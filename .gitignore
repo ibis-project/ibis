@@ -1,0 +1,38 @@
+# Editor temporary/working/backup files
+.#*
+*\#*\#
+[#]*#
+*~
+*$
+*.bak
+*flymake*
+*.kdev4
+*.log
+*.swp
+*.pdb
+
+# Compiled source
+*.a
+*.dll
+*.o
+*.py[ocd]
+*.so
+.build_cache_dir
+MANIFEST
+
+# Python files
+
+# setup.py working directory
+build
+# setup.py dist directory
+dist
+# Egg metadata
+*.egg-info
+# coverage
+.coverage
+
+# OS generated files
+.directory
+.gdb_history
+.DS_Store?
+Icon?
