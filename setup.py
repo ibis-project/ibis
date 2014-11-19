@@ -23,9 +23,8 @@ if Cython.__version__ < '0.19.1':
 from setuptools import setup
 import os
 
-# Will need these soon
-# from Cython.Build import cythonize
-# from distutils.extension import Extension
+from Cython.Build import cythonize
+from distutils.extension import Extension
 
 MAJOR = 0
 MINOR = 0
@@ -42,7 +41,14 @@ class clean(_clean):
             except OSError:
                 pass
 
-extensions = []
+common_include = ['ibis/src']
+
+comms_ext = Extension('ibis.comms',
+                      ['ibis/comms.pyx',
+                       'ibis/src/ipc_support.c'],
+                      depends=['ibis/src/ipc_support.h'],
+                      include_dirs=common_include)
+extensions = cythonize([comms_ext])
 
 setup(
     name='ibis',

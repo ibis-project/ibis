@@ -11,3 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from posix.time cimport timespec, time_t
+
+cdef extern from "ipc_support.h" nogil:
+
+    int semarray_init(int size, unsigned short* init_vals)
+    int semarray_exists(int sem_id)
+    int semarray_delete(int sem_id)
+
+    int semarray_lock(int sem_id, int i, timespec* timeout)
+    int semarray_unlock(int sem_id, int i, timespec* timeout)

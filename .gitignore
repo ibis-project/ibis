@@ -20,6 +20,10 @@
 .build_cache_dir
 MANIFEST
 
+# Generated sources
+*.c
+*.cpp
+
 # Python files
 
 # setup.py working directory
