@@ -22,6 +22,7 @@ if Cython.__version__ < '0.19.1':
 
 from setuptools import setup
 import os
+import sys
 
 from Cython.Build import cythonize
 from distutils.extension import Extension
@@ -43,10 +44,17 @@ class clean(_clean):
 
 common_include = ['ibis/src']
 
+comms_ext_libraries = []
+if sys.platform != 'darwin':
+    # libuuid is available without additional linking as part of the base BSD
+    # system on OS X, needs to be installed and linked on Linux, though.
+    comms_ext_libraries.append('uuid')
+
 comms_ext = Extension('ibis.comms',
                       ['ibis/comms.pyx',
                        'ibis/src/ipc_support.c'],
                       depends=['ibis/src/ipc_support.h'],
+                      libraries=comms_ext_libraries,
                       include_dirs=common_include)
 extensions = cythonize([comms_ext])
 

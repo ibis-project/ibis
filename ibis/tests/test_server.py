@@ -101,7 +101,7 @@ class TestDaemon(unittest.TestCase, ImpalaServerFixture):
         self.assertEqual(len(exceptions), 1)
 
 
-class TestWorkerManagement(unittest.TestCase, ImpalaServerFixture):
+class WorkerTestFixture(ImpalaServerFixture):
 
     def setUp(self):
         ImpalaServerFixture.setUp(self)
@@ -120,16 +120,42 @@ class TestWorkerManagement(unittest.TestCase, ImpalaServerFixture):
             self.daemon.shutdown()
             self.daemon_t.join()
 
-    def _connect_daemon(self):
+    def _connect(self, port=None):
+        if port is None:
+            port = self.daemon.listen_port
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect(('localhost', self.daemon.listen_port))
+        sock.connect(('localhost', port))
         return sock
+
+    def _spawn_worker(self):
+        sock = self._connect()
+
+        # Ask to create a worker; reply OK on successful fork
+        sock.send('new')
+        reply = sock.recv(1024)
+        assert reply == 'ok'
+        sock.close()
+
+        # Acknowledge the worker's existence
+        sock, _ = self.server_sock.accept()
+        msg = sock.recv(1024)
+        sock.send('ok')
+        sock.close()
+
+        worker_port, worker_pid = struct.unpack('II', msg)
+        proc = psutil.Process(worker_pid)
+        assert proc.status() != ('running', 'sleeping')
+        return worker_port, worker_pid
+
+
+
+class TestWorkerManagement(WorkerTestFixture, unittest.TestCase):
 
     def test_spawn_worker_and_kill(self):
         worker_port, worker_pid = self._spawn_worker()
 
         # Kill the worker
-        sock = self._connect_daemon()
+        sock = self._connect()
         sock.send('kill %d' % worker_pid)
         msg = sock.recv(1024)
         assert msg == 'ok'
@@ -151,7 +177,7 @@ class TestWorkerManagement(unittest.TestCase, ImpalaServerFixture):
         assert not port_is_closed(worker_port)
         assert not port_is_closed(worker_port2)
 
-        sock = self._connect_daemon()
+        sock = self._connect()
         sock.send('shutdown')
         reply = sock.recv(1024)
         assert reply == 'ok'
@@ -167,23 +193,3 @@ class TestWorkerManagement(unittest.TestCase, ImpalaServerFixture):
 
         self.daemon_t.join()
         assert not self.daemon_t.isAlive()
-
-    def _spawn_worker(self):
-        sock = self._connect_daemon()
-
-        # Ask to create a worker; reply OK on successful fork
-        sock.send('new')
-        reply = sock.recv(1024)
-        assert reply == 'ok'
-        sock.close()
-
-        # Acknowledge the worker's existence
-        sock, _ = self.server_sock.accept()
-        msg = sock.recv(1024)
-        sock.send('ok')
-        sock.close()
-
-        worker_port, worker_pid = struct.unpack('II', msg)
-        proc = psutil.Process(worker_pid)
-        assert proc.status() != ('running', 'sleeping')
-        return worker_port, worker_pid

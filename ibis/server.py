@@ -30,9 +30,8 @@ import threading
 import traceback
 
 
-REQ_PID = 0
-REQ_KILL = 1
-REQ_TASK = 2
+from ibis.tasks import IbisTaskMessage, IbisTaskExecutor
+
 
 SELECT_TIMEOUT = 0.25
 
@@ -41,7 +40,7 @@ def pack_uint32(val):
     return struct.pack('I', val)
 
 
-class IbisTask(object):
+class IbisTaskHandler(object):
 
     def __init__(self, sock):
         self.sock = sock
@@ -50,11 +49,25 @@ class IbisTask(object):
         # TODO: task execution class should acquire OS semaphore, execute
         # task, then release the semaphore.
 
-        request_str = self.sock.recv(1024)
-        if not request_str:
+        encoded_task = self.sock.recv(1024)
+        if not encoded_task:
             raise ValueError('Request was empty')
 
-        msg_type = struct.unpack('b', request_str[0])[0]
+        try:
+            task_msg = IbisTaskMessage.decode(encoded_task)
+        except:
+            self.sock.send(traceback.format_exc())
+        else:
+            # Acknowledge successful receipt
+            self.sock.send('ok')
+        finally:
+            self.sock.close()
+
+        self.execute(task_msg)
+
+    def execute(self, task_msg):
+        executor = IbisTaskExecutor(task_msg)
+        return executor.execute()
 
 
 def compute_real_exit_code(exit_code):
@@ -84,7 +97,7 @@ class IbisServerNode(object):
     This can be a daemon (for launching subprocesses) or a worker
     """
     def __init__(self, server_port=17001, daemon=True,
-                 task_handler=IbisTask):
+                 task_handler=IbisTaskHandler):
         self.server_port = server_port
         self.task_handler = task_handler
 
@@ -96,6 +109,8 @@ class IbisServerNode(object):
         self._is_shutdown.clear()
 
         self.is_daemon = daemon
+
+        self.threaded_worker = False
 
         if self.is_daemon:
             # Create a new process group to corral our children
@@ -268,14 +283,21 @@ class IbisServerNode(object):
 
             sock, _ = _eintr_retry(self.listen_sock.accept)
 
-            # Run the task in a thread
             task = self.task_handler(sock)
 
-            # Spawn task in a daemon. These threads should not stay alive if
-            # main worker thread exits. Revisit this at some point.
-            t = threading.Thread(target=task.run)
-            t.daemon = True
-            t.start()
+            if self.threaded_worker:
+                # Spawn task in a daemon. These threads should not stay alive
+                # if main worker thread exits. Revisit this at some point.
+                t = threading.Thread(target=task.run)
+                t.daemon = True
+                t.start()
+            else:
+                # Run the task synchronously
+                try:
+                    task.run()
+                except:
+                    # Exception reporting is the task's job
+                    pass
 
 
 def parse_cl_args():
