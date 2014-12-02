@@ -15,9 +15,15 @@
 import os
 import unittest
 
+import pandas as pd
+
+from cPickle import loads as pickle_load
+from ibis.cloudpickle import dumps as pickle_dump
+
 from ibis.tasks import IbisTaskMessage, IbisTaskExecutor
-from ibis.comms import SharedMmap, IPCLock
+from ibis.comms import SharedMmap, IPCLock, IbisTableWriter
 from ibis.util import guid
+from ibis.wire import BytesIO
 import ibis.wire as wire
 
 from ibis.tests.test_server import WorkerTestFixture
@@ -63,22 +69,26 @@ class TestPingPongTask(unittest.TestCase):
                 pass
 
     def test_execute_task(self):
-        executor = IbisTaskExecutor(self.task)
-
-        try:
-            executor.execute()
-        except:
-            # Don't deadlock if execute has an exception
-            executor.lock.release()
-            raise
-
-        # IPCLock has been released
-        self.lock.acquire()
+        _execute_task(self.task, self.lock)
 
         self.mm.seek(0)
         reader = wire.PackedMessageReader(self.mm)
         assert reader.uint8()
         assert reader.string() == 'pong'
+
+
+def _execute_task(task, master_lock):
+    executor = IbisTaskExecutor(task)
+
+    try:
+        executor.execute()
+    except:
+        # Don't deadlock if execute has an exception
+        executor.lock.release()
+        raise
+
+    # IPCLock has been released
+    master_lock.acquire()
 
 
 class TestTaskE2E(TestPingPongTask, WorkerTestFixture):
@@ -134,6 +144,225 @@ def delete_all_guid_files():
     [os.remove(x) for x in glob.glob('*') if len(x) == 32]
 
 
+from test_comms import double_ex
+
 
 class TestAggregateTasks(unittest.TestCase):
-    pass
+
+    def _get_mean_uda(self):
+        # Dynamically generate the class instance. Use pandas so nulls are
+        # excluded
+        class Mean(object):
+
+            def __init__(self):
+                self.total = 0
+                self.count = 0
+
+            def update(self, values):
+                values = pd.Series(values)
+                self.total += values.sum()
+                self.count += values.count()
+
+            def merge(self, other):
+                self.total += other.total
+                self.count += other.count
+                return self
+
+            def finalize(self):
+                return self.total / float(self.count)
+
+        return Mean
+
+    def setUp(self):
+        self.paths_to_delete = []
+        self.col_fragments = [double_ex(1000) for _ in range(10)]
+        self.lock = IPCLock(is_slave=0)
+
+    def test_update(self):
+        klass = self._get_mean_uda()
+
+        col = self.col_fragments[0]
+        task, mm = self._make_update_task(klass, [col])
+
+        _execute_task(task, self.lock)
+
+        mm.seek(0)
+        reader = wire.PackedMessageReader(mm)
+
+        # success
+        if not reader.uint8():
+            raise Exception(reader.string())
+
+        result = pickle_load(reader.string())
+
+        ex_total = pd.Series(col.to_numpy_for_pandas()).sum()
+        assert result.total == ex_total
+
+        # Test with prior state
+        col = self.col_fragments[1]
+        task, mm = self._make_update_task(klass, [col], prior_state=result)
+
+        # Executor's turn again
+        self.lock.release()
+        _execute_task(task, self.lock)
+
+        mm.seek(0)
+        reader = wire.PackedMessageReader(mm)
+
+        # success
+        if not reader.uint8():
+            raise Exception(reader.string())
+
+        result = pickle_load(reader.string())
+
+        ex_total += pd.Series(col.to_numpy_for_pandas()).sum()
+
+        # pandas will yield 0 on None input strangely
+        assert ex_total != 0
+
+        assert result.total == ex_total
+
+    def test_merge(self):
+        klass = self._get_mean_uda()
+
+        lcol = self.col_fragments[0]
+        rcol = self.col_fragments[1]
+
+        left = self._update(klass, [lcol])
+        right = self._update(klass, [rcol])
+
+        task, mm = self._make_merge_task(left, right)
+        _execute_task(task, self.lock)
+
+        mm.seek(0)
+        reader = wire.PackedMessageReader(mm)
+
+        # success
+        if not reader.uint8():
+            raise Exception(reader.string())
+
+        result = pickle_load(reader.string())
+
+        larr = lcol.to_numpy_for_pandas()
+        rarr = rcol.to_numpy_for_pandas()
+        assert larr is not None
+        ex_total = (pd.Series(larr).sum() + pd.Series(rarr).sum())
+        assert result.total == ex_total
+
+    def test_finalize(self):
+        klass = self._get_mean_uda()
+
+        col = self.col_fragments[0]
+        result = self._update(klass, [col])
+
+        task, mm = self._make_finalize_task(result)
+        _execute_task(task, self.lock)
+
+        mm.seek(0)
+        reader = wire.PackedMessageReader(mm)
+
+        # success
+        if not reader.uint8():
+            raise Exception(reader.string())
+
+        result = pickle_load(reader.string())
+
+        arr = col.to_numpy_for_pandas()
+        ex_result = pd.Series(arr).mean()
+        assert result == ex_result
+
+    def _update(self, klass, args):
+        task, mm = self._make_update_task(klass, args)
+        _execute_task(task, self.lock)
+        self.lock.release()
+
+        mm.seek(0)
+        reader = wire.PackedMessageReader(mm)
+
+        # success
+        if not reader.uint8():
+            raise Exception(reader.string())
+
+        return reader.string()
+
+    def _make_update_task(self, uda_class, cols, prior_state=None):
+
+        # Overall layout here:
+        # - task name
+        # - serialized agg class
+        # - prior state flag 1/0
+        # - (optional) serialized prior state
+        # - serialized table fragment
+
+        payload = BytesIO()
+        msg_writer = wire.PackedMessageWriter(payload)
+        msg_writer.string('agg-update')
+        msg_writer.string(pickle_dump(uda_class))
+
+        if prior_state is not None:
+            msg_writer.uint8(1)
+            msg_writer.string(pickle_dump(prior_state))
+        else:
+            msg_writer.uint8(0)
+
+        writer = IbisTableWriter(cols)
+
+        # Create memory map of the appropriate size
+        path = 'task_%s' % guid()
+        size = writer.total_size() + payload.tell()
+        offset = 0
+        mm = SharedMmap(path, size, create=True)
+        self.paths_to_delete.append(path)
+
+        mm.write(payload.getvalue())
+        writer.write(mm)
+
+        task = IbisTaskMessage(self.lock.semaphore_id, path, offset, size)
+
+        return task, mm
+
+    def _make_merge_task(self, left_pickled, right_pickled):
+        payload = BytesIO()
+        msg_writer = wire.PackedMessageWriter(payload)
+        msg_writer.string('agg-merge')
+        msg_writer.string(left_pickled)
+        msg_writer.string(right_pickled)
+
+        # Create memory map of the appropriate size
+        path = 'task_%s' % guid()
+        size = payload.tell()
+        offset = 0
+        mm = SharedMmap(path, size, create=True)
+        self.paths_to_delete.append(path)
+
+        mm.write(payload.getvalue())
+
+        task = IbisTaskMessage(self.lock.semaphore_id, path, offset, size)
+
+        return task, mm
+
+    def _make_finalize_task(self, pickled):
+        payload = BytesIO()
+        msg_writer = wire.PackedMessageWriter(payload)
+        msg_writer.string('agg-finalize')
+        msg_writer.string(pickled)
+
+        # Create memory map of the appropriate size
+        path = 'task_%s' % guid()
+        size = payload.tell()
+        offset = 0
+        mm = SharedMmap(path, size, create=True)
+        self.paths_to_delete.append(path)
+
+        mm.write(payload.getvalue())
+
+        task = IbisTaskMessage(self.lock.semaphore_id, path, offset, size)
+
+        return task, mm
+
+    def tearDown(self):
+        for path in self.paths_to_delete:
+            try:
+                os.remove(path)
+            except os.error:
+                pass

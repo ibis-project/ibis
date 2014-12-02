@@ -107,7 +107,6 @@ class CloudPickler(pickle.Pickler):
 
     dispatch = pickle.Pickler.dispatch.copy()
     savedForceImports = False
-    savedDjangoEnv = False #hack tro transport django environment
 
     def __init__(self, file, protocol=None, min_size_to_save= 0):
         pickle.Pickler.__init__(self,file,protocol)
@@ -213,20 +212,6 @@ class CloudPickler(pickle.Pickler):
             self.modules.add(themodule)
             if getattr(themodule, name, None) is obj:
                 return self.save_global(obj, name)
-
-        if not self.savedDjangoEnv:
-            #hack for django - if we detect the settings module, we transport it
-            django_settings = os.environ.get('DJANGO_SETTINGS_MODULE', '')
-            if django_settings:
-                django_mod = sys.modules.get(django_settings)
-                if django_mod:
-                    cloudLog.debug('Transporting django settings %s during save of %s', django_mod, name)
-                    self.savedDjangoEnv = True
-                    self.modules.add(django_mod)
-                    write(pickle.MARK)
-                    self.save_reduce(django_settings_load, (django_mod.__name__,), obj=django_mod)
-                    write(pickle.POP_MARK)
-
 
         # if func is lambda, def'ed at prompt, is in main, or is nested, then
         # we'll pickle the actual function object rather than simply saving a
@@ -737,34 +722,6 @@ class CloudPickler(pickle.Pickler):
                     return
         raise pickle.PicklingError('cannot save %s. Cannot resolve what module it is defined in' % str(obj))
 
-    def inject_timeseries(self):
-        """Handle bugs with pickling scikits timeseries"""
-        tseries = sys.modules.get('scikits.timeseries.tseries')
-        if not tseries or not hasattr(tseries, 'Timeseries'):
-            return
-        self.dispatch[tseries.Timeseries] = self.__class__.save_timeseries
-
-    def save_timeseries(self, obj):
-        import scikits.timeseries.tseries as ts
-
-        func, reduce_args, state = obj.__reduce__()
-        if func != ts._tsreconstruct:
-            raise pickle.PicklingError('timeseries using unexpected reconstruction function %s' % str(func))
-        state = (1,
-                         obj.shape,
-                         obj.dtype,
-                         obj.flags.fnc,
-                         obj._data.tostring(),
-                         ts.getmaskarray(obj).tostring(),
-                         obj._fill_value,
-                         obj._dates.shape,
-                         obj._dates.__array__().tostring(),
-                         obj._dates.dtype, #added -- preserve type
-                         obj.freq,
-                         obj._optinfo,
-                         )
-        return self.save_reduce(_genTimeSeries, (reduce_args, state))
-
     def inject_email(self):
         """Block email LazyImporters from being saved"""
         email = sys.modules.get('email')
@@ -775,7 +732,6 @@ class CloudPickler(pickle.Pickler):
     def inject_addons(self):
         """Plug in system. Register additional pickling functions if modules already loaded"""
         self.inject_numpy()
-        self.inject_timeseries()
         self.inject_email()
 
     """Python Imaging Library"""
@@ -817,26 +773,6 @@ def dumps(obj, protocol=2):
 def subimport(name):
     __import__(name)
     return sys.modules[name]
-
-#hack to load django settings:
-def django_settings_load(name):
-    modified_env = False
-
-    if 'DJANGO_SETTINGS_MODULE' not in os.environ:
-        os.environ['DJANGO_SETTINGS_MODULE'] = name # must set name first due to circular deps
-        modified_env = True
-    try:
-        module = subimport(name)
-    except Exception, i:
-        print >> sys.stderr, 'Cloud not import django settings %s:' % (name)
-        print_exec(sys.stderr)
-        if modified_env:
-            del os.environ['DJANGO_SETTINGS_MODULE']
-    else:
-        #add project directory to sys,path:
-        if hasattr(module,'__file__'):
-            dirname = os.path.split(module.__file__)[0] + '/'
-            sys.path.append(dirname)
 
 # restores function attributes
 def _restore_attr(obj, attr):
@@ -933,27 +869,3 @@ def _lazyloadImage(fp):
     import Image
     fp.seek(0)  #works in almost any case
     return Image.open(fp)
-
-"""Timeseries"""
-def _genTimeSeries(reduce_args, state):
-    import scikits.timeseries.tseries as ts
-    from numpy import ndarray
-    from numpy.ma import MaskedArray
-
-
-    time_series = ts._tsreconstruct(*reduce_args)
-
-    #from setstate modified
-    (ver, shp, typ, isf, raw, msk, flv, dsh, dtm, dtyp, frq, infodict) = state
-    #print 'regenerating %s' % dtyp
-
-    MaskedArray.__setstate__(time_series, (ver, shp, typ, isf, raw, msk, flv))
-    _dates = time_series._dates
-    #_dates.__setstate__((ver, dsh, typ, isf, dtm, frq))  #use remote typ
-    ndarray.__setstate__(_dates,(dsh,dtyp, isf, dtm))
-    _dates.freq = frq
-    _dates._cachedinfo.update(dict(full=None, hasdups=None, steps=None,
-                                   toobj=None, toord=None, tostr=None))
-    # Update the _optinfo dictionary
-    time_series._optinfo.update(infodict)
-    return time_series

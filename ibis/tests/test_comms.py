@@ -198,6 +198,12 @@ def int_ex(N, ibis_type):
     return _to_masked(values, mask, ibis_type)
 
 
+def double_ex(N):
+    mask = rand_bool(N)
+    values = np.random.randn(N)
+    return _to_masked(values, mask, IbisType.DOUBLE)
+
+
 def _to_masked(values, mask, dtype):
     return comms.masked_from_numpy(values, mask, dtype)
 
@@ -310,12 +316,22 @@ class TestImpalaMaskedFormat(unittest.TestCase):
         self.assertEqual(col.nbytes(), self.N * 5)
         self._check_roundtrip([col])
 
+        result = col.to_numpy_for_pandas()
+        assert result.dtype == np.float32
+        mask = np.isnan(result)
+        ex_mask = col.mask().view(np.bool_)
+        assert np.array_equal(mask, ex_mask)
+
     def test_double(self):
-        mask = rand_bool(self.N)
-        values = np.random.randn(self.N)
-        col = _to_masked(values, mask, IbisType.DOUBLE)
+        col = double_ex(self.N)
         self.assertEqual(col.nbytes(), self.N * 9)
         self._check_roundtrip([col])
+
+        result = col.to_numpy_for_pandas()
+        assert result.dtype == np.float64
+        mask = np.isnan(result)
+        ex_mask = col.mask().view(np.bool_)
+        assert np.array_equal(mask, ex_mask)
 
     def test_string_pyobject(self):
         # pandas handles strings in object-type (NPY_OBJECT) arrays and uses

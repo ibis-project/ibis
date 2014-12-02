@@ -14,6 +14,9 @@
 
 import traceback
 
+from cPickle import loads as pickle_load
+from ibis.cloudpickle import dumps as pickle_dump
+
 from ibis.wire import PackedMessageReader, PackedMessageWriter
 import ibis.comms as comms
 import ibis.wire as wire
@@ -80,7 +83,6 @@ class Task(object):
     Run task in a thread, capture tracebacks or other problems.
     """
     def __init__(self, shmem):
-        shmem.seek(0)
         self.shmem = shmem
         self.complete = False
 
@@ -137,8 +139,8 @@ class IbisTaskExecutor(object):
         # TODO: Timeout concerns
         self.lock.acquire()
 
-        # TODO: this can block forever on malformed input
-        task_type = PackedMessageReader(self.shmem).string()
+        # TODO: this can break in various ways on bad input
+        task_type = wire.read_string(self.shmem)
 
         try:
             klass = _task_registry[task_type]
@@ -168,10 +170,8 @@ class IbisTaskExecutor(object):
 
 class PingPongTask(Task):
 
-    def __init__(self, shmem):
-        Task.__init__(self, shmem)
-
     def run(self):
+        self.shmem.seek(0)
         self.mark_success()
         wire.write_string(self.shmem, 'pong')
 
@@ -181,26 +181,104 @@ register_task('ping', PingPongTask)
 #----------------------------------------------------------------------
 # Aggregation execution tasks
 
+class AggregationTask(Task):
 
-class AggregationUpdateTask(Task):
+    def _write_response(self, agg_inst):
+        self.shmem.seek(0)
+        self.mark_success()
+
+        serialized_inst = pickle_dump(agg_inst)
+        wire.write_string(self.shmem, serialized_inst)
+
+
+class AggregationUpdateTask(AggregationTask):
     """
+    Task header layout
+    - serialized agg class
+    - prior state flag 1/0
+    - (optional) serialized prior state
+    - serialized table fragment
 
     """
+    def __init__(self, shmem):
+        AggregationTask.__init__(self, shmem)
+
+        self._read_header()
+
+    def _read_header(self):
+        reader = wire.PackedMessageReader(self.shmem)
+
+        # Unpack header
+        self.agg_class_pickled = reader.string()
+        has_prior_state = reader.uint8() != 0
+
+        if has_prior_state:
+            self.prior_state = pickle_load(reader.string())
+        else:
+            self.prior_state = None
+
     def run(self):
-        # Shared memory includes the serialized aggregation class (as a string)
-        # followed by
-        pass
+        if self.prior_state is not None:
+            agg_inst = self.prior_state
+        else:
+            klass = pickle_load(self.agg_class_pickled)
+            agg_inst = klass()
+
+        args = self._deserialize_args()
+        agg_inst.update(*args)
+        self._write_response(agg_inst)
+
+    def _deserialize_args(self):
+        # TODO: we need some mechanism to indicate how the data should be
+        # deserialized before passing to the aggregator. For now, will assume
+        # "pandas-friendly" NumPy-format
+
+        # Deserialize data fragment
+        table_reader = comms.IbisTableReader(self.shmem)
+
+        args = []
+        for i in range(table_reader.ncolumns):
+            col = table_reader.get_column(i)
+            arg = col.to_numpy_for_pandas()
+
+            args.append(arg)
+
+        return args
 
 
-class AggregationMergeTask(Task):
+class AggregationMergeTask(AggregationTask):
+
+    def __init__(self, shmem):
+        AggregationTask.__init__(self, shmem)
+
+        reader = wire.PackedMessageReader(shmem)
+
+        # TODO: may wish to merge more than 2 at a time?
+
+        # Unpack header
+        self.left_inst = pickle_load(reader.string())
+        self.right_inst = pickle_load(reader.string())
 
     def run(self):
         # Objects to merge stored in length-prefixed strings in shared memory
-        pass
+        merged = self.left_inst.merge(self.right_inst)
+        self._write_response(merged)
 
 
-class AggregationFinalizeTask(Task):
+class AggregationFinalizeTask(AggregationTask):
+
+    def __init__(self, shmem):
+        AggregationTask.__init__(self, shmem)
+
+        reader = wire.PackedMessageReader(shmem)
+        self.state = pickle_load(reader.string())
 
     def run(self):
         # Single length-prefixed string to finalize
-        pass
+        result = self.state.finalize()
+        self._write_response(result)
+
+
+register_task('agg-update', AggregationUpdateTask)
+register_task('agg-merge', AggregationMergeTask)
+register_task('agg-finalize', AggregationFinalizeTask)

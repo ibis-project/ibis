@@ -33,6 +33,7 @@ cimport cpython as cp
 from cython.operator cimport (dereference as deref,
                               preincrement as preinc,
                               predecrement as predec)
+cimport cython
 
 import numpy as np
 import os
@@ -165,11 +166,12 @@ cdef class BufferLike:
     def read(self, int nbytes=-1):
         self._raise_if_closed()
 
-        if nbytes < 0:
+        if (nbytes < 0) or nbytes > (self.size - self.pos):
+            # Read no more than the remaining capacity of the buffer
             nbytes = self.size - self.pos
 
-        result = cp.PyBytes_FromStringAndSize(
-            <char*> (self.get_buffer() + self.pos), nbytes)
+        result = cp.PyBytes_FromStringAndSize(<char*> self.get_buffer(),
+                                              nbytes)
 
         self.pos += nbytes
 
@@ -187,7 +189,7 @@ cdef class BufferLike:
         cdef char* s_bytes = cp.PyBytes_AsString(s)
         cdef size_t length = len(s)
         with nogil:
-            memcpy(self.get_buffer() + self.pos, s_bytes, length)
+            memcpy(self.get_buffer(), s_bytes, length)
 
         self.pos += length
 
@@ -218,7 +220,7 @@ cdef class RAMBuffer(BufferLike):
             free(self.buf)
 
     cdef uint8_t* get_buffer(self) nogil:
-        return self.buf
+        return self.buf + self.pos
 
 
 cdef class SharedMmap(BufferLike):
@@ -266,7 +268,7 @@ cdef class SharedMmap(BufferLike):
         self.close()
 
     cdef uint8_t* get_buffer(self) nogil:
-        return self.buf
+        return self.buf + self.pos
 
     def __repr__(self):
         return ('SharedMmap(%s, size=%d, offset=%d)' %
@@ -562,12 +564,14 @@ cdef class IbisTableReader:
     """
 
     """
+    cdef readonly:
+        int ncolumns
+        uint64_t length
+
     cdef:
         uint8_t* buf
         size_t bufsize
 
-        int ncolumns
-        uint64_t length
         uint8_t* dtypes
         uint32_t* col_offsets
         uint8_t table_format
@@ -751,6 +755,12 @@ cdef class MaskedColumn(IbisColumn):
         elif self.dtype == TYPE_BIGINT:
             return _box_pandas_integer(<int64_t*> self.data, self.null_mask,
                                        self.length, NPY_I8, copy=copy)
+        elif self.dtype == TYPE_FLOAT:
+            return _box_pandas_floating(<float*> self.data, self.null_mask,
+                                        self.length, NPY_F4, copy=copy)
+        elif self.dtype == TYPE_DOUBLE:
+            return _box_pandas_floating(<double*> self.data, self.null_mask,
+                                        self.length, NPY_F8, copy=copy)
         elif self.dtype == TYPE_TIMESTAMP:
             raise NotImplementedError
         elif self.dtype == TYPE_DECIMAL:
@@ -858,6 +868,21 @@ cdef _box_pandas_integer(signed_int* data, uint8_t* mask, int length,
         if copy:
             result = result.copy()
         return result
+
+cdef _box_pandas_floating(cython.floating* data, uint8_t* mask, int length,
+                          object dtype, copy=False):
+    cdef:
+        int i
+        ndarray[cython.floating] result
+
+    result = np.empty(length, dtype=dtype)
+    with nogil:
+        for i in range(length):
+            if mask[i]:
+                result[i] = NaN
+            else:
+                result[i] = data[i]
+    return result
 
 
 cdef _box_pandas_string(uint32_t* labels, uint8_t* mask, int length,
