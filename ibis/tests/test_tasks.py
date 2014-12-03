@@ -146,6 +146,21 @@ def delete_all_guid_files():
 
 from test_comms import double_ex
 
+class NRows(object):
+
+    def __init__(self):
+        self.total = 0
+
+    def update(self, values):
+        self.total += len(values)
+
+    def merge(self, other):
+        self.total += other.total
+        return self
+
+    def finalize(self):
+        return self.total
+
 
 class TestAggregateTasks(unittest.TestCase):
 

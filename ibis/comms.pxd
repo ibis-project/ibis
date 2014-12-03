@@ -90,20 +90,20 @@ cdef class IPCLock:
 #----------------------------------------------------------------------
 # Serialization / deserialization
 
-ctypedef enum ImpalaType:
-    TYPE_NULL
-    TYPE_BOOLEAN
-    TYPE_TINYINT
-    TYPE_SMALLINT
-    TYPE_INT
-    TYPE_BIGINT
-    TYPE_FLOAT
-    TYPE_DOUBLE
-    TYPE_STRING
-    TYPE_VARCHAR
-    TYPE_CHAR
-    TYPE_TIMESTAMP
-    TYPE_DECIMAL
+ctypedef enum IbisCType:
+    TYPE_NULL = 0
+    TYPE_BOOLEAN = 1
+    TYPE_TINYINT = 2
+    TYPE_SMALLINT = 3
+    TYPE_INT = 4
+    TYPE_BIGINT = 5
+    TYPE_FLOAT = 6
+    TYPE_DOUBLE = 7
+    TYPE_STRING = 8
+    TYPE_VARCHAR = 9
+    TYPE_CHAR = 10
+    TYPE_TIMESTAMP = 11
+    TYPE_DECIMAL = 12
 
 
 cdef extern from *:
