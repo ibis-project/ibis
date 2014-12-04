@@ -17,3 +17,22 @@ import ibis.comms as comms
 
 def guid():
     return comms.uuid4_hex()
+
+def bytes_to_uint8_array(val, width=70):
+    """
+    Formats a byte string for use as a uint8_t* literal in C/C++
+    """
+    if len(val) == 0:
+        return '{}'
+
+    lines = []
+    line = '{' + str(ord(val[0]))
+    for x in val[1:]:
+        token = str(ord(x))
+        if len(line) + len(token) > width:
+            lines.append(line + ',')
+            line = token
+        else:
+            line += ',%s' % token
+    lines.append(line)
+    return '\n'.join(lines) + '}'

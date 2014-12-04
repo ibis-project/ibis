@@ -104,6 +104,7 @@ ctypedef enum IbisCType:
     TYPE_CHAR = 10
     TYPE_TIMESTAMP = 11
     TYPE_DECIMAL = 12
+    TYPE_FIXED_BUFFER = 13
 
 
 cdef extern from *:
