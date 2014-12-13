@@ -144,7 +144,7 @@ class WorkerTestFixture(ImpalaServerFixture):
 
         worker_port, worker_pid = struct.unpack('II', msg)
         proc = psutil.Process(worker_pid)
-        assert proc.status() != ('running', 'sleeping')
+        assert proc.status != ('running', 'sleeping')
         return worker_port, worker_pid
 
 

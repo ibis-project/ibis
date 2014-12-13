@@ -162,6 +162,23 @@ class NRows(object):
         return self.total
 
 
+class Summ(object):
+
+    def __init__(self):
+        self.total = 0
+
+    def update(self, values):
+        import pandas as pd
+        self.total += pd.Series(values).sum()
+
+    def merge(self, other):
+        self.total += other.total
+        return self
+
+    def finalize(self):
+        return self.total
+
+
 class TestAggregateTasks(unittest.TestCase):
 
     def _get_mean_uda(self):
