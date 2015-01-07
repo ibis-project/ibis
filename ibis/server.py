@@ -78,6 +78,7 @@ def compute_real_exit_code(exit_code):
     else:
         return 1
 
+
 def _eintr_retry(func, *args):
     """restart a system call interrupted by EINTR"""
     while True:
@@ -91,11 +92,12 @@ def _eintr_retry(func, *args):
 # Daemon logic for spawning new child workers
 
 
-
 class IbisServerNode(object):
+
     """
     This can be a daemon (for launching subprocesses) or a worker
     """
+
     def __init__(self, server_port=17001, daemon=True,
                  task_handler=IbisTaskHandler):
         self.server_port = server_port

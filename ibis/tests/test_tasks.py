@@ -146,6 +146,7 @@ def delete_all_guid_files():
 
 from test_comms import double_ex
 
+
 class NRows(object):
 
     def __init__(self):

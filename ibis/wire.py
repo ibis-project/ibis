@@ -21,6 +21,7 @@ except ImportError:
 
 
 class PackedMessageReader(object):
+
     """
 
     """
@@ -55,6 +56,7 @@ class PackedMessageReader(object):
 
 
 class PackedMessageWriter(object):
+
     """
 
     """

@@ -87,7 +87,6 @@ class TestIPCLock(unittest.TestCase):
         assert results == ex_results
 
 
-
 class TestSharedMmap(unittest.TestCase):
 
     def setUp(self):
@@ -178,6 +177,7 @@ class TestSharedMmap(unittest.TestCase):
 def rand_bool(N):
     return np.random.randint(0, 2, size=N).astype(np.uint8)
 
+
 def rand_int_span(dtype, N):
     info = np.iinfo(dtype)
     lo, hi = info.min, info.max
@@ -209,6 +209,7 @@ def _to_masked(values, mask, dtype):
 
 
 class TestImpalaMaskedFormat(unittest.TestCase):
+
     """
     Check that data makes it to and from the file format, and that it can be
     correctly transformed to the appropriate NumPy/pandas/etc. format
@@ -260,10 +261,10 @@ class TestImpalaMaskedFormat(unittest.TestCase):
         _check_masked_correct(col2, result2, np.bool_,
                               lambda x: x is None)
 
-        # # Get a numpy.ma.MaskedArray
+        # Get a numpy.ma.MaskedArray
         # masked_result = col.to_masked_array()
 
-        # # didn't copy
+        # didn't copy
         # assert not masked_result.flags.owndata
         # assert masked_result.base is col
 
@@ -370,7 +371,6 @@ def _check_pandas_ints_no_nulls(N, ibis_type):
     _check_masked_correct(col, result, nptype, lambda x: False)
 
 
-
 def _check_masked_correct(col, result, dtype, is_na_f):
     mask = col.mask()
     data = col.data_bytes().view(dtype)
@@ -384,6 +384,7 @@ def _check_masked_correct(col, result, dtype, is_na_f):
 
 
 class TestTableRoundTrip(unittest.TestCase):
+
     """
     Test things not captured by datatype-specific tests
     """

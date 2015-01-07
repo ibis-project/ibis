@@ -18,6 +18,7 @@ import ibis.comms as comms
 def guid():
     return comms.uuid4_hex()
 
+
 def bytes_to_uint8_array(val, width=70):
     """
     Formats a byte string for use as a uint8_t* literal in C/C++

@@ -32,6 +32,7 @@ def port_is_closed(port):
         return False
     return True
 
+
 class ImpalaServerFixture(object):
 
     def setUp(self):
@@ -79,6 +80,7 @@ class TestDaemon(unittest.TestCase, ImpalaServerFixture):
         daemon = IbisServerNode(server_port=self.server_port)
 
         exceptions = []
+
         def f():
             try:
                 daemon.report_daemon()
@@ -146,7 +148,6 @@ class WorkerTestFixture(ImpalaServerFixture):
         proc = psutil.Process(worker_pid)
         assert proc.status != ('running', 'sleeping')
         return worker_port, worker_pid
-
 
 
 class TestWorkerManagement(WorkerTestFixture, unittest.TestCase):

@@ -23,6 +23,7 @@ import ibis.wire as wire
 
 
 class IbisTaskMessage(object):
+
     """
     Prototype wire protocol for task descriptions
 
@@ -32,6 +33,7 @@ class IbisTaskMessage(object):
     uint64_t shmem_offset
     uint64_t shmem_size
     """
+
     def __init__(self, semaphore_id, shmem_name, shmem_offset, shmem_size):
         self.semaphore_id = semaphore_id
         self.shmem_name = shmem_name
@@ -77,11 +79,13 @@ class IbisTaskMessage(object):
 
 
 class Task(object):
+
     """
     Prototype
 
     Run task in a thread, capture tracebacks or other problems.
     """
+
     def __init__(self, shmem):
         self.shmem = shmem
         self.complete = False
@@ -104,6 +108,7 @@ class Task(object):
 
 _task_registry = {}
 
+
 def register_task(kind, task_class, override=False):
     """
     Register a new task implementation with the execution system
@@ -116,10 +121,12 @@ def register_task(kind, task_class, override=False):
 
 
 class IbisTaskExecutor(object):
+
     """
     Runs the requested task and handles locking, exception reporting, and so
     forth.
     """
+
     def __init__(self, task_msg):
         self.task_msg = task_msg
 
@@ -181,6 +188,7 @@ register_task('ping', PingPongTask)
 #----------------------------------------------------------------------
 # Aggregation execution tasks
 
+
 class AggregationTask(Task):
 
     def _write_response(self, agg_inst):
@@ -192,6 +200,7 @@ class AggregationTask(Task):
 
 
 class AggregationUpdateTask(AggregationTask):
+
     """
     Task header layout
     - serialized agg class
@@ -200,6 +209,7 @@ class AggregationUpdateTask(AggregationTask):
     - serialized table fragment
 
     """
+
     def __init__(self, shmem):
         AggregationTask.__init__(self, shmem)
 
