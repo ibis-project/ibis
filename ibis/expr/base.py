@@ -26,7 +26,6 @@
 # Expressions can be parameterized both by tables (known schema, but not bound
 # to a particular table in any database), fields, and literal values. In order
 # to execute an expression containing parameters, the user must perform a
-
 # actual data. Mixing table and field parameters can lead to tricky binding
 # scenarios -- essentially all unbound field parameters within a particular
 # table expression must originate from the same concrete table. Internally we
@@ -40,209 +39,22 @@
 # be a scalar or array expression. In this case the binding requirements may be
 # somewhat more lax.
 
+
 import operator
 
-
-class ExpressionError(Exception):
-    pass
-
-
-class RelationError(ExpressionError):
-    pass
+from ibis.common import RelationError
+import ibis.common as com
+import ibis.util as util
 
 
-class FormatMemo(object):
-    # A little sanity hack to simplify the below
-
-    def __init__(self):
-        from collections import defaultdict
-        self.formatted = {}
-        self.aliases = {}
-        self.counts = defaultdict(lambda: 0)
-
-    def __contains__(self, obj):
-        return id(obj) in self.formatted
-
-    def observe(self, obj, formatter=repr):
-        key = id(obj)
-        if key not in self.formatted:
-            self.aliases[key] = 'ref_%d' % len(self.formatted)
-            self.formatted[key] = formatter(obj)
-
-        self.counts[key] += 1
-
-    def count(self, obj):
-        return self.counts[id(obj)]
-
-    def get_alias(self, obj):
-        return self.aliases[id(obj)]
-
-    def get_formatted(self, obj):
-        return self.formatted[id(obj)]
-
-
-class ExprFormatter(object):
+class Parameter(object):
 
     """
-    For creating a nice tree-like representation of an expression graph for
-    displaying in the console.
-
-    TODO: detect reused DAG nodes and do not display redundant information
+    Placeholder, to be implemented
     """
 
-    def __init__(self, expr, indent_size=2, base_level=0, memo=None,
-                 memoize=True):
-        self.expr = expr
-        self.indent_size = indent_size
-        self.base_level = base_level
+    pass
 
-        self.memoize = memoize
-
-        # For tracking "extracted" objects, like tables, that we don't want to
-        # print out more than once, and simply alias in the expression tree
-        self.memo = memo or FormatMemo()
-
-    def get_result(self):
-        what = self.expr.op()
-
-        if self.memoize:
-            self._memoize_tables()
-
-        if isinstance(what, TableView):
-            # This should also catch aggregations
-            if not self.memoize and what in self.memo:
-                text = 'Table: %s' % self.memo.get_alias(what)
-            elif isinstance(what, Node):
-                text = self._format_node(what)
-            else:
-                text = self._format_table(what)
-        elif isinstance(what, TableColumn):
-            text = self._format_column(what)
-        elif isinstance(what, Node):
-            text = self._format_node(what)
-        elif isinstance(what, Literal):
-            text = 'Literal[%s] %s' % (self._get_type_display(),
-                                       str(what.value))
-
-        if self.memoize:
-            alias_to_text = [(self.memo.aliases[x],
-                              self.memo.formatted[x], x)
-                             for x in self.memo.formatted]
-            alias_to_text.sort()
-
-            # A hack to suppress printing out of a ref that is the result of
-            # the top level expression
-            refs = [x + '\n' + y
-                    for x, y, key in alias_to_text if key != id(what)]
-
-            text = '\n\n'.join(refs + [text])
-
-        return self._indent(text, self.base_level)
-
-    def _memoize_tables(self):
-        table_memo_ops = (Aggregation, Projection, SelfReference)
-
-        def walk(expr):
-            op = expr.op()
-
-            def visit(arg):
-                if isinstance(arg, list):
-                    [visit(x) for x in arg]
-                elif isinstance(arg, Expr):
-                    walk(arg)
-
-            if isinstance(op, Node):
-                visit(op.args)
-                if isinstance(op, table_memo_ops):
-                    self.memo.observe(op, self._format_node)
-            elif isinstance(op, TableView):
-                self.memo.observe(op, self._format_table)
-
-        walk(self.expr)
-
-    def _indent(self, text, indents=1):
-        return _indent(text, self.indent_size * indents)
-
-    def _format_table(self, table):
-        # format the schema
-        rows = ['%s : %s' % tup for tup in
-                zip(table.schema.names, table.schema.types)]
-        opname = type(table).__name__
-        type_display = self._get_type_display()
-        opline = '%s[%s]' % (opname, type_display)
-        return self._indent('\n'.join([opline] + rows))
-
-    def _format_column(self, col):
-        # TODO: yuck
-        table_formatted = self.memo.get_alias(col.parent().op())
-        return ("Column[%s] '%s' from table %s" % (self.expr.type(),
-                                                   col.name,
-                                                   table_formatted))
-
-    def _format_node(self, op):
-        formatted_args = []
-
-        def visit(what):
-            if isinstance(what, Expr):
-                result = self._format_subexpr(what)
-            else:
-                result = self._indent(str(what))
-            formatted_args.append(result)
-
-        for arg in op.args:
-            if isinstance(arg, list):
-                for x in arg:
-                    visit(x)
-            else:
-                visit(arg)
-
-        opname = type(op).__name__
-        type_display = self._get_type_display()
-        opline = '%s[%s]' % (opname, type_display)
-
-        return '\n'.join([opline] + formatted_args)
-
-    def _format_subexpr(self, expr):
-        formatter = ExprFormatter(expr, base_level=1, memo=self.memo,
-                                  memoize=False)
-        return formatter.get_result()
-
-    def _get_type_display(self):
-        if isinstance(self.expr, TableExpr):
-            return 'table'
-        elif isinstance(self.expr, ArrayExpr):
-            return 'array(%s)' % self.expr.type()
-        elif isinstance(self.expr, ScalarExpr):
-            return '%s' % self.expr.type()
-        else:
-            raise NotImplementedError
-
-
-def _indent(text, spaces):
-    block = ' ' * spaces
-    return '\n'.join(block + x for x in text.split('\n'))
-
-
-class Literal(object):
-
-    def __init__(self, value):
-        self.value = value
-
-    def __repr__(self):
-        return 'Literal(%s)' % repr(self.value)
-
-    @property
-    def args(self):
-        return [self.value]
-
-    def equals(self, other):
-        if not isinstance(other, Literal):
-            return False
-        return (type(self.value) == type(other.value)
-                and self.value == other.value)
-
-    def root_tables(self):
-        return []
 
 #----------------------------------------------------------------------
 
@@ -260,6 +72,9 @@ class Schema(object):
         self.types = [_validate_type(x) for x in types]
 
         self._name_locs = dict((v, i) for i, v in enumerate(self.names))
+
+        if len(self._name_locs) < len(self.names):
+            raise com.IntegrityError('Duplicate column names')
 
     def __repr__(self):
         return self._repr()
@@ -301,7 +116,7 @@ def _validate_type(t):
     return t
 
 
-class TableView(object):
+class HasSchema(object):
 
     """
     Base class representing a structured dataset with a well-defined
@@ -311,9 +126,10 @@ class TableView(object):
     concrete dataset or database table.
     """
 
-    def __init__(self, schema):
+    def __init__(self, schema, name=None):
         assert isinstance(schema, Schema)
         self._schema = schema
+        self._name = name
 
     def __repr__(self):
         return self._repr()
@@ -324,6 +140,10 @@ class TableView(object):
     @property
     def schema(self):
         return self._schema
+
+    @property
+    def name(self):
+        return self._name
 
     def equals(self, other):
         if type(self) != type(other):
@@ -338,6 +158,42 @@ class TableView(object):
 
 
 #----------------------------------------------------------------------
+
+
+class Expr(object):
+
+    """
+
+    """
+
+    def __init__(self, arg):
+        # TODO: all inputs must inherit from a common table API
+        self._arg = arg
+
+    def __repr__(self):
+        return self._repr()
+
+    def _repr(self):
+        from ibis.expr.format import ExprFormatter
+        return ExprFormatter(self).get_result()
+
+    def equals(self, other):
+        if type(self) != type(other):
+            return False
+        return self._arg.equals(other._arg)
+
+    def op(self):
+        raise NotImplementedError
+
+    def _root_tables(self):
+        return self.op().root_tables()
+
+    def _get_unbound_tables(self):
+        # The expression graph may contain one or more tables of a particular
+        # known schema
+        pass
+
+
 
 class Node(object):
 
@@ -382,7 +238,7 @@ class Node(object):
                         return False
                 return True
 
-            if isinstance(left, (Node, Expr)):
+            if hasattr(left, 'equals'):
                 return left.equals(right)
             else:
                 return left == right
@@ -426,6 +282,43 @@ class ValueNode(Node):
         raise NotImplementedError
 
 
+
+class Literal(ValueNode):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return 'Literal(%s)' % repr(self.value)
+
+    @property
+    def args(self):
+        return [self.value]
+
+    def equals(self, other):
+        if not isinstance(other, Literal):
+            return False
+        return (type(self.value) == type(other.value)
+                and self.value == other.value)
+
+    def output_type(self):
+        if isinstance(self.value, bool):
+            klass = BooleanScalar
+        elif isinstance(self.value, (int, long)):
+            int_type = _int_literal_class(self.value)
+            klass = scalar_class(int_type)
+        elif isinstance(self.value, float):
+            klass = DoubleScalar
+        elif isinstance(self.value, basestring):
+            klass = StringScalar
+
+        return klass
+
+    def root_tables(self):
+        return []
+
+
+
 class ArrayNode(ValueNode):
 
     def __init__(self, expr):
@@ -435,6 +328,49 @@ class ArrayNode(ValueNode):
 
 class TableNode(Node):
     pass
+
+
+class BlockingTableNode(TableNode):
+    # Try to represent the fact that whatever lies here is a semantically
+    # distinct table. Like projections, aggregations, and so forth
+    pass
+
+
+class PhysicalTable(BlockingTableNode, HasSchema):
+
+    pass
+
+
+class UnboundTable(PhysicalTable):
+
+    def __init__(self, schema, name=None):
+        TableNode.__init__(self, [schema, name])
+        HasSchema.__init__(self, schema, name=name)
+
+
+class DatabaseTable(PhysicalTable):
+
+    """
+
+    """
+
+    def __init__(self, name, schema, source):
+        self.source = source
+
+        TableNode.__init__(self, [name, schema, source])
+        HasSchema.__init__(self, schema, name=name)
+
+
+class SQLQueryResult(TableNode, HasSchema):
+
+    """
+    A table sourced from the result set of a select query
+    """
+
+    def __init__(self, query, schema, source):
+        self.query = query
+        TableNode.__init__(self, [query, schema, source])
+        HasSchema.__init__(self, schema)
 
 
 class TableColumn(ArrayNode):
@@ -465,15 +401,36 @@ class TableColumn(ArrayNode):
 
 class UnaryOp(ValueNode):
 
-    def __init__(self, expr):
-        self.arg = expr
-        ValueNode.__init__(self, [expr])
+    def __init__(self, arg):
+        self.arg = arg
+        ValueNode.__init__(self, [arg])
 
     def root_tables(self):
         return self.arg._root_tables()
 
     def resolve_name(self):
         return self.arg.get_name()
+
+
+class Cast(ValueNode):
+
+    def __init__(self, value_expr, target_type):
+        self._ensure_value(value_expr)
+
+        self.value_expr = value_expr
+        self.target_type = target_type.lower()
+
+        # TODO: shorthand type aliases, e.g. int
+        _validate_type(self.target_type)
+
+        ValueNode.__init__(self, [value_expr, target_type])
+
+    def resolve_name(self):
+        return self.value_expr.get_name()
+
+    def output_type(self):
+        # TODO: error handling for invalid casts
+        return _shape_like(self.value_expr, self.target_type)
 
 
 class Negate(UnaryOp):
@@ -567,29 +524,23 @@ def _distinct_roots(*args):
     all_roots = []
     for arg in args:
         all_roots.extend(arg._root_tables())
-    return _unique_by_key(all_roots, id)
+    return util.unique_by_key(all_roots, id)
 
-
-def _unique_by_key(values, key):
-    id_to_table = {}
-    for x in values:
-        id_to_table[key(x)] = x
-    return id_to_table.values()
 
 #----------------------------------------------------------------------
 
 
 class Reduction(ArrayNode):
 
-    def __init__(self, expr):
-        self.expr = expr
-        ArrayNode.__init__(self, expr)
+    def __init__(self, arg):
+        self.arg = arg
+        ArrayNode.__init__(self, arg)
 
     def root_tables(self):
-        return self.expr._root_tables()
+        return self.arg._root_tables()
 
     def resolve_name(self):
-        return self.expr.get_name()
+        return self.arg.get_name()
 
     def to_expr(self):
         klass = self.output_type()
@@ -605,7 +556,7 @@ class Count(Reduction):
         # during the SQL generation exercise
         if not isinstance(expr, (ArrayExpr, TableExpr)):
             raise TypeError
-        self.expr = expr
+        self.arg = expr
         ValueNode.__init__(self, [expr])
 
     def output_type(self):
@@ -615,18 +566,18 @@ class Count(Reduction):
 class Sum(Reduction):
 
     def output_type(self):
-        if isinstance(self.expr, (IntegerValue, BooleanValue)):
+        if isinstance(self.arg, (IntegerValue, BooleanValue)):
             return Int64Scalar
-        elif isinstance(self.expr, FloatingValue):
+        elif isinstance(self.arg, FloatingValue):
             return DoubleScalar
         else:
-            raise TypeError(self.expr)
+            raise TypeError(self.arg)
 
 
 class Mean(Reduction):
 
     def output_type(self):
-        if isinstance(self.expr, NumericValue):
+        if isinstance(self.arg, NumericValue):
             return DoubleScalar
         else:
             raise NotImplementedError
@@ -639,37 +590,16 @@ class StdDeviation(Reduction):
 class Max(Reduction):
 
     def output_type(self):
-        return scalar_class(self.expr.type())
+        return scalar_class(self.arg.type())
 
 
 class Min(Reduction):
 
     def output_type(self):
-        return scalar_class(self.expr.type())
+        return scalar_class(self.arg.type())
 
 
 #----------------------------------------------------------------------
-
-
-class Cast(ValueNode):
-
-    def __init__(self, value_expr, target_type):
-        self._ensure_value(value_expr)
-
-        self.value_expr = value_expr
-        self.target_type = target_type.lower()
-
-        # TODO: shorthand type aliases, e.g. int
-        _validate_type(self.target_type)
-
-        ValueNode.__init__(self, [value_expr, target_type])
-
-    def resolve_name(self):
-        return self.value_expr.get_name()
-
-    def output_type(self):
-        # TODO: error handling for invalid casts
-        return _shape_like(self.value_expr, self.target_type)
 
 
 class SingleCase(ValueNode):
@@ -698,13 +628,14 @@ class Join(TableNode):
 
         self.left = left
         self.right = right
+        self.predicates = [substitute_parents(x) for x in join_predicates]
 
         # Validate join predicates. Each predicate must be valid jointly when
         # considering the roots of each input table
         validator = ExprValidator(left._root_tables() + right._root_tables())
-        validator.validate_all(join_predicates)
+        validator.validate_all(self.predicates)
 
-        Node.__init__(self, [left, right, join_predicates])
+        Node.__init__(self, [left, right, self.predicates])
 
     def _get_schema(self):
         # For joins retaining both table schemas, merge them together here
@@ -727,8 +658,8 @@ class Join(TableNode):
 
         return sleft.append(sright)
 
-    def materialize(self, project_exprs=None):
-        return MaterializedJoin(self, project_exprs)
+    def materialize(self):
+        return MaterializedJoin(self)
 
     def root_tables(self):
         return _distinct_roots(self.left, self.right)
@@ -739,6 +670,10 @@ class InnerJoin(Join):
 
 
 class LeftJoin(Join):
+    pass
+
+
+class RightJoin(Join):
     pass
 
 
@@ -756,21 +691,25 @@ class LeftSemiJoin(Join):
         return self.left.schema()
 
 
-class MaterializedJoin(TableNode, TableView):
+class LeftAntiJoin(Join):
 
-    def __init__(self, join_expr, project_exprs=None):
+    """
+
+    """
+
+    def _get_schema(self):
+        return self.left.schema()
+
+
+class MaterializedJoin(TableNode, HasSchema):
+
+    def __init__(self, join_expr):
         assert isinstance(join_expr, Join)
         self.join = join_expr
 
         TableNode.__init__(self, [join_expr])
-
-        # TODO: handle various projection exprs cases
-        if project_exprs is None:
-            schema = self.join._get_schema()
-        else:
-            raise NotImplementedError
-
-        TableView.__init__(self, schema)
+        schema = self.join._get_schema()
+        HasSchema.__init__(self, schema)
 
     def root_tables(self):
         return self.join._root_tables()
@@ -783,32 +722,116 @@ class CrossJoin(InnerJoin):
     over an INNER JOIN with no predicates.
     """
 
-    def __init__(self, left, right):
+    def __init__(self, left, right, predicates=[]):
         InnerJoin.__init__(self, left, right, [])
 
 
-class Filter(TableNode, TableView):
+class Filter(TableNode):
 
     def __init__(self, table_expr, predicates):
         self.table = table_expr
         self.predicates = predicates
 
-        ExprValidator(table_expr._root_tables()).validate_all(predicates)
-
+        table_expr._assert_valid(predicates)
         TableNode.__init__(self, [table_expr, predicates])
-        TableView.__init__(self, table_expr.schema())
 
     def root_tables(self):
         tables = self.table._root_tables()
         return tables
 
 
-class SelfReference(TableNode, TableView):
+class FilterWithSchema(Filter, HasSchema):
+
+    def __init__(self, table_expr, predicates):
+        Filter.__init__(self, table_expr, predicates)
+        HasSchema.__init__(self, table_expr.schema())
+
+
+
+def _filter(expr, predicates):
+    klass = FilterWithSchema if expr._is_materialized() else Filter
+    return klass(expr, predicates)
+
+
+class Limit(BlockingTableNode):
+
+    def __init__(self, table, n, offset):
+        self.table = table
+        self.n = n
+        self.offset = offset
+        BlockingTableNode.__init__(self, [table, n, offset])
+
+    def root_tables(self):
+        return self.table._root_tables()
+
+
+class SortBy(TableNode, HasSchema):
+
+    # Q: Will SortBy always require a materialized schema?
+
+    def __init__(self, table_expr, sort_keys):
+        self.table = table_expr
+        self.keys = [_to_sort_key(self.table, k) for k in sort_keys]
+
+        TableNode.__init__(self, [self.table, self.keys])
+        HasSchema.__init__(self, self.table.schema())
+
+
+class SortKey(object):
+
+    def __init__(self, expr, ascending=True):
+        if not isinstance(expr, ArrayExpr):
+            raise com.ExpressionError('Must be an array/column expression')
+
+        self.expr = expr
+        self.ascending = ascending
+
+    def __repr__(self):
+        # Temporary
+        rows = ['Sort key:',
+                '  ascending: {!s}'.format(self.ascending),
+                util.indent(repr(self.expr), 2)]
+        return '\n'.join(rows)
+
+    def equals(self, other):
+        return (isinstance(other, SortKey) and self.expr.equals(other.expr)
+                and self.ascending == other.ascending)
+
+
+def desc(expr):
+    return SortKey(expr, ascending=False)
+
+
+def _to_sort_key(table, key):
+    if isinstance(key, SortKey):
+        return key
+
+    if isinstance(key, (tuple, list)):
+        key, sort_order = key
+    else:
+        sort_order = True
+
+    if not isinstance(key, Expr):
+        key = table._ensure_expr(key)
+
+    if isinstance(sort_order, basestring):
+        if sort_order.lower() in ('desc', 'descending'):
+            sort_order = False
+        elif not isinstance(sort_order, bool):
+            sort_order = bool(sort_order)
+
+    return SortKey(key, ascending=sort_order)
+
+
+
+
+class SelfReference(BlockingTableNode, HasSchema):
 
     def __init__(self, table_expr):
-        self.table = table
+        self.table = table_expr
         TableNode.__init__(self, [table_expr])
-        TableView.__init__(self, table_expr.schema())
+        HasSchema.__init__(self, table_expr.schema(),
+                           name=table_expr.op().name)
 
     def root_tables(self):
         # The dependencies of this operation are not walked, which makes the
@@ -817,7 +840,7 @@ class SelfReference(TableNode, TableView):
         return [self]
 
 
-class Projection(TableNode, TableView):
+class Projection(BlockingTableNode, HasSchema):
 
     def __init__(self, table_expr, proj_exprs):
         # Need to validate that the column expressions are compatible with the
@@ -850,13 +873,17 @@ class Projection(TableNode, TableView):
 
             clean_exprs.append(expr)
 
-        # TODO: Validate name uniqueness
+        # validate uniqueness
+        schema = Schema(names, types)
 
-        TableView.__init__(self, Schema(names, types))
-        Node.__init__(self, [table_expr] + clean_exprs)
+        HasSchema.__init__(self, schema)
+        Node.__init__(self, [table_expr] + [clean_exprs])
 
         self.table = table_expr
         self.selections = clean_exprs
+
+    def substitute_table(self, table_expr):
+        return Projection(table_expr, self.selections)
 
     def root_tables(self):
         tables = self.table._root_tables()
@@ -890,13 +917,7 @@ class ExprValidator(object):
             raise RelationError(msg)
 
 
-class SortBy(TableNode):
-
-    def __init__(self, table_expr, sorting_exprs):
-        pass
-
-
-class Aggregation(TableNode, TableView):
+class Aggregation(BlockingTableNode, HasSchema):
 
     """
     agg_exprs : per-group scalar aggregates
@@ -915,17 +936,21 @@ class Aggregation(TableNode, TableView):
 
         by = by or []
         self.by = self.table._resolve(by)
+        self.by = [substitute_parents(x) for x in self.by]
 
         # TODO: aggregates in having may need to be included among the
         # aggregation expressions
         self.having = having or []
-
         self._validate()
 
         TableNode.__init__(self, [table, agg_exprs, self.by, self.having])
 
         schema = self._result_schema()
-        TableView.__init__(self, schema)
+        HasSchema.__init__(self, schema)
+
+    def substitute_table(self, table_expr):
+        return Aggregation(table_expr, self.agg_exprs, by=self.by,
+                           having=self.having)
 
     def _validate(self):
         # All aggregates are valid
@@ -936,7 +961,7 @@ class Aggregation(TableNode, TableView):
 
         # All non-scalar refs originate from the input table
         all_exprs = self.agg_exprs + self.by + self.having
-        ExprValidator(self.table._root_tables()).validate_all(all_exprs)
+        self.table._assert_valid(all_exprs)
 
     def _result_schema(self):
         names = []
@@ -978,10 +1003,10 @@ class Subtract(BinaryOp):
 class Divide(BinaryOp):
 
     def output_type(self):
-        if not _all_of(self.args, NumericValue):
+        if not util.all_of(self.args, NumericValue):
             raise TypeError('One argument was non-numeric')
 
-        if _any_of(self.args, ArrayExpr):
+        if util.any_of(self.args, ArrayExpr):
             return DoubleArray
         else:
             return DoubleScalar
@@ -990,9 +1015,9 @@ class Divide(BinaryOp):
 class LogicalBinaryOp(BinaryOp):
 
     def output_type(self):
-        if not _all_of(self.args, BooleanValue):
+        if not util.all_of(self.args, BooleanValue):
             raise TypeError('Only valid with boolean data')
-        return (BooleanArray if _any_of(self.args, ArrayExpr)
+        return (BooleanArray if util.any_of(self.args, ArrayExpr)
                 else BooleanScalar)
 
 
@@ -1011,7 +1036,7 @@ class Xor(LogicalBinaryOp):
 class Comparison(BinaryOp):
 
     def output_type(self):
-        return (BooleanArray if _any_of(self.args, ArrayExpr)
+        return (BooleanArray if util.any_of(self.args, ArrayExpr)
                 else BooleanScalar)
 
 
@@ -1052,18 +1077,18 @@ class BinaryPromoter(object):
 
     def get_result(self):
         promoted_type = self._get_type()
-        if _any_of(self.args, ArrayExpr):
+        if util.any_of(self.args, ArrayExpr):
             return array_class(promoted_type)
         else:
             return scalar_class(promoted_type)
 
     def _get_type(self):
-        if _any_of(self.args, FloatingValue):
-            if _any_of(self.args, DoubleValue):
+        if util.any_of(self.args, FloatingValue):
+            if util.any_of(self.args, DoubleValue):
                 return 'double'
             else:
                 return 'float'
-        elif _all_of(self.args, IntegerValue):
+        elif util.all_of(self.args, IntegerValue):
             return self._get_int_type()
         else:
             raise NotImplementedError
@@ -1071,10 +1096,10 @@ class BinaryPromoter(object):
     def _get_int_type(self):
         deps = [x.op() for x in self.args]
 
-        if _all_of(deps, Literal):
+        if util.all_of(deps, Literal):
             return _smallest_int_containing(
                 [self.op(deps[0].value, deps[1].value)])
-        elif _any_of(deps, Literal):
+        elif util.any_of(deps, Literal):
             if isinstance(deps[0], Literal):
                 val = deps[0].value
                 atype = self.args[1].type()
@@ -1087,8 +1112,8 @@ class BinaryPromoter(object):
                                          self.right.type(), self.op)
 
     def _check_compatibility(self):
-        if (_any_of(self.args, StringValue) and
-                not _all_of(self.args, StringValue)):
+        if (util.any_of(self.args, StringValue) and
+                not util.all_of(self.args, StringValue)):
             raise TypeError('String and non-string incompatible')
 
 
@@ -1100,14 +1125,14 @@ class PowerPromoter(BinaryPromoter):
     def _get_type(self):
         rval = self.args[1].op()
 
-        if _any_of(self.args, FloatingValue):
-            if _any_of(self.args, DoubleValue):
+        if util.any_of(self.args, FloatingValue):
+            if util.any_of(self.args, DoubleValue):
                 return 'double'
             else:
                 return 'float'
         elif isinstance(rval, Literal) and rval.value < 0:
             return 'double'
-        elif _all_of(self.args, IntegerValue):
+        elif util.all_of(self.args, IntegerValue):
             return self._get_int_type()
         else:
             raise NotImplementedError
@@ -1140,20 +1165,6 @@ def _smallest_int_containing(values, allow_overflow=False):
     return _largest_int(containing_types)
 
 
-def _any_of(values, t):
-    for x in values:
-        if isinstance(x, t):
-            return True
-    return False
-
-
-def _all_of(values, t):
-    for x in values:
-        if not isinstance(x, t):
-            return False
-    return True
-
-
 class Contains(ArrayNode):
 
     def __init__(self, values_expr, match_expr):
@@ -1170,39 +1181,6 @@ class ReplaceValues(ArrayNode):
     and 7 to "WEEKEND"
     """
     pass
-
-
-class Expr(object):
-
-    """
-
-    """
-
-    def __init__(self, arg):
-        # TODO: all inputs must inherit from a common table API
-        self._arg = arg
-
-    def __repr__(self):
-        return self._repr()
-
-    def _repr(self):
-        return ExprFormatter(self).get_result()
-
-    def equals(self, other):
-        if type(self) != type(other):
-            return False
-        return self._arg.equals(other._arg)
-
-    def op(self):
-        raise NotImplementedError
-
-    def _root_tables(self):
-        return self.op().root_tables()
-
-    def _get_unbound_tables(self):
-        # The expression graph may contain one or more tables of a particular
-        # known schema
-        pass
 
 
 def _binop_expr(name, klass):
@@ -1362,10 +1340,13 @@ class TableExpr(Expr):
     def op(self):
         return self._arg
 
+    def _assert_valid(self, exprs):
+        ExprValidator(self._root_tables()).validate_all(exprs)
+
     def __getitem__(self, what):
         if isinstance(what, basestring):
             return self.get_column(what)
-        elif isinstance(what, list):
+        elif isinstance(what, (list, tuple)):
             # Projection case
             return self.projection(what)
         elif isinstance(what, BooleanArray):
@@ -1373,6 +1354,21 @@ class TableExpr(Expr):
             return self.filter([what])
         else:
             raise NotImplementedError
+
+    def __getattr__(self, key):
+        try:
+            return object.__getattribute__(self, key)
+        except AttributeError:
+            if not self._is_materialized() or key not in self.schema():
+                raise
+
+            return self.get_column(key)
+
+    def __dir__(self):
+        attrs = dir(type(self))
+        if self._is_materialized():
+            attrs = list(sorted(set(attrs + self.schema().names)))
+        return attrs
 
     def _resolve(self, exprs):
         # Stash this helper method here for now
@@ -1388,13 +1384,16 @@ class TableExpr(Expr):
 
     def _is_materialized(self):
         # The schema is known and set
-        return isinstance(self.op(), TableView)
+        return isinstance(self.op(), HasSchema)
 
     def materialize(self):
         if self._is_materialized():
             return self
         else:
             return TableExpr(self.op().materialize())
+
+    def get_columns(self, iterable):
+        return [self.get_column(x) for x in iterable]
 
     def get_column(self, name):
         ref = TableColumn(name, self)
@@ -1429,7 +1428,7 @@ class TableExpr(Expr):
             expr = expr.name(name)
 
         # New column originates from this table expression if at all
-        ExprValidator(self._root_tables()).assert_valid(expr)
+        self._assert_valid([expr])
         return self.projection([self, expr])
 
     def add_columns(self, what):
@@ -1477,7 +1476,6 @@ class TableExpr(Expr):
         """
 
         """
-        # TODO: rewriting anti-join as semi-join
         raise NotImplementedError
 
     def projection(self, col_exprs):
@@ -1486,12 +1484,19 @@ class TableExpr(Expr):
         """
         clean_exprs = []
         for expr in col_exprs:
-            if isinstance(expr, basestring):
-                expr = self[expr]
+            expr = self._ensure_expr(expr)
+
+            expr = substitute_parents(expr)
             clean_exprs.append(expr)
 
-        op = Projection(self, clean_exprs)
+        op = _maybe_fuse_projection(self, clean_exprs)
         return TableExpr(op)
+
+    def _ensure_expr(self, expr):
+        if isinstance(expr, basestring):
+            expr = self[expr]
+
+        return expr
 
     def filter(self, predicates):
         """
@@ -1505,10 +1510,17 @@ class TableExpr(Expr):
         """
         # Fusion opportunity
         parent = self.op()
+
+        # This prevents the broken ref issue (described in more detail in
+        # #59). If substitution is not possible, we will expect an error
+        # during filter validation
+        clean_preds = [substitute_parents(x) for x in predicates]
+
         if isinstance(parent, Filter):
-            op = Filter(parent.table, parent.predicates + predicates)
+            op = _filter(parent.table, parent.predicates + clean_preds)
         else:
-            op = Filter(self, predicates)
+            op = apply_filter(self, clean_preds)
+
         return TableExpr(op)
 
     def aggregate(self, agg_exprs, by=None, having=None):
@@ -1521,6 +1533,26 @@ class TableExpr(Expr):
         agg_expr : TableExpr
         """
         op = Aggregation(self, agg_exprs, by=by, having=having)
+        return TableExpr(op)
+
+    def limit(self, n, offset=None):
+        """
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        limited : TableExpr
+        """
+        op = Limit(self, n, offset=offset)
+        return TableExpr(op)
+
+    def sort_by(self, what):
+        if not isinstance(what, list):
+            what = [what]
+
+        op = SortBy(self, what)
         return TableExpr(op)
 
 
@@ -1787,17 +1819,7 @@ def array_class(name):
 
 
 def literal(value, name=None):
-    if isinstance(value, bool):
-        klass = BooleanScalar
-    elif isinstance(value, (int, long)):
-        int_type = _int_literal_class(value)
-        klass = scalar_class(int_type)
-    elif isinstance(value, float):
-        klass = DoubleScalar
-    elif isinstance(value, basestring):
-        klass = StringScalar
-
-    return klass(Literal(value), name=name)
+    return Literal(value).to_expr()
 
 
 def _int_literal_class(value, allow_overflow=False):
@@ -1820,15 +1842,248 @@ def _largest_int(int_types):
     return 'int%d' % (8 * nbytes)
 
 
-def table(schema):
+def table(schema, name=None):
     if not isinstance(schema, Schema):
         if isinstance(schema, list):
             schema = Schema.from_tuples(schema)
         else:
             schema = Schema.from_dict(schema)
 
-    return TableExpr(TableView(schema))
+    node = UnboundTable(schema, name=name)
+    return TableExpr(node)
 
+
+#----------------------------------------------------------------------
+# Some expression metaprogramming / graph transformations to support
+# compilation later
+
+class ExprSimplifier(object):
+    """
+    Rewrite the input expression by replacing any table expressions part of a
+    "commutative table operation unit" (for lack of scientific term, a set of
+    operations that can be written down in any order and still yield the same
+    semantic result)
+    """
+    def __init__(self, expr, lift_memo=None):
+        self.expr = expr
+        self.lift_memo = lift_memo or {}
+        self.unchanged = True
+
+    def get_result(self):
+        expr = self.expr
+        node = expr.op()
+        if isinstance(node, Literal):
+            return expr
+
+        # For table column references, in the event that we're on top of a
+        # projection, we need to check whether the ref comes from the base
+        # table schema or is a derived field.
+        if isinstance(node, TableColumn):
+            tnode = node.table.op()
+            root = _base_table(tnode)
+
+            if isinstance(root, Projection):
+                can_lift = False
+                for val in root.selections:
+                    if (isinstance(val, TableExpr) and
+                        node.name in val.schema()):
+
+                        can_lift = True
+                        lifted_root = self.lift(val)
+                    elif (isinstance(val.op(), TableColumn)
+                          and node.name == val.get_name()):
+                        can_lift = True
+                        lifted_root = self.lift(val.op().table)
+
+                if can_lift:
+                    lifted_node = TableColumn(node.name, lifted_root)
+                    return type(expr)(lifted_node, name=expr._name)
+
+        lifted_args = []
+        for arg in node.args:
+            if isinstance(arg, (tuple, list)):
+                lifted_arg = [self._lift_arg(x) for x in arg]
+            else:
+                lifted_arg = self._lift_arg(arg)
+            lifted_args.append(lifted_arg)
+
+        # Do not modify unnecessarily
+        if self.unchanged:
+            return expr
+
+        lifted_node = type(node)(*lifted_args)
+        if isinstance(expr, ValueExpr):
+            result = type(expr)(lifted_node, name=expr._name)
+        else:
+            result = type(expr)(lifted_node)
+
+        return result
+
+    def _lift_arg(self, arg):
+        if isinstance(arg, Expr):
+            lifted_arg = self.lift(arg)
+            if lifted_arg is not arg:
+                self.unchanged = False
+        else:
+            # a string or some other thing
+            lifted_arg = arg
+
+        return lifted_arg
+
+    def _sub(self, expr):
+        return ExprSimplifier(expr, lift_memo=self.lift_memo).get_result()
+
+    def lift(self, expr):
+        key = id(expr.op())
+        if key in self.lift_memo:
+            return self.lift_memo[key]
+
+        op = expr.op()
+        if isinstance(op, (ValueNode, ArrayNode)):
+            return self._sub(expr)
+        elif isinstance(op, Filter):
+            result = self.lift(op.table)
+        elif isinstance(op, Join):
+            left_lifted = self.lift(op.left)
+            right_lifted = self.lift(op.right)
+
+            # Fix predicates
+            lifted_preds = [self._sub(x) for x in op.predicates]
+            lifted_join = type(op)(left_lifted, right_lifted, lifted_preds)
+            result = TableExpr(lifted_join)
+        elif isinstance(op, (TableNode, HasSchema)):
+            return expr
+        else:
+            raise NotImplementedError
+
+        # If we get here, time to record the modified expression in our memo to
+        # avoid excessive graph-walking
+        self.lift_memo[key] = result
+        return result
+
+
+def substitute_parents(expr, lift_memo=None):
+    rewriter = ExprSimplifier(expr, lift_memo=lift_memo)
+    return rewriter.get_result()
+
+
+def _base_table(table_node):
+    # Find the aggregate or projection root. Not proud of this
+    if isinstance(table_node, BlockingTableNode):
+        return table_node
+    else:
+        return _base_table(table_node.table.op())
+
+
+def apply_filter(expr, predicates):
+    # This will attempt predicate pushdown in the cases where we can do it
+    # easily
+
+    op = expr.op()
+    if isinstance(op, (Projection, Aggregation)):
+        # if any of the filter predicates have the parent expression among
+        # their roots, then pushdown (at least of that predicate) is not
+        # possible
+        # TODO: is partial pushdown something we should consider
+        # doing? Seems reasonable
+        can_pushdown = True
+        for pred in predicates:
+            roots = pred._root_tables()
+            if expr in roots:
+                can_pushdown = False
+
+        if can_pushdown:
+            # this will further fuse, if possible
+            filtered = op.table.filter(predicates)
+            result = op.substitute_table(filtered)
+        else:
+            result = _filter(expr, predicates)
+    else:
+        result = _filter(expr, predicates)
+
+    return result
+
+
+def _maybe_fuse_projection(expr, clean_exprs):
+    node = expr.op()
+
+    if isinstance(node, Projection):
+        roots = [node]
+    else:
+        roots = node.root_tables()
+
+    if len(roots) == 1 and isinstance(roots[0], Projection):
+        root = roots[0]
+
+        roots = root.root_tables()
+        validator = ExprValidator(roots)
+        fused_exprs = []
+        can_fuse = True
+        for val in clean_exprs:
+            # a * projection
+            if (isinstance(val, TableExpr) and
+                (val is expr or
+
+                 # gross we share the same table root. Better way to detect?
+                 len(roots) == 1 and val._root_tables()[0] is roots[0])
+            ):
+                continue
+            elif not validator.validate(val):
+                can_fuse = False
+            else:
+                fused_exprs.append(val)
+
+        if can_fuse:
+            return Projection(root.table, root.selections + fused_exprs)
+
+    return Projection(expr, clean_exprs)
+
+
+def collect_modifiers(table_expr, modifiers=None, memo=None, toplevel=True):
+    """
+    Make a list of all
+    """
+    if modifiers is None:
+        modifiers = {
+            'filters': [],
+            'limit': None,
+            'sort_by': []
+        }
+        memo = set()
+
+    node = table_expr.op()
+    if not isinstance(node, TableNode):
+        return modifiers
+
+    def collect(arg):
+        op = arg.op()
+
+        # Don't scrape twice
+        if id(op) in memo:
+            return
+
+        if isinstance(op, Filter):
+            modifiers['filters'].extend(op.predicates)
+            collect_modifiers(op.table, modifiers, memo, toplevel=False)
+        elif isinstance(op, Limit):
+            modifiers['limit'] = {
+                'n': op.n,
+                'offset': op.offset
+            }
+            collect_modifiers(op.table, modifiers, memo, toplevel=False)
+        elif isinstance(op, SortBy):
+            modifiers['sort_by'] = op.keys
+            collect_modifiers(op.table, modifiers, memo, toplevel=False)
+        else:
+            for arg in op.args:
+                if isinstance(arg, (tuple, list)):
+                    [collect(x) for x in arg]
+                elif isinstance(arg, Expr):
+                    collect(arg)
+        memo.add(id(op))
+
+    collect(table_expr)
+    return modifiers
 
 #----------------------------------------------------------------------
 # Impala table interface

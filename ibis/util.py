@@ -37,3 +37,29 @@ def bytes_to_uint8_array(val, width=70):
             line += ',%s' % token
     lines.append(line)
     return '\n'.join(lines) + '}'
+
+
+def unique_by_key(values, key):
+    id_to_table = {}
+    for x in values:
+        id_to_table[key(x)] = x
+    return id_to_table.values()
+
+
+def indent(text, spaces):
+    block = ' ' * spaces
+    return '\n'.join(block + x for x in text.split('\n'))
+
+
+def any_of(values, t):
+    for x in values:
+        if isinstance(x, t):
+            return True
+    return False
+
+
+def all_of(values, t):
+    for x in values:
+        if not isinstance(x, t):
+            return False
+    return True

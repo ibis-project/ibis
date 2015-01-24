@@ -20,6 +20,12 @@ from ibis.expr.base import ArrayExpr, TableExpr, RelationError
 import ibis.expr.base as api
 import ibis.expr.base as operations
 
+from ibis.expr.format import ExprFormatter
+from ibis.expr.tests.mocks import MockConnection
+
+
+import ibis.common as com
+
 
 class TestParameters(unittest.TestCase):
     pass
@@ -114,7 +120,7 @@ class BasicTestCase(object):
         self.float_cols = ['e', 'f']
 
 
-class TestTableExprOperations(BasicTestCase, unittest.TestCase):
+class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
     def test_view_new_relation(self):
         # For assisting with self-joins and other self-referential operations
@@ -146,6 +152,17 @@ class TestTableExprOperations(BasicTestCase, unittest.TestCase):
             assert isinstance(parent, api.TableColumn)
             assert parent.parent() is self.table
 
+    def test_getitem_attribute(self):
+        result = self.table.a
+        assert result.equals(self.table['a'])
+
+        assert 'a' in dir(self.table)
+
+        # Project and add a name that conflicts with a TableExpr built-in
+        # attribute
+        view = self.table[[self.table, self.table['a'].name('schema')]]
+        assert not isinstance(view.schema, ArrayExpr)
+
     def test_projection(self):
         cols = ['f', 'a', 'h']
 
@@ -173,6 +190,10 @@ class TestTableExprOperations(BasicTestCase, unittest.TestCase):
         # Test with unnamed expr
         self.assertRaises(ValueError, self.table.projection,
                           ['g', mean_diff])
+
+    def test_projection_duplicate_names(self):
+        self.assertRaises(com.IntegrityError, self.table.projection,
+                          [self.table.c, self.table.c])
 
     def test_projection_unary_name_passthrough(self):
         # Can fix this later if we add different default names
@@ -214,6 +235,11 @@ class TestTableExprOperations(BasicTestCase, unittest.TestCase):
         self.assertRaises(RelationError, t.__getitem__, [t2])
 
         # TODO: there may be some ways this can be invalid
+
+    def test_projection_convenient_syntax(self):
+        proj = self.table[self.table, self.table['a'].name('foo')]
+        proj2 = self.table[[self.table, self.table['a'].name('foo')]]
+        assert proj.equals(proj2)
 
     def test_add_column(self):
         # Creates a projection with a select-all on top of a non-projection
@@ -288,11 +314,38 @@ class TestTableExprOperations(BasicTestCase, unittest.TestCase):
         expected = self.table.filter([pred1, pred2])
         assert result.equals(expected)
 
-    def test_predicate_projection_pushdown(self):
+        # #59, if we are not careful, we can obtain broken refs
+        interm = self.table[pred1]
+        result = interm[interm['b'] > 0]
+        assert result.equals(expected)
+
+    def test_projection_predicate_pushdown(self):
         # Probably test this during the evaluation phase. In SQL, "fusable"
         # table operations will be combined together into a single select
         # statement
+        #
+        # see ibis #71 for more on this
+        t = self.table
+        proj = t['a', 'b', 'c']
+
+        # Rewrite a little more aggressively here
+        result = proj[t.a > 0]
+
+        # at one point these yielded different results
+        filtered = t[t.a > 0]
+        expected = filtered[t.a, t.b, t.c]
+        expected2 = filtered.projection(['a', 'b', 'c'])
+
+        assert result.equals(expected)
+        assert result.equals(expected2)
+
+    def test_filter_projection_partial_pushdown(self):
         pass
+
+    def test_limit(self):
+        limited = self.table.limit(10, offset=5)
+        assert limited.op().n == 10
+        assert limited.op().offset == 5
 
     def test_sort_by(self):
         # Commit to some API for ascending and descending
@@ -301,9 +354,25 @@ class TestTableExprOperations(BasicTestCase, unittest.TestCase):
         #
         # Default is ascending for anything coercable to an expression,
         # and we'll have ascending/descending wrappers to help.
-        pass
+        result = self.table.sort_by(['f'])
+        sort_key = result.op().keys[0]
+        assert sort_key.expr.equals(self.table.f)
+        assert sort_key.ascending
 
-    def test_limit(self):
+        result2 = self.table.sort_by([('f', False)])
+        result3 = self.table.sort_by([('f', 'descending')])
+        result4 = self.table.sort_by([('f', 0)])
+
+        key2 = result2.op().keys[0]
+        key3 = result3.op().keys[0]
+        key4 = result4.op().keys[0]
+
+        assert not key2.ascending
+        assert not key3.ascending
+        assert not key4.ascending
+        assert result2.equals(result3)
+
+    def test_sort_by_aggregate_or_projection_field(self):
         pass
 
 
@@ -338,11 +407,63 @@ class TestExprFormatting(unittest.TestCase):
 
         result = table.aggregate(agg_exprs, by=['g'])
 
-        formatter = api.ExprFormatter(result)
+        formatter = ExprFormatter(result)
         formatted = formatter.get_result()
 
         alias = formatter.memo.get_alias(table.op())
         assert formatted.count(alias) == 7
+
+    def test_format_multiple_join_with_projection(self):
+        # Star schema with fact table
+        table = api.table([
+            ('c', 'int32'),
+            ('f', 'double'),
+            ('foo_id', 'string'),
+            ('bar_id', 'string'),
+        ])
+
+        table2 = api.table([
+            ('foo_id', 'string'),
+            ('value1', 'double')
+        ])
+
+        table3 = api.table([
+            ('bar_id', 'string'),
+            ('value2', 'double')
+        ])
+
+        filtered = table[table['f'] > 0]
+
+        pred1 = table['foo_id'] == table2['foo_id']
+        pred2 = filtered['bar_id'] == table3['bar_id']
+
+        j1 = filtered.left_join(table2, [pred1])
+        j2 = j1.inner_join(table3, [pred2])
+
+        # Project out the desired fields
+        view = j2[[table, table2['value1'], table3['value2']]]
+
+        # it works!
+        repr(view)
+
+    def test_memoize_database_table(self):
+        con = MockConnection()
+        table = con.table('test1')
+        table2 = con.table('test2')
+
+        filter_pred = table['f'] > 0
+        table3 = table[filter_pred]
+        join_pred = table3['g'] == table2['key']
+
+        joined = table2.inner_join(table3, [join_pred])
+
+        met1 = (table3['f'] - table2['value']).mean().name('foo')
+        result = joined.aggregate([met1, table3['f'].sum().name('bar')],
+                                  by=[table3['g'], table2['key']])
+
+        formatted = repr(result)
+        assert formatted.count('test1') == 1
+        assert formatted.count('test2') == 1
 
 
 class TestNullOps(BasicTestCase, unittest.TestCase):
@@ -736,7 +857,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         # Pass a non-aggregation or non-scalar expr
         pass
 
-    def test_aggregate_pushdown_predicate(self):
+    def test_filter_aggregate_pushdown_predicate(self):
         # In the case where we want to add a predicate to an aggregate
         # expression after the fact, rather than having to backpedal and add it
         # before calling aggregate.
@@ -745,6 +866,15 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         # predicate originating from the same root table; if an expression is
         # created from field references from the aggregated table then it
         # becomes a filter predicate applied on top of a view
+
+        pred = self.table.f > 0
+        metrics = [self.table.a.sum().name('total')]
+        agged = self.table.aggregate(metrics, by=['g'])
+        filtered = agged[pred]
+        expected = self.table[pred].aggregate(metrics, by=['g'])
+        assert filtered.equals(expected)
+
+    def test_filter_aggregate_partial_pushdown(self):
         pass
 
     def test_aggregate_post_predicate(self):
@@ -910,6 +1040,38 @@ class TestJoins(BasicTestCase, unittest.TestCase):
         materialized = joined2.materialize()
         repr(materialized)
 
+    def test_filter_join_unmaterialized(self):
+        table1 = api.table({'key1': 'string', 'key2': 'string',
+                            'value1': 'double'})
+        table2 = api.table({'key3': 'string', 'value2': 'double'})
+
+        # It works!
+        joined = table1.inner_join(table2, [table1['key1'] == table2['key3']])
+        filtered = joined.filter([table1.value1 > 0])
+        repr(filtered)
+
+    def test_join_can_rewrite_errant_predicate(self):
+        # Join predicate references a derived table, but we can salvage and
+        # rewrite it to get the join semantics out
+        # see ibis #74
+        table = api.table([
+            ('c', 'int32'),
+            ('f', 'double'),
+            ('g', 'string')
+        ], 'foo_table')
+
+        table2 = api.table([
+            ('key', 'string'),
+            ('value', 'double')
+        ], 'bar_table')
+
+        filter_pred = table['f'] > 0
+        table3 = table[filter_pred]
+
+        result = table.inner_join(table2, [table3['g'] == table2['key']])
+        expected = table.inner_join(table2, [table['g'] == table2['key']])
+        assert result.equals(expected)
+
     def test_join_add_prefixes(self):
         pass
 
@@ -917,9 +1079,4 @@ class TestJoins(BasicTestCase, unittest.TestCase):
         pass
 
     def test_join_nontrivial_exprs(self):
-        pass
-
-    def test_join_coalesce_multiple(self):
-        # This is a SQL generation issue, but putting it here for now as a
-        # reminder
         pass

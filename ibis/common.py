@@ -12,6 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.connection import impala_connect
 
-import ibis.expr.base as ir
+class IbisError(Exception):
+    pass
+
+
+class InternalError(IbisError):
+    pass
+
+
+class IntegrityError(IbisError):
+    pass
+
+
+class ExpressionError(IbisError):
+    pass
+
+
+class RelationError(ExpressionError):
+    pass

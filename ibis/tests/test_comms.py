@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import sys
 import threading
 import unittest
 
@@ -33,6 +34,9 @@ def _nuke(path):
 class TestIPCLock(unittest.TestCase):
 
     def setUp(self):
+        if sys.platform == 'darwin':
+            raise unittest.SkipTest
+
         self.timeout = 1
         self.master = comms.IPCLock(is_slave=0, lock_timeout_ms=self.timeout)
         self.slave = comms.IPCLock(self.master.semaphore_id,

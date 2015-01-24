@@ -20,6 +20,8 @@ import Cython
 if Cython.__version__ < '0.19.1':
     raise Exception('Please upgrade to Cython 0.19.1 or newer')
 
+import numpy as np
+
 from setuptools import setup
 import os
 import sys
@@ -42,7 +44,7 @@ class clean(_clean):
             except OSError:
                 pass
 
-common_include = ['ibis/src']
+common_include = ['ibis/src', np.get_include()]
 
 comms_ext_libraries = []
 if sys.platform != 'darwin':

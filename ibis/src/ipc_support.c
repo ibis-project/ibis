@@ -22,13 +22,20 @@
 #include <sys/sem.h>
 
 /* This union is not defined in sys/sem.h on some systems */
-#if !defined(__GNU_LIBRARY__) || defined(_SEM_SEMUN_UNDEFINED)
+#if (!__APPLE__) && (!defined(__GNU_LIBRARY__) || defined(_SEM_SEMUN_UNDEFINED))
 union semun {
   int val;               /* value for SETVAL */
   struct semid_ds* buf;  /* buffer for IPC_STAT, IPC_SET */
   unsigned short* array; /* array for GETALL, SETALL */
   struct seminfo* __buf; /* buffer for IPC_INFO; linux only */
 };
+#endif
+
+#if __APPLE__
+int semtimedop(int semid, struct sembuf *sops, unsigned nsops,
+               struct timespec *timeout) {
+  return semop(semid, sops, nsops);
+}
 #endif
 
 int semarray_init(int size, unsigned short* init_vals) {
