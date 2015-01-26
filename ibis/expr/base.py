@@ -753,13 +753,13 @@ def _filter(expr, predicates):
     return klass(expr, predicates)
 
 
-class Limit(BlockingTableNode):
+class Limit(TableNode):
 
     def __init__(self, table, n, offset):
         self.table = table
         self.n = n
         self.offset = offset
-        BlockingTableNode.__init__(self, [table, n, offset])
+        TableNode.__init__(self, [table, n, offset])
 
     def root_tables(self):
         return self.table._root_tables()
@@ -2038,52 +2038,6 @@ def _maybe_fuse_projection(expr, clean_exprs):
 
     return Projection(expr, clean_exprs)
 
-
-def collect_modifiers(table_expr, modifiers=None, memo=None, toplevel=True):
-    """
-    Make a list of all
-    """
-    if modifiers is None:
-        modifiers = {
-            'filters': [],
-            'limit': None,
-            'sort_by': []
-        }
-        memo = set()
-
-    node = table_expr.op()
-    if not isinstance(node, TableNode):
-        return modifiers
-
-    def collect(arg):
-        op = arg.op()
-
-        # Don't scrape twice
-        if id(op) in memo:
-            return
-
-        if isinstance(op, Filter):
-            modifiers['filters'].extend(op.predicates)
-            collect_modifiers(op.table, modifiers, memo, toplevel=False)
-        elif isinstance(op, Limit):
-            modifiers['limit'] = {
-                'n': op.n,
-                'offset': op.offset
-            }
-            collect_modifiers(op.table, modifiers, memo, toplevel=False)
-        elif isinstance(op, SortBy):
-            modifiers['sort_by'] = op.keys
-            collect_modifiers(op.table, modifiers, memo, toplevel=False)
-        else:
-            for arg in op.args:
-                if isinstance(arg, (tuple, list)):
-                    [collect(x) for x in arg]
-                elif isinstance(arg, Expr):
-                    collect(arg)
-        memo.add(id(op))
-
-    collect(table_expr)
-    return modifiers
 
 #----------------------------------------------------------------------
 # Impala table interface

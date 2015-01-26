@@ -175,20 +175,6 @@ class TestASTBuilder(unittest.TestCase):
     def test_ast_non_materialized_join(self):
         pass
 
-    def test_subquery_used_for_self_join(self):
-        # There could be cases that should look in SQL like
-        # WITH t0 as (some subquery)
-        # select ...
-        # from t0 t1
-        #   join t0 t2
-        #     on t1.kind = t2.subkind
-        # ...
-        # However, the Ibis code will simply have an expression (projection or
-        # aggregation, say) built on top of the subquery expression, so we need
-        # to extract the subquery unit (we see that it appears multiple times
-        # in the tree).
-        pass
-
     def test_nonequijoin_unsupported(self):
         pass
 
@@ -579,6 +565,135 @@ WHERE value > 0"""
 
         assert table3.equals(expected)
         assert table3_filtered.equals(expected2)
+
+    def test_aggregate_projection_subquery(self):
+        t = self.con.table('alltypes')
+
+        proj = t[t.f > 0][t, (t.a + t.b).name('foo')]
+
+        def agg(x):
+            return x.aggregate([x.foo.sum().name('foo total')], by=['g'])
+
+        # predicate gets pushed down
+        agged = agg(proj[proj.g == 'bar'])
+
+        result = to_sql(agged)
+        expected = """SELECT g, sum(foo) AS `foo total`
+FROM (
+  SELECT *, a + b AS foo
+  FROM alltypes
+  WHERE f > 0 AND
+        g = 'bar'
+)
+GROUP BY 1"""
+        assert result == expected
+
+        # different pushdown case. Does Impala support this?
+        agged2 = agg(proj[proj.foo < 10])
+
+        result = to_sql(agged2)
+        expected = """SELECT g, sum(foo) AS `foo total`
+FROM (
+  SELECT *, a + b AS foo
+  FROM alltypes
+  WHERE f > 0 AND
+        foo < 10
+)
+GROUP BY 1"""
+        assert result == expected
+
+    def test_subquery_aliased(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
+        what = (agged.inner_join(t2, [agged.foo_id == t2.foo_id])
+                [agged, t2.value1])
+
+        result = to_sql(what)
+        expected = """SELECT t0.*, t1.value1
+FROM (
+  SELECT foo_id, sum(f) AS total
+  FROM star1
+  GROUP BY 1
+) t0
+  INNER JOIN star2 t1
+    ON t0.foo_id = t1.foo_id"""
+        assert result == expected
+
+    def test_double_nested_subquery_no_aliases(self):
+        # We don't require any table aliasing anywhere
+        t = ir.table([
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('key3', 'string'),
+            ('value', 'double')
+        ], 'foo_table')
+
+        agg1 = t.aggregate([t.value.sum().name('total')],
+                           by=['key1', 'key2', 'key3'])
+        agg2 = agg1.aggregate([agg1.total.sum().name('total')],
+                              by=['key1', 'key2'])
+        agg3 = agg2.aggregate([agg2.total.sum().name('total')],
+                              by=['key1'])
+
+        result = to_sql(agg3)
+        expected = """SELECT key1, sum(total) AS total
+FROM (
+  SELECT key1, key2, sum(total) AS total
+  FROM (
+    SELECT key1, key2, key3, sum(value) AS total
+    FROM foo_table
+    GROUP BY 1, 2, 3
+  )
+  GROUP BY 1, 2
+)
+GROUP BY 1"""
+        assert result == expected
+
+    def test_subquery_used_for_self_join(self):
+        # There could be cases that should look in SQL like
+        # WITH t0 as (some subquery)
+        # select ...
+        # from t0 t1
+        #   join t0 t2
+        #     on t1.kind = t2.subkind
+        # ...
+        # However, the Ibis code will simply have an expression (projection or
+        # aggregation, say) built on top of the subquery expression, so we need
+        # to extract the subquery unit (we see that it appears multiple times
+        # in the tree).
+        t = self.con.table('alltypes')
+
+        agged = t.aggregate([t.f.sum().name('total')], by=['g', 'a', 'b'])
+        view = agged.view()
+        metrics = [(agged.total - view.total).max().name('metric')]
+        reagged = (agged.inner_join(view, [agged.a == view.b])
+                   .aggregate(metrics, by=[agged.g]))
+
+        result = to_sql(reagged)
+        expected = """WITH t0 AS (
+  SELECT g, a, b, sum(f) AS total
+  FROM alltypes
+  GROUP BY 1, 2, 3
+)
+SELECT t0.g, max(t0.total - t1.total) AS metric
+FROM t0
+  INNER JOIN t0 t1
+    ON t0.a = t1.b
+GROUP BY 1"""
+        assert result == expected
+
+    def test_extract_subquery_nested_lower(self):
+        # We may have a join between two tables requiring subqueries, and
+        # buried inside these there may be a common subquery. Let's test that
+        # we find it and pull it out to the top level to avoid repeating
+        # ourselves.
+        pass
+
+    def test_subquery_in_filter_predicate(self):
+        # E.g. comparing against some scalar aggregate value
+        pass
 
 
 class TestASTTransformations(unittest.TestCase):

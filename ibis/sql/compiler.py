@@ -18,7 +18,7 @@
 # table, with optional teardown if the user wants the intermediate converted
 # table to be temporary.
 
-
+from collections import defaultdict
 from io import BytesIO
 
 import ibis.expr.base as ir
@@ -39,11 +39,37 @@ class QueryContext(object):
 
     def __init__(self):
         self.table_aliases = {}
+        self.extracted_subexprs = set()
+        self.subquery_memo = {}
+
+    @property
+    def top_context(self):
+        return self
 
     def _get_table_key(self, table):
         if isinstance(table, ir.TableExpr):
             table = table.op()
         return id(table)
+
+    def is_extracted(self, expr):
+        key = self._get_table_key(expr)
+        return key in self.top_context.extracted_subexprs
+
+    def set_extracted(self, expr):
+        key = self._get_table_key(expr)
+        self.extracted_subexprs.add(key)
+        self.make_alias(expr)
+
+    def get_formatted_query(self, expr):
+        this = self.top_context
+
+        key = self._get_table_key(expr)
+        if key in this.subquery_memo:
+            return this.subquery_memo[key]
+
+        result = to_sql(expr, context=self.subcontext())
+        this.subquery_memo[key] = result
+        return result
 
     def make_alias(self, table_expr):
         i = len(self.table_aliases)
@@ -67,7 +93,27 @@ class QueryContext(object):
         table or inline view
         """
         key = self._get_table_key(table_expr)
+
+        top = self.top_context
+        if self is top:
+            if self.is_extracted(table_expr):
+                return top.table_aliases.get(key)
+
         return self.table_aliases.get(key)
+
+    def subcontext(self):
+        return SubContext(self)
+
+
+class SubContext(QueryContext):
+
+    def __init__(self, parent):
+        self.parent = parent
+        super(SubContext, self).__init__()
+
+    @property
+    def top_context(self):
+        return self.parent.top_context
 
 
 #----------------------------------------------------------------------
@@ -82,7 +128,7 @@ class Select(object):
     """
 
     def __init__(self, table_set, select_set, where=None, group_by=None,
-                 order_by=None, limit=None, having=None, subqueries=None,
+                 order_by=None, limit=None, having=None,
                  parent_expr=None, indent=2):
         self.select_set = select_set
         self.table_set = table_set
@@ -132,10 +178,13 @@ class Select(object):
 
     def compile(self, context=None, semicolon=False):
         """
-
+        This method isn't yet idempotent; calling multiple times may yield
+        unexpected results
         """
         if context is None:
             context = QueryContext()
+
+        self._extract_subqueries(context)
 
         self.populate_context(context)
 
@@ -166,17 +215,55 @@ class Select(object):
 
     def populate_context(self, context):
         # Populate aliases for the distinct relations used to output this
-        # select statement. For now we're going to assume they're either in the
-        # table set or the subqueries.
-        for query in self.subqueries:
-            query.populate_context(context)
-
+        # select statement.
         roots = self.table_set._root_tables()
         for table in roots:
+            if context.is_extracted(table):
+                continue
+
             context.make_alias(table)
 
+    def _extract_subqueries(self, context):
+        # Somewhat temporary place for this. A little bit tricky, because
+        # subqueries can be found in many places
+        # - With the table set
+        # - Inside the where clause (these may be able to place directly, some
+        #   cases not)
+        # - As support queries inside certain expressions (possibly needing to
+        #   be extracted and joined into the table set where they are
+        #   used). More complex transformations should probably not occur here,
+        #   though.
+        #
+        # Duplicate subqueries might appear in different parts of the query
+        # structure, e.g. beneath two aggregates that are joined together, so
+        # we have to walk the entire query structure.
+        #
+        # The default behavior is to only extract into a WITH clause when a
+        # subquery appears multiple times (for DRY reasons). At some point we
+        # can implement a more aggressive policy so that subqueries always
+        # appear in the WITH part of the SELECT statement, if that's what you
+        # want.
+
+        # Find the subqueries, and record them in the passed query context.
+        self.subqueries = _extract_subqueries(self)
+        for expr in self.subqueries:
+            context.set_extracted(expr)
+
     def format_subqueries(self, context):
-        pass
+        if len(self.subqueries) == 0:
+            return
+
+        buf = BytesIO()
+        buf.write('WITH ')
+
+        for i, expr in enumerate(self.subqueries):
+            if i > 0:
+                buf.write(',\n')
+            formatted = util.indent(context.get_formatted_query(expr), 2)
+            alias = context.get_alias(expr)
+            buf.write('{} AS (\n{}\n)'.format(alias, formatted))
+
+        return buf.getvalue()
 
     def format_select_set(self, context):
         # TODO:
@@ -220,13 +307,8 @@ class Select(object):
     def format_table_set(self, ctx):
         fragment = 'FROM '
 
-        op = self.table_set.op()
-
-        if isinstance(op, ir.Join):
-            helper = _JoinFormatter(ctx, self.table_set)
-            fragment += helper.get_result()
-        elif isinstance(op, ir.TableNode):
-            fragment += _format_table(ctx, self.table_set)
+        helper = _TableSetFormatter(ctx, self.table_set)
+        fragment += helper.get_result()
 
         return fragment
 
@@ -299,19 +381,7 @@ class Select(object):
         pass
 
 
-def _format_table(ctx, expr):
-    op = expr.op()
-    name = op.name
-
-    if name is None:
-        raise com.RelationError('Table did not have a name: {!r}'.format(expr))
-
-    if ctx.need_aliases():
-        name += ' {}'.format(ctx.get_alias(expr))
-    return name
-
-
-class _JoinFormatter(object):
+class _TableSetFormatter(object):
     _join_names = {
         ir.InnerJoin: 'INNER JOIN',
         ir.LeftJoin: 'LEFT OUTER JOIN',
@@ -335,7 +405,12 @@ class _JoinFormatter(object):
         # Got to unravel the join stack; the nesting order could be
         # arbitrary, so we do a depth first search and push the join tokens
         # and predicates onto a flat list, then format them
-        self._walk_join_tree(self.expr.op())
+        op = self.expr.op()
+
+        if isinstance(op, ir.Join):
+            self._walk_join_tree(op)
+        else:
+            self.join_tables.append(self._format_table(self.expr))
 
         # TODO: Now actually format the things
         buf = BytesIO()
@@ -389,6 +464,121 @@ class _JoinFormatter(object):
     def _format_table(self, expr):
         return _format_table(self.context, expr)
 
+
+def _format_table(ctx, expr, indent=2):
+    # TODO: This could probably go in a class and be significantly nicer
+
+    ref_expr = expr
+    op = ref_op = expr.op()
+    if isinstance(op, ir.SelfReference):
+        ref_expr = op.table
+        ref_op = ref_expr.op()
+
+    if isinstance(ref_op, ir.PhysicalTable):
+        name = op.name
+        if name is None:
+            raise com.RelationError('Table did not have a name: {!r}'
+                                    .format(expr))
+        result = name
+    else:
+        # A subquery
+        if ctx.is_extracted(ref_expr):
+            # Was put elsewhere, e.g. WITH block, we just need to grab its
+            # alias
+            alias = ctx.get_alias(expr)
+
+            # HACK: self-references have to be treated more carefully here
+            if isinstance(op, ir.SelfReference):
+                return '{} {}'.format(ctx.get_alias(ref_expr), alias)
+            else:
+                return alias
+
+        subquery = ctx.get_formatted_query(expr)
+        result = '(\n{}\n)'.format(util.indent(subquery, indent))
+
+    if ctx.need_aliases():
+        result += ' {}'.format(ctx.get_alias(expr))
+
+    return result
+
+
+def _extract_subqueries(select_stmt):
+    helper = _ExtractSubqueries(select_stmt)
+    return helper.get_result()
+
+
+class _ExtractSubqueries(object):
+
+    # Helper class to make things a little easier
+
+    def __init__(self, query, greedy=False):
+        self.query = query
+        self.greedy = greedy
+
+        # Keep track of table expressions that we find in the query structure
+        self.observed_exprs = {}
+        self.expr_counts = defaultdict(lambda: 0)
+
+    def get_result(self):
+        self.visit(self.query.table_set)
+
+        to_extract = []
+        for k, v in self.expr_counts.items():
+            if self.greedy or v > 1:
+                to_extract.append(self.observed_exprs[k])
+
+        return to_extract
+
+    def observe(self, expr):
+        key = id(expr.op())
+        self.observed_exprs[key] = expr
+        self.expr_counts[key] += 1
+
+    def visit(self, expr):
+        node = expr.op()
+        method = '_visit_{}'.format(type(node).__name__)
+
+        if hasattr(self, method):
+            f = getattr(self, method)
+            f(expr)
+        elif isinstance(node, ir.Join):
+            self._visit_join(expr)
+        elif isinstance(node, ir.PhysicalTable):
+            self._visit_physical_table(expr)
+        else:
+            raise NotImplementedError(type(node))
+
+    def _visit_join(self, expr):
+        node = expr.op()
+        self.visit(node.left)
+        self.visit(node.right)
+
+    def _visit_physical_table(self, expr):
+        return
+
+    def _visit_Aggregation(self, expr):
+        self.observe(expr)
+        self.visit(expr.op().table)
+
+    def _visit_Filter(self, expr):
+        pass
+
+    def _visit_FilterWithSchema(self, expr):
+        self._visit_Filter(expr)
+
+    def _visit_Limit(self, expr):
+        self.visit(expr.op().table)
+
+    def _visit_Projection(self, expr):
+        self.observe(expr)
+        self.visit(expr.op().table)
+
+    def _visit_SelfReference(self, expr):
+        self.visit(expr.op().table)
+
+    def _visit_SortBy(self, expr):
+        self.observe(expr)
+        self.visit(expr.op().table)
 
 
 def _join_not_none(sep, pieces):
@@ -451,7 +641,7 @@ class QueryASTBuilder(object):
         # expression.
         source_table = self._get_source_table_expr()
 
-        modifiers = ir.collect_modifiers(source_table)
+        modifiers = _collect_modifiers(source_table)
 
         # The base expression could be one or more types of operations now. It
         # could be a
@@ -557,6 +747,53 @@ class QueryASTBuilder(object):
     def _walk_arg(self):
         pass
 
+
+
+def _collect_modifiers(table_expr, modifiers=None, memo=None, toplevel=True):
+    """
+    Make a list of all
+    """
+    if modifiers is None:
+        modifiers = {
+            'filters': [],
+            'limit': None,
+            'sort_by': []
+        }
+        memo = set()
+
+    def collect(arg, toplevel=False):
+        op = arg.op()
+
+        if ((not toplevel and isinstance(op, ir.BlockingTableNode)) or
+            not isinstance(op, ir.TableNode)):
+            return
+
+        # Don't scrape twice
+        if id(op) in memo:
+            return
+
+        if isinstance(op, ir.Filter):
+            modifiers['filters'].extend(op.predicates)
+            collect(op.table, toplevel=False)
+        elif isinstance(op, ir.Limit):
+            modifiers['limit'] = {
+                'n': op.n,
+                'offset': op.offset
+            }
+            collect(op.table, toplevel=False)
+        elif isinstance(op, ir.SortBy):
+            modifiers['sort_by'] = op.keys
+            collect(op.table, toplevel=False)
+        else:
+            for arg in op.args:
+                if isinstance(arg, (tuple, list)):
+                    [collect(x) for x in arg]
+                elif isinstance(arg, ir.Expr):
+                    collect(arg)
+        memo.add(id(op))
+
+    collect(table_expr, toplevel=True)
+    return modifiers
 
 
 class QueryAST(object):
@@ -721,7 +958,9 @@ _unary_ops = {
 
     # Unary aggregates
     ir.Mean: _unary_op('avg'),
-    ir.Sum: _unary_op('sum')
+    ir.Sum: _unary_op('sum'),
+    ir.Max: _unary_op('max'),
+    ir.Min: _unary_op('min')
 }
 
 _binary_infix_ops = {
@@ -840,6 +1079,6 @@ def _get_query(expr):
     ast = build_ast(expr)
     return ast.queries[0]
 
-def to_sql(expr):
+def to_sql(expr, context=None):
     query = _get_query(expr)
-    return query.compile()
+    return query.compile(context=context)
