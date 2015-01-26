@@ -176,7 +176,11 @@ class TestASTBuilder(unittest.TestCase):
         pass
 
     def test_nonequijoin_unsupported(self):
-        pass
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        joined = t1.inner_join(t2, [t1.f < t2.value1])[[t1]]
+        self.assertRaises(com.TranslationError, to_sql, joined)
 
     def test_simple_scalar_aggregates(self):
         # Things like table.column.{sum, mean, ...}()

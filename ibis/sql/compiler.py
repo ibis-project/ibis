@@ -439,6 +439,8 @@ class _TableSetFormatter(object):
             raise NotImplementedError('Do not support joins between '
                                       'joins yet')
 
+        self._validate_join_predicates(op.predicates)
+
         jname = self._join_names[type(op)]
 
         # Read off tables and join predicates left-to-right in
@@ -463,6 +465,18 @@ class _TableSetFormatter(object):
 
     def _format_table(self, expr):
         return _format_table(self.context, expr)
+
+    # Placeholder; revisit when supporting other databases
+    _non_equijoin_supported = False
+    def _validate_join_predicates(self, predicates):
+        for pred in predicates:
+            op = pred.op()
+
+            if (not isinstance(op, ir.Equals) and
+                not self._non_equijoin_supported):
+                raise com.TranslationError(
+                    'Non-equality join predicates, '
+                    'i.e. non-equijoins, are not supported')
 
 
 def _format_table(ctx, expr, indent=2):
