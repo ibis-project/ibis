@@ -1104,6 +1104,37 @@ class TestJoins(BasicTestCase, unittest.TestCase):
         predicate = t1.bar_id == t3.bar_id
         self.assertRaises(com.RelationError, t1.inner_join, t2, [predicate])
 
+    def test_join_non_boolean_expr(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        # oops
+        predicate = t1.f * t2.value1
+        self.assertRaises(com.ExpressionError, t1.inner_join, t2, [predicate])
+
+    def test_unravel_compound_equijoin(self):
+        t1 = api.table([
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('key3', 'string'),
+            ('value1', 'double')
+        ], 'foo_table')
+
+        t2 = api.table([
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('key3', 'string'),
+            ('value2', 'double')
+        ], 'bar_table')
+
+        p1 = t1.key1 == t2.key1
+        p2 = t1.key2 == t2.key2
+        p3 = t1.key3 == t2.key3
+
+        joined = t1.inner_join(t2, [p1 & p2 & p3])
+        expected = t1.inner_join(t2, [p1, p2, p3])
+        assert joined.equals(expected)
+
     def test_join_add_prefixes(self):
         pass
 

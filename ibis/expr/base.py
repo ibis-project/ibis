@@ -657,7 +657,12 @@ class Join(TableNode):
                 pred = lk == rk
             else:
                 pred = substitute_parents(pred)
-            result.append(pred)
+
+            if not isinstance(pred, BooleanArray):
+                raise com.ExpressionError('Join predicate must be comparison')
+
+            preds = _maybe_unwrap_ands(pred)
+            result.extend(preds)
 
         return result
 
@@ -687,6 +692,23 @@ class Join(TableNode):
 
     def root_tables(self):
         return _distinct_roots(self.left, self.right)
+
+
+def _maybe_unwrap_ands(expr):
+    out_exprs = []
+    def walk(expr):
+        op = expr.op()
+        if isinstance(op, Comparison):
+            out_exprs.append(expr)
+        elif isinstance(op, And):
+            walk(op.left)
+            walk(op.right)
+        else:
+            raise Exception('Invalid predicate: {!r}'.format(expr))
+
+    walk(expr)
+    return out_exprs
+
 
 
 class InnerJoin(Join):
