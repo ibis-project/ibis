@@ -119,6 +119,8 @@ class BasicTestCase(object):
         self.bool_cols = ['h']
         self.float_cols = ['e', 'f']
 
+        self.con = MockConnection()
+
 
 class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
@@ -1021,12 +1023,6 @@ class TestJoins(BasicTestCase, unittest.TestCase):
         # The user might have composed predicates through logical operations
         pass
 
-    def test_non_equijoins(self):
-        pass
-
-    def test_join_overlapping_column_names(self):
-        pass
-
     def test_multiple_join_deeper_reference(self):
         # Join predicates down the chain might reference one or more root
         # tables in the hierarchy.
@@ -1074,10 +1070,41 @@ class TestJoins(BasicTestCase, unittest.TestCase):
         expected = table.inner_join(table2, [table['g'] == table2['key']])
         assert result.equals(expected)
 
-    def test_join_add_prefixes(self):
+    def test_non_equijoins(self):
         pass
 
+    def test_join_overlapping_column_names(self):
+        pass
+
+    def test_join_key_alternatives(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        # Join with tuples
+        joined = t1.inner_join(t2, [('foo_id', 'foo_id')])
+        joined2 = t1.inner_join(t2, [(t1.foo_id, t2.foo_id)])
+
+        # Join with single expr
+        joined3 = t1.inner_join(t2, t1.foo_id == t2.foo_id)
+
+        expected = t1.inner_join(t2, [t1.foo_id == t2.foo_id])
+
+        assert joined.equals(expected)
+        assert joined2.equals(expected)
+        assert joined3.equals(expected)
+
+        self.assertRaises(com.ExpressionError, t1.inner_join, t2,
+                          [('foo_id', 'foo_id', 'foo_id')])
+
     def test_join_invalid_refs(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+        t3 = self.con.table('star3')
+
+        predicate = t1.bar_id == t3.bar_id
+        self.assertRaises(com.RelationError, t1.inner_join, t2, [predicate])
+
+    def test_join_add_prefixes(self):
         pass
 
     def test_join_nontrivial_exprs(self):

@@ -631,7 +631,7 @@ class Join(TableNode):
 
         self.left = left
         self.right = right
-        self.predicates = [substitute_parents(x) for x in join_predicates]
+        self.predicates = self._clean_predicates(join_predicates)
 
         # Validate join predicates. Each predicate must be valid jointly when
         # considering the roots of each input table
@@ -639,6 +639,27 @@ class Join(TableNode):
         validator.validate_all(self.predicates)
 
         Node.__init__(self, [left, right, self.predicates])
+
+    def _clean_predicates(self, predicates):
+        result = []
+
+        if not isinstance(predicates, (list)):
+            predicates = [predicates]
+
+        for pred in predicates:
+            if isinstance(pred, tuple):
+                if len(pred) != 2:
+                    raise com.ExpressionError('Join key tuple must be '
+                                              'length 2')
+                lk, rk = pred
+                lk = self.left._ensure_expr(lk)
+                rk = self.right._ensure_expr(rk)
+                pred = lk == rk
+            else:
+                pred = substitute_parents(pred)
+            result.append(pred)
+
+        return result
 
     def _get_schema(self):
         # For joins retaining both table schemas, merge them together here
@@ -1383,8 +1404,7 @@ class TableExpr(Expr):
         # Stash this helper method here for now
         out_exprs = []
         for expr in exprs:
-            if not isinstance(expr, ValueExpr):
-                expr = self[expr]
+            expr = self._ensure_expr(expr)
             out_exprs.append(expr)
         return out_exprs
 
