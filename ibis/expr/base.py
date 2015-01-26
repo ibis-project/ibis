@@ -185,6 +185,9 @@ class Expr(object):
     def op(self):
         raise NotImplementedError
 
+    def _can_compare(self, other):
+        return False
+
     def _root_tables(self):
         return self.op().root_tables()
 
@@ -1036,8 +1039,14 @@ class Xor(LogicalBinaryOp):
 class Comparison(BinaryOp):
 
     def output_type(self):
+        self._assert_can_compare()
         return (BooleanArray if util.any_of(self.args, ArrayExpr)
                 else BooleanScalar)
+
+    def _assert_can_compare(self):
+        if not self.left._can_compare(self.right):
+            raise TypeError('Cannot compare argument types')
+
 
 
 class Equals(Comparison):
@@ -1611,6 +1620,9 @@ class NumericValue(ValueExpr):
     log2 = _unary_op('log2', Log2)
     log10 = _unary_op('log10', Log10)
 
+    def _can_compare(self, other):
+        return isinstance(other, NumericValue)
+
 
 class IntegerValue(NumericValue):
     pass
@@ -1679,6 +1691,9 @@ class DoubleValue(FloatingValue):
 class StringValue(ValueExpr):
 
     _typename = 'string'
+
+    def _can_compare(self, other):
+        return isinstance(other, StringValue)
 
 
 class DecimalValue(NumericValue):

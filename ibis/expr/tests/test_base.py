@@ -647,10 +647,12 @@ class TestBooleanBinaryOps(BasicTestCase, unittest.TestCase):
             assert isinstance(result, api.BooleanScalar)
 
     def test_string_compare_numeric_array(self):
-        pass
+        self.assertRaises(TypeError, self.table.g.__eq__, self.table.f)
+        self.assertRaises(TypeError, self.table.g.__eq__, self.table.c)
 
     def test_string_compare_numeric_literal(self):
-        pass
+        self.assertRaises(TypeError, self.table.g.__eq__, api.literal(1.5))
+        self.assertRaises(TypeError, self.table.g.__eq__, api.literal(5))
 
 
 class TestBinaryArithOps(BasicTestCase, unittest.TestCase):
