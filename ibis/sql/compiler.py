@@ -216,12 +216,18 @@ class Select(object):
     def populate_context(self, context):
         # Populate aliases for the distinct relations used to output this
         # select statement.
-        roots = self.table_set._root_tables()
-        for table in roots:
-            if context.is_extracted(table):
-                continue
 
-            context.make_alias(table)
+        # Urgh, hack for now
+        op = self.table_set.op()
+
+        if isinstance(op, ir.Join):
+            roots = self.table_set._root_tables()
+            for table in roots:
+                if context.is_extracted(table):
+                    continue
+                context.make_alias(table)
+        else:
+            context.make_alias(self.table_set)
 
     def _extract_subqueries(self, context):
         # Somewhat temporary place for this. A little bit tricky, because
@@ -577,9 +583,6 @@ class _ExtractSubqueries(object):
     def _visit_Filter(self, expr):
         pass
 
-    def _visit_FilterWithSchema(self, expr):
-        self._visit_Filter(expr)
-
     def _visit_Limit(self, expr):
         self.visit(expr.op().table)
 
@@ -618,11 +621,20 @@ class QueryASTBuilder(object):
         if context is None:
             context = QueryContext()
 
-        self.substitute_memo = {}
-        self.base_expr = ir.substitute_parents(self.expr, self.substitute_memo)
+        self.sub_memo = {}
 
         self.context = context
         self.queries = []
+
+        self.table_set = None
+        self.select_set = None
+        self.group_by = None
+        self.having = None
+        self.filters = []
+        self.limit = None
+        self.sort_by = []
+
+        self.op_memo = set()
 
     def get_result(self):
         # make idempotent
@@ -637,8 +649,10 @@ class QueryASTBuilder(object):
         # statement(s)
         teardown_queries = self._generate_teardown_queries()
 
+        select_query = self._build_select()
+
         self.queries.extend(setup_queries)
-        self.queries.append(self._build_select())
+        self.queries.append(select_query)
         self.queries.extend(teardown_queries)
 
         return self._wrap_result()
@@ -647,76 +661,134 @@ class QueryASTBuilder(object):
         return QueryAST(self.context, self.queries)
 
     def _build_select(self):
+        self._collect_elements()
+        return Select(self.table_set, self.select_set, where=self.filters,
+                      group_by=self.group_by,
+                      having=self.having, limit=self.limit,
+                      order_by=self.sort_by,
+                      parent_expr=self.expr)
+
+    def _collect_elements(self):
         # If expr is a ValueExpr, we must seek out the TableExprs that it
         # references, build their ASTs, and mark them in our QueryContext
 
         # For now, we need to make the simplifying assumption that a value
         # expression that is being translated only depends on a single table
         # expression.
+
         source_table = self._get_source_table_expr()
 
-        modifiers = _collect_modifiers(source_table)
-
-        # The base expression could be one or more types of operations now. It
-        # could be a
-        # - Projection
-        # - Aggregation
-        # - Unmaterialized join, without projection, needing materialization
-        # - Materialized join
-        # - An unmodified table
-
-        # HACK: Shed filters on top of whatever is the root operation.
-        base_expr = self.base_expr
-        base_node = base_expr.op()
-        while isinstance(base_node, (ir.Filter, ir.Limit, ir.SortBy)):
-            base_expr = base_node.table
-            base_node = base_expr.op()
-
         # hm, is this the best place for this?
-        if isinstance(base_node, ir.Join):
-            if not isinstance(base_node, ir.MaterializedJoin):
-                # Unmaterialized join
-                materialized = self.base_expr.materialize()
-                base_node = materialized.op()
+        root_op = source_table.op()
+        if (isinstance(root_op, ir.Join) and
+            not isinstance(root_op, ir.MaterializedJoin)):
+            # Unmaterialized join
+            source_table = source_table.materialize()
 
-        if isinstance(base_node, ir.SelfReference):
-            base_expr = base_node.table
-            base_node = base_expr.op()
+        self._visit(source_table, toplevel=True)
 
-        group_by = None
-        having = None
-        if isinstance(base_node, ir.Projection):
-            select_set = base_node.selections
-            table_set = base_node.table
-        elif isinstance(base_node, ir.Aggregation):
-            # The select set includes the grouping keys (if any), and these are
-            # duplicated in the group_by set. SQL translator can decide how to
-            # format these depending on the database. Most likely the
-            # GROUP BY 1, 2, ... style
-            group_by = base_node.by
-            having = base_node.having
-            select_set = group_by + base_node.agg_exprs
-            table_set = base_node.table
-        elif isinstance(base_node, ir.MaterializedJoin):
-            select_set = [base_node.left, base_node.left]
-            table_set = base_expr
-        elif isinstance(base_node, ir.PhysicalTable):
-            select_set = [base_expr]
-            table_set = base_expr
+    def _visit(self, expr, toplevel=False):
+        op = expr.op()
+        method = '_visit_{}'.format(type(op).__name__)
+
+        # Do not visit nodes twice
+        if id(op) in self.op_memo:
+            return
+
+        if hasattr(self, method):
+            f = getattr(self, method)
+            f(expr, toplevel=toplevel)
+        elif isinstance(op, ir.PhysicalTable):
+            self._visit_PhysicalTable(expr, toplevel=toplevel)
+        elif isinstance(op, ir.Join):
+            self._visit_Join(expr, toplevel=toplevel)
         else:
-            raise NotImplementedError
+            raise NotImplementedError(type(op))
 
-        return Select(table_set, select_set, where=modifiers['filters'],
-                      group_by=group_by,
-                      having=having, limit=modifiers['limit'],
-                      order_by=modifiers['sort_by'],
-                      parent_expr=self.expr)
+        self.op_memo.add(id(op))
 
-    def _generate_setup_queries(self):
-        return []
+    def _visit_Aggregation(self, expr, toplevel=False):
+        # The select set includes the grouping keys (if any), and these are
+        # duplicated in the group_by set. SQL translator can decide how to
+        # format these depending on the database. Most likely the
+        # GROUP BY 1, 2, ... style
+        if toplevel:
+            subbed_expr = self._sub(expr)
+            sub_op = subbed_expr.op()
 
-    def _generate_teardown_queries(self):
-        return []
+            self.group_by = sub_op.by
+            self.having = sub_op.having
+            self.select_set = self.group_by + sub_op.agg_exprs
+            self.table_set = sub_op.table
+
+            self._visit(expr.op().table)
+
+    def _sub(self, what):
+        if isinstance(what, list):
+            return [ir.substitute_parents(x, self.sub_memo) for x in what]
+        else:
+            return ir.substitute_parents(what, self.sub_memo)
+
+    def _visit_Filter(self, expr, toplevel=False):
+        op = expr.op()
+
+        subbed = self._sub(expr)
+        self.filters.extend(subbed.op().predicates)
+        if toplevel:
+            self.select_set = [subbed]
+            self.table_set = subbed.op().table
+
+        self._visit(op.table)
+
+    def _visit_Limit(self, expr, toplevel=False):
+        op = expr.op()
+        if toplevel:
+            subbed = self._sub(expr)
+
+            self.select_set = [subbed]
+            self.table_set = subbed.op().table
+            self.limit = {
+                'n': op.n,
+                'offset': op.offset
+            }
+
+            self._visit(op.table)
+
+    def _visit_Join(self, expr, toplevel=False):
+        op = expr.op()
+        if toplevel:
+            subbed = self._sub(expr)
+            self.table_set = subbed
+            self.select_set = [op.left, op.left]
+
+        self._visit(op.left, toplevel=toplevel)
+        self._visit(op.right, toplevel=toplevel)
+
+    def _visit_Projection(self, expr, toplevel=False):
+        op = expr.op()
+        if toplevel:
+            subbed = self._sub(expr)
+            sop = subbed.op()
+
+            self.select_set = sop.selections
+            self.table_set = sop.table
+            self._visit(op.table)
+
+    def _visit_PhysicalTable(self, expr, toplevel=False):
+        if toplevel:
+            self.select_set = [expr]
+            self.table_set = ir.substitute_parents(expr, self.sub_memo)
+
+    def _visit_SelfReference(self, expr, toplevel=False):
+        op = expr.op()
+        if toplevel:
+            self._visit(op.table, toplevel=toplevel)
+
+    def _visit_SortBy(self, expr, toplevel=False):
+        op = expr.op()
+        if toplevel:
+            self.sort_by = op.keys
+            self._visit(op.table, toplevel=toplevel)
 
     def _get_source_table_expr(self):
         if isinstance(self.expr, ir.TableExpr):
@@ -725,7 +797,7 @@ class QueryASTBuilder(object):
         node = self.expr.op()
 
         # First table expression observed for each argument that the expr
-        # depends no
+        # depends on
         first_tables = []
         def push_first(arg):
             if isinstance(arg, (tuple, list)):
@@ -746,68 +818,11 @@ class QueryASTBuilder(object):
         collect(node)
         return util.unique_by_key(first_tables, id)
 
-    def _visit_aggregate(self):
-        pass
+    def _generate_setup_queries(self):
+        return []
 
-    def _visit_projection(self):
-        pass
-
-    def _visit_filter(self):
-        pass
-
-    def _visit_value_op(self):
-        pass
-
-    def _walk_arg(self):
-        pass
-
-
-
-def _collect_modifiers(table_expr, modifiers=None, memo=None, toplevel=True):
-    """
-    Make a list of all
-    """
-    if modifiers is None:
-        modifiers = {
-            'filters': [],
-            'limit': None,
-            'sort_by': []
-        }
-        memo = set()
-
-    def collect(arg, toplevel=False):
-        op = arg.op()
-
-        if ((not toplevel and isinstance(op, ir.BlockingTableNode)) or
-            not isinstance(op, ir.TableNode)):
-            return
-
-        # Don't scrape twice
-        if id(op) in memo:
-            return
-
-        if isinstance(op, ir.Filter):
-            modifiers['filters'].extend(op.predicates)
-            collect(op.table, toplevel=False)
-        elif isinstance(op, ir.Limit):
-            modifiers['limit'] = {
-                'n': op.n,
-                'offset': op.offset
-            }
-            collect(op.table, toplevel=False)
-        elif isinstance(op, ir.SortBy):
-            modifiers['sort_by'] = op.keys
-            collect(op.table, toplevel=False)
-        else:
-            for arg in op.args:
-                if isinstance(arg, (tuple, list)):
-                    [collect(x) for x in arg]
-                elif isinstance(arg, ir.Expr):
-                    collect(arg)
-        memo.add(id(op))
-
-    collect(table_expr, toplevel=True)
-    return modifiers
+    def _generate_teardown_queries(self):
+        return []
 
 
 class QueryAST(object):

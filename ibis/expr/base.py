@@ -141,6 +141,12 @@ class HasSchema(object):
     def schema(self):
         return self._schema
 
+    def get_schema(self):
+        return self._schema
+
+    def has_schema(self):
+        return True
+
     @property
     def name(self):
         return self._name
@@ -152,9 +158,6 @@ class HasSchema(object):
 
     def root_tables(self):
         return [self]
-
-    def get_type(self, name):
-        return self.schema.get_type(name)
 
 
 #----------------------------------------------------------------------
@@ -330,7 +333,9 @@ class ArrayNode(ValueNode):
 
 
 class TableNode(Node):
-    pass
+
+    def get_type(self, name):
+        return self.get_schema().get_type(name)
 
 
 class BlockingTableNode(TableNode):
@@ -687,6 +692,9 @@ class Join(TableNode):
 
         return sleft.append(sright)
 
+    def has_schema(self):
+        return False
+
     def materialize(self):
         return MaterializedJoin(self)
 
@@ -781,25 +789,18 @@ class Filter(TableNode):
         table_expr._assert_valid(predicates)
         TableNode.__init__(self, [table_expr, predicates])
 
+    def get_schema(self):
+        return self.table.schema()
+
+    def has_schema(self):
+        return self.table.op().has_schema()
+
     def root_tables(self):
         tables = self.table._root_tables()
         return tables
 
 
-class FilterWithSchema(Filter, HasSchema):
-
-    def __init__(self, table_expr, predicates):
-        Filter.__init__(self, table_expr, predicates)
-        HasSchema.__init__(self, table_expr.schema())
-
-
-
-def _filter(expr, predicates):
-    klass = FilterWithSchema if expr._is_materialized() else Filter
-    return klass(expr, predicates)
-
-
-class Limit(TableNode):
+class Limit(BlockingTableNode):
 
     def __init__(self, table, n, offset):
         self.table = table
@@ -807,11 +808,20 @@ class Limit(TableNode):
         self.offset = offset
         TableNode.__init__(self, [table, n, offset])
 
+    def get_schema(self):
+        return self.table.schema()
+
+    def has_schema(self):
+        return self.table.op().has_schema()
+
     def root_tables(self):
-        return self.table._root_tables()
+        return [self]
+
+    # def root_tables(self):
+    #     return self.table._root_tables()
 
 
-class SortBy(TableNode, HasSchema):
+class SortBy(TableNode):
 
     # Q: Will SortBy always require a materialized schema?
 
@@ -820,7 +830,12 @@ class SortBy(TableNode, HasSchema):
         self.keys = [_to_sort_key(self.table, k) for k in sort_keys]
 
         TableNode.__init__(self, [self.table, self.keys])
-        HasSchema.__init__(self, self.table.schema())
+
+    def get_schema(self):
+        return self.table.schema()
+
+    def has_schema(self):
+        return self.table.op().has_schema()
 
 
 class SortKey(object):
@@ -1433,10 +1448,6 @@ class TableExpr(Expr):
     def _get_type(self, name):
         return self._arg.get_type(name)
 
-    def _is_materialized(self):
-        # The schema is known and set
-        return isinstance(self.op(), HasSchema)
-
     def materialize(self):
         if self._is_materialized():
             return self
@@ -1453,7 +1464,12 @@ class TableExpr(Expr):
     def schema(self):
         if not self._is_materialized():
             raise Exception('Table operation is not yet materialized')
-        return self.op().schema
+        return self.op().get_schema()
+
+    def _is_materialized(self):
+        # The operation produces a known schema
+        op = self.op()
+        return isinstance(op, HasSchema) or op.has_schema()
 
     def view(self):
         """
@@ -1568,7 +1584,7 @@ class TableExpr(Expr):
         clean_preds = [substitute_parents(x) for x in predicates]
 
         if isinstance(parent, Filter):
-            op = _filter(parent.table, parent.predicates + clean_preds)
+            op = Filter(parent.table, parent.predicates + clean_preds)
         else:
             op = apply_filter(self, clean_preds)
 
@@ -2054,9 +2070,9 @@ def apply_filter(expr, predicates):
             filtered = op.table.filter(predicates)
             result = op.substitute_table(filtered)
         else:
-            result = _filter(expr, predicates)
+            result = Filter(expr, predicates)
     else:
-        result = _filter(expr, predicates)
+        result = Filter(expr, predicates)
 
     return result
 

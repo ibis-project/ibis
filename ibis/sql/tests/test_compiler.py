@@ -239,17 +239,50 @@ LIMIT 10 OFFSET 5"""
         table = table[table.f > 0].limit(10)
         result = to_sql(table)
 
-        table = self.con.table('star1')
-        table = table.limit(10)[table.f > 0]
-        result2 = to_sql(table)
-
         expected = """SELECT *
 FROM star1
 WHERE f > 0
 LIMIT 10"""
 
         assert result == expected
-        assert result2 == expected
+
+        table = self.con.table('star1')
+
+        # Semantically, this should produce a subquery
+        table = table.limit(10)
+        table = table[table.f > 0]
+
+        result2 = to_sql(table)
+
+        expected2 = """SELECT *
+FROM (
+  SELECT *
+  FROM star1
+  LIMIT 10
+)
+WHERE f > 0"""
+
+        assert result2 == expected2
+
+    def test_join_with_limited_table(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        limited = t1.limit(100)
+        joined = (limited.inner_join(t2, [limited.foo_id == t2.foo_id])
+                  [[limited]])
+
+        result = to_sql(joined)
+        expected = """SELECT t0.*
+FROM (
+  SELECT *
+  FROM star1
+  LIMIT 100
+) t0
+  INNER JOIN star2 t1
+    ON t0.foo_id = t1.foo_id"""
+
+        assert result == expected
 
     def test_sort_by_on_limit_yield_subquery(self):
         # x.limit(...).sort_by(...)
@@ -579,8 +612,16 @@ WHERE value > 0"""
             return x.aggregate([x.foo.sum().name('foo total')], by=['g'])
 
         # predicate gets pushed down
-        agged = agg(proj[proj.g == 'bar'])
+        filtered = proj[proj.g == 'bar']
 
+        result = to_sql(filtered)
+        expected = """SELECT *, a + b AS foo
+FROM alltypes
+WHERE f > 0 AND
+      g = 'bar'"""
+        assert result == expected
+
+        agged = agg(filtered)
         result = to_sql(agged)
         expected = """SELECT g, sum(foo) AS `foo total`
 FROM (
@@ -654,6 +695,33 @@ FROM (
 )
 GROUP BY 1"""
         assert result == expected
+
+    def test_aggregate_projection_alias_bug(self):
+        # Observed in use
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        what = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
+                [[t1, t2.value1]])
+
+        what = what.aggregate([what.value1.sum().name('total')],
+                              by=[t1.foo_id])
+
+        # TODO: Not fusing the aggregation with the projection yet
+        result = to_sql(what)
+        expected = """SELECT foo_id, sum(value1) AS total
+FROM (
+  SELECT t0.*, t1.value1
+  FROM star1 t0
+    INNER JOIN star2 t1
+      ON t0.foo_id = t1.foo_id
+)
+GROUP BY 1"""
+        assert result == expected
+
+    def test_aggregate_fuse_with_projection(self):
+        # see above test case
+        pass
 
     def test_subquery_used_for_self_join(self):
         # There could be cases that should look in SQL like
