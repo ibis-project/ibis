@@ -882,9 +882,17 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         pass
 
     def test_aggregate_post_predicate(self):
-        # TODO: "having" type post-aggregation predicates. What kind of public
-        # API is less horrible?
-        pass
+        # Test invalid having clause
+        metrics = [self.table.f.sum().name('total')]
+        by = ['g']
+
+        invalid_having_cases = [
+            self.table.f.sum(),
+            self.table.f > 2
+        ]
+        for case in invalid_having_cases:
+            self.assertRaises(com.ExpressionError, self.table.aggregate,
+                              metrics, by=by, having=[case])
 
     def test_aggregate_root_table_internal(self):
         pass

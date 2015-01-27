@@ -559,7 +559,28 @@ GROUP BY 1, 2""")
 
     def test_aggregate_having(self):
         # Filtering post-aggregation predicate
-        pass
+        t1 = self.con.table('star1')
+
+        total = t1.f.sum().name('total')
+        metrics = [total]
+
+        expr = t1.aggregate(metrics, by=['foo_id'],
+                            having=[total > 10])
+        result = to_sql(expr)
+        expected = """SELECT foo_id, sum(f) AS total
+FROM star1
+GROUP BY 1
+HAVING sum(f) > 10"""
+        assert result == expected
+
+        expr = t1.aggregate(metrics, by=['foo_id'],
+                            having=[t1.count() > 100])
+        result = to_sql(expr)
+        expected = """SELECT foo_id, sum(f) AS total
+FROM star1
+GROUP BY 1
+HAVING count(*) > 100"""
+        assert result == expected
 
     def test_expr_template_field_name_binding(self):
         # Given an expression with no concrete links to actual database tables,

@@ -329,12 +329,20 @@ class Select(object):
             if expr is not self.select_set[i]:
                 raise com.InternalError('Select was improperly formed')
 
-        clause = 'GROUP BY {}'.format(', '.join([
-            str(x + 1) for x in range(len(self.group_by))]))
+        lines = []
+        if len(self.group_by) > 0:
+            clause = 'GROUP BY {}'.format(', '.join([
+                str(x + 1) for x in range(len(self.group_by))]))
+            lines.append(clause)
 
-        # TODO having
+        if len(self.having) > 0:
+            trans_exprs = []
+            for expr in self.having:
+                translated = translate_expr(expr, context=context)
+                trans_exprs.append(translated)
+            lines.append('HAVING {}'.format(' AND '.join(trans_exprs)))
 
-        return clause
+        return '\n'.join(lines)
 
     def format_where(self, context):
         if len(self.where) == 0:
@@ -989,7 +997,9 @@ _unary_ops = {
     ir.Mean: _unary_op('avg'),
     ir.Sum: _unary_op('sum'),
     ir.Max: _unary_op('max'),
-    ir.Min: _unary_op('min')
+    ir.Min: _unary_op('min'),
+
+    ir.Count: _unary_op('count')
 }
 
 _binary_infix_ops = {
@@ -1067,6 +1077,9 @@ class ExprTranslator(object):
             return self._trans_param(expr)
         elif isinstance(op, ir.TableColumn):
             return self._trans_column_ref(expr)
+        elif isinstance(op, ir.PhysicalTable):
+            # HACK/TODO: revisit for more complex cases
+            return '*'
         elif type(op) in _operation_registry:
             formatter = _operation_registry[type(op)]
             return formatter(self, expr)

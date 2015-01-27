@@ -1015,9 +1015,8 @@ class Aggregation(BlockingTableNode, HasSchema):
         self.by = self.table._resolve(by)
         self.by = [substitute_parents(x) for x in self.by]
 
-        # TODO: aggregates in having may need to be included among the
-        # aggregation expressions
         self.having = having or []
+        self.having = [substitute_parents(x) for x in self.having]
         self._validate()
 
         TableNode.__init__(self, [table, agg_exprs, self.by, self.having])
@@ -1035,6 +1034,16 @@ class Aggregation(BlockingTableNode, HasSchema):
             if not isinstance(expr, ScalarExpr) or not expr.is_reduction():
                 raise TypeError('Passed a non-aggregate expression: %s' %
                                 repr(expr))
+
+        for expr in self.having:
+            if not isinstance(expr, BooleanScalar):
+                raise com.ExpressionError('Having clause must be boolean '
+                                          'expression, was: {!r}'
+                                          .format(expr))
+            if not isinstance(expr, ScalarExpr) or not expr.is_reduction():
+                raise com.ExpressionError('Having clause must contain a '
+                                          'reduction was: {!r}'
+                                          .format(expr))
 
         # All non-scalar refs originate from the input table
         all_exprs = self.agg_exprs + self.by + self.having
