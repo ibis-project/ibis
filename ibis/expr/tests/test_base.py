@@ -277,17 +277,13 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
     def test_add_column_existing_projection(self):
         # The "blocking" predecessor table is a projection; we can simply add
         # the column to the existing projection
-        #
-        # Also TODO: adding column to projection below "fusable" table exprs
-        # like Filter
-        pass
+        foo = (self.table.f * 2).name('foo')
+        bar = (self.table.f * 4).name('bar')
+        t2 = self.table.add_column(foo)
+        t3 = t2.add_column(bar)
 
-    def test_add_multiple_columns_coalesce(self):
-        # When adding multiple columns in succession, the resulting projection
-        # should not be a projection of a projection. We could (and probably
-        # should) handle this simplification during expression evaluation, but
-        # no reason not to simplify here when we can
-        pass
+        expected = self.table[self.table, foo, bar]
+        assert t3.equals(expected)
 
     def test_add_predicate(self):
         pred = self.table['a'] > 5
