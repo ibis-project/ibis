@@ -393,6 +393,56 @@ FROM star1 t0
     ON t0.bar_id = t2.bar_id"""
         assert result_sql == expected_sql
 
+    def test_join_between_joins(self):
+        t1 = ir.table([
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('value1', 'double'),
+        ], 'first')
+
+        t2 = ir.table([
+            ('key1', 'string'),
+            ('value2', 'double'),
+        ], 'second')
+
+        t3 = ir.table([
+            ('key2', 'string'),
+            ('key3', 'string'),
+            ('value3', 'double'),
+        ], 'third')
+
+        t4 = ir.table([
+            ('key3', 'string'),
+            ('value4', 'double')
+        ], 'fourth')
+
+        left = t1.inner_join(t2, [('key1', 'key1')])[t1, t2.value2]
+        right = t3.inner_join(t4, [('key3', 'key3')])[t3, t4.value4]
+
+        joined = left.inner_join(right, [('key2', 'key2')])
+
+        # At one point, the expression simplification was resulting in bad refs
+        # here (right.value3 referencing the table inside the right join)
+        exprs = [left, right.value3, right.value4]
+        projected = joined.projection(exprs)
+
+        result = to_sql(projected)
+        expected = """SELECT t0.*, t1.value3, t1.value4
+FROM (
+  SELECT t0.*, t1.value2
+  FROM first t0
+    INNER JOIN second t1
+      ON t0.key1 = t1.key1
+) t0
+  INNER JOIN (
+    SELECT t0.*, t1.value4
+    FROM third t0
+      INNER JOIN fourth t1
+        ON t0.key3 = t1.key3
+  ) t1
+    ON t0.key2 = t1.key2"""
+        assert result == expected
+
     def test_self_reference_simple(self):
         t1 = self.con.table('star1')
 

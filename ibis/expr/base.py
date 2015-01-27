@@ -699,7 +699,12 @@ class Join(TableNode):
         return MaterializedJoin(self)
 
     def root_tables(self):
-        return _distinct_roots(self.left, self.right)
+        if util.all_of([self.left.op(), self.right.op()],
+                       (Join, Projection)):
+            # Unraveling is not possible
+            return [self.left.op(), self.right.op()]
+        else:
+            return _distinct_roots(self.left, self.right)
 
 
 def _maybe_unwrap_ands(expr):
@@ -961,6 +966,17 @@ class ExprValidator(object):
         # TODO: in the case of a join, or multiple joins, the table_expr will
         # have multiple root input tables. We must validate set containment
         # among the root tables in the column expressions
+
+        op = expr.op()
+        if isinstance(op, TableColumn):
+            for root in self.roots:
+                if root is op.table.op():
+                    return True
+        elif isinstance(op, Projection):
+            for root in self.roots:
+                if root is op:
+                    return True
+
         expr_roots = expr._root_tables()
         for root in expr_roots:
             if id(root) not in self.root_ids:
@@ -1950,15 +1966,17 @@ class ExprSimplifier(object):
 
         # For table column references, in the event that we're on top of a
         # projection, we need to check whether the ref comes from the base
-        # table schema or is a derived field.
+        # table schema or is a derived field. If we've projected out of
+        # something other than a physical table, then lifting should not occur
         if isinstance(node, TableColumn):
             tnode = node.table.op()
             root = _base_table(tnode)
 
             if isinstance(root, Projection):
                 can_lift = False
+
                 for val in root.selections:
-                    if (isinstance(val, TableExpr) and
+                    if (isinstance(val.op(), PhysicalTable) and
                         node.name in val.schema()):
 
                         can_lift = True
@@ -1967,6 +1985,11 @@ class ExprSimplifier(object):
                           and node.name == val.get_name()):
                         can_lift = True
                         lifted_root = self.lift(val.op().table)
+
+                # HACK: If we've projected a join, do not lift the children
+                # TODO: what about limits and other things?
+                if isinstance(root.table.op(), Join):
+                    can_lift = False
 
                 if can_lift:
                     lifted_node = TableColumn(node.name, lifted_root)
@@ -2003,9 +2026,6 @@ class ExprSimplifier(object):
 
         return lifted_arg
 
-    def _sub(self, expr):
-        return ExprSimplifier(expr, lift_memo=self.lift_memo).get_result()
-
     def lift(self, expr):
         key = id(expr.op())
         if key in self.lift_memo:
@@ -2020,10 +2040,22 @@ class ExprSimplifier(object):
             left_lifted = self.lift(op.left)
             right_lifted = self.lift(op.right)
 
+            unchanged = (left_lifted is op.left and
+                         right_lifted is op.right)
+
             # Fix predicates
-            lifted_preds = [self._sub(x) for x in op.predicates]
-            lifted_join = type(op)(left_lifted, right_lifted, lifted_preds)
-            result = TableExpr(lifted_join)
+            lifted_preds = []
+            for x in op.predicates:
+                subbed = self._sub(x)
+                if subbed is not x:
+                    unchanged = False
+                lifted_preds.append(subbed)
+
+            if not unchanged:
+                lifted_join = type(op)(left_lifted, right_lifted, lifted_preds)
+                result = TableExpr(lifted_join)
+            else:
+                result = expr
         elif isinstance(op, (TableNode, HasSchema)):
             return expr
         else:
@@ -2033,6 +2065,9 @@ class ExprSimplifier(object):
         # avoid excessive graph-walking
         self.lift_memo[key] = result
         return result
+
+    def _sub(self, expr):
+        return ExprSimplifier(expr, lift_memo=self.lift_memo).get_result()
 
 
 def substitute_parents(expr, lift_memo=None):
