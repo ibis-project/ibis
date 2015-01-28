@@ -314,7 +314,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         # #59, if we are not careful, we can obtain broken refs
         interm = self.table[pred1]
-        result = interm[interm['b'] > 0]
+        result = interm.filter([interm['b'] > 0])
         assert result.equals(expected)
 
     def test_projection_predicate_pushdown(self):

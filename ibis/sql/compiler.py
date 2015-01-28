@@ -37,10 +37,11 @@ class QueryContext(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, indent=2):
         self.table_aliases = {}
         self.extracted_subexprs = set()
         self.subquery_memo = {}
+        self.indent = indent
 
     @property
     def top_context(self):
@@ -109,7 +110,7 @@ class SubContext(QueryContext):
 
     def __init__(self, parent):
         self.parent = parent
-        super(SubContext, self).__init__()
+        super(SubContext, self).__init__(indent=parent.indent)
 
     @property
     def top_context(self):
@@ -186,6 +187,11 @@ class Select(object):
 
         self._extract_subqueries(context)
 
+        # What's semantically contained in the filter predicates may need to be
+        # rewritten. Not sure if this is the right place to do this, but a
+        # starting point
+        self._analyze_where_clauses()
+
         self.populate_context(context)
 
         # If any subqueries, translate them and add to beginning of query as
@@ -254,6 +260,17 @@ class Select(object):
         self.subqueries = _extract_subqueries(self)
         for expr in self.subqueries:
             context.set_extracted(expr)
+
+    def _analyze_where_clauses(self):
+        # Various kinds of semantically valid WHERE clauses may need to be
+        # rewritten into a form that we can actually translate into valid SQL.
+        new_where = []
+        for expr in self.where:
+            helper = _WhereRewrites(self, expr)
+            new_expr = helper.get_result()
+            new_where.append(new_expr)
+
+        self.where = new_where
 
     def format_subqueries(self, context):
         if len(self.subqueries) == 0:
@@ -606,6 +623,62 @@ class _ExtractSubqueries(object):
         self.visit(expr.op().table)
 
 
+class _WhereRewrites(object):
+
+    # Dumping ground for analysis of WHERE expressions
+    # - Subquery extraction
+    # - Conversion to explicit semi/anti joins
+    # - Rewrites to generate subqueries
+
+    def __init__(self, query, expr):
+        self.query = query
+        self.expr = expr
+
+    def get_result(self):
+        expr = self.visit(self.expr)
+        return expr
+
+    def visit(self, expr):
+        op = expr.op()
+
+        unchanged = True
+        if isinstance(expr, ir.ScalarExpr):
+            if expr.is_reduction():
+                return self._rewrite_reduction(expr)
+
+        if isinstance(op, ir.BinaryOp):
+            left = self.visit(op.left)
+            right = self.visit(op.right)
+            unchanged = left is op.left and right is op.right
+            if not unchanged:
+                return type(expr)(type(op)(left, right))
+            else:
+                return expr
+        elif isinstance(op, (ir.TableColumn, ir.Literal)):
+            return expr
+
+    def _rewrite_reduction(self, expr):
+        # Find the table that this reduction references.
+
+        # TODO: what about reductions that reference a join that isn't visible
+        # at this level? Means we probably have the wrong design, but will have
+        # to revisit when it becomes a problem.
+        table = _find_base_table(expr)
+        aggregation = table.aggregate([expr.name('tmp')])
+        return aggregation.to_array()
+
+
+def _find_base_table(expr):
+    if isinstance(expr, ir.TableExpr):
+        return expr
+
+    for arg in expr.op().args:
+        if isinstance(arg, ir.Expr):
+            r = _find_base_table(arg)
+            if isinstance(r, ir.TableExpr):
+                return r
+
+
 def _join_not_none(sep, pieces):
     pieces = [x for x in pieces if x is not None]
     return sep.join(pieces)
@@ -740,11 +813,10 @@ class QueryASTBuilder(object):
     def _visit_Filter(self, expr, toplevel=False):
         op = expr.op()
 
-        subbed = self._sub(expr)
-        self.filters.extend(subbed.op().predicates)
+        self.filters.extend(op.predicates)
         if toplevel:
-            self.select_set = [subbed]
-            self.table_set = subbed.op().table
+            self.select_set = [expr]
+            self.table_set = op.table
 
         self._visit(op.table)
 
@@ -785,7 +857,7 @@ class QueryASTBuilder(object):
     def _visit_PhysicalTable(self, expr, toplevel=False):
         if toplevel:
             self.select_set = [expr]
-            self.table_set = ir.substitute_parents(expr, self.sub_memo)
+            self.table_set = self._sub(expr)
 
     def _visit_SelfReference(self, expr, toplevel=False):
         op = expr.op()
@@ -974,6 +1046,17 @@ def _quote_field(name, quotechar='`'):
     else:
         return name
 
+def _trans_literal(translator, expr):
+    if isinstance(expr, ir.BooleanValue):
+        typeclass = 'boolean'
+    elif isinstance(expr, ir.StringValue):
+        typeclass = 'string'
+    elif isinstance(expr, ir.NumericValue):
+        typeclass = 'number'
+    else:
+        raise NotImplementedError
+
+    return _literal_formatters[typeclass](expr)
 
 _literal_formatters = {
     'boolean': _boolean_literal_format,
@@ -1009,19 +1092,34 @@ _binary_infix_ops = {
     ir.Multiply: _binary_infix_op('*'),
     ir.Divide: _binary_infix_op('/'),
     ir.Power: _binary_infix_op('^'),
-    ir.And: _binary_infix_op('AND'),
-    ir.Or: _binary_infix_op('OR'),
-    ir.Xor: _xor,
+
+    # Comparisons
     ir.Equals: _binary_infix_op('='),
     ir.NotEquals: _binary_infix_op('!='),
     ir.GreaterEqual: _binary_infix_op('>='),
     ir.Greater: _binary_infix_op('>'),
     ir.LessEqual: _binary_infix_op('<='),
-    ir.Less: _binary_infix_op('<')
+    ir.Less: _binary_infix_op('<'),
+
+    # Boolean comparisons
+    ir.And: _binary_infix_op('AND'),
+    ir.Or: _binary_infix_op('OR'),
+    ir.Xor: _xor,
 }
 
+
+def _table_array_view(translator, expr):
+    ctx = translator.context
+    table = expr.op().table
+    query = ctx.get_formatted_query(table)
+    return '(\n{}\n)'.format(util.indent(query, ctx.indent))
+
+
 _other_ops = {
-    ir.Cast: _cast
+    ir.Literal: _trans_literal,
+    ir.Cast: _cast,
+
+    ir.TableArrayView: _table_array_view
 }
 
 
@@ -1071,9 +1169,7 @@ class ExprTranslator(object):
         # The operation node type the typed expression wraps
         op = expr.op()
 
-        if isinstance(op, ir.Literal):
-            return self._trans_literal(expr)
-        elif isinstance(op, ir.Parameter):
+        if isinstance(op, ir.Parameter):
             return self._trans_param(expr)
         elif isinstance(op, ir.TableColumn):
             return self._trans_column_ref(expr)
@@ -1085,18 +1181,6 @@ class ExprTranslator(object):
             return formatter(self, expr)
         else:
             raise NotImplementedError('No translator rule for {0}'.format(op))
-
-    def _trans_literal(self, expr):
-        if isinstance(expr, ir.BooleanValue):
-            typeclass = 'boolean'
-        elif isinstance(expr, ir.StringValue):
-            typeclass = 'string'
-        elif isinstance(expr, ir.NumericValue):
-            typeclass = 'number'
-        else:
-            raise NotImplementedError
-
-        return _literal_formatters[typeclass](expr)
 
     def _trans_param(self, expr):
         raise NotImplementedError

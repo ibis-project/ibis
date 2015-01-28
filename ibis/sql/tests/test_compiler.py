@@ -835,7 +835,68 @@ GROUP BY 1"""
         pass
 
     def test_subquery_in_filter_predicate(self):
-        # E.g. comparing against some scalar aggregate value
+        # E.g. comparing against some scalar aggregate value. See Ibis #43
+        t1 = self.con.table('star1')
+
+        pred = t1.f > t1.f.mean()
+        expr = t1[pred]
+
+        # This brought out another expression rewriting bug, since the filtered
+        # table isn't found elsewhere in the expression.
+        pred2 = t1.f > t1[t1.foo_id == 'foo'].f.mean()
+        expr2 = t1[pred2]
+
+        result = to_sql(expr)
+        expected = """SELECT *
+FROM star1
+WHERE f > (
+  SELECT avg(f) AS tmp
+  FROM star1
+)"""
+        assert result == expected
+
+        result = to_sql(expr2)
+        expected = """SELECT *
+FROM star1
+WHERE f > (
+  SELECT avg(f) AS tmp
+  FROM star1
+  WHERE foo_id = 'foo'
+)"""
+        assert result == expected
+
+    def test_filter_subquery_derived_reduction(self):
+        t1 = self.con.table('star1')
+
+        # Reduction can be nested inside some scalar expression
+        pred3 = t1.f > t1[t1.foo_id == 'foo'].f.mean().log()
+        pred4 = t1.f > (t1[t1.foo_id == 'foo'].f.mean().log() + 1)
+
+        expr3 = t1[pred3]
+        result = to_sql(expr3)
+        expected = """SELECT *
+FROM star1
+WHERE f > (
+  SELECT log(avg(f)) AS tmp
+  FROM star1
+  WHERE foo_id = 'foo'
+)"""
+        assert result == expected
+
+        expr4 = t1[pred4]
+
+        result = to_sql(expr4)
+        expected = """SELECT *
+FROM star1
+WHERE f > (
+  SELECT log(avg(f)) + 1 AS tmp
+  FROM star1
+  WHERE foo_id = 'foo'
+)"""
+        assert result == expected
+
+    def test_subquery_in_where_from_another_table(self):
+        # TODO: this will currently break at the IR level
         pass
 
 

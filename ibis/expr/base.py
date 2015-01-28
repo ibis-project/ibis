@@ -42,7 +42,7 @@
 
 import operator
 
-from ibis.common import RelationError
+from ibis.common import RelationError, ExpressionError
 import ibis.common as com
 import ibis.util as util
 
@@ -78,6 +78,9 @@ class Schema(object):
 
     def __repr__(self):
         return self._repr()
+
+    def __len__(self):
+        return len(self.names)
 
     def _repr(self):
         return "%s(%s, %s)" % (type(self).__name__, repr(self.names),
@@ -331,11 +334,21 @@ class ArrayNode(ValueNode):
         self._ensure_array(expr)
         ValueNode.__init__(self, [expr])
 
+    def output_type(self):
+        return NotImplementedError
+
+    def to_expr(self):
+        klass = self.output_type()
+        return klass(self)
+
 
 class TableNode(Node):
 
     def get_type(self, name):
         return self.get_schema().get_type(name)
+
+    def to_expr(self):
+        return TableExpr(self)
 
 
 class BlockingTableNode(TableNode):
@@ -397,6 +410,34 @@ class TableColumn(ArrayNode):
 
     def resolve_name(self):
         return self.name
+
+    def root_tables(self):
+        return self.table._root_tables()
+
+    def to_expr(self):
+        ctype = self.table._get_type(self.name)
+        klass = array_class(ctype)
+        return klass(self, name=self.name)
+
+
+class TableArrayView(ArrayNode):
+    """
+    (Temporary?) Helper operation class for SQL translation (fully formed table
+    subqueries to be viewed as arrays)
+    """
+
+    def __init__(self, table):
+        if not isinstance(table, TableExpr):
+            raise ExpressionError('Requires table')
+
+        schema = table.schema()
+        if len(schema) > 1:
+            raise ExpressionError('Table can only have a single column')
+
+        self.table = table
+        self.name = schema.names[0]
+
+        Node.__init__(self, [table])
 
     def root_tables(self):
         return self.table._root_tables()
@@ -550,10 +591,6 @@ class Reduction(ArrayNode):
     def resolve_name(self):
         return self.arg.get_name()
 
-    def to_expr(self):
-        klass = self.output_type()
-        return klass(self)
-
 
 class Count(Reduction):
     # TODO: count(col) takes down Impala, must always do count(*) in generated
@@ -654,8 +691,7 @@ class Join(TableNode):
         for pred in predicates:
             if isinstance(pred, tuple):
                 if len(pred) != 2:
-                    raise com.ExpressionError('Join key tuple must be '
-                                              'length 2')
+                    raise ExpressionError('Join key tuple must be length 2')
                 lk, rk = pred
                 lk = self.left._ensure_expr(lk)
                 rk = self.right._ensure_expr(rk)
@@ -664,7 +700,7 @@ class Join(TableNode):
                 pred = substitute_parents(pred)
 
             if not isinstance(pred, BooleanArray):
-                raise com.ExpressionError('Join predicate must be comparison')
+                raise ExpressionError('Join predicate must be comparison')
 
             preds = _maybe_unwrap_ands(pred)
             result.extend(preds)
@@ -847,7 +883,7 @@ class SortKey(object):
 
     def __init__(self, expr, ascending=True):
         if not isinstance(expr, ArrayExpr):
-            raise com.ExpressionError('Must be an array/column expression')
+            raise ExpressionError('Must be an array/column expression')
 
         self.expr = expr
         self.ascending = ascending
@@ -1009,20 +1045,26 @@ class Aggregation(BlockingTableNode, HasSchema):
         # For tables, like joins, that are not materialized
         self.table = table
 
-        self.agg_exprs = agg_exprs
+        self.agg_exprs = self._rewrite_exprs(agg_exprs)
 
         by = by or []
         self.by = self.table._resolve(by)
-        self.by = [substitute_parents(x) for x in self.by]
+        self.by = self._rewrite_exprs(self.by)
 
         self.having = having or []
-        self.having = [substitute_parents(x) for x in self.having]
+        self.having = self._rewrite_exprs(self.having)
         self._validate()
 
         TableNode.__init__(self, [table, agg_exprs, self.by, self.having])
 
         schema = self._result_schema()
         HasSchema.__init__(self, schema)
+
+    def _rewrite_exprs(self, what):
+        if isinstance(what, (list, tuple)):
+            return [substitute_parents(x) for x in what]
+        else:
+            return substitute_parents(what)
 
     def substitute_table(self, table_expr):
         return Aggregation(table_expr, self.agg_exprs, by=self.by,
@@ -1037,13 +1079,13 @@ class Aggregation(BlockingTableNode, HasSchema):
 
         for expr in self.having:
             if not isinstance(expr, BooleanScalar):
-                raise com.ExpressionError('Having clause must be boolean '
-                                          'expression, was: {!r}'
-                                          .format(expr))
+                raise ExpressionError('Having clause must be boolean '
+                                      'expression, was: {!r}'
+                                      .format(expr))
             if not isinstance(expr, ScalarExpr) or not expr.is_reduction():
-                raise com.ExpressionError('Having clause must contain a '
-                                          'reduction was: {!r}'
-                                          .format(expr))
+                raise ExpressionError('Having clause must contain a '
+                                      'reduction was: {!r}'
+                                      .format(expr))
 
         # All non-scalar refs originate from the input table
         all_exprs = self.agg_exprs + self.by + self.having
@@ -1491,6 +1533,13 @@ class TableExpr(Expr):
             raise Exception('Table operation is not yet materialized')
         return self.op().get_schema()
 
+    def to_array(self):
+        """
+        Single column tables can be viewed as arrays.
+        """
+        op = TableArrayView(self)
+        return op.to_expr()
+
     def _is_materialized(self):
         # The operation produces a known schema
         op = self.op()
@@ -1600,19 +1649,7 @@ class TableExpr(Expr):
         -------
         filtered_expr : TableExpr
         """
-        # Fusion opportunity
-        parent = self.op()
-
-        # This prevents the broken ref issue (described in more detail in
-        # #59). If substitution is not possible, we will expect an error
-        # during filter validation
-        clean_preds = [substitute_parents(x) for x in predicates]
-
-        if isinstance(parent, Filter):
-            op = Filter(parent.table, parent.predicates + clean_preds)
-        else:
-            op = apply_filter(self, clean_preds)
-
+        op = apply_filter(self, predicates)
         return TableExpr(op)
 
     def aggregate(self, agg_exprs, by=None, having=None):
@@ -1955,6 +1992,89 @@ def table(schema, name=None):
 # Some expression metaprogramming / graph transformations to support
 # compilation later
 
+def sub_for(expr, substitutions):
+    helper = _Substitutor(expr, substitutions)
+    return helper.get_result()
+
+
+
+class _Substitutor(object):
+
+    def __init__(self, expr, substitutions, sub_memo=None):
+        self.expr = expr
+
+        self.substitutions = substitutions
+
+        self._id_to_expr = {}
+        for k, v in substitutions:
+            self._id_to_expr[self._key(k)] = v
+
+        self.sub_memo = sub_memo or {}
+        self.unchanged = True
+
+    def get_result(self):
+        expr = self.expr
+        node = expr.op()
+
+        subbed_args = []
+        for arg in node.args:
+            if isinstance(arg, (tuple, list)):
+                subbed_arg = [self._sub_arg(x) for x in arg]
+            else:
+                subbed_arg = self._sub_arg(arg)
+            subbed_args.append(subbed_arg)
+
+        # Do not modify unnecessarily
+        if self.unchanged:
+            return expr
+
+        subbed_node = type(node)(*subbed_args)
+        if isinstance(expr, ValueExpr):
+            result = type(expr)(subbed_node, name=expr._name)
+        else:
+            result = type(expr)(subbed_node)
+
+        return result
+
+    def _sub_arg(self, arg):
+        if isinstance(arg, Expr):
+            subbed_arg = self.sub(arg)
+            if subbed_arg is not arg:
+                self.unchanged = False
+        else:
+            # a string or some other thing
+            subbed_arg = arg
+
+        return subbed_arg
+
+    def _key(self, expr):
+        return id(expr.op())
+
+    def sub(self, expr):
+        key = self._key(expr)
+
+        if key in self.sub_memo:
+            return self.sub_memo[key]
+
+        if key in self._id_to_expr:
+            return self._id_to_expr[key]
+
+        result = self._sub(expr)
+
+        self.sub_memo[key] = result
+        return result
+
+    def _sub(self, expr):
+        helper = _Substitutor(expr, self.substitutions,
+                              sub_memo=self.sub_memo)
+        return helper.get_result()
+
+
+def substitute_parents(expr, lift_memo=None):
+    rewriter = ExprSimplifier(expr, lift_memo=lift_memo)
+    return rewriter.get_result()
+
+
 class ExprSimplifier(object):
     """
     Rewrite the input expression by replacing any table expressions part of a
@@ -2079,10 +2199,6 @@ class ExprSimplifier(object):
         return ExprSimplifier(expr, lift_memo=self.lift_memo).get_result()
 
 
-def substitute_parents(expr, lift_memo=None):
-    rewriter = ExprSimplifier(expr, lift_memo=lift_memo)
-    return rewriter.get_result()
-
 
 def _base_table(table_node):
     # Find the aggregate or projection root. Not proud of this
@@ -2097,7 +2213,15 @@ def apply_filter(expr, predicates):
     # easily
 
     op = expr.op()
-    if isinstance(op, (Projection, Aggregation)):
+
+    if isinstance(op, Filter):
+        # Potential fusion opportunity. The predicates may need to be rewritten
+        # in terms of the child table. This prevents the broken ref issue
+        # (described in more detail in #59)
+        predicates = [sub_for(x, [(expr, op.table)]) for x in predicates]
+        return Filter(op.table, op.predicates + predicates)
+
+    elif isinstance(op, (Projection, Aggregation)):
         # if any of the filter predicates have the parent expression among
         # their roots, then pushdown (at least of that predicate) is not
         # possible
