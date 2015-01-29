@@ -479,6 +479,10 @@ class _TableSetFormatter(object):
 
         jname = self._join_names[type(op)]
 
+        # Impala requires this
+        if len(op.predicates) == 0:
+            jname = self._join_names[ir.CrossJoin]
+
         # Read off tables and join predicates left-to-right in
         # depth-first order
         if isinstance(left, ir.Join):

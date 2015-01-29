@@ -443,6 +443,27 @@ FROM (
     ON t0.key2 = t1.key2"""
         assert result == expected
 
+    def test_join_no_predicates_for_impala(self):
+        # Impala requires that joins without predicates be written explicitly
+        # as CROSS JOIN, since result sets can accidentally get too large if a
+        # query is executed before predicates are written
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        joined2 = t1.cross_join(t2)[[t1]]
+
+        expected = """SELECT t0.*
+FROM star1 t0
+  CROSS JOIN star2 t1"""
+        result2 = to_sql(joined2)
+        assert result2 == expected
+
+        for jtype in ['inner_join', 'left_join', 'outer_join']:
+            joined = getattr(t1, jtype)(t2)[[t1]]
+
+            result = to_sql(joined)
+            assert result == expected
+
     def test_self_reference_simple(self):
         t1 = self.con.table('star1')
 

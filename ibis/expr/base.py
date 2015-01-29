@@ -692,7 +692,7 @@ class Join(TableNode):
     def _clean_predicates(self, predicates):
         result = []
 
-        if not isinstance(predicates, (list)):
+        if not isinstance(predicates, (list, tuple)):
             predicates = [predicates]
 
         for pred in predicates:
@@ -1622,21 +1622,21 @@ class TableExpr(Expr):
         op = CrossJoin(self, other)
         return TableExpr(op)
 
-    def inner_join(self, other, predicates, prefixes=None):
+    def inner_join(self, other, predicates=(), prefixes=None):
         """
 
         """
         op = InnerJoin(self, other, predicates)
         return TableExpr(op)
 
-    def left_join(self, other, predicates, prefixes=None):
+    def left_join(self, other, predicates=(), prefixes=None):
         """
 
         """
         op = LeftJoin(self, other, predicates)
         return TableExpr(op)
 
-    def outer_join(self, other, predicates, prefixes=None):
+    def outer_join(self, other, predicates=(), prefixes=None):
         """
 
         """
