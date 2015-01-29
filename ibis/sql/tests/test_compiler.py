@@ -949,6 +949,58 @@ WHERE f > (
         # TODO: this will currently break at the IR level
         pass
 
+    def test_topk_operation_to_semi_join(self):
+        # TODO: top K with filter in place
+
+        table = ir.table([
+            ('foo', 'string'),
+            ('bar', 'string'),
+            ('city', 'string'),
+            ('v1', 'double'),
+            ('v2', 'double'),
+        ], 'table')
+
+        what = table.city.topk(10, by=table.v2.mean())
+        filtered = table[what]
+
+        query = to_sql(filtered)
+        expected = """SELECT t0.*
+FROM table t0
+  LEFT SEMI JOIN (
+    SELECT city, avg(v2) AS __tmp__
+    FROM table
+    GROUP BY 1
+    ORDER BY __tmp__ DESC
+    LIMIT 10
+  ) t1
+    ON t0.city = t1.city"""
+        assert query == expected
+
+        # Test the default metric (count)
+
+        what = table.city.topk(10)
+        filtered2 = table[what]
+        query = to_sql(filtered2)
+        expected = """SELECT t0.*
+FROM table t0
+  LEFT SEMI JOIN (
+    SELECT city, count(city) AS __tmp__
+    FROM table
+    GROUP BY 1
+    ORDER BY __tmp__ DESC
+    LIMIT 10
+  ) t1
+    ON t0.city = t1.city"""
+        assert query == expected
+
+    def test_bottomk(self):
+        pass
+
+    def test_topk_antijoin(self):
+        # Get the "other" category somehow
+        pass
+
+
 
 class TestASTTransformations(unittest.TestCase):
 

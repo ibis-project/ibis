@@ -1336,6 +1336,31 @@ class ReplaceValues(ArrayNode):
     pass
 
 
+class TopK(ArrayNode):
+
+    def __init__(self, arg, k, by=None):
+        if by is None:
+            by = arg.count()
+
+        if not isinstance(arg, ArrayExpr):
+            raise TypeError(arg)
+
+        if not isinstance(k, int) or k < 0:
+            raise ValueError('k must be positive integer, was: {}'.format(k))
+
+        self.arg = arg
+        self.k = k
+        self.by = by
+
+        Node.__init__(self, [arg, k, by])
+
+    def root_tables(self):
+        return self.arg._root_tables()
+
+    def to_expr(self):
+        return BooleanArray(self)
+
+
 def _binop_expr(name, klass):
     def f(self, other):
         other = as_value_expr(other)
@@ -1498,6 +1523,19 @@ class ArrayExpr(ValueExpr):
 
     def parent(self):
         return self._arg
+
+    def topk(self, k, by=None):
+        """
+        Produces
+        """
+        op = TopK(self, k, by=by)
+        return op.to_expr()
+
+    def count(self):
+        return Count(self).to_expr()
+
+    def bottomk(self, k, by=None):
+        raise NotImplementedError
 
     def to_projection(self):
         """

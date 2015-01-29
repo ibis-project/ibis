@@ -27,6 +27,27 @@ import ibis.util as util
 
 from ibis.sql.exprs import ExprTranslator
 
+
+def build_ast(expr):
+    builder = QueryASTBuilder(expr)
+    return builder.get_result()
+
+
+def translate_expr(expr, context=None, named=False):
+    translator = ExprTranslator(expr, context=context, named=named)
+    return translator.get_result()
+
+
+def _get_query(expr):
+    ast = build_ast(expr)
+    return ast.queries[0]
+
+
+def to_sql(expr, context=None):
+    query = _get_query(expr)
+    return query.compile(context=context)
+
+
 #----------------------------------------------------------------------
 # The QueryContext (temporary name) will store useful information like table
 # alias names for converting value expressions to SQL.
@@ -188,11 +209,6 @@ class Select(object):
 
         self._extract_subqueries(context)
 
-        # What's semantically contained in the filter predicates may need to be
-        # rewritten. Not sure if this is the right place to do this, but a
-        # starting point
-        self._analyze_where_clauses()
-
         self.populate_context(context)
 
         # If any subqueries, translate them and add to beginning of query as
@@ -261,17 +277,6 @@ class Select(object):
         self.subqueries = _extract_subqueries(self)
         for expr in self.subqueries:
             context.set_extracted(expr)
-
-    def _analyze_where_clauses(self):
-        # Various kinds of semantically valid WHERE clauses may need to be
-        # rewritten into a form that we can actually translate into valid SQL.
-        new_where = []
-        for expr in self.where:
-            helper = _WhereRewrites(self, expr)
-            new_expr = helper.get_result()
-            new_where.append(new_expr)
-
-        self.where = new_where
 
     def format_subqueries(self, context):
         if len(self.subqueries) == 0:
@@ -632,53 +637,6 @@ class _ExtractSubqueries(object):
         self.visit(expr.op().table)
 
 
-class _WhereRewrites(object):
-
-    # Dumping ground for analysis of WHERE expressions
-    # - Subquery extraction
-    # - Conversion to explicit semi/anti joins
-    # - Rewrites to generate subqueries
-
-    def __init__(self, query, expr):
-        self.query = query
-        self.expr = expr
-
-    def get_result(self):
-        expr = self.visit(self.expr)
-        return expr
-
-    def visit(self, expr):
-        op = expr.op()
-
-        unchanged = True
-        if isinstance(expr, ir.ScalarExpr):
-            if expr.is_reduction():
-                return self._rewrite_reduction(expr)
-
-        if isinstance(op, ir.BinaryOp):
-            left = self.visit(op.left)
-            right = self.visit(op.right)
-            unchanged = left is op.left and right is op.right
-            if not unchanged:
-                return type(expr)(type(op)(left, right))
-            else:
-                return expr
-        elif isinstance(op, (ir.Between, ir.TableColumn, ir.Literal)):
-            return expr
-        else:
-            raise NotImplementedError(type(op))
-
-    def _rewrite_reduction(self, expr):
-        # Find the table that this reduction references.
-
-        # TODO: what about reductions that reference a join that isn't visible
-        # at this level? Means we probably have the wrong design, but will have
-        # to revisit when it becomes a problem.
-        table = _find_base_table(expr)
-        aggregation = table.aggregate([expr.name('tmp')])
-        return aggregation.to_array()
-
-
 def _find_base_table(expr):
     if isinstance(expr, ir.TableExpr):
         return expr
@@ -693,6 +651,13 @@ def _find_base_table(expr):
 def _join_not_none(sep, pieces):
     pieces = [x for x in pieces if x is not None]
     return sep.join(pieces)
+
+
+class QueryAST(object):
+
+    def __init__(self, context, queries):
+        self.context = context
+        self.queries = queries
 
 
 class QueryASTBuilder(object):
@@ -754,11 +719,100 @@ class QueryASTBuilder(object):
 
     def _build_select(self):
         self._collect_elements()
+
+        # What's semantically contained in the filter predicates may need to be
+        # rewritten. Not sure if this is the right place to do this, but a
+        # starting point
+        self._analyze_where_clauses()
+
         return Select(self.table_set, self.select_set, where=self.filters,
                       group_by=self.group_by,
                       having=self.having, limit=self.limit,
                       order_by=self.sort_by,
                       parent_expr=self.expr)
+
+    def _analyze_where_clauses(self):
+        # Various kinds of semantically valid WHERE clauses may need to be
+        # rewritten into a form that we can actually translate into valid SQL.
+        new_where = []
+        for expr in self.filters:
+            new_expr = self._visit_where(expr)
+
+            if new_expr is not None:
+                new_where.append(new_expr)
+
+        self.filters = new_where
+
+    def _visit_where(self, expr):
+        # Dumping ground for analysis of WHERE expressions
+        # - Subquery extraction
+        # - Conversion to explicit semi/anti joins
+        # - Rewrites to generate subqueries
+
+        op = expr.op()
+
+        method = '_visit_{}'.format(type(op).__name__)
+        if hasattr(self, method):
+            f = getattr(self, method)
+            return f(expr)
+
+        unchanged = True
+        if isinstance(expr, ir.ScalarExpr):
+            if expr.is_reduction():
+                return self._rewrite_reduction(expr)
+
+        if isinstance(op, ir.BinaryOp):
+            left = self._visit_where(op.left)
+            right = self._visit_where(op.right)
+            unchanged = left is op.left and right is op.right
+            if not unchanged:
+                return type(expr)(type(op)(left, right))
+            else:
+                return expr
+        elif isinstance(op, (ir.Between, ir.TableColumn, ir.Literal)):
+            return expr
+        else:
+            raise NotImplementedError(type(op))
+
+    def _rewrite_reduction(self, expr):
+        # Find the table that this reduction references.
+
+        # TODO: what about reductions that reference a join that isn't visible
+        # at this level? Means we probably have the wrong design, but will have
+        # to revisit when it becomes a problem.
+        table = _find_base_table(expr)
+        aggregation = table.aggregate([expr.name('tmp')])
+        return aggregation.to_array()
+
+    def _visit_TopK(self, expr):
+        # Top K is rewritten as an
+        # - aggregation
+        # - sort by
+        # - limit
+        # - left semi join with table set
+
+        metric_name = '__tmp__'
+
+        op = expr.op()
+
+        metrics = [op.by.name(metric_name)]
+        rank_set = (self.table_set.aggregate(metrics, by=[op.arg])
+                    .sort_by([(metric_name, False)])
+                    .limit(op.k))
+
+        pred = (op.arg == getattr(rank_set, op.arg.get_name()))
+        filtered = self.table_set.semi_join(rank_set, [pred])
+
+        # Now, fix up the now broken select set. Is this necessary?
+        # new_select_set = []
+        # for x in self.select_set:
+        #     new_expr = ir.sub_for(x, [(self.table_set, filtered)])
+        #     new_select_set.append(new_expr)
+        # self.select_set = new_select_set
+
+        self.table_set = filtered
+
+        return None
 
     def _collect_elements(self):
         # If expr is a ValueExpr, we must seek out the TableExprs that it
@@ -826,24 +880,21 @@ class QueryASTBuilder(object):
 
         self.filters.extend(op.predicates)
         if toplevel:
-            self.select_set = [expr]
+            self.select_set = [op.table]
             self.table_set = op.table
 
         self._visit(op.table)
 
     def _visit_Limit(self, expr, toplevel=False):
+        if not toplevel:
+            return
+
         op = expr.op()
-        if toplevel:
-            subbed = self._sub(expr)
-
-            self.select_set = [subbed]
-            self.table_set = subbed.op().table
-            self.limit = {
-                'n': op.n,
-                'offset': op.offset
-            }
-
-            self._visit(op.table)
+        self.limit = {
+            'n': op.n,
+            'offset': op.offset
+        }
+        self._visit(op.table, toplevel=toplevel)
 
     def _visit_Join(self, expr, toplevel=False):
         op = expr.op()
@@ -914,29 +965,3 @@ class QueryASTBuilder(object):
 
     def _generate_teardown_queries(self):
         return []
-
-
-class QueryAST(object):
-
-    def __init__(self, context, queries):
-        self.context = context
-        self.queries = queries
-
-
-def build_ast(expr):
-    builder = QueryASTBuilder(expr)
-    return builder.get_result()
-
-
-
-def translate_expr(expr, context=None, named=False):
-    translator = ExprTranslator(expr, context=context, named=named)
-    return translator.get_result()
-
-def _get_query(expr):
-    ast = build_ast(expr)
-    return ast.queries[0]
-
-def to_sql(expr, context=None):
-    query = _get_query(expr)
-    return query.compile(context=context)
