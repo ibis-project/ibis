@@ -402,6 +402,10 @@ class TableColumn(ArrayNode):
 
     def __init__(self, name, table_expr):
         Node.__init__(self, [name, table_expr])
+
+        if name not in table_expr.schema():
+            raise KeyError("'{}' is not a field".format(name))
+
         self.name = name
         self.table = table_expr
 
