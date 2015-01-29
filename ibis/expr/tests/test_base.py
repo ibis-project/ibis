@@ -24,7 +24,6 @@ import ibis.expr.base as operations
 from ibis.expr.format import ExprFormatter
 from ibis.expr.tests.mocks import MockConnection
 
-
 import ibis.common as com
 
 

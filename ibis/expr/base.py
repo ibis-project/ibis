@@ -507,6 +507,13 @@ def _shape_like(arg, out_type):
         return array_class(out_type)
 
 
+def _shape_like_args(args, out_type):
+    if util.any_of(args, ArrayExpr):
+        return array_class(out_type)
+    else:
+        return scalar_class(out_type)
+
+
 class RealUnaryOp(UnaryOp):
 
     _allow_boolean = True
@@ -1134,10 +1141,7 @@ class Divide(BinaryOp):
         if not util.all_of(self.args, NumericValue):
             raise TypeError('One argument was non-numeric')
 
-        if util.any_of(self.args, ArrayExpr):
-            return DoubleArray
-        else:
-            return DoubleScalar
+        return _shape_like_args(self.args, 'double')
 
 
 class LogicalBinaryOp(BinaryOp):
@@ -1145,8 +1149,7 @@ class LogicalBinaryOp(BinaryOp):
     def output_type(self):
         if not util.all_of(self.args, BooleanValue):
             raise TypeError('Only valid with boolean data')
-        return (BooleanArray if util.any_of(self.args, ArrayExpr)
-                else BooleanScalar)
+        return _shape_like_args(self.args, 'boolean')
 
 
 class And(LogicalBinaryOp):
@@ -1165,8 +1168,7 @@ class Comparison(BinaryOp):
 
     def output_type(self):
         self._assert_can_compare()
-        return (BooleanArray if util.any_of(self.args, ArrayExpr)
-                else BooleanScalar)
+        return _shape_like_args(self.args, 'boolean')
 
     def _assert_can_compare(self):
         if not self.left._can_compare(self.right):
@@ -1210,8 +1212,7 @@ class Between(ValueNode):
 
     def output_type(self):
         self._assert_can_compare()
-        return (BooleanArray if util.any_of(self.args, ArrayExpr)
-                else BooleanScalar)
+        return _shape_like_args(self.args, 'boolean')
 
     def _assert_can_compare(self):
         if (not self.expr._can_compare(self.lower_bound) or
@@ -1232,10 +1233,7 @@ class BinaryPromoter(object):
 
     def get_result(self):
         promoted_type = self._get_type()
-        if util.any_of(self.args, ArrayExpr):
-            return array_class(promoted_type)
-        else:
-            return scalar_class(promoted_type)
+        return _shape_like_args(self.args, promoted_type)
 
     def _get_type(self):
         if util.any_of(self.args, FloatingValue):
@@ -1858,9 +1856,66 @@ class DecimalValue(NumericValue):
     _typename = 'decimal'
 
 
+
+class ExtractTimestampField(UnaryOp):
+
+    def output_type(self):
+        if not isinstance(self.arg, TimestampValue):
+            raise AssertionError
+        return _shape_like(self.arg, 'int32')
+
+    def to_expr(self):
+        klass = self.output_type()
+        return klass(self)
+
+
+class ExtractYear(ExtractTimestampField):
+    pass
+
+
+class ExtractMonth(ExtractTimestampField):
+    pass
+
+
+class ExtractDay(ExtractTimestampField):
+    pass
+
+
+class ExtractHour(ExtractTimestampField):
+    pass
+
+
+class ExtractMinute(ExtractTimestampField):
+    pass
+
+
+class ExtractSecond(ExtractTimestampField):
+    pass
+
+
+class ExtractMillisecond(ExtractTimestampField):
+    pass
+
+
+def _extract_field(name, klass):
+    def f(self):
+        op = klass(self)
+        return op.to_expr()
+    f.__name__ = name
+    return f
+
+
 class TimestampValue(ValueExpr):
 
     _typename = 'timestamp'
+
+    year = _extract_field('year', ExtractYear)
+    month = _extract_field('month', ExtractMonth)
+    day = _extract_field('day', ExtractDay)
+    hour = _extract_field('hour', ExtractHour)
+    minute = _extract_field('minute', ExtractMinute)
+    second = _extract_field('second', ExtractSecond)
+    millisecond = _extract_field('millisecond', ExtractMillisecond)
 
 
 class NumericArray(ArrayExpr, NumericValue):
@@ -1944,6 +1999,14 @@ class StringArray(ArrayExpr, StringValue):
     pass
 
 
+class TimestampScalar(ScalarExpr, TimestampValue):
+    pass
+
+
+class TimestampArray(ArrayExpr, TimestampValue):
+    pass
+
+
 _scalar_types = {
     'boolean': BooleanScalar,
     'int8': Int8Scalar,
@@ -1952,7 +2015,8 @@ _scalar_types = {
     'int64': Int64Scalar,
     'float': FloatScalar,
     'double': DoubleScalar,
-    'string': StringScalar
+    'string': StringScalar,
+    'timestamp': TimestampScalar
 }
 
 _nbytes = {
@@ -1978,7 +2042,8 @@ _array_types = {
     'int64': Int64Array,
     'float': FloatArray,
     'double': DoubleArray,
-    'string': StringArray
+    'string': StringArray,
+    'timestamp': TimestampArray
 }
 
 
@@ -2315,7 +2380,3 @@ def _maybe_fuse_projection(expr, clean_exprs):
             return Projection(root.table, root.selections + fused_exprs)
 
     return Projection(expr, clean_exprs)
-
-
-#----------------------------------------------------------------------
-# Impala table interface

@@ -27,7 +27,8 @@ class MockConnection(SQLConnection):
             ('e', 'float'),
             ('f', 'double'),
             ('g', 'string'),
-            ('h', 'boolean')
+            ('h', 'boolean'),
+            ('i', 'timestamp')
         ],
         'star1': [
             ('c', 'int32'),
