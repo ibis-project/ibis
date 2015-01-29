@@ -532,10 +532,18 @@ WHERE diff > 1"""
         result_sql = to_sql(filtered)
         assert result_sql == expected_sql
 
-    def test_where_correlation_subquery(self):
-        pass
+    def test_where_with_between(self):
+        t = self.con.table('alltypes')
 
-    def test_where_uncorrelated_subquery(self):
+        what = t.filter([t.a > 0, t.f.between(0, 1)])
+        result = to_sql(what)
+        expected = """SELECT *
+FROM alltypes
+WHERE a > 0 AND
+      f BETWEEN 0 AND 1"""
+        assert result == expected
+
+    def test_where_correlation_subquery(self):
         pass
 
     def test_simple_aggregate_query(self):
@@ -1025,6 +1033,12 @@ class TestValueExprs(unittest.TestCase):
             (b + (-(a + c)), 'b + (-(a + c))')
         ]
 
+        self._check_expr_cases(cases)
+
+    def test_between(self):
+        cases = [
+            (self.table.f.between(0, 1), 'f BETWEEN 0 AND 1')
+        ]
         self._check_expr_cases(cases)
 
     def test_isnull_notnull(self):

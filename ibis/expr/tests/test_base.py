@@ -18,6 +18,7 @@ import unittest
 
 from ibis.expr.base import ArrayExpr, TableExpr, RelationError
 import ibis.expr.base as api
+import ibis.expr.base as ir
 import ibis.expr.base as operations
 
 from ibis.expr.format import ExprFormatter
@@ -579,7 +580,7 @@ class TestBooleanUnaryOps(BasicTestCase, unittest.TestCase):
         pass
 
 
-class TestBooleanBinaryOps(BasicTestCase, unittest.TestCase):
+class TestComparisons(BasicTestCase, unittest.TestCase):
 
     def test_numbers_compare_numeric_literal(self):
         ops = ['lt', 'gt', 'ge', 'le', 'eq', 'ne']
@@ -651,6 +652,27 @@ class TestBooleanBinaryOps(BasicTestCase, unittest.TestCase):
     def test_string_compare_numeric_literal(self):
         self.assertRaises(TypeError, self.table.g.__eq__, api.literal(1.5))
         self.assertRaises(TypeError, self.table.g.__eq__, api.literal(5))
+
+    def test_between(self):
+        result = self.table.f.between(0, 1)
+
+        assert isinstance(result, ir.BooleanArray)
+        assert isinstance(result.op(), ir.Between)
+
+        # it works!
+        result = self.table.g.between('a', 'f')
+        assert isinstance(result, ir.BooleanArray)
+
+        result = api.literal(1).between(self.table.a, self.table.c)
+        assert isinstance(result, ir.BooleanArray)
+
+        result = api.literal(7).between(5, 10)
+        assert isinstance(result, ir.BooleanScalar)
+
+        # Cases where between should immediately fail, e.g. incomparables
+        self.assertRaises(TypeError, self.table.f.between, '0', '1')
+        self.assertRaises(TypeError, self.table.f.between, 0, '1')
+        self.assertRaises(TypeError, self.table.f.between, '0', 1)
 
 
 class TestBinaryArithOps(BasicTestCase, unittest.TestCase):

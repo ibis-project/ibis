@@ -654,8 +654,10 @@ class _WhereRewrites(object):
                 return type(expr)(type(op)(left, right))
             else:
                 return expr
-        elif isinstance(op, (ir.TableColumn, ir.Literal)):
+        elif isinstance(op, (ir.Between, ir.TableColumn, ir.Literal)):
             return expr
+        else:
+            raise NotImplementedError(type(op))
 
     def _rewrite_reduction(self, expr):
         # Find the table that this reduction references.
@@ -938,6 +940,14 @@ def _cast(translator, expr):
     return 'CAST({!s} AS {!s})'.format(arg, sql_type)
 
 
+def _between(translator, expr):
+    op = expr.op()
+    comp = translator.translate(op.expr)
+    lower = translator.translate(op.lower_bound)
+    upper = translator.translate(op.upper_bound)
+    return '{!s} BETWEEN {!s} AND {!s}'.format(comp, lower, upper)
+
+
 def _is_null(translator, expr):
     formatted_arg = translator.translate(expr.op().arg)
     return '{!s} IS NULL'.format(formatted_arg)
@@ -1118,7 +1128,7 @@ def _table_array_view(translator, expr):
 _other_ops = {
     ir.Literal: _trans_literal,
     ir.Cast: _cast,
-
+    ir.Between: _between,
     ir.TableArrayView: _table_array_view
 }
 

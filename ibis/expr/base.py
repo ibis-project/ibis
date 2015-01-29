@@ -1173,7 +1173,6 @@ class Comparison(BinaryOp):
             raise TypeError('Cannot compare argument types')
 
 
-
 class Equals(Comparison):
     pass
 
@@ -1196,6 +1195,28 @@ class LessEqual(Comparison):
 
 class Less(Comparison):
     pass
+
+
+class Between(ValueNode):
+
+    def __init__(self, expr, lower_bound, upper_bound):
+        self.expr = expr
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
+        ValueNode.__init__(self, [expr, lower_bound, upper_bound])
+
+    def root_tables(self):
+        return _distinct_roots(*self.args)
+
+    def output_type(self):
+        self._assert_can_compare()
+        return (BooleanArray if util.any_of(self.args, ArrayExpr)
+                else BooleanScalar)
+
+    def _assert_can_compare(self):
+        if (not self.expr._can_compare(self.lower_bound) or
+            not self.expr._can_compare(self.upper_bound)):
+            raise TypeError('Arguments are not comparable')
 
 
 class BinaryPromoter(object):
@@ -1319,9 +1340,7 @@ class ReplaceValues(ArrayNode):
 
 def _binop_expr(name, klass):
     def f(self, other):
-        if not isinstance(other, Expr):
-            other = literal(other)
-
+        other = as_value_expr(other)
         op = klass(self, other)
         return op.to_expr()
 
@@ -1333,8 +1352,7 @@ def _binop_expr(name, klass):
 def _rbinop_expr(name, klass):
     # For reflexive binary ops, like radd, etc.
     def f(self, other):
-        if not isinstance(other, Expr):
-            other = literal(other)
+        other = as_value_expr(other)
         op = klass(other, self)
         return op.to_expr()
 
@@ -1400,6 +1418,20 @@ class ValueExpr(Expr):
         else:
             return op.to_expr()
 
+    def between(self, lower, upper):
+        """
+        Check if the input expr falls between the lower/upper bounds
+        passed. Bounds are inclusive. All arguments must be comparable.
+
+        Returns
+        -------
+        is_between : BooleanValue
+        """
+        lower = as_value_expr(lower)
+        upper = as_value_expr(upper)
+        op = Between(self, lower, upper)
+        return op.to_expr()
+
     isnull = _unary_op('isnull', IsNull)
     notnull = _unary_op('notnull', NotNull)
 
@@ -1424,6 +1456,13 @@ class ValueExpr(Expr):
     __gt__ = _binop_expr('__gt__', Greater)
     __le__ = _binop_expr('__le__', LessEqual)
     __lt__ = _binop_expr('__lt__', Less)
+
+
+def as_value_expr(val):
+    if not isinstance(val, Expr):
+        val = literal(val)
+
+    return val
 
 
 class ScalarExpr(ValueExpr):
@@ -1693,8 +1732,7 @@ class TableExpr(Expr):
 
 def _boolean_binary_op(name, klass):
     def f(self, other):
-        if not isinstance(other, Expr):
-            other = literal(other)
+        other = as_value_expr(other)
 
         if not isinstance(other, BooleanValue):
             raise TypeError(other)
@@ -1709,8 +1747,7 @@ def _boolean_binary_op(name, klass):
 
 def _boolean_binary_rop(name, klass):
     def f(self, other):
-        if not isinstance(other, Expr):
-            other = literal(other)
+        other = as_value_expr(other)
 
         if not isinstance(other, BooleanValue):
             raise TypeError(other)
