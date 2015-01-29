@@ -1654,7 +1654,8 @@ class TableExpr(Expr):
         """
 
         """
-        raise NotImplementedError
+        op = LeftAntiJoin(self, other, predicates)
+        return TableExpr(op)
 
     def projection(self, col_exprs):
         """

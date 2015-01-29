@@ -464,6 +464,27 @@ FROM star1 t0
             result = to_sql(joined)
             assert result == expected
 
+    def test_semi_anti_joins(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        joined = t1.semi_join(t2, [t1.foo_id == t2.foo_id])[[t1]]
+
+        result = to_sql(joined)
+        expected = """SELECT t0.*
+FROM star1 t0
+  LEFT SEMI JOIN star2 t1
+    ON t0.foo_id = t1.foo_id"""
+        assert result == expected
+
+        joined = t1.anti_join(t2, [t1.foo_id == t2.foo_id])[[t1]]
+        result = to_sql(joined)
+        expected = """SELECT t0.*
+FROM star1 t0
+  LEFT ANTI JOIN star2 t1
+    ON t0.foo_id = t1.foo_id"""
+        assert result == expected
+
     def test_self_reference_simple(self):
         t1 = self.con.table('star1')
 
