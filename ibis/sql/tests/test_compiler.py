@@ -1000,7 +1000,35 @@ FROM table t0
         # Get the "other" category somehow
         pass
 
+    def test_case_in_projection(self):
+        t = self.con.table('alltypes')
 
+        expr = (t.g.case()
+                .when('foo', 'bar')
+                .when('baz', 'qux')
+                .else_('default').end())
+
+        expr2 = (ir.case()
+                .when(t.g == 'foo', 'bar')
+                .when(t.g == 'baz', t.g)
+                .end())
+
+        proj = t[expr.name('col1'), expr2.name('col2'), t]
+
+        result = to_sql(proj)
+        expected = """SELECT
+  CASE g
+    WHEN 'foo' THEN 'bar'
+    WHEN 'baz' THEN 'qux'
+    ELSE 'default'
+  END AS col1,
+  CASE
+    WHEN g = 'foo' THEN 'bar'
+    WHEN g = 'baz' THEN g
+    ELSE NULL
+  END AS col2, *
+FROM alltypes"""
+        assert result == expected
 
 class TestASTTransformations(unittest.TestCase):
 

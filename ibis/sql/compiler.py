@@ -315,12 +315,15 @@ class Select(object):
         for i, val in enumerate(formatted):
             # always line-break for multi-line expressions
             if val.count('\n'):
-                if i: buf.write(',')
+                if i:
+                    buf.write(',')
                 buf.write('\n')
-                buf.write(util.indent(val, self.indent))
-                buf.write('\n')
-                line_length = 0
-                tokens = 0
+                indented = util.indent(val, self.indent)
+                buf.write(indented)
+
+                # set length of last line
+                line_length = len(indented.split('\n')[-1])
+                tokens = 1
             elif (tokens > 0 and line_length and
                   len(val) + line_length > max_length):
                 # There is an expr, and adding this new one will make the line
@@ -330,12 +333,13 @@ class Select(object):
                 line_length = len(val) + 7
                 tokens = 1
             else:
-                buf.write(', ') if i else None
+                if i: buf.write(',')
+                buf.write(' ')
                 buf.write(val)
                 tokens += 1
                 line_length += len(val) + 2
 
-        return 'SELECT {}'.format(buf.getvalue())
+        return 'SELECT{}'.format(buf.getvalue())
 
     def format_table_set(self, ctx):
         fragment = 'FROM '

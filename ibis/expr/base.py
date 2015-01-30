@@ -39,6 +39,7 @@
 # be a scalar or array expression. In this case the binding requirements may be
 # somewhat more lax.
 
+from collections import defaultdict
 
 import operator
 
@@ -327,6 +328,28 @@ class Literal(ValueNode):
         return []
 
 
+class NullLiteral(ValueNode):
+
+    """
+    Typeless NULL literal
+    """
+
+    def __init__(self):
+        return
+
+    @property
+    def args(self):
+        return [None]
+
+    def equals(other):
+        return isinstance(other, NullLiteral)
+
+    def output_type(self):
+        return NullScalar
+
+    def root_tables(self):
+        return []
+
 
 class ArrayNode(ValueNode):
 
@@ -553,6 +576,23 @@ class Log10(RealUnaryOp):
 
     _allow_boolean = False
 
+
+class StringUnaryOp(UnaryOp):
+
+    def output_type(self):
+        if not isinstance(self.arg, StringValue):
+            raise TypeError('Only implemented for numeric types')
+        return _shape_like(self.arg, 'string')
+
+
+class Uppercase(StringUnaryOp):
+    pass
+
+
+class Lowercase(StringUnaryOp):
+    pass
+
+
 #----------------------------------------------------------------------
 
 
@@ -658,17 +698,181 @@ class Min(Reduction):
 #----------------------------------------------------------------------
 
 
-class SingleCase(ValueNode):
+class SimpleCaseBuilder(object):
 
-    def __init__(self, case_expr, check_exprs, result_exprs,
+    def __init__(self, expr, cases=None, results=None, default=None):
+        self.base = expr
+        self.cases = cases or []
+        self.results = results or []
+        self.default = default
+
+    def when(self, case_expr, result_expr):
+        """
+        Add a new case-result pair.
+
+        Parameters
+        ----------
+        case : Expr
+          Expression to equality-compare with base expression. Must be
+          comparable with the base.
+        result : Expr
+          Value when the case predicate evaluates to true.
+
+        Returns
+        -------
+        builder : CaseBuilder
+        """
+        case_expr = as_value_expr(case_expr)
+        result_expr = as_value_expr(result_expr)
+
+        if not self.base._can_compare(case_expr):
+            raise TypeError('Base expression and passed case are not '
+                            'comparable')
+
+        cases = list(self.cases)
+        cases.append(case_expr)
+
+        results = list(self.results)
+        results.append(result_expr)
+
+        # Maintain immutability
+        return SimpleCaseBuilder(self.base, cases=cases, results=results,
+                                 default=self.default)
+
+    def else_(self, result_expr):
+        """
+        Specify
+
+        Returns
+        -------
+        builder : CaseBuilder
+        """
+        result_expr = as_value_expr(result_expr)
+
+        # Maintain immutability
+        return SimpleCaseBuilder(self.base, cases=list(self.cases),
+                                 results=list(self.results),
+                                 default=result_expr)
+
+    def end(self):
+        if self.default is None:
+            default = null()
+        else:
+            default = self.default
+
+        op = SimpleCase(self.base, self.cases, self.results, default)
+        return op.to_expr()
+
+
+class SearchedCaseBuilder(object):
+
+    def __init__(self, cases=None, results=None, default=None):
+        self.cases = cases or []
+        self.results = results or []
+        self.default = default
+
+    def when(self, case_expr, result_expr):
+        """
+        Add a new case-result pair.
+
+        Parameters
+        ----------
+        case : Expr
+          Expression to equality-compare with base expression. Must be
+          comparable with the base.
+        result : Expr
+          Value when the case predicate evaluates to true.
+
+        Returns
+        -------
+        builder : CaseBuilder
+        """
+        case_expr = as_value_expr(case_expr)
+        result_expr = as_value_expr(result_expr)
+
+        if not isinstance(case_expr, BooleanValue):
+            raise TypeError(case_expr)
+
+        cases = list(self.cases)
+        cases.append(case_expr)
+
+        results = list(self.results)
+        results.append(result_expr)
+
+        # Maintain immutability
+        return SearchedCaseBuilder(cases=cases, results=results,
+                                   default=self.default)
+
+    def else_(self, result_expr):
+        """
+        Specify
+
+        Returns
+        -------
+        builder : CaseBuilder
+        """
+        result_expr = as_value_expr(result_expr)
+
+        # Maintain immutability
+        return SearchedCaseBuilder(cases=list(self.cases),
+                                   results=list(self.results),
+                                   default=result_expr)
+
+    def end(self):
+        if self.default is None:
+            default = null()
+        else:
+            default = self.default
+
+        op = SearchedCase(self.cases, self.results, default)
+        return op.to_expr()
+
+
+class SimpleCase(ValueNode):
+
+    def __init__(self, base_expr, case_exprs, result_exprs,
                  default_expr):
-        pass
+        assert len(case_exprs) == len(result_exprs)
+
+        self.base = base_expr
+        self.cases = case_exprs
+        self.results = result_exprs
+        self.default = default_expr
+        Node.__init__(self, [self.base, self.cases, self.results,
+                             self.default])
+
+    def root_tables(self):
+        all_exprs = [self.base] + self.cases + self.results
+        if self.default is not None:
+            all_exprs.append(self.default)
+        return _distinct_roots(*all_exprs)
+
+    def output_type(self):
+        out_exprs = self.results + [self.default]
+        typename = _highest_precedence_type(out_exprs)
+        return _shape_like(self.base, typename)
 
 
-class MultiCase(ValueNode):
+class SearchedCase(ValueNode):
 
     def __init__(self, case_exprs, result_exprs, default_expr):
-        pass
+        assert len(case_exprs) == len(result_exprs)
+
+        self.cases = case_exprs
+        self.results = result_exprs
+        self.default = default_expr
+        Node.__init__(self, [self.cases, self.results, self.default])
+
+    def root_tables(self):
+        all_exprs = self.cases + self.results
+        if self.default is not None:
+            all_exprs.append(self.default)
+        return _distinct_roots(*all_exprs)
+
+    def output_type(self):
+        out_exprs = self.results + [self.default]
+        typename = _highest_precedence_type(out_exprs)
+        return _shape_like_args(self.cases, typename)
 
 
 class Join(TableNode):
@@ -1401,12 +1605,21 @@ class ValueExpr(Expr):
     either a single value (scalar)
     """
 
+    _implicit_casts = set()
+
     def __init__(self, arg, name=None):
         Expr.__init__(self, arg)
         self._name = name
 
     def type(self):
         return self._typename
+
+    def _base_type(self):
+        # Parametric types like "decimal"
+        return self.type()
+
+    def _can_cast_implicit(self, typename):
+        return typename in self._implicit_casts or typename == self.type()
 
     def op(self):
         return self._arg
@@ -1541,11 +1754,57 @@ class ArrayExpr(ValueExpr):
     def bottomk(self, k, by=None):
         raise NotImplementedError
 
+    def case(self):
+        """
+        Create a new SimpleCaseBuilder to chain multiple if-else
+        statements. Add new search expressions with the .when method. These
+        must be comparable with this array expression. Conclude by calling
+        .end()
+
+        Examples
+        --------
+        case_expr = (expr.case()
+                     .when(case1, output1)
+                     .when(case2, output2)
+                     .default(default_output)
+                     .end())
+
+        Returns
+        -------
+        builder : CaseBuilder
+        """
+        return SimpleCaseBuilder(self)
+
+    def cases(self, case_result_pairs, default=None):
+        """
+        Create a case expression in one shot.
+
+        Returns
+        -------
+        case_expr : SimpleCase
+        """
+        builder = self.case()
+        for case, result in case_result_pairs:
+            builder = builder.when(case, result)
+        if default is not None:
+            builder = builder.else_(default)
+        return builder.end()
+
     def to_projection(self):
         """
         Promote this column expression to a table projection
         """
         pass
+
+
+
+def case():
+    """
+    Similar to the .case method on array expressions, create a case builder
+    that accepts self-contained boolean expressions (as opposed to expressions
+    which are to be equality-compared with a fixed value expression)
+    """
+    return SearchedCaseBuilder()
 
 
 class TableExpr(Expr):
@@ -1807,6 +2066,14 @@ def _agg_function(name, klass):
     return f
 
 
+class NullValue(ValueExpr):
+
+    _typename = 'null'
+
+    def _can_cast_implicit(self, typename):
+        return True
+
+
 class NumericValue(ValueExpr):
 
     __neg__ = _unary_op('__neg__', Negate)
@@ -1849,27 +2116,32 @@ class BooleanValue(NumericValue):
         # Result will be the result of promotion of true/false exprs. These
         # might be conflicting types; same type resolution as case expressions
         # must be used.
-        raise NotImplementedError
+        return case().when(self, true_expr).else_(false_expr).end()
 
 
 class Int8Value(IntegerValue):
 
     _typename = 'int8'
+    _implicit_casts = {'int16', 'int32', 'int64', 'float', 'double'}
 
 
 class Int16Value(IntegerValue):
 
     _typename = 'int16'
-
+    _implicit_casts = {'int32', 'int64', 'float', 'double'}
 
 class Int32Value(IntegerValue):
 
     _typename = 'int32'
+    _implicit_casts = {'int64', 'float', 'double'}
 
 
 class Int64Value(IntegerValue):
 
     _typename = 'int64'
+    _implicit_casts = {'float', 'double'}
+
+
 
 
 class FloatingValue(NumericValue):
@@ -1879,6 +2151,7 @@ class FloatingValue(NumericValue):
 class FloatValue(FloatingValue):
 
     _typename = 'float'
+    _implicit_casts = {'double'}
 
 
 class DoubleValue(FloatingValue):
@@ -1893,10 +2166,14 @@ class StringValue(ValueExpr):
     def _can_compare(self, other):
         return isinstance(other, StringValue)
 
+    lower = _unary_op('lower', Lowercase)
+    upper = _unary_op('upper', Uppercase)
+
 
 class DecimalValue(NumericValue):
 
     _typename = 'decimal'
+    _implicit_casts = {'float', 'double'}
 
 
 
@@ -1971,6 +2248,10 @@ class NumericArray(ArrayExpr, NumericValue):
     mean = _agg_function('mean', Mean)
     min = _agg_function('min', Min)
     max = _agg_function('max', Max)
+
+
+class NullScalar(NullValue, ScalarExpr):
+    pass
 
 
 class BooleanScalar(ScalarExpr, BooleanValue):
@@ -2090,6 +2371,63 @@ _array_types = {
 }
 
 
+
+def _highest_precedence_type(exprs):
+    # Return the highest precedence type from the passed expressions. Also
+    # verifies that there are valid implicit casts between any of the types and
+    # the selected highest precedence type
+    selector = _TypePrecedence(exprs)
+    return selector.get_result()
+
+
+class _TypePrecedence(object):
+    # Impala type precedence (more complex in other database implementations)
+    # timestamp
+    # double
+    # float
+    # decimal
+    # bigint
+    # int
+    # smallint
+    # tinyint
+    # boolean
+    # string
+
+    _precedence = ['double', 'float', 'decimal',
+                   'int64', 'int32', 'int16', 'int8',
+                   'boolean', 'string']
+
+    def __init__(self, exprs):
+        self.exprs = exprs
+
+        if len(exprs) == 0:
+            raise ValueError('Must pass at least one expression')
+
+        self.type_counts = defaultdict(lambda: 0)
+        self._count_types()
+
+    def get_result(self):
+        highest_type = self._get_highest_type()
+        self._check_casts(highest_type)
+        return highest_type
+
+    def _count_types(self):
+        for expr in self.exprs:
+            self.type_counts[expr._base_type()] += 1
+
+    def _get_highest_type(self):
+        for typename in self._precedence:
+            if self.type_counts[typename] > 0:
+                return typename
+
+    def _check_casts(self, typename):
+        for expr in self.exprs:
+            if not expr._can_cast_implicit(typename):
+                raise ValueError('Expression with type {} cannot be '
+                                 'implicitly casted to {}'
+                                 .format(expr.type(), typename))
+
+
 def scalar_class(name):
     return _scalar_types[name]
 
@@ -2098,8 +2436,11 @@ def array_class(name):
     return _array_types[name]
 
 
-def literal(value, name=None):
-    return Literal(value).to_expr()
+def literal(value):
+    if value is None:
+        return null()
+    else:
+        return Literal(value).to_expr()
 
 
 def _int_literal_class(value, allow_overflow=False):
@@ -2120,6 +2461,13 @@ def _int_literal_class(value, allow_overflow=False):
 def _largest_int(int_types):
     nbytes = max(_nbytes[t] for t in int_types)
     return 'int%d' % (8 * nbytes)
+
+
+_NULL = NullScalar(NullLiteral())
+
+
+def null():
+    return _NULL
 
 
 def table(schema, name=None):

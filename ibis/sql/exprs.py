@@ -18,6 +18,7 @@
 # table, with optional teardown if the user wants the intermediate converted
 # table to be temporary.
 
+from io import BytesIO
 
 import ibis.expr.base as ir
 import ibis.util as util
@@ -160,6 +161,88 @@ def _quote_field(name, quotechar='`'):
     else:
         return name
 
+
+class CaseFormatter(object):
+
+    def __init__(self, translator, base, cases, results, default):
+        self.translator = translator
+        self.base = base
+        self.cases = cases
+        self.results = results
+        self.default = default
+
+        # HACK
+        self.indent = 2
+        self.multiline = len(cases) > 1
+        self.buf = BytesIO()
+
+    def _trans(self, expr):
+        return self.translator.translate(expr)
+
+    def get_result(self):
+        self.buf.seek(0)
+
+        self.buf.write('CASE')
+        if self.base is not None:
+            base_str = self._trans(self.base)
+            self.buf.write(' {}'.format(base_str))
+
+        for case, result in zip(self.cases, self.results):
+            self._next_case()
+            case_str = self._trans(case)
+            result_str = self._trans(result)
+            self.buf.write('WHEN {} THEN {}'.format(case_str, result_str))
+
+        if self.default is not None:
+            self._next_case()
+            default_str = self._trans(self.default)
+            self.buf.write('ELSE {}'.format(default_str))
+
+        if self.multiline:
+            self.buf.write('\nEND')
+        else:
+            self.buf.write(' END')
+
+        return self.buf.getvalue()
+
+    def _next_case(self):
+        if self.multiline:
+            self.buf.write('\n{}'.format(' ' * self.indent))
+        else:
+            self.buf.write(' ')
+
+def _simple_case(translator, expr):
+    op = expr.op()
+    formatter = CaseFormatter(translator, op.base, op.cases, op.results,
+                              op.default)
+    return formatter.get_result()
+
+
+def _searched_case(translator, expr):
+    op = expr.op()
+    formatter = CaseFormatter(translator, None, op.cases, op.results,
+                              op.default)
+    return formatter.get_result()
+
+
+def _table_array_view(translator, expr):
+    ctx = translator.context
+    table = expr.op().table
+    query = ctx.get_formatted_query(table)
+    return '(\n{}\n)'.format(util.indent(query, ctx.indent))
+
+
+def _extract_field(sql_attr):
+    def extract_field_formatter(translator, expr):
+        op = expr.op()
+        arg = translator.translate(op.arg)
+
+        # This is pre-2.0 Impala-style, which did not used to support the
+        # SQL-99 format extract($FIELD from expr)
+        return "extract({!s}, '{!s}')".format(arg, sql_attr)
+    return extract_field_formatter
+
+
 def _trans_literal(translator, expr):
     if isinstance(expr, ir.BooleanValue):
         typeclass = 'boolean'
@@ -171,6 +254,11 @@ def _trans_literal(translator, expr):
         raise NotImplementedError
 
     return _literal_formatters[typeclass](expr)
+
+
+def _null_literal(translator, expr):
+    return 'NULL'
+
 
 _literal_formatters = {
     'boolean': _boolean_literal_format,
@@ -222,24 +310,6 @@ _binary_infix_ops = {
 }
 
 
-def _table_array_view(translator, expr):
-    ctx = translator.context
-    table = expr.op().table
-    query = ctx.get_formatted_query(table)
-    return '(\n{}\n)'.format(util.indent(query, ctx.indent))
-
-
-def _extract_field(sql_attr):
-    def extract_field_formatter(translator, expr):
-        op = expr.op()
-        arg = translator.translate(op.arg)
-
-        # This is pre-2.0 Impala-style, which did not used to support the
-        # SQL-99 format extract($FIELD from expr)
-        return 'extract({!s}, "{!s}")'.format(arg, sql_attr)
-    return extract_field_formatter
-
-
 _timestamp_ops = {
     ir.ExtractYear: _extract_field('year'),
     ir.ExtractMonth: _extract_field('month'),
@@ -253,9 +323,14 @@ _timestamp_ops = {
 
 _other_ops = {
     ir.Literal: _trans_literal,
+    ir.NullLiteral: _null_literal,
     ir.Cast: _cast,
     ir.Between: _between,
-    ir.TableArrayView: _table_array_view
+
+    ir.SimpleCase: _simple_case,
+    ir.SearchedCase: _searched_case,
+
+    ir.TableArrayView: _table_array_view,
 }
 
 

@@ -16,10 +16,25 @@ import unittest
 
 from ibis.sql.compiler import ExprTranslator, QueryContext, to_sql
 from ibis.expr.tests.mocks import MockConnection
+import ibis.expr.base as api
 import ibis.expr.base as ir
 
 
-class TestValueExprs(unittest.TestCase):
+class ExprSQLTest(object):
+
+    def _check_expr_cases(self, cases, context=None, named=False):
+        for expr, expected in cases:
+            result = self._translate(expr, named=named, context=context)
+            assert result == expected
+
+    def _translate(self, expr, named=False, context=None):
+        translator = ExprTranslator(expr, context=context, named=named)
+        return translator.get_result()
+
+
+
+
+class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def setUp(self):
         self.con = MockConnection()
@@ -29,19 +44,10 @@ class TestValueExprs(unittest.TestCase):
         self.bool_cols = ['h']
         self.float_cols = ['e', 'f']
 
-    def _translate(self, expr, named=False, context=None):
-        translator = ExprTranslator(expr, context=context, named=named)
-        return translator.get_result()
-
     def _check_literals(self, cases):
         for value, expected in cases:
             lit_expr = ir.literal(value)
             result = self._translate(lit_expr)
-            assert result == expected
-
-    def _check_expr_cases(self, cases, context=None, named=False):
-        for expr, expected in cases:
-            result = self._translate(expr, named=named, context=context)
             assert result == expected
 
     def test_string_literals(self):
@@ -179,7 +185,7 @@ class TestValueExprs(unittest.TestCase):
                  'second', 'millisecond']
 
         cases = [(getattr(self.table.i, field)(),
-                  'extract(i, "{}")'.format(field))
+                  "extract(i, '{}')".format(field))
                  for field in fields]
         self._check_expr_cases(cases)
 
@@ -190,7 +196,55 @@ class TestValueExprs(unittest.TestCase):
 
         result = to_sql(expr)
         expected = \
-"""SELECT extract(i, "year") AS year, extract(i, "month") AS month,
-       extract(i, "day") AS day
+"""SELECT extract(i, 'year') AS year, extract(i, 'month') AS month,
+       extract(i, 'day') AS day
 FROM alltypes"""
+        assert result == expected
+
+
+class TestCaseExprs(unittest.TestCase, ExprSQLTest):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('alltypes')
+
+    def test_isnull_1_0(self):
+        expr = self.table.g.isnull().ifelse(1, 0)
+
+        result = self._translate(expr)
+        expected = 'CASE WHEN g IS NULL THEN 1 ELSE 0 END'
+        assert result == expected
+
+        # inside some other function
+        result = self._translate(expr.sum())
+        expected = 'sum(CASE WHEN g IS NULL THEN 1 ELSE 0 END)'
+        assert result == expected
+
+    def test_simple_case(self):
+        expr = (self.table.g.case()
+                .when('foo', 'bar')
+                .when('baz', 'qux')
+                .else_('default')
+                .end())
+
+        result = self._translate(expr)
+        expected = """CASE g
+  WHEN 'foo' THEN 'bar'
+  WHEN 'baz' THEN 'qux'
+  ELSE 'default'
+END"""
+        assert result == expected
+
+    def test_search_case(self):
+        expr = (api.case()
+                .when(self.table.f > 0, self.table.d * 2)
+                .when(self.table.c < 0, self.table.a * 2)
+                .end())
+
+        result = self._translate(expr)
+        expected = """CASE
+  WHEN f > 0 THEN d * 2
+  WHEN c < 0 THEN a * 2
+  ELSE NULL
+END"""
         assert result == expected
