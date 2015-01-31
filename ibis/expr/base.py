@@ -490,23 +490,26 @@ class UnaryOp(ValueNode):
 
 class Cast(ValueNode):
 
-    def __init__(self, value_expr, target_type):
-        self._ensure_value(value_expr)
+    def __init__(self, arg, target_type):
+        self._ensure_value(arg)
 
-        self.value_expr = value_expr
+        self.arg = arg
         self.target_type = target_type.lower()
 
         # TODO: shorthand type aliases, e.g. int
         _validate_type(self.target_type)
 
-        ValueNode.__init__(self, [value_expr, target_type])
+        ValueNode.__init__(self, [arg, target_type])
 
     def resolve_name(self):
-        return self.value_expr.get_name()
+        return self.arg.get_name()
+
+    def root_tables(self):
+        return self.arg._root_tables()
 
     def output_type(self):
         # TODO: error handling for invalid casts
-        return _shape_like(self.value_expr, self.target_type)
+        return _shape_like(self.arg, self.target_type)
 
 
 class Negate(UnaryOp):
@@ -1991,6 +1994,21 @@ class TableExpr(Expr):
         op = apply_filter(self, predicates)
         return TableExpr(op)
 
+    def group_by(self, by):
+        """
+        Create an intermediate grouped table expression, pending some group
+        operation to be applied with it.
+
+        Examples
+        --------
+        x.group_by([b1, b2]).aggregate(metrics)
+
+        Returns
+        -------
+        grouped_expr : GroupedTableExpr
+        """
+        return GroupedTableExpr(self, by)
+
     def aggregate(self, agg_exprs, by=None, having=None):
         """
         Parameters
@@ -2022,6 +2040,24 @@ class TableExpr(Expr):
 
         op = SortBy(self, what)
         return TableExpr(op)
+
+
+class GroupedTableExpr(object):
+    """
+    Helper intermediate construct
+    """
+    def __init__(self, table, by):
+        if not isinstance(by, (list, tuple)):
+            if not isinstance(by, Expr):
+                by = table._resolve([by])
+            else:
+                by = [by]
+
+        self.table = table
+        self.by = by
+
+    def aggregate(self, metrics, having=None):
+        return self.table.aggregate(metrics, by=self.by, having=having)
 
 
 #------------------------------------------------------------------------------

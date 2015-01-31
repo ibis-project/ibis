@@ -40,7 +40,7 @@ _sql_type_names = {
 
 def _cast(translator, expr):
     op = expr.op()
-    arg = translator.translate(op.value_expr)
+    arg = translator.translate(op.arg)
     sql_type = _sql_type_names[op.target_type]
     return 'CAST({!s} AS {!s})'.format(arg, sql_type)
 

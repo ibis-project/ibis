@@ -933,6 +933,18 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         # Validates internally
         self.table.aggregate([compound_expr])
 
+    def test_groupby_convenience(self):
+        metrics = [self.table.f.sum().name('total')]
+
+        expr = self.table.group_by('g').aggregate(metrics)
+        expected = self.table.aggregate(metrics, by=['g'])
+        assert expr.equals(expected)
+
+        group_expr = self.table.g.cast('double')
+        expr = self.table.group_by(group_expr).aggregate(metrics)
+        expected = self.table.aggregate(metrics, by=[group_expr])
+        assert expr.equals(expected)
+
 
 class TestJoins(BasicTestCase, unittest.TestCase):
 
