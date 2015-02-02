@@ -100,6 +100,28 @@ class TestLiterals(unittest.TestCase):
             assert isinstance(expr.op(), api.Literal)
             assert expr.op().value is value
 
+    def test_literal_list(self):
+        what = [1, 2, 1000]
+        expr = ir.as_value_expr(what)
+
+        assert isinstance(expr, ir.ArrayExpr)
+        assert isinstance(expr.op(), ir.ValueList)
+        assert isinstance(expr.op().values[2], ir.Int16Scalar)
+
+        # it works!
+        repr(expr)
+
+    def test_mixed_arity(self):
+        table = api.table(_all_types_schema)
+        what = ["bar", table.g, "foo"]
+        expr = ir.as_value_expr(what)
+
+        values = expr.op().values
+        assert isinstance(values[1], ir.StringArray)
+
+        # it works!
+        repr(expr)
+
 
 _all_types_schema = [
     ('a', 'int8'),
@@ -377,6 +399,61 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
     def test_sort_by_aggregate_or_projection_field(self):
         pass
+
+
+
+class TestContains(BasicTestCase, unittest.TestCase):
+
+    def test_isin_notin_list(self):
+        vals = [1, 2, 3]
+
+        expr = self.table.a.isin(vals)
+        not_expr = self.table.a.notin(vals)
+
+        assert isinstance(expr, ir.BooleanArray)
+        assert isinstance(expr.op(), ir.Contains)
+
+        assert isinstance(not_expr, ir.BooleanArray)
+        assert isinstance(not_expr.op(), ir.NotContains)
+
+    def test_isin_not_comparable(self):
+        pass
+
+    def test_isin_array_expr(self):
+        #
+        pass
+
+    def test_isin_invalid_cases(self):
+        # For example, array expression in a list of values, where the inner
+        # array values originate from some other table
+        pass
+
+    def test_isin_notin_scalars(self):
+        a, b, c = [api.literal(x) for x in [1, 1, 2]]
+
+        result = a.isin([1, 2])
+        assert isinstance(result, ir.BooleanScalar)
+
+        result = a.notin([b, c])
+        assert isinstance(result, ir.BooleanScalar)
+
+    def test_isin_null(self):
+        pass
+
+    def test_negate_isin(self):
+        # Should yield a NotContains
+        pass
+
+    def test_scalar_isin_list_with_array(self):
+        val = api.literal(2)
+
+        options = [self.table.a, self.table.b, self.table.c]
+
+        expr = val.isin(options)
+        assert isinstance(expr, ir.BooleanArray)
+
+        not_expr = val.notin(options)
+        assert isinstance(not_expr, ir.BooleanArray)
 
 
 class TestExprFormatting(unittest.TestCase):

@@ -53,6 +53,21 @@ def _between(translator, expr):
     return '{!s} BETWEEN {!s} AND {!s}'.format(comp, lower, upper)
 
 
+def _contains(translator, expr):
+    op = expr.op()
+    comp = translator.translate(op.value)
+    options = translator.translate(op.options)
+    return '{!s} IN {!s}'.format(comp, options)
+
+
+def _not_contains(translator, expr):
+    # Slight code dup
+    op = expr.op()
+    comp = translator.translate(op.value)
+    options = translator.translate(op.options)
+    return '{!s} NOT IN {!s}'.format(comp, options)
+
+
 def _is_null(translator, expr):
     formatted_arg = translator.translate(expr.op().arg)
     return '{!s} IS NULL'.format(formatted_arg)
@@ -243,7 +258,7 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
-def _trans_literal(translator, expr):
+def _literal(translator, expr):
     if isinstance(expr, ir.BooleanValue):
         typeclass = 'boolean'
     elif isinstance(expr, ir.StringValue):
@@ -265,6 +280,12 @@ _literal_formatters = {
     'number': _number_literal_format,
     'string': _string_literal_format
 }
+
+
+def _value_list(translator, expr):
+    op = expr.op()
+    formatted = [translator.translate(x) for x in op.values]
+    return '({})'.format(', '.join(formatted))
 
 
 _unary_ops = {
@@ -322,10 +343,15 @@ _timestamp_ops = {
 
 
 _other_ops = {
-    ir.Literal: _trans_literal,
+    ir.Literal: _literal,
     ir.NullLiteral: _null_literal,
+    ir.ValueList: _value_list,
+
     ir.Cast: _cast,
+
     ir.Between: _between,
+    ir.Contains: _contains,
+    ir.NotContains: _not_contains,
 
     ir.SimpleCase: _simple_case,
     ir.SearchedCase: _searched_case,

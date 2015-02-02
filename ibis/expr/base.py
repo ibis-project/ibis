@@ -1531,10 +1531,20 @@ def _smallest_int_containing(values, allow_overflow=False):
 
 class Contains(ArrayNode):
 
-    def __init__(self, values_expr, match_expr):
-        # If match_expr is a table, and it contains one column, we select that
-        # column here
-        pass
+    def __init__(self, value, options):
+        self.value = as_value_expr(value)
+        self.options = as_value_expr(options)
+        Node.__init__(self, [self.value, self.options])
+
+    def output_type(self):
+        all_args = [self.value] + self.options.op().values
+        return _shape_like_args(all_args, 'boolean')
+
+
+class NotContains(Contains):
+
+    def __init__(self, value, options):
+        Contains.__init__(self, value, options)
 
 
 class ReplaceValues(ArrayNode):
@@ -1675,6 +1685,38 @@ class ValueExpr(Expr):
         op = Between(self, lower, upper)
         return op.to_expr()
 
+    def isin(self, values):
+        """
+        Check whether the value expression is contained within the indicated
+        list of values.
+
+        Parameters
+        ----------
+        values : list, tuple, or array expression
+          The values can be scalar or array-like. Each of them must be
+          comparable with the calling expression, or None (NULL).
+
+        Examples
+        --------
+        expr = table.strings.isin(['foo', 'bar', 'baz'])
+
+        expr2 = table.strings.isin(table2.other_string_col)
+
+        Returns
+        -------
+        contains : BooleanValue
+        """
+        op = Contains(self, values)
+        return op.to_expr()
+
+    def notin(self, values):
+        """
+        Like isin, but checks whether this expression's value(s) are not
+        contained in the passed values. See isin docs for full usage.
+        """
+        op = NotContains(self, values)
+        return op.to_expr()
+
     isnull = _unary_op('isnull', IsNull)
     notnull = _unary_op('notnull', NotNull)
 
@@ -1703,9 +1745,27 @@ class ValueExpr(Expr):
 
 def as_value_expr(val):
     if not isinstance(val, Expr):
-        val = literal(val)
+        if isinstance(val, (tuple, list)):
+            val = value_list(val)
+        else:
+            val = literal(val)
 
     return val
+
+
+class ValueList(ArrayNode):
+
+    """
+    Data structure for a list of value expressions
+    """
+
+    def __init__(self, args):
+        self.values = [as_value_expr(x) for x in args]
+        Node.__init__(self, [self.values])
+
+    def to_expr(self):
+        return ListExpr(self)
+
 
 
 class ScalarExpr(ValueExpr):
@@ -2102,7 +2162,12 @@ def _agg_function(name, klass):
     return f
 
 
-class NullValue(ValueExpr):
+class AnyValue(ValueExpr):
+
+    _typename = 'any'
+
+
+class NullValue(AnyValue):
 
     _typename = 'null'
 
@@ -2110,7 +2175,7 @@ class NullValue(ValueExpr):
         return True
 
 
-class NumericValue(ValueExpr):
+class NumericValue(AnyValue):
 
     __neg__ = _unary_op('__neg__', Negate)
 
@@ -2195,7 +2260,7 @@ class DoubleValue(FloatingValue):
     _typename = 'double'
 
 
-class StringValue(ValueExpr):
+class StringValue(AnyValue):
 
     _typename = 'string'
 
@@ -2261,7 +2326,7 @@ def _extract_field(name, klass):
     return f
 
 
-class TimestampValue(ValueExpr):
+class TimestampValue(AnyValue):
 
     _typename = 'timestamp'
 
@@ -2287,6 +2352,10 @@ class NumericArray(ArrayExpr, NumericValue):
 
 
 class NullScalar(NullValue, ScalarExpr):
+    pass
+
+
+class ListExpr(ArrayExpr, AnyValue):
     pass
 
 
@@ -2477,6 +2546,10 @@ def literal(value):
         return null()
     else:
         return Literal(value).to_expr()
+
+
+def value_list(values):
+    return ValueList(values).to_expr()
 
 
 def _int_literal_class(value, allow_overflow=False):

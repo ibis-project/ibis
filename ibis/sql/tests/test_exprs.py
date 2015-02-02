@@ -248,3 +248,28 @@ END"""
   ELSE NULL
 END"""
         assert result == expected
+
+
+class TestInNotIn(unittest.TestCase, ExprSQLTest):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('alltypes')
+
+    def test_field_in_literals(self):
+        cases = [
+            (self.table.g.isin(["foo", "bar", "baz"]),
+             "g IN ('foo', 'bar', 'baz')"),
+            (self.table.g.notin(["foo", "bar", "baz"]),
+             "g NOT IN ('foo', 'bar', 'baz')")
+        ]
+        self._check_expr_cases(cases)
+
+    def test_literal_in_list(self):
+        cases = [
+            (api.literal(2).isin([self.table.a, self.table.b, self.table.c]),
+             '2 IN (a, b, c)'),
+            (api.literal(2).notin([self.table.a, self.table.b, self.table.c]),
+             '2 NOT IN (a, b, c)')
+        ]
+        self._check_expr_cases(cases)
