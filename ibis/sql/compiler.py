@@ -773,7 +773,8 @@ class QueryASTBuilder(object):
                 return type(expr)(type(op)(left, right))
             else:
                 return expr
-        elif isinstance(op, (ir.Between, ir.TableColumn, ir.Literal)):
+        elif isinstance(op, (ir.Between, ir.Contains,
+                             ir.TableColumn, ir.Literal)):
             return expr
         else:
             raise NotImplementedError(type(op))

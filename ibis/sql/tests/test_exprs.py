@@ -273,3 +273,18 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
              '2 NOT IN (a, b, c)')
         ]
         self._check_expr_cases(cases)
+
+    def test_isin_notin_in_select(self):
+        filtered = self.table[self.table.g.isin(["foo", "bar"])]
+        result = to_sql(filtered)
+        expected = """SELECT *
+FROM alltypes
+WHERE g IN ('foo', 'bar')"""
+        assert result == expected
+
+        filtered = self.table[self.table.g.notin(["foo", "bar"])]
+        result = to_sql(filtered)
+        expected = """SELECT *
+FROM alltypes
+WHERE g NOT IN ('foo', 'bar')"""
+        assert result == expected

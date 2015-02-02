@@ -1536,6 +1536,10 @@ class Contains(ArrayNode):
         self.options = as_value_expr(options)
         Node.__init__(self, [self.value, self.options])
 
+    def root_tables(self):
+        exprs = [self.value, self.options]
+        return _distinct_roots(*exprs)
+
     def output_type(self):
         all_args = [self.value] + self.options.op().values
         return _shape_like_args(all_args, 'boolean')
@@ -1762,6 +1766,9 @@ class ValueList(ArrayNode):
     def __init__(self, args):
         self.values = [as_value_expr(x) for x in args]
         Node.__init__(self, [self.values])
+
+    def root_tables(self):
+        return _distinct_roots(*self.values)
 
     def to_expr(self):
         return ListExpr(self)
