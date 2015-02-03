@@ -2443,11 +2443,11 @@ class TimestampArray(ArrayExpr, TimestampValue):
     pass
 
 
-class DecimalScalar(ScalarExpr, TimestampValue):
+class DecimalScalar(ScalarExpr, DecimalValue):
     pass
 
 
-class DecimalArray(ArrayExpr, TimestampValue):
+class DecimalArray(ArrayExpr, DecimalValue):
     pass
 
 
