@@ -405,7 +405,7 @@ class DatabaseTable(PhysicalTable):
         HasSchema.__init__(self, schema, name=name)
 
 
-class SQLQueryResult(TableNode, HasSchema):
+class SQLQueryResult(BlockingTableNode, HasSchema):
 
     """
     A table sourced from the result set of a select query
@@ -2443,6 +2443,14 @@ class TimestampArray(ArrayExpr, TimestampValue):
     pass
 
 
+class DecimalScalar(ScalarExpr, TimestampValue):
+    pass
+
+
+class DecimalArray(ArrayExpr, TimestampValue):
+    pass
+
+
 _scalar_types = {
     'boolean': BooleanScalar,
     'int8': Int8Scalar,
@@ -2452,7 +2460,8 @@ _scalar_types = {
     'float': FloatScalar,
     'double': DoubleScalar,
     'string': StringScalar,
-    'timestamp': TimestampScalar
+    'timestamp': TimestampScalar,
+    'decimal': DecimalScalar
 }
 
 _nbytes = {
@@ -2479,7 +2488,8 @@ _array_types = {
     'float': FloatArray,
     'double': DoubleArray,
     'string': StringArray,
-    'timestamp': TimestampArray
+    'timestamp': TimestampArray,
+    'decimal': DecimalArray
 }
 
 

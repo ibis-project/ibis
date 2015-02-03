@@ -90,7 +90,11 @@ class QueryContext(object):
         if key in this.subquery_memo:
             return this.subquery_memo[key]
 
-        result = to_sql(expr, context=self.subcontext())
+        op = expr.op()
+        if isinstance(op, ir.SQLQueryResult):
+            result = op.query
+        else:
+            result = to_sql(expr, context=self.subcontext())
         this.subquery_memo[key] = result
         return result
 
@@ -543,6 +547,7 @@ def _format_table(ctx, expr, indent=2):
             raise com.RelationError('Table did not have a name: {!r}'
                                     .format(expr))
         result = name
+        is_subquery = False
     else:
         # A subquery
         if ctx.is_extracted(ref_expr):
@@ -558,8 +563,9 @@ def _format_table(ctx, expr, indent=2):
 
         subquery = ctx.get_formatted_query(expr)
         result = '(\n{}\n)'.format(util.indent(subquery, indent))
+        is_subquery = True
 
-    if ctx.need_aliases():
+    if is_subquery or ctx.need_aliases():
         result += ' {}'.format(ctx.get_alias(expr))
 
     return result
@@ -632,6 +638,9 @@ class _ExtractSubqueries(object):
     def _visit_Projection(self, expr):
         self.observe(expr)
         self.visit(expr.op().table)
+
+    def _visit_SQLQueryResult(self, expr):
+        self.observe(expr)
 
     def _visit_SelfReference(self, expr):
         self.visit(expr.op().table)
@@ -849,7 +858,7 @@ class QueryASTBuilder(object):
         if hasattr(self, method):
             f = getattr(self, method)
             f(expr, toplevel=toplevel)
-        elif isinstance(op, ir.PhysicalTable):
+        elif isinstance(op, (ir.PhysicalTable, ir.SQLQueryResult)):
             self._visit_PhysicalTable(expr, toplevel=toplevel)
         elif isinstance(op, ir.Join):
             self._visit_Join(expr, toplevel=toplevel)

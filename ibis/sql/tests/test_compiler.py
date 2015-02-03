@@ -259,7 +259,7 @@ FROM (
   SELECT *
   FROM star1
   LIMIT 10
-)
+) t0
 WHERE f > 0"""
 
         assert result2 == expected2
@@ -750,7 +750,7 @@ FROM (
   FROM alltypes
   WHERE f > 0 AND
         g = 'bar'
-)
+) t0
 GROUP BY 1"""
         assert result == expected
 
@@ -764,7 +764,7 @@ FROM (
   FROM alltypes
   WHERE f > 0 AND
         foo < 10
-)
+) t0
 GROUP BY 1"""
         assert result == expected
 
@@ -811,9 +811,9 @@ FROM (
     SELECT key1, key2, key3, sum(value) AS total
     FROM foo_table
     GROUP BY 1, 2, 3
-  )
+  ) t0
   GROUP BY 1, 2
-)
+) t0
 GROUP BY 1"""
         assert result == expected
 
@@ -836,7 +836,7 @@ FROM (
   FROM star1 t0
     INNER JOIN star2 t1
       ON t0.foo_id = t1.foo_id
-)
+) t0
 GROUP BY 1"""
         assert result == expected
 
