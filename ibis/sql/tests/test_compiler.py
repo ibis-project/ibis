@@ -14,6 +14,8 @@
 
 import unittest
 
+import pandas as pd
+
 from ibis.sql.compiler import QueryContext, build_ast, to_sql
 from ibis.expr.tests.mocks import MockConnection
 import ibis.common as com
@@ -182,19 +184,6 @@ class TestASTBuilder(unittest.TestCase):
         joined = t1.inner_join(t2, [t1.f < t2.value1])[[t1]]
         self.assertRaises(com.TranslationError, to_sql, joined)
 
-    def test_simple_scalar_aggregates(self):
-        # Things like table.column.{sum, mean, ...}()
-        pass
-
-    def test_simple_count_distinct(self):
-        pass
-
-    def test_input_source_from_sql(self):
-        pass
-
-    def test_input_source_from_textfile(self):
-        pass
-
     def test_sort_by(self):
         table = self.con.table('star1')
 
@@ -305,8 +294,90 @@ FROM (
         pass
 
     def test_self_aggregate_in_predicate(self):
-        # Per ibis#43
+        # Per ibis #43
         pass
+
+
+
+class TestNonTabularResults(unittest.TestCase):
+
+    """
+
+    """
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('alltypes')
+
+    def test_simple_scalar_aggregates(self):
+        # Things like table.column.{sum, mean, ...}()
+        table = self.con.table('alltypes')
+
+        expr = table[table.c > 0].f.sum()
+
+        ast = build_ast(expr)
+        query = ast.queries[0]
+
+        sql_query = query.compile()
+        expected = """SELECT sum(f) AS tmp
+FROM alltypes
+WHERE c > 0"""
+
+        assert sql_query == expected
+
+        # Maybe the result handler should act on the cursor. Not sure.
+        handler = query.result_handler
+        output = pd.DataFrame({'tmp': [5]})
+        assert handler(output) == 5
+
+    def test_table_column_unbox(self):
+        table = self.table
+        m = table.f.sum().name('total')
+        agged = table[table.c > 0].group_by('g').aggregate([m])
+        expr = agged.g
+
+        ast = build_ast(expr)
+        query = ast.queries[0]
+
+        sql_query = query.compile()
+        expected = """SELECT g, sum(f) AS total
+FROM alltypes
+WHERE c > 0
+GROUP BY 1"""
+
+        assert sql_query == expected
+
+        # Maybe the result handler should act on the cursor. Not sure.
+        handler = query.result_handler
+        output = pd.DataFrame({'g': ['foo', 'bar', 'baz']})
+        assert (handler(output) == output['g']).all()
+
+    def test_complex_array_expr_projection(self):
+        # May require finding the base table and forming a projection.
+        expr = (self.table.group_by('g')
+                .aggregate([self.table.count().name('count')]))
+        expr2 = expr.g.cast('double')
+
+        query = to_sql(expr2)
+        expected = """SELECT CAST(g AS double) AS tmp
+FROM (
+  SELECT g, count(*) AS count
+  FROM alltypes
+  GROUP BY 1
+) t0"""
+        assert query == expected
+
+    def test_distinct_use_cases(self):
+        pass
+
+
+
+class TestDataIngestWorkflows(unittest.TestCase):
+
+    def test_input_source_from_textfile(self):
+        pass
+
+
 
 
 def _get_query(expr):

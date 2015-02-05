@@ -14,7 +14,8 @@
 
 import unittest
 
-from ibis.sql.compiler import ExprTranslator, QueryContext, to_sql
+from ibis.sql.exprs import ExprTranslator
+from ibis.sql.compiler import QueryContext, to_sql
 from ibis.expr.tests.mocks import MockConnection
 import ibis.expr.base as api
 import ibis.expr.base as ir

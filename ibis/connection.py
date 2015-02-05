@@ -76,11 +76,20 @@ class SQLConnection(object):
             sql_string = query.compile()
 
             cursor = self._execute(sql_string)
-            results = cursor.fetchall()
+            result = self._fetch_from_cursor(cursor)
             if isinstance(query, sql.Select):
-                output = results
+                if query.result_handler is not None:
+                    result = query.result_handler(result)
+
+                output = result
 
         return output
+
+    def _fetch_from_cursor(self, cursor):
+        import pandas as pd
+        rows = cursor.fetchall()
+        names = [x[0] for x in cursor.description]
+        return pd.DataFrame.from_records(rows, columns=names)
 
 
 class ImpalaConnection(SQLConnection):

@@ -15,6 +15,7 @@
 import os
 import unittest
 
+import pandas as pd
 
 import ibis.connection as cnx
 import ibis.expr.base as ir
@@ -71,10 +72,29 @@ FROM tpch.lineitem li
         assert table.schema().equals(li.schema())
 
         expr = table.limit(10)
-        self.con.execute(expr)
+        result = self.con.execute(expr)
+        assert len(result) == 10
 
-    def test_execute_expr(self):
+    def test_result_as_dataframe(self):
+        expr = self.con.table('functional.alltypes').limit(10)
+
+        ex_names = expr.schema().names
+        result = self.con.execute(expr)
+
+        assert isinstance(result, pd.DataFrame)
+        assert list(result.columns) == ex_names
+        assert len(result) == 10
+
+    def test_adapt_scalar_array_results(self):
         table = self.con.table('functional.alltypes')
-        expr = table.limit(10)
-        results = self.con.execute(expr)
-        assert len(results) == 10
+
+        expr = table.double_col.sum()
+        result = self.con.execute(expr)
+        assert isinstance(result, float)
+
+        expr = (table.group_by('string_col')
+                .aggregate([table.count().name('count')])
+                .string_col)
+
+        result = self.con.execute(expr)
+        assert isinstance(result, pd.Series)
