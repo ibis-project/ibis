@@ -232,6 +232,14 @@ class Node(object):
         pprint_args = [repr(x) for x in self.args]
         return '%s(%s)' % (opname, ', '.join(pprint_args))
 
+    def flat_args(self):
+        for arg in self.args:
+            if isinstance(arg, (tuple, list)):
+                for x in arg:
+                    yield x
+            else:
+                yield arg
+
     def equals(self, other):
         if type(self) != type(other):
             return False
@@ -895,7 +903,7 @@ class Join(TableNode):
 
         # Validate join predicates. Each predicate must be valid jointly when
         # considering the roots of each input table
-        validator = ExprValidator(left._root_tables() + right._root_tables())
+        validator = _ExprValidator([left, right])
         validator.validate_all(self.predicates)
 
         Node.__init__(self, [left, right, self.predicates])
@@ -1045,8 +1053,12 @@ class Filter(TableNode):
         self.table = table_expr
         self.predicates = predicates
 
-        table_expr._assert_valid(predicates)
         TableNode.__init__(self, [table_expr, predicates])
+        self._validate()
+
+    def _validate(self):
+        validator = _FilterValidator([self.table])
+        validator.validate_all(self.predicates)
 
     def get_schema(self):
         return self.table.schema()
@@ -1095,6 +1107,10 @@ class SortBy(TableNode):
 
     def has_schema(self):
         return self.table.op().has_schema()
+
+    def root_tables(self):
+        tables = self.table._root_tables()
+        return tables
 
 
 class SortKey(object):
@@ -1166,7 +1182,7 @@ class Projection(BlockingTableNode, HasSchema):
         # Need to validate that the column expressions are compatible with the
         # input table; this means they must either be scalar expressions or
         # array expressions originating from the same root table expression
-        validator = ExprValidator(table_expr._root_tables())
+        validator = _ExprValidator([table_expr])
 
         # Resolve schema and initialize
         types = []
@@ -1208,44 +1224,6 @@ class Projection(BlockingTableNode, HasSchema):
     def root_tables(self):
         tables = self.table._root_tables()
         return tables
-
-
-class ExprValidator(object):
-
-    def __init__(self, roots):
-        self.roots = roots
-        self.root_ids = set(id(x) for x in self.roots)
-
-    def validate(self, expr):
-        # TODO: in the case of a join, or multiple joins, the table_expr will
-        # have multiple root input tables. We must validate set containment
-        # among the root tables in the column expressions
-
-        op = expr.op()
-        if isinstance(op, TableColumn):
-            for root in self.roots:
-                if root is op.table.op():
-                    return True
-        elif isinstance(op, Projection):
-            for root in self.roots:
-                if root is op:
-                    return True
-
-        expr_roots = expr._root_tables()
-        for root in expr_roots:
-            if id(root) not in self.root_ids:
-                return False
-        return True
-
-    def validate_all(self, exprs):
-        for expr in exprs:
-            self.assert_valid(expr)
-
-    def assert_valid(self, expr):
-        if not self.validate(expr):
-            msg = ('The expression %s does not fully originate from '
-                   'dependencies of the table expression.' % repr(expr))
-            raise RelationError(msg)
 
 
 class Aggregation(BlockingTableNode, HasSchema):
@@ -1541,7 +1519,16 @@ class Contains(ArrayNode):
         return _distinct_roots(*exprs)
 
     def output_type(self):
-        all_args = [self.value] + self.options.op().values
+        all_args = [self.value]
+
+        options = self.options.op()
+        if isinstance(options, ValueList):
+            all_args += options.values
+        elif isinstance(self.options, ArrayExpr):
+            all_args += [self.options]
+        else:
+            raise TypeError(type(options))
+
         return _shape_like_args(all_args, 'boolean')
 
 
@@ -1883,7 +1870,7 @@ class TableExpr(Expr):
         return self._arg
 
     def _assert_valid(self, exprs):
-        ExprValidator(self._root_tables()).validate_all(exprs)
+        _ExprValidator([self]).validate_all(exprs)
 
     def __getitem__(self, what):
         if isinstance(what, basestring):
@@ -2876,7 +2863,7 @@ def _maybe_fuse_projection(expr, clean_exprs):
         root = roots[0]
 
         roots = root.root_tables()
-        validator = ExprValidator(roots)
+        validator = _ExprValidator([TableExpr(root)])
         fused_exprs = []
         can_fuse = True
         for val in clean_exprs:
@@ -2897,3 +2884,95 @@ def _maybe_fuse_projection(expr, clean_exprs):
             return Projection(root.table, root.selections + fused_exprs)
 
     return Projection(expr, clean_exprs)
+
+
+
+class _ExprValidator(object):
+
+    def __init__(self, exprs):
+        self.parent_exprs = exprs
+
+        self.roots = []
+        for expr in self.parent_exprs:
+
+            self.roots.extend(expr._root_tables())
+
+        self.root_ids = set(id(x) for x in self.roots)
+
+    def validate(self, expr):
+        return self.has_common_roots(expr)
+
+    def has_common_roots(self, expr):
+        op = expr.op()
+        if isinstance(op, TableColumn):
+            for root in self.roots:
+                if root is op.table.op():
+                    return True
+        elif isinstance(op, Projection):
+            for root in self.roots:
+                if root is op:
+                    return True
+
+        expr_roots = expr._root_tables()
+        for root in expr_roots:
+            if id(root) not in self.root_ids:
+                return False
+        return True
+
+    def shares_some_roots(self, expr):
+        expr_roots = expr._root_tables()
+        return any(id(root) in self.root_ids for root in expr_roots)
+
+    def validate_all(self, exprs):
+        for expr in exprs:
+            self.assert_valid(expr)
+
+    def assert_valid(self, expr):
+        if not self.validate(expr):
+            msg = self._error_message(expr)
+            raise RelationError(msg)
+
+    def _error_message(self, expr):
+        return ('The expression %s does not fully originate from '
+                'dependencies of the table expression.' % repr(expr))
+
+
+class _FilterValidator(_ExprValidator):
+
+    """
+    Filters need not necessarily originate fully from the ancestors of the
+    table being filtered. The key cases for this are
+
+    - Scalar reductions involving some other tables
+    - Array expressions involving other tables only (mapping to "uncorrelated
+      subqueries" in SQL-land)
+    - Reductions or array expressions like the above, but containing some
+      predicate with a record-specific interdependency ("correlated subqueries"
+      in SQL)
+    """
+
+    def validate(self, expr):
+        op = expr.op()
+
+        is_valid = True
+
+        if isinstance(op, Contains):
+            value_valid = self.has_common_roots(op.value)
+            is_valid = value_valid
+        else:
+            roots_valid = []
+            for arg in op.flat_args():
+                if isinstance(arg, ScalarExpr):
+                    arg_valid = True
+                elif isinstance(arg, ArrayExpr):
+                    roots_valid.append(self.shares_some_roots(arg))
+                elif isinstance(arg, Expr):
+                    raise NotImplementedError
+                else:
+                    arg_valid = True
+
+                # args_valid.append(arg_valid)
+
+            is_valid = any(roots_valid)
+
+        return is_valid

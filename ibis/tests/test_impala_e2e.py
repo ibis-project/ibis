@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import pytest
 import unittest
 
 import pandas as pd
@@ -20,13 +21,6 @@ import pandas as pd
 import ibis.connection as cnx
 import ibis.expr.base as ir
 
-
-def setup_module():
-    try:
-        connect(ENV)
-    except Exception as e:
-        if 'could not connect' in e.message.lower():
-            raise unittest.SkipTest
 
 
 class IbisTestEnv(object):
@@ -49,7 +43,15 @@ class TestImpalaConnection(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.con = connect(ENV)
+        try:
+            import impala
+            cls.con = connect(ENV)
+        except ImportError:
+            # fail gracefully if impyla not installed
+            pytest.skip('no impyla')
+        except Exception as e:
+            if 'could not connect' in e.message.lower():
+                pytest.skip('impalad not running')
 
     @classmethod
     def tearDownClass(cls):

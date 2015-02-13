@@ -202,6 +202,24 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 FROM alltypes"""
         assert result == expected
 
+    def test_correlated_predicate_subquery(self):
+        t0 = self.table
+        t1 = t0.view()
+
+        expr = t0.g == t1.g
+
+        ctx = QueryContext()
+        ctx.make_alias(t0)
+
+        # Grab alias from parent context
+        subctx = ctx.subcontext()
+        subctx.make_alias(t1)
+        subctx.make_alias(t0)
+
+        result = self._translate(expr, context=subctx)
+        expected = "t0.g = t1.g"
+        assert result == expected
+
 
 class TestCaseExprs(unittest.TestCase, ExprSQLTest):
 

@@ -70,8 +70,8 @@ class SQLConnection(object):
         """
         ast = sql.build_ast(expr)
 
+        # TODO: create some query pipeline executor abstraction
         output = None
-
         for query in ast.queries:
             sql_string = query.compile()
 

@@ -16,7 +16,7 @@ import unittest
 
 import pandas as pd
 
-from ibis.sql.compiler import QueryContext, build_ast, to_sql
+from ibis.sql.compiler import build_ast, to_sql
 from ibis.expr.tests.mocks import MockConnection
 import ibis.common as com
 import ibis.expr.base as ir
@@ -500,16 +500,16 @@ FROM star1 t0
         result = to_sql(projected)
         expected = """SELECT t0.*, t1.value3, t1.value4
 FROM (
-  SELECT t0.*, t1.value2
-  FROM first t0
-    INNER JOIN second t1
-      ON t0.key1 = t1.key1
+  SELECT t2.*, t3.value2
+  FROM first t2
+    INNER JOIN second t3
+      ON t2.key1 = t3.key1
 ) t0
   INNER JOIN (
-    SELECT t0.*, t1.value4
-    FROM third t0
-      INNER JOIN fourth t1
-        ON t0.key3 = t1.key3
+    SELECT t2.*, t3.value4
+    FROM third t2
+      INNER JOIN fourth t3
+        ON t2.key3 = t3.key3
   ) t1
     ON t0.key2 = t1.key2"""
         assert result == expected
@@ -656,9 +656,6 @@ WHERE a > 0 AND
       f BETWEEN 0 AND 1"""
         assert result == expected
 
-    def test_where_correlation_subquery(self):
-        pass
-
     def test_simple_aggregate_query(self):
         t1 = self.con.table('star1')
 
@@ -721,8 +718,7 @@ HAVING count(*) > 100"""
                                by=['key1', 'key2'])
 
         query = _get_query(expr)
-        context = QueryContext()
-        query.populate_context(context)
+        context = query.context
         assert not context.need_aliases()
 
     def test_context_aliases_multiple_join(self):
@@ -735,8 +731,7 @@ HAVING count(*) > 100"""
                 [[t1, t2['value1'], t3['value2']]])
 
         query = _get_query(expr)
-        context = QueryContext()
-        query.populate_context(context)
+        context = query.context
 
         assert context.get_alias(t1) == 't0'
         assert context.get_alias(t2) == 't1'
@@ -882,7 +877,7 @@ FROM (
     SELECT key1, key2, key3, sum(value) AS total
     FROM foo_table
     GROUP BY 1, 2, 3
-  ) t0
+  ) t1
   GROUP BY 1, 2
 ) t0
 GROUP BY 1"""
@@ -903,10 +898,10 @@ GROUP BY 1"""
         result = to_sql(what)
         expected = """SELECT foo_id, sum(value1) AS total
 FROM (
-  SELECT t0.*, t1.value1
-  FROM star1 t0
-    INNER JOIN star2 t1
-      ON t0.foo_id = t1.foo_id
+  SELECT t1.*, t2.value1
+  FROM star1 t1
+    INNER JOIN star2 t2
+      ON t1.foo_id = t2.foo_id
 ) t0
 GROUP BY 1"""
         assert result == expected
@@ -1016,10 +1011,6 @@ WHERE f > (
 )"""
         assert result == expected
 
-    def test_subquery_in_where_from_another_table(self):
-        # TODO: this will currently break at the IR level
-        pass
-
     def test_topk_operation_to_semi_join(self):
         # TODO: top K with filter in place
 
@@ -1101,6 +1092,71 @@ FROM table t0
 FROM alltypes"""
         assert result == expected
 
-class TestASTTransformations(unittest.TestCase):
 
-    pass
+class TestSubqueriesEtc(unittest.TestCase):
+
+    def setUp(self):
+        self.foo = ir.table(
+          [
+            ('job', 'string'),
+            ('dept_id', 'string'),
+            ('year', 'int32'),
+            ('y', 'double')
+        ], 'foo')
+
+        self.bar = ir.table([
+            ('x', 'double'),
+            ('job', 'string')
+        ], 'bar')
+
+    def test_scalar_subquery_different_table(self):
+        t1, t2 = self.foo, self.bar
+        expr = t1[t1.y > t2.x.max()]
+
+        result = to_sql(expr)
+        expected = """SELECT *
+FROM foo
+WHERE y > (
+  SELECT max(x) AS tmp
+  FROM bar
+)"""
+        assert result == expected
+
+    def test_where_uncorrelated_subquery(self):
+        expr = self.foo[self.foo.job.isin(self.bar.job)]
+
+        result = to_sql(expr)
+        expected = """SELECT *
+FROM foo
+WHERE job IN (
+  SELECT job
+  FROM bar
+)"""
+        assert result == expected
+
+    def test_where_correlated_subquery(self):
+        t1 = self.foo
+        t2 = t1.view()
+
+        stat = t2[t1.dept_id == t2.dept_id].y.mean()
+        expr = t1[t1.y > stat]
+
+        result = to_sql(expr)
+        expected = """SELECT t0.*
+FROM foo t0
+WHERE t0.y > (
+  SELECT avg(t1.y) AS tmp
+  FROM foo t1
+  WHERE t0.dept_id = t1.dept_id
+)"""
+        assert result == expected
+
+    def test_where_array_correlated(self):
+        # Test membership in some record-dependent values, if this is supported
+        pass
+
+    def test_exists_semi_join_case(self):
+        pass
+
+    def test_not_exists_anti_join_case(self):
+        pass

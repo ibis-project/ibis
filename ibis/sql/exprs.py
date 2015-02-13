@@ -247,6 +247,27 @@ def _table_array_view(translator, expr):
     return '(\n{}\n)'.format(util.indent(query, ctx.indent))
 
 
+def _table_column(translator, expr):
+    op = expr.op()
+    field_name = _quote_field(op.name)
+
+    table = op.table
+    ctx = translator.context
+
+    # If the column does not originate from the table set in the current SELECT
+    # context, we should format as a subquery
+    if translator.permit_subquery and ctx.is_foreign_expr(table):
+        proj_expr = table.projection([field_name]).to_array()
+        return _table_array_view(translator, proj_expr)
+
+    if ctx.need_aliases():
+        alias = ctx.get_alias(table)
+        if alias is not None:
+            field_name = '{0}.{1}'.format(alias, field_name)
+
+    return field_name
+
+
 def _extract_field(sql_attr):
     def extract_field_formatter(translator, expr):
         op = expr.op()
@@ -356,6 +377,8 @@ _other_ops = {
     ir.SimpleCase: _simple_case,
     ir.SearchedCase: _searched_case,
 
+    ir.TableColumn: _table_column,
+
     ir.TableArrayView: _table_array_view,
 }
 
@@ -369,8 +392,9 @@ _operation_registry.update(_other_ops)
 
 class ExprTranslator(object):
 
-    def __init__(self, expr, context=None, named=False):
+    def __init__(self, expr, context=None, named=False, permit_subquery=False):
         self.expr = expr
+        self.permit_subquery = permit_subquery
 
         if context is None:
             from ibis.sql.compiler import QueryContext
@@ -408,10 +432,9 @@ class ExprTranslator(object):
         # The operation node type the typed expression wraps
         op = expr.op()
 
+        # TODO: use op MRO for subclasses instead of this isinstance spaghetti
         if isinstance(op, ir.Parameter):
             return self._trans_param(expr)
-        elif isinstance(op, ir.TableColumn):
-            return self._trans_column_ref(expr)
         elif isinstance(op, ir.PhysicalTable):
             # HACK/TODO: revisit for more complex cases
             return '*'
@@ -423,14 +446,3 @@ class ExprTranslator(object):
 
     def _trans_param(self, expr):
         raise NotImplementedError
-
-    def _trans_column_ref(self, expr):
-        op = expr.op()
-        field_name = _quote_field(op.name)
-
-        if self.context.need_aliases():
-            alias = self.context.get_alias(op.table)
-            if alias is not None:
-                field_name = '{0}.{1}'.format(alias, field_name)
-
-        return field_name

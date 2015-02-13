@@ -26,20 +26,31 @@ class QueryContext(object):
 
     """
 
-    def __init__(self, indent=2):
+    def __init__(self, indent=2, parent=None):
         self.table_aliases = {}
         self.extracted_subexprs = set()
         self.subquery_memo = {}
         self.indent = indent
+        self.parent = parent
+
+        self.always_alias = False
+
+        self.query = None
 
     @property
     def top_context(self):
-        return self
+        if self.parent is None:
+            return self
+        else:
+            return self.parent.top_context
 
     def _get_table_key(self, table):
         if isinstance(table, ir.TableExpr):
             table = table.op()
         return id(table)
+
+    def set_always_alias(self):
+        self.always_alias = True
 
     def is_extracted(self, expr):
         key = self._get_table_key(expr)
@@ -69,15 +80,42 @@ class QueryContext(object):
 
     def make_alias(self, table_expr):
         i = len(self.table_aliases)
+
+        key = self._get_table_key(table_expr)
+
+        # Get total number of aliases up and down the tree at this point; if we
+        # find the table prior-aliased along the way, however, we reuse that
+        # alias
+        ctx = self
+        while ctx.parent is not None:
+            ctx = ctx.parent
+
+            if key in ctx.table_aliases:
+                alias = ctx.table_aliases[key]
+                self.set_alias(table_expr, alias)
+                return
+
+            i += len(ctx.table_aliases)
+
         alias = 't%d' % i
         self.set_alias(table_expr, alias)
 
-    def has_alias(self, table_expr):
+    def has_alias(self, table_expr, parent_contexts=False):
         key = self._get_table_key(table_expr)
-        return key in self.table_aliases
+
+        if key in self.table_aliases:
+            return True
+
+        ctx = self
+        while parent_contexts and ctx.parent is not None:
+            ctx = ctx.parent
+            if key in ctx.table_aliases:
+                return True
+
+        return False
 
     def need_aliases(self):
-        return len(self.table_aliases) > 1
+        return self.always_alias or len(self.table_aliases) > 1
 
     def set_alias(self, table_expr, alias):
         key = self._get_table_key(table_expr)
@@ -98,15 +136,21 @@ class QueryContext(object):
         return self.table_aliases.get(key)
 
     def subcontext(self):
-        return SubContext(self)
+        return QueryContext(indent=self.indent, parent=self)
 
+    # Maybe temporary hacks for correlated / uncorrelated subqueries
 
-class SubContext(QueryContext):
+    def set_query(self, query):
+        self.query = query
 
-    def __init__(self, parent):
-        self.parent = parent
-        super(SubContext, self).__init__(indent=parent.indent)
+    def is_foreign_expr(self, expr):
+        from ibis.expr.base import _ExprValidator
 
-    @property
-    def top_context(self):
-        return self.parent.top_context
+        # The expression isn't foreign to us. For example, the parent table set
+        # in a correlated WHERE subquery
+        if self.has_alias(expr):
+            return False
+
+        exprs = [self.query.table_set] + self.query.select_set
+        validator = _ExprValidator(exprs)
+        return not validator.validate(expr)

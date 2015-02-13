@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
 from io import BytesIO
 
-from ibis.sql.context import QueryContext
 from ibis.sql.exprs import ExprTranslator
 import ibis.expr.base as ir
 import ibis.common as com
@@ -30,12 +28,16 @@ class Select(object):
     generated it
     """
 
-    def __init__(self, table_set, select_set,
-                 where=None, group_by=None, having=None,
+    def __init__(self, context, table_set, select_set,
+                 subqueries=None, where=None, group_by=None, having=None,
                  order_by=None, limit=None,
-                 indent=2, result_handler=None):
+                 indent=2, result_handler=None, parent_expr=None):
+        self.context = context
+
         self.select_set = select_set
         self.table_set = table_set
+
+        self.parent_expr = parent_expr
 
         self.where = where or []
 
@@ -45,7 +47,7 @@ class Select(object):
         self.order_by = order_by or []
 
         self.limit = limit
-        self.subqueries = []
+        self.subqueries = subqueries or []
 
         self.indent = indent
 
@@ -87,11 +89,10 @@ class Select(object):
         unexpected results
         """
         if context is None:
-            context = QueryContext()
+            context = self.context
 
-        self._extract_subqueries(context)
-
-        self.populate_context(context)
+        # Can't tell if this is a hack or not. Revisit later
+        context.set_query(self)
 
         # If any subqueries, translate them and add to beginning of query as
         # part of the WITH section
@@ -117,48 +118,6 @@ class Select(object):
                                       where_frag, groupby_frag, order_frag])
 
         return query
-
-    def populate_context(self, context):
-        # Populate aliases for the distinct relations used to output this
-        # select statement.
-
-        # Urgh, hack for now
-        op = self.table_set.op()
-
-        if isinstance(op, ir.Join):
-            roots = self.table_set._root_tables()
-            for table in roots:
-                if context.is_extracted(table):
-                    continue
-                context.make_alias(table)
-        else:
-            context.make_alias(self.table_set)
-
-    def _extract_subqueries(self, context):
-        # Somewhat temporary place for this. A little bit tricky, because
-        # subqueries can be found in many places
-        # - With the table set
-        # - Inside the where clause (these may be able to place directly, some
-        #   cases not)
-        # - As support queries inside certain expressions (possibly needing to
-        #   be extracted and joined into the table set where they are
-        #   used). More complex transformations should probably not occur here,
-        #   though.
-        #
-        # Duplicate subqueries might appear in different parts of the query
-        # structure, e.g. beneath two aggregates that are joined together, so
-        # we have to walk the entire query structure.
-        #
-        # The default behavior is to only extract into a WITH clause when a
-        # subquery appears multiple times (for DRY reasons). At some point we
-        # can implement a more aggressive policy so that subqueries always
-        # appear in the WITH part of the SELECT statement, if that's what you
-        # want.
-
-        # Find the subqueries, and record them in the passed query context.
-        self.subqueries = _extract_subqueries(self)
-        for expr in self.subqueries:
-            context.set_extracted(expr)
 
     def format_subqueries(self, context):
         if len(self.subqueries) == 0:
@@ -263,7 +222,8 @@ class Select(object):
 
         buf = BytesIO()
         buf.write('WHERE ')
-        fmt_preds = [translate_expr(pred, context=context)
+        fmt_preds = [translate_expr(pred, context=context,
+                                    permit_subquery=True)
                      for pred in self.where]
         conj = ' AND\n{}'.format(' ' * 6)
         buf.write(conj.join(fmt_preds))
@@ -440,84 +400,6 @@ def _format_table(ctx, expr, indent=2):
     return result
 
 
-def _extract_subqueries(select_stmt):
-    helper = _ExtractSubqueries(select_stmt)
-    return helper.get_result()
-
-
-class _ExtractSubqueries(object):
-
-    # Helper class to make things a little easier
-
-    def __init__(self, query, greedy=False):
-        self.query = query
-        self.greedy = greedy
-
-        # Keep track of table expressions that we find in the query structure
-        self.observed_exprs = {}
-        self.expr_counts = defaultdict(lambda: 0)
-
-    def get_result(self):
-        self.visit(self.query.table_set)
-
-        to_extract = []
-        for k, v in self.expr_counts.items():
-            if self.greedy or v > 1:
-                to_extract.append(self.observed_exprs[k])
-
-        return to_extract
-
-    def observe(self, expr):
-        key = id(expr.op())
-        self.observed_exprs[key] = expr
-        self.expr_counts[key] += 1
-
-    def visit(self, expr):
-        node = expr.op()
-        method = '_visit_{}'.format(type(node).__name__)
-
-        if hasattr(self, method):
-            f = getattr(self, method)
-            f(expr)
-        elif isinstance(node, ir.Join):
-            self._visit_join(expr)
-        elif isinstance(node, ir.PhysicalTable):
-            self._visit_physical_table(expr)
-        else:
-            raise NotImplementedError(type(node))
-
-    def _visit_join(self, expr):
-        node = expr.op()
-        self.visit(node.left)
-        self.visit(node.right)
-
-    def _visit_physical_table(self, expr):
-        return
-
-    def _visit_Aggregation(self, expr):
-        self.observe(expr)
-        self.visit(expr.op().table)
-
-    def _visit_Filter(self, expr):
-        pass
-
-    def _visit_Limit(self, expr):
-        self.visit(expr.op().table)
-
-    def _visit_Projection(self, expr):
-        self.observe(expr)
-        self.visit(expr.op().table)
-
-    def _visit_SQLQueryResult(self, expr):
-        self.observe(expr)
-
-    def _visit_SelfReference(self, expr):
-        self.visit(expr.op().table)
-
-    def _visit_SortBy(self, expr):
-        self.observe(expr)
-        self.visit(expr.op().table)
-
 
 
 def _join_not_none(sep, pieces):
@@ -526,6 +408,7 @@ def _join_not_none(sep, pieces):
 
 
 
-def translate_expr(expr, context=None, named=False):
-    translator = ExprTranslator(expr, context=context, named=named)
+def translate_expr(expr, context=None, named=False, permit_subquery=False):
+    translator = ExprTranslator(expr, context=context, named=named,
+                                permit_subquery=permit_subquery)
     return translator.get_result()
