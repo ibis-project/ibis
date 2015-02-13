@@ -576,6 +576,44 @@ FROM star1 t0
     ON t0.foo_id = t1.bar_id"""
         assert result_sql == expected_sql
 
+    def test_join_projection_subquery_broken_alias(self):
+        # From an observed bug, derived from tpch tables
+        nation = ir.table([
+            ('n_regionkey', 'int32'),
+            ('n_nationkey', 'int32'),
+            ('n_name', 'string')
+        ], 'nation')
+
+        region = ir.table([
+            ('r_regionkey', 'int32'),
+            ('r_name', 'string')
+        ], 'region')
+
+        customer = ir.table([
+            ('c_nationkey', 'int32'),
+            ('c_name', 'string')
+        ], 'customer')
+
+        geo = (nation.inner_join(region, [('n_regionkey', 'r_regionkey')])
+               [nation.n_nationkey,
+                nation.n_name.name('nation'),
+                region.r_name.name('region')])
+
+        expr = (geo.inner_join(customer, [('n_nationkey', 'c_nationkey')])
+                [customer, geo])
+
+        result = to_sql(expr)
+        expected = """SELECT t1.*, t0.*
+FROM (
+  SELECT t2.n_nationkey, t2.n_name AS nation, t3.r_name AS region
+  FROM nation t2
+    INNER JOIN region t3
+      ON t2.n_regionkey = t3.r_regionkey
+) t0
+  INNER JOIN customer t1
+    ON t0.n_nationkey = t1.c_nationkey"""
+        assert result == expected
+
     def test_where_simple_comparisons(self):
         t1 = self.con.table('star1')
 

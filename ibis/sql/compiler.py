@@ -141,18 +141,7 @@ class SelectBuilder(object):
         # Populate aliases for the distinct relations used to output this
         # select statement.
 
-        # Urgh, hack for now
-        op = self.table_set.op()
-        ctx = self.context
-
-        if isinstance(op, ir.Join):
-            roots = self.table_set._root_tables()
-            for table in roots:
-                if ctx.is_extracted(table):
-                    continue
-                ctx.make_alias(table)
-        else:
-            ctx.make_alias(self.table_set)
+        self._make_table_aliases(self.table_set)
 
         # XXX: This is a temporary solution to the table-aliasing / correlated
         # subquery problem. Will need to revisit and come up with a cleaner
@@ -169,6 +158,18 @@ class SelectBuilder(object):
             needs_alias = _foreign_ref_check(self, expr)
             if needs_alias:
                 self.context.set_always_alias()
+
+    def _make_table_aliases(self, expr):
+        ctx = self.context
+        node = expr.op()
+        if isinstance(node, (ir.Join, ir.Union)):
+            for arg in node.args:
+                if not isinstance(arg, ir.TableExpr):
+                    continue
+                self._make_table_aliases(arg)
+        else:
+            if not ctx.is_extracted(expr):
+                ctx.make_alias(expr)
 
     #----------------------------------------------------------------------
     # Filter analysis / rewrites

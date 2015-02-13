@@ -1047,6 +1047,10 @@ class CrossJoin(InnerJoin):
         InnerJoin.__init__(self, left, right, [])
 
 
+class Union(TableNode):
+    pass
+
+
 class Filter(TableNode):
 
     def __init__(self, table_expr, predicates):
