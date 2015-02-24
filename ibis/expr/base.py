@@ -2019,15 +2019,20 @@ class TableExpr(Expr):
         op = LeftAntiJoin(self, other, predicates)
         return TableExpr(op)
 
-    def projection(self, col_exprs):
+    def projection(self, exprs):
         """
 
         """
         clean_exprs = []
-        for expr in col_exprs:
+
+        validator = _ExprValidator([self])
+
+        for expr in exprs:
             expr = self._ensure_expr(expr)
 
-            expr = substitute_parents(expr)
+            # Perform substitution only if we share common roots
+            if validator.shares_some_roots(expr):
+                expr = substitute_parents(expr)
             clean_exprs.append(expr)
 
         op = _maybe_fuse_projection(self, clean_exprs)
@@ -2692,10 +2697,11 @@ class ExprSimplifier(object):
     operations that can be written down in any order and still yield the same
     semantic result)
     """
-    def __init__(self, expr, lift_memo=None):
+    def __init__(self, expr, lift_memo=None, block_projection=False):
         self.expr = expr
         self.lift_memo = lift_memo or {}
-        self.unchanged = True
+
+        self.block_projection = block_projection
 
     def get_result(self):
         expr = self.expr
@@ -2708,42 +2714,26 @@ class ExprSimplifier(object):
         # table schema or is a derived field. If we've projected out of
         # something other than a physical table, then lifting should not occur
         if isinstance(node, TableColumn):
-            tnode = node.table.op()
-            root = _base_table(tnode)
+            result = self._lift_TableColumn(expr, block=self.block_projection)
+            if result is not expr:
+                return result
+        # Temporary hacks around issues addressed in #109
+        elif isinstance(node, Projection):
+            return self._lift_Projection(expr, block=self.block_projection)
+        elif isinstance(node, Aggregation):
+            return self._lift_Aggregation(expr, block=self.block_projection)
 
-            if isinstance(root, Projection):
-                can_lift = False
-
-                for val in root.selections:
-                    if (isinstance(val.op(), PhysicalTable) and
-                        node.name in val.schema()):
-
-                        can_lift = True
-                        lifted_root = self.lift(val)
-                    elif (isinstance(val.op(), TableColumn)
-                          and node.name == val.get_name()):
-                        can_lift = True
-                        lifted_root = self.lift(val.op().table)
-
-                # HACK: If we've projected a join, do not lift the children
-                # TODO: what about limits and other things?
-                if isinstance(root.table.op(), Join):
-                    can_lift = False
-
-                if can_lift:
-                    lifted_node = TableColumn(node.name, lifted_root)
-                    return type(expr)(lifted_node, name=expr._name)
+        unchanged = True
 
         lifted_args = []
         for arg in node.args:
-            if isinstance(arg, (tuple, list)):
-                lifted_arg = [self._lift_arg(x) for x in arg]
-            else:
-                lifted_arg = self._lift_arg(arg)
+            lifted_arg, unch_arg = self._lift_arg(arg)
             lifted_args.append(lifted_arg)
 
+            unchanged = unchanged and unch_arg
+
         # Do not modify unnecessarily
-        if self.unchanged:
+        if unchanged:
             return expr
 
         lifted_node = type(node)(*lifted_args)
@@ -2754,47 +2744,43 @@ class ExprSimplifier(object):
 
         return result
 
-    def _lift_arg(self, arg):
-        if isinstance(arg, Expr):
-            lifted_arg = self.lift(arg)
-            if lifted_arg is not arg:
-                self.unchanged = False
+    def _lift_arg(self, arg, block=None):
+        unchanged = [True]
+        def _lift(x):
+            if isinstance(x, Expr):
+                lifted_arg = self.lift(x, block=block)
+                if lifted_arg is not x:
+                    unchanged[0] = False
+            else:
+                # a string or some other thing
+                lifted_arg = x
+            return lifted_arg
+
+        if arg is None:
+            return arg, True
+
+        if isinstance(arg, (tuple, list)):
+            result = [_lift(x) for x in arg]
         else:
-            # a string or some other thing
-            lifted_arg = arg
+            result = _lift(arg)
 
-        return lifted_arg
+        return result, unchanged[0]
 
-    def lift(self, expr):
-        key = id(expr.op())
+    def lift(self, expr, block=None):
+        key = id(expr.op()), block
         if key in self.lift_memo:
             return self.lift_memo[key]
 
         op = expr.op()
+
         if isinstance(op, (ValueNode, ArrayNode)):
-            return self._sub(expr)
+            return self._sub(expr, block=block)
         elif isinstance(op, Filter):
-            result = self.lift(op.table)
+            result = self.lift(op.table, block=block)
+        elif isinstance(op, Projection):
+            result = self._lift_Projection(expr, block=block)
         elif isinstance(op, Join):
-            left_lifted = self.lift(op.left)
-            right_lifted = self.lift(op.right)
-
-            unchanged = (left_lifted is op.left and
-                         right_lifted is op.right)
-
-            # Fix predicates
-            lifted_preds = []
-            for x in op.predicates:
-                subbed = self._sub(x)
-                if subbed is not x:
-                    unchanged = False
-                lifted_preds.append(subbed)
-
-            if not unchanged:
-                lifted_join = type(op)(left_lifted, right_lifted, lifted_preds)
-                result = TableExpr(lifted_join)
-            else:
-                result = expr
+            result = self._lift_Join(expr, block=block)
         elif isinstance(op, (TableNode, HasSchema)):
             return expr
         else:
@@ -2805,8 +2791,115 @@ class ExprSimplifier(object):
         self.lift_memo[key] = result
         return result
 
-    def _sub(self, expr):
-        return ExprSimplifier(expr, lift_memo=self.lift_memo).get_result()
+    def _lift_TableColumn(self, expr, block=None):
+        node = expr.op()
+
+        tnode = node.table.op()
+        root = _base_table(tnode)
+
+        result = expr
+        if isinstance(root, Projection):
+            can_lift = False
+
+            for val in root.selections:
+                if (isinstance(val.op(), PhysicalTable) and
+                    node.name in val.schema()):
+
+                    can_lift = True
+                    lifted_root = self.lift(val)
+                elif (isinstance(val.op(), TableColumn)
+                      and node.name == val.get_name()):
+                    can_lift = True
+                    lifted_root = self.lift(val.op().table)
+
+            # HACK: If we've projected a join, do not lift the children
+            # TODO: what about limits and other things?
+            # if isinstance(root.table.op(), Join):
+            #     can_lift = False
+
+            if can_lift and not block:
+                lifted_node = TableColumn(node.name, lifted_root)
+                result = type(expr)(lifted_node, name=expr._name)
+
+        return result
+
+    def _lift_Aggregation(self, expr, block=None):
+        if block is None:
+            block = self.block_projection
+
+        op = expr.op()
+        lifted_table = self.lift(op.table, block=True)
+        unch = lifted_table is op.table
+
+        lifted_aggs, unch1 = self._lift_arg(op.agg_exprs, block=True)
+        lifted_by, unch2 = self._lift_arg(op.by, block=True)
+        lifted_having, unch3 = self._lift_arg(op.having, block=True)
+
+        unchanged = unch and unch1 and unch2 and unch3
+
+        if not unchanged:
+            lifted_op = Aggregation(lifted_table, lifted_aggs, by=lifted_by,
+                                    having=lifted_having)
+            result = TableExpr(lifted_op)
+        else:
+            result = expr
+
+        return result
+
+    def _lift_Projection(self, expr, block=None):
+        if block is None:
+            block = self.block_projection
+
+        op = expr.op()
+
+        if block:
+            lifted_table = op.table
+        else:
+            lifted_table = self.lift(op.table, block=block)
+
+        lifted_selections, unch_sel = self._lift_arg(op.selections, block=True)
+        unchanged = (lifted_table is op.table) and unch_sel
+        if not unchanged:
+            lifted_projection = Projection(lifted_table, lifted_selections)
+            result = TableExpr(lifted_projection)
+        else:
+            result = expr
+
+        return result
+
+    def _lift_Join(self, expr, block=None):
+        op = expr.op()
+
+        left_lifted = self.lift(op.left, block=block)
+        right_lifted = self.lift(op.right, block=block)
+
+        unchanged = (left_lifted is op.left and
+                     right_lifted is op.right)
+
+        # Fix predicates
+        lifted_preds = []
+        for x in op.predicates:
+            subbed = self._sub(x, block=True)
+            if subbed is not x:
+                unchanged = False
+            lifted_preds.append(subbed)
+
+        if not unchanged:
+            lifted_join = type(op)(left_lifted, right_lifted, lifted_preds)
+            result = TableExpr(lifted_join)
+        else:
+            result = expr
+
+        return result
+
+    def _sub(self, expr, block=None):
+        # catchall recursive rewriter
+        if block is None:
+            block = self.block_projection
+
+        helper = ExprSimplifier(expr, lift_memo=self.lift_memo,
+                                block_projection=block)
+        return helper.get_result()
 
 
 
@@ -2820,7 +2913,7 @@ def _base_table(table_node):
 
 def apply_filter(expr, predicates):
     # This will attempt predicate pushdown in the cases where we can do it
-    # easily
+    # easily and safely
 
     op = expr.op()
 
@@ -2835,15 +2928,33 @@ def apply_filter(expr, predicates):
         # if any of the filter predicates have the parent expression among
         # their roots, then pushdown (at least of that predicate) is not
         # possible
-        # TODO: is partial pushdown something we should consider
-        # doing? Seems reasonable
+
+        # TODO: is partial pushdown (one or more, but not all of the passed
+        # predicates) something we should consider doing? Could be reasonable
+
         can_pushdown = True
         for pred in predicates:
             roots = pred._root_tables()
-            if expr in roots:
+            if _in_roots(expr, roots):
                 can_pushdown = False
 
+        # It's not unusual for the filter to reference the projection
+        # itself. If a predicate can be pushed down, in this case we must
+        # rewrite replacing the table refs with the roots internal to the
+        # projection we are referencing
+        #
+        # in pseudocode
+        # c = Projection(Join(a, b, jpreds), ppreds)
+        # filter_pred = c.field1 == c.field2
+        # Filter(c, [filter_pred])
+        #
+        # Assuming that the fields referenced by the filter predicate originate
+        # below the projection, we need to rewrite the predicate referencing
+        # the parent tables in the join being projected
+
         if can_pushdown:
+            predicates = [substitute_parents(x) for x in predicates]
+
             # this will further fuse, if possible
             filtered = op.table.filter(predicates)
             result = op.substitute_table(filtered)
@@ -2853,6 +2964,28 @@ def apply_filter(expr, predicates):
         result = Filter(expr, predicates)
 
     return result
+
+# def _pushdown_substitute(expr):
+#     rewriter = _PushdownRewrite(expr)
+#     return rewriter.get_result()
+# class _PushdownRewrite(object):
+#     # Hm, this is quite similar to the ExprSimplifier above
+#     def __init__(self, expr):
+#         self.expr = expr
+#     def get_result(self):
+#         return self._rewrite(expr)
+#     def _rewrite(self, expr):
+#         node = expr.op()
+#         unchanged = True
+#         new_args = []
+#         for arg in node.args:
+#             pass
+
+
+def _in_roots(expr, roots):
+    # XXX
+    what = expr.op() if isinstance(expr, Expr) else expr
+    return id(what) in [id(x) for x in roots]
 
 
 def _maybe_fuse_projection(expr, clean_exprs):

@@ -364,6 +364,44 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert result.equals(expected)
         assert result.equals(expected2)
 
+    def test_projection_with_join_pushdown_rewrite_refs(self):
+        # Observed this expression IR issue in a TopK-rewrite context
+        table1 = ir.table([
+            ('a_key1', 'string'),
+            ('a_key2', 'string'),
+            ('a_value', 'double')
+        ], 'foo')
+
+        table2 = ir.table([
+            ('b_key1', 'string'),
+            ('b_name', 'string'),
+            ('b_value', 'double')
+        ], 'bar')
+
+        table3 = ir.table([
+            ('c_key2', 'string'),
+            ('c_name', 'string')
+        ], 'baz')
+
+        proj = (table1.inner_join(table2, [('a_key1', 'b_key1')])
+                .inner_join(table3, [(table1.a_key2, table3.c_key2)])
+                [table1, table2.b_name.name('b'), table3.c_name.name('c'),
+                 table2.b_value])
+
+        cases = [
+            (proj.a_value > 0, table1.a_value > 0),
+            (proj.b_value > 0, table2.b_value > 0)
+        ]
+
+        for higher_pred, lower_pred in cases:
+            result = proj.filter([higher_pred])
+            op = result.op()
+            assert isinstance(op, ir.Projection)
+            filter_op = op.table.op()
+            assert isinstance(filter_op, ir.Filter)
+            new_pred = filter_op.predicates[0]
+            assert new_pred.equals(lower_pred)
+
     def test_filter_projection_partial_pushdown(self):
         pass
 

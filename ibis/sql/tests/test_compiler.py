@@ -384,6 +384,24 @@ def _get_query(expr):
     ast = build_ast(expr)
     return ast.queries[0]
 
+nation = ir.table([
+    ('n_regionkey', 'int32'),
+    ('n_nationkey', 'int32'),
+    ('n_name', 'string')
+], 'nation')
+
+region = ir.table([
+    ('r_regionkey', 'int32'),
+    ('r_name', 'string')
+], 'region')
+
+customer = ir.table([
+    ('c_nationkey', 'int32'),
+    ('c_name', 'string'),
+    ('c_acctbal', 'double')
+], 'customer')
+
+
 
 class TestSelectSQL(unittest.TestCase):
 
@@ -578,22 +596,6 @@ FROM star1 t0
 
     def test_join_projection_subquery_broken_alias(self):
         # From an observed bug, derived from tpch tables
-        nation = ir.table([
-            ('n_regionkey', 'int32'),
-            ('n_nationkey', 'int32'),
-            ('n_name', 'string')
-        ], 'nation')
-
-        region = ir.table([
-            ('r_regionkey', 'int32'),
-            ('r_name', 'string')
-        ], 'region')
-
-        customer = ir.table([
-            ('c_nationkey', 'int32'),
-            ('c_name', 'string')
-        ], 'customer')
-
         geo = (nation.inner_join(region, [('n_regionkey', 'r_regionkey')])
                [nation.n_nationkey,
                 nation.n_name.name('nation'),
@@ -1092,6 +1094,39 @@ FROM table t0
   ) t1
     ON t0.city = t1.city"""
         assert query == expected
+
+    def test_topk_predicate_pushdown_bug(self):
+        # Observed on TPCH data
+        cplusgeo = (
+            customer.inner_join(nation, [customer.c_nationkey ==
+                                         nation.n_nationkey])
+                    .inner_join(region, [nation.n_regionkey ==
+                                         region.r_regionkey])
+            [customer, nation.n_name, region.r_name])
+
+        pred = cplusgeo.n_name.topk(10, by=cplusgeo.c_acctbal.sum())
+        expr = cplusgeo.filter([pred])
+
+        result = to_sql(expr)
+        expected = """SELECT t0.*, t1.n_name, t2.r_name
+FROM customer t0
+  INNER JOIN nation t1
+    ON t0.c_nationkey = t1.n_nationkey
+  INNER JOIN region t2
+    ON t1.n_regionkey = t2.r_regionkey
+  LEFT SEMI JOIN (
+    SELECT t1.n_name, sum(t0.c_acctbal) AS __tmp__
+    FROM customer t0
+      INNER JOIN nation t1
+        ON t0.c_nationkey = t1.n_nationkey
+      INNER JOIN region t2
+        ON t1.n_regionkey = t2.r_regionkey
+    GROUP BY 1
+    ORDER BY __tmp__ DESC
+    LIMIT 10
+  ) t3
+    ON t1.n_name = t3.n_name"""
+        assert result == expected
 
     def test_bottomk(self):
         pass

@@ -321,12 +321,6 @@ class SelectBuilder(object):
 
             self._collect(expr.op().table)
 
-    def _sub(self, what):
-        if isinstance(what, list):
-            return [ir.substitute_parents(x, self.sub_memo) for x in what]
-        else:
-            return ir.substitute_parents(what, self.sub_memo)
-
     def _collect_Filter(self, expr, toplevel=False):
         op = expr.op()
 
@@ -383,6 +377,12 @@ class SelectBuilder(object):
         if toplevel:
             self.sort_by = op.keys
             self._collect(op.table, toplevel=toplevel)
+
+    def _sub(self, what):
+        if isinstance(what, list):
+            return [ir.substitute_parents(x, self.sub_memo) for x in what]
+        else:
+            return ir.substitute_parents(what, self.sub_memo)
 
     #----------------------------------------------------------------------
     # Subquery analysis / extraction
