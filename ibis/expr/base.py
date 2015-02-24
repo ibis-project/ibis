@@ -957,9 +957,6 @@ class Join(TableNode):
     def has_schema(self):
         return False
 
-    def materialize(self):
-        return MaterializedJoin(self)
-
     def root_tables(self):
         if util.all_of([self.left.op(), self.right.op()],
                        (Join, Projection)):
@@ -1025,11 +1022,11 @@ class LeftAntiJoin(Join):
 class MaterializedJoin(TableNode, HasSchema):
 
     def __init__(self, join_expr):
-        assert isinstance(join_expr, Join)
+        assert isinstance(join_expr.op(), Join)
         self.join = join_expr
 
         TableNode.__init__(self, [join_expr])
-        schema = self.join._get_schema()
+        schema = self.join.op()._get_schema()
         HasSchema.__init__(self, schema)
 
     def root_tables(self):
@@ -1918,7 +1915,8 @@ class TableExpr(Expr):
         if self._is_materialized():
             return self
         else:
-            return TableExpr(self.op().materialize())
+            op = MaterializedJoin(self)
+            return TableExpr(op)
 
     def get_columns(self, iterable):
         return [self.get_column(x) for x in iterable]

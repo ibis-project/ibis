@@ -53,6 +53,35 @@ class MockConnection(SQLConnection):
         'test2': [
             ('key', 'string'),
             ('value', 'double')
+        ],
+        'tpch_region': [
+            ('r_regionkey', 'int16'),
+            ('r_name', 'string'),
+            ('r_comment', 'string')
+        ],
+        'tpch_nation': [
+            ('n_nationkey', 'int16'),
+            ('n_name', 'string'),
+            ('n_regionkey', 'int16'),
+            ('n_comment', 'string')
+        ],
+        'tpch_lineitem': [
+            ('l_orderkey', 'int64'),
+            ('l_partkey', 'int64'),
+            ('l_suppkey', 'int64'),
+            ('l_linenumber', 'int32'),
+            ('l_quantity', 'decimal'),
+            ('l_extendedprice', 'decimal'),
+            ('l_discount', 'decimal'),
+            ('l_tax', 'decimal'),
+            ('l_returnflag', 'string'),
+            ('l_linestatus', 'string'),
+            ('l_shipdate', 'string'),
+            ('l_commitdate', 'string'),
+            ('l_receiptdate', 'string'),
+            ('l_shipinstruct', 'string'),
+            ('l_shipmode', 'string'),
+            ('l_comment', 'string')
         ]
     }
 

@@ -532,6 +532,21 @@ FROM (
     ON t0.key2 = t1.key2"""
         assert result == expected
 
+    def test_join_just_materialized(self):
+        t1 = self.con.table('tpch_nation')
+        t2 = self.con.table('tpch_region')
+
+        joined = t1.inner_join(t2, [t1.n_regionkey == t2.r_regionkey])
+        result = to_sql(joined)
+        expected = """SELECT t0.*, t1.*
+FROM tpch_nation t0
+  INNER JOIN tpch_region t1
+    ON t0.n_regionkey = t1.r_regionkey"""
+        assert result == expected
+
+        result = to_sql(joined.materialize())
+        assert result == expected
+
     def test_join_no_predicates_for_impala(self):
         # Impala requires that joins without predicates be written explicitly
         # as CROSS JOIN, since result sets can accidentally get too large if a
