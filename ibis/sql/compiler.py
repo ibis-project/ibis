@@ -342,6 +342,20 @@ class SelectBuilder(object):
         }
         self._collect(op.table, toplevel=toplevel)
 
+    def _collect_SortBy(self, expr, toplevel=False):
+        op = expr.op()
+
+        self.sort_by = op.keys
+        if toplevel:
+            # HACK: yuck, need a better way to know if we should perform a
+            # select * from a subquery here
+            if not isinstance(op.table.op(), ir.Aggregation):
+                self.select_set = [op.table]
+                self.table_set = op.table
+                toplevel = False
+
+        self._collect(op.table, toplevel=toplevel)
+
     def _collect_Join(self, expr, toplevel=False):
         op = expr.op()
 
@@ -375,12 +389,6 @@ class SelectBuilder(object):
     def _collect_SelfReference(self, expr, toplevel=False):
         op = expr.op()
         if toplevel:
-            self._collect(op.table, toplevel=toplevel)
-
-    def _collect_SortBy(self, expr, toplevel=False):
-        op = expr.op()
-        if toplevel:
-            self.sort_by = op.keys
             self._collect(op.table, toplevel=toplevel)
 
     def _sub(self, what):

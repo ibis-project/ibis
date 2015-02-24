@@ -275,9 +275,25 @@ FROM (
 
     def test_sort_by_on_limit_yield_subquery(self):
         # x.limit(...).sort_by(...)
-        # is different from
+        #   is semantically different from
         # x.sort_by(...).limit(...)
-        pass
+        #   and will often yield different results
+        t = self.con.table('functional_alltypes')
+        expr = (t.group_by('string_col')
+                .aggregate([t.count().name('nrows')])
+                .limit(5)
+                .sort_by('string_col'))
+
+        result = to_sql(expr)
+        expected = """SELECT *
+FROM (
+  SELECT string_col, count(*) AS nrows
+  FROM functional_alltypes
+  GROUP BY 1
+  LIMIT 5
+) t0
+ORDER BY string_col"""
+        assert result == expected
 
     def test_top_convenience(self):
         # x.top(10, by=field)
