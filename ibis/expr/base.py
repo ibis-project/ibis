@@ -2852,11 +2852,12 @@ class ExprSimplifier(object):
 
         if block:
             lifted_table = op.table
+            unch = True
         else:
-            lifted_table = self.lift(op.table, block=block)
+            lifted_table, unch = self._lift_arg(op.table, block=True)
 
         lifted_selections, unch_sel = self._lift_arg(op.selections, block=True)
-        unchanged = (lifted_table is op.table) and unch_sel
+        unchanged = unch and unch_sel
         if not unchanged:
             lifted_projection = Projection(lifted_table, lifted_selections)
             result = TableExpr(lifted_projection)
@@ -3000,7 +3001,7 @@ def _maybe_fuse_projection(expr, clean_exprs):
         roots = root.root_tables()
         validator = _ExprValidator([TableExpr(root)])
         fused_exprs = []
-        can_fuse = True
+        can_fuse = False
         for val in clean_exprs:
             # a * projection
             if (isinstance(val, TableExpr) and
@@ -3009,14 +3010,16 @@ def _maybe_fuse_projection(expr, clean_exprs):
                  # gross we share the same table root. Better way to detect?
                  len(roots) == 1 and val._root_tables()[0] is roots[0])
             ):
-                continue
+                can_fuse = True
+                fused_exprs.extend(root.selections)
             elif not validator.validate(val):
                 can_fuse = False
+                break
             else:
                 fused_exprs.append(val)
 
         if can_fuse:
-            return Projection(root.table, root.selections + fused_exprs)
+            return Projection(root.table, fused_exprs)
 
     return Projection(expr, clean_exprs)
 

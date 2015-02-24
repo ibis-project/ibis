@@ -845,6 +845,53 @@ WHERE value > 0"""
         assert table3.equals(expected)
         assert table3_filtered.equals(expected2)
 
+    def test_bug_project_multiple_times(self):
+        # #108
+        customer = self.con.table('tpch_customer')
+        nation = self.con.table('tpch_nation')
+        region = self.con.table('tpch_region')
+
+        joined = (
+            customer.inner_join(nation,
+                                [customer.c_nationkey == nation.n_nationkey])
+            .inner_join(region,
+                        [nation.n_regionkey == region.r_regionkey])
+            )
+        proj1 = [customer, nation.n_name, region.r_name]
+        step1 = joined[proj1]
+
+        topk_by = step1.c_acctbal.cast('double').sum()
+        pred = step1.n_name.topk(10, by=topk_by)
+
+        proj_exprs = [step1.c_name, step1.r_name, step1.n_name]
+        step2 = step1[pred]
+        expr = step2.projection(proj_exprs)
+
+        # it works!
+        result = to_sql(expr)
+        expected = """SELECT c_name, r_name, n_name
+FROM (
+  SELECT t1.*, t2.n_name, t3.r_name
+  FROM tpch_customer t1
+    INNER JOIN tpch_nation t2
+      ON t1.c_nationkey = t2.n_nationkey
+    INNER JOIN tpch_region t3
+      ON t2.n_regionkey = t3.r_regionkey
+    LEFT SEMI JOIN (
+      SELECT t2.n_name, sum(CAST(t1.c_acctbal AS double)) AS __tmp__
+      FROM tpch_customer t1
+        INNER JOIN tpch_nation t2
+          ON t1.c_nationkey = t2.n_nationkey
+        INNER JOIN tpch_region t3
+          ON t2.n_regionkey = t3.r_regionkey
+      GROUP BY 1
+      ORDER BY __tmp__ DESC
+      LIMIT 10
+    ) t4
+      ON t2.n_name = t4.n_name
+) t0"""
+        assert result == expected
+
     def test_aggregate_projection_subquery(self):
         t = self.con.table('alltypes')
 

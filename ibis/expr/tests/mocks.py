@@ -82,6 +82,16 @@ class MockConnection(SQLConnection):
             ('l_shipinstruct', 'string'),
             ('l_shipmode', 'string'),
             ('l_comment', 'string')
+        ],
+        'tpch_customer': [
+            ('c_custkey', 'int64'),
+            ('c_name', 'string'),
+            ('c_address', 'string'),
+            ('c_nationkey', 'int16'),
+            ('c_phone', 'string'),
+            ('c_acctbal', 'decimal'),
+            ('c_mktsegment', 'string'),
+            ('c_comment', 'string')
         ]
     }
 
