@@ -1044,8 +1044,20 @@ class CrossJoin(InnerJoin):
         InnerJoin.__init__(self, left, right, [])
 
 
-class Union(TableNode):
-    pass
+class Union(BlockingTableNode, HasSchema):
+
+    def __init__(self, left, right, distinct=False):
+        self.left = left
+        self.right = right
+        self.distinct = distinct
+
+        TableNode.__init__(self, [left, right, distinct])
+        self._validate()
+        HasSchema.__init__(self, self.left.schema())
+
+    def _validate(self):
+        if not self.left.schema().equals(self.right.schema()):
+            raise RelationError('Table schemas must be equal to form union')
 
 
 class Filter(TableNode):
@@ -2100,6 +2112,25 @@ class TableExpr(Expr):
             what = [what]
 
         op = SortBy(self, what)
+        return TableExpr(op)
+
+    def union(self, other, distinct=False):
+        """
+        Form the table set union of two table expressions having identical
+        schemas.
+
+        Parameters
+        ----------
+        other : TableExpr
+        distinct : boolean, default False
+            Only union distinct rows not occurring in the calling table (this
+            can be very expensive, be careful)
+
+        Returns
+        -------
+        union : TableExpr
+        """
+        op = Union(self, other, distinct=distinct)
         return TableExpr(op)
 
 

@@ -1244,6 +1244,71 @@ FROM alltypes"""
         assert result == expected
 
 
+class TestUnions(unittest.TestCase):
+
+    def setUp(self):
+        self.con = MockConnection()
+
+        table = self.con.table('functional_alltypes')
+
+        self.t1 = (table[table.int_col > 0]
+                   [table.string_col.name('key'),
+                    table.float_col.name('value').cast('double')])
+        self.t2 = (table[table.int_col <= 0]
+                   [table.string_col.name('key'),
+                    table.double_col.name('value')])
+
+        self.union1 = self.t1.union(self.t2)
+
+    def test_union(self):
+        result = to_sql(self.union1)
+        expected = """\
+SELECT string_col AS key, CAST(float_col AS double) AS value
+FROM functional_alltypes
+WHERE int_col > 0
+UNION ALL
+SELECT string_col AS key, double_col AS value
+FROM functional_alltypes
+WHERE int_col <= 0"""
+        assert result == expected
+
+    def test_union_distinct(self):
+        union = self.t1.union(self.t2, distinct=True)
+        result = to_sql(union)
+        expected = """\
+SELECT string_col AS key, CAST(float_col AS double) AS value
+FROM functional_alltypes
+WHERE int_col > 0
+UNION
+SELECT string_col AS key, double_col AS value
+FROM functional_alltypes
+WHERE int_col <= 0"""
+        assert result == expected
+
+    def test_union_project_column(self):
+        # select a column, get a subquery
+        expr = self.union1[[self.union1.key]]
+        result = to_sql(expr)
+        expected = """SELECT key
+FROM (
+  SELECT string_col AS key, CAST(float_col AS double) AS value
+  FROM functional_alltypes
+  WHERE int_col > 0
+  UNION ALL
+  SELECT string_col AS key, double_col AS value
+  FROM functional_alltypes
+  WHERE int_col <= 0
+) t0"""
+        assert result == expected
+
+    def test_union_extract_with_block(self):
+        pass
+
+    def test_union_in_subquery(self):
+        pass
+
+
+
 class TestSubqueriesEtc(unittest.TestCase):
 
     def setUp(self):

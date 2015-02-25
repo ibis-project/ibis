@@ -1061,7 +1061,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         assert expr.equals(expected)
 
 
-class TestJoins(BasicTestCase, unittest.TestCase):
+class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 
     def test_equijoin_schema_merge(self):
         table1 = api.table([('key1',  'string'), ('value1', 'double')])
@@ -1228,6 +1228,8 @@ class TestJoins(BasicTestCase, unittest.TestCase):
         assert result.equals(expected)
 
     def test_non_equijoins(self):
+        # Move non-equijoin predicates to WHERE during SQL translation if
+        # possible, per #107
         pass
 
     def test_join_overlapping_column_names(self):
@@ -1297,6 +1299,30 @@ class TestJoins(BasicTestCase, unittest.TestCase):
 
     def test_join_nontrivial_exprs(self):
         pass
+
+    def test_union(self):
+        schema1  = [
+            ('key', 'string'),
+            ('value', 'double')
+        ]
+        schema2  = [
+            ('key', 'string'),
+            ('key2', 'string'),
+            ('value', 'double')
+        ]
+        t1 = api.table(schema1, 'foo')
+        t2 = api.table(schema1, 'bar')
+        t3 = api.table(schema2, 'baz')
+
+        result = t1.union(t2)
+        assert isinstance(result.op(), ir.Union)
+        assert not result.op().distinct
+
+        result = t1.union(t2, distinct=True)
+        assert isinstance(result.op(), ir.Union)
+        assert result.op().distinct
+
+        self.assertRaises(ir.RelationError, t1.union, t3)
 
 
 class TestCaseExpressions(BasicTestCase, unittest.TestCase):

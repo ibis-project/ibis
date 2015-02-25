@@ -24,11 +24,11 @@ import ibis.expr.base as ir
 import ibis.util as util
 
 from ibis.sql.context import QueryContext
-from ibis.sql.select import Select
+import ibis.sql.select as ddl
 
 
 def build_ast(expr, context=None):
-    builder = SelectBuilder(expr, context=context)
+    builder = QueryBuilder(expr, context=context)
     return builder.get_result()
 
 
@@ -55,6 +55,38 @@ class QueryAST(object):
         self.queries = queries
 
 
+class QueryBuilder(object):
+
+    def __init__(self, expr, context=None):
+        self.expr = expr
+
+        if context is None:
+            context = QueryContext()
+
+        self.context = context
+
+    def get_result(self):
+        op = self.expr.op()
+
+        # TODO: any setup / teardown DDL statements will need to be done prior
+        # to building the result set-generating statements.
+        if isinstance(op, ir.Union):
+            query = self._make_union()
+        else:
+            query = self._make_select()
+
+        return QueryAST(self.context, [query])
+
+    def _make_union(self):
+        op = self.expr.op()
+        return ddl.Union(op.left, op.right, distinct=op.distinct,
+                         context=self.context)
+
+    def _make_select(self):
+        builder = SelectBuilder(self.expr, self.context)
+        return builder.get_result()
+
+
 class SelectBuilder(object):
 
     """
@@ -67,13 +99,10 @@ class SelectBuilder(object):
     relevant query unit aliases to be used when actually generating SQL.
     """
 
-    def __init__(self, expr, context=None):
+    def __init__(self, expr, context):
         self.expr = expr
 
         self.query_expr, self.result_handler = _adapt_expr(self.expr)
-
-        if context is None:
-            context = QueryContext()
 
         self.sub_memo = {}
 
@@ -104,13 +133,13 @@ class SelectBuilder(object):
         # statement(s)
         teardown_queries = self._generate_teardown_queries()
 
-        select_query = self._build_select()
+        select_query = self._build_result_query()
 
         self.queries.extend(setup_queries)
         self.queries.append(select_query)
         self.queries.extend(teardown_queries)
 
-        return self._wrap_result()
+        return select_query
 
     def _generate_setup_queries(self):
         return []
@@ -118,24 +147,21 @@ class SelectBuilder(object):
     def _generate_teardown_queries(self):
         return []
 
-    def _wrap_result(self):
-        return QueryAST(self.context, self.queries)
-
-    def _build_select(self):
+    def _build_result_query(self):
         self._collect_elements()
         self._analyze_filter_clauses()
         self._analyze_subqueries()
         self._populate_context()
 
-        return Select(self.context, self.table_set, self.select_set,
-                      subqueries=self.subqueries,
-                      where=self.filters,
-                      group_by=self.group_by,
-                      having=self.having,
-                      limit=self.limit,
-                      order_by=self.sort_by,
-                      result_handler=self.result_handler,
-                      parent_expr=self.query_expr)
+        return ddl.Select(self.context, self.table_set, self.select_set,
+                          subqueries=self.subqueries,
+                          where=self.filters,
+                          group_by=self.group_by,
+                          having=self.having,
+                          limit=self.limit,
+                          order_by=self.sort_by,
+                          result_handler=self.result_handler,
+                          parent_expr=self.query_expr)
 
     def _populate_context(self):
         # Populate aliases for the distinct relations used to output this
@@ -162,7 +188,7 @@ class SelectBuilder(object):
     def _make_table_aliases(self, expr):
         ctx = self.context
         node = expr.op()
-        if isinstance(node, (ir.Join, ir.Union)):
+        if isinstance(node, ir.Join):
             for arg in node.args:
                 if not isinstance(arg, ir.TableExpr):
                     continue
@@ -371,6 +397,12 @@ class SelectBuilder(object):
         self._collect(op.left, toplevel=False)
         self._collect(op.right, toplevel=False)
 
+    def _collect_Union(self, expr, toplevel=False):
+        if not toplevel:
+            return
+        else:
+            raise NotImplementedError
+
     def _collect_Projection(self, expr, toplevel=False):
         op = expr.op()
         if toplevel:
@@ -491,6 +523,9 @@ class _ExtractSubqueries(object):
 
     def _visit_Limit(self, expr):
         self.visit(expr.op().table)
+
+    def _visit_Union(self, expr):
+        self.observe(expr)
 
     def _visit_Projection(self, expr):
         self.observe(expr)

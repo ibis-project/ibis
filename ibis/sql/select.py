@@ -20,7 +20,11 @@ import ibis.common as com
 import ibis.util as util
 
 
-class Select(object):
+class DDLStatement(object):
+    pass
+
+
+class Select(DDLStatement):
 
     """
     A SELECT statement which, after execution, might yield back to the user a
@@ -399,6 +403,31 @@ def _format_table(ctx, expr, indent=2):
 
     return result
 
+
+class Union(DDLStatement):
+
+    def __init__(self, left_table, right_table, distinct=False,
+                 context=None):
+        self.context = context
+        self.left = left_table
+        self.right = right_table
+
+        self.distinct = distinct
+
+    def compile(self, context=None, semicolon=False):
+        if context is None:
+            context = self.context
+
+        if self.distinct:
+            union_keyword = 'UNION'
+        else:
+            union_keyword = 'UNION ALL'
+
+        left_set = context.get_formatted_query(self.left)
+        right_set = context.get_formatted_query(self.right)
+
+        query = '{}\n{}\n{}'.format(left_set, union_keyword, right_set)
+        return query
 
 
 
