@@ -15,6 +15,7 @@
 
 import ibis.expr.base as ir
 import ibis.sql.compiler as sql
+import ibis.sql.select as ddl
 
 
 class Connection(object):
@@ -77,7 +78,7 @@ class SQLConnection(object):
 
             cursor = self._execute(sql_string)
             result = self._fetch_from_cursor(cursor)
-            if isinstance(query, sql.Select):
+            if isinstance(query, ddl.Select):
                 if query.result_handler is not None:
                     result = query.result_handler(result)
 

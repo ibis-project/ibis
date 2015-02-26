@@ -35,11 +35,13 @@ class Select(DDLStatement):
     def __init__(self, context, table_set, select_set,
                  subqueries=None, where=None, group_by=None, having=None,
                  order_by=None, limit=None,
-                 indent=2, result_handler=None, parent_expr=None):
+                 distinct=False, indent=2,
+                 result_handler=None, parent_expr=None):
         self.context = context
 
         self.select_set = select_set
         self.table_set = table_set
+        self.distinct = distinct
 
         self.parent_expr = parent_expr
 
@@ -184,7 +186,12 @@ class Select(DDLStatement):
                 tokens += 1
                 line_length += len(val) + 2
 
-        return 'SELECT{}'.format(buf.getvalue())
+        if self.distinct:
+            select_key = 'SELECT DISTINCT'
+        else:
+            select_key = 'SELECT'
+
+        return '{}{}'.format(select_key, buf.getvalue())
 
     def format_table_set(self, ctx):
         fragment = 'FROM '

@@ -494,6 +494,46 @@ class TestContains(BasicTestCase, unittest.TestCase):
         assert isinstance(not_expr, ir.BooleanArray)
 
 
+class TestDistinct(unittest.TestCase):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('functional_alltypes')
+
+    def test_distinct_basic(self):
+        expr = self.table.distinct()
+        assert isinstance(expr.op(), ir.Distinct)
+        assert expr.op().table is self.table
+
+        expr = self.table.string_col.distinct()
+        assert isinstance(expr.op(), ir.DistinctArray)
+
+        ex_projection = self.table[[self.table.string_col]]
+        assert expr.op().table.op().table.equals(ex_projection)
+
+    # def test_distinct_array_interactions(self):
+    #     # TODO
+
+    #     # array cardinalities / shapes are likely to be different.
+    #     a = self.table.int_col.distinct()
+    #     b = self.table.bigint_col
+
+    #     self.assertRaises(ir.RelationError, a.__add__, b)
+
+    def test_distinct_count(self):
+        result = self.table.string_col.distinct().count()
+        expected = self.table.string_col.nunique()
+        assert result.equals(expected)
+        assert isinstance(result.op(), ir.CountDistinct)
+
+    def test_nunique(self):
+        expr = self.table.string_col.nunique()
+        assert isinstance(expr.op(), ir.CountDistinct)
+
+    def test_project_with_distinct(self):
+        pass
+
+
 class TestExprFormatting(unittest.TestCase):
     # Uncertain about how much we want to commit to unit tests around the
     # particulars of the output at the moment.

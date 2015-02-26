@@ -144,7 +144,7 @@ class QueryContext(object):
         self.query = query
 
     def is_foreign_expr(self, expr):
-        from ibis.expr.base import _ExprValidator
+        from ibis.expr.analysis import ExprValidator
 
         # The expression isn't foreign to us. For example, the parent table set
         # in a correlated WHERE subquery
@@ -152,5 +152,5 @@ class QueryContext(object):
             return False
 
         exprs = [self.query.table_set] + self.query.select_set
-        validator = _ExprValidator(exprs)
+        validator = ExprValidator(exprs)
         return not validator.validate(expr)

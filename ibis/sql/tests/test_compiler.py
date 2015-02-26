@@ -19,6 +19,8 @@ import pandas as pd
 from ibis.sql.compiler import build_ast, to_sql
 from ibis.expr.tests.mocks import MockConnection
 import ibis.common as com
+
+import ibis.expr.analysis as L
 import ibis.expr.base as ir
 
 
@@ -39,7 +41,7 @@ class TestASTBuilder(unittest.TestCase):
 
         expr = table2['c'] == 2
 
-        result = ir.substitute_parents(expr)
+        result = L.substitute_parents(expr)
         expected = table['c'] == 2
         assert result.equals(expected)
 
@@ -47,7 +49,7 @@ class TestASTBuilder(unittest.TestCase):
         # projection
         table4 = table[['c', (table['c'] * 2).name('foo')]]
         expr = table4['c'] == table4['foo']
-        result = ir.substitute_parents(expr)
+        result = L.substitute_parents(expr)
         expected = table['c'] == table4['foo']
         assert result.equals(expected)
 
@@ -58,14 +60,14 @@ class TestASTBuilder(unittest.TestCase):
         table3 = table[['c', 'f']]
         expr = table3['c'] == 2
 
-        result = ir.substitute_parents(expr)
+        result = L.substitute_parents(expr)
         expected = table['c'] == 2
         assert result.equals(expected)
 
         # Unsafe to rewrite past projection
         table5 = table[(table.f * 2).name('c'), table.f]
         expr = table5['c'] == 2
-        result = ir.substitute_parents(expr)
+        result = L.substitute_parents(expr)
         assert result is expr
 
     def test_rewrite_join_projection_without_other_ops(self):
@@ -93,7 +95,7 @@ class TestASTBuilder(unittest.TestCase):
         ex_expr = (table.left_join(table2, [pred1])
                    .inner_join(table3, [ex_pred2]))
 
-        rewritten_proj = ir.substitute_parents(view)
+        rewritten_proj = L.substitute_parents(view)
         op = rewritten_proj.op()
         assert op.table.equals(ex_expr)
 
@@ -382,9 +384,6 @@ FROM (
   GROUP BY 1
 ) t0"""
         assert query == expected
-
-    def test_distinct_use_cases(self):
-        pass
 
 
 
@@ -1307,6 +1306,60 @@ FROM (
     def test_union_in_subquery(self):
         pass
 
+
+class TestDistinct(unittest.TestCase):
+
+    def setUp(self):
+        self.con = MockConnection()
+
+    def test_simple_table_distinct(self):
+        t = self.con.table('functional_alltypes')
+
+        expr = t[t.string_col, t.int_col].distinct()
+
+        result = to_sql(expr)
+        expected = """SELECT DISTINCT string_col, int_col
+FROM functional_alltypes"""
+        assert result == expected
+
+    def test_array_distinct(self):
+        t = self.con.table('functional_alltypes')
+        expr = t.string_col.distinct()
+
+        result = to_sql(expr)
+        expected = """SELECT DISTINCT string_col
+FROM functional_alltypes"""
+        assert result == expected
+
+    def test_count_distinct(self):
+        t = self.con.table('functional_alltypes')
+
+        metric = t.int_col.nunique().name('nunique')
+        expr = t[t.bigint_col > 0].group_by('string_col').aggregate([metric])
+
+        result = to_sql(expr)
+        expected = """SELECT string_col, COUNT(DISTINCT int_col) AS nunique
+FROM functional_alltypes
+WHERE bigint_col > 0
+GROUP BY 1"""
+        assert result == expected
+
+    def test_multiple_count_distinct(self):
+        # Impala and some other databases will not execute multiple
+        # count-distincts in a single aggregation query. This error reporting
+        # will be left to the database itself, for now.
+        t = self.con.table('functional_alltypes')
+        metrics = [t.int_col.nunique().name('int_card'),
+                   t.smallint_col.nunique().name('smallint_card')]
+
+        expr = t.group_by('string_col').aggregate(metrics)
+
+        result = to_sql(expr)
+        expected = """SELECT string_col, COUNT(DISTINCT int_col) AS int_card,
+       COUNT(DISTINCT smallint_col) AS smallint_card
+FROM functional_alltypes
+GROUP BY 1"""
+        assert result == expected
 
 
 class TestSubqueriesEtc(unittest.TestCase):

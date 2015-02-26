@@ -279,6 +279,12 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+def _count_distinct(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    return 'COUNT(DISTINCT {})'.format(arg_formatted)
+
+
 def _literal(translator, expr):
     if isinstance(expr, ir.BooleanValue):
         typeclass = 'boolean'
@@ -326,7 +332,8 @@ _unary_ops = {
     ir.Max: _unary_op('max'),
     ir.Min: _unary_op('min'),
 
-    ir.Count: _unary_op('count')
+    ir.Count: _unary_op('count'),
+    ir.CountDistinct: _count_distinct
 }
 
 _binary_infix_ops = {

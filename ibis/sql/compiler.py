@@ -20,8 +20,8 @@
 
 from collections import defaultdict
 
+import ibis.expr.analysis as L
 import ibis.expr.base as ir
-import ibis.util as util
 
 from ibis.sql.context import QueryContext
 import ibis.sql.select as ddl
@@ -117,6 +117,7 @@ class SelectBuilder(object):
         self.limit = None
         self.sort_by = []
         self.subqueries = []
+        self.distinct = False
 
         self.op_memo = set()
 
@@ -160,6 +161,7 @@ class SelectBuilder(object):
                           having=self.having,
                           limit=self.limit,
                           order_by=self.sort_by,
+                          distinct=self.distinct,
                           result_handler=self.result_handler,
                           parent_expr=self.query_expr)
 
@@ -347,6 +349,12 @@ class SelectBuilder(object):
 
             self._collect(expr.op().table)
 
+    def _collect_Distinct(self, expr, toplevel=False):
+        if toplevel:
+            self.distinct = True
+
+        self._collect(expr.op().table, toplevel=toplevel)
+
     def _collect_Filter(self, expr, toplevel=False):
         op = expr.op()
 
@@ -425,9 +433,9 @@ class SelectBuilder(object):
 
     def _sub(self, what):
         if isinstance(what, list):
-            return [ir.substitute_parents(x, self.sub_memo) for x in what]
+            return [L.substitute_parents(x, self.sub_memo) for x in what]
         else:
-            return ir.substitute_parents(what, self.sub_memo)
+            return L.substitute_parents(what, self.sub_memo)
 
     #----------------------------------------------------------------------
     # Subquery analysis / extraction
@@ -517,6 +525,9 @@ class _ExtractSubqueries(object):
     def _visit_Aggregation(self, expr):
         self.observe(expr)
         self.visit(expr.op().table)
+
+    def _visit_Distinct(self, expr):
+        self.observe(expr)
 
     def _visit_Filter(self, expr):
         pass
@@ -642,14 +653,14 @@ def _adapt_expr(expr):
     elif isinstance(expr, ir.ArrayExpr):
         op = expr.op()
 
-        if isinstance(op, ir.TableColumn):
+        if isinstance(op, (ir.TableColumn, ir.DistinctArray)):
             table_expr = op.table
             def column_handler(results):
                 return results[op.name]
             result_handler = column_handler
         else:
             # Something more complicated.
-            base_table = _find_source_table(expr)
+            base_table = L.find_source_table(expr)
             table_expr = base_table.projection([expr.name('tmp')])
             def projection_handler(results):
                 return results['tmp']
@@ -662,49 +673,5 @@ def _adapt_expr(expr):
 
 
 def _reduction_to_aggregation(expr, agg_name='tmp'):
-    table = _find_base_table(expr)
+    table = L.find_base_table(expr)
     return table.aggregate([expr.name(agg_name)])
-
-
-def _find_base_table(expr):
-    if isinstance(expr, ir.TableExpr):
-        return expr
-
-    for arg in expr.op().args:
-        if isinstance(arg, ir.Expr):
-            r = _find_base_table(arg)
-            if isinstance(r, ir.TableExpr):
-                return r
-
-
-def _find_source_table(expr):
-    # A more complex version of _find_base_table.
-    # TODO: Revisit/refactor this all at some point
-    node = expr.op()
-
-    # First table expression observed for each argument that the expr
-    # depends on
-    first_tables = []
-    def push_first(arg):
-        if isinstance(arg, (tuple, list)):
-            [push_first(x) for x in arg]
-            return
-
-        if not isinstance(arg, ir.Expr):
-            return
-        if isinstance(arg, ir.TableExpr):
-            first_tables.append(arg)
-        else:
-            collect(arg.op())
-
-    def collect(node):
-        for arg in node.args:
-            push_first(arg)
-
-    collect(node)
-    options = util.unique_by_key(first_tables, id)
-
-    if len(options) > 1:
-        raise NotImplementedError
-
-    return options[0]

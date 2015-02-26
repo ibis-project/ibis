@@ -100,3 +100,10 @@ FROM tpch.lineitem li
 
         result = self.con.execute(expr)
         assert isinstance(result, pd.Series)
+
+    def test_distinct_array(self):
+        table = self.con.table('functional.alltypes')
+
+        expr = table.string_col.distinct()
+        result = self.con.execute(expr)
+        assert isinstance(result, pd.Series)
