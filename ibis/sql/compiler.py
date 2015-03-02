@@ -25,6 +25,7 @@ import ibis.expr.base as ir
 
 from ibis.sql.context import QueryContext
 import ibis.sql.select as ddl
+import ibis.sql.transforms as transforms
 
 
 def build_ast(expr, context=None):
@@ -246,7 +247,7 @@ class SelectBuilder(object):
                 return type(expr)(type(op)(left, right))
             else:
                 return expr
-        elif isinstance(op, (ir.Between, ir.Contains,
+        elif isinstance(op, (ir.Any, ir.Between, ir.Contains,
                              ir.TableColumn, ir.Literal)):
             return expr
         else:
@@ -260,6 +261,14 @@ class SelectBuilder(object):
         # to revisit when it becomes a problem.
         aggregation = _reduction_to_aggregation(expr, agg_name='tmp')
         return aggregation.to_array()
+
+    def _visit_filter_Any(self, expr):
+        # Rewrite semi/anti-join predicates in way that can hook into SQL
+        # translation step
+        transform = transforms.AnyToExistsTransform(self.context, expr,
+                                                    self.table_set)
+        return transform.get_result()
+    _visit_filter_NotAny = _visit_filter_Any
 
     def _visit_filter_TopK(self, expr):
         # Top K is rewritten as an

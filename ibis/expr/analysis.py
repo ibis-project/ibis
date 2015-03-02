@@ -573,3 +573,19 @@ def find_source_table(expr):
         raise NotImplementedError
 
     return options[0]
+
+
+def unwrap_ands(expr):
+    out_exprs = []
+    def walk(expr):
+        op = expr.op()
+        if isinstance(op, ir.Comparison):
+            out_exprs.append(expr)
+        elif isinstance(op, ir.And):
+            walk(op.left)
+            walk(op.right)
+        else:
+            raise Exception('Invalid predicate: {!r}'.format(expr))
+
+    walk(expr)
+    return out_exprs

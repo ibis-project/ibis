@@ -1378,6 +1378,18 @@ class TestSubqueriesEtc(unittest.TestCase):
             ('job', 'string')
         ], 'bar')
 
+        self.t1 = ir.table([
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('value1', 'double')
+        ], 'foo')
+
+        self.t2 = ir.table([
+            ('key1', 'string'),
+            ('key2', 'string')
+        ], 'bar')
+
+
     def test_scalar_subquery_different_table(self):
         t1, t2 = self.foo, self.bar
         expr = t1[t1.y > t2.x.max()]
@@ -1425,7 +1437,47 @@ WHERE t0.y > (
         pass
 
     def test_exists_semi_join_case(self):
-        pass
+        t1, t2 = self.t1, self.t2
+
+        cond = (t1.key1 == t2.key1).any()
+        expr = t1[cond]
+
+        result = to_sql(expr)
+        expected = """SELECT t0.*
+FROM foo t0
+WHERE EXISTS (
+  SELECT 1
+  FROM bar t1
+  WHERE t0.key1 = t1.key1
+)"""
+        assert result == expected
+
+        cond2 = ((t1.key1 == t2.key1) & (t2.key2 == 'foo')).any()
+        expr2 = t1[cond2]
+
+        result = to_sql(expr2)
+        expected = """SELECT t0.*
+FROM foo t0
+WHERE EXISTS (
+  SELECT 1
+  FROM bar t1
+  WHERE t0.key1 = t1.key1 AND
+        t1.key2 = 'foo'
+)"""
+        assert result == expected
 
     def test_not_exists_anti_join_case(self):
-        pass
+        t1, t2 = self.t1, self.t2
+
+        cond = (t1.key1 == t2.key1).any()
+        expr = t1[-cond]
+
+        result = to_sql(expr)
+        expected = """SELECT t0.*
+FROM foo t0
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM bar t1
+  WHERE t0.key1 = t1.key1
+)"""
+        assert result == expected

@@ -151,6 +151,10 @@ class BasicTestCase(object):
 
 class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
+    def test_empty_schema(self):
+        table = api.table([], 'foo')
+        assert len(table.schema()) == 0
+
     def test_view_new_relation(self):
         # For assisting with self-joins and other self-referential operations
         # where we need to be able to treat instances of the same TableExpr as
@@ -1363,6 +1367,42 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         assert result.op().distinct
 
         self.assertRaises(ir.RelationError, t1.union, t3)
+
+
+class TestSemiAntiJoinPredicates(unittest.TestCase):
+
+    def setUp(self):
+        self.con = MockConnection()
+
+        self.t1 = api.table([
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('value1', 'double')
+        ], 'foo')
+
+        self.t2 = api.table([
+            ('key1', 'string'),
+            ('key2', 'string')
+        ], 'bar')
+
+    def test_simple_existence_predicate(self):
+        cond = (self.t1.key1 == self.t2.key1).any()
+
+        assert isinstance(cond, ir.BooleanArray)
+        op = cond.op()
+        assert isinstance(op, ir.Any)
+
+        # it works!
+        expr = self.t1[cond]
+        assert isinstance(expr.op(), ir.Filter)
+
+    def test_cannot_use_existence_expression_in_join(self):
+        # Join predicates must consist only of comparisons
+        pass
+
+    def test_not_exists_predicate(self):
+        cond = -(self.t1.key1 == self.t2.key1).any()
+        assert isinstance(cond.op(), ir.NotAny)
 
 
 class TestCaseExpressions(BasicTestCase, unittest.TestCase):

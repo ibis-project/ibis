@@ -20,9 +20,10 @@
 
 from io import BytesIO
 
+import ibis.expr.analysis as L
 import ibis.expr.base as ir
+import ibis.sql.transforms as transforms
 import ibis.util as util
-
 
 #----------------------------------------------------------------------
 # Scalar and array expression formatting
@@ -247,6 +248,51 @@ def _table_array_view(translator, expr):
     return '(\n{}\n)'.format(util.indent(query, ctx.indent))
 
 
+#----------------------------------------------------------------------
+# Semi/anti-join supports
+
+
+def _any_exists(translator, expr):
+    # Foreign references will have been catalogued by the correlated
+    # ref-checking code. However, we need to rewrite this expression as a query
+    # of the type
+    #
+    # SELECT 1
+    # FROM {foreign_ref}
+    # WHERE {correlated_filter}
+    #
+    # It's possible there could be multiple predicates inside the Any involving
+    # more than one foreign reference. Will just disallow this for now until
+    # someone *really* needs it.
+    # op = expr.op()
+    # ctx = translator.context
+
+    # comp_op = op.arg.op()
+
+    raise NotImplementedError
+
+
+def _exists_subquery(translator, expr):
+    op = expr.op()
+    ctx = translator.context
+
+    expr = (op.foreign_table
+            .filter(op.predicates)
+            .projection([ir.literal(1).name(ir.unnamed)]))
+
+    subquery = ctx.get_formatted_query(expr)
+
+    if isinstance(op, transforms.ExistsSubquery):
+        key = 'EXISTS'
+    elif isinstance(op, transforms.NotExistsSubquery):
+        key = 'NOT EXISTS'
+    else:
+        raise NotImplementedError
+
+    return '{} (\n{}\n)'.format(key, util.indent(subquery, ctx.indent))
+
+
+
 def _table_column(translator, expr):
     op = expr.op()
     field_name = _quote_field(op.name)
@@ -315,6 +361,10 @@ def _value_list(translator, expr):
     return '({})'.format(', '.join(formatted))
 
 
+def _not_implemented(translator, expr):
+    raise NotImplementedError
+
+
 _unary_ops = {
     # Unary operations
     ir.NotNull: _not_null,
@@ -333,7 +383,7 @@ _unary_ops = {
     ir.Min: _unary_op('min'),
 
     ir.Count: _unary_op('count'),
-    ir.CountDistinct: _count_distinct
+    ir.CountDistinct: _count_distinct,
 }
 
 _binary_infix_ops = {
@@ -387,6 +437,11 @@ _other_ops = {
     ir.TableColumn: _table_column,
 
     ir.TableArrayView: _table_array_view,
+
+    ir.Any: _any_exists,
+
+    transforms.ExistsSubquery: _exists_subquery,
+    transforms.NotExistsSubquery: _exists_subquery
 }
 
 
@@ -431,6 +486,9 @@ class ExprTranslator(object):
             # This column has been given an explicitly different name
             if expr.get_name() != op.name:
                 return True
+            return False
+
+        if expr.get_name() is ir.unnamed:
             return False
 
         return True

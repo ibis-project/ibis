@@ -92,7 +92,10 @@ class Schema(object):
 
     @classmethod
     def from_tuples(cls, values):
-        names, types = zip(*values)
+        if len(values):
+            names, types = zip(*values)
+        else:
+            names, types = [], []
         return Schema(names, types)
 
     @classmethod
@@ -293,12 +296,21 @@ class ValueNode(Node):
         if not isinstance(expr, ScalarExpr):
             raise TypeError('Must be a scalar, got: %s' % repr(expr))
 
+    def root_tables(self):
+        return self.arg._root_tables()
+
     def output_type(self):
         raise NotImplementedError
 
     def resolve_name(self):
         raise NotImplementedError
 
+
+class UnnamedMarker(object):
+    pass
+
+
+unnamed = UnnamedMarker()
 
 
 class Literal(ValueNode):
@@ -489,9 +501,6 @@ class UnaryOp(ValueNode):
         self.arg = arg
         ValueNode.__init__(self, [arg])
 
-    def root_tables(self):
-        return self.arg._root_tables()
-
     def resolve_name(self):
         return self.arg.get_name()
 
@@ -512,9 +521,6 @@ class Cast(ValueNode):
     def resolve_name(self):
         return self.arg.get_name()
 
-    def root_tables(self):
-        return self.arg._root_tables()
-
     def output_type(self):
         # TODO: error handling for invalid casts
         return _shape_like(self.arg, self.target_type)
@@ -524,6 +530,14 @@ class Negate(UnaryOp):
 
     def output_type(self):
         return type(self.arg)
+
+
+def _negate(expr):
+    op = expr.op()
+    if hasattr(op, 'negate'):
+        return op.negate()
+    else:
+        return Negate(expr)
 
 
 class IsNull(UnaryOp):
@@ -765,6 +779,7 @@ class CountDistinct(Reduction):
     def output_type(self):
         return Int64Scalar
 
+
 def _count(expr):
     op = expr.op()
     if isinstance(op, DistinctArray):
@@ -772,6 +787,38 @@ def _count(expr):
     else:
         return Count(expr).to_expr()
 
+
+#----------------------------------------------------------------------
+# Boolean reductions and semi/anti join support
+
+class Any(ValueNode):
+
+    # Depending on the kind of input boolean array, the result might either be
+    # array-like (an existence-type predicate) or scalar (a reduction)
+
+    def __init__(self, expr):
+        if not isinstance(expr, BooleanArray):
+            raise ValueError('Expression must be a boolean array')
+
+        self.arg = expr
+        ValueNode.__init__(self, [expr])
+
+    def output_type(self):
+        roots = self.arg._root_tables()
+        if len(roots) > 1:
+            return BooleanArray
+        else:
+            # A reduction
+            return BooleanScalar
+
+    def negate(self):
+        return NotAny(self.arg)
+
+
+class NotAny(Any):
+
+    def negate(self):
+        return Any(self.arg)
 
 #----------------------------------------------------------------------
 
@@ -978,7 +1025,7 @@ class Join(TableNode):
         Node.__init__(self, [left, right, self.predicates])
 
     def _clean_predicates(self, predicates):
-        from ibis.expr.analysis import substitute_parents
+        import ibis.expr.analysis as L
 
         result = []
 
@@ -994,12 +1041,12 @@ class Join(TableNode):
                 rk = self.right._ensure_expr(rk)
                 pred = lk == rk
             else:
-                pred = substitute_parents(pred)
+                pred = L.substitute_parents(pred)
 
             if not isinstance(pred, BooleanArray):
                 raise ExpressionError('Join predicate must be comparison')
 
-            preds = _maybe_unwrap_ands(pred)
+            preds = L.unwrap_ands(pred)
             result.extend(preds)
 
         return result
@@ -1035,22 +1082,6 @@ class Join(TableNode):
             return [self.left.op(), self.right.op()]
         else:
             return _distinct_roots(self.left, self.right)
-
-
-def _maybe_unwrap_ands(expr):
-    out_exprs = []
-    def walk(expr):
-        op = expr.op()
-        if isinstance(op, Comparison):
-            out_exprs.append(expr)
-        elif isinstance(op, And):
-            walk(op.left)
-            walk(op.right)
-        else:
-            raise Exception('Invalid predicate: {!r}'.format(expr))
-
-    walk(expr)
-    return out_exprs
 
 
 
@@ -2315,7 +2346,7 @@ class NullValue(AnyValue):
 
 class NumericValue(AnyValue):
 
-    __neg__ = _unary_op('__neg__', Negate)
+    __neg__ = _unary_op('__neg__', _negate)
 
     exp = _unary_op('exp', Exp)
     sqrt = _unary_op('sqrt', Sqrt)
@@ -2508,7 +2539,11 @@ class BooleanScalar(ScalarExpr, BooleanValue):
 class BooleanArray(NumericArray, BooleanValue):
 
     def any(self):
-        raise NotImplementedError
+        op = Any(self)
+        return op.to_expr()
+
+    def none(self):
+        pass
 
     def all(self):
         raise NotImplementedError
