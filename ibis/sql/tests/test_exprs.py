@@ -173,6 +173,14 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
+    def test_decimal_casts(self):
+        cases = [
+            (api.literal('9.9999999').cast('decimal(38,5)'),
+             "CAST('9.9999999' AS decimal(38,5))"),
+            (self.table.f.cast('decimal(12,2)'), "CAST(f AS decimal(12,2))")
+        ]
+        self._check_expr_cases(cases)
+
     def test_negate(self):
         cases = [
             (-self.table['a'], '-a'),

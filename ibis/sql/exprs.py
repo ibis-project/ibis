@@ -42,8 +42,15 @@ _sql_type_names = {
 def _cast(translator, expr):
     op = expr.op()
     arg = translator.translate(op.arg)
-    sql_type = _sql_type_names[op.target_type]
+    sql_type = _type_to_sql_string(op.target_type)
     return 'CAST({!s} AS {!s})'.format(arg, sql_type)
+
+
+def _type_to_sql_string(tval):
+    if isinstance(tval, ir.DecimalType):
+        return 'decimal({},{})'.format(tval.precision, tval.scale)
+    else:
+        return _sql_type_names[tval]
 
 
 def _between(translator, expr):

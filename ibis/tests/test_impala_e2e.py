@@ -107,3 +107,12 @@ FROM tpch.lineitem li
         expr = table.string_col.distinct()
         result = self.con.execute(expr)
         assert isinstance(result, pd.Series)
+
+    def test_decimal_metadata(self):
+        table = self.con.table('tpch.lineitem')
+
+        expr = table.l_quantity
+        assert expr.precision == 12
+        assert expr.scale == 2
+
+        # TODO: what if user impyla version does not have decimal metadata?

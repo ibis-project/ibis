@@ -57,9 +57,9 @@ class _Substitutor(object):
 
         subbed_node = type(node)(*subbed_args)
         if isinstance(expr, ir.ValueExpr):
-            result = type(expr)(subbed_node, name=expr._name)
+            result = expr._factory(subbed_node, name=expr._name)
         else:
-            result = type(expr)(subbed_node)
+            result = expr._factory(subbed_node)
 
         return result
 
@@ -150,9 +150,9 @@ class ExprSimplifier(object):
 
         lifted_node = type(node)(*lifted_args)
         if isinstance(expr, ir.ValueExpr):
-            result = type(expr)(lifted_node, name=expr._name)
+            result = expr._factory(lifted_node, name=expr._name)
         else:
-            result = type(expr)(lifted_node)
+            result = expr._factory(lifted_node)
 
         return result
 
@@ -231,7 +231,7 @@ class ExprSimplifier(object):
 
             if can_lift and not block:
                 lifted_node = ir.TableColumn(node.name, lifted_root)
-                result = type(expr)(lifted_node, name=expr._name)
+                result = expr._factory(lifted_node, name=expr._name)
 
         return result
 

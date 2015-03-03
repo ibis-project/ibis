@@ -42,6 +42,7 @@
 from collections import defaultdict
 
 import operator
+import re
 
 from ibis.common import RelationError, ExpressionError
 import ibis.common as com
@@ -55,6 +56,39 @@ class Parameter(object):
     """
 
     pass
+
+
+class DataType(object):
+    pass
+
+
+class DecimalType(DataType):
+    # Decimal types are parametric, we store the parameters in this object
+
+    def __init__(self, precision, scale):
+        self.precision = precision
+        self.scale = scale
+
+    def __repr__(self):
+        return ('decimal(precision=%s, scale=%s)'
+                % (self.precision, self.scale))
+
+    def __eq__(self, other):
+        if not isinstance(other, DecimalType):
+            return False
+
+        return (self.precision == other.precision and
+                self.scale == other.scale)
+
+    def array_ctor(self):
+        def constructor(op, name=None):
+            return DecimalArray(op, self, name=name)
+        return constructor
+
+    def scalar_ctor(self):
+        def constructor(op, name=None):
+            return DecimalScalar(op, self, name=name)
+        return constructor
 
 
 #----------------------------------------------------------------------
@@ -118,9 +152,44 @@ class Schema(object):
 
 
 def _validate_type(t):
+    if isinstance(t, DataType):
+        return t
+
+    parsed_type = _parse_type(t)
+    if parsed_type is not None:
+        return parsed_type
+
     if t not in _array_types:
         raise ValueError('Invalid type: %s' % repr(t))
     return t
+
+
+
+_DECIMAL_RE = re.compile('decimal\((\d+),[\s]*(\d+)\)')
+
+
+def _parse_decimal(t):
+    m = _DECIMAL_RE.match(t)
+    if m:
+        precision, scale = m.groups()
+        return DecimalType(int(precision), int(scale))
+
+    if t == 'decimal':
+        # From the Impala documentation
+        return DecimalType(9, 0)
+
+
+_type_parsers = [
+    _parse_decimal
+]
+
+
+def _parse_type(t):
+    for parse_fn in _type_parsers:
+        parsed = parse_fn(t)
+        if parsed is not None:
+            return parsed
+    return None
 
 
 class HasSchema(object):
@@ -186,6 +255,12 @@ class Expr(object):
     def _repr(self):
         from ibis.expr.format import ExprFormatter
         return ExprFormatter(self).get_result()
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return type(self)(arg, name=name)
+        return factory
 
     def equals(self, other):
         if type(self) != type(other):
@@ -336,7 +411,7 @@ class Literal(ValueNode):
             klass = BooleanScalar
         elif isinstance(self.value, (int, long)):
             int_type = _int_literal_class(self.value)
-            klass = scalar_class(int_type)
+            klass = scalar_type(int_type)
         elif isinstance(self.value, float):
             klass = DoubleScalar
         elif isinstance(self.value, basestring):
@@ -463,7 +538,7 @@ class TableColumn(ArrayNode):
 
     def to_expr(self):
         ctype = self.table._get_type(self.name)
-        klass = array_class(ctype)
+        klass = array_type(ctype)
         return klass(self, name=self.name)
 
 
@@ -491,7 +566,7 @@ class TableArrayView(ArrayNode):
 
     def to_expr(self):
         ctype = self.table._get_type(self.name)
-        klass = array_class(ctype)
+        klass = array_type(ctype)
         return klass(self, name=self.name)
 
 
@@ -511,12 +586,8 @@ class Cast(ValueNode):
         self._ensure_value(arg)
 
         self.arg = arg
-        self.target_type = target_type.lower()
-
-        # TODO: shorthand type aliases, e.g. int
-        _validate_type(self.target_type)
-
-        ValueNode.__init__(self, [arg, target_type])
+        self.target_type = _validate_type(target_type.lower())
+        ValueNode.__init__(self, [arg, self.target_type])
 
     def resolve_name(self):
         return self.arg.get_name()
@@ -554,16 +625,16 @@ class NotNull(UnaryOp):
 
 def _shape_like(arg, out_type):
     if isinstance(arg, ScalarExpr):
-        return scalar_class(out_type)
+        return scalar_type(out_type)
     else:
-        return array_class(out_type)
+        return array_type(out_type)
 
 
 def _shape_like_args(args, out_type):
     if util.any_of(args, ArrayExpr):
-        return array_class(out_type)
+        return array_type(out_type)
     else:
-        return scalar_class(out_type)
+        return scalar_type(out_type)
 
 
 class RealUnaryOp(UnaryOp):
@@ -691,6 +762,8 @@ class Sum(Reduction):
             return Int64Scalar
         elif isinstance(self.arg, FloatingValue):
             return DoubleScalar
+        elif isinstance(self.arg, DecimalValue):
+            return _decimal_scalar_ctor(self.arg.precision, 38)
         else:
             raise TypeError(self.arg)
 
@@ -698,10 +771,17 @@ class Sum(Reduction):
 class Mean(Reduction):
 
     def output_type(self):
-        if isinstance(self.arg, NumericValue):
+        if isinstance(self.arg, DecimalValue):
+            return _decimal_scalar_ctor(self.arg.precision, 38)
+        elif isinstance(self.arg, NumericValue):
             return DoubleScalar
         else:
             raise NotImplementedError
+
+
+def _decimal_scalar_ctor(precision, scale):
+    out_type = DecimalType(precision, scale)
+    return DecimalScalar._make_constructor(out_type)
 
 
 class StdDeviation(Reduction):
@@ -711,13 +791,19 @@ class StdDeviation(Reduction):
 class Max(Reduction):
 
     def output_type(self):
-        return scalar_class(self.arg.type())
+        if isinstance(self.arg, DecimalValue):
+            return _decimal_scalar_ctor(self.arg.precision, 38)
+        else:
+            return scalar_type(self.arg.type())
 
 
 class Min(Reduction):
 
     def output_type(self):
-        return scalar_class(self.arg.type())
+        if isinstance(self.arg, DecimalValue):
+            return _decimal_scalar_ctor(self.arg.precision, 38)
+        else:
+            return scalar_type(self.arg.type())
 
 #----------------------------------------------------------------------
 # Distinct stuff
@@ -2445,9 +2531,16 @@ class DecimalValue(NumericValue):
     _typename = 'decimal'
     _implicit_casts = {'float', 'double'}
 
-    # def __init__(self, precision, scale):
-    #     self.precision = precision
-    #     self.scale = scale
+    def __init__(self, meta):
+        self.meta = meta
+        self.precision = meta.precision
+        self.scale = meta.scale
+
+    @classmethod
+    def _make_constructor(cls, meta):
+        def constructor(arg, name=None):
+            return cls(arg, meta, name=name)
+        return constructor
 
 
 
@@ -2613,12 +2706,30 @@ class TimestampArray(ArrayExpr, TimestampValue):
     pass
 
 
-class DecimalScalar(ScalarExpr, DecimalValue):
-    pass
+class DecimalScalar(DecimalValue, ScalarExpr):
+
+    def __init__(self, arg, meta, name=None):
+        DecimalValue.__init__(self, meta)
+        ScalarExpr.__init__(self, arg, name=name)
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return DecimalScalar(arg, self.meta, name=name)
+        return factory
 
 
-class DecimalArray(ArrayExpr, DecimalValue):
-    pass
+class DecimalArray(DecimalValue, NumericArray):
+
+    def __init__(self, arg, meta, name=None):
+        DecimalValue.__init__(self, meta)
+        ArrayExpr.__init__(self, arg, name=name)
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return DecimalArray(arg, self.meta, name=name)
+        return factory
 
 
 _scalar_types = {
@@ -2630,8 +2741,7 @@ _scalar_types = {
     'float': FloatScalar,
     'double': DoubleScalar,
     'string': StringScalar,
-    'timestamp': TimestampScalar,
-    'decimal': DecimalScalar
+    'timestamp': TimestampScalar
 }
 
 _nbytes = {
@@ -2658,8 +2768,7 @@ _array_types = {
     'float': FloatArray,
     'double': DoubleArray,
     'string': StringArray,
-    'timestamp': TimestampArray,
-    'decimal': DecimalArray
+    'timestamp': TimestampArray
 }
 
 
@@ -2720,12 +2829,18 @@ class _TypePrecedence(object):
                                  .format(expr.type(), typename))
 
 
-def scalar_class(name):
-    return _scalar_types[name]
+def scalar_type(t):
+    if isinstance(t, DataType):
+        return t.scalar_ctor()
+    else:
+        return _scalar_types[t]
 
 
-def array_class(name):
-    return _array_types[name]
+def array_type(t):
+    if isinstance(t, DataType):
+        return t.array_ctor()
+    else:
+        return _array_types[t]
 
 
 def literal(value):

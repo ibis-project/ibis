@@ -95,7 +95,7 @@ class TestLiterals(unittest.TestCase):
 
         for value, ex_type in cases:
             expr = api.literal(value)
-            klass = api.scalar_class(ex_type)
+            klass = api.scalar_type(ex_type)
             assert isinstance(expr, klass)
             assert isinstance(expr.op(), api.Literal)
             assert expr.op().value is value
@@ -178,7 +178,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
             # Make sure it's the right type
             assert isinstance(col, ArrayExpr)
-            assert isinstance(col, api.array_class(v))
+            assert isinstance(col, api.array_type(v))
 
             # Ensure we have a field selection with back-reference to the table
             parent = col.parent()
@@ -704,11 +704,11 @@ class TestTypeCasting(BasicTestCase, unittest.TestCase):
         for t in types:
             c = 'g'
             casted = self.table[c].cast(t)
-            assert isinstance(casted, api.array_class(t))
+            assert isinstance(casted, api.array_type(t))
             assert casted.get_name() == c
 
             casted_literal = api.literal('5').name('bar').cast(t)
-            assert isinstance(casted_literal, api.scalar_class(t))
+            assert isinstance(casted_literal, api.scalar_type(t))
             assert casted_literal.get_name() == 'bar'
 
     def test_number_to_string(self):
@@ -959,11 +959,11 @@ class TestBinaryArithOps(BasicTestCase, unittest.TestCase):
             col = self.table[name]
 
             result = op(col, val)
-            ex_class = api.array_class(ex_type)
+            ex_class = api.array_type(ex_type)
             assert isinstance(result, ex_class)
 
             result = op(val, col)
-            ex_class = api.array_class(ex_type)
+            ex_class = api.array_type(ex_type)
             assert isinstance(result, ex_class)
 
     def test_add_array_promotions(self):

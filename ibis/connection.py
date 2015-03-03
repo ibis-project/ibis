@@ -133,22 +133,27 @@ class ImpalaConnection(SQLConnection):
 
     def _get_schema_using_query(self, query):
         cursor = self._execute(query)
-        # Logic cribbed from impyla
-        schema = [tup[:2] for tup in cursor.description]
 
         # resets the state of the cursor and closes operation
         cursor.fetchall()
 
-        names, impala_types = zip(*schema)
-        ibis_types = self._adapt_types(impala_types)
+        names, ibis_types = self._adapt_types(cursor.description)
         return ir.Schema(names, ibis_types)
 
-    def _adapt_types(self, types):
+    def _adapt_types(self, descr):
+        names = []
         adapted_types = []
-        for t in types:
-            typename = _impala_type_mapping[t.lower()]
-            adapted_types.append(typename)
-        return adapted_types
+        for col in descr:
+            names.append(col[0])
+            impala_typename = col[1]
+            typename = _impala_type_mapping[impala_typename.lower()]
+
+            if typename == 'decimal':
+                precision, scale = col[4:6]
+                adapted_types.append(ir.DecimalType(precision, scale))
+            else:
+                adapted_types.append(typename)
+        return names, adapted_types
 
 
 _impala_type_mapping = {
