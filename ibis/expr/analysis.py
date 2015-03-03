@@ -589,3 +589,24 @@ def unwrap_ands(expr):
 
     walk(expr)
     return out_exprs
+
+
+def find_backend(expr):
+    from ibis.connection import Connection
+
+    backends = []
+    def walk(expr):
+        node = expr.op()
+        for arg in node.flat_args():
+            if isinstance(arg, Connection):
+                backends.append(arg)
+            elif isinstance(arg, ir.Expr):
+                walk(arg)
+
+    walk(expr)
+    backends = util.unique_by_key(backends, id)
+
+    if len(backends) > 1:
+        raise ValueError('Multiple backends found')
+
+    return backends[0]

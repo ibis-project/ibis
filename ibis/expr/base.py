@@ -46,6 +46,7 @@ import re
 
 from ibis.common import RelationError, ExpressionError
 import ibis.common as com
+import ibis.config as config
 import ibis.util as util
 
 
@@ -250,7 +251,11 @@ class Expr(object):
         self._arg = arg
 
     def __repr__(self):
-        return self._repr()
+        if config.options.interactive:
+            result = self.execute()
+            return repr(result)
+        else:
+            return self._repr()
 
     def _repr(self):
         from ibis.expr.format import ExprFormatter
@@ -261,6 +266,20 @@ class Expr(object):
         def factory(arg, name=None):
             return type(self)(arg, name=name)
         return factory
+
+    def execute(self):
+        """
+        If this expression is based on physical tables in a database backend,
+        execute it against that backend.
+
+        Returns
+        -------
+        result : expression-dependent
+          Result of compiling expression and executing in backend
+        """
+        import ibis.expr.analysis as L
+        backend = L.find_backend(self)
+        return backend.execute(self)
 
     def equals(self, other):
         if type(self) != type(other):

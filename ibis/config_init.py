@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.connection import impala_connect
-import ibis.expr.base as ir
+import ibis.config as cf
 
-import ibis.config_init
-from ibis.config import options
+cf.register_option('interactive', False, validator=cf.is_bool)

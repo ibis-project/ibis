@@ -25,6 +25,7 @@ from ibis.expr.format import ExprFormatter
 from ibis.expr.tests.mocks import MockConnection
 
 import ibis.common as com
+import ibis.config as config
 
 
 class TestParameters(unittest.TestCase):
@@ -1487,3 +1488,19 @@ class TestCaseExpressions(BasicTestCase, unittest.TestCase):
 
     def test_no_implicit_cast_possible(self):
         pass
+
+
+class TestInteractiveUse(unittest.TestCase):
+
+    def setUp(self):
+        self.con = MockConnection()
+
+    def test_interactive_execute_on_repr(self):
+        table = self.con.table('functional_alltypes')
+
+        expr = table.bigint_col.sum()
+
+        with config.option_context('interactive', True):
+            repr(expr)
+
+        assert self.con.last_executed_expr is expr

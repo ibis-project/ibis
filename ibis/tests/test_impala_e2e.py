@@ -18,6 +18,7 @@ import unittest
 
 import pandas as pd
 
+import ibis.config as config
 import ibis.connection as cnx
 import ibis.expr.base as ir
 
@@ -74,7 +75,7 @@ FROM tpch.lineitem li
         assert table.schema().equals(li.schema())
 
         expr = table.limit(10)
-        result = self.con.execute(expr)
+        result = expr.execute()
         assert len(result) == 10
 
     def test_result_as_dataframe(self):
@@ -93,6 +94,10 @@ FROM tpch.lineitem li
         expr = table.double_col.sum()
         result = self.con.execute(expr)
         assert isinstance(result, float)
+
+        with config.option_context('interactive', True):
+            result2 = expr.execute()
+            assert isinstance(result2, float)
 
         expr = (table.group_by('string_col')
                 .aggregate([table.count().name('count')])
@@ -115,4 +120,4 @@ FROM tpch.lineitem li
         assert expr.precision == 12
         assert expr.scale == 2
 
-        # TODO: what if user impyla version does not have decimal metadata?
+        # TODO: what if user impyla version does not have decimal Metadata?

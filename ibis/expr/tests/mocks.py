@@ -110,5 +110,12 @@ class MockConnection(SQLConnection):
         ]
     }
 
+    def __init__(self):
+        self.last_executed_expr = None
+
     def _get_table_schema(self, name):
         return ir.Schema.from_tuples(self._tables[name])
+
+    def execute(self, expr):
+        self.last_executed_expr = expr
+        return None

@@ -23,7 +23,7 @@ class Connection(object):
     pass
 
 
-class SQLConnection(object):
+class SQLConnection(Connection):
 
     def table(self, name, database=None):
         """
