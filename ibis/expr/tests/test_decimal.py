@@ -14,8 +14,8 @@
 
 import unittest
 
-import ibis.expr.base as api
-import ibis.expr.base as ir
+import ibis.expr.api as api
+import ibis.expr.types as ir
 
 from ibis.expr.tests.mocks import MockConnection
 

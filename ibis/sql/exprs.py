@@ -21,7 +21,9 @@
 from io import BytesIO
 
 import ibis.expr.analysis as L
-import ibis.expr.base as ir
+import ibis.expr.base as base
+import ibis.expr.types as ir
+import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 import ibis.util as util
 
@@ -152,7 +154,7 @@ def _needs_parens(op):
     op_klass = type(op)
     # function calls don't need parens
     return (op_klass in _binary_infix_ops or
-            op_klass in [ir.Negate])
+            op_klass in [ops.Negate])
 
 
 def _need_parenthesize_args(op):
@@ -160,7 +162,7 @@ def _need_parenthesize_args(op):
         op = op.op()
     op_klass = type(op)
     return (op_klass in _binary_infix_ops or
-            op_klass in [ir.Negate])
+            op_klass in [ops.Negate])
 
 
 def _boolean_literal_format(expr):
@@ -332,6 +334,34 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+def _substring(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+
+    # Databases are 1-indexed
+    if op.length:
+        return 'substr({}, {}, {})'.format(arg_formatted, op.start + 1,
+                                           op.length)
+    else:
+        return 'substr({}, {})'.format(arg_formatted, op.start + 1)
+
+
+def _strright(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    return 'strright({}, {})'.format(arg_formatted, op.nchars)
+
+
+def _round(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+
+    if op.digits is not None:
+        return 'round({}, {})'.format(arg_formatted, op.digits)
+    else:
+        return 'round({})'.format(arg_formatted)
+
+
 def _count_distinct(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
@@ -374,78 +404,97 @@ def _not_implemented(translator, expr):
 
 _unary_ops = {
     # Unary operations
-    ir.NotNull: _not_null,
-    ir.IsNull: _is_null,
-    ir.Negate: _negate,
-    ir.Exp: _unary_op('exp'),
-    ir.Sqrt: _unary_op('sqrt'),
-    ir.Log: _unary_op('log'),
-    ir.Log2: _unary_op('log2'),
-    ir.Log10: _unary_op('log10'),
+    ops.NotNull: _not_null,
+    ops.IsNull: _is_null,
+    ops.Negate: _negate,
+
+    ops.Abs: _unary_op('abs'),
+    ops.Ceil: _unary_op('ceil'),
+    ops.Floor: _unary_op('floor'),
+    ops.Exp: _unary_op('exp'),
+    ops.Round: _round,
+
+    ops.Sign: _unary_op('sign'),
+    ops.Sqrt: _unary_op('sqrt'),
+
+    ops.Log: _unary_op('log'),
+    ops.Log2: _unary_op('log2'),
+    ops.Log10: _unary_op('log10'),
 
     # Unary aggregates
-    ir.Mean: _unary_op('avg'),
-    ir.Sum: _unary_op('sum'),
-    ir.Max: _unary_op('max'),
-    ir.Min: _unary_op('min'),
+    ops.Mean: _unary_op('avg'),
+    ops.Sum: _unary_op('sum'),
+    ops.Max: _unary_op('max'),
+    ops.Min: _unary_op('min'),
 
-    ir.Count: _unary_op('count'),
-    ir.CountDistinct: _count_distinct,
+    ops.Count: _unary_op('count'),
+    ops.CountDistinct: _count_distinct,
 }
+
 
 _binary_infix_ops = {
     # Binary operations
-    ir.Add: _binary_infix_op('+'),
-    ir.Subtract: _binary_infix_op('-'),
-    ir.Multiply: _binary_infix_op('*'),
-    ir.Divide: _binary_infix_op('/'),
-    ir.Power: _binary_infix_op('^'),
+    ops.Add: _binary_infix_op('+'),
+    ops.Subtract: _binary_infix_op('-'),
+    ops.Multiply: _binary_infix_op('*'),
+    ops.Divide: _binary_infix_op('/'),
+    ops.Power: _binary_infix_op('^'),
 
     # Comparisons
-    ir.Equals: _binary_infix_op('='),
-    ir.NotEquals: _binary_infix_op('!='),
-    ir.GreaterEqual: _binary_infix_op('>='),
-    ir.Greater: _binary_infix_op('>'),
-    ir.LessEqual: _binary_infix_op('<='),
-    ir.Less: _binary_infix_op('<'),
+    ops.Equals: _binary_infix_op('='),
+    ops.NotEquals: _binary_infix_op('!='),
+    ops.GreaterEqual: _binary_infix_op('>='),
+    ops.Greater: _binary_infix_op('>'),
+    ops.LessEqual: _binary_infix_op('<='),
+    ops.Less: _binary_infix_op('<'),
 
     # Boolean comparisons
-    ir.And: _binary_infix_op('AND'),
-    ir.Or: _binary_infix_op('OR'),
-    ir.Xor: _xor,
+    ops.And: _binary_infix_op('AND'),
+    ops.Or: _binary_infix_op('OR'),
+    ops.Xor: _xor,
+}
+
+_string_ops = {
+    ops.StringLength: _unary_op('length'),
+    ops.Lowercase: _unary_op('lower'),
+    ops.Uppercase: _unary_op('upper'),
+    ops.Substring: _substring,
+    ops.StrRight: _strright
 }
 
 
 _timestamp_ops = {
-    ir.ExtractYear: _extract_field('year'),
-    ir.ExtractMonth: _extract_field('month'),
-    ir.ExtractDay: _extract_field('day'),
-    ir.ExtractHour: _extract_field('hour'),
-    ir.ExtractMinute: _extract_field('minute'),
-    ir.ExtractSecond: _extract_field('second'),
-    ir.ExtractMillisecond: _extract_field('millisecond'),
+    ops.TimestampNow: lambda *args: 'now()',
+    ops.ExtractYear: _extract_field('year'),
+    ops.ExtractMonth: _extract_field('month'),
+    ops.ExtractDay: _extract_field('day'),
+    ops.ExtractHour: _extract_field('hour'),
+    ops.ExtractMinute: _extract_field('minute'),
+    ops.ExtractSecond: _extract_field('second'),
+    ops.ExtractMillisecond: _extract_field('millisecond'),
 }
 
 
 _other_ops = {
-    ir.Literal: _literal,
-    ir.NullLiteral: _null_literal,
-    ir.ValueList: _value_list,
+    base.Literal: _literal,
+    base.NullLiteral: _null_literal,
 
-    ir.Cast: _cast,
+    ops.ValueList: _value_list,
 
-    ir.Between: _between,
-    ir.Contains: _contains,
-    ir.NotContains: _not_contains,
+    ops.Cast: _cast,
 
-    ir.SimpleCase: _simple_case,
-    ir.SearchedCase: _searched_case,
+    ops.Between: _between,
+    ops.Contains: _contains,
+    ops.NotContains: _not_contains,
 
-    ir.TableColumn: _table_column,
+    ops.SimpleCase: _simple_case,
+    ops.SearchedCase: _searched_case,
 
-    ir.TableArrayView: _table_array_view,
+    ops.TableColumn: _table_column,
 
-    ir.Any: _any_exists,
+    ops.TableArrayView: _table_array_view,
+
+    ops.Any: _any_exists,
 
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery
@@ -455,6 +504,7 @@ _other_ops = {
 _operation_registry = {}
 _operation_registry.update(_unary_ops)
 _operation_registry.update(_binary_infix_ops)
+_operation_registry.update(_string_ops)
 _operation_registry.update(_timestamp_ops)
 _operation_registry.update(_other_ops)
 
@@ -489,7 +539,7 @@ class ExprTranslator(object):
             return False
 
         op = expr.op()
-        if isinstance(op, ir.TableColumn):
+        if isinstance(op, ops.TableColumn):
             # This column has been given an explicitly different name
             if expr.get_name() != op.name:
                 return True
@@ -505,9 +555,9 @@ class ExprTranslator(object):
         op = expr.op()
 
         # TODO: use op MRO for subclasses instead of this isinstance spaghetti
-        if isinstance(op, ir.Parameter):
+        if isinstance(op, base.Parameter):
             return self._trans_param(expr)
-        elif isinstance(op, ir.PhysicalTable):
+        elif isinstance(op, ops.PhysicalTable):
             # HACK/TODO: revisit for more complex cases
             return '*'
         elif type(op) in _operation_registry:

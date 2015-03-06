@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ibis.expr.base as ir
+from ibis.common import RelationError
+import ibis.expr.base as base
+import ibis.expr.types as ir
+import ibis.expr.operations as ops
 import ibis.util as util
 
 #----------------------------------------------------------------------
@@ -125,14 +128,14 @@ class ExprSimplifier(object):
         # projection, we need to check whether the ref comes from the base
         # table schema or is a derived field. If we've projected out of
         # something other than a physical table, then lifting should not occur
-        if isinstance(node, ir.TableColumn):
+        if isinstance(node, ops.TableColumn):
             result = self._lift_TableColumn(expr, block=self.block_projection)
             if result is not expr:
                 return result
         # Temporary hacks around issues addressed in #109
-        elif isinstance(node, ir.Projection):
+        elif isinstance(node, ops.Projection):
             return self._lift_Projection(expr, block=self.block_projection)
-        elif isinstance(node, ir.Aggregation):
+        elif isinstance(node, ops.Aggregation):
             return self._lift_Aggregation(expr, block=self.block_projection)
 
         unchanged = True
@@ -185,15 +188,15 @@ class ExprSimplifier(object):
 
         op = expr.op()
 
-        if isinstance(op, (ir.ValueNode, ir.ArrayNode)):
+        if isinstance(op, (ops.ValueNode, ops.ArrayNode)):
             return self._sub(expr, block=block)
-        elif isinstance(op, ir.Filter):
+        elif isinstance(op, ops.Filter):
             result = self.lift(op.table, block=block)
-        elif isinstance(op, ir.Projection):
+        elif isinstance(op, ops.Projection):
             result = self._lift_Projection(expr, block=block)
-        elif isinstance(op, ir.Join):
+        elif isinstance(op, ops.Join):
             result = self._lift_Join(expr, block=block)
-        elif isinstance(op, (ir.TableNode, ir.HasSchema)):
+        elif isinstance(op, (ops.TableNode, base.HasSchema)):
             return expr
         else:
             raise NotImplementedError
@@ -210,16 +213,16 @@ class ExprSimplifier(object):
         root = _base_table(tnode)
 
         result = expr
-        if isinstance(root, ir.Projection):
+        if isinstance(root, ops.Projection):
             can_lift = False
 
             for val in root.selections:
-                if (isinstance(val.op(), ir.PhysicalTable) and
+                if (isinstance(val.op(), ops.PhysicalTable) and
                     node.name in val.schema()):
 
                     can_lift = True
                     lifted_root = self.lift(val)
-                elif (isinstance(val.op(), ir.TableColumn)
+                elif (isinstance(val.op(), ops.TableColumn)
                       and node.name == val.get_name()):
                     can_lift = True
                     lifted_root = self.lift(val.op().table)
@@ -230,7 +233,7 @@ class ExprSimplifier(object):
             #     can_lift = False
 
             if can_lift and not block:
-                lifted_node = ir.TableColumn(node.name, lifted_root)
+                lifted_node = ops.TableColumn(node.name, lifted_root)
                 result = expr._factory(lifted_node, name=expr._name)
 
         return result
@@ -250,8 +253,8 @@ class ExprSimplifier(object):
         unchanged = unch and unch1 and unch2 and unch3
 
         if not unchanged:
-            lifted_op = ir.Aggregation(lifted_table, lifted_aggs, by=lifted_by,
-                                       having=lifted_having)
+            lifted_op = ops.Aggregation(lifted_table, lifted_aggs,
+                                        by=lifted_by, having=lifted_having)
             result = ir.TableExpr(lifted_op)
         else:
             result = expr
@@ -273,7 +276,7 @@ class ExprSimplifier(object):
         lifted_selections, unch_sel = self._lift_arg(op.selections, block=True)
         unchanged = unch and unch_sel
         if not unchanged:
-            lifted_projection = ir.Projection(lifted_table, lifted_selections)
+            lifted_projection = ops.Projection(lifted_table, lifted_selections)
             result = ir.TableExpr(lifted_projection)
         else:
             result = expr
@@ -318,7 +321,7 @@ class ExprSimplifier(object):
 
 def _base_table(table_node):
     # Find the aggregate or projection root. Not proud of this
-    if isinstance(table_node, ir.BlockingTableNode):
+    if isinstance(table_node, base.BlockingTableNode):
         return table_node
     else:
         return _base_table(table_node.table.op())
@@ -330,14 +333,14 @@ def apply_filter(expr, predicates):
 
     op = expr.op()
 
-    if isinstance(op, ir.Filter):
+    if isinstance(op, ops.Filter):
         # Potential fusion opportunity. The predicates may need to be rewritten
         # in terms of the child table. This prevents the broken ref issue
         # (described in more detail in #59)
         predicates = [sub_for(x, [(expr, op.table)]) for x in predicates]
-        return ir.Filter(op.table, op.predicates + predicates)
+        return ops.Filter(op.table, op.predicates + predicates)
 
-    elif isinstance(op, (ir.Projection, ir.Aggregation)):
+    elif isinstance(op, (ops.Projection, ops.Aggregation)):
         # if any of the filter predicates have the parent expression among
         # their roots, then pushdown (at least of that predicate) is not
         # possible
@@ -372,9 +375,9 @@ def apply_filter(expr, predicates):
             filtered = op.table.filter(predicates)
             result = op.substitute_table(filtered)
         else:
-            result = ir.Filter(expr, predicates)
+            result = ops.Filter(expr, predicates)
     else:
-        result = ir.Filter(expr, predicates)
+        result = ops.Filter(expr, predicates)
 
     return result
 
@@ -404,12 +407,12 @@ def _in_roots(expr, roots):
 def _maybe_fuse_projection(expr, clean_exprs):
     node = expr.op()
 
-    if isinstance(node, ir.Projection):
+    if isinstance(node, ops.Projection):
         roots = [node]
     else:
         roots = node.root_tables()
 
-    if len(roots) == 1 and isinstance(roots[0], ir.Projection):
+    if len(roots) == 1 and isinstance(roots[0], ops.Projection):
         root = roots[0]
 
         roots = root.root_tables()
@@ -433,9 +436,9 @@ def _maybe_fuse_projection(expr, clean_exprs):
                 fused_exprs.append(val)
 
         if can_fuse:
-            return ir.Projection(root.table, fused_exprs)
+            return ops.Projection(root.table, fused_exprs)
 
-    return ir.Projection(expr, clean_exprs)
+    return ops.Projection(expr, clean_exprs)
 
 
 
@@ -456,11 +459,11 @@ class ExprValidator(object):
 
     def has_common_roots(self, expr):
         op = expr.op()
-        if isinstance(op, ir.TableColumn):
+        if isinstance(op, ops.TableColumn):
             for root in self.roots:
                 if root is op.table.op():
                     return True
-        elif isinstance(op, ir.Projection):
+        elif isinstance(op, ops.Projection):
             for root in self.roots:
                 if root is op:
                     return True
@@ -482,7 +485,7 @@ class ExprValidator(object):
     def assert_valid(self, expr):
         if not self.validate(expr):
             msg = self._error_message(expr)
-            raise ir.RelationError(msg)
+            raise RelationError(msg)
 
     def _error_message(self, expr):
         return ('The expression %s does not fully originate from '
@@ -508,7 +511,7 @@ class FilterValidator(ExprValidator):
 
         is_valid = True
 
-        if isinstance(op, ir.Contains):
+        if isinstance(op, ops.Contains):
             value_valid = self.has_common_roots(op.value)
             is_valid = value_valid
         else:
@@ -579,9 +582,9 @@ def unwrap_ands(expr):
     out_exprs = []
     def walk(expr):
         op = expr.op()
-        if isinstance(op, ir.Comparison):
+        if isinstance(op, ops.Comparison):
             out_exprs.append(expr)
-        elif isinstance(op, ir.And):
+        elif isinstance(op, ops.And):
             walk(op.left)
             walk(op.right)
         else:

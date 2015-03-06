@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import ibis.util as util
-import ibis.expr.base as ir
+import ibis.expr.base as base
+import ibis.expr.types as ir
+import ibis.expr.operations as ops
 
 
 class FormatMemo(object):
@@ -73,20 +75,20 @@ class ExprFormatter(object):
         if self.memoize:
             self._memoize_tables()
 
-        if isinstance(what, ir.HasSchema):
+        if isinstance(what, base.HasSchema):
             # This should also catch aggregations
             if not self.memoize and what in self.memo:
                 text = 'Table: %s' % self.memo.get_alias(what)
-            elif isinstance(what, ir.PhysicalTable):
+            elif isinstance(what, ops.PhysicalTable):
                 text = self._format_table(what)
             else:
                 # Any other node type
                 text = self._format_node(what)
-        elif isinstance(what, ir.TableColumn):
+        elif isinstance(what, ops.TableColumn):
             text = self._format_column(self.expr)
-        elif isinstance(what, ir.Node):
+        elif isinstance(what, base.Node):
             text = self._format_node(what)
-        elif isinstance(what, ir.Literal):
+        elif isinstance(what, base.Literal):
             text = 'Literal[%s] %s' % (self._get_type_display(),
                                        str(what.value))
 
@@ -106,7 +108,7 @@ class ExprFormatter(object):
         return self._indent(text, self.base_level)
 
     def _memoize_tables(self):
-        table_memo_ops = (ir.Aggregation, ir.Projection, ir.SelfReference)
+        table_memo_ops = (ops.Aggregation, ops.Projection, ops.SelfReference)
 
         def walk(expr):
             op = expr.op()
@@ -114,16 +116,16 @@ class ExprFormatter(object):
             def visit(arg):
                 if isinstance(arg, list):
                     [visit(x) for x in arg]
-                elif isinstance(arg, ir.Expr):
+                elif isinstance(arg, base.Expr):
                     walk(arg)
 
-            if isinstance(op, ir.PhysicalTable):
+            if isinstance(op, ops.PhysicalTable):
                 self.memo.observe(op, self._format_table)
-            elif isinstance(op, ir.Node):
+            elif isinstance(op, base.Node):
                 visit(op.args)
                 if isinstance(op, table_memo_ops):
                     self.memo.observe(op, self._format_node)
-            elif isinstance(op, ir.HasSchema):
+            elif isinstance(op, base.HasSchema):
                 self.memo.observe(op, self._format_table)
 
         walk(self.expr)
@@ -158,7 +160,7 @@ class ExprFormatter(object):
         formatted_args = []
 
         def visit(what):
-            if isinstance(what, ir.Expr):
+            if isinstance(what, base.Expr):
                 result = self._format_subexpr(what)
             else:
                 result = self._indent(str(what))

@@ -21,7 +21,9 @@ from ibis.expr.tests.mocks import MockConnection
 import ibis.common as com
 
 import ibis.expr.analysis as L
-import ibis.expr.base as ir
+import ibis.expr.api as api
+import ibis.expr.types as ir
+import ibis.expr.operations as ops
 
 
 # We are only testing Impala SQL dialect for the time being. At some point if
@@ -131,7 +133,7 @@ class TestASTBuilder(unittest.TestCase):
         # Check that the join has been rebuilt to only include the root tables
         tbl = stmt.table_set
         tbl_node = tbl.op()
-        assert isinstance(tbl_node, ir.InnerJoin)
+        assert isinstance(tbl_node, ops.InnerJoin)
         assert tbl_node.left is table2
         assert tbl_node.right is table
 
@@ -399,18 +401,18 @@ def _get_query(expr):
     ast = build_ast(expr)
     return ast.queries[0]
 
-nation = ir.table([
+nation = api.table([
     ('n_regionkey', 'int32'),
     ('n_nationkey', 'int32'),
     ('n_name', 'string')
 ], 'nation')
 
-region = ir.table([
+region = api.table([
     ('r_regionkey', 'int32'),
     ('r_name', 'string')
 ], 'region')
 
-customer = ir.table([
+customer = api.table([
     ('c_nationkey', 'int32'),
     ('c_name', 'string'),
     ('c_acctbal', 'double')
@@ -425,10 +427,10 @@ class TestSelectSQL(unittest.TestCase):
 
     def test_nameless_table(self):
         # Ensure that user gets some kind of sensible error
-        nameless = ir.table([('key', 'string')])
+        nameless = api.table([('key', 'string')])
         self.assertRaises(com.RelationError, to_sql, nameless)
 
-        with_name = ir.table([('key', 'string')], name='baz')
+        with_name = api.table([('key', 'string')], name='baz')
         result = to_sql(with_name)
         assert result == 'SELECT *\nFROM baz'
 
@@ -498,24 +500,24 @@ FROM star1 t0
         assert result_sql == expected_sql
 
     def test_join_between_joins(self):
-        t1 = ir.table([
+        t1 = api.table([
             ('key1', 'string'),
             ('key2', 'string'),
             ('value1', 'double'),
         ], 'first')
 
-        t2 = ir.table([
+        t2 = api.table([
             ('key1', 'string'),
             ('value2', 'double'),
         ], 'second')
 
-        t3 = ir.table([
+        t3 = api.table([
             ('key2', 'string'),
             ('key3', 'string'),
             ('value3', 'double'),
         ], 'third')
 
-        t4 = ir.table([
+        t4 = api.table([
             ('key3', 'string'),
             ('value4', 'double')
         ], 'fourth')
@@ -778,7 +780,7 @@ HAVING count(*) > 100"""
         pass
 
     def test_no_aliases_needed(self):
-        table = ir.table([
+        table = api.table([
             ('key1', 'string'),
             ('key2', 'string'),
             ('value', 'double')
@@ -808,7 +810,7 @@ HAVING count(*) > 100"""
         assert context.get_alias(t3) == 't2'
 
     def test_fuse_projections(self):
-        table = ir.table([
+        table = api.table([
             ('foo', 'int32'),
             ('bar', 'int64'),
             ('value', 'double')
@@ -972,7 +974,7 @@ FROM (
 
     def test_double_nested_subquery_no_aliases(self):
         # We don't require any table aliasing anywhere
-        t = ir.table([
+        t = api.table([
             ('key1', 'string'),
             ('key2', 'string'),
             ('key3', 'string'),
@@ -1131,7 +1133,7 @@ WHERE f > (
     def test_topk_operation_to_semi_join(self):
         # TODO: top K with filter in place
 
-        table = ir.table([
+        table = api.table([
             ('foo', 'string'),
             ('bar', 'string'),
             ('city', 'string'),
@@ -1220,7 +1222,7 @@ FROM customer t0
                 .when('baz', 'qux')
                 .else_('default').end())
 
-        expr2 = (ir.case()
+        expr2 = (api.case()
                 .when(t.g == 'foo', 'bar')
                 .when(t.g == 'baz', t.g)
                 .end())
@@ -1365,7 +1367,7 @@ GROUP BY 1"""
 class TestSubqueriesEtc(unittest.TestCase):
 
     def setUp(self):
-        self.foo = ir.table(
+        self.foo = api.table(
           [
             ('job', 'string'),
             ('dept_id', 'string'),
@@ -1373,18 +1375,18 @@ class TestSubqueriesEtc(unittest.TestCase):
             ('y', 'double')
         ], 'foo')
 
-        self.bar = ir.table([
+        self.bar = api.table([
             ('x', 'double'),
             ('job', 'string')
         ], 'bar')
 
-        self.t1 = ir.table([
+        self.t1 = api.table([
             ('key1', 'string'),
             ('key2', 'string'),
             ('value1', 'double')
         ], 'foo')
 
-        self.t2 = ir.table([
+        self.t2 = api.table([
             ('key1', 'string'),
             ('key2', 'string')
         ], 'bar')

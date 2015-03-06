@@ -20,7 +20,7 @@ import pandas as pd
 
 import ibis.config as config
 import ibis.connection as cnx
-import ibis.expr.base as ir
+import ibis.expr.types as ir
 
 
 

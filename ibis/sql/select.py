@@ -15,7 +15,8 @@
 from io import BytesIO
 
 from ibis.sql.exprs import ExprTranslator
-import ibis.expr.base as ir
+import ibis.expr.types as ir
+import ibis.expr.operations as ops
 import ibis.common as com
 import ibis.util as util
 
@@ -272,13 +273,13 @@ class Select(DDLStatement):
 
 class _TableSetFormatter(object):
     _join_names = {
-        ir.InnerJoin: 'INNER JOIN',
-        ir.LeftJoin: 'LEFT OUTER JOIN',
-        ir.RightJoin: 'RIGHT OUTER JOIN',
-        ir.OuterJoin: 'FULL OUTER JOIN',
-        ir.LeftAntiJoin: 'LEFT ANTI JOIN',
-        ir.LeftSemiJoin: 'LEFT SEMI JOIN',
-        ir.CrossJoin: 'CROSS JOIN'
+        ops.InnerJoin: 'INNER JOIN',
+        ops.LeftJoin: 'LEFT OUTER JOIN',
+        ops.RightJoin: 'RIGHT OUTER JOIN',
+        ops.OuterJoin: 'FULL OUTER JOIN',
+        ops.LeftAntiJoin: 'LEFT ANTI JOIN',
+        ops.LeftSemiJoin: 'LEFT SEMI JOIN',
+        ops.CrossJoin: 'CROSS JOIN'
     }
 
     def __init__(self, context, expr, indent=2):
@@ -296,7 +297,7 @@ class _TableSetFormatter(object):
         # and predicates onto a flat list, then format them
         op = self.expr.op()
 
-        if isinstance(op, ir.Join):
+        if isinstance(op, ops.Join):
             self._walk_join_tree(op)
         else:
             self.join_tables.append(self._format_table(self.expr))
@@ -324,7 +325,7 @@ class _TableSetFormatter(object):
         left = op.left.op()
         right = op.right.op()
 
-        if util.all_of([left, right], ir.Join):
+        if util.all_of([left, right], ops.Join):
             raise NotImplementedError('Do not support joins between '
                                       'joins yet')
 
@@ -334,16 +335,16 @@ class _TableSetFormatter(object):
 
         # Impala requires this
         if len(op.predicates) == 0:
-            jname = self._join_names[ir.CrossJoin]
+            jname = self._join_names[ops.CrossJoin]
 
         # Read off tables and join predicates left-to-right in
         # depth-first order
-        if isinstance(left, ir.Join):
+        if isinstance(left, ops.Join):
             self._walk_join_tree(left)
             self.join_tables.append(self._format_table(op.right))
             self.join_types.append(jname)
             self.join_predicates.append(op.predicates)
-        elif isinstance(right, ir.Join):
+        elif isinstance(right, ops.Join):
             # When rewrites are possible at the expression IR stage, we should
             # do them. Otherwise subqueries might be necessary in some cases
             # here
@@ -365,7 +366,7 @@ class _TableSetFormatter(object):
         for pred in predicates:
             op = pred.op()
 
-            if (not isinstance(op, ir.Equals) and
+            if (not isinstance(op, ops.Equals) and
                 not self._non_equijoin_supported):
                 raise com.TranslationError(
                     'Non-equality join predicates, '
@@ -377,11 +378,11 @@ def _format_table(ctx, expr, indent=2):
 
     ref_expr = expr
     op = ref_op = expr.op()
-    if isinstance(op, ir.SelfReference):
+    if isinstance(op, ops.SelfReference):
         ref_expr = op.table
         ref_op = ref_expr.op()
 
-    if isinstance(ref_op, ir.PhysicalTable):
+    if isinstance(ref_op, ops.PhysicalTable):
         name = op.name
         if name is None:
             raise com.RelationError('Table did not have a name: {!r}'
@@ -396,7 +397,7 @@ def _format_table(ctx, expr, indent=2):
             alias = ctx.get_alias(expr)
 
             # HACK: self-references have to be treated more carefully here
-            if isinstance(op, ir.SelfReference):
+            if isinstance(op, ops.SelfReference):
                 return '{} {}'.format(ctx.get_alias(ref_expr), alias)
             else:
                 return alias

@@ -13,11 +13,13 @@
 # limitations under the License.
 
 
+from ibis.expr.base import Node
 import ibis.expr.analysis as L
-import ibis.expr.base as ir
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
 
 
-class ExistsSubquery(ir.Node):
+class ExistsSubquery(Node):
 
     """
     Helper class
@@ -25,14 +27,14 @@ class ExistsSubquery(ir.Node):
     def __init__(self, foreign_table, predicates):
         self.foreign_table = foreign_table
         self.predicates = predicates
-        ir.Node.__init__(self, [foreign_table, predicates])
+        Node.__init__(self, [foreign_table, predicates])
 
-class NotExistsSubquery(ir.Node):
+class NotExistsSubquery(Node):
 
     def __init__(self, foreign_table, predicates):
         self.foreign_table = foreign_table
         self.predicates = predicates
-        ir.Node.__init__(self, [foreign_table, predicates])
+        Node.__init__(self, [foreign_table, predicates])
 
 
 class AnyToExistsTransform(object):
@@ -56,7 +58,7 @@ class AnyToExistsTransform(object):
 
         self._visit(self.expr)
 
-        if type(self.expr.op()) == ir.Any:
+        if type(self.expr.op()) == ops.Any:
             op = ExistsSubquery(self.foreign_table, self.predicates)
         else:
             op = NotExistsSubquery(self.foreign_table, self.predicates)
@@ -81,7 +83,7 @@ class AnyToExistsTransform(object):
     def _visit_table(self, expr):
         node = expr.op()
 
-        if isinstance(node, (ir.PhysicalTable, ir.SelfReference)):
+        if isinstance(node, (ops.PhysicalTable, ops.SelfReference)):
             self._ref_check(expr)
 
         for arg in node.flat_args():
@@ -95,7 +97,7 @@ class AnyToExistsTransform(object):
             pass
         else:
             # Foreign ref
-            if isinstance(node, ir.SelfReference):
+            if isinstance(node, ops.SelfReference):
                 foreign_table = node.table
             else:
                 foreign_table = expr

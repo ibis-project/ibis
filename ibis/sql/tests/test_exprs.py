@@ -17,8 +17,7 @@ import unittest
 from ibis.sql.exprs import ExprTranslator
 from ibis.sql.compiler import QueryContext, to_sql
 from ibis.expr.tests.mocks import MockConnection
-import ibis.expr.base as api
-import ibis.expr.base as ir
+import ibis.expr.api as api
 
 
 class ExprSQLTest(object):
@@ -47,7 +46,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def _check_literals(self, cases):
         for value, expected in cases:
-            lit_expr = ir.literal(value)
+            lit_expr = api.literal(value)
             result = self._translate(lit_expr)
             assert result == expected
 
@@ -59,7 +58,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         ]
 
         for value, expected in cases:
-            lit_expr = ir.literal(value)
+            lit_expr = api.literal(value)
             result = self._translate(lit_expr)
             assert result == expected
 
@@ -75,12 +74,12 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
     def test_column_ref_table_aliases(self):
         context = QueryContext()
 
-        table1 = ir.table([
+        table1 = api.table([
             ('key1', 'string'),
             ('value1', 'double')
         ])
 
-        table2 = ir.table([
+        table2 = api.table([
             ('key2', 'string'),
             ('value and2', 'double')
         ])
@@ -96,7 +95,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def test_column_ref_quoting(self):
         schema = [('has a space', 'double')]
-        table = ir.table(schema)
+        table = api.table(schema)
         self._translate(table['has a space'], '`has a space`')
 
     def test_named_expressions(self):
@@ -210,6 +209,12 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 FROM alltypes"""
         assert result == expected
 
+    def test_timestamp_now(self):
+        cases = [
+            (api.now(), 'now()')
+        ]
+        self._check_expr_cases(cases)
+
     def test_correlated_predicate_subquery(self):
         t0 = self.table
         t1 = t0.view()
@@ -227,6 +232,41 @@ FROM alltypes"""
         result = self._translate(expr, context=subctx)
         expected = "t0.g = t1.g"
         assert result == expected
+
+
+class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('functional_alltypes')
+
+    def test_numeric_monadic_builtins(self):
+        # No argument functions
+        functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt', 'sign', 'log',
+                     ('ln', 'log'),
+                     'log2', 'log10']
+
+        cases = []
+        for what in functions:
+            if isinstance(what, tuple):
+                ibis_name, sql_name = what
+            else:
+                ibis_name = sql_name = what
+
+            for cname in ['double_col', 'int_col']:
+                expr = getattr(self.table[cname], ibis_name)()
+                cases.append((expr, '{}({})'.format(sql_name, cname)))
+
+        self._check_expr_cases(cases)
+
+    def test_round(self):
+        cases = [
+            (self.table.double_col.round(), 'round(double_col)'),
+            (self.table.double_col.round(0), 'round(double_col, 0)'),
+            (self.table.double_col.round(2, ), 'round(double_col, 2)')
+        ]
+        self._check_expr_cases(cases)
+
 
 
 class TestCaseExprs(unittest.TestCase, ExprSQLTest):
@@ -315,3 +355,32 @@ WHERE g IN ('foo', 'bar')"""
 FROM alltypes
 WHERE g NOT IN ('foo', 'bar')"""
         assert result == expected
+
+
+class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('functional_alltypes')
+
+    def test_unary_ops(self):
+        cases = [
+            (self.table.string_col.lower(), 'lower(string_col)'),
+            (self.table.string_col.upper(), 'upper(string_col)'),
+            (self.table.string_col.length(), 'length(string_col)')
+        ]
+        self._check_expr_cases(cases)
+
+    def test_substr(self):
+        # Database numbers starting from 1
+        cases = [
+            (self.table.string_col.substr(2), 'substr(string_col, 3)'),
+            (self.table.string_col.substr(0, 3), 'substr(string_col, 1, 3)')
+        ]
+        self._check_expr_cases(cases)
+
+    def test_strright(self):
+        cases = [
+            (self.table.string_col.right(4), 'strright(string_col, 4)')
+        ]
+        self._check_expr_cases(cases)

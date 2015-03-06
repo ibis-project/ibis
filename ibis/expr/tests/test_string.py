@@ -14,9 +14,9 @@
 
 import unittest
 
-import ibis.expr.base as api
-import ibis.expr.base as ir
-import ibis.expr.base as ops
+import ibis.expr.api as api
+import ibis.expr.types as ir
+import ibis.expr.operations as ops
 
 from ibis.expr.tests.mocks import MockConnection
 
@@ -43,3 +43,36 @@ class TestStringOps(unittest.TestCase):
         uresult = lit.upper()
         assert isinstance(lresult, ir.StringScalar)
         assert isinstance(uresult, ir.StringScalar)
+
+    def test_substr(self):
+        lit = api.literal('FoO')
+
+        result = self.table.g.substr(2, 4)
+        lit_result = lit.substr(0, 2)
+
+        assert isinstance(result, ir.StringArray)
+        assert isinstance(lit_result, ir.StringScalar)
+
+        op = result.op()
+        assert isinstance(op, ops.Substring)
+        assert op.start == 2
+        assert op.length == 4
+
+    def test_left_right(self):
+        result = self.table.g.left(5)
+        expected = self.table.g.substr(0, 5)
+        assert result.equals(expected)
+
+        result = self.table.g.right(5)
+        op = result.op()
+        assert isinstance(op, ops.StrRight)
+        assert op.nchars == 5
+
+    def test_length(self):
+        lit = api.literal('FoO')
+        result = self.table.g.length()
+        lit_result = lit.length()
+
+        assert isinstance(result, ir.Int32Array)
+        assert isinstance(lit_result, ir.Int32Scalar)
+        assert isinstance(result.op(), ops.StringLength)

@@ -13,7 +13,8 @@
 # limitations under the License.
 
 
-import ibis.expr.base as ir
+import ibis.expr.types as ir
+import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
 import ibis.sql.select as ddl
 
@@ -43,7 +44,7 @@ class SQLConnection(Connection):
             raise NotImplementedError
 
         schema = self._get_table_schema(name)
-        node = ir.DatabaseTable(name, schema, self)
+        node = ops.DatabaseTable(name, schema, self)
         return ir.TableExpr(node)
 
     def sql(self, query):
@@ -62,7 +63,7 @@ class SQLConnection(Connection):
         limited_query = _set_limit(query, 0)
         schema = self._get_schema_using_query(limited_query)
 
-        node = ir.SQLQueryResult(query, schema, self)
+        node = ops.SQLQueryResult(query, schema, self)
         return ir.TableExpr(node)
 
     def execute(self, expr, params=None):

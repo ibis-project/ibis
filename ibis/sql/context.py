@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ibis.expr.base as ir
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
 
 
 #----------------------------------------------------------------------
@@ -71,7 +72,7 @@ class QueryContext(object):
             return this.subquery_memo[key]
 
         op = expr.op()
-        if isinstance(op, ir.SQLQueryResult):
+        if isinstance(op, ops.SQLQueryResult):
             result = op.query
         else:
             result = to_sql(expr, context=self.subcontext())

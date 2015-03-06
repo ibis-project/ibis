@@ -16,10 +16,11 @@ import itertools
 import operator
 import unittest
 
-from ibis.expr.base import ArrayExpr, TableExpr, RelationError
-import ibis.expr.base as api
-import ibis.expr.base as ir
-import ibis.expr.base as operations
+from ibis.expr.types import ArrayExpr, TableExpr, RelationError
+import ibis.expr.api as api
+import ibis.expr.base as base
+import ibis.expr.types as ir
+import ibis.expr.operations as ops
 
 from ibis.expr.format import ExprFormatter
 from ibis.expr.tests.mocks import MockConnection
@@ -41,7 +42,7 @@ class TestLiterals(unittest.TestCase):
     def test_null(self):
         expr = api.literal(None)
         assert isinstance(expr, api.NullScalar)
-        assert isinstance(expr.op(), api.NullLiteral)
+        assert isinstance(expr.op(), base.NullLiteral)
 
     def test_boolean(self):
         val = True
@@ -96,7 +97,7 @@ class TestLiterals(unittest.TestCase):
 
         for value, ex_type in cases:
             expr = api.literal(value)
-            klass = api.scalar_type(ex_type)
+            klass = ir.scalar_type(ex_type)
             assert isinstance(expr, klass)
             assert isinstance(expr.op(), api.Literal)
             assert expr.op().value is value
@@ -106,7 +107,7 @@ class TestLiterals(unittest.TestCase):
         expr = ir.as_value_expr(what)
 
         assert isinstance(expr, ir.ArrayExpr)
-        assert isinstance(expr.op(), ir.ValueList)
+        assert isinstance(expr.op(), ops.ValueList)
         assert isinstance(expr.op().values[2], ir.Int16Scalar)
 
         # it works!
@@ -179,11 +180,11 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
             # Make sure it's the right type
             assert isinstance(col, ArrayExpr)
-            assert isinstance(col, api.array_type(v))
+            assert isinstance(col, ir.array_type(v))
 
             # Ensure we have a field selection with back-reference to the table
             parent = col.parent()
-            assert isinstance(parent, api.TableColumn)
+            assert isinstance(parent, ops.TableColumn)
             assert parent.parent() is self.table
 
     def test_getitem_attribute(self):
@@ -202,7 +203,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         proj = self.table[cols]
         assert isinstance(proj, TableExpr)
-        assert isinstance(proj.op(), api.Projection)
+        assert isinstance(proj.op(), ops.Projection)
 
         assert proj.schema().names == cols
         for c in cols:
@@ -320,7 +321,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
     def test_add_predicate(self):
         pred = self.table['a'] > 5
         result = self.table[pred]
-        assert isinstance(result.op(), api.Filter)
+        assert isinstance(result.op(), ops.Filter)
 
     def test_filter_root_table_preserved(self):
         result = self.table[self.table['a'] > 5]
@@ -371,19 +372,19 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
     def test_projection_with_join_pushdown_rewrite_refs(self):
         # Observed this expression IR issue in a TopK-rewrite context
-        table1 = ir.table([
+        table1 = api.table([
             ('a_key1', 'string'),
             ('a_key2', 'string'),
             ('a_value', 'double')
         ], 'foo')
 
-        table2 = ir.table([
+        table2 = api.table([
             ('b_key1', 'string'),
             ('b_name', 'string'),
             ('b_value', 'double')
         ], 'bar')
 
-        table3 = ir.table([
+        table3 = api.table([
             ('c_key2', 'string'),
             ('c_name', 'string')
         ], 'baz')
@@ -401,9 +402,9 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         for higher_pred, lower_pred in cases:
             result = proj.filter([higher_pred])
             op = result.op()
-            assert isinstance(op, ir.Projection)
+            assert isinstance(op, ops.Projection)
             filter_op = op.table.op()
-            assert isinstance(filter_op, ir.Filter)
+            assert isinstance(filter_op, ops.Filter)
             new_pred = filter_op.predicates[0]
             assert new_pred.equals(lower_pred)
 
@@ -454,10 +455,10 @@ class TestContains(BasicTestCase, unittest.TestCase):
         not_expr = self.table.a.notin(vals)
 
         assert isinstance(expr, ir.BooleanArray)
-        assert isinstance(expr.op(), ir.Contains)
+        assert isinstance(expr.op(), ops.Contains)
 
         assert isinstance(not_expr, ir.BooleanArray)
-        assert isinstance(not_expr.op(), ir.NotContains)
+        assert isinstance(not_expr.op(), ops.NotContains)
 
     def test_isin_not_comparable(self):
         pass
@@ -507,11 +508,11 @@ class TestDistinct(unittest.TestCase):
 
     def test_distinct_basic(self):
         expr = self.table.distinct()
-        assert isinstance(expr.op(), ir.Distinct)
+        assert isinstance(expr.op(), ops.Distinct)
         assert expr.op().table is self.table
 
         expr = self.table.string_col.distinct()
-        assert isinstance(expr.op(), ir.DistinctArray)
+        assert isinstance(expr.op(), ops.DistinctArray)
 
         ex_projection = self.table[[self.table.string_col]]
         assert expr.op().table.op().table.equals(ex_projection)
@@ -529,11 +530,11 @@ class TestDistinct(unittest.TestCase):
         result = self.table.string_col.distinct().count()
         expected = self.table.string_col.nunique()
         assert result.equals(expected)
-        assert isinstance(result.op(), ir.CountDistinct)
+        assert isinstance(result.op(), ops.CountDistinct)
 
     def test_nunique(self):
         expr = self.table.string_col.nunique()
-        assert isinstance(expr.op(), ir.CountDistinct)
+        assert isinstance(expr.op(), ops.CountDistinct)
 
     def test_project_with_distinct(self):
         pass
@@ -634,20 +635,20 @@ class TestNullOps(BasicTestCase, unittest.TestCase):
     def test_isnull(self):
         expr = self.table['g'].isnull()
         assert isinstance(expr, api.BooleanArray)
-        assert isinstance(expr.op(), operations.IsNull)
+        assert isinstance(expr.op(), ops.IsNull)
 
         expr = api.literal('foo').isnull()
         assert isinstance(expr, api.BooleanScalar)
-        assert isinstance(expr.op(), operations.IsNull)
+        assert isinstance(expr.op(), ops.IsNull)
 
     def test_notnull(self):
         expr = self.table['g'].notnull()
         assert isinstance(expr, api.BooleanArray)
-        assert isinstance(expr.op(), operations.NotNull)
+        assert isinstance(expr.op(), ops.NotNull)
 
         expr = api.literal('foo').notnull()
         assert isinstance(expr, api.BooleanScalar)
-        assert isinstance(expr.op(), operations.NotNull)
+        assert isinstance(expr.op(), ops.NotNull)
 
     def test_null_literal(self):
         pass
@@ -656,11 +657,11 @@ class TestNullOps(BasicTestCase, unittest.TestCase):
 class TestMathUnaryOps(BasicTestCase, unittest.TestCase):
 
     def test_log_variants(self):
-        ops = ['log', 'log2', 'log10']
+        opnames = ['log', 'log2', 'log10']
 
         columns = ['a', 'b', 'c', 'd', 'e', 'f']
 
-        for opname in ops:
+        for opname in opnames:
             f = lambda x: getattr(x, opname)()
 
             for c in columns:
@@ -673,7 +674,7 @@ class TestMathUnaryOps(BasicTestCase, unittest.TestCase):
             assert isinstance(f(api.literal(5)), api.DoubleScalar)
             assert isinstance(f(api.literal(5.5)), api.DoubleScalar)
 
-            klass = getattr(operations, opname.capitalize())
+            klass = getattr(ops, opname.capitalize())
             self.assertRaises(TypeError, klass(self.table['g']).to_expr)
 
             # boolean not implemented for these
@@ -705,11 +706,11 @@ class TestTypeCasting(BasicTestCase, unittest.TestCase):
         for t in types:
             c = 'g'
             casted = self.table[c].cast(t)
-            assert isinstance(casted, api.array_type(t))
+            assert isinstance(casted, ir.array_type(t))
             assert casted.get_name() == c
 
             casted_literal = api.literal('5').name('bar').cast(t)
-            assert isinstance(casted_literal, api.scalar_type(t))
+            assert isinstance(casted_literal, ir.scalar_type(t))
             assert casted_literal.get_name() == 'bar'
 
     def test_number_to_string(self):
@@ -734,11 +735,11 @@ class TestBooleanUnaryOps(BasicTestCase, unittest.TestCase):
             col = self.table[name]
             result = -col
             assert isinstance(result, type(col))
-            assert isinstance(result.op(), operations.Negate)
+            assert isinstance(result.op(), ops.Negate)
 
         result = -api.literal(False)
         assert isinstance(result, api.BooleanScalar)
-        assert isinstance(result.op(), operations.Negate)
+        assert isinstance(result.op(), ops.Negate)
 
     def test_isnull_notnull(self):
         pass
@@ -747,21 +748,21 @@ class TestBooleanUnaryOps(BasicTestCase, unittest.TestCase):
 class TestComparisons(BasicTestCase, unittest.TestCase):
 
     def test_numbers_compare_numeric_literal(self):
-        ops = ['lt', 'gt', 'ge', 'le', 'eq', 'ne']
+        opnames = ['lt', 'gt', 'ge', 'le', 'eq', 'ne']
 
         ex_op_class = {
-            'eq': api.Equals,
-            'ne': api.NotEquals,
-            'le': api.LessEqual,
-            'lt': api.Less,
-            'ge': api.GreaterEqual,
-            'gt': api.Greater,
+            'eq': ops.Equals,
+            'ne': ops.NotEquals,
+            'le': ops.LessEqual,
+            'lt': ops.Less,
+            'ge': ops.GreaterEqual,
+            'gt': ops.Greater,
         }
 
         columns = ['a', 'b', 'c', 'd', 'e', 'f']
 
         cases = [2, 2 ** 9, 2 ** 17, 2 ** 33, 1.5]
-        for opname, cname, val in itertools.product(ops, columns, cases):
+        for opname, cname, val in itertools.product(opnames, columns, cases):
             f = getattr(operator, opname)
             col = self.table[cname]
 
@@ -821,7 +822,7 @@ class TestComparisons(BasicTestCase, unittest.TestCase):
         result = self.table.f.between(0, 1)
 
         assert isinstance(result, ir.BooleanArray)
-        assert isinstance(result.op(), ir.Between)
+        assert isinstance(result.op(), ops.Between)
 
         # it works!
         result = self.table.g.between('a', 'f')
@@ -960,11 +961,11 @@ class TestBinaryArithOps(BasicTestCase, unittest.TestCase):
             col = self.table[name]
 
             result = op(col, val)
-            ex_class = api.array_type(ex_type)
+            ex_class = ir.array_type(ex_type)
             assert isinstance(result, ex_class)
 
             result = op(val, col)
-            ex_class = api.array_type(ex_type)
+            ex_class = ir.array_type(ex_type)
             assert isinstance(result, ex_class)
 
     def test_add_array_promotions(self):
@@ -988,11 +989,11 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
     def test_count(self):
         result = self.table['a'].count()
         assert isinstance(result, api.Int64Scalar)
-        assert isinstance(result.op(), operations.Count)
+        assert isinstance(result.op(), ops.Count)
 
         result = self.table.count()
         assert isinstance(result, api.Int64Scalar)
-        assert isinstance(result.op(), operations.Count)
+        assert isinstance(result.op(), ops.Count)
 
     def test_sum_expr_basics(self):
         # Impala gives bigint for all integer types
@@ -1000,7 +1001,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         for c in self.int_cols + self.bool_cols:
             result = self.table[c].sum()
             assert isinstance(result, ex_class)
-            assert isinstance(result.op(), api.Sum)
+            assert isinstance(result.op(), ops.Sum)
 
             assert result.get_name() == c
 
@@ -1009,14 +1010,14 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         for c in self.float_cols:
             result = self.table[c].sum()
             assert isinstance(result, ex_class)
-            assert isinstance(result.op(), api.Sum)
+            assert isinstance(result.op(), ops.Sum)
 
     def test_mean_expr_basics(self):
         cols = self.int_cols + self.float_cols + self.bool_cols
         for c in cols:
             result = self.table[c].mean()
             assert isinstance(result, api.DoubleScalar)
-            assert isinstance(result.op(), api.Mean)
+            assert isinstance(result.op(), ops.Mean)
 
     def test_aggregate_no_keys(self):
         agg_exprs = [self.table['a'].sum(),
@@ -1360,11 +1361,11 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         t3 = api.table(schema2, 'baz')
 
         result = t1.union(t2)
-        assert isinstance(result.op(), ir.Union)
+        assert isinstance(result.op(), ops.Union)
         assert not result.op().distinct
 
         result = t1.union(t2, distinct=True)
-        assert isinstance(result.op(), ir.Union)
+        assert isinstance(result.op(), ops.Union)
         assert result.op().distinct
 
         self.assertRaises(ir.RelationError, t1.union, t3)
@@ -1391,11 +1392,11 @@ class TestSemiAntiJoinPredicates(unittest.TestCase):
 
         assert isinstance(cond, ir.BooleanArray)
         op = cond.op()
-        assert isinstance(op, ir.Any)
+        assert isinstance(op, ops.Any)
 
         # it works!
         expr = self.t1[cond]
-        assert isinstance(expr.op(), ir.Filter)
+        assert isinstance(expr.op(), ops.Filter)
 
     def test_cannot_use_existence_expression_in_join(self):
         # Join predicates must consist only of comparisons
@@ -1403,7 +1404,7 @@ class TestSemiAntiJoinPredicates(unittest.TestCase):
 
     def test_not_exists_predicate(self):
         cond = -(self.t1.key1 == self.t2.key1).any()
-        assert isinstance(cond.op(), ir.NotAny)
+        assert isinstance(cond.op(), ops.NotAny)
 
 
 class TestCaseExpressions(BasicTestCase, unittest.TestCase):
@@ -1447,7 +1448,7 @@ class TestCaseExpressions(BasicTestCase, unittest.TestCase):
 
         default = self.table.d
 
-        expr = (ir.case()
+        expr = (api.case()
                 .when(case1, result1)
                 .when(case2, result2)
                 .when(case3, result3)
@@ -1456,7 +1457,7 @@ class TestCaseExpressions(BasicTestCase, unittest.TestCase):
 
         op = expr.op()
         assert isinstance(expr, ir.DoubleArray)
-        assert isinstance(op, ir.SearchedCase)
+        assert isinstance(op, ops.SearchedCase)
         assert op.default is default
 
     def test_simple_case_no_default(self):
@@ -1473,15 +1474,15 @@ class TestCaseExpressions(BasicTestCase, unittest.TestCase):
 
         assert isinstance(expr, ir.StringArray)
         assert isinstance(op.default, ir.ValueExpr)
-        assert isinstance(op.default.op(), ir.NullLiteral)
+        assert isinstance(op.default.op(), base.NullLiteral)
 
     def test_multiple_case_null_else(self):
-        expr = ir.case().when(self.table.g == "foo", "bar").end()
+        expr = api.case().when(self.table.g == "foo", "bar").end()
         op = expr.op()
 
         assert isinstance(expr, ir.StringArray)
         assert isinstance(op.default, ir.ValueExpr)
-        assert isinstance(op.default.op(), ir.NullLiteral)
+        assert isinstance(op.default.op(), base.NullLiteral)
 
     def test_case_type_precedence(self):
         pass
@@ -1497,9 +1498,7 @@ class TestInteractiveUse(unittest.TestCase):
 
     def test_interactive_execute_on_repr(self):
         table = self.con.table('functional_alltypes')
-
         expr = table.bigint_col.sum()
-
         with config.option_context('interactive', True):
             repr(expr)
 

@@ -21,7 +21,8 @@
 from collections import defaultdict
 
 import ibis.expr.analysis as L
-import ibis.expr.base as ir
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
 
 from ibis.sql.context import QueryContext
 import ibis.sql.select as ddl
@@ -71,7 +72,7 @@ class QueryBuilder(object):
 
         # TODO: any setup / teardown DDL statements will need to be done prior
         # to building the result set-generating statements.
-        if isinstance(op, ir.Union):
+        if isinstance(op, ops.Union):
             query = self._make_union()
         else:
             query = self._make_select()
@@ -191,7 +192,7 @@ class SelectBuilder(object):
     def _make_table_aliases(self, expr):
         ctx = self.context
         node = expr.op()
-        if isinstance(node, ir.Join):
+        if isinstance(node, ops.Join):
             for arg in node.args:
                 if not isinstance(arg, ir.TableExpr):
                     continue
@@ -239,7 +240,7 @@ class SelectBuilder(object):
             if expr.is_reduction():
                 return self._rewrite_reduction_filter(expr)
 
-        if isinstance(op, ir.BinaryOp):
+        if isinstance(op, ops.BinaryOp):
             left = self._visit_filter(op.left)
             right = self._visit_filter(op.right)
             unchanged = left is op.left and right is op.right
@@ -247,8 +248,8 @@ class SelectBuilder(object):
                 return type(expr)(type(op)(left, right))
             else:
                 return expr
-        elif isinstance(op, (ir.Any, ir.Between, ir.Contains,
-                             ir.TableColumn, ir.Literal)):
+        elif isinstance(op, (ops.Any, ops.Between, ops.Contains,
+                             ops.TableColumn, ops.Literal)):
             return expr
         else:
             raise NotImplementedError(type(op))
@@ -315,8 +316,8 @@ class SelectBuilder(object):
 
         # hm, is this the best place for this?
         root_op = source_table.op()
-        if (isinstance(root_op, ir.Join) and
-            not isinstance(root_op, ir.MaterializedJoin)):
+        if (isinstance(root_op, ops.Join) and
+            not isinstance(root_op, ops.MaterializedJoin)):
             # Unmaterialized join
             source_table = source_table.materialize()
 
@@ -333,9 +334,9 @@ class SelectBuilder(object):
         if hasattr(self, method):
             f = getattr(self, method)
             f(expr, toplevel=toplevel)
-        elif isinstance(op, (ir.PhysicalTable, ir.SQLQueryResult)):
+        elif isinstance(op, (ops.PhysicalTable, ops.SQLQueryResult)):
             self._collect_PhysicalTable(expr, toplevel=toplevel)
-        elif isinstance(op, (ir.Join, ir.MaterializedJoin)):
+        elif isinstance(op, (ops.Join, ops.MaterializedJoin)):
             self._collect_Join(expr, toplevel=toplevel)
         else:
             raise NotImplementedError(type(op))
@@ -392,7 +393,7 @@ class SelectBuilder(object):
         if toplevel:
             # HACK: yuck, need a better way to know if we should perform a
             # select * from a subquery here
-            if not isinstance(op.table.op(), ir.Aggregation):
+            if not isinstance(op.table.op(), ops.Aggregation):
                 self.select_set = [op.table]
                 self.table_set = op.table
                 toplevel = False
@@ -402,7 +403,7 @@ class SelectBuilder(object):
     def _collect_Join(self, expr, toplevel=False):
         op = expr.op()
 
-        if isinstance(op, ir.MaterializedJoin):
+        if isinstance(op, ops.MaterializedJoin):
             expr = op.join
             op = expr.op()
 
@@ -516,9 +517,9 @@ class _ExtractSubqueries(object):
         if hasattr(self, method):
             f = getattr(self, method)
             f(expr)
-        elif isinstance(node, ir.Join):
+        elif isinstance(node, ops.Join):
             self._visit_join(expr)
-        elif isinstance(node, ir.PhysicalTable):
+        elif isinstance(node, ops.PhysicalTable):
             self._visit_physical_table(expr)
         else:
             raise NotImplementedError(type(node))
@@ -602,10 +603,10 @@ class _CorrelatedRefCheck(object):
 
     def _is_subquery(self, node):
         # XXX
-        if isinstance(node, ir.TableArrayView):
+        if isinstance(node, ops.TableArrayView):
             return True
 
-        if isinstance(node, ir.TableColumn):
+        if isinstance(node, ops.TableColumn):
             return not self._is_root(node.table)
 
         return False
@@ -613,7 +614,7 @@ class _CorrelatedRefCheck(object):
     def _visit_table(self, expr, in_subquery=False):
         node = expr.op()
 
-        if isinstance(node, (ir.PhysicalTable, ir.SelfReference)):
+        if isinstance(node, (ops.PhysicalTable, ops.SelfReference)):
             self._ref_check(node, in_subquery=in_subquery)
 
         for arg in node.flat_args():
@@ -662,7 +663,7 @@ def _adapt_expr(expr):
     elif isinstance(expr, ir.ArrayExpr):
         op = expr.op()
 
-        if isinstance(op, (ir.TableColumn, ir.DistinctArray)):
+        if isinstance(op, (ops.TableColumn, ops.DistinctArray)):
             table_expr = op.table
             def column_handler(results):
                 return results[op.name]

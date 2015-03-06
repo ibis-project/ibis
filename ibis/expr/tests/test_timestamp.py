@@ -14,8 +14,9 @@
 
 import unittest
 
-import ibis.expr.base as api
-import ibis.expr.base as ir
+import ibis.expr.api as api
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
 
 from ibis.expr.tests.mocks import MockConnection
 
@@ -42,15 +43,20 @@ class TestTimestamp(unittest.TestCase):
     def test_extract_fields(self):
         # type-size may be database specific
         cases = [
-            ('year', ir.ExtractYear, ir.Int32Array),
-            ('month', ir.ExtractMonth, ir.Int32Array),
-            ('day', ir.ExtractDay, ir.Int32Array),
-            ('hour', ir.ExtractHour, ir.Int32Array),
-            ('minute', ir.ExtractMinute, ir.Int32Array),
-            ('second', ir.ExtractSecond, ir.Int32Array)
+            ('year', ops.ExtractYear, ir.Int32Array),
+            ('month', ops.ExtractMonth, ir.Int32Array),
+            ('day', ops.ExtractDay, ir.Int32Array),
+            ('hour', ops.ExtractHour, ir.Int32Array),
+            ('minute', ops.ExtractMinute, ir.Int32Array),
+            ('second', ops.ExtractSecond, ir.Int32Array)
         ]
 
         for attr, ex_op, ex_type in cases:
             result = getattr(self.col, attr)()
             assert isinstance(result, ex_type)
             assert isinstance(result.op(), ex_op)
+
+    def test_now(self):
+        result = api.now()
+        assert isinstance(result, ir.TimestampScalar)
+        assert isinstance(result.op(), ops.TimestampNow)
