@@ -223,6 +223,7 @@ class ExprSimplifier(object):
                     can_lift = True
                     lifted_root = self.lift(val)
                 elif (isinstance(val.op(), ops.TableColumn)
+                      and val.op().name == val.get_name()
                       and node.name == val.get_name()):
                     can_lift = True
                     lifted_root = self.lift(val.op().table)

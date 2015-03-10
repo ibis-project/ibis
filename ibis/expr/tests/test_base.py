@@ -1,4 +1,4 @@
-# Copyright 2014 Cloudera Inc.
+# copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1369,6 +1369,26 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         assert result.op().distinct
 
         self.assertRaises(ir.RelationError, t1.union, t3)
+
+    def test_column_ref_on_projection_rename(self):
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+        customer = self.con.table('tpch_customer')
+
+        joined = (region.inner_join(
+            nation, [region.r_regionkey == nation.n_regionkey])
+                  .inner_join(
+                      customer, [customer.c_nationkey == nation.n_nationkey]))
+
+        proj_exprs = [customer, nation.n_name.name('nation'),
+                      region.r_name.name('region')]
+        joined = joined.projection(proj_exprs)
+
+        metrics = [joined.c_acctbal.sum().name('metric')]
+
+        # it works!
+        joined.aggregate(metrics, by=['region'])
+
 
 
 class TestSemiAntiJoinPredicates(unittest.TestCase):

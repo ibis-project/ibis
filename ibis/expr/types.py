@@ -181,7 +181,7 @@ class ValueExpr(Expr):
         return self.op().resolve_name()
 
     def name(self, name):
-        return type(self)(self._arg, name=name)
+        return self._factory(self._arg, name=name)
 
     def cast(self, target_type):
         """
