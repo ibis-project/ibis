@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ibis.comms as comms
-
 
 def guid():
-    return comms.uuid4_hex()
+    from ibis.comms import uuid4_hex
+    return uuid4_hex()
 
 
 def bytes_to_uint8_array(val, width=70):

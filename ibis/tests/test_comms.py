@@ -17,11 +17,19 @@ import sys
 import threading
 import unittest
 
+import pytest
+
 import numpy as np
 
-from ibis.comms import (SharedMmap, IbisType, IbisTableReader, IbisTableWriter)
 from ibis.util import guid
-import ibis.comms as comms
+
+try:
+    import ibis.comms as comms
+    from ibis.comms import (SharedMmap, IbisType, IbisTableReader,
+                            IbisTableWriter)
+    SKIP_TESTS = False
+except ImportError:
+    SKIP_TESTS = True
 
 
 def _nuke(path):
@@ -29,6 +37,9 @@ def _nuke(path):
         os.remove(path)
     except os.error:
         pass
+
+pytestmark = pytest.mark.skipif(SKIP_TESTS,
+                                reason='Comms extension disabled')
 
 
 class TestIPCLock(unittest.TestCase):

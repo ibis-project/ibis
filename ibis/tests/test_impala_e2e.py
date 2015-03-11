@@ -39,6 +39,9 @@ def connect(env):
                               port=ENV.port)
 
 
+pytestmark = pytest.mark.e2e
+
+
 class TestImpalaConnection(unittest.TestCase):
 
     @classmethod

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import pytest
 import unittest
 
 import pandas as pd
@@ -21,12 +22,21 @@ from cPickle import loads as pickle_load
 from ibis.cloudpickle import dumps as pickle_dump
 
 from ibis.tasks import IbisTaskMessage, IbisTaskExecutor
-from ibis.comms import SharedMmap, IPCLock, IbisTableWriter
 from ibis.util import guid
 from ibis.wire import BytesIO
 import ibis.wire as wire
 
 from ibis.tests.test_server import WorkerTestFixture
+
+try:
+    from ibis.comms import SharedMmap, IPCLock, IbisTableWriter
+    SKIP_TESTS = False
+except ImportError:
+    SKIP_TESTS = True
+
+
+pytestmark = pytest.mark.skipif(SKIP_TESTS,
+                                reason='Comms extension disabled')
 
 
 class TestTasks(unittest.TestCase):

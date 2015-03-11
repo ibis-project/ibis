@@ -18,8 +18,12 @@ from cPickle import loads as pickle_load
 from ibis.cloudpickle import dumps as pickle_dump
 
 from ibis.wire import PackedMessageReader, PackedMessageWriter
-import ibis.comms as comms
 import ibis.wire as wire
+
+try:
+    import ibis.comms as comms
+except ImportError:
+    pass
 
 
 class IbisTaskMessage(object):

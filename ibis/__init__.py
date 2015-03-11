@@ -20,6 +20,9 @@ import ibis.config_init
 from ibis.config import options
 
 
-def test():
+def test(include_e2e=False):
     import pytest
-    pytest.main(['--pyargs', 'ibis'])
+    args = ['--pyargs', 'ibis']
+    if not include_e2e:
+        args.extend(['-m', 'not e2e'])
+    pytest.main(args)
