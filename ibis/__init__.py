@@ -18,3 +18,8 @@ import ibis.expr.types as ir
 
 import ibis.config_init
 from ibis.config import options
+
+
+def test():
+    import pytest
+    pytest.main(['--pyargs', 'ibis'])
