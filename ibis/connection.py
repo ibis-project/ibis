@@ -71,7 +71,7 @@ class SQLConnection(Connection):
         """
 
         """
-        ast = self._build_ast_ensure_limit(expr, default_limit)
+        ast, expr = self._build_ast_ensure_limit(expr, default_limit)
 
         # TODO: create some query pipeline executor abstraction
         output = None
