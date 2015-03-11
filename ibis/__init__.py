@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from ibis.connection import impala_connect
-import ibis.expr.base as ir
+import ibis.expr.api as api
+import ibis.expr.types as ir
 
 import ibis.config_init
 from ibis.config import options

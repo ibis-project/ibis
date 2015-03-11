@@ -49,11 +49,11 @@ class BinaryPromoter(object):
     def _get_int_type(self):
         deps = [x.op() for x in self.args]
 
-        if util.all_of(deps, ir.Literal):
+        if util.all_of(deps, ops.Literal):
             return _smallest_int_containing(
                 [self.op(deps[0].value, deps[1].value)])
-        elif util.any_of(deps, ir.Literal):
-            if isinstance(deps[0], ir.Literal):
+        elif util.any_of(deps, ops.Literal):
+            if isinstance(deps[0], ops.Literal):
                 val = deps[0].value
                 atype = self.args[1].type()
             else:
@@ -66,7 +66,7 @@ class BinaryPromoter(object):
 
     def _check_compatibility(self):
         if (util.any_of(self.args, ir.StringValue) and
-            not util.all_of(self.args, ir.StringValue)):
+                not util.all_of(self.args, ir.StringValue)):
             raise TypeError('String and non-string incompatible')
 
 
@@ -83,13 +83,12 @@ class PowerPromoter(BinaryPromoter):
                 return 'double'
             else:
                 return 'float'
-        elif isinstance(rval, ir.Literal) and rval.value < 0:
+        elif isinstance(rval, ops.Literal) and rval.value < 0:
             return 'double'
         elif util.all_of(self.args, ir.IntegerValue):
             return self._get_int_type()
         else:
             raise NotImplementedError
-
 
 
 _nbytes = {
@@ -106,7 +105,6 @@ _int_bounds = {
     'int32': (-2147483648, 2147483647),
     'int64': (-9223372036854775808, 9223372036854775807)
 }
-
 
 
 def highest_precedence_type(exprs):

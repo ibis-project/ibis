@@ -106,7 +106,7 @@ def _set_option(*args, **kwargs):
     nargs = len(args)
     if not nargs or nargs % 2 != 0:
         raise ValueError("Must provide an even number of non-keyword "
-                             "arguments")
+                         "arguments")
 
     # default to false
     silent = kwargs.get('silent', False)
@@ -124,6 +124,7 @@ def _set_option(*args, **kwargs):
 
         if o.cb:
             o.cb(key)
+
 
 def _describe_option(pat='', _print_desc=True):
 
@@ -333,6 +334,7 @@ options = DictWrapper(_global_config)
 
 
 class option_context(object):
+
     """
     Context manager to temporarily set options in the `with` statement context.
     You need to invoke as ``option_context(pat, val, [(pat, val), ...])``.

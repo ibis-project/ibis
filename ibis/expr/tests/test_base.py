@@ -18,7 +18,6 @@ import unittest
 
 from ibis.expr.types import ArrayExpr, TableExpr, RelationError
 import ibis.expr.api as api
-import ibis.expr.base as base
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
@@ -42,7 +41,7 @@ class TestLiterals(unittest.TestCase):
     def test_null(self):
         expr = api.literal(None)
         assert isinstance(expr, api.NullScalar)
-        assert isinstance(expr.op(), base.NullLiteral)
+        assert isinstance(expr.op(), ops.NullLiteral)
 
     def test_boolean(self):
         val = True
@@ -67,7 +66,7 @@ class TestLiterals(unittest.TestCase):
         assert isinstance(expr, ex_klass)
 
         arg = expr.op()
-        assert isinstance(arg, api.Literal)
+        assert isinstance(arg, ops.Literal)
         assert arg.value == val
 
         # Console formatting works
@@ -99,12 +98,12 @@ class TestLiterals(unittest.TestCase):
             expr = api.literal(value)
             klass = ir.scalar_type(ex_type)
             assert isinstance(expr, klass)
-            assert isinstance(expr.op(), api.Literal)
+            assert isinstance(expr.op(), ops.Literal)
             assert expr.op().value is value
 
     def test_literal_list(self):
         what = [1, 2, 1000]
-        expr = ir.as_value_expr(what)
+        expr = api.as_value_expr(what)
 
         assert isinstance(expr, ir.ArrayExpr)
         assert isinstance(expr.op(), ops.ValueList)
@@ -116,7 +115,7 @@ class TestLiterals(unittest.TestCase):
     def test_mixed_arity(self):
         table = api.table(_all_types_schema)
         what = ["bar", table.g, "foo"]
-        expr = ir.as_value_expr(what)
+        expr = api.as_value_expr(what)
 
         values = expr.op().values
         assert isinstance(values[1], ir.StringArray)
@@ -443,7 +442,6 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
     def test_sort_by_aggregate_or_projection_field(self):
         pass
-
 
 
 class TestContains(BasicTestCase, unittest.TestCase):
@@ -1347,11 +1345,11 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         pass
 
     def test_union(self):
-        schema1  = [
+        schema1 = [
             ('key', 'string'),
             ('value', 'double')
         ]
-        schema2  = [
+        schema2 = [
             ('key', 'string'),
             ('key2', 'string'),
             ('value', 'double')
@@ -1377,8 +1375,8 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 
         joined = (region.inner_join(
             nation, [region.r_regionkey == nation.n_regionkey])
-                  .inner_join(
-                      customer, [customer.c_nationkey == nation.n_nationkey]))
+            .inner_join(
+            customer, [customer.c_nationkey == nation.n_nationkey]))
 
         proj_exprs = [customer, nation.n_name.name('nation'),
                       region.r_name.name('region')]
@@ -1388,7 +1386,6 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 
         # it works!
         joined.aggregate(metrics, by=['region'])
-
 
 
 class TestSemiAntiJoinPredicates(unittest.TestCase):
@@ -1494,7 +1491,7 @@ class TestCaseExpressions(BasicTestCase, unittest.TestCase):
 
         assert isinstance(expr, ir.StringArray)
         assert isinstance(op.default, ir.ValueExpr)
-        assert isinstance(op.default.op(), base.NullLiteral)
+        assert isinstance(op.default.op(), ops.NullLiteral)
 
     def test_multiple_case_null_else(self):
         expr = api.case().when(self.table.g == "foo", "bar").end()
@@ -1502,7 +1499,7 @@ class TestCaseExpressions(BasicTestCase, unittest.TestCase):
 
         assert isinstance(expr, ir.StringArray)
         assert isinstance(op.default, ir.ValueExpr)
-        assert isinstance(op.default.op(), base.NullLiteral)
+        assert isinstance(op.default.op(), ops.NullLiteral)
 
     def test_case_type_precedence(self):
         pass
@@ -1523,3 +1520,13 @@ class TestInteractiveUse(unittest.TestCase):
             repr(expr)
 
         assert self.con.last_executed_expr is expr
+
+    def test_default_limit(self):
+        table = self.con.table('functional_alltypes')
+
+        with config.option_context('interactive', True):
+            repr(table)
+
+        result = self.con.last_executed_expr
+        limit = config.options.sql.default_limit
+        assert result.equals(table.limit(limit))

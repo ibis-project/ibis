@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import ibis.util as util
-import ibis.expr.base as base
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
@@ -75,7 +74,7 @@ class ExprFormatter(object):
         if self.memoize:
             self._memoize_tables()
 
-        if isinstance(what, base.HasSchema):
+        if isinstance(what, ir.HasSchema):
             # This should also catch aggregations
             if not self.memoize and what in self.memo:
                 text = 'Table: %s' % self.memo.get_alias(what)
@@ -86,9 +85,9 @@ class ExprFormatter(object):
                 text = self._format_node(what)
         elif isinstance(what, ops.TableColumn):
             text = self._format_column(self.expr)
-        elif isinstance(what, base.Node):
+        elif isinstance(what, ir.Node):
             text = self._format_node(what)
-        elif isinstance(what, base.Literal):
+        elif isinstance(what, ops.Literal):
             text = 'Literal[%s] %s' % (self._get_type_display(),
                                        str(what.value))
 
@@ -116,16 +115,16 @@ class ExprFormatter(object):
             def visit(arg):
                 if isinstance(arg, list):
                     [visit(x) for x in arg]
-                elif isinstance(arg, base.Expr):
+                elif isinstance(arg, ir.Expr):
                     walk(arg)
 
             if isinstance(op, ops.PhysicalTable):
                 self.memo.observe(op, self._format_table)
-            elif isinstance(op, base.Node):
+            elif isinstance(op, ir.Node):
                 visit(op.args)
                 if isinstance(op, table_memo_ops):
                     self.memo.observe(op, self._format_node)
-            elif isinstance(op, base.HasSchema):
+            elif isinstance(op, ir.HasSchema):
                 self.memo.observe(op, self._format_table)
 
         walk(self.expr)
@@ -160,7 +159,7 @@ class ExprFormatter(object):
         formatted_args = []
 
         def visit(what):
-            if isinstance(what, base.Expr):
+            if isinstance(what, ir.Expr):
                 result = self._format_subexpr(what)
             else:
                 result = self._indent(str(what))

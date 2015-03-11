@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from ibis.config import options
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
@@ -66,11 +67,11 @@ class SQLConnection(Connection):
         node = ops.SQLQueryResult(query, schema, self)
         return ir.TableExpr(node)
 
-    def execute(self, expr, params=None):
+    def execute(self, expr, params=None, default_limit=None):
         """
 
         """
-        ast = sql.build_ast(expr)
+        ast = self._build_ast_ensure_limit(expr, default_limit)
 
         # TODO: create some query pipeline executor abstraction
         output = None
@@ -86,6 +87,19 @@ class SQLConnection(Connection):
                 output = result
 
         return output
+
+    def _build_ast_ensure_limit(self, expr, default_limit):
+        ast = sql.build_ast(expr)
+        if default_limit is not None and isinstance(expr, ir.TableExpr):
+            for query in ast.queries:
+                if not isinstance(query, ddl.Select):
+                    continue
+
+                if query.limit is None:
+                    k = options.sql.default_limit
+                    expr = expr.limit(k)
+                    ast = sql.build_ast(expr)
+        return ast, expr
 
     def _fetch_from_cursor(self, cursor):
         import pandas as pd

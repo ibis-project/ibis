@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from ibis.common import RelationError
-import ibis.expr.base as base
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.util as util
@@ -22,10 +21,10 @@ import ibis.util as util
 # Some expression metaprogramming / graph transformations to support
 # compilation later
 
+
 def sub_for(expr, substitutions):
     helper = _Substitutor(expr, substitutions)
     return helper.get_result()
-
 
 
 class _Substitutor(object):
@@ -106,12 +105,14 @@ def substitute_parents(expr, lift_memo=None):
 
 
 class ExprSimplifier(object):
+
     """
     Rewrite the input expression by replacing any table expressions part of a
     "commutative table operation unit" (for lack of scientific term, a set of
     operations that can be written down in any order and still yield the same
     semantic result)
     """
+
     def __init__(self, expr, lift_memo=None, block_projection=False):
         self.expr = expr
         self.lift_memo = lift_memo or {}
@@ -121,7 +122,7 @@ class ExprSimplifier(object):
     def get_result(self):
         expr = self.expr
         node = expr.op()
-        if isinstance(node, ir.Literal):
+        if isinstance(node, ops.Literal):
             return expr
 
         # For table column references, in the event that we're on top of a
@@ -161,6 +162,7 @@ class ExprSimplifier(object):
 
     def _lift_arg(self, arg, block=None):
         unchanged = [True]
+
         def _lift(x):
             if isinstance(x, ir.Expr):
                 lifted_arg = self.lift(x, block=block)
@@ -196,7 +198,7 @@ class ExprSimplifier(object):
             result = self._lift_Projection(expr, block=block)
         elif isinstance(op, ops.Join):
             result = self._lift_Join(expr, block=block)
-        elif isinstance(op, (ops.TableNode, base.HasSchema)):
+        elif isinstance(op, (ops.TableNode, ir.HasSchema)):
             return expr
         else:
             raise NotImplementedError
@@ -218,7 +220,7 @@ class ExprSimplifier(object):
 
             for val in root.selections:
                 if (isinstance(val.op(), ops.PhysicalTable) and
-                    node.name in val.schema()):
+                        node.name in val.schema()):
 
                     can_lift = True
                     lifted_root = self.lift(val)
@@ -319,10 +321,9 @@ class ExprSimplifier(object):
         return helper.get_result()
 
 
-
 def _base_table(table_node):
     # Find the aggregate or projection root. Not proud of this
-    if isinstance(table_node, base.BlockingTableNode):
+    if isinstance(table_node, ir.BlockingTableNode):
         return table_node
     else:
         return _base_table(table_node.table.op())
@@ -425,9 +426,9 @@ def _maybe_fuse_projection(expr, clean_exprs):
             if (isinstance(val, ir.TableExpr) and
                 (val is expr or
 
-                 # gross we share the same table root. Better way to detect?
-                 len(roots) == 1 and val._root_tables()[0] is roots[0])
-            ):
+                     # gross we share the same table root. Better way to detect?
+                     len(roots) == 1 and val._root_tables()[0] is roots[0])
+                    ):
                 can_fuse = True
                 fused_exprs.extend(root.selections)
             elif not validator.validate(val):
@@ -440,7 +441,6 @@ def _maybe_fuse_projection(expr, clean_exprs):
             return ops.Projection(root.table, fused_exprs)
 
     return ops.Projection(expr, clean_exprs)
-
 
 
 class ExprValidator(object):
@@ -534,7 +534,6 @@ class FilterValidator(ExprValidator):
         return is_valid
 
 
-
 def find_base_table(expr):
     if isinstance(expr, ir.TableExpr):
         return expr
@@ -554,6 +553,7 @@ def find_source_table(expr):
     # First table expression observed for each argument that the expr
     # depends on
     first_tables = []
+
     def push_first(arg):
         if isinstance(arg, (tuple, list)):
             [push_first(x) for x in arg]
@@ -581,6 +581,7 @@ def find_source_table(expr):
 
 def unwrap_ands(expr):
     out_exprs = []
+
     def walk(expr):
         op = expr.op()
         if isinstance(op, ops.Comparison):
@@ -599,6 +600,7 @@ def find_backend(expr):
     from ibis.connection import Connection
 
     backends = []
+
     def walk(expr):
         node = expr.op()
         for arg in node.flat_args():

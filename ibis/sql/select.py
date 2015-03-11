@@ -181,7 +181,8 @@ class Select(DDLStatement):
                 line_length = len(val) + 7
                 tokens = 1
             else:
-                if i: buf.write(',')
+                if i:
+                    buf.write(',')
                 buf.write(' ')
                 buf.write(val)
                 tokens += 1
@@ -362,12 +363,13 @@ class _TableSetFormatter(object):
 
     # Placeholder; revisit when supporting other databases
     _non_equijoin_supported = False
+
     def _validate_join_predicates(self, predicates):
         for pred in predicates:
             op = pred.op()
 
             if (not isinstance(op, ops.Equals) and
-                not self._non_equijoin_supported):
+                    not self._non_equijoin_supported):
                 raise com.TranslationError(
                     'Non-equality join predicates, '
                     'i.e. non-equijoins, are not supported')
@@ -438,11 +440,9 @@ class Union(DDLStatement):
         return query
 
 
-
 def _join_not_none(sep, pieces):
     pieces = [x for x in pieces if x is not None]
     return sep.join(pieces)
-
 
 
 def translate_expr(expr, context=None, named=False, permit_subquery=False):

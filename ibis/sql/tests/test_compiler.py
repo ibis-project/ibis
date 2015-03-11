@@ -318,7 +318,6 @@ ORDER BY string_col"""
         pass
 
 
-
 class TestNonTabularResults(unittest.TestCase):
 
     """
@@ -388,13 +387,10 @@ FROM (
         assert query == expected
 
 
-
 class TestDataIngestWorkflows(unittest.TestCase):
 
     def test_input_source_from_textfile(self):
         pass
-
-
 
 
 def _get_query(expr):
@@ -417,7 +413,6 @@ customer = api.table([
     ('c_name', 'string'),
     ('c_acctbal', 'double')
 ], 'customer')
-
 
 
 class TestSelectSQL(unittest.TestCase):
@@ -696,7 +691,7 @@ WHERE t0.f > 0 AND
         t2 = self.con.table('star2')
 
         joined = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
-                [t1, (t1.f - t2.value1).name('diff')])
+                  [t1, (t1.f - t2.value1).name('diff')])
 
         filtered = joined[joined.diff > 1]
 
@@ -873,7 +868,7 @@ WHERE value > 0"""
                                 [customer.c_nationkey == nation.n_nationkey])
             .inner_join(region,
                         [nation.n_regionkey == region.r_regionkey])
-            )
+        )
         proj1 = [customer, nation.n_name, region.r_name]
         step1 = joined[proj1]
 
@@ -1223,9 +1218,9 @@ FROM customer t0
                 .else_('default').end())
 
         expr2 = (api.case()
-                .when(t.g == 'foo', 'bar')
-                .when(t.g == 'baz', t.g)
-                .end())
+                 .when(t.g == 'foo', 'bar')
+                 .when(t.g == 'baz', t.g)
+                 .end())
 
         proj = t[expr.name('col1'), expr2.name('col2'), t]
 
@@ -1368,12 +1363,12 @@ class TestSubqueriesEtc(unittest.TestCase):
 
     def setUp(self):
         self.foo = api.table(
-          [
-            ('job', 'string'),
-            ('dept_id', 'string'),
-            ('year', 'int32'),
-            ('y', 'double')
-        ], 'foo')
+            [
+                ('job', 'string'),
+                ('dept_id', 'string'),
+                ('year', 'int32'),
+                ('y', 'double')
+            ], 'foo')
 
         self.bar = api.table([
             ('x', 'double'),
@@ -1390,7 +1385,6 @@ class TestSubqueriesEtc(unittest.TestCase):
             ('key1', 'string'),
             ('key2', 'string')
         ], 'bar')
-
 
     def test_scalar_subquery_different_table(self):
         t1, t2 = self.foo, self.bar

@@ -32,8 +32,6 @@ class ExprSQLTest(object):
         return translator.get_result()
 
 
-
-
 class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def setUp(self):
@@ -190,7 +188,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def test_timestamp_extract_field(self):
         fields = ['year', 'month', 'day', 'hour', 'minute',
-                 'second', 'millisecond']
+                  'second', 'millisecond']
 
         cases = [(getattr(self.table.i, field)(),
                   "extract(i, '{}')".format(field))
@@ -204,7 +202,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
         result = to_sql(expr)
         expected = \
-"""SELECT extract(i, 'year') AS year, extract(i, 'month') AS month,
+            """SELECT extract(i, 'year') AS year, extract(i, 'month') AS month,
        extract(i, 'day') AS day
 FROM alltypes"""
         assert result == expected
@@ -266,7 +264,6 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
             (self.table.double_col.round(2, ), 'round(double_col, 2)')
         ]
         self._check_expr_cases(cases)
-
 
 
 class TestCaseExprs(unittest.TestCase, ExprSQLTest):

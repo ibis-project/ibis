@@ -23,7 +23,6 @@ import ibis.connection as cnx
 import ibis.expr.types as ir
 
 
-
 class IbisTestEnv(object):
 
     def __init__(self):

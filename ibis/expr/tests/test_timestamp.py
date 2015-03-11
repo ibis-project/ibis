@@ -21,7 +21,6 @@ import ibis.expr.types as ir
 from ibis.expr.tests.mocks import MockConnection
 
 
-
 class TestTimestamp(unittest.TestCase):
 
     def setUp(self):

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from ibis.connection import SQLConnection
-import ibis.expr.base as ir
+import ibis.expr.types as ir
 
 
 class MockConnection(SQLConnection):
@@ -116,6 +116,7 @@ class MockConnection(SQLConnection):
     def _get_table_schema(self, name):
         return ir.Schema.from_tuples(self._tables[name])
 
-    def execute(self, expr):
+    def execute(self, expr, default_limit=None):
+        ast, expr = self._build_ast_ensure_limit(expr, default_limit)
         self.last_executed_expr = expr
         return None

@@ -13,28 +13,29 @@
 # limitations under the License.
 
 
-from ibis.expr.base import Node
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 
-class ExistsSubquery(Node):
+class ExistsSubquery(ir.Node):
 
     """
     Helper class
     """
-    def __init__(self, foreign_table, predicates):
-        self.foreign_table = foreign_table
-        self.predicates = predicates
-        Node.__init__(self, [foreign_table, predicates])
-
-class NotExistsSubquery(Node):
 
     def __init__(self, foreign_table, predicates):
         self.foreign_table = foreign_table
         self.predicates = predicates
-        Node.__init__(self, [foreign_table, predicates])
+        ir.Node.__init__(self, [foreign_table, predicates])
+
+
+class NotExistsSubquery(ir.Node):
+
+    def __init__(self, foreign_table, predicates):
+        self.foreign_table = foreign_table
+        self.predicates = predicates
+        ir.Node.__init__(self, [foreign_table, predicates])
 
 
 class AnyToExistsTransform(object):

@@ -1,4 +1,4 @@
-# Copyright 2015 Cloudera Inc.
+# Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,137 +12,368 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Expressions can be parameterized both by tables (known schema, but not bound
+# to a particular table in any database), fields, and literal values. In order
+# to execute an expression containing parameters, the user must perform a
+# actual data. Mixing table and field parameters can lead to tricky binding
+# scenarios -- essentially all unbound field parameters within a particular
+# table expression must originate from the same concrete table. Internally we
+# can identify the "logical tables" in the expression and present those to the
+# user for the binding. Good introspection capability will be important
+# here. Literal parameters are much simpler. A literal parameter is declared
+# and used however many times the user wishes; binding in that case simply
+# introduces the actual value to be used.
+#
+# In some cases, we'll want to be able to indicate that a parameter can either
+# be a scalar or array expression. In this case the binding requirements may be
+# somewhat more lax.
+
+
 import re
 
 from ibis.common import RelationError
-from ibis.expr.base import Expr, Literal, Schema
-import ibis.expr.base as base
-import ibis.expr.operations as ops
+import ibis.common as com
+import ibis.config as config
+import ibis.util as util
+
+
+def _ops():
+    import ibis.expr.operations as mod
+    return mod
+
+
+class Parameter(object):
+
+    """
+    Placeholder, to be implemented
+    """
+
+    pass
+
+
+#----------------------------------------------------------------------
+
+
+class Schema(object):
+
+    """
+    Holds table schema information
+    """
+
+    def __init__(self, names, types):
+        from ibis.expr.types import _validate_type
+        if not isinstance(names, list):
+            names = list(names)
+        self.names = names
+        self.types = [_validate_type(x) for x in types]
+
+        self._name_locs = dict((v, i) for i, v in enumerate(self.names))
+
+        if len(self._name_locs) < len(self.names):
+            raise com.IntegrityError('Duplicate column names')
+
+    def __repr__(self):
+        return self._repr()
+
+    def __len__(self):
+        return len(self.names)
+
+    def _repr(self):
+        return "%s(%s, %s)" % (type(self).__name__, repr(self.names),
+                               repr(self.types))
+
+    def __contains__(self, name):
+        return name in self._name_locs
+
+    @classmethod
+    def from_tuples(cls, values):
+        if len(values):
+            names, types = zip(*values)
+        else:
+            names, types = [], []
+        return Schema(names, types)
+
+    @classmethod
+    def from_dict(cls, values):
+        names = list(values.keys())
+        types = values.values()
+        return Schema(names, types)
+
+    def equals(self, other):
+        return ((self.names == other.names) and
+                (self.types == other.types))
+
+    def get_type(self, name):
+        return self.types[self._name_locs[name]]
+
+    def append(self, schema):
+        names = self.names + schema.names
+        types = self.types + schema.types
+        return Schema(names, types)
+
+
+class DataType(object):
+    pass
+
+
+class HasSchema(object):
+
+    """
+    Base class representing a structured dataset with a well-defined
+    schema.
+
+    Base implementation is for tables that do not reference a particular
+    concrete dataset or database table.
+    """
+
+    def __init__(self, schema, name=None):
+        assert isinstance(schema, Schema)
+        self._schema = schema
+        self._name = name
+
+    def __repr__(self):
+        return self._repr()
+
+    def _repr(self):
+        return "%s(%s)" % (type(self).__name__, repr(self.schema))
+
+    @property
+    def schema(self):
+        return self._schema
+
+    def get_schema(self):
+        return self._schema
+
+    def has_schema(self):
+        return True
+
+    @property
+    def name(self):
+        return self._name
+
+    def equals(self, other):
+        if type(self) != type(other):
+            return False
+        return self.schema.equals(other.schema)
+
+    def root_tables(self):
+        return [self]
+
+
+#----------------------------------------------------------------------
+
+
+class Expr(object):
+
+    """
+
+    """
+
+    def __init__(self, arg):
+        # TODO: all inputs must inherit from a common table API
+        self._arg = arg
+
+    def __repr__(self):
+        if config.options.interactive:
+            limit = config.options.sql.default_limit
+            result = self.execute(default_limit=limit)
+            return repr(result)
+        else:
+            return self._repr()
+
+    def _repr(self):
+        from ibis.expr.format import ExprFormatter
+        return ExprFormatter(self).get_result()
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return type(self)(arg, name=name)
+        return factory
+
+    def execute(self, default_limit=None):
+        """
+        If this expression is based on physical tables in a database backend,
+        execute it against that backend.
+
+        Returns
+        -------
+        result : expression-dependent
+          Result of compiling expression and executing in backend
+        """
+        import ibis.expr.analysis as L
+        backend = L.find_backend(self)
+        return backend.execute(self, default_limit=default_limit)
+
+    def equals(self, other):
+        if type(self) != type(other):
+            return False
+        return self._arg.equals(other._arg)
+
+    def op(self):
+        raise NotImplementedError
+
+    def _can_compare(self, other):
+        return False
+
+    def _root_tables(self):
+        return self.op().root_tables()
+
+    def _get_unbound_tables(self):
+        # The expression graph may contain one or more tables of a particular
+        # known schema
+        pass
+
+
+class Node(object):
+
+    """
+    Node is the base class for all relational algebra and analytical
+    functionality. It transforms the input expressions into an output
+    expression.
+
+    Each node implementation is responsible for validating the inputs,
+    including any type promotion and / or casting issues, and producing a
+    well-typed expression
+
+    Note that Node is deliberately not made an expression subclass: think
+    of Node as merely a typed expression builder.
+    """
+
+    def __init__(self, args):
+        self.args = args
+
+    def __repr__(self):
+        return self._repr()
+
+    def _repr(self):
+        # Quick and dirty to get us started
+        opname = type(self).__name__
+        pprint_args = [repr(x) for x in self.args]
+        return '%s(%s)' % (opname, ', '.join(pprint_args))
+
+    def flat_args(self):
+        for arg in self.args:
+            if isinstance(arg, (tuple, list)):
+                for x in arg:
+                    yield x
+            else:
+                yield arg
+
+    def equals(self, other):
+        if type(self) != type(other):
+            return False
+
+        if len(self.args) != len(other.args):
+            return False
+
+        def is_equal(left, right):
+            if isinstance(left, list):
+                if not isinstance(right, list):
+                    return False
+                for a, b in zip(left, right):
+                    if not is_equal(a, b):
+                        return False
+                return True
+
+            if hasattr(left, 'equals'):
+                return left.equals(right)
+            else:
+                return left == right
+            return True
+
+        for left, right in zip(self.args, other.args):
+            if not is_equal(left, right):
+                return False
+        return True
+
+    def to_expr(self):
+        """
+        This function must resolve the output type of the expression and return
+        the node wrapped in the appropriate ValueExpr type.
+        """
+        raise NotImplementedError
+
+
+class ValueNode(Node):
+
+    def to_expr(self):
+        klass = self.output_type()
+        return klass(self)
+
+    def _ensure_value(self, expr):
+        if not isinstance(expr, ValueExpr):
+            raise TypeError('Must be a value, got: %s' % repr(expr))
+
+    def _ensure_array(self, expr):
+        if not isinstance(expr, ArrayExpr):
+            raise TypeError('Must be an array, got: %s' % repr(expr))
+
+    def _ensure_scalar(self, expr):
+        if not isinstance(expr, ScalarExpr):
+            raise TypeError('Must be a scalar, got: %s' % repr(expr))
+
+    def root_tables(self):
+        return self.arg._root_tables()
+
+    def output_type(self):
+        raise NotImplementedError
+
+    def resolve_name(self):
+        raise NotImplementedError
+
+
+class ArrayNode(ValueNode):
+
+    def __init__(self, expr):
+        self._ensure_array(expr)
+        ValueNode.__init__(self, [expr])
+
+    def output_type(self):
+        return NotImplementedError
+
+    def to_expr(self):
+        klass = self.output_type()
+        return klass(self)
+
+
+class TableNode(Node):
+
+    def get_type(self, name):
+        return self.get_schema().get_type(name)
+
+    def to_expr(self):
+        return TableExpr(self)
+
+
+class Reduction(ArrayNode):
+
+    def __init__(self, arg):
+        self.arg = arg
+        ArrayNode.__init__(self, arg)
+
+    def root_tables(self):
+        return self.arg._root_tables()
+
+    def resolve_name(self):
+        return self.arg.get_name()
+
+
+class BlockingTableNode(TableNode):
+    # Try to represent the fact that whatever lies here is a semantically
+    # distinct table. Like projections, aggregations, and so forth
+    pass
+
+
+def distinct_roots(*args):
+    all_roots = []
+    for arg in args:
+        all_roots.extend(arg._root_tables())
+    return util.unique_by_key(all_roots, id)
 
 
 #----------------------------------------------------------------------
 # Helper / factory functions
-
-def _negate(expr):
-    op = expr.op()
-    if hasattr(op, 'negate'):
-        return op.negate()
-    else:
-        return ops.Negate(expr)
-
-
-def _count(expr):
-    op = expr.op()
-    if isinstance(op, ops.DistinctArray):
-        return op.count()
-    else:
-        return ops.Count(expr).to_expr()
-
-
-def _binop_expr(name, klass):
-    def f(self, other):
-        other = as_value_expr(other)
-        op = klass(self, other)
-        return op.to_expr()
-
-    f.__name__ = name
-
-    return f
-
-
-def _rbinop_expr(name, klass):
-    # For reflexive binary ops, like radd, etc.
-    def f(self, other):
-        other = as_value_expr(other)
-        op = klass(other, self)
-        return op.to_expr()
-
-    f.__name__ = name
-    return f
-
-
-def _boolean_binary_op(name, klass):
-    def f(self, other):
-        other = as_value_expr(other)
-
-        if not isinstance(other, BooleanValue):
-            raise TypeError(other)
-
-        op = klass(self, other)
-        return op.to_expr()
-
-    f.__name__ = name
-
-    return f
-
-
-def _boolean_binary_rop(name, klass):
-    def f(self, other):
-        other = as_value_expr(other)
-
-        if not isinstance(other, BooleanValue):
-            raise TypeError(other)
-
-        op = klass(other, self)
-        return op.to_expr()
-
-    f.__name__ = name
-    return f
-
-
-def _agg_function(name, klass):
-    def f(self):
-        return klass(self).to_expr()
-    f.__name__ = name
-    return f
-
-
-def _unary_op(name, klass, doc=None):
-    def f(self):
-        return klass(self).to_expr()
-    f.__name__ = name
-    f.__doc__ = doc
-    return f
-
-
-def as_value_expr(val):
-    if not isinstance(val, Expr):
-        if isinstance(val, (tuple, list)):
-            val = value_list(val)
-        else:
-            val = literal(val)
-
-    return val
-
-
-def table(schema, name=None):
-    if not isinstance(schema, base.Schema):
-        if isinstance(schema, list):
-            schema = base.Schema.from_tuples(schema)
-        else:
-            schema = base.Schema.from_dict(schema)
-
-    node = ops.UnboundTable(schema, name=name)
-    return TableExpr(node)
-
-
-def literal(value):
-    if value is None:
-        return null()
-    else:
-        return base.Literal(value).to_expr()
-
-
-def null():
-    return _NULL
-
-
-def desc(expr):
-    return ops.SortKey(expr, ascending=False)
-
-
-def value_list(values):
-    return ops.ValueList(values).to_expr()
 
 
 class ValueExpr(Expr):
@@ -183,28 +414,6 @@ class ValueExpr(Expr):
     def name(self, name):
         return self._factory(self._arg, name=name)
 
-    def cast(self, target_type):
-        """
-        Cast value(s) to indicated data type. Values that cannot be
-        successfully casted
-
-        Parameters
-        ----------
-        target_type : data type name
-
-        Returns
-        -------
-        cast_expr : ValueExpr
-        """
-        # validate
-        op = ops.Cast(self, target_type)
-
-        if op.target_type == self.type():
-            # noop case if passed type is the same
-            return self
-        else:
-            return op.to_expr()
-
     def between(self, lower, upper):
         """
         Check if the input expr falls between the lower/upper bounds
@@ -214,9 +423,10 @@ class ValueExpr(Expr):
         -------
         is_between : BooleanValue
         """
+        from ibis.expr.operations import as_value_expr, Between
         lower = as_value_expr(lower)
         upper = as_value_expr(upper)
-        op = ops.Between(self, lower, upper)
+        op = Between(self, lower, upper)
         return op.to_expr()
 
     def isin(self, values):
@@ -240,7 +450,7 @@ class ValueExpr(Expr):
         -------
         contains : BooleanValue
         """
-        op = ops.Contains(self, values)
+        op = _ops().Contains(self, values)
         return op.to_expr()
 
     def notin(self, values):
@@ -248,33 +458,11 @@ class ValueExpr(Expr):
         Like isin, but checks whether this expression's value(s) are not
         contained in the passed values. See isin docs for full usage.
         """
-        op = ops.NotContains(self, values)
+        op = _ops().NotContains(self, values)
         return op.to_expr()
-
-    isnull = _unary_op('isnull', ops.IsNull)
-    notnull = _unary_op('notnull', ops.NotNull)
 
     def ifnull(self, sub_expr):
         pass
-
-    __add__ = _binop_expr('__add__', ops.Add)
-    __sub__ = _binop_expr('__sub__', ops.Subtract)
-    __mul__ = _binop_expr('__mul__', ops.Multiply)
-    __div__ = _binop_expr('__div__', ops.Divide)
-    __pow__ = _binop_expr('__pow__', ops.Power)
-
-    __radd__ = _rbinop_expr('__radd__', ops.Add)
-    __rsub__ = _rbinop_expr('__rsub__', ops.Subtract)
-    __rmul__ = _rbinop_expr('__rmul__', ops.Multiply)
-    __rdiv__ = _rbinop_expr('__rdiv__', ops.Divide)
-    __rpow__ = _binop_expr('__rpow__', ops.Power)
-
-    __eq__ = _binop_expr('__eq__', ops.Equals)
-    __ne__ = _binop_expr('__ne__', ops.NotEquals)
-    __ge__ = _binop_expr('__ge__', ops.GreaterEqual)
-    __gt__ = _binop_expr('__gt__', ops.Greater)
-    __le__ = _binop_expr('__le__', ops.LessEqual)
-    __lt__ = _binop_expr('__lt__', ops.Less)
 
 
 class ScalarExpr(ValueExpr):
@@ -296,7 +484,7 @@ class ScalarExpr(ValueExpr):
         # literal, and must be computed as a separate query and stored in a
         # temporary variable (or joined, for bound aggregations with keys)
         def has_reduction(op):
-            if isinstance(op, base.Reduction):
+            if isinstance(op, Reduction):
                 return True
 
             for arg in op.args:
@@ -319,7 +507,7 @@ class ArrayExpr(ValueExpr):
         in conjunction with other array expressions from the same context
         (because it's a cardinality-modifying pseudo-reduction).
         """
-        op = ops.DistinctArray(self)
+        op = _ops().DistinctArray(self)
         return op.to_expr()
 
     def nunique(self):
@@ -327,17 +515,14 @@ class ArrayExpr(ValueExpr):
         Shorthand for foo.distinct().count(); computing the number of unique
         values in an array.
         """
-        return ops.CountDistinct(self).to_expr()
+        return _ops().CountDistinct(self).to_expr()
 
     def topk(self, k, by=None):
         """
         Produces
         """
-        op = ops.TopK(self, k, by=by)
+        op = _ops().TopK(self, k, by=by)
         return op.to_expr()
-
-    def count(self):
-        return _count(self)
 
     def bottomk(self, k, by=None):
         raise NotImplementedError
@@ -361,7 +546,7 @@ class ArrayExpr(ValueExpr):
         -------
         builder : CaseBuilder
         """
-        return ops.SimpleCaseBuilder(self)
+        return _ops().SimpleCaseBuilder(self)
 
     def cases(self, case_result_pairs, default=None):
         """
@@ -390,7 +575,6 @@ class ArrayExpr(ValueExpr):
 
         table = TableExpr(roots[0])
         return table.projection([self])
-
 
 
 class TableExpr(Expr):
@@ -444,14 +628,14 @@ class TableExpr(Expr):
         if self._is_materialized():
             return self
         else:
-            op = ops.MaterializedJoin(self)
+            op = _ops().MaterializedJoin(self)
             return TableExpr(op)
 
     def get_columns(self, iterable):
         return [self.get_column(x) for x in iterable]
 
     def get_column(self, name):
-        ref = ops.TableColumn(name, self)
+        ref = _ops().TableColumn(name, self)
         return ref.to_expr()
 
     def schema(self):
@@ -463,13 +647,13 @@ class TableExpr(Expr):
         """
         Single column tables can be viewed as arrays.
         """
-        op = ops.TableArrayView(self)
+        op = _ops().TableArrayView(self)
         return op.to_expr()
 
     def _is_materialized(self):
         # The operation produces a known schema
         op = self.op()
-        return isinstance(op, base.HasSchema) or op.has_schema()
+        return isinstance(op, HasSchema) or op.has_schema()
 
     def view(self):
         """
@@ -485,7 +669,7 @@ class TableExpr(Expr):
         -------
         expr : TableExpr
         """
-        return TableExpr(ops.SelfReference(self))
+        return TableExpr(_ops().SelfReference(self))
 
     def add_column(self, expr, name=None):
         if not isinstance(expr, ArrayExpr):
@@ -502,56 +686,14 @@ class TableExpr(Expr):
         raise NotImplementedError
 
     def count(self):
-        return ops.Count(self).to_expr()
+        return _ops().Count(self).to_expr()
 
     def distinct(self):
         """
         Compute set of unique rows/tuples occurring in this table
         """
-        op = ops.Distinct(self)
+        op = _ops().Distinct(self)
         return op.to_expr()
-
-    def cross_join(self, other, prefixes=None):
-        """
-
-        """
-        op = ops.CrossJoin(self, other)
-        return TableExpr(op)
-
-    def inner_join(self, other, predicates=(), prefixes=None):
-        """
-
-        """
-        op = ops.InnerJoin(self, other, predicates)
-        return TableExpr(op)
-
-    def left_join(self, other, predicates=(), prefixes=None):
-        """
-
-        """
-        op = ops.LeftJoin(self, other, predicates)
-        return TableExpr(op)
-
-    def outer_join(self, other, predicates=(), prefixes=None):
-        """
-
-        """
-        op = ops.OuterJoin(self, other, predicates)
-        return TableExpr(op)
-
-    def semi_join(self, other, predicates, prefixes=None):
-        """
-
-        """
-        op = ops.LeftSemiJoin(self, other, predicates)
-        return TableExpr(op)
-
-    def anti_join(self, other, predicates, prefixes=None):
-        """
-
-        """
-        op = ops.LeftAntiJoin(self, other, predicates)
-        return TableExpr(op)
 
     def projection(self, exprs):
         """
@@ -618,7 +760,7 @@ class TableExpr(Expr):
         -------
         agg_expr : TableExpr
         """
-        op = ops.Aggregation(self, agg_exprs, by=by, having=having)
+        op = _ops().Aggregation(self, agg_exprs, by=by, having=having)
         return TableExpr(op)
 
     def limit(self, n, offset=None):
@@ -631,14 +773,14 @@ class TableExpr(Expr):
         -------
         limited : TableExpr
         """
-        op = ops.Limit(self, n, offset=offset)
+        op = _ops().Limit(self, n, offset=offset)
         return TableExpr(op)
 
     def sort_by(self, what):
         if not isinstance(what, list):
             what = [what]
 
-        op = ops.SortBy(self, what)
+        op = _ops().SortBy(self, what)
         return TableExpr(op)
 
     def union(self, other, distinct=False):
@@ -657,14 +799,16 @@ class TableExpr(Expr):
         -------
         union : TableExpr
         """
-        op = ops.Union(self, other, distinct=distinct)
+        op = _ops().Union(self, other, distinct=distinct)
         return TableExpr(op)
 
 
 class GroupedTableExpr(object):
+
     """
     Helper intermediate construct
     """
+
     def __init__(self, table, by):
         if not isinstance(by, (list, tuple)):
             if not isinstance(by, Expr):
@@ -700,23 +844,6 @@ class NullValue(AnyValue):
 
 class NumericValue(AnyValue):
 
-    __neg__ = _unary_op('__neg__', _negate)
-
-    abs = _unary_op('abs', ops.Abs, 'Absolute value')
-
-    ceil = _unary_op('ceil', ops.Ceil)
-    floor = _unary_op('floor', ops.Floor)
-
-    sign = _unary_op('sign', ops.Sign)
-
-    exp = _unary_op('exp', ops.Exp)
-    sqrt = _unary_op('sqrt', ops.Sqrt)
-
-    log = _unary_op('log', ops.Log, 'Natural logarithm')
-    ln = log
-    log2 = _unary_op('log2', ops.Log2, 'Logarithm base 2')
-    log10 = _unary_op('log10', ops.Log10, 'Logarithm base 10')
-
     def round(self, digits=None):
         """
 
@@ -730,7 +857,7 @@ class NumericValue(AnyValue):
             decimal types: decimal
             other numeric types: double
         """
-        op = ops.Round(self, digits)
+        op = _ops().Round(self, digits)
         return op.to_expr()
 
     def _can_compare(self, other):
@@ -745,15 +872,6 @@ class BooleanValue(NumericValue):
 
     _typename = 'boolean'
 
-    # TODO: logical binary operators for BooleanValue
-    __and__ = _boolean_binary_op('__and__', ops.And)
-    __or__ = _boolean_binary_op('__or__', ops.Or)
-    __xor__ = _boolean_binary_op('__xor__', ops.Xor)
-
-    __rand__ = _boolean_binary_rop('__rand__', ops.And)
-    __ror__ = _boolean_binary_rop('__ror__', ops.Or)
-    __rxor__ = _boolean_binary_rop('__rxor__', ops.Xor)
-
     def ifelse(self, true_expr, false_expr):
         """
         Shorthand for implementing ternary expressions
@@ -764,7 +882,7 @@ class BooleanValue(NumericValue):
         # Result will be the result of promotion of true/false exprs. These
         # might be conflicting types; same type resolution as case expressions
         # must be used.
-        case = ops.SearchedCaseBuilder()
+        case = _ops().SearchedCaseBuilder()
         return case.when(self, true_expr).else_(false_expr).end()
 
 
@@ -779,6 +897,7 @@ class Int16Value(IntegerValue):
     _typename = 'int16'
     _implicit_casts = {'int32', 'int64', 'float', 'double'}
 
+
 class Int32Value(IntegerValue):
 
     _typename = 'int32'
@@ -789,8 +908,6 @@ class Int64Value(IntegerValue):
 
     _typename = 'int64'
     _implicit_casts = {'float', 'double'}
-
-
 
 
 class FloatingValue(NumericValue):
@@ -815,54 +932,8 @@ class StringValue(AnyValue):
     def _can_compare(self, other):
         return isinstance(other, StringValue)
 
-    length = _unary_op('length', ops.StringLength)
-    lower = _unary_op('lower', ops.Lowercase)
-    upper = _unary_op('upper', ops.Uppercase)
 
-    def substr(self, start, length=None):
-        """
-        Pull substrings out of each string value by position and maximum
-        length.
-
-        Parameters
-        ----------
-        start : int
-          First character to start splitting, indices starting at 0 (like
-          Python)
-        length : int, optional
-          Maximum length of each substring. If not supplied, splits each string
-          to the end
-
-        Returns
-        -------
-        substrings : type of caller
-        """
-        op = ops.Substring(self, start, length)
-        return op.to_expr()
-
-    def left(self, nchars):
-        """
-        Return left-most up to N characters from each string. Convenience
-        use of substr.
-
-        Returns
-        -------
-        substrings : type of caller
-        """
-        return self.substr(0, length=nchars)
-
-    def right(self, nchars):
-        """
-        Split up to nchars starting from end of each string.
-
-        Returns
-        -------
-        substrings : type of caller
-        """
-        return ops.StrRight(self, nchars).to_expr()
-
-
-class DecimalType(base.DataType):
+class DecimalType(DataType):
     # Decimal types are parametric, we store the parameters in this object
 
     def __init__(self, precision, scale):
@@ -908,37 +979,16 @@ class DecimalValue(NumericValue):
         return constructor
 
 
-def _extract_field(name, klass):
-    def f(self):
-        op = klass(self)
-        return op.to_expr()
-    f.__name__ = name
-    return f
-
-
 class TimestampValue(AnyValue):
 
     _typename = 'timestamp'
-
-    year = _extract_field('year', ops.ExtractYear)
-    month = _extract_field('month', ops.ExtractMonth)
-    day = _extract_field('day', ops.ExtractDay)
-    hour = _extract_field('hour', ops.ExtractHour)
-    minute = _extract_field('minute', ops.ExtractMinute)
-    second = _extract_field('second', ops.ExtractSecond)
-    millisecond = _extract_field('millisecond', ops.ExtractMillisecond)
 
 
 class NumericArray(ArrayExpr, NumericValue):
 
     def count(self):
         # TODO: should actually get the parent table expression here
-        return ops.Count(self).to_expr()
-
-    sum = _agg_function('sum', ops.Sum)
-    mean = _agg_function('mean', ops.Mean)
-    min = _agg_function('min', ops.Min)
-    max = _agg_function('max', ops.Max)
+        return _ops().Count(self).to_expr()
 
 
 class NullScalar(NullValue, ScalarExpr):
@@ -954,10 +1004,6 @@ class BooleanScalar(ScalarExpr, BooleanValue):
 
 
 class BooleanArray(NumericArray, BooleanValue):
-
-    def any(self):
-        op = ops.Any(self)
-        return op.to_expr()
 
     def none(self):
         pass
@@ -1057,18 +1103,17 @@ class DecimalArray(DecimalValue, NumericArray):
 
 
 def scalar_type(t):
-    if isinstance(t, base.DataType):
+    if isinstance(t, DataType):
         return t.scalar_ctor()
     else:
         return _scalar_types[t]
 
 
 def array_type(t):
-    if isinstance(t, base.DataType):
+    if isinstance(t, DataType):
         return t.array_ctor()
     else:
         return _array_types[t]
-
 
 
 _scalar_types = {
@@ -1098,11 +1143,9 @@ _array_types = {
 
 #----------------------------------------------------------------------
 
-_NULL = NullScalar(base.NullLiteral())
-
 
 def _validate_type(t):
-    if isinstance(t, base.DataType):
+    if isinstance(t, DataType):
         return t
 
     parsed_type = _parse_type(t)
@@ -1112,7 +1155,6 @@ def _validate_type(t):
     if t not in _array_types:
         raise ValueError('Invalid type: %s' % repr(t))
     return t
-
 
 
 _DECIMAL_RE = re.compile('decimal\((\d+),[\s]*(\d+)\)')

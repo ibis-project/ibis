@@ -15,34 +15,135 @@
 import operator
 
 from ibis.common import RelationError, ExpressionError
-from ibis.expr.base import (Node, ArrayNode, TableNode, ValueNode,
-                            HasSchema, Literal)
-import ibis.expr.base as base
+from ibis.expr.types import (Node,
+                             ValueExpr, ScalarExpr, ArrayExpr, TableExpr,
+                             ArrayNode, TableNode, ValueNode,
+                             HasSchema)
+import ibis.expr.types as ir
 
 import ibis.util as util
 
 
-def ir():
-    import ibis.expr.types as ir
-    return ir
-
-
 def is_table(e):
-    return isinstance(e, ir().TableExpr)
+    return isinstance(e, TableExpr)
 
 
 def is_array(e):
-    return isinstance(e, ir().ArrayExpr)
+    return isinstance(e, ArrayExpr)
 
 
 def is_scalar(e):
-    return isinstance(e, ir().ScalarExpr)
+    return isinstance(e, ScalarExpr)
 
 
 def is_collection(expr):
-    _ = ir()
-    return isinstance(expr, (_.ArrayExpr, _.TableExpr))
+    return isinstance(expr, (ArrayExpr, TableExpr))
 
+
+def as_value_expr(val):
+    if not isinstance(val, ir.Expr):
+        if isinstance(val, (tuple, list)):
+            val = value_list(val)
+        else:
+            val = literal(val)
+
+    return val
+
+
+def table(schema, name=None):
+    if not isinstance(schema, ir.Schema):
+        if isinstance(schema, list):
+            schema = ir.Schema.from_tuples(schema)
+        else:
+            schema = ir.Schema.from_dict(schema)
+
+    node = UnboundTable(schema, name=name)
+    return TableExpr(node)
+
+
+def literal(value):
+    if value is None:
+        return null()
+    else:
+        return Literal(value).to_expr()
+
+
+_NULL = None
+
+
+def null():
+    global _NULL
+    if _NULL is None:
+        _NULL = ir.NullScalar(NullLiteral())
+
+    return _NULL
+
+
+def desc(expr):
+    return SortKey(expr, ascending=False)
+
+
+def value_list(values):
+    return ValueList(values).to_expr()
+
+
+class Literal(ValueNode):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return 'Literal(%s)' % repr(self.value)
+
+    @property
+    def args(self):
+        return [self.value]
+
+    def equals(self, other):
+        if not isinstance(other, Literal):
+            return False
+        return (type(self.value) == type(other.value)
+                and self.value == other.value)
+
+    def output_type(self):
+        import ibis.expr.rules as rules
+        if isinstance(self.value, bool):
+            klass = ir.BooleanScalar
+        elif isinstance(self.value, (int, long)):
+            int_type = rules.int_literal_class(self.value)
+            klass = ir.scalar_type(int_type)
+        elif isinstance(self.value, float):
+            klass = ir.DoubleScalar
+        elif isinstance(self.value, basestring):
+            klass = ir.StringScalar
+
+        return klass
+
+    def root_tables(self):
+        return []
+
+
+class NullLiteral(ValueNode):
+
+    """
+    Typeless NULL literal
+    """
+
+    def __init__(self):
+        return
+
+    @property
+    def args(self):
+        return [None]
+
+    def equals(other):
+        return isinstance(other, NullLiteral)
+
+    def output_type(self):
+        return ir.NullScalar
+
+    def root_tables(self):
+        return []
 
 
 class ValueList(ArrayNode):
@@ -52,18 +153,17 @@ class ValueList(ArrayNode):
     """
 
     def __init__(self, args):
-        self.values = [ir().as_value_expr(x) for x in args]
+        self.values = [as_value_expr(x) for x in args]
         Node.__init__(self, [self.values])
 
     def root_tables(self):
-        return base.distinct_roots(*self.values)
+        return ir.distinct_roots(*self.values)
 
     def to_expr(self):
-        return ir().ListExpr(self)
+        return ir.ListExpr(self)
 
 
-
-class PhysicalTable(base.BlockingTableNode, HasSchema):
+class PhysicalTable(ir.BlockingTableNode, HasSchema):
 
     pass
 
@@ -88,7 +188,7 @@ class DatabaseTable(PhysicalTable):
         HasSchema.__init__(self, schema, name=name)
 
 
-class SQLQueryResult(base.BlockingTableNode, HasSchema):
+class SQLQueryResult(ir.BlockingTableNode, HasSchema):
 
     """
     A table sourced from the result set of a select query
@@ -126,18 +226,19 @@ class TableColumn(ArrayNode):
 
     def to_expr(self):
         ctype = self.table._get_type(self.name)
-        klass = ir().array_type(ctype)
+        klass = ir.array_type(ctype)
         return klass(self, name=self.name)
 
 
 class TableArrayView(ArrayNode):
+
     """
     (Temporary?) Helper operation class for SQL translation (fully formed table
     subqueries to be viewed as arrays)
     """
 
     def __init__(self, table):
-        if not isinstance(table, ir().TableExpr):
+        if not isinstance(table, TableExpr):
             raise ExpressionError('Requires table')
 
         schema = table.schema()
@@ -154,7 +255,7 @@ class TableArrayView(ArrayNode):
 
     def to_expr(self):
         ctype = self.table._get_type(self.name)
-        klass = ir().array_type(ctype)
+        klass = ir.array_type(ctype)
         return klass(self, name=self.name)
 
 
@@ -174,7 +275,7 @@ class Cast(ValueNode):
         self._ensure_value(arg)
 
         self.arg = arg
-        self.target_type = ir()._validate_type(target_type.lower())
+        self.target_type = ir._validate_type(target_type.lower())
         ValueNode.__init__(self, [arg, self.target_type])
 
     def resolve_name(self):
@@ -191,8 +292,15 @@ class Negate(UnaryOp):
         return type(self.arg)
 
 
-
 class IsNull(UnaryOp):
+
+    """
+    Returns true if values are null
+
+    Returns
+    -------
+    isnull : boolean with dimension of caller
+    """
 
     def output_type(self):
         return _shape_like(self.arg, 'boolean')
@@ -200,40 +308,52 @@ class IsNull(UnaryOp):
 
 class NotNull(UnaryOp):
 
+    """
+    Returns true if values are not null
+
+    Returns
+    -------
+    notnull : boolean with dimension of caller
+    """
+
     def output_type(self):
         return _shape_like(self.arg, 'boolean')
 
 
 def _shape_like(arg, out_type):
-    if isinstance(arg, ir().ScalarExpr):
-        return ir().scalar_type(out_type)
+    if isinstance(arg, ir.ScalarExpr):
+        return ir.scalar_type(out_type)
     else:
-        return ir().array_type(out_type)
+        return ir.array_type(out_type)
 
 
 def _shape_like_args(args, out_type):
-    if util.any_of(args, ir().ArrayExpr):
-        return ir().array_type(out_type)
+    if util.any_of(args, ArrayExpr):
+        return ir.array_type(out_type)
     else:
-        return ir().scalar_type(out_type)
+        return ir.scalar_type(out_type)
 
 
 def _numeric_same_type(self):
-    if not isinstance(self.arg, ir().NumericValue):
+    if not isinstance(self.arg, ir.NumericValue):
         raise TypeError('Only valid for numeric types')
     return self.arg._factory
 
 
 class Abs(UnaryOp):
 
+    """
+    Absolute value
+    """
+
     output_type = _numeric_same_type
 
 
 def _ceil_floor_output(self):
-    if not isinstance(self.arg, ir().NumericValue):
+    if not isinstance(self.arg, ir.NumericValue):
         raise TypeError('Only valid for numeric types')
 
-    if isinstance(self.arg, ir().DecimalValue):
+    if isinstance(self.arg, ir.DecimalValue):
         return self.arg._factory
     else:
         return _shape_like(self.arg, 'int32')
@@ -258,7 +378,7 @@ class Round(ValueNode):
 
     def output_type(self):
         validate_numeric(self.arg)
-        if isinstance(self.arg, ir().DecimalValue):
+        if isinstance(self.arg, ir.DecimalValue):
             return self.arg._factory
         elif self.digits is None or self.digits == 0:
             return _shape_like(self.arg, 'int64')
@@ -274,7 +394,7 @@ def validate_int(x):
 
 
 def validate_numeric(x):
-    if not isinstance(x, ir().NumericValue):
+    if not isinstance(x, ir.NumericValue):
         raise TypeError('Only implemented for numeric types')
 
 
@@ -283,9 +403,9 @@ class RealUnaryOp(UnaryOp):
     _allow_boolean = True
 
     def output_type(self):
-        if not isinstance(self.arg, ir().NumericValue):
+        if not isinstance(self.arg, ir.NumericValue):
             raise TypeError('Only implemented for numeric types')
-        elif (isinstance(self.arg, ir().BooleanValue)
+        elif (isinstance(self.arg, ir.BooleanValue)
               and not self._allow_boolean):
             raise TypeError('Not implemented for boolean types')
 
@@ -308,21 +428,33 @@ class Sqrt(RealUnaryOp):
 
 class Log(RealUnaryOp):
 
+    """
+    Natural logarithm
+    """
+
     _allow_boolean = False
 
 
 class Log2(RealUnaryOp):
+
+    """
+    Logarithm base 2
+    """
 
     _allow_boolean = False
 
 
 class Log10(RealUnaryOp):
 
+    """
+    Logarithm base 10
+    """
+
     _allow_boolean = False
 
 
 def _string_output(self):
-    if not isinstance(self.arg, ir().StringValue):
+    if not isinstance(self.arg, ir.StringValue):
         raise TypeError('Only implemented for string types')
     return _shape_like(self.arg, 'string')
 
@@ -385,7 +517,7 @@ class BinaryOp(ValueNode):
         ValueNode.__init__(self, [left_expr, right_expr])
 
     def root_tables(self):
-        return base.distinct_roots(self.left, self.right)
+        return ir.distinct_roots(self.left, self.right)
 
     def output_type(self):
         raise NotImplementedError
@@ -394,7 +526,7 @@ class BinaryOp(ValueNode):
 #----------------------------------------------------------------------
 
 
-class Count(base.Reduction):
+class Count(ir.Reduction):
     # TODO: count(col) takes down Impala, must always do count(*) in generated
     # SQL
 
@@ -407,14 +539,13 @@ class Count(base.Reduction):
         ValueNode.__init__(self, [expr])
 
     def output_type(self):
-        return ir().Int64Scalar
+        return ir.Int64Scalar
 
 
-
-class Sum(base.Reduction):
+class Sum(ir.Reduction):
 
     def output_type(self):
-        _ = ir()
+        _ = ir
         if isinstance(self.arg, (_.IntegerValue, _.BooleanValue)):
             return _.Int64Scalar
         elif isinstance(self.arg, _.FloatingValue):
@@ -425,10 +556,10 @@ class Sum(base.Reduction):
             raise TypeError(self.arg)
 
 
-class Mean(base.Reduction):
+class Mean(ir.Reduction):
 
     def output_type(self):
-        _ = ir()
+        _ = ir
         if isinstance(self.arg, _.DecimalValue):
             return _decimal_scalar_ctor(self.arg.precision, 38)
         elif isinstance(self.arg, _.NumericValue):
@@ -438,29 +569,29 @@ class Mean(base.Reduction):
 
 
 def _decimal_scalar_ctor(precision, scale):
-    _ = ir()
+    _ = ir
     out_type = _.DecimalType(precision, scale)
     return _.DecimalScalar._make_constructor(out_type)
 
 
-class StdDeviation(base.Reduction):
+class StdDeviation(ir.Reduction):
     pass
 
 
 def _min_max_output_rule(self):
-    _ = ir()
+    _ = ir
     if isinstance(self.arg, _.DecimalValue):
         return _decimal_scalar_ctor(self.arg.precision, 38)
     else:
         return _.scalar_type(self.arg.type())
 
 
-class Max(base.Reduction):
+class Max(ir.Reduction):
 
     output_type = _min_max_output_rule
 
 
-class Min(base.Reduction):
+class Min(ir.Reduction):
 
     output_type = _min_max_output_rule
 
@@ -468,7 +599,7 @@ class Min(base.Reduction):
 #----------------------------------------------------------------------
 # Distinct stuff
 
-class Distinct(base.BlockingTableNode, base.HasSchema):
+class Distinct(ir.BlockingTableNode, ir.HasSchema):
 
     """
     Distinct is a table-level unique-ing operation.
@@ -485,7 +616,7 @@ class Distinct(base.BlockingTableNode, base.HasSchema):
     def __init__(self, table):
         self.table = table
 
-        base.BlockingTableNode.__init__(self, [table])
+        ir.BlockingTableNode.__init__(self, [table])
         schema = self.table.schema()
         HasSchema.__init__(self, schema)
 
@@ -500,6 +631,7 @@ class DistinctArray(ArrayNode):
     for evaluation if the result should be array-like versus table-like. Also
     for calling count()
     """
+
     def __init__(self, arg):
         self.arg = arg
         self.name = arg.get_name()
@@ -516,14 +648,13 @@ class DistinctArray(ArrayNode):
         """
         Only valid if the distinct contains a single column
         """
-        op = CountDistinct(self.arg)
-        return op.to_expr()
+        return CountDistinct(self.arg)
 
 
-class CountDistinct(base.Reduction):
+class CountDistinct(ir.Reduction):
 
     def output_type(self):
-        return ir().Int64Scalar
+        return ir.Int64Scalar
 
 
 #----------------------------------------------------------------------
@@ -535,14 +666,14 @@ class Any(ValueNode):
     # array-like (an existence-type predicate) or scalar (a reduction)
 
     def __init__(self, expr):
-        if not isinstance(expr, ir().BooleanArray):
+        if not isinstance(expr, ir.BooleanArray):
             raise ValueError('Expression must be a boolean array')
 
         self.arg = expr
         ValueNode.__init__(self, [expr])
 
     def output_type(self):
-        _ = ir()
+        _ = ir
         roots = self.arg._root_tables()
         if len(roots) > 1:
             return _.BooleanArray
@@ -586,8 +717,8 @@ class SimpleCaseBuilder(object):
         -------
         builder : CaseBuilder
         """
-        case_expr = ir().as_value_expr(case_expr)
-        result_expr = ir().as_value_expr(result_expr)
+        case_expr = as_value_expr(case_expr)
+        result_expr = as_value_expr(result_expr)
 
         if not self.base._can_compare(case_expr):
             raise TypeError('Base expression and passed case are not '
@@ -611,7 +742,7 @@ class SimpleCaseBuilder(object):
         -------
         builder : CaseBuilder
         """
-        result_expr = ir().as_value_expr(result_expr)
+        result_expr = as_value_expr(result_expr)
 
         # Maintain immutability
         return SimpleCaseBuilder(self.base, cases=list(self.cases),
@@ -620,7 +751,7 @@ class SimpleCaseBuilder(object):
 
     def end(self):
         if self.default is None:
-            default = ir().null()
+            default = null()
         else:
             default = self.default
 
@@ -651,10 +782,10 @@ class SearchedCaseBuilder(object):
         -------
         builder : CaseBuilder
         """
-        case_expr = ir().as_value_expr(case_expr)
-        result_expr = ir().as_value_expr(result_expr)
+        case_expr = as_value_expr(case_expr)
+        result_expr = as_value_expr(result_expr)
 
-        if not isinstance(case_expr, ir().BooleanValue):
+        if not isinstance(case_expr, ir.BooleanValue):
             raise TypeError(case_expr)
 
         cases = list(self.cases)
@@ -675,7 +806,7 @@ class SearchedCaseBuilder(object):
         -------
         builder : CaseBuilder
         """
-        result_expr = ir().as_value_expr(result_expr)
+        result_expr = as_value_expr(result_expr)
 
         # Maintain immutability
         return SearchedCaseBuilder(cases=list(self.cases),
@@ -684,7 +815,7 @@ class SearchedCaseBuilder(object):
 
     def end(self):
         if self.default is None:
-            default = ir().null()
+            default = null()
         else:
             default = self.default
 
@@ -709,7 +840,7 @@ class SimpleCase(ValueNode):
         all_exprs = [self.base] + self.cases + self.results
         if self.default is not None:
             all_exprs.append(self.default)
-        return base.distinct_roots(*all_exprs)
+        return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
         from ibis.expr.rules import highest_precedence_type
@@ -732,7 +863,7 @@ class SearchedCase(ValueNode):
         all_exprs = self.cases + self.results
         if self.default is not None:
             all_exprs.append(self.default)
-        return base.distinct_roots(*all_exprs)
+        return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
         from ibis.expr.rules import highest_precedence_type
@@ -784,7 +915,7 @@ class Join(TableNode):
             else:
                 pred = L.substitute_parents(pred)
 
-            if not isinstance(pred, ir().BooleanArray):
+            if not isinstance(pred, ir.BooleanArray):
                 raise ExpressionError('Join predicate must be comparison')
 
             preds = L.unwrap_ands(pred)
@@ -822,8 +953,7 @@ class Join(TableNode):
             # Unraveling is not possible
             return [self.left.op(), self.right.op()]
         else:
-            return base.distinct_roots(self.left, self.right)
-
+            return ir.distinct_roots(self.left, self.right)
 
 
 class InnerJoin(Join):
@@ -887,7 +1017,7 @@ class CrossJoin(InnerJoin):
         InnerJoin.__init__(self, left, right, [])
 
 
-class Union(base.BlockingTableNode, HasSchema):
+class Union(ir.BlockingTableNode, HasSchema):
 
     def __init__(self, left, right, distinct=False):
         self.left = left
@@ -928,7 +1058,7 @@ class Filter(TableNode):
         return tables
 
 
-class Limit(base.BlockingTableNode):
+class Limit(ir.BlockingTableNode):
 
     def __init__(self, table, n, offset):
         self.table = table
@@ -947,6 +1077,7 @@ class Limit(base.BlockingTableNode):
 
 #----------------------------------------------------------------------
 # Sorting
+
 
 class SortBy(TableNode):
 
@@ -978,7 +1109,7 @@ def _to_sort_key(table, key):
     else:
         sort_order = True
 
-    if not isinstance(key, base.Expr):
+    if not isinstance(key, ir.Expr):
         key = table._ensure_expr(key)
 
     if isinstance(sort_order, basestring):
@@ -1011,8 +1142,7 @@ class SortKey(object):
                 and self.ascending == other.ascending)
 
 
-
-class SelfReference(base.BlockingTableNode, HasSchema):
+class SelfReference(ir.BlockingTableNode, HasSchema):
 
     def __init__(self, table_expr):
         self.table = table_expr
@@ -1027,7 +1157,7 @@ class SelfReference(base.BlockingTableNode, HasSchema):
         return [self]
 
 
-class Projection(base.BlockingTableNode, HasSchema):
+class Projection(ir.BlockingTableNode, HasSchema):
 
     def __init__(self, table_expr, proj_exprs):
         from ibis.expr.analysis import ExprValidator
@@ -1046,7 +1176,7 @@ class Projection(base.BlockingTableNode, HasSchema):
                 expr = table_expr[expr]
 
             validator.assert_valid(expr)
-            if isinstance(expr, ir().ValueExpr):
+            if isinstance(expr, ValueExpr):
                 try:
                     name = expr.get_name()
                 except NotImplementedError:
@@ -1063,7 +1193,7 @@ class Projection(base.BlockingTableNode, HasSchema):
             clean_exprs.append(expr)
 
         # validate uniqueness
-        schema = base.Schema(names, types)
+        schema = ir.Schema(names, types)
 
         HasSchema.__init__(self, schema)
         Node.__init__(self, [table_expr] + [clean_exprs])
@@ -1079,7 +1209,7 @@ class Projection(base.BlockingTableNode, HasSchema):
         return tables
 
 
-class Aggregation(base.BlockingTableNode, HasSchema):
+class Aggregation(ir.BlockingTableNode, HasSchema):
 
     """
     agg_exprs : per-group scalar aggregates
@@ -1129,7 +1259,7 @@ class Aggregation(base.BlockingTableNode, HasSchema):
                                 repr(expr))
 
         for expr in self.having:
-            if not isinstance(expr, ir().BooleanScalar):
+            if not isinstance(expr, ir.BooleanScalar):
                 raise ExpressionError('Having clause must be boolean '
                                       'expression, was: {!r}'
                                       .format(expr))
@@ -1149,7 +1279,7 @@ class Aggregation(base.BlockingTableNode, HasSchema):
             names.append(e.get_name())
             types.append(e.type())
 
-        return base.Schema(names, types)
+        return ir.Schema(names, types)
 
 
 class Add(BinaryOp):
@@ -1186,7 +1316,7 @@ class Subtract(BinaryOp):
 class Divide(BinaryOp):
 
     def output_type(self):
-        if not util.all_of(self.args, ir().NumericValue):
+        if not util.all_of(self.args, ir.NumericValue):
             raise TypeError('One argument was non-numeric')
 
         return _shape_like_args(self.args, 'double')
@@ -1195,7 +1325,7 @@ class Divide(BinaryOp):
 class LogicalBinaryOp(BinaryOp):
 
     def output_type(self):
-        if not util.all_of(self.args, ir().BooleanValue):
+        if not util.all_of(self.args, ir.BooleanValue):
             raise TypeError('Only valid with boolean data')
         return _shape_like_args(self.args, 'boolean')
 
@@ -1256,7 +1386,7 @@ class Between(ValueNode):
         ValueNode.__init__(self, [expr, lower_bound, upper_bound])
 
     def root_tables(self):
-        return base.distinct_roots(*self.args)
+        return ir.distinct_roots(*self.args)
 
     def output_type(self):
         self._assert_can_compare()
@@ -1264,17 +1394,15 @@ class Between(ValueNode):
 
     def _assert_can_compare(self):
         if (not self.expr._can_compare(self.lower_bound) or
-            not self.expr._can_compare(self.upper_bound)):
+                not self.expr._can_compare(self.upper_bound)):
             raise TypeError('Arguments are not comparable')
-
-
 
 
 class Contains(ArrayNode):
 
     def __init__(self, value, options):
-        self.value = ir().as_value_expr(value)
-        self.options = ir().as_value_expr(options)
+        self.value = as_value_expr(value)
+        self.options = as_value_expr(options)
         Node.__init__(self, [self.value, self.options])
 
     def root_tables(self):
@@ -1287,7 +1415,7 @@ class Contains(ArrayNode):
         options = self.options.op()
         if isinstance(options, ValueList):
             all_args += options.values
-        elif isinstance(self.options, ir().ArrayExpr):
+        elif isinstance(self.options, ArrayExpr):
             all_args += [self.options]
         else:
             raise TypeError(type(options))
@@ -1317,7 +1445,7 @@ class TopK(ArrayNode):
         if by is None:
             by = arg.count()
 
-        if not isinstance(arg, ir().ArrayExpr):
+        if not isinstance(arg, ArrayExpr):
             raise TypeError(arg)
 
         if not isinstance(k, int) or k < 0:
@@ -1333,7 +1461,7 @@ class TopK(ArrayNode):
         return self.arg._root_tables()
 
     def to_expr(self):
-        return ir().BooleanArray(self)
+        return ir.BooleanArray(self)
 
 
 class TimestampNow(ValueNode):
@@ -1342,13 +1470,13 @@ class TimestampNow(ValueNode):
         ValueNode.__init__(self, [])
 
     def output_type(self):
-        return ir().TimestampScalar
+        return ir.TimestampScalar
 
 
 class ExtractTimestampField(UnaryOp):
 
     def output_type(self):
-        if not isinstance(self.arg, ir().TimestampValue):
+        if not isinstance(self.arg, ir.TimestampValue):
             raise AssertionError
         return _shape_like(self.arg, 'int32')
 

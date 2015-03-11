@@ -317,7 +317,7 @@ class SelectBuilder(object):
         # hm, is this the best place for this?
         root_op = source_table.op()
         if (isinstance(root_op, ops.Join) and
-            not isinstance(root_op, ops.MaterializedJoin)):
+                not isinstance(root_op, ops.MaterializedJoin)):
             # Unmaterialized join
             source_table = source_table.materialize()
 
@@ -477,7 +477,6 @@ class SelectBuilder(object):
             self.context.set_extracted(expr)
 
 
-
 def _extract_subqueries(select_stmt):
     helper = _ExtractSubqueries(select_stmt)
     return helper.get_result()
@@ -631,7 +630,7 @@ class _CorrelatedRefCheck(object):
             if in_subquery:
                 self.has_foreign_root = True
                 if (not is_aliased and
-                    self.ctx.has_alias(node, parent_contexts=True)):
+                        self.ctx.has_alias(node, parent_contexts=True)):
                     self.ctx.make_alias(node)
 
             elif not self.ctx.has_alias(node):
@@ -656,6 +655,7 @@ def _adapt_expr(expr):
 
     if isinstance(expr, ir.ScalarExpr) and expr.is_reduction():
         table_expr = _reduction_to_aggregation(expr, agg_name='tmp')
+
         def scalar_handler(results):
             return results['tmp'][0]
 
@@ -665,6 +665,7 @@ def _adapt_expr(expr):
 
         if isinstance(op, (ops.TableColumn, ops.DistinctArray)):
             table_expr = op.table
+
             def column_handler(results):
                 return results[op.name]
             result_handler = column_handler
@@ -672,6 +673,7 @@ def _adapt_expr(expr):
             # Something more complicated.
             base_table = L.find_source_table(expr)
             table_expr = base_table.projection([expr.name('tmp')])
+
             def projection_handler(results):
                 return results['tmp']
 

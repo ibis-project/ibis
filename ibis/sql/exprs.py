@@ -21,7 +21,6 @@
 from io import BytesIO
 
 import ibis.expr.analysis as L
-import ibis.expr.base as base
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
@@ -40,6 +39,7 @@ _sql_type_names = {
     'string': 'string',
     'boolean': 'boolean'
 }
+
 
 def _cast(translator, expr):
     op = expr.op()
@@ -236,6 +236,7 @@ class CaseFormatter(object):
         else:
             self.buf.write(' ')
 
+
 def _simple_case(translator, expr):
     op = expr.op()
     formatter = CaseFormatter(translator, op.base, op.cases, op.results,
@@ -287,7 +288,7 @@ def _exists_subquery(translator, expr):
 
     expr = (op.foreign_table
             .filter(op.predicates)
-            .projection([ir.literal(1).name(ir.unnamed)]))
+            .projection([ops.literal(1).name(ir.unnamed)]))
 
     subquery = ctx.get_formatted_query(expr)
 
@@ -299,7 +300,6 @@ def _exists_subquery(translator, expr):
         raise NotImplementedError
 
     return '{} (\n{}\n)'.format(key, util.indent(subquery, ctx.indent))
-
 
 
 def _table_column(translator, expr):
@@ -476,8 +476,8 @@ _timestamp_ops = {
 
 
 _other_ops = {
-    base.Literal: _literal,
-    base.NullLiteral: _null_literal,
+    ops.Literal: _literal,
+    ops.NullLiteral: _null_literal,
 
     ops.ValueList: _value_list,
 
@@ -555,7 +555,7 @@ class ExprTranslator(object):
         op = expr.op()
 
         # TODO: use op MRO for subclasses instead of this isinstance spaghetti
-        if isinstance(op, base.Parameter):
+        if isinstance(op, ir.Parameter):
             return self._trans_param(expr)
         elif isinstance(op, ops.PhysicalTable):
             # HACK/TODO: revisit for more complex cases
