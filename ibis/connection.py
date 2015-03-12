@@ -117,9 +117,7 @@ class ImpalaConnection(SQLConnection):
 
     def _connect(self):
         import impala.dbapi as db
-        self.con = db.connect(host=self.params['host'],
-                              protocol=self.params['protocol'],
-                              port=self.params['port'])
+        self.con = db.connect(**self.params)
 
     def _fetchall(self, query, retries=3):
         cursor = self._execute(query, retries=retries)
