@@ -638,6 +638,10 @@ class TableExpr(Expr):
         ref = _ops().TableColumn(name, self)
         return ref.to_expr()
 
+    @property
+    def columns(self):
+        return self.schema().names
+
     def schema(self):
         if not self._is_materialized():
             raise Exception('Table operation is not yet materialized')

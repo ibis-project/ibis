@@ -156,6 +156,12 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         table = api.table([], 'foo')
         assert len(table.schema()) == 0
 
+    def test_columns(self):
+        t = self.con.table('alltypes')
+        result = t.columns
+        expected = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+        assert result == expected
+
     def test_view_new_relation(self):
         # For assisting with self-joins and other self-referential operations
         # where we need to be able to treat instances of the same TableExpr as
