@@ -22,7 +22,13 @@ import ibis.util as util
 
 
 class DDLStatement(object):
-    pass
+
+    def _get_scoped_name(self, table_name, database):
+        if database:
+            scoped_name = '{}.{}'.format(database, table_name)
+        else:
+            scoped_name = table_name
+        return scoped_name
 
 
 class Select(DDLStatement):
@@ -438,6 +444,61 @@ class Union(DDLStatement):
 
         query = '{}\n{}\n{}'.format(left_set, union_keyword, right_set)
         return query
+
+
+class CTAS(DDLStatement):
+
+    """
+    Create Table As Select
+    """
+
+    def __init__(self, table_name, select, context, database=None,
+                 external=False, format='parquet', overwrite=False,
+                 partition=None):
+        self.select = select
+        self.context = context
+
+        self.table_name = table_name
+        self.database = database
+        self.external = external
+        self.overwrite = overwrite
+        self.format = format.lower()
+
+    def compile(self):
+        if_exists = '' if self.overwrite else 'IF NOT EXISTS '
+
+        buf = BytesIO()
+
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+        create_line = 'CREATE TABLE {}{}'.format(if_exists, scoped_name)
+
+        buf.write(create_line)
+        buf.write(self._storage())
+
+        select_query = self.select.compile()
+        buf.write('\nAS\n{}'.format(select_query))
+
+        return buf.getvalue()
+
+    def _storage(self):
+        if self.format == 'parquet':
+            return '\nSTORED AS PARQUET'
+        else:
+            raise NotImplementedError
+
+
+class DropTable(DDLStatement):
+
+    def __init__(self, table_name, database=None, must_exist=True):
+        self.table_name = table_name
+        self.database = database
+        self.must_exist = must_exist
+
+    def compile(self):
+        if_exists = 'IF EXISTS ' if self.must_exist else ''
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+        drop_line = 'DROP TABLE {}{}'.format(if_exists, scoped_name)
+        return drop_line
 
 
 def _join_not_none(sep, pieces):

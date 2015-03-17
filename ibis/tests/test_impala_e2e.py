@@ -123,3 +123,36 @@ FROM tpch.lineitem li
         assert expr.scale == 2
 
         # TODO: what if user impyla version does not have decimal Metadata?
+
+    def test_ctas_from_table_expr(self):
+        import uuid
+        table_name = 'testing_' + uuid.uuid4().get_hex()
+
+        expr = self.con.table('functional.alltypes')
+
+        try:
+            self.con.create_table(table_name, expr, database='functional')
+        except Exception:
+            raise
+        finally:
+            self._ensure_drop(table_name, database='functional')
+
+    def _ensure_drop(self, table_name, database=None):
+        self.con.drop_table(table_name, database=database,
+                            must_exist=False)
+        self._assert_table_not_exists(table_name, database=database)
+
+    def _assert_table_not_exists(self, table_name, database=None):
+        from impala.error import Error as ImpylaError
+
+        if database is not None:
+            tname = '.'.join((database, table_name))
+        else:
+            tname = table_name
+
+        try:
+            self.con.table(tname)
+        except ImpylaError:
+            pass
+        except:
+            raise

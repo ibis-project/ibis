@@ -17,7 +17,7 @@ from ibis.config import options
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
-import ibis.sql.select as ddl
+import ibis.sql.ddl as ddl
 
 
 class Connection(object):
@@ -139,6 +139,52 @@ class ImpalaConnection(SQLConnection):
 
     def set_database(self, name):
         pass
+
+    def create_table(self, table_name, expr, database=None, format='parquet',
+                     overwrite=False):
+        """
+        Create a new table in Impala using an Ibis table expression
+
+        Parameters
+        ----------
+        table_name : string
+        expr : TableExpr
+        database : string, default None (optional)
+        format : {'parquet'}
+        overwrite : boolean, default False
+          Do not create table if table with indicated name already exists
+
+        Examples
+        --------
+        con.create_table('new_table_name', table_expr)
+        """
+        ast = sql.build_ast(expr)
+        select = ast.queries[0]
+        context = ast.context
+        statement = ddl.CTAS(table_name, select, context,
+                             database=database,
+                             overwrite=overwrite)
+        query = statement.compile()
+        self._execute(query)
+
+    def drop_table(self, table_name, database=None, must_exist=False):
+        """
+
+        Parameters
+        ----------
+        table_name : string
+        database : string, default None (optional)
+        must_exist : boolean, default False
+          Database may throw exception if table does not exist
+
+        Examples
+        --------
+        con.drop_table('my_table', database='operations', must_exist=True)
+        """
+        statement = ddl.DropTable(table_name, database=database,
+                                  must_exist=must_exist)
+        query = statement.compile()
+        self._execute(query)
 
     def _get_table_schema(self, name):
         query = 'SELECT * FROM {} LIMIT 0'.format(name)

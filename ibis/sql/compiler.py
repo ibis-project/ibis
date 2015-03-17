@@ -25,7 +25,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 from ibis.sql.context import QueryContext
-import ibis.sql.select as ddl
+import ibis.sql.ddl as ddl
 import ibis.sql.transforms as transforms
 
 

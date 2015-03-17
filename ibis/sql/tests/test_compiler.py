@@ -25,6 +25,7 @@ import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
+import ibis.sql.ddl as ddl
 
 # We are only testing Impala SQL dialect for the time being. At some point if
 # we choose to support more SQL dialects we can refactor the test suite to
@@ -1301,6 +1302,63 @@ FROM (
         pass
 
     def test_union_in_subquery(self):
+        pass
+
+
+def _create_table(table_name, expr, database=None, overwrite=False):
+    ast = build_ast(expr)
+    select = ast.queries[0]
+    context = ast.context
+    statement = ddl.CTAS(table_name, select, context,
+                         database=database,
+                         overwrite=overwrite)
+    return statement
+
+
+class TestCTAS(unittest.TestCase):
+
+    def setUp(self):
+        self.con = MockConnection()
+
+        self.t = t = self.con.table('functional_alltypes')
+        self.expr = t[t.bigint_col > 0]
+
+    def test_create_table_parquet(self):
+        statement = _create_table('some_table', self.expr,
+                                  database='bar',
+                                  overwrite=True)
+        result = statement.compile()
+
+        expected = """\
+CREATE TABLE bar.some_table
+STORED AS PARQUET
+AS
+SELECT *
+FROM functional_alltypes
+WHERE bigint_col > 0"""
+        assert result == expected
+
+    def test_external_table(self):
+        pass
+
+    def test_no_overwrite(self):
+        statement = _create_table('tname', self.expr,
+                                  overwrite=False)
+        result = statement.compile()
+
+        expected = """\
+CREATE TABLE IF NOT EXISTS tname
+STORED AS PARQUET
+AS
+SELECT *
+FROM functional_alltypes
+WHERE bigint_col > 0"""
+        assert result == expected
+
+    def test_other_storage_formats(self):
+        pass
+
+    def test_partition_by(self):
         pass
 
 
