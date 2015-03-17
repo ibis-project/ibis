@@ -1315,6 +1315,20 @@ def _create_table(table_name, expr, database=None, overwrite=False):
     return statement
 
 
+class TestDropTable(unittest.TestCase):
+
+    def test_must_exist(self):
+        statement = ddl.DropTable('foo', database='bar', must_exist=True)
+        query = statement.compile()
+        expected = "DROP TABLE bar.foo"
+        assert query == expected
+
+        statement = ddl.DropTable('foo', database='bar', must_exist=False)
+        query = statement.compile()
+        expected = "DROP TABLE IF EXISTS bar.foo"
+        assert query == expected
+
+
 class TestCTAS(unittest.TestCase):
 
     def setUp(self):

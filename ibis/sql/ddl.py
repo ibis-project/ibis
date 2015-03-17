@@ -495,7 +495,7 @@ class DropTable(DDLStatement):
         self.must_exist = must_exist
 
     def compile(self):
-        if_exists = 'IF EXISTS ' if self.must_exist else ''
+        if_exists = '' if self.must_exist else 'IF EXISTS '
         scoped_name = self._get_scoped_name(self.table_name, self.database)
         drop_line = 'DROP TABLE {}{}'.format(if_exists, scoped_name)
         return drop_line
