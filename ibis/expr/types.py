@@ -462,7 +462,7 @@ class ValueExpr(Expr):
         return op.to_expr()
 
     def ifnull(self, sub_expr):
-        pass
+        raise NotImplementedError
 
 
 class ScalarExpr(ValueExpr):
@@ -520,6 +520,10 @@ class ArrayExpr(ValueExpr):
     def topk(self, k, by=None):
         """
         Produces
+
+        Returns
+        -------
+        topk : TopK filter expression
         """
         op = _ops().TopK(self, k, by=by)
         return op.to_expr()
@@ -632,9 +636,27 @@ class TableExpr(Expr):
             return TableExpr(op)
 
     def get_columns(self, iterable):
+        """
+        Get multiple columns from the table
+
+        Examples
+        --------
+        a, b, c = table.get_columns(['a', 'b', 'c'])
+
+        Returns
+        -------
+        columns : list of column/array expressions
+        """
         return [self.get_column(x) for x in iterable]
 
     def get_column(self, name):
+        """
+        Get a reference to a single column from the table
+
+        Returns
+        -------
+        column : array expression
+        """
         ref = _ops().TableColumn(name, self)
         return ref.to_expr()
 
@@ -643,6 +665,13 @@ class TableExpr(Expr):
         return self.schema().names
 
     def schema(self):
+        """
+        Get the schema for this table (if one is known)
+
+        Returns
+        -------
+        schema : Schema
+        """
         if not self._is_materialized():
             raise Exception('Table operation is not yet materialized')
         return self.op().get_schema()
@@ -676,6 +705,14 @@ class TableExpr(Expr):
         return TableExpr(_ops().SelfReference(self))
 
     def add_column(self, expr, name=None):
+        """
+        Add indicated column expression to table, producing a new table. Note:
+        this is a shortcut for performing a projection having the same effect.
+
+        Returns
+        -------
+        modified_table : TableExpr
+        """
         if not isinstance(expr, ArrayExpr):
             raise TypeError('Must pass array expression')
 
@@ -687,9 +724,19 @@ class TableExpr(Expr):
         return self.projection([self, expr])
 
     def add_columns(self, what):
+        """
+
+        """
         raise NotImplementedError
 
     def count(self):
+        """
+        Returns the computed number of rows in the table expression
+
+        Returns
+        -------
+        count : Int64Scalar
+        """
         return _ops().Count(self).to_expr()
 
     def distinct(self):
@@ -790,8 +837,11 @@ class TableExpr(Expr):
     def limit(self, n, offset=None):
         """
 
+
         Parameters
         ----------
+        n :
+        offset :
 
         Returns
         -------
@@ -800,11 +850,31 @@ class TableExpr(Expr):
         op = _ops().Limit(self, n, offset=offset)
         return TableExpr(op)
 
-    def sort_by(self, what):
-        if not isinstance(what, list):
-            what = [what]
+    def sort_by(self, sort_exprs):
+        """
+        Sort table by the indicated column expressions and sort orders
+        (ascending/descending)
 
-        op = _ops().SortBy(self, what)
+        Parameters
+        ----------
+        sort_exprs : sorting expressions
+          Must be one of:
+            - Column name or expression
+            - Sort key, e.g. desc(col)
+            - (column name, True (ascending) / False (descending))
+
+        Examples
+        --------
+        sorted = table.sort_by([('a', True), ('b', False)])
+
+        Returns
+        -------
+        sorted : TableExpr
+        """
+        if not isinstance(sort_exprs, list):
+            sort_exprs = [sort_exprs]
+
+        op = _ops().SortBy(self, sort_exprs)
         return TableExpr(op)
 
     def union(self, other, distinct=False):
@@ -870,6 +940,7 @@ class NumericValue(AnyValue):
 
     def round(self, digits=None):
         """
+        Round values either to integer or indicated number of decimal places.
 
         Returns
         -------
