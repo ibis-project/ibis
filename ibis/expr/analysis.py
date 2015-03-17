@@ -387,7 +387,7 @@ def apply_filter(expr, predicates):
 #     rewriter = _PushdownRewrite(expr)
 #     return rewriter.get_result()
 # class _PushdownRewrite(object):
-#     # Hm, this is quite similar to the ExprSimplifier above
+# Hm, this is quite similar to the ExprSimplifier above
 #     def __init__(self, expr):
 #         self.expr = expr
 #     def get_result(self):

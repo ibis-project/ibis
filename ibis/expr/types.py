@@ -701,7 +701,17 @@ class TableExpr(Expr):
 
     def projection(self, exprs):
         """
+        Compute new table expression with the indicated column expressions from
+        this table.
 
+        Parameters
+        ----------
+        exprs : column expression, or list of column expressions, or strings
+          If strings passed, must be columns in the table already
+
+        Returns
+        -------
+        projection : TableExpr
         """
         import ibis.expr.analysis as L
 
@@ -732,9 +742,11 @@ class TableExpr(Expr):
 
     def filter(self, predicates):
         """
+        Select rows from table based on boolean expressions
 
         Parameters
         ----------
+        predicates : boolean array expressions, or list thereof
 
         Returns
         -------

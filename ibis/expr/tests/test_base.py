@@ -270,7 +270,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         t = self.table
 
         # it lives!
-        proj = t[[t, new_expr]]
+        proj = t[t, new_expr]
         repr(proj)
 
         ex_names = self.table.schema().names + ['bigger_a']
@@ -363,7 +363,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         expected = self.table.filter([pred1, pred2])
         assert result.equals(expected)
 
-        # #59, if we are not careful, we can obtain broken refs
+        # 59, if we are not careful, we can obtain broken refs
         interm = self.table[pred1]
         result = interm.filter([interm['b'] > 0])
         assert result.equals(expected)
@@ -535,9 +535,9 @@ class TestDistinct(unittest.TestCase):
         assert expr.op().table.op().table.equals(ex_projection)
 
     # def test_distinct_array_interactions(self):
-    #     # TODO
+    # TODO
 
-    #     # array cardinalities / shapes are likely to be different.
+    # array cardinalities / shapes are likely to be different.
     #     a = self.table.int_col.distinct()
     #     b = self.table.bigint_col
 
@@ -1404,7 +1404,7 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         joined = (region.inner_join(
             nation, [region.r_regionkey == nation.n_regionkey])
             .inner_join(
-            customer, [customer.c_nationkey == nation.n_nationkey]))
+                customer, [customer.c_nationkey == nation.n_nationkey]))
 
         proj_exprs = [customer, nation.n_name.name('nation'),
                       region.r_name.name('region')]

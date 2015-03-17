@@ -859,7 +859,7 @@ WHERE value > 0"""
         assert table3_filtered.equals(expected2)
 
     def test_bug_project_multiple_times(self):
-        # #108
+        # 108
         customer = self.con.table('tpch_customer')
         nation = self.con.table('tpch_nation')
         region = self.con.table('tpch_region')
