@@ -722,6 +722,8 @@ class TableExpr(Expr):
         op = L._maybe_fuse_projection(self, clean_exprs)
         return TableExpr(op)
 
+    select = projection
+
     def _ensure_expr(self, expr):
         if isinstance(expr, basestring):
             expr = self[expr]

@@ -217,7 +217,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
     def test_projection_no_list(self):
         expr = (self.table.f * 2).name('bar')
-        result = self.table.projection(expr)
+        result = self.table.select(expr)
         expected = self.table.projection([expr])
         assert result.equals(expected)
 
