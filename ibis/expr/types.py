@@ -705,8 +705,10 @@ class TableExpr(Expr):
         """
         import ibis.expr.analysis as L
 
-        clean_exprs = []
+        if isinstance(exprs, Expr):
+            exprs = [exprs]
 
+        clean_exprs = []
         validator = L.ExprValidator([self])
 
         for expr in exprs:
@@ -737,6 +739,10 @@ class TableExpr(Expr):
         filtered_expr : TableExpr
         """
         import ibis.expr.analysis as L
+
+        if isinstance(predicates, Expr):
+            predicates = L.unwrap_ands(predicates)
+
         op = L.apply_filter(self, predicates)
         return TableExpr(op)
 

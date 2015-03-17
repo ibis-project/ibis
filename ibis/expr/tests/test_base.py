@@ -215,6 +215,12 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
             expr = proj[c]
             assert type(expr) == type(self.table[c])
 
+    def test_projection_no_list(self):
+        expr = (self.table.f * 2).name('bar')
+        result = self.table.projection(expr)
+        expected = self.table.projection([expr])
+        assert result.equals(expected)
+
     def test_projection_with_exprs(self):
         # unnamed expr to test
         mean_diff = (self.table['a'] - self.table['c']).mean()
@@ -322,6 +328,13 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         expected = self.table[self.table, foo, bar]
         assert t3.equals(expected)
+
+    def test_filter_no_list(self):
+        pred = self.table.a > 5
+
+        result = self.table.filter(pred)
+        expected = self.table[pred]
+        assert result.equals(expected)
 
     def test_add_predicate(self):
         pred = self.table['a'] > 5
@@ -1112,6 +1125,15 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
 
 
 class TestJoinsUnions(BasicTestCase, unittest.TestCase):
+
+    def test_join_no_predicate_list(self):
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+
+        pred = region.r_regionkey == nation.n_regionkey
+        joined = region.inner_join(nation, pred)
+        expected = region.inner_join(nation, [pred])
+        assert joined.equals(expected)
 
     def test_equijoin_schema_merge(self):
         table1 = api.table([('key1',  'string'), ('value1', 'double')])

@@ -32,6 +32,7 @@ from ibis.expr.types import (Schema, Expr,
 
 from ibis.expr.operations import (as_value_expr, table, literal, null,
                                   value_list, desc)
+import ibis.expr.analysis as _L
 import ibis.expr.operations as _ops
 
 
@@ -375,6 +376,9 @@ def cross_join(left, right, prefixes=None):
 
 def _regular_join_method(name, klass, doc=None):
     def f(self, other, predicates=(), prefixes=None):
+        if isinstance(predicates, Expr):
+            predicates = _L.unwrap_ands(predicates)
+
         op = klass(self, other, predicates)
         return TableExpr(op)
     if doc:
