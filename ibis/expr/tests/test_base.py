@@ -1124,7 +1124,20 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         assert expr.equals(expected)
 
     def test_group_by_count_size(self):
-        pass
+        # #148, convenience for interactive use, and so forth
+        result1 = self.table.group_by('g').size()
+        result2 = self.table.group_by('g').count()
+
+        expected = (self.table.group_by('g')
+                    .aggregate([self.table.count().name('count')]))
+
+        assert result1.equals(expected)
+        assert result2.equals(expected)
+
+        result = self.table.group_by('g').count('foo')
+        expected = (self.table.group_by('g')
+                    .aggregate([self.table.count().name('foo')]))
+        assert result.equals(expected)
 
 
 class TestJoinsUnions(BasicTestCase, unittest.TestCase):

@@ -903,7 +903,7 @@ class GroupedTableExpr(object):
     Helper intermediate construct
     """
 
-    def __init__(self, table, by):
+    def __init__(self, table, by, having=None):
         if not isinstance(by, (list, tuple)):
             if not isinstance(by, Expr):
                 by = table._resolve([by])
@@ -912,10 +912,33 @@ class GroupedTableExpr(object):
 
         self.table = table
         self.by = by
+        self.having = having
 
     def aggregate(self, metrics, having=None):
         return self.table.aggregate(metrics, by=self.by, having=having)
 
+    def having(self, expr):
+        raise NotImplementedError
+
+    def count(self, metric_name='count'):
+        """
+        Convenience function for computing the group sizes (number of rows per
+        group) given a grouped table.
+
+        Parameters
+        ----------
+        metric_name : string, default 'count'
+          Name to use for the row count metric
+
+        Returns
+        -------
+        aggregated : TableExpr
+          The aggregated table
+        """
+        metric = self.table.count().name(metric_name)
+        return self.table.aggregate([metric], by=self.by)
+
+    size = count
 
 #------------------------------------------------------------------------------
 # Declare all typed ValueExprs. This is what the user will actually interact
