@@ -557,7 +557,7 @@ class ExprTranslator(object):
         # TODO: use op MRO for subclasses instead of this isinstance spaghetti
         if isinstance(op, ir.Parameter):
             return self._trans_param(expr)
-        elif isinstance(op, ops.PhysicalTable):
+        elif isinstance(op, ops.TableNode):
             # HACK/TODO: revisit for more complex cases
             return '*'
         elif type(op) in _operation_registry:

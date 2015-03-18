@@ -1123,6 +1123,9 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         expected = self.table.aggregate(metrics, by=[group_expr])
         assert expr.equals(expected)
 
+    def test_group_by_count_size(self):
+        pass
+
 
 class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 

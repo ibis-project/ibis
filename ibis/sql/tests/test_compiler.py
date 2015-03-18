@@ -768,6 +768,32 @@ GROUP BY 1
 HAVING count(*) > 100"""
         assert result == expected
 
+    def test_aggregate_table_count_metric(self):
+        expr = self.con.table('star1').count()
+
+        result = to_sql(expr)
+        expected = """SELECT count(*) AS tmp
+FROM star1"""
+        assert result == expected
+
+        # count on more complicated table
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+        join_expr = region.r_regionkey == nation.n_regionkey
+        joined = region.inner_join(nation, join_expr)
+        table_ref = joined[nation, region.r_name.name('region')]
+
+        expr = table_ref.count()
+        result = to_sql(expr)
+        expected = """SELECT count(*) AS tmp
+FROM (
+  SELECT t2.*, t1.r_name AS region
+  FROM tpch_region t1
+    INNER JOIN tpch_nation t2
+      ON t1.r_regionkey = t2.n_regionkey
+) t0"""
+        assert result == expected
+
     def test_expr_template_field_name_binding(self):
         # Given an expression with no concrete links to actual database tables,
         # indicate a mapping between the distinct unbound table leaves of the
