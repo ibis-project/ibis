@@ -1085,7 +1085,8 @@ class SortBy(TableNode):
 
     def __init__(self, table_expr, sort_keys):
         self.table = table_expr
-        self.keys = [_to_sort_key(self.table, k) for k in sort_keys]
+        self.keys = [_to_sort_key(self.table, k)
+                     for k in _promote_list(sort_keys)]
 
         TableNode.__init__(self, [self.table, self.keys])
 
@@ -1226,26 +1227,23 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
 
         self.agg_exprs = self._rewrite_exprs(agg_exprs)
 
-        by = by or []
+        by = _promote_list(by or [])
         self.by = self.table._resolve(by)
         self.by = self._rewrite_exprs(self.by)
 
-        self.having = having or []
+        self.having = _promote_list(having or [])
         self.having = self._rewrite_exprs(self.having)
         self._validate()
 
-        TableNode.__init__(self, [table, agg_exprs, self.by, self.having])
+        TableNode.__init__(self, [table, self.agg_exprs, self.by, self.having])
 
         schema = self._result_schema()
         HasSchema.__init__(self, schema)
 
     def _rewrite_exprs(self, what):
         from ibis.expr.analysis import substitute_parents
-
-        if isinstance(what, (list, tuple)):
-            return [substitute_parents(x) for x in what]
-        else:
-            return substitute_parents(what)
+        what = _promote_list(what)
+        return [substitute_parents(x) for x in what]
 
     def substitute_table(self, table_expr):
         return Aggregation(table_expr, self.agg_exprs, by=self.by,
@@ -1511,3 +1509,9 @@ class ExtractSecond(ExtractTimestampField):
 
 class ExtractMillisecond(ExtractTimestampField):
     pass
+
+
+def _promote_list(val):
+    if not isinstance(val, list):
+        val = [val]
+    return val

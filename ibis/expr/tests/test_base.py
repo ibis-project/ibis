@@ -446,6 +446,10 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert sort_key.expr.equals(self.table.f)
         assert sort_key.ascending
 
+        # non-list input. per #150
+        result2 = self.table.sort_by('f')
+        assert result.equals(result2)
+
         result2 = self.table.sort_by([('f', False)])
         result3 = self.table.sort_by([('f', 'descending')])
         result4 = self.table.sort_by([('f', 0)])
@@ -1056,6 +1060,16 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
 
         # it works!
         repr(result)
+
+    def test_aggregate_non_list_inputs(self):
+        # per #150
+        metric = self.table.f.sum().name('total')
+        by = 'g'
+        having = self.table.c.sum() > 10
+
+        result = self.table.aggregate(metric, by=by, having=having)
+        expected = self.table.aggregate([metric], by=[by], having=[having])
+        assert result.equals(expected)
 
     def test_aggregate_invalid(self):
         # Pass a non-aggregation or non-scalar expr

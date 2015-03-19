@@ -871,9 +871,6 @@ class TableExpr(Expr):
         -------
         sorted : TableExpr
         """
-        if not isinstance(sort_exprs, list):
-            sort_exprs = [sort_exprs]
-
         op = _ops().SortBy(self, sort_exprs)
         return TableExpr(op)
 
