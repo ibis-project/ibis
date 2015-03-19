@@ -689,7 +689,7 @@ class TestNullOps(BasicTestCase, unittest.TestCase):
 class TestMathUnaryOps(BasicTestCase, unittest.TestCase):
 
     def test_log_variants(self):
-        opnames = ['log', 'log2', 'log10']
+        opnames = ['ln', 'log', 'log2', 'log10']
 
         columns = ['a', 'b', 'c', 'd', 'e', 'f']
 

@@ -963,23 +963,6 @@ class NullValue(AnyValue):
 
 class NumericValue(AnyValue):
 
-    def round(self, digits=None):
-        """
-        Round values either to integer or indicated number of decimal places.
-
-        Returns
-        -------
-        rounded : type depending on digits argument
-          digits None or 0
-            decimal types: decimal
-            other numeric types: bigint
-          digits nonzero
-            decimal types: decimal
-            other numeric types: double
-        """
-        op = _ops().Round(self, digits)
-        return op.to_expr()
-
     def _can_compare(self, other):
         return isinstance(other, NumericValue)
 

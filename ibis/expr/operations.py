@@ -428,6 +428,15 @@ class Sqrt(RealUnaryOp):
 
 class Log(RealUnaryOp):
 
+    _allow_boolean = False
+
+    def __init__(self, arg, base=None):
+        self.base = base
+        RealUnaryOp.__init__(self, arg)
+
+
+class Ln(RealUnaryOp):
+
     """
     Natural logarithm
     """
@@ -1228,11 +1237,11 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
 
         self.agg_exprs = self._rewrite_exprs(agg_exprs)
 
-        by = _promote_list(by or [])
+        by = by or []
         self.by = self.table._resolve(by)
         self.by = self._rewrite_exprs(self.by)
 
-        self.having = _promote_list(having or [])
+        self.having = having or []
         self.having = self._rewrite_exprs(self.having)
         self._validate()
 

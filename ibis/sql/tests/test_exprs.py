@@ -136,7 +136,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
         cases = [
             ((a + b) + c, '(a + b) + c'),
-            (a.log() + c, 'log(a) + c'),
+            (a.log() + c, 'ln(a) + c'),
             (b + (-(a + c)), 'b + (-(a + c))')
         ]
 
@@ -240,9 +240,8 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_numeric_monadic_builtins(self):
         # No argument functions
-        functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt', 'sign', 'log',
-                     ('ln', 'log'),
-                     'log2', 'log10']
+        functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt', 'sign',
+                     ('log', 'ln'), 'ln', 'log2', 'log10']
 
         cases = []
         for what in functions:
@@ -255,6 +254,12 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
                 expr = getattr(self.table[cname], ibis_name)()
                 cases.append((expr, '{}({})'.format(sql_name, cname)))
 
+        self._check_expr_cases(cases)
+
+    def test_log_other_bases(self):
+        cases = [
+            (self.table.double_col.log(5), 'log(double_col, 5)')
+        ]
         self._check_expr_cases(cases)
 
     def test_round(self):

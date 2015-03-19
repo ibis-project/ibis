@@ -1134,7 +1134,7 @@ WHERE f > (
         expected = """SELECT *
 FROM star1
 WHERE f > (
-  SELECT log(avg(f)) AS tmp
+  SELECT ln(avg(f)) AS tmp
   FROM star1
   WHERE foo_id = 'foo'
 )"""
@@ -1146,7 +1146,7 @@ WHERE f > (
         expected = """SELECT *
 FROM star1
 WHERE f > (
-  SELECT log(avg(f)) + 1 AS tmp
+  SELECT ln(avg(f)) + 1 AS tmp
   FROM star1
   WHERE foo_id = 'foo'
 )"""

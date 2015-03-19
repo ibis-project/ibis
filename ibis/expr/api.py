@@ -224,6 +224,40 @@ _add_methods(ArrayExpr, _generic_array_methods)
 #----------------------------------------------------------------------
 # Numeric API
 
+def round(arg, digits=None):
+    """
+    Round values either to integer or indicated number of decimal places.
+
+    Returns
+    -------
+    rounded : type depending on digits argument
+      digits None or 0
+        decimal types: decimal
+        other numeric types: bigint
+      digits nonzero
+        decimal types: decimal
+        other numeric types: double
+    """
+    op = _ops.Round(arg, digits)
+    return op.to_expr()
+
+
+def log(arg, base=None):
+    """
+    Perform the logarithm using a specified base
+
+    Parameters
+    ----------
+    base : number, default None
+      If None, base e is used
+
+    Returns
+    -------
+    logarithm : double type
+    """
+    op = _ops.Log(arg, base)
+    return op.to_expr()
+
 
 _numeric_value_methods = dict(
     __neg__=_unary_op('__neg__', _negate),
@@ -233,10 +267,11 @@ _numeric_value_methods = dict(
     sign=_unary_op('sign', _ops.Sign),
     exp=_unary_op('exp', _ops.Exp),
     sqrt=_unary_op('sqrt', _ops.Sqrt),
-    log=_unary_op('log', _ops.Log),
-    ln=_unary_op('log', _ops.Log),
+    log=log,
+    ln=_unary_op('ln', _ops.Ln),
     log2=_unary_op('log2', _ops.Log2),
     log10=_unary_op('log10', _ops.Log10),
+    round=round
 )
 
 

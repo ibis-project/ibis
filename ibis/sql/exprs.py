@@ -362,6 +362,16 @@ def _round(translator, expr):
         return 'round({})'.format(arg_formatted)
 
 
+def _log(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+
+    if op.base is None:
+        return 'ln({})'.format(arg_formatted)
+    else:
+        return 'log({}, {})'.format(arg_formatted, op.base)
+
+
 def _count_distinct(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
@@ -417,7 +427,8 @@ _unary_ops = {
     ops.Sign: _unary_op('sign'),
     ops.Sqrt: _unary_op('sqrt'),
 
-    ops.Log: _unary_op('log'),
+    ops.Log: _log,
+    ops.Ln: _unary_op('ln'),
     ops.Log2: _unary_op('log2'),
     ops.Log10: _unary_op('log10'),
 
