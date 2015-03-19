@@ -20,6 +20,7 @@ from ibis.expr.types import ArrayExpr, TableExpr, RelationError
 import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
+import ibis
 
 from ibis.expr.format import ExprFormatter
 from ibis.expr.tests.mocks import MockConnection
@@ -257,6 +258,16 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         exprs = [right['foo'], right['bar']]
         self.assertRaises(RelationError, left.projection, exprs)
+
+    def test_projection_unnamed_literal_interactive_blowup(self):
+        # #147 and #153 alike
+        table = self.con.table('functional_alltypes')
+
+        with config.option_context('interactive', True):
+            try:
+                table.select([table.bigint_col, ibis.literal(5)])
+            except Exception as e:
+                assert 'unnamed' in e.message
 
     def test_projection_of_aggregated(self):
         # Fully-formed aggregations "block"; in a projection, column

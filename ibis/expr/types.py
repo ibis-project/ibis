@@ -225,6 +225,10 @@ class Expr(object):
         pass
 
 
+def _safe_repr(x):
+    return x._repr() if isinstance(x, Expr) else repr(x)
+
+
 class Node(object):
 
     """
@@ -249,7 +253,8 @@ class Node(object):
     def _repr(self):
         # Quick and dirty to get us started
         opname = type(self).__name__
-        pprint_args = [repr(x) for x in self.args]
+        pprint_args = [x._repr() if isinstance(x, Expr) else repr(x)
+                       for x in self.args]
         return '%s(%s)' % (opname, ', '.join(pprint_args))
 
     def flat_args(self):
@@ -303,15 +308,15 @@ class ValueNode(Node):
 
     def _ensure_value(self, expr):
         if not isinstance(expr, ValueExpr):
-            raise TypeError('Must be a value, got: %s' % repr(expr))
+            raise TypeError('Must be a value, got: %s' % _safe_repr(expr))
 
     def _ensure_array(self, expr):
         if not isinstance(expr, ArrayExpr):
-            raise TypeError('Must be an array, got: %s' % repr(expr))
+            raise TypeError('Must be an array, got: %s' % _safe_repr(expr))
 
     def _ensure_scalar(self, expr):
         if not isinstance(expr, ScalarExpr):
-            raise TypeError('Must be a scalar, got: %s' % repr(expr))
+            raise TypeError('Must be a scalar, got: %s' % _safe_repr(expr))
 
     def root_tables(self):
         return self.arg._root_tables()

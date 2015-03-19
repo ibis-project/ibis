@@ -18,7 +18,7 @@ from ibis.common import RelationError, ExpressionError
 from ibis.expr.types import (Node,
                              ValueExpr, ScalarExpr, ArrayExpr, TableExpr,
                              ArrayNode, TableNode, ValueNode,
-                             HasSchema)
+                             HasSchema, _safe_repr)
 import ibis.expr.types as ir
 
 import ibis.util as util
@@ -1135,7 +1135,7 @@ class SortKey(object):
         # Temporary
         rows = ['Sort key:',
                 '  ascending: {!s}'.format(self.ascending),
-                util.indent(repr(self.expr), 2)]
+                util.indent(_safe_repr(self.expr), 2)]
         return '\n'.join(rows)
 
     def equals(self, other):
@@ -1181,7 +1181,8 @@ class Projection(ir.BlockingTableNode, HasSchema):
                 try:
                     name = expr.get_name()
                 except NotImplementedError:
-                    raise ValueError("Expression is unnamed: %s" % repr(expr))
+                    raise ValueError("Expression is unnamed: %s" %
+                                     _safe_repr(expr))
                 names.append(name)
                 types.append(expr.type())
             elif is_table(expr):
@@ -1254,17 +1255,17 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
         for expr in self.agg_exprs:
             if not is_scalar(expr) or not expr.is_reduction():
                 raise TypeError('Passed a non-aggregate expression: %s' %
-                                repr(expr))
+                                _safe_repr(expr))
 
         for expr in self.having:
             if not isinstance(expr, ir.BooleanScalar):
                 raise ExpressionError('Having clause must be boolean '
-                                      'expression, was: {!r}'
-                                      .format(expr))
+                                      'expression, was: {!s}'
+                                      .format(_safe_repr(expr)))
             if not is_scalar(expr) or not expr.is_reduction():
                 raise ExpressionError('Having clause must contain a '
-                                      'reduction was: {!r}'
-                                      .format(expr))
+                                      'reduction was: {!s}'
+                                      .format(_safe_repr(expr)))
 
         # All non-scalar refs originate from the input table
         all_exprs = self.agg_exprs + self.by + self.having
