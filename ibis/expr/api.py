@@ -397,8 +397,45 @@ _add_methods(TimestampValue, _timestamp_value_methods)
 #----------------------------------------------------------------------
 # Table API
 
-def join(left, right, predicates=(), prefixes=None, how='inner'):
-    pass
+_join_classes = {
+    'inner': _ops.InnerJoin,
+    'left': _ops.LeftJoin,
+    'outer': _ops.OuterJoin,
+    'left_semi': _ops.LeftSemiJoin,
+    'semi': _ops.LeftSemiJoin,
+    'anti': _ops.LeftAntiJoin,
+    'cross': _ops.CrossJoin
+}
+
+
+def join(left, right, predicates=(), how='inner'):
+    """
+    Perform a relational join between two tables. Does not resolve resulting
+    table schema.
+
+    Parameters
+    ----------
+    left : TableExpr
+    right : TableExpr
+    predicates : join expression(s)
+    how : string, default 'inner'
+      - 'inner': inner join
+      - 'left': left join
+      - 'outer': full outer join
+      - 'semi' or 'left_semi': left semi join
+      - 'anti': anti join
+
+    Returns
+    -------
+    joined : TableExpr
+      Note, schema is not materialized yet
+    """
+    klass = _join_classes[how.lower()]
+    if isinstance(predicates, Expr):
+        predicates = _L.unwrap_ands(predicates)
+
+    op = klass(left, right, predicates)
+    return TableExpr(op)
 
 
 def cross_join(left, right, prefixes=None):
@@ -409,27 +446,26 @@ def cross_join(left, right, prefixes=None):
     return TableExpr(op)
 
 
-def _regular_join_method(name, klass, doc=None):
-    def f(self, other, predicates=(), prefixes=None):
-        if isinstance(predicates, Expr):
-            predicates = _L.unwrap_ands(predicates)
-
-        op = klass(self, other, predicates)
-        return TableExpr(op)
+def _regular_join_method(name, how, doc=None):
+    def f(self, other, predicates=()):
+        return self.join(other, predicates, how=how)
     if doc:
         f.__doc__ = doc
+    else:
+        # XXX
+        f.__doc__ = join.__doc__
     f.__name__ = name
-
     return f
 
 
 _table_methods = dict(
+    join=join,
     cross_join=cross_join,
-    inner_join=_regular_join_method('inner_join', _ops.InnerJoin),
-    left_join=_regular_join_method('left_join', _ops.LeftJoin),
-    outer_join=_regular_join_method('outer_join', _ops.OuterJoin),
-    semi_join=_regular_join_method('semi_join', _ops.LeftSemiJoin),
-    anti_join=_regular_join_method('anti_join', _ops.LeftAntiJoin),
+    inner_join=_regular_join_method('inner_join', 'inner'),
+    left_join=_regular_join_method('left_join', 'left'),
+    outer_join=_regular_join_method('outer_join', 'outer'),
+    semi_join=_regular_join_method('semi_join', 'semi'),
+    anti_join=_regular_join_method('anti_join', 'anti')
 )
 
 
