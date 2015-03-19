@@ -188,6 +188,28 @@ def cast(arg, target_type):
         return op.to_expr()
 
 
+def value_counts(arg, value_name=None, metric_name='count'):
+    """
+    Compute a frequency table for this value expression
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    counts : TableExpr
+      Aggregated table
+    """
+    base = _L.find_base_table(arg)
+    metric = base.count().name(metric_name)
+
+    if value_name is not None:
+        # Expression may require a name
+        arg = arg.name(value_name)
+
+    return base.group_by(arg).aggregate(metric)
+
+
 _generic_value_methods = dict(
     cast=cast,
     isnull=_unary_op('isnull', _ops.IsNull),
@@ -213,7 +235,8 @@ _generic_value_methods = dict(
 )
 
 _generic_array_methods = dict(
-    count=_unary_op('count', _count)
+    count=_unary_op('count', _count),
+    value_counts=value_counts
 )
 
 

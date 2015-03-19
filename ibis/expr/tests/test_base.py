@@ -1164,6 +1164,21 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
                     .aggregate([self.table.count().name('foo')]))
         assert result.equals(expected)
 
+    def test_value_counts_convenience(self):
+        # #152
+        result = self.table.g.value_counts()
+        expected = (self.table.group_by('g')
+                    .aggregate(self.table.count().name('count')))
+
+        assert result.equals(expected)
+
+        expr = self.table.f + 1
+        name = 'arg'
+        result = expr.value_counts(value_name=name)
+        expected = (self.table.group_by(expr.name(name))
+                    .aggregate(self.table.count().name('count')))
+        assert result.equals(expected)
+
 
 class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 
