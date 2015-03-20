@@ -186,6 +186,25 @@ class ImpalaConnection(SQLConnection):
         query = statement.compile()
         self._execute(query)
 
+    def cache_table(self, table_name, database=None, pool='default'):
+        """
+        Caches a table in cluster memory in the given pool.
+
+        Parameters
+        ----------
+        table_name : string
+        database : string default None (optional)
+        pool : string, default 'default'
+           The name of the pool in which to cache the table
+
+        Examples
+        --------
+        con.cache_table('my_table', database='operations', pool='op_4GB_pool')
+        """
+        statement = ddl.CacheTable(table_name, database=database, pool=pool)
+        query = statement.compile()
+        self._execute(query)
+
     def _get_table_schema(self, name):
         query = 'SELECT * FROM {} LIMIT 0'.format(name)
         return self._get_schema_using_query(query)

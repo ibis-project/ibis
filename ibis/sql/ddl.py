@@ -501,6 +501,19 @@ class DropTable(DDLStatement):
         return drop_line
 
 
+class CacheTable(DDLStatement):
+
+    def __init__(self, table_name, database=None, pool='default'):
+        self.table_name = table_name
+        self.database = database
+        self.pool = pool
+
+    def compile(self):
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+        cache_line = 'ALTER TABLE {} SET CACHED IN \'{}\''.format(scoped_name, self.pool)
+        return cache_line
+
+
 def _join_not_none(sep, pieces):
     pieces = [x for x in pieces if x is not None]
     return sep.join(pieces)

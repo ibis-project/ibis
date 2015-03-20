@@ -1355,6 +1355,20 @@ class TestDropTable(unittest.TestCase):
         assert query == expected
 
 
+class TestCacheTable(unittest.TestCase):
+
+    def test_pool_name(self):
+        statement = ddl.CacheTable('foo', database='bar')
+        query = statement.compile()
+        expected = "ALTER TABLE bar.foo SET CACHED IN 'default'"
+        assert query == expected
+
+        statement = ddl.CacheTable('foo', database='bar', pool='my_pool')
+        query = statement.compile()
+        expected = "ALTER TABLE bar.foo SET CACHED IN 'my_pool'"
+        assert query == expected
+
+
 class TestCTAS(unittest.TestCase):
 
     def setUp(self):
