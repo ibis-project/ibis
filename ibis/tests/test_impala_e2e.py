@@ -137,6 +137,39 @@ FROM tpch.lineitem li
         finally:
             self._ensure_drop(table_name, database='functional')
 
+    def test_tpch_self_join_failure(self):
+        region = self.con.table('tpch.region')
+        nation = self.con.table('tpch.nation')
+        customer = self.con.table('tpch.customer')
+        orders = self.con.table('tpch.orders')
+
+        fields_of_interest = [
+            region.r_name.name('region'),
+            nation.n_name.name('nation'),
+            orders.o_totalprice.name('amount'),
+            orders.o_orderdate.cast('timestamp').name('odate')]
+
+        joined_all = (
+            region.join(nation, region.r_regionkey == nation.n_regionkey)
+            .join(customer, customer.c_nationkey == nation.n_nationkey)
+            .join(orders, orders.o_custkey == customer.c_custkey)
+            [fields_of_interest])
+
+        year = joined_all.odate.year().name('year')
+        total = joined_all.amount.sum().cast('double').name('total')
+        annual_amounts = (joined_all
+                          .group_by(['region', year])
+                          .aggregate(total))
+
+        current = annual_amounts
+        prior = annual_amounts.view()
+
+        yoy_change = (current.total - prior.total).name('yoy_change')
+        yoy = (current.join(prior, current.year == (prior.year - 1))
+               [current.region, current.year, yoy_change])
+
+        yoy.execute()
+
     def _ensure_drop(self, table_name, database=None):
         self.con.drop_table(table_name, database=database,
                             must_exist=False)

@@ -93,6 +93,17 @@ class MockConnection(SQLConnection):
             ('c_mktsegment', 'string'),
             ('c_comment', 'string')
         ],
+        'tpch_orders': [
+            ('o_orderkey', 'int64'),
+            ('o_custkey', 'int64'),
+            ('o_orderstatus', 'string'),
+            ('o_totalprice', 'decimal(12,2)'),
+            ('o_orderdate', 'string'),
+            ('o_orderpriority', 'string'),
+            ('o_clerk', 'string'),
+            ('o_shippriority', 'int32'),
+            ('o_comment', 'string')
+        ],
         'functional_alltypes': [
             ('id', 'int32'),
             ('bool_col', 'boolean'),

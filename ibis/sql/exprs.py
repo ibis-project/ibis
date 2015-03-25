@@ -37,7 +37,8 @@ _sql_type_names = {
     'float': 'float',
     'double': 'double',
     'string': 'string',
-    'boolean': 'boolean'
+    'boolean': 'boolean',
+    'timestamp': 'timestamp'
 }
 
 

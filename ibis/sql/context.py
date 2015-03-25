@@ -75,7 +75,8 @@ class QueryContext(object):
         if isinstance(op, ops.SQLQueryResult):
             result = op.query
         else:
-            result = to_sql(expr, context=self.subcontext())
+            sub_ctx = self.subcontext()
+            result = to_sql(expr, context=sub_ctx)
         this.subquery_memo[key] = result
         return result
 
@@ -130,9 +131,13 @@ class QueryContext(object):
         key = self._get_table_key(table_expr)
 
         top = self.top_context
-        if self is top:
-            if self.is_extracted(table_expr):
-                return top.table_aliases.get(key)
+
+        if self.is_extracted(table_expr):
+            return top.table_aliases.get(key)
+
+        # if self is top:
+        #     if self.is_extracted(table_expr):
+        #         return top.table_aliases.get(key)
 
         return self.table_aliases.get(key)
 

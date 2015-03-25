@@ -492,13 +492,21 @@ class _ExtractSubqueries(object):
 
         # Keep track of table expressions that we find in the query structure
         self.observed_exprs = {}
+
+        # Maintain order of observation
+        self.observed_keys = []
+
         self.expr_counts = defaultdict(lambda: 0)
 
     def get_result(self):
         self.visit(self.query.table_set)
 
         to_extract = []
-        for k, v in self.expr_counts.items():
+
+        # Read them inside-out, to avoid nested dependency issues
+        for k in reversed(self.observed_keys):
+            v = self.expr_counts[k]
+
             if self.greedy or v > 1:
                 to_extract.append(self.observed_exprs[k])
 
@@ -506,6 +514,10 @@ class _ExtractSubqueries(object):
 
     def observe(self, expr):
         key = id(expr.op())
+
+        if key not in self.expr_counts:
+            self.observed_keys.append(key)
+
         self.observed_exprs[key] = expr
         self.expr_counts[key] += 1
 

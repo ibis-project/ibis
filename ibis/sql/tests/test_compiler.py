@@ -1084,6 +1084,38 @@ FROM t0
 GROUP BY 1"""
         assert result == expected
 
+    def test_tpch_self_join_failure(self):
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+        customer = self.con.table('tpch_customer')
+        orders = self.con.table('tpch_orders')
+
+        fields_of_interest = [
+            region.r_name.name('region'),
+            nation.n_name.name('nation'),
+            orders.o_totalprice.name('amount'),
+            orders.o_orderdate.cast('timestamp').name('odate')]
+
+        joined_all = (
+            region.join(nation, region.r_regionkey == nation.n_regionkey)
+            .join(customer, customer.c_nationkey == nation.n_nationkey)
+            .join(orders, orders.o_custkey == customer.c_custkey)
+            [fields_of_interest])
+
+        year = joined_all.odate.year().name('year')
+        total = joined_all.amount.sum().cast('double').name('total')
+        annual_amounts = (joined_all
+                          .group_by(['region', year])
+                          .aggregate(total))
+
+        current = annual_amounts
+        prior = annual_amounts.view()
+
+        yoy_change = (current.total - prior.total).name('yoy_change')
+        yoy = (current.join(prior, current.year == (prior.year - 1))
+               [current.region, current.year, yoy_change])
+        to_sql(yoy)
+
     def test_extract_subquery_nested_lower(self):
         # We may have a join between two tables requiring subqueries, and
         # buried inside these there may be a common subquery. Let's test that

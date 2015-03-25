@@ -166,7 +166,8 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
             (a.cast('double'), 'CAST(a AS double)'),
             (a.cast('string'), 'CAST(a AS string)'),
             (d.cast('int8'), 'CAST(d AS tinyint)'),
-            (g.cast('double'), 'CAST(g AS double)')
+            (g.cast('double'), 'CAST(g AS double)'),
+            (g.cast('timestamp'), 'CAST(g AS timestamp)')
         ]
         self._check_expr_cases(cases)
 
