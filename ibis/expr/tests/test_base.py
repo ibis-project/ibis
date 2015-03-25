@@ -564,6 +564,13 @@ class TestDistinct(unittest.TestCase):
         assert result.equals(expected)
         assert isinstance(result.op(), ops.CountDistinct)
 
+    def test_distinct_count_numeric_types(self):
+        table = self.table
+        metric = (table.bigint_col.distinct().count()
+                  .name('unique_bigints'))
+
+        table.group_by('string_col').aggregate(metric)
+
     def test_nunique(self):
         expr = self.table.string_col.nunique()
         assert isinstance(expr.op(), ops.CountDistinct)

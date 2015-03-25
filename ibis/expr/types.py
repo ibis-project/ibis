@@ -1088,10 +1088,7 @@ class TimestampValue(AnyValue):
 
 
 class NumericArray(ArrayExpr, NumericValue):
-
-    def count(self):
-        # TODO: should actually get the parent table expression here
-        return _ops().Count(self).to_expr()
+    pass
 
 
 class NullScalar(NullValue, ScalarExpr):
