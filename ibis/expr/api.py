@@ -188,6 +188,26 @@ def cast(arg, target_type):
         return op.to_expr()
 
 
+def fillna(arg, fill_value):
+    """
+    Replace any null values with the indicated fill value
+
+    Parameters
+    ----------
+    fill_value : scalar / array value or expression
+
+    Examples
+    --------
+    result = table.col.fillna(5)
+    result2 = table.col.fillna(table.other_col * 3)
+
+    Returns
+    -------
+    filled : type of caller
+    """
+    return arg.isnull().ifelse(fill_value, arg)
+
+
 def value_counts(arg, value_name=None, metric_name='count'):
     """
     Compute a frequency table for this value expression
@@ -212,6 +232,7 @@ def value_counts(arg, value_name=None, metric_name='count'):
 
 _generic_value_methods = dict(
     cast=cast,
+    fillna=fillna,
     isnull=_unary_op('isnull', _ops.IsNull),
     notnull=_unary_op('notnull', _ops.NotNull),
     __add__=_binop_expr('__add__', _ops.Add),

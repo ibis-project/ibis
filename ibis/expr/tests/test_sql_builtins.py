@@ -51,6 +51,20 @@ class TestBuiltins(unittest.TestCase):
         # Impala upconverts all ints to bigint. Hmm.
         assert type(iresult) == ir.Int64Array
 
+    def test_fillna(self):
+        result = self.alltypes.double_col.fillna(5)
+        assert isinstance(result, ir.DoubleArray)
+
+        expected = (self.alltypes.double_col.isnull()
+                    .ifelse(5, self.alltypes.double_col))
+        assert result.equals(expected)
+
+        result = self.alltypes.bool_col.fillna(True)
+        assert isinstance(result, ir.BooleanArray)
+
+        result = self.alltypes.int_col.fillna(self.alltypes.bigint_col)
+        assert isinstance(result, ir.Int64Array)
+
     def test_ceil_floor(self):
         cresult = self.alltypes.double_col.ceil()
         fresult = self.alltypes.double_col.floor()
