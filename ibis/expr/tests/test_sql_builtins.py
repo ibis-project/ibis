@@ -41,6 +41,16 @@ class TestBuiltins(unittest.TestCase):
         expr = self.lineitem.l_extendedprice
         self._check_unary_op(expr, fname, op, type(expr))
 
+    def test_zeroifnull(self):
+        dresult = self.alltypes.double_col.zeroifnull()
+        iresult = self.alltypes.int_col.zeroifnull()
+
+        assert type(dresult.op()) == ops.ZeroIfNull
+        assert type(dresult) == ir.DoubleArray
+
+        # Impala upconverts all ints to bigint. Hmm.
+        assert type(iresult) == ir.Int64Array
+
     def test_ceil_floor(self):
         cresult = self.alltypes.double_col.ceil()
         fresult = self.alltypes.double_col.floor()

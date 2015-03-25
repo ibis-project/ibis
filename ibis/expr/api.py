@@ -294,7 +294,8 @@ _numeric_value_methods = dict(
     ln=_unary_op('ln', _ops.Ln),
     log2=_unary_op('log2', _ops.Log2),
     log10=_unary_op('log10', _ops.Log10),
-    round=round
+    round=round,
+    zeroifnull=_unary_op('zeroifnull', _ops.ZeroIfNull),
 )
 
 

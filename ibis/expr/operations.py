@@ -320,6 +320,20 @@ class NotNull(UnaryOp):
         return _shape_like(self.arg, 'boolean')
 
 
+class ZeroIfNull(UnaryOp):
+
+    def output_type(self):
+        if isinstance(self.arg, ir.DecimalValue):
+            return self.arg._factory
+        elif isinstance(self.arg, ir.FloatingValue):
+            # Impala upcasts float to double in this op
+            return _shape_like(self.arg, 'double')
+        elif isinstance(self.arg, ir.IntegerValue):
+            return _shape_like(self.arg, 'int64')
+        else:
+            raise NotImplementedError
+
+
 def _shape_like(arg, out_type):
     if isinstance(arg, ir.ScalarExpr):
         return ir.scalar_type(out_type)

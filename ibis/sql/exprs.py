@@ -419,6 +419,8 @@ _unary_ops = {
     ops.IsNull: _is_null,
     ops.Negate: _negate,
 
+    ops.ZeroIfNull: _unary_op('zeroifnull'),
+
     ops.Abs: _unary_op('abs'),
     ops.Ceil: _unary_op('ceil'),
     ops.Floor: _unary_op('floor'),
