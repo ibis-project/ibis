@@ -1085,6 +1085,8 @@ GROUP BY 1"""
         assert result == expected
 
     def test_tpch_self_join_failure(self):
+        # duplicating the integration test here
+
         region = self.con.table('tpch_region')
         nation = self.con.table('tpch_nation')
         customer = self.con.table('tpch_customer')

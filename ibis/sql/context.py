@@ -135,10 +135,6 @@ class QueryContext(object):
         if self.is_extracted(table_expr):
             return top.table_aliases.get(key)
 
-        # if self is top:
-        #     if self.is_extracted(table_expr):
-        #         return top.table_aliases.get(key)
-
         return self.table_aliases.get(key)
 
     def subcontext(self):

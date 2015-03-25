@@ -165,9 +165,11 @@ FROM tpch.lineitem li
         prior = annual_amounts.view()
 
         yoy_change = (current.total - prior.total).name('yoy_change')
-        yoy = (current.join(prior, current.year == (prior.year - 1))
+        yoy = (current.join(prior, ((current.region == prior.region) &
+                                    (current.year == (prior.year - 1))))
                [current.region, current.year, yoy_change])
 
+        # it works!
         yoy.execute()
 
     def _ensure_drop(self, table_name, database=None):
