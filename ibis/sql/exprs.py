@@ -24,6 +24,7 @@ import ibis.expr.analysis as L
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
+import ibis.sql.identifiers as identifiers
 import ibis.util as util
 
 #----------------------------------------------------------------------
@@ -181,8 +182,8 @@ def _string_literal_format(expr):
     return "'{!s}'".format(value.replace("'", "\\'"))
 
 
-def _quote_field(name, quotechar='`'):
-    if name.count(' '):
+def quote_identifier(name, quotechar='`'):
+    if name.count(' ') or name in identifiers.impala_identifiers:
         return '{0}{1}{0}'.format(quotechar, name)
     else:
         return name
@@ -305,7 +306,7 @@ def _exists_subquery(translator, expr):
 
 def _table_column(translator, expr):
     op = expr.op()
-    field_name = _quote_field(op.name)
+    field_name = quote_identifier(op.name)
 
     table = op.table
     ctx = translator.context
@@ -545,7 +546,7 @@ class ExprTranslator(object):
         if self._needs_name(self.expr):
             # TODO: this could fail in various ways
             name = self.expr.get_name()
-            translated = _name_expr(translated, _quote_field(name))
+            translated = _name_expr(translated, quote_identifier(name))
         return translated
 
     def _needs_name(self, expr):

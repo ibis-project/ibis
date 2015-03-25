@@ -532,7 +532,7 @@ FROM star1 t0
         expected = """SELECT t0.*, t1.value3, t1.value4
 FROM (
   SELECT t2.*, t3.value2
-  FROM first t2
+  FROM `first` t2
     INNER JOIN second t3
       ON t2.key1 = t3.key1
 ) t0
@@ -836,7 +836,7 @@ FROM (
             ('foo', 'int32'),
             ('bar', 'int64'),
             ('value', 'double')
-        ], name='table')
+        ], name='tbl')
 
         # Cases where we project in both cases using the base table reference
         f1 = (table['foo'] + table['bar']).name('baz')
@@ -860,10 +860,10 @@ FROM (
         assert table3_filtered.equals(expected2)
 
         ex_sql = """SELECT *, foo + bar AS baz, foo * 2 AS qux
-FROM table"""
+FROM tbl"""
 
         ex_sql2 = """SELECT *, foo + bar AS baz, foo * 2 AS qux
-FROM table
+FROM tbl
 WHERE value > 0"""
 
         table3_sql = to_sql(table3)
@@ -1195,17 +1195,17 @@ WHERE f > (
             ('city', 'string'),
             ('v1', 'double'),
             ('v2', 'double'),
-        ], 'table')
+        ], 'tbl')
 
         what = table.city.topk(10, by=table.v2.mean())
         filtered = table[what]
 
         query = to_sql(filtered)
         expected = """SELECT t0.*
-FROM table t0
+FROM tbl t0
   LEFT SEMI JOIN (
     SELECT city, avg(v2) AS __tmp__
-    FROM table
+    FROM tbl
     GROUP BY 1
     ORDER BY __tmp__ DESC
     LIMIT 10
@@ -1219,10 +1219,10 @@ FROM table t0
         filtered2 = table[what]
         query = to_sql(filtered2)
         expected = """SELECT t0.*
-FROM table t0
+FROM tbl t0
   LEFT SEMI JOIN (
     SELECT city, count(city) AS __tmp__
-    FROM table
+    FROM tbl
     GROUP BY 1
     ORDER BY __tmp__ DESC
     LIMIT 10
@@ -1298,6 +1298,19 @@ FROM customer t0
     ELSE NULL
   END AS col2, *
 FROM alltypes"""
+        assert result == expected
+
+    def test_identifier_quoting(self):
+        data = api.table([
+            ('date', 'int32'),
+            ('explain', 'string')
+        ], 'table')
+
+        expr = data[data.date.name('else'), data.explain.name('join')]
+
+        result = to_sql(expr)
+        expected = """SELECT `date` AS `else`, `explain` AS `join`
+FROM `table`"""
         assert result == expected
 
 

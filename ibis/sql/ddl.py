@@ -14,7 +14,7 @@
 
 from io import BytesIO
 
-from ibis.sql.exprs import ExprTranslator
+from ibis.sql.exprs import ExprTranslator, quote_identifier
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.common as com
@@ -395,7 +395,7 @@ def _format_table(ctx, expr, indent=2):
         if name is None:
             raise com.RelationError('Table did not have a name: {!r}'
                                     .format(expr))
-        result = name
+        result = quote_identifier(name)
         is_subquery = False
     else:
         # A subquery

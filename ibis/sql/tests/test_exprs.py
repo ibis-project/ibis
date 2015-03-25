@@ -96,6 +96,12 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         table = api.table(schema)
         self._translate(table['has a space'], '`has a space`')
 
+    def test_identifier_quoting(self):
+        schema = [('date', 'double'), ('table', 'string')]
+        table = api.table(schema)
+        self._translate(table['date'], '`date`')
+        self._translate(table['table'], '`table`')
+
     def test_named_expressions(self):
         a, b, g = self.table.get_columns(['a', 'b', 'g'])
 
