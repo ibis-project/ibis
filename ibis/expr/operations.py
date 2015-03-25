@@ -1429,7 +1429,7 @@ class Contains(ArrayNode):
 
     def root_tables(self):
         exprs = [self.value, self.options]
-        return util.distinct_roots(*exprs)
+        return ir.distinct_roots(*exprs)
 
     def output_type(self):
         all_args = [self.value]

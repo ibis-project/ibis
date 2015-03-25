@@ -1179,6 +1179,12 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
                     .aggregate(self.table.count().name('count')))
         assert result.equals(expected)
 
+    def test_isin_value_counts(self):
+        # #157, this code path was untested before
+        bool_clause = self.table.g.notin(['1', '4', '7'])
+        # it works!
+        bool_clause.name('notin').value_counts()
+
 
 class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 
