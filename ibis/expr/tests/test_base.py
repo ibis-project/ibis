@@ -243,11 +243,6 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         self.assertRaises(com.IntegrityError, self.table.projection,
                           [self.table.c, self.table.c])
 
-    def test_projection_unary_name_passthrough(self):
-        # Can fix this later if we add different default names
-        proj = self.table[[self.table['a'].log()]]
-        assert proj.schema().names == ['a']
-
     def test_projection_invalid_root(self):
         schema1 = {
             'foo': 'double',
@@ -289,7 +284,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert proj.schema().names == ex_names
 
         # cannot pass an invalid table expression
-        t2 = t.aggregate([t['a'].sum()], by=['g'])
+        t2 = t.aggregate([t['a'].sum().name('sum(a)')], by=['g'])
         self.assertRaises(RelationError, t.__getitem__, [t2])
 
         # TODO: there may be some ways this can be invalid
@@ -607,7 +602,8 @@ class TestExprFormatting(unittest.TestCase):
         table = self.table
 
         agg_expr = (table['c'].sum() / table['c'].mean() - 1).name('analysis')
-        agg_exprs = [table['a'].sum(), table['b'].mean(), agg_expr]
+        agg_exprs = [table['a'].sum().name('sum(a)'),
+                     table['b'].mean().name('mean(b)'), agg_expr]
 
         result = table.aggregate(agg_exprs, by=['g'])
 
@@ -1043,8 +1039,6 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
             assert isinstance(result, ex_class)
             assert isinstance(result.op(), ops.Sum)
 
-            assert result.get_name() == c
-
         # Impala gives double for all floating point types
         ex_class = api.DoubleScalar
         for c in self.float_cols:
@@ -1060,8 +1054,8 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
             assert isinstance(result.op(), ops.Mean)
 
     def test_aggregate_no_keys(self):
-        agg_exprs = [self.table['a'].sum(),
-                     self.table['c'].mean()]
+        agg_exprs = [self.table['a'].sum().name('sum(a)'),
+                     self.table['c'].mean().name('mean(c)')]
 
         # A TableExpr, which in SQL at least will yield a table with a single
         # row
@@ -1069,8 +1063,8 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         assert isinstance(result, TableExpr)
 
     def test_aggregate_keys_basic(self):
-        agg_exprs = [self.table['a'].sum(),
-                     self.table['c'].mean()]
+        agg_exprs = [self.table['a'].sum().name('sum(a)'),
+                     self.table['c'].mean().name('mean(c)')]
 
         # A TableExpr, which in SQL at least will yield a table with a single
         # row
@@ -1180,13 +1174,6 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
 
         assert result.equals(expected)
 
-        expr = self.table.f + 1
-        name = 'arg'
-        result = expr.value_counts(value_name=name)
-        expected = (self.table.group_by(expr.name(name))
-                    .aggregate(self.table.count().name('count')))
-        assert result.equals(expected)
-
     def test_isin_value_counts(self):
         # #157, this code path was untested before
         bool_clause = self.table.g.notin(['1', '4', '7'])
@@ -1195,8 +1182,16 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
 
     def test_value_counts_unnamed_expr(self):
         nation = self.con.table('tpch_nation')
+
+        expr = nation.n_name.lower().value_counts()
+        expected = nation.n_name.lower().name('unnamed').value_counts()
+        assert expr.equals(expected)
+
+    def test_aggregate_unnamed_expr(self):
+        nation = self.con.table('tpch_nation')
         expr = nation.n_name.lower().left(1)
-        self.assertRaises(com.ExpressionError, expr.value_counts)
+        self.assertRaises(com.ExpressionError, nation.group_by(expr).aggregate,
+                          nation.count().name('metric'))
 
 
 class TestJoinsUnions(BasicTestCase, unittest.TestCase):

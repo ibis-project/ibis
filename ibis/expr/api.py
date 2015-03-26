@@ -32,6 +32,8 @@ from ibis.expr.types import (Schema, Expr,
 
 from ibis.expr.operations import (as_value_expr, table, literal, null,
                                   value_list, desc)
+
+import ibis.common as _com
 import ibis.expr.analysis as _L
 import ibis.expr.operations as _ops
 
@@ -208,7 +210,7 @@ def fillna(arg, fill_value):
     return arg.isnull().ifelse(fill_value, arg)
 
 
-def value_counts(arg, value_name=None, metric_name='count'):
+def value_counts(arg, metric_name='count'):
     """
     Compute a frequency table for this value expression
 
@@ -223,9 +225,10 @@ def value_counts(arg, value_name=None, metric_name='count'):
     base = _L.find_base_table(arg)
     metric = base.count().name(metric_name)
 
-    if value_name is not None:
-        # Expression may require a name
-        arg = arg.name(value_name)
+    try:
+        arg.get_name()
+    except _com.ExpressionError:
+        arg = arg.name('unnamed')
 
     return base.group_by(arg).aggregate(metric)
 

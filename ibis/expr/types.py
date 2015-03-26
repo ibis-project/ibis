@@ -360,9 +360,6 @@ class Reduction(ArrayNode):
     def root_tables(self):
         return self.arg._root_tables()
 
-    def resolve_name(self):
-        return self.arg.get_name()
-
 
 class BlockingTableNode(TableNode):
     # Try to represent the fact that whatever lies here is a semantically
@@ -393,6 +390,15 @@ class ValueExpr(Expr):
     def __init__(self, arg, name=None):
         Expr.__init__(self, arg)
         self._name = name
+
+    def equals(self, other):
+        if not isinstance(other, ValueExpr):
+            return False
+
+        if self._name != other._name:
+            return False
+
+        return Expr.equals(self, other)
 
     def type(self):
         return self._typename

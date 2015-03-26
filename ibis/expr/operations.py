@@ -265,9 +265,6 @@ class UnaryOp(ValueNode):
         self.arg = arg
         ValueNode.__init__(self, [arg])
 
-    def resolve_name(self):
-        return self.arg.get_name()
-
 
 class Cast(ValueNode):
 
