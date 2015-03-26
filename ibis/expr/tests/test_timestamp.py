@@ -14,6 +14,7 @@
 
 import unittest
 
+import ibis.common as com
 import ibis.expr.api as api
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -54,6 +55,13 @@ class TestTimestamp(unittest.TestCase):
             result = getattr(self.col, attr)()
             assert isinstance(result, ex_type)
             assert isinstance(result.op(), ex_op)
+
+    def test_extract_no_propagate_name(self):
+        # see #146
+        table = self.con.table('functional_alltypes')
+
+        expr = table.timestamp_col.hour()
+        self.assertRaises(com.ExpressionError, expr.get_name)
 
     def test_now(self):
         result = api.now()

@@ -325,7 +325,7 @@ class ValueNode(Node):
         raise NotImplementedError
 
     def resolve_name(self):
-        raise com.ExpressionError('Expression is not named')
+        raise com.ExpressionError('Expression is not named: %s' % repr(self))
 
 
 class ArrayNode(ValueNode):
