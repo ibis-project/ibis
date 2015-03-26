@@ -1201,11 +1201,7 @@ class Projection(ir.BlockingTableNode, HasSchema):
 
             validator.assert_valid(expr)
             if isinstance(expr, ValueExpr):
-                try:
-                    name = expr.get_name()
-                except NotImplementedError:
-                    raise ValueError("Expression is unnamed: %s" %
-                                     _safe_repr(expr))
+                name = expr.get_name()
                 names.append(name)
                 types.append(expr.type())
             elif is_table(expr):
@@ -1297,6 +1293,9 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
     def _result_schema(self):
         names = []
         types = []
+
+        # All exprs must be named
+
         for e in self.by + self.agg_exprs:
             names.append(e.get_name())
             types.append(e.type())

@@ -17,6 +17,7 @@ import operator
 import unittest
 
 from ibis.expr.types import ArrayExpr, TableExpr, RelationError
+from ibis.common import ExpressionError
 import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -235,7 +236,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert schema.types == ['double', 'double', 'string']
 
         # Test with unnamed expr
-        self.assertRaises(ValueError, self.table.projection,
+        self.assertRaises(ExpressionError, self.table.projection,
                           ['g', mean_diff])
 
     def test_projection_duplicate_names(self):
@@ -267,7 +268,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
             try:
                 table.select([table.bigint_col, ibis.literal(5)])
             except Exception as e:
-                assert 'unnamed' in e.message
+                assert 'named' in e.message
 
     def test_projection_of_aggregated(self):
         # Fully-formed aggregations "block"; in a projection, column
@@ -1191,6 +1192,11 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         bool_clause = self.table.g.notin(['1', '4', '7'])
         # it works!
         bool_clause.name('notin').value_counts()
+
+    def test_value_counts_unnamed_expr(self):
+        nation = self.con.table('tpch_nation')
+        expr = nation.n_name.lower().left(1)
+        self.assertRaises(com.ExpressionError, expr.value_counts)
 
 
 class TestJoinsUnions(BasicTestCase, unittest.TestCase):
