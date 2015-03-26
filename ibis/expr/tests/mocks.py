@@ -129,5 +129,8 @@ class MockConnection(SQLConnection):
 
     def execute(self, expr, default_limit=None):
         ast, expr = self._build_ast_ensure_limit(expr, default_limit)
+        for query in ast.queries:
+            query.compile()
+
         self.last_executed_expr = expr
         return None

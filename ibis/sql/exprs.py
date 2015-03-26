@@ -25,6 +25,7 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 import ibis.sql.identifiers as identifiers
+import ibis.common as com
 import ibis.util as util
 
 #----------------------------------------------------------------------
@@ -579,7 +580,7 @@ class ExprTranslator(object):
             formatter = _operation_registry[type(op)]
             return formatter(self, expr)
         else:
-            raise NotImplementedError('No translator rule for {0}'.format(op))
+            raise com.TranslationError('No translator rule for {0}'.format(op))
 
     def _trans_param(self, expr):
         raise NotImplementedError

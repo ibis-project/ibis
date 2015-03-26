@@ -176,8 +176,14 @@ class Expr(object):
     def __repr__(self):
         if config.options.interactive:
             limit = config.options.sql.default_limit
-            result = self.execute(default_limit=limit)
-            return repr(result)
+
+            try:
+                result = self.execute(default_limit=limit)
+                return repr(result)
+            except com.TranslationError:
+                output = ('Translation to backend failed, repr follows:\n%s'
+                          % self._repr())
+                return output
         else:
             return self._repr()
 

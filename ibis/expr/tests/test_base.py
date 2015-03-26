@@ -1636,4 +1636,5 @@ class TestInteractiveUse(unittest.TestCase):
         expr = table.string_col.topk(3)
 
         # it works!
-        repr(expr)
+        with config.option_context('interactive', True):
+            repr(expr)
