@@ -387,6 +387,17 @@ FROM (
 ) t0"""
         assert query == expected
 
+    def test_isnull_case_expr_rewrite_failure(self):
+        # #172, case expression that was not being properly converted into an
+        # aggregation
+        reduction = self.table.g.isnull().ifelse(1, 0).sum()
+
+        result = to_sql(reduction)
+        expected = """\
+SELECT sum(CASE WHEN g IS NULL THEN 1 ELSE 0 END) AS tmp
+FROM alltypes"""
+        assert result == expected
+
 
 class TestDataIngestWorkflows(unittest.TestCase):
 

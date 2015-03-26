@@ -538,7 +538,7 @@ def find_base_table(expr):
     if isinstance(expr, ir.TableExpr):
         return expr
 
-    for arg in expr.op().args:
+    for arg in expr.op().flat_args():
         if isinstance(arg, ir.Expr):
             r = find_base_table(arg)
             if isinstance(r, ir.TableExpr):
