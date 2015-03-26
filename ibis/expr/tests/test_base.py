@@ -1628,3 +1628,12 @@ class TestInteractiveUse(unittest.TestCase):
         result = self.con.last_executed_expr
         limit = config.options.sql.default_limit
         assert result.equals(table.limit(limit))
+
+    def test_interactive_non_compilable_repr_not_fail(self):
+        # #170
+        table = self.con.table('functional_alltypes')
+
+        expr = table.string_col.topk(3)
+
+        # it works!
+        repr(expr)

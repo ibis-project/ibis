@@ -555,10 +555,6 @@ def find_source_table(expr):
     first_tables = []
 
     def push_first(arg):
-        if isinstance(arg, (tuple, list)):
-            [push_first(x) for x in arg]
-            return
-
         if not isinstance(arg, ir.Expr):
             return
         if isinstance(arg, ir.TableExpr):
@@ -567,7 +563,7 @@ def find_source_table(expr):
             collect(arg.op())
 
     def collect(node):
-        for arg in node.args:
+        for arg in node.flat_args():
             push_first(arg)
 
     collect(node)
