@@ -331,6 +331,65 @@ class ZeroIfNull(UnaryOp):
             raise NotImplementedError
 
 
+class IfNull(UnaryOp):
+
+    def output_type(self):
+        pass
+
+
+class NullIf(UnaryOp):
+
+    def output_type(self):
+        pass
+
+
+def _coalesce_upcast(self):
+    # TODO: how much validation is necessary that the call is valid and can
+    # succeed?
+    first_value = self.args[0]
+
+    if isinstance(first_value, ir.IntegerValue):
+        out_type = 'int64'
+    elif isinstance(first_value, ir.FloatingValue):
+        out_type = 'double'
+    else:
+        out_type = first_value.type()
+
+    return _shape_like_args(self.args, out_type)
+
+
+class CoalesceLike(ValueNode):
+
+    def __init__(self, args):
+        if len(args) == 0:
+            raise ValueError('Must provide at least one value')
+
+        self.values = [as_value_expr(x) for x in args]
+        ValueNode.__init__(self, self.values)
+
+    # According to Impala documentation:
+    # Return type: same as the initial argument value, except that integer
+    # values are promoted to BIGINT and floating-point values are promoted to
+    # DOUBLE; use CAST() when inserting into a smaller numeric column
+
+    output_type = _coalesce_upcast
+
+    def root_tables(self):
+        return ir.distinct_roots(*self.values)
+
+
+class Coalesce(CoalesceLike):
+    pass
+
+
+class Greatest(CoalesceLike):
+    pass
+
+
+class Least(CoalesceLike):
+    pass
+
+
 def _shape_like(arg, out_type):
     if isinstance(arg, ir.ScalarExpr):
         return ir.scalar_type(out_type)
@@ -372,10 +431,30 @@ def _ceil_floor_output(self):
 
 class Ceil(UnaryOp):
 
+    """
+    Round up to the nearest integer value greater than or equal to this value
+
+    Returns
+    -------
+    ceiled : type depending on input
+      Decimal values: yield decimal
+      Other numeric values: yield integer (int32)
+    """
+
     output_type = _ceil_floor_output
 
 
 class Floor(UnaryOp):
+
+    """
+    Round down to the nearest integer value less than or equal to this value
+
+    Returns
+    -------
+    floored : type depending on input
+      Decimal values: yield decimal
+      Other numeric values: yield integer (int32)
+    """
 
     output_type = _ceil_floor_output
 

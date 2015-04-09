@@ -337,6 +337,14 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+def _coalesce_like(func_name):
+    def coalesce_like_formatter(translator, expr):
+        op = expr.op()
+        trans_args = [translator.translate(arg) for arg in op.args]
+        return '{}({})'.format(func_name, ', '.join(trans_args))
+    return coalesce_like_formatter
+
+
 def _substring(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
@@ -498,6 +506,10 @@ _other_ops = {
     ops.ValueList: _value_list,
 
     ops.Cast: _cast,
+
+    ops.Coalesce: _coalesce_like('coalesce'),
+    ops.Greatest: _coalesce_like('greatest'),
+    ops.Least: _coalesce_like('least'),
 
     ops.Between: _between,
     ops.Contains: _contains,

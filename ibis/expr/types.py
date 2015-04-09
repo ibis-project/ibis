@@ -1087,6 +1087,9 @@ class DecimalValue(NumericValue):
         self.precision = meta.precision
         self.scale = meta.scale
 
+    def type(self):
+        return DecimalType(self.precision, self.scale)
+
     @classmethod
     def _make_constructor(cls, meta):
         def constructor(arg, name=None):

@@ -20,6 +20,7 @@ import pandas as pd
 
 import ibis.config as config
 import ibis.connection as cnx
+import ibis.expr.api as api
 import ibis.expr.types as ir
 
 
@@ -136,6 +137,49 @@ FROM tpch.lineitem li
             raise
         finally:
             self._ensure_drop(table_name, database='functional')
+
+    def test_builtins_1(self):
+        table = self.con.table('functional.alltypes')
+
+        i4 = table.int_col
+        d = table.double_col
+
+        exprs = [
+            i4.zeroifnull(),
+
+            d.abs(),
+            d.cast('decimal(12, 2)'),
+            d.cast('int32'),
+            d.ceil(),
+            d.exp(),
+            d.isnull(),
+            d.fillna(0),
+            d.floor(),
+            d.log(),
+            d.ln(),
+            d.log2(),
+            d.log10(),
+            d.notnull(),
+            d.round(),
+            d.round(2),
+            d.sign(),
+            d.sqrt(),
+            d.zeroifnull(),
+
+            api.coalesce(table.int_col,
+                         api.null(),
+                         table.smallint_col,
+                         table.bigint_col, 5),
+            api.greatest(table.float_col,
+                         table.double_col, 5),
+            api.least(table.string_col, 'foo'),
+        ]
+
+        proj_exprs = [expr.name('e%d' % i)
+                      for i, expr in enumerate(exprs)]
+
+        projection = table[proj_exprs].limit(10)
+        projection.execute()
 
     def test_tpch_self_join_failure(self):
         region = self.con.table('tpch.region')

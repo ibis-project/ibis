@@ -210,6 +210,61 @@ def fillna(arg, fill_value):
     return arg.isnull().ifelse(fill_value, arg)
 
 
+def coalesce(*args):
+    """
+    Compute the first non-null value(s) from the passed arguments in
+    left-to-right order. This is also known as "combine_first" in pandas.
+
+    Parameters
+    ----------
+    *args : variable-length value list
+
+    Examples
+    --------
+    result = coalesce(expr1, expr2, 5)
+
+    Returns
+    -------
+    coalesced : type of first provided argument
+    """
+    return _ops.Coalesce(args).to_expr()
+
+
+def greatest(*args):
+    """
+    Compute the largest value (row-wise, if any arrays are present) among the
+    supplied arguments.
+    """
+    return _ops.Greatest(args).to_expr()
+
+
+def least(*args):
+    """
+    Compute the smallest value (row-wise, if any arrays are present) among the
+    supplied arguments.
+    """
+    return _ops.Least(args).to_expr()
+
+
+def where(boolean_expr, true_expr, false_null_expr):
+    """
+
+    Parameters
+    ----------
+    boolean_expr : BooleanValue (array or scalar)
+    true_expr : value
+      Values for each True value
+    false_null_expr : value
+      Values for False or NULL values
+
+    Returns
+    -------
+    result : arity depending on inputs
+      Type of true_expr used to determine output type
+    """
+    pass
+
+
 def value_counts(arg, metric_name='count'):
     """
     Compute a frequency table for this value expression

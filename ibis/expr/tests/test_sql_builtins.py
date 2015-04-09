@@ -127,3 +127,52 @@ class TestBuiltins(unittest.TestCase):
         result = getattr(expr, fname)()
         assert type(result.op()) == ex_op
         assert type(result) == ex_type
+
+
+class TestCoalesceLikeFunctions(unittest.TestCase):
+
+    def setUp(self):
+        self.table = api.table([
+            ('v1', 'decimal(12, 2)'),
+            ('v2', 'decimal(10, 4)'),
+            ('v3', 'int32'),
+            ('v4', 'int64'),
+            ('v5', 'float'),
+            ('v6', 'double'),
+            ('v7', 'string'),
+            ('v8', 'boolean')
+        ], 'testing')
+
+        self.functions = [api.coalesce, api.greatest, api.least]
+
+    def test_integer_promotions(self):
+        t = self.table
+
+        for f in self.functions:
+            expr = f(t.v3, t.v4)
+            assert isinstance(expr, ir.Int64Array)
+
+            expr = f(5, t.v3)
+            assert isinstance(expr, ir.Int64Array)
+
+            expr = f(5, 12)
+            assert isinstance(expr, ir.Int64Scalar)
+
+    def test_floats(self):
+        t = self.table
+
+        for f in self.functions:
+            expr = f(t.v5)
+            assert isinstance(expr, ir.DoubleArray)
+
+            expr = f(5.5, t.v5)
+            assert isinstance(expr, ir.DoubleArray)
+
+            expr = f(5.5, 5)
+            assert isinstance(expr, ir.DoubleScalar)
+
+    def test_bools(self):
+        pass
+
+    def test_decimal_promotions(self):
+        pass

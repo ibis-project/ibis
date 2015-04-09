@@ -366,6 +366,43 @@ WHERE g NOT IN ('foo', 'bar')"""
         assert result == expected
 
 
+class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('functional_alltypes')
+
+    def test_coalesce(self):
+        t = self.table
+        cases = [
+            (api.coalesce(t.string_col, 'foo'),
+             "coalesce(string_col, 'foo')"),
+            (api.coalesce(t.int_col, t.bigint_col),
+             'coalesce(int_col, bigint_col)'),
+        ]
+        self._check_expr_cases(cases)
+
+    def test_greatest(self):
+        t = self.table
+        cases = [
+            (api.greatest(t.string_col, 'foo'),
+             "greatest(string_col, 'foo')"),
+            (api.greatest(t.int_col, t.bigint_col),
+             'greatest(int_col, bigint_col)'),
+        ]
+        self._check_expr_cases(cases)
+
+    def test_least(self):
+        t = self.table
+        cases = [
+            (api.least(t.string_col, 'foo'),
+             "least(string_col, 'foo')"),
+            (api.least(t.int_col, t.bigint_col),
+             'least(int_col, bigint_col)'),
+        ]
+        self._check_expr_cases(cases)
+
+
 class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
     def setUp(self):
