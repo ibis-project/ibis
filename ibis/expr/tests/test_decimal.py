@@ -30,16 +30,16 @@ class TestDecimal(unittest.TestCase):
         col = self.lineitem.l_extendedprice
         assert isinstance(col, ir.DecimalArray)
 
-        assert col.precision == 12
-        assert col.scale == 2
+        assert col._precision == 12
+        assert col._scale == 2
 
     def test_cast_scalar_to_decimal(self):
         val = api.literal('1.2345')
 
         casted = val.cast('decimal(15,5)')
         assert isinstance(casted, ir.DecimalScalar)
-        assert casted.precision == 15
-        assert casted.scale == 5
+        assert casted._precision == 15
+        assert casted._scale == 5
 
     def test_decimal_aggregate_function_behavior(self):
         # From the Impala documentation: "The result of an aggregate function
@@ -53,8 +53,8 @@ class TestDecimal(unittest.TestCase):
         for func_name in functions:
             result = getattr(col, func_name)()
             assert isinstance(result, ir.DecimalScalar)
-            assert result.precision == col.precision
-            assert result.scale == 38
+            assert result._precision == col._precision
+            assert result._scale == 38
 
     def test_invalid_precision_scale_combo(self):
         pass

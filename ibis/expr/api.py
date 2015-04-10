@@ -58,6 +58,9 @@ def now():
     return _ops.TimestampNow().to_expr()
 
 
+e = _ops.E().to_expr()
+
+
 def _add_methods(klass, method_table):
     for k, v in method_table.items():
         setattr(klass, k, v)

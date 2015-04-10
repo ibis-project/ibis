@@ -666,7 +666,7 @@ class Sum(ir.Reduction):
         elif isinstance(self.arg, _.FloatingValue):
             return _.DoubleScalar
         elif isinstance(self.arg, _.DecimalValue):
-            return _decimal_scalar_ctor(self.arg.precision, 38)
+            return _decimal_scalar_ctor(self.arg._precision, 38)
         else:
             raise TypeError(self.arg)
 
@@ -676,7 +676,7 @@ class Mean(ir.Reduction):
     def output_type(self):
         _ = ir
         if isinstance(self.arg, _.DecimalValue):
-            return _decimal_scalar_ctor(self.arg.precision, 38)
+            return _decimal_scalar_ctor(self.arg._precision, 38)
         elif isinstance(self.arg, _.NumericValue):
             return _.DoubleScalar
         else:
@@ -696,7 +696,7 @@ class StdDeviation(ir.Reduction):
 def _min_max_output_rule(self):
     _ = ir
     if isinstance(self.arg, _.DecimalValue):
-        return _decimal_scalar_ctor(self.arg.precision, 38)
+        return _decimal_scalar_ctor(self.arg._precision, 38)
     else:
         return _.scalar_type(self.arg.type())
 
@@ -1577,13 +1577,25 @@ class TopK(ArrayNode):
         return ir.BooleanArray(self)
 
 
-class TimestampNow(ValueNode):
+class Constant(ValueNode):
 
     def __init__(self):
         ValueNode.__init__(self, [])
 
+    def root_tables(self):
+        return []
+
+
+class TimestampNow(Constant):
+
     def output_type(self):
         return ir.TimestampScalar
+
+
+class E(Constant):
+
+    def output_type(self):
+        return ir.DoubleScalar
 
 
 class ExtractTimestampField(UnaryOp):

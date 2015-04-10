@@ -1081,11 +1081,11 @@ class DecimalValue(NumericValue):
 
     def __init__(self, meta):
         self.meta = meta
-        self.precision = meta.precision
-        self.scale = meta.scale
+        self._precision = meta.precision
+        self._scale = meta.scale
 
     def type(self):
-        return DecimalType(self.precision, self.scale)
+        return DecimalType(self._precision, self._scale)
 
     @classmethod
     def _make_constructor(cls, meta):

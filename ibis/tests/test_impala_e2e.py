@@ -120,8 +120,8 @@ FROM tpch.lineitem li
         table = self.con.table('tpch.lineitem')
 
         expr = table.l_quantity
-        assert expr.precision == 12
-        assert expr.scale == 2
+        assert expr._precision == 12
+        assert expr._scale == 2
 
         # TODO: what if user impyla version does not have decimal Metadata?
 
@@ -146,6 +146,8 @@ FROM tpch.lineitem li
         d = table.double_col
 
         exprs = [
+            api.now(),
+            api.e,
 
             i4.zeroifnull(),
 

@@ -514,6 +514,8 @@ _timestamp_ops = {
 
 
 _other_ops = {
+    ops.E: lambda *args: 'e()',
+
     ops.Literal: _literal,
     ops.NullLiteral: _null_literal,
 
