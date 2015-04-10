@@ -177,6 +177,13 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
+    def test_misc_conditionals(self):
+        a = self.table.a
+        cases = [
+            (a.nullif(0), 'nullif(a, 0)')
+        ]
+        self._check_expr_cases(cases)
+
     def test_decimal_casts(self):
         cases = [
             (api.literal('9.9999999').cast('decimal(38,5)'),

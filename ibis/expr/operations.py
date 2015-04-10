@@ -337,10 +337,19 @@ class IfNull(UnaryOp):
         pass
 
 
-class NullIf(UnaryOp):
+class NullIf(ValueNode):
+
+    """
+    Set values to NULL if they equal the null_if_expr
+    """
+
+    def __init__(self, value, null_if_expr):
+        self.value = as_value_expr(value)
+        self.null_if_expr = as_value_expr(null_if_expr)
+        ValueNode.__init__(self, [self.value, self.null_if_expr])
 
     def output_type(self):
-        pass
+        return self.value._factory
 
 
 def _coalesce_upcast(self):

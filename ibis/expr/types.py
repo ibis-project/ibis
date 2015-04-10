@@ -478,9 +478,6 @@ class ValueExpr(Expr):
         op = _ops().NotContains(self, values)
         return op.to_expr()
 
-    def ifnull(self, sub_expr):
-        raise NotImplementedError
-
 
 class ScalarExpr(ValueExpr):
 

@@ -112,6 +112,18 @@ def _unary_op(func_name):
         return '{!s}({!s})'.format(func_name, arg)
     return formatter
 
+def _fixed_arity_call(func_name, arity):
+    def formatter(translator, expr):
+        op = expr.op()
+        formatted_args = []
+        for i in xrange(arity):
+            arg = op.args[i]
+            fmt_arg = translator.translate(arg)
+            formatted_args.append(fmt_arg)
+
+        return '{!s}({!s})'.format(func_name, ', '.join(formatted_args))
+    return formatter
+
 
 def _binary_infix_op(infix_sym):
     def formatter(translator, expr):
@@ -428,6 +440,8 @@ _unary_ops = {
     ops.NotNull: _not_null,
     ops.IsNull: _is_null,
     ops.Negate: _negate,
+
+    ops.NullIf: _fixed_arity_call('nullif', 2),
 
     ops.ZeroIfNull: _unary_op('zeroifnull'),
 

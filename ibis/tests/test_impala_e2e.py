@@ -141,10 +141,12 @@ FROM tpch.lineitem li
     def test_builtins_1(self):
         table = self.con.table('functional.alltypes')
 
+        i1 = table.tinyint_col
         i4 = table.int_col
         d = table.double_col
 
         exprs = [
+
             i4.zeroifnull(),
 
             d.abs(),
@@ -166,6 +168,13 @@ FROM tpch.lineitem li
             d.sqrt(),
             d.zeroifnull(),
 
+            # nullif cases
+            5 / i1.nullif(0),
+            5 / i1.nullif(i4),
+            5 / i4.nullif(0),
+            5 / d.nullif(0),
+
+            # coalesce-like cases
             api.coalesce(table.int_col,
                          api.null(),
                          table.smallint_col,

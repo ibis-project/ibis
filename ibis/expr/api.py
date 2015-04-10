@@ -288,9 +288,32 @@ def value_counts(arg, metric_name='count'):
     return base.group_by(arg).aggregate(metric)
 
 
+def nullif(value, null_if_expr):
+    """
+    Set values to null if they match/equal a particular expression (scalar or
+    array-valued).
+
+    Common use to avoid divide-by-zero problems (get NULL instead of INF on
+    divide-by-zero):
+      5 / expr.nullif(0)
+
+    Parameters
+    ----------
+    value : value expression
+      Value to modify
+    null_if_expr : value expression (array or scalar)
+
+    Returns
+    -------
+    null_if : type of caller
+    """
+    return _ops.NullIf(value, null_if_expr).to_expr()
+
+
 _generic_value_methods = dict(
     cast=cast,
     fillna=fillna,
+    nullif=nullif,
     isnull=_unary_op('isnull', _ops.IsNull),
     notnull=_unary_op('notnull', _ops.NotNull),
     __add__=_binop_expr('__add__', _ops.Add),
