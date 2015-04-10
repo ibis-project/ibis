@@ -331,13 +331,20 @@ class ZeroIfNull(UnaryOp):
             raise NotImplementedError
 
 
+class MultiExprNode(ValueNode):
+
+    def root_tables(self):
+        return ir.distinct_roots(*self.args)
+
+
+
 class IfNull(UnaryOp):
 
     def output_type(self):
         pass
 
 
-class NullIf(ValueNode):
+class NullIf(MultiExprNode):
 
     """
     Set values to NULL if they equal the null_if_expr
@@ -384,7 +391,7 @@ class CoalesceLike(ValueNode):
     output_type = _coalesce_upcast
 
     def root_tables(self):
-        return ir.distinct_roots(*self.values)
+        return ir.distinct_roots(*self.args)
 
 
 class Coalesce(CoalesceLike):
