@@ -473,6 +473,22 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
     def test_sort_by_aggregate_or_projection_field(self):
         pass
 
+    def test_slice_convenience(self):
+        expr = self.table[:5]
+        expr2 = self.table[:5:1]
+        assert expr.equals(self.table.limit(5))
+        assert expr.equals(expr2)
+
+        expr = self.table[2:7]
+        expr2 = self.table[2:7:1]
+        assert expr.equals(self.table.limit(5, offset=2))
+        assert expr.equals(expr2)
+
+        self.assertRaises(ValueError, self.table.__getitem__, slice(2, 15, 2))
+        self.assertRaises(ValueError, self.table.__getitem__, slice(5, None))
+        self.assertRaises(ValueError, self.table.__getitem__, slice(None, -5))
+        self.assertRaises(ValueError, self.table.__getitem__, slice(-10, -5))
+
 
 class TestContains(BasicTestCase, unittest.TestCase):
 

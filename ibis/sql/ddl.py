@@ -268,7 +268,7 @@ class Select(DDLStatement):
                 buf.write('\n')
             n, offset = self.limit['n'], self.limit['offset']
             buf.write('LIMIT {}'.format(n))
-            if offset is not None:
+            if offset is not None and offset != 0:
                 buf.write(' OFFSET {}'.format(offset))
             lines += 1
 

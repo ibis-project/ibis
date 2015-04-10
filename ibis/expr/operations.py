@@ -1175,7 +1175,7 @@ class Filter(TableNode):
 
 class Limit(ir.BlockingTableNode):
 
-    def __init__(self, table, n, offset):
+    def __init__(self, table, n, offset=0):
         self.table = table
         self.n = n
         self.offset = offset

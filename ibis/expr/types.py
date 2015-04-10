@@ -607,6 +607,21 @@ class TableExpr(Expr):
     def __getitem__(self, what):
         if isinstance(what, basestring):
             return self.get_column(what)
+        if isinstance(what, slice):
+            step = what.step
+            if step is not None and step != 1:
+                raise ValueError('Slice step can only be 1')
+            start = what.start or 0
+            stop = what.stop
+
+            if stop is None or stop < 0:
+                raise ValueError('End index must be a positive number')
+
+            if start < 0:
+                raise ValueError('Start index must be a positive number')
+
+            return self.limit(stop - start, offset=start)
+
         elif isinstance(what, (list, tuple)):
             # Projection case
             return self.projection(what)
@@ -848,7 +863,7 @@ class TableExpr(Expr):
         op = _ops().Aggregation(self, agg_exprs, by=by, having=having)
         return TableExpr(op)
 
-    def limit(self, n, offset=None):
+    def limit(self, n, offset=0):
         """
 
 
