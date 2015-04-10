@@ -176,6 +176,8 @@ FROM tpch.lineitem li
             5 / i4.nullif(0),
             5 / d.nullif(0),
 
+            api.literal(5).isin([i1, i4, d]),
+
             # coalesce-like cases
             api.coalesce(table.int_col,
                          api.null(),
