@@ -67,8 +67,8 @@ def _add_methods(klass, method_table):
 
 
 def _unary_op(name, klass, doc=None):
-    def f(self):
-        return klass(self).to_expr()
+    def f(arg):
+        return klass(arg).to_expr()
     f.__name__ = name
     if doc is not None:
         f.__doc__ = doc
@@ -77,17 +77,32 @@ def _unary_op(name, klass, doc=None):
     return f
 
 
-def _negate(expr):
-    op = expr.op()
+def negate(arg):
+    """
+    Negate a numeric expression
+
+    Parameters
+    ----------
+    arg : numeric value expression
+
+    Returns
+    -------
+    negated : type of caller
+    """
+    op = arg.op()
     if hasattr(op, 'negate'):
-        return op.negate()
+        result = op.negate()
     else:
-        return _ops.Negate(expr)
+        result = _ops.Negate(arg)
+
+    return result.to_expr()
 
 
 def _count(expr):
     """
-    Compute cardinality / sequence size of expression
+    Compute cardinality / sequence size of expression. For array expressions,
+    the count is excluding nulls. For tables, it's the size of the entire
+    table.
 
     Returns
     -------
@@ -387,28 +402,48 @@ def log(arg, base=None):
     return op.to_expr()
 
 
+abs = _unary_op('abs', _ops.Abs)
+ceil = _unary_op('ceil', _ops.Ceil)
+exp = _unary_op('exp', _ops.Exp)
+floor = _unary_op('floor', _ops.Floor)
+log2 = _unary_op('log2', _ops.Log2)
+log10 = _unary_op('log10', _ops.Log10)
+ln = _unary_op('ln', _ops.Ln)
+sign = _unary_op('sign', _ops.Sign)
+sqrt = _unary_op('sqrt', _ops.Sqrt)
+
+
 _numeric_value_methods = dict(
-    __neg__=_unary_op('__neg__', _negate),
-    abs=_unary_op('abs', _ops.Abs),
-    ceil=_unary_op('ceil', _ops.Ceil),
-    floor=_unary_op('floor', _ops.Floor),
-    sign=_unary_op('sign', _ops.Sign),
-    exp=_unary_op('exp', _ops.Exp),
-    sqrt=_unary_op('sqrt', _ops.Sqrt),
+    __neg__=negate,
+    abs=abs,
+    ceil=ceil,
+    floor=floor,
+    sign=sign,
+    exp=exp,
+    sqrt=sqrt,
     log=log,
-    ln=_unary_op('ln', _ops.Ln),
-    log2=_unary_op('log2', _ops.Log2),
-    log10=_unary_op('log10', _ops.Log10),
+    ln=ln,
+    log2=log2,
+    log10=log10,
     round=round,
     zeroifnull=_unary_op('zeroifnull', _ops.ZeroIfNull),
 )
 
+approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality)
+approx_median = _agg_function('approx_median', _ops.CMSMedian)
+mean = _agg_function('mean', _ops.Mean)
+max = _agg_function('max', _ops.Max)
+min = _agg_function('min', _ops.Min)
+sum = _agg_function('sum', _ops.Sum)
+
 
 _numeric_array_methods = dict(
-    sum=_agg_function('sum', _ops.Sum),
-    mean=_agg_function('mean', _ops.Mean),
-    min=_agg_function('min', _ops.Min),
-    max=_agg_function('max', _ops.Max)
+    approx_median=approx_median,
+    approx_nunique=approx_nunique,
+    mean=mean,
+    min=min,
+    max=max,
+    sum=sum,
 )
 
 _add_methods(NumericValue, _numeric_value_methods)

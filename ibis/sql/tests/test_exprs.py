@@ -255,7 +255,10 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
     def test_numeric_monadic_builtins(self):
         # No argument functions
         functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt', 'sign',
-                     ('log', 'ln'), 'ln', 'log2', 'log10', 'zeroifnull']
+                     ('log', 'ln'),
+                     ('approx_median', 'appx_median'),
+                     ('approx_nunique', 'ndv'),
+                     'ln', 'log2', 'log10', 'zeroifnull']
 
         cases = []
         for what in functions:

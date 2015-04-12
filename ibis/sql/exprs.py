@@ -460,6 +460,8 @@ _unary_ops = {
     ops.Log10: _unary_op('log10'),
 
     # Unary aggregates
+    ops.CMSMedian: _unary_op('appx_median'),
+    ops.HLLCardinality: _unary_op('ndv'),
     ops.Mean: _unary_op('avg'),
     ops.Sum: _unary_op('sum'),
     ops.Max: _unary_op('max'),

@@ -711,6 +711,29 @@ class Min(ir.Reduction):
     output_type = _min_max_output_rule
 
 
+class HLLCardinality(ir.Reduction):
+
+    """
+    Approximate number of unique values using HyperLogLog algorithm. Impala
+    offers the NDV built-in function for this.
+    """
+
+    def output_type(self):
+        # Impala 2.0 and higher returns a DOUBLE
+        return ir.DoubleScalar
+
+
+class CMSMedian(ir.Reduction):
+
+    """
+    Compute the approximate median of a set of comparable values using the
+    Count-Min-Sketch algorithm. Exposed in Impala using APPX_MEDIAN.
+    """
+
+    def output_type(self):
+        # Scalar but type of caller
+        return ir.scalar_type(self.arg.type())
+
 #----------------------------------------------------------------------
 # Distinct stuff
 
