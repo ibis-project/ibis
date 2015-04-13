@@ -723,6 +723,21 @@ class HLLCardinality(ir.Reduction):
         return ir.DoubleScalar
 
 
+class GroupConcat(ir.Reduction):
+
+    def __init__(self, arg, sep=','):
+        self._ensure_array(arg)
+        self.arg = arg
+        self.sep = as_value_expr(sep)
+        ValueNode.__init__(self, [self.arg, self.sep])
+
+    def root_tables(self):
+        return self.arg._root_tables()
+
+    def output_type(self):
+        return ir.StringScalar
+
+
 class CMSMedian(ir.Reduction):
 
     """

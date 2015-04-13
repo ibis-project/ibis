@@ -98,7 +98,7 @@ def negate(arg):
     return result.to_expr()
 
 
-def _count(expr):
+def count(expr):
     """
     Compute cardinality / sequence size of expression. For array expressions,
     the count is excluding nulls. For tables, it's the size of the entire
@@ -110,9 +110,26 @@ def _count(expr):
     """
     op = expr.op()
     if isinstance(op, _ops.DistinctArray):
-        return op.count()
+        return op.count().to_expr()
     else:
-        return _ops.Count(expr)
+        return _ops.Count(expr).to_expr()
+
+
+def group_concat(arg, sep=','):
+    """
+    Concatenate values using the indicated separator (comma by default) to
+    produce a string
+
+    Parameters
+    ----------
+    arg : array expression
+    sep : string, default ','
+
+    Returns
+    -------
+    concatenated : string scalar
+    """
+    return _ops.GroupConcat(arg, sep=sep).to_expr()
 
 
 def _binop_expr(name, klass):
@@ -175,8 +192,7 @@ def _agg_function(name, klass):
 
 def _extract_field(name, klass):
     def f(self):
-        op = klass(self)
-        return op.to_expr()
+        return klass(self).to_expr()
     f.__name__ = name
     return f
 
@@ -354,8 +370,16 @@ _generic_value_methods = dict(
     __lt__=_binop_expr('__lt__', _ops.Less)
 )
 
+
+approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality)
+approx_median = _agg_function('approx_median', _ops.CMSMedian)
+
+
 _generic_array_methods = dict(
-    count=_unary_op('count', _count),
+    count=count,
+    approx_median=approx_median,
+    approx_nunique=approx_nunique,
+    group_concat=group_concat,
     value_counts=value_counts
 )
 
@@ -429,8 +453,6 @@ _numeric_value_methods = dict(
     zeroifnull=_unary_op('zeroifnull', _ops.ZeroIfNull),
 )
 
-approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality)
-approx_median = _agg_function('approx_median', _ops.CMSMedian)
 mean = _agg_function('mean', _ops.Mean)
 max = _agg_function('max', _ops.Max)
 min = _agg_function('min', _ops.Min)
@@ -438,8 +460,6 @@ sum = _agg_function('sum', _ops.Sum)
 
 
 _numeric_array_methods = dict(
-    approx_median=approx_median,
-    approx_nunique=approx_nunique,
     mean=mean,
     min=min,
     max=max,

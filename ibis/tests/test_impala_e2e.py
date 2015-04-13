@@ -194,6 +194,29 @@ FROM tpch.lineitem li
         projection = table[proj_exprs].limit(10)
         projection.execute()
 
+    def test_aggregations_e2e(self):
+        table = self.con.table('functional.alltypes').limit(100)
+
+        d = table.double_col
+        s = table.string_col
+
+        exprs = [
+            table.bool_col.count(),
+            d.sum(),
+            d.mean(),
+            d.min(),
+            d.max(),
+            s.approx_nunique(),
+            d.approx_median(),
+            s.group_concat()
+        ]
+
+        agg_exprs = [expr.name('e%d' % i)
+                      for i, expr in enumerate(exprs)]
+
+        agged_table = table.aggregate(agg_exprs)
+        agged_table.execute()
+
     def test_tpch_self_join_failure(self):
         region = self.con.table('tpch.region')
         nation = self.con.table('tpch.nation')

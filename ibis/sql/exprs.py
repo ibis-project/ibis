@@ -20,7 +20,6 @@
 
 from io import BytesIO
 
-import ibis.expr.analysis as L
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
@@ -466,6 +465,7 @@ _unary_ops = {
     ops.Sum: _unary_op('sum'),
     ops.Max: _unary_op('max'),
     ops.Min: _unary_op('min'),
+    ops.GroupConcat: _fixed_arity_call('group_concat', 2),
 
     ops.Count: _unary_op('count'),
     ops.CountDistinct: _count_distinct,

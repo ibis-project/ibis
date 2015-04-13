@@ -41,6 +41,16 @@ class TestBuiltins(unittest.TestCase):
         expr = self.lineitem.l_extendedprice
         self._check_unary_op(expr, fname, op, type(expr))
 
+    def test_group_concat(self):
+        col = self.alltypes.string_col
+
+        expr = col.group_concat()
+        assert isinstance(expr.op(), ops.GroupConcat)
+        assert expr.op().sep == ','
+
+        expr = col.group_concat('|')
+        assert expr.op().sep == '|'
+
     def test_zeroifnull(self):
         dresult = self.alltypes.double_col.zeroifnull()
         iresult = self.alltypes.int_col.zeroifnull()
