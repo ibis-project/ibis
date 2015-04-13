@@ -344,22 +344,46 @@ def nullif(value, null_if_expr):
     return _ops.NullIf(value, null_if_expr).to_expr()
 
 
+add = _binop_expr('__add__', _ops.Add)
+sub = _binop_expr('__sub__', _ops.Subtract)
+mul = _binop_expr('__mul__', _ops.Multiply)
+div = _binop_expr('__div__', _ops.Divide)
+pow = _binop_expr('__pow__', _ops.Power)
+
+rsub = _rbinop_expr('__rsub__', _ops.Subtract)
+rdiv = _rbinop_expr('__rdiv__', _ops.Divide)
+
 _generic_value_methods = dict(
     cast=cast,
     fillna=fillna,
     nullif=nullif,
     isnull=_unary_op('isnull', _ops.IsNull),
     notnull=_unary_op('notnull', _ops.NotNull),
-    __add__=_binop_expr('__add__', _ops.Add),
-    __sub__=_binop_expr('__sub__', _ops.Subtract),
-    __mul__=_binop_expr('__mul__', _ops.Multiply),
-    __div__=_binop_expr('__div__', _ops.Divide),
-    __pow__=_binop_expr('__pow__', _ops.Power),
 
-    __radd__=_rbinop_expr('__radd__', _ops.Add),
-    __rsub__=_rbinop_expr('__rsub__', _ops.Subtract),
+    __add__=add,
+    add=add,
+
+    __sub__=sub,
+    sub=sub,
+
+    __mul__=mul,
+    mul=mul,
+
+    __div__=div,
+    div=div,
+
+    __rdiv__=rdiv,
+    rdiv=rdiv,
+
+    __pow__=pow,
+    pow=pow,
+
+    __radd__=add,
+
+    __rsub__=rsub,
+    rsub=rsub,
+
     __rmul__=_rbinop_expr('__rmul__', _ops.Multiply),
-    __rdiv__=_rbinop_expr('__rdiv__', _ops.Divide),
     __rpow__=_binop_expr('__rpow__', _ops.Power),
 
     __eq__=_binop_expr('__eq__', _ops.Equals),
