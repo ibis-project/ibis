@@ -1066,7 +1066,7 @@ class Join(TableNode):
                 rk = self.right._ensure_expr(rk)
                 pred = lk == rk
             else:
-                pred = L.substitute_parents(pred)
+                pred = L.substitute_parents(pred, past_projection=False)
 
             if not isinstance(pred, ir.BooleanArray):
                 raise ExpressionError('Join predicate must be comparison')
@@ -1207,8 +1207,7 @@ class Filter(TableNode):
         return self.table.op().has_schema()
 
     def root_tables(self):
-        tables = self.table._root_tables()
-        return tables
+        return self.table._root_tables()
 
 
 class Limit(ir.BlockingTableNode):
@@ -1356,8 +1355,26 @@ class Projection(ir.BlockingTableNode, HasSchema):
         return Projection(table_expr, self.selections)
 
     def root_tables(self):
-        tables = self.table._root_tables()
-        return tables
+        return [self]
+
+    def is_ancestor(self, other):
+        if isinstance(other, ir.Expr):
+            other = other.op()
+
+        if self.equals(other):
+            return True
+
+        table = self.table
+        exist_layers = False
+        while not isinstance(table.op(), (ir.BlockingTableNode, Join)):
+            table = table.op().table
+            exist_layers = True
+
+        if exist_layers:
+            reboxed = Projection(table, self.selections)
+            return reboxed.is_ancestor(other)
+        else:
+            return False
 
 
 class Aggregation(ir.BlockingTableNode, HasSchema):
@@ -1393,7 +1410,7 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
     def _rewrite_exprs(self, what):
         from ibis.expr.analysis import substitute_parents
         what = _promote_list(what)
-        return [substitute_parents(x) for x in what]
+        return [substitute_parents(x, past_projection=False) for x in what]
 
     def substitute_table(self, table_expr):
         return Aggregation(table_expr, self.agg_exprs, by=self.by,

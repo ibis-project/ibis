@@ -99,8 +99,9 @@ class _Substitutor(object):
         return helper.get_result()
 
 
-def substitute_parents(expr, lift_memo=None):
-    rewriter = ExprSimplifier(expr, lift_memo=lift_memo)
+def substitute_parents(expr, lift_memo=None, past_projection=True):
+    rewriter = ExprSimplifier(expr, lift_memo=lift_memo,
+                              block_projection=not past_projection)
     return rewriter.get_result()
 
 
@@ -230,6 +231,9 @@ class ExprSimplifier(object):
                     can_lift = True
                     lifted_root = self.lift(val.op().table)
 
+                # XXX
+                # can_lift = False
+
             # HACK: If we've projected a join, do not lift the children
             # TODO: what about limits and other things?
             # if isinstance(root.table.op(), Join):
@@ -347,19 +351,12 @@ def apply_filter(expr, predicates):
         # their roots, then pushdown (at least of that predicate) is not
         # possible
 
-        # TODO: is partial pushdown (one or more, but not all of the passed
-        # predicates) something we should consider doing? Could be reasonable
-
-        can_pushdown = True
-        for pred in predicates:
-            roots = pred._root_tables()
-            if _in_roots(expr, roots):
-                can_pushdown = False
-
         # It's not unusual for the filter to reference the projection
         # itself. If a predicate can be pushed down, in this case we must
         # rewrite replacing the table refs with the roots internal to the
         # projection we are referencing
+        #
+        # If the filter references any new or derived aliases in the
         #
         # in pseudocode
         # c = Projection(Join(a, b, jpreds), ppreds)
@@ -369,6 +366,16 @@ def apply_filter(expr, predicates):
         # Assuming that the fields referenced by the filter predicate originate
         # below the projection, we need to rewrite the predicate referencing
         # the parent tables in the join being projected
+
+        # TODO: is partial pushdown (one or more, but not all of the passed
+        # predicates) something we should consider doing? Could be reasonable
+
+        # if isinstance(op, ops.Projection):
+        # else:
+        #     # Aggregation
+        #     can_pushdown = op.table.is_an
+
+        can_pushdown = _can_pushdown(op, predicates)
 
         if can_pushdown:
             predicates = [substitute_parents(x) for x in predicates]
@@ -383,54 +390,157 @@ def apply_filter(expr, predicates):
 
     return result
 
-# def _pushdown_substitute(expr):
-#     rewriter = _PushdownRewrite(expr)
-#     return rewriter.get_result()
-# class _PushdownRewrite(object):
-# Hm, this is quite similar to the ExprSimplifier above
-#     def __init__(self, expr):
-#         self.expr = expr
-#     def get_result(self):
-#         return self._rewrite(expr)
-#     def _rewrite(self, expr):
-#         node = expr.op()
-#         unchanged = True
-#         new_args = []
-#         for arg in node.args:
-#             pass
+
+def _can_pushdown(op, predicates):
+    # Per issues discussed in #173
+    #
+    # The only case in which pushdown is possible is that all table columns
+    # referenced must meet all of the following (not that onerous in practice)
+    # criteria
+    #
+    # 1) Is a table column, not any other kind of expression
+    # 2) Is unaliased. So, if you project t3.foo AS bar, then filter on bar,
+    #    this cannot be pushed down (until we implement alias rewriting if
+    #    necessary)
+    # 3) Appears in the selections in the projection (either is part of one of
+    #    the entire tables or a single column selection)
+
+    can_pushdown = True
+    for pred in predicates:
+        validator = _PushdownValidate(op, pred)
+        predicate_is_valid = validator.get_result()
+        can_pushdown = can_pushdown and predicate_is_valid
+    return can_pushdown
 
 
-def _in_roots(expr, roots):
-    # XXX
-    what = expr.op() if isinstance(expr, ir.Expr) else expr
-    return id(what) in [id(x) for x in roots]
+class _PushdownValidate(object):
+
+    def __init__(self, parent, predicate):
+        self.parent = parent
+        self.pred = predicate
+
+        self.validator = ExprValidator([self.parent.table])
+
+        self.valid = True
+
+    def get_result(self):
+        self._walk(self.pred)
+        return self.valid
+
+    def _walk(self, expr):
+        node = expr.op()
+        if isinstance(node, ops.TableColumn):
+            is_valid = self._validate_column(expr)
+            self.valid = self.valid and is_valid
+
+        for arg in node.flat_args():
+            if isinstance(arg, ir.ValueExpr):
+                self._walk(arg)
+
+            # Skip other types of exprs
+
+    def _validate_column(self, expr):
+        if isinstance(self.parent, ops.Projection):
+            return self._validate_projection(expr)
+        else:
+            validator = ExprValidator([self.parent.table])
+            return validator.validate(expr)
+
+    def _validate_projection(self, expr):
+        is_valid = False
+        node = expr.op()
+
+        # Has a different alias, invalid
+        if _is_aliased(expr):
+            return False
+
+        for val in self.parent.selections:
+            if (isinstance(val.op(), ops.PhysicalTable)
+                and node.name in val.schema()):
+                is_valid = True
+            elif (isinstance(val.op(), ops.TableColumn)
+                  and node.name == val.get_name()
+                  and not _is_aliased(val)):
+                # Aliased table columns are no good
+                col_table = val.op().table.op()
+
+                lifted_node = substitute_parents(expr).op()
+
+                is_valid = (col_table.is_ancestor(node.table)
+                            or col_table.is_ancestor(lifted_node.table))
+
+                # is_valid = True
+
+        return is_valid
 
 
-def _maybe_fuse_projection(expr, clean_exprs):
-    node = expr.op()
+def _is_aliased(col_expr):
+    return col_expr.op().name != col_expr.get_name()
 
-    if isinstance(node, ops.Projection):
-        roots = [node]
-    else:
-        roots = node.root_tables()
 
-    if len(roots) == 1 and isinstance(roots[0], ops.Projection):
-        root = roots[0]
+class Projector(object):
 
-        roots = root.root_tables()
-        validator = ExprValidator([ir.TableExpr(root)])
+    """
+    Analysis and validation of projection operation, taking advantage of
+    "projection fusion" opportunities where they exist, i.e. combining
+    compatible projections together rather than nesting them. Translation /
+    evaluation later will not attempt to do any further fusion /
+    simplification.
+    """
+
+    def __init__(self, parent, proj_exprs):
+        self.parent = parent
+
+        node = self.parent.op()
+
+        if isinstance(node, ops.Projection):
+            roots = [node]
+        else:
+            roots = node.root_tables()
+
+        self.parent_roots = roots
+
+        clean_exprs = []
+        validator = ExprValidator([parent])
+
+        for expr in proj_exprs:
+            # Perform substitution only if we share common roots
+            if validator.shares_some_roots(expr):
+                expr = substitute_parents(expr, past_projection=False)
+            clean_exprs.append(expr)
+
+        self.clean_exprs = clean_exprs
+
+    def get_result(self):
+        roots = self.parent_roots
+
+        if len(roots) == 1 and isinstance(roots[0], ops.Projection):
+            fused_op = self._check_fusion(roots[0])
+            if fused_op is not None:
+                return fused_op
+
+        return ops.Projection(self.parent, self.clean_exprs)
+
+    def _check_fusion(self, root):
+        roots = root.table._root_tables()
+        validator = ExprValidator([root.table])
         fused_exprs = []
         can_fuse = False
-        for val in clean_exprs:
+        for val in self.clean_exprs:
+            # XXX
+            lifted_val = substitute_parents(val)
+
             # a * projection
             if (isinstance(val, ir.TableExpr) and
-                (val is expr or
-
-                     # gross we share the same table root. Better way to detect?
-                     len(roots) == 1 and val._root_tables()[0] is roots[0])
-                    ):
+                (self.parent.op().is_ancestor(val) or
+                 # gross we share the same table root. Better way to
+                 # detect?
+                 len(roots) == 1 and val._root_tables()[0] is roots[0])
+            ):
                 can_fuse = True
                 fused_exprs.extend(root.selections)
+            elif validator.validate(lifted_val):
+                fused_exprs.append(lifted_val)
             elif not validator.validate(val):
                 can_fuse = False
                 break
@@ -439,8 +549,8 @@ def _maybe_fuse_projection(expr, clean_exprs):
 
         if can_fuse:
             return ops.Projection(root.table, fused_exprs)
-
-    return ops.Projection(expr, clean_exprs)
+        else:
+            return None
 
 
 class ExprValidator(object):
@@ -450,34 +560,36 @@ class ExprValidator(object):
 
         self.roots = []
         for expr in self.parent_exprs:
-
             self.roots.extend(expr._root_tables())
 
-        self.root_ids = set(id(x) for x in self.roots)
+    def has_common_roots(self, expr):
+        return self.validate(expr)
 
     def validate(self, expr):
-        return self.has_common_roots(expr)
-
-    def has_common_roots(self, expr):
         op = expr.op()
         if isinstance(op, ops.TableColumn):
-            for root in self.roots:
-                if root is op.table.op():
-                    return True
+            if self._among_roots(op.table.op()):
+                return True
         elif isinstance(op, ops.Projection):
-            for root in self.roots:
-                if root is op:
-                    return True
+            if self._among_roots(op):
+                return True
 
         expr_roots = expr._root_tables()
         for root in expr_roots:
-            if id(root) not in self.root_ids:
+            if not self._among_roots(root):
                 return False
         return True
 
+    def _among_roots(self, node):
+        for root in self.roots:
+            if root.is_ancestor(node):
+                return True
+        return False
+
     def shares_some_roots(self, expr):
         expr_roots = expr._root_tables()
-        return any(id(root) in self.root_ids for root in expr_roots)
+        return any(self._among_roots(root)
+                   for root in expr_roots)
 
     def validate_all(self, exprs):
         for expr in exprs:
@@ -513,7 +625,7 @@ class FilterValidator(ExprValidator):
         is_valid = True
 
         if isinstance(op, ops.Contains):
-            value_valid = self.has_common_roots(op.value)
+            value_valid = ExprValidator.validate(self, op.value)
             is_valid = value_valid
         else:
             roots_valid = []

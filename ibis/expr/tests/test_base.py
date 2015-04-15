@@ -18,6 +18,7 @@ import unittest
 
 from ibis.expr.types import ArrayExpr, TableExpr, RelationError
 from ibis.common import ExpressionError
+import ibis.expr.analysis as L
 import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -249,8 +250,8 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
             'bar': 'int32'
         }
 
-        left = api.table(schema1)
-        right = api.table(schema1)
+        left = api.table(schema1, name='foo')
+        right = api.table(schema1, name='bar')
 
         exprs = [right['foo'], right['bar']]
         self.assertRaises(RelationError, left.projection, exprs)
@@ -355,7 +356,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
     def test_invalid_predicate(self):
         # a lookalike
-        table2 = api.table(self.schema)
+        table2 = api.table(self.schema, name='bar')
         self.assertRaises(RelationError, self.table.__getitem__,
                           table2['a'] > 5)
 
@@ -374,6 +375,43 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         interm = self.table[pred1]
         result = interm.filter([interm['b'] > 0])
         assert result.equals(expected)
+
+    def test_rewrite_expr_with_parent(self):
+        table = self.con.table('test1')
+
+        table2 = table[table['f'] > 0]
+
+        expr = table2['c'] == 2
+
+        result = L.substitute_parents(expr)
+        expected = table['c'] == 2
+        assert result.equals(expected)
+
+        # Substitution not fully possible if we depend on a new expr in a
+        # projection
+
+        table4 = table[['c', (table['c'] * 2).name('foo')]]
+        expr = table4['c'] == table4['foo']
+        result = L.substitute_parents(expr)
+        expected = table['c'] == table4['foo']
+        assert result.equals(expected)
+
+    def test_rewrite_past_projection(self):
+        table = self.con.table('test1')
+
+        # Rewrite past a projection
+        table3 = table[['c', 'f']]
+        expr = table3['c'] == 2
+
+        result = L.substitute_parents(expr)
+        expected = table['c'] == 2
+        assert result.equals(expected)
+
+        # Unsafe to rewrite past projection
+        table5 = table[(table.f * 2).name('c'), table.f]
+        expr = table5['c'] == 2
+        result = L.substitute_parents(expr)
+        assert result is expr
 
     def test_projection_predicate_pushdown(self):
         # Probably test this during the evaluation phase. In SQL, "fusable"
@@ -432,9 +470,6 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
             assert isinstance(filter_op, ops.Filter)
             new_pred = filter_op.predicates[0]
             assert new_pred.equals(lower_pred)
-
-    def test_filter_projection_partial_pushdown(self):
-        pass
 
     def test_limit(self):
         limited = self.table.limit(10, offset=5)
@@ -1117,7 +1152,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         pred = self.table.f > 0
         metrics = [self.table.a.sum().name('total')]
         agged = self.table.aggregate(metrics, by=['g'])
-        filtered = agged[pred]
+        filtered = agged.filter([pred])
         expected = self.table[pred].aggregate(metrics, by=['g'])
         assert filtered.equals(expected)
 
@@ -1362,6 +1397,42 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         joined = table1.inner_join(table2, [table1['key1'] == table2['key3']])
         filtered = joined.filter([table1.value1 > 0])
         repr(filtered)
+
+    def test_filter_on_projected_field(self):
+        # See #173. Impala and other SQL engines do not allow filtering on a
+        # just-created alias in a projection
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+        customer = self.con.table('tpch_customer')
+        orders = self.con.table('tpch_orders')
+
+        fields_of_interest = [customer,
+                              region.r_name.name('region'),
+                              orders.o_totalprice.name('amount'),
+                              orders.o_orderdate.cast('timestamp').name('odate')]
+
+        all_join = (
+            region.join(nation, region.r_regionkey == nation.n_regionkey)
+            .join(customer, customer.c_nationkey == nation.n_nationkey)
+            .join(orders, orders.o_custkey == customer.c_custkey))
+
+        tpch = all_join[fields_of_interest]
+
+        # Correlated subquery, yikes!
+        t2 = tpch.view()
+        conditional_avg = t2[(t2.region == tpch.region)].amount.mean()
+
+        # `amount` is part of the projection above as an aliased field
+        amount_filter = tpch.amount > conditional_avg
+
+        result = tpch.filter([amount_filter])
+
+        # Now then! Predicate pushdown here is inappropriate, so we check that
+        # it didn't occur.
+
+        # If filter were pushed below projection, the top-level operator type
+        # would be Projection instead.
+        assert type(result.op()) == ops.Filter
 
     def test_join_can_rewrite_errant_predicate(self):
         # Join predicate references a derived table, but we can salvage and

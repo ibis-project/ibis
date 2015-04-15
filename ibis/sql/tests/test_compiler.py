@@ -22,7 +22,6 @@ import ibis.common as com
 
 import ibis.expr.analysis as L
 import ibis.expr.api as api
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
 import ibis.sql.ddl as ddl
@@ -36,42 +35,6 @@ class TestASTBuilder(unittest.TestCase):
 
     def setUp(self):
         self.con = MockConnection()
-
-    def test_rewrite_expr_with_parent(self):
-        table = self.con.table('test1')
-
-        table2 = table[table['f'] > 0]
-
-        expr = table2['c'] == 2
-
-        result = L.substitute_parents(expr)
-        expected = table['c'] == 2
-        assert result.equals(expected)
-
-        # Substitution not fully possible if we depend on a new expr in a
-        # projection
-        table4 = table[['c', (table['c'] * 2).name('foo')]]
-        expr = table4['c'] == table4['foo']
-        result = L.substitute_parents(expr)
-        expected = table['c'] == table4['foo']
-        assert result.equals(expected)
-
-    def test_rewrite_past_projection(self):
-        table = self.con.table('test1')
-
-        # Rewrite past a projection
-        table3 = table[['c', 'f']]
-        expr = table3['c'] == 2
-
-        result = L.substitute_parents(expr)
-        expected = table['c'] == 2
-        assert result.equals(expected)
-
-        # Unsafe to rewrite past projection
-        table5 = table[(table.f * 2).name('c'), table.f]
-        expr = table5['c'] == 2
-        result = L.substitute_parents(expr)
-        assert result is expr
 
     def test_rewrite_join_projection_without_other_ops(self):
         # Drop out filters and other commutative table operations. Join
@@ -678,14 +641,14 @@ WHERE f > 0 AND
 
         # This also tests some cases of predicate pushdown
         what = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
-                [t1, t2.value1]
+                .projection([t1, t2.value1, t2.value3])
                 .filter([t1.f > 0, t2.value3 < 1000]))
 
         what2 = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
                  .filter([t1.f > 0, t2.value3 < 1000])
-                 [t1, t2.value1])
+                 .projection([t1, t2.value1, t2.value3]))
 
-        expected_sql = """SELECT t0.*, t1.value1
+        expected_sql = """SELECT t0.*, t1.value1, t1.value3
 FROM star1 t0
   INNER JOIN star2 t1
     ON t0.foo_id = t1.foo_id
@@ -859,10 +822,10 @@ FROM (
         f2 = (table2['foo'] * 2).name('qux')
         f3 = (table['foo'] * 2).name('qux')
 
-        table3 = table2.projection([table2, f3])
+        table3 = table2.projection([table2, f2])
 
         # fusion works even if there's a filter
-        table3_filtered = table2_filtered.projection([table2, f3])
+        table3_filtered = table2_filtered.projection([table2, f2])
 
         expected = table[table, f1, f3]
         expected2 = table[pred][table, f1, f3]
@@ -919,7 +882,8 @@ WHERE value > 0"""
 
         # it works!
         result = to_sql(expr)
-        expected = """SELECT c_name, r_name, n_name
+        expected = """\
+SELECT c_name, r_name, n_name
 FROM (
   SELECT t1.*, t2.n_name, t3.r_name
   FROM tpch_customer t1
@@ -972,17 +936,17 @@ FROM (
 GROUP BY 1"""
         assert result == expected
 
-        # different pushdown case. Does Impala support this?
+        # Pushdown is not possible (in Impala, Postgres, others)
         agged2 = agg(proj[proj.foo < 10])
 
         result = to_sql(agged2)
-        expected = """SELECT g, sum(foo) AS `foo total`
+        expected = """SELECT t0.g, sum(t0.foo) AS `foo total`
 FROM (
   SELECT *, a + b AS foo
   FROM alltypes
-  WHERE f > 0 AND
-        foo < 10
+  WHERE f > 0
 ) t0
+WHERE t0.foo < 10
 GROUP BY 1"""
         assert result == expected
 
@@ -1044,7 +1008,7 @@ GROUP BY 1"""
                 [[t1, t2.value1]])
 
         what = what.aggregate([what.value1.sum().name('total')],
-                              by=[t1.foo_id])
+                              by=[what.foo_id])
 
         # TODO: Not fusing the aggregation with the projection yet
         result = to_sql(what)
@@ -1254,7 +1218,8 @@ FROM tbl t0
         expr = cplusgeo.filter([pred])
 
         result = to_sql(expr)
-        expected = """SELECT t0.*, t1.n_name, t2.r_name
+        expected = """\
+SELECT t0.*, t1.n_name, t2.r_name
 FROM customer t0
   INNER JOIN nation t1
     ON t0.c_nationkey = t1.n_nationkey

@@ -298,6 +298,12 @@ class Node(object):
                 return False
         return True
 
+    def is_ancestor(self, other):
+        if isinstance(other, Expr):
+            other = other.op()
+
+        return self.equals(other)
+
     def to_expr(self):
         """
         This function must resolve the output type of the expression and return
@@ -748,8 +754,6 @@ class TableExpr(Expr):
         if name is not None:
             expr = expr.name(name)
 
-        # New column originates from this table expression if at all
-        self._assert_valid([expr])
         return self.projection([self, expr])
 
     def add_columns(self, what):
@@ -794,18 +798,8 @@ class TableExpr(Expr):
         if isinstance(exprs, Expr):
             exprs = [exprs]
 
-        clean_exprs = []
-        validator = L.ExprValidator([self])
-
-        for expr in exprs:
-            expr = self._ensure_expr(expr)
-
-            # Perform substitution only if we share common roots
-            if validator.shares_some_roots(expr):
-                expr = L.substitute_parents(expr)
-            clean_exprs.append(expr)
-
-        op = L._maybe_fuse_projection(self, clean_exprs)
+        exprs = [self._ensure_expr(e) for e in exprs]
+        op = L.Projector(self, exprs).get_result()
         return TableExpr(op)
 
     select = projection
