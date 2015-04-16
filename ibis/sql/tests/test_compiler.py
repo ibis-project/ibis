@@ -1410,6 +1410,13 @@ def _create_table(table_name, expr, database=None, overwrite=False):
                          overwrite=overwrite)
     return statement
 
+def _get_select(expr):
+    ast = build_ast(expr)
+    select = ast.queries[0]
+    context = ast.context
+
+    return select, context
+
 
 class TestDropTable(unittest.TestCase):
 
@@ -1423,6 +1430,42 @@ class TestDropTable(unittest.TestCase):
         query = statement.compile()
         expected = "DROP TABLE IF EXISTS bar.foo"
         assert query == expected
+
+
+class TestInsert(unittest.TestCase):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.t = self.con.table('functional_alltypes')
+
+    def test_select_basics(self):
+        name = 'testing123456'
+
+        expr = self.t.limit(10)
+        select, _ = _get_select(expr)
+
+        stmt = ddl.InsertSelect(name, select, database='foo')
+        result = stmt.compile()
+
+        expected = """\
+INSERT INTO foo.testing123456
+SELECT *
+FROM functional_alltypes
+LIMIT 10"""
+        assert result == expected
+
+        stmt = ddl.InsertSelect(name, select, database='foo', overwrite=True)
+        result = stmt.compile()
+
+        expected = """\
+INSERT OVERWRITE foo.testing123456
+SELECT *
+FROM functional_alltypes
+LIMIT 10"""
+        assert result == expected
+
+    def test_select_overwrite(self):
+        pass
 
 
 class TestCacheTable(unittest.TestCase):

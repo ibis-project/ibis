@@ -487,6 +487,27 @@ class CTAS(DDLStatement):
             raise NotImplementedError
 
 
+class InsertSelect(DDLStatement):
+
+    def __init__(self, table_name, select_expr, database=None,
+                 overwrite=False):
+        self.table_name = table_name
+        self.database = database
+        self.select = select_expr
+
+        self.overwrite = overwrite
+
+    def compile(self):
+        if self.overwrite:
+            cmd = 'INSERT OVERWRITE'
+        else:
+            cmd = 'INSERT INTO'
+
+        select_query = self.select.compile()
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+        return'{} {}\n{}'.format(cmd, scoped_name, select_query)
+
+
 class DropTable(DDLStatement):
 
     def __init__(self, table_name, database=None, must_exist=True):

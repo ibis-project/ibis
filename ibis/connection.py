@@ -167,6 +167,33 @@ class ImpalaConnection(SQLConnection):
         query = statement.compile()
         self._execute(query)
 
+    def insert(self, table_name, expr, database=None, overwrite=False):
+        """
+        Insert into existing table
+
+        Parameters
+        ----------
+        table_name : string
+        expr : TableExpr
+        database : string, default None
+        overwrite : boolean, default False
+          If True, will replace existing contents of table
+
+        Examples
+        --------
+        con.insert('my_table', table_expr)
+
+        # Completely overwrite contents
+        con.insert('my_table', table_expr, overwrite=True)
+        """
+        ast = sql.build_ast(expr)
+        select = ast.queries[0]
+        statement = ddl.InsertSelect(table_name, select,
+                                     database=database,
+                                     overwrite=overwrite)
+        query = statement.compile()
+        self._execute(query)
+
     def drop_table(self, table_name, database=None, must_exist=False):
         """
 

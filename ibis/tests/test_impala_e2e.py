@@ -126,13 +126,39 @@ FROM tpch.lineitem li
         # TODO: what if user impyla version does not have decimal Metadata?
 
     def test_ctas_from_table_expr(self):
-        import uuid
-        table_name = 'testing_' + uuid.uuid4().get_hex()
-
         expr = self.con.table('functional.alltypes')
+        table_name = self._random_table_name()
 
         try:
             self.con.create_table(table_name, expr, database='functional')
+        except Exception:
+            raise
+        finally:
+            self._ensure_drop(table_name, database='functional')
+
+    def _random_table_name(self):
+        import uuid
+        table_name = 'testing_' + uuid.uuid4().get_hex()
+        return table_name
+
+    def test_insert_table(self):
+        expr = self.con.table('functional.alltypes')
+        table_name = self._random_table_name()
+        db = 'functional'
+
+        try:
+            self.con.create_table(table_name, expr.limit(0),
+                                  database=db)
+            self.con.insert(table_name, expr.limit(10), database=db)
+            self.con.insert(table_name, expr.limit(10), database=db)
+
+            sz = self.con.table('functional.{}'.format(table_name)).count()
+            assert sz.execute() == 20
+
+            # Overwrite and verify only 10 rows now
+            self.con.insert(table_name, expr.limit(10), database=db,
+                            overwrite=True)
+            assert sz.execute() == 10
         except Exception:
             raise
         finally:
