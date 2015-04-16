@@ -1059,6 +1059,53 @@ FROM t0
 GROUP BY 1"""
         assert result == expected
 
+    def test_subquery_factor_correlated_subquery(self):
+        # #173, #183 and other issues
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+        customer = self.con.table('tpch_customer')
+        orders = self.con.table('tpch_orders')
+
+        fields_of_interest = [customer,
+                              region.r_name.name('region'),
+                              orders.o_totalprice.name('amount'),
+                              orders.o_orderdate.cast('timestamp').name('odate')]
+
+        tpch = (region.join(nation, region.r_regionkey == nation.n_regionkey)
+                .join(customer, customer.c_nationkey == nation.n_nationkey)
+                .join(orders, orders.o_custkey == customer.c_custkey)
+                [fields_of_interest])
+
+        # Self-reference + correlated subquery complicates things
+        t2 = tpch.view()
+        conditional_avg = t2[t2.region == tpch.region].amount.mean()
+        amount_filter = tpch.amount > conditional_avg
+
+        expr = tpch[amount_filter].limit(10)
+
+        result = to_sql(expr)
+        expected = """\
+WITH t0 AS (
+  SELECT t5.*, t1.r_name AS region, t3.o_totalprice AS amount,
+         CAST(t3.o_orderdate AS timestamp) AS odate
+  FROM tpch_region t1
+    INNER JOIN tpch_nation t2
+      ON t1.r_regionkey = t2.n_regionkey
+    INNER JOIN tpch_customer t5
+      ON t5.c_nationkey = t2.n_nationkey
+    INNER JOIN tpch_orders t3
+      ON t3.o_custkey = t5.c_custkey
+)
+SELECT t0.*
+FROM t0
+WHERE t0.amount > (
+  SELECT avg(t4.amount) AS tmp
+  FROM t0 t4
+  WHERE t4.region = t0.region
+)
+LIMIT 10"""
+        assert result == expected
+
     def test_tpch_self_join_failure(self):
         # duplicating the integration test here
 

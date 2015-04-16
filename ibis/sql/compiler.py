@@ -288,16 +288,7 @@ class SelectBuilder(object):
                     .limit(op.k))
 
         pred = (op.arg == getattr(rank_set, op.arg.get_name()))
-        filtered = self.table_set.semi_join(rank_set, [pred])
-
-        # Now, fix up the now broken select set. Is this necessary?
-        # new_select_set = []
-        # for x in self.select_set:
-        #     new_expr = ir.sub_for(x, [(self.table_set, filtered)])
-        #     new_select_set.append(new_expr)
-        # self.select_set = new_select_set
-
-        self.table_set = filtered
+        self.table_set = self.table_set.semi_join(rank_set, [pred])
 
         return None
 
@@ -472,14 +463,22 @@ class SelectBuilder(object):
         # want.
 
         # Find the subqueries, and record them in the passed query context.
-        self.subqueries = _extract_subqueries(self)
-        for expr in self.subqueries:
-            self.context.set_extracted(expr)
+        subqueries = _extract_subqueries(self)
+        self.subqueries = []
+        for expr in subqueries:
+            # See #173. Might have been extracted already in a parent context.
+            if not self.context.is_extracted(expr):
+                self.subqueries.append(expr)
+                self.context.set_extracted(expr)
 
 
 def _extract_subqueries(select_stmt):
     helper = _ExtractSubqueries(select_stmt)
     return helper.get_result()
+
+
+def _extract_noop(self, expr):
+    return
 
 
 class _ExtractSubqueries(object):
@@ -501,6 +500,9 @@ class _ExtractSubqueries(object):
     def get_result(self):
         self.visit(self.query.table_set)
 
+        for clause in self.query.filters:
+            self.visit(clause)
+
         to_extract = []
 
         # Read them inside-out, to avoid nested dependency issues
@@ -513,13 +515,19 @@ class _ExtractSubqueries(object):
         return to_extract
 
     def observe(self, expr):
-        key = id(expr.op())
+        key = self._key(expr)
 
         if key not in self.expr_counts:
             self.observed_keys.append(key)
 
         self.observed_exprs[key] = expr
         self.expr_counts[key] += 1
+
+    def _key(self, expr):
+        return id(expr.op())
+
+    def _has_been_observed(self, expr):
+        return self._key(expr) in self.observed_exprs
 
     def visit(self, expr):
         node = expr.op()
@@ -532,6 +540,11 @@ class _ExtractSubqueries(object):
             self._visit_join(expr)
         elif isinstance(node, ops.PhysicalTable):
             self._visit_physical_table(expr)
+        elif isinstance(node, ops.ValueNode):
+            for arg in node.flat_args():
+                if not isinstance(arg, ir.Expr):
+                    continue
+                self.visit(arg)
         else:
             raise NotImplementedError(type(node))
 
@@ -540,8 +553,9 @@ class _ExtractSubqueries(object):
         self.visit(node.left)
         self.visit(node.right)
 
-    def _visit_physical_table(self, expr):
-        return
+    _visit_physical_table = _extract_noop
+    _visit_ExistsSubquery = _extract_noop
+    _visit_NotExistsSubquery = _extract_noop
 
     def _visit_Aggregation(self, expr):
         self.observe(expr)
@@ -551,7 +565,7 @@ class _ExtractSubqueries(object):
         self.observe(expr)
 
     def _visit_Filter(self, expr):
-        pass
+        self.visit(expr.op().table)
 
     def _visit_Limit(self, expr):
         self.visit(expr.op().table)
@@ -565,6 +579,11 @@ class _ExtractSubqueries(object):
 
     def _visit_SQLQueryResult(self, expr):
         self.observe(expr)
+
+    def _visit_TableColumn(self, expr):
+        table = expr.op().table
+        if not self._has_been_observed(table):
+            self.visit(table)
 
     def _visit_SelfReference(self, expr):
         self.visit(expr.op().table)

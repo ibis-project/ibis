@@ -104,14 +104,17 @@ class QueryContext(object):
 
     def has_alias(self, table_expr, parent_contexts=False):
         key = self._get_table_key(table_expr)
+        return self._key_in(key, 'table_aliases',
+                            parent_contexts=parent_contexts)
 
-        if key in self.table_aliases:
+    def _key_in(self, key, memo_attr, parent_contexts=False):
+        if key in getattr(self, memo_attr):
             return True
 
         ctx = self
         while parent_contexts and ctx.parent is not None:
             ctx = ctx.parent
-            if key in ctx.table_aliases:
+            if key in getattr(ctx, memo_attr):
                 return True
 
         return False
@@ -150,7 +153,7 @@ class QueryContext(object):
 
         # The expression isn't foreign to us. For example, the parent table set
         # in a correlated WHERE subquery
-        if self.has_alias(expr):
+        if self.has_alias(expr, parent_contexts=True):
             return False
 
         exprs = [self.query.table_set] + self.query.select_set

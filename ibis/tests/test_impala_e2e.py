@@ -252,6 +252,30 @@ FROM tpch.lineitem li
         # it works!
         yoy.execute()
 
+    def test_tpch_correlated_subquery_failure(self):
+        # #183 and other issues
+        region = self.con.table('tpch.region')
+        nation = self.con.table('tpch.nation')
+        customer = self.con.table('tpch.customer')
+        orders = self.con.table('tpch.orders')
+
+        fields_of_interest = [customer,
+                              region.r_name.name('region'),
+                              orders.o_totalprice.name('amount'),
+                              orders.o_orderdate.cast('timestamp').name('odate')]
+
+        tpch = (region.join(nation, region.r_regionkey == nation.n_regionkey)
+                .join(customer, customer.c_nationkey == nation.n_nationkey)
+                .join(orders, orders.o_custkey == customer.c_custkey)
+                [fields_of_interest])
+
+        t2 = tpch.view()
+        conditional_avg = t2[(t2.region == tpch.region)].amount.mean()
+        amount_filter = tpch.amount > conditional_avg
+
+        expr = tpch[amount_filter].limit(0)
+        expr.execute()
+
     def _ensure_drop(self, table_name, database=None):
         self.con.drop_table(table_name, database=database,
                             must_exist=False)
