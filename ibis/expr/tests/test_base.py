@@ -1322,6 +1322,16 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         ex_schema = api.Schema(['g', 'metric'], ['string', 'double'])
         assert aggregated.schema().equals(ex_schema)
 
+    def test_self_join_no_view_convenience(self):
+        # #165, self joins ought to be possible when the user specifies the
+        # column names to join on rather than referentially-valid expressions
+
+        result = self.table.join(self.table, [('g', 'g')])
+
+        t2 = self.table.view()
+        expected = self.table.join(t2, self.table.g == t2.g)
+        assert result.equals(expected)
+
     def test_join_project_after(self):
         # e.g.
         #

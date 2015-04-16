@@ -1038,16 +1038,19 @@ class Join(TableNode):
             raise TypeError('Can only join table expressions, got %s for '
                             'right table' % type(left))
 
+        if left.equals(right):
+            right = right.view()
+
         self.left = left
         self.right = right
         self.predicates = self._clean_predicates(join_predicates)
 
         # Validate join predicates. Each predicate must be valid jointly when
         # considering the roots of each input table
-        validator = ExprValidator([left, right])
+        validator = ExprValidator([self.left, self.right])
         validator.validate_all(self.predicates)
 
-        Node.__init__(self, [left, right, self.predicates])
+        Node.__init__(self, [self.left, self.right, self.predicates])
 
     def _clean_predicates(self, predicates):
         import ibis.expr.analysis as L
