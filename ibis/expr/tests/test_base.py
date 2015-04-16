@@ -1172,12 +1172,20 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
             self.assertRaises(com.ExpressionError, self.table.aggregate,
                               metrics, by=by, having=[case])
 
-    def test_aggregate_root_table_internal(self):
-        pass
+    def test_group_by_having_api(self):
+        # #154, add a HAVING post-predicate in a composable way
+        metric = self.table.f.sum().name('foo')
+        postp = self.table.d.mean() > 1
 
-    def test_group_by_expr(self):
-        # Should not be an issue, as long as expr originates from table and has
-        # a name
+        expr = (self.table
+                .group_by('g')
+                .having(postp)
+                .aggregate(metric))
+
+        expected = self.table.aggregate(metric, by='g', having=postp)
+        assert expr.equals(expected)
+
+    def test_aggregate_root_table_internal(self):
         pass
 
     def test_compound_aggregate_expr(self):

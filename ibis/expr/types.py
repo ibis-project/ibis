@@ -929,16 +929,29 @@ class GroupedTableExpr(object):
                 by = table._resolve([by])
             else:
                 by = [by]
+        else:
+            by = table._resolve(by)
 
         self.table = table
         self.by = by
-        self.having = having
+        self._having = having or []
 
-    def aggregate(self, metrics, having=None):
-        return self.table.aggregate(metrics, by=self.by, having=having)
+    def aggregate(self, metrics):
+        return self.table.aggregate(metrics, by=self.by,
+                                    having=self._having)
 
     def having(self, expr):
-        raise NotImplementedError
+        """
+        Add a post-aggregation result filter (like the having argument in
+        `aggregate`), for composability with the group_by API
+
+        Returns
+        -------
+        grouped : GroupedTableExpr
+        """
+        exprs = util.promote_list(expr)
+        new_having = self._having + exprs
+        return GroupedTableExpr(self.table, self.by, having=new_having)
 
     def count(self, metric_name='count'):
         """

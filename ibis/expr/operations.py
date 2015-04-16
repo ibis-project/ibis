@@ -1241,7 +1241,7 @@ class SortBy(TableNode):
     def __init__(self, table_expr, sort_keys):
         self.table = table_expr
         self.keys = [_to_sort_key(self.table, k)
-                     for k in _promote_list(sort_keys)]
+                     for k in util.promote_list(sort_keys)]
 
         TableNode.__init__(self, [self.table, self.keys])
 
@@ -1412,7 +1412,7 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
 
     def _rewrite_exprs(self, what):
         from ibis.expr.analysis import substitute_parents
-        what = _promote_list(what)
+        what = util.promote_list(what)
         return [substitute_parents(x, past_projection=False) for x in what]
 
     def substitute_table(self, table_expr):
@@ -1694,9 +1694,3 @@ class ExtractSecond(ExtractTimestampField):
 
 class ExtractMillisecond(ExtractTimestampField):
     pass
-
-
-def _promote_list(val):
-    if not isinstance(val, list):
-        val = [val]
-    return val

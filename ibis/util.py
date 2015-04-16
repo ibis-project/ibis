@@ -62,3 +62,9 @@ def all_of(values, t):
         if not isinstance(x, t):
             return False
     return True
+
+
+def promote_list(val):
+    if not isinstance(val, list):
+        val = [val]
+    return val
