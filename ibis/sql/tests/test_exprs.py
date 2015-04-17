@@ -106,9 +106,9 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         a, b, g = self.table.get_columns(['a', 'b', 'g'])
 
         cases = [
-            (g.cast('double').name('g_dub'), 'CAST(g AS double) AS g_dub'),
+            (g.cast('double').name('g_dub'), 'CAST(g AS double) AS `g_dub`'),
             (g.name('has a space'), 'g AS `has a space`'),
-            (((a - b) * a).name('expr'), '(a - b) * a AS expr')
+            (((a - b) * a).name('expr'), '(a - b) * a AS `expr`')
         ]
 
         return self._check_expr_cases(cases, named=True)
@@ -216,8 +216,8 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
         result = to_sql(expr)
         expected = \
-            """SELECT extract(i, 'year') AS year, extract(i, 'month') AS month,
-       extract(i, 'day') AS day
+            """SELECT extract(i, 'year') AS `year`, extract(i, 'month') AS `month`,
+       extract(i, 'day') AS `day`
 FROM alltypes"""
         assert result == expected
 

@@ -397,10 +397,14 @@ _generic_value_methods = dict(
 
 approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality)
 approx_median = _agg_function('approx_median', _ops.CMSMedian)
+max = _agg_function('max', _ops.Max)
+min = _agg_function('min', _ops.Min)
 
 
 _generic_array_methods = dict(
     count=count,
+    min=min,
+    max=max,
     approx_median=approx_median,
     approx_nunique=approx_nunique,
     group_concat=group_concat,
@@ -478,15 +482,11 @@ _numeric_value_methods = dict(
 )
 
 mean = _agg_function('mean', _ops.Mean)
-max = _agg_function('max', _ops.Max)
-min = _agg_function('min', _ops.Min)
 sum = _agg_function('sum', _ops.Sum)
 
 
 _numeric_array_methods = dict(
     mean=mean,
-    min=min,
-    max=max,
     sum=sum,
 )
 

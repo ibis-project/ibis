@@ -1225,6 +1225,19 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
                     .aggregate([self.table.count().name('foo')]))
         assert result.equals(expected)
 
+    def test_group_by_column_select_api(self):
+        grouped = self.table.group_by('g')
+
+        result = grouped.f.sum()
+        expected = grouped.aggregate(self.table.f.sum().name('sum(f)'))
+        assert result.equals(expected)
+
+        supported_functions = ['sum', 'mean', 'count', 'size', 'max', 'min']
+
+        # make sure they all work
+        for fn in supported_functions:
+            getattr(grouped.f, fn)()
+
     def test_value_counts_convenience(self):
         # #152
         result = self.table.g.value_counts()

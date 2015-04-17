@@ -194,8 +194,8 @@ def _string_literal_format(expr):
     return "'{!s}'".format(value.replace("'", "\\'"))
 
 
-def quote_identifier(name, quotechar='`'):
-    if name.count(' ') or name in identifiers.impala_identifiers:
+def quote_identifier(name, quotechar='`', force=False):
+    if force or name.count(' ') or name in identifiers.impala_identifiers:
         return '{0}{1}{0}'.format(quotechar, name)
     else:
         return name
@@ -577,7 +577,8 @@ class ExprTranslator(object):
         if self._needs_name(self.expr):
             # TODO: this could fail in various ways
             name = self.expr.get_name()
-            translated = _name_expr(translated, quote_identifier(name))
+            translated = _name_expr(translated,
+                                    quote_identifier(name, force=True))
         return translated
 
     def _needs_name(self, expr):

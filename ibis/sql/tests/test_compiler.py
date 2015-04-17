@@ -255,7 +255,7 @@ FROM (
         result = to_sql(expr)
         expected = """SELECT *
 FROM (
-  SELECT string_col, count(*) AS nrows
+  SELECT string_col, count(*) AS `nrows`
   FROM functional_alltypes
   GROUP BY 1
   LIMIT 5
@@ -302,7 +302,7 @@ class TestNonTabularResults(unittest.TestCase):
         query = ast.queries[0]
 
         sql_query = query.compile()
-        expected = """SELECT sum(f) AS tmp
+        expected = """SELECT sum(f) AS `tmp`
 FROM alltypes
 WHERE c > 0"""
 
@@ -323,7 +323,7 @@ WHERE c > 0"""
         query = ast.queries[0]
 
         sql_query = query.compile()
-        expected = """SELECT g, sum(f) AS total
+        expected = """SELECT g, sum(f) AS `total`
 FROM alltypes
 WHERE c > 0
 GROUP BY 1"""
@@ -342,9 +342,9 @@ GROUP BY 1"""
         expr2 = expr.g.cast('double')
 
         query = to_sql(expr2)
-        expected = """SELECT CAST(g AS double) AS tmp
+        expected = """SELECT CAST(g AS double) AS `tmp`
 FROM (
-  SELECT g, count(*) AS count
+  SELECT g, count(*) AS `count`
   FROM alltypes
   GROUP BY 1
 ) t0"""
@@ -357,7 +357,7 @@ FROM (
 
         result = to_sql(reduction)
         expected = """\
-SELECT sum(CASE WHEN g IS NULL THEN 1 ELSE 0 END) AS tmp
+SELECT sum(CASE WHEN g IS NULL THEN 1 ELSE 0 END) AS `tmp`
 FROM alltypes"""
         assert result == expected
 
@@ -609,7 +609,7 @@ FROM star1 t0
         result = to_sql(expr)
         expected = """SELECT t1.*, t0.*
 FROM (
-  SELECT t2.n_nationkey, t2.n_name AS nation, t3.r_name AS region
+  SELECT t2.n_nationkey, t2.n_name AS `nation`, t3.r_name AS `region`
   FROM nation t2
     INNER JOIN region t3
       ON t2.n_regionkey = t3.r_regionkey
@@ -673,7 +673,7 @@ WHERE t0.f > 0 AND
         # TODO: I'm not sure if this is exactly what we want
         expected_sql = """SELECT *
 FROM (
-  SELECT t0.*, t0.f - t1.value1 AS diff
+  SELECT t0.*, t0.f - t1.value1 AS `diff`
   FROM star1 t0
     INNER JOIN star2 t1
       ON t0.foo_id = t1.foo_id
@@ -704,12 +704,12 @@ WHERE a > 0 AND
         cases = [
             (t1.aggregate([t1['f'].sum().name('total')],
                           [t1['foo_id']]),
-             """SELECT foo_id, sum(f) AS total
+             """SELECT foo_id, sum(f) AS `total`
 FROM star1
 GROUP BY 1"""),
             (t1.aggregate([t1['f'].sum().name('total')],
                           ['foo_id', 'bar_id']),
-             """SELECT foo_id, bar_id, sum(f) AS total
+             """SELECT foo_id, bar_id, sum(f) AS `total`
 FROM star1
 GROUP BY 1, 2""")
         ]
@@ -727,7 +727,7 @@ GROUP BY 1, 2""")
         expr = t1.aggregate(metrics, by=['foo_id'],
                             having=[total > 10])
         result = to_sql(expr)
-        expected = """SELECT foo_id, sum(f) AS total
+        expected = """SELECT foo_id, sum(f) AS `total`
 FROM star1
 GROUP BY 1
 HAVING sum(f) > 10"""
@@ -736,7 +736,7 @@ HAVING sum(f) > 10"""
         expr = t1.aggregate(metrics, by=['foo_id'],
                             having=[t1.count() > 100])
         result = to_sql(expr)
-        expected = """SELECT foo_id, sum(f) AS total
+        expected = """SELECT foo_id, sum(f) AS `total`
 FROM star1
 GROUP BY 1
 HAVING count(*) > 100"""
@@ -746,7 +746,7 @@ HAVING count(*) > 100"""
         expr = self.con.table('star1').count()
 
         result = to_sql(expr)
-        expected = """SELECT count(*) AS tmp
+        expected = """SELECT count(*) AS `tmp`
 FROM star1"""
         assert result == expected
 
@@ -759,9 +759,9 @@ FROM star1"""
 
         expr = table_ref.count()
         result = to_sql(expr)
-        expected = """SELECT count(*) AS tmp
+        expected = """SELECT count(*) AS `tmp`
 FROM (
-  SELECT t2.*, t1.r_name AS region
+  SELECT t2.*, t1.r_name AS `region`
   FROM tpch_region t1
     INNER JOIN tpch_nation t2
       ON t1.r_regionkey = t2.n_regionkey
@@ -833,10 +833,10 @@ FROM (
         assert table3.equals(expected)
         assert table3_filtered.equals(expected2)
 
-        ex_sql = """SELECT *, foo + bar AS baz, foo * 2 AS qux
+        ex_sql = """SELECT *, foo + bar AS `baz`, foo * 2 AS `qux`
 FROM tbl"""
 
-        ex_sql2 = """SELECT *, foo + bar AS baz, foo * 2 AS qux
+        ex_sql2 = """SELECT *, foo + bar AS `baz`, foo * 2 AS `qux`
 FROM tbl
 WHERE value > 0"""
 
@@ -892,7 +892,7 @@ FROM (
     INNER JOIN tpch_region t3
       ON t2.n_regionkey = t3.r_regionkey
     LEFT SEMI JOIN (
-      SELECT t2.n_name, sum(CAST(t1.c_acctbal AS double)) AS __tmp__
+      SELECT t2.n_name, sum(CAST(t1.c_acctbal AS double)) AS `__tmp__`
       FROM tpch_customer t1
         INNER JOIN tpch_nation t2
           ON t1.c_nationkey = t2.n_nationkey
@@ -918,7 +918,7 @@ FROM (
         filtered = proj[proj.g == 'bar']
 
         result = to_sql(filtered)
-        expected = """SELECT *, a + b AS foo
+        expected = """SELECT *, a + b AS `foo`
 FROM alltypes
 WHERE f > 0 AND
       g = 'bar'"""
@@ -928,7 +928,7 @@ WHERE f > 0 AND
         result = to_sql(agged)
         expected = """SELECT g, sum(foo) AS `foo total`
 FROM (
-  SELECT *, a + b AS foo
+  SELECT *, a + b AS `foo`
   FROM alltypes
   WHERE f > 0 AND
         g = 'bar'
@@ -942,7 +942,7 @@ GROUP BY 1"""
         result = to_sql(agged2)
         expected = """SELECT t0.g, sum(t0.foo) AS `foo total`
 FROM (
-  SELECT *, a + b AS foo
+  SELECT *, a + b AS `foo`
   FROM alltypes
   WHERE f > 0
 ) t0
@@ -961,7 +961,7 @@ GROUP BY 1"""
         result = to_sql(what)
         expected = """SELECT t0.*, t1.value1
 FROM (
-  SELECT foo_id, sum(f) AS total
+  SELECT foo_id, sum(f) AS `total`
   FROM star1
   GROUP BY 1
 ) t0
@@ -986,11 +986,11 @@ FROM (
                               by=['key1'])
 
         result = to_sql(agg3)
-        expected = """SELECT key1, sum(total) AS total
+        expected = """SELECT key1, sum(total) AS `total`
 FROM (
-  SELECT key1, key2, sum(total) AS total
+  SELECT key1, key2, sum(total) AS `total`
   FROM (
-    SELECT key1, key2, key3, sum(value) AS total
+    SELECT key1, key2, key3, sum(value) AS `total`
     FROM foo_table
     GROUP BY 1, 2, 3
   ) t1
@@ -1012,7 +1012,7 @@ GROUP BY 1"""
 
         # TODO: Not fusing the aggregation with the projection yet
         result = to_sql(what)
-        expected = """SELECT foo_id, sum(value1) AS total
+        expected = """SELECT foo_id, sum(value1) AS `total`
 FROM (
   SELECT t1.*, t2.value1
   FROM star1 t1
@@ -1048,11 +1048,11 @@ GROUP BY 1"""
 
         result = to_sql(reagged)
         expected = """WITH t0 AS (
-  SELECT g, a, b, sum(f) AS total
+  SELECT g, a, b, sum(f) AS `total`
   FROM alltypes
   GROUP BY 1, 2, 3
 )
-SELECT t0.g, max(t0.total - t1.total) AS metric
+SELECT t0.g, max(t0.total - t1.total) AS `metric`
 FROM t0
   INNER JOIN t0 t1
     ON t0.a = t1.b
@@ -1086,8 +1086,8 @@ GROUP BY 1"""
         result = to_sql(expr)
         expected = """\
 WITH t0 AS (
-  SELECT t5.*, t1.r_name AS region, t3.o_totalprice AS amount,
-         CAST(t3.o_orderdate AS timestamp) AS odate
+  SELECT t5.*, t1.r_name AS `region`, t3.o_totalprice AS `amount`,
+         CAST(t3.o_orderdate AS timestamp) AS `odate`
   FROM tpch_region t1
     INNER JOIN tpch_nation t2
       ON t1.r_regionkey = t2.n_regionkey
@@ -1099,7 +1099,7 @@ WITH t0 AS (
 SELECT t0.*
 FROM t0
 WHERE t0.amount > (
-  SELECT avg(t4.amount) AS tmp
+  SELECT avg(t4.amount) AS `tmp`
   FROM t0 t4
   WHERE t4.region = t0.region
 )
@@ -1163,7 +1163,7 @@ LIMIT 10"""
         expected = """SELECT *
 FROM star1
 WHERE f > (
-  SELECT avg(f) AS tmp
+  SELECT avg(f) AS `tmp`
   FROM star1
 )"""
         assert result == expected
@@ -1172,7 +1172,7 @@ WHERE f > (
         expected = """SELECT *
 FROM star1
 WHERE f > (
-  SELECT avg(f) AS tmp
+  SELECT avg(f) AS `tmp`
   FROM star1
   WHERE foo_id = 'foo'
 )"""
@@ -1190,7 +1190,7 @@ WHERE f > (
         expected = """SELECT *
 FROM star1
 WHERE f > (
-  SELECT ln(avg(f)) AS tmp
+  SELECT ln(avg(f)) AS `tmp`
   FROM star1
   WHERE foo_id = 'foo'
 )"""
@@ -1202,7 +1202,7 @@ WHERE f > (
         expected = """SELECT *
 FROM star1
 WHERE f > (
-  SELECT ln(avg(f)) + 1 AS tmp
+  SELECT ln(avg(f)) + 1 AS `tmp`
   FROM star1
   WHERE foo_id = 'foo'
 )"""
@@ -1226,7 +1226,7 @@ WHERE f > (
         expected = """SELECT t0.*
 FROM tbl t0
   LEFT SEMI JOIN (
-    SELECT city, avg(v2) AS __tmp__
+    SELECT city, avg(v2) AS `__tmp__`
     FROM tbl
     GROUP BY 1
     ORDER BY __tmp__ DESC
@@ -1243,7 +1243,7 @@ FROM tbl t0
         expected = """SELECT t0.*
 FROM tbl t0
   LEFT SEMI JOIN (
-    SELECT city, count(city) AS __tmp__
+    SELECT city, count(city) AS `__tmp__`
     FROM tbl
     GROUP BY 1
     ORDER BY __tmp__ DESC
@@ -1273,7 +1273,7 @@ FROM customer t0
   INNER JOIN region t2
     ON t1.n_regionkey = t2.r_regionkey
   LEFT SEMI JOIN (
-    SELECT t1.n_name, sum(t0.c_acctbal) AS __tmp__
+    SELECT t1.n_name, sum(t0.c_acctbal) AS `__tmp__`
     FROM customer t0
       INNER JOIN nation t1
         ON t0.c_nationkey = t1.n_nationkey
@@ -1314,12 +1314,12 @@ FROM customer t0
     WHEN 'foo' THEN 'bar'
     WHEN 'baz' THEN 'qux'
     ELSE 'default'
-  END AS col1,
+  END AS `col1`,
   CASE
     WHEN g = 'foo' THEN 'bar'
     WHEN g = 'baz' THEN g
     ELSE NULL
-  END AS col2, *
+  END AS `col2`, *
 FROM alltypes"""
         assert result == expected
 
@@ -1356,11 +1356,11 @@ class TestUnions(unittest.TestCase):
     def test_union(self):
         result = to_sql(self.union1)
         expected = """\
-SELECT string_col AS key, CAST(float_col AS double) AS value
+SELECT string_col AS `key`, CAST(float_col AS double) AS `value`
 FROM functional_alltypes
 WHERE int_col > 0
 UNION ALL
-SELECT string_col AS key, double_col AS value
+SELECT string_col AS `key`, double_col AS `value`
 FROM functional_alltypes
 WHERE int_col <= 0"""
         assert result == expected
@@ -1369,11 +1369,11 @@ WHERE int_col <= 0"""
         union = self.t1.union(self.t2, distinct=True)
         result = to_sql(union)
         expected = """\
-SELECT string_col AS key, CAST(float_col AS double) AS value
+SELECT string_col AS `key`, CAST(float_col AS double) AS `value`
 FROM functional_alltypes
 WHERE int_col > 0
 UNION
-SELECT string_col AS key, double_col AS value
+SELECT string_col AS `key`, double_col AS `value`
 FROM functional_alltypes
 WHERE int_col <= 0"""
         assert result == expected
@@ -1384,11 +1384,11 @@ WHERE int_col <= 0"""
         result = to_sql(expr)
         expected = """SELECT key
 FROM (
-  SELECT string_col AS key, CAST(float_col AS double) AS value
+  SELECT string_col AS `key`, CAST(float_col AS double) AS `value`
   FROM functional_alltypes
   WHERE int_col > 0
   UNION ALL
-  SELECT string_col AS key, double_col AS value
+  SELECT string_col AS `key`, double_col AS `value`
   FROM functional_alltypes
   WHERE int_col <= 0
 ) t0"""
@@ -1560,7 +1560,7 @@ FROM functional_alltypes"""
         expr = t[t.bigint_col > 0].group_by('string_col').aggregate([metric])
 
         result = to_sql(expr)
-        expected = """SELECT string_col, COUNT(DISTINCT int_col) AS nunique
+        expected = """SELECT string_col, COUNT(DISTINCT int_col) AS `nunique`
 FROM functional_alltypes
 WHERE bigint_col > 0
 GROUP BY 1"""
@@ -1577,8 +1577,8 @@ GROUP BY 1"""
         expr = t.group_by('string_col').aggregate(metrics)
 
         result = to_sql(expr)
-        expected = """SELECT string_col, COUNT(DISTINCT int_col) AS int_card,
-       COUNT(DISTINCT smallint_col) AS smallint_card
+        expected = """SELECT string_col, COUNT(DISTINCT int_col) AS `int_card`,
+       COUNT(DISTINCT smallint_col) AS `smallint_card`
 FROM functional_alltypes
 GROUP BY 1"""
         assert result == expected
@@ -1619,7 +1619,7 @@ class TestSubqueriesEtc(unittest.TestCase):
         expected = """SELECT *
 FROM foo
 WHERE y > (
-  SELECT max(x) AS tmp
+  SELECT max(x) AS `tmp`
   FROM bar
 )"""
         assert result == expected
@@ -1647,7 +1647,7 @@ WHERE job IN (
         expected = """SELECT t0.*
 FROM foo t0
 WHERE t0.y > (
-  SELECT avg(t1.y) AS tmp
+  SELECT avg(t1.y) AS `tmp`
   FROM foo t1
   WHERE t0.dept_id = t1.dept_id
 )"""

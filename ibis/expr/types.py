@@ -843,6 +843,7 @@ class TableExpr(Expr):
         -------
         grouped_expr : GroupedTableExpr
         """
+        from ibis.expr.groupby import GroupedTableExpr
         return GroupedTableExpr(self, by)
 
     def aggregate(self, agg_exprs, by=None, having=None):
@@ -916,62 +917,6 @@ class TableExpr(Expr):
         op = _ops().Union(self, other, distinct=distinct)
         return TableExpr(op)
 
-
-class GroupedTableExpr(object):
-
-    """
-    Helper intermediate construct
-    """
-
-    def __init__(self, table, by, having=None):
-        if not isinstance(by, (list, tuple)):
-            if not isinstance(by, Expr):
-                by = table._resolve([by])
-            else:
-                by = [by]
-        else:
-            by = table._resolve(by)
-
-        self.table = table
-        self.by = by
-        self._having = having or []
-
-    def aggregate(self, metrics):
-        return self.table.aggregate(metrics, by=self.by,
-                                    having=self._having)
-
-    def having(self, expr):
-        """
-        Add a post-aggregation result filter (like the having argument in
-        `aggregate`), for composability with the group_by API
-
-        Returns
-        -------
-        grouped : GroupedTableExpr
-        """
-        exprs = util.promote_list(expr)
-        new_having = self._having + exprs
-        return GroupedTableExpr(self.table, self.by, having=new_having)
-
-    def count(self, metric_name='count'):
-        """
-        Convenience function for computing the group sizes (number of rows per
-        group) given a grouped table.
-
-        Parameters
-        ----------
-        metric_name : string, default 'count'
-          Name to use for the row count metric
-
-        Returns
-        -------
-        aggregated : TableExpr
-          The aggregated table
-        """
-        metric = self.table.count().name(metric_name)
-        return self.table.aggregate([metric], by=self.by)
-
-    size = count
 
 #------------------------------------------------------------------------------
 # Declare all typed ValueExprs. This is what the user will actually interact
