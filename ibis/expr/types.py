@@ -653,6 +653,8 @@ class TableExpr(Expr):
         return attrs
 
     def _resolve(self, exprs):
+        exprs = util.promote_list(exprs)
+
         # Stash this helper method here for now
         out_exprs = []
         for expr in exprs:

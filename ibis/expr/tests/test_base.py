@@ -505,8 +505,17 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert not key4.ascending
         assert result2.equals(result3)
 
-    def test_sort_by_aggregate_or_projection_field(self):
-        pass
+    def test_sort_by_desc_deferred_sort_key(self):
+        result = (self.table.group_by('g')
+                  .size()
+                  .sort_by(ibis.desc('count')))
+
+        tmp = self.table.group_by('g').size()
+        expected = tmp.sort_by((tmp['count'], False))
+        expected2 = tmp.sort_by(ibis.desc(tmp['count']))
+
+        assert result.equals(expected)
+        assert result.equals(expected2)
 
     def test_slice_convenience(self):
         expr = self.table[:5]

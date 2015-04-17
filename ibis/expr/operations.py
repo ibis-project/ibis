@@ -79,10 +79,6 @@ def null():
     return _NULL
 
 
-def desc(expr):
-    return SortKey(expr, ascending=False)
-
-
 def value_list(values):
     return ValueList(values).to_expr()
 
@@ -1257,6 +1253,9 @@ class SortBy(TableNode):
 
 
 def _to_sort_key(table, key):
+    if isinstance(key, DeferredSortKey):
+        key = key.resolve(table)
+
     if isinstance(key, SortKey):
         return key
 
@@ -1296,6 +1295,39 @@ class SortKey(object):
     def equals(self, other):
         return (isinstance(other, SortKey) and self.expr.equals(other.expr)
                 and self.ascending == other.ascending)
+
+
+class DeferredSortKey(object):
+
+    def __init__(self, what, ascending=True):
+        self.what = what
+        self.ascending = ascending
+
+    def resolve(self, parent):
+        what = self.what
+        if not isinstance(what, ir.Expr):
+            what = parent.get_column(what)
+        return SortKey(what, ascending=self.ascending)
+
+
+def desc(expr):
+    """
+    Create a sort key (when used in sort_by) by the passed array expression or
+    column name.
+
+    Parameters
+    ----------
+    expr : array expression or string
+      Can be a column name in the table being sorted
+
+    Examples
+    --------
+    result = (self.table.group_by('g')
+              .size('count')
+              .sort_by(ibis.desc('count')))
+    """
+    return DeferredSortKey(expr, ascending=False)
+
 
 
 class SelfReference(ir.BlockingTableNode, HasSchema):
