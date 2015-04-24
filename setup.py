@@ -63,8 +63,6 @@ with open('requirements.txt') as f:
     file_reqs = f.read().splitlines()
     requirements = requirements + file_reqs
 
-print requirements
-
 if COMMS_EXT_ENABLED:
     comms_ext_libraries = []
     if sys.platform != 'darwin':
