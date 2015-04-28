@@ -687,6 +687,19 @@ class TestExprFormatting(unittest.TestCase):
         alias = formatter.memo.get_alias(table.op())
         assert formatted.count(alias) == 7
 
+    def test_aggregate_arg_names(self):
+        # Not sure how to test this *well*
+
+        t = self.table
+
+        by_exprs = [t.g.name('key1'), t.f.round().name('key2')]
+        agg_exprs = [t.c.sum().name('c'), t.d.mean().name('d')]
+
+        expr = self.table.group_by(by_exprs).aggregate(agg_exprs)
+        result = repr(expr)
+        assert 'metrics' in result
+        assert 'by' in result
+
     def test_format_multiple_join_with_projection(self):
         # Star schema with fact table
         table = api.table([

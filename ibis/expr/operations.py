@@ -1449,6 +1449,8 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
     where : pre-aggregation predicate
     """
 
+    _arg_names = ['table', 'metrics', 'by', 'having']
+
     def __init__(self, table, agg_exprs, by=None, having=None):
         # For tables, like joins, that are not materialized
         self.table = table

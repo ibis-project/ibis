@@ -158,19 +158,37 @@ class ExprFormatter(object):
     def _format_node(self, op):
         formatted_args = []
 
-        def visit(what):
+        def visit(what, extra_indents=0):
             if isinstance(what, ir.Expr):
                 result = self._format_subexpr(what)
             else:
                 result = self._indent(str(what))
+
+            if extra_indents > 0:
+                result = util.indent(result, self.indent_size)
+
             formatted_args.append(result)
 
-        for arg in op.args:
-            if isinstance(arg, list):
-                for x in arg:
-                    visit(x)
-            else:
-                visit(arg)
+        arg_names = getattr(op, '_arg_names', None)
+
+        if arg_names is None:
+            for arg in op.args:
+                if isinstance(arg, list):
+                    for x in arg:
+                        visit(x)
+                else:
+                    visit(arg)
+        else:
+            for arg, name in zip(op.args, arg_names):
+                name = self._indent('{}:'.format(name))
+                if isinstance(arg, list):
+                    if len(arg) > 0:
+                        formatted_args.append(name)
+                    for x in arg:
+                        visit(x, extra_indents=1)
+                else:
+                    formatted_args.append(name)
+                    visit(arg, extra_indents=1)
 
         opname = type(op).__name__
         type_display = self._get_type_display(op)
@@ -184,7 +202,6 @@ class ExprFormatter(object):
         return formatter.get_result()
 
     def _get_type_display(self, expr=None):
-
         if expr is None:
             expr = self.expr
 
