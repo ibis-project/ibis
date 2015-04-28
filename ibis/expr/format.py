@@ -138,7 +138,7 @@ class ExprFormatter(object):
         rows.extend(['  %s : %s' % tup for tup in
                      zip(table.schema.names, table.schema.types)])
         opname = type(table).__name__
-        type_display = self._get_type_display()
+        type_display = self._get_type_display(table)
         opline = '%s[%s]' % (opname, type_display)
         return '{}\n{}'.format(opline, self._indent('\n'.join(rows)))
 
@@ -173,7 +173,7 @@ class ExprFormatter(object):
                 visit(arg)
 
         opname = type(op).__name__
-        type_display = self._get_type_display()
+        type_display = self._get_type_display(op)
         opline = '%s[%s]' % (opname, type_display)
 
         return '\n'.join([opline] + formatted_args)
@@ -183,8 +183,15 @@ class ExprFormatter(object):
                                   memoize=False)
         return formatter.get_result()
 
-    def _get_type_display(self):
-        if isinstance(self.expr, ir.TableExpr):
+    def _get_type_display(self, expr=None):
+
+        if expr is None:
+            expr = self.expr
+
+        if isinstance(expr, ir.Node):
+            expr = expr.to_expr()
+
+        if isinstance(expr, ir.TableExpr):
             return 'table'
         elif isinstance(self.expr, ir.ArrayExpr):
             return 'array(%s)' % self.expr.type()

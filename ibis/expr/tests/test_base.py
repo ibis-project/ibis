@@ -658,6 +658,20 @@ class TestExprFormatting(unittest.TestCase):
         proj = self.table[['c', 'a', 'f']]
         repr(proj['a'])
 
+    def test_table_type_output(self):
+        foo = api.table(
+            [
+                ('job', 'string'),
+                ('dept_id', 'string'),
+                ('year', 'int32'),
+                ('y', 'double')
+            ], 'foo')
+
+        expr = foo.dept_id == foo.view().dept_id
+        result = repr(expr)
+        assert 'SelfReference[table]' in result
+        assert 'UnboundTable[table]' in result
+
     def test_memoize_aggregate_correctly(self):
         table = self.table
 
