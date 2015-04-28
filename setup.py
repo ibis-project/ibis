@@ -59,6 +59,9 @@ cmdclass['clean'] = clean
 
 common_include = ['ibis/src', np.get_include()]
 
+with open('requirements.txt') as f:
+    file_reqs = f.read().splitlines()
+    requirements = requirements + file_reqs
 
 if COMMS_EXT_ENABLED:
     comms_ext_libraries = []
