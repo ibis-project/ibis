@@ -440,3 +440,17 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
             (self.table.string_col.right(4), 'strright(string_col, 4)')
         ]
         self._check_expr_cases(cases)
+
+    def test_like(self):
+        cases = [
+            (self.table.string_col.like('foo%'), "string_col LIKE 'foo%'")
+        ]
+        self._check_expr_cases(cases)
+
+    def test_rlike(self):
+        ex = "string_col RLIKE '[\d]+'"
+        cases = [
+            (self.table.string_col.rlike('[\d]+'), ex),
+            (self.table.string_col.re_search('[\d]+'), ex),
+        ]
+        self._check_expr_cases(cases)

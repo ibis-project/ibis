@@ -170,6 +170,7 @@ FROM tpch.lineitem li
         i1 = table.tinyint_col
         i4 = table.int_col
         d = table.double_col
+        s = table.string_col
 
         exprs = [
             api.now(),
@@ -212,6 +213,10 @@ FROM tpch.lineitem li
             api.greatest(table.float_col,
                          table.double_col, 5),
             api.least(table.string_col, 'foo'),
+
+            # string stuff
+            s.like('6%'),
+            s.re_search('[\d]+'),
         ]
 
         proj_exprs = [expr.name('e%d' % i)

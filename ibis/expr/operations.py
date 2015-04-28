@@ -570,6 +570,10 @@ def _string_output(self):
     return _shape_like(self.arg, 'string')
 
 
+def _bool_output(self):
+    return _shape_like(self.arg, 'boolean')
+
+
 class StringUnaryOp(UnaryOp):
 
     output_type = _string_output
@@ -602,6 +606,28 @@ class StrRight(ValueNode):
         ValueNode.__init__(self, [arg, nchars])
 
     output_type = _string_output
+
+
+class FuzzySearch(ValueNode):
+
+    def __init__(self, arg, pattern):
+        self.arg = arg
+        self.pattern = as_value_expr(pattern)
+
+        if not isinstance(self.pattern, ir.StringScalar):
+            raise TypeError(self.pattern)
+
+        ValueNode.__init__(self, [self.arg, self.pattern])
+
+    output_type = _bool_output
+
+
+class StringSQLLike(FuzzySearch):
+    pass
+
+
+class RegexSearch(FuzzySearch):
+    pass
 
 
 class StringLength(UnaryOp):

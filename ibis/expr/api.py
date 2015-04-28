@@ -568,10 +568,49 @@ def _string_right(self, nchars):
     return _ops.StrRight(self, nchars).to_expr()
 
 
+def _string_like(self, pattern):
+    """
+    Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
+    % as a multiple-character wildcard or _ (underscore) as a single-character
+    wildcard.
+
+    Use re_search or rlike for regex-based matching.
+
+    Parameters
+    ----------
+    pattern : string
+
+    Returns
+    -------
+    matched : boolean value
+    """
+    return _ops.StringSQLLike(self, pattern).to_expr()
+
+
+def re_search(arg, pattern):
+    """
+    Search string values using a regular expression. Returns True if the regex
+    matches a string and False otherwise.
+
+    Parameters
+    ----------
+    pattern : string (regular expression string)
+
+    Returns
+    -------
+    searched : boolean value
+    """
+    return _ops.RegexSearch(arg, pattern).to_expr()
+
+
 _string_value_methods = dict(
     length=_unary_op('length', _ops.StringLength),
     lower=_unary_op('lower', _ops.Lowercase),
     upper=_unary_op('upper', _ops.Uppercase),
+
+    like=_string_like,
+    rlike=re_search,
+    re_search=re_search,
 
     substr=_string_substr,
     left=_string_left,

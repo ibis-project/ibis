@@ -72,6 +72,20 @@ def _contains(translator, expr):
     return '{!s} IN {!s}'.format(comp, options)
 
 
+def _like(translator, expr):
+    op = expr.op()
+    arg = translator.translate(op.arg)
+    pattern = translator.translate(op.pattern)
+    return '{!s} LIKE {!s}'.format(arg, pattern)
+
+
+def _rlike(translator, expr):
+    op = expr.op()
+    arg = translator.translate(op.arg)
+    pattern = translator.translate(op.pattern)
+    return '{!s} RLIKE {!s}'.format(arg, pattern)
+
+
 def _not_contains(translator, expr):
     # Slight code dup
     op = expr.op()
@@ -528,6 +542,9 @@ _other_ops = {
     ops.Coalesce: _coalesce_like('coalesce'),
     ops.Greatest: _coalesce_like('greatest'),
     ops.Least: _coalesce_like('least'),
+
+    ops.StringSQLLike: _like,
+    ops.RegexSearch: _rlike,
 
     ops.Between: _between,
     ops.Contains: _contains,
