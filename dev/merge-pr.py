@@ -22,6 +22,9 @@
 #
 # Lightly modified from version of this script in incubator-parquet-format
 
+from requests.auth import HTTPBasicAuth
+import requests
+
 import json
 import os
 import subprocess
@@ -38,21 +41,23 @@ PR_REMOTE_NAME = os.environ.get("PR_REMOTE_NAME", "origin")
 # Remote name where results pushed
 PUSH_REMOTE_NAME = os.environ.get("PUSH_REMOTE_NAME", "origin")
 
-GITHUB_BASE = "http://github.mtv.cloudera.com/wesm/" + PROJECT_NAME + "/pull"
-GITHUB_API_BASE = "http://github.mtv.cloudera.com/api/v3/repos/wesm/" + PROJECT_NAME
+GITHUB_BASE = "https://github.com/cloudera/" + PROJECT_NAME + "/pull"
+GITHUB_API_BASE = "https://api.github.com/repos/cloudera/" + PROJECT_NAME
 
 # Prefix added to temporary branches
 BRANCH_PREFIX = "PR_TOOL"
 
 os.chdir(IBIS_HOME)
 
+GITHUB_USERNAME = os.environ['GITHUB_USER']
+import getpass
+GITHUB_PASSWORD = getpass.getpass('Enter github.com password for %s:'
+                                  % GITHUB_USERNAME)
 
 def get_json(url):
-    try:
-        return json.load(urllib2.urlopen(url))
-    except urllib2.HTTPError as e:
-        print "Unable to fetch URL, exiting: %s" % url
-        sys.exit(-1)
+    auth = HTTPBasicAuth(GITHUB_USERNAME, GITHUB_PASSWORD)
+    req = requests.get(url, auth=auth)
+    return req.json()
 
 
 def fail(msg):
