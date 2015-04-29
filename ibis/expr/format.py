@@ -180,15 +180,23 @@ class ExprFormatter(object):
                     visit(arg)
         else:
             for arg, name in zip(op.args, arg_names):
-                name = self._indent('{}:'.format(name))
+                if name is not None:
+                    name = self._indent('{}:'.format(name))
                 if isinstance(arg, list):
-                    if len(arg) > 0:
+                    if name is not None and len(arg) > 0:
                         formatted_args.append(name)
+                        indents = 1
+                    else:
+                        indents = 0
                     for x in arg:
-                        visit(x, extra_indents=1)
+                        visit(x, extra_indents=indents)
                 else:
-                    formatted_args.append(name)
-                    visit(arg, extra_indents=1)
+                    if name is not None:
+                        formatted_args.append(name)
+                        indents = 1
+                    else:
+                        indents = 0
+                    visit(arg, extra_indents=indents)
 
         opname = type(op).__name__
         type_display = self._get_type_display(op)

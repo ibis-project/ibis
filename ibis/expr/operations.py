@@ -1237,6 +1237,8 @@ class Filter(TableNode):
 
 class Limit(ir.BlockingTableNode):
 
+    _arg_names = [None, 'n', 'offset']
+
     def __init__(self, table, n, offset=0):
         self.table = table
         self.n = n
@@ -1490,10 +1492,6 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
             if not isinstance(expr, ir.BooleanScalar):
                 raise ExpressionError('Having clause must be boolean '
                                       'expression, was: {!s}'
-                                      .format(_safe_repr(expr)))
-            if not is_scalar(expr) or not expr.is_reduction():
-                raise ExpressionError('Having clause must contain a '
-                                      'reduction was: {!s}'
                                       .format(_safe_repr(expr)))
 
         # All non-scalar refs originate from the input table
