@@ -25,9 +25,9 @@ class DDLStatement(object):
 
     def _get_scoped_name(self, table_name, database):
         if database:
-            scoped_name = '{}.{}'.format(database, table_name)
+            scoped_name = '{}.`{}`'.format(database, table_name)
         else:
-            scoped_name = table_name
+            scoped_name = '`{}`'.format(table_name)
         return scoped_name
 
 
@@ -446,33 +446,34 @@ class Union(DDLStatement):
         return query
 
 
-class CTAS(DDLStatement):
+class CreateTable(DDLStatement):
 
     """
-    Create Table As Select
+
+    Parameters
+    ----------
+    partition :
+
     """
 
-    def __init__(self, table_name, select, context, database=None,
-                 external=False, format='parquet', overwrite=False,
-                 partition=None):
-        self.select = select
-        self.context = context
-
+    def __init__(self, table_name, database=None, external=False,
+                 format='parquet', overwrite=False, partition=None):
         self.table_name = table_name
         self.database = database
         self.external = external
         self.overwrite = overwrite
-        self.format = format.lower()
+        self.format = self._validate_storage_format(format)
+
+    def _validate_storage_format(self, format):
+        format = format.lower()
+        if format not in ('parquet', 'avro'):
+            raise ValueError('Invalid format: {}'.format(format))
+        return format
 
     def compile(self):
-        if_exists = '' if self.overwrite else 'IF NOT EXISTS '
-
         buf = BytesIO()
 
-        scoped_name = self._get_scoped_name(self.table_name, self.database)
-        create_line = 'CREATE TABLE {}{}'.format(if_exists, scoped_name)
-
-        buf.write(create_line)
+        buf.write(self._create_line())
         buf.write(self._storage())
 
         select_query = self.select.compile()
@@ -480,11 +481,81 @@ class CTAS(DDLStatement):
 
         return buf.getvalue()
 
-    def _storage(self):
-        if self.format == 'parquet':
-            return '\nSTORED AS PARQUET'
+    def _create_line(self):
+        if_exists = '' if self.overwrite else 'IF NOT EXISTS '
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+
+        if self.external:
+            create_decl = 'CREATE EXTERNAL TABLE'
         else:
-            raise NotImplementedError
+            create_decl = 'CREATE TABLE'
+
+        create_line = '{} {}{}'.format(create_decl, if_exists,
+                                       scoped_name)
+        return create_line
+
+    def _storage(self):
+        storage_lines = {
+            'parquet': '\nSTORED AS PARQUET',
+            'avro': '\nSTORED AS AVRO'
+        }
+        return storage_lines[self.format]
+
+
+class CTAS(CreateTable):
+
+    """
+    Create Table As Select
+    """
+
+    def __init__(self, table_name, select, database=None,
+                 external=False, format='parquet', overwrite=False,
+                 partition=None):
+        self.select = select
+        CreateTable.__init__(self, table_name, database=database,
+                             external=external, format=format,
+                             overwrite=overwrite, partition=partition)
+
+    def compile(self):
+        buf = BytesIO()
+        buf.write(self._create_line())
+        buf.write(self._storage())
+
+        select_query = self.select.compile()
+        buf.write('\nAS\n{}'.format(select_query))
+        return buf.getvalue()
+
+
+class CreateTableParquet(CreateTable):
+
+    def __init__(self, table_name, path, external=True, **kwargs):
+        self.path = path
+        CreateTable.__init__(self, table_name, external=external,
+                             **kwargs)
+
+    def compile(self):
+        buf = BytesIO()
+        buf.write(self._create_line())
+
+        buf.write("\nLIKE PARQUET '{}'".format(self.path))
+        buf.write("\nLOCATION '{}'".format(self.path))
+        return buf.getvalue()
+
+
+
+class CreateTableFromSchema(CreateTable):
+
+    def __init__(self, table_name, schema, location=None, **kwargs):
+        self.schema = schema
+        self.location = location
+        CreateTable.__init__(self, table_name, **kwargs)
+
+
+class CreateTableDelimited(CreateTable):
+
+    def __init__(self, table_name, delimiter=',', escapechar=None,
+                 lineterminator=None, **kwargs):
+        pass
 
 
 class InsertSelect(DDLStatement):

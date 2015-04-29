@@ -1401,12 +1401,13 @@ FROM (
         pass
 
 
-def _create_table(table_name, expr, database=None, overwrite=False):
+def _create_table(table_name, expr, database=None, overwrite=False,
+                  format='parquet'):
     ast = build_ast(expr)
     select = ast.queries[0]
-    context = ast.context
-    statement = ddl.CTAS(table_name, select, context,
+    statement = ddl.CTAS(table_name, select,
                          database=database,
+                         format=format,
                          overwrite=overwrite)
     return statement
 
@@ -1423,12 +1424,12 @@ class TestDropTable(unittest.TestCase):
     def test_must_exist(self):
         statement = ddl.DropTable('foo', database='bar', must_exist=True)
         query = statement.compile()
-        expected = "DROP TABLE bar.foo"
+        expected = "DROP TABLE bar.`foo`"
         assert query == expected
 
         statement = ddl.DropTable('foo', database='bar', must_exist=False)
         query = statement.compile()
-        expected = "DROP TABLE IF EXISTS bar.foo"
+        expected = "DROP TABLE IF EXISTS bar.`foo`"
         assert query == expected
 
 
@@ -1448,7 +1449,7 @@ class TestInsert(unittest.TestCase):
         result = stmt.compile()
 
         expected = """\
-INSERT INTO foo.testing123456
+INSERT INTO foo.`testing123456`
 SELECT *
 FROM functional_alltypes
 LIMIT 10"""
@@ -1458,7 +1459,7 @@ LIMIT 10"""
         result = stmt.compile()
 
         expected = """\
-INSERT OVERWRITE foo.testing123456
+INSERT OVERWRITE foo.`testing123456`
 SELECT *
 FROM functional_alltypes
 LIMIT 10"""
@@ -1473,22 +1474,38 @@ class TestCacheTable(unittest.TestCase):
     def test_pool_name(self):
         statement = ddl.CacheTable('foo', database='bar')
         query = statement.compile()
-        expected = "ALTER TABLE bar.foo SET CACHED IN 'default'"
+        expected = "ALTER TABLE bar.`foo` SET CACHED IN 'default'"
         assert query == expected
 
         statement = ddl.CacheTable('foo', database='bar', pool='my_pool')
         query = statement.compile()
-        expected = "ALTER TABLE bar.foo SET CACHED IN 'my_pool'"
+        expected = "ALTER TABLE bar.`foo` SET CACHED IN 'my_pool'"
         assert query == expected
 
 
-class TestCTAS(unittest.TestCase):
+class TestCreateTable(unittest.TestCase):
 
     def setUp(self):
         self.con = MockConnection()
 
         self.t = t = self.con.table('functional_alltypes')
         self.expr = t[t.bigint_col > 0]
+
+    def test_create_table_like_parquet(self):
+        path = '/path/to/parquetfile'
+        statement = ddl.CreateTableParquet('new_table', path, overwrite=False,
+                                           database='foo')
+
+        result = statement.compile()
+        expected = """\
+CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
+LIKE PARQUET '{0}'
+LOCATION '{0}'""".format(path)
+
+        assert result == expected
+
+    def test_create_external_table(self):
+        pass
 
     def test_create_table_parquet(self):
         statement = _create_table('some_table', self.expr,
@@ -1497,16 +1514,13 @@ class TestCTAS(unittest.TestCase):
         result = statement.compile()
 
         expected = """\
-CREATE TABLE bar.some_table
+CREATE TABLE bar.`some_table`
 STORED AS PARQUET
 AS
 SELECT *
 FROM functional_alltypes
 WHERE bigint_col > 0"""
         assert result == expected
-
-    def test_external_table(self):
-        pass
 
     def test_no_overwrite(self):
         statement = _create_table('tname', self.expr,
@@ -1514,7 +1528,7 @@ WHERE bigint_col > 0"""
         result = statement.compile()
 
         expected = """\
-CREATE TABLE IF NOT EXISTS tname
+CREATE TABLE IF NOT EXISTS `tname`
 STORED AS PARQUET
 AS
 SELECT *
@@ -1522,8 +1536,19 @@ FROM functional_alltypes
 WHERE bigint_col > 0"""
         assert result == expected
 
-    def test_other_storage_formats(self):
-        pass
+    def test_avro_other_formats(self):
+        statement = _create_table('tname', self.t, format='avro')
+        result = statement.compile()
+        expected = """\
+CREATE TABLE IF NOT EXISTS `tname`
+STORED AS AVRO
+AS
+SELECT *
+FROM functional_alltypes"""
+        assert result == expected
+
+        self.assertRaises(ValueError, _create_table, 'tname', self.t,
+                          format='foo')
 
     def test_partition_by(self):
         pass

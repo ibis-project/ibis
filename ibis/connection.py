@@ -160,8 +160,7 @@ class ImpalaConnection(SQLConnection):
         """
         ast = sql.build_ast(expr)
         select = ast.queries[0]
-        context = ast.context
-        statement = ddl.CTAS(table_name, select, context,
+        statement = ddl.CTAS(table_name, select,
                              database=database,
                              overwrite=overwrite)
         query = statement.compile()
