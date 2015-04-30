@@ -43,7 +43,7 @@ def connect(env):
 pytestmark = pytest.mark.e2e
 
 
-class TestImpalaConnection(unittest.TestCase):
+class ImpalaE2E(object):
 
     @classmethod
     def setUpClass(cls):
@@ -60,6 +60,10 @@ class TestImpalaConnection(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         pass
+
+
+
+class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
     def test_get_table_ref(self):
         table = self.con.table('functional.alltypes')
@@ -127,23 +131,18 @@ FROM tpch.lineitem li
 
     def test_ctas_from_table_expr(self):
         expr = self.con.table('functional.alltypes')
-        table_name = self._random_table_name()
+        table_name = _random_table_name()
 
         try:
             self.con.create_table(table_name, expr, database='functional')
         except Exception:
             raise
         finally:
-            self._ensure_drop(table_name, database='functional')
-
-    def _random_table_name(self):
-        import uuid
-        table_name = 'testing_' + uuid.uuid4().get_hex()
-        return table_name
+            _ensure_drop(self.con, table_name, database='functional')
 
     def test_insert_table(self):
         expr = self.con.table('functional.alltypes')
-        table_name = self._random_table_name()
+        table_name = _random_table_name()
         db = 'functional'
 
         try:
@@ -162,7 +161,7 @@ FROM tpch.lineitem li
         except Exception:
             raise
         finally:
-            self._ensure_drop(table_name, database='functional')
+            _ensure_drop(self.con, table_name, database='functional')
 
     def test_builtins_1(self):
         table = self.con.table('functional.alltypes')
@@ -307,22 +306,62 @@ FROM tpch.lineitem li
         expr = tpch[amount_filter].limit(0)
         expr.execute()
 
-    def _ensure_drop(self, table_name, database=None):
-        self.con.drop_table(table_name, database=database,
-                            must_exist=False)
-        self._assert_table_not_exists(table_name, database=database)
+def _ensure_drop(con, table_name, database=None):
+    con.drop_table(table_name, database=database,
+                   must_exist=False)
+    _assert_table_not_exists(con, table_name, database=database)
 
-    def _assert_table_not_exists(self, table_name, database=None):
-        from impala.error import Error as ImpylaError
+def _assert_table_not_exists(con, table_name, database=None):
+    from impala.error import Error as ImpylaError
 
-        if database is not None:
-            tname = '.'.join((database, table_name))
-        else:
-            tname = table_name
+    if database is not None:
+        tname = '.'.join((database, table_name))
+    else:
+        tname = table_name
 
-        try:
-            self.con.table(tname)
-        except ImpylaError:
-            pass
-        except:
-            raise
+    try:
+        con.table(tname)
+    except ImpylaError:
+        pass
+    except:
+        raise
+
+
+def _random_table_name():
+    import uuid
+    table_name = 'testing_' + uuid.uuid4().get_hex()
+    return table_name
+
+
+class TestQueryHDFSData(ImpalaE2E):
+
+    def test_query_parquet_file(self):
+        raise unittest.SkipTest
+
+        hdfs_path = '/test-warehouse/functional_parquet.db/alltypesinsert'
+        table = self.con.parquet_file(hdfs_path)
+
+        name = table.op().name
+        assert name.startswith('ibis_tmp_')
+
+        # table exists
+        self.con.table(name)
+
+        expr = table.string_col.value_counts()
+        expr.execute()
+
+    def test_query_text_file_regex(self):
+        pass
+
+    def test_delimited_ascii(self):
+        pass
+
+    def test_avro(self):
+        pass
+
+    def test_cleanup_tmp_table_on_gc(self):
+        # try:
+        #     table.op().cleanup()
+        # finally:
+        #     _ensure_drop(table
+        pass

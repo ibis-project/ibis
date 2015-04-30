@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from ibis.common import IbisError
 from ibis.config import options
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -124,6 +125,9 @@ class ImpalaConnection(SQLConnection):
         return cursor.fetchall()
 
     def _execute(self, query, retries=3):
+        if isinstance(query, ddl.DDLStatement):
+            query = query.compile()
+
         from impala.error import DatabaseError
         try:
             cursor = self.con.cursor()
@@ -163,8 +167,68 @@ class ImpalaConnection(SQLConnection):
         statement = ddl.CTAS(table_name, select,
                              database=database,
                              overwrite=overwrite)
-        query = statement.compile()
-        self._execute(query)
+        self._execute(statement)
+
+    def avro_file(self, hdfs_path):
+        pass
+
+    def delimited_file(self, hdfs_path, delimiter=',', escapechar=None,
+                       lineterminator=None):
+        pass
+
+    def parquet_file(self, hdfs_path, name=None, database=None, external=True,
+                     persist=False):
+        """
+        Make indicated parquet file in HDFS available as an Ibis table.
+
+        The table created can be optionally named and persisted, otherwise a
+        unique name will be generated. Temporarily, for any non-persistent
+        external table created by Ibis we will attempt to drop it when the
+        underlying object is garbage collected (or the Python interpreter shuts
+        down normally).
+
+        Parameters
+        ----------
+        hdfs_path : string
+          Path in HDFS
+        name : string, optional
+          random unique name generated otherwise
+        database : string, optional
+        external : boolean, default True
+          If a table is external, the referenced data will not be deleted when
+          the table is dropped in Impala. Otherwise (external=False) Impala
+          takes ownership of the Parquet file.
+        persist : boolean, default False
+          Do not drop the table upon Ibis garbage collection / interpreter
+          shutdown
+
+        Returns
+        -------
+        parquet_table : TableExpr
+        """
+        if name is None:
+            name = self._random_tmp_table()
+
+        stmt = ddl.CreateTableParquet(name, hdfs_path, external=external)
+        self._execute(stmt)
+        print 'Created {}'.format(name)
+        return self._wrap_new_table(name, database, persist)
+
+    def _wrap_new_table(self, name, database, persist):
+        if persist:
+            return self.table(name, database=database)
+        else:
+            schema = self._get_table_schema(name, database=database)
+            node = ImpalaTemporaryTable(name, schema, self)
+            return ir.TableExpr(node)
+
+    def text_file(self, hdfs_path):
+        pass
+
+    def _random_tmp_table(self):
+        import uuid
+        table_name = 'ibis_tmp_' + uuid.uuid4().get_hex()
+        return table_name
 
     def insert(self, table_name, expr, database=None, overwrite=False):
         """
@@ -190,8 +254,7 @@ class ImpalaConnection(SQLConnection):
         statement = ddl.InsertSelect(table_name, select,
                                      database=database,
                                      overwrite=overwrite)
-        query = statement.compile()
-        self._execute(query)
+        self._execute(statement)
 
     def drop_table(self, table_name, database=None, must_exist=False):
         """
@@ -209,8 +272,7 @@ class ImpalaConnection(SQLConnection):
         """
         statement = ddl.DropTable(table_name, database=database,
                                   must_exist=must_exist)
-        query = statement.compile()
-        self._execute(query)
+        self._execute(statement)
 
     def cache_table(self, table_name, database=None, pool='default'):
         """
@@ -228,8 +290,7 @@ class ImpalaConnection(SQLConnection):
         con.cache_table('my_table', database='operations', pool='op_4GB_pool')
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
-        query = statement.compile()
-        self._execute(query)
+        self._execute(statement)
 
     def _get_table_schema(self, name):
         query = 'SELECT * FROM {} LIMIT 0'.format(name)
@@ -272,6 +333,18 @@ _impala_type_mapping = {
     'timestamp': 'timestamp',
     'decimal': 'decimal'
 }
+
+
+class ImpalaTemporaryTable(ops.DatabaseTable):
+
+    def __del__(self):
+        try:
+            self.cleanup()
+        except IbisError:
+            pass
+
+    def cleanup(self):
+        self.source.drop_table(self.name)
 
 
 def _set_limit(query, k):
