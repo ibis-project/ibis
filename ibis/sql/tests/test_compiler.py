@@ -16,6 +16,8 @@ import unittest
 
 import pandas as pd
 
+import ibis
+
 from ibis.sql.compiler import build_ast, to_sql
 from ibis.expr.tests.mocks import MockConnection
 import ibis.common as com
@@ -1492,16 +1494,43 @@ class TestCreateTable(unittest.TestCase):
         self.expr = t[t.bigint_col > 0]
 
     def test_create_table_like_parquet(self):
+        directory = '/path/to/'
         path = '/path/to/parquetfile'
-        statement = ddl.CreateTableParquet('new_table', path, overwrite=False,
+        statement = ddl.CreateTableParquet('new_table',
+                                           directory,
+                                           example_file=path,
+                                           overwrite=False,
                                            database='foo')
 
         result = statement.compile()
         expected = """\
 CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
 LIKE PARQUET '{0}'
-LOCATION '{0}'""".format(path)
+LOCATION '{1}'""".format(path, directory)
 
+        assert result == expected
+
+    def test_create_table_delimited(self):
+        path = '/path/to/files/'
+        schema = ibis.schema([('a', 'string'),
+                              ('b', 'int32'),
+                              ('c', 'double'),
+                              ('d', 'decimal(12,2)')])
+
+        stmt = ddl.CreateTableDelimited('new_table', path, schema,
+                                        delimiter='|',
+                                        escapechar='\\',
+                                        lineterminator='\0',
+                                        database='foo')
+
+        result = stmt.compile()
+        expected = """\
+CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY '|'
+ESCAPED BY '\\'
+LINES TERMINATED BY '\0'
+LOCATION '{0}'""".format(path)
         assert result == expected
 
     def test_create_external_table(self):
@@ -1521,6 +1550,10 @@ SELECT *
 FROM functional_alltypes
 WHERE bigint_col > 0"""
         assert result == expected
+
+    def test_create_table_parquet_like_other(self):
+        # alternative to "LIKE PARQUET"
+        pass
 
     def test_no_overwrite(self):
         statement = _create_table('tname', self.expr,

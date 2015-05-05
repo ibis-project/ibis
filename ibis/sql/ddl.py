@@ -528,34 +528,61 @@ class CTAS(CreateTable):
 
 class CreateTableParquet(CreateTable):
 
-    def __init__(self, table_name, path, external=True, **kwargs):
+    def __init__(self, table_name, path,
+                 example_file=None,
+                 example_table=None,
+                 schema=None,
+                 external=True,
+                 **kwargs):
         self.path = path
-        CreateTable.__init__(self, table_name, external=external,
-                             **kwargs)
+        self.example_file = example_file
+        self.example_table = example_table
+        CreateTable.__init__(self, table_name, external=external, **kwargs)
+
+        self._validate()
+
+    def _validate(self):
+        pass
 
     def compile(self):
         buf = BytesIO()
         buf.write(self._create_line())
 
-        buf.write("\nLIKE PARQUET '{}'".format(self.path))
+        buf.write("\nLIKE PARQUET '{}'".format(self.example_file))
         buf.write("\nLOCATION '{}'".format(self.path))
         return buf.getvalue()
 
 
-
-class CreateTableFromSchema(CreateTable):
-
-    def __init__(self, table_name, schema, location=None, **kwargs):
-        self.schema = schema
-        self.location = location
-        CreateTable.__init__(self, table_name, **kwargs)
-
-
 class CreateTableDelimited(CreateTable):
 
-    def __init__(self, table_name, delimiter=',', escapechar=None,
-                 lineterminator=None, **kwargs):
-        pass
+    def __init__(self, table_name, path, schema,
+                 delimiter=None, escapechar=None, lineterminator=None,
+                 external=True, **kwargs):
+        self.path = path
+        self.schema = schema
+        self.delimiter = delimiter
+        self.escapechar = escapechar
+        self.lineterminator = lineterminator
+
+        CreateTable.__init__(self, table_name, external=external, **kwargs)
+
+    def compile(self):
+        buf = BytesIO()
+        buf.write(self._create_line())
+
+        buf.write("\nROW FORMAT DELIMITED")
+
+        if self.delimiter is not None:
+            buf.write("\nFIELDS TERMINATED BY '{}'".format(self.delimiter))
+
+        if self.escapechar is not None:
+            buf.write("\nESCAPED BY '{}'".format(self.escapechar))
+
+        if self.lineterminator is not None:
+            buf.write("\nLINES TERMINATED BY '{}'".format(self.lineterminator))
+
+        buf.write("\nLOCATION '{}'".format(self.path))
+        return buf.getvalue()
 
 
 class InsertSelect(DDLStatement):
