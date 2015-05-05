@@ -21,6 +21,7 @@ import ibis.sql.compiler as sql
 import ibis.sql.ddl as ddl
 
 
+
 class Connection(object):
 
     pass
@@ -111,9 +112,12 @@ class SQLConnection(Connection):
 
 class ImpalaConnection(SQLConnection):
 
-    def __init__(self, **params):
+    def __init__(self, hdfs_client=None, **params):
+        self.hdfs_client = hdfs_client
+
         self.params = params
         self.con = None
+
         self._connect()
 
     def _connect(self):
@@ -172,9 +176,37 @@ class ImpalaConnection(SQLConnection):
     def avro_file(self, hdfs_path):
         pass
 
-    def delimited_file(self, hdfs_path, schema, delimiter=',', escapechar=None,
-                       lineterminator=None):
-        pass
+    def delimited_file(self, hdfs_dir, schema,
+                       name=None, database=None,
+                       delimiter=None,
+                       escapechar=None,
+                       lineterminator=None,
+                       external=True,
+                       persist=False):
+        """
+
+        Parameters
+        ----------
+        delimiter : length-1 string
+          Uses ',' if nothing passed
+        escapechar : length-1 string
+          Character used to escape special characters
+
+
+
+        Returns
+        -------
+        delimited_table : TableExpr
+        """
+        if name is None:
+            name = self._random_tmp_table()
+
+        stmt = ddl.CreateTableDelimited(name, hdfs_dir, schema,
+                                        delimiter=delimiter,
+                                        external=external)
+        self._execute(stmt)
+        print 'Created {}'.format(name)
+        return self._wrap_new_table(name, database, persist)
 
     def parquet_file(self, hdfs_dir, schema=None, name=None, database=None,
                      external=True, like_file=None, persist=False):
@@ -218,7 +250,8 @@ class ImpalaConnection(SQLConnection):
             like_file = self._find_any_file(hdfs_dir)
 
         stmt = ddl.CreateTableParquet(name, hdfs_dir, schema=schema,
-                                      like_file=like_file, external=external)
+                                      example_file=like_file,
+                                      external=external)
         self._execute(stmt)
         print 'Created {}'.format(name)
         return self._wrap_new_table(name, database, persist)
@@ -230,6 +263,13 @@ class ImpalaConnection(SQLConnection):
             schema = self._get_table_schema(name, database=database)
             node = ImpalaTemporaryTable(name, schema, self)
             return ir.TableExpr(node)
+
+    def _find_any_file(self, hdfs_dir):
+        contents = self.hdfs_client.list(hdfs_dir)
+        for filename, meta in contents:
+            if meta['type'].lower() == 'file':
+                return filename
+        raise IbisError('No files found in the passed directory')
 
     def text_file(self, hdfs_path, column_name='value'):
         """
@@ -311,8 +351,13 @@ class ImpalaConnection(SQLConnection):
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self._execute(statement)
 
-    def _get_table_schema(self, name):
-        query = 'SELECT * FROM {} LIMIT 0'.format(name)
+    def _get_table_schema(self, name, database=None):
+        if database is not None:
+            tname = '{}.{}'.format(database, name)
+        else:
+            tname = name
+
+        query = 'SELECT * FROM {} LIMIT 0'.format(tname)
         return self._get_schema_using_query(query)
 
     def _get_schema_using_query(self, query):
@@ -372,10 +417,29 @@ def _set_limit(query, k):
     return limited_query
 
 
+WEBHDFS_DEFAULT_PORT = 50075
+
+
 def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
                    database=None, timeout=45, use_ssl=False, ca_cert=None,
                    use_ldap=False, ldap_user=None, ldap_password=None,
-                   use_kerberos=False, kerberos_service_name='impala'):
+                   use_kerberos=False, kerberos_service_name='impala',
+                   hdfs_config=None):
+    """
+
+    Returns
+    -------
+    con : ImpalaConnection
+    """
+    if hdfs_config is not None:
+        from hdfs.client import Client
+        host = hdfs_config['host']
+        webhdfs_port = hdfs_config.get('webhdfs_port', WEBHDFS_DEFAULT_PORT)
+        url = 'http://{}:{}'.format(host, webhdfs_port)
+        hdfs_client = Client(url)
+    else:
+        hdfs_client = None
+
     params = {
         'host': host,
         'port': port,
@@ -390,4 +454,4 @@ def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
         'use_kerberos': use_kerberos,
         'kerberos_service_name': kerberos_service_name
     }
-    return ImpalaConnection(**params)
+    return ImpalaConnection(hdfs_client=hdfs_client, **params)

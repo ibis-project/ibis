@@ -31,13 +31,20 @@ class IbisTestEnv(object):
         self.protocol = os.environ.get('IBIS_TEST_PROTOCOL', 'hiveserver2')
         self.port = os.environ.get('IBIS_TEST_PORT', 21050)
 
+        # Impala dev environment uses port 5070 for HDFS web interface
+        self.hdfs_config = {
+            'host': 'localhost',
+            'webhdfs_port': 5070
+        }
+
 
 ENV = IbisTestEnv()
 
 
 def connect(env):
     return cnx.impala_connect(host=ENV.host, protocol=ENV.protocol,
-                              port=ENV.port)
+                              port=ENV.port,
+                              hdfs_config=ENV.hdfs_config)
 
 
 pytestmark = pytest.mark.e2e
@@ -333,12 +340,10 @@ def _random_table_name():
     return table_name
 
 
-class TestQueryHDFSData(ImpalaE2E):
+class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
-    def test_query_parquet_file(self):
-        raise unittest.SkipTest
-
-        hdfs_path = '/test-warehouse/functional_parquet.db/alltypesinsert'
+    def test_query_parquet_file_with_schema(self):
+        hdfs_path = '/test-warehouse/tpch.region_parquet'
         table = self.con.parquet_file(hdfs_path)
 
         name = table.op().name
@@ -347,13 +352,21 @@ class TestQueryHDFSData(ImpalaE2E):
         # table exists
         self.con.table(name)
 
-        expr = table.string_col.value_counts()
+        expr = table.r_name.value_counts()
         expr.execute()
+
+        assert table.count().execute() == 5
+
+    def test_query_parquet_file_like_table(self):
+        pass
+
+    def test_query_parquet_infer_schema(self):
+        pass
 
     def test_query_text_file_regex(self):
         pass
 
-    def test_delimited_ascii(self):
+    def test_query_delimited_file_directory(Self):
         pass
 
     def test_avro(self):
