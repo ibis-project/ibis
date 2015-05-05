@@ -172,12 +172,12 @@ class ImpalaConnection(SQLConnection):
     def avro_file(self, hdfs_path):
         pass
 
-    def delimited_file(self, hdfs_path, delimiter=',', escapechar=None,
+    def delimited_file(self, hdfs_path, schema, delimiter=',', escapechar=None,
                        lineterminator=None):
         pass
 
-    def parquet_file(self, hdfs_path, name=None, database=None, external=True,
-                     persist=False):
+    def parquet_file(self, hdfs_dir, schema=None, name=None, database=None,
+                     external=True, like_file=None, persist=False):
         """
         Make indicated parquet file in HDFS available as an Ibis table.
 
@@ -189,8 +189,11 @@ class ImpalaConnection(SQLConnection):
 
         Parameters
         ----------
-        hdfs_path : string
+        hdfs_dir : string
           Path in HDFS
+        schema : Schema
+          If no schema provided, one will be inferred from one of the parquet
+          files in the directory
         name : string, optional
           random unique name generated otherwise
         database : string, optional
@@ -209,7 +212,13 @@ class ImpalaConnection(SQLConnection):
         if name is None:
             name = self._random_tmp_table()
 
-        stmt = ddl.CreateTableParquet(name, hdfs_path, external=external)
+        # If no schema provided, need to find some absolute path to a file in
+        # the HDFS directory
+        if schema is None:
+            like_file = self._find_any_file(hdfs_dir)
+
+        stmt = ddl.CreateTableParquet(name, hdfs_dir, schema=schema,
+                                      like_file=like_file, external=external)
         self._execute(stmt)
         print 'Created {}'.format(name)
         return self._wrap_new_table(name, database, persist)
@@ -222,7 +231,17 @@ class ImpalaConnection(SQLConnection):
             node = ImpalaTemporaryTable(name, schema, self)
             return ir.TableExpr(node)
 
-    def text_file(self, hdfs_path):
+    def text_file(self, hdfs_path, column_name='value'):
+        """
+        Interpret text data as a table with a single string column.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        text_table : TableExpr
+        """
         pass
 
     def _random_tmp_table(self):

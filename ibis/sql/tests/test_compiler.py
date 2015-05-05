@@ -1549,6 +1549,10 @@ LOCATION '{}'""".format(directory)
         result = stmt.compile()
         expected = """\
 CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
+(`a` STRING,
+ `b` INT,
+ `c` DOUBLE,
+ `d` DECIMAL(12,2))
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '|'
 ESCAPED BY '\\'

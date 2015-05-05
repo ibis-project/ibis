@@ -578,6 +578,9 @@ class CreateTableDelimited(CreateTable):
         buf = BytesIO()
         buf.write(self._create_line())
 
+        schema = format_schema(self.schema)
+        buf.write('\n{}'.format(schema))
+
         buf.write("\nROW FORMAT DELIMITED")
 
         if self.delimiter is not None:
