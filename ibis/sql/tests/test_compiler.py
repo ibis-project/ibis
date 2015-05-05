@@ -1510,6 +1510,29 @@ LOCATION '{1}'""".format(path, directory)
 
         assert result == expected
 
+    def test_create_table_parquet_with_schema(self):
+        directory = '/path/to/'
+
+        schema = ibis.schema([('foo', 'string'),
+                              ('bar', 'int8'),
+                              ('baz', 'int16')])
+
+        statement = ddl.CreateTableParquet('new_table',
+                                           directory,
+                                           schema=schema,
+                                           external=True,
+                                           database='foo')
+
+        result = statement.compile()
+        expected = """\
+CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
+(`foo` STRING,
+ `bar` TINYINT,
+ `baz` SMALLINT)
+LOCATION '{}'""".format(directory)
+
+        assert result == expected
+
     def test_create_table_delimited(self):
         path = '/path/to/files/'
         schema = ibis.schema([('a', 'string'),

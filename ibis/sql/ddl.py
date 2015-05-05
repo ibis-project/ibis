@@ -537,6 +537,7 @@ class CreateTableParquet(CreateTable):
         self.path = path
         self.example_file = example_file
         self.example_table = example_table
+        self.schema = schema
         CreateTable.__init__(self, table_name, external=external, **kwargs)
 
         self._validate()
@@ -548,7 +549,14 @@ class CreateTableParquet(CreateTable):
         buf = BytesIO()
         buf.write(self._create_line())
 
-        buf.write("\nLIKE PARQUET '{}'".format(self.example_file))
+        if self.example_file is not None:
+            buf.write("\nLIKE PARQUET '{}'".format(self.example_file))
+        elif self.schema is not None:
+            schema = format_schema(self.schema)
+            buf.write('\n{}'.format(schema))
+        else:
+            raise NotImplementedError
+
         buf.write("\nLOCATION '{}'".format(self.path))
         return buf.getvalue()
 
@@ -636,6 +644,37 @@ class CacheTable(DDLStatement):
 def _join_not_none(sep, pieces):
     pieces = [x for x in pieces if x is not None]
     return sep.join(pieces)
+
+
+def format_schema(schema):
+    elements = [_format_schema_element(name, t)
+                for name, t in zip(schema.names, schema.types)]
+    return '({})'.format(',\n '.join(elements))
+
+
+def _format_schema_element(name, t):
+    return '{} {}'.format(quote_identifier(name, force=True),
+                          _format_type(t))
+
+
+def _format_type(t):
+    if isinstance(t, ir.DecimalType):
+        return 'DECIMAL({},{})'.format(t.precision, t.scale)
+    else:
+        return _impala_type_names[t]
+
+
+_impala_type_names = {
+    'int8': 'TINYINT',
+    'int16': 'SMALLINT',
+    'int32': 'INT',
+    'int64': 'BIGINT',
+    'float': 'FLOAT',
+    'double': 'DOUBLE',
+    'boolean': 'BOOLEAN',
+    'timestamp': 'TIMESTAMP',
+    'string': 'STRING'
+}
 
 
 def translate_expr(expr, context=None, named=False, permit_subquery=False):
