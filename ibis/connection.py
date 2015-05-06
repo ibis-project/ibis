@@ -171,10 +171,31 @@ class ImpalaConnection(SQLConnection):
             statement += " LIKE '{}'".format(like)
 
         cur = self._execute(statement)
-        return list(zip(*cur.fetchall())[0])
+        return self._get_list(cur)
+
+    def _get_list(self, cur, i=0):
+        return list(zip(*cur.fetchall())[i])
 
     def list_databases(self, like=None):
-        pass
+        """
+        List databases in the Impala cluster. Like the SHOW DATABASES command
+        in the impala-shell.
+
+        Parameters
+        ----------
+        like : string, default None
+          e.g. 'foo*' to match all tables starting with 'foo'
+
+        Returns
+        -------
+        databases : list of strings
+        """
+        statement = 'SHOW DATABASES'
+        if like:
+            statement += " LIKE '{}'".format(like)
+
+        cur = self._execute(statement)
+        return self._get_list(cur)
 
     def get_schema(self, table_name, database=None):
         pass

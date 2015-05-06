@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gc
 import os
 import pytest
 import unittest
@@ -76,6 +77,9 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
     def test_get_table_ref(self):
         table = self.con.table('functional.alltypes')
         assert isinstance(table, ir.TableExpr)
+
+    def test_list_databases(self):
+        assert len(self.con.list_databases()) > 0
 
     def test_list_tables(self):
         assert len(self.con.list_tables(database='tpch')) > 0
@@ -352,11 +356,24 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         table = self.con.parquet_file(hdfs_path)
         name = table.op().name
         table = None
-        import gc; gc.collect()
+        gc.collect()
         _assert_table_not_exists(self.con, name)
 
     def test_persist_parquet_file_with_name(self):
-        pass
+        hdfs_path = '/test-warehouse/tpch.region_parquet'
+
+        name = _random_table_name()
+        schema = ibis.schema([('r_regionkey', 'int16'),
+                              ('r_name', 'string'),
+                              ('r_comment', 'string')])
+        self.con.parquet_file(hdfs_path, schema=schema,
+                              name=name, persist=True)
+        gc.collect()
+
+        # table still exists
+        self.con.table(name)
+
+        _ensure_drop(self.con, name)
 
     def test_query_parquet_file_with_schema(self):
         hdfs_path = '/test-warehouse/tpch.region_parquet'
