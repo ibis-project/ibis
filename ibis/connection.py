@@ -148,6 +148,37 @@ class ImpalaConnection(SQLConnection):
     def set_database(self, name):
         pass
 
+    def list_tables(self, like=None, database=None):
+        """
+        List tables in the current (or indicated) database. Like the SHOW
+        TABLES command in the impala-shell.
+
+        Parameters
+        ----------
+        like : string, default None
+          e.g. 'foo*' to match all tables starting with 'foo'
+        database : string, default None
+          If not passed, uses the current/default database
+
+        Returns
+        -------
+        tables : list of strings
+        """
+        statement = 'SHOW TABLES'
+        if database:
+            statement += ' IN {}'.format(database)
+        if like:
+            statement += " LIKE '{}'".format(like)
+
+        cur = self._execute(statement)
+        return list(zip(*cur.fetchall())[0])
+
+    def list_databases(self, like=None):
+        pass
+
+    def get_schema(self, table_name, database=None):
+        pass
+
     def create_table(self, table_name, expr, database=None, format='parquet',
                      overwrite=False):
         """
@@ -225,8 +256,14 @@ class ImpalaConnection(SQLConnection):
         hdfs_dir : string
           Path in HDFS
         schema : Schema
-          If no schema provided, one will be inferred from one of the parquet
-          files in the directory
+          If no schema provided, and neither of the like_* argument is passed,
+          one will be inferred from one of the parquet files in the directory.
+        like_file : string
+          Absolute path to Parquet file in HDFS to use for schema
+          definitions. An alternative to having to supply an explicit schema
+        like_table : string
+          Fully scoped and escaped string to an Impala table whose schema we
+          will use for the newly created table.
         name : string, optional
           random unique name generated otherwise
         database : string, optional

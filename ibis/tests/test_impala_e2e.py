@@ -77,6 +77,10 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         table = self.con.table('functional.alltypes')
         assert isinstance(table, ir.TableExpr)
 
+    def test_list_tables(self):
+        assert len(self.con.list_tables(database='tpch')) > 0
+        assert len(self.con.list_tables(like='nat*', database='tpch')) > 0
+
     def test_run_sql(self):
         query = """SELECT li.*
 FROM tpch.lineitem li
@@ -350,6 +354,9 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         table = None
         import gc; gc.collect()
         _assert_table_not_exists(self.con, name)
+
+    def test_persist_parquet_file_with_name(self):
+        pass
 
     def test_query_parquet_file_with_schema(self):
         hdfs_path = '/test-warehouse/tpch.region_parquet'
