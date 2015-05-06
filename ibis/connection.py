@@ -205,11 +205,12 @@ class ImpalaConnection(SQLConnection):
                                         delimiter=delimiter,
                                         external=external)
         self._execute(stmt)
-        print 'Created {}'.format(name)
         return self._wrap_new_table(name, database, persist)
 
     def parquet_file(self, hdfs_dir, schema=None, name=None, database=None,
-                     external=True, like_file=None, persist=False):
+                     external=True, like_file=None,
+                     like_table=None,
+                     persist=False):
         """
         Make indicated parquet file in HDFS available as an Ibis table.
 
@@ -246,11 +247,12 @@ class ImpalaConnection(SQLConnection):
 
         # If no schema provided, need to find some absolute path to a file in
         # the HDFS directory
-        if schema is None:
+        if like_table is None and schema is None:
             like_file = self._find_any_file(hdfs_dir)
 
         stmt = ddl.CreateTableParquet(name, hdfs_dir, schema=schema,
                                       example_file=like_file,
+                                      example_table=like_table,
                                       external=external)
         self._execute(stmt)
         print 'Created {}'.format(name)

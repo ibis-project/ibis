@@ -551,12 +551,15 @@ class CreateTableParquet(CreateTable):
 
         if self.example_file is not None:
             buf.write("\nLIKE PARQUET '{}'".format(self.example_file))
+        elif self.example_table is not None:
+            buf.write("\nLIKE {}".format(self.example_table))
         elif self.schema is not None:
             schema = format_schema(self.schema)
             buf.write('\n{}'.format(schema))
         else:
             raise NotImplementedError
 
+        buf.write('\nSTORED AS PARQUET')
         buf.write("\nLOCATION '{}'".format(self.path))
         return buf.getvalue()
 

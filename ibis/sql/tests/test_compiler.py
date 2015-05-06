@@ -1506,7 +1506,28 @@ class TestCreateTable(unittest.TestCase):
         expected = """\
 CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
 LIKE PARQUET '{0}'
+STORED AS PARQUET
 LOCATION '{1}'""".format(path, directory)
+
+        assert result == expected
+
+    def test_create_table_parquet_like_other(self):
+        # alternative to "LIKE PARQUET"
+        directory = '/path/to/'
+        example_table = 'db.other'
+
+        statement = ddl.CreateTableParquet('new_table',
+                                           directory,
+                                           example_table=example_table,
+                                           overwrite=False,
+                                           database='foo')
+
+        result = statement.compile()
+        expected = """\
+CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
+LIKE {0}
+STORED AS PARQUET
+LOCATION '{1}'""".format(example_table, directory)
 
         assert result == expected
 
@@ -1529,6 +1550,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
 (`foo` STRING,
  `bar` TINYINT,
  `baz` SMALLINT)
+STORED AS PARQUET
 LOCATION '{}'""".format(directory)
 
         assert result == expected
@@ -1577,10 +1599,6 @@ SELECT *
 FROM functional_alltypes
 WHERE bigint_col > 0"""
         assert result == expected
-
-    def test_create_table_parquet_like_other(self):
-        # alternative to "LIKE PARQUET"
-        pass
 
     def test_no_overwrite(self):
         statement = _create_table('tname', self.expr,

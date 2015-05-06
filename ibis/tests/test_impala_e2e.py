@@ -22,6 +22,7 @@ import ibis.config as config
 import ibis.connection as cnx
 import ibis.expr.api as api
 import ibis.expr.types as ir
+import ibis
 
 
 class IbisTestEnv(object):
@@ -342,9 +343,21 @@ def _random_table_name():
 
 class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
-    def test_query_parquet_file_with_schema(self):
+    def test_cleanup_tmp_table_on_gc(self):
         hdfs_path = '/test-warehouse/tpch.region_parquet'
         table = self.con.parquet_file(hdfs_path)
+        name = table.op().name
+        table = None
+        import gc; gc.collect()
+        _assert_table_not_exists(self.con, name)
+
+    def test_query_parquet_file_with_schema(self):
+        hdfs_path = '/test-warehouse/tpch.region_parquet'
+        schema = ibis.schema([('r_regionkey', 'int16'),
+                              ('r_name', 'string'),
+                              ('r_comment', 'string')])
+
+        table = self.con.parquet_file(hdfs_path, schema=schema)
 
         name = table.op().name
         assert name.startswith('ibis_tmp_')
@@ -358,10 +371,25 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         assert table.count().execute() == 5
 
     def test_query_parquet_file_like_table(self):
-        pass
+        hdfs_path = '/test-warehouse/tpch.region_parquet'
+
+        ex_schema = ibis.schema([('r_regionkey', 'int16'),
+                                 ('r_name', 'string'),
+                                 ('r_comment', 'string')])
+
+        table = self.con.parquet_file(hdfs_path, like_table='tpch.region')
+
+        assert table.schema().equals(ex_schema)
 
     def test_query_parquet_infer_schema(self):
-        pass
+        hdfs_path = '/test-warehouse/tpch.region_parquet'
+        table = self.con.parquet_file(hdfs_path)
+
+        ex_schema = ibis.schema([('r_regionkey', 'int32'),
+                                 ('r_name', 'string'),
+                                 ('r_comment', 'string')])
+
+        assert table.schema().equals(ex_schema)
 
     def test_query_text_file_regex(self):
         pass
@@ -370,11 +398,4 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         pass
 
     def test_avro(self):
-        pass
-
-    def test_cleanup_tmp_table_on_gc(self):
-        # try:
-        #     table.op().cleanup()
-        # finally:
-        #     _ensure_drop(table
         pass
