@@ -418,8 +418,20 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
     def test_query_text_file_regex(self):
         pass
 
-    def test_query_delimited_file_directory(Self):
-        pass
+    def test_query_delimited_file_directory(self):
+        hdfs_path = '/ibis-test/csv-test'
+
+        schema = ibis.schema([('foo', 'string'),
+                              ('bar', 'double'),
+                              ('baz', 'int8')])
+        table = self.con.delimited_file(hdfs_path, schema, delimiter=',')
+
+        expr = (table
+                [table.bar > 0]
+                .group_by('foo')
+                .aggregate([table.bar.sum().name('sum(bar)'),
+                            table.baz.sum().name('mean(baz)')]))
+        expr.execute()
 
     def test_avro(self):
         pass

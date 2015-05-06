@@ -230,7 +230,7 @@ class ImpalaConnection(SQLConnection):
 
     def delimited_file(self, hdfs_dir, schema,
                        name=None, database=None,
-                       delimiter=None,
+                       delimiter=',',
                        escapechar=None,
                        lineterminator=None,
                        external=True,
@@ -239,12 +239,10 @@ class ImpalaConnection(SQLConnection):
 
         Parameters
         ----------
-        delimiter : length-1 string
-          Uses ',' if nothing passed
+        delimiter : length-1 string, default ','
+          Pass None if there is no delimiter
         escapechar : length-1 string
           Character used to escape special characters
-
-
 
         Returns
         -------

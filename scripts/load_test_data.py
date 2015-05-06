@@ -53,15 +53,16 @@ def add_csv_test_files(nfiles=10):
 
     hdfs.rmdir(directory)
 
-    for i in xrange(nfiles):
-        df = pd.DataFrame({
-            'foo': [tm.rands(10) for _ in xrange(N)],
-            'bar': np.random.randn(N),
-            'baz': np.random.randint(0, 100, size=N)
-        }, columns=['foo', 'bar', 'baz'])
+    df = pd.DataFrame({
+        'foo': [tm.rands(10) for _ in xrange(N)],
+        'bar': np.random.randn(N),
+        'baz': np.random.randint(0, 100, size=N)
+    }, columns=['foo', 'bar', 'baz'])
 
-        buf = BytesIO()
-        df.to_csv(buf, index=False, header=False)
+    buf = BytesIO()
+    df.to_csv(buf, index=False, header=False)
+
+    for i in xrange(nfiles):
 
         path = '/'.join((directory, '{}.csv'.format(i)))
         print('Writing {}'.format(path))
