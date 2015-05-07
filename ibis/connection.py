@@ -478,7 +478,7 @@ def _set_limit(query, k):
     return limited_query
 
 
-WEBHDFS_DEFAULT_PORT = 50075
+WEBHDFS_DEFAULT_PORT = 50070
 
 
 def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
