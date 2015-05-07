@@ -15,6 +15,9 @@
 
 from ibis.common import IbisError
 from ibis.config import options
+
+from ibis.filesystems import HDFS
+
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
@@ -323,7 +326,7 @@ class ImpalaConnection(SQLConnection):
             return ir.TableExpr(node)
 
     def _find_any_file(self, hdfs_dir):
-        contents = self.hdfs_client.list(hdfs_dir)
+        contents = self.hdfs_client.ls(hdfs_dir)
         for filename, meta in contents:
             if meta['type'].lower() == 'file':
                 return filename
@@ -490,11 +493,10 @@ def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
     con : ImpalaConnection
     """
     if hdfs_config is not None:
-        from hdfs.client import Client
-        host = hdfs_config['host']
-        webhdfs_port = hdfs_config.get('webhdfs_port', WEBHDFS_DEFAULT_PORT)
-        url = 'http://{}:{}'.format(host, webhdfs_port)
-        hdfs_client = Client(url)
+        hdfs_client = HDFS(hdfs_config['host'],
+                           hdfs_config.get('webhdfs_port',
+                                           WEBHDFS_DEFAULT_PORT),
+                           params=hdfs_config.get('params'))
     else:
         hdfs_client = None
 
