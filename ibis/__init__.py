@@ -16,7 +16,8 @@ from ibis.connection import impala_connect
 import ibis.expr.api as api
 import ibis.expr.types as ir
 
-from ibis.expr.api import desc, literal, table, case
+# __all__ is defined
+from ibis.expr.api import *
 
 import ibis.config_init
 from ibis.config import options

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import gc
 import os
 import pytest
 import unittest
@@ -22,6 +23,7 @@ import ibis.config as config
 import ibis.connection as cnx
 import ibis.expr.api as api
 import ibis.expr.types as ir
+import ibis
 
 
 class IbisTestEnv(object):
@@ -31,19 +33,26 @@ class IbisTestEnv(object):
         self.protocol = os.environ.get('IBIS_TEST_PROTOCOL', 'hiveserver2')
         self.port = os.environ.get('IBIS_TEST_PORT', 21050)
 
+        # Impala dev environment uses port 5070 for HDFS web interface
+        self.hdfs_config = {
+            'host': 'localhost',
+            'webhdfs_port': 5070
+        }
+
 
 ENV = IbisTestEnv()
 
 
 def connect(env):
     return cnx.impala_connect(host=ENV.host, protocol=ENV.protocol,
-                              port=ENV.port)
+                              port=ENV.port,
+                              hdfs_config=ENV.hdfs_config)
 
 
 pytestmark = pytest.mark.e2e
 
 
-class TestImpalaConnection(unittest.TestCase):
+class ImpalaE2E(object):
 
     @classmethod
     def setUpClass(cls):
@@ -61,9 +70,20 @@ class TestImpalaConnection(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
+
+
+class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
+
     def test_get_table_ref(self):
         table = self.con.table('functional.alltypes')
         assert isinstance(table, ir.TableExpr)
+
+    def test_list_databases(self):
+        assert len(self.con.list_databases()) > 0
+
+    def test_list_tables(self):
+        assert len(self.con.list_tables(database='tpch')) > 0
+        assert len(self.con.list_tables(like='nat*', database='tpch')) > 0
 
     def test_run_sql(self):
         query = """SELECT li.*
@@ -127,23 +147,18 @@ FROM tpch.lineitem li
 
     def test_ctas_from_table_expr(self):
         expr = self.con.table('functional.alltypes')
-        table_name = self._random_table_name()
+        table_name = _random_table_name()
 
         try:
             self.con.create_table(table_name, expr, database='functional')
         except Exception:
             raise
         finally:
-            self._ensure_drop(table_name, database='functional')
-
-    def _random_table_name(self):
-        import uuid
-        table_name = 'testing_' + uuid.uuid4().get_hex()
-        return table_name
+            _ensure_drop(self.con, table_name, database='functional')
 
     def test_insert_table(self):
         expr = self.con.table('functional.alltypes')
-        table_name = self._random_table_name()
+        table_name = _random_table_name()
         db = 'functional'
 
         try:
@@ -162,7 +177,7 @@ FROM tpch.lineitem li
         except Exception:
             raise
         finally:
-            self._ensure_drop(table_name, database='functional')
+            _ensure_drop(self.con, table_name, database='functional')
 
     def test_builtins_1(self):
         table = self.con.table('functional.alltypes')
@@ -307,22 +322,116 @@ FROM tpch.lineitem li
         expr = tpch[amount_filter].limit(0)
         expr.execute()
 
-    def _ensure_drop(self, table_name, database=None):
-        self.con.drop_table(table_name, database=database,
-                            must_exist=False)
-        self._assert_table_not_exists(table_name, database=database)
+def _ensure_drop(con, table_name, database=None):
+    con.drop_table(table_name, database=database,
+                   must_exist=False)
+    _assert_table_not_exists(con, table_name, database=database)
 
-    def _assert_table_not_exists(self, table_name, database=None):
-        from impala.error import Error as ImpylaError
+def _assert_table_not_exists(con, table_name, database=None):
+    from impala.error import Error as ImpylaError
 
-        if database is not None:
-            tname = '.'.join((database, table_name))
-        else:
-            tname = table_name
+    if database is not None:
+        tname = '.'.join((database, table_name))
+    else:
+        tname = table_name
 
-        try:
-            self.con.table(tname)
-        except ImpylaError:
-            pass
-        except:
-            raise
+    try:
+        con.table(tname)
+    except ImpylaError:
+        pass
+    except:
+        raise
+
+
+def _random_table_name():
+    import uuid
+    table_name = 'testing_' + uuid.uuid4().get_hex()
+    return table_name
+
+
+class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
+
+    def test_cleanup_tmp_table_on_gc(self):
+        hdfs_path = '/test-warehouse/tpch.region_parquet'
+        table = self.con.parquet_file(hdfs_path)
+        name = table.op().name
+        table = None
+        gc.collect()
+        _assert_table_not_exists(self.con, name)
+
+    def test_persist_parquet_file_with_name(self):
+        hdfs_path = '/test-warehouse/tpch.region_parquet'
+
+        name = _random_table_name()
+        schema = ibis.schema([('r_regionkey', 'int16'),
+                              ('r_name', 'string'),
+                              ('r_comment', 'string')])
+        self.con.parquet_file(hdfs_path, schema=schema,
+                              name=name, persist=True)
+        gc.collect()
+
+        # table still exists
+        self.con.table(name)
+
+        _ensure_drop(self.con, name)
+
+    def test_query_parquet_file_with_schema(self):
+        hdfs_path = '/test-warehouse/tpch.region_parquet'
+        schema = ibis.schema([('r_regionkey', 'int16'),
+                              ('r_name', 'string'),
+                              ('r_comment', 'string')])
+
+        table = self.con.parquet_file(hdfs_path, schema=schema)
+
+        name = table.op().name
+        assert name.startswith('ibis_tmp_')
+
+        # table exists
+        self.con.table(name)
+
+        expr = table.r_name.value_counts()
+        expr.execute()
+
+        assert table.count().execute() == 5
+
+    def test_query_parquet_file_like_table(self):
+        hdfs_path = '/test-warehouse/tpch.region_parquet'
+
+        ex_schema = ibis.schema([('r_regionkey', 'int16'),
+                                 ('r_name', 'string'),
+                                 ('r_comment', 'string')])
+
+        table = self.con.parquet_file(hdfs_path, like_table='tpch.region')
+
+        assert table.schema().equals(ex_schema)
+
+    def test_query_parquet_infer_schema(self):
+        hdfs_path = '/test-warehouse/tpch.region_parquet'
+        table = self.con.parquet_file(hdfs_path)
+
+        ex_schema = ibis.schema([('r_regionkey', 'int32'),
+                                 ('r_name', 'string'),
+                                 ('r_comment', 'string')])
+
+        assert table.schema().equals(ex_schema)
+
+    def test_query_text_file_regex(self):
+        pass
+
+    def test_query_delimited_file_directory(self):
+        hdfs_path = '/ibis-test/csv-test'
+
+        schema = ibis.schema([('foo', 'string'),
+                              ('bar', 'double'),
+                              ('baz', 'int8')])
+        table = self.con.delimited_file(hdfs_path, schema, delimiter=',')
+
+        expr = (table
+                [table.bar > 0]
+                .group_by('foo')
+                .aggregate([table.bar.sum().name('sum(bar)'),
+                            table.baz.sum().name('mean(baz)')]))
+        expr.execute()
+
+    def test_avro(self):
+        pass

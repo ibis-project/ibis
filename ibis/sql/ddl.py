@@ -25,9 +25,9 @@ class DDLStatement(object):
 
     def _get_scoped_name(self, table_name, database):
         if database:
-            scoped_name = '{}.{}'.format(database, table_name)
+            scoped_name = '{}.`{}`'.format(database, table_name)
         else:
-            scoped_name = table_name
+            scoped_name = '`{}`'.format(table_name)
         return scoped_name
 
 
@@ -446,33 +446,34 @@ class Union(DDLStatement):
         return query
 
 
-class CTAS(DDLStatement):
+class CreateTable(DDLStatement):
 
     """
-    Create Table As Select
+
+    Parameters
+    ----------
+    partition :
+
     """
 
-    def __init__(self, table_name, select, context, database=None,
-                 external=False, format='parquet', overwrite=False,
-                 partition=None):
-        self.select = select
-        self.context = context
-
+    def __init__(self, table_name, database=None, external=False,
+                 format='parquet', overwrite=False, partition=None):
         self.table_name = table_name
         self.database = database
         self.external = external
         self.overwrite = overwrite
-        self.format = format.lower()
+        self.format = self._validate_storage_format(format)
+
+    def _validate_storage_format(self, format):
+        format = format.lower()
+        if format not in ('parquet', 'avro'):
+            raise ValueError('Invalid format: {}'.format(format))
+        return format
 
     def compile(self):
-        if_exists = '' if self.overwrite else 'IF NOT EXISTS '
-
         buf = BytesIO()
 
-        scoped_name = self._get_scoped_name(self.table_name, self.database)
-        create_line = 'CREATE TABLE {}{}'.format(if_exists, scoped_name)
-
-        buf.write(create_line)
+        buf.write(self._create_line())
         buf.write(self._storage())
 
         select_query = self.select.compile()
@@ -480,11 +481,122 @@ class CTAS(DDLStatement):
 
         return buf.getvalue()
 
+    def _create_line(self):
+        if_exists = '' if self.overwrite else 'IF NOT EXISTS '
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+
+        if self.external:
+            create_decl = 'CREATE EXTERNAL TABLE'
+        else:
+            create_decl = 'CREATE TABLE'
+
+        create_line = '{} {}{}'.format(create_decl, if_exists,
+                                       scoped_name)
+        return create_line
+
     def _storage(self):
-        if self.format == 'parquet':
-            return '\nSTORED AS PARQUET'
+        storage_lines = {
+            'parquet': '\nSTORED AS PARQUET',
+            'avro': '\nSTORED AS AVRO'
+        }
+        return storage_lines[self.format]
+
+
+class CTAS(CreateTable):
+
+    """
+    Create Table As Select
+    """
+
+    def __init__(self, table_name, select, database=None,
+                 external=False, format='parquet', overwrite=False,
+                 partition=None):
+        self.select = select
+        CreateTable.__init__(self, table_name, database=database,
+                             external=external, format=format,
+                             overwrite=overwrite, partition=partition)
+
+    def compile(self):
+        buf = BytesIO()
+        buf.write(self._create_line())
+        buf.write(self._storage())
+
+        select_query = self.select.compile()
+        buf.write('\nAS\n{}'.format(select_query))
+        return buf.getvalue()
+
+
+class CreateTableParquet(CreateTable):
+
+    def __init__(self, table_name, path,
+                 example_file=None,
+                 example_table=None,
+                 schema=None,
+                 external=True,
+                 **kwargs):
+        self.path = path
+        self.example_file = example_file
+        self.example_table = example_table
+        self.schema = schema
+        CreateTable.__init__(self, table_name, external=external, **kwargs)
+
+        self._validate()
+
+    def _validate(self):
+        pass
+
+    def compile(self):
+        buf = BytesIO()
+        buf.write(self._create_line())
+
+        if self.example_file is not None:
+            buf.write("\nLIKE PARQUET '{}'".format(self.example_file))
+        elif self.example_table is not None:
+            buf.write("\nLIKE {}".format(self.example_table))
+        elif self.schema is not None:
+            schema = format_schema(self.schema)
+            buf.write('\n{}'.format(schema))
         else:
             raise NotImplementedError
+
+        buf.write('\nSTORED AS PARQUET')
+        buf.write("\nLOCATION '{}'".format(self.path))
+        return buf.getvalue()
+
+
+class CreateTableDelimited(CreateTable):
+
+    def __init__(self, table_name, path, schema,
+                 delimiter=None, escapechar=None, lineterminator=None,
+                 external=True, **kwargs):
+        self.path = path
+        self.schema = schema
+        self.delimiter = delimiter
+        self.escapechar = escapechar
+        self.lineterminator = lineterminator
+
+        CreateTable.__init__(self, table_name, external=external, **kwargs)
+
+    def compile(self):
+        buf = BytesIO()
+        buf.write(self._create_line())
+
+        schema = format_schema(self.schema)
+        buf.write('\n{}'.format(schema))
+
+        buf.write("\nROW FORMAT DELIMITED")
+
+        if self.delimiter is not None:
+            buf.write("\nFIELDS TERMINATED BY '{}'".format(self.delimiter))
+
+        if self.escapechar is not None:
+            buf.write("\nESCAPED BY '{}'".format(self.escapechar))
+
+        if self.lineterminator is not None:
+            buf.write("\nLINES TERMINATED BY '{}'".format(self.lineterminator))
+
+        buf.write("\nLOCATION '{}'".format(self.path))
+        return buf.getvalue()
 
 
 class InsertSelect(DDLStatement):
@@ -538,6 +650,37 @@ class CacheTable(DDLStatement):
 def _join_not_none(sep, pieces):
     pieces = [x for x in pieces if x is not None]
     return sep.join(pieces)
+
+
+def format_schema(schema):
+    elements = [_format_schema_element(name, t)
+                for name, t in zip(schema.names, schema.types)]
+    return '({})'.format(',\n '.join(elements))
+
+
+def _format_schema_element(name, t):
+    return '{} {}'.format(quote_identifier(name, force=True),
+                          _format_type(t))
+
+
+def _format_type(t):
+    if isinstance(t, ir.DecimalType):
+        return 'DECIMAL({},{})'.format(t.precision, t.scale)
+    else:
+        return _impala_type_names[t]
+
+
+_impala_type_names = {
+    'int8': 'TINYINT',
+    'int16': 'SMALLINT',
+    'int32': 'INT',
+    'int64': 'BIGINT',
+    'float': 'FLOAT',
+    'double': 'DOUBLE',
+    'boolean': 'BOOLEAN',
+    'timestamp': 'TIMESTAMP',
+    'string': 'STRING'
+}
 
 
 def translate_expr(expr, context=None, named=False, permit_subquery=False):

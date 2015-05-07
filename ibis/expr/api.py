@@ -38,6 +38,42 @@ import ibis.expr.analysis as _L
 import ibis.expr.operations as _ops
 
 
+__all__ = ['schema', 'table', 'literal', 'case', 'now', 'desc', 'null',
+           'cast', 'coalesce', 'greatest', 'least', 'join']
+
+
+def schema(pairs=None, names=None, types=None):
+    """
+    Validate and return an Ibis Schema object
+
+    Parameters
+    ----------
+    pairs : list of (name, type) tuples
+      Mutually exclusive with names/types
+    names : list of string
+      Field names
+    types : list of string
+      Field types
+
+    Examples
+    --------
+    sc = schema([('foo', 'string'),
+                 ('bar', 'int64'),
+                 ('baz', 'boolean')])
+
+    sc2 = schema(names=['foo', 'bar', 'baz'],
+                 types=['string', 'int64', 'boolean'])
+
+    Returns
+    -------
+    schema : Schema
+    """
+    if pairs is not None:
+        return Schema.from_tuples(pairs)
+    else:
+        return Schema(names, types)
+
+
 def case():
     """
     Similar to the .case method on array expressions, create a case builder

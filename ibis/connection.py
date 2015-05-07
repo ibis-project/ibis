@@ -13,11 +13,16 @@
 # limitations under the License.
 
 
+from ibis.common import IbisError
 from ibis.config import options
+
+from ibis.filesystems import HDFS
+
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
 import ibis.sql.ddl as ddl
+
 
 
 class Connection(object):
@@ -110,9 +115,12 @@ class SQLConnection(Connection):
 
 class ImpalaConnection(SQLConnection):
 
-    def __init__(self, **params):
+    def __init__(self, hdfs_client=None, **params):
+        self.hdfs_client = hdfs_client
+
         self.params = params
         self.con = None
+
         self._connect()
 
     def _connect(self):
@@ -124,6 +132,9 @@ class ImpalaConnection(SQLConnection):
         return cursor.fetchall()
 
     def _execute(self, query, retries=3):
+        if isinstance(query, ddl.DDLStatement):
+            query = query.compile()
+
         from impala.error import DatabaseError
         try:
             cursor = self.con.cursor()
@@ -138,6 +149,58 @@ class ImpalaConnection(SQLConnection):
         return cursor
 
     def set_database(self, name):
+        pass
+
+    def list_tables(self, like=None, database=None):
+        """
+        List tables in the current (or indicated) database. Like the SHOW
+        TABLES command in the impala-shell.
+
+        Parameters
+        ----------
+        like : string, default None
+          e.g. 'foo*' to match all tables starting with 'foo'
+        database : string, default None
+          If not passed, uses the current/default database
+
+        Returns
+        -------
+        tables : list of strings
+        """
+        statement = 'SHOW TABLES'
+        if database:
+            statement += ' IN {}'.format(database)
+        if like:
+            statement += " LIKE '{}'".format(like)
+
+        cur = self._execute(statement)
+        return self._get_list(cur)
+
+    def _get_list(self, cur, i=0):
+        return list(zip(*cur.fetchall())[i])
+
+    def list_databases(self, like=None):
+        """
+        List databases in the Impala cluster. Like the SHOW DATABASES command
+        in the impala-shell.
+
+        Parameters
+        ----------
+        like : string, default None
+          e.g. 'foo*' to match all tables starting with 'foo'
+
+        Returns
+        -------
+        databases : list of strings
+        """
+        statement = 'SHOW DATABASES'
+        if like:
+            statement += " LIKE '{}'".format(like)
+
+        cur = self._execute(statement)
+        return self._get_list(cur)
+
+    def get_schema(self, table_name, database=None):
         pass
 
     def create_table(self, table_name, expr, database=None, format='parquet',
@@ -160,12 +223,132 @@ class ImpalaConnection(SQLConnection):
         """
         ast = sql.build_ast(expr)
         select = ast.queries[0]
-        context = ast.context
-        statement = ddl.CTAS(table_name, select, context,
+        statement = ddl.CTAS(table_name, select,
                              database=database,
                              overwrite=overwrite)
-        query = statement.compile()
-        self._execute(query)
+        self._execute(statement)
+
+    def avro_file(self, hdfs_path):
+        pass
+
+    def delimited_file(self, hdfs_dir, schema,
+                       name=None, database=None,
+                       delimiter=',',
+                       escapechar=None,
+                       lineterminator=None,
+                       external=True,
+                       persist=False):
+        """
+
+        Parameters
+        ----------
+        delimiter : length-1 string, default ','
+          Pass None if there is no delimiter
+        escapechar : length-1 string
+          Character used to escape special characters
+
+        Returns
+        -------
+        delimited_table : TableExpr
+        """
+        if name is None:
+            name = self._random_tmp_table()
+
+        stmt = ddl.CreateTableDelimited(name, hdfs_dir, schema,
+                                        delimiter=delimiter,
+                                        external=external)
+        self._execute(stmt)
+        return self._wrap_new_table(name, database, persist)
+
+    def parquet_file(self, hdfs_dir, schema=None, name=None, database=None,
+                     external=True, like_file=None,
+                     like_table=None,
+                     persist=False):
+        """
+        Make indicated parquet file in HDFS available as an Ibis table.
+
+        The table created can be optionally named and persisted, otherwise a
+        unique name will be generated. Temporarily, for any non-persistent
+        external table created by Ibis we will attempt to drop it when the
+        underlying object is garbage collected (or the Python interpreter shuts
+        down normally).
+
+        Parameters
+        ----------
+        hdfs_dir : string
+          Path in HDFS
+        schema : Schema
+          If no schema provided, and neither of the like_* argument is passed,
+          one will be inferred from one of the parquet files in the directory.
+        like_file : string
+          Absolute path to Parquet file in HDFS to use for schema
+          definitions. An alternative to having to supply an explicit schema
+        like_table : string
+          Fully scoped and escaped string to an Impala table whose schema we
+          will use for the newly created table.
+        name : string, optional
+          random unique name generated otherwise
+        database : string, optional
+        external : boolean, default True
+          If a table is external, the referenced data will not be deleted when
+          the table is dropped in Impala. Otherwise (external=False) Impala
+          takes ownership of the Parquet file.
+        persist : boolean, default False
+          Do not drop the table upon Ibis garbage collection / interpreter
+          shutdown
+
+        Returns
+        -------
+        parquet_table : TableExpr
+        """
+        if name is None:
+            name = self._random_tmp_table()
+
+        # If no schema provided, need to find some absolute path to a file in
+        # the HDFS directory
+        if like_table is None and schema is None:
+            like_file = self._find_any_file(hdfs_dir)
+
+        stmt = ddl.CreateTableParquet(name, hdfs_dir, schema=schema,
+                                      example_file=like_file,
+                                      example_table=like_table,
+                                      external=external)
+        self._execute(stmt)
+        print 'Created {}'.format(name)
+        return self._wrap_new_table(name, database, persist)
+
+    def _wrap_new_table(self, name, database, persist):
+        if persist:
+            return self.table(name, database=database)
+        else:
+            schema = self._get_table_schema(name, database=database)
+            node = ImpalaTemporaryTable(name, schema, self)
+            return ir.TableExpr(node)
+
+    def _find_any_file(self, hdfs_dir):
+        contents = self.hdfs_client.ls(hdfs_dir)
+        for filename, meta in contents:
+            if meta['type'].lower() == 'file':
+                return filename
+        raise IbisError('No files found in the passed directory')
+
+    def text_file(self, hdfs_path, column_name='value'):
+        """
+        Interpret text data as a table with a single string column.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        text_table : TableExpr
+        """
+        pass
+
+    def _random_tmp_table(self):
+        import uuid
+        table_name = 'ibis_tmp_' + uuid.uuid4().get_hex()
+        return table_name
 
     def insert(self, table_name, expr, database=None, overwrite=False):
         """
@@ -191,8 +374,7 @@ class ImpalaConnection(SQLConnection):
         statement = ddl.InsertSelect(table_name, select,
                                      database=database,
                                      overwrite=overwrite)
-        query = statement.compile()
-        self._execute(query)
+        self._execute(statement)
 
     def drop_table(self, table_name, database=None, must_exist=False):
         """
@@ -210,8 +392,7 @@ class ImpalaConnection(SQLConnection):
         """
         statement = ddl.DropTable(table_name, database=database,
                                   must_exist=must_exist)
-        query = statement.compile()
-        self._execute(query)
+        self._execute(statement)
 
     def cache_table(self, table_name, database=None, pool='default'):
         """
@@ -229,11 +410,15 @@ class ImpalaConnection(SQLConnection):
         con.cache_table('my_table', database='operations', pool='op_4GB_pool')
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
-        query = statement.compile()
-        self._execute(query)
+        self._execute(statement)
 
-    def _get_table_schema(self, name):
-        query = 'SELECT * FROM {} LIMIT 0'.format(name)
+    def _get_table_schema(self, name, database=None):
+        if database is not None:
+            tname = '{}.{}'.format(database, name)
+        else:
+            tname = name
+
+        query = 'SELECT * FROM {} LIMIT 0'.format(tname)
         return self._get_schema_using_query(query)
 
     def _get_schema_using_query(self, query):
@@ -275,16 +460,46 @@ _impala_type_mapping = {
 }
 
 
+class ImpalaTemporaryTable(ops.DatabaseTable):
+
+    def __del__(self):
+        try:
+            self.cleanup()
+        except IbisError:
+            pass
+
+    def cleanup(self):
+        self.source.drop_table(self.name)
+
+
 def _set_limit(query, k):
     limited_query = '{}\nLIMIT {}'.format(query, k)
 
     return limited_query
 
 
+WEBHDFS_DEFAULT_PORT = 50075
+
+
 def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
                    database=None, timeout=45, use_ssl=False, ca_cert=None,
                    use_ldap=False, ldap_user=None, ldap_password=None,
-                   use_kerberos=False, kerberos_service_name='impala'):
+                   use_kerberos=False, kerberos_service_name='impala',
+                   hdfs_config=None):
+    """
+
+    Returns
+    -------
+    con : ImpalaConnection
+    """
+    if hdfs_config is not None:
+        hdfs_client = HDFS(hdfs_config['host'],
+                           hdfs_config.get('webhdfs_port',
+                                           WEBHDFS_DEFAULT_PORT),
+                           params=hdfs_config.get('params'))
+    else:
+        hdfs_client = None
+
     params = {
         'host': host,
         'port': port,
@@ -299,4 +514,4 @@ def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
         'use_kerberos': use_kerberos,
         'kerberos_service_name': kerberos_service_name
     }
-    return ImpalaConnection(**params)
+    return ImpalaConnection(hdfs_client=hdfs_client, **params)
