@@ -24,6 +24,11 @@ import unittest
 from ibis.server import IbisServerNode
 
 
+# non-POSIX system (e.g. Windows)
+pytestmark = pytest.mark.skipif(not hasattr(os, 'setpgid'),
+                                reason='non-POSIX system')
+
+
 def port_is_closed(port):
     server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
