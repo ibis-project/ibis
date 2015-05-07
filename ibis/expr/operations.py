@@ -1559,6 +1559,14 @@ class LogicalBinaryOp(BinaryOp):
         return _shape_like_args(self.args, 'boolean')
 
 
+class Modulus(BinaryOp):
+
+    def output_type(self):
+        from ibis.expr.rules import BinaryPromoter
+        helper = BinaryPromoter(self.left, self.right, operator.add)
+        return helper.get_result()
+
+
 class And(LogicalBinaryOp):
     pass
 

@@ -191,6 +191,12 @@ FROM tpch.lineitem li
             api.now(),
             api.e,
 
+            # modulus cases
+            i1 % 5,
+            i4 % 10,
+            20 % i1,
+            d % 5,
+
             i4.zeroifnull(),
 
             d.abs(),
@@ -232,6 +238,27 @@ FROM tpch.lineitem li
             # string stuff
             s.like('6%'),
             s.re_search('[\d]+'),
+        ]
+
+        proj_exprs = [expr.name('e%d' % i)
+                      for i, expr in enumerate(exprs)]
+
+        projection = table[proj_exprs].limit(10)
+        projection.execute()
+
+    def test_decimal_builtins(self):
+        table = self.con.table('tpch.lineitem')
+
+        dc = table.l_quantity
+
+        exprs = [
+            dc % 10,
+            dc + 5,
+            dc + dc,
+            dc / 2,
+            dc * 2,
+            dc ** 2,
+            dc.cast('double')
         ]
 
         proj_exprs = [expr.name('e%d' % i)

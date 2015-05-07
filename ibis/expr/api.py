@@ -412,9 +412,11 @@ sub = _binop_expr('__sub__', _ops.Subtract)
 mul = _binop_expr('__mul__', _ops.Multiply)
 div = _binop_expr('__div__', _ops.Divide)
 pow = _binop_expr('__pow__', _ops.Power)
+mod = _binop_expr('__mod__', _ops.Modulus)
 
 rsub = _rbinop_expr('__rsub__', _ops.Subtract)
 rdiv = _rbinop_expr('__rdiv__', _ops.Divide)
+
 
 _generic_value_methods = dict(
     cast=cast,
@@ -448,6 +450,9 @@ _generic_value_methods = dict(
 
     __rmul__=_rbinop_expr('__rmul__', _ops.Multiply),
     __rpow__=_binop_expr('__rpow__', _ops.Power),
+
+    __mod__=mod,
+    __rmod__=_rbinop_expr('__rmod__', _ops.Modulus),
 
     __eq__=_binop_expr('__eq__', _ops.Equals),
     __ne__=_binop_expr('__ne__', _ops.NotEquals),

@@ -123,7 +123,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
             (a - b, 'a - b'),
             (a * b, 'a * b'),
             (a / b, 'a / b'),
-            (a ** b, 'a ^ b'),
+            (a ** b, 'pow(a, b)'),
             (a < b, 'a < b'),
             (a <= b, 'a <= b'),
             (a > b, 'a > b'),

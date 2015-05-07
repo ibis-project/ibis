@@ -43,6 +43,8 @@ class BinaryPromoter(object):
                 return 'float'
         elif util.all_of(self.args, ir.IntegerValue):
             return self._get_int_type()
+        elif util.any_of(self.args, ir.DecimalValue):
+            return _decimal_promoted_type(self.args)
         else:
             raise NotImplementedError
 
@@ -70,6 +72,16 @@ class BinaryPromoter(object):
             raise TypeError('String and non-string incompatible')
 
 
+def _decimal_promoted_type(args):
+    precisions = []
+    scales = []
+    for arg in args:
+        if isinstance(arg, ir.DecimalValue):
+            precisions.append(arg.meta.precision)
+            scales.append(arg.meta.scale)
+    return ir.DecimalType(max(precisions), max(scales))
+
+
 class PowerPromoter(BinaryPromoter):
 
     def __init__(self, left, right):
@@ -83,6 +95,8 @@ class PowerPromoter(BinaryPromoter):
                 return 'double'
             else:
                 return 'float'
+        elif util.any_of(self.args, ir.DecimalValue):
+            return _decimal_promoted_type(self.args)
         elif isinstance(rval, ops.Literal) and rval.value < 0:
             return 'double'
         elif util.all_of(self.args, ir.IntegerValue):

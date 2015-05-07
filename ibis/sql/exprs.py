@@ -492,7 +492,8 @@ _binary_infix_ops = {
     ops.Subtract: _binary_infix_op('-'),
     ops.Multiply: _binary_infix_op('*'),
     ops.Divide: _binary_infix_op('/'),
-    ops.Power: _binary_infix_op('^'),
+    ops.Power: _fixed_arity_call('pow', 2),
+    ops.Modulus: _binary_infix_op('%'),
 
     # Comparisons
     ops.Equals: _binary_infix_op('='),
