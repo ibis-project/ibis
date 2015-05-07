@@ -306,7 +306,7 @@ class ImpalaConnection(SQLConnection):
 
         # If no schema provided, need to find some absolute path to a file in
         # the HDFS directory
-        if like_table is None and schema is None:
+        if like_file is None and like_table is None and schema is None:
             like_file = self._find_any_file(hdfs_dir)
 
         stmt = ddl.CreateTableParquet(name, hdfs_dir, schema=schema,
@@ -314,7 +314,6 @@ class ImpalaConnection(SQLConnection):
                                       example_table=like_table,
                                       external=external)
         self._execute(stmt)
-        print 'Created {}'.format(name)
         return self._wrap_new_table(name, database, persist)
 
     def _wrap_new_table(self, name, database, persist):
