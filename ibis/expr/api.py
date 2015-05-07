@@ -42,36 +42,58 @@ __all__ = ['schema', 'table', 'literal', 'case', 'now', 'desc', 'null',
            'cast', 'coalesce', 'greatest', 'least', 'join']
 
 
+_data_type_docs = """\
+Ibis uses its own type aliases that map onto database types. See, for
+example, the correspondence between Ibis type names and Impala type names:
+
+Ibis type      Impala Type
+~~~~~~~~~      ~~~~~~~~~~~
+int8           TINYINT
+int16          SMALLINT
+int32          INT
+int64          BIGINT
+float          FLOAT
+double         DOUBLE
+boolean        BOOLEAN
+string         STRING
+timestamp      TIMESTAMP
+decimal(p, s)  DECIMAL(p,s)"""
+
+
 def schema(pairs=None, names=None, types=None):
-    """
-    Validate and return an Ibis Schema object
-
-    Parameters
-    ----------
-    pairs : list of (name, type) tuples
-      Mutually exclusive with names/types
-    names : list of string
-      Field names
-    types : list of string
-      Field types
-
-    Examples
-    --------
-    sc = schema([('foo', 'string'),
-                 ('bar', 'int64'),
-                 ('baz', 'boolean')])
-
-    sc2 = schema(names=['foo', 'bar', 'baz'],
-                 types=['string', 'int64', 'boolean'])
-
-    Returns
-    -------
-    schema : Schema
-    """
     if pairs is not None:
         return Schema.from_tuples(pairs)
     else:
         return Schema(names, types)
+
+
+schema.__doc__ = """\
+Validate and return an Ibis Schema object
+
+{0}
+
+Parameters
+----------
+pairs : list of (name, type) tuples
+  Mutually exclusive with names/types
+names : list of string
+  Field names
+types : list of string
+  Field types
+
+Examples
+--------
+sc = schema([('foo', 'string'),
+             ('bar', 'int64'),
+             ('baz', 'boolean')])
+
+sc2 = schema(names=['foo', 'bar', 'baz'],
+             types=['string', 'int64', 'boolean'])
+
+Returns
+-------
+schema : Schema
+""".format(_data_type_docs)
 
 
 def case():
@@ -238,18 +260,6 @@ def _extract_field(name, klass):
 
 
 def cast(arg, target_type):
-    """
-    Cast value(s) to indicated data type. Values that cannot be
-    successfully casted
-
-    Parameters
-    ----------
-    target_type : data type name
-
-    Returns
-    -------
-    cast_expr : ValueExpr
-    """
     # validate
     op = _ops.Cast(arg, target_type)
 
@@ -258,6 +268,23 @@ def cast(arg, target_type):
         return arg
     else:
         return op.to_expr()
+
+cast.__doc__ = """
+Cast value(s) to indicated data type. Values that cannot be
+successfully casted
+
+Parameters
+----------
+target_type : data type name
+
+Notes
+-----
+{0}
+
+Returns
+-------
+cast_expr : ValueExpr
+""".format(_data_type_docs)
 
 
 def fillna(arg, fill_value):
