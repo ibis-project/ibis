@@ -791,6 +791,32 @@ FROM (
         context = query.context
         assert not context.need_aliases()
 
+    def test_table_names_overlap_default_aliases(self):
+        # see discussion in #104; this actually is not needed for query
+        # correctness, and only makes the generated SQL nicer
+        raise unittest.SkipTest
+
+        t0 = api.table([
+            ('key', 'string'),
+            ('v1', 'double')
+        ], 't1')
+
+        t1 = api.table([
+            ('key', 'string'),
+            ('v2', 'double')
+        ], 't0')
+
+        expr = t0.join(t1, t0.key == t1.key)[t0.key, t0.v1, t1.v2]
+
+        result = to_sql(expr)
+        expected = """\
+SELECT t2.key, t2.v1, t3.v2
+FROM t0 t2
+  INNER JOIN t1 t3
+    ON t2.key = t3.key"""
+
+        assert result == expected
+
     def test_context_aliases_multiple_join(self):
         t1 = self.con.table('star1')
         t2 = self.con.table('star2')
