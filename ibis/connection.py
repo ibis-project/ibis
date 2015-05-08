@@ -22,7 +22,7 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
 import ibis.sql.ddl as ddl
-
+import ibis.sql.identifiers as ident
 
 
 class Connection(object):
@@ -46,12 +46,14 @@ class SQLConnection(Connection):
         -------
         table : TableExpr
         """
-        if database is not None:
-            raise NotImplementedError
-
-        schema = self._get_table_schema(name)
-        node = ops.DatabaseTable(name, schema, self)
+        qualified_name = self._fully_qualified_name(name, database)
+        schema = self._get_table_schema(qualified_name)
+        node = ops.DatabaseTable(qualified_name, schema, self)
         return ir.TableExpr(node)
+
+    def _fully_qualified_name(self, name, database):
+        # XXX
+        return name
 
     def sql(self, query):
         """
@@ -122,6 +124,16 @@ class ImpalaConnection(SQLConnection):
         self.con = None
 
         self._connect()
+
+    def _fully_qualified_name(self, name, database):
+        if database is not None:
+            return '{}.`{}`'.format(database, name)
+        else:
+            # TODO: This is not foolproof
+            if '.' not in name and name.lower() in ident.impala_identifiers:
+                return '`{}`'.format(name)
+            else:
+                return name
 
     def _connect(self):
         import impala.dbapi as db
@@ -258,7 +270,8 @@ class ImpalaConnection(SQLConnection):
                                         delimiter=delimiter,
                                         external=external)
         self._execute(stmt)
-        return self._wrap_new_table(name, database, persist)
+        qualified_name = self._fully_qualified_name(name, database)
+        return self._wrap_new_table(qualified_name, persist)
 
     def parquet_file(self, hdfs_dir, schema=None, name=None, database=None,
                      external=True, like_file=None,
@@ -314,14 +327,16 @@ class ImpalaConnection(SQLConnection):
                                       example_table=like_table,
                                       external=external)
         self._execute(stmt)
-        return self._wrap_new_table(name, database, persist)
 
-    def _wrap_new_table(self, name, database, persist):
+        qualified_name = self._fully_qualified_name(name, database)
+        return self._wrap_new_table(qualified_name, persist)
+
+    def _wrap_new_table(self, qualified_name, persist):
         if persist:
-            return self.table(name, database=database)
+            return self.table(qualified_name)
         else:
-            schema = self._get_table_schema(name, database=database)
-            node = ImpalaTemporaryTable(name, schema, self)
+            schema = self._get_table_schema(qualified_name)
+            node = ImpalaTemporaryTable(qualified_name, schema, self)
             return ir.TableExpr(node)
 
     def _find_any_file(self, hdfs_dir):
@@ -411,12 +426,7 @@ class ImpalaConnection(SQLConnection):
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self._execute(statement)
 
-    def _get_table_schema(self, name, database=None):
-        if database is not None:
-            tname = '{}.{}'.format(database, name)
-        else:
-            tname = name
-
+    def _get_table_schema(self, tname):
         query = 'SELECT * FROM {} LIMIT 0'.format(tname)
         return self._get_schema_using_query(query)
 

@@ -125,6 +125,7 @@ class MockConnection(SQLConnection):
         self.last_executed_expr = None
 
     def _get_table_schema(self, name):
+        name = name.replace('`', '')
         return ir.Schema.from_tuples(self._tables[name])
 
     def execute(self, expr, default_limit=None):

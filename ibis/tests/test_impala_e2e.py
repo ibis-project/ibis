@@ -78,6 +78,16 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         table = self.con.table('functional.alltypes')
         assert isinstance(table, ir.TableExpr)
 
+    def test_table_name_reserved_identifier(self):
+        table_name = 'distinct'
+        expr = self.con.table('functional.alltypes')
+        self.con.create_table(table_name, expr)
+
+        t = self.con.table(table_name)
+        t.limit(10).execute()
+
+        _ensure_drop(self.con, 'distinct')
+
     def test_list_databases(self):
         assert len(self.con.list_databases()) > 0
 
@@ -327,10 +337,10 @@ FROM tpch.lineitem li
 
     def test_tpch_correlated_subquery_failure(self):
         # #183 and other issues
-        region = self.con.table('tpch.region')
-        nation = self.con.table('tpch.nation')
-        customer = self.con.table('tpch.customer')
-        orders = self.con.table('tpch.orders')
+        region = self.con.table('region', database='tpch_parquet')
+        nation = self.con.table('nation', database='tpch')
+        customer = self.con.table('customer', database='tpch')
+        orders = self.con.table('orders', database='tpch_parquet')
 
         fields_of_interest = [customer,
                               region.r_name.name('region'),
@@ -349,10 +359,12 @@ FROM tpch.lineitem li
         expr = tpch[amount_filter].limit(0)
         expr.execute()
 
+
 def _ensure_drop(con, table_name, database=None):
     con.drop_table(table_name, database=database,
                    must_exist=False)
     _assert_table_not_exists(con, table_name, database=database)
+
 
 def _assert_table_not_exists(con, table_name, database=None):
     from impala.error import Error as ImpylaError
