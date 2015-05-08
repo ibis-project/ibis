@@ -564,16 +564,12 @@ class CreateTableParquet(CreateTable):
         return buf.getvalue()
 
 
-class CreateTableDelimited(CreateTable):
+class CreateTableWithSchema(CreateTable):
 
-    def __init__(self, table_name, path, schema,
-                 delimiter=None, escapechar=None, lineterminator=None,
-                 external=True, **kwargs):
-        self.path = path
+    def __init__(self, table_name, schema,
+                 table_format, external=True, **kwargs):
         self.schema = schema
-        self.delimiter = delimiter
-        self.escapechar = escapechar
-        self.lineterminator = lineterminator
+        self.table_format = table_format
 
         CreateTable.__init__(self, table_name, external=external, **kwargs)
 
@@ -583,6 +579,24 @@ class CreateTableDelimited(CreateTable):
 
         schema = format_schema(self.schema)
         buf.write('\n{}'.format(schema))
+
+        format_ddl = self.table_format.to_ddl()
+        buf.write(format_ddl)
+
+        return buf.getvalue()
+
+
+class DelimitedFormat(object):
+
+    def __init__(self, path, delimiter=None, escapechar=None,
+                 lineterminator=None):
+        self.path = path
+        self.delimiter = delimiter
+        self.escapechar = escapechar
+        self.lineterminator = lineterminator
+
+    def to_ddl(self):
+        buf = BytesIO()
 
         buf.write("\nROW FORMAT DELIMITED")
 
@@ -596,7 +610,50 @@ class CreateTableDelimited(CreateTable):
             buf.write("\nLINES TERMINATED BY '{}'".format(self.lineterminator))
 
         buf.write("\nLOCATION '{}'".format(self.path))
+
         return buf.getvalue()
+
+
+class AvroFormat(object):
+
+    def __init__(self, path, avro_schema):
+        self.path = path
+        self.avro_schema = avro_schema
+
+    def to_ddl(self):
+        import json
+
+        buf = BytesIO()
+        buf.write('\nSTORED AS AVRO')
+        buf.write("\nLOCATION '{}'".format(self.path))
+
+        schema = json.dumps(self.avro_schema, indent=2, sort_keys=True)
+        schema = '\n'.join([x.rstrip() for x in schema.split('\n')])
+        buf.write("\nTBLPROPERTIES ('avro.schema.literal'='{}')"
+                  .format(schema))
+
+        return buf.getvalue()
+
+
+class CreateTableDelimited(CreateTableWithSchema):
+
+    def __init__(self, table_name, path, schema,
+                 delimiter=None, escapechar=None, lineterminator=None,
+                 external=True, **kwargs):
+        table_format = DelimitedFormat(path, delimiter=delimiter,
+                                       escapechar=escapechar,
+                                       lineterminator=lineterminator)
+        CreateTableWithSchema.__init__(self, table_name, schema,
+                                       table_format, external=external,
+                                       **kwargs)
+
+
+class CreateTableAvro(CreateTableWithSchema):
+
+    def __init__(self, table_name, path, schema, avro_schema, **kwargs):
+        table_format = AvroFormat(path, avro_schema)
+        CreateTableWithSchema.__init__(self, table_name, schema, table_format,
+                                       **kwargs)
 
 
 class InsertSelect(DDLStatement):

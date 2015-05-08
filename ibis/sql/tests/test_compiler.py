@@ -1582,8 +1582,60 @@ LINES TERMINATED BY '\0'
 LOCATION '{0}'""".format(path)
         assert result == expected
 
-    def test_create_external_table(self):
-        pass
+    def test_create_external_table_avro(self):
+        path = '/path/to/files/'
+        schema = ibis.schema([('a', 'string'),
+                              ('b', 'int32'),
+                              ('c', 'double'),
+                              ('d', 'decimal(12,2)')])
+
+        avro_schema = {
+            'fields': [
+                {'name': 'a', 'type': 'string'},
+                {'name': 'b', 'type': 'int'},
+                {'name': 'c', 'type': 'double'},
+                {'name': 'd', 'type': 'bytes'}
+
+            ],
+            'name': 'my_record',
+            'type': 'record'
+        }
+
+        stmt = ddl.CreateTableAvro('new_table', path, schema, avro_schema,
+                                   database='foo')
+
+        result = stmt.compile()
+        expected = """\
+CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
+(`a` STRING,
+ `b` INT,
+ `c` DOUBLE,
+ `d` DECIMAL(12,2))
+STORED AS AVRO
+LOCATION '%s'
+TBLPROPERTIES ('avro.schema.literal'='{
+  "fields": [
+    {
+      "name": "a",
+      "type": "string"
+    },
+    {
+      "name": "b",
+      "type": "int"
+    },
+    {
+      "name": "c",
+      "type": "double"
+    },
+    {
+      "name": "d",
+      "type": "bytes"
+    }
+  ],
+  "name": "my_record",
+  "type": "record"
+}')""" % path
+        assert result == expected
 
     def test_create_table_parquet(self):
         statement = _create_table('some_table', self.expr,

@@ -414,6 +414,34 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
         _ensure_drop(self.con, name)
 
+    def test_query_avro(self):
+        hdfs_path = '/test-warehouse/tpch.region_avro'
+        schema = ibis.schema([('r_regionkey', 'int16'),
+                              ('r_name', 'string'),
+                              ('r_comment', 'string')])
+
+        avro_schema = {
+            "fields": [
+                {"type": ["int", "null"], "name": "R_REGIONKEY"},
+                {"type": ["string", "null"], "name": "R_NAME"},
+                {"type": ["string", "null"], "name": "R_COMMENT"}],
+            "type": "record",
+            "name": "a"
+        }
+
+        table = self.con.avro_file(hdfs_path, schema, avro_schema)
+
+        name = table.op().name
+        assert name.startswith('ibis_tmp_')
+
+        # table exists
+        self.con.table(name)
+
+        expr = table.r_name.value_counts()
+        expr.execute()
+
+        assert table.count().execute() == 5
+
     def test_query_parquet_file_with_schema(self):
         hdfs_path = '/test-warehouse/tpch.region_parquet'
         schema = ibis.schema([('r_regionkey', 'int16'),

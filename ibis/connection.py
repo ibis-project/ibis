@@ -240,24 +240,66 @@ class ImpalaConnection(SQLConnection):
                              overwrite=overwrite)
         self._execute(statement)
 
-    def avro_file(self, hdfs_path):
-        pass
-
-    def delimited_file(self, hdfs_dir, schema,
-                       name=None, database=None,
-                       delimiter=',',
-                       escapechar=None,
-                       lineterminator=None,
-                       external=True,
-                       persist=False):
+    def avro_file(self, hdfs_dir, schema, avro_schema=None,
+                  name=None, database=None,
+                  external=True, persist=False):
         """
+        Create a (possibly temporary) table to read a collection of Avro data.
 
         Parameters
         ----------
+        hdfs_dir
+        schema : ibis Schema
+        avro_schema : dict
+          The Avro schema for the data as a Python dict
+        name : string, default None
+        database : string, default None
+        external : boolean, default True
+        persist : boolean, default False
+
+        Returns
+        -------
+        avro_table : TableExpr
+        """
+        if name is None:
+            name = self._random_tmp_table()
+
+        stmt = ddl.CreateTableAvro(name, hdfs_dir, schema, avro_schema,
+                                   external=external)
+        self._execute(stmt)
+        qualified_name = self._fully_qualified_name(name, database)
+        return self._wrap_new_table(qualified_name, persist)
+
+    def delimited_file(self, hdfs_dir, schema, name=None, database=None,
+                       delimiter=',', escapechar=None, lineterminator=None,
+                       external=True, persist=False):
+        """
+        Interpret delimited text files (CSV / TSV / etc.) as an Ibis table. See
+        `parquet_file` for more exposition on what happens under the hood.
+
+        Parameters
+        ----------
+        hdfs_dir : string
+          HDFS directory name containing delimited text files
+        schema : ibis Schema
+        name : string, default None
+          Name for temporary or persistent table; otherwise random one
+          generated
+        database : string
+          Database to create the (possibly temporary) table in
         delimiter : length-1 string, default ','
           Pass None if there is no delimiter
         escapechar : length-1 string
           Character used to escape special characters
+        lineterminator : length-1 string
+          Character used to delimit lines
+        external : boolean, default True
+          Create table as EXTERNAL (data will not be deleted on drop). Not that
+          if persist=False and external=False, whatever data you reference will
+          be deleted
+        persist : boolean, default False
+          If True, do not delete the table upon garbage collection of ibis
+          table object
 
         Returns
         -------
@@ -290,7 +332,7 @@ class ImpalaConnection(SQLConnection):
         ----------
         hdfs_dir : string
           Path in HDFS
-        schema : Schema
+        schema : ibis Schema
           If no schema provided, and neither of the like_* argument is passed,
           one will be inferred from one of the parquet files in the directory.
         like_file : string
@@ -302,6 +344,7 @@ class ImpalaConnection(SQLConnection):
         name : string, optional
           random unique name generated otherwise
         database : string, optional
+          Database to create the (possibly temporary) table in
         external : boolean, default True
           If a table is external, the referenced data will not be deleted when
           the table is dropped in Impala. Otherwise (external=False) Impala
