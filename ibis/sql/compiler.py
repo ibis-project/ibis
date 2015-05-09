@@ -603,7 +603,7 @@ class _CorrelatedRefCheck(object):
 
         qroots = self.query.table_set._root_tables()
 
-        self.query_roots = set([id(x) for x in qroots])
+        self.query_roots = util.IbisSet.from_list(qroots)
 
         # aliasing required
         self.foreign_refs = []
@@ -667,7 +667,7 @@ class _CorrelatedRefCheck(object):
     def _is_root(self, what):
         if isinstance(what, ir.Expr):
             what = what.op()
-        return id(what) in self.query_roots
+        return what in self.query_roots
 
 
 def _adapt_expr(expr):

@@ -72,8 +72,12 @@ def promote_list(val):
 
 class IbisSet(object):
 
-    def __init__(self):
-        self.keys = []
+    def __init__(self, keys=None):
+        self.keys = keys or []
+
+    @classmethod
+    def from_list(cls, keys):
+        return IbisSet(keys)
 
     def __contains__(self, obj):
         for other in self.keys:
