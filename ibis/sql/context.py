@@ -38,6 +38,8 @@ class QueryContext(object):
 
         self.query = None
 
+        self._table_key_memo = {}
+
     @property
     def top_context(self):
         if self.parent is None:
@@ -48,7 +50,14 @@ class QueryContext(object):
     def _get_table_key(self, table):
         if isinstance(table, ir.TableExpr):
             table = table.op()
-        return id(table)
+
+        k = id(table)
+        if k in self._table_key_memo:
+            return self._table_key_memo[k]
+        else:
+            val = repr(table)
+            self._table_key_memo[k] = val
+            return val
 
     def set_always_alias(self):
         self.always_alias = True

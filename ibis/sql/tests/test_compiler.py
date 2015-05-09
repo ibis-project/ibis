@@ -1101,6 +1101,34 @@ WHERE t0.amount > (
 LIMIT 10"""
         assert result == expected
 
+    def test_self_join_subquery_distinct_equal(self):
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+
+        j1 = (region.join(nation, region.r_regionkey == nation.n_regionkey)
+              [region, nation])
+
+        j2 = (region.join(nation, region.r_regionkey == nation.n_regionkey)
+              [region, nation].view())
+
+        expr = (j1.join(j2, j1.r_regionkey == j2.r_regionkey)
+                [j1.r_name, j2.n_name])
+
+        result = to_sql(expr)
+        expected = """\
+WITH t0 AS (
+  SELECT t2.*, t3.*
+  FROM tpch_region t2
+    INNER JOIN tpch_nation t3
+      ON t2.r_regionkey = t3.n_regionkey
+)
+SELECT t0.r_name, t1.n_name
+FROM t0
+  INNER JOIN t0 t1
+    ON t0.r_regionkey = t1.r_regionkey"""
+
+        assert result == expected
+
     def test_tpch_self_join_failure(self):
         # duplicating the integration test here
 

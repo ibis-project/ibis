@@ -24,6 +24,7 @@ class FormatMemo(object):
         from collections import defaultdict
         self.formatted = {}
         self.aliases = {}
+        self.ops = {}
         self.counts = defaultdict(lambda: 0)
 
     def __contains__(self, obj):
@@ -37,6 +38,7 @@ class FormatMemo(object):
         if key not in self.formatted:
             self.aliases[key] = 'ref_%d' % len(self.formatted)
             self.formatted[key] = formatter(obj)
+            self.ops[key] = obj
 
         self.counts[key] += 1
 
@@ -96,15 +98,16 @@ class ExprFormatter(object):
 
         if self.memoize:
             alias_to_text = [(self.memo.aliases[x],
-                              self.memo.formatted[x], x)
+                              self.memo.formatted[x],
+                              self.memo.ops[x])
                              for x in self.memo.formatted]
             alias_to_text.sort()
 
             # A hack to suppress printing out of a ref that is the result of
             # the top level expression
             refs = [x + '\n' + y
-                    for x, y, key in alias_to_text
-                    if key != repr(what)]
+                    for x, y, op in alias_to_text
+                    if not op.equals(what)]
 
             text = '\n\n'.join(refs + [text])
 
