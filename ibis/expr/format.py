@@ -27,10 +27,13 @@ class FormatMemo(object):
         self.counts = defaultdict(lambda: 0)
 
     def __contains__(self, obj):
-        return id(obj) in self.formatted
+        return self._key(obj) in self.formatted
+
+    def _key(self, obj):
+        return repr(obj)
 
     def observe(self, obj, formatter=repr):
-        key = id(obj)
+        key = self._key(obj)
         if key not in self.formatted:
             self.aliases[key] = 'ref_%d' % len(self.formatted)
             self.formatted[key] = formatter(obj)
@@ -38,13 +41,13 @@ class FormatMemo(object):
         self.counts[key] += 1
 
     def count(self, obj):
-        return self.counts[id(obj)]
+        return self.counts[self._key(obj)]
 
     def get_alias(self, obj):
-        return self.aliases[id(obj)]
+        return self.aliases[self._key(obj)]
 
     def get_formatted(self, obj):
-        return self.formatted[id(obj)]
+        return self.formatted[self._key(obj)]
 
 
 class ExprFormatter(object):
@@ -100,7 +103,8 @@ class ExprFormatter(object):
             # A hack to suppress printing out of a ref that is the result of
             # the top level expression
             refs = [x + '\n' + y
-                    for x, y, key in alias_to_text if key != id(what)]
+                    for x, y, key in alias_to_text
+                    if key != repr(what)]
 
             text = '\n\n'.join(refs + [text])
 

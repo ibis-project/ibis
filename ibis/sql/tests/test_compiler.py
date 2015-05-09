@@ -22,7 +22,6 @@ from ibis.sql.compiler import build_ast, to_sql
 from ibis.expr.tests.mocks import MockConnection
 import ibis.common as com
 
-import ibis.expr.analysis as L
 import ibis.expr.api as api
 import ibis.expr.operations as ops
 
@@ -37,38 +36,6 @@ class TestASTBuilder(unittest.TestCase):
 
     def setUp(self):
         self.con = MockConnection()
-
-    def test_rewrite_join_projection_without_other_ops(self):
-        # Drop out filters and other commutative table operations. Join
-        # predicates are "lifted" to reference the base, unmodified join roots
-
-        # Star schema with fact table
-        table = self.con.table('star1')
-        table2 = self.con.table('star2')
-        table3 = self.con.table('star3')
-
-        filtered = table[table['f'] > 0]
-
-        pred1 = table['foo_id'] == table2['foo_id']
-        pred2 = filtered['bar_id'] == table3['bar_id']
-
-        j1 = filtered.left_join(table2, [pred1])
-        j2 = j1.inner_join(table3, [pred2])
-
-        # Project out the desired fields
-        view = j2[[filtered, table2['value1'], table3['value2']]]
-
-        # Construct the thing we expect to obtain
-        ex_pred2 = table['bar_id'] == table3['bar_id']
-        ex_expr = (table.left_join(table2, [pred1])
-                   .inner_join(table3, [ex_pred2]))
-
-        rewritten_proj = L.substitute_parents(view)
-        op = rewritten_proj.op()
-        assert op.table.equals(ex_expr)
-
-        # Ensure that filtered table has been substituted with the base table
-        assert op.selections[0] is table
 
     def test_ast_with_projection_join_filter(self):
         table = self.con.table('test1')
