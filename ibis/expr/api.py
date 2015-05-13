@@ -671,11 +671,21 @@ def re_search(arg, pattern):
     return _ops.RegexSearch(arg, pattern).to_expr()
 
 
+def _string_contains(arg, substr):
+    return arg.like('%{}%'.format(substr))
+
+
+def _string_dunder_contains(arg, substr):
+    raise TypeError('Use val.contains(arg)')
+
+
 _string_value_methods = dict(
     length=_unary_op('length', _ops.StringLength),
     lower=_unary_op('lower', _ops.Lowercase),
     upper=_unary_op('upper', _ops.Uppercase),
 
+    __contains__=_string_dunder_contains,
+    contains=_string_contains,
     like=_string_like,
     rlike=re_search,
     re_search=re_search,

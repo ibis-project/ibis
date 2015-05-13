@@ -76,3 +76,10 @@ class TestStringOps(unittest.TestCase):
         assert isinstance(result, ir.Int32Array)
         assert isinstance(lit_result, ir.Int32Scalar)
         assert isinstance(result.op(), ops.StringLength)
+
+    def test_contains(self):
+        expr = self.table.g.contains('foo')
+        expected = self.table.g.like('%foo%')
+        assert expr.equals(expected)
+
+        self.assertRaises(Exception, lambda: 'foo' in self.table.g)

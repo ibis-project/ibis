@@ -1138,8 +1138,6 @@ FROM t0
 
         expr = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
 
-        foo
-
         result = to_sql(expr)
         expected = """\
 WITH t0 AS (

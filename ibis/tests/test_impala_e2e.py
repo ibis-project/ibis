@@ -246,6 +246,7 @@ FROM tpch.lineitem li
             api.least(table.string_col, 'foo'),
 
             # string stuff
+            s.contains('6'),
             s.like('6%'),
             s.re_search('[\d]+'),
         ]
