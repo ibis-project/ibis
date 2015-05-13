@@ -396,6 +396,87 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         expected = table['c'] == table4['foo']
         assert result.equals(expected)
 
+    def test_rewrite_distinct_but_equal_objects(self):
+        t = self.con.table('test1')
+        t_copy = self.con.table('test1')
+
+        table2 = t[t_copy['f'] > 0]
+
+        expr = table2['c'] == 2
+
+        result = L.substitute_parents(expr)
+        expected = t['c'] == 2
+        assert result.equals(expected)
+
+    def test_repr_same_but_distinct_objects(self):
+        t = self.con.table('test1')
+        t_copy = self.con.table('test1')
+        table2 = t[t_copy['f'] > 0]
+
+        result = repr(table2)
+        assert result.count('DatabaseTable') == 1
+
+    def test_filter_fusion_distinct_table_objects(self):
+        t = self.con.table('test1')
+        tt = self.con.table('test1')
+
+        expr = t[t.f > 0][t.c > 0]
+        expr2 = t[t.f > 0][tt.c > 0]
+        expr3 = t[tt.f > 0][tt.c > 0]
+        expr4 = t[tt.f > 0][t.c > 0]
+
+        assert expr.equals(expr2)
+        assert repr(expr) == repr(expr2)
+        assert expr.equals(expr3)
+        assert expr.equals(expr4)
+
+    def test_rewrite_substitute_distinct_tables(self):
+        t = self.con.table('test1')
+        tt = self.con.table('test1')
+
+        expr = t[t.c > 0]
+        expr2 = tt[tt.c > 0]
+
+        metric = t.f.sum().name('metric')
+        expr3 = expr.aggregate(metric)
+
+        result = L.sub_for(expr3, [(expr2, t)])
+        expected = t.aggregate(metric)
+
+        assert result.equals(expected)
+
+    def test_rewrite_join_projection_without_other_ops(self):
+        # Drop out filters and other commutative table operations. Join
+        # predicates are "lifted" to reference the base, unmodified join roots
+
+        # Star schema with fact table
+        table = self.con.table('star1')
+        table2 = self.con.table('star2')
+        table3 = self.con.table('star3')
+
+        filtered = table[table['f'] > 0]
+
+        pred1 = table['foo_id'] == table2['foo_id']
+        pred2 = filtered['bar_id'] == table3['bar_id']
+
+        j1 = filtered.left_join(table2, [pred1])
+        j2 = j1.inner_join(table3, [pred2])
+
+        # Project out the desired fields
+        view = j2[[filtered, table2['value1'], table3['value2']]]
+
+        # Construct the thing we expect to obtain
+        ex_pred2 = table['bar_id'] == table3['bar_id']
+        ex_expr = (table.left_join(table2, [pred1])
+                   .inner_join(table3, [ex_pred2]))
+
+        rewritten_proj = L.substitute_parents(view)
+        op = rewritten_proj.op()
+        assert op.table.equals(ex_expr)
+
+        # Ensure that filtered table has been substituted with the base table
+        assert op.selections[0] is table
+
     def test_rewrite_past_projection(self):
         table = self.con.table('test1')
 

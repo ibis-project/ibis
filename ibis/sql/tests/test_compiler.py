@@ -22,7 +22,6 @@ from ibis.sql.compiler import build_ast, to_sql
 from ibis.expr.tests.mocks import MockConnection
 import ibis.common as com
 
-import ibis.expr.analysis as L
 import ibis.expr.api as api
 import ibis.expr.operations as ops
 
@@ -37,38 +36,6 @@ class TestASTBuilder(unittest.TestCase):
 
     def setUp(self):
         self.con = MockConnection()
-
-    def test_rewrite_join_projection_without_other_ops(self):
-        # Drop out filters and other commutative table operations. Join
-        # predicates are "lifted" to reference the base, unmodified join roots
-
-        # Star schema with fact table
-        table = self.con.table('star1')
-        table2 = self.con.table('star2')
-        table3 = self.con.table('star3')
-
-        filtered = table[table['f'] > 0]
-
-        pred1 = table['foo_id'] == table2['foo_id']
-        pred2 = filtered['bar_id'] == table3['bar_id']
-
-        j1 = filtered.left_join(table2, [pred1])
-        j2 = j1.inner_join(table3, [pred2])
-
-        # Project out the desired fields
-        view = j2[[filtered, table2['value1'], table3['value2']]]
-
-        # Construct the thing we expect to obtain
-        ex_pred2 = table['bar_id'] == table3['bar_id']
-        ex_expr = (table.left_join(table2, [pred1])
-                   .inner_join(table3, [ex_pred2]))
-
-        rewritten_proj = L.substitute_parents(view)
-        op = rewritten_proj.op()
-        assert op.table.equals(ex_expr)
-
-        # Ensure that filtered table has been substituted with the base table
-        assert op.selections[0] is table
 
     def test_ast_with_projection_join_filter(self):
         table = self.con.table('test1')
@@ -1132,6 +1099,59 @@ WHERE t0.amount > (
   WHERE t4.region = t0.region
 )
 LIMIT 10"""
+        assert result == expected
+
+    def test_self_join_subquery_distinct_equal(self):
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+
+        j1 = (region.join(nation, region.r_regionkey == nation.n_regionkey)
+              [region, nation])
+
+        j2 = (region.join(nation, region.r_regionkey == nation.n_regionkey)
+              [region, nation].view())
+
+        expr = (j1.join(j2, j1.r_regionkey == j2.r_regionkey)
+                [j1.r_name, j2.n_name])
+
+        result = to_sql(expr)
+        expected = """\
+WITH t0 AS (
+  SELECT t2.*, t3.*
+  FROM tpch_region t2
+    INNER JOIN tpch_nation t3
+      ON t2.r_regionkey = t3.n_regionkey
+)
+SELECT t0.r_name, t1.n_name
+FROM t0
+  INNER JOIN t0 t1
+    ON t0.r_regionkey = t1.r_regionkey"""
+
+        assert result == expected
+
+    def test_cte_factor_distinct_but_equal(self):
+        t = self.con.table('alltypes')
+        tt = self.con.table('alltypes')
+
+        expr1 = t.group_by('g').aggregate(t.f.sum().name('metric'))
+        expr2 = tt.group_by('g').aggregate(tt.f.sum().name('metric')).view()
+
+        expr = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
+
+        foo
+
+        result = to_sql(expr)
+        expected = """\
+WITH t0 AS (
+  SELECT g, sum(f) AS `metric`
+  FROM alltypes
+  GROUP BY 1
+)
+SELECT t0.*
+FROM t0
+  INNER JOIN t0 t1
+    ON t0.g = t1.g"""
+
         assert result == expected
 
     def test_tpch_self_join_failure(self):

@@ -16,6 +16,7 @@
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.util as util
 
 
 class ExistsSubquery(ir.Node):
@@ -51,7 +52,7 @@ class AnyToExistsTransform(object):
         self.parent_table = parent_table
 
         qroots = self.parent_table._root_tables()
-        self.query_roots = set([id(x) for x in qroots])
+        self.query_roots = util.IbisSet.from_list(qroots)
 
     def get_result(self):
         self.foreign_table = None
@@ -108,4 +109,4 @@ class AnyToExistsTransform(object):
     def _is_root(self, what):
         if isinstance(what, ir.Expr):
             what = what.op()
-        return id(what) in self.query_roots
+        return what in self.query_roots

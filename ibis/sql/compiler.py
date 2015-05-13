@@ -27,6 +27,7 @@ import ibis.expr.types as ir
 from ibis.sql.context import QueryContext
 import ibis.sql.ddl as ddl
 import ibis.sql.transforms as transforms
+import ibis.util as util
 
 
 def build_ast(expr, context=None):
@@ -121,7 +122,7 @@ class SelectBuilder(object):
         self.subqueries = []
         self.distinct = False
 
-        self.op_memo = set()
+        self.op_memo = util.IbisSet()
 
     def get_result(self):
         # make idempotent
@@ -319,7 +320,7 @@ class SelectBuilder(object):
         method = '_collect_{}'.format(type(op).__name__)
 
         # Do not visit nodes twice
-        if id(op) in self.op_memo:
+        if op in self.op_memo:
             return
 
         if hasattr(self, method):
@@ -332,7 +333,7 @@ class SelectBuilder(object):
         else:
             raise NotImplementedError(type(op))
 
-        self.op_memo.add(id(op))
+        self.op_memo.add(op)
 
     def _collect_Aggregation(self, expr, toplevel=False):
         # The select set includes the grouping keys (if any), and these are
@@ -489,11 +490,8 @@ class _ExtractSubqueries(object):
         self.query = query
         self.greedy = greedy
 
-        # Keep track of table expressions that we find in the query structure
-        self.observed_exprs = {}
-
-        # Maintain order of observation
-        self.observed_keys = []
+        # Ordered set that uses object .equals to find keys
+        self.observed_exprs = util.IbisMap()
 
         self.expr_counts = defaultdict(lambda: 0)
 
@@ -506,28 +504,27 @@ class _ExtractSubqueries(object):
         to_extract = []
 
         # Read them inside-out, to avoid nested dependency issues
-        for k in reversed(self.observed_keys):
-            v = self.expr_counts[k]
+        for expr, key in reversed(zip(self.observed_exprs.keys,
+                                      self.observed_exprs.values)):
+            v = self.expr_counts[key]
 
             if self.greedy or v > 1:
-                to_extract.append(self.observed_exprs[k])
+                to_extract.append(expr)
 
         return to_extract
 
     def observe(self, expr):
-        key = self._key(expr)
+        if expr in self.observed_exprs:
+            key = self.observed_exprs.get(expr)
+        else:
+            # this key only needs to be unique because of the IbisMap
+            key = id(expr.op())
+            self.observed_exprs.set(expr, key)
 
-        if key not in self.expr_counts:
-            self.observed_keys.append(key)
-
-        self.observed_exprs[key] = expr
         self.expr_counts[key] += 1
 
-    def _key(self, expr):
-        return id(expr.op())
-
     def _has_been_observed(self, expr):
-        return self._key(expr) in self.observed_exprs
+        return expr in self.observed_exprs
 
     def visit(self, expr):
         node = expr.op()
@@ -606,7 +603,8 @@ class _CorrelatedRefCheck(object):
         self.expr = expr
 
         qroots = self.query.table_set._root_tables()
-        self.query_roots = set([id(x) for x in qroots])
+
+        self.query_roots = util.IbisSet.from_list(qroots)
 
         # aliasing required
         self.foreign_refs = []
@@ -670,7 +668,7 @@ class _CorrelatedRefCheck(object):
     def _is_root(self, what):
         if isinstance(what, ir.Expr):
             what = what.op()
-        return id(what) in self.query_roots
+        return what in self.query_roots
 
 
 def _adapt_expr(expr):
