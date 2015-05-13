@@ -430,6 +430,21 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert expr.equals(expr3)
         assert expr.equals(expr4)
 
+    def test_rewrite_substitute_distinct_tables(self):
+        t = self.con.table('test1')
+        tt = self.con.table('test1')
+
+        expr = t[t.c > 0]
+        expr2 = tt[tt.c > 0]
+
+        metric = t.f.sum().name('metric')
+        expr3 = expr.aggregate(metric)
+
+        result = L.sub_for(expr3, [(expr2, t)])
+        expected = t.aggregate(metric)
+
+        assert result.equals(expected)
+
     def test_rewrite_join_projection_without_other_ops(self):
         # Drop out filters and other commutative table operations. Join
         # predicates are "lifted" to reference the base, unmodified join roots

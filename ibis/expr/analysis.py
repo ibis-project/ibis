@@ -77,7 +77,7 @@ class _Substitutor(object):
         return subbed_arg
 
     def _key(self, expr):
-        return id(expr.op())
+        return repr(expr.op())
 
     def sub(self, expr):
         key = self._key(expr)

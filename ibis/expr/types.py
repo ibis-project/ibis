@@ -603,6 +603,12 @@ class ArrayExpr(ValueExpr):
 
 class TableExpr(Expr):
 
+    @property
+    def _factory(self):
+        def factory(arg):
+            return TableExpr(arg)
+        return factory
+
     def op(self):
         return self._arg
 
