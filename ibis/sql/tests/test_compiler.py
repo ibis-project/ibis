@@ -1129,6 +1129,31 @@ FROM t0
 
         assert result == expected
 
+    def test_cte_factor_distinct_but_equal(self):
+        t = self.con.table('alltypes')
+        tt = self.con.table('alltypes')
+
+        expr1 = t.group_by('g').aggregate(t.f.sum().name('metric'))
+        expr2 = tt.group_by('g').aggregate(tt.f.sum().name('metric')).view()
+
+        expr = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
+
+        foo
+
+        result = to_sql(expr)
+        expected = """\
+WITH t0 AS (
+  SELECT g, sum(f) AS `metric`
+  FROM alltypes
+  GROUP BY 1
+)
+SELECT t0.*
+FROM t0
+  INNER JOIN t0 t1
+    ON t0.g = t1.g"""
+
+        assert result == expected
+
     def test_tpch_self_join_failure(self):
         # duplicating the integration test here
 

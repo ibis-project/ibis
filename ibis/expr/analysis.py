@@ -185,7 +185,9 @@ class ExprSimplifier(object):
         return result, unchanged[0]
 
     def lift(self, expr, block=None):
+        # This use of id() is OK since only for memoization
         key = id(expr.op()), block
+
         if key in self.lift_memo:
             return self.lift_memo[key]
 

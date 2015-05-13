@@ -517,6 +517,7 @@ class _ExtractSubqueries(object):
         if expr in self.observed_exprs:
             key = self.observed_exprs.get(expr)
         else:
+            # this key only needs to be unique because of the IbisMap
             key = id(expr.op())
             self.observed_exprs.set(expr, key)
 
