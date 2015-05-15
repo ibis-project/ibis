@@ -57,6 +57,23 @@ class TestDecimal(unittest.TestCase):
             assert result._precision == col._precision
             assert result._scale == 38
 
+    def test_where(self):
+        table = self.lineitem
+
+        q = table.l_quantity
+        expr = api.where(table.l_discount > 0,
+                         q * table.l_discount, api.null)
+
+        assert isinstance(expr, ir.DecimalArray)
+
+        expr = api.where(table.l_discount > 0,
+                         (q * table.l_discount).sum(), api.null)
+        assert isinstance(expr, ir.DecimalArray)
+
+        expr = api.where(table.l_discount.sum() > 0,
+                         (q * table.l_discount).sum(), api.null)
+        assert isinstance(expr, ir.DecimalScalar)
+
     def test_precision_scale(self):
         col = self.lineitem.l_extendedprice
 

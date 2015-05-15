@@ -269,7 +269,12 @@ FROM tpch.lineitem li
             dc / 2,
             dc * 2,
             dc ** 2,
-            dc.cast('double')
+            dc.cast('double'),
+
+            api.where(table.l_discount > 0,
+                      dc * table.l_discount, api.NA),
+
+            dc.fillna(0)
         ]
 
         proj_exprs = [expr.name('e%d' % i)

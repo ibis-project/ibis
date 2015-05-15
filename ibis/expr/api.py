@@ -38,8 +38,12 @@ import ibis.expr.analysis as _L
 import ibis.expr.operations as _ops
 
 
-__all__ = ['schema', 'table', 'literal', 'case', 'now', 'desc', 'null',
+__all__ = ['schema', 'table', 'literal', 'case', 'where',
+           'now', 'desc', 'null', 'NA',
            'cast', 'coalesce', 'greatest', 'least', 'join']
+
+
+NA = null()
 
 
 _data_type_docs = """\
@@ -359,7 +363,8 @@ def where(boolean_expr, true_expr, false_null_expr):
     result : arity depending on inputs
       Type of true_expr used to determine output type
     """
-    pass
+    op = _ops.Where(boolean_expr, true_expr, false_null_expr)
+    return op.to_expr()
 
 
 def value_counts(arg, metric_name='count'):

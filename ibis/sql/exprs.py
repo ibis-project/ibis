@@ -547,6 +547,8 @@ _other_ops = {
     ops.Greatest: _coalesce_like('greatest'),
     ops.Least: _coalesce_like('least'),
 
+    ops.Where: _fixed_arity_call('if', 3),
+
     ops.StringSQLLike: _like,
     ops.RegexSearch: _rlike,
 

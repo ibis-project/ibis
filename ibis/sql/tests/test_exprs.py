@@ -18,6 +18,7 @@ from ibis.sql.exprs import ExprTranslator
 from ibis.sql.compiler import QueryContext, to_sql
 from ibis.expr.tests.mocks import MockConnection
 import ibis.expr.api as api
+import ibis.expr.types as ir
 
 
 class ExprSQLTest(object):
@@ -342,6 +343,14 @@ END"""
   WHEN c < 0 THEN a * 2
   ELSE NULL
 END"""
+        assert result == expected
+
+    def test_where_use_if(self):
+        expr = api.where(self.table.f > 0, self.table.e, self.table.a)
+        assert isinstance(expr, ir.FloatValue)
+
+        result = self._translate(expr)
+        expected = "if(f > 0, e, a)"
         assert result == expected
 
 

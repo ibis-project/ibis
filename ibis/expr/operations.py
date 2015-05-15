@@ -62,7 +62,7 @@ def table(schema, name=None):
 
 
 def literal(value):
-    if value is None:
+    if value is None or value is null:
         return null()
     else:
         return Literal(value).to_expr()
@@ -1045,6 +1045,28 @@ class SearchedCase(ValueNode):
         out_exprs = self.results + [self.default]
         typename = highest_precedence_type(out_exprs)
         return _shape_like_args(self.cases, typename)
+
+
+class Where(ValueNode):
+
+    """
+    Ternary case expression, equivalent to
+
+    bool_expr.case()
+             .when(True, true_expr)
+             .else_(false_or_null_expr)
+    """
+
+    def __init__(self, bool_expr, true_expr, false_null_expr):
+        self.bool_expr = as_value_expr(bool_expr)
+        self.true_expr = as_value_expr(true_expr)
+        self.false_null_expr = as_value_expr(false_null_expr)
+
+        ValueNode.__init__(self, [self.bool_expr, self.true_expr,
+                                  self.false_null_expr])
+
+    def output_type(self):
+        return _shape_like(self.bool_expr, self.true_expr.type())
 
 
 class Join(TableNode):
