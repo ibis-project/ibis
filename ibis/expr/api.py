@@ -712,12 +712,20 @@ _timestamp_value_methods = dict(
     millisecond=_extract_field('millisecond', _ops.ExtractMillisecond)
 )
 
+
 _add_methods(TimestampValue, _timestamp_value_methods)
 
 
 #----------------------------------------------------------------------
 # Decimal API
 
+_decimal_value_methods = dict(
+    precision=_unary_op('precision', _ops.DecimalPrecision),
+    scale=_unary_op('scale', _ops.DecimalScale),
+)
+
+
+_add_methods(DecimalValue, _decimal_value_methods)
 
 #----------------------------------------------------------------------
 # Table API

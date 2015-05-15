@@ -1729,10 +1729,6 @@ class ExtractTimestampField(UnaryOp):
             raise AssertionError
         return _shape_like(self.arg, 'int32')
 
-    def to_expr(self):
-        klass = self.output_type()
-        return klass(self)
-
 
 class ExtractYear(ExtractTimestampField):
     pass
@@ -1760,3 +1756,19 @@ class ExtractSecond(ExtractTimestampField):
 
 class ExtractMillisecond(ExtractTimestampField):
     pass
+
+
+class DecimalPrecision(UnaryOp):
+
+    def output_type(self):
+        if not isinstance(self.arg, ir.DecimalValue):
+            raise AssertionError
+        return _shape_like(self.arg, 'int32')
+
+
+class DecimalScale(UnaryOp):
+
+    def output_type(self):
+        if not isinstance(self.arg, ir.DecimalValue):
+            raise AssertionError
+        return _shape_like(self.arg, 'int32')

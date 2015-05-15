@@ -60,6 +60,15 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
             result = self._translate(lit_expr)
             assert result == expected
 
+    def test_decimal_builtins(self):
+        t = self.con.table('tpch_lineitem')
+        col = t.l_extendedprice
+        cases = [
+            (col.precision(), 'precision(l_extendedprice)'),
+            (col.scale(), 'scale(l_extendedprice)'),
+        ]
+        self._check_expr_cases(cases)
+
     def test_number_boolean_literals(self):
         cases = [
             (5, '5'),

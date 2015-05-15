@@ -472,6 +472,9 @@ _unary_ops = {
     ops.Log2: _unary_op('log2'),
     ops.Log10: _unary_op('log10'),
 
+    ops.DecimalPrecision: _unary_op('precision'),
+    ops.DecimalScale: _unary_op('scale'),
+
     # Unary aggregates
     ops.CMSMedian: _unary_op('appx_median'),
     ops.HLLCardinality: _unary_op('ndv'),

@@ -16,6 +16,7 @@ import unittest
 
 import ibis.expr.api as api
 import ibis.expr.types as ir
+import ibis.expr.operations as ops
 
 from ibis.expr.tests.mocks import MockConnection
 
@@ -55,6 +56,18 @@ class TestDecimal(unittest.TestCase):
             assert isinstance(result, ir.DecimalScalar)
             assert result._precision == col._precision
             assert result._scale == 38
+
+    def test_precision_scale(self):
+        col = self.lineitem.l_extendedprice
+
+        p = col.precision()
+        s = col.scale()
+
+        assert isinstance(p, ir.IntegerValue)
+        assert isinstance(p.op(), ops.DecimalPrecision)
+
+        assert isinstance(s, ir.IntegerValue)
+        assert isinstance(s.op(), ops.DecimalScale)
 
     def test_invalid_precision_scale_combo(self):
         pass
