@@ -142,9 +142,18 @@ class _TypePrecedence(object):
     # boolean
     # string
 
-    _precedence = ['double', 'float', 'decimal',
-                   'int64', 'int32', 'int16', 'int8',
-                   'boolean', 'string']
+    _precedence = {
+        'double': 9,
+        'float': 8,
+        'decimal': 7,
+        'int64': 6,
+        'int32': 5,
+        'int16': 4,
+        'int8': 3,
+        'boolean': 2,
+        'string': 1,
+        'null': 0
+    }
 
     def __init__(self, exprs):
         self.exprs = exprs
@@ -162,12 +171,22 @@ class _TypePrecedence(object):
 
     def _count_types(self):
         for expr in self.exprs:
-            self.type_counts[expr._base_type()] += 1
+            self.type_counts[expr.type()] += 1
 
     def _get_highest_type(self):
-        for typename in self._precedence:
-            if self.type_counts[typename] > 0:
-                return typename
+        scores = []
+        for k, v in self.type_counts.items():
+            if not v:
+                continue
+            if isinstance(k, ir.DataType):
+                score = self._precedence[k._base_type()]
+            else:
+                score = self._precedence[k]
+
+            scores.append((score, k))
+
+        scores.sort()
+        return scores[-1][1]
 
     def _check_casts(self, typename):
         for expr in self.exprs:
@@ -222,3 +241,19 @@ def int_literal_class(value, allow_overflow=False):
 def _largest_int(int_types):
     nbytes = max(_nbytes[t] for t in int_types)
     return 'int%d' % (8 * nbytes)
+
+
+class ImplicitCast(object):
+
+    def __init__(self, value_type, implicit_targets):
+        self.value_type = value_type
+        self.implicit_targets = implicit_targets
+
+    def can_cast(self, target):
+        if isinstance(target, ir.DataType):
+            base_type = target._base_type()
+        else:
+            base_type = target
+
+        return (base_type in self.implicit_targets or
+                target == self.value_type)

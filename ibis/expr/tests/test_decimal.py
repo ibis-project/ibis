@@ -74,6 +74,14 @@ class TestDecimal(unittest.TestCase):
                          (q * table.l_discount).sum(), api.null)
         assert isinstance(expr, ir.DecimalScalar)
 
+    def test_fillna(self):
+        expr = self.lineitem.l_extendedprice.fillna(0)
+        assert isinstance(expr, ir.DecimalArray)
+
+        expr = self.lineitem.l_extendedprice.fillna(
+            self.lineitem.l_quantity)
+        assert isinstance(expr, ir.DecimalArray)
+
     def test_precision_scale(self):
         col = self.lineitem.l_extendedprice
 

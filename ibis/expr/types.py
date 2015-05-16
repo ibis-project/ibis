@@ -420,7 +420,9 @@ class ValueExpr(Expr):
         return self.type()
 
     def _can_cast_implicit(self, typename):
-        return typename in self._implicit_casts or typename == self.type()
+        from ibis.expr.rules import ImplicitCast
+        rule = ImplicitCast(self.type(), self._implicit_casts)
+        return rule.can_cast(typename)
 
     def op(self):
         return self._arg
@@ -976,25 +978,26 @@ class BooleanValue(NumericValue):
 class Int8Value(IntegerValue):
 
     _typename = 'int8'
-    _implicit_casts = {'int16', 'int32', 'int64', 'float', 'double'}
+    _implicit_casts = {'int16', 'int32', 'int64', 'float', 'double',
+                       'decimal'}
 
 
 class Int16Value(IntegerValue):
 
     _typename = 'int16'
-    _implicit_casts = {'int32', 'int64', 'float', 'double'}
+    _implicit_casts = {'int32', 'int64', 'float', 'double', 'decimal'}
 
 
 class Int32Value(IntegerValue):
 
     _typename = 'int32'
-    _implicit_casts = {'int64', 'float', 'double'}
+    _implicit_casts = {'int64', 'float', 'double', 'decimal'}
 
 
 class Int64Value(IntegerValue):
 
     _typename = 'int64'
-    _implicit_casts = {'float', 'double'}
+    _implicit_casts = {'float', 'double', 'decimal'}
 
 
 class FloatingValue(NumericValue):
@@ -1004,12 +1007,13 @@ class FloatingValue(NumericValue):
 class FloatValue(FloatingValue):
 
     _typename = 'float'
-    _implicit_casts = {'double'}
+    _implicit_casts = {'double', 'decimal'}
 
 
 class DoubleValue(FloatingValue):
 
     _typename = 'double'
+    _implicit_casts = {'decimal'}
 
 
 class StringValue(AnyValue):
@@ -1027,9 +1031,15 @@ class DecimalType(DataType):
         self.precision = precision
         self.scale = scale
 
+    def _base_type(self):
+        return 'decimal'
+
     def __repr__(self):
         return ('decimal(precision=%s, scale=%s)'
                 % (self.precision, self.scale))
+
+    def __hash__(self):
+        return hash((self.precision, self.scale))
 
     def __eq__(self, other):
         if not isinstance(other, DecimalType):
@@ -1061,6 +1071,9 @@ class DecimalValue(NumericValue):
 
     def type(self):
         return DecimalType(self._precision, self._scale)
+
+    def _base_type(self):
+        return 'decimal'
 
     @classmethod
     def _make_constructor(cls, meta):
