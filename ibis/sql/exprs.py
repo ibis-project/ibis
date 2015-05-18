@@ -398,6 +398,16 @@ def _round(translator, expr):
         return 'round({})'.format(arg_formatted)
 
 
+def _hash(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+
+    if op.how == 'fnv':
+        return 'fnv_hash({})'.format(arg_formatted)
+    else:
+        raise NotImplementedError(op.how)
+
+
 def _log(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
@@ -467,6 +477,8 @@ _unary_ops = {
 
     ops.Sign: _unary_op('sign'),
     ops.Sqrt: _unary_op('sqrt'),
+
+    ops.Hash: _hash,
 
     ops.Log: _log,
     ops.Ln: _unary_op('ln'),

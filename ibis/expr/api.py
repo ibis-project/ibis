@@ -291,6 +291,24 @@ cast_expr : ValueExpr
 """.format(_data_type_docs)
 
 
+def hash(arg, how='fnv'):
+    """
+    Compute an integer hash value for the indicated value expression.
+
+    Parameters
+    ----------
+    arg : value expression
+    how : {'fnv'}, default 'fnv'
+      Hash algorithm to use
+
+    Returns
+    -------
+    hash_value : int64 expression
+    """
+    op = _ops.Hash(arg, how)
+    return op.to_expr()
+
+
 def fillna(arg, fill_value):
     """
     Replace any null values with the indicated fill value
@@ -425,6 +443,7 @@ rdiv = _rbinop_expr('__rdiv__', _ops.Divide)
 
 
 _generic_value_methods = dict(
+    hash=hash,
     cast=cast,
     fillna=fillna,
     nullif=nullif,

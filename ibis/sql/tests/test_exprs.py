@@ -297,6 +297,17 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
+    def test_hash(self):
+        expr = self.table.int_col.hash()
+        assert isinstance(expr, ir.Int64Array)
+        assert isinstance(self.table.int_col.sum().hash(),
+                          ir.Int64Scalar)
+
+        cases = [
+            (self.table.int_col.hash(), 'fnv_hash(int_col)')
+        ]
+        self._check_expr_cases(cases)
+
 
 class TestCaseExprs(unittest.TestCase, ExprSQLTest):
 

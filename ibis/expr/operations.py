@@ -489,7 +489,7 @@ class Round(ValueNode):
     def __init__(self, arg, digits=None):
         self.arg = arg
         self.digits = validate_int(digits)
-        ValueNode.__init__(self, [arg, digits])
+        ValueNode.__init__(self, [self.arg, self.digits])
 
     def output_type(self):
         validate_numeric(self.arg)
@@ -1807,3 +1807,14 @@ class DecimalScale(UnaryOp):
         if not isinstance(self.arg, ir.DecimalValue):
             raise AssertionError
         return _shape_like(self.arg, 'int32')
+
+
+class Hash(ValueNode):
+
+    def __init__(self, arg, how):
+        self.arg = as_value_expr(arg)
+        self.how = how
+        ValueNode.__init__(self, [self.arg, self.how])
+
+    def output_type(self):
+        return _shape_like(self.arg, 'int64')
