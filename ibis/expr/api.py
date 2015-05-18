@@ -308,7 +308,8 @@ def fillna(arg, fill_value):
     -------
     filled : type of caller
     """
-    return arg.isnull().ifelse(fill_value, arg)
+    op = _ops.IfNull(arg, fill_value)
+    return op.to_expr()
 
 
 def coalesce(*args):

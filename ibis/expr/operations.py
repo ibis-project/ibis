@@ -334,10 +334,23 @@ class MultiExprNode(ValueNode):
 
 
 
-class IfNull(UnaryOp):
+class IfNull(MultiExprNode):
+
+    """
+    Equivalent to (but perhaps implemented differently):
+
+    case().when(expr.notnull(), expr)
+          .else_(null_substitute_expr)
+    """
+
+    def __init__(self, value, ifnull_expr):
+        self.value = as_value_expr(value)
+        self.ifnull_expr = as_value_expr(ifnull_expr)
+        ValueNode.__init__(self, [self.value, self.ifnull_expr])
 
     def output_type(self):
-        pass
+        return self.value._factory
+
 
 
 class NullIf(MultiExprNode):

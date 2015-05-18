@@ -353,6 +353,18 @@ END"""
         expected = "if(f > 0, e, a)"
         assert result == expected
 
+    def test_nullif_ifnull(self):
+        table = self.con.table('tpch_lineitem')
+
+        f = table.l_quantity
+
+        cases = [
+            (f.nullif(f == 0),
+             'nullif(l_quantity, l_quantity = 0)'),
+            (f.fillna(0), 'isnull(l_quantity, 0)'),
+        ]
+        self._check_expr_cases(cases)
+
 
 class TestInNotIn(unittest.TestCase, ExprSQLTest):
 

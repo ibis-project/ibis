@@ -65,15 +65,14 @@ class TestBuiltins(unittest.TestCase):
         result = self.alltypes.double_col.fillna(5)
         assert isinstance(result, ir.DoubleArray)
 
-        expected = (self.alltypes.double_col.isnull()
-                    .ifelse(5, self.alltypes.double_col))
-        assert result.equals(expected)
+        assert isinstance(result.op(), ops.IfNull)
 
         result = self.alltypes.bool_col.fillna(True)
         assert isinstance(result, ir.BooleanArray)
 
+        # Retains type of caller (for now)
         result = self.alltypes.int_col.fillna(self.alltypes.bigint_col)
-        assert isinstance(result, ir.Int64Array)
+        assert isinstance(result, ir.Int32Array)
 
     def test_ceil_floor(self):
         cresult = self.alltypes.double_col.ceil()

@@ -454,6 +454,7 @@ _unary_ops = {
     ops.IsNull: _is_null,
     ops.Negate: _negate,
 
+    ops.IfNull: _fixed_arity_call('isnull', 2),
     ops.NullIf: _fixed_arity_call('nullif', 2),
 
     ops.ZeroIfNull: _unary_op('zeroifnull'),
