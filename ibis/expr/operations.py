@@ -112,6 +112,8 @@ class Literal(ValueNode):
             klass = ir.DoubleScalar
         elif isinstance(self.value, basestring):
             klass = ir.StringScalar
+        else:
+            raise TypeError(self.value)
 
         return klass
 

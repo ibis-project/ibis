@@ -44,7 +44,7 @@ class Timedelta(object):
         else:
             raise TypeError(arg)
 
-    __radd__ = __add__
+    __radd__ = lambda self, other: other + self
 
     def __sub__(self, arg):
         pass
@@ -199,10 +199,6 @@ _names = ['week', 'day', 'hour', 'minute', 'second',
 CONVERTER = UnitConverter(_ordering, _factors, _names)
 
 
-def _conversion_factor(source, target):
-    pass
-
-
 def _delta_factory(name, unit):
     klass = _timedelta_units[unit]
     def factory(n=1):
@@ -267,4 +263,13 @@ class TimestampDelta(ops.ValueNode):
 
     def __init__(self, arg, offset):
         self.arg = ops.as_value_expr(arg)
-        pass
+
+        if not isinstance(self.arg, ir.TimestampValue):
+            raise TypeError('Must interact with a timestamp expression')
+
+        self.offset = offset
+
+        ops.ValueNode.__init__(self, [self.arg, self.offset])
+
+    def output_type(self):
+        return ops._shape_like(self.arg, 'timestamp')

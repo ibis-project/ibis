@@ -15,10 +15,17 @@
 import unittest
 
 from ibis.common import IbisError
+import ibis.expr.types as ir
 import ibis.expr.temporal as T
+
+from ibis.expr.tests.mocks import MockConnection
 
 
 class TestFixedOffsets(unittest.TestCase):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('alltypes')
 
     def test_upconvert(self):
         pass
@@ -121,6 +128,21 @@ class TestFixedOffsets(unittest.TestCase):
     def _check_cases(self, cases):
         for x, y in cases:
             assert x.equals(y)
+
+    def test_offset_timestamp_expr(self):
+        c = self.table.i
+        x = T.timedelta(days=1)
+
+        expr = x + c
+        assert isinstance(expr, ir.TimestampArray)
+        assert isinstance(expr.op(), T.TimestampDelta)
+
+        raise unittest.SkipTest
+
+        # test radd
+        expr = c + x
+        assert isinstance(expr, ir.TimestampArray)
+        assert isinstance(expr.op(), T.TimestampDelta)
 
 
 class TestTimedelta(unittest.TestCase):
