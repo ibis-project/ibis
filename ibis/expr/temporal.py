@@ -35,11 +35,29 @@ class Timedelta(object):
 
     __rmul__ = __mul__
 
-    def __add__(self, expr):
+    def __add__(self, arg):
+        if isinstance(arg, ir.TimestampValue):
+            op = TimestampDelta(arg, self)
+            return op.to_expr()
+        elif isinstance(arg, Timedelta):
+            return self.combine(arg)
+        else:
+            raise TypeError(arg)
+
+    __radd__ = __add__
+
+    def __sub__(self, arg):
         pass
 
-    def __sub__(self, expr):
+    def __rsub__(self, arg):
         pass
+
+    def combine(self, other):
+        if type(self) != type(other):
+            raise TypeError(type(other))
+
+        klass = type(self)
+        return klass(self.n + other.n)
 
     def equals(self, other):
         if type(self) != type(other):
@@ -54,14 +72,30 @@ class TimeIncrement(Timedelta):
     def unit(self):
         return self._unit
 
+    def combine(self, other):
+        if not isinstance(other, TimeIncrement):
+            raise TypeError('Must be a fixed size timedelta, was {!r}'
+                            .format(type(other)))
+
+        a, b = _to_common_units([self, other])
+        return type(a)(a.n + b.n)
+
     def to_unit(self, target_unit):
         """
 
         """
         target_unit = target_unit.lower()
+        if self.unit == target_unit:
+            return self
+
         klass = _timedelta_units[target_unit]
         increments = CONVERTER.convert(self.n, self.unit, target_unit)
         return klass(increments)
+
+
+def _to_common_units(args):
+    common_unit = CONVERTER.get_common_unit([x.unit for x in args])
+    return [x.to_unit(common_unit) for x in args]
 
 
 class Nanosecond(TimeIncrement):
@@ -121,10 +155,17 @@ _timedelta_units = {
 
 class UnitConverter(object):
 
-    def __init__(self, ordering, conv_factors):
+    def __init__(self, ordering, conv_factors, names):
         self.ordering = ordering
         self.conv_factors = conv_factors
+        self.names = names
+
         self.ranks = dict((name, i) for i, name in enumerate(ordering))
+        self.rank_to_unit = dict((v, k) for k, v in self.ranks.items())
+
+    def get_common_unit(self, units):
+        min_rank = max(self.ranks[x] for x in units)
+        return self.rank_to_unit[min_rank]
 
     def convert(self, n, from_unit, to_unit):
         i = self.ranks[from_unit]
@@ -133,13 +174,13 @@ class UnitConverter(object):
         if i == j:
             return n
 
-        factors = self.conv_factors[i + 1 : j + 1]
+        factors = self.conv_factors[min(i, j) + 1 : max(i, j) + 1]
         factor = 1
         for x in factors:
             factor *= x
 
         if j < i:
-            if not n % factor:
+            if n % factor:
                 raise IbisError('{} is not a multiple of {}'.format(n, factor))
             return n / factor
         else:
@@ -151,11 +192,11 @@ class UnitConverter(object):
 
 _ordering = ['w', 'd', 'h', 'm', 's', 'ms', 'us', 'ns']
 _factors = [1, 7, 24, 60, 60, 1000, 1000, 1000]
-_name = ['week', 'day', 'hour', 'minute', 'second',
+_names = ['week', 'day', 'hour', 'minute', 'second',
          'millisecond', 'microsecond', 'nanosecond']
 
 
-CONVERTER = UnitConverter(_ordering, _factors)
+CONVERTER = UnitConverter(_ordering, _factors, _names)
 
 
 def _conversion_factor(source, target):
@@ -183,19 +224,43 @@ month = _delta_factory('month', 'M')
 year = _delta_factory('year', 'Y')
 
 
-def timedelta(days=None,
-              weeks=None,
-              hours=None,
-              minutes=None,
-              seconds=None,
-              milliseconds=None,
-              microseconds=None,
-              nanoseconds=None):
+def timedelta(days=None, hours=None, minutes=None, seconds=None,
+              milliseconds=None, microseconds=None, nanoseconds=None,
+              weeks=None):
     """
+    Generic API for creating a fixed size timedelta
 
+    Parameters
+    ----------
+
+    Returns
+    -------
+    delta : TimeIncrement (Timedelta)
     """
-    pass
+    out = {
+        'result': None
+    }
+    def _apply(klass, n):
+        if not n:
+            return
+        offset = klass(n)
+        delta = out['result']
+        out['result'] = delta + offset if delta else offset
 
+    _apply(Week, weeks)
+    _apply(Day, days)
+    _apply(Hour, hours)
+    _apply(Minute, minutes)
+    _apply(Second, seconds)
+    _apply(Millisecond, milliseconds)
+    _apply(Microsecond, microseconds)
+    _apply(Nanosecond, nanoseconds)
+
+    result = out['result']
+    if not result:
+        raise IbisError('Must pass some offset parameter')
+
+    return result
 
 
 class TimestampDelta(ops.ValueNode):

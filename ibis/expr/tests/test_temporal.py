@@ -99,15 +99,22 @@ class TestFixedOffsets(unittest.TestCase):
 
     def test_combine_with_different_kinds(self):
         cases = [
-
-
+            (T.day() + T.minute(), T.minute(1441)),
+            (T.second() + T.millisecond(10), T.millisecond(1010)),
+            (T.hour() + T.minute(5) + T.second(10), T.second(3910))
         ]
         self._check_cases(cases)
 
     def test_timedelta_generic_api(self):
         cases = [
-
-
+            (T.timedelta(weeks=2), T.week(2)),
+            (T.timedelta(days=3), T.day(3)),
+            (T.timedelta(hours=4), T.hour(4)),
+            (T.timedelta(minutes=5), T.minute(5)),
+            (T.timedelta(seconds=6), T.second(6)),
+            (T.timedelta(milliseconds=7), T.millisecond(7)),
+            (T.timedelta(microseconds=8), T.microsecond(8)),
+            (T.timedelta(nanoseconds=9), T.nanosecond(9)),
         ]
         self._check_cases(cases)
 
@@ -120,4 +127,7 @@ class TestTimedelta(unittest.TestCase):
 
     def test_compound_offset(self):
         # These are not yet allowed (e.g. 1 month + 1 hour)
+        pass
+
+    def test_offset_months(self):
         pass
