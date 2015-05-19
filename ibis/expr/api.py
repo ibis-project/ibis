@@ -33,14 +33,18 @@ from ibis.expr.types import (Schema, Expr,
 from ibis.expr.operations import (as_value_expr, table, literal, null,
                                   value_list, desc)
 
+from ibis.expr.temporal import *
+
 import ibis.common as _com
 import ibis.expr.analysis as _L
 import ibis.expr.operations as _ops
+import ibis.expr.temporal as _T
 
 
 __all__ = ['schema', 'table', 'literal', 'case', 'where',
            'now', 'desc', 'null', 'NA',
            'cast', 'coalesce', 'greatest', 'least', 'join']
+__all__ += _T.__all__
 
 
 NA = null()
