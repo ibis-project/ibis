@@ -287,6 +287,13 @@ FROM tpch.lineitem li
             exprs.append(ts + offset)
             exprs.append(ts - offset)
 
+        micro = ibis.microsecond(2)
+        nano = ibis.nanosecond(2)
+        exprs.extend([
+            ts + micro, ts - micro,
+            ts + nano, ts - nano
+        ])
+
         proj_exprs = [expr.name('e%d' % i)
                       for i, expr in enumerate(exprs)]
 
