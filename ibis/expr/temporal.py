@@ -253,6 +253,19 @@ def timedelta(days=None, hours=None, minutes=None, seconds=None,
 
     Parameters
     ----------
+    days : int, default None
+    weeks : int, default None
+    hours : int, default None
+    minutes : int, default None
+    seconds : int, default None
+    milliseconds : int, default None
+    microseconds : int, default None
+    nanoseconds : int, default None
+
+    Notes
+    -----
+    For potentially non-fixed-length timedeltas (like year, month, etc.), use
+    the corresponding named API (e.g. ibis.month).
 
     Returns
     -------
