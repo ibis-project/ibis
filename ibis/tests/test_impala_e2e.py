@@ -279,22 +279,15 @@ FROM tpch.lineitem li
         ]
 
         timestamp_fields = ['year', 'month', 'day', 'hour', 'minute',
-                            'second', 'millisecond']
+                            'second', 'millisecond', 'microsecond',
+                            'nanosecond', 'week']
         for field in timestamp_fields:
-            exprs.append(getattr(ts, field)())
+            if hasattr(ts, field):
+                exprs.append(getattr(ts, field)())
 
             offset = getattr(ibis, field)(2)
             exprs.append(ts + offset)
             exprs.append(ts - offset)
-
-        micro = ibis.microsecond(2)
-        nano = ibis.nanosecond(2)
-        week = ibis.week(2)
-        exprs.extend([
-            ts + week, ts - week,
-            ts + micro, ts - micro,
-            ts + nano, ts - nano
-        ])
 
         proj_exprs = [expr.name('e%d' % i)
                       for i, expr in enumerate(exprs)]

@@ -537,8 +537,31 @@ def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
                    database=None, timeout=45, use_ssl=False, ca_cert=None,
                    use_ldap=False, ldap_user=None, ldap_password=None,
                    use_kerberos=False, kerberos_service_name='impala',
-                   hdfs_config=None):
+                   hdfs_config=None, hdfs_client=None):
     """
+    Create an Impala connection for use with Ibis
+
+    Parameters
+    ----------
+    host : host name
+    port : int, default 21050 (HiveServer 2)
+    protocol : {'hiveserver2', 'beeswax'}
+    database :
+    timeout :
+    use_ssl :
+    ca_cert :
+    use_ldap : boolean, default False
+    ldap_user :
+    ldap_password :
+    use_kerberos : boolean, default False
+    kerberos_service_name : string, default 'impala'
+    hdfs_config : dict, with below keys
+      host :
+      webhdfs_port
+      params : dict
+        Parameter dict to pass to HDFS constructor
+    hdfs_client : HDFS instance (using hdfs library)
+      If you created an HDFS client instance elsewhere
 
     Returns
     -------
