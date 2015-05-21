@@ -29,6 +29,22 @@ class Timedelta(object):
     def __init__(self, n):
         self.n = int(n)
 
+    @property
+    def unit(self):
+        raise NotImplementedError
+
+    @property
+    def unit_name(self):
+        return type(self).__name__.lower()
+
+    def __repr__(self):
+        if self.n == 1:
+            pretty_unit = self.unit_name
+        else:
+            pretty_unit = '{}s'.format(self.unit_name)
+
+        return '<Timedelta: {} {}>'.format(self.n, pretty_unit)
+
     def replace(self, n):
         return type(self)(n)
 

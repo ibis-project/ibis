@@ -52,6 +52,13 @@ class TestFixedOffsets(unittest.TestCase):
         assert (3 * offset).equals(T.day(6))
         assert ((-3) * offset).equals(T.day(-6))
 
+    def test_repr(self):
+        assert repr(T.day()) == '<Timedelta: 1 day>'
+        assert repr(T.day(2)) == '<Timedelta: 2 days>'
+        assert repr(T.year()) == '<Timedelta: 1 year>'
+        assert repr(T.month(2)) == '<Timedelta: 2 months>'
+        assert repr(T.second(40)) == '<Timedelta: 40 seconds>'
+
     def test_cannot_upconvert(self):
         cases = [
             (T.day(), 'w'),
