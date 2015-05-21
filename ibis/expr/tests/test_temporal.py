@@ -29,7 +29,28 @@ class TestFixedOffsets(unittest.TestCase):
         self.table = self.con.table('alltypes')
 
     def test_upconvert(self):
-        pass
+        cases = [
+            (T.day(14), 'w', T.week(2)),
+            (T.hour(72), 'd', T.day(3)),
+            (T.minute(240), 'h', T.hour(4)),
+            (T.second(360), 'm', T.minute(6)),
+            (T.second(3 * 86400), 'd', T.day(3)),
+            (T.millisecond(5000), 's', T.second(5)),
+            (T.microsecond(5000000), 's', T.second(5)),
+            (T.nanosecond(5000000000), 's', T.second(5)),
+        ]
+
+        for offset, unit, expected in cases:
+            result = offset.to_unit(unit)
+            assert result.equals(expected)
+
+    def test_multiply(self):
+        offset = T.day(2)
+
+        assert (offset * 2).equals(T.day(4))
+        assert (offset * (-2)).equals(T.day(-4))
+        assert (3 * offset).equals(T.day(6))
+        assert ((-3) * offset).equals(T.day(-6))
 
     def test_cannot_upconvert(self):
         cases = [

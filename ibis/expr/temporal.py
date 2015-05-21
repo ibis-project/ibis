@@ -33,7 +33,7 @@ class Timedelta(object):
         return type(self)(n)
 
     def __mul__(self, times):
-        pass
+        return self.replace(self.n * times)
 
     __rmul__ = __mul__
 
@@ -48,8 +48,7 @@ class Timedelta(object):
         else:
             raise TypeError(arg)
 
-    def __radd__(self, other):
-        return self.__add__(other)
+    __radd__ = __add__
 
     def __sub__(self, arg):
         if isinstance(arg, ir.Expr):
