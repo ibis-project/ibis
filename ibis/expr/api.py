@@ -200,9 +200,12 @@ def group_concat(arg, sep=','):
 
 def _binop_expr(name, klass):
     def f(self, other):
-        other = as_value_expr(other)
-        op = klass(self, other)
-        return op.to_expr()
+        try:
+            other = as_value_expr(other)
+            op = klass(self, other)
+            return op.to_expr()
+        except _com.InputTypeError:
+            return NotImplemented
 
     f.__name__ = name
 

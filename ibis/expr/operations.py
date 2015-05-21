@@ -19,8 +19,8 @@ from ibis.expr.types import (Node,
                              ValueExpr, ScalarExpr, ArrayExpr, TableExpr,
                              ArrayNode, TableNode, ValueNode,
                              HasSchema, _safe_repr)
+import ibis.common as com
 import ibis.expr.types as ir
-
 import ibis.util as util
 
 
@@ -113,7 +113,7 @@ class Literal(ValueNode):
         elif isinstance(self.value, basestring):
             klass = ir.StringScalar
         else:
-            raise TypeError(self.value)
+            raise com.InputTypeError(self.value)
 
         return klass
 

@@ -35,3 +35,11 @@ class RelationError(ExpressionError):
 
 class TranslationError(IbisError):
     pass
+
+
+class IbisTypeError(IbisError, TypeError):
+    pass
+
+
+class InputTypeError(IbisTypeError):
+    pass

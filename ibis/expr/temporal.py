@@ -44,7 +44,8 @@ class Timedelta(object):
         else:
             raise TypeError(arg)
 
-    __radd__ = lambda self, other: other + self
+    def __radd__(self, other):
+        return self.__add__(other)
 
     def __sub__(self, arg):
         pass

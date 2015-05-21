@@ -137,8 +137,6 @@ class TestFixedOffsets(unittest.TestCase):
         assert isinstance(expr, ir.TimestampArray)
         assert isinstance(expr.op(), T.TimestampDelta)
 
-        raise unittest.SkipTest
-
         # test radd
         expr = c + x
         assert isinstance(expr, ir.TimestampArray)
