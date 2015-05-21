@@ -299,6 +299,7 @@ def _timestamp_delta(translator, expr):
 
 
 _impala_delta_functions = {
+    tempo.Year: 'years_add',
     tempo.Month: 'months_add',
     tempo.Day: 'days_add',
     tempo.Hour: 'hours_add',

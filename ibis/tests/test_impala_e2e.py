@@ -257,10 +257,11 @@ FROM tpch.lineitem li
         projection = table[proj_exprs].limit(10)
         projection.execute()
 
-    def test_decimal_builtins(self):
+    def test_decimal_timestamp_builtins(self):
         table = self.con.table('tpch.lineitem')
 
         dc = table.l_quantity
+        ts = table.l_receiptdate.cast('timestamp')
 
         exprs = [
             dc % 10,
@@ -274,8 +275,17 @@ FROM tpch.lineitem li
             api.where(table.l_discount > 0,
                       dc * table.l_discount, api.NA),
 
-            dc.fillna(0)
+            dc.fillna(0),
         ]
+
+        timestamp_fields = ['year', 'month', 'day', 'hour', 'minute',
+                            'second', 'millisecond']
+        for field in timestamp_fields:
+            exprs.append(getattr(ts, field)())
+
+            offset = getattr(ibis, field)(2)
+            exprs.append(ts + offset)
+            exprs.append(ts - offset)
 
         proj_exprs = [expr.name('e%d' % i)
                       for i, expr in enumerate(exprs)]
