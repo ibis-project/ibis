@@ -17,7 +17,7 @@ import unittest
 from ibis.sql.exprs import ExprTranslator
 from ibis.sql.compiler import QueryContext, to_sql
 from ibis.expr.tests.mocks import MockConnection
-import ibis.expr.api as api
+import ibis as api
 import ibis.expr.types as ir
 
 
@@ -235,6 +235,24 @@ FROM alltypes"""
         cases = [
             (api.now(), 'now()')
         ]
+        self._check_expr_cases(cases)
+
+    def test_timestamp_deltas(self):
+        units = ['month', 'day', 'hour', 'minute', 'second', 'millisecond',
+                 'microsecond', 'nanosecond']
+
+        t = self.table.i
+        f = 'i'
+
+        cases = []
+        for unit in units:
+            K = 5
+            offset = getattr(api, unit)(K)
+            template = '{}s_add({}, {})'
+
+            cases.append((t + offset, template.format(unit, f, K)))
+            cases.append((t - offset, template.format(unit, f, -K)))
+
         self._check_expr_cases(cases)
 
     def test_correlated_predicate_subquery(self):

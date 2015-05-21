@@ -14,7 +14,6 @@
 
 from ibis.common import IbisError
 import ibis.expr.types as ir
-import ibis.expr.operations as ops
 
 
 __all__ = ['timedelta', 'year', 'month', 'week', 'day',
@@ -30,12 +29,17 @@ class Timedelta(object):
     def __init__(self, n):
         self.n = int(n)
 
+    def replace(self, n):
+        return type(self)(n)
+
     def __mul__(self, times):
         pass
 
     __rmul__ = __mul__
 
     def __add__(self, arg):
+        from ibis.expr.operations import TimestampDelta
+
         if isinstance(arg, ir.TimestampValue):
             op = TimestampDelta(arg, self)
             return op.to_expr()
@@ -48,10 +52,15 @@ class Timedelta(object):
         return self.__add__(other)
 
     def __sub__(self, arg):
-        pass
+        if isinstance(arg, ir.Expr):
+            raise TypeError(arg)
+        elif isinstance(arg, Timedelta):
+            return self.combine(arg.replace(-arg.n))
+        else:
+            raise NotImplementedError
 
     def __rsub__(self, arg):
-        pass
+        return self.replace(-self.n).__add__(arg)
 
     def combine(self, other):
         if type(self) != type(other):
@@ -258,19 +267,3 @@ def timedelta(days=None, hours=None, minutes=None, seconds=None,
         raise IbisError('Must pass some offset parameter')
 
     return result
-
-
-class TimestampDelta(ops.ValueNode):
-
-    def __init__(self, arg, offset):
-        self.arg = ops.as_value_expr(arg)
-
-        if not isinstance(self.arg, ir.TimestampValue):
-            raise TypeError('Must interact with a timestamp expression')
-
-        self.offset = offset
-
-        ops.ValueNode.__init__(self, [self.arg, self.offset])
-
-    def output_type(self):
-        return ops._shape_like(self.arg, 'timestamp')

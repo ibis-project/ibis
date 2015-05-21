@@ -1820,3 +1820,23 @@ class Hash(ValueNode):
 
     def output_type(self):
         return _shape_like(self.arg, 'int64')
+
+
+class TimestampDelta(ValueNode):
+
+    def __init__(self, arg, offset):
+        from ibis.expr.temporal import Timedelta
+
+        self.arg = as_value_expr(arg)
+        self.offset = offset
+
+        if not isinstance(self.arg, ir.TimestampValue):
+            raise TypeError('Must interact with a timestamp expression')
+
+        if not isinstance(offset, Timedelta):
+            raise TypeError(offset)
+
+        ValueNode.__init__(self, [self.arg, self.offset])
+
+    def output_type(self):
+        return _shape_like(self.arg, 'timestamp')

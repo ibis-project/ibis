@@ -15,6 +15,7 @@
 import unittest
 
 from ibis.common import IbisError
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.temporal as T
 
@@ -135,12 +136,12 @@ class TestFixedOffsets(unittest.TestCase):
 
         expr = x + c
         assert isinstance(expr, ir.TimestampArray)
-        assert isinstance(expr.op(), T.TimestampDelta)
+        assert isinstance(expr.op(), ops.TimestampDelta)
 
         # test radd
         expr = c + x
         assert isinstance(expr, ir.TimestampArray)
-        assert isinstance(expr.op(), T.TimestampDelta)
+        assert isinstance(expr.op(), ops.TimestampDelta)
 
 
 class TestTimedelta(unittest.TestCase):
