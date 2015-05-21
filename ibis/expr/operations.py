@@ -1039,7 +1039,7 @@ class SimpleCase(ValueNode):
         return _shape_like(self.base, typename)
 
 
-class SearchedCase(ValueNode):
+class SearchedCase(MultiExprNode):
 
     def __init__(self, case_exprs, result_exprs, default_expr):
         assert len(case_exprs) == len(result_exprs)
@@ -1047,7 +1047,7 @@ class SearchedCase(ValueNode):
         self.cases = case_exprs
         self.results = result_exprs
         self.default = default_expr
-        Node.__init__(self, [self.cases, self.results, self.default])
+        MultiExprNode.__init__(self, [self.cases, self.results, self.default])
 
     def root_tables(self):
         all_exprs = self.cases + self.results
@@ -1062,7 +1062,7 @@ class SearchedCase(ValueNode):
         return _shape_like_args(self.cases, typename)
 
 
-class Where(ValueNode):
+class Where(MultiExprNode):
 
     """
     Ternary case expression, equivalent to
@@ -1077,8 +1077,8 @@ class Where(ValueNode):
         self.true_expr = as_value_expr(true_expr)
         self.false_null_expr = as_value_expr(false_null_expr)
 
-        ValueNode.__init__(self, [self.bool_expr, self.true_expr,
-                                  self.false_null_expr])
+        MultiExprNode.__init__(self, [self.bool_expr, self.true_expr,
+                                      self.false_null_expr])
 
     def output_type(self):
         return _shape_like(self.bool_expr, self.true_expr.type())
