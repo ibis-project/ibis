@@ -22,8 +22,11 @@ from io import BytesIO
 
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
+import ibis.expr.temporal as tempo
+
 import ibis.sql.transforms as transforms
 import ibis.sql.identifiers as identifiers
+
 import ibis.common as com
 import ibis.util as util
 
@@ -287,6 +290,34 @@ def _table_array_view(translator, expr):
 
 
 #----------------------------------------------------------------------
+# Timestamp arithmetic and other functions
+
+def _timestamp_delta(translator, expr):
+    op = expr.op()
+    formatted_arg = translator.translate(op.arg)
+    return _timestamp_format_offset(op.offset, formatted_arg)
+
+
+_impala_delta_functions = {
+    tempo.Year: 'years_add',
+    tempo.Month: 'months_add',
+    tempo.Week: 'weeks_add',
+    tempo.Day: 'days_add',
+    tempo.Hour: 'hours_add',
+    tempo.Minute: 'minutes_add',
+    tempo.Second: 'seconds_add',
+    tempo.Millisecond: 'milliseconds_add',
+    tempo.Microsecond: 'microseconds_add',
+    tempo.Nanosecond: 'nanoseconds_add'
+}
+
+
+def _timestamp_format_offset(offset, arg):
+    f = _impala_delta_functions[type(offset)]
+    return '{}({}, {})'.format(f, arg, offset.n)
+
+
+#----------------------------------------------------------------------
 # Semi/anti-join supports
 
 
@@ -547,6 +578,8 @@ _timestamp_ops = {
 
 
 _other_ops = {
+    ops.Any: _any_exists,
+
     ops.E: lambda *args: 'e()',
 
     ops.Literal: _literal,
@@ -576,7 +609,7 @@ _other_ops = {
 
     ops.TableArrayView: _table_array_view,
 
-    ops.Any: _any_exists,
+    ops.TimestampDelta: _timestamp_delta,
 
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery

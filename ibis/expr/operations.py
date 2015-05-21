@@ -19,8 +19,8 @@ from ibis.expr.types import (Node,
                              ValueExpr, ScalarExpr, ArrayExpr, TableExpr,
                              ArrayNode, TableNode, ValueNode,
                              HasSchema, _safe_repr)
+import ibis.common as com
 import ibis.expr.types as ir
-
 import ibis.util as util
 
 
@@ -112,6 +112,8 @@ class Literal(ValueNode):
             klass = ir.DoubleScalar
         elif isinstance(self.value, basestring):
             klass = ir.StringScalar
+        else:
+            raise com.InputTypeError(self.value)
 
         return klass
 
@@ -1037,7 +1039,7 @@ class SimpleCase(ValueNode):
         return _shape_like(self.base, typename)
 
 
-class SearchedCase(ValueNode):
+class SearchedCase(MultiExprNode):
 
     def __init__(self, case_exprs, result_exprs, default_expr):
         assert len(case_exprs) == len(result_exprs)
@@ -1045,7 +1047,7 @@ class SearchedCase(ValueNode):
         self.cases = case_exprs
         self.results = result_exprs
         self.default = default_expr
-        Node.__init__(self, [self.cases, self.results, self.default])
+        MultiExprNode.__init__(self, [self.cases, self.results, self.default])
 
     def root_tables(self):
         all_exprs = self.cases + self.results
@@ -1060,7 +1062,7 @@ class SearchedCase(ValueNode):
         return _shape_like_args(self.cases, typename)
 
 
-class Where(ValueNode):
+class Where(MultiExprNode):
 
     """
     Ternary case expression, equivalent to
@@ -1075,8 +1077,8 @@ class Where(ValueNode):
         self.true_expr = as_value_expr(true_expr)
         self.false_null_expr = as_value_expr(false_null_expr)
 
-        ValueNode.__init__(self, [self.bool_expr, self.true_expr,
-                                  self.false_null_expr])
+        MultiExprNode.__init__(self, [self.bool_expr, self.true_expr,
+                                      self.false_null_expr])
 
     def output_type(self):
         return _shape_like(self.bool_expr, self.true_expr.type())
@@ -1818,3 +1820,23 @@ class Hash(ValueNode):
 
     def output_type(self):
         return _shape_like(self.arg, 'int64')
+
+
+class TimestampDelta(ValueNode):
+
+    def __init__(self, arg, offset):
+        from ibis.expr.temporal import Timedelta
+
+        self.arg = as_value_expr(arg)
+        self.offset = offset
+
+        if not isinstance(self.arg, ir.TimestampValue):
+            raise TypeError('Must interact with a timestamp expression')
+
+        if not isinstance(offset, Timedelta):
+            raise TypeError(offset)
+
+        ValueNode.__init__(self, [self.arg, self.offset])
+
+    def output_type(self):
+        return _shape_like(self.arg, 'timestamp')
