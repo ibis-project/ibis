@@ -238,7 +238,8 @@ FROM alltypes"""
         self._check_expr_cases(cases)
 
     def test_timestamp_deltas(self):
-        units = ['year', 'month', 'day', 'hour', 'minute', 'second',
+        units = ['year', 'month', 'week', 'day',
+                 'hour', 'minute', 'second',
                  'millisecond', 'microsecond', 'nanosecond']
 
         t = self.table.i

@@ -289,7 +289,9 @@ FROM tpch.lineitem li
 
         micro = ibis.microsecond(2)
         nano = ibis.nanosecond(2)
+        week = ibis.week(2)
         exprs.extend([
+            ts + week, ts - week,
             ts + micro, ts - micro,
             ts + nano, ts - nano
         ])
