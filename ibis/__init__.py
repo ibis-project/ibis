@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.connection import impala_connect
+
+# flake8: noqa
+
+
+from ibis.client import ImpalaConnection, ImpalaClient
+from ibis.filesystems import WebHDFS
+
 import ibis.expr.api as api
 import ibis.expr.types as ir
 
@@ -21,6 +27,59 @@ from ibis.expr.api import *
 
 import ibis.config_init
 from ibis.config import options
+
+
+def make_client(db, hdfs_client=None):
+    """
+
+    """
+    return ImpalaClient(db, hdfs_client=hdfs_client)
+
+
+def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
+                   database=None, timeout=45, use_ssl=False, ca_cert=None,
+                   use_ldap=False, ldap_user=None, ldap_password=None,
+                   use_kerberos=False, kerberos_service_name='impala'):
+    """
+    Create an Impala Client for use with Ibis
+
+    Parameters
+    ----------
+    host : host name
+    port : int, default 21050 (HiveServer 2)
+    protocol : {'hiveserver2', 'beeswax'}
+    database :
+    timeout :
+    use_ssl :
+    ca_cert :
+    use_ldap : boolean, default False
+    ldap_user :
+    ldap_password :
+    use_kerberos : boolean, default False
+    kerberos_service_name : string, default 'impala'
+    hdfs_client : HDFS instance (using hdfs library)
+      If you created an HDFS client instance elsewhere
+
+    Returns
+    -------
+    con : ImpalaClient
+    """
+    params = {
+        'host': host,
+        'port': port,
+        'protocol': protocol,
+        'database': database,
+        'timeout': timeout,
+        'use_ssl': use_ssl,
+        'ca_cert': ca_cert,
+        'use_ldap': use_ldap,
+        'ldap_user': ldap_user,
+        'ldap_password': ldap_password,
+        'use_kerberos': use_kerberos,
+        'kerberos_service_name': kerberos_service_name
+    }
+
+    return ImpalaConnection(**params)
 
 
 def test(include_e2e=False):

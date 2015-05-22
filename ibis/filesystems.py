@@ -14,6 +14,8 @@
 
 import hdfs
 
+import ibis.common as com
+
 
 class HDFS(object):
 
@@ -22,18 +24,6 @@ class HDFS(object):
     user/developer against) various 3rd party library API differences.
     """
 
-    def __init__(self, host, port, params=None, protocol='webhdfs'):
-        self.host = host
-        self.port = port
-        self.params = params
-        self.protocol = protocol
-
-        if self.protocol == 'webhdfs':
-            url = 'http://{}:{}'.format(self.host, self.port)
-            self.client = hdfs.client.Client(url, params=self.params)
-        else:
-            raise NotImplementedError
-
     def path_exists(self, path):
         try:
             self.client.status(path)
@@ -41,26 +31,61 @@ class HDFS(object):
         except Exception:
             return False
 
-    def ls(self, hdfs_path):
-        if self.protocol == 'webhdfs':
-            return self.client.list(hdfs_path)
+    def head(self, hdfs_path, nbytes=1024, offset=0):
+        raise NotImplementedError
 
-    def delete(self, hdfs_path):
+    def get(self, hdfs_path, local_path, overwrite=False):
+        raise NotImplementedError
+
+    def put(self, hdfs_path, local_path, overwrite=False, **kwargs):
+        raise NotImplementedError
+
+    def write(self, hdfs_path, buf, overwrite=False, blocksize=None,
+              replication=None, buffersize=None):
+        raise NotImplementedError
+
+    def mkdir(self, path, create_parent=False):
         pass
 
-    def head(self, hdfs_path, nbytes=1024, offset=0):
-        if self.protocol == 'webhdfs':
-            gen = self.client.read(hdfs_path, offset=offset, length=nbytes)
-            return ''.join(gen)
+    def ls(self, hdfs_path):
+        raise NotImplementedError
 
     def tail(self, hdfs_path, nbytes=1024):
         raise NotImplementedError
 
-    def get(self, hdfs_path, local_path, overwrite=False):
-        """
-        Download a file from HDFS to local
-        """
+    def delete(self, hdfs_path):
         pass
+
+    def rmdir(self, path):
+        self.client.delete(path, recursive=True)
+
+    def _find_any_file(self, hdfs_dir):
+        contents = self.ls(hdfs_dir)
+        for filename, meta in contents:
+            if meta['type'].lower() == 'file':
+                return filename
+        raise com.IbisError('No files found in the passed directory')
+
+
+class WebHDFS(HDFS):
+
+    """
+    A WebHDFS-based interface to HDFS using the HDFSCli library
+    """
+
+    def __init__(self, client):
+        self.client = client
+
+    @property
+    def protocol(self):
+        return 'webhdfs'
+
+    def ls(self, hdfs_path):
+        return self.client.list(hdfs_path)
+
+    def head(self, hdfs_path, nbytes=1024, offset=0):
+        gen = self.client.read(hdfs_path, offset=offset, length=nbytes)
+        return ''.join(gen)
 
     def put(self, hdfs_path, local_path, overwrite=False, **kwargs):
         """
@@ -70,9 +95,8 @@ class HDFS(object):
 
         Other keywords forwarded to .write API.
         """
-        if self.protocol == 'webhdfs':
-            self.client.upload(hdfs_path, local_path,
-                               overwrite=overwrite, **kwargs)
+        self.client.upload(hdfs_path, local_path,
+                           overwrite=overwrite, **kwargs)
 
     def write(self, hdfs_path, buf, overwrite=False, blocksize=None,
               replication=None, buffersize=None):
@@ -82,17 +106,9 @@ class HDFS(object):
         Parameters
         ----------
         """
-        if self.protocol == 'webhdfs':
-            self.client.write(buf, hdfs_path, overwrite=overwrite,
-                              blocksize=blocksize, replication=replication,
-                              buffersize=buffersize)
-
-    def mkdir(self, path, create_parent=False):
-        pass
-
-    def rmdir(self, path):
-        self.client.delete(path, recursive=True)
-
+        self.client.write(buf, hdfs_path, overwrite=overwrite,
+                          blocksize=blocksize, replication=replication,
+                          buffersize=buffersize)
 
 
 def connect(host, port=8020, hadoop_version=9):
