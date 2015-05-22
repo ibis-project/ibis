@@ -152,13 +152,13 @@ class ImpalaConnection(object):
         return cursor.fetchall()
 
     def ensure_connected(self):
-        if self.con is None or not self.con.ping():
+        if self.con is None or not self.con.cursor().ping():
             self.connect()
 
     def connect(self):
         import impala.dbapi as db
         self.con = db.connect(**self.params)
-        self.con.ping()
+        self.con.cursor().ping()
 
 
 class ImpalaClient(SQLClient):
