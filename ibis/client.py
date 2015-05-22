@@ -175,7 +175,7 @@ class ImpalaClient(SQLClient):
         elif hdfs_client is not None and not isinstance(hdfs_client, HDFS):
             raise TypeError(hdfs_client)
 
-        self.hdfs_client = hdfs_client
+        self.hdfs = hdfs_client
 
         self.con.ensure_connected()
 
@@ -392,7 +392,7 @@ class ImpalaClient(SQLClient):
         # If no schema provided, need to find some absolute path to a file in
         # the HDFS directory
         if like_file is None and like_table is None and schema is None:
-            like_file = self._find_any_file(hdfs_dir)
+            like_file = self.hdfs._find_any_file(hdfs_dir)
 
         stmt = ddl.CreateTableParquet(name, hdfs_dir, schema=schema,
                                       example_file=like_file,
