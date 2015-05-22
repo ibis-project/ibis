@@ -392,7 +392,7 @@ class ImpalaClient(SQLClient):
         # If no schema provided, need to find some absolute path to a file in
         # the HDFS directory
         if like_file is None and like_table is None and schema is None:
-            like_file = self.hdfs._find_any_file(hdfs_dir)
+            like_file = self.hdfs.find_any_file(hdfs_dir)
 
         stmt = ddl.CreateTableParquet(name, hdfs_dir, schema=schema,
                                       example_file=like_file,

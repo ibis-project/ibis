@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import posixpath
+
 import hdfs
 
 import ibis.common as com
@@ -59,10 +61,20 @@ class HDFS(object):
     def rmdir(self, path):
         self.client.delete(path, recursive=True)
 
-    def _find_any_file(self, hdfs_dir):
+    def find_any_file(self, hdfs_dir):
         contents = self.ls(hdfs_dir)
+
+        def valid_filename(name):
+            head, tail = posixpath.split(name)
+
+            tail = tail.lower()
+            return (not tail.endswith('.tmp') and
+                    not tail.endswith('.copying') and
+                    not tail.startswith('_') and
+                    not tail.startswith('.'))
+
         for filename, meta in contents:
-            if meta['type'].lower() == 'file':
+            if meta['type'].lower() == 'file' and valid_filename(filename):
                 return filename
         raise com.IbisError('No files found in the passed directory')
 
