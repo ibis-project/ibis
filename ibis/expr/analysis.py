@@ -707,14 +707,14 @@ def unwrap_ands(expr):
 
 
 def find_backend(expr):
-    from ibis.connection import Connection
+    from ibis.client import Client
 
     backends = []
 
     def walk(expr):
         node = expr.op()
         for arg in node.flat_args():
-            if isinstance(arg, Connection):
+            if isinstance(arg, Client):
                 backends.append(arg)
             elif isinstance(arg, ir.Expr):
                 walk(arg)

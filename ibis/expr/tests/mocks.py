@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.connection import SQLConnection
+from ibis.client import SQLClient
 import ibis.expr.types as ir
 
 
-class MockConnection(SQLConnection):
+class MockConnection(SQLClient):
 
     _tables = {
         'alltypes': [
