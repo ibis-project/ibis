@@ -41,9 +41,17 @@ import sys
 from distutils.extension import Extension
 
 MAJOR = 0
-MINOR = 1
+MINOR = 2
 MICRO = 0
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+
+ISRELEASED = False
+
+if not ISRELEASED:
+    VERSION += '.dev'
+
+    # todo: acquire git hash
+
 
 from distutils.command.clean import clean as _clean
 class clean(_clean):

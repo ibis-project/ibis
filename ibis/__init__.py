@@ -84,7 +84,12 @@ def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
 
 def test(include_e2e=False):
     import pytest
-    args = ['--pyargs', 'ibis']
+    import ibis
+    import os
+
+    ibis_dir, _ = os.path.split(ibis.__file__)
+
+    args = ['--pyargs', ibis_dir]
     if not include_e2e:
         args.extend(['-m', 'not e2e'])
     pytest.main(args)
