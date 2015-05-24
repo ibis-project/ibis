@@ -19,11 +19,13 @@ import unittest
 
 import pandas as pd
 
+from hdfs import InsecureClient
+
+import ibis
+
 import ibis.config as config
-import ibis.connection as cnx
 import ibis.expr.api as api
 import ibis.expr.types as ir
-import ibis
 
 
 class IbisTestEnv(object):
@@ -34,19 +36,21 @@ class IbisTestEnv(object):
         self.port = os.environ.get('IBIS_TEST_PORT', 21050)
 
         # Impala dev environment uses port 5070 for HDFS web interface
-        self.hdfs_config = {
-            'host': 'localhost',
-            'webhdfs_port': 5070
-        }
+
+        hdfs_host = 'localhost'
+        webhdfs_port = 5070
+        url = 'http://{}:{}'.format(hdfs_host, webhdfs_port)
+        self.hdfs = InsecureClient(url)
 
 
 ENV = IbisTestEnv()
 
 
 def connect(env):
-    return cnx.impala_connect(host=ENV.host, protocol=ENV.protocol,
-                              port=ENV.port,
-                              hdfs_config=ENV.hdfs_config)
+    con = ibis.impala_connect(host=ENV.host,
+                              protocol=ENV.protocol,
+                              port=ENV.port)
+    return ibis.make_client(con, ENV.hdfs)
 
 
 pytestmark = pytest.mark.e2e
@@ -57,7 +61,7 @@ class ImpalaE2E(object):
     @classmethod
     def setUpClass(cls):
         try:
-            import impala
+            import impala  # noqa
             cls.con = connect(ENV)
         except ImportError:
             # fail gracefully if impyla not installed
@@ -65,11 +69,11 @@ class ImpalaE2E(object):
         except Exception as e:
             if 'could not connect' in e.message.lower():
                 pytest.skip('impalad not running')
+            raise
 
     @classmethod
     def tearDownClass(cls):
         pass
-
 
 
 class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
@@ -313,7 +317,7 @@ FROM tpch.lineitem li
         ]
 
         agg_exprs = [expr.name('e%d' % i)
-                      for i, expr in enumerate(exprs)]
+                     for i, expr in enumerate(exprs)]
 
         agged_table = table.aggregate(agg_exprs)
         agged_table.execute()
@@ -363,7 +367,8 @@ FROM tpch.lineitem li
         fields_of_interest = [customer,
                               region.r_name.name('region'),
                               orders.o_totalprice.name('amount'),
-                              orders.o_orderdate.cast('timestamp').name('odate')]
+                              orders.o_orderdate
+                              .cast('timestamp').name('odate')]
 
         tpch = (region.join(nation, region.r_regionkey == nation.n_regionkey)
                 .join(customer, customer.c_nationkey == nation.n_nationkey)

@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import hdfs
 
 from ibis.common import IbisError
 from ibis.config import options
 
-from ibis.filesystems import HDFS
+from ibis.filesystems import HDFS, WebHDFS
 
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -25,12 +26,12 @@ import ibis.sql.ddl as ddl
 import ibis.sql.identifiers as ident
 
 
-class Connection(object):
+class Client(object):
 
     pass
 
 
-class SQLConnection(Connection):
+class SQLClient(Client):
 
     def table(self, name, database=None):
         """
@@ -54,6 +55,9 @@ class SQLConnection(Connection):
     def _fully_qualified_name(self, name, database):
         # XXX
         return name
+
+    def _execute(self, query):
+        return self.con.execute(query)
 
     def sql(self, query):
         """
@@ -115,15 +119,65 @@ class SQLConnection(Connection):
         return pd.DataFrame.from_records(rows, columns=names)
 
 
-class ImpalaConnection(SQLConnection):
+class ImpalaConnection(object):
 
-    def __init__(self, hdfs_client=None, **params):
-        self.hdfs_client = hdfs_client
+    """
+    Database connection wrapper
+    """
 
+    def __init__(self, **params):
         self.params = params
         self.con = None
+        self.ensure_connected()
 
-        self._connect()
+    def execute(self, query, retries=3):
+        if isinstance(query, ddl.DDLStatement):
+            query = query.compile()
+
+        from impala.error import DatabaseError
+        try:
+            cursor = self.con.cursor()
+        except DatabaseError:
+            if retries > 0:
+                self.ensure_connected()
+                self.fetchall(query, retries=retries - 1)
+            else:
+                raise
+
+        cursor.execute(query)
+        return cursor
+
+    def fetchall(self, query, retries=3):
+        cursor = self.execute(query, retries=retries)
+        return cursor.fetchall()
+
+    def ensure_connected(self):
+        if self.con is None or not self.con.cursor().ping():
+            self.connect()
+
+    def connect(self):
+        import impala.dbapi as db
+        self.con = db.connect(**self.params)
+        self.con.cursor().ping()
+
+
+class ImpalaClient(SQLClient):
+
+    """
+    An Ibis client interface that uses Impala
+    """
+
+    def __init__(self, con, hdfs_client=None, **params):
+        self.con = con
+
+        if isinstance(hdfs_client, hdfs.Client):
+            hdfs_client = WebHDFS(hdfs_client)
+        elif hdfs_client is not None and not isinstance(hdfs_client, HDFS):
+            raise TypeError(hdfs_client)
+
+        self.hdfs = hdfs_client
+
+        self.con.ensure_connected()
 
     def _fully_qualified_name(self, name, database):
         if database is not None:
@@ -134,31 +188,6 @@ class ImpalaConnection(SQLConnection):
                 return '`{}`'.format(name)
             else:
                 return name
-
-    def _connect(self):
-        import impala.dbapi as db
-        self.con = db.connect(**self.params)
-
-    def _fetchall(self, query, retries=3):
-        cursor = self._execute(query, retries=retries)
-        return cursor.fetchall()
-
-    def _execute(self, query, retries=3):
-        if isinstance(query, ddl.DDLStatement):
-            query = query.compile()
-
-        from impala.error import DatabaseError
-        try:
-            cursor = self.con.cursor()
-        except DatabaseError:
-            if retries > 0:
-                self._connect()
-                self._fetchall(query, retries=retries - 1)
-            else:
-                raise
-
-        cursor.execute(query)
-        return cursor
 
     def set_database(self, name):
         pass
@@ -363,7 +392,7 @@ class ImpalaConnection(SQLConnection):
         # If no schema provided, need to find some absolute path to a file in
         # the HDFS directory
         if like_file is None and like_table is None and schema is None:
-            like_file = self._find_any_file(hdfs_dir)
+            like_file = self.hdfs.find_any_file(hdfs_dir)
 
         stmt = ddl.CreateTableParquet(name, hdfs_dir, schema=schema,
                                       example_file=like_file,
@@ -381,13 +410,6 @@ class ImpalaConnection(SQLConnection):
             schema = self._get_table_schema(qualified_name)
             node = ImpalaTemporaryTable(qualified_name, schema, self)
             return ir.TableExpr(node)
-
-    def _find_any_file(self, hdfs_dir):
-        contents = self.hdfs_client.ls(hdfs_dir)
-        for filename, meta in contents:
-            if meta['type'].lower() == 'file':
-                return filename
-        raise IbisError('No files found in the passed directory')
 
     def text_file(self, hdfs_path, column_name='value'):
         """
@@ -528,65 +550,3 @@ def _set_limit(query, k):
     limited_query = '{}\nLIMIT {}'.format(query, k)
 
     return limited_query
-
-
-WEBHDFS_DEFAULT_PORT = 50070
-
-
-def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
-                   database=None, timeout=45, use_ssl=False, ca_cert=None,
-                   use_ldap=False, ldap_user=None, ldap_password=None,
-                   use_kerberos=False, kerberos_service_name='impala',
-                   hdfs_config=None, hdfs_client=None):
-    """
-    Create an Impala connection for use with Ibis
-
-    Parameters
-    ----------
-    host : host name
-    port : int, default 21050 (HiveServer 2)
-    protocol : {'hiveserver2', 'beeswax'}
-    database :
-    timeout :
-    use_ssl :
-    ca_cert :
-    use_ldap : boolean, default False
-    ldap_user :
-    ldap_password :
-    use_kerberos : boolean, default False
-    kerberos_service_name : string, default 'impala'
-    hdfs_config : dict, with below keys
-      host :
-      webhdfs_port
-      params : dict
-        Parameter dict to pass to HDFS constructor
-    hdfs_client : HDFS instance (using hdfs library)
-      If you created an HDFS client instance elsewhere
-
-    Returns
-    -------
-    con : ImpalaConnection
-    """
-    if hdfs_config is not None:
-        hdfs_client = HDFS(hdfs_config['host'],
-                           hdfs_config.get('webhdfs_port',
-                                           WEBHDFS_DEFAULT_PORT),
-                           params=hdfs_config.get('params'))
-    else:
-        hdfs_client = None
-
-    params = {
-        'host': host,
-        'port': port,
-        'protocol': protocol,
-        'database': database,
-        'timeout': timeout,
-        'use_ssl': use_ssl,
-        'ca_cert': ca_cert,
-        'use_ldap': use_ldap,
-        'ldap_user': ldap_user,
-        'ldap_password': ldap_password,
-        'use_kerberos': use_kerberos,
-        'kerberos_service_name': kerberos_service_name
-    }
-    return ImpalaConnection(hdfs_client=hdfs_client, **params)
