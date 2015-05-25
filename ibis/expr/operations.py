@@ -134,7 +134,7 @@ class NullLiteral(ValueNode):
     def args(self):
         return [None]
 
-    def equals(other):
+    def equals(self, other):
         return isinstance(other, NullLiteral)
 
     def output_type(self):

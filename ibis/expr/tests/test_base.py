@@ -46,6 +46,9 @@ class TestLiterals(unittest.TestCase):
         assert isinstance(expr, api.NullScalar)
         assert isinstance(expr.op(), ops.NullLiteral)
 
+        expr2 = api.null()
+        assert expr.equals(expr2)
+
     def test_boolean(self):
         val = True
         expr = api.literal(val)
