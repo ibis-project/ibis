@@ -1211,7 +1211,9 @@ class CategoryType(DataType):
         return 'category'
 
     def __repr__(self):
-        return ('(cardinality=%s)' % (self.cardinality))
+        card = (self.cardinality if self.cardinality is not None
+                else 'unknown')
+        return ('category(K=%s)' % card)
 
     def __hash__(self):
         return hash((self.cardinality))
