@@ -21,6 +21,7 @@
 from collections import defaultdict
 
 import ibis.expr.analysis as L
+import ibis.expr.api as api
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
@@ -153,7 +154,9 @@ class SelectBuilder(object):
 
     def _build_result_query(self):
         self._collect_elements()
-        self._analyze_filter_clauses()
+
+        self._analyze_select_exprs()
+        self._analyze_filter_exprs()
         self._analyze_subqueries()
         self._populate_context()
 
@@ -203,9 +206,83 @@ class SelectBuilder(object):
                 ctx.make_alias(expr)
 
     #----------------------------------------------------------------------
-    # Filter analysis / rewrites
+    # Expr analysis / rewrites
 
-    def _analyze_filter_clauses(self):
+    def _analyze_select_exprs(self):
+        new_select_set = []
+
+        for expr in self.select_set:
+            new_expr = self._visit_select_expr(expr)
+            new_select_set.append(new_expr)
+
+        self.select_set = new_select_set
+
+    def _visit_select_expr(self, expr):
+        # Dumping ground for analysis of WHERE expressions
+        # - Subquery extraction
+        # - Conversion to explicit semi/anti joins
+        # - Rewrites to generate subqueries
+
+        op = expr.op()
+
+        method = '_visit_select_{}'.format(type(op).__name__)
+        if hasattr(self, method):
+            f = getattr(self, method)
+            return f(expr)
+
+        unchanged = True
+
+        if isinstance(op, ops.ValueNode):
+            new_args = []
+            for arg in op.args:
+                if isinstance(arg, ir.Expr):
+                    new_arg = self._visit_select_expr(arg)
+                    if arg is not new_arg:
+                        unchanged = False
+                    new_args.append(new_arg)
+                else:
+                    new_args.append(arg)
+
+            if not unchanged:
+                return expr._factory(type(op)(*new_args))
+            else:
+                return expr
+        else:
+            return expr
+
+    def _visit_select_Bucket(self, expr):
+        import operator
+
+        op = expr.op()
+
+        stmt = api.case()
+
+        if op.closed == 'left':
+            l_cmp = operator.le
+            r_cmp = operator.lt
+        else:
+            l_cmp = operator.lt
+            r_cmp = operator.le
+
+        bucket_id = 0
+        if op.include_under:
+            stmt = stmt.when(r_cmp(op.arg, op.buckets[0]), bucket_id)
+            bucket_id += 1
+
+        for lower, upper in zip(op.buckets, op.buckets[1:]):
+            stmt = stmt.when(l_cmp(lower, op.arg) & r_cmp(op.arg, upper),
+                             bucket_id)
+            bucket_id += 1
+
+        if op.include_over:
+            stmt = stmt.when(l_cmp(op.buckets[-1], op.arg), bucket_id)
+            bucket_id += 1
+
+        case_expr = stmt.end()
+
+        return case_expr.name(expr.get_name())
+
+    def _analyze_filter_exprs(self):
         # What's semantically contained in the filter predicates may need to be
         # rewritten. Not sure if this is the right place to do this, but a
         # starting point

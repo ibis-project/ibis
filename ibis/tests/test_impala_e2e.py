@@ -240,6 +240,12 @@ FROM tpch.lineitem li
 
             api.literal(5).isin([i1, i4, d]),
 
+            # tier and histogram
+            d.bucket([0, 10, 25, 50, 100]),
+            d.bucket([0, 10, 25, 50], include_over=True),
+            d.bucket([0, 10, 25, 50], include_over=True, close_extreme=False),
+            d.bucket([10, 25, 50, 100], include_under=True),
+
             # coalesce-like cases
             api.coalesce(table.int_col,
                          api.null(),

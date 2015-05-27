@@ -51,17 +51,17 @@ class Bucket(ir.ValueNode):
 class Histogram(ir.ValueNode):
 
     def __init__(self, arg, nbins, binwidth, base, closed='left',
-                 close_extreme=True):
+                 close_extreme=True, aux_hash=None):
         self.arg = arg
         self.nbins = nbins
         self.binwidth = binwidth
         self.base = base
         self.closed = closed
         self.close_extreme = close_extreme
-        self.include_over = include_over
+        self.aux_hash = aux_hash
         ir.ValueNode.__init__(self, [self.arg, self.nbins, self.binwidth,
                                      self.base, self.closed,
-                                     self.close_extreme])
+                                     self.close_extreme, self.aux_hash])
 
     def output_type(self):
         # always undefined cardinality (for now)
@@ -115,5 +115,5 @@ def histogram(arg, nbins=None, binwidth=None, base=None, closed='left',
     """
     op = Histogram(arg, nbins, binwidth, base, closed=closed,
                    close_extreme=close_extreme,
-                   include_over=include_over)
+                   aux_hash=aux_hash)
     return op.to_expr()
