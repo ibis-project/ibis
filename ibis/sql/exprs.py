@@ -20,6 +20,8 @@
 
 from io import BytesIO
 
+import ibis.expr.analytics as analytics
+import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.expr.temporal as tempo
@@ -280,6 +282,49 @@ def _searched_case(translator, expr):
     formatter = CaseFormatter(translator, None, op.cases, op.results,
                               op.default)
     return formatter.get_result()
+
+
+def _bucket(translator, expr):
+    import operator
+
+    op = expr.op()
+
+    stmt = api.case()
+
+    if op.closed == 'left':
+        l_cmp = operator.le
+        r_cmp = operator.lt
+    else:
+        l_cmp = operator.lt
+        r_cmp = operator.le
+
+    bucket_id = 0
+    if op.include_under:
+        cmp = operator.lt if op.close_extreme else r_cmp
+        stmt = stmt.when(cmp(op.arg, op.buckets[0]), bucket_id)
+        bucket_id += 1
+
+    user_num_buckets = len(op.buckets) - 1
+
+    for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
+        if (op.close_extreme
+            and ((op.closed == 'right' and j == 0) or
+                 (op.closed == 'left' and j == (user_num_buckets - 1)))):
+            stmt = stmt.when((lower <= op.arg) & (op.arg <= upper),
+                             bucket_id)
+        else:
+            stmt = stmt.when(l_cmp(lower, op.arg) & r_cmp(op.arg, upper),
+                             bucket_id)
+        bucket_id += 1
+
+    if op.include_over:
+        cmp = operator.lt if op.close_extreme else l_cmp
+        stmt = stmt.when(cmp(op.buckets[-1], op.arg), bucket_id)
+        bucket_id += 1
+
+    case_expr = stmt.end().name(expr._name)
+    return _searched_case(translator, case_expr)
+
 
 
 def _table_array_view(translator, expr):
@@ -601,6 +646,8 @@ _other_ops = {
     ops.Between: _between,
     ops.Contains: _contains,
     ops.NotContains: _not_contains,
+
+    analytics.Bucket: _bucket,
 
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,

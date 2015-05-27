@@ -250,38 +250,6 @@ class SelectBuilder(object):
         else:
             return expr
 
-    def _visit_select_Bucket(self, expr):
-        import operator
-
-        op = expr.op()
-
-        stmt = api.case()
-
-        if op.closed == 'left':
-            l_cmp = operator.le
-            r_cmp = operator.lt
-        else:
-            l_cmp = operator.lt
-            r_cmp = operator.le
-
-        bucket_id = 0
-        if op.include_under:
-            stmt = stmt.when(r_cmp(op.arg, op.buckets[0]), bucket_id)
-            bucket_id += 1
-
-        for lower, upper in zip(op.buckets, op.buckets[1:]):
-            stmt = stmt.when(l_cmp(lower, op.arg) & r_cmp(op.arg, upper),
-                             bucket_id)
-            bucket_id += 1
-
-        if op.include_over:
-            stmt = stmt.when(l_cmp(op.buckets[-1], op.arg), bucket_id)
-            bucket_id += 1
-
-        case_expr = stmt.end()
-
-        return case_expr.name(expr.get_name())
-
     def _analyze_filter_exprs(self):
         # What's semantically contained in the filter predicates may need to be
         # rewritten. Not sure if this is the right place to do this, but a

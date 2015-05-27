@@ -375,6 +375,113 @@ END"""
 END"""
         assert result == expected
 
+    def test_bucket_to_case(self):
+        buckets = [0, 10, 25, 50]
+
+        expr1 = self.table.f.bucket(buckets)
+        expected1 = """\
+CASE
+  WHEN (f >= 0) AND (f < 10) THEN 0
+  WHEN (f >= 10) AND (f < 25) THEN 1
+  WHEN (f >= 25) AND (f <= 50) THEN 2
+  ELSE NULL
+END"""
+
+        expr2 = self.table.f.bucket(buckets, close_extreme=False)
+        expected2 = """\
+CASE
+  WHEN (f >= 0) AND (f < 10) THEN 0
+  WHEN (f >= 10) AND (f < 25) THEN 1
+  WHEN (f >= 25) AND (f < 50) THEN 2
+  ELSE NULL
+END"""
+
+        expr3 = self.table.f.bucket(buckets, closed='right')
+        expected3 = """\
+CASE
+  WHEN (f >= 0) AND (f <= 10) THEN 0
+  WHEN (f > 10) AND (f <= 25) THEN 1
+  WHEN (f > 25) AND (f <= 50) THEN 2
+  ELSE NULL
+END"""
+
+        expr4 = self.table.f.bucket(buckets, closed='right',
+                                    close_extreme=False)
+        expected4 = """\
+CASE
+  WHEN (f > 0) AND (f <= 10) THEN 0
+  WHEN (f > 10) AND (f <= 25) THEN 1
+  WHEN (f > 25) AND (f <= 50) THEN 2
+  ELSE NULL
+END"""
+
+
+        expr5 = self.table.f.bucket(buckets, include_under=True)
+        expected5 = """\
+CASE
+  WHEN f < 0 THEN 0
+  WHEN (f >= 0) AND (f < 10) THEN 1
+  WHEN (f >= 10) AND (f < 25) THEN 2
+  WHEN (f >= 25) AND (f <= 50) THEN 3
+  ELSE NULL
+END"""
+
+        expr6 = self.table.f.bucket(buckets,
+                                    include_under=True,
+                                    include_over=True)
+        expected6 = """\
+CASE
+  WHEN f < 0 THEN 0
+  WHEN (f >= 0) AND (f < 10) THEN 1
+  WHEN (f >= 10) AND (f < 25) THEN 2
+  WHEN (f >= 25) AND (f <= 50) THEN 3
+  WHEN f > 50 THEN 4
+  ELSE NULL
+END"""
+
+        expr7 = self.table.f.bucket(buckets,
+                                    close_extreme=False,
+                                    include_under=True,
+                                    include_over=True)
+        expected7 = """\
+CASE
+  WHEN f < 0 THEN 0
+  WHEN (f >= 0) AND (f < 10) THEN 1
+  WHEN (f >= 10) AND (f < 25) THEN 2
+  WHEN (f >= 25) AND (f < 50) THEN 3
+  WHEN f >= 50 THEN 4
+  ELSE NULL
+END"""
+
+        expr8 = self.table.f.bucket(buckets, closed='right',
+                                    close_extreme=False,
+                                    include_under=True)
+        expected8 = """\
+CASE
+  WHEN f <= 0 THEN 0
+  WHEN (f > 0) AND (f <= 10) THEN 1
+  WHEN (f > 10) AND (f <= 25) THEN 2
+  WHEN (f > 25) AND (f <= 50) THEN 3
+  ELSE NULL
+END"""
+
+
+        cases = [
+            (expr1, expected1),
+            (expr2, expected2),
+            (expr3, expected3),
+            (expr4, expected4),
+            (expr5, expected5),
+            (expr6, expected6),
+            (expr7, expected7),
+            (expr8, expected8)
+        ]
+        cases = [(expr,
+            #self.table[[expr.name('bucket')]],
+                  exp)
+                 for expr, exp in cases]
+        self._check_expr_cases(cases)
+
     def test_where_use_if(self):
         expr = api.where(self.table.f > 0, self.table.e, self.table.a)
         assert isinstance(expr, ir.FloatValue)

@@ -246,6 +246,10 @@ FROM tpch.lineitem li
             d.bucket([0, 10, 25, 50], include_over=True, close_extreme=False),
             d.bucket([10, 25, 50, 100], include_under=True),
 
+            # d.histogram(10),
+            # d.histogram(5, base=10),
+            # d.histogram(base=10, binwidth=5),
+
             # coalesce-like cases
             api.coalesce(table.int_col,
                          api.null(),
