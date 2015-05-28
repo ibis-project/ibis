@@ -259,8 +259,21 @@ class Node(object):
     def _repr(self):
         # Quick and dirty to get us started
         opname = type(self).__name__
-        pprint_args = [x._repr() if isinstance(x, Expr) else repr(x)
-                       for x in self.args]
+        pprint_args = []
+
+        def _pp(x):
+            if isinstance(x, Expr):
+                return x._repr()
+            else:
+                return repr(x)
+
+        for x in self.args:
+            if isinstance(x, (tuple, list)):
+                pp = repr([_pp(y) for y in x])
+            else:
+                pp = _pp(x)
+            pprint_args.append(pp)
+
         return '%s(%s)' % (opname, ', '.join(pprint_args))
 
     def flat_args(self):

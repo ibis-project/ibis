@@ -253,6 +253,8 @@ class SelectBuilder(object):
     def _visit_select_Histogram(self, expr):
         op = expr.op()
 
+        EPS = 1e-13
+
         if op.binwidth is None or op.base is None:
             aux_hash = op.aux_hash or util.guid()[:6]
 
@@ -264,7 +266,7 @@ class SelectBuilder(object):
             self.table_set = self.table_set.cross_join(minmax)
 
             if op.base is None:
-                base = minmax[min_name]
+                base = minmax[min_name] - EPS
             else:
                 base = op.base
 
@@ -274,8 +276,7 @@ class SelectBuilder(object):
             binwidth = op.binwidth
             base = op.base
 
-        eps = 1e-13
-        bucket = (op.arg - base) / binwidth + eps
+        bucket = (op.arg - base) / binwidth
         return bucket.floor().name(expr._name)
 
     def _analyze_filter_exprs(self):
