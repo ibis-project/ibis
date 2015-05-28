@@ -298,13 +298,16 @@ def _bucket(translator, expr):
         l_cmp = operator.lt
         r_cmp = operator.le
 
+    user_num_buckets = len(op.buckets) - 1
+
     bucket_id = 0
     if op.include_under:
-        cmp = operator.lt if op.close_extreme else r_cmp
+        if user_num_buckets > 0:
+            cmp = operator.lt if op.close_extreme else r_cmp
+        else:
+            cmp = operator.le if op.closed == 'right' else operator.lt
         stmt = stmt.when(cmp(op.arg, op.buckets[0]), bucket_id)
         bucket_id += 1
-
-    user_num_buckets = len(op.buckets) - 1
 
     for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
         if (op.close_extreme
@@ -318,7 +321,11 @@ def _bucket(translator, expr):
         bucket_id += 1
 
     if op.include_over:
-        cmp = operator.lt if op.close_extreme else l_cmp
+        if user_num_buckets > 0:
+            cmp = operator.lt if op.close_extreme else l_cmp
+        else:
+            cmp = operator.lt if op.closed == 'right' else operator.le
+
         stmt = stmt.when(cmp(op.buckets[-1], op.arg), bucket_id)
         bucket_id += 1
 

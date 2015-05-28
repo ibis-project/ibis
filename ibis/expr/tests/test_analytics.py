@@ -46,5 +46,22 @@ class TestAnalytics(unittest.TestCase):
         expr = d.bucket(bins, include_over=True, include_under=True)
         assert expr.op().nbuckets == 5
 
+    def test_bucket_error_cases(self):
+        d = self.alltypes.double_col
+
+        self.assertRaises(ValueError, d.bucket, [])
+        self.assertRaises(ValueError, d.bucket, [1, 2], closed='foo')
+
+        # it works!
+        d.bucket([10], include_under=True, include_over=True)
+
+        self.assertRaises(ValueError, d.bucket, [10])
+        self.assertRaises(ValueError, d.bucket, [10], include_under=True)
+        self.assertRaises(ValueError, d.bucket, [10], include_over=True)
+
     def test_histogram(self):
-        pass
+        d = self.alltypes.double_col
+
+        self.assertRaises(ValueError, d.histogram, nbins=10, binwidth=5)
+        self.assertRaises(ValueError, d.histogram)
+        self.assertRaises(ValueError, d.histogram, 10, closed='foo')

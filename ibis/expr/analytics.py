@@ -45,6 +45,14 @@ class Bucket(BucketLike):
         self.close_extreme = bool(close_extreme)
         self.include_over = bool(include_over)
         self.include_under = bool(include_under)
+
+        if len(buckets) == 0:
+            raise ValueError('Must be at least one bucket edge')
+        elif len(buckets) == 1:
+            if not self.include_under or not self.include_over:
+                raise ValueError('If one bucket edge provided, must have'
+                                 ' include_under=True and include_over=True')
+
         ir.ValueNode.__init__(self, [self.arg, self.buckets, self.closed,
                                      self.close_extreme,
                                      self.include_under,

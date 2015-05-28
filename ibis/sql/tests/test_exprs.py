@@ -465,6 +465,25 @@ CASE
   ELSE NULL
 END"""
 
+        expr9 = self.table.f.bucket([10], closed='right',
+                                    include_over=True,
+                                    include_under=True)
+        expected9 = """\
+CASE
+  WHEN f <= 10 THEN 0
+  WHEN f > 10 THEN 1
+  ELSE NULL
+END"""
+
+        expr10 = self.table.f.bucket([10],
+                                    include_over=True,
+                                    include_under=True)
+        expected10 = """\
+CASE
+  WHEN f < 10 THEN 0
+  WHEN f >= 10 THEN 1
+  ELSE NULL
+END"""
 
         cases = [
             (expr1, expected1),
@@ -474,12 +493,10 @@ END"""
             (expr5, expected5),
             (expr6, expected6),
             (expr7, expected7),
-            (expr8, expected8)
+            (expr8, expected8),
+            (expr9, expected9),
+            (expr10, expected10),
         ]
-        cases = [(expr,
-            #self.table[[expr.name('bucket')]],
-                  exp)
-                 for expr, exp in cases]
         self._check_expr_cases(cases)
 
     def test_where_use_if(self):
