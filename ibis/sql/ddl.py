@@ -214,16 +214,10 @@ class Select(DDLStatement):
             # There is no aggregation, nothing to see here
             return None
 
-        # Verify that the group by exprs match the first few tokens in the
-        # select set
-        for i, expr in enumerate(self.group_by):
-            if expr is not self.select_set[i]:
-                raise com.InternalError('Select was improperly formed')
-
         lines = []
         if len(self.group_by) > 0:
             clause = 'GROUP BY {}'.format(', '.join([
-                str(x + 1) for x in range(len(self.group_by))]))
+                str(x + 1) for x in self.group_by]))
             lines.append(clause)
 
         if len(self.having) > 0:

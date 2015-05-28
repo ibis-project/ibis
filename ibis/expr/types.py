@@ -1204,7 +1204,7 @@ class DecimalArray(DecimalValue, NumericArray):
 
 class CategoryType(DataType):
 
-    def __init__(self, cardinality):
+    def __init__(self, cardinality=None):
         self.cardinality = cardinality
 
     def _base_type(self):

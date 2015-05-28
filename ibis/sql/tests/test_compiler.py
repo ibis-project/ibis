@@ -105,7 +105,7 @@ class TestASTBuilder(unittest.TestCase):
             assert res.equals(ex)
 
         for res, ex in zip(stmt.group_by, ex_by):
-            assert res.equals(ex)
+            assert stmt.select_set[res].equals(ex)
 
         # Check we got the filter
         assert len(stmt.where) == 1

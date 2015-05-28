@@ -55,7 +55,7 @@ class QueryContext(object):
         if k in self._table_key_memo:
             return self._table_key_memo[k]
         else:
-            val = repr(table)
+            val = table._repr()
             self._table_key_memo[k] = val
             return val
 

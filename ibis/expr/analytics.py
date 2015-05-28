@@ -17,17 +17,30 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
 
-class Bucket(ir.ValueNode):
+class BucketLike(ir.ValueNode):
+
+    def _validate_closed(self, closed):
+        closed = closed.lower()
+        if closed not in ['left', 'right']:
+            raise ValueError("closed must be 'left' or 'right'")
+        return closed
+
+    @property
+    def nbuckets(self):
+        return None
+
+    def output_type(self):
+        ctype = ir.CategoryType(self.nbuckets)
+        return ctype.array_ctor()
+
+
+class Bucket(BucketLike):
 
     def __init__(self, arg, buckets, closed='left', close_extreme=True,
                  include_under=False, include_over=False):
         self.arg = arg
         self.buckets = buckets
-
-        self.closed = closed.lower()
-
-        if self.closed not in ['left', 'right']:
-            raise ValueError("closed must be 'left' or 'right'")
+        self.closed = self._validate_closed(closed)
 
         self.close_extreme = bool(close_extreme)
         self.include_over = bool(include_over)
@@ -43,25 +56,28 @@ class Bucket(ir.ValueNode):
         k += int(self.include_over) + int(self.include_under)
         return k
 
-    def output_type(self):
-        ctype = ir.CategoryType(self.nbuckets)
-        return ctype.array_ctor()
 
-
-class Histogram(ir.ValueNode):
+class Histogram(BucketLike):
 
     def __init__(self, arg, nbins, binwidth, base, closed='left',
-                 close_extreme=True, aux_hash=None):
+                 aux_hash=None):
         self.arg = arg
+
         self.nbins = nbins
         self.binwidth = binwidth
         self.base = base
-        self.closed = closed
-        self.close_extreme = close_extreme
+
+        if self.nbins is None:
+            if self.binwidth is None:
+                raise ValueError('Must indicate nbins or binwidth')
+        elif self.binwidth is not None:
+            raise ValueError('nbins and binwidth are mutually exclusive')
+
+        self.closed = self._validate_closed(closed)
+
         self.aux_hash = aux_hash
         ir.ValueNode.__init__(self, [self.arg, self.nbins, self.binwidth,
-                                     self.base, self.closed,
-                                     self.close_extreme, self.aux_hash])
+                                     self.base, self.closed, self.aux_hash])
 
     def output_type(self):
         # always undefined cardinality (for now)
@@ -94,7 +110,7 @@ def bucket(arg, buckets, closed='left', close_extreme=True,
 
 
 def histogram(arg, nbins=None, binwidth=None, base=None, closed='left',
-              close_extreme=True, aux_hash=None):
+              aux_hash=None):
     """
     Compute a histogram with fixed width bins
 
@@ -114,6 +130,5 @@ def histogram(arg, nbins=None, binwidth=None, base=None, closed='left',
     histogrammed : coded value expression
     """
     op = Histogram(arg, nbins, binwidth, base, closed=closed,
-                   close_extreme=close_extreme,
                    aux_hash=aux_hash)
     return op.to_expr()

@@ -250,6 +250,34 @@ class SelectBuilder(object):
         else:
             return expr
 
+    def _visit_select_Histogram(self, expr):
+        op = expr.op()
+
+        if op.binwidth is None or op.base is None:
+            aux_hash = op.aux_hash or util.guid()[:6]
+
+            min_name = 'min_%s' % aux_hash
+            max_name = 'max_%s' % aux_hash
+
+            minmax = self.table_set.aggregate([op.arg.min().name(min_name),
+                                               op.arg.max().name(max_name)])
+            self.table_set = self.table_set.cross_join(minmax)
+
+            if op.base is None:
+                base = minmax[min_name]
+            else:
+                base = op.base
+
+            binwidth = (minmax[max_name] - base) / (op.nbins - 1)
+        else:
+            # Have both a bin width and a base
+            binwidth = op.binwidth
+            base = op.base
+
+        eps = 1e-13
+        bucket = (op.arg - base) / binwidth + eps
+        return bucket.floor().name(expr._name)
+
     def _analyze_filter_exprs(self):
         # What's semantically contained in the filter predicates may need to be
         # rewritten. Not sure if this is the right place to do this, but a
@@ -389,9 +417,9 @@ class SelectBuilder(object):
             subbed_expr = self._sub(expr)
             sub_op = subbed_expr.op()
 
-            self.group_by = sub_op.by
+            self.group_by = range(len(sub_op.by))
             self.having = sub_op.having
-            self.select_set = self.group_by + sub_op.agg_exprs
+            self.select_set = sub_op.by + sub_op.agg_exprs
             self.table_set = sub_op.table
 
             self._collect(expr.op().table)
