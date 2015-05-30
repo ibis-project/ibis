@@ -590,6 +590,10 @@ FROM (
 
         assert result == expected
 
+        self.assertRaises(ValueError, size.tier.label, ['a', 'b', 'c'])
+        self.assertRaises(ValueError, size.tier.label,
+                          ['a', 'b', 'c', 'd', 'e'])
+
 
 class TestInNotIn(unittest.TestCase, ExprSQLTest):
 

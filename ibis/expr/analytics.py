@@ -98,6 +98,12 @@ class CategoryLabel(ir.ValueNode):
     def __init__(self, arg, labels, nulls):
         self.arg = ops.as_value_expr(arg)
         self.labels = labels
+
+        card = self.arg.type().cardinality
+        if len(self.labels) != card:
+            raise ValueError('Number of labels must match number of '
+                             'categories: %d' % card)
+
         self.nulls = nulls
         ir.ValueNode.__init__(self, [self.arg, self.labels, self.nulls])
 
