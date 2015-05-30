@@ -28,7 +28,7 @@ from ibis.expr.types import (Schema, Expr,
                              StringValue, StringScalar, StringArray,
                              DecimalValue, DecimalScalar, DecimalArray,
                              TimestampValue, TimestampScalar, TimestampArray,
-                             unnamed)
+                             CategoryValue, unnamed)
 
 from ibis.expr.operations import (as_value_expr, table, literal, null,
                                   value_list, desc)
@@ -38,6 +38,7 @@ from ibis.expr.temporal import *
 import ibis.common as _com
 
 from ibis.expr.analytics import bucket, histogram
+import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
 import ibis.expr.operations as _ops
 import ibis.expr.temporal as _T
@@ -598,7 +599,7 @@ _add_methods(NumericValue, _numeric_value_methods)
 _add_methods(NumericArray, _numeric_array_methods)
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Boolean API
 
 
@@ -762,6 +763,30 @@ _decimal_value_methods = dict(
 
 
 _add_methods(DecimalValue, _decimal_value_methods)
+
+
+# ----------------------------------------------------------------------
+# Category API
+
+def _category_label(arg, labels, nulls=None):
+    """
+
+    Parameters
+    ----------
+    labels : list of string
+    nulls : string, optional
+      How to label any null values among the categories
+    """
+    op = _analytics.CategoryLabel(arg, labels, nulls)
+    return op.to_expr()
+
+
+_category_value_methods = dict(
+    label=_category_label
+)
+
+_add_methods(CategoryValue, _category_value_methods)
+
 
 # ---------------------------------------------------------------------
 # Table API

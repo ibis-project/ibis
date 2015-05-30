@@ -554,6 +554,42 @@ END AS double)"""
         self._check_expr_cases([(expr, expected),
                                 (expr2, expected2)])
 
+    def test_bucket_assign_labels(self):
+        buckets = [0, 10, 25, 50]
+        bucket = self.table.f.bucket(buckets, include_under=True)
+
+        size = self.table.group_by(bucket.name('tier')).size()
+        labelled = size.tier.label(['Under 0', '0 to 10',
+                                    '10 to 25', '25 to 50'],
+                                   nulls='error').name('tier2')
+        expr = size[labelled, size['count']]
+
+        expected = """\
+SELECT
+  CASE tier
+    WHEN 0 THEN 'Under 0'
+    WHEN 1 THEN '0 to 10'
+    WHEN 2 THEN '10 to 25'
+    WHEN 3 THEN '25 to 50'
+    ELSE 'error'
+  END AS `tier2`, count
+FROM (
+  SELECT
+    CASE
+      WHEN f < 0 THEN 0
+      WHEN (f >= 0) AND (f < 10) THEN 1
+      WHEN (f >= 10) AND (f < 25) THEN 2
+      WHEN (f >= 25) AND (f <= 50) THEN 3
+      ELSE NULL
+    END AS `tier`, count(*) AS `count`
+  FROM alltypes
+  GROUP BY 1
+) t0"""
+
+        result = to_sql(expr)
+
+        assert result == expected
+
 
 class TestInNotIn(unittest.TestCase, ExprSQLTest):
 

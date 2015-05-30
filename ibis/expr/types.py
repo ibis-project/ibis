@@ -1267,6 +1267,9 @@ class CategoryValue(AnyValue):
     def _base_type(self):
         return 'category'
 
+    def _can_compare(self, other):
+        return isinstance(other, IntegerValue)
+
 
 class CategoryScalar(CategoryValue, ScalarExpr):
 

@@ -93,6 +93,18 @@ class Histogram(BucketLike):
         return ctype.array_ctor()
 
 
+class CategoryLabel(ir.ValueNode):
+
+    def __init__(self, arg, labels, nulls):
+        self.arg = ops.as_value_expr(arg)
+        self.labels = labels
+        self.nulls = nulls
+        ir.ValueNode.__init__(self, [self.arg, self.labels, self.nulls])
+
+    def output_type(self):
+        return ops._shape_like(self.arg, 'string')
+
+
 def bucket(arg, buckets, closed='left', close_extreme=True,
            include_under=False, include_over=False):
     """

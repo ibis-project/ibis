@@ -291,7 +291,6 @@ def _bucket(translator, expr):
     import operator
 
     op = expr.op()
-
     stmt = api.case()
 
     if op.closed == 'left':
@@ -335,6 +334,19 @@ def _bucket(translator, expr):
     case_expr = stmt.end().name(expr._name)
     return _searched_case(translator, case_expr)
 
+
+def _category_label(translator, expr):
+    op = expr.op()
+
+    stmt = op.arg.case()
+    for i, label in enumerate(op.labels):
+        stmt = stmt.when(i, label)
+
+    if op.nulls is not None:
+        stmt = stmt.else_(op.nulls)
+
+    case_expr = stmt.end().name(expr._name)
+    return _simple_case(translator, case_expr)
 
 
 def _table_array_view(translator, expr):
@@ -658,6 +670,7 @@ _other_ops = {
     ops.NotContains: _not_contains,
 
     analytics.Bucket: _bucket,
+    analytics.CategoryLabel: _category_label,
 
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
