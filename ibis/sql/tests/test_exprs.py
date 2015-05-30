@@ -375,6 +375,33 @@ END"""
 END"""
         assert result == expected
 
+    def test_where_use_if(self):
+        expr = api.where(self.table.f > 0, self.table.e, self.table.a)
+        assert isinstance(expr, ir.FloatValue)
+
+        result = self._translate(expr)
+        expected = "if(f > 0, e, a)"
+        assert result == expected
+
+    def test_nullif_ifnull(self):
+        table = self.con.table('tpch_lineitem')
+
+        f = table.l_quantity
+
+        cases = [
+            (f.nullif(f == 0),
+             'nullif(l_quantity, l_quantity = 0)'),
+            (f.fillna(0), 'isnull(l_quantity, 0)'),
+        ]
+        self._check_expr_cases(cases)
+
+
+class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('alltypes')
+
     def test_bucket_to_case(self):
         buckets = [0, 10, 25, 50]
 
@@ -499,25 +526,33 @@ END"""
         ]
         self._check_expr_cases(cases)
 
-    def test_where_use_if(self):
-        expr = api.where(self.table.f > 0, self.table.e, self.table.a)
-        assert isinstance(expr, ir.FloatValue)
+    def test_cast_category_to_int_noop(self):
+        # Because the bucket result is an integer, no explicit cast is
+        # necessary
+        expr = (self.table.f.bucket([10], include_over=True,
+                                    include_under=True)
+                .cast('int32'))
 
-        result = self._translate(expr)
-        expected = "if(f > 0, e, a)"
-        assert result == expected
+        expected = """\
+CASE
+  WHEN f < 10 THEN 0
+  WHEN f >= 10 THEN 1
+  ELSE NULL
+END"""
 
-    def test_nullif_ifnull(self):
-        table = self.con.table('tpch_lineitem')
+        expr2 = (self.table.f.bucket([10], include_over=True,
+                                     include_under=True)
+                 .cast('double'))
 
-        f = table.l_quantity
+        expected2 = """\
+CAST(CASE
+  WHEN f < 10 THEN 0
+  WHEN f >= 10 THEN 1
+  ELSE NULL
+END AS double)"""
 
-        cases = [
-            (f.nullif(f == 0),
-             'nullif(l_quantity, l_quantity = 0)'),
-            (f.fillna(0), 'isnull(l_quantity, 0)'),
-        ]
-        self._check_expr_cases(cases)
+        self._check_expr_cases([(expr, expected),
+                                (expr2, expected2)])
 
 
 class TestInNotIn(unittest.TestCase, ExprSQLTest):
