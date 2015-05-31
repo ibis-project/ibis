@@ -21,6 +21,7 @@
 from collections import defaultdict
 
 import ibis.expr.analysis as L
+import ibis.expr.api as api
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
@@ -153,7 +154,9 @@ class SelectBuilder(object):
 
     def _build_result_query(self):
         self._collect_elements()
-        self._analyze_filter_clauses()
+
+        self._analyze_select_exprs()
+        self._analyze_filter_exprs()
         self._analyze_subqueries()
         self._populate_context()
 
@@ -203,9 +206,80 @@ class SelectBuilder(object):
                 ctx.make_alias(expr)
 
     #----------------------------------------------------------------------
-    # Filter analysis / rewrites
+    # Expr analysis / rewrites
 
-    def _analyze_filter_clauses(self):
+    def _analyze_select_exprs(self):
+        new_select_set = []
+
+        for expr in self.select_set:
+            new_expr = self._visit_select_expr(expr)
+            new_select_set.append(new_expr)
+
+        self.select_set = new_select_set
+
+    def _visit_select_expr(self, expr):
+        # Dumping ground for analysis of WHERE expressions
+        # - Subquery extraction
+        # - Conversion to explicit semi/anti joins
+        # - Rewrites to generate subqueries
+
+        op = expr.op()
+
+        method = '_visit_select_{}'.format(type(op).__name__)
+        if hasattr(self, method):
+            f = getattr(self, method)
+            return f(expr)
+
+        unchanged = True
+
+        if isinstance(op, ops.ValueNode):
+            new_args = []
+            for arg in op.args:
+                if isinstance(arg, ir.Expr):
+                    new_arg = self._visit_select_expr(arg)
+                    if arg is not new_arg:
+                        unchanged = False
+                    new_args.append(new_arg)
+                else:
+                    new_args.append(arg)
+
+            if not unchanged:
+                return expr._factory(type(op)(*new_args))
+            else:
+                return expr
+        else:
+            return expr
+
+    def _visit_select_Histogram(self, expr):
+        op = expr.op()
+
+        EPS = 1e-13
+
+        if op.binwidth is None or op.base is None:
+            aux_hash = op.aux_hash or util.guid()[:6]
+
+            min_name = 'min_%s' % aux_hash
+            max_name = 'max_%s' % aux_hash
+
+            minmax = self.table_set.aggregate([op.arg.min().name(min_name),
+                                               op.arg.max().name(max_name)])
+            self.table_set = self.table_set.cross_join(minmax)
+
+            if op.base is None:
+                base = minmax[min_name] - EPS
+            else:
+                base = op.base
+
+            binwidth = (minmax[max_name] - base) / (op.nbins - 1)
+        else:
+            # Have both a bin width and a base
+            binwidth = op.binwidth
+            base = op.base
+
+        bucket = (op.arg - base) / binwidth
+        return bucket.floor().name(expr._name)
+
+    def _analyze_filter_exprs(self):
         # What's semantically contained in the filter predicates may need to be
         # rewritten. Not sure if this is the right place to do this, but a
         # starting point
@@ -344,9 +418,9 @@ class SelectBuilder(object):
             subbed_expr = self._sub(expr)
             sub_op = subbed_expr.op()
 
-            self.group_by = sub_op.by
+            self.group_by = range(len(sub_op.by))
             self.having = sub_op.having
-            self.select_set = self.group_by + sub_op.agg_exprs
+            self.select_set = sub_op.by + sub_op.agg_exprs
             self.table_set = sub_op.table
 
             self._collect(expr.op().table)

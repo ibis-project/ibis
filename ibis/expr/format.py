@@ -31,9 +31,9 @@ class FormatMemo(object):
         return self._key(obj) in self.formatted
 
     def _key(self, obj):
-        return repr(obj)
+        return obj._repr()
 
-    def observe(self, obj, formatter=repr):
+    def observe(self, obj, formatter=lambda x: x._repr()):
         key = self._key(obj)
         if key not in self.formatted:
             self.aliases[key] = 'ref_%d' % len(self.formatted)

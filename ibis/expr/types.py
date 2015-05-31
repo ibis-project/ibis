@@ -259,8 +259,21 @@ class Node(object):
     def _repr(self):
         # Quick and dirty to get us started
         opname = type(self).__name__
-        pprint_args = [x._repr() if isinstance(x, Expr) else repr(x)
-                       for x in self.args]
+        pprint_args = []
+
+        def _pp(x):
+            if isinstance(x, Expr):
+                return x._repr()
+            else:
+                return repr(x)
+
+        for x in self.args:
+            if isinstance(x, (tuple, list)):
+                pp = repr([_pp(y) for y in x])
+            else:
+                pp = _pp(x)
+            pprint_args.append(pp)
+
         return '%s(%s)' % (opname, ', '.join(pprint_args))
 
     def flat_args(self):
@@ -1202,6 +1215,88 @@ class DecimalArray(DecimalValue, NumericArray):
         return factory
 
 
+class CategoryType(DataType):
+
+    def __init__(self, cardinality=None):
+        self.cardinality = cardinality
+
+    def _base_type(self):
+        return 'category'
+
+    def __repr__(self):
+        card = (self.cardinality if self.cardinality is not None
+                else 'unknown')
+        return ('category(K=%s)' % card)
+
+    def __hash__(self):
+        return hash((self.cardinality))
+
+    def __eq__(self, other):
+        if not isinstance(other, CategoryType):
+            return False
+
+        return self.cardinality == other.cardinality
+
+    def array_ctor(self):
+        def constructor(op, name=None):
+            return CategoryArray(op, self, name=name)
+        return constructor
+
+    def scalar_ctor(self):
+        def constructor(op, name=None):
+            return CategoryScalar(op, self, name=name)
+        return constructor
+
+
+class CategoryValue(AnyValue):
+
+    """
+    Represents some ordered data categorization; tracked as an int32 value
+    until explicitly
+    """
+
+    _typename = 'category'
+    _implicit_casts = Int16Value._implicit_casts
+
+    def __init__(self, meta):
+        self.meta = meta
+
+    def type(self):
+        return self.meta
+
+    def _base_type(self):
+        return 'category'
+
+    def _can_compare(self, other):
+        return isinstance(other, IntegerValue)
+
+
+class CategoryScalar(CategoryValue, ScalarExpr):
+
+    def __init__(self, arg, meta, name=None):
+        CategoryValue.__init__(self, meta)
+        ScalarExpr.__init__(self, arg, name=name)
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return CategoryScalar(arg, self.meta, name=name)
+        return factory
+
+
+class CategoryArray(CategoryValue, ArrayExpr):
+
+    def __init__(self, arg, meta, name=None):
+        CategoryValue.__init__(self, meta)
+        ArrayExpr.__init__(self, arg, name=name)
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return CategoryArray(arg, self.meta, name=name)
+        return factory
+
+
 def scalar_type(t):
     if isinstance(t, DataType):
         return t.scalar_ctor()
@@ -1225,7 +1320,8 @@ _scalar_types = {
     'float': FloatScalar,
     'double': DoubleScalar,
     'string': StringScalar,
-    'timestamp': TimestampScalar
+    'timestamp': TimestampScalar,
+    'category': CategoryScalar
 }
 
 
@@ -1238,7 +1334,8 @@ _array_types = {
     'float': FloatArray,
     'double': DoubleArray,
     'string': StringArray,
-    'timestamp': TimestampArray
+    'timestamp': TimestampArray,
+    'category': CategoryArray
 }
 
 #----------------------------------------------------------------------

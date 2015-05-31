@@ -240,6 +240,16 @@ FROM tpch.lineitem li
 
             api.literal(5).isin([i1, i4, d]),
 
+            # tier and histogram
+            d.bucket([0, 10, 25, 50, 100]),
+            d.bucket([0, 10, 25, 50], include_over=True),
+            d.bucket([0, 10, 25, 50], include_over=True, close_extreme=False),
+            d.bucket([10, 25, 50, 100], include_under=True),
+
+            d.histogram(10),
+            d.histogram(5, base=10),
+            d.histogram(base=10, binwidth=5),
+
             # coalesce-like cases
             api.coalesce(table.int_col,
                          api.null(),
@@ -260,6 +270,11 @@ FROM tpch.lineitem li
 
         projection = table[proj_exprs].limit(10)
         projection.execute()
+
+    def test_histogram_value_counts(self):
+        t = self.con.table('functional.alltypes')
+        expr = t.double_col.histogram(10).value_counts()
+        expr.execute()
 
     def test_decimal_timestamp_builtins(self):
         table = self.con.table('tpch.lineitem')

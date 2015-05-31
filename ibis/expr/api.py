@@ -28,7 +28,7 @@ from ibis.expr.types import (Schema, Expr,
                              StringValue, StringScalar, StringArray,
                              DecimalValue, DecimalScalar, DecimalArray,
                              TimestampValue, TimestampScalar, TimestampArray,
-                             unnamed)
+                             CategoryValue, unnamed)
 
 from ibis.expr.operations import (as_value_expr, table, literal, null,
                                   value_list, desc)
@@ -36,6 +36,9 @@ from ibis.expr.operations import (as_value_expr, table, literal, null,
 from ibis.expr.temporal import *
 
 import ibis.common as _com
+
+from ibis.expr.analytics import bucket, histogram
+import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
 import ibis.expr.operations as _ops
 import ibis.expr.temporal as _T
@@ -266,7 +269,7 @@ def _extract_field(name, klass):
     return f
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Generic value API
 
 
@@ -516,7 +519,7 @@ _add_methods(ValueExpr, _generic_value_methods)
 _add_methods(ArrayExpr, _generic_array_methods)
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Numeric API
 
 def round(arg, digits=None):
@@ -588,13 +591,15 @@ sum = _agg_function('sum', _ops.Sum)
 _numeric_array_methods = dict(
     mean=mean,
     sum=sum,
+    bucket=bucket,
+    histogram=histogram
 )
 
 _add_methods(NumericValue, _numeric_value_methods)
 _add_methods(NumericArray, _numeric_array_methods)
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Boolean API
 
 
@@ -620,7 +625,7 @@ _add_methods(BooleanValue, _boolean_value_methods)
 _add_methods(BooleanArray, _boolean_array_methods)
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # String API
 
 def _string_substr(self, start, length=None):
@@ -731,7 +736,7 @@ _string_value_methods = dict(
 _add_methods(StringValue, _string_value_methods)
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Timestamp API
 
 _timestamp_value_methods = dict(
@@ -748,7 +753,7 @@ _timestamp_value_methods = dict(
 _add_methods(TimestampValue, _timestamp_value_methods)
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Decimal API
 
 _decimal_value_methods = dict(
@@ -759,7 +764,19 @@ _decimal_value_methods = dict(
 
 _add_methods(DecimalValue, _decimal_value_methods)
 
-#----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# Category API
+
+
+_category_value_methods = dict(
+    label=_analytics.category_label
+)
+
+_add_methods(CategoryValue, _category_value_methods)
+
+
+# ---------------------------------------------------------------------
 # Table API
 
 _join_classes = {

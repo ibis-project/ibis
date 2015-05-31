@@ -14,8 +14,12 @@
 
 
 def guid():
-    from ibis.comms import uuid4_hex
-    return uuid4_hex()
+    try:
+        from ibis.comms import uuid4_hex
+        return uuid4_hex()
+    except ImportError:
+        from uuid import uuid4
+        return uuid4().get_hex()
 
 
 def bytes_to_uint8_array(val, width=70):

@@ -396,6 +396,205 @@ END"""
         self._check_expr_cases(cases)
 
 
+class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('alltypes')
+
+    def test_bucket_to_case(self):
+        buckets = [0, 10, 25, 50]
+
+        expr1 = self.table.f.bucket(buckets)
+        expected1 = """\
+CASE
+  WHEN (f >= 0) AND (f < 10) THEN 0
+  WHEN (f >= 10) AND (f < 25) THEN 1
+  WHEN (f >= 25) AND (f <= 50) THEN 2
+  ELSE NULL
+END"""
+
+        expr2 = self.table.f.bucket(buckets, close_extreme=False)
+        expected2 = """\
+CASE
+  WHEN (f >= 0) AND (f < 10) THEN 0
+  WHEN (f >= 10) AND (f < 25) THEN 1
+  WHEN (f >= 25) AND (f < 50) THEN 2
+  ELSE NULL
+END"""
+
+        expr3 = self.table.f.bucket(buckets, closed='right')
+        expected3 = """\
+CASE
+  WHEN (f >= 0) AND (f <= 10) THEN 0
+  WHEN (f > 10) AND (f <= 25) THEN 1
+  WHEN (f > 25) AND (f <= 50) THEN 2
+  ELSE NULL
+END"""
+
+        expr4 = self.table.f.bucket(buckets, closed='right',
+                                    close_extreme=False)
+        expected4 = """\
+CASE
+  WHEN (f > 0) AND (f <= 10) THEN 0
+  WHEN (f > 10) AND (f <= 25) THEN 1
+  WHEN (f > 25) AND (f <= 50) THEN 2
+  ELSE NULL
+END"""
+
+
+        expr5 = self.table.f.bucket(buckets, include_under=True)
+        expected5 = """\
+CASE
+  WHEN f < 0 THEN 0
+  WHEN (f >= 0) AND (f < 10) THEN 1
+  WHEN (f >= 10) AND (f < 25) THEN 2
+  WHEN (f >= 25) AND (f <= 50) THEN 3
+  ELSE NULL
+END"""
+
+        expr6 = self.table.f.bucket(buckets,
+                                    include_under=True,
+                                    include_over=True)
+        expected6 = """\
+CASE
+  WHEN f < 0 THEN 0
+  WHEN (f >= 0) AND (f < 10) THEN 1
+  WHEN (f >= 10) AND (f < 25) THEN 2
+  WHEN (f >= 25) AND (f <= 50) THEN 3
+  WHEN f > 50 THEN 4
+  ELSE NULL
+END"""
+
+        expr7 = self.table.f.bucket(buckets,
+                                    close_extreme=False,
+                                    include_under=True,
+                                    include_over=True)
+        expected7 = """\
+CASE
+  WHEN f < 0 THEN 0
+  WHEN (f >= 0) AND (f < 10) THEN 1
+  WHEN (f >= 10) AND (f < 25) THEN 2
+  WHEN (f >= 25) AND (f < 50) THEN 3
+  WHEN f >= 50 THEN 4
+  ELSE NULL
+END"""
+
+        expr8 = self.table.f.bucket(buckets, closed='right',
+                                    close_extreme=False,
+                                    include_under=True)
+        expected8 = """\
+CASE
+  WHEN f <= 0 THEN 0
+  WHEN (f > 0) AND (f <= 10) THEN 1
+  WHEN (f > 10) AND (f <= 25) THEN 2
+  WHEN (f > 25) AND (f <= 50) THEN 3
+  ELSE NULL
+END"""
+
+        expr9 = self.table.f.bucket([10], closed='right',
+                                    include_over=True,
+                                    include_under=True)
+        expected9 = """\
+CASE
+  WHEN f <= 10 THEN 0
+  WHEN f > 10 THEN 1
+  ELSE NULL
+END"""
+
+        expr10 = self.table.f.bucket([10],
+                                    include_over=True,
+                                    include_under=True)
+        expected10 = """\
+CASE
+  WHEN f < 10 THEN 0
+  WHEN f >= 10 THEN 1
+  ELSE NULL
+END"""
+
+        cases = [
+            (expr1, expected1),
+            (expr2, expected2),
+            (expr3, expected3),
+            (expr4, expected4),
+            (expr5, expected5),
+            (expr6, expected6),
+            (expr7, expected7),
+            (expr8, expected8),
+            (expr9, expected9),
+            (expr10, expected10),
+        ]
+        self._check_expr_cases(cases)
+
+    def test_cast_category_to_int_noop(self):
+        # Because the bucket result is an integer, no explicit cast is
+        # necessary
+        expr = (self.table.f.bucket([10], include_over=True,
+                                    include_under=True)
+                .cast('int32'))
+
+        expected = """\
+CASE
+  WHEN f < 10 THEN 0
+  WHEN f >= 10 THEN 1
+  ELSE NULL
+END"""
+
+        expr2 = (self.table.f.bucket([10], include_over=True,
+                                     include_under=True)
+                 .cast('double'))
+
+        expected2 = """\
+CAST(CASE
+  WHEN f < 10 THEN 0
+  WHEN f >= 10 THEN 1
+  ELSE NULL
+END AS double)"""
+
+        self._check_expr_cases([(expr, expected),
+                                (expr2, expected2)])
+
+    def test_bucket_assign_labels(self):
+        buckets = [0, 10, 25, 50]
+        bucket = self.table.f.bucket(buckets, include_under=True)
+
+        size = self.table.group_by(bucket.name('tier')).size()
+        labelled = size.tier.label(['Under 0', '0 to 10',
+                                    '10 to 25', '25 to 50'],
+                                   nulls='error').name('tier2')
+        expr = size[labelled, size['count']]
+
+        expected = """\
+SELECT
+  CASE tier
+    WHEN 0 THEN 'Under 0'
+    WHEN 1 THEN '0 to 10'
+    WHEN 2 THEN '10 to 25'
+    WHEN 3 THEN '25 to 50'
+    ELSE 'error'
+  END AS `tier2`, count
+FROM (
+  SELECT
+    CASE
+      WHEN f < 0 THEN 0
+      WHEN (f >= 0) AND (f < 10) THEN 1
+      WHEN (f >= 10) AND (f < 25) THEN 2
+      WHEN (f >= 25) AND (f <= 50) THEN 3
+      ELSE NULL
+    END AS `tier`, count(*) AS `count`
+  FROM alltypes
+  GROUP BY 1
+) t0"""
+
+        result = to_sql(expr)
+
+        assert result == expected
+
+        self.assertRaises(ValueError, size.tier.label, ['a', 'b', 'c'])
+        self.assertRaises(ValueError, size.tier.label,
+                          ['a', 'b', 'c', 'd', 'e'])
+
+
 class TestInNotIn(unittest.TestCase, ExprSQLTest):
 
     def setUp(self):

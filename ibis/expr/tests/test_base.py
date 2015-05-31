@@ -1876,3 +1876,11 @@ class TestInteractiveUse(unittest.TestCase):
         # it works!
         with config.option_context('interactive', True):
             repr(expr)
+
+    def test_histogram_repr_no_query_execute(self):
+        t = self.con.table('functional_alltypes')
+        tier = t.double_col.histogram(10).name('bucket')
+        expr = t.group_by(tier).size()
+        with config.option_context('interactive', True):
+            expr._repr()
+        assert self.con.last_executed_expr is None
