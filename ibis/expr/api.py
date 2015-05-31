@@ -768,21 +768,9 @@ _add_methods(DecimalValue, _decimal_value_methods)
 # ----------------------------------------------------------------------
 # Category API
 
-def _category_label(arg, labels, nulls=None):
-    """
-
-    Parameters
-    ----------
-    labels : list of string
-    nulls : string, optional
-      How to label any null values among the categories
-    """
-    op = _analytics.CategoryLabel(arg, labels, nulls)
-    return op.to_expr()
-
 
 _category_value_methods = dict(
-    label=_category_label
+    label=_analytics.category_label
 )
 
 _add_methods(CategoryValue, _category_value_methods)

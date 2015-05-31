@@ -158,3 +158,21 @@ def histogram(arg, nbins=None, binwidth=None, base=None, closed='left',
     op = Histogram(arg, nbins, binwidth, base, closed=closed,
                    aux_hash=aux_hash)
     return op.to_expr()
+
+
+def category_label(arg, labels, nulls=None):
+    """
+    Format a known number of categories as strings
+
+    Parameters
+    ----------
+    labels : list of string
+    nulls : string, optional
+      How to label any null values among the categories
+
+    Returns
+    -------
+    string_categories : string value expression
+    """
+    op = CategoryLabel(arg, labels, nulls)
+    return op.to_expr()
