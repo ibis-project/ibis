@@ -28,7 +28,7 @@
 # be a scalar or array expression. In this case the binding requirements may be
 # somewhat more lax.
 
-
+import datetime
 import re
 
 from ibis.common import RelationError
@@ -385,6 +385,8 @@ class Literal(ValueNode):
             klass = DoubleScalar
         elif isinstance(self.value, basestring):
             klass = StringScalar
+        elif isinstance(self.value, datetime.datetime):
+            klass = TimestampScalar
         else:
             raise com.InputTypeError(self.value)
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import operator
 
 from ibis.common import RelationError, ExpressionError
@@ -21,6 +22,9 @@ from ibis.expr.types import (Node,
                              HasSchema, _safe_repr)
 import ibis.expr.types as ir
 import ibis.util as util
+
+
+py_string = basestring
 
 
 def is_table(e):
@@ -65,6 +69,17 @@ def literal(value):
         return null()
     else:
         return ir.Literal(value).to_expr()
+
+
+def timestamp(value):
+    """
+    Returns a timestamp literal if value is likely coercible to a timestamp
+    """
+    if isinstance(value, py_string):
+        from pandas import Timestamp
+        value = Timestamp(value)
+    op = ir.Literal(value)
+    return ir.TimestampScalar(op)
 
 
 _NULL = None
@@ -1298,7 +1313,7 @@ def _to_sort_key(table, key):
     if not isinstance(key, ir.Expr):
         key = table._ensure_expr(key)
 
-    if isinstance(sort_order, basestring):
+    if isinstance(sort_order, py_string):
         if sort_order.lower() in ('desc', 'descending'):
             sort_order = False
         elif not isinstance(sort_order, bool):
@@ -1390,7 +1405,7 @@ class Projection(ir.BlockingTableNode, HasSchema):
         names = []
         clean_exprs = []
         for expr in proj_exprs:
-            if isinstance(expr, basestring):
+            if isinstance(expr, py_string):
                 expr = table_expr[expr]
 
             validator.assert_valid(expr)

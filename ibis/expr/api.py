@@ -30,8 +30,8 @@ from ibis.expr.types import (Schema, Expr,
                              TimestampValue, TimestampScalar, TimestampArray,
                              CategoryValue, unnamed)
 
-from ibis.expr.operations import (as_value_expr, table, literal, null,
-                                  value_list, desc)
+from ibis.expr.operations import (as_value_expr, table, literal, timestamp,
+                                  null, value_list, desc)
 
 from ibis.expr.temporal import *
 
@@ -44,7 +44,8 @@ import ibis.expr.operations as _ops
 import ibis.expr.temporal as _T
 
 
-__all__ = ['schema', 'table', 'literal', 'case', 'where',
+__all__ = ['schema', 'table', 'literal', 'timestamp',
+           'case', 'where',
            'now', 'desc', 'null', 'NA',
            'cast', 'coalesce', 'greatest', 'least', 'join']
 __all__ += _T.__all__
