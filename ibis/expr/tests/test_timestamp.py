@@ -83,6 +83,10 @@ class TestTimestamp(unittest.TestCase):
 
         self.assertRaises(ValueError, ibis.timestamp, '2015-01-01 00:71')
 
+    def test_integer_to_timestamp(self):
+        # #246
+        pass
+
     def test_comparison_timestamp(self):
         expr = self.col > (self.col.min() + ibis.day(3))
         assert isinstance(expr, ir.BooleanArray)

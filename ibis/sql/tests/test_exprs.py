@@ -14,6 +14,9 @@
 
 import unittest
 
+import pandas as pd
+
+import ibis
 from ibis.sql.exprs import ExprTranslator
 from ibis.sql.compiler import QueryContext, to_sql
 from ibis.expr.tests.mocks import MockConnection
@@ -254,6 +257,19 @@ FROM alltypes"""
             cases.append((t + offset, template.format(unit, f, K)))
             cases.append((t - offset, template.format(unit, f, -K)))
 
+        self._check_expr_cases(cases)
+
+    def test_timestamp_literals(self):
+        tv1 = '2015-01-01 12:34:56'
+        ex1 = ("'2015-01-01 12:34:56'")
+
+        # ('CAST(from_unixtime(1420115696, "yyyy-MM-dd HH:mm:ss") '
+        #        'AS timestamp)')
+        cases = [
+            (ibis.literal(pd.Timestamp(tv1)), ex1),
+            (ibis.literal(pd.Timestamp(tv1).to_pydatetime()), ex1),
+            (ibis.timestamp(tv1), ex1)
+        ]
         self._check_expr_cases(cases)
 
     def test_correlated_predicate_subquery(self):

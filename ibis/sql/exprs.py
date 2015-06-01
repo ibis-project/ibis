@@ -18,6 +18,7 @@
 # table, with optional teardown if the user wants the intermediate converted
 # table to be temporary.
 
+import datetime
 from io import BytesIO
 
 import ibis.expr.analytics as analytics
@@ -214,6 +215,16 @@ def _number_literal_format(expr):
 def _string_literal_format(expr):
     value = expr.op().value
     return "'{!s}'".format(value.replace("'", "\\'"))
+
+
+def _timestamp_literal_format(expr):
+    value = expr.op().value
+    if isinstance(value, datetime.datetime):
+        if value.microsecond != 0:
+            raise ValueError(value)
+        value = value.strftime('%Y-%m-%d %H:%M:%S')
+
+    return "'{!s}'".format(value)
 
 
 def quote_identifier(name, quotechar='`', force=False):
@@ -529,6 +540,8 @@ def _literal(translator, expr):
         typeclass = 'string'
     elif isinstance(expr, ir.NumericValue):
         typeclass = 'number'
+    elif isinstance(expr, ir.TimestampValue):
+        typeclass = 'timestamp'
     else:
         raise NotImplementedError
 
@@ -542,7 +555,8 @@ def _null_literal(translator, expr):
 _literal_formatters = {
     'boolean': _boolean_literal_format,
     'number': _number_literal_format,
-    'string': _string_literal_format
+    'string': _string_literal_format,
+    'timestamp': _timestamp_literal_format
 }
 
 
