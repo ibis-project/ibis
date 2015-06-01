@@ -21,8 +21,8 @@
 import datetime
 from io import BytesIO
 
+import ibis
 import ibis.expr.analytics as analytics
-import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.expr.temporal as tempo
@@ -33,7 +33,7 @@ import ibis.sql.identifiers as identifiers
 import ibis.common as com
 import ibis.util as util
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Scalar and array expression formatting
 
 _sql_type_names = {
@@ -133,6 +133,21 @@ def _unary_op(func_name):
         arg = translator.translate(expr.op().arg)
         return '{!s}({!s})'.format(func_name, arg)
     return formatter
+
+
+def _reduction(func_name):
+    def formatter(translator, expr):
+        op = expr.op()
+
+        if op.where is not None:
+            case = op.where.ifelse(op.arg, ibis.NA)
+            arg = translator.translate(case)
+        else:
+            arg = translator.translate(op.arg)
+
+        return '{!s}({!s})'.format(func_name, arg)
+    return formatter
+
 
 def _fixed_arity_call(func_name, arity):
     def formatter(translator, expr):
@@ -302,7 +317,7 @@ def _bucket(translator, expr):
     import operator
 
     op = expr.op()
-    stmt = api.case()
+    stmt = ibis.case()
 
     if op.closed == 'left':
         l_cmp = operator.le
@@ -619,15 +634,15 @@ _unary_ops = {
     ops.DecimalScale: _unary_op('scale'),
 
     # Unary aggregates
-    ops.CMSMedian: _unary_op('appx_median'),
-    ops.HLLCardinality: _unary_op('ndv'),
-    ops.Mean: _unary_op('avg'),
-    ops.Sum: _unary_op('sum'),
-    ops.Max: _unary_op('max'),
-    ops.Min: _unary_op('min'),
+    ops.CMSMedian: _reduction('appx_median'),
+    ops.HLLCardinality: _reduction('ndv'),
+    ops.Mean: _reduction('avg'),
+    ops.Sum: _reduction('sum'),
+    ops.Max: _reduction('max'),
+    ops.Min: _reduction('min'),
     ops.GroupConcat: _fixed_arity_call('group_concat', 2),
 
-    ops.Count: _unary_op('count'),
+    ops.Count: _reduction('count'),
     ops.CountDistinct: _count_distinct,
 }
 

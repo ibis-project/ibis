@@ -177,7 +177,6 @@ _timedelta_units = {
 }
 
 
-
 class UnitConverter(object):
 
     def __init__(self, ordering, conv_factors, names):
@@ -199,7 +198,7 @@ class UnitConverter(object):
         if i == j:
             return n
 
-        factors = self.conv_factors[min(i, j) + 1 : max(i, j) + 1]
+        factors = self.conv_factors[min(i, j) + 1: max(i, j) + 1]
         factor = 1
         for x in factors:
             factor *= x
@@ -218,7 +217,7 @@ class UnitConverter(object):
 _ordering = ['w', 'd', 'h', 'm', 's', 'ms', 'us', 'ns']
 _factors = [1, 7, 24, 60, 60, 1000, 1000, 1000]
 _names = ['week', 'day', 'hour', 'minute', 'second',
-         'millisecond', 'microsecond', 'nanosecond']
+          'millisecond', 'microsecond', 'nanosecond']
 
 
 CONVERTER = UnitConverter(_ordering, _factors, _names)
@@ -226,6 +225,7 @@ CONVERTER = UnitConverter(_ordering, _factors, _names)
 
 def _delta_factory(name, unit):
     klass = _timedelta_units[unit]
+
     def factory(n=1):
         return klass(n)
 
@@ -274,6 +274,7 @@ def timedelta(days=None, hours=None, minutes=None, seconds=None,
     out = {
         'result': None
     }
+
     def _apply(klass, n):
         if not n:
             return

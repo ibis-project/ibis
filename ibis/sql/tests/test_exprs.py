@@ -357,6 +357,18 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
+    def test_reduction_where(self):
+        cond = self.table.bigint_col < 70
+        c = self.table.double_col
+        tmp = '{}(CASE WHEN bigint_col < 70 THEN double_col ELSE NULL END)'
+        cases = [
+            (c.sum(where=cond), tmp.format('sum')),
+            (c.count(where=cond), tmp.format('count')),
+            (c.mean(where=cond), tmp.format('avg')),
+            (c.max(where=cond), tmp.format('max')),
+            (c.min(where=cond), tmp.format('min')),
+        ]
+        self._check_expr_cases(cases)
 
 class TestCaseExprs(unittest.TestCase, ExprSQLTest):
 

@@ -1560,7 +1560,8 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         fields_of_interest = [customer,
                               region.r_name.name('region'),
                               orders.o_totalprice.name('amount'),
-                              orders.o_orderdate.cast('timestamp').name('odate')]
+                              orders.o_orderdate
+                              .cast('timestamp').name('odate')]
 
         all_join = (
             region.join(nation, region.r_regionkey == nation.n_regionkey)

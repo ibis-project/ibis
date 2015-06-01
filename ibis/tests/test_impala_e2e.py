@@ -327,6 +327,8 @@ FROM tpch.lineitem li
         d = table.double_col
         s = table.string_col
 
+        cond = table.string_col.isin(['1', '7'])
+
         exprs = [
             table.bool_col.count(),
             d.sum(),
@@ -335,7 +337,13 @@ FROM tpch.lineitem li
             d.max(),
             s.approx_nunique(),
             d.approx_median(),
-            s.group_concat()
+            s.group_concat(),
+
+            table.bool_col.count(where=cond),
+            d.sum(where=cond),
+            d.mean(where=cond),
+            d.min(where=cond),
+            d.max(where=cond),
         ]
 
         agg_exprs = [expr.name('e%d' % i)

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
 import operator
 
 from ibis.common import RelationError, ExpressionError
@@ -683,13 +682,13 @@ class Count(ir.Reduction):
     # TODO: count(col) takes down Impala, must always do count(*) in generated
     # SQL
 
-    def __init__(self, expr):
+    def __init__(self, expr, where=None):
         # TODO: counts are actually table-level operations. Let's address
         # during the SQL generation exercise
         if not is_collection(expr):
             raise TypeError
-        self.arg = expr
-        ValueNode.__init__(self, [expr])
+
+        ir.Reduction.__init__(self, expr, where)
 
     def output_type(self):
         return ir.Int64Scalar

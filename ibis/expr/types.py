@@ -420,14 +420,18 @@ class TableNode(Node):
         return TableExpr(self)
 
 
-class Reduction(ArrayNode):
+class Reduction(ValueNode):
 
-    def __init__(self, arg):
+    def __init__(self, arg, where=None):
         self.arg = arg
-        ArrayNode.__init__(self, arg)
+        self.where = where
+        ValueNode.__init__(self, [self.arg, self.where])
 
     def root_tables(self):
-        return self.arg._root_tables()
+        if self.where is not None:
+            return distinct_roots(*self.args)
+        else:
+            return self.arg._root_tables()
 
 
 class BlockingTableNode(TableNode):

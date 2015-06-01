@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from ibis.expr.types import (Schema, Expr,
+from ibis.expr.types import (Schema, Expr,  # noqa
                              ValueExpr, ScalarExpr, ArrayExpr,
                              TableExpr,
                              NumericValue, NumericArray,
@@ -170,7 +170,7 @@ def negate(arg):
     return result.to_expr()
 
 
-def count(expr):
+def count(expr, where=None):
     """
     Compute cardinality / sequence size of expression. For array expressions,
     the count is excluding nulls. For tables, it's the size of the entire
@@ -182,9 +182,11 @@ def count(expr):
     """
     op = expr.op()
     if isinstance(op, _ops.DistinctArray):
+        if where is not None:
+            raise NotImplementedError
         return op.count().to_expr()
     else:
-        return _ops.Count(expr).to_expr()
+        return _ops.Count(expr, where).to_expr()
 
 
 def group_concat(arg, sep=','):
@@ -259,8 +261,8 @@ def _boolean_binary_rop(name, klass):
 
 
 def _agg_function(name, klass):
-    def f(self):
-        return klass(self).to_expr()
+    def f(self, where=None):
+        return klass(self, where).to_expr()
     f.__name__ = name
     return f
 

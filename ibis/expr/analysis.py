@@ -17,7 +17,7 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.util as util
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
 # compilation later
 
@@ -537,8 +537,7 @@ class Projector(object):
                 (self.parent.op().is_ancestor(val) or
                  # gross we share the same table root. Better way to
                  # detect?
-                 len(roots) == 1 and val._root_tables()[0] is roots[0])
-            ):
+                 len(roots) == 1 and val._root_tables()[0] is roots[0])):
                 can_fuse = True
                 fused_exprs.extend(root.selections)
             elif validator.validate(lifted_val):
