@@ -31,7 +31,7 @@
 import datetime
 import re
 
-from ibis.common import RelationError
+from ibis.common import IbisError, RelationError, IbisTypeError
 import ibis.common as com
 import ibis.config as config
 import ibis.util as util
@@ -336,11 +336,12 @@ class ValueNode(Node):
 
     def _ensure_value(self, expr):
         if not isinstance(expr, ValueExpr):
-            raise TypeError('Must be a value, got: %s' % _safe_repr(expr))
+            raise IbisTypeError('Must be a value, got: %s' %
+                                _safe_repr(expr))
 
     def _ensure_array(self, expr):
         if not isinstance(expr, ArrayExpr):
-            raise TypeError('Must be an array, got: %s' % _safe_repr(expr))
+            raise IbisTypeError('Must be an array, got: %s' % _safe_repr(expr))
 
     def _ensure_scalar(self, expr):
         if not isinstance(expr, ScalarExpr):
@@ -774,7 +775,7 @@ class TableExpr(Expr):
         schema : Schema
         """
         if not self._is_materialized():
-            raise Exception('Table operation is not yet materialized')
+            raise IbisError('Table operation is not yet materialized')
         return self.op().get_schema()
 
     def to_array(self):
@@ -815,7 +816,7 @@ class TableExpr(Expr):
         modified_table : TableExpr
         """
         if not isinstance(expr, ArrayExpr):
-            raise TypeError('Must pass array expression')
+            raise com.InputTypeError('Must pass array expression')
 
         if name is not None:
             expr = expr.name(name)

@@ -198,6 +198,7 @@ FROM tpch.lineitem li
 
         i1 = table.tinyint_col
         i4 = table.int_col
+        i8 = table.bigint_col
         d = table.double_col
         s = table.string_col
 
@@ -212,6 +213,12 @@ FROM tpch.lineitem li
             d % 5,
 
             i4.zeroifnull(),
+
+            i4.to_timestamp('s'),
+            i4.to_timestamp('ms'),
+            i4.to_timestamp('us'),
+
+            i8.to_timestamp(),
 
             d.abs(),
             d.cast('decimal(12, 2)'),

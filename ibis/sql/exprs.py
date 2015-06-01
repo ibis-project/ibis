@@ -471,6 +471,24 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+def _timestamp_from_unix(translator, expr):
+    op = expr.op()
+
+    val = op.arg
+    if op.unit == 'ms':
+        val = val / 1000
+    elif op.unit == 'us':
+        val = val / 1000000
+
+    arg = _from_unixtime(translator, val)
+    return 'CAST({} AS timestamp)'.format(arg)
+
+
+def _from_unixtime(translator, expr):
+    arg = translator.translate(expr)
+    return 'from_unixtime({}, "yyyy-MM-dd HH:mm:ss")'.format(arg)
+
+
 def _coalesce_like(func_name):
     def coalesce_like_formatter(translator, expr):
         op = expr.op()
@@ -694,6 +712,7 @@ _other_ops = {
     ops.TableArrayView: _table_array_view,
 
     ops.TimestampDelta: _timestamp_delta,
+    ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery

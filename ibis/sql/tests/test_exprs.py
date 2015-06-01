@@ -28,6 +28,7 @@ class ExprSQLTest(object):
 
     def _check_expr_cases(self, cases, context=None, named=False):
         for expr, expected in cases:
+            repr(expr)
             result = self._translate(expr, named=named, context=context)
             assert result == expected
 
@@ -243,7 +244,7 @@ FROM alltypes"""
     def test_timestamp_deltas(self):
         units = ['year', 'month', 'week', 'day',
                  'hour', 'minute', 'second',
-                 'millisecond', 'microsecond', 'nanosecond']
+                 'millisecond', 'microsecond']
 
         t = self.table.i
         f = 'i'
@@ -263,12 +264,26 @@ FROM alltypes"""
         tv1 = '2015-01-01 12:34:56'
         ex1 = ("'2015-01-01 12:34:56'")
 
-        # ('CAST(from_unixtime(1420115696, "yyyy-MM-dd HH:mm:ss") '
-        #        'AS timestamp)')
         cases = [
             (ibis.literal(pd.Timestamp(tv1)), ex1),
             (ibis.literal(pd.Timestamp(tv1).to_pydatetime()), ex1),
             (ibis.timestamp(tv1), ex1)
+        ]
+        self._check_expr_cases(cases)
+
+    def test_timestamp_from_integer(self):
+        col = self.table.c
+
+        cases = [
+            (col.to_timestamp(),
+             'CAST(from_unixtime(c, "yyyy-MM-dd HH:mm:ss") '
+             'AS timestamp)'),
+            (col.to_timestamp('ms'),
+             'CAST(from_unixtime(c / 1000, "yyyy-MM-dd HH:mm:ss") '
+             'AS timestamp)'),
+            (col.to_timestamp('us'),
+             'CAST(from_unixtime(c / 1000000, "yyyy-MM-dd HH:mm:ss") '
+             'AS timestamp)'),
         ]
         self._check_expr_cases(cases)
 

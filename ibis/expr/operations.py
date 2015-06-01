@@ -46,7 +46,7 @@ def is_collection(expr):
 def as_value_expr(val):
     if not isinstance(val, ir.Expr):
         if isinstance(val, (tuple, list)):
-            val = value_list(val)
+            val = sequence(val)
         else:
             val = literal(val)
 
@@ -65,6 +65,17 @@ def table(schema, name=None):
 
 
 def literal(value):
+    """
+    Create a scalar expression from a Python value
+
+    Parameters
+    ----------
+    value : some Python basic type
+
+    Returns
+    -------
+    lit_value : value expression, type depending on input value
+    """
     if value is None or value is null:
         return null()
     else:
@@ -93,7 +104,19 @@ def null():
     return _NULL
 
 
-def value_list(values):
+def sequence(values):
+    """
+    Wrap a list of Python values as an Ibis sequence type
+
+    Parameters
+    ----------
+    values : list
+      Should all be None or the same type
+
+    Returns
+    -------
+    seq : Sequence
+    """
     return ValueList(values).to_expr()
 
 
@@ -1782,6 +1805,21 @@ class ExtractSecond(ExtractTimestampField):
 
 class ExtractMillisecond(ExtractTimestampField):
     pass
+
+
+class TimestampFromUNIX(ValueNode):
+
+    def __init__(self, arg, unit='s'):
+        self.arg = as_value_expr(arg)
+        self.unit = unit
+
+        if self.unit not in {'s', 'ms', 'us'}:
+            raise ValueError(self.unit)
+
+        ValueNode.__init__(self, [self.arg, self.unit])
+
+    def output_type(self):
+        return _shape_like(self.arg, 'timestamp')
 
 
 class DecimalPrecision(UnaryOp):

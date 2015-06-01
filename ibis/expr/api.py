@@ -17,6 +17,7 @@ from ibis.expr.types import (Schema, Expr,
                              ValueExpr, ScalarExpr, ArrayExpr,
                              TableExpr,
                              NumericValue, NumericArray,
+                             IntegerValue,
                              Int8Value, Int8Scalar, Int8Array,
                              Int16Value, Int16Scalar, Int16Array,
                              Int32Value, Int32Scalar, Int32Array,
@@ -31,9 +32,10 @@ from ibis.expr.types import (Schema, Expr,
                              CategoryValue, unnamed)
 
 from ibis.expr.operations import (as_value_expr, table, literal, timestamp,
-                                  null, value_list, desc)
+                                  null, sequence, desc)
 
-from ibis.expr.temporal import *
+# __all__ is defined
+from ibis.expr.temporal import *  # noqa
 
 import ibis.common as _com
 
@@ -45,7 +47,7 @@ import ibis.expr.temporal as _T
 
 
 __all__ = ['schema', 'table', 'literal', 'timestamp',
-           'case', 'where',
+           'case', 'where', 'sequence',
            'now', 'desc', 'null', 'NA',
            'cast', 'coalesce', 'greatest', 'least', 'join']
 __all__ += _T.__all__
@@ -558,6 +560,23 @@ def log(arg, base=None):
     return op.to_expr()
 
 
+def _integer_to_timestamp(arg, unit='s'):
+    """
+    Convert integer UNIX timestamp (at some resolution) to a timestamp type
+
+    Parameters
+    ----------
+    unit : {'s', 'ms', 'us'}
+      Second (s), millisecond (ms), or microsecond (us) resolution
+
+    Returns
+    -------
+    timestamp : timestamp value expression
+    """
+    op = _ops.TimestampFromUNIX(arg, unit)
+    return op.to_expr()
+
+
 abs = _unary_op('abs', _ops.Abs)
 ceil = _unary_op('ceil', _ops.Ceil)
 exp = _unary_op('exp', _ops.Exp)
@@ -585,6 +604,12 @@ _numeric_value_methods = dict(
     zeroifnull=_unary_op('zeroifnull', _ops.ZeroIfNull),
 )
 
+
+_integer_value_methods = dict(
+    to_timestamp=_integer_to_timestamp
+)
+
+
 mean = _agg_function('mean', _ops.Mean)
 sum = _agg_function('sum', _ops.Sum)
 
@@ -597,6 +622,8 @@ _numeric_array_methods = dict(
 )
 
 _add_methods(NumericValue, _numeric_value_methods)
+_add_methods(IntegerValue, _integer_value_methods)
+
 _add_methods(NumericArray, _numeric_array_methods)
 
 
@@ -739,6 +766,7 @@ _add_methods(StringValue, _string_value_methods)
 
 # ---------------------------------------------------------------------
 # Timestamp API
+
 
 _timestamp_value_methods = dict(
     year=_extract_field('year', _ops.ExtractYear),
