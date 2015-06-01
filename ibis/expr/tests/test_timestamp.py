@@ -67,3 +67,20 @@ class TestTimestamp(unittest.TestCase):
         result = api.now()
         assert isinstance(result, ir.TimestampScalar)
         assert isinstance(result.op(), ops.TimestampNow)
+
+    def test_comparison_timestamp(self):
+        pass
+
+    def test_comparisons_string(self):
+        val = '2015-01-01 00:00:00'
+        expr = self.col > val
+        op = expr.op()
+        assert isinstance(op.right, ir.TimestampScalar)
+
+        expr2 = val < self.col
+        op = expr2.op()
+        assert isinstance(op, ops.Greater)
+        assert isinstance(op.right, ir.TimestampScalar)
+
+    def test_comparisons_pandas_timestamp(self):
+        pass

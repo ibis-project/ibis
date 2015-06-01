@@ -19,7 +19,6 @@ from ibis.expr.types import (Node,
                              ValueExpr, ScalarExpr, ArrayExpr, TableExpr,
                              ArrayNode, TableNode, ValueNode,
                              HasSchema, _safe_repr)
-import ibis.common as com
 import ibis.expr.types as ir
 import ibis.util as util
 
@@ -65,7 +64,7 @@ def literal(value):
     if value is None or value is null:
         return null()
     else:
-        return Literal(value).to_expr()
+        return ir.Literal(value).to_expr()
 
 
 _NULL = None
@@ -81,44 +80,6 @@ def null():
 
 def value_list(values):
     return ValueList(values).to_expr()
-
-
-class Literal(ValueNode):
-
-    def __init__(self, value):
-        self.value = value
-
-    def __repr__(self):
-        return 'Literal(%s)' % repr(self.value)
-
-    @property
-    def args(self):
-        return [self.value]
-
-    def equals(self, other):
-        if not isinstance(other, Literal):
-            return False
-        return (type(self.value) == type(other.value)
-                and self.value == other.value)
-
-    def output_type(self):
-        import ibis.expr.rules as rules
-        if isinstance(self.value, bool):
-            klass = ir.BooleanScalar
-        elif isinstance(self.value, (int, long)):
-            int_type = rules.int_literal_class(self.value)
-            klass = ir.scalar_type(int_type)
-        elif isinstance(self.value, float):
-            klass = ir.DoubleScalar
-        elif isinstance(self.value, basestring):
-            klass = ir.StringScalar
-        else:
-            raise com.InputTypeError(self.value)
-
-        return klass
-
-    def root_tables(self):
-        return []
 
 
 class NullLiteral(ValueNode):
@@ -335,7 +296,6 @@ class MultiExprNode(ValueNode):
         return ir.distinct_roots(*self.args)
 
 
-
 class IfNull(MultiExprNode):
 
     """
@@ -352,7 +312,6 @@ class IfNull(MultiExprNode):
 
     def output_type(self):
         return self.value._factory
-
 
 
 class NullIf(MultiExprNode):
@@ -663,10 +622,14 @@ class BinaryOp(ValueNode):
     # TODO: how will overflows be handled? Can we provide anything useful in
     # Ibis to help the user avoid them?
 
-    def __init__(self, left_expr, right_expr):
-        self.left = left_expr
-        self.right = right_expr
-        ValueNode.__init__(self, [left_expr, right_expr])
+    def __init__(self, left, right):
+        left, right = self._maybe_cast_args(left, right)
+        self.left = left
+        self.right = right
+        ValueNode.__init__(self, [self.left, self.right])
+
+    def _maybe_cast_args(self, left, right):
+        return left, right
 
     def root_tables(self):
         return ir.distinct_roots(self.left, self.right)
@@ -675,7 +638,7 @@ class BinaryOp(ValueNode):
         raise NotImplementedError
 
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class Count(ir.Reduction):
@@ -786,8 +749,9 @@ class CMSMedian(ir.Reduction):
         # Scalar but type of caller
         return ir.scalar_type(self.arg.type())
 
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Distinct stuff
+
 
 class Distinct(ir.BlockingTableNode, ir.HasSchema):
 
@@ -847,7 +811,7 @@ class CountDistinct(ir.Reduction):
         return ir.Int64Scalar
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Boolean reductions and semi/anti join support
 
 class Any(ValueNode):
@@ -880,7 +844,8 @@ class NotAny(Any):
     def negate(self):
         return Any(self.arg)
 
-#----------------------------------------------------------------------
+
+# ---------------------------------------------------------------------
 
 
 class SimpleCaseBuilder(object):
@@ -1291,7 +1256,8 @@ class Limit(ir.BlockingTableNode):
     def root_tables(self):
         return [self]
 
-#----------------------------------------------------------------------
+
+# --------------------------------------------------------------------
 # Sorting
 
 
@@ -1392,7 +1358,6 @@ def desc(expr):
               .sort_by(ibis.desc('count')))
     """
     return DeferredSortKey(expr, ascending=False)
-
 
 
 class SelfReference(ir.BlockingTableNode, HasSchema):
@@ -1617,6 +1582,15 @@ class Xor(LogicalBinaryOp):
 
 
 class Comparison(BinaryOp):
+
+    def _maybe_cast_args(self, left, right):
+        if left._can_implicit_cast(right):
+            return left, left._implicit_cast(right)
+
+        if right._can_implicit_cast(left):
+            return right, right._implicit_cast(left)
+
+        return left, right
 
     def output_type(self):
         self._assert_can_compare()

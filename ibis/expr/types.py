@@ -51,7 +51,7 @@ class Parameter(object):
     pass
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 
 class Schema(object):
@@ -160,7 +160,7 @@ class HasSchema(object):
         return [self]
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 
 class Expr(object):
@@ -196,6 +196,9 @@ class Expr(object):
         def factory(arg, name=None):
             return type(self)(arg, name=name)
         return factory
+
+    def _can_implicit_cast(self, arg):
+        return False
 
     def execute(self, default_limit=None):
         """
@@ -353,6 +356,44 @@ class ValueNode(Node):
         raise com.ExpressionError('Expression is not named: %s' % repr(self))
 
 
+class Literal(ValueNode):
+
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return 'Literal(%s)' % repr(self.value)
+
+    @property
+    def args(self):
+        return [self.value]
+
+    def equals(self, other):
+        if not isinstance(other, Literal):
+            return False
+        return (type(self.value) == type(other.value)
+                and self.value == other.value)
+
+    def output_type(self):
+        import ibis.expr.rules as rules
+        if isinstance(self.value, bool):
+            klass = BooleanScalar
+        elif isinstance(self.value, (int, long)):
+            int_type = rules.int_literal_class(self.value)
+            klass = scalar_type(int_type)
+        elif isinstance(self.value, float):
+            klass = DoubleScalar
+        elif isinstance(self.value, basestring):
+            klass = StringScalar
+        else:
+            raise com.InputTypeError(self.value)
+
+        return klass
+
+    def root_tables(self):
+        return []
+
+
 class ArrayNode(ValueNode):
 
     def __init__(self, expr):
@@ -399,7 +440,7 @@ def distinct_roots(*args):
     return util.unique_by_key(all_roots, id)
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Helper / factory functions
 
 
@@ -941,7 +982,7 @@ class TableExpr(Expr):
         return TableExpr(op)
 
 
-#------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Declare all typed ValueExprs. This is what the user will actually interact
 # with: an instance of each is well-typed and includes all valid methods
 # defined for each type.
@@ -1098,6 +1139,25 @@ class DecimalValue(NumericValue):
 class TimestampValue(AnyValue):
 
     _typename = 'timestamp'
+
+    def _can_implicit_cast(self, arg):
+        op = arg.op()
+        if isinstance(op, Literal):
+            try:
+                import pandas as pd
+                pd.Timestamp(op.value)
+                return True
+            except ValueError:
+                return False
+        return False
+
+    def _can_compare(self, other):
+        return isinstance(other, TimestampValue)
+
+    def _implicit_cast(self, arg):
+        # assume we've checked this is OK at this point...
+        op = arg.op()
+        return TimestampScalar(op)
 
 
 class NumericArray(ArrayExpr, NumericValue):
@@ -1338,7 +1398,7 @@ _array_types = {
     'category': CategoryArray
 }
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 
 def _validate_type(t):

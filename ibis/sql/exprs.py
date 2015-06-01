@@ -649,7 +649,7 @@ _other_ops = {
 
     ops.E: lambda *args: 'e()',
 
-    ops.Literal: _literal,
+    ir.Literal: _literal,
     ops.NullLiteral: _null_literal,
 
     ops.ValueList: _value_list,

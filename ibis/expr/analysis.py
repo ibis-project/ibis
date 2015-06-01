@@ -123,7 +123,7 @@ class ExprSimplifier(object):
     def get_result(self):
         expr = self.expr
         node = expr.op()
-        if isinstance(node, ops.Literal):
+        if isinstance(node, ir.Literal):
             return expr
 
         # For table column references, in the event that we're on top of a

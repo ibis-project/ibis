@@ -21,7 +21,6 @@
 from collections import defaultdict
 
 import ibis.expr.analysis as L
-import ibis.expr.api as api
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
@@ -49,7 +48,7 @@ def to_sql(expr, context=None):
     return query.compile(context)
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
 
 class QueryAST(object):
@@ -205,7 +204,7 @@ class SelectBuilder(object):
             if not ctx.is_extracted(expr):
                 ctx.make_alias(expr)
 
-    #----------------------------------------------------------------------
+    # ---------------------------------------------------------------------
     # Expr analysis / rewrites
 
     def _analyze_select_exprs(self):
@@ -324,7 +323,7 @@ class SelectBuilder(object):
             else:
                 return expr
         elif isinstance(op, (ops.Any, ops.Between, ops.Contains,
-                             ops.TableColumn, ops.Literal)):
+                             ops.TableColumn, ir.Literal)):
             return expr
         else:
             raise NotImplementedError(type(op))
@@ -367,7 +366,7 @@ class SelectBuilder(object):
 
         return None
 
-    #----------------------------------------------------------------------
+    # ---------------------------------------------------------------------
     # Analysis of table set
 
     def _collect_elements(self):
@@ -513,7 +512,7 @@ class SelectBuilder(object):
         else:
             return L.substitute_parents(what, self.sub_memo)
 
-    #----------------------------------------------------------------------
+    # --------------------------------------------------------------------
     # Subquery analysis / extraction
 
     def _analyze_subqueries(self):
