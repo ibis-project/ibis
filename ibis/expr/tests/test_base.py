@@ -72,7 +72,7 @@ class TestLiterals(unittest.TestCase):
         assert isinstance(expr, ex_klass)
 
         arg = expr.op()
-        assert isinstance(arg, ops.Literal)
+        assert isinstance(arg, ir.Literal)
         assert arg.value == val
 
         # Console formatting works
@@ -104,7 +104,7 @@ class TestLiterals(unittest.TestCase):
             expr = api.literal(value)
             klass = ir.scalar_type(ex_type)
             assert isinstance(expr, klass)
-            assert isinstance(expr.op(), ops.Literal)
+            assert isinstance(expr.op(), ir.Literal)
             assert expr.op().value is value
 
     def test_literal_list(self):

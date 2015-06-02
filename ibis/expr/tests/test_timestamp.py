@@ -14,6 +14,9 @@
 
 import unittest
 
+import pandas as pd
+
+import ibis
 import ibis.common as com
 import ibis.expr.api as api
 import ibis.expr.operations as ops
@@ -67,3 +70,47 @@ class TestTimestamp(unittest.TestCase):
         result = api.now()
         assert isinstance(result, ir.TimestampScalar)
         assert isinstance(result.op(), ops.TimestampNow)
+
+    def test_timestamp_literals(self):
+        ts_str = '2015-01-01 00:00:00'
+        val = pd.Timestamp(ts_str)
+
+        expr = ibis.literal(val)
+        assert isinstance(expr, ir.TimestampScalar)
+
+        expr = ibis.timestamp(ts_str)
+        assert isinstance(expr, ir.TimestampScalar)
+
+        self.assertRaises(ValueError, ibis.timestamp, '2015-01-01 00:71')
+
+    def test_integer_to_timestamp(self):
+        # #246
+        pass
+
+    def test_comparison_timestamp(self):
+        expr = self.col > (self.col.min() + ibis.day(3))
+        assert isinstance(expr, ir.BooleanArray)
+
+    def test_comparisons_string(self):
+        val = '2015-01-01 00:00:00'
+        expr = self.col > val
+        op = expr.op()
+        assert isinstance(op.right, ir.TimestampScalar)
+
+        expr2 = val < self.col
+        op = expr2.op()
+        assert isinstance(op, ops.Greater)
+        assert isinstance(op.right, ir.TimestampScalar)
+
+    def test_comparisons_pandas_timestamp(self):
+        val = pd.Timestamp('2015-01-01 00:00:00')
+        expr = self.col > val
+        op = expr.op()
+        assert isinstance(op.right, ir.TimestampScalar)
+
+        # TODO: this is broken for now because of upstream pandas problems
+
+        # expr2 = val < self.col
+        # op = expr2.op()
+        # assert isinstance(op, ops.Greater)
+        # assert isinstance(op.right, ir.TimestampScalar)

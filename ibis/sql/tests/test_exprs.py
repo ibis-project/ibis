@@ -14,17 +14,20 @@
 
 import unittest
 
+import pandas as pd
+
 from ibis.sql.exprs import ExprTranslator
 from ibis.sql.compiler import QueryContext, to_sql
 from ibis.expr.tests.mocks import MockConnection
-import ibis as api
 import ibis.expr.types as ir
+import ibis
 
 
 class ExprSQLTest(object):
 
     def _check_expr_cases(self, cases, context=None, named=False):
         for expr, expected in cases:
+            repr(expr)
             result = self._translate(expr, named=named, context=context)
             assert result == expected
 
@@ -45,7 +48,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def _check_literals(self, cases):
         for value, expected in cases:
-            lit_expr = api.literal(value)
+            lit_expr = ibis.literal(value)
             result = self._translate(lit_expr)
             assert result == expected
 
@@ -57,7 +60,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         ]
 
         for value, expected in cases:
-            lit_expr = api.literal(value)
+            lit_expr = ibis.literal(value)
             result = self._translate(lit_expr)
             assert result == expected
 
@@ -82,12 +85,12 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
     def test_column_ref_table_aliases(self):
         context = QueryContext()
 
-        table1 = api.table([
+        table1 = ibis.table([
             ('key1', 'string'),
             ('value1', 'double')
         ])
 
-        table2 = api.table([
+        table2 = ibis.table([
             ('key2', 'string'),
             ('value and2', 'double')
         ])
@@ -103,12 +106,12 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def test_column_ref_quoting(self):
         schema = [('has a space', 'double')]
-        table = api.table(schema)
+        table = ibis.table(schema)
         self._translate(table['has a space'], '`has a space`')
 
     def test_identifier_quoting(self):
         schema = [('date', 'double'), ('table', 'string')]
-        table = api.table(schema)
+        table = ibis.table(schema)
         self._translate(table['date'], '`date`')
         self._translate(table['table'], '`table`')
 
@@ -196,7 +199,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def test_decimal_casts(self):
         cases = [
-            (api.literal('9.9999999').cast('decimal(38,5)'),
+            (ibis.literal('9.9999999').cast('decimal(38,5)'),
              "CAST('9.9999999' AS decimal(38,5))"),
             (self.table.f.cast('decimal(12,2)'), "CAST(f AS decimal(12,2))")
         ]
@@ -233,14 +236,14 @@ FROM alltypes"""
 
     def test_timestamp_now(self):
         cases = [
-            (api.now(), 'now()')
+            (ibis.now(), 'now()')
         ]
         self._check_expr_cases(cases)
 
     def test_timestamp_deltas(self):
         units = ['year', 'month', 'week', 'day',
                  'hour', 'minute', 'second',
-                 'millisecond', 'microsecond', 'nanosecond']
+                 'millisecond', 'microsecond']
 
         t = self.table.i
         f = 'i'
@@ -248,12 +251,39 @@ FROM alltypes"""
         cases = []
         for unit in units:
             K = 5
-            offset = getattr(api, unit)(K)
+            offset = getattr(ibis, unit)(K)
             template = '{}s_add({}, {})'
 
             cases.append((t + offset, template.format(unit, f, K)))
             cases.append((t - offset, template.format(unit, f, -K)))
 
+        self._check_expr_cases(cases)
+
+    def test_timestamp_literals(self):
+        tv1 = '2015-01-01 12:34:56'
+        ex1 = ("'2015-01-01 12:34:56'")
+
+        cases = [
+            (ibis.literal(pd.Timestamp(tv1)), ex1),
+            (ibis.literal(pd.Timestamp(tv1).to_pydatetime()), ex1),
+            (ibis.timestamp(tv1), ex1)
+        ]
+        self._check_expr_cases(cases)
+
+    def test_timestamp_from_integer(self):
+        col = self.table.c
+
+        cases = [
+            (col.to_timestamp(),
+             'CAST(from_unixtime(c, "yyyy-MM-dd HH:mm:ss") '
+             'AS timestamp)'),
+            (col.to_timestamp('ms'),
+             'CAST(from_unixtime(c / 1000, "yyyy-MM-dd HH:mm:ss") '
+             'AS timestamp)'),
+            (col.to_timestamp('us'),
+             'CAST(from_unixtime(c / 1000000, "yyyy-MM-dd HH:mm:ss") '
+             'AS timestamp)'),
+        ]
         self._check_expr_cases(cases)
 
     def test_correlated_predicate_subquery(self):
@@ -362,7 +392,7 @@ END"""
         assert result == expected
 
     def test_search_case(self):
-        expr = (api.case()
+        expr = (ibis.case()
                 .when(self.table.f > 0, self.table.d * 2)
                 .when(self.table.c < 0, self.table.a * 2)
                 .end())
@@ -376,7 +406,7 @@ END"""
         assert result == expected
 
     def test_where_use_if(self):
-        expr = api.where(self.table.f > 0, self.table.e, self.table.a)
+        expr = ibis.where(self.table.f > 0, self.table.e, self.table.a)
         assert isinstance(expr, ir.FloatValue)
 
         result = self._translate(expr)
@@ -612,9 +642,9 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
 
     def test_literal_in_list(self):
         cases = [
-            (api.literal(2).isin([self.table.a, self.table.b, self.table.c]),
+            (ibis.literal(2).isin([self.table.a, self.table.b, self.table.c]),
              '2 IN (a, b, c)'),
-            (api.literal(2).notin([self.table.a, self.table.b, self.table.c]),
+            (ibis.literal(2).notin([self.table.a, self.table.b, self.table.c]),
              '2 NOT IN (a, b, c)')
         ]
         self._check_expr_cases(cases)
@@ -644,9 +674,9 @@ class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
     def test_coalesce(self):
         t = self.table
         cases = [
-            (api.coalesce(t.string_col, 'foo'),
+            (ibis.coalesce(t.string_col, 'foo'),
              "coalesce(string_col, 'foo')"),
-            (api.coalesce(t.int_col, t.bigint_col),
+            (ibis.coalesce(t.int_col, t.bigint_col),
              'coalesce(int_col, bigint_col)'),
         ]
         self._check_expr_cases(cases)
@@ -654,9 +684,9 @@ class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
     def test_greatest(self):
         t = self.table
         cases = [
-            (api.greatest(t.string_col, 'foo'),
+            (ibis.greatest(t.string_col, 'foo'),
              "greatest(string_col, 'foo')"),
-            (api.greatest(t.int_col, t.bigint_col),
+            (ibis.greatest(t.int_col, t.bigint_col),
              'greatest(int_col, bigint_col)'),
         ]
         self._check_expr_cases(cases)
@@ -664,9 +694,9 @@ class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
     def test_least(self):
         t = self.table
         cases = [
-            (api.least(t.string_col, 'foo'),
+            (ibis.least(t.string_col, 'foo'),
              "least(string_col, 'foo')"),
-            (api.least(t.int_col, t.bigint_col),
+            (ibis.least(t.int_col, t.bigint_col),
              'least(int_col, bigint_col)'),
         ]
         self._check_expr_cases(cases)

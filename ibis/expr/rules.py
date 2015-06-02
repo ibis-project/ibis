@@ -51,11 +51,11 @@ class BinaryPromoter(object):
     def _get_int_type(self):
         deps = [x.op() for x in self.args]
 
-        if util.all_of(deps, ops.Literal):
+        if util.all_of(deps, ir.Literal):
             return _smallest_int_containing(
                 [self.op(deps[0].value, deps[1].value)])
-        elif util.any_of(deps, ops.Literal):
-            if isinstance(deps[0], ops.Literal):
+        elif util.any_of(deps, ir.Literal):
+            if isinstance(deps[0], ir.Literal):
                 val = deps[0].value
                 atype = self.args[1].type()
             else:
@@ -97,7 +97,7 @@ class PowerPromoter(BinaryPromoter):
                 return 'float'
         elif util.any_of(self.args, ir.DecimalValue):
             return _decimal_promoted_type(self.args)
-        elif isinstance(rval, ops.Literal) and rval.value < 0:
+        elif isinstance(rval, ir.Literal) and rval.value < 0:
             return 'double'
         elif util.all_of(self.args, ir.IntegerValue):
             return self._get_int_type()

@@ -18,7 +18,7 @@ import ibis.expr.types as ir
 
 __all__ = ['timedelta', 'year', 'month', 'week', 'day',
            'hour', 'minute', 'second',
-           'millisecond', 'microsecond', 'nanosecond']
+           'millisecond', 'microsecond']
 
 
 class Timedelta(object):
