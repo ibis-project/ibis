@@ -306,7 +306,7 @@ FROM tpch.lineitem li
 
         timestamp_fields = ['year', 'month', 'day', 'hour', 'minute',
                             'second', 'millisecond', 'microsecond',
-                            'nanosecond', 'week']
+                            'week']
         for field in timestamp_fields:
             if hasattr(ts, field):
                 exprs.append(getattr(ts, field)())
