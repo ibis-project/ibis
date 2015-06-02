@@ -278,10 +278,12 @@ FROM alltypes"""
              'CAST(from_unixtime(c, "yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
             (col.to_timestamp('ms'),
-             'CAST(from_unixtime(c / 1000, "yyyy-MM-dd HH:mm:ss") '
+             'CAST(from_unixtime(CAST(c / 1000 AS int), '
+             '"yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
             (col.to_timestamp('us'),
-             'CAST(from_unixtime(c / 1000000, "yyyy-MM-dd HH:mm:ss") '
+             'CAST(from_unixtime(CAST(c / 1000000 AS int), '
+             '"yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
         ]
         self._check_expr_cases(cases)

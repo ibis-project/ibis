@@ -491,9 +491,9 @@ def _timestamp_from_unix(translator, expr):
 
     val = op.arg
     if op.unit == 'ms':
-        val = val / 1000
+        val = (val / 1000).cast('int32')
     elif op.unit == 'us':
-        val = val / 1000000
+        val = (val / 1000000).cast('int32')
 
     arg = _from_unixtime(translator, val)
     return 'CAST({} AS timestamp)'.format(arg)
