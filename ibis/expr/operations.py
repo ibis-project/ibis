@@ -1514,7 +1514,16 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
     def _rewrite_exprs(self, what):
         from ibis.expr.analysis import substitute_parents
         what = util.promote_list(what)
-        return [substitute_parents(x, past_projection=False) for x in what]
+
+        all_exprs = []
+        for expr in what:
+            if isinstance(expr, ir.ExprList):
+                all_exprs.extend(expr.exprs())
+            else:
+                all_exprs.append(expr)
+
+        return [substitute_parents(x, past_projection=False)
+                for x in all_exprs]
 
     def substitute_table(self, table_expr):
         return Aggregation(table_expr, self.agg_exprs, by=self.by,

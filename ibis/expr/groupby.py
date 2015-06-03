@@ -113,8 +113,16 @@ class GroupedArray(object):
     approx_median = _group_agg_dispatch('approx_median')
     group_concat = _group_agg_dispatch('group_concat')
 
+    def summary(self, exact_nunique=False):
+        metric = self.arr.summary(exact_nunique=exact_nunique)
+        return self.parent.aggregate(metric)
+
 
 class GroupedNumbers(GroupedArray):
 
     mean = _group_agg_dispatch('mean')
     sum = _group_agg_dispatch('sum')
+
+    def summary(self, exact_nunique=False):
+        metric = self.arr.summary(exact_nunique=exact_nunique)
+        return self.parent.aggregate(metric)

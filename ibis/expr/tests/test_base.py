@@ -1255,6 +1255,14 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         expected = self.table.aggregate([metric], by=[by], having=[having])
         assert result.equals(expected)
 
+    def test_summary_expand_list(self):
+        summ = self.table.f.summary()
+
+        metric = self.table.g.group_concat().name('bar')
+        result = self.table.aggregate([metric, summ])
+        expected = self.table.aggregate([metric] + summ.exprs())
+        assert result.equals(expected)
+
     def test_aggregate_invalid(self):
         # Pass a non-aggregation or non-scalar expr
         pass

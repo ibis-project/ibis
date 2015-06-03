@@ -42,6 +42,7 @@ import ibis.common as _com
 from ibis.expr.analytics import bucket, histogram
 import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
+import ibis.expr.types as _ir
 import ibis.expr.operations as _ops
 import ibis.expr.temporal as _T
 
@@ -634,8 +635,74 @@ def cases(arg, case_result_pairs, default=None):
     return builder.end()
 
 
-def summary(arg, uniques=False):
-    pass
+def _generic_summary(arg, exact_nunique=False, prefix=None):
+    """
+    Compute a set of summary metrics from the input value expression
+
+    Parameters
+    ----------
+    arg : value expression
+    exact_nunique : boolean, default False
+      Compute the exact number of distinct values (slower)
+    prefix : string, default None
+      String prefix for metric names
+
+    Returns
+    -------
+    summary : (count, # nulls, nunique)
+    """
+    metrics = [
+        arg.count().name('count'),
+        arg.isnull().sum().name('nulls')
+    ]
+
+    if exact_nunique:
+        unique_metric = arg.nunique().name('uniques')
+    else:
+        unique_metric = arg.approx_nunique().name('uniques')
+
+    metrics.append(unique_metric)
+    return _wrap_summary_metrics(metrics, prefix)
+
+
+def _numeric_summary(arg, exact_nunique=False, prefix=None):
+    """
+    Compute a set of summary metrics from the input numeric value expression
+
+    Parameters
+    ----------
+    arg : numeric value expression
+    exact_nunique : boolean, default False
+    prefix : string, default None
+      String prefix for metric names
+
+    Returns
+    -------
+    summary : (count, # nulls, min, max, sum, mean, nunique)
+    """
+    metrics = [
+        arg.count().name('count'),
+        arg.isnull().sum().name('nulls'),
+        arg.min().name('min'),
+        arg.max().name('max'),
+        arg.sum().name('sum'),
+        arg.mean().name('mean')
+    ]
+
+    if exact_nunique:
+        unique_metric = arg.nunique().name('nunique')
+    else:
+        unique_metric = arg.approx_nunique().name('approx_nunique')
+
+    metrics.append(unique_metric)
+    return _wrap_summary_metrics(metrics, prefix)
+
+
+def _wrap_summary_metrics(metrics, prefix):
+    if prefix is not None:
+        metrics = [x.name(prefix + x.get_name()) for x in metrics]
+
+    return _ir.ExpressionList(metrics).to_expr()
 
 
 _generic_array_methods = dict(
@@ -645,7 +712,7 @@ _generic_array_methods = dict(
     distinct=distinct,
     nunique=nunique,
     topk=topk,
-    summary=summary,
+    summary=_generic_summary,
     count=count,
     min=min,
     max=max,
@@ -756,7 +823,8 @@ _numeric_array_methods = dict(
     mean=mean,
     sum=sum,
     bucket=bucket,
-    histogram=histogram
+    histogram=histogram,
+    summary=_numeric_summary,
 )
 
 _add_methods(NumericValue, _numeric_value_methods)
