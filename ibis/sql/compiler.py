@@ -751,17 +751,29 @@ def _adapt_expr(expr):
     #
     # Canonical case is scalar values or arrays produced by some reductions
     # (simple reductions, or distinct, say)
-    if isinstance(expr, ir.TableExpr):
-        handler = lambda x: x
-        return expr, handler
+    as_is = lambda x: x
 
-    if isinstance(expr, ir.ScalarExpr) and expr.is_reduction():
+    if isinstance(expr, ir.TableExpr):
+        return expr, as_is
+
+    def _scalar_reduce(x):
+        return isinstance(x, ir.ScalarExpr) and x.is_reduction()
+
+    if _scalar_reduce(expr):
         table_expr = _reduction_to_aggregation(expr, agg_name='tmp')
 
         def scalar_handler(results):
             return results['tmp'][0]
 
         return table_expr, scalar_handler
+    elif isinstance(expr, ir.ExprList):
+        exprs = expr.exprs()
+        for expr in exprs:
+            if not _scalar_reduce(expr):
+                raise NotImplementedError(expr)
+
+        table = L.find_base_table(exprs[0])
+        return table.aggregate(exprs), as_is
     elif isinstance(expr, ir.ArrayExpr):
         op = expr.op()
 

@@ -659,18 +659,23 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
         unique_metric = arg.approx_nunique().name('uniques')
 
     metrics.append(unique_metric)
-    return _ir.ExpressionList(metrics).to_expr()
+    return _wrap_summary_metrics(metrics, prefix)
 
 
 def _numeric_summary(arg, exact_nunique=False, prefix=None):
     """
+    Compute a set of summary metrics from the input numeric value expression
 
     Parameters
     ----------
+    arg : numeric value expression
+    exact_nunique : boolean, default False
+    prefix : string, default None
+      String prefix for metric names
 
     Returns
     -------
-
+    summary : (count, # nulls, min, max, sum, mean, nunique)
     """
     metrics = [
         arg.count().name('count'),
@@ -687,6 +692,12 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
         unique_metric = arg.approx_nunique().name('approx_nunique')
 
     metrics.append(unique_metric)
+    return _wrap_summary_metrics(metrics, prefix)
+
+
+def _wrap_summary_metrics(metrics, prefix):
+    if prefix is not None:
+        metrics = [x.name(prefix + x.get_name()) for x in metrics]
 
     return _ir.ExpressionList(metrics).to_expr()
 

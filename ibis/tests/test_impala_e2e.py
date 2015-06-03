@@ -143,6 +143,19 @@ FROM tpch.lineitem li
         result = self.con.execute(expr)
         assert isinstance(result, pd.Series)
 
+    def test_summary_execute(self):
+        table = self.con.table('functional.alltypes')
+
+        expr = table.double_col.summary()
+        result = expr.execute()
+        assert isinstance(result, pd.DataFrame)
+
+        expr = (table.group_by('string_col')
+                .aggregate([table.double_col.summary(prefix='double_'),
+                            table.float_col.summary(prefix='float_')]))
+        result = expr.execute()
+        assert isinstance(result, pd.DataFrame)
+
     def test_distinct_array(self):
         table = self.con.table('functional.alltypes')
 

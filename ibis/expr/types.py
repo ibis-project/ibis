@@ -371,7 +371,8 @@ class ExpressionList(Node):
 
 class ExprList(Expr):
 
-    pass
+    def exprs(self):
+        return self.op().args
 
 
 class Literal(ValueNode):
