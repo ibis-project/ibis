@@ -35,7 +35,7 @@ from ibis.expr.operations import (as_value_expr, table, literal, timestamp,
                                   null, sequence, desc)
 
 # __all__ is defined
-from ibis.expr.temporal import *  # noqa
+from ibis.expr.temporal import *  #  noqa
 
 import ibis.common as _com
 
@@ -446,6 +446,55 @@ def nullif(value, null_if_expr):
     return _ops.NullIf(value, null_if_expr).to_expr()
 
 
+def between(arg, lower, upper):
+    """
+    Check if the input expr falls between the lower/upper bounds
+    passed. Bounds are inclusive. All arguments must be comparable.
+
+    Returns
+    -------
+    is_between : BooleanValue
+    """
+    lower = _ops.as_value_expr(lower)
+    upper = _ops.as_value_expr(upper)
+    op = _ops.Between(arg, lower, upper)
+    return op.to_expr()
+
+
+def isin(arg, values):
+    """
+    Check whether the value expression is contained within the indicated
+    list of values.
+
+    Parameters
+    ----------
+    values : list, tuple, or array expression
+      The values can be scalar or array-like. Each of them must be
+      comparable with the calling expression, or None (NULL).
+
+    Examples
+    --------
+    expr = table.strings.isin(['foo', 'bar', 'baz'])
+
+    expr2 = table.strings.isin(table2.other_string_col)
+
+    Returns
+    -------
+    contains : BooleanValue
+    """
+    op = _ops.Contains(arg, values)
+    return op.to_expr()
+
+
+def notin(arg, values):
+    """
+    Like isin, but checks whether this expression's value(s) are not
+    contained in the passed values. See isin docs for full usage.
+    """
+    op = _ops.NotContains(arg, values)
+    return op.to_expr()
+
+
 add = _binop_expr('__add__', _ops.Add)
 sub = _binop_expr('__sub__', _ops.Subtract)
 mul = _binop_expr('__mul__', _ops.Multiply)
@@ -462,6 +511,9 @@ _generic_value_methods = dict(
     cast=cast,
     fillna=fillna,
     nullif=nullif,
+    between=between,
+    isin=isin,
+    notin=notin,
     isnull=_unary_op('isnull', _ops.IsNull),
     notnull=_unary_op('notnull', _ops.NotNull),
 
@@ -509,7 +561,91 @@ max = _agg_function('max', _ops.Max)
 min = _agg_function('min', _ops.Min)
 
 
+
+def distinct(arg):
+    """
+    Compute set of unique values occurring in this array. Can not be used
+    in conjunction with other array expressions from the same context
+    (because it's a cardinality-modifying pseudo-reduction).
+    """
+    op = _ops.DistinctArray(arg)
+    return op.to_expr()
+
+
+def nunique(arg):
+    """
+    Shorthand for foo.distinct().count(); computing the number of unique
+    values in an array.
+    """
+    return _ops.CountDistinct(arg).to_expr()
+
+
+def topk(arg, k, by=None):
+    """
+    Produces
+
+    Returns
+    -------
+    topk : TopK filter expression
+    """
+    op = _ops.TopK(arg, k, by=by)
+    return op.to_expr()
+
+
+def bottomk(arg, k, by=None):
+    raise NotImplementedError
+
+
+def _case(arg):
+    """
+    Create a new SimpleCaseBuilder to chain multiple if-else
+    statements. Add new search expressions with the .when method. These
+    must be comparable with this array expression. Conclude by calling
+    .end()
+
+    Examples
+    --------
+    case_expr = (expr.case()
+                 .when(case1, output1)
+                 .when(case2, output2)
+                 .default(default_output)
+                 .end())
+
+    Returns
+    -------
+    builder : CaseBuilder
+    """
+    return _ops.SimpleCaseBuilder(arg)
+
+
+def cases(arg, case_result_pairs, default=None):
+    """
+    Create a case expression in one shot.
+
+    Returns
+    -------
+    case_expr : SimpleCase
+    """
+    builder = arg.case()
+    for case, result in case_result_pairs:
+        builder = builder.when(case, result)
+    if default is not None:
+        builder = builder.else_(default)
+    return builder.end()
+
+
+def summary(arg, uniques=False):
+    pass
+
+
 _generic_array_methods = dict(
+    case=_case,
+    cases=cases,
+    bottomk=bottomk,
+    distinct=distinct,
+    nunique=nunique,
+    topk=topk,
+    summary=summary,
     count=count,
     min=min,
     max=max,
@@ -636,7 +772,22 @@ _add_methods(NumericArray, _numeric_array_methods)
 # TODO: logical binary operators for BooleanValue
 
 
+def ifelse(arg, true_expr, false_expr):
+    """
+    Shorthand for implementing ternary expressions
+
+    bool_expr.ifelse(0, 1)
+    e.g., in SQL: CASE WHEN bool_expr THEN 0 else 1 END
+    """
+    # Result will be the result of promotion of true/false exprs. These
+    # might be conflicting types; same type resolution as case expressions
+    # must be used.
+    case = _ops.SearchedCaseBuilder()
+    return case.when(arg, true_expr).else_(false_expr).end()
+
+
 _boolean_value_methods = dict(
+    ifelse=ifelse,
     __and__=_boolean_binary_op('__and__', _ops.And),
     __or__=_boolean_binary_op('__or__', _ops.Or),
     __xor__=_boolean_binary_op('__xor__', _ops.Xor),

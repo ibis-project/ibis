@@ -500,53 +500,6 @@ class ValueExpr(Expr):
     def name(self, name):
         return self._factory(self._arg, name=name)
 
-    def between(self, lower, upper):
-        """
-        Check if the input expr falls between the lower/upper bounds
-        passed. Bounds are inclusive. All arguments must be comparable.
-
-        Returns
-        -------
-        is_between : BooleanValue
-        """
-        from ibis.expr.operations import as_value_expr, Between
-        lower = as_value_expr(lower)
-        upper = as_value_expr(upper)
-        op = Between(self, lower, upper)
-        return op.to_expr()
-
-    def isin(self, values):
-        """
-        Check whether the value expression is contained within the indicated
-        list of values.
-
-        Parameters
-        ----------
-        values : list, tuple, or array expression
-          The values can be scalar or array-like. Each of them must be
-          comparable with the calling expression, or None (NULL).
-
-        Examples
-        --------
-        expr = table.strings.isin(['foo', 'bar', 'baz'])
-
-        expr2 = table.strings.isin(table2.other_string_col)
-
-        Returns
-        -------
-        contains : BooleanValue
-        """
-        op = _ops().Contains(self, values)
-        return op.to_expr()
-
-    def notin(self, values):
-        """
-        Like isin, but checks whether this expression's value(s) are not
-        contained in the passed values. See isin docs for full usage.
-        """
-        op = _ops().NotContains(self, values)
-        return op.to_expr()
-
 
 class ScalarExpr(ValueExpr):
 
@@ -583,72 +536,6 @@ class ArrayExpr(ValueExpr):
 
     def parent(self):
         return self._arg
-
-    def distinct(self):
-        """
-        Compute set of unique values occurring in this array. Can not be used
-        in conjunction with other array expressions from the same context
-        (because it's a cardinality-modifying pseudo-reduction).
-        """
-        op = _ops().DistinctArray(self)
-        return op.to_expr()
-
-    def nunique(self):
-        """
-        Shorthand for foo.distinct().count(); computing the number of unique
-        values in an array.
-        """
-        return _ops().CountDistinct(self).to_expr()
-
-    def topk(self, k, by=None):
-        """
-        Produces
-
-        Returns
-        -------
-        topk : TopK filter expression
-        """
-        op = _ops().TopK(self, k, by=by)
-        return op.to_expr()
-
-    def bottomk(self, k, by=None):
-        raise NotImplementedError
-
-    def case(self):
-        """
-        Create a new SimpleCaseBuilder to chain multiple if-else
-        statements. Add new search expressions with the .when method. These
-        must be comparable with this array expression. Conclude by calling
-        .end()
-
-        Examples
-        --------
-        case_expr = (expr.case()
-                     .when(case1, output1)
-                     .when(case2, output2)
-                     .default(default_output)
-                     .end())
-
-        Returns
-        -------
-        builder : CaseBuilder
-        """
-        return _ops().SimpleCaseBuilder(self)
-
-    def cases(self, case_result_pairs, default=None):
-        """
-        Create a case expression in one shot.
-
-        Returns
-        -------
-        case_expr : SimpleCase
-        """
-        builder = self.case()
-        for case, result in case_result_pairs:
-            builder = builder.when(case, result)
-        if default is not None:
-            builder = builder.else_(default)
-        return builder.end()
 
     def to_projection(self):
         """
@@ -1021,19 +908,6 @@ class IntegerValue(NumericValue):
 class BooleanValue(NumericValue):
 
     _typename = 'boolean'
-
-    def ifelse(self, true_expr, false_expr):
-        """
-        Shorthand for implementing ternary expressions
-
-        bool_expr.ifelse(0, 1)
-        e.g., in SQL: CASE WHEN bool_expr THEN 0 else 1 END
-        """
-        # Result will be the result of promotion of true/false exprs. These
-        # might be conflicting types; same type resolution as case expressions
-        # must be used.
-        case = _ops().SearchedCaseBuilder()
-        return case.when(self, true_expr).else_(false_expr).end()
 
 
 class Int8Value(IntegerValue):
