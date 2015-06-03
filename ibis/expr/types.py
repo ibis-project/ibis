@@ -191,6 +191,9 @@ class Expr(object):
         from ibis.expr.format import ExprFormatter
         return ExprFormatter(self).get_result()
 
+    def op(self):
+        return self._arg
+
     @property
     def _factory(self):
         def factory(arg, name=None):
@@ -218,9 +221,6 @@ class Expr(object):
         if type(self) != type(other):
             return False
         return self._arg.equals(other._arg)
-
-    def op(self):
-        raise NotImplementedError
 
     def _can_compare(self, other):
         return False
@@ -321,6 +321,10 @@ class Node(object):
         return self.equals(other)
 
     def to_expr(self):
+        klass = self.output_type()
+        return klass(self)
+
+    def output_type(self):
         """
         This function must resolve the output type of the expression and return
         the node wrapped in the appropriate ValueExpr type.
@@ -329,10 +333,6 @@ class Node(object):
 
 
 class ValueNode(Node):
-
-    def to_expr(self):
-        klass = self.output_type()
-        return klass(self)
 
     def _ensure_value(self, expr):
         if not isinstance(expr, ValueExpr):
@@ -350,11 +350,28 @@ class ValueNode(Node):
     def root_tables(self):
         return self.arg._root_tables()
 
-    def output_type(self):
-        raise NotImplementedError
-
     def resolve_name(self):
         raise com.ExpressionError('Expression is not named: %s' % repr(self))
+
+
+
+class ExpressionList(Node):
+
+    def __init__(self, exprs):
+        from ibis.expr.operations import as_value_expr
+        exprs = [as_value_expr(x) for x in exprs]
+        Node.__init__(self, exprs)
+
+    def root_tables(self):
+        return distinct_roots(*self.args)
+
+    def output_type(self):
+        return ExprList
+
+
+class ExprList(Expr):
+
+    pass
 
 
 class Literal(ValueNode):
@@ -485,9 +502,6 @@ class ValueExpr(Expr):
         rule = ImplicitCast(self.type(), self._implicit_casts)
         return rule.can_cast(typename)
 
-    def op(self):
-        return self._arg
-
     def get_name(self):
         if self._name is not None:
             # This value has been explicitly named
@@ -558,9 +572,6 @@ class TableExpr(Expr):
         def factory(arg):
             return TableExpr(arg)
         return factory
-
-    def op(self):
-        return self._arg
 
     def _assert_valid(self, exprs):
         from ibis.expr.analysis import ExprValidator

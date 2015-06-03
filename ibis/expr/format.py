@@ -225,9 +225,13 @@ class ExprFormatter(object):
 
         if isinstance(expr, ir.TableExpr):
             return 'table'
-        elif isinstance(self.expr, ir.ArrayExpr):
-            return 'array(%s)' % self.expr.type()
-        elif isinstance(self.expr, ir.ScalarExpr):
-            return '%s' % self.expr.type()
+        elif isinstance(expr, ir.ArrayExpr):
+            return 'array(%s)' % expr.type()
+        elif isinstance(expr, ir.ScalarExpr):
+            return '%s' % expr.type()
+        elif isinstance(expr, ir.ExprList):
+            list_args = [self._get_type_display(arg)
+                         for arg in expr.op().args]
+            return ', '.join(list_args)
         else:
             raise NotImplementedError
