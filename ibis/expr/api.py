@@ -644,9 +644,12 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
     arg : value expression
     exact_nunique : boolean, default False
       Compute the exact number of distinct values (slower)
+    prefix : string, default None
+      String prefix for metric names
 
     Returns
     -------
+    summary : (count, # nulls, nunique)
     """
     metrics = [
         arg.count().name('count'),
