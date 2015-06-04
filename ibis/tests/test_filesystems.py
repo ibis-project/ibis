@@ -106,8 +106,12 @@ class TestHDFSE2E(unittest.TestCase):
             except os.error:
                 pass
 
-    def _make_random_file(self, units=100):
+    def _make_random_file(self, units=100, directory=None):
         path = util.guid()
+
+        if directory:
+            path = os.path.join(directory, path)
+
         with open(path, 'wb') as f:
             for i in xrange(units):
                 f.write(util.guid())
@@ -133,8 +137,26 @@ class TestHDFSE2E(unittest.TestCase):
         self.hdfs.rm(fpath)
         assert not self.hdfs.exists(fpath)
 
-    def test_write_local_directory(self):
+    def test_overwrite_file(self):
         pass
+
+    def test_write_local_directory(self):
+        local_dir = util.guid()
+
+        K = 5
+
+        os.mkdir(local_dir)
+        for i in xrange(K):
+            self._make_random_file(directory=local_dir)
+
+        remote_dir = pjoin(self.test_dir, local_dir)
+        self.hdfs.put(remote_dir, local_dir)
+
+        assert self.hdfs.exists(remote_dir)
+        assert len(self.hdfs.ls(remote_dir)) == K
+
+        self.hdfs.rmdir(remote_dir)
+        assert not self.hdfs.exists(remote_dir)
 
     def test_ls(self):
         test_dir = pjoin(self.test_dir, 'ls-test')
@@ -145,6 +167,3 @@ class TestHDFSE2E(unittest.TestCase):
             self.hdfs.put(hdfs_path, local_path)
 
         assert len(self.hdfs.ls(test_dir)) == 10
-
-    def test_rmdir(self):
-        pass

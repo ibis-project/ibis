@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import posixpath
 
 import ibis.common as com
@@ -31,6 +32,8 @@ class HDFS(object):
     Interface class to HDFS for ibis that abstracts away (and protects
     user/developer against) various 3rd party library API differences.
     """
+    def log(self, message):
+        print(message)
 
     def exists(self, path):
         raise NotImplementedError
@@ -41,7 +44,11 @@ class HDFS(object):
     def get(self, hdfs_path, local_path, overwrite=False):
         raise NotImplementedError
 
-    def put(self, hdfs_path, local_path, overwrite=False, **kwargs):
+    def put(self, hdfs_path, local_path, overwrite=False, verbose=None,
+            **kwargs):
+        """
+
+        """
         raise NotImplementedError
 
     def write(self, hdfs_path, buf, overwrite=False, blocksize=None,
@@ -132,16 +139,25 @@ class WebHDFS(HDFS):
         gen = self.client.read(hdfs_path, offset=offset, length=nbytes)
         return ''.join(gen)
 
-    def put(self, hdfs_path, local_path, overwrite=False, **kwargs):
-        """
-
-        Parameters
-        ----------
-
-        Other keywords forwarded to .write API.
-        """
-        self.client.upload(hdfs_path, local_path,
-                           overwrite=overwrite, **kwargs)
+    @implements(HDFS.put)
+    def put(self, hdfs_path, local_path, overwrite=False, verbose=None,
+            **kwargs):
+        if os.path.isdir(local_path):
+            for dirpath, dirnames, filenames in os.walk(local_path):
+                rel_dir = os.path.relpath(dirpath, local_path)
+                if rel_dir == '.':
+                    rel_dir = ''
+                for fpath in filenames:
+                    abs_path = os.path.join(dirpath, fpath)
+                    rel_hdfs_path = posixpath.join(hdfs_path, rel_dir, fpath)
+                    self.put(rel_hdfs_path, abs_path, overwrite=overwrite,
+                             **kwargs)
+        else:
+            if verbose:
+                self.log('Writing local {} to HDFS {}'.format(local_path,
+                                                              hdfs_path))
+            self.client.upload(hdfs_path, local_path,
+                               overwrite=overwrite, **kwargs)
 
     def write(self, hdfs_path, buf, overwrite=False, blocksize=None,
               replication=None, buffersize=None):
