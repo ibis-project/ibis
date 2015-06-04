@@ -14,9 +14,15 @@
 
 import posixpath
 
-import hdfs
-
 import ibis.common as com
+import ibis.util as util
+
+
+def implements(f):
+    def decorator(g):
+        g.__doc__ = f.__doc__
+        return g
+    return decorator
 
 
 class HDFS(object):
@@ -26,12 +32,8 @@ class HDFS(object):
     user/developer against) various 3rd party library API differences.
     """
 
-    def path_exists(self, path):
-        try:
-            self.client.status(path)
-            return True
-        except Exception:
-            return False
+    def exists(self, path):
+        raise NotImplementedError
 
     def head(self, hdfs_path, nbytes=1024, offset=0):
         raise NotImplementedError
@@ -50,13 +52,20 @@ class HDFS(object):
         pass
 
     def ls(self, hdfs_path):
+        """
+        Return contents of directory
+
+        Parameters
+        ----------
+        hdfs_path : string
+        """
         raise NotImplementedError
 
     def tail(self, hdfs_path, nbytes=1024):
         raise NotImplementedError
 
-    def delete(self, hdfs_path):
-        pass
+    def rm(self, path):
+        return self.delete(path)
 
     def rmdir(self, path):
         self.client.delete(path, recursive=True)
@@ -92,8 +101,32 @@ class WebHDFS(HDFS):
     def protocol(self):
         return 'webhdfs'
 
+    @implements(HDFS.exists)
+    def exists(self, path):
+        try:
+            self.client.status(path)
+            return True
+        except Exception:
+            return False
+
+    @implements(HDFS.ls)
     def ls(self, hdfs_path):
         return self.client.list(hdfs_path)
+
+    @implements(HDFS.mkdir)
+    def mkdir(self, dir_path, create_parent=False):
+        # ugh, see #252
+
+        # create a temporary file, then delete it
+        dummy = posixpath.join(dir_path, util.guid())
+        self.client.write(dummy, '')
+        self.client.delete(dummy)
+
+    def delete(self, hdfs_path, recursive=False):
+        """
+
+        """
+        return self.client.delete(hdfs_path, recursive=recursive)
 
     def head(self, hdfs_path, nbytes=1024, offset=0):
         gen = self.client.read(hdfs_path, offset=offset, length=nbytes)
