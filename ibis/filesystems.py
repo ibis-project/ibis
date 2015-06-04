@@ -151,7 +151,7 @@ class WebHDFS(HDFS):
                     abs_path = os.path.join(dirpath, fpath)
                     rel_hdfs_path = posixpath.join(hdfs_path, rel_dir, fpath)
                     self.put(rel_hdfs_path, abs_path, overwrite=overwrite,
-                             **kwargs)
+                             verbose=verbose, **kwargs)
         else:
             if verbose:
                 self.log('Writing local {} to HDFS {}'.format(local_path,
