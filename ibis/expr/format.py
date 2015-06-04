@@ -96,6 +96,9 @@ class ExprFormatter(object):
             text = 'Literal[%s] %s' % (self._get_type_display(),
                                        str(what.value))
 
+        if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
+            text = '{} = {}'.format(self.expr.get_name(), text)
+
         if self.memoize:
             alias_to_text = [(self.memo.aliases[x],
                               self.memo.formatted[x],

@@ -836,6 +836,18 @@ class TestExprFormatting(unittest.TestCase):
         assert formatted.count('test1') == 1
         assert formatted.count('test2') == 1
 
+    def test_named_value_expr_show_name(self):
+        expr = self.table.f * 2
+        expr2 = expr.name('baz')
+
+        # it works!
+        repr(expr)
+
+        result2 = repr(expr2)
+
+        # not really committing to a particular output yet
+        assert 'baz' in result2
+
 
 class TestNullOps(BasicTestCase, unittest.TestCase):
 
