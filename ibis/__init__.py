@@ -82,6 +82,26 @@ def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
     return ImpalaConnection(**params)
 
 
+def hdfs_connect(host='localhost', port=50070, protocol='webhdfs', **kwds):
+    """
+    Connect to HDFS
+
+    Parameters
+    ----------
+    host : string
+    port : int, default 50070 (webhdfs default)
+    protocol : {'webhdfs'}
+
+    Returns
+    -------
+    client : ibis HDFS client
+    """
+    from hdfs import InsecureClient
+    url = 'http://{}:{}'.format(host, port)
+    client = InsecureClient(url, **kwds)
+    return WebHDFS(client)
+
+
 def test(include_e2e=False):
     import pytest
     import ibis

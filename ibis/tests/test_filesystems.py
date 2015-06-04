@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.filesystems import HDFS
-
-import pytest
+from posixpath import join as pjoin
+import os
 import unittest
+
+from hdfs import InsecureClient
+import pytest
+
+from ibis.filesystems import HDFS, WebHDFS
+import ibis.util as util
 
 
 class MockHDFS(HDFS):
@@ -55,3 +60,110 @@ class TestHDFSRandom(unittest.TestCase):
 
         result = self.con.find_any_file('/path')
         assert result == '/path/0.parq'
+
+
+class TestHDFSE2E(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.host = os.environ.get('IBIS_TEST_HOST', 'localhost')
+        cls.protocol = os.environ.get('IBIS_TEST_PROTOCOL', 'hiveserver2')
+        cls.port = os.environ.get('IBIS_TEST_PORT', 21050)
+
+        cls.test_dir = '/{}'.format(util.guid())
+
+        # Impala dev environment uses port 5070 for HDFS web interface
+
+        hdfs_host = 'localhost'
+        webhdfs_port = 5070
+        url = 'http://{}:{}'.format(hdfs_host, webhdfs_port)
+
+        try:
+            cls.hdfs_client = InsecureClient(url)
+            cls.hdfs = WebHDFS(cls.hdfs_client)
+        except Exception as e:
+            pytest.skip('Could not connect to HDFS: {}'.format(e.message))
+
+        cls.hdfs.mkdir(cls.test_dir)
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            cls.hdfs.rmdir(cls.test_dir)
+        except:
+            pass
+
+    def setUp(self):
+        self.test_files = []
+
+    def tearDown(self):
+        self._delete_test_files()
+
+    def _delete_test_files(self):
+        for path in self.test_files:
+            try:
+                os.remove(path)
+            except os.error:
+                pass
+
+    def _make_random_file(self, units=100, directory=None):
+        path = util.guid()
+
+        if directory:
+            path = os.path.join(directory, path)
+
+        with open(path, 'wb') as f:
+            for i in xrange(units):
+                f.write(util.guid())
+
+        self.test_files.append(path)
+        return path
+
+    def test_mkdir(self):
+        path = pjoin(self.test_dir, 'mkdir-test')
+        self.hdfs.mkdir(path)
+        assert self.hdfs.exists(path)
+
+    def test_write_delete_file(self):
+        dirpath = pjoin(self.test_dir, 'write-delete-test')
+        self.hdfs.mkdir(dirpath)
+
+        lpath = self._make_random_file()
+        fpath = pjoin(dirpath, lpath)
+
+        self.hdfs.put(fpath, lpath)
+        assert self.hdfs.exists(fpath)
+
+        self.hdfs.rm(fpath)
+        assert not self.hdfs.exists(fpath)
+
+    def test_overwrite_file(self):
+        pass
+
+    def test_write_local_directory(self):
+        local_dir = util.guid()
+
+        K = 5
+
+        os.mkdir(local_dir)
+        for i in xrange(K):
+            self._make_random_file(directory=local_dir)
+
+        remote_dir = pjoin(self.test_dir, local_dir)
+        self.hdfs.put(remote_dir, local_dir)
+
+        assert self.hdfs.exists(remote_dir)
+        assert len(self.hdfs.ls(remote_dir)) == K
+
+        self.hdfs.rmdir(remote_dir)
+        assert not self.hdfs.exists(remote_dir)
+
+    def test_ls(self):
+        test_dir = pjoin(self.test_dir, 'ls-test')
+        self.hdfs.mkdir(test_dir)
+        for i in xrange(10):
+            local_path = self._make_random_file()
+            hdfs_path = pjoin(test_dir, local_path)
+            self.hdfs.put(hdfs_path, local_path)
+
+        assert len(self.hdfs.ls(test_dir)) == 10

@@ -41,7 +41,7 @@ def generate_test_data(clean_first=False):
 
 
 def make_base_directory():
-    if not hdfs.path_exists(IBIS_TEST_FILE_DIRECTORY):
+    if not hdfs.exists(IBIS_TEST_FILE_DIRECTORY):
         hdfs.mkdir(IBIS_TEST_FILE_DIRECTORY, create_parent=True)
 
 
