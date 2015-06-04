@@ -185,9 +185,11 @@ def count(expr, where=None):
     if isinstance(op, _ops.DistinctArray):
         if where is not None:
             raise NotImplementedError
-        return op.count().to_expr()
+        result = op.count().to_expr()
     else:
-        return _ops.Count(expr, where).to_expr()
+        result = _ops.Count(expr, where).to_expr()
+
+    return result.name('count')
 
 
 def group_concat(arg, sep=','):
@@ -261,9 +263,12 @@ def _boolean_binary_rop(name, klass):
     return f
 
 
-def _agg_function(name, klass):
+def _agg_function(name, klass, assign_default_name=True):
     def f(self, where=None):
-        return klass(self, where).to_expr()
+        expr = klass(self, where).to_expr()
+        if assign_default_name:
+            expr = expr.name(name)
+        return expr
     f.__name__ = name
     return f
 
@@ -556,10 +561,10 @@ _generic_value_methods = dict(
 )
 
 
-approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality)
-approx_median = _agg_function('approx_median', _ops.CMSMedian)
-max = _agg_function('max', _ops.Max)
-min = _agg_function('min', _ops.Min)
+approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality, True)
+approx_median = _agg_function('approx_median', _ops.CMSMedian, True)
+max = _agg_function('max', _ops.Max, True)
+min = _agg_function('min', _ops.Min, True)
 
 
 
@@ -652,7 +657,7 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
     summary : (count, # nulls, nunique)
     """
     metrics = [
-        arg.count().name('count'),
+        arg.count(),
         arg.isnull().sum().name('nulls')
     ]
 
@@ -681,12 +686,12 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
     summary : (count, # nulls, min, max, sum, mean, nunique)
     """
     metrics = [
-        arg.count().name('count'),
+        arg.count(),
         arg.isnull().sum().name('nulls'),
-        arg.min().name('min'),
-        arg.max().name('max'),
-        arg.sum().name('sum'),
-        arg.mean().name('mean')
+        arg.min(),
+        arg.max(),
+        arg.sum(),
+        arg.mean()
     ]
 
     if exact_nunique:
@@ -815,8 +820,8 @@ _integer_value_methods = dict(
 )
 
 
-mean = _agg_function('mean', _ops.Mean)
-sum = _agg_function('sum', _ops.Sum)
+mean = _agg_function('mean', _ops.Mean, True)
+sum = _agg_function('sum', _ops.Sum, True)
 
 
 _numeric_array_methods = dict(

@@ -1,4 +1,4 @@
-# copyright 2014 Cloudera Inc.
+# Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -241,7 +241,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         # Test with unnamed expr
         self.assertRaises(ExpressionError, self.table.projection,
-                          ['g', mean_diff])
+                          ['g', self.table['a'] - self.table['c']])
 
     def test_projection_duplicate_names(self):
         self.assertRaises(com.IntegrityError, self.table.projection,
@@ -700,7 +700,7 @@ class TestDistinct(unittest.TestCase):
 
     def test_distinct_count(self):
         result = self.table.string_col.distinct().count()
-        expected = self.table.string_col.nunique()
+        expected = self.table.string_col.nunique().name('count')
         assert result.equals(expected)
         assert isinstance(result.op(), ops.CountDistinct)
 
@@ -1404,6 +1404,21 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         expr = nation.n_name.lower().left(1)
         self.assertRaises(com.ExpressionError, nation.group_by(expr).aggregate,
                           nation.count().name('metric'))
+
+    def test_default_reduction_names(self):
+        d = self.table.f
+        cases = [
+            (d.count(), 'count'),
+            (d.sum(), 'sum'),
+            (d.mean(), 'mean'),
+            (d.approx_nunique(), 'approx_nunique'),
+            (d.approx_median(), 'approx_median'),
+            (d.min(), 'min'),
+            (d.max(), 'max')
+        ]
+
+        for expr, ex_name in cases:
+            assert expr.get_name() == ex_name
 
 
 class TestJoinsUnions(BasicTestCase, unittest.TestCase):
