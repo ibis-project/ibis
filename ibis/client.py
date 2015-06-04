@@ -144,6 +144,9 @@ class ImpalaConnection(object):
             else:
                 raise
 
+        if options.verbose:
+            options.verbose_log(query)
+
         cursor.execute(query)
         return cursor
 

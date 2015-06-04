@@ -428,6 +428,18 @@ FROM tpch.lineitem li
         expr = tpch[amount_filter].limit(0)
         expr.execute()
 
+    def test_verbose_log_queries(self):
+        queries = []
+        def logger(x):
+            queries.append(x)
+
+        with config.option_context('verbose', True):
+            with config.option_context('verbose_log', logger):
+                self.con.table('orders', database='tpch_parquet')
+
+        assert len(queries) == 1
+        assert queries[0] == 'SELECT * FROM tpch_parquet.`orders` LIMIT 0'
+
 
 def _ensure_drop(con, table_name, database=None):
     con.drop_table(table_name, database=database,

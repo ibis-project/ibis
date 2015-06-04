@@ -2,3 +2,5 @@ include setup.py
 include requirements.txt
 include README.md
 include LICENSE.txt
+graft ibis
+graft LICENSES
