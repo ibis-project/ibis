@@ -14,6 +14,7 @@
 
 from posixpath import join as pjoin
 import os
+import shutil
 import unittest
 
 from hdfs import InsecureClient
@@ -146,17 +147,21 @@ class TestHDFSE2E(unittest.TestCase):
         K = 5
 
         os.mkdir(local_dir)
-        for i in xrange(K):
-            self._make_random_file(directory=local_dir)
 
-        remote_dir = pjoin(self.test_dir, local_dir)
-        self.hdfs.put(remote_dir, local_dir)
+        try:
+            for i in xrange(K):
+                self._make_random_file(directory=local_dir)
 
-        assert self.hdfs.exists(remote_dir)
-        assert len(self.hdfs.ls(remote_dir)) == K
+            remote_dir = pjoin(self.test_dir, local_dir)
+            self.hdfs.put(remote_dir, local_dir)
 
-        self.hdfs.rmdir(remote_dir)
-        assert not self.hdfs.exists(remote_dir)
+            assert self.hdfs.exists(remote_dir)
+            assert len(self.hdfs.ls(remote_dir)) == K
+
+            self.hdfs.rmdir(remote_dir)
+            assert not self.hdfs.exists(remote_dir)
+        finally:
+            shutil.rmtree(local_dir)
 
     def test_ls(self):
         test_dir = pjoin(self.test_dir, 'ls-test')
