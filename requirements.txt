@@ -5,3 +5,4 @@ impyla>=0.9.1
 psutil==0.6.1
 snakebite
 hdfs[kerberos]
+six

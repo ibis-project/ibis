@@ -28,6 +28,13 @@
 # be a scalar or array expression. In this case the binding requirements may be
 # somewhat more lax.
 
+import six
+
+if six.PY3:
+    from io import StringIO
+else:
+    from io import BytesIO as StringIO
+
 import datetime
 import re
 
@@ -79,8 +86,12 @@ class Schema(object):
         return len(self.names)
 
     def _repr(self):
-        return "%s(%s, %s)" % (type(self).__name__, repr(self.names),
-                               repr(self.types))
+        buf = StringIO()
+        space = 2 + max(len(x) for x in self.names)
+        for name, tipo in zip(self.names, self.types):
+            buf.write('\n{0}{1}'.format(name.ljust(space), str(tipo)))
+
+        return "ibis.Schema {{{0}\n}}".format(util.indent(buf.getvalue(), 2))
 
     def __contains__(self, name):
         return name in self._name_locs

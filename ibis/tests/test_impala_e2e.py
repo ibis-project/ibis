@@ -115,6 +115,11 @@ FROM tpch.lineitem li
         result = expr.execute()
         assert len(result) == 10
 
+    def test_get_schema(self):
+        t = self.con.table('tpch.lineitem')
+        schema = self.con.get_schema('lineitem', database='tpch')
+        assert t.schema().equals(schema)
+
     def test_result_as_dataframe(self):
         expr = self.con.table('functional.alltypes').limit(10)
 
