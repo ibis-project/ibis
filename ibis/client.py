@@ -245,7 +245,19 @@ class ImpalaClient(SQLClient):
         return self._get_list(cur)
 
     def get_schema(self, table_name, database=None):
-        pass
+        qualified_name = self._fully_qualified_name(table_name, database)
+        query = 'DESCRIBE {0}'.format(qualified_name)
+        tuples = self.con.fetchall(query)
+
+        names, types, comments = zip(*tuples)
+
+        ibis_types = []
+        for t in types:
+            t = t.lower()
+            t = _impala_type_mapping.get(t, t)
+            ibis_types.append(t)
+
+        return ir.Schema(names, ibis_types)
 
     def create_table(self, table_name, expr, database=None, format='parquet',
                      overwrite=False):
