@@ -671,18 +671,33 @@ class InsertSelect(DDLStatement):
         return'{} {}\n{}'.format(cmd, scoped_name, select_query)
 
 
-class DropTable(DDLStatement):
+class DropObject(DDLStatement):
 
-    def __init__(self, table_name, database=None, must_exist=True):
-        self.table_name = table_name
-        self.database = database
+    def __init__(self, must_exist=True):
         self.must_exist = must_exist
 
     def compile(self):
         if_exists = '' if self.must_exist else 'IF EXISTS '
-        scoped_name = self._get_scoped_name(self.table_name, self.database)
-        drop_line = 'DROP TABLE {}{}'.format(if_exists, scoped_name)
+        object_name = self._object_name()
+        drop_line = 'DROP {0} {1}{2}'.format(self._object_type, if_exists,
+                                             object_name)
         return drop_line
+
+
+
+class DropTable(DropObject):
+
+    def __init__(self, table_name, database=None, must_exist=True):
+        self.table_name = table_name
+        self.database = database
+        DropObject.__init__(self, must_exist=must_exist)
+
+    @property
+    def _object_type(self):
+        return 'TABLE'
+
+    def _object_name(self):
+        return self._get_scoped_name(self.table_name, self.database)
 
 
 class CacheTable(DDLStatement):
@@ -696,6 +711,35 @@ class CacheTable(DDLStatement):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
         cache_line = 'ALTER TABLE {} SET CACHED IN \'{}\''.format(scoped_name, self.pool)
         return cache_line
+
+
+class CreateDatabase(DDLStatement):
+
+    def __init__(self, name, fail_if_exists=True):
+        self.name = name
+        self.fail_if_exists = fail_if_exists
+
+    def compile(self):
+        if_exists = '' if self.fail_if_exists else 'IF NOT EXISTS '
+        name = quote_identifier(self.name)
+
+        create_decl = 'CREATE DATABASE'
+        create_line = '{} {}{}'.format(create_decl, if_exists, name)
+        return create_line
+
+
+class DropDatabase(DropObject):
+
+    def __init__(self, name, must_exist=True):
+        self.name = name
+        DropObject.__init__(self, must_exist=must_exist)
+
+    @property
+    def _object_type(self):
+        return 'DATABASE'
+
+    def _object_name(self):
+        return self.name
 
 
 def _join_not_none(sep, pieces):

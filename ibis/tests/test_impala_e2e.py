@@ -26,6 +26,7 @@ import ibis
 import ibis.config as config
 import ibis.expr.api as api
 import ibis.expr.types as ir
+import ibis.util as util
 
 
 class IbisTestEnv(object):
@@ -99,6 +100,26 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         assert len(self.con.list_tables(database='tpch')) > 0
         assert len(self.con.list_tables(like='nat*', database='tpch')) > 0
 
+    def test_set_database(self):
+        self.assertRaises(Exception, self.con.table, 'alltypes')
+        self.con.set_database('functional')
+
+        self.con.table('alltypes')
+
+    def test_create_exists_drop_database(self):
+        tmp_name = util.guid()
+
+        assert not self.con.exists_database(tmp_name)
+
+        self.con.create_database(tmp_name)
+        assert self.con.exists_database(tmp_name)
+
+        self.con.drop_database(tmp_name)
+        assert not self.con.exists_database(tmp_name)
+
+    def test_exists_table(self):
+        pass
+
     def test_run_sql(self):
         query = """SELECT li.*
 FROM tpch.lineitem li
@@ -114,6 +135,11 @@ FROM tpch.lineitem li
         expr = table.limit(10)
         result = expr.execute()
         assert len(result) == 10
+
+    def test_get_schema(self):
+        t = self.con.table('tpch.lineitem')
+        schema = self.con.get_schema('lineitem', database='tpch')
+        assert t.schema().equals(schema)
 
     def test_result_as_dataframe(self):
         expr = self.con.table('functional.alltypes').limit(10)
