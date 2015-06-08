@@ -26,6 +26,7 @@ import ibis
 import ibis.config as config
 import ibis.expr.api as api
 import ibis.expr.types as ir
+import ibis.util as util
 
 
 class IbisTestEnv(object):
@@ -98,6 +99,26 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
     def test_list_tables(self):
         assert len(self.con.list_tables(database='tpch')) > 0
         assert len(self.con.list_tables(like='nat*', database='tpch')) > 0
+
+    def test_set_database(self):
+        self.assertRaises(Exception, self.con.table, 'alltypes')
+        self.con.set_database('functional')
+
+        self.con.table('alltypes')
+
+    def test_create_exists_drop_database(self):
+        tmp_name = util.guid()
+
+        assert not self.con.exists_database(tmp_name)
+
+        self.con.create_database(tmp_name)
+        assert self.con.exists_database(tmp_name)
+
+        self.con.drop_database(tmp_name)
+        assert not self.con.exists_database(tmp_name)
+
+    def test_exists_table(self):
+        pass
 
     def test_run_sql(self):
         query = """SELECT li.*

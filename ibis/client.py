@@ -19,6 +19,7 @@ from ibis.config import options
 
 from ibis.filesystems import HDFS, WebHDFS
 
+from ibis.sql.exprs import quote_identifier
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
@@ -130,6 +131,10 @@ class ImpalaConnection(object):
         self.con = None
         self.ensure_connected()
 
+    def set_database(self, name):
+        self.params['database'] = name
+        self.connect()
+
     def execute(self, query, retries=3):
         if isinstance(query, ddl.DDLStatement):
             query = query.compile()
@@ -192,9 +197,6 @@ class ImpalaClient(SQLClient):
             else:
                 return name
 
-    def set_database(self, name):
-        pass
-
     def list_tables(self, like=None, database=None):
         """
         List tables in the current (or indicated) database. Like the SHOW
@@ -221,7 +223,56 @@ class ImpalaClient(SQLClient):
         return self._get_list(cur)
 
     def _get_list(self, cur, i=0):
-        return list(zip(*cur.fetchall())[i])
+        tuples = cur.fetchall()
+        if len(tuples) > 0:
+            return list(zip(*tuples)[i])
+        else:
+            return []
+
+    def set_database(self, name):
+        """
+        Set the default database scope for client
+        """
+        self.con.set_database(name)
+
+    def exists_database(self, name):
+        """
+        Checks if a given database exists
+
+        Parameters
+        ----------
+        name : string
+          Database name
+
+        Returns
+        -------
+        if_exists : boolean
+        """
+        return len(self.list_databases(like=name)) > 0
+
+    def create_database(self, name, fail_if_exists=True):
+        """
+        Create a new Impala database
+
+        Parameters
+        ----------
+        name : string
+          Database name
+        """
+        statement = ddl.CreateDatabase(name, fail_if_exists=fail_if_exists)
+        self._execute(statement)
+
+    def drop_database(self, name, must_exist=True):
+        """
+        Drop an Impala database
+
+        Parameters
+        ----------
+        name : string
+          Database name
+        """
+        statement = ddl.DropDatabase(name, must_exist=must_exist)
+        self._execute(statement)
 
     def list_databases(self, like=None):
         """
@@ -245,6 +296,19 @@ class ImpalaClient(SQLClient):
         return self._get_list(cur)
 
     def get_schema(self, table_name, database=None):
+        """
+        Return a Schema object for the indicated table and database
+
+        Parameters
+        ----------
+        table_name : string
+          May be fully qualified
+        database : string, default None
+
+        Returns
+        -------
+        schema : ibis Schema
+        """
         qualified_name = self._fully_qualified_name(table_name, database)
         query = 'DESCRIBE {0}'.format(qualified_name)
         tuples = self.con.fetchall(query)
