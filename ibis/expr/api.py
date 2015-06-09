@@ -1083,6 +1083,39 @@ def cross_join(left, right, prefixes=None):
     return TableExpr(op)
 
 
+def _table_set_column(table, name, expr):
+    """
+    Replace an existing column with a new expression
+
+    Parameters
+    ----------
+    name : string
+      Column name to replace
+    expr : value expression
+      New data for column
+
+    Returns
+    -------
+    set_table : TableExpr
+      New table expression
+    """
+    if expr._name != name:
+        expr = expr.name(name)
+
+    if name not in table:
+        raise KeyError('{0} is not in the table'.format(name))
+
+    # TODO: This assumes that projection is required; may be backend-dependent
+    proj_exprs = []
+    for key in table.columns:
+        if key == name:
+            proj_exprs.append(expr)
+        else:
+            proj_exprs.append(table[key])
+
+    return table.projection(proj_exprs)
+
+
 def _regular_join_method(name, how, doc=None):
     def f(self, other, predicates=()):
         return self.join(other, predicates, how=how)
@@ -1096,6 +1129,7 @@ def _regular_join_method(name, how, doc=None):
 
 
 _table_methods = dict(
+    set_column=_table_set_column,
     join=join,
     cross_join=cross_join,
     inner_join=_regular_join_method('inner_join', 'inner'),

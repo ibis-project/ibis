@@ -340,6 +340,19 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         expected = self.table[self.table, foo, bar]
         assert t3.equals(expected)
 
+    def test_replace_column(self):
+        tb = api.table([
+            ('a', 'int32'),
+            ('b', 'double'),
+            ('c', 'string')
+        ])
+
+        expr = tb.b.cast('int32')
+        tb2 = tb.set_column('b', expr)
+        expected = tb[tb.a, expr.name('b'), tb.c]
+
+        assert tb2.equals(expected)
+
     def test_filter_no_list(self):
         pred = self.table.a > 5
 
