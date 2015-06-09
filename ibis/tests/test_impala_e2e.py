@@ -172,6 +172,10 @@ FROM tpch.lineitem li
     def test_summary_execute(self):
         table = self.con.table('functional.alltypes')
 
+        # also test set_column while we're at it
+        table = table.set_column('double_col',
+                                 table.double_col * 2)
+
         expr = table.double_col.summary()
         repr(expr)
 

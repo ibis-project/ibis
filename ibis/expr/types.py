@@ -589,6 +589,9 @@ class TableExpr(Expr):
         from ibis.expr.analysis import ExprValidator
         ExprValidator([self]).validate_all(exprs)
 
+    def __contains__(self, name):
+        return name in self.schema()
+
     def __getitem__(self, what):
         if isinstance(what, basestring):
             return self.get_column(what)
