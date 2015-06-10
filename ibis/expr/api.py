@@ -116,6 +116,19 @@ def case():
     Similar to the .case method on array expressions, create a case builder
     that accepts self-contained boolean expressions (as opposed to expressions
     which are to be equality-compared with a fixed value expression)
+
+    Use the .when method on the resulting object followed by .end to create a
+    complete case.
+
+    Examples
+    --------
+    expr = (ibis.case()
+            .when(cond1, result1)
+            .when(cond2, result2).end())
+
+    Returns
+    -------
+    case : CaseBuilder
     """
     return _ops.SearchedCaseBuilder()
 
@@ -375,6 +388,10 @@ def greatest(*args):
     """
     Compute the largest value (row-wise, if any arrays are present) among the
     supplied arguments.
+
+    Returns
+    -------
+    greatest : type depending on arguments
     """
     return _ops.Greatest(args).to_expr()
 
@@ -383,12 +400,17 @@ def least(*args):
     """
     Compute the smallest value (row-wise, if any arrays are present) among the
     supplied arguments.
+
+    Returns
+    -------
+    least : type depending on arguments
     """
     return _ops.Least(args).to_expr()
 
 
 def where(boolean_expr, true_expr, false_null_expr):
     """
+    Equivalent to the ternary expression: if X then Y else Z
 
     Parameters
     ----------

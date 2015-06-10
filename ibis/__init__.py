@@ -15,6 +15,7 @@
 
 # flake8: noqa
 
+__version__ = '0.2.0'
 
 from ibis.client import ImpalaConnection, ImpalaClient
 from ibis.filesystems import WebHDFS
@@ -31,7 +32,24 @@ from ibis.config import options
 
 def make_client(db, hdfs_client=None):
     """
+    Create an Ibis client from a database connection and optional additional
+    connections (like HDFS)
 
+    Parameters
+    ----------
+    db : Connection
+      e.g. produced by ibis.impala_connect
+    hdfs_client : ibis HDFS client
+
+    Examples
+    --------
+    con = ibis.impala_connect(**impala_params)
+    hdfs = ibis.hdfs_connect(**hdfs_params)
+    client = ibis.make_client(con, hdfs_client=hdfs)
+
+    Returns
+    -------
+    client : IbisClient
     """
     return ImpalaClient(db, hdfs_client=hdfs_client)
 
@@ -57,12 +75,10 @@ def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
     ldap_password :
     use_kerberos : boolean, default False
     kerberos_service_name : string, default 'impala'
-    hdfs_client : HDFS instance (using hdfs library)
-      If you created an HDFS client instance elsewhere
 
     Returns
     -------
-    con : ImpalaClient
+    con : ImpalaConnection
     """
     params = {
         'host': host,
