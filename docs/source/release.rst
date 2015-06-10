@@ -2,7 +2,10 @@
 Release Notes
 =============
 
-0.2.0 (June 10, 2015)
+0.3.0 (TBD)
+-----------
+
+0.2.0 (June 11, 2015)
 ---------------------
 
 New features
@@ -17,6 +20,7 @@ New features
 * New ``category`` logical datatype for handling bucketed data, among other
   things
 * Add ``summary`` API to numeric expressions
+* Add ``value_counts`` convenience API to array expressions
 * New string methods ``like``, ``rlike``, and ``contains`` for fuzzy and regex
   searching
 * Add ``options.verbose`` option and configurable ``options.verbose_log``
