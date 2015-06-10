@@ -1,0 +1,7 @@
+Remember to run
+
+  pip install -r requirements-docs.txt
+
+Then
+
+  make html
