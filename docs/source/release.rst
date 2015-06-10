@@ -22,12 +22,14 @@ New features
 * Add ``options.verbose`` option and configurable ``options.verbose_log``
   callback function for improved query logging and visibility
 * Support for new SQL built-in functions
+
   * ``ibis.coalesce``
   * ``ibis.greatest`` and ``ibis.least``
   * ``ibis.where`` for conditional logic (see also ``ibis.case`` and
     ``ibis.cases``)
   * ``nullif`` method on value expressions
   * ``ibis.now``
+
 * New aggregate functions: ``approx_median``, ``approx_nunique``, and
   ``group_concat``
 * ``where`` argument in aggregate functions
@@ -36,11 +38,13 @@ New features
   ``table.group_by(exprs).COLUMN_NAME.agg_function()``
 * Add default expression names to most aggregate functions
 * New Impala database client helper methods
+
   * ``create_database``
   * ``drop_database``
   * ``exists_database``
   * ``list_databases``
   * ``set_database``
+
 * Client ``list_tables`` searching / listing method
 * Add ``add``, ``sub``, and other explicit arithmetic methods to value
   expressions
