@@ -250,7 +250,7 @@ class ImpalaClient(SQLClient):
         """
         return len(self.list_databases(like=name)) > 0
 
-    def create_database(self, name, fail_if_exists=True):
+    def create_database(self, name, path=None, fail_if_exists=True):
         """
         Create a new Impala database
 
@@ -258,8 +258,12 @@ class ImpalaClient(SQLClient):
         ----------
         name : string
           Database name
+        path : string, default None
+          HDFS path where to store the database data; otherwise uses Impala
+          default
         """
-        statement = ddl.CreateDatabase(name, fail_if_exists=fail_if_exists)
+        statement = ddl.CreateDatabase(name, path=path,
+                                       fail_if_exists=fail_if_exists)
         self._execute(statement)
 
     def drop_database(self, name, must_exist=True):

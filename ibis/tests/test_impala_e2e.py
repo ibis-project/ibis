@@ -14,6 +14,7 @@
 
 import gc
 import os
+import posixpath
 import pytest
 import unittest
 
@@ -64,6 +65,7 @@ class ImpalaE2E(object):
         try:
             import impala  # noqa
             cls.con = connect(ENV)
+            cls.hdfs = cls.con.hdfs
         except ImportError:
             # fail gracefully if impyla not installed
             pytest.skip('no impyla')
@@ -116,6 +118,16 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
         self.con.drop_database(tmp_name)
         assert not self.con.exists_database(tmp_name)
+
+    def test_create_database_with_location(self):
+        base = '/{0}'.format(util.guid())
+        name = 'test_{0}'.format(util.guid())
+        tmp_path = posixpath.join(base, name)
+
+        self.con.create_database(name, path=tmp_path)
+        assert self.hdfs.exists(base)
+        self.con.drop_database(name)
+        self.hdfs.rmdir(base)
 
     def test_exists_table(self):
         pass

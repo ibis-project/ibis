@@ -82,7 +82,7 @@ class HDFS(object):
     def mkdir(self, path, create_parent=False):
         pass
 
-    def ls(self, hdfs_path):
+    def ls(self, hdfs_path, status=False):
         """
         Return contents of directory
 
@@ -102,7 +102,7 @@ class HDFS(object):
         self.client.delete(path, recursive=True)
 
     def find_any_file(self, hdfs_dir):
-        contents = self.ls(hdfs_dir)
+        contents = self.ls(hdfs_dir, status=True)
 
         def valid_filename(name):
             head, tail = posixpath.split(name)
@@ -144,8 +144,12 @@ class WebHDFS(HDFS):
             return False
 
     @implements(HDFS.ls)
-    def ls(self, hdfs_path):
-        return self.client.list(hdfs_path)
+    def ls(self, hdfs_path, status=False):
+        contents = self.client.list(hdfs_path)
+        if not status:
+            return [path for path, detail in contents]
+        else:
+            return contents
 
     @implements(HDFS.mkdir)
     def mkdir(self, dir_path, create_parent=False):
@@ -188,9 +192,6 @@ class WebHDFS(HDFS):
 
     @implements(HDFS.get)
     def get(self, hdfs_path, local_path, overwrite=False):
-        if not overwrite and osp.exists(local_path):
-            raise Exception('{0} exists'.format(local_path))
-
         hdfs_path = hdfs_path.rstrip(posixpath.sep)
 
         if osp.isdir(local_path):
@@ -215,10 +216,14 @@ class WebHDFS(HDFS):
                 if detail['type'] == 'FILE':
                     self.client.download(hpath, full_opath)
                 else:
+                    os.makedirs(full_opath)
                     _scrape_dir(hpath, dst)
 
         status = self.status(hdfs_path)
         if status['type'] == 'FILE':
+            if not overwrite and osp.exists(local_path):
+                raise Exception('{0} exists'.format(local_path))
+
             self.client.download(hdfs_path, local_path)
         else:
             # TODO: partitioned files

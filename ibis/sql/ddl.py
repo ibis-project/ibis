@@ -715,8 +715,9 @@ class CacheTable(DDLStatement):
 
 class CreateDatabase(DDLStatement):
 
-    def __init__(self, name, fail_if_exists=True):
+    def __init__(self, name, path=None, fail_if_exists=True):
         self.name = name
+        self.path = path
         self.fail_if_exists = fail_if_exists
 
     def compile(self):
@@ -725,6 +726,9 @@ class CreateDatabase(DDLStatement):
 
         create_decl = 'CREATE DATABASE'
         create_line = '{} {}{}'.format(create_decl, if_exists, name)
+        if self.path is not None:
+            create_line += "\nLOCATION '{}'".format(self.path)
+
         return create_line
 
 
