@@ -148,8 +148,7 @@ class ImpalaConnection(object):
             else:
                 raise
 
-            self.log(query)
-
+        self.log(query)
         cursor.execute(query)
         return cursor
 
@@ -395,10 +394,12 @@ class ImpalaClient(SQLClient):
         if name is None:
             name = self._random_tmp_table()
 
-        stmt = ddl.CreateTableAvro(name, hdfs_dir, schema, avro_schema,
+        qualified_name = self._fully_qualified_name(name, database)
+        stmt = ddl.CreateTableAvro(name, hdfs_dir, schema,
+                                   avro_schema,
+                                   database=database,
                                    external=external)
         self._execute(stmt)
-        qualified_name = self._fully_qualified_name(name, database)
         return self._wrap_new_table(qualified_name, persist)
 
     def delimited_file(self, hdfs_dir, schema, name=None, database=None,
@@ -439,11 +440,13 @@ class ImpalaClient(SQLClient):
         if name is None:
             name = self._random_tmp_table()
 
+        qualified_name = self._fully_qualified_name(name, database)
+
         stmt = ddl.CreateTableDelimited(name, hdfs_dir, schema,
+                                        database=database,
                                         delimiter=delimiter,
                                         external=external)
         self._execute(stmt)
-        qualified_name = self._fully_qualified_name(name, database)
         return self._wrap_new_table(qualified_name, persist)
 
     def parquet_file(self, hdfs_dir, schema=None, name=None, database=None,
@@ -496,13 +499,16 @@ class ImpalaClient(SQLClient):
         if like_file is None and like_table is None and schema is None:
             like_file = self.hdfs.find_any_file(hdfs_dir)
 
-        stmt = ddl.CreateTableParquet(name, hdfs_dir, schema=schema,
+        qualified_name = self._fully_qualified_name(name, database)
+
+        stmt = ddl.CreateTableParquet(name, hdfs_dir,
+                                      schema=schema,
+                                      database=database,
                                       example_file=like_file,
                                       example_table=like_table,
                                       external=external)
         self._execute(stmt)
 
-        qualified_name = self._fully_qualified_name(name, database)
         return self._wrap_new_table(qualified_name, persist)
 
     def _wrap_new_table(self, qualified_name, persist):
