@@ -139,6 +139,7 @@ class TestHDFSE2E(unittest.TestCase):
             dpath = util.guid()
             self.hdfs.get(fpath, dpath)
             assert _contents_equal(dpath, lpath)
+            os.remove(dpath)
         finally:
             self.hdfs.rm(fpath)
             assert not self.hdfs.exists(fpath)
