@@ -14,6 +14,7 @@
 
 import gc
 import os
+import posixpath
 import pytest
 import unittest
 
@@ -23,6 +24,7 @@ from hdfs import InsecureClient
 
 import ibis
 
+import ibis.common as com
 import ibis.config as config
 import ibis.expr.api as api
 import ibis.expr.types as ir
@@ -64,6 +66,13 @@ class ImpalaE2E(object):
         try:
             import impala  # noqa
             cls.con = connect(ENV)
+            cls.hdfs = cls.con.hdfs
+
+            cls.test_db = '__ibis_{0}'.format(util.guid())
+
+            cls.con.create_database(cls.test_db)
+
+            cls.alltypes = cls.con.table('functional.alltypes')
         except ImportError:
             # fail gracefully if impyla not installed
             pytest.skip('no impyla')
@@ -74,7 +83,10 @@ class ImpalaE2E(object):
 
     @classmethod
     def tearDownClass(cls):
-        pass
+        try:
+            cls.con.drop_database(cls.test_db)
+        except:
+            pass
 
 
 class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
@@ -116,6 +128,28 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
         self.con.drop_database(tmp_name)
         assert not self.con.exists_database(tmp_name)
+
+    def test_drop_non_empty_database(self):
+        tmp_db = util.guid()
+        self.con.create_database(tmp_db)
+
+        tmp_table = util.guid()
+        self.con.create_table(tmp_table, self.alltypes, database=tmp_db)
+
+        self.assertRaises(com.IntegrityError, self.con.drop_database, tmp_db)
+
+        self.con.drop_database(tmp_db, drop_tables=True)
+        assert not self.con.exists_database(tmp_db)
+
+    def test_create_database_with_location(self):
+        base = '/{0}'.format(util.guid())
+        name = 'test_{0}'.format(util.guid())
+        tmp_path = posixpath.join(base, name)
+
+        self.con.create_database(name, path=tmp_path)
+        assert self.hdfs.exists(base)
+        self.con.drop_database(name)
+        self.hdfs.rmdir(base)
 
     def test_exists_table(self):
         pass
@@ -517,13 +551,15 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
                               ('r_name', 'string'),
                               ('r_comment', 'string')])
         self.con.parquet_file(hdfs_path, schema=schema,
-                              name=name, persist=True)
+                              name=name,
+                              database=self.test_db,
+                              persist=True)
         gc.collect()
 
         # table still exists
-        self.con.table(name)
+        self.con.table(name, database=self.test_db)
 
-        _ensure_drop(self.con, name)
+        _ensure_drop(self.con, name, database=self.test_db)
 
     def test_query_avro(self):
         hdfs_path = '/test-warehouse/tpch.region_avro'
@@ -540,10 +576,12 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
             "name": "a"
         }
 
-        table = self.con.avro_file(hdfs_path, schema, avro_schema)
+        table = self.con.avro_file(hdfs_path, schema, avro_schema,
+                                   database=self.test_db)
 
         name = table.op().name
-        assert name.startswith('ibis_tmp_')
+        assert 'ibis_tmp_' in name
+        assert name.startswith('{}.'.format(self.test_db))
 
         # table exists
         self.con.table(name)
@@ -602,14 +640,16 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         schema = ibis.schema([('foo', 'string'),
                               ('bar', 'double'),
                               ('baz', 'int8')])
-        table = self.con.delimited_file(hdfs_path, schema, delimiter=',')
-
-        expr = (table
-                [table.bar > 0]
-                .group_by('foo')
-                .aggregate([table.bar.sum().name('sum(bar)'),
-                            table.baz.sum().name('mean(baz)')]))
-        expr.execute()
-
-    def test_avro(self):
-        pass
+        name = 'delimited_table_test1'
+        table = self.con.delimited_file(hdfs_path, schema, name=name,
+                                        database=self.test_db,
+                                        delimiter=',')
+        try:
+            expr = (table
+                    [table.bar > 0]
+                    .group_by('foo')
+                    .aggregate([table.bar.sum().name('sum(bar)'),
+                                table.baz.sum().name('mean(baz)')]))
+            expr.execute()
+        finally:
+            self.con.drop_table(name, database=self.test_db)

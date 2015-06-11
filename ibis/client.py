@@ -14,12 +14,11 @@
 
 import hdfs
 
-from ibis.common import IbisError
 from ibis.config import options
 
 from ibis.filesystems import HDFS, WebHDFS
 
-from ibis.sql.exprs import quote_identifier
+import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
@@ -149,11 +148,13 @@ class ImpalaConnection(object):
             else:
                 raise
 
-        if options.verbose:
-            options.verbose_log(query)
-
+        self.log(query)
         cursor.execute(query)
         return cursor
+
+    def log(self, msg):
+        if options.verbose:
+            options.verbose_log(msg)
 
     def fetchall(self, query, retries=3):
         cursor = self.execute(query, retries=retries)
@@ -186,6 +187,10 @@ class ImpalaClient(SQLClient):
         self.hdfs = hdfs_client
 
         self.con.ensure_connected()
+
+    def log(self, msg):
+        if options.verbose:
+            options.verbose_log(msg)
 
     def _fully_qualified_name(self, name, database):
         if database is not None:
@@ -250,7 +255,7 @@ class ImpalaClient(SQLClient):
         """
         return len(self.list_databases(like=name)) > 0
 
-    def create_database(self, name, fail_if_exists=True):
+    def create_database(self, name, path=None, fail_if_exists=True):
         """
         Create a new Impala database
 
@@ -258,11 +263,15 @@ class ImpalaClient(SQLClient):
         ----------
         name : string
           Database name
+        path : string, default None
+          HDFS path where to store the database data; otherwise uses Impala
+          default
         """
-        statement = ddl.CreateDatabase(name, fail_if_exists=fail_if_exists)
+        statement = ddl.CreateDatabase(name, path=path,
+                                       fail_if_exists=fail_if_exists)
         self._execute(statement)
 
-    def drop_database(self, name, must_exist=True):
+    def drop_database(self, name, must_exist=True, drop_tables=False):
         """
         Drop an Impala database
 
@@ -270,7 +279,20 @@ class ImpalaClient(SQLClient):
         ----------
         name : string
           Database name
+        drop_tables : boolean, default False
+          If False and there are any tables in this database, raises an
+          IntegrityError
         """
+        tables = self.list_tables(database=name)
+        if drop_tables:
+            for table in tables:
+                self.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
+                self.drop_table(table, database=name)
+        else:
+            if len(tables) > 0:
+                raise com.IntegrityError('Database {0} must be empty before '
+                                         'being dropped, or set '
+                                         'drop_tables=True'.format(name))
         statement = ddl.DropDatabase(name, must_exist=must_exist)
         self._execute(statement)
 
@@ -372,10 +394,12 @@ class ImpalaClient(SQLClient):
         if name is None:
             name = self._random_tmp_table()
 
-        stmt = ddl.CreateTableAvro(name, hdfs_dir, schema, avro_schema,
+        qualified_name = self._fully_qualified_name(name, database)
+        stmt = ddl.CreateTableAvro(name, hdfs_dir, schema,
+                                   avro_schema,
+                                   database=database,
                                    external=external)
         self._execute(stmt)
-        qualified_name = self._fully_qualified_name(name, database)
         return self._wrap_new_table(qualified_name, persist)
 
     def delimited_file(self, hdfs_dir, schema, name=None, database=None,
@@ -416,11 +440,13 @@ class ImpalaClient(SQLClient):
         if name is None:
             name = self._random_tmp_table()
 
+        qualified_name = self._fully_qualified_name(name, database)
+
         stmt = ddl.CreateTableDelimited(name, hdfs_dir, schema,
+                                        database=database,
                                         delimiter=delimiter,
                                         external=external)
         self._execute(stmt)
-        qualified_name = self._fully_qualified_name(name, database)
         return self._wrap_new_table(qualified_name, persist)
 
     def parquet_file(self, hdfs_dir, schema=None, name=None, database=None,
@@ -473,13 +499,16 @@ class ImpalaClient(SQLClient):
         if like_file is None and like_table is None and schema is None:
             like_file = self.hdfs.find_any_file(hdfs_dir)
 
-        stmt = ddl.CreateTableParquet(name, hdfs_dir, schema=schema,
+        qualified_name = self._fully_qualified_name(name, database)
+
+        stmt = ddl.CreateTableParquet(name, hdfs_dir,
+                                      schema=schema,
+                                      database=database,
                                       example_file=like_file,
                                       example_table=like_table,
                                       external=external)
         self._execute(stmt)
 
-        qualified_name = self._fully_qualified_name(name, database)
         return self._wrap_new_table(qualified_name, persist)
 
     def _wrap_new_table(self, qualified_name, persist):
@@ -618,7 +647,7 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
     def __del__(self):
         try:
             self.cleanup()
-        except IbisError:
+        except com.IbisError:
             pass
 
     def cleanup(self):

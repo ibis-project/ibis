@@ -12,11 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This file may adapt small portions of https://github.com/mtth/hdfs (MIT
+# license), see the LICENSES directory.
+
+from os import path as osp
 import os
 import posixpath
+import shutil
 
 import ibis.common as com
 import ibis.util as util
+
+
+from hdfs.util import temppath
+
+
+class HDFSError(com.IbisError):
+    pass
+
 
 
 def implements(f):
@@ -38,16 +51,43 @@ class HDFS(object):
     def exists(self, path):
         raise NotImplementedError
 
+    def status(self, path):
+        raise NotImplementedError
+
     def head(self, hdfs_path, nbytes=1024, offset=0):
         raise NotImplementedError
 
-    def get(self, hdfs_path, local_path, overwrite=False):
+    def get(self, hdfs_path, local_path='.', overwrite=False):
+        """
+        Download remote file or directory to the local filesystem
+
+        Parameters
+        ----------
+        hdfs_path : string
+        local_path : string, default '.'
+        """
         raise NotImplementedError
 
     def put(self, hdfs_path, local_path, overwrite=False, verbose=None,
             **kwargs):
         """
+        Write file or directory to HDFS
 
+        Parameters
+        ----------
+        hdfs_path : string
+          Directory or path
+        local_path : string
+          Relative or absolute path to local resource
+        overwrite : boolean, default False
+        verbose : boolean, default ibis options.verbose
+
+        Further keyword arguments passed down to any internal API used.
+
+        Returns
+        -------
+        written_path : string
+          The path to the written file or directory
         """
         raise NotImplementedError
 
@@ -58,7 +98,7 @@ class HDFS(object):
     def mkdir(self, path, create_parent=False):
         pass
 
-    def ls(self, hdfs_path):
+    def ls(self, hdfs_path, status=False):
         """
         Return contents of directory
 
@@ -78,7 +118,7 @@ class HDFS(object):
         self.client.delete(path, recursive=True)
 
     def find_any_file(self, hdfs_dir):
-        contents = self.ls(hdfs_dir)
+        contents = self.ls(hdfs_dir, status=True)
 
         def valid_filename(name):
             head, tail = posixpath.split(name)
@@ -108,6 +148,9 @@ class WebHDFS(HDFS):
     def protocol(self):
         return 'webhdfs'
 
+    def status(self, path):
+        return self.client.status(path)
+
     @implements(HDFS.exists)
     def exists(self, path):
         try:
@@ -117,8 +160,12 @@ class WebHDFS(HDFS):
             return False
 
     @implements(HDFS.ls)
-    def ls(self, hdfs_path):
-        return self.client.list(hdfs_path)
+    def ls(self, hdfs_path, status=False):
+        contents = self.client.list(hdfs_path)
+        if not status:
+            return [path for path, detail in contents]
+        else:
+            return contents
 
     @implements(HDFS.mkdir)
     def mkdir(self, dir_path, create_parent=False):
@@ -142,13 +189,13 @@ class WebHDFS(HDFS):
     @implements(HDFS.put)
     def put(self, hdfs_path, local_path, overwrite=False, verbose=None,
             **kwargs):
-        if os.path.isdir(local_path):
+        if osp.isdir(local_path):
             for dirpath, dirnames, filenames in os.walk(local_path):
-                rel_dir = os.path.relpath(dirpath, local_path)
+                rel_dir = osp.relpath(dirpath, local_path)
                 if rel_dir == '.':
                     rel_dir = ''
                 for fpath in filenames:
-                    abs_path = os.path.join(dirpath, fpath)
+                    abs_path = osp.join(dirpath, fpath)
                     rel_hdfs_path = posixpath.join(hdfs_path, rel_dir, fpath)
                     self.put(rel_hdfs_path, abs_path, overwrite=overwrite,
                              verbose=verbose, **kwargs)
@@ -158,6 +205,52 @@ class WebHDFS(HDFS):
                                                               hdfs_path))
             self.client.upload(hdfs_path, local_path,
                                overwrite=overwrite, **kwargs)
+
+    @implements(HDFS.get)
+    def get(self, hdfs_path, local_path, overwrite=False):
+        hdfs_path = hdfs_path.rstrip(posixpath.sep)
+
+        if osp.isdir(local_path):
+            dest = osp.join(local_path, posixpath.basename(hdfs_path))
+        else:
+            local_dir = osp.dirname(local_path) or '.'
+            if osp.isdir(local_dir):
+                dest = local_path
+            else:
+                # fail early
+                raise HDFSError('Parent directory %s does not exist',
+                                local_dir)
+
+        # TODO: threadpool
+
+        def _scrape_dir(path, dst):
+            objs = self.client.list(path)
+            for hpath, detail in objs:
+                relpath = posixpath.relpath(hpath, hdfs_path)
+                full_opath = posixpath.join(dst, relpath)
+
+                if detail['type'] == 'FILE':
+                    self.client.download(hpath, full_opath)
+                else:
+                    os.makedirs(full_opath)
+                    _scrape_dir(hpath, dst)
+
+        status = self.status(hdfs_path)
+        if status['type'] == 'FILE':
+            if not overwrite and osp.exists(local_path):
+                raise Exception('{0} exists'.format(local_path))
+
+            self.client.download(hdfs_path, local_path)
+        else:
+            # TODO: partitioned files
+
+            with temppath() as tpath:
+                _temp_dir_path = osp.join(tpath, posixpath.basename(hdfs_path))
+                os.makedirs(_temp_dir_path)
+                _scrape_dir(hdfs_path, _temp_dir_path)
+                shutil.move(_temp_dir_path, local_path)
+
+        return dest
 
     def write(self, hdfs_path, buf, overwrite=False, blocksize=None,
               replication=None, buffersize=None):
@@ -170,13 +263,3 @@ class WebHDFS(HDFS):
         self.client.write(buf, hdfs_path, overwrite=overwrite,
                           blocksize=blocksize, replication=replication,
                           buffersize=buffersize)
-
-
-def connect(host, port=8020, hadoop_version=9):
-    from snakebite.client import Client
-    client = Client(host, port=port, hadoop_version=hadoop_version)
-    return HDFS(client)
-
-
-def connect_ha(namenodes):
-    raise NotImplementedError
