@@ -24,6 +24,7 @@ from hdfs import InsecureClient
 
 import ibis
 
+import ibis.common as com
 import ibis.config as config
 import ibis.expr.api as api
 import ibis.expr.types as ir
@@ -66,6 +67,8 @@ class ImpalaE2E(object):
             import impala  # noqa
             cls.con = connect(ENV)
             cls.hdfs = cls.con.hdfs
+
+            cls.alltypes = cls.con.table('functional.alltypes')
         except ImportError:
             # fail gracefully if impyla not installed
             pytest.skip('no impyla')
@@ -118,6 +121,18 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
         self.con.drop_database(tmp_name)
         assert not self.con.exists_database(tmp_name)
+
+    def test_drop_non_empty_database(self):
+        tmp_db = util.guid()
+        self.con.create_database(tmp_db)
+
+        tmp_table = util.guid()
+        self.con.create_table(tmp_table, self.alltypes, database=tmp_db)
+
+        self.assertRaises(com.IntegrityError, self.con.drop_database, tmp_db)
+
+        self.con.drop_database(tmp_db, drop_tables=True)
+        assert not self.con.exists_database(tmp_db)
 
     def test_create_database_with_location(self):
         base = '/{0}'.format(util.guid())

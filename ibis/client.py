@@ -14,12 +14,11 @@
 
 import hdfs
 
-from ibis.common import IbisError
 from ibis.config import options
 
 from ibis.filesystems import HDFS, WebHDFS
 
-from ibis.sql.exprs import quote_identifier
+import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
@@ -149,11 +148,14 @@ class ImpalaConnection(object):
             else:
                 raise
 
-        if options.verbose:
-            options.verbose_log(query)
+            self.log(query)
 
         cursor.execute(query)
         return cursor
+
+    def log(self, msg):
+        if options.verbose:
+            options.verbose_log(msg)
 
     def fetchall(self, query, retries=3):
         cursor = self.execute(query, retries=retries)
@@ -186,6 +188,10 @@ class ImpalaClient(SQLClient):
         self.hdfs = hdfs_client
 
         self.con.ensure_connected()
+
+    def log(self, msg):
+        if options.verbose:
+            options.verbose_log(msg)
 
     def _fully_qualified_name(self, name, database):
         if database is not None:
@@ -266,7 +272,7 @@ class ImpalaClient(SQLClient):
                                        fail_if_exists=fail_if_exists)
         self._execute(statement)
 
-    def drop_database(self, name, must_exist=True):
+    def drop_database(self, name, must_exist=True, drop_tables=False):
         """
         Drop an Impala database
 
@@ -274,7 +280,20 @@ class ImpalaClient(SQLClient):
         ----------
         name : string
           Database name
+        drop_tables : boolean, default False
+          If False and there are any tables in this database, raises an
+          IntegrityError
         """
+        tables = self.list_tables(database=name)
+        if drop_tables:
+            for table in tables:
+                self.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
+                self.drop_table(table, database=name)
+        else:
+            if len(tables) > 0:
+                raise com.IntegrityError('Database {0} must be empty before '
+                                         'being dropped, or set '
+                                         'drop_tables=True'.format(name))
         statement = ddl.DropDatabase(name, must_exist=must_exist)
         self._execute(statement)
 
@@ -622,7 +641,7 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
     def __del__(self):
         try:
             self.cleanup()
-        except IbisError:
+        except com.IbisError:
             pass
 
     def cleanup(self):
