@@ -177,6 +177,35 @@ class TestHDFSE2E(unittest.TestCase):
         finally:
             shutil.rmtree(local_dir)
 
+    def test_get_directory_nested_dirs(self):
+        local_dir = util.guid()
+        local_download_dir = util.guid()
+
+        K = 5
+
+        os.mkdir(local_dir)
+
+        try:
+            for i in xrange(K):
+                self._make_random_file(directory=local_dir)
+
+            nested_dir = os.path.join(local_dir, 'nested-dir')
+            shutil.copytree(local_dir, nested_dir)
+
+            remote_dir = pjoin(self.test_dir, local_dir)
+            self.hdfs.put(remote_dir, local_dir)
+
+            # download directory and check contents
+            self.hdfs.get(remote_dir, local_download_dir)
+
+            _check_directories_equal(local_dir, local_download_dir)
+
+            self._try_delete_directory(local_download_dir)
+
+            self.hdfs.rmdir(remote_dir)
+            assert not self.hdfs.exists(remote_dir)
+        finally:
+            shutil.rmtree(local_dir)
 
     def _try_delete_directory(self, path):
         try:
