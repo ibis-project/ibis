@@ -71,7 +71,23 @@ class HDFS(object):
     def put(self, hdfs_path, local_path, overwrite=False, verbose=None,
             **kwargs):
         """
+        Write file or directory to HDFS
 
+        Parameters
+        ----------
+        hdfs_path : string
+          Directory or path
+        local_path : string
+          Relative or absolute path to local resource
+        overwrite : boolean, default False
+        verbose : boolean, default ibis options.verbose
+
+        Further keyword arguments passed down to any internal API used.
+
+        Returns
+        -------
+        written_path : string
+          The path to the written file or directory
         """
         raise NotImplementedError
 
