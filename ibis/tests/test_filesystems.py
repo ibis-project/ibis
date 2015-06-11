@@ -125,7 +125,7 @@ class TestHDFSE2E(unittest.TestCase):
         self.hdfs.mkdir(path)
         assert self.hdfs.exists(path)
 
-    def test_write_delete_file(self):
+    def test_write_get_delete_file(self):
         dirpath = pjoin(self.test_dir, 'write-delete-test')
         self.hdfs.mkdir(dirpath)
 
@@ -135,14 +135,20 @@ class TestHDFSE2E(unittest.TestCase):
         self.hdfs.put(fpath, lpath)
         assert self.hdfs.exists(fpath)
 
-        self.hdfs.rm(fpath)
-        assert not self.hdfs.exists(fpath)
+        try:
+            dpath = util.guid()
+            self.hdfs.get(fpath, dpath)
+            assert _contents_equal(dpath, lpath)
+        finally:
+            self.hdfs.rm(fpath)
+            assert not self.hdfs.exists(fpath)
 
     def test_overwrite_file(self):
         pass
 
-    def test_write_local_directory(self):
+    def test_write_get_directory(self):
         local_dir = util.guid()
+        local_download_dir = util.guid()
 
         K = 5
 
@@ -158,10 +164,24 @@ class TestHDFSE2E(unittest.TestCase):
             assert self.hdfs.exists(remote_dir)
             assert len(self.hdfs.ls(remote_dir)) == K
 
+            # download directory and check contents
+            self.hdfs.get(remote_dir, local_download_dir)
+
+            _check_directories_equal(local_dir, local_download_dir)
+
+            self._try_delete_directory(local_download_dir)
+
             self.hdfs.rmdir(remote_dir)
             assert not self.hdfs.exists(remote_dir)
         finally:
             shutil.rmtree(local_dir)
+
+
+    def _try_delete_directory(self, path):
+        try:
+            shutil.rmtree(path)
+        except os.error:
+            pass
 
     def test_ls(self):
         test_dir = pjoin(self.test_dir, 'ls-test')
@@ -172,3 +192,34 @@ class TestHDFSE2E(unittest.TestCase):
             self.hdfs.put(hdfs_path, local_path)
 
         assert len(self.hdfs.ls(test_dir)) == 10
+
+
+def _check_directories_equal(left, right):
+    left_files = _get_all_files(left)
+    right_files = _get_all_files(right)
+
+    assert set(left_files.keys()) == set(right_files.keys())
+
+    for relpath, labspath in left_files.items():
+        rabspath = right_files[relpath]
+        assert _contents_equal(rabspath, labspath)
+
+
+def _contents_equal(left, right):
+    with open(left) as lf:
+        with open(right) as rf:
+            return lf.read() == rf.read()
+
+
+def _get_all_files(path):
+    paths = {}
+    for dirpath, _, filenames in os.walk(path):
+        rel_dir = os.path.relpath(dirpath, path)
+        if rel_dir == '.':
+            rel_dir = ''
+        for name in filenames:
+            abspath = os.path.join(dirpath, name)
+            relpath = os.path.join(rel_dir, name)
+            paths[relpath] = abspath
+
+    return paths
