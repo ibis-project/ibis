@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from posixpath import join as pjoin
 import gc
 import os
 import posixpath
@@ -37,6 +38,7 @@ class IbisTestEnv(object):
         self.host = os.environ.get('IBIS_TEST_HOST', 'localhost')
         self.protocol = os.environ.get('IBIS_TEST_PROTOCOL', 'hiveserver2')
         self.port = os.environ.get('IBIS_TEST_PORT', 21050)
+        self.database = os.environ.get('IBIS_TEST_DATABASE', 'ibis_testing')
 
         # Impala dev environment uses port 5070 for HDFS web interface
 
@@ -47,11 +49,12 @@ class IbisTestEnv(object):
 
 
 ENV = IbisTestEnv()
-
+HDFS_TEST_DATA = '/__ibis/ibis-testing-data'
 
 def connect(env):
     con = ibis.impala_connect(host=ENV.host,
                               protocol=ENV.protocol,
+                              database=ENV.database,
                               port=ENV.port)
     return ibis.make_client(con, ENV.hdfs)
 
@@ -68,11 +71,12 @@ class ImpalaE2E(object):
             cls.con = connect(ENV)
             cls.hdfs = cls.con.hdfs
 
+            cls.db = ENV.database
             cls.test_db = '__ibis_{0}'.format(util.guid())
 
             cls.con.create_database(cls.test_db)
 
-            cls.alltypes = cls.con.table('functional.alltypes')
+            cls.alltypes = cls.con.table('functional_alltypes')
         except ImportError:
             # fail gracefully if impyla not installed
             pytest.skip('no impyla')
@@ -92,12 +96,12 @@ class ImpalaE2E(object):
 class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
     def test_get_table_ref(self):
-        table = self.con.table('functional.alltypes')
+        table = self.con.table('functional_alltypes')
         assert isinstance(table, ir.TableExpr)
 
     def test_table_name_reserved_identifier(self):
         table_name = 'distinct'
-        expr = self.con.table('functional.alltypes')
+        expr = self.con.table('functional_alltypes')
         self.con.create_table(table_name, expr)
 
         t = self.con.table(table_name)
@@ -109,14 +113,18 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         assert len(self.con.list_databases()) > 0
 
     def test_list_tables(self):
-        assert len(self.con.list_tables(database='tpch')) > 0
-        assert len(self.con.list_tables(like='nat*', database='tpch')) > 0
+        assert len(self.con.list_tables(database=self.db)) > 0
+        assert len(self.con.list_tables(like='*nat*',
+                                        database=self.db)) > 0
 
     def test_set_database(self):
+        # TODO: free of dependence on functional database
         self.assertRaises(Exception, self.con.table, 'alltypes')
         self.con.set_database('functional')
 
         self.con.table('alltypes')
+
+        self.con.set_database(self.db)
 
     def test_create_exists_drop_database(self):
         tmp_name = util.guid()
@@ -138,13 +146,13 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
         self.assertRaises(com.IntegrityError, self.con.drop_database, tmp_db)
 
-        self.con.drop_database(tmp_db, drop_tables=True)
+        self.con.drop_database(tmp_db, force=True)
         assert not self.con.exists_database(tmp_db)
 
     def test_create_database_with_location(self):
         base = '/{0}'.format(util.guid())
         name = 'test_{0}'.format(util.guid())
-        tmp_path = posixpath.join(base, name)
+        tmp_path = pjoin(base, name)
 
         self.con.create_database(name, path=tmp_path)
         assert self.hdfs.exists(base)
@@ -156,13 +164,13 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
     def test_run_sql(self):
         query = """SELECT li.*
-FROM tpch.lineitem li
-  INNER JOIN tpch.orders o
+FROM ibis_testing.tpch_lineitem li
+  INNER JOIN ibis_testing.tpch_orders o
     ON li.l_orderkey = o.o_orderkey
 """
         table = self.con.sql(query)
 
-        li = self.con.table('tpch.lineitem')
+        li = self.con.table('tpch_lineitem')
         assert isinstance(table, ir.TableExpr)
         assert table.schema().equals(li.schema())
 
@@ -171,12 +179,12 @@ FROM tpch.lineitem li
         assert len(result) == 10
 
     def test_get_schema(self):
-        t = self.con.table('tpch.lineitem')
-        schema = self.con.get_schema('lineitem', database='tpch')
+        t = self.con.table('tpch_lineitem')
+        schema = self.con.get_schema('tpch_lineitem', database='ibis_testing')
         assert t.schema().equals(schema)
 
     def test_result_as_dataframe(self):
-        expr = self.con.table('functional.alltypes').limit(10)
+        expr = self.alltypes.limit(10)
 
         ex_names = expr.schema().names
         result = self.con.execute(expr)
@@ -186,7 +194,7 @@ FROM tpch.lineitem li
         assert len(result) == 10
 
     def test_adapt_scalar_array_results(self):
-        table = self.con.table('functional.alltypes')
+        table = self.alltypes
 
         expr = table.double_col.sum()
         result = self.con.execute(expr)
@@ -204,7 +212,7 @@ FROM tpch.lineitem li
         assert isinstance(result, pd.Series)
 
     def test_summary_execute(self):
-        table = self.con.table('functional.alltypes')
+        table = self.alltypes
 
         # also test set_column while we're at it
         table = table.set_column('double_col',
@@ -224,14 +232,14 @@ FROM tpch.lineitem li
         assert isinstance(result, pd.DataFrame)
 
     def test_distinct_array(self):
-        table = self.con.table('functional.alltypes')
+        table = self.alltypes
 
         expr = table.string_col.distinct()
         result = self.con.execute(expr)
         assert isinstance(result, pd.Series)
 
     def test_decimal_metadata(self):
-        table = self.con.table('tpch.lineitem')
+        table = self.con.table('tpch_lineitem')
 
         expr = table.l_quantity
         assert expr._precision == 12
@@ -240,20 +248,20 @@ FROM tpch.lineitem li
         # TODO: what if user impyla version does not have decimal Metadata?
 
     def test_ctas_from_table_expr(self):
-        expr = self.con.table('functional.alltypes')
+        expr = self.alltypes
         table_name = _random_table_name()
 
         try:
-            self.con.create_table(table_name, expr, database='functional')
+            self.con.create_table(table_name, expr, database=self.db)
         except Exception:
             raise
         finally:
-            _ensure_drop(self.con, table_name, database='functional')
+            _ensure_drop(self.con, table_name, database=self.db)
 
     def test_insert_table(self):
-        expr = self.con.table('functional.alltypes')
+        expr = self.alltypes
         table_name = _random_table_name()
-        db = 'functional'
+        db = self.db
 
         try:
             self.con.create_table(table_name, expr.limit(0),
@@ -261,7 +269,7 @@ FROM tpch.lineitem li
             self.con.insert(table_name, expr.limit(10), database=db)
             self.con.insert(table_name, expr.limit(10), database=db)
 
-            sz = self.con.table('functional.{}'.format(table_name)).count()
+            sz = self.con.table('{}.{}'.format(db, table_name)).count()
             assert sz.execute() == 20
 
             # Overwrite and verify only 10 rows now
@@ -271,10 +279,10 @@ FROM tpch.lineitem li
         except Exception:
             raise
         finally:
-            _ensure_drop(self.con, table_name, database='functional')
+            _ensure_drop(self.con, table_name, database=db)
 
     def test_builtins_1(self):
-        table = self.con.table('functional.alltypes')
+        table = self.alltypes
 
         i1 = table.tinyint_col
         i4 = table.int_col
@@ -359,12 +367,12 @@ FROM tpch.lineitem li
         projection.execute()
 
     def test_histogram_value_counts(self):
-        t = self.con.table('functional.alltypes')
+        t = self.alltypes
         expr = t.double_col.histogram(10).value_counts()
         expr.execute()
 
     def test_decimal_timestamp_builtins(self):
-        table = self.con.table('tpch.lineitem')
+        table = self.con.table('tpch_lineitem')
 
         dc = table.l_quantity
         ts = table.l_receiptdate.cast('timestamp')
@@ -402,7 +410,7 @@ FROM tpch.lineitem li
         projection.execute()
 
     def test_aggregations_e2e(self):
-        table = self.con.table('functional.alltypes').limit(100)
+        table = self.alltypes.limit(100)
 
         d = table.double_col
         s = table.string_col
@@ -433,10 +441,10 @@ FROM tpch.lineitem li
         agged_table.execute()
 
     def test_tpch_self_join_failure(self):
-        region = self.con.table('tpch.region')
-        nation = self.con.table('tpch.nation')
-        customer = self.con.table('tpch.customer')
-        orders = self.con.table('tpch.orders')
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+        customer = self.con.table('tpch_customer')
+        orders = self.con.table('tpch_orders')
 
         fields_of_interest = [
             region.r_name.name('region'),
@@ -469,10 +477,10 @@ FROM tpch.lineitem li
 
     def test_tpch_correlated_subquery_failure(self):
         # #183 and other issues
-        region = self.con.table('region', database='tpch_parquet')
-        nation = self.con.table('nation', database='tpch')
-        customer = self.con.table('customer', database='tpch')
-        orders = self.con.table('orders', database='tpch_parquet')
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+        customer = self.con.table('tpch_customer')
+        orders = self.con.table('tpch_orders')
 
         fields_of_interest = [customer,
                               region.r_name.name('region'),
@@ -499,10 +507,10 @@ FROM tpch.lineitem li
 
         with config.option_context('verbose', True):
             with config.option_context('verbose_log', logger):
-                self.con.table('orders', database='tpch_parquet')
+                self.con.table('tpch_orders', database=self.db)
 
         assert len(queries) == 1
-        assert queries[0] == 'SELECT * FROM tpch_parquet.`orders` LIMIT 0'
+        assert queries[0] == 'SELECT * FROM ibis_testing.`tpch_orders` LIMIT 0'
 
 
 def _ensure_drop(con, table_name, database=None):
@@ -536,7 +544,7 @@ def _random_table_name():
 class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
     def test_cleanup_tmp_table_on_gc(self):
-        hdfs_path = '/test-warehouse/tpch.region_parquet'
+        hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
         table = self.con.parquet_file(hdfs_path)
         name = table.op().name
         table = None
@@ -544,7 +552,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         _assert_table_not_exists(self.con, name)
 
     def test_persist_parquet_file_with_name(self):
-        hdfs_path = '/test-warehouse/tpch.region_parquet'
+        hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
 
         name = _random_table_name()
         schema = ibis.schema([('r_regionkey', 'int16'),
@@ -562,7 +570,8 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         _ensure_drop(self.con, name, database=self.test_db)
 
     def test_query_avro(self):
-        hdfs_path = '/test-warehouse/tpch.region_avro'
+        hdfs_path = pjoin(HDFS_TEST_DATA, 'avro/tpch.region')
+
         schema = ibis.schema([('r_regionkey', 'int16'),
                               ('r_name', 'string'),
                               ('r_comment', 'string')])
@@ -592,7 +601,8 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         assert table.count().execute() == 5
 
     def test_query_parquet_file_with_schema(self):
-        hdfs_path = '/test-warehouse/tpch.region_parquet'
+        hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
+
         schema = ibis.schema([('r_regionkey', 'int16'),
                               ('r_name', 'string'),
                               ('r_comment', 'string')])
@@ -611,7 +621,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         assert table.count().execute() == 5
 
     def test_query_parquet_file_like_table(self):
-        hdfs_path = '/test-warehouse/tpch.region_parquet'
+        hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
 
         ex_schema = ibis.schema([('r_regionkey', 'int16'),
                                  ('r_name', 'string'),
@@ -622,7 +632,8 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         assert table.schema().equals(ex_schema)
 
     def test_query_parquet_infer_schema(self):
-        hdfs_path = '/test-warehouse/tpch.region_parquet'
+        hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
+
         table = self.con.parquet_file(hdfs_path)
 
         ex_schema = ibis.schema([('r_regionkey', 'int32'),
@@ -635,7 +646,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         pass
 
     def test_query_delimited_file_directory(self):
-        hdfs_path = '/ibis-test/csv-test'
+        hdfs_path = pjoin(HDFS_TEST_DATA, 'csv')
 
         schema = ibis.schema([('foo', 'string'),
                               ('bar', 'double'),
