@@ -146,7 +146,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
         self.assertRaises(com.IntegrityError, self.con.drop_database, tmp_db)
 
-        self.con.drop_database(tmp_db, drop_tables=True)
+        self.con.drop_database(tmp_db, force=True)
         assert not self.con.exists_database(tmp_db)
 
     def test_create_database_with_location(self):

@@ -45,13 +45,13 @@ TMP_DB = guid()
 
 def make_temp_database(con):
     if con.exists_database(TMP_DB):
-        con.drop_database(TMP_DB, drop_tables=True)
+        con.drop_database(TMP_DB, force=True)
     con.create_database(TMP_DB, path=TMP_DB_LOCATION)
     print('Created database {0} at {1}'.format(TMP_DB, TMP_DB_LOCATION))
 
 
 def cleanup_temporary_stuff(con):
-    con.drop_database(TMP_DB, drop_tables=True)
+    con.drop_database(TMP_DB, force=True)
     assert not con.hdfs.exists(TMP_DB_LOCATION)
 
 def download_parquet_files(con):
@@ -129,7 +129,7 @@ def write_data_to_hdfs(con):
 
 def create_test_database(con):
     if con.exists_database(TEST_DB):
-        con.drop_database(TEST_DB, drop_tables=True)
+        con.drop_database(TEST_DB, force=True)
     con.create_database(TEST_DB)
     print('Created database {0}'.format(TEST_DB))
 

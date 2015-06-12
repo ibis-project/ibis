@@ -271,7 +271,7 @@ class ImpalaClient(SQLClient):
                                        fail_if_exists=fail_if_exists)
         self._execute(statement)
 
-    def drop_database(self, name, must_exist=True, drop_tables=False):
+    def drop_database(self, name, must_exist=True, force=False):
         """
         Drop an Impala database
 
@@ -279,12 +279,12 @@ class ImpalaClient(SQLClient):
         ----------
         name : string
           Database name
-        drop_tables : boolean, default False
+        force : boolean, default False
           If False and there are any tables in this database, raises an
           IntegrityError
         """
         tables = self.list_tables(database=name)
-        if drop_tables:
+        if force:
             for table in tables:
                 self.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
                 self.drop_table(table, database=name)
@@ -292,7 +292,7 @@ class ImpalaClient(SQLClient):
             if len(tables) > 0:
                 raise com.IntegrityError('Database {0} must be empty before '
                                          'being dropped, or set '
-                                         'drop_tables=True'.format(name))
+                                         'force=True'.format(name))
         statement = ddl.DropDatabase(name, must_exist=must_exist)
         self._execute(statement)
 
