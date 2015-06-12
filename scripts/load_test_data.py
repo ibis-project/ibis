@@ -12,68 +12,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import BytesIO
-import os
+# Populates the ibis_testing Impala database
 
-import numpy as np
-import pandas as pd
-import pandas.util.testing as tm
+from posixpath import join as pjoin
+import posixpath
 
-from ibis.filesystems import HDFS
+import ibis
 
+IMPALA_HOST = 'localhost'
 HDFS_HOST = 'localhost'
 WEBHDFS_PORT = 5070
-
-HDFS_USER = os.getlogin()
-
-IBIS_TEST_FILE_DIRECTORY = '/ibis-test'
-
-
-hdfs = HDFS(HDFS_HOST, WEBHDFS_PORT, params={'user.name': HDFS_USER})
+TEST_DB = 'ibis_testing'
+TEST_DATA_DIR = 'ibis-testing-data'
+TEST_DATA_HDFS_LOC = '/__ibis/ibis-testing-data'
 
 
-def generate_test_data(clean_first=False):
-    if clean_first:
-        clean_all()
+def make_connection():
+    ic = ibis.impala_connect(host=IMPALA_HOST)
+    hdfs = ibis.hdfs_connect(host=HDFS_HOST, port=WEBHDFS_PORT)
+    con = ibis.make_client(ic, hdfs_client=hdfs)
 
-    make_base_directory()
-    add_csv_test_files()
-
-
-def make_base_directory():
-    if not hdfs.exists(IBIS_TEST_FILE_DIRECTORY):
-        hdfs.mkdir(IBIS_TEST_FILE_DIRECTORY, create_parent=True)
+    return con
 
 
-def add_csv_test_files(nfiles=10):
-    N = 10
-
-    path = 'csv-test'
-    directory = '/'.join((IBIS_TEST_FILE_DIRECTORY, path))
-
-    hdfs.rmdir(directory)
-
-    df = pd.DataFrame({
-        'foo': [tm.rands(10) for _ in xrange(N)],
-        'bar': np.random.randn(N),
-        'baz': np.random.randint(0, 100, size=N)
-    }, columns=['foo', 'bar', 'baz'])
-
-    buf = BytesIO()
-    df.to_csv(buf, index=False, header=False)
-
-    for i in xrange(nfiles):
-
-        path = '/'.join((directory, '{}.csv'.format(i)))
-        print('Writing {}'.format(path))
-
-        buf.seek(0)
-        hdfs.write(buf, path)
+def write_data_to_hdfs(con):
+    # TODO per #278, write directly from the gzipped tarball
+    con.hdfs.put(TEST_DATA_HDFS_LOC, TEST_DATA_DIR,
+                 verbose=True, overwrite=True)
 
 
-def clean_all():
-    hdfs.rmdir(IBIS_TEST_FILE_DIRECTORY)
+def create_test_database(con):
+    if con.exists_database(TEST_DB):
+        con.drop_database(TEST_DB, drop_tables=True)
+    con.create_database(TEST_DB)
+    print('Created database {0}'.format(TEST_DB))
+
+
+def create_parquet_tables(con):
+    parquet_files = con.hdfs.ls(pjoin(TEST_DATA_HDFS_LOC, 'parquet'))
+
+    for path in parquet_files:
+        head, table_name = posixpath.split(path)
+        print 'Creating {0}'.format(table_name)
+        con.parquet_file(path, name=table_name, database=TEST_DB, persist=True)
 
 
 if __name__ == '__main__':
-    generate_test_data()
+    con = make_connection()
+    write_data_to_hdfs(con)
+    create_test_database(con)
+    create_parquet_tables(con)
