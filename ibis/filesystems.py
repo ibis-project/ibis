@@ -31,7 +31,6 @@ class HDFSError(com.IbisError):
     pass
 
 
-
 def implements(f):
     def decorator(g):
         g.__doc__ = f.__doc__

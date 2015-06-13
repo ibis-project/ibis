@@ -700,7 +700,7 @@ def is_instance_factory(_type):
 
 def is_one_of_factory(legal_values):
     def inner(x):
-        if not x in legal_values:
+        if x not in legal_values:
             pp_values = map(str, legal_values)
             raise ValueError("Value must be one of %s"
                              % str("|".join(pp_values)))

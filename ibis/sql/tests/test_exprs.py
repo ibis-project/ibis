@@ -372,6 +372,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
+
 class TestCaseExprs(unittest.TestCase, ExprSQLTest):
 
     def setUp(self):
@@ -486,7 +487,6 @@ CASE
   ELSE NULL
 END"""
 
-
         expr5 = self.table.f.bucket(buckets, include_under=True)
         expected5 = """\
 CASE
@@ -546,9 +546,8 @@ CASE
   ELSE NULL
 END"""
 
-        expr10 = self.table.f.bucket([10],
-                                    include_over=True,
-                                    include_under=True)
+        expr10 = self.table.f.bucket([10], include_over=True,
+                                     include_under=True)
         expected10 = """\
 CASE
   WHEN f < 10 THEN 0

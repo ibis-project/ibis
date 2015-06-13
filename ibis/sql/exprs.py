@@ -382,7 +382,7 @@ def _table_array_view(translator, expr):
     return '(\n{}\n)'.format(util.indent(query, ctx.indent))
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Timestamp arithmetic and other functions
 
 def _timestamp_delta(translator, expr):
@@ -410,7 +410,7 @@ def _timestamp_format_offset(offset, arg):
     return '{}({}, {})'.format(f, arg, offset.n)
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Semi/anti-join supports
 
 

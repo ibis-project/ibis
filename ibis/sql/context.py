@@ -16,7 +16,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # The QueryContext (temporary name) will store useful information like table
 # alias names for converting value expressions to SQL.
 

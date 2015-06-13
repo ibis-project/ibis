@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from ibis.cloudpickle import dumps as pickle_dump
-from cPickle import loads as pickle_load
 
 import base64
 

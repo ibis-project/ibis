@@ -684,7 +684,6 @@ class DropObject(DDLStatement):
         return drop_line
 
 
-
 class DropTable(DropObject):
 
     def __init__(self, table_name, database=None, must_exist=True):
@@ -709,7 +708,8 @@ class CacheTable(DDLStatement):
 
     def compile(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        cache_line = 'ALTER TABLE {} SET CACHED IN \'{}\''.format(scoped_name, self.pool)
+        cache_line = ('ALTER TABLE {} SET CACHED IN \'{}\''
+                      .format(scoped_name, self.pool))
         return cache_line
 
 

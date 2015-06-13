@@ -88,7 +88,7 @@ def _eintr_retry(func, *args):
             if e.args[0] != errno.EINTR:
                 raise
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Daemon logic for spawning new child workers
 
 

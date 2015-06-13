@@ -458,7 +458,7 @@ class _PushdownValidate(object):
 
         for val in self.parent.selections:
             if (isinstance(val.op(), ops.PhysicalTable)
-                and node.name in val.schema()):
+                    and node.name in val.schema()):
                 is_valid = True
             elif (isinstance(val.op(), ops.TableColumn)
                   and node.name == val.get_name()
@@ -632,15 +632,15 @@ class FilterValidator(ExprValidator):
             roots_valid = []
             for arg in op.flat_args():
                 if isinstance(arg, ir.ScalarExpr):
-                    arg_valid = True
+                    # arg_valid = True
+                    pass
                 elif isinstance(arg, ir.ArrayExpr):
                     roots_valid.append(self.shares_some_roots(arg))
                 elif isinstance(arg, ir.Expr):
                     raise NotImplementedError
                 else:
-                    arg_valid = True
-
-                # args_valid.append(arg_valid)
+                    # arg_valid = True
+                    pass
 
             is_valid = any(roots_valid)
 

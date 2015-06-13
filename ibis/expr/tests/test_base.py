@@ -1006,10 +1006,10 @@ class TestComparisons(BasicTestCase, unittest.TestCase):
     def test_boolean_comparisons(self):
         bool_col = self.table['h']
 
-        result = bool_col == True
+        result = bool_col == True  # noqa
         assert isinstance(result, api.BooleanArray)
 
-        result = bool_col == False
+        result = bool_col == False  # noqa
         assert isinstance(result, api.BooleanArray)
 
     def test_string_comparisons(self):

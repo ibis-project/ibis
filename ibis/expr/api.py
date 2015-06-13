@@ -35,7 +35,7 @@ from ibis.expr.operations import (as_value_expr, table, literal, timestamp,
                                   null, sequence, desc)
 
 # __all__ is defined
-from ibis.expr.temporal import *  #  noqa
+from ibis.expr.temporal import *  # noqa
 
 import ibis.common as _com
 
@@ -587,7 +587,6 @@ approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality, True)
 approx_median = _agg_function('approx_median', _ops.CMSMedian, True)
 max = _agg_function('max', _ops.Max, True)
 min = _agg_function('min', _ops.Min, True)
-
 
 
 def distinct(arg):

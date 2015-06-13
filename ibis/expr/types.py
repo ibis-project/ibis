@@ -365,7 +365,6 @@ class ValueNode(Node):
         raise com.ExpressionError('Expression is not named: %s' % repr(self))
 
 
-
 class ExpressionList(Node):
 
     def __init__(self, exprs):

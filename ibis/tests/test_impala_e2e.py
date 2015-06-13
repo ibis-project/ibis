@@ -51,6 +51,7 @@ class IbisTestEnv(object):
 ENV = IbisTestEnv()
 HDFS_TEST_DATA = '/__ibis/ibis-testing-data'
 
+
 def connect(env):
     con = ibis.impala_connect(host=ENV.host,
                               protocol=ENV.protocol,
@@ -507,6 +508,7 @@ FROM ibis_testing.tpch_lineitem li
 
     def test_verbose_log_queries(self):
         queries = []
+
         def logger(x):
             queries.append(x)
 
