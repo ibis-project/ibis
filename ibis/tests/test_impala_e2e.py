@@ -15,7 +15,6 @@
 from posixpath import join as pjoin
 import gc
 import os
-import posixpath
 import pytest
 import unittest
 
@@ -39,6 +38,7 @@ class IbisTestEnv(object):
         self.protocol = os.environ.get('IBIS_TEST_PROTOCOL', 'hiveserver2')
         self.port = os.environ.get('IBIS_TEST_PORT', 21050)
         self.database = os.environ.get('IBIS_TEST_DATABASE', 'ibis_testing')
+        self.use_codegen = bool(os.environ.get('IBIS_TEST_USE_CODEGEN', False))
 
         # Impala dev environment uses port 5070 for HDFS web interface
 
@@ -69,6 +69,11 @@ class ImpalaE2E(object):
         try:
             import impala  # noqa
             cls.con = connect(ENV)
+
+            # Tests run generally faster without it
+            if not ENV.use_codegen:
+                cls.con.disable_codegen()
+
             cls.hdfs = cls.con.hdfs
 
             cls.db = ENV.database

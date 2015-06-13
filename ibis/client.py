@@ -128,11 +128,23 @@ class ImpalaConnection(object):
     def __init__(self, **params):
         self.params = params
         self.con = None
+        self.cursor = None
+        self.codegen_disabled = False
         self.ensure_connected()
+
+    def __del__(self):
+        if self.cursor is not None:
+            self.cursor.close()
 
     def set_database(self, name):
         self.params['database'] = name
         self.connect()
+
+    def disable_codegen(self, disabled=True):
+        query = 'SET disable_codegen={0}'.format(
+            'true' if disabled else 'false')
+        self.codegen_disabled = disabled
+        self.cursor.execute(query)
 
     def execute(self, query, retries=3):
         if isinstance(query, ddl.DDLStatement):
@@ -140,7 +152,7 @@ class ImpalaConnection(object):
 
         from impala.error import DatabaseError
         try:
-            cursor = self.con.cursor()
+            cursor = self.cursor
         except DatabaseError:
             if retries > 0:
                 self.ensure_connected()
@@ -161,13 +173,17 @@ class ImpalaConnection(object):
         return cursor.fetchall()
 
     def ensure_connected(self):
-        if self.con is None or not self.con.cursor().ping():
+        if self.con is None or not self.cursor.ping():
             self.connect()
 
     def connect(self):
         import impala.dbapi as db
         self.con = db.connect(**self.params)
-        self.con.cursor().ping()
+        self.cursor = self.con.cursor()
+        self.cursor.ping()
+
+        if self.codegen_disabled:
+            self.disable_codegen(True)
 
 
 class ImpalaClient(SQLClient):
@@ -187,6 +203,18 @@ class ImpalaClient(SQLClient):
         self.hdfs = hdfs_client
 
         self.con.ensure_connected()
+
+    def disable_codegen(self, disabled=True):
+        """
+        Turn off or on LLVM codegen in Impala query execution
+
+        Parameters
+        ----------
+        disabled : boolean, default True
+          To disable codegen, pass with no argument or True. To enable codegen,
+          pass False
+        """
+        self.con.disable_codegen(disabled)
 
     def log(self, msg):
         if options.verbose:
