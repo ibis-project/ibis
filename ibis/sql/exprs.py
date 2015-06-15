@@ -675,6 +675,9 @@ _string_ops = {
     ops.StringAscii: _unary_op('ascii'),
     ops.Lowercase: _unary_op('lower'),
     ops.Uppercase: _unary_op('upper'),
+    ops.Trim: _unary_op('trim'),
+    ops.LTrim: _unary_op('ltrim'),
+    ops.RTrim: _unary_op('rtrim'),
     ops.Substring: _substring,
     ops.StrRight: _strright
 }

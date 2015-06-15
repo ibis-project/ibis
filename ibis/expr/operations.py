@@ -598,6 +598,18 @@ class Lowercase(StringUnaryOp):
     pass
 
 
+class Trim(StringUnaryOp):
+    pass
+
+
+class LTrim(StringUnaryOp):
+    pass
+
+
+class RTrim(StringUnaryOp):
+    pass
+
+
 class Substring(ValueNode):
 
     def __init__(self, arg, start, length=None):

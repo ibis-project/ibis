@@ -394,6 +394,9 @@ FROM ibis_testing.tpch_lineitem li
             s.re_search('[\d]+'),
             s.ascii_str(),
             s.length(),
+            s.trim(),
+            s.ltrim(),
+            s.trim(),
         ]
 
         proj_exprs = [expr.name('e%d' % i)
