@@ -954,6 +954,21 @@ def _string_right(self, nchars):
     return _ops.StrRight(self, nchars).to_expr()
 
 
+def repeat(self, n):
+    """
+    Returns the argument string repeated n times
+
+    Parameters
+    ----------
+    n : int
+
+    Returns
+    -------
+    result : string
+    """
+    return _ops.Repeat(self, n).to_expr()
+
+
 def _string_like(self, pattern):
     """
     Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
@@ -1001,6 +1016,7 @@ _string_value_methods = dict(
     length=_unary_op('length', _ops.StringLength),
     lower=_unary_op('lower', _ops.Lowercase),
     upper=_unary_op('upper', _ops.Uppercase),
+    reverse=_unary_op('reverse', _ops.Reverse),
     ascii_str=_unary_op('ascii', _ops.StringAscii),
     trim=_unary_op('trim', _ops.Trim),
     ltrim=_unary_op('ltrim', _ops.LTrim),
@@ -1014,7 +1030,8 @@ _string_value_methods = dict(
 
     substr=_string_substr,
     left=_string_left,
-    right=_string_right
+    right=_string_right,
+    repeat=repeat,
 )
 
 

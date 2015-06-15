@@ -530,6 +530,12 @@ def _strright(translator, expr):
     return 'strright({0}, {1})'.format(arg_formatted, op.nchars)
 
 
+def _repeat(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    return 'repeat({}, {})'.format(arg_formatted, op.n)
+
+
 def _round(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
@@ -675,11 +681,13 @@ _string_ops = {
     ops.StringAscii: _unary_op('ascii'),
     ops.Lowercase: _unary_op('lower'),
     ops.Uppercase: _unary_op('upper'),
+    ops.Reverse: _unary_op('reverse'),
     ops.Trim: _unary_op('trim'),
     ops.LTrim: _unary_op('ltrim'),
     ops.RTrim: _unary_op('rtrim'),
     ops.Substring: _substring,
-    ops.StrRight: _strright
+    ops.StrRight: _strright,
+    ops.Repeat: _repeat,
 }
 
 

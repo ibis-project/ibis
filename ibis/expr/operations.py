@@ -598,6 +598,10 @@ class Lowercase(StringUnaryOp):
     pass
 
 
+class Reverse(StringUnaryOp):
+    pass
+
+
 class Trim(StringUnaryOp):
     pass
 
@@ -616,7 +620,7 @@ class Substring(ValueNode):
         self.arg = arg
         self.start = start
         self.length = length
-        ValueNode.__init__(self, [arg, start, length])
+        ValueNode.__init__(self, [self.arg, self.start, self.length])
 
     output_type = _string_output
 
@@ -626,7 +630,17 @@ class StrRight(ValueNode):
     def __init__(self, arg, nchars):
         self.arg = arg
         self.nchars = nchars
-        ValueNode.__init__(self, [arg, nchars])
+        ValueNode.__init__(self, [self.arg, self.nchars])
+
+    output_type = _string_output
+
+
+class Repeat(ValueNode):
+
+    def __init__(self, arg, n):
+        self.arg = arg
+        self.n = n
+        ValueNode.__init__(self, [self.arg, self.n])
 
     output_type = _string_output
 

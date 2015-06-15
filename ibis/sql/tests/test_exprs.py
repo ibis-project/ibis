@@ -733,6 +733,7 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         cases = [
             (self.table.string_col.lower(), 'lower(string_col)'),
             (self.table.string_col.upper(), 'upper(string_col)'),
+            (self.table.string_col.reverse(), 'reverse(string_col)'),
             (self.table.string_col.trim(), 'trim(string_col)'),
             (self.table.string_col.ltrim(), 'ltrim(string_col)'),
             (self.table.string_col.rtrim(), 'rtrim(string_col)'),
@@ -766,5 +767,11 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         cases = [
             (self.table.string_col.rlike('[\d]+'), ex),
             (self.table.string_col.re_search('[\d]+'), ex),
+        ]
+        self._check_expr_cases(cases)
+
+    def test_repeat(self):
+        cases = [
+            (self.table.string_col.repeat(2), 'repeat(string_col,2)')
         ]
         self._check_expr_cases(cases)
