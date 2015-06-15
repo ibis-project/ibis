@@ -212,9 +212,17 @@ class ImpalaClient(SQLClient):
         elif hdfs_client is not None and not isinstance(hdfs_client, HDFS):
             raise TypeError(hdfs_client)
 
-        self.hdfs = hdfs_client
+        self._hdfs = hdfs_client
 
         self.con.ensure_connected()
+
+    @property
+    def hdfs(self):
+        if self._hdfs is None:
+            raise com.IbisError('No HDFS connection; must pass connection '
+                                'using the hdfs_client argument to '
+                                'ibis.make_client')
+        return self._hdfs
 
     def disable_codegen(self, disabled=True):
         """

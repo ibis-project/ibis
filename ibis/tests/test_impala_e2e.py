@@ -52,12 +52,15 @@ ENV = IbisTestEnv()
 HDFS_TEST_DATA = '/__ibis/ibis-testing-data'
 
 
-def connect(env):
+def connect(env, with_hdfs=True):
     con = ibis.impala_connect(host=ENV.host,
                               protocol=ENV.protocol,
                               database=ENV.database,
                               port=ENV.port)
-    return ibis.make_client(con, ENV.hdfs)
+    if with_hdfs:
+        return ibis.make_client(con, ENV.hdfs)
+    else:
+        return ibis.make_client(con)
 
 
 pytestmark = pytest.mark.e2e
@@ -100,6 +103,11 @@ class ImpalaE2E(object):
 
 
 class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
+
+    def test_raise_ibis_error_no_hdfs(self):
+        # #299
+        client = connect(ENV, with_hdfs=False)
+        self.assertRaises(com.IbisError, getattr, client, 'hdfs')
 
     def test_get_table_ref(self):
         table = self.con.table('functional_alltypes')
