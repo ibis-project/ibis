@@ -166,7 +166,7 @@ class ImpalaConnection(object):
             cursor.execute(query)
         except:
             try:
-                self.log('Exception caused by {0}'.format(query))
+                self.error('Exception caused by {0}'.format(query))
             except:
                 pass
             raise
@@ -176,6 +176,9 @@ class ImpalaConnection(object):
     def log(self, msg):
         if options.verbose:
             options.verbose_log(msg)
+
+    def error(self, msg):
+        self.log(msg)
 
     def fetchall(self, query, retries=3):
         cursor = self.execute(query, retries=retries)
@@ -308,7 +311,7 @@ class ImpalaClient(SQLClient):
                                        fail_if_exists=fail_if_exists)
         self._execute(statement)
 
-    def drop_database(self, name, must_exist=True, force=False):
+    def drop_database(self, name, force=False):
         """
         Drop an Impala database
 
@@ -330,7 +333,7 @@ class ImpalaClient(SQLClient):
                 raise com.IntegrityError('Database {0} must be empty before '
                                          'being dropped, or set '
                                          'force=True'.format(name))
-        statement = ddl.DropDatabase(name, must_exist=must_exist)
+        statement = ddl.DropDatabase(name, must_exist=not force)
         self._execute(statement)
 
     def list_databases(self, like=None):
@@ -599,22 +602,22 @@ class ImpalaClient(SQLClient):
                                      overwrite=overwrite)
         self._execute(statement)
 
-    def drop_table(self, table_name, database=None, must_exist=False):
+    def drop_table(self, table_name, database=None, force=False):
         """
 
         Parameters
         ----------
         table_name : string
         database : string, default None (optional)
-        must_exist : boolean, default False
+        force : boolean, default False
           Database may throw exception if table does not exist
 
         Examples
         --------
-        con.drop_table('my_table', database='operations', must_exist=True)
+        con.drop_table('my_table', database='operations', force=True)
         """
         statement = ddl.DropTable(table_name, database=database,
-                                  must_exist=must_exist)
+                                  must_exist=not force)
         self._execute(statement)
 
     def cache_table(self, table_name, database=None, pool='default'):

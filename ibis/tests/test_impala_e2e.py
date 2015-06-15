@@ -165,6 +165,12 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         self.con.drop_database(name)
         self.hdfs.rmdir(base)
 
+    def test_drop_table_not_exist(self):
+        random_name = util.guid()
+        self.assertRaises(Exception, self.con.drop_table, random_name)
+
+        self.con.drop_table(random_name, force=True)
+
     def test_exists_table(self):
         pass
 
@@ -521,8 +527,7 @@ FROM ibis_testing.tpch_lineitem li
 
 
 def _ensure_drop(con, table_name, database=None):
-    con.drop_table(table_name, database=database,
-                   must_exist=False)
+    con.drop_table(table_name, database=database, force=True)
     _assert_table_not_exists(con, table_name, database=database)
 
 
