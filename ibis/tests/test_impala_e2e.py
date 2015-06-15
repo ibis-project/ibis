@@ -392,6 +392,8 @@ FROM ibis_testing.tpch_lineitem li
             s.contains('6'),
             s.like('6%'),
             s.re_search('[\d]+'),
+            s.ascii_str(),
+            s.length(),
         ]
 
         proj_exprs = [expr.name('e%d' % i)
@@ -636,9 +638,9 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
         avro_schema = {
             "fields": [
-                {"type": ["int", "null"], "name": "R_REGIONKEY"},
-                {"type": ["string", "null"], "name": "R_NAME"},
-                {"type": ["string", "null"], "name": "R_COMMENT"}],
+                {"type": ["int", "null"], "name": "r_regionkey"},
+                {"type": ["string", "null"], "name": "r_name"},
+                {"type": ["string", "null"], "name": "r_comment"}],
             "type": "record",
             "name": "a"
         }

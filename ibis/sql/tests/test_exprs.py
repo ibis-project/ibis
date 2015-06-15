@@ -733,7 +733,8 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         cases = [
             (self.table.string_col.lower(), 'lower(string_col)'),
             (self.table.string_col.upper(), 'upper(string_col)'),
-            (self.table.string_col.length(), 'length(string_col)')
+            (self.table.string_col.length(), 'length(string_col)'),
+            (self.table.string_col.ascii_str(), 'ascii(string_col)')
         ]
         self._check_expr_cases(cases)
 

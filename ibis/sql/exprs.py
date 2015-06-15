@@ -672,6 +672,7 @@ _binary_infix_ops = {
 
 _string_ops = {
     ops.StringLength: _unary_op('length'),
+    ops.StringAscii: _unary_op('ascii'),
     ops.Lowercase: _unary_op('lower'),
     ops.Uppercase: _unary_op('upper'),
     ops.Substring: _substring,

@@ -1001,6 +1001,7 @@ _string_value_methods = dict(
     length=_unary_op('length', _ops.StringLength),
     lower=_unary_op('lower', _ops.Lowercase),
     upper=_unary_op('upper', _ops.Uppercase),
+    ascii_str=_unary_op('ascii', _ops.StringAscii),
 
     __contains__=_string_dunder_contains,
     contains=_string_contains,

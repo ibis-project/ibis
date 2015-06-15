@@ -651,6 +651,12 @@ class StringLength(UnaryOp):
         return _shape_like(self.arg, 'int32')
 
 
+class StringAscii(UnaryOp):
+
+    def output_type(self):
+        return _shape_like(self.arg, 'int32')
+
+
 class BinaryOp(ValueNode):
 
     """
