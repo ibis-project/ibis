@@ -161,7 +161,16 @@ class ImpalaConnection(object):
                 raise
 
         self.log(query)
-        cursor.execute(query)
+
+        try:
+            cursor.execute(query)
+        except:
+            try:
+                self.log('Exception caused by {0}'.format(query))
+            except:
+                pass
+            raise
+
         return cursor
 
     def log(self, msg):
@@ -398,7 +407,7 @@ class ImpalaClient(SQLClient):
                              overwrite=overwrite)
         self._execute(statement)
 
-    def avro_file(self, hdfs_dir, schema, avro_schema=None,
+    def avro_file(self, hdfs_dir, avro_schema,
                   name=None, database=None,
                   external=True, persist=False):
         """
@@ -406,8 +415,8 @@ class ImpalaClient(SQLClient):
 
         Parameters
         ----------
-        hdfs_dir
-        schema : ibis Schema
+        hdfs_dir : string
+          Absolute HDFS path to directory containing avro files
         avro_schema : dict
           The Avro schema for the data as a Python dict
         name : string, default None
@@ -423,8 +432,7 @@ class ImpalaClient(SQLClient):
             name = self._random_tmp_table()
 
         qualified_name = self._fully_qualified_name(name, database)
-        stmt = ddl.CreateTableAvro(name, hdfs_dir, schema,
-                                   avro_schema,
+        stmt = ddl.CreateTableAvro(name, hdfs_dir, avro_schema,
                                    database=database,
                                    external=external)
         self._execute(stmt)

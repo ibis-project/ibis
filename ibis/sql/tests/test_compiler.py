@@ -1630,33 +1630,28 @@ LOCATION '{0}'""".format(path)
 
     def test_create_external_table_avro(self):
         path = '/path/to/files/'
-        schema = ibis.schema([('a', 'string'),
-                              ('b', 'int32'),
-                              ('c', 'double'),
-                              ('d', 'decimal(12,2)')])
 
         avro_schema = {
             'fields': [
                 {'name': 'a', 'type': 'string'},
                 {'name': 'b', 'type': 'int'},
                 {'name': 'c', 'type': 'double'},
-                {'name': 'd', 'type': 'bytes'}
-
+                {"type": "bytes",
+                 "logicalType": "decimal",
+                 "precision": 4,
+                 "scale": 2,
+                 'name': 'd'}
             ],
             'name': 'my_record',
             'type': 'record'
         }
 
-        stmt = ddl.CreateTableAvro('new_table', path, schema, avro_schema,
+        stmt = ddl.CreateTableAvro('new_table', path, avro_schema,
                                    database='foo')
 
         result = stmt.compile()
         expected = """\
 CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-(`a` STRING,
- `b` INT,
- `c` DOUBLE,
- `d` DECIMAL(12,2))
 STORED AS AVRO
 LOCATION '%s'
 TBLPROPERTIES ('avro.schema.literal'='{
@@ -1674,7 +1669,10 @@ TBLPROPERTIES ('avro.schema.literal'='{
       "type": "double"
     },
     {
+      "logicalType": "decimal",
       "name": "d",
+      "precision": 4,
+      "scale": 2,
       "type": "bytes"
     }
   ],

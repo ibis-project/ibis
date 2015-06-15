@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from io import BytesIO
+import re
 
 from ibis.sql.exprs import ExprTranslator, quote_identifier
 import ibis.expr.types as ir
@@ -27,8 +28,26 @@ class DDLStatement(object):
         if database:
             scoped_name = '{}.`{}`'.format(database, table_name)
         else:
-            scoped_name = '`{}`'.format(table_name)
+            if not _is_fully_qualified(table_name):
+                if _is_quoted(table_name):
+                    return table_name
+                else:
+                    return '`{}`'.format(table_name)
+            else:
+                return table_name
         return scoped_name
+
+
+def _is_fully_qualified(x):
+    regex = re.compile("(.*)\.(?:`(.*)`|(.*))")
+    m = regex.search(x)
+    return bool(m)
+
+
+def _is_quoted(x):
+    regex = re.compile("(?:`(.*)`|(.*))")
+    quoted, unquoted = regex.match(x).groups()
+    return quoted is not None
 
 
 class Select(DDLStatement):
@@ -642,12 +661,21 @@ class CreateTableDelimited(CreateTableWithSchema):
                                        **kwargs)
 
 
-class CreateTableAvro(CreateTableWithSchema):
+class CreateTableAvro(CreateTable):
 
-    def __init__(self, table_name, path, schema, avro_schema, **kwargs):
-        table_format = AvroFormat(path, avro_schema)
-        CreateTableWithSchema.__init__(self, table_name, schema, table_format,
-                                       **kwargs)
+    def __init__(self, table_name, path, avro_schema, external=True, **kwargs):
+        self.table_format = AvroFormat(path, avro_schema)
+
+        CreateTable.__init__(self, table_name, external=external, **kwargs)
+
+    def compile(self):
+        buf = BytesIO()
+        buf.write(self._create_line())
+
+        format_ddl = self.table_format.to_ddl()
+        buf.write(format_ddl)
+
+        return buf.getvalue()
 
 
 class InsertSelect(DDLStatement):

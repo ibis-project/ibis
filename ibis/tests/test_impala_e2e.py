@@ -579,20 +579,16 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
     def test_query_avro(self):
         hdfs_path = pjoin(HDFS_TEST_DATA, 'avro/tpch.region')
 
-        schema = ibis.schema([('r_regionkey', 'int16'),
-                              ('r_name', 'string'),
-                              ('r_comment', 'string')])
-
         avro_schema = {
             "fields": [
-                {"type": ["int", "null"], "name": "R_REGIONKEY"},
-                {"type": ["string", "null"], "name": "R_NAME"},
-                {"type": ["string", "null"], "name": "R_COMMENT"}],
+                {"type": ["int", "null"], "name": "r_regionkey"},
+                {"type": ["string", "null"], "name": "r_name"},
+                {"type": ["string", "null"], "name": "r_comment"}],
             "type": "record",
             "name": "a"
         }
 
-        table = self.con.avro_file(hdfs_path, schema, avro_schema,
+        table = self.con.avro_file(hdfs_path, avro_schema,
                                    database=self.test_db)
 
         name = table.op().name
