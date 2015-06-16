@@ -100,7 +100,7 @@ setup(
     ext_modules=extensions,
     cmdclass=cmdclass,
     install_requires=requirements,
-    description="Python analytics framework for Impala",
+    description="Productivity-centric Python Big Data Framework",
     license='Apache License, Version 2.0',
     maintainer="Wes McKinney",
     maintainer_email="wes@cloudera.com"

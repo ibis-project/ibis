@@ -1104,6 +1104,17 @@ def cross_join(left, right, prefixes=None):
     return TableExpr(op)
 
 
+def _table_count(self):
+    """
+    Returns the computed number of rows in the table expression
+
+    Returns
+    -------
+    count : Int64Scalar
+    """
+    return _ops.Count(self).to_expr().name('count')
+
+
 def _table_set_column(table, name, expr):
     """
     Replace an existing column with a new expression
@@ -1150,6 +1161,7 @@ def _regular_join_method(name, how, doc=None):
 
 
 _table_methods = dict(
+    count=_table_count,
     set_column=_table_set_column,
     join=join,
     cross_join=cross_join,

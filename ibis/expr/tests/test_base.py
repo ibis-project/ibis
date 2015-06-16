@@ -1223,9 +1223,11 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         assert isinstance(result, api.Int64Scalar)
         assert isinstance(result.op(), ops.Count)
 
+    def test_table_count(self):
         result = self.table.count()
         assert isinstance(result, api.Int64Scalar)
         assert isinstance(result.op(), ops.Count)
+        assert result.get_name() == 'count'
 
     def test_sum_expr_basics(self):
         # Impala gives bigint for all integer types

@@ -745,16 +745,6 @@ class TableExpr(Expr):
         """
         raise NotImplementedError
 
-    def count(self):
-        """
-        Returns the computed number of rows in the table expression
-
-        Returns
-        -------
-        count : Int64Scalar
-        """
-        return _ops().Count(self).to_expr()
-
     def distinct(self):
         """
         Compute set of unique rows/tuples occurring in this table
