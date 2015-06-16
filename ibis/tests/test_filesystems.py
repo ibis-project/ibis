@@ -82,10 +82,9 @@ class TestHDFSE2E(unittest.TestCase):
         try:
             cls.hdfs_client = InsecureClient(url)
             cls.hdfs = WebHDFS(cls.hdfs_client)
+            cls.hdfs.mkdir(cls.test_dir)
         except Exception as e:
             pytest.skip('Could not connect to HDFS: {}'.format(e.message))
-
-        cls.hdfs.mkdir(cls.test_dir)
 
     @classmethod
     def tearDownClass(cls):
