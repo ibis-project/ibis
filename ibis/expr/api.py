@@ -969,6 +969,21 @@ def repeat(self, n):
     return _ops.Repeat(self, n).to_expr()
 
 
+def _instring(self, substr):
+    """
+    Returns the position of first occurence of the given substring
+
+    Parameters
+    ----------
+    substr : string
+
+    Returns
+    -------
+    index : int
+    """
+    return _ops.InString(self, substr).to_expr()
+
+
 def _string_like(self, pattern):
     """
     Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
@@ -1032,6 +1047,7 @@ _string_value_methods = dict(
     left=_string_left,
     right=_string_right,
     repeat=repeat,
+    instr=_instring,
 )
 
 

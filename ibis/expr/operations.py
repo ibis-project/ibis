@@ -649,6 +649,15 @@ class Repeat(ValueNode):
     output_type = _string_output
 
 
+class InString(ValueNode):
+    def __init__(self, arg, substr):
+        self.arg = as_value_expr(arg)
+        self.substr = as_value_expr(substr)
+        ValueNode.__init__(self, [self.arg, self.substr])
+
+    output_type = _int_output
+
+
 class BooleanValueOp(ValueNode):
     pass
 

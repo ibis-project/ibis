@@ -536,6 +536,12 @@ def _repeat(translator, expr):
     return 'repeat({}, {})'.format(arg_formatted, op.n)
 
 
+def _instring(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    return 'instr({}, {})'.format(arg_formatted, translator.translate(op.substr))
+
+
 def _round(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
@@ -688,6 +694,7 @@ _string_ops = {
     ops.Substring: _substring,
     ops.StrRight: _strright,
     ops.Repeat: _repeat,
+    ops.InString: _instring,
 }
 
 

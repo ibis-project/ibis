@@ -775,3 +775,9 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
             (self.table.string_col.repeat(2), 'repeat(string_col,2)')
         ]
         self._check_expr_cases(cases)
+
+    def test_instring(self):
+        cases = [
+            (self.table.string_col.instring('a'), 'instr(string_col, a)')
+        ]
+        self._check_expr_cases(cases)
