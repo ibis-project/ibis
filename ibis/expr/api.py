@@ -984,6 +984,56 @@ def _instring(self, substr):
     return _ops.InString(self, substr).to_expr()
 
 
+def _translate(self, from_str, to_str):
+    """
+    Returns string with set of 'from' characters replaced
+    by set of 'to' characters.
+
+    Parameters
+    ----------
+    from_str : string
+    to_str : string
+
+    Returns
+    -------
+    translated : string
+    """
+    return _ops.Translate(self, from_str, to_str).to_expr()
+
+
+def _locate(self, substr, pos=0):
+    """
+    Returns position (1 indexed) of first occurence of substring,
+    optionally after a particular position
+
+    Parameters
+    ----------
+    substr : string
+    pos : int
+
+    Returns
+    -------
+    position : int
+    """
+    return _ops.Locate(self, substr, pos).to_expr()
+
+
+def _find_in_set(self, str_list):
+    """
+    Returns postion (1 indexed) of first occurence of argument within
+    comma-separated string
+
+    Parameters
+    ----------
+    str_list : string
+
+    Returns
+    -------
+    position : int
+    """
+    return _ops.FindInSet(self, str_list).to_expr()
+
+
 def _string_like(self, pattern):
     """
     Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
@@ -1048,6 +1098,9 @@ _string_value_methods = dict(
     right=_string_right,
     repeat=repeat,
     instr=_instring,
+    translate=_translate,
+    locate=_locate,
+    find_in_set=_find_in_set,
 )
 
 

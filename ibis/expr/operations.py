@@ -650,10 +650,43 @@ class Repeat(ValueNode):
 
 
 class InString(ValueNode):
+
     def __init__(self, arg, substr):
-        self.arg = as_value_expr(arg)
+        self.arg = arg
         self.substr = as_value_expr(substr)
         ValueNode.__init__(self, [self.arg, self.substr])
+
+    output_type = _int_output
+
+
+class Translate(ValueNode):
+
+    def __init__(self, arg, from_str, to_str):
+        self.arg = arg
+        self.from_str = as_value_expr(from_str)
+        self.to_str = as_value_expr(to_str)
+        ValueNode.__init__(self, [self.arg, self.from_str, self.to_str])
+
+    output_type = _string_output
+
+
+class Locate(ValueNode):
+
+    def __init__(self, arg, substr, pos=0):
+        self.arg = arg
+        self.substr = as_value_expr(substr)
+        self.pos = pos
+        ValueNode.__init__(self, [self.arg, self.substr, self.pos])
+
+    output_type = _int_output
+
+
+class FindInSet(ValueNode):
+
+    def __init__(self, arg, str_list):
+        self.arg = arg
+        self.str_list = as_value_expr(str_list)
+        ValueNode.__init__(self, [self.arg, self.str_list])
 
     output_type = _int_output
 

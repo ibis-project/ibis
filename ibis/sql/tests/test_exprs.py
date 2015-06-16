@@ -781,3 +781,24 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
             (self.table.string_col.instring('a'), 'instr(string_col, a)')
         ]
         self._check_expr_cases(cases)
+
+    def test_translate(self):
+        cases = [
+            (self.table.string_col.translate('a', 'b'),
+             'translate(string_col, a ,b)')
+        ]
+        self._check_expr_case(cases)
+
+    def test_locate(self):
+        cases = [
+            (self.table.string_col.locate('a'), 'locate(string_col, a)'),
+            (self.table.string_col.locate('a', 2), 'locate(string_col, a, 2)')
+        ]
+        self._check_expr_case(cases)
+
+    def test_find_in_set(self):
+        cases = [
+            (self.table.string_col.find_in_set('a'),
+             'find_in_set(string_col, a)')
+        ]
+        self._check_expr_case(cases)

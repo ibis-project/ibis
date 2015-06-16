@@ -539,7 +539,36 @@ def _repeat(translator, expr):
 def _instring(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
-    return 'instr({}, {})'.format(arg_formatted, translator.translate(op.substr))
+    substr_formatted = translator.translate(op.substr)
+    return 'instr({}, {})'.format(arg_formatted, substr_formatted)
+
+
+def _translate(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    from_formatted = translator.translate(op.from_str)
+    to_formatted = translator.translate(op.to_str)
+    return 'translate({}, {}, {})'.format(arg_formatted, from_formatted,
+                                          to_formatted)
+
+
+def _locate(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    substr_formatted = translator.translate(op.substr)
+
+    if op.pos:
+        return 'locate({}, {}, {})'.format(substr_formatted, arg_formatted,
+                                           op.pos + 1)
+    else:
+        return 'locate({}, {})'.format(substr_formatted, arg_formatted)
+
+
+def _find_in_set(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    str_list_formatted = translator.translate(op.str_list)
+    return 'find_in_set({}, {})'.format(arg_formatted, str_list_formatted)
 
 
 def _round(translator, expr):
@@ -695,6 +724,9 @@ _string_ops = {
     ops.StrRight: _strright,
     ops.Repeat: _repeat,
     ops.InString: _instring,
+    ops.Translate: _translate,
+    ops.Locate: _locate,
+    ops.FindInSet: _find_in_set,
 }
 
 
