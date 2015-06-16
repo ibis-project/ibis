@@ -320,6 +320,18 @@ class SelectBuilder(object):
         elif isinstance(op, (ops.Any, ops.BooleanValueOp,
                              ops.TableColumn, ir.Literal)):
             return expr
+        elif isinstance(op, ops.ValueNode):
+            visited = [self._visit_filter(arg)
+                       if isinstance(arg, ir.Expr) else arg
+                       for arg in op.args]
+            unchanged = True
+            for new, old in zip(visited, op.args):
+                if new is not old:
+                    unchanged = False
+            if not unchanged:
+                return type(expr)(type(op)(*visited))
+            else:
+                return expr
         else:
             raise NotImplementedError(type(op))
 

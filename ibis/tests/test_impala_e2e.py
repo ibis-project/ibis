@@ -425,6 +425,9 @@ FROM ibis_testing.tpch_lineitem li
                       dc * table.l_discount, api.NA),
 
             dc.fillna(0),
+
+            ts < (ibis.now() + ibis.month(3)),
+            ts < (ibis.timestamp('2005-01-01') + ibis.month(3)),
         ]
 
         timestamp_fields = ['year', 'month', 'day', 'hour', 'minute',
@@ -443,6 +446,16 @@ FROM ibis_testing.tpch_lineitem li
 
         projection = table[proj_exprs].limit(10)
         projection.execute()
+
+    def test_timestamp_scalar_in_filter(self):
+        # #310
+        table = self.alltypes
+
+        expr = (table.filter([table.timestamp_col <
+                             (ibis.timestamp('2010-01-01') + ibis.month(3)),
+                             table.timestamp_col < (ibis.now() + ibis.day(10))])
+                .count())
+        expr.execute()
 
     def test_aggregations_e2e(self):
         table = self.alltypes.limit(100)
