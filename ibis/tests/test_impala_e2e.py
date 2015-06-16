@@ -386,6 +386,21 @@ FROM ibis_testing.tpch_lineitem li
         projection = table[proj_exprs].limit(10)
         projection.execute()
 
+    def test_filter_predicates(self):
+        t = self.con.table('tpch_nation')
+
+        predicates = [
+            lambda x: x.n_name.lower().like('%ge%'),
+            lambda x: x.n_name.lower().contains('ge'),
+            lambda x: x.n_name.lower().rlike('.*ge.*')
+        ]
+
+        expr = t
+        for pred in predicates:
+            expr = expr[pred(expr)].projection([expr])
+
+        expr.execute()
+
     def test_histogram_value_counts(self):
         t = self.alltypes
         expr = t.double_col.histogram(10).value_counts()

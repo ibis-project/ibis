@@ -619,7 +619,11 @@ class StrRight(ValueNode):
     output_type = _string_output
 
 
-class FuzzySearch(ValueNode):
+class BooleanValueOp(ValueNode):
+    pass
+
+
+class FuzzySearch(BooleanValueOp):
 
     def __init__(self, arg, pattern):
         self.arg = arg
@@ -1627,7 +1631,7 @@ class Xor(LogicalBinaryOp):
     pass
 
 
-class Comparison(BinaryOp):
+class Comparison(BinaryOp, BooleanValueOp):
 
     def _maybe_cast_args(self, left, right):
         if left._can_implicit_cast(right):
@@ -1671,13 +1675,13 @@ class Less(Comparison):
     pass
 
 
-class Between(ValueNode):
+class Between(BooleanValueOp):
 
     def __init__(self, expr, lower_bound, upper_bound):
         self.expr = expr
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        ValueNode.__init__(self, [expr, lower_bound, upper_bound])
+        BooleanValueOp.__init__(self, [expr, lower_bound, upper_bound])
 
     def root_tables(self):
         return ir.distinct_roots(*self.args)
@@ -1692,12 +1696,12 @@ class Between(ValueNode):
             raise TypeError('Arguments are not comparable')
 
 
-class Contains(ArrayNode):
+class Contains(BooleanValueOp):
 
     def __init__(self, value, options):
         self.value = as_value_expr(value)
         self.options = as_value_expr(options)
-        Node.__init__(self, [self.value, self.options])
+        BooleanValueOp.__init__(self, [self.value, self.options])
 
     def root_tables(self):
         exprs = [self.value, self.options]

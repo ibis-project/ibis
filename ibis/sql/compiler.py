@@ -217,11 +217,6 @@ class SelectBuilder(object):
         self.select_set = new_select_set
 
     def _visit_select_expr(self, expr):
-        # Dumping ground for analysis of WHERE expressions
-        # - Subquery extraction
-        # - Conversion to explicit semi/anti joins
-        # - Rewrites to generate subqueries
-
         op = expr.op()
 
         method = '_visit_select_{}'.format(type(op).__name__)
@@ -322,7 +317,7 @@ class SelectBuilder(object):
                 return type(expr)(type(op)(left, right))
             else:
                 return expr
-        elif isinstance(op, (ops.Any, ops.Between, ops.Contains,
+        elif isinstance(op, (ops.Any, ops.BooleanValueOp,
                              ops.TableColumn, ir.Literal)):
             return expr
         else:
