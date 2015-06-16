@@ -453,6 +453,12 @@ class Reduction(ValueNode):
     def __init__(self, arg, where=None):
         self.arg = arg
         self.where = where
+
+        if self.where is not None and not isinstance(where, BooleanValue):
+            raise IbisTypeError(
+                '"where" expression must be a Boolean value, got %s' %
+                _safe_repr(where))
+
         ValueNode.__init__(self, [self.arg, self.where])
 
     def root_tables(self):
