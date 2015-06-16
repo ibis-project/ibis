@@ -585,6 +585,10 @@ def _bool_output(self):
     return _shape_like(self.arg, 'boolean')
 
 
+def _int_output(self):
+    return _shape_like(self.arg, 'int32')
+
+
 class StringUnaryOp(UnaryOp):
 
     output_type = _string_output
@@ -673,14 +677,12 @@ class RegexSearch(FuzzySearch):
 
 class StringLength(UnaryOp):
 
-    def output_type(self):
-        return _shape_like(self.arg, 'int32')
+    output_type = _int_output
 
 
 class StringAscii(UnaryOp):
 
-    def output_type(self):
-        return _shape_like(self.arg, 'int32')
+    output_type = _int_output
 
 
 class BinaryOp(ValueNode):
