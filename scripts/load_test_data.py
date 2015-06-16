@@ -137,10 +137,32 @@ def create_test_database(con):
 def create_parquet_tables(con):
     parquet_files = con.hdfs.ls(pjoin(TEST_DATA_HDFS_LOC, 'parquet'))
 
+    schemas = {
+        'functional_alltypes': ibis.schema(
+            [('id', 'int32'),
+             ('bool_col', 'boolean'),
+             ('tinyint_col', 'int8'),
+             ('smallint_col', 'int16'),
+             ('int_col', 'int32'),
+             ('bigint_col', 'int64'),
+             ('float_col', 'float'),
+             ('double_col', 'double'),
+             ('date_string_col', 'string'),
+             ('string_col', 'string'),
+             ('timestamp_col', 'timestamp'),
+             ('year', 'int32'),
+             ('month', 'int32')])
+    }
+
     for path in parquet_files:
         head, table_name = posixpath.split(path)
         print 'Creating {0}'.format(table_name)
-        con.parquet_file(path, name=table_name, database=TEST_DB, persist=True)
+
+        # if no schema infer!
+        schema = schemas.get(table_name)
+
+        con.parquet_file(path, schema=schema, name=table_name,
+                         database=TEST_DB, persist=True)
 
 
 def setup_test_data():
