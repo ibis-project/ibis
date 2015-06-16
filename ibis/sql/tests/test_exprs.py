@@ -372,6 +372,13 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
+    def test_reduction_invalid_where(self):
+        condbad_literal = ibis.literal('T')
+        c = self.table.double_col
+        for reduction in [c.sum, c.count, c.mean, c.max, c.min]:
+            with self.assertRaises(TypeError):
+                reduction(where=condbad_literal)
+
 
 class TestCaseExprs(unittest.TestCase, ExprSQLTest):
 
