@@ -40,3 +40,6 @@ dist
 .gdb_history
 .DS_Store?
 Icon?
+
+# file to put random dev-related chicken-scratches
+scratch.txt
