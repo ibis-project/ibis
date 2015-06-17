@@ -70,14 +70,12 @@ class TestHDFSE2E(unittest.TestCase):
         cls.host = os.environ.get('IBIS_TEST_HOST', 'localhost')
         cls.protocol = os.environ.get('IBIS_TEST_PROTOCOL', 'hiveserver2')
         cls.port = os.environ.get('IBIS_TEST_PORT', 21050)
+        cls.hdfs_host = os.environ.get('IBIS_TEST_HDFS_HOST', 'localhost')
+        # Impala dev environment uses port 5070 for HDFS web interface
+        cls.webhdfs_port = os.environ.get('IBIS_TEST_WEBHDFS_PORT', 5070)
+        url = 'http://{}:{}'.format(cls.hdfs_host, cls.webhdfs_port)
 
         cls.test_dir = '/{}'.format(util.guid())
-
-        # Impala dev environment uses port 5070 for HDFS web interface
-
-        hdfs_host = 'localhost'
-        webhdfs_port = 5070
-        url = 'http://{}:{}'.format(hdfs_host, webhdfs_port)
 
         try:
             cls.hdfs_client = InsecureClient(url)

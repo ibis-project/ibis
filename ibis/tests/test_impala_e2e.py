@@ -39,12 +39,10 @@ class IbisTestEnv(object):
         self.port = os.environ.get('IBIS_TEST_PORT', 21050)
         self.database = os.environ.get('IBIS_TEST_DATABASE', 'ibis_testing')
         self.use_codegen = bool(os.environ.get('IBIS_TEST_USE_CODEGEN', False))
-
+        self.hdfs_host = os.environ.get('IBIS_TEST_HDFS_HOST', 'localhost')
         # Impala dev environment uses port 5070 for HDFS web interface
-
-        hdfs_host = 'localhost'
-        webhdfs_port = 5070
-        url = 'http://{}:{}'.format(hdfs_host, webhdfs_port)
+        self.webhdfs_port = os.environ.get('IBIS_TEST_WEBHDFS_PORT', 5070)
+        url = 'http://{}:{}'.format(self.hdfs_host, self.webhdfs_port)
         self.hdfs = InsecureClient(url)
 
 
