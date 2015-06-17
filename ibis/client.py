@@ -391,6 +391,8 @@ class ImpalaClient(SQLClient):
             t = _impala_type_mapping.get(t, t)
             ibis_types.append(t)
 
+        names = [x.lower() for x in names]
+
         return ir.Schema(names, ibis_types)
 
     def create_table(self, table_name, expr, database=None, format='parquet',
@@ -657,6 +659,14 @@ class ImpalaClient(SQLClient):
         cursor.fetchall()
 
         names, ibis_types = self._adapt_types(cursor.description)
+
+        # per #321; most Impala tables will be lower case already, but Avro
+        # data, depending on the version of Impala, might have field names in
+        # the metastore cased according to the explicit case in the declared
+        # avro schema. This is very annoying, so it's easier to just conform on
+        # all lowercase fields from Impala.
+        names = [x.lower() for x in names]
+
         return ir.Schema(names, ibis_types)
 
     def _adapt_types(self, descr):
