@@ -681,6 +681,28 @@ class Locate(ValueNode):
     output_type = _int_output
 
 
+class LPad(ValueNode):
+
+    def __init__(self, arg, length, pad):
+        self.arg = arg
+        self.length = length
+        self.pad = as_value_expr(pad)
+        ValueNode.__init__(self, [self.arg, self.length, self.pad])
+
+    output_type = _string_output
+
+
+class RPad(ValueNode):
+
+    def __init__(self, arg, length, pad):
+        self.arg = arg
+        self.length = length
+        self.pad = as_value_expr(pad)
+        ValueNode.__init__(self, [self.arg, self.length, self.pad])
+
+    output_type = _string_output
+
+
 class FindInSet(ValueNode):
 
     def __init__(self, arg, str_list):

@@ -1018,6 +1018,40 @@ def _locate(self, substr, pos=0):
     return _ops.Locate(self, substr, pos).to_expr()
 
 
+def _lpad(self, length, pad):
+    """
+    Returns string of given length by truncating or
+    padding (on left) original string
+
+    Parameters
+    ----------
+    length : int
+    pad : string
+
+    Returns
+    -------
+    padded : string
+    """
+    return _ops.LPad(self, length, pad).to_expr()
+
+
+def _rpad(self, length, pad):
+    """
+    Returns string of given length by truncating or
+    padding (on right) original string
+
+    Parameters
+    ----------
+    length : int
+    pad : stirng
+
+    Returns
+    -------
+    padded : string
+    """
+    return _ops.RPad(self, length, pad).to_expr()
+
+
 def _find_in_set(self, str_list):
     """
     Returns postion (1 indexed) of first occurence of argument within
@@ -1101,6 +1135,8 @@ _string_value_methods = dict(
     translate=_translate,
     locate=_locate,
     find_in_set=_find_in_set,
+    lpad=_lpad,
+    rpad=_rpad,
 )
 
 

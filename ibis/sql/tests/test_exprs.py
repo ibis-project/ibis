@@ -772,33 +772,49 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_repeat(self):
         cases = [
-            (self.table.string_col.repeat(2), 'repeat(string_col,2)')
+            (self.table.string_col.repeat(2), 'repeat(string_col, 2)')
         ]
         self._check_expr_cases(cases)
 
     def test_instring(self):
         cases = [
-            (self.table.string_col.instring('a'), 'instr(string_col, a)')
+            (self.table.string_col.instr('a'), "instr(string_col, 'a')")
         ]
         self._check_expr_cases(cases)
 
     def test_translate(self):
         cases = [
             (self.table.string_col.translate('a', 'b'),
-             'translate(string_col, a ,b)')
+             "translate(string_col, 'a', 'b')")
         ]
-        self._check_expr_case(cases)
+        self._check_expr_cases(cases)
 
     def test_locate(self):
         cases = [
-            (self.table.string_col.locate('a'), 'locate(string_col, a)'),
-            (self.table.string_col.locate('a', 2), 'locate(string_col, a, 2)')
+            (self.table.string_col.locate('a'),
+             "locate('a', string_col)"),
+            (self.table.string_col.locate('a', 2),
+             "locate('a', string_col, 3)")
         ]
-        self._check_expr_case(cases)
+        self._check_expr_cases(cases)
+
+    def test_lpad(self):
+        cases = [
+            (self.table.string_col.lpad(1, 'a'), "lpad(string_col, 1, 'a')"),
+            (self.table.string_col.lpad(25, 'a'), "lpad(string_col, 25, 'a')")
+        ]
+        self._check_expr_cases(cases)
+
+    def test_rpad(self):
+        cases = [
+            (self.table.string_col.rpad(1, 'a'), "rpad(string_col, 1, 'a')"),
+            (self.table.string_col.rpad(25, 'a'), "rpad(string_col, 25, 'a')")
+        ]
+        self._check_expr_cases(cases)
 
     def test_find_in_set(self):
         cases = [
             (self.table.string_col.find_in_set('a'),
-             'find_in_set(string_col, a)')
+             "find_in_set(string_col, 'a')")
         ]
-        self._check_expr_case(cases)
+        self._check_expr_cases(cases)

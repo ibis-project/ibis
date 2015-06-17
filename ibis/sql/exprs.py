@@ -564,6 +564,20 @@ def _locate(translator, expr):
         return 'locate({}, {})'.format(substr_formatted, arg_formatted)
 
 
+def _lpad(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    pad_formatted = translator.translate(op.pad)
+    return 'lpad({}, {}, {})'.format(arg_formatted, op.length, pad_formatted)
+
+
+def _rpad(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    pad_formatted = translator.translate(op.pad)
+    return 'rpad({}, {}, {})'.format(arg_formatted, op.length, pad_formatted)
+
+
 def _find_in_set(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
@@ -727,6 +741,8 @@ _string_ops = {
     ops.Translate: _translate,
     ops.Locate: _locate,
     ops.FindInSet: _find_in_set,
+    ops.LPad: _lpad,
+    ops.RPad: _rpad,
 }
 
 
