@@ -1043,7 +1043,7 @@ def _rpad(self, length, pad):
     Parameters
     ----------
     length : int
-    pad : stirng
+    pad : string
 
     Returns
     -------
@@ -1066,6 +1066,37 @@ def _find_in_set(self, str_list):
     position : int
     """
     return _ops.FindInSet(self, str_list).to_expr()
+
+
+def _concat(self, strings):
+    """
+    Returns single string representing all values joined together
+
+    Parameters
+    ----------
+    strings : list of strings
+
+    Returns
+    -------
+    concatted : string
+    """
+    return _ops.Concat(self, strings).to_expr()
+
+
+def _concat_ws(self, strings, sep):
+    """
+    Returns single string combined with given separator in between.
+
+    Parameters
+    ----------
+    strings : list of strings
+    sep : string
+
+    Returns
+    -------
+    concatted : string
+    """
+    return _ops.ConcatWS(self, strings, sep).to_expr()
 
 
 def _string_like(self, pattern):
@@ -1135,6 +1166,8 @@ _string_value_methods = dict(
     translate=_translate,
     locate=_locate,
     find_in_set=_find_in_set,
+    concat=_concat,
+    concat_ws=_concat_ws,
     lpad=_lpad,
     rpad=_rpad,
 )

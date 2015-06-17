@@ -585,6 +585,24 @@ def _find_in_set(translator, expr):
     return 'find_in_set({}, {})'.format(arg_formatted, str_list_formatted)
 
 
+def _concat(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    strings_formatted = [translator.translate(arg) for arg in op.strings]
+    return 'concat({})'.format(arg_formatted + ', '
+                               + ', '.join(strings_formatted))
+
+
+def _concat_ws(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    sep_formatted = translator.translate(op.sep)
+    strings_formatted = [translator.translate(arg) for arg in op.strings]
+    return 'concat_ws({}, {})'.format(sep_formatted,
+                                      arg_formatted + ', '
+                                      + ', '.join(strings_formatted))
+
+
 def _round(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
@@ -741,6 +759,8 @@ _string_ops = {
     ops.Translate: _translate,
     ops.Locate: _locate,
     ops.FindInSet: _find_in_set,
+    ops.Concat: _concat,
+    ops.ConcatWS: _concat_ws,
     ops.LPad: _lpad,
     ops.RPad: _rpad,
 }

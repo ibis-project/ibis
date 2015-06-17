@@ -818,3 +818,23 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
              "find_in_set(string_col, 'a')")
         ]
         self._check_expr_cases(cases)
+
+    def test_concat(self):
+        cases = [
+            (self.table.string_col.concat(['a']),
+             "concat(string_col, 'a')"),
+            (self.table.string_col.concat(['a', 'b']),
+             "concat(string_col, 'a', 'b')")
+        ]
+        self._check_expr_cases(cases)
+
+    def test_concat_ws(self):
+        cases = [
+            (self.table.string_col.concat_ws(['a'], 'O'),
+             "concat_ws('O', string_col, 'a')"),
+            (self.table.string_col.concat_ws(['a', 'b'], 'O'),
+             "concat_ws('O', string_col, 'a', 'b')"),
+            (self.table.string_col.concat_ws(['a'], ','),
+             "concat_ws(',', string_col, 'a')")
+        ]
+        self._check_expr_cases(cases)

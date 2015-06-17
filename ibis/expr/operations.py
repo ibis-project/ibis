@@ -717,6 +717,27 @@ class BooleanValueOp(ValueNode):
     pass
 
 
+class Concat(ValueNode):
+
+    def __init__(self, arg, strings):
+        self.arg = arg
+        self.strings = [as_value_expr(x) for x in strings]
+        ValueNode.__init__(self, [self.arg, self.strings])
+
+    output_type = _string_output
+
+
+class ConcatWS(ValueNode):
+
+    def __init__(self, arg, strings, sep):
+        self.arg = arg
+        self.strings = [as_value_expr(x) for x in strings]
+        self.sep = as_value_expr(sep)
+        ValueNode.__init__(self, [self.arg, self.strings, self.sep])
+
+    output_type = _string_output
+
+
 class FuzzySearch(BooleanValueOp):
 
     def __init__(self, arg, pattern):
