@@ -622,9 +622,9 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
         avro_schema = {
             "fields": [
-                {"type": ["int", "null"], "name": "r_regionkey"},
-                {"type": ["string", "null"], "name": "r_name"},
-                {"type": ["string", "null"], "name": "r_comment"}],
+                {"type": ["int", "null"], "name": "R_REGIONKEY"},
+                {"type": ["string", "null"], "name": "R_NAME"},
+                {"type": ["string", "null"], "name": "R_COMMENT"}],
             "type": "record",
             "name": "a"
         }
@@ -643,6 +643,9 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         expr.execute()
 
         assert table.count().execute() == 5
+
+        df = table.execute()
+        assert len(df) == 5
 
     def test_query_parquet_file_with_schema(self):
         hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
