@@ -319,6 +319,33 @@ FROM (
 ) t0"""
         assert query == expected
 
+    def test_scalar_exprs_no_table_refs(self):
+        expr1 = ibis.now()
+        expected1 = """\
+SELECT now() AS `tmp`"""
+
+        expr2 = ibis.literal(1) + ibis.literal(2)
+        expected2 = """\
+SELECT 1 + 2 AS `tmp`"""
+
+        cases = [
+            (expr1, expected1),
+            (expr2, expected2)
+        ]
+
+        for expr, expected in cases:
+            result = to_sql(expr)
+            assert result == expected
+
+    def test_expr_list_no_table_refs(self):
+        exlist = ibis.api.expr_list([ibis.literal(1).name('a'),
+                                     ibis.now().name('b'),
+                                     ibis.literal(2).log().name('c')])
+        result = to_sql(exlist)
+        expected = """\
+SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
+        assert result == expected
+
     def test_isnull_case_expr_rewrite_failure(self):
         # #172, case expression that was not being properly converted into an
         # aggregation

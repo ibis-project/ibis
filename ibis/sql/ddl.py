@@ -221,6 +221,9 @@ class Select(DDLStatement):
         return '{}{}'.format(select_key, buf.getvalue())
 
     def format_table_set(self, ctx):
+        if self.table_set is None:
+            return None
+
         fragment = 'FROM '
 
         helper = _TableSetFormatter(ctx, self.table_set)

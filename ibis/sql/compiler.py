@@ -20,6 +20,7 @@
 
 from collections import defaultdict
 
+import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -173,8 +174,8 @@ class SelectBuilder(object):
     def _populate_context(self):
         # Populate aliases for the distinct relations used to output this
         # select statement.
-
-        self._make_table_aliases(self.table_set)
+        if self.table_set is not None:
+            self._make_table_aliases(self.table_set)
 
         # XXX: This is a temporary solution to the table-aliasing / correlated
         # subquery problem. Will need to revisit and come up with a cleaner
@@ -384,16 +385,24 @@ class SelectBuilder(object):
         # expression that is being translated only depends on a single table
         # expression.
 
-        source_table = self.query_expr
+        source_expr = self.query_expr
 
         # hm, is this the best place for this?
-        root_op = source_table.op()
+        root_op = source_expr.op()
         if (isinstance(root_op, ops.Join) and
                 not isinstance(root_op, ops.MaterializedJoin)):
             # Unmaterialized join
-            source_table = source_table.materialize()
+            source_expr = source_expr.materialize()
 
-        self._collect(source_table, toplevel=True)
+        if isinstance(root_op, ops.TableNode):
+            self._collect(source_expr, toplevel=True)
+            if self.table_set is None:
+                raise com.InternalError('no table set')
+        else:
+            if isinstance(root_op, ir.ExpressionList):
+                self.select_set = source_expr.exprs()
+            else:
+                self.select_set = [source_expr]
 
     def _collect(self, expr, toplevel=False):
         op = expr.op()
@@ -576,7 +585,8 @@ class _ExtractSubqueries(object):
         self.expr_counts = defaultdict(lambda: 0)
 
     def get_result(self):
-        self.visit(self.query.table_set)
+        if self.query.table_set is not None:
+            self.visit(self.query.table_set)
 
         for clause in self.query.filters:
             self.visit(clause)
@@ -766,21 +776,41 @@ def _adapt_expr(expr):
     def _scalar_reduce(x):
         return isinstance(x, ir.ScalarExpr) and x.is_reduction()
 
-    if _scalar_reduce(expr):
-        table_expr = _reduction_to_aggregation(expr, agg_name='tmp')
-
+    if isinstance(expr, ir.ScalarExpr):
         def scalar_handler(results):
             return results['tmp'][0]
 
-        return table_expr, scalar_handler
-    elif isinstance(expr, ir.ExprList):
-        exprs = expr.exprs()
-        for expr in exprs:
-            if not _scalar_reduce(expr):
+        if _scalar_reduce(expr):
+            table_expr = _reduction_to_aggregation(expr, agg_name='tmp')
+            return table_expr, scalar_handler
+        else:
+            base_table = L.find_base_table(expr)
+            if base_table is None:
+                # expr with no table refs
+                return expr.name('tmp'), scalar_handler
+            else:
                 raise NotImplementedError(expr)
 
-        table = L.find_base_table(exprs[0])
-        return table.aggregate(exprs), as_is
+    elif isinstance(expr, ir.ExprList):
+        exprs = expr.exprs()
+
+        is_aggregation = True
+        any_aggregation = False
+
+        for x in exprs:
+            if not _scalar_reduce(x):
+                is_aggregation = False
+            else:
+                any_aggregation = True
+
+        if is_aggregation:
+            table = L.find_base_table(exprs[0])
+            return table.aggregate(exprs), as_is
+        elif not any_aggregation:
+            return expr, as_is
+        else:
+            raise NotImplementedError(expr)
+
     elif isinstance(expr, ir.ArrayExpr):
         op = expr.op()
 

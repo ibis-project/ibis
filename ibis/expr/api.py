@@ -728,7 +728,13 @@ def _wrap_summary_metrics(metrics, prefix):
     if prefix is not None:
         metrics = [x.name(prefix + x.get_name()) for x in metrics]
 
-    return _ir.ExpressionList(metrics).to_expr()
+    return expr_list(metrics)
+
+
+def expr_list(exprs):
+    for e in exprs:
+        e.get_name()
+    return _ir.ExpressionList(exprs).to_expr()
 
 
 _generic_array_methods = dict(

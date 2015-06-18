@@ -229,6 +229,21 @@ FROM ibis_testing.tpch_lineitem li
         result = self.con.execute(expr)
         assert isinstance(result, pd.Series)
 
+    def test_execute_exprs_no_table_ref(self):
+        cases = [
+            (ibis.literal(1) + ibis.literal(2), 3)
+        ]
+
+        for expr, expected in cases:
+            result = self.con.execute(expr)
+            assert result == expected
+
+        # ExprList
+        exlist = ibis.api.expr_list([ibis.literal(1).name('a'),
+                                     ibis.now().name('b'),
+                                     ibis.literal(2).log().name('c')])
+        self.con.execute(exlist)
+
     def test_summary_execute(self):
         table = self.alltypes
 
