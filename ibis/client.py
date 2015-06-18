@@ -42,6 +42,24 @@ class Client(object):
 
 class SQLClient(Client):
 
+    def database(self, name):
+        """
+        Create a Database object for a given database name that can be used for
+        exploring and manipulating the objects (tables, functions, views, etc.)
+        inside
+
+        Parameters
+        ----------
+        name : string
+          Name of database
+
+        Returns
+        -------
+        database : Database
+        """
+        # TODO: validate existence of database
+        return Database(name, self)
+
     def table(self, name, database=None):
         """
         Create a table expression that references a particular table in the
@@ -273,6 +291,112 @@ class ImpalaCursor(object):
 
     def fetchall(self):
         return self.cursor.fetchall()
+
+
+class Database(object):
+
+    def __init__(self, name, client):
+        self.name = name
+        self.client = client
+
+    def __repr__(self):
+        return "{0}('{1}')".format('Database', self.name)
+
+    def __dir__(self):
+        attrs = dir(type(self))
+        tables = self.list_tables()
+        unqualified_tables = [self._unqualify(x) for x in tables]
+        return list(sorted(set(attrs + unqualified_tables)))
+
+    def __getattr__(self, key):
+        try:
+            return object.__getattribute__(self, key)
+        except AttributeError:
+            return self.table(key)
+
+    def _qualify(self, value):
+        return value
+
+    def _unqualify(self, value):
+        return value
+
+    def drop(self, force=False):
+        self.client.drop_database(self.name, force=force)
+
+    def namespace(self, ns):
+        return DatabaseNamespace(self, ns)
+
+    def table(self, name):
+        return Table(name, self)
+
+    def view(self, name):
+        pass
+
+    def list_tables(self, like=None):
+        return self.client.list_tables(like=like, database=self.name)
+
+    def list_udfs(self, like=None):
+        return self.client.list_udfs(like=like, database=self.name)
+
+    def list_udas(self, like=None):
+        return self.client.list_udas(like=like, database=self.name)
+
+
+class Entity(object):
+    pass
+
+
+class Table(Entity):
+
+    def __init__(self, name, database):
+        self.name = name
+        self.database = database
+
+    def drop(self):
+        pass
+
+
+class View(Entity):
+
+    def drop(self):
+        pass
+
+
+class ScalarFunction(Entity):
+
+    def drop(self):
+        pass
+
+
+class AggregateFunction(Entity):
+
+    def drop(self):
+        pass
+
+
+class DatabaseNamespace(Database):
+
+    def __init__(self, parent, namespace):
+        self.parent = parent
+        self.namespace = namespace
+
+    def __repr__(self):
+        pass
+
+    @property
+    def client(self):
+        return self.parent.client
+
+    @property
+    def name(self):
+        return self.parent.name
+
+    def _qualify(self, value):
+        return self.namespace + value
+
+    def _unqualify(self, value):
+        return value.replace(self.namespace, '', 1)
+
 
 
 class ImpalaClient(SQLClient):
