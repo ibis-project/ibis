@@ -202,6 +202,32 @@ class Expr(object):
         from ibis.expr.format import ExprFormatter
         return ExprFormatter(self).get_result()
 
+    def pipe(self, f, *args, **kwargs):
+        """
+        Generic composition function to enable expression pipelining
+
+          (expr
+           .pipe(f, *args, **kwargs)
+           .pipe(g, *args2, **kwargs2))
+
+        is equivalent to
+
+          g(f(expr, *args, **kwargs), *args2, **kwargs2)
+
+        Returns
+        -------
+        result : result type of passed function
+        """
+        if isinstance(f, tuple):
+            f, data_keyword = f
+            kwargs = kwargs.copy()
+            kwargs[data_keyword] = self
+            return f(*args, **kwargs)
+        else:
+            return f(self, *args, **kwargs)
+
+    __call__ = pipe
+
     def op(self):
         return self._arg
 
