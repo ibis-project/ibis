@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six import BytesIO
+
+
 from posixpath import join as pjoin
 import os
 import shutil
@@ -141,7 +144,7 @@ class TestHDFSE2E(unittest.TestCase):
         self.hdfs.mkdir(path)
         assert self.hdfs.exists(path)
 
-    def test_write_get_delete_file(self):
+    def test_put_get_delete_file(self):
         dirpath = pjoin(self.test_dir, 'write-delete-test')
         self.hdfs.mkdir(dirpath)
 
@@ -163,7 +166,7 @@ class TestHDFSE2E(unittest.TestCase):
     def test_overwrite_file(self):
         pass
 
-    def test_write_get_directory(self):
+    def test_put_get_directory(self):
         local_dir = util.guid()
         local_download_dir = util.guid()
 
@@ -208,6 +211,22 @@ class TestHDFSE2E(unittest.TestCase):
 
         self.hdfs.get(remote_path, local_path2, overwrite=True)
         assert open(local_path2).read() == open(local_path).read()
+
+    def test_put_buffer_like(self):
+        data = b'peekaboo'
+
+        buf = BytesIO()
+        buf.write(data)
+        buf.seek(0)
+
+        remote_path = pjoin(self.test_dir, util.guid())
+        self.hdfs.put(remote_path, buf)
+
+        local_path = util.guid()
+        self.test_files.append(local_path)
+
+        self.hdfs.get(remote_path, local_path)
+        assert open(local_path, 'rb').read() == data
 
     def test_get_logging(self):
         # TODO write a test for this

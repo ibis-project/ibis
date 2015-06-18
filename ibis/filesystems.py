@@ -20,10 +20,11 @@ import os
 import posixpath
 import shutil
 
+import six
+
 from ibis.config import options
 import ibis.common as com
 import ibis.util as util
-
 
 from hdfs.util import temppath
 
@@ -68,7 +69,7 @@ class HDFS(object):
         """
         raise NotImplementedError
 
-    def put(self, hdfs_path, local_path, overwrite=False, verbose=None,
+    def put(self, hdfs_path, resource, overwrite=False, verbose=None,
             **kwargs):
         """
         Write file or directory to HDFS
@@ -77,8 +78,8 @@ class HDFS(object):
         ----------
         hdfs_path : string
           Directory or path
-        local_path : string
-          Relative or absolute path to local resource
+        resource : string or buffer-like
+          Relative or absolute path to local resource, or a file-like object
         overwrite : boolean, default False
         verbose : boolean, default ibis options.verbose
 
@@ -187,12 +188,14 @@ class WebHDFS(HDFS):
         return ''.join(gen)
 
     @implements(HDFS.put)
-    def put(self, hdfs_path, local_path, overwrite=False, verbose=None,
+    def put(self, hdfs_path, resource, overwrite=False, verbose=None,
             **kwargs):
         verbose = verbose or options.verbose
-        if osp.isdir(local_path):
-            for dirpath, dirnames, filenames in os.walk(local_path):
-                rel_dir = osp.relpath(dirpath, local_path)
+        is_path = isinstance(resource, six.string_types)
+
+        if is_path and osp.isdir(resource):
+            for dirpath, dirnames, filenames in os.walk(resource):
+                rel_dir = osp.relpath(dirpath, resource)
                 if rel_dir == '.':
                     rel_dir = ''
                 for fpath in filenames:
@@ -201,11 +204,17 @@ class WebHDFS(HDFS):
                     self.put(rel_hdfs_path, abs_path, overwrite=overwrite,
                              verbose=verbose, **kwargs)
         else:
-            if verbose:
-                self.log('Writing local {} to HDFS {}'.format(local_path,
-                                                              hdfs_path))
-            self.client.upload(hdfs_path, local_path,
-                               overwrite=overwrite, **kwargs)
+            if is_path:
+                if verbose:
+                    self.log('Writing local {} to HDFS {}'.format(resource,
+                                                                  hdfs_path))
+                self.client.upload(hdfs_path, resource,
+                                   overwrite=overwrite, **kwargs)
+            else:
+                if verbose:
+                    self.log('Writing buffer to HDFS {0}'.format(hdfs_path))
+                self.client.write(hdfs_path, resource, overwrite=overwrite,
+                                  **kwargs)
 
     @implements(HDFS.get)
     def get(self, hdfs_path, local_path, overwrite=False, verbose=None):
@@ -279,15 +288,3 @@ class WebHDFS(HDFS):
                     shutil.move(_temp_dir_path, local_path)
 
         return dest
-
-    def write(self, hdfs_path, buf, overwrite=False, blocksize=None,
-              replication=None, buffersize=None):
-        """
-        Write a buffer-like object to indicated HDFS path
-
-        Parameters
-        ----------
-        """
-        self.client.write(buf, hdfs_path, overwrite=overwrite,
-                          blocksize=blocksize, replication=replication,
-                          buffersize=buffersize)
