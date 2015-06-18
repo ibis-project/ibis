@@ -258,9 +258,9 @@ FROM ibis_testing.tpch_lineitem li
         assert isinstance(result, pd.DataFrame)
 
         expr = (table.group_by('string_col')
-                .aggregate([table.double_col.summary(prefix='double_'),
-                            table.float_col.summary(prefix='float_'),
-                            table.string_col.summary(prefix='string_')]))
+                .aggregate([table.double_col.summary().prefix('double_'),
+                            table.float_col.summary().prefix('float_'),
+                            table.string_col.summary().suffix('_string')]))
         result = expr.execute()
         assert isinstance(result, pd.DataFrame)
 

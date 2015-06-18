@@ -1895,6 +1895,47 @@ class TestCaseExpressions(BasicTestCase, unittest.TestCase):
         pass
 
 
+class TestExprList(unittest.TestCase):
+
+    def setUp(self):
+        exprs = [ibis.literal(1).name('a'),
+                 ibis.literal(2).name('b')]
+
+        self.expr = ibis.expr_list(exprs)
+
+    def test_names(self):
+        assert self.expr.names() == ['a', 'b']
+
+    def test_prefix(self):
+        prefixed = self.expr.prefix('foo_')
+        result = prefixed.names()
+        assert result == ['foo_a', 'foo_b']
+
+    def test_rename(self):
+        renamed = self.expr.rename(lambda x: 'foo({0})'.format(x))
+        result = renamed.names()
+        assert result == ['foo(a)', 'foo(b)']
+
+    def test_suffix(self):
+        suffixed = self.expr.suffix('.x')
+        result = suffixed.names()
+        assert result == ['a.x', 'b.x']
+
+    def test_concat(self):
+        exprs = [ibis.literal(1).name('a'),
+                 ibis.literal(2).name('b')]
+
+        exprs2 = [ibis.literal(3).name('c'),
+                  ibis.literal(4).name('d')]
+
+        list1 = ibis.expr_list(exprs)
+        list2 = ibis.expr_list(exprs2)
+
+        result = list1.concat(list2)
+        expected = ibis.expr_list(exprs + exprs2)
+        assert result.equals(expected)
+
+
 class TestInteractiveUse(unittest.TestCase):
 
     def setUp(self):

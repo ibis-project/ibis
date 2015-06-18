@@ -47,7 +47,7 @@ import ibis.expr.operations as _ops
 import ibis.expr.temporal as _T
 
 
-__all__ = ['schema', 'table', 'literal', 'timestamp',
+__all__ = ['schema', 'table', 'literal', 'expr_list', 'timestamp',
            'case', 'where', 'sequence',
            'now', 'desc', 'null', 'NA',
            'cast', 'coalesce', 'greatest', 'least', 'join']
@@ -725,10 +725,10 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
 
 
 def _wrap_summary_metrics(metrics, prefix):
+    result = expr_list(metrics)
     if prefix is not None:
-        metrics = [x.name(prefix + x.get_name()) for x in metrics]
-
-    return expr_list(metrics)
+        result = result.prefix(prefix)
+    return result
 
 
 def expr_list(exprs):

@@ -384,6 +384,34 @@ class ExprList(Expr):
     def exprs(self):
         return self.op().args
 
+    def names(self):
+        return [x.get_name() for x in self.exprs()]
+
+    def rename(self, f):
+        new_exprs = [x.name(f(x.get_name())) for x in self.exprs()]
+        return ExpressionList(new_exprs).to_expr()
+
+    def prefix(self, value):
+        return self.rename(lambda x: value + x)
+
+    def suffix(self, value):
+        return self.rename(lambda x: x + value)
+
+    def concat(self, *others):
+        """
+        Concatenate expression lists
+
+        Returns
+        -------
+        combined : ExprList
+        """
+        exprs = list(self.exprs())
+        for o in others:
+            if not isinstance(o, ExprList):
+                raise TypeError(o)
+            exprs.extend(o.exprs())
+        return ExpressionList(exprs).to_expr()
+
 
 class Literal(ValueNode):
 
