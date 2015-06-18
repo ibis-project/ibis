@@ -237,9 +237,9 @@ class WebHDFS(HDFS):
         status = self.status(hdfs_path)
         if status['type'] == 'FILE':
             if not overwrite and osp.exists(local_path):
-                raise Exception('{0} exists'.format(local_path))
+                raise IOError('{0} exists'.format(local_path))
 
-            self.client.download(hdfs_path, local_path)
+            self.client.download(hdfs_path, local_path, overwrite=overwrite)
         else:
             # TODO: partitioned files
 

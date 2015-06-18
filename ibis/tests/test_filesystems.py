@@ -174,6 +174,22 @@ class TestHDFSE2E(unittest.TestCase):
         finally:
             shutil.rmtree(local_dir)
 
+    def test_get_file_overwrite(self):
+        local_path = self._make_random_file()
+        local_path2 = self._make_random_file()
+
+        remote_path = pjoin(self.test_dir, local_path)
+        self.hdfs.put(remote_path, local_path)
+
+        remote_path2 = pjoin(self.test_dir, local_path2)
+        self.hdfs.put(remote_path2, local_path2)
+
+        with self.assertRaises(IOError):
+            self.hdfs.get(remote_path, '.')
+
+        self.hdfs.get(remote_path, local_path2, overwrite=True)
+        assert open(local_path2).read() == open(local_path).read()
+
     def test_get_directory_nested_dirs(self):
         local_dir = util.guid()
         local_download_dir = util.guid()
