@@ -20,6 +20,7 @@ import os
 import posixpath
 import shutil
 
+from ibis.config import options
 import ibis.common as com
 import ibis.util as util
 
@@ -188,6 +189,7 @@ class WebHDFS(HDFS):
     @implements(HDFS.put)
     def put(self, hdfs_path, local_path, overwrite=False, verbose=None,
             **kwargs):
+        verbose = verbose or options.verbose
         if osp.isdir(local_path):
             for dirpath, dirnames, filenames in os.walk(local_path):
                 rel_dir = osp.relpath(dirpath, local_path)
@@ -206,10 +208,12 @@ class WebHDFS(HDFS):
                                overwrite=overwrite, **kwargs)
 
     @implements(HDFS.get)
-    def get(self, hdfs_path, local_path, overwrite=False):
+    def get(self, hdfs_path, local_path, overwrite=False, verbose=None):
+        verbose = verbose or options.verbose
+
         hdfs_path = hdfs_path.rstrip(posixpath.sep)
 
-        if osp.isdir(local_path):
+        if osp.isdir(local_path) and not overwrite:
             dest = osp.join(local_path, posixpath.basename(hdfs_path))
         else:
             local_dir = osp.dirname(local_path) or '.'
@@ -222,6 +226,11 @@ class WebHDFS(HDFS):
 
         # TODO: threadpool
 
+        def _get_file(remote, local):
+            if verbose:
+                self.log('Writing HDFS {} to local {}'.format(remote, local))
+            self.client.download(remote, local, overwrite=overwrite)
+
         def _scrape_dir(path, dst):
             objs = self.client.list(path)
             for hpath, detail in objs:
@@ -229,7 +238,7 @@ class WebHDFS(HDFS):
                 full_opath = posixpath.join(dst, relpath)
 
                 if detail['type'] == 'FILE':
-                    self.client.download(hpath, full_opath)
+                    _get_file(hpath, full_opath)
                 else:
                     os.makedirs(full_opath)
                     _scrape_dir(hpath, dst)
@@ -239,7 +248,7 @@ class WebHDFS(HDFS):
             if not overwrite and osp.exists(local_path):
                 raise IOError('{0} exists'.format(local_path))
 
-            self.client.download(hdfs_path, local_path, overwrite=overwrite)
+            _get_file(hdfs_path, local_path)
         else:
             # TODO: partitioned files
 
@@ -247,7 +256,27 @@ class WebHDFS(HDFS):
                 _temp_dir_path = osp.join(tpath, posixpath.basename(hdfs_path))
                 os.makedirs(_temp_dir_path)
                 _scrape_dir(hdfs_path, _temp_dir_path)
-                shutil.move(_temp_dir_path, local_path)
+
+                if verbose:
+                    self.log('Moving {0} to {1}'.format(_temp_dir_path,
+                                                        local_path))
+
+                if overwrite and osp.exists(local_path):
+                    # swap and delete
+                    local_swap_path = util.guid()
+                    shutil.move(local_path, local_swap_path)
+
+                    try:
+                        shutil.move(_temp_dir_path, local_path)
+                        if verbose:
+                            msg = 'Deleting original {0}'.format(local_path)
+                            self.log(msg)
+                        shutil.rmtree(local_swap_path)
+                    except:
+                        # undo our diddle
+                        shutil.move(local_swap_path, local_path)
+                else:
+                    shutil.move(_temp_dir_path, local_path)
 
         return dest
 

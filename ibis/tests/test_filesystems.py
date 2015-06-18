@@ -93,6 +93,7 @@ class TestHDFSE2E(unittest.TestCase):
 
     def setUp(self):
         self.test_files = []
+        self.test_directories = []
 
     def tearDown(self):
         self._delete_test_files()
@@ -101,6 +102,12 @@ class TestHDFSE2E(unittest.TestCase):
         for path in self.test_files:
             try:
                 os.remove(path)
+            except os.error:
+                pass
+
+        for path in self.test_directories:
+            try:
+                shutil.rmtree(path)
             except os.error:
                 pass
 
@@ -116,6 +123,18 @@ class TestHDFSE2E(unittest.TestCase):
 
         self.test_files.append(path)
         return path
+
+    def _make_test_directory(self, files=5):
+        local_dir = util.guid()
+
+        os.mkdir(local_dir)
+
+        for i in xrange(files):
+            self._make_random_file(directory=local_dir)
+
+        self.test_directories.append(local_dir)
+
+        return local_dir
 
     def test_mkdir(self):
         path = pjoin(self.test_dir, 'mkdir-test')
@@ -190,6 +209,10 @@ class TestHDFSE2E(unittest.TestCase):
         self.hdfs.get(remote_path, local_path2, overwrite=True)
         assert open(local_path2).read() == open(local_path).read()
 
+    def test_get_logging(self):
+        # TODO write a test for this
+        pass
+
     def test_get_directory_nested_dirs(self):
         local_dir = util.guid()
         local_download_dir = util.guid()
@@ -219,6 +242,22 @@ class TestHDFSE2E(unittest.TestCase):
             assert not self.hdfs.exists(remote_dir)
         finally:
             shutil.rmtree(local_dir)
+
+    def test_get_directory_overwrite(self):
+        local_dir = self._make_test_directory()
+        local_dir2 = self._make_test_directory()
+
+        remote_dir = pjoin(self.test_dir, local_dir)
+        remote_dir2 = pjoin(self.test_dir, local_dir2)
+
+        self.hdfs.put(remote_dir, local_dir)
+        self.hdfs.put(remote_dir2, local_dir2)
+
+        self.hdfs.get(remote_dir, local_dir2, overwrite=True)
+        _check_directories_equal(local_dir2, local_dir)
+
+        self.hdfs.get(remote_dir, local_dir2, overwrite=True)
+        _check_directories_equal(local_dir2, local_dir)
 
     def _try_delete_directory(self, path):
         try:
