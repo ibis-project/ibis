@@ -391,6 +391,8 @@ FROM ibis_testing.tpch_lineitem li
             s.contains('6'),
             s.like('6%'),
             s.re_search('[\d]+'),
+            s.re_extract('[\d]+', 0),
+            s.re_replace('[\d]+', 'a'),
             s.repeat(2),
             s.instr("a"),
             s.translate("a", "b"),

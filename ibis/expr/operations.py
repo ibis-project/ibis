@@ -760,6 +760,36 @@ class RegexSearch(FuzzySearch):
     pass
 
 
+class RegexExtract(ValueNode):
+
+    def __init__(self, arg, pattern, index):
+        self.arg = arg
+        self.pattern = as_value_expr(pattern)
+        self.index = index
+
+        if not isinstance(self.pattern, ir.StringScalar):
+            raise TypeError(self.pattern)
+
+        ValueNode.__init__(self, [self.arg, self.pattern, self.index])
+
+    output_type = _string_output
+
+
+class RegexReplace(ValueNode):
+
+    def __init__(self, arg, pattern, replacement):
+        self.arg = as_value_expr(arg)
+        self.pattern = as_value_expr(pattern)
+        self.replacement = as_value_expr(replacement)
+
+        if not isinstance(self.pattern, ir.StringScalar):
+            raise TypeError(self.pattern)
+
+        ValueNode.__init__(self, [self.arg, self.pattern, self.replacement])
+
+    output_type = _string_output
+
+
 class StringLength(UnaryOp):
 
     output_type = _int_output

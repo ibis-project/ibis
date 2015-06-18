@@ -770,6 +770,20 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
+    def test_re_extract(self):
+        sql = "regexp_extract(string_col, '[\d]+', 0)"
+        cases = [
+            (self.table.string_col.re_extract('[\d]+', 0), sql)
+        ]
+        self._check_expr_cases(cases)
+
+    def test_re_replace(self):
+        sql = "regexp_replace(string_col, '[\d]+', 'aaa')"
+        cases = [
+            (self.table.string_col.re_replace('[\d]+', 'aaa'), sql)
+        ]
+        self._check_expr_cases(cases)
+
     def test_repeat(self):
         cases = [
             (self.table.string_col.repeat(2), 'repeat(string_col, 2)')

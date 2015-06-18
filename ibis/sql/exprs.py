@@ -95,6 +95,25 @@ def _rlike(translator, expr):
     return '{0!s} RLIKE {1!s}'.format(arg, pattern)
 
 
+def _regex_extract(translator, expr):
+    op = expr.op()
+    formatted_arg = translator.translate(op.arg)
+    formatted_pattern = translator.translate(op.pattern)
+    return 'regexp_extract({}, {}, {})'.format(formatted_arg,
+                                               formatted_pattern,
+                                               op.index)
+
+
+def _regex_replace(translator, expr):
+    op = expr.op()
+    formatted_arg = translator.translate(op.arg)
+    formatted_pattern = translator.translate(op.pattern)
+    formatted_replacement = translator.translate(op.replacement)
+    return 'regexp_replace({}, {}, {})'.format(formatted_arg,
+                                               formatted_pattern,
+                                               formatted_replacement)
+
+
 def _not_contains(translator, expr):
     # Slight code dup
     op = expr.op()
@@ -798,6 +817,8 @@ _other_ops = {
 
     ops.StringSQLLike: _like,
     ops.RegexSearch: _rlike,
+    ops.RegexExtract: _regex_extract,
+    ops.RegexReplace: _regex_replace,
 
     ops.Between: _between,
     ops.Contains: _contains,

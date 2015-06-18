@@ -1134,6 +1134,38 @@ def re_search(arg, pattern):
     return _ops.RegexSearch(arg, pattern).to_expr()
 
 
+def regex_extract(arg, pattern, index):
+    """
+    Returns specified index from string based on regex pattern given
+
+    Parameters:
+    -----------
+    pattern : string (regular expression string)
+    index : int
+
+    Returns
+    -------
+    extracted : string
+    """
+    return _ops.RegexExtract(arg, pattern, index).to_expr()
+
+
+def regex_replace(arg, pattern, replacement):
+    """
+    Replaces match found by regex with replacement string
+
+    Parameters:
+    -----------
+    pattern : string (regular expression string)
+    replacement : string
+
+    Returns
+    -------
+    modified : string
+    """
+    return _ops.RegexReplace(arg, pattern, replacement).to_expr()
+
+
 def _string_contains(arg, substr):
     return arg.like('%{0}%'.format(substr))
 
@@ -1157,6 +1189,8 @@ _string_value_methods = dict(
     like=_string_like,
     rlike=re_search,
     re_search=re_search,
+    re_extract=regex_extract,
+    re_replace=regex_replace,
 
     substr=_string_substr,
     left=_string_left,
