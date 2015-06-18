@@ -214,6 +214,27 @@ class Expr(object):
 
           g(f(expr, *args, **kwargs), *args2, **kwargs2)
 
+        Parameters
+        ----------
+        f : function or (function, arg_name) tuple
+          If the expression needs to be passed as anything other than the first
+          argument to the function, pass a tuple with the argument name. For
+          example, (f, 'data') if the function f expects a 'data' keyword
+        *args : positional arguments
+        **kwargs : keyword arguments
+
+        Examples
+        --------
+        def foo(data, a=None, b=None):
+            pass
+
+        def bar(a, b, data=None):
+            pass
+
+        expr.pipe(foo, a=5, b=10)
+
+        expr.pipe((bar, 'data'), 1, 2)
+
         Returns
         -------
         result : result type of passed function
