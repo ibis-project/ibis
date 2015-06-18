@@ -654,9 +654,9 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
         avro_schema = {
             "fields": [
-                {"type": ["int", "null"], "name": "r_regionkey"},
-                {"type": ["string", "null"], "name": "r_name"},
-                {"type": ["string", "null"], "name": "r_comment"}],
+                {"type": ["int", "null"], "name": "R_REGIONKEY"},
+                {"type": ["string", "null"], "name": "R_NAME"},
+                {"type": ["string", "null"], "name": "R_COMMENT"}],
             "type": "record",
             "name": "a"
         }
