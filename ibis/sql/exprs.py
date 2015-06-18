@@ -782,6 +782,10 @@ _string_ops = {
     ops.ConcatWS: _concat_ws,
     ops.LPad: _lpad,
     ops.RPad: _rpad,
+    ops.StringSQLLike: _like,
+    ops.RegexSearch: _rlike,
+    ops.RegexExtract: _regex_extract,
+    ops.RegexReplace: _regex_replace,
 }
 
 
@@ -814,11 +818,6 @@ _other_ops = {
     ops.Least: _coalesce_like('least'),
 
     ops.Where: _fixed_arity_call('if', 3),
-
-    ops.StringSQLLike: _like,
-    ops.RegexSearch: _rlike,
-    ops.RegexExtract: _regex_extract,
-    ops.RegexReplace: _regex_replace,
 
     ops.Between: _between,
     ops.Contains: _contains,
