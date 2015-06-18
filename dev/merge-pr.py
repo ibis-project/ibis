@@ -30,6 +30,7 @@ import os
 import subprocess
 import sys
 import urllib2
+import textwrap
 
 IBIS_HOME = os.path.abspath(__file__).rsplit("/", 2)[0]
 PROJECT_NAME = 'ibis'
@@ -123,7 +124,7 @@ def merge_pr(pr_num, target_ref):
 
     merge_message_flags += ["-m", title]
     if body != None:
-        merge_message_flags += ["-m", body]
+        merge_message_flags += ["-m", textwrap.wrap(body)]
 
     authors = "\n".join(["Author: %s" % a for a in distinct_authors])
 
