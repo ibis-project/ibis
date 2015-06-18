@@ -713,10 +713,6 @@ class FindInSet(ValueNode):
     output_type = _int_output
 
 
-class BooleanValueOp(ValueNode):
-    pass
-
-
 class Concat(ValueNode):
 
     def __init__(self, arg, strings):
@@ -736,6 +732,10 @@ class ConcatWS(ValueNode):
         ValueNode.__init__(self, [self.arg, self.strings, self.sep])
 
     output_type = _string_output
+
+
+class BooleanValueOp(ValueNode):
+    pass
 
 
 class FuzzySearch(BooleanValueOp):
