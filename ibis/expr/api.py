@@ -971,7 +971,8 @@ def repeat(self, n):
 
 def _instring(self, substr):
     """
-    Returns the position of first occurence of the given substring
+    Returns the position, 1 indexed, of first occurence of the given substring
+    Returns 0 if substring is not found.
 
     Parameters
     ----------
@@ -979,7 +980,7 @@ def _instring(self, substr):
 
     Returns
     -------
-    index : int
+    index : int, 1 indexed
     """
     return _ops.InString(self, substr).to_expr()
 
@@ -988,12 +989,19 @@ def _translate(self, from_str, to_str):
     """
     Returns string with set of 'from' characters replaced
     by set of 'to' characters.
+    from_str[x] is replaced by to_str[x].
+    To avoid unexpected behavior, from_str should be
+    shorter than to_string.
 
     Parameters
     ----------
     from_str : string
     to_str : string
 
+    Examples
+    --------
+    expr = table.strings.translate('a', 'b')
+    expr = table.string.translate('a', 'bc')
     Returns
     -------
     translated : string
@@ -1001,10 +1009,10 @@ def _translate(self, from_str, to_str):
     return _ops.Translate(self, from_str, to_str).to_expr()
 
 
-def _locate(self, substr, pos=0):
+def _locate(self, substr, pos=None):
     """
     Returns position (1 indexed) of first occurence of substring,
-    optionally after a particular position
+    optionally after a particular position (0 indexed)
 
     Parameters
     ----------
@@ -1013,20 +1021,26 @@ def _locate(self, substr, pos=0):
 
     Returns
     -------
-    position : int
+    position : int, 0 indexed
     """
     return _ops.Locate(self, substr, pos).to_expr()
 
 
 def _lpad(self, length, pad):
     """
-    Returns string of given length by truncating or
-    padding (on left) original string
+    Returns string of given length by truncating (on right)
+    or padding (on left) original string
 
     Parameters
     ----------
     length : int
     pad : string
+
+    Examples
+    --------
+    table.strings.lpad(5, '-')
+    'a' becomes '----a'
+    'abcdefg' becomes 'abcde'
 
     Returns
     -------
@@ -1037,13 +1051,19 @@ def _lpad(self, length, pad):
 
 def _rpad(self, length, pad):
     """
-    Returns string of given length by truncating or
-    padding (on right) original string
+    Returns string of given length by truncating (on right)
+    or padding (on right) original string
 
     Parameters
     ----------
     length : int
     pad : string
+
+    Examples
+    --------
+    table.strings.rpad(5, '-')
+    'a' becomes 'a----'
+    'abcdefg' becomes 'abcde'
 
     Returns
     -------
@@ -1099,6 +1119,26 @@ def _concat_ws(self, strings, sep):
     return _ops.ConcatWS(self, strings, sep).to_expr()
 
 
+def _string_join(self, strings):
+    """
+    Joins a list of strings together using the calling string as a separator
+
+    Parameters
+    ----------
+    strings : list of strings
+
+    Examples
+    --------
+    sep = ibis.literal(',')
+    sep.join(['a','b','c'])
+
+    Returns
+    -------
+    joined : string
+    """
+    pass
+
+
 def _string_like(self, pattern):
     """
     Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
@@ -1136,12 +1176,13 @@ def re_search(arg, pattern):
 
 def regex_extract(arg, pattern, index):
     """
-    Returns specified index from string based on regex pattern given
+    Returns specified index, 0 indexed, from string 
+    based on regex pattern given
 
     Parameters:
     -----------
     pattern : string (regular expression string)
-    index : int
+    index : int, 0 indexed
 
     Returns
     -------
@@ -1152,12 +1193,18 @@ def regex_extract(arg, pattern, index):
 
 def regex_replace(arg, pattern, replacement):
     """
-    Replaces match found by regex with replacement string
+    Replaces match found by regex with replacement string.
+    Replacement string can also be a regex
 
     Parameters:
     -----------
     pattern : string (regular expression string)
-    replacement : string
+    replacement : string (can be regular expression string)
+
+    Examples
+    --------
+    table.strings.replace('(b+)', '<\\1>')
+    'aaabbbaa' becomes 'aaa<bbb>aaa'
 
     Returns
     -------

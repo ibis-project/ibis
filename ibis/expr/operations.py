@@ -633,7 +633,7 @@ class StrRight(ValueNode):
 
     def __init__(self, arg, nchars):
         self.arg = arg
-        self.nchars = nchars
+        self.nchars = as_value_expr(nchars)
         ValueNode.__init__(self, [self.arg, self.nchars])
 
     output_type = _string_output
@@ -643,7 +643,7 @@ class Repeat(ValueNode):
 
     def __init__(self, arg, n):
         self.arg = arg
-        self.n = n
+        self.n = as_value_expr(n)
         ValueNode.__init__(self, [self.arg, self.n])
 
     output_type = _string_output
@@ -685,7 +685,7 @@ class LPad(ValueNode):
 
     def __init__(self, arg, length, pad):
         self.arg = arg
-        self.length = length
+        self.length = as_value_expr(length)
         self.pad = as_value_expr(pad)
         ValueNode.__init__(self, [self.arg, self.length, self.pad])
 
@@ -696,7 +696,7 @@ class RPad(ValueNode):
 
     def __init__(self, arg, length, pad):
         self.arg = arg
-        self.length = length
+        self.length = as_value_expr(length)
         self.pad = as_value_expr(pad)
         ValueNode.__init__(self, [self.arg, self.length, self.pad])
 

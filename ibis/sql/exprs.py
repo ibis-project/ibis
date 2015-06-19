@@ -538,7 +538,7 @@ def _substring(translator, expr):
     # Databases are 1-indexed
     if op.length:
         return 'substr({0}, {1}, {2})'.format(arg_formatted, op.start + 1,
-                                           op.length)
+                                              op.length)
     else:
         return 'substr({0}, {1})'.format(arg_formatted, op.start + 1)
 
@@ -581,27 +581,6 @@ def _locate(translator, expr):
                                            op.pos + 1)
     else:
         return 'locate({}, {})'.format(substr_formatted, arg_formatted)
-
-
-def _lpad(translator, expr):
-    op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    pad_formatted = translator.translate(op.pad)
-    return 'lpad({}, {}, {})'.format(arg_formatted, op.length, pad_formatted)
-
-
-def _rpad(translator, expr):
-    op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    pad_formatted = translator.translate(op.pad)
-    return 'rpad({}, {}, {})'.format(arg_formatted, op.length, pad_formatted)
-
-
-def _find_in_set(translator, expr):
-    op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    str_list_formatted = translator.translate(op.str_list)
-    return 'find_in_set({}, {})'.format(arg_formatted, str_list_formatted)
 
 
 def _concat(translator, expr):
@@ -772,16 +751,16 @@ _string_ops = {
     ops.LTrim: _unary_op('ltrim'),
     ops.RTrim: _unary_op('rtrim'),
     ops.Substring: _substring,
-    ops.StrRight: _strright,
-    ops.Repeat: _repeat,
-    ops.InString: _instring,
-    ops.Translate: _translate,
+    ops.StrRight: _fixed_arity_call('strright', 2),
+    ops.Repeat: _fixed_arity_call('repeat', 2),
+    ops.InString: _fixed_arity_call('instr', 2),
+    ops.Translate: _fixed_arity_call('translate', 3),
+    ops.FindInSet: _fixed_arity_call('find_in_set', 2),
+    ops.LPad: _fixed_arity_call('lpad', 3),
+    ops.RPad: _fixed_arity_call('rpad', 3),
     ops.Locate: _locate,
-    ops.FindInSet: _find_in_set,
     ops.Concat: _concat,
     ops.ConcatWS: _concat_ws,
-    ops.LPad: _lpad,
-    ops.RPad: _rpad,
     ops.StringSQLLike: _like,
     ops.RegexSearch: _rlike,
     ops.RegexExtract: _regex_extract,
