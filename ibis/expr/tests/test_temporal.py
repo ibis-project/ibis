@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+import sys
 
 from ibis.common import IbisError
 import ibis.expr.operations as ops
@@ -20,6 +20,7 @@ import ibis.expr.types as ir
 import ibis.expr.temporal as T
 
 from ibis.expr.tests.mocks import MockConnection
+from ibis.compat import unittest
 
 
 class TestFixedOffsets(unittest.TestCase):

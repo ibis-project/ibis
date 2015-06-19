@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+import sys
 
 import pandas as pd
 
 from ibis.sql.exprs import ExprTranslator
 from ibis.sql.compiler import QueryContext, to_sql
 from ibis.expr.tests.mocks import MockConnection
+from ibis.compat import unittest
 import ibis.expr.types as ir
 import ibis
 
@@ -218,7 +219,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
                   'second', 'millisecond']
 
         cases = [(getattr(self.table.i, field)(),
-                  "extract(i, '{}')".format(field))
+                  "extract(i, '{0}')".format(field))
                  for field in fields]
         self._check_expr_cases(cases)
 
@@ -252,7 +253,7 @@ FROM alltypes"""
         for unit in units:
             K = 5
             offset = getattr(ibis, unit)(K)
-            template = '{}s_add({}, {})'
+            template = '{0}s_add({1}, {2})'
 
             cases.append((t + offset, template.format(unit, f, K)))
             cases.append((t - offset, template.format(unit, f, -K)))
@@ -330,7 +331,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
             for cname in ['double_col', 'int_col']:
                 expr = getattr(self.table[cname], ibis_name)()
-                cases.append((expr, '{}({})'.format(sql_name, cname)))
+                cases.append((expr, '{0}({1})'.format(sql_name, cname)))
 
         self._check_expr_cases(cases)
 
@@ -362,7 +363,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
     def test_reduction_where(self):
         cond = self.table.bigint_col < 70
         c = self.table.double_col
-        tmp = '{}(CASE WHEN bigint_col < 70 THEN double_col ELSE NULL END)'
+        tmp = '{0}(CASE WHEN bigint_col < 70 THEN double_col ELSE NULL END)'
         cases = [
             (c.sum(where=cond), tmp.format('sum')),
             (c.count(where=cond), tmp.format('count')),

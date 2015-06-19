@@ -14,7 +14,7 @@
 
 import os
 import pytest
-import unittest
+import sys
 
 import pandas as pd
 
@@ -26,6 +26,7 @@ from ibis.util import guid
 from ibis.wire import BytesIO
 import ibis.wire as wire
 
+from ibis.compat import unittest
 from ibis.tests.test_server import WorkerTestFixture
 
 try:

@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+import sys
 
 import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
+from ibis.compat import unittest
 from ibis.expr.tests.mocks import MockConnection
 
 

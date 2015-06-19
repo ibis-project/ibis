@@ -206,7 +206,7 @@ class TableColumn(ArrayNode):
         Node.__init__(self, [name, table_expr])
 
         if name not in table_expr.schema():
-            raise KeyError("'{}' is not a field".format(name))
+            raise KeyError("'{0}' is not a field".format(name))
 
         self.name = name
         self.table = table_expr
@@ -1360,7 +1360,7 @@ class SortKey(object):
     def __repr__(self):
         # Temporary
         rows = ['Sort key:',
-                '  ascending: {!s}'.format(self.ascending),
+                '  ascending: {0!s}'.format(self.ascending),
                 util.indent(_safe_repr(self.expr), 2)]
         return '\n'.join(rows)
 
@@ -1543,7 +1543,7 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
         for expr in self.having:
             if not isinstance(expr, ir.BooleanScalar):
                 raise ExpressionError('Having clause must be boolean '
-                                      'expression, was: {!s}'
+                                      'expression, was: {0!s}'
                                       .format(_safe_repr(expr)))
 
         # All non-scalar refs originate from the input table
@@ -1747,7 +1747,7 @@ class TopK(ArrayNode):
             raise TypeError(arg)
 
         if not isinstance(k, int) or k < 0:
-            raise ValueError('k must be positive integer, was: {}'.format(k))
+            raise ValueError('k must be positive integer, was: {0}'.format(k))
 
         self.arg = arg
         self.k = k
@@ -1825,7 +1825,7 @@ class TimestampFromUNIX(ValueNode):
         self.arg = as_value_expr(arg)
         self.unit = unit
 
-        if self.unit not in {'s', 'ms', 'us'}:
+        if self.unit not in set(['s', 'ms', 'us']):
             raise ValueError(self.unit)
 
         ValueNode.__init__(self, [self.arg, self.unit])

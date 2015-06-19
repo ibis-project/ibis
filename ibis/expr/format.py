@@ -97,7 +97,7 @@ class ExprFormatter(object):
                                        str(what.value))
 
         if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
-            text = '{} = {}'.format(self.expr.get_name(), text)
+            text = '{0} = {1}'.format(self.expr.get_name(), text)
 
         if self.memoize:
             alias_to_text = [(self.memo.aliases[x],
@@ -144,13 +144,13 @@ class ExprFormatter(object):
 
     def _format_table(self, table):
         # format the schema
-        rows = ['name: {!s}\nschema:'.format(table.name)]
+        rows = ['name: {0!s}\nschema:'.format(table.name)]
         rows.extend(['  %s : %s' % tup for tup in
                      zip(table.schema.names, table.schema.types)])
         opname = type(table).__name__
         type_display = self._get_type_display(table)
         opline = '%s[%s]' % (opname, type_display)
-        return '{}\n{}'.format(opline, self._indent('\n'.join(rows)))
+        return '{0}\n{1}'.format(opline, self._indent('\n'.join(rows)))
 
     def _format_column(self, expr):
         # HACK: if column is pulled from a Filter of another table, this parent
@@ -191,7 +191,7 @@ class ExprFormatter(object):
         else:
             for arg, name in zip(op.args, arg_names):
                 if name is not None:
-                    name = self._indent('{}:'.format(name))
+                    name = self._indent('{0}:'.format(name))
                 if isinstance(arg, list):
                     if name is not None and len(arg) > 0:
                         formatted_args.append(name)

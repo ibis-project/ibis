@@ -1009,26 +1009,26 @@ class BooleanValue(NumericValue):
 class Int8Value(IntegerValue):
 
     _typename = 'int8'
-    _implicit_casts = {'int16', 'int32', 'int64', 'float', 'double',
-                       'decimal'}
+    _implicit_casts = set(['int16', 'int32', 'int64', 'float', 'double',
+                           'decimal'])
 
 
 class Int16Value(IntegerValue):
 
     _typename = 'int16'
-    _implicit_casts = {'int32', 'int64', 'float', 'double', 'decimal'}
+    _implicit_casts = set(['int32', 'int64', 'float', 'double', 'decimal'])
 
 
 class Int32Value(IntegerValue):
 
     _typename = 'int32'
-    _implicit_casts = {'int64', 'float', 'double', 'decimal'}
+    _implicit_casts = set(['int64', 'float', 'double', 'decimal'])
 
 
 class Int64Value(IntegerValue):
 
     _typename = 'int64'
-    _implicit_casts = {'float', 'double', 'decimal'}
+    _implicit_casts = set(['float', 'double', 'decimal'])
 
 
 class FloatingValue(NumericValue):
@@ -1038,13 +1038,13 @@ class FloatingValue(NumericValue):
 class FloatValue(FloatingValue):
 
     _typename = 'float'
-    _implicit_casts = {'double', 'decimal'}
+    _implicit_casts = set(['double', 'decimal'])
 
 
 class DoubleValue(FloatingValue):
 
     _typename = 'double'
-    _implicit_casts = {'decimal'}
+    _implicit_casts = set(['decimal'])
 
 
 class StringValue(AnyValue):
@@ -1093,7 +1093,7 @@ class DecimalType(DataType):
 class DecimalValue(NumericValue):
 
     _typename = 'decimal'
-    _implicit_casts = {'float', 'double'}
+    _implicit_casts = set(['float', 'double'])
 
     def __init__(self, meta):
         self.meta = meta

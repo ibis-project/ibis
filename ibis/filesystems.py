@@ -206,7 +206,7 @@ class WebHDFS(HDFS):
         else:
             if is_path:
                 if verbose:
-                    self.log('Writing local {} to HDFS {}'.format(resource,
+                    self.log('Writing local {0} to HDFS {1}'.format(resource,
                                                                   hdfs_path))
                 self.client.upload(hdfs_path, resource,
                                    overwrite=overwrite, **kwargs)
@@ -237,7 +237,7 @@ class WebHDFS(HDFS):
 
         def _get_file(remote, local):
             if verbose:
-                self.log('Writing HDFS {} to local {}'.format(remote, local))
+                self.log('Writing HDFS {0} to local {1}'.format(remote, local))
             self.client.download(remote, local, overwrite=overwrite)
 
         def _scrape_dir(path, dst):

@@ -85,8 +85,8 @@ def generate_csv_files():
     }, columns=['foo', 'bar', 'baz'])
 
     for i in xrange(nfiles):
-        csv_path = os.path.join(csv_base, '{}.csv'.format(i))
-        print('Writing {}'.format(csv_path))
+        csv_path = os.path.join(csv_base, '{0}.csv'.format(i))
+        print('Writing {0}'.format(csv_path))
         df.to_csv(csv_path, index=False, header=False)
 
 
@@ -95,8 +95,8 @@ def scrape_parquet_files(con):
     to_scrape.append(('functional', 'alltypes'))
     for db, tname in to_scrape:
         table = con.table(tname, database=db)
-        new_name = '{}_{}'.format(db, tname)
-        print('Creating {}'.format(new_name))
+        new_name = '{0}_{1}'.format(db, tname)
+        print('Creating {0}'.format(new_name))
         con.create_table(new_name, table, database=TMP_DB)
 
 

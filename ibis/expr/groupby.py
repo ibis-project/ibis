@@ -92,7 +92,7 @@ def _group_agg_dispatch(name):
     def wrapper(self, *args, **kwargs):
         f = getattr(self.arr, name)
         metric = f(*args, **kwargs)
-        alias = '{}({})'.format(name, self.arr.get_name())
+        alias = '{0}({1})'.format(name, self.arr.get_name())
         return self.parent.aggregate(metric.name(alias))
 
     wrapper.__name__ = name

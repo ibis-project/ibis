@@ -56,12 +56,12 @@ def _cast(translator, expr):
         return arg
     else:
         sql_type = _type_to_sql_string(op.target_type)
-        return 'CAST({!s} AS {!s})'.format(arg, sql_type)
+        return 'CAST({0!s} AS {1!s})'.format(arg, sql_type)
 
 
 def _type_to_sql_string(tval):
     if isinstance(tval, ir.DecimalType):
-        return 'decimal({},{})'.format(tval.precision, tval.scale)
+        return 'decimal({0},{1})'.format(tval.precision, tval.scale)
     else:
         return _sql_type_names[tval]
 
@@ -71,28 +71,28 @@ def _between(translator, expr):
     comp = translator.translate(op.expr)
     lower = translator.translate(op.lower_bound)
     upper = translator.translate(op.upper_bound)
-    return '{!s} BETWEEN {!s} AND {!s}'.format(comp, lower, upper)
+    return '{0!s} BETWEEN {1!s} AND {2!s}'.format(comp, lower, upper)
 
 
 def _contains(translator, expr):
     op = expr.op()
     comp = translator.translate(op.value)
     options = translator.translate(op.options)
-    return '{!s} IN {!s}'.format(comp, options)
+    return '{0!s} IN {1!s}'.format(comp, options)
 
 
 def _like(translator, expr):
     op = expr.op()
     arg = translator.translate(op.arg)
     pattern = translator.translate(op.pattern)
-    return '{!s} LIKE {!s}'.format(arg, pattern)
+    return '{0!s} LIKE {1!s}'.format(arg, pattern)
 
 
 def _rlike(translator, expr):
     op = expr.op()
     arg = translator.translate(op.arg)
     pattern = translator.translate(op.pattern)
-    return '{!s} RLIKE {!s}'.format(arg, pattern)
+    return '{0!s} RLIKE {1!s}'.format(arg, pattern)
 
 
 def _not_contains(translator, expr):
@@ -100,38 +100,38 @@ def _not_contains(translator, expr):
     op = expr.op()
     comp = translator.translate(op.value)
     options = translator.translate(op.options)
-    return '{!s} NOT IN {!s}'.format(comp, options)
+    return '{0!s} NOT IN {1!s}'.format(comp, options)
 
 
 def _is_null(translator, expr):
     formatted_arg = translator.translate(expr.op().arg)
-    return '{!s} IS NULL'.format(formatted_arg)
+    return '{0!s} IS NULL'.format(formatted_arg)
 
 
 def _not_null(translator, expr):
     formatted_arg = translator.translate(expr.op().arg)
-    return '{!s} IS NOT NULL'.format(formatted_arg)
+    return '{0!s} IS NOT NULL'.format(formatted_arg)
 
 
 def _negate(translator, expr):
     arg = expr.op().arg
     formatted_arg = translator.translate(arg)
     if isinstance(expr, ir.BooleanValue):
-        return 'NOT {!s}'.format(formatted_arg)
+        return 'NOT {0!s}'.format(formatted_arg)
     else:
         if _needs_parens(arg):
             formatted_arg = _parenthesize(formatted_arg)
-        return '-{!s}'.format(formatted_arg)
+        return '-{0!s}'.format(formatted_arg)
 
 
 def _parenthesize(what):
-    return '({!s})'.format(what)
+    return '({0!s})'.format(what)
 
 
 def _unary_op(func_name):
     def formatter(translator, expr):
         arg = translator.translate(expr.op().arg)
-        return '{!s}({!s})'.format(func_name, arg)
+        return '{0!s}({1!s})'.format(func_name, arg)
     return formatter
 
 
@@ -145,7 +145,7 @@ def _reduction(func_name):
         else:
             arg = translator.translate(op.arg)
 
-        return '{!s}({!s})'.format(func_name, arg)
+        return '{0!s}({1!s})'.format(func_name, arg)
     return formatter
 
 
@@ -158,7 +158,7 @@ def _fixed_arity_call(func_name, arity):
             fmt_arg = translator.translate(arg)
             formatted_args.append(fmt_arg)
 
-        return '{!s}({!s})'.format(func_name, ', '.join(formatted_args))
+        return '{0!s}({1!s})'.format(func_name, ', '.join(formatted_args))
     return formatter
 
 
@@ -175,7 +175,7 @@ def _binary_infix_op(infix_sym):
         if _needs_parens(op.right):
             right_arg = _parenthesize(right_arg)
 
-        return '{!s} {!s} {!s}'.format(left_arg, infix_sym, right_arg)
+        return '{0!s} {1!s} {2!s}'.format(left_arg, infix_sym, right_arg)
     return formatter
 
 
@@ -197,7 +197,7 @@ def _xor(translator, expr):
 
 
 def _name_expr(formatted_expr, quoted_name):
-    return '{!s} AS {!s}'.format(formatted_expr, quoted_name)
+    return '{0!s} AS {1!s}'.format(formatted_expr, quoted_name)
 
 
 def _needs_parens(op):
@@ -229,7 +229,7 @@ def _number_literal_format(expr):
 
 def _string_literal_format(expr):
     value = expr.op().value
-    return "'{!s}'".format(value.replace("'", "\\'"))
+    return "'{0!s}'".format(value.replace("'", "\\'"))
 
 
 def _timestamp_literal_format(expr):
@@ -239,7 +239,7 @@ def _timestamp_literal_format(expr):
             raise ValueError(value)
         value = value.strftime('%Y-%m-%d %H:%M:%S')
 
-    return "'{!s}'".format(value)
+    return "'{0!s}'".format(value)
 
 
 def quote_identifier(name, quotechar='`', force=False):
@@ -272,18 +272,18 @@ class CaseFormatter(object):
         self.buf.write('CASE')
         if self.base is not None:
             base_str = self._trans(self.base)
-            self.buf.write(' {}'.format(base_str))
+            self.buf.write(' {0}'.format(base_str))
 
         for case, result in zip(self.cases, self.results):
             self._next_case()
             case_str = self._trans(case)
             result_str = self._trans(result)
-            self.buf.write('WHEN {} THEN {}'.format(case_str, result_str))
+            self.buf.write('WHEN {0} THEN {1}'.format(case_str, result_str))
 
         if self.default is not None:
             self._next_case()
             default_str = self._trans(self.default)
-            self.buf.write('ELSE {}'.format(default_str))
+            self.buf.write('ELSE {0}'.format(default_str))
 
         if self.multiline:
             self.buf.write('\nEND')
@@ -294,7 +294,7 @@ class CaseFormatter(object):
 
     def _next_case(self):
         if self.multiline:
-            self.buf.write('\n{}'.format(' ' * self.indent))
+            self.buf.write('\n{0}'.format(' ' * self.indent))
         else:
             self.buf.write(' ')
 
@@ -379,7 +379,7 @@ def _table_array_view(translator, expr):
     ctx = translator.context
     table = expr.op().table
     query = ctx.get_formatted_query(table)
-    return '(\n{}\n)'.format(util.indent(query, ctx.indent))
+    return '(\n{0}\n)'.format(util.indent(query, ctx.indent))
 
 
 # ---------------------------------------------------------------------
@@ -407,7 +407,7 @@ _impala_delta_functions = {
 
 def _timestamp_format_offset(offset, arg):
     f = _impala_delta_functions[type(offset)]
-    return '{}({}, {})'.format(f, arg, offset.n)
+    return '{0}({1}, {2})'.format(f, arg, offset.n)
 
 
 # ---------------------------------------------------------------------
@@ -451,7 +451,7 @@ def _exists_subquery(translator, expr):
     else:
         raise NotImplementedError
 
-    return '{} (\n{}\n)'.format(key, util.indent(subquery, ctx.indent))
+    return '{0} (\n{1}\n)'.format(key, util.indent(subquery, ctx.indent))
 
 
 def _table_column(translator, expr):
@@ -482,7 +482,7 @@ def _extract_field(sql_attr):
 
         # This is pre-2.0 Impala-style, which did not used to support the
         # SQL-99 format extract($FIELD from expr)
-        return "extract({!s}, '{!s}')".format(arg, sql_attr)
+        return "extract({0!s}, '{1!s}')".format(arg, sql_attr)
     return extract_field_formatter
 
 
@@ -496,19 +496,19 @@ def _timestamp_from_unix(translator, expr):
         val = (val / 1000000).cast('int32')
 
     arg = _from_unixtime(translator, val)
-    return 'CAST({} AS timestamp)'.format(arg)
+    return 'CAST({0} AS timestamp)'.format(arg)
 
 
 def _from_unixtime(translator, expr):
     arg = translator.translate(expr)
-    return 'from_unixtime({}, "yyyy-MM-dd HH:mm:ss")'.format(arg)
+    return 'from_unixtime({0}, "yyyy-MM-dd HH:mm:ss")'.format(arg)
 
 
 def _coalesce_like(func_name):
     def coalesce_like_formatter(translator, expr):
         op = expr.op()
         trans_args = [translator.translate(arg) for arg in op.args]
-        return '{}({})'.format(func_name, ', '.join(trans_args))
+        return '{0}({1})'.format(func_name, ', '.join(trans_args))
     return coalesce_like_formatter
 
 
@@ -518,16 +518,16 @@ def _substring(translator, expr):
 
     # Databases are 1-indexed
     if op.length:
-        return 'substr({}, {}, {})'.format(arg_formatted, op.start + 1,
+        return 'substr({0}, {1}, {2})'.format(arg_formatted, op.start + 1,
                                            op.length)
     else:
-        return 'substr({}, {})'.format(arg_formatted, op.start + 1)
+        return 'substr({0}, {1})'.format(arg_formatted, op.start + 1)
 
 
 def _strright(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
-    return 'strright({}, {})'.format(arg_formatted, op.nchars)
+    return 'strright({0}, {1})'.format(arg_formatted, op.nchars)
 
 
 def _round(translator, expr):
@@ -535,9 +535,9 @@ def _round(translator, expr):
     arg_formatted = translator.translate(op.arg)
 
     if op.digits is not None:
-        return 'round({}, {})'.format(arg_formatted, op.digits)
+        return 'round({0}, {1})'.format(arg_formatted, op.digits)
     else:
-        return 'round({})'.format(arg_formatted)
+        return 'round({0})'.format(arg_formatted)
 
 
 def _hash(translator, expr):
@@ -545,7 +545,7 @@ def _hash(translator, expr):
     arg_formatted = translator.translate(op.arg)
 
     if op.how == 'fnv':
-        return 'fnv_hash({})'.format(arg_formatted)
+        return 'fnv_hash({0})'.format(arg_formatted)
     else:
         raise NotImplementedError(op.how)
 
@@ -555,15 +555,15 @@ def _log(translator, expr):
     arg_formatted = translator.translate(op.arg)
 
     if op.base is None:
-        return 'ln({})'.format(arg_formatted)
+        return 'ln({0})'.format(arg_formatted)
     else:
-        return 'log({}, {})'.format(arg_formatted, op.base)
+        return 'log({0}, {1})'.format(arg_formatted, op.base)
 
 
 def _count_distinct(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
-    return 'COUNT(DISTINCT {})'.format(arg_formatted)
+    return 'COUNT(DISTINCT {0})'.format(arg_formatted)
 
 
 def _literal(translator, expr):
@@ -596,7 +596,7 @@ _literal_formatters = {
 def _value_list(translator, expr):
     op = expr.op()
     formatted = [translator.translate(x) for x in op.values]
-    return '({})'.format(', '.join(formatted))
+    return '({0})'.format(', '.join(formatted))
 
 
 def _not_implemented(translator, expr):

@@ -41,9 +41,9 @@ class Timedelta(object):
         if self.n == 1:
             pretty_unit = self.unit_name
         else:
-            pretty_unit = '{}s'.format(self.unit_name)
+            pretty_unit = '{0}s'.format(self.unit_name)
 
-        return '<Timedelta: {} {}>'.format(self.n, pretty_unit)
+        return '<Timedelta: {0} {1}>'.format(self.n, pretty_unit)
 
     def replace(self, n):
         return type(self)(n)
@@ -99,7 +99,7 @@ class TimeIncrement(Timedelta):
 
     def combine(self, other):
         if not isinstance(other, TimeIncrement):
-            raise TypeError('Must be a fixed size timedelta, was {!r}'
+            raise TypeError('Must be a fixed size timedelta, was {0!r}'
                             .format(type(other)))
 
         a, b = _to_common_units([self, other])
@@ -205,7 +205,7 @@ class UnitConverter(object):
 
         if j < i:
             if n % factor:
-                raise IbisError('{} is not a multiple of {}'.format(n, factor))
+                raise IbisError('{0} is not a multiple of {1}'.format(n, factor))
             return n / factor
         else:
             return n * factor

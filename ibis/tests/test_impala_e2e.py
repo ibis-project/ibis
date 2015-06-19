@@ -16,13 +16,14 @@ from posixpath import join as pjoin
 import gc
 import os
 import pytest
-import unittest
+import sys
 
 import pandas as pd
 
 from hdfs import InsecureClient
 
 import ibis
+from ibis.compat import unittest
 
 import ibis.common as com
 import ibis.config as config
@@ -42,7 +43,7 @@ class IbisTestEnv(object):
         self.hdfs_host = os.environ.get('IBIS_TEST_HDFS_HOST', 'localhost')
         # Impala dev environment uses port 5070 for HDFS web interface
         self.webhdfs_port = os.environ.get('IBIS_TEST_WEBHDFS_PORT', 5070)
-        url = 'http://{}:{}'.format(self.hdfs_host, self.webhdfs_port)
+        url = 'http://{0}:{1}'.format(self.hdfs_host, self.webhdfs_port)
         self.hdfs = InsecureClient(url)
 
 
@@ -302,7 +303,7 @@ FROM ibis_testing.tpch_lineitem li
             self.con.insert(table_name, expr.limit(10), database=db)
             self.con.insert(table_name, expr.limit(10), database=db)
 
-            sz = self.con.table('{}.{}'.format(db, table_name)).count()
+            sz = self.con.table('{0}.{1}'.format(db, table_name)).count()
             assert sz.execute() == 20
 
             # Overwrite and verify only 10 rows now
@@ -647,7 +648,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
         name = table.op().name
         assert 'ibis_tmp_' in name
-        assert name.startswith('{}.'.format(self.test_db))
+        assert name.startswith('{0}.'.format(self.test_db))
 
         # table exists
         self.con.table(name)

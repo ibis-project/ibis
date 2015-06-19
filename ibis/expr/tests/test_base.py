@@ -14,7 +14,7 @@
 
 import itertools
 import operator
-import unittest
+import sys
 
 from ibis.expr.types import ArrayExpr, TableExpr, RelationError
 from ibis.common import ExpressionError
@@ -24,6 +24,7 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis
 
+from ibis.compat import unittest
 from ibis.expr.format import ExprFormatter
 from ibis.expr.tests.mocks import MockConnection
 

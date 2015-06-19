@@ -68,10 +68,14 @@ def fail(msg):
 
 
 def run_cmd(cmd):
-    if isinstance(cmd, list):
-        return subprocess.check_output(cmd)
-    else:
-        return subprocess.check_output(cmd.split(" "))
+    # py2.6 does not have subprocess.check_output
+    if isinstance(cmd, basestring):
+        cmd = cmd.split(' ')
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    (out, err) = p.communicate()
+    if p.returncode != 0:
+        raise subprocess.CalledProcessError(p.returncode, str(cmd), out + err)
+    return out
 
 
 def continue_maybe(prompt):

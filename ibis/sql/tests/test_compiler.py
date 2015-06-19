@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+import sys
 
 import pandas as pd
 
@@ -20,6 +20,7 @@ import ibis
 
 from ibis.sql.compiler import build_ast, to_sql
 from ibis.expr.tests.mocks import MockConnection
+from ibis.compat import unittest
 import ibis.common as com
 
 import ibis.expr.api as api
@@ -1643,7 +1644,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
  `bar` TINYINT,
  `baz` SMALLINT)
 STORED AS PARQUET
-LOCATION '{}'""".format(directory)
+LOCATION '{0}'""".format(directory)
 
         assert result == expected
 

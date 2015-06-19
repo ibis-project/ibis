@@ -15,13 +15,14 @@
 import os
 import sys
 import threading
-import unittest
+import sys
 
 import pytest
 
 import numpy as np
 
 from ibis.util import guid
+from ibis.compat import unittest
 
 try:
     import ibis.comms as comms

@@ -113,7 +113,7 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs', **kwds):
     client : ibis HDFS client
     """
     from hdfs import InsecureClient
-    url = 'http://{}:{}'.format(host, port)
+    url = 'http://{0}:{1}'.format(host, port)
     client = InsecureClient(url, **kwds)
     return WebHDFS(client)
 

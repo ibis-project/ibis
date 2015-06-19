@@ -14,16 +14,16 @@
 
 from six import BytesIO
 
-
 from posixpath import join as pjoin
 import os
 import shutil
-import unittest
+import sys
 
 from hdfs import InsecureClient
 import pytest
 
 from ibis.filesystems import HDFS, WebHDFS
+from ibis.compat import unittest
 import ibis.util as util
 
 
@@ -76,16 +76,16 @@ class TestHDFSE2E(unittest.TestCase):
         cls.hdfs_host = os.environ.get('IBIS_TEST_HDFS_HOST', 'localhost')
         # Impala dev environment uses port 5070 for HDFS web interface
         cls.webhdfs_port = os.environ.get('IBIS_TEST_WEBHDFS_PORT', 5070)
-        url = 'http://{}:{}'.format(cls.hdfs_host, cls.webhdfs_port)
+        url = 'http://{0}:{1}'.format(cls.hdfs_host, cls.webhdfs_port)
 
-        cls.test_dir = '/{}'.format(util.guid())
+        cls.test_dir = '/{0}'.format(util.guid())
 
         try:
             cls.hdfs_client = InsecureClient(url)
             cls.hdfs = WebHDFS(cls.hdfs_client)
             cls.hdfs.mkdir(cls.test_dir)
         except Exception as e:
-            pytest.skip('Could not connect to HDFS: {}'.format(e.message))
+            pytest.skip('Could not connect to HDFS: {0}'.format(e.message))
 
     @classmethod
     def tearDownClass(cls):

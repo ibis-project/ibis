@@ -990,7 +990,7 @@ def re_search(arg, pattern):
 
 
 def _string_contains(arg, substr):
-    return arg.like('%{}%'.format(substr))
+    return arg.like('%{0}%'.format(substr))
 
 
 def _string_dunder_contains(arg, substr):

@@ -26,13 +26,13 @@ class DDLStatement(object):
 
     def _get_scoped_name(self, table_name, database):
         if database:
-            scoped_name = '{}.`{}`'.format(database, table_name)
+            scoped_name = '{0}.`{1}`'.format(database, table_name)
         else:
             if not _is_fully_qualified(table_name):
                 if _is_quoted(table_name):
                     return table_name
                 else:
-                    return '`{}`'.format(table_name)
+                    return '`{0}`'.format(table_name)
             else:
                 return table_name
         return scoped_name
@@ -163,7 +163,7 @@ class Select(DDLStatement):
                 buf.write(',\n')
             formatted = util.indent(context.get_formatted_query(expr), 2)
             alias = context.get_alias(expr)
-            buf.write('{} AS (\n{}\n)'.format(alias, formatted))
+            buf.write('{0} AS (\n{1}\n)'.format(alias, formatted))
 
         return buf.getvalue()
 
@@ -176,7 +176,7 @@ class Select(DDLStatement):
             elif isinstance(expr, ir.TableExpr):
                 # A * selection, possibly prefixed
                 if context.need_aliases():
-                    expr_str = '{}.*'.format(context.get_alias(expr))
+                    expr_str = '{0}.*'.format(context.get_alias(expr))
                 else:
                     expr_str = '*'
             formatted.append(expr_str)
@@ -218,7 +218,7 @@ class Select(DDLStatement):
         else:
             select_key = 'SELECT'
 
-        return '{}{}'.format(select_key, buf.getvalue())
+        return '{0}{1}'.format(select_key, buf.getvalue())
 
     def format_table_set(self, ctx):
         if self.table_set is None:
@@ -238,7 +238,7 @@ class Select(DDLStatement):
 
         lines = []
         if len(self.group_by) > 0:
-            clause = 'GROUP BY {}'.format(', '.join([
+            clause = 'GROUP BY {0}'.format(', '.join([
                 str(x + 1) for x in self.group_by]))
             lines.append(clause)
 
@@ -247,7 +247,7 @@ class Select(DDLStatement):
             for expr in self.having:
                 translated = translate_expr(expr, context=context)
                 trans_exprs.append(translated)
-            lines.append('HAVING {}'.format(' AND '.join(trans_exprs)))
+            lines.append('HAVING {0}'.format(' AND '.join(trans_exprs)))
 
         return '\n'.join(lines)
 
@@ -260,7 +260,7 @@ class Select(DDLStatement):
         fmt_preds = [translate_expr(pred, context=context,
                                     permit_subquery=True)
                      for pred in self.where]
-        conj = ' AND\n{}'.format(' ' * 6)
+        conj = ' AND\n{0}'.format(' ' * 6)
         buf.write(conj.join(fmt_preds))
         return buf.getvalue()
 
@@ -283,9 +283,9 @@ class Select(DDLStatement):
             if lines:
                 buf.write('\n')
             n, offset = self.limit['n'], self.limit['offset']
-            buf.write('LIMIT {}'.format(n))
+            buf.write('LIMIT {0}'.format(n))
             if offset is not None and offset != 0:
-                buf.write(' OFFSET {}'.format(offset))
+                buf.write(' OFFSET {0}'.format(offset))
             lines += 1
 
         if not lines:
@@ -331,13 +331,13 @@ class _TableSetFormatter(object):
         for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
                                        self.join_predicates):
             buf.write('\n')
-            buf.write(util.indent('{} {}'.format(jtype, table), self.indent))
+            buf.write(util.indent('{0} {1}'.format(jtype, table), self.indent))
 
             if len(preds):
                 buf.write('\n')
                 fmt_preds = [translate_expr(pred, context=self.context)
                              for pred in preds]
-                conj = ' AND\n{}'.format(' ' * 3)
+                conj = ' AND\n{0}'.format(' ' * 3)
                 fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
                                         self.indent * 2)
                 buf.write(fmt_preds)
@@ -409,7 +409,7 @@ def _format_table(ctx, expr, indent=2):
     if isinstance(ref_op, ops.PhysicalTable):
         name = op.name
         if name is None:
-            raise com.RelationError('Table did not have a name: {!r}'
+            raise com.RelationError('Table did not have a name: {0!r}'
                                     .format(expr))
         result = quote_identifier(name)
         is_subquery = False
@@ -422,16 +422,16 @@ def _format_table(ctx, expr, indent=2):
 
             # HACK: self-references have to be treated more carefully here
             if isinstance(op, ops.SelfReference):
-                return '{} {}'.format(ctx.get_alias(ref_expr), alias)
+                return '{0} {1}'.format(ctx.get_alias(ref_expr), alias)
             else:
                 return alias
 
         subquery = ctx.get_formatted_query(expr)
-        result = '(\n{}\n)'.format(util.indent(subquery, indent))
+        result = '(\n{0}\n)'.format(util.indent(subquery, indent))
         is_subquery = True
 
     if is_subquery or ctx.need_aliases():
-        result += ' {}'.format(ctx.get_alias(expr))
+        result += ' {0}'.format(ctx.get_alias(expr))
 
     return result
 
@@ -458,7 +458,7 @@ class Union(DDLStatement):
         left_set = context.get_formatted_query(self.left)
         right_set = context.get_formatted_query(self.right)
 
-        query = '{}\n{}\n{}'.format(left_set, union_keyword, right_set)
+        query = '{0}\n{1}\n{2}'.format(left_set, union_keyword, right_set)
         return query
 
 
@@ -483,7 +483,7 @@ class CreateTable(DDLStatement):
     def _validate_storage_format(self, format):
         format = format.lower()
         if format not in ('parquet', 'avro'):
-            raise ValueError('Invalid format: {}'.format(format))
+            raise ValueError('Invalid format: {0}'.format(format))
         return format
 
     def compile(self):
@@ -493,7 +493,7 @@ class CreateTable(DDLStatement):
         buf.write(self._storage())
 
         select_query = self.select.compile()
-        buf.write('\nAS\n{}'.format(select_query))
+        buf.write('\nAS\n{0}'.format(select_query))
 
         return buf.getvalue()
 
@@ -506,7 +506,7 @@ class CreateTable(DDLStatement):
         else:
             create_decl = 'CREATE TABLE'
 
-        create_line = '{} {}{}'.format(create_decl, if_exists,
+        create_line = '{0} {1}{2}'.format(create_decl, if_exists,
                                        scoped_name)
         return create_line
 
@@ -538,7 +538,7 @@ class CTAS(CreateTable):
         buf.write(self._storage())
 
         select_query = self.select.compile()
-        buf.write('\nAS\n{}'.format(select_query))
+        buf.write('\nAS\n{0}'.format(select_query))
         return buf.getvalue()
 
 
@@ -566,17 +566,17 @@ class CreateTableParquet(CreateTable):
         buf.write(self._create_line())
 
         if self.example_file is not None:
-            buf.write("\nLIKE PARQUET '{}'".format(self.example_file))
+            buf.write("\nLIKE PARQUET '{0}'".format(self.example_file))
         elif self.example_table is not None:
-            buf.write("\nLIKE {}".format(self.example_table))
+            buf.write("\nLIKE {0}".format(self.example_table))
         elif self.schema is not None:
             schema = format_schema(self.schema)
-            buf.write('\n{}'.format(schema))
+            buf.write('\n{0}'.format(schema))
         else:
             raise NotImplementedError
 
         buf.write('\nSTORED AS PARQUET')
-        buf.write("\nLOCATION '{}'".format(self.path))
+        buf.write("\nLOCATION '{0}'".format(self.path))
         return buf.getvalue()
 
 
@@ -594,7 +594,7 @@ class CreateTableWithSchema(CreateTable):
         buf.write(self._create_line())
 
         schema = format_schema(self.schema)
-        buf.write('\n{}'.format(schema))
+        buf.write('\n{0}'.format(schema))
 
         format_ddl = self.table_format.to_ddl()
         buf.write(format_ddl)
@@ -617,15 +617,15 @@ class DelimitedFormat(object):
         buf.write("\nROW FORMAT DELIMITED")
 
         if self.delimiter is not None:
-            buf.write("\nFIELDS TERMINATED BY '{}'".format(self.delimiter))
+            buf.write("\nFIELDS TERMINATED BY '{0}'".format(self.delimiter))
 
         if self.escapechar is not None:
-            buf.write("\nESCAPED BY '{}'".format(self.escapechar))
+            buf.write("\nESCAPED BY '{0}'".format(self.escapechar))
 
         if self.lineterminator is not None:
-            buf.write("\nLINES TERMINATED BY '{}'".format(self.lineterminator))
+            buf.write("\nLINES TERMINATED BY '{0}'".format(self.lineterminator))
 
-        buf.write("\nLOCATION '{}'".format(self.path))
+        buf.write("\nLOCATION '{0}'".format(self.path))
 
         return buf.getvalue()
 
@@ -641,11 +641,11 @@ class AvroFormat(object):
 
         buf = BytesIO()
         buf.write('\nSTORED AS AVRO')
-        buf.write("\nLOCATION '{}'".format(self.path))
+        buf.write("\nLOCATION '{0}'".format(self.path))
 
         schema = json.dumps(self.avro_schema, indent=2, sort_keys=True)
         schema = '\n'.join([x.rstrip() for x in schema.split('\n')])
-        buf.write("\nTBLPROPERTIES ('avro.schema.literal'='{}')"
+        buf.write("\nTBLPROPERTIES ('avro.schema.literal'='{0}')"
                   .format(schema))
 
         return buf.getvalue()
@@ -699,7 +699,7 @@ class InsertSelect(DDLStatement):
 
         select_query = self.select.compile()
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return'{} {}\n{}'.format(cmd, scoped_name, select_query)
+        return'{0} {1}\n{2}'.format(cmd, scoped_name, select_query)
 
 
 class DropObject(DDLStatement):
@@ -739,7 +739,7 @@ class CacheTable(DDLStatement):
 
     def compile(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        cache_line = ('ALTER TABLE {} SET CACHED IN \'{}\''
+        cache_line = ('ALTER TABLE {0} SET CACHED IN \'{1}\''
                       .format(scoped_name, self.pool))
         return cache_line
 
@@ -756,9 +756,9 @@ class CreateDatabase(DDLStatement):
         name = quote_identifier(self.name)
 
         create_decl = 'CREATE DATABASE'
-        create_line = '{} {}{}'.format(create_decl, if_exists, name)
+        create_line = '{0} {1}{2}'.format(create_decl, if_exists, name)
         if self.path is not None:
-            create_line += "\nLOCATION '{}'".format(self.path)
+            create_line += "\nLOCATION '{0}'".format(self.path)
 
         return create_line
 
@@ -785,17 +785,17 @@ def _join_not_none(sep, pieces):
 def format_schema(schema):
     elements = [_format_schema_element(name, t)
                 for name, t in zip(schema.names, schema.types)]
-    return '({})'.format(',\n '.join(elements))
+    return '({0})'.format(',\n '.join(elements))
 
 
 def _format_schema_element(name, t):
-    return '{} {}'.format(quote_identifier(name, force=True),
+    return '{0} {1}'.format(quote_identifier(name, force=True),
                           _format_type(t))
 
 
 def _format_type(t):
     if isinstance(t, ir.DecimalType):
-        return 'DECIMAL({},{})'.format(t.precision, t.scale)
+        return 'DECIMAL({0},{1})'.format(t.precision, t.scale)
     else:
         return _impala_type_names[t]
 

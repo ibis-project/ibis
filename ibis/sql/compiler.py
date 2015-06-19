@@ -220,7 +220,7 @@ class SelectBuilder(object):
     def _visit_select_expr(self, expr):
         op = expr.op()
 
-        method = '_visit_select_{}'.format(type(op).__name__)
+        method = '_visit_select_{0}'.format(type(op).__name__)
         if hasattr(self, method):
             f = getattr(self, method)
             return f(expr)
@@ -300,7 +300,7 @@ class SelectBuilder(object):
 
         op = expr.op()
 
-        method = '_visit_filter_{}'.format(type(op).__name__)
+        method = '_visit_filter_{0}'.format(type(op).__name__)
         if hasattr(self, method):
             f = getattr(self, method)
             return f(expr)
@@ -406,7 +406,7 @@ class SelectBuilder(object):
 
     def _collect(self, expr, toplevel=False):
         op = expr.op()
-        method = '_collect_{}'.format(type(op).__name__)
+        method = '_collect_{0}'.format(type(op).__name__)
 
         # Do not visit nodes twice
         if op in self.op_memo:
@@ -618,7 +618,7 @@ class _ExtractSubqueries(object):
 
     def visit(self, expr):
         node = expr.op()
-        method = '_visit_{}'.format(type(node).__name__)
+        method = '_visit_{0}'.format(type(node).__name__)
 
         if hasattr(self, method):
             f = getattr(self, method)

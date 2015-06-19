@@ -242,11 +242,11 @@ class ImpalaClient(SQLClient):
 
     def _fully_qualified_name(self, name, database):
         if database is not None:
-            return '{}.`{}`'.format(database, name)
+            return '{0}.`{1}`'.format(database, name)
         else:
             # TODO: This is not foolproof
             if '.' not in name and name.lower() in ident.impala_identifiers:
-                return '`{}`'.format(name)
+                return '`{0}`'.format(name)
             else:
                 return name
 
@@ -268,9 +268,9 @@ class ImpalaClient(SQLClient):
         """
         statement = 'SHOW TABLES'
         if database:
-            statement += ' IN {}'.format(database)
+            statement += ' IN {0}'.format(database)
         if like:
-            statement += " LIKE '{}'".format(like)
+            statement += " LIKE '{0}'".format(like)
 
         cur = self._execute(statement)
         return self._get_list(cur)
@@ -360,7 +360,7 @@ class ImpalaClient(SQLClient):
         """
         statement = 'SHOW DATABASES'
         if like:
-            statement += " LIKE '{}'".format(like)
+            statement += " LIKE '{0}'".format(like)
 
         cur = self._execute(statement)
         return self._get_list(cur)
@@ -649,7 +649,7 @@ class ImpalaClient(SQLClient):
         self._execute(statement)
 
     def _get_table_schema(self, tname):
-        query = 'SELECT * FROM {} LIMIT 0'.format(tname)
+        query = 'SELECT * FROM {0} LIMIT 0'.format(tname)
         return self._get_schema_using_query(query)
 
     def _get_schema_using_query(self, query):
@@ -712,6 +712,6 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
 
 
 def _set_limit(query, k):
-    limited_query = '{}\nLIMIT {}'.format(query, k)
+    limited_query = '{0}\nLIMIT {1}'.format(query, k)
 
     return limited_query

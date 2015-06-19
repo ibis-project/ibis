@@ -191,8 +191,8 @@ class _TypePrecedence(object):
     def _check_casts(self, typename):
         for expr in self.exprs:
             if not expr._can_cast_implicit(typename):
-                raise ValueError('Expression with type {} cannot be '
-                                 'implicitly casted to {}'
+                raise ValueError('Expression with type {0} cannot be '
+                                 'implicitly casted to {1}'
                                  .format(expr.type(), typename))
 
 
