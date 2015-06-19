@@ -32,8 +32,6 @@ if COMMS_EXT_ENABLED:
 
     cmdclass['build_ext'] = build_ext
 
-import numpy as np
-
 from setuptools import setup
 import os
 import sys
@@ -65,13 +63,14 @@ class clean(_clean):
 
 cmdclass['clean'] = clean
 
-common_include = ['ibis/src', np.get_include()]
-
 with open('requirements.txt') as f:
     file_reqs = f.read().splitlines()
     requirements = requirements + file_reqs
 
 if COMMS_EXT_ENABLED:
+    import numpy as np
+    
+    common_include = ['ibis/src', np.get_include()]
     comms_ext_libraries = []
     if sys.platform != 'darwin':
         # libuuid is available without additional linking as part of the base
