@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,26 +27,21 @@ import pandas as pd
 import pandas.util.testing as tm
 
 from ibis.util import guid
+from ibis.tests.util import IbisTestEnv
 import ibis
 
 
-IMPALA_HOST = os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
-IMPALA_PROTOCOL = os.environ.get('IBIS_TEST_IMPALA_PROTOCOL', 'hiveserver2')
-IMPALA_PORT = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
-NN_HOST = os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
-WEBHDFS_PORT = int(os.environ.get('IBIS_TEST_WEBHDFS_PORT', 5070))
-
-
-HDFS_WRITABLE_PATH = os.environ.get('IBIS_HDFS_WRITABLE_PATH', '/tmp')
-IBIS_TEST_DATA_LOCAL_DIR = 'ibis-testing-data'
-TMP_DB_HDFS_PATH = pjoin(HDFS_WRITABLE_PATH, guid())
+ENV = IbisTestEnv()
+TMP_DB_HDFS_PATH = pjoin(ENV.tmp_dir, guid())
 TMP_DB = guid()
+# hardcoded:
+IBIS_TEST_DATA_LOCAL_DIR = 'ibis-testing-data'
 
 
 def make_connection():
-    ic = ibis.impala_connect(host=IMPALA_HOST, port=IMPALA_PORT,
-                             protocol=IMPALA_PROTOCOL)
-    hdfs = ibis.hdfs_connect(host=NN_HOST, port=WEBHDFS_PORT)
+    ic = ibis.impala_connect(host=ENV.impala_host, port=ENV.impala_port,
+                             protocol=ENV.impala_protocol)
+    hdfs = ibis.hdfs_connect(host=ENV.nn_host, port=ENV.webhdfs_port)
     return ibis.make_client(ic, hdfs_client=hdfs)
 
 
@@ -120,6 +116,8 @@ def make_local_test_archive():
         generate_csv_files()
     finally:
         cleanup_temporary_stuff(con)
+
+    # TODO: push a tarball to S3?
 
 
 if __name__ == '__main__':

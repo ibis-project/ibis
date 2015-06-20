@@ -24,6 +24,7 @@ import pytest
 
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.compat import unittest
+from ibis.tests.util import IbisTestEnv
 import ibis.util as util
 
 
@@ -70,27 +71,16 @@ class TestHDFSE2E(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.host = os.environ.get('IBIS_TEST_HOST', 'localhost')
-        cls.protocol = os.environ.get('IBIS_TEST_PROTOCOL', 'hiveserver2')
-        cls.port = os.environ.get('IBIS_TEST_PORT', 21050)
-        cls.hdfs_host = os.environ.get('IBIS_TEST_HDFS_HOST', 'localhost')
-        # Impala dev environment uses port 5070 for HDFS web interface
-        cls.webhdfs_port = os.environ.get('IBIS_TEST_WEBHDFS_PORT', 5070)
-        url = 'http://{0}:{1}'.format(cls.hdfs_host, cls.webhdfs_port)
-
-        cls.test_dir = '/{0}'.format(util.guid())
-
-        try:
-            cls.hdfs_client = InsecureClient(url)
-            cls.hdfs = WebHDFS(cls.hdfs_client)
-            cls.hdfs.mkdir(cls.test_dir)
-        except Exception as e:
-            pytest.skip('Could not connect to HDFS: {0}'.format(e.message))
+        cls.ENV = IbisTestEnv()
+        cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
+        cls.hdfs_client = InsecureClient(cls.ENV.hdfs_url)
+        cls.hdfs = WebHDFS(cls.hdfs_client)
+        cls.hdfs.mkdir(cls.tmp_dir)
 
     @classmethod
     def tearDownClass(cls):
         try:
-            cls.hdfs.rmdir(cls.test_dir)
+            cls.hdfs.rmdir(cls.tmp_dir)
         except:
             pass
 
@@ -140,12 +130,12 @@ class TestHDFSE2E(unittest.TestCase):
         return local_dir
 
     def test_mkdir(self):
-        path = pjoin(self.test_dir, 'mkdir-test')
+        path = pjoin(self.tmp_dir, 'mkdir-test')
         self.hdfs.mkdir(path)
         assert self.hdfs.exists(path)
 
     def test_put_get_delete_file(self):
-        dirpath = pjoin(self.test_dir, 'write-delete-test')
+        dirpath = pjoin(self.tmp_dir, 'write-delete-test')
         self.hdfs.mkdir(dirpath)
 
         lpath = self._make_random_file()
@@ -178,7 +168,7 @@ class TestHDFSE2E(unittest.TestCase):
             for i in xrange(K):
                 self._make_random_file(directory=local_dir)
 
-            remote_dir = pjoin(self.test_dir, local_dir)
+            remote_dir = pjoin(self.tmp_dir, local_dir)
             self.hdfs.put(remote_dir, local_dir)
 
             assert self.hdfs.exists(remote_dir)
@@ -200,10 +190,10 @@ class TestHDFSE2E(unittest.TestCase):
         local_path = self._make_random_file()
         local_path2 = self._make_random_file()
 
-        remote_path = pjoin(self.test_dir, local_path)
+        remote_path = pjoin(self.tmp_dir, local_path)
         self.hdfs.put(remote_path, local_path)
 
-        remote_path2 = pjoin(self.test_dir, local_path2)
+        remote_path2 = pjoin(self.tmp_dir, local_path2)
         self.hdfs.put(remote_path2, local_path2)
 
         with self.assertRaises(IOError):
@@ -219,7 +209,7 @@ class TestHDFSE2E(unittest.TestCase):
         buf.write(data)
         buf.seek(0)
 
-        remote_path = pjoin(self.test_dir, util.guid())
+        remote_path = pjoin(self.tmp_dir, util.guid())
         self.hdfs.put(remote_path, buf)
 
         local_path = util.guid()
@@ -247,7 +237,7 @@ class TestHDFSE2E(unittest.TestCase):
             nested_dir = os.path.join(local_dir, 'nested-dir')
             shutil.copytree(local_dir, nested_dir)
 
-            remote_dir = pjoin(self.test_dir, local_dir)
+            remote_dir = pjoin(self.tmp_dir, local_dir)
             self.hdfs.put(remote_dir, local_dir)
 
             # download directory and check contents
@@ -266,8 +256,8 @@ class TestHDFSE2E(unittest.TestCase):
         local_dir = self._make_test_directory()
         local_dir2 = self._make_test_directory()
 
-        remote_dir = pjoin(self.test_dir, local_dir)
-        remote_dir2 = pjoin(self.test_dir, local_dir2)
+        remote_dir = pjoin(self.tmp_dir, local_dir)
+        remote_dir2 = pjoin(self.tmp_dir, local_dir2)
 
         self.hdfs.put(remote_dir, local_dir)
         self.hdfs.put(remote_dir2, local_dir2)
@@ -285,7 +275,7 @@ class TestHDFSE2E(unittest.TestCase):
             pass
 
     def test_ls(self):
-        test_dir = pjoin(self.test_dir, 'ls-test')
+        test_dir = pjoin(self.tmp_dir, 'ls-test')
         self.hdfs.mkdir(test_dir)
         for i in xrange(10):
             local_path = self._make_random_file()

@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # Copyright 2014 Cloudera Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,26 +23,19 @@ import tempfile
 import subprocess
 
 import ibis
+from ibis.tests.util import IbisTestEnv
 
 
-IMPALA_HOST = os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
-IMPALA_PROTOCOL = os.environ.get('IBIS_TEST_IMPALA_PROTOCOL', 'hiveserver2')
-IMPALA_PORT = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
-NN_HOST = os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
-WEBHDFS_PORT = int(os.environ.get('IBIS_TEST_WEBHDFS_PORT', 5070))
-
-
-IBIS_TEST_DATA_HDFS_DIR = os.environ.get('IBIS_TEST_DATA_HDFS_DIR',
-                                         '/__ibis/ibis-testing-data')
-IBIS_TEST_DB = os.environ.get('IBIS_TEST_DATABASE', 'ibis_testing')
+ENV = IbisTestEnv()
+# hardcoded:
 IBIS_TEST_DATA_URL = ('https://ibis-test-resources.s3.amazonaws.com/'
                       'ibis-testing-data.tar.gz')
 
 
 def make_connection():
-    ic = ibis.impala_connect(host=IMPALA_HOST, port=IMPALA_PORT,
-                             protocol=IMPALA_PROTOCOL)
-    hdfs = ibis.hdfs_connect(host=NN_HOST, port=WEBHDFS_PORT)
+    ic = ibis.impala_connect(host=ENV.impala_host, port=ENV.impala_port,
+                             protocol=ENV.impala_protocol)
+    hdfs = ibis.hdfs_connect(host=ENV.nn_host, port=ENV.webhdfs_port)
     return ibis.make_client(ic, hdfs_client=hdfs)
 
 
@@ -57,14 +51,14 @@ def get_ibis_test_data(local_path):
 
 
 def create_test_database(con):
-    if con.exists_database(IBIS_TEST_DB):
-        con.drop_database(IBIS_TEST_DB, force=True)
-    con.create_database(IBIS_TEST_DB)
-    print('Created database {0}'.format(IBIS_TEST_DB))
+    if con.exists_database(ENV.test_data_db):
+        con.drop_database(ENV.test_data_db, force=True)
+    con.create_database(ENV.test_data_db)
+    print('Created database {0}'.format(ENV.test_data_db))
 
 
 def create_parquet_tables(con):
-    parquet_files = con.hdfs.ls(pjoin(IBIS_TEST_DATA_HDFS_DIR, 'parquet'))
+    parquet_files = con.hdfs.ls(pjoin(ENV.test_data_dir, 'parquet'))
     schemas = {
         'functional_alltypes': ibis.schema(
             [('id', 'int32'),
@@ -86,15 +80,16 @@ def create_parquet_tables(con):
         # if no schema infer!
         schema = schemas.get(table_name)
         con.parquet_file(path, schema=schema, name=table_name,
-                         database=IBIS_TEST_DB, persist=True)
+                         database=ENV.test_data_db, persist=True)
 
 
 def setup_test_data():
     con = make_connection()
+    # TODO: test that HDFS dir is writable before initiating dnload
     try:
         tmp_dir = tempfile.mkdtemp(prefix='__ibis_tmp')
         local_data_dir = get_ibis_test_data(tmp_dir)
-        con.hdfs.put(IBIS_TEST_DATA_HDFS_DIR, local_data_dir, overwrite=True,
+        con.hdfs.put(ENV.test_data_dir, local_data_dir, overwrite=True,
                      verbose=True)
     finally:
         shutil.rmtree(tmp_dir)

@@ -14,7 +14,6 @@
 
 from posixpath import join as pjoin
 import gc
-import os
 import pytest
 import sys
 
@@ -24,6 +23,7 @@ from decimal import Decimal
 from hdfs import InsecureClient
 import ibis
 from ibis.compat import unittest
+from ibis.tests.util import IbisTestEnv
 
 import ibis.common as com
 import ibis.config as config
@@ -32,32 +32,17 @@ import ibis.expr.types as ir
 import ibis.util as util
 
 
-class IbisTestEnv(object):
-
-    def __init__(self):
-        self.host = os.environ.get('IBIS_TEST_HOST', 'localhost')
-        self.protocol = os.environ.get('IBIS_TEST_PROTOCOL', 'hiveserver2')
-        self.port = os.environ.get('IBIS_TEST_PORT', 21050)
-        self.database = os.environ.get('IBIS_TEST_DATABASE', 'ibis_testing')
-        self.use_codegen = bool(os.environ.get('IBIS_TEST_USE_CODEGEN', False))
-        self.hdfs_host = os.environ.get('IBIS_TEST_HDFS_HOST', 'localhost')
-        # Impala dev environment uses port 5070 for HDFS web interface
-        self.webhdfs_port = os.environ.get('IBIS_TEST_WEBHDFS_PORT', 5070)
-        url = 'http://{0}:{1}'.format(self.hdfs_host, self.webhdfs_port)
-        self.hdfs = InsecureClient(url)
-
-
 ENV = IbisTestEnv()
-HDFS_TEST_DATA = '/__ibis/ibis-testing-data'
 
 
 def connect(env, with_hdfs=True):
-    con = ibis.impala_connect(host=ENV.host,
-                              protocol=ENV.protocol,
-                              database=ENV.database,
-                              port=ENV.port)
+    con = ibis.impala_connect(host=ENV.impala_host,
+                              protocol=ENV.impala_protocol,
+                              database=ENV.test_data_db,
+                              port=ENV.impala_port)
     if with_hdfs:
-        return ibis.make_client(con, ENV.hdfs)
+        hdfs_client = InsecureClient(ENV.hdfs_url)
+        return ibis.make_client(con, hdfs_client)
     else:
         return ibis.make_client(con)
 
@@ -69,36 +54,20 @@ class ImpalaE2E(object):
 
     @classmethod
     def setUpClass(cls):
-        try:
-            import impala  # noqa
-            cls.con = connect(ENV)
-
-            # Tests run generally faster without it
-            if not ENV.use_codegen:
-                cls.con.disable_codegen()
-
-            cls.hdfs = cls.con.hdfs
-
-            cls.db = ENV.database
-            cls.test_db = '__ibis_{0}'.format(util.guid())
-
-            cls.con.create_database(cls.test_db)
-
-            cls.alltypes = cls.con.table('functional_alltypes')
-        except ImportError:
-            # fail gracefully if impyla not installed
-            pytest.skip('no impyla')
-        except Exception as e:
-            if 'could not connect' in e.message.lower():
-                pytest.skip('impalad not running')
-            raise
+        cls.con = connect(ENV)
+        # Tests run generally faster without it
+        if not ENV.use_codegen:
+            cls.con.disable_codegen()
+        cls.hdfs = cls.con.hdfs
+        cls.test_data_dir = ENV.test_data_dir
+        cls.test_data_db = ENV.test_data_db
+        cls.tmp_db = '__ibis_{0}'.format(util.guid())
+        cls.con.create_database(cls.tmp_db)
+        cls.alltypes = cls.con.table('functional_alltypes')
 
     @classmethod
     def tearDownClass(cls):
-        try:
-            cls.con.drop_database(cls.test_db)
-        except:
-            pass
+        cls.con.drop_database(cls.tmp_db, force=True)
 
 
 class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
@@ -126,9 +95,9 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         assert len(self.con.list_databases()) > 0
 
     def test_list_tables(self):
-        assert len(self.con.list_tables(database=self.db)) > 0
+        assert len(self.con.list_tables(database=self.test_data_db)) > 0
         assert len(self.con.list_tables(like='*nat*',
-                                        database=self.db)) > 0
+                                        database=self.test_data_db)) > 0
 
     def test_set_database(self):
         # TODO: free of dependence on functional database
@@ -137,7 +106,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
         self.con.table('alltypes')
 
-        self.con.set_database(self.db)
+        self.con.set_database(self.test_data_db)
 
     def test_create_exists_drop_database(self):
         tmp_name = util.guid()
@@ -286,16 +255,16 @@ FROM ibis_testing.tpch_lineitem li
         table_name = _random_table_name()
 
         try:
-            self.con.create_table(table_name, expr, database=self.db)
+            self.con.create_table(table_name, expr, database=self.test_data_db)
         except Exception:
             raise
         finally:
-            _ensure_drop(self.con, table_name, database=self.db)
+            _ensure_drop(self.con, table_name, database=self.test_data_db)
 
     def test_insert_table(self):
         expr = self.alltypes
         table_name = _random_table_name()
-        db = self.db
+        db = self.test_data_db
 
         try:
             self.con.create_table(table_name, expr.limit(0),
@@ -688,7 +657,7 @@ FROM ibis_testing.tpch_lineitem li
 
         with config.option_context('verbose', True):
             with config.option_context('verbose_log', logger):
-                self.con.table('tpch_orders', database=self.db)
+                self.con.table('tpch_orders', database=self.test_data_db)
 
         assert len(queries) == 1
         assert queries[0] == 'SELECT * FROM ibis_testing.`tpch_orders` LIMIT 0'
@@ -724,7 +693,7 @@ def _random_table_name():
 class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
     def test_cleanup_tmp_table_on_gc(self):
-        hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
+        hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
         table = self.con.parquet_file(hdfs_path)
         name = table.op().name
         table = None
@@ -732,7 +701,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         _assert_table_not_exists(self.con, name)
 
     def test_persist_parquet_file_with_name(self):
-        hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
+        hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
 
         name = _random_table_name()
         schema = ibis.schema([('r_regionkey', 'int16'),
@@ -740,17 +709,17 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
                               ('r_comment', 'string')])
         self.con.parquet_file(hdfs_path, schema=schema,
                               name=name,
-                              database=self.test_db,
+                              database=self.tmp_db,
                               persist=True)
         gc.collect()
 
         # table still exists
-        self.con.table(name, database=self.test_db)
+        self.con.table(name, database=self.tmp_db)
 
-        _ensure_drop(self.con, name, database=self.test_db)
+        _ensure_drop(self.con, name, database=self.tmp_db)
 
     def test_query_avro(self):
-        hdfs_path = pjoin(HDFS_TEST_DATA, 'avro/tpch.region')
+        hdfs_path = pjoin(self.test_data_dir, 'avro/tpch.region')
 
         avro_schema = {
             "fields": [
@@ -762,11 +731,11 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         }
 
         table = self.con.avro_file(hdfs_path, avro_schema,
-                                   database=self.test_db)
+                                   database=self.tmp_db)
 
         name = table.op().name
         assert 'ibis_tmp_' in name
-        assert name.startswith('{0}.'.format(self.test_db))
+        assert name.startswith('{0}.'.format(self.tmp_db))
 
         # table exists
         self.con.table(name)
@@ -780,7 +749,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         assert len(df) == 5
 
     def test_query_parquet_file_with_schema(self):
-        hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
+        hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
 
         schema = ibis.schema([('r_regionkey', 'int16'),
                               ('r_name', 'string'),
@@ -800,7 +769,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         assert table.count().execute() == 5
 
     def test_query_parquet_file_like_table(self):
-        hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
+        hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
 
         ex_schema = ibis.schema([('r_regionkey', 'int16'),
                                  ('r_name', 'string'),
@@ -811,7 +780,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         assert table.schema().equals(ex_schema)
 
     def test_query_parquet_infer_schema(self):
-        hdfs_path = pjoin(HDFS_TEST_DATA, 'parquet/tpch_region')
+        hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
 
         table = self.con.parquet_file(hdfs_path)
 
@@ -825,14 +794,14 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         pass
 
     def test_query_delimited_file_directory(self):
-        hdfs_path = pjoin(HDFS_TEST_DATA, 'csv')
+        hdfs_path = pjoin(self.test_data_dir, 'csv')
 
         schema = ibis.schema([('foo', 'string'),
                               ('bar', 'double'),
                               ('baz', 'int8')])
         name = 'delimited_table_test1'
         table = self.con.delimited_file(hdfs_path, schema, name=name,
-                                        database=self.test_db,
+                                        database=self.tmp_db,
                                         delimiter=',')
         try:
             expr = (table
@@ -842,4 +811,4 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
                                 table.baz.sum().name('mean(baz)')]))
             expr.execute()
         finally:
-            self.con.drop_table(name, database=self.test_db)
+            self.con.drop_table(name, database=self.tmp_db)
