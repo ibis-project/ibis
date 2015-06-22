@@ -1088,37 +1088,6 @@ def _find_in_set(self, str_list):
     return _ops.FindInSet(self, str_list).to_expr()
 
 
-def _concat(self, strings):
-    """
-    Returns single string representing all values joined together
-
-    Parameters
-    ----------
-    strings : list of strings
-
-    Returns
-    -------
-    concatted : string
-    """
-    return _ops.Concat(self, strings).to_expr()
-
-
-def _concat_ws(self, strings, sep):
-    """
-    Returns single string combined with given separator in between.
-
-    Parameters
-    ----------
-    strings : list of strings
-    sep : string
-
-    Returns
-    -------
-    concatted : string
-    """
-    return _ops.ConcatWS(self, strings, sep).to_expr()
-
-
 def _string_join(self, strings):
     """
     Joins a list of strings together using the calling string as a separator
@@ -1136,7 +1105,7 @@ def _string_join(self, strings):
     -------
     joined : string
     """
-    pass
+    return _ops.StringJoin(self, strings).to_expr()
 
 
 def _string_like(self, pattern):
@@ -1176,7 +1145,7 @@ def re_search(arg, pattern):
 
 def regex_extract(arg, pattern, index):
     """
-    Returns specified index, 0 indexed, from string 
+    Returns specified index, 0 indexed, from string
     based on regex pattern given
 
     Parameters:
@@ -1247,8 +1216,7 @@ _string_value_methods = dict(
     translate=_translate,
     locate=_locate,
     find_in_set=_find_in_set,
-    concat=_concat,
-    concat_ws=_concat_ws,
+    join=_string_join,
     lpad=_lpad,
     rpad=_rpad,
 )

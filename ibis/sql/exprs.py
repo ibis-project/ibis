@@ -583,22 +583,12 @@ def _locate(translator, expr):
         return 'locate({}, {})'.format(substr_formatted, arg_formatted)
 
 
-def _concat(translator, expr):
+def _string_join(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
-    strings_formatted = [translator.translate(arg) for arg in op.strings]
-    return 'concat({})'.format(arg_formatted + ', '
-                               + ', '.join(strings_formatted))
-
-
-def _concat_ws(translator, expr):
-    op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    sep_formatted = translator.translate(op.sep)
-    strings_formatted = [translator.translate(arg) for arg in op.strings]
-    return 'concat_ws({}, {})'.format(sep_formatted,
-                                      arg_formatted + ', '
-                                      + ', '.join(strings_formatted))
+    strings_formatted = [translator.translate(x) for x in op.strings]
+    return 'concat_ws({}, {})'.format(arg_formatted,
+                                      ', '.join(strings_formatted))
 
 
 def _round(translator, expr):
@@ -759,8 +749,7 @@ _string_ops = {
     ops.LPad: _fixed_arity_call('lpad', 3),
     ops.RPad: _fixed_arity_call('rpad', 3),
     ops.Locate: _locate,
-    ops.Concat: _concat,
-    ops.ConcatWS: _concat_ws,
+    ops.StringJoin: _string_join,
     ops.StringSQLLike: _like,
     ops.RegexSearch: _rlike,
     ops.RegexExtract: _regex_extract,

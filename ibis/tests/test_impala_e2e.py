@@ -400,8 +400,6 @@ FROM ibis_testing.tpch_lineitem li
             s.lpad(10, "a"),
             s.rpad(10, "a"),
             s.find_in_set("a"),
-            s.concat(["a"]),
-            s.concat_ws(["a"], ","),
             s.lower(),
             s.upper(),
             s.reverse(),
@@ -485,7 +483,8 @@ FROM ibis_testing.tpch_lineitem li
 
         expr = (table.filter([table.timestamp_col <
                              (ibis.timestamp('2010-01-01') + ibis.month(3)),
-                             table.timestamp_col < (ibis.now() + ibis.day(10))])
+                             table.timestamp_col < (ibis.now() + ibis.day(10))
+                              ])
                 .count())
         expr.execute()
 

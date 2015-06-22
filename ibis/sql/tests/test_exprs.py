@@ -833,22 +833,8 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
-    def test_concat(self):
+    def test_string_join(self):
         cases = [
-            (self.table.string_col.concat(['a']),
-             "concat(string_col, 'a')"),
-            (self.table.string_col.concat(['a', 'b']),
-             "concat(string_col, 'a', 'b')")
-        ]
-        self._check_expr_cases(cases)
-
-    def test_concat_ws(self):
-        cases = [
-            (self.table.string_col.concat_ws(['a'], 'O'),
-             "concat_ws('O', string_col, 'a')"),
-            (self.table.string_col.concat_ws(['a', 'b'], 'O'),
-             "concat_ws('O', string_col, 'a', 'b')"),
-            (self.table.string_col.concat_ws(['a'], ','),
-             "concat_ws(',', string_col, 'a')")
+            (ibis.literal(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")
         ]
         self._check_expr_cases(cases)
