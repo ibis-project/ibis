@@ -707,7 +707,7 @@ class FindInSet(ValueNode):
 
     def __init__(self, arg, str_list):
         self.arg = arg
-        self.str_list = as_value_expr(str_list)
+        self.str_list = [as_value_expr(x) for x in str_list]
         ValueNode.__init__(self, [self.arg, self.str_list])
 
     output_type = _int_output

@@ -1075,11 +1075,17 @@ def _rpad(self, length, pad):
 def _find_in_set(self, str_list):
     """
     Returns postion (1 indexed) of first occurence of argument within
-    comma-separated string
+    a list of strings. No string in list can have a comma
+    Returns 0 if search string isn't found or if search string contains ','
+
 
     Parameters
     ----------
-    str_list : string
+    str_list : list of strings
+
+    Examples
+    --------
+    table.strings.find_in_set(['a', 'b'])
 
     Returns
     -------

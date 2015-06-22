@@ -828,8 +828,10 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_find_in_set(self):
         cases = [
-            (self.table.string_col.find_in_set('a'),
-             "find_in_set(string_col, 'a')")
+            (self.table.string_col.find_in_set(['a']),
+             "find_in_set(string_col, 'a')"),
+            (self.table.string_col.find_in_set(['a', 'b']),
+             "find_in_set(string_col, 'a', 'b')")
         ]
         self._check_expr_cases(cases)
 

@@ -591,6 +591,15 @@ def _string_join(translator, expr):
                                       ', '.join(strings_formatted))
 
 
+def _find_in_set(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    strings_formatted = [translator.translate(x) for
+                         x in op.str_list]
+    return 'find_in_set({}, {})'.format(arg_formatted,
+                                        ', '.join(strings_formatted))
+
+
 def _round(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
@@ -745,7 +754,7 @@ _string_ops = {
     ops.Repeat: _fixed_arity_call('repeat', 2),
     ops.InString: _fixed_arity_call('instr', 2),
     ops.Translate: _fixed_arity_call('translate', 3),
-    ops.FindInSet: _fixed_arity_call('find_in_set', 2),
+    ops.FindInSet: _find_in_set,
     ops.LPad: _fixed_arity_call('lpad', 3),
     ops.RPad: _fixed_arity_call('rpad', 3),
     ops.Locate: _locate,
