@@ -507,7 +507,7 @@ class CreateTable(DDLStatement):
             create_decl = 'CREATE TABLE'
 
         create_line = '{0} {1}{2}'.format(create_decl, if_exists,
-                                       scoped_name)
+                                          scoped_name)
         return create_line
 
     def _storage(self):
@@ -623,7 +623,8 @@ class DelimitedFormat(object):
             buf.write("\nESCAPED BY '{0}'".format(self.escapechar))
 
         if self.lineterminator is not None:
-            buf.write("\nLINES TERMINATED BY '{0}'".format(self.lineterminator))
+            buf.write("\nLINES TERMINATED BY '{0}'"
+                      .format(self.lineterminator))
 
         buf.write("\nLOCATION '{0}'".format(self.path))
 
@@ -790,7 +791,7 @@ def format_schema(schema):
 
 def _format_schema_element(name, t):
     return '{0} {1}'.format(quote_identifier(name, force=True),
-                          _format_type(t))
+                            _format_type(t))
 
 
 def _format_type(t):
