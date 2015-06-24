@@ -559,7 +559,7 @@ def _instring(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
     substr_formatted = translator.translate(op.substr)
-    return 'instr({}, {})'.format(arg_formatted, substr_formatted)
+    return 'instr({}, {}) - 1'.format(arg_formatted, substr_formatted)
 
 
 def _translate(translator, expr):
@@ -577,10 +577,10 @@ def _locate(translator, expr):
     substr_formatted = translator.translate(op.substr)
 
     if op.pos:
-        return 'locate({}, {}, {})'.format(substr_formatted, arg_formatted,
-                                           op.pos + 1)
+        return 'locate({}, {}, {}) - 1'.format(substr_formatted, arg_formatted,
+                                               op.pos + 1)
     else:
-        return 'locate({}, {})'.format(substr_formatted, arg_formatted)
+        return 'locate({}, {}) - 1'.format(substr_formatted, arg_formatted)
 
 
 def _string_join(translator, expr):
@@ -594,11 +594,8 @@ def _string_join(translator, expr):
 def _find_in_set(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
-    strings_formatted = [translator.translate(x) for
-                         x in op.str_list]
-    return 'find_in_set({}, {})'.format(arg_formatted,
-                                        ', '.join(strings_formatted))
-
+    str_formatted = ','.join([x._arg.value for x in op.str_list])
+    return "find_in_set({0}, '{1}') - 1".format(arg_formatted, str_formatted) 
 
 def _round(translator, expr):
     op = expr.op()
@@ -752,7 +749,7 @@ _string_ops = {
     ops.Substring: _substring,
     ops.StrRight: _fixed_arity_call('strright', 2),
     ops.Repeat: _fixed_arity_call('repeat', 2),
-    ops.InString: _fixed_arity_call('instr', 2),
+    ops.InString: _instring,
     ops.Translate: _fixed_arity_call('translate', 3),
     ops.FindInSet: _find_in_set,
     ops.LPad: _fixed_arity_call('lpad', 3),

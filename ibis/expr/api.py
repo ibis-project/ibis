@@ -971,8 +971,8 @@ def repeat(self, n):
 
 def _instring(self, substr):
     """
-    Returns the position, 1 indexed, of first occurence of the given substring
-    Returns 0 if substring is not found.
+    Returns the position, 0 indexed, of first occurence of the given substring
+    Returns -1 if substring is not found.
 
     Parameters
     ----------
@@ -980,7 +980,7 @@ def _instring(self, substr):
 
     Returns
     -------
-    index : int, 1 indexed
+    index : int, 0 indexed
     """
     return _ops.InString(self, substr).to_expr()
 
@@ -1011,7 +1011,7 @@ def _translate(self, from_str, to_str):
 
 def _locate(self, substr, pos=None):
     """
-    Returns position (1 indexed) of first occurence of substring,
+    Returns position (0 indexed) of first occurence of substring,
     optionally after a particular position (0 indexed)
 
     Parameters
@@ -1074,9 +1074,9 @@ def _rpad(self, length, pad):
 
 def _find_in_set(self, str_list):
     """
-    Returns postion (1 indexed) of first occurence of argument within
+    Returns postion (0 indexed) of first occurence of argument within
     a list of strings. No string in list can have a comma
-    Returns 0 if search string isn't found or if search string contains ','
+    Returns -1 if search string isn't found or if search string contains ','
 
 
     Parameters
