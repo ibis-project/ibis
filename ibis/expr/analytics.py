@@ -14,6 +14,7 @@
 
 
 import ibis.expr.types as ir
+import ibis.expr.rules as rules
 import ibis.expr.operations as ops
 
 
@@ -108,7 +109,7 @@ class CategoryLabel(ir.ValueNode):
         ir.ValueNode.__init__(self, [self.arg, self.labels, self.nulls])
 
     def output_type(self):
-        return ops._shape_like(self.arg, 'string')
+        return rules.shape_like(self.arg, 'string')
 
 
 def bucket(arg, buckets, closed='left', close_extreme=True,

@@ -19,6 +19,7 @@ from ibis.expr.types import (Node,
                              ValueExpr, ScalarExpr, ArrayExpr, TableExpr,
                              ArrayNode, TableNode, ValueNode,
                              HasSchema, _safe_repr)
+import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
 
@@ -276,7 +277,7 @@ class Cast(ValueNode):
 
     def output_type(self):
         # TODO: error handling for invalid casts
-        return _shape_like(self.arg, self.target_type)
+        return rules.shape_like(self.arg, self.target_type)
 
 
 class Negate(UnaryOp):
@@ -296,7 +297,7 @@ class IsNull(UnaryOp):
     """
 
     def output_type(self):
-        return _shape_like(self.arg, 'boolean')
+        return rules.shape_like(self.arg, 'boolean')
 
 
 class NotNull(UnaryOp):
@@ -310,7 +311,7 @@ class NotNull(UnaryOp):
     """
 
     def output_type(self):
-        return _shape_like(self.arg, 'boolean')
+        return rules.shape_like(self.arg, 'boolean')
 
 
 class ZeroIfNull(UnaryOp):
@@ -320,20 +321,14 @@ class ZeroIfNull(UnaryOp):
             return self.arg._factory
         elif isinstance(self.arg, ir.FloatingValue):
             # Impala upcasts float to double in this op
-            return _shape_like(self.arg, 'double')
+            return rules.shape_like(self.arg, 'double')
         elif isinstance(self.arg, ir.IntegerValue):
-            return _shape_like(self.arg, 'int64')
+            return rules.shape_like(self.arg, 'int64')
         else:
             raise NotImplementedError
 
 
-class MultiExprNode(ValueNode):
-
-    def root_tables(self):
-        return ir.distinct_roots(*self.args)
-
-
-class IfNull(MultiExprNode):
+class IfNull(ValueNode):
 
     """
     Equivalent to (but perhaps implemented differently):
@@ -351,7 +346,7 @@ class IfNull(MultiExprNode):
         return self.value._factory
 
 
-class NullIf(MultiExprNode):
+class NullIf(ValueNode):
 
     """
     Set values to NULL if they equal the null_if_expr
@@ -378,7 +373,7 @@ def _coalesce_upcast(self):
     else:
         out_type = first_value.type()
 
-    return _shape_like_args(self.args, out_type)
+    return rules.shape_like_args(self.args, out_type)
 
 
 class CoalesceLike(ValueNode):
@@ -413,20 +408,6 @@ class Least(CoalesceLike):
     pass
 
 
-def _shape_like(arg, out_type):
-    if isinstance(arg, ir.ScalarExpr):
-        return ir.scalar_type(out_type)
-    else:
-        return ir.array_type(out_type)
-
-
-def _shape_like_args(args, out_type):
-    if util.any_of(args, ArrayExpr):
-        return ir.array_type(out_type)
-    else:
-        return ir.scalar_type(out_type)
-
-
 def _numeric_same_type(self):
     if not isinstance(self.arg, ir.NumericValue):
         raise TypeError('Only valid for numeric types')
@@ -449,7 +430,7 @@ def _ceil_floor_output(self):
     if isinstance(self.arg, ir.DecimalValue):
         return self.arg._factory
     else:
-        return _shape_like(self.arg, 'int32')
+        return rules.shape_like(self.arg, 'int32')
 
 
 class Ceil(UnaryOp):
@@ -494,9 +475,9 @@ class Round(ValueNode):
         if isinstance(self.arg, ir.DecimalValue):
             return self.arg._factory
         elif self.digits is None or self.digits == 0:
-            return _shape_like(self.arg, 'int64')
+            return rules.shape_like(self.arg, 'int64')
         else:
-            return _shape_like(self.arg, 'double')
+            return rules.shape_like(self.arg, 'double')
 
 
 def validate_int(x):
@@ -522,7 +503,7 @@ class RealUnaryOp(UnaryOp):
               and not self._allow_boolean):
             raise TypeError('Not implemented for boolean types')
 
-        return _shape_like(self.arg, 'double')
+        return rules.shape_like(self.arg, 'double')
 
 
 class Exp(RealUnaryOp):
@@ -532,7 +513,7 @@ class Exp(RealUnaryOp):
 class Sign(UnaryOp):
 
     def output_type(self):
-        return _shape_like(self.arg, 'int32')
+        return rules.shape_like(self.arg, 'int32')
 
 
 class Sqrt(RealUnaryOp):
@@ -578,15 +559,15 @@ class Log10(RealUnaryOp):
 def _string_output(self):
     if not isinstance(self.arg, ir.StringValue):
         raise TypeError('Only implemented for string types')
-    return _shape_like(self.arg, 'string')
+    return rules.shape_like(self.arg, 'string')
 
 
 def _bool_output(self):
-    return _shape_like(self.arg, 'boolean')
+    return rules.shape_like(self.arg, 'boolean')
 
 
 def _int_output(self):
-    return _shape_like(self.arg, 'int32')
+    return rules.shape_like(self.arg, 'int32')
 
 
 class StringUnaryOp(UnaryOp):
@@ -1177,13 +1158,12 @@ class SimpleCase(ValueNode):
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
-        from ibis.expr.rules import highest_precedence_type
         out_exprs = self.results + [self.default]
-        typename = highest_precedence_type(out_exprs)
-        return _shape_like(self.base, typename)
+        typename = rules.highest_precedence_type(out_exprs)
+        return rules.shape_like(self.base, typename)
 
 
-class SearchedCase(MultiExprNode):
+class SearchedCase(ValueNode):
 
     def __init__(self, case_exprs, result_exprs, default_expr):
         assert len(case_exprs) == len(result_exprs)
@@ -1191,7 +1171,7 @@ class SearchedCase(MultiExprNode):
         self.cases = case_exprs
         self.results = result_exprs
         self.default = default_expr
-        MultiExprNode.__init__(self, [self.cases, self.results, self.default])
+        ValueNode.__init__(self, [self.cases, self.results, self.default])
 
     def root_tables(self):
         all_exprs = self.cases + self.results
@@ -1200,13 +1180,12 @@ class SearchedCase(MultiExprNode):
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
-        from ibis.expr.rules import highest_precedence_type
         out_exprs = self.results + [self.default]
-        typename = highest_precedence_type(out_exprs)
-        return _shape_like_args(self.cases, typename)
+        typename = rules.highest_precedence_type(out_exprs)
+        return rules.shape_like_args(self.cases, typename)
 
 
-class Where(MultiExprNode):
+class Where(ValueNode):
 
     """
     Ternary case expression, equivalent to
@@ -1221,11 +1200,11 @@ class Where(MultiExprNode):
         self.true_expr = as_value_expr(true_expr)
         self.false_null_expr = as_value_expr(false_null_expr)
 
-        MultiExprNode.__init__(self, [self.bool_expr, self.true_expr,
-                                      self.false_null_expr])
+        ValueNode.__init__(self, [self.bool_expr, self.true_expr,
+                                  self.false_null_expr])
 
     def output_type(self):
-        return _shape_like(self.bool_expr, self.true_expr.type())
+        return rules.shape_like(self.bool_expr, self.true_expr.type())
 
 
 class Join(TableNode):
@@ -1704,31 +1683,27 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
 class Add(BinaryOp):
 
     def output_type(self):
-        from ibis.expr.rules import BinaryPromoter
-        helper = BinaryPromoter(self.left, self.right, operator.add)
+        helper = rules.BinaryPromoter(self.left, self.right, operator.add)
         return helper.get_result()
 
 
 class Multiply(BinaryOp):
 
     def output_type(self):
-        from ibis.expr.rules import BinaryPromoter
-        helper = BinaryPromoter(self.left, self.right, operator.mul)
+        helper = rules.BinaryPromoter(self.left, self.right, operator.mul)
         return helper.get_result()
 
 
 class Power(BinaryOp):
 
     def output_type(self):
-        from ibis.expr.rules import PowerPromoter
-        return PowerPromoter(self.left, self.right).get_result()
+        return rules.PowerPromoter(self.left, self.right).get_result()
 
 
 class Subtract(BinaryOp):
 
     def output_type(self):
-        from ibis.expr.rules import BinaryPromoter
-        helper = BinaryPromoter(self.left, self.right, operator.sub)
+        helper = rules.BinaryPromoter(self.left, self.right, operator.sub)
         return helper.get_result()
 
 
@@ -1738,7 +1713,7 @@ class Divide(BinaryOp):
         if not util.all_of(self.args, ir.NumericValue):
             raise TypeError('One argument was non-numeric')
 
-        return _shape_like_args(self.args, 'double')
+        return rules.shape_like_args(self.args, 'double')
 
 
 class LogicalBinaryOp(BinaryOp):
@@ -1746,14 +1721,13 @@ class LogicalBinaryOp(BinaryOp):
     def output_type(self):
         if not util.all_of(self.args, ir.BooleanValue):
             raise TypeError('Only valid with boolean data')
-        return _shape_like_args(self.args, 'boolean')
+        return rules.shape_like_args(self.args, 'boolean')
 
 
 class Modulus(BinaryOp):
 
     def output_type(self):
-        from ibis.expr.rules import BinaryPromoter
-        helper = BinaryPromoter(self.left, self.right, operator.add)
+        helper = rules.BinaryPromoter(self.left, self.right, operator.add)
         return helper.get_result()
 
 
@@ -1782,7 +1756,7 @@ class Comparison(BinaryOp, BooleanValueOp):
 
     def output_type(self):
         self._assert_can_compare()
-        return _shape_like_args(self.args, 'boolean')
+        return rules.shape_like_args(self.args, 'boolean')
 
     def _assert_can_compare(self):
         if not self.left._can_compare(self.right):
@@ -1826,7 +1800,7 @@ class Between(BooleanValueOp):
 
     def output_type(self):
         self._assert_can_compare()
-        return _shape_like_args(self.args, 'boolean')
+        return rules.shape_like_args(self.args, 'boolean')
 
     def _assert_can_compare(self):
         if (not self.expr._can_compare(self.lower_bound) or
@@ -1856,7 +1830,7 @@ class Contains(BooleanValueOp):
         else:
             raise TypeError(type(options))
 
-        return _shape_like_args(all_args, 'boolean')
+        return rules.shape_like_args(all_args, 'boolean')
 
 
 class NotContains(Contains):
@@ -1926,7 +1900,7 @@ class ExtractTimestampField(UnaryOp):
     def output_type(self):
         if not isinstance(self.arg, ir.TimestampValue):
             raise AssertionError
-        return _shape_like(self.arg, 'int32')
+        return rules.shape_like(self.arg, 'int32')
 
 
 class ExtractYear(ExtractTimestampField):
@@ -1969,7 +1943,7 @@ class TimestampFromUNIX(ValueNode):
         ValueNode.__init__(self, [self.arg, self.unit])
 
     def output_type(self):
-        return _shape_like(self.arg, 'timestamp')
+        return rules.shape_like(self.arg, 'timestamp')
 
 
 class DecimalPrecision(UnaryOp):
@@ -1977,7 +1951,7 @@ class DecimalPrecision(UnaryOp):
     def output_type(self):
         if not isinstance(self.arg, ir.DecimalValue):
             raise AssertionError
-        return _shape_like(self.arg, 'int32')
+        return rules.shape_like(self.arg, 'int32')
 
 
 class DecimalScale(UnaryOp):
@@ -1985,7 +1959,7 @@ class DecimalScale(UnaryOp):
     def output_type(self):
         if not isinstance(self.arg, ir.DecimalValue):
             raise AssertionError
-        return _shape_like(self.arg, 'int32')
+        return rules.shape_like(self.arg, 'int32')
 
 
 class Hash(ValueNode):
@@ -1996,7 +1970,7 @@ class Hash(ValueNode):
         ValueNode.__init__(self, [self.arg, self.how])
 
     def output_type(self):
-        return _shape_like(self.arg, 'int64')
+        return rules.shape_like(self.arg, 'int64')
 
 
 class TimestampDelta(ValueNode):
@@ -2016,4 +1990,4 @@ class TimestampDelta(ValueNode):
         ValueNode.__init__(self, [self.arg, self.offset])
 
     def output_type(self):
-        return _shape_like(self.arg, 'timestamp')
+        return rules.shape_like(self.arg, 'timestamp')

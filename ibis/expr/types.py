@@ -392,6 +392,10 @@ class Node(object):
 
 class ValueNode(Node):
 
+    def root_tables(self):
+        exprs = [arg for arg in self.args if isinstance(arg, Expr)]
+        return distinct_roots(*exprs)
+
     def _ensure_value(self, expr):
         if not isinstance(expr, ValueExpr):
             raise IbisTypeError('Must be a value, got: %s' %
@@ -404,9 +408,6 @@ class ValueNode(Node):
     def _ensure_scalar(self, expr):
         if not isinstance(expr, ScalarExpr):
             raise TypeError('Must be a scalar, got: %s' % _safe_repr(expr))
-
-    def root_tables(self):
-        return self.arg._root_tables()
 
     def resolve_name(self):
         raise com.ExpressionError('Expression is not named: %s' % repr(self))

@@ -16,7 +16,6 @@ from collections import defaultdict
 import operator
 
 import ibis.expr.types as ir
-import ibis.expr.operations as ops
 import ibis.util as util
 
 
@@ -33,7 +32,7 @@ class BinaryPromoter(object):
 
     def get_result(self):
         promoted_type = self._get_type()
-        return ops._shape_like_args(self.args, promoted_type)
+        return shape_like_args(self.args, promoted_type)
 
     def _get_type(self):
         if util.any_of(self.args, ir.FloatingValue):
@@ -257,3 +256,26 @@ class ImplicitCast(object):
 
         return (base_type in self.implicit_targets or
                 target == self.value_type)
+
+
+# ----------------------------------------------------------------------
+# Input / output type rules and validation
+
+
+def shape_like(arg, out_type):
+    if isinstance(arg, ir.ScalarExpr):
+        return ir.scalar_type(out_type)
+    else:
+        return ir.array_type(out_type)
+
+
+def shape_like_args(args, out_type):
+    if util.any_of(args, ir.ArrayExpr):
+        return ir.array_type(out_type)
+    else:
+        return ir.scalar_type(out_type)
+
+
+class TypeValidator(object):
+
+    pass
