@@ -19,6 +19,7 @@ import pytest
 import sys
 
 import pandas as pd
+from decimal import Decimal
 
 from hdfs import InsecureClient
 import ibis
@@ -415,6 +416,106 @@ FROM ibis_testing.tpch_lineitem li
 
         projection = table[proj_exprs].limit(10)
         projection.execute()
+
+    def assert_cases_equality(self, cases):
+        for expr, expected in cases:
+            result = self.con.execute(expr)
+            assert result == expected
+
+    def test_int_builtins(self):
+        i8 = ibis.literal(50)
+        i32 = ibis.literal(50000)
+        i64 = ibis.literal(5 * 10 ** 8)
+        mod_cases = [
+            (i8 % 5, 0),
+            (i32 % 10, 0),
+            (250 % i8, 0),
+        ]
+        nullif_cases = [
+            (5 / i8.nullif(0), 0.1),
+            (5 / i8.nullif(i32), 0.1),
+            (5 / i32.nullif(0), 0.0001),
+            (i32.zeroifnull(), 50000),
+        ]
+        timestamp_cases = [
+            (i32.to_timestamp('s'), pd.to_datetime(50000, unit='s')),
+            (i32.to_timestamp('ms'), pd.to_datetime(50000, unit='ms')),
+            (i64.to_timestamp(), pd.to_datetime(5 * 10 ** 8, unit='s')),
+        ]
+
+        self.assert_cases_equality(mod_cases + nullif_cases + timestamp_cases)
+
+    def test_decimal_builtins(self):
+        d = ibis.literal(5.245)
+        general_cases = [
+            (ibis.literal(-5).abs(), 5),
+            (d.cast('int32'), 5),
+            (d.ceil(), 6),
+            (d.isnull(), False),
+            (d.floor(), 5),
+            (d.notnull(), True),
+            (d.round(), 5),
+            (d.round(2), 5.25),
+            (d.sign(), 1),
+        ]
+        self.assert_cases_equality(general_cases)
+
+    def test_decimal_builtins_2(self):
+        d = ibis.literal(5.245)
+        cases = [
+            (d.cast('decimal(12,2)'), Decimal(5.24)),
+            (d % 5, 0.245),
+            (d.fillna(0), 5.245),
+            (d.exp(), 189.6158),
+            (d.log(), 1.65728),
+            (d.log2(), 2.39094),
+            (d.log10(), 0.71975),
+            (d.sqrt(), 2.29019),
+            (d.zeroifnull(), Decimal(5.245)),
+        ]
+
+        for expr, expected in cases:
+            result = self.con.execute(expr)
+
+            def approx_equal(a, b, eps=0.0001):
+                assert abs(a - b) < eps
+            approx_equal(result, expected)
+
+    def test_string_functions(self):
+        string = ibis.literal('abcd')
+        trim_string = ibis.literal('   a   ')
+
+        cases = [
+            (string.length(), 4),
+            (ibis.literal('ABCD').lower(), 'abcd'),
+            (string.upper(), 'ABCD'),
+            (string.reverse(), 'dcba'),
+            (string.ascii_str(), 97),
+            (trim_string.trim(), 'a'),
+            (trim_string.ltrim(), 'a   '),
+            (trim_string.rtrim(), '   a'),
+            (string.substr(0, 2), 'ab'),
+            (string.left(2), 'ab'),
+            (string.right(2), 'cd'),
+            (string.repeat(2), 'abcdabcd'),
+            (string.instr('a'), 0),
+            (ibis.literal('0123').translate('012', 'abc'), 'abc3'),
+            (string.locate('a'), 0),
+            (string.lpad(1, '-'), 'a'),
+            (string.lpad(5, '-'), '-abcd'),
+            (string.rpad(1, '-'), 'a'),
+            (string.rpad(5, '-'), 'abcd-'),
+            (string.find_in_set(['a', 'b', 'abcd']), 2),
+            (ibis.literal(', ').join(['a', 'b']), 'a, b'),
+            (string.like('a%'), True),
+            (string.re_search('[a-z]'), True),
+            (string.re_extract('[a-z]', 0), 'a'),
+            (string.re_replace('(b)', '2'), 'a2cd'),
+        ]
+
+        for expr, expected in cases:
+            result = self.con.execute(expr)
+            assert result == expected
 
     def test_filter_predicates(self):
         t = self.con.table('tpch_nation')
