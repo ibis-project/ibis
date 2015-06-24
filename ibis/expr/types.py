@@ -396,18 +396,9 @@ class ValueNode(Node):
         exprs = [arg for arg in self.args if isinstance(arg, Expr)]
         return distinct_roots(*exprs)
 
-    def _ensure_value(self, expr):
-        if not isinstance(expr, ValueExpr):
-            raise IbisTypeError('Must be a value, got: %s' %
-                                _safe_repr(expr))
-
     def _ensure_array(self, expr):
         if not isinstance(expr, ArrayExpr):
             raise IbisTypeError('Must be an array, got: %s' % _safe_repr(expr))
-
-    def _ensure_scalar(self, expr):
-        if not isinstance(expr, ScalarExpr):
-            raise TypeError('Must be a scalar, got: %s' % _safe_repr(expr))
 
     def resolve_name(self):
         raise com.ExpressionError('Expression is not named: %s' % repr(self))

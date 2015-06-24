@@ -127,7 +127,7 @@ class NullLiteral(ValueNode):
     """
 
     def __init__(self):
-        return
+        pass
 
     @property
     def args(self):
@@ -266,9 +266,7 @@ class UnaryOp(ValueNode):
 class Cast(ValueNode):
 
     def __init__(self, arg, target_type):
-        self._ensure_value(arg)
-
-        self.arg = arg
+        self.arg = as_value_expr(arg)
         self.target_type = ir._validate_type(target_type.lower())
         ValueNode.__init__(self, [arg, self.target_type])
 
@@ -391,9 +389,6 @@ class CoalesceLike(ValueNode):
     # DOUBLE; use CAST() when inserting into a smaller numeric column
 
     output_type = _coalesce_upcast
-
-    def root_tables(self):
-        return ir.distinct_roots(*self.args)
 
 
 class Coalesce(CoalesceLike):
@@ -791,9 +786,6 @@ class BinaryOp(ValueNode):
     def _maybe_cast_args(self, left, right):
         return left, right
 
-    def root_tables(self):
-        return ir.distinct_roots(self.left, self.right)
-
     def output_type(self):
         raise NotImplementedError
 
@@ -854,11 +846,10 @@ class StdDeviation(ir.Reduction):
 
 
 def _min_max_output_rule(self):
-    _ = ir
-    if isinstance(self.arg, _.DecimalValue):
+    if isinstance(self.arg, ir.DecimalValue):
         return _decimal_scalar_ctor(self.arg._precision, 38)
     else:
-        return _.scalar_type(self.arg.type())
+        return ir.scalar_type(self.arg.type())
 
 
 class Max(ir.Reduction):
@@ -885,14 +876,12 @@ class HLLCardinality(ir.Reduction):
 
 class GroupConcat(ir.Reduction):
 
-    def __init__(self, arg, sep=','):
+    def __init__(self, arg, sep=',', where=None):
         self._ensure_array(arg)
         self.arg = arg
+        self.where = where
         self.sep = as_value_expr(sep)
         ValueNode.__init__(self, [self.arg, self.sep])
-
-    def root_tables(self):
-        return self.arg._root_tables()
 
     def output_type(self):
         return ir.StringScalar
@@ -984,16 +973,15 @@ class Any(ValueNode):
             raise ValueError('Expression must be a boolean array')
 
         self.arg = expr
-        ValueNode.__init__(self, [expr])
+        ValueNode.__init__(self, [self.arg])
 
     def output_type(self):
-        _ = ir
         roots = self.arg._root_tables()
         if len(roots) > 1:
-            return _.BooleanArray
+            return ir.BooleanArray
         else:
             # A reduction
-            return _.BooleanScalar
+            return ir.BooleanScalar
 
     def negate(self):
         return NotAny(self.arg)
@@ -1795,9 +1783,6 @@ class Between(BooleanValueOp):
         self.upper_bound = upper_bound
         BooleanValueOp.__init__(self, [expr, lower_bound, upper_bound])
 
-    def root_tables(self):
-        return ir.distinct_roots(*self.args)
-
     def output_type(self):
         self._assert_can_compare()
         return rules.shape_like_args(self.args, 'boolean')
@@ -1814,10 +1799,6 @@ class Contains(BooleanValueOp):
         self.value = as_value_expr(value)
         self.options = as_value_expr(options)
         BooleanValueOp.__init__(self, [self.value, self.options])
-
-    def root_tables(self):
-        exprs = [self.value, self.options]
-        return ir.distinct_roots(*exprs)
 
     def output_type(self):
         all_args = [self.value]
