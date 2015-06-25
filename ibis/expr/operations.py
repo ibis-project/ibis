@@ -585,6 +585,10 @@ def _bool_output(self):
     return _shape_like(self.arg, 'boolean')
 
 
+def _int_output(self):
+    return _shape_like(self.arg, 'int32')
+
+
 class StringUnaryOp(UnaryOp):
 
     output_type = _string_output
@@ -598,13 +602,29 @@ class Lowercase(StringUnaryOp):
     pass
 
 
+class Reverse(StringUnaryOp):
+    pass
+
+
+class Trim(StringUnaryOp):
+    pass
+
+
+class LTrim(StringUnaryOp):
+    pass
+
+
+class RTrim(StringUnaryOp):
+    pass
+
+
 class Substring(ValueNode):
 
     def __init__(self, arg, start, length=None):
         self.arg = arg
         self.start = start
         self.length = length
-        ValueNode.__init__(self, [arg, start, length])
+        ValueNode.__init__(self, [self.arg, self.start, self.length])
 
     output_type = _string_output
 
@@ -613,8 +633,92 @@ class StrRight(ValueNode):
 
     def __init__(self, arg, nchars):
         self.arg = arg
-        self.nchars = nchars
-        ValueNode.__init__(self, [arg, nchars])
+        self.nchars = as_value_expr(nchars)
+        ValueNode.__init__(self, [self.arg, self.nchars])
+
+    output_type = _string_output
+
+
+class Repeat(ValueNode):
+
+    def __init__(self, arg, n):
+        self.arg = arg
+        self.n = as_value_expr(n)
+        ValueNode.__init__(self, [self.arg, self.n])
+
+    output_type = _string_output
+
+
+class InString(ValueNode):
+
+    def __init__(self, arg, substr):
+        self.arg = arg
+        self.substr = as_value_expr(substr)
+        ValueNode.__init__(self, [self.arg, self.substr])
+
+    output_type = _int_output
+
+
+class Translate(ValueNode):
+
+    def __init__(self, arg, from_str, to_str):
+        self.arg = arg
+        self.from_str = as_value_expr(from_str)
+        self.to_str = as_value_expr(to_str)
+        ValueNode.__init__(self, [self.arg, self.from_str, self.to_str])
+
+    output_type = _string_output
+
+
+class Locate(ValueNode):
+
+    def __init__(self, arg, substr, pos=0):
+        self.arg = arg
+        self.substr = as_value_expr(substr)
+        self.pos = pos
+        ValueNode.__init__(self, [self.arg, self.substr, self.pos])
+
+    output_type = _int_output
+
+
+class LPad(ValueNode):
+
+    def __init__(self, arg, length, pad):
+        self.arg = arg
+        self.length = as_value_expr(length)
+        self.pad = as_value_expr(pad)
+        ValueNode.__init__(self, [self.arg, self.length, self.pad])
+
+    output_type = _string_output
+
+
+class RPad(ValueNode):
+
+    def __init__(self, arg, length, pad):
+        self.arg = arg
+        self.length = as_value_expr(length)
+        self.pad = as_value_expr(pad)
+        ValueNode.__init__(self, [self.arg, self.length, self.pad])
+
+    output_type = _string_output
+
+
+class FindInSet(ValueNode):
+
+    def __init__(self, arg, str_list):
+        self.arg = arg
+        self.str_list = [as_value_expr(x) for x in str_list]
+        ValueNode.__init__(self, [self.arg, self.str_list])
+
+    output_type = _int_output
+
+
+class StringJoin(ValueNode):
+
+    def __init__(self, arg, strings):
+        self.arg = arg
+        self.strings = [as_value_expr(x) for x in strings]
+        ValueNode.__init__(self, [self.arg, self.strings])
 
     output_type = _string_output
 
@@ -645,10 +749,44 @@ class RegexSearch(FuzzySearch):
     pass
 
 
+class RegexExtract(ValueNode):
+
+    def __init__(self, arg, pattern, index):
+        self.arg = arg
+        self.pattern = as_value_expr(pattern)
+        self.index = index
+
+        if not isinstance(self.pattern, ir.StringScalar):
+            raise TypeError(self.pattern)
+
+        ValueNode.__init__(self, [self.arg, self.pattern, self.index])
+
+    output_type = _string_output
+
+
+class RegexReplace(ValueNode):
+
+    def __init__(self, arg, pattern, replacement):
+        self.arg = as_value_expr(arg)
+        self.pattern = as_value_expr(pattern)
+        self.replacement = as_value_expr(replacement)
+
+        if not isinstance(self.pattern, ir.StringScalar):
+            raise TypeError(self.pattern)
+
+        ValueNode.__init__(self, [self.arg, self.pattern, self.replacement])
+
+    output_type = _string_output
+
+
 class StringLength(UnaryOp):
 
-    def output_type(self):
-        return _shape_like(self.arg, 'int32')
+    output_type = _int_output
+
+
+class StringAscii(UnaryOp):
+
+    output_type = _int_output
 
 
 class BinaryOp(ValueNode):

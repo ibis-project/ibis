@@ -95,6 +95,25 @@ def _rlike(translator, expr):
     return '{0!s} RLIKE {1!s}'.format(arg, pattern)
 
 
+def _regex_extract(translator, expr):
+    op = expr.op()
+    formatted_arg = translator.translate(op.arg)
+    formatted_pattern = translator.translate(op.pattern)
+    return 'regexp_extract({}, {}, {})'.format(formatted_arg,
+                                               formatted_pattern,
+                                               op.index)
+
+
+def _regex_replace(translator, expr):
+    op = expr.op()
+    formatted_arg = translator.translate(op.arg)
+    formatted_pattern = translator.translate(op.pattern)
+    formatted_replacement = translator.translate(op.replacement)
+    return 'regexp_replace({}, {}, {})'.format(formatted_arg,
+                                               formatted_pattern,
+                                               formatted_replacement)
+
+
 def _not_contains(translator, expr):
     # Slight code dup
     op = expr.op()
@@ -519,7 +538,7 @@ def _substring(translator, expr):
     # Databases are 1-indexed
     if op.length:
         return 'substr({0}, {1}, {2})'.format(arg_formatted, op.start + 1,
-                                           op.length)
+                                              op.length)
     else:
         return 'substr({0}, {1})'.format(arg_formatted, op.start + 1)
 
@@ -529,6 +548,54 @@ def _strright(translator, expr):
     arg_formatted = translator.translate(op.arg)
     return 'strright({0}, {1})'.format(arg_formatted, op.nchars)
 
+
+def _repeat(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    return 'repeat({}, {})'.format(arg_formatted, op.n)
+
+
+def _instring(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    substr_formatted = translator.translate(op.substr)
+    return 'instr({}, {}) - 1'.format(arg_formatted, substr_formatted)
+
+
+def _translate(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    from_formatted = translator.translate(op.from_str)
+    to_formatted = translator.translate(op.to_str)
+    return 'translate({}, {}, {})'.format(arg_formatted, from_formatted,
+                                          to_formatted)
+
+
+def _locate(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    substr_formatted = translator.translate(op.substr)
+
+    if op.pos:
+        return 'locate({}, {}, {}) - 1'.format(substr_formatted, arg_formatted,
+                                               op.pos + 1)
+    else:
+        return 'locate({}, {}) - 1'.format(substr_formatted, arg_formatted)
+
+
+def _string_join(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    strings_formatted = [translator.translate(x) for x in op.strings]
+    return 'concat_ws({}, {})'.format(arg_formatted,
+                                      ', '.join(strings_formatted))
+
+
+def _find_in_set(translator, expr):
+    op = expr.op()
+    arg_formatted = translator.translate(op.arg)
+    str_formatted = ','.join([x._arg.value for x in op.str_list])
+    return "find_in_set({0}, '{1}') - 1".format(arg_formatted, str_formatted) 
 
 def _round(translator, expr):
     op = expr.op()
@@ -672,10 +739,27 @@ _binary_infix_ops = {
 
 _string_ops = {
     ops.StringLength: _unary_op('length'),
+    ops.StringAscii: _unary_op('ascii'),
     ops.Lowercase: _unary_op('lower'),
     ops.Uppercase: _unary_op('upper'),
+    ops.Reverse: _unary_op('reverse'),
+    ops.Trim: _unary_op('trim'),
+    ops.LTrim: _unary_op('ltrim'),
+    ops.RTrim: _unary_op('rtrim'),
     ops.Substring: _substring,
-    ops.StrRight: _strright
+    ops.StrRight: _fixed_arity_call('strright', 2),
+    ops.Repeat: _fixed_arity_call('repeat', 2),
+    ops.InString: _instring,
+    ops.Translate: _fixed_arity_call('translate', 3),
+    ops.FindInSet: _find_in_set,
+    ops.LPad: _fixed_arity_call('lpad', 3),
+    ops.RPad: _fixed_arity_call('rpad', 3),
+    ops.Locate: _locate,
+    ops.StringJoin: _string_join,
+    ops.StringSQLLike: _like,
+    ops.RegexSearch: _rlike,
+    ops.RegexExtract: _regex_extract,
+    ops.RegexReplace: _regex_replace,
 }
 
 
@@ -708,9 +792,6 @@ _other_ops = {
     ops.Least: _coalesce_like('least'),
 
     ops.Where: _fixed_arity_call('if', 3),
-
-    ops.StringSQLLike: _like,
-    ops.RegexSearch: _rlike,
 
     ops.Between: _between,
     ops.Contains: _contains,

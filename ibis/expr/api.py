@@ -954,6 +954,166 @@ def _string_right(self, nchars):
     return _ops.StrRight(self, nchars).to_expr()
 
 
+def repeat(self, n):
+    """
+    Returns the argument string repeated n times
+
+    Parameters
+    ----------
+    n : int
+
+    Returns
+    -------
+    result : string
+    """
+    return _ops.Repeat(self, n).to_expr()
+
+
+def _instring(self, substr):
+    """
+    Returns the position, 0 indexed, of first occurence of the given substring
+    Returns -1 if substring is not found.
+
+    Parameters
+    ----------
+    substr : string
+
+    Returns
+    -------
+    index : int, 0 indexed
+    """
+    return _ops.InString(self, substr).to_expr()
+
+
+def _translate(self, from_str, to_str):
+    """
+    Returns string with set of 'from' characters replaced
+    by set of 'to' characters.
+    from_str[x] is replaced by to_str[x].
+    To avoid unexpected behavior, from_str should be
+    shorter than to_string.
+
+    Parameters
+    ----------
+    from_str : string
+    to_str : string
+
+    Examples
+    --------
+    expr = table.strings.translate('a', 'b')
+    expr = table.string.translate('a', 'bc')
+    Returns
+    -------
+    translated : string
+    """
+    return _ops.Translate(self, from_str, to_str).to_expr()
+
+
+def _locate(self, substr, pos=None):
+    """
+    Returns position (0 indexed) of first occurence of substring,
+    optionally after a particular position (0 indexed)
+
+    Parameters
+    ----------
+    substr : string
+    pos : int
+
+    Returns
+    -------
+    position : int, 0 indexed
+    """
+    return _ops.Locate(self, substr, pos).to_expr()
+
+
+def _lpad(self, length, pad):
+    """
+    Returns string of given length by truncating (on right)
+    or padding (on left) original string
+
+    Parameters
+    ----------
+    length : int
+    pad : string
+
+    Examples
+    --------
+    table.strings.lpad(5, '-')
+    'a' becomes '----a'
+    'abcdefg' becomes 'abcde'
+
+    Returns
+    -------
+    padded : string
+    """
+    return _ops.LPad(self, length, pad).to_expr()
+
+
+def _rpad(self, length, pad):
+    """
+    Returns string of given length by truncating (on right)
+    or padding (on right) original string
+
+    Parameters
+    ----------
+    length : int
+    pad : string
+
+    Examples
+    --------
+    table.strings.rpad(5, '-')
+    'a' becomes 'a----'
+    'abcdefg' becomes 'abcde'
+
+    Returns
+    -------
+    padded : string
+    """
+    return _ops.RPad(self, length, pad).to_expr()
+
+
+def _find_in_set(self, str_list):
+    """
+    Returns postion (0 indexed) of first occurence of argument within
+    a list of strings. No string in list can have a comma
+    Returns -1 if search string isn't found or if search string contains ','
+
+
+    Parameters
+    ----------
+    str_list : list of strings
+
+    Examples
+    --------
+    table.strings.find_in_set(['a', 'b'])
+
+    Returns
+    -------
+    position : int
+    """
+    return _ops.FindInSet(self, str_list).to_expr()
+
+
+def _string_join(self, strings):
+    """
+    Joins a list of strings together using the calling string as a separator
+
+    Parameters
+    ----------
+    strings : list of strings
+
+    Examples
+    --------
+    sep = ibis.literal(',')
+    sep.join(['a','b','c'])
+
+    Returns
+    -------
+    joined : string
+    """
+    return _ops.StringJoin(self, strings).to_expr()
+
+
 def _string_like(self, pattern):
     """
     Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
@@ -989,6 +1149,45 @@ def re_search(arg, pattern):
     return _ops.RegexSearch(arg, pattern).to_expr()
 
 
+def regex_extract(arg, pattern, index):
+    """
+    Returns specified index, 0 indexed, from string
+    based on regex pattern given
+
+    Parameters:
+    -----------
+    pattern : string (regular expression string)
+    index : int, 0 indexed
+
+    Returns
+    -------
+    extracted : string
+    """
+    return _ops.RegexExtract(arg, pattern, index).to_expr()
+
+
+def regex_replace(arg, pattern, replacement):
+    """
+    Replaces match found by regex with replacement string.
+    Replacement string can also be a regex
+
+    Parameters:
+    -----------
+    pattern : string (regular expression string)
+    replacement : string (can be regular expression string)
+
+    Examples
+    --------
+    table.strings.replace('(b+)', '<\\1>')
+    'aaabbbaa' becomes 'aaa<bbb>aaa'
+
+    Returns
+    -------
+    modified : string
+    """
+    return _ops.RegexReplace(arg, pattern, replacement).to_expr()
+
+
 def _string_contains(arg, substr):
     return arg.like('%{0}%'.format(substr))
 
@@ -1001,16 +1200,31 @@ _string_value_methods = dict(
     length=_unary_op('length', _ops.StringLength),
     lower=_unary_op('lower', _ops.Lowercase),
     upper=_unary_op('upper', _ops.Uppercase),
+    reverse=_unary_op('reverse', _ops.Reverse),
+    ascii_str=_unary_op('ascii', _ops.StringAscii),
+    trim=_unary_op('trim', _ops.Trim),
+    ltrim=_unary_op('ltrim', _ops.LTrim),
+    rtrim=_unary_op('rtrim', _ops.RTrim),
 
     __contains__=_string_dunder_contains,
     contains=_string_contains,
     like=_string_like,
     rlike=re_search,
     re_search=re_search,
+    re_extract=regex_extract,
+    re_replace=regex_replace,
 
     substr=_string_substr,
     left=_string_left,
-    right=_string_right
+    right=_string_right,
+    repeat=repeat,
+    instr=_instring,
+    translate=_translate,
+    locate=_locate,
+    find_in_set=_find_in_set,
+    join=_string_join,
+    lpad=_lpad,
+    rpad=_rpad,
 )
 
 

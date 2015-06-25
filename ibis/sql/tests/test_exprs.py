@@ -733,7 +733,12 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         cases = [
             (self.table.string_col.lower(), 'lower(string_col)'),
             (self.table.string_col.upper(), 'upper(string_col)'),
-            (self.table.string_col.length(), 'length(string_col)')
+            (self.table.string_col.reverse(), 'reverse(string_col)'),
+            (self.table.string_col.trim(), 'trim(string_col)'),
+            (self.table.string_col.ltrim(), 'ltrim(string_col)'),
+            (self.table.string_col.rtrim(), 'rtrim(string_col)'),
+            (self.table.string_col.length(), 'length(string_col)'),
+            (self.table.string_col.ascii_str(), 'ascii(string_col)')
         ]
         self._check_expr_cases(cases)
 
@@ -762,5 +767,76 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         cases = [
             (self.table.string_col.rlike('[\d]+'), ex),
             (self.table.string_col.re_search('[\d]+'), ex),
+        ]
+        self._check_expr_cases(cases)
+
+    def test_re_extract(self):
+        sql = "regexp_extract(string_col, '[\d]+', 0)"
+        cases = [
+            (self.table.string_col.re_extract('[\d]+', 0), sql)
+        ]
+        self._check_expr_cases(cases)
+
+    def test_re_replace(self):
+        sql = "regexp_replace(string_col, '[\d]+', 'aaa')"
+        cases = [
+            (self.table.string_col.re_replace('[\d]+', 'aaa'), sql)
+        ]
+        self._check_expr_cases(cases)
+
+    def test_repeat(self):
+        cases = [
+            (self.table.string_col.repeat(2), 'repeat(string_col, 2)')
+        ]
+        self._check_expr_cases(cases)
+
+    def test_instring(self):
+        cases = [
+            (self.table.string_col.instr('a'), "instr(string_col, 'a') - 1")
+        ]
+        self._check_expr_cases(cases)
+
+    def test_translate(self):
+        cases = [
+            (self.table.string_col.translate('a', 'b'),
+             "translate(string_col, 'a', 'b')")
+        ]
+        self._check_expr_cases(cases)
+
+    def test_locate(self):
+        cases = [
+            (self.table.string_col.locate('a'),
+             "locate('a', string_col) - 1"),
+            (self.table.string_col.locate('a', 2),
+             "locate('a', string_col, 3) - 1")
+        ]
+        self._check_expr_cases(cases)
+
+    def test_lpad(self):
+        cases = [
+            (self.table.string_col.lpad(1, 'a'), "lpad(string_col, 1, 'a')"),
+            (self.table.string_col.lpad(25, 'a'), "lpad(string_col, 25, 'a')")
+        ]
+        self._check_expr_cases(cases)
+
+    def test_rpad(self):
+        cases = [
+            (self.table.string_col.rpad(1, 'a'), "rpad(string_col, 1, 'a')"),
+            (self.table.string_col.rpad(25, 'a'), "rpad(string_col, 25, 'a')")
+        ]
+        self._check_expr_cases(cases)
+
+    def test_find_in_set(self):
+        cases = [
+            (self.table.string_col.find_in_set(['a']),
+             "find_in_set(string_col, 'a') - 1"),
+            (self.table.string_col.find_in_set(['a', 'b']),
+             "find_in_set(string_col, 'a,b') - 1")
+        ]
+        self._check_expr_cases(cases)
+
+    def test_string_join(self):
+        cases = [
+            (ibis.literal(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")
         ]
         self._check_expr_cases(cases)

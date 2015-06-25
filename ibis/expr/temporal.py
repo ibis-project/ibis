@@ -205,7 +205,8 @@ class UnitConverter(object):
 
         if j < i:
             if n % factor:
-                raise IbisError('{0} is not a multiple of {1}'.format(n, factor))
+                raise IbisError('{0} is not a multiple of {1}'.format(n,
+                                                                      factor))
             return n / factor
         else:
             return n * factor

@@ -207,7 +207,7 @@ class WebHDFS(HDFS):
             if is_path:
                 if verbose:
                     self.log('Writing local {0} to HDFS {1}'.format(resource,
-                                                                  hdfs_path))
+                                                                    hdfs_path))
                 self.client.upload(hdfs_path, resource,
                                    overwrite=overwrite, **kwargs)
             else:
