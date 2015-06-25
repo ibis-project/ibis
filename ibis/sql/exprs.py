@@ -99,9 +99,9 @@ def _regex_extract(translator, expr):
     op = expr.op()
     formatted_arg = translator.translate(op.arg)
     formatted_pattern = translator.translate(op.pattern)
-    return 'regexp_extract({}, {}, {})'.format(formatted_arg,
-                                               formatted_pattern,
-                                               op.index)
+    return 'regexp_extract({0}, {1}, {2})'.format(formatted_arg,
+                                                  formatted_pattern,
+                                                  op.index)
 
 
 def _regex_replace(translator, expr):
@@ -109,9 +109,9 @@ def _regex_replace(translator, expr):
     formatted_arg = translator.translate(op.arg)
     formatted_pattern = translator.translate(op.pattern)
     formatted_replacement = translator.translate(op.replacement)
-    return 'regexp_replace({}, {}, {})'.format(formatted_arg,
-                                               formatted_pattern,
-                                               formatted_replacement)
+    return 'regexp_replace({0}, {1}, {2})'.format(formatted_arg,
+                                                  formatted_pattern,
+                                                  formatted_replacement)
 
 
 def _not_contains(translator, expr):
@@ -552,23 +552,14 @@ def _strright(translator, expr):
 def _repeat(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
-    return 'repeat({}, {})'.format(arg_formatted, op.n)
+    return 'repeat({0}, {1})'.format(arg_formatted, op.n)
 
 
-def _instring(translator, expr):
+def _string_find(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
     substr_formatted = translator.translate(op.substr)
-    return 'instr({}, {}) - 1'.format(arg_formatted, substr_formatted)
-
-
-def _translate(translator, expr):
-    op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    from_formatted = translator.translate(op.from_str)
-    to_formatted = translator.translate(op.to_str)
-    return 'translate({}, {}, {})'.format(arg_formatted, from_formatted,
-                                          to_formatted)
+    return 'instr({0}, {1}) - 1'.format(arg_formatted, substr_formatted)
 
 
 def _locate(translator, expr):
@@ -577,25 +568,27 @@ def _locate(translator, expr):
     substr_formatted = translator.translate(op.substr)
 
     if op.pos:
-        return 'locate({}, {}, {}) - 1'.format(substr_formatted, arg_formatted,
-                                               op.pos + 1)
+        return 'locate({0}, {1}, {2}) - 1'.format(substr_formatted,
+                                                  arg_formatted,
+                                                  op.pos + 1)
     else:
-        return 'locate({}, {}) - 1'.format(substr_formatted, arg_formatted)
+        return 'locate({0}, {1}) - 1'.format(substr_formatted, arg_formatted)
 
 
 def _string_join(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
     strings_formatted = [translator.translate(x) for x in op.strings]
-    return 'concat_ws({}, {})'.format(arg_formatted,
-                                      ', '.join(strings_formatted))
+    return 'concat_ws({0}, {1})'.format(arg_formatted,
+                                        ', '.join(strings_formatted))
 
 
 def _find_in_set(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.arg)
     str_formatted = ','.join([x._arg.value for x in op.str_list])
-    return "find_in_set({0}, '{1}') - 1".format(arg_formatted, str_formatted) 
+    return "find_in_set({0}, '{1}') - 1".format(arg_formatted, str_formatted)
+
 
 def _round(translator, expr):
     op = expr.op()
@@ -749,7 +742,7 @@ _string_ops = {
     ops.Substring: _substring,
     ops.StrRight: _fixed_arity_call('strright', 2),
     ops.Repeat: _fixed_arity_call('repeat', 2),
-    ops.InString: _instring,
+    ops.StringFind: _string_find,
     ops.Translate: _fixed_arity_call('translate', 3),
     ops.FindInSet: _find_in_set,
     ops.LPad: _fixed_arity_call('lpad', 3),

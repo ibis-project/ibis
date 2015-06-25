@@ -649,7 +649,7 @@ class Repeat(ValueNode):
     output_type = _string_output
 
 
-class InString(ValueNode):
+class StringFind(ValueNode):
 
     def __init__(self, arg, substr):
         self.arg = arg

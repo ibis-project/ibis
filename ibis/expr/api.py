@@ -969,9 +969,9 @@ def repeat(self, n):
     return _ops.Repeat(self, n).to_expr()
 
 
-def _instring(self, substr):
+def _string_find(self, substr):
     """
-    Returns the position, 0 indexed, of first occurence of the given substring
+    Returns the position, 0 indexed, of first occurrence of the given substring
     Returns -1 if substring is not found.
 
     Parameters
@@ -982,7 +982,7 @@ def _instring(self, substr):
     -------
     index : int, 0 indexed
     """
-    return _ops.InString(self, substr).to_expr()
+    return _ops.StringFind(self, substr).to_expr()
 
 
 def _translate(self, from_str, to_str):
@@ -1218,7 +1218,7 @@ _string_value_methods = dict(
     left=_string_left,
     right=_string_right,
     repeat=repeat,
-    instr=_instring,
+    find=_string_find,
     translate=_translate,
     locate=_locate,
     find_in_set=_find_in_set,
