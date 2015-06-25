@@ -424,16 +424,14 @@ class ValueArgument(Argument):
         return arg
 
 
-class ValueTyped(ValueArgument):
+class AnyTyped(Argument):
 
     def __init__(self, types, fail_message, **arg_kwds):
         self.types = types
         self.fail_message = fail_message
-        ValueArgument.__init__(self, **arg_kwds)
+        Argument.__init__(self, **arg_kwds)
 
     def _validate(self, arg):
-        arg = ValueArgument._validate(self, arg)
-
         if not isinstance(arg, self.types):
             if isinstance(self.fail_message, py_string):
                 exc = self.fail_message
@@ -442,6 +440,13 @@ class ValueTyped(ValueArgument):
             raise IbisTypeError(exc)
 
         return arg
+
+
+class ValueTyped(AnyTyped, ValueArgument):
+
+    def _validate(self, arg):
+        arg = ValueArgument._validate(self, arg)
+        return AnyTyped._validate(self, arg)
 
 
 class MultipleTypes(Argument):
@@ -513,6 +518,19 @@ number = Number
 
 def integer(**arg_kwds):
     return ValueTyped(ir.IntegerValue, 'not integer', **arg_kwds)
+
+
+def decimal(**arg_kwds):
+    return ValueTyped(ir.DecimalValue, 'not decimal', **arg_kwds)
+
+
+def timestamp(**arg_kwds):
+    return ValueTyped(ir.TimestampValue, 'not decimal', **arg_kwds)
+
+
+def timedelta(**arg_kwds):
+    from ibis.expr.temporal import Timedelta
+    return AnyTyped(Timedelta, 'not a timedelta', **arg_kwds)
 
 
 def string(**arg_kwds):

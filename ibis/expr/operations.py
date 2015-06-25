@@ -1613,7 +1613,7 @@ class E(Constant):
 
 class TimestampUnaryOp(UnaryOp):
 
-    input_type = [rules.value_typed_as(ir.TimestampValue)]
+    input_type = [rules.timestamp]
 
 
 class ExtractTimestampField(TimestampUnaryOp):
@@ -1657,7 +1657,7 @@ class TimestampFromUNIX(ValueNode):
 
 class DecimalUnaryOp(UnaryOp):
 
-    input_type = [rules.value_typed_as(ir.DecimalValue)]
+    input_type = [rules.decimal]
 
 
 class DecimalPrecision(DecimalUnaryOp):
@@ -1678,18 +1678,5 @@ class Hash(ValueNode):
 
 class TimestampDelta(ValueNode):
 
+    input_type = [rules.timestamp, rules.timedelta(name='offset')]
     output_type = rules.shape_like_arg(0, 'timestamp')
-
-    def __init__(self, arg, offset):
-        from ibis.expr.temporal import Timedelta
-
-        self.arg = as_value_expr(arg)
-        self.offset = offset
-
-        if not isinstance(self.arg, ir.TimestampValue):
-            raise TypeError('Must interact with a timestamp expression')
-
-        if not isinstance(offset, Timedelta):
-            raise TypeError(offset)
-
-        ValueNode.__init__(self, self.arg, self.offset)

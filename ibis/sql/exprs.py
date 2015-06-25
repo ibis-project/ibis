@@ -362,8 +362,9 @@ def _table_array_view(translator, expr):
 
 def _timestamp_delta(translator, expr):
     op = expr.op()
-    formatted_arg = translator.translate(op.arg)
-    return _timestamp_format_offset(op.offset, formatted_arg)
+    arg, offset = op.args
+    formatted_arg = translator.translate(arg)
+    return _timestamp_format_offset(offset, formatted_arg)
 
 
 _impala_delta_functions = {
