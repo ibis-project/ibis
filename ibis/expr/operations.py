@@ -16,6 +16,7 @@ import operator
 
 from ibis.common import RelationError, ExpressionError
 from ibis.compat import py_string
+from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr,
                              ValueExpr, ArrayExpr, TableExpr,
                              ArrayNode, TableNode, ValueNode,
@@ -123,12 +124,12 @@ class TableArrayView(ArrayNode):
 
 class UnaryOp(ValueNode):
 
-    input_type = [rules.value]
+    input_type = [value]
 
 
 class Cast(ValueNode):
 
-    # input_type = [rules.value, rules.data_type]
+    # input_type = [value, rules.data_type]
 
     def __init__(self, arg, target_type):
         self.arg = as_value_expr(arg)
@@ -145,7 +146,7 @@ class Cast(ValueNode):
 
 class Negate(UnaryOp):
 
-    input_type = [rules.numeric]
+    input_type = [number]
     output_type = rules.type_of_arg(0)
 
 
@@ -189,7 +190,7 @@ class IfNull(ValueNode):
           .else_(null_substitute_expr)
     """
 
-    input_type = [rules.value, rules.value(name='ifnull_expr')]
+    input_type = [value, value(name='ifnull_expr')]
     output_type = rules.type_of_arg(0)
 
 
@@ -199,7 +200,7 @@ class NullIf(ValueNode):
     Set values to NULL if they equal the null_if_expr
     """
 
-    input_type = [rules.value, rules.value(name='null_if_expr')]
+    input_type = [value, value(name='null_if_expr')]
     output_type = rules.type_of_arg(0)
 
 
@@ -275,7 +276,7 @@ class Ceil(UnaryOp):
       Decimal values: yield decimal
       Other numeric values: yield integer (int32)
     """
-    input_type = [rules.numeric()]
+    input_type = [number]
     output_type = _ceil_floor_output
 
 
@@ -291,14 +292,13 @@ class Floor(UnaryOp):
       Other numeric values: yield integer (int32)
     """
 
-    input_type = [rules.numeric()]
+    input_type = [number]
     output_type = _ceil_floor_output
 
 
 class Round(ValueNode):
 
-    input_type = [rules.value,
-                  rules.integer(name='digits', optional=True)]
+    input_type = [value, integer(name='digits', optional=True)]
 
     def output_type(self):
         arg, digits = self.args
@@ -312,7 +312,7 @@ class Round(ValueNode):
 
 class RealUnaryOp(UnaryOp):
 
-    input_type = [rules.numeric()]
+    input_type = [number]
     output_type = rules.shape_like_arg(0, 'double')
 
 
@@ -333,13 +333,13 @@ class Logarithm(RealUnaryOp):
 
     # superclass
 
-    input_type = [rules.numeric(allow_boolean=False)]
+    input_type = [number(allow_boolean=False)]
 
 
 class Log(Logarithm):
 
     input_type = (Logarithm.input_type +
-                  [rules.numeric(name='base', optional=True)])
+                  [number(name='base', optional=True)])
 
 
 class Ln(Logarithm):
@@ -365,7 +365,7 @@ class Log10(Logarithm):
 
 class StringUnaryOp(UnaryOp):
 
-    input_type = [rules.string]
+    input_type = [string]
     output_type = rules.shape_like_arg(0, 'string')
 
 
@@ -395,93 +395,63 @@ class RStrip(StringUnaryOp):
 
 class Substring(ValueNode):
 
-    def __init__(self, arg, start, length=None):
-        self.arg = arg
-        self.start = start
-        self.length = length
-        ValueNode.__init__(self, self.arg, self.start, self.length)
-
+    input_type = [string, integer(name='start'),
+                  integer(name='length', optional=True)]
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class StrRight(ValueNode):
 
-    def __init__(self, arg, nchars):
-        self.arg = arg
-        self.nchars = as_value_expr(nchars)
-        ValueNode.__init__(self, self.arg, self.nchars)
-
+    input_type = [string, integer(name='nchars')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class Repeat(ValueNode):
 
-    def __init__(self, arg, n):
-        self.arg = arg
-        self.n = as_value_expr(n)
-        ValueNode.__init__(self, self.arg, self.n)
-
+    input_type = [string, integer(name='times')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class StringFind(ValueNode):
 
-    def __init__(self, arg, substr):
-        self.arg = arg
-        self.substr = as_value_expr(substr)
-        ValueNode.__init__(self, self.arg, self.substr)
-
+    input_type = [string, string(name='substr')]
     output_type = rules.shape_like_arg(0, 'int32')
 
 
 class Translate(ValueNode):
 
-    input_type = [rules.string, rules.string(name='from_str'),
-                  rules.string(name='to_str')]
+    input_type = [string, string(name='from_str'), string(name='to_str')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class Locate(ValueNode):
 
-    input_type = [rules.string,
-                  rules.string(name='substr'),
-                  rules.integer(name='pos', default=0)]
+    input_type = [string, string(name='substr'),
+                  integer(name='pos', default=0)]
     output_type = rules.shape_like_arg(0, 'int32')
 
 
 class LPad(ValueNode):
 
-    input_type = [rules.string, rules.integer(name='length'),
-                  rules.string(name='pad')]
+    input_type = [string, integer(name='length'), string(name='pad')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class RPad(ValueNode):
 
-    input_type = [rules.string, rules.integer(name='length'),
-                  rules.string(name='pad')]
+    input_type = [string, integer(name='length'), string(name='pad')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class FindInSet(ValueNode):
 
-    def __init__(self, arg, str_list):
-        self.arg = arg
-        self.str_list = [as_value_expr(x) for x in str_list]
-        ValueNode.__init__(self, self.arg, self.str_list)
-
+    input_type = [string(name='needle'), list_of(string, min_length=1)]
     output_type = rules.shape_like_arg(0, 'int32')
 
 
 class StringJoin(ValueNode):
 
-    def __init__(self, arg, strings):
-        self.arg = arg
-        self.strings = [as_value_expr(x) for x in strings]
-        ValueNode.__init__(self, self.arg, self.strings)
-
-    # input_type = [rules.string(name='sep'),
-    #               rules.list_of(rules.string, min_length=1)]
+    input_type = [string(name='sep'), list_of(string, min_length=1)]
     output_type = rules.shape_like_arg(0, 'string')
 
 
@@ -491,7 +461,7 @@ class BooleanValueOp(ValueNode):
 
 class FuzzySearch(BooleanValueOp):
 
-    input_type = [rules.string, rules.string(name='pattern')]
+    input_type = [string, string(name='pattern')]
     output_type = rules.shape_like_arg(0, 'boolean')
 
 
@@ -505,17 +475,14 @@ class RegexSearch(FuzzySearch):
 
 class RegexExtract(ValueNode):
 
-    input_type = [rules.string,
-                  rules.string(name='pattern'),
-                  rules.integer(name='index')]
+    input_type = [string, string(name='pattern'), integer(name='index')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class RegexReplace(ValueNode):
 
-    input_type = [rules.string,
-                  rules.string(name='pattern'),
-                  rules.string(name='replacement')]
+    input_type = [string, string(name='pattern'),
+                  string(name='replacement')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
@@ -559,8 +526,7 @@ class BinaryOp(ValueNode):
 
 class Reduction(ValueNode):
 
-    input_type = [rules.array,
-                  rules.boolean(name='where', optional=True)]
+    input_type = [rules.array, boolean(name='where', optional=True)]
 
 
 def is_reduction(expr):
@@ -596,8 +562,7 @@ class Count(Reduction):
     # TODO: count(col) takes down Impala, must always do count(*) in generated
     # SQL
 
-    input_type = [rules.collection,
-                  rules.boolean(name='where', optional=True)]
+    input_type = [rules.collection, boolean(name='where', optional=True)]
 
     # TODO: counts are actually table-level operations. Let's address
     # during the SQL generation exercise
@@ -673,9 +638,8 @@ class HLLCardinality(Reduction):
 
 class GroupConcat(Reduction):
 
-    input_type = [rules.array,
-                  rules.string(name='sep', default=','),
-                  rules.boolean(name='where', optional=True)]
+    input_type = [rules.array, string(name='sep', default=','),
+                  boolean(name='where', optional=True)]
 
     def output_type(self):
         return ir.StringScalar
@@ -922,51 +886,69 @@ class SearchedCaseBuilder(object):
         return op.to_expr()
 
 
+def _arg_getter(i):
+    @property
+    def arg_accessor(self):
+        return self.args[i]
+    return arg_accessor
+
+
 class SimpleCase(ValueNode):
 
-    def __init__(self, base_expr, case_exprs, result_exprs,
-                 default_expr):
-        assert len(case_exprs) == len(result_exprs)
+    input_type = [value(name='base'),
+                  list_of(value, name='cases'),
+                  list_of(value, name='results'),
+                  value(name='default')]
 
-        self.base = base_expr
-        self.cases = case_exprs
-        self.results = result_exprs
-        self.default = default_expr
-        ValueNode.__init__(self, self.base, self.cases, self.results,
-                           self.default)
+    def __init__(self, base, cases, results, default):
+        assert len(cases) == len(results)
+        ValueNode.__init__(self, base, cases, results, default)
+
+    base = _arg_getter(0)
+    cases = _arg_getter(1)
+    results = _arg_getter(2)
+    default = _arg_getter(3)
 
     def root_tables(self):
-        all_exprs = [self.base] + self.cases + self.results
-        if self.default is not None:
-            all_exprs.append(self.default)
+        base, cases, results, default = self.args
+        all_exprs = [base] + cases + results
+        if default is not None:
+            all_exprs.append(default)
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
-        out_exprs = self.results + [self.default]
+        base, cases, results, default = self.args
+        out_exprs = results + [default]
         typename = rules.highest_precedence_type(out_exprs)
-        return rules.shape_like(self.base, typename)
+        return rules.shape_like(base, typename)
 
 
 class SearchedCase(ValueNode):
 
-    def __init__(self, case_exprs, result_exprs, default_expr):
-        assert len(case_exprs) == len(result_exprs)
+    input_type = [list_of(boolean, name='cases'),
+                  list_of(value, name='results'),
+                  value(name='default')]
 
-        self.cases = case_exprs
-        self.results = result_exprs
-        self.default = default_expr
-        ValueNode.__init__(self, self.cases, self.results, self.default)
+    def __init__(self, cases, results, default):
+        assert len(cases) == len(results)
+        ValueNode.__init__(self, cases, results, default)
+
+    cases = _arg_getter(0)
+    results = _arg_getter(1)
+    default = _arg_getter(2)
 
     def root_tables(self):
-        all_exprs = self.cases + self.results
-        if self.default is not None:
-            all_exprs.append(self.default)
+        cases, results, default = self.args
+        all_exprs = cases + results
+        if default is not None:
+            all_exprs.append(default)
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
-        out_exprs = self.results + [self.default]
+        cases, results, default = self.args
+        out_exprs = results + [default]
         typename = rules.highest_precedence_type(out_exprs)
-        return rules.shape_like_args(self.cases, typename)
+        return rules.shape_like_args(cases, typename)
 
 
 class Where(ValueNode):
@@ -979,9 +961,8 @@ class Where(ValueNode):
              .else_(false_or_null_expr)
     """
 
-    input_type = [rules.boolean(name='bool_expr'),
-                  rules.value(name='true_expr'),
-                  rules.value(name='false_null_expr')]
+    input_type = [boolean(name='bool_expr'),
+                  value(name='true_expr'), value(name='false_null_expr')]
 
     def output_type(self):
         return rules.shape_like(self.args[0], self.args[1].type())
@@ -1689,8 +1670,7 @@ class ExtractMillisecond(ExtractTimestampField):
 
 class TimestampFromUNIX(ValueNode):
 
-    input_type = [rules.value,
-                  rules.string_options(['s', 'ms', 'us'], name='unit')]
+    input_type = [value, rules.string_options(['s', 'ms', 'us'], name='unit')]
     output_type = rules.shape_like_arg(0, 'timestamp')
 
 
@@ -1711,8 +1691,7 @@ class DecimalScale(UnaryOp):
 
 class Hash(ValueNode):
 
-    input_type = [rules.value,
-                  rules.string_options(['fnv'], name='how')]
+    input_type = [value, rules.string_options(['fnv'], name='how')]
     output_type = rules.shape_like_arg(0, 'int64')
 
 

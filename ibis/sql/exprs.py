@@ -505,32 +505,33 @@ def _coalesce_like(func_name):
 
 def _substring(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
+    arg, start, length = op.args
+    arg_formatted = translator.translate(arg)
 
-    # Databases are 1-indexed
-    if op.length:
-        return 'substr({0}, {1}, {2})'.format(arg_formatted, op.start + 1,
-                                              op.length)
+    start_formatted = translator.translate(start)
+
+    # Impala is 1-indexed
+    if length is None or isinstance(length.op(), ir.Literal):
+        lvalue = length.op().value if length else None
+        if lvalue:
+            return 'substr({0}, {1} + 1, {2})'.format(arg_formatted,
+                                                      start_formatted,
+                                                      lvalue)
+        else:
+            return 'substr({0}, {1} + 1)'.format(arg_formatted,
+                                                 start_formatted)
     else:
-        return 'substr({0}, {1})'.format(arg_formatted, op.start + 1)
-
-
-def _strright(translator, expr):
-    op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    return 'strright({0}, {1})'.format(arg_formatted, op.nchars)
-
-
-def _repeat(translator, expr):
-    op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    return 'repeat({0}, {1})'.format(arg_formatted, op.n)
+        length_formatted = translator.translate(length)
+        return 'substr({0}, {1} + 1, {2})'.format(arg_formatted,
+                                                  start_formatted,
+                                                  length_formatted)
 
 
 def _string_find(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    substr_formatted = translator.translate(op.substr)
+    arg, substr = op.args
+    arg_formatted = translator.translate(arg)
+    substr_formatted = translator.translate(substr)
     return 'instr({0}, {1}) - 1'.format(arg_formatted, substr_formatted)
 
 
@@ -556,16 +557,19 @@ def _locate(translator, expr):
 
 def _string_join(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    strings_formatted = [translator.translate(x) for x in op.strings]
+    arg, strings = op.args
+    arg_formatted = translator.translate(arg)
+    strings_formatted = [translator.translate(x) for x in strings]
     return 'concat_ws({0}, {1})'.format(arg_formatted,
                                         ', '.join(strings_formatted))
 
 
 def _find_in_set(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    str_formatted = ','.join([x._arg.value for x in op.str_list])
+
+    arg, str_list = op.args
+    arg_formatted = translator.translate(arg)
+    str_formatted = ','.join([x._arg.value for x in str_list])
     return "find_in_set({0}, '{1}') - 1".format(arg_formatted, str_formatted)
 
 

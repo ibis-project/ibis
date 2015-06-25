@@ -373,7 +373,7 @@ FROM ibis_testing.tpch_lineitem li
             s.locate("a"),
             s.lpad(10, "a"),
             s.rpad(10, "a"),
-            s.find_in_set("a"),
+            s.find_in_set(["a"]),
             s.lower(),
             s.upper(),
             s.reverse(),

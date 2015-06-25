@@ -747,8 +747,9 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
     def test_substr(self):
         # Database numbers starting from 1
         cases = [
-            (self.table.string_col.substr(2), 'substr(string_col, 3)'),
-            (self.table.string_col.substr(0, 3), 'substr(string_col, 1, 3)')
+            (self.table.string_col.substr(2), 'substr(string_col, 2 + 1)'),
+            (self.table.string_col.substr(0, 3),
+             'substr(string_col, 0 + 1, 3)')
         ]
         self._check_expr_cases(cases)
 

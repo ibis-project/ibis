@@ -14,7 +14,6 @@
 
 import itertools
 import operator
-import sys
 
 from ibis.expr.types import ArrayExpr, TableExpr, RelationError
 from ibis.common import ExpressionError, IbisTypeError
