@@ -419,7 +419,7 @@ def coalesce(*args):
     -------
     coalesced : type of first provided argument
     """
-    return _ops.Coalesce(args).to_expr()
+    return _ops.Coalesce(*args).to_expr()
 
 
 def greatest(*args):
@@ -431,7 +431,7 @@ def greatest(*args):
     -------
     greatest : type depending on arguments
     """
-    return _ops.Greatest(args).to_expr()
+    return _ops.Greatest(*args).to_expr()
 
 
 def least(*args):
@@ -443,7 +443,7 @@ def least(*args):
     -------
     least : type depending on arguments
     """
-    return _ops.Least(args).to_expr()
+    return _ops.Least(*args).to_expr()
 
 
 def where(boolean_expr, true_expr, false_null_expr):

@@ -70,25 +70,8 @@ def _type_to_sql_string(tval):
 
 def _between(translator, expr):
     op = expr.op()
-    comp = translator.translate(op.expr)
-    lower = translator.translate(op.lower_bound)
-    upper = translator.translate(op.upper_bound)
+    comp, lower, upper = [translator.translate(x) for x in op.args]
     return '{0!s} BETWEEN {1!s} AND {2!s}'.format(comp, lower, upper)
-
-
-def _contains(translator, expr):
-    op = expr.op()
-    comp = translator.translate(op.value)
-    options = translator.translate(op.options)
-    return '{0!s} IN {1!s}'.format(comp, options)
-
-
-def _not_contains(translator, expr):
-    # Slight code dup
-    op = expr.op()
-    comp = translator.translate(op.value)
-    options = translator.translate(op.options)
-    return '{0!s} NOT IN {1!s}'.format(comp, options)
 
 
 def _is_null(translator, expr):
@@ -780,8 +763,8 @@ _other_ops = {
     ops.Where: _fixed_arity_call('if', 3),
 
     ops.Between: _between,
-    ops.Contains: _contains,
-    ops.NotContains: _not_contains,
+    ops.Contains: _binary_infix_op('IN'),
+    ops.NotContains: _binary_infix_op('NOT IN'),
 
     analytics.Bucket: _bucket,
     analytics.CategoryLabel: _category_label,

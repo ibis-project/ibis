@@ -335,8 +335,11 @@ class TypeSignature(object):
         if n != k:
             raise com.IbisError('Expected {0} args, got {1}'.format(k, n))
 
+        return self._validate(args, self.types)
+
+    def _validate(self, args, types):
         validated_args = []
-        for i, (arg, validator) in enumerate(zip(args, self.types)):
+        for i, (arg, validator) in enumerate(zip(args, types)):
             try:
                 checked_arg = validator.validate(arg)
             except IbisTypeError as e:
@@ -353,11 +356,22 @@ class TypeSignature(object):
 
 class VarArgs(TypeSignature):
 
-    def __init__(self, arg_type):
-        pass
+    def __init__(self, arg_type, min_length=1):
+        if not isinstance(arg_type, Argument):
+            arg_type = arg_type()
+        self.arg_type = arg_type
+        self.min_length = min_length
 
     def validate(self, args):
-        pass
+        n, k = len(args), self.min_length
+        if n < k:
+            raise com.IbisError('Expected at least {0} args, got {1}'
+                                .format(k, n))
+
+        return self._validate(args, [self.arg_type] * n)
+
+
+varargs = VarArgs
 
 
 def shape_like_arg(i, out_type):

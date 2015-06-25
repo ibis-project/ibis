@@ -26,6 +26,13 @@ import ibis.expr.types as ir
 import ibis.util as util
 
 
+def _arg_getter(i):
+    @property
+    def arg_accessor(self):
+        return self.args[i]
+    return arg_accessor
+
+
 class PhysicalTable(ir.BlockingTableNode, HasSchema):
 
     pass
@@ -216,18 +223,12 @@ def _coalesce_upcast(self):
 
 class CoalesceLike(ValueNode):
 
-    def __init__(self, args):
-        if len(args) == 0:
-            raise ValueError('Must provide at least one value')
-
-        self.values = [as_value_expr(x) for x in args]
-        ValueNode.__init__(self, *self.values)
-
     # According to Impala documentation:
     # Return type: same as the initial argument value, except that integer
     # values are promoted to BIGINT and floating-point values are promoted to
     # DOUBLE; use CAST() when inserting into a smaller numeric column
 
+    input_type = rules.varargs(rules.value)
     output_type = _coalesce_upcast
 
 
@@ -503,11 +504,13 @@ class BinaryOp(ValueNode):
     # TODO: how will overflows be handled? Can we provide anything useful in
     # Ibis to help the user avoid them?
 
+    input_type = [rules.value(name='left'), rules.value(name='right')]
+
     def __init__(self, left, right):
         left, right = self._maybe_cast_args(left, right)
-        self.left = left
-        self.right = right
-        ValueNode.__init__(self, self.left, self.right)
+        ValueNode.__init__(self, left, right)
+
+    left, right = _arg_getter(0), _arg_getter(1)
 
     def _maybe_cast_args(self, left, right):
         return left, right
@@ -879,13 +882,6 @@ class SearchedCaseBuilder(object):
 
         op = SearchedCase(self.cases, self.results, default)
         return op.to_expr()
-
-
-def _arg_getter(i):
-    @property
-    def arg_accessor(self):
-        return self.args[i]
-    return arg_accessor
 
 
 class SimpleCase(ValueNode):
@@ -1526,19 +1522,16 @@ class Less(Comparison):
 
 class Between(BooleanValueOp):
 
-    def __init__(self, expr, lower_bound, upper_bound):
-        self.expr = expr
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
-        BooleanValueOp.__init__(self, expr, lower_bound, upper_bound)
+    input_type = [rules.value, rules.value(name='lower_bound'),
+                  rules.value(name='upper_bound')]
 
     def output_type(self):
         self._assert_can_compare()
         return rules.shape_like_args(self.args, 'boolean')
 
     def _assert_can_compare(self):
-        if (not self.expr._can_compare(self.lower_bound) or
-                not self.expr._can_compare(self.upper_bound)):
+        expr, lower, upper = self.args
+        if (not expr._can_compare(lower) or not expr._can_compare(upper)):
             raise TypeError('Arguments are not comparable')
 
 
@@ -1564,9 +1557,7 @@ class Contains(BooleanValueOp):
 
 
 class NotContains(Contains):
-
-    def __init__(self, value, options):
-        Contains.__init__(self, value, options)
+    pass
 
 
 class ReplaceValues(ArrayNode):
