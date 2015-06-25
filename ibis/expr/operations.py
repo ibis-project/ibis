@@ -129,19 +129,14 @@ class UnaryOp(ValueNode):
 
 class Cast(ValueNode):
 
-    # input_type = [value, rules.data_type]
-
-    def __init__(self, arg, target_type):
-        self.arg = as_value_expr(arg)
-        self.target_type = ir._validate_type(target_type.lower())
-        ValueNode.__init__(self, arg, self.target_type)
+    input_type = [value, rules.data_type]
 
     def resolve_name(self):
-        return self.arg.get_name()
+        return self.args[0].get_name()
 
     def output_type(self):
         # TODO: error handling for invalid casts
-        return rules.shape_like(self.arg, self.target_type)
+        return rules.shape_like(self.args[0], self.args[1])
 
 
 class Negate(UnaryOp):

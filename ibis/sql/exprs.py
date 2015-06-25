@@ -51,12 +51,14 @@ _sql_type_names = {
 
 def _cast(translator, expr):
     op = expr.op()
-    arg = translator.translate(op.arg)
-    if isinstance(op.arg, ir.CategoryValue) and op.target_type == 'int32':
-        return arg
+    arg, target_type = op.args
+    arg_formatted = translator.translate(arg)
+
+    if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
+        return arg_formatted
     else:
-        sql_type = _type_to_sql_string(op.target_type)
-        return 'CAST({0!s} AS {1!s})'.format(arg, sql_type)
+        sql_type = _type_to_sql_string(target_type)
+        return 'CAST({0!s} AS {1!s})'.format(arg_formatted, sql_type)
 
 
 def _type_to_sql_string(tval):

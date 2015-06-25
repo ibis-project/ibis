@@ -541,9 +541,13 @@ class ListOf(Argument):
 list_of = ListOf
 
 
-class DataTypeName(Argument):
+class DataType(Argument):
 
-    pass
+    def _validate(self, arg):
+        if isinstance(arg, py_string):
+            arg = arg.lower()
+
+        return ir._validate_type(arg)
 
 
-data_type = DataTypeName
+data_type = DataType

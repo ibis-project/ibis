@@ -341,7 +341,7 @@ def cast(arg, target_type):
     # validate
     op = _ops.Cast(arg, target_type)
 
-    if op.target_type == arg.type():
+    if op.args[1] == arg.type():
         # noop case if passed type is the same
         return arg
     else:
