@@ -22,3 +22,6 @@ if PY26:
     import unittest2 as unittest
 else:
     import unittest
+
+
+py_string = basestring

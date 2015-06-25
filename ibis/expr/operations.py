@@ -15,6 +15,7 @@
 import operator
 
 from ibis.common import RelationError, ExpressionError
+from ibis.compat import py_string
 from ibis.expr.types import (Node, as_value_expr,
                              ValueExpr, ArrayExpr, TableExpr,
                              ArrayNode, TableNode, ValueNode,
@@ -22,31 +23,6 @@ from ibis.expr.types import (Node, as_value_expr,
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
-
-
-py_string = basestring
-
-
-def table(schema, name=None):
-    if not isinstance(schema, ir.Schema):
-        if isinstance(schema, list):
-            schema = ir.Schema.from_tuples(schema)
-        else:
-            schema = ir.Schema.from_dict(schema)
-
-    node = UnboundTable(schema, name=name)
-    return TableExpr(node)
-
-
-def timestamp(value):
-    """
-    Returns a timestamp literal if value is likely coercible to a timestamp
-    """
-    if isinstance(value, py_string):
-        from pandas import Timestamp
-        value = Timestamp(value)
-    op = ir.Literal(value)
-    return ir.TimestampScalar(op)
 
 
 class PhysicalTable(ir.BlockingTableNode, HasSchema):
@@ -1301,25 +1277,6 @@ class DeferredSortKey(object):
         if not isinstance(what, ir.Expr):
             what = parent.get_column(what)
         return SortKey(what, ascending=self.ascending)
-
-
-def desc(expr):
-    """
-    Create a sort key (when used in sort_by) by the passed array expression or
-    column name.
-
-    Parameters
-    ----------
-    expr : array expression or string
-      Can be a column name in the table being sorted
-
-    Examples
-    --------
-    result = (self.table.group_by('g')
-              .size('count')
-              .sort_by(ibis.desc('count')))
-    """
-    return DeferredSortKey(expr, ascending=False)
 
 
 class SelfReference(ir.BlockingTableNode, HasSchema):

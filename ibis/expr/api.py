@@ -32,17 +32,16 @@ from ibis.expr.types import (Schema, Expr,  # noqa
                              CategoryValue, unnamed, as_value_expr, literal,
                              null, sequence)
 
-from ibis.expr.operations import table, timestamp, desc
-
 # __all__ is defined
 from ibis.expr.temporal import *  # noqa
 
 import ibis.common as _com
 
+from ibis.compat import py_string
 from ibis.expr.analytics import bucket, histogram
 import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
-import ibis.expr.types as _ir
+import ibis.expr.types as ir
 import ibis.expr.operations as _ops
 import ibis.expr.temporal as _T
 
@@ -80,6 +79,47 @@ def schema(pairs=None, names=None, types=None):
         return Schema.from_tuples(pairs)
     else:
         return Schema(names, types)
+
+
+def table(schema, name=None):
+    if not isinstance(schema, ir.Schema):
+        if isinstance(schema, list):
+            schema = ir.Schema.from_tuples(schema)
+        else:
+            schema = ir.Schema.from_dict(schema)
+
+    node = _ops.UnboundTable(schema, name=name)
+    return TableExpr(node)
+
+
+def desc(expr):
+    """
+    Create a sort key (when used in sort_by) by the passed array expression or
+    column name.
+
+    Parameters
+    ----------
+    expr : array expression or string
+      Can be a column name in the table being sorted
+
+    Examples
+    --------
+    result = (self.table.group_by('g')
+              .size('count')
+              .sort_by(ibis.desc('count')))
+    """
+    return _ops.DeferredSortKey(expr, ascending=False)
+
+
+def timestamp(value):
+    """
+    Returns a timestamp literal if value is likely coercible to a timestamp
+    """
+    if isinstance(value, py_string):
+        from pandas import Timestamp
+        value = Timestamp(value)
+    op = ir.Literal(value)
+    return ir.TimestampScalar(op)
 
 
 schema.__doc__ = """\
@@ -732,7 +772,7 @@ def _wrap_summary_metrics(metrics, prefix):
 def expr_list(exprs):
     for e in exprs:
         e.get_name()
-    return _ir.ExpressionList(exprs).to_expr()
+    return ir.ExpressionList(exprs).to_expr()
 
 
 _generic_array_methods = dict(
