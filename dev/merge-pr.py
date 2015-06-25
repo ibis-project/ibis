@@ -71,11 +71,19 @@ def run_cmd(cmd):
     # py2.6 does not have subprocess.check_output
     if isinstance(cmd, basestring):
         cmd = cmd.split(' ')
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-    (out, err) = p.communicate()
-    if p.returncode != 0:
-        raise subprocess.CalledProcessError(p.returncode, str(cmd), out + err)
-    return out
+
+    popenargs = [cmd]
+    kwargs = {}
+
+    process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs)
+    output, unused_err = process.communicate()
+    retcode = process.poll()
+    if retcode:
+        cmd = kwargs.get("args")
+        if cmd is None:
+            cmd = popenargs[0]
+        raise subprocess.CalledProcessError(retcode, cmd, output=output)
+    return output
 
 
 def continue_maybe(prompt):
@@ -128,7 +136,7 @@ def merge_pr(pr_num, target_ref):
 
     merge_message_flags += ["-m", title]
     if body != None:
-        merge_message_flags += ["-m", textwrap.wrap(body)]
+        merge_message_flags += ["-m", '\n'.join(textwrap.wrap(body))]
 
     authors = "\n".join(["Author: %s" % a for a in distinct_authors])
 
