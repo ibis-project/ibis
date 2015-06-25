@@ -392,6 +392,23 @@ class Node(object):
 
 class ValueNode(Node):
 
+    def __init__(self, args):
+        args = self._validate_args(args)
+        Node.__init__(self, args)
+
+    def _validate_args(self, args):
+        import ibis.expr.rules as rules
+
+        if not hasattr(self, 'input_type'):
+            return args
+
+        validator = self.input_type
+
+        if not isinstance(validator, rules.TypeSignature):
+            validator = rules.signature(self.input_type)
+
+        return validator.validate(args)
+
     def root_tables(self):
         exprs = [arg for arg in self.args if isinstance(arg, Expr)]
         return distinct_roots(*exprs)
@@ -1415,3 +1432,98 @@ class UnnamedMarker(object):
 
 
 unnamed = UnnamedMarker()
+
+
+def as_value_expr(val):
+    if not isinstance(val, Expr):
+        if isinstance(val, (tuple, list)):
+            val = sequence(val)
+        else:
+            val = literal(val)
+
+    return val
+
+
+def literal(value):
+    """
+    Create a scalar expression from a Python value
+
+    Parameters
+    ----------
+    value : some Python basic type
+
+    Returns
+    -------
+    lit_value : value expression, type depending on input value
+    """
+    if value is None or value is null:
+        return null()
+    else:
+        return Literal(value).to_expr()
+
+
+_NULL = None
+
+
+def null():
+    global _NULL
+    if _NULL is None:
+        _NULL = NullScalar(NullLiteral())
+
+    return _NULL
+
+
+def sequence(values):
+    """
+    Wrap a list of Python values as an Ibis sequence type
+
+    Parameters
+    ----------
+    values : list
+      Should all be None or the same type
+
+    Returns
+    -------
+    seq : Sequence
+    """
+    return ValueList(values).to_expr()
+
+
+class NullLiteral(ValueNode):
+
+    """
+    Typeless NULL literal
+    """
+
+    def __init__(self):
+        pass
+
+    @property
+    def args(self):
+        return [None]
+
+    def equals(self, other):
+        return isinstance(other, NullLiteral)
+
+    def output_type(self):
+        return NullScalar
+
+    def root_tables(self):
+        return []
+
+
+class ValueList(ArrayNode):
+
+    """
+    Data structure for a list of value expressions
+    """
+
+    def __init__(self, args):
+        self.values = [as_value_expr(x) for x in args]
+        Node.__init__(self, [self.values])
+
+    def root_tables(self):
+        return distinct_roots(*self.values)
+
+    def to_expr(self):
+        return ListExpr(self)

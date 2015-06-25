@@ -17,7 +17,7 @@ import operator
 import sys
 
 from ibis.expr.types import ArrayExpr, TableExpr, RelationError
-from ibis.common import ExpressionError
+from ibis.common import ExpressionError, IbisTypeError
 import ibis.expr.analysis as L
 import ibis.expr.api as api
 import ibis.expr.types as ir
@@ -44,8 +44,8 @@ class TestLiterals(unittest.TestCase):
 
     def test_null(self):
         expr = api.literal(None)
-        assert isinstance(expr, api.NullScalar)
-        assert isinstance(expr.op(), ops.NullLiteral)
+        assert isinstance(expr, ir.NullScalar)
+        assert isinstance(expr.op(), ir.NullLiteral)
 
         expr2 = api.null()
         assert expr.equals(expr2)
@@ -113,7 +113,7 @@ class TestLiterals(unittest.TestCase):
         expr = api.as_value_expr(what)
 
         assert isinstance(expr, ir.ArrayExpr)
-        assert isinstance(expr.op(), ops.ValueList)
+        assert isinstance(expr.op(), ir.ValueList)
         assert isinstance(expr.op().values[2], ir.Int16Scalar)
 
         # it works!
@@ -908,10 +908,12 @@ class TestMathUnaryOps(BasicTestCase, unittest.TestCase):
             assert isinstance(f(api.literal(5.5)), api.DoubleScalar)
 
             klass = getattr(ops, opname.capitalize())
-            self.assertRaises(TypeError, klass(self.table['g']).to_expr)
+            with self.assertRaises(IbisTypeError):
+                klass(self.table['g']).to_expr()
 
             # boolean not implemented for these
-            self.assertRaises(TypeError, f, self.table['h'])
+            with self.assertRaises(IbisTypeError):
+                f(self.table['h'])
 
     def test_exp(self):
         pass
@@ -1879,7 +1881,7 @@ class TestCaseExpressions(BasicTestCase, unittest.TestCase):
 
         assert isinstance(expr, ir.StringArray)
         assert isinstance(op.default, ir.ValueExpr)
-        assert isinstance(op.default.op(), ops.NullLiteral)
+        assert isinstance(op.default.op(), ir.NullLiteral)
 
     def test_multiple_case_null_else(self):
         expr = api.case().when(self.table.g == "foo", "bar").end()
@@ -1887,7 +1889,7 @@ class TestCaseExpressions(BasicTestCase, unittest.TestCase):
 
         assert isinstance(expr, ir.StringArray)
         assert isinstance(op.default, ir.ValueExpr)
-        assert isinstance(op.default.op(), ops.NullLiteral)
+        assert isinstance(op.default.op(), ir.NullLiteral)
 
     def test_case_type_precedence(self):
         pass

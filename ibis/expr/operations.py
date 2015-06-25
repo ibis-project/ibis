@@ -15,8 +15,8 @@
 import operator
 
 from ibis.common import RelationError, ExpressionError
-from ibis.expr.types import (Node,
-                             ValueExpr, ScalarExpr, ArrayExpr, TableExpr,
+from ibis.expr.types import (Node, as_value_expr,
+                             ValueExpr, ArrayExpr, TableExpr,
                              ArrayNode, TableNode, ValueNode,
                              HasSchema, _safe_repr)
 import ibis.expr.rules as rules
@@ -25,32 +25,6 @@ import ibis.util as util
 
 
 py_string = basestring
-
-
-def is_table(e):
-    return isinstance(e, TableExpr)
-
-
-def is_array(e):
-    return isinstance(e, ArrayExpr)
-
-
-def is_scalar(e):
-    return isinstance(e, ScalarExpr)
-
-
-def is_collection(expr):
-    return isinstance(expr, (ArrayExpr, TableExpr))
-
-
-def as_value_expr(val):
-    if not isinstance(val, ir.Expr):
-        if isinstance(val, (tuple, list)):
-            val = sequence(val)
-        else:
-            val = literal(val)
-
-    return val
 
 
 def table(schema, name=None):
@@ -64,24 +38,6 @@ def table(schema, name=None):
     return TableExpr(node)
 
 
-def literal(value):
-    """
-    Create a scalar expression from a Python value
-
-    Parameters
-    ----------
-    value : some Python basic type
-
-    Returns
-    -------
-    lit_value : value expression, type depending on input value
-    """
-    if value is None or value is null:
-        return null()
-    else:
-        return ir.Literal(value).to_expr()
-
-
 def timestamp(value):
     """
     Returns a timestamp literal if value is likely coercible to a timestamp
@@ -91,73 +47,6 @@ def timestamp(value):
         value = Timestamp(value)
     op = ir.Literal(value)
     return ir.TimestampScalar(op)
-
-
-_NULL = None
-
-
-def null():
-    global _NULL
-    if _NULL is None:
-        _NULL = ir.NullScalar(NullLiteral())
-
-    return _NULL
-
-
-def sequence(values):
-    """
-    Wrap a list of Python values as an Ibis sequence type
-
-    Parameters
-    ----------
-    values : list
-      Should all be None or the same type
-
-    Returns
-    -------
-    seq : Sequence
-    """
-    return ValueList(values).to_expr()
-
-
-class NullLiteral(ValueNode):
-
-    """
-    Typeless NULL literal
-    """
-
-    def __init__(self):
-        pass
-
-    @property
-    def args(self):
-        return [None]
-
-    def equals(self, other):
-        return isinstance(other, NullLiteral)
-
-    def output_type(self):
-        return ir.NullScalar
-
-    def root_tables(self):
-        return []
-
-
-class ValueList(ArrayNode):
-
-    """
-    Data structure for a list of value expressions
-    """
-
-    def __init__(self, args):
-        self.values = [as_value_expr(x) for x in args]
-        Node.__init__(self, [self.values])
-
-    def root_tables(self):
-        return ir.distinct_roots(*self.values)
-
-    def to_expr(self):
-        return ir.ListExpr(self)
 
 
 class PhysicalTable(ir.BlockingTableNode, HasSchema):
@@ -294,8 +183,7 @@ class IsNull(UnaryOp):
     isnull : boolean with dimension of caller
     """
 
-    def output_type(self):
-        return rules.shape_like(self.arg, 'boolean')
+    output_type = rules.shape_like_arg(0, 'boolean')
 
 
 class NotNull(UnaryOp):
@@ -308,22 +196,12 @@ class NotNull(UnaryOp):
     notnull : boolean with dimension of caller
     """
 
-    def output_type(self):
-        return rules.shape_like(self.arg, 'boolean')
+    output_type = rules.shape_like_arg(0, 'boolean')
 
 
 class ZeroIfNull(UnaryOp):
 
-    def output_type(self):
-        if isinstance(self.arg, ir.DecimalValue):
-            return self.arg._factory
-        elif isinstance(self.arg, ir.FloatingValue):
-            # Impala upcasts float to double in this op
-            return rules.shape_like(self.arg, 'double')
-        elif isinstance(self.arg, ir.IntegerValue):
-            return rules.shape_like(self.arg, 'int64')
-        else:
-            raise NotImplementedError
+    output_type = rules.numeric_highest_promote(0)
 
 
 class IfNull(ValueNode):
@@ -340,8 +218,7 @@ class IfNull(ValueNode):
         self.ifnull_expr = as_value_expr(ifnull_expr)
         ValueNode.__init__(self, [self.value, self.ifnull_expr])
 
-    def output_type(self):
-        return self.value._factory
+    output_type = rules.type_of_arg(0)
 
 
 class NullIf(ValueNode):
@@ -355,8 +232,7 @@ class NullIf(ValueNode):
         self.null_if_expr = as_value_expr(null_if_expr)
         ValueNode.__init__(self, [self.value, self.null_if_expr])
 
-    def output_type(self):
-        return self.value._factory
+    output_type = rules.type_of_arg(0)
 
 
 def _coalesce_upcast(self):
@@ -403,19 +279,13 @@ class Least(CoalesceLike):
     pass
 
 
-def _numeric_same_type(self):
-    if not isinstance(self.arg, ir.NumericValue):
-        raise TypeError('Only valid for numeric types')
-    return self.arg._factory
-
-
 class Abs(UnaryOp):
 
     """
     Absolute value
     """
 
-    output_type = _numeric_same_type
+    output_type = rules.type_of_arg(0)
 
 
 def _ceil_floor_output(self):
@@ -460,45 +330,23 @@ class Floor(UnaryOp):
 
 class Round(ValueNode):
 
-    def __init__(self, arg, digits=None):
-        self.arg = arg
-        self.digits = validate_int(digits)
-        ValueNode.__init__(self, [self.arg, self.digits])
+    input_type = [rules.value,
+                  rules.integer('digits', optional=True)]
 
     def output_type(self):
-        validate_numeric(self.arg)
-        if isinstance(self.arg, ir.DecimalValue):
-            return self.arg._factory
-        elif self.digits is None or self.digits == 0:
-            return rules.shape_like(self.arg, 'int64')
+        arg, digits = self.args
+        if isinstance(arg, ir.DecimalValue):
+            return arg._factory
+        elif digits is None:
+            return rules.shape_like(arg, 'int64')
         else:
-            return rules.shape_like(self.arg, 'double')
-
-
-def validate_int(x):
-    if x is not None and not isinstance(x, int):
-        raise ValueError('Value must be an integer')
-
-    return x
-
-
-def validate_numeric(x):
-    if not isinstance(x, ir.NumericValue):
-        raise TypeError('Only implemented for numeric types')
+            return rules.shape_like(arg, 'double')
 
 
 class RealUnaryOp(UnaryOp):
 
-    _allow_boolean = True
-
-    def output_type(self):
-        if not isinstance(self.arg, ir.NumericValue):
-            raise TypeError('Only implemented for numeric types')
-        elif (isinstance(self.arg, ir.BooleanValue)
-              and not self._allow_boolean):
-            raise TypeError('Not implemented for boolean types')
-
-        return rules.shape_like(self.arg, 'double')
+    input_type = [rules.numeric()]
+    output_type = rules.shape_like_arg(0, 'double')
 
 
 class Exp(RealUnaryOp):
@@ -507,48 +355,46 @@ class Exp(RealUnaryOp):
 
 class Sign(UnaryOp):
 
-    def output_type(self):
-        return rules.shape_like(self.arg, 'int32')
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class Sqrt(RealUnaryOp):
     pass
 
 
-class Log(RealUnaryOp):
+class Logarithm(RealUnaryOp):
 
-    _allow_boolean = False
+    # superclass
+
+    input_type = [rules.numeric(allow_boolean=False)]
+
+
+class Log(Logarithm):
 
     def __init__(self, arg, base=None):
         self.base = base
-        RealUnaryOp.__init__(self, arg)
+        Logarithm.__init__(self, arg)
 
 
-class Ln(RealUnaryOp):
+class Ln(Logarithm):
 
     """
     Natural logarithm
     """
 
-    _allow_boolean = False
 
-
-class Log2(RealUnaryOp):
+class Log2(Logarithm):
 
     """
     Logarithm base 2
     """
 
-    _allow_boolean = False
 
-
-class Log10(RealUnaryOp):
+class Log10(Logarithm):
 
     """
     Logarithm base 10
     """
-
-    _allow_boolean = False
 
 
 def _string_output(self):
@@ -800,7 +646,7 @@ class Count(ir.Reduction):
     def __init__(self, expr, where=None):
         # TODO: counts are actually table-level operations. Let's address
         # during the SQL generation exercise
-        if not is_collection(expr):
+        if not rules.is_collection(expr):
             raise TypeError
 
         ir.Reduction.__init__(self, expr, where)
@@ -1054,7 +900,7 @@ class SimpleCaseBuilder(object):
 
     def end(self):
         if self.default is None:
-            default = null()
+            default = ir.null()
         else:
             default = self.default
 
@@ -1118,7 +964,7 @@ class SearchedCaseBuilder(object):
 
     def end(self):
         if self.default is None:
-            default = null()
+            default = ir.null()
         else:
             default = self.default
 
@@ -1200,11 +1046,11 @@ class Join(TableNode):
     def __init__(self, left, right, join_predicates):
         from ibis.expr.analysis import ExprValidator
 
-        if not is_table(left):
+        if not rules.is_table(left):
             raise TypeError('Can only join table expressions, got %s for '
                             'left table' % type(left))
 
-        if not is_table(right):
+        if not rules.is_table(right):
             raise TypeError('Can only join table expressions, got %s for '
                             'right table' % type(left))
 
@@ -1456,7 +1302,7 @@ def _to_sort_key(table, key):
 class SortKey(object):
 
     def __init__(self, expr, ascending=True):
-        if not is_array(expr):
+        if not rules.is_array(expr):
             raise ExpressionError('Must be an array/column expression')
 
         self.expr = expr
@@ -1544,7 +1390,7 @@ class Projection(ir.BlockingTableNode, HasSchema):
                 name = expr.get_name()
                 names.append(name)
                 types.append(expr.type())
-            elif is_table(expr):
+            elif rules.is_table(expr):
                 schema = expr.schema()
                 names.extend(schema.names)
                 types.extend(schema.types)
@@ -1641,7 +1487,7 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
     def _validate(self):
         # All aggregates are valid
         for expr in self.agg_exprs:
-            if not is_scalar(expr) or not expr.is_reduction():
+            if not rules.is_scalar(expr) or not expr.is_reduction():
                 raise TypeError('Passed a non-aggregate expression: %s' %
                                 _safe_repr(expr))
 
@@ -1804,7 +1650,7 @@ class Contains(BooleanValueOp):
         all_args = [self.value]
 
         options = self.options.op()
-        if isinstance(options, ValueList):
+        if isinstance(options, ir.ValueList):
             all_args += options.values
         elif isinstance(self.options, ArrayExpr):
             all_args += [self.options]

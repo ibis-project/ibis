@@ -29,10 +29,10 @@ from ibis.expr.types import (Schema, Expr,  # noqa
                              StringValue, StringScalar, StringArray,
                              DecimalValue, DecimalScalar, DecimalArray,
                              TimestampValue, TimestampScalar, TimestampArray,
-                             CategoryValue, unnamed)
+                             CategoryValue, unnamed, as_value_expr, literal,
+                             null, sequence)
 
-from ibis.expr.operations import (as_value_expr, table, literal, timestamp,
-                                  null, sequence, desc)
+from ibis.expr.operations import table, timestamp, desc
 
 # __all__ is defined
 from ibis.expr.temporal import *  # noqa
@@ -776,7 +776,7 @@ def round(arg, digits=None):
         decimal types: decimal
         other numeric types: double
     """
-    op = _ops.Round(arg, digits)
+    op = _ops.Round([arg, digits])
     return op.to_expr()
 
 

@@ -16,6 +16,7 @@ from collections import defaultdict
 import operator
 
 import ibis.expr.types as ir
+import ibis.common as com
 import ibis.util as util
 
 
@@ -276,10 +277,177 @@ def shape_like_args(args, out_type):
         return ir.scalar_type(out_type)
 
 
-class TypeValidator(object):
+def is_table(e):
+    return isinstance(e, ir.TableExpr)
 
-    def __init__(self, arg_types):
+
+def is_array(e):
+    return isinstance(e, ir.ArrayExpr)
+
+
+def is_scalar(e):
+    return isinstance(e, ir.ScalarExpr)
+
+
+def is_collection(expr):
+    return isinstance(expr, (ir.ArrayExpr, ir.TableExpr))
+
+
+class Argument(object):
+
+    """
+
+    """
+
+    def __init__(self, validator, name=None, default=None, optional=False):
+        self.validator = validator
+        self.name = name
+        self.default = default
+        self.optional = optional
+
+    def validate(self, arg):
+        return self.validator(arg)
+
+
+class TypeSignature(object):
+
+    def __init__(self, type_specs):
+        types = []
+
+        for val in type_specs:
+            if not isinstance(val, Argument):
+                val = val()
+            types.append(val)
+
+        self.types = types
+
+    def validate(self, args):
+        n, k = len(args), len(self.types)
+        if n != k:
+            raise com.IbisError('Expected {0} args, got {1}'.format(k, n))
+
+        validated_args = []
+        for i, (arg, validator) in enumerate(zip(args, self.types)):
+            checked_arg, exc = validator.validate(arg)
+
+            if exc is not None:
+                msg = ('Argument index {0} had a type '
+                       'error: {1}'.format(i, exc) +
+                       '\nArgument was: {0}'.format(repr(arg)))
+                raise com.IbisTypeError(msg)
+
+            validated_args.append(checked_arg)
+
+        return validated_args
+
+
+class VarArgs(TypeSignature):
+
+    def __init__(self, arg_type):
         pass
 
     def validate(self, args):
         pass
+
+
+def shape_like_arg(i, out_type):
+
+    def output_type(self):
+        return shape_like(self.args[i], out_type)
+
+    return output_type
+
+
+def numeric_highest_promote(i):
+
+    def output_type(self):
+        arg = self.args[i]
+
+        if isinstance(arg, ir.DecimalValue):
+            return arg._factory
+        elif isinstance(arg, ir.FloatingValue):
+            # Impala upcasts float to double in this op
+            return shape_like(arg, 'double')
+        elif isinstance(arg, ir.IntegerValue):
+            return shape_like(arg, 'int64')
+        else:
+            raise NotImplementedError
+
+    return output_type
+
+
+def type_of_arg(i):
+
+    def output_type(self):
+        return self.args[i]._factory
+
+    return output_type
+
+
+def signature(types):
+    if isinstance(types, TypeSignature):
+        return types
+
+    return TypeSignature(types)
+
+
+def array(name=None):
+    pass
+
+
+def scalar(name=None):
+    pass
+
+
+def table(name=None):
+    pass
+
+
+def value(name=None, optional=False):
+
+    def validator(arg):
+        if not isinstance(arg, ir.Expr):
+            arg = ir.as_value_expr(arg)
+
+        exc = None
+        if not isinstance(arg, ir.ValueExpr):
+            exc = 'not a value expr'
+        return arg, exc
+
+    return Argument(validator, name=name, optional=optional)
+
+
+def numeric(name=None, allow_boolean=True, optional=False):
+
+    def validator(arg):
+        exc = None
+
+        arg = ir.as_value_expr(arg)
+        if optional and arg is None:
+            return arg, exc
+        if not isinstance(arg, ir.NumericValue):
+            exc = 'not numeric'
+        if isinstance(arg, ir.BooleanValue) and not allow_boolean:
+            exc = 'not implemented for boolean values'
+        return arg, exc
+
+    return Argument(validator, name=name, optional=optional)
+
+
+def integer(name=None, optional=False):
+
+    def validator(arg):
+        exc = None
+        if optional and arg is None:
+            return arg, exc
+
+        arg = ir.as_value_expr(arg)
+        if not isinstance(arg, ir.IntegerValue):
+            exc = 'not integer'
+        return arg, exc
+
+    return Argument(validator, name=name, optional=optional)
+
+
+def list_of(value_type, name=None, optional=False):
+    pass

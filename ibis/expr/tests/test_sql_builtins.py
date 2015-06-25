@@ -112,11 +112,11 @@ class TestBuiltins(unittest.TestCase):
     def test_round(self):
         result = self.alltypes.double_col.round()
         assert isinstance(result, ir.Int64Array)
-        assert result.op().digits is None
+        assert result.op().args[1] is None
 
         result = self.alltypes.double_col.round(2)
         assert isinstance(result, ir.DoubleArray)
-        assert result.op().digits == 2
+        assert result.op().args[1] == 2
 
         # Even integers are double (at least in Impala, check with other DB
         # implementations)

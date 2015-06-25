@@ -345,7 +345,9 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         cases = [
             (self.table.double_col.round(), 'round(double_col)'),
             (self.table.double_col.round(0), 'round(double_col, 0)'),
-            (self.table.double_col.round(2, ), 'round(double_col, 2)')
+            (self.table.double_col.round(2, ), 'round(double_col, 2)'),
+            (self.table.double_col.round(self.table.tinyint_col),
+             'round(double_col, tinyint_col)')
         ]
         self._check_expr_cases(cases)
 

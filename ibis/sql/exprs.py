@@ -459,7 +459,7 @@ def _exists_subquery(translator, expr):
 
     expr = (op.foreign_table
             .filter(op.predicates)
-            .projection([ops.literal(1).name(ir.unnamed)]))
+            .projection([ir.literal(1).name(ir.unnamed)]))
 
     subquery = ctx.get_formatted_query(expr)
 
@@ -592,10 +592,14 @@ def _find_in_set(translator, expr):
 
 def _round(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
+    arg, digits = op.args
 
-    if op.digits is not None:
-        return 'round({0}, {1})'.format(arg_formatted, op.digits)
+    arg_formatted = translator.translate(arg)
+
+    if digits is not None:
+        digits_formatted = translator.translate(digits)
+        return 'round({0}, {1})'.format(arg_formatted,
+                                        digits_formatted)
     else:
         return 'round({0})'.format(arg_formatted)
 
@@ -774,9 +778,9 @@ _other_ops = {
     ops.E: lambda *args: 'e()',
 
     ir.Literal: _literal,
-    ops.NullLiteral: _null_literal,
+    ir.NullLiteral: _null_literal,
 
-    ops.ValueList: _value_list,
+    ir.ValueList: _value_list,
 
     ops.Cast: _cast,
 

@@ -325,8 +325,11 @@ FROM ibis_testing.tpch_lineitem li
             d.log2(),
             d.log10(),
             d.notnull(),
+
             d.round(),
             d.round(2),
+            d.round(i1),
+
             d.sign(),
             d.sqrt(),
             d.zeroifnull(),
