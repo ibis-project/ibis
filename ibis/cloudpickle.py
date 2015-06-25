@@ -42,6 +42,8 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+# flake8: noqa
+
 from copy_reg import _extension_registry
 from functools import partial
 

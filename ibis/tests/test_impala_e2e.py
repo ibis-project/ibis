@@ -15,7 +15,6 @@
 from posixpath import join as pjoin
 import gc
 import pytest
-import sys
 
 import pandas as pd
 from decimal import Decimal

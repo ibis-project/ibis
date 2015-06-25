@@ -14,7 +14,6 @@
 
 import os
 import pytest
-import sys
 
 import pandas as pd
 

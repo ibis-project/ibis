@@ -14,8 +14,6 @@
 
 import os
 
-from ibis.util import guid
-
 
 class IbisTestEnv(object):
     def __init__(self):

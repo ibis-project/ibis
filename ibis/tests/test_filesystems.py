@@ -17,10 +17,8 @@ from six import BytesIO
 from posixpath import join as pjoin
 import os
 import shutil
-import sys
 
 from hdfs import InsecureClient
-import pytest
 
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.compat import unittest

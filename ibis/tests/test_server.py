@@ -19,7 +19,6 @@ import psutil
 import socket
 import struct
 import threading
-import sys
 
 from ibis.compat import unittest
 from ibis.server import IbisServerNode

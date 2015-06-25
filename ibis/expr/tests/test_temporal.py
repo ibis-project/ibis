@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 from ibis.common import IbisError
 import ibis.expr.operations as ops
 import ibis.expr.types as ir

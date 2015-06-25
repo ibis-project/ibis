@@ -15,7 +15,6 @@
 import os
 import sys
 import threading
-import sys
 
 import pytest
 
