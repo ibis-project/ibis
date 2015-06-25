@@ -909,7 +909,10 @@ class TestMathUnaryOps(BasicTestCase, unittest.TestCase):
 
             klass = getattr(ops, opname.capitalize())
             with self.assertRaises(IbisTypeError):
-                klass(self.table['g']).to_expr()
+                if opname == 'log':
+                    klass(self.table['g'], None).to_expr()
+                else:
+                    klass(self.table['g']).to_expr()
 
             # boolean not implemented for these
             with self.assertRaises(IbisTypeError):

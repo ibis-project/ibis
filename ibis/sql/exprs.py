@@ -90,17 +90,17 @@ def _not_contains(translator, expr):
 
 
 def _is_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().arg)
+    formatted_arg = translator.translate(expr.op().args[0])
     return '{0!s} IS NULL'.format(formatted_arg)
 
 
 def _not_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().arg)
+    formatted_arg = translator.translate(expr.op().args[0])
     return '{0!s} IS NOT NULL'.format(formatted_arg)
 
 
 def _negate(translator, expr):
-    arg = expr.op().arg
+    arg = expr.op().args[0]
     formatted_arg = translator.translate(arg)
     if isinstance(expr, ir.BooleanValue):
         return 'NOT {0!s}'.format(formatted_arg)
@@ -116,7 +116,7 @@ def _parenthesize(what):
 
 def _unary_op(func_name):
     def formatter(translator, expr):
-        arg = translator.translate(expr.op().arg)
+        arg = translator.translate(expr.op().args[0])
         return '{0!s}({1!s})'.format(func_name, arg)
     return formatter
 
@@ -354,7 +354,7 @@ def _bucket(translator, expr):
 def _category_label(translator, expr):
     op = expr.op()
 
-    stmt = op.arg.case()
+    stmt = op.args[0].case()
     for i, label in enumerate(op.labels):
         stmt = stmt.when(i, label)
 
@@ -468,7 +468,7 @@ def _table_column(translator, expr):
 def _extract_field(sql_attr):
     def extract_field_formatter(translator, expr):
         op = expr.op()
-        arg = translator.translate(op.arg)
+        arg = translator.translate(op.args[0])
 
         # This is pre-2.0 Impala-style, which did not used to support the
         # SQL-99 format extract($FIELD from expr)
@@ -590,12 +590,14 @@ def _hash(translator, expr):
 
 def _log(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
+    arg, base = op.args
+    arg_formatted = translator.translate(arg)
 
-    if op.base is None:
+    if base is None:
         return 'ln({0})'.format(arg_formatted)
     else:
-        return 'log({0}, {1})'.format(arg_formatted, op.base)
+        return 'log({0}, {1})'.format(arg_formatted,
+                                      translator.translate(base))
 
 
 def _count_distinct(translator, expr):

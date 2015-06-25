@@ -432,9 +432,10 @@ def numeric(name=None, allow_boolean=True, optional=False):
     def validator(arg):
         exc = None
 
-        arg = ir.as_value_expr(arg)
         if optional and arg is None:
             return arg, exc
+
+        arg = ir.as_value_expr(arg)
         if not isinstance(arg, ir.NumericValue):
             exc = 'not numeric'
         if isinstance(arg, ir.BooleanValue) and not allow_boolean:

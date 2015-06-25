@@ -147,9 +147,7 @@ class TableArrayView(ArrayNode):
 
 class UnaryOp(ValueNode):
 
-    def __init__(self, arg):
-        self.arg = arg
-        ValueNode.__init__(self, arg)
+    input_type = [rules.value]
 
 
 class Cast(ValueNode):
@@ -171,6 +169,7 @@ class Cast(ValueNode):
 
 class Negate(UnaryOp):
 
+    input_type = [rules.numeric]
     output_type = rules.type_of_arg(0)
 
 
@@ -363,9 +362,8 @@ class Logarithm(RealUnaryOp):
 
 class Log(Logarithm):
 
-    def __init__(self, arg, base=None):
-        self.base = base
-        Logarithm.__init__(self, arg)
+    input_type = (Logarithm.input_type +
+                  [rules.numeric(name='base', optional=True)])
 
 
 class Ln(Logarithm):
@@ -965,8 +963,8 @@ class SimpleCase(ValueNode):
         self.cases = case_exprs
         self.results = result_exprs
         self.default = default_expr
-        Node.__init__(self, [self.base, self.cases, self.results,
-                             self.default])
+        ValueNode.__init__(self, self.base, self.cases, self.results,
+                           self.default)
 
     def root_tables(self):
         all_exprs = [self.base] + self.cases + self.results

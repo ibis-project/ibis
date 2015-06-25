@@ -54,10 +54,9 @@ class Bucket(BucketLike):
                 raise ValueError('If one bucket edge provided, must have'
                                  ' include_under=True and include_over=True')
 
-        ir.ValueNode.__init__(self, [self.arg, self.buckets, self.closed,
-                                     self.close_extreme,
-                                     self.include_under,
-                                     self.include_over])
+        ir.ValueNode.__init__(self, self.arg, self.buckets, self.closed,
+                              self.close_extreme, self.include_under,
+                              self.include_over)
 
     @property
     def nbuckets(self):
@@ -85,8 +84,8 @@ class Histogram(BucketLike):
         self.closed = self._validate_closed(closed)
 
         self.aux_hash = aux_hash
-        ir.ValueNode.__init__(self, [self.arg, self.nbins, self.binwidth,
-                                     self.base, self.closed, self.aux_hash])
+        ir.ValueNode.__init__(self, self.arg, self.nbins, self.binwidth,
+                              self.base, self.closed, self.aux_hash)
 
     def output_type(self):
         # always undefined cardinality (for now)
@@ -106,7 +105,7 @@ class CategoryLabel(ir.ValueNode):
                              'categories: %d' % card)
 
         self.nulls = nulls
-        ir.ValueNode.__init__(self, [self.arg, self.labels, self.nulls])
+        ir.ValueNode.__init__(self, self.arg, self.labels, self.nulls)
 
     def output_type(self):
         return rules.shape_like(self.arg, 'string')
