@@ -38,7 +38,7 @@ else:
 import datetime
 import re
 
-from ibis.common import IbisError, RelationError, IbisTypeError
+from ibis.common import IbisError, RelationError
 import ibis.common as com
 import ibis.config as config
 import ibis.util as util
@@ -413,10 +413,6 @@ class ValueNode(Node):
         exprs = [arg for arg in self.args if isinstance(arg, Expr)]
         return distinct_roots(*exprs)
 
-    def _ensure_array(self, expr):
-        if not isinstance(expr, ArrayExpr):
-            raise IbisTypeError('Must be an array, got: %s' % _safe_repr(expr))
-
     def resolve_name(self):
         raise com.ExpressionError('Expression is not named: %s' % repr(self))
 
@@ -424,7 +420,6 @@ class ValueNode(Node):
 class ExpressionList(Node):
 
     def __init__(self, exprs):
-        from ibis.expr.operations import as_value_expr
         exprs = [as_value_expr(x) for x in exprs]
         Node.__init__(self, exprs)
 
@@ -509,20 +504,6 @@ class Literal(ValueNode):
         return []
 
 
-class ArrayNode(ValueNode):
-
-    def __init__(self, expr):
-        self._ensure_array(expr)
-        ValueNode.__init__(self, expr)
-
-    def output_type(self):
-        return NotImplementedError
-
-    def to_expr(self):
-        klass = self.output_type()
-        return klass(self)
-
-
 class TableNode(Node):
 
     def get_type(self, name):
@@ -530,7 +511,6 @@ class TableNode(Node):
 
     def to_expr(self):
         return TableExpr(self)
-
 
 
 class BlockingTableNode(TableNode):
@@ -1109,10 +1089,6 @@ class NullScalar(NullValue, ScalarExpr):
     pass
 
 
-class ListExpr(ArrayExpr, AnyValue):
-    pass
-
-
 class BooleanScalar(ScalarExpr, BooleanValue):
     pass
 
@@ -1465,6 +1441,25 @@ class NullLiteral(ValueNode):
 
     def root_tables(self):
         return []
+
+
+class ArrayNode(ValueNode):
+
+    def __init__(self, expr):
+        from ibis.expr.rules import array
+        self.input_type = [array]
+        ValueNode.__init__(self, expr)
+
+    def output_type(self):
+        return NotImplementedError
+
+    def to_expr(self):
+        klass = self.output_type()
+        return klass(self)
+
+
+class ListExpr(ArrayExpr, AnyValue):
+    pass
 
 
 class ValueList(ArrayNode):
