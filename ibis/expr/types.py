@@ -38,7 +38,7 @@ else:
 import datetime
 import re
 
-from ibis.common import IbisError, RelationError, IbisTypeError
+from ibis.common import IbisError, RelationError
 import ibis.common as com
 import ibis.config as config
 import ibis.util as util
@@ -392,21 +392,26 @@ class Node(object):
 
 class ValueNode(Node):
 
-    def _ensure_value(self, expr):
-        if not isinstance(expr, ValueExpr):
-            raise IbisTypeError('Must be a value, got: %s' %
-                                _safe_repr(expr))
+    def __init__(self, *args):
+        args = self._validate_args(args)
+        Node.__init__(self, args)
 
-    def _ensure_array(self, expr):
-        if not isinstance(expr, ArrayExpr):
-            raise IbisTypeError('Must be an array, got: %s' % _safe_repr(expr))
+    def _validate_args(self, args):
+        import ibis.expr.rules as rules
 
-    def _ensure_scalar(self, expr):
-        if not isinstance(expr, ScalarExpr):
-            raise TypeError('Must be a scalar, got: %s' % _safe_repr(expr))
+        if not hasattr(self, 'input_type'):
+            return args
+
+        validator = self.input_type
+
+        if not isinstance(validator, rules.TypeSignature):
+            validator = rules.signature(self.input_type)
+
+        return validator.validate(args)
 
     def root_tables(self):
-        return self.arg._root_tables()
+        exprs = [arg for arg in self.args if isinstance(arg, Expr)]
+        return distinct_roots(*exprs)
 
     def resolve_name(self):
         raise com.ExpressionError('Expression is not named: %s' % repr(self))
@@ -415,7 +420,6 @@ class ValueNode(Node):
 class ExpressionList(Node):
 
     def __init__(self, exprs):
-        from ibis.expr.operations import as_value_expr
         exprs = [as_value_expr(x) for x in exprs]
         Node.__init__(self, exprs)
 
@@ -500,20 +504,6 @@ class Literal(ValueNode):
         return []
 
 
-class ArrayNode(ValueNode):
-
-    def __init__(self, expr):
-        self._ensure_array(expr)
-        ValueNode.__init__(self, [expr])
-
-    def output_type(self):
-        return NotImplementedError
-
-    def to_expr(self):
-        klass = self.output_type()
-        return klass(self)
-
-
 class TableNode(Node):
 
     def get_type(self, name):
@@ -521,26 +511,6 @@ class TableNode(Node):
 
     def to_expr(self):
         return TableExpr(self)
-
-
-class Reduction(ValueNode):
-
-    def __init__(self, arg, where=None):
-        self.arg = arg
-        self.where = where
-
-        if self.where is not None and not isinstance(where, BooleanValue):
-            raise IbisTypeError(
-                '"where" expression must be a Boolean value, got %s' %
-                _safe_repr(where))
-
-        ValueNode.__init__(self, [self.arg, self.where])
-
-    def root_tables(self):
-        if self.where is not None:
-            return distinct_roots(*self.args)
-        else:
-            return self.arg._root_tables()
 
 
 class BlockingTableNode(TableNode):
@@ -609,33 +579,7 @@ class ValueExpr(Expr):
 
 class ScalarExpr(ValueExpr):
 
-    def is_reduction(self):
-        # Aggregations yield typed scalar expressions, since the result of an
-        # aggregation is a single value. When creating an table expression
-        # containing a GROUP BY equivalent, we need to be able to easily check
-        # that we are looking at the result of an aggregation.
-        #
-        # As an example, the expression we are looking at might be something
-        # like: foo.sum().log10() + bar.sum().log10()
-        #
-        # We examine the operator DAG in the expression to determine if there
-        # are aggregations present.
-        #
-        # A bound aggregation referencing a separate table is a "false
-        # aggregation" in a GROUP BY-type expression and should be treated a
-        # literal, and must be computed as a separate query and stored in a
-        # temporary variable (or joined, for bound aggregations with keys)
-        def has_reduction(op):
-            if isinstance(op, Reduction):
-                return True
-
-            for arg in op.args:
-                if isinstance(arg, ScalarExpr) and has_reduction(arg.op()):
-                    return True
-
-            return False
-
-        return has_reduction(self.op())
+    pass
 
 
 class ArrayExpr(ValueExpr):
@@ -1145,10 +1089,6 @@ class NullScalar(NullValue, ScalarExpr):
     pass
 
 
-class ListExpr(ArrayExpr, AnyValue):
-    pass
-
-
 class BooleanScalar(ScalarExpr, BooleanValue):
     pass
 
@@ -1423,3 +1363,117 @@ class UnnamedMarker(object):
 
 
 unnamed = UnnamedMarker()
+
+
+def as_value_expr(val):
+    if not isinstance(val, Expr):
+        if isinstance(val, (tuple, list)):
+            val = sequence(val)
+        else:
+            val = literal(val)
+
+    return val
+
+
+def literal(value):
+    """
+    Create a scalar expression from a Python value
+
+    Parameters
+    ----------
+    value : some Python basic type
+
+    Returns
+    -------
+    lit_value : value expression, type depending on input value
+    """
+    if value is None or value is null:
+        return null()
+    else:
+        return Literal(value).to_expr()
+
+
+_NULL = None
+
+
+def null():
+    global _NULL
+    if _NULL is None:
+        _NULL = NullScalar(NullLiteral())
+
+    return _NULL
+
+
+def sequence(values):
+    """
+    Wrap a list of Python values as an Ibis sequence type
+
+    Parameters
+    ----------
+    values : list
+      Should all be None or the same type
+
+    Returns
+    -------
+    seq : Sequence
+    """
+    return ValueList(values).to_expr()
+
+
+class NullLiteral(ValueNode):
+
+    """
+    Typeless NULL literal
+    """
+
+    def __init__(self):
+        pass
+
+    @property
+    def args(self):
+        return [None]
+
+    def equals(self, other):
+        return isinstance(other, NullLiteral)
+
+    def output_type(self):
+        return NullScalar
+
+    def root_tables(self):
+        return []
+
+
+class ArrayNode(ValueNode):
+
+    def __init__(self, expr):
+        from ibis.expr.rules import array
+        self.input_type = [array]
+        ValueNode.__init__(self, expr)
+
+    def output_type(self):
+        return NotImplementedError
+
+    def to_expr(self):
+        klass = self.output_type()
+        return klass(self)
+
+
+class ListExpr(ArrayExpr, AnyValue):
+    pass
+
+
+class ValueList(ArrayNode):
+
+    """
+    Data structure for a list of value expressions
+    """
+
+    def __init__(self, args):
+        self.values = [as_value_expr(x) for x in args]
+        Node.__init__(self, [self.values])
+
+    def root_tables(self):
+        return distinct_roots(*self.values)
+
+    def to_expr(self):
+        return ListExpr(self)

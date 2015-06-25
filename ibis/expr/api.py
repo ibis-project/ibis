@@ -29,20 +29,19 @@ from ibis.expr.types import (Schema, Expr,  # noqa
                              StringValue, StringScalar, StringArray,
                              DecimalValue, DecimalScalar, DecimalArray,
                              TimestampValue, TimestampScalar, TimestampArray,
-                             CategoryValue, unnamed)
-
-from ibis.expr.operations import (as_value_expr, table, literal, timestamp,
-                                  null, sequence, desc)
+                             CategoryValue, unnamed, as_value_expr, literal,
+                             null, sequence)
 
 # __all__ is defined
 from ibis.expr.temporal import *  # noqa
 
 import ibis.common as _com
 
+from ibis.compat import py_string
 from ibis.expr.analytics import bucket, histogram
 import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
-import ibis.expr.types as _ir
+import ibis.expr.types as ir
 import ibis.expr.operations as _ops
 import ibis.expr.temporal as _T
 
@@ -80,6 +79,47 @@ def schema(pairs=None, names=None, types=None):
         return Schema.from_tuples(pairs)
     else:
         return Schema(names, types)
+
+
+def table(schema, name=None):
+    if not isinstance(schema, ir.Schema):
+        if isinstance(schema, list):
+            schema = ir.Schema.from_tuples(schema)
+        else:
+            schema = ir.Schema.from_dict(schema)
+
+    node = _ops.UnboundTable(schema, name=name)
+    return TableExpr(node)
+
+
+def desc(expr):
+    """
+    Create a sort key (when used in sort_by) by the passed array expression or
+    column name.
+
+    Parameters
+    ----------
+    expr : array expression or string
+      Can be a column name in the table being sorted
+
+    Examples
+    --------
+    result = (self.table.group_by('g')
+              .size('count')
+              .sort_by(ibis.desc('count')))
+    """
+    return _ops.DeferredSortKey(expr, ascending=False)
+
+
+def timestamp(value):
+    """
+    Returns a timestamp literal if value is likely coercible to a timestamp
+    """
+    if isinstance(value, py_string):
+        from pandas import Timestamp
+        value = Timestamp(value)
+    op = ir.Literal(value)
+    return ir.TimestampScalar(op)
 
 
 schema.__doc__ = """\
@@ -219,7 +259,7 @@ def group_concat(arg, sep=','):
     -------
     concatenated : string scalar
     """
-    return _ops.GroupConcat(arg, sep=sep).to_expr()
+    return _ops.GroupConcat(arg, sep, None).to_expr()
 
 
 def _binop_expr(name, klass):
@@ -301,7 +341,7 @@ def cast(arg, target_type):
     # validate
     op = _ops.Cast(arg, target_type)
 
-    if op.target_type == arg.type():
+    if op.args[1] == arg.type():
         # noop case if passed type is the same
         return arg
     else:
@@ -339,8 +379,7 @@ def hash(arg, how='fnv'):
     -------
     hash_value : int64 expression
     """
-    op = _ops.Hash(arg, how)
-    return op.to_expr()
+    return _ops.Hash(arg, how).to_expr()
 
 
 def fillna(arg, fill_value):
@@ -360,8 +399,7 @@ def fillna(arg, fill_value):
     -------
     filled : type of caller
     """
-    op = _ops.IfNull(arg, fill_value)
-    return op.to_expr()
+    return _ops.IfNull(arg, fill_value).to_expr()
 
 
 def coalesce(*args):
@@ -381,7 +419,7 @@ def coalesce(*args):
     -------
     coalesced : type of first provided argument
     """
-    return _ops.Coalesce(args).to_expr()
+    return _ops.Coalesce(*args).to_expr()
 
 
 def greatest(*args):
@@ -393,7 +431,7 @@ def greatest(*args):
     -------
     greatest : type depending on arguments
     """
-    return _ops.Greatest(args).to_expr()
+    return _ops.Greatest(*args).to_expr()
 
 
 def least(*args):
@@ -405,7 +443,7 @@ def least(*args):
     -------
     least : type depending on arguments
     """
-    return _ops.Least(args).to_expr()
+    return _ops.Least(*args).to_expr()
 
 
 def where(boolean_expr, true_expr, false_null_expr):
@@ -734,7 +772,7 @@ def _wrap_summary_metrics(metrics, prefix):
 def expr_list(exprs):
     for e in exprs:
         e.get_name()
-    return _ir.ExpressionList(exprs).to_expr()
+    return ir.ExpressionList(exprs).to_expr()
 
 
 _generic_array_methods = dict(
@@ -1151,8 +1189,8 @@ def re_search(arg, pattern):
 
 def regex_extract(arg, pattern, index):
     """
-    Returns specified index, 0 indexed, from string
-    based on regex pattern given
+    Returns specified index, 0 indexed, from string based on regex pattern
+    given
 
     Parameters:
     -----------
@@ -1178,7 +1216,7 @@ def regex_replace(arg, pattern, replacement):
 
     Examples
     --------
-    table.strings.replace('(b+)', '<\\1>')
+    table.strings.replace('(b+)', r'<\1>')
     'aaabbbaa' becomes 'aaa<bbb>aaa'
 
     Returns
@@ -1332,7 +1370,7 @@ def _table_count(self):
     -------
     count : Int64Scalar
     """
-    return _ops.Count(self).to_expr().name('count')
+    return _ops.Count(self, None).to_expr().name('count')
 
 
 def _table_set_column(table, name, expr):

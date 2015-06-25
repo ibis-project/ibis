@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
-import ibis.expr.api as api
+import ibis
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
@@ -38,7 +36,7 @@ class TestStringOps(unittest.TestCase):
         assert isinstance(lresult.op(), ops.Lowercase)
         assert isinstance(uresult.op(), ops.Uppercase)
 
-        lit = api.literal('FoO')
+        lit = ibis.literal('FoO')
 
         lresult = lit.lower()
         uresult = lit.upper()
@@ -46,7 +44,7 @@ class TestStringOps(unittest.TestCase):
         assert isinstance(uresult, ir.StringScalar)
 
     def test_substr(self):
-        lit = api.literal('FoO')
+        lit = ibis.literal('FoO')
 
         result = self.table.g.substr(2, 4)
         lit_result = lit.substr(0, 2)
@@ -56,8 +54,11 @@ class TestStringOps(unittest.TestCase):
 
         op = result.op()
         assert isinstance(op, ops.Substring)
-        assert op.start == 2
-        assert op.length == 4
+
+        start, length = op.args[1:]
+
+        assert start.equals(ibis.literal(2))
+        assert length.equals(ibis.literal(4))
 
     def test_left_right(self):
         result = self.table.g.left(5)
@@ -67,10 +68,10 @@ class TestStringOps(unittest.TestCase):
         result = self.table.g.right(5)
         op = result.op()
         assert isinstance(op, ops.StrRight)
-        assert op.nchars == 5
+        assert op.args[1].equals(ibis.literal(5))
 
     def test_length(self):
-        lit = api.literal('FoO')
+        lit = ibis.literal('FoO')
         result = self.table.g.length()
         lit_result = lit.length()
 

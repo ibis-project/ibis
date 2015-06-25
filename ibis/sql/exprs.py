@@ -51,12 +51,14 @@ _sql_type_names = {
 
 def _cast(translator, expr):
     op = expr.op()
-    arg = translator.translate(op.arg)
-    if isinstance(op.arg, ir.CategoryValue) and op.target_type == 'int32':
-        return arg
+    arg, target_type = op.args
+    arg_formatted = translator.translate(arg)
+
+    if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
+        return arg_formatted
     else:
-        sql_type = _type_to_sql_string(op.target_type)
-        return 'CAST({0!s} AS {1!s})'.format(arg, sql_type)
+        sql_type = _type_to_sql_string(target_type)
+        return 'CAST({0!s} AS {1!s})'.format(arg_formatted, sql_type)
 
 
 def _type_to_sql_string(tval):
@@ -68,72 +70,22 @@ def _type_to_sql_string(tval):
 
 def _between(translator, expr):
     op = expr.op()
-    comp = translator.translate(op.expr)
-    lower = translator.translate(op.lower_bound)
-    upper = translator.translate(op.upper_bound)
+    comp, lower, upper = [translator.translate(x) for x in op.args]
     return '{0!s} BETWEEN {1!s} AND {2!s}'.format(comp, lower, upper)
 
 
-def _contains(translator, expr):
-    op = expr.op()
-    comp = translator.translate(op.value)
-    options = translator.translate(op.options)
-    return '{0!s} IN {1!s}'.format(comp, options)
-
-
-def _like(translator, expr):
-    op = expr.op()
-    arg = translator.translate(op.arg)
-    pattern = translator.translate(op.pattern)
-    return '{0!s} LIKE {1!s}'.format(arg, pattern)
-
-
-def _rlike(translator, expr):
-    op = expr.op()
-    arg = translator.translate(op.arg)
-    pattern = translator.translate(op.pattern)
-    return '{0!s} RLIKE {1!s}'.format(arg, pattern)
-
-
-def _regex_extract(translator, expr):
-    op = expr.op()
-    formatted_arg = translator.translate(op.arg)
-    formatted_pattern = translator.translate(op.pattern)
-    return 'regexp_extract({0}, {1}, {2})'.format(formatted_arg,
-                                                  formatted_pattern,
-                                                  op.index)
-
-
-def _regex_replace(translator, expr):
-    op = expr.op()
-    formatted_arg = translator.translate(op.arg)
-    formatted_pattern = translator.translate(op.pattern)
-    formatted_replacement = translator.translate(op.replacement)
-    return 'regexp_replace({0}, {1}, {2})'.format(formatted_arg,
-                                                  formatted_pattern,
-                                                  formatted_replacement)
-
-
-def _not_contains(translator, expr):
-    # Slight code dup
-    op = expr.op()
-    comp = translator.translate(op.value)
-    options = translator.translate(op.options)
-    return '{0!s} NOT IN {1!s}'.format(comp, options)
-
-
 def _is_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().arg)
+    formatted_arg = translator.translate(expr.op().args[0])
     return '{0!s} IS NULL'.format(formatted_arg)
 
 
 def _not_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().arg)
+    formatted_arg = translator.translate(expr.op().args[0])
     return '{0!s} IS NOT NULL'.format(formatted_arg)
 
 
 def _negate(translator, expr):
-    arg = expr.op().arg
+    arg = expr.op().args[0]
     formatted_arg = translator.translate(arg)
     if isinstance(expr, ir.BooleanValue):
         return 'NOT {0!s}'.format(formatted_arg)
@@ -149,7 +101,7 @@ def _parenthesize(what):
 
 def _unary_op(func_name):
     def formatter(translator, expr):
-        arg = translator.translate(expr.op().arg)
+        arg = translator.translate(expr.op().args[0])
         return '{0!s}({1!s})'.format(func_name, arg)
     return formatter
 
@@ -158,11 +110,13 @@ def _reduction(func_name):
     def formatter(translator, expr):
         op = expr.op()
 
-        if op.where is not None:
-            case = op.where.ifelse(op.arg, ibis.NA)
+        arg, where = op.args
+
+        if where is not None:
+            case = where.ifelse(arg, ibis.NA)
             arg = translator.translate(case)
         else:
-            arg = translator.translate(op.arg)
+            arg = translator.translate(arg)
 
         return '{0!s}({1!s})'.format(func_name, arg)
     return formatter
@@ -185,13 +139,15 @@ def _binary_infix_op(infix_sym):
     def formatter(translator, expr):
         op = expr.op()
 
-        left_arg = translator.translate(op.left)
-        right_arg = translator.translate(op.right)
+        left, right = op.args
 
-        if _needs_parens(op.left):
+        left_arg = translator.translate(left)
+        right_arg = translator.translate(right)
+
+        if _needs_parens(left):
             left_arg = _parenthesize(left_arg)
 
-        if _needs_parens(op.right):
+        if _needs_parens(right):
             right_arg = _parenthesize(right_arg)
 
         return '{0!s} {1!s} {2!s}'.format(left_arg, infix_sym, right_arg)
@@ -383,7 +339,7 @@ def _bucket(translator, expr):
 def _category_label(translator, expr):
     op = expr.op()
 
-    stmt = op.arg.case()
+    stmt = op.args[0].case()
     for i, label in enumerate(op.labels):
         stmt = stmt.when(i, label)
 
@@ -406,8 +362,9 @@ def _table_array_view(translator, expr):
 
 def _timestamp_delta(translator, expr):
     op = expr.op()
-    formatted_arg = translator.translate(op.arg)
-    return _timestamp_format_offset(op.offset, formatted_arg)
+    arg, offset = op.args
+    formatted_arg = translator.translate(arg)
+    return _timestamp_format_offset(offset, formatted_arg)
 
 
 _impala_delta_functions = {
@@ -459,7 +416,7 @@ def _exists_subquery(translator, expr):
 
     expr = (op.foreign_table
             .filter(op.predicates)
-            .projection([ops.literal(1).name(ir.unnamed)]))
+            .projection([ir.literal(1).name(ir.unnamed)]))
 
     subquery = ctx.get_formatted_query(expr)
 
@@ -497,7 +454,7 @@ def _table_column(translator, expr):
 def _extract_field(sql_attr):
     def extract_field_formatter(translator, expr):
         op = expr.op()
-        arg = translator.translate(op.arg)
+        arg = translator.translate(op.args[0])
 
         # This is pre-2.0 Impala-style, which did not used to support the
         # SQL-99 format extract($FIELD from expr)
@@ -508,10 +465,11 @@ def _extract_field(sql_attr):
 def _timestamp_from_unix(translator, expr):
     op = expr.op()
 
-    val = op.arg
-    if op.unit == 'ms':
+    val, unit = op.args
+
+    if unit == 'ms':
         val = (val / 1000).cast('int32')
-    elif op.unit == 'us':
+    elif unit == 'us':
         val = (val / 1000000).cast('int32')
 
     arg = _from_unixtime(translator, val)
@@ -533,96 +491,115 @@ def _coalesce_like(func_name):
 
 def _substring(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
+    arg, start, length = op.args
+    arg_formatted = translator.translate(arg)
 
-    # Databases are 1-indexed
-    if op.length:
-        return 'substr({0}, {1}, {2})'.format(arg_formatted, op.start + 1,
-                                              op.length)
+    start_formatted = translator.translate(start)
+
+    # Impala is 1-indexed
+    if length is None or isinstance(length.op(), ir.Literal):
+        lvalue = length.op().value if length else None
+        if lvalue:
+            return 'substr({0}, {1} + 1, {2})'.format(arg_formatted,
+                                                      start_formatted,
+                                                      lvalue)
+        else:
+            return 'substr({0}, {1} + 1)'.format(arg_formatted,
+                                                 start_formatted)
     else:
-        return 'substr({0}, {1})'.format(arg_formatted, op.start + 1)
-
-
-def _strright(translator, expr):
-    op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    return 'strright({0}, {1})'.format(arg_formatted, op.nchars)
-
-
-def _repeat(translator, expr):
-    op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    return 'repeat({0}, {1})'.format(arg_formatted, op.n)
+        length_formatted = translator.translate(length)
+        return 'substr({0}, {1} + 1, {2})'.format(arg_formatted,
+                                                  start_formatted,
+                                                  length_formatted)
 
 
 def _string_find(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    substr_formatted = translator.translate(op.substr)
+    arg, substr = op.args
+    arg_formatted = translator.translate(arg)
+    substr_formatted = translator.translate(substr)
     return 'instr({0}, {1}) - 1'.format(arg_formatted, substr_formatted)
 
 
 def _locate(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    substr_formatted = translator.translate(op.substr)
+    arg, substr, pos = op.args
+    arg_formatted = translator.translate(arg)
+    substr_formatted = translator.translate(substr)
 
-    if op.pos:
+    if not isinstance(pos.op(), ir.Literal):
+        pos_fmt = translator.translate(pos)
+        return 'locate({0}, {1}, {2} + 1) - 1'.format(substr_formatted,
+                                                      arg_formatted,
+                                                      pos_fmt)
+    elif pos.op().value:
+        pval = pos.op().value
         return 'locate({0}, {1}, {2}) - 1'.format(substr_formatted,
                                                   arg_formatted,
-                                                  op.pos + 1)
+                                                  pval + 1)
     else:
         return 'locate({0}, {1}) - 1'.format(substr_formatted, arg_formatted)
 
 
 def _string_join(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    strings_formatted = [translator.translate(x) for x in op.strings]
+    arg, strings = op.args
+    arg_formatted = translator.translate(arg)
+    strings_formatted = [translator.translate(x) for x in strings]
     return 'concat_ws({0}, {1})'.format(arg_formatted,
                                         ', '.join(strings_formatted))
 
 
 def _find_in_set(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    str_formatted = ','.join([x._arg.value for x in op.str_list])
+
+    arg, str_list = op.args
+    arg_formatted = translator.translate(arg)
+    str_formatted = ','.join([x._arg.value for x in str_list])
     return "find_in_set({0}, '{1}') - 1".format(arg_formatted, str_formatted)
 
 
 def _round(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
+    arg, digits = op.args
 
-    if op.digits is not None:
-        return 'round({0}, {1})'.format(arg_formatted, op.digits)
+    arg_formatted = translator.translate(arg)
+
+    if digits is not None:
+        digits_formatted = translator.translate(digits)
+        return 'round({0}, {1})'.format(arg_formatted,
+                                        digits_formatted)
     else:
         return 'round({0})'.format(arg_formatted)
 
 
 def _hash(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
+    arg, how = op.args
 
-    if op.how == 'fnv':
+    arg_formatted = translator.translate(arg)
+
+    if how == 'fnv':
         return 'fnv_hash({0})'.format(arg_formatted)
     else:
-        raise NotImplementedError(op.how)
+        raise NotImplementedError(how)
 
 
 def _log(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
+    arg, base = op.args
+    arg_formatted = translator.translate(arg)
 
-    if op.base is None:
+    if base is None:
         return 'ln({0})'.format(arg_formatted)
     else:
-        return 'log({0}, {1})'.format(arg_formatted, op.base)
+        return 'log({0}, {1})'.format(arg_formatted,
+                                      translator.translate(base))
 
 
 def _count_distinct(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
+    arg_formatted = translator.translate(op.args[0])
     return 'COUNT(DISTINCT {0})'.format(arg_formatted)
 
 
@@ -749,10 +726,10 @@ _string_ops = {
     ops.RPad: _fixed_arity_call('rpad', 3),
     ops.Locate: _locate,
     ops.StringJoin: _string_join,
-    ops.StringSQLLike: _like,
-    ops.RegexSearch: _rlike,
-    ops.RegexExtract: _regex_extract,
-    ops.RegexReplace: _regex_replace,
+    ops.StringSQLLike: _binary_infix_op('LIKE'),
+    ops.RegexSearch: _binary_infix_op('RLIKE'),
+    ops.RegexExtract: _fixed_arity_call('regexp_extract', 3),
+    ops.RegexReplace: _fixed_arity_call('regexp_replace', 3),
 }
 
 
@@ -774,9 +751,9 @@ _other_ops = {
     ops.E: lambda *args: 'e()',
 
     ir.Literal: _literal,
-    ops.NullLiteral: _null_literal,
+    ir.NullLiteral: _null_literal,
 
-    ops.ValueList: _value_list,
+    ir.ValueList: _value_list,
 
     ops.Cast: _cast,
 
@@ -787,8 +764,8 @@ _other_ops = {
     ops.Where: _fixed_arity_call('if', 3),
 
     ops.Between: _between,
-    ops.Contains: _contains,
-    ops.NotContains: _not_contains,
+    ops.Contains: _binary_infix_op('IN'),
+    ops.NotContains: _binary_infix_op('NOT IN'),
 
     analytics.Bucket: _bucket,
     analytics.CategoryLabel: _category_label,

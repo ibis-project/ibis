@@ -345,7 +345,9 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         cases = [
             (self.table.double_col.round(), 'round(double_col)'),
             (self.table.double_col.round(0), 'round(double_col, 0)'),
-            (self.table.double_col.round(2, ), 'round(double_col, 2)')
+            (self.table.double_col.round(2, ), 'round(double_col, 2)'),
+            (self.table.double_col.round(self.table.tinyint_col),
+             'round(double_col, tinyint_col)')
         ]
         self._check_expr_cases(cases)
 
@@ -745,8 +747,9 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
     def test_substr(self):
         # Database numbers starting from 1
         cases = [
-            (self.table.string_col.substr(2), 'substr(string_col, 3)'),
-            (self.table.string_col.substr(0, 3), 'substr(string_col, 1, 3)')
+            (self.table.string_col.substr(2), 'substr(string_col, 2 + 1)'),
+            (self.table.string_col.substr(0, 3),
+             'substr(string_col, 0 + 1, 3)')
         ]
         self._check_expr_cases(cases)
 
@@ -804,11 +807,12 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_locate(self):
+        s = self.table.string_col
+        i1 = self.table.tinyint_col
         cases = [
-            (self.table.string_col.locate('a'),
-             "locate('a', string_col) - 1"),
-            (self.table.string_col.locate('a', 2),
-             "locate('a', string_col, 3) - 1")
+            (s.locate('a'), "locate('a', string_col) - 1"),
+            (s.locate('a', 2), "locate('a', string_col, 3) - 1"),
+            (s.locate('a', i1), "locate('a', string_col, tinyint_col + 1) - 1")
         ]
         self._check_expr_cases(cases)
 

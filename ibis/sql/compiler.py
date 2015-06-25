@@ -307,7 +307,7 @@ class SelectBuilder(object):
 
         unchanged = True
         if isinstance(expr, ir.ScalarExpr):
-            if expr.is_reduction():
+            if ops.is_reduction(expr):
                 return self._rewrite_reduction_filter(expr)
 
         if isinstance(op, ops.BinaryOp):
@@ -774,7 +774,7 @@ def _adapt_expr(expr):
         return expr, as_is
 
     def _scalar_reduce(x):
-        return isinstance(x, ir.ScalarExpr) and x.is_reduction()
+        return isinstance(x, ir.ScalarExpr) and ops.is_reduction(x)
 
     if isinstance(expr, ir.ScalarExpr):
         def scalar_handler(results):
