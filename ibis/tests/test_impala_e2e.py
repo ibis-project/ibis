@@ -61,6 +61,7 @@ class ImpalaE2E(object):
         cls.hdfs = cls.con.hdfs
         cls.test_data_dir = ENV.test_data_dir
         cls.test_data_db = ENV.test_data_db
+        cls.tmp_dir = ENV.tmp_dir
         cls.tmp_db = '__ibis_{0}'.format(util.guid())
         cls.con.create_database(cls.tmp_db)
         cls.alltypes = cls.con.table('functional_alltypes')
@@ -132,7 +133,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         assert not self.con.exists_database(tmp_db)
 
     def test_create_database_with_location(self):
-        base = '/{0}'.format(util.guid())
+        base = pjoin(self.tmp_dir, util.guid())
         name = 'test_{0}'.format(util.guid())
         tmp_path = pjoin(base, name)
 
