@@ -444,14 +444,34 @@ class ValueTyped(ValueArgument):
         return arg
 
 
+class MultipleTypes(Argument):
+
+    def __init__(self, types, **arg_kwds):
+        self.types = [t() if not isinstance(t, Argument) else t
+                      for t in types]
+        Argument.__init__(self, **arg_kwds)
+
+    def _validate(self, arg):
+        for t in self.types:
+            arg = t.validate(arg)
+        return arg
+
+
 def value_typed_as(types, **arg_kwds):
     fail_message = 'Arg was not in types {0}'.format(repr(types))
     return ValueTyped(types, fail_message, **arg_kwds)
 
 
-def array(name=None, optional=False):
-    return ValueTyped(ir.ArrayExpr, 'not an array expr', name=name,
-                      optional=optional)
+def array(value_type=None, name=None, optional=False):
+    array_checker = ValueTyped(ir.ArrayExpr, 'not an array expr',
+                               name=name,
+                               optional=optional)
+    if value_type is None:
+        return array_checker
+    else:
+        return MultipleTypes([array_checker, value_type],
+                             name=name,
+                             optional=optional)
 
 
 def scalar(name=None, optional=False):

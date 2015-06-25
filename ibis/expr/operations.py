@@ -726,15 +726,10 @@ class Any(ValueNode):
     # Depending on the kind of input boolean array, the result might either be
     # array-like (an existence-type predicate) or scalar (a reduction)
 
-    def __init__(self, expr):
-        if not isinstance(expr, ir.BooleanArray):
-            raise ValueError('Expression must be a boolean array')
-
-        self.arg = expr
-        ValueNode.__init__(self, self.arg)
+    input_type = [rules.array(boolean)]
 
     def output_type(self):
-        roots = self.arg._root_tables()
+        roots = self.args[0]._root_tables()
         if len(roots) > 1:
             return ir.BooleanArray
         else:
@@ -742,13 +737,13 @@ class Any(ValueNode):
             return ir.BooleanScalar
 
     def negate(self):
-        return NotAny(self.arg)
+        return NotAny(self.args[0])
 
 
 class NotAny(Any):
 
     def negate(self):
-        return Any(self.arg)
+        return Any(self.args[0])
 
 
 # ---------------------------------------------------------------------
