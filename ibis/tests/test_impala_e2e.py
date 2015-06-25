@@ -395,7 +395,7 @@ FROM ibis_testing.tpch_lineitem li
             s.re_extract('[\d]+', 0),
             s.re_replace('[\d]+', 'a'),
             s.repeat(2),
-            s.instr("a"),
+            s.find("a"),
             s.translate("a", "b"),
             s.locate("a"),
             s.lpad(10, "a"),
@@ -406,9 +406,9 @@ FROM ibis_testing.tpch_lineitem li
             s.reverse(),
             s.ascii_str(),
             s.length(),
-            s.trim(),
-            s.ltrim(),
-            s.trim(),
+            s.strip(),
+            s.lstrip(),
+            s.strip(),
         ]
 
         proj_exprs = [expr.name('e%d' % i)
@@ -483,7 +483,7 @@ FROM ibis_testing.tpch_lineitem li
 
     def test_string_functions(self):
         string = ibis.literal('abcd')
-        trim_string = ibis.literal('   a   ')
+        strip_string = ibis.literal('   a   ')
 
         cases = [
             (string.length(), 4),
@@ -491,14 +491,14 @@ FROM ibis_testing.tpch_lineitem li
             (string.upper(), 'ABCD'),
             (string.reverse(), 'dcba'),
             (string.ascii_str(), 97),
-            (trim_string.trim(), 'a'),
-            (trim_string.ltrim(), 'a   '),
-            (trim_string.rtrim(), '   a'),
+            (strip_string.strip(), 'a'),
+            (strip_string.lstrip(), 'a   '),
+            (strip_string.rstrip(), '   a'),
             (string.substr(0, 2), 'ab'),
             (string.left(2), 'ab'),
             (string.right(2), 'cd'),
             (string.repeat(2), 'abcdabcd'),
-            (string.instr('a'), 0),
+            (string.find('a'), 0),
             (ibis.literal('0123').translate('012', 'abc'), 'abc3'),
             (string.locate('a'), 0),
             (string.lpad(1, '-'), 'a'),

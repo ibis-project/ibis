@@ -734,9 +734,9 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
             (self.table.string_col.lower(), 'lower(string_col)'),
             (self.table.string_col.upper(), 'upper(string_col)'),
             (self.table.string_col.reverse(), 'reverse(string_col)'),
-            (self.table.string_col.trim(), 'trim(string_col)'),
-            (self.table.string_col.ltrim(), 'ltrim(string_col)'),
-            (self.table.string_col.rtrim(), 'rtrim(string_col)'),
+            (self.table.string_col.strip(), 'trim(string_col)'),
+            (self.table.string_col.lstrip(), 'ltrim(string_col)'),
+            (self.table.string_col.rstrip(), 'rtrim(string_col)'),
             (self.table.string_col.length(), 'length(string_col)'),
             (self.table.string_col.ascii_str(), 'ascii(string_col)')
         ]
@@ -790,9 +790,9 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
-    def test_instring(self):
+    def test_string_find(self):
         cases = [
-            (self.table.string_col.instr('a'), "instr(string_col, 'a') - 1")
+            (self.table.string_col.find('a'), "instr(string_col, 'a') - 1")
         ]
         self._check_expr_cases(cases)
 

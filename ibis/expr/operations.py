@@ -606,15 +606,15 @@ class Reverse(StringUnaryOp):
     pass
 
 
-class Trim(StringUnaryOp):
+class Strip(StringUnaryOp):
     pass
 
 
-class LTrim(StringUnaryOp):
+class LStrip(StringUnaryOp):
     pass
 
 
-class RTrim(StringUnaryOp):
+class RStrip(StringUnaryOp):
     pass
 
 

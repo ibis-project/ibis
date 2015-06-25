@@ -1202,9 +1202,9 @@ _string_value_methods = dict(
     upper=_unary_op('upper', _ops.Uppercase),
     reverse=_unary_op('reverse', _ops.Reverse),
     ascii_str=_unary_op('ascii', _ops.StringAscii),
-    trim=_unary_op('trim', _ops.Trim),
-    ltrim=_unary_op('ltrim', _ops.LTrim),
-    rtrim=_unary_op('rtrim', _ops.RTrim),
+    strip=_unary_op('strip', _ops.Strip),
+    lstrip=_unary_op('lstrip', _ops.LStrip),
+    rstrip=_unary_op('rstrip', _ops.RStrip),
 
     __contains__=_string_dunder_contains,
     contains=_string_contains,
