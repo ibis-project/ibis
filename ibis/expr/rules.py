@@ -278,4 +278,8 @@ def shape_like_args(args, out_type):
 
 class TypeValidator(object):
 
-    pass
+    def __init__(self, arg_types):
+        pass
+
+    def validate(self, args):
+        pass
