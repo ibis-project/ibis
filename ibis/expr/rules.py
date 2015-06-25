@@ -307,7 +307,7 @@ class Argument(object):
 
     def validate(self, arg):
         if arg is None and not self.optional:
-            return self.default
+            return ir.as_value_expr(self.default), None
         return self.validator(arg)
 
 
@@ -445,7 +445,7 @@ def numeric(name=None, allow_boolean=True, optional=False):
     return Argument(validator, name=name, optional=optional)
 
 
-def integer(name=None, optional=False):
+def integer(name=None, default=None, optional=False):
 
     def validator(arg):
         exc = None
@@ -457,7 +457,7 @@ def integer(name=None, optional=False):
             exc = 'not integer'
         return arg, exc
 
-    return Argument(validator, name=name, optional=optional)
+    return Argument(validator, name=name, default=default, optional=optional)
 
 
 def string(name=None, default=None, optional=False):

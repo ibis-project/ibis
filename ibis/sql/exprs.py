@@ -536,13 +536,20 @@ def _string_find(translator, expr):
 
 def _locate(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
-    substr_formatted = translator.translate(op.substr)
+    arg, substr, pos = op.args
+    arg_formatted = translator.translate(arg)
+    substr_formatted = translator.translate(substr)
 
-    if op.pos:
+    if not isinstance(pos.op(), ir.Literal):
+        pos_fmt = translator.translate(pos)
+        return 'locate({0}, {1}, {2} + 1) - 1'.format(substr_formatted,
+                                                      arg_formatted,
+                                                      pos_fmt)
+    elif pos.op().value:
+        pval = pos.op().value
         return 'locate({0}, {1}, {2}) - 1'.format(substr_formatted,
                                                   arg_formatted,
-                                                  op.pos + 1)
+                                                  pval + 1)
     else:
         return 'locate({0}, {1}) - 1'.format(substr_formatted, arg_formatted)
 

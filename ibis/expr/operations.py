@@ -460,23 +460,16 @@ class StringFind(ValueNode):
 
 class Translate(ValueNode):
 
-    def __init__(self, arg, from_str, to_str):
-        self.arg = arg
-        self.from_str = as_value_expr(from_str)
-        self.to_str = as_value_expr(to_str)
-        ValueNode.__init__(self, self.arg, self.from_str, self.to_str)
-
+    input_type = [rules.string, rules.string(name='from_str'),
+                  rules.string(name='to_str')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class Locate(ValueNode):
 
-    def __init__(self, arg, substr, pos=0):
-        self.arg = arg
-        self.substr = as_value_expr(substr)
-        self.pos = pos
-        ValueNode.__init__(self, self.arg, self.substr, self.pos)
-
+    input_type = [rules.string,
+                  rules.string(name='substr'),
+                  rules.integer(name='pos', default=0)]
     output_type = rules.shape_like_arg(0, 'int32')
 
 

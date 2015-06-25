@@ -806,11 +806,12 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_locate(self):
+        s = self.table.string_col
+        i1 = self.table.tinyint_col
         cases = [
-            (self.table.string_col.locate('a'),
-             "locate('a', string_col) - 1"),
-            (self.table.string_col.locate('a', 2),
-             "locate('a', string_col, 3) - 1")
+            (s.locate('a'), "locate('a', string_col) - 1"),
+            (s.locate('a', 2), "locate('a', string_col, 3) - 1"),
+            (s.locate('a', i1), "locate('a', string_col, tinyint_col + 1) - 1")
         ]
         self._check_expr_cases(cases)
 
