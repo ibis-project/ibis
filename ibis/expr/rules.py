@@ -344,8 +344,7 @@ class TypeSignature(object):
                 checked_arg = validator.validate(arg)
             except IbisTypeError as e:
                 exc = e.message
-                msg = ('Argument index {0} had a type '
-                       'error: {1}'.format(i, exc) +
+                msg = ('Argument {0}: {1}'.format(i, exc) +
                        '\nArgument was: {0}'.format(ir._safe_repr(arg)))
                 raise IbisTypeError(msg)
 
