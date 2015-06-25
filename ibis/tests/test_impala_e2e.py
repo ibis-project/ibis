@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from posixpath import join as pjoin
+from copy import copy
 import gc
 import pytest
 
@@ -35,12 +36,12 @@ ENV = IbisTestEnv()
 
 
 def connect(env, with_hdfs=True):
-    con = ibis.impala_connect(host=ENV.impala_host,
-                              protocol=ENV.impala_protocol,
-                              database=ENV.test_data_db,
-                              port=ENV.impala_port)
+    con = ibis.impala_connect(host=env.impala_host,
+                              protocol=env.impala_protocol,
+                              database=env.test_data_db,
+                              port=env.impala_port)
     if with_hdfs:
-        hdfs_client = InsecureClient(ENV.hdfs_url)
+        hdfs_client = InsecureClient(env.hdfs_url)
         return ibis.make_client(con, hdfs_client)
     else:
         return ibis.make_client(con)
@@ -100,13 +101,13 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
                                         database=self.test_data_db)) > 0
 
     def test_set_database(self):
-        # TODO: free of dependence on functional database
-        self.assertRaises(Exception, self.con.table, 'alltypes')
-        self.con.set_database('functional')
-
-        self.con.table('alltypes')
-
-        self.con.set_database(self.test_data_db)
+        # create new connection with no default db set
+        env = copy(ENV)
+        env.test_data_db = None
+        con = connect(env)
+        self.assertRaises(Exception, con.table, 'functional_alltypes')
+        con.set_database(self.test_data_db)
+        con.table('functional_alltypes')
 
     def test_create_exists_drop_database(self):
         tmp_name = util.guid()
