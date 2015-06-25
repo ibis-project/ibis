@@ -149,15 +149,17 @@ class UnaryOp(ValueNode):
 
     def __init__(self, arg):
         self.arg = arg
-        ValueNode.__init__(self, [arg])
+        ValueNode.__init__(self, arg)
 
 
 class Cast(ValueNode):
 
+    # input_type = [rules.value, rules.data_type]
+
     def __init__(self, arg, target_type):
         self.arg = as_value_expr(arg)
         self.target_type = ir._validate_type(target_type.lower())
-        ValueNode.__init__(self, [arg, self.target_type])
+        ValueNode.__init__(self, arg, self.target_type)
 
     def resolve_name(self):
         return self.arg.get_name()
@@ -169,8 +171,7 @@ class Cast(ValueNode):
 
 class Negate(UnaryOp):
 
-    def output_type(self):
-        return type(self.arg)
+    output_type = rules.type_of_arg(0)
 
 
 class IsNull(UnaryOp):
@@ -213,11 +214,7 @@ class IfNull(ValueNode):
           .else_(null_substitute_expr)
     """
 
-    def __init__(self, value, ifnull_expr):
-        self.value = as_value_expr(value)
-        self.ifnull_expr = as_value_expr(ifnull_expr)
-        ValueNode.__init__(self, [self.value, self.ifnull_expr])
-
+    input_type = [rules.value, rules.value(name='ifnull_expr')]
     output_type = rules.type_of_arg(0)
 
 
@@ -227,11 +224,7 @@ class NullIf(ValueNode):
     Set values to NULL if they equal the null_if_expr
     """
 
-    def __init__(self, value, null_if_expr):
-        self.value = as_value_expr(value)
-        self.null_if_expr = as_value_expr(null_if_expr)
-        ValueNode.__init__(self, [self.value, self.null_if_expr])
-
+    input_type = [rules.value, rules.value(name='null_if_expr')]
     output_type = rules.type_of_arg(0)
 
 
@@ -257,7 +250,7 @@ class CoalesceLike(ValueNode):
             raise ValueError('Must provide at least one value')
 
         self.values = [as_value_expr(x) for x in args]
-        ValueNode.__init__(self, self.values)
+        ValueNode.__init__(self, *self.values)
 
     # According to Impala documentation:
     # Return type: same as the initial argument value, except that integer
@@ -289,13 +282,11 @@ class Abs(UnaryOp):
 
 
 def _ceil_floor_output(self):
-    if not isinstance(self.arg, ir.NumericValue):
-        raise TypeError('Only valid for numeric types')
-
-    if isinstance(self.arg, ir.DecimalValue):
-        return self.arg._factory
+    arg = self.args[0]
+    if isinstance(arg, ir.DecimalValue):
+        return arg._factory
     else:
-        return rules.shape_like(self.arg, 'int32')
+        return rules.shape_like(arg, 'int32')
 
 
 class Ceil(UnaryOp):
@@ -309,7 +300,7 @@ class Ceil(UnaryOp):
       Decimal values: yield decimal
       Other numeric values: yield integer (int32)
     """
-
+    input_type = [rules.numeric()]
     output_type = _ceil_floor_output
 
 
@@ -325,13 +316,14 @@ class Floor(UnaryOp):
       Other numeric values: yield integer (int32)
     """
 
+    input_type = [rules.numeric()]
     output_type = _ceil_floor_output
 
 
 class Round(ValueNode):
 
     input_type = [rules.value,
-                  rules.integer('digits', optional=True)]
+                  rules.integer(name='digits', optional=True)]
 
     def output_type(self):
         arg, digits = self.args
@@ -397,23 +389,10 @@ class Log10(Logarithm):
     """
 
 
-def _string_output(self):
-    if not isinstance(self.arg, ir.StringValue):
-        raise TypeError('Only implemented for string types')
-    return rules.shape_like(self.arg, 'string')
-
-
-def _bool_output(self):
-    return rules.shape_like(self.arg, 'boolean')
-
-
-def _int_output(self):
-    return rules.shape_like(self.arg, 'int32')
-
-
 class StringUnaryOp(UnaryOp):
 
-    output_type = _string_output
+    input_type = [rules.string]
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class Uppercase(StringUnaryOp):
@@ -446,9 +425,9 @@ class Substring(ValueNode):
         self.arg = arg
         self.start = start
         self.length = length
-        ValueNode.__init__(self, [self.arg, self.start, self.length])
+        ValueNode.__init__(self, self.arg, self.start, self.length)
 
-    output_type = _string_output
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class StrRight(ValueNode):
@@ -456,9 +435,9 @@ class StrRight(ValueNode):
     def __init__(self, arg, nchars):
         self.arg = arg
         self.nchars = as_value_expr(nchars)
-        ValueNode.__init__(self, [self.arg, self.nchars])
+        ValueNode.__init__(self, self.arg, self.nchars)
 
-    output_type = _string_output
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class Repeat(ValueNode):
@@ -466,9 +445,9 @@ class Repeat(ValueNode):
     def __init__(self, arg, n):
         self.arg = arg
         self.n = as_value_expr(n)
-        ValueNode.__init__(self, [self.arg, self.n])
+        ValueNode.__init__(self, self.arg, self.n)
 
-    output_type = _string_output
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class StringFind(ValueNode):
@@ -476,9 +455,9 @@ class StringFind(ValueNode):
     def __init__(self, arg, substr):
         self.arg = arg
         self.substr = as_value_expr(substr)
-        ValueNode.__init__(self, [self.arg, self.substr])
+        ValueNode.__init__(self, self.arg, self.substr)
 
-    output_type = _int_output
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class Translate(ValueNode):
@@ -487,9 +466,9 @@ class Translate(ValueNode):
         self.arg = arg
         self.from_str = as_value_expr(from_str)
         self.to_str = as_value_expr(to_str)
-        ValueNode.__init__(self, [self.arg, self.from_str, self.to_str])
+        ValueNode.__init__(self, self.arg, self.from_str, self.to_str)
 
-    output_type = _string_output
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class Locate(ValueNode):
@@ -498,31 +477,23 @@ class Locate(ValueNode):
         self.arg = arg
         self.substr = as_value_expr(substr)
         self.pos = pos
-        ValueNode.__init__(self, [self.arg, self.substr, self.pos])
+        ValueNode.__init__(self, self.arg, self.substr, self.pos)
 
-    output_type = _int_output
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class LPad(ValueNode):
 
-    def __init__(self, arg, length, pad):
-        self.arg = arg
-        self.length = as_value_expr(length)
-        self.pad = as_value_expr(pad)
-        ValueNode.__init__(self, [self.arg, self.length, self.pad])
-
-    output_type = _string_output
+    input_type = [rules.string, rules.integer(name='length'),
+                  rules.string(name='pad')]
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class RPad(ValueNode):
 
-    def __init__(self, arg, length, pad):
-        self.arg = arg
-        self.length = as_value_expr(length)
-        self.pad = as_value_expr(pad)
-        ValueNode.__init__(self, [self.arg, self.length, self.pad])
-
-    output_type = _string_output
+    input_type = [rules.string, rules.integer(name='length'),
+                  rules.string(name='pad')]
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class FindInSet(ValueNode):
@@ -530,9 +501,9 @@ class FindInSet(ValueNode):
     def __init__(self, arg, str_list):
         self.arg = arg
         self.str_list = [as_value_expr(x) for x in str_list]
-        ValueNode.__init__(self, [self.arg, self.str_list])
+        ValueNode.__init__(self, self.arg, self.str_list)
 
-    output_type = _int_output
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class StringJoin(ValueNode):
@@ -540,9 +511,11 @@ class StringJoin(ValueNode):
     def __init__(self, arg, strings):
         self.arg = arg
         self.strings = [as_value_expr(x) for x in strings]
-        ValueNode.__init__(self, [self.arg, self.strings])
+        ValueNode.__init__(self, self.arg, self.strings)
 
-    output_type = _string_output
+    # input_type = [rules.string(name='sep'),
+    #               rules.list_of(rules.string, min_length=1)]
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class BooleanValueOp(ValueNode):
@@ -551,16 +524,8 @@ class BooleanValueOp(ValueNode):
 
 class FuzzySearch(BooleanValueOp):
 
-    def __init__(self, arg, pattern):
-        self.arg = arg
-        self.pattern = as_value_expr(pattern)
-
-        if not isinstance(self.pattern, ir.StringScalar):
-            raise TypeError(self.pattern)
-
-        ValueNode.__init__(self, [self.arg, self.pattern])
-
-    output_type = _bool_output
+    input_type = [rules.string, rules.string(name='pattern')]
+    output_type = rules.shape_like_arg(0, 'boolean')
 
 
 class StringSQLLike(FuzzySearch):
@@ -573,42 +538,28 @@ class RegexSearch(FuzzySearch):
 
 class RegexExtract(ValueNode):
 
-    def __init__(self, arg, pattern, index):
-        self.arg = arg
-        self.pattern = as_value_expr(pattern)
-        self.index = index
-
-        if not isinstance(self.pattern, ir.StringScalar):
-            raise TypeError(self.pattern)
-
-        ValueNode.__init__(self, [self.arg, self.pattern, self.index])
-
-    output_type = _string_output
+    input_type = [rules.string,
+                  rules.string(name='pattern'),
+                  rules.integer(name='index')]
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class RegexReplace(ValueNode):
 
-    def __init__(self, arg, pattern, replacement):
-        self.arg = as_value_expr(arg)
-        self.pattern = as_value_expr(pattern)
-        self.replacement = as_value_expr(replacement)
-
-        if not isinstance(self.pattern, ir.StringScalar):
-            raise TypeError(self.pattern)
-
-        ValueNode.__init__(self, [self.arg, self.pattern, self.replacement])
-
-    output_type = _string_output
+    input_type = [rules.string,
+                  rules.string(name='pattern'),
+                  rules.string(name='replacement')]
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class StringLength(UnaryOp):
 
-    output_type = _int_output
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class StringAscii(UnaryOp):
 
-    output_type = _int_output
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class BinaryOp(ValueNode):
@@ -627,7 +578,7 @@ class BinaryOp(ValueNode):
         left, right = self._maybe_cast_args(left, right)
         self.left = left
         self.right = right
-        ValueNode.__init__(self, [self.left, self.right])
+        ValueNode.__init__(self, self.left, self.right)
 
     def _maybe_cast_args(self, left, right):
         return left, right
@@ -639,76 +590,109 @@ class BinaryOp(ValueNode):
 # ----------------------------------------------------------------------
 
 
-class Count(ir.Reduction):
+class Reduction(ValueNode):
+
+    input_type = [rules.array,
+                  rules.boolean(name='where', optional=True)]
+
+
+def is_reduction(expr):
+    # Aggregations yield typed scalar expressions, since the result of an
+    # aggregation is a single value. When creating an table expression
+    # containing a GROUP BY equivalent, we need to be able to easily check
+    # that we are looking at the result of an aggregation.
+    #
+    # As an example, the expression we are looking at might be something
+    # like: foo.sum().log10() + bar.sum().log10()
+    #
+    # We examine the operator DAG in the expression to determine if there
+    # are aggregations present.
+    #
+    # A bound aggregation referencing a separate table is a "false
+    # aggregation" in a GROUP BY-type expression and should be treated a
+    # literal, and must be computed as a separate query and stored in a
+    # temporary variable (or joined, for bound aggregations with keys)
+    def has_reduction(op):
+        if isinstance(op, Reduction):
+            return True
+
+        for arg in op.args:
+            if isinstance(arg, ir.ScalarExpr) and has_reduction(arg.op()):
+                return True
+
+        return False
+
+    return has_reduction(expr.op())
+
+
+class Count(Reduction):
     # TODO: count(col) takes down Impala, must always do count(*) in generated
     # SQL
 
-    def __init__(self, expr, where=None):
-        # TODO: counts are actually table-level operations. Let's address
-        # during the SQL generation exercise
-        if not rules.is_collection(expr):
-            raise TypeError
+    input_type = [rules.collection,
+                  rules.boolean(name='where', optional=True)]
 
-        ir.Reduction.__init__(self, expr, where)
+    # TODO: counts are actually table-level operations. Let's address
+    # during the SQL generation exercise
 
     def output_type(self):
         return ir.Int64Scalar
 
 
-class Sum(ir.Reduction):
+class Sum(Reduction):
 
     def output_type(self):
-        _ = ir
-        if isinstance(self.arg, (_.IntegerValue, _.BooleanValue)):
-            return _.Int64Scalar
-        elif isinstance(self.arg, _.FloatingValue):
-            return _.DoubleScalar
-        elif isinstance(self.arg, _.DecimalValue):
-            return _decimal_scalar_ctor(self.arg._precision, 38)
+        arg = self.args[0]
+        if isinstance(arg, (ir.IntegerValue, ir.BooleanValue)):
+            return ir.Int64Scalar
+        elif isinstance(arg, ir.FloatingValue):
+            return ir.DoubleScalar
+        elif isinstance(arg, ir.DecimalValue):
+            return _decimal_scalar_ctor(arg._precision, 38)
         else:
-            raise TypeError(self.arg)
+            raise TypeError(arg)
 
 
-class Mean(ir.Reduction):
+class Mean(Reduction):
 
     def output_type(self):
-        _ = ir
-        if isinstance(self.arg, _.DecimalValue):
-            return _decimal_scalar_ctor(self.arg._precision, 38)
-        elif isinstance(self.arg, _.NumericValue):
-            return _.DoubleScalar
+        arg = self.args[0]
+        if isinstance(arg, ir.DecimalValue):
+            return _decimal_scalar_ctor(arg._precision, 38)
+        elif isinstance(arg, ir.NumericValue):
+            return ir.DoubleScalar
         else:
             raise NotImplementedError
 
 
 def _decimal_scalar_ctor(precision, scale):
-    _ = ir
-    out_type = _.DecimalType(precision, scale)
-    return _.DecimalScalar._make_constructor(out_type)
+    out_type = ir.DecimalType(precision, scale)
+    return ir.DecimalScalar._make_constructor(out_type)
 
 
-class StdDeviation(ir.Reduction):
+class StdDeviation(Reduction):
     pass
 
 
 def _min_max_output_rule(self):
-    if isinstance(self.arg, ir.DecimalValue):
-        return _decimal_scalar_ctor(self.arg._precision, 38)
+    arg = self.args[0]
+    if isinstance(arg, ir.DecimalValue):
+        return _decimal_scalar_ctor(arg._precision, 38)
     else:
-        return ir.scalar_type(self.arg.type())
+        return ir.scalar_type(arg.type())
 
 
-class Max(ir.Reduction):
-
-    output_type = _min_max_output_rule
-
-
-class Min(ir.Reduction):
+class Max(Reduction):
 
     output_type = _min_max_output_rule
 
 
-class HLLCardinality(ir.Reduction):
+class Min(Reduction):
+
+    output_type = _min_max_output_rule
+
+
+class HLLCardinality(Reduction):
 
     """
     Approximate number of unique values using HyperLogLog algorithm. Impala
@@ -720,20 +704,17 @@ class HLLCardinality(ir.Reduction):
         return ir.DoubleScalar
 
 
-class GroupConcat(ir.Reduction):
+class GroupConcat(Reduction):
 
-    def __init__(self, arg, sep=',', where=None):
-        self._ensure_array(arg)
-        self.arg = arg
-        self.where = where
-        self.sep = as_value_expr(sep)
-        ValueNode.__init__(self, [self.arg, self.sep])
+    input_type = [rules.array,
+                  rules.string(name='sep', default=','),
+                  rules.boolean(name='where', optional=True)]
 
     def output_type(self):
         return ir.StringScalar
 
 
-class CMSMedian(ir.Reduction):
+class CMSMedian(Reduction):
 
     """
     Compute the approximate median of a set of comparable values using the
@@ -742,7 +723,7 @@ class CMSMedian(ir.Reduction):
 
     def output_type(self):
         # Scalar but type of caller
-        return ir.scalar_type(self.arg.type())
+        return ir.scalar_type(self.args[0].type())
 
 # ----------------------------------------------------------------------
 # Distinct stuff
@@ -800,7 +781,9 @@ class DistinctArray(ArrayNode):
         return CountDistinct(self.arg)
 
 
-class CountDistinct(ir.Reduction):
+class CountDistinct(Reduction):
+
+    input_type = [rules.array]
 
     def output_type(self):
         return ir.Int64Scalar
@@ -819,7 +802,7 @@ class Any(ValueNode):
             raise ValueError('Expression must be a boolean array')
 
         self.arg = expr
-        ValueNode.__init__(self, [self.arg])
+        ValueNode.__init__(self, self.arg)
 
     def output_type(self):
         roots = self.arg._root_tables()
@@ -1005,7 +988,7 @@ class SearchedCase(ValueNode):
         self.cases = case_exprs
         self.results = result_exprs
         self.default = default_expr
-        ValueNode.__init__(self, [self.cases, self.results, self.default])
+        ValueNode.__init__(self, self.cases, self.results, self.default)
 
     def root_tables(self):
         all_exprs = self.cases + self.results
@@ -1029,16 +1012,12 @@ class Where(ValueNode):
              .else_(false_or_null_expr)
     """
 
-    def __init__(self, bool_expr, true_expr, false_null_expr):
-        self.bool_expr = as_value_expr(bool_expr)
-        self.true_expr = as_value_expr(true_expr)
-        self.false_null_expr = as_value_expr(false_null_expr)
-
-        ValueNode.__init__(self, [self.bool_expr, self.true_expr,
-                                  self.false_null_expr])
+    input_type = [rules.boolean(name='bool_expr'),
+                  rules.value(name='true_expr'),
+                  rules.value(name='false_null_expr')]
 
     def output_type(self):
-        return rules.shape_like(self.bool_expr, self.true_expr.type())
+        return rules.shape_like(self.args[0], self.args[1].type())
 
 
 class Join(TableNode):
@@ -1487,7 +1466,7 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
     def _validate(self):
         # All aggregates are valid
         for expr in self.agg_exprs:
-            if not rules.is_scalar(expr) or not expr.is_reduction():
+            if not rules.is_scalar(expr) or not is_reduction(expr):
                 raise TypeError('Passed a non-aggregate expression: %s' %
                                 _safe_repr(expr))
 
@@ -1627,7 +1606,7 @@ class Between(BooleanValueOp):
         self.expr = expr
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        BooleanValueOp.__init__(self, [expr, lower_bound, upper_bound])
+        BooleanValueOp.__init__(self, expr, lower_bound, upper_bound)
 
     def output_type(self):
         self._assert_can_compare()
@@ -1644,7 +1623,7 @@ class Contains(BooleanValueOp):
     def __init__(self, value, options):
         self.value = as_value_expr(value)
         self.options = as_value_expr(options)
-        BooleanValueOp.__init__(self, [self.value, self.options])
+        BooleanValueOp.__init__(self, self.value, self.options)
 
     def output_type(self):
         all_args = [self.value]
@@ -1722,12 +1701,14 @@ class E(Constant):
         return ir.DoubleScalar
 
 
-class ExtractTimestampField(UnaryOp):
+class TimestampUnaryOp(UnaryOp):
 
-    def output_type(self):
-        if not isinstance(self.arg, ir.TimestampValue):
-            raise AssertionError
-        return rules.shape_like(self.arg, 'int32')
+    input_type = [rules.value_typed_as(ir.TimestampValue)]
+
+
+class ExtractTimestampField(TimestampUnaryOp):
+
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class ExtractYear(ExtractTimestampField):
@@ -1760,47 +1741,36 @@ class ExtractMillisecond(ExtractTimestampField):
 
 class TimestampFromUNIX(ValueNode):
 
-    def __init__(self, arg, unit='s'):
-        self.arg = as_value_expr(arg)
-        self.unit = unit
-
-        if self.unit not in set(['s', 'ms', 'us']):
-            raise ValueError(self.unit)
-
-        ValueNode.__init__(self, [self.arg, self.unit])
-
-    def output_type(self):
-        return rules.shape_like(self.arg, 'timestamp')
+    input_type = [rules.value,
+                  rules.string_options(['s', 'ms', 'us'], name='unit')]
+    output_type = rules.shape_like_arg(0, 'timestamp')
 
 
-class DecimalPrecision(UnaryOp):
+class DecimalUnaryOp(UnaryOp):
 
-    def output_type(self):
-        if not isinstance(self.arg, ir.DecimalValue):
-            raise AssertionError
-        return rules.shape_like(self.arg, 'int32')
+    input_type = [rules.value_typed_as(ir.DecimalValue)]
+
+
+class DecimalPrecision(DecimalUnaryOp):
+
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class DecimalScale(UnaryOp):
 
-    def output_type(self):
-        if not isinstance(self.arg, ir.DecimalValue):
-            raise AssertionError
-        return rules.shape_like(self.arg, 'int32')
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class Hash(ValueNode):
 
-    def __init__(self, arg, how):
-        self.arg = as_value_expr(arg)
-        self.how = how
-        ValueNode.__init__(self, [self.arg, self.how])
-
-    def output_type(self):
-        return rules.shape_like(self.arg, 'int64')
+    input_type = [rules.value,
+                  rules.string_options(['fnv'], name='how')]
+    output_type = rules.shape_like_arg(0, 'int64')
 
 
 class TimestampDelta(ValueNode):
+
+    output_type = rules.shape_like_arg(0, 'timestamp')
 
     def __init__(self, arg, offset):
         from ibis.expr.temporal import Timedelta
@@ -1814,7 +1784,4 @@ class TimestampDelta(ValueNode):
         if not isinstance(offset, Timedelta):
             raise TypeError(offset)
 
-        ValueNode.__init__(self, [self.arg, self.offset])
-
-    def output_type(self):
-        return rules.shape_like(self.arg, 'timestamp')
+        ValueNode.__init__(self, self.arg, self.offset)

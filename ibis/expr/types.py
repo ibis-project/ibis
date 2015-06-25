@@ -392,7 +392,7 @@ class Node(object):
 
 class ValueNode(Node):
 
-    def __init__(self, args):
+    def __init__(self, *args):
         args = self._validate_args(args)
         Node.__init__(self, args)
 
@@ -513,7 +513,7 @@ class ArrayNode(ValueNode):
 
     def __init__(self, expr):
         self._ensure_array(expr)
-        ValueNode.__init__(self, [expr])
+        ValueNode.__init__(self, expr)
 
     def output_type(self):
         return NotImplementedError
@@ -531,25 +531,6 @@ class TableNode(Node):
     def to_expr(self):
         return TableExpr(self)
 
-
-class Reduction(ValueNode):
-
-    def __init__(self, arg, where=None):
-        self.arg = arg
-        self.where = where
-
-        if self.where is not None and not isinstance(where, BooleanValue):
-            raise IbisTypeError(
-                '"where" expression must be a Boolean value, got %s' %
-                _safe_repr(where))
-
-        ValueNode.__init__(self, [self.arg, self.where])
-
-    def root_tables(self):
-        if self.where is not None:
-            return distinct_roots(*self.args)
-        else:
-            return self.arg._root_tables()
 
 
 class BlockingTableNode(TableNode):
@@ -618,33 +599,7 @@ class ValueExpr(Expr):
 
 class ScalarExpr(ValueExpr):
 
-    def is_reduction(self):
-        # Aggregations yield typed scalar expressions, since the result of an
-        # aggregation is a single value. When creating an table expression
-        # containing a GROUP BY equivalent, we need to be able to easily check
-        # that we are looking at the result of an aggregation.
-        #
-        # As an example, the expression we are looking at might be something
-        # like: foo.sum().log10() + bar.sum().log10()
-        #
-        # We examine the operator DAG in the expression to determine if there
-        # are aggregations present.
-        #
-        # A bound aggregation referencing a separate table is a "false
-        # aggregation" in a GROUP BY-type expression and should be treated a
-        # literal, and must be computed as a separate query and stored in a
-        # temporary variable (or joined, for bound aggregations with keys)
-        def has_reduction(op):
-            if isinstance(op, Reduction):
-                return True
-
-            for arg in op.args:
-                if isinstance(arg, ScalarExpr) and has_reduction(arg.op()):
-                    return True
-
-            return False
-
-        return has_reduction(self.op())
+    pass
 
 
 class ArrayExpr(ValueExpr):

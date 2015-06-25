@@ -306,6 +306,8 @@ class Argument(object):
         self.optional = optional
 
     def validate(self, arg):
+        if arg is None and not self.optional:
+            return self.default
         return self.validator(arg)
 
 
@@ -333,7 +335,7 @@ class TypeSignature(object):
             if exc is not None:
                 msg = ('Argument index {0} had a type '
                        'error: {1}'.format(i, exc) +
-                       '\nArgument was: {0}'.format(repr(arg)))
+                       '\nArgument was: {0}'.format(ir._safe_repr(arg)))
                 raise com.IbisTypeError(msg)
 
             validated_args.append(checked_arg)
@@ -391,30 +393,38 @@ def signature(types):
     return TypeSignature(types)
 
 
-def array(name=None):
-    pass
-
-
-def scalar(name=None):
-    pass
-
-
-def table(name=None):
-    pass
-
-
-def value(name=None, optional=False):
-
+def _instance_of(name, optional, types, msg_if_fail):
     def validator(arg):
         if not isinstance(arg, ir.Expr):
             arg = ir.as_value_expr(arg)
 
         exc = None
-        if not isinstance(arg, ir.ValueExpr):
-            exc = 'not a value expr'
+        if not isinstance(arg, types):
+            exc = msg_if_fail
         return arg, exc
 
     return Argument(validator, name=name, optional=optional)
+
+
+def array(name=None, optional=False):
+    return _instance_of(name, optional, ir.ArrayExpr, 'not an array expr')
+
+
+def scalar(name=None, optional=False):
+    return _instance_of(name, optional, ir.ScalarExpr, 'not a scalar expr')
+
+
+def collection(name=None, optional=False):
+    return _instance_of(name, optional, (ir.ArrayExpr, ir.TableExpr),
+                        'not a collection')
+
+
+def value(name=None, optional=False):
+    return _instance_of(name, optional, ir.ValueExpr, 'not a value expr')
+
+
+def table(name=None):
+    pass
 
 
 def numeric(name=None, allow_boolean=True, optional=False):
@@ -444,6 +454,69 @@ def integer(name=None, optional=False):
         arg = ir.as_value_expr(arg)
         if not isinstance(arg, ir.IntegerValue):
             exc = 'not integer'
+        return arg, exc
+
+    return Argument(validator, name=name, optional=optional)
+
+
+def string(name=None, default=None, optional=False):
+
+    def validator(arg):
+        exc = None
+        if optional and arg is None:
+            return arg, exc
+
+        arg = ir.as_value_expr(arg)
+        if not isinstance(arg, ir.StringValue):
+            exc = 'not string'
+        return arg, exc
+
+    return Argument(validator, name=name, default=default, optional=optional)
+
+
+def boolean(name=None, optional=False):
+
+    def validator(arg):
+        exc = None
+        if optional and arg is None:
+            return arg, exc
+
+        arg = ir.as_value_expr(arg)
+        if not isinstance(arg, ir.BooleanValue):
+            exc = 'not boolean'
+        return arg, exc
+
+    return Argument(validator, name=name, optional=optional)
+
+
+def string_options(options, name=None, optional=False):
+
+    def validator(arg):
+        exc = None
+        if optional and arg is None:
+            return arg, exc
+
+        if arg not in options:
+            exc = '{0} not among options {1}'.format(arg, repr(options))
+
+        return arg, exc
+
+    return Argument(validator, name=name, optional=optional)
+
+
+def value_typed_as(ex_type, name=None, optional=False):
+
+    def validator(arg):
+        exc = None
+        if optional and arg is None:
+            return arg, exc
+
+        arg = ir.as_value_expr(arg)
+
+        if not isinstance(arg, ex_type):
+            exc = ('Arg was not of type {0}\nWas: {1}'
+                   .format(repr(ex_type), ir._safe_repr(arg)))
+
         return arg, exc
 
     return Argument(validator, name=name, optional=optional)

@@ -219,7 +219,7 @@ def group_concat(arg, sep=','):
     -------
     concatenated : string scalar
     """
-    return _ops.GroupConcat(arg, sep=sep).to_expr()
+    return _ops.GroupConcat(arg, sep, None).to_expr()
 
 
 def _binop_expr(name, klass):
@@ -339,8 +339,7 @@ def hash(arg, how='fnv'):
     -------
     hash_value : int64 expression
     """
-    op = _ops.Hash(arg, how)
-    return op.to_expr()
+    return _ops.Hash(arg, how).to_expr()
 
 
 def fillna(arg, fill_value):
@@ -360,8 +359,7 @@ def fillna(arg, fill_value):
     -------
     filled : type of caller
     """
-    op = _ops.IfNull(arg, fill_value)
-    return op.to_expr()
+    return _ops.IfNull(arg, fill_value).to_expr()
 
 
 def coalesce(*args):
@@ -776,7 +774,7 @@ def round(arg, digits=None):
         decimal types: decimal
         other numeric types: double
     """
-    op = _ops.Round([arg, digits])
+    op = _ops.Round(arg, digits)
     return op.to_expr()
 
 
@@ -1151,8 +1149,8 @@ def re_search(arg, pattern):
 
 def regex_extract(arg, pattern, index):
     """
-    Returns specified index, 0 indexed, from string
-    based on regex pattern given
+    Returns specified index, 0 indexed, from string based on regex pattern
+    given
 
     Parameters:
     -----------
@@ -1178,7 +1176,7 @@ def regex_replace(arg, pattern, replacement):
 
     Examples
     --------
-    table.strings.replace('(b+)', '<\\1>')
+    table.strings.replace('(b+)', r'<\1>')
     'aaabbbaa' becomes 'aaa<bbb>aaa'
 
     Returns
@@ -1332,7 +1330,7 @@ def _table_count(self):
     -------
     count : Int64Scalar
     """
-    return _ops.Count(self).to_expr().name('count')
+    return _ops.Count(self, None).to_expr().name('count')
 
 
 def _table_set_column(table, name, expr):

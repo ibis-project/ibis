@@ -81,39 +81,6 @@ def _contains(translator, expr):
     return '{0!s} IN {1!s}'.format(comp, options)
 
 
-def _like(translator, expr):
-    op = expr.op()
-    arg = translator.translate(op.arg)
-    pattern = translator.translate(op.pattern)
-    return '{0!s} LIKE {1!s}'.format(arg, pattern)
-
-
-def _rlike(translator, expr):
-    op = expr.op()
-    arg = translator.translate(op.arg)
-    pattern = translator.translate(op.pattern)
-    return '{0!s} RLIKE {1!s}'.format(arg, pattern)
-
-
-def _regex_extract(translator, expr):
-    op = expr.op()
-    formatted_arg = translator.translate(op.arg)
-    formatted_pattern = translator.translate(op.pattern)
-    return 'regexp_extract({0}, {1}, {2})'.format(formatted_arg,
-                                                  formatted_pattern,
-                                                  op.index)
-
-
-def _regex_replace(translator, expr):
-    op = expr.op()
-    formatted_arg = translator.translate(op.arg)
-    formatted_pattern = translator.translate(op.pattern)
-    formatted_replacement = translator.translate(op.replacement)
-    return 'regexp_replace({0}, {1}, {2})'.format(formatted_arg,
-                                                  formatted_pattern,
-                                                  formatted_replacement)
-
-
 def _not_contains(translator, expr):
     # Slight code dup
     op = expr.op()
@@ -158,11 +125,13 @@ def _reduction(func_name):
     def formatter(translator, expr):
         op = expr.op()
 
-        if op.where is not None:
-            case = op.where.ifelse(op.arg, ibis.NA)
+        arg, where = op.args
+
+        if where is not None:
+            case = where.ifelse(arg, ibis.NA)
             arg = translator.translate(case)
         else:
-            arg = translator.translate(op.arg)
+            arg = translator.translate(arg)
 
         return '{0!s}({1!s})'.format(func_name, arg)
     return formatter
@@ -185,13 +154,15 @@ def _binary_infix_op(infix_sym):
     def formatter(translator, expr):
         op = expr.op()
 
-        left_arg = translator.translate(op.left)
-        right_arg = translator.translate(op.right)
+        left, right = op.args
 
-        if _needs_parens(op.left):
+        left_arg = translator.translate(left)
+        right_arg = translator.translate(right)
+
+        if _needs_parens(left):
             left_arg = _parenthesize(left_arg)
 
-        if _needs_parens(op.right):
+        if _needs_parens(right):
             right_arg = _parenthesize(right_arg)
 
         return '{0!s} {1!s} {2!s}'.format(left_arg, infix_sym, right_arg)
@@ -508,10 +479,11 @@ def _extract_field(sql_attr):
 def _timestamp_from_unix(translator, expr):
     op = expr.op()
 
-    val = op.arg
-    if op.unit == 'ms':
+    val, unit = op.args
+
+    if unit == 'ms':
         val = (val / 1000).cast('int32')
-    elif op.unit == 'us':
+    elif unit == 'us':
         val = (val / 1000000).cast('int32')
 
     arg = _from_unixtime(translator, val)
@@ -606,12 +578,14 @@ def _round(translator, expr):
 
 def _hash(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
+    arg, how = op.args
 
-    if op.how == 'fnv':
+    arg_formatted = translator.translate(arg)
+
+    if how == 'fnv':
         return 'fnv_hash({0})'.format(arg_formatted)
     else:
-        raise NotImplementedError(op.how)
+        raise NotImplementedError(how)
 
 
 def _log(translator, expr):
@@ -626,7 +600,7 @@ def _log(translator, expr):
 
 def _count_distinct(translator, expr):
     op = expr.op()
-    arg_formatted = translator.translate(op.arg)
+    arg_formatted = translator.translate(op.args[0])
     return 'COUNT(DISTINCT {0})'.format(arg_formatted)
 
 
@@ -753,10 +727,10 @@ _string_ops = {
     ops.RPad: _fixed_arity_call('rpad', 3),
     ops.Locate: _locate,
     ops.StringJoin: _string_join,
-    ops.StringSQLLike: _like,
-    ops.RegexSearch: _rlike,
-    ops.RegexExtract: _regex_extract,
-    ops.RegexReplace: _regex_replace,
+    ops.StringSQLLike: _binary_infix_op('LIKE'),
+    ops.RegexSearch: _binary_infix_op('RLIKE'),
+    ops.RegexExtract: _fixed_arity_call('regexp_extract', 3),
+    ops.RegexReplace: _fixed_arity_call('regexp_replace', 3),
 }
 
 

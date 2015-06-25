@@ -1350,7 +1350,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         # See ibis #24
         compound_expr = (self.table['a'].sum() /
                          self.table['a'].mean()).name('foo')
-        assert compound_expr.is_reduction()
+        assert ops.is_reduction(compound_expr)
 
         # Validates internally
         self.table.aggregate([compound_expr])
