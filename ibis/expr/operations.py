@@ -414,6 +414,10 @@ class RStrip(StringUnaryOp):
     pass
 
 
+class Capitalize(StringUnaryOp):
+    pass
+
+
 class Substring(ValueOp):
 
     input_type = [string, integer(name='start'),
@@ -454,13 +458,15 @@ class Locate(ValueOp):
 
 class LPad(ValueOp):
 
-    input_type = [string, integer(name='length'), string(name='pad')]
+    input_type = [string, integer(name='length'),
+                  string(name='pad', optional=True)]
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class RPad(ValueOp):
 
-    input_type = [string, integer(name='length'), string(name='pad')]
+    input_type = [string, integer(name='length'),
+                  string(name='pad', optional=True)]
     output_type = rules.shape_like_arg(0, 'string')
 
 
@@ -504,6 +510,16 @@ class RegexReplace(ValueOp):
 
     input_type = [string, string(name='pattern'),
                   string(name='replacement')]
+    output_type = rules.shape_like_arg(0, 'string')
+
+
+class ParseURL(ValueOp):
+
+    input_type = [string, rules.string_options(['PROTOCOL', 'HOST', 'PATH',
+                                                'REF', 'AUTHORITY', 'FILE',
+                                                'USERINFO', 'QUERY'],
+                                               name='extract'),
+                  string(name='key', optional=True)]
     output_type = rules.shape_like_arg(0, 'string')
 
 

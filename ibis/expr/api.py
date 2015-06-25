@@ -1064,7 +1064,7 @@ def _locate(self, substr, pos=None):
     return _ops.Locate(self, substr, pos).to_expr()
 
 
-def _lpad(self, length, pad):
+def _lpad(self, length, pad=' '):
     """
     Returns string of given length by truncating (on right)
     or padding (on left) original string
@@ -1072,7 +1072,7 @@ def _lpad(self, length, pad):
     Parameters
     ----------
     length : int
-    pad : string
+    pad : string, default is ' '
 
     Examples
     --------
@@ -1087,7 +1087,7 @@ def _lpad(self, length, pad):
     return _ops.LPad(self, length, pad).to_expr()
 
 
-def _rpad(self, length, pad):
+def _rpad(self, length, pad=' '):
     """
     Returns string of given length by truncating (on right)
     or padding (on right) original string
@@ -1095,7 +1095,7 @@ def _rpad(self, length, pad):
     Parameters
     ----------
     length : int
-    pad : string
+    pad : string, default is ' '
 
     Examples
     --------
@@ -1226,6 +1226,31 @@ def regex_replace(arg, pattern, replacement):
     return _ops.RegexReplace(arg, pattern, replacement).to_expr()
 
 
+def parse_url(arg, extract, key=None):
+    """
+    Returns the portion of a URL corresponding to a part specified
+    by 'extract'
+    Can optionally specify a key to retrieve an associated value
+    if extract parameter is 'QUERY'
+
+    Parameters
+    ----------
+    extract : one of {'PROTOCOL', 'HOST', 'PATH', 'REF',
+                'AUTHORITY', 'FILE', 'USERINFO', 'QUERY'}
+    key : string (optional)
+
+    Examples
+    --------
+    parse_url("https://www.youtube.com/watch?v=kEuEcWfewf8&t=10", 'QUERY', 'v')
+    yields 'kEuEcWfewf8'
+
+    Returns
+    -------
+    extracted : string
+    """
+    return _ops.ParseURL(arg, extract, key).to_expr()
+
+
 def _string_contains(arg, substr):
     return arg.like('%{0}%'.format(substr))
 
@@ -1243,6 +1268,7 @@ _string_value_methods = dict(
     strip=_unary_op('strip', _ops.Strip),
     lstrip=_unary_op('lstrip', _ops.LStrip),
     rstrip=_unary_op('rstrip', _ops.RStrip),
+    capitalize=_unary_op('initcap', _ops.Capitalize),
 
     __contains__=_string_dunder_contains,
     contains=_string_contains,
@@ -1251,6 +1277,7 @@ _string_value_methods = dict(
     re_search=re_search,
     re_extract=regex_extract,
     re_replace=regex_replace,
+    parse_url=parse_url,
 
     substr=_string_substr,
     left=_string_left,

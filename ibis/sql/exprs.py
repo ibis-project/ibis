@@ -550,6 +550,25 @@ def _string_join(translator, expr):
                                         ', '.join(strings_formatted))
 
 
+def _parse_url(translator, expr):
+    op = expr.op()
+
+    arg, extract, key = op.args
+    arg_formatted = translator.translate(arg)
+
+    if key is None:
+        return "parse_url({0}, '{1}')".format(arg_formatted, extract)
+    elif not isinstance(key.op(), ir.Literal):
+        key_fmt = translator.translate(key)
+        return "parse_url({0}, '{1}', {2})".format(arg_formatted,
+                                                   extract,
+                                                   key_fmt)
+    else:
+        return "parse_url({0}, '{1}', {2})".format(arg_formatted,
+                                                   extract,
+                                                   key)
+
+
 def _find_in_set(translator, expr):
     op = expr.op()
 
@@ -557,6 +576,28 @@ def _find_in_set(translator, expr):
     arg_formatted = translator.translate(arg)
     str_formatted = ','.join([x._arg.value for x in str_list])
     return "find_in_set({0}, '{1}') - 1".format(arg_formatted, str_formatted)
+
+
+def _lpad(translator, expr):
+    op = expr.op()
+    arg, length, pad = op.args
+    arg_formatted = translator.translate(arg)
+    length_formatted = translator.translate(length)
+    pad_fmt = translator.translate(pad)
+    return 'lpad({0}, {1}, {2})'.format(arg_formatted,
+                                        length_formatted,
+                                        pad_fmt)
+
+
+def _rpad(translator, expr):
+    op = expr.op()
+    arg, length, pad = op.args
+    arg_formatted = translator.translate(arg)
+    length_formatted = translator.translate(length)
+    pad_fmt = translator.translate(pad)
+    return 'rpad({0}, {1}, {2})'.format(arg_formatted,
+                                        length_formatted,
+                                        pad_fmt)
 
 
 def _round(translator, expr):
@@ -716,20 +757,22 @@ _string_ops = {
     ops.Strip: _unary_op('trim'),
     ops.LStrip: _unary_op('ltrim'),
     ops.RStrip: _unary_op('rtrim'),
+    ops.Capitalize: _unary_op('initcap'),
     ops.Substring: _substring,
     ops.StrRight: _fixed_arity_call('strright', 2),
     ops.Repeat: _fixed_arity_call('repeat', 2),
     ops.StringFind: _string_find,
     ops.Translate: _fixed_arity_call('translate', 3),
     ops.FindInSet: _find_in_set,
-    ops.LPad: _fixed_arity_call('lpad', 3),
-    ops.RPad: _fixed_arity_call('rpad', 3),
+    ops.LPad: _lpad,
+    ops.RPad: _rpad,
     ops.Locate: _locate,
     ops.StringJoin: _string_join,
     ops.StringSQLLike: _binary_infix_op('LIKE'),
     ops.RegexSearch: _binary_infix_op('RLIKE'),
     ops.RegexExtract: _fixed_arity_call('regexp_extract', 3),
     ops.RegexReplace: _fixed_arity_call('regexp_replace', 3),
+    ops.ParseURL: _parse_url,
 }
 
 
