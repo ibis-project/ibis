@@ -441,7 +441,7 @@ FROM ibis_testing.tpch_lineitem li
         cases = [
             (dc % 5, Decimal('0.245')),
 
-            # (dc.fillna(0), Decimal('5.245')),
+            (dc.fillna(0), Decimal('5.245')),
 
             (dc.exp(), 189.6158),
             (dc.log(), 1.65728),

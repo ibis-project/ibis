@@ -192,8 +192,8 @@ class IfNull(ValueNode):
           .else_(null_substitute_expr)
     """
 
-    input_type = [value, value(name='ifnull_expr')]
-    # rules.cast_if_decimal(0, name='ifnull_expr')]
+    input_type = [value,
+                  rules.cast_if_decimal(0, name='ifnull_expr')]
     output_type = rules.type_of_arg(0)
 
 

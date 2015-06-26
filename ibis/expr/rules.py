@@ -339,19 +339,17 @@ class TypeSignature(object):
         return self._validate(args, self.types)
 
     def _validate(self, args, types):
-        validated_args = []
+        clean_args = list(args)
         for i, validator in enumerate(types):
             try:
-                checked_arg = validator.validate(args, i)
+                clean_args[i] = validator.validate(clean_args, i)
             except IbisTypeError as e:
                 exc = e.message
                 msg = ('Argument {0}: {1}'.format(i, exc) +
                        '\nArgument was: {0}'.format(ir._safe_repr(args[i])))
                 raise IbisTypeError(msg)
 
-            validated_args.append(checked_arg)
-
-        return validated_args
+        return clean_args
 
 
 class VarArgs(TypeSignature):
@@ -465,6 +463,25 @@ class MultipleTypes(Argument):
         for t in self.types:
             arg = t.validate(args, i)
         return arg
+
+
+class CastIfDecimal(ValueArgument):
+
+    def __init__(self, ref_j, **arg_kwds):
+        self.ref_j = ref_j
+        ValueArgument.__init__(self, **arg_kwds)
+
+    def _validate(self, args, i):
+        arg = ValueArgument._validate(self, args, i)
+
+        ref_arg = args[self.ref_j]
+        if isinstance(ref_arg, ir.DecimalValue):
+            return arg.cast(ref_arg.type())
+
+        return arg
+
+
+cast_if_decimal = CastIfDecimal
 
 
 def value_typed_as(types, **arg_kwds):
