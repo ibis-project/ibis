@@ -22,7 +22,9 @@ from decimal import Decimal
 
 from hdfs import InsecureClient
 import ibis
+
 from ibis.compat import unittest
+from ibis.sql.compiler import to_sql
 from ibis.tests.util import IbisTestEnv
 
 import ibis.common as com
@@ -393,7 +395,7 @@ FROM ibis_testing.tpch_lineitem li
     def assert_cases_equality(self, cases):
         for expr, expected in cases:
             result = self.con.execute(expr)
-            assert result == expected
+            assert result == expected, to_sql(expr)
 
     def test_int_builtins(self):
         i8 = ibis.literal(50)
@@ -439,8 +441,7 @@ FROM ibis_testing.tpch_lineitem li
         cases = [
             (dc % 5, Decimal('0.245')),
 
-            # TODO: fix this
-            # (dc.fillna(0), Decimal('5.245')),
+            (dc.fillna(0), Decimal('5.245')),
 
             (dc.exp(), 189.6158),
             (dc.log(), 1.65728),

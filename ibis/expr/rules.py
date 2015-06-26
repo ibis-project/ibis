@@ -306,15 +306,16 @@ class Argument(object):
         self.default = default
         self.optional = optional
 
-    def validate(self, arg):
+    def validate(self, args, i):
+        arg = args[i]
         if arg is None:
             if not self.optional:
                 return ir.as_value_expr(self.default)
             elif self.optional:
                 return arg
-        return self._validate(arg)
+        return self._validate(args, i)
 
-    def _validate(self, arg):
+    def _validate(self, args, i):
         raise NotImplementedError
 
 
@@ -338,19 +339,17 @@ class TypeSignature(object):
         return self._validate(args, self.types)
 
     def _validate(self, args, types):
-        validated_args = []
-        for i, (arg, validator) in enumerate(zip(args, types)):
+        clean_args = list(args)
+        for i, validator in enumerate(types):
             try:
-                checked_arg = validator.validate(arg)
+                clean_args[i] = validator.validate(clean_args, i)
             except IbisTypeError as e:
                 exc = e.message
                 msg = ('Argument {0}: {1}'.format(i, exc) +
-                       '\nArgument was: {0}'.format(ir._safe_repr(arg)))
+                       '\nArgument was: {0}'.format(ir._safe_repr(args[i])))
                 raise IbisTypeError(msg)
 
-            validated_args.append(checked_arg)
-
-        return validated_args
+        return clean_args
 
 
 class VarArgs(TypeSignature):
@@ -416,7 +415,8 @@ def signature(types):
 
 class ValueArgument(Argument):
 
-    def _validate(self, arg):
+    def _validate(self, args, i):
+        arg = args[i]
         if not isinstance(arg, ir.Expr):
             arg = ir.as_value_expr(arg)
 
@@ -430,7 +430,9 @@ class AnyTyped(Argument):
         self.fail_message = fail_message
         Argument.__init__(self, **arg_kwds)
 
-    def _validate(self, arg):
+    def _validate(self, args, i):
+        arg = args[i]
+
         if not isinstance(arg, self.types):
             if isinstance(self.fail_message, py_string):
                 exc = self.fail_message
@@ -443,9 +445,11 @@ class AnyTyped(Argument):
 
 class ValueTyped(AnyTyped, ValueArgument):
 
-    def _validate(self, arg):
-        arg = ValueArgument._validate(self, arg)
-        return AnyTyped._validate(self, arg)
+    def _validate(self, args, i):
+        arg = ValueArgument._validate(self, args, i)
+        new_args = list(args)
+        new_args[i] = arg
+        return AnyTyped._validate(self, new_args, i)
 
 
 class MultipleTypes(Argument):
@@ -455,10 +459,29 @@ class MultipleTypes(Argument):
                       for t in types]
         Argument.__init__(self, **arg_kwds)
 
-    def _validate(self, arg):
+    def _validate(self, args, i):
         for t in self.types:
-            arg = t.validate(arg)
+            arg = t.validate(args, i)
         return arg
+
+
+class CastIfDecimal(ValueArgument):
+
+    def __init__(self, ref_j, **arg_kwds):
+        self.ref_j = ref_j
+        ValueArgument.__init__(self, **arg_kwds)
+
+    def _validate(self, args, i):
+        arg = ValueArgument._validate(self, args, i)
+
+        ref_arg = args[self.ref_j]
+        if isinstance(ref_arg, ir.DecimalValue):
+            return arg.cast(ref_arg.type())
+
+        return arg
+
+
+cast_if_decimal = CastIfDecimal
 
 
 def value_typed_as(types, **arg_kwds):
@@ -503,8 +526,10 @@ class Number(ValueTyped):
         self.allow_boolean = allow_boolean
         ValueTyped.__init__(self, ir.NumericValue, 'not numeric', **arg_kwds)
 
-    def _validate(self, arg):
-        arg = ValueTyped._validate(self, arg)
+    def _validate(self, args, i):
+        arg = args[i]
+
+        arg = ValueTyped._validate(self, args, i)
 
         if isinstance(arg, ir.BooleanValue) and not self.allow_boolean:
             raise IbisTypeError('not implemented for boolean values')
@@ -546,7 +571,8 @@ class StringOptions(Argument):
         self.options = options
         Argument.__init__(self, **arg_kwds)
 
-    def _validate(self, arg):
+    def _validate(self, args, i):
+        arg = args[i]
         if arg not in self.options:
             raise IbisTypeError('{0} not among options {1}'
                                 .format(arg, repr(self.options)))
@@ -564,7 +590,8 @@ class ListOf(Argument):
         self.value_type = value_type
         self.min_length = min_length
 
-    def _validate(self, arg):
+    def _validate(self, args, i):
+        arg = args[i]
         if isinstance(arg, tuple):
             arg = list(arg)
 
@@ -576,9 +603,9 @@ class ListOf(Argument):
                                 .format(self.min_length))
 
         checked_args = []
-        for j, x in enumerate(arg):
+        for j in range(len(arg)):
             try:
-                checked_arg = self.value_type.validate(x)
+                checked_arg = self.value_type.validate(arg, j)
             except IbisTypeError as e:
                 exc = e.message
                 msg = ('List element {0} had a type error: {1}'
@@ -594,7 +621,9 @@ list_of = ListOf
 
 class DataType(Argument):
 
-    def _validate(self, arg):
+    def _validate(self, args, i):
+        arg = args[i]
+
         if isinstance(arg, py_string):
             arg = arg.lower()
 

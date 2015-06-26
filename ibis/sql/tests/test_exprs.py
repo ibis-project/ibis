@@ -444,7 +444,18 @@ END"""
         cases = [
             (f.nullif(f == 0),
              'nullif(l_quantity, l_quantity = 0)'),
-            (f.fillna(0), 'isnull(l_quantity, 0)'),
+            (f.fillna(0),
+             'isnull(l_quantity, CAST(0 AS decimal(12,2)))'),
+        ]
+        self._check_expr_cases(cases)
+
+    def test_decimal_fillna_cast_arg(self):
+        table = self.con.table('tpch_lineitem')
+        f = table.l_extendedprice
+
+        cases = [
+            (f.fillna(0),
+             'isnull(l_extendedprice, CAST(0 AS decimal(12,2)))')
         ]
         self._check_expr_cases(cases)
 
