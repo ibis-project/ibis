@@ -589,6 +589,7 @@ class ListOf(Argument):
             value_type = value_type()
         self.value_type = value_type
         self.min_length = min_length
+        Argument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
         arg = args[i]

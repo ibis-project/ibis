@@ -40,7 +40,14 @@ class ValueOperationMeta(type):
         if 'input_type' in dct:
             sig = dct['input_type']
             if not isinstance(sig, rules.TypeSignature):
-                dct['input_type'] = rules.signature(sig)
+                dct['input_type'] = sig = rules.signature(sig)
+
+                for i, t in enumerate(sig.types):
+                    if t.name is None:
+                        continue
+
+                    if t.name not in dct:
+                        dct[t.name] = _arg_getter(i)
 
         return super(ValueOperationMeta, cls).__new__(cls, name, parents, dct)
 
@@ -528,8 +535,6 @@ class BinaryOp(ValueOp):
         left, right = self._maybe_cast_args(left, right)
         ValueOp.__init__(self, left, right)
 
-    left, right = _arg_getter(0), _arg_getter(1)
-
     def _maybe_cast_args(self, left, right):
         return left, right
 
@@ -908,11 +913,6 @@ class SimpleCase(ValueOp):
         assert len(cases) == len(results)
         ValueOp.__init__(self, base, cases, results, default)
 
-    base = _arg_getter(0)
-    cases = _arg_getter(1)
-    results = _arg_getter(2)
-    default = _arg_getter(3)
-
     def root_tables(self):
         base, cases, results, default = self.args
         all_exprs = [base] + cases + results
@@ -936,10 +936,6 @@ class SearchedCase(ValueOp):
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
         ValueOp.__init__(self, cases, results, default)
-
-    cases = _arg_getter(0)
-    results = _arg_getter(1)
-    default = _arg_getter(2)
 
     def root_tables(self):
         cases, results, default = self.args
