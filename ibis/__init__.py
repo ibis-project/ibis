@@ -126,6 +126,6 @@ def test(include_e2e=False):
     ibis_dir, _ = os.path.split(ibis.__file__)
 
     args = ['--pyargs', ibis_dir]
-    if not include_e2e:
-        args.extend(['-m', 'not e2e'])
+    if include_e2e:
+        args.append('--e2e')
     pytest.main(args)

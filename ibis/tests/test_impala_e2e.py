@@ -49,9 +49,7 @@ def connect(env, with_hdfs=True):
         return ibis.make_client(con)
 
 
-pytestmark = pytest.mark.e2e
-
-
+@pytest.mark.e2e
 class ImpalaE2E(object):
 
     @classmethod

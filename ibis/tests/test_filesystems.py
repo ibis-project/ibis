@@ -19,11 +19,15 @@ import os
 import shutil
 
 from hdfs import InsecureClient
+import pytest
 
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.compat import unittest
 from ibis.tests.util import IbisTestEnv
 import ibis.util as util
+
+
+ENV = IbisTestEnv()
 
 
 class MockHDFS(HDFS):
@@ -64,12 +68,12 @@ class TestHDFSRandom(unittest.TestCase):
         result = self.con.find_any_file('/path')
         assert result == '/path/0.parq'
 
-
+@pytest.mark.e2e
 class TestHDFSE2E(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.ENV = IbisTestEnv()
+        cls.ENV = ENV
         cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
         cls.hdfs_client = InsecureClient(cls.ENV.hdfs_url)
         cls.hdfs = WebHDFS(cls.hdfs_client)
