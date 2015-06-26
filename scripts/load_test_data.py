@@ -87,6 +87,24 @@ def create_parquet_tables(con):
                          database=ENV.test_data_db, persist=True)
 
 
+def create_avro_tables(con):
+    avro_files = con.hdfs.ls(pjoin(ENV.test_data_dir, 'avro'))
+    schemas = {
+        'tpch_region_avro': {
+            'type': 'record',
+            'name': 'a',
+            'fields': [
+                {'name': 'R_REGIONKEY', 'type': ['null', 'int']},
+                {'name': 'R_NAME', 'type': ['null', 'string']},
+                {'name': 'R_COMMENT', 'type': ['null', 'string']}]}}
+    for path in avro_files:
+        head, table_name = posixpath.split(path)
+        print 'Creating {0}'.format(table_name)
+        schema = schemas[table_name]
+        con.avro_file(path, schema, name=table_name, database=ENV.test_data_db,
+                      persist=True)
+
+
 def setup_test_data():
     con = make_connection()
     # TODO: test that HDFS dir is writable before initiating dnload
@@ -99,6 +117,7 @@ def setup_test_data():
         shutil.rmtree(tmp_dir)
     create_test_database(con)
     create_parquet_tables(con)
+    create_avro_tables(con)
 
 
 if __name__ == '__main__':

@@ -73,7 +73,7 @@ def download_avro_files(con):
     os.mkdir(os.path.join(IBIS_TEST_DATA_LOCAL_DIR, 'avro'))
     print("Downloading {0}".format(avro_path))
     con.hdfs.get(avro_path,
-                 pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'avro', 'tpch.region'))
+                 pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'avro', 'tpch_region_avro'))
 
 
 def generate_csv_files():
