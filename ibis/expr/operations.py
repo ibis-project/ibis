@@ -33,6 +33,23 @@ def _arg_getter(i):
     return arg_accessor
 
 
+class ValueOperationMeta(type):
+
+    def __new__(cls, name, parents, dct):
+
+        if 'input_type' in dct:
+            sig = dct['input_type']
+            if not isinstance(sig, rules.TypeSignature):
+                dct['input_type'] = rules.signature(sig)
+
+        return super(ValueOperationMeta, cls).__new__(cls, name, parents, dct)
+
+
+class ValueOp(ValueNode):
+
+    __metaclass__ = ValueOperationMeta
+
+
 class PhysicalTable(ir.BlockingTableNode, HasSchema):
 
     pass
@@ -129,12 +146,12 @@ class TableArrayView(ArrayNode):
         return klass(self, name=self.name)
 
 
-class UnaryOp(ValueNode):
+class UnaryOp(ValueOp):
 
     input_type = [value]
 
 
-class Cast(ValueNode):
+class Cast(ValueOp):
 
     input_type = [value, rules.data_type]
 
@@ -183,7 +200,7 @@ class ZeroIfNull(UnaryOp):
     output_type = rules.numeric_highest_promote(0)
 
 
-class IfNull(ValueNode):
+class IfNull(ValueOp):
 
     """
     Equivalent to (but perhaps implemented differently):
@@ -197,7 +214,7 @@ class IfNull(ValueNode):
     output_type = rules.type_of_arg(0)
 
 
-class NullIf(ValueNode):
+class NullIf(ValueOp):
 
     """
     Set values to NULL if they equal the null_if_expr
@@ -222,7 +239,7 @@ def _coalesce_upcast(self):
     return rules.shape_like_args(self.args, out_type)
 
 
-class CoalesceLike(ValueNode):
+class CoalesceLike(ValueOp):
 
     # According to Impala documentation:
     # Return type: same as the initial argument value, except that integer
@@ -293,7 +310,7 @@ class Floor(UnaryOp):
     output_type = _ceil_floor_output
 
 
-class Round(ValueNode):
+class Round(ValueOp):
 
     input_type = [value, integer(name='digits', optional=True)]
 
@@ -335,8 +352,8 @@ class Logarithm(RealUnaryOp):
 
 class Log(Logarithm):
 
-    input_type = (Logarithm.input_type +
-                  [number(name='base', optional=True)])
+    input_type = [number(allow_boolean=False),
+                  number(name='base', optional=True)]
 
 
 class Ln(Logarithm):
@@ -390,69 +407,69 @@ class RStrip(StringUnaryOp):
     pass
 
 
-class Substring(ValueNode):
+class Substring(ValueOp):
 
     input_type = [string, integer(name='start'),
                   integer(name='length', optional=True)]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class StrRight(ValueNode):
+class StrRight(ValueOp):
 
     input_type = [string, integer(name='nchars')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class Repeat(ValueNode):
+class Repeat(ValueOp):
 
     input_type = [string, integer(name='times')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class StringFind(ValueNode):
+class StringFind(ValueOp):
 
     input_type = [string, string(name='substr')]
     output_type = rules.shape_like_arg(0, 'int32')
 
 
-class Translate(ValueNode):
+class Translate(ValueOp):
 
     input_type = [string, string(name='from_str'), string(name='to_str')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class Locate(ValueNode):
+class Locate(ValueOp):
 
     input_type = [string, string(name='substr'),
                   integer(name='pos', default=0)]
     output_type = rules.shape_like_arg(0, 'int32')
 
 
-class LPad(ValueNode):
+class LPad(ValueOp):
 
     input_type = [string, integer(name='length'), string(name='pad')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class RPad(ValueNode):
+class RPad(ValueOp):
 
     input_type = [string, integer(name='length'), string(name='pad')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class FindInSet(ValueNode):
+class FindInSet(ValueOp):
 
     input_type = [string(name='needle'), list_of(string, min_length=1)]
     output_type = rules.shape_like_arg(0, 'int32')
 
 
-class StringJoin(ValueNode):
+class StringJoin(ValueOp):
 
     input_type = [string(name='sep'), list_of(string, min_length=1)]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class BooleanValueOp(ValueNode):
+class BooleanValueOp(ValueOp):
     pass
 
 
@@ -470,13 +487,13 @@ class RegexSearch(FuzzySearch):
     pass
 
 
-class RegexExtract(ValueNode):
+class RegexExtract(ValueOp):
 
     input_type = [string, string(name='pattern'), integer(name='index')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class RegexReplace(ValueNode):
+class RegexReplace(ValueOp):
 
     input_type = [string, string(name='pattern'),
                   string(name='replacement')]
@@ -493,7 +510,7 @@ class StringAscii(UnaryOp):
     output_type = rules.shape_like_arg(0, 'int32')
 
 
-class BinaryOp(ValueNode):
+class BinaryOp(ValueOp):
 
     """
     A binary operation
@@ -509,7 +526,7 @@ class BinaryOp(ValueNode):
 
     def __init__(self, left, right):
         left, right = self._maybe_cast_args(left, right)
-        ValueNode.__init__(self, left, right)
+        ValueOp.__init__(self, left, right)
 
     left, right = _arg_getter(0), _arg_getter(1)
 
@@ -523,7 +540,7 @@ class BinaryOp(ValueNode):
 # ----------------------------------------------------------------------
 
 
-class Reduction(ValueNode):
+class Reduction(ValueOp):
 
     input_type = [rules.array, boolean(name='where', optional=True)]
 
@@ -722,7 +739,7 @@ class CountDistinct(Reduction):
 # ---------------------------------------------------------------------
 # Boolean reductions and semi/anti join support
 
-class Any(ValueNode):
+class Any(ValueOp):
 
     # Depending on the kind of input boolean array, the result might either be
     # array-like (an existence-type predicate) or scalar (a reduction)
@@ -880,7 +897,7 @@ class SearchedCaseBuilder(object):
         return op.to_expr()
 
 
-class SimpleCase(ValueNode):
+class SimpleCase(ValueOp):
 
     input_type = [value(name='base'),
                   list_of(value, name='cases'),
@@ -889,7 +906,7 @@ class SimpleCase(ValueNode):
 
     def __init__(self, base, cases, results, default):
         assert len(cases) == len(results)
-        ValueNode.__init__(self, base, cases, results, default)
+        ValueOp.__init__(self, base, cases, results, default)
 
     base = _arg_getter(0)
     cases = _arg_getter(1)
@@ -910,7 +927,7 @@ class SimpleCase(ValueNode):
         return rules.shape_like(base, typename)
 
 
-class SearchedCase(ValueNode):
+class SearchedCase(ValueOp):
 
     input_type = [list_of(boolean, name='cases'),
                   list_of(value, name='results'),
@@ -918,7 +935,7 @@ class SearchedCase(ValueNode):
 
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
-        ValueNode.__init__(self, cases, results, default)
+        ValueOp.__init__(self, cases, results, default)
 
     cases = _arg_getter(0)
     results = _arg_getter(1)
@@ -938,7 +955,7 @@ class SearchedCase(ValueNode):
         return rules.shape_like_args(cases, typename)
 
 
-class Where(ValueNode):
+class Where(ValueOp):
 
     """
     Ternary case expression, equivalent to
@@ -1591,10 +1608,10 @@ class TopK(ArrayNode):
         return ir.BooleanArray(self)
 
 
-class Constant(ValueNode):
+class Constant(ValueOp):
 
     def __init__(self):
-        ValueNode.__init__(self, [])
+        ValueOp.__init__(self, [])
 
     def root_tables(self):
         return []
@@ -1650,7 +1667,7 @@ class ExtractMillisecond(ExtractTimestampField):
     pass
 
 
-class TimestampFromUNIX(ValueNode):
+class TimestampFromUNIX(ValueOp):
 
     input_type = [value, rules.string_options(['s', 'ms', 'us'], name='unit')]
     output_type = rules.shape_like_arg(0, 'timestamp')
@@ -1671,13 +1688,13 @@ class DecimalScale(UnaryOp):
     output_type = rules.shape_like_arg(0, 'int32')
 
 
-class Hash(ValueNode):
+class Hash(ValueOp):
 
     input_type = [value, rules.string_options(['fnv'], name='how')]
     output_type = rules.shape_like_arg(0, 'int64')
 
 
-class TimestampDelta(ValueNode):
+class TimestampDelta(ValueOp):
 
     input_type = [rules.timestamp, rules.timedelta(name='offset')]
     output_type = rules.shape_like_arg(0, 'timestamp')

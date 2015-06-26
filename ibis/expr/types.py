@@ -397,17 +397,10 @@ class ValueNode(Node):
         Node.__init__(self, args)
 
     def _validate_args(self, args):
-        import ibis.expr.rules as rules
-
         if not hasattr(self, 'input_type'):
             return args
 
-        validator = self.input_type
-
-        if not isinstance(validator, rules.TypeSignature):
-            validator = rules.signature(self.input_type)
-
-        return validator.validate(args)
+        return self.input_type.validate(args)
 
     def root_tables(self):
         exprs = [arg for arg in self.args if isinstance(arg, Expr)]
@@ -1446,8 +1439,7 @@ class NullLiteral(ValueNode):
 class ArrayNode(ValueNode):
 
     def __init__(self, expr):
-        from ibis.expr.rules import array
-        self.input_type = [array]
+        assert isinstance(expr, ArrayExpr)
         ValueNode.__init__(self, expr)
 
     def output_type(self):
