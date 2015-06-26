@@ -73,7 +73,11 @@ def create_parquet_tables(con):
              ('string_col', 'string'),
              ('timestamp_col', 'timestamp'),
              ('year', 'int32'),
-             ('month', 'int32')])}
+             ('month', 'int32')]),
+        'tpch_region': ibis.schema(
+            [('r_regionkey', 'int16'),
+             ('r_name', 'string'),
+             ('r_comment', 'string')])}
     for path in parquet_files:
         head, table_name = posixpath.split(path)
         print 'Creating {0}'.format(table_name)

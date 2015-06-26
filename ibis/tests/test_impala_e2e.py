@@ -784,7 +784,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
                                  ('r_name', 'string'),
                                  ('r_comment', 'string')])
 
-        table = self.con.parquet_file(hdfs_path, like_table='tpch.region')
+        table = self.con.parquet_file(hdfs_path, like_table='tpch_region')
 
         assert table.schema().equals(ex_schema)
 
@@ -793,6 +793,9 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
         table = self.con.parquet_file(hdfs_path)
 
+        # NOTE: the actual schema should have an int16, but bc this is being
+        # inferred from a parquet file, which has no notion of int16, the
+        # inferred schema will have an int32 instead.
         ex_schema = ibis.schema([('r_regionkey', 'int32'),
                                  ('r_name', 'string'),
                                  ('r_comment', 'string')])
