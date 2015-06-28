@@ -15,6 +15,7 @@
 # flake8: noqa
 
 import sys
+from six import BytesIO
 
 
 PY26 = sys.version_info[0] == 2 and sys.version_info[1] == 6

@@ -123,13 +123,29 @@ def setup_test_data(local_data_dir):
     create_avro_tables(con)
 
 
-if __name__ == '__main__':
-    # TODO: test that HDFS dir is writable before initiating dnload
+def can_write_to_hdfs():
+    from ibis.compat import BytesIO
+    con = make_connection()
 
+    test_path = pjoin(ENV.test_data_dir, ibis.util.guid())
+    test_file = BytesIO(ibis.util.guid())
+
+    try:
+        con.hdfs.put(test_path, test_file)
+        con.hdfs.rm(test_path)
+        return True
+    except:
+        return False
+
+
+if __name__ == '__main__':
     if len(sys.argv) > 1:
         data_dir = os.path.expanduser(sys.argv[1])
         setup_test_data(data_dir)
     else:
+        if not can_write_to_hdfs():
+            print('Do not have write permission to HDFS')
+
         try:
             tmp_dir = tempfile.mkdtemp(prefix='__ibis_tmp')
             local_data_dir = get_ibis_test_data(tmp_dir)
