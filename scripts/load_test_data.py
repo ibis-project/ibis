@@ -15,10 +15,13 @@
 
 # Fetches the ibis-testing-data archive and loads it into Impala
 
+from __future__ import print_function
+
 from posixpath import join as pjoin
 import os
 import posixpath
 import shutil
+import sys
 import tempfile
 import subprocess
 
@@ -78,9 +81,10 @@ def create_parquet_tables(con):
             [('r_regionkey', 'int16'),
              ('r_name', 'string'),
              ('r_comment', 'string')])}
+
     for path in parquet_files:
         head, table_name = posixpath.split(path)
-        print 'Creating {0}'.format(table_name)
+        print('Creating {0}'.format(table_name))
         # if no schema infer!
         schema = schemas.get(table_name)
         con.parquet_file(path, schema=schema, name=table_name,
@@ -97,28 +101,38 @@ def create_avro_tables(con):
                 {'name': 'R_REGIONKEY', 'type': ['null', 'int']},
                 {'name': 'R_NAME', 'type': ['null', 'string']},
                 {'name': 'R_COMMENT', 'type': ['null', 'string']}]}}
+
     for path in avro_files:
         head, table_name = posixpath.split(path)
-        print 'Creating {0}'.format(table_name)
+        print('Creating {0}'.format(table_name))
         schema = schemas[table_name]
         con.avro_file(path, schema, name=table_name, database=ENV.test_data_db,
                       persist=True)
 
 
-def setup_test_data():
+def setup_test_data(local_data_dir):
     con = make_connection()
-    # TODO: test that HDFS dir is writable before initiating dnload
-    try:
-        tmp_dir = tempfile.mkdtemp(prefix='__ibis_tmp')
-        local_data_dir = get_ibis_test_data(tmp_dir)
-        con.hdfs.put(ENV.test_data_dir, local_data_dir, overwrite=True,
-                     verbose=True)
-    finally:
-        shutil.rmtree(tmp_dir)
+    hdfs = con.hdfs
+
+    if hdfs.exists(ENV.test_data_dir):
+        hdfs.rmdir(ENV.test_data_dir)
+    hdfs.put(ENV.test_data_dir, local_data_dir, verbose=True)
+
     create_test_database(con)
     create_parquet_tables(con)
     create_avro_tables(con)
 
 
 if __name__ == '__main__':
-    setup_test_data()
+    # TODO: test that HDFS dir is writable before initiating dnload
+
+    if len(sys.argv) > 1:
+        data_dir = os.path.expanduser(sys.argv[1])
+        setup_test_data(data_dir)
+    else:
+        try:
+            tmp_dir = tempfile.mkdtemp(prefix='__ibis_tmp')
+            local_data_dir = get_ibis_test_data(tmp_dir)
+            setup_test_data(tmp_dir)
+        finally:
+            shutil.rmtree(tmp_dir)

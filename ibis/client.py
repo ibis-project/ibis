@@ -14,6 +14,9 @@
 
 import hdfs
 
+from impala.error import Error as ImpylaError
+import impala.dbapi as impyla_dbapi
+
 from ibis.config import options
 
 from ibis.filesystems import HDFS, WebHDFS
@@ -189,8 +192,7 @@ class ImpalaConnection(object):
             self.connect()
 
     def connect(self):
-        import impala.dbapi as db
-        self.con = db.connect(**self.params)
+        self.con = impyla_dbapi.connect(**self.params)
         self.cursor = self.con.cursor()
         self.cursor.ping()
 
@@ -708,7 +710,11 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
             pass
 
     def cleanup(self):
-        self.source.drop_table(self.name)
+        try:
+            self.source.drop_table(self.name)
+        except ImpylaError:
+            # database might have been dropped
+            pass
 
 
 def _set_limit(query, k):

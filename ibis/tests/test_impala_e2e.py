@@ -726,7 +726,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         _ensure_drop(self.con, name, database=self.tmp_db)
 
     def test_query_avro(self):
-        hdfs_path = pjoin(self.test_data_dir, 'avro/tpch.region')
+        hdfs_path = pjoin(self.test_data_dir, 'avro/tpch_region_avro')
 
         avro_schema = {
             "fields": [
