@@ -259,7 +259,7 @@ def group_concat(arg, sep=','):
     -------
     concatenated : string scalar
     """
-    return _ops.GroupConcat(arg, sep, None).to_expr()
+    return _ops.GroupConcat(arg, sep).to_expr()
 
 
 def _binop_expr(name, klass):

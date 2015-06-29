@@ -45,11 +45,11 @@ class TestBuiltins(unittest.TestCase):
 
         expr = col.group_concat()
         assert isinstance(expr.op(), ops.GroupConcat)
-        arg, sep, where = expr.op().args
+        arg, sep = expr.op().args
         assert sep == ','
 
         expr = col.group_concat('|')
-        arg, sep, where = expr.op().args
+        arg, sep = expr.op().args
         assert sep == '|'
 
     def test_zeroifnull(self):

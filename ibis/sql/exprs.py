@@ -123,16 +123,35 @@ def _reduction(func_name):
 
 
 def _fixed_arity_call(func_name, arity):
+
     def formatter(translator, expr):
         op = expr.op()
-        formatted_args = []
-        for i in xrange(arity):
-            arg = op.args[i]
-            fmt_arg = translator.translate(arg)
-            formatted_args.append(fmt_arg)
+        if arity != len(op.args):
+            raise com.IbisError('incorrect number of args')
+        return _format_call(translator, func_name, *op.args)
 
-        return '{0!s}({1!s})'.format(func_name, ', '.join(formatted_args))
     return formatter
+
+
+def _ifnull_workaround(translator, expr):
+    op = expr.op()
+    a, b = op.args
+
+    # work around per #345, #360
+    if (isinstance(a, ir.DecimalValue) and
+            isinstance(b, ir.IntegerValue)):
+        b = b.cast(a.type())
+
+    return _format_call(translator, 'isnull', a, b)
+
+
+def _format_call(translator, func, *args):
+    formatted_args = []
+    for arg in args:
+        fmt_arg = translator.translate(arg)
+        formatted_args.append(fmt_arg)
+
+    return '{0!s}({1!s})'.format(func, ', '.join(formatted_args))
 
 
 def _binary_infix_op(infix_sym):
@@ -665,7 +684,7 @@ _unary_ops = {
     ops.IsNull: _is_null,
     ops.Negate: _negate,
 
-    ops.IfNull: _fixed_arity_call('isnull', 2),
+    ops.IfNull: _ifnull_workaround,
     ops.NullIf: _fixed_arity_call('nullif', 2),
 
     ops.ZeroIfNull: _unary_op('zeroifnull'),

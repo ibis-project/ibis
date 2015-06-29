@@ -455,7 +455,8 @@ END"""
 
         cases = [
             (f.fillna(0),
-             'isnull(l_extendedprice, CAST(0 AS decimal(12,2)))')
+             'isnull(l_extendedprice, CAST(0 AS decimal(12,2)))'),
+            (f.fillna(0.0), 'isnull(l_extendedprice, 0.0)'),
         ]
         self._check_expr_cases(cases)
 
