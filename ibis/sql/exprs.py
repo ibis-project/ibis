@@ -100,10 +100,7 @@ def _parenthesize(what):
 
 
 def _unary_op(func_name):
-    def formatter(translator, expr):
-        arg = translator.translate(expr.op().args[0])
-        return '{0!s}({1!s})'.format(func_name, arg)
-    return formatter
+    return _fixed_arity_call(func_name, 1)
 
 
 def _reduction(func_name):
@@ -500,12 +497,11 @@ def _from_unixtime(translator, expr):
     return 'from_unixtime({0}, "yyyy-MM-dd HH:mm:ss")'.format(arg)
 
 
-def _coalesce_like(func_name):
-    def coalesce_like_formatter(translator, expr):
+def _varargs(func_name):
+    def varargs_formatter(translator, expr):
         op = expr.op()
-        trans_args = [translator.translate(arg) for arg in op.args]
-        return '{0}({1})'.format(func_name, ', '.join(trans_args))
-    return coalesce_like_formatter
+        return _format_call(translator, func_name, *op.args)
+    return varargs_formatter
 
 
 def _substring(translator, expr):
@@ -563,10 +559,7 @@ def _locate(translator, expr):
 def _string_join(translator, expr):
     op = expr.op()
     arg, strings = op.args
-    arg_formatted = translator.translate(arg)
-    strings_formatted = [translator.translate(x) for x in strings]
-    return 'concat_ws({0}, {1})'.format(arg_formatted,
-                                        ', '.join(strings_formatted))
+    return _format_call(translator, 'concat_ws', arg, *strings)
 
 
 def _parse_url(translator, expr):
@@ -797,9 +790,9 @@ _other_ops = {
 
     ops.Cast: _cast,
 
-    ops.Coalesce: _coalesce_like('coalesce'),
-    ops.Greatest: _coalesce_like('greatest'),
-    ops.Least: _coalesce_like('least'),
+    ops.Coalesce: _varargs('coalesce'),
+    ops.Greatest: _varargs('greatest'),
+    ops.Least: _varargs('least'),
 
     ops.Where: _fixed_arity_call('if', 3),
 
