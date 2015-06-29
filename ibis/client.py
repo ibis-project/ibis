@@ -178,7 +178,7 @@ class ImpalaConnection(object):
 
     def log(self, msg):
         if options.verbose:
-            options.verbose_log(msg)
+            (options.verbose_log or to_stdout)(msg)
 
     def error(self, msg):
         self.log(msg)
@@ -240,7 +240,7 @@ class ImpalaClient(SQLClient):
 
     def log(self, msg):
         if options.verbose:
-            options.verbose_log(msg)
+            (options.verbose_log or to_stdout)(msg)
 
     def _fully_qualified_name(self, name, database):
         if database is not None:
@@ -721,3 +721,7 @@ def _set_limit(query, k):
     limited_query = '{0}\nLIMIT {1}'.format(query, k)
 
     return limited_query
+
+
+def to_stdout(x):
+    print(x)

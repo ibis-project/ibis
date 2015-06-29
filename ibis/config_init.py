@@ -16,13 +16,7 @@ import ibis.config as cf
 
 cf.register_option('interactive', False, validator=cf.is_bool)
 cf.register_option('verbose', False, validator=cf.is_bool)
-
-
-def to_stdout(x):
-    print(x)
-
-
-cf.register_option('verbose_log', to_stdout)
+cf.register_option('verbose_log', None)
 
 
 sql_default_limit_doc = """
