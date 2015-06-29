@@ -298,6 +298,11 @@ FROM ibis_testing.tpch_lineitem li
             api.now(),
             api.e,
 
+            # hash functions
+            i4.hash(),
+            d.hash(),
+            s.hash(),
+
             # modulus cases
             i1 % 5,
             i4 % 10,
@@ -538,6 +543,10 @@ FROM ibis_testing.tpch_lineitem li
 
             ts < (ibis.now() + ibis.month(3)),
             ts < (ibis.timestamp('2005-01-01') + ibis.month(3)),
+
+            # hashing
+            dc.hash(),
+            ts.hash()
         ]
 
         timestamp_fields = ['year', 'month', 'day', 'hour', 'minute',
