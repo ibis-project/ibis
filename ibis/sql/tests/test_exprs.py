@@ -748,6 +748,7 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
             (self.table.string_col.strip(), 'trim(string_col)'),
             (self.table.string_col.lstrip(), 'ltrim(string_col)'),
             (self.table.string_col.rstrip(), 'rtrim(string_col)'),
+            (self.table.string_col.capitalize(), 'initcap(string_col)'),
             (self.table.string_col.length(), 'length(string_col)'),
             (self.table.string_col.ascii_str(), 'ascii(string_col)')
         ]
@@ -796,6 +797,13 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
+    def test_parse_url(self):
+        sql = "parse_url(string_col, 'HOST')"
+        cases = [
+            (self.table.string_col.parse_url('HOST'), sql)
+        ]
+        self._check_expr_cases(cases)
+
     def test_repeat(self):
         cases = [
             (self.table.string_col.repeat(2), 'repeat(string_col, 2)')
@@ -828,14 +836,14 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
     def test_lpad(self):
         cases = [
             (self.table.string_col.lpad(1, 'a'), "lpad(string_col, 1, 'a')"),
-            (self.table.string_col.lpad(25, 'a'), "lpad(string_col, 25, 'a')")
+            (self.table.string_col.lpad(25), "lpad(string_col, 25, ' ')")
         ]
         self._check_expr_cases(cases)
 
     def test_rpad(self):
         cases = [
             (self.table.string_col.rpad(1, 'a'), "rpad(string_col, 1, 'a')"),
-            (self.table.string_col.rpad(25, 'a'), "rpad(string_col, 25, 'a')")
+            (self.table.string_col.rpad(25), "rpad(string_col, 25, ' ')")
         ]
         self._check_expr_cases(cases)
 
