@@ -31,6 +31,9 @@ import ibis.common as com
 import ibis.config as config
 
 
+from ibis.tests.util import assert_equal
+
+
 class TestParameters(unittest.TestCase):
     pass
 
@@ -47,7 +50,7 @@ class TestLiterals(unittest.TestCase):
         assert isinstance(expr.op(), ir.NullLiteral)
 
         expr2 = api.null()
-        assert expr.equals(expr2)
+        assert_equal(expr, expr2)
 
     def test_boolean(self):
         val = True
@@ -200,7 +203,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
     def test_getitem_attribute(self):
         result = self.table.a
-        assert result.equals(self.table['a'])
+        assert_equal(result, self.table['a'])
 
         assert 'a' in dir(self.table)
 
@@ -225,7 +228,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         expr = (self.table.f * 2).name('bar')
         result = self.table.select(expr)
         expected = self.table.projection([expr])
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_projection_with_exprs(self):
         # unnamed expr to test
@@ -296,7 +299,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
     def test_projection_convenient_syntax(self):
         proj = self.table[self.table, self.table['a'].name('foo')]
         proj2 = self.table[[self.table, self.table['a'].name('foo')]]
-        assert proj.equals(proj2)
+        assert_equal(proj, proj2)
 
     def test_add_column(self):
         # Creates a projection with a select-all on top of a non-projection
@@ -307,11 +310,11 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         result = t.add_column(new_expr)
         expected = t[[t, new_expr]]
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
         result = t.add_column(new_expr, 'wat')
         expected = t[[t, new_expr.name('wat')]]
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_add_column_scalar_expr(self):
         # Check literals, at least
@@ -338,7 +341,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         t3 = t2.add_column(bar)
 
         expected = self.table[self.table, foo, bar]
-        assert t3.equals(expected)
+        assert_equal(t3, expected)
 
     def test_replace_column(self):
         tb = api.table([
@@ -351,14 +354,14 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         tb2 = tb.set_column('b', expr)
         expected = tb[tb.a, expr.name('b'), tb.c]
 
-        assert tb2.equals(expected)
+        assert_equal(tb2, expected)
 
     def test_filter_no_list(self):
         pred = self.table.a > 5
 
         result = self.table.filter(pred)
         expected = self.table[pred]
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_add_predicate(self):
         pred = self.table['a'] > 5
@@ -385,12 +388,12 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         result = self.table[pred1][pred2]
         expected = self.table.filter([pred1, pred2])
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
         # 59, if we are not careful, we can obtain broken refs
         interm = self.table[pred1]
         result = interm.filter([interm['b'] > 0])
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_rewrite_expr_with_parent(self):
         table = self.con.table('test1')
@@ -401,7 +404,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         result = L.substitute_parents(expr)
         expected = table['c'] == 2
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
         # Substitution not fully possible if we depend on a new expr in a
         # projection
@@ -410,7 +413,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         expr = table4['c'] == table4['foo']
         result = L.substitute_parents(expr)
         expected = table['c'] == table4['foo']
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_rewrite_distinct_but_equal_objects(self):
         t = self.con.table('test1')
@@ -422,7 +425,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         result = L.substitute_parents(expr)
         expected = t['c'] == 2
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_repr_same_but_distinct_objects(self):
         t = self.con.table('test1')
@@ -441,10 +444,10 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         expr3 = t[tt.f > 0][tt.c > 0]
         expr4 = t[tt.f > 0][t.c > 0]
 
-        assert expr.equals(expr2)
+        assert_equal(expr, expr2)
         assert repr(expr) == repr(expr2)
-        assert expr.equals(expr3)
-        assert expr.equals(expr4)
+        assert_equal(expr, expr3)
+        assert_equal(expr, expr4)
 
     def test_rewrite_substitute_distinct_tables(self):
         t = self.con.table('test1')
@@ -459,7 +462,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         result = L.sub_for(expr3, [(expr2, t)])
         expected = t.aggregate(metric)
 
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_rewrite_join_projection_without_other_ops(self):
         # Drop out filters and other commutative table operations. Join
@@ -488,7 +491,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         rewritten_proj = L.substitute_parents(view)
         op = rewritten_proj.op()
-        assert op.table.equals(ex_expr)
+        assert_equal(op.table, ex_expr)
 
         # Ensure that filtered table has been substituted with the base table
         assert op.selections[0] is table
@@ -502,7 +505,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         result = L.substitute_parents(expr)
         expected = table['c'] == 2
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
         # Unsafe to rewrite past projection
         table5 = table[(table.f * 2).name('c'), table.f]
@@ -527,8 +530,8 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         expected = filtered[t.a, t.b, t.c]
         expected2 = filtered.projection(['a', 'b', 'c'])
 
-        assert result.equals(expected)
-        assert result.equals(expected2)
+        assert_equal(result, expected)
+        assert_equal(result, expected2)
 
     def test_projection_with_join_pushdown_rewrite_refs(self):
         # Observed this expression IR issue in a TopK-rewrite context
@@ -566,7 +569,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
             filter_op = op.table.op()
             assert isinstance(filter_op, ops.Filter)
             new_pred = filter_op.predicates[0]
-            assert new_pred.equals(lower_pred)
+            assert_equal(new_pred, lower_pred)
 
     def test_limit(self):
         limited = self.table.limit(10, offset=5)
@@ -582,12 +585,12 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         # and we'll have ascending/descending wrappers to help.
         result = self.table.sort_by(['f'])
         sort_key = result.op().keys[0]
-        assert sort_key.expr.equals(self.table.f)
+        assert_equal(sort_key.expr, self.table.f)
         assert sort_key.ascending
 
         # non-list input. per #150
         result2 = self.table.sort_by('f')
-        assert result.equals(result2)
+        assert_equal(result, result2)
 
         result2 = self.table.sort_by([('f', False)])
         result3 = self.table.sort_by([('f', 'descending')])
@@ -600,7 +603,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert not key2.ascending
         assert not key3.ascending
         assert not key4.ascending
-        assert result2.equals(result3)
+        assert_equal(result2, result3)
 
     def test_sort_by_desc_deferred_sort_key(self):
         result = (self.table.group_by('g')
@@ -611,19 +614,19 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         expected = tmp.sort_by((tmp['count'], False))
         expected2 = tmp.sort_by(ibis.desc(tmp['count']))
 
-        assert result.equals(expected)
-        assert result.equals(expected2)
+        assert_equal(result, expected)
+        assert_equal(result, expected2)
 
     def test_slice_convenience(self):
         expr = self.table[:5]
         expr2 = self.table[:5:1]
-        assert expr.equals(self.table.limit(5))
-        assert expr.equals(expr2)
+        assert_equal(expr, self.table.limit(5))
+        assert_equal(expr, expr2)
 
         expr = self.table[2:7]
         expr2 = self.table[2:7:1]
-        assert expr.equals(self.table.limit(5, offset=2))
-        assert expr.equals(expr2)
+        assert_equal(expr, self.table.limit(5, offset=2))
+        assert_equal(expr, expr2)
 
         self.assertRaises(ValueError, self.table.__getitem__, slice(2, 15, 2))
         self.assertRaises(ValueError, self.table.__getitem__, slice(5, None))
@@ -700,7 +703,7 @@ class TestDistinct(unittest.TestCase):
         assert isinstance(expr.op(), ops.DistinctArray)
 
         ex_projection = self.table[[self.table.string_col]]
-        assert expr.op().table.op().table.equals(ex_projection)
+        assert_equal(expr.op().table.op().table, ex_projection)
 
     # def test_distinct_array_interactions(self):
     # TODO
@@ -714,7 +717,7 @@ class TestDistinct(unittest.TestCase):
     def test_distinct_count(self):
         result = self.table.string_col.distinct().count()
         expected = self.table.string_col.nunique().name('count')
-        assert result.equals(expected)
+        assert_equal(result, expected)
         assert isinstance(result.op(), ops.CountDistinct)
 
     def test_distinct_count_numeric_types(self):
@@ -1285,7 +1288,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
 
         result = self.table.aggregate(metric, by=by, having=having)
         expected = self.table.aggregate([metric], by=[by], having=[having])
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_summary_expand_list(self):
         summ = self.table.f.summary()
@@ -1293,7 +1296,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         metric = self.table.g.group_concat().name('bar')
         result = self.table.aggregate([metric, summ])
         expected = self.table.aggregate([metric] + summ.exprs())
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_aggregate_invalid(self):
         # Pass a non-aggregation or non-scalar expr
@@ -1314,7 +1317,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         agged = self.table.aggregate(metrics, by=['g'])
         filtered = agged.filter([pred])
         expected = self.table[pred].aggregate(metrics, by=['g'])
-        assert filtered.equals(expected)
+        assert_equal(filtered, expected)
 
     def test_filter_aggregate_partial_pushdown(self):
         pass
@@ -1343,7 +1346,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
                 .aggregate(metric))
 
         expected = self.table.aggregate(metric, by='g', having=postp)
-        assert expr.equals(expected)
+        assert_equal(expr, expected)
 
     def test_aggregate_root_table_internal(self):
         pass
@@ -1362,12 +1365,12 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
 
         expr = self.table.group_by('g').aggregate(metrics)
         expected = self.table.aggregate(metrics, by=['g'])
-        assert expr.equals(expected)
+        assert_equal(expr, expected)
 
         group_expr = self.table.g.cast('double')
         expr = self.table.group_by(group_expr).aggregate(metrics)
         expected = self.table.aggregate(metrics, by=[group_expr])
-        assert expr.equals(expected)
+        assert_equal(expr, expected)
 
     def test_group_by_count_size(self):
         # #148, convenience for interactive use, and so forth
@@ -1377,20 +1380,20 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         expected = (self.table.group_by('g')
                     .aggregate([self.table.count().name('count')]))
 
-        assert result1.equals(expected)
-        assert result2.equals(expected)
+        assert_equal(result1, expected)
+        assert_equal(result2, expected)
 
         result = self.table.group_by('g').count('foo')
         expected = (self.table.group_by('g')
                     .aggregate([self.table.count().name('foo')]))
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_group_by_column_select_api(self):
         grouped = self.table.group_by('g')
 
         result = grouped.f.sum()
         expected = grouped.aggregate(self.table.f.sum().name('sum(f)'))
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
         supported_functions = ['sum', 'mean', 'count', 'size', 'max', 'min']
 
@@ -1404,7 +1407,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         expected = (self.table.group_by('g')
                     .aggregate(self.table.count().name('count')))
 
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_isin_value_counts(self):
         # #157, this code path was untested before
@@ -1417,7 +1420,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
 
         expr = nation.n_name.lower().value_counts()
         expected = nation.n_name.lower().name('unnamed').value_counts()
-        assert expr.equals(expected)
+        assert_equal(expr, expected)
 
     def test_aggregate_unnamed_expr(self):
         nation = self.con.table('tpch_nation')
@@ -1450,7 +1453,7 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         pred = region.r_regionkey == nation.n_regionkey
         joined = region.inner_join(nation, pred)
         expected = region.inner_join(nation, [pred])
-        assert joined.equals(expected)
+        assert_equal(joined, expected)
 
     def test_equijoin_schema_merge(self):
         table1 = api.table([('key1',  'string'), ('value1', 'double')])
@@ -1465,7 +1468,7 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         for fname in join_types:
             f = getattr(table1, fname)
             joined = f(table2, [pred]).materialize()
-            assert joined.schema().equals(ex_schema)
+            assert_equal(joined.schema(), ex_schema)
 
     def test_join_combo_with_projection(self):
         # Test a case where there is column name overlap, but the projection
@@ -1511,12 +1514,12 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 
         # Project out left table schema
         proj = joined[[left]]
-        assert proj.schema().equals(left.schema())
+        assert_equal(proj.schema(), left.schema())
 
         # Try aggregating on top of joined
         aggregated = joined.aggregate([metric], by=[left['g']])
         ex_schema = api.Schema(['g', 'metric'], ['string', 'double'])
-        assert aggregated.schema().equals(ex_schema)
+        assert_equal(aggregated.schema(), ex_schema)
 
     def test_self_join_no_view_convenience(self):
         # #165, self joins ought to be possible when the user specifies the
@@ -1526,7 +1529,7 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 
         t2 = self.table.view()
         expected = self.table.join(t2, self.table.g == t2.g)
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_join_project_after(self):
         # e.g.
@@ -1563,7 +1566,7 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         semi_joined = table1.semi_join(table2, [pred]).materialize()
 
         result_schema = semi_joined.schema()
-        assert result_schema.equals(table1.schema())
+        assert_equal(result_schema, table1.schema())
 
     def test_cross_join(self):
         agg_exprs = [self.table['a'].sum().name('sum_a'),
@@ -1573,7 +1576,7 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         joined = self.table.cross_join(scalar_aggs).materialize()
         agg_schema = api.Schema(['sum_a', 'mean_b'], ['int64', 'double'])
         ex_schema = self.table.schema().append(agg_schema)
-        assert joined.schema().equals(ex_schema)
+        assert_equal(joined.schema(), ex_schema)
 
     def test_join_compound_boolean_predicate(self):
         # The user might have composed predicates through logical operations
@@ -1661,7 +1664,7 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 
         result = table.inner_join(table2, [table3['g'] == table2['key']])
         expected = table.inner_join(table2, [table['g'] == table2['key']])
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
     def test_non_equijoins(self):
         # Move non-equijoin predicates to WHERE during SQL translation if
@@ -1684,9 +1687,9 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 
         expected = t1.inner_join(t2, [t1.foo_id == t2.foo_id])
 
-        assert joined.equals(expected)
-        assert joined2.equals(expected)
-        assert joined3.equals(expected)
+        assert_equal(joined, expected)
+        assert_equal(joined2, expected)
+        assert_equal(joined3, expected)
 
         self.assertRaises(com.ExpressionError, t1.inner_join, t2,
                           [('foo_id', 'foo_id', 'foo_id')])
@@ -1728,7 +1731,7 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
 
         joined = t1.inner_join(t2, [p1 & p2 & p3])
         expected = t1.inner_join(t2, [p1, p2, p3])
-        assert joined.equals(expected)
+        assert_equal(joined, expected)
 
     def test_join_add_prefixes(self):
         pass
@@ -1843,7 +1846,7 @@ class TestCaseExpressions(BasicTestCase, unittest.TestCase):
                  .else_(default_result)
                  .end())
 
-        assert expr1.equals(expr2)
+        assert_equal(expr1, expr2)
         assert isinstance(expr1, ir.Int32Array)
 
     def test_multiple_case_expr(self):
@@ -1938,7 +1941,7 @@ class TestExprList(unittest.TestCase):
 
         result = list1.concat(list2)
         expected = ibis.expr_list(exprs + exprs2)
-        assert result.equals(expected)
+        assert_equal(result, expected)
 
 
 class TestInteractiveUse(unittest.TestCase):
@@ -1962,7 +1965,7 @@ class TestInteractiveUse(unittest.TestCase):
 
         result = self.con.last_executed_expr
         limit = config.options.sql.default_limit
-        assert result.equals(table.limit(limit))
+        assert_equal(result, table.limit(limit))
 
     def test_interactive_non_compilable_repr_not_fail(self):
         # #170

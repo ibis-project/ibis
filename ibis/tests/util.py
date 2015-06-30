@@ -14,8 +14,12 @@
 
 import os
 
+from ibis import Schema
+import ibis.util as util
+
 
 class IbisTestEnv(object):
+
     def __init__(self):
         # TODO: allow initializing values through a constructor
         self.impala_host = os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
@@ -37,3 +41,12 @@ class IbisTestEnv(object):
     def __repr__(self):
         kvs = ['{0}={1}'.format(k, v) for (k, v) in self.__dict__.iteritems()]
         return 'IbisTestEnv(\n    {0})'.format(',\n    '.join(kvs))
+
+
+def assert_equal(left, right):
+    if util.all_of([left, right], Schema):
+        assert left.equals(right),\
+            'Comparing schemas: \n%s !=\n%s' % (repr(left), repr(right))
+    else:
+        assert left.equals(right), ('Objects unequal: {0}\nvs\n{1}'
+                                    .format(repr(left), repr(right)))

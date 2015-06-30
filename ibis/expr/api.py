@@ -49,7 +49,8 @@ import ibis.expr.temporal as _T
 __all__ = ['schema', 'table', 'literal', 'expr_list', 'timestamp',
            'case', 'where', 'sequence',
            'now', 'desc', 'null', 'NA',
-           'cast', 'coalesce', 'greatest', 'least', 'join']
+           'cast', 'coalesce', 'greatest', 'least', 'join',
+           'Expr', 'Schema']
 __all__ += _T.__all__
 
 
