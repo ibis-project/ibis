@@ -20,7 +20,6 @@ import pytest
 import pandas as pd
 from decimal import Decimal
 
-from hdfs import InsecureClient
 import ibis
 
 from ibis.compat import unittest
@@ -44,9 +43,15 @@ def connect(env, with_hdfs=True):
     con = ibis.impala_connect(host=env.impala_host,
                               protocol=env.impala_protocol,
                               database=env.test_data_db,
-                              port=env.impala_port)
+                              port=env.impala_port,
+                              use_kerberos=env.use_kerberos)
     if with_hdfs:
-        hdfs_client = InsecureClient(env.hdfs_url)
+        if env.use_kerberos:
+            from hdfs.ext.kerberos import KerberosClient
+            hdfs_client = KerberosClient(env.hdfs_url, mutual_auth='REQUIRED')
+        else:
+            from hdfs.client import InsecureClient
+            hdfs_client = InsecureClient(env.hdfs_url)
         return ibis.make_client(con, hdfs_client)
     else:
         return ibis.make_client(con)
