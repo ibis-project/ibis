@@ -438,7 +438,9 @@ class Repeat(ValueOp):
 
 class StringFind(ValueOp):
 
-    input_type = [string, string(name='substr')]
+    input_type = [string, string(name='substr'),
+                  integer(name='start', optional=True, default=None),
+                  integer(name='end', optional=True, default=None)]
     output_type = rules.shape_like_arg(0, 'int32')
 
 
@@ -446,13 +448,6 @@ class Translate(ValueOp):
 
     input_type = [string, string(name='from_str'), string(name='to_str')]
     output_type = rules.shape_like_arg(0, 'string')
-
-
-class Locate(ValueOp):
-
-    input_type = [string, string(name='substr'),
-                  integer(name='pos', default=0)]
-    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class LPad(ValueOp):

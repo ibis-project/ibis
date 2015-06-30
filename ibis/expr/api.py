@@ -1008,22 +1008,6 @@ def repeat(self, n):
     return _ops.Repeat(self, n).to_expr()
 
 
-def _string_find(self, substr):
-    """
-    Returns the position, 0 indexed, of first occurrence of the given substring
-    Returns -1 if substring is not found.
-
-    Parameters
-    ----------
-    substr : string
-
-    Returns
-    -------
-    index : int, 0 indexed
-    """
-    return _ops.StringFind(self, substr).to_expr()
-
-
 def _translate(self, from_str, to_str):
     """
     Returns string with set of 'from' characters replaced
@@ -1048,7 +1032,7 @@ def _translate(self, from_str, to_str):
     return _ops.Translate(self, from_str, to_str).to_expr()
 
 
-def _locate(self, substr, pos=None):
+def _string_find(self, substr, start=None, end=None):
     """
     Returns position (0 indexed) of first occurence of substring,
     optionally after a particular position (0 indexed)
@@ -1056,13 +1040,17 @@ def _locate(self, substr, pos=None):
     Parameters
     ----------
     substr : string
-    pos : int
+    start : int, default None
+    end : int, default None
+        Not currently implemented
 
     Returns
     -------
     position : int, 0 indexed
     """
-    return _ops.Locate(self, substr, pos).to_expr()
+    if end is not None:
+        raise NotImplementedError
+    return _ops.StringFind(self, substr, start, end).to_expr()
 
 
 def _lpad(self, length, pad=' '):
@@ -1286,7 +1274,6 @@ _string_value_methods = dict(
     repeat=repeat,
     find=_string_find,
     translate=_translate,
-    locate=_locate,
     find_in_set=_find_in_set,
     join=_string_join,
     lpad=_lpad,

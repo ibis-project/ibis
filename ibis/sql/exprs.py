@@ -530,28 +530,20 @@ def _substring(translator, expr):
 
 def _string_find(translator, expr):
     op = expr.op()
-    arg, substr = op.args
-    arg_formatted = translator.translate(arg)
-    substr_formatted = translator.translate(substr)
-    return 'instr({0}, {1}) - 1'.format(arg_formatted, substr_formatted)
-
-
-def _locate(translator, expr):
-    op = expr.op()
-    arg, substr, pos = op.args
+    arg, substr, start, _ = op.args
     arg_formatted = translator.translate(arg)
     substr_formatted = translator.translate(substr)
 
-    if not isinstance(pos.op(), ir.Literal):
-        pos_fmt = translator.translate(pos)
+    if start and not isinstance(start.op(), ir.Literal):
+        start_fmt = translator.translate(start)
         return 'locate({0}, {1}, {2} + 1) - 1'.format(substr_formatted,
                                                       arg_formatted,
-                                                      pos_fmt)
-    elif pos.op().value:
-        pval = pos.op().value
+                                                      start_fmt)
+    elif start and start.op().value:
+        sval = start.op().value
         return 'locate({0}, {1}, {2}) - 1'.format(substr_formatted,
                                                   arg_formatted,
-                                                  pval + 1)
+                                                  sval + 1)
     else:
         return 'locate({0}, {1}) - 1'.format(substr_formatted, arg_formatted)
 
@@ -756,7 +748,6 @@ _string_ops = {
     ops.FindInSet: _find_in_set,
     ops.LPad: _fixed_arity_call('lpad', 3),
     ops.RPad: _fixed_arity_call('rpad', 3),
-    ops.Locate: _locate,
     ops.StringJoin: _string_join,
     ops.StringSQLLike: _binary_infix_op('LIKE'),
     ops.RegexSearch: _binary_infix_op('RLIKE'),

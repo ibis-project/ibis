@@ -811,12 +811,6 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
-    def test_string_find(self):
-        cases = [
-            (self.table.string_col.find('a'), "instr(string_col, 'a') - 1")
-        ]
-        self._check_expr_cases(cases)
-
     def test_translate(self):
         cases = [
             (self.table.string_col.translate('a', 'b'),
@@ -824,13 +818,14 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
-    def test_locate(self):
+    def test_find(self):
         s = self.table.string_col
         i1 = self.table.tinyint_col
         cases = [
-            (s.locate('a'), "locate('a', string_col) - 1"),
-            (s.locate('a', 2), "locate('a', string_col, 3) - 1"),
-            (s.locate('a', i1), "locate('a', string_col, tinyint_col + 1) - 1")
+            (s.find('a'), "locate('a', string_col) - 1"),
+            (s.find('a', 2), "locate('a', string_col, 3) - 1"),
+            (s.find('a', start=i1),
+             "locate('a', string_col, tinyint_col + 1) - 1")
         ]
         self._check_expr_cases(cases)
 
