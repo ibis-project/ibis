@@ -149,6 +149,6 @@ if __name__ == '__main__':
         try:
             tmp_dir = tempfile.mkdtemp(prefix='__ibis_tmp')
             local_data_dir = get_ibis_test_data(tmp_dir)
-            setup_test_data(tmp_dir)
+            setup_test_data(local_data_dir)
         finally:
             shutil.rmtree(tmp_dir)
