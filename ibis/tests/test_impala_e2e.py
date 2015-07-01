@@ -386,6 +386,12 @@ FROM ibis_testing.tpch_lineitem li
             s.strip(),
             s.lstrip(),
             s.strip(),
+
+            # strings with int expr inputs
+            s.left(i1),
+            s.right(i1),
+            s.substr(i1, i1 + 2),
+            s.repeat(i1)
         ]
 
         proj_exprs = [expr.name('e%d' % i)
