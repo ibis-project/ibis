@@ -25,7 +25,7 @@ import ibis
 
 from ibis.compat import unittest
 from ibis.sql.compiler import to_sql
-from ibis.tests.util import IbisTestEnv
+from ibis.tests.util import IbisTestEnv, assert_equal
 
 import ibis.common as com
 import ibis.config as config
@@ -69,6 +69,13 @@ class ImpalaE2E(object):
     @classmethod
     def tearDownClass(cls):
         cls.con.drop_database(cls.tmp_db, force=True)
+
+    def setUp(self):
+        self.temp_tables = []
+
+    def tearDown(self):
+        for t in self.temp_tables:
+            self.con.drop_table(t, force=True)
 
 
 class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
@@ -161,7 +168,7 @@ FROM ibis_testing.tpch_lineitem li
 
         li = self.con.table('tpch_lineitem')
         assert isinstance(table, ir.TableExpr)
-        assert table.schema().equals(li.schema())
+        assert_equal(table.schema(), li.schema())
 
         expr = table.limit(10)
         result = expr.execute()
@@ -170,7 +177,7 @@ FROM ibis_testing.tpch_lineitem li
     def test_get_schema(self):
         t = self.con.table('tpch_lineitem')
         schema = self.con.get_schema('tpch_lineitem', database='ibis_testing')
-        assert t.schema().equals(schema)
+        assert_equal(t.schema(), schema)
 
     def test_result_as_dataframe(self):
         expr = self.alltypes.limit(10)
@@ -261,6 +268,21 @@ FROM ibis_testing.tpch_lineitem li
             raise
         finally:
             _ensure_drop(self.con, table_name, database=self.test_data_db)
+
+    def test_create_empty_table(self):
+        schema = ibis.schema([('a', 'string'),
+                              ('b', 'timestamp'),
+                              ('c', 'decimal(12,8)'),
+                              ('d', 'double')])
+
+        table_name = util.guid()
+        self.con.create_table(table_name, schema=schema)
+        self.temp_tables.append(table_name)
+
+        result_schema = self.con.get_schema(table_name)
+        assert_equal(result_schema, schema)
+
+        assert len(self.con.table(table_name).execute()) == 0
 
     def test_insert_table(self):
         expr = self.alltypes
@@ -810,7 +832,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
         table = self.con.parquet_file(hdfs_path, like_table='tpch_region')
 
-        assert table.schema().equals(ex_schema)
+        assert_equal(table.schema(), ex_schema)
 
     def test_query_parquet_infer_schema(self):
         hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
@@ -824,7 +846,7 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
                                  ('r_name', 'string'),
                                  ('r_comment', 'string')])
 
-        assert table.schema().equals(ex_schema)
+        assert_equal(table.schema(), ex_schema)
 
     def test_query_text_file_regex(self):
         pass

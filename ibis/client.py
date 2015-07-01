@@ -397,15 +397,19 @@ class ImpalaClient(SQLClient):
 
         return ir.Schema(names, ibis_types)
 
-    def create_table(self, table_name, expr, database=None, format='parquet',
-                     overwrite=False):
+    def create_table(self, table_name, expr=None, schema=None,
+                     database=None, format='parquet', overwrite=False):
         """
         Create a new table in Impala using an Ibis table expression
 
         Parameters
         ----------
         table_name : string
-        expr : TableExpr
+        expr : TableExpr, optional
+          If passed, creates table from select statement results
+        schema : ibis.Schema, optional
+          Mutually exclusive with expr, creates an empty table with a
+          particular schema
         database : string, default None (optional)
         format : {'parquet'}
         overwrite : boolean, default False
@@ -415,11 +419,22 @@ class ImpalaClient(SQLClient):
         --------
         con.create_table('new_table_name', table_expr)
         """
-        ast = sql.build_ast(expr)
-        select = ast.queries[0]
-        statement = ddl.CTAS(table_name, select,
-                             database=database,
-                             overwrite=overwrite)
+        if expr is not None:
+            ast = sql.build_ast(expr)
+            select = ast.queries[0]
+            statement = ddl.CTAS(table_name, select,
+                                 database=database,
+                                 overwrite=overwrite,
+                                 format=format)
+        elif schema is not None:
+            statement = ddl.CreateTableWithSchema(
+                table_name, schema, ddl.NoFormat(),
+                database=database,
+                format=format,
+                overwrite=overwrite)
+        else:
+            raise com.IbisError('Must pass expr or schema')
+
         self._execute(statement)
 
     def avro_file(self, hdfs_dir, avro_schema,

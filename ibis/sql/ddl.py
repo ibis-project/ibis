@@ -597,9 +597,16 @@ class CreateTableWithSchema(CreateTable):
         buf.write('\n{0}'.format(schema))
 
         format_ddl = self.table_format.to_ddl()
-        buf.write(format_ddl)
+        if format_ddl:
+            buf.write(format_ddl)
 
         return buf.getvalue()
+
+
+class NoFormat(object):
+
+    def to_ddl(self):
+        return None
 
 
 class DelimitedFormat(object):
