@@ -27,6 +27,7 @@ import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
 import ibis.sql.ddl as ddl
 import ibis.sql.identifiers as ident
+import ibis.util as util
 
 
 class Client(object):
@@ -192,7 +193,12 @@ class ImpalaConnection(object):
             self.connect()
 
     def connect(self):
-        self.con = impyla_dbapi.connect(**self.params)
+        params = self.params.copy()
+
+        if params.get('database') is None:
+            params['database'] = options.impala.temp_db
+
+        self.con = impyla_dbapi.connect(**params)
         self.cursor = self.con.cursor()
         self.cursor.ping()
 
@@ -217,6 +223,7 @@ class ImpalaClient(SQLClient):
         self._hdfs = hdfs_client
 
         self.con.ensure_connected()
+        self._ensure_temp_db_exists()
 
     @property
     def hdfs(self):
@@ -458,8 +465,8 @@ class ImpalaClient(SQLClient):
         -------
         avro_table : TableExpr
         """
-        if name is None:
-            name = self._random_tmp_table()
+        name, database = self._get_concrete_table_path(name, database,
+                                                       persist=persist)
 
         qualified_name = self._fully_qualified_name(name, database)
         stmt = ddl.CreateTableAvro(name, hdfs_dir, avro_schema,
@@ -503,8 +510,8 @@ class ImpalaClient(SQLClient):
         -------
         delimited_table : TableExpr
         """
-        if name is None:
-            name = self._random_tmp_table()
+        name, database = self._get_concrete_table_path(name, database,
+                                                       persist=persist)
 
         qualified_name = self._fully_qualified_name(name, database)
 
@@ -557,8 +564,8 @@ class ImpalaClient(SQLClient):
         -------
         parquet_table : TableExpr
         """
-        if name is None:
-            name = self._random_tmp_table()
+        name, database = self._get_concrete_table_path(name, database,
+                                                       persist=persist)
 
         # If no schema provided, need to find some absolute path to a file in
         # the HDFS directory
@@ -576,6 +583,26 @@ class ImpalaClient(SQLClient):
         self._execute(stmt)
 
         return self._wrap_new_table(qualified_name, persist)
+
+    def _get_concrete_table_path(self, name, database, persist=False):
+        if not persist:
+            if name is None:
+                name = util.guid()
+
+            if database is None:
+                self._ensure_temp_db_exists()
+                database = options.impala.temp_db
+            return name, database
+        else:
+            if name is None:
+                raise com.IbisError('Must pass table name if persist=True')
+            return name, database
+
+    def _ensure_temp_db_exists(self):
+        # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
+        name, path = options.impala.temp_db, options.impala.temp_hdfs_path
+        if not self.exists_database(name):
+            self.create_database(name, path=path, fail_if_exists=True)
 
     def _wrap_new_table(self, qualified_name, persist):
         if persist:
@@ -597,11 +624,6 @@ class ImpalaClient(SQLClient):
         text_table : TableExpr
         """
         pass
-
-    def _random_tmp_table(self):
-        import uuid
-        table_name = 'ibis_tmp_' + uuid.uuid4().get_hex()
-        return table_name
 
     def insert(self, table_name, expr, database=None, overwrite=False):
         """

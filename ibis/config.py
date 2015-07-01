@@ -21,8 +21,11 @@ import re
 
 from collections import namedtuple
 from contextlib import contextmanager
+import pprint
 import warnings
 import sys
+
+from six import StringIO
 
 PY3 = (sys.version_info[0] >= 3)
 
@@ -150,6 +153,11 @@ class DictWrapper(object):
     def __init__(self, d, prefix=""):
         object.__setattr__(self, "d", d)
         object.__setattr__(self, "prefix", prefix)
+
+    def __repr__(self):
+        buf = StringIO()
+        pprint.pprint(self.d, stream=buf)
+        return buf.getvalue()
 
     def __setattr__(self, key, val):
         prefix = object.__getattribute__(self, "prefix")

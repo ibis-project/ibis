@@ -26,3 +26,18 @@ Number of rows to be retrieved for an unlimited table expression
 
 with cf.config_prefix('sql'):
     cf.register_option('default_limit', 10000, sql_default_limit_doc)
+
+
+impala_temp_db_doc = """
+Database to use for temporary tables, views. functions, etc.
+"""
+
+impala_temp_hdfs_path_doc = """
+HDFS path for storage of temporary data
+"""
+
+
+with cf.config_prefix('impala'):
+    cf.register_option('temp_db', '__ibis_tmp', impala_temp_db_doc)
+    cf.register_option('temp_hdfs_path', '/tmp/ibis',
+                       impala_temp_hdfs_path_doc)
