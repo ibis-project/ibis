@@ -39,5 +39,5 @@ HDFS path for storage of temporary data
 
 with cf.config_prefix('impala'):
     cf.register_option('temp_db', '__ibis_tmp', impala_temp_db_doc)
-    cf.register_option('temp_hdfs_path', '/__ibis/tmp',
+    cf.register_option('temp_hdfs_path', '/tmp/ibis',
                        impala_temp_hdfs_path_doc)
