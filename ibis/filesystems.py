@@ -109,6 +109,16 @@ class HDFS(object):
         """
         raise NotImplementedError
 
+    def size(self, hdfs_path):
+        """
+        Return total size of file or directory
+
+        Parameters
+        ----------
+        size : int
+        """
+        raise NotImplementedError
+
     def tail(self, hdfs_path, nbytes=1024):
         raise NotImplementedError
 
@@ -176,6 +186,20 @@ class WebHDFS(HDFS):
         dummy = posixpath.join(dir_path, util.guid())
         self.client.write(dummy, '')
         self.client.delete(dummy)
+
+    @implements(HDFS.size)
+    def size(self, hdfs_path):
+        stat = self.status(hdfs_path)
+
+        if stat['type'] == 'FILE':
+            return stat['length']
+        elif stat['type'] == 'DIRECTORY':
+            total = 0
+            for path in self.ls(hdfs_path):
+                total += self.size(path)
+            return total
+        else:
+            raise NotImplementedError
 
     def delete(self, hdfs_path, recursive=False):
         """

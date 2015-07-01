@@ -15,6 +15,7 @@
 from six import BytesIO
 
 from posixpath import join as pjoin
+from os import path as osp
 import os
 import shutil
 
@@ -68,6 +69,7 @@ class TestHDFSRandom(unittest.TestCase):
         result = self.con.find_any_file('/path')
         assert result == '/path/0.parq'
 
+
 @pytest.mark.e2e
 class TestHDFSE2E(unittest.TestCase):
 
@@ -106,11 +108,24 @@ class TestHDFSE2E(unittest.TestCase):
             except os.error:
                 pass
 
-    def _make_random_file(self, units=100, directory=None):
+    def _make_test_directory(self, files=5, filesize=1024, directory=None):
+        if directory is None:
+            directory = util.guid()
+            os.mkdir(directory)
+            self.test_directories.append(directory)
+
+        for i in xrange(files):
+            self._make_random_file(size=filesize, directory=directory)
+
+        return directory
+
+    def _make_random_file(self, size=1024, directory=None):
         path = util.guid()
 
         if directory:
-            path = os.path.join(directory, path)
+            path = osp.join(directory, path)
+
+        units = size / 32
 
         with open(path, 'wb') as f:
             for i in xrange(units):
@@ -118,18 +133,6 @@ class TestHDFSE2E(unittest.TestCase):
 
         self.test_files.append(path)
         return path
-
-    def _make_test_directory(self, files=5):
-        local_dir = util.guid()
-
-        os.mkdir(local_dir)
-
-        for i in xrange(files):
-            self._make_random_file(directory=local_dir)
-
-        self.test_directories.append(local_dir)
-
-        return local_dir
 
     def test_mkdir(self):
         path = pjoin(self.tmp_dir, 'mkdir-test')
@@ -236,7 +239,7 @@ class TestHDFSE2E(unittest.TestCase):
             for i in xrange(K):
                 self._make_random_file(directory=local_dir)
 
-            nested_dir = os.path.join(local_dir, 'nested-dir')
+            nested_dir = osp.join(local_dir, 'nested-dir')
             shutil.copytree(local_dir, nested_dir)
 
             remote_dir = pjoin(self.tmp_dir, local_dir)
@@ -283,8 +286,29 @@ class TestHDFSE2E(unittest.TestCase):
             local_path = self._make_random_file()
             hdfs_path = pjoin(test_dir, local_path)
             self.hdfs.put(hdfs_path, local_path)
-
         assert len(self.hdfs.ls(test_dir)) == 10
+
+    def test_size(self):
+        test_dir = pjoin(self.tmp_dir, 'size-test')
+
+        K = 2048
+        path = self._make_random_file(size=K)
+        hdfs_path = pjoin(test_dir, path)
+        self.hdfs.put(hdfs_path, path)
+        assert self.hdfs.size(hdfs_path) == K
+
+        size_test_dir = self._make_test_directory(files=2,
+                                                  filesize=K)
+        nested_dir = osp.join(size_test_dir, util.guid())
+        os.mkdir(nested_dir)
+
+        self._make_test_directory(files=5, filesize=K,
+                                  directory=nested_dir)
+
+        hdfs_path = pjoin(test_dir, size_test_dir)
+        self.hdfs.put(hdfs_path, size_test_dir)
+
+        assert self.hdfs.size(hdfs_path) == K * 7
 
 
 def _check_directories_equal(left, right):
@@ -307,12 +331,12 @@ def _contents_equal(left, right):
 def _get_all_files(path):
     paths = {}
     for dirpath, _, filenames in os.walk(path):
-        rel_dir = os.path.relpath(dirpath, path)
+        rel_dir = osp.relpath(dirpath, path)
         if rel_dir == '.':
             rel_dir = ''
         for name in filenames:
-            abspath = os.path.join(dirpath, name)
-            relpath = os.path.join(rel_dir, name)
+            abspath = osp.join(dirpath, name)
+            relpath = osp.join(rel_dir, name)
             paths[relpath] = abspath
 
     return paths
