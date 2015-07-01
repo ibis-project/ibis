@@ -62,13 +62,17 @@ class ImpalaE2E(object):
         cls.test_data_dir = ENV.test_data_dir
         cls.test_data_db = ENV.test_data_db
         cls.tmp_dir = ENV.tmp_dir
-        cls.tmp_db = '__ibis_{0}'.format(util.guid())
-        cls.con.create_database(cls.tmp_db)
+        cls.tmp_db = config.options.impala.temp_db
         cls.alltypes = cls.con.table('functional_alltypes')
+
+        # Using configured temp DB
+        # cls.con.create_database(cls.tmp_db)
 
     @classmethod
     def tearDownClass(cls):
-        cls.con.drop_database(cls.tmp_db, force=True)
+        # Using configured temp DB
+        # cls.con.drop_database(cls.tmp_db, force=True)
+        pass
 
 
 class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
@@ -758,7 +762,6 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
                                    database=self.tmp_db)
 
         name = table.op().name
-        assert 'ibis_tmp_' in name
         assert name.startswith('{0}.'.format(self.tmp_db))
 
         # table exists
@@ -782,7 +785,6 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         table = self.con.parquet_file(hdfs_path, schema=schema)
 
         name = table.op().name
-        assert name.startswith('ibis_tmp_')
 
         # table exists
         self.con.table(name)
