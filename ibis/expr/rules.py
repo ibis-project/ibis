@@ -331,6 +331,11 @@ class TypeSignature(object):
 
         self.types = types
 
+    def __repr__(self):
+        types = '\n    '.join('arg {0}: {1}'.format(i, repr(x))
+                              for i, x in enumerate(self.types))
+        return '{0}\n    {1}'.format(type(self), types)
+
     def validate(self, args):
         n, k = len(args), len(self.types)
         if n != k:
@@ -359,6 +364,9 @@ class VarArgs(TypeSignature):
             arg_type = arg_type()
         self.arg_type = arg_type
         self.min_length = min_length
+
+    def __repr__(self):
+        return '{0}\n    {1}'.format(type(self), repr(self.arg_type))
 
     def validate(self, args):
         n, k = len(args), self.min_length
@@ -444,6 +452,9 @@ class AnyTyped(Argument):
 
 
 class ValueTyped(AnyTyped, ValueArgument):
+
+    def __repr__(self):
+        return 'ValueTyped({0})'.format(repr(self.types))
 
     def _validate(self, args, i):
         arg = ValueArgument._validate(self, args, i)
