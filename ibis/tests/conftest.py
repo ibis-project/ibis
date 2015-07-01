@@ -22,5 +22,5 @@ def pytest_addoption(parser):
 
 def pytest_runtest_setup(item):
     if getattr(item.obj, 'e2e', None):  # the test item is marked e2e
-        if not item.config.getvalue('e2e'): # but --e2e option not set
+        if not item.config.getvalue('e2e'):  # but --e2e option not set
             skip('e2e was not enabled')

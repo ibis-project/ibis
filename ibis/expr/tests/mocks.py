@@ -14,6 +14,7 @@
 
 from ibis.client import SQLClient
 import ibis.expr.types as ir
+import ibis
 
 
 class MockConnection(SQLClient):
@@ -135,3 +136,29 @@ class MockConnection(SQLClient):
 
         self.last_executed_expr = expr
         return None
+
+
+_all_types_schema = [
+    ('a', 'int8'),
+    ('b', 'int16'),
+    ('c', 'int32'),
+    ('d', 'int64'),
+    ('e', 'float'),
+    ('f', 'double'),
+    ('g', 'string'),
+    ('h', 'boolean')
+]
+
+
+class BasicTestCase(object):
+
+    def setUp(self):
+        self.schema = _all_types_schema
+        self.schema_dict = dict(self.schema)
+        self.table = ibis.table(self.schema)
+
+        self.int_cols = ['a', 'b', 'c', 'd']
+        self.bool_cols = ['h']
+        self.float_cols = ['e', 'f']
+
+        self.con = MockConnection()
