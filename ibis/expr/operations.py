@@ -1275,8 +1275,7 @@ class SelfReference(ir.BlockingTableNode, HasSchema):
     def __init__(self, table_expr):
         self.table = table_expr
         TableNode.__init__(self, [table_expr])
-        HasSchema.__init__(self, table_expr.schema(),
-                           name=table_expr.op().name)
+        HasSchema.__init__(self, table_expr.schema())
 
     def root_tables(self):
         # The dependencies of this operation are not walked, which makes the

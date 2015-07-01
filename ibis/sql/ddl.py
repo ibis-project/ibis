@@ -384,7 +384,7 @@ class _TableSetFormatter(object):
         return _format_table(self.context, expr)
 
     # Placeholder; revisit when supporting other databases
-    _non_equijoin_supported = False
+    _non_equijoin_supported = True
 
     def _validate_join_predicates(self, predicates):
         for pred in predicates:
@@ -407,7 +407,7 @@ def _format_table(ctx, expr, indent=2):
         ref_op = ref_expr.op()
 
     if isinstance(ref_op, ops.PhysicalTable):
-        name = op.name
+        name = ref_op.name
         if name is None:
             raise com.RelationError('Table did not have a name: {0!r}'
                                     .format(expr))

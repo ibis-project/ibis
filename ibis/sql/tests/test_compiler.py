@@ -113,13 +113,6 @@ class TestASTBuilder(unittest.TestCase):
     def test_ast_non_materialized_join(self):
         pass
 
-    def test_nonequijoin_unsupported(self):
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
-
-        joined = t1.inner_join(t2, [t1.f < t2.value1])[[t1]]
-        self.assertRaises(com.TranslationError, to_sql, joined)
-
     def test_sort_by(self):
         table = self.con.table('star1')
 
@@ -1173,6 +1166,21 @@ FROM t0
   INNER JOIN t0 t1
     ON t0.r_regionkey = t1.r_regionkey"""
 
+        assert result == expected
+
+    def test_limit_with_self_join(self):
+        t = self.con.table('functional_alltypes')
+        t2 = t.view()
+
+        expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
+
+        # it works
+        result = to_sql(expr)
+        expected = """\
+SELECT count(*) AS `tmp`
+FROM functional_alltypes t0
+  INNER JOIN functional_alltypes t1
+    ON t0.tinyint_col < extract(t1.timestamp_col, 'minute')"""
         assert result == expected
 
     def test_cte_factor_distinct_but_equal(self):

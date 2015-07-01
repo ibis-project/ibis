@@ -673,6 +673,15 @@ FROM ibis_testing.tpch_lineitem li
         expr = tpch[amount_filter].limit(0)
         expr.execute()
 
+    def test_non_equijoin(self):
+        t = self.con.table('functional_alltypes').limit(100)
+        t2 = t.view()
+
+        expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
+
+        # it works
+        expr.execute()
+
     def test_verbose_log_queries(self):
         queries = []
 
