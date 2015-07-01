@@ -27,14 +27,6 @@ from ibis.expr.tests.mocks import MockConnection, BasicTestCase
 from ibis.tests.util import assert_equal
 
 
-class TestParameters(unittest.TestCase):
-    pass
-
-
-class TestSchema(unittest.TestCase):
-    pass
-
-
 class TestLiterals(BasicTestCase, unittest.TestCase):
 
     def test_null(self):
