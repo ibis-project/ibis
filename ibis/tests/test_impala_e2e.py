@@ -502,7 +502,7 @@ FROM ibis_testing.tpch_lineitem li
             (dc.log2(), 2.39094),
             (dc.log10(), 0.71975),
             (dc.sqrt(), 2.29019),
-            (dc.zeroifnull(), Decimal(5.245)),
+            (dc.zeroifnull(), Decimal('5.245')),
             (-dc, Decimal('-5.245'))
         ]
 
