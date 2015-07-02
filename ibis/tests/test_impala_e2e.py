@@ -148,6 +148,10 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         name = 'test_{0}'.format(util.guid())
         tmp_path = pjoin(base, name)
 
+        # We have to explicitly mkdir(base) because if we leave the dir
+        # creation to Impala, then the base dir will be owned by user impala,
+        # and we will not be able to remove it when we clean up
+        self.hdfs.mkdir(base, create_parent=True)
         self.con.create_database(name, path=tmp_path)
         assert self.hdfs.exists(base)
         self.con.drop_database(name)
