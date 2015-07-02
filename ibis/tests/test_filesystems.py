@@ -94,6 +94,7 @@ class TestHDFSE2E(unittest.TestCase):
 
     def tearDown(self):
         self._delete_test_files()
+        pass
 
     def _delete_test_files(self):
         for path in self.test_files:
@@ -297,18 +298,47 @@ class TestHDFSE2E(unittest.TestCase):
         self.hdfs.put(hdfs_path, path)
         assert self.hdfs.size(hdfs_path) == K
 
-        size_test_dir = self._make_test_directory(files=2,
-                                                  filesize=K)
-        nested_dir = osp.join(size_test_dir, util.guid())
-        os.mkdir(nested_dir)
-
-        self._make_test_directory(files=5, filesize=K,
-                                  directory=nested_dir)
+        size_test_dir = self._sample_nested_directory()
 
         hdfs_path = pjoin(test_dir, size_test_dir)
         self.hdfs.put(hdfs_path, size_test_dir)
 
         assert self.hdfs.size(hdfs_path) == K * 7
+
+    def test_put_get_tarfile(self):
+        test_dir = pjoin(self.tmp_dir, 'tarfile-test')
+
+        dirname = self._sample_nested_directory()
+
+        import subprocess
+        tf_name = '{}.tar.gz'.format(dirname)
+        cmd = 'tar zc {0} > {1}'.format(dirname, tf_name)
+
+        retcode = subprocess.call(cmd, shell=True)
+        if retcode:
+            raise Exception((retcode, cmd))
+
+        self.test_files.append(tf_name)
+
+        randname = util.guid()
+        hdfs_path = pjoin(test_dir, randname)
+        self.hdfs.put_tarfile(hdfs_path, tf_name, compression='gzip')
+
+        self.hdfs.get(hdfs_path, '.')
+        self.test_directories.append(randname)
+        _check_directories_equal(osp.join(randname, dirname), dirname)
+
+    def _sample_nested_directory(self):
+        K = 2048
+        dirname = self._make_test_directory(files=2, filesize=K)
+        nested_dir = osp.join(dirname, util.guid())
+        os.mkdir(nested_dir)
+
+        self._make_test_directory(files=5, filesize=K,
+                                  directory=nested_dir)
+
+        return dirname
+
 
 
 def _check_directories_equal(left, right):

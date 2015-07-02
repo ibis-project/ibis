@@ -16,6 +16,7 @@
 # license), see the LICENSES directory.
 
 from os import path as osp
+from posixpath import join as pjoin
 import os
 import posixpath
 import shutil
@@ -90,6 +91,44 @@ class HDFS(object):
         written_path : string
           The path to the written file or directory
         """
+        raise NotImplementedError
+
+    def put_tarfile(self, hdfs_path, local_path, compression='gzip',
+                    verbose=None, overwrite=False):
+        """
+        Write contents of tar archive to HDFS directly without having to
+        decompress it locally first
+
+        Parameters
+        ----------
+        hdfs_path : string
+        local_path : string
+        compression : {'gzip', 'bz2', None}
+        overwrite : boolean, default False
+        verbose : boolean, default None (global default)
+        """
+        import tarfile
+        modes = {
+            None: 'r',
+            'gzip': 'r:gz',
+            'bz2': 'r:bz2'
+        }
+
+        if compression not in modes:
+            raise ValueError('Invalid compression type {0}'
+                             .format(compression))
+        mode = modes[compression]
+
+        tf = tarfile.open(local_path, mode=mode)
+        for info in tf:
+            if not info.isfile():
+                continue
+
+            buf = tf.extractfile(info)
+            abspath = pjoin(hdfs_path, info.path)
+            self.put(abspath, buf, verbose=verbose, overwrite=overwrite)
+
+    def put_zipfile(self, hdfs_path, local_path):
         raise NotImplementedError
 
     def write(self, hdfs_path, buf, overwrite=False, blocksize=None,
@@ -183,7 +222,7 @@ class WebHDFS(HDFS):
         # ugh, see #252
 
         # create a temporary file, then delete it
-        dummy = posixpath.join(dir_path, util.guid())
+        dummy = pjoin(dir_path, util.guid())
         self.client.write(dummy, '')
         self.client.delete(dummy)
 
@@ -224,7 +263,7 @@ class WebHDFS(HDFS):
                     rel_dir = ''
                 for fpath in filenames:
                     abs_path = osp.join(dirpath, fpath)
-                    rel_hdfs_path = posixpath.join(hdfs_path, rel_dir, fpath)
+                    rel_hdfs_path = pjoin(hdfs_path, rel_dir, fpath)
                     self.put(rel_hdfs_path, abs_path, overwrite=overwrite,
                              verbose=verbose, **kwargs)
         else:
@@ -268,7 +307,7 @@ class WebHDFS(HDFS):
             objs = self.client.list(path)
             for hpath, detail in objs:
                 relpath = posixpath.relpath(hpath, hdfs_path)
-                full_opath = posixpath.join(dst, relpath)
+                full_opath = pjoin(dst, relpath)
 
                 if detail['type'] == 'FILE':
                     _get_file(hpath, full_opath)
