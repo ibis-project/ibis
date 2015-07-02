@@ -478,6 +478,24 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+def _truncate(translator, expr):
+    op = expr.op()
+
+    arg = translator.translate(op.args[0])
+
+    _impala_unit_names = {
+        'M': 'MONTH',
+        'D': 'J',
+        'J': 'D',
+        'H': 'HH'
+    }
+
+    unit = op.args[1]
+    unit = _impala_unit_names.get(unit, unit)
+
+    return "trunc({0!s}, '{1!s}')".format(arg, unit)
+
+
 def _timestamp_from_unix(translator, expr):
     op = expr.op()
 
@@ -766,6 +784,7 @@ _timestamp_ops = {
     ops.ExtractMinute: _extract_field('minute'),
     ops.ExtractSecond: _extract_field('second'),
     ops.ExtractMillisecond: _extract_field('millisecond'),
+    ops.Truncate: _truncate
 }
 
 

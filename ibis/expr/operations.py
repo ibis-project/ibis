@@ -14,13 +14,13 @@
 
 import operator
 
-from ibis.common import RelationError, ExpressionError
 from ibis.compat import py_string
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr,
                              ValueExpr, ArrayExpr, TableExpr,
                              ArrayNode, TableNode, ValueNode,
                              HasSchema, _safe_repr)
+import ibis.common as com
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
@@ -133,11 +133,11 @@ class TableArrayView(ArrayNode):
 
     def __init__(self, table):
         if not isinstance(table, TableExpr):
-            raise ExpressionError('Requires table')
+            raise com.ExpressionError('Requires table')
 
         schema = table.schema()
         if len(schema) > 1:
-            raise ExpressionError('Table can only have a single column')
+            raise com.ExpressionError('Table can only have a single column')
 
         self.table = table
         self.name = schema.names[0]
@@ -1016,7 +1016,8 @@ class Join(TableNode):
         for pred in predicates:
             if isinstance(pred, tuple):
                 if len(pred) != 2:
-                    raise ExpressionError('Join key tuple must be length 2')
+                    raise com.ExpressionError('Join key tuple must be '
+                                              'length 2')
                 lk, rk = pred
                 lk = self.left._ensure_expr(lk)
                 rk = self.right._ensure_expr(rk)
@@ -1025,7 +1026,7 @@ class Join(TableNode):
                 pred = L.substitute_parents(pred, past_projection=False)
 
             if not isinstance(pred, ir.BooleanArray):
-                raise ExpressionError('Join predicate must be comparison')
+                raise com.ExpressionError('Join predicate must be comparison')
 
             preds = L.unwrap_ands(pred)
             result.extend(preds)
@@ -1048,8 +1049,8 @@ class Join(TableNode):
 
         overlap = set(sleft.names) & set(sright.names)
         if overlap:
-            raise RelationError('Joined tables have overlapping names: %s'
-                                % str(list(overlap)))
+            raise com.RelationError('Joined tables have overlapping names: %s'
+                                    % str(list(overlap)))
 
         return sleft.append(sright)
 
@@ -1139,7 +1140,8 @@ class Union(ir.BlockingTableNode, HasSchema):
 
     def _validate(self):
         if not self.left.schema().equals(self.right.schema()):
-            raise RelationError('Table schemas must be equal to form union')
+            raise com.RelationError('Table schemas must be equal '
+                                    'to form union')
 
 
 class Filter(TableNode):
@@ -1240,7 +1242,7 @@ class SortKey(object):
 
     def __init__(self, expr, ascending=True):
         if not rules.is_array(expr):
-            raise ExpressionError('Must be an array/column expression')
+            raise com.ExpressionError('Must be an array/column expression')
 
         self.expr = expr
         self.ascending = ascending
@@ -1410,9 +1412,9 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
 
         for expr in self.having:
             if not isinstance(expr, ir.BooleanScalar):
-                raise ExpressionError('Having clause must be boolean '
-                                      'expression, was: {0!s}'
-                                      .format(_safe_repr(expr)))
+                raise com.ExpressionError('Having clause must be boolean '
+                                          'expression, was: {0!s}'
+                                          .format(_safe_repr(expr)))
 
         # All non-scalar refs originate from the input table
         all_exprs = self.agg_exprs + self.by + self.having
@@ -1637,6 +1639,70 @@ class E(Constant):
 class TimestampUnaryOp(UnaryOp):
 
     input_type = [rules.timestamp]
+
+
+_truncate_units = [
+    'Y', 'Q', 'M', 'D', 'J', 'W', 'H', 'MI'
+]
+
+_truncate_unit_aliases = {
+    # year
+    'YYYY': 'Y',
+    'SYYYY': 'Y',
+    'YEAR': 'Y',
+    'YYY': 'Y',
+    'YY': 'Y',
+
+    # month
+    'MONTH': 'M',
+    'MON': 'M',
+
+    # week
+    'WW': 'W',
+
+    # day of month
+
+    # starting day of week
+
+    # hour
+    'HOUR': 'H',
+    'HH24': 'H',
+
+    # minute
+    'MINUTE': 'MI',
+
+    # second
+
+    # millisecond
+
+    # microsecond
+}
+
+
+def _truncate_unit_validate(unit):
+    orig_unit = unit
+    unit = unit.upper()
+
+    # TODO: truncate autocompleter
+
+    unit = _truncate_unit_aliases.get(unit, unit)
+    valid_units = set(_truncate_units)
+
+    if unit not in valid_units:
+        raise com.IbisInputError('Passed unit {0} was not one of'
+                                 ' {1}'.format(orig_unit,
+                                               repr(valid_units)))
+
+    return unit
+
+
+class Truncate(ValueOp):
+
+    input_type = [
+        rules.timestamp,
+        rules.string_options(_truncate_units, name='unit',
+                             validator=_truncate_unit_validate)]
+    output_type = rules.shape_like_arg(0, 'timestamp')
 
 
 class ExtractTimestampField(TimestampUnaryOp):

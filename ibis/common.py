@@ -37,6 +37,10 @@ class TranslationError(IbisError):
     pass
 
 
+class IbisInputError(ValueError, IbisError):
+    pass
+
+
 class IbisTypeError(TypeError, IbisError):
     pass
 
