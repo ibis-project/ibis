@@ -301,18 +301,26 @@ class Argument(object):
 
     """
 
-    def __init__(self, name=None, default=None, optional=False):
+    def __init__(self, name=None, default=None, optional=False,
+                 validator=None):
         self.name = name
         self.default = default
         self.optional = optional
 
+        self.validator = validator
+
     def validate(self, args, i):
         arg = args[i]
+
+        if self.validator is not None:
+            arg = args[i] = self.validator(arg)
+
         if arg is None:
             if not self.optional:
                 return ir.as_value_expr(self.default)
             elif self.optional:
                 return arg
+
         return self._validate(args, i)
 
     def _validate(self, args, i):
@@ -426,7 +434,7 @@ class ValueArgument(Argument):
     def _validate(self, args, i):
         arg = args[i]
         if not isinstance(arg, ir.Expr):
-            arg = ir.as_value_expr(arg)
+            arg = args[i] = ir.as_value_expr(arg)
 
         return arg
 
@@ -457,10 +465,8 @@ class ValueTyped(AnyTyped, ValueArgument):
         return 'ValueTyped({0})'.format(repr(self.types))
 
     def _validate(self, args, i):
-        arg = ValueArgument._validate(self, args, i)
-        new_args = list(args)
-        new_args[i] = arg
-        return AnyTyped._validate(self, new_args, i)
+        ValueArgument._validate(self, args, i)
+        return AnyTyped._validate(self, args, i)
 
 
 class MultipleTypes(Argument):
@@ -483,13 +489,13 @@ class CastIfDecimal(ValueArgument):
         ValueArgument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
-        arg = ValueArgument._validate(self, args, i)
+        ValueArgument._validate(self, args, i)
 
         ref_arg = args[self.ref_j]
         if isinstance(ref_arg, ir.DecimalValue):
-            return arg.cast(ref_arg.type())
+            return args[i].cast(ref_arg.type())
 
-        return arg
+        return args[i]
 
 
 cast_if_decimal = CastIfDecimal
@@ -538,8 +544,6 @@ class Number(ValueTyped):
         ValueTyped.__init__(self, ir.NumericValue, 'not numeric', **arg_kwds)
 
     def _validate(self, args, i):
-        arg = args[i]
-
         arg = ValueTyped._validate(self, args, i)
 
         if isinstance(arg, ir.BooleanValue) and not self.allow_boolean:
@@ -605,7 +609,7 @@ class ListOf(Argument):
     def _validate(self, args, i):
         arg = args[i]
         if isinstance(arg, tuple):
-            arg = list(arg)
+            arg = args[i] = list(arg)
 
         if not isinstance(arg, list):
             raise IbisTypeError('not a list')
@@ -625,6 +629,8 @@ class ListOf(Argument):
                 raise IbisTypeError(msg)
             checked_args.append(checked_arg)
 
+        args[i] = checked_args
+
         return checked_args
 
 
@@ -639,7 +645,8 @@ class DataType(Argument):
         if isinstance(arg, py_string):
             arg = arg.lower()
 
-        return ir._validate_type(arg)
+        arg = args[i] = ir._validate_type(arg)
+        return arg
 
 
 data_type = DataType

@@ -1641,48 +1641,52 @@ class TimestampUnaryOp(UnaryOp):
     input_type = [rules.timestamp]
 
 
+_truncate_units = [
+    'Y', 'Q', 'M', 'D', 'J', 'W', 'H', 'MI'
+]
+
+_truncate_unit_aliases = {
+    # year
+    'YYYY': 'Y',
+    'SYYYY': 'Y',
+    'YEAR': 'Y',
+    'YYY': 'Y',
+    'YY': 'Y',
+
+    # month
+    'MONTH': 'M',
+    'MON': 'M',
+
+    # week
+    'WW': 'W',
+
+    # day of month
+
+    # starting day of week
+
+    # hour
+    'HOUR': 'H',
+    'HH24': 'H',
+
+    # minute
+    'MINUTE': 'MI',
+
+    # second
+
+    # millisecond
+
+    # microsecond
+}
+
+
 def _truncate_unit_validate(unit):
     orig_unit = unit
     unit = unit.upper()
 
     # TODO: truncate autocompleter
 
-    unit_aliases = {
-        # year
-        'YYYY': 'Y',
-        'SYYYY': 'Y',
-        'YEAR': 'Y',
-        'YYY': 'Y',
-        'YY': 'Y',
-
-        # month
-        'MON': 'MONTH',
-
-        # week
-        'WW': 'W',
-
-        # day of month
-
-        # starting day of week
-
-        # hour
-
-        # minute
-
-        # second
-
-        # millisecond
-
-        # microsecond
-    }
-
-    unit = unit_aliases.get(unit, unit)
-
-    valid_units = set([
-        'Y', 'Q', 'MONTH',
-        'D',
-        'J'
-    ])
+    unit = _truncate_unit_aliases.get(unit, unit)
+    valid_units = set(_truncate_units)
 
     if unit not in valid_units:
         raise com.IbisInputError('Passed unit {0} was not one of'
@@ -1694,9 +1698,10 @@ def _truncate_unit_validate(unit):
 
 class Truncate(ValueOp):
 
-    input_type = [rules.timestamp,
-                  rules.string(name='unit',
-                               validator=_truncate_unit_validate)]
+    input_type = [
+        rules.timestamp,
+        rules.string_options(_truncate_units, name='unit',
+                             validator=_truncate_unit_validate)]
     output_type = rules.shape_like_arg(0, 'timestamp')
 
 

@@ -434,25 +434,41 @@ FROM ibis_testing.tpch_lineitem li
     def test_int_builtins(self):
         i8 = ibis.literal(50)
         i32 = ibis.literal(50000)
-        i64 = ibis.literal(5 * 10 ** 8)
+
         mod_cases = [
             (i8 % 5, 0),
             (i32 % 10, 0),
             (250 % i8, 0),
         ]
+
         nullif_cases = [
             (5 / i8.nullif(0), 0.1),
             (5 / i8.nullif(i32), 0.1),
             (5 / i32.nullif(0), 0.0001),
             (i32.zeroifnull(), 50000),
         ]
+
+        self.assert_cases_equality(mod_cases + nullif_cases)
+
+    def test_timestamp_builtins(self):
+        i32 = ibis.literal(50000)
+        i64 = ibis.literal(5 * 10 ** 8)
+
+        stamp = ibis.timestamp('2009-05-17 12:34:56')
+
         timestamp_cases = [
             (i32.to_timestamp('s'), pd.to_datetime(50000, unit='s')),
             (i32.to_timestamp('ms'), pd.to_datetime(50000, unit='ms')),
             (i64.to_timestamp(), pd.to_datetime(5 * 10 ** 8, unit='s')),
+
+            (stamp.truncate('y'), pd.Timestamp('2009-01-01')),
+            (stamp.truncate('m'), pd.Timestamp('2009-05-01')),
+            (stamp.truncate('d'), pd.Timestamp('2009-05-17')),
+            (stamp.truncate('h'), pd.Timestamp('2009-05-17 12:00')),
+            (stamp.truncate('minute'), pd.Timestamp('2009-05-17 12:34'))
         ]
 
-        self.assert_cases_equality(mod_cases + nullif_cases + timestamp_cases)
+        self.assert_cases_equality(timestamp_cases)
 
     def test_decimal_builtins(self):
         d = ibis.literal(5.245)
@@ -577,7 +593,16 @@ FROM ibis_testing.tpch_lineitem li
 
             # hashing
             dc.hash(),
-            ts.hash()
+            ts.hash(),
+
+            # truncate
+            ts.truncate('y'),
+            ts.truncate('q'),
+            ts.truncate('month'),
+            ts.truncate('d'),
+            ts.truncate('w'),
+            ts.truncate('h'),
+            ts.truncate('minute'),
         ]
 
         timestamp_fields = ['year', 'month', 'day', 'hour', 'minute',

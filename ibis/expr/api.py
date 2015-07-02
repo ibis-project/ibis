@@ -1287,6 +1287,9 @@ _add_methods(StringValue, _string_value_methods)
 # ---------------------------------------------------------------------
 # Timestamp API
 
+def _timestamp_truncate(arg, unit):
+    return _ops.Truncate(arg, unit).to_expr()
+
 
 _timestamp_value_methods = dict(
     year=_extract_field('year', _ops.ExtractYear),
@@ -1295,7 +1298,8 @@ _timestamp_value_methods = dict(
     hour=_extract_field('hour', _ops.ExtractHour),
     minute=_extract_field('minute', _ops.ExtractMinute),
     second=_extract_field('second', _ops.ExtractSecond),
-    millisecond=_extract_field('millisecond', _ops.ExtractMillisecond)
+    millisecond=_extract_field('millisecond', _ops.ExtractMillisecond),
+    truncate=_timestamp_truncate
 )
 
 
