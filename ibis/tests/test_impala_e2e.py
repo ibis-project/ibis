@@ -76,10 +76,14 @@ class ImpalaE2E(object):
 
     def setUp(self):
         self.temp_tables = []
+        self.temp_views = []
 
     def tearDown(self):
         for t in self.temp_tables:
             self.con.drop_table(t, force=True)
+
+        for t in self.temp_views:
+            self.con.drop_view(t, force=True)
 
 
 class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
@@ -131,12 +135,39 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         self.con.drop_database(tmp_name)
         assert not self.con.exists_database(tmp_name)
 
+    def test_exists_table(self):
+        assert self.con.exists_table('functional_alltypes')
+        assert not self.con.exists_table(util.guid())
+
+    def test_create_exists_drop_view(self):
+        tmp_name = util.guid()
+
+        assert not self.con.exists_table(tmp_name)
+
+        expr = (self.con.table('functional_alltypes')
+                .group_by('string_col')
+                .size())
+
+        self.con.create_view(tmp_name, expr)
+        self.temp_views.append(tmp_name)
+        assert self.con.exists_table(tmp_name)
+
+        # just check it works for now
+        expr2 = self.con.table(tmp_name)
+        expr2.execute()
+
+        self.con.drop_view(tmp_name)
+        assert not self.con.exists_table(tmp_name)
+
     def test_drop_non_empty_database(self):
         tmp_db = util.guid()
         self.con.create_database(tmp_db)
 
-        tmp_table = util.guid()
-        self.con.create_table(tmp_table, self.alltypes, database=tmp_db)
+        self.con.create_table(util.guid(), self.alltypes, database=tmp_db)
+
+        # Has a view, too
+        self.con.create_view(util.guid(), self.alltypes,
+                             database=tmp_db)
 
         self.assertRaises(com.IntegrityError, self.con.drop_database, tmp_db)
 

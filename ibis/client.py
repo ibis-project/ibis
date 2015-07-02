@@ -341,7 +341,7 @@ class ImpalaClient(SQLClient):
         if force:
             for table in tables:
                 self.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
-                self.drop_table(table, database=name)
+                self.drop_table_or_view(table, database=name)
         else:
             if len(tables) > 0:
                 raise com.IntegrityError('Database {0} must be empty before '
@@ -400,6 +400,51 @@ class ImpalaClient(SQLClient):
         names = [x.lower() for x in names]
 
         return ir.Schema(names, ibis_types)
+
+    def exists_table(self, name, database=None):
+        """
+        Determine if the indicated table or view exists
+
+        Parameters
+        ----------
+        name : string
+        database : string, default None
+
+        Returns
+        -------
+        if_exists : boolean
+        """
+        return len(self.list_tables(like=name)) > 0
+
+    def create_view(self, name, expr, database=None):
+        """
+        Create an Impala view from a table expression
+
+        Parameters
+        ----------
+        name : string
+        expr : ibis TableExpr
+        database : string, default None
+        """
+        ast = sql.build_ast(expr)
+        select = ast.queries[0]
+        statement = ddl.CreateView(name, select, database=database)
+        self._execute(statement)
+
+    def drop_view(self, name, database=None, force=False):
+        """
+        Drop an Impala view
+
+        Parameters
+        ----------
+        name : string
+        database : string, default None
+        force : boolean, default False
+          Database may throw exception if table does not exist
+        """
+        statement = ddl.DropView(name, database=database,
+                                 must_exist=not force)
+        self._execute(statement)
 
     def create_table(self, table_name, expr=None, schema=None,
                      database=None, format='parquet', overwrite=False):
@@ -650,6 +695,7 @@ class ImpalaClient(SQLClient):
 
     def drop_table(self, table_name, database=None, force=False):
         """
+        Drop an Impala table
 
         Parameters
         ----------
@@ -665,6 +711,18 @@ class ImpalaClient(SQLClient):
         statement = ddl.DropTable(table_name, database=database,
                                   must_exist=not force)
         self._execute(statement)
+
+    def drop_table_or_view(self, name, database=None, force=False):
+        """
+        Attempt to drop a relation that may be a view or table
+        """
+        try:
+            self.drop_table(name, database=database)
+        except Exception as e:
+            try:
+                self.drop_view(name, database=database)
+            except:
+                raise e
 
     def cache_table(self, table_name, database=None, pool='default'):
         """

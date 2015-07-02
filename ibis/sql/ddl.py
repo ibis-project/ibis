@@ -486,17 +486,6 @@ class CreateTable(DDLStatement):
             raise ValueError('Invalid format: {0}'.format(format))
         return format
 
-    def compile(self):
-        buf = BytesIO()
-
-        buf.write(self._create_line())
-        buf.write(self._storage())
-
-        select_query = self.select.compile()
-        buf.write('\nAS\n{0}'.format(select_query))
-
-        return buf.getvalue()
-
     def _create_line(self):
         if_exists = '' if self.overwrite else 'IF NOT EXISTS '
         scoped_name = self._get_scoped_name(self.table_name, self.database)
@@ -540,6 +529,33 @@ class CTAS(CreateTable):
         select_query = self.select.compile()
         buf.write('\nAS\n{0}'.format(select_query))
         return buf.getvalue()
+
+
+class CreateView(DDLStatement):
+
+    """
+    Create Table As Select
+    """
+
+    def __init__(self, name, select, database=None, overwrite=False):
+        self.name = name
+        self.database = database
+        self.select = select
+        self.overwrite = overwrite
+
+    def compile(self):
+        buf = BytesIO()
+        buf.write(self._create_line())
+
+        select_query = self.select.compile()
+        buf.write('\nAS\n{0}'.format(select_query))
+        return buf.getvalue()
+
+    def _create_line(self):
+        if_exists = '' if self.overwrite else 'IF NOT EXISTS '
+        scoped_name = self._get_scoped_name(self.name, self.database)
+
+        return '{0} {1}{2}'.format('CREATE VIEW', if_exists, scoped_name)
 
 
 class CreateTableParquet(CreateTable):
@@ -725,17 +741,20 @@ class DropObject(DDLStatement):
 
 class DropTable(DropObject):
 
+    _object_type = 'TABLE'
+
     def __init__(self, table_name, database=None, must_exist=True):
         self.table_name = table_name
         self.database = database
         DropObject.__init__(self, must_exist=must_exist)
 
-    @property
-    def _object_type(self):
-        return 'TABLE'
-
     def _object_name(self):
         return self._get_scoped_name(self.table_name, self.database)
+
+
+class DropView(DropTable):
+
+    _object_type = 'VIEW'
 
 
 class CacheTable(DDLStatement):
@@ -773,13 +792,11 @@ class CreateDatabase(DDLStatement):
 
 class DropDatabase(DropObject):
 
+    _object_type = 'DATABASE'
+
     def __init__(self, name, must_exist=True):
         self.name = name
         DropObject.__init__(self, must_exist=must_exist)
-
-    @property
-    def _object_type(self):
-        return 'DATABASE'
 
     def _object_name(self):
         return self.name
