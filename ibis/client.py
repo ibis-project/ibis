@@ -195,9 +195,6 @@ class ImpalaConnection(object):
     def connect(self):
         params = self.params.copy()
 
-        if params.get('database') is None:
-            params['database'] = options.impala.temp_db
-
         self.con = impyla_dbapi.connect(**params)
         self.cursor = self.con.cursor()
         self.cursor.ping()
