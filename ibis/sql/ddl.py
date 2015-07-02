@@ -752,6 +752,19 @@ class DropTable(DropObject):
         return self._get_scoped_name(self.table_name, self.database)
 
 
+class TruncateTable(DDLStatement):
+
+    _object_type = 'TABLE'
+
+    def __init__(self, table_name, database=None):
+        self.table_name = table_name
+        self.database = database
+
+    def compile(self):
+        name = self._get_scoped_name(self.table_name, self.database)
+        return 'TRUNCATE TABLE {0}'.format(name)
+
+
 class DropView(DropTable):
 
     _object_type = 'VIEW'

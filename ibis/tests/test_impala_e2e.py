@@ -34,6 +34,9 @@ import ibis.expr.types as ir
 import ibis.util as util
 
 
+from impala.error import HiveServer2Error as HS2Error
+
+
 ENV = IbisTestEnv()
 
 
@@ -194,8 +197,22 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
         self.con.drop_table(random_name, force=True)
 
-    def test_exists_table(self):
-        pass
+    def test_truncate_table(self):
+        expr = self.alltypes.limit(50)
+
+        table_name = util.guid()
+        self.con.create_table(table_name, expr=expr)
+        self.temp_tables.append(table_name)
+
+        try:
+            self.con.truncate_table(table_name)
+        except HS2Error as e:
+            if 'AnalysisException' in e.message:
+                pytest.skip('TRUNCATE not available in this '
+                            'version of Impala')
+
+        result = self.con.table(table_name).execute()
+        assert len(result) == 0
 
     def test_run_sql(self):
         query = """SELECT li.*
