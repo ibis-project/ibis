@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pandas as pd
+import hashlib
 
 import ibis
 
@@ -23,7 +24,6 @@ import ibis.common as com
 
 import ibis.expr.api as api
 import ibis.expr.operations as ops
-
 import ibis.sql.ddl as ddl
 
 # We are only testing Impala SQL dialect for the time being. At some point if
@@ -1953,4 +1953,52 @@ WHERE NOT EXISTS (
   FROM bar t1
   WHERE t0.key1 = t1.key1
 )"""
+        assert result == expected
+
+
+class TestUDFStatements(unittest.TestCase):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.name = 'test_name'
+        self.inputs = ['string', 'string']
+
+    def test_create_udf(self):
+        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
+                                  'int32', self.name)
+        result = stmt.compile()
+        expected = ("CREATE FUNCTION test_name(string, string) returns int32 "
+                    "location '/foo/bar.so' symbol='testFunc'")
+        assert result == expected
+
+    def test_create_udf_naming(self):
+        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
+                                  'int32', self.name, db='foo')
+        result = stmt.compile()
+        expected = ("CREATE FUNCTION foo.test_name(string, string) "
+                    "returns int32 location '/foo/bar.so' symbol='testFunc'")
+        assert result == expected
+
+    def test_delete_udf_simple(self):
+        stmt = ddl.DropFunction(self.name, self.inputs)
+        result = stmt.compile()
+        expected = "DROP FUNCTION test_name(string, string)"
+        assert result == expected
+
+    def test_delete_udf_aggregate(self):
+        stmt = ddl.DropFunction(self.name, self.inputs, False, True)
+        result = stmt.compile()
+        expected = "DROP AGGREGATE FUNCTION test_name(string, string)"
+        assert result == expected
+
+    def test_delete_udf_ifexists(self):
+        stmt = ddl.DropFunction(self.name, self.inputs, True)
+        result = stmt.compile()
+        expected = "DROP FUNCTION IF EXISTS test_name(string, string)"
+        assert result == expected
+
+    def test_delete_udf_db(self):
+        stmt = ddl.DropFunction(self.name, self.inputs, False, False, 'test')
+        result = stmt.compile()
+        expected = "DROP FUNCTION test.test_name(string, string)"
         assert result == expected

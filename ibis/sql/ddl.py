@@ -14,6 +14,7 @@
 
 from io import BytesIO
 import re
+import hashlib
 
 from ibis.sql.exprs import ExprTranslator, quote_identifier
 import ibis.expr.types as ir
@@ -837,6 +838,71 @@ def _format_type(t):
     else:
         return _impala_type_names[t]
 
+
+class CreateFunction(DDLStatement):
+
+    _object_type = 'FUNCTION'
+
+    def __init__(self, hdfs_file, so_symbol, inputs, output, name, db=None):
+        self.hdfs_file = hdfs_file
+        self.so_symbol = so_symbol
+        self.inputs = inputs
+        self.output = output
+        self.name = name
+        self.db = db
+
+    def get_name(self):
+        return self.name
+
+    def _get_scoped_name(self):
+        if self.db:
+            return '{0}.{1}'.format(self.db, self.name)
+        else:
+            return self.name
+
+    def compile(self):
+        create_decl = 'CREATE FUNCTION'
+        scoped_name = self._get_scoped_name()
+        create_line = '{0!s}({1!s}) returns {2!s}'.format(scoped_name,
+                                                          ', '.join(self.inputs),
+                                                          self.output)
+        param_line = "location '{0!s}' symbol='{1!s}'".format(self.hdfs_file,
+                                                              self.so_symbol)
+        full_line = ' '.join([create_decl, create_line, param_line])
+        return full_line
+
+
+class DropFunction(DropObject):
+
+    def __init__(self, name, input_types, must_exist=False,
+                 aggregate=False, db=None):
+        self.name = name
+        self.inputs = input_types
+        self.must_exist = must_exist
+        self.aggregate = aggregate
+        self.db = db
+        DropObject.__init__(self, must_exist=must_exist)
+
+    def _object_name(self):
+        return self.name
+
+    def _get_scoped_name(self):
+        if self.db:
+            return '{0}.{1}'.format(self.db, self.name)
+        else:
+            return self.name
+
+    def compile(self):
+        statement = 'DROP'
+        if self.aggregate:
+            statement += ' AGGREGATE'
+        statement += ' FUNCTION'
+        if self.must_exist:
+            statement += ' IF EXISTS'
+        full_name = self._get_scoped_name()
+        func_line = ' {0!s}({1!s})'.format(full_name, ', '.join(self.inputs))
+        statement += func_line
+        return statement
 
 _impala_type_names = {
     'int8': 'TINYINT',

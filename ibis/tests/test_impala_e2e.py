@@ -16,6 +16,7 @@ from posixpath import join as pjoin
 from copy import copy
 import gc
 import pytest
+import pdb
 
 import pandas as pd
 from decimal import Decimal
@@ -31,7 +32,7 @@ import ibis.config as config
 import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.util as util
-
+import ibis.sql.udf as udf
 
 from impala.error import HiveServer2Error as HS2Error
 
@@ -182,6 +183,44 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         self.con.drop_view(tmp_name)
         assert not self.con.exists_table(tmp_name)
 
+    def test_create_exists_drop_function(self):
+        location = '/__ibis/ibis-testing-data/udfs/libTestUdfs.so'
+        symbol = 'Identity'
+        name = 'identity'
+        inputs = ['boolean']
+        output = 'boolean'
+        db = 'ibis_testing'
+        udf_info = udf.UDFInfo(location, symbol, inputs, output, name)
+        self.con.create_udf(udf_info, None, db)
+        assert self.con.exists_udf(name, db)
+
+        self.con.drop_udf(name, inputs, db=db)
+        assert not self.con.exists_udf(name, db)
+        
+    def test_udf_full_workflow_using_infoclass(self):
+        location = '/__ibis/ibis-testing-data/udfs/libTestUdfs.so'
+        symbol = 'Identity'
+        name = 'identity'
+        inputs = ['boolean']
+        output = 'boolean'
+        db = 'ibis_testing'
+        udf_info = udf.UDFInfo(location, symbol, inputs, output, name)
+        self.con.create_udf(udf_info, None, db)
+
+        assert self.con.exists_udf(name, db)
+
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, db)
+
+        def _identity_test(value):
+            return op(value).to_expr()
+
+        val = ibis.literal(True)
+        expr = _identity_test(val)
+        result = self.con.execute(expr)
+        assert result == val
+        self.con.drop_udf(name, inputs, db=db)
+    
     def test_drop_non_empty_database(self):
         tmp_db = util.guid()
         self.con.create_database(tmp_db)
@@ -619,6 +658,7 @@ FROM {0}.tpch_lineitem li
 
         for expr, expected in cases:
             result = self.con.execute(expr)
+#            assert type(expr) == 'fail'
             assert result == expected
 
     def test_filter_predicates(self):

@@ -21,6 +21,7 @@
 import datetime
 from io import BytesIO
 
+import pdb
 import ibis
 import ibis.expr.analytics as analytics
 import ibis.expr.types as ir
@@ -101,6 +102,15 @@ def _parenthesize(what):
 
 def _unary_op(func_name):
     return _fixed_arity_call(func_name, 1)
+
+
+def _udf_op(func_name, db):
+    full_name = '{0}.{1}'.format(db, func_name)
+    def udf_formatter(translator, expr):
+        assert type(expr) != list
+        op = expr.op()
+        return _format_call(translator, full_name, *op.args)
+    return udf_formatter
 
 
 def _reduction(func_name):
