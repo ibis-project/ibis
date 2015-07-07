@@ -532,7 +532,7 @@ FROM ibis_testing.tpch_lineitem li
             (d.floor(), 5),
             (d.notnull(), True),
             (d.round(), 5),
-            (d.round(2), 5.25),
+            (d.round(2), Decimal('5.25')),
             (d.sign(), 1),
         ]
         self.assert_cases_equality(general_cases)
