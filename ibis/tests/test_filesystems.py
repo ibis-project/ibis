@@ -311,7 +311,7 @@ class TestHDFSE2E(unittest.TestCase):
         dirname = self._sample_nested_directory()
 
         import subprocess
-        tf_name = '{}.tar.gz'.format(dirname)
+        tf_name = '{0}.tar.gz'.format(dirname)
         cmd = 'tar zc {0} > {1}'.format(dirname, tf_name)
 
         retcode = subprocess.call(cmd, shell=True)
