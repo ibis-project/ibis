@@ -554,12 +554,12 @@ FROM ibis_testing.tpch_lineitem li
             (-dc, Decimal('-5.245'))
         ]
 
+        def approx_equal(a, b, eps):
+            assert abs(a - b) < eps
+
         for expr, expected in cases:
             result = self.con.execute(expr)
-
-            def approx_equal(a, b, eps=0.0001):
-                assert abs(a - b) < eps
-            approx_equal(result, expected)
+            approx_equal(result, expected, Decimal('0.0001'))
 
     def test_string_functions(self):
         string = ibis.literal('abcd')
