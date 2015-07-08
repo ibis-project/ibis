@@ -559,7 +559,11 @@ FROM ibis_testing.tpch_lineitem li
 
         for expr, expected in cases:
             result = self.con.execute(expr)
-            approx_equal(result, expected, Decimal('0.0001'))
+            if isinstance(expected, Decimal):
+                tol = Decimal('0.0001')
+            else:
+                tol = 0.0001
+            approx_equal(result, expected, tol)
 
     def test_string_functions(self):
         string = ibis.literal('abcd')
