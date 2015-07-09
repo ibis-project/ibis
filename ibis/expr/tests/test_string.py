@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from ibis import literal
 import ibis
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -36,7 +37,7 @@ class TestStringOps(unittest.TestCase):
         assert isinstance(lresult.op(), ops.Lowercase)
         assert isinstance(uresult.op(), ops.Uppercase)
 
-        lit = ibis.literal('FoO')
+        lit = literal('FoO')
 
         lresult = lit.lower()
         uresult = lit.upper()
@@ -44,7 +45,7 @@ class TestStringOps(unittest.TestCase):
         assert isinstance(uresult, ir.StringScalar)
 
     def test_substr(self):
-        lit = ibis.literal('FoO')
+        lit = literal('FoO')
 
         result = self.table.g.substr(2, 4)
         lit_result = lit.substr(0, 2)
@@ -57,8 +58,8 @@ class TestStringOps(unittest.TestCase):
 
         start, length = op.args[1:]
 
-        assert start.equals(ibis.literal(2))
-        assert length.equals(ibis.literal(4))
+        assert start.equals(literal(2))
+        assert length.equals(literal(4))
 
     def test_left_right(self):
         result = self.table.g.left(5)
@@ -68,16 +69,26 @@ class TestStringOps(unittest.TestCase):
         result = self.table.g.right(5)
         op = result.op()
         assert isinstance(op, ops.StrRight)
-        assert op.args[1].equals(ibis.literal(5))
+        assert op.args[1].equals(literal(5))
 
     def test_length(self):
-        lit = ibis.literal('FoO')
+        lit = literal('FoO')
         result = self.table.g.length()
         lit_result = lit.length()
 
         assert isinstance(result, ir.Int32Array)
         assert isinstance(lit_result, ir.Int32Scalar)
         assert isinstance(result.op(), ops.StringLength)
+
+    def test_join(self):
+        dash = literal('-')
+
+        expr = dash.join([self.table.f.cast('string'),
+                          self.table.g])
+        assert isinstance(expr, ir.StringArray)
+
+        expr = dash.join([literal('ab'), literal('cd')])
+        assert isinstance(expr, ir.StringScalar)
 
     def test_contains(self):
         expr = self.table.g.contains('foo')

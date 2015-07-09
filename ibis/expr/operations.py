@@ -473,7 +473,7 @@ class FindInSet(ValueOp):
 class StringJoin(ValueOp):
 
     input_type = [string(name='sep'), list_of(string, min_length=1)]
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rules.shape_like_flatargs('string')
 
 
 class BooleanValueOp(ValueOp):
