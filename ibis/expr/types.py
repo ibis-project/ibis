@@ -322,11 +322,7 @@ class Node(object):
         opname = type(self).__name__
         pprint_args = []
 
-        def _pp(x):
-            if isinstance(x, Expr):
-                return x._repr()
-            else:
-                return repr(x)
+        _pp = _safe_repr
 
         for x in self.args:
             if isinstance(x, (tuple, list)):

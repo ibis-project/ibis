@@ -699,7 +699,8 @@ def unwrap_ands(expr):
             walk(op.left)
             walk(op.right)
         else:
-            raise Exception('Invalid predicate: {0!r}'.format(expr))
+            raise Exception('Invalid predicate: {0!s}'
+                            .format(expr._repr()))
 
     walk(expr)
     return out_exprs

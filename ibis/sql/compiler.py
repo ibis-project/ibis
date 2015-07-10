@@ -789,7 +789,7 @@ def _adapt_expr(expr):
                 # expr with no table refs
                 return expr.name('tmp'), scalar_handler
             else:
-                raise NotImplementedError(expr)
+                raise NotImplementedError(expr._repr())
 
     elif isinstance(expr, ir.ExprList):
         exprs = expr.exprs()
@@ -809,7 +809,7 @@ def _adapt_expr(expr):
         elif not any_aggregation:
             return expr, as_is
         else:
-            raise NotImplementedError(expr)
+            raise NotImplementedError(expr._repr())
 
     elif isinstance(expr, ir.ArrayExpr):
         op = expr.op()
