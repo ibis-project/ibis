@@ -814,12 +814,14 @@ def _adapt_expr(expr):
     elif isinstance(expr, ir.ArrayExpr):
         op = expr.op()
 
+        def _get_column(name):
+            def column_handler(results):
+                return results[name]
+            return column_handler
+
         if isinstance(op, ops.TableColumn):
             table_expr = op.table
-
-            def column_handler(results):
-                return results[op.name]
-            result_handler = column_handler
+            result_handler = _get_column(op.name)
         else:
             # Something more complicated.
             base_table = L.find_source_table(expr)
@@ -833,13 +835,10 @@ def _adapt_expr(expr):
 
                 table_expr = (base_table.projection([expr.name(name)])
                               .distinct())
+                result_handler = _get_column(name)
             else:
                 table_expr = base_table.projection([expr.name('tmp')])
-
-            def projection_handler(results):
-                return results['tmp']
-
-            result_handler = projection_handler
+                result_handler = _get_column('tmp')
 
         return table_expr, result_handler
     else:
