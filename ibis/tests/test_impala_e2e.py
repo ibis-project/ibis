@@ -78,6 +78,7 @@ class ImpalaE2E(object):
         pass
 
     def setUp(self):
+        self.temp_databases = []
         self.temp_tables = []
         self.temp_views = []
 
@@ -87,6 +88,10 @@ class ImpalaE2E(object):
 
         for t in self.temp_views:
             self.con.drop_view(t, force=True)
+
+        self.con.set_database(self.test_data_db)
+        for t in self.temp_databases:
+            self.con.drop_database(t, force=True)
 
 
 class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
@@ -126,6 +131,18 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         self.assertRaises(Exception, con.table, 'functional_alltypes')
         con.set_database(self.test_data_db)
         con.table('functional_alltypes')
+
+    def test_tables_robust_to_set_database(self):
+        db_name = util.guid()
+        self.con.create_database(db_name)
+        self.temp_databases.append(db_name)
+
+        table = self.con.table('functional_alltypes')
+
+        self.con.set_database(db_name)
+
+        # it still works!
+        table.limit(10).execute()
 
     def test_create_exists_drop_database(self):
         tmp_name = util.guid()

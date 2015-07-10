@@ -56,6 +56,10 @@ class SQLClient(Client):
         node = ops.DatabaseTable(qualified_name, schema, self)
         return ir.TableExpr(node)
 
+    @property
+    def current_database(self):
+        return self.con.database
+
     def _fully_qualified_name(self, name, database):
         # XXX
         return name
@@ -129,11 +133,12 @@ class ImpalaConnection(object):
     Database connection wrapper
     """
 
-    def __init__(self, **params):
+    def __init__(self, database='default', **params):
         self.params = params
         self.con = None
         self.cursor = None
         self.codegen_disabled = False
+        self.database = database
         self.ensure_connected()
 
     def __del__(self):
@@ -141,7 +146,7 @@ class ImpalaConnection(object):
             self.cursor.close()
 
     def set_database(self, name):
-        self.params['database'] = name
+        self.database = name
         self.connect()
 
     def disable_codegen(self, disabled=True):
@@ -195,7 +200,7 @@ class ImpalaConnection(object):
     def connect(self):
         params = self.params.copy()
 
-        self.con = impyla_dbapi.connect(**params)
+        self.con = impyla_dbapi.connect(database=self.database, **params)
         self.cursor = self.con.cursor()
         self.cursor.ping()
 
@@ -247,14 +252,11 @@ class ImpalaClient(SQLClient):
             (options.verbose_log or to_stdout)(msg)
 
     def _fully_qualified_name(self, name, database):
-        if database is not None:
-            return '{0}.`{1}`'.format(database, name)
-        else:
-            # TODO: This is not foolproof
-            if '.' not in name and name.lower() in ident.impala_identifiers:
-                return '`{0}`'.format(name)
-            else:
-                return name
+        if ddl._is_fully_qualified(name):
+            return name
+
+        database = database or self.current_database
+        return '{0}.`{1}`'.format(database, name)
 
     def list_tables(self, like=None, database=None):
         """
