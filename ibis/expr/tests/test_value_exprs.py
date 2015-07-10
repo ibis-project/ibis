@@ -181,13 +181,12 @@ class TestDistinct(unittest.TestCase):
     def test_distinct_basic(self):
         expr = self.table.distinct()
         assert isinstance(expr.op(), ops.Distinct)
+        assert isinstance(expr, ir.TableExpr)
         assert expr.op().table is self.table
 
         expr = self.table.string_col.distinct()
         assert isinstance(expr.op(), ops.DistinctArray)
-
-        ex_projection = self.table[[self.table.string_col]]
-        assert_equal(expr.op().table.op().table, ex_projection)
+        assert isinstance(expr, ir.StringArray)
 
     # def test_distinct_array_interactions(self):
     # TODO
@@ -203,6 +202,19 @@ class TestDistinct(unittest.TestCase):
         expected = self.table.string_col.nunique().name('count')
         assert_equal(result, expected)
         assert isinstance(result.op(), ops.CountDistinct)
+
+    def test_distinct_unnamed_array_expr(self):
+        table = ibis.table([('year', 'int32'),
+                            ('month', 'int32'),
+                            ('day', 'int32')], 'foo')
+
+        # it works!
+        expr = (ibis.literal('-')
+                .join([table.year.cast('string'),
+                       table.month.cast('string'),
+                       table.day.cast('string')])
+                .distinct())
+        repr(expr)
 
     def test_distinct_count_numeric_types(self):
         table = self.table

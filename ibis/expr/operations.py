@@ -726,15 +726,13 @@ class DistinctArray(ArrayNode):
 
     def __init__(self, arg):
         self.arg = arg
-        self.name = arg.get_name()
-        self.table = arg.to_projection().distinct()
         ArrayNode.__init__(self, arg)
 
     def output_type(self):
         return type(self.arg)
 
     def root_tables(self):
-        return [self.table]
+        return self.arg._root_tables()
 
     def count(self):
         """

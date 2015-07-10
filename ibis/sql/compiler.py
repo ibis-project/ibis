@@ -814,7 +814,7 @@ def _adapt_expr(expr):
     elif isinstance(expr, ir.ArrayExpr):
         op = expr.op()
 
-        if isinstance(op, (ops.TableColumn, ops.DistinctArray)):
+        if isinstance(op, ops.TableColumn):
             table_expr = op.table
 
             def column_handler(results):
@@ -823,7 +823,18 @@ def _adapt_expr(expr):
         else:
             # Something more complicated.
             base_table = L.find_source_table(expr)
-            table_expr = base_table.projection([expr.name('tmp')])
+
+            if isinstance(op, ops.DistinctArray):
+                expr = op.arg
+                try:
+                    name = op.arg.get_name()
+                except Exception:
+                    name = 'tmp'
+
+                table_expr = (base_table.projection([expr.name(name)])
+                              .distinct())
+            else:
+                table_expr = base_table.projection([expr.name('tmp')])
 
             def projection_handler(results):
                 return results['tmp']
