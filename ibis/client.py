@@ -323,6 +323,10 @@ class ImpalaClient(SQLClient):
           HDFS path where to store the database data; otherwise uses Impala
           default
         """
+        if path:
+            # explicit mkdir ensures the user own the dir rather than impala,
+            # which is easier for manual cleanup, if necessary
+            self._hdfs.mkdir(path, create_parent=True)
         statement = ddl.CreateDatabase(name, path=path,
                                        fail_if_exists=fail_if_exists)
         self._execute(statement)
