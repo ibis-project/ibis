@@ -229,10 +229,10 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
     def test_run_sql(self):
         query = """SELECT li.*
-FROM ibis_testing.tpch_lineitem li
-  INNER JOIN ibis_testing.tpch_orders o
+FROM {0}.tpch_lineitem li
+  INNER JOIN {0}.tpch_orders o
     ON li.l_orderkey = o.o_orderkey
-"""
+""".format(self.test_data_db)
         table = self.con.sql(query)
 
         li = self.con.table('tpch_lineitem')
@@ -245,7 +245,8 @@ FROM ibis_testing.tpch_lineitem li
 
     def test_get_schema(self):
         t = self.con.table('tpch_lineitem')
-        schema = self.con.get_schema('tpch_lineitem', database='ibis_testing')
+        schema = self.con.get_schema('tpch_lineitem',
+                                     database=self.test_data_db)
         assert_equal(t.schema(), schema)
 
     def test_result_as_dataframe(self):
@@ -813,7 +814,9 @@ FROM ibis_testing.tpch_lineitem li
                 self.con.table('tpch_orders', database=self.test_data_db)
 
         assert len(queries) == 1
-        assert queries[0] == 'SELECT * FROM ibis_testing.`tpch_orders` LIMIT 0'
+        expected = 'SELECT * FROM {0}.`tpch_orders` LIMIT 0'.format(
+            self.test_data_db)
+        assert queries[0] == expected
 
 
 def _ensure_drop(con, table_name, database=None):

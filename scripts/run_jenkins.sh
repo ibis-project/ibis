@@ -19,7 +19,7 @@ IBIS_HOME=$WORKSPACE
 cd $IBIS_HOME
 
 # set up python environment
-VENV_NAME=$JOB_NAME-pyvenv-$BUILD_NUMBER
+VENV_NAME=pyvenv-$BUILD_TAG
 virtualenv $VENV_NAME && source $VENV_NAME/bin/activate
 pip install -U pip setuptools
 pip install .
@@ -31,4 +31,5 @@ $IBIS_HOME/scripts/load_test_data.py
 py.test --e2e ibis
 
 # cleanup
+$IBIS_HOME/scripts/cleanup_testing_data.py
 deactivate && rm -rf $VENV_NAME

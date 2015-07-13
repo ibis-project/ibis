@@ -37,6 +37,8 @@ class IbisTestEnv(object):
                                                 self.webhdfs_port)
         self.use_codegen = (
             os.environ.get('IBIS_TEST_USE_CODEGEN', 'False').lower() == 'true')
+        self.cleanup_test_data = os.environ.get('IBIS_TEST_CLEANUP_TEST_DATA',
+                                                'True').lower() == 'true'
 
     def __repr__(self):
         kvs = ['{0}={1}'.format(k, v) for (k, v) in self.__dict__.iteritems()]
