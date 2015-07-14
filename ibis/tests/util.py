@@ -26,6 +26,7 @@ class IbisTestEnv(object):
         self.impala_protocol = os.environ.get('IBIS_TEST_IMPALA_PROTOCOL',
                                               'hiveserver2')
         self.impala_port = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
+        self.tmp_db = os.environ.get('IBIS_TEST_TMP_DB', '__ibis_tmp')
         self.tmp_dir = os.environ.get('IBIS_TEST_TMP_HDFS_DIR', '/tmp/__ibis_test')
         self.test_data_db = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
         self.test_data_dir = os.environ.get('IBIS_TEST_DATA_HDFS_DIR',

@@ -65,17 +65,14 @@ class ImpalaE2E(object):
         cls.test_data_dir = ENV.test_data_dir
         cls.test_data_db = ENV.test_data_db
         cls.tmp_dir = ENV.tmp_dir
-        cls.tmp_db = config.options.impala.temp_db
+        cls.tmp_db = ENV.tmp_db
         cls.alltypes = cls.con.table('functional_alltypes')
 
-        # Using configured temp DB
-        # cls.con.create_database(cls.tmp_db)
+        cls.con.create_database(cls.tmp_db)
 
     @classmethod
     def tearDownClass(cls):
-        # Using configured temp DB
-        # cls.con.drop_database(cls.tmp_db, force=True)
-        pass
+        cls.con.drop_database(cls.tmp_db, force=True)
 
     def setUp(self):
         self.temp_databases = []
