@@ -1100,7 +1100,7 @@ class LeftAntiJoin(Join):
         return self.left.schema()
 
 
-class MaterializedJoin(TableNode, HasSchema):
+class MaterializedJoin(ir.BlockingTableNode, HasSchema):
 
     def __init__(self, join_expr):
         assert isinstance(join_expr.op(), Join)

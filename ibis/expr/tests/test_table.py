@@ -812,6 +812,19 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         expected = self.table.join(t2, self.table.g == t2.g)
         assert_equal(result, expected)
 
+    def test_materialized_join_reference_bug(self):
+        # GH#403
+        orders = self.con.table('tpch_orders')
+        customer = self.con.table('tpch_customer')
+        lineitem = self.con.table('tpch_lineitem')
+
+        items = (orders
+                 .join(lineitem, orders.o_orderkey == lineitem.l_orderkey)
+                 [lineitem, orders.o_custkey, orders.o_orderpriority]
+                 .join(customer, [('o_custkey', 'c_custkey')])
+                 .materialize())
+        items['o_orderpriority'].value_counts()
+
     def test_join_project_after(self):
         # e.g.
         #

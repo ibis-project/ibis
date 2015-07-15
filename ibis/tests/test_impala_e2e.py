@@ -73,7 +73,8 @@ class ImpalaE2E(object):
         cls.tmp_db = ENV.tmp_db
         cls.alltypes = cls.con.table('functional_alltypes')
 
-        cls.con.create_database(cls.tmp_db)
+        if not cls.con.exists_database(cls.tmp_db):
+            cls.con.create_database(cls.tmp_db)
 
     @classmethod
     def tearDownClass(cls):
