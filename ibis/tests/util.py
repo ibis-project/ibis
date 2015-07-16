@@ -15,6 +15,7 @@
 import os
 
 from ibis import Schema
+from ibis import options
 import ibis.util as util
 
 
@@ -42,6 +43,10 @@ class IbisTestEnv(object):
                                                 'True').lower() == 'true'
         self.use_kerberos = os.environ.get('IBIS_TEST_USE_KERBEROS',
                                            'False').lower() == 'true'
+
+        # update global Ibis config where relevant
+        options.impala.temp_db = self.tmp_db
+        options.impala.temp_hdfs_path = self.tmp_dir
 
     def __repr__(self):
         kvs = ['{0}={1}'.format(k, v) for (k, v) in self.__dict__.iteritems()]
