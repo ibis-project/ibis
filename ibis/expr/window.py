@@ -48,7 +48,10 @@ class Window(object):
     def bind(self, table):
         # Internal API, ensure that any unresolved expr references (as strings,
         # say) are bound to the table being windowed
-        pass
+        groups = table._resolve(self.group_by)
+        sorts = [ops.to_sort_key(table, k) for k in self.order_by]
+        return Window(group_by=groups, order_by=sorts,
+                      preceding=self.preceding, following=self.following)
 
     def equals(self, other):
         if not isinstance(other, Window):

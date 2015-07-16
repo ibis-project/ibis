@@ -22,9 +22,12 @@ from ibis.tests.util import assert_equal
 
 class TestWindowFunctions(BasicTestCase, unittest.TestCase):
 
-    def test_compose_group_by_apis(self):
-        t = self.con.table('alltypes')
+    def setUp(self):
+        BasicTestCase.setUp(self)
+        self.t = self.con.table('alltypes')
 
+    def test_compose_group_by_apis(self):
+        t = self.t
         w = ibis.window(group_by=t.g, order_by=t.f)
 
         diff = t.d - t.d.lag()
@@ -41,8 +44,17 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
         assert_equal(expr, expr2)
         assert_equal(expr, expr3)
 
-    def test_window_bind_to_table(self):
+    def test_combine_windows(self):
         pass
+
+    def test_window_bind_to_table(self):
+        w = ibis.window(group_by='g', order_by=ibis.desc('f'))
+
+        w2 = w.bind(self.t)
+        expected = ibis.window(group_by=self.t.g,
+                               order_by=ibis.desc(self.t.f))
+
+        assert_equal(w2, expected)
 
     def test_window_equals(self):
         pass
