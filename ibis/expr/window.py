@@ -31,11 +31,16 @@ class Window(object):
                  preceding=None, following=None):
         if group_by is None:
             group_by = []
+
         if order_by is None:
             order_by = []
 
         self.group_by = util.promote_list(group_by)
         self.order_by = util.promote_list(order_by)
+        self.order_by = [ops.SortKey(expr)
+                         if isinstance(expr, ir.Expr)
+                         else expr
+                         for expr in self.order_by]
 
         self.preceding = preceding
         self.following = following
