@@ -96,8 +96,13 @@ def _window(translator, expr):
         components.append('PARTITION BY {0}'.format(', '.join(partition_args)))
 
     if len(window.order_by) > 0:
-        order_args = [translator.translate(x)
-                      for x in window.order_by]
+        order_args = []
+        for key in window.order_by:
+            translated = translator.translate(key.expr)
+            if not key.ascending:
+                translated += ' DESC'
+            order_args.append(translated)
+
         components.append('ORDER BY {0}'.format(', '.join(order_args)))
 
     if window.preceding is not None and window.following is not None:
@@ -863,6 +868,8 @@ _other_ops = {
 
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
+
+    ops.RowNumber: lambda *args: 'row_number()',
 
     ops.WindowOp: _window
 }

@@ -735,6 +735,20 @@ class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
 
+class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.table = self.con.table('functional_alltypes')
+
+    def test_analytic_exprs(self):
+        t = self.table
+        cases = [
+            (ibis.row_number(), 'row_number()')
+        ]
+        self._check_expr_cases(cases)
+
+
 class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
     def setUp(self):
@@ -742,16 +756,17 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         self.table = self.con.table('functional_alltypes')
 
     def test_unary_ops(self):
+        s = self.table.string_col
         cases = [
-            (self.table.string_col.lower(), 'lower(string_col)'),
-            (self.table.string_col.upper(), 'upper(string_col)'),
-            (self.table.string_col.reverse(), 'reverse(string_col)'),
-            (self.table.string_col.strip(), 'trim(string_col)'),
-            (self.table.string_col.lstrip(), 'ltrim(string_col)'),
-            (self.table.string_col.rstrip(), 'rtrim(string_col)'),
-            (self.table.string_col.capitalize(), 'initcap(string_col)'),
-            (self.table.string_col.length(), 'length(string_col)'),
-            (self.table.string_col.ascii_str(), 'ascii(string_col)')
+            (s.lower(), 'lower(string_col)'),
+            (s.upper(), 'upper(string_col)'),
+            (s.reverse(), 'reverse(string_col)'),
+            (s.strip(), 'trim(string_col)'),
+            (s.lstrip(), 'ltrim(string_col)'),
+            (s.rstrip(), 'rtrim(string_col)'),
+            (s.capitalize(), 'initcap(string_col)'),
+            (s.length(), 'length(string_col)'),
+            (s.ascii_str(), 'ascii(string_col)')
         ]
         self._check_expr_cases(cases)
 

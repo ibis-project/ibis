@@ -32,9 +32,6 @@ class GroupedTableExpr(object):
     """
 
     def __init__(self, table, by, having=None, order_by=None, window=None):
-        if order_by is not None:
-            order_by = _resolve_exprs(table, order_by)
-
         self.table = table
         self.by = _resolve_exprs(table, by)
         self._order_by = order_by or []
@@ -142,6 +139,8 @@ class GroupedTableExpr(object):
             groups = w.group_by + self.by
             sorts = w.order_by + self._order_by
             preceding, following = w.preceding, w.following
+
+        sorts = [ops.to_sort_key(self.table, k) for k in sorts]
 
         return _window.window(preceding=preceding, following=following,
                               group_by=groups, order_by=sorts)

@@ -755,7 +755,9 @@ class NTile(AnalyticOp):
 
 class RowNumber(AnalyticOp):
     # Equivalent to SQL ROW_NUMBER()
-    pass
+
+    def output_type(self):
+        return ir.Int64Array
 
 
 class FirstValue(AnalyticOp):
@@ -1291,7 +1293,7 @@ class SortBy(TableNode):
 
     def __init__(self, table_expr, sort_keys):
         self.table = table_expr
-        self.keys = [_to_sort_key(self.table, k)
+        self.keys = [to_sort_key(self.table, k)
                      for k in util.promote_list(sort_keys)]
 
         TableNode.__init__(self, [self.table, self.keys])
@@ -1307,7 +1309,7 @@ class SortBy(TableNode):
         return tables
 
 
-def _to_sort_key(table, key):
+def to_sort_key(table, key):
     if isinstance(key, DeferredSortKey):
         key = key.resolve(table)
 

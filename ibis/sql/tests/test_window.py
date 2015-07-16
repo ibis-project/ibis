@@ -28,15 +28,18 @@ import ibis.sql.ddl as ddl
 
 class TestWindowFunctions(BasicTestCase, unittest.TestCase):
 
+    def _check_sql(self, expr, expected):
+        result = to_sql(expr)
+        assert result == expected
+
     def test_aggregate_in_projection(self):
         t = self.con.table('alltypes')
         proj = t[t, (t.f / t.f.sum()).name('normed_f')]
 
-        result = to_sql(proj)
         expected = """\
 SELECT *, f / sum(f) OVER () AS `normed_f`
 FROM alltypes"""
-        assert result == expected
+        self._check_sql(proj, expected)
 
     def test_multiple_windows(self):
         t = self.con.table('alltypes')
@@ -46,15 +49,31 @@ FROM alltypes"""
         expr = t.f.sum().over(w) - t.f.sum()
         proj = t.projection([t.g, expr.name('result')])
 
-        result = to_sql(proj)
         expected = """\
 SELECT g, sum(f) OVER (PARTITION BY g) - sum(f) OVER () AS `result`
 FROM alltypes"""
-        assert result == expected
+        self._check_sql(proj, expected)
+
+    def test_order_by_desc(self):
+        t = self.con.table('alltypes')
+
+        w = ibis.window(order_by=ibis.desc(t.f))
+
+        proj = t[t.f, ibis.row_number().over(w).name('revrank')]
+        expected = """\
+SELECT f, row_number() OVER (ORDER BY f DESC) AS `revrank`
+FROM alltypes"""
+        self._check_sql(proj, expected)
+
+    def test_math_on_windowed_expr(self):
+        # Window clause may not be found at top level of expression
+        pass
 
     def test_group_by_then_different_sort_orders(self):
         pass
 
-    def test_math_on_windowed_expr(self):
-        # Window clause may not be found at top level of expression
+    def test_cumulative_window(self):
+        pass
+
+    def test_trailing_window(self):
         pass

@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import ibis.expr.types as ir
-
+import ibis.expr.operations as ops
 import ibis.util as util
+
 
 class Window(object):
 

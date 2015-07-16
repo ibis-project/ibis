@@ -52,6 +52,7 @@ __all__ = [
     'case', 'where', 'sequence',
     'now', 'desc', 'null', 'NA',
     'cast', 'coalesce', 'greatest', 'least', 'join',
+    'row_number',
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window'
 ]
@@ -113,7 +114,10 @@ def desc(expr):
               .size('count')
               .sort_by(ibis.desc('count')))
     """
-    return _ops.DeferredSortKey(expr, ascending=False)
+    if not isinstance(expr, Expr):
+        return _ops.DeferredSortKey(expr, ascending=False)
+    else:
+        return _ops.SortKey(expr, ascending=False)
 
 
 def timestamp(value):
@@ -187,6 +191,17 @@ def now():
     now : Timestamp scalar
     """
     return _ops.TimestampNow().to_expr()
+
+
+def row_number():
+    """
+    Analytic function for the current row number, starting at 0
+
+    Returns
+    -------
+    row_number : IntArray
+    """
+    return _ops.RowNumber().to_expr()
 
 
 e = _ops.E().to_expr()
