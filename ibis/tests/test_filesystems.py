@@ -19,13 +19,13 @@ from os import path as osp
 import os
 import shutil
 
-from hdfs import InsecureClient
 import pytest
 
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.compat import unittest
 from ibis.tests.util import IbisTestEnv
 import ibis.util as util
+import ibis
 
 
 ENV = IbisTestEnv()
@@ -77,8 +77,12 @@ class TestHDFSE2E(unittest.TestCase):
     def setUpClass(cls):
         cls.ENV = ENV
         cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
-        cls.hdfs_client = InsecureClient(cls.ENV.hdfs_url)
-        cls.hdfs = WebHDFS(cls.hdfs_client)
+        if cls.ENV.use_kerberos:
+            print("Warning: ignoring invalid Certificate Authority errors")
+        cls.hdfs = ibis.hdfs_connect(host=cls.ENV.nn_host,
+                                     port=cls.ENV.webhdfs_port,
+                                     use_kerberos=cls.ENV.use_kerberos,
+                                     verify=(not cls.ENV.use_kerberos))
         cls.hdfs.mkdir(cls.tmp_dir)
 
     @classmethod

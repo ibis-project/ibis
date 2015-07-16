@@ -35,8 +35,13 @@ ENV = IbisTestEnv()
 
 def make_connection():
     ic = ibis.impala_connect(host=ENV.impala_host, port=ENV.impala_port,
-                             protocol=ENV.impala_protocol)
-    hdfs = ibis.hdfs_connect(host=ENV.nn_host, port=ENV.webhdfs_port)
+                             protocol=ENV.impala_protocol,
+                             use_kerberos=ENV.use_kerberos)
+    if ENV.use_kerberos:
+        print("Warning: ignoring invalid Certificate Authority errors")
+    hdfs = ibis.hdfs_connect(host=ENV.nn_host, port=ENV.webhdfs_port,
+                             use_kerberos=ENV.use_kerberos,
+                             verify=(not ENV.use_kerberos))
     return ibis.make_client(ic, hdfs_client=hdfs)
 
 
