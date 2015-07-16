@@ -766,14 +766,19 @@ class RowNumber(AnalyticOp):
 class FirstValue(AnalyticOp):
 
     input_type = [rules.array]
-
-
-class NthValue(AnalyticOp):
-    pass
+    output_type = rules.type_of_arg(0)
 
 
 class LastValue(AnalyticOp):
-    pass
+
+    input_type = [rules.array]
+    output_type = rules.type_of_arg(0)
+
+
+class NthValue(AnalyticOp):
+
+    input_type = [rules.array, rules.integer]
+    output_type = rules.type_of_arg(0)
 
 
 class SmallestValue(AnalyticOp):

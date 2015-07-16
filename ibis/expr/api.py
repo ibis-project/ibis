@@ -682,6 +682,27 @@ def lead(arg, offset=None, default=None):
     return _ops.Lead(arg, offset, default).to_expr()
 
 
+first = _unary_op('first', _ops.FirstValue)
+last = _unary_op('last', _ops.LastValue)
+
+
+def nth(arg, k):
+    """
+    Analytic operation computing nth value from start of sequence
+
+    Parameters
+    ----------
+    arg : array expression
+    k : int
+        Desired rank value
+
+    Returns
+    -------
+    nth : type of argument
+    """
+    return _ops.NthValue(arg, k).to_expr()
+
+
 def distinct(arg):
     """
     Compute set of unique values occurring in this array. Can not be used
@@ -841,12 +862,16 @@ _generic_array_methods = dict(
     count=count,
     min=min,
     max=max,
-    lag=lag,
-    lead=lead,
     approx_median=approx_median,
     approx_nunique=approx_nunique,
     group_concat=group_concat,
-    value_counts=value_counts
+    value_counts=value_counts,
+
+    first=first,
+    last=last,
+    nth=nth,
+    lag=lag,
+    lead=lead,
 )
 
 

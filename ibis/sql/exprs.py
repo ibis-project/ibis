@@ -156,6 +156,17 @@ def _shift_like(name):
     return formatter
 
 
+def _nth_value(translator, expr):
+    op = expr.op()
+    arg, rank = op.args
+
+    arg_formatted = translator.translate(arg)
+    rank_formatted = translator.translate(rank - 1)
+
+    return 'first_value(lag({0}, {1}))'.format(arg_formatted,
+                                               rank_formatted)
+
+
 def _negate(translator, expr):
     arg = expr.op().args[0]
     formatted_arg = translator.translate(arg)
@@ -900,6 +911,9 @@ _other_ops = {
 
     ops.RowNumber: lambda *args: 'row_number()',
 
+    ops.FirstValue: _unary_op('first_value'),
+    ops.LastValue: _unary_op('last_value'),
+    ops.NthValue: _nth_value,
     ops.Lag: _shift_like('lag'),
     ops.Lead: _shift_like('lead'),
     ops.WindowOp: _window
