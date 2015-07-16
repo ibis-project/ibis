@@ -14,8 +14,15 @@
 
 # User API for grouped data operations
 
+import ibis.expr.window as _window
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
+
+
+def _resolve_exprs(table, exprs):
+    exprs = util.promote_list(exprs)
+    return table._resolve(exprs)
 
 
 class GroupedTableExpr(object):
@@ -24,18 +31,19 @@ class GroupedTableExpr(object):
     Helper intermediate construct
     """
 
-    def __init__(self, table, by, having=None):
-        if not isinstance(by, (list, tuple)):
-            if not isinstance(by, ir.Expr):
-                by = table._resolve([by])
-            else:
-                by = [by]
-        else:
-            by = table._resolve(by)
+    def __init__(self, table, by, having=None, order_by=None, window=None):
+        if order_by is not None:
+            order_by = _resolve_exprs(table, order_by)
 
         self.table = table
-        self.by = by
+        self.by = _resolve_exprs(table, by)
+        self._order_by = order_by or []
         self._having = having or []
+        self._window = window
+
+    def __getitem__(self, args):
+        # Shortcut for projection with window functions
+        return self._windowed_projection(args)
 
     def __getattr__(self, attr):
         if hasattr(self.table, attr):
@@ -59,13 +67,92 @@ class GroupedTableExpr(object):
         Add a post-aggregation result filter (like the having argument in
         `aggregate`), for composability with the group_by API
 
+        Parameters
+        ----------
+
         Returns
         -------
         grouped : GroupedTableExpr
         """
         exprs = util.promote_list(expr)
         new_having = self._having + exprs
-        return GroupedTableExpr(self.table, self.by, having=new_having)
+        return GroupedTableExpr(self.table, self.by, having=new_having,
+                                order_by=self._order_by,
+                                window=self._window)
+
+    def order_by(self, expr):
+        """
+        Expressions to use for ordering data for a window function
+        computation. Ignored in aggregations.
+
+        Parameters
+        ----------
+        expr : value expression or list of value expressions
+
+        Returns
+        -------
+        grouped : GroupedTableExpr
+        """
+        exprs = util.promote_list(expr)
+        new_order = self._order_by + exprs
+        return GroupedTableExpr(self.table, self.by, having=self._having,
+                                order_by=new_order,
+                                window=self._window)
+
+    def mutate(self, exprs=None, **kwds):
+        """
+        Returns a table projection with analytic / window functions applied
+
+        Examples
+        --------
+        expr = (table
+                .group_by('foo')
+                .order_by(ibis.desc('bar'))
+                mutate
+
+        Returns
+        -------
+        mutated : TableExpr
+        """
+
+        if exprs is None:
+            exprs = []
+
+        for k, v in kwds.items():
+            exprs.append(v.name(k))
+
+        return self._windowed_projection([self.table] + exprs)
+
+    def _windowed_projection(self, exprs):
+        w = self._get_window()
+        windowed_exprs = []
+        for expr in exprs:
+            if ops.is_analytic(expr):
+                expr = expr.over(w)
+            windowed_exprs.append(expr)
+        return self.table.projection(windowed_exprs)
+
+    def _get_window(self):
+        if self._window is None:
+            groups = self.by
+            sorts = self._order_by
+            preceding, following = None, None
+        else:
+            w = self._window
+            groups = w.group_by + self.by
+            sorts = w.order_by + self._order_by
+            preceding, following = w.preceding, w.following
+
+        return _window.window(preceding=preceding, following=following,
+                              group_by=groups, order_by=sorts)
+
+    def over(self, window):
+        """
+        Add a window clause to be applied to downstream analytic expressions
+        """
+        return GroupedTableExpr(self.table, self.by, having=self._having,
+                                order_by=self._order_by,
+                                window=window)
 
     def count(self, metric_name='count'):
         """

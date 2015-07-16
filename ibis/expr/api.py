@@ -39,6 +39,7 @@ import ibis.common as _com
 
 from ibis.compat import py_string
 from ibis.expr.analytics import bucket, histogram
+from ibis.expr.window import window, trailing_window, cumulative_window
 import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
 import ibis.expr.types as ir
@@ -46,11 +47,14 @@ import ibis.expr.operations as _ops
 import ibis.expr.temporal as _T
 
 
-__all__ = ['schema', 'table', 'literal', 'expr_list', 'timestamp',
-           'case', 'where', 'sequence',
-           'now', 'desc', 'null', 'NA',
-           'cast', 'coalesce', 'greatest', 'least', 'join',
-           'Expr', 'Schema']
+__all__ = [
+    'schema', 'table', 'literal', 'expr_list', 'timestamp',
+    'case', 'where', 'sequence',
+    'now', 'desc', 'null', 'NA',
+    'cast', 'coalesce', 'greatest', 'least', 'join',
+    'Expr', 'Schema',
+    'window', 'trailing_window', 'cumulative_window'
+]
 __all__ += _T.__all__
 
 
@@ -468,6 +472,31 @@ def where(boolean_expr, true_expr, false_null_expr):
     return op.to_expr()
 
 
+def over(expr, window):
+    """
+    Turn an aggregation or full-sample analytic operation into a windowed
+    operation. See ibis.window for more details on window configuration
+
+    Parameters
+    ----------
+    expr : value expression
+    window : ibis.Window
+
+    Returns
+    -------
+    expr : type of input
+    """
+    op = _ops.WindowOp(expr, window)
+    result = op.to_expr()
+
+    try:
+        result = result.name(expr.get_name())
+    except:
+        pass
+
+    return result
+
+
 def value_counts(arg, metric_name='count'):
     """
     Compute a frequency table for this value expression
@@ -584,6 +613,8 @@ _generic_value_methods = dict(
     isnull=_unary_op('isnull', _ops.IsNull),
     notnull=_unary_op('notnull', _ops.NotNull),
 
+    over=over,
+
     __add__=add,
     add=add,
 
@@ -626,6 +657,10 @@ approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality, True)
 approx_median = _agg_function('approx_median', _ops.CMSMedian, True)
 max = _agg_function('max', _ops.Max, True)
 min = _agg_function('min', _ops.Min, True)
+
+
+lag = _unary_op('lag', _ops.Lag)
+lead = _unary_op('lead', _ops.Lead)
 
 
 def distinct(arg):
@@ -787,6 +822,8 @@ _generic_array_methods = dict(
     count=count,
     min=min,
     max=max,
+    lag=lag,
+    lead=lead,
     approx_median=approx_median,
     approx_nunique=approx_nunique,
     group_concat=group_concat,

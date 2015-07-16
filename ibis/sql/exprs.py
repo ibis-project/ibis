@@ -84,6 +84,44 @@ def _not_null(translator, expr):
     return '{0!s} IS NOT NULL'.format(formatted_arg)
 
 
+def _window(translator, expr):
+    op = expr.op()
+
+    arg, window = op.args
+    components = []
+
+    if len(window.group_by) > 0:
+        partition_args = [translator.translate(x)
+                          for x in window.group_by]
+        components.append('PARTITION BY {0}'.format(', '.join(partition_args)))
+
+    if len(window.order_by) > 0:
+        order_args = [translator.translate(x)
+                      for x in window.order_by]
+        components.append('ORDER BY {0}'.format(', '.join(order_args)))
+
+    if window.preceding is not None and window.following is not None:
+        frame = ('RANGE BETWEEN {0} PRECEDING AND {1} FOLLOWING'
+                 .format(window.preceding, window.following))
+    elif window.preceding:
+        frame = ('RANGE BETWEEN {0} PRECEDING AND CURRENT ROW'
+                 .format(window.preceding))
+    elif window.following:
+        frame += ('RANGE BETWEEN CURRENT ROW AND {0} FOLLOWING'
+                  .format(window.following))
+    else:
+        # no-op, default is full sample
+        frame = None
+
+    if frame is not None:
+        components.append(frame)
+
+    window_formatted = 'OVER ({0})'.format('\n'.join(components))
+
+    arg_formatted = translator.translate(arg)
+    return '{0} {1}'.format(arg_formatted, window_formatted)
+
+
 def _negate(translator, expr):
     arg = expr.op().args[0]
     formatted_arg = translator.translate(arg)
@@ -824,7 +862,9 @@ _other_ops = {
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery
+    transforms.NotExistsSubquery: _exists_subquery,
+
+    ops.WindowOp: _window
 }
 
 

@@ -687,6 +687,101 @@ class CMSMedian(Reduction):
         # Scalar but type of caller
         return ir.scalar_type(self.args[0].type())
 
+
+# ----------------------------------------------------------------------
+# Analytic functions
+
+
+class AnalyticOp(ValueOp):
+    pass
+
+
+class WindowOp(ValueOp):
+
+    output_type = rules.type_of_arg(0)
+
+    def __init__(self, expr, window):
+        if not is_analytic(expr):
+            raise com.IbisInputError('Expression does not contain a valid '
+                                     'window operation')
+        ValueNode.__init__(self, expr, window)
+
+
+def is_analytic(expr, exclude_windows=False):
+    def _is_analytic(op):
+        if isinstance(op, (Reduction, AnalyticOp)):
+            return True
+        elif isinstance(op, WindowOp) and exclude_windows:
+            return False
+
+        for arg in op.args:
+            if isinstance(arg, ir.Expr) and _is_analytic(arg.op()):
+                return True
+
+        return False
+
+    return _is_analytic(expr.op())
+
+
+class Lag(AnalyticOp):
+
+    input_type = [rules.array]
+    output_type = rules.type_of_arg(0)
+
+
+class Lead(AnalyticOp):
+
+    input_type = [rules.array]
+    output_type = rules.type_of_arg(0)
+
+
+class MinRank(AnalyticOp):
+    # Equivalent to SQL RANK()
+    input_type = [rules.array]
+
+
+class DenseRank(AnalyticOp):
+    # Equivalent to SQL DENSE_RANK()
+    pass
+
+
+class PercentRank(AnalyticOp):
+    pass
+
+
+class NTile(AnalyticOp):
+    pass
+
+
+class RowNumber(AnalyticOp):
+    # Equivalent to SQL ROW_NUMBER()
+    pass
+
+
+class FirstValue(AnalyticOp):
+
+    input_type = [rules.array]
+
+
+class NthValue(AnalyticOp):
+    pass
+
+
+class LastValue(AnalyticOp):
+    pass
+
+
+class SmallestValue(AnalyticOp):
+    pass
+
+
+class NthLargestValue(AnalyticOp):
+    pass
+
+
+class LargestValue(AnalyticOp):
+    pass
+
 # ----------------------------------------------------------------------
 # Distinct stuff
 
@@ -1285,6 +1380,8 @@ class SelfReference(ir.BlockingTableNode, HasSchema):
 
 
 class Projection(ir.BlockingTableNode, HasSchema):
+
+    _arg_names = ['table', 'selections']
 
     def __init__(self, table_expr, proj_exprs):
         from ibis.expr.analysis import ExprValidator

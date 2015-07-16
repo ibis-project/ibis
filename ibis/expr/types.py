@@ -348,23 +348,8 @@ class Node(object):
         if len(self.args) != len(other.args):
             return False
 
-        def is_equal(left, right):
-            if isinstance(left, list):
-                if not isinstance(right, list):
-                    return False
-                for a, b in zip(left, right):
-                    if not is_equal(a, b):
-                        return False
-                return True
-
-            if hasattr(left, 'equals'):
-                return left.equals(right)
-            else:
-                return left == right
-            return True
-
         for left, right in zip(self.args, other.args):
-            if not is_equal(left, right):
+            if not all_equal(left, right):
                 return False
         return True
 
@@ -384,6 +369,22 @@ class Node(object):
         the node wrapped in the appropriate ValueExpr type.
         """
         raise NotImplementedError
+
+
+def all_equal(left, right):
+    if isinstance(left, list):
+        if not isinstance(right, list):
+            return False
+        for a, b in zip(left, right):
+            if not all_equal(a, b):
+                return False
+        return True
+
+    if hasattr(left, 'equals'):
+        return left.equals(right)
+    else:
+        return left == right
+    return True
 
 
 class ValueNode(Node):

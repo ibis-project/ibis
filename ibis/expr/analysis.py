@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from ibis.common import RelationError
+from ibis.expr.window import window
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.util as util
@@ -480,6 +481,13 @@ def _is_aliased(col_expr):
     return col_expr.op().name != col_expr.get_name()
 
 
+def _windowize_analytic_functions(parent, expr):
+    if ops.is_analytic(expr, exclude_windows=True):
+        return expr.over(window())
+
+    return expr
+
+
 class Projector(object):
 
     """
@@ -509,6 +517,9 @@ class Projector(object):
             # Perform substitution only if we share common roots
             if validator.shares_some_roots(expr):
                 expr = substitute_parents(expr, past_projection=False)
+
+            expr = _windowize_analytic_functions(parent, expr)
+
             clean_exprs.append(expr)
 
         self.clean_exprs = clean_exprs
