@@ -723,16 +723,19 @@ def is_analytic(expr, exclude_windows=False):
     return _is_analytic(expr.op())
 
 
-class Lag(AnalyticOp):
+class ShiftBase(AnalyticOp):
 
-    input_type = [rules.array]
+    input_type = [rules.array, rules.integer(name='offset', optional=True),
+                  rules.value(name='default', optional=True)]
     output_type = rules.type_of_arg(0)
 
 
-class Lead(AnalyticOp):
+class Lag(ShiftBase):
+    pass
 
-    input_type = [rules.array]
-    output_type = rules.type_of_arg(0)
+
+class Lead(ShiftBase):
+    pass
 
 
 class MinRank(AnalyticOp):

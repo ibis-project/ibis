@@ -744,7 +744,13 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
     def test_analytic_exprs(self):
         t = self.table
         cases = [
-            (ibis.row_number(), 'row_number()')
+            (ibis.row_number(), 'row_number()'),
+            (t.string_col.lag(), 'lag(string_col)'),
+            (t.string_col.lag(2), 'lag(string_col, 2)'),
+            (t.string_col.lag(default=0), 'lag(string_col, 1, 0)'),
+            (t.string_col.lead(), 'lead(string_col)'),
+            (t.string_col.lead(2), 'lead(string_col, 2)'),
+            (t.string_col.lead(default=0), 'lead(string_col, 1, 0)'),
         ]
         self._check_expr_cases(cases)
 

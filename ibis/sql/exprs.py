@@ -127,6 +127,35 @@ def _window(translator, expr):
     return '{0} {1}'.format(arg_formatted, window_formatted)
 
 
+def _shift_like(name):
+
+    def formatter(translator, expr):
+        op = expr.op()
+        arg, offset, default = op.args
+
+        arg_formatted = translator.translate(arg)
+
+        if default is not None:
+            if offset is None:
+                offset_formatted = '1'
+            else:
+                offset_formatted = translator.translate(offset)
+
+            default_formatted = translator.translate(default)
+
+            return '{0}({1}, {2}, {3})'.format(name, arg_formatted,
+                                               offset_formatted,
+                                               default_formatted)
+        elif offset is not None:
+            offset_formatted = translator.translate(offset)
+            return '{0}({1}, {2})'.format(name, arg_formatted,
+                                          offset_formatted)
+        else:
+            return '{0}({1})'.format(name, arg_formatted)
+
+    return formatter
+
+
 def _negate(translator, expr):
     arg = expr.op().args[0]
     formatted_arg = translator.translate(arg)
@@ -871,6 +900,8 @@ _other_ops = {
 
     ops.RowNumber: lambda *args: 'row_number()',
 
+    ops.Lag: _shift_like('lag'),
+    ops.Lead: _shift_like('lead'),
     ops.WindowOp: _window
 }
 

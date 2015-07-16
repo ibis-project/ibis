@@ -674,8 +674,12 @@ max = _agg_function('max', _ops.Max, True)
 min = _agg_function('min', _ops.Min, True)
 
 
-lag = _unary_op('lag', _ops.Lag)
-lead = _unary_op('lead', _ops.Lead)
+def lag(arg, offset=None, default=None):
+    return _ops.Lag(arg, offset, default).to_expr()
+
+
+def lead(arg, offset=None, default=None):
+    return _ops.Lead(arg, offset, default).to_expr()
 
 
 def distinct(arg):
