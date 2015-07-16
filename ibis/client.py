@@ -88,11 +88,11 @@ class SQLClient(Client):
         node = ops.SQLQueryResult(query, schema, self)
         return ir.TableExpr(node)
 
-    def execute(self, expr, params=None, default_limit=None):
+    def execute(self, expr, params=None, limit=None):
         """
 
         """
-        ast, expr = self._build_ast_ensure_limit(expr, default_limit)
+        ast, expr = self._build_ast_ensure_limit(expr, limit)
 
         # TODO: create some query pipeline executor abstraction
         output = None
@@ -109,17 +109,19 @@ class SQLClient(Client):
 
         return output
 
-    def _build_ast_ensure_limit(self, expr, default_limit):
+    def _build_ast_ensure_limit(self, expr, limit):
         ast = sql.build_ast(expr)
-        if default_limit is not None and isinstance(expr, ir.TableExpr):
-            for query in ast.queries:
-                if not isinstance(query, ddl.Select):
-                    continue
-
-                if query.limit is None:
-                    k = options.sql.default_limit
-                    expr = expr.limit(k)
-                    ast = sql.build_ast(expr)
+        if not limit:
+            limit = options.sql.default_limit
+        # note: limit can still be None at this point, if the global
+        # default_limit is None
+        if limit is not None and isinstance(expr, ir.TableExpr):
+            for query in reversed(ast.queries):
+                if isinstance(query, ddl.Select):
+                    if query.limit is None:
+                        expr = expr.limit(limit)
+                        ast = sql.build_ast(expr)
+                        break
         return ast, expr
 
     def _db_type_to_dtype(self, db_type):
