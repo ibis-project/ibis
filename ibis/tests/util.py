@@ -41,8 +41,6 @@ class IbisTestEnv(object):
         self.nn_host = os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
         # 5070 is default for impala dev env
         self.webhdfs_port = int(os.environ.get('IBIS_TEST_WEBHDFS_PORT', 5070))
-        self.hdfs_url = 'http://{0}:{1}'.format(self.nn_host,
-                                                self.webhdfs_port)
         self.use_codegen = os.environ.get('IBIS_TEST_USE_CODEGEN',
                                           'False').lower() == 'true'
         self.cleanup_test_data = os.environ.get('IBIS_TEST_CLEANUP_TEST_DATA',
@@ -68,14 +66,14 @@ def connect_test(env, with_hdfs=True):
                               pool_size=2)
     if with_hdfs:
         if env.use_kerberos:
-            from hdfs.ext.kerberos import KerberosClient
-            hdfs_client = KerberosClient(env.hdfs_url, mutual_auth='REQUIRED')
-        else:
-            from hdfs.client import InsecureClient
-            hdfs_client = InsecureClient(env.hdfs_url)
-        return ibis.make_client(con, hdfs_client)
+            print("Warning: ignoring invalid Certificate Authority errors")
+        hdfs_client = ibis.hdfs_connect(host=env.nn_host,
+                                        port=env.webhdfs_port,
+                                        use_kerberos=env.use_kerberos,
+                                        verify=(not env.use_kerberos))
     else:
-        return ibis.make_client(con)
+        hdfs_client = None
+    return ibis.make_client(con, hdfs_client)
 
 
 @pytest.mark.e2e
