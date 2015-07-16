@@ -35,12 +35,12 @@ class Window(object):
         if order_by is None:
             order_by = []
 
-        self.group_by = util.promote_list(group_by)
-        self.order_by = util.promote_list(order_by)
-        self.order_by = [ops.SortKey(expr)
+        self._group_by = util.promote_list(group_by)
+        self._order_by = util.promote_list(order_by)
+        self._order_by = [ops.SortKey(expr)
                          if isinstance(expr, ir.Expr)
                          else expr
-                         for expr in self.order_by]
+                         for expr in self._order_by]
 
         self.preceding = preceding
         self.following = following
@@ -53,21 +53,46 @@ class Window(object):
     def bind(self, table):
         # Internal API, ensure that any unresolved expr references (as strings,
         # say) are bound to the table being windowed
-        groups = table._resolve(self.group_by)
-        sorts = [ops.to_sort_key(table, k) for k in self.order_by]
-        return Window(group_by=groups, order_by=sorts,
-                      preceding=self.preceding, following=self.following)
+        groups = table._resolve(self._group_by)
+        sorts = [ops.to_sort_key(table, k) for k in self._order_by]
+        return self._replace(group_by=groups, order_by=sorts)
+
+    def combine(self, window):
+        kwds = dict(
+            preceding=self.preceding or window.preceding,
+            following=self.following or window.following,
+            group_by=self._group_by + window._group_by,
+            order_by=self._order_by + window._order_by
+        )
+        return Window(**kwds)
+
+    def group_by(self, expr):
+        new_groups = self._group_by + [expr]
+        return self._replace(group_by=new_groups)
+
+    def _replace(self, **kwds):
+        new_kwds = dict(
+            group_by=kwds.get('group_by', self._group_by),
+            order_by=kwds.get('order_by', self._order_by),
+            preceding=kwds.get('preceding', self.preceding),
+            following=kwds.get('following', self.following)
+        )
+        return Window(**new_kwds)
+
+    def order_by(self, expr):
+        new_sorts = self._order_by + [expr]
+        return self._replace(order_by=new_sorts)
 
     def equals(self, other):
         if not isinstance(other, Window):
             return False
 
-        if (len(self.group_by) != len(other.group_by)
-                or not ir.all_equal(self.group_by, other.group_by)):
+        if (len(self._group_by) != len(other._group_by)
+                or not ir.all_equal(self._group_by, other._group_by)):
             return False
 
-        if (len(self.order_by) != len(other.order_by)
-                or not ir.all_equal(self.order_by, other.order_by)):
+        if (len(self._order_by) != len(other._order_by)
+                or not ir.all_equal(self._order_by, other._order_by)):
             return False
 
         return (self.preceding == other.preceding

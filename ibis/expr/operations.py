@@ -706,6 +706,11 @@ class WindowOp(ValueOp):
                                      'window operation')
         ValueNode.__init__(self, expr, window)
 
+    def over(self, window):
+        existing_window = self.args[1]
+        new_window = existing_window.combine(window)
+        return WindowOp(self.args[0], new_window)
+
 
 def is_analytic(expr, exclude_windows=False):
     def _is_analytic(op):

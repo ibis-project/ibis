@@ -753,7 +753,7 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
             (t.string_col.lead(default=0), 'lead(string_col, 1, 0)'),
             (t.double_col.first(), 'first_value(double_col)'),
             (t.double_col.last(), 'last_value(double_col)'),
-            (t.double_col.nth(4), 'first_value(lag(double_col, 4 - 1))')
+            # (t.double_col.nth(4), 'first_value(lag(double_col, 4 - 1))')
         ]
         self._check_expr_cases(cases)
 

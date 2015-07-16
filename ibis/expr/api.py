@@ -501,7 +501,13 @@ def over(expr, window):
     -------
     expr : type of input
     """
-    op = _ops.WindowOp(expr, window)
+    prior_op = expr.op()
+
+    if isinstance(prior_op, _ops.WindowOp):
+        op = prior_op.over(window)
+    else:
+        op = _ops.WindowOp(expr, window)
+
     result = op.to_expr()
 
     try:
@@ -869,7 +875,7 @@ _generic_array_methods = dict(
 
     first=first,
     last=last,
-    nth=nth,
+    # nth=nth,
     lag=lag,
     lead=lead,
 )

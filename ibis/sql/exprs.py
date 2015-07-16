@@ -88,16 +88,35 @@ def _window(translator, expr):
     op = expr.op()
 
     arg, window = op.args
+    window_op = arg.op()
+
+    _require_order_by = (ops.Lag, ops.Lead,
+                         ops.FirstValue,
+                         ops.LastValue)
+
+    # Some analytic functions need to have the expression of interest in
+    # the ORDER BY part of the window clause
+    if (isinstance(window_op, _require_order_by)
+            and len(window._order_by) == 0):
+        window = window.order_by(window_op.args[0])
+
+    window_formatted = _format_window(translator, window)
+
+    arg_formatted = translator.translate(arg)
+    return '{0} {1}'.format(arg_formatted, window_formatted)
+
+
+def _format_window(translator, window):
     components = []
 
-    if len(window.group_by) > 0:
+    if len(window._group_by) > 0:
         partition_args = [translator.translate(x)
-                          for x in window.group_by]
+                          for x in window._group_by]
         components.append('PARTITION BY {0}'.format(', '.join(partition_args)))
 
-    if len(window.order_by) > 0:
+    if len(window._order_by) > 0:
         order_args = []
-        for key in window.order_by:
+        for key in window._order_by:
             translated = translator.translate(key.expr)
             if not key.ascending:
                 translated += ' DESC'
@@ -121,10 +140,7 @@ def _window(translator, expr):
     if frame is not None:
         components.append(frame)
 
-    window_formatted = 'OVER ({0})'.format('\n'.join(components))
-
-    arg_formatted = translator.translate(arg)
-    return '{0} {1}'.format(arg_formatted, window_formatted)
+    return 'OVER ({0})'.format(' '.join(components))
 
 
 def _shift_like(name):
