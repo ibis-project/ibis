@@ -773,8 +773,8 @@ class TableExpr(Expr):
 
         Parameters
         ----------
-        exprs : column expression, or list of column expressions, or strings
-          If strings passed, must be columns in the table already
+        exprs : column expression, or string, or list of column expressions and
+          strings. If strings passed, must be columns in the table already
 
         Returns
         -------
@@ -782,7 +782,7 @@ class TableExpr(Expr):
         """
         import ibis.expr.analysis as L
 
-        if isinstance(exprs, Expr):
+        if isinstance(exprs, (Expr, basestring)):
             exprs = [exprs]
 
         exprs = [self._ensure_expr(e) for e in exprs]
