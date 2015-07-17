@@ -48,7 +48,7 @@ class UDFTest(unittest.TestCase):
         assert result == "SELECT udf_testing.identity('hello world')"
 
     def test_sql_generation_from_infoclass(self):
-        udf_info = udf.UDFInfo('test.so', 'info_test', ['string'], 'string')
+        udf_info = udf.UDFInfo('test.so', ['string'], 'string', 'info_test')
         op = udf_info.to_operation()
         udf.add_impala_operation(op, 'info_test', 'udf_testing')
 

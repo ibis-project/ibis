@@ -190,7 +190,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         inputs = ['boolean']
         output = 'boolean'
         db = 'ibis_testing'
-        udf_info = udf.UDFInfo(location, symbol, inputs, output, name)
+        udf_info = udf.UDFInfo(location, inputs, output, symbol, name)
         self.con.create_udf(udf_info, None, db)
         assert self.con.exists_udf(name, db)
 
@@ -204,7 +204,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         inputs = ['boolean']
         output = 'boolean'
         db = 'ibis_testing'
-        udf_info = udf.UDFInfo(location, symbol, inputs, output, name)
+        udf_info = udf.UDFInfo(location, inputs, output, symbol, name)
         self.con.create_udf(udf_info, None, db)
 
         assert self.con.exists_udf(name, db)

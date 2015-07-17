@@ -46,14 +46,13 @@ import ibis.sql.exprs as _expr
 import ibis.util as util
 
 
-class UDFInfo(object):
+class UDFInfoParent(object):
 
-    def __init__(self, hdfs_file, so_symbol, input_type,
+    def __init__(self, hdfs_file, input_type,
                  output_type, name=None):
         if hdfs_file[-3:] != '.so':
             raise ValueError('File is not a .so file')
         self.hdfs_file = hdfs_file
-        self.so_symbol = so_symbol
         self.inputs = [ir._validate_type(x) for x in input_type]
         self.output = ir._validate_type(output_type)
         if name:
@@ -89,6 +88,25 @@ class UDFInfo(object):
 
     def get_name(self):
         return self.name
+
+
+class UDFInfo(UDFInfoParent):
+
+    def __init__(self, hdfs_file, input_type, output_type,
+                 so_symbol, name=None):
+        self.so_symbol = so_symbol
+        UDFInfoParent.__init__(self, hdfs_file, input_type, output_type, name=name)
+
+    
+class UDAInfo(UDFInfo):
+
+    def __init__(self, hdfs_file, input_type, output_type, init_fn,
+                 update_fn, merge_fn, finalize_fn, name=None):
+        self.init_fn = init_fn
+        self.update_fn = udate_fn
+        self.merge_fn = merge_fn
+        self.finalize_fn = finalize_fn
+        UDFInfoParent.__init__(self, hdfs_file, input_type, output_type, name=name)
 
 
 def _operation_type_conversion(inputs, output):

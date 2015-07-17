@@ -1962,10 +1962,11 @@ class TestUDFStatements(unittest.TestCase):
         self.con = MockConnection()
         self.name = 'test_name'
         self.inputs = ['string', 'string']
+        self.output = 'int32'
 
     def test_create_udf(self):
         stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
-                                  'int32', self.name)
+                                  self.output, self.name)
         result = stmt.compile()
         expected = ("CREATE FUNCTION test_name(string, string) returns int32 "
                     "location '/foo/bar.so' symbol='testFunc'")
@@ -1973,7 +1974,7 @@ class TestUDFStatements(unittest.TestCase):
 
     def test_create_udf_naming(self):
         stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
-                                  'int32', self.name, db='foo')
+                                  self.output, self.name, db='foo')
         result = stmt.compile()
         expected = ("CREATE FUNCTION foo.test_name(string, string) "
                     "returns int32 location '/foo/bar.so' symbol='testFunc'")
@@ -2001,4 +2002,14 @@ class TestUDFStatements(unittest.TestCase):
         stmt = ddl.DropFunction(self.name, self.inputs, False, False, 'test')
         result = stmt.compile()
         expected = "DROP FUNCTION test.test_name(string, string)"
+        assert result == expected
+    
+
+    def test_create_uda(self):
+        stmt = ddl.CreateAggregateFunction('/foo/bar.so', self.inputs, self.output, 'Init',
+                                           'Update', 'Merge', 'Finalize', self.name)
+        result = stmt.compile()
+        expected = ("CREATE AGGREGATE FUNCTION test_name(string, string) returns int32"
+                    " location '/foo/bar.so' init_fn='Init' update_fn='Update'"
+                    " merge_fn='Merge' finalize_fn='Finalize'")
         assert result == expected

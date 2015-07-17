@@ -783,12 +783,12 @@ class ImpalaClient(SQLClient):
 
     def create_udf(self, udf_info, udf_name=None, db=None):
         """
-        Creates a function
+        Creates a function within Impala
 
         Parameters
         ----------
-        udf_name : string
         udf_info : UDFInfo object
+        udf_name : string (optional)
         db : string (optional)
         """
         name = udf_info.get_name()
@@ -799,6 +799,30 @@ class ImpalaClient(SQLClient):
                                        udf_info.inputs,
                                        udf_info.output,
                                        name, db)
+        self._execute(statement)
+
+    def create_uda(self, uda_info, uda_name=None, db=None):
+        """
+        Creates a user-defined aggregate function within Impala
+
+        Parameters
+        ----------
+        uda_info : UDAInfo object
+        uda_name : string (optional)
+        db : string (optional)
+        """
+        name = uda_info.get_name()
+        if uda_name:
+            name = uda_name
+        statement = ddl.CreateAggregateFunction(uda_info.hdfs_file,
+                                                uda_info.input_type,
+                                                uda_info.output_type,
+                                                uda_info.init_fn,
+                                                uda_info.update_fn,
+                                                uda_info.merge_fn,
+                                                uda_info.finalize_fn,
+                                                name,
+                                                db=db)
         self._execute(statement)
 
     def drop_udf(self, name, input_types, db=None, must_exist=False,
