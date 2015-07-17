@@ -16,7 +16,6 @@ from posixpath import join as pjoin
 from copy import copy
 import gc
 import pytest
-import pdb
 
 import pandas as pd
 from decimal import Decimal
@@ -196,7 +195,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
         self.con.drop_udf(name, inputs, db=db)
         assert not self.con.exists_udf(name, db)
-        
+
     def test_udf_full_workflow_using_infoclass(self):
         location = '/__ibis/ibis-testing-data/udfs/libTestUdfs.so'
         symbol = 'Identity'
@@ -220,7 +219,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         result = self.con.execute(expr)
         assert result == val
         self.con.drop_udf(name, inputs, db=db)
-    
+
     def test_drop_non_empty_database(self):
         tmp_db = util.guid()
         self.con.create_database(tmp_db)
@@ -658,7 +657,6 @@ FROM {0}.tpch_lineitem li
 
         for expr, expected in cases:
             result = self.con.execute(expr)
-#            assert type(expr) == 'fail'
             assert result == expected
 
     def test_filter_predicates(self):

@@ -14,7 +14,6 @@
 
 from io import BytesIO
 import re
-import hashlib
 
 from ibis.sql.exprs import ExprTranslator, quote_identifier
 import ibis.expr.types as ir
@@ -871,10 +870,13 @@ class CreateFunction(DDLStatement):
         full_line = ' '.join([create_decl, create_line, param_line])
         return full_line
 
+
 class CreateAggregateFunction(DDLStatement):
+
     _object_type = 'FUNCTION'
 
-    def __init__(self, hdfs_file, inputs, output, init_fn, update_fn, merge_fn, finalize_fn, name, db=None):
+    def __init__(self, hdfs_file, inputs, output, init_fn, update_fn,
+                 merge_fn, finalize_fn, name, db=None):
         self.hdfs_file = hdfs_file
         self.inputs = inputs
         self.output = output
@@ -905,7 +907,6 @@ class CreateAggregateFunction(DDLStatement):
         update_ln = "update_fn='{0}'".format(self.update)
         merge_ln = "merge_fn='{0}'".format(self.merge)
         finalize_ln = "finalize_fn='{0}'".format(self.finalize)
-        
         full_line = ' '.join([create_decl, create_line, loc_ln,
                               init_ln, update_ln, merge_ln, finalize_ln])
         return full_line

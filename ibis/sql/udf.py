@@ -13,32 +13,17 @@
 
 import hashlib
 
-from ibis.expr.types import (Schema, Expr,  # noqa
-                             ValueExpr, ScalarExpr, ArrayExpr,
-                             TableExpr,
-                             NumericValue, NumericArray,
-                             IntegerValue,
-                             Int8Value, Int8Scalar, Int8Array,
-                             Int16Value, Int16Scalar, Int16Array,
-                             Int32Value, Int32Scalar, Int32Array,
-                             Int64Value, Int64Scalar, Int64Array,
-                             NullScalar,
-                             BooleanValue, BooleanScalar, BooleanArray,
-                             FloatValue, FloatScalar, FloatArray,
-                             DoubleValue, DoubleScalar, DoubleArray,
-                             StringValue, StringScalar, StringArray,
-                             DecimalValue, DecimalScalar, DecimalArray,
-                             TimestampValue, TimestampScalar, TimestampArray,
-                             CategoryValue, unnamed, as_value_expr, literal,
-                             null, sequence)
+from ibis.expr.types import (
+    Int8Scalar, Int16Scalar,
+    Int32Scalar, Int64Scalar,
+    BooleanScalar, FloatScalar,
+    DoubleScalar, StringScalar,
+    TimestampScalar,
+)
 
 # __all__ is defined
 from ibis.expr.temporal import *  # noqa
-import ibis.common as _com
 
-from ibis.compat import py_string
-import ibis.expr.analytics as _analytics
-import ibis.expr.analysis as _L
 import ibis.expr.types as ir
 import ibis.expr.operations as _ops
 import ibis.expr.rules as rules
@@ -95,9 +80,10 @@ class UDFInfo(UDFInfoParent):
     def __init__(self, hdfs_file, input_type, output_type,
                  so_symbol, name=None):
         self.so_symbol = so_symbol
-        UDFInfoParent.__init__(self, hdfs_file, input_type, output_type, name=name)
+        UDFInfoParent.__init__(self, hdfs_file, input_type,
+                               output_type, name=name)
 
-    
+
 class UDAInfo(UDFInfo):
 
     def __init__(self, hdfs_file, input_type, output_type, init_fn,
@@ -106,7 +92,8 @@ class UDAInfo(UDFInfo):
         self.update_fn = udate_fn
         self.merge_fn = merge_fn
         self.finalize_fn = finalize_fn
-        UDFInfoParent.__init__(self, hdfs_file, input_type, output_type, name=name)
+        UDFInfoParent.__init__(self, hdfs_file, input_type,
+                               output_type, name=name)
 
 
 def _operation_type_conversion(inputs, output):
@@ -133,7 +120,9 @@ def scalar_function(inputs, output, name=None):
 
 
 def add_impala_operation(op, func_name, db):
-    _expr._operation_registry[op] = _expr._udf_op(func_name, db)
+    full_name = '{0}.{1}'.format(db, func_name)
+    arity = len(op.input_type.types)
+    _expr._operation_registry[op] = _expr._fixed_arity_call(full_name, arity)
 
 
 _scalar_conversion_types = {

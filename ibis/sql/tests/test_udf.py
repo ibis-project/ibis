@@ -11,31 +11,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
-import ibis
-
 from ibis.compat import unittest
-from ibis.tests.util import IbisTestEnv, assert_equal
-
-import ibis.common as com
-import ibis.config as config
-import ibis.expr.api as api
-import ibis.expr.operations as _ops
-import ibis.expr.types as ir
-import ibis.util as util
 import ibis.sql.udf as udf
-import ibis.sql.exprs as _exprs
+
 
 class UDFTest(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        pass
-
-    @classmethod
-    def tearDownClass(cls):
-        pass
 
     def test_sql_generation(self):
         op = udf.scalar_function(['string'], 'string', name='Tester')
@@ -44,7 +24,6 @@ class UDFTest(unittest.TestCase):
         def _identity_test(value):
             return op(value).to_expr()
         result = _identity_test('hello world')
-        
         assert result == "SELECT udf_testing.identity('hello world')"
 
     def test_sql_generation_from_infoclass(self):

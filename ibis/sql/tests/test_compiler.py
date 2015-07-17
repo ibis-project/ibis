@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pandas as pd
-import hashlib
 
 import ibis
 
@@ -2003,13 +2002,14 @@ class TestUDFStatements(unittest.TestCase):
         result = stmt.compile()
         expected = "DROP FUNCTION test.test_name(string, string)"
         assert result == expected
-    
 
     def test_create_uda(self):
-        stmt = ddl.CreateAggregateFunction('/foo/bar.so', self.inputs, self.output, 'Init',
-                                           'Update', 'Merge', 'Finalize', self.name)
+        stmt = ddl.CreateAggregateFunction('/foo/bar.so', self.inputs,
+                                           self.output, 'Init', 'Update',
+                                           'Merge', 'Finalize', self.name)
         result = stmt.compile()
-        expected = ("CREATE AGGREGATE FUNCTION test_name(string, string) returns int32"
-                    " location '/foo/bar.so' init_fn='Init' update_fn='Update'"
+        expected = ("CREATE AGGREGATE FUNCTION test_name(string, string)"
+                    " returns int32 location '/foo/bar.so' "
+                    " init_fn='Init' update_fn='Update'"
                     " merge_fn='Merge' finalize_fn='Finalize'")
         assert result == expected
