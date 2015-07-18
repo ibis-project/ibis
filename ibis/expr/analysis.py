@@ -481,11 +481,54 @@ def _is_aliased(col_expr):
     return col_expr.op().name != col_expr.get_name()
 
 
-def _windowize_analytic_functions(parent, expr):
-    if ops.is_analytic(expr, exclude_windows=True):
-        return expr.over(window())
+def windowize_function(expr, w=None):
+    def _windowize(x, w):
+        if not isinstance(x.op(), ops.WindowOp):
+            walked = _walk(x, w)
+        else:
+            window_arg, window_w = x.op().args
+            walked_child = _walk(window_arg, w)
 
-    return expr
+            if walked_child is not window_arg:
+                walked = x._factory(ops.WindowOp(walked_child, window_w),
+                                    name=x._name)
+            else:
+                walked = x
+
+        op = walked.op()
+        if isinstance(op, (ops.AnalyticOp, ops.Reduction)):
+            if w is None:
+                w = window()
+            return walked.over(w)
+        elif isinstance(op, ops.WindowOp):
+            if w is not None:
+                return walked.over(w)
+            else:
+                return walked
+        else:
+            return walked
+
+    def _walk(x, w):
+        op = x.op()
+
+        unchanged = True
+        windowed_args = []
+        for arg in op.args:
+            if not isinstance(arg, ir.Expr):
+                windowed_args.append(arg)
+                continue
+
+            new_arg = _windowize(arg, w)
+            unchanged = unchanged and arg is new_arg
+            windowed_args.append(new_arg)
+
+        if not unchanged:
+            new_op = type(op)(*windowed_args)
+            return x._factory(new_op, name=x._name)
+        else:
+            return x
+
+    return _windowize(expr, w)
 
 
 class Projector(object):
@@ -518,7 +561,7 @@ class Projector(object):
             if validator.shares_some_roots(expr):
                 expr = substitute_parents(expr, past_projection=False)
 
-            expr = _windowize_analytic_functions(parent, expr)
+            expr = windowize_function(expr)
 
             clean_exprs.append(expr)
 

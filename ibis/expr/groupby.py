@@ -14,9 +14,10 @@
 
 # User API for grouped data operations
 
-import ibis.expr.window as _window
+import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.expr.window as _window
 import ibis.util as util
 
 
@@ -105,7 +106,7 @@ class GroupedTableExpr(object):
         expr = (table
                 .group_by('foo')
                 .order_by(ibis.desc('bar'))
-                mutate
+                .mutate(qux=table.baz.lag().name('lag_baz')))
 
         Returns
         -------
@@ -114,6 +115,8 @@ class GroupedTableExpr(object):
 
         if exprs is None:
             exprs = []
+        else:
+            exprs = util.promote_list(exprs)
 
         for k, v in kwds.items():
             exprs.append(v.name(k))
@@ -124,8 +127,7 @@ class GroupedTableExpr(object):
         w = self._get_window()
         windowed_exprs = []
         for expr in exprs:
-            if ops.is_analytic(expr):
-                expr = expr.over(w)
+            expr = L.windowize_function(expr, w=w)
             windowed_exprs.append(expr)
         return self.table.projection(windowed_exprs)
 

@@ -16,14 +16,9 @@
 import ibis
 
 from ibis.sql.compiler import to_sql
-from ibis.expr.tests.mocks import MockConnection, BasicTestCase
+from ibis.expr.tests.mocks import BasicTestCase
 from ibis.compat import unittest
 import ibis.common as com
-
-import ibis.expr.api as api
-import ibis.expr.operations as ops
-
-import ibis.sql.ddl as ddl
 
 
 class TestWindowFunctions(BasicTestCase, unittest.TestCase):
@@ -47,16 +42,30 @@ FROM alltypes"""
         first = t.f.first().name('first')
         last = t.f.last().name('last')
         lag = t.f.lag().name('lag')
+        diff = (t.f.lead() - t.f).name('fwd_diff')
         lag2 = t.f.lag().over(ibis.window(order_by=t.d)).name('lag2')
         grouped = t.group_by('g')
-        proj = grouped.mutate([lag, first, last, lag2])
+        proj = grouped.mutate([lag, diff, first, last, lag2])
         expected = """\
 SELECT *, lag(f) OVER (PARTITION BY g ORDER BY f) AS `lag`,
+       lead(f) OVER (PARTITION BY g ORDER BY f) - f AS `fwd_diff`,
        first_value(f) OVER (PARTITION BY g ORDER BY f) AS `first`,
        last_value(f) OVER (PARTITION BY g ORDER BY f) AS `last`,
        lag(f) OVER (PARTITION BY g ORDER BY d) AS `lag2`
 FROM alltypes"""
         self._check_sql(proj, expected)
+
+    def test_nested_analytic_function(self):
+        t = self.con.table('alltypes')
+
+        w = ibis.window(order_by=t.f)
+        expr = (t.f - t.f.lag()).lag().over(w).name('foo')
+        result = t.projection([expr])
+        expected = """\
+SELECT lag(f - lag(f) OVER (ORDER BY f)) \
+OVER (ORDER BY f) AS `foo`
+FROM alltypes"""
+        self._check_sql(result, expected)
 
     def test_rank_functions(self):
         t = self.con.table('alltypes')
@@ -99,6 +108,22 @@ FROM alltypes"""
         expected = """\
 SELECT lag(d) OVER (PARTITION BY g ORDER BY f DESC) AS `foo`,
        max(a) OVER (PARTITION BY g ORDER BY f DESC) AS `max`
+FROM alltypes"""
+        self._check_sql(expr, expected)
+
+    def test_row_number_requires_order_by(self):
+        t = self.con.table('alltypes')
+
+        with self.assertRaises(com.ExpressionError):
+            (t.group_by(t.g)
+             .mutate(ibis.row_number().name('foo')))
+
+        expr = (t.group_by(t.g)
+                .order_by(t.f)
+                .mutate(ibis.row_number().name('foo')))
+
+        expected = """\
+SELECT row_number() OVER (PARTITION BY g ORDER BY f - 1 AS `foo`
 FROM alltypes"""
         self._check_sql(expr, expected)
 
