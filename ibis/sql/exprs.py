@@ -12,12 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# An Ibis analytical expression will typically consist of a primary SELECT
-# statement, with zero or more supporting DDL queries. For example we would
-# want to support converting a text file in HDFS to a Parquet-backed Impala
-# table, with optional teardown if the user wants the intermediate converted
-# table to be temporary.
-
 import datetime
 from io import BytesIO
 

@@ -12,28 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Expressions can be parameterized both by tables (known schema, but not bound
-# to a particular table in any database), fields, and literal values. In order
-# to execute an expression containing parameters, the user must perform a
-# actual data. Mixing table and field parameters can lead to tricky binding
-# scenarios -- essentially all unbound field parameters within a particular
-# table expression must originate from the same concrete table. Internally we
-# can identify the "logical tables" in the expression and present those to the
-# user for the binding. Good introspection capability will be important
-# here. Literal parameters are much simpler. A literal parameter is declared
-# and used however many times the user wishes; binding in that case simply
-# introduces the actual value to be used.
-#
-# In some cases, we'll want to be able to indicate that a parameter can either
-# be a scalar or array expression. In this case the binding requirements may be
-# somewhat more lax.
-
 import six
-
-if six.PY3:
-    from io import StringIO
-else:
-    from io import BytesIO as StringIO
 
 import datetime
 import re
@@ -42,6 +21,11 @@ from ibis.common import IbisError, RelationError
 import ibis.common as com
 import ibis.config as config
 import ibis.util as util
+
+if six.PY3:
+    from io import StringIO
+else:
+    from io import BytesIO as StringIO
 
 
 def _ops():

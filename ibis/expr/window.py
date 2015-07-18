@@ -15,6 +15,7 @@
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.util as util
+import ibis.common as com
 
 
 class Window(object):
@@ -48,7 +49,38 @@ class Window(object):
         self._validate_frame()
 
     def _validate_frame(self):
-        pass
+        p_tuple = has_p = False
+        f_tuple = has_f = False
+        if self.preceding is not None:
+            p_tuple = isinstance(self.preceding, (list, tuple))
+            has_p = True
+
+        if self.following is not None:
+            f_tuple = isinstance(self.following, (list, tuple))
+            has_f = True
+
+        if ((p_tuple and has_f) or (f_tuple and has_p)):
+            raise com.IbisInputError('Can only specify one window side '
+                                     ' when you want an off-center '
+                                     'window')
+        elif p_tuple:
+            start, end = self.preceding
+            if start is None:
+                assert end >= 0
+            else:
+                assert start > end
+        elif f_tuple:
+            start, end = self.following
+            if end is None:
+                assert start >= 0
+            else:
+                assert start < end
+        else:
+            if has_p and self.preceding < 0:
+                raise com.IbisInputError('Window offset must be positive')
+
+            if has_f and self.following < 0:
+                raise com.IbisInputError('Window offset must be positive')
 
     def bind(self, table):
         # Internal API, ensure that any unresolved expr references (as strings,

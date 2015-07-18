@@ -228,9 +228,9 @@ class ExprSimplifier(object):
 
                     can_lift = True
                     lifted_root = self.lift(val)
-                elif (isinstance(val.op(), ops.TableColumn)
-                      and val.op().name == val.get_name()
-                      and node.name == val.get_name()):
+                elif (isinstance(val.op(), ops.TableColumn) and
+                      val.op().name == val.get_name() and
+                      node.name == val.get_name()):
                     can_lift = True
                     lifted_root = self.lift(val.op().table)
 
@@ -458,19 +458,19 @@ class _PushdownValidate(object):
             return False
 
         for val in self.parent.selections:
-            if (isinstance(val.op(), ops.PhysicalTable)
-                    and node.name in val.schema()):
+            if (isinstance(val.op(), ops.PhysicalTable) and
+                    node.name in val.schema()):
                 is_valid = True
-            elif (isinstance(val.op(), ops.TableColumn)
-                  and node.name == val.get_name()
-                  and not _is_aliased(val)):
+            elif (isinstance(val.op(), ops.TableColumn) and
+                  node.name == val.get_name() and
+                  not _is_aliased(val)):
                 # Aliased table columns are no good
                 col_table = val.op().table.op()
 
                 lifted_node = substitute_parents(expr).op()
 
-                is_valid = (col_table.is_ancestor(node.table)
-                            or col_table.is_ancestor(lifted_node.table))
+                is_valid = (col_table.is_ancestor(node.table) or
+                            col_table.is_ancestor(lifted_node.table))
 
                 # is_valid = True
 

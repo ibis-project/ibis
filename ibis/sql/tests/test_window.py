@@ -145,4 +145,4 @@ FROM alltypes"""
 
     def test_off_center_window(self):
         w1 = ibis.window(following=(5, 10))
-        w2 = ibis.window(preceding=(5, 10))
+        w2 = ibis.window(preceding=(10, 5))
