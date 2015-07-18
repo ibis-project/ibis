@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.common import RelationError
+from ibis.common import RelationError, ExpressionError
 from ibis.expr.window import window
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -482,6 +482,16 @@ def _is_aliased(col_expr):
 
 
 def windowize_function(expr, w=None):
+    def _check_window(x):
+        # Hmm
+        arg, window = x.op().args
+        if isinstance(arg.op(), ops.RowNumber):
+            if len(window._order_by) == 0:
+                raise ExpressionError('RowNumber requires explicit '
+                                      'window sort')
+
+        return x
+
     def _windowize(x, w):
         if not isinstance(x.op(), ops.WindowOp):
             walked = _walk(x, w)
@@ -499,12 +509,12 @@ def windowize_function(expr, w=None):
         if isinstance(op, (ops.AnalyticOp, ops.Reduction)):
             if w is None:
                 w = window()
-            return walked.over(w)
+            return _check_window(walked.over(w))
         elif isinstance(op, ops.WindowOp):
             if w is not None:
-                return walked.over(w)
+                return _check_window(walked.over(w))
             else:
-                return walked
+                return _check_window(walked)
         else:
             return walked
 

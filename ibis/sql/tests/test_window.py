@@ -123,7 +123,7 @@ FROM alltypes"""
                 .mutate(ibis.row_number().name('foo')))
 
         expected = """\
-SELECT row_number() OVER (PARTITION BY g ORDER BY f - 1 AS `foo`
+SELECT *, row_number() OVER (PARTITION BY g ORDER BY f) - 1 AS `foo`
 FROM alltypes"""
         self._check_sql(expr, expected)
 

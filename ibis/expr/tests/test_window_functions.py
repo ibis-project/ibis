@@ -37,7 +37,7 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
         expr2 = grouped.mutate(diff=diff)
         expr3 = grouped.mutate([diff.name('diff')])
 
-        window_expr = diff.name('diff').over(w)
+        window_expr = (t.d - t.d.lag().over(w)).name('diff')
         expected = t.projection([t, window_expr])
 
         assert_equal(expr, expected)
