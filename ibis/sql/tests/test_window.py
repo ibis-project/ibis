@@ -93,6 +93,15 @@ SELECT f, row_number() OVER (ORDER BY f DESC) - 1 AS `revrank`
 FROM alltypes"""
         self._check_sql(proj, expected)
 
+        expr = (t.group_by('g')
+                .order_by(ibis.desc(t.f))
+                [t.d.lag().name('foo'), t.a.max()])
+        expected = """\
+SELECT lag(d) OVER (PARTITION BY g ORDER BY f DESC) AS `foo`,
+       max(a) OVER (PARTITION BY g ORDER BY f DESC) AS `max`
+FROM alltypes"""
+        self._check_sql(expr, expected)
+
     def test_math_on_windowed_expr(self):
         # Window clause may not be found at top level of expression
         pass
