@@ -473,9 +473,10 @@ class CreateTable(DDLStatement):
     """
 
     def __init__(self, table_name, database=None, external=False,
-                 format='parquet', overwrite=False, partition=None):
+                 format='parquet', overwrite=False, partition=None, path=None):
         self.table_name = table_name
         self.database = database
+        self.path = path
         self.external = external
         self.overwrite = overwrite
         self.format = self._validate_storage_format(format)
@@ -499,6 +500,11 @@ class CreateTable(DDLStatement):
                                           scoped_name)
         return create_line
 
+    def _location(self):
+        if self.path:
+            return "\nLOCATION '{0}'".format(self.path)
+        return ''
+
     def _storage(self):
         storage_lines = {
             'parquet': '\nSTORED AS PARQUET',
@@ -515,16 +521,18 @@ class CTAS(CreateTable):
 
     def __init__(self, table_name, select, database=None,
                  external=False, format='parquet', overwrite=False,
-                 partition=None):
+                 partition=None, path=None):
         self.select = select
         CreateTable.__init__(self, table_name, database=database,
                              external=external, format=format,
-                             overwrite=overwrite, partition=partition)
+                             overwrite=overwrite, partition=partition,
+                             path=path)
 
     def compile(self):
         buf = BytesIO()
         buf.write(self._create_line())
         buf.write(self._storage())
+        buf.write(self._location())
 
         select_query = self.select.compile()
         buf.write('\nAS\n{0}'.format(select_query))
@@ -566,11 +574,11 @@ class CreateTableParquet(CreateTable):
                  schema=None,
                  external=True,
                  **kwargs):
-        self.path = path
         self.example_file = example_file
         self.example_table = example_table
         self.schema = schema
-        CreateTable.__init__(self, table_name, external=external, **kwargs)
+        CreateTable.__init__(self, table_name, external=external,
+                             format='parquet', path=path, **kwargs)
 
         self._validate()
 
@@ -591,19 +599,18 @@ class CreateTableParquet(CreateTable):
         else:
             raise NotImplementedError
 
-        buf.write('\nSTORED AS PARQUET')
-        buf.write("\nLOCATION '{0}'".format(self.path))
+        buf.write(self._storage())
+        buf.write(self._location())
         return buf.getvalue()
 
 
 class CreateTableWithSchema(CreateTable):
 
-    def __init__(self, table_name, schema,
-                 table_format, external=True, **kwargs):
+    def __init__(self, table_name, schema, table_format, **kwargs):
         self.schema = schema
         self.table_format = table_format
 
-        CreateTable.__init__(self, table_name, external=external, **kwargs)
+        CreateTable.__init__(self, table_name, **kwargs)
 
     def compile(self):
         buf = BytesIO()
@@ -615,6 +622,8 @@ class CreateTableWithSchema(CreateTable):
         format_ddl = self.table_format.to_ddl()
         if format_ddl:
             buf.write(format_ddl)
+
+        buf.write(self._location())
 
         return buf.getvalue()
 
