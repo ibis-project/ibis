@@ -519,6 +519,16 @@ FROM {0}.tpch_lineitem li
 
         self.assert_cases_equality(mod_cases + nullif_cases)
 
+    def test_column_types(self):
+        df = self.alltypes.execute()
+        assert df.tinyint_col.dtype.name == 'int8'
+        assert df.smallint_col.dtype.name == 'int16'
+        assert df.int_col.dtype.name == 'int32'
+        assert df.bigint_col.dtype.name == 'int64'
+        assert df.float_col.dtype.name == 'float32'
+        assert df.double_col.dtype.name == 'float64'
+        assert pd.core.common.is_datetime64_dtype(df.timestamp_col.dtype)
+
     def test_timestamp_builtins(self):
         i32 = ibis.literal(50000)
         i64 = ibis.literal(5 * 10 ** 8)

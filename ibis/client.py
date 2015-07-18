@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from itertools import izip
+
 import hdfs
 
 from impala.error import Error as ImpylaError
@@ -120,11 +122,23 @@ class SQLClient(Client):
                     ast = sql.build_ast(expr)
         return ast, expr
 
+    def _db_type_to_dtype(self, db_type):
+        raise NotImplementedError
+
     def _fetch_from_cursor(self, cursor):
         import pandas as pd
         rows = cursor.fetchall()
+        # TODO(wesm): please evaluate/reimpl to optimize for perf/memory
+        dtypes = [self._db_type_to_dtype(x[1]) for x in cursor.description]
         names = [x[0] for x in cursor.description]
-        return pd.DataFrame.from_records(rows, columns=names)
+        cols = {}
+        for (col, name, dtype) in zip(izip(*rows), names, dtypes):
+            try:
+                cols[name] = pd.Series(col, dtype=dtype)
+            except TypeError:
+                # coercing to specified dtype failed, e.g. NULL vals in int col
+                cols[name] = pd.Series(col)
+        return pd.DataFrame(cols, columns=names)
 
 
 class ImpalaConnection(object):
@@ -214,6 +228,22 @@ class ImpalaClient(SQLClient):
     An Ibis client interface that uses Impala
     """
 
+    _HS2_TTypeId_to_dtype = {
+        'BOOLEAN': 'bool',
+        'TINYINT': 'int8',
+        'SMALLINT': 'int16',
+        'INT': 'int32',
+        'BIGINT': 'int64',
+        'TIMESTAMP': 'datetime64[ns]',
+        'FLOAT': 'float32',
+        'DOUBLE': 'float64',
+        'STRING': 'string',
+        'DECIMAL': 'object',
+        'BINARY': 'string',
+        'VARCHAR': 'string',
+        'CHAR': 'string'
+    }
+
     def __init__(self, con, hdfs_client=None, **params):
         self.con = con
 
@@ -257,6 +287,9 @@ class ImpalaClient(SQLClient):
 
         database = database or self.current_database
         return '{0}.`{1}`'.format(database, name)
+
+    def _db_type_to_dtype(self, db_type):
+        return self._HS2_TTypeId_to_dtype[db_type]
 
     def list_tables(self, like=None, database=None):
         """
