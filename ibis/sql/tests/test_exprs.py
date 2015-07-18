@@ -743,8 +743,12 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
 
     def test_analytic_exprs(self):
         t = self.table
+
+        w = ibis.window(order_by=t.float_col)
+
         cases = [
-            (ibis.row_number(), 'row_number()'),
+            (ibis.row_number().over(w),
+             'row_number() OVER (ORDER BY float_col) - 1'),
             (t.string_col.lag(), 'lag(string_col)'),
             (t.string_col.lag(2), 'lag(string_col, 2)'),
             (t.string_col.lag(default=0), 'lag(string_col, 1, 0)'),

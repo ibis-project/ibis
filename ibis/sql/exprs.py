@@ -90,7 +90,10 @@ def _window(translator, expr):
     arg, window = op.args
     window_op = arg.op()
 
-    _require_order_by = (ops.Lag, ops.Lead,
+    _require_order_by = (ops.Lag,
+                         ops.Lead,
+                         ops.DenseRank,
+                         ops.MinRank,
                          ops.FirstValue,
                          ops.LastValue)
 
@@ -103,7 +106,12 @@ def _window(translator, expr):
     window_formatted = _format_window(translator, window)
 
     arg_formatted = translator.translate(arg)
-    return '{0} {1}'.format(arg_formatted, window_formatted)
+    result = '{0} {1}'.format(arg_formatted, window_formatted)
+
+    if type(window_op) in _expr_transforms:
+        return _expr_transforms[type(window_op)](result)
+    else:
+        return result
 
 
 def _format_window(translator, window):
@@ -925,7 +933,10 @@ _other_ops = {
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
 
+    # RowNumber, and rank functions starts with 0 in Ibis-land
     ops.RowNumber: lambda *args: 'row_number()',
+    ops.DenseRank: lambda *args: 'dense_rank()',
+    ops.MinRank: lambda *args: 'rank()',
 
     ops.FirstValue: _unary_op('first_value'),
     ops.LastValue: _unary_op('last_value'),
@@ -933,6 +944,16 @@ _other_ops = {
     ops.Lag: _shift_like('lag'),
     ops.Lead: _shift_like('lead'),
     ops.WindowOp: _window
+}
+
+
+_substract_one = lambda x: '{0} - 1'.format(x)
+
+
+_expr_transforms = {
+    ops.RowNumber: _substract_one,
+    ops.DenseRank: _substract_one,
+    ops.MinRank: _substract_one,
 }
 
 

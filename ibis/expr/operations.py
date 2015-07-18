@@ -743,13 +743,86 @@ class Lead(ShiftBase):
     pass
 
 
-class MinRank(AnalyticOp):
+class RankBase(AnalyticOp):
+
+    def output_type(self):
+        return ir.Int64Array
+
+
+class MinRank(RankBase):
+
+    """
+    Compute position of first element within each equal-value group in sorted
+    order.
+
+    Examples
+    --------
+    values   ranks
+    1        0
+    1        0
+    2        2
+    2        2
+    2        2
+    3        5
+
+    Returns
+    -------
+    ranks : Int64Array, starting from 0
+    """
+
     # Equivalent to SQL RANK()
     input_type = [rules.array]
 
 
-class DenseRank(AnalyticOp):
+class DenseRank(RankBase):
+
+    """
+    Compute position of first element within each equal-value group in sorted
+    order, ignoring duplicate values.
+
+    Examples
+    --------
+    values   ranks
+    1        0
+    1        0
+    2        1
+    2        1
+    2        1
+    3        2
+
+    Returns
+    -------
+    ranks : Int64Array, starting from 0
+    """
+
     # Equivalent to SQL DENSE_RANK()
+    input_type = [rules.array]
+
+
+class RowNumber(RankBase):
+
+    """
+    Compute row number starting from 0 after sorting by column expression
+
+    Examples
+    --------
+    w = window(order_by=values)
+    row_number().over(w)
+
+    values   number
+    1        0
+    1        1
+    2        2
+    2        3
+    2        4
+    3        5
+
+    Returns
+    -------
+    row_number : Int64Array, starting from 0
+    """
+
+    # Equivalent to SQL ROW_NUMBER()
     pass
 
 
@@ -760,12 +833,6 @@ class PercentRank(AnalyticOp):
 class NTile(AnalyticOp):
     pass
 
-
-class RowNumber(AnalyticOp):
-    # Equivalent to SQL ROW_NUMBER()
-
-    def output_type(self):
-        return ir.Int64Array
 
 
 class FirstValue(AnalyticOp):

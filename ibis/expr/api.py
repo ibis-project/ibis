@@ -690,6 +690,8 @@ def lead(arg, offset=None, default=None):
 
 first = _unary_op('first', _ops.FirstValue)
 last = _unary_op('last', _ops.LastValue)
+rank = _unary_op('rank', _ops.MinRank)
+dense_rank = _unary_op('dense_rank', _ops.DenseRank)
 
 
 def nth(arg, k):
@@ -875,6 +877,8 @@ _generic_array_methods = dict(
 
     first=first,
     last=last,
+    dense_rank=dense_rank,
+    rank=rank,
     # nth=nth,
     lag=lag,
     lead=lead,

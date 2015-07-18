@@ -58,6 +58,17 @@ SELECT *, lag(f) OVER (PARTITION BY g ORDER BY f) AS `lag`,
 FROM alltypes"""
         self._check_sql(proj, expected)
 
+    def test_rank_functions(self):
+        t = self.con.table('alltypes')
+
+        proj = t[t.g, t.f.rank().name('minr'),
+                 t.f.dense_rank().name('denser')]
+        expected = """\
+SELECT g, rank() OVER (ORDER BY f) - 1 AS `minr`,
+       dense_rank() OVER (ORDER BY f) - 1 AS `denser`
+FROM alltypes"""
+        self._check_sql(proj, expected)
+
     def test_multiple_windows(self):
         t = self.con.table('alltypes')
 
@@ -78,7 +89,7 @@ FROM alltypes"""
 
         proj = t[t.f, ibis.row_number().over(w).name('revrank')]
         expected = """\
-SELECT f, row_number() OVER (ORDER BY f DESC) AS `revrank`
+SELECT f, row_number() OVER (ORDER BY f DESC) - 1 AS `revrank`
 FROM alltypes"""
         self._check_sql(proj, expected)
 
