@@ -250,6 +250,9 @@ class ImpalaCursor(object):
         self.database = database
         self.codegen_disabled = codegen_disabled
 
+    def __del__(self):
+        self.cursor.close()
+
     def disable_codegen(self, disabled=True):
         self.codegen_disabled = disabled
         query = ('SET disable_codegen={0}'
@@ -756,7 +759,6 @@ class ImpalaClient(SQLClient):
                                       example_table=like_table,
                                       external=external)
         self._execute(stmt)
-
         return self._wrap_new_table(qualified_name, persist)
 
     def _get_concrete_table_path(self, name, database, persist=False):

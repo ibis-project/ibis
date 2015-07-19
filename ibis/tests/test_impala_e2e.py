@@ -1004,26 +1004,34 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         finally:
             self.con.drop_table(name, database=self.tmp_db)
 
-    # def test_temp_table_concurrency(self):
-    #     from threading import Thread
-    #     nthreads = 4
+    def test_temp_table_concurrency(self):
+        pytest.skip('Cannot get this test to run under pytest')
 
-    #     hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
+        from threading import Thread, Lock
+        import gc
+        nthreads = 4
 
-    #     results = []
+        hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
 
-    #     def do_something():
-    #         t = self.con.parquet_file(hdfs_path)
-    #         t.limit(10).execute()
-    #         t = None
-    #         results.append(True)
+        lock = Lock()
 
-    #     threads = []
-    #     for i in range(nthreads):
-    #         t = Thread(target=do_something)
-    #         t.start()
-    #         threads.append(t)
+        results = []
 
-    #     [x.join() for x in threads]
+        def do_something():
+            t = self.con.parquet_file(hdfs_path)
 
-    #     assert results == [True] * nthreads
+            with lock:
+                t.limit(10).execute()
+                t = None
+                gc.collect()
+                results.append(True)
+
+        threads = []
+        for i in range(nthreads):
+            t = Thread(target=do_something)
+            t.start()
+            threads.append(t)
+
+        [x.join() for x in threads]
+
+        assert results == [True] * nthreads
