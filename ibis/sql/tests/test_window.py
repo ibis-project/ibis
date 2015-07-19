@@ -60,27 +60,39 @@ FROM alltypes"""
         t = self.con.table('alltypes')
 
         ex_template = """\
-SELECT sum(d) OVER (ORDER BY f RANGE BETWEEN {0}) AS `foo`
+SELECT sum(d) OVER (ORDER BY f {0}) AS `foo`
 FROM alltypes"""
 
         cases = [
-            (window(preceding=5), '5 preceding and unbounded following'),
+            (window(preceding=5),
+             'range between 5 preceding and unbounded following'),
             (window(preceding=5, following=0),
-             '5 preceding and current row'),
+             'rows between 5 preceding and current row'),
             (window(preceding=5, following=2),
-             '5 preceding and 2 following'),
-            (window(following=2), 'unbounded preceding and 2 following'),
+             'rows between 5 preceding and 2 following'),
+            (window(following=2),
+             'range between unbounded preceding and 2 following'),
             (window(following=2, preceding=0),
-             'current row and 2 following'),
-            (window(preceding=5), '5 preceding and unbounded following'),
-            (window(following=[5, 10]), '5 following and 10 following'),
-            (window(preceding=[10, 5]), '10 preceding and 5 preceding')
+             'rows between current row and 2 following'),
+            (window(preceding=5),
+             'range between 5 preceding and unbounded following'),
+            (window(following=[5, 10]),
+             'rows between 5 following and 10 following'),
+            (window(preceding=[10, 5]),
+             'rows between 10 preceding and 5 preceding'),
+
+            # # cumulative windows
+            (ibis.cumulative_window(),
+             'range between unbounded preceding and current row'),
+
+            # # trailing windows
+            (ibis.trailing_window(10),
+             'rows between 10 preceding and current row'),
         ]
 
         for w, frame in cases:
             w2 = w.order_by(t.f)
-            expr = t.projection([t.d.sum()
-                                 .over(w2).name('foo')])
+            expr = t.projection([t.d.sum().over(w2).name('foo')])
             expected = ex_template.format(frame.upper())
             self._check_sql(expr, expected)
 
@@ -161,9 +173,6 @@ FROM alltypes"""
         pass
 
     def test_group_by_then_different_sort_orders(self):
-        pass
-
-    def test_cumulative_window(self):
         pass
 
     def test_trailing_window(self):

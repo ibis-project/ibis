@@ -128,24 +128,31 @@ def _format_window(translator, window):
 
     p, f = window.preceding, window.following
 
+    def _prec(p):
+        return '{0} PRECEDING'.format(p) if p > 0 else 'CURRENT ROW'
+
+    def _foll(f):
+        return '{0} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
+
     if p is not None and f is not None:
-        prec = '{0} PRECEDING'.format(p) if p > 0 else 'CURRENT ROW'
-        follow = '{0} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
-        frame = 'RANGE BETWEEN {0} AND {1}'.format(prec, follow)
-    elif p:
+        frame = ('ROWS BETWEEN {0} AND {1}'
+                 .format(_prec(p), _foll(f)))
+    elif p is not None:
         if isinstance(p, tuple):
-            frame = ('RANGE BETWEEN {0} PRECEDING AND {1} PRECEDING'
-                     .format(*p))
+            start, end = p
+            frame = ('ROWS BETWEEN {0} AND {1}'
+                     .format(_prec(start), _prec(end)))
         else:
-            frame = ('RANGE BETWEEN {0} PRECEDING AND UNBOUNDED FOLLOWING'
-                     .format(p))
-    elif f:
+            frame = ('RANGE BETWEEN {0} AND UNBOUNDED FOLLOWING'
+                     .format(_prec(p)))
+    elif f is not None:
         if isinstance(f, tuple):
-            frame = ('RANGE BETWEEN {0} FOLLOWING AND {1} FOLLOWING'
-                     .format(*f))
+            start, end = f
+            frame = ('ROWS BETWEEN {0} AND {1}'
+                     .format(_foll(start), _foll(end)))
         else:
-            frame = ('RANGE BETWEEN UNBOUNDED PRECEDING AND {0} FOLLOWING'
-                     .format(f))
+            frame = ('RANGE BETWEEN UNBOUNDED PRECEDING AND {0}'
+                     .format(_foll(f)))
     else:
         # no-op, default is full sample
         frame = None
