@@ -33,44 +33,33 @@ trap cleanup EXIT
 
 cd $TMP_DIR
 
-# Build requested Python version
-wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz
-tar -xzf Python-$PYTHON_VERSION.tgz && cd Python-$PYTHON_VERSION
-./configure --prefix=$TMP_DIR
-make && make altinstall
-
-PY_MAJOR=$(echo $PYTHON_VERSION | cut -d. -f1)
-PY_MINOR=$(echo $PYTHON_VERSION | cut -d. -f2)
-PY_BIN_DIR=$TMP_DIR/bin
-PY_EXEC=$PY_BIN_DIR/python$PY_MAJOR.$PY_MINOR
-
-$PY_EXEC --version
-which $PY_EXEC
-
-# Install pip and virtualenv
-curl https://bootstrap.pypa.io/get-pip.py | $PY_EXEC
-$PY_BIN_DIR/pip install virtualenv
-
-cd $TMP_DIR
-
 # Checkout ibis if necessary
 if [ -z "$WORKSPACE" ]; then
     : ${GIT_URL:?"GIT_URL is unset"}
     : ${GIT_BRANCH:?"GIT_BRANCH is unset"}
-    git clone $GIT_URL && cd ibis
-    git checkout origin/$GIT_BRANCH
-    IBIS_HOME=$TMP_DIR/impyla
+    git clone $GIT_URL
+    pushd ibis && git checkout origin/$GIT_BRANCH && popd
+    IBIS_HOME=$TMP_DIR/ibis
 else
     # WORKSPACE is set, so I must be on a Jenkins slave
     IBIS_HOME=$WORKSPACE
 fi
 
-# set up python virtualenv
-# note: this is not strictly necessary because we're using a custom-build python
-VENV_NAME=pyvenv-ibis-test
-virtualenv $VENV_NAME && source $VENV_NAME/bin/activate
-pip install -U pip setuptools
+# Setup Python
+curl https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh > miniconda.sh
+bash miniconda.sh -b -p $TMP_DIR/miniconda
+export PATH="$TMP_DIR/miniconda/bin:$PATH"
+conda update -y -q conda
+conda info -a
+
+# Install ibis and deps into new environment
+CONDA_ENV_NAME=pyenv-ibis-test
+conda create -y -q -n $CONDA_ENV_NAME python=$PYTHON_VERSION numpy pandas
+source activate $CONDA_ENV_NAME
 pip install $IBIS_HOME
+
+python --version
+which python
 
 cd $IBIS_HOME
 
@@ -84,4 +73,3 @@ py.test --e2e ibis
 
 # cleanup
 scripts/cleanup_testing_data.py
-deactivate

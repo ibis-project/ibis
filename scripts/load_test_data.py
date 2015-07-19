@@ -43,7 +43,7 @@ def make_connection():
 
 
 def get_ibis_test_data(local_path):
-    cmd = 'cd {0} && wget {1} && tar -xzf {2}'.format(
+    cmd = 'cd {0} && wget -q {1} && tar -xzf {2}'.format(
         local_path, IBIS_TEST_DATA_URL, os.path.basename(IBIS_TEST_DATA_URL))
     subprocess.check_call(cmd, shell=True)
     data_dir = pjoin(local_path,
