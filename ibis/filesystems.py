@@ -276,8 +276,10 @@ class WebHDFS(HDFS):
             else:
                 if verbose:
                     self.log('Writing buffer to HDFS {0}'.format(hdfs_path))
-                # TODO: eliminate the .getvalue() call to support general handle types
-                self.client.write(hdfs_path, resource.getvalue(),
+                # TODO: eliminate the .getvalue() call to support general
+                # handle types
+                resource.seek(0)
+                self.client.write(hdfs_path, resource.read(),
                                   overwrite=overwrite, **kwargs)
 
     @implements(HDFS.get)

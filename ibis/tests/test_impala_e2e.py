@@ -24,7 +24,7 @@ import ibis
 
 from ibis.compat import unittest
 from ibis.sql.compiler import to_sql
-from ibis.tests.util import IbisTestEnv, ImpalaE2E, assert_equal, test_connect
+from ibis.tests.util import IbisTestEnv, ImpalaE2E, assert_equal, connect_test
 
 import ibis.common as com
 import ibis.config as config
@@ -43,7 +43,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
     def test_raise_ibis_error_no_hdfs(self):
         # #299
-        client = test_connect(ENV, with_hdfs=False)
+        client = connect_test(ENV, with_hdfs=False)
         self.assertRaises(com.IbisError, getattr, client, 'hdfs')
 
     def test_get_table_ref(self):
@@ -72,7 +72,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         # create new connection with no default db set
         env = copy(ENV)
         env.test_data_db = None
-        con = test_connect(env)
+        con = connect_test(env)
         self.assertRaises(Exception, con.table, 'functional_alltypes')
         con.set_database(self.test_data_db)
         con.table('functional_alltypes')
@@ -970,7 +970,6 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
     def test_query_parquet_infer_schema(self):
         hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
-
         table = self.con.parquet_file(hdfs_path)
 
         # NOTE: the actual schema should have an int16, but bc this is being
@@ -1004,3 +1003,35 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
             expr.execute()
         finally:
             self.con.drop_table(name, database=self.tmp_db)
+
+    def test_temp_table_concurrency(self):
+        pytest.skip('Cannot get this test to run under pytest')
+
+        from threading import Thread, Lock
+        import gc
+        nthreads = 4
+
+        hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
+
+        lock = Lock()
+
+        results = []
+
+        def do_something():
+            t = self.con.parquet_file(hdfs_path)
+
+            with lock:
+                t.limit(10).execute()
+                t = None
+                gc.collect()
+                results.append(True)
+
+        threads = []
+        for i in range(nthreads):
+            t = Thread(target=do_something)
+            t.start()
+            threads.append(t)
+
+        [x.join() for x in threads]
+
+        assert results == [True] * nthreads

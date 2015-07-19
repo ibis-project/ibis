@@ -57,7 +57,8 @@ def make_client(db, hdfs_client=None):
 def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
                    database='default', timeout=45, use_ssl=False, ca_cert=None,
                    use_ldap=False, ldap_user=None, ldap_password=None,
-                   use_kerberos=False, kerberos_service_name='impala'):
+                   use_kerberos=False, kerberos_service_name='impala',
+                   pool_size=8):
     """
     Create an Impala Client for use with Ibis
 
@@ -95,7 +96,7 @@ def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
         'kerberos_service_name': kerberos_service_name
     }
 
-    return ImpalaConnection(**params)
+    return ImpalaConnection(pool_size=pool_size, **params)
 
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs', **kwds):

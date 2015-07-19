@@ -15,6 +15,8 @@
 from itertools import izip
 from posixpath import join as pjoin
 from six import BytesIO
+import Queue
+import threading
 
 import hdfs
 
@@ -67,8 +69,12 @@ class SQLClient(Client):
         # XXX
         return name
 
-    def _execute(self, query):
-        return self.con.execute(query)
+    def _execute(self, query, results=False):
+        cur = self.con.execute(query)
+        if results:
+            return cur
+        else:
+            cur.release()
 
     def sql(self, query):
         """
@@ -100,8 +106,9 @@ class SQLClient(Client):
         for query in ast.queries:
             sql_string = query.compile()
 
-            cursor = self._execute(sql_string)
+            cursor = self._execute(sql_string, results=True)
             result = self._fetch_from_cursor(cursor)
+            cursor.release()
             if isinstance(query, ddl.Select):
                 if query.result_handler is not None:
                     result = query.result_handler(result)
@@ -150,51 +157,39 @@ class ImpalaConnection(object):
     Database connection wrapper
     """
 
-    def __init__(self, database='default', **params):
+    def __init__(self, pool_size=8, database='default', **params):
         self.params = params
-        self.con = None
-        self.cursor = None
         self.codegen_disabled = False
         self.database = database
-        self.ensure_connected()
 
-    def __del__(self):
-        if self.cursor is not None:
-            self.cursor.close()
+        self.lock = threading.Lock()
+
+        self.connection_pool = Queue.Queue(pool_size)
+        self.connection_pool_size = 0
+        self.max_pool_size = pool_size
+
+        self.ping()
 
     def set_database(self, name):
         self.database = name
-        self.connect()
 
     def disable_codegen(self, disabled=True):
-        query = 'SET disable_codegen={0}'.format(
-            'true' if disabled else 'false')
         self.codegen_disabled = disabled
-        self.cursor.execute(query)
 
-    def execute(self, query, retries=3):
+    def execute(self, query):
         if isinstance(query, ddl.DDLStatement):
             query = query.compile()
 
         from impala.error import DatabaseError
-        try:
-            cursor = self.cursor
-        except DatabaseError:
-            if retries > 0:
-                self.ensure_connected()
-                self.fetchall(query, retries=retries - 1)
-            else:
-                raise
 
+        cursor = self._get_cursor()
         self.log(query)
 
         try:
             cursor.execute(query)
         except:
-            try:
-                self.error('Exception caused by {0}'.format(query))
-            except:
-                pass
+            cursor.release()
+            self.error('Exception caused by {0}'.format(query))
             raise
 
         return cursor
@@ -206,23 +201,76 @@ class ImpalaConnection(object):
     def error(self, msg):
         self.log(msg)
 
-    def fetchall(self, query, retries=3):
-        cursor = self.execute(query, retries=retries)
-        return cursor.fetchall()
+    def fetchall(self, query):
+        cursor = self.execute(query)
+        results = cursor.fetchall()
+        cursor.release()
+        return results
 
-    def ensure_connected(self):
-        if self.con is None or not self.cursor.ping():
-            self.connect()
+    def _get_cursor(self):
+        try:
+            cur = self.connection_pool.get(False)
+            if cur.database != self.database:
+                cur = self._new_cursor()
+            if cur.codegen_disabled != self.codegen_disabled:
+                cur.disable_codegen(self.codegen_disabled)
+            return cur
+        except Queue.Empty:
+            if self.connection_pool_size < self.max_pool_size:
+                cursor = self._new_cursor()
+                self.connection_pool_size += 1
+                return cursor
+            else:
+                raise Exception('Too many concurrent / hung queries')
 
-    def connect(self):
+    def _new_cursor(self):
         params = self.params.copy()
+        con = impyla_dbapi.connect(database=self.database, **params)
 
-        self.con = impyla_dbapi.connect(database=self.database, **params)
-        self.cursor = self.con.cursor()
-        self.cursor.ping()
+        # make sure the connection works
+        cursor = con.cursor()
+        cursor.ping()
+
+        wrapper = ImpalaCursor(cursor, self, self.database)
 
         if self.codegen_disabled:
-            self.disable_codegen(True)
+            wrapper.disable_codegen(self.codegen_disabled)
+
+        return wrapper
+
+    def ping(self):
+        self._new_cursor()
+
+
+class ImpalaCursor(object):
+
+    def __init__(self, cursor, con, database, codegen_disabled=False):
+        self.cursor = cursor
+        self.con = con
+        self.database = database
+        self.codegen_disabled = codegen_disabled
+
+    def __del__(self):
+        self.cursor.close()
+
+    def disable_codegen(self, disabled=True):
+        self.codegen_disabled = disabled
+        query = ('SET disable_codegen={0}'
+                 .format('true' if disabled else 'false'))
+        self.cursor.execute(query)
+
+    @property
+    def description(self):
+        return self.cursor.description
+
+    def release(self):
+        self.con.connection_pool.put(self)
+
+    def execute(self, stmt):
+        self.cursor.execute(stmt)
+
+    def fetchall(self):
+        return self.cursor.fetchall()
 
 
 class ImpalaClient(SQLClient):
@@ -257,7 +305,6 @@ class ImpalaClient(SQLClient):
 
         self._hdfs = hdfs_client
 
-        self.con.ensure_connected()
         self._ensure_temp_db_exists()
 
     @property
@@ -316,8 +363,11 @@ class ImpalaClient(SQLClient):
         if like:
             statement += " LIKE '{0}'".format(like)
 
-        cur = self._execute(statement)
-        return self._get_list(cur)
+        cur = self._execute(statement, results=True)
+        result = self._get_list(cur)
+        cur.release()
+
+        return result
 
     def _get_list(self, cur, i=0):
         tuples = cur.fetchall()
@@ -410,8 +460,10 @@ class ImpalaClient(SQLClient):
         if like:
             statement += " LIKE '{0}'".format(like)
 
-        cur = self._execute(statement)
-        return self._get_list(cur)
+        cur = self._execute(statement, results=True)
+        results = self._get_list(cur)
+        cur.release()
+        return results
 
     def get_schema(self, table_name, database=None):
         """
@@ -707,7 +759,6 @@ class ImpalaClient(SQLClient):
                                       example_table=like_table,
                                       external=external)
         self._execute(stmt)
-
         return self._wrap_new_table(qualified_name, persist)
 
     def _get_concrete_table_path(self, name, database, persist=False):
@@ -843,12 +894,14 @@ class ImpalaClient(SQLClient):
         return self._get_schema_using_query(query)
 
     def _get_schema_using_query(self, query):
-        cursor = self._execute(query)
+        cursor = self._execute(query, results=True)
 
         # resets the state of the cursor and closes operation
         cursor.fetchall()
 
         names, ibis_types = self._adapt_types(cursor.description)
+
+        cursor.release()
 
         # per #321; most Impala tables will be lower case already, but Avro
         # data, depending on the version of Impala, might have field names in
