@@ -340,7 +340,6 @@ class TestHDFSE2E(unittest.TestCase):
         return dirname
 
 
-
 def _check_directories_equal(left, right):
     left_files = _get_all_files(left)
     right_files = _get_all_files(right)

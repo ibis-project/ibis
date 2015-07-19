@@ -687,6 +687,223 @@ class CMSMedian(Reduction):
         # Scalar but type of caller
         return ir.scalar_type(self.args[0].type())
 
+
+# ----------------------------------------------------------------------
+# Analytic functions
+
+
+class AnalyticOp(ValueOp):
+    pass
+
+
+class WindowOp(ValueOp):
+
+    output_type = rules.type_of_arg(0)
+
+    def __init__(self, expr, window):
+        if not is_analytic(expr):
+            raise com.IbisInputError('Expression does not contain a valid '
+                                     'window operation')
+        ValueNode.__init__(self, expr, window)
+
+    def over(self, window):
+        existing_window = self.args[1]
+        new_window = existing_window.combine(window)
+        return WindowOp(self.args[0], new_window)
+
+
+def is_analytic(expr, exclude_windows=False):
+    def _is_analytic(op):
+        if isinstance(op, (Reduction, AnalyticOp)):
+            return True
+        elif isinstance(op, WindowOp) and exclude_windows:
+            return False
+
+        for arg in op.args:
+            if isinstance(arg, ir.Expr) and _is_analytic(arg.op()):
+                return True
+
+        return False
+
+    return _is_analytic(expr.op())
+
+
+class ShiftBase(AnalyticOp):
+
+    input_type = [rules.array, rules.integer(name='offset', optional=True),
+                  rules.value(name='default', optional=True)]
+    output_type = rules.type_of_arg(0)
+
+
+class Lag(ShiftBase):
+    pass
+
+
+class Lead(ShiftBase):
+    pass
+
+
+class RankBase(AnalyticOp):
+
+    def output_type(self):
+        return ir.Int64Array
+
+
+class MinRank(RankBase):
+
+    """
+    Compute position of first element within each equal-value group in sorted
+    order.
+
+    Examples
+    --------
+    values   ranks
+    1        0
+    1        0
+    2        2
+    2        2
+    2        2
+    3        5
+
+    Returns
+    -------
+    ranks : Int64Array, starting from 0
+    """
+
+    # Equivalent to SQL RANK()
+    input_type = [rules.array]
+
+
+class DenseRank(RankBase):
+
+    """
+    Compute position of first element within each equal-value group in sorted
+    order, ignoring duplicate values.
+
+    Examples
+    --------
+    values   ranks
+    1        0
+    1        0
+    2        1
+    2        1
+    2        1
+    3        2
+
+    Returns
+    -------
+    ranks : Int64Array, starting from 0
+    """
+
+    # Equivalent to SQL DENSE_RANK()
+    input_type = [rules.array]
+
+
+class RowNumber(RankBase):
+
+    """
+    Compute row number starting from 0 after sorting by column expression
+
+    Examples
+    --------
+    w = window(order_by=values)
+    row_number().over(w)
+
+    values   number
+    1        0
+    1        1
+    2        2
+    2        3
+    2        4
+    3        5
+
+    Returns
+    -------
+    row_number : Int64Array, starting from 0
+    """
+
+    # Equivalent to SQL ROW_NUMBER()
+    pass
+
+
+class CumulativeOp(AnalyticOp):
+
+    input_type = [rules.array]
+
+
+class CumulativeSum(CumulativeOp):
+
+    """
+    Cumulative sum. Requires an order window.
+    """
+
+    output_type = Sum.output_type.im_func
+
+
+class CumulativeMean(CumulativeOp):
+
+    """
+    Cumulative mean. Requires an order window.
+    """
+
+    output_type = Mean.output_type.im_func
+
+
+class CumulativeMax(CumulativeOp):
+
+    """
+    Cumulative max. Requires an order window.
+    """
+
+    output_type = Max.output_type.im_func
+
+
+class CumulativeMin(CumulativeOp):
+
+    """
+    Cumulative min. Requires an order window.
+    """
+
+    output_type = Min.output_type.im_func
+
+
+class PercentRank(AnalyticOp):
+    pass
+
+
+class NTile(AnalyticOp):
+    pass
+
+
+class FirstValue(AnalyticOp):
+
+    input_type = [rules.array]
+    output_type = rules.type_of_arg(0)
+
+
+class LastValue(AnalyticOp):
+
+    input_type = [rules.array]
+    output_type = rules.type_of_arg(0)
+
+
+class NthValue(AnalyticOp):
+
+    input_type = [rules.array, rules.integer]
+    output_type = rules.type_of_arg(0)
+
+
+class SmallestValue(AnalyticOp):
+    pass
+
+
+class NthLargestValue(AnalyticOp):
+    pass
+
+
+class LargestValue(AnalyticOp):
+    pass
+
 # ----------------------------------------------------------------------
 # Distinct stuff
 
@@ -1196,7 +1413,7 @@ class SortBy(TableNode):
 
     def __init__(self, table_expr, sort_keys):
         self.table = table_expr
-        self.keys = [_to_sort_key(self.table, k)
+        self.keys = [to_sort_key(self.table, k)
                      for k in util.promote_list(sort_keys)]
 
         TableNode.__init__(self, [self.table, self.keys])
@@ -1212,7 +1429,7 @@ class SortBy(TableNode):
         return tables
 
 
-def _to_sort_key(table, key):
+def to_sort_key(table, key):
     if isinstance(key, DeferredSortKey):
         key = key.resolve(table)
 
@@ -1253,8 +1470,9 @@ class SortKey(object):
         return '\n'.join(rows)
 
     def equals(self, other):
-        return (isinstance(other, SortKey) and self.expr.equals(other.expr)
-                and self.ascending == other.ascending)
+        return (isinstance(other, SortKey) and
+                self.expr.equals(other.expr) and
+                self.ascending == other.ascending)
 
 
 class DeferredSortKey(object):
@@ -1285,6 +1503,8 @@ class SelfReference(ir.BlockingTableNode, HasSchema):
 
 
 class Projection(ir.BlockingTableNode, HasSchema):
+
+    _arg_names = ['table', 'selections']
 
     def __init__(self, table_expr, proj_exprs):
         from ibis.expr.analysis import ExprValidator

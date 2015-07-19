@@ -747,6 +747,40 @@ FROM {0}.tpch_lineitem li
         agged_table = table.aggregate(agg_exprs)
         agged_table.execute()
 
+    def test_analytic_functions(self):
+        t = self.alltypes.limit(1000)
+
+        g = t.group_by('string_col').order_by('double_col')
+        f = t.float_col
+
+        exprs = [
+            f.lag(),
+            f.lead(),
+            f.rank(),
+            f.dense_rank(),
+
+            f.first(),
+            f.last(),
+
+            f.first().over(ibis.window(preceding=10)),
+            f.first().over(ibis.window(following=10)),
+
+            ibis.row_number(),
+            f.cumsum(),
+            f.cummean(),
+            f.cummin(),
+            f.cummax(),
+
+            f.sum(),
+            f.mean(),
+        ]
+
+        proj_exprs = [expr.name('e%d' % i)
+                      for i, expr in enumerate(exprs)]
+
+        proj_table = g.mutate(proj_exprs)
+        proj_table.execute()
+
     def test_tpch_self_join_failure(self):
         region = self.con.table('tpch_region')
         nation = self.con.table('tpch_nation')

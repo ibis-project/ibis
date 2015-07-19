@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from ibis import literal
-import ibis
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 

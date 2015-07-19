@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.common import RelationError
+from ibis.common import RelationError, ExpressionError
+from ibis.expr.window import window
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.util as util
@@ -227,9 +228,9 @@ class ExprSimplifier(object):
 
                     can_lift = True
                     lifted_root = self.lift(val)
-                elif (isinstance(val.op(), ops.TableColumn)
-                      and val.op().name == val.get_name()
-                      and node.name == val.get_name()):
+                elif (isinstance(val.op(), ops.TableColumn) and
+                      val.op().name == val.get_name() and
+                      node.name == val.get_name()):
                     can_lift = True
                     lifted_root = self.lift(val.op().table)
 
@@ -457,19 +458,19 @@ class _PushdownValidate(object):
             return False
 
         for val in self.parent.selections:
-            if (isinstance(val.op(), ops.PhysicalTable)
-                    and node.name in val.schema()):
+            if (isinstance(val.op(), ops.PhysicalTable) and
+                    node.name in val.schema()):
                 is_valid = True
-            elif (isinstance(val.op(), ops.TableColumn)
-                  and node.name == val.get_name()
-                  and not _is_aliased(val)):
+            elif (isinstance(val.op(), ops.TableColumn) and
+                  node.name == val.get_name() and
+                  not _is_aliased(val)):
                 # Aliased table columns are no good
                 col_table = val.op().table.op()
 
                 lifted_node = substitute_parents(expr).op()
 
-                is_valid = (col_table.is_ancestor(node.table)
-                            or col_table.is_ancestor(lifted_node.table))
+                is_valid = (col_table.is_ancestor(node.table) or
+                            col_table.is_ancestor(lifted_node.table))
 
                 # is_valid = True
 
@@ -478,6 +479,66 @@ class _PushdownValidate(object):
 
 def _is_aliased(col_expr):
     return col_expr.op().name != col_expr.get_name()
+
+
+def windowize_function(expr, w=None):
+    def _check_window(x):
+        # Hmm
+        arg, window = x.op().args
+        if isinstance(arg.op(), ops.RowNumber):
+            if len(window._order_by) == 0:
+                raise ExpressionError('RowNumber requires explicit '
+                                      'window sort')
+
+        return x
+
+    def _windowize(x, w):
+        if not isinstance(x.op(), ops.WindowOp):
+            walked = _walk(x, w)
+        else:
+            window_arg, window_w = x.op().args
+            walked_child = _walk(window_arg, w)
+
+            if walked_child is not window_arg:
+                walked = x._factory(ops.WindowOp(walked_child, window_w),
+                                    name=x._name)
+            else:
+                walked = x
+
+        op = walked.op()
+        if isinstance(op, (ops.AnalyticOp, ops.Reduction)):
+            if w is None:
+                w = window()
+            return _check_window(walked.over(w))
+        elif isinstance(op, ops.WindowOp):
+            if w is not None:
+                return _check_window(walked.over(w))
+            else:
+                return _check_window(walked)
+        else:
+            return walked
+
+    def _walk(x, w):
+        op = x.op()
+
+        unchanged = True
+        windowed_args = []
+        for arg in op.args:
+            if not isinstance(arg, ir.Expr):
+                windowed_args.append(arg)
+                continue
+
+            new_arg = _windowize(arg, w)
+            unchanged = unchanged and arg is new_arg
+            windowed_args.append(new_arg)
+
+        if not unchanged:
+            new_op = type(op)(*windowed_args)
+            return x._factory(new_op, name=x._name)
+        else:
+            return x
+
+    return _windowize(expr, w)
 
 
 class Projector(object):
@@ -509,6 +570,9 @@ class Projector(object):
             # Perform substitution only if we share common roots
             if validator.shares_some_roots(expr):
                 expr = substitute_parents(expr, past_projection=False)
+
+            expr = windowize_function(expr)
+
             clean_exprs.append(expr)
 
         self.clean_exprs = clean_exprs

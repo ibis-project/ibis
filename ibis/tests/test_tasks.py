@@ -20,6 +20,8 @@ import pandas as pd
 from cPickle import loads as pickle_load
 from ibis.cloudpickle import dumps as pickle_dump
 
+from test_comms import double_ex
+
 from ibis.tasks import IbisTaskMessage, IbisTaskExecutor
 from ibis.util import guid
 from ibis.wire import BytesIO
@@ -152,9 +154,6 @@ def delete_all_guid_files():
     import glob
     import os
     [os.remove(x) for x in glob.glob('*') if len(x) == 32]
-
-
-from test_comms import double_ex
 
 
 class NRows(object):

@@ -346,8 +346,16 @@ class TypeSignature(object):
 
     def validate(self, args):
         n, k = len(args), len(self.types)
-        if n != k:
+        k_required = len([x for x in self.types if not x.optional])
+        if k != k_required:
+            if n < k_required:
+                raise com.IbisError('Expected at least {0} args, got {1}'
+                                    .format(k, k_required))
+        elif n != k:
             raise com.IbisError('Expected {0} args, got {1}'.format(k, n))
+
+        if n < k:
+            args = list(args) + [t.default for t in self.types[n:]]
 
         return self._validate(args, self.types)
 

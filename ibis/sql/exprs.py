@@ -12,12 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# An Ibis analytical expression will typically consist of a primary SELECT
-# statement, with zero or more supporting DDL queries. For example we would
-# want to support converting a text file in HDFS to a Parquet-backed Impala
-# table, with optional teardown if the user wants the intermediate converted
-# table to be temporary.
-
 import datetime
 from io import BytesIO
 
@@ -82,6 +76,157 @@ def _is_null(translator, expr):
 def _not_null(translator, expr):
     formatted_arg = translator.translate(expr.op().args[0])
     return '{0!s} IS NOT NULL'.format(formatted_arg)
+
+
+_cumulative_to_reduction = {
+    ops.CumulativeSum: ops.Sum,
+    ops.CumulativeMin: ops.Min,
+    ops.CumulativeMax: ops.Max,
+    ops.CumulativeMean: ops.Mean,
+}
+
+
+def _cumulative_to_window(expr, window):
+    win = ibis.cumulative_window()
+    win = (win.group_by(window._group_by)
+           .order_by(window._order_by))
+
+    op = expr.op()
+
+    klass = _cumulative_to_reduction[type(op)]
+    new_op = klass(*op.args)
+    return expr._factory(new_op, name=expr._name), win
+
+
+def _window(translator, expr):
+    op = expr.op()
+
+    arg, window = op.args
+    window_op = arg.op()
+
+    _require_order_by = (ops.Lag,
+                         ops.Lead,
+                         ops.DenseRank,
+                         ops.MinRank,
+                         ops.FirstValue,
+                         ops.LastValue)
+
+    if isinstance(window_op, ops.CumulativeOp):
+        arg, window = _cumulative_to_window(arg, window)
+        window_op = arg.op()
+
+    # Some analytic functions need to have the expression of interest in
+    # the ORDER BY part of the window clause
+    if (isinstance(window_op, _require_order_by) and
+            len(window._order_by) == 0):
+        window = window.order_by(window_op.args[0])
+
+    window_formatted = _format_window(translator, window)
+
+    arg_formatted = translator.translate(arg)
+    result = '{0} {1}'.format(arg_formatted, window_formatted)
+
+    if type(window_op) in _expr_transforms:
+        return _expr_transforms[type(window_op)](result)
+    else:
+        return result
+
+
+def _format_window(translator, window):
+    components = []
+
+    if len(window._group_by) > 0:
+        partition_args = [translator.translate(x)
+                          for x in window._group_by]
+        components.append('PARTITION BY {0}'.format(', '.join(partition_args)))
+
+    if len(window._order_by) > 0:
+        order_args = []
+        for key in window._order_by:
+            translated = translator.translate(key.expr)
+            if not key.ascending:
+                translated += ' DESC'
+            order_args.append(translated)
+
+        components.append('ORDER BY {0}'.format(', '.join(order_args)))
+
+    p, f = window.preceding, window.following
+
+    def _prec(p):
+        return '{0} PRECEDING'.format(p) if p > 0 else 'CURRENT ROW'
+
+    def _foll(f):
+        return '{0} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
+
+    if p is not None and f is not None:
+        frame = ('ROWS BETWEEN {0} AND {1}'
+                 .format(_prec(p), _foll(f)))
+    elif p is not None:
+        if isinstance(p, tuple):
+            start, end = p
+            frame = ('ROWS BETWEEN {0} AND {1}'
+                     .format(_prec(start), _prec(end)))
+        else:
+            kind = 'ROWS' if p > 0 else 'RANGE'
+            frame = ('{0} BETWEEN {1} AND UNBOUNDED FOLLOWING'
+                     .format(kind, _prec(p)))
+    elif f is not None:
+        if isinstance(f, tuple):
+            start, end = f
+            frame = ('ROWS BETWEEN {0} AND {1}'
+                     .format(_foll(start), _foll(end)))
+        else:
+            kind = 'ROWS' if f > 0 else 'RANGE'
+            frame = ('{0} BETWEEN UNBOUNDED PRECEDING AND {1}'
+                     .format(kind, _foll(f)))
+    else:
+        # no-op, default is full sample
+        frame = None
+
+    if frame is not None:
+        components.append(frame)
+
+    return 'OVER ({0})'.format(' '.join(components))
+
+
+def _shift_like(name):
+
+    def formatter(translator, expr):
+        op = expr.op()
+        arg, offset, default = op.args
+
+        arg_formatted = translator.translate(arg)
+
+        if default is not None:
+            if offset is None:
+                offset_formatted = '1'
+            else:
+                offset_formatted = translator.translate(offset)
+
+            default_formatted = translator.translate(default)
+
+            return '{0}({1}, {2}, {3})'.format(name, arg_formatted,
+                                               offset_formatted,
+                                               default_formatted)
+        elif offset is not None:
+            offset_formatted = translator.translate(offset)
+            return '{0}({1}, {2})'.format(name, arg_formatted,
+                                          offset_formatted)
+        else:
+            return '{0}({1})'.format(name, arg_formatted)
+
+    return formatter
+
+
+def _nth_value(translator, expr):
+    op = expr.op()
+    arg, rank = op.args
+
+    arg_formatted = translator.translate(arg)
+    rank_formatted = translator.translate(rank - 1)
+
+    return 'first_value(lag({0}, {1}))'.format(arg_formatted,
+                                               rank_formatted)
 
 
 def _negate(translator, expr):
@@ -329,9 +474,9 @@ def _bucket(translator, expr):
         bucket_id += 1
 
     for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
-        if (op.close_extreme
-            and ((op.closed == 'right' and j == 0) or
-                 (op.closed == 'left' and j == (user_num_buckets - 1)))):
+        if (op.close_extreme and
+            ((op.closed == 'right' and j == 0) or
+             (op.closed == 'left' and j == (user_num_buckets - 1)))):
             stmt = stmt.when((lower <= op.arg) & (op.arg <= upper),
                              bucket_id)
         else:
@@ -824,7 +969,29 @@ _other_ops = {
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery
+    transforms.NotExistsSubquery: _exists_subquery,
+
+    # RowNumber, and rank functions starts with 0 in Ibis-land
+    ops.RowNumber: lambda *args: 'row_number()',
+    ops.DenseRank: lambda *args: 'dense_rank()',
+    ops.MinRank: lambda *args: 'rank()',
+
+    ops.FirstValue: _unary_op('first_value'),
+    ops.LastValue: _unary_op('last_value'),
+    ops.NthValue: _nth_value,
+    ops.Lag: _shift_like('lag'),
+    ops.Lead: _shift_like('lead'),
+    ops.WindowOp: _window
+}
+
+
+_subtract_one = '{0} - 1'.format
+
+
+_expr_transforms = {
+    ops.RowNumber: _subtract_one,
+    ops.DenseRank: _subtract_one,
+    ops.MinRank: _subtract_one,
 }
 
 

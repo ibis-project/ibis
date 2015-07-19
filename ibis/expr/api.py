@@ -39,6 +39,7 @@ import ibis.common as _com
 
 from ibis.compat import py_string
 from ibis.expr.analytics import bucket, histogram
+from ibis.expr.window import window, trailing_window, cumulative_window
 import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
 import ibis.expr.types as ir
@@ -46,11 +47,15 @@ import ibis.expr.operations as _ops
 import ibis.expr.temporal as _T
 
 
-__all__ = ['schema', 'table', 'literal', 'expr_list', 'timestamp',
-           'case', 'where', 'sequence',
-           'now', 'desc', 'null', 'NA',
-           'cast', 'coalesce', 'greatest', 'least', 'join',
-           'Expr', 'Schema']
+__all__ = [
+    'schema', 'table', 'literal', 'expr_list', 'timestamp',
+    'case', 'where', 'sequence',
+    'now', 'desc', 'null', 'NA',
+    'cast', 'coalesce', 'greatest', 'least', 'join',
+    'row_number',
+    'Expr', 'Schema',
+    'window', 'trailing_window', 'cumulative_window'
+]
 __all__ += _T.__all__
 
 
@@ -109,7 +114,10 @@ def desc(expr):
               .size('count')
               .sort_by(ibis.desc('count')))
     """
-    return _ops.DeferredSortKey(expr, ascending=False)
+    if not isinstance(expr, Expr):
+        return _ops.DeferredSortKey(expr, ascending=False)
+    else:
+        return _ops.SortKey(expr, ascending=False)
 
 
 def timestamp(value):
@@ -183,6 +191,17 @@ def now():
     now : Timestamp scalar
     """
     return _ops.TimestampNow().to_expr()
+
+
+def row_number():
+    """
+    Analytic function for the current row number, starting at 0
+
+    Returns
+    -------
+    row_number : IntArray
+    """
+    return _ops.RowNumber().to_expr()
 
 
 e = _ops.E().to_expr()
@@ -468,6 +487,37 @@ def where(boolean_expr, true_expr, false_null_expr):
     return op.to_expr()
 
 
+def over(expr, window):
+    """
+    Turn an aggregation or full-sample analytic operation into a windowed
+    operation. See ibis.window for more details on window configuration
+
+    Parameters
+    ----------
+    expr : value expression
+    window : ibis.Window
+
+    Returns
+    -------
+    expr : type of input
+    """
+    prior_op = expr.op()
+
+    if isinstance(prior_op, _ops.WindowOp):
+        op = prior_op.over(window)
+    else:
+        op = _ops.WindowOp(expr, window)
+
+    result = op.to_expr()
+
+    try:
+        result = result.name(expr.get_name())
+    except:
+        pass
+
+    return result
+
+
 def value_counts(arg, metric_name='count'):
     """
     Compute a frequency table for this value expression
@@ -584,6 +634,8 @@ _generic_value_methods = dict(
     isnull=_unary_op('isnull', _ops.IsNull),
     notnull=_unary_op('notnull', _ops.NotNull),
 
+    over=over,
+
     __add__=add,
     add=add,
 
@@ -626,6 +678,41 @@ approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality, True)
 approx_median = _agg_function('approx_median', _ops.CMSMedian, True)
 max = _agg_function('max', _ops.Max, True)
 min = _agg_function('min', _ops.Min, True)
+
+
+def lag(arg, offset=None, default=None):
+    return _ops.Lag(arg, offset, default).to_expr()
+
+
+def lead(arg, offset=None, default=None):
+    return _ops.Lead(arg, offset, default).to_expr()
+
+
+first = _unary_op('first', _ops.FirstValue)
+last = _unary_op('last', _ops.LastValue)
+rank = _unary_op('rank', _ops.MinRank)
+dense_rank = _unary_op('dense_rank', _ops.DenseRank)
+cumsum = _unary_op('cumsum', _ops.CumulativeSum)
+cummean = _unary_op('cummena', _ops.CumulativeMean)
+cummin = _unary_op('cummin', _ops.CumulativeMin)
+cummax = _unary_op('cummax', _ops.CumulativeMax)
+
+
+def nth(arg, k):
+    """
+    Analytic operation computing nth value from start of sequence
+
+    Parameters
+    ----------
+    arg : array expression
+    k : int
+        Desired rank value
+
+    Returns
+    -------
+    nth : type of argument
+    """
+    return _ops.NthValue(arg, k).to_expr()
 
 
 def distinct(arg):
@@ -790,7 +877,19 @@ _generic_array_methods = dict(
     approx_median=approx_median,
     approx_nunique=approx_nunique,
     group_concat=group_concat,
-    value_counts=value_counts
+    value_counts=value_counts,
+
+    first=first,
+    last=last,
+    dense_rank=dense_rank,
+    rank=rank,
+    # nth=nth,
+    lag=lag,
+    lead=lead,
+    cumsum=cumsum,
+    cummean=cummean,
+    cummin=cummin,
+    cummax=cummax,
 )
 
 

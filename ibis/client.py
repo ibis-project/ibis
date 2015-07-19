@@ -28,7 +28,6 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
 import ibis.sql.ddl as ddl
-import ibis.sql.identifiers as ident
 import ibis.util as util
 
 

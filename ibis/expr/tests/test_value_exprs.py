@@ -263,7 +263,8 @@ class TestMathUnaryOps(BasicTestCase, unittest.TestCase):
         columns = ['a', 'b', 'c', 'd', 'e', 'f']
 
         for opname in opnames:
-            f = lambda x: getattr(x, opname)()
+            def f(x):
+                return getattr(x, opname)()
 
             for c in columns:
                 result = f(self.table[c])
