@@ -173,7 +173,7 @@ class Expr(object):
             limit = config.options.sql.default_limit
 
             try:
-                result = self.execute(default_limit=limit)
+                result = self.execute(limit=limit)
                 return repr(result)
             except com.TranslationError:
                 output = ('Translation to backend failed, repr follows:\n%s'
@@ -245,7 +245,7 @@ class Expr(object):
     def _can_implicit_cast(self, arg):
         return False
 
-    def execute(self, default_limit=None):
+    def execute(self, limit=None):
         """
         If this expression is based on physical tables in a database backend,
         execute it against that backend.
@@ -257,7 +257,7 @@ class Expr(object):
         """
         import ibis.expr.analysis as L
         backend = L.find_backend(self)
-        return backend.execute(self, default_limit=default_limit)
+        return backend.execute(self, limit=limit)
 
     def equals(self, other):
         if type(self) != type(other):

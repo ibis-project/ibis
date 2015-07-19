@@ -129,8 +129,8 @@ class MockConnection(SQLClient):
         name = name.replace('`', '')
         return ir.Schema.from_tuples(self._tables[name])
 
-    def execute(self, expr, default_limit=None):
-        ast, expr = self._build_ast_ensure_limit(expr, default_limit)
+    def execute(self, expr, limit=None):
+        ast, expr = self._build_ast_ensure_limit(expr, limit)
         for query in ast.queries:
             query.compile()
 

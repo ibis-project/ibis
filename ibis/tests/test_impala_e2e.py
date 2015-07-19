@@ -880,6 +880,37 @@ FROM {0}.tpch_lineitem li
             self.test_data_db)
         assert queries[0] == expected
 
+    def test_sql_query_limits(self):
+        table = self.con.table('tpch_nation', database=self.test_data_db)
+        with config.option_context('sql.default_limit', 100000):
+            # table has 25 rows
+            assert len(table.execute()) == 25
+            # comply with limit arg for TableExpr
+            assert len(table.execute(limit=10)) == 10
+            # state hasn't changed
+            assert len(table.execute()) == 25
+            # non-TableExpr ignores default_limit
+            assert table.count().execute() == 25
+            # non-TableExpr doesn't observe limit arg
+            assert table.count().execute(limit=10) == 25
+        with config.option_context('sql.default_limit', 20):
+            # TableExpr observes default limit setting
+            assert len(table.execute()) == 20
+            # explicit limit= overrides default
+            assert len(table.execute(limit=15)) == 15
+            assert len(table.execute(limit=23)) == 23
+            # non-TableExpr ignores default_limit
+            assert table.count().execute() == 25
+            # non-TableExpr doesn't observe limit arg
+            assert table.count().execute(limit=10) == 25
+        # eliminating default_limit doesn't break anything
+        with config.option_context('sql.default_limit', None):
+            assert len(table.execute()) == 25
+            assert len(table.execute(limit=15)) == 15
+            assert len(table.execute(limit=10000)) == 25
+            assert table.count().execute() == 25
+            assert table.count().execute(limit=10) == 25
+
 
 def _ensure_drop(con, table_name, database=None):
     con.drop_table(table_name, database=database, force=True)
