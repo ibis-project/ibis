@@ -237,6 +237,12 @@ FROM {0}.tpch_lineitem li
         result = self.con.execute(expr)
         assert isinstance(result, pd.Series)
 
+    def test_array_default_limit(self):
+        t = self.alltypes
+
+        result = self.con.execute(t.float_col, limit=100)
+        assert len(result) == 100
+
     def test_execute_exprs_no_table_ref(self):
         cases = [
             (ibis.literal(1) + ibis.literal(2), 3)

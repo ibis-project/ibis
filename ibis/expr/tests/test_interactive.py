@@ -30,7 +30,7 @@ class TestInteractiveUse(unittest.TestCase):
         with config.option_context('interactive', True):
             repr(expr)
 
-        assert self.con.last_executed_expr is expr
+        assert len(self.con.executed_queries) > 0
 
     def test_default_limit(self):
         table = self.con.table('functional_alltypes')
@@ -38,9 +38,12 @@ class TestInteractiveUse(unittest.TestCase):
         with config.option_context('interactive', True):
             repr(table)
 
-        result = self.con.last_executed_expr
-        limit = config.options.sql.default_limit
-        assert_equal(result, table.limit(limit))
+        expected = """\
+SELECT *
+FROM functional_alltypes
+LIMIT {0}""".format(config.options.sql.default_limit)
+
+        assert self.con.executed_queries[0] == expected
 
     def test_disable_query_limit(self):
         table = self.con.table('functional_alltypes')
@@ -49,8 +52,11 @@ class TestInteractiveUse(unittest.TestCase):
             with config.option_context('sql.default_limit', None):
                 repr(table)
 
-        result = self.con.last_executed_expr
-        assert_equal(result, table)
+        expected = """\
+SELECT *
+FROM functional_alltypes"""
+
+        assert self.con.executed_queries[0] == expected
 
     def test_interactive_non_compilable_repr_not_fail(self):
         # #170
@@ -68,4 +74,4 @@ class TestInteractiveUse(unittest.TestCase):
         expr = t.group_by(tier).size()
         with config.option_context('interactive', True):
             expr._repr()
-        assert self.con.last_executed_expr is None
+        assert self.con.executed_queries == []

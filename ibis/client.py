@@ -99,7 +99,7 @@ class SQLClient(Client):
         """
 
         """
-        ast, expr = self._build_ast_ensure_limit(expr, limit)
+        ast = self._build_ast_ensure_limit(expr, limit)
 
         # TODO: create some query pipeline executor abstraction
         output = None
@@ -123,14 +123,15 @@ class SQLClient(Client):
             limit = options.sql.default_limit
         # note: limit can still be None at this point, if the global
         # default_limit is None
-        if limit is not None and isinstance(expr, ir.TableExpr):
+        if limit is not None:
             for query in reversed(ast.queries):
-                if isinstance(query, ddl.Select):
+                if (isinstance(query, ddl.Select) and
+                        query.table_set is not None):
                     if query.limit is None:
-                        expr = expr.limit(limit)
-                        ast = sql.build_ast(expr)
+                        query.limit = {'n': limit,
+                                       'offset': 0}
                         break
-        return ast, expr
+        return ast
 
     def _db_type_to_dtype(self, db_type):
         raise NotImplementedError

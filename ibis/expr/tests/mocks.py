@@ -123,18 +123,16 @@ class MockConnection(SQLClient):
     }
 
     def __init__(self):
-        self.last_executed_expr = None
+        self.executed_queries = []
 
     def _get_table_schema(self, name):
         name = name.replace('`', '')
         return ir.Schema.from_tuples(self._tables[name])
 
     def execute(self, expr, limit=None):
-        ast, expr = self._build_ast_ensure_limit(expr, limit)
+        ast = self._build_ast_ensure_limit(expr, limit)
         for query in ast.queries:
-            query.compile()
-
-        self.last_executed_expr = expr
+            self.executed_queries.append(query.compile())
         return None
 
 
