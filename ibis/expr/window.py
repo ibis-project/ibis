@@ -105,7 +105,7 @@ class Window(object):
         return Window(**kwds)
 
     def group_by(self, expr):
-        new_groups = self._group_by + [expr]
+        new_groups = self._group_by + util.promote_list(expr)
         return self._replace(group_by=new_groups)
 
     def _replace(self, **kwds):
@@ -118,7 +118,7 @@ class Window(object):
         return Window(**new_kwds)
 
     def order_by(self, expr):
-        new_sorts = self._order_by + [expr]
+        new_sorts = self._order_by + util.promote_list(expr)
         return self._replace(order_by=new_sorts)
 
     def equals(self, other):

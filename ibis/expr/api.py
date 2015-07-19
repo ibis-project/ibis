@@ -692,6 +692,10 @@ first = _unary_op('first', _ops.FirstValue)
 last = _unary_op('last', _ops.LastValue)
 rank = _unary_op('rank', _ops.MinRank)
 dense_rank = _unary_op('dense_rank', _ops.DenseRank)
+cumsum = _unary_op('cumsum', _ops.CumulativeSum)
+cummean = _unary_op('cummena', _ops.CumulativeMean)
+cummin = _unary_op('cummin', _ops.CumulativeMin)
+cummax = _unary_op('cummax', _ops.CumulativeMax)
 
 
 def nth(arg, k):
@@ -882,6 +886,10 @@ _generic_array_methods = dict(
     # nth=nth,
     lag=lag,
     lead=lead,
+    cumsum=cumsum,
+    cummean=cummean,
+    cummin=cummin,
+    cummax=cummax,
 )
 
 

@@ -826,13 +826,53 @@ class RowNumber(RankBase):
     pass
 
 
+class CumulativeOp(AnalyticOp):
+
+    input_type = [rules.array]
+
+
+class CumulativeSum(CumulativeOp):
+
+    """
+    Cumulative sum. Requires an order window.
+    """
+
+    output_type = Sum.output_type.im_func
+
+
+class CumulativeMean(CumulativeOp):
+
+    """
+    Cumulative mean. Requires an order window.
+    """
+
+    output_type = Mean.output_type.im_func
+
+
+class CumulativeMax(CumulativeOp):
+
+    """
+    Cumulative max. Requires an order window.
+    """
+
+    output_type = Max.output_type.im_func
+
+
+class CumulativeMin(CumulativeOp):
+
+    """
+    Cumulative min. Requires an order window.
+    """
+
+    output_type = Min.output_type.im_func
+
+
 class PercentRank(AnalyticOp):
     pass
 
 
 class NTile(AnalyticOp):
     pass
-
 
 
 class FirstValue(AnalyticOp):

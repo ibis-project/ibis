@@ -78,6 +78,26 @@ def _not_null(translator, expr):
     return '{0!s} IS NOT NULL'.format(formatted_arg)
 
 
+_cumulative_to_reduction = {
+    ops.CumulativeSum: ops.Sum,
+    ops.CumulativeMin: ops.Min,
+    ops.CumulativeMax: ops.Max,
+    ops.CumulativeMean: ops.Mean,
+}
+
+
+def _cumulative_to_window(expr, window):
+    win = ibis.cumulative_window()
+    win = (win.group_by(window._group_by)
+           .order_by(window._order_by))
+
+    op = expr.op()
+
+    klass = _cumulative_to_reduction[type(op)]
+    new_op = klass(*op.args)
+    return expr._factory(new_op, name=expr._name), win
+
+
 def _window(translator, expr):
     op = expr.op()
 
@@ -90,6 +110,10 @@ def _window(translator, expr):
                          ops.MinRank,
                          ops.FirstValue,
                          ops.LastValue)
+
+    if isinstance(window_op, ops.CumulativeOp):
+        arg, window = _cumulative_to_window(arg, window)
+        window_op = arg.op()
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause

@@ -96,6 +96,31 @@ FROM alltypes"""
             expected = ex_template.format(frame.upper())
             self._check_sql(expr, expected)
 
+    def test_cumulative_functions(self):
+        t = self.con.table('alltypes')
+
+        w = ibis.window(order_by=t.d)
+        exprs = [
+            (t.f.cumsum().over(w), t.f.sum().over(w)),
+            (t.f.cummin().over(w), t.f.min().over(w)),
+            (t.f.cummax().over(w), t.f.max().over(w)),
+            (t.f.cummean().over(w), t.f.mean().over(w)),
+        ]
+
+        for cumulative, static in exprs:
+            actual = cumulative.name('foo')
+            expected = static.over(ibis.cumulative_window()).name('foo')
+
+            expr1 = t.projection(actual)
+            expr2 = t.projection(expected)
+
+            self._compare_sql(expr1, expr2)
+
+    def _compare_sql(self, e1, e2):
+        s1 = to_sql(e1)
+        s2 = to_sql(e2)
+        assert s1 == s2
+
     def test_nested_analytic_function(self):
         t = self.con.table('alltypes')
 
@@ -173,10 +198,4 @@ FROM alltypes"""
         pass
 
     def test_group_by_then_different_sort_orders(self):
-        pass
-
-    def test_trailing_window(self):
-        pass
-
-    def test_cumulative_functions(self):
         pass
