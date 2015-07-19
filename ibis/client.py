@@ -792,7 +792,8 @@ class ImpalaClient(SQLClient):
 
         # Compute number of rows in table for better default query planning
         cardinality = t.count().execute()
-        set_card = ("alter table {0} set tblproperties('numRows'='{1}')"
+        set_card = ("alter table {0} set tblproperties('numRows'='{1}', "
+                    "'STATS_GENERATED_VIA_STATS_TASK' = 'true')"
                     .format(qualified_name, cardinality))
         self._execute(set_card)
 
