@@ -1343,9 +1343,12 @@ unnamed = UnnamedMarker()
 
 
 def as_value_expr(val):
+    import pandas as pd
     if not isinstance(val, Expr):
         if isinstance(val, (tuple, list)):
             val = sequence(val)
+        elif isinstance(val, pd.Series):
+            val = sequence(list(val))
         else:
             val = literal(val)
 

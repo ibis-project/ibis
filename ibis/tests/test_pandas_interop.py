@@ -17,6 +17,7 @@ import pandas as pd
 import pytest
 
 import ibis
+import ibis.expr.types as ir
 from ibis.compat import unittest
 from ibis.util import pandas_to_ibis_schema
 from ibis.common import IbisTypeError
@@ -53,6 +54,17 @@ functional_alltypes_with_nulls = pd.DataFrame({
                       pd.Timestamp('2010-11-01 00:09:00.360000')],
     'tinyint_col': np.int8([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
     'year': [2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010]})
+
+
+class TestPandasTypeInterop(unittest.TestCase):
+
+    def test_series_to_ibis_literal(self):
+        values = [1, 2, 3, 4]
+        s = pd.Series(values)
+
+        expr = ir.as_value_expr(s)
+        expected = ir.sequence(list(s))
+        assert expr.equals(expected)
 
 
 class TestPandasSchemaInference(unittest.TestCase):
