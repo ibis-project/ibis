@@ -126,6 +126,7 @@ class SQLClient(Client):
         if limit is not None:
             for query in reversed(ast.queries):
                 if (isinstance(query, ddl.Select) and
+                        not isinstance(expr, ir.ScalarExpr) and
                         query.table_set is not None):
                     if query.limit is None:
                         query.limit = {'n': limit,
