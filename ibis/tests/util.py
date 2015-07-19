@@ -57,12 +57,13 @@ class IbisTestEnv(object):
         return 'IbisTestEnv(\n    {0})'.format(',\n    '.join(kvs))
 
 
-def test_connect(env, with_hdfs=True):
+def connect_test(env, with_hdfs=True):
     con = ibis.impala_connect(host=env.impala_host,
                               protocol=env.impala_protocol,
                               database=env.test_data_db,
                               port=env.impala_port,
-                              use_kerberos=env.use_kerberos)
+                              use_kerberos=env.use_kerberos,
+                              pool_size=2)
     if with_hdfs:
         if env.use_kerberos:
             from hdfs.ext.kerberos import KerberosClient
@@ -81,7 +82,7 @@ class ImpalaE2E(object):
     @classmethod
     def setUpClass(cls):
         ENV = IbisTestEnv()
-        cls.con = test_connect(ENV)
+        cls.con = connect_test(ENV)
         # Tests run generally faster without it
         if not ENV.use_codegen:
             cls.con.disable_codegen()
