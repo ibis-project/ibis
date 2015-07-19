@@ -484,8 +484,9 @@ class ImpalaClient(SQLClient):
                                  must_exist=not force)
         self._execute(statement)
 
-    def create_table(self, table_name, expr=None, schema=None,
-                     database=None, format='parquet', overwrite=False):
+    def create_table(self, table_name, expr=None, schema=None, database=None,
+                     format='parquet', overwrite=False, external=False,
+                     path=None):
         """
         Create a new table in Impala using an Ibis table expression
 
@@ -501,6 +502,11 @@ class ImpalaClient(SQLClient):
         format : {'parquet'}
         overwrite : boolean, default False
           Do not create table if table with indicated name already exists
+        external : boolean, default False
+          Create an external table; Impala will not delete the underlying data
+          when the table is dropped
+        path : string, default None
+          Specify the path where Impala reads and writes files for the table
 
         Examples
         --------
@@ -512,13 +518,17 @@ class ImpalaClient(SQLClient):
             statement = ddl.CTAS(table_name, select,
                                  database=database,
                                  overwrite=overwrite,
-                                 format=format)
+                                 format=format,
+                                 external=external,
+                                 path=path)
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
                 table_name, schema, ddl.NoFormat(),
                 database=database,
                 format=format,
-                overwrite=overwrite)
+                overwrite=overwrite,
+                external=external,
+                path=path)
         else:
             raise com.IbisError('Must pass expr or schema')
 

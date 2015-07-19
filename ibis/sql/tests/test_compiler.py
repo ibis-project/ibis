@@ -1592,6 +1592,45 @@ class TestCreateTable(unittest.TestCase):
         self.t = t = self.con.table('functional_alltypes')
         self.expr = t[t.bigint_col > 0]
 
+    def test_create_external_table_as(self):
+        path = '/path/to/table'
+        select = build_ast(self.con.table('test1')).queries[0]
+        statement = ddl.CTAS('another_table',
+                             select,
+                             external=True,
+                             overwrite=True,
+                             path=path,
+                             database='foo')
+        result = statement.compile()
+
+        expected = """\
+CREATE EXTERNAL TABLE foo.`another_table`
+STORED AS PARQUET
+LOCATION '{0}'
+AS
+SELECT *
+FROM test1""".format(path)
+        assert result == expected
+
+    def test_create_table_with_location(self):
+        path = '/path/to/table'
+        schema = ibis.schema([('foo', 'string'),
+                              ('bar', 'int8'),
+                              ('baz', 'int16')])
+        select = build_ast(self.con.table('test1')).queries[0]
+        statement = ddl.CreateTableWithSchema('another_table', schema,
+                                              ddl.NoFormat(), overwrite=True,
+                                              path=path, database='foo')
+        result = statement.compile()
+
+        expected = """\
+CREATE TABLE foo.`another_table`
+(`foo` STRING,
+ `bar` TINYINT,
+ `baz` SMALLINT)
+LOCATION '{0}'""".format(path)
+        assert result == expected
+
     def test_create_table_like_parquet(self):
         directory = '/path/to/'
         path = '/path/to/parquetfile'

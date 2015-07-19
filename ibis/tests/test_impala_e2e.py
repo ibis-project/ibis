@@ -207,6 +207,22 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         self.con.drop_database(name)
         self.hdfs.rmdir(base)
 
+    def test_create_table_with_location(self):
+        base = pjoin(self.tmp_dir, util.guid())
+        name = 'test_{0}'.format(util.guid())
+        tmp_path = pjoin(base, name)
+
+        expr = self.alltypes
+        table_name = _random_table_name()
+
+        try:
+            self.con.create_table(table_name, expr=expr, path=tmp_path,
+                                  database=self.test_data_db)
+        except Exception:
+            raise
+        finally:
+            _ensure_drop(self.con, table_name, database=self.test_data_db)
+
     def test_drop_table_not_exist(self):
         random_name = util.guid()
         self.assertRaises(Exception, self.con.drop_table, random_name)
