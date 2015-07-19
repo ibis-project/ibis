@@ -167,16 +167,18 @@ def _format_window(translator, window):
             frame = ('ROWS BETWEEN {0} AND {1}'
                      .format(_prec(start), _prec(end)))
         else:
-            frame = ('RANGE BETWEEN {0} AND UNBOUNDED FOLLOWING'
-                     .format(_prec(p)))
+            kind = 'ROWS' if p > 0 else 'RANGE'
+            frame = ('{0} BETWEEN {1} AND UNBOUNDED FOLLOWING'
+                     .format(kind, _prec(p)))
     elif f is not None:
         if isinstance(f, tuple):
             start, end = f
             frame = ('ROWS BETWEEN {0} AND {1}'
                      .format(_foll(start), _foll(end)))
         else:
-            frame = ('RANGE BETWEEN UNBOUNDED PRECEDING AND {0}'
-                     .format(_foll(f)))
+            kind = 'ROWS' if f > 0 else 'RANGE'
+            frame = ('{0} BETWEEN UNBOUNDED PRECEDING AND {1}'
+                     .format(kind, _foll(f)))
     else:
         # no-op, default is full sample
         frame = None

@@ -64,18 +64,24 @@ SELECT sum(d) OVER (ORDER BY f {0}) AS `foo`
 FROM alltypes"""
 
         cases = [
+            (window(preceding=0),
+             'range between current row and unbounded following'),
+
+            (window(following=0),
+             'range between unbounded preceding and current row'),
+
             (window(preceding=5),
-             'range between 5 preceding and unbounded following'),
+             'rows between 5 preceding and unbounded following'),
             (window(preceding=5, following=0),
              'rows between 5 preceding and current row'),
             (window(preceding=5, following=2),
              'rows between 5 preceding and 2 following'),
             (window(following=2),
-             'range between unbounded preceding and 2 following'),
+             'rows between unbounded preceding and 2 following'),
             (window(following=2, preceding=0),
              'rows between current row and 2 following'),
             (window(preceding=5),
-             'range between 5 preceding and unbounded following'),
+             'rows between 5 preceding and unbounded following'),
             (window(following=[5, 10]),
              'rows between 5 following and 10 following'),
             (window(preceding=[10, 5]),
