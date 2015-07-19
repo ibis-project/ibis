@@ -162,8 +162,9 @@ class Cast(ValueOp):
 
     input_type = [value, rules.data_type]
 
-    def resolve_name(self):
-        return self.args[0].get_name()
+    # see #396 for the issue preventing this
+    # def resolve_name(self):
+    #     return self.args[0].get_name()
 
     def output_type(self):
         # TODO: error handling for invalid casts

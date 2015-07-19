@@ -1475,7 +1475,7 @@ class TestUnions(unittest.TestCase):
 
         self.t1 = (table[table.int_col > 0]
                    [table.string_col.name('key'),
-                    table.float_col.name('value').cast('double')])
+                    table.float_col.cast('double').name('value')])
         self.t2 = (table[table.int_col <= 0]
                    [table.string_col.name('key'),
                     table.double_col.name('value')])

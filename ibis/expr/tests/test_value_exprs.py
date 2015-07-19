@@ -314,9 +314,8 @@ class TestTypeCasting(BasicTestCase, unittest.TestCase):
             c = 'g'
             casted = self.table[c].cast(t)
             assert isinstance(casted, ir.array_type(t))
-            assert casted.get_name() == c
 
-            casted_literal = ibis.literal('5').name('bar').cast(t)
+            casted_literal = ibis.literal('5').cast(t).name('bar')
             assert isinstance(casted_literal, ir.scalar_type(t))
             assert casted_literal.get_name() == 'bar'
 
@@ -325,11 +324,18 @@ class TestTypeCasting(BasicTestCase, unittest.TestCase):
         for c in cols:
             casted = self.table[c].cast('string')
             assert isinstance(casted, api.StringArray)
-            assert casted.get_name() == c
 
-        casted_literal = ibis.literal(5).name('bar').cast('string')
+        casted_literal = ibis.literal(5).cast('string').name('bar')
         assert isinstance(casted_literal, api.StringScalar)
         assert casted_literal.get_name() == 'bar'
+
+    def test_casted_exprs_are_unnamed(self):
+        expr = self.table.f.cast('string')
+        with self.assertRaises(Exception):
+            expr.get_name()
+
+        # it works! per GH #396
+        expr.value_counts()
 
 
 class TestBooleanUnaryOps(BasicTestCase, unittest.TestCase):

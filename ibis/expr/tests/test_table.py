@@ -668,7 +668,7 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         expected = self.table.aggregate(metrics, by=['g'])
         assert_equal(expr, expected)
 
-        group_expr = self.table.g.cast('double')
+        group_expr = self.table.g.cast('double').name('g')
         expr = self.table.group_by(group_expr).aggregate(metrics)
         expected = self.table.aggregate(metrics, by=[group_expr])
         assert_equal(expr, expected)
