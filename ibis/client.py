@@ -598,7 +598,9 @@ class ImpalaClient(SQLClient):
         stmt = ddl.CreateTableDelimited(name, hdfs_dir, schema,
                                         database=database,
                                         delimiter=delimiter,
-                                        external=external)
+                                        external=external,
+                                        lineterminator=lineterminator,
+                                        escapechar=escapechar)
         self._execute(stmt)
         return self._wrap_new_table(qualified_name, persist)
 
