@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import time
 
 import pytest
 
@@ -30,7 +31,8 @@ class IbisTestEnv(object):
         self.impala_protocol = os.environ.get('IBIS_TEST_IMPALA_PROTOCOL',
                                               'hiveserver2')
         self.impala_port = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
-        self.tmp_db = os.environ.get('IBIS_TEST_TMP_DB', '__ibis_tmp')
+        self.tmp_db = os.environ.get('IBIS_TEST_TMP_DB',
+                                     '__ibis_tmp_{0}'.format(util.guid()))
         self.tmp_dir = os.environ.get('IBIS_TEST_TMP_HDFS_DIR',
                                       '/tmp/__ibis_test')
         self.test_data_db = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
@@ -98,7 +100,18 @@ class ImpalaE2E(object):
 
     @classmethod
     def tearDownClass(cls):
-        cls.con.drop_database(cls.tmp_db, force=True)
+        i, retries = 0, 3
+        while True:
+            # reduce test flakiness
+            try:
+                cls.con.drop_database(cls.tmp_db, force=True)
+                break
+            except:
+                i += 1
+                if i >= retries:
+                    raise
+
+                time.sleep(0.1)
 
     def setUp(self):
         self.temp_databases = []
@@ -115,7 +128,6 @@ class ImpalaE2E(object):
         self.con.set_database(self.test_data_db)
         for t in self.temp_databases:
             self.con.drop_database(t, force=True)
-
 
 
 def assert_equal(left, right):

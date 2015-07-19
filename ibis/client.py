@@ -784,11 +784,19 @@ class ImpalaClient(SQLClient):
 
     def _wrap_new_table(self, qualified_name, persist):
         if persist:
-            return self.table(qualified_name)
+            t = self.table(qualified_name)
         else:
             schema = self._get_table_schema(qualified_name)
             node = ImpalaTemporaryTable(qualified_name, schema, self)
-            return ir.TableExpr(node)
+            t = ir.TableExpr(node)
+
+        # Compute number of rows in table for better default query planning
+        cardinality = t.count().execute()
+        set_card = ("alter table {0} set tblproperties('numRows'='{1}')"
+                    .format(qualified_name, cardinality))
+        self._execute(set_card)
+
+        return t
 
     def text_file(self, hdfs_path, column_name='value'):
         """
