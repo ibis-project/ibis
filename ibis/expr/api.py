@@ -1563,7 +1563,29 @@ def mutate(table, exprs=None, **kwds):
     for k, v in sorted(kwds.items()):
         exprs.append(as_value_expr(v).name(k))
 
-    return table.projection([table] + exprs)
+    has_replacement = False
+    for expr in exprs:
+        if expr.get_name() in table:
+            has_replacement = True
+
+    if has_replacement:
+        by_name = dict((x.get_name(), x) for x in exprs)
+        used = set()
+        proj_exprs = []
+        for c in table.columns:
+            if c in by_name:
+                proj_exprs.append(by_name[c])
+                used.add(c)
+            else:
+                proj_exprs.append(c)
+
+        for x in exprs:
+            if x.get_name() not in used:
+                proj_exprs.append(x)
+
+        return table.projection(proj_exprs)
+    else:
+        return table.projection([table] + exprs)
 
 
 _table_methods = dict(
