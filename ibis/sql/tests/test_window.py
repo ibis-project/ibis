@@ -199,6 +199,21 @@ SELECT *, row_number() OVER (PARTITION BY g ORDER BY f) - 1 AS `foo`
 FROM alltypes"""
         self._check_sql(expr, expected)
 
+    def test_unsupported_aggregate_functions(self):
+        t = self.con.table('alltypes')
+        w = ibis.window(order_by=t.d)
+
+        exprs = [
+            t.f.approx_nunique(),
+            t.f.approx_median(),
+            t.g.group_concat(),
+        ]
+
+        for expr in exprs:
+            with self.assertRaises(com.TranslationError):
+                proj = t.projection([expr.over(w).name('foo')])
+                to_sql(proj)
+
     def test_math_on_windowed_expr(self):
         # Window clause may not be found at top level of expression
         pass

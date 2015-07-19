@@ -736,6 +736,8 @@ FROM {0}.tpch_lineitem li
 
             f.sum(),
             f.mean(),
+            f.min(),
+            f.max()
         ]
 
         proj_exprs = [expr.name('e%d' % i)

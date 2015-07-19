@@ -111,6 +111,18 @@ def _window(translator, expr):
                          ops.FirstValue,
                          ops.LastValue)
 
+    _unsupported_reductions = (
+        ops.CMSMedian,
+        ops.GroupConcat,
+        ops.HLLCardinality,
+
+    )
+
+    if isinstance(window_op, _unsupported_reductions):
+        raise com.TranslationError('{0!s} is not supported in '
+                                   'window functions'
+                                   .format(type(window_op)))
+
     if isinstance(window_op, ops.CumulativeOp):
         arg, window = _cumulative_to_window(arg, window)
         window_op = arg.op()
