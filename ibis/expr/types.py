@@ -785,26 +785,6 @@ class TableExpr(Expr):
 
         return expr
 
-    def filter(self, predicates):
-        """
-        Select rows from table based on boolean expressions
-
-        Parameters
-        ----------
-        predicates : boolean array expressions, or list thereof
-
-        Returns
-        -------
-        filtered_expr : TableExpr
-        """
-        import ibis.expr.analysis as L
-
-        if isinstance(predicates, Expr):
-            predicates = L.unwrap_ands(predicates)
-
-        op = L.apply_filter(self, predicates)
-        return TableExpr(op)
-
     def group_by(self, by):
         """
         Create an intermediate grouped table expression, pending some group

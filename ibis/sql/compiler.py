@@ -359,9 +359,16 @@ class SelectBuilder(object):
         op = expr.op()
 
         metrics = [op.by.name(metric_name)]
-        rank_set = (self.table_set.aggregate(metrics, by=[op.arg])
-                    .sort_by([(metric_name, False)])
-                    .limit(op.k))
+
+        arg_table = L.find_base_table(op.arg)
+        by_table = L.find_base_table(op.by)
+
+        if arg_table.equals(by_table):
+            agg = arg_table.aggregate(metrics, by=[op.arg])
+        else:
+            agg = self.table_set.aggregate(metrics, by=[op.arg])
+
+        rank_set = agg.sort_by([(metric_name, False)]).limit(op.k)
 
         pred = (op.arg == getattr(rank_set, op.arg.get_name()))
         self.table_set = self.table_set.semi_join(rank_set, [pred])

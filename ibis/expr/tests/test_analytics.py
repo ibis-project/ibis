@@ -15,6 +15,7 @@
 from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest
 import ibis.expr.types as ir
+import ibis
 
 
 class TestAnalytics(unittest.TestCase):
@@ -64,3 +65,18 @@ class TestAnalytics(unittest.TestCase):
         self.assertRaises(ValueError, d.histogram, nbins=10, binwidth=5)
         self.assertRaises(ValueError, d.histogram)
         self.assertRaises(ValueError, d.histogram, 10, closed='foo')
+
+    def test_topk_analysis_bug(self):
+        # GH #398
+        airlines = ibis.table([('dest', 'string'),
+                               ('origin', 'string'),
+                               ('arrdelay', 'int32')], 'airlines')
+
+        dests = ['ORD', 'JFK', 'SFO']
+        t = airlines[airlines.dest.isin(dests)]
+        delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
+        filtered = t.filter([delay_filter])
+
+        # predicate is unmodified by analysis
+        post_pred = filtered.op().predicates[1]
+        assert delay_filter.equals(post_pred)

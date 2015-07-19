@@ -1386,6 +1386,35 @@ FROM customer t0
     ON t1.n_name = t3.n_name"""
         assert result == expected
 
+    def test_topk_analysis_bug(self):
+        # GH #398
+        airlines = ibis.table([('dest', 'string'),
+                               ('origin', 'string'),
+                               ('arrdelay', 'int32')], 'airlines')
+
+        dests = ['ORD', 'JFK', 'SFO']
+        t = airlines[airlines.dest.isin(dests)]
+        delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
+        expr = t[delay_filter].group_by('origin').size()
+
+        result = to_sql(expr)
+        expected = """\
+SELECT t0.origin, count(*) AS `count`
+FROM airlines t0
+  LEFT SEMI JOIN (
+    SELECT dest, avg(arrdelay) AS `__tmp__`
+    FROM airlines
+    WHERE dest IN ('ORD', 'JFK', 'SFO')
+    GROUP BY 1
+    ORDER BY __tmp__ DESC
+    LIMIT 10
+  ) t1
+    ON t0.dest = t1.dest
+WHERE t0.dest IN ('ORD', 'JFK', 'SFO')
+GROUP BY 1"""
+
+        assert result == expected
+
     def test_bottomk(self):
         pass
 

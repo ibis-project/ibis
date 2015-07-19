@@ -1810,6 +1810,9 @@ class ReplaceValues(ArrayNode):
 
 class TopK(ArrayNode):
 
+    # Substitutions under TopK are not allowed
+    blocking = True
+
     def __init__(self, arg, k, by=None):
         if by is None:
             by = arg.count()

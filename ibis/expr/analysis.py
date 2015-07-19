@@ -46,6 +46,9 @@ class _Substitutor(object):
         expr = self.expr
         node = expr.op()
 
+        if getattr(node, 'blocking', False):
+            return expr
+
         subbed_args = []
         for arg in node.args:
             if isinstance(arg, (tuple, list)):

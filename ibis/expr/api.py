@@ -1537,6 +1537,25 @@ def _regular_join_method(name, how, doc=None):
     return f
 
 
+def filter(table, predicates):
+    """
+    Select rows from table based on boolean expressions
+
+    Parameters
+    ----------
+    predicates : boolean array expressions, or list thereof
+
+    Returns
+    -------
+    filtered_expr : TableExpr
+    """
+    if isinstance(predicates, Expr):
+        predicates = _L.unwrap_ands(predicates)
+
+    op = _L.apply_filter(table, predicates)
+    return TableExpr(op)
+
+
 def mutate(table, exprs=None, **kwds):
     """
     Convenience function for table projections involving adding columns
@@ -1591,6 +1610,7 @@ def mutate(table, exprs=None, **kwds):
 _table_methods = dict(
     count=_table_count,
     set_column=_table_set_column,
+    filter=filter,
     mutate=mutate,
     join=join,
     cross_join=cross_join,
