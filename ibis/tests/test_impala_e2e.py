@@ -136,7 +136,8 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         con.table('functional_alltypes')
 
     def test_tables_robust_to_set_database(self):
-        db_name = util.guid()
+        db_name = '__ibis_test_{0}'.format(util.guid())
+
         self.con.create_database(db_name)
         self.temp_databases.append(db_name)
 
@@ -148,7 +149,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         table.limit(10).execute()
 
     def test_create_exists_drop_database(self):
-        tmp_name = util.guid()
+        tmp_name = '__ibis_test_{0}'.format(util.guid())
 
         assert not self.con.exists_database(tmp_name)
 
@@ -183,7 +184,8 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         assert not self.con.exists_table(tmp_name)
 
     def test_drop_non_empty_database(self):
-        tmp_db = util.guid()
+        tmp_db = '__ibis_test_{0}'.format(util.guid())
+
         self.con.create_database(tmp_db)
 
         self.con.create_table(util.guid(), self.alltypes, database=tmp_db)
@@ -199,7 +201,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
     def test_create_database_with_location(self):
         base = pjoin(self.tmp_dir, util.guid())
-        name = 'test_{0}'.format(util.guid())
+        name = '__ibis_test_{0}'.format(util.guid())
         tmp_path = pjoin(base, name)
 
         self.con.create_database(name, path=tmp_path)
@@ -215,13 +217,10 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         expr = self.alltypes
         table_name = _random_table_name()
 
-        try:
-            self.con.create_table(table_name, expr=expr, path=tmp_path,
-                                  database=self.test_data_db)
-        except Exception:
-            raise
-        finally:
-            _ensure_drop(self.con, table_name, database=self.test_data_db)
+        self.con.create_table(table_name, expr=expr, path=tmp_path,
+                              database=self.test_data_db)
+        self.temp_tables.append('.'.join([self.test_data_db, table_name]))
+        assert self.hdfs.exists(tmp_path)
 
     def test_drop_table_not_exist(self):
         random_name = util.guid()
