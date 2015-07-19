@@ -14,9 +14,12 @@
 
 import os
 
+import pytest
+
 from ibis import Schema
 from ibis import options
 import ibis.util as util
+import ibis
 
 
 class IbisTestEnv(object):
@@ -52,6 +55,66 @@ class IbisTestEnv(object):
     def __repr__(self):
         kvs = ['{0}={1}'.format(k, v) for (k, v) in self.__dict__.iteritems()]
         return 'IbisTestEnv(\n    {0})'.format(',\n    '.join(kvs))
+
+
+def test_connect(env, with_hdfs=True):
+    con = ibis.impala_connect(host=env.impala_host,
+                              protocol=env.impala_protocol,
+                              database=env.test_data_db,
+                              port=env.impala_port,
+                              use_kerberos=env.use_kerberos)
+    if with_hdfs:
+        if env.use_kerberos:
+            from hdfs.ext.kerberos import KerberosClient
+            hdfs_client = KerberosClient(env.hdfs_url, mutual_auth='REQUIRED')
+        else:
+            from hdfs.client import InsecureClient
+            hdfs_client = InsecureClient(env.hdfs_url)
+        return ibis.make_client(con, hdfs_client)
+    else:
+        return ibis.make_client(con)
+
+
+@pytest.mark.e2e
+class ImpalaE2E(object):
+
+    @classmethod
+    def setUpClass(cls):
+        ENV = IbisTestEnv()
+        cls.con = test_connect(ENV)
+        # Tests run generally faster without it
+        if not ENV.use_codegen:
+            cls.con.disable_codegen()
+        cls.hdfs = cls.con.hdfs
+        cls.test_data_dir = ENV.test_data_dir
+        cls.test_data_db = ENV.test_data_db
+        cls.tmp_dir = ENV.tmp_dir
+        cls.tmp_db = ENV.tmp_db
+        cls.alltypes = cls.con.table('functional_alltypes')
+
+        if not cls.con.exists_database(cls.tmp_db):
+            cls.con.create_database(cls.tmp_db)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.con.drop_database(cls.tmp_db, force=True)
+
+    def setUp(self):
+        self.temp_databases = []
+        self.temp_tables = []
+        self.temp_views = []
+
+    def tearDown(self):
+        for t in self.temp_tables:
+            self.con.drop_table(t, force=True)
+
+        for t in self.temp_views:
+            self.con.drop_view(t, force=True)
+
+        self.con.set_database(self.test_data_db)
+        for t in self.temp_databases:
+            self.con.drop_database(t, force=True)
+
 
 
 def assert_equal(left, right):

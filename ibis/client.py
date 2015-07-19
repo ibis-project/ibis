@@ -13,6 +13,8 @@
 # limitations under the License.
 
 from itertools import izip
+from posixpath import join as pjoin
+from six import BytesIO
 
 import hdfs
 
@@ -434,7 +436,7 @@ class ImpalaClient(SQLClient):
         ibis_types = []
         for t in types:
             t = t.lower()
-            t = _impala_type_mapping.get(t, t)
+            t = _impala_to_ibis_type_mapping.get(t, t)
             ibis_types.append(t)
 
         names = [x.lower() for x in names]
@@ -535,6 +537,36 @@ class ImpalaClient(SQLClient):
             raise com.IbisError('Must pass expr or schema')
 
         self._execute(statement)
+
+    def pandas(self, df, name=None, database=None, persist=False):
+        """
+        Create a (possibly temp) parquet table from a local pandas DataFrame.
+        """
+        name, database = self._get_concrete_table_path(name, database,
+                                                       persist=persist)
+        qualified_name = self._fully_qualified_name(name, database)
+
+        # write df to a temp CSV file on HDFS
+        temp_csv_hdfs_dir = pjoin(options.impala.temp_hdfs_path, util.guid())
+        buf = BytesIO()
+        df.to_csv(buf, header=False, index=False, na_rep='\N')
+        self.hdfs.put(pjoin(temp_csv_hdfs_dir, '0.csv'), buf)
+
+        # define a temporary table using delimited data
+        schema = util.pandas_to_ibis_schema(df)
+        table = self.delimited_file(
+            temp_csv_hdfs_dir, schema,
+            name='ibis_tmp_pandas_{0}'.format(util.guid()), database=database,
+            external=True, persist=False)
+
+        # CTAS into Parquet
+        self.create_table(name, expr=table, database=database,
+                          format='parquet', overwrite=False)
+
+        # cleanup
+        self.hdfs.delete(temp_csv_hdfs_dir, recursive=True)
+
+        return self._wrap_new_table(qualified_name, persist)
 
     def avro_file(self, hdfs_dir, avro_schema,
                   name=None, database=None,
@@ -833,7 +865,7 @@ class ImpalaClient(SQLClient):
         for col in descr:
             names.append(col[0])
             impala_typename = col[1]
-            typename = _impala_type_mapping[impala_typename.lower()]
+            typename = _impala_to_ibis_type_mapping[impala_typename.lower()]
 
             if typename == 'decimal':
                 precision, scale = col[4:6]
@@ -843,7 +875,7 @@ class ImpalaClient(SQLClient):
         return names, adapted_types
 
 
-_impala_type_mapping = {
+_impala_to_ibis_type_mapping = {
     'boolean': 'boolean',
     'tinyint': 'int8',
     'smallint': 'int16',

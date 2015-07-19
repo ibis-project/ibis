@@ -24,7 +24,7 @@ import ibis
 
 from ibis.compat import unittest
 from ibis.sql.compiler import to_sql
-from ibis.tests.util import IbisTestEnv, assert_equal
+from ibis.tests.util import IbisTestEnv, ImpalaE2E, assert_equal, test_connect
 
 import ibis.common as com
 import ibis.config as config
@@ -39,69 +39,11 @@ from impala.error import HiveServer2Error as HS2Error
 ENV = IbisTestEnv()
 
 
-def connect(env, with_hdfs=True):
-    con = ibis.impala_connect(host=env.impala_host,
-                              protocol=env.impala_protocol,
-                              database=env.test_data_db,
-                              port=env.impala_port,
-                              use_kerberos=env.use_kerberos)
-    if with_hdfs:
-        if env.use_kerberos:
-            from hdfs.ext.kerberos import KerberosClient
-            hdfs_client = KerberosClient(env.hdfs_url, mutual_auth='REQUIRED')
-        else:
-            from hdfs.client import InsecureClient
-            hdfs_client = InsecureClient(env.hdfs_url)
-        return ibis.make_client(con, hdfs_client)
-    else:
-        return ibis.make_client(con)
-
-
-@pytest.mark.e2e
-class ImpalaE2E(object):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.con = connect(ENV)
-        # Tests run generally faster without it
-        if not ENV.use_codegen:
-            cls.con.disable_codegen()
-        cls.hdfs = cls.con.hdfs
-        cls.test_data_dir = ENV.test_data_dir
-        cls.test_data_db = ENV.test_data_db
-        cls.tmp_dir = ENV.tmp_dir
-        cls.tmp_db = ENV.tmp_db
-        cls.alltypes = cls.con.table('functional_alltypes')
-
-        if not cls.con.exists_database(cls.tmp_db):
-            cls.con.create_database(cls.tmp_db)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.con.drop_database(cls.tmp_db, force=True)
-
-    def setUp(self):
-        self.temp_databases = []
-        self.temp_tables = []
-        self.temp_views = []
-
-    def tearDown(self):
-        for t in self.temp_tables:
-            self.con.drop_table(t, force=True)
-
-        for t in self.temp_views:
-            self.con.drop_view(t, force=True)
-
-        self.con.set_database(self.test_data_db)
-        for t in self.temp_databases:
-            self.con.drop_database(t, force=True)
-
-
 class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
     def test_raise_ibis_error_no_hdfs(self):
         # #299
-        client = connect(ENV, with_hdfs=False)
+        client = test_connect(ENV, with_hdfs=False)
         self.assertRaises(com.IbisError, getattr, client, 'hdfs')
 
     def test_get_table_ref(self):
@@ -130,7 +72,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         # create new connection with no default db set
         env = copy(ENV)
         env.test_data_db = None
-        con = connect(env)
+        con = test_connect(env)
         self.assertRaises(Exception, con.table, 'functional_alltypes')
         con.set_database(self.test_data_db)
         con.table('functional_alltypes')

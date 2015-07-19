@@ -98,6 +98,9 @@ class Schema(object):
         return ((self.names == other.names) and
                 (self.types == other.types))
 
+    def __eq__(self, other):
+        return self.equals(other)
+
     def get_type(self, name):
         return self.types[self._name_locs[name]]
 
