@@ -41,7 +41,7 @@ class GroupedTableExpr(object):
 
     def __getitem__(self, args):
         # Shortcut for projection with window functions
-        return self._windowed_projection(args)
+        return self.projection(args)
 
     def __getattr__(self, attr):
         if hasattr(self.table, attr):
@@ -106,13 +106,12 @@ class GroupedTableExpr(object):
         expr = (table
                 .group_by('foo')
                 .order_by(ibis.desc('bar'))
-                .mutate(qux=table.baz.lag().name('lag_baz')))
+                .mutate(qux=table.baz.lag()))
 
         Returns
         -------
         mutated : TableExpr
         """
-
         if exprs is None:
             exprs = []
         else:
@@ -121,9 +120,9 @@ class GroupedTableExpr(object):
         for k, v in kwds.items():
             exprs.append(v.name(k))
 
-        return self._windowed_projection([self.table] + exprs)
+        return self.projection([self.table] + exprs)
 
-    def _windowed_projection(self, exprs):
+    def projection(self, exprs):
         w = self._get_window()
         windowed_exprs = []
         for expr in exprs:

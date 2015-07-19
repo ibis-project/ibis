@@ -45,6 +45,7 @@ import ibis.expr.analysis as _L
 import ibis.expr.types as ir
 import ibis.expr.operations as _ops
 import ibis.expr.temporal as _T
+import ibis.util as util
 
 
 __all__ = [
@@ -1536,9 +1537,39 @@ def _regular_join_method(name, how, doc=None):
     return f
 
 
+def mutate(table, exprs=None, **kwds):
+    """
+    Convenience function for table projections involving adding columns
+
+    Parameters
+    ----------
+    exprs : list, default None
+      List of named expressions to add as columns
+    kwds : keywords for new columns
+
+    Examples
+    --------
+    expr = table.mutate(qux=table.foo + table.bar, baz=5)
+
+    Returns
+    -------
+    mutated : TableExpr
+    """
+    if exprs is None:
+        exprs = []
+    else:
+        exprs = util.promote_list(exprs)
+
+    for k, v in sorted(kwds.items()):
+        exprs.append(as_value_expr(v).name(k))
+
+    return table.projection([table] + exprs)
+
+
 _table_methods = dict(
     count=_table_count,
     set_column=_table_set_column,
+    mutate=mutate,
     join=join,
     cross_join=cross_join,
     inner_join=_regular_join_method('inner_join', 'inner'),
