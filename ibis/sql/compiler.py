@@ -762,7 +762,8 @@ def _adapt_expr(expr):
     #
     # Canonical case is scalar values or arrays produced by some reductions
     # (simple reductions, or distinct, say)
-    as_is = lambda x: x
+    def as_is(x):
+        return x
 
     if isinstance(expr, ir.TableExpr):
         return expr, as_is

@@ -474,9 +474,9 @@ def _bucket(translator, expr):
         bucket_id += 1
 
     for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
-        if (op.close_extreme
-            and ((op.closed == 'right' and j == 0) or
-                 (op.closed == 'left' and j == (user_num_buckets - 1)))):
+        if (op.close_extreme and
+            ((op.closed == 'right' and j == 0) or
+             (op.closed == 'left' and j == (user_num_buckets - 1)))):
             stmt = stmt.when((lower <= op.arg) & (op.arg <= upper),
                              bucket_id)
         else:
@@ -985,13 +985,13 @@ _other_ops = {
 }
 
 
-_substract_one = lambda x: '{0} - 1'.format(x)
+_subtract_one = '{0} - 1'.format
 
 
 _expr_transforms = {
-    ops.RowNumber: _substract_one,
-    ops.DenseRank: _substract_one,
-    ops.MinRank: _substract_one,
+    ops.RowNumber: _subtract_one,
+    ops.DenseRank: _subtract_one,
+    ops.MinRank: _subtract_one,
 }
 
 

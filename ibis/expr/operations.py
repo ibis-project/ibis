@@ -1470,8 +1470,9 @@ class SortKey(object):
         return '\n'.join(rows)
 
     def equals(self, other):
-        return (isinstance(other, SortKey) and self.expr.equals(other.expr)
-                and self.ascending == other.ascending)
+        return (isinstance(other, SortKey) and
+                self.expr.equals(other.expr) and
+                self.ascending == other.ascending)
 
 
 class DeferredSortKey(object):

@@ -453,8 +453,8 @@ class Literal(ValueNode):
     def equals(self, other):
         if not isinstance(other, Literal):
             return False
-        return (type(self.value) == type(other.value)
-                and self.value == other.value)
+        return (type(self.value) == type(other.value) and
+                self.value == other.value)
 
     def output_type(self):
         import ibis.expr.rules as rules

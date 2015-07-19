@@ -45,9 +45,9 @@ class Window(object):
         self._group_by = util.promote_list(group_by)
         self._order_by = util.promote_list(order_by)
         self._order_by = [ops.SortKey(expr)
-                         if isinstance(expr, ir.Expr)
-                         else expr
-                         for expr in self._order_by]
+                          if isinstance(expr, ir.Expr)
+                          else expr
+                          for expr in self._order_by]
 
         self.preceding = _list_to_tuple(preceding)
         self.following = _list_to_tuple(following)
@@ -125,16 +125,16 @@ class Window(object):
         if not isinstance(other, Window):
             return False
 
-        if (len(self._group_by) != len(other._group_by)
-                or not ir.all_equal(self._group_by, other._group_by)):
+        if (len(self._group_by) != len(other._group_by) or
+                not ir.all_equal(self._group_by, other._group_by)):
             return False
 
-        if (len(self._order_by) != len(other._order_by)
-                or not ir.all_equal(self._order_by, other._order_by)):
+        if (len(self._order_by) != len(other._order_by) or
+                not ir.all_equal(self._order_by, other._order_by)):
             return False
 
-        return (self.preceding == other.preceding
-                and self.following == other.following)
+        return (self.preceding == other.preceding and
+                self.following == other.following)
 
 
 def window(preceding=None, following=None, group_by=None, order_by=None):
