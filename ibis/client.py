@@ -223,7 +223,7 @@ class ImpalaConnection(object):
                 self.connection_pool_size += 1
                 return cursor
             else:
-                raise Exception('Too many concurrent / hung queries')
+                raise com.InternalError('Too many concurrent / hung queries')
 
     def _new_cursor(self):
         params = self.params.copy()
