@@ -214,6 +214,26 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         expected = self.table[self.table, foo, bar]
         assert_equal(t3, expected)
 
+    def test_mutate(self):
+        one = self.table.f * 2
+        foo = (self.table.a + self.table.b).name('foo')
+
+        expr = self.table.mutate(foo, one=one, two=2)
+        expected = self.table[self.table, foo, one.name('one'),
+                              ibis.literal(2).name('two')]
+        assert_equal(expr, expected)
+
+    def test_mutate_alter_existing_columns(self):
+        new_f = self.table.f * 2
+        foo = self.table.d * 2
+        expr = self.table.mutate(f=new_f, foo=foo)
+
+        expected = self.table['a', 'b', 'c', 'd', 'e',
+                              new_f.name('f'), 'g', 'h',
+                              foo.name('foo')]
+
+        assert_equal(expr, expected)
+
     def test_replace_column(self):
         tb = api.table([
             ('a', 'int32'),
