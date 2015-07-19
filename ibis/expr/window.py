@@ -18,6 +18,12 @@ import ibis.util as util
 import ibis.common as com
 
 
+def _list_to_tuple(x):
+    if isinstance(x, list):
+        x = tuple(x)
+    return x
+
+
 class Window(object):
 
     """
@@ -43,8 +49,8 @@ class Window(object):
                          else expr
                          for expr in self._order_by]
 
-        self.preceding = preceding
-        self.following = following
+        self.preceding = _list_to_tuple(preceding)
+        self.following = _list_to_tuple(following)
 
         self._validate_frame()
 
@@ -52,11 +58,11 @@ class Window(object):
         p_tuple = has_p = False
         f_tuple = has_f = False
         if self.preceding is not None:
-            p_tuple = isinstance(self.preceding, (list, tuple))
+            p_tuple = isinstance(self.preceding, tuple)
             has_p = True
 
         if self.following is not None:
-            f_tuple = isinstance(self.following, (list, tuple))
+            f_tuple = isinstance(self.following, tuple)
             has_f = True
 
         if ((p_tuple and has_f) or (f_tuple and has_p)):
@@ -133,7 +139,28 @@ class Window(object):
 
 def window(preceding=None, following=None, group_by=None, order_by=None):
     """
+    Create a window clause for use with window (analytic and aggregate)
+    functions.
 
+    All window frames / ranges are inclusive.
+
+    Parameters
+    ----------
+    preceding : int, tuple, or None, default None
+      Specify None for unbounded, 0 to include current row
+      tuple for off-center window
+    following : int, tuple, or None, default None
+      Specify None for unbounded, 0 to include current row
+      tuple for off-center window
+    group_by : expressions, default None
+      Either specify here or with TableExpr.group_by
+    order_by : expressions, default None
+      For analytic functions requiring an ordering, specify here, or let Ibis
+      determine the default ordering (for functions like rank)
+
+    Returns
+    -------
+    win : ibis Window
     """
     return Window(preceding=preceding, following=following,
                   group_by=group_by, order_by=order_by)
@@ -141,7 +168,21 @@ def window(preceding=None, following=None, group_by=None, order_by=None):
 
 def cumulative_window(group_by=None, order_by=None):
     """
+    Create a cumulative window clause for use with aggregate window functions.
 
+    All window frames / ranges are inclusive.
+
+    Parameters
+    ----------
+    group_by : expressions, default None
+      Either specify here or with TableExpr.group_by
+    order_by : expressions, default None
+      For analytic functions requiring an ordering, specify here, or let Ibis
+      determine the default ordering (for functions like rank)
+
+    Returns
+    -------
+    win : ibis Window
     """
     return Window(preceding=None, following=0,
                   group_by=group_by, order_by=order_by)
@@ -149,7 +190,21 @@ def cumulative_window(group_by=None, order_by=None):
 
 def trailing_window(periods, group_by=None, order_by=None):
     """
+    Create a trailing window for use with aggregate window functions.
 
+    Parameters
+    ----------
+    periods : int
+      Number of trailing periods to include. 0 includes only the current period
+    group_by : expressions, default None
+      Either specify here or with TableExpr.group_by
+    order_by : expressions, default None
+      For analytic functions requiring an ordering, specify here, or let Ibis
+      determine the default ordering (for functions like rank)
+
+    Returns
+    -------
+    win : ibis Window
     """
     return Window(preceding=periods, following=0,
                   group_by=group_by, order_by=order_by)

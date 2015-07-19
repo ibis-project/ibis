@@ -93,8 +93,8 @@ def _window(translator, expr):
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
-    if (isinstance(window_op, _require_order_by)
-            and len(window._order_by) == 0):
+    if (isinstance(window_op, _require_order_by) and
+            len(window._order_by) == 0):
         window = window.order_by(window_op.args[0])
 
     window_formatted = _format_window(translator, window)
@@ -126,15 +126,26 @@ def _format_window(translator, window):
 
         components.append('ORDER BY {0}'.format(', '.join(order_args)))
 
-    if window.preceding is not None and window.following is not None:
-        frame = ('RANGE BETWEEN {0} PRECEDING AND {1} FOLLOWING'
-                 .format(window.preceding, window.following))
-    elif window.preceding:
-        frame = ('RANGE BETWEEN {0} PRECEDING AND CURRENT ROW'
-                 .format(window.preceding))
-    elif window.following:
-        frame += ('RANGE BETWEEN CURRENT ROW AND {0} FOLLOWING'
-                  .format(window.following))
+    p, f = window.preceding, window.following
+
+    if p is not None and f is not None:
+        prec = '{0} PRECEDING'.format(p) if p > 0 else 'CURRENT ROW'
+        follow = '{0} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
+        frame = 'RANGE BETWEEN {0} AND {1}'.format(prec, follow)
+    elif p:
+        if isinstance(p, tuple):
+            frame = ('RANGE BETWEEN {0} PRECEDING AND {1} PRECEDING'
+                     .format(*p))
+        else:
+            frame = ('RANGE BETWEEN {0} PRECEDING AND UNBOUNDED FOLLOWING'
+                     .format(p))
+    elif f:
+        if isinstance(f, tuple):
+            frame = ('RANGE BETWEEN {0} FOLLOWING AND {1} FOLLOWING'
+                     .format(*f))
+        else:
+            frame = ('RANGE BETWEEN UNBOUNDED PRECEDING AND {0} FOLLOWING'
+                     .format(f))
     else:
         # no-op, default is full sample
         frame = None

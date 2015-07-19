@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+from ibis import window
 import ibis
 
 from ibis.sql.compiler import to_sql
@@ -43,7 +44,7 @@ FROM alltypes"""
         last = t.f.last().name('last')
         lag = t.f.lag().name('lag')
         diff = (t.f.lead() - t.f).name('fwd_diff')
-        lag2 = t.f.lag().over(ibis.window(order_by=t.d)).name('lag2')
+        lag2 = t.f.lag().over(window(order_by=t.d)).name('lag2')
         grouped = t.group_by('g')
         proj = grouped.mutate([lag, diff, first, last, lag2])
         expected = """\
@@ -55,10 +56,38 @@ SELECT *, lag(f) OVER (PARTITION BY g ORDER BY f) AS `lag`,
 FROM alltypes"""
         self._check_sql(proj, expected)
 
+    def test_window_frame_specs(self):
+        t = self.con.table('alltypes')
+
+        ex_template = """\
+SELECT sum(d) OVER (ORDER BY f RANGE BETWEEN {0}) AS `foo`
+FROM alltypes"""
+
+        cases = [
+            (window(preceding=5), '5 preceding and unbounded following'),
+            (window(preceding=5, following=0),
+             '5 preceding and current row'),
+            (window(preceding=5, following=2),
+             '5 preceding and 2 following'),
+            (window(following=2), 'unbounded preceding and 2 following'),
+            (window(following=2, preceding=0),
+             'current row and 2 following'),
+            (window(preceding=5), '5 preceding and unbounded following'),
+            (window(following=[5, 10]), '5 following and 10 following'),
+            (window(preceding=[10, 5]), '10 preceding and 5 preceding')
+        ]
+
+        for w, frame in cases:
+            w2 = w.order_by(t.f)
+            expr = t.projection([t.d.sum()
+                                 .over(w2).name('foo')])
+            expected = ex_template.format(frame.upper())
+            self._check_sql(expr, expected)
+
     def test_nested_analytic_function(self):
         t = self.con.table('alltypes')
 
-        w = ibis.window(order_by=t.f)
+        w = window(order_by=t.f)
         expr = (t.f - t.f.lag()).lag().over(w).name('foo')
         result = t.projection([expr])
         expected = """\
@@ -81,7 +110,7 @@ FROM alltypes"""
     def test_multiple_windows(self):
         t = self.con.table('alltypes')
 
-        w = ibis.window(group_by=t.g)
+        w = window(group_by=t.g)
 
         expr = t.f.sum().over(w) - t.f.sum()
         proj = t.projection([t.g, expr.name('result')])
@@ -94,7 +123,7 @@ FROM alltypes"""
     def test_order_by_desc(self):
         t = self.con.table('alltypes')
 
-        w = ibis.window(order_by=ibis.desc(t.f))
+        w = window(order_by=ibis.desc(t.f))
 
         proj = t[t.f, ibis.row_number().over(w).name('revrank')]
         expected = """\
@@ -142,7 +171,3 @@ FROM alltypes"""
 
     def test_cumulative_functions(self):
         pass
-
-    def test_off_center_window(self):
-        w1 = ibis.window(following=(5, 10))
-        w2 = ibis.window(preceding=(10, 5))
