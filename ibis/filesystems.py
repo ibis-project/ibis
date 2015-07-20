@@ -161,6 +161,20 @@ class HDFS(object):
     def tail(self, hdfs_path, nbytes=1024):
         raise NotImplementedError
 
+    def mv(self, hdfs_path_src, hdfs_path_dest, overwrite=True):
+        """
+        Move hdfs_path_src to hdfs_path_dest
+
+        Parameters
+        ----------
+        overwrite : boolean, default True
+          Overwrite hdfs_path_dest if it exists.
+        """
+        raise NotImplementedError
+
+    def cp(self, hdfs_path_src, hdfs_path_dest):
+        raise NotImplementedError
+
     def rm(self, path):
         return self.delete(path)
 
@@ -239,6 +253,13 @@ class WebHDFS(HDFS):
             return total
         else:
             raise NotImplementedError
+
+    @implements(HDFS.mv)
+    def mv(self, hdfs_path_src, hdfs_path_dest, overwrite=True):
+        if overwrite and self.exists(hdfs_path_dest):
+            if self.status(hdfs_path_dest)['type'] == 'FILE':
+                self.rm(hdfs_path_dest)
+        return self.client.rename(hdfs_path_src, hdfs_path_dest)
 
     def delete(self, hdfs_path, recursive=False):
         """
