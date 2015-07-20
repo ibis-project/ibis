@@ -391,10 +391,18 @@ class StringUnaryOp(UnaryOp):
 
 
 class Uppercase(StringUnaryOp):
+
+    """
+    Convert string to all uppercase
+    """
     pass
 
 
 class Lowercase(StringUnaryOp):
+
+    """
+    Convert string to all lowercase
+    """
     pass
 
 
@@ -403,14 +411,25 @@ class Reverse(StringUnaryOp):
 
 
 class Strip(StringUnaryOp):
+
+    """
+    Remove whitespace from left and right sides of string
+    """
     pass
 
 
 class LStrip(StringUnaryOp):
+
+    """
+    Remove whitespace from left side of string
+    """
     pass
 
 
 class RStrip(StringUnaryOp):
+    """
+    Remove whitespace from right side of string
+    """
     pass
 
 
@@ -519,6 +538,14 @@ class ParseURL(ValueOp):
 
 
 class StringLength(UnaryOp):
+
+    """
+    Compute length of strings
+
+    Returns
+    -------
+    length : int32
+    """
 
     output_type = rules.shape_like_arg(0, 'int32')
 

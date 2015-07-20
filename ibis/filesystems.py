@@ -57,6 +57,22 @@ class HDFS(object):
         raise NotImplementedError
 
     def head(self, hdfs_path, nbytes=1024, offset=0):
+        """
+        Retrieve the requested number of bytes from a file
+
+        Parameters
+        ----------
+        hdfs_path : string
+          Absolute HDFS path
+        nbytes : int, default 1024 (1K)
+          Number of bytes to retrieve
+        offset : int, default 0
+          Number of bytes at beginning of file to skip before retrieving data
+
+        Returns
+        -------
+        head_data : bytes
+        """
         raise NotImplementedError
 
     def get(self, hdfs_path, local_path='.', overwrite=False):
@@ -162,9 +178,15 @@ class HDFS(object):
         raise NotImplementedError
 
     def rm(self, path):
+        """
+        Delete a single file
+        """
         return self.delete(path)
 
     def rmdir(self, path):
+        """
+        Delete a directory and all its contents
+        """
         self.client.delete(path, recursive=True)
 
     def find_any_file(self, hdfs_dir):
@@ -199,6 +221,9 @@ class WebHDFS(HDFS):
         return 'webhdfs'
 
     def status(self, path):
+        """
+        Retrieve HDFS metadata for path
+        """
         return self.client.status(path)
 
     @implements(HDFS.exists)
@@ -246,6 +271,7 @@ class WebHDFS(HDFS):
         """
         return self.client.delete(hdfs_path, recursive=recursive)
 
+    @implements(HDFS.head)
     def head(self, hdfs_path, nbytes=1024, offset=0):
         gen = self.client.read(hdfs_path, offset=offset, length=nbytes)
         return ''.join(gen)

@@ -1051,6 +1051,9 @@ class NumericArray(ArrayExpr, NumericValue):
 
 
 class NullScalar(NullValue, ScalarExpr):
+    """
+    A scalar value expression representing NULL
+    """
     pass
 
 
@@ -1365,6 +1368,9 @@ _NULL = None
 
 
 def null():
+    """
+    Create a NULL/NA scalar
+    """
     global _NULL
     if _NULL is None:
         _NULL = NullScalar(NullLiteral())

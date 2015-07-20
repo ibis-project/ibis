@@ -10,6 +10,9 @@ API Reference
 Creating connections
 --------------------
 
+These methods are in the ``ibis`` module namespace, and your main point of
+entry to using Ibis.
+
 .. autosummary::
    :toctree: generated/
 
@@ -19,6 +22,10 @@ Creating connections
 
 Impala client
 -------------
+
+These methods are available on the Impala client object after connecting to
+your Impala cluster, HDFS cluster, and creating the client with
+``ibis.make_client``.
 
 Table methods
 ~~~~~~~~~~~~~
@@ -79,7 +86,7 @@ Executing expressions
 HDFS
 ----
 
-Client objects have an `hdfs` attribute you can use to interact directly with
+Client objects have an ``hdfs`` attribute you can use to interact directly with
 HDFS.
 
 .. autosummary::
@@ -97,6 +104,8 @@ HDFS.
 Top-level expression APIs
 -------------------------
 
+These methods are available directly in the ``ibis`` module namespace.
+
 .. autosummary::
    :toctree: generated/
 
@@ -113,6 +122,7 @@ Top-level expression APIs
    negate
    desc
    now
+   NA
    null
    expr_list
    row_number

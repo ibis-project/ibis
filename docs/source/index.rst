@@ -3,16 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Ibis
-====
+Ibis Documentation
+==================
+
+
 
 Contents:
 
 .. toctree::
    :maxdepth: 1
 
+   getting-started
    api
    release
+   developer
+   type-system
    legal
 
 Indices and tables

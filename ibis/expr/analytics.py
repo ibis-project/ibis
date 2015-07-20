@@ -114,6 +114,7 @@ class CategoryLabel(ir.ValueNode):
 def bucket(arg, buckets, closed='left', close_extreme=True,
            include_under=False, include_over=False):
     """
+    Compute a discrete binning of a numeric array
 
     Parameters
     ----------

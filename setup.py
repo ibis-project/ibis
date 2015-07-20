@@ -74,7 +74,7 @@ if PY26:
 
 if COMMS_EXT_ENABLED:
     import numpy as np
-    
+
     common_include = ['ibis/src', np.get_include()]
     comms_ext_libraries = []
     if sys.platform != 'darwin':
@@ -92,7 +92,7 @@ if COMMS_EXT_ENABLED:
     extensions = cythonize([comms_ext])
 
 setup(
-    name='ibis',
+    name='ibis-framework',
     packages=['ibis',
               'ibis.expr',
               'ibis.expr.tests',

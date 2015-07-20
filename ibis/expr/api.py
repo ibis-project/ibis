@@ -91,6 +91,22 @@ def schema(pairs=None, names=None, types=None):
 
 
 def table(schema, name=None):
+    """
+    Create an unbound Ibis table for creating expressions. Cannot be executed
+    without being bound to some physical table.
+
+    Useful for testing
+
+    Parameters
+    ----------
+    schema : ibis Schema
+    name : string, default None
+      Name for table
+
+    Returns
+    -------
+    table : TableExpr
+    """
     if not isinstance(schema, ir.Schema):
         if isinstance(schema, list):
             schema = ir.Schema.from_tuples(schema)
@@ -1342,6 +1358,11 @@ def parse_url(arg, extract, key=None):
 
 
 def _string_contains(arg, substr):
+    """
+    Parameters
+    ----------
+    substr
+    """
     return arg.like('%{0}%'.format(substr))
 
 
