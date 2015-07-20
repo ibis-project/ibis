@@ -923,6 +923,130 @@ class ImpalaClient(SQLClient):
 
         return ir.Schema(names, ibis_types)
 
+    def create_udf(self, udf_info, udf_name=None, db=None):
+        """
+        Creates a function within Impala
+
+        Parameters
+        ----------
+        udf_info : UDFInfo object
+        udf_name : string (optional)
+        db : string (optional)
+        """
+        name = udf_info.get_name()
+        if udf_name:
+            name = udf_name
+        statement = ddl.CreateFunction(udf_info.hdfs_file,
+                                       udf_info.so_symbol,
+                                       udf_info.inputs,
+                                       udf_info.output,
+                                       name, db)
+        self._execute(statement)
+
+    def create_uda(self, uda_info, uda_name=None, db=None):
+        """
+        Creates a user-defined aggregate function within Impala
+
+        Parameters
+        ----------
+        uda_info : UDAInfo object
+        uda_name : string (optional)
+        db : string (optional)
+        """
+        name = uda_info.get_name()
+        if uda_name:
+            name = uda_name
+        statement = ddl.CreateAggregateFunction(uda_info.hdfs_file,
+                                                uda_info.input_type,
+                                                uda_info.output_type,
+                                                uda_info.init_fn,
+                                                uda_info.update_fn,
+                                                uda_info.merge_fn,
+                                                uda_info.finalize_fn,
+                                                name,
+                                                db=db)
+        self._execute(statement)
+
+    def drop_udf(self, name, input_types, db=None, must_exist=False,
+                 aggregate=False):
+        """
+        Drops a function
+
+        Parameters
+        ----------
+        name : string
+        input_types : list of strings
+        must_exist : boolean, default False
+        db : string, default None
+        aggregate : boolean, default False
+        """
+        inputs = [ir._validate_type(x) for x in input_types]
+        statement = ddl.DropFunction(name, inputs, must_exist=must_exist,
+                                     aggregate=aggregate, db=db)
+        self._execute(statement)
+
+    def list_udfs(self, db, like=None):
+        """
+        Lists all UDFs associated with given database
+
+        Parameters
+        ----------
+        db : string
+        like : string for searching (optional)
+        """
+        statement = 'SHOW FUNCTIONS IN {0}'.format(db)
+        if like:
+            statement += " LIKE '{0}'".format(like)
+
+        cur = self._execute(statement)
+        return self._get_list(cur)
+
+    def list_udafs(self, db, like=None):
+        """
+        Lists all UDAFs associated with a given database
+
+        Parameters
+        ----------
+        db : string
+        like : string for searching (optional)
+        """
+        statement = 'SHOW AGGREGATE FUNCTIONS IN {0}'.format(db)
+        if like:
+            statement += " LIKE '{0}'".format(like)
+
+        cur = self._execute(statement)
+        return self._get_list(cur)
+
+    def exists_udf(self, name, db):
+        """
+        Checks if a given UDF exists within a specified database
+
+        Parameters
+        ----------
+        name : string, UDF name
+        db : string, database name
+
+        Returns
+        -------
+        if_exists : boolean
+        """
+        return len(self.list_udfs(db, like=name)) > 0
+
+    def exists_udaf(self, name, db):
+        """
+        Checks if a given UDAF exists within a specified database
+
+        Parameters
+        ----------
+        name : string, UDAF name
+        db : string, database name
+
+        Returns
+        -------
+        if_exists : boolean
+        """
+        return len(self.list_udafs(db, like=name)) > 0
+
     def _adapt_types(self, descr):
         names = []
         adapted_types = []
