@@ -91,6 +91,25 @@ if COMMS_EXT_ENABLED:
                           include_dirs=common_include)
     extensions = cythonize([comms_ext])
 
+LONG_DESCRIPTION = """
+Ibis is a productivity-centric Python big data framework.
+
+See http://ibis-project.org
+"""
+
+CLASSIFIERS = [
+    'Development Status :: 4 - Beta',
+    'Operating System :: OS Independent',
+    'Intended Audience :: Science/Research',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 2',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 2.6',
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Cython',
+    'Topic :: Scientific/Engineering',
+]
+
 setup(
     name='ibis-framework',
     packages=['ibis',
@@ -105,6 +124,8 @@ setup(
     cmdclass=cmdclass,
     install_requires=requirements,
     description="Productivity-centric Python Big Data Framework",
+    long_description=LONG_DESCRIPTION,
+    classifiers=CLASSIFIERS,
     license='Apache License, Version 2.0',
     maintainer="Wes McKinney",
     maintainer_email="wes@cloudera.com"
