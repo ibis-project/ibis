@@ -1,0 +1,5 @@
+.. _configuration:
+
+****************
+Configuring Ibis
+****************
