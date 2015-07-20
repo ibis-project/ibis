@@ -46,7 +46,8 @@ engine, right at your fingertips in Python:
 * A pandas-like data expression system providing comprehensive coverage of the
   functionality already provided by Impala. It is composable and semantically
   complete; if you can write it with SQL, you can write it with Ibis, often
-  with substantially less code. This includes such tricky constructs as
+  with substantially less code. This even includes such tricky relational data
+  concepts as
 
   * Window functions
   * Correlated and uncorrelated subqueries
@@ -60,7 +61,13 @@ engine, right at your fingertips in Python:
 * Interoperability with pandas: executing expressions returns pandas objects,
   and pandas objects can be written back to HDFS (experimental).
 
-Please stay tuned to http://ibis-project.org
+It's possible to support other compute engines in Ibis, or SQL databases like
+PostgreSQL. In particular, Ibis's data expressions are decoupled from the
+Impala expression executor/compiler. We welcome community contributions to
+integrate Ibis with other backend systems. Keep in mind that it's a design goal
+of Ibis to hide as much of backend complexity as possible.
+
+Please stay tuned to http://ibis-project.org for updates.
 
 Since this is a young project, the documentation is definitely patchy in
 places, but this will improve as things progress.
