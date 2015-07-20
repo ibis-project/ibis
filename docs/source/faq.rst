@@ -36,4 +36,5 @@ expose to Ibis users through an seamlessly integrated user
 experience. Workflows involving multiple systems (for example: using Spark
 MLLib alongside Impala) would be straightforward to put together with HDFS as
 the common point of contact. In such cases, Ibis would use PySpark as a
-dependency.
+dependency. This of course includes using Spark's Dataframe APIs where relevant
+to translate Ibis data operations into Spark operations.
