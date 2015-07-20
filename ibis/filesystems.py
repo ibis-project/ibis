@@ -268,6 +268,10 @@ class WebHDFS(HDFS):
                              verbose=verbose, **kwargs)
         else:
             if is_path:
+                basename = os.path.basename(resource)
+                if self.exists(hdfs_path):
+                    if self.status(hdfs_path)['type'] == 'DIRECTORY':
+                        hdfs_path = pjoin(hdfs_path, basename)
                 if verbose:
                     self.log('Writing local {0} to HDFS {1}'.format(resource,
                                                                     hdfs_path))
