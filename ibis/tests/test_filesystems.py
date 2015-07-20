@@ -135,10 +135,36 @@ class TestHDFSE2E(unittest.TestCase):
         self.test_files.append(path)
         return path
 
+    def _make_random_hdfs_file(self, size=1024, directory=None):
+        local_path = self._make_random_file(size=size)
+        remote_path = pjoin(directory or self.tmp_dir, local_path)
+        self.hdfs.put(remote_path, local_path)
+        return remote_path
+
     def test_mkdir(self):
         path = pjoin(self.tmp_dir, 'mkdir-test')
         self.hdfs.mkdir(path)
         assert self.hdfs.exists(path)
+
+    def test_mv_to_existing_file(self):
+        remote_file = self._make_random_hdfs_file()
+        existing_remote_file_dest = self._make_random_hdfs_file()
+        self.hdfs.mv(remote_file, existing_remote_file_dest)
+
+    def test_mv_to_existing_file_no_overwrite(self):
+        remote_file = self._make_random_hdfs_file()
+        existing_remote_file_dest = self._make_random_hdfs_file()
+        with self.assertRaises(Exception):
+            self.hdfs.mv(remote_file, existing_remote_file_dest, overwrite=False)
+
+    def test_mv_to_directory(self):
+        remote_file = self._make_random_hdfs_file()
+        dest_dir = pjoin(self.tmp_dir, util.guid())
+        self.hdfs.mkdir(dest_dir)
+        self.hdfs.mv(remote_file, dest_dir)
+        new_remote_file = pjoin(dest_dir, os.path.basename(remote_file))
+        file_status = self.hdfs.status(new_remote_file)
+        assert file_status['type'] == 'FILE'
 
     def test_put_get_delete_file(self):
         dirpath = pjoin(self.tmp_dir, 'write-delete-test')
