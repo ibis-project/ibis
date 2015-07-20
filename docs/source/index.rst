@@ -6,6 +6,8 @@
 Ibis Documentation
 ==================
 
+Source code on GitHub: http://github.com/cloudera/ibis
+
 Ibis is a new Python data analysis framework with the goal of enabling data
 scientists and data engineers to be as productive working with big data as they
 are working with small and medium data today. In doing so, we will enable
@@ -78,6 +80,7 @@ places, but this will improve as things progress.
    getting-started
    configuration
    api
+   faq
    release
    developer
    type-system
