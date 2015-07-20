@@ -6,7 +6,8 @@
 Ibis Documentation
 ==================
 
-
+Since this is a young project, the documentation is definitely patchy in
+places, but this will improve as things progress.
 
 Contents:
 
@@ -14,6 +15,7 @@ Contents:
    :maxdepth: 1
 
    getting-started
+   configuration
    api
    release
    developer

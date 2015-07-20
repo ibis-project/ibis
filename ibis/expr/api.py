@@ -1359,9 +1359,15 @@ def parse_url(arg, extract, key=None):
 
 def _string_contains(arg, substr):
     """
+    Determine if indicated string is exactly contained in the calling string.
+
     Parameters
     ----------
     substr
+
+    Returns
+    -------
+    contains : boolean
     """
     return arg.like('%{0}%'.format(substr))
 

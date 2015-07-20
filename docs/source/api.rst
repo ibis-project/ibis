@@ -7,6 +7,8 @@ API Reference
 
 .. currentmodule:: ibis
 
+.. _api.client:
+
 Creating connections
 --------------------
 
@@ -83,6 +85,8 @@ Executing expressions
    ImpalaClient.execute
    ImpalaClient.disable_codegen
 
+.. _api.hdfs:
+
 HDFS
 ----
 
@@ -96,6 +100,7 @@ HDFS.
    HDFS.get
    HDFS.head
    HDFS.put
+   HDFS.put_tarfile
    HDFS.rm
    HDFS.rmdir
    HDFS.size
@@ -286,6 +291,7 @@ Scalar or array methods
 
    IntegerValue.to_timestamp
 
+.. _api.string:
 
 String methods
 --------------

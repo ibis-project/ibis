@@ -37,6 +37,22 @@ This installs the ``ibis`` library to your configured Python environment.
 Creating a client
 -----------------
 
+To create an Ibis "client", you must first connect your services and assemble
+the client using ``ibis.make_client``:
+
+.. code-block:: python
+
+   import ibis
+
+   ic = ibis.impala_connect(host=impala_host, port=impala_port)
+   hdfs = ibis.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
+
+   con = ibis.make_client(ic, hdfs_client=hdfs)
+
+Depending on your cluster setup, this may be more complicated, especially if
+LDAP or Kerberos is involved. See the :ref:`API reference <api.client>` for
+more.
+
 Learning resources
 ------------------
 
