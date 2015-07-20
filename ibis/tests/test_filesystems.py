@@ -192,6 +192,13 @@ class TestHDFSE2E(unittest.TestCase):
         finally:
             shutil.rmtree(local_dir)
 
+    def test_put_file_into_directory(self):
+        local_path = self._make_random_file()
+        self.hdfs.put(self.tmp_dir, local_path)
+        remote_file_path = pjoin(self.tmp_dir, local_path)
+        file_status = self.hdfs.status(remote_file_path)
+        assert file_status['type'] == 'FILE'
+
     def test_get_file_overwrite(self):
         local_path = self._make_random_file()
         local_path2 = self._make_random_file()
