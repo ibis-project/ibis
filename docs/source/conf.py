@@ -12,6 +12,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+import glob
 import sys
 import os
 
@@ -34,6 +35,13 @@ extensions = [
     'sphinx.ext.autosummary',
     'numpydoc'
 ]
+
+autosummary_generate = glob.glob("*.rst")
+
+# autosummary_generate = True
+
+import numpydoc
+numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

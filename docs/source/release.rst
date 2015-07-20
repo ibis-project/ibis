@@ -2,8 +2,33 @@
 Release Notes
 =============
 
-0.3.0 (TBD)
------------
+0.3.0 (July 20, 2015)
+---------------------
+
+First public release. See http://ibis-project.org for more.
+
+New features
+~~~~~~~~~~~~
+* Implement window / analytic function support
+* Enable non-equijoins (join clauses with operations other than ``==``).
+* Add remaining :ref:`string functions <api.string>` supported by Impala.
+* Add ``pipe`` method to tables (hat-tip to the pandas dev team).
+* Add ``mutate`` convenience method to tables.
+* Fleshed out ``WebHDFS`` implementations: get/put directories, move files,
+  etc. See the :ref:`full HDFS API <api.hdfs>`.
+* Add ``truncate`` method for timestamp values
+* ``ImpalaClient`` can execute scalar expressions not involving any table.
+* Can also create internal Impala tables with a specific HDFS path.
+* Make Ibis's temporary Impala database and HDFS paths configurable (see
+  ``ibis.options``).
+* Add ``truncate_table`` function to client (if the user's Impala cluster
+  supports it).
+* Python 2.6 compatibility
+* Enable Ibis to execute concurrent queries in multithreaded applications
+  (earlier versions were not thread-safe).
+* Test data load script in ``scripts/load_test_data.py``
+* Add an internal operation type signature API to enhance developer
+  productivity.
 
 0.2.0 (June 16, 2015)
 ---------------------

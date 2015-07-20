@@ -193,13 +193,13 @@ class Expr(object):
         """
         Generic composition function to enable expression pipelining
 
-          (expr
-           .pipe(f, *args, **kwargs)
-           .pipe(g, *args2, **kwargs2))
+        >>> (expr
+             .pipe(f, *args, **kwargs)
+             .pipe(g, *args2, **kwargs2))
 
         is equivalent to
 
-          g(f(expr, *args, **kwargs), *args2, **kwargs2)
+        >>> g(f(expr, *args, **kwargs), *args2, **kwargs2)
 
         Parameters
         ----------
@@ -207,20 +207,17 @@ class Expr(object):
           If the expression needs to be passed as anything other than the first
           argument to the function, pass a tuple with the argument name. For
           example, (f, 'data') if the function f expects a 'data' keyword
-        *args : positional arguments
-        **kwargs : keyword arguments
+        args : positional arguments
+        kwargs : keyword arguments
 
         Examples
         --------
-        def foo(data, a=None, b=None):
-            pass
-
-        def bar(a, b, data=None):
-            pass
-
-        expr.pipe(foo, a=5, b=10)
-
-        expr.pipe((bar, 'data'), 1, 2)
+        >>> def foo(data, a=None, b=None):
+                pass
+        >>> def bar(a, b, data=None):
+                pass
+        >>> expr.pipe(foo, a=5, b=10)
+        >>> expr.pipe((bar, 'data'), 1, 2)
 
         Returns
         -------
@@ -803,8 +800,16 @@ class TableExpr(Expr):
 
     def aggregate(self, agg_exprs, by=None, having=None):
         """
+        Aggregate a table with a given set of reductions, with grouping
+        expressions, and post-aggregation filters.
+
         Parameters
         ----------
+        agg_exprs : expression or expression list
+        by : optional, default None
+          Grouping expressions
+        having : optional, default None
+          Post-aggregation filters
 
         Returns
         -------
@@ -815,12 +820,15 @@ class TableExpr(Expr):
 
     def limit(self, n, offset=0):
         """
-
+        Select the first n rows at beginning of table (may not be deterministic
+        depending on implementatino and presence of a sorting).
 
         Parameters
         ----------
-        n :
-        offset :
+        n : int
+          Rows to include
+        offset : int, default 0
+          Number of rows to skip first
 
         Returns
         -------
@@ -1043,6 +1051,9 @@ class NumericArray(ArrayExpr, NumericValue):
 
 
 class NullScalar(NullValue, ScalarExpr):
+    """
+    A scalar value expression representing NULL
+    """
     pass
 
 
@@ -1357,6 +1368,9 @@ _NULL = None
 
 
 def null():
+    """
+    Create a NULL/NA scalar
+    """
     global _NULL
     if _NULL is None:
         _NULL = NullScalar(NullLiteral())

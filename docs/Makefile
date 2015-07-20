@@ -48,6 +48,7 @@ help:
 
 clean:
 	rm -rf $(BUILDDIR)/*
+	rm -rf source/generated
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
@@ -175,3 +176,22 @@ pseudoxml:
 	$(SPHINXBUILD) -b pseudoxml $(ALLSPHINXOPTS) $(BUILDDIR)/pseudoxml
 	@echo
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
+
+
+BASEDIR=$(CURDIR)
+OUTPUTDIR=$(BASEDIR)/build/html
+DEPLOYREPOSITORY=docs.ibis-project.org
+
+deploy: html
+	if test -d build; \
+	then echo " (build directory exists)"; \
+	else mkdir -p build; \
+	fi
+	if test -d build/$(DEPLOYREPOSITORY); \
+	then echo "  (repository directory exists)"; \
+	else cd build && git clone git@github.com:cloudera/$(DEPLOYREPOSITORY).git; \
+	fi
+	cd build/$(DEPLOYREPOSITORY) && git pull
+	rsync -r $(OUTPUTDIR)/* build/$(DEPLOYREPOSITORY)/
+	cd build/$(DEPLOYREPOSITORY) && git add . && git commit -m "deploy"
+	cd build/$(DEPLOYREPOSITORY) && git push origin gh-pages

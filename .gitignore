@@ -40,3 +40,6 @@ dist
 .gdb_history
 .DS_Store?
 Icon?
+
+# documentation files
+docs/source/generated
