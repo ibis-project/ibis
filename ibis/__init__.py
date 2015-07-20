@@ -15,10 +15,10 @@
 
 # flake8: noqa
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 from ibis.client import ImpalaConnection, ImpalaClient
-from ibis.filesystems import WebHDFS
+from ibis.filesystems import HDFS, WebHDFS
 
 import ibis.expr.api as api
 import ibis.expr.types as ir
@@ -43,9 +43,9 @@ def make_client(db, hdfs_client=None):
 
     Examples
     --------
-    con = ibis.impala_connect(**impala_params)
-    hdfs = ibis.hdfs_connect(**hdfs_params)
-    client = ibis.make_client(con, hdfs_client=hdfs)
+    >>> con = ibis.impala_connect(**impala_params)
+    >>> hdfs = ibis.hdfs_connect(**hdfs_params)
+    >>> client = ibis.make_client(con, hdfs_client=hdfs)
 
     Returns
     -------

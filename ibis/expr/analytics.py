@@ -122,8 +122,8 @@ def bucket(arg, buckets, closed='left', close_extreme=True,
     closed : {'left', 'right'}, default 'left'
       Which side of each interval is closed. For example
       buckets = [0, 100, 200]
-        closed = 'left': 100 falls in 2nd bucket
-        closed = 'right': 100 falls in 1st bucket
+      closed = 'left': 100 falls in 2nd bucket
+      closed = 'right': 100 falls in 1st bucket
     close_extreme : boolean, default True
 
     Returns

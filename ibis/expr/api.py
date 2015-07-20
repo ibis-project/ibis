@@ -39,6 +39,7 @@ import ibis.common as _com
 
 from ibis.compat import py_string
 from ibis.expr.analytics import bucket, histogram
+from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import window, trailing_window, cumulative_window
 import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
@@ -54,6 +55,7 @@ __all__ = [
     'now', 'desc', 'null', 'NA',
     'cast', 'coalesce', 'greatest', 'least', 'join',
     'row_number',
+    'negate', 'ifelse',
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window'
 ]
@@ -548,8 +550,7 @@ def nullif(value, null_if_expr):
     array-valued).
 
     Common use to avoid divide-by-zero problems (get NULL instead of INF on
-    divide-by-zero):
-      5 / expr.nullif(0)
+    divide-by-zero): 5 / expr.nullif(0)
 
     Parameters
     ----------
@@ -887,8 +888,6 @@ _generic_array_methods = dict(
     # nth=nth,
     lag=lag,
     lead=lead,
-    cumsum=cumsum,
-    cummean=cummean,
     cummin=cummin,
     cummax=cummax,
 )
@@ -993,6 +992,8 @@ sum = _agg_function('sum', _ops.Sum, True)
 _numeric_array_methods = dict(
     mean=mean,
     sum=sum,
+    cumsum=cumsum,
+    cummean=cummean,
     bucket=bucket,
     histogram=histogram,
     summary=_numeric_summary,
@@ -1281,8 +1282,8 @@ def regex_extract(arg, pattern, index):
     Returns specified index, 0 indexed, from string based on regex pattern
     given
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     pattern : string (regular expression string)
     index : int, 0 indexed
 
@@ -1298,8 +1299,8 @@ def regex_replace(arg, pattern, replacement):
     Replaces match found by regex with replacement string.
     Replacement string can also be a regex
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     pattern : string (regular expression string)
     replacement : string (can be regular expression string)
 
@@ -1388,6 +1389,25 @@ _add_methods(StringValue, _string_value_methods)
 # Timestamp API
 
 def _timestamp_truncate(arg, unit):
+    """
+    Zero out smaller-size units beyond indicated unit. Commonly used for time
+    series resampling.
+
+    Parameters
+    ----------
+    unit : string, one of below table
+      'Y': year
+      'Q': quarter
+      'M': month
+      'D': day
+      'W': week
+      'H': hour
+      'MI': minute
+
+    Returns
+    -------
+    truncated : timestamp
+    """
     return _ops.Truncate(arg, unit).to_expr()
 
 
