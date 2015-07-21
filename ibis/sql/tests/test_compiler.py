@@ -2085,7 +2085,7 @@ class TestUDFStatements(unittest.TestCase):
                                            'Merge', 'Finalize', self.name)
         result = stmt.compile()
         expected = ("CREATE AGGREGATE FUNCTION test_name(string, string)"
-                    " returns int32 location '/foo/bar.so' "
+                    " returns int32 location '/foo/bar.so'"
                     " init_fn='Init' update_fn='Update'"
                     " merge_fn='Merge' finalize_fn='Finalize'")
         assert result == expected

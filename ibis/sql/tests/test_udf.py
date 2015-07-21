@@ -13,6 +13,8 @@
 
 from ibis.compat import unittest
 import ibis.sql.udf as udf
+from ibis.sql.exprs import _operation_registry
+from ibis.expr.operations import ValueOp
 
 
 class UDFTest(unittest.TestCase):
@@ -30,9 +32,14 @@ class UDFTest(unittest.TestCase):
         udf_info = udf.UDFInfo('test.so', ['string'], 'string', 'info_test')
         op = udf_info.to_operation()
         udf.add_impala_operation(op, 'info_test', 'udf_testing')
+        assert op in _operation_registry
 
         def _infoclass_test(value):
             return op(value).to_expr()
         result = _infoclass_test('UDFInfo')
 
         assert result == "SELECT udf_testing.info_test('UDFInfo')"
+
+    def test_udf_class_creation(self):
+        op = udf.scalar_function(['string'], 'string', name='Tester')
+        assert issubclass(op, ValueOp)

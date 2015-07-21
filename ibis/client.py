@@ -1109,7 +1109,10 @@ class ImpalaClient(SQLClient):
             statement += " LIKE '{0}'".format(like)
 
         cur = self._execute(statement)
-        return self._get_list(cur)
+        result = self._get_list(cur)
+        cur.release()
+
+        return result
 
     def list_udafs(self, db, like=None):
         """
@@ -1125,7 +1128,10 @@ class ImpalaClient(SQLClient):
             statement += " LIKE '{0}'".format(like)
 
         cur = self._execute(statement)
-        return self._get_list(cur)
+        result = self._get_list(cur)
+        cur.release()
+
+        return result
 
     def exists_udf(self, name, db):
         """

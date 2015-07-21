@@ -64,11 +64,11 @@ class UDFInfoParent(object):
             class_name = self.name
         elif not (name or self.name):
             class_name = 'UDF_{0}'.format(util.guid())
-
-        class UdfOp(_ops.ValueOp):
-            input_type = in_values
-            output_type = out_value
-        UdfOp.__name__ = class_name
+        func_dict = {
+            'input_type': in_values,
+            'output_type': out_value,
+            }
+        UdfOp = type(class_name, (_ops.ValueOp,), func_dict)
         return UdfOp
 
     def get_name(self):
@@ -111,11 +111,11 @@ def scalar_function(inputs, output, name=None):
     if not name:
         class_name = 'UDF_{0}'.format(util.guid())
 
-    class UdfOp(_ops.ValueOp):
-        input_type = in_values
-        output_type = out_value
-
-    UdfOp.__name__ = class_name
+    func_dict = {
+        'input_type': in_values,
+        'output_type': out_value,
+    }
+    UdfOp = type(class_name, (_ops.ValueOp,), func_dict)
     return UdfOp
 
 
