@@ -61,6 +61,16 @@ pip install $IBIS_HOME
 python --version
 which python
 
+if [ $USE_KERBEROS = "True" ]; then
+    pip install git+https://github.com/laserson/python-sasl.git@cython
+
+    # CLOUDERA INTERNAL JENKINS/KERBEROS CONFIG
+    kinit -l 4h -kt /cdep/keytabs/hive.keytab hive
+    sudo -u hive PYTHON_EGG_CACHE=/dev/null impala-shell -k -q "GRANT ALL ON DATABASE $IBIS_TEST_DATA_DB TO ROLE cdep_default_admin"
+    kdestroy
+    kinit -l 4h -kt /cdep/keytabs/systest.keytab systest
+fi
+
 cd $IBIS_HOME
 
 python -c "from ibis.tests.util import IbisTestEnv; print(IbisTestEnv())"
