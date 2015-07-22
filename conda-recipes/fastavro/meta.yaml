@@ -1,0 +1,36 @@
+package:
+  name: fastavro
+  version: "0.8.3"
+
+source:
+  fn: fastavro-0.8.3.tar.gz
+  url: https://pypi.python.org/packages/source/f/fastavro/fastavro-0.8.3.tar.gz
+  md5: 646b94e5d9ac92f0faf4f1f75e288062
+
+build:
+  entry_points:
+    - fastavro = fastavro.__main__:main
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - python
+
+test:
+  imports:
+    - fastavro
+
+  commands:
+    - fastavro --help
+
+  requires:
+    - flake8
+    - nose
+
+about:
+  home: https://github.com/tebeka/fastavro
+  license: MIT License
+  summary: 'Fast iteration of AVRO files'

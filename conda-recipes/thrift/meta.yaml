@@ -1,0 +1,28 @@
+package:
+  name: thrift
+  version: "0.9.2"
+
+source:
+  fn: thrift-0.9.2.tar.gz
+  url: https://pypi.python.org/packages/source/t/thrift/thrift-0.9.2.tar.gz
+  md5: 91f1c224c46a257bb428431943387dfd
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - python
+
+test:
+  imports:
+    - thrift
+    - thrift.protocol
+    - thrift.server
+    - thrift.transport
+
+about:
+  home: http://thrift.apache.org
+  license: Apache License 2.0
+  summary: 'Python bindings for the Apache Thrift RPC system'

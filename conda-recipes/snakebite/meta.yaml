@@ -1,0 +1,34 @@
+package:
+  name: snakebite
+  version: "2.5.5"
+
+source:
+  fn: snakebite-2.5.5.tar.gz
+  url: https://pypi.python.org/packages/source/s/snakebite/snakebite-2.5.5.tar.gz
+  md5: 3612ffa7ac7274bca31e8c8b693a4160
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - protobuf >2.4.1
+    - tox
+
+  run:
+    - python
+    - protobuf >2.4.1
+    - tox
+
+test:
+  imports:
+    - snakebite
+    - snakebite.protobuf
+
+  requires:
+    - tox
+    - virtualenv >=1.11.2
+
+about:
+  home: http://github.com/spotify/snakebite
+  license: Apache License 2.0
+  summary: 'Pure Python HDFS client'
