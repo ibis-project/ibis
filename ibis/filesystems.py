@@ -56,6 +56,34 @@ class HDFS(object):
     def status(self, path):
         raise NotImplementedError
 
+    def chmod(self, hdfs_path, permissions):
+        """
+        Change permissions of a file of directory
+
+        Parameters
+        ----------
+        hdfs_path : string
+          Directory or path
+        permissions : string
+          Octal permissions string
+        """
+        raise NotImplementedError
+
+    def chown(self, hdfs_path, owner=None, group=None):
+        """
+        Change owner (and/or group) of a file or directory
+
+        Parameters
+        ----------
+        hdfs_path : string
+          Directory or path
+        owner : string, optional
+          Name of owner
+        group : string, optional
+          Name of group
+        """
+        raise NotImplementedError
+
     def head(self, hdfs_path, nbytes=1024, offset=0):
         """
         Retrieve the requested number of bytes from a file
@@ -239,6 +267,14 @@ class WebHDFS(HDFS):
         Retrieve HDFS metadata for path
         """
         return self.client.status(path)
+
+    @implements(HDFS.chmod)
+    def chmod(self, path, permissions):
+        self.client.set_permissions(path, permissions)
+
+    @implements(HDFS.chown)
+    def chown(self, path, owner=None, group=None):
+        self.client.set_owner(path, owner, group)
 
     @implements(HDFS.exists)
     def exists(self, path):
