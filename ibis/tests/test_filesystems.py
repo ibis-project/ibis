@@ -146,6 +146,45 @@ class TestHDFSE2E(unittest.TestCase):
         self.hdfs.mkdir(path)
         assert self.hdfs.exists(path)
 
+    def test_chmod(self):
+        new_permissions = '755'
+        path = self._make_random_hdfs_file()
+        self.hdfs.chmod(path, new_permissions)
+        assert self.hdfs.status(path)['permission'] == new_permissions
+
+    def test_chmod_directory(self):
+        new_permissions = '755'
+        path = pjoin(self.tmp_dir, util.guid())
+        self.hdfs.mkdir(path)
+        self.hdfs.chmod(path, new_permissions)
+        assert self.hdfs.status(path)['permission'] == new_permissions
+
+    def test_chown_owner(self):
+        new_owner = 'randomowner'
+        path = self._make_random_hdfs_file()
+        self.hdfs.chown(path, new_owner)
+        assert self.hdfs.status(path)['owner'] == new_owner
+
+    def test_chown_group(self):
+        new_group = 'randomgroup'
+        path = self._make_random_hdfs_file()
+        self.hdfs.chown(path, group=new_owner)
+        assert self.hdfs.status(path)['group'] == new_group
+
+    def test_chown_owner_directory(self):
+        new_owner = 'randomowner'
+        path = pjoin(self.tmp_dir, util.guid())
+        self.hdfs.mkdir(path)
+        self.hdfs.chown(path, new_owner)
+        assert self.hdfs.status(path)['owner'] == new_owner
+
+    def test_chown_group_directory(self):
+        new_group = 'randomgroup'
+        path = pjoin(self.tmp_dir, util.guid())
+        self.hdfs.mkdir(path)
+        self.hdfs.chown(path, group=new_owner)
+        assert self.hdfs.status(path)['group'] == new_group
+
     def test_mv_to_existing_file(self):
         remote_file = self._make_random_hdfs_file()
         existing_remote_file_dest = self._make_random_hdfs_file()
