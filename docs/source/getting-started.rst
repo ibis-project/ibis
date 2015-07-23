@@ -49,9 +49,10 @@ the client using ``ibis.make_client``:
 
    con = ibis.make_client(ic, hdfs_client=hdfs)
 
-Depending on your cluster setup, this may be more complicated, especially if
-LDAP or Kerberos is involved. See the :ref:`API reference <api.client>` for
-more.
+Both method calls can take ``use_kerberos=True`` to connect to Kerberos
+clusters.  Depending on your cluster setup, this may also include LDAP or SSL.
+See the :ref:`API reference <api.client>` for more, along with the Impala shell
+reference, as the connection semantics are identical.
 
 Learning resources
 ------------------
