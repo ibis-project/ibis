@@ -109,6 +109,9 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
     host : string
     port : int, default 50070 (webhdfs default)
     protocol : {'webhdfs'}
+    use_kerberos : boolean, default False
+    verify : boolean, default False
+        Set to False to turn off verifying SSL certificates
 
     Returns
     -------
