@@ -37,10 +37,10 @@ PROJECT_NAME = 'ibis'
 print "IBIS_HOME = " + IBIS_HOME
 
 # Remote name with the PR
-PR_REMOTE_NAME = os.environ.get("PR_REMOTE_NAME", "origin")
+PR_REMOTE_NAME = os.environ.get("PR_REMOTE_NAME", "upstream")
 
 # Remote name where results pushed
-PUSH_REMOTE_NAME = os.environ.get("PUSH_REMOTE_NAME", "origin")
+PUSH_REMOTE_NAME = os.environ.get("PUSH_REMOTE_NAME", "upstream")
 
 GITHUB_BASE = "https://github.com/cloudera/" + PROJECT_NAME + "/pull"
 GITHUB_API_BASE = "https://api.github.com/repos/cloudera/" + PROJECT_NAME
@@ -50,15 +50,26 @@ BRANCH_PREFIX = "PR_TOOL"
 
 os.chdir(IBIS_HOME)
 
-GITHUB_USERNAME = os.environ['GITHUB_USER']
-import getpass
-GITHUB_PASSWORD = getpass.getpass('Enter github.com password for %s:'
-                                  % GITHUB_USERNAME)
+auth_required = False
 
-def get_json(url):
-    auth = HTTPBasicAuth(GITHUB_USERNAME, GITHUB_PASSWORD)
-    req = requests.get(url, auth=auth)
-    return req.json()
+if auth_required:
+    GITHUB_USERNAME = os.environ['GITHUB_USER']
+    import getpass
+    GITHUB_PASSWORD = getpass.getpass('Enter github.com password for %s:'
+                                      % GITHUB_USERNAME)
+
+    def get_json_auth(url):
+        auth = HTTPBasicAuth(GITHUB_USERNAME, GITHUB_PASSWORD)
+        req = requests.get(url, auth=auth)
+        return req.json()
+
+    get_json = get_json_auth
+else:
+    def get_json_no_auth(url):
+        req = requests.get(url)
+        return req.json()
+
+    get_json = get_json_no_auth
 
 
 def fail(msg):
