@@ -981,6 +981,9 @@ class DecimalType(DataType):
     def __hash__(self):
         return hash((self.precision, self.scale))
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __eq__(self, other):
         if not isinstance(other, DecimalType):
             return False
@@ -1181,6 +1184,18 @@ class CategoryType(DataType):
             return False
 
         return self.cardinality == other.cardinality
+
+    def to_integer_type(self):
+        if self.cardinality is None:
+            return 'int64'
+        elif self.cardinality < (2 ** 7 - 1):
+            return 'int8'
+        elif self.cardinality < (2 ** 15 - 1):
+            return 'int16'
+        elif self.cardinality < (2 ** 31 - 1):
+            return 'int32'
+        else:
+            return 'int64'
 
     def array_ctor(self):
         def constructor(op, name=None):

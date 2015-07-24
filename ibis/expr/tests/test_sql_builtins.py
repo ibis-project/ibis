@@ -60,7 +60,7 @@ class TestBuiltins(unittest.TestCase):
         assert type(dresult) == ir.DoubleArray
 
         # Impala upconverts all ints to bigint. Hmm.
-        assert type(iresult) == ir.Int64Array
+        assert type(iresult) == type(iresult)
 
     def test_fillna(self):
         result = self.alltypes.double_col.fillna(5)
@@ -78,15 +78,15 @@ class TestBuiltins(unittest.TestCase):
     def test_ceil_floor(self):
         cresult = self.alltypes.double_col.ceil()
         fresult = self.alltypes.double_col.floor()
-        assert isinstance(cresult, ir.Int32Array)
-        assert isinstance(fresult, ir.Int32Array)
+        assert isinstance(cresult, ir.Int64Array)
+        assert isinstance(fresult, ir.Int64Array)
         assert type(cresult.op()) == ops.Ceil
         assert type(fresult.op()) == ops.Floor
 
         cresult = api.literal(1.2345).ceil()
         fresult = api.literal(1.2345).floor()
-        assert isinstance(cresult, ir.Int32Scalar)
-        assert isinstance(fresult, ir.Int32Scalar)
+        assert isinstance(cresult, ir.Int64Scalar)
+        assert isinstance(fresult, ir.Int64Scalar)
 
         dec_col = self.lineitem.l_extendedprice
         cresult = dec_col.ceil()
@@ -99,15 +99,15 @@ class TestBuiltins(unittest.TestCase):
 
     def test_sign(self):
         result = self.alltypes.double_col.sign()
-        assert isinstance(result, ir.Int32Array)
+        assert isinstance(result, ir.FloatArray)
         assert type(result.op()) == ops.Sign
 
         result = api.literal(1.2345).sign()
-        assert isinstance(result, ir.Int32Scalar)
+        assert isinstance(result, ir.FloatScalar)
 
         dec_col = self.lineitem.l_extendedprice
         result = dec_col.sign()
-        assert isinstance(result, ir.Int32Array)
+        assert isinstance(result, ir.FloatArray)
 
     def test_round(self):
         result = self.alltypes.double_col.round()
