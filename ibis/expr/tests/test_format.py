@@ -136,6 +136,18 @@ class TestExprFormatting(unittest.TestCase):
         assert formatted.count('test1') == 1
         assert formatted.count('test2') == 1
 
+    def test_memoize_filtered_table(self):
+        airlines = ibis.table([('dest', 'string'),
+                               ('origin', 'string'),
+                               ('arrdelay', 'int32')], 'airlines')
+
+        dests = ['ORD', 'JFK', 'SFO']
+        t = airlines[airlines.dest.isin(dests)]
+        delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
+
+        result = repr(delay_filter)
+        assert result.count('Filter') == 1
+
     def test_named_value_expr_show_name(self):
         expr = self.table.f * 2
         expr2 = expr.name('baz')
