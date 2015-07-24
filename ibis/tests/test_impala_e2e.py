@@ -47,7 +47,10 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         self.assertRaises(com.IbisError, getattr, client, 'hdfs')
 
     def test_get_table_ref(self):
-        table = self.con.table('functional_alltypes')
+        table = self.db.functional_alltypes
+        assert isinstance(table, ir.TableExpr)
+
+        table = self.db['functional_alltypes']
         assert isinstance(table, ir.TableExpr)
 
     def test_table_name_reserved_identifier(self):
@@ -1043,3 +1046,56 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
         [x.join() for x in threads]
 
         assert results == [True] * nthreads
+
+
+class TestObjectLayer(ImpalaE2E, unittest.TestCase):
+
+    def test_database_repr(self):
+        assert self.test_data_db in repr(self.db)
+
+    def test_database_drop(self):
+        tmp_name = '__ibis_test_{0}'.format(util.guid())
+        self.con.create_database(tmp_name)
+
+        db = self.con.database(tmp_name)
+        self.temp_databases.append(tmp_name)
+        db.drop()
+        assert not self.con.exists_database(tmp_name)
+
+    def test_namespace(self):
+        ns = self.db.namespace('tpch_')
+
+        assert 'tpch_' in repr(ns)
+
+        table = ns.lineitem
+        expected = self.db.tpch_lineitem
+        attrs = dir(ns)
+        assert 'lineitem' in attrs
+        assert 'functional_alltypes' not in attrs
+
+        assert_equal(table, expected)
+
+    def test_drop_table_or_view(self):
+        t = self.db.functional_alltypes
+
+        tname = util.guid()
+        self.con.create_table(tname, t.limit(10))
+        self.temp_tables.append(tname)
+
+        vname = util.guid()
+        self.con.create_view(vname, t.limit(10))
+        self.temp_views.append(vname)
+
+        t2 = self.db[tname]
+        t2.drop()
+        assert tname not in self.db
+
+        t3 = self.db[vname]
+        t3.drop()
+        assert vname not in self.db
+
+    def test_udf(self):
+        pass
+
+    def test_uda(self):
+        pass

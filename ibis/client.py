@@ -77,7 +77,11 @@ class SQLClient(Client):
         qualified_name = self._fully_qualified_name(name, database)
         schema = self._get_table_schema(qualified_name)
         node = ops.DatabaseTable(qualified_name, schema, self)
-        return ir.TableExpr(node)
+        return self._table_expr_klass(node)
+
+    @property
+    def _table_expr_klass(self):
+        return ir.TableExpr
 
     @property
     def current_database(self):
@@ -293,112 +297,6 @@ class ImpalaCursor(object):
         return self.cursor.fetchall()
 
 
-class Database(object):
-
-    def __init__(self, name, client):
-        self.name = name
-        self.client = client
-
-    def __repr__(self):
-        return "{0}('{1}')".format('Database', self.name)
-
-    def __dir__(self):
-        attrs = dir(type(self))
-        tables = self.list_tables()
-        unqualified_tables = [self._unqualify(x) for x in tables]
-        return list(sorted(set(attrs + unqualified_tables)))
-
-    def __getattr__(self, key):
-        try:
-            return object.__getattribute__(self, key)
-        except AttributeError:
-            return self.table(key)
-
-    def _qualify(self, value):
-        return value
-
-    def _unqualify(self, value):
-        return value
-
-    def drop(self, force=False):
-        self.client.drop_database(self.name, force=force)
-
-    def namespace(self, ns):
-        return DatabaseNamespace(self, ns)
-
-    def table(self, name):
-        return Table(name, self)
-
-    def view(self, name):
-        pass
-
-    def list_tables(self, like=None):
-        return self.client.list_tables(like=like, database=self.name)
-
-    def list_udfs(self, like=None):
-        return self.client.list_udfs(like=like, database=self.name)
-
-    def list_udas(self, like=None):
-        return self.client.list_udas(like=like, database=self.name)
-
-
-class Entity(object):
-    pass
-
-
-class Table(Entity):
-
-    def __init__(self, name, database):
-        self.name = name
-        self.database = database
-
-    def drop(self):
-        pass
-
-
-class View(Entity):
-
-    def drop(self):
-        pass
-
-
-class ScalarFunction(Entity):
-
-    def drop(self):
-        pass
-
-
-class AggregateFunction(Entity):
-
-    def drop(self):
-        pass
-
-
-class DatabaseNamespace(Database):
-
-    def __init__(self, parent, namespace):
-        self.parent = parent
-        self.namespace = namespace
-
-    def __repr__(self):
-        pass
-
-    @property
-    def client(self):
-        return self.parent.client
-
-    @property
-    def name(self):
-        return self.parent.name
-
-    def _qualify(self, value):
-        return self.namespace + value
-
-    def _unqualify(self, value):
-        return value.replace(self.namespace, '', 1)
-
-
-
 class ImpalaClient(SQLClient):
 
     """
@@ -440,6 +338,10 @@ class ImpalaClient(SQLClient):
                                 'using the hdfs_client argument to '
                                 'ibis.make_client')
         return self._hdfs
+
+    @property
+    def _table_expr_klass(self):
+        return ImpalaTable
 
     def disable_codegen(self, disabled=True):
         """
@@ -555,7 +457,10 @@ class ImpalaClient(SQLClient):
           If False and there are any tables in this database, raises an
           IntegrityError
         """
-        tables = self.list_tables(database=name)
+        if not force or self.exists_database(name):
+            tables = self.list_tables(database=name)
+        else:
+            tables = []
         if force:
             for table in tables:
                 self.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
@@ -765,7 +670,7 @@ class ImpalaClient(SQLClient):
 
         Returns
         -------
-        avro_table : TableExpr
+        avro_table : ImpalaTable
         """
         name, database = self._get_concrete_table_path(name, database,
                                                        persist=persist)
@@ -810,7 +715,7 @@ class ImpalaClient(SQLClient):
 
         Returns
         -------
-        delimited_table : TableExpr
+        delimited_table : ImpalaTable
         """
         name, database = self._get_concrete_table_path(name, database,
                                                        persist=persist)
@@ -866,7 +771,7 @@ class ImpalaClient(SQLClient):
 
         Returns
         -------
-        parquet_table : TableExpr
+        parquet_table : ImpalaTable
         """
         name, database = self._get_concrete_table_path(name, database,
                                                        persist=persist)
@@ -913,7 +818,7 @@ class ImpalaClient(SQLClient):
         else:
             schema = self._get_table_schema(qualified_name)
             node = ImpalaTemporaryTable(qualified_name, schema, self)
-            t = ir.TableExpr(node)
+            t = self._table_expr_klass(node)
 
         # Compute number of rows in table for better default query planning
         cardinality = t.count().execute()
@@ -1077,6 +982,162 @@ _impala_to_ibis_type_mapping = {
 }
 
 
+def _set_limit(query, k):
+    limited_query = '{0}\nLIMIT {1}'.format(query, k)
+
+    return limited_query
+
+
+def to_stdout(x):
+    print(x)
+
+
+# ----------------------------------------------------------------------
+# ORM-ish usability layer
+
+
+class Database(object):
+
+    def __init__(self, name, client):
+        self.name = name
+        self.client = client
+
+    def __repr__(self):
+        return "{0}('{1}')".format('Database', self.name)
+
+    def __dir__(self):
+        attrs = dir(type(self))
+        unqualified_tables = [self._unqualify(x) for x in self.tables]
+        return list(sorted(set(attrs + unqualified_tables)))
+
+    def __contains__(self, key):
+        return key in self.tables
+
+    @property
+    def tables(self):
+        return self.list_tables()
+
+    def __getitem__(self, key):
+        return self.table(key)
+
+    def __getattr__(self, key):
+        special_attrs = ['_ipython_display_', 'trait_names',
+                         '_getAttributeNames']
+
+        try:
+            return object.__getattribute__(self, key)
+        except AttributeError:
+            if key in special_attrs:
+                raise
+            return self.table(key)
+
+    def _qualify(self, value):
+        return value
+
+    def _unqualify(self, value):
+        return value
+
+    def drop(self, force=False):
+        self.client.drop_database(self.name, force=force)
+
+    def namespace(self, ns):
+        return DatabaseNamespace(self, ns)
+
+    def table(self, name):
+        """
+        Return a table expression referencing a table in this database
+
+        Returns
+        -------
+        table : TableExpr
+        """
+        qualified_name = self._qualify(name)
+        return self.client.table(qualified_name, self.name)
+
+    def list_tables(self, like=None):
+        return self.client.list_tables(like=self._qualify_like(like),
+                                       database=self.name)
+
+    def list_udfs(self, like=None):
+        return self.client.list_udfs(like=self._qualify_like(like),
+                                     database=self.name)
+
+    def list_udas(self, like=None):
+        return self.client.list_udas(like=self._qualify_like(like),
+                                     database=self.name)
+
+    def _qualify_like(self, like):
+        return like
+
+
+class DatabaseEntity(object):
+    pass
+
+
+class View(DatabaseEntity):
+
+    def drop(self):
+        pass
+
+
+class ScalarFunction(DatabaseEntity):
+
+    def drop(self):
+        pass
+
+
+class AggregateFunction(DatabaseEntity):
+
+    def drop(self):
+        pass
+
+
+class DatabaseNamespace(Database):
+
+    def __init__(self, parent, namespace):
+        self.parent = parent
+        self.namespace = namespace
+
+    def __repr__(self):
+        return ("{0}(database={1!r}, namespace={2!r})"
+                .format('DatabaseNamespace', self.name, self.namespace))
+
+    @property
+    def client(self):
+        return self.parent.client
+
+    @property
+    def name(self):
+        return self.parent.name
+
+    def _qualify(self, value):
+        return self.namespace + value
+
+    def _unqualify(self, value):
+        return value.replace(self.namespace, '', 1)
+
+    def _qualify_like(self, like):
+        if like:
+            return self.namespace + like
+        else:
+            return '{0}*'.format(self.namespace)
+
+
+class ImpalaTable(ir.TableExpr, DatabaseEntity):
+
+    """
+    References a physical table in the Impala-Hive metastore
+    """
+
+    def drop(self):
+        """
+        Drop the table from the database
+        """
+        op = self.op()
+        con = op.source
+        con.drop_table_or_view(op.args[0])
+
+
 class ImpalaTemporaryTable(ops.DatabaseTable):
 
     def __del__(self):
@@ -1091,13 +1152,3 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
         except ImpylaError:
             # database might have been dropped
             pass
-
-
-def _set_limit(query, k):
-    limited_query = '{0}\nLIMIT {1}'.format(query, k)
-
-    return limited_query
-
-
-def to_stdout(x):
-    print(x)
