@@ -50,14 +50,15 @@ BRANCH_PREFIX = "PR_TOOL"
 
 os.chdir(IBIS_HOME)
 
-GITHUB_USERNAME = os.environ['GITHUB_USER']
-import getpass
-GITHUB_PASSWORD = getpass.getpass('Enter github.com password for %s:'
-                                  % GITHUB_USERNAME)
+# GITHUB_USERNAME = os.environ['GITHUB_USER']
+# import getpass
+# GITHUB_PASSWORD = getpass.getpass('Enter github.com password for %s:'
+#                                   % GITHUB_USERNAME)
+
 
 def get_json(url):
-    auth = HTTPBasicAuth(GITHUB_USERNAME, GITHUB_PASSWORD)
-    req = requests.get(url, auth=auth)
+    #  auth = HTTPBasicAuth(GITHUB_USERNAME, GITHUB_PASSWORD)
+    req = requests.get(url)  # , auth=auth)
     return req.json()
 
 
