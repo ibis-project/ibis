@@ -37,10 +37,10 @@ PROJECT_NAME = 'ibis'
 print "IBIS_HOME = " + IBIS_HOME
 
 # Remote name with the PR
-PR_REMOTE_NAME = os.environ.get("PR_REMOTE_NAME", "origin")
+PR_REMOTE_NAME = os.environ.get("PR_REMOTE_NAME", "upstream")
 
 # Remote name where results pushed
-PUSH_REMOTE_NAME = os.environ.get("PUSH_REMOTE_NAME", "origin")
+PUSH_REMOTE_NAME = os.environ.get("PUSH_REMOTE_NAME", "upstream")
 
 GITHUB_BASE = "https://github.com/cloudera/" + PROJECT_NAME + "/pull"
 GITHUB_API_BASE = "https://api.github.com/repos/cloudera/" + PROJECT_NAME
