@@ -1038,9 +1038,28 @@ class Database(object):
         return value
 
     def drop(self, force=False):
+        """
+        Drop the database
+
+        Parameters
+        ----------
+        drop : boolean, default False
+          Drop any objects if they exist, and do not fail if the databaes does
+          not exist
+        """
         self.client.drop_database(self.name, force=force)
 
     def namespace(self, ns):
+        """
+        Creates a derived Database instance for collections of objects having a
+        common prefix. For example, for tables foo_a, foo_b, and foo_c,
+        creating the "foo_" namespace would enable you to reference those
+        objects as a, b, and c, respectively.
+
+        Returns
+        -------
+        ns : DatabaseNamespace
+        """
         return DatabaseNamespace(self, ns)
 
     def table(self, name):
