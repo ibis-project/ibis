@@ -370,7 +370,9 @@ FROM {0}.tpch_lineitem li
             20 % i1,
             d % 5,
 
+            i1.zeroifnull(),
             i4.zeroifnull(),
+            i8.zeroifnull(),
 
             i4.to_timestamp('s'),
             i4.to_timestamp('ms'),
@@ -396,7 +398,10 @@ FROM {0}.tpch_lineitem li
             d.round(2),
             d.round(i1),
 
+            i1.sign(),
+            i4.sign(),
             d.sign(),
+
             d.sqrt(),
             d.zeroifnull(),
 
@@ -458,8 +463,29 @@ FROM {0}.tpch_lineitem li
         proj_exprs = [expr.name('e%d' % i)
                       for i, expr in enumerate(exprs)]
 
-        projection = table[proj_exprs].limit(10)
-        projection.execute()
+        projection = table[proj_exprs]
+        projection.limit(10).execute()
+
+        self._check_impala_output_types_match(projection)
+
+    def _check_impala_output_types_match(self, table):
+        query = to_sql(table)
+        t = self.con.sql(query)
+
+        def _clean_type(x):
+            if isinstance(x, ir.CategoryType):
+                x = x.to_integer_type()
+            return x
+
+        left, right = t.schema(), table.schema()
+        for i, (n, l, r) in enumerate(zip(left.names, left.types,
+                                          right.types)):
+            l = _clean_type(l)
+            r = _clean_type(r)
+
+            if l != r:
+                pytest.fail('Value for {0} had left type {1}'
+                            ' and right type {2}'.format(n, l, r))
 
     def assert_cases_equality(self, cases):
         for expr, expected in cases:

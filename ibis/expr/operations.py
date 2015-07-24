@@ -205,7 +205,7 @@ class NotNull(UnaryOp):
 
 class ZeroIfNull(UnaryOp):
 
-    output_type = rules.numeric_highest_promote(0)
+    output_type = rules.type_of_arg(0)
 
 
 class IfNull(ValueOp):
@@ -283,7 +283,7 @@ def _ceil_floor_output(self):
     if isinstance(arg, ir.DecimalValue):
         return arg._factory
     else:
-        return rules.shape_like(arg, 'int32')
+        return rules.shape_like(arg, 'int64')
 
 
 class Ceil(UnaryOp):
@@ -343,7 +343,8 @@ class Exp(RealUnaryOp):
 
 class Sign(UnaryOp):
 
-    output_type = rules.shape_like_arg(0, 'int32')
+    # This is the Impala output for both integers and double/float
+    output_type = rules.shape_like_arg(0, 'float')
 
 
 class Sqrt(RealUnaryOp):
@@ -461,7 +462,7 @@ class StringFind(ValueOp):
     input_type = [string, string(name='substr'),
                   integer(name='start', optional=True, default=None),
                   integer(name='end', optional=True, default=None)]
-    output_type = rules.shape_like_arg(0, 'int32')
+    output_type = rules.shape_like_arg(0, 'int64')
 
 
 class Translate(ValueOp):
@@ -487,7 +488,7 @@ class RPad(ValueOp):
 class FindInSet(ValueOp):
 
     input_type = [string(name='needle'), list_of(string, min_length=1)]
-    output_type = rules.shape_like_arg(0, 'int32')
+    output_type = rules.shape_like_arg(0, 'int64')
 
 
 class StringJoin(ValueOp):
@@ -1726,7 +1727,8 @@ class LogicalBinaryOp(BinaryOp):
 class Modulus(BinaryOp):
 
     def output_type(self):
-        helper = rules.BinaryPromoter(self.left, self.right, operator.add)
+        helper = rules.BinaryPromoter(self.left, self.right,
+                                      operator.mod)
         return helper.get_result()
 
 
