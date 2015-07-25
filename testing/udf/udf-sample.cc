@@ -137,3 +137,62 @@ void ReturnConstantArgClose(
     context->SetFunctionState(scope, NULL);
   }
 }
+
+
+BooleanVal Identity(FunctionContext* context, const BooleanVal& arg) { return arg; }
+
+TinyIntVal Identity(FunctionContext* context, const TinyIntVal& arg) { return arg; }
+
+SmallIntVal Identity(FunctionContext* context, const SmallIntVal& arg) { return arg; }
+
+IntVal Identity(FunctionContext* context, const IntVal& arg) { return arg; }
+
+BigIntVal Identity(FunctionContext* context, const BigIntVal& arg) { return arg; }
+
+FloatVal Identity(FunctionContext* context, const FloatVal& arg) { return arg; }
+
+DoubleVal Identity(FunctionContext* context, const DoubleVal& arg) { return arg; }
+
+StringVal Identity(FunctionContext* context, const StringVal& arg) { return arg; }
+
+TimestampVal Identity(FunctionContext* context, const TimestampVal& arg) { return arg; }
+
+DecimalVal Identity(FunctionContext* context, const DecimalVal& arg) { return arg; }
+
+IntVal AllTypes(
+		FunctionContext* context, const StringVal& string, const BooleanVal& boolean,
+		const TinyIntVal& tiny_int, const SmallIntVal& small_int, const IntVal& int_val,
+		const BigIntVal& big_int, const FloatVal& float_val, const DoubleVal& double_val,
+		const DecimalVal& decimal) {
+  int result = string.len + boolean.val + tiny_int.val + small_int.val + int_val.val
+    + big_int.val + static_cast<int64_t>(float_val.val)
+    + static_cast<int64_t>(double_val.val) + decimal.val4;
+  return IntVal(result);
+}
+
+IntVal FourArgs(FunctionContext* context, const IntVal& v1, const IntVal& v2,
+		const IntVal& v3, const IntVal& v4) {
+  return IntVal(v1.val + v2.val + v3.val + v4.val);
+}
+
+IntVal FiveArgs(FunctionContext* context, const IntVal& v1, const IntVal& v2,
+		const IntVal& v3, const IntVal& v4, const IntVal& v5) {
+  return IntVal(v1.val + v2.val + v3.val + v4.val + v5.val);
+}
+
+IntVal SixArgs(FunctionContext* context, const IntVal& v1, const IntVal& v2,
+	       const IntVal& v3, const IntVal& v4, const IntVal& v5, const IntVal& v6) {
+  return IntVal(v1.val + v2.val + v3.val + v4.val + v5.val + v6.val);
+}
+
+IntVal SevenArgs(FunctionContext* context, const IntVal& v1, const IntVal& v2,
+		 const IntVal& v3, const IntVal& v4, const IntVal& v5, const IntVal& v6,
+		 const IntVal& v7) {
+  return IntVal(v1.val + v2.val + v3.val + v4.val + v5.val + v6.val + v7.val);
+}
+
+IntVal EightArgs(FunctionContext* context, const IntVal& v1, const IntVal& v2,
+		 const IntVal& v3, const IntVal& v4, const IntVal& v5, const IntVal& v6,
+		 const IntVal& v7, const IntVal& v8) {
+  return IntVal(v1.val + v2.val + v3.val + v4.val + v5.val + v6.val + v7.val + v8.val);
+}
