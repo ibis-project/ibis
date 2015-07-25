@@ -128,45 +128,6 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         self.con.drop_view(tmp_name)
         assert not self.con.exists_table(tmp_name)
 
-    @pytest.mark.xfail
-    def test_create_exists_drop_function(self):
-        location = ENV.test_data_dir + '/udf/libudfsample.so'
-        symbol = 'HasVowels'
-        name = 'has_vowels'
-        inputs = ['string']
-        output = 'boolean'
-        db = ENV.test_data_db
-        udf_info = udf.UDFInfo(location, inputs, output, symbol, name)
-        self.con.create_udf(udf_info, None, db)
-        assert self.con.exists_udf(name, db)
-        self.con.drop_udf(name, inputs, db=db)
-        assert not self.con.exists_udf(name, db)
-
-    def test_udf_full_workflow_using_infoclass(self):
-        location = ENV.test_data_dir + '/udf/libudfsample.so'
-        symbol = 'HasVowels'
-        name = 'has_vowels'
-        inputs = ['string']
-        output = 'boolean'
-        db = ENV.test_data_db
-        udf_info = udf.UDFInfo(location, inputs, output, symbol, name)
-        try:
-            self.con.create_udf(udf_info, None, db)
-            op = udf_info.to_operation()
-            udf.add_impala_operation(op, name, db)
-
-            def _identity_test(value):
-                return op(value).to_expr()
-
-            val = ibis.literal(True)
-            expr = _identity_test(val)
-            result = self.con.execute(expr)
-            assert result == val
-        except Exception:
-            pass
-        finally:
-            self.con.drop_udf(name, inputs, db=db)
-
     def test_drop_non_empty_database(self):
         tmp_db = '__ibis_test_{0}'.format(util.guid())
 
@@ -965,6 +926,179 @@ LIMIT 10"""
             assert len(table.execute(limit=10000)) == 25
             assert table.count().execute() == 25
             assert table.count().execute(limit=10) == 25
+
+#  UDF Testing
+    def test_boolean_wrapping(self):
+        symbol = 'Identity'
+        name = 'identity'
+        inputs = ['boolean']
+        output = 'boolean'
+        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        self.con.create_udf(udf_info, db=self.test_data_db)
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, self.test_data_db)
+        assert self.con.exists_udf(name, self.test_data_db)
+
+        def _identity_test(value):
+            return op(value).to_expr()
+        val = ibis.literal(True)
+        expr = _identity_test(val)
+        result = self.con.execute(expr)
+        assert result == val
+
+    def test_nameless_wrapping(self):
+        symbol = 'Identity'
+        inputs = ['boolean']
+        output = 'boolean'
+        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol)
+        pass
+
+    def test_tinyint_wrapping(self):
+        symbol = 'Identity'
+        name = 'identity'
+        inputs = ['tinyint']
+        output = 'tinyint'
+        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        self.con.create_udf(udf_info, db=self.test_data_db)
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, self.test_data_db)
+        assert self.con.exists_udf(name, self.test_data_db)
+
+        def _identity_test(value):
+            return op(value).to_expr()
+        val = ibis.literal(5)
+        expr = _identity_test(val)
+        result = self.con.execute(expr)
+        assert result == val
+
+    def test_int_wrapping(self):
+        symbol = 'Identity'
+        name = 'identity'
+        inputs = ['int']
+        output = 'int'
+        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        self.con.create_udf(udf_info, db=self.test_data_db)
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, self.test_data_db)
+        assert self.con.exists_udf(name, self.test_data_db)
+
+        def _identity_test(value):
+            return op(value).to_expr()
+        val = ibis.literal(129)
+        expr = _identity_test(val)
+        result = self.con.execute(expr)
+        assert result == val
+
+    def test_bigint_wrapping(self):
+        symbol = 'Identity'
+        name = 'identity'
+        inputs = ['bigint']
+        output = 'bigint'
+        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        self.con.create_udf(udf_info, db=self.test_data_db)
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, self.test_data_db)
+        assert self.con.exists_udf(name, self.test_data_db)
+
+        def _identity_test(value):
+            return op(value).to_expr()
+        val = ibis.literal(1000)
+        expr = _identity_test(val)
+        result = self.con.execute(expr)
+        assert result == val
+
+    def test_float_wrapping(self):
+        symbol = 'Identity'
+        name = 'identity'
+        inputs = ['float']
+        output = 'float'
+        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        self.con.create_udf(udf_info, db=self.test_data_db)
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, self.test_data_db)
+        assert self.con.exists_udf(name, self.test_data_db)
+
+        def _identity_test(value):
+            return op(value).to_expr()
+        val = ibis.literal(3.14)
+        expr = _identity_test(val)
+        result = self.con.execute(expr)
+        assert result == val
+
+    def test_double_wrapping(self):
+        symbol = 'Identity'
+        name = 'identity'
+        inputs = ['double']
+        output = 'double'
+        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        self.con.create_udf(udf_info, db=self.test_data_db)
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, self.test_data_db)
+        assert self.con.exists_udf(name, self.test_data_db)
+
+        def _identity_test(value):
+            return op(value).to_expr()
+        val = ibis.literal(3.14)
+        expr = _identity_test(val)
+        result = self.con.execute(expr)
+        assert result == val
+
+    def test_string_wrapping(self):
+        symbol = 'Identity'
+        name = 'identity'
+        inputs = ['string']
+        output = 'string'
+        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        self.con.create_udf(udf_info, db=self.test_data_db)
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, self.test_data_db)
+        assert self.con.exists_udf(name, self.test_data_db)
+
+        def _identity_test(value):
+            return op(value).to_expr()
+        val = ibis.literal('ibis')
+        expr = _identity_test(val)
+        result = self.con.execute(expr)
+        assert result == val
+
+    @pytest.mark.xfail
+    def test_timestamp_wrapping(self):
+        symbol = 'Identity'
+        name = 'identity'
+        inputs = ['timestamp']
+        output = 'timestamp'
+        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        self.con.create_udf(udf_info, db=self.test_data_db)
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, self.test_data_db)
+        assert self.con.exists_udf(name, self.test_data_db)
+
+        def _identity_test(value):
+            return op(value).to_expr()
+        val = ibis.literal(1000)
+        expr = _identity_test(val)
+        result = self.con.execute(expr)
+        assert result == val
+
+    def test_mult_type_args_wrapping(self):
+        symbol = 'AlmostAllTypes'
+        name = 'all_types'
+        inputs = ['string', 'boolean', 'tinyint', 'smallint', 'int',
+                  'bigint', 'float', 'double']
+        output = 'int'
+        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        self.con.create_udf(udf_info, db=self.test_data_db)
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, self.test_data_db)
+        assert self.con.exists_udf(name, self.test_data_db)
+
+        def _mult_types(string, boolean, tinyint, smallint, integer,
+                        bigint, float_val, double_val):
+            return op(string, boolean, tinyint, smallint, integer,
+                      bigint, float_val, double_val).to_expr()
+        expr = _mult_types('a', True, 1, 1, 1, 1, 1.0, 1.0)
+        result = self.con.execute(expr)
+        assert result == 8
 
 
 def _ensure_drop(con, table_name, database=None):

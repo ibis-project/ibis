@@ -17,6 +17,7 @@ from posixpath import join as pjoin
 from six import BytesIO
 import Queue
 import threading
+import re
 
 import hdfs
 
@@ -32,6 +33,7 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
 import ibis.sql.ddl as ddl
+import ibis.sql.udf as udf
 import ibis.util as util
 
 
@@ -438,6 +440,22 @@ class ImpalaClient(SQLClient):
         tuples = cur.fetchall()
         if len(tuples) > 0:
             return list(zip(*tuples)[i])
+        else:
+            return []
+
+    def _get_udfs(self, cur):
+        tuples = cur.fetchall()
+        if len(tuples) > 0:
+            regex = re.compile("(.*?)\s*\((.*?)\)")
+            result = []
+            for out_type, sig in tuples:
+                reg_result = regex.search(sig)
+                name = reg_result.group(1)
+                inputs = [x.strip().lower()
+                          for x in reg_result.group(2).split(',')]
+                output = out_type.lower()
+                result.append(udf.UDFInfo(inputs, output, name))
+            return result
         else:
             return []
 
@@ -1039,7 +1057,7 @@ class ImpalaClient(SQLClient):
 
         Parameters
         ----------
-        udf_info : UDFInfo object
+        udf_info : UDFCreator object
         udf_name : string (optional)
         db : string (optional)
         """
@@ -1077,11 +1095,13 @@ class ImpalaClient(SQLClient):
                                                 db=db)
         self._execute(statement)
 
-    def drop_udf(self, name, input_types, db=None, must_exist=False,
+    def drop_udf(self, name=None, input_types=None, db=None, force=False,
                  aggregate=False):
         """
         Drops a function
-
+        If only a database and force=True are passed, all functions
+        in specified database are dropped.
+        If only name is given, function will search for
         Parameters
         ----------
         name : string
@@ -1090,10 +1110,59 @@ class ImpalaClient(SQLClient):
         db : string, default None
         aggregate : boolean, default False
         """
-        inputs = [ir._validate_type(x) for x in input_types]
-        statement = ddl.DropFunction(name, inputs, must_exist=must_exist,
-                                     aggregate=aggregate, db=db)
-        self._execute(statement)
+        if not input_types:
+            if name:
+                #  TODO : Check if database is given.
+                #  If so, use fully qualified name to query
+                db = self.current_database()
+                result = self.list_udfs(db, like=name)
+                if len(result) > 1:
+                    if force:
+                        for func in result:
+                            self._drop_single_function(func.name, func.inputs,
+                                                       aggregate=aggregate)
+                        return
+                    else:
+                        raise Exception("More than one function " +
+                                        "with {0} found.".format(name) +
+                                        "Please specify force=True")
+                elif len(result) == 1:
+                    func = result.pop()
+                    self._drop_single_function(func.name, func.inputs,
+                                               aggregate=aggregate)
+                    return
+                else:
+                    raise Exception("No function found with name {0}"
+                                    .format(name))
+            elif db:
+                if force:
+                    self._drop_all_functions(db)
+                    return
+                else:
+                    raise Exception("Need database to drop all functions")
+        else:
+            self._drop_single_function(name, input_types, db=db,
+                                       aggregate=aggregate)
+            return
+
+    def _drop_single_function(self, name, input_types, db=None,
+                              aggregate=False):
+        inputs = [udf._validate_type(x) for x in input_types]
+        stmt = ddl.DropFunction(name, inputs, must_exist=False,
+                                aggregate=aggregate, db=db)
+        self._execute(stmt)
+
+    def _drop_all_functions(self, db):
+        udfs = self.list_udfs(db)
+        for fnct in udfs:
+            stmt = ddl.DropFunction(fnct.name, fnct.inputs, must_exist=False,
+                                    aggregate=False, db=db)
+            self._execute(stmt)
+        udafs = self.list_udafs(db)
+        for udaf in udafs:
+            stmt = ddl.DropFunction(udaf.name, udaf.inputs, must_exist=False,
+                                    aggregate=True, db=db)
+            self._execute(stmt)
 
     def list_udfs(self, db, like=None):
         """
@@ -1104,14 +1173,10 @@ class ImpalaClient(SQLClient):
         db : string
         like : string for searching (optional)
         """
-        statement = 'SHOW FUNCTIONS IN {0}'.format(db)
-        if like:
-            statement += " LIKE '{0}'".format(like)
-
-        cur = self._execute(statement)
-        result = self._get_list(cur)
+        statement = ddl.ListFunction(db, like=like, aggregate=False)
+        cur = self._execute(statement, results=True)
+        result = self._get_udfs(cur)
         cur.release()
-
         return result
 
     def list_udafs(self, db, like=None):
@@ -1123,11 +1188,8 @@ class ImpalaClient(SQLClient):
         db : string
         like : string for searching (optional)
         """
-        statement = 'SHOW AGGREGATE FUNCTIONS IN {0}'.format(db)
-        if like:
-            statement += " LIKE '{0}'".format(like)
-
-        cur = self._execute(statement)
+        statement = ddl.ListFunction(db, like=like, aggregate=True)
+        cur = self._execute(statement, results=True)
         result = self._get_list(cur)
         cur.release()
 

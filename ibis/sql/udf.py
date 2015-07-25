@@ -14,15 +14,13 @@
 import hashlib
 
 from ibis.expr.types import (
-    Int8Scalar, Int16Scalar,
-    Int32Scalar, Int64Scalar,
-    BooleanScalar, FloatScalar,
-    DoubleScalar, StringScalar,
-    TimestampScalar,
+    Int8Value, Int16Value,
+    Int32Value, Int64Value,
+    BooleanValue, FloatValue,
+    DoubleValue, StringValue,
+    TimestampValue, DecimalValue,
 )
-
-# __all__ is defined
-from ibis.expr.temporal import *  # noqa
+from ibis.common import IbisTypeError
 
 import ibis.expr.types as ir
 import ibis.expr.operations as _ops
@@ -31,19 +29,28 @@ import ibis.sql.exprs as _expr
 import ibis.util as util
 
 
-class UDFInfoParent(object):
+class UDFInfo(object):
+
+    def __init__(self, input_type, output_type, name):
+        self.inputs = input_type
+        self.output = output_type
+        self.name = name
+
+
+class UDFCreatorParent(UDFInfo):
 
     def __init__(self, hdfs_file, input_type,
                  output_type, name=None):
         if hdfs_file[-3:] != '.so':
             raise ValueError('File is not a .so file')
         self.hdfs_file = hdfs_file
-        self.inputs = [ir._validate_type(x) for x in input_type]
-        self.output = ir._validate_type(output_type)
-        if name:
-            self.name = name
-        else:
-            self.name = hashlib.sha1(self.so_symbol).hexdigest()
+        inputs = [_validate_impala_type(x) for x in input_type]
+        output = _validate_impala_type(output_type)
+        new_name = name
+        if not name:
+            new_name = hashlib.sha1(self.so_symbol).hexdigest()
+
+        UDFInfo.__init__(self, inputs, output, new_name)
 
     def to_operation(self, name=None):
         """
@@ -75,32 +82,39 @@ class UDFInfoParent(object):
         return self.name
 
 
-class UDFInfo(UDFInfoParent):
+class UDFCreator(UDFCreatorParent):
 
     def __init__(self, hdfs_file, input_type, output_type,
                  so_symbol, name=None):
         self.so_symbol = so_symbol
-        UDFInfoParent.__init__(self, hdfs_file, input_type,
-                               output_type, name=name)
+        UDFCreatorParent.__init__(self, hdfs_file, input_type,
+                                  output_type, name=name)
 
 
-class UDAInfo(UDFInfo):
+class UDACreator(UDFCreatorParent):
 
     def __init__(self, hdfs_file, input_type, output_type, init_fn,
                  update_fn, merge_fn, finalize_fn, name=None):
         self.init_fn = init_fn
-        self.update_fn = udate_fn
+        self.update_fn = update_fn
         self.merge_fn = merge_fn
         self.finalize_fn = finalize_fn
-        UDFInfoParent.__init__(self, hdfs_file, input_type,
-                               output_type, name=name)
+        UDFCreatorParent.__init__(self, hdfs_file, input_type,
+                                  output_type, name=name)
+
+
+def _validate_impala_type(t):
+    if t in _impala_to_ibis.keys():
+        return t
+    raise IbisTypeError("Not a valid Impala type for UDFs")
 
 
 def _operation_type_conversion(inputs, output):
-    in_type = [ir._validate_type(x) for x in inputs]
-    in_values = [rules.value_typed_as(_scalar_conversion_types[x])
-                 for x in in_type]
-    out_type = ir._validate_type(output)
+    ibis_in_types = [_impala_to_ibis[x] for x in inputs]
+    in_type = [ir._validate_type(x) for x in ibis_in_types]
+    in_values = [rules.value_typed_as(_conversion_types[x]) for x in in_type]
+    out_ibis_type = _impala_to_ibis[output]
+    out_type = ir._validate_type(out_ibis_type)
     out_value = rules.shape_like_arg(0, out_type)
     return (in_values, out_value)
 
@@ -125,14 +139,17 @@ def add_impala_operation(op, func_name, db):
     _expr._operation_registry[op] = _expr._fixed_arity_call(full_name, arity)
 
 
-_scalar_conversion_types = {
-    'boolean': (BooleanScalar),
-    'int8': (Int8Scalar),
-    'int16': (Int8Scalar, Int16Scalar),
-    'int32': (Int8Scalar, Int16Scalar, Int32Scalar),
-    'int64': (Int8Scalar, Int16Scalar, Int32Scalar, Int64Scalar),
-    'float': (FloatScalar),
-    'double': (FloatScalar, DoubleScalar),
-    'string': (StringScalar),
-    'timestamp': (TimestampScalar),
+_conversion_types = {
+    'boolean': (BooleanValue),
+    'int8': (Int8Value),
+    'int16': (Int8Value, Int16Value),
+    'int32': (Int8Value, Int16Value, Int32Value),
+    'int64': (Int8Value, Int16Value, Int32Value, Int64Value),
+    'float': (FloatValue, DoubleValue),
+    'double': (FloatValue, DoubleValue),
+    'decimal': (DecimalValue),
+    'string': (StringValue),
+    'timestamp': (TimestampValue),
 }
+
+_impala_to_ibis = {v: k for k, v in _expr._sql_type_names.items()}

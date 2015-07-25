@@ -2037,13 +2037,21 @@ class TestUDFStatements(unittest.TestCase):
         self.con = MockConnection()
         self.name = 'test_name'
         self.inputs = ['string', 'string']
-        self.output = 'int32'
+        self.output = 'int'
 
     def test_create_udf(self):
         stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
                                   self.output, self.name)
         result = stmt.compile()
-        expected = ("CREATE FUNCTION test_name(string, string) returns int32 "
+        expected = ("CREATE FUNCTION test_name(string, string) returns int "
+                    "location '/foo/bar.so' symbol='testFunc'")
+        assert result == expected
+
+    def test_create_udf_bigint(self):
+        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
+                                  'bigint', self.name)
+        result = stmt.compile()
+        expected = ("CREATE FUNCTION test_name(string, string) returns bigint "
                     "location '/foo/bar.so' symbol='testFunc'")
         assert result == expected
 
@@ -2052,11 +2060,16 @@ class TestUDFStatements(unittest.TestCase):
                                   self.output, self.name, db='foo')
         result = stmt.compile()
         expected = ("CREATE FUNCTION foo.test_name(string, string) "
-                    "returns int32 location '/foo/bar.so' symbol='testFunc'")
+                    "returns int location '/foo/bar.so' symbol='testFunc'")
         assert result == expected
 
     def test_delete_udf_simple(self):
-        stmt = ddl.DropFunction(self.name, self.inputs)
+        stmt = ddl.DropFunction(self.name, self.inputs, must_exist=True)
+        result = stmt.compile()
+        expected = "DROP FUNCTION IF EXISTS test_name(string, string)"
+        assert result == expected
+
+        stmt = ddl.DropFunction(self.name, self.inputs, must_exist=False)
         result = stmt.compile()
         expected = "DROP FUNCTION test_name(string, string)"
         assert result == expected
@@ -2085,7 +2098,31 @@ class TestUDFStatements(unittest.TestCase):
                                            'Merge', 'Finalize', self.name)
         result = stmt.compile()
         expected = ("CREATE AGGREGATE FUNCTION test_name(string, string)"
-                    " returns int32 location '/foo/bar.so'"
+                    " returns int location '/foo/bar.so'"
                     " init_fn='Init' update_fn='Update'"
                     " merge_fn='Merge' finalize_fn='Finalize'")
+        assert result == expected
+
+    def test_list_udf(self):
+        stmt = ddl.ListFunction('test')
+        result = stmt.compile()
+        expected = 'SHOW FUNCTIONS IN test'
+        assert result == expected
+
+    def test_list_udfs_like(self):
+        stmt = ddl.ListFunction('test', like='identity')
+        result = stmt.compile()
+        expected = "SHOW FUNCTIONS IN test LIKE 'identity'"
+        assert result == expected
+
+    def test_list_udafs(self):
+        stmt = ddl.ListFunction('test', aggregate=True)
+        result = stmt.compile()
+        expected = 'SHOW AGGREGATE FUNCTIONS IN test'
+        assert result == expected
+
+    def test_list_udafs_like(self):
+        stmt = ddl.ListFunction('test', like='identity', aggregate=True)
+        result = stmt.compile()
+        expected = "SHOW AGGREGATE FUNCTIONS IN test LIKE 'identity'"
         assert result == expected

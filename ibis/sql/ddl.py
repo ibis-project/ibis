@@ -944,7 +944,7 @@ class CreateAggregateFunction(DDLStatement):
 
 class DropFunction(DropObject):
 
-    def __init__(self, name, input_types, must_exist=False,
+    def __init__(self, name, input_types, must_exist=True,
                  aggregate=False, db=None):
         self.name = name
         self.inputs = input_types
@@ -973,6 +973,25 @@ class DropFunction(DropObject):
         func_line = ' {0!s}({1!s})'.format(full_name, ', '.join(self.inputs))
         statement += func_line
         return statement
+
+
+class ListFunction(DDLStatement):
+
+    def __init__(self, db, like=None, aggregate=False):
+
+        self.db = db
+        self.like = like
+        self.aggregate = aggregate
+
+    def compile(self):
+        statement = 'SHOW '
+        if self.aggregate:
+            statement += 'AGGREGATE '
+        statement += 'FUNCTIONS IN {0}'.format(self.db)
+        if self.like:
+            statement += " LIKE '{0}'".format(self.like)
+        return statement
+
 
 _impala_type_names = {
     'int8': 'TINYINT',

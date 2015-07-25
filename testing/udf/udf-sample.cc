@@ -159,14 +159,14 @@ TimestampVal Identity(FunctionContext* context, const TimestampVal& arg) { retur
 
 DecimalVal Identity(FunctionContext* context, const DecimalVal& arg) { return arg; }
 
-IntVal AllTypes(
+IntVal AlmostAllTypes(
 		FunctionContext* context, const StringVal& string, const BooleanVal& boolean,
 		const TinyIntVal& tiny_int, const SmallIntVal& small_int, const IntVal& int_val,
-		const BigIntVal& big_int, const FloatVal& float_val, const DoubleVal& double_val,
-		const DecimalVal& decimal) {
+		const BigIntVal& big_int, const FloatVal& float_val, const DoubleVal& double_val
+		) {
   int result = string.len + boolean.val + tiny_int.val + small_int.val + int_val.val
     + big_int.val + static_cast<int64_t>(float_val.val)
-    + static_cast<int64_t>(double_val.val) + decimal.val4;
+    + static_cast<int64_t>(double_val.val);
   return IntVal(result);
 }
 

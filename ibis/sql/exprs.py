@@ -40,7 +40,8 @@ _sql_type_names = {
     'double': 'double',
     'string': 'string',
     'boolean': 'boolean',
-    'timestamp': 'timestamp'
+    'timestamp': 'timestamp',
+    'decimal': 'decimal',
 }
 
 
