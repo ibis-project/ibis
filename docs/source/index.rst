@@ -21,6 +21,8 @@ places, but this will improve as things progress.
    configuration
    tutorial
    api
+   sql
+   impala
    release
    developer
    type-system

@@ -1088,6 +1088,9 @@ class TestObjectLayer(ImpalaE2E, unittest.TestCase):
         db.drop()
         assert not self.con.exists_database(tmp_name)
 
+    def test_compute_stats(self):
+        self.con.table('functional_alltypes').compute_stats()
+
     def test_namespace(self):
         ns = self.db.namespace('tpch_')
 
