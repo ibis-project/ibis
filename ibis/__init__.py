@@ -99,7 +99,8 @@ def impala_connect(host='localhost', port=21050, protocol='hiveserver2',
     return ImpalaConnection(pool_size=pool_size, **params)
 
 
-def hdfs_connect(host='localhost', port=50070, protocol='webhdfs', **kwds):
+def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
+                 use_kerberos=False, verify=True, **kwds):
     """
     Connect to HDFS
 
@@ -108,15 +109,24 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs', **kwds):
     host : string
     port : int, default 50070 (webhdfs default)
     protocol : {'webhdfs'}
+    use_kerberos : boolean, default False
+    verify : boolean, default False
+        Set to False to turn off verifying SSL certificates
 
     Returns
     -------
     client : ibis HDFS client
     """
-    from hdfs import InsecureClient
-    url = 'http://{0}:{1}'.format(host, port)
-    client = InsecureClient(url, **kwds)
-    return WebHDFS(client)
+    if use_kerberos:
+        from hdfs.ext.kerberos import KerberosClient
+        url = 'https://{0}:{1}'.format(host, port) # note SSL
+        hdfs_client = KerberosClient(url, mutual_auth='OPTIONAL',
+                                     verify=verify)
+    else:
+        from hdfs.client import InsecureClient
+        url = 'http://{0}:{1}'.format(host, port)
+        hdfs_client = InsecureClient(url, verify=verify)
+    return WebHDFS(hdfs_client)
 
 
 def test(include_e2e=False):
