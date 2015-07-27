@@ -204,8 +204,6 @@ class ImpalaConnection(object):
         if isinstance(query, ddl.DDLStatement):
             query = query.compile()
 
-        from impala.error import DatabaseError
-
         cursor = self._get_cursor()
         self.log(query)
 
@@ -1148,13 +1146,27 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
     References a physical table in the Impala-Hive metastore
     """
 
+    @property
+    def _table_name(self):
+        return self.op().args[0]
+
+    @property
+    def _client(self):
+        return self.op().args[2]
+
+    def compute_stats(self):
+        """
+        Invoke Impala COMPUTE STATS command to compute column, table, and
+        partition statistics. No return value.
+        """
+        stmt = 'COMPUTE STATS {0}'.format(self._table_name)
+        self._client._execute(stmt)
+
     def drop(self):
         """
         Drop the table from the database
         """
-        op = self.op()
-        con = op.source
-        con.drop_table_or_view(op.args[0])
+        self._client.drop_table_or_view(self._table_name)
 
 
 class ImpalaTemporaryTable(ops.DatabaseTable):

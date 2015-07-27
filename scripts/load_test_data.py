@@ -82,13 +82,18 @@ def create_parquet_tables(con):
              ('r_name', 'string'),
              ('r_comment', 'string')])}
 
+    tables = []
+
     for path in parquet_files:
         head, table_name = posixpath.split(path)
         print('Creating {0}'.format(table_name))
         # if no schema infer!
         schema = schemas.get(table_name)
-        con.parquet_file(path, schema=schema, name=table_name,
-                         database=ENV.test_data_db, persist=True)
+        t = con.parquet_file(path, schema=schema, name=table_name,
+                             database=ENV.test_data_db, persist=True)
+        tables.append(t)
+
+    return tables
 
 
 def create_avro_tables(con):
@@ -102,12 +107,16 @@ def create_avro_tables(con):
                 {'name': 'R_NAME', 'type': ['null', 'string']},
                 {'name': 'R_COMMENT', 'type': ['null', 'string']}]}}
 
+    tables = []
     for path in avro_files:
         head, table_name = posixpath.split(path)
         print('Creating {0}'.format(table_name))
         schema = schemas[table_name]
-        con.avro_file(path, schema, name=table_name, database=ENV.test_data_db,
-                      persist=True)
+        t = con.avro_file(path, schema, name=table_name,
+                          database=ENV.test_data_db, persist=True)
+        tables.append(t)
+
+    return tables
 
 
 def setup_test_data(local_data_dir):
@@ -119,8 +128,12 @@ def setup_test_data(local_data_dir):
     hdfs.put(ENV.test_data_dir, local_data_dir, verbose=True)
 
     create_test_database(con)
-    create_parquet_tables(con)
-    create_avro_tables(con)
+    parquet_tables = create_parquet_tables(con)
+    avro_tables = create_avro_tables(con)
+
+    for t in parquet_tables + avro_tables:
+        print('Computing stats for {0}'.format(t.op().name))
+        t.compute_stats()
 
 
 def can_write_to_hdfs():
