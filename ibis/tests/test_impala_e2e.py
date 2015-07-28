@@ -193,8 +193,6 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
     def test_run_sql(self):
         query = """SELECT li.*
 FROM {0}.tpch_lineitem li
-  INNER JOIN {0}.tpch_orders o
-    ON li.l_orderkey = o.o_orderkey
 """.format(self.test_data_db)
         table = self.con.sql(query)
 
@@ -822,8 +820,8 @@ LIMIT 10"""
                                     (current.year == (prior.year - 1))))
                [current.region, current.year, yoy_change])
 
-        # it works!
-        yoy.execute()
+        # no analysis failure
+        self.con.explain(yoy)
 
     def test_tpch_correlated_subquery_failure(self):
         # #183 and other issues
@@ -848,7 +846,7 @@ LIMIT 10"""
         amount_filter = tpch.amount > conditional_avg
 
         expr = tpch[amount_filter].limit(0)
-        expr.execute()
+        self.con.explain(expr)
 
     def test_non_equijoin(self):
         t = self.con.table('functional_alltypes').limit(100)
