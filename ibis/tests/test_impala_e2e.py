@@ -206,6 +206,15 @@ FROM {0}.tpch_lineitem li
         result = expr.execute()
         assert len(result) == 10
 
+    def test_sql_with_limit(self):
+        query = """\
+SELECT *
+FROM functional_alltypes
+LIMIT 10"""
+        table = self.con.sql(query)
+        ex_schema = self.con.get_schema('functional_alltypes')
+        assert_equal(table.schema(), ex_schema)
+
     def test_get_schema(self):
         t = self.con.table('tpch_lineitem')
         schema = self.con.get_schema('tpch_lineitem',
