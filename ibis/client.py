@@ -133,9 +133,9 @@ LIMIT 0""".format(query)
         for query in ast.queries:
             sql_string = query.compile()
 
-            cursor = self._execute(sql_string, results=True)
-            result = self._fetch_from_cursor(cursor)
-            cursor.release()
+            with self._execute(sql_string, results=True) as cur:
+                result = self._fetch_from_cursor(cur)
+
             if isinstance(query, ddl.Select):
                 if query.result_handler is not None:
                     result = query.result_handler(result)
@@ -160,6 +160,32 @@ LIMIT 0""".format(query)
                                        'offset': 0}
                         break
         return ast
+
+    def explain(self, expr):
+        """
+        Query for and return the query plan associated with the indicated
+        expression or SQL query.
+
+        Returns
+        -------
+        plan : string
+        """
+        if isinstance(expr, ir.Expr):
+            ast = sql.build_ast(expr)
+            if len(ast.queries) > 1:
+                raise Exception('Multi-query expression')
+
+            query = ast.queries[0].compile()
+        else:
+            query = expr
+
+        statement = 'EXPLAIN {0}'.format(query)
+
+        with self._execute(statement, results=True) as cur:
+            result = self._get_list(cur)
+
+        return 'Query:\n{0}\n\n{1}'.format(util.indent(query, 2),
+                                           '\n'.join(result))
 
     def _db_type_to_dtype(self, db_type):
         raise NotImplementedError
@@ -280,6 +306,12 @@ class ImpalaCursor(object):
     def __del__(self):
         self.cursor.close()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.release()
+
     def disable_codegen(self, disabled=True):
         self.codegen_disabled = disabled
         query = ('SET disable_codegen={0}'
@@ -394,9 +426,8 @@ class ImpalaClient(SQLClient):
         if like:
             statement += " LIKE '{0}'".format(like)
 
-        cur = self._execute(statement, results=True)
-        result = self._get_list(cur)
-        cur.release()
+        with self._execute(statement, results=True) as cur:
+            result = self._get_list(cur)
 
         return result
 
@@ -494,9 +525,9 @@ class ImpalaClient(SQLClient):
         if like:
             statement += " LIKE '{0}'".format(like)
 
-        cur = self._execute(statement, results=True)
-        results = self._get_list(cur)
-        cur.release()
+        with self._execute(statement, results=True) as cur:
+            results = self._get_list(cur)
+
         return results
 
     def get_schema(self, table_name, database=None):
@@ -937,14 +968,10 @@ class ImpalaClient(SQLClient):
         return self._get_schema_using_query(query)
 
     def _get_schema_using_query(self, query):
-        cursor = self._execute(query, results=True)
-
-        # resets the state of the cursor and closes operation
-        cursor.fetchall()
-
-        names, ibis_types = self._adapt_types(cursor.description)
-
-        cursor.release()
+        with self._execute(query, results=True) as cur:
+            # resets the state of the cursor and closes operation
+            cur.fetchall()
+            names, ibis_types = self._adapt_types(cur.description)
 
         # per #321; most Impala tables will be lower case already, but Avro
         # data, depending on the version of Impala, might have field names in
