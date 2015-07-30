@@ -23,8 +23,8 @@ set -x
 
 printenv
 
-mkdir -p /tmp/impyla-dbapi
-TMP_DIR=$(mktemp -d -p /tmp/impyla-dbapi tmpXXXX)
+mkdir -p /tmp/ibis-tests
+TMP_DIR=$(mktemp -d -p /tmp/ibis-tests tmpXXXX)
 
 function cleanup {
     rm -rf $TMP_DIR
@@ -43,6 +43,15 @@ if [ -z "$WORKSPACE" ]; then
 else
     # WORKSPACE is set, so I must be on a Jenkins slave
     IBIS_HOME=$WORKSPACE
+fi
+
+# pull in PR if necessary
+if [ -n "$GITHUB_PR" ]; then
+    pushd $IBIS_HOME
+    git clean -d -f
+    git fetch origin pull/$GITHUB_PR/head:pr_$GITHUB_PR
+    git checkout pr_$GITHUB_PR
+    popd
 fi
 
 # Setup Python
