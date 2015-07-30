@@ -1057,6 +1057,7 @@ _boolean_array_methods = dict(
     any=_unary_op('any', _ops.Any),
     notany=_unary_op('notany', _ops.NotAny),
     all=_unary_op('all', _ops.All),
+    notall=_unary_op('notany', _ops.NotAll),
     cumany=_unary_op('cumany', _ops.CumulativeAny),
     cumall=_unary_op('cumall', _ops.CumulativeAll)
 )

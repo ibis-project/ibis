@@ -740,9 +740,11 @@ LIMIT 10"""
             s.group_concat(),
 
             table.bool_col.any(),
+            table.bool_col.notany(),
             -table.bool_col.any(),
 
             table.bool_col.all(),
+            table.bool_col.notall(),
             -table.bool_col.all(),
 
             table.bool_col.count(where=cond),
