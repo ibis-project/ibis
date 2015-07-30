@@ -44,8 +44,8 @@ class UDFCreatorParent(UDFInfo):
         if hdfs_file[-3:] != '.so':
             raise ValueError('File is not a .so file')
         self.hdfs_file = hdfs_file
-        inputs = [_validate_impala_type(x) for x in input_type]
-        output = _validate_impala_type(output_type)
+        inputs = [ir._validate_type(x) for x in input_type]
+        output = ir._validate_type(output_type)
         new_name = name
         if not name:
             new_name = hashlib.sha1(self.so_symbol).hexdigest()
@@ -110,11 +110,9 @@ def _validate_impala_type(t):
 
 
 def _operation_type_conversion(inputs, output):
-    ibis_in_types = [_impala_to_ibis[x] for x in inputs]
-    in_type = [ir._validate_type(x) for x in ibis_in_types]
+    in_type = [ir._validate_type(x) for x in inputs]
     in_values = [rules.value_typed_as(_conversion_types[x]) for x in in_type]
-    out_ibis_type = _impala_to_ibis[output]
-    out_type = ir._validate_type(out_ibis_type)
+    out_type = ir._validate_type(output)
     out_value = rules.shape_like_arg(0, out_type)
     return (in_values, out_value)
 
@@ -138,6 +136,11 @@ def add_impala_operation(op, func_name, db):
     arity = len(op.input_type.types)
     _expr._operation_registry[op] = _expr._fixed_arity_call(full_name, arity)
 
+def _impala_type_to_ibis(tval):
+    if tval in _impala_to_ibis.keys():
+        return _impala_to_ibis[tval]
+    else:
+        raise Exception('Not a valid Impala type')
 
 _conversion_types = {
     'boolean': (BooleanValue),

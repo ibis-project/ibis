@@ -957,8 +957,8 @@ LIMIT 10"""
     def test_tinyint_wrapping(self):
         symbol = 'Identity'
         name = 'identity'
-        inputs = ['tinyint']
-        output = 'tinyint'
+        inputs = ['int8']
+        output = 'int8'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
         self.temp_functions.append((name, inputs))
@@ -976,8 +976,8 @@ LIMIT 10"""
     def test_int_wrapping(self):
         symbol = 'Identity'
         name = 'identity'
-        inputs = ['int']
-        output = 'int'
+        inputs = ['int32']
+        output = 'int32'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
         self.temp_functions.append((name, inputs))
@@ -995,8 +995,8 @@ LIMIT 10"""
     def test_bigint_wrapping(self):
         symbol = 'Identity'
         name = 'identity'
-        inputs = ['bigint']
-        output = 'bigint'
+        inputs = ['int64']
+        output = 'int64'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
         self.temp_functions.append((name, inputs))
@@ -1090,10 +1090,10 @@ LIMIT 10"""
 
     def test_mult_type_args_wrapping(self):
         symbol = 'AlmostAllTypes'
-        name = 'all_types'
-        inputs = ['string', 'boolean', 'tinyint', 'smallint', 'int',
-                  'bigint', 'float', 'double']
-        output = 'int'
+        name = 'most_types'
+        inputs = ['string', 'boolean', 'int8', 'int16', 'int32',
+                  'int64', 'float', 'double']
+        output = 'int32'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.temp_functions.append((name, inputs))
         self.con.create_udf(udf_info, database=self.test_data_db)

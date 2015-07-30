@@ -15,12 +15,11 @@
 from io import BytesIO
 import re
 
-from ibis.sql.exprs import ExprTranslator, quote_identifier
+from ibis.sql.exprs import ExprTranslator, quote_identifier, _type_to_sql_string
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.common as com
 import ibis.util as util
-
 
 class DDLStatement(object):
 
@@ -875,8 +874,8 @@ class CreateFunction(DDLStatement):
     def __init__(self, hdfs_file, so_symbol, inputs, output, name, database=None):
         self.hdfs_file = hdfs_file
         self.so_symbol = so_symbol
-        self.inputs = inputs
-        self.output = output
+        self.inputs = [_type_to_sql_string(x) for x in inputs]
+        self.output = _type_to_sql_string(output)
         self.name = name
         self.database = database
 
@@ -908,8 +907,8 @@ class CreateAggregateFunction(DDLStatement):
     def __init__(self, hdfs_file, inputs, output, init_fn, update_fn,
                  merge_fn, finalize_fn, name, database=None):
         self.hdfs_file = hdfs_file
-        self.inputs = inputs
-        self.output = output
+        self.inputs = [_type_to_sql_string(x) for x in inputs]
+        self.output = _type_to_sql_string(output)
         self.init = init_fn
         self.update = update_fn
         self.merge = merge_fn
@@ -947,7 +946,7 @@ class DropFunction(DropObject):
     def __init__(self, name, input_types, must_exist=True,
                  aggregate=False, database=None):
         self.name = name
-        self.inputs = input_types
+        self.inputs = [_type_to_sql_string(x) for x in input_types]
         self.must_exist = must_exist
         self.aggregate = aggregate
         self.database = database

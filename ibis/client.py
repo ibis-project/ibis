@@ -451,9 +451,9 @@ class ImpalaClient(SQLClient):
             for out_type, sig in tuples:
                 reg_result = regex.search(sig)
                 name = reg_result.group(1)
-                inputs = [x.strip().lower()
+                inputs = [udf._impala_type_to_ibis(x.strip().lower())
                           for x in reg_result.group(2).split(',')]
-                output = out_type.lower()
+                output = udf._impala_type_to_ibis(out_type.lower())
                 result.append(udf.UDFInfo(inputs, output, name))
             return result
         else:
@@ -1153,8 +1153,7 @@ class ImpalaClient(SQLClient):
 
     def _drop_single_function(self, name, input_types, database=None,
                               aggregate=False):
-        inputs = [udf._validate_impala_type(x) for x in input_types]
-        stmt = ddl.DropFunction(name, inputs, must_exist=False,
+        stmt = ddl.DropFunction(name, input_types, must_exist=False,
                                 aggregate=aggregate, database=database)
         self._execute(stmt)
 

@@ -2037,32 +2037,27 @@ class TestUDFStatements(unittest.TestCase):
         self.con = MockConnection()
         self.name = 'test_name'
         self.inputs = ['string', 'string']
-        self.output = 'int'
+        self.output = 'int64'
 
     def test_create_udf(self):
         stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
                                   self.output, self.name)
         result = stmt.compile()
-        expected = ("CREATE FUNCTION test_name(string, string) returns int "
-                    "location '/foo/bar.so' symbol='testFunc'")
-        assert result == expected
-
-    def test_create_udf_bigint(self):
-        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
-                                  'bigint', self.name)
-        result = stmt.compile()
         expected = ("CREATE FUNCTION test_name(string, string) returns bigint "
                     "location '/foo/bar.so' symbol='testFunc'")
         assert result == expected
-
-    def test_create_udf_naming(self):
-        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
-                                  self.output, self.name, db='foo')
+    
+    def test_create_udf_type_conversions(self):
+        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc',
+                                  ['string', 'int8', 'int16', 'int32'],
+                                  self.output, self.name)
         result = stmt.compile()
-        expected = ("CREATE FUNCTION foo.test_name(string, string) "
-                    "returns int location '/foo/bar.so' symbol='testFunc'")
+        expected = ("CREATE FUNCTION test_name(string, tinyint, smallint, int) "
+                    "returns bigint "
+                    "location '/foo/bar.so' symbol='testFunc'")
         assert result == expected
-
+        
+        
     def test_delete_udf_simple(self):
         stmt = ddl.DropFunction(self.name, self.inputs, must_exist=True)
         result = stmt.compile()
@@ -2098,7 +2093,7 @@ class TestUDFStatements(unittest.TestCase):
                                            'Merge', 'Finalize', self.name)
         result = stmt.compile()
         expected = ("CREATE AGGREGATE FUNCTION test_name(string, string)"
-                    " returns int location '/foo/bar.so'"
+                    " returns bigint location '/foo/bar.so'"
                     " init_fn='Init' update_fn='Update'"
                     " merge_fn='Merge' finalize_fn='Finalize'")
         assert result == expected
