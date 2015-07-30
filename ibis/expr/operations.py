@@ -1036,6 +1036,26 @@ class NotAny(Any):
         return Any(self.args[0])
 
 
+class CumulativeAny(CumulativeOp):
+
+    """
+    Cumulative any
+    """
+
+    def output_type(self):
+        return ir.BooleanArray
+
+
+class CumulativeAll(CumulativeOp):
+
+    """
+    Cumulative all
+    """
+
+    def output_type(self):
+        return ir.BooleanArray
+
+
 # ---------------------------------------------------------------------
 
 

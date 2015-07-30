@@ -711,7 +711,7 @@ last = _unary_op('last', _ops.LastValue)
 rank = _unary_op('rank', _ops.MinRank)
 dense_rank = _unary_op('dense_rank', _ops.DenseRank)
 cumsum = _unary_op('cumsum', _ops.CumulativeSum)
-cummean = _unary_op('cummena', _ops.CumulativeMean)
+cummean = _unary_op('cummean', _ops.CumulativeMean)
 cummin = _unary_op('cummin', _ops.CumulativeMin)
 cummax = _unary_op('cummax', _ops.CumulativeMax)
 
@@ -1056,7 +1056,9 @@ _boolean_value_methods = dict(
 _boolean_array_methods = dict(
     any=_unary_op('any', _ops.Any),
     notany=_unary_op('notany', _ops.NotAny),
-    all=_unary_op('all', _ops.All)
+    all=_unary_op('all', _ops.All),
+    cumany=_unary_op('cumany', _ops.CumulativeAny),
+    cumall=_unary_op('cumall', _ops.CumulativeAll)
 )
 
 
