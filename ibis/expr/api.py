@@ -1054,7 +1054,9 @@ _boolean_value_methods = dict(
 
 
 _boolean_array_methods = dict(
-    any=_unary_op('any', _ops.Any)
+    any=_unary_op('any', _ops.Any),
+    notany=_unary_op('notany', _ops.NotAny),
+    all=_unary_op('all', _ops.All)
 )
 
 

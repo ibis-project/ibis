@@ -587,6 +587,7 @@ class BinaryOp(ValueOp):
 class Reduction(ValueOp):
 
     input_type = [rules.array, boolean(name='where', optional=True)]
+    _reduction = True
 
 
 def is_reduction(expr):
@@ -606,7 +607,7 @@ def is_reduction(expr):
     # literal, and must be computed as a separate query and stored in a
     # temporary variable (or joined, for bound aggregations with keys)
     def has_reduction(op):
-        if isinstance(op, Reduction):
+        if getattr(op, '_reduction', False):
             return True
 
         for arg in op.args:
@@ -615,7 +616,7 @@ def is_reduction(expr):
 
         return False
 
-    return has_reduction(expr.op())
+    return has_reduction(expr.op() if isinstance(expr, ir.Expr) else expr)
 
 
 class Count(Reduction):
@@ -1005,16 +1006,28 @@ class Any(ValueOp):
 
     input_type = [rules.array(boolean)]
 
-    def output_type(self):
+    @property
+    def _reduction(self):
         roots = self.args[0]._root_tables()
-        if len(roots) > 1:
-            return ir.BooleanArray
-        else:
-            # A reduction
-            return ir.BooleanScalar
+        return len(roots) < 2
+
+    def output_type(self):
+        return ir.BooleanScalar if self._reduction else ir.BooleanArray
 
     def negate(self):
         return NotAny(self.args[0])
+
+
+class All(ValueOp):
+
+    input_type = [rules.array(boolean)]
+    _reduction = True
+
+    def output_type(self):
+        return ir.BooleanScalar
+
+    def negate(self):
+        raise NotImplementedError
 
 
 class NotAny(Any):

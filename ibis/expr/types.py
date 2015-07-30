@@ -1065,12 +1065,7 @@ class BooleanScalar(ScalarExpr, BooleanValue):
 
 
 class BooleanArray(NumericArray, BooleanValue):
-
-    def none(self):
-        pass
-
-    def all(self):
-        raise NotImplementedError
+    pass
 
 
 class Int8Scalar(ScalarExpr, Int8Value):
