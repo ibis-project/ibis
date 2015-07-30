@@ -1027,13 +1027,19 @@ class All(ValueOp):
         return ir.BooleanScalar
 
     def negate(self):
-        raise NotImplementedError
+        return NotAll(self.args[0])
 
 
 class NotAny(Any):
 
     def negate(self):
         return Any(self.args[0])
+
+
+class NotAll(All):
+
+    def negate(self):
+        return All(self.args[0])
 
 
 class CumulativeAny(CumulativeOp):

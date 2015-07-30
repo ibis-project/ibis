@@ -289,10 +289,21 @@ def _any_expand(expr):
     return arg.sum() > 0
 
 
+def _notany_expand(expr):
+    arg = expr.op().args[0]
+    return arg.sum() == 0
+
+
 def _all_expand(expr):
     arg = expr.op().args[0]
     t = L.find_base_table(arg)
     return arg.sum() == t.count()
+
+
+def _notall_expand(expr):
+    arg = expr.op().args[0]
+    t = L.find_base_table(arg)
+    return arg.sum() < t.count()
 
 
 def _fixed_arity_call(func_name, arity):
@@ -1007,6 +1018,8 @@ _expr_transforms = {
 _expr_rewrites = {
     ops.Any: _any_expand,
     ops.All: _all_expand,
+    ops.NotAny: _notany_expand,
+    ops.NotAll: _notall_expand,
 }
 
 

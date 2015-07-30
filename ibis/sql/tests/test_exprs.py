@@ -312,7 +312,9 @@ FROM alltypes"""
 
         cases = [
             (bool_expr.any(), 'sum(f = 0) > 0'),
+            (-bool_expr.any(), 'sum(f = 0) = 0'),
             (bool_expr.all(), 'sum(f = 0) = count(*)'),
+            (-bool_expr.all(), 'sum(f = 0) < count(*)'),
         ]
         self._check_expr_cases(cases)
 
