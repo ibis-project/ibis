@@ -18,11 +18,6 @@ System dependencies
 Ibis requires a working Python 2.6 or 2.7 installation (3.x support will come
 in a future release). We recommend `Anaconda <http://continuum.io/downloads>`_.
 
-Some platforms will require that you have Kerberos installed to build properly.
-
-* Redhat / CentOS: ``yum install krb5-devel``
-* Ubuntu / Debian: ``apt-get install libkrb5-dev``
-
 Installing the Python package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -33,6 +28,17 @@ Install ibis using ``pip`` (or ``conda``, whenever it becomes available):
   pip install ibis-framework
 
 This installs the ``ibis`` library to your configured Python environment.
+
+Ibis can also be installed with Kerberos support for its HDFS functionality:
+
+::
+
+  pip install ibis-framework[kerberos]
+
+Some platforms will require that you have Kerberos installed to build properly.
+
+* Redhat / CentOS: ``yum install krb5-devel``
+* Ubuntu / Debian: ``apt-get install libkrb5-dev``
 
 Creating a client
 -----------------

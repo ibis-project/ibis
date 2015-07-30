@@ -19,6 +19,7 @@ __version__ = '0.3.0'
 
 from ibis.client import ImpalaConnection, ImpalaClient
 from ibis.filesystems import HDFS, WebHDFS
+from ibis.common import IbisError
 
 import ibis.expr.api as api
 import ibis.expr.types as ir
@@ -118,6 +119,13 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
     client : ibis HDFS client
     """
     if use_kerberos:
+        try:
+            import requests_kerberos
+        except ImportError:
+            raise IbisError(
+                "Unable to import requests-kerberos, which is required for "
+                "Kerberos HDFS support. Install it by executing `pip install "
+                "requests-kerberos` or `pip install hdfs[kerberos]`.")
         from hdfs.ext.kerberos import KerberosClient
         url = 'https://{0}:{1}'.format(host, port) # note SSL
         hdfs_client = KerberosClient(url, mutual_auth='OPTIONAL',

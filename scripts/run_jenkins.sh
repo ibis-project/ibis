@@ -71,6 +71,7 @@ python --version
 which python
 
 if [ $IBIS_TEST_USE_KERBEROS = "True" ]; then
+    pip install requests-kerberos
     pip install git+https://github.com/laserson/python-sasl.git@cython
 
     # CLOUDERA INTERNAL JENKINS/KERBEROS CONFIG
