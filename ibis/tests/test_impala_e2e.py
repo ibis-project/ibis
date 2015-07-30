@@ -935,6 +935,7 @@ LIMIT 10"""
         output = 'boolean'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
+        self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -960,6 +961,7 @@ LIMIT 10"""
         output = 'tinyint'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
+        self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -978,6 +980,7 @@ LIMIT 10"""
         output = 'int'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
+        self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -996,6 +999,7 @@ LIMIT 10"""
         output = 'bigint'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
+        self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1014,6 +1018,7 @@ LIMIT 10"""
         output = 'float'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
+        self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1032,6 +1037,7 @@ LIMIT 10"""
         output = 'double'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
+        self.temp_functions.append((name, inputs))        
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1050,6 +1056,7 @@ LIMIT 10"""
         output = 'string'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
+        self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1069,6 +1076,7 @@ LIMIT 10"""
         output = 'timestamp'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
+        self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1087,6 +1095,7 @@ LIMIT 10"""
                   'bigint', 'float', 'double']
         output = 'int'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        self.temp_functions.append((name, inputs))
         self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)

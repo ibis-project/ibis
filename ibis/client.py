@@ -514,14 +514,29 @@ class ImpalaClient(SQLClient):
         """
         if not force or self.exists_database(name):
             tables = self.list_tables(database=name)
+            udfs = self.list_udfs(database=name)
+            udas = self.list_udas(database=name)
         else:
             tables = []
+            udfs = []
+            udas = []
         if force:
             for table in tables:
                 self.log('Dropping {0}'.format('{0}.{1}'.format(name, table)))
                 self.drop_table_or_view(table, database=name)
+            for func in udfs:
+                self.log('Dropping function {0}({1})'.format(func.name,
+                                                             func.inputs))
+                self.drop_udf(func.name, input_types=func.inputs,
+                              database=name, force=True)
+            for func in udas:
+                self.log('Dropping aggregate function {0}({1})'
+                         .format(func.name, func.inputs))
+                self.drop_udf(func.name, input_types=func.inputs,
+                              database=name, force=True,
+                              aggregate=True)
         else:
-            if len(tables) > 0:
+            if len(tables) > 0 or len(udfs) > 0 or len(udas) > 0:
                 raise com.IntegrityError('Database {0} must be empty before '
                                          'being dropped, or set '
                                          'force=True'.format(name))
@@ -1095,13 +1110,13 @@ class ImpalaClient(SQLClient):
                                                 database=database)
         self._execute(statement)
 
-    def drop_udf(self, name=None, input_types=None, database=None, force=False,
+    def drop_udf(self, name, input_types=None, database=None, force=False,
                  aggregate=False):
         """
-        Drops a function
-        If only a database and force=True are passed, all functions
-        in specified database are dropped.
-        If only name is given, function will search for
+        Drops a UDF
+        If only name is given, this will search
+        for the relevant UDF and drop it.
+        To delete an overloaded UDF, give only a name and force=True
         Parameters
         ----------
         name : string
@@ -1111,60 +1126,51 @@ class ImpalaClient(SQLClient):
         aggregate : boolean, default False
         """
         if not input_types:
-            if name:
-                #  TODO : Check if database is given.
-                #  If so, use fully qualified name to query
-                database = self.current_database()
-                result = self.list_udfs(database, like=name)
-                if len(result) > 1:
-                    if force:
-                        for func in result:
-                            self._drop_single_function(func.name, func.inputs,
-                                                       aggregate=aggregate)
-                        return
-                    else:
-                        raise Exception("More than one function " +
-                                        "with {0} found.".format(name) +
-                                        "Please specify force=True")
-                elif len(result) == 1:
-                    func = result.pop()
-                    self._drop_single_function(func.name, func.inputs,
-                                               aggregate=aggregate)
-                    return
-                else:
-                    raise Exception("No function found with name {0}"
-                                    .format(name))
-            elif database:
+            if not database:
+                database = self.current_database
+            result = self.list_udfs(database=database, like=name)
+            if len(result) > 1:
                 if force:
-                    self._drop_all_functions(database)
+                    for func in result:
+                        self._drop_single_function(func.name, func.inputs,
+                                                   database=database,
+                                                   aggregate=aggregate)
                     return
                 else:
-                    raise Exception("Need database to drop all functions")
-        else:
-            self._drop_single_function(name, input_types, database=database,
-                                       aggregate=aggregate)
-            return
+                    raise Exception("More than one function " +
+                                    "with {0} found.".format(name) +
+                                    "Please specify force=True")
+            elif len(result) == 1:
+                func = result.pop()
+                self._drop_single_function(func.name, func.inputs,
+                                           database=database, aggregate=aggregate)
+                return
+            else:
+                raise Exception("No function found with name {0}"
+                                .format(name))
+        self._drop_single_function(name, input_types, database=database,
+                                   aggregate=aggregate)
 
     def _drop_single_function(self, name, input_types, database=None,
                               aggregate=False):
-        inputs = [udf._validate_type(x) for x in input_types]
+        inputs = [udf._validate_impala_type(x) for x in input_types]
         stmt = ddl.DropFunction(name, inputs, must_exist=False,
                                 aggregate=aggregate, database=database)
         self._execute(stmt)
 
     def _drop_all_functions(self, database):
-        udfs = self.list_udfs(database)
+        udfs = self.list_udfs(database=database)
         for fnct in udfs:
             stmt = ddl.DropFunction(fnct.name, fnct.inputs, must_exist=False,
                                     aggregate=False, database=database)
             self._execute(stmt)
-        udafs = self.list_udafs(database)
+        udafs = self.list_udas(database=database)
         for udaf in udafs:
             stmt = ddl.DropFunction(udaf.name, udaf.inputs, must_exist=False,
                                     aggregate=True, database=database)
             self._execute(stmt)
 
-    def list_udfs(self, database, like=None):
+    def list_udfs(self, database=None, like=None):
         """
         Lists all UDFs associated with given database
 
@@ -1173,13 +1179,15 @@ class ImpalaClient(SQLClient):
         database : string
         like : string for searching (optional)
         """
+        if not database:
+            database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=False)
         cur = self._execute(statement, results=True)
         result = self._get_udfs(cur)
         cur.release()
         return result
 
-    def list_udafs(self, database, like=None):
+    def list_udas(self, database=None, like=None):
         """
         Lists all UDAFs associated with a given database
 
@@ -1188,6 +1196,8 @@ class ImpalaClient(SQLClient):
         database : string
         like : string for searching (optional)
         """
+        if not database:
+            database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=True)
         cur = self._execute(statement, results=True)
         result = self._get_list(cur)
@@ -1195,7 +1205,7 @@ class ImpalaClient(SQLClient):
 
         return result
 
-    def exists_udf(self, name, database):
+    def exists_udf(self, name, database=None):
         """
         Checks if a given UDF exists within a specified database
 
@@ -1208,9 +1218,9 @@ class ImpalaClient(SQLClient):
         -------
         if_exists : boolean
         """
-        return len(self.list_udfs(database, like=name)) > 0
+        return len(self.list_udfs(database=database, like=name)) > 0
 
-    def exists_udaf(self, name, database):
+    def exists_uda(self, name, database=None):
         """
         Checks if a given UDAF exists within a specified database
 
@@ -1223,7 +1233,7 @@ class ImpalaClient(SQLClient):
         -------
         if_exists : boolean
         """
-        return len(self.list_udafs(database, like=name)) > 0
+        return len(self.list_udas(database=database, like=name)) > 0
 
     def _adapt_types(self, descr):
         names = []
