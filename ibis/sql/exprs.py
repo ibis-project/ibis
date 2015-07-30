@@ -16,6 +16,7 @@ import datetime
 from io import BytesIO
 
 import ibis
+import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -83,6 +84,8 @@ _cumulative_to_reduction = {
     ops.CumulativeMin: ops.Min,
     ops.CumulativeMax: ops.Max,
     ops.CumulativeMean: ops.Mean,
+    ops.CumulativeAny: ops.Any,
+    ops.CumulativeAll: ops.All,
 }
 
 
@@ -95,7 +98,13 @@ def _cumulative_to_window(expr, window):
 
     klass = _cumulative_to_reduction[type(op)]
     new_op = klass(*op.args)
-    return expr._factory(new_op, name=expr._name), win
+    new_expr = expr._factory(new_op, name=expr._name)
+
+    if type(new_op) in _expr_rewrites:
+        new_expr = _expr_rewrites[type(new_op)](new_expr)
+
+    new_expr = L.windowize_function(new_expr, win)
+    return new_expr
 
 
 def _window(translator, expr):
@@ -115,7 +124,6 @@ def _window(translator, expr):
         ops.CMSMedian,
         ops.GroupConcat,
         ops.HLLCardinality,
-
     )
 
     if isinstance(window_op, _unsupported_reductions):
@@ -124,8 +132,8 @@ def _window(translator, expr):
                                    .format(type(window_op)))
 
     if isinstance(window_op, ops.CumulativeOp):
-        arg, window = _cumulative_to_window(arg, window)
-        window_op = arg.op()
+        arg = _cumulative_to_window(arg, window)
+        return translator.translate(arg)
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
@@ -274,6 +282,28 @@ def _reduction(func_name):
 
         return '{0!s}({1!s})'.format(func_name, arg)
     return formatter
+
+
+def _any_expand(expr):
+    arg = expr.op().args[0]
+    return arg.sum() > 0
+
+
+def _notany_expand(expr):
+    arg = expr.op().args[0]
+    return arg.sum() == 0
+
+
+def _all_expand(expr):
+    arg = expr.op().args[0]
+    t = L.find_base_table(arg)
+    return arg.sum() == t.count()
+
+
+def _notall_expand(expr):
+    arg = expr.op().args[0]
+    t = L.find_base_table(arg)
+    return arg.sum() < t.count()
 
 
 def _fixed_arity_call(func_name, arity):
@@ -561,26 +591,6 @@ def _timestamp_format_offset(offset, arg):
 
 # ---------------------------------------------------------------------
 # Semi/anti-join supports
-
-
-def _any_exists(translator, expr):
-    # Foreign references will have been catalogued by the correlated
-    # ref-checking code. However, we need to rewrite this expression as a query
-    # of the type
-    #
-    # SELECT 1
-    # FROM {foreign_ref}
-    # WHERE {correlated_filter}
-    #
-    # It's possible there could be multiple predicates inside the Any involving
-    # more than one foreign reference. Will just disallow this for now until
-    # someone *really* needs it.
-    # op = expr.op()
-    # ctx = translator.context
-
-    # comp_op = op.arg.op()
-
-    raise NotImplementedError
 
 
 def _exists_subquery(translator, expr):
@@ -946,8 +956,6 @@ _timestamp_ops = {
 
 
 _other_ops = {
-    ops.Any: _any_exists,
-
     ops.E: lambda *args: 'e()',
 
     ir.Literal: _literal,
@@ -1007,6 +1015,14 @@ _expr_transforms = {
 }
 
 
+_expr_rewrites = {
+    ops.Any: _any_expand,
+    ops.All: _all_expand,
+    ops.NotAny: _notany_expand,
+    ops.NotAll: _notall_expand,
+}
+
+
 _operation_registry = {}
 _operation_registry.update(_unary_ops)
 _operation_registry.update(_binary_infix_ops)
@@ -1060,6 +1076,10 @@ class ExprTranslator(object):
     def translate(self, expr):
         # The operation node type the typed expression wraps
         op = expr.op()
+
+        if type(op) in _expr_rewrites:
+            expr = _expr_rewrites[type(op)](expr)
+            op = expr.op()
 
         # TODO: use op MRO for subclasses instead of this isinstance spaghetti
         if isinstance(op, ir.Parameter):

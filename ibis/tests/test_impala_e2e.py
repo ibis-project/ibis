@@ -739,6 +739,14 @@ LIMIT 10"""
             d.approx_median(),
             s.group_concat(),
 
+            table.bool_col.any(),
+            table.bool_col.notany(),
+            -table.bool_col.any(),
+
+            table.bool_col.all(),
+            table.bool_col.notall(),
+            -table.bool_col.all(),
+
             table.bool_col.count(where=cond),
             d.sum(where=cond),
             d.mean(where=cond),
@@ -775,6 +783,10 @@ LIMIT 10"""
             f.cummean(),
             f.cummin(),
             f.cummax(),
+
+            # boolean cumulative reductions
+            (f == 0).cumany(),
+            (f == 0).cumall(),
 
             f.sum(),
             f.mean(),

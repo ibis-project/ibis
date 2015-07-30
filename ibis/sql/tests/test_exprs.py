@@ -305,6 +305,19 @@ FROM alltypes"""
         expected = "t0.g = t1.g"
         assert result == expected
 
+    def test_any_all(self):
+        t = self.table
+
+        bool_expr = t.f == 0
+
+        cases = [
+            (bool_expr.any(), 'sum(f = 0) > 0'),
+            (-bool_expr.any(), 'sum(f = 0) = 0'),
+            (bool_expr.all(), 'sum(f = 0) = count(*)'),
+            (-bool_expr.all(), 'sum(f = 0) < count(*)'),
+        ]
+        self._check_expr_cases(cases)
+
 
 class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 

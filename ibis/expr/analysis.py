@@ -509,7 +509,8 @@ def windowize_function(expr, w=None):
                 walked = x
 
         op = walked.op()
-        if isinstance(op, (ops.AnalyticOp, ops.Reduction)):
+        if (isinstance(op, ops.AnalyticOp) or
+                getattr(op, '_reduction', False)):
             if w is None:
                 w = window()
             return _check_window(walked.over(w))
