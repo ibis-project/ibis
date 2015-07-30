@@ -934,7 +934,7 @@ LIMIT 10"""
         inputs = ['boolean']
         output = 'boolean'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
-        self.con.create_udf(udf_info, db=self.test_data_db)
+        self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -959,7 +959,7 @@ LIMIT 10"""
         inputs = ['tinyint']
         output = 'tinyint'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
-        self.con.create_udf(udf_info, db=self.test_data_db)
+        self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -977,7 +977,7 @@ LIMIT 10"""
         inputs = ['int']
         output = 'int'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
-        self.con.create_udf(udf_info, db=self.test_data_db)
+        self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -995,7 +995,7 @@ LIMIT 10"""
         inputs = ['bigint']
         output = 'bigint'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
-        self.con.create_udf(udf_info, db=self.test_data_db)
+        self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1013,7 +1013,7 @@ LIMIT 10"""
         inputs = ['float']
         output = 'float'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
-        self.con.create_udf(udf_info, db=self.test_data_db)
+        self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1031,7 +1031,7 @@ LIMIT 10"""
         inputs = ['double']
         output = 'double'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
-        self.con.create_udf(udf_info, db=self.test_data_db)
+        self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1049,7 +1049,7 @@ LIMIT 10"""
         inputs = ['string']
         output = 'string'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
-        self.con.create_udf(udf_info, db=self.test_data_db)
+        self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1068,7 +1068,7 @@ LIMIT 10"""
         inputs = ['timestamp']
         output = 'timestamp'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
-        self.con.create_udf(udf_info, db=self.test_data_db)
+        self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1087,7 +1087,7 @@ LIMIT 10"""
                   'bigint', 'float', 'double']
         output = 'int'
         udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
-        self.con.create_udf(udf_info, db=self.test_data_db)
+        self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1099,7 +1099,6 @@ LIMIT 10"""
         expr = _mult_types('a', True, 1, 1, 1, 1, 1.0, 1.0)
         result = self.con.execute(expr)
         assert result == 8
-
 
 def _ensure_drop(con, table_name, database=None):
     con.drop_table(table_name, database=database, force=True)

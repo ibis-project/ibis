@@ -1051,7 +1051,7 @@ class ImpalaClient(SQLClient):
 
         return ir.Schema(names, ibis_types)
 
-    def create_udf(self, udf_info, udf_name=None, db=None):
+    def create_udf(self, udf_info, udf_name=None, database=None):
         """
         Creates a function within Impala
 
@@ -1059,7 +1059,7 @@ class ImpalaClient(SQLClient):
         ----------
         udf_info : UDFCreator object
         udf_name : string (optional)
-        db : string (optional)
+        database : string (optional)
         """
         name = udf_info.get_name()
         if udf_name:
@@ -1068,10 +1068,10 @@ class ImpalaClient(SQLClient):
                                        udf_info.so_symbol,
                                        udf_info.inputs,
                                        udf_info.output,
-                                       name, db)
+                                       name, database)
         self._execute(statement)
 
-    def create_uda(self, uda_info, uda_name=None, db=None):
+    def create_uda(self, uda_info, uda_name=None, database=None):
         """
         Creates a user-defined aggregate function within Impala
 
@@ -1079,7 +1079,7 @@ class ImpalaClient(SQLClient):
         ----------
         uda_info : UDAInfo object
         uda_name : string (optional)
-        db : string (optional)
+        database : string (optional)
         """
         name = uda_info.get_name()
         if uda_name:
@@ -1092,10 +1092,10 @@ class ImpalaClient(SQLClient):
                                                 uda_info.merge_fn,
                                                 uda_info.finalize_fn,
                                                 name,
-                                                db=db)
+                                                database=database)
         self._execute(statement)
 
-    def drop_udf(self, name=None, input_types=None, db=None, force=False,
+    def drop_udf(self, name=None, input_types=None, database=None, force=False,
                  aggregate=False):
         """
         Drops a function
@@ -1107,15 +1107,15 @@ class ImpalaClient(SQLClient):
         name : string
         input_types : list of strings
         must_exist : boolean, default False
-        db : string, default None
+        database : string, default None
         aggregate : boolean, default False
         """
         if not input_types:
             if name:
                 #  TODO : Check if database is given.
                 #  If so, use fully qualified name to query
-                db = self.current_database()
-                result = self.list_udfs(db, like=name)
+                database = self.current_database()
+                result = self.list_udfs(database, like=name)
                 if len(result) > 1:
                     if force:
                         for func in result:
@@ -1134,96 +1134,96 @@ class ImpalaClient(SQLClient):
                 else:
                     raise Exception("No function found with name {0}"
                                     .format(name))
-            elif db:
+            elif database:
                 if force:
-                    self._drop_all_functions(db)
+                    self._drop_all_functions(database)
                     return
                 else:
                     raise Exception("Need database to drop all functions")
         else:
-            self._drop_single_function(name, input_types, db=db,
+            self._drop_single_function(name, input_types, database=database,
                                        aggregate=aggregate)
             return
 
-    def _drop_single_function(self, name, input_types, db=None,
+    def _drop_single_function(self, name, input_types, database=None,
                               aggregate=False):
         inputs = [udf._validate_type(x) for x in input_types]
         stmt = ddl.DropFunction(name, inputs, must_exist=False,
-                                aggregate=aggregate, db=db)
+                                aggregate=aggregate, database=database)
         self._execute(stmt)
 
-    def _drop_all_functions(self, db):
-        udfs = self.list_udfs(db)
+    def _drop_all_functions(self, database):
+        udfs = self.list_udfs(database)
         for fnct in udfs:
             stmt = ddl.DropFunction(fnct.name, fnct.inputs, must_exist=False,
-                                    aggregate=False, db=db)
+                                    aggregate=False, database=database)
             self._execute(stmt)
-        udafs = self.list_udafs(db)
+        udafs = self.list_udafs(database)
         for udaf in udafs:
             stmt = ddl.DropFunction(udaf.name, udaf.inputs, must_exist=False,
-                                    aggregate=True, db=db)
+                                    aggregate=True, database=database)
             self._execute(stmt)
 
-    def list_udfs(self, db, like=None):
+    def list_udfs(self, database, like=None):
         """
         Lists all UDFs associated with given database
 
         Parameters
         ----------
-        db : string
+        database : string
         like : string for searching (optional)
         """
-        statement = ddl.ListFunction(db, like=like, aggregate=False)
+        statement = ddl.ListFunction(database, like=like, aggregate=False)
         cur = self._execute(statement, results=True)
         result = self._get_udfs(cur)
         cur.release()
         return result
 
-    def list_udafs(self, db, like=None):
+    def list_udafs(self, database, like=None):
         """
         Lists all UDAFs associated with a given database
 
         Parameters
         ----------
-        db : string
+        database : string
         like : string for searching (optional)
         """
-        statement = ddl.ListFunction(db, like=like, aggregate=True)
+        statement = ddl.ListFunction(database, like=like, aggregate=True)
         cur = self._execute(statement, results=True)
         result = self._get_list(cur)
         cur.release()
 
         return result
 
-    def exists_udf(self, name, db):
+    def exists_udf(self, name, database):
         """
         Checks if a given UDF exists within a specified database
 
         Parameters
         ----------
         name : string, UDF name
-        db : string, database name
+        database : string, database name
 
         Returns
         -------
         if_exists : boolean
         """
-        return len(self.list_udfs(db, like=name)) > 0
+        return len(self.list_udfs(database, like=name)) > 0
 
-    def exists_udaf(self, name, db):
+    def exists_udaf(self, name, database):
         """
         Checks if a given UDAF exists within a specified database
 
         Parameters
         ----------
         name : string, UDAF name
-        db : string, database name
+        database : string, database name
 
         Returns
         -------
         if_exists : boolean
         """
-        return len(self.list_udafs(db, like=name)) > 0
+        return len(self.list_udafs(database, like=name)) > 0
 
     def _adapt_types(self, descr):
         names = []

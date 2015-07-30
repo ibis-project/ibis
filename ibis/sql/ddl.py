@@ -872,20 +872,20 @@ class CreateFunction(DDLStatement):
 
     _object_type = 'FUNCTION'
 
-    def __init__(self, hdfs_file, so_symbol, inputs, output, name, db=None):
+    def __init__(self, hdfs_file, so_symbol, inputs, output, name, database=None):
         self.hdfs_file = hdfs_file
         self.so_symbol = so_symbol
         self.inputs = inputs
         self.output = output
         self.name = name
-        self.db = db
+        self.database = database
 
     def get_name(self):
         return self.name
 
     def _get_scoped_name(self):
-        if self.db:
-            return '{0}.{1}'.format(self.db, self.name)
+        if self.database:
+            return '{0}.{1}'.format(self.database, self.name)
         else:
             return self.name
 
@@ -906,7 +906,7 @@ class CreateAggregateFunction(DDLStatement):
     _object_type = 'FUNCTION'
 
     def __init__(self, hdfs_file, inputs, output, init_fn, update_fn,
-                 merge_fn, finalize_fn, name, db=None):
+                 merge_fn, finalize_fn, name, database=None):
         self.hdfs_file = hdfs_file
         self.inputs = inputs
         self.output = output
@@ -915,14 +915,14 @@ class CreateAggregateFunction(DDLStatement):
         self.merge = merge_fn
         self.finalize = finalize_fn
         self.name = name
-        self.db = db
+        self.database = database
 
     def get_name(self):
         return self.name
 
     def _get_scoped_name(self):
-        if self.db:
-            return '{0}.{1}'.format(self.db, self.name)
+        if self.database:
+            return '{0}.{1}'.format(self.database, self.name)
         else:
             return self.name
 
@@ -945,20 +945,20 @@ class CreateAggregateFunction(DDLStatement):
 class DropFunction(DropObject):
 
     def __init__(self, name, input_types, must_exist=True,
-                 aggregate=False, db=None):
+                 aggregate=False, database=None):
         self.name = name
         self.inputs = input_types
         self.must_exist = must_exist
         self.aggregate = aggregate
-        self.db = db
+        self.database = database
         DropObject.__init__(self, must_exist=must_exist)
 
     def _object_name(self):
         return self.name
 
     def _get_scoped_name(self):
-        if self.db:
-            return '{0}.{1}'.format(self.db, self.name)
+        if self.database:
+            return '{0}.{1}'.format(self.database, self.name)
         else:
             return self.name
 
@@ -977,9 +977,9 @@ class DropFunction(DropObject):
 
 class ListFunction(DDLStatement):
 
-    def __init__(self, db, like=None, aggregate=False):
+    def __init__(self, database, like=None, aggregate=False):
 
-        self.db = db
+        self.database = database
         self.like = like
         self.aggregate = aggregate
 
@@ -987,7 +987,7 @@ class ListFunction(DDLStatement):
         statement = 'SHOW '
         if self.aggregate:
             statement += 'AGGREGATE '
-        statement += 'FUNCTIONS IN {0}'.format(self.db)
+        statement += 'FUNCTIONS IN {0}'.format(self.database)
         if self.like:
             statement += " LIKE '{0}'".format(self.like)
         return statement
