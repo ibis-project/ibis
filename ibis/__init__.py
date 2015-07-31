@@ -114,6 +114,8 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
     verify : boolean, default False
         Set to False to turn off verifying SSL certificates
 
+    Other keywords are forwarded to hdfs library classes
+
     Returns
     -------
     client : ibis HDFS client
@@ -129,11 +131,11 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
         from hdfs.ext.kerberos import KerberosClient
         url = 'https://{0}:{1}'.format(host, port) # note SSL
         hdfs_client = KerberosClient(url, mutual_auth='OPTIONAL',
-                                     verify=verify)
+                                     verify=verify, **kwds)
     else:
         from hdfs.client import InsecureClient
         url = 'http://{0}:{1}'.format(host, port)
-        hdfs_client = InsecureClient(url, verify=verify)
+        hdfs_client = InsecureClient(url, verify=verify, **kwds)
     return WebHDFS(hdfs_client)
 
 
