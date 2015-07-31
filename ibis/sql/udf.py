@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import hashlib
+from hashlib import sha1
 
 from ibis.expr.types import (
     Int8Value, Int16Value,
@@ -48,7 +48,10 @@ class UDFCreatorParent(UDFInfo):
         output = ir._validate_type(output_type)
         new_name = name
         if not name:
-            new_name = hashlib.sha1(self.so_symbol).hexdigest()
+            string = self.so_symbol
+            for in_type in self.inputs:
+                string += i
+            new_name = sha1(string).hexdigest()
 
         UDFInfo.__init__(self, inputs, output, new_name)
 

@@ -21,6 +21,7 @@ import ibis.expr.operations as ops
 import ibis.common as com
 import ibis.util as util
 
+
 class DDLStatement(object):
 
     def _get_scoped_name(self, table_name, database):
@@ -871,7 +872,8 @@ class CreateFunction(DDLStatement):
 
     _object_type = 'FUNCTION'
 
-    def __init__(self, hdfs_file, so_symbol, inputs, output, name, database=None):
+    def __init__(self, hdfs_file, so_symbol, inputs, output,
+                 name, database=None):
         self.hdfs_file = hdfs_file
         self.so_symbol = so_symbol
         self.inputs = [_type_to_sql_string(x) for x in inputs]
@@ -966,7 +968,7 @@ class DropFunction(DropObject):
         if self.aggregate:
             statement += ' AGGREGATE'
         statement += ' FUNCTION'
-        if self.must_exist:
+        if not self.must_exist:
             statement += ' IF EXISTS'
         full_name = self._get_scoped_name()
         func_line = ' {0!s}({1!s})'.format(full_name, ', '.join(self.inputs))

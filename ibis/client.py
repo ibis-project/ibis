@@ -1117,11 +1117,13 @@ class ImpalaClient(SQLClient):
         If only name is given, this will search
         for the relevant UDF and drop it.
         To delete an overloaded UDF, give only a name and force=True
+
         Parameters
         ----------
         name : string
-        input_types : list of strings
-        must_exist : boolean, default False
+        input_types : list of strings (optional)
+        force : boolean, default False Must be set to true to
+                drop overloaded UDFs
         database : string, default None
         aggregate : boolean, default False
         """
@@ -1143,7 +1145,8 @@ class ImpalaClient(SQLClient):
             elif len(result) == 1:
                 func = result.pop()
                 self._drop_single_function(func.name, func.inputs,
-                                           database=database, aggregate=aggregate)
+                                           database=database,
+                                           aggregate=aggregate)
                 return
             else:
                 raise Exception("No function found with name {0}"
