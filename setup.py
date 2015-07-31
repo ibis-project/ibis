@@ -123,6 +123,7 @@ setup(
     ext_modules=extensions,
     cmdclass=cmdclass,
     install_requires=requirements,
+    extras_require={'kerberos': ['requests-kerberos']},
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,
     classifiers=CLASSIFIERS,

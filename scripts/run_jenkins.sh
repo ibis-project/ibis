@@ -54,6 +54,8 @@ if [ -n "$GITHUB_PR" ]; then
     popd
 fi
 
+pushd $IBIS_HOME && git status && popd
+
 # Setup Python
 curl https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh > miniconda.sh
 bash miniconda.sh -b -p $TMP_DIR/miniconda
@@ -71,6 +73,7 @@ python --version
 which python
 
 if [ $IBIS_TEST_USE_KERBEROS = "True" ]; then
+    pip install requests-kerberos
     pip install git+https://github.com/laserson/python-sasl.git@cython
 
     # CLOUDERA INTERNAL JENKINS/KERBEROS CONFIG
