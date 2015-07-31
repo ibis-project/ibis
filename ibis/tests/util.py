@@ -88,8 +88,6 @@ class ImpalaE2E(object):
         cls.hdfs = cls.con.hdfs
         cls.test_data_dir = ENV.test_data_dir
         cls.test_data_db = ENV.test_data_db
-        cls.udf_so = cls.test_data_dir + '/udf/libudfsample.so'
-        cls.udaf_so = cls.test_data_dir + '/udf/libudasample.so'
         cls.tmp_dir = ENV.tmp_dir
         cls.tmp_db = ENV.tmp_db
         cls.alltypes = cls.con.table('functional_alltypes')
