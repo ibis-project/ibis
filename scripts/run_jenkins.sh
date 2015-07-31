@@ -54,7 +54,7 @@ if [ -n "$GITHUB_PR" ]; then
     popd
 fi
 
-git status
+pushd $IBIS_HOME && git status && popd
 
 # Setup Python
 curl https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh > miniconda.sh
