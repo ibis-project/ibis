@@ -54,6 +54,8 @@ if [ -n "$GITHUB_PR" ]; then
     popd
 fi
 
+git status
+
 # Setup Python
 curl https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh > miniconda.sh
 bash miniconda.sh -b -p $TMP_DIR/miniconda
