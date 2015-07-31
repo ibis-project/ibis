@@ -170,6 +170,22 @@ IntVal AlmostAllTypes(
   return IntVal(result);
 }
 
+IntVal AllTypes(
+		FunctionContext* context, const StringVal& string, const BooleanVal& boolean,
+		const TinyIntVal& tiny_int, const SmallIntVal& small_int, const IntVal& int_val,
+		const BigIntVal& big_int, const FloatVal& float_val, const DoubleVal& double_val,
+		const DecimalVal& decimal) {
+  int result = string.len + boolean.val + tiny_int.val + small_int.val + int_val.val
+    + big_int.val + static_cast<int64_t>(float_val.val)
+    + static_cast<int64_t>(double_val.val) + decimal.val4;
+  return IntVal(result);
+}
+
+
+IntVal TwoArgs(FunctionContext* context, const IntVal& v1, const IntVal& v2) {
+  return IntVal(v1.val + v2.val);
+}
+
 IntVal FourArgs(FunctionContext* context, const IntVal& v1, const IntVal& v2,
 		const IntVal& v3, const IntVal& v4) {
   return IntVal(v1.val + v2.val + v3.val + v4.val);

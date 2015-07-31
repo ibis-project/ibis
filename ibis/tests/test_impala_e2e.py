@@ -933,7 +933,7 @@ LIMIT 10"""
         name = 'identity'
         inputs = ['boolean']
         output = 'boolean'
-        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
         self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
@@ -947,19 +947,12 @@ LIMIT 10"""
         result = self.con.execute(expr)
         assert result == val
 
-    def test_nameless_wrapping(self):
-        symbol = 'Identity'
-        inputs = ['boolean']
-        output = 'boolean'
-        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol)
-        pass
-
     def test_tinyint_wrapping(self):
         symbol = 'Identity'
         name = 'identity'
         inputs = ['int8']
         output = 'int8'
-        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
         self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
@@ -978,7 +971,7 @@ LIMIT 10"""
         name = 'identity'
         inputs = ['int32']
         output = 'int32'
-        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
         self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
@@ -997,7 +990,7 @@ LIMIT 10"""
         name = 'identity'
         inputs = ['int64']
         output = 'int64'
-        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
         self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
@@ -1016,7 +1009,7 @@ LIMIT 10"""
         name = 'identity'
         inputs = ['float']
         output = 'float'
-        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
         self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
@@ -1035,9 +1028,9 @@ LIMIT 10"""
         name = 'identity'
         inputs = ['double']
         output = 'double'
-        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
-        self.temp_functions.append((name, inputs))        
+        self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
         udf.add_impala_operation(op, name, self.test_data_db)
         assert self.con.exists_udf(name, self.test_data_db)
@@ -1054,7 +1047,7 @@ LIMIT 10"""
         name = 'identity'
         inputs = ['string']
         output = 'string'
-        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
         self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
@@ -1063,18 +1056,18 @@ LIMIT 10"""
 
         def _identity_test(value):
             return op(value).to_expr()
-        val = ibis.literal('ibis')
-        expr = _identity_test(val)
-        result = self.con.execute(expr)
-        assert result == val
 
-    @pytest.mark.xfail
+        val = self.alltypes.string_col
+        expr = _identity_test(val)
+        assert issubclass(type(expr), ibis.expr.types.ArrayExpr)
+        self.con.execute(expr)
+
     def test_timestamp_wrapping(self):
         symbol = 'Identity'
         name = 'identity'
         inputs = ['timestamp']
         output = 'timestamp'
-        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
         self.con.create_udf(udf_info, database=self.test_data_db)
         self.temp_functions.append((name, inputs))
         op = udf_info.to_operation()
@@ -1083,10 +1076,10 @@ LIMIT 10"""
 
         def _identity_test(value):
             return op(value).to_expr()
-        val = ibis.literal(1000)
+        val = self.alltypes.timestamp_col
         expr = _identity_test(val)
-        result = self.con.execute(expr)
-        assert result == val
+        assert issubclass(type(expr), ibis.expr.types.ArrayExpr)
+        self.con.execute(expr)
 
     def test_mult_type_args_wrapping(self):
         symbol = 'AlmostAllTypes'
@@ -1094,7 +1087,7 @@ LIMIT 10"""
         inputs = ['string', 'boolean', 'int8', 'int16', 'int32',
                   'int64', 'float', 'double']
         output = 'int32'
-        udf_info = udf.UDFCreator(ENV.udf_so, inputs, output, symbol, name)
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
         self.temp_functions.append((name, inputs))
         self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
@@ -1108,6 +1101,7 @@ LIMIT 10"""
         expr = _mult_types('a', True, 1, 1, 1, 1, 1.0, 1.0)
         result = self.con.execute(expr)
         assert result == 8
+
 
 def _ensure_drop(con, table_name, database=None):
     con.drop_table(table_name, database=database, force=True)

@@ -47,8 +47,6 @@ class IbisTestEnv(object):
                                                 'True').lower() == 'true'
         self.use_kerberos = os.environ.get('IBIS_TEST_USE_KERBEROS',
                                            'False').lower() == 'true'
-        self.udf_so = self.test_data_dir + '/udf/libudfsample.so'
-        self.udaf_so = self.test_data_dir + '/udf/libudasample.so'
         # update global Ibis config where relevant
         options.impala.temp_db = self.tmp_db
         options.impala.temp_hdfs_path = self.tmp_dir
@@ -90,6 +88,8 @@ class ImpalaE2E(object):
         cls.hdfs = cls.con.hdfs
         cls.test_data_dir = ENV.test_data_dir
         cls.test_data_db = ENV.test_data_db
+        cls.udf_so = cls.test_data_dir + '/udf/libudfsample.so'
+        cls.udaf_so = cls.test_data_dir + '/udf/libudasample.so'
         cls.tmp_dir = ENV.tmp_dir
         cls.tmp_db = ENV.tmp_db
         cls.alltypes = cls.con.table('functional_alltypes')
