@@ -36,6 +36,11 @@ class UDFInfo(object):
         self.output = output_type
         self.name = name
 
+    def __repr__(self):
+        return ('{0}({1}) returns {2}'.format(
+            self.name,
+            ', '.join(self.inputs),
+            self.output))
 
 class UDFCreatorParent(UDFInfo):
 
@@ -49,8 +54,8 @@ class UDFCreatorParent(UDFInfo):
         new_name = name
         if not name:
             string = self.so_symbol
-            for in_type in self.inputs:
-                string += i
+            for in_type in inputs:
+                string += in_type
             new_name = sha1(string).hexdigest()
 
         UDFInfo.__init__(self, inputs, output, new_name)
@@ -109,14 +114,16 @@ class UDACreator(UDFCreatorParent):
 def _validate_impala_type(t):
     if t in _impala_to_ibis.keys():
         return t
+    elif ir._DECIMAL_RE.match(t):
+        return t
     raise IbisTypeError("Not a valid Impala type for UDFs")
 
 
 def _operation_type_conversion(inputs, output):
     in_type = [ir._validate_type(x) for x in inputs]
-    in_values = [rules.value_typed_as(_conversion_types[x]) for x in in_type]
+    in_values = [rules.value_typed_as(_convert_types(x)) for x in in_type]
     out_type = ir._validate_type(output)
-    out_value = rules.shape_like_arg(0, out_type)
+    out_value = rules.shape_like_flatargs(out_type)
     return (in_values, out_value)
 
 
@@ -139,11 +146,19 @@ def add_impala_operation(op, func_name, db):
     arity = len(op.input_type.types)
     _expr._operation_registry[op] = _expr._fixed_arity_call(full_name, arity)
 
+
 def _impala_type_to_ibis(tval):
     if tval in _impala_to_ibis.keys():
         return _impala_to_ibis[tval]
     else:
         raise Exception('Not a valid Impala type')
+
+
+def _convert_types(t):
+    if t in _conversion_types.keys():
+        return _conversion_types[t]
+    elif t._base_type == 'decimal':
+        return (DecimalValue)
 
 _conversion_types = {
     'boolean': (BooleanValue),
@@ -153,7 +168,6 @@ _conversion_types = {
     'int64': (Int8Value, Int16Value, Int32Value, Int64Value),
     'float': (FloatValue, DoubleValue),
     'double': (FloatValue, DoubleValue),
-    'decimal': (DecimalValue),
     'string': (StringValue),
     'timestamp': (TimestampValue),
 }

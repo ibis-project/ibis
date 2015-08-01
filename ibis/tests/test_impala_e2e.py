@@ -1241,27 +1241,33 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         literal = ibis.timestamp('1961-04-10')
         self._identity_func_testing('timestamp', literal, col)
 
+    @pytest.mark.xfail
     def test_decimal_wrapping(self):
-        # TODO
-        # Need a decimal column
-        pass
+        col = self.con.table('tpch_customer').c_acctbal
+        literal = ibis.literal(1.0)  # TODO
+        self._identity_func_testing('decimal', literal, col)
 
-    def test_array_literal_inputs(self):
+    def test_mixed_inputs(self):
         name = 'two_args'
         symbol = 'TwoArgs'
         inputs = ['int32', 'int32']
         output = 'int32'
         op = self._udf_creation_to_op(name, symbol, inputs, output)
-        
+
         def _two_args(val1, val2):
             return op(val1, val2).to_expr()
+
         expr = _two_args(self.alltypes.int_col, 1)
+        assert issubclass(type(expr), ir.ArrayExpr)
+        self.con.execute(expr)
+
+        expr = _two_args(1, self.alltypes.int_col)
         assert issubclass(type(expr), ir.ArrayExpr)
         self.con.execute(expr)
 
         expr = _two_args(self.alltypes.int_col, self.alltypes.tinyint_col)
         self.con.execute(expr)
-    
+
     def test_implicit_typecasting(self):
         col = self.alltypes.tinyint_col
         literal = ibis.literal(1000)
@@ -1273,8 +1279,9 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         inputs = ['string', 'boolean', 'int8', 'int16', 'int32',
                   'int64', 'float', 'double']
         output = 'int32'
-        
+
         op = self._udf_creation_to_op(name, symbol, inputs, output)
+
         def _mult_types(string, boolean, tinyint, smallint, integer,
                         bigint, float_val, double_val):
             return op(string, boolean, tinyint, smallint, integer,
@@ -1289,9 +1296,13 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
                            table.smallint_col, table.smallint_col,
                            1.0, 1.0)
         self.con.execute(expr)
-    
+
+    def test_drop_udf_not_exists(self):
+        random_name = util.guid()
+        self.assertRaises(Exception, self.con.drop_udf, random_name)
+
     def _udf_creation_to_op(self, name, symbol, inputs, output):
-        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)        
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
         self.temp_functions.append((name, inputs))
         self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()
@@ -1307,6 +1318,7 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         def _identity_test(value):
             return op(value).to_expr()
         expr = _identity_test(literal)
+        assert issubclass(type(expr), ir.ScalarExpr)
         result = self.con.execute(expr)
         # Hacky
         if datatype is 'timestamp':
