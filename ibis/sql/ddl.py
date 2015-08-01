@@ -15,7 +15,8 @@
 from io import BytesIO
 import re
 
-from ibis.sql.exprs import ExprTranslator, quote_identifier, _type_to_sql_string
+from ibis.sql.exprs import (ExprTranslator, quote_identifier,
+                            _sql_type_names, _type_to_sql_string)
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.common as com
@@ -948,7 +949,7 @@ class DropFunction(DropObject):
     def __init__(self, name, input_types, must_exist=True,
                  aggregate=False, database=None):
         self.name = name
-        self.inputs = [_type_to_sql_string(x) for x in input_types]
+        self.inputs = [self._ibis_string_to_impala(x) for x in input_types]
         self.must_exist = must_exist
         self.aggregate = aggregate
         self.database = database
@@ -962,6 +963,14 @@ class DropFunction(DropObject):
             return '{0}.{1}'.format(self.database, self.name)
         else:
             return self.name
+
+    def _ibis_string_to_impala(self, tval):
+        if tval in _sql_type_names.keys():
+            return _sql_type_names[tval]
+        result = ir._parse_decimal(tval)
+        if result:
+            return 'decimal({0},{1})'.format(result.precision,
+                                             result.scale)
 
     def compile(self):
         statement = 'DROP'

@@ -446,18 +446,22 @@ class ImpalaClient(SQLClient):
     def _get_udfs(self, cur):
         tuples = cur.fetchall()
         if len(tuples) > 0:
-            regex = re.compile("(.*?)\s*\((.*?)\)")
+            regex = re.compile("^.*?\((.*)\).*")
             result = []
             for out_type, sig in tuples:
-                reg_result = regex.search(sig)
-                name = reg_result.group(1)
-                inputs = [udf._impala_type_to_ibis(x.strip().lower())
-                          for x in reg_result.group(2).split(',')]
+                name = sig.split('(')[0]
+                inputs = self._parse_input_string(regex.findall(sig)[0])
                 output = udf._impala_type_to_ibis(out_type.lower())
                 result.append(udf.UDFInfo(inputs, output, name))
             return result
         else:
             return []
+
+    def _parse_input_string(self, s):
+        regex = re.compile(r'(?:[^,(]|\([^)]*\))+')
+        results = regex.findall(s)
+        return [udf._impala_type_to_ibis(x.strip().lower())
+                for x in results]
 
     def set_database(self, name):
         """

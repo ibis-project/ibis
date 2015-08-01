@@ -1218,7 +1218,7 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
 
     def test_bigint_wrapping(self):
         col = self.alltypes.bigint_col
-        literal = ibis.literal(1000000)
+        literal = ibis.literal(1000).cast('int64')
         self._identity_func_testing('int64', literal, col)
 
     def test_float_wrapping(self):
@@ -1241,11 +1241,22 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         literal = ibis.timestamp('1961-04-10')
         self._identity_func_testing('timestamp', literal, col)
 
-    @pytest.mark.xfail
     def test_decimal_wrapping(self):
         col = self.con.table('tpch_customer').c_acctbal
-        literal = ibis.literal(1.0)  # TODO
-        self._identity_func_testing('decimal', literal, col)
+        literal = ibis.literal(1).cast('decimal(12,2)')
+        op = self._udf_creation_to_op('identity', 'Identity',
+                                      ['decimal(12,2)'], 'decimal(12,2)')
+
+        def _func(val):
+            return op(val).to_expr()
+        expr = _func(literal)
+        assert issubclass(type(expr), ir.ScalarExpr)
+        result = self.con.execute(expr)
+        assert result == Decimal(1)
+
+        expr = _func(col)
+        assert issubclass(type(expr), ir.ArrayExpr)
+        self.con.execute(expr)
 
     def test_mixed_inputs(self):
         name = 'two_args'
@@ -1324,7 +1335,7 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         if datatype is 'timestamp':
             assert type(result) == pd.tslib.Timestamp
         else:
-            assert result == literal
+            self.assertEqual(result, literal)
 
         expr = _identity_test(column)
         assert issubclass(type(expr), ir.ArrayExpr)

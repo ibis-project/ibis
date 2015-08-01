@@ -150,15 +150,23 @@ def add_impala_operation(op, func_name, db):
 def _impala_type_to_ibis(tval):
     if tval in _impala_to_ibis.keys():
         return _impala_to_ibis[tval]
-    else:
-        raise Exception('Not a valid Impala type')
+    result = ir._parse_decimal(tval)
+    if result: 
+        return result.__repr__()
+    raise Exception('Not a valid Impala type')
 
-
+def _ibis_string_to_impala(tval):
+    if tval in _expr._sql_type_names.keys():
+        return _expr._sql_type_names[tval]
+    result = ir._parse_decimal(tval)
+    if result: 
+        return result.__repr__()
+        
 def _convert_types(t):
     if t in _conversion_types.keys():
         return _conversion_types[t]
-    elif t._base_type == 'decimal':
-        return (DecimalValue)
+    elif t._base_type() == 'decimal':
+        return (DecimalValue, FloatValue, DoubleValue)
 
 _conversion_types = {
     'boolean': (BooleanValue),

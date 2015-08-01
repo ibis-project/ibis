@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import ibis
 
 import ibis.sql.udf as udf
@@ -41,7 +40,7 @@ class UDFTest(unittest.TestCase):
         self.t = self.table.timestamp_col
         self.dec = self.con.table('tpch_customer').c_acctbal
         self.all_cols = [self.i8, self.i16, self.i32, self.i64, self.d,
-                         self.f, self.s, self.b, self.t, self.dec]
+                         self.f, self.dec, self.s, self.b, self.t]
 
     def test_sql_generation(self):
         op = udf.scalar_function(['string'], 'string', name='Tester')
@@ -167,8 +166,8 @@ class UDFTest(unittest.TestCase):
         self._invalid_typecasts('int64', self.all_cols[4:])
 
     def test_invalid_typecasting_boolean(self):
-        self._invalid_typecasts('boolean', self.all_cols[:7] +
-                                self.all_cols[8:])
+        self._invalid_typecasts('boolean', self.all_cols[:8] +
+                                self.all_cols[9:])
 
     def test_invalid_typecasting_float(self):
         self._invalid_typecasts('float', self.all_cols[:4] +
@@ -179,16 +178,15 @@ class UDFTest(unittest.TestCase):
                                 self.all_cols[6:])
 
     def test_invalid_typecasting_string(self):
-        self._invalid_typecasts('string', self.all_cols[:6] +
-                                self.all_cols[7:])
+        self._invalid_typecasts('string', self.all_cols[:7] +
+                                self.all_cols[8:])
 
     def test_invalid_typecasting_timestamp(self):
-        self._invalid_typecasts('timestamp', self.all_cols[:8] +
-                                self.all_cols[9:])
+        self._invalid_typecasts('timestamp', self.all_cols[:-1])
 
-    @pytest.mark.xfail
     def test_invalid_typecasting_decimal(self):
-        self._invalid_typecasts('decimal', self.all_cols[:-1])
+        self._invalid_typecasts('decimal', self.all_cols[:4] +
+                                self.all_cols[7:])
 
     def test_mult_args(self):
         op = self._udf_registration(['int32', 'double', 'string',
