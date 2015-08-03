@@ -146,19 +146,22 @@ LIMIT 0""".format(query)
 
     def _build_ast_ensure_limit(self, expr, limit):
         ast = sql.build_ast(expr)
-        if not limit:
-            limit = options.sql.default_limit
         # note: limit can still be None at this point, if the global
         # default_limit is None
-        if limit is not None:
-            for query in reversed(ast.queries):
-                if (isinstance(query, ddl.Select) and
-                        not isinstance(expr, ir.ScalarExpr) and
-                        query.table_set is not None):
-                    if query.limit is None:
-                        query.limit = {'n': limit,
-                                       'offset': 0}
-                        break
+        for query in reversed(ast.queries):
+            if (isinstance(query, ddl.Select) and
+                    not isinstance(expr, ir.ScalarExpr) and
+                    query.table_set is not None):
+                if query.limit is None:
+                    query_limit = limit or options.sql.default_limit
+                    if query_limit:
+                        query.limit = {
+                            'n': query_limit,
+                            'offset': 0
+                        }
+                elif limit is not None:
+                    query.limit = {'n': limit,
+                                   'offset': query.limit['offset']}
         return ast
 
     def explain(self, expr):
