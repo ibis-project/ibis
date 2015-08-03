@@ -860,6 +860,7 @@ _unary_ops = {
     ops.ZeroIfNull: _unary_op('zeroifnull'),
 
     ops.Abs: _unary_op('abs'),
+    ops.BaseConvert: _fixed_arity_call('conv', 3),
     ops.Ceil: _unary_op('ceil'),
     ops.Floor: _unary_op('floor'),
     ops.Exp: _unary_op('exp'),

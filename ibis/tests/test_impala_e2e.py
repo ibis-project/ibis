@@ -421,6 +421,12 @@ LIMIT 10"""
             i4.sign(),
             d.sign(),
 
+            # conv
+            i1.convert_base(10, 2),
+            i4.convert_base(10, 2),
+            i8.convert_base(10, 2),
+            s.convert_base(10, 2),
+
             d.sqrt(),
             d.zeroifnull(),
 
