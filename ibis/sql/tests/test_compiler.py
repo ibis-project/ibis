@@ -224,6 +224,14 @@ FROM (
 ORDER BY string_col"""
         assert result == expected
 
+    def test_multiple_limits(self):
+        t = self.con.table('functional_alltypes')
+
+        expr = t.limit(20).limit(10)
+        stmt = build_ast(expr).queries[0]
+
+        assert stmt.limit['n'] == 10
+
     def test_top_convenience(self):
         # x.top(10, by=field)
         # x.top(10, by=[field1, field2])

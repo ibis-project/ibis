@@ -259,6 +259,12 @@ LIMIT 10"""
         result = self.con.execute(t.float_col, limit=100)
         assert len(result) == 100
 
+    def test_limit_overrides_expr(self):
+        # #418
+        t = self.alltypes
+        result = self.con.execute(t.limit(10), limit=5)
+        assert len(result) == 5
+
     def test_execute_exprs_no_table_ref(self):
         cases = [
             (ibis.literal(1) + ibis.literal(2), 3)
