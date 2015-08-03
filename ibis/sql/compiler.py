@@ -462,10 +462,15 @@ class SelectBuilder(object):
             return
 
         op = expr.op()
-        self.limit = {
-            'n': op.n,
-            'offset': op.offset
-        }
+
+        # Ignore "inner" limits, because they've been overrided by an exterior
+        # one
+        if self.limit is None:
+            self.limit = {
+                'n': op.n,
+                'offset': op.offset
+            }
+
         self._collect(op.table, toplevel=toplevel)
 
     def _collect_SortBy(self, expr, toplevel=False):
