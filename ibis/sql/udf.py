@@ -42,6 +42,7 @@ class UDFInfo(object):
             ', '.join(self.inputs),
             self.output))
 
+
 class UDFCreatorParent(UDFInfo):
 
     def __init__(self, hdfs_file, input_type,
@@ -62,15 +63,16 @@ class UDFCreatorParent(UDFInfo):
 
     def to_operation(self, name=None):
         """
-        Creates and returns a ValueOp subclass
+        Creates and returns an operator class that can
+        be passed to add_impala_operation()
 
         Parameters
         ----------
-        name : string (optional)
+        name : string (optional). Used internally to track function
 
         Returns
         -------
-        op : UdfOp object
+        op : an operator class to use in constructing function
         """
         (in_values, out_value) = _operation_type_conversion(self.inputs,
                                                             self.output)
@@ -151,17 +153,19 @@ def _impala_type_to_ibis(tval):
     if tval in _impala_to_ibis.keys():
         return _impala_to_ibis[tval]
     result = ir._parse_decimal(tval)
-    if result: 
+    if result:
         return result.__repr__()
     raise Exception('Not a valid Impala type')
+
 
 def _ibis_string_to_impala(tval):
     if tval in _expr._sql_type_names.keys():
         return _expr._sql_type_names[tval]
     result = ir._parse_decimal(tval)
-    if result: 
+    if result:
         return result.__repr__()
-        
+
+
 def _convert_types(t):
     if t in _conversion_types.keys():
         return _conversion_types[t]
