@@ -996,8 +996,26 @@ _numeric_value_methods = dict(
 )
 
 
+def convert_base(arg, from_base, to_base):
+    """
+    Convert number (as integer or string) from one base to another
+
+    Parameters
+    ----------
+    arg : string or integer
+    from_base : integer
+    to_base : integer
+
+    Returns
+    -------
+    converted : string
+    """
+    return _ops.BaseConvert(arg, from_base, to_base).to_expr()
+
+
 _integer_value_methods = dict(
-    to_timestamp=_integer_to_timestamp
+    to_timestamp=_integer_to_timestamp,
+    convert_base=convert_base
 )
 
 
@@ -1391,6 +1409,8 @@ _string_value_methods = dict(
     lstrip=_unary_op('lstrip', _ops.LStrip),
     rstrip=_unary_op('rstrip', _ops.RStrip),
     capitalize=_unary_op('initcap', _ops.Capitalize),
+
+    convert_base=convert_base,
 
     __contains__=_string_dunder_contains,
     contains=_string_contains,

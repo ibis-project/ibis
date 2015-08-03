@@ -504,6 +504,30 @@ class MultipleTypes(Argument):
         return arg
 
 
+class OneOf(Argument):
+
+    def __init__(self, types, **arg_kwds):
+        self.types = [t() if not isinstance(t, Argument) else t
+                      for t in types]
+        Argument.__init__(self, **arg_kwds)
+
+    def _validate(self, args, i):
+        validated = False
+        for t in self.types:
+            try:
+                arg = t.validate(args, i)
+                validated = True
+            except:
+                pass
+            else:
+                break
+
+        if not validated:
+            raise IbisTypeError('No type options validated')
+
+        return arg
+
+
 class CastIfDecimal(ValueArgument):
 
     def __init__(self, ref_j, **arg_kwds):
@@ -600,6 +624,10 @@ def string(**arg_kwds):
 
 def boolean(**arg_kwds):
     return ValueTyped(ir.BooleanValue, 'not string', **arg_kwds)
+
+
+def one_of(args, **arg_kwds):
+    return OneOf(args, **arg_kwds)
 
 
 class StringOptions(Argument):

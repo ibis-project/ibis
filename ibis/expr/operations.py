@@ -331,6 +331,14 @@ class Round(ValueOp):
             return rules.shape_like(arg, 'double')
 
 
+class BaseConvert(ValueOp):
+
+    input_type = [rules.one_of([integer, string]),
+                  integer(name='from_base'),
+                  integer(name='to_base')]
+    output_type = rules.shape_like_flatargs('string')
+
+
 class RealUnaryOp(UnaryOp):
 
     input_type = [number]
