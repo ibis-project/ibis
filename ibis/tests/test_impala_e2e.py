@@ -1308,6 +1308,23 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
                            1.0, 1.0)
         self.con.execute(expr)
 
+    def all_type_args_wrapping(self):
+        symbol = 'AllTypes'
+        name = 'all_types'
+        inputs = ['string', 'boolean', 'int8', 'int16', 'int32',
+                  'int64', 'float', 'double', 'decimal']
+        output = 'int32'
+
+        op = self._udf_creation_to_op(name, symbol, inputs, output)
+
+        def _all_types(string, boolean, tinyint, smallint, integer,
+                        bigint, float_val, double_val, decimal_val):
+            return op(string, boolean, tinyint, smallint, integer,
+                      bigint, float_val, double_val, decimal_val).to_expr()
+        expr = _mult_types('a', True, 1, 1, 1, 1, 1.0, 1.0, 1.0)
+        result = self.con.execute(expr)
+        assert result == 9
+
     def test_drop_udf_not_exists(self):
         random_name = util.guid()
         self.assertRaises(Exception, self.con.drop_udf, random_name)
