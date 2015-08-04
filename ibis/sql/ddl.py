@@ -473,9 +473,11 @@ class CreateTable(DDLStatement):
     """
 
     def __init__(self, table_name, database=None, external=False,
-                 format='parquet', overwrite=False, partition=None, path=None):
+                 format='parquet', overwrite=False,
+                 partition=None, path=None):
         self.table_name = table_name
         self.database = database
+        self.partition = partition
         self.path = path
         self.external = external
         self.overwrite = overwrite
@@ -521,12 +523,11 @@ class CTAS(CreateTable):
 
     def __init__(self, table_name, select, database=None,
                  external=False, format='parquet', overwrite=False,
-                 partition=None, path=None):
+                 path=None):
         self.select = select
         CreateTable.__init__(self, table_name, database=database,
                              external=external, format=format,
-                             overwrite=overwrite, partition=partition,
-                             path=path)
+                             overwrite=overwrite, path=path)
 
     def compile(self):
         buf = BytesIO()
@@ -613,11 +614,31 @@ class CreateTableWithSchema(CreateTable):
         CreateTable.__init__(self, table_name, **kwargs)
 
     def compile(self):
+        from ibis.expr.api import schema
+
         buf = BytesIO()
         buf.write(self._create_line())
 
-        schema = format_schema(self.schema)
-        buf.write('\n{0}'.format(schema))
+        def _push_schema(x):
+            formatted = format_schema(x)
+            buf.write('{0}'.format(formatted))
+
+        if self.partition is not None:
+            modified_schema = []
+            partition_schema = []
+            for name, dtype in zip(self.schema.names, self.schema.types):
+                if name in self.partition:
+                    partition_schema.append((name, dtype))
+                else:
+                    modified_schema.append((name, dtype))
+
+            buf.write('\n')
+            _push_schema(schema(modified_schema))
+            buf.write('\nPARTITIONED BY ')
+            _push_schema(schema(partition_schema))
+        else:
+            buf.write('\n')
+            _push_schema(self.schema)
 
         format_ddl = self.table_format.to_ddl()
         if format_ddl:
