@@ -533,6 +533,41 @@ class ImpalaClient(SQLClient):
 
         return results
 
+    def get_partition_schema(self, table_name, database=None):
+        """
+        For partitioned tables, return the schema (names and types) for the
+        partition columns
+
+        Parameters
+        ----------
+        table_name : string
+          May be fully qualified
+        database : string, default None
+
+        Returns
+        -------
+        partition_schema : ibis Schema
+        """
+        qualified_name = self._fully_qualified_name(table_name, database)
+
+        schema = self.get_schema(table_name, database=database)
+
+        name_to_type = dict(zip(schema.names, schema.types))
+
+        query = 'SHOW PARTITIONS {0}'.format(qualified_name)
+
+        partition_fields = []
+        with self._execute(query, results=True) as cur:
+            result = self._fetch_from_cursor(cur)
+
+            for x in result.columns:
+                if x not in name_to_type:
+                    break
+                partition_fields.append((x, name_to_type[x]))
+
+        pnames, ptypes = zip(*partition_fields)
+        return ir.Schema(pnames, ptypes)
+
     def get_schema(self, table_name, database=None):
         """
         Return a Schema object for the indicated table and database
@@ -610,7 +645,7 @@ class ImpalaClient(SQLClient):
 
     def create_table(self, table_name, expr=None, schema=None, database=None,
                      format='parquet', overwrite=False, external=False,
-                     path=None):
+                     path=None, partition=None, like_parquet=None):
         """
         Create a new table in Impala using an Ibis table expression
 
@@ -631,14 +666,28 @@ class ImpalaClient(SQLClient):
           when the table is dropped
         path : string, default None
           Specify the path where Impala reads and writes files for the table
+        partition : list of strings
+          Must pass a schema to use this. Cannot partition from an expression
+          (create-table-as-select)
+        like_parquet : string (HDFS path), optional
+          Can specify in lieu of a schema
 
         Examples
         --------
         con.create_table('new_table_name', table_expr)
         """
+        if like_parquet is not None:
+            raise NotImplementedError
+
         if expr is not None:
             ast = sql.build_ast(expr)
             select = ast.queries[0]
+
+            if partition is not None:
+                # Fairly certain this is currently the case
+                raise ValueError('partition not supported with '
+                                 'create-table-as-select')
+
             statement = ddl.CTAS(table_name, select,
                                  database=database,
                                  overwrite=overwrite,
@@ -652,7 +701,7 @@ class ImpalaClient(SQLClient):
                 format=format,
                 overwrite=overwrite,
                 external=external,
-                path=path)
+                path=path, partition=partition)
         else:
             raise com.IbisError('Must pass expr or schema')
 
@@ -769,8 +818,7 @@ class ImpalaClient(SQLClient):
         return self._wrap_new_table(qualified_name, persist)
 
     def parquet_file(self, hdfs_dir, schema=None, name=None, database=None,
-                     external=True, like_file=None,
-                     like_table=None,
+                     external=True, like_file=None, like_table=None,
                      persist=False):
         """
         Make indicated parquet file in HDFS available as an Ibis table.
