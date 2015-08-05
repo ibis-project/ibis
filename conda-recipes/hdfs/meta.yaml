@@ -1,11 +1,11 @@
 package:
   name: hdfs
-  version: "1.2.1"
+  version: "1.4.3"
 
 source:
-  fn: hdfs-1.2.1.tar.gz
-  url: https://pypi.python.org/packages/source/h/hdfs/hdfs-1.2.1.tar.gz
-  md5: 6e6360eeb4eb1868e7e0f97b24d5c853
+  fn: hdfs-1.4.3.tar.gz
+  url: https://pypi.python.org/packages/source/h/hdfs/hdfs-1.4.3.tar.gz
+  md5: 872034eb169d9315b71eb00cb7e28ead
 
 build:
   entry_points:

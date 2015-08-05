@@ -1,11 +1,11 @@
 package:
   name: fastavro
-  version: "0.8.3"
+  version: "0.8.5"
 
 source:
-  fn: fastavro-0.8.3.tar.gz
-  url: https://pypi.python.org/packages/source/f/fastavro/fastavro-0.8.3.tar.gz
-  md5: 646b94e5d9ac92f0faf4f1f75e288062
+  fn: fastavro-0.8.5.tar.gz
+  url: https://pypi.python.org/packages/source/f/fastavro/fastavro-0.8.5.tar.gz
+  md5: 5c51b9c92423c1579b63adf61478427b
 
 build:
   entry_points:

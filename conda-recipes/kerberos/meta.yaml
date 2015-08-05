@@ -15,5 +15,6 @@ requirements:
     - python
 
 about:
+  home: http://www.calendarserver.org/
   license: Apache Software License
   summary: 'Kerberos high-level interface'
