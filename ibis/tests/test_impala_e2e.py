@@ -981,7 +981,6 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         assert_equal(partition_schema, expected)
 
 
-
 class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
     def test_cleanup_tmp_table_on_gc(self):
@@ -1200,6 +1199,9 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         super(TestUDFWrapping, self).setUp()
         self.udf_so = self.test_data_dir + '/udf/libudfsample.so'
         self.uda_so = self.test_data_dir + '/udf/libudasample.so'
+
+        if not self.con.hdfs.exists(self.udf_so):
+            pytest.skip('No udf library in HDFS')
 
     def test_boolean_wrapping(self):
         col = self.alltypes.bool_col
