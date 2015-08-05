@@ -1,0 +1,52 @@
+package:
+  name: impyla
+  version: "0.10.0"
+
+source:
+  fn: impyla-0.10.0.tar.gz
+  url: https://pypi.python.org/packages/source/i/impyla/impyla-0.10.0.tar.gz
+  md5: 52c35b16b3897dbb53fb59510c33cfaa
+
+build:
+  preserve_egg_dir: True
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - six
+    - thrift
+    - llvmpy
+    - numba
+
+  run:
+    - python
+    - setuptools
+    - six
+    - thrift
+    - llvmpy
+    - numba
+
+test:
+  imports:
+    - impala
+    - impala._rpc
+    - impala._thrift_api
+    - impala._thrift_gen
+    - impala._thrift_gen.ExecStats
+    - impala._thrift_gen.ImpalaService
+    - impala._thrift_gen.Status
+    - impala._thrift_gen.TCLIService
+    - impala._thrift_gen.Types
+    - impala._thrift_gen.beeswax
+    - impala._thrift_gen.fb303
+    - impala._thrift_gen.hive_metastore
+    - impala.dbapi
+    - impala.tests
+    - impala.thrift
+    # - impala.udf  # Test fails on osx-64
+
+about:
+  home: https://github.com/cloudera/impyla
+  license: Apache License, Version 2.0
+  summary: 'Python client for the Impala distributed query engine'

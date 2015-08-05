@@ -1,0 +1,43 @@
+package:
+  name: ibis-framework
+  version: "0.3.0"
+
+source:
+  fn: ibis-framework-0.3.0.tar.gz
+  url: https://pypi.python.org/packages/source/i/ibis-framework/ibis-framework-0.3.0.tar.gz
+  md5: 5aafdf43711df3fa45df3e17f68e46d5
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - pytest
+    - numpy >=1.7.0
+    - pandas >=0.12.0
+    - impyla >=0.9.1
+    - psutil ==0.6.1
+    - hdfs >=1.4.0
+    - six
+
+  run:
+    - python
+    - pytest
+    - numpy >=1.7.0
+    - pandas >=0.12.0
+    - impyla >=0.9.1
+    - psutil ==0.6.1
+    - hdfs >=1.4.0
+    - six
+
+test:
+  imports:
+    - ibis
+    - ibis.expr
+    - ibis.expr.tests
+    - ibis.sql
+    - ibis.sql.tests
+    - ibis.tests
+
+about:
+  license: Apache License, Version 2.0
+  summary: 'Productivity-centric Python Big Data Framework'
