@@ -10,7 +10,7 @@ source:
 build:
   entry_points:
     - hdfs = hdfs.__main__:main
-    - hdfs-avro = hdfs.ext.avro:main
+    # - hdfs-avro = hdfs.ext.avro:main  # disabled
 
 requirements:
   build:
@@ -18,21 +18,11 @@ requirements:
     - setuptools
     - docopt
     - requests >=2.0.1
-    - requests-kerberos
-    - avro
-    - numpy
-    - pandas >=0.14.1
-    - fastavro
 
   run:
     - python
     - docopt
     - requests >=2.0.1
-    - requests-kerberos
-    - avro
-    - numpy
-    - pandas >=0.14.1
-    - fastavro
 
 test:
   imports:
@@ -41,7 +31,7 @@ test:
 
   commands:
     - hdfs --help
-    - hdfs-avro --help
+    # - hdfs-avro --help  # disabled
 
 about:
   home: http://hdfscli.readthedocs.org
