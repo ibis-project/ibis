@@ -23,7 +23,7 @@ MANIFEST
 # Generated sources
 *.c
 *.cpp
-
+*.cmake
 # Python files
 
 # setup.py working directory
@@ -44,3 +44,8 @@ Icon?
 # documentation files
 docs/source/generated
 docs/source/generated-notebooks
+
+# UDF testing generated files
+testing/udf/CMakeCache.txt
+testing/udf/CMakeFiles/
+testing/udf/Makefile

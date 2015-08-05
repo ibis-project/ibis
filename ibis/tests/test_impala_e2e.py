@@ -31,7 +31,7 @@ import ibis.config as config
 import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.util as util
-
+import ibis.sql.udf as udf
 
 from impala.error import HiveServer2Error as HS2Error
 
@@ -1192,3 +1192,168 @@ class TestObjectLayer(ImpalaE2E, unittest.TestCase):
 
     def test_uda(self):
         pass
+
+
+class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
+
+    def setUp(self):
+        super(TestUDFWrapping, self).setUp()
+        self.udf_so = self.test_data_dir + '/udf/libudfsample.so'
+        self.uda_so = self.test_data_dir + '/udf/libudasample.so'
+
+    def test_boolean_wrapping(self):
+        col = self.alltypes.bool_col
+        literal = ibis.literal(True)
+        self._identity_func_testing('boolean', literal, col)
+
+    def test_tinyint_wrapping(self):
+        col = self.alltypes.tinyint_col
+        literal = ibis.literal(5)
+        self._identity_func_testing('int8', literal, col)
+
+    def test_int_wrapping(self):
+        col = self.alltypes.int_col
+        literal = ibis.literal(1000)
+        self._identity_func_testing('int32', literal, col)
+
+    def test_bigint_wrapping(self):
+        col = self.alltypes.bigint_col
+        literal = ibis.literal(1000).cast('int64')
+        self._identity_func_testing('int64', literal, col)
+
+    def test_float_wrapping(self):
+        col = self.alltypes.float_col
+        literal = ibis.literal(3.14)
+        self._identity_func_testing('float', literal, col)
+
+    def test_double_wrapping(self):
+        col = self.alltypes.double_col
+        literal = ibis.literal(3.14)
+        self._identity_func_testing('double', literal, col)
+
+    def test_string_wrapping(self):
+        col = self.alltypes.string_col
+        literal = ibis.literal('ibis')
+        self._identity_func_testing('string', literal, col)
+
+    def test_timestamp_wrapping(self):
+        col = self.alltypes.timestamp_col
+        literal = ibis.timestamp('1961-04-10')
+        self._identity_func_testing('timestamp', literal, col)
+
+    def test_decimal_wrapping(self):
+        col = self.con.table('tpch_customer').c_acctbal
+        literal = ibis.literal(1).cast('decimal(12,2)')
+        op = self._udf_creation_to_op('identity', 'Identity',
+                                      ['decimal(12,2)'], 'decimal(12,2)')
+
+        def _func(val):
+            return op(val).to_expr()
+        expr = _func(literal)
+        assert issubclass(type(expr), ir.ScalarExpr)
+        result = self.con.execute(expr)
+        assert result == Decimal(1)
+
+        expr = _func(col)
+        assert issubclass(type(expr), ir.ArrayExpr)
+        self.con.execute(expr)
+
+    def test_mixed_inputs(self):
+        name = 'two_args'
+        symbol = 'TwoArgs'
+        inputs = ['int32', 'int32']
+        output = 'int32'
+        op = self._udf_creation_to_op(name, symbol, inputs, output)
+
+        def _two_args(val1, val2):
+            return op(val1, val2).to_expr()
+
+        expr = _two_args(self.alltypes.int_col, 1)
+        assert issubclass(type(expr), ir.ArrayExpr)
+        self.con.execute(expr)
+
+        expr = _two_args(1, self.alltypes.int_col)
+        assert issubclass(type(expr), ir.ArrayExpr)
+        self.con.execute(expr)
+
+        expr = _two_args(self.alltypes.int_col, self.alltypes.tinyint_col)
+        self.con.execute(expr)
+
+    def test_implicit_typecasting(self):
+        col = self.alltypes.tinyint_col
+        literal = ibis.literal(1000)
+        self._identity_func_testing('int32', literal, col)
+
+    def test_mult_type_args_wrapping(self):
+        symbol = 'AlmostAllTypes'
+        name = 'most_types'
+        inputs = ['string', 'boolean', 'int8', 'int16', 'int32',
+                  'int64', 'float', 'double']
+        output = 'int32'
+
+        op = self._udf_creation_to_op(name, symbol, inputs, output)
+
+        def _mult_types(string, boolean, tinyint, smallint, integer,
+                        bigint, float_val, double_val):
+            return op(string, boolean, tinyint, smallint, integer,
+                      bigint, float_val, double_val).to_expr()
+        expr = _mult_types('a', True, 1, 1, 1, 1, 1.0, 1.0)
+        result = self.con.execute(expr)
+        assert result == 8
+
+        table = self.alltypes
+        expr = _mult_types(table.string_col, table.bool_col,
+                           table.tinyint_col, table.tinyint_col,
+                           table.smallint_col, table.smallint_col,
+                           1.0, 1.0)
+        self.con.execute(expr)
+
+    def all_type_args_wrapping(self):
+        symbol = 'AllTypes'
+        name = 'all_types'
+        inputs = ['string', 'boolean', 'int8', 'int16', 'int32',
+                  'int64', 'float', 'double', 'decimal']
+        output = 'int32'
+
+        op = self._udf_creation_to_op(name, symbol, inputs, output)
+
+        def _all_types(string, boolean, tinyint, smallint, integer,
+                        bigint, float_val, double_val, decimal_val):
+            return op(string, boolean, tinyint, smallint, integer,
+                      bigint, float_val, double_val, decimal_val).to_expr()
+        expr = _mult_types('a', True, 1, 1, 1, 1, 1.0, 1.0, 1.0)
+        result = self.con.execute(expr)
+        assert result == 9
+
+    def test_drop_udf_not_exists(self):
+        random_name = util.guid()
+        self.assertRaises(Exception, self.con.drop_udf, random_name)
+
+    def _udf_creation_to_op(self, name, symbol, inputs, output):
+        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
+        self.temp_functions.append((name, inputs))
+        self.con.create_udf(udf_info, database=self.test_data_db)
+        op = udf_info.to_operation()
+        udf.add_impala_operation(op, name, self.test_data_db)
+        assert self.con.exists_udf(name, self.test_data_db)
+        return op
+
+    def _identity_func_testing(self, datatype, literal, column):
+        inputs = [datatype]
+        name = 'identity'
+        op = self._udf_creation_to_op(name, 'Identity', inputs, datatype)
+
+        def _identity_test(value):
+            return op(value).to_expr()
+        expr = _identity_test(literal)
+        assert issubclass(type(expr), ir.ScalarExpr)
+        result = self.con.execute(expr)
+        # Hacky
+        if datatype is 'timestamp':
+            assert type(result) == pd.tslib.Timestamp
+        else:
+            self.assertEqual(result, literal)
+
+        expr = _identity_test(column)
+        assert issubclass(type(expr), ir.ArrayExpr)
+        self.con.execute(expr)

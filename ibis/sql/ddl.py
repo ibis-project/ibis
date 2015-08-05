@@ -15,7 +15,8 @@
 from io import BytesIO
 import re
 
-from ibis.sql.exprs import ExprTranslator, quote_identifier
+from ibis.sql.exprs import (ExprTranslator, quote_identifier,
+                            _sql_type_names, _type_to_sql_string)
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.common as com
@@ -866,6 +867,140 @@ def _format_type(t):
         return 'DECIMAL({0},{1})'.format(t.precision, t.scale)
     else:
         return _impala_type_names[t]
+
+
+class CreateFunction(DDLStatement):
+
+    _object_type = 'FUNCTION'
+
+    def __init__(self, hdfs_file, so_symbol, inputs, output,
+                 name, database=None):
+        self.hdfs_file = hdfs_file
+        self.so_symbol = so_symbol
+        self.inputs = [_type_to_sql_string(x) for x in inputs]
+        self.output = _type_to_sql_string(output)
+        self.name = name
+        self.database = database
+
+    def get_name(self):
+        return self.name
+
+    def _get_scoped_name(self):
+        if self.database:
+            return '{0}.{1}'.format(self.database, self.name)
+        else:
+            return self.name
+
+    def compile(self):
+        create_decl = 'CREATE FUNCTION'
+        scoped_name = self._get_scoped_name()
+        create_line = '{0!s}({1!s}) returns {2!s}'.format(scoped_name,
+                                                          ', '.join(self.inputs),
+                                                          self.output)
+        param_line = "location '{0!s}' symbol='{1!s}'".format(self.hdfs_file,
+                                                              self.so_symbol)
+        full_line = ' '.join([create_decl, create_line, param_line])
+        return full_line
+
+
+class CreateAggregateFunction(DDLStatement):
+
+    _object_type = 'FUNCTION'
+
+    def __init__(self, hdfs_file, inputs, output, init_fn, update_fn,
+                 merge_fn, finalize_fn, name, database=None):
+        self.hdfs_file = hdfs_file
+        self.inputs = [_type_to_sql_string(x) for x in inputs]
+        self.output = _type_to_sql_string(output)
+        self.init = init_fn
+        self.update = update_fn
+        self.merge = merge_fn
+        self.finalize = finalize_fn
+        self.name = name
+        self.database = database
+
+    def get_name(self):
+        return self.name
+
+    def _get_scoped_name(self):
+        if self.database:
+            return '{0}.{1}'.format(self.database, self.name)
+        else:
+            return self.name
+
+    def compile(self):
+        create_decl = 'CREATE AGGREGATE FUNCTION'
+        scoped_name = self._get_scoped_name()
+        create_line = '{0!s}({1!s}) returns {2!s}'.format(scoped_name,
+                                                          ', '.join(self.inputs),
+                                                          self.output)
+        loc_ln = "location '{0!s}'".format(self.hdfs_file)
+        init_ln = "init_fn='{0}'".format(self.init)
+        update_ln = "update_fn='{0}'".format(self.update)
+        merge_ln = "merge_fn='{0}'".format(self.merge)
+        finalize_ln = "finalize_fn='{0}'".format(self.finalize)
+        full_line = ' '.join([create_decl, create_line, loc_ln,
+                              init_ln, update_ln, merge_ln, finalize_ln])
+        return full_line
+
+
+class DropFunction(DropObject):
+
+    def __init__(self, name, input_types, must_exist=True,
+                 aggregate=False, database=None):
+        self.name = name
+        self.inputs = [self._ibis_string_to_impala(x) for x in input_types]
+        self.must_exist = must_exist
+        self.aggregate = aggregate
+        self.database = database
+        DropObject.__init__(self, must_exist=must_exist)
+
+    def _object_name(self):
+        return self.name
+
+    def _get_scoped_name(self):
+        if self.database:
+            return '{0}.{1}'.format(self.database, self.name)
+        else:
+            return self.name
+
+    def _ibis_string_to_impala(self, tval):
+        if tval in _sql_type_names.keys():
+            return _sql_type_names[tval]
+        result = ir._parse_decimal(tval)
+        if result:
+            return 'decimal({0},{1})'.format(result.precision,
+                                             result.scale)
+
+    def compile(self):
+        statement = 'DROP'
+        if self.aggregate:
+            statement += ' AGGREGATE'
+        statement += ' FUNCTION'
+        if not self.must_exist:
+            statement += ' IF EXISTS'
+        full_name = self._get_scoped_name()
+        func_line = ' {0!s}({1!s})'.format(full_name, ', '.join(self.inputs))
+        statement += func_line
+        return statement
+
+
+class ListFunction(DDLStatement):
+
+    def __init__(self, database, like=None, aggregate=False):
+
+        self.database = database
+        self.like = like
+        self.aggregate = aggregate
+
+    def compile(self):
+        statement = 'SHOW '
+        if self.aggregate:
+            statement += 'AGGREGATE '
+        statement += 'FUNCTIONS IN {0}'.format(self.database)
+        if self.like:
+            statement += " LIKE '{0}'".format(self.like)
+        return statement
 
 
 _impala_type_names = {

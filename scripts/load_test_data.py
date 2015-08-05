@@ -58,6 +58,15 @@ def get_ibis_test_data(local_path):
     return data_dir
 
 
+def create_udf_data(con):
+    os.chdir('../testing/udf')
+    subprocess.check_call('cmake .', shell=True)
+    subprocess.check_call('make', shell=True)
+    build_dir = 'build/'
+    so_dir = ENV.test_data_dir + '/udf'
+    con.hdfs.put(so_dir, build_dir, verbose=True)
+
+
 def create_test_database(con):
     if con.exists_database(ENV.test_data_db):
         con.drop_database(ENV.test_data_db, force=True)
@@ -132,6 +141,7 @@ def setup_test_data(local_data_dir):
         hdfs.rmdir(ENV.test_data_dir)
     hdfs.put(ENV.test_data_dir, local_data_dir, verbose=True)
 
+    create_udf_data(con)
     create_test_database(con)
     parquet_tables = create_parquet_tables(con)
     avro_tables = create_avro_tables(con)

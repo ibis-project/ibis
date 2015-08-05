@@ -47,7 +47,6 @@ class IbisTestEnv(object):
                                                 'True').lower() == 'true'
         self.use_kerberos = os.environ.get('IBIS_TEST_USE_KERBEROS',
                                            'False').lower() == 'true'
-
         # update global Ibis config where relevant
         options.impala.temp_db = self.tmp_db
         options.impala.temp_hdfs_path = self.tmp_dir
@@ -117,6 +116,7 @@ class ImpalaE2E(object):
         self.temp_databases = []
         self.temp_tables = []
         self.temp_views = []
+        self.temp_functions = []
 
     def tearDown(self):
         for t in self.temp_tables:
@@ -124,6 +124,10 @@ class ImpalaE2E(object):
 
         for t in self.temp_views:
             self.con.drop_view(t, force=True)
+        
+        for f_name, f_inputs in self.temp_functions:
+            self.con.drop_udf(f_name, input_types=f_inputs,
+                              force=True)
 
         self.con.set_database(self.test_data_db)
         for t in self.temp_databases:
