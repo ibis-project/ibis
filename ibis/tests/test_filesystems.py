@@ -21,7 +21,7 @@ import shutil
 
 import pytest
 
-from ibis.filesystems import HDFS, WebHDFS
+from ibis.filesystems import HDFS
 from ibis.compat import unittest
 from ibis.tests.util import IbisTestEnv
 import ibis.util as util
@@ -172,7 +172,7 @@ class TestHDFSE2E(unittest.TestCase):
     def test_chown_group(self):
         new_group = 'randomgroup'
         path = self._make_random_hdfs_file()
-        self.hdfs.chown(path, group=new_owner)
+        self.hdfs.chown(path, group=new_group)
         assert self.hdfs.status(path)['group'] == new_group
 
     def test_chown_owner_directory(self):
@@ -186,7 +186,7 @@ class TestHDFSE2E(unittest.TestCase):
         new_group = 'randomgroup'
         path = pjoin(self.tmp_dir, util.guid())
         self.hdfs.mkdir(path)
-        self.hdfs.chown(path, group=new_owner)
+        self.hdfs.chown(path, group=new_group)
         assert self.hdfs.status(path)['group'] == new_group
 
     def test_mv_to_existing_file(self):
@@ -198,7 +198,8 @@ class TestHDFSE2E(unittest.TestCase):
         remote_file = self._make_random_hdfs_file()
         existing_remote_file_dest = self._make_random_hdfs_file()
         with self.assertRaises(Exception):
-            self.hdfs.mv(remote_file, existing_remote_file_dest, overwrite=False)
+            self.hdfs.mv(remote_file, existing_remote_file_dest,
+                         overwrite=False)
 
     def test_mv_to_directory(self):
         remote_file = self._make_random_hdfs_file()
