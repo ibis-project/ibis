@@ -53,7 +53,8 @@ __all__ = [
     'schema', 'table', 'literal', 'expr_list', 'timestamp',
     'case', 'where', 'sequence',
     'now', 'desc', 'null', 'NA',
-    'cast', 'coalesce', 'greatest', 'least', 'join',
+    'cast', 'coalesce', 'greatest', 'least',
+    'cross_join', 'join',
     'row_number',
     'negate', 'ifelse',
     'Expr', 'Schema',
@@ -1545,11 +1546,28 @@ def join(left, right, predicates=(), how='inner'):
     return TableExpr(op)
 
 
-def cross_join(left, right, prefixes=None):
+def cross_join(*args, **kwargs):
     """
+    Perform a cross join (cartesian product) amongst a list of tables, with
+    optional set of prefixes to apply to overlapping column names
 
+    Parameters
+    ----------
+    positional args: tables to join
+    prefixes keyword : prefixes for each table
+      Not yet implemented
+
+    Examples
+    --------
+    >>> joined1 = ibis.cross_join(a, b, c, d, e)
+    >>> joined2 = ibis.cross_join(a, b, c, prefixes=['a_', 'b_', 'c_']))
+
+    Returns
+    -------
+    joined : TableExpr
+      If prefixes not provided, the result schema is not yet materialized
     """
-    op = _ops.CrossJoin(left, right)
+    op = _ops.CrossJoin(*args, **kwargs)
     return TableExpr(op)
 
 

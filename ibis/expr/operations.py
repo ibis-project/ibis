@@ -1414,7 +1414,17 @@ class CrossJoin(InnerJoin):
     over an INNER JOIN with no predicates.
     """
 
-    def __init__(self, left, right, predicates=[]):
+    def __init__(self, *args, **kwargs):
+        if 'prefixes' in kwargs:
+            raise NotImplementedError
+
+        if len(args) < 2:
+            raise com.IbisInputError('Must pass at least 2 tables')
+
+        left = args[0]
+        right = args[1]
+        for t in args[2:]:
+            right = right.cross_join(t)
         InnerJoin.__init__(self, left, right, [])
 
 

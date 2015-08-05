@@ -892,6 +892,15 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         ex_schema = self.table.schema().append(agg_schema)
         assert_equal(joined.schema(), ex_schema)
 
+    def test_cross_join_multiple(self):
+        a = self.table['a', 'b', 'c']
+        b = self.table['d', 'e']
+        c = self.table['f', 'h']
+
+        joined = ibis.cross_join(a, b, c)
+        expected = a.cross_join(b.cross_join(c))
+        assert joined.equals(expected)
+
     def test_join_compound_boolean_predicate(self):
         # The user might have composed predicates through logical operations
         pass
