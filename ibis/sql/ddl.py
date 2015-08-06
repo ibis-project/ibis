@@ -177,7 +177,10 @@ class Select(DDLStatement):
             elif isinstance(expr, ir.TableExpr):
                 # A * selection, possibly prefixed
                 if context.need_aliases():
-                    expr_str = '{0}.*'.format(context.get_alias(expr))
+                    alias = context.get_alias(expr)
+
+                    # materialized join will not have an alias. see #491
+                    expr_str = '{0}.*'.format(alias) if alias else '*'
                 else:
                     expr_str = '*'
             formatted.append(expr_str)

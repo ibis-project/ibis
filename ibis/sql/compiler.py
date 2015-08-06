@@ -418,7 +418,7 @@ class SelectBuilder(object):
             f(expr, toplevel=toplevel)
         elif isinstance(op, (ops.PhysicalTable, ops.SQLQueryResult)):
             self._collect_PhysicalTable(expr, toplevel=toplevel)
-        elif isinstance(op, (ops.Join, ops.MaterializedJoin)):
+        elif isinstance(op, ops.Join):
             self._collect_Join(expr, toplevel=toplevel)
         else:
             raise NotImplementedError(type(op))
@@ -487,17 +487,26 @@ class SelectBuilder(object):
 
         self._collect(op.table, toplevel=toplevel)
 
-    def _collect_Join(self, expr, toplevel=False):
+    def _collect_MaterializedJoin(self, expr, toplevel=False):
         op = expr.op()
 
-        if isinstance(op, ops.MaterializedJoin):
-            expr = op.join
-            op = expr.op()
+        join = op.join
+        join_op = join.op()
 
+        if toplevel:
+            subbed = self._sub(join)
+            self.table_set = subbed
+            self.select_set = [subbed]
+
+        self._collect(join_op.left, toplevel=False)
+        self._collect(join_op.right, toplevel=False)
+
+    def _collect_Join(self, expr, toplevel=False):
+        op = expr.op()
         if toplevel:
             subbed = self._sub(expr)
             self.table_set = subbed
-            self.select_set = [op.left, op.right]
+            self.select_set = [subbed]
 
         self._collect(op.left, toplevel=False)
         self._collect(op.right, toplevel=False)
