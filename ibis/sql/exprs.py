@@ -616,7 +616,8 @@ def _exists_subquery(translator, expr):
 
 def _table_column(translator, expr):
     op = expr.op()
-    field_name = quote_identifier(op.name)
+    field_name = op.name
+    quoted_name = quote_identifier(field_name, force=True)
 
     table = op.table
     ctx = translator.context
@@ -630,9 +631,9 @@ def _table_column(translator, expr):
     if ctx.need_aliases():
         alias = ctx.get_alias(table)
         if alias is not None:
-            field_name = '{0}.{1}'.format(alias, field_name)
+            quoted_name = '{0}.{1}'.format(alias, quoted_name)
 
-    return field_name
+    return quoted_name
 
 
 def _extract_field(sql_attr):

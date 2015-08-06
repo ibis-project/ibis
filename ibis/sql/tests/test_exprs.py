@@ -67,8 +67,8 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         t = self.con.table('tpch_lineitem')
         col = t.l_extendedprice
         cases = [
-            (col.precision(), 'precision(l_extendedprice)'),
-            (col.scale(), 'scale(l_extendedprice)'),
+            (col.precision(), 'precision(`l_extendedprice`)'),
+            (col.scale(), 'scale(`l_extendedprice`)'),
         ]
         self._check_expr_cases(cases)
 
@@ -100,7 +100,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         expr = table1['value1'] - table2['value and2']
 
         result = self._translate(expr, context=context)
-        expected = 't0.value1 - t1.`value and2`'
+        expected = 't0.`value1` - t1.`value and2`'
         assert result == expected
 
     def test_column_ref_quoting(self):
@@ -118,9 +118,9 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         a, b, g = self.table.get_columns(['a', 'b', 'g'])
 
         cases = [
-            (g.cast('double').name('g_dub'), 'CAST(g AS double) AS `g_dub`'),
-            (g.name('has a space'), 'g AS `has a space`'),
-            (((a - b) * a).name('expr'), '(a - b) * a AS `expr`')
+            (g.cast('double').name('g_dub'), 'CAST(`g` AS double) AS `g_dub`'),
+            (g.name('has a space'), '`g` AS `has a space`'),
+            (((a - b) * a).name('expr'), '(`a` - `b`) * `a` AS `expr`')
         ]
 
         return self._check_expr_cases(cases, named=True)
@@ -131,21 +131,21 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         bool_col = a > 0
 
         cases = [
-            (a + b, 'a + b'),
-            (a - b, 'a - b'),
-            (a * b, 'a * b'),
-            (a / b, 'a / b'),
-            (a ** b, 'pow(a, b)'),
-            (a < b, 'a < b'),
-            (a <= b, 'a <= b'),
-            (a > b, 'a > b'),
-            (a >= b, 'a >= b'),
-            (a == b, 'a = b'),
-            (a != b, 'a != b'),
-            (h & bool_col, 'h AND (a > 0)'),
-            (h | bool_col, 'h OR (a > 0)'),
+            (a + b, '`a` + `b`'),
+            (a - b, '`a` - `b`'),
+            (a * b, '`a` * `b`'),
+            (a / b, '`a` / `b`'),
+            (a ** b, 'pow(`a`, `b`)'),
+            (a < b, '`a` < `b`'),
+            (a <= b, '`a` <= `b`'),
+            (a > b, '`a` > `b`'),
+            (a >= b, '`a` >= `b`'),
+            (a == b, '`a` = `b`'),
+            (a != b, '`a` != `b`'),
+            (h & bool_col, '`h` AND (`a` > 0)'),
+            (h | bool_col, '`h` OR (`a` > 0)'),
             # xor is brute force
-            (h ^ bool_col, '(h OR (a > 0)) AND NOT (h AND (a > 0))')
+            (h ^ bool_col, '(`h` OR (`a` > 0)) AND NOT (`h` AND (`a` > 0))')
         ]
         self._check_expr_cases(cases)
 
@@ -153,46 +153,47 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         a, b, c = self.table.get_columns(['a', 'b', 'c'])
 
         cases = [
-            ((a + b) + c, '(a + b) + c'),
-            (a.log() + c, 'ln(a) + c'),
-            (b + (-(a + c)), 'b + (-(a + c))')
+            ((a + b) + c, '(`a` + `b`) + `c`'),
+            (a.log() + c, 'ln(`a`) + `c`'),
+            (b + (-(a + c)), '`b` + (-(`a` + `c`))')
         ]
 
         self._check_expr_cases(cases)
 
     def test_between(self):
         cases = [
-            (self.table.f.between(0, 1), 'f BETWEEN 0 AND 1')
+            (self.table.f.between(0, 1), '`f` BETWEEN 0 AND 1')
         ]
         self._check_expr_cases(cases)
 
     def test_isnull_notnull(self):
         cases = [
-            (self.table['g'].isnull(), 'g IS NULL'),
-            (self.table['a'].notnull(), 'a IS NOT NULL'),
-            ((self.table['a'] + self.table['b']).isnull(), 'a + b IS NULL')
+            (self.table['g'].isnull(), '`g` IS NULL'),
+            (self.table['a'].notnull(), '`a` IS NOT NULL'),
+            ((self.table['a'] + self.table['b']).isnull(),
+             '`a` + `b` IS NULL')
         ]
         self._check_expr_cases(cases)
 
     def test_casts(self):
         a, d, g = self.table.get_columns(['a', 'd', 'g'])
         cases = [
-            (a.cast('int16'), 'CAST(a AS smallint)'),
-            (a.cast('int32'), 'CAST(a AS int)'),
-            (a.cast('int64'), 'CAST(a AS bigint)'),
-            (a.cast('float'), 'CAST(a AS float)'),
-            (a.cast('double'), 'CAST(a AS double)'),
-            (a.cast('string'), 'CAST(a AS string)'),
-            (d.cast('int8'), 'CAST(d AS tinyint)'),
-            (g.cast('double'), 'CAST(g AS double)'),
-            (g.cast('timestamp'), 'CAST(g AS timestamp)')
+            (a.cast('int16'), 'CAST(`a` AS smallint)'),
+            (a.cast('int32'), 'CAST(`a` AS int)'),
+            (a.cast('int64'), 'CAST(`a` AS bigint)'),
+            (a.cast('float'), 'CAST(`a` AS float)'),
+            (a.cast('double'), 'CAST(`a` AS double)'),
+            (a.cast('string'), 'CAST(`a` AS string)'),
+            (d.cast('int8'), 'CAST(`d` AS tinyint)'),
+            (g.cast('double'), 'CAST(`g` AS double)'),
+            (g.cast('timestamp'), 'CAST(`g` AS timestamp)')
         ]
         self._check_expr_cases(cases)
 
     def test_misc_conditionals(self):
         a = self.table.a
         cases = [
-            (a.nullif(0), 'nullif(a, 0)')
+            (a.nullif(0), 'nullif(`a`, 0)')
         ]
         self._check_expr_cases(cases)
 
@@ -200,15 +201,15 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         cases = [
             (ibis.literal('9.9999999').cast('decimal(38,5)'),
              "CAST('9.9999999' AS decimal(38,5))"),
-            (self.table.f.cast('decimal(12,2)'), "CAST(f AS decimal(12,2))")
+            (self.table.f.cast('decimal(12,2)'), "CAST(`f` AS decimal(12,2))")
         ]
         self._check_expr_cases(cases)
 
     def test_negate(self):
         cases = [
-            (-self.table['a'], '-a'),
-            (-self.table['f'], '-f'),
-            (-self.table['h'], 'NOT h')
+            (-self.table['a'], '-`a`'),
+            (-self.table['f'], '-`f`'),
+            (-self.table['h'], 'NOT `h`')
         ]
         self._check_expr_cases(cases)
 
@@ -217,7 +218,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
                   'second', 'millisecond']
 
         cases = [(getattr(self.table.i, field)(),
-                  "extract(i, '{0}')".format(field))
+                  "extract(`i`, '{0}')".format(field))
                  for field in fields]
         self._check_expr_cases(cases)
 
@@ -228,8 +229,8 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
         result = to_sql(expr)
         expected = \
-            """SELECT extract(i, 'year') AS `year`, extract(i, 'month') AS `month`,
-       extract(i, 'day') AS `day`
+            """SELECT extract(`i`, 'year') AS `year`, extract(`i`, 'month') AS `month`,
+       extract(`i`, 'day') AS `day`
 FROM alltypes"""
         assert result == expected
 
@@ -245,7 +246,7 @@ FROM alltypes"""
                  'millisecond', 'microsecond']
 
         t = self.table.i
-        f = 'i'
+        f = '`i`'
 
         cases = []
         for unit in units:
@@ -274,14 +275,14 @@ FROM alltypes"""
 
         cases = [
             (col.to_timestamp(),
-             'CAST(from_unixtime(c, "yyyy-MM-dd HH:mm:ss") '
+             'CAST(from_unixtime(`c`, "yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
             (col.to_timestamp('ms'),
-             'CAST(from_unixtime(CAST(c / 1000 AS int), '
+             'CAST(from_unixtime(CAST(`c` / 1000 AS int), '
              '"yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
             (col.to_timestamp('us'),
-             'CAST(from_unixtime(CAST(c / 1000000 AS int), '
+             'CAST(from_unixtime(CAST(`c` / 1000000 AS int), '
              '"yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
         ]
@@ -302,7 +303,7 @@ FROM alltypes"""
         subctx.make_alias(t0)
 
         result = self._translate(expr, context=subctx)
-        expected = "t0.g = t1.g"
+        expected = "t0.`g` = t1.`g`"
         assert result == expected
 
     def test_any_all(self):
@@ -311,10 +312,10 @@ FROM alltypes"""
         bool_expr = t.f == 0
 
         cases = [
-            (bool_expr.any(), 'sum(f = 0) > 0'),
-            (-bool_expr.any(), 'sum(f = 0) = 0'),
-            (bool_expr.all(), 'sum(f = 0) = count(*)'),
-            (-bool_expr.all(), 'sum(f = 0) < count(*)'),
+            (bool_expr.any(), 'sum(`f` = 0) > 0'),
+            (-bool_expr.any(), 'sum(`f` = 0) = 0'),
+            (bool_expr.all(), 'sum(`f` = 0) = count(*)'),
+            (-bool_expr.all(), 'sum(`f` = 0) < count(*)'),
         ]
         self._check_expr_cases(cases)
 
@@ -342,23 +343,24 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
             for cname in ['double_col', 'int_col']:
                 expr = getattr(self.table[cname], ibis_name)()
-                cases.append((expr, '{0}({1})'.format(sql_name, cname)))
+                cases.append((expr, '{0}({1})'.format(
+                    sql_name, '`{0}`'.format(cname))))
 
         self._check_expr_cases(cases)
 
     def test_log_other_bases(self):
         cases = [
-            (self.table.double_col.log(5), 'log(double_col, 5)')
+            (self.table.double_col.log(5), 'log(`double_col`, 5)')
         ]
         self._check_expr_cases(cases)
 
     def test_round(self):
         cases = [
-            (self.table.double_col.round(), 'round(double_col)'),
-            (self.table.double_col.round(0), 'round(double_col, 0)'),
-            (self.table.double_col.round(2, ), 'round(double_col, 2)'),
+            (self.table.double_col.round(), 'round(`double_col`)'),
+            (self.table.double_col.round(0), 'round(`double_col`, 0)'),
+            (self.table.double_col.round(2, ), 'round(`double_col`, 2)'),
             (self.table.double_col.round(self.table.tinyint_col),
-             'round(double_col, tinyint_col)')
+             'round(`double_col`, `tinyint_col`)')
         ]
         self._check_expr_cases(cases)
 
@@ -369,14 +371,14 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
                           ir.Int64Scalar)
 
         cases = [
-            (self.table.int_col.hash(), 'fnv_hash(int_col)')
+            (self.table.int_col.hash(), 'fnv_hash(`int_col`)')
         ]
         self._check_expr_cases(cases)
 
     def test_reduction_where(self):
         cond = self.table.bigint_col < 70
         c = self.table.double_col
-        tmp = '{0}(CASE WHEN bigint_col < 70 THEN double_col ELSE NULL END)'
+        tmp = '{0}(CASE WHEN `bigint_col` < 70 THEN `double_col` ELSE NULL END)'
         cases = [
             (c.sum(where=cond), tmp.format('sum')),
             (c.count(where=cond), tmp.format('count')),
@@ -404,12 +406,12 @@ class TestCaseExprs(unittest.TestCase, ExprSQLTest):
         expr = self.table.g.isnull().ifelse(1, 0)
 
         result = self._translate(expr)
-        expected = 'CASE WHEN g IS NULL THEN 1 ELSE 0 END'
+        expected = 'CASE WHEN `g` IS NULL THEN 1 ELSE 0 END'
         assert result == expected
 
         # inside some other function
         result = self._translate(expr.sum())
-        expected = 'sum(CASE WHEN g IS NULL THEN 1 ELSE 0 END)'
+        expected = 'sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END)'
         assert result == expected
 
     def test_simple_case(self):
@@ -420,7 +422,7 @@ class TestCaseExprs(unittest.TestCase, ExprSQLTest):
                 .end())
 
         result = self._translate(expr)
-        expected = """CASE g
+        expected = """CASE `g`
   WHEN 'foo' THEN 'bar'
   WHEN 'baz' THEN 'qux'
   ELSE 'default'
@@ -435,8 +437,8 @@ END"""
 
         result = self._translate(expr)
         expected = """CASE
-  WHEN f > 0 THEN d * 2
-  WHEN c < 0 THEN a * 2
+  WHEN `f` > 0 THEN `d` * 2
+  WHEN `c` < 0 THEN `a` * 2
   ELSE NULL
 END"""
         assert result == expected
@@ -446,7 +448,7 @@ END"""
         assert isinstance(expr, ir.FloatValue)
 
         result = self._translate(expr)
-        expected = "if(f > 0, e, a)"
+        expected = "if(`f` > 0, `e`, `a`)"
         assert result == expected
 
     def test_nullif_ifnull(self):
@@ -456,9 +458,9 @@ END"""
 
         cases = [
             (f.nullif(f == 0),
-             'nullif(l_quantity, l_quantity = 0)'),
+             'nullif(`l_quantity`, `l_quantity` = 0)'),
             (f.fillna(0),
-             'isnull(l_quantity, CAST(0 AS decimal(12,2)))'),
+             'isnull(`l_quantity`, CAST(0 AS decimal(12,2)))'),
         ]
         self._check_expr_cases(cases)
 
@@ -468,8 +470,8 @@ END"""
 
         cases = [
             (f.fillna(0),
-             'isnull(l_extendedprice, CAST(0 AS decimal(12,2)))'),
-            (f.fillna(0.0), 'isnull(l_extendedprice, 0.0)'),
+             'isnull(`l_extendedprice`, CAST(0 AS decimal(12,2)))'),
+            (f.fillna(0.0), 'isnull(`l_extendedprice`, 0.0)'),
         ]
         self._check_expr_cases(cases)
 
@@ -486,27 +488,27 @@ class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
         expr1 = self.table.f.bucket(buckets)
         expected1 = """\
 CASE
-  WHEN (f >= 0) AND (f < 10) THEN 0
-  WHEN (f >= 10) AND (f < 25) THEN 1
-  WHEN (f >= 25) AND (f <= 50) THEN 2
+  WHEN (`f` >= 0) AND (`f` < 10) THEN 0
+  WHEN (`f` >= 10) AND (`f` < 25) THEN 1
+  WHEN (`f` >= 25) AND (`f` <= 50) THEN 2
   ELSE NULL
 END"""
 
         expr2 = self.table.f.bucket(buckets, close_extreme=False)
         expected2 = """\
 CASE
-  WHEN (f >= 0) AND (f < 10) THEN 0
-  WHEN (f >= 10) AND (f < 25) THEN 1
-  WHEN (f >= 25) AND (f < 50) THEN 2
+  WHEN (`f` >= 0) AND (`f` < 10) THEN 0
+  WHEN (`f` >= 10) AND (`f` < 25) THEN 1
+  WHEN (`f` >= 25) AND (`f` < 50) THEN 2
   ELSE NULL
 END"""
 
         expr3 = self.table.f.bucket(buckets, closed='right')
         expected3 = """\
 CASE
-  WHEN (f >= 0) AND (f <= 10) THEN 0
-  WHEN (f > 10) AND (f <= 25) THEN 1
-  WHEN (f > 25) AND (f <= 50) THEN 2
+  WHEN (`f` >= 0) AND (`f` <= 10) THEN 0
+  WHEN (`f` > 10) AND (`f` <= 25) THEN 1
+  WHEN (`f` > 25) AND (`f` <= 50) THEN 2
   ELSE NULL
 END"""
 
@@ -514,19 +516,19 @@ END"""
                                     close_extreme=False)
         expected4 = """\
 CASE
-  WHEN (f > 0) AND (f <= 10) THEN 0
-  WHEN (f > 10) AND (f <= 25) THEN 1
-  WHEN (f > 25) AND (f <= 50) THEN 2
+  WHEN (`f` > 0) AND (`f` <= 10) THEN 0
+  WHEN (`f` > 10) AND (`f` <= 25) THEN 1
+  WHEN (`f` > 25) AND (`f` <= 50) THEN 2
   ELSE NULL
 END"""
 
         expr5 = self.table.f.bucket(buckets, include_under=True)
         expected5 = """\
 CASE
-  WHEN f < 0 THEN 0
-  WHEN (f >= 0) AND (f < 10) THEN 1
-  WHEN (f >= 10) AND (f < 25) THEN 2
-  WHEN (f >= 25) AND (f <= 50) THEN 3
+  WHEN `f` < 0 THEN 0
+  WHEN (`f` >= 0) AND (`f` < 10) THEN 1
+  WHEN (`f` >= 10) AND (`f` < 25) THEN 2
+  WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
   ELSE NULL
 END"""
 
@@ -535,11 +537,11 @@ END"""
                                     include_over=True)
         expected6 = """\
 CASE
-  WHEN f < 0 THEN 0
-  WHEN (f >= 0) AND (f < 10) THEN 1
-  WHEN (f >= 10) AND (f < 25) THEN 2
-  WHEN (f >= 25) AND (f <= 50) THEN 3
-  WHEN f > 50 THEN 4
+  WHEN `f` < 0 THEN 0
+  WHEN (`f` >= 0) AND (`f` < 10) THEN 1
+  WHEN (`f` >= 10) AND (`f` < 25) THEN 2
+  WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
+  WHEN `f` > 50 THEN 4
   ELSE NULL
 END"""
 
@@ -549,11 +551,11 @@ END"""
                                     include_over=True)
         expected7 = """\
 CASE
-  WHEN f < 0 THEN 0
-  WHEN (f >= 0) AND (f < 10) THEN 1
-  WHEN (f >= 10) AND (f < 25) THEN 2
-  WHEN (f >= 25) AND (f < 50) THEN 3
-  WHEN f >= 50 THEN 4
+  WHEN `f` < 0 THEN 0
+  WHEN (`f` >= 0) AND (`f` < 10) THEN 1
+  WHEN (`f` >= 10) AND (`f` < 25) THEN 2
+  WHEN (`f` >= 25) AND (`f` < 50) THEN 3
+  WHEN `f` >= 50 THEN 4
   ELSE NULL
 END"""
 
@@ -562,10 +564,10 @@ END"""
                                     include_under=True)
         expected8 = """\
 CASE
-  WHEN f <= 0 THEN 0
-  WHEN (f > 0) AND (f <= 10) THEN 1
-  WHEN (f > 10) AND (f <= 25) THEN 2
-  WHEN (f > 25) AND (f <= 50) THEN 3
+  WHEN `f` <= 0 THEN 0
+  WHEN (`f` > 0) AND (`f` <= 10) THEN 1
+  WHEN (`f` > 10) AND (`f` <= 25) THEN 2
+  WHEN (`f` > 25) AND (`f` <= 50) THEN 3
   ELSE NULL
 END"""
 
@@ -574,8 +576,8 @@ END"""
                                     include_under=True)
         expected9 = """\
 CASE
-  WHEN f <= 10 THEN 0
-  WHEN f > 10 THEN 1
+  WHEN `f` <= 10 THEN 0
+  WHEN `f` > 10 THEN 1
   ELSE NULL
 END"""
 
@@ -583,8 +585,8 @@ END"""
                                      include_under=True)
         expected10 = """\
 CASE
-  WHEN f < 10 THEN 0
-  WHEN f >= 10 THEN 1
+  WHEN `f` < 10 THEN 0
+  WHEN `f` >= 10 THEN 1
   ELSE NULL
 END"""
 
@@ -611,8 +613,8 @@ END"""
 
         expected = """\
 CASE
-  WHEN f < 10 THEN 0
-  WHEN f >= 10 THEN 1
+  WHEN `f` < 10 THEN 0
+  WHEN `f` >= 10 THEN 1
   ELSE NULL
 END"""
 
@@ -622,8 +624,8 @@ END"""
 
         expected2 = """\
 CAST(CASE
-  WHEN f < 10 THEN 0
-  WHEN f >= 10 THEN 1
+  WHEN `f` < 10 THEN 0
+  WHEN `f` >= 10 THEN 1
   ELSE NULL
 END AS double)"""
 
@@ -642,20 +644,20 @@ END AS double)"""
 
         expected = """\
 SELECT
-  CASE tier
+  CASE `tier`
     WHEN 0 THEN 'Under 0'
     WHEN 1 THEN '0 to 10'
     WHEN 2 THEN '10 to 25'
     WHEN 3 THEN '25 to 50'
     ELSE 'error'
-  END AS `tier2`, count
+  END AS `tier2`, `count`
 FROM (
   SELECT
     CASE
-      WHEN f < 0 THEN 0
-      WHEN (f >= 0) AND (f < 10) THEN 1
-      WHEN (f >= 10) AND (f < 25) THEN 2
-      WHEN (f >= 25) AND (f <= 50) THEN 3
+      WHEN `f` < 0 THEN 0
+      WHEN (`f` >= 0) AND (`f` < 10) THEN 1
+      WHEN (`f` >= 10) AND (`f` < 25) THEN 2
+      WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
       ELSE NULL
     END AS `tier`, count(*) AS `count`
   FROM alltypes
@@ -680,18 +682,18 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
     def test_field_in_literals(self):
         cases = [
             (self.table.g.isin(["foo", "bar", "baz"]),
-             "g IN ('foo', 'bar', 'baz')"),
+             "`g` IN ('foo', 'bar', 'baz')"),
             (self.table.g.notin(["foo", "bar", "baz"]),
-             "g NOT IN ('foo', 'bar', 'baz')")
+             "`g` NOT IN ('foo', 'bar', 'baz')")
         ]
         self._check_expr_cases(cases)
 
     def test_literal_in_list(self):
         cases = [
             (ibis.literal(2).isin([self.table.a, self.table.b, self.table.c]),
-             '2 IN (a, b, c)'),
+             '2 IN (`a`, `b`, `c`)'),
             (ibis.literal(2).notin([self.table.a, self.table.b, self.table.c]),
-             '2 NOT IN (a, b, c)')
+             '2 NOT IN (`a`, `b`, `c`)')
         ]
         self._check_expr_cases(cases)
 
@@ -700,14 +702,14 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
         result = to_sql(filtered)
         expected = """SELECT *
 FROM alltypes
-WHERE g IN ('foo', 'bar')"""
+WHERE `g` IN ('foo', 'bar')"""
         assert result == expected
 
         filtered = self.table[self.table.g.notin(["foo", "bar"])]
         result = to_sql(filtered)
         expected = """SELECT *
 FROM alltypes
-WHERE g NOT IN ('foo', 'bar')"""
+WHERE `g` NOT IN ('foo', 'bar')"""
         assert result == expected
 
 
@@ -721,9 +723,9 @@ class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
         t = self.table
         cases = [
             (ibis.coalesce(t.string_col, 'foo'),
-             "coalesce(string_col, 'foo')"),
+             "coalesce(`string_col`, 'foo')"),
             (ibis.coalesce(t.int_col, t.bigint_col),
-             'coalesce(int_col, bigint_col)'),
+             'coalesce(`int_col`, `bigint_col`)'),
         ]
         self._check_expr_cases(cases)
 
@@ -731,9 +733,9 @@ class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
         t = self.table
         cases = [
             (ibis.greatest(t.string_col, 'foo'),
-             "greatest(string_col, 'foo')"),
+             "greatest(`string_col`, 'foo')"),
             (ibis.greatest(t.int_col, t.bigint_col),
-             'greatest(int_col, bigint_col)'),
+             'greatest(`int_col`, `bigint_col`)'),
         ]
         self._check_expr_cases(cases)
 
@@ -741,9 +743,9 @@ class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
         t = self.table
         cases = [
             (ibis.least(t.string_col, 'foo'),
-             "least(string_col, 'foo')"),
+             "least(`string_col`, 'foo')"),
             (ibis.least(t.int_col, t.bigint_col),
-             'least(int_col, bigint_col)'),
+             'least(`int_col`, `bigint_col`)'),
         ]
         self._check_expr_cases(cases)
 
@@ -761,15 +763,15 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
 
         cases = [
             (ibis.row_number().over(w),
-             'row_number() OVER (ORDER BY float_col) - 1'),
-            (t.string_col.lag(), 'lag(string_col)'),
-            (t.string_col.lag(2), 'lag(string_col, 2)'),
-            (t.string_col.lag(default=0), 'lag(string_col, 1, 0)'),
-            (t.string_col.lead(), 'lead(string_col)'),
-            (t.string_col.lead(2), 'lead(string_col, 2)'),
-            (t.string_col.lead(default=0), 'lead(string_col, 1, 0)'),
-            (t.double_col.first(), 'first_value(double_col)'),
-            (t.double_col.last(), 'last_value(double_col)'),
+             'row_number() OVER (ORDER BY `float_col`) - 1'),
+            (t.string_col.lag(), 'lag(`string_col`)'),
+            (t.string_col.lag(2), 'lag(`string_col`, 2)'),
+            (t.string_col.lag(default=0), 'lag(`string_col`, 1, 0)'),
+            (t.string_col.lead(), 'lead(`string_col`)'),
+            (t.string_col.lead(2), 'lead(`string_col`, 2)'),
+            (t.string_col.lead(default=0), 'lead(`string_col`, 1, 0)'),
+            (t.double_col.first(), 'first_value(`double_col`)'),
+            (t.double_col.last(), 'last_value(`double_col`)'),
             # (t.double_col.nth(4), 'first_value(lag(double_col, 4 - 1))')
         ]
         self._check_expr_cases(cases)
@@ -784,41 +786,41 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
     def test_unary_ops(self):
         s = self.table.string_col
         cases = [
-            (s.lower(), 'lower(string_col)'),
-            (s.upper(), 'upper(string_col)'),
-            (s.reverse(), 'reverse(string_col)'),
-            (s.strip(), 'trim(string_col)'),
-            (s.lstrip(), 'ltrim(string_col)'),
-            (s.rstrip(), 'rtrim(string_col)'),
-            (s.capitalize(), 'initcap(string_col)'),
-            (s.length(), 'length(string_col)'),
-            (s.ascii_str(), 'ascii(string_col)')
+            (s.lower(), 'lower(`string_col`)'),
+            (s.upper(), 'upper(`string_col`)'),
+            (s.reverse(), 'reverse(`string_col`)'),
+            (s.strip(), 'trim(`string_col`)'),
+            (s.lstrip(), 'ltrim(`string_col`)'),
+            (s.rstrip(), 'rtrim(`string_col`)'),
+            (s.capitalize(), 'initcap(`string_col`)'),
+            (s.length(), 'length(`string_col`)'),
+            (s.ascii_str(), 'ascii(`string_col`)')
         ]
         self._check_expr_cases(cases)
 
     def test_substr(self):
         # Database numbers starting from 1
         cases = [
-            (self.table.string_col.substr(2), 'substr(string_col, 2 + 1)'),
+            (self.table.string_col.substr(2), 'substr(`string_col`, 2 + 1)'),
             (self.table.string_col.substr(0, 3),
-             'substr(string_col, 0 + 1, 3)')
+             'substr(`string_col`, 0 + 1, 3)')
         ]
         self._check_expr_cases(cases)
 
     def test_strright(self):
         cases = [
-            (self.table.string_col.right(4), 'strright(string_col, 4)')
+            (self.table.string_col.right(4), 'strright(`string_col`, 4)')
         ]
         self._check_expr_cases(cases)
 
     def test_like(self):
         cases = [
-            (self.table.string_col.like('foo%'), "string_col LIKE 'foo%'")
+            (self.table.string_col.like('foo%'), "`string_col` LIKE 'foo%'")
         ]
         self._check_expr_cases(cases)
 
     def test_rlike(self):
-        ex = "string_col RLIKE '[\d]+'"
+        ex = "`string_col` RLIKE '[\d]+'"
         cases = [
             (self.table.string_col.rlike('[\d]+'), ex),
             (self.table.string_col.re_search('[\d]+'), ex),
@@ -826,21 +828,21 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_re_extract(self):
-        sql = "regexp_extract(string_col, '[\d]+', 0)"
+        sql = "regexp_extract(`string_col`, '[\d]+', 0)"
         cases = [
             (self.table.string_col.re_extract('[\d]+', 0), sql)
         ]
         self._check_expr_cases(cases)
 
     def test_re_replace(self):
-        sql = "regexp_replace(string_col, '[\d]+', 'aaa')"
+        sql = "regexp_replace(`string_col`, '[\d]+', 'aaa')"
         cases = [
             (self.table.string_col.re_replace('[\d]+', 'aaa'), sql)
         ]
         self._check_expr_cases(cases)
 
     def test_parse_url(self):
-        sql = "parse_url(string_col, 'HOST')"
+        sql = "parse_url(`string_col`, 'HOST')"
         cases = [
             (self.table.string_col.parse_url('HOST'), sql)
         ]
@@ -848,14 +850,14 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_repeat(self):
         cases = [
-            (self.table.string_col.repeat(2), 'repeat(string_col, 2)')
+            (self.table.string_col.repeat(2), 'repeat(`string_col`, 2)')
         ]
         self._check_expr_cases(cases)
 
     def test_translate(self):
         cases = [
             (self.table.string_col.translate('a', 'b'),
-             "translate(string_col, 'a', 'b')")
+             "translate(`string_col`, 'a', 'b')")
         ]
         self._check_expr_cases(cases)
 
@@ -863,33 +865,33 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         s = self.table.string_col
         i1 = self.table.tinyint_col
         cases = [
-            (s.find('a'), "locate('a', string_col) - 1"),
-            (s.find('a', 2), "locate('a', string_col, 3) - 1"),
+            (s.find('a'), "locate('a', `string_col`) - 1"),
+            (s.find('a', 2), "locate('a', `string_col`, 3) - 1"),
             (s.find('a', start=i1),
-             "locate('a', string_col, tinyint_col + 1) - 1")
+             "locate('a', `string_col`, `tinyint_col` + 1) - 1")
         ]
         self._check_expr_cases(cases)
 
     def test_lpad(self):
         cases = [
-            (self.table.string_col.lpad(1, 'a'), "lpad(string_col, 1, 'a')"),
-            (self.table.string_col.lpad(25), "lpad(string_col, 25, ' ')")
+            (self.table.string_col.lpad(1, 'a'), "lpad(`string_col`, 1, 'a')"),
+            (self.table.string_col.lpad(25), "lpad(`string_col`, 25, ' ')")
         ]
         self._check_expr_cases(cases)
 
     def test_rpad(self):
         cases = [
-            (self.table.string_col.rpad(1, 'a'), "rpad(string_col, 1, 'a')"),
-            (self.table.string_col.rpad(25), "rpad(string_col, 25, ' ')")
+            (self.table.string_col.rpad(1, 'a'), "rpad(`string_col`, 1, 'a')"),
+            (self.table.string_col.rpad(25), "rpad(`string_col`, 25, ' ')")
         ]
         self._check_expr_cases(cases)
 
     def test_find_in_set(self):
         cases = [
             (self.table.string_col.find_in_set(['a']),
-             "find_in_set(string_col, 'a') - 1"),
+             "find_in_set(`string_col`, 'a') - 1"),
             (self.table.string_col.find_in_set(['a', 'b']),
-             "find_in_set(string_col, 'a,b') - 1")
+             "find_in_set(`string_col`, 'a,b') - 1")
         ]
         self._check_expr_cases(cases)
 

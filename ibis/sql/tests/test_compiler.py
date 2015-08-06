@@ -119,21 +119,21 @@ class TestASTBuilder(unittest.TestCase):
         result = to_sql(what)
         expected = """SELECT *
 FROM star1
-ORDER BY f"""
+ORDER BY `f`"""
         assert result == expected
 
         what = table.sort_by(('f', 0))
         result = to_sql(what)
         expected = """SELECT *
 FROM star1
-ORDER BY f DESC"""
+ORDER BY `f` DESC"""
         assert result == expected
 
         what = table.sort_by(['c', ('f', 0)])
         result = to_sql(what)
         expected = """SELECT *
 FROM star1
-ORDER BY c, f DESC"""
+ORDER BY `c`, `f` DESC"""
         assert result == expected
 
     def test_limit(self):
@@ -158,7 +158,7 @@ LIMIT 10 OFFSET 5"""
 
         expected = """SELECT *
 FROM star1
-WHERE f > 0
+WHERE `f` > 0
 LIMIT 10"""
 
         assert result == expected
@@ -177,7 +177,7 @@ FROM (
   FROM star1
   LIMIT 10
 ) t0
-WHERE f > 0"""
+WHERE `f` > 0"""
 
         assert result2 == expected2
 
@@ -197,7 +197,7 @@ FROM (
   LIMIT 100
 ) t0
   INNER JOIN star2 t1
-    ON t0.foo_id = t1.foo_id"""
+    ON t0.`foo_id` = t1.`foo_id`"""
 
         assert result == expected
 
@@ -215,12 +215,12 @@ FROM (
         result = to_sql(expr)
         expected = """SELECT *
 FROM (
-  SELECT string_col, count(*) AS `nrows`
+  SELECT `string_col`, count(*) AS `nrows`
   FROM functional_alltypes
   GROUP BY 1
   LIMIT 5
 ) t0
-ORDER BY string_col"""
+ORDER BY `string_col`"""
         assert result == expected
 
     def test_multiple_limits(self):
@@ -270,9 +270,9 @@ class TestNonTabularResults(unittest.TestCase):
         query = ast.queries[0]
 
         sql_query = query.compile()
-        expected = """SELECT sum(f) AS `tmp`
+        expected = """SELECT sum(`f`) AS `tmp`
 FROM alltypes
-WHERE c > 0"""
+WHERE `c` > 0"""
 
         assert sql_query == expected
 
@@ -291,9 +291,9 @@ WHERE c > 0"""
         query = ast.queries[0]
 
         sql_query = query.compile()
-        expected = """SELECT g, sum(f) AS `total`
+        expected = """SELECT `g`, sum(`f`) AS `total`
 FROM alltypes
-WHERE c > 0
+WHERE `c` > 0
 GROUP BY 1"""
 
         assert sql_query == expected
@@ -310,9 +310,9 @@ GROUP BY 1"""
         expr2 = expr.g.cast('double')
 
         query = to_sql(expr2)
-        expected = """SELECT CAST(g AS double) AS `tmp`
+        expected = """SELECT CAST(`g` AS double) AS `tmp`
 FROM (
-  SELECT g, count(*) AS `count`
+  SELECT `g`, count(*) AS `count`
   FROM alltypes
   GROUP BY 1
 ) t0"""
@@ -352,7 +352,7 @@ SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
 
         result = to_sql(reduction)
         expected = """\
-SELECT sum(CASE WHEN g IS NULL THEN 1 ELSE 0 END) AS `tmp`
+SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `tmp`
 FROM alltypes"""
         assert result == expected
 
@@ -420,24 +420,24 @@ class TestSelectSQL(unittest.TestCase):
              """SELECT t0.*
 FROM star1 t0
   INNER JOIN star2 t1
-    ON t0.foo_id = t1.foo_id"""),
+    ON t0.`foo_id` = t1.`foo_id`"""),
             (t1.left_join(t2, [pred])[[t1]],
              """SELECT t0.*
 FROM star1 t0
   LEFT OUTER JOIN star2 t1
-    ON t0.foo_id = t1.foo_id"""),
+    ON t0.`foo_id` = t1.`foo_id`"""),
             (t1.outer_join(t2, [pred])[[t1]],
              """SELECT t0.*
 FROM star1 t0
   FULL OUTER JOIN star2 t1
-    ON t0.foo_id = t1.foo_id"""),
+    ON t0.`foo_id` = t1.`foo_id`"""),
             # multiple predicates
             (t1.inner_join(t2, [pred, pred2])[[t1]],
              """SELECT t0.*
 FROM star1 t0
   INNER JOIN star2 t1
-    ON t0.foo_id = t1.foo_id AND
-       t0.bar_id = t1.foo_id"""),
+    ON t0.`foo_id` = t1.`foo_id` AND
+       t0.`bar_id` = t1.`foo_id`"""),
         ]
 
         for expr, expected_sql in cases:
@@ -456,12 +456,12 @@ FROM star1 t0
                 .inner_join(t3, [predB])
                 .projection([t1, t2['value1'], t3['value2']]))
         result_sql = to_sql(what)
-        expected_sql = """SELECT t0.*, t1.value1, t2.value2
+        expected_sql = """SELECT t0.*, t1.`value1`, t2.`value2`
 FROM star1 t0
   LEFT OUTER JOIN star2 t1
-    ON t0.foo_id = t1.foo_id
+    ON t0.`foo_id` = t1.`foo_id`
   INNER JOIN star3 t2
-    ON t0.bar_id = t2.bar_id"""
+    ON t0.`bar_id` = t2.`bar_id`"""
         assert result_sql == expected_sql
 
     def test_join_between_joins(self):
@@ -498,20 +498,20 @@ FROM star1 t0
         projected = joined.projection(exprs)
 
         result = to_sql(projected)
-        expected = """SELECT t0.*, t1.value3, t1.value4
+        expected = """SELECT t0.*, t1.`value3`, t1.`value4`
 FROM (
-  SELECT t2.*, t3.value2
+  SELECT t2.*, t3.`value2`
   FROM `first` t2
     INNER JOIN second t3
-      ON t2.key1 = t3.key1
+      ON t2.`key1` = t3.`key1`
 ) t0
   INNER JOIN (
-    SELECT t2.*, t3.value4
+    SELECT t2.*, t3.`value4`
     FROM third t2
       INNER JOIN fourth t3
-        ON t2.key3 = t3.key3
+        ON t2.`key3` = t3.`key3`
   ) t1
-    ON t0.key2 = t1.key2"""
+    ON t0.`key2` = t1.`key2`"""
         assert result == expected
 
     def test_join_just_materialized(self):
@@ -526,9 +526,9 @@ FROM (
         expected = """SELECT *
 FROM tpch_nation t0
   INNER JOIN tpch_region t1
-    ON t0.n_regionkey = t1.r_regionkey
+    ON t0.`n_regionkey` = t1.`r_regionkey`
   INNER JOIN tpch_customer t2
-    ON t0.n_nationkey = t2.c_nationkey"""
+    ON t0.`n_nationkey` = t2.`c_nationkey`"""
         assert result == expected
 
         result = to_sql(joined.materialize())
@@ -565,7 +565,7 @@ FROM star1 t0
         expected = """SELECT t0.*
 FROM star1 t0
   LEFT SEMI JOIN star2 t1
-    ON t0.foo_id = t1.foo_id"""
+    ON t0.`foo_id` = t1.`foo_id`"""
         assert result == expected
 
         joined = t1.anti_join(t2, [t1.foo_id == t2.foo_id])[[t1]]
@@ -573,7 +573,7 @@ FROM star1 t0
         expected = """SELECT t0.*
 FROM star1 t0
   LEFT ANTI JOIN star2 t1
-    ON t0.foo_id = t1.foo_id"""
+    ON t0.`foo_id` = t1.`foo_id`"""
         assert result == expected
 
     def test_self_reference_simple(self):
@@ -593,7 +593,7 @@ FROM star1 t0
         expected_sql = """SELECT t0.*
 FROM star1 t0
   INNER JOIN star1 t1
-    ON t0.foo_id = t1.bar_id"""
+    ON t0.`foo_id` = t1.`bar_id`"""
         assert result_sql == expected_sql
 
     def test_join_projection_subquery_broken_alias(self):
@@ -609,13 +609,13 @@ FROM star1 t0
         result = to_sql(expr)
         expected = """SELECT t1.*, t0.*
 FROM (
-  SELECT t2.n_nationkey, t2.n_name AS `nation`, t3.r_name AS `region`
+  SELECT t2.`n_nationkey`, t2.`n_name` AS `nation`, t3.`r_name` AS `region`
   FROM nation t2
     INNER JOIN region t3
-      ON t2.n_regionkey = t3.r_regionkey
+      ON t2.`n_regionkey` = t3.`r_regionkey`
 ) t0
   INNER JOIN customer t1
-    ON t0.n_nationkey = t1.c_nationkey"""
+    ON t0.`n_nationkey` = t1.`c_nationkey`"""
         assert result == expected
 
     def test_where_simple_comparisons(self):
@@ -626,8 +626,8 @@ FROM (
         result = to_sql(what)
         expected = """SELECT *
 FROM star1
-WHERE f > 0 AND
-      c < (f * 2)"""
+WHERE `f` > 0 AND
+      `c` < (`f` * 2)"""
         assert result == expected
 
     def test_where_in_array_literal(self):
@@ -648,12 +648,12 @@ WHERE f > 0 AND
                  .filter([t1.f > 0, t2.value3 < 1000])
                  .projection([t1, t2.value1, t2.value3]))
 
-        expected_sql = """SELECT t0.*, t1.value1, t1.value3
+        expected_sql = """SELECT t0.*, t1.`value1`, t1.`value3`
 FROM star1 t0
   INNER JOIN star2 t1
-    ON t0.foo_id = t1.foo_id
-WHERE t0.f > 0 AND
-      t1.value3 < 1000"""
+    ON t0.`foo_id` = t1.`foo_id`
+WHERE t0.`f` > 0 AND
+      t1.`value3` < 1000"""
 
         result_sql = to_sql(what)
         assert result_sql == expected_sql
@@ -673,14 +673,14 @@ WHERE t0.f > 0 AND
         # TODO: I'm not sure if this is exactly what we want
         expected_sql = """SELECT *
 FROM (
-  SELECT t0.*, t0.f - t1.value1 AS `diff`
+  SELECT t0.*, t0.`f` - t1.`value1` AS `diff`
   FROM star1 t0
     INNER JOIN star2 t1
-      ON t0.foo_id = t1.foo_id
-  WHERE t0.f > 0 AND
-        t1.value3 < 1000
+      ON t0.`foo_id` = t1.`foo_id`
+  WHERE t0.`f` > 0 AND
+        t1.`value3` < 1000
 )
-WHERE diff > 1"""
+WHERE `diff` > 1"""
 
         raise unittest.SkipTest
 
@@ -694,8 +694,8 @@ WHERE diff > 1"""
         result = to_sql(what)
         expected = """SELECT *
 FROM alltypes
-WHERE a > 0 AND
-      f BETWEEN 0 AND 1"""
+WHERE `a` > 0 AND
+      `f` BETWEEN 0 AND 1"""
         assert result == expected
 
     def test_where_analyze_scalar_op(self):
@@ -713,8 +713,8 @@ WHERE a > 0 AND
         expected = """\
 SELECT count(*) AS `tmp`
 FROM functional_alltypes
-WHERE timestamp_col < months_add('2010-01-01 00:00:00', 3) AND
-      timestamp_col < days_add(now(), 10)"""
+WHERE `timestamp_col` < months_add('2010-01-01 00:00:00', 3) AND
+      `timestamp_col` < days_add(now(), 10)"""
         assert result == expected
 
     def test_simple_aggregate_query(self):
@@ -723,12 +723,12 @@ WHERE timestamp_col < months_add('2010-01-01 00:00:00', 3) AND
         cases = [
             (t1.aggregate([t1['f'].sum().name('total')],
                           [t1['foo_id']]),
-             """SELECT foo_id, sum(f) AS `total`
+             """SELECT `foo_id`, sum(`f`) AS `total`
 FROM star1
 GROUP BY 1"""),
             (t1.aggregate([t1['f'].sum().name('total')],
                           ['foo_id', 'bar_id']),
-             """SELECT foo_id, bar_id, sum(f) AS `total`
+             """SELECT `foo_id`, `bar_id`, sum(`f`) AS `total`
 FROM star1
 GROUP BY 1, 2""")
         ]
@@ -746,16 +746,16 @@ GROUP BY 1, 2""")
         expr = t1.aggregate(metrics, by=['foo_id'],
                             having=[total > 10])
         result = to_sql(expr)
-        expected = """SELECT foo_id, sum(f) AS `total`
+        expected = """SELECT `foo_id`, sum(`f`) AS `total`
 FROM star1
 GROUP BY 1
-HAVING sum(f) > 10"""
+HAVING sum(`f`) > 10"""
         assert result == expected
 
         expr = t1.aggregate(metrics, by=['foo_id'],
                             having=[t1.count() > 100])
         result = to_sql(expr)
-        expected = """SELECT foo_id, sum(f) AS `total`
+        expected = """SELECT `foo_id`, sum(`f`) AS `total`
 FROM star1
 GROUP BY 1
 HAVING count(*) > 100"""
@@ -780,10 +780,10 @@ FROM star1"""
         result = to_sql(expr)
         expected = """SELECT count(*) AS `tmp`
 FROM (
-  SELECT t2.*, t1.r_name AS `region`
+  SELECT t2.*, t1.`r_name` AS `region`
   FROM tpch_region t1
     INNER JOIN tpch_nation t2
-      ON t1.r_regionkey = t2.n_regionkey
+      ON t1.`r_regionkey` = t2.`n_regionkey`
 ) t0"""
         assert result == expected
 
@@ -827,10 +827,10 @@ FROM (
 
         result = to_sql(expr)
         expected = """\
-SELECT t2.key, t2.v1, t3.v2
+SELECT t2.`key`, t2.`v1`, t3.`v2`
 FROM t0 t2
   INNER JOIN t1 t3
-    ON t2.key = t3.key"""
+    ON t2.`key` = t3.`key`"""
 
         assert result == expected
 
@@ -878,12 +878,12 @@ FROM t0 t2
         assert table3.equals(expected)
         assert table3_filtered.equals(expected2)
 
-        ex_sql = """SELECT *, foo + bar AS `baz`, foo * 2 AS `qux`
+        ex_sql = """SELECT *, `foo` + `bar` AS `baz`, `foo` * 2 AS `qux`
 FROM tbl"""
 
-        ex_sql2 = """SELECT *, foo + bar AS `baz`, foo * 2 AS `qux`
+        ex_sql2 = """SELECT *, `foo` + `bar` AS `baz`, `foo` * 2 AS `qux`
 FROM tbl
-WHERE value > 0"""
+WHERE `value` > 0"""
 
         table3_sql = to_sql(table3)
         table3_filt_sql = to_sql(table3_filtered)
@@ -928,26 +928,26 @@ WHERE value > 0"""
         # it works!
         result = to_sql(expr)
         expected = """\
-SELECT c_name, r_name, n_name
+SELECT `c_name`, `r_name`, `n_name`
 FROM (
-  SELECT t1.*, t2.n_name, t3.r_name
+  SELECT t1.*, t2.`n_name`, t3.`r_name`
   FROM tpch_customer t1
     INNER JOIN tpch_nation t2
-      ON t1.c_nationkey = t2.n_nationkey
+      ON t1.`c_nationkey` = t2.`n_nationkey`
     INNER JOIN tpch_region t3
-      ON t2.n_regionkey = t3.r_regionkey
+      ON t2.`n_regionkey` = t3.`r_regionkey`
     LEFT SEMI JOIN (
-      SELECT t2.n_name, sum(CAST(t1.c_acctbal AS double)) AS `__tmp__`
+      SELECT t2.`n_name`, sum(CAST(t1.`c_acctbal` AS double)) AS `__tmp__`
       FROM tpch_customer t1
         INNER JOIN tpch_nation t2
-          ON t1.c_nationkey = t2.n_nationkey
+          ON t1.`c_nationkey` = t2.`n_nationkey`
         INNER JOIN tpch_region t3
-          ON t2.n_regionkey = t3.r_regionkey
+          ON t2.`n_regionkey` = t3.`r_regionkey`
       GROUP BY 1
-      ORDER BY __tmp__ DESC
+      ORDER BY `__tmp__` DESC
       LIMIT 10
     ) t4
-      ON t2.n_name = t4.n_name
+      ON t2.`n_name` = t4.`n_name`
 ) t0"""
         assert result == expected
 
@@ -963,20 +963,20 @@ FROM (
         filtered = proj[proj.g == 'bar']
 
         result = to_sql(filtered)
-        expected = """SELECT *, a + b AS `foo`
+        expected = """SELECT *, `a` + `b` AS `foo`
 FROM alltypes
-WHERE f > 0 AND
-      g = 'bar'"""
+WHERE `f` > 0 AND
+      `g` = 'bar'"""
         assert result == expected
 
         agged = agg(filtered)
         result = to_sql(agged)
-        expected = """SELECT g, sum(foo) AS `foo total`
+        expected = """SELECT `g`, sum(`foo`) AS `foo total`
 FROM (
-  SELECT *, a + b AS `foo`
+  SELECT *, `a` + `b` AS `foo`
   FROM alltypes
-  WHERE f > 0 AND
-        g = 'bar'
+  WHERE `f` > 0 AND
+        `g` = 'bar'
 ) t0
 GROUP BY 1"""
         assert result == expected
@@ -985,13 +985,13 @@ GROUP BY 1"""
         agged2 = agg(proj[proj.foo < 10])
 
         result = to_sql(agged2)
-        expected = """SELECT t0.g, sum(t0.foo) AS `foo total`
+        expected = """SELECT t0.`g`, sum(t0.`foo`) AS `foo total`
 FROM (
-  SELECT *, a + b AS `foo`
+  SELECT *, `a` + `b` AS `foo`
   FROM alltypes
-  WHERE f > 0
+  WHERE `f` > 0
 ) t0
-WHERE t0.foo < 10
+WHERE t0.`foo` < 10
 GROUP BY 1"""
         assert result == expected
 
@@ -1004,14 +1004,14 @@ GROUP BY 1"""
                 [agged, t2.value1])
 
         result = to_sql(what)
-        expected = """SELECT t0.*, t1.value1
+        expected = """SELECT t0.*, t1.`value1`
 FROM (
-  SELECT foo_id, sum(f) AS `total`
+  SELECT `foo_id`, sum(`f`) AS `total`
   FROM star1
   GROUP BY 1
 ) t0
   INNER JOIN star2 t1
-    ON t0.foo_id = t1.foo_id"""
+    ON t0.`foo_id` = t1.`foo_id`"""
         assert result == expected
 
     def test_double_nested_subquery_no_aliases(self):
@@ -1031,11 +1031,11 @@ FROM (
                               by=['key1'])
 
         result = to_sql(agg3)
-        expected = """SELECT key1, sum(total) AS `total`
+        expected = """SELECT `key1`, sum(`total`) AS `total`
 FROM (
-  SELECT key1, key2, sum(total) AS `total`
+  SELECT `key1`, `key2`, sum(`total`) AS `total`
   FROM (
-    SELECT key1, key2, key3, sum(value) AS `total`
+    SELECT `key1`, `key2`, `key3`, sum(`value`) AS `total`
     FROM foo_table
     GROUP BY 1, 2, 3
   ) t1
@@ -1057,12 +1057,12 @@ GROUP BY 1"""
 
         # TODO: Not fusing the aggregation with the projection yet
         result = to_sql(what)
-        expected = """SELECT foo_id, sum(value1) AS `total`
+        expected = """SELECT `foo_id`, sum(`value1`) AS `total`
 FROM (
-  SELECT t1.*, t2.value1
+  SELECT t1.*, t2.`value1`
   FROM star1 t1
     INNER JOIN star2 t2
-      ON t1.foo_id = t2.foo_id
+      ON t1.`foo_id` = t2.`foo_id`
 ) t0
 GROUP BY 1"""
         assert result == expected
@@ -1093,14 +1093,14 @@ GROUP BY 1"""
 
         result = to_sql(reagged)
         expected = """WITH t0 AS (
-  SELECT g, a, b, sum(f) AS `total`
+  SELECT `g`, `a`, `b`, sum(`f`) AS `total`
   FROM alltypes
   GROUP BY 1, 2, 3
 )
-SELECT t0.g, max(t0.total - t1.total) AS `metric`
+SELECT t0.`g`, max(t0.`total` - t1.`total`) AS `metric`
 FROM t0
   INNER JOIN t0 t1
-    ON t0.a = t1.b
+    ON t0.`a` = t1.`b`
 GROUP BY 1"""
         assert result == expected
 
@@ -1132,22 +1132,22 @@ GROUP BY 1"""
         result = to_sql(expr)
         expected = """\
 WITH t0 AS (
-  SELECT t5.*, t1.r_name AS `region`, t3.o_totalprice AS `amount`,
-         CAST(t3.o_orderdate AS timestamp) AS `odate`
+  SELECT t5.*, t1.`r_name` AS `region`, t3.`o_totalprice` AS `amount`,
+         CAST(t3.`o_orderdate` AS timestamp) AS `odate`
   FROM tpch_region t1
     INNER JOIN tpch_nation t2
-      ON t1.r_regionkey = t2.n_regionkey
+      ON t1.`r_regionkey` = t2.`n_regionkey`
     INNER JOIN tpch_customer t5
-      ON t5.c_nationkey = t2.n_nationkey
+      ON t5.`c_nationkey` = t2.`n_nationkey`
     INNER JOIN tpch_orders t3
-      ON t3.o_custkey = t5.c_custkey
+      ON t3.`o_custkey` = t5.`c_custkey`
 )
 SELECT t0.*
 FROM t0
-WHERE t0.amount > (
-  SELECT avg(t4.amount) AS `tmp`
+WHERE t0.`amount` > (
+  SELECT avg(t4.`amount`) AS `tmp`
   FROM t0 t4
-  WHERE t4.region = t0.region
+  WHERE t4.`region` = t0.`region`
 )
 LIMIT 10"""
         assert result == expected
@@ -1171,12 +1171,12 @@ WITH t0 AS (
   SELECT t2.*, t3.*
   FROM tpch_region t2
     INNER JOIN tpch_nation t3
-      ON t2.r_regionkey = t3.n_regionkey
+      ON t2.`r_regionkey` = t3.`n_regionkey`
 )
-SELECT t0.r_name, t1.n_name
+SELECT t0.`r_name`, t1.`n_name`
 FROM t0
   INNER JOIN t0 t1
-    ON t0.r_regionkey = t1.r_regionkey"""
+    ON t0.`r_regionkey` = t1.`r_regionkey`"""
 
         assert result == expected
 
@@ -1192,7 +1192,7 @@ FROM t0
 SELECT count(*) AS `tmp`
 FROM functional_alltypes t0
   INNER JOIN functional_alltypes t1
-    ON t0.tinyint_col < extract(t1.timestamp_col, 'minute')"""
+    ON t0.`tinyint_col` < extract(t1.`timestamp_col`, 'minute')"""
         assert result == expected
 
     def test_cte_factor_distinct_but_equal(self):
@@ -1207,14 +1207,14 @@ FROM functional_alltypes t0
         result = to_sql(expr)
         expected = """\
 WITH t0 AS (
-  SELECT g, sum(f) AS `metric`
+  SELECT `g`, sum(`f`) AS `metric`
   FROM alltypes
   GROUP BY 1
 )
 SELECT t0.*
 FROM t0
   INNER JOIN t0 t1
-    ON t0.g = t1.g"""
+    ON t0.`g` = t1.`g`"""
 
         assert result == expected
 
@@ -1274,8 +1274,8 @@ FROM t0
         result = to_sql(expr)
         expected = """SELECT *
 FROM star1
-WHERE f > (
-  SELECT avg(f) AS `tmp`
+WHERE `f` > (
+  SELECT avg(`f`) AS `tmp`
   FROM star1
 )"""
         assert result == expected
@@ -1283,10 +1283,10 @@ WHERE f > (
         result = to_sql(expr2)
         expected = """SELECT *
 FROM star1
-WHERE f > (
-  SELECT avg(f) AS `tmp`
+WHERE `f` > (
+  SELECT avg(`f`) AS `tmp`
   FROM star1
-  WHERE foo_id = 'foo'
+  WHERE `foo_id` = 'foo'
 )"""
         assert result == expected
 
@@ -1301,10 +1301,10 @@ WHERE f > (
         result = to_sql(expr3)
         expected = """SELECT *
 FROM star1
-WHERE f > (
-  SELECT ln(avg(f)) AS `tmp`
+WHERE `f` > (
+  SELECT ln(avg(`f`)) AS `tmp`
   FROM star1
-  WHERE foo_id = 'foo'
+  WHERE `foo_id` = 'foo'
 )"""
         assert result == expected
 
@@ -1313,10 +1313,10 @@ WHERE f > (
         result = to_sql(expr4)
         expected = """SELECT *
 FROM star1
-WHERE f > (
-  SELECT ln(avg(f)) + 1 AS `tmp`
+WHERE `f` > (
+  SELECT ln(avg(`f`)) + 1 AS `tmp`
   FROM star1
-  WHERE foo_id = 'foo'
+  WHERE `foo_id` = 'foo'
 )"""
         assert result == expected
 
@@ -1338,13 +1338,13 @@ WHERE f > (
         expected = """SELECT t0.*
 FROM tbl t0
   LEFT SEMI JOIN (
-    SELECT city, avg(v2) AS `__tmp__`
+    SELECT `city`, avg(`v2`) AS `__tmp__`
     FROM tbl
     GROUP BY 1
-    ORDER BY __tmp__ DESC
+    ORDER BY `__tmp__` DESC
     LIMIT 10
   ) t1
-    ON t0.city = t1.city"""
+    ON t0.`city` = t1.`city`"""
         assert query == expected
 
         # Test the default metric (count)
@@ -1355,13 +1355,13 @@ FROM tbl t0
         expected = """SELECT t0.*
 FROM tbl t0
   LEFT SEMI JOIN (
-    SELECT city, count(city) AS `__tmp__`
+    SELECT `city`, count(`city`) AS `__tmp__`
     FROM tbl
     GROUP BY 1
-    ORDER BY __tmp__ DESC
+    ORDER BY `__tmp__` DESC
     LIMIT 10
   ) t1
-    ON t0.city = t1.city"""
+    ON t0.`city` = t1.`city`"""
         assert query == expected
 
     def test_topk_predicate_pushdown_bug(self):
@@ -1378,24 +1378,24 @@ FROM tbl t0
 
         result = to_sql(expr)
         expected = """\
-SELECT t0.*, t1.n_name, t2.r_name
+SELECT t0.*, t1.`n_name`, t2.`r_name`
 FROM customer t0
   INNER JOIN nation t1
-    ON t0.c_nationkey = t1.n_nationkey
+    ON t0.`c_nationkey` = t1.`n_nationkey`
   INNER JOIN region t2
-    ON t1.n_regionkey = t2.r_regionkey
+    ON t1.`n_regionkey` = t2.`r_regionkey`
   LEFT SEMI JOIN (
-    SELECT t1.n_name, sum(t0.c_acctbal) AS `__tmp__`
+    SELECT t1.`n_name`, sum(t0.`c_acctbal`) AS `__tmp__`
     FROM customer t0
       INNER JOIN nation t1
-        ON t0.c_nationkey = t1.n_nationkey
+        ON t0.`c_nationkey` = t1.`n_nationkey`
       INNER JOIN region t2
-        ON t1.n_regionkey = t2.r_regionkey
+        ON t1.`n_regionkey` = t2.`r_regionkey`
     GROUP BY 1
-    ORDER BY __tmp__ DESC
+    ORDER BY `__tmp__` DESC
     LIMIT 10
   ) t3
-    ON t1.n_name = t3.n_name"""
+    ON t1.`n_name` = t3.`n_name`"""
         assert result == expected
 
     def test_topk_analysis_bug(self):
@@ -1411,18 +1411,18 @@ FROM customer t0
 
         result = to_sql(expr)
         expected = """\
-SELECT t0.origin, count(*) AS `count`
+SELECT t0.`origin`, count(*) AS `count`
 FROM airlines t0
   LEFT SEMI JOIN (
-    SELECT dest, avg(arrdelay) AS `__tmp__`
+    SELECT `dest`, avg(`arrdelay`) AS `__tmp__`
     FROM airlines
-    WHERE dest IN ('ORD', 'JFK', 'SFO')
+    WHERE `dest` IN ('ORD', 'JFK', 'SFO')
     GROUP BY 1
-    ORDER BY __tmp__ DESC
+    ORDER BY `__tmp__` DESC
     LIMIT 10
   ) t1
-    ON t0.dest = t1.dest
-WHERE t0.dest IN ('ORD', 'JFK', 'SFO')
+    ON t0.`dest` = t1.`dest`
+WHERE t0.`dest` IN ('ORD', 'JFK', 'SFO')
 GROUP BY 1"""
 
         assert result == expected
@@ -1451,14 +1451,14 @@ GROUP BY 1"""
 
         result = to_sql(proj)
         expected = """SELECT
-  CASE g
+  CASE `g`
     WHEN 'foo' THEN 'bar'
     WHEN 'baz' THEN 'qux'
     ELSE 'default'
   END AS `col1`,
   CASE
-    WHEN g = 'foo' THEN 'bar'
-    WHEN g = 'baz' THEN g
+    WHEN `g` = 'foo' THEN 'bar'
+    WHEN `g` = 'baz' THEN `g`
     ELSE NULL
   END AS `col2`, *
 FROM alltypes"""
@@ -1497,41 +1497,41 @@ class TestUnions(unittest.TestCase):
     def test_union(self):
         result = to_sql(self.union1)
         expected = """\
-SELECT string_col AS `key`, CAST(float_col AS double) AS `value`
+SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
 FROM functional_alltypes
-WHERE int_col > 0
+WHERE `int_col` > 0
 UNION ALL
-SELECT string_col AS `key`, double_col AS `value`
+SELECT `string_col` AS `key`, `double_col` AS `value`
 FROM functional_alltypes
-WHERE int_col <= 0"""
+WHERE `int_col` <= 0"""
         assert result == expected
 
     def test_union_distinct(self):
         union = self.t1.union(self.t2, distinct=True)
         result = to_sql(union)
         expected = """\
-SELECT string_col AS `key`, CAST(float_col AS double) AS `value`
+SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
 FROM functional_alltypes
-WHERE int_col > 0
+WHERE `int_col` > 0
 UNION
-SELECT string_col AS `key`, double_col AS `value`
+SELECT `string_col` AS `key`, `double_col` AS `value`
 FROM functional_alltypes
-WHERE int_col <= 0"""
+WHERE `int_col` <= 0"""
         assert result == expected
 
     def test_union_project_column(self):
         # select a column, get a subquery
         expr = self.union1[[self.union1.key]]
         result = to_sql(expr)
-        expected = """SELECT key
+        expected = """SELECT `key`
 FROM (
-  SELECT string_col AS `key`, CAST(float_col AS double) AS `value`
+  SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
   FROM functional_alltypes
-  WHERE int_col > 0
+  WHERE `int_col` > 0
   UNION ALL
-  SELECT string_col AS `key`, double_col AS `value`
+  SELECT `string_col` AS `key`, `double_col` AS `value`
   FROM functional_alltypes
-  WHERE int_col <= 0
+  WHERE `int_col` <= 0
 ) t0"""
         assert result == expected
 
@@ -1826,7 +1826,7 @@ STORED AS PARQUET
 AS
 SELECT *
 FROM functional_alltypes
-WHERE bigint_col > 0"""
+WHERE `bigint_col` > 0"""
         assert result == expected
 
     def test_no_overwrite(self):
@@ -1840,7 +1840,7 @@ STORED AS PARQUET
 AS
 SELECT *
 FROM functional_alltypes
-WHERE bigint_col > 0"""
+WHERE `bigint_col` > 0"""
         assert result == expected
 
     def test_avro_other_formats(self):
@@ -1872,7 +1872,7 @@ class TestDistinct(unittest.TestCase):
         expr = t[t.string_col, t.int_col].distinct()
 
         result = to_sql(expr)
-        expected = """SELECT DISTINCT string_col, int_col
+        expected = """SELECT DISTINCT `string_col`, `int_col`
 FROM functional_alltypes"""
         assert result == expected
 
@@ -1881,7 +1881,7 @@ FROM functional_alltypes"""
         expr = t.string_col.distinct()
 
         result = to_sql(expr)
-        expected = """SELECT DISTINCT string_col
+        expected = """SELECT DISTINCT `string_col`
 FROM functional_alltypes"""
         assert result == expected
 
@@ -1892,9 +1892,9 @@ FROM functional_alltypes"""
         expr = t[t.bigint_col > 0].group_by('string_col').aggregate([metric])
 
         result = to_sql(expr)
-        expected = """SELECT string_col, COUNT(DISTINCT int_col) AS `nunique`
+        expected = """SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `nunique`
 FROM functional_alltypes
-WHERE bigint_col > 0
+WHERE `bigint_col` > 0
 GROUP BY 1"""
         assert result == expected
 
@@ -1909,8 +1909,8 @@ GROUP BY 1"""
         expr = t.group_by('string_col').aggregate(metrics)
 
         result = to_sql(expr)
-        expected = """SELECT string_col, COUNT(DISTINCT int_col) AS `int_card`,
-       COUNT(DISTINCT smallint_col) AS `smallint_card`
+        expected = """SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `int_card`,
+       COUNT(DISTINCT `smallint_col`) AS `smallint_card`
 FROM functional_alltypes
 GROUP BY 1"""
         assert result == expected
@@ -1950,8 +1950,8 @@ class TestSubqueriesEtc(unittest.TestCase):
         result = to_sql(expr)
         expected = """SELECT *
 FROM foo
-WHERE y > (
-  SELECT max(x) AS `tmp`
+WHERE `y` > (
+  SELECT max(`x`) AS `tmp`
   FROM bar
 )"""
         assert result == expected
@@ -1962,8 +1962,8 @@ WHERE y > (
         result = to_sql(expr)
         expected = """SELECT *
 FROM foo
-WHERE job IN (
-  SELECT job
+WHERE `job` IN (
+  SELECT `job`
   FROM bar
 )"""
         assert result == expected
@@ -1978,10 +1978,10 @@ WHERE job IN (
         result = to_sql(expr)
         expected = """SELECT t0.*
 FROM foo t0
-WHERE t0.y > (
-  SELECT avg(t1.y) AS `tmp`
+WHERE t0.`y` > (
+  SELECT avg(t1.`y`) AS `tmp`
   FROM foo t1
-  WHERE t0.dept_id = t1.dept_id
+  WHERE t0.`dept_id` = t1.`dept_id`
 )"""
         assert result == expected
 
@@ -2001,7 +2001,7 @@ FROM foo t0
 WHERE EXISTS (
   SELECT 1
   FROM bar t1
-  WHERE t0.key1 = t1.key1
+  WHERE t0.`key1` = t1.`key1`
 )"""
         assert result == expected
 
@@ -2014,8 +2014,8 @@ FROM foo t0
 WHERE EXISTS (
   SELECT 1
   FROM bar t1
-  WHERE t0.key1 = t1.key1 AND
-        t1.key2 = 'foo'
+  WHERE t0.`key1` = t1.`key1` AND
+        t1.`key2` = 'foo'
 )"""
         assert result == expected
 
@@ -2031,7 +2031,7 @@ FROM foo t0
 WHERE NOT EXISTS (
   SELECT 1
   FROM bar t1
-  WHERE t0.key1 = t1.key1
+  WHERE t0.`key1` = t1.`key1`
 )"""
         assert result == expected
 
