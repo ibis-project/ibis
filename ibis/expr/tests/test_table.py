@@ -1181,6 +1181,11 @@ class TestLateBindingFunctions(BasicTestCase, unittest.TestCase):
         assert_equal(result, expected)
         assert_equal(result2, expected)
 
+        result = m.filter([lambda x: x.foo > 10,
+                           lambda x: x.bar < 0])
+        expected = m.filter([m.foo > 10, m.bar < 0])
+        assert_equal(result, expected)
+
     def test_sort_by(self):
         pass
 
