@@ -124,6 +124,26 @@ LIMIT 0""".format(query)
         node = ops.SQLQueryResult(query, schema, self)
         return ir.TableExpr(node)
 
+    def raw_sql(self, query, results=False):
+        """
+        Execute a given query string. Could have unexpected results if the
+        query modifies the behavior of the session in a way unknown to Ibis; be
+        careful.
+
+        Parameters
+        ----------
+        query : string
+          SQL or DDL statement
+        results : boolean, default False
+          Pass True if the query as a result set
+
+        Returns
+        -------
+        cur : ImpalaCursor if results=True, None otherwise
+          You must call cur.release() after you are finished using the cursor.
+        """
+        return self._execute(query, results=results)
+
     def execute(self, expr, params=None, limit=None):
         """
 
@@ -260,9 +280,8 @@ class ImpalaConnection(object):
         self.log(msg)
 
     def fetchall(self, query):
-        cursor = self.execute(query)
-        results = cursor.fetchall()
-        cursor.release()
+        with self.execute(query) as cur:
+            results = cur.fetchall()
         return results
 
     def _get_cursor(self):
@@ -1188,9 +1207,8 @@ class ImpalaClient(SQLClient):
         if not database:
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=False)
-        cur = self._execute(statement, results=True)
-        result = self._get_udfs(cur)
-        cur.release()
+        with self._execute(statement, results=True) as cur:
+            result = self._get_udfs(cur)
         return result
 
     def list_udas(self, database=None, like=None):
@@ -1205,9 +1223,8 @@ class ImpalaClient(SQLClient):
         if not database:
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=True)
-        cur = self._execute(statement, results=True)
-        result = self._get_list(cur)
-        cur.release()
+        with self._execute(statement, results=True) as cur:
+            result = self._get_list(cur)
 
         return result
 
