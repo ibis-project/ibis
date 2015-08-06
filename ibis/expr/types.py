@@ -646,6 +646,10 @@ class TableExpr(Expr):
         return self._arg.get_type(name)
 
     def materialize(self):
+        """
+        Force schema resolution for a joined table, selecting all fields from
+        all tables.
+        """
         if self._is_materialized():
             return self
         else:
@@ -737,12 +741,6 @@ class TableExpr(Expr):
             expr = expr.name(name)
 
         return self.projection([self, expr])
-
-    def add_columns(self, what):
-        """
-
-        """
-        raise NotImplementedError
 
     def distinct(self):
         """

@@ -1140,3 +1140,41 @@ class TestSemiAntiJoinPredicates(unittest.TestCase):
     def test_not_exists_predicate(self):
         cond = -(self.t1.key1 == self.t2.key1).any()
         assert isinstance(cond.op(), ops.NotAny)
+
+
+class TestLateBindingFunctions(BasicTestCase, unittest.TestCase):
+
+    def test_aggregate_metrics(self):
+        functions = [lambda x: x.e.sum().name('esum'),
+                     lambda x: x.f.sum().name('fsum')]
+        exprs = [self.table.e.sum().name('esum'),
+                 self.table.f.sum().name('fsum')]
+
+        result = self.table.aggregate(functions[0])
+        expected = self.table.aggregate(exprs[0])
+        assert_equal(result, expected)
+
+        result = self.table.aggregate(functions)
+        expected = self.table.aggregate(exprs)
+        assert_equal(result, expected)
+
+    def test_group_by_keys(self):
+        pass
+
+    def test_sort_by(self):
+        pass
+
+    def test_projection(self):
+        pass
+
+    def test_filter(self):
+        pass
+
+    def test_getitem(self):
+        pass
+
+    def test_add_column(self):
+        pass
+
+    def test_mutate(self):
+        pass

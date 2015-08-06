@@ -1698,7 +1698,8 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
             if isinstance(expr, ir.ExprList):
                 all_exprs.extend(expr.exprs())
             else:
-                all_exprs.append(expr)
+                bound_expr = bind_expr(self.table, expr)
+                all_exprs.append(bound_expr)
 
         return [substitute_parents(x, past_projection=False)
                 for x in all_exprs]
@@ -2077,3 +2078,10 @@ class TimestampDelta(ValueOp):
 
     input_type = [rules.timestamp, rules.timedelta(name='offset')]
     output_type = rules.shape_like_arg(0, 'timestamp')
+
+
+def bind_expr(table, expr):
+    if isinstance(expr, ir.Expr):
+        return expr
+    else:
+        return expr(table)
