@@ -1170,16 +1170,21 @@ class TestLateBindingFunctions(BasicTestCase, unittest.TestCase):
         expected = m.group_by(['foo', 'bar']).size()
         assert_equal(expr, expected)
 
+    def test_filter(self):
+        m = self.table.mutate(foo=self.table.f * 2,
+                              bar=self.table.e / 2)
+
+        result = m.filter(lambda x: x.foo > 10)
+        result2 = m[lambda x: x.foo > 10]
+        expected = m[m.foo > 10]
+
+        assert_equal(result, expected)
+        assert_equal(result2, expected)
+
     def test_sort_by(self):
         pass
 
     def test_projection(self):
-        pass
-
-    def test_filter(self):
-        pass
-
-    def test_getitem(self):
         pass
 
     def test_add_column(self):

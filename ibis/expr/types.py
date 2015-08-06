@@ -593,6 +593,7 @@ class TableExpr(Expr):
     def __getitem__(self, what):
         if isinstance(what, basestring):
             return self.get_column(what)
+
         if isinstance(what, slice):
             step = what.step
             if step is not None and step != 1:
@@ -608,7 +609,9 @@ class TableExpr(Expr):
 
             return self.limit(stop - start, offset=start)
 
-        elif isinstance(what, (list, tuple)):
+        what = bind_expr(self, what)
+
+        if isinstance(what, (list, tuple)):
             # Projection case
             return self.projection(what)
         elif isinstance(what, BooleanArray):
@@ -1460,3 +1463,10 @@ class ValueList(ArrayNode):
 
     def to_expr(self):
         return ListExpr(self)
+
+
+def bind_expr(table, expr):
+    if isinstance(expr, (list, tuple)):
+        return [bind_expr(table, x) for x in expr]
+
+    return table._ensure_expr(expr)

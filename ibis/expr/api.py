@@ -1641,6 +1641,9 @@ def filter(table, predicates):
     """
     if isinstance(predicates, Expr):
         predicates = _L.unwrap_ands(predicates)
+    predicates = util.promote_list(predicates)
+
+    predicates = [ir.bind_expr(table, x) for x in predicates]
 
     op = _L.apply_filter(table, predicates)
     return TableExpr(op)
