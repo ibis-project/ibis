@@ -1170,6 +1170,19 @@ class TestLateBindingFunctions(BasicTestCase, unittest.TestCase):
         expected = m.group_by(['foo', 'bar']).size()
         assert_equal(expr, expected)
 
+    def test_having(self):
+        m = self.table.mutate(foo=self.table.f * 2,
+                              bar=self.table.e / 2)
+
+        expr = (m.group_by('foo')
+                .having(lambda x: x.foo.sum() > 10)
+                .size())
+        expected = (m.group_by('foo')
+                    .having(m.foo.sum() > 10)
+                    .size())
+
+        assert_equal(expr, expected)
+
     def test_filter(self):
         m = self.table.mutate(foo=self.table.f * 2,
                               bar=self.table.e / 2)
