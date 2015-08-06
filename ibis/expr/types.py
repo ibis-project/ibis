@@ -642,6 +642,14 @@ class TableExpr(Expr):
             out_exprs.append(expr)
         return out_exprs
 
+    def _ensure_expr(self, expr):
+        if isinstance(expr, basestring):
+            return self[expr]
+        elif not isinstance(expr, Expr):
+            return expr(self)
+        else:
+            return expr
+
     def _get_type(self, name):
         return self._arg.get_type(name)
 
@@ -773,12 +781,6 @@ class TableExpr(Expr):
         return TableExpr(op)
 
     select = projection
-
-    def _ensure_expr(self, expr):
-        if isinstance(expr, basestring):
-            expr = self[expr]
-
-        return expr
 
     def group_by(self, by):
         """

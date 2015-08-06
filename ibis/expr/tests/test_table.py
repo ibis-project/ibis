@@ -1159,7 +1159,16 @@ class TestLateBindingFunctions(BasicTestCase, unittest.TestCase):
         assert_equal(result, expected)
 
     def test_group_by_keys(self):
-        pass
+        m = self.table.mutate(foo=self.table.f * 2,
+                              bar=self.table.e / 2)
+
+        expr = m.group_by(lambda x: x.foo).size()
+        expected = m.group_by('foo').size()
+        assert_equal(expr, expected)
+
+        expr = m.group_by([lambda x: x.foo, lambda x: x.bar]).size()
+        expected = m.group_by(['foo', 'bar']).size()
+        assert_equal(expr, expected)
 
     def test_sort_by(self):
         pass
