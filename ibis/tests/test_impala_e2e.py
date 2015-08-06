@@ -213,6 +213,13 @@ LIMIT 10"""
         ex_schema = self.con.get_schema('functional_alltypes')
         assert_equal(table.schema(), ex_schema)
 
+    def test_raw_sql(self):
+        query = 'SELECT * from functional_alltypes limit 10'
+        cur = self.con.raw_sql(query, results=True)
+        rows = cur.fetchall()
+        cur.release()
+        assert len(rows) == 10
+
     def test_explain(self):
         t = self.con.table('functional_alltypes')
         expr = t.group_by('string_col').size()
