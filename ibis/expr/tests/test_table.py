@@ -1210,6 +1210,10 @@ class TestLateBindingFunctions(BasicTestCase, unittest.TestCase):
         expected = m.sort_by(ibis.desc('foo'))
         assert_equal(result, expected)
 
+        result = m.sort_by(ibis.desc(lambda x: x.foo))
+        expected = m.sort_by(ibis.desc('foo'))
+        assert_equal(result, expected)
+
     def test_projection(self):
         pass
 

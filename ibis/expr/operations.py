@@ -1570,9 +1570,7 @@ class DeferredSortKey(object):
         self.ascending = ascending
 
     def resolve(self, parent):
-        what = self.what
-        if not isinstance(what, ir.Expr):
-            what = parent.get_column(what)
+        what = parent._ensure_expr(self.what)
         return SortKey(what, ascending=self.ascending)
 
 
