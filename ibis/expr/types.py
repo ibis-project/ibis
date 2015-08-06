@@ -1432,25 +1432,11 @@ class NullLiteral(ValueNode):
         return []
 
 
-class ArrayNode(ValueNode):
-
-    def __init__(self, expr):
-        assert isinstance(expr, ArrayExpr)
-        ValueNode.__init__(self, expr)
-
-    def output_type(self):
-        return NotImplementedError
-
-    def to_expr(self):
-        klass = self.output_type()
-        return klass(self)
-
-
 class ListExpr(ArrayExpr, AnyValue):
     pass
 
 
-class ValueList(ArrayNode):
+class ValueList(ValueNode):
 
     """
     Data structure for a list of value expressions
@@ -1458,7 +1444,7 @@ class ValueList(ArrayNode):
 
     def __init__(self, args):
         self.values = [as_value_expr(x) for x in args]
-        Node.__init__(self, [self.values])
+        ValueNode.__init__(self, [self.values])
 
     def root_tables(self):
         return distinct_roots(*self.values)

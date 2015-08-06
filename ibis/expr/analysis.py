@@ -197,7 +197,7 @@ class ExprSimplifier(object):
 
         op = expr.op()
 
-        if isinstance(op, (ops.ValueNode, ops.ArrayNode)):
+        if isinstance(op, ops.ValueNode):
             return self._sub(expr, block=block)
         elif isinstance(op, ops.Filter):
             result = self.lift(op.table, block=block)

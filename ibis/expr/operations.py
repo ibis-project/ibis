@@ -18,7 +18,7 @@ from ibis.compat import py_string
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr,
                              ValueExpr, ArrayExpr, TableExpr,
-                             ArrayNode, TableNode, ValueNode,
+                             TableNode, ValueNode,
                              HasSchema, _safe_repr)
 import ibis.common as com
 import ibis.expr.rules as rules
@@ -94,7 +94,7 @@ class SQLQueryResult(ir.BlockingTableNode, HasSchema):
         HasSchema.__init__(self, schema)
 
 
-class TableColumn(ArrayNode):
+class TableColumn(ValueNode):
 
     """
     Selects a column from a TableExpr
@@ -124,7 +124,7 @@ class TableColumn(ArrayNode):
         return klass(self, name=self.name)
 
 
-class TableArrayView(ArrayNode):
+class TableArrayView(ValueNode):
 
     """
     (Temporary?) Helper operation class for SQL translation (fully formed table
@@ -742,7 +742,7 @@ class WindowOp(ValueOp):
         if not is_analytic(expr):
             raise com.IbisInputError('Expression does not contain a valid '
                                      'window operation')
-        ValueNode.__init__(self, expr, window)
+        ValueOp.__init__(self, expr, window)
 
     def over(self, window):
         existing_window = self.args[1]
@@ -968,7 +968,7 @@ class Distinct(ir.BlockingTableNode, ir.HasSchema):
         HasSchema.__init__(self, schema)
 
 
-class DistinctArray(ArrayNode):
+class DistinctArray(ValueNode):
 
     """
     COUNT(DISTINCT ...) is really just syntactic suger, but we provide a
@@ -981,7 +981,7 @@ class DistinctArray(ArrayNode):
 
     def __init__(self, arg):
         self.arg = arg
-        ArrayNode.__init__(self, arg)
+        ValueNode.__init__(self, arg)
 
     def output_type(self):
         return type(self.arg)
@@ -1886,7 +1886,7 @@ class NotContains(Contains):
     pass
 
 
-class ReplaceValues(ArrayNode):
+class ReplaceValues(ValueNode):
 
     """
     Apply a multi-value replacement on a particular column. As an example from
@@ -1896,7 +1896,7 @@ class ReplaceValues(ArrayNode):
     pass
 
 
-class TopK(ArrayNode):
+class TopK(ValueNode):
 
     # Substitutions under TopK are not allowed
     blocking = True
