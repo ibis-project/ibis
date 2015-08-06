@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from ibis.expr.types import (Schema, Expr,  # noqa
                              ValueExpr, ScalarExpr, ArrayExpr,
                              TableExpr,
@@ -1673,7 +1672,11 @@ def mutate(table, exprs=None, **kwds):
         exprs = util.promote_list(exprs)
 
     for k, v in sorted(kwds.items()):
-        exprs.append(as_value_expr(v).name(k))
+        if util.is_function(v):
+            v = v(table)
+        else:
+            v = as_value_expr(v)
+        exprs.append(v.name(k))
 
     has_replacement = False
     for expr in exprs:
