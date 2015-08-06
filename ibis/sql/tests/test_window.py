@@ -33,7 +33,7 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
         proj = t[t, (t.f / t.f.sum()).name('normed_f')]
 
         expected = """\
-SELECT *, f / sum(f) OVER () AS `normed_f`
+SELECT *, `f` / sum(`f`) OVER () AS `normed_f`
 FROM alltypes"""
         self._check_sql(proj, expected)
 
@@ -48,11 +48,11 @@ FROM alltypes"""
         grouped = t.group_by('g')
         proj = grouped.mutate([lag, diff, first, last, lag2])
         expected = """\
-SELECT *, lag(f) OVER (PARTITION BY g ORDER BY f) AS `lag`,
-       lead(f) OVER (PARTITION BY g ORDER BY f) - f AS `fwd_diff`,
-       first_value(f) OVER (PARTITION BY g ORDER BY f) AS `first`,
-       last_value(f) OVER (PARTITION BY g ORDER BY f) AS `last`,
-       lag(f) OVER (PARTITION BY g ORDER BY d) AS `lag2`
+SELECT *, lag(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `lag`,
+       lead(`f`) OVER (PARTITION BY `g` ORDER BY `f`) - `f` AS `fwd_diff`,
+       first_value(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `first`,
+       last_value(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `last`,
+       lag(`f`) OVER (PARTITION BY `g` ORDER BY `d`) AS `lag2`
 FROM alltypes"""
         self._check_sql(proj, expected)
 
@@ -60,7 +60,7 @@ FROM alltypes"""
         t = self.con.table('alltypes')
 
         ex_template = """\
-SELECT sum(d) OVER (ORDER BY f {0}) AS `foo`
+SELECT sum(`d`) OVER (ORDER BY `f` {0}) AS `foo`
 FROM alltypes"""
 
         cases = [
@@ -134,8 +134,8 @@ FROM alltypes"""
         expr = (t.f - t.f.lag()).lag().over(w).name('foo')
         result = t.projection([expr])
         expected = """\
-SELECT lag(f - lag(f) OVER (ORDER BY f)) \
-OVER (ORDER BY f) AS `foo`
+SELECT lag(`f` - lag(`f`) OVER (ORDER BY `f`)) \
+OVER (ORDER BY `f`) AS `foo`
 FROM alltypes"""
         self._check_sql(result, expected)
 
@@ -145,8 +145,8 @@ FROM alltypes"""
         proj = t[t.g, t.f.rank().name('minr'),
                  t.f.dense_rank().name('denser')]
         expected = """\
-SELECT g, rank() OVER (ORDER BY f) - 1 AS `minr`,
-       dense_rank() OVER (ORDER BY f) - 1 AS `denser`
+SELECT `g`, rank() OVER (ORDER BY `f`) - 1 AS `minr`,
+       dense_rank() OVER (ORDER BY `f`) - 1 AS `denser`
 FROM alltypes"""
         self._check_sql(proj, expected)
 
@@ -159,7 +159,7 @@ FROM alltypes"""
         proj = t.projection([t.g, expr.name('result')])
 
         expected = """\
-SELECT g, sum(f) OVER (PARTITION BY g) - sum(f) OVER () AS `result`
+SELECT `g`, sum(`f`) OVER (PARTITION BY `g`) - sum(`f`) OVER () AS `result`
 FROM alltypes"""
         self._check_sql(proj, expected)
 
@@ -170,7 +170,7 @@ FROM alltypes"""
 
         proj = t[t.f, ibis.row_number().over(w).name('revrank')]
         expected = """\
-SELECT f, row_number() OVER (ORDER BY f DESC) - 1 AS `revrank`
+SELECT `f`, row_number() OVER (ORDER BY `f` DESC) - 1 AS `revrank`
 FROM alltypes"""
         self._check_sql(proj, expected)
 
@@ -178,8 +178,8 @@ FROM alltypes"""
                 .order_by(ibis.desc(t.f))
                 [t.d.lag().name('foo'), t.a.max()])
         expected = """\
-SELECT lag(d) OVER (PARTITION BY g ORDER BY f DESC) AS `foo`,
-       max(a) OVER (PARTITION BY g ORDER BY f DESC) AS `max`
+SELECT lag(`d`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `foo`,
+       max(`a`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `max`
 FROM alltypes"""
         self._check_sql(expr, expected)
 
@@ -195,7 +195,7 @@ FROM alltypes"""
                 .mutate(ibis.row_number().name('foo')))
 
         expected = """\
-SELECT *, row_number() OVER (PARTITION BY g ORDER BY f) - 1 AS `foo`
+SELECT *, row_number() OVER (PARTITION BY `g` ORDER BY `f`) - 1 AS `foo`
 FROM alltypes"""
         self._check_sql(expr, expected)
 

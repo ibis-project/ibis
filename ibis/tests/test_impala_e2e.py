@@ -63,6 +63,13 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
         _ensure_drop(self.con, 'distinct')
 
+    def test_embedded_identifier_quoting(self):
+        t = self.con.table('functional_alltypes')
+
+        expr = (t[[(t.double_col * 2).name('double(fun)')]]
+                ['double(fun)'].sum())
+        expr.execute()
+
     def test_list_databases(self):
         assert len(self.con.list_databases()) > 0
 
