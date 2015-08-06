@@ -1529,6 +1529,8 @@ def to_sort_key(table, key):
 
     if not isinstance(key, ir.Expr):
         key = table._ensure_expr(key)
+        if isinstance(key, (SortKey, DeferredSortKey)):
+            return to_sort_key(table, key)
 
     if isinstance(sort_order, py_string):
         if sort_order.lower() in ('desc', 'descending'):

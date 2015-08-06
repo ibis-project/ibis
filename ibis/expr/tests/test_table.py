@@ -1200,7 +1200,15 @@ class TestLateBindingFunctions(BasicTestCase, unittest.TestCase):
         assert_equal(result, expected)
 
     def test_sort_by(self):
-        pass
+        m = self.table.mutate(foo=self.table.e + self.table.f)
+
+        result = m.sort_by(lambda x: -x.foo)
+        expected = m.sort_by(-m.foo)
+        assert_equal(result, expected)
+
+        result = m.sort_by(lambda x: ibis.desc(x.foo))
+        expected = m.sort_by(ibis.desc('foo'))
+        assert_equal(result, expected)
 
     def test_projection(self):
         pass
