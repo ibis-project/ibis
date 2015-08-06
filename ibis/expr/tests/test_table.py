@@ -1243,4 +1243,17 @@ class TestLateBindingFunctions(BasicTestCase, unittest.TestCase):
         assert_equal(result, expected)
 
     def test_add_column(self):
-        pass
+        def g(x):
+            return x.f * 2
+
+        result = self.table.add_column(g, name='foo')
+        expected = self.table.mutate(foo=g)
+        assert_equal(result, expected)
+
+    def test_set_column(self):
+        def g(x):
+            return x.f * 2
+
+        result = self.table.set_column('f', g)
+        expected = self.table.set_column('f', self.table.f * 2)
+        assert_equal(result, expected)

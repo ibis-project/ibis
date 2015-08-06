@@ -1597,6 +1597,8 @@ def _table_set_column(table, name, expr):
     set_table : TableExpr
       New table expression
     """
+    expr = table._ensure_expr(expr)
+
     if expr._name != name:
         expr = expr.name(name)
 

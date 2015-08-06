@@ -745,6 +745,8 @@ class TableExpr(Expr):
         -------
         modified_table : TableExpr
         """
+        expr = self._ensure_expr(expr)
+
         if not isinstance(expr, ArrayExpr):
             raise com.InputTypeError('Must pass array expression')
 
