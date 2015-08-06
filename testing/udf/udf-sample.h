@@ -16,7 +16,7 @@
 #ifndef SAMPLES_UDF_H
 #define SAMPLES_UDF_H
 
-#include <impala_udf/udf.h>
+#include "lib/udf.h"
 
 using namespace impala_udf;
 

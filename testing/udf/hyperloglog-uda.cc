@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iostream>
-#include <impala_udf/udf.h>
+#include "lib/udf.h"
 
 using namespace std;
 using namespace impala_udf;

@@ -15,7 +15,7 @@
 #include <iostream>
 #include <math.h>
 
-#include <impala_udf/uda-test-harness.h>
+#include "lib/uda-test-harness.h"
 #include "uda-sample.h"
 
 using namespace impala;
