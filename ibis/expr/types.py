@@ -593,6 +593,7 @@ class TableExpr(Expr):
     def __getitem__(self, what):
         if isinstance(what, basestring):
             return self.get_column(what)
+
         if isinstance(what, slice):
             step = what.step
             if step is not None and step != 1:
@@ -608,7 +609,9 @@ class TableExpr(Expr):
 
             return self.limit(stop - start, offset=start)
 
-        elif isinstance(what, (list, tuple)):
+        what = bind_expr(self, what)
+
+        if isinstance(what, (list, tuple)):
             # Projection case
             return self.projection(what)
         elif isinstance(what, BooleanArray):
@@ -642,10 +645,22 @@ class TableExpr(Expr):
             out_exprs.append(expr)
         return out_exprs
 
+    def _ensure_expr(self, expr):
+        if isinstance(expr, basestring):
+            return self[expr]
+        elif not isinstance(expr, Expr):
+            return expr(self)
+        else:
+            return expr
+
     def _get_type(self, name):
         return self._arg.get_type(name)
 
     def materialize(self):
+        """
+        Force schema resolution for a joined table, selecting all fields from
+        all tables.
+        """
         if self._is_materialized():
             return self
         else:
@@ -730,6 +745,8 @@ class TableExpr(Expr):
         -------
         modified_table : TableExpr
         """
+        expr = self._ensure_expr(expr)
+
         if not isinstance(expr, ArrayExpr):
             raise com.InputTypeError('Must pass array expression')
 
@@ -737,12 +754,6 @@ class TableExpr(Expr):
             expr = expr.name(name)
 
         return self.projection([self, expr])
-
-    def add_columns(self, what):
-        """
-
-        """
-        raise NotImplementedError
 
     def distinct(self):
         """
@@ -775,12 +786,6 @@ class TableExpr(Expr):
         return TableExpr(op)
 
     select = projection
-
-    def _ensure_expr(self, expr):
-        if isinstance(expr, basestring):
-            expr = self[expr]
-
-        return expr
 
     def group_by(self, by):
         """
@@ -1460,3 +1465,10 @@ class ValueList(ArrayNode):
 
     def to_expr(self):
         return ListExpr(self)
+
+
+def bind_expr(table, expr):
+    if isinstance(expr, (list, tuple)):
+        return [bind_expr(table, x) for x in expr]
+
+    return table._ensure_expr(expr)

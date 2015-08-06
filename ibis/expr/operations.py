@@ -1529,6 +1529,8 @@ def to_sort_key(table, key):
 
     if not isinstance(key, ir.Expr):
         key = table._ensure_expr(key)
+        if isinstance(key, (SortKey, DeferredSortKey)):
+            return to_sort_key(table, key)
 
     if isinstance(sort_order, py_string):
         if sort_order.lower() in ('desc', 'descending'):
@@ -1568,9 +1570,7 @@ class DeferredSortKey(object):
         self.ascending = ascending
 
     def resolve(self, parent):
-        what = self.what
-        if not isinstance(what, ir.Expr):
-            what = parent.get_column(what)
+        what = parent._ensure_expr(self.what)
         return SortKey(what, ascending=self.ascending)
 
 
@@ -1698,7 +1698,8 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
             if isinstance(expr, ir.ExprList):
                 all_exprs.extend(expr.exprs())
             else:
-                all_exprs.append(expr)
+                bound_expr = ir.bind_expr(self.table, expr)
+                all_exprs.append(bound_expr)
 
         return [substitute_parents(x, past_projection=False)
                 for x in all_exprs]

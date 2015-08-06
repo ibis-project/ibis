@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import types
+
 import numpy as np
 import pandas as pd
 import pandas.core.common as pdcom
@@ -180,3 +182,7 @@ def pandas_to_ibis_schema(frame):
         ibis_type = pandas_col_to_ibis_type(frame[col_name])
         pairs.append((col_name, ibis_type))
     return ibis.schema(pairs)
+
+
+def is_function(v):
+    return isinstance(v, (types.FunctionType, types.LambdaType))

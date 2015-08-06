@@ -1140,3 +1140,120 @@ class TestSemiAntiJoinPredicates(unittest.TestCase):
     def test_not_exists_predicate(self):
         cond = -(self.t1.key1 == self.t2.key1).any()
         assert isinstance(cond.op(), ops.NotAny)
+
+
+class TestLateBindingFunctions(BasicTestCase, unittest.TestCase):
+
+    def test_aggregate_metrics(self):
+        functions = [lambda x: x.e.sum().name('esum'),
+                     lambda x: x.f.sum().name('fsum')]
+        exprs = [self.table.e.sum().name('esum'),
+                 self.table.f.sum().name('fsum')]
+
+        result = self.table.aggregate(functions[0])
+        expected = self.table.aggregate(exprs[0])
+        assert_equal(result, expected)
+
+        result = self.table.aggregate(functions)
+        expected = self.table.aggregate(exprs)
+        assert_equal(result, expected)
+
+    def test_group_by_keys(self):
+        m = self.table.mutate(foo=self.table.f * 2,
+                              bar=self.table.e / 2)
+
+        expr = m.group_by(lambda x: x.foo).size()
+        expected = m.group_by('foo').size()
+        assert_equal(expr, expected)
+
+        expr = m.group_by([lambda x: x.foo, lambda x: x.bar]).size()
+        expected = m.group_by(['foo', 'bar']).size()
+        assert_equal(expr, expected)
+
+    def test_having(self):
+        m = self.table.mutate(foo=self.table.f * 2,
+                              bar=self.table.e / 2)
+
+        expr = (m.group_by('foo')
+                .having(lambda x: x.foo.sum() > 10)
+                .size())
+        expected = (m.group_by('foo')
+                    .having(m.foo.sum() > 10)
+                    .size())
+
+        assert_equal(expr, expected)
+
+    def test_filter(self):
+        m = self.table.mutate(foo=self.table.f * 2,
+                              bar=self.table.e / 2)
+
+        result = m.filter(lambda x: x.foo > 10)
+        result2 = m[lambda x: x.foo > 10]
+        expected = m[m.foo > 10]
+
+        assert_equal(result, expected)
+        assert_equal(result2, expected)
+
+        result = m.filter([lambda x: x.foo > 10,
+                           lambda x: x.bar < 0])
+        expected = m.filter([m.foo > 10, m.bar < 0])
+        assert_equal(result, expected)
+
+    def test_sort_by(self):
+        m = self.table.mutate(foo=self.table.e + self.table.f)
+
+        result = m.sort_by(lambda x: -x.foo)
+        expected = m.sort_by(-m.foo)
+        assert_equal(result, expected)
+
+        result = m.sort_by(lambda x: ibis.desc(x.foo))
+        expected = m.sort_by(ibis.desc('foo'))
+        assert_equal(result, expected)
+
+        result = m.sort_by(ibis.desc(lambda x: x.foo))
+        expected = m.sort_by(ibis.desc('foo'))
+        assert_equal(result, expected)
+
+    def test_projection(self):
+        m = self.table.mutate(foo=self.table.f * 2)
+
+        def f(x):
+            return (x.foo * 2).name('bar')
+
+        result = m.projection([f, 'f'])
+        result2 = m[f, 'f']
+        expected = m.projection([f(m), 'f'])
+        assert_equal(result, expected)
+        assert_equal(result2, expected)
+
+    def test_mutate(self):
+        m = self.table.mutate(foo=self.table.f * 2)
+
+        def g(x):
+            return x.foo * 2
+
+        def h(x):
+            return x.bar * 2
+
+        result = m.mutate(bar=g).mutate(baz=h)
+
+        m2 = m.mutate(bar=g(m))
+        expected = m2.mutate(baz=h(m2))
+
+        assert_equal(result, expected)
+
+    def test_add_column(self):
+        def g(x):
+            return x.f * 2
+
+        result = self.table.add_column(g, name='foo')
+        expected = self.table.mutate(foo=g)
+        assert_equal(result, expected)
+
+    def test_set_column(self):
+        def g(x):
+            return x.f * 2
+
+        result = self.table.set_column('f', g)
+        expected = self.table.set_column('f', self.table.f * 2)
+        assert_equal(result, expected)
