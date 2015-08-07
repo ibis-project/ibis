@@ -549,7 +549,7 @@ def value_counts(arg, metric_name='count'):
     counts : TableExpr
       Aggregated table
     """
-    base = _L.find_base_table(arg)
+    base = ir.find_base_table(arg)
     metric = base.count().name(metric_name)
 
     try:
@@ -1646,7 +1646,13 @@ def filter(table, predicates):
 
     predicates = [ir.bind_expr(table, x) for x in predicates]
 
-    op = _L.apply_filter(table, predicates)
+    resolved_predicates = []
+    for pred in predicates:
+        if isinstance(pred, ir.AnalyticExpr):
+            pred = pred.to_filter()
+        resolved_predicates.append(pred)
+
+    op = _L.apply_filter(table, resolved_predicates)
     return TableExpr(op)
 
 

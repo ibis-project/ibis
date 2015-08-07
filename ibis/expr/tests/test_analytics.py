@@ -77,6 +77,5 @@ class TestAnalytics(unittest.TestCase):
         delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
         filtered = t.filter([delay_filter])
 
-        # predicate is unmodified by analysis
         post_pred = filtered.op().predicates[1]
-        assert delay_filter.equals(post_pred)
+        assert delay_filter.to_filter().equals(post_pred)

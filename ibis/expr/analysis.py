@@ -702,7 +702,7 @@ class FilterValidator(ExprValidator):
                 if isinstance(arg, ir.ScalarExpr):
                     # arg_valid = True
                     pass
-                elif isinstance(arg, ir.ArrayExpr):
+                elif isinstance(arg, (ir.ArrayExpr, ir.AnalyticExpr)):
                     roots_valid.append(self.shares_some_roots(arg))
                 elif isinstance(arg, ir.Expr):
                     raise NotImplementedError
@@ -713,17 +713,6 @@ class FilterValidator(ExprValidator):
             is_valid = any(roots_valid)
 
         return is_valid
-
-
-def find_base_table(expr):
-    if isinstance(expr, ir.TableExpr):
-        return expr
-
-    for arg in expr.op().flat_args():
-        if isinstance(arg, ir.Expr):
-            r = find_base_table(arg)
-            if isinstance(r, ir.TableExpr):
-                return r
 
 
 def find_source_table(expr):

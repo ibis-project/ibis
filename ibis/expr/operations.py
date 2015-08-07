@@ -1896,6 +1896,27 @@ class ReplaceValues(ValueNode):
     pass
 
 
+class TopKExpr(ir.AnalyticExpr):
+
+    def type(self):
+        return 'topk'
+
+    def _table_getitem(self):
+        return self.to_filter()
+
+    def to_filter(self):
+        return SummaryFilter(self).to_expr()
+
+
+class SummaryFilter(ValueNode):
+
+    def __init__(self, expr):
+        ValueNode.__init__(self, expr)
+
+    def output_type(self):
+        return ir.BooleanArray
+
+
 class TopK(ValueNode):
 
     # Substitutions under TopK are not allowed
@@ -1917,11 +1938,29 @@ class TopK(ValueNode):
 
         Node.__init__(self, [arg, k, by])
 
-    def root_tables(self):
-        return self.arg._root_tables()
+    def to_aggregation(self, metric_name='__tmp__', parent_table=None):
+        """
+        Convert the TopK operation to a table aggregation
+        """
+        metric_name = '__tmp__'
 
-    def to_expr(self):
-        return ir.BooleanArray(self)
+        metrics = [self.by.name(metric_name)]
+
+        arg_table = ir.find_base_table(self.arg)
+        by_table = ir.find_base_table(self.by)
+
+        if arg_table.equals(by_table):
+            agg = arg_table.aggregate(metrics, by=[self.arg])
+        elif parent_table is not None:
+            agg = parent_table.aggregate(metrics, by=[self.arg])
+        else:
+            raise com.IbisError('Cross-table TopK; must provide a parent '
+                                'joined table')
+
+        return agg.sort_by([(metric_name, False)]).limit(self.k)
+
+    def output_type(self):
+        return TopKExpr
 
 
 class Constant(ValueOp):

@@ -297,13 +297,13 @@ def _notany_expand(expr):
 
 def _all_expand(expr):
     arg = expr.op().args[0]
-    t = L.find_base_table(arg)
+    t = ir.find_base_table(arg)
     return arg.sum() == t.count()
 
 
 def _notall_expand(expr):
     arg = expr.op().args[0]
-    t = L.find_base_table(arg)
+    t = ir.find_base_table(arg)
     return arg.sum() < t.count()
 
 
