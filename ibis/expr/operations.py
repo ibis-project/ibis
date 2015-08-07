@@ -18,7 +18,7 @@ from ibis.compat import py_string
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr,
                              ValueExpr, ArrayExpr, TableExpr,
-                             ArrayNode, TableNode, ValueNode,
+                             TableNode, ValueNode,
                              HasSchema, _safe_repr)
 import ibis.common as com
 import ibis.expr.rules as rules
@@ -94,7 +94,7 @@ class SQLQueryResult(ir.BlockingTableNode, HasSchema):
         HasSchema.__init__(self, schema)
 
 
-class TableColumn(ArrayNode):
+class TableColumn(ValueNode):
 
     """
     Selects a column from a TableExpr
@@ -124,7 +124,7 @@ class TableColumn(ArrayNode):
         return klass(self, name=self.name)
 
 
-class TableArrayView(ArrayNode):
+class TableArrayView(ValueNode):
 
     """
     (Temporary?) Helper operation class for SQL translation (fully formed table
@@ -742,7 +742,7 @@ class WindowOp(ValueOp):
         if not is_analytic(expr):
             raise com.IbisInputError('Expression does not contain a valid '
                                      'window operation')
-        ValueNode.__init__(self, expr, window)
+        ValueOp.__init__(self, expr, window)
 
     def over(self, window):
         existing_window = self.args[1]
@@ -968,7 +968,7 @@ class Distinct(ir.BlockingTableNode, ir.HasSchema):
         HasSchema.__init__(self, schema)
 
 
-class DistinctArray(ArrayNode):
+class DistinctArray(ValueNode):
 
     """
     COUNT(DISTINCT ...) is really just syntactic suger, but we provide a
@@ -981,7 +981,7 @@ class DistinctArray(ArrayNode):
 
     def __init__(self, arg):
         self.arg = arg
-        ArrayNode.__init__(self, arg)
+        ValueNode.__init__(self, arg)
 
     def output_type(self):
         return type(self.arg)
@@ -1886,7 +1886,7 @@ class NotContains(Contains):
     pass
 
 
-class ReplaceValues(ArrayNode):
+class ReplaceValues(ValueNode):
 
     """
     Apply a multi-value replacement on a particular column. As an example from
@@ -1896,7 +1896,54 @@ class ReplaceValues(ArrayNode):
     pass
 
 
-class TopK(ArrayNode):
+class TopKExpr(ir.AnalyticExpr):
+
+    def type(self):
+        return 'topk'
+
+    def _table_getitem(self):
+        return self.to_filter()
+
+    def to_filter(self):
+        return SummaryFilter(self).to_expr()
+
+    def to_aggregation(self, metric_name=None, parent_table=None,
+                       backup_metric_name=None):
+        """
+        Convert the TopK operation to a table aggregation
+        """
+        op = self.op()
+        by = op.by
+        if metric_name is None:
+            if by.get_name() == op.arg.get_name():
+                by = by.name(backup_metric_name)
+        else:
+            by = by.name(metric_name)
+
+        arg_table = ir.find_base_table(op.arg)
+        by_table = ir.find_base_table(op.by)
+
+        if arg_table.equals(by_table):
+            agg = arg_table.aggregate(by, by=[op.arg])
+        elif parent_table is not None:
+            agg = parent_table.aggregate(by, by=[op.arg])
+        else:
+            raise com.IbisError('Cross-table TopK; must provide a parent '
+                                'joined table')
+
+        return agg.sort_by([(by.get_name(), False)]).limit(op.k)
+
+
+class SummaryFilter(ValueNode):
+
+    def __init__(self, expr):
+        ValueNode.__init__(self, expr)
+
+    def output_type(self):
+        return ir.BooleanArray
+
+
+class TopK(ValueNode):
 
     # Substitutions under TopK are not allowed
     blocking = True
@@ -1917,11 +1964,8 @@ class TopK(ArrayNode):
 
         Node.__init__(self, [arg, k, by])
 
-    def root_tables(self):
-        return self.arg._root_tables()
-
-    def to_expr(self):
-        return ir.BooleanArray(self)
+    def output_type(self):
+        return TopKExpr
 
 
 class Constant(ValueOp):

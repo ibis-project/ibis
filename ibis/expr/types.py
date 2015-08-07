@@ -575,6 +575,18 @@ class ArrayExpr(ValueExpr):
         return table.projection([self])
 
 
+class AnalyticExpr(Expr):
+
+    @property
+    def _factory(self):
+        def factory(arg):
+            return type(self)(arg)
+        return factory
+
+    def type(self):
+        return 'analytic'
+
+
 class TableExpr(Expr):
 
     @property
@@ -610,6 +622,9 @@ class TableExpr(Expr):
             return self.limit(stop - start, offset=start)
 
         what = bind_expr(self, what)
+
+        if isinstance(what, AnalyticExpr):
+            what = what._table_getitem()
 
         if isinstance(what, (list, tuple)):
             # Projection case
@@ -1432,25 +1447,11 @@ class NullLiteral(ValueNode):
         return []
 
 
-class ArrayNode(ValueNode):
-
-    def __init__(self, expr):
-        assert isinstance(expr, ArrayExpr)
-        ValueNode.__init__(self, expr)
-
-    def output_type(self):
-        return NotImplementedError
-
-    def to_expr(self):
-        klass = self.output_type()
-        return klass(self)
-
-
 class ListExpr(ArrayExpr, AnyValue):
     pass
 
 
-class ValueList(ArrayNode):
+class ValueList(ValueNode):
 
     """
     Data structure for a list of value expressions
@@ -1458,7 +1459,7 @@ class ValueList(ArrayNode):
 
     def __init__(self, args):
         self.values = [as_value_expr(x) for x in args]
-        Node.__init__(self, [self.values])
+        ValueNode.__init__(self, [self.values])
 
     def root_tables(self):
         return distinct_roots(*self.values)
@@ -1472,3 +1473,14 @@ def bind_expr(table, expr):
         return [bind_expr(table, x) for x in expr]
 
     return table._ensure_expr(expr)
+
+
+def find_base_table(expr):
+    if isinstance(expr, TableExpr):
+        return expr
+
+    for arg in expr.op().flat_args():
+        if isinstance(arg, Expr):
+            r = find_base_table(arg)
+            if isinstance(r, TableExpr):
+                return r

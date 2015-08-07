@@ -231,7 +231,7 @@ class ExprFormatter(object):
             return 'table'
         elif isinstance(expr, ir.ArrayExpr):
             return 'array(%s)' % expr.type()
-        elif isinstance(expr, ir.ScalarExpr):
+        elif isinstance(expr, (ir.ScalarExpr, ir.AnalyticExpr)):
             return '%s' % expr.type()
         elif isinstance(expr, ir.ExprList):
             list_args = [self._get_type_display(arg)

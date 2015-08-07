@@ -347,28 +347,19 @@ class SelectBuilder(object):
         return transform.get_result()
     _visit_filter_NotAny = _visit_filter_Any
 
-    def _visit_filter_TopK(self, expr):
+    def _visit_filter_SummaryFilter(self, expr):
         # Top K is rewritten as an
         # - aggregation
         # - sort by
         # - limit
         # - left semi join with table set
+        parent_op = expr.op()
+        summary_expr = parent_op.args[0]
+        op = summary_expr.op()
 
-        metric_name = '__tmp__'
-
-        op = expr.op()
-
-        metrics = [op.by.name(metric_name)]
-
-        arg_table = L.find_base_table(op.arg)
-        by_table = L.find_base_table(op.by)
-
-        if arg_table.equals(by_table):
-            agg = arg_table.aggregate(metrics, by=[op.arg])
-        else:
-            agg = self.table_set.aggregate(metrics, by=[op.arg])
-
-        rank_set = agg.sort_by([(metric_name, False)]).limit(op.k)
+        rank_set = summary_expr.to_aggregation(
+            backup_metric_name='__tmp__',
+            parent_table=self.table_set)
 
         pred = (op.arg == getattr(rank_set, op.arg.get_name()))
         self.table_set = self.table_set.semi_join(rank_set, [pred])
@@ -800,12 +791,15 @@ def _adapt_expr(expr):
             table_expr = _reduction_to_aggregation(expr, agg_name='tmp')
             return table_expr, scalar_handler
         else:
-            base_table = L.find_base_table(expr)
+            base_table = ir.find_base_table(expr)
             if base_table is None:
                 # expr with no table refs
                 return expr.name('tmp'), scalar_handler
             else:
                 raise NotImplementedError(expr._repr())
+
+    elif isinstance(expr, ir.AnalyticExpr):
+        return expr.to_aggregation(), as_is
 
     elif isinstance(expr, ir.ExprList):
         exprs = expr.exprs()
@@ -820,7 +814,7 @@ def _adapt_expr(expr):
                 any_aggregation = True
 
         if is_aggregation:
-            table = L.find_base_table(exprs[0])
+            table = ir.find_base_table(exprs[0])
             return table.aggregate(exprs), as_is
         elif not any_aggregation:
             return expr, as_is
@@ -858,9 +852,10 @@ def _adapt_expr(expr):
 
         return table_expr, result_handler
     else:
-        raise NotImplementedError
+        raise com.TranslationError('Do not know how to execute: {0}'
+                                   .format(type(expr)))
 
 
 def _reduction_to_aggregation(expr, agg_name='tmp'):
-    table = L.find_base_table(expr)
+    table = ir.find_base_table(expr)
     return table.aggregate([expr.name(agg_name)])
