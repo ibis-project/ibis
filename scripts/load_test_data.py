@@ -24,6 +24,7 @@ import shutil
 import sys
 import tempfile
 import subprocess
+import getopt
 
 import ibis
 from ibis.tests.util import IbisTestEnv
@@ -154,6 +155,14 @@ def setup_test_data(local_data_dir):
         print('Computing stats for {0}'.format(t.op().name))
         t.compute_stats()
 
+def upload_udf_to_hdfs():
+    con = make_connection()
+    hdfs = con.hdfs
+    udf_dir = pjoin(ENV.test_data_dir, 'udf/')
+    if hdfs.exists(udf_dir):
+        hdfs.rmdir(udf_dir)
+
+    create_udf_data(con)
 
 def can_write_to_hdfs():
     from ibis.compat import BytesIO
@@ -172,8 +181,13 @@ def can_write_to_hdfs():
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        data_dir = os.path.expanduser(sys.argv[1])
-        setup_test_data(data_dir)
+        options, remainder = getopt.getopt(sys.argv[1:], 'd:u', ['data_dir=', 'udf'])
+        for opt, arg in options:
+            if opt in ('-d', '--data_dir'):
+                data_dir = os.path.expanduser(arg)
+                setup_test_data(data_dir)
+            elif opt in ('-u', '--udf'):
+                upload_udf_to_hdfs()
     else:
         if not can_write_to_hdfs():
             print('Do not have write permission to HDFS')
