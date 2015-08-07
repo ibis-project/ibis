@@ -1213,8 +1213,10 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         super(TestUDFWrapping, self).setUp()
         self.udf_so = self.test_data_dir + '/udf/libudfsample.so'
         self.uda_so = self.test_data_dir + '/udf/libudasample.so'
+        self.udf_ll = self.test_data_dir + '/udf/udf-sample.ll'
+        self.uda_ll = self.test_data_dir + '/udf/uda-sample.ll'
 
-        if not self.con.hdfs.exists(self.udf_so):
+        if not self.con.hdfs.exists(self.udf_ll):
             pytest.skip('No udf library in HDFS')
 
     def test_boolean_wrapping(self):
@@ -1346,7 +1348,7 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         self.assertRaises(Exception, self.con.drop_udf, random_name)
 
     def _udf_creation_to_op(self, name, symbol, inputs, output):
-        udf_info = udf.UDFCreator(self.udf_so, inputs, output, symbol, name)
+        udf_info = udf.UDFCreator(self.udf_ll, inputs, output, symbol, name)
         self.temp_functions.append((name, inputs))
         self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()

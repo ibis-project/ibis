@@ -24,6 +24,7 @@ import shutil
 import sys
 import tempfile
 import subprocess
+import getopt
 
 import ibis
 from ibis.tests.util import IbisTestEnv
@@ -59,11 +60,15 @@ def get_ibis_test_data(local_path):
 
 
 def create_udf_data(con):
-    os.chdir('../testing/udf')
-    subprocess.check_call('cmake .', shell=True)
-    subprocess.check_call('make', shell=True)
-    build_dir = 'build/'
-    so_dir = ENV.test_data_dir + '/udf'
+    ibis_home = posixpath.dirname(posixpath.dirname(os.path.abspath(__file__)))
+    sep = os.sep
+    path_list = ibis_home.split(sep)
+    path_list += ['testing', 'udf']
+    udf_dir = sep.join(path_list)
+    build_list = path_list + ['build']
+    build_dir = sep.join(build_list)
+    subprocess.check_call('cmake . && make', shell=True, cwd=udf_dir)
+    so_dir = pjoin(ENV.test_data_dir, 'udf')
     con.hdfs.put(so_dir, build_dir, verbose=True)
 
 
@@ -150,6 +155,14 @@ def setup_test_data(local_data_dir):
         print('Computing stats for {0}'.format(t.op().name))
         t.compute_stats()
 
+def upload_udf_to_hdfs():
+    con = make_connection()
+    hdfs = con.hdfs
+    udf_dir = pjoin(ENV.test_data_dir, 'udf/')
+    if hdfs.exists(udf_dir):
+        hdfs.rmdir(udf_dir)
+
+    create_udf_data(con)
 
 def can_write_to_hdfs():
     from ibis.compat import BytesIO
@@ -168,8 +181,13 @@ def can_write_to_hdfs():
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        data_dir = os.path.expanduser(sys.argv[1])
-        setup_test_data(data_dir)
+        options, remainder = getopt.getopt(sys.argv[1:], 'd:u', ['data_dir=', 'udf'])
+        for opt, arg in options:
+            if opt in ('-d', '--data_dir'):
+                data_dir = os.path.expanduser(arg)
+                setup_test_data(data_dir)
+            elif opt in ('-u', '--udf'):
+                upload_udf_to_hdfs()
     else:
         if not can_write_to_hdfs():
             print('Do not have write permission to HDFS')

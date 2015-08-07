@@ -47,8 +47,9 @@ class UDFCreatorParent(UDFInfo):
 
     def __init__(self, hdfs_file, input_type,
                  output_type, name=None):
-        if hdfs_file[-3:] != '.so':
-            raise ValueError('File is not a .so file')
+        file_suffix = hdfs_file[-3:]
+        if not(file_suffix == '.so' or file_suffix == '.ll'):
+            raise ValueError('Invalid file type. Must be .so or .ll ')
         self.hdfs_file = hdfs_file
         inputs = [ir._validate_type(x) for x in input_type]
         output = ir._validate_type(output_type)
@@ -184,4 +185,14 @@ _conversion_types = {
     'timestamp': (TimestampValue),
 }
 
-_impala_to_ibis = {v: k for k, v in _expr._sql_type_names.items()}
+_impala_to_ibis = {
+    'tinyint': 'int8',
+    'smallint': 'int16',
+    'int': 'int32',
+    'bigint': 'int64',
+    'float': 'float',
+    'double': 'double',
+    'string': 'string',
+    'boolean': 'boolean',
+    'timestamp': 'timestamp',
+}
