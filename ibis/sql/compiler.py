@@ -353,14 +353,13 @@ class SelectBuilder(object):
         # - sort by
         # - limit
         # - left semi join with table set
-        metric_name = '__tmp__'
-
         parent_op = expr.op()
         summary_expr = parent_op.args[0]
         op = summary_expr.op()
 
-        rank_set = op.to_aggregation(metric_name=metric_name,
-                                     parent_table=self.table_set)
+        rank_set = summary_expr.to_aggregation(
+            backup_metric_name='__tmp__',
+            parent_table=self.table_set)
 
         pred = (op.arg == getattr(rank_set, op.arg.get_name()))
         self.table_set = self.table_set.semi_join(rank_set, [pred])
@@ -798,6 +797,9 @@ def _adapt_expr(expr):
                 return expr.name('tmp'), scalar_handler
             else:
                 raise NotImplementedError(expr._repr())
+
+    elif isinstance(expr, ir.AnalyticExpr):
+        return expr.to_aggregation(), as_is
 
     elif isinstance(expr, ir.ExprList):
         exprs = expr.exprs()

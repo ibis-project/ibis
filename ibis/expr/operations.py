@@ -1907,6 +1907,32 @@ class TopKExpr(ir.AnalyticExpr):
     def to_filter(self):
         return SummaryFilter(self).to_expr()
 
+    def to_aggregation(self, metric_name=None, parent_table=None,
+                       backup_metric_name=None):
+        """
+        Convert the TopK operation to a table aggregation
+        """
+        op = self.op()
+        by = op.by
+        if metric_name is None:
+            if by.get_name() == op.arg.get_name():
+                by = by.name(backup_metric_name)
+        else:
+            by = by.name(metric_name)
+
+        arg_table = ir.find_base_table(op.arg)
+        by_table = ir.find_base_table(op.by)
+
+        if arg_table.equals(by_table):
+            agg = arg_table.aggregate(by, by=[op.arg])
+        elif parent_table is not None:
+            agg = parent_table.aggregate(by, by=[op.arg])
+        else:
+            raise com.IbisError('Cross-table TopK; must provide a parent '
+                                'joined table')
+
+        return agg.sort_by([(by.get_name(), False)]).limit(op.k)
+
 
 class SummaryFilter(ValueNode):
 
@@ -1937,27 +1963,6 @@ class TopK(ValueNode):
         self.by = by
 
         Node.__init__(self, [arg, k, by])
-
-    def to_aggregation(self, metric_name='__tmp__', parent_table=None):
-        """
-        Convert the TopK operation to a table aggregation
-        """
-        metric_name = '__tmp__'
-
-        metrics = [self.by.name(metric_name)]
-
-        arg_table = ir.find_base_table(self.arg)
-        by_table = ir.find_base_table(self.by)
-
-        if arg_table.equals(by_table):
-            agg = arg_table.aggregate(metrics, by=[self.arg])
-        elif parent_table is not None:
-            agg = parent_table.aggregate(metrics, by=[self.arg])
-        else:
-            raise com.IbisError('Cross-table TopK; must provide a parent '
-                                'joined table')
-
-        return agg.sort_by([(metric_name, False)]).limit(self.k)
 
     def output_type(self):
         return TopKExpr

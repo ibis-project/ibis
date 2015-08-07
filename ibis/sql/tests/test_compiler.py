@@ -937,14 +937,14 @@ FROM (
     INNER JOIN tpch_region t3
       ON t2.`n_regionkey` = t3.`r_regionkey`
     LEFT SEMI JOIN (
-      SELECT t2.`n_name`, sum(CAST(t1.`c_acctbal` AS double)) AS `__tmp__`
+      SELECT t2.`n_name`, sum(CAST(t1.`c_acctbal` AS double)) AS `sum`
       FROM tpch_customer t1
         INNER JOIN tpch_nation t2
           ON t1.`c_nationkey` = t2.`n_nationkey`
         INNER JOIN tpch_region t3
           ON t2.`n_regionkey` = t3.`r_regionkey`
       GROUP BY 1
-      ORDER BY `__tmp__` DESC
+      ORDER BY `sum` DESC
       LIMIT 10
     ) t4
       ON t2.`n_name` = t4.`n_name`
@@ -1338,10 +1338,10 @@ WHERE `f` > (
         expected = """SELECT t0.*
 FROM tbl t0
   LEFT SEMI JOIN (
-    SELECT `city`, avg(`v2`) AS `__tmp__`
+    SELECT `city`, avg(`v2`) AS `mean`
     FROM tbl
     GROUP BY 1
-    ORDER BY `__tmp__` DESC
+    ORDER BY `mean` DESC
     LIMIT 10
   ) t1
     ON t0.`city` = t1.`city`"""
@@ -1355,10 +1355,10 @@ FROM tbl t0
         expected = """SELECT t0.*
 FROM tbl t0
   LEFT SEMI JOIN (
-    SELECT `city`, count(`city`) AS `__tmp__`
+    SELECT `city`, count(`city`) AS `count`
     FROM tbl
     GROUP BY 1
-    ORDER BY `__tmp__` DESC
+    ORDER BY `count` DESC
     LIMIT 10
   ) t1
     ON t0.`city` = t1.`city`"""
@@ -1385,14 +1385,14 @@ FROM customer t0
   INNER JOIN region t2
     ON t1.`n_regionkey` = t2.`r_regionkey`
   LEFT SEMI JOIN (
-    SELECT t1.`n_name`, sum(t0.`c_acctbal`) AS `__tmp__`
+    SELECT t1.`n_name`, sum(t0.`c_acctbal`) AS `sum`
     FROM customer t0
       INNER JOIN nation t1
         ON t0.`c_nationkey` = t1.`n_nationkey`
       INNER JOIN region t2
         ON t1.`n_regionkey` = t2.`r_regionkey`
     GROUP BY 1
-    ORDER BY `__tmp__` DESC
+    ORDER BY `sum` DESC
     LIMIT 10
   ) t3
     ON t1.`n_name` = t3.`n_name`"""
@@ -1414,17 +1414,28 @@ FROM customer t0
 SELECT t0.`origin`, count(*) AS `count`
 FROM airlines t0
   LEFT SEMI JOIN (
-    SELECT `dest`, avg(`arrdelay`) AS `__tmp__`
+    SELECT `dest`, avg(`arrdelay`) AS `mean`
     FROM airlines
     WHERE `dest` IN ('ORD', 'JFK', 'SFO')
     GROUP BY 1
-    ORDER BY `__tmp__` DESC
+    ORDER BY `mean` DESC
     LIMIT 10
   ) t1
     ON t0.`dest` = t1.`dest`
 WHERE t0.`dest` IN ('ORD', 'JFK', 'SFO')
 GROUP BY 1"""
 
+        assert result == expected
+
+    def test_topk_to_aggregate(self):
+        t = ibis.table([('dest', 'string'),
+                        ('origin', 'string'),
+                        ('arrdelay', 'int32')], 'airlines')
+
+        top = t.dest.topk(10, by=t.arrdelay.mean())
+
+        result = to_sql(top)
+        expected = to_sql(top.to_aggregation())
         assert result == expected
 
     def test_bottomk(self):
