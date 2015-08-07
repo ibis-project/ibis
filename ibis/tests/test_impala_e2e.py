@@ -1216,9 +1216,6 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         self.udf_ll = self.test_data_dir + '/udf/udf-sample.ll'
         self.uda_ll = self.test_data_dir + '/udf/uda-sample.ll'
 
-        if not self.con.hdfs.exists(self.udf_ll):
-            pytest.skip('No udf library in HDFS')
-
     def test_boolean_wrapping(self):
         col = self.alltypes.bool_col
         literal = ibis.literal(True)
