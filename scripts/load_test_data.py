@@ -59,11 +59,15 @@ def get_ibis_test_data(local_path):
 
 
 def create_udf_data(con):
-    os.chdir('../testing/udf')
-    subprocess.check_call('cmake .', shell=True)
-    subprocess.check_call('make', shell=True)
-    build_dir = 'build/'
-    so_dir = ENV.test_data_dir + '/udf'
+    ibis_home = posixpath.dirname(posixpath.dirname(os.path.abspath(__file__)))
+    sep = os.sep
+    path_list = ibis_home.split(sep)
+    path_list += ['testing', 'udf']
+    udf_dir = sep.join(path_list)
+    build_list = path_list + ['build']
+    build_dir = sep.join(build_list)
+    subprocess.check_call('cmake . && make', shell=True, cwd=udf_dir)
+    so_dir = pjoin(ENV.test_data_dir, 'udf')
     con.hdfs.put(so_dir, build_dir, verbose=True)
 
 
