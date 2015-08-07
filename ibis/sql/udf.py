@@ -184,4 +184,15 @@ _conversion_types = {
     'timestamp': (TimestampValue),
 }
 
-_impala_to_ibis = {v: k for k, v in _expr._sql_type_names.items()}
+_impala_to_ibis = {
+    'tinyint': 'int8',
+    'smallint': 'int16',
+    'int': 'int32',
+    'bigint': 'int64',
+    'float': 'float',
+    'double': 'double',
+    'string': 'string',
+    'boolean': 'boolean',
+    'timestamp': 'timestamp',
+}
+
