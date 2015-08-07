@@ -1123,8 +1123,8 @@ class ImpalaClient(SQLClient):
         if uda_name:
             name = uda_name
         statement = ddl.CreateAggregateFunction(uda_info.hdfs_file,
-                                                uda_info.input_type,
-                                                uda_info.output_type,
+                                                uda_info.inputs,
+                                                uda_info.output,
                                                 uda_info.init_fn,
                                                 uda_info.update_fn,
                                                 uda_info.merge_fn,
