@@ -45,6 +45,19 @@ LIMIT {0}""".format(config.options.sql.default_limit)
 
         assert self.con.executed_queries[0] == expected
 
+    def test_respect_set_limit(self):
+        table = self.con.table('functional_alltypes').limit(10)
+
+        with config.option_context('interactive', True):
+            repr(table)
+
+        expected = """\
+SELECT *
+FROM functional_alltypes
+LIMIT 10"""
+
+        assert self.con.executed_queries[0] == expected
+
     def test_disable_query_limit(self):
         table = self.con.table('functional_alltypes')
 
