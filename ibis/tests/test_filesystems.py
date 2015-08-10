@@ -163,32 +163,6 @@ class TestHDFSE2E(unittest.TestCase):
         self.hdfs.chmod(path, new_permissions)
         assert self.hdfs.status(path)['permission'] == new_permissions
 
-    def test_chown_owner(self):
-        new_owner = 'randomowner'
-        path = self._make_random_hdfs_file()
-        self.hdfs.chown(path, new_owner)
-        assert self.hdfs.status(path)['owner'] == new_owner
-
-    def test_chown_group(self):
-        new_group = 'randomgroup'
-        path = self._make_random_hdfs_file()
-        self.hdfs.chown(path, group=new_group)
-        assert self.hdfs.status(path)['group'] == new_group
-
-    def test_chown_owner_directory(self):
-        new_owner = 'randomowner'
-        path = pjoin(self.tmp_dir, util.guid())
-        self.hdfs.mkdir(path)
-        self.hdfs.chown(path, new_owner)
-        assert self.hdfs.status(path)['owner'] == new_owner
-
-    def test_chown_group_directory(self):
-        new_group = 'randomgroup'
-        path = pjoin(self.tmp_dir, util.guid())
-        self.hdfs.mkdir(path)
-        self.hdfs.chown(path, group=new_group)
-        assert self.hdfs.status(path)['group'] == new_group
-
     def test_mv_to_existing_file(self):
         remote_file = self._make_random_hdfs_file()
         existing_remote_file_dest = self._make_random_hdfs_file()
@@ -415,6 +389,50 @@ class TestHDFSE2E(unittest.TestCase):
                                   directory=nested_dir)
 
         return dirname
+
+
+@pytest.mark.e2e
+class TestSuperUserHDFSE2E(TestHDFSE2E):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.ENV = ENV
+        cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
+        if cls.ENV.use_kerberos:
+            print("Warning: ignoring invalid Certificate Authority errors")
+        # NOTE: specifying user 'hdfs'
+        cls.hdfs = ibis.hdfs_connect(host=cls.ENV.nn_host,
+                                     port=cls.ENV.webhdfs_port,
+                                     use_kerberos=cls.ENV.use_kerberos,
+                                     verify=(not cls.ENV.use_kerberos),
+                                     user='hdfs')
+        cls.hdfs.mkdir(cls.tmp_dir)
+
+    def test_chown_owner(self):
+        new_owner = 'randomowner'
+        path = self._make_random_hdfs_file()
+        self.hdfs.chown(path, new_owner)
+        assert self.hdfs.status(path)['owner'] == new_owner
+
+    def test_chown_group(self):
+        new_group = 'randomgroup'
+        path = self._make_random_hdfs_file()
+        self.hdfs.chown(path, group=new_group)
+        assert self.hdfs.status(path)['group'] == new_group
+
+    def test_chown_group_directory(self):
+        new_group = 'randomgroup'
+        path = pjoin(self.tmp_dir, util.guid())
+        self.hdfs.mkdir(path)
+        self.hdfs.chown(path, group=new_group)
+        assert self.hdfs.status(path)['group'] == new_group
+
+    def test_chown_owner_directory(self):
+        new_owner = 'randomowner'
+        path = pjoin(self.tmp_dir, util.guid())
+        self.hdfs.mkdir(path)
+        self.hdfs.chown(path, new_owner)
+        assert self.hdfs.status(path)['owner'] == new_owner
 
 
 def _check_directories_equal(left, right):
