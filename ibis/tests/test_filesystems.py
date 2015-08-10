@@ -400,12 +400,12 @@ class TestSuperUserHDFSE2E(TestHDFSE2E):
         cls.tmp_dir = pjoin(cls.ENV.tmp_dir, util.guid())
         if cls.ENV.use_kerberos:
             print("Warning: ignoring invalid Certificate Authority errors")
-        # NOTE: specifying user 'hdfs'
+        # NOTE: specifying superuser as set in IbisTestEnv
         cls.hdfs = ibis.hdfs_connect(host=cls.ENV.nn_host,
                                      port=cls.ENV.webhdfs_port,
                                      use_kerberos=cls.ENV.use_kerberos,
                                      verify=(not cls.ENV.use_kerberos),
-                                     user='hdfs')
+                                     user=cls.ENV.hdfs_superuser)
         cls.hdfs.mkdir(cls.tmp_dir)
 
     def test_chown_owner(self):
