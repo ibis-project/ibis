@@ -17,6 +17,8 @@ from ibis.compat import unittest
 import ibis.expr.types as ir
 import ibis
 
+from ibis.tests.util import assert_equal
+
 
 class TestAnalytics(unittest.TestCase):
 
@@ -70,8 +72,8 @@ class TestAnalytics(unittest.TestCase):
         # GH #398
         airlines = ibis.table([('dest', 'string'),
                                ('origin', 'string'),
-                               ('arrdelay', 'int32')], 'airlines')
-
+                               ('arrdelay', 'int32')], 'airlines'
+)
         dests = ['ORD', 'JFK', 'SFO']
         t = airlines[airlines.dest.isin(dests)]
         delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
@@ -79,3 +81,14 @@ class TestAnalytics(unittest.TestCase):
 
         post_pred = filtered.op().predicates[1]
         assert delay_filter.to_filter().equals(post_pred)
+
+    def test_topk_function_late_bind(self):
+        # GH #520
+        airlines = ibis.table([('dest', 'string'),
+                               ('origin', 'string'),
+                               ('arrdelay', 'int32')], 'airlines'
+)
+        expr1 = airlines.dest.topk(5, by=lambda x: x.arrdelay.mean())
+        expr2 = airlines.dest.topk(5, by=airlines.arrdelay.mean())
+
+        assert_equal(expr1.to_aggregation(), expr2.to_aggregation())

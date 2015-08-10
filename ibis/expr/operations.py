@@ -1913,15 +1913,21 @@ class TopKExpr(ir.AnalyticExpr):
         Convert the TopK operation to a table aggregation
         """
         op = self.op()
+
+        arg_table = ir.find_base_table(op.arg)
+
         by = op.by
+        if not isinstance(by, ir.Expr):
+            by = by(arg_table)
+            by_table = arg_table
+        else:
+            by_table = ir.find_base_table(op.by)
+
         if metric_name is None:
             if by.get_name() == op.arg.get_name():
                 by = by.name(backup_metric_name)
         else:
             by = by.name(metric_name)
-
-        arg_table = ir.find_base_table(op.arg)
-        by_table = ir.find_base_table(op.by)
 
         if arg_table.equals(by_table):
             agg = arg_table.aggregate(by, by=[op.arg])
