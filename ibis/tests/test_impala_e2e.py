@@ -1095,6 +1095,16 @@ class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
         assert_equal(table.schema(), ex_schema)
 
+    def test_create_table_persist_fails_if_called_twice(self):
+        tname = util.guid()
+
+        hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
+        self.con.parquet_file(hdfs_path, name=tname, persist=True)
+        self.temp_tables.append(tname)
+
+        with self.assertRaises(HS2Error):
+            self.con.parquet_file(hdfs_path, name=tname, persist=True)
+
     def test_query_text_file_regex(self):
         pass
 

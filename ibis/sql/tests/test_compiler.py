@@ -1553,14 +1553,14 @@ FROM (
         pass
 
 
-def _create_table(table_name, expr, database=None, overwrite=False,
+def _create_table(table_name, expr, database=None, can_exist=False,
                   format='parquet'):
     ast = build_ast(expr)
     select = ast.queries[0]
     statement = ddl.CTAS(table_name, select,
                          database=database,
                          format=format,
-                         overwrite=overwrite)
+                         can_exist=can_exist)
     return statement
 
 
@@ -1650,7 +1650,7 @@ class TestCreateTable(unittest.TestCase):
         statement = ddl.CTAS('another_table',
                              select,
                              external=True,
-                             overwrite=True,
+                             can_exist=False,
                              path=path,
                              database='foo')
         result = statement.compile()
@@ -1671,7 +1671,8 @@ FROM test1""".format(path)
                               ('baz', 'int16')])
         select = build_ast(self.con.table('test1')).queries[0]
         statement = ddl.CreateTableWithSchema('another_table', schema,
-                                              ddl.NoFormat(), overwrite=True,
+                                              ddl.NoFormat(),
+                                              can_exist=False,
                                               path=path, database='foo')
         result = statement.compile()
 
@@ -1689,7 +1690,7 @@ LOCATION '{0}'""".format(path)
         statement = ddl.CreateTableParquet('new_table',
                                            directory,
                                            example_file=path,
-                                           overwrite=False,
+                                           can_exist=True,
                                            database='foo')
 
         result = statement.compile()
@@ -1709,7 +1710,7 @@ LOCATION '{1}'""".format(path, directory)
         statement = ddl.CreateTableParquet('new_table',
                                            directory,
                                            example_table=example_table,
-                                           overwrite=False,
+                                           can_exist=True,
                                            database='foo')
 
         result = statement.compile()
@@ -1732,6 +1733,7 @@ LOCATION '{1}'""".format(example_table, directory)
                                            directory,
                                            schema=schema,
                                            external=True,
+                                           can_exist=True,
                                            database='foo')
 
         result = statement.compile()
@@ -1756,7 +1758,8 @@ LOCATION '{0}'""".format(directory)
                                         delimiter='|',
                                         escapechar='\\',
                                         lineterminator='\0',
-                                        database='foo')
+                                        database='foo',
+                                        can_exist=True)
 
         result = stmt.compile()
         expected = """\
@@ -1791,7 +1794,7 @@ LOCATION '{0}'""".format(path)
         }
 
         stmt = ddl.CreateTableAvro('new_table', path, avro_schema,
-                                   database='foo')
+                                   database='foo', can_exist=True)
 
         result = stmt.compile()
         expected = """\
@@ -1828,7 +1831,7 @@ TBLPROPERTIES ('avro.schema.literal'='{
     def test_create_table_parquet(self):
         statement = _create_table('some_table', self.expr,
                                   database='bar',
-                                  overwrite=True)
+                                  can_exist=False)
         result = statement.compile()
 
         expected = """\
@@ -1841,8 +1844,7 @@ WHERE `bigint_col` > 0"""
         assert result == expected
 
     def test_no_overwrite(self):
-        statement = _create_table('tname', self.expr,
-                                  overwrite=False)
+        statement = _create_table('tname', self.expr, can_exist=True)
         result = statement.compile()
 
         expected = """\
@@ -1855,7 +1857,8 @@ WHERE `bigint_col` > 0"""
         assert result == expected
 
     def test_avro_other_formats(self):
-        statement = _create_table('tname', self.t, format='avro')
+        statement = _create_table('tname', self.t, format='avro',
+                                  can_exist=True)
         result = statement.compile()
         expected = """\
 CREATE TABLE IF NOT EXISTS `tname`

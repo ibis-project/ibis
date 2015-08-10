@@ -503,7 +503,7 @@ class ImpalaClient(SQLClient):
         """
         return len(self.list_databases(like=name)) > 0
 
-    def create_database(self, name, path=None, fail_if_exists=True):
+    def create_database(self, name, path=None, force=False):
         """
         Create a new Impala database
 
@@ -519,8 +519,7 @@ class ImpalaClient(SQLClient):
             # explicit mkdir ensures the user own the dir rather than impala,
             # which is easier for manual cleanup, if necessary
             self._hdfs.mkdir(path, create_parent=True)
-        statement = ddl.CreateDatabase(name, path=path,
-                                       fail_if_exists=fail_if_exists)
+        statement = ddl.CreateDatabase(name, path=path, can_exist=force)
         self._execute(statement)
 
     def drop_database(self, name, force=False):
@@ -700,7 +699,7 @@ class ImpalaClient(SQLClient):
         self._execute(statement)
 
     def create_table(self, table_name, expr=None, schema=None, database=None,
-                     format='parquet', overwrite=False, external=False,
+                     format='parquet', force=False, external=False,
                      path=None, partition=None, like_parquet=None):
         """
         Create a new table in Impala using an Ibis table expression
@@ -715,7 +714,7 @@ class ImpalaClient(SQLClient):
           particular schema
         database : string, default None (optional)
         format : {'parquet'}
-        overwrite : boolean, default False
+        force : boolean, default False
           Do not create table if table with indicated name already exists
         external : boolean, default False
           Create an external table; Impala will not delete the underlying data
@@ -746,7 +745,7 @@ class ImpalaClient(SQLClient):
 
             statement = ddl.CTAS(table_name, select,
                                  database=database,
-                                 overwrite=overwrite,
+                                 can_exist=force,
                                  format=format,
                                  external=external,
                                  path=path)
@@ -755,7 +754,7 @@ class ImpalaClient(SQLClient):
                 table_name, schema, ddl.NoFormat(),
                 database=database,
                 format=format,
-                overwrite=overwrite,
+                can_exist=force,
                 external=external,
                 path=path, partition=partition)
         else:
@@ -786,15 +785,14 @@ class ImpalaClient(SQLClient):
 
         # CTAS into Parquet
         self.create_table(name, expr=table, database=database,
-                          format='parquet', overwrite=False)
+                          format='parquet', force=False)
 
         # cleanup
         self.hdfs.delete(temp_csv_hdfs_dir, recursive=True)
 
         return self._wrap_new_table(qualified_name, persist)
 
-    def avro_file(self, hdfs_dir, avro_schema,
-                  name=None, database=None,
+    def avro_file(self, hdfs_dir, avro_schema, name=None, database=None,
                   external=True, persist=False):
         """
         Create a (possibly temporary) table to read a collection of Avro data.
@@ -929,7 +927,8 @@ class ImpalaClient(SQLClient):
                                       database=database,
                                       example_file=like_file,
                                       example_table=like_table,
-                                      external=external)
+                                      external=external,
+                                      can_exist=False)
         self._execute(stmt)
         return self._wrap_new_table(qualified_name, persist)
 
@@ -951,7 +950,7 @@ class ImpalaClient(SQLClient):
         # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
         name, path = options.impala.temp_db, options.impala.temp_hdfs_path
         if not self.exists_database(name):
-            self.create_database(name, path=path, fail_if_exists=True)
+            self.create_database(name, path=path, force=True)
 
     def _wrap_new_table(self, qualified_name, persist):
         if persist:
