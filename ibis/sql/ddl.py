@@ -466,7 +466,13 @@ class Union(DDLStatement):
         return query
 
 
-class CreateTable(DDLStatement):
+class CreateDDL(DDLStatement):
+
+    def _if_exists(self):
+        return 'IF NOT EXISTS ' if self.can_exist else ''
+
+
+class CreateTable(CreateDDL):
 
     """
 
@@ -477,14 +483,14 @@ class CreateTable(DDLStatement):
     """
 
     def __init__(self, table_name, database=None, external=False,
-                 format='parquet', overwrite=False,
+                 format='parquet', can_exist=False,
                  partition=None, path=None):
         self.table_name = table_name
         self.database = database
         self.partition = partition
         self.path = path
         self.external = external
-        self.overwrite = overwrite
+        self.can_exist = can_exist
         self.format = self._validate_storage_format(format)
 
     def _validate_storage_format(self, format):
@@ -494,7 +500,6 @@ class CreateTable(DDLStatement):
         return format
 
     def _create_line(self):
-        if_exists = '' if self.overwrite else 'IF NOT EXISTS '
         scoped_name = self._get_scoped_name(self.table_name, self.database)
 
         if self.external:
@@ -502,7 +507,7 @@ class CreateTable(DDLStatement):
         else:
             create_decl = 'CREATE TABLE'
 
-        create_line = '{0} {1}{2}'.format(create_decl, if_exists,
+        create_line = '{0} {1}{2}'.format(create_decl, self._if_exists(),
                                           scoped_name)
         return create_line
 
@@ -526,12 +531,12 @@ class CTAS(CreateTable):
     """
 
     def __init__(self, table_name, select, database=None,
-                 external=False, format='parquet', overwrite=False,
+                 external=False, format='parquet', can_exist=False,
                  path=None):
         self.select = select
         CreateTable.__init__(self, table_name, database=database,
                              external=external, format=format,
-                             overwrite=overwrite, path=path)
+                             can_exist=can_exist, path=path)
 
     def compile(self):
         buf = BytesIO()
@@ -544,17 +549,17 @@ class CTAS(CreateTable):
         return buf.getvalue()
 
 
-class CreateView(DDLStatement):
+class CreateView(CreateDDL):
 
     """
     Create Table As Select
     """
 
-    def __init__(self, name, select, database=None, overwrite=False):
+    def __init__(self, name, select, database=None, can_exist=False):
         self.name = name
         self.database = database
         self.select = select
-        self.overwrite = overwrite
+        self.can_exist = can_exist
 
     def compile(self):
         buf = BytesIO()
@@ -565,10 +570,9 @@ class CreateView(DDLStatement):
         return buf.getvalue()
 
     def _create_line(self):
-        if_exists = '' if self.overwrite else 'IF NOT EXISTS '
         scoped_name = self._get_scoped_name(self.name, self.database)
-
-        return '{0} {1}{2}'.format('CREATE VIEW', if_exists, scoped_name)
+        return '{0} {1}{2}'.format('CREATE VIEW', self._if_exists(),
+                                   scoped_name)
 
 
 class CreateTableParquet(CreateTable):
@@ -818,19 +822,19 @@ class CacheTable(DDLStatement):
         return cache_line
 
 
-class CreateDatabase(DDLStatement):
+class CreateDatabase(CreateDDL):
 
-    def __init__(self, name, path=None, fail_if_exists=True):
+    def __init__(self, name, path=None, can_exist=False):
         self.name = name
         self.path = path
-        self.fail_if_exists = fail_if_exists
+        self.can_exist = can_exist
 
     def compile(self):
-        if_exists = '' if self.fail_if_exists else 'IF NOT EXISTS '
         name = quote_identifier(self.name)
 
         create_decl = 'CREATE DATABASE'
-        create_line = '{0} {1}{2}'.format(create_decl, if_exists, name)
+        create_line = '{0} {1}{2}'.format(create_decl, self._if_exists(),
+                                          name)
         if self.path is not None:
             create_line += "\nLOCATION '{0}'".format(self.path)
 
