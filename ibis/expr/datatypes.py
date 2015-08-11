@@ -156,6 +156,9 @@ class DataType(object):
 
         return isinstance(other, type(self))
 
+    def can_implicit_cast(self, other):
+        return self.equals(other)
+
     def scalar_type(self):
         name = type(self).__name__
         return getattr(ir, '{0}Scalar'.format(name))
@@ -189,7 +192,7 @@ class Integer(Primitive):
 
     def can_implicit_cast(self, other):
         if isinstance(other, Integer):
-            return other._nbytes < self._nbytes
+            return other._nbytes <= self._nbytes
         return False
 
 

@@ -366,23 +366,45 @@ LIMIT 10"""
         table_name = _random_table_name()
         db = self.test_data_db
 
-        try:
-            self.con.create_table(table_name, expr.limit(0),
-                                  database=db)
-            self.con.insert(table_name, expr.limit(10), database=db)
-            self.con.insert(table_name, expr.limit(10), database=db)
+        self.con.create_table(table_name, expr.limit(0), database=db)
+        self.temp_tables.append('.'.join((db, table_name)))
+        self.con.insert(table_name, expr.limit(10), database=db)
+        self.con.insert(table_name, expr.limit(10), database=db)
 
-            sz = self.con.table('{0}.{1}'.format(db, table_name)).count()
-            assert sz.execute() == 20
+        sz = self.con.table('{0}.{1}'.format(db, table_name)).count()
+        assert sz.execute() == 20
 
-            # Overwrite and verify only 10 rows now
-            self.con.insert(table_name, expr.limit(10), database=db,
-                            overwrite=True)
-            assert sz.execute() == 10
-        except Exception:
-            raise
-        finally:
-            _ensure_drop(self.con, table_name, database=db)
+        # Overwrite and verify only 10 rows now
+        self.con.insert(table_name, expr.limit(10), database=db,
+                        overwrite=True)
+        assert sz.execute() == 10
+
+    def test_insert_validate_types(self):
+        # GH #235
+        table_name = _random_table_name()
+        db = self.test_data_db
+
+        expr = self.alltypes
+        self.con.create_table(table_name,
+                              schema=expr['tinyint_col', 'int_col',
+                                          'string_col'].schema(),
+                              database=db)
+        self.temp_tables.append('.'.join((db, table_name)))
+
+        to_insert = expr[expr.tinyint_col, expr.smallint_col.name('int_col'),
+                         expr.string_col]
+        self.con.insert(table_name, to_insert.limit(10))
+
+        to_insert = expr[expr.tinyint_col,
+                         expr.smallint_col.cast('int32').name('int_col'),
+                         expr.string_col]
+        self.con.insert(table_name, to_insert.limit(10))
+
+        to_insert = expr[expr.tinyint_col,
+                         expr.bigint_col.name('int_col'),
+                         expr.string_col]
+        with self.assertRaises(com.IbisError):
+            self.con.insert(table_name, to_insert.limit(10))
 
     def test_builtins_1(self):
         table = self.alltypes

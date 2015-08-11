@@ -986,7 +986,8 @@ class ImpalaClient(SQLClient):
         """
         pass
 
-    def insert(self, table_name, expr, database=None, overwrite=False):
+    def insert(self, table_name, expr, database=None, overwrite=False,
+               validate=True):
         """
         Insert into existing table
 
@@ -997,6 +998,9 @@ class ImpalaClient(SQLClient):
         database : string, default None
         overwrite : boolean, default False
           If True, will replace existing contents of table
+        validate : boolean, default True
+          If True, do more rigorous validation that schema of table being
+          inserted is compatible with the existing table
 
         Examples
         --------
@@ -1005,6 +1009,12 @@ class ImpalaClient(SQLClient):
         # Completely overwrite contents
         con.insert('my_table', table_expr, overwrite=True)
         """
+        if validate:
+            existing_schema = self.get_schema(table_name, database=database)
+            insert_schema = expr.schema()
+            if not insert_schema.equals(existing_schema):
+                _validate_compatible(insert_schema, existing_schema)
+
         ast = sql.build_ast(expr)
         select = ast.queries[0]
         statement = ddl.InsertSelect(table_name, select,
@@ -1546,3 +1556,13 @@ def pandas_to_ibis_schema(frame):
         ibis_type = pandas_col_to_ibis_type(frame[col_name])
         pairs.append((col_name, ibis_type))
     return schema(pairs)
+
+
+def _validate_compatible(from_schema, to_schema):
+    if from_schema.names != to_schema.names:
+        raise com.IbisInputError('Schemas have different names')
+
+    for lt, rt in zip(from_schema.types, to_schema.types):
+        if not rt.can_implicit_cast(lt):
+            raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
+                                     .format(lt, rt))
