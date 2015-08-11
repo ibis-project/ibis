@@ -15,13 +15,20 @@
 # flake8: noqa
 
 import sys
-from six import BytesIO, string_types as py_string
+from six import BytesIO, StringIO, string_types as py_string
 
 
 PY26 = sys.version_info[0] == 2 and sys.version_info[1] == 6
+PY3 = (sys.version_info[0] >= 3)
+PY2 = sys.version_info[0] == 2
 
 
 if PY26:
     import unittest2 as unittest
 else:
     import unittest
+
+if PY3:
+    unicode_type = str
+else:
+    unicode_type = unicode

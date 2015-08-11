@@ -22,7 +22,7 @@ from decimal import Decimal
 
 import ibis
 
-from ibis.compat import unittest
+from ibis.compat import unittest, StringIO
 from ibis.expr.datatypes import Category
 from ibis.sql.compiler import to_sql
 from ibis.tests.util import IbisTestEnv, ImpalaE2E, assert_equal, connect_test
@@ -237,6 +237,13 @@ LIMIT 10"""
         expr = t.group_by('string_col').size()
         result = self.con.explain(expr)
         assert isinstance(result, str)
+
+    def test_table_info(self):
+        t = self.con.table('functional_alltypes')
+        buf = StringIO()
+        t.info(buf=buf)
+
+        assert buf.getvalue() is not None
 
     def test_get_schema(self):
         t = self.con.table('tpch_lineitem')

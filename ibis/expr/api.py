@@ -1582,6 +1582,33 @@ def _table_count(self):
     return _ops.Count(self, None).to_expr().name('count')
 
 
+def _table_info(self, buf=None):
+    """
+    Similar to pandas DataFrame.info. Show column names, types, and null
+    counts. Output to stdout by default
+    """
+    metrics = [self.count().name('nrows')]
+    for col in self.columns:
+        metrics.append(self[col].count().name(col))
+
+    metrics = self.aggregate(metrics).execute().loc[0]
+
+    names = ['Column', '------'] + self.columns
+    types = ['Type', '----'] + [repr(x) for x in self.schema().types]
+    counts = ['Non-null #', '----------'] + [str(x) for x in metrics[1:]]
+    col_metrics = util.adjoin(2, names, types, counts)
+
+    if buf is None:
+        import sys
+        buf = sys.stdout
+
+    result = ('Table rows: {0}\n\n'
+              '{1}'
+              .format(metrics[0], col_metrics))
+
+    buf.write(result)
+
+
 def _table_set_column(table, name, expr):
     """
     Replace an existing column with a new expression
@@ -1714,6 +1741,7 @@ def mutate(table, exprs=None, **kwds):
 
 _table_methods = dict(
     count=_table_count,
+    info=_table_info,
     set_column=_table_set_column,
     filter=filter,
     mutate=mutate,
