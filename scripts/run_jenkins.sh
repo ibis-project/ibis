@@ -33,6 +33,11 @@ trap cleanup EXIT
 
 cd $TMP_DIR
 
+# Add LLVM to PATH
+if [ -n "$IBIS_TEST_LLVM_CONFIG" ]; then
+    export PATH="$($IBIS_TEST_LLVM_CONFIG --bindir):$PATH"
+fi
+
 # Checkout ibis if necessary
 if [ -z "$WORKSPACE" ]; then
     : ${GIT_URL:?"GIT_URL is unset"}
@@ -46,7 +51,7 @@ else
 fi
 
 # pull in PR if necessary
-if [ -n "$GITHUB_PR" ]; then
+if [ -z "$WORKSPACE" -a -n "$GITHUB_PR" ]; then
     pushd $IBIS_HOME
     git clean -d -f
     git fetch origin pull/$GITHUB_PR/head:pr_$GITHUB_PR
@@ -67,6 +72,7 @@ conda info -a
 CONDA_ENV_NAME=pyenv-ibis-test
 conda create -y -q -n $CONDA_ENV_NAME python=$PYTHON_VERSION numpy pandas
 source activate $CONDA_ENV_NAME
+pip install click
 pip install $IBIS_HOME
 
 python --version
@@ -89,11 +95,18 @@ cd $IBIS_HOME
 
 python -c "from ibis.tests.util import IbisTestEnv; print(IbisTestEnv())"
 
-# load necessary test data
-scripts/load_test_data.py
+# load necessary test data (without overwriting)
+scripts/test_data_admin.py load --data --no-udf
 
-# run the test suite
-py.test --e2e ibis
+if [ -z "$WORKSPACE" ]; then
+    # on kerberized cluster, skip UDF work
+    py.test --skip-udf --skip-superuser --e2e ibis
+else
+    # build and load the UDFs
+    scripts/test_data_admin.py load --no-data --udf --overwrite
+    # run the full test suite
+    py.test --e2e ibis
+fi
 
-# cleanup
-scripts/cleanup_testing_data.py
+# cleanup temporary data (but not testing data)
+scripts/test_data_admin.py cleanup --tmp-data --tmp-db

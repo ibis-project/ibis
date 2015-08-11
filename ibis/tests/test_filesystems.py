@@ -392,7 +392,8 @@ class TestHDFSE2E(unittest.TestCase):
 
 
 @pytest.mark.e2e
-class TestSuperUserHDFSE2E(TestHDFSE2E):
+@pytest.mark.superuser
+class TestSuperUserHDFSE2E(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -407,6 +408,55 @@ class TestSuperUserHDFSE2E(TestHDFSE2E):
                                      verify=(not cls.ENV.use_kerberos),
                                      user=cls.ENV.hdfs_superuser)
         cls.hdfs.mkdir(cls.tmp_dir)
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            cls.hdfs.rmdir(cls.tmp_dir)
+        except:
+            pass
+
+    def setUp(self):
+        self.test_files = []
+        self.test_directories = []
+
+    def tearDown(self):
+        self._delete_test_files()
+        pass
+
+    def _delete_test_files(self):
+        for path in self.test_files:
+            try:
+                os.remove(path)
+            except os.error:
+                pass
+
+        for path in self.test_directories:
+            try:
+                shutil.rmtree(path)
+            except os.error:
+                pass
+
+    def _make_random_file(self, size=1024, directory=None):
+        path = util.guid()
+
+        if directory:
+            path = osp.join(directory, path)
+
+        units = size / 32
+
+        with open(path, 'wb') as f:
+            for i in xrange(units):
+                f.write(util.guid())
+
+        self.test_files.append(path)
+        return path
+
+    def _make_random_hdfs_file(self, size=1024, directory=None):
+        local_path = self._make_random_file(size=size)
+        remote_path = pjoin(directory or self.tmp_dir, local_path)
+        self.hdfs.put(remote_path, local_path)
+        return remote_path
 
     def test_chown_owner(self):
         new_owner = 'randomowner'
