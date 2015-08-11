@@ -17,6 +17,7 @@ import operator
 
 from ibis.common import IbisTypeError
 import ibis.expr.api as api
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis
@@ -90,7 +91,7 @@ class TestLiterals(BasicTestCase, unittest.TestCase):
 
         for value, ex_type in cases:
             expr = ibis.literal(value)
-            klass = ir.scalar_type(ex_type)
+            klass = dt.scalar_type(ex_type)
             assert isinstance(expr, klass)
             assert isinstance(expr.op(), ir.Literal)
             assert expr.op().value is value
@@ -332,10 +333,10 @@ class TestTypeCasting(BasicTestCase, unittest.TestCase):
         for t in types:
             c = 'g'
             casted = self.table[c].cast(t)
-            assert isinstance(casted, ir.array_type(t))
+            assert isinstance(casted, dt.array_type(t))
 
             casted_literal = ibis.literal('5').cast(t).name('bar')
-            assert isinstance(casted_literal, ir.scalar_type(t))
+            assert isinstance(casted_literal, dt.scalar_type(t))
             assert casted_literal.get_name() == 'bar'
 
     def test_number_to_string(self):
@@ -606,11 +607,11 @@ class TestBinaryArithOps(BasicTestCase, unittest.TestCase):
             col = self.table[name]
 
             result = op(col, val)
-            ex_class = ir.array_type(ex_type)
+            ex_class = dt.array_type(ex_type)
             assert isinstance(result, ex_class)
 
             result = op(val, col)
-            ex_class = ir.array_type(ex_type)
+            ex_class = dt.array_type(ex_type)
             assert isinstance(result, ex_class)
 
     def test_add_array_promotions(self):

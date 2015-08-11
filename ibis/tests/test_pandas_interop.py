@@ -17,9 +17,10 @@ import pandas as pd
 import pytest
 
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.compat import unittest
-from ibis.util import pandas_to_ibis_schema
+from ibis.client import pandas_to_ibis_schema
 from ibis.common import IbisTypeError
 from ibis.tests.util import ImpalaE2E
 
@@ -161,7 +162,7 @@ class TestPandasSchemaInference(unittest.TestCase):
     def test_dtype_categorical(self):
         df = pd.DataFrame({'col': ['a', 'b', 'c', 'a']}, dtype='category')
         inferred = pandas_to_ibis_schema(df)
-        expected = ibis.schema([('col', 'category')])
+        expected = ibis.schema([('col', dt.Category(3))])
         assert inferred == expected
 
 

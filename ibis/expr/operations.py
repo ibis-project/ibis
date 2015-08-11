@@ -15,12 +15,13 @@
 import operator
 
 from ibis.compat import py_string
+from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr,
                              ValueExpr, ArrayExpr, TableExpr,
-                             TableNode, ValueNode,
-                             HasSchema, _safe_repr)
+                             TableNode, ValueNode, _safe_repr)
 import ibis.common as com
+import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
@@ -120,7 +121,7 @@ class TableColumn(ValueNode):
 
     def to_expr(self):
         ctype = self.table._get_type(self.name)
-        klass = ir.array_type(ctype)
+        klass = ctype.array_type()
         return klass(self, name=self.name)
 
 
@@ -149,7 +150,7 @@ class TableArrayView(ValueNode):
 
     def to_expr(self):
         ctype = self.table._get_type(self.name)
-        klass = ir.array_type(ctype)
+        klass = ctype.array_type()
         return klass(self, name=self.name)
 
 
@@ -647,7 +648,7 @@ def _sum_output_type(self):
     elif isinstance(arg, ir.FloatingValue):
         t = 'double'
     elif isinstance(arg, ir.DecimalValue):
-        t = ir.DecimalType(arg._precision, 38)
+        t = dt.Decimal(arg._precision, 38)
     else:
         raise TypeError(arg)
     return t
@@ -656,7 +657,7 @@ def _sum_output_type(self):
 def _mean_output_type(self):
     arg = self.args[0]
     if isinstance(arg, ir.DecimalValue):
-        t = ir.DecimalType(arg._precision, 38)
+        t = dt.Decimal(arg._precision, 38)
     elif isinstance(arg, ir.NumericValue):
         t = 'double'
     else:
@@ -666,15 +667,15 @@ def _mean_output_type(self):
 
 def _scalar_output(rule):
     def f(self):
-        t = rule(self)
-        return ir.scalar_type(t)
+        t = dt.validate_type(rule(self))
+        return t.scalar_type()
     return f
 
 
 def _array_output(rule):
     def f(self):
-        t = rule(self)
-        return ir.array_type(t)
+        t = dt.validate_type(rule(self))
+        return t.array_type()
     return f
 
 
@@ -689,7 +690,7 @@ class Mean(Reduction):
 
 
 def _decimal_scalar_ctor(precision, scale):
-    out_type = ir.DecimalType(precision, scale)
+    out_type = dt.Decimal(precision, scale)
     return ir.DecimalScalar._make_constructor(out_type)
 
 
@@ -700,7 +701,7 @@ class StdDeviation(Reduction):
 def _min_max_output_rule(self):
     arg = self.args[0]
     if isinstance(arg, ir.DecimalValue):
-        t = ir.DecimalType(arg._precision, 38)
+        t = dt.Decimal(arg._precision, 38)
     else:
         t = arg.type()
 
@@ -747,7 +748,7 @@ class CMSMedian(Reduction):
 
     def output_type(self):
         # Scalar but type of caller
-        return ir.scalar_type(self.args[0].type())
+        return self.args[0].type().scalar_type()
 
 
 # ----------------------------------------------------------------------
@@ -970,7 +971,7 @@ class LargestValue(AnalyticOp):
 # Distinct stuff
 
 
-class Distinct(ir.BlockingTableNode, ir.HasSchema):
+class Distinct(ir.BlockingTableNode, HasSchema):
 
     """
     Distinct is a table-level unique-ing operation.
@@ -1645,7 +1646,7 @@ class Projection(ir.BlockingTableNode, HasSchema):
             clean_exprs.append(expr)
 
         # validate uniqueness
-        schema = ir.Schema(names, types)
+        schema = Schema(names, types)
 
         HasSchema.__init__(self, schema)
         Node.__init__(self, [table_expr] + [clean_exprs])
@@ -1757,7 +1758,7 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
             names.append(e.get_name())
             types.append(e.type())
 
-        return ir.Schema(names, types)
+        return Schema(names, types)
 
 
 class Add(BinaryOp):

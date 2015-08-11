@@ -18,6 +18,7 @@ from io import BytesIO
 import ibis
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.expr.temporal as tempo
@@ -58,10 +59,10 @@ def _cast(translator, expr):
 
 
 def _type_to_sql_string(tval):
-    if isinstance(tval, ir.DecimalType):
+    if isinstance(tval, dt.Decimal):
         return 'decimal({0},{1})'.format(tval.precision, tval.scale)
     else:
-        return _sql_type_names[tval]
+        return _sql_type_names[tval.name()]
 
 
 def _between(translator, expr):

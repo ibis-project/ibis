@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.rules as rules
 import ibis.expr.operations as ops
@@ -31,8 +32,8 @@ class BucketLike(ir.ValueNode):
         return None
 
     def output_type(self):
-        ctype = ir.CategoryType(self.nbuckets)
-        return ctype.array_ctor()
+        ctype = dt.Category(self.nbuckets)
+        return ctype.array_type()
 
 
 class Bucket(BucketLike):
@@ -89,8 +90,8 @@ class Histogram(BucketLike):
 
     def output_type(self):
         # always undefined cardinality (for now)
-        ctype = ir.CategoryType()
-        return ctype.array_ctor()
+        ctype = dt.Category()
+        return ctype.array_type()
 
 
 class CategoryLabel(ir.ValueNode):
