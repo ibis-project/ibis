@@ -255,7 +255,26 @@ class TestNullOps(BasicTestCase, unittest.TestCase):
         pass
 
 
-class TestMathUnaryOps(BasicTestCase, unittest.TestCase):
+class TestCumulativeOps(BasicTestCase, unittest.TestCase):
+
+    def test_cumulative_yield_array_types(self):
+        d = self.table.f
+        h = self.table.h
+
+        cases = [
+            d.cumsum(),
+            d.cummean(),
+            d.cummin(),
+            d.cummax(),
+            h.cumany(),
+            h.cumall()
+        ]
+
+        for expr in cases:
+            assert isinstance(expr, ir.ArrayExpr)
+
+
+class TestMathOps(BasicTestCase, unittest.TestCase):
 
     def test_log_variants(self):
         opnames = ['ln', 'log', 'log2', 'log10']

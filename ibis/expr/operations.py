@@ -640,30 +640,52 @@ class Count(Reduction):
         return ir.Int64Scalar
 
 
+def _sum_output_type(self):
+    arg = self.args[0]
+    if isinstance(arg, (ir.IntegerValue, ir.BooleanValue)):
+        t = 'int64'
+    elif isinstance(arg, ir.FloatingValue):
+        t = 'double'
+    elif isinstance(arg, ir.DecimalValue):
+        t = ir.DecimalType(arg._precision, 38)
+    else:
+        raise TypeError(arg)
+    return t
+
+
+def _mean_output_type(self):
+    arg = self.args[0]
+    if isinstance(arg, ir.DecimalValue):
+        t = ir.DecimalType(arg._precision, 38)
+    elif isinstance(arg, ir.NumericValue):
+        t = 'double'
+    else:
+        raise NotImplementedError
+    return t
+
+
+def _scalar_output(rule):
+    def f(self):
+        t = rule(self)
+        return ir.scalar_type(t)
+    return f
+
+
+def _array_output(rule):
+    def f(self):
+        t = rule(self)
+        return ir.array_type(t)
+    return f
+
+
 class Sum(Reduction):
 
-    def output_type(self):
-        arg = self.args[0]
-        if isinstance(arg, (ir.IntegerValue, ir.BooleanValue)):
-            return ir.Int64Scalar
-        elif isinstance(arg, ir.FloatingValue):
-            return ir.DoubleScalar
-        elif isinstance(arg, ir.DecimalValue):
-            return _decimal_scalar_ctor(arg._precision, 38)
-        else:
-            raise TypeError(arg)
+    output_type = _scalar_output(_sum_output_type)
 
 
 class Mean(Reduction):
 
-    def output_type(self):
-        arg = self.args[0]
-        if isinstance(arg, ir.DecimalValue):
-            return _decimal_scalar_ctor(arg._precision, 38)
-        elif isinstance(arg, ir.NumericValue):
-            return ir.DoubleScalar
-        else:
-            raise NotImplementedError
+    output_type = _scalar_output(_mean_output_type)
 
 
 def _decimal_scalar_ctor(precision, scale):
@@ -678,19 +700,21 @@ class StdDeviation(Reduction):
 def _min_max_output_rule(self):
     arg = self.args[0]
     if isinstance(arg, ir.DecimalValue):
-        return _decimal_scalar_ctor(arg._precision, 38)
+        t = ir.DecimalType(arg._precision, 38)
     else:
-        return ir.scalar_type(arg.type())
+        t = arg.type()
+
+    return t
 
 
 class Max(Reduction):
 
-    output_type = _min_max_output_rule
+    output_type = _scalar_output(_min_max_output_rule)
 
 
 class Min(Reduction):
 
-    output_type = _min_max_output_rule
+    output_type = _scalar_output(_min_max_output_rule)
 
 
 class HLLCardinality(Reduction):
@@ -875,7 +899,7 @@ class CumulativeSum(CumulativeOp):
     Cumulative sum. Requires an order window.
     """
 
-    output_type = Sum.output_type.im_func
+    output_type = _array_output(_sum_output_type)
 
 
 class CumulativeMean(CumulativeOp):
@@ -884,7 +908,7 @@ class CumulativeMean(CumulativeOp):
     Cumulative mean. Requires an order window.
     """
 
-    output_type = Mean.output_type.im_func
+    output_type = _array_output(_mean_output_type)
 
 
 class CumulativeMax(CumulativeOp):
@@ -893,7 +917,7 @@ class CumulativeMax(CumulativeOp):
     Cumulative max. Requires an order window.
     """
 
-    output_type = Max.output_type.im_func
+    output_type = _array_output(_min_max_output_rule)
 
 
 class CumulativeMin(CumulativeOp):
@@ -902,7 +926,7 @@ class CumulativeMin(CumulativeOp):
     Cumulative min. Requires an order window.
     """
 
-    output_type = Min.output_type.im_func
+    output_type = _array_output(_min_max_output_rule)
 
 
 class PercentRank(AnalyticOp):
@@ -1056,8 +1080,7 @@ class CumulativeAny(CumulativeOp):
     Cumulative any
     """
 
-    def output_type(self):
-        return ir.BooleanArray
+    output_type = _array_output(lambda self: 'boolean')
 
 
 class CumulativeAll(CumulativeOp):
@@ -1066,8 +1089,7 @@ class CumulativeAll(CumulativeOp):
     Cumulative all
     """
 
-    def output_type(self):
-        return ir.BooleanArray
+    output_type = _array_output(lambda self: 'boolean')
 
 
 # ---------------------------------------------------------------------
