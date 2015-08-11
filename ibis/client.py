@@ -29,6 +29,7 @@ from ibis.config import options
 from ibis.filesystems import HDFS, WebHDFS
 
 import ibis.common as com
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as sql
@@ -1267,7 +1268,7 @@ class ImpalaClient(SQLClient):
 
             if typename == 'decimal':
                 precision, scale = col[4:6]
-                adapted_types.append(ir.DecimalType(precision, scale))
+                adapted_types.append(dt.Decimal(precision, scale))
             else:
                 adapted_types.append(typename)
         return names, adapted_types

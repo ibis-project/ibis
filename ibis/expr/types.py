@@ -15,9 +15,10 @@
 import datetime
 
 from ibis.common import IbisError, RelationError
-from ibis.expr.datatypes import Schema, DataType, DecimalType
+from ibis.expr.datatypes import Schema, DataType
 import ibis.common as com
 import ibis.config as config
+import ibis.expr.datatypes as dt
 import ibis.util as util
 
 
@@ -917,7 +918,7 @@ class DecimalValue(NumericValue):
         self._scale = meta.scale
 
     def type(self):
-        return DecimalType(self._precision, self._scale)
+        return dt.Decimal(self._precision, self._scale)
 
     def _base_type(self):
         return 'decimal'

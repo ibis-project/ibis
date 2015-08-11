@@ -32,7 +32,7 @@ class BucketLike(ir.ValueNode):
         return None
 
     def output_type(self):
-        ctype = dt.CategoryType(self.nbuckets)
+        ctype = dt.Category(self.nbuckets)
         return ctype.array_ctor()
 
 
@@ -90,7 +90,7 @@ class Histogram(BucketLike):
 
     def output_type(self):
         # always undefined cardinality (for now)
-        ctype = dt.CategoryType()
+        ctype = dt.Category()
         return ctype.array_ctor()
 
 

@@ -15,13 +15,13 @@
 import operator
 
 from ibis.compat import py_string
-from ibis.expr.datatypes import DecimalType
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr,
                              ValueExpr, ArrayExpr, TableExpr,
                              TableNode, ValueNode,
                              HasSchema, _safe_repr)
 import ibis.common as com
+import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
@@ -648,7 +648,7 @@ def _sum_output_type(self):
     elif isinstance(arg, ir.FloatingValue):
         t = 'double'
     elif isinstance(arg, ir.DecimalValue):
-        t = DecimalType(arg._precision, 38)
+        t = dt.Decimal(arg._precision, 38)
     else:
         raise TypeError(arg)
     return t
@@ -657,7 +657,7 @@ def _sum_output_type(self):
 def _mean_output_type(self):
     arg = self.args[0]
     if isinstance(arg, ir.DecimalValue):
-        t = DecimalType(arg._precision, 38)
+        t = dt.Decimal(arg._precision, 38)
     elif isinstance(arg, ir.NumericValue):
         t = 'double'
     else:
@@ -690,7 +690,7 @@ class Mean(Reduction):
 
 
 def _decimal_scalar_ctor(precision, scale):
-    out_type = DecimalType(precision, scale)
+    out_type = dt.Decimal(precision, scale)
     return ir.DecimalScalar._make_constructor(out_type)
 
 
@@ -701,7 +701,7 @@ class StdDeviation(Reduction):
 def _min_max_output_rule(self):
     arg = self.args[0]
     if isinstance(arg, ir.DecimalValue):
-        t = DecimalType(arg._precision, 38)
+        t = dt.Decimal(arg._precision, 38)
     else:
         t = arg.type()
 

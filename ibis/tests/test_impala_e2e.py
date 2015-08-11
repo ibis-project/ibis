@@ -23,7 +23,7 @@ from decimal import Decimal
 import ibis
 
 from ibis.compat import unittest
-from ibis.expr.datatypes import CategoryType
+from ibis.expr.datatypes import Category
 from ibis.sql.compiler import to_sql
 from ibis.tests.util import IbisTestEnv, ImpalaE2E, assert_equal, connect_test
 
@@ -517,7 +517,7 @@ LIMIT 10"""
         t = self.con.sql(query)
 
         def _clean_type(x):
-            if isinstance(x, CategoryType):
+            if isinstance(x, Category):
                 x = x.to_integer_type()
             return x
 

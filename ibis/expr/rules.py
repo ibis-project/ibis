@@ -17,7 +17,7 @@ import operator
 
 from ibis.common import IbisTypeError
 from ibis.compat import py_string
-from ibis.expr.datatypes import validate_type, DecimalType
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.common as com
 import ibis.util as util
@@ -82,7 +82,7 @@ def _decimal_promoted_type(args):
         if isinstance(arg, ir.DecimalValue):
             precisions.append(arg.meta.precision)
             scales.append(arg.meta.scale)
-    return DecimalType(max(precisions), max(scales))
+    return dt.Decimal(max(precisions), max(scales))
 
 
 class PowerPromoter(BinaryPromoter):
@@ -696,7 +696,7 @@ class DataType(Argument):
         if isinstance(arg, py_string):
             arg = arg.lower()
 
-        arg = args[i] = validate_type(arg)
+        arg = args[i] = dt.validate_type(arg)
         return arg
 
 

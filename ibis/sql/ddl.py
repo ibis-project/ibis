@@ -871,7 +871,7 @@ def _format_schema_element(name, t):
 
 
 def _format_type(t):
-    if isinstance(t, ir.DecimalType):
+    if isinstance(t, dt.Decimal):
         return 'DECIMAL({0},{1})'.format(t.precision, t.scale)
     else:
         return _impala_type_names[t]

@@ -92,7 +92,55 @@ class DataType(object):
     pass
 
 
-class DecimalType(DataType):
+class Boolean(DataType):
+    pass
+
+
+class Integer(DataType):
+    pass
+
+
+class String(DataType):
+    pass
+
+
+class Timestamp(DataType):
+    pass
+
+
+class SignedInteger(Integer):
+    pass
+
+
+class Floating(DataType):
+    pass
+
+
+class Int8(Integer):
+    pass
+
+
+class Int16(Integer):
+    pass
+
+
+class Int32(Integer):
+    pass
+
+
+class Int64(Integer):
+    pass
+
+
+class Float32(Integer):
+    pass
+
+
+class Float64(Integer):
+    pass
+
+
+class Decimal(DataType):
     # Decimal types are parametric, we store the parameters in this object
 
     def __init__(self, precision, scale):
@@ -113,7 +161,7 @@ class DecimalType(DataType):
         return not self.__eq__(other)
 
     def __eq__(self, other):
-        if not isinstance(other, DecimalType):
+        if not isinstance(other, Decimal):
             return False
 
         return (self.precision == other.precision and
@@ -132,7 +180,7 @@ class DecimalType(DataType):
         return constructor
 
 
-class CategoryType(DataType):
+class Category(DataType):
 
     def __init__(self, cardinality=None):
         self.cardinality = cardinality
@@ -149,7 +197,7 @@ class CategoryType(DataType):
         return hash((self.cardinality))
 
     def __eq__(self, other):
-        if not isinstance(other, CategoryType):
+        if not isinstance(other, Category):
             return False
 
         return self.cardinality == other.cardinality
@@ -178,6 +226,24 @@ class CategoryType(DataType):
             return CategoryScalar(op, self, name=name)
         return constructor
 
+
+class Struct(DataType):
+    pass
+
+
+class Array(DataType):
+    pass
+
+
+class Enum(DataType):
+    pass
+
+
+class Map(DataType):
+
+    pass
+
+
 # ---------------------------------------------------------------------
 
 _primitive_types = set(['boolean', 'int8', 'int16', 'int32', 'int64',
@@ -205,11 +271,11 @@ def _parse_decimal(t):
     m = _DECIMAL_RE.match(t)
     if m:
         precision, scale = m.groups()
-        return DecimalType(int(precision), int(scale))
+        return Decimal(int(precision), int(scale))
 
     if t == 'decimal':
         # From the Impala documentation
-        return DecimalType(9, 0)
+        return Decimal(9, 0)
 
 
 _type_parsers = [
