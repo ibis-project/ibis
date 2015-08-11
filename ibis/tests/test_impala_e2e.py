@@ -23,6 +23,7 @@ from decimal import Decimal
 import ibis
 
 from ibis.compat import unittest
+from ibis.expr.datatypes import CategoryType
 from ibis.sql.compiler import to_sql
 from ibis.tests.util import IbisTestEnv, ImpalaE2E, assert_equal, connect_test
 
@@ -34,6 +35,10 @@ import ibis.util as util
 import ibis.sql.udf as udf
 
 from impala.error import HiveServer2Error as HS2Error
+
+
+def approx_equal(a, b, eps):
+    assert abs(a - b) < eps
 
 
 ENV = IbisTestEnv()
@@ -512,7 +517,7 @@ LIMIT 10"""
         t = self.con.sql(query)
 
         def _clean_type(x):
-            if isinstance(x, ir.CategoryType):
+            if isinstance(x, CategoryType):
                 x = x.to_integer_type()
             return x
 
@@ -611,9 +616,6 @@ LIMIT 10"""
             (dc.zeroifnull(), Decimal('5.245')),
             (-dc, Decimal('-5.245'))
         ]
-
-        def approx_equal(a, b, eps):
-            assert abs(a - b) < eps
 
         for expr, expected in cases:
             result = self.con.execute(expr)
@@ -1269,7 +1271,8 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
     def test_decimal_wrapping(self):
         col = self.con.table('tpch_customer').c_acctbal
         literal = ibis.literal(1).cast('decimal(12,2)')
-        op = self._udf_creation_to_op('identity', 'Identity',
+        name = '__tmp_udf_' + util.guid()
+        op = self._udf_creation_to_op(name, 'Identity',
                                       ['decimal(12,2)'], 'decimal(12,2)')
 
         def _func(val):
@@ -1333,7 +1336,9 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
                            1.0, 1.0)
         self.con.execute(expr)
 
-    def all_type_args_wrapping(self):
+    def test_all_type_args_wrapping(self):
+        pytest.skip('failing test, to be fixed later')
+
         symbol = 'AllTypes'
         name = 'all_types'
         inputs = ['string', 'boolean', 'int8', 'int16', 'int32',
@@ -1343,10 +1348,10 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         op = self._udf_creation_to_op(name, symbol, inputs, output)
 
         def _all_types(string, boolean, tinyint, smallint, integer,
-                        bigint, float_val, double_val, decimal_val):
+                       bigint, float_val, double_val, decimal_val):
             return op(string, boolean, tinyint, smallint, integer,
                       bigint, float_val, double_val, decimal_val).to_expr()
-        expr = _mult_types('a', True, 1, 1, 1, 1, 1.0, 1.0, 1.0)
+        expr = _all_types('a', True, 1, 1, 1, 1, 1.0, 1.0, 1.0)
         result = self.con.execute(expr)
         assert result == 9
 
@@ -1365,7 +1370,7 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
 
     def _identity_func_testing(self, datatype, literal, column):
         inputs = [datatype]
-        name = 'identity'
+        name = '__tmp_udf_' + util.guid()
         op = self._udf_creation_to_op(name, 'Identity', inputs, datatype)
 
         def _identity_test(value):
@@ -1377,7 +1382,11 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         if datatype is 'timestamp':
             assert type(result) == pd.tslib.Timestamp
         else:
-            self.assertEqual(result, literal)
+            lop = literal.op()
+            if isinstance(lop, ir.Literal):
+                self.assertAlmostEqual(result, lop.value, 5)
+            else:
+                self.assertAlmostEqual(result, self.con.execute(literal), 5)
 
         expr = _identity_test(column)
         assert issubclass(type(expr), ir.ArrayExpr)

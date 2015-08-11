@@ -17,6 +17,7 @@ import re
 
 from ibis.sql.exprs import (ExprTranslator, quote_identifier,
                             _sql_type_names, _type_to_sql_string)
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.common as com
@@ -901,9 +902,9 @@ class CreateFunction(DDLStatement):
     def compile(self):
         create_decl = 'CREATE FUNCTION'
         scoped_name = self._get_scoped_name()
-        create_line = '{0!s}({1!s}) returns {2!s}'.format(scoped_name,
-                                                          ', '.join(self.inputs),
-                                                          self.output)
+        create_line = ('{0!s}({1!s}) returns {2!s}'
+                       .format(scoped_name, ', '.join(self.inputs),
+                               self.output))
         param_line = "location '{0!s}' symbol='{1!s}'".format(self.hdfs_file,
                                                               self.so_symbol)
         full_line = ' '.join([create_decl, create_line, param_line])
@@ -938,9 +939,9 @@ class CreateAggregateFunction(DDLStatement):
     def compile(self):
         create_decl = 'CREATE AGGREGATE FUNCTION'
         scoped_name = self._get_scoped_name()
-        create_line = '{0!s}({1!s}) returns {2!s}'.format(scoped_name,
-                                                          ', '.join(self.inputs),
-                                                          self.output)
+        create_line = ('{0!s}({1!s}) returns {2!s}'
+                       .format(scoped_name, ', '.join(self.inputs),
+                               self.output))
         loc_ln = "location '{0!s}'".format(self.hdfs_file)
         init_ln = "init_fn='{0}'".format(self.init)
         update_ln = "update_fn='{0}'".format(self.update)
@@ -974,7 +975,7 @@ class DropFunction(DropObject):
     def _ibis_string_to_impala(self, tval):
         if tval in _sql_type_names.keys():
             return _sql_type_names[tval]
-        result = ir._parse_decimal(tval)
+        result = dt._parse_decimal(tval)
         if result:
             return 'decimal({0},{1})'.format(result.precision,
                                              result.scale)

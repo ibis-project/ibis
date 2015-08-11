@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.expr.types import (Schema, Expr,  # noqa
+from ibis.expr.datatypes import Schema  # noqa
+from ibis.expr.types import (Expr,  # noqa
                              ValueExpr, ScalarExpr, ArrayExpr,
                              TableExpr,
                              NumericValue, NumericArray,

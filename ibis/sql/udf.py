@@ -22,7 +22,8 @@ from ibis.expr.types import (
 )
 from ibis.common import IbisTypeError
 
-import ibis.expr.types as ir
+from ibis.expr.datatypes import validate_type
+import ibis.expr.datatypes as _dt
 import ibis.expr.operations as _ops
 import ibis.expr.rules as rules
 import ibis.sql.exprs as _expr
@@ -51,8 +52,8 @@ class UDFCreatorParent(UDFInfo):
         if not(file_suffix == '.so' or file_suffix == '.ll'):
             raise ValueError('Invalid file type. Must be .so or .ll ')
         self.hdfs_file = hdfs_file
-        inputs = [ir._validate_type(x) for x in input_type]
-        output = ir._validate_type(output_type)
+        inputs = [validate_type(x) for x in input_type]
+        output = validate_type(output_type)
         new_name = name
         if not name:
             string = self.so_symbol
@@ -117,15 +118,15 @@ class UDACreator(UDFCreatorParent):
 def _validate_impala_type(t):
     if t in _impala_to_ibis.keys():
         return t
-    elif ir._DECIMAL_RE.match(t):
+    elif _dt._DECIMAL_RE.match(t):
         return t
     raise IbisTypeError("Not a valid Impala type for UDFs")
 
 
 def _operation_type_conversion(inputs, output):
-    in_type = [ir._validate_type(x) for x in inputs]
+    in_type = [validate_type(x) for x in inputs]
     in_values = [rules.value_typed_as(_convert_types(x)) for x in in_type]
-    out_type = ir._validate_type(output)
+    out_type = validate_type(output)
     out_value = rules.shape_like_flatargs(out_type)
     return (in_values, out_value)
 
@@ -153,7 +154,7 @@ def add_impala_operation(op, func_name, db):
 def _impala_type_to_ibis(tval):
     if tval in _impala_to_ibis.keys():
         return _impala_to_ibis[tval]
-    result = ir._parse_decimal(tval)
+    result = _dt._parse_decimal(tval)
     if result:
         return result.__repr__()
     raise Exception('Not a valid Impala type')
@@ -162,7 +163,7 @@ def _impala_type_to_ibis(tval):
 def _ibis_string_to_impala(tval):
     if tval in _expr._sql_type_names.keys():
         return _expr._sql_type_names[tval]
-    result = ir._parse_decimal(tval)
+    result = _dt._parse_decimal(tval)
     if result:
         return result.__repr__()
 
