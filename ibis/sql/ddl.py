@@ -16,7 +16,7 @@ from io import BytesIO
 import re
 
 from ibis.sql.exprs import (ExprTranslator, quote_identifier,
-                            _sql_type_names, _type_to_sql_string)
+                            _type_to_sql_string)
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -867,14 +867,7 @@ def format_schema(schema):
 
 def _format_schema_element(name, t):
     return '{0} {1}'.format(quote_identifier(name, force=True),
-                            _format_type(t))
-
-
-def _format_type(t):
-    if isinstance(t, dt.Decimal):
-        return 'DECIMAL({0},{1})'.format(t.precision, t.scale)
-    else:
-        return _impala_type_names[t]
+                            _type_to_sql_string(t))
 
 
 class CreateFunction(DDLStatement):
@@ -885,8 +878,8 @@ class CreateFunction(DDLStatement):
                  name, database=None):
         self.hdfs_file = hdfs_file
         self.so_symbol = so_symbol
-        self.inputs = [_type_to_sql_string(x) for x in inputs]
-        self.output = _type_to_sql_string(output)
+        self.inputs = _impala_signature(inputs)
+        self.output = _impala_signature([output])[0]
         self.name = name
         self.database = database
 
@@ -918,8 +911,8 @@ class CreateAggregateFunction(DDLStatement):
     def __init__(self, hdfs_file, inputs, output, init_fn, update_fn,
                  merge_fn, finalize_fn, name, database=None):
         self.hdfs_file = hdfs_file
-        self.inputs = [_type_to_sql_string(x) for x in inputs]
-        self.output = _type_to_sql_string(output)
+        self.inputs = _impala_signature(inputs)
+        self.output = _impala_signature([output])[0]
         self.init = init_fn
         self.update = update_fn
         self.merge = merge_fn
@@ -957,7 +950,7 @@ class DropFunction(DropObject):
     def __init__(self, name, input_types, must_exist=True,
                  aggregate=False, database=None):
         self.name = name
-        self.inputs = [self._ibis_string_to_impala(x) for x in input_types]
+        self.inputs = _impala_signature(input_types)
         self.must_exist = must_exist
         self.aggregate = aggregate
         self.database = database
@@ -971,14 +964,6 @@ class DropFunction(DropObject):
             return '{0}.{1}'.format(self.database, self.name)
         else:
             return self.name
-
-    def _ibis_string_to_impala(self, tval):
-        if tval in _sql_type_names.keys():
-            return _sql_type_names[tval]
-        result = dt._parse_decimal(tval)
-        if result:
-            return 'decimal({0},{1})'.format(result.precision,
-                                             result.scale)
 
     def compile(self):
         statement = 'DROP'
@@ -996,7 +981,6 @@ class DropFunction(DropObject):
 class ListFunction(DDLStatement):
 
     def __init__(self, database, like=None, aggregate=False):
-
         self.database = database
         self.like = like
         self.aggregate = aggregate
@@ -1011,20 +995,12 @@ class ListFunction(DDLStatement):
         return statement
 
 
-_impala_type_names = {
-    'int8': 'TINYINT',
-    'int16': 'SMALLINT',
-    'int32': 'INT',
-    'int64': 'BIGINT',
-    'float': 'FLOAT',
-    'double': 'DOUBLE',
-    'boolean': 'BOOLEAN',
-    'timestamp': 'TIMESTAMP',
-    'string': 'STRING'
-}
-
-
 def translate_expr(expr, context=None, named=False, permit_subquery=False):
     translator = ExprTranslator(expr, context=context, named=named,
                                 permit_subquery=permit_subquery)
     return translator.get_result()
+
+
+def _impala_signature(types):
+    from ibis.expr.datatypes import validate_type
+    return [_type_to_sql_string(validate_type(x)) for x in types]

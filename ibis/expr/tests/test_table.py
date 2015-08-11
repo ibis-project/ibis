@@ -14,6 +14,7 @@
 
 from ibis.expr.types import ArrayExpr, TableExpr, RelationError
 from ibis.common import ExpressionError
+from ibis.expr.datatypes import array_type
 import ibis.expr.analysis as L
 import ibis.expr.api as api
 import ibis.expr.types as ir
@@ -65,7 +66,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
             # Make sure it's the right type
             assert isinstance(col, ArrayExpr)
-            assert isinstance(col, ir.array_type(v))
+            assert isinstance(col, array_type(v))
 
             # Ensure we have a field selection with back-reference to the table
             parent = col.parent()

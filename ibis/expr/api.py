@@ -108,11 +108,11 @@ def table(schema, name=None):
     -------
     table : TableExpr
     """
-    if not isinstance(schema, ir.Schema):
+    if not isinstance(schema, Schema):
         if isinstance(schema, list):
-            schema = ir.Schema.from_tuples(schema)
+            schema = Schema.from_tuples(schema)
         else:
-            schema = ir.Schema.from_dict(schema)
+            schema = Schema.from_dict(schema)
 
     node = _ops.UnboundTable(schema, name=name)
     return TableExpr(node)

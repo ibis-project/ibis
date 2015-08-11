@@ -1678,9 +1678,9 @@ FROM test1""".format(path)
 
         expected = """\
 CREATE TABLE foo.`another_table`
-(`foo` STRING,
- `bar` TINYINT,
- `baz` SMALLINT)
+(`foo` string,
+ `bar` tinyint,
+ `baz` smallint)
 LOCATION '{0}'""".format(path)
         assert result == expected
 
@@ -1739,9 +1739,9 @@ LOCATION '{1}'""".format(example_table, directory)
         result = statement.compile()
         expected = """\
 CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-(`foo` STRING,
- `bar` TINYINT,
- `baz` SMALLINT)
+(`foo` string,
+ `bar` tinyint,
+ `baz` smallint)
 STORED AS PARQUET
 LOCATION '{0}'""".format(directory)
 
@@ -1764,10 +1764,10 @@ LOCATION '{0}'""".format(directory)
         result = stmt.compile()
         expected = """\
 CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-(`a` STRING,
- `b` INT,
- `c` DOUBLE,
- `d` DECIMAL(12,2))
+(`a` string,
+ `b` int,
+ `c` double,
+ `d` decimal(12,2))
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '|'
 ESCAPED BY '\\'

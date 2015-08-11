@@ -14,13 +14,6 @@
 
 import types
 
-import numpy as np
-import pandas as pd
-import pandas.core.common as pdcom
-
-import ibis
-from ibis.common import IbisTypeError
-
 
 def guid():
     try:
@@ -123,65 +116,6 @@ class IbisMap(object):
             if key.equals(k):
                 return v
         raise KeyError(key)
-
-
-def pandas_col_to_ibis_type(col):
-    dty = col.dtype
-
-    # datetime types
-    if pdcom.is_datetime64_dtype(dty):
-        if pdcom.is_datetime64_ns_dtype(dty):
-            return 'timestamp'
-        else:
-            raise IbisTypeError(
-                "Column {0} has dtype {1}, which is datetime64-like but does "
-                "not use nanosecond units".format(col.name, dty))
-    if pdcom.is_timedelta64_dtype(dty):
-        print("Warning: encoding a timedelta64 as an int64")
-        return 'int64'
-
-    if pdcom.is_categorical_dtype(dty):
-        return 'category'
-
-    if pdcom.is_bool_dtype(dty):
-        return 'boolean'
-
-    # simple numerical types
-    if issubclass(dty.type, np.int8):
-        return 'int8'
-    if issubclass(dty.type, np.int16):
-        return 'int16'
-    if issubclass(dty.type, np.int32):
-        return 'int32'
-    if issubclass(dty.type, np.int64):
-        return 'int64'
-    if issubclass(dty.type, np.float32):
-        return 'float'
-    if issubclass(dty.type, np.float64):
-        return 'double'
-    if issubclass(dty.type, np.uint8):
-        return 'int16'
-    if issubclass(dty.type, np.uint16):
-        return 'int32'
-    if issubclass(dty.type, np.uint32):
-        return 'int64'
-    if issubclass(dty.type, np.uint64):
-        raise IbisTypeError("Column {0} is an unsigned int64".format(col.name))
-
-    if pdcom.is_object_dtype(dty):
-        # TODO: overly broad?
-        return 'string'
-
-    raise IbisTypeError("Column {0} is dtype {1}".format(col.name, dty))
-
-
-def pandas_to_ibis_schema(frame):
-    # no analog for decimal in pandas
-    pairs = []
-    for col_name in frame:
-        ibis_type = pandas_col_to_ibis_type(frame[col_name])
-        pairs.append((col_name, ibis_type))
-    return ibis.schema(pairs)
 
 
 def is_function(v):

@@ -15,7 +15,7 @@
 # flake8: noqa
 
 import sys
-from six import BytesIO
+from six import BytesIO, string_types as py_string
 
 
 PY26 = sys.version_info[0] == 2 and sys.version_info[1] == 6
@@ -25,6 +25,3 @@ if PY26:
     import unittest2 as unittest
 else:
     import unittest
-
-
-py_string = basestring

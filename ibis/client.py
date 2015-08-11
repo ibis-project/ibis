@@ -29,9 +29,12 @@ from ibis.config import options
 from ibis.filesystems import HDFS, WebHDFS
 
 import ibis.common as com
+
+from ibis.expr.datatypes import Schema
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
+
 import ibis.sql.compiler as sql
 import ibis.sql.ddl as ddl
 import ibis.sql.udf as udf
@@ -622,7 +625,7 @@ class ImpalaClient(SQLClient):
                 partition_fields.append((x, name_to_type[x]))
 
         pnames, ptypes = zip(*partition_fields)
-        return ir.Schema(pnames, ptypes)
+        return Schema(pnames, ptypes)
 
     def get_schema(self, table_name, database=None):
         """
@@ -647,12 +650,12 @@ class ImpalaClient(SQLClient):
         ibis_types = []
         for t in types:
             t = t.lower()
-            t = _impala_to_ibis_type_mapping.get(t, t)
+            t = udf._impala_to_ibis_type.get(t, t)
             ibis_types.append(t)
 
         names = [x.lower() for x in names]
 
-        return ir.Schema(names, ibis_types)
+        return Schema(names, ibis_types)
 
     def exists_table(self, name, database=None):
         """
@@ -778,7 +781,7 @@ class ImpalaClient(SQLClient):
         self.hdfs.put(pjoin(temp_csv_hdfs_dir, '0.csv'), buf)
 
         # define a temporary table using delimited data
-        schema = util.pandas_to_ibis_schema(df)
+        schema = pandas_to_ibis_schema(df)
         table = self.delimited_file(
             temp_csv_hdfs_dir, schema,
             name='ibis_tmp_pandas_{0}'.format(util.guid()), database=database,
@@ -1087,7 +1090,7 @@ class ImpalaClient(SQLClient):
         # all lowercase fields from Impala.
         names = [x.lower() for x in names]
 
-        return ir.Schema(names, ibis_types)
+        return Schema(names, ibis_types)
 
     def create_udf(self, udf_info, udf_name=None, database=None):
         """
@@ -1264,7 +1267,7 @@ class ImpalaClient(SQLClient):
         for col in descr:
             names.append(col[0])
             impala_typename = col[1]
-            typename = _impala_to_ibis_type_mapping[impala_typename.lower()]
+            typename = udf._impala_to_ibis_type[impala_typename.lower()]
 
             if typename == 'decimal':
                 precision, scale = col[4:6]
@@ -1272,20 +1275,6 @@ class ImpalaClient(SQLClient):
             else:
                 adapted_types.append(typename)
         return names, adapted_types
-
-
-_impala_to_ibis_type_mapping = {
-    'boolean': 'boolean',
-    'tinyint': 'int8',
-    'smallint': 'int16',
-    'int': 'int32',
-    'bigint': 'int64',
-    'float': 'float',
-    'double': 'double',
-    'string': 'string',
-    'timestamp': 'timestamp',
-    'decimal': 'decimal'
-}
 
 
 def _set_limit(query, k):
@@ -1491,3 +1480,69 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
         except ImpylaError:
             # database might have been dropped
             pass
+
+
+def pandas_col_to_ibis_type(col):
+    import pandas.core.common as pdcom
+    import ibis.expr.datatypes as dt
+    import numpy as np
+    dty = col.dtype
+
+    # datetime types
+    if pdcom.is_datetime64_dtype(dty):
+        if pdcom.is_datetime64_ns_dtype(dty):
+            return 'timestamp'
+        else:
+            raise com.IbisTypeError("Column {0} has dtype {1}, which is "
+                                    "datetime64-like but does "
+                                    "not use nanosecond units"
+                                    .format(col.name, dty))
+    if pdcom.is_timedelta64_dtype(dty):
+        print("Warning: encoding a timedelta64 as an int64")
+        return 'int64'
+
+    if pdcom.is_categorical_dtype(dty):
+        return dt.Category(len(col.cat.categories))
+
+    if pdcom.is_bool_dtype(dty):
+        return 'boolean'
+
+    # simple numerical types
+    if issubclass(dty.type, np.int8):
+        return 'int8'
+    if issubclass(dty.type, np.int16):
+        return 'int16'
+    if issubclass(dty.type, np.int32):
+        return 'int32'
+    if issubclass(dty.type, np.int64):
+        return 'int64'
+    if issubclass(dty.type, np.float32):
+        return 'float'
+    if issubclass(dty.type, np.float64):
+        return 'double'
+    if issubclass(dty.type, np.uint8):
+        return 'int16'
+    if issubclass(dty.type, np.uint16):
+        return 'int32'
+    if issubclass(dty.type, np.uint32):
+        return 'int64'
+    if issubclass(dty.type, np.uint64):
+        raise com.IbisTypeError("Column {0} is an unsigned int64"
+                                .format(col.name))
+
+    if pdcom.is_object_dtype(dty):
+        # TODO: overly broad?
+        return 'string'
+
+    raise com.IbisTypeError("Column {0} is dtype {1}"
+                            .format(col.name, dty))
+
+
+def pandas_to_ibis_schema(frame):
+    from ibis.expr.api import schema
+    # no analog for decimal in pandas
+    pairs = []
+    for col_name in frame:
+        ibis_type = pandas_col_to_ibis_type(frame[col_name])
+        pairs.append((col_name, ibis_type))
+    return schema(pairs)

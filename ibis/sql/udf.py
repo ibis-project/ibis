@@ -13,19 +13,13 @@
 
 from hashlib import sha1
 
-from ibis.expr.types import (
-    Int8Value, Int16Value,
-    Int32Value, Int64Value,
-    BooleanValue, FloatValue,
-    DoubleValue, StringValue,
-    TimestampValue, DecimalValue,
-)
 from ibis.common import IbisTypeError
 
 from ibis.expr.datatypes import validate_type
 import ibis.expr.datatypes as _dt
 import ibis.expr.operations as _ops
 import ibis.expr.rules as rules
+import ibis.expr.types as ir
 import ibis.sql.exprs as _expr
 import ibis.util as util
 
@@ -58,7 +52,7 @@ class UDFCreatorParent(UDFInfo):
         if not name:
             string = self.so_symbol
             for in_type in inputs:
-                string += in_type
+                string += in_type.name()
             new_name = sha1(string).hexdigest()
 
         UDFInfo.__init__(self, inputs, output, new_name)
@@ -116,7 +110,7 @@ class UDACreator(UDFCreatorParent):
 
 
 def _validate_impala_type(t):
-    if t in _impala_to_ibis.keys():
+    if t in _impala_to_ibis_type:
         return t
     elif _dt._DECIMAL_RE.match(t):
         return t
@@ -152,8 +146,8 @@ def add_impala_operation(op, func_name, db):
 
 
 def _impala_type_to_ibis(tval):
-    if tval in _impala_to_ibis.keys():
-        return _impala_to_ibis[tval]
+    if tval in _impala_to_ibis_type:
+        return _impala_to_ibis_type[tval]
     result = _dt._parse_decimal(tval)
     if result:
         return result.__repr__()
@@ -161,7 +155,7 @@ def _impala_type_to_ibis(tval):
 
 
 def _ibis_string_to_impala(tval):
-    if tval in _expr._sql_type_names.keys():
+    if tval in _expr._sql_type_names:
         return _expr._sql_type_names[tval]
     result = _dt._parse_decimal(tval)
     if result:
@@ -169,24 +163,26 @@ def _ibis_string_to_impala(tval):
 
 
 def _convert_types(t):
-    if t in _conversion_types.keys():
-        return _conversion_types[t]
-    elif t._base_type() == 'decimal':
-        return (DecimalValue, FloatValue, DoubleValue)
+    name = t.name()
+    return _conversion_types[name]
+
 
 _conversion_types = {
-    'boolean': (BooleanValue),
-    'int8': (Int8Value),
-    'int16': (Int8Value, Int16Value),
-    'int32': (Int8Value, Int16Value, Int32Value),
-    'int64': (Int8Value, Int16Value, Int32Value, Int64Value),
-    'float': (FloatValue, DoubleValue),
-    'double': (FloatValue, DoubleValue),
-    'string': (StringValue),
-    'timestamp': (TimestampValue),
+    'boolean': (ir.BooleanValue),
+    'int8': (ir.Int8Value),
+    'int16': (ir.Int8Value, ir.Int16Value),
+    'int32': (ir.Int8Value, ir.Int16Value, ir.Int32Value),
+    'int64': (ir.Int8Value, ir.Int16Value, ir.Int32Value, ir.Int64Value),
+    'float': (ir.FloatValue, ir.DoubleValue),
+    'double': (ir.FloatValue, ir.DoubleValue),
+    'string': (ir.StringValue),
+    'timestamp': (ir.TimestampValue),
+    'decimal': (ir.DecimalValue, ir.FloatValue, ir.DoubleValue)
 }
 
-_impala_to_ibis = {
+
+_impala_to_ibis_type = {
+    'boolean': 'boolean',
     'tinyint': 'int8',
     'smallint': 'int16',
     'int': 'int32',
@@ -194,6 +190,6 @@ _impala_to_ibis = {
     'float': 'float',
     'double': 'double',
     'string': 'string',
-    'boolean': 'boolean',
     'timestamp': 'timestamp',
+    'decimal': 'decimal'
 }

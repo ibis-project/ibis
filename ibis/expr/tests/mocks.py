@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from ibis.client import SQLClient
+from ibis.expr.datatypes import Schema
 import ibis.expr.types as ir
 import ibis
 
@@ -127,7 +128,7 @@ class MockConnection(SQLClient):
 
     def _get_table_schema(self, name):
         name = name.replace('`', '')
-        return ir.Schema.from_tuples(self._tables[name])
+        return Schema.from_tuples(self._tables[name])
 
     def execute(self, expr, limit=None):
         ast = self._build_ast_ensure_limit(expr, limit)

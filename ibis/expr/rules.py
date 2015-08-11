@@ -108,22 +108,6 @@ class PowerPromoter(BinaryPromoter):
             raise NotImplementedError
 
 
-_nbytes = {
-    'int8': 1,
-    'int16': 2,
-    'int32': 4,
-    'int64': 8
-}
-
-
-_int_bounds = {
-    'int8': (-128, 127),
-    'int16': (-32768, 32767),
-    'int32': (-2147483648, 2147483647),
-    'int64': (-9223372036854775808, 9223372036854775807)
-}
-
-
 def highest_precedence_type(exprs):
     # Return the highest precedence type from the passed expressions. Also
     # verifies that there are valid implicit casts between any of the types and
@@ -181,10 +165,7 @@ class _TypePrecedence(object):
         for k, v in self.type_counts.items():
             if not v:
                 continue
-            if isinstance(k, ir.DataType):
-                score = self._precedence[k._base_type()]
-            else:
-                score = self._precedence[k]
+            score = self._precedence[k.name()]
 
             scores.append((score, k))
 
@@ -200,8 +181,8 @@ class _TypePrecedence(object):
 
 
 def _int_bounds_promotion(ltype, rtype, op):
-    lmin, lmax = _int_bounds[ltype]
-    rmin, rmax = _int_bounds[rtype]
+    lmin, lmax = ltype.bounds
+    rmin, rmax = rtype.bounds
 
     values = [op(lmin, rmin), op(lmin, rmax),
               op(lmax, rmin), op(lmax, rmax)]
@@ -210,7 +191,7 @@ def _int_bounds_promotion(ltype, rtype, op):
 
 
 def _int_one_literal_promotion(atype, lit_val, op):
-    amin, amax = _int_bounds[atype]
+    amin, amax = atype.bounds
     bound_type = _smallest_int_containing([op(amin, lit_val),
                                            op(amax, lit_val)],
                                           allow_overflow=True)
@@ -228,22 +209,22 @@ def _smallest_int_containing(values, allow_overflow=False):
 
 def int_literal_class(value, allow_overflow=False):
     if -128 <= value <= 127:
-        scalar_type = 'int8'
+        t = 'int8'
     elif -32768 <= value <= 32767:
-        scalar_type = 'int16'
+        t = 'int16'
     elif -2147483648 <= value <= 2147483647:
-        scalar_type = 'int32'
+        t = 'int32'
     else:
         if value < -9223372036854775808 or value > 9223372036854775807:
             if not allow_overflow:
                 raise OverflowError(value)
-        scalar_type = 'int64'
-    return scalar_type
+        t = 'int64'
+    return dt.validate_type(t)
 
 
 def _largest_int(int_types):
-    nbytes = max(_nbytes[t] for t in int_types)
-    return 'int%d' % (8 * nbytes)
+    nbytes = max(t._nbytes for t in int_types)
+    return dt.validate_type('int%d' % (8 * nbytes))
 
 
 class ImplicitCast(object):
@@ -253,11 +234,7 @@ class ImplicitCast(object):
         self.implicit_targets = implicit_targets
 
     def can_cast(self, target):
-        if isinstance(target, ir.DataType):
-            base_type = target._base_type()
-        else:
-            base_type = target
-
+        base_type = target.name()
         return (base_type in self.implicit_targets or
                 target == self.value_type)
 
@@ -267,17 +244,19 @@ class ImplicitCast(object):
 
 
 def shape_like(arg, out_type):
+    out_type = dt.validate_type(out_type)
     if isinstance(arg, ir.ScalarExpr):
-        return ir.scalar_type(out_type)
+        return out_type.scalar_type()
     else:
-        return ir.array_type(out_type)
+        return out_type.array_type()
 
 
 def shape_like_args(args, out_type):
+    out_type = dt.validate_type(out_type)
     if util.any_of(args, ir.ArrayExpr):
-        return ir.array_type(out_type)
+        return out_type.array_type()
     else:
-        return ir.scalar_type(out_type)
+        return out_type.scalar_type()
 
 
 def is_table(e):
@@ -688,7 +667,7 @@ class ListOf(Argument):
 list_of = ListOf
 
 
-class DataType(Argument):
+class DataTypeArgument(Argument):
 
     def _validate(self, args, i):
         arg = args[i]
@@ -700,4 +679,4 @@ class DataType(Argument):
         return arg
 
 
-data_type = DataType
+data_type = DataTypeArgument

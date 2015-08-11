@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from ibis.common import RelationError, ExpressionError
+from ibis.expr.datatypes import HasSchema
 from ibis.expr.window import window
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -205,7 +206,7 @@ class ExprSimplifier(object):
             result = self._lift_Projection(expr, block=block)
         elif isinstance(op, ops.Join):
             result = self._lift_Join(expr, block=block)
-        elif isinstance(op, (ops.TableNode, ir.HasSchema)):
+        elif isinstance(op, (ops.TableNode, HasSchema)):
             return expr
         else:
             raise NotImplementedError

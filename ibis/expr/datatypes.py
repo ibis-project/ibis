@@ -15,6 +15,7 @@
 import re
 import six
 
+import ibis.expr.types as ir
 import ibis.common as com
 import ibis.util as util
 
@@ -88,23 +89,115 @@ class Schema(object):
         return Schema(names, types)
 
 
+class HasSchema(object):
+
+    """
+    Base class representing a structured dataset with a well-defined
+    schema.
+
+    Base implementation is for tables that do not reference a particular
+    concrete dataset or database table.
+    """
+
+    def __init__(self, schema, name=None):
+        assert isinstance(schema, Schema)
+        self._schema = schema
+        self._name = name
+
+    def __repr__(self):
+        return self._repr()
+
+    def _repr(self):
+        return "%s(%s)" % (type(self).__name__, repr(self.schema))
+
+    @property
+    def schema(self):
+        return self._schema
+
+    def get_schema(self):
+        return self._schema
+
+    def has_schema(self):
+        return True
+
+    @property
+    def name(self):
+        return self._name
+
+    def equals(self, other):
+        if type(self) != type(other):
+            return False
+        return self.schema.equals(other.schema)
+
+    def root_tables(self):
+        return [self]
+
+
 class DataType(object):
+
+    def __eq__(self, other):
+        return self.equals(other)
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __hash__(self):
+        return hash(type(self))
+
+    def __repr__(self):
+        return self.name()
+
+    def name(self):
+        return type(self).__name__.lower()
+
+    def equals(self, other):
+        if isinstance(other, six.string_types):
+            other = validate_type(other)
+
+        return isinstance(other, type(self))
+
+    def scalar_type(self):
+        name = type(self).__name__
+        return getattr(ir, '{0}Scalar'.format(name))
+
+    def array_type(self):
+        name = type(self).__name__
+        return getattr(ir, '{0}Array'.format(name))
+
+
+class Any(DataType):
     pass
 
 
-class Boolean(DataType):
+class Primitive(DataType):
     pass
 
 
-class Integer(DataType):
+class Null(DataType):
     pass
 
 
-class String(DataType):
+class Variadic(DataType):
     pass
 
 
-class Timestamp(DataType):
+class Boolean(Primitive):
+    pass
+
+
+class Integer(Primitive):
+
+    def can_implicit_cast(self, other):
+        if isinstance(other, Integer):
+            return other._nbytes < self._nbytes
+        return False
+
+
+class String(Variadic):
+    pass
+
+
+class Timestamp(Primitive):
     pass
 
 
@@ -112,32 +205,42 @@ class SignedInteger(Integer):
     pass
 
 
-class Floating(DataType):
+class Floating(Primitive):
     pass
 
 
 class Int8(Integer):
-    pass
+
+    _nbytes = 1
+    bounds = (-128, 127)
 
 
 class Int16(Integer):
-    pass
+
+    _nbytes = 2
+    bounds = (-32768, 32767)
 
 
 class Int32(Integer):
-    pass
+
+    _nbytes = 4
+    bounds = (-2147483648, 2147483647)
 
 
 class Int64(Integer):
-    pass
+
+    _nbytes = 8
+    bounds = (-9223372036854775808, 9223372036854775807)
 
 
-class Float32(Integer):
-    pass
+class Float(Floating):
+
+    _nbytes = 4
 
 
-class Float64(Integer):
-    pass
+class Double(Floating):
+
+    _nbytes = 8
 
 
 class Decimal(DataType):
@@ -167,13 +270,13 @@ class Decimal(DataType):
         return (self.precision == other.precision and
                 self.scale == other.scale)
 
-    def array_ctor(self):
+    def array_type(self):
         def constructor(op, name=None):
             from ibis.expr.types import DecimalArray
             return DecimalArray(op, self, name=name)
         return constructor
 
-    def scalar_ctor(self):
+    def scalar_type(self):
         def constructor(op, name=None):
             from ibis.expr.types import DecimalScalar
             return DecimalScalar(op, self, name=name)
@@ -214,13 +317,13 @@ class Category(DataType):
         else:
             return 'int64'
 
-    def array_ctor(self):
+    def array_type(self):
         def constructor(op, name=None):
             from ibis.expr.types import CategoryArray
             return CategoryArray(op, self, name=name)
         return constructor
 
-    def scalar_ctor(self):
+    def scalar_type(self):
         def constructor(op, name=None):
             from ibis.expr.types import CategoryScalar
             return CategoryScalar(op, self, name=name)
@@ -228,27 +331,58 @@ class Category(DataType):
 
 
 class Struct(DataType):
-    pass
+
+    def __init__(self, names, types):
+        pass
 
 
-class Array(DataType):
-    pass
+class Array(Variadic):
+
+    def __init__(self, value_type):
+        pass
 
 
 class Enum(DataType):
-    pass
+
+    def __init__(self, rep_type, value_type):
+        pass
 
 
 class Map(DataType):
 
-    pass
+    def __init__(self, key_type, value_type):
+        pass
 
 
 # ---------------------------------------------------------------------
 
-_primitive_types = set(['boolean', 'int8', 'int16', 'int32', 'int64',
-                        'float', 'double', 'string', 'timestamp',
-                        'category'])
+
+any = Any()
+null = Null()
+boolean = Boolean()
+int8 = Int8()
+int16 = Int16()
+int32 = Int32()
+int64 = Int64()
+float = Float()
+double = Double()
+string = String()
+timestamp = Timestamp()
+
+
+_primitive_types = {
+    'any': any,
+    'null': null,
+    'boolean': boolean,
+    'int8': int8,
+    'int16': int16,
+    'int32': int32,
+    'int64': int64,
+    'float': float,
+    'double': double,
+    'string': string,
+    'timestamp': timestamp
+}
 
 
 def validate_type(t):
@@ -259,9 +393,10 @@ def validate_type(t):
     if parsed_type is not None:
         return parsed_type
 
-    if t not in _primitive_types:
+    if t in _primitive_types:
+        return _primitive_types[t]
+    else:
         raise ValueError('Invalid type: %s' % repr(t))
-    return t
 
 
 _DECIMAL_RE = re.compile('decimal\((\d+),[\s]*(\d+)\)')
@@ -289,3 +424,13 @@ def _parse_type(t):
         if parsed is not None:
             return parsed
     return None
+
+
+def array_type(t):
+    # compatibility
+    return validate_type(t).array_type()
+
+
+def scalar_type(t):
+    # compatibility
+    return validate_type(t).scalar_type()

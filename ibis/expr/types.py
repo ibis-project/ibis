@@ -13,12 +13,11 @@
 # limitations under the License.
 
 import datetime
+import six
 
 from ibis.common import IbisError, RelationError
-from ibis.expr.datatypes import Schema, DataType
 import ibis.common as com
 import ibis.config as config
-import ibis.expr.datatypes as dt
 import ibis.util as util
 
 
@@ -34,53 +33,6 @@ class Parameter(object):
     """
 
     pass
-
-
-# ---------------------------------------------------------------------
-
-
-class HasSchema(object):
-
-    """
-    Base class representing a structured dataset with a well-defined
-    schema.
-
-    Base implementation is for tables that do not reference a particular
-    concrete dataset or database table.
-    """
-
-    def __init__(self, schema, name=None):
-        assert isinstance(schema, Schema)
-        self._schema = schema
-        self._name = name
-
-    def __repr__(self):
-        return self._repr()
-
-    def _repr(self):
-        return "%s(%s)" % (type(self).__name__, repr(self.schema))
-
-    @property
-    def schema(self):
-        return self._schema
-
-    def get_schema(self):
-        return self._schema
-
-    def has_schema(self):
-        return True
-
-    @property
-    def name(self):
-        return self._name
-
-    def equals(self, other):
-        if type(self) != type(other):
-            return False
-        return self.schema.equals(other.schema)
-
-    def root_tables(self):
-        return [self]
 
 
 # ---------------------------------------------------------------------
@@ -385,10 +337,10 @@ class Literal(ValueNode):
             klass = BooleanScalar
         elif isinstance(self.value, (int, long)):
             int_type = rules.int_literal_class(self.value)
-            klass = scalar_type(int_type)
+            klass = int_type.scalar_type()
         elif isinstance(self.value, float):
             klass = DoubleScalar
-        elif isinstance(self.value, basestring):
+        elif isinstance(self.value, six.string_types):
             klass = StringScalar
         elif isinstance(self.value, datetime.datetime):
             klass = TimestampScalar
@@ -450,7 +402,8 @@ class ValueExpr(Expr):
         return Expr.equals(self, other)
 
     def type(self):
-        return self._typename
+        import ibis.expr.datatypes as dt
+        return dt._primitive_types[self._typename]
 
     def _base_type(self):
         # Parametric types like "decimal"
@@ -526,7 +479,7 @@ class TableExpr(Expr):
         return name in self.schema()
 
     def __getitem__(self, what):
-        if isinstance(what, basestring):
+        if isinstance(what, six.string_types):
             return self.get_column(what)
 
         if isinstance(what, slice):
@@ -584,7 +537,7 @@ class TableExpr(Expr):
         return out_exprs
 
     def _ensure_expr(self, expr):
-        if isinstance(expr, basestring):
+        if isinstance(expr, six.string_types):
             return self[expr]
         elif not isinstance(expr, Expr):
             return expr(self)
@@ -655,8 +608,7 @@ class TableExpr(Expr):
 
     def _is_materialized(self):
         # The operation produces a known schema
-        op = self.op()
-        return isinstance(op, HasSchema) or op.has_schema()
+        return self.op().has_schema()
 
     def view(self):
         """
@@ -716,7 +668,7 @@ class TableExpr(Expr):
         """
         import ibis.expr.analysis as L
 
-        if isinstance(exprs, (Expr, basestring)):
+        if isinstance(exprs, (Expr,) + six.string_types):
             exprs = [exprs]
 
         exprs = [self._ensure_expr(e) for e in exprs]
@@ -918,7 +870,8 @@ class DecimalValue(NumericValue):
         self._scale = meta.scale
 
     def type(self):
-        return dt.Decimal(self._precision, self._scale)
+        from ibis.expr.datatypes import Decimal
+        return Decimal(self._precision, self._scale)
 
     def _base_type(self):
         return 'decimal'
@@ -1110,48 +1063,6 @@ class CategoryArray(CategoryValue, ArrayExpr):
         def factory(arg, name=None):
             return CategoryArray(arg, self.meta, name=name)
         return factory
-
-
-def scalar_type(t):
-    if isinstance(t, DataType):
-        return t.scalar_ctor()
-    else:
-        return _scalar_types[t]
-
-
-def array_type(t):
-    if isinstance(t, DataType):
-        return t.array_ctor()
-    else:
-        return _array_types[t]
-
-
-_scalar_types = {
-    'boolean': BooleanScalar,
-    'int8': Int8Scalar,
-    'int16': Int16Scalar,
-    'int32': Int32Scalar,
-    'int64': Int64Scalar,
-    'float': FloatScalar,
-    'double': DoubleScalar,
-    'string': StringScalar,
-    'timestamp': TimestampScalar,
-    'category': CategoryScalar
-}
-
-
-_array_types = {
-    'boolean': BooleanArray,
-    'int8': Int8Array,
-    'int16': Int16Array,
-    'int32': Int32Array,
-    'int64': Int64Array,
-    'float': FloatArray,
-    'double': DoubleArray,
-    'string': StringArray,
-    'timestamp': TimestampArray,
-    'category': CategoryArray
-}
 
 
 class UnnamedMarker(object):

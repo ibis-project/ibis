@@ -62,7 +62,7 @@ def _type_to_sql_string(tval):
     if isinstance(tval, dt.Decimal):
         return 'decimal({0},{1})'.format(tval.precision, tval.scale)
     else:
-        return _sql_type_names[tval]
+        return _sql_type_names[tval.name()]
 
 
 def _between(translator, expr):
