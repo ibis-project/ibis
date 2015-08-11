@@ -670,7 +670,7 @@ class ImpalaClient(SQLClient):
         -------
         if_exists : boolean
         """
-        return len(self.list_tables(like=name)) > 0
+        return len(self.list_tables(like=name, database=database)) > 0
 
     def create_view(self, name, expr, database=None):
         """

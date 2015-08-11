@@ -120,6 +120,17 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
         assert self.con.exists_table('functional_alltypes')
         assert not self.con.exists_table(util.guid())
 
+    def text_exists_table_with_database(self):
+        table_name = _random_table_name()
+        tmp_db = self.test_data_db
+        self.con.create_table(table_name, self.alltypes, database=tmp_db)
+
+        assert self.con.exists_table(table_name, database=tmp_db)
+
+        tmp_name = '__ibis_test_{0}'.format(util.guid())
+        self.con.create_database(tmp_name)
+        assert not self.con.exists_table(table_name, database=tmp_name)
+
     def test_create_exists_drop_view(self):
         tmp_name = util.guid()
 
