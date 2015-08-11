@@ -129,6 +129,7 @@ class TestImpalaConnection(ImpalaE2E, unittest.TestCase):
 
         tmp_name = '__ibis_test_{0}'.format(util.guid())
         self.con.create_database(tmp_name)
+        self.temp_databases.append(tmp_name)
         assert not self.con.exists_table(table_name, database=tmp_name)
 
     def test_create_exists_drop_view(self):
