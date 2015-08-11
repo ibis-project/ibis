@@ -126,7 +126,7 @@ class ImpalaE2E(object):
 
         for t in self.temp_views:
             self.con.drop_view(t, force=True)
-        
+
         for f_name, f_inputs in self.temp_functions:
             self.con.drop_udf(f_name, input_types=f_inputs,
                               force=True)

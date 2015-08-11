@@ -17,7 +17,6 @@ import re
 
 from ibis.sql.exprs import (ExprTranslator, quote_identifier,
                             _type_to_sql_string)
-import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.common as com

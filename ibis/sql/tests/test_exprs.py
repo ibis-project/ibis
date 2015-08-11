@@ -378,7 +378,8 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
     def test_reduction_where(self):
         cond = self.table.bigint_col < 70
         c = self.table.double_col
-        tmp = '{0}(CASE WHEN `bigint_col` < 70 THEN `double_col` ELSE NULL END)'
+        tmp = ('{0}(CASE WHEN `bigint_col` < 70 THEN `double_col` '
+               'ELSE NULL END)')
         cases = [
             (c.sum(where=cond), tmp.format('sum')),
             (c.count(where=cond), tmp.format('count')),

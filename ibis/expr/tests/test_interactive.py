@@ -16,8 +16,6 @@ from ibis.compat import unittest
 from ibis.expr.tests.mocks import MockConnection
 import ibis.config as config
 
-from ibis.tests.util import assert_equal
-
 
 class TestInteractiveUse(unittest.TestCase):
 

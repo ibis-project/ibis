@@ -94,7 +94,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert proj.schema().names == cols
         for c in cols:
             expr = proj[c]
-            assert type(expr) == type(self.table[c])
+            assert isinstance(expr, type(self.table[c]))
 
     def test_projection_no_list(self):
         expr = (self.table.f * 2).name('bar')

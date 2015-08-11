@@ -72,8 +72,8 @@ class TestAnalytics(unittest.TestCase):
         # GH #398
         airlines = ibis.table([('dest', 'string'),
                                ('origin', 'string'),
-                               ('arrdelay', 'int32')], 'airlines'
-)
+                               ('arrdelay', 'int32')],
+                              'airlines')
         dests = ['ORD', 'JFK', 'SFO']
         t = airlines[airlines.dest.isin(dests)]
         delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
@@ -86,8 +86,8 @@ class TestAnalytics(unittest.TestCase):
         # GH #520
         airlines = ibis.table([('dest', 'string'),
                                ('origin', 'string'),
-                               ('arrdelay', 'int32')], 'airlines'
-)
+                               ('arrdelay', 'int32')],
+                              'airlines')
         expr1 = airlines.dest.topk(5, by=lambda x: x.arrdelay.mean())
         expr2 = airlines.dest.topk(5, by=airlines.arrdelay.mean())
 

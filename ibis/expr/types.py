@@ -328,7 +328,7 @@ class Literal(ValueNode):
     def equals(self, other):
         if not isinstance(other, Literal):
             return False
-        return (type(self.value) == type(other.value) and
+        return (isinstance(other.value, type(self.value)) and
                 self.value == other.value)
 
     def output_type(self):

@@ -1669,7 +1669,6 @@ FROM test1""".format(path)
         schema = ibis.schema([('foo', 'string'),
                               ('bar', 'int8'),
                               ('baz', 'int16')])
-        select = build_ast(self.con.table('test1')).queries[0]
         statement = ddl.CreateTableWithSchema('another_table', schema,
                                               ddl.NoFormat(),
                                               can_exist=False,
