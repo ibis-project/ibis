@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import types
+import ibis.compat as compat
 
 
 def guid():
@@ -120,3 +121,37 @@ class IbisMap(object):
 
 def is_function(v):
     return isinstance(v, (types.FunctionType, types.LambdaType))
+
+
+def adjoin(space, *lists):
+    """
+    Glues together two sets of strings using the amount of space requested.
+    The idea is to prettify.
+
+    Brought over from from pandas
+    """
+    out_lines = []
+    newLists = []
+    lengths = [max(map(len, x)) + space for x in lists[:-1]]
+
+    # not the last one
+    lengths.append(max(map(len, lists[-1])))
+
+    maxLen = max(map(len, lists))
+    for i, lst in enumerate(lists):
+        nl = [x.ljust(lengths[i]) for x in lst]
+        nl.extend([' ' * lengths[i]] * (maxLen - len(lst)))
+        newLists.append(nl)
+    toJoin = zip(*newLists)
+    for lines in toJoin:
+        out_lines.append(_join_unicode(lines))
+    return _join_unicode(out_lines, sep='\n')
+
+
+def _join_unicode(lines, sep=''):
+    try:
+        return sep.join(lines)
+    except UnicodeDecodeError:
+        sep = compat.unicode_type(sep)
+        return sep.join([x.decode('utf-8') if isinstance(x, str) else x
+                         for x in lines])
