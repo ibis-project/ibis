@@ -1264,51 +1264,57 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
 
     def setUp(self):
         super(TestUDFWrapping, self).setUp()
-        self.udf_so = self.test_data_dir + '/udf/libudfsample.so'
-        self.uda_so = self.test_data_dir + '/udf/libudasample.so'
-        self.udf_ll = self.test_data_dir + '/udf/udf-sample.ll'
-        self.uda_ll = self.test_data_dir + '/udf/uda-sample.ll'
+        self.udf_ll = pjoin(self.test_data_dir, 'udf/udf-sample.ll')
 
+    @pytest.mark.udf
     def test_boolean_wrapping(self):
         col = self.alltypes.bool_col
         literal = ibis.literal(True)
         self._identity_func_testing('boolean', literal, col)
 
+    @pytest.mark.udf
     def test_tinyint_wrapping(self):
         col = self.alltypes.tinyint_col
         literal = ibis.literal(5)
         self._identity_func_testing('int8', literal, col)
 
+    @pytest.mark.udf
     def test_int_wrapping(self):
         col = self.alltypes.int_col
         literal = ibis.literal(1000)
         self._identity_func_testing('int32', literal, col)
 
+    @pytest.mark.udf
     def test_bigint_wrapping(self):
         col = self.alltypes.bigint_col
         literal = ibis.literal(1000).cast('int64')
         self._identity_func_testing('int64', literal, col)
 
+    @pytest.mark.udf
     def test_float_wrapping(self):
         col = self.alltypes.float_col
         literal = ibis.literal(3.14)
         self._identity_func_testing('float', literal, col)
 
+    @pytest.mark.udf
     def test_double_wrapping(self):
         col = self.alltypes.double_col
         literal = ibis.literal(3.14)
         self._identity_func_testing('double', literal, col)
 
+    @pytest.mark.udf
     def test_string_wrapping(self):
         col = self.alltypes.string_col
         literal = ibis.literal('ibis')
         self._identity_func_testing('string', literal, col)
 
+    @pytest.mark.udf
     def test_timestamp_wrapping(self):
         col = self.alltypes.timestamp_col
         literal = ibis.timestamp('1961-04-10')
         self._identity_func_testing('timestamp', literal, col)
 
+    @pytest.mark.udf
     def test_decimal_wrapping(self):
         col = self.con.table('tpch_customer').c_acctbal
         literal = ibis.literal(1).cast('decimal(12,2)')
@@ -1327,6 +1333,7 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         assert issubclass(type(expr), ir.ArrayExpr)
         self.con.execute(expr)
 
+    @pytest.mark.udf
     def test_mixed_inputs(self):
         name = 'two_args'
         symbol = 'TwoArgs'
@@ -1348,11 +1355,13 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         expr = _two_args(self.alltypes.int_col, self.alltypes.tinyint_col)
         self.con.execute(expr)
 
+    @pytest.mark.udf
     def test_implicit_typecasting(self):
         col = self.alltypes.tinyint_col
         literal = ibis.literal(1000)
         self._identity_func_testing('int32', literal, col)
 
+    @pytest.mark.udf
     def test_mult_type_args_wrapping(self):
         symbol = 'AlmostAllTypes'
         name = 'most_types'
@@ -1377,6 +1386,7 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
                            1.0, 1.0)
         self.con.execute(expr)
 
+    @pytest.mark.udf
     def test_all_type_args_wrapping(self):
         pytest.skip('failing test, to be fixed later')
 
@@ -1396,6 +1406,7 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         result = self.con.execute(expr)
         assert result == 9
 
+    @pytest.mark.udf
     def test_drop_udf_not_exists(self):
         random_name = util.guid()
         self.assertRaises(Exception, self.con.drop_udf, random_name)
