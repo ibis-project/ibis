@@ -6,8 +6,13 @@
 Ibis Documentation
 ==================
 
-Ibis is a Python big data framework. To learn more about Ibis's vision and
-roadmap, please visit http://ibis-project.org.
+Ibis is a Python data analysis framework, designed to be ab ideal companion for
+big data storage and computation systems. Ibis is being jointly developed with
+Impala to deliver a complete 100% Python user experience on tera- and petascale
+big data problems.
+
+To learn more about Ibis's vision and roadmap, please visit
+http://ibis-project.org.
 
 Source code is on GitHub: http://github.com/cloudera/ibis
 
