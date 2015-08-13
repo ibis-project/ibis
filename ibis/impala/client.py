@@ -30,10 +30,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
-import ibis.impala.udf as udf
+from ibis.impala import udf, ddl
 
+from ibis.sql.ddl import DDL
 import ibis.sql.compiler as sql
-import ibis.sql.ddl as ddl
+
 import ibis.util as util
 
 
@@ -66,7 +67,7 @@ class ImpalaConnection(object):
         self.codegen_disabled = disabled
 
     def execute(self, query):
-        if isinstance(query, ddl.DDLStatement):
+        if isinstance(query, DDL):
             query = query.compile()
 
         cursor = self._get_cursor()

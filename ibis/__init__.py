@@ -30,10 +30,13 @@ import ibis.impala.api as impala
 
 import ibis.config_init
 from ibis.config import options
+import util
 
 
 # Deprecated
-impala_connect = impala.connect
+impala_connect = util.deprecate(impala.connect,
+                                'impala_connect is deprecated, use'
+                                ' ibis.impala.connect instead')
 
 
 def make_client(db, hdfs_client=None):

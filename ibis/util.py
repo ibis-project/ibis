@@ -155,3 +155,10 @@ def _join_unicode(lines, sep=''):
         sep = compat.unicode_type(sep)
         return sep.join([x.decode('utf-8') if isinstance(x, str) else x
                          for x in lines])
+
+
+def deprecate(f, message):
+    def g(*args, **kwargs):
+        print(message)
+        return f(*args, **kwargs)
+    return g

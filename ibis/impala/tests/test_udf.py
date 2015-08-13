@@ -19,7 +19,7 @@ import ibis
 
 import ibis.expr.types as ir
 
-from ibis.impala import udf
+from ibis.impala import udf, ddl
 
 from ibis.compat import unittest
 from ibis.expr.tests.mocks import MockConnection
@@ -230,10 +230,10 @@ class UDFTest(unittest.TestCase):
             self.assertRaises(IbisTypeError, func, in_type)
 
 
-class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
+class TestUDFE2E(ImpalaE2E, unittest.TestCase):
 
     def setUp(self):
-        super(TestUDFWrapping, self).setUp()
+        super(TestUDFE2E, self).setUp()
         self.udf_ll = pjoin(self.test_data_dir, 'udf/udf-sample.ll')
 
     @pytest.mark.udf
@@ -414,3 +414,89 @@ class TestUDFWrapping(ImpalaE2E, unittest.TestCase):
         expr = _identity_test(column)
         assert issubclass(type(expr), ir.ArrayExpr)
         self.con.execute(expr)
+
+
+class TestUDFStatements(unittest.TestCase):
+
+    def setUp(self):
+        self.con = MockConnection()
+        self.name = 'test_name'
+        self.inputs = ['string', 'string']
+        self.output = 'int64'
+
+    def test_create_udf(self):
+        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
+                                  self.output, self.name)
+        result = stmt.compile()
+        expected = ("CREATE FUNCTION test_name(string, string) returns bigint "
+                    "location '/foo/bar.so' symbol='testFunc'")
+        assert result == expected
+
+    def test_create_udf_type_conversions(self):
+        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc',
+                                  ['string', 'int8', 'int16', 'int32'],
+                                  self.output, self.name)
+        result = stmt.compile()
+        expected = ("CREATE FUNCTION test_name(string, tinyint, "
+                    "smallint, int) returns bigint "
+                    "location '/foo/bar.so' symbol='testFunc'")
+        assert result == expected
+
+    def test_delete_udf_simple(self):
+        stmt = ddl.DropFunction(self.name, self.inputs)
+        result = stmt.compile()
+        expected = "DROP FUNCTION test_name(string, string)"
+        assert result == expected
+
+    def test_delete_udf_if_exists(self):
+        stmt = ddl.DropFunction(self.name, self.inputs, must_exist=False)
+        result = stmt.compile()
+        expected = "DROP FUNCTION IF EXISTS test_name(string, string)"
+        assert result == expected
+
+    def test_delete_udf_aggregate(self):
+        stmt = ddl.DropFunction(self.name, self.inputs, aggregate=True)
+        result = stmt.compile()
+        expected = "DROP AGGREGATE FUNCTION test_name(string, string)"
+        assert result == expected
+
+    def test_delete_udf_db(self):
+        stmt = ddl.DropFunction(self.name, self.inputs, database='test')
+        result = stmt.compile()
+        expected = "DROP FUNCTION test.test_name(string, string)"
+        assert result == expected
+
+    def test_create_uda(self):
+        stmt = ddl.CreateAggregateFunction('/foo/bar.so', self.inputs,
+                                           self.output, 'Init', 'Update',
+                                           'Merge', 'Finalize', self.name)
+        result = stmt.compile()
+        expected = ("CREATE AGGREGATE FUNCTION test_name(string, string)"
+                    " returns bigint location '/foo/bar.so'"
+                    " init_fn='Init' update_fn='Update'"
+                    " merge_fn='Merge' finalize_fn='Finalize'")
+        assert result == expected
+
+    def test_list_udf(self):
+        stmt = ddl.ListFunction('test')
+        result = stmt.compile()
+        expected = 'SHOW FUNCTIONS IN test'
+        assert result == expected
+
+    def test_list_udfs_like(self):
+        stmt = ddl.ListFunction('test', like='identity')
+        result = stmt.compile()
+        expected = "SHOW FUNCTIONS IN test LIKE 'identity'"
+        assert result == expected
+
+    def test_list_udafs(self):
+        stmt = ddl.ListFunction('test', aggregate=True)
+        result = stmt.compile()
+        expected = 'SHOW AGGREGATE FUNCTIONS IN test'
+        assert result == expected
+
+    def test_list_udafs_like(self):
+        stmt = ddl.ListFunction('test', like='identity', aggregate=True)
+        result = stmt.compile()
+        expected = "SHOW AGGREGATE FUNCTIONS IN test LIKE 'identity'"
+        assert result == expected

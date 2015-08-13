@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.tests.conftest import *
+from ibis.tests.conftest import *  # noqa
