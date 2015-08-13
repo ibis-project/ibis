@@ -19,7 +19,7 @@ entry to using Ibis.
    :toctree: generated/
 
    make_client
-   impala_connect
+   impala.connect
    hdfs_connect
 
 Impala client
@@ -31,6 +31,8 @@ your Impala cluster, HDFS cluster, and creating the client with
 
 Table methods
 ~~~~~~~~~~~~~
+.. currentmodule:: ibis.impala.api
+
 .. autosummary::
    :toctree: generated/
 
@@ -92,6 +94,8 @@ HDFS
 
 Client objects have an ``hdfs`` attribute you can use to interact directly with
 HDFS.
+
+.. currentmodule:: ibis
 
 .. autosummary::
    :toctree: generated/

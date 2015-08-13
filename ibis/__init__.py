@@ -47,12 +47,12 @@ def make_client(db, hdfs_client=None):
     Parameters
     ----------
     db : Connection
-      e.g. produced by ibis.impala_connect
+      e.g. produced by ibis.impala.connect
     hdfs_client : ibis HDFS client
 
     Examples
     --------
-    >>> con = ibis.impala_connect(**impala_params)
+    >>> con = ibis.impala.connect(**impala_params)
     >>> hdfs = ibis.hdfs_connect(**hdfs_params)
     >>> client = ibis.make_client(con, hdfs_client=hdfs)
 
