@@ -73,6 +73,8 @@ CONDA_ENV_NAME=pyenv-ibis-test
 conda create -y -q -n $CONDA_ENV_NAME python=$PYTHON_VERSION numpy pandas
 source activate $CONDA_ENV_NAME
 pip install click
+# preempt the requirements.txt file by installing impyla master
+pip install git+https://github.com/cloudera/impyla.git
 pip install $IBIS_HOME
 
 python --version
