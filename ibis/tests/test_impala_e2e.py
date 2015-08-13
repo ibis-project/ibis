@@ -24,6 +24,7 @@ import ibis
 
 from ibis.compat import unittest, StringIO
 from ibis.expr.datatypes import Category
+from ibis.impala.compat import HS2Error, ImpylaError
 from ibis.sql.compiler import to_sql
 from ibis.tests.util import IbisTestEnv, ImpalaE2E, assert_equal, connect_test
 
@@ -33,8 +34,6 @@ import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.util as util
 import ibis.sql.udf as udf
-
-from impala.error import HiveServer2Error as HS2Error
 
 
 def approx_equal(a, b, eps):
@@ -991,8 +990,6 @@ def _ensure_drop(con, table_name, database=None):
 
 
 def _assert_table_not_exists(con, table_name, database=None):
-    from impala.error import Error as ImpylaError
-
     if database is not None:
         tname = '.'.join((database, table_name))
     else:

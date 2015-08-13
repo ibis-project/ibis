@@ -21,9 +21,6 @@ import re
 
 import hdfs
 
-from impala.error import Error as ImpylaError
-import impala.dbapi as impyla_dbapi
-
 from ibis.config import options
 
 from ibis.filesystems import HDFS, WebHDFS
@@ -39,6 +36,8 @@ import ibis.sql.compiler as sql
 import ibis.sql.ddl as ddl
 import ibis.sql.udf as udf
 import ibis.util as util
+
+from ibis.impala.compat import impyla, ImpylaError
 
 
 class Client(object):
@@ -306,7 +305,7 @@ class ImpalaConnection(object):
 
     def _new_cursor(self):
         params = self.params.copy()
-        con = impyla_dbapi.connect(database=self.database, **params)
+        con = impyla.connect(database=self.database, **params)
 
         # make sure the connection works
         cursor = con.cursor()
