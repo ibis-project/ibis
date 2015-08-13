@@ -102,9 +102,6 @@ class TestASTBuilder(unittest.TestCase):
         assert len(stmt.where) == 1
         assert stmt.where[0].equals(filter_pred)
 
-    def test_ast_non_materialized_join(self):
-        pass
-
     def test_sort_by(self):
         table = self.con.table('star1')
 
@@ -227,15 +224,6 @@ ORDER BY `string_col`"""
     def test_top_convenience(self):
         # x.top(10, by=field)
         # x.top(10, by=[field1, field2])
-        pass
-
-    def test_scalar_aggregate_expr(self):
-        # Things like (table.a - table2.b.mean()).sum(), requiring subquery
-        # extraction
-        pass
-
-    def test_filter_in_between_joins(self):
-        # With filter predicates involving only a single
         pass
 
     def test_self_aggregate_in_predicate(self):

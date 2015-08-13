@@ -173,8 +173,7 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
 
 def scalar_function(inputs, output, name=None):
     """
-    Creates and returns an operator class that can be
-    passed to add_operation()
+    Creates and returns an operator class that can be passed to add_operation()
 
     Parameters:
     inputs: list of strings denoting ibis datatypes
@@ -200,8 +199,7 @@ def scalar_function(inputs, output, name=None):
 
 def add_operation(op, func_name, db):
     """
-    Registers the given operation within the Ibis
-    framework so it can be used
+    Registers the given operation within the Ibis SQL translation toolchain
 
     Parameters
     ----------

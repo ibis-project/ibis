@@ -852,7 +852,49 @@ def _not_implemented(translator, expr):
     raise NotImplementedError
 
 
-_unary_ops = {
+_subtract_one = '{0} - 1'.format
+
+
+_expr_transforms = {
+    ops.RowNumber: _subtract_one,
+    ops.DenseRank: _subtract_one,
+    ops.MinRank: _subtract_one,
+}
+
+
+_expr_rewrites = {
+    ops.Any: _any_expand,
+    ops.All: _all_expand,
+    ops.NotAny: _notany_expand,
+    ops.NotAll: _notall_expand,
+}
+
+
+_binary_infix_ops = {
+    # Binary operations
+    ops.Add: _binary_infix_op('+'),
+    ops.Subtract: _binary_infix_op('-'),
+    ops.Multiply: _binary_infix_op('*'),
+    ops.Divide: _binary_infix_op('/'),
+    ops.Power: _fixed_arity_call('pow', 2),
+    ops.Modulus: _binary_infix_op('%'),
+
+    # Comparisons
+    ops.Equals: _binary_infix_op('='),
+    ops.NotEquals: _binary_infix_op('!='),
+    ops.GreaterEqual: _binary_infix_op('>='),
+    ops.Greater: _binary_infix_op('>'),
+    ops.LessEqual: _binary_infix_op('<='),
+    ops.Less: _binary_infix_op('<'),
+
+    # Boolean comparisons
+    ops.And: _binary_infix_op('AND'),
+    ops.Or: _binary_infix_op('OR'),
+    ops.Xor: _xor,
+}
+
+
+_operation_registry = {
     # Unary operations
     ops.NotNull: _not_null,
     ops.IsNull: _is_null,
@@ -894,33 +936,8 @@ _unary_ops = {
 
     ops.Count: _reduction('count'),
     ops.CountDistinct: _count_distinct,
-}
 
-
-_binary_infix_ops = {
-    # Binary operations
-    ops.Add: _binary_infix_op('+'),
-    ops.Subtract: _binary_infix_op('-'),
-    ops.Multiply: _binary_infix_op('*'),
-    ops.Divide: _binary_infix_op('/'),
-    ops.Power: _fixed_arity_call('pow', 2),
-    ops.Modulus: _binary_infix_op('%'),
-
-    # Comparisons
-    ops.Equals: _binary_infix_op('='),
-    ops.NotEquals: _binary_infix_op('!='),
-    ops.GreaterEqual: _binary_infix_op('>='),
-    ops.Greater: _binary_infix_op('>'),
-    ops.LessEqual: _binary_infix_op('<='),
-    ops.Less: _binary_infix_op('<'),
-
-    # Boolean comparisons
-    ops.And: _binary_infix_op('AND'),
-    ops.Or: _binary_infix_op('OR'),
-    ops.Xor: _xor,
-}
-
-_string_ops = {
+    # string operations
     ops.StringLength: _unary_op('length'),
     ops.StringAscii: _unary_op('ascii'),
     ops.Lowercase: _unary_op('lower'),
@@ -944,10 +961,8 @@ _string_ops = {
     ops.RegexExtract: _fixed_arity_call('regexp_extract', 3),
     ops.RegexReplace: _fixed_arity_call('regexp_replace', 3),
     ops.ParseURL: _parse_url,
-}
 
-
-_timestamp_ops = {
+    # Timestamp operations
     ops.TimestampNow: lambda *args: 'now()',
     ops.ExtractYear: _extract_field('year'),
     ops.ExtractMonth: _extract_field('month'),
@@ -956,11 +971,9 @@ _timestamp_ops = {
     ops.ExtractMinute: _extract_field('minute'),
     ops.ExtractSecond: _extract_field('second'),
     ops.ExtractMillisecond: _extract_field('millisecond'),
-    ops.Truncate: _truncate
-}
+    ops.Truncate: _truncate,
 
-
-_other_ops = {
+    # Other operations
     ops.E: lambda *args: 'e()',
 
     ir.Literal: _literal,
@@ -1009,31 +1022,7 @@ _other_ops = {
     ops.WindowOp: _window
 }
 
-
-_subtract_one = '{0} - 1'.format
-
-
-_expr_transforms = {
-    ops.RowNumber: _subtract_one,
-    ops.DenseRank: _subtract_one,
-    ops.MinRank: _subtract_one,
-}
-
-
-_expr_rewrites = {
-    ops.Any: _any_expand,
-    ops.All: _all_expand,
-    ops.NotAny: _notany_expand,
-    ops.NotAll: _notall_expand,
-}
-
-
-_operation_registry = {}
-_operation_registry.update(_unary_ops)
 _operation_registry.update(_binary_infix_ops)
-_operation_registry.update(_string_ops)
-_operation_registry.update(_timestamp_ops)
-_operation_registry.update(_other_ops)
 
 
 class ExprTranslator(object):
