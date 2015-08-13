@@ -24,7 +24,8 @@ import ibis.expr.operations as ops
 import ibis.expr.temporal as tempo
 
 import ibis.sql.transforms as transforms
-import ibis.sql.identifiers as identifiers
+
+import ibis.impala.identifiers as identifiers
 
 import ibis.common as com
 import ibis.util as util

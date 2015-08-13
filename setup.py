@@ -115,6 +115,8 @@ setup(
     packages=['ibis',
               'ibis.expr',
               'ibis.expr.tests',
+              'ibis.impala',
+              'ibis.impala.tests',
               'ibis.sql',
               'ibis.sql.tests',
               'ibis.tests'],
