@@ -19,20 +19,46 @@ entry to using Ibis.
    :toctree: generated/
 
    make_client
-   impala.connect
    hdfs_connect
 
 Impala client
 -------------
+.. currentmodule:: ibis.impala.api
 
 These methods are available on the Impala client object after connecting to
 your Impala cluster, HDFS cluster, and creating the client with
 ``ibis.make_client``.
 
+Use ``ibis.impala.connect`` to create an Impala connection to use for
+assembling a client.
+
+.. autosummary::
+   :toctree: generated/
+
+   connect
+   ImpalaClient.database
+
+Database methods
+~~~~~~~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+
+   ImpalaClient.set_database
+   ImpalaClient.create_database
+   ImpalaClient.drop_database
+   ImpalaClient.list_databases
+   ImpalaClient.exists_database
+
+.. autosummary::
+   :toctree: generated/
+
+   Database.drop
+   Database.namespace
+   Database.table
+
 Table methods
 ~~~~~~~~~~~~~
-.. currentmodule:: ibis.impala.api
-
 .. autosummary::
    :toctree: generated/
 
@@ -46,6 +72,12 @@ Table methods
    ImpalaClient.truncate_table
    ImpalaClient.get_schema
    ImpalaClient.cache_table
+
+.. autosummary::
+   :toctree: generated/
+
+   ImpalaTable.drop
+   ImpalaTable.compute_stats
 
 Creating views is also possible:
 
@@ -65,18 +97,6 @@ Accessing data formats in HDFS
    ImpalaClient.avro_file
    ImpalaClient.delimited_file
    ImpalaClient.parquet_file
-
-Database methods
-~~~~~~~~~~~~~~~~
-
-.. autosummary::
-   :toctree: generated/
-
-   ImpalaClient.set_database
-   ImpalaClient.create_database
-   ImpalaClient.drop_database
-   ImpalaClient.list_databases
-   ImpalaClient.exists_database
 
 Executing expressions
 ~~~~~~~~~~~~~~~~~~~~~
