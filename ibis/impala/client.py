@@ -1181,9 +1181,9 @@ class Database(object):
     def namespace(self, ns):
         """
         Creates a derived Database instance for collections of objects having a
-        common prefix. For example, for tables foo_a, foo_b, and foo_c,
-        creating the "foo_" namespace would enable you to reference those
-        objects as a, b, and c, respectively.
+        common prefix. For example, for tables fooa, foob, and fooc, creating
+        the "foo" namespace would enable you to reference those objects as a,
+        b, and c, respectively.
 
         Returns
         -------
