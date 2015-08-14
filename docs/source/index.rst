@@ -6,7 +6,7 @@
 Ibis Documentation
 ==================
 
-Ibis is a Python data analysis framework, designed to be ab ideal companion for
+Ibis is a Python data analysis framework, designed to be an ideal companion for
 big data storage and computation systems. Ibis is being jointly developed with
 Impala to deliver a complete 100% Python user experience on tera- and petascale
 big data problems.

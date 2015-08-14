@@ -5,11 +5,19 @@ include LICENSE.txt
 graft ibis
 graft LICENSES
 graft scripts
+graft conda-recipes
 
 graft docs
+prune docs/source/generated
+prune docs/source/generated-notebooks
 prune docs/build
 
+global-exclude *CMakeCache*
+global-exclude *.o
+global-exclude *.make
+global-exclude *.cmake
 global-exclude *.so
+global-exclude *.ll
 global-exclude *.pyd
 global-exclude *.pyc
 global-exclude *~
