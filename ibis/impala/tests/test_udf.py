@@ -70,7 +70,7 @@ class UDFTest(unittest.TestCase):
 
         assert result == "SELECT udf_testing.info_test('hello world')"
 
-    def test_boolean_wrapping(self):
+    def test_boolean(self):
         func = self._udf_registration_single_input('boolean',
                                                    'boolean',
                                                    'test')
@@ -79,7 +79,7 @@ class UDFTest(unittest.TestCase):
         expr = func(self.b)
         assert type(expr) == ir.BooleanArray
 
-    def test_tinyint_wrapping(self):
+    def test_tinyint(self):
         func = self._udf_registration_single_input('int8',
                                                    'int8',
                                                    'test')
@@ -88,7 +88,7 @@ class UDFTest(unittest.TestCase):
         expr = func(self.i8)
         assert type(expr) == ir.Int8Array
 
-    def test_smallint_wrapping(self):
+    def test_smallint(self):
         func = self._udf_registration_single_input('int16',
                                                    'int16',
                                                    'test')
@@ -97,7 +97,7 @@ class UDFTest(unittest.TestCase):
         expr = func(self.i16)
         assert type(expr) == ir.Int16Array
 
-    def test_int_wrapping(self):
+    def test_int(self):
         func = self._udf_registration_single_input('int32',
                                                    'int32',
                                                    'test')
@@ -106,7 +106,7 @@ class UDFTest(unittest.TestCase):
         expr = func(self.i32)
         assert type(expr) == ir.Int32Array
 
-    def test_bigint_wrapping(self):
+    def test_bigint(self):
         func = self._udf_registration_single_input('int64',
                                                    'int64',
                                                    'test')
@@ -115,7 +115,7 @@ class UDFTest(unittest.TestCase):
         expr = func(self.i64)
         assert type(expr) == ir.Int64Array
 
-    def test_float_wrapping(self):
+    def test_float(self):
         func = self._udf_registration_single_input('float',
                                                    'float',
                                                    'test')
@@ -124,7 +124,7 @@ class UDFTest(unittest.TestCase):
         expr = func(self.f)
         assert type(expr) == ir.FloatArray
 
-    def test_double_wrapping(self):
+    def test_double(self):
         func = self._udf_registration_single_input('double',
                                                    'double',
                                                    'test')
@@ -133,7 +133,7 @@ class UDFTest(unittest.TestCase):
         expr = func(self.d)
         assert type(expr) == ir.DoubleArray
 
-    def test_decimal_wrapping(self):
+    def test_decimal(self):
         func = self._udf_registration_single_input('decimal(9,0)',
                                                    'decimal(9,0)',
                                                    'test')
@@ -142,7 +142,7 @@ class UDFTest(unittest.TestCase):
         expr = func(self.dec)
         assert type(expr) == ir.DecimalArray
 
-    def test_string_wrapping(self):
+    def test_string(self):
         func = self._udf_registration_single_input('string',
                                                    'string',
                                                    'test')
@@ -151,7 +151,7 @@ class UDFTest(unittest.TestCase):
         expr = func(self.s)
         assert type(expr) == ir.StringArray
 
-    def test_timestamp_wrapping(self):
+    def test_timestamp(self):
         func = self._udf_registration_single_input('timestamp',
                                                    'timestamp',
                                                    'test')
@@ -237,55 +237,55 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         self.udf_ll = pjoin(self.test_data_dir, 'udf/udf-sample.ll')
 
     @pytest.mark.udf
-    def test_boolean_wrapping(self):
+    def test_boolean(self):
         col = self.alltypes.bool_col
         literal = ibis.literal(True)
         self._identity_func_testing('boolean', literal, col)
 
     @pytest.mark.udf
-    def test_tinyint_wrapping(self):
+    def test_tinyint(self):
         col = self.alltypes.tinyint_col
         literal = ibis.literal(5)
         self._identity_func_testing('int8', literal, col)
 
     @pytest.mark.udf
-    def test_int_wrapping(self):
+    def test_int(self):
         col = self.alltypes.int_col
         literal = ibis.literal(1000)
         self._identity_func_testing('int32', literal, col)
 
     @pytest.mark.udf
-    def test_bigint_wrapping(self):
+    def test_bigint(self):
         col = self.alltypes.bigint_col
         literal = ibis.literal(1000).cast('int64')
         self._identity_func_testing('int64', literal, col)
 
     @pytest.mark.udf
-    def test_float_wrapping(self):
+    def test_float(self):
         col = self.alltypes.float_col
         literal = ibis.literal(3.14)
         self._identity_func_testing('float', literal, col)
 
     @pytest.mark.udf
-    def test_double_wrapping(self):
+    def test_double(self):
         col = self.alltypes.double_col
         literal = ibis.literal(3.14)
         self._identity_func_testing('double', literal, col)
 
     @pytest.mark.udf
-    def test_string_wrapping(self):
+    def test_string(self):
         col = self.alltypes.string_col
         literal = ibis.literal('ibis')
         self._identity_func_testing('string', literal, col)
 
     @pytest.mark.udf
-    def test_timestamp_wrapping(self):
+    def test_timestamp(self):
         col = self.alltypes.timestamp_col
         literal = ibis.timestamp('1961-04-10')
         self._identity_func_testing('timestamp', literal, col)
 
     @pytest.mark.udf
-    def test_decimal_wrapping(self):
+    def test_decimal(self):
         col = self.con.table('tpch_customer').c_acctbal
         literal = ibis.literal(1).cast('decimal(12,2)')
         name = '__tmp_udf_' + util.guid()
@@ -332,7 +332,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         self._identity_func_testing('int32', literal, col)
 
     @pytest.mark.udf
-    def test_mult_type_args_wrapping(self):
+    def test_mult_type_args(self):
         symbol = 'AlmostAllTypes'
         name = 'most_types'
         inputs = ['string', 'boolean', 'int8', 'int16', 'int32',
@@ -357,7 +357,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         self.con.execute(expr)
 
     @pytest.mark.udf
-    def test_all_type_args_wrapping(self):
+    def test_all_type_args(self):
         pytest.skip('failing test, to be fixed later')
 
         symbol = 'AllTypes'
