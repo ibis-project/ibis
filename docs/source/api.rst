@@ -36,6 +36,7 @@ assembling a client.
    :toctree: generated/
 
    connect
+   ImpalaClient.close
    ImpalaClient.database
 
 Database methods

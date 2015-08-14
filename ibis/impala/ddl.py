@@ -19,9 +19,11 @@ from ibis.sql.ddl import DDL, Select
 from ibis.sql.exprs import quote_identifier, _type_to_sql_string
 
 
+fully_qualified_re = re.compile("(.*)\.(?:`(.*)`|(.*))")
+
+
 def _is_fully_qualified(x):
-    regex = re.compile("(.*)\.(?:`(.*)`|(.*))")
-    m = regex.search(x)
+    m = fully_qualified_re.search(x)
     return bool(m)
 
 

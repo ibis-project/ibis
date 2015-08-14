@@ -15,8 +15,9 @@
 from posixpath import join as pjoin
 from six import BytesIO
 import Queue
-import threading
 import re
+import threading
+import weakref
 
 import hdfs
 
@@ -38,7 +39,7 @@ import ibis.sql.compiler as sql
 import ibis.util as util
 
 
-from ibis.impala.compat import impyla, ImpylaError
+from ibis.impala.compat import impyla, ImpylaError, HS2Error
 
 
 class ImpalaConnection(object):
@@ -58,7 +59,16 @@ class ImpalaConnection(object):
         self.connection_pool_size = 0
         self.max_pool_size = pool_size
 
+        self._connections = weakref.WeakValueDictionary()
+
         self.ping()
+
+    def close(self):
+        """
+        Close all open Impyla sessions
+        """
+        for k, con in self._connections.items():
+            con.close()
 
     def set_database(self, name):
         self.database = name
@@ -114,11 +124,13 @@ class ImpalaConnection(object):
         params = self.params.copy()
         con = impyla.connect(database=self.database, **params)
 
+        self._connections[id(con)] = con
+
         # make sure the connection works
         cursor = con.cursor()
         cursor.ping()
 
-        wrapper = ImpalaCursor(cursor, self, self.database)
+        wrapper = ImpalaCursor(cursor, self, con, self.database)
 
         if self.codegen_disabled:
             wrapper.disable_codegen(self.codegen_disabled)
@@ -131,9 +143,11 @@ class ImpalaConnection(object):
 
 class ImpalaCursor(object):
 
-    def __init__(self, cursor, con, database, codegen_disabled=False):
+    def __init__(self, cursor, con, impyla_con, database,
+                 codegen_disabled=False):
         self.cursor = cursor
         self.con = con
+        self.impyla_con = impyla_con
         self.database = database
         self.codegen_disabled = codegen_disabled
 
@@ -198,6 +212,8 @@ class ImpalaClient(SQLClient):
 
         self._hdfs = hdfs_client
 
+        self._temp_objects = weakref.WeakValueDictionary()
+
         self._ensure_temp_db_exists()
 
     @property
@@ -211,6 +227,18 @@ class ImpalaClient(SQLClient):
     @property
     def _table_expr_klass(self):
         return ImpalaTable
+
+    def close(self):
+        """
+        Close Impala connection and drop any temporary objects
+        """
+        for k, v in self._temp_objects.items():
+            try:
+                v.drop()
+            except HS2Error:
+                pass
+
+        self.con.close()
 
     def disable_codegen(self, disabled=True):
         """
@@ -276,6 +304,11 @@ class ImpalaClient(SQLClient):
         if database:
             statement += ' IN {0}'.format(database)
         if like:
+            m = ddl.fully_qualified_re.match(like)
+            if m:
+                database, quoted, unquoted = m.groups()
+                like = quoted or unquoted
+                return self.list_tables(like=like, database=database)
             statement += " LIKE '{0}'".format(like)
 
         with self._execute(statement, results=True) as cur:
@@ -795,6 +828,8 @@ class ImpalaClient(SQLClient):
                     .format(qualified_name, cardinality))
         self._execute(set_card)
 
+        self._temp_objects[id(t)] = t
+
         return t
 
     def text_file(self, hdfs_path, column_name='value'):
@@ -1303,11 +1338,11 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
 
     def __del__(self):
         try:
-            self.cleanup()
+            self.drop()
         except com.IbisError:
             pass
 
-    def cleanup(self):
+    def drop(self):
         try:
             self.source.drop_table(self.name)
         except ImpylaError:

@@ -196,3 +196,17 @@ LIMIT 10"""
         assert 'functional_alltypes' not in attrs
 
         assert_equal(table, expected)
+
+    def test_close_drops_temp_tables(self):
+        from posixpath import join as pjoin
+
+        hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
+
+        client = connect_test(ENV)
+        table = client.parquet_file(hdfs_path)
+
+        name = table.op().name
+        assert self.con.exists_table(name) is True
+        client.close()
+
+        assert not self.con.exists_table(name)
