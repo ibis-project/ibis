@@ -62,8 +62,10 @@ Table methods
 .. autosummary::
    :toctree: generated/
 
+   ImpalaClient.database
    ImpalaClient.table
    ImpalaClient.sql
+   ImpalaClient.raw_sql
    ImpalaClient.list_tables
    ImpalaClient.exists_table
    ImpalaClient.drop_table
@@ -121,6 +123,8 @@ HDFS.
    :toctree: generated/
 
    HDFS.ls
+   HDFS.chmod
+   HDFS.chown
    HDFS.get
    HDFS.head
    HDFS.put
@@ -173,6 +177,7 @@ Table methods
    TableExpr.aggregate
    TableExpr.count
    TableExpr.distinct
+   TableExpr.info
    TableExpr.filter
    TableExpr.get_column
    TableExpr.get_columns
@@ -313,6 +318,7 @@ Scalar or array methods
 .. autosummary::
    :toctree: generated/
 
+   IntegerValue.convert_base
    IntegerValue.to_timestamp
 
 .. _api.string:
@@ -325,6 +331,7 @@ All string operations are valid either on scalar or array values
 .. autosummary::
    :toctree: generated/
 
+   StringValue.convert_base
    StringValue.length
    StringValue.lower
    StringValue.upper
@@ -384,6 +391,9 @@ Boolean methods
    :toctree: generated/
 
    BooleanArray.any
+   BooleanArray.all
+   BooleanArray.cumany
+   BooleanArray.cumall
 
 Category methods
 ----------------

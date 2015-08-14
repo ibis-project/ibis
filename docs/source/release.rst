@@ -2,6 +2,37 @@
 Release Notes
 =============
 
+0.4.0 (August 14, 2015)
+-----------------------
+
+New features
+~~~~~~~~~~~~
+* Add tooling to use Impala C++ scalar UDFs within Ibis (#262, #195)
+* Support and testing for Kerberos-enabled secure HDFS clusters
+* Many table functions can now accept functions as parameters (invoked on the
+  calling table) to enhance composability and emulate late-binding semantics of
+  languages (like R) that have non-standard evaluation (#460)
+* Add ``any``, ``all``, ``notany``, and ``notall`` reductions on boolean
+  arrays, as well as ``cumany`` and ``cumall``
+* Using ``topk`` now produces an analytic expression that is executable (as an
+  aggregation) but can also be used as a filter as before (#392, #91)
+* Added experimental database object "usability layer", see
+  ``ImpalaClient.database``.
+* Add ``TableExpr.info``
+* Add ``compute_stats`` API to table expressions referencing physical Impala
+  tables
+* Add ``explain`` method to ``ImpalaClient`` to show query plan for an
+  expression
+* Add ``chmod`` and ``chown`` APIs to ``HDFS`` interface for superusers
+* Add ``convert_base`` method to strings and integer types
+* Add option to ``ImpalaClient.create_table`` to create empty partitioned
+  tables
+* ``ibis.cross_join`` can now join more than 2 tables at once
+* Add ``ImpalaClient.raw_sql`` method for running naked SQL queries
+* ``ImpalaClient.insert`` now validates schemas locally prior to sending query
+  to cluster, for better usability.
+* Add conda installation recipes
+
 0.3.0 (July 20, 2015)
 ---------------------
 
