@@ -50,7 +50,7 @@ the client using ``ibis.make_client``:
 
    import ibis
 
-   ic = ibis.impala_connect(host=impala_host, port=impala_port)
+   ic = ibis.impala.connect(host=impala_host, port=impala_port)
    hdfs = ibis.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
 
    con = ibis.make_client(ic, hdfs_client=hdfs)

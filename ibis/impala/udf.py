@@ -34,7 +34,7 @@ class UDFInfo(object):
     def __repr__(self):
         return ('{0}({1}) returns {2}'.format(
             self.name,
-            ', '.join(self.inputs),
+            ', '.join([repr(x) for x in self.inputs]),
             self.output))
 
 

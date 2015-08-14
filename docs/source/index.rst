@@ -25,6 +25,7 @@ places, but this will improve as things progress.
    getting-started
    configuration
    tutorial
+   impala-udf
    api
    sql
    impala

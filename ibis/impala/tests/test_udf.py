@@ -60,6 +60,7 @@ class UDFTest(unittest.TestCase):
 
     def test_sql_generation_from_infoclass(self):
         udf_info = udf.UDFCreator('test.so', ['string'], 'string', 'info_test')
+        repr(udf_info)
         op = udf_info.to_operation()
         udf.add_operation(op, 'info_test', 'udf_testing')
         assert op in _operation_registry
@@ -382,7 +383,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         self.assertRaises(Exception, self.con.drop_udf, random_name)
 
     def _udf_creation_to_op(self, name, symbol, inputs, output):
-        udf_info = udf.UDFCreator(self.udf_ll, inputs, output, symbol, name)
+        udf_info = udf.wrap_udf(self.udf_ll, inputs, output, symbol, name)
         self.temp_functions.append((name, inputs))
         self.con.create_udf(udf_info, database=self.test_data_db)
         op = udf_info.to_operation()

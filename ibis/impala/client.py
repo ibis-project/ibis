@@ -926,19 +926,18 @@ class ImpalaClient(SQLClient):
 
         return Schema(names, ibis_types)
 
-    def create_udf(self, udf_info, udf_name=None, database=None):
+    def create_udf(self, udf_info, name=None, database=None):
         """
         Creates a function within Impala
 
         Parameters
         ----------
         udf_info : UDFCreator object
-        udf_name : string (optional)
+        name : string (optional)
         database : string (optional)
         """
-        name = udf_info.get_name()
-        if udf_name:
-            name = udf_name
+        if name is None:
+            name = udf_info.get_name()
         statement = ddl.CreateFunction(udf_info.hdfs_file,
                                        udf_info.so_symbol,
                                        udf_info.inputs,
@@ -946,19 +945,19 @@ class ImpalaClient(SQLClient):
                                        name, database)
         self._execute(statement)
 
-    def create_uda(self, uda_info, uda_name=None, database=None):
+    def create_uda(self, uda_info, name=None, database=None):
         """
         Creates a user-defined aggregate function within Impala
 
         Parameters
         ----------
         uda_info : UDAInfo object
-        uda_name : string (optional)
+        name : string (optional)
         database : string (optional)
         """
-        name = uda_info.get_name()
-        if uda_name:
-            name = uda_name
+        if name is None:
+            name = uda_info.get_name()
+
         statement = ddl.CreateAggregateFunction(uda_info.hdfs_file,
                                                 uda_info.inputs,
                                                 uda_info.output,
