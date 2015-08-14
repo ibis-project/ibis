@@ -60,7 +60,7 @@ class UDFCreatorParent(UDFInfo):
     def to_operation(self, name=None):
         """
         Creates and returns an operator class that can
-        be passed to add_impala_operation()
+        be passed to add_operation()
 
         Parameters
         ----------
@@ -125,7 +125,65 @@ def _operation_type_conversion(inputs, output):
     return (in_values, out_value)
 
 
+def wrap_uda(hdfs_file, inputs, output, init_fn, update_fn,
+             merge_fn, finalize_fn, name=None):
+    """
+    Creates and returns a useful container object that can be used to
+    issue a create_uda() statement and register the uda within ibis
+
+    Parameters
+    ----------
+    hdfs_file: .so file that contains relevant UDA
+    inputs: list of strings denoting ibis datatypes
+    output: string denoting ibis datatype
+    init_fn: string, C++ function name for initialization function
+    update_fn: string, C++ function name for update function
+    merge_fn: string, C++ function name for merge function
+    finalize_fn: C++ function name for finalize function
+    name: string (optional). Used internally to track function
+
+    Returns
+    -------
+    container : UDA object
+    """
+    return UDACreator(hdfs_file, inputs, output, init_fn,
+                      update_fn, merge_fn, finalize_fn,
+                      name=name)
+
+
+def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
+    """
+    Creates and returns a useful container object that can be used to
+    issue a create_udf() statement and register the udf within ibis
+
+    Parameters
+    ----------
+    hdfs_file: .so file that contains relevant UDF
+    inputs: list of strings denoting ibis datatypes
+    output: string denoting ibis datatype
+    so_symbol: string, C++ function name for relevant UDF
+    name: string (optional). Used internally to track function
+
+    Returns
+    -------
+    container : UDF object
+    """
+    return UDFCreator(hdfs_file, inputs, output, so_symbol, name=name)
+
+
 def scalar_function(inputs, output, name=None):
+    """
+    Creates and returns an operator class that can be passed to add_operation()
+
+    Parameters:
+    inputs: list of strings denoting ibis datatypes
+    output: string denoting ibis datatype
+    name: string (optional). Used internally to track function
+
+    Returns
+    -------
+    op : operator class to use in construction function
+    """
     (in_values, out_value) = _operation_type_conversion(inputs, output)
     class_name = name
     if not name:
@@ -139,7 +197,16 @@ def scalar_function(inputs, output, name=None):
     return UdfOp
 
 
-def add_impala_operation(op, func_name, db):
+def add_operation(op, func_name, db):
+    """
+    Registers the given operation within the Ibis SQL translation toolchain
+
+    Parameters
+    ----------
+    op: operator class
+    name: used in issuing statements to SQL engine
+    database: database the relevant operator is registered to
+    """
     full_name = '{0}.{1}'.format(db, func_name)
     arity = len(op.input_type.types)
     _expr._operation_registry[op] = _expr._fixed_arity_call(full_name, arity)

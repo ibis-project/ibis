@@ -36,7 +36,7 @@ IBIS_TEST_DATA_TARBALL = 'ibis-testing-data.tar.gz'
 
 
 def make_ibis_client():
-    ic = ibis.impala_connect(host=ENV.impala_host, port=ENV.impala_port,
+    ic = ibis.impala.connect(host=ENV.impala_host, port=ENV.impala_port,
                              protocol=ENV.impala_protocol,
                              use_kerberos=ENV.use_kerberos)
     if ENV.use_kerberos:

@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pandas as pd
-
 from ibis.sql.exprs import ExprTranslator
 from ibis.sql.compiler import QueryContext, to_sql
 from ibis.expr.tests.mocks import MockConnection
@@ -260,12 +258,14 @@ FROM alltypes"""
         self._check_expr_cases(cases)
 
     def test_timestamp_literals(self):
+        from pandas import Timestamp
+
         tv1 = '2015-01-01 12:34:56'
         ex1 = ("'2015-01-01 12:34:56'")
 
         cases = [
-            (ibis.literal(pd.Timestamp(tv1)), ex1),
-            (ibis.literal(pd.Timestamp(tv1).to_pydatetime()), ex1),
+            (ibis.literal(Timestamp(tv1)), ex1),
+            (ibis.literal(Timestamp(tv1).to_pydatetime()), ex1),
             (ibis.timestamp(tv1), ex1)
         ]
         self._check_expr_cases(cases)

@@ -20,9 +20,10 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.compat import unittest
-from ibis.client import pandas_to_ibis_schema
 from ibis.common import IbisTypeError
 from ibis.tests.util import ImpalaE2E
+
+from ibis.impala.client import pandas_to_ibis_schema
 
 
 functional_alltypes_with_nulls = pd.DataFrame({
@@ -168,7 +169,6 @@ class TestPandasSchemaInference(unittest.TestCase):
         assert inferred == expected
 
 
-@pytest.mark.e2e
 class TestPandasRoundTrip(ImpalaE2E, unittest.TestCase):
 
     def test_round_trip(self):

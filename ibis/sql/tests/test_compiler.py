@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pandas as pd
-
 import ibis
 
 from ibis.sql.compiler import build_ast, to_sql
@@ -23,11 +21,6 @@ import ibis.common as com
 
 import ibis.expr.api as api
 import ibis.expr.operations as ops
-import ibis.sql.ddl as ddl
-
-# We are only testing Impala SQL dialect for the time being. At some point if
-# we choose to support more SQL dialects we can refactor the test suite to
-# check each supported database.
 
 
 class TestASTBuilder(unittest.TestCase):
@@ -108,9 +101,6 @@ class TestASTBuilder(unittest.TestCase):
         # Check we got the filter
         assert len(stmt.where) == 1
         assert stmt.where[0].equals(filter_pred)
-
-    def test_ast_non_materialized_join(self):
-        pass
 
     def test_sort_by(self):
         table = self.con.table('star1')
@@ -236,15 +226,6 @@ ORDER BY `string_col`"""
         # x.top(10, by=[field1, field2])
         pass
 
-    def test_scalar_aggregate_expr(self):
-        # Things like (table.a - table2.b.mean()).sum(), requiring subquery
-        # extraction
-        pass
-
-    def test_filter_in_between_joins(self):
-        # With filter predicates involving only a single
-        pass
-
     def test_self_aggregate_in_predicate(self):
         # Per ibis #43
         pass
@@ -261,6 +242,8 @@ class TestNonTabularResults(unittest.TestCase):
         self.table = self.con.table('alltypes')
 
     def test_simple_scalar_aggregates(self):
+        from pandas import DataFrame
+
         # Things like table.column.{sum, mean, ...}()
         table = self.con.table('alltypes')
 
@@ -278,10 +261,12 @@ WHERE `c` > 0"""
 
         # Maybe the result handler should act on the cursor. Not sure.
         handler = query.result_handler
-        output = pd.DataFrame({'tmp': [5]})
+        output = DataFrame({'tmp': [5]})
         assert handler(output) == 5
 
     def test_table_column_unbox(self):
+        from pandas import DataFrame
+
         table = self.table
         m = table.f.sum().name('total')
         agged = table[table.c > 0].group_by('g').aggregate([m])
@@ -300,7 +285,7 @@ GROUP BY 1"""
 
         # Maybe the result handler should act on the cursor. Not sure.
         handler = query.result_handler
-        output = pd.DataFrame({'g': ['foo', 'bar', 'baz']})
+        output = DataFrame({'g': ['foo', 'bar', 'baz']})
         assert (handler(output) == output['g']).all()
 
     def test_complex_array_expr_projection(self):
@@ -355,12 +340,6 @@ SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
 SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `tmp`
 FROM alltypes"""
         assert result == expected
-
-
-class TestDataIngestWorkflows(unittest.TestCase):
-
-    def test_input_source_from_textfile(self):
-        pass
 
 
 def _get_query(expr):
@@ -1553,327 +1532,6 @@ FROM (
         pass
 
 
-def _create_table(table_name, expr, database=None, can_exist=False,
-                  format='parquet'):
-    ast = build_ast(expr)
-    select = ast.queries[0]
-    statement = ddl.CTAS(table_name, select,
-                         database=database,
-                         format=format,
-                         can_exist=can_exist)
-    return statement
-
-
-def _get_select(expr):
-    ast = build_ast(expr)
-    select = ast.queries[0]
-    context = ast.context
-
-    return select, context
-
-
-class TestDropTable(unittest.TestCase):
-
-    def test_must_exist(self):
-        statement = ddl.DropTable('foo', database='bar', must_exist=True)
-        query = statement.compile()
-        expected = "DROP TABLE bar.`foo`"
-        assert query == expected
-
-        statement = ddl.DropTable('foo', database='bar', must_exist=False)
-        query = statement.compile()
-        expected = "DROP TABLE IF EXISTS bar.`foo`"
-        assert query == expected
-
-
-class TestInsert(unittest.TestCase):
-
-    def setUp(self):
-        self.con = MockConnection()
-        self.t = self.con.table('functional_alltypes')
-
-    def test_select_basics(self):
-        name = 'testing123456'
-
-        expr = self.t.limit(10)
-        select, _ = _get_select(expr)
-
-        stmt = ddl.InsertSelect(name, select, database='foo')
-        result = stmt.compile()
-
-        expected = """\
-INSERT INTO foo.`testing123456`
-SELECT *
-FROM functional_alltypes
-LIMIT 10"""
-        assert result == expected
-
-        stmt = ddl.InsertSelect(name, select, database='foo', overwrite=True)
-        result = stmt.compile()
-
-        expected = """\
-INSERT OVERWRITE foo.`testing123456`
-SELECT *
-FROM functional_alltypes
-LIMIT 10"""
-        assert result == expected
-
-    def test_select_overwrite(self):
-        pass
-
-
-class TestCacheTable(unittest.TestCase):
-
-    def test_pool_name(self):
-        statement = ddl.CacheTable('foo', database='bar')
-        query = statement.compile()
-        expected = "ALTER TABLE bar.`foo` SET CACHED IN 'default'"
-        assert query == expected
-
-        statement = ddl.CacheTable('foo', database='bar', pool='my_pool')
-        query = statement.compile()
-        expected = "ALTER TABLE bar.`foo` SET CACHED IN 'my_pool'"
-        assert query == expected
-
-
-class TestCreateTable(unittest.TestCase):
-
-    def setUp(self):
-        self.con = MockConnection()
-
-        self.t = t = self.con.table('functional_alltypes')
-        self.expr = t[t.bigint_col > 0]
-
-    def test_create_external_table_as(self):
-        path = '/path/to/table'
-        select = build_ast(self.con.table('test1')).queries[0]
-        statement = ddl.CTAS('another_table',
-                             select,
-                             external=True,
-                             can_exist=False,
-                             path=path,
-                             database='foo')
-        result = statement.compile()
-
-        expected = """\
-CREATE EXTERNAL TABLE foo.`another_table`
-STORED AS PARQUET
-LOCATION '{0}'
-AS
-SELECT *
-FROM test1""".format(path)
-        assert result == expected
-
-    def test_create_table_with_location(self):
-        path = '/path/to/table'
-        schema = ibis.schema([('foo', 'string'),
-                              ('bar', 'int8'),
-                              ('baz', 'int16')])
-        statement = ddl.CreateTableWithSchema('another_table', schema,
-                                              ddl.NoFormat(),
-                                              can_exist=False,
-                                              path=path, database='foo')
-        result = statement.compile()
-
-        expected = """\
-CREATE TABLE foo.`another_table`
-(`foo` string,
- `bar` tinyint,
- `baz` smallint)
-LOCATION '{0}'""".format(path)
-        assert result == expected
-
-    def test_create_table_like_parquet(self):
-        directory = '/path/to/'
-        path = '/path/to/parquetfile'
-        statement = ddl.CreateTableParquet('new_table',
-                                           directory,
-                                           example_file=path,
-                                           can_exist=True,
-                                           database='foo')
-
-        result = statement.compile()
-        expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-LIKE PARQUET '{0}'
-STORED AS PARQUET
-LOCATION '{1}'""".format(path, directory)
-
-        assert result == expected
-
-    def test_create_table_parquet_like_other(self):
-        # alternative to "LIKE PARQUET"
-        directory = '/path/to/'
-        example_table = 'db.other'
-
-        statement = ddl.CreateTableParquet('new_table',
-                                           directory,
-                                           example_table=example_table,
-                                           can_exist=True,
-                                           database='foo')
-
-        result = statement.compile()
-        expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-LIKE {0}
-STORED AS PARQUET
-LOCATION '{1}'""".format(example_table, directory)
-
-        assert result == expected
-
-    def test_create_table_parquet_with_schema(self):
-        directory = '/path/to/'
-
-        schema = ibis.schema([('foo', 'string'),
-                              ('bar', 'int8'),
-                              ('baz', 'int16')])
-
-        statement = ddl.CreateTableParquet('new_table',
-                                           directory,
-                                           schema=schema,
-                                           external=True,
-                                           can_exist=True,
-                                           database='foo')
-
-        result = statement.compile()
-        expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-(`foo` string,
- `bar` tinyint,
- `baz` smallint)
-STORED AS PARQUET
-LOCATION '{0}'""".format(directory)
-
-        assert result == expected
-
-    def test_create_table_delimited(self):
-        path = '/path/to/files/'
-        schema = ibis.schema([('a', 'string'),
-                              ('b', 'int32'),
-                              ('c', 'double'),
-                              ('d', 'decimal(12,2)')])
-
-        stmt = ddl.CreateTableDelimited('new_table', path, schema,
-                                        delimiter='|',
-                                        escapechar='\\',
-                                        lineterminator='\0',
-                                        database='foo',
-                                        can_exist=True)
-
-        result = stmt.compile()
-        expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-(`a` string,
- `b` int,
- `c` double,
- `d` decimal(12,2))
-ROW FORMAT DELIMITED
-FIELDS TERMINATED BY '|'
-ESCAPED BY '\\'
-LINES TERMINATED BY '\0'
-LOCATION '{0}'""".format(path)
-        assert result == expected
-
-    def test_create_external_table_avro(self):
-        path = '/path/to/files/'
-
-        avro_schema = {
-            'fields': [
-                {'name': 'a', 'type': 'string'},
-                {'name': 'b', 'type': 'int'},
-                {'name': 'c', 'type': 'double'},
-                {"type": "bytes",
-                 "logicalType": "decimal",
-                 "precision": 4,
-                 "scale": 2,
-                 'name': 'd'}
-            ],
-            'name': 'my_record',
-            'type': 'record'
-        }
-
-        stmt = ddl.CreateTableAvro('new_table', path, avro_schema,
-                                   database='foo', can_exist=True)
-
-        result = stmt.compile()
-        expected = """\
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
-STORED AS AVRO
-LOCATION '%s'
-TBLPROPERTIES ('avro.schema.literal'='{
-  "fields": [
-    {
-      "name": "a",
-      "type": "string"
-    },
-    {
-      "name": "b",
-      "type": "int"
-    },
-    {
-      "name": "c",
-      "type": "double"
-    },
-    {
-      "logicalType": "decimal",
-      "name": "d",
-      "precision": 4,
-      "scale": 2,
-      "type": "bytes"
-    }
-  ],
-  "name": "my_record",
-  "type": "record"
-}')""" % path
-        assert result == expected
-
-    def test_create_table_parquet(self):
-        statement = _create_table('some_table', self.expr,
-                                  database='bar',
-                                  can_exist=False)
-        result = statement.compile()
-
-        expected = """\
-CREATE TABLE bar.`some_table`
-STORED AS PARQUET
-AS
-SELECT *
-FROM functional_alltypes
-WHERE `bigint_col` > 0"""
-        assert result == expected
-
-    def test_no_overwrite(self):
-        statement = _create_table('tname', self.expr, can_exist=True)
-        result = statement.compile()
-
-        expected = """\
-CREATE TABLE IF NOT EXISTS `tname`
-STORED AS PARQUET
-AS
-SELECT *
-FROM functional_alltypes
-WHERE `bigint_col` > 0"""
-        assert result == expected
-
-    def test_avro_other_formats(self):
-        statement = _create_table('tname', self.t, format='avro',
-                                  can_exist=True)
-        result = statement.compile()
-        expected = """\
-CREATE TABLE IF NOT EXISTS `tname`
-STORED AS AVRO
-AS
-SELECT *
-FROM functional_alltypes"""
-        assert result == expected
-
-        self.assertRaises(ValueError, _create_table, 'tname', self.t,
-                          format='foo')
-
-    def test_partition_by(self):
-        pass
-
-
 class TestDistinct(unittest.TestCase):
 
     def setUp(self):
@@ -2046,90 +1704,4 @@ WHERE NOT EXISTS (
   FROM bar t1
   WHERE t0.`key1` = t1.`key1`
 )"""
-        assert result == expected
-
-
-class TestUDFStatements(unittest.TestCase):
-
-    def setUp(self):
-        self.con = MockConnection()
-        self.name = 'test_name'
-        self.inputs = ['string', 'string']
-        self.output = 'int64'
-
-    def test_create_udf(self):
-        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
-                                  self.output, self.name)
-        result = stmt.compile()
-        expected = ("CREATE FUNCTION test_name(string, string) returns bigint "
-                    "location '/foo/bar.so' symbol='testFunc'")
-        assert result == expected
-
-    def test_create_udf_type_conversions(self):
-        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc',
-                                  ['string', 'int8', 'int16', 'int32'],
-                                  self.output, self.name)
-        result = stmt.compile()
-        expected = ("CREATE FUNCTION test_name(string, tinyint, "
-                    "smallint, int) returns bigint "
-                    "location '/foo/bar.so' symbol='testFunc'")
-        assert result == expected
-
-    def test_delete_udf_simple(self):
-        stmt = ddl.DropFunction(self.name, self.inputs)
-        result = stmt.compile()
-        expected = "DROP FUNCTION test_name(string, string)"
-        assert result == expected
-
-    def test_delete_udf_if_exists(self):
-        stmt = ddl.DropFunction(self.name, self.inputs, must_exist=False)
-        result = stmt.compile()
-        expected = "DROP FUNCTION IF EXISTS test_name(string, string)"
-        assert result == expected
-
-    def test_delete_udf_aggregate(self):
-        stmt = ddl.DropFunction(self.name, self.inputs, aggregate=True)
-        result = stmt.compile()
-        expected = "DROP AGGREGATE FUNCTION test_name(string, string)"
-        assert result == expected
-
-    def test_delete_udf_db(self):
-        stmt = ddl.DropFunction(self.name, self.inputs, database='test')
-        result = stmt.compile()
-        expected = "DROP FUNCTION test.test_name(string, string)"
-        assert result == expected
-
-    def test_create_uda(self):
-        stmt = ddl.CreateAggregateFunction('/foo/bar.so', self.inputs,
-                                           self.output, 'Init', 'Update',
-                                           'Merge', 'Finalize', self.name)
-        result = stmt.compile()
-        expected = ("CREATE AGGREGATE FUNCTION test_name(string, string)"
-                    " returns bigint location '/foo/bar.so'"
-                    " init_fn='Init' update_fn='Update'"
-                    " merge_fn='Merge' finalize_fn='Finalize'")
-        assert result == expected
-
-    def test_list_udf(self):
-        stmt = ddl.ListFunction('test')
-        result = stmt.compile()
-        expected = 'SHOW FUNCTIONS IN test'
-        assert result == expected
-
-    def test_list_udfs_like(self):
-        stmt = ddl.ListFunction('test', like='identity')
-        result = stmt.compile()
-        expected = "SHOW FUNCTIONS IN test LIKE 'identity'"
-        assert result == expected
-
-    def test_list_udafs(self):
-        stmt = ddl.ListFunction('test', aggregate=True)
-        result = stmt.compile()
-        expected = 'SHOW AGGREGATE FUNCTIONS IN test'
-        assert result == expected
-
-    def test_list_udafs_like(self):
-        stmt = ddl.ListFunction('test', like='identity', aggregate=True)
-        result = stmt.compile()
-        expected = "SHOW AGGREGATE FUNCTIONS IN test LIKE 'identity'"
         assert result == expected
