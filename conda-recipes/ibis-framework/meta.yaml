@@ -1,11 +1,11 @@
 package:
   name: ibis-framework
-  version: "0.3.0"
+  version: "0.4.0"
 
 source:
-  fn: ibis-framework-0.3.0.tar.gz
-  url: https://pypi.python.org/packages/source/i/ibis-framework/ibis-framework-0.3.0.tar.gz
-  md5: 5aafdf43711df3fa45df3e17f68e46d5
+  fn: ibis-framework-0.4.0.tar.gz
+  url: https://pypi.python.org/packages/source/i/ibis-framework/ibis-framework-0.4.0.tar.gz
+  md5: 87323b54e070a538912cbb8d8174854a
 
 requirements:
   build:
@@ -14,9 +14,9 @@ requirements:
     - pytest
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - impyla >=0.9.1
+    - impyla >=0.10.0
     - psutil ==0.6.1
-    - hdfs >=1.4.0
+    - hdfs ==1.4.3
     - six
 
   run:
@@ -24,9 +24,9 @@ requirements:
     - pytest
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - impyla >=0.9.1
+    - impyla >=0.10.0
     - psutil ==0.6.1
-    - hdfs >=1.4.0
+    - hdfs ==1.4.3
     - six
 
 test:
@@ -34,8 +34,22 @@ test:
     - ibis
     - ibis.expr
     - ibis.expr.tests
+    - ibis.hive
+    - ibis.hive.tests
+    - ibis.impala
+    - ibis.impala.tests
+    - ibis.spark
+    - ibis.spark.tests
     - ibis.sql
+    - ibis.sql.presto
+    - ibis.sql.presto.tests
+    - ibis.sql.redshift
+    - ibis.sql.redshift.tests
+    - ibis.sql.sqlite
+    - ibis.sql.sqlite.tests
     - ibis.sql.tests
+    - ibis.sql.vertica
+    - ibis.sql.vertica.tests
     - ibis.tests
 
 about:
