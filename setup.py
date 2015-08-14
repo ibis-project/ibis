@@ -39,11 +39,11 @@ import sys
 from distutils.extension import Extension
 
 MAJOR = 0
-MINOR = 4
+MINOR = 5
 MICRO = 0
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
-ISRELEASED = True
+ISRELEASED = False
 
 if not ISRELEASED:
     VERSION += '.dev'
