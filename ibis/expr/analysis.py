@@ -257,7 +257,12 @@ class ExprSimplifier(object):
             block = self.block_projection
 
         op = expr.op()
+
+        # as exposed in #544, do not lift the table inside (which may be
+        # filtered or otherwise altered in some way)
         lifted_table = self.lift(op.table, block=True)
+        # lifted_table = op.table
+
         unch = lifted_table is op.table
 
         lifted_aggs, unch1 = self._lift_arg(op.agg_exprs, block=True)
@@ -529,7 +534,7 @@ def windowize_function(expr, w=None):
         unchanged = True
         windowed_args = []
         for arg in op.args:
-            if not isinstance(arg, ir.Expr):
+            if not isinstance(arg, ir.ValueExpr):
                 windowed_args.append(arg)
                 continue
 
@@ -558,6 +563,8 @@ class Projector(object):
 
     def __init__(self, parent, proj_exprs):
         self.parent = parent
+
+        self.input_exprs = proj_exprs
 
         node = self.parent.op()
 
