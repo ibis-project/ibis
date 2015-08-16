@@ -47,6 +47,22 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
     def test_combine_windows(self):
         pass
 
+    def test_auto_windowize_analysis_bug(self):
+        # GH #544
+        t = self.con.table('airlines')
+
+        annual_delay = (t[t.dest.isin(['JFK', 'SFO'])]
+                        .group_by(['dest', 'year'])
+                        .aggregate(t.arrdelay.mean().name('avg_delay')))
+        what = annual_delay.group_by('dest')
+        enriched = what.mutate(grand_avg=annual_delay.avg_delay.mean())
+
+        expr = (annual_delay.avg_delay.mean().name('grand_avg')
+                .over(ibis.window(group_by=annual_delay.dest)))
+        expected = annual_delay[annual_delay, expr]
+
+        assert_equal(enriched, expected)
+
     def test_window_bind_to_table(self):
         w = ibis.window(group_by='g', order_by=ibis.desc('f'))
 
