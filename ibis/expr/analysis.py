@@ -259,9 +259,12 @@ class ExprSimplifier(object):
         op = expr.op()
 
         # as exposed in #544, do not lift the table inside (which may be
-        # filtered or otherwise altered in some way)
-        lifted_table = self.lift(op.table, block=True)
-        # lifted_table = op.table
+        # filtered or otherwise altered in some way) if blocking
+
+        if block:
+            lifted_table = op.table
+        else:
+            lifted_table = self.lift(op.table, block=True)
 
         unch = lifted_table is op.table
 
