@@ -16,6 +16,7 @@ import pandas as pd
 
 from ibis.compat import unittest
 from ibis.tests.util import IbisTestEnv, ImpalaE2E, assert_equal, connect_test
+import ibis
 
 import ibis.common as com
 import ibis.config as config
@@ -113,6 +114,25 @@ LIMIT 10"""
 
         result = self.con.execute(expr)
         assert isinstance(result, pd.Series)
+
+    def test_interactive_repr_call_failure(self):
+        t = self.con.table('tpch_lineitem').limit(100000)
+
+        t = t[t, t.l_receiptdate.cast('timestamp').name('date')]
+
+        keys = [t.date.year().name('year'), 'l_linestatus']
+        filt = t.l_linestatus.isin(['F'])
+        expr = (t[filt]
+                .group_by(keys)
+                .aggregate(t.l_extendedprice.mean().name('avg_px')))
+
+        w2 = ibis.trailing_window(9, group_by=expr.l_linestatus,
+                                  order_by=expr.year)
+
+        metric = expr['avg_px'].mean().over(w2)
+        enriched = expr[expr, metric]
+        with config.option_context('interactive', True):
+            repr(enriched)
 
     def test_array_default_limit(self):
         t = self.alltypes

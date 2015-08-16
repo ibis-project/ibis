@@ -1168,7 +1168,7 @@ class ValueList(ValueNode):
 
     def __init__(self, args):
         self.values = [as_value_expr(x) for x in args]
-        ValueNode.__init__(self, [self.values])
+        ValueNode.__init__(self, self.values)
 
     def root_tables(self):
         return distinct_roots(*self.values)
