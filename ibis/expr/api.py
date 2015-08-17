@@ -55,6 +55,7 @@ __all__ = [
     'now', 'desc', 'null', 'NA',
     'cast', 'coalesce', 'greatest', 'least',
     'cross_join', 'join',
+    'aggregate',
     'row_number',
     'negate', 'ifelse',
     'Expr', 'Schema',
@@ -1684,6 +1685,100 @@ def filter(table, predicates):
     return TableExpr(op)
 
 
+def aggregate(table, metrics=None, by=None, having=None, **kwds):
+    """
+    Aggregate a table with a given set of reductions, with grouping
+    expressions, and post-aggregation filters.
+
+    Parameters
+    ----------
+    table : table expression
+    metrics : expression or expression list
+    by : optional, default None
+      Grouping expressions
+    having : optional, default None
+      Post-aggregation filters
+
+    Returns
+    -------
+    agg_expr : TableExpr
+    """
+    if metrics is None:
+        metrics = []
+
+    for k, v in sorted(kwds.items()):
+        v = table._ensure_expr(v)
+        metrics.append(v.name(k))
+
+    op = _ops.Aggregation(table, metrics, by=by, having=having)
+    return TableExpr(op)
+
+
+def _table_limit(table, n, offset=0):
+    """
+    Select the first n rows at beginning of table (may not be deterministic
+    depending on implementatino and presence of a sorting).
+
+    Parameters
+    ----------
+    n : int
+      Rows to include
+    offset : int, default 0
+      Number of rows to skip first
+
+    Returns
+    -------
+    limited : TableExpr
+    """
+    op = _ops.Limit(table, n, offset=offset)
+    return TableExpr(op)
+
+
+def _table_sort_by(table, sort_exprs):
+    """
+    Sort table by the indicated column expressions and sort orders
+    (ascending/descending)
+
+    Parameters
+    ----------
+    sort_exprs : sorting expressions
+      Must be one of:
+        - Column name or expression
+        - Sort key, e.g. desc(col)
+        - (column name, True (ascending) / False (descending))
+
+    Examples
+    --------
+    sorted = table.sort_by([('a', True), ('b', False)])
+
+    Returns
+    -------
+    sorted : TableExpr
+    """
+    op = _ops.SortBy(table, sort_exprs)
+    return TableExpr(op)
+
+
+def _table_union(left, right, distinct=False):
+    """
+    Form the table set union of two table expressions having identical
+    schemas.
+
+    Parameters
+    ----------
+    right : TableExpr
+    distinct : boolean, default False
+        Only union distinct rows not occurring in the calling table (this
+        can be very expensive, be careful)
+
+    Returns
+    -------
+    union : TableExpr
+    """
+    op = _ops.Union(left, right, distinct=distinct)
+    return TableExpr(op)
+
+
 def mutate(table, exprs=None, **kwds):
     """
     Convenience function for table projections involving adding columns
@@ -1740,8 +1835,10 @@ def mutate(table, exprs=None, **kwds):
 
 
 _table_methods = dict(
+    aggregate=aggregate,
     count=_table_count,
     info=_table_info,
+    limit=_table_limit,
     set_column=_table_set_column,
     filter=filter,
     mutate=mutate,
@@ -1751,7 +1848,9 @@ _table_methods = dict(
     left_join=_regular_join_method('left_join', 'left'),
     outer_join=_regular_join_method('outer_join', 'outer'),
     semi_join=_regular_join_method('semi_join', 'semi'),
-    anti_join=_regular_join_method('anti_join', 'anti')
+    anti_join=_regular_join_method('anti_join', 'anti'),
+    sort_by=_table_sort_by,
+    union=_table_union
 )
 
 

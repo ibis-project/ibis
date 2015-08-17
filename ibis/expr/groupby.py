@@ -56,9 +56,9 @@ class GroupedTableExpr(object):
         else:
             return GroupedArray(col, self)
 
-    def aggregate(self, metrics):
+    def aggregate(self, metrics=None, **kwds):
         return self.table.aggregate(metrics, by=self.by,
-                                    having=self._having)
+                                    having=self._having, **kwds)
 
     def having(self, expr):
         """

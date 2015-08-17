@@ -266,6 +266,36 @@ class ValueNode(Node):
         raise com.ExpressionError('Expression is not named: %s' % repr(self))
 
 
+class TableColumn(ValueNode):
+
+    """
+    Selects a column from a TableExpr
+    """
+
+    def __init__(self, name, table_expr):
+        Node.__init__(self, [name, table_expr])
+
+        if name not in table_expr.schema():
+            raise KeyError("'{0}' is not a field".format(name))
+
+        self.name = name
+        self.table = table_expr
+
+    def parent(self):
+        return self.table
+
+    def resolve_name(self):
+        return self.name
+
+    def root_tables(self):
+        return self.table._root_tables()
+
+    def to_expr(self):
+        ctype = self.table._get_type(self.name)
+        klass = ctype.array_type()
+        return klass(self, name=self.name)
+
+
 class ExpressionList(Node):
 
     def __init__(self, exprs):
@@ -580,7 +610,7 @@ class TableExpr(Expr):
         -------
         column : array expression
         """
-        ref = _ops().TableColumn(name, self)
+        ref = TableColumn(name, self)
         return ref.to_expr()
 
     @property
@@ -692,88 +722,6 @@ class TableExpr(Expr):
         """
         from ibis.expr.groupby import GroupedTableExpr
         return GroupedTableExpr(self, by)
-
-    def aggregate(self, agg_exprs, by=None, having=None):
-        """
-        Aggregate a table with a given set of reductions, with grouping
-        expressions, and post-aggregation filters.
-
-        Parameters
-        ----------
-        agg_exprs : expression or expression list
-        by : optional, default None
-          Grouping expressions
-        having : optional, default None
-          Post-aggregation filters
-
-        Returns
-        -------
-        agg_expr : TableExpr
-        """
-        op = _ops().Aggregation(self, agg_exprs, by=by, having=having)
-        return TableExpr(op)
-
-    def limit(self, n, offset=0):
-        """
-        Select the first n rows at beginning of table (may not be deterministic
-        depending on implementatino and presence of a sorting).
-
-        Parameters
-        ----------
-        n : int
-          Rows to include
-        offset : int, default 0
-          Number of rows to skip first
-
-        Returns
-        -------
-        limited : TableExpr
-        """
-        op = _ops().Limit(self, n, offset=offset)
-        return TableExpr(op)
-
-    def sort_by(self, sort_exprs):
-        """
-        Sort table by the indicated column expressions and sort orders
-        (ascending/descending)
-
-        Parameters
-        ----------
-        sort_exprs : sorting expressions
-          Must be one of:
-            - Column name or expression
-            - Sort key, e.g. desc(col)
-            - (column name, True (ascending) / False (descending))
-
-        Examples
-        --------
-        sorted = table.sort_by([('a', True), ('b', False)])
-
-        Returns
-        -------
-        sorted : TableExpr
-        """
-        op = _ops().SortBy(self, sort_exprs)
-        return TableExpr(op)
-
-    def union(self, other, distinct=False):
-        """
-        Form the table set union of two table expressions having identical
-        schemas.
-
-        Parameters
-        ----------
-        other : TableExpr
-        distinct : boolean, default False
-            Only union distinct rows not occurring in the calling table (this
-            can be very expensive, be careful)
-
-        Returns
-        -------
-        union : TableExpr
-        """
-        op = _ops().Union(self, other, distinct=distinct)
-        return TableExpr(op)
 
 
 # -----------------------------------------------------------------------------

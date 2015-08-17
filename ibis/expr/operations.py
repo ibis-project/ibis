@@ -19,7 +19,7 @@ from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr,
                              ValueExpr, ArrayExpr, TableExpr,
-                             TableNode, ValueNode, _safe_repr)
+                             TableNode, ValueNode, TableColumn, _safe_repr)
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
@@ -93,36 +93,6 @@ class SQLQueryResult(ir.BlockingTableNode, HasSchema):
         self.query = query
         TableNode.__init__(self, [query, schema, source])
         HasSchema.__init__(self, schema)
-
-
-class TableColumn(ValueNode):
-
-    """
-    Selects a column from a TableExpr
-    """
-
-    def __init__(self, name, table_expr):
-        Node.__init__(self, [name, table_expr])
-
-        if name not in table_expr.schema():
-            raise KeyError("'{0}' is not a field".format(name))
-
-        self.name = name
-        self.table = table_expr
-
-    def parent(self):
-        return self.table
-
-    def resolve_name(self):
-        return self.name
-
-    def root_tables(self):
-        return self.table._root_tables()
-
-    def to_expr(self):
-        ctype = self.table._get_type(self.name)
-        klass = ctype.array_type()
-        return klass(self, name=self.name)
 
 
 class TableArrayView(ValueNode):

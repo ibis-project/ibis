@@ -602,6 +602,19 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         expected = self.table.aggregate([metric], by=[by], having=[having])
         assert_equal(result, expected)
 
+    def test_aggregate_keywords(self):
+        t = self.table
+
+        expr = t.aggregate(foo=t.f.sum(), bar=lambda x: x.f.mean(),
+                           by='g')
+        expr2 = t.group_by('g').aggregate(foo=t.f.sum(),
+                                          bar=lambda x: x.f.mean())
+        expected = t.aggregate([t.f.mean().name('bar'),
+                                t.f.sum().name('foo')], by='g')
+
+        assert_equal(expr, expected)
+        assert_equal(expr2, expected)
+
     def test_summary_expand_list(self):
         summ = self.table.f.summary()
 
