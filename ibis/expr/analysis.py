@@ -149,7 +149,8 @@ class ExprSimplifier(object):
 
         lifted_args = []
         for arg in node.args:
-            lifted_arg, unch_arg = self._lift_arg(arg)
+            lifted_arg, unch_arg = self._lift_arg(
+                arg, block=self.block_projection)
             lifted_args.append(lifted_arg)
 
             unchanged = unchanged and unch_arg
@@ -290,8 +291,8 @@ class ExprSimplifier(object):
         op = expr.op()
 
         if block:
-            lifted_table = op.table
-            unch = True
+            # GH #549: dig no further
+            return expr
         else:
             lifted_table, unch = self._lift_arg(op.table, block=True)
 

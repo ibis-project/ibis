@@ -173,6 +173,16 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         proj2 = self.table[[self.table, self.table['a'].name('foo')]]
         assert_equal(proj, proj2)
 
+    def test_projection_mutate_analysis_bug(self):
+        # GH #549
+
+        t = self.con.table('airlines')
+
+        # it works!
+        (t[t.depdelay.notnull()]
+         .mutate(leg=ibis.literal('-').join([t.origin, t.dest]))
+         ['year', 'month', 'day', 'depdelay', 'leg'])
+
     def test_add_column(self):
         # Creates a projection with a select-all on top of a non-projection
         # TableExpr
