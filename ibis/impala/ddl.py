@@ -464,9 +464,6 @@ class CreateFunction(ImpalaDDL):
         self.name = name
         self.database = database
 
-    def get_name(self):
-        return self.name
-
     def _get_scoped_name(self):
         if self.database:
             return '{0}.{1}'.format(self.database, self.name)
@@ -500,9 +497,6 @@ class CreateAggregateFunction(ImpalaDDL):
         self.finalize = finalize_fn
         self.name = name
         self.database = database
-
-    def get_name(self):
-        return self.name
 
     def _get_scoped_name(self):
         if self.database:

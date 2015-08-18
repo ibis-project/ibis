@@ -332,7 +332,7 @@ class ImpalaClient(SQLClient):
                 name = sig.split('(')[0]
                 inputs = self._parse_input_string(regex.findall(sig)[0])
                 output = udf._impala_type_to_ibis(out_type.lower())
-                result.append(udf.UDFInfo(inputs, output, name))
+                result.append(udf.ImpalaUDF(inputs, output, name))
             return result
         else:
             return []
@@ -961,45 +961,45 @@ class ImpalaClient(SQLClient):
 
         return Schema(names, ibis_types)
 
-    def create_udf(self, udf_info, name=None, database=None):
+    def create_udf(self, info, name=None, database=None):
         """
         Creates a function within Impala
 
         Parameters
         ----------
-        udf_info : UDFCreator object
+        info : ImpalaUDF
         name : string (optional)
         database : string (optional)
         """
         if name is None:
-            name = udf_info.get_name()
-        statement = ddl.CreateFunction(udf_info.hdfs_file,
-                                       udf_info.so_symbol,
-                                       udf_info.inputs,
-                                       udf_info.output,
+            name = info.name
+        statement = ddl.CreateFunction(info.lib_path,
+                                       info.so_symbol,
+                                       info.inputs,
+                                       info.output,
                                        name, database)
         self._execute(statement)
 
-    def create_uda(self, uda_info, name=None, database=None):
+    def create_uda(self, info, name=None, database=None):
         """
         Creates a user-defined aggregate function within Impala
 
         Parameters
         ----------
-        uda_info : UDAInfo object
+        info : ImpalaUDAF
         name : string (optional)
         database : string (optional)
         """
         if name is None:
-            name = uda_info.get_name()
+            name = info.name
 
-        statement = ddl.CreateAggregateFunction(uda_info.hdfs_file,
-                                                uda_info.inputs,
-                                                uda_info.output,
-                                                uda_info.init_fn,
-                                                uda_info.update_fn,
-                                                uda_info.merge_fn,
-                                                uda_info.finalize_fn,
+        statement = ddl.CreateAggregateFunction(info.lib_path,
+                                                info.inputs,
+                                                info.output,
+                                                info.init_fn,
+                                                info.update_fn,
+                                                info.merge_fn,
+                                                info.finalize_fn,
                                                 name,
                                                 database=database)
         self._execute(statement)
