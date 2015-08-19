@@ -116,7 +116,7 @@ class ImpalaUDF(ScalarFunction, ImpalaFunction):
     """
     Feel free to customize my __doc__ or wrap in a nicer user API
     """
-    def __init__(self, inputs, output, so_symbol, lib_path=None,
+    def __init__(self, inputs, output, so_symbol=None, lib_path=None,
                  name=None):
         self.so_symbol = so_symbol
         ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
@@ -133,9 +133,9 @@ class ImpalaUDF(ScalarFunction, ImpalaFunction):
         pass
 
 
-class ImpalaUDAF(AggregateFunction, ImpalaFunction):
+class ImpalaUDA(AggregateFunction, ImpalaFunction):
 
-    def __init__(self, inputs, output, update_fn, init_fn=None,
+    def __init__(self, inputs, output, update_fn=None, init_fn=None,
                  merge_fn=None, finalize_fn=None, serialize_fn=None,
                  lib_path=None, name=None):
         self.init_fn = init_fn
@@ -186,10 +186,10 @@ def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
     -------
     container : UDA object
     """
-    func = ImpalaUDAF(inputs, output, update_fn, init_fn,
-                      merge_fn, finalize_fn,
-                      serialize_fn=serialize_fn,
-                      name=name, lib_path=hdfs_file)
+    func = ImpalaUDA(inputs, output, update_fn, init_fn,
+                     merge_fn, finalize_fn,
+                     serialize_fn=serialize_fn,
+                     name=name, lib_path=hdfs_file)
     return func
 
 

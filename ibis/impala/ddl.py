@@ -35,17 +35,17 @@ def _is_quoted(x):
 
 class ImpalaDDL(DDL):
 
-    def _get_scoped_name(self, table_name, database):
+    def _get_scoped_name(self, obj_name, database):
         if database:
-            scoped_name = '{0}.`{1}`'.format(database, table_name)
+            scoped_name = '{0}.`{1}`'.format(database, obj_name)
         else:
-            if not _is_fully_qualified(table_name):
-                if _is_quoted(table_name):
-                    return table_name
+            if not _is_fully_qualified(obj_name):
+                if _is_quoted(obj_name):
+                    return obj_name
                 else:
-                    return '`{0}`'.format(table_name)
+                    return '`{0}`'.format(obj_name)
             else:
-                return table_name
+                return obj_name
         return scoped_name
 
 
@@ -464,15 +464,9 @@ class CreateFunction(ImpalaDDL):
         self.name = name
         self.database = database
 
-    def _get_scoped_name(self):
-        if self.database:
-            return '{0}.{1}'.format(self.database, self.name)
-        else:
-            return self.name
-
     def compile(self):
         create_decl = 'CREATE FUNCTION'
-        scoped_name = self._get_scoped_name()
+        scoped_name = self._get_scoped_name(self.name, self.database)
         create_line = ('{0!s}({1!s}) returns {2!s}'
                        .format(scoped_name, ', '.join(self.inputs),
                                self.output))
@@ -500,15 +494,9 @@ class CreateAggregateFunction(ImpalaDDL):
         self.name = name
         self.database = database
 
-    def _get_scoped_name(self):
-        if self.database:
-            return '{0}.{1}'.format(self.database, self.name)
-        else:
-            return self.name
-
     def compile(self):
         create_decl = 'CREATE AGGREGATE FUNCTION'
-        scoped_name = self._get_scoped_name()
+        scoped_name = self._get_scoped_name(self.name, self.database)
         create_line = ('{0!s}({1!s}) returns {2!s}'
                        .format(scoped_name, ', '.join(self.inputs),
                                self.output))
@@ -547,12 +535,6 @@ class DropFunction(DropObject):
     def _object_name(self):
         return self.name
 
-    def _get_scoped_name(self):
-        if self.database:
-            return '{0}.{1}'.format(self.database, self.name)
-        else:
-            return self.name
-
     def compile(self):
         statement = 'DROP'
         if self.aggregate:
@@ -560,7 +542,7 @@ class DropFunction(DropObject):
         statement += ' FUNCTION'
         if not self.must_exist:
             statement += ' IF EXISTS'
-        full_name = self._get_scoped_name()
+        full_name = self._get_scoped_name(self.name, self.database)
         func_line = ' {0!s}({1!s})'.format(full_name, ', '.join(self.inputs))
         statement += func_line
         return statement

@@ -1074,22 +1074,8 @@ class ImpalaClient(SQLClient):
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=False)
         with self._execute(statement, results=True) as cur:
-            result = self._get_udfs(cur)
+            result = self._get_udfs(cur, udf.ImpalaUDF)
         return result
-
-    def _get_udfs(self, cur):
-        tuples = cur.fetchall()
-        if len(tuples) > 0:
-            regex = re.compile("^.*?\((.*)\).*")
-            result = []
-            for out_type, sig in tuples:
-                name = sig.split('(')[0]
-                inputs = self._parse_input_string(regex.findall(sig)[0])
-                output = udf._impala_type_to_ibis(out_type.lower())
-                result.append(udf.ImpalaUDF(inputs, output, name))
-            return result
-        else:
-            return []
 
     def list_udas(self, database=None, like=None):
         """
@@ -1104,9 +1090,23 @@ class ImpalaClient(SQLClient):
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=True)
         with self._execute(statement, results=True) as cur:
-            result = self._get_list(cur)
+            result = self._get_udfs(cur, udf.ImpalaUDA)
 
         return result
+
+    def _get_udfs(self, cur, klass):
+        tuples = cur.fetchall()
+        if len(tuples) > 0:
+            regex = re.compile("^.*?\((.*)\).*")
+            result = []
+            for out_type, sig in tuples:
+                name = sig.split('(')[0]
+                inputs = self._parse_input_string(regex.findall(sig)[0])
+                output = udf._impala_type_to_ibis(out_type.lower())
+                result.append(klass(inputs, output, name=name))
+            return result
+        else:
+            return []
 
     def exists_udf(self, name, database=None):
         """

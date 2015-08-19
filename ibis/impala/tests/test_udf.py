@@ -162,6 +162,8 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
     def setUp(self):
         super(TestUDFE2E, self).setUp()
         self.udf_ll = pjoin(self.test_data_dir, 'udf/udf-sample.ll')
+        self.uda_ll = pjoin(self.test_data_dir, 'udf/uda-sample.ll')
+        self.uda_so = pjoin(self.test_data_dir, 'udf/libudasample.so')
 
     def test_identity_primitive_types(self):
         cases = [
@@ -298,14 +300,6 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         assert self.con.exists_udf(name, self.test_data_db)
         return func
 
-
-class TestUDAE2E(ImpalaE2E, unittest.TestCase):
-
-    def setUp(self):
-        super(TestUDAE2E, self).setUp()
-        self.uda_ll = pjoin(self.test_data_dir, 'udf/uda-sample.ll')
-        self.uda_so = pjoin(self.test_data_dir, 'udf/libudasample.so')
-
     def test_ll_uda_not_supported(self):
         # LLVM IR UDAs are not supported as of Impala 2.2
         with self.assertRaises(com.IbisError):
@@ -338,25 +332,31 @@ class TestUDAE2E(ImpalaE2E, unittest.TestCase):
         pass
 
     def test_drop_database_with_udfs_and_udas(self):
-        pass
+        uda1 = self._wrap_count_uda()
+        uda2 = self._wrap_count_uda()
 
-    def _wrap_count_uda(self):
-        name = 'user_count_{0}'.format(util.guid())
+        udf1 = api.wrap_udf(self.udf_ll, ['boolean'], 'boolean', 'Identity',
+                            'udf_{0}'.format(util.guid()))
 
+        db = '__ibis_tmp_{0}'.format(util.guid())
+
+        self.con.create_database(db)
+
+        self.con.create_uda(uda1, database=db)
+        self.con.create_uda(uda2, database=db)
+
+        self.con.create_udf(udf1, database=db)
+
+        self.con.drop_database(db, force=True)
+
+        assert not self.con.exists_database(db)
+
+    def _wrap_count_uda(self, name=None):
+        if name is None:
+            name = 'user_count_{0}'.format(util.guid())
         func = api.wrap_uda(self.uda_so, ['int32'], 'int64',
                             'CountUpdate', name=name)
         return func
-
-    def _wrap_avg_uda(self):
-        # update_fn = ('_Z9AvgUpdatePN10impala_udf'
-        #              '15FunctionContextERKNS_9DoubleValEPPh')
-        # init_fn = ('_Z9AvgUpdatePN10impala_udf'
-        #            '15FunctionContextERKNS_9DoubleValEPPh')
-        # update_fn = ('_Z9AvgUpdatePN10impala_udf'
-        #              '15FunctionContextERKNS_9DoubleValEPPh')
-        # update_fn = ('_Z9AvgUpdatePN10impala_udf'
-        #              '15FunctionContextERKNS_9DoubleValEPPh')
-        pass
 
 
 class TestUDFDDL(unittest.TestCase):
@@ -371,7 +371,8 @@ class TestUDFDDL(unittest.TestCase):
         stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
                                   self.output, self.name)
         result = stmt.compile()
-        expected = ("CREATE FUNCTION test_name(string, string) returns bigint "
+        expected = ("CREATE FUNCTION `test_name`(string, string) "
+                    "returns bigint "
                     "location '/foo/bar.so' symbol='testFunc'")
         assert result == expected
 
@@ -380,7 +381,7 @@ class TestUDFDDL(unittest.TestCase):
                                   ['string', 'int8', 'int16', 'int32'],
                                   self.output, self.name)
         result = stmt.compile()
-        expected = ("CREATE FUNCTION test_name(string, tinyint, "
+        expected = ("CREATE FUNCTION `test_name`(string, tinyint, "
                     "smallint, int) returns bigint "
                     "location '/foo/bar.so' symbol='testFunc'")
         assert result == expected
@@ -388,25 +389,25 @@ class TestUDFDDL(unittest.TestCase):
     def test_delete_udf_simple(self):
         stmt = ddl.DropFunction(self.name, self.inputs)
         result = stmt.compile()
-        expected = "DROP FUNCTION test_name(string, string)"
+        expected = "DROP FUNCTION `test_name`(string, string)"
         assert result == expected
 
     def test_delete_udf_if_exists(self):
         stmt = ddl.DropFunction(self.name, self.inputs, must_exist=False)
         result = stmt.compile()
-        expected = "DROP FUNCTION IF EXISTS test_name(string, string)"
+        expected = "DROP FUNCTION IF EXISTS `test_name`(string, string)"
         assert result == expected
 
     def test_delete_udf_aggregate(self):
         stmt = ddl.DropFunction(self.name, self.inputs, aggregate=True)
         result = stmt.compile()
-        expected = "DROP AGGREGATE FUNCTION test_name(string, string)"
+        expected = "DROP AGGREGATE FUNCTION `test_name`(string, string)"
         assert result == expected
 
     def test_delete_udf_db(self):
         stmt = ddl.DropFunction(self.name, self.inputs, database='test')
         result = stmt.compile()
-        expected = "DROP FUNCTION test.test_name(string, string)"
+        expected = "DROP FUNCTION test.`test_name`(string, string)"
         assert result == expected
 
     def test_create_uda(self):
@@ -415,7 +416,8 @@ class TestUDFDDL(unittest.TestCase):
                 serialize = "\nserialize_fn='Serialize'"
             else:
                 serialize = ""
-            return (("CREATE AGGREGATE FUNCTION bar.test_name(string, string)"
+            return (("CREATE AGGREGATE FUNCTION "
+                     "bar.`test_name`(string, string)"
                      " returns bigint location '/foo/bar.so'"
                      "\ninit_fn='Init'"
                      "\nupdate_fn='Update'"
