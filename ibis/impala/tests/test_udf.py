@@ -314,27 +314,25 @@ class TestUDAE2E(ImpalaE2E, unittest.TestCase):
 
     def _conforming_wrapper(self, where, inputs, output, prefix,
                             serialize=True, name=None):
+        kwds = {
+            'name': name
+        }
         if serialize:
-            serialize_fn = '{0}Serialize'.format(prefix)
-        else:
-            serialize_fn = None
-        return api.wrap_uda(where, inputs, output,
-                            '{0}Init'.format(prefix),
-                            '{0}Update'.format(prefix),
-                            '{0}Merge'.format(prefix),
-                            '{0}Finalize'.format(prefix),
-                            serialize_fn=serialize_fn, name=name)
+            kwds['serialize_fn'] = '{0}Serialize'.format(prefix)
+        return api.wrap_uda(where, inputs, output, '{0}Update'.format(prefix),
+                            init_fn='{0}Init'.format(prefix),
+                            merge_fn='{0}Merge'.format(prefix),
+                            finalize_fn='{0}Finalize'.format(prefix),
+                            **kwds)
 
-    def test_variance_uda(self):
-        pytest.skip('foo')
-
-        func = self._wrap_variance_uda()
+    def test_count_uda(self):
+        func = self._wrap_count_uda()
         func.register(func.name, self.test_data_db)
         self.con.create_uda(func, database=self.test_data_db)
 
         # it works!
-        func(self.alltypes.double_col).execute()
-        self.temp_udas.append((func.name, ['double']))
+        func(self.alltypes.int_col).execute()
+        self.temp_udas.append((func.name, ['int32']))
 
     def test_list_udas(self):
         pass
@@ -342,23 +340,23 @@ class TestUDAE2E(ImpalaE2E, unittest.TestCase):
     def test_drop_database_with_udfs_and_udas(self):
         pass
 
-    def _wrap_variance_uda(self):
-        init = ('_Z12VarianceInitPN10impala_udf'
-                '15FunctionContextEPNS_9StringValE')
-        merge = ('_Z13VarianceMergePN10impala_udf'
-                 '15FunctionContextERKNS_9StringValEPS2_')
-        update = ('_Z14VarianceUpdatePN10impala_udf'
-                  '15FunctionContextERKNS_9DoubleValEPNS_9StringValE')
-        finalize = ('_Z16VarianceFinalizePN10impala_udf'
-                    '15FunctionContextERKNS_9StringValE')
-        serialize = ('_Z17VarianceSerializePN10impala_udf'
-                     '15FunctionContextERKNS_9StringValE')
+    def _wrap_count_uda(self):
+        name = 'user_count_{0}'.format(util.guid())
 
-        name = 'user_variance_{0}'.format(util.guid())
-        func = api.wrap_uda(self.uda_so, ['double'], 'double',
-                            init, update, merge, finalize,
-                            serialize_fn=serialize, name=name)
+        func = api.wrap_uda(self.uda_so, ['int32'], 'int64',
+                            'CountUpdate', name=name)
         return func
+
+    def _wrap_avg_uda(self):
+        # update_fn = ('_Z9AvgUpdatePN10impala_udf'
+        #              '15FunctionContextERKNS_9DoubleValEPPh')
+        # init_fn = ('_Z9AvgUpdatePN10impala_udf'
+        #            '15FunctionContextERKNS_9DoubleValEPPh')
+        # update_fn = ('_Z9AvgUpdatePN10impala_udf'
+        #              '15FunctionContextERKNS_9DoubleValEPPh')
+        # update_fn = ('_Z9AvgUpdatePN10impala_udf'
+        #              '15FunctionContextERKNS_9DoubleValEPPh')
+        pass
 
 
 class TestUDFDDL(unittest.TestCase):
@@ -421,13 +419,13 @@ class TestUDFDDL(unittest.TestCase):
                      " returns bigint location '/foo/bar.so'"
                      "\ninit_fn='Init'"
                      "\nupdate_fn='Update'"
-                     "\nmerge_fn='Merge'"
-                     "\nfinalize_fn='Finalize'") +
-                    serialize)
+                     "\nmerge_fn='Merge'") +
+                    serialize +
+                    ("\nfinalize_fn='Finalize'"))
 
         for ser in [True, False]:
             stmt = ddl.CreateAggregateFunction('/foo/bar.so', self.inputs,
-                                               self.output, 'Init', 'Update',
+                                               self.output, 'Update', 'Init',
                                                'Merge',
                                                'Serialize' if ser else None,
                                                'Finalize', self.name, 'bar')

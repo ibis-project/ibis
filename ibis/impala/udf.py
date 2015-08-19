@@ -135,8 +135,9 @@ class ImpalaUDF(ScalarFunction, ImpalaFunction):
 
 class ImpalaUDAF(AggregateFunction, ImpalaFunction):
 
-    def __init__(self, inputs, output, init_fn, update_fn, merge_fn,
-                 finalize_fn, serialize_fn=None, lib_path=None, name=None):
+    def __init__(self, inputs, output, update_fn, init_fn=None,
+                 merge_fn=None, finalize_fn=None, serialize_fn=None,
+                 lib_path=None, name=None):
         self.init_fn = init_fn
         self.update_fn = update_fn
         self.merge_fn = merge_fn
@@ -166,17 +167,18 @@ def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
     hdfs_file: .so file that contains relevant UDA
     inputs: list of strings denoting ibis datatypes
     output: string denoting ibis datatype
-    init_fn: string
-      Library symbol name for initialization function
     update_fn: string
       Library symbol name for update function
-    merge_fn: string
+    init_fn: string, optional
+      Library symbol name for initialization function
+    merge_fn: string, optional
       Library symbol name for merge function
-    finalize_fn: string
+    finalize_fn: string, optional
       Library symbol name for finalize function
     serialize_fn : string, optional
       Library symbol name for serialize UDA API function. Not required for all
       UDAs; see documentation for more.
+    close_fn : string, optional
     name: string, optional
       Used internally to track function
 
@@ -184,7 +186,7 @@ def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
     -------
     container : UDA object
     """
-    func = ImpalaUDAF(inputs, output, init_fn, update_fn,
+    func = ImpalaUDAF(inputs, output, update_fn, init_fn,
                       merge_fn, finalize_fn,
                       serialize_fn=serialize_fn,
                       name=name, lib_path=hdfs_file)
