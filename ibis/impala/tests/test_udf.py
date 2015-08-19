@@ -27,6 +27,7 @@ from ibis.expr.datatypes import validate_type
 from ibis.expr.tests.mocks import MockConnection
 from ibis.common import IbisTypeError
 from ibis.tests.util import ImpalaE2E
+import ibis.common as com
 import ibis.util as util
 
 
@@ -161,7 +162,6 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
     def setUp(self):
         super(TestUDFE2E, self).setUp()
         self.udf_ll = pjoin(self.test_data_dir, 'udf/udf-sample.ll')
-        self.uda_ll = pjoin(self.test_data_dir, 'udf/uda-sample.ll')
 
     def test_identity_primitive_types(self):
         cases = [
@@ -222,6 +222,29 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         literal = ibis.literal(1000)
         self._identity_func_testing('int32', literal, col)
 
+    def _identity_func_testing(self, datatype, literal, column):
+        inputs = [datatype]
+        name = '__tmp_udf_' + util.guid()
+        func = self._udf_creation_to_op(name, 'Identity', inputs, datatype)
+
+        expr = func(literal)
+        assert issubclass(type(expr), ir.ScalarExpr)
+        result = self.con.execute(expr)
+        # Hacky
+        if datatype is 'timestamp':
+            import pandas as pd
+            assert type(result) == pd.tslib.Timestamp
+        else:
+            lop = literal.op()
+            if isinstance(lop, ir.Literal):
+                self.assertAlmostEqual(result, lop.value, 5)
+            else:
+                self.assertAlmostEqual(result, self.con.execute(literal), 5)
+
+        expr = func(column)
+        assert issubclass(type(expr), ir.ArrayExpr)
+        self.con.execute(expr)
+
     def test_mult_type_args(self):
         symbol = 'AlmostAllTypes'
         name = 'most_types'
@@ -259,10 +282,14 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         random_name = util.guid()
         self.assertRaises(Exception, self.con.drop_udf, random_name)
 
+    def test_drop_uda_not_exists(self):
+        random_name = util.guid()
+        self.assertRaises(Exception, self.con.drop_uda, random_name)
+
     def _udf_creation_to_op(self, name, symbol, inputs, output):
         func = api.wrap_udf(self.udf_ll, inputs, output, symbol, name)
 
-        self.temp_functions.append((name, inputs))
+        self.temp_udfs.append((name, inputs))
 
         self.con.create_udf(func, database=self.test_data_db)
 
@@ -271,28 +298,65 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         assert self.con.exists_udf(name, self.test_data_db)
         return func
 
-    def _identity_func_testing(self, datatype, literal, column):
-        inputs = [datatype]
-        name = '__tmp_udf_' + util.guid()
-        func = self._udf_creation_to_op(name, 'Identity', inputs, datatype)
 
-        expr = func(literal)
-        assert issubclass(type(expr), ir.ScalarExpr)
-        result = self.con.execute(expr)
-        # Hacky
-        if datatype is 'timestamp':
-            import pandas as pd
-            assert type(result) == pd.tslib.Timestamp
+class TestUDAE2E(ImpalaE2E, unittest.TestCase):
+
+    def setUp(self):
+        super(TestUDAE2E, self).setUp()
+        self.uda_ll = pjoin(self.test_data_dir, 'udf/uda-sample.ll')
+        self.uda_so = pjoin(self.test_data_dir, 'udf/libudasample.so')
+
+    def test_ll_uda_not_supported(self):
+        # LLVM IR UDAs are not supported as of Impala 2.2
+        with self.assertRaises(com.IbisError):
+            self._conforming_wrapper(self.uda_ll, ['double'], 'double',
+                                     'Variance')
+
+    def _conforming_wrapper(self, where, inputs, output, prefix,
+                            serialize=True, name=None):
+        if serialize:
+            serialize_fn = '{0}Serialize'.format(prefix)
         else:
-            lop = literal.op()
-            if isinstance(lop, ir.Literal):
-                self.assertAlmostEqual(result, lop.value, 5)
-            else:
-                self.assertAlmostEqual(result, self.con.execute(literal), 5)
+            serialize_fn = None
+        return api.wrap_uda(where, inputs, output,
+                            '{0}Init'.format(prefix),
+                            '{0}Update'.format(prefix),
+                            '{0}Merge'.format(prefix),
+                            '{0}Finalize'.format(prefix),
+                            serialize_fn=serialize_fn, name=name)
 
-        expr = func(column)
-        assert issubclass(type(expr), ir.ArrayExpr)
-        self.con.execute(expr)
+    def test_variance_uda(self):
+        func = self._wrap_variance_uda()
+        func.register(func.name, self.test_data_db)
+        self.con.create_uda(func, database=self.test_data_db)
+
+        # it works!
+        func(self.alltypes.double_col).execute()
+        self.temp_udas.append((func.name, ['double']))
+
+    def test_list_udas(self):
+        pass
+
+    def test_drop_database_with_udfs_and_udas(self):
+        pass
+
+    def _wrap_variance_uda(self):
+        init = ('_Z12VarianceInitPN10impala_udf'
+                '15FunctionContextEPNS_9StringValE')
+        merge = ('_Z13VarianceMergePN10impala_udf'
+                 '15FunctionContextERKNS_9StringValEPS2_')
+        update = ('_Z14VarianceUpdatePN10impala_udf'
+                  '15FunctionContextERKNS_9DoubleValEPNS_9StringValE')
+        finalize = ('_Z16VarianceFinalizePN10impala_udf'
+                    '15FunctionContextERKNS_9StringValE')
+        serialize = ('_Z17VarianceSerializePN10impala_udf'
+                     '15FunctionContextERKNS_9StringValE')
+
+        name = 'user_variance_{0}'.format(util.guid())
+        func = api.wrap_uda(self.uda_so, ['double'], 'double',
+                            init, update, merge, finalize,
+                            serialize_fn=serialize, name=name)
+        return func
 
 
 class TestUDFDDL(unittest.TestCase):
@@ -346,15 +410,28 @@ class TestUDFDDL(unittest.TestCase):
         assert result == expected
 
     def test_create_uda(self):
-        stmt = ddl.CreateAggregateFunction('/foo/bar.so', self.inputs,
-                                           self.output, 'Init', 'Update',
-                                           'Merge', 'Finalize', self.name)
-        result = stmt.compile()
-        expected = ("CREATE AGGREGATE FUNCTION test_name(string, string)"
-                    " returns bigint location '/foo/bar.so'"
-                    " init_fn='Init' update_fn='Update'"
-                    " merge_fn='Merge' finalize_fn='Finalize'")
-        assert result == expected
+        def make_ex(serialize=False):
+            if serialize:
+                serialize = "\nserialize_fn='Serialize'"
+            else:
+                serialize = ""
+            return (("CREATE AGGREGATE FUNCTION bar.test_name(string, string)"
+                     " returns bigint location '/foo/bar.so'"
+                     "\ninit_fn='Init'"
+                     "\nupdate_fn='Update'"
+                     "\nmerge_fn='Merge'"
+                     "\nfinalize_fn='Finalize'") +
+                    serialize)
+
+        for ser in [True, False]:
+            stmt = ddl.CreateAggregateFunction('/foo/bar.so', self.inputs,
+                                               self.output, 'Init', 'Update',
+                                               'Merge',
+                                               'Serialize' if ser else None,
+                                               'Finalize', self.name, 'bar')
+            result = stmt.compile()
+            expected = make_ex(ser)
+            assert result == expected
 
     def test_list_udf(self):
         stmt = ddl.ListFunction('test')

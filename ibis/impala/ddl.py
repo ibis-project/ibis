@@ -487,14 +487,16 @@ class CreateAggregateFunction(ImpalaDDL):
     _object_type = 'FUNCTION'
 
     def __init__(self, hdfs_file, inputs, output, init_fn, update_fn,
-                 merge_fn, finalize_fn, name, database=None):
+                 merge_fn, serialize_fn, finalize_fn, name, database):
         self.hdfs_file = hdfs_file
         self.inputs = _impala_signature(inputs)
         self.output = _impala_signature([output])[0]
         self.init = init_fn
         self.update = update_fn
         self.merge = merge_fn
+        self.serialize = serialize_fn
         self.finalize = finalize_fn
+
         self.name = name
         self.database = database
 
@@ -510,13 +512,17 @@ class CreateAggregateFunction(ImpalaDDL):
         create_line = ('{0!s}({1!s}) returns {2!s}'
                        .format(scoped_name, ', '.join(self.inputs),
                                self.output))
-        loc_ln = "location '{0!s}'".format(self.hdfs_file)
-        init_ln = "init_fn='{0}'".format(self.init)
-        update_ln = "update_fn='{0}'".format(self.update)
-        merge_ln = "merge_fn='{0}'".format(self.merge)
-        finalize_ln = "finalize_fn='{0}'".format(self.finalize)
-        full_line = ' '.join([create_decl, create_line, loc_ln,
-                              init_ln, update_ln, merge_ln, finalize_ln])
+        tokens = ["location '{0!s}'".format(self.hdfs_file),
+                  "init_fn='{0}'".format(self.init),
+                  "update_fn='{0}'".format(self.update),
+                  "merge_fn='{0}'".format(self.merge),
+                  "finalize_fn='{0}'".format(self.finalize)]
+
+        if self.serialize is not None:
+            tokens.append("serialize_fn='{0}'".format(self.serialize))
+
+        full_line = (' '.join([create_decl, create_line]) + ' ' +
+                     '\n'.join(tokens))
         return full_line
 
 

@@ -323,20 +323,6 @@ class ImpalaClient(SQLClient):
         else:
             return []
 
-    def _get_udfs(self, cur):
-        tuples = cur.fetchall()
-        if len(tuples) > 0:
-            regex = re.compile("^.*?\((.*)\).*")
-            result = []
-            for out_type, sig in tuples:
-                name = sig.split('(')[0]
-                inputs = self._parse_input_string(regex.findall(sig)[0])
-                output = udf._impala_type_to_ibis(out_type.lower())
-                result.append(udf.ImpalaUDF(inputs, output, name))
-            return result
-        else:
-            return []
-
     def _parse_input_string(self, s):
         regex = re.compile(r'(?:[^,(]|\([^)]*\))+')
         results = regex.findall(s)
@@ -415,9 +401,8 @@ class ImpalaClient(SQLClient):
             for func in udas:
                 self.log('Dropping aggregate function {0}({1})'
                          .format(func.name, func.inputs))
-                self.drop_udf(func.name, input_types=func.inputs,
-                              database=name, force=True,
-                              aggregate=True)
+                self.drop_uda(func.name, input_types=func.inputs,
+                              database=name, force=True)
         else:
             if len(tables) > 0 or len(udfs) > 0 or len(udas) > 0:
                 raise com.IntegrityError('Database {0} must be empty before '
@@ -973,6 +958,7 @@ class ImpalaClient(SQLClient):
         """
         if name is None:
             name = info.name
+        database = database or self.current_database
         statement = ddl.CreateFunction(info.lib_path,
                                        info.so_symbol,
                                        info.inputs,
@@ -993,15 +979,16 @@ class ImpalaClient(SQLClient):
         if name is None:
             name = info.name
 
+        database = database or self.current_database
         statement = ddl.CreateAggregateFunction(info.lib_path,
                                                 info.inputs,
                                                 info.output,
                                                 info.init_fn,
                                                 info.update_fn,
                                                 info.merge_fn,
+                                                info.serialize_fn,
                                                 info.finalize_fn,
-                                                name,
-                                                database=database)
+                                                name, database)
         self._execute(statement)
 
     def drop_udf(self, name, input_types=None, database=None, force=False,
@@ -1048,6 +1035,14 @@ class ImpalaClient(SQLClient):
         self._drop_single_function(name, input_types, database=database,
                                    aggregate=aggregate)
 
+    def drop_uda(self, name, input_types=None, database=None, force=False):
+        """
+        Drop aggregate function. See drop_udf for more information on the
+        parameters.
+        """
+        return self.drop_udf(name, input_types=input_types, database=database,
+                             force=force)
+
     def _drop_single_function(self, name, input_types, database=None,
                               aggregate=False):
         stmt = ddl.DropFunction(name, input_types, must_exist=False,
@@ -1081,6 +1076,20 @@ class ImpalaClient(SQLClient):
         with self._execute(statement, results=True) as cur:
             result = self._get_udfs(cur)
         return result
+
+    def _get_udfs(self, cur):
+        tuples = cur.fetchall()
+        if len(tuples) > 0:
+            regex = re.compile("^.*?\((.*)\).*")
+            result = []
+            for out_type, sig in tuples:
+                name = sig.split('(')[0]
+                inputs = self._parse_input_string(regex.findall(sig)[0])
+                output = udf._impala_type_to_ibis(out_type.lower())
+                result.append(udf.ImpalaUDF(inputs, output, name))
+            return result
+        else:
+            return []
 
     def list_udas(self, database=None, like=None):
         """

@@ -17,6 +17,7 @@ import ibis.expr.operations as _ops
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.sql.exprs as _expr
+import ibis.common as com
 import ibis.util as util
 
 
@@ -32,10 +33,12 @@ class Function(object):
 
         (self.input_type,
          self.output_type) = self._type_signature(inputs, output)
+        self._klass = self._create_operation(name)
+
+    def _create_operation(self, name):
         class_name = self._get_class_name(name)
-        self._klass = _create_operation_class(class_name,
-                                              self.input_type,
-                                              self.output_type)
+        return _create_operation_class(class_name, self.input_type,
+                                       self.output_type)
 
     def __repr__(self):
         klass = type(self).__name__
@@ -73,6 +76,11 @@ class ScalarFunction(Function):
 
 
 class AggregateFunction(Function):
+
+    def _create_operation(self, name):
+        klass = Function._create_operation(self, name)
+        klass._reduction = True
+        return klass
 
     def _get_class_name(self, name):
         if name is None:
@@ -128,18 +136,26 @@ class ImpalaUDF(ScalarFunction, ImpalaFunction):
 class ImpalaUDAF(AggregateFunction, ImpalaFunction):
 
     def __init__(self, inputs, output, init_fn, update_fn, merge_fn,
-                 finalize_fn, lib_path=None, name=None):
+                 finalize_fn, serialize_fn=None, lib_path=None, name=None):
         self.init_fn = init_fn
         self.update_fn = update_fn
         self.merge_fn = merge_fn
         self.finalize_fn = finalize_fn
+        self.serialize_fn = serialize_fn
 
         ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
         AggregateFunction.__init__(self, inputs, output, name=self.name)
 
+    def _check_library(self):
+        suffix = self.lib_path[-3:]
+        if suffix == '.ll':
+            raise com.IbisInputError('LLVM IR UDAs are not yet supported')
+        elif suffix != '.so':
+            raise ValueError('Invalid file type. Must be .so')
+
 
 def wrap_uda(hdfs_file, inputs, output, init_fn, update_fn,
-             merge_fn, finalize_fn, name=None):
+             merge_fn, finalize_fn, serialize_fn=None, name=None):
     """
     Creates and returns a useful container object that can be used to
     issue a create_uda() statement and register the uda within ibis
@@ -149,12 +165,19 @@ def wrap_uda(hdfs_file, inputs, output, init_fn, update_fn,
     hdfs_file: .so file that contains relevant UDA
     inputs: list of strings denoting ibis datatypes
     output: string denoting ibis datatype
-    init_fn: string, C++ function name for initialization function
-    update_fn: string, C++ function name for update function
-    merge_fn: string, C++ function name for merge function
-    finalize_fn: C++ function name for finalize function
+    init_fn: string
+      Library symbol name for initialization function
+    update_fn: string
+      Library symbol name for update function
+    merge_fn: string
+      Library symbol name for merge function
+    finalize_fn: string
+      Library symbol name for finalize function
+    serialize_fn : string, optional
+      Library symbol name for serialize UDA API function. Not required for all
+      UDAs; see documentation for more.
     name: string, optional
-        Used internally to track function
+      Used internally to track function
 
     Returns
     -------
@@ -162,6 +185,7 @@ def wrap_uda(hdfs_file, inputs, output, init_fn, update_fn,
     """
     func = ImpalaUDAF(inputs, output, init_fn, update_fn,
                       merge_fn, finalize_fn,
+                      serialize_fn=serialize_fn,
                       name=name, lib_path=hdfs_file)
     return func
 
@@ -198,7 +222,7 @@ def scalar_function(inputs, output, name=None):
     output: string
       Ibis data type
     name: string, optional
-        Used internally to track function
+      Used internally to track function
 
     Returns
     -------
