@@ -329,7 +329,19 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         self.temp_udas.append((func.name, ['int32']))
 
     def test_list_udas(self):
-        pass
+        db = '__ibis_tmp_{0}'.format(util.guid())
+        self.con.create_database(db)
+        self.temp_databases.append(db)
+
+        func = self._wrap_count_uda()
+        self.con.create_uda(func, database=db)
+
+        funcs = self.con.list_udas(database=db)
+
+        f = funcs[0]
+        assert f.name == func.name
+        assert f.inputs == func.inputs
+        assert f.output == func.output
 
     def test_drop_database_with_udfs_and_udas(self):
         uda1 = self._wrap_count_uda()

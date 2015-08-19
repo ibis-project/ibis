@@ -293,7 +293,7 @@ def _ibis_string_to_impala(tval):
         return _expr._sql_type_names[tval]
     result = _dt._parse_decimal(tval)
     if result:
-        return result.__repr__()
+        return repr(result)
 
 
 def _convert_types(t):
