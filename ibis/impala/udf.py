@@ -11,122 +11,153 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from hashlib import sha1
-
-from ibis.common import IbisTypeError
-
 from ibis.expr.datatypes import validate_type
 import ibis.expr.datatypes as _dt
 import ibis.expr.operations as _ops
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.sql.exprs as _expr
+import ibis.common as com
 import ibis.util as util
 
 
-class UDFInfo(object):
+__all__ = ['add_operation', 'scalar_function', 'aggregate_function',
+           'wrap_udf', 'wrap_uda']
 
-    def __init__(self, input_type, output_type, name):
-        self.inputs = input_type
-        self.output = output_type
-        self.name = name
+
+class Function(object):
+
+    def __init__(self, inputs, output, name):
+        self.inputs = inputs
+        self.output = output
+
+        (self.input_type,
+         self.output_type) = self._type_signature(inputs, output)
+        self._klass = self._create_operation(name)
+
+    def _create_operation(self, name):
+        class_name = self._get_class_name(name)
+        return _create_operation_class(class_name, self.input_type,
+                                       self.output_type)
 
     def __repr__(self):
-        return ('{0}({1}) returns {2}'.format(
-            self.name,
-            ', '.join([repr(x) for x in self.inputs]),
-            self.output))
+        klass = type(self).__name__
+        return ('{0}({1}, {2!r}, {3!r})'
+                .format(klass, self.name, self.inputs, self.output))
 
+    def __call__(self, *args):
+        return self._klass(*args).to_expr()
 
-class UDFCreatorParent(UDFInfo):
-
-    def __init__(self, hdfs_file, input_type,
-                 output_type, name=None):
-        file_suffix = hdfs_file[-3:]
-        if not(file_suffix == '.so' or file_suffix == '.ll'):
-            raise ValueError('Invalid file type. Must be .so or .ll ')
-        self.hdfs_file = hdfs_file
-        inputs = [validate_type(x) for x in input_type]
-        output = validate_type(output_type)
-        new_name = name
-        if not name:
-            string = self.so_symbol
-            for in_type in inputs:
-                string += in_type.name()
-            new_name = sha1(string).hexdigest()
-
-        UDFInfo.__init__(self, inputs, output, new_name)
-
-    def to_operation(self, name=None):
+    def register(self, name, database):
         """
-        Creates and returns an operator class that can
-        be passed to add_operation()
+        Registers the given operation within the Ibis SQL translation
+        toolchain. Can also use add_operation API
 
         Parameters
         ----------
-        name : string (optional). Used internally to track function
-
-        Returns
-        -------
-        op : an operator class to use in constructing function
+        name: used in issuing statements to SQL engine
+        database: database the relevant operator is registered to
         """
-        (in_values, out_value) = _operation_type_conversion(self.inputs,
-                                                            self.output)
-        class_name = name
-        if self.name and not name:
-            class_name = self.name
-        elif not (name or self.name):
-            class_name = 'UDF_{0}'.format(util.guid())
-        func_dict = {
-            'input_type': in_values,
-            'output_type': out_value,
-            }
-        UdfOp = type(class_name, (_ops.ValueOp,), func_dict)
-        return UdfOp
-
-    def get_name(self):
-        return self.name
+        add_operation(self._klass, name, database)
 
 
-class UDFCreator(UDFCreatorParent):
+class ScalarFunction(Function):
 
-    def __init__(self, hdfs_file, input_type, output_type,
-                 so_symbol, name=None):
+    def _get_class_name(self, name):
+        if name is None:
+            name = util.guid()
+        return 'UDF_{0}'.format(name)
+
+    def _type_signature(self, inputs, output):
+        input_type = _to_input_sig(inputs)
+        output = validate_type(output)
+        output_type = rules.shape_like_flatargs(output)
+        return input_type, output_type
+
+
+class AggregateFunction(Function):
+
+    def _create_operation(self, name):
+        klass = Function._create_operation(self, name)
+        klass._reduction = True
+        return klass
+
+    def _get_class_name(self, name):
+        if name is None:
+            name = util.guid()
+        return 'UDA_{0}'.format(name)
+
+    def _type_signature(self, inputs, output):
+        input_type = _to_input_sig(inputs)
+        output = validate_type(output)
+        output_type = rules.scalar_output(output)
+        return input_type, output_type
+
+
+class ImpalaFunction(object):
+
+    def __init__(self, name=None, lib_path=None):
+        self.lib_path = lib_path
+        self.name = name or util.guid()
+
+        if lib_path is not None:
+            self._check_library()
+
+    def _check_library(self):
+        suffix = self.lib_path[-3:]
+        if suffix not in ['.so', '.ll']:
+            raise ValueError('Invalid file type. Must be .so or .ll ')
+
+    def hash(self):
+        raise NotImplementedError
+
+
+class ImpalaUDF(ScalarFunction, ImpalaFunction):
+    """
+    Feel free to customize my __doc__ or wrap in a nicer user API
+    """
+    def __init__(self, inputs, output, so_symbol=None, lib_path=None,
+                 name=None):
         self.so_symbol = so_symbol
-        UDFCreatorParent.__init__(self, hdfs_file, input_type,
-                                  output_type, name=name)
+        ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
+        ScalarFunction.__init__(self, inputs, output, name=self.name)
+
+    def hash(self):
+        # TODO: revisit this later
+        # from hashlib import sha1
+        # val = self.so_symbol
+        # for in_type in self.inputs:
+        #     val += in_type.name()
+
+        # return sha1(val).hexdigest()
+        pass
 
 
-class UDACreator(UDFCreatorParent):
+class ImpalaUDA(AggregateFunction, ImpalaFunction):
 
-    def __init__(self, hdfs_file, input_type, output_type, init_fn,
-                 update_fn, merge_fn, finalize_fn, name=None):
+    def __init__(self, inputs, output, update_fn=None, init_fn=None,
+                 merge_fn=None, finalize_fn=None, serialize_fn=None,
+                 lib_path=None, name=None):
         self.init_fn = init_fn
         self.update_fn = update_fn
         self.merge_fn = merge_fn
         self.finalize_fn = finalize_fn
-        UDFCreatorParent.__init__(self, hdfs_file, input_type,
-                                  output_type, name=name)
+        self.serialize_fn = serialize_fn
+
+        ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
+        AggregateFunction.__init__(self, inputs, output, name=self.name)
+
+    def _check_library(self):
+        suffix = self.lib_path[-3:]
+        if suffix == '.ll':
+            raise com.IbisInputError('LLVM IR UDAs are not yet supported')
+        elif suffix != '.so':
+            raise ValueError('Invalid file type. Must be .so')
 
 
-def _validate_impala_type(t):
-    if t in _impala_to_ibis_type:
-        return t
-    elif _dt._DECIMAL_RE.match(t):
-        return t
-    raise IbisTypeError("Not a valid Impala type for UDFs")
-
-
-def _operation_type_conversion(inputs, output):
-    in_type = [validate_type(x) for x in inputs]
-    in_values = [rules.value_typed_as(_convert_types(x)) for x in in_type]
-    out_type = validate_type(output)
-    out_value = rules.shape_like_flatargs(out_type)
-    return (in_values, out_value)
-
-
-def wrap_uda(hdfs_file, inputs, output, init_fn, update_fn,
-             merge_fn, finalize_fn, name=None):
+def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
+             merge_fn=None, finalize_fn=None, serialize_fn=None,
+             close_fn=None, name=None):
     """
     Creates and returns a useful container object that can be used to
     issue a create_uda() statement and register the uda within ibis
@@ -136,19 +167,30 @@ def wrap_uda(hdfs_file, inputs, output, init_fn, update_fn,
     hdfs_file: .so file that contains relevant UDA
     inputs: list of strings denoting ibis datatypes
     output: string denoting ibis datatype
-    init_fn: string, C++ function name for initialization function
-    update_fn: string, C++ function name for update function
-    merge_fn: string, C++ function name for merge function
-    finalize_fn: C++ function name for finalize function
-    name: string (optional). Used internally to track function
+    update_fn: string
+      Library symbol name for update function
+    init_fn: string, optional
+      Library symbol name for initialization function
+    merge_fn: string, optional
+      Library symbol name for merge function
+    finalize_fn: string, optional
+      Library symbol name for finalize function
+    serialize_fn : string, optional
+      Library symbol name for serialize UDA API function. Not required for all
+      UDAs; see documentation for more.
+    close_fn : string, optional
+    name: string, optional
+      Used internally to track function
 
     Returns
     -------
     container : UDA object
     """
-    return UDACreator(hdfs_file, inputs, output, init_fn,
-                      update_fn, merge_fn, finalize_fn,
-                      name=name)
+    func = ImpalaUDA(inputs, output, update_fn, init_fn,
+                     merge_fn, finalize_fn,
+                     serialize_fn=serialize_fn,
+                     name=name, lib_path=hdfs_file)
+    return func
 
 
 def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
@@ -168,7 +210,9 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
     -------
     container : UDF object
     """
-    return UDFCreator(hdfs_file, inputs, output, so_symbol, name=name)
+    func = ImpalaUDF(inputs, output, so_symbol, name=name,
+                     lib_path=hdfs_file)
+    return func
 
 
 def scalar_function(inputs, output, name=None):
@@ -176,25 +220,51 @@ def scalar_function(inputs, output, name=None):
     Creates and returns an operator class that can be passed to add_operation()
 
     Parameters:
-    inputs: list of strings denoting ibis datatypes
-    output: string denoting ibis datatype
-    name: string (optional). Used internally to track function
+    inputs: list of strings
+      Ibis data type names
+    output: string
+      Ibis data type
+    name: string, optional
+      Used internally to track function
 
     Returns
     -------
-    op : operator class to use in construction function
+    klass, user_api : class, function
     """
-    (in_values, out_value) = _operation_type_conversion(inputs, output)
-    class_name = name
-    if not name:
-        class_name = 'UDF_{0}'.format(util.guid())
+    return ScalarFunction(inputs, output, name=name)
 
+
+def aggregate_function(inputs, output, name=None):
+    """
+    Creates and returns an operator class that can be passed to add_operation()
+
+    Parameters:
+    inputs: list of strings
+      Ibis data type names
+    output: string
+      Ibis data type
+    name: string, optional
+        Used internally to track function
+
+    Returns
+    -------
+    klass, user_api : class, function
+    """
+    return AggregateFunction(inputs, output, name=name)
+
+
+def _to_input_sig(inputs):
+    in_type = [validate_type(x) for x in inputs]
+    return [rules.value_typed_as(_convert_types(x)) for x in in_type]
+
+
+def _create_operation_class(name, input_type, output_type):
     func_dict = {
-        'input_type': in_values,
-        'output_type': out_value,
+        'input_type': input_type,
+        'output_type': output_type,
     }
-    UdfOp = type(class_name, (_ops.ValueOp,), func_dict)
-    return UdfOp
+    klass = type(name, (_ops.ValueOp,), func_dict)
+    return klass
 
 
 def add_operation(op, func_name, db):
@@ -215,10 +285,7 @@ def add_operation(op, func_name, db):
 def _impala_type_to_ibis(tval):
     if tval in _impala_to_ibis_type:
         return _impala_to_ibis_type[tval]
-    result = _dt._parse_decimal(tval)
-    if result:
-        return result.__repr__()
-    raise Exception('Not a valid Impala type')
+    return tval
 
 
 def _ibis_string_to_impala(tval):
@@ -226,7 +293,7 @@ def _ibis_string_to_impala(tval):
         return _expr._sql_type_names[tval]
     result = _dt._parse_decimal(tval)
     if result:
-        return result.__repr__()
+        return repr(result)
 
 
 def _convert_types(t):

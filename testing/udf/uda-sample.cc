@@ -14,26 +14,8 @@
 
 #include "uda-sample.h"
 #include <assert.h>
-#include <sstream>
 
 using namespace impala_udf;
-using namespace std;
-
-template <typename T>
-StringVal ToStringVal(FunctionContext* context, const T& val) {
-  stringstream ss;
-  ss << val;
-  string str = ss.str();
-  StringVal string_val(context, str.size());
-  memcpy(string_val.ptr, str.c_str(), str.size());
-  return string_val;
-}
-
-template <>
-StringVal ToStringVal<DoubleVal>(FunctionContext* context, const DoubleVal& val) {
-  if (val.is_null) return StringVal::null();
-  return ToStringVal(context, val.val);
-}
 
 // ---------------------------------------------------------------------------
 // This is a sample of implementing a COUNT aggregate function.
@@ -64,92 +46,54 @@ struct AvgStruct {
   int64_t count;
 };
 
-// Initialize the StringVal intermediate to a zero'd AvgStruct
-void AvgInit(FunctionContext* context, StringVal* val) {
-  val->is_null = false;
-  val->len = sizeof(AvgStruct);
-  val->ptr = context->Allocate(val->len);
-  memset(val->ptr, 0, val->len);
+void AvgInit(FunctionContext* context, BufferVal* val) {
+  assert(sizeof(AvgStruct) == 16);
+  memset(*val, 0, sizeof(AvgStruct));
 }
 
-void AvgUpdate(FunctionContext* context, const DoubleVal& input, StringVal* val) {
+void AvgUpdate(FunctionContext* context, const DoubleVal& input, BufferVal* val) {
   if (input.is_null) return;
-  assert(!val->is_null);
-  assert(val->len == sizeof(AvgStruct));
-  AvgStruct* avg = reinterpret_cast<AvgStruct*>(val->ptr);
+  AvgStruct* avg = reinterpret_cast<AvgStruct*>(*val);
   avg->sum += input.val;
   ++avg->count;
 }
 
-void AvgMerge(FunctionContext* context, const StringVal& src, StringVal* dst) {
-  if (src.is_null) return;
-  const AvgStruct* src_avg = reinterpret_cast<const AvgStruct*>(src.ptr);
-  AvgStruct* dst_avg = reinterpret_cast<AvgStruct*>(dst->ptr);
-  dst_avg->sum += src_avg->sum;
-  dst_avg->count += src_avg->count;
+void AvgMerge(FunctionContext* context, const BufferVal& src, BufferVal* dst) {
+  if (src == NULL) return;
+  const AvgStruct* src_struct = reinterpret_cast<const AvgStruct*>(src);
+  AvgStruct* dst_struct = reinterpret_cast<AvgStruct*>(*dst);
+  dst_struct->sum += src_struct->sum;
+  dst_struct->count += src_struct->count;
 }
 
-// A serialize function is necesary to free the intermediate state allocation. We use the
-// StringVal constructor to allocate memory owned by Impala, copy the intermediate state,
-// and free the original allocation. Note that memory allocated by the StringVal ctor is
-// not necessarily persisted across UDA function calls, which is why we don't use it in
-// AvgInit().
-const StringVal AvgSerialize(FunctionContext* context, const StringVal& val) {
-  assert(!val.is_null);
-  StringVal result(context, val.len);
-  memcpy(result.ptr, val.ptr, val.len);
-  context->Free(val.ptr);
-  return result;
-}
-
-StringVal AvgFinalize(FunctionContext* context, const StringVal& val) {
-  assert(!val.is_null);
-  assert(val.len == sizeof(AvgStruct));
-  AvgStruct* avg = reinterpret_cast<AvgStruct*>(val.ptr);
-  StringVal result;
-  if (avg->count == 0) {
-    result = StringVal::null();
-  } else {
-    // Copies the result to memory owned by Impala
-    result = ToStringVal(context, avg->sum / avg->count);
-  }
-  context->Free(val.ptr);
-  return result;
+DoubleVal AvgFinalize(FunctionContext* context, const BufferVal& val) {
+  if (val == NULL) return DoubleVal::null();
+  AvgStruct* val_struct = reinterpret_cast<AvgStruct*>(val);
+  return DoubleVal(val_struct->sum / val_struct->count);
 }
 
 // ---------------------------------------------------------------------------
 // This is a sample of implementing the STRING_CONCAT aggregate function.
 // Example: select string_concat(string_col, ",") from table
 // ---------------------------------------------------------------------------
-// Delimiter to use if the separator is NULL.
-static const StringVal DEFAULT_STRING_CONCAT_DELIM((uint8_t*)", ", 2);
-
 void StringConcatInit(FunctionContext* context, StringVal* val) {
   val->is_null = true;
 }
 
-void StringConcatUpdate(FunctionContext* context, const StringVal& str,
-    const StringVal& separator, StringVal* result) {
-  if (str.is_null) return;
-  if (result->is_null) {
-    // This is the first string, simply set the result to be the value.
-    uint8_t* copy = context->Allocate(str.len);
-    memcpy(copy, str.ptr, str.len);
-    *result = StringVal(copy, str.len);
-    return;
+void StringConcatUpdate(FunctionContext* context, const StringVal& arg1,
+    const StringVal& arg2, StringVal* val) {
+  if (val->is_null) {
+    val->is_null = false;
+    *val = StringVal(context, arg1.len);
+    memcpy(val->ptr, arg1.ptr, arg1.len);
+  } else {
+    int new_len = val->len + arg1.len + arg2.len;
+    StringVal new_val(context, new_len);
+    memcpy(new_val.ptr, val->ptr, val->len);
+    memcpy(new_val.ptr + val->len, arg2.ptr, arg2.len);
+    memcpy(new_val.ptr + val->len + arg2.len, arg1.ptr, arg1.len);
+    *val = new_val;
   }
-
-  const StringVal* sep_ptr = separator.is_null ? &DEFAULT_STRING_CONCAT_DELIM :
-      &separator;
-
-  // We need to grow the result buffer and then append the new string and
-  // separator.
-  int new_size = result->len + sep_ptr->len + str.len;
-  result->ptr = context->Reallocate(result->ptr, new_size);
-  memcpy(result->ptr + result->len, sep_ptr->ptr, sep_ptr->len);
-  result->len += sep_ptr->len;
-  memcpy(result->ptr + result->len, str.ptr, str.len);
-  result->len += str.len;
 }
 
 void StringConcatMerge(FunctionContext* context, const StringVal& src, StringVal* dst) {
@@ -157,24 +101,32 @@ void StringConcatMerge(FunctionContext* context, const StringVal& src, StringVal
   StringConcatUpdate(context, src, ",", dst);
 }
 
-// A serialize function is necesary to free the intermediate state allocation. We use the
-// StringVal constructor to allocate memory owned by Impala, copy the intermediate
-// StringVal, and free the intermediate's memory. Note that memory allocated by the
-// StringVal ctor is not necessarily persisted across UDA function calls, which is why we
-// don't use it in StringConcatUpdate().
-const StringVal StringConcatSerialize(FunctionContext* context, const StringVal& val) {
-  if (val.is_null) return val;
-  StringVal result(context, val.len);
-  memcpy(result.ptr, val.ptr, val.len);
-  context->Free(val.ptr);
-  return result;
+StringVal StringConcatFinalize(FunctionContext* context, const StringVal& val) {
+  return val;
 }
 
-// Same as StringConcatSerialize().
-StringVal StringConcatFinalize(FunctionContext* context, const StringVal& val) {
-  if (val.is_null) return val;
-  StringVal result(context, val.len);
-  memcpy(result.ptr, val.ptr, val.len);
-  context->Free(val.ptr);
-  return result;
+// ---------------------------------------------------------------------------
+// This is a sample of implementing the SUM aggregate function for decimals.
+// Example: select sum_small_decimal(dec_col) from table
+// It is different than the builtin sum since it can easily overflow but can
+// be faster for small tables.
+// ---------------------------------------------------------------------------
+void SumSmallDecimalInit(FunctionContext*, DecimalVal* val) {
+  val->is_null = true;
+  val->val4 = 0;
+}
+
+void SumSmallDecimalUpdate(FunctionContext* ctx,
+    const DecimalVal& src, DecimalVal* dst) {
+  assert(ctx->GetArgType(0)->scale == 2);
+  assert(ctx->GetArgType(0)->precision == 9);
+  if (src.is_null) return;
+  dst->is_null = false;
+  dst->val4 += src.val4;
+}
+
+void SumSmallDecimalMerge(FunctionContext*, const DecimalVal& src, DecimalVal* dst) {
+  if (src.is_null) return;
+  dst->is_null = false;
+  dst->val4 += src.val4;
 }

@@ -35,8 +35,7 @@ You can compile this to either a shared library (a ``.so`` file) or to LLVM
 bitcode with clang (a ``.ll`` file). Skipping that step for now (will add some
 more detailed instructions here later, promise).
 
-To make this function callable, we first create a UDF wrapper with
-``ibis.impala.wrap_udf``:
+To make this function callable, we use ``ibis.impala.wrap_udf``:
 
 .. code-block:: python
 
@@ -47,7 +46,8 @@ To make this function callable, we first create a UDF wrapper with
    udf_db = 'ibis_testing'
    udf_name = 'fuzzy_equals'
 
-   wrapper = ibis.impala.wrap_udf(library, inputs, output, symbol, name=udf_name)
+   fuzzy_equals = ibis.impala.wrap_udf(library, inputs, output,
+                                       symbol, name=udf_name)
 
 In typical workflows, you will set up a UDF in Impala once then use it
 thenceforth. So the *first time* you do this, you need to create the UDF in
@@ -55,38 +55,16 @@ Impala:
 
 .. code-block:: python
 
-   client.create_udf(wrapper, name=udf_name, database=udf_db)
+   client.create_udf(fuzzy_equals, database=udf_db)
 
 Now, we must register this function as a new Impala operation in Ibis. This
 must take place each time you load your Ibis session.
 
 .. code-block:: python
 
-   operation_class = wrapper.to_operation()
-   ibis.impala.add_operation(operation_class, udf_name, udf_db)
+   func.register(fuzzy_equals.name, udf_db)
 
-Lastly, we define a *user API* to make ``fuzzy_equals`` callable on Ibis
-expressions:
-
-.. code-block:: python
-
-   def fuzzy_equals(left, right):
-       """
-       Approximate equals UDF
-
-       Parameters
-       ----------
-       left : numeric
-       right : numeric
-
-       Returns
-       -------
-       is_approx_equal : boolean
-       """
-       op = operation_class(left, right)
-       return op.to_expr()
-
-Now, we have a callable Python function that works with Ibis expressions:
+The object ``fuzzy_equals`` is callable and works with Ibis expressions:
 
 .. code-block:: python
 
@@ -110,7 +88,7 @@ Now, we have a callable Python function that works with Ibis expressions:
    9    False
    Name: tmp, dtype: bool
 
-Note that the call to ``ibis.impala.add_operation`` must happen each time you
+Note that the call to ``register`` on the UDF object must happen each time you
 use Ibis. If you have a lot of UDFs, I suggest you create a file with all of
 your wrapper declarations and user APIs that you load with your Ibis session to
 plug in all your own functions.
@@ -119,6 +97,24 @@ Using aggregate functions (UDAs)
 --------------------------------
 
 Coming soon.
+
+Adding documentation to new functions
+-------------------------------------
+
+.. code-block:: python
+
+   fuzzy_equal.__doc__ = """\
+   Approximate equals UDF
+
+   Parameters
+   ----------
+   left : numeric
+   right : numeric
+
+   Returns
+   -------
+   is_approx_equal : boolean
+   """
 
 Adding UDF functions to Ibis types
 ----------------------------------

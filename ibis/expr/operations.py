@@ -14,12 +14,14 @@
 
 import operator
 
+from ibis.expr.types import TableColumn  # noqa
+
 from ibis.compat import py_string
 from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr,
                              ValueExpr, ArrayExpr, TableExpr,
-                             TableNode, ValueNode, TableColumn, _safe_repr)
+                             TableNode, ValueNode, _safe_repr)
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
@@ -635,28 +637,14 @@ def _mean_output_type(self):
     return t
 
 
-def _scalar_output(rule):
-    def f(self):
-        t = dt.validate_type(rule(self))
-        return t.scalar_type()
-    return f
-
-
-def _array_output(rule):
-    def f(self):
-        t = dt.validate_type(rule(self))
-        return t.array_type()
-    return f
-
-
 class Sum(Reduction):
 
-    output_type = _scalar_output(_sum_output_type)
+    output_type = rules.scalar_output(_sum_output_type)
 
 
 class Mean(Reduction):
 
-    output_type = _scalar_output(_mean_output_type)
+    output_type = rules.scalar_output(_mean_output_type)
 
 
 def _decimal_scalar_ctor(precision, scale):
@@ -680,12 +668,12 @@ def _min_max_output_rule(self):
 
 class Max(Reduction):
 
-    output_type = _scalar_output(_min_max_output_rule)
+    output_type = rules.scalar_output(_min_max_output_rule)
 
 
 class Min(Reduction):
 
-    output_type = _scalar_output(_min_max_output_rule)
+    output_type = rules.scalar_output(_min_max_output_rule)
 
 
 class HLLCardinality(Reduction):
@@ -870,7 +858,7 @@ class CumulativeSum(CumulativeOp):
     Cumulative sum. Requires an order window.
     """
 
-    output_type = _array_output(_sum_output_type)
+    output_type = rules.array_output(_sum_output_type)
 
 
 class CumulativeMean(CumulativeOp):
@@ -879,7 +867,7 @@ class CumulativeMean(CumulativeOp):
     Cumulative mean. Requires an order window.
     """
 
-    output_type = _array_output(_mean_output_type)
+    output_type = rules.array_output(_mean_output_type)
 
 
 class CumulativeMax(CumulativeOp):
@@ -888,7 +876,7 @@ class CumulativeMax(CumulativeOp):
     Cumulative max. Requires an order window.
     """
 
-    output_type = _array_output(_min_max_output_rule)
+    output_type = rules.array_output(_min_max_output_rule)
 
 
 class CumulativeMin(CumulativeOp):
@@ -897,7 +885,7 @@ class CumulativeMin(CumulativeOp):
     Cumulative min. Requires an order window.
     """
 
-    output_type = _array_output(_min_max_output_rule)
+    output_type = rules.array_output(_min_max_output_rule)
 
 
 class PercentRank(AnalyticOp):
@@ -1051,7 +1039,7 @@ class CumulativeAny(CumulativeOp):
     Cumulative any
     """
 
-    output_type = _array_output(lambda self: 'boolean')
+    output_type = rules.array_output(lambda self: 'boolean')
 
 
 class CumulativeAll(CumulativeOp):
@@ -1060,7 +1048,7 @@ class CumulativeAll(CumulativeOp):
     Cumulative all
     """
 
-    output_type = _array_output(lambda self: 'boolean')
+    output_type = rules.array_output(lambda self: 'boolean')
 
 
 # ---------------------------------------------------------------------

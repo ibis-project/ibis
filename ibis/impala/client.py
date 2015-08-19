@@ -323,20 +323,6 @@ class ImpalaClient(SQLClient):
         else:
             return []
 
-    def _get_udfs(self, cur):
-        tuples = cur.fetchall()
-        if len(tuples) > 0:
-            regex = re.compile("^.*?\((.*)\).*")
-            result = []
-            for out_type, sig in tuples:
-                name = sig.split('(')[0]
-                inputs = self._parse_input_string(regex.findall(sig)[0])
-                output = udf._impala_type_to_ibis(out_type.lower())
-                result.append(udf.UDFInfo(inputs, output, name))
-            return result
-        else:
-            return []
-
     def _parse_input_string(self, s):
         regex = re.compile(r'(?:[^,(]|\([^)]*\))+')
         results = regex.findall(s)
@@ -415,9 +401,8 @@ class ImpalaClient(SQLClient):
             for func in udas:
                 self.log('Dropping aggregate function {0}({1})'
                          .format(func.name, func.inputs))
-                self.drop_udf(func.name, input_types=func.inputs,
-                              database=name, force=True,
-                              aggregate=True)
+                self.drop_uda(func.name, input_types=func.inputs,
+                              database=name, force=True)
         else:
             if len(tables) > 0 or len(udfs) > 0 or len(udas) > 0:
                 raise com.IntegrityError('Database {0} must be empty before '
@@ -961,47 +946,49 @@ class ImpalaClient(SQLClient):
 
         return Schema(names, ibis_types)
 
-    def create_udf(self, udf_info, name=None, database=None):
+    def create_udf(self, info, name=None, database=None):
         """
         Creates a function within Impala
 
         Parameters
         ----------
-        udf_info : UDFCreator object
+        info : ImpalaUDF
         name : string (optional)
         database : string (optional)
         """
         if name is None:
-            name = udf_info.get_name()
-        statement = ddl.CreateFunction(udf_info.hdfs_file,
-                                       udf_info.so_symbol,
-                                       udf_info.inputs,
-                                       udf_info.output,
+            name = info.name
+        database = database or self.current_database
+        statement = ddl.CreateFunction(info.lib_path,
+                                       info.so_symbol,
+                                       info.inputs,
+                                       info.output,
                                        name, database)
         self._execute(statement)
 
-    def create_uda(self, uda_info, name=None, database=None):
+    def create_uda(self, info, name=None, database=None):
         """
         Creates a user-defined aggregate function within Impala
 
         Parameters
         ----------
-        uda_info : UDAInfo object
+        info : ImpalaUDAF
         name : string (optional)
         database : string (optional)
         """
         if name is None:
-            name = uda_info.get_name()
+            name = info.name
 
-        statement = ddl.CreateAggregateFunction(uda_info.hdfs_file,
-                                                uda_info.inputs,
-                                                uda_info.output,
-                                                uda_info.init_fn,
-                                                uda_info.update_fn,
-                                                uda_info.merge_fn,
-                                                uda_info.finalize_fn,
-                                                name,
-                                                database=database)
+        database = database or self.current_database
+        statement = ddl.CreateAggregateFunction(info.lib_path,
+                                                info.inputs,
+                                                info.output,
+                                                info.update_fn,
+                                                info.init_fn,
+                                                info.merge_fn,
+                                                info.serialize_fn,
+                                                info.finalize_fn,
+                                                name, database)
         self._execute(statement)
 
     def drop_udf(self, name, input_types=None, database=None, force=False,
@@ -1048,6 +1035,14 @@ class ImpalaClient(SQLClient):
         self._drop_single_function(name, input_types, database=database,
                                    aggregate=aggregate)
 
+    def drop_uda(self, name, input_types=None, database=None, force=False):
+        """
+        Drop aggregate function. See drop_udf for more information on the
+        parameters.
+        """
+        return self.drop_udf(name, input_types=input_types, database=database,
+                             force=force)
+
     def _drop_single_function(self, name, input_types, database=None,
                               aggregate=False):
         stmt = ddl.DropFunction(name, input_types, must_exist=False,
@@ -1079,7 +1074,7 @@ class ImpalaClient(SQLClient):
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=False)
         with self._execute(statement, results=True) as cur:
-            result = self._get_udfs(cur)
+            result = self._get_udfs(cur, udf.ImpalaUDF)
         return result
 
     def list_udas(self, database=None, like=None):
@@ -1095,9 +1090,23 @@ class ImpalaClient(SQLClient):
             database = self.current_database
         statement = ddl.ListFunction(database, like=like, aggregate=True)
         with self._execute(statement, results=True) as cur:
-            result = self._get_list(cur)
+            result = self._get_udfs(cur, udf.ImpalaUDA)
 
         return result
+
+    def _get_udfs(self, cur, klass):
+        tuples = cur.fetchall()
+        if len(tuples) > 0:
+            regex = re.compile("^.*?\((.*)\).*")
+            result = []
+            for out_type, sig in tuples:
+                name = sig.split('(')[0]
+                inputs = self._parse_input_string(regex.findall(sig)[0])
+                output = udf._impala_type_to_ibis(out_type.lower())
+                result.append(klass(inputs, output, name=name))
+            return result
+        else:
+            return []
 
     def exists_udf(self, name, database=None):
         """

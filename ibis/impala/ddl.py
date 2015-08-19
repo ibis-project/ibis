@@ -35,17 +35,17 @@ def _is_quoted(x):
 
 class ImpalaDDL(DDL):
 
-    def _get_scoped_name(self, table_name, database):
+    def _get_scoped_name(self, obj_name, database):
         if database:
-            scoped_name = '{0}.`{1}`'.format(database, table_name)
+            scoped_name = '{0}.`{1}`'.format(database, obj_name)
         else:
-            if not _is_fully_qualified(table_name):
-                if _is_quoted(table_name):
-                    return table_name
+            if not _is_fully_qualified(obj_name):
+                if _is_quoted(obj_name):
+                    return obj_name
                 else:
-                    return '`{0}`'.format(table_name)
+                    return '`{0}`'.format(obj_name)
             else:
-                return table_name
+                return obj_name
         return scoped_name
 
 
@@ -464,18 +464,9 @@ class CreateFunction(ImpalaDDL):
         self.name = name
         self.database = database
 
-    def get_name(self):
-        return self.name
-
-    def _get_scoped_name(self):
-        if self.database:
-            return '{0}.{1}'.format(self.database, self.name)
-        else:
-            return self.name
-
     def compile(self):
         create_decl = 'CREATE FUNCTION'
-        scoped_name = self._get_scoped_name()
+        scoped_name = self._get_scoped_name(self.name, self.database)
         create_line = ('{0!s}({1!s}) returns {2!s}'
                        .format(scoped_name, ', '.join(self.inputs),
                                self.output))
@@ -489,40 +480,44 @@ class CreateAggregateFunction(ImpalaDDL):
 
     _object_type = 'FUNCTION'
 
-    def __init__(self, hdfs_file, inputs, output, init_fn, update_fn,
-                 merge_fn, finalize_fn, name, database=None):
+    def __init__(self, hdfs_file, inputs, output, update_fn, init_fn,
+                 merge_fn, serialize_fn, finalize_fn, name, database):
         self.hdfs_file = hdfs_file
         self.inputs = _impala_signature(inputs)
         self.output = _impala_signature([output])[0]
         self.init = init_fn
         self.update = update_fn
         self.merge = merge_fn
+        self.serialize = serialize_fn
         self.finalize = finalize_fn
+
         self.name = name
         self.database = database
 
-    def get_name(self):
-        return self.name
-
-    def _get_scoped_name(self):
-        if self.database:
-            return '{0}.{1}'.format(self.database, self.name)
-        else:
-            return self.name
-
     def compile(self):
         create_decl = 'CREATE AGGREGATE FUNCTION'
-        scoped_name = self._get_scoped_name()
+        scoped_name = self._get_scoped_name(self.name, self.database)
         create_line = ('{0!s}({1!s}) returns {2!s}'
                        .format(scoped_name, ', '.join(self.inputs),
                                self.output))
-        loc_ln = "location '{0!s}'".format(self.hdfs_file)
-        init_ln = "init_fn='{0}'".format(self.init)
-        update_ln = "update_fn='{0}'".format(self.update)
-        merge_ln = "merge_fn='{0}'".format(self.merge)
-        finalize_ln = "finalize_fn='{0}'".format(self.finalize)
-        full_line = ' '.join([create_decl, create_line, loc_ln,
-                              init_ln, update_ln, merge_ln, finalize_ln])
+        tokens = ["location '{0!s}'".format(self.hdfs_file)]
+
+        if self.init is not None:
+            tokens.append("init_fn='{0}'".format(self.init))
+
+        tokens.append("update_fn='{0}'".format(self.update))
+
+        if self.merge is not None:
+            tokens.append("merge_fn='{0}'".format(self.merge))
+
+        if self.serialize is not None:
+            tokens.append("serialize_fn='{0}'".format(self.serialize))
+
+        if self.finalize is not None:
+            tokens.append("finalize_fn='{0}'".format(self.finalize))
+
+        full_line = (' '.join([create_decl, create_line]) + ' ' +
+                     '\n'.join(tokens))
         return full_line
 
 
@@ -540,12 +535,6 @@ class DropFunction(DropObject):
     def _object_name(self):
         return self.name
 
-    def _get_scoped_name(self):
-        if self.database:
-            return '{0}.{1}'.format(self.database, self.name)
-        else:
-            return self.name
-
     def compile(self):
         statement = 'DROP'
         if self.aggregate:
@@ -553,7 +542,7 @@ class DropFunction(DropObject):
         statement += ' FUNCTION'
         if not self.must_exist:
             statement += ' IF EXISTS'
-        full_name = self._get_scoped_name()
+        full_name = self._get_scoped_name(self.name, self.database)
         func_line = ' {0!s}({1!s})'.format(full_name, ', '.join(self.inputs))
         statement += func_line
         return statement

@@ -376,6 +376,26 @@ class VarArgs(TypeSignature):
 varargs = VarArgs
 
 
+def scalar_output(rule):
+    def f(self):
+        if isinstance(rule, dt.DataType):
+            t = rule
+        else:
+            t = dt.validate_type(rule(self))
+        return t.scalar_type()
+    return f
+
+
+def array_output(rule):
+    def f(self):
+        if isinstance(rule, dt.DataType):
+            t = rule
+        else:
+            t = dt.validate_type(rule(self))
+        return t.array_type()
+    return f
+
+
 def shape_like_flatargs(out_type):
 
     def output_type(self):
