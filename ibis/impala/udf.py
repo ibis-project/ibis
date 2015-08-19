@@ -11,8 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.common import IbisTypeError
-
 from ibis.expr.datatypes import validate_type
 import ibis.expr.datatypes as _dt
 import ibis.expr.operations as _ops
@@ -22,18 +20,77 @@ import ibis.sql.exprs as _expr
 import ibis.util as util
 
 
-class FunctionWrapper(object):
+__all__ = ['add_operation', 'scalar_function', 'aggregate_function',
+           'wrap_udf', 'wrap_uda']
 
-    def __init__(self, input_type, output_type, name=None, lib_path=None):
-        self.lib_path = lib_path
 
-        self.inputs = [validate_type(x) for x in input_type]
-        self.output = validate_type(output_type)
+class Function(object):
 
+    def __init__(self, inputs, output, name):
+        self.inputs = inputs
+        self.output = output
+
+        (self.input_type,
+         self.output_type) = self._type_signature(inputs, output)
+        class_name = self._get_class_name(name)
+        self._klass = _create_operation_class(class_name,
+                                              self.input_type,
+                                              self.output_type)
+
+    def __repr__(self):
+        klass = type(self).__name__
+        return ('{0}({1}, {2!r}, {3!r})'
+                .format(klass, self.name, self.inputs, self.output))
+
+    def __call__(self, *args):
+        return self._klass(*args).to_expr()
+
+    def register(self, name, database):
+        """
+        Registers the given operation within the Ibis SQL translation
+        toolchain. Can also use add_operation API
+
+        Parameters
+        ----------
+        name: used in issuing statements to SQL engine
+        database: database the relevant operator is registered to
+        """
+        add_operation(self._klass, name, database)
+
+
+class ScalarFunction(Function):
+
+    def _get_class_name(self, name):
         if name is None:
-            name = self.hash()
+            name = util.guid()
+        return 'UDF_{0}'.format(name)
 
-        self.name = name
+    def _type_signature(self, inputs, output):
+        input_type = _to_input_sig(inputs)
+        output = validate_type(output)
+        output_type = rules.shape_like_flatargs(output)
+        return input_type, output_type
+
+
+class AggregateFunction(Function):
+
+    def _get_class_name(self, name):
+        if name is None:
+            name = util.guid()
+        return 'UDA_{0}'.format(name)
+
+    def _type_signature(self, inputs, output):
+        input_type = _to_input_sig(inputs)
+        output = validate_type(output)
+        output_type = rules.scalar_output(output)
+        return input_type, output_type
+
+
+class ImpalaFunction(object):
+
+    def __init__(self, name=None, lib_path=None):
+        self.lib_path = lib_path
+        self.name = name or util.guid()
 
         if lib_path is not None:
             self._check_library()
@@ -46,57 +103,39 @@ class FunctionWrapper(object):
     def hash(self):
         raise NotImplementedError
 
-    def __repr__(self):
-        klass = type(self).__name__
-        return ('{0}({1}, {2!r}, {3!r})'
-                .format(klass, self.name, self.inputs, self.output))
 
-
-class ImpalaUDF(FunctionWrapper):
-
-    def __init__(self, input_type, output_type, so_symbol,
-                 lib_path=None, name=None):
+class ImpalaUDF(ScalarFunction, ImpalaFunction):
+    """
+    Feel free to customize my __doc__ or wrap in a nicer user API
+    """
+    def __init__(self, inputs, output, so_symbol, lib_path=None,
+                 name=None):
         self.so_symbol = so_symbol
-        FunctionWrapper.__init__(self, input_type, output_type,
-                                 lib_path=lib_path, name=name)
+        ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
+        ScalarFunction.__init__(self, inputs, output, name=self.name)
 
     def hash(self):
-        from hashlib import sha1
-        val = self.so_symbol
-        for in_type in self.inputs:
-            val += in_type.name()
+        # TODO: revisit this later
+        # from hashlib import sha1
+        # val = self.so_symbol
+        # for in_type in self.inputs:
+        #     val += in_type.name()
 
-        return sha1(val).hexdigest()
+        # return sha1(val).hexdigest()
+        pass
 
 
-class ImpalaUDAF(FunctionWrapper):
+class ImpalaUDAF(AggregateFunction, ImpalaFunction):
 
-    def __init__(self, input_type, output_type, init_fn, update_fn,
-                 merge_fn, finalize_fn,
-                 lib_path=None, name=None):
+    def __init__(self, inputs, output, init_fn, update_fn, merge_fn,
+                 finalize_fn, lib_path=None, name=None):
         self.init_fn = init_fn
         self.update_fn = update_fn
         self.merge_fn = merge_fn
         self.finalize_fn = finalize_fn
 
-        FunctionWrapper.__init__(self, input_type, output_type,
-                                 lib_path=lib_path, name=name)
-
-
-def _validate_impala_type(t):
-    if t in _impala_to_ibis_type:
-        return t
-    elif _dt._DECIMAL_RE.match(t):
-        return t
-    raise IbisTypeError("Not a valid Impala type for UDFs")
-
-
-def _operation_type_conversion(inputs, output):
-    in_type = [validate_type(x) for x in inputs]
-    in_values = [rules.value_typed_as(_convert_types(x)) for x in in_type]
-    out_type = validate_type(output)
-    out_value = rules.shape_like_flatargs(out_type)
-    return (in_values, out_value)
+        ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
+        AggregateFunction.__init__(self, inputs, output, name=self.name)
 
 
 def wrap_uda(hdfs_file, inputs, output, init_fn, update_fn,
@@ -121,11 +160,10 @@ def wrap_uda(hdfs_file, inputs, output, init_fn, update_fn,
     -------
     container : UDA object
     """
-    wrapper = ImpalaUDAF(inputs, output, init_fn, update_fn,
-                         merge_fn, finalize_fn,
-                         name=name, lib_path=hdfs_file)
-    op = aggregate_function(inputs, output, name=name)
-    return wrapper, op
+    func = ImpalaUDAF(inputs, output, init_fn, update_fn,
+                      merge_fn, finalize_fn,
+                      name=name, lib_path=hdfs_file)
+    return func
 
 
 def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
@@ -145,10 +183,9 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
     -------
     container : UDF object
     """
-    wrapper = ImpalaUDF(inputs, output, so_symbol, name=name,
-                        lib_path=hdfs_file)
-    op = scalar_function(inputs, output, name=name)
-    return wrapper, op
+    func = ImpalaUDF(inputs, output, so_symbol, name=name,
+                     lib_path=hdfs_file)
+    return func
 
 
 def scalar_function(inputs, output, name=None):
@@ -165,37 +202,41 @@ def scalar_function(inputs, output, name=None):
 
     Returns
     -------
-    op : operator class to use in construction function
+    klass, user_api : class, function
     """
-    input_type, output_type = _operation_type_conversion(inputs, output)
-    if name is None:
-        name = util.guid()
-
-    class_name = 'UDF_{0}'.format(name)
-    return _create_operation_class(class_name, input_type, output_type)
+    return ScalarFunction(inputs, output, name=name)
 
 
 def aggregate_function(inputs, output, name=None):
-    in_values, out_value = _operation_type_conversion(inputs, output)
-    if name is None:
-        name = util.guid()
+    """
+    Creates and returns an operator class that can be passed to add_operation()
 
-    class_name = 'UDF_{0}'.format(name)
+    Parameters:
+    inputs: list of strings
+      Ibis data type names
+    output: string
+      Ibis data type
+    name: string, optional
+        Used internally to track function
 
-    func_dict = {
-        'input_type': in_values,
-        'output_type': out_value,
-    }
-    klass = type(class_name, (_ops.ValueOp,), func_dict)
-    return klass
+    Returns
+    -------
+    klass, user_api : class, function
+    """
+    return AggregateFunction(inputs, output, name=name)
 
 
-def _create_operation_class(class_name, input_type, output_type):
+def _to_input_sig(inputs):
+    in_type = [validate_type(x) for x in inputs]
+    return [rules.value_typed_as(_convert_types(x)) for x in in_type]
+
+
+def _create_operation_class(name, input_type, output_type):
     func_dict = {
         'input_type': input_type,
         'output_type': output_type,
     }
-    klass = type(class_name, (_ops.ValueOp,), func_dict)
+    klass = type(name, (_ops.ValueOp,), func_dict)
     return klass
 
 

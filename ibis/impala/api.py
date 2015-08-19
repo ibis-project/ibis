@@ -13,7 +13,7 @@
 
 from ibis.impala.client import (ImpalaConnection, ImpalaClient,  # noqa
                                 Database, ImpalaTable)
-from ibis.impala.udf import add_operation, wrap_udf, wrap_uda  # noqa
+from ibis.impala.udf import *  # noqa
 
 
 def connect(host='localhost', port=21050, protocol='hiveserver2',
