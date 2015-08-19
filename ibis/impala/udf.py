@@ -154,8 +154,9 @@ class ImpalaUDAF(AggregateFunction, ImpalaFunction):
             raise ValueError('Invalid file type. Must be .so')
 
 
-def wrap_uda(hdfs_file, inputs, output, init_fn, update_fn,
-             merge_fn, finalize_fn, serialize_fn=None, name=None):
+def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
+             merge_fn=None, finalize_fn=None, serialize_fn=None,
+             close_fn=None, name=None):
     """
     Creates and returns a useful container object that can be used to
     issue a create_uda() statement and register the uda within ibis
