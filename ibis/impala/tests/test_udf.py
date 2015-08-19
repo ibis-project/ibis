@@ -163,7 +163,6 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         self.udf_ll = pjoin(self.test_data_dir, 'udf/udf-sample.ll')
         self.uda_ll = pjoin(self.test_data_dir, 'udf/uda-sample.ll')
 
-    @pytest.mark.udf
     def test_identity_primitive_types(self):
         cases = [
             ('boolean', True, self.alltypes.bool_col),
@@ -183,7 +182,6 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
                 lit_val = ibis.literal(lit_val)
             self._identity_func_testing(t, lit_val, array_val)
 
-    @pytest.mark.udf
     def test_decimal(self):
         col = self.con.table('tpch_customer').c_acctbal
         literal = ibis.literal(1).cast('decimal(12,2)')
@@ -201,7 +199,6 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         assert issubclass(type(expr), ir.ArrayExpr)
         self.con.execute(expr)
 
-    @pytest.mark.udf
     def test_mixed_inputs(self):
         name = 'two_args'
         symbol = 'TwoArgs'
@@ -220,13 +217,11 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         expr = func(self.alltypes.int_col, self.alltypes.tinyint_col)
         self.con.execute(expr)
 
-    @pytest.mark.udf
     def test_implicit_typecasting(self):
         col = self.alltypes.tinyint_col
         literal = ibis.literal(1000)
         self._identity_func_testing('int32', literal, col)
 
-    @pytest.mark.udf
     def test_mult_type_args(self):
         symbol = 'AlmostAllTypes'
         name = 'most_types'
@@ -246,7 +241,6 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
                     table.smallint_col, 1.0, 1.0)
         self.con.execute(expr)
 
-    @pytest.mark.udf
     def test_all_type_args(self):
         pytest.skip('failing test, to be fixed later')
 
@@ -261,7 +255,6 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         result = self.con.execute(expr)
         assert result == 9
 
-    @pytest.mark.udf
     def test_drop_udf_not_exists(self):
         random_name = util.guid()
         self.assertRaises(Exception, self.con.drop_udf, random_name)
