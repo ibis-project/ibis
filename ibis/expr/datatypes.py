@@ -192,8 +192,10 @@ class Integer(Primitive):
 
     def can_implicit_cast(self, other):
         if isinstance(other, Integer):
-            return other._nbytes <= self._nbytes
-        return False
+            return ((type(self) == Integer) or
+                    (other._nbytes <= self._nbytes))
+        else:
+            return False
 
 
 class String(Variadic):
@@ -209,7 +211,15 @@ class SignedInteger(Integer):
 
 
 class Floating(Primitive):
-    pass
+
+    def can_implicit_cast(self, other):
+        if isinstance(other, Integer):
+            return True
+        elif isinstance(other, Floating):
+            # return other._nbytes <= self._nbytes
+            return True
+        else:
+            return False
 
 
 class Int8(Integer):
@@ -272,6 +282,10 @@ class Decimal(DataType):
 
         return (self.precision == other.precision and
                 self.scale == other.scale)
+
+    @classmethod
+    def can_implicit_cast(cls, other):
+        return isinstance(other, (Floating, Decimal))
 
     def array_type(self):
         def constructor(op, name=None):
@@ -363,6 +377,7 @@ class Map(DataType):
 any = Any()
 null = Null()
 boolean = Boolean()
+int_ = Integer()
 int8 = Int8()
 int16 = Int16()
 int32 = Int32()

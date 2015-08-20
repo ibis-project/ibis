@@ -27,6 +27,7 @@ from ibis.expr.datatypes import validate_type
 from ibis.expr.tests.mocks import MockConnection
 from ibis.common import IbisTypeError
 from ibis.tests.util import ImpalaE2E
+import ibis.expr.rules as rules
 import ibis.common as com
 import ibis.util as util
 
@@ -123,8 +124,11 @@ class TestWrapping(unittest.TestCase):
             ('int32', self.all_cols[3:]),
             ('int64', self.all_cols[4:]),
             ('boolean', self.all_cols[:8] + self.all_cols[9:]),
-            ('float', self.all_cols[:4] + self.all_cols[6:]),
-            ('double', self.all_cols[:4] + self.all_cols[6:]),
+
+            # allowing double here for now
+            ('float', [self.s, self.b, self.t, self.dec]),
+
+            ('double', [self.s, self.b, self.t, self.dec]),
             ('string', self.all_cols[:7] + self.all_cols[8:]),
             ('timestamp', self.all_cols[:-1]),
             ('decimal', self.all_cols[:4] + self.all_cols[7:])
@@ -279,6 +283,20 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         expr = func('a', True, 1, 1, 1, 1, 1.0, 1.0, 1.0)
         result = self.con.execute(expr)
         assert result == 9
+
+    def test_udf_varargs(self):
+        t = self.alltypes
+
+        name = 'add_numbers_{0}'.format(util.guid()[:4])
+
+        input_sig = rules.varargs(rules.double)
+        func = api.wrap_udf(self.udf_ll, input_sig, 'double', 'AddNumbers',
+                            name=name)
+        func.register(name, self.test_data_db)
+        self.con.create_function(func, database=self.test_data_db)
+
+        expr = func(t.double_col, t.double_col)
+        expr.execute()
 
     def test_drop_udf_not_exists(self):
         random_name = util.guid()

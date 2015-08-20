@@ -464,14 +464,14 @@ class ValueArgument(Argument):
 class AnyTyped(Argument):
 
     def __init__(self, types, fail_message, **arg_kwds):
-        self.types = types
+        self.types = util.promote_list(types)
         self.fail_message = fail_message
         Argument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
         arg = args[i]
 
-        if not isinstance(arg, self.types):
+        if not self._type_matches(arg):
             if isinstance(self.fail_message, py_string):
                 exc = self.fail_message
             else:
@@ -479,6 +479,17 @@ class AnyTyped(Argument):
             raise IbisTypeError(exc)
 
         return arg
+
+    def _type_matches(self, arg):
+        for t in self.types:
+            if (isinstance(t, dt.DataType) or
+                    isinstance(t, type) and issubclass(t, dt.DataType)):
+                if t.can_implicit_cast(arg.type()):
+                    return True
+            else:
+                if isinstance(arg, t):
+                    return True
+        return False
 
 
 class ValueTyped(AnyTyped, ValueArgument):
@@ -602,11 +613,15 @@ number = Number
 
 
 def integer(**arg_kwds):
-    return ValueTyped(ir.IntegerValue, 'not integer', **arg_kwds)
+    return ValueTyped(dt.int_, 'not integer', **arg_kwds)
+
+
+def double(**arg_kwds):
+    return ValueTyped(dt.double, 'not double', **arg_kwds)
 
 
 def decimal(**arg_kwds):
-    return ValueTyped(ir.DecimalValue, 'not decimal', **arg_kwds)
+    return ValueTyped(dt.Decimal, 'not decimal', **arg_kwds)
 
 
 def timestamp(**arg_kwds):
@@ -619,11 +634,11 @@ def timedelta(**arg_kwds):
 
 
 def string(**arg_kwds):
-    return ValueTyped(ir.StringValue, 'not string', **arg_kwds)
+    return ValueTyped(dt.string, 'not string', **arg_kwds)
 
 
 def boolean(**arg_kwds):
-    return ValueTyped(ir.BooleanValue, 'not string', **arg_kwds)
+    return ValueTyped(dt.boolean, 'not string', **arg_kwds)
 
 
 def one_of(args, **arg_kwds):

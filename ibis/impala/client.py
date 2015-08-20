@@ -963,11 +963,13 @@ class ImpalaClient(SQLClient):
 
         if isinstance(func, udf.ImpalaUDF):
             stmt = ddl.CreateFunction(func.lib_path, func.so_symbol,
-                                      func.inputs, func.output,
+                                      func.input_type,
+                                      func.output,
                                       name, database)
         elif isinstance(func, udf.ImpalaUDA):
             stmt = ddl.CreateAggregateFunction(func.lib_path,
-                                               func.inputs, func.output,
+                                               func.input_type,
+                                               func.output,
                                                func.update_fn,
                                                func.init_fn,
                                                func.merge_fn,
