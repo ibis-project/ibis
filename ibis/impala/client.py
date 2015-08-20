@@ -946,50 +946,37 @@ class ImpalaClient(SQLClient):
 
         return Schema(names, ibis_types)
 
-    def create_udf(self, info, name=None, database=None):
+    def create_function(self, func, name=None, database=None):
         """
         Creates a function within Impala
 
         Parameters
         ----------
-        info : ImpalaUDF
+        func : ImpalaUDF or ImpalaUDA
+          Created with wrap_udf or wrap_uda
         name : string (optional)
         database : string (optional)
         """
         if name is None:
-            name = info.name
+            name = func.name
         database = database or self.current_database
-        statement = ddl.CreateFunction(info.lib_path,
-                                       info.so_symbol,
-                                       info.inputs,
-                                       info.output,
-                                       name, database)
-        self._execute(statement)
 
-    def create_uda(self, info, name=None, database=None):
-        """
-        Creates a user-defined aggregate function within Impala
-
-        Parameters
-        ----------
-        info : ImpalaUDAF
-        name : string (optional)
-        database : string (optional)
-        """
-        if name is None:
-            name = info.name
-
-        database = database or self.current_database
-        statement = ddl.CreateAggregateFunction(info.lib_path,
-                                                info.inputs,
-                                                info.output,
-                                                info.update_fn,
-                                                info.init_fn,
-                                                info.merge_fn,
-                                                info.serialize_fn,
-                                                info.finalize_fn,
-                                                name, database)
-        self._execute(statement)
+        if isinstance(func, udf.ImpalaUDF):
+            stmt = ddl.CreateFunction(func.lib_path, func.so_symbol,
+                                      func.inputs, func.output,
+                                      name, database)
+        elif isinstance(func, udf.ImpalaUDA):
+            stmt = ddl.CreateAggregateFunction(func.lib_path,
+                                               func.inputs, func.output,
+                                               func.update_fn,
+                                               func.init_fn,
+                                               func.merge_fn,
+                                               func.serialize_fn,
+                                               func.finalize_fn,
+                                               name, database)
+        else:
+            raise TypeError(func)
+        self._execute(stmt)
 
     def drop_udf(self, name, input_types=None, database=None, force=False,
                  aggregate=False):

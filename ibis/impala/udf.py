@@ -159,8 +159,8 @@ def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
              merge_fn=None, finalize_fn=None, serialize_fn=None,
              close_fn=None, name=None):
     """
-    Creates and returns a useful container object that can be used to
-    issue a create_uda() statement and register the uda within ibis
+    Creates a callable aggregation function object. Must be created in Impala
+    to be used
 
     Parameters
     ----------
@@ -195,8 +195,8 @@ def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
 
 def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
     """
-    Creates and returns a useful container object that can be used to
-    issue a create_udf() statement and register the udf within ibis
+    Creates a callable scalar function object. Must be created in Impala to be
+    used
 
     Parameters
     ----------
@@ -217,7 +217,7 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
 
 def scalar_function(inputs, output, name=None):
     """
-    Creates and returns an operator class that can be passed to add_operation()
+    Creates an operator class that can be passed to add_operation()
 
     Parameters:
     inputs: list of strings
@@ -236,7 +236,7 @@ def scalar_function(inputs, output, name=None):
 
 def aggregate_function(inputs, output, name=None):
     """
-    Creates and returns an operator class that can be passed to add_operation()
+    Creates an operator class that can be passed to add_operation()
 
     Parameters:
     inputs: list of strings

@@ -22,7 +22,7 @@ class MADLibAPI(object):
     Ibis.
     """
     _udas = {
-        'linr_fit': (['string', 'string'], 'string', 'LinrUpdate'),
+        'linr_fit': (['string', 'double'], 'string', 'LinrUpdate'),
         'logr_fit': (['string', 'string', 'boolean', 'double', 'double'],
                      'string', 'LogrUpdate'),
         'svm_fit': (['string', 'string', 'boolean', 'double', 'double'],
@@ -62,14 +62,26 @@ class MADLibAPI(object):
             setattr(self, name, func)
 
         for name, (inputs, output, sym) in self._udfs.items():
-            func = wrap_udf(self.library_path, inputs, output, update_sym,
+            func = wrap_udf(self.library_path, inputs, output, sym,
                             name=self.func_prefix + name)
             setattr(self, name, func)
 
     def _register_functions(self):
+        # Enable SQL translation to work correctly
         for name in self.function_names:
             func = getattr(self, name)
             func.register(func.name, self.database)
 
     def create_functions(self, client):
+        for name in self.function_names:
+            func = getattr(self, name)
+            client.create_function(func, database=self.database)
+
+    def logistic_regression(self):
+        pass
+
+    def linear_regression(self):
+        pass
+
+    def svm(self):
         pass

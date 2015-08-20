@@ -293,7 +293,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
 
         self.temp_udfs.append((name, inputs))
 
-        self.con.create_udf(func, database=self.test_data_db)
+        self.con.create_function(func, database=self.test_data_db)
 
         func.register(name, self.test_data_db)
 
@@ -322,7 +322,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
     def test_count_uda(self):
         func = self._wrap_count_uda()
         func.register(func.name, self.test_data_db)
-        self.con.create_uda(func, database=self.test_data_db)
+        self.con.create_function(func, database=self.test_data_db)
 
         # it works!
         func(self.alltypes.int_col).execute()
@@ -334,7 +334,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         self.temp_databases.append(db)
 
         func = self._wrap_count_uda()
-        self.con.create_uda(func, database=db)
+        self.con.create_function(func, database=db)
 
         funcs = self.con.list_udas(database=db)
 
@@ -354,10 +354,10 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
 
         self.con.create_database(db)
 
-        self.con.create_uda(uda1, database=db)
-        self.con.create_uda(uda2, database=db)
+        self.con.create_function(uda1, database=db)
+        self.con.create_function(uda2, database=db)
 
-        self.con.create_udf(udf1, database=db)
+        self.con.create_function(udf1, database=db)
 
         self.con.drop_database(db, force=True)
 

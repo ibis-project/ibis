@@ -12,6 +12,7 @@
 # limitations under the License.
 
 from posixpath import join as pjoin
+import pytest
 
 from ibis.compat import unittest
 from ibis.tests.util import ImpalaE2E
@@ -21,21 +22,22 @@ from ibis.impala import madlib
 import ibis.util as util
 
 
+@pytest.mark.madlib
 class TestMADLib(ImpalaE2E, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         super(TestMADLib, cls).setUpClass()
-        cls.madlib_db = '__ibis_madlib_{0}'.format(util.guid()[:4])
+        cls.db = '__ibis_madlib_{0}'.format(util.guid()[:4])
 
-        cls.con.create_database(cls.madlib_db)
+        cls.con.create_database(cls.db)
 
     @classmethod
     def tearDownClass(cls):
         super(TestMADLib, cls).tearDownClass()
 
         try:
-            cls.con.drop_database(cls.madlib_db, force=True)
+            cls.con.drop_database(cls.db, force=True)
         except:
             pass
 
@@ -43,8 +45,15 @@ class TestMADLib(ImpalaE2E, unittest.TestCase):
         super(TestMADLib, self).setUp()
         self.madlib_so = pjoin(self.test_data_dir, 'udf/madlib.so')
 
-        self.api = madlib.MADLibAPI(self.madlib_so, self.madlib_db)
+        self.api = madlib.MADLibAPI(self.madlib_so, self.db)
 
     def test_create_functions(self):
-        for name in self.api.function_names:
-            pass
+        self.api.create_functions(self.con)
+
+        for name in self.api._udfs:
+            func = getattr(self.api, name)
+            assert self.con.exists_udf(func.name, database=self.db)
+
+        for name in self.api._udas:
+            func = getattr(self.api, name)
+            assert self.con.exists_uda(func.name, database=self.db)
