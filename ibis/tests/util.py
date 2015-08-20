@@ -49,6 +49,7 @@ class IbisTestEnv(object):
                                                 'True').lower() == 'true'
         self.use_kerberos = os.environ.get('IBIS_TEST_USE_KERBEROS',
                                            'False').lower() == 'true'
+        self.llvm_config = os.environ.get('IBIS_TEST_LLVM_CONFIG', None)
         # update global Ibis config where relevant
         options.impala.temp_db = self.tmp_db
         options.impala.temp_hdfs_path = self.tmp_dir

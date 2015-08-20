@@ -173,6 +173,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         self.uda_ll = pjoin(self.test_data_dir, 'udf/uda-sample.ll')
         self.uda_so = pjoin(self.test_data_dir, 'udf/libudasample.so')
 
+    @pytest.mark.udf
     def test_identity_primitive_types(self):
         cases = [
             ('boolean', True, self.alltypes.bool_col),
@@ -192,6 +193,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
                 lit_val = ibis.literal(lit_val)
             self._identity_func_testing(t, lit_val, array_val)
 
+    @pytest.mark.udf
     def test_decimal(self):
         col = self.con.table('tpch_customer').c_acctbal
         literal = ibis.literal(1).cast('decimal(12,2)')
@@ -209,6 +211,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         assert issubclass(type(expr), ir.ArrayExpr)
         self.con.execute(expr)
 
+    @pytest.mark.udf
     def test_mixed_inputs(self):
         name = 'two_args'
         symbol = 'TwoArgs'
@@ -227,6 +230,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         expr = func(self.alltypes.int_col, self.alltypes.tinyint_col)
         self.con.execute(expr)
 
+    @pytest.mark.udf
     def test_implicit_typecasting(self):
         col = self.alltypes.tinyint_col
         literal = ibis.literal(1000)
@@ -255,6 +259,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         assert issubclass(type(expr), ir.ArrayExpr)
         self.con.execute(expr)
 
+    @pytest.mark.udf
     def test_mult_type_args(self):
         symbol = 'AlmostAllTypes'
         name = 'most_types'
@@ -288,6 +293,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         result = self.con.execute(expr)
         assert result == 9
 
+    @pytest.mark.udf
     def test_udf_varargs(self):
         t = self.alltypes
 
@@ -341,6 +347,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
                             finalize_fn='{0}Finalize'.format(prefix),
                             **kwds)
 
+    @pytest.mark.udf
     def test_count_uda(self):
         func = self._wrap_count_uda()
         func.register(func.name, self.test_data_db)
@@ -350,6 +357,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         func(self.alltypes.int_col).execute()
         self.temp_udas.append((func.name, ['int32']))
 
+    @pytest.mark.udf
     def test_list_udas(self):
         db = '__ibis_tmp_{0}'.format(util.guid())
         self.con.create_database(db)
@@ -365,6 +373,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         assert f.inputs == func.inputs
         assert f.output == func.output
 
+    @pytest.mark.udf
     def test_drop_database_with_udfs_and_udas(self):
         uda1 = self._wrap_count_uda()
         uda2 = self._wrap_count_uda()
