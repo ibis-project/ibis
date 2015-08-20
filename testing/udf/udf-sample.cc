@@ -212,3 +212,14 @@ IntVal EightArgs(FunctionContext* context, const IntVal& v1, const IntVal& v2,
 		 const IntVal& v7, const IntVal& v8) {
   return IntVal(v1.val + v2.val + v3.val + v4.val + v5.val + v6.val + v7.val + v8.val);
 }
+
+
+DoubleVal AddNumbers(FunctionContext* context, int num_args,
+    const DoubleVal* args) {
+  double result = 0;
+
+  for (int i = 0; i < num_args; ++i) {
+    result += args[i].val;
+  }
+  return DoubleVal(result);
+}

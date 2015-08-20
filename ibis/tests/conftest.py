@@ -18,6 +18,8 @@ from pytest import skip
 def pytest_addoption(parser):
     parser.addoption('--e2e', action='store_true', default=False,
                      help='Enable the e2e (end-to-end) tests')
+    parser.addoption('--madlib', action='store_true', default=False,
+                     help='Enable the madlib (end-to-end) tests')
     parser.addoption('--skip-udf', action='store_true', default=False,
                      help='Skip tests marked udf')
     parser.addoption('--skip-superuser', action='store_true', default=False,
@@ -28,9 +30,17 @@ def pytest_runtest_setup(item):
     if getattr(item.obj, 'e2e', None):  # the test item is marked e2e
         if not item.config.getoption('--e2e'):  # but --e2e option not set
             skip('--e2e NOT enabled')
+
+    # the test item is marked madlib
+    if getattr(item.obj, 'madlib', None):
+        # but --madlib option not set
+        if not item.config.getoption('--madlib'):
+            skip('--madlib NOT enabled')
+
     if getattr(item.obj, 'udf', None):
         if item.config.getoption('--skip-udf'):
             skip('--skip-udf enabled')
+
     if getattr(item.obj, 'superuser', None):
         if item.config.getoption('--skip-superuser'):
             skip('--skip-superuser enabled')

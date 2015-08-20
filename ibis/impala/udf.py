@@ -15,7 +15,6 @@ from ibis.expr.datatypes import validate_type
 import ibis.expr.datatypes as _dt
 import ibis.expr.operations as _ops
 import ibis.expr.rules as rules
-import ibis.expr.types as ir
 import ibis.sql.exprs as _expr
 import ibis.common as com
 import ibis.util as util
@@ -30,6 +29,7 @@ class Function(object):
     def __init__(self, inputs, output, name):
         self.inputs = inputs
         self.output = output
+        self.name = name
 
         (self.input_type,
          self.output_type) = self._type_signature(inputs, output)
@@ -159,8 +159,8 @@ def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
              merge_fn=None, finalize_fn=None, serialize_fn=None,
              close_fn=None, name=None):
     """
-    Creates and returns a useful container object that can be used to
-    issue a create_uda() statement and register the uda within ibis
+    Creates a callable aggregation function object. Must be created in Impala
+    to be used
 
     Parameters
     ----------
@@ -195,14 +195,16 @@ def wrap_uda(hdfs_file, inputs, output, update_fn, init_fn=None,
 
 def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
     """
-    Creates and returns a useful container object that can be used to
-    issue a create_udf() statement and register the udf within ibis
+    Creates a callable scalar function object. Must be created in Impala to be
+    used
 
     Parameters
     ----------
     hdfs_file: .so file that contains relevant UDF
-    inputs: list of strings denoting ibis datatypes
-    output: string denoting ibis datatype
+    inputs: list of strings or TypeSignature
+      Input types to UDF
+    output: string
+      Ibis data type
     so_symbol: string, C++ function name for relevant UDF
     name: string (optional). Used internally to track function
 
@@ -217,7 +219,7 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
 
 def scalar_function(inputs, output, name=None):
     """
-    Creates and returns an operator class that can be passed to add_operation()
+    Creates an operator class that can be passed to add_operation()
 
     Parameters:
     inputs: list of strings
@@ -236,7 +238,7 @@ def scalar_function(inputs, output, name=None):
 
 def aggregate_function(inputs, output, name=None):
     """
-    Creates and returns an operator class that can be passed to add_operation()
+    Creates an operator class that can be passed to add_operation()
 
     Parameters:
     inputs: list of strings
@@ -254,8 +256,12 @@ def aggregate_function(inputs, output, name=None):
 
 
 def _to_input_sig(inputs):
-    in_type = [validate_type(x) for x in inputs]
-    return [rules.value_typed_as(_convert_types(x)) for x in in_type]
+    if isinstance(inputs, rules.TypeSignature):
+        return inputs
+    else:
+        in_type = [validate_type(x) for x in inputs]
+        return rules.TypeSignature([rules.value_typed_as(x)
+                                    for x in in_type])
 
 
 def _create_operation_class(name, input_type, output_type):
@@ -278,8 +284,13 @@ def add_operation(op, func_name, db):
     database: database the relevant operator is registered to
     """
     full_name = '{0}.{1}'.format(db, func_name)
-    arity = len(op.input_type.types)
-    _expr._operation_registry[op] = _expr._fixed_arity_call(full_name, arity)
+    if isinstance(op.input_type, rules.VarArgs):
+        translator = _expr._varargs(full_name)
+    else:
+        arity = len(op.input_type.types)
+        translator = _expr._fixed_arity_call(full_name, arity)
+
+    _expr._operation_registry[op] = translator
 
 
 def _impala_type_to_ibis(tval):
@@ -294,25 +305,6 @@ def _ibis_string_to_impala(tval):
     result = _dt._parse_decimal(tval)
     if result:
         return repr(result)
-
-
-def _convert_types(t):
-    name = t.name()
-    return _conversion_types[name]
-
-
-_conversion_types = {
-    'boolean': (ir.BooleanValue),
-    'int8': (ir.Int8Value),
-    'int16': (ir.Int8Value, ir.Int16Value),
-    'int32': (ir.Int8Value, ir.Int16Value, ir.Int32Value),
-    'int64': (ir.Int8Value, ir.Int16Value, ir.Int32Value, ir.Int64Value),
-    'float': (ir.FloatValue, ir.DoubleValue),
-    'double': (ir.FloatValue, ir.DoubleValue),
-    'string': (ir.StringValue),
-    'timestamp': (ir.TimestampValue),
-    'decimal': (ir.DecimalValue, ir.FloatValue, ir.DoubleValue)
-}
 
 
 _impala_to_ibis_type = {

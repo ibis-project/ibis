@@ -55,7 +55,7 @@ Impala:
 
 .. code-block:: python
 
-   client.create_udf(fuzzy_equals, database=udf_db)
+   client.create_function(fuzzy_equals, database=udf_db)
 
 Now, we must register this function as a new Impala operation in Ibis. This
 must take place each time you load your Ibis session.

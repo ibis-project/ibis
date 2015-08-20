@@ -68,4 +68,7 @@ void ReturnConstantArgPrepare(
 void ReturnConstantArgClose(
     FunctionContext* context, FunctionContext::FunctionStateScope scope);
 
+DoubleVal AddNumbers(FunctionContext* context, int num_args,
+    const DoubleVal* args);
+
 #endif

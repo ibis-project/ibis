@@ -307,14 +307,21 @@ class Argument(object):
         raise NotImplementedError
 
 
+def _to_argument(val):
+    if isinstance(val, dt.DataType):
+        val = value_typed_as(val)
+    elif not isinstance(val, Argument):
+        val = val()
+    return val
+
+
 class TypeSignature(object):
 
     def __init__(self, type_specs):
         types = []
 
         for val in type_specs:
-            if not isinstance(val, Argument):
-                val = val()
+            val = _to_argument(val)
             types.append(val)
 
         self.types = types
@@ -356,9 +363,7 @@ class TypeSignature(object):
 class VarArgs(TypeSignature):
 
     def __init__(self, arg_type, min_length=1):
-        if not isinstance(arg_type, Argument):
-            arg_type = arg_type()
-        self.arg_type = arg_type
+        self.arg_type = _to_argument(arg_type)
         self.min_length = min_length
 
     def __repr__(self):
@@ -464,14 +469,14 @@ class ValueArgument(Argument):
 class AnyTyped(Argument):
 
     def __init__(self, types, fail_message, **arg_kwds):
-        self.types = types
+        self.types = util.promote_list(types)
         self.fail_message = fail_message
         Argument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
         arg = args[i]
 
-        if not isinstance(arg, self.types):
+        if not self._type_matches(arg):
             if isinstance(self.fail_message, py_string):
                 exc = self.fail_message
             else:
@@ -479,6 +484,17 @@ class AnyTyped(Argument):
             raise IbisTypeError(exc)
 
         return arg
+
+    def _type_matches(self, arg):
+        for t in self.types:
+            if (isinstance(t, dt.DataType) or
+                    isinstance(t, type) and issubclass(t, dt.DataType)):
+                if t.can_implicit_cast(arg.type()):
+                    return True
+            else:
+                if isinstance(arg, t):
+                    return True
+        return False
 
 
 class ValueTyped(AnyTyped, ValueArgument):
@@ -494,8 +510,7 @@ class ValueTyped(AnyTyped, ValueArgument):
 class MultipleTypes(Argument):
 
     def __init__(self, types, **arg_kwds):
-        self.types = [t() if not isinstance(t, Argument) else t
-                      for t in types]
+        self.types = [_to_argument(t) for t in types]
         Argument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
@@ -507,8 +522,7 @@ class MultipleTypes(Argument):
 class OneOf(Argument):
 
     def __init__(self, types, **arg_kwds):
-        self.types = [t() if not isinstance(t, Argument) else t
-                      for t in types]
+        self.types = [_to_argument(t) for t in types]
         Argument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
@@ -602,11 +616,15 @@ number = Number
 
 
 def integer(**arg_kwds):
-    return ValueTyped(ir.IntegerValue, 'not integer', **arg_kwds)
+    return ValueTyped(dt.int_, 'not integer', **arg_kwds)
+
+
+def double(**arg_kwds):
+    return ValueTyped(dt.double, 'not double', **arg_kwds)
 
 
 def decimal(**arg_kwds):
-    return ValueTyped(ir.DecimalValue, 'not decimal', **arg_kwds)
+    return ValueTyped(dt.Decimal, 'not decimal', **arg_kwds)
 
 
 def timestamp(**arg_kwds):
@@ -619,11 +637,11 @@ def timedelta(**arg_kwds):
 
 
 def string(**arg_kwds):
-    return ValueTyped(ir.StringValue, 'not string', **arg_kwds)
+    return ValueTyped(dt.string, 'not string', **arg_kwds)
 
 
 def boolean(**arg_kwds):
-    return ValueTyped(ir.BooleanValue, 'not string', **arg_kwds)
+    return ValueTyped(dt.boolean, 'not string', **arg_kwds)
 
 
 def one_of(args, **arg_kwds):
@@ -650,9 +668,7 @@ string_options = StringOptions
 class ListOf(Argument):
 
     def __init__(self, value_type, min_length=0, **arg_kwds):
-        if not isinstance(value_type, Argument):
-            value_type = value_type()
-        self.value_type = value_type
+        self.value_type = _to_argument(value_type)
         self.min_length = min_length
         Argument.__init__(self, **arg_kwds)
 

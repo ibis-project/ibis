@@ -27,6 +27,7 @@ from ibis.expr.datatypes import validate_type
 from ibis.expr.tests.mocks import MockConnection
 from ibis.common import IbisTypeError
 from ibis.tests.util import ImpalaE2E
+import ibis.expr.rules as rules
 import ibis.common as com
 import ibis.util as util
 
@@ -123,8 +124,11 @@ class TestWrapping(unittest.TestCase):
             ('int32', self.all_cols[3:]),
             ('int64', self.all_cols[4:]),
             ('boolean', self.all_cols[:8] + self.all_cols[9:]),
-            ('float', self.all_cols[:4] + self.all_cols[6:]),
-            ('double', self.all_cols[:4] + self.all_cols[6:]),
+
+            # allowing double here for now
+            ('float', [self.s, self.b, self.t, self.dec]),
+
+            ('double', [self.s, self.b, self.t, self.dec]),
             ('string', self.all_cols[:7] + self.all_cols[8:]),
             ('timestamp', self.all_cols[:-1]),
             ('decimal', self.all_cols[:4] + self.all_cols[7:])
@@ -280,6 +284,20 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         result = self.con.execute(expr)
         assert result == 9
 
+    def test_udf_varargs(self):
+        t = self.alltypes
+
+        name = 'add_numbers_{0}'.format(util.guid()[:4])
+
+        input_sig = rules.varargs(rules.double)
+        func = api.wrap_udf(self.udf_ll, input_sig, 'double', 'AddNumbers',
+                            name=name)
+        func.register(name, self.test_data_db)
+        self.con.create_function(func, database=self.test_data_db)
+
+        expr = func(t.double_col, t.double_col)
+        expr.execute()
+
     def test_drop_udf_not_exists(self):
         random_name = util.guid()
         self.assertRaises(Exception, self.con.drop_udf, random_name)
@@ -293,7 +311,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
 
         self.temp_udfs.append((name, inputs))
 
-        self.con.create_udf(func, database=self.test_data_db)
+        self.con.create_function(func, database=self.test_data_db)
 
         func.register(name, self.test_data_db)
 
@@ -322,7 +340,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
     def test_count_uda(self):
         func = self._wrap_count_uda()
         func.register(func.name, self.test_data_db)
-        self.con.create_uda(func, database=self.test_data_db)
+        self.con.create_function(func, database=self.test_data_db)
 
         # it works!
         func(self.alltypes.int_col).execute()
@@ -334,7 +352,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         self.temp_databases.append(db)
 
         func = self._wrap_count_uda()
-        self.con.create_uda(func, database=db)
+        self.con.create_function(func, database=db)
 
         funcs = self.con.list_udas(database=db)
 
@@ -354,10 +372,10 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
 
         self.con.create_database(db)
 
-        self.con.create_uda(uda1, database=db)
-        self.con.create_uda(uda2, database=db)
+        self.con.create_function(uda1, database=db)
+        self.con.create_function(uda2, database=db)
 
-        self.con.create_udf(udf1, database=db)
+        self.con.create_function(udf1, database=db)
 
         self.con.drop_database(db, force=True)
 

@@ -14,6 +14,7 @@
 from ibis.impala.client import (ImpalaConnection, ImpalaClient,  # noqa
                                 Database, ImpalaTable)
 from ibis.impala.udf import *  # noqa
+from ibis.impala.madlib import MADLibAPI  # noqa
 
 
 def connect(host='localhost', port=21050, protocol='hiveserver2',

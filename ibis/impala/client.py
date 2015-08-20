@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from posixpath import join as pjoin
-from six import BytesIO
+from six import BytesIO, StringIO
 import Queue
 import re
 import threading
@@ -322,12 +322,6 @@ class ImpalaClient(SQLClient):
             return list(zip(*tuples)[i])
         else:
             return []
-
-    def _parse_input_string(self, s):
-        regex = re.compile(r'(?:[^,(]|\([^)]*\))+')
-        results = regex.findall(s)
-        return [udf._impala_type_to_ibis(x.strip().lower())
-                for x in results]
 
     def set_database(self, name):
         """
@@ -946,50 +940,39 @@ class ImpalaClient(SQLClient):
 
         return Schema(names, ibis_types)
 
-    def create_udf(self, info, name=None, database=None):
+    def create_function(self, func, name=None, database=None):
         """
         Creates a function within Impala
 
         Parameters
         ----------
-        info : ImpalaUDF
+        func : ImpalaUDF or ImpalaUDA
+          Created with wrap_udf or wrap_uda
         name : string (optional)
         database : string (optional)
         """
         if name is None:
-            name = info.name
+            name = func.name
         database = database or self.current_database
-        statement = ddl.CreateFunction(info.lib_path,
-                                       info.so_symbol,
-                                       info.inputs,
-                                       info.output,
-                                       name, database)
-        self._execute(statement)
 
-    def create_uda(self, info, name=None, database=None):
-        """
-        Creates a user-defined aggregate function within Impala
-
-        Parameters
-        ----------
-        info : ImpalaUDAF
-        name : string (optional)
-        database : string (optional)
-        """
-        if name is None:
-            name = info.name
-
-        database = database or self.current_database
-        statement = ddl.CreateAggregateFunction(info.lib_path,
-                                                info.inputs,
-                                                info.output,
-                                                info.update_fn,
-                                                info.init_fn,
-                                                info.merge_fn,
-                                                info.serialize_fn,
-                                                info.finalize_fn,
-                                                name, database)
-        self._execute(statement)
+        if isinstance(func, udf.ImpalaUDF):
+            stmt = ddl.CreateFunction(func.lib_path, func.so_symbol,
+                                      func.input_type,
+                                      func.output,
+                                      name, database)
+        elif isinstance(func, udf.ImpalaUDA):
+            stmt = ddl.CreateAggregateFunction(func.lib_path,
+                                               func.input_type,
+                                               func.output,
+                                               func.update_fn,
+                                               func.init_fn,
+                                               func.merge_fn,
+                                               func.serialize_fn,
+                                               func.finalize_fn,
+                                               name, database)
+        else:
+            raise TypeError(func)
+        self._execute(stmt)
 
     def drop_udf(self, name, input_types=None, database=None, force=False,
                  aggregate=False):
@@ -1095,18 +1078,45 @@ class ImpalaClient(SQLClient):
         return result
 
     def _get_udfs(self, cur, klass):
+        from ibis.expr.rules import varargs
+        from ibis.expr.datatypes import validate_type
+
+        def _to_type(x):
+            ibis_type = udf._impala_type_to_ibis(x.lower())
+            return validate_type(ibis_type)
+
         tuples = cur.fetchall()
         if len(tuples) > 0:
-            regex = re.compile("^.*?\((.*)\).*")
             result = []
             for out_type, sig in tuples:
-                name = sig.split('(')[0]
-                inputs = self._parse_input_string(regex.findall(sig)[0])
+                name, types = _split_signature(sig)
+                types = _type_parser(types).types
+
+                inputs = []
+                for arg in types:
+                    argm = _arg_type.match(arg)
+                    var, simple = argm.groups()
+                    if simple:
+                        t = _to_type(simple)
+                        inputs.append(t)
+                    else:
+                        t = _to_type(var)
+                        inputs = varargs(t)
+                        # TODO
+                        # inputs.append(varargs(t))
+                        break
+
                 output = udf._impala_type_to_ibis(out_type.lower())
                 result.append(klass(inputs, output, name=name))
             return result
         else:
             return []
+
+    def _parse_input_string(self, s):
+        regex = re.compile(r'(?:[^,(]|\([^)]*\))+')
+        results = regex.findall(s)
+        return [udf._impala_type_to_ibis(x.strip().lower())
+                for x in results]
 
     def exists_udf(self, name, database=None):
         """
@@ -1433,3 +1443,42 @@ def _validate_compatible(from_schema, to_schema):
         if not rt.can_implicit_cast(lt):
             raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
                                      .format(lt, rt))
+
+
+def _split_signature(x):
+    name, rest = x.split('(', 1)
+    return name, rest[:-1]
+
+_arg_type = re.compile('(.*)\.\.\.|([^\.]*)')
+
+
+class _type_parser(object):
+
+    NORMAL, IN_PAREN = 0, 1
+
+    def __init__(self, value):
+        self.value = value
+        self.state = self.NORMAL
+        self.buf = StringIO()
+        self.types = []
+        for c in value:
+            self._step(c)
+        self._push()
+
+    def _push(self):
+        val = self.buf.getvalue().strip()
+        if val:
+            self.types.append(val)
+        self.buf = StringIO()
+
+    def _step(self, c):
+        if self.state == self.NORMAL:
+            if c == '(':
+                self.state = self.IN_PAREN
+            elif c == ',':
+                self._push()
+                return
+        elif self.state == self.IN_PAREN:
+            if c == ')':
+                self.state = self.NORMAL
+        self.buf.write(c)

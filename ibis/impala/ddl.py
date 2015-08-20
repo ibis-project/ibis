@@ -18,6 +18,10 @@ import re
 from ibis.sql.ddl import DDL, Select
 from ibis.sql.exprs import quote_identifier, _type_to_sql_string
 
+from ibis.expr.datatypes import validate_type
+from ibis.compat import py_string
+import ibis.expr.rules as rules
+
 
 fully_qualified_re = re.compile("(.*)\.(?:`(.*)`|(.*))")
 
@@ -451,56 +455,61 @@ def _format_schema_element(name, t):
                             _type_to_sql_string(t))
 
 
-class CreateFunction(ImpalaDDL):
+class CreateFunctionBase(ImpalaDDL):
 
     _object_type = 'FUNCTION'
 
-    def __init__(self, hdfs_file, so_symbol, inputs, output,
-                 name, database=None):
-        self.hdfs_file = hdfs_file
-        self.so_symbol = so_symbol
-        self.inputs = _impala_signature(inputs)
-        self.output = _impala_signature([output])[0]
+    def __init__(self, lib_path, inputs, output, name, database=None):
+        self.lib_path = lib_path
+
+        self.inputs, self.output = inputs, output
+        self.input_sig = _impala_signature(inputs)
+        self.output_sig = _arg_to_string(output)
+
         self.name = name
         self.database = database
 
+    def _create_line(self):
+        scoped_name = self._get_scoped_name(self.name, self.database)
+        return ('{0!s}({1!s}) returns {2!s}'
+                .format(scoped_name, self.input_sig, self.output_sig))
+
+
+class CreateFunction(CreateFunctionBase):
+
+    def __init__(self, lib_path, so_symbol, inputs, output,
+                 name, database=None):
+        self.so_symbol = so_symbol
+
+        CreateFunctionBase.__init__(self, lib_path, inputs, output,
+                                    name, database=database)
+
     def compile(self):
         create_decl = 'CREATE FUNCTION'
-        scoped_name = self._get_scoped_name(self.name, self.database)
-        create_line = ('{0!s}({1!s}) returns {2!s}'
-                       .format(scoped_name, ', '.join(self.inputs),
-                               self.output))
-        param_line = "location '{0!s}' symbol='{1!s}'".format(self.hdfs_file,
-                                                              self.so_symbol)
+        create_line = self._create_line()
+        param_line = ("location '{0!s}' symbol='{1!s}'"
+                      .format(self.lib_path, self.so_symbol))
         full_line = ' '.join([create_decl, create_line, param_line])
         return full_line
 
 
-class CreateAggregateFunction(ImpalaDDL):
+class CreateAggregateFunction(CreateFunction):
 
-    _object_type = 'FUNCTION'
-
-    def __init__(self, hdfs_file, inputs, output, update_fn, init_fn,
+    def __init__(self, lib_path, inputs, output, update_fn, init_fn,
                  merge_fn, serialize_fn, finalize_fn, name, database):
-        self.hdfs_file = hdfs_file
-        self.inputs = _impala_signature(inputs)
-        self.output = _impala_signature([output])[0]
         self.init = init_fn
         self.update = update_fn
         self.merge = merge_fn
         self.serialize = serialize_fn
         self.finalize = finalize_fn
 
-        self.name = name
-        self.database = database
+        CreateFunctionBase.__init__(self, lib_path, inputs, output,
+                                    name, database=database)
 
     def compile(self):
         create_decl = 'CREATE AGGREGATE FUNCTION'
-        scoped_name = self._get_scoped_name(self.name, self.database)
-        create_line = ('{0!s}({1!s}) returns {2!s}'
-                       .format(scoped_name, ', '.join(self.inputs),
-                               self.output))
-        tokens = ["location '{0!s}'".format(self.hdfs_file)]
+        create_line = self._create_line()
+        tokens = ["location '{0!s}'".format(self.lib_path)]
 
         if self.init is not None:
             tokens.append("init_fn='{0}'".format(self.init))
@@ -523,10 +532,13 @@ class CreateAggregateFunction(ImpalaDDL):
 
 class DropFunction(DropObject):
 
-    def __init__(self, name, input_types, must_exist=True,
+    def __init__(self, name, inputs, must_exist=True,
                  aggregate=False, database=None):
         self.name = name
-        self.inputs = _impala_signature(input_types)
+
+        self.inputs = inputs
+        self.input_sig = _impala_signature(inputs)
+
         self.must_exist = must_exist
         self.aggregate = aggregate
         self.database = database
@@ -535,17 +547,20 @@ class DropFunction(DropObject):
     def _object_name(self):
         return self.name
 
-    def compile(self):
-        statement = 'DROP'
-        if self.aggregate:
-            statement += ' AGGREGATE'
-        statement += ' FUNCTION'
-        if not self.must_exist:
-            statement += ' IF EXISTS'
+    def _function_sig(self):
         full_name = self._get_scoped_name(self.name, self.database)
-        func_line = ' {0!s}({1!s})'.format(full_name, ', '.join(self.inputs))
-        statement += func_line
-        return statement
+        return '{0!s}({1!s})'.format(full_name, self.input_sig)
+
+    def compile(self):
+        tokens = ['DROP']
+        if self.aggregate:
+            tokens.append('AGGREGATE')
+        tokens.append('FUNCTION')
+        if not self.must_exist:
+            tokens.append('IF EXISTS')
+
+        tokens.append(self._function_sig())
+        return ' '.join(tokens)
 
 
 class ListFunction(ImpalaDDL):
@@ -565,6 +580,25 @@ class ListFunction(ImpalaDDL):
         return statement
 
 
-def _impala_signature(types):
-    from ibis.expr.datatypes import validate_type
-    return [_type_to_sql_string(validate_type(x)) for x in types]
+def _impala_signature(sig):
+    if isinstance(sig, rules.TypeSignature):
+        if isinstance(sig, rules.VarArgs):
+            val = _arg_to_string(sig.arg_type)
+            return '{0}...'.format(val)
+        else:
+            return ', '.join([_arg_to_string(arg) for arg in sig.types])
+    else:
+        return ', '.join([_type_to_sql_string(validate_type(x))
+                          for x in sig])
+
+
+def _arg_to_string(arg):
+    if isinstance(arg, rules.ValueTyped):
+        types = arg.types
+        if len(types) > 1:
+            raise NotImplementedError
+        return _type_to_sql_string(types[0])
+    elif isinstance(arg, py_string):
+        return _type_to_sql_string(validate_type(arg))
+    else:
+        raise NotImplementedError
