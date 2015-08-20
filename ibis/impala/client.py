@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from posixpath import join as pjoin
-from six import BytesIO
+from six import BytesIO, StringIO
 import Queue
 import re
 import threading
@@ -322,12 +322,6 @@ class ImpalaClient(SQLClient):
             return list(zip(*tuples)[i])
         else:
             return []
-
-    def _parse_input_string(self, s):
-        regex = re.compile(r'(?:[^,(]|\([^)]*\))+')
-        results = regex.findall(s)
-        return [udf._impala_type_to_ibis(x.strip().lower())
-                for x in results]
 
     def set_database(self, name):
         """
@@ -1084,18 +1078,45 @@ class ImpalaClient(SQLClient):
         return result
 
     def _get_udfs(self, cur, klass):
+        from ibis.expr.rules import varargs
+        from ibis.expr.datatypes import validate_type
+
+        def _to_type(x):
+            ibis_type = udf._impala_type_to_ibis(x.lower())
+            return validate_type(ibis_type)
+
         tuples = cur.fetchall()
         if len(tuples) > 0:
-            regex = re.compile("^.*?\((.*)\).*")
             result = []
             for out_type, sig in tuples:
-                name = sig.split('(')[0]
-                inputs = self._parse_input_string(regex.findall(sig)[0])
+                name, types = _split_signature(sig)
+                types = _type_parser(types).types
+
+                inputs = []
+                for arg in types:
+                    argm = _arg_type.match(arg)
+                    var, simple = argm.groups()
+                    if simple:
+                        t = _to_type(simple)
+                        inputs.append(t)
+                    else:
+                        t = _to_type(var)
+                        inputs = varargs(t)
+                        # TODO
+                        # inputs.append(varargs(t))
+                        break
+
                 output = udf._impala_type_to_ibis(out_type.lower())
                 result.append(klass(inputs, output, name=name))
             return result
         else:
             return []
+
+    def _parse_input_string(self, s):
+        regex = re.compile(r'(?:[^,(]|\([^)]*\))+')
+        results = regex.findall(s)
+        return [udf._impala_type_to_ibis(x.strip().lower())
+                for x in results]
 
     def exists_udf(self, name, database=None):
         """
@@ -1422,3 +1443,42 @@ def _validate_compatible(from_schema, to_schema):
         if not rt.can_implicit_cast(lt):
             raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
                                      .format(lt, rt))
+
+
+def _split_signature(x):
+    name, rest = x.split('(', 1)
+    return name, rest[:-1]
+
+_arg_type = re.compile('(.*)\.\.\.|([^\.]*)')
+
+
+class _type_parser(object):
+
+    NORMAL, IN_PAREN = 0, 1
+
+    def __init__(self, value):
+        self.value = value
+        self.state = self.NORMAL
+        self.buf = StringIO()
+        self.types = []
+        for c in value:
+            self._step(c)
+        self._push()
+
+    def _push(self):
+        val = self.buf.getvalue().strip()
+        if val:
+            self.types.append(val)
+        self.buf = StringIO()
+
+    def _step(self, c):
+        if self.state == self.NORMAL:
+            if c == '(':
+                self.state = self.IN_PAREN
+            elif c == ',':
+                self._push()
+                return
+        elif self.state == self.IN_PAREN:
+            if c == ')':
+                self.state = self.NORMAL
+        self.buf.write(c)

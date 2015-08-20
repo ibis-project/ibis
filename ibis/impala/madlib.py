@@ -12,6 +12,7 @@
 # limitations under the License.
 
 from ibis.impala.udf import wrap_uda, wrap_udf
+import ibis.expr.rules as rules
 
 
 class MADLibAPI(object):
@@ -38,6 +39,9 @@ class MADLibAPI(object):
         'svm_predict': (['string', 'string'], 'boolean', 'SVMPredict'),
         'svm_loss': (['string', 'string', 'boolean'], 'double', 'SVMLoss'),
 
+        'to_array': (rules.varargs(rules.double), 'string',
+                     ('_Z7ToArrayPN10impala_udf'
+                      '15FunctionContextEiPNS_9DoubleValE')),
         'arrayget': (['int64', 'string'], 'double', 'ArrayGet'),
         'allbytes': ([], 'string', 'AllBytes'),
         'printarray': (['string'], 'string', 'PrintArray'),

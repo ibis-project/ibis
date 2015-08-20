@@ -307,14 +307,21 @@ class Argument(object):
         raise NotImplementedError
 
 
+def _to_argument(val):
+    if isinstance(val, dt.DataType):
+        val = value_typed_as(val)
+    elif not isinstance(val, Argument):
+        val = val()
+    return val
+
+
 class TypeSignature(object):
 
     def __init__(self, type_specs):
         types = []
 
         for val in type_specs:
-            if not isinstance(val, Argument):
-                val = val()
+            val = _to_argument(val)
             types.append(val)
 
         self.types = types
@@ -356,9 +363,7 @@ class TypeSignature(object):
 class VarArgs(TypeSignature):
 
     def __init__(self, arg_type, min_length=1):
-        if not isinstance(arg_type, Argument):
-            arg_type = arg_type()
-        self.arg_type = arg_type
+        self.arg_type = _to_argument(arg_type)
         self.min_length = min_length
 
     def __repr__(self):
@@ -505,8 +510,7 @@ class ValueTyped(AnyTyped, ValueArgument):
 class MultipleTypes(Argument):
 
     def __init__(self, types, **arg_kwds):
-        self.types = [t() if not isinstance(t, Argument) else t
-                      for t in types]
+        self.types = [_to_argument(t) for t in types]
         Argument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
@@ -518,8 +522,7 @@ class MultipleTypes(Argument):
 class OneOf(Argument):
 
     def __init__(self, types, **arg_kwds):
-        self.types = [t() if not isinstance(t, Argument) else t
-                      for t in types]
+        self.types = [_to_argument(t) for t in types]
         Argument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
@@ -665,9 +668,7 @@ string_options = StringOptions
 class ListOf(Argument):
 
     def __init__(self, value_type, min_length=0, **arg_kwds):
-        if not isinstance(value_type, Argument):
-            value_type = value_type()
-        self.value_type = value_type
+        self.value_type = _to_argument(value_type)
         self.min_length = min_length
         Argument.__init__(self, **arg_kwds)
 
