@@ -119,25 +119,29 @@ class TestWrapping(unittest.TestCase):
 
     def test_udf_invalid_typecasting(self):
         cases = [
-            ('int8', self.all_cols[1:]),
-            ('int16', self.all_cols[2:]),
-            ('int32', self.all_cols[3:]),
-            ('int64', self.all_cols[4:]),
-            ('boolean', self.all_cols[:8] + self.all_cols[9:]),
+            ('int8', self.all_cols[:1], self.all_cols[1:]),
+            ('int16', self.all_cols[:2], self.all_cols[2:]),
+            ('int32', self.all_cols[:3], self.all_cols[3:]),
+            ('int64', self.all_cols[:4], self.all_cols[4:]),
+            ('boolean', [], self.all_cols[:8] + self.all_cols[9:]),
 
             # allowing double here for now
-            ('float', [self.s, self.b, self.t, self.dec]),
+            ('float', self.all_cols[:4], [self.s, self.b, self.t, self.dec]),
 
-            ('double', [self.s, self.b, self.t, self.dec]),
-            ('string', self.all_cols[:7] + self.all_cols[8:]),
-            ('timestamp', self.all_cols[:-1]),
-            ('decimal', self.all_cols[:4] + self.all_cols[7:])
+            ('double', self.all_cols[:4], [self.s, self.b, self.t, self.dec]),
+            ('string', [], self.all_cols[:7] + self.all_cols[8:]),
+            ('timestamp', [], self.all_cols[:-1]),
+            ('decimal', [], self.all_cols[:4] + self.all_cols[7:])
         ]
 
-        for t, casts in cases:
+        for t, valid_casts, invalid_casts in cases:
             func = self._register_udf([t], 'int32', 'typecast')
-            for in_type in casts:
-                self.assertRaises(IbisTypeError, func, in_type)
+
+            for expr in valid_casts:
+                func(expr)
+
+            for expr in invalid_casts:
+                self.assertRaises(IbisTypeError, func, expr)
 
     def test_mult_args(self):
         func = self._register_udf(['int32', 'double', 'string',
