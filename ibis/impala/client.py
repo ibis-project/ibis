@@ -359,7 +359,7 @@ class ImpalaClient(SQLClient):
         if path:
             # explicit mkdir ensures the user own the dir rather than impala,
             # which is easier for manual cleanup, if necessary
-            self._hdfs.mkdir(path, create_parent=True)
+            self._hdfs.mkdir(path)
         statement = ddl.CreateDatabase(name, path=path, can_exist=force)
         self._execute(statement)
 

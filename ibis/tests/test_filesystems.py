@@ -253,7 +253,7 @@ class TestHDFSE2E(unittest.TestCase):
         remote_path2 = pjoin(self.tmp_dir, local_path2)
         self.hdfs.put(remote_path2, local_path2)
 
-        with self.assertRaises(IOError):
+        with self.assertRaises(Exception):
             self.hdfs.get(remote_path, '.')
 
         self.hdfs.get(remote_path, local_path2, overwrite=True)
@@ -309,21 +309,33 @@ class TestHDFSE2E(unittest.TestCase):
         finally:
             shutil.rmtree(local_dir)
 
-    def test_get_directory_overwrite(self):
-        local_dir = self._make_test_directory()
-        local_dir2 = self._make_test_directory()
+    def test_get_directory_overwrite_file(self):
+        try:
+            local_path1 = self._make_test_directory()
+            local_path2 = self._make_random_file()
+            remote_path = pjoin(self.tmp_dir, local_path1)
+            self.hdfs.put(remote_path, local_path1)
+            self.hdfs.get(remote_path, local_path2, overwrite=True)
+            _check_directories_equal(local_path1, local_path2)
+        finally:
+            # Path changed from file to directory, must be cleaned manually.
+            self._try_delete_directory(local_path2)
 
-        remote_dir = pjoin(self.tmp_dir, local_dir)
-        remote_dir2 = pjoin(self.tmp_dir, local_dir2)
+    def test_get_directory_overwrite_directory(self):
+        local_path1 = self._make_test_directory()
+        local_path2 = self._make_test_directory()
+        remote_path = pjoin(self.tmp_dir, local_path2)
+        self.hdfs.put(remote_path, local_path1)
+        self.hdfs.get(remote_path, osp.dirname(local_path2), overwrite=True)
+        _check_directories_equal(local_path1, local_path2)
 
-        self.hdfs.put(remote_dir, local_dir)
-        self.hdfs.put(remote_dir2, local_dir2)
-
-        self.hdfs.get(remote_dir, local_dir2, overwrite=True)
-        _check_directories_equal(local_dir2, local_dir)
-
-        self.hdfs.get(remote_dir, local_dir2, overwrite=True)
-        _check_directories_equal(local_dir2, local_dir)
+    def test_get_directory_into_directory(self):
+        local_path1 = self._make_test_directory()
+        local_path2 = self._make_test_directory()
+        remote_path = pjoin(self.tmp_dir, local_path1)
+        self.hdfs.put(remote_path, local_path1)
+        local_path3 = self.hdfs.get(remote_path, local_path2)
+        _check_directories_equal(local_path3, local_path1)
 
     def _try_delete_directory(self, path):
         try:

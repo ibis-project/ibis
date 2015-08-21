@@ -83,6 +83,9 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
     -------
     client : ibis HDFS client
     """
+    import requests
+    session = kwds.setdefault('session', requests.Session())
+    session.verify = verify
     if use_kerberos:
         try:
             import requests_kerberos
@@ -93,12 +96,12 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
                 "requests-kerberos` or `pip install hdfs[kerberos]`.")
         from hdfs.ext.kerberos import KerberosClient
         url = 'https://{0}:{1}'.format(host, port) # note SSL
-        hdfs_client = KerberosClient(url, mutual_auth='OPTIONAL',
-                                     verify=verify, **kwds)
+        kwds.setdefault('mutual_auth', 'OPTIONAL')
+        hdfs_client = KerberosClient(url, **kwds)
     else:
         from hdfs.client import InsecureClient
         url = 'http://{0}:{1}'.format(host, port)
-        hdfs_client = InsecureClient(url, verify=verify, **kwds)
+        hdfs_client = InsecureClient(url, **kwds)
     return WebHDFS(hdfs_client)
 
 
