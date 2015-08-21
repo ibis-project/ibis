@@ -20,24 +20,20 @@ import weakref
 
 import hdfs
 
-from ibis.config import options
-from ibis.filesystems import HDFS, WebHDFS
 import ibis.common as com
 
+from ibis.config import options
+from ibis.compat import lzip
 from ibis.client import SQLClient
-from ibis.expr.datatypes import Schema
+from ibis.filesystems import HDFS, WebHDFS
+from ibis.impala import udf, ddl
+from ibis.impala.compat import impyla, ImpylaError, HS2Error
+from ibis.sql.ddl import DDL
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-
-from ibis.impala import udf, ddl
-
-from ibis.sql.ddl import DDL
 import ibis.sql.compiler as sql
-
 import ibis.util as util
-
-from ibis.impala.compat import impyla, ImpylaError, HS2Error
 
 
 if six.PY2:
@@ -323,7 +319,7 @@ class ImpalaClient(SQLClient):
     def _get_list(self, cur):
         tuples = cur.fetchall()
         if len(tuples) > 0:
-            return list(next(zip(*tuples)))
+            return list(lzip(*tuples)[0])
         else:
             return []
 
@@ -465,7 +461,7 @@ class ImpalaClient(SQLClient):
                 partition_fields.append((x, name_to_type[x]))
 
         pnames, ptypes = zip(*partition_fields)
-        return Schema(pnames, ptypes)
+        return dt.Schema(pnames, ptypes)
 
     def get_schema(self, table_name, database=None):
         """
@@ -495,7 +491,7 @@ class ImpalaClient(SQLClient):
 
         names = [x.lower() for x in names]
 
-        return Schema(names, ibis_types)
+        return dt.Schema(names, ibis_types)
 
     def exists_table(self, name, database=None):
         """
@@ -943,7 +939,7 @@ class ImpalaClient(SQLClient):
         # all lowercase fields from Impala.
         names = [x.lower() for x in names]
 
-        return Schema(names, ibis_types)
+        return dt.Schema(names, ibis_types)
 
     def create_function(self, func, name=None, database=None):
         """
