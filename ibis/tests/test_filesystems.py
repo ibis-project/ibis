@@ -49,25 +49,25 @@ class TestHDFSRandom(unittest.TestCase):
         self.con = MockHDFS()
 
     def test_find_any_file(self):
-        ls_contents = [(u'/path/foo',
+        ls_contents = [(u'foo',
                         {u'type': u'DIRECTORY'}),
-                       (u'/path/bar.tmp',
+                       (u'bar.tmp',
                         {u'type': u'FILE'}),
-                       (u'/path/baz.copying',
+                       (u'baz.copying',
                         {u'type': u'FILE'}),
-                       (u'/path/_SUCCESS',
+                       (u'_SUCCESS',
                         {u'type': u'FILE'}),
-                       (u'/path/.peekaboo',
+                       (u'.peekaboo',
                         {u'type': u'FILE'}),
-                       (u'/path/0.parq',
+                       (u'0.parq',
                         {u'type': u'FILE'}),
-                       (u'/path/_FILE',
+                       (u'_FILE',
                         {u'type': u'DIRECTORY'})]
 
         self.con.set_ls(ls_contents)
 
-        result = self.con.find_any_file('/path')
-        assert result == '/path/0.parq'
+        result = self.con._find_any_file('/path')
+        assert result == '0.parq'
 
 
 @pytest.mark.e2e
@@ -119,7 +119,7 @@ class TestHDFSE2E(unittest.TestCase):
             os.mkdir(directory)
             self.test_directories.append(directory)
 
-        for i in xrange(files):
+        for i in range(files):
             self._make_random_file(size=filesize, directory=directory)
 
         return directory
@@ -133,7 +133,7 @@ class TestHDFSE2E(unittest.TestCase):
         units = size / 32
 
         with open(path, 'wb') as f:
-            for i in xrange(units):
+            for i in range(units):
                 f.write(util.guid())
 
         self.test_files.append(path)
@@ -215,7 +215,7 @@ class TestHDFSE2E(unittest.TestCase):
         os.mkdir(local_dir)
 
         try:
-            for i in xrange(K):
+            for i in range(K):
                 self._make_random_file(directory=local_dir)
 
             remote_dir = pjoin(self.tmp_dir, local_dir)
@@ -288,7 +288,7 @@ class TestHDFSE2E(unittest.TestCase):
         os.mkdir(local_dir)
 
         try:
-            for i in xrange(K):
+            for i in range(K):
                 self._make_random_file(directory=local_dir)
 
             nested_dir = osp.join(local_dir, 'nested-dir')
@@ -346,7 +346,7 @@ class TestHDFSE2E(unittest.TestCase):
     def test_ls(self):
         test_dir = pjoin(self.tmp_dir, 'ls-test')
         self.hdfs.mkdir(test_dir)
-        for i in xrange(10):
+        for i in range(10):
             local_path = self._make_random_file()
             hdfs_path = pjoin(test_dir, local_path)
             self.hdfs.put(hdfs_path, local_path)
@@ -458,7 +458,7 @@ class TestSuperUserHDFSE2E(unittest.TestCase):
         units = size / 32
 
         with open(path, 'wb') as f:
-            for i in xrange(units):
+            for i in range(int(units)):
                 f.write(util.guid())
 
         self.test_files.append(path)

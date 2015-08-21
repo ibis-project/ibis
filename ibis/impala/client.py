@@ -762,7 +762,8 @@ class ImpalaClient(SQLClient):
         # If no schema provided, need to find some absolute path to a file in
         # the HDFS directory
         if like_file is None and like_table is None and schema is None:
-            like_file = self.hdfs.find_any_file(hdfs_dir)
+            file_name = self.hdfs._find_any_file(hdfs_dir)
+            like_file = pjoin(hdfs_dir, file_name)
 
         qualified_name = self._fully_qualified_name(name, database)
 

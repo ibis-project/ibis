@@ -238,7 +238,7 @@ class HDFS(object):
         """
         self.client.delete(path, recursive=True)
 
-    def find_any_file(self, hdfs_dir):
+    def _find_any_file(self, hdfs_dir):
         contents = self.ls(hdfs_dir, status=True)
 
         def valid_filename(name):
