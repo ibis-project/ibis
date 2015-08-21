@@ -24,6 +24,7 @@ import pytest
 from ibis.filesystems import HDFS
 from ibis.compat import unittest
 from ibis.tests.util import IbisTestEnv
+import ibis.compat as compat
 import ibis.util as util
 import ibis
 
@@ -133,8 +134,8 @@ class TestHDFSE2E(unittest.TestCase):
         units = size / 32
 
         with open(path, 'wb') as f:
-            for i in range(units):
-                f.write(util.guid())
+            for i in range(int(units)):
+                f.write(guidbytes())
 
         self.test_files.append(path)
         return path
@@ -459,7 +460,7 @@ class TestSuperUserHDFSE2E(unittest.TestCase):
 
         with open(path, 'wb') as f:
             for i in range(int(units)):
-                f.write(util.guid())
+                f.write(guidbytes())
 
         self.test_files.append(path)
         return path
@@ -526,3 +527,10 @@ def _get_all_files(path):
             paths[relpath] = abspath
 
     return paths
+
+
+def guidbytes():
+    if compat.PY3:
+        return util.guid().encode('utf8')
+    else:
+        return util.guid()
