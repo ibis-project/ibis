@@ -30,7 +30,7 @@ import ibis.impala.api as impala
 
 import ibis.config_init
 from ibis.config import options
-import util
+import ibis.util as util
 
 
 # Deprecated

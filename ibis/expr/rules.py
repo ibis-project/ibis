@@ -352,7 +352,7 @@ class TypeSignature(object):
             try:
                 clean_args[i] = validator.validate(clean_args, i)
             except IbisTypeError as e:
-                exc = e.message
+                exc = e.args[0]
                 msg = ('Argument {0}: {1}'.format(i, exc) +
                        '\nArgument was: {0}'.format(ir._safe_repr(args[i])))
                 raise IbisTypeError(msg)
@@ -689,7 +689,7 @@ class ListOf(Argument):
             try:
                 checked_arg = self.value_type.validate(arg, j)
             except IbisTypeError as e:
-                exc = e.message
+                exc = e.args[0]
                 msg = ('List element {0} had a type error: {1}'
                        .format(j, exc))
                 raise IbisTypeError(msg)

@@ -13,9 +13,8 @@
 # limitations under the License.
 
 from posixpath import join as pjoin
-from six import BytesIO, StringIO
-import Queue
 import re
+import six
 import threading
 import weakref
 
@@ -38,8 +37,13 @@ import ibis.sql.compiler as sql
 
 import ibis.util as util
 
-
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
+
+
+if six.PY2:
+    import Queue as queue
+else:
+    import queue
 
 
 class ImpalaConnection(object):
@@ -55,7 +59,7 @@ class ImpalaConnection(object):
 
         self.lock = threading.Lock()
 
-        self.connection_pool = Queue.Queue(pool_size)
+        self.connection_pool = queue.Queue(pool_size)
         self.connection_pool_size = 0
         self.max_pool_size = pool_size
 
@@ -112,7 +116,7 @@ class ImpalaConnection(object):
             if cur.codegen_disabled != self.codegen_disabled:
                 cur.disable_codegen(self.codegen_disabled)
             return cur
-        except Queue.Empty:
+        except queue.Empty:
             if self.connection_pool_size < self.max_pool_size:
                 cursor = self._new_cursor()
                 self.connection_pool_size += 1
@@ -316,10 +320,10 @@ class ImpalaClient(SQLClient):
 
         return result
 
-    def _get_list(self, cur, i=0):
+    def _get_list(self, cur):
         tuples = cur.fetchall()
         if len(tuples) > 0:
-            return list(zip(*tuples)[i])
+            return list(next(zip(*tuples)))
         else:
             return []
 
@@ -612,8 +616,8 @@ class ImpalaClient(SQLClient):
 
         # write df to a temp CSV file on HDFS
         temp_csv_hdfs_dir = pjoin(options.impala.temp_hdfs_path, util.guid())
-        buf = BytesIO()
-        df.to_csv(buf, header=False, index=False, na_rep='\N')
+        buf = six.BytesIO()
+        df.to_csv(buf, header=False, index=False, na_rep='\\N')
         self.hdfs.put(pjoin(temp_csv_hdfs_dir, '0.csv'), buf)
 
         # define a temporary table using delimited data
@@ -1459,7 +1463,7 @@ class _type_parser(object):
     def __init__(self, value):
         self.value = value
         self.state = self.NORMAL
-        self.buf = StringIO()
+        self.buf = six.StringIO()
         self.types = []
         for c in value:
             self._step(c)
@@ -1469,7 +1473,7 @@ class _type_parser(object):
         val = self.buf.getvalue().strip()
         if val:
             self.types.append(val)
-        self.buf = StringIO()
+        self.buf = six.StringIO()
 
     def _step(self, c):
         if self.state == self.NORMAL:

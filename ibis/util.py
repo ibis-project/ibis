@@ -22,7 +22,8 @@ def guid():
         return uuid4_hex()
     except ImportError:
         from uuid import uuid4
-        return uuid4().get_hex()
+        guid = uuid4()
+        return guid.hex if compat.PY3 else guid.get_hex()
 
 
 def bytes_to_uint8_array(val, width=70):
@@ -49,7 +50,7 @@ def unique_by_key(values, key):
     id_to_table = {}
     for x in values:
         id_to_table[key(x)] = x
-    return id_to_table.values()
+    return compat.dict_values(id_to_table)
 
 
 def indent(text, spaces):

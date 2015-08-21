@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from itertools import izip
-
+from ibis.compat import zip as czip
 from ibis.config import options
 
 import ibis.expr.types as ir
@@ -191,7 +190,7 @@ LIMIT 0""".format(query)
         dtypes = [self._db_type_to_dtype(x[1]) for x in cursor.description]
         names = [x[0] for x in cursor.description]
         cols = {}
-        for (col, name, dtype) in zip(izip(*rows), names, dtypes):
+        for (col, name, dtype) in czip(czip(*rows), names, dtypes):
             try:
                 cols[name] = pd.Series(col, dtype=dtype)
             except TypeError:

@@ -236,7 +236,7 @@ class IbisServerNode(object):
             elif msg.startswith('kill'):
                 # e.g. kill 12345
                 worker_pid = int(msg[4:])
-                print 'Killing %d' % worker_pid
+                print('Killing %d' % worker_pid)
                 try:
                     os.kill(worker_pid, signal.SIGINT)
                 except OSError:

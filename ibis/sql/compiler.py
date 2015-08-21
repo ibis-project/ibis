@@ -14,6 +14,7 @@
 
 from collections import defaultdict
 
+from ibis.compat import lzip
 import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
@@ -600,8 +601,8 @@ class _ExtractSubqueries(object):
         to_extract = []
 
         # Read them inside-out, to avoid nested dependency issues
-        for expr, key in reversed(zip(self.observed_exprs.keys,
-                                      self.observed_exprs.values)):
+        for expr, key in reversed(lzip(self.observed_exprs.keys,
+                                       self.observed_exprs.values)):
             v = self.expr_counts[key]
 
             if self.greedy or v > 1:

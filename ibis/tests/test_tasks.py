@@ -17,10 +17,9 @@ import pytest
 
 import pandas as pd
 
-from cPickle import loads as pickle_load
-from ibis.cloudpickle import dumps as pickle_dump
+import ibis.compat as compat
 
-from test_comms import double_ex
+from .test_comms import double_ex
 
 from ibis.tasks import IbisTaskMessage, IbisTaskExecutor
 from ibis.util import guid
@@ -37,7 +36,7 @@ except ImportError:
     SKIP_TESTS = True
 
 
-pytestmark = pytest.mark.skipif(SKIP_TESTS,
+pytestmark = pytest.mark.skipif(SKIP_TESTS or compat.PY3,
                                 reason='Comms extension disabled')
 
 
@@ -235,7 +234,7 @@ class TestAggregateTasks(unittest.TestCase):
         if not reader.uint8():
             raise Exception(reader.string())
 
-        result = pickle_load(reader.string())
+        result = compat.pickle_load(reader.string())
 
         ex_total = pd.Series(col.to_numpy_for_pandas()).sum()
         assert result.total == ex_total
@@ -255,7 +254,7 @@ class TestAggregateTasks(unittest.TestCase):
         if not reader.uint8():
             raise Exception(reader.string())
 
-        result = pickle_load(reader.string())
+        result = compat.pickle_load(reader.string())
 
         ex_total += pd.Series(col.to_numpy_for_pandas()).sum()
 
@@ -283,7 +282,7 @@ class TestAggregateTasks(unittest.TestCase):
         if not reader.uint8():
             raise Exception(reader.string())
 
-        result = pickle_load(reader.string())
+        result = compat.pickle_load(reader.string())
 
         larr = lcol.to_numpy_for_pandas()
         rarr = rcol.to_numpy_for_pandas()
@@ -307,7 +306,7 @@ class TestAggregateTasks(unittest.TestCase):
         if not reader.uint8():
             raise Exception(reader.string())
 
-        result = pickle_load(reader.string())
+        result = compat.pickle_load(reader.string())
 
         arr = col.to_numpy_for_pandas()
         ex_result = pd.Series(arr).mean()
@@ -339,11 +338,11 @@ class TestAggregateTasks(unittest.TestCase):
         payload = BytesIO()
         msg_writer = wire.PackedMessageWriter(payload)
         msg_writer.string('agg-update')
-        msg_writer.string(pickle_dump(uda_class))
+        msg_writer.string(compat.pickle_dump(uda_class))
 
         if prior_state is not None:
             msg_writer.uint8(1)
-            msg_writer.string(pickle_dump(prior_state))
+            msg_writer.string(compat.pickle_dump(prior_state))
         else:
             msg_writer.uint8(0)
 

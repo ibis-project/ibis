@@ -125,7 +125,7 @@ class CloudPickler(pickle.Pickler):
         self.inject_addons()
         try:
             return pickle.Pickler.dump(self, obj)
-        except RuntimeError, e:
+        except RuntimeError as e:
             if 'recursion' in e.args[0]:
                 msg = """Could not pickle object as excessively deep recursion required.
                 Try _fast_serialization=2 or contact PiCloud support"""
@@ -348,7 +348,7 @@ class CloudPickler(pickle.Pickler):
         def get_contents(cell):
             try:
                 return cell.cell_contents
-            except ValueError, e: #cell is empty error on not yet assigned
+            except ValueError as e: #cell is empty error on not yet assigned
                 raise pickle.PicklingError('Function to be pickled has free variables that are referenced before assignment in enclosing scope')
 
 
@@ -799,7 +799,7 @@ def _modules_to_main(modList):
         if type(modname) is str:
             try:
                 mod = __import__(modname)
-            except Exception, i: #catch all...
+            except Exception as i: #catch all...
                 sys.stderr.write('warning: could not import %s\n.  Your function may unexpectedly error due to this import failing; \
 A version mismatch is likely.  Specific error was:\n' % modname)
                 print_exec(sys.stderr)

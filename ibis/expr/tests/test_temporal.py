@@ -108,7 +108,7 @@ class TestFixedOffsets(unittest.TestCase):
             (offset.to_unit('s'), T.second(K * 3600)),
             (offset.to_unit('ms'), T.millisecond(K * 3600000)),
             (offset.to_unit('us'), T.microsecond(K * 3600000000)),
-            (offset.to_unit('ns'), T.nanosecond(K * 3600000000000L))
+            (offset.to_unit('ns'), T.nanosecond(K * 3600000000000))
         ]
         self._check_cases(cases)
 
@@ -128,7 +128,7 @@ class TestFixedOffsets(unittest.TestCase):
             (day.to_unit('s'), T.second(K * 86400)),
             (day.to_unit('ms'), T.millisecond(K * 86400000)),
             (day.to_unit('us'), T.microsecond(K * 86400000000)),
-            (day.to_unit('ns'), T.nanosecond(K * 86400000000000L))
+            (day.to_unit('ns'), T.nanosecond(K * 86400000000000))
         ]
         self._check_cases(cases)
 

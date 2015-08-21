@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six import StringIO
 import datetime
-from io import BytesIO
 
 import ibis
 import ibis.expr.analysis as L
@@ -442,7 +442,7 @@ class CaseFormatter(object):
         # HACK
         self.indent = 2
         self.multiline = len(cases) > 1
-        self.buf = BytesIO()
+        self.buf = StringIO()
 
     def _trans(self, expr):
         return self.translator.translate(expr)

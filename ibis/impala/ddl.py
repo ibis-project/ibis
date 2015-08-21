@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import BytesIO
+from ibis.compat import StringIO
 import re
 
 from ibis.sql.ddl import DDL, Select
@@ -130,7 +130,7 @@ class CTAS(CreateTable):
                              can_exist=can_exist, path=path)
 
     def compile(self):
-        buf = BytesIO()
+        buf = StringIO()
         buf.write(self._create_line())
         buf.write(self._storage())
         buf.write(self._location())
@@ -153,7 +153,7 @@ class CreateView(CreateDDL):
         self.can_exist = can_exist
 
     def compile(self):
-        buf = BytesIO()
+        buf = StringIO()
         buf.write(self._create_line())
 
         select_query = self.select.compile()
@@ -186,7 +186,7 @@ class CreateTableParquet(CreateTable):
         pass
 
     def compile(self):
-        buf = BytesIO()
+        buf = StringIO()
         buf.write(self._create_line())
 
         if self.example_file is not None:
@@ -215,7 +215,7 @@ class CreateTableWithSchema(CreateTable):
     def compile(self):
         from ibis.expr.api import schema
 
-        buf = BytesIO()
+        buf = StringIO()
         buf.write(self._create_line())
 
         def _push_schema(x):
@@ -264,7 +264,7 @@ class DelimitedFormat(object):
         self.lineterminator = lineterminator
 
     def to_ddl(self):
-        buf = BytesIO()
+        buf = StringIO()
 
         buf.write("\nROW FORMAT DELIMITED")
 
@@ -292,7 +292,7 @@ class AvroFormat(object):
     def to_ddl(self):
         import json
 
-        buf = BytesIO()
+        buf = StringIO()
         buf.write('\nSTORED AS AVRO')
         buf.write("\nLOCATION '{0}'".format(self.path))
 
@@ -325,7 +325,7 @@ class CreateTableAvro(CreateTable):
         CreateTable.__init__(self, table_name, external=external, **kwargs)
 
     def compile(self):
-        buf = BytesIO()
+        buf = StringIO()
         buf.write(self._create_line())
 
         format_ddl = self.table_format.to_ddl()
