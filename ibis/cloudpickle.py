@@ -313,7 +313,7 @@ class CloudPickler(pickle.Pickler):
                 extended_arg = 0
                 i = i+2
                 if op == EXTENDED_ARG:
-                    extended_arg = oparg*65536L
+                    extended_arg = oparg*65536
                 if op in GLOBAL_OPS:
                     out_names.add(names[oparg])
         #print 'extracted', out_names, ' from ', names
@@ -366,7 +366,8 @@ class CloudPickler(pickle.Pickler):
             outvars.append('globals: ' + str(f_globals))
             outvars.append('defaults: ' + str(defaults))
             outvars.append('closure: ' + str(closure))
-            print 'function ', func, 'is extracted to: ', ', '.join(outvars)
+            print('function {0} is extracted to: {1}'.format(
+                func, ', '.join(outvars)))
 
         base_globals = self.globals_ref.get(id(func.func_globals), {})
         self.globals_ref[id(func.func_globals)] = base_globals
@@ -417,7 +418,7 @@ class CloudPickler(pickle.Pickler):
                     themodule = sys.modules[modname]
                     try:
                         klass = getattr(themodule, name)
-                    except AttributeError, a:
+                    except AttributeError as a:
                         # print themodule, name, obj, type(obj)
                         raise pickle.PicklingError("Can't pickle builtin %s" % obj)
                 else:
