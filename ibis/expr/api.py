@@ -138,7 +138,7 @@ def desc(expr):
     if not isinstance(expr, Expr):
         return _ops.DeferredSortKey(expr, ascending=False)
     else:
-        return _ops.SortKey(expr, ascending=False)
+        return _ops.SortKey(expr, ascending=False).to_expr()
 
 
 def timestamp(value):

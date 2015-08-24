@@ -1109,6 +1109,10 @@ class ListExpr(ArrayExpr, AnyValue):
     pass
 
 
+class SortExpr(Expr):
+    pass
+
+
 class ValueList(ValueNode):
 
     """

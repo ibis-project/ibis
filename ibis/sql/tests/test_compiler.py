@@ -696,6 +696,30 @@ WHERE `timestamp_col` < months_add('2010-01-01 00:00:00', 3) AND
       `timestamp_col` < days_add(now(), 10)"""
         assert result == expected
 
+    def test_bug_duplicated_where(self):
+        # GH #539
+        table = self.con.table('airlines')
+
+        t = table['arrdelay', 'dest']
+        expr = (t.group_by('dest')
+                .mutate(dest_avg=t.arrdelay.mean(),
+                        dev=t.arrdelay - t.arrdelay.mean()))
+
+        worst = expr[expr.dev.notnull()].sort_by(ibis.desc('dev')).limit(10)
+        result = to_sql(worst)
+        expected = """\
+SELECT *
+FROM (
+  SELECT `arrdelay`, `dest`,
+         avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dest_avg`,
+         `arrdelay` - avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dev`
+  FROM airlines
+) t0
+WHERE `dev` IS NOT NULL
+ORDER BY `dev` DESC
+LIMIT 10"""
+        assert result == expected
+
     def test_simple_aggregate_query(self):
         t1 = self.con.table('star1')
 

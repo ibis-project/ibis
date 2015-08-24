@@ -249,7 +249,8 @@ class Select(DDL):
         if len(self.order_by) > 0:
             buf.write('ORDER BY ')
             formatted = []
-            for key in self.order_by:
+            for expr in self.order_by:
+                key = expr.op()
                 translated = translate_expr(key.expr, context=context)
                 if not key.ascending:
                     translated += ' DESC'

@@ -43,11 +43,14 @@ class Window(object):
             order_by = []
 
         self._group_by = util.promote_list(group_by)
-        self._order_by = util.promote_list(order_by)
-        self._order_by = [ops.SortKey(expr)
-                          if isinstance(expr, ir.Expr)
-                          else expr
-                          for expr in self._order_by]
+
+        self._order_by = []
+        for x in util.promote_list(order_by):
+            if isinstance(x, ir.SortExpr):
+                pass
+            elif isinstance(x, ir.Expr):
+                x = ops.SortKey(x).to_expr()
+            self._order_by.append(x)
 
         self.preceding = _list_to_tuple(preceding)
         self.following = _list_to_tuple(following)

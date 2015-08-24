@@ -164,9 +164,9 @@ class ExprFormatter(object):
             table_formatted = self.memo.get_alias(parent_op)
         else:
             table_formatted = '\n' + self._indent(self._format_node(parent_op))
-        return ("Column[%s] '%s' from table %s" % (self.expr.type(),
-                                                   col.name,
-                                                   table_formatted))
+        type_display = self._get_type_display(self.expr)
+        return ("Column[{0}] '{1}' from table {2}"
+                .format(type_display, col.name, table_formatted))
 
     def _format_node(self, op):
         formatted_args = []
@@ -233,6 +233,8 @@ class ExprFormatter(object):
             return 'table'
         elif isinstance(expr, ir.ArrayExpr):
             return 'array(%s)' % expr.type()
+        elif isinstance(expr, ir.SortExpr):
+            return 'array-sort'
         elif isinstance(expr, (ir.ScalarExpr, ir.AnalyticExpr)):
             return '%s' % expr.type()
         elif isinstance(expr, ir.ExprList):

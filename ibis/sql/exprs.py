@@ -165,7 +165,8 @@ def _format_window(translator, window):
 
     if len(window._order_by) > 0:
         order_args = []
-        for key in window._order_by:
+        for expr in window._order_by:
+            key = expr.op()
             translated = translator.translate(key.expr)
             if not key.ascending:
                 translated += ' DESC'
