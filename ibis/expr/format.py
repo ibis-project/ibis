@@ -233,6 +233,8 @@ class ExprFormatter(object):
             return 'table'
         elif isinstance(expr, ir.ArrayExpr):
             return 'array(%s)' % expr.type()
+        elif isinstance(expr, ir.SortExpr):
+            return 'array-sort'
         elif isinstance(expr, (ir.ScalarExpr, ir.AnalyticExpr)):
             return '%s' % expr.type()
         elif isinstance(expr, ir.ExprList):

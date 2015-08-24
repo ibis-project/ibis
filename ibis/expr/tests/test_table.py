@@ -497,7 +497,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         # Default is ascending for anything coercable to an expression,
         # and we'll have ascending/descending wrappers to help.
         result = self.table.sort_by(['f'])
-        sort_key = result.op().keys[0]
+        sort_key = result.op().keys[0].op()
         assert_equal(sort_key.expr, self.table.f)
         assert sort_key.ascending
 
@@ -509,9 +509,9 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         result3 = self.table.sort_by([('f', 'descending')])
         result4 = self.table.sort_by([('f', 0)])
 
-        key2 = result2.op().keys[0]
-        key3 = result3.op().keys[0]
-        key4 = result4.op().keys[0]
+        key2 = result2.op().keys[0].op()
+        key3 = result3.op().keys[0].op()
+        key4 = result4.op().keys[0].op()
 
         assert not key2.ascending
         assert not key3.ascending

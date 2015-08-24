@@ -1429,6 +1429,8 @@ class Union(ir.BlockingTableNode, HasSchema):
 
 class Filter(TableNode):
 
+    _arg_names = ['table', 'predicates']
+
     def __init__(self, table_expr, predicates):
         self.table = table_expr
         self.predicates = predicates
@@ -1501,7 +1503,7 @@ def to_sort_key(table, key):
     if isinstance(key, DeferredSortKey):
         key = key.resolve(table)
 
-    if isinstance(key, SortKey):
+    if isinstance(key, ir.SortExpr):
         return key
 
     if isinstance(key, (tuple, list)):
@@ -1511,7 +1513,7 @@ def to_sort_key(table, key):
 
     if not isinstance(key, ir.Expr):
         key = table._ensure_expr(key)
-        if isinstance(key, (SortKey, DeferredSortKey)):
+        if isinstance(key, (ir.SortExpr, DeferredSortKey)):
             return to_sort_key(table, key)
 
     if isinstance(sort_order, py_string):
@@ -1520,10 +1522,12 @@ def to_sort_key(table, key):
         elif not isinstance(sort_order, bool):
             sort_order = bool(sort_order)
 
-    return SortKey(key, ascending=sort_order)
+    return SortKey(key, ascending=sort_order).to_expr()
 
 
-class SortKey(object):
+class SortKey(ir.Node):
+
+    _arg_names = ['by', 'ascending']
 
     def __init__(self, expr, ascending=True):
         if not rules.is_array(expr):
@@ -1532,12 +1536,17 @@ class SortKey(object):
         self.expr = expr
         self.ascending = ascending
 
+        ir.Node.__init__(self, [self.expr, self.ascending])
+
     def __repr__(self):
         # Temporary
         rows = ['Sort key:',
                 '  ascending: {0!s}'.format(self.ascending),
                 util.indent(_safe_repr(self.expr), 2)]
         return '\n'.join(rows)
+
+    def to_expr(self):
+        return ir.SortExpr(self)
 
     def equals(self, other):
         return (isinstance(other, SortKey) and
@@ -1553,7 +1562,7 @@ class DeferredSortKey(object):
 
     def resolve(self, parent):
         what = parent._ensure_expr(self.what)
-        return SortKey(what, ascending=self.ascending)
+        return SortKey(what, ascending=self.ascending).to_expr()
 
 
 class SelfReference(ir.BlockingTableNode, HasSchema):

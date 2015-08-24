@@ -36,6 +36,7 @@ class TestExprFormatting(unittest.TestCase):
         ]
         self.schema_dict = dict(self.schema)
         self.table = ibis.table(self.schema)
+        self.con = MockConnection()
 
     def test_format_projection(self):
         # This should produce a ref to the projection
@@ -118,9 +119,8 @@ class TestExprFormatting(unittest.TestCase):
         repr(view)
 
     def test_memoize_database_table(self):
-        con = MockConnection()
-        table = con.table('test1')
-        table2 = con.table('test2')
+        table = self.con.table('test1')
+        table2 = self.con.table('test2')
 
         filter_pred = table['f'] > 0
         table3 = table[filter_pred]
@@ -147,6 +147,19 @@ class TestExprFormatting(unittest.TestCase):
 
         result = repr(delay_filter)
         assert result.count('Filter') == 1
+
+    def test_memoize_insert_sort_key(self):
+        table = self.con.table('airlines')
+
+        t = table['arrdelay', 'dest']
+        expr = (t.group_by('dest')
+                .mutate(dest_avg=t.arrdelay.mean(),
+                        dev=t.arrdelay - t.arrdelay.mean()))
+
+        worst = expr[expr.dev.notnull()].sort_by(ibis.desc('dev')).limit(10)
+
+        result = repr(worst)
+        assert result.count('airlines') == 1
 
     def test_named_value_expr_show_name(self):
         expr = self.table.f * 2
