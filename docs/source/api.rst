@@ -80,6 +80,7 @@ Table methods
    :toctree: generated/
 
    ImpalaTable.drop
+   ImpalaTable.insert
    ImpalaTable.compute_stats
 
 Creating views is also possible:
@@ -187,6 +188,7 @@ Table methods
    TableExpr.mutate
    TableExpr.pipe
    TableExpr.projection
+   TableExpr.rename
    TableExpr.schema
    TableExpr.set_column
    TableExpr.sort_by

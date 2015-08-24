@@ -1361,6 +1361,29 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         """
         self._client.drop_table_or_view(self._table_name)
 
+    def insert(self, expr, overwrite=False, validate=True):
+        """
+        Insert into Impala table. Wraps ImpalaClient.insert
+
+        Parameters
+        ----------
+        expr : TableExpr
+        overwrite : boolean, default False
+          If True, will replace existing contents of table
+        validate : boolean, default True
+          If True, do more rigorous validation that schema of table being
+          inserted is compatible with the existing table
+
+        Examples
+        --------
+        t.insert(table_expr)
+
+        # Completely overwrite contents
+        t.insert(table_expr, overwrite=True)
+        """
+        self._client.insert(self._table_name, expr, overwrite=overwrite,
+                            validate=validate)
+
 
 class ImpalaTemporaryTable(ops.DatabaseTable):
 

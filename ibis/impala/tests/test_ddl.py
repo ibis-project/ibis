@@ -508,15 +508,18 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
 
         self.con.create_table(table_name, expr.limit(0), database=db)
         self.temp_tables.append('.'.join((db, table_name)))
-        self.con.insert(table_name, expr.limit(10), database=db)
+
         self.con.insert(table_name, expr.limit(10), database=db)
 
-        sz = self.con.table('{0}.{1}'.format(db, table_name)).count()
+        # check using ImpalaTable.insert
+        t = self.con.table(table_name, database=db)
+        t.insert(expr.limit(10))
+
+        sz = t.count()
         assert sz.execute() == 20
 
         # Overwrite and verify only 10 rows now
-        self.con.insert(table_name, expr.limit(10), database=db,
-                        overwrite=True)
+        t.insert(expr.limit(10), overwrite=True)
         assert sz.execute() == 10
 
     def test_insert_validate_types(self):
@@ -531,20 +534,22 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
                               database=db)
         self.temp_tables.append('.'.join((db, table_name)))
 
+        t = self.con.table(table_name, database=db)
+
         to_insert = expr[expr.tinyint_col, expr.smallint_col.name('int_col'),
                          expr.string_col]
-        self.con.insert(table_name, to_insert.limit(10))
+        t.insert(to_insert.limit(10))
 
         to_insert = expr[expr.tinyint_col,
                          expr.smallint_col.cast('int32').name('int_col'),
                          expr.string_col]
-        self.con.insert(table_name, to_insert.limit(10))
+        t.insert(to_insert.limit(10))
 
         to_insert = expr[expr.tinyint_col,
                          expr.bigint_col.name('int_col'),
                          expr.string_col]
         with self.assertRaises(com.IbisError):
-            self.con.insert(table_name, to_insert.limit(10))
+            t.insert(to_insert.limit(10))
 
     def test_compute_stats(self):
         self.con.table('functional_alltypes').compute_stats()
