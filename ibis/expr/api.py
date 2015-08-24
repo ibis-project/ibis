@@ -110,10 +110,10 @@ def table(schema, name=None):
     table : TableExpr
     """
     if not isinstance(schema, Schema):
-        if isinstance(schema, list):
-            schema = Schema.from_tuples(schema)
-        else:
+        if isinstance(schema, dict):
             schema = Schema.from_dict(schema)
+        else:
+            schema = Schema.from_tuples(schema)
 
     node = _ops.UnboundTable(schema, name=name)
     return TableExpr(node)
@@ -1836,6 +1836,38 @@ def mutate(table, exprs=None, **kwds):
         return table.projection([table] + exprs)
 
 
+def _table_rename(table, substitutions, replacements=None):
+    """
+    Change table column names, otherwise leaving table unaltered
+
+    Parameters
+    ----------
+    substitutions
+
+    Returns
+    -------
+    renamed : TableExpr
+    """
+    if replacements is not None:
+        raise NotImplementedError
+
+    observed = set()
+
+    exprs = []
+    for c in table.columns:
+        expr = table[c]
+        if c in substitutions:
+            expr = expr.name(substitutions[c])
+            observed.add(c)
+        exprs.append(expr)
+
+    for c in substitutions:
+        if c not in observed:
+            raise KeyError('{0!r} is not an existing column'.format(c))
+
+    return table.projection(exprs)
+
+
 _table_methods = dict(
     aggregate=aggregate,
     count=_table_count,
@@ -1844,6 +1876,7 @@ _table_methods = dict(
     set_column=_table_set_column,
     filter=filter,
     mutate=mutate,
+    rename=_table_rename,
     join=join,
     cross_join=cross_join,
     inner_join=_regular_join_method('inner_join', 'inner'),
