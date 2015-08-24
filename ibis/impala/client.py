@@ -152,7 +152,15 @@ class ImpalaCursor(object):
         self.codegen_disabled = codegen_disabled
 
     def __del__(self):
-        self.cursor.close()
+        self._close_cursor()
+
+    def _close_cursor(self):
+        try:
+            self.cursor.close()
+        except HS2Error as e:
+            # connection was closed elsewhere
+            if 'invalid session' not in e.args[0].lower():
+                raise
 
     def __enter__(self):
         return self
