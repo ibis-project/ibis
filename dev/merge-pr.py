@@ -22,19 +22,20 @@
 #
 # Lightly modified from version of this script in incubator-parquet-format
 
+from __future__ import print_function
+
 from requests.auth import HTTPBasicAuth
 import requests
 
-import json
 import os
+import six
 import subprocess
 import sys
-import urllib2
 import textwrap
 
 IBIS_HOME = os.path.abspath(__file__).rsplit("/", 2)[0]
 PROJECT_NAME = 'ibis'
-print "IBIS_HOME = " + IBIS_HOME
+print("IBIS_HOME = " + IBIS_HOME)
 
 # Remote name with the PR
 PR_REMOTE_NAME = os.environ.get("PR_REMOTE_NAME", "upstream")
@@ -73,14 +74,14 @@ else:
 
 
 def fail(msg):
-    print msg
+    print(msg)
     clean_up()
     sys.exit(-1)
 
 
 def run_cmd(cmd):
     # py2.6 does not have subprocess.check_output
-    if isinstance(cmd, basestring):
+    if isinstance(cmd, six.string_types):
         cmd = cmd.split(' ')
 
     popenargs = [cmd]
@@ -107,13 +108,13 @@ original_head = run_cmd("git rev-parse HEAD")[:8]
 
 
 def clean_up():
-    print "Restoring head pointer to %s" % original_head
+    print("Restoring head pointer to %s" % original_head)
     run_cmd("git checkout %s" % original_head)
 
     branches = run_cmd("git branch").replace(" ", "").split("\n")
 
     for branch in filter(lambda x: x.startswith(BRANCH_PREFIX), branches):
-        print "Deleting local branch %s" % branch
+        print("Deleting local branch %s" % branch)
         run_cmd("git branch -D %s" % branch)
 
 
@@ -167,13 +168,15 @@ def merge_pr(pr_num, target_ref):
     for c in commits:
         merge_message_flags += ["-m", c]
 
-    run_cmd(['git', 'commit', '--author="%s"' % primary_author] + merge_message_flags)
+    run_cmd(['git', 'commit', '--author="%s"' % primary_author] +
+            merge_message_flags)
 
     continue_maybe("Merge complete (local ref %s). Push to %s?" % (
         target_branch_name, PUSH_REMOTE_NAME))
 
     try:
-        run_cmd('git push %s %s:%s' % (PUSH_REMOTE_NAME, target_branch_name, target_ref))
+        run_cmd('git push %s %s:%s' % (PUSH_REMOTE_NAME, target_branch_name,
+                                       target_ref))
     except Exception as e:
         clean_up()
         fail("Exception while pushing: %s" % e)
@@ -190,9 +193,11 @@ def cherry_pick(pr_num, merge_hash, default_branch):
     if pick_ref == "":
         pick_ref = default_branch
 
-    pick_branch_name = "%s_PICK_PR_%s_%s" % (BRANCH_PREFIX, pr_num, pick_ref.upper())
+    pick_branch_name = "%s_PICK_PR_%s_%s" % (BRANCH_PREFIX, pr_num,
+                                             pick_ref.upper())
 
-    run_cmd("git fetch %s %s:%s" % (PUSH_REMOTE_NAME, pick_ref, pick_branch_name))
+    run_cmd("git fetch %s %s:%s" % (PUSH_REMOTE_NAME, pick_ref,
+                                    pick_branch_name))
     run_cmd("git checkout %s" % pick_branch_name)
     run_cmd("git cherry-pick -sx %s" % merge_hash)
 
@@ -200,7 +205,8 @@ def cherry_pick(pr_num, merge_hash, default_branch):
         pick_branch_name, PUSH_REMOTE_NAME))
 
     try:
-        run_cmd('git push %s %s:%s' % (PUSH_REMOTE_NAME, pick_branch_name, pick_ref))
+        run_cmd('git push %s %s:%s' % (PUSH_REMOTE_NAME, pick_branch_name,
+                                       pick_ref))
     except Exception as e:
         clean_up()
         fail("Exception while pushing: %s" % e)
@@ -214,7 +220,8 @@ def cherry_pick(pr_num, merge_hash, default_branch):
 
 
 def fix_version_from_branch(branch, versions):
-    # Note: Assumes this is a sorted (newest->oldest) list of un-released versions
+    #  Note: Assumes this is a sorted (newest->oldest) list of un-released
+    #  versions
     if branch == "master":
         return versions[0]
     else:
@@ -223,7 +230,8 @@ def fix_version_from_branch(branch, versions):
 
 
 branches = get_json("%s/branches" % GITHUB_API_BASE)
-branch_names = filter(lambda x: x.startswith("branch-"), [x['name'] for x in branches])
+branch_names = filter(lambda x: x.startswith("branch-"),
+                      [x['name'] for x in branches])
 # Assumes branch names can be sorted lexicographically
 # latest_branch = sorted(branch_names, reverse=True)[0]
 
@@ -239,23 +247,25 @@ base_ref = pr["head"]["ref"]
 pr_repo_desc = "%s/%s" % (user_login, base_ref)
 
 if pr["merged"] is True:
-    print "Pull request %s has already been merged, assuming you want to backport" % pr_num
+    print("Pull request {0} has already been merged, assuming "
+          "you want to backport".format(pr_num))
     merge_commit_desc = run_cmd([
         'git', 'log', '--merges', '--first-parent',
         '--grep=pull request #%s' % pr_num, '--oneline']).split("\n")[0]
     if merge_commit_desc == "":
-        fail("Couldn't find any merge commit for #%s, you may need to update HEAD." % pr_num)
+        fail("Couldn't find any merge commit for #{0}"
+             ", you may need to update HEAD.".format(pr_num))
 
     merge_hash = merge_commit_desc[:7]
     message = merge_commit_desc[8:]
 
-    print "Found: %s" % message
+    print("Found: %s" % message)
     maybe_cherry_pick(pr_num, merge_hash, latest_branch)
     sys.exit(0)
 
 if not bool(pr["mergeable"]):
-    msg = "Pull request %s is not mergeable in its current form.\n" % pr_num + \
-        "Continue? (experts only!)"
+    msg = ("Pull request {0} is not mergeable in its current form.\n"
+           "Continue? (experts only!)".format(pr_num))
     continue_maybe(msg)
 
 print ("\n=== Pull Request #%s ===" % pr_num)
@@ -269,4 +279,5 @@ merge_hash = merge_pr(pr_num, target_ref)
 
 pick_prompt = "Would you like to pick %s into another branch?" % merge_hash
 while raw_input("\n%s (y/n): " % pick_prompt).lower() == "y":
-    merged_refs = merged_refs + [cherry_pick(pr_num, merge_hash, latest_branch)]
+    merged_refs = merged_refs + [cherry_pick(pr_num, merge_hash,
+                                             latest_branch)]
