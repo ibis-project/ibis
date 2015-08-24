@@ -61,6 +61,9 @@ class Schema(object):
 
     @classmethod
     def from_tuples(cls, values):
+        if not isinstance(values, (list, tuple)):
+            values = list(values)
+
         if len(values):
             names, types = zip(*values)
         else:
