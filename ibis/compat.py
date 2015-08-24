@@ -14,7 +14,12 @@
 
 # flake8: noqa
 
+import itertools
+
+import numpy as np
+
 import sys
+import six
 from six import BytesIO, StringIO, string_types as py_string
 
 
@@ -29,6 +34,25 @@ else:
     import unittest
 
 if PY3:
+    import pickle
     unicode_type = str
+    def lzip(*x):
+        return list(zip(*x))
+    zip = zip
+    pickle_dump = pickle.dumps
+    pickle_load = pickle.loads
+    def dict_values(x):
+        return list(x.values())
 else:
+    import cPickle
+
     unicode_type = unicode
+    lzip = zip
+    zip = itertools.izip
+    from ibis.cloudpickle import dumps as pickle_dump
+    pickle_load = cPickle.loads
+
+    def dict_values(x):
+        return x.values()
+
+integer_types = six.integer_types + (np.integer,)

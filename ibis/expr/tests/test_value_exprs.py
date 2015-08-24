@@ -493,7 +493,7 @@ class TestBinaryArithOps(BasicTestCase, unittest.TestCase):
         ints = self.table['a']
         strs = self.table['g']
 
-        ops = ['add', 'mul', 'div', 'sub']
+        ops = ['add', 'mul', 'truediv', 'sub']
         for name in ops:
             f = getattr(operator, name)
             self.assertRaises(TypeError, f, ints, strs)
@@ -571,7 +571,7 @@ class TestBinaryArithOps(BasicTestCase, unittest.TestCase):
             ('b', -5, 'double'),
             ('c', 5, 'double'),
         ]
-        self._check_literal_promote_cases(operator.div, cases)
+        self._check_literal_promote_cases(operator.truediv, cases)
 
     def test_pow_literal_promotions(self):
         cases = [

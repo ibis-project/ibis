@@ -111,6 +111,13 @@ class HDFS(object):
         ----------
         hdfs_path : string
         local_path : string, default '.'
+
+        Further keyword arguments passed down to any internal API used.
+
+        Returns
+        -------
+        written_path : string
+          The path to the written file or directory
         """
         raise NotImplementedError
 
@@ -179,7 +186,7 @@ class HDFS(object):
               replication=None, buffersize=None):
         raise NotImplementedError
 
-    def mkdir(self, path, create_parent=False):
+    def mkdir(self, path):
         pass
 
     def ls(self, hdfs_path, status=False):
@@ -231,7 +238,7 @@ class HDFS(object):
         """
         self.client.delete(path, recursive=True)
 
-    def find_any_file(self, hdfs_dir):
+    def _find_any_file(self, hdfs_dir):
         contents = self.ls(hdfs_dir, status=True)
 
         def valid_filename(name):
@@ -270,7 +277,7 @@ class WebHDFS(HDFS):
 
     @implements(HDFS.chmod)
     def chmod(self, path, permissions):
-        self.client.set_permissions(path, permissions)
+        self.client.set_permission(path, permissions)
 
     @implements(HDFS.chown)
     def chown(self, path, owner=None, group=None):
@@ -278,42 +285,19 @@ class WebHDFS(HDFS):
 
     @implements(HDFS.exists)
     def exists(self, path):
-        try:
-            self.client.status(path)
-            return True
-        except Exception:
-            return False
+        return not self.client.status(path, strict=False) is None
 
     @implements(HDFS.ls)
     def ls(self, hdfs_path, status=False):
-        contents = self.client.list(hdfs_path)
-        if not status:
-            return [path for path, detail in contents]
-        else:
-            return contents
+        return self.client.list(hdfs_path, status=status)
 
     @implements(HDFS.mkdir)
-    def mkdir(self, dir_path, create_parent=False):
-        # ugh, see #252
-
-        # create a temporary file, then delete it
-        dummy = pjoin(dir_path, util.guid())
-        self.client.write(dummy, '')
-        self.client.delete(dummy)
+    def mkdir(self, dir_path):
+        self.client.makedirs(dir_path)
 
     @implements(HDFS.size)
     def size(self, hdfs_path):
-        stat = self.status(hdfs_path)
-
-        if stat['type'] == 'FILE':
-            return stat['length']
-        elif stat['type'] == 'DIRECTORY':
-            total = 0
-            for path in self.ls(hdfs_path):
-                total += self.size(path)
-            return total
-        else:
-            raise NotImplementedError
+        return self.client.content(hdfs_path)['length']
 
     @implements(HDFS.mv)
     def mv(self, hdfs_path_src, hdfs_path_dest, overwrite=True):
@@ -324,118 +308,34 @@ class WebHDFS(HDFS):
 
     def delete(self, hdfs_path, recursive=False):
         """
-
+        Delete a file.
         """
         return self.client.delete(hdfs_path, recursive=recursive)
 
     @implements(HDFS.head)
     def head(self, hdfs_path, nbytes=1024, offset=0):
-        gen = self.client.read(hdfs_path, offset=offset, length=nbytes)
-        return ''.join(gen)
+        _reader = self.client.read(hdfs_path, offset=offset, length=nbytes)
+        with _reader as reader:
+            return reader.read()
 
     @implements(HDFS.put)
     def put(self, hdfs_path, resource, overwrite=False, verbose=None,
             **kwargs):
         verbose = verbose or options.verbose
-        is_path = isinstance(resource, six.string_types)
-
-        if is_path and osp.isdir(resource):
-            for dirpath, dirnames, filenames in os.walk(resource):
-                rel_dir = osp.relpath(dirpath, resource)
-                if rel_dir == '.':
-                    rel_dir = ''
-                for fpath in filenames:
-                    abs_path = osp.join(dirpath, fpath)
-                    rel_hdfs_path = pjoin(hdfs_path, rel_dir, fpath)
-                    self.put(rel_hdfs_path, abs_path, overwrite=overwrite,
-                             verbose=verbose, **kwargs)
+        if isinstance(resource, six.string_types):
+            # `resource` is a path.
+            return self.client.upload(hdfs_path, resource, overwrite=overwrite,
+                                      **kwargs)
         else:
-            if is_path:
-                basename = os.path.basename(resource)
-                if self.exists(hdfs_path):
-                    if self.status(hdfs_path)['type'] == 'DIRECTORY':
-                        hdfs_path = pjoin(hdfs_path, basename)
-                if verbose:
-                    self.log('Writing local {0} to HDFS {1}'.format(resource,
-                                                                    hdfs_path))
-                self.client.upload(hdfs_path, resource,
-                                   overwrite=overwrite, **kwargs)
-            else:
-                if verbose:
-                    self.log('Writing buffer to HDFS {0}'.format(hdfs_path))
-                resource.seek(0)
-                self.client.write(hdfs_path, resource, overwrite=overwrite,
-                                  **kwargs)
+            # `resource` is a file-like object.
+            hdfs_path = self.client.resolve(hdfs_path)
+            self.client.write(hdfs_path, data=resource, overwrite=overwrite,
+                              **kwargs)
+            return hdfs_path
 
     @implements(HDFS.get)
-    def get(self, hdfs_path, local_path, overwrite=False, verbose=None):
+    def get(self, hdfs_path, local_path, overwrite=False, verbose=None,
+            **kwargs):
         verbose = verbose or options.verbose
-
-        hdfs_path = hdfs_path.rstrip(posixpath.sep)
-
-        if osp.isdir(local_path) and not overwrite:
-            dest = osp.join(local_path, posixpath.basename(hdfs_path))
-        else:
-            local_dir = osp.dirname(local_path) or '.'
-            if osp.isdir(local_dir):
-                dest = local_path
-            else:
-                # fail early
-                raise HDFSError('Parent directory %s does not exist',
-                                local_dir)
-
-        # TODO: threadpool
-
-        def _get_file(remote, local):
-            if verbose:
-                self.log('Writing HDFS {0} to local {1}'.format(remote, local))
-            self.client.download(remote, local, overwrite=overwrite)
-
-        def _scrape_dir(path, dst):
-            objs = self.client.list(path)
-            for hpath, detail in objs:
-                relpath = posixpath.relpath(hpath, hdfs_path)
-                full_opath = pjoin(dst, relpath)
-
-                if detail['type'] == 'FILE':
-                    _get_file(hpath, full_opath)
-                else:
-                    os.makedirs(full_opath)
-                    _scrape_dir(hpath, dst)
-
-        status = self.status(hdfs_path)
-        if status['type'] == 'FILE':
-            if not overwrite and osp.exists(local_path):
-                raise IOError('{0} exists'.format(local_path))
-
-            _get_file(hdfs_path, local_path)
-        else:
-            # TODO: partitioned files
-
-            with temppath() as tpath:
-                _temp_dir_path = osp.join(tpath, posixpath.basename(hdfs_path))
-                os.makedirs(_temp_dir_path)
-                _scrape_dir(hdfs_path, _temp_dir_path)
-
-                if verbose:
-                    self.log('Moving {0} to {1}'.format(_temp_dir_path,
-                                                        local_path))
-
-                if overwrite and osp.exists(local_path):
-                    # swap and delete
-                    local_swap_path = util.guid()
-                    shutil.move(local_path, local_swap_path)
-
-                    try:
-                        shutil.move(_temp_dir_path, local_path)
-                        if verbose:
-                            msg = 'Deleting original {0}'.format(local_path)
-                            self.log(msg)
-                        shutil.rmtree(local_swap_path)
-                    except:
-                        # undo our diddle
-                        shutil.move(local_swap_path, local_path)
-                else:
-                    shutil.move(_temp_dir_path, local_path)
-
-        return dest
+        return self.client.download(hdfs_path, local_path, overwrite=overwrite,
+                                    **kwargs)

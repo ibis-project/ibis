@@ -57,11 +57,11 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert roots[0] is tview.op()
 
     def test_get_type(self):
-        for k, v in self.schema_dict.iteritems():
+        for k, v in self.schema_dict.items():
             assert self.table._get_type(k) == v
 
     def test_getitem_column_select(self):
-        for k, v in self.schema_dict.iteritems():
+        for k, v in self.schema_dict.items():
             col = self.table[k]
 
             # Make sure it's the right type
@@ -142,7 +142,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
             try:
                 table.select([table.bigint_col, ibis.literal(5)])
             except Exception as e:
-                assert 'named' in e.message
+                assert 'named' in e.args[0]
 
     def test_projection_of_aggregated(self):
         # Fully-formed aggregations "block"; in a projection, column

@@ -17,6 +17,7 @@ import six
 
 from ibis.common import IbisError, RelationError
 import ibis.common as com
+import ibis.compat as compat
 import ibis.config as config
 import ibis.util as util
 
@@ -365,7 +366,7 @@ class Literal(ValueNode):
         import ibis.expr.rules as rules
         if isinstance(self.value, bool):
             klass = BooleanScalar
-        elif isinstance(self.value, (int, long)):
+        elif isinstance(self.value, compat.integer_types):
             int_type = rules.int_literal_class(self.value)
             klass = int_type.scalar_type()
         elif isinstance(self.value, float):

@@ -14,10 +14,8 @@
 
 import traceback
 
-from cPickle import loads as pickle_load
-from ibis.cloudpickle import dumps as pickle_dump
-
 from ibis.wire import PackedMessageReader, PackedMessageWriter
+import ibis.compat as compat
 import ibis.wire as wire
 
 try:

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import operator
+import six
 
 from ibis.expr.types import TableColumn  # noqa
 
@@ -55,9 +56,9 @@ class ValueOperationMeta(type):
         return super(ValueOperationMeta, cls).__new__(cls, name, parents, dct)
 
 
-class ValueOp(ValueNode):
+class ValueOp(six.with_metaclass(ValueOperationMeta, ValueNode)):
 
-    __metaclass__ = ValueOperationMeta
+    pass
 
 
 class PhysicalTable(ir.BlockingTableNode, HasSchema):

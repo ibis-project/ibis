@@ -471,7 +471,7 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
         try:
             self.con.truncate_table(table_name)
         except HS2Error as e:
-            if 'AnalysisException' in e.message:
+            if 'AnalysisException' in e.args[0]:
                 pytest.skip('TRUNCATE not available in this '
                             'version of Impala')
 
@@ -764,8 +764,7 @@ def _get_select(expr):
 
 
 def _random_table_name():
-    import uuid
-    table_name = 'testing_' + uuid.uuid4().get_hex()
+    table_name = '__ibis_test_' + util.guid()
     return table_name
 
 

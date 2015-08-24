@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from io import BytesIO
+from ibis.compat import StringIO
 
 from ibis.sql.exprs import ExprTranslator, quote_identifier
 import ibis.expr.types as ir
@@ -130,7 +130,7 @@ class Select(DDL):
         if len(self.subqueries) == 0:
             return
 
-        buf = BytesIO()
+        buf = StringIO()
         buf.write('WITH ')
 
         for i, expr in enumerate(self.subqueries):
@@ -159,7 +159,7 @@ class Select(DDL):
                     expr_str = '*'
             formatted.append(expr_str)
 
-        buf = BytesIO()
+        buf = StringIO()
         line_length = 0
         max_length = 70
         tokens = 0
@@ -233,7 +233,7 @@ class Select(DDL):
         if len(self.where) == 0:
             return None
 
-        buf = BytesIO()
+        buf = StringIO()
         buf.write('WHERE ')
         fmt_preds = [translate_expr(pred, context=context,
                                     permit_subquery=True)
@@ -243,7 +243,7 @@ class Select(DDL):
         return buf.getvalue()
 
     def format_postamble(self, context):
-        buf = BytesIO()
+        buf = StringIO()
         lines = 0
 
         if len(self.order_by) > 0:
@@ -304,7 +304,7 @@ class _TableSetFormatter(object):
             self.join_tables.append(self._format_table(self.expr))
 
         # TODO: Now actually format the things
-        buf = BytesIO()
+        buf = StringIO()
         buf.write(self.join_tables[0])
         for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
                                        self.join_predicates):

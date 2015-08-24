@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.cloudpickle import dumps as pickle_dump
-
 import base64
 
 
 class UDAEvaluator(object):
 
     def __init__(self, uda_class, view_name, uda_fields, key_fields=None):
+        from ibis.compat import pickle_dump
         self.uda_class = uda_class
 
         self.uda_encoded = base64.b64_encode(pickle_dump(uda_class))

@@ -24,6 +24,7 @@ import pytest
 from ibis.filesystems import HDFS
 from ibis.compat import unittest
 from ibis.tests.util import IbisTestEnv
+import ibis.compat as compat
 import ibis.util as util
 import ibis
 
@@ -49,25 +50,25 @@ class TestHDFSRandom(unittest.TestCase):
         self.con = MockHDFS()
 
     def test_find_any_file(self):
-        ls_contents = [(u'/path/foo',
+        ls_contents = [(u'foo',
                         {u'type': u'DIRECTORY'}),
-                       (u'/path/bar.tmp',
+                       (u'bar.tmp',
                         {u'type': u'FILE'}),
-                       (u'/path/baz.copying',
+                       (u'baz.copying',
                         {u'type': u'FILE'}),
-                       (u'/path/_SUCCESS',
+                       (u'_SUCCESS',
                         {u'type': u'FILE'}),
-                       (u'/path/.peekaboo',
+                       (u'.peekaboo',
                         {u'type': u'FILE'}),
-                       (u'/path/0.parq',
+                       (u'0.parq',
                         {u'type': u'FILE'}),
-                       (u'/path/_FILE',
+                       (u'_FILE',
                         {u'type': u'DIRECTORY'})]
 
         self.con.set_ls(ls_contents)
 
-        result = self.con.find_any_file('/path')
-        assert result == '/path/0.parq'
+        result = self.con._find_any_file('/path')
+        assert result == '0.parq'
 
 
 @pytest.mark.e2e
@@ -119,7 +120,7 @@ class TestHDFSE2E(unittest.TestCase):
             os.mkdir(directory)
             self.test_directories.append(directory)
 
-        for i in xrange(files):
+        for i in range(files):
             self._make_random_file(size=filesize, directory=directory)
 
         return directory
@@ -133,8 +134,8 @@ class TestHDFSE2E(unittest.TestCase):
         units = size / 32
 
         with open(path, 'wb') as f:
-            for i in xrange(units):
-                f.write(util.guid())
+            for i in range(int(units)):
+                f.write(guidbytes())
 
         self.test_files.append(path)
         return path
@@ -215,7 +216,7 @@ class TestHDFSE2E(unittest.TestCase):
         os.mkdir(local_dir)
 
         try:
-            for i in xrange(K):
+            for i in range(K):
                 self._make_random_file(directory=local_dir)
 
             remote_dir = pjoin(self.tmp_dir, local_dir)
@@ -253,7 +254,7 @@ class TestHDFSE2E(unittest.TestCase):
         remote_path2 = pjoin(self.tmp_dir, local_path2)
         self.hdfs.put(remote_path2, local_path2)
 
-        with self.assertRaises(IOError):
+        with self.assertRaises(Exception):
             self.hdfs.get(remote_path, '.')
 
         self.hdfs.get(remote_path, local_path2, overwrite=True)
@@ -288,7 +289,7 @@ class TestHDFSE2E(unittest.TestCase):
         os.mkdir(local_dir)
 
         try:
-            for i in xrange(K):
+            for i in range(K):
                 self._make_random_file(directory=local_dir)
 
             nested_dir = osp.join(local_dir, 'nested-dir')
@@ -309,21 +310,33 @@ class TestHDFSE2E(unittest.TestCase):
         finally:
             shutil.rmtree(local_dir)
 
-    def test_get_directory_overwrite(self):
-        local_dir = self._make_test_directory()
-        local_dir2 = self._make_test_directory()
+    def test_get_directory_overwrite_file(self):
+        try:
+            local_path1 = self._make_test_directory()
+            local_path2 = self._make_random_file()
+            remote_path = pjoin(self.tmp_dir, local_path1)
+            self.hdfs.put(remote_path, local_path1)
+            self.hdfs.get(remote_path, local_path2, overwrite=True)
+            _check_directories_equal(local_path1, local_path2)
+        finally:
+            # Path changed from file to directory, must be cleaned manually.
+            self._try_delete_directory(local_path2)
 
-        remote_dir = pjoin(self.tmp_dir, local_dir)
-        remote_dir2 = pjoin(self.tmp_dir, local_dir2)
+    def test_get_directory_overwrite_directory(self):
+        local_path1 = self._make_test_directory()
+        local_path2 = self._make_test_directory()
+        remote_path = pjoin(self.tmp_dir, local_path2)
+        self.hdfs.put(remote_path, local_path1)
+        self.hdfs.get(remote_path, osp.dirname(local_path2), overwrite=True)
+        _check_directories_equal(local_path1, local_path2)
 
-        self.hdfs.put(remote_dir, local_dir)
-        self.hdfs.put(remote_dir2, local_dir2)
-
-        self.hdfs.get(remote_dir, local_dir2, overwrite=True)
-        _check_directories_equal(local_dir2, local_dir)
-
-        self.hdfs.get(remote_dir, local_dir2, overwrite=True)
-        _check_directories_equal(local_dir2, local_dir)
+    def test_get_directory_into_directory(self):
+        local_path1 = self._make_test_directory()
+        local_path2 = self._make_test_directory()
+        remote_path = pjoin(self.tmp_dir, local_path1)
+        self.hdfs.put(remote_path, local_path1)
+        local_path3 = self.hdfs.get(remote_path, local_path2)
+        _check_directories_equal(local_path3, local_path1)
 
     def _try_delete_directory(self, path):
         try:
@@ -334,7 +347,7 @@ class TestHDFSE2E(unittest.TestCase):
     def test_ls(self):
         test_dir = pjoin(self.tmp_dir, 'ls-test')
         self.hdfs.mkdir(test_dir)
-        for i in xrange(10):
+        for i in range(10):
             local_path = self._make_random_file()
             hdfs_path = pjoin(test_dir, local_path)
             self.hdfs.put(hdfs_path, local_path)
@@ -446,8 +459,8 @@ class TestSuperUserHDFSE2E(unittest.TestCase):
         units = size / 32
 
         with open(path, 'wb') as f:
-            for i in xrange(units):
-                f.write(util.guid())
+            for i in range(int(units)):
+                f.write(guidbytes())
 
         self.test_files.append(path)
         return path
@@ -514,3 +527,10 @@ def _get_all_files(path):
             paths[relpath] = abspath
 
     return paths
+
+
+def guidbytes():
+    if compat.PY3:
+        return util.guid().encode('utf8')
+    else:
+        return util.guid()

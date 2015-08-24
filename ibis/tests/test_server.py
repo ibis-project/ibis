@@ -22,10 +22,11 @@ import threading
 
 from ibis.compat import unittest
 from ibis.server import IbisServerNode
+import ibis.compat as compat
 
 
 # non-POSIX system (e.g. Windows)
-pytestmark = pytest.mark.skipif(not hasattr(os, 'setpgid'),
+pytestmark = pytest.mark.skipif(compat.PY3 or not hasattr(os, 'setpgid'),
                                 reason='non-POSIX system')
 
 

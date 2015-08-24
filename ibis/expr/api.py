@@ -666,9 +666,11 @@ _generic_value_methods = dict(
     mul=mul,
 
     __div__=div,
+    __truediv__=div,
     div=div,
 
     __rdiv__=rdiv,
+    __rtruediv__=rdiv,
     rdiv=rdiv,
 
     __pow__=pow,

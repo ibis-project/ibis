@@ -13,33 +13,33 @@
 # limitations under the License.
 
 from posixpath import join as pjoin
-from six import BytesIO, StringIO
-import Queue
 import re
+import six
 import threading
 import weakref
 
 import hdfs
 
-from ibis.config import options
-from ibis.filesystems import HDFS, WebHDFS
 import ibis.common as com
 
+from ibis.config import options
+from ibis.compat import lzip
 from ibis.client import SQLClient
-from ibis.expr.datatypes import Schema
+from ibis.filesystems import HDFS, WebHDFS
+from ibis.impala import udf, ddl
+from ibis.impala.compat import impyla, ImpylaError, HS2Error
+from ibis.sql.ddl import DDL
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-
-from ibis.impala import udf, ddl
-
-from ibis.sql.ddl import DDL
 import ibis.sql.compiler as sql
-
 import ibis.util as util
 
 
-from ibis.impala.compat import impyla, ImpylaError, HS2Error
+if six.PY2:
+    import Queue as queue
+else:
+    import queue
 
 
 class ImpalaConnection(object):
@@ -55,7 +55,7 @@ class ImpalaConnection(object):
 
         self.lock = threading.Lock()
 
-        self.connection_pool = Queue.Queue(pool_size)
+        self.connection_pool = queue.Queue(pool_size)
         self.connection_pool_size = 0
         self.max_pool_size = pool_size
 
@@ -112,7 +112,7 @@ class ImpalaConnection(object):
             if cur.codegen_disabled != self.codegen_disabled:
                 cur.disable_codegen(self.codegen_disabled)
             return cur
-        except Queue.Empty:
+        except queue.Empty:
             if self.connection_pool_size < self.max_pool_size:
                 cursor = self._new_cursor()
                 self.connection_pool_size += 1
@@ -152,7 +152,15 @@ class ImpalaCursor(object):
         self.codegen_disabled = codegen_disabled
 
     def __del__(self):
-        self.cursor.close()
+        self._close_cursor()
+
+    def _close_cursor(self):
+        try:
+            self.cursor.close()
+        except HS2Error as e:
+            # connection was closed elsewhere
+            if 'invalid session' not in e.args[0].lower():
+                raise
 
     def __enter__(self):
         return self
@@ -316,10 +324,10 @@ class ImpalaClient(SQLClient):
 
         return result
 
-    def _get_list(self, cur, i=0):
+    def _get_list(self, cur):
         tuples = cur.fetchall()
         if len(tuples) > 0:
-            return list(zip(*tuples)[i])
+            return list(lzip(*tuples)[0])
         else:
             return []
 
@@ -359,7 +367,7 @@ class ImpalaClient(SQLClient):
         if path:
             # explicit mkdir ensures the user own the dir rather than impala,
             # which is easier for manual cleanup, if necessary
-            self._hdfs.mkdir(path, create_parent=True)
+            self._hdfs.mkdir(path)
         statement = ddl.CreateDatabase(name, path=path, can_exist=force)
         self._execute(statement)
 
@@ -461,7 +469,7 @@ class ImpalaClient(SQLClient):
                 partition_fields.append((x, name_to_type[x]))
 
         pnames, ptypes = zip(*partition_fields)
-        return Schema(pnames, ptypes)
+        return dt.Schema(pnames, ptypes)
 
     def get_schema(self, table_name, database=None):
         """
@@ -491,7 +499,7 @@ class ImpalaClient(SQLClient):
 
         names = [x.lower() for x in names]
 
-        return Schema(names, ibis_types)
+        return dt.Schema(names, ibis_types)
 
     def exists_table(self, name, database=None):
         """
@@ -612,8 +620,8 @@ class ImpalaClient(SQLClient):
 
         # write df to a temp CSV file on HDFS
         temp_csv_hdfs_dir = pjoin(options.impala.temp_hdfs_path, util.guid())
-        buf = BytesIO()
-        df.to_csv(buf, header=False, index=False, na_rep='\N')
+        buf = six.BytesIO()
+        df.to_csv(buf, header=False, index=False, na_rep='\\N')
         self.hdfs.put(pjoin(temp_csv_hdfs_dir, '0.csv'), buf)
 
         # define a temporary table using delimited data
@@ -758,7 +766,8 @@ class ImpalaClient(SQLClient):
         # If no schema provided, need to find some absolute path to a file in
         # the HDFS directory
         if like_file is None and like_table is None and schema is None:
-            like_file = self.hdfs.find_any_file(hdfs_dir)
+            file_name = self.hdfs._find_any_file(hdfs_dir)
+            like_file = pjoin(hdfs_dir, file_name)
 
         qualified_name = self._fully_qualified_name(name, database)
 
@@ -938,7 +947,7 @@ class ImpalaClient(SQLClient):
         # all lowercase fields from Impala.
         names = [x.lower() for x in names]
 
-        return Schema(names, ibis_types)
+        return dt.Schema(names, ibis_types)
 
     def create_function(self, func, name=None, database=None):
         """
@@ -1459,7 +1468,7 @@ class _type_parser(object):
     def __init__(self, value):
         self.value = value
         self.state = self.NORMAL
-        self.buf = StringIO()
+        self.buf = six.StringIO()
         self.types = []
         for c in value:
             self._step(c)
@@ -1469,7 +1478,7 @@ class _type_parser(object):
         val = self.buf.getvalue().strip()
         if val:
             self.types.append(val)
-        self.buf = StringIO()
+        self.buf = six.StringIO()
 
     def _step(self, c):
         if self.state == self.NORMAL:
