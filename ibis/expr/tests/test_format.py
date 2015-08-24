@@ -38,6 +38,11 @@ class TestExprFormatting(unittest.TestCase):
         self.table = ibis.table(self.schema)
         self.con = MockConnection()
 
+    def test_format_table_column(self):
+        # GH #507
+        result = repr(self.table.f)
+        assert 'Column[array(double)]' in result
+
     def test_format_projection(self):
         # This should produce a ref to the projection
         proj = self.table[['c', 'a', 'f']]

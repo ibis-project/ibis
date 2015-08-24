@@ -472,7 +472,9 @@ class SelectBuilder(object):
         if toplevel:
             # HACK: yuck, need a better way to know if we should perform a
             # select * from a subquery here
-            if not isinstance(op.table.op(), ops.Aggregation):
+            parent_op = op.table.op()
+            if (isinstance(parent_op, ir.BlockingTableNode) and
+                    not isinstance(parent_op, ops.Aggregation)):
                 self.select_set = [op.table]
                 self.table_set = op.table
                 toplevel = False
