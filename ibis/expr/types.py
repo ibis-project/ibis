@@ -22,11 +22,6 @@ import ibis.config as config
 import ibis.util as util
 
 
-def _ops():
-    import ibis.expr.operations as mod
-    return mod
-
-
 class Parameter(object):
 
     """
@@ -577,17 +572,6 @@ class TableExpr(Expr):
     def _get_type(self, name):
         return self._arg.get_type(name)
 
-    def materialize(self):
-        """
-        Force schema resolution for a joined table, selecting all fields from
-        all tables.
-        """
-        if self._is_materialized():
-            return self
-        else:
-            op = _ops().MaterializedJoin(self)
-            return TableExpr(op)
-
     def get_columns(self, iterable):
         """
         Get multiple columns from the table
@@ -629,32 +613,9 @@ class TableExpr(Expr):
             raise IbisError('Table operation is not yet materialized')
         return self.op().get_schema()
 
-    def to_array(self):
-        """
-        Single column tables can be viewed as arrays.
-        """
-        op = _ops().TableArrayView(self)
-        return op.to_expr()
-
     def _is_materialized(self):
         # The operation produces a known schema
         return self.op().has_schema()
-
-    def view(self):
-        """
-        Create a new table expression that is semantically equivalent to the
-        current one, but is considered a distinct relation for evaluation
-        purposes (e.g. in SQL).
-
-        For doing any self-referencing operations, like a self-join, you will
-        use this operation to create a reference to the current table
-        expression.
-
-        Returns
-        -------
-        expr : TableExpr
-        """
-        return TableExpr(_ops().SelfReference(self))
 
     def add_column(self, expr, name=None):
         """
@@ -674,38 +635,6 @@ class TableExpr(Expr):
             expr = expr.name(name)
 
         return self.projection([self, expr])
-
-    def distinct(self):
-        """
-        Compute set of unique rows/tuples occurring in this table
-        """
-        op = _ops().Distinct(self)
-        return op.to_expr()
-
-    def projection(self, exprs):
-        """
-        Compute new table expression with the indicated column expressions from
-        this table.
-
-        Parameters
-        ----------
-        exprs : column expression, or string, or list of column expressions and
-          strings. If strings passed, must be columns in the table already
-
-        Returns
-        -------
-        projection : TableExpr
-        """
-        import ibis.expr.analysis as L
-
-        if isinstance(exprs, (Expr,) + six.string_types):
-            exprs = [exprs]
-
-        exprs = [self._ensure_expr(e) for e in exprs]
-        op = L.Projector(self, exprs).get_result()
-        return TableExpr(op)
-
-    select = projection
 
     def group_by(self, by):
         """

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
+
 from ibis.expr.datatypes import Schema  # noqa
 from ibis.expr.types import (Expr,  # noqa
                              ValueExpr, ScalarExpr, ArrayExpr,
@@ -1716,6 +1718,14 @@ def aggregate(table, metrics=None, by=None, having=None, **kwds):
     return TableExpr(op)
 
 
+def _table_distinct(self):
+    """
+    Compute set of unique rows/tuples occurring in this table
+    """
+    op = _ops.Distinct(self)
+    return op.to_expr()
+
+
 def _table_limit(table, n, offset=0):
     """
     Select the first n rows at beginning of table (may not be deterministic
@@ -1781,6 +1791,26 @@ def _table_union(left, right, distinct=False):
     return TableExpr(op)
 
 
+def _table_to_array(self):
+    """
+    Single column tables can be viewed as arrays.
+    """
+    op = _ops.TableArrayView(self)
+    return op.to_expr()
+
+
+def _table_materialize(table):
+    """
+    Force schema resolution for a joined table, selecting all fields from
+    all tables.
+    """
+    if table._is_materialized():
+        return table
+    else:
+        op = _ops.MaterializedJoin(table)
+        return TableExpr(op)
+
+
 def mutate(table, exprs=None, **kwds):
     """
     Convenience function for table projections involving adding columns
@@ -1836,6 +1866,30 @@ def mutate(table, exprs=None, **kwds):
         return table.projection([table] + exprs)
 
 
+def projection(table, exprs):
+    """
+    Compute new table expression with the indicated column expressions from
+    this table.
+
+    Parameters
+    ----------
+    exprs : column expression, or string, or list of column expressions and
+      strings. If strings passed, must be columns in the table already
+
+    Returns
+    -------
+    projection : TableExpr
+    """
+    import ibis.expr.analysis as L
+
+    if isinstance(exprs, (Expr,) + six.string_types):
+        exprs = [exprs]
+
+    exprs = [table._ensure_expr(e) for e in exprs]
+    op = L.Projector(table, exprs).get_result()
+    return TableExpr(op)
+
+
 def _table_relabel(table, substitutions, replacements=None):
     """
     Change table column names, otherwise leaving table unaltered
@@ -1868,14 +1922,35 @@ def _table_relabel(table, substitutions, replacements=None):
     return table.projection(exprs)
 
 
+def _table_view(self):
+    """
+    Create a new table expression that is semantically equivalent to the
+    current one, but is considered a distinct relation for evaluation
+    purposes (e.g. in SQL).
+
+    For doing any self-referencing operations, like a self-join, you will
+    use this operation to create a reference to the current table
+    expression.
+
+    Returns
+    -------
+    expr : TableExpr
+    """
+    return TableExpr(_ops.SelfReference(self))
+
+
 _table_methods = dict(
     aggregate=aggregate,
     count=_table_count,
+    distinct=_table_distinct,
     info=_table_info,
     limit=_table_limit,
     set_column=_table_set_column,
     filter=filter,
+    materialize=_table_materialize,
     mutate=mutate,
+    projection=projection,
+    select=projection,
     relabel=_table_relabel,
     join=join,
     cross_join=cross_join,
@@ -1885,7 +1960,9 @@ _table_methods = dict(
     semi_join=_regular_join_method('semi_join', 'semi'),
     anti_join=_regular_join_method('anti_join', 'anti'),
     sort_by=_table_sort_by,
-    union=_table_union
+    to_array=_table_to_array,
+    union=_table_union,
+    view=_table_view
 )
 
 
