@@ -19,6 +19,7 @@ import pytest
 
 from ibis import options
 import ibis.util as util
+import ibis.compat as compat
 import ibis
 
 
@@ -137,3 +138,13 @@ class ImpalaE2E(object):
         self.con.set_database(self.test_data_db)
         for t in self.temp_databases:
             self.con.drop_database(t, force=True)
+
+
+def format_schema(expr):
+    from ibis.sql.exprs import _type_to_sql_string
+    from pprint import pprint
+    schema = expr.schema()
+
+    what = compat.lzip(schema.names,
+                       [_type_to_sql_string(x) for x in schema.types])
+    pprint(what)
