@@ -60,7 +60,7 @@ class IbisTestEnv(object):
 
 
 def connect_test(env, with_hdfs=True):
-    con = ibis.impala_connect(host=env.impala_host,
+    con = ibis.impala.connect(host=env.impala_host,
                               protocol=env.impala_protocol,
                               database=env.test_data_db,
                               port=env.impala_port,

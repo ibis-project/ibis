@@ -131,9 +131,8 @@ class Expr(object):
         result : expression-dependent
           Result of compiling expression and executing in backend
         """
-        import ibis.expr.analysis as L
-        backend = L.find_backend(self)
-        return backend.execute(self, limit=limit)
+        from ibis.client import execute
+        return execute(self, limit=limit)
 
     def equals(self, other):
         if type(self) != type(other):

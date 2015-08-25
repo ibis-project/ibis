@@ -60,7 +60,12 @@ def make_client(db, hdfs_client=None):
     -------
     client : IbisClient
     """
-    return impala.ImpalaClient(db, hdfs_client=hdfs_client)
+    client = impala.ImpalaClient(db, hdfs_client=hdfs_client)
+
+    if options.default_backend is None:
+        options.default_backend = client
+
+    return client
 
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',

@@ -15,19 +15,13 @@
 # This file may adapt small portions of https://github.com/mtth/hdfs (MIT
 # license), see the LICENSES directory.
 
-from os import path as osp
 from posixpath import join as pjoin
-import os
 import posixpath
-import shutil
 
 import six
 
 from ibis.config import options
 import ibis.common as com
-import ibis.util as util
-
-from hdfs.util import temppath
 
 
 class HDFSError(com.IbisError):

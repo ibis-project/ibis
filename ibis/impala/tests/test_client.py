@@ -33,6 +33,19 @@ ENV = IbisTestEnv()
 
 class TestImpalaClient(ImpalaE2E, unittest.TestCase):
 
+    def test_execute_exprs_default_backend(self):
+        cases = [
+            (ibis.literal(2), 2)
+        ]
+
+        ibis.options.default_backend = None
+        client = connect_test(ENV, with_hdfs=False)
+        assert ibis.options.default_backend is client
+
+        for expr, expected in cases:
+            result = expr.execute()
+            assert result == expected
+
     def test_raise_ibis_error_no_hdfs(self):
         # #299
         client = connect_test(ENV, with_hdfs=False)

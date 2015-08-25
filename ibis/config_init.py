@@ -18,6 +18,7 @@ cf.register_option('interactive', False, validator=cf.is_bool)
 cf.register_option('verbose', False, validator=cf.is_bool)
 cf.register_option('verbose_log', None)
 
+cf.register_option('default_backend', None)
 
 sql_default_limit_doc = """
 Number of rows to be retrieved for an unlimited table expression

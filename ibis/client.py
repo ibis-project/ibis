@@ -20,6 +20,7 @@ import ibis.expr.operations as ops
 
 import ibis.sql.compiler as sql
 import ibis.sql.ddl as ddl
+import ibis.common as com
 import ibis.util as util
 
 
@@ -197,3 +198,34 @@ LIMIT 0""".format(query)
                 # coercing to specified dtype failed, e.g. NULL vals in int col
                 cols[name] = pd.Series(col)
         return pd.DataFrame(cols, columns=names)
+
+
+def execute(expr, limit=None):
+    backend = find_backend(expr)
+    return backend.execute(expr, limit=limit)
+
+
+def find_backend(expr):
+    backends = []
+
+    def walk(expr):
+        node = expr.op()
+        for arg in node.flat_args():
+            if isinstance(arg, Client):
+                backends.append(arg)
+            elif isinstance(arg, ir.Expr):
+                walk(arg)
+
+    walk(expr)
+    backends = util.unique_by_key(backends, id)
+
+    if len(backends) > 1:
+        raise ValueError('Multiple backends found')
+    elif len(backends) == 0:
+        default = options.default_backend
+        if default is None:
+            raise com.IbisError('Expression depends on no backends, '
+                                'and found no default')
+        return default
+
+    return backends[0]

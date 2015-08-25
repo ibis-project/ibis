@@ -197,7 +197,7 @@ class AggregationTask(Task):
         self.shmem.seek(0)
         self.mark_success()
 
-        serialized_inst = pickle_dump(agg_inst)
+        serialized_inst = compat.pickle_dump(agg_inst)
         wire.write_string(self.shmem, serialized_inst)
 
 
@@ -225,7 +225,7 @@ class AggregationUpdateTask(AggregationTask):
         has_prior_state = reader.uint8() != 0
 
         if has_prior_state:
-            self.prior_state = pickle_load(reader.string())
+            self.prior_state = compat.pickle_load(reader.string())
         else:
             self.prior_state = None
 
@@ -233,7 +233,7 @@ class AggregationUpdateTask(AggregationTask):
         if self.prior_state is not None:
             agg_inst = self.prior_state
         else:
-            klass = pickle_load(self.agg_class_pickled)
+            klass = compat.pickle_load(self.agg_class_pickled)
             agg_inst = klass()
 
         args = self._deserialize_args()
@@ -268,8 +268,8 @@ class AggregationMergeTask(AggregationTask):
         # TODO: may wish to merge more than 2 at a time?
 
         # Unpack header
-        self.left_inst = pickle_load(reader.string())
-        self.right_inst = pickle_load(reader.string())
+        self.left_inst = compat.pickle_load(reader.string())
+        self.right_inst = compat.pickle_load(reader.string())
 
     def run(self):
         # Objects to merge stored in length-prefixed strings in shared memory
@@ -283,7 +283,7 @@ class AggregationFinalizeTask(AggregationTask):
         AggregationTask.__init__(self, shmem)
 
         reader = wire.PackedMessageReader(shmem)
-        self.state = pickle_load(reader.string())
+        self.state = compat.pickle_load(reader.string())
 
     def run(self):
         # Single length-prefixed string to finalize
