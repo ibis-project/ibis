@@ -574,6 +574,26 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
         assert vname not in self.db
 
 
+class TestAlterTable(ImpalaE2E, unittest.TestCase):
+
+    def test_rename_table(self):
+        tmp_db = '__ibis_tmp_{0}'.format(util.guid()[:4])
+        self.con.create_database(tmp_db)
+        self.temp_databases.append(tmp_db)
+
+        self.con.create_table('tmp_rename_test',
+                              self.con.table('tpch_region'))
+        table = self.con.table('tmp_rename_test')
+
+        new_name = 'rename_test'
+        table.rename(new_name, database=tmp_db)
+
+        table.execute()
+
+        t = self.con.table(new_name, database=tmp_db)
+        assert_equal(table, t)
+
+
 class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
     def test_cleanup_tmp_table_on_gc(self):

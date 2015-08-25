@@ -1836,7 +1836,7 @@ def mutate(table, exprs=None, **kwds):
         return table.projection([table] + exprs)
 
 
-def _table_rename(table, substitutions, replacements=None):
+def _table_relabel(table, substitutions, replacements=None):
     """
     Change table column names, otherwise leaving table unaltered
 
@@ -1846,7 +1846,7 @@ def _table_rename(table, substitutions, replacements=None):
 
     Returns
     -------
-    renamed : TableExpr
+    relabeled : TableExpr
     """
     if replacements is not None:
         raise NotImplementedError
@@ -1876,7 +1876,7 @@ _table_methods = dict(
     set_column=_table_set_column,
     filter=filter,
     mutate=mutate,
-    rename=_table_rename,
+    relabel=_table_relabel,
     join=join,
     cross_join=cross_join,
     inner_join=_regular_join_method('inner_join', 'inner'),

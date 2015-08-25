@@ -1121,12 +1121,6 @@ class ImpalaClient(SQLClient):
         else:
             return []
 
-    def _parse_input_string(self, s):
-        regex = re.compile(r'(?:[^,(]|\([^)]*\))+')
-        results = regex.findall(s)
-        return [udf._impala_type_to_ibis(x.strip().lower())
-                for x in results]
-
     def exists_udf(self, name, database=None):
         """
         Checks if a given UDF exists within a specified database
@@ -1340,26 +1334,42 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
     """
 
     @property
-    def _table_name(self):
+    def _qualified_name(self):
         return self.op().args[0]
+
+    @property
+    def _unqualified_name(self):
+        return self._match_name()[1]
 
     @property
     def _client(self):
         return self.op().args[2]
+
+    def _match_name(self):
+        m = ddl.fully_qualified_re.match(self._qualified_name)
+        if not m:
+            raise com.IbisError('Cannot determine database name from {0}'
+                                .format(self._qualified_name))
+        db, quoted, unquoted = m.groups()
+        return db, quoted or unquoted
+
+    @property
+    def _database(self):
+        return self._match_name()[0]
 
     def compute_stats(self):
         """
         Invoke Impala COMPUTE STATS command to compute column, table, and
         partition statistics. No return value.
         """
-        stmt = 'COMPUTE STATS {0}'.format(self._table_name)
+        stmt = 'COMPUTE STATS {0}'.format(self._qualified_name)
         self._client._execute(stmt)
 
     def drop(self):
         """
         Drop the table from the database
         """
-        self._client.drop_table_or_view(self._table_name)
+        self._client.drop_table_or_view(self._qualified_name)
 
     def insert(self, expr, overwrite=False, validate=True):
         """
@@ -1381,8 +1391,30 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         # Completely overwrite contents
         t.insert(table_expr, overwrite=True)
         """
-        self._client.insert(self._table_name, expr, overwrite=overwrite,
+        self._client.insert(self._qualified_name, expr, overwrite=overwrite,
                             validate=validate)
+
+    def rename(self, new_name, database=None):
+        """
+        Rename table inside Impala.
+
+        Beware: mutates table expression in place.
+
+        Parameters
+        ----------
+        new_name : string
+        database : string
+        """
+        m = ddl.fully_qualified_re.match(new_name)
+        if not m and database is None:
+            database = self._database
+        statement = ddl.RenameTable(self._qualified_name, new_name,
+                                    new_database=database)
+        self._client._execute(statement)
+
+        # HACK. Not sure about the best API here...
+        op = self.op().change_name(statement.new_qualified_name)
+        self._arg = op
 
 
 class ImpalaTemporaryTable(ops.DatabaseTable):
