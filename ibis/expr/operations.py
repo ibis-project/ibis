@@ -651,6 +651,22 @@ class Mean(Reduction):
     output_type = rules.scalar_output(_mean_output_type)
 
 
+class VarianceBase(Reduction):
+
+    input_type = [rules.array, boolean(name='where', optional=True),
+                  rules.string_options(['sample', 'pop'],
+                                       name='how', optional=True)]
+    output_type = rules.scalar_output(_mean_output_type)
+
+
+class StandardDev(VarianceBase):
+    pass
+
+
+class Variance(VarianceBase):
+    pass
+
+
 def _decimal_scalar_ctor(precision, scale):
     out_type = dt.Decimal(precision, scale)
     return ir.DecimalScalar._make_constructor(out_type)

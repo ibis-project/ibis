@@ -716,8 +716,6 @@ first = _unary_op('first', _ops.FirstValue)
 last = _unary_op('last', _ops.LastValue)
 rank = _unary_op('rank', _ops.MinRank)
 dense_rank = _unary_op('dense_rank', _ops.DenseRank)
-cumsum = _unary_op('cumsum', _ops.CumulativeSum)
-cummean = _unary_op('cummean', _ops.CumulativeMean)
 cummin = _unary_op('cummin', _ops.CumulativeMin)
 cummax = _unary_op('cummax', _ops.CumulativeMax)
 
@@ -1026,14 +1024,56 @@ _integer_value_methods = dict(
 
 
 mean = _agg_function('mean', _ops.Mean, True)
+cummean = _unary_op('cummean', _ops.CumulativeMean)
+
 sum = _agg_function('sum', _ops.Sum, True)
+cumsum = _unary_op('cumsum', _ops.CumulativeSum)
+
+
+def std(arg, where=None, how='sample'):
+    """
+    Compute standard deviation of numeric array
+
+    Parameters
+    ----------
+    how : {'sample', 'pop'}, default 'sample'
+
+    Returns
+    -------
+    stdev : double scalar
+    """
+    expr = _ops.StandardDev(arg, where, how).to_expr()
+    expr = expr.name('std')
+    return expr
+
+
+def variance(arg, where=None, how='sample'):
+    """
+    Compute standard deviation of numeric array
+
+    Parameters
+    ----------
+    how : {'sample', 'pop'}, default 'sample'
+
+    Returns
+    -------
+    stdev : double scalar
+    """
+    expr = _ops.Variance(arg, where, how).to_expr()
+    expr = expr.name('var')
+    return expr
 
 
 _numeric_array_methods = dict(
     mean=mean,
+    cummean=cummean,
+
     sum=sum,
     cumsum=cumsum,
-    cummean=cummean,
+
+    std=std,
+    var=variance,
+
     bucket=bucket,
     histogram=histogram,
     summary=_numeric_summary,

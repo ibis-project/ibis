@@ -481,6 +481,11 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase):
             d.approx_median(),
             s.group_concat(),
 
+            d.std(),
+            d.std(how='pop'),
+            d.var(),
+            d.var(how='pop'),
+
             table.bool_col.any(),
             table.bool_col.notany(),
             -table.bool_col.any(),
@@ -494,6 +499,8 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase):
             d.mean(where=cond),
             d.min(where=cond),
             d.max(where=cond),
+            d.std(where=cond),
+            d.var(where=cond),
         ]
 
         agg_exprs = [expr.name('e%d' % i)
