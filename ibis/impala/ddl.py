@@ -16,7 +16,7 @@ from ibis.compat import StringIO
 import re
 
 from ibis.sql.ddl import DDL, Select
-from ibis.sql.exprs import quote_identifier, _type_to_sql_string
+from .exprs import quote_identifier, _type_to_sql_string
 
 from ibis.expr.datatypes import validate_type
 from ibis.compat import py_string

@@ -15,7 +15,7 @@ from ibis.expr.datatypes import validate_type
 import ibis.expr.datatypes as _dt
 import ibis.expr.operations as _ops
 import ibis.expr.rules as rules
-import ibis.sql.exprs as _expr
+import ibis.impala.exprs as _expr
 import ibis.common as com
 import ibis.util as util
 
@@ -300,8 +300,10 @@ def _impala_type_to_ibis(tval):
 
 
 def _ibis_string_to_impala(tval):
-    if tval in _expr._sql_type_names:
-        return _expr._sql_type_names[tval]
+    from ibis.impala.exprs import _sql_type_names
+
+    if tval in _sql_type_names:
+        return _sql_type_names[tval]
     result = _dt._parse_decimal(tval)
     if result:
         return repr(result)

@@ -14,7 +14,6 @@
 
 from ibis.compat import StringIO
 
-from ibis.sql.exprs import ExprTranslator, quote_identifier
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.common as com
@@ -378,6 +377,7 @@ class _TableSetFormatter(object):
 
 def _format_table(ctx, expr, indent=2):
     # TODO: This could probably go in a class and be significantly nicer
+    from ibis.impala.exprs import quote_identifier
 
     ref_expr = expr
     op = ref_op = expr.op()
@@ -442,6 +442,7 @@ class Union(DDL):
 
 
 def translate_expr(expr, context=None, named=False, permit_subquery=False):
+    from ibis.impala.exprs import ExprTranslator
     translator = ExprTranslator(expr, context=context, named=named,
                                 permit_subquery=permit_subquery)
     return translator.get_result()

@@ -141,7 +141,7 @@ class ImpalaE2E(object):
 
 
 def format_schema(expr):
-    from ibis.sql.exprs import _type_to_sql_string
+    from ibis.impala.exprs import _type_to_sql_string
     from pprint import pprint
     schema = expr.schema()
 
