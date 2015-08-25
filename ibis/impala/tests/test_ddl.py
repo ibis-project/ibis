@@ -26,8 +26,8 @@ from ibis.compat import unittest
 from ibis.impala import ddl
 from ibis.impala.compat import HS2Error, ImpylaError
 from ibis.sql.compiler import build_ast
-from ibis.tests.util import (IbisTestEnv, ImpalaE2E,
-                             assert_equal, connect_test)
+from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E, connect_test
+from ibis.tests.util import assert_equal
 import ibis.common as com
 import ibis.util as util
 

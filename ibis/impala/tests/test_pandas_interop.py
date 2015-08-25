@@ -21,9 +21,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.compat import unittest
 from ibis.common import IbisTypeError
-from ibis.tests.util import ImpalaE2E
-
 from ibis.impala.client import pandas_to_ibis_schema
+from ibis.impala.tests.common import ImpalaE2E
 
 
 functional_alltypes_with_nulls = pd.DataFrame({

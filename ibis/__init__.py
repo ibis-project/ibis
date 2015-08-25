@@ -110,7 +110,7 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
     return WebHDFS(hdfs_client)
 
 
-def test(include_e2e=False):
+def test(impala=False):
     import pytest
     import ibis
     import os
@@ -118,6 +118,6 @@ def test(include_e2e=False):
     ibis_dir, _ = os.path.split(ibis.__file__)
 
     args = ['--pyargs', ibis_dir]
-    if include_e2e:
-        args.append('--e2e')
+    if impala:
+        args.append('--impala')
     pytest.main(args)

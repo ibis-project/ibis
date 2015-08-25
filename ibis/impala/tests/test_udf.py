@@ -22,11 +22,11 @@ import ibis.expr.types as ir
 from ibis.impala import ddl
 import ibis.impala as api
 
+from ibis.common import IbisTypeError
 from ibis.compat import unittest
 from ibis.expr.datatypes import validate_type
 from ibis.expr.tests.mocks import MockConnection
-from ibis.common import IbisTypeError
-from ibis.tests.util import ImpalaE2E
+from ibis.impala.tests.common import ImpalaE2E
 import ibis.expr.rules as rules
 import ibis.common as com
 import ibis.util as util

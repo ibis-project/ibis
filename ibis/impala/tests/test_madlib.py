@@ -15,7 +15,7 @@ from posixpath import join as pjoin
 import pytest
 
 from ibis.compat import unittest
-from ibis.tests.util import ImpalaE2E
+from ibis.impala.tests.common import ImpalaE2E
 
 from ibis.impala import madlib
 

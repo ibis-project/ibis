@@ -15,7 +15,8 @@
 import ibis
 
 from ibis.compat import unittest
-from ibis.tests.util import ImpalaE2E, assert_equal
+from ibis.impala.tests.common import ImpalaE2E
+from ibis.tests.util import assert_equal
 
 import ibis.util as util
 

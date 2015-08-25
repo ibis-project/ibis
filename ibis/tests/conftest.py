@@ -16,8 +16,8 @@ from pytest import skip
 
 
 def pytest_addoption(parser):
-    parser.addoption('--e2e', action='store_true', default=False,
-                     help='Enable the e2e (end-to-end) tests')
+    parser.addoption('--impala', action='store_true', default=False,
+                     help='Enable the impala (end-to-end) tests')
     parser.addoption('--madlib', action='store_true', default=False,
                      help='Enable the madlib (end-to-end) tests')
     parser.addoption('--skip-udf', action='store_true', default=False,
@@ -27,9 +27,11 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    if getattr(item.obj, 'e2e', None):  # the test item is marked e2e
-        if not item.config.getoption('--e2e'):  # but --e2e option not set
-            skip('--e2e NOT enabled')
+    # the test item is marked impala
+    if getattr(item.obj, 'impala', None):
+        # but --impala option not set
+        if not item.config.getoption('--impala'):
+            skip('--impala NOT enabled')
 
     # the test item is marked madlib
     if getattr(item.obj, 'madlib', None):

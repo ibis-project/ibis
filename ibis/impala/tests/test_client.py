@@ -15,7 +15,8 @@
 import pandas as pd
 
 from ibis.compat import unittest
-from ibis.tests.util import IbisTestEnv, ImpalaE2E, assert_equal, connect_test
+from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E, connect_test
+from ibis.tests.util import assert_equal
 import ibis
 
 import ibis.common as com

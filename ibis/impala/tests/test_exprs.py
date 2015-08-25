@@ -22,7 +22,7 @@ import ibis
 from ibis.compat import unittest, StringIO
 from ibis.expr.datatypes import Category
 from ibis.sql.compiler import to_sql
-from ibis.tests.util import ImpalaE2E
+from ibis.impala.tests.common import ImpalaE2E
 
 import ibis.expr.api as api
 
@@ -463,7 +463,7 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase):
                 .count())
         expr.execute()
 
-    def test_aggregations_e2e(self):
+    def test_aggregations(self):
         table = self.alltypes.limit(100)
 
         d = table.double_col

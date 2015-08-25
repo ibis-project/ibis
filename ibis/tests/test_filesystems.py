@@ -23,7 +23,7 @@ import pytest
 
 from ibis.filesystems import HDFS
 from ibis.compat import unittest
-from ibis.tests.util import IbisTestEnv
+from ibis.impala.tests.common import IbisTestEnv
 import ibis.compat as compat
 import ibis.util as util
 import ibis
@@ -71,7 +71,7 @@ class TestHDFSRandom(unittest.TestCase):
         assert result == '0.parq'
 
 
-@pytest.mark.e2e
+@pytest.mark.impala
 class TestHDFSE2E(unittest.TestCase):
 
     @classmethod
@@ -404,7 +404,7 @@ class TestHDFSE2E(unittest.TestCase):
         return dirname
 
 
-@pytest.mark.e2e
+@pytest.mark.impala
 @pytest.mark.superuser
 class TestSuperUserHDFSE2E(unittest.TestCase):
 
