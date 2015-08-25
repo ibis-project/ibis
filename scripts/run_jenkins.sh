@@ -13,10 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script calls machinery that initializes an ibis.tests.util.IbisTestEnv,
-# so it needs those variables set correctly.  It also assumes that WORKSPACE is
-# set (i.e., that it is being run as a Jenkins job).  If the latter is not
-# true, you can instead set GIT_URL and GIT_BRANCH to check them out manually.
+# This script calls machinery that initializes an
+# ibis.impala.tests.common.IbisTestEnv, so it needs those variables set
+# correctly.  It also assumes that WORKSPACE is set (i.e., that it is being run
+# as a Jenkins job).  If the latter is not true, you can instead set GIT_URL
+# and GIT_BRANCH to check them out manually.
 
 set -e
 set -x
@@ -95,7 +96,7 @@ fi
 
 cd $IBIS_HOME
 
-python -c "from ibis.tests.util import IbisTestEnv; print(IbisTestEnv())"
+python -c "from ibis.impala.tests.common import IbisTestEnv; print(IbisTestEnv())"
 
 # load necessary test data (without overwriting)
 scripts/test_data_admin.py load --data --no-udf

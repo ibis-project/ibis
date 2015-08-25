@@ -26,7 +26,7 @@ from click import group, option
 import ibis
 from ibis.compat import BytesIO
 from ibis.common import IbisError
-from ibis.tests.util import IbisTestEnv
+from ibis.impala.tests.common import IbisTestEnv
 
 
 ENV = IbisTestEnv()
@@ -49,7 +49,7 @@ def make_ibis_client():
 
 def can_write_to_hdfs(con):
     test_path = pjoin(ENV.test_data_dir, ibis.util.guid())
-    test_file = BytesIO(ibis.util.guid())
+    test_file = BytesIO(ibis.util.guid().encode('utf-8'))
     try:
         con.hdfs.put(test_path, test_file)
         con.hdfs.rm(test_path)
@@ -130,11 +130,11 @@ def create_parquet_tables(con):
              ('r_name', 'string'),
              ('r_comment', 'string')])}
     tables = []
-    for path in parquet_files:
-        head, table_name = osp.split(path)
+    for table_name in parquet_files:
         print('Creating {0}'.format(table_name))
         # if no schema infer!
         schema = schemas.get(table_name)
+        path = pjoin(ENV.test_data_dir, 'parquet', table_name)
         table = con.parquet_file(path, schema=schema, name=table_name,
                                  database=ENV.test_data_db, persist=True)
         tables.append(table)
@@ -152,10 +152,10 @@ def create_avro_tables(con):
                 {'name': 'R_NAME', 'type': ['null', 'string']},
                 {'name': 'R_COMMENT', 'type': ['null', 'string']}]}}
     tables = []
-    for path in avro_files:
-        head, table_name = osp.split(path)
+    for table_name in avro_files:
         print('Creating {0}'.format(table_name))
         schema = schemas[table_name]
+        path = pjoin(ENV.test_data_dir, 'avro', table_name)
         table = con.avro_file(path, schema, name=table_name,
                           database=ENV.test_data_db, persist=True)
         tables.append(table)

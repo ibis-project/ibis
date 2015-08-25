@@ -14,6 +14,7 @@
 
 import os
 import time
+import six
 
 import pytest
 
@@ -55,7 +56,8 @@ class IbisTestEnv(object):
         options.impala.temp_hdfs_path = self.tmp_dir
 
     def __repr__(self):
-        kvs = ['{0}={1}'.format(k, v) for (k, v) in self.__dict__.iteritems()]
+        kvs = ['{0}={1}'.format(k, v)
+               for (k, v) in six.iteritems(self.__dict__)]
         return 'IbisTestEnv(\n    {0})'.format(',\n    '.join(kvs))
 
 
