@@ -85,6 +85,9 @@ class DatabaseTable(PhysicalTable):
         TableNode.__init__(self, [name, schema, source])
         HasSchema.__init__(self, schema, name=name)
 
+    def change_name(self, new_name):
+        return type(self)(new_name, self.args[1], self.source)
+
 
 class SQLQueryResult(ir.BlockingTableNode, HasSchema):
 

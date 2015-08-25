@@ -355,6 +355,39 @@ class InsertSelect(ImpalaDDL):
         return'{0} {1}\n{2}'.format(cmd, scoped_name, select_query)
 
 
+class AlterTable(ImpalaDDL):
+
+    def _wrap_command(self, cmd):
+        return 'ALTER TABLE {0}'.format(cmd)
+
+
+class RenameTable(AlterTable):
+
+    def __init__(self, old_name, new_name, old_database=None,
+                 new_database=None):
+        # if either database is None, the name is assumed to be fully scoped
+        self.old_name = old_name
+        self.old_database = old_database
+        self.new_name = new_name
+        self.new_database = new_database
+
+        new_qualified_name = new_name
+        if new_database is not None:
+            new_qualified_name = self._get_scoped_name(new_name, new_database)
+
+        old_qualified_name = old_name
+        if old_database is not None:
+            old_qualified_name = self._get_scoped_name(old_name, old_database)
+
+        self.old_qualified_name = old_qualified_name
+        self.new_qualified_name = new_qualified_name
+
+    def compile(self):
+        cmd = '{0} RENAME TO {1}'.format(self.old_qualified_name,
+                                         self.new_qualified_name)
+        return self._wrap_command(cmd)
+
+
 class DropObject(ImpalaDDL):
 
     def __init__(self, must_exist=True):

@@ -14,24 +14,19 @@
 
 import ibis
 
-from ibis.sql.compiler import build_ast, to_sql
-from ibis.expr.tests.mocks import MockConnection
+from ibis.sql.compiler import to_sql
 from ibis.compat import unittest
-import ibis.common as com
-
-import ibis.expr.api as api
-import ibis.expr.operations as ops
 
 
 class TestImpalaSQL(unittest.TestCase):
 
-    def test_rename_projection(self):
+    def test_relabel_projection(self):
         # GH #551
         types = ['int32', 'string', 'double']
-        table = api.table(zip(['foo', 'bar', 'baz'], types), 'table')
-        renamed = table.rename({'foo': 'one', 'baz': 'three'})
+        table = ibis.table(zip(['foo', 'bar', 'baz'], types), 'table')
+        relabeled = table.relabel({'foo': 'one', 'baz': 'three'})
 
-        result = to_sql(renamed)
+        result = to_sql(relabeled)
         expected = """\
 SELECT `foo` AS `one`, `bar`, `baz` AS `three`
 FROM `table`"""

@@ -473,12 +473,12 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
             new_pred = filter_op.predicates[0]
             assert_equal(new_pred, lower_pred)
 
-    def test_column_rename(self):
+    def test_column_relabel(self):
         # GH #551. Keeping the test case very high level to not presume that
-        # the rename is necessarily implemented using a projection
+        # the relabel is necessarily implemented using a projection
         types = ['int32', 'string', 'double']
         table = api.table(zip(['foo', 'bar', 'baz'], types))
-        result = table.rename({'foo': 'one', 'baz': 'three'})
+        result = table.relabel({'foo': 'one', 'baz': 'three'})
 
         schema = result.schema()
         ex_schema = api.schema(zip(['one', 'bar', 'three'], types))
