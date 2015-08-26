@@ -23,6 +23,7 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.expr.temporal as tempo
 
+from ibis.sql.ddl import ExprTranslator
 import ibis.sql.transforms as transforms
 
 import ibis.impala.identifiers as identifiers
@@ -1047,67 +1048,11 @@ _operation_registry = {
 _operation_registry.update(_binary_infix_ops)
 
 
-class ExprTranslator(object):
+class ImpalaExprTranslator(ExprTranslator):
 
-    def __init__(self, expr, context=None, named=False, permit_subquery=False):
-        self.expr = expr
-        self.permit_subquery = permit_subquery
+    _registry = _operation_registry
+    _rewrites = _expr_rewrites
 
-        if context is None:
-            from ibis.sql.compiler import QueryContext
-            context = QueryContext()
-        self.context = context
-
-        # For now, governing whether the result will have a name
-        self.named = named
-
-    def get_result(self):
-        """
-        Build compiled SQL expression from the bottom up and return as a string
-        """
-        translated = self.translate(self.expr)
-        if self._needs_name(self.expr):
-            # TODO: this could fail in various ways
-            name = self.expr.get_name()
-            translated = _name_expr(translated,
-                                    quote_identifier(name, force=True))
-        return translated
-
-    def _needs_name(self, expr):
-        if not self.named:
-            return False
-
-        op = expr.op()
-        if isinstance(op, ops.TableColumn):
-            # This column has been given an explicitly different name
-            if expr.get_name() != op.name:
-                return True
-            return False
-
-        if expr.get_name() is ir.unnamed:
-            return False
-
-        return True
-
-    def translate(self, expr):
-        # The operation node type the typed expression wraps
-        op = expr.op()
-
-        if type(op) in _expr_rewrites:
-            expr = _expr_rewrites[type(op)](expr)
-            op = expr.op()
-
-        # TODO: use op MRO for subclasses instead of this isinstance spaghetti
-        if isinstance(op, ir.Parameter):
-            return self._trans_param(expr)
-        elif isinstance(op, ops.TableNode):
-            # HACK/TODO: revisit for more complex cases
-            return '*'
-        elif type(op) in _operation_registry:
-            formatter = _operation_registry[type(op)]
-            return formatter(self, expr)
-        else:
-            raise com.TranslationError('No translator rule for {0}'.format(op))
-
-    def _trans_param(self, expr):
-        raise NotImplementedError
+    def name(self, translated, name, force=True):
+        return _name_expr(translated,
+                          quote_identifier(name, force=force))

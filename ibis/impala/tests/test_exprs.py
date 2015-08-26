@@ -21,7 +21,7 @@ import ibis
 from ibis.compat import unittest, StringIO, Decimal
 from ibis.expr.datatypes import Category
 from ibis.expr.tests.mocks import MockConnection
-from ibis.impala.exprs import ExprTranslator
+from ibis.impala.exprs import ImpalaExprTranslator
 from ibis.impala.tests.common import ImpalaE2E
 from ibis.sql.compiler import to_sql, QueryContext
 import ibis.expr.types as ir
@@ -41,7 +41,7 @@ class ExprSQLTest(object):
             assert result == expected
 
     def _translate(self, expr, named=False, context=None):
-        translator = ExprTranslator(expr, context=context, named=named)
+        translator = ImpalaExprTranslator(expr, context=context, named=named)
         return translator.get_result()
 
 

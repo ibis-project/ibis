@@ -34,14 +34,13 @@ def build_ast(expr, context=None):
 def _get_query(expr, context):
     ast = build_ast(expr, context)
     query = ast.queries[0]
-    context = ast.context
 
-    return query, context
+    return query
 
 
 def to_sql(expr, context=None):
-    query, context = _get_query(expr, context)
-    return query.compile(context)
+    query = _get_query(expr, context)
+    return query.compile()
 
 
 # ---------------------------------------------------------------------
@@ -155,7 +154,7 @@ class SelectBuilder(object):
         self._analyze_subqueries()
         self._populate_context()
 
-        return ddl.Select(self.context, self.table_set, self.select_set,
+        return ddl.Select(self.table_set, self.select_set,
                           subqueries=self.subqueries,
                           where=self.filters,
                           group_by=self.group_by,
@@ -164,7 +163,8 @@ class SelectBuilder(object):
                           order_by=self.sort_by,
                           distinct=self.distinct,
                           result_handler=self.result_handler,
-                          parent_expr=self.query_expr)
+                          parent_expr=self.query_expr,
+                          context=self.context)
 
     def _populate_context(self):
         # Populate aliases for the distinct relations used to output this

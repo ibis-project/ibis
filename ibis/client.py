@@ -14,11 +14,8 @@
 
 from ibis.compat import zip as czip
 from ibis.config import options
-
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-
-import ibis.sql.compiler as sql
 import ibis.sql.ddl as ddl
 import ibis.common as com
 import ibis.util as util
@@ -136,7 +133,7 @@ LIMIT 0""".format(query)
         return output
 
     def _build_ast_ensure_limit(self, expr, limit):
-        ast = sql.build_ast(expr)
+        ast = self._build_ast(expr)
         # note: limit can still be None at this point, if the global
         # default_limit is None
         for query in reversed(ast.queries):
@@ -165,7 +162,7 @@ LIMIT 0""".format(query)
         plan : string
         """
         if isinstance(expr, ir.Expr):
-            ast = sql.build_ast(expr)
+            ast = self._build_ast(expr)
             if len(ast.queries) > 1:
                 raise Exception('Multi-query expression')
 
@@ -180,6 +177,10 @@ LIMIT 0""".format(query)
 
         return 'Query:\n{0}\n\n{1}'.format(util.indent(query, 2),
                                            '\n'.join(result))
+
+    def _build_ast(self, expr):
+        # Implement in clients
+        raise NotImplementedError
 
     def _db_type_to_dtype(self, db_type):
         raise NotImplementedError

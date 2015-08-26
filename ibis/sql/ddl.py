@@ -32,11 +32,12 @@ class Select(DDL):
     generated it
     """
 
-    def __init__(self, context, table_set, select_set,
+    def __init__(self, table_set, select_set,
                  subqueries=None, where=None, group_by=None, having=None,
                  order_by=None, limit=None,
                  distinct=False, indent=2,
-                 result_handler=None, parent_expr=None):
+                 result_handler=None, parent_expr=None,
+                 context=None):
         self.context = context
 
         self.select_set = select_set
@@ -89,13 +90,12 @@ class Select(DDL):
 
         return exprs
 
-    def compile(self, context=None, semicolon=False):
+    def compile(self):
         """
         This method isn't yet idempotent; calling multiple times may yield
         unexpected results
         """
-        if context is None:
-            context = self.context
+        context = self.context
 
         # Can't tell if this is a hack or not. Revisit later
         context.set_query(self)
@@ -146,7 +146,7 @@ class Select(DDL):
         formatted = []
         for expr in self.select_set:
             if isinstance(expr, ir.ValueExpr):
-                expr_str = translate_expr(expr, context=context, named=True)
+                expr_str = self._translate(expr, context=context, named=True)
             elif isinstance(expr, ir.TableExpr):
                 # A * selection, possibly prefixed
                 if context.need_aliases():
@@ -203,7 +203,7 @@ class Select(DDL):
 
         fragment = 'FROM '
 
-        helper = _TableSetFormatter(ctx, self.table_set)
+        helper = _TableSetFormatter(self, ctx, self.table_set)
         fragment += helper.get_result()
 
         return fragment
@@ -222,7 +222,7 @@ class Select(DDL):
         if len(self.having) > 0:
             trans_exprs = []
             for expr in self.having:
-                translated = translate_expr(expr, context=context)
+                translated = self._translate(expr, context=context)
                 trans_exprs.append(translated)
             lines.append('HAVING {0}'.format(' AND '.join(trans_exprs)))
 
@@ -234,8 +234,8 @@ class Select(DDL):
 
         buf = StringIO()
         buf.write('WHERE ')
-        fmt_preds = [translate_expr(pred, context=context,
-                                    permit_subquery=True)
+        fmt_preds = [self._translate(pred, context=context,
+                                     permit_subquery=True)
                      for pred in self.where]
         conj = ' AND\n{0}'.format(' ' * 6)
         buf.write(conj.join(fmt_preds))
@@ -250,7 +250,7 @@ class Select(DDL):
             formatted = []
             for expr in self.order_by:
                 key = expr.op()
-                translated = translate_expr(key.expr, context=context)
+                translated = self._translate(key.expr, context=context)
                 if not key.ascending:
                     translated += ' DESC'
                 formatted.append(translated)
@@ -271,6 +271,13 @@ class Select(DDL):
 
         return buf.getvalue()
 
+    def _translate(self, expr, context=None, named=False,
+                   permit_subquery=False):
+        from ibis.impala.exprs import ImpalaExprTranslator
+        translator = ImpalaExprTranslator(expr, context=context, named=named,
+                                          permit_subquery=permit_subquery)
+        return translator.get_result()
+
 
 class _TableSetFormatter(object):
     _join_names = {
@@ -283,7 +290,8 @@ class _TableSetFormatter(object):
         ops.CrossJoin: 'CROSS JOIN'
     }
 
-    def __init__(self, context, expr, indent=2):
+    def __init__(self, parent, context, expr, indent=2):
+        self.parent = parent
         self.context = context
         self.expr = expr
         self.indent = indent
@@ -313,7 +321,7 @@ class _TableSetFormatter(object):
 
             if len(preds):
                 buf.write('\n')
-                fmt_preds = [translate_expr(pred, context=self.context)
+                fmt_preds = [self.parent._translate(pred, context=self.context)
                              for pred in preds]
                 conj = ' AND\n{0}'.format(' ' * 3)
                 fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
@@ -425,9 +433,8 @@ class Union(DDL):
 
         self.distinct = distinct
 
-    def compile(self, context=None, semicolon=False):
-        if context is None:
-            context = self.context
+    def compile(self):
+        context = self.context
 
         if self.distinct:
             union_keyword = 'UNION'
@@ -441,11 +448,69 @@ class Union(DDL):
         return query
 
 
-def translate_expr(expr, context=None, named=False, permit_subquery=False):
-    from ibis.impala.exprs import ExprTranslator
-    translator = ExprTranslator(expr, context=context, named=named,
-                                permit_subquery=permit_subquery)
-    return translator.get_result()
+class ExprTranslator(object):
+
+    def __init__(self, expr, context=None, named=False, permit_subquery=False):
+        self.expr = expr
+        self.permit_subquery = permit_subquery
+
+        if context is None:
+            from ibis.sql.compiler import QueryContext
+            context = QueryContext()
+        self.context = context
+
+        # For now, governing whether the result will have a name
+        self.named = named
+
+    def get_result(self):
+        """
+        Build compiled SQL expression from the bottom up and return as a string
+        """
+        translated = self.translate(self.expr)
+        if self._needs_name(self.expr):
+            # TODO: this could fail in various ways
+            name = self.expr.get_name()
+            translated = self.name(translated, name)
+        return translated
+
+    def _needs_name(self, expr):
+        if not self.named:
+            return False
+
+        op = expr.op()
+        if isinstance(op, ops.TableColumn):
+            # This column has been given an explicitly different name
+            if expr.get_name() != op.name:
+                return True
+            return False
+
+        if expr.get_name() is ir.unnamed:
+            return False
+
+        return True
+
+    def translate(self, expr):
+        # The operation node type the typed expression wraps
+        op = expr.op()
+
+        if type(op) in self._rewrites:
+            expr = self._rewrites[type(op)](expr)
+            op = expr.op()
+
+        # TODO: use op MRO for subclasses instead of this isinstance spaghetti
+        if isinstance(op, ir.Parameter):
+            return self._trans_param(expr)
+        elif isinstance(op, ops.TableNode):
+            # HACK/TODO: revisit for more complex cases
+            return '*'
+        elif type(op) in self._registry:
+            formatter = self._registry[type(op)]
+            return formatter(self, expr)
+        else:
+            raise com.TranslationError('No translator rule for {0}'.format(op))
+
+    def _trans_param(self, expr):
+        raise NotImplementedError
 
 
 def _join_not_none(sep, pieces):

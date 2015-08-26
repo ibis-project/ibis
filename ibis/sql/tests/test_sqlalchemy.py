@@ -18,7 +18,10 @@ import ibis.expr.datatypes as dt
 import ibis.sql.alchemy as alch
 import ibis
 
+from sqlalchemy import types as sat
 import sqlalchemy as sa
+
+# SQL engine-independent unit tests
 
 
 class TestSQLAlchemy(unittest.TestCase):
@@ -29,10 +32,12 @@ class TestSQLAlchemy(unittest.TestCase):
     def test_sqla_schema_conversion(self):
         typespec = [
             # name, type, nullable
-            ('one', sa.Integer, True, dt.int32),
-            ('two', sa.SmallInteger, False, dt.int16),
-            ('three', sa.REAL, True, dt.double),
-            ('four', sa.Boolean, True, dt.boolean)
+            ('smallint', sat.SmallInteger, False, dt.int16),
+            ('int', sat.Integer, True, dt.int32),
+            ('bigint', sat.BigInteger, False, dt.int64),
+            ('real', sat.REAL, True, dt.double),
+            ('bool', sat.Boolean, True, dt.boolean),
+            ('timestamp', sat.DateTime, True, dt.timestamp),
         ]
 
         sqla_types = []
@@ -48,3 +53,9 @@ class TestSQLAlchemy(unittest.TestCase):
         expected = ibis.schema(ibis_types)
 
         assert_equal(schema, expected)
+
+    def test_joins(self):
+        pass
+
+    def test_union(self):
+        pass

@@ -13,7 +13,12 @@
 # limitations under the License.
 
 import sqlalchemy as sa
+import sqlalchemy.sql as sql
+
+from ibis.sql.ddl import ExprTranslator, Select, Union
+import ibis.common as com
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 
 _ibis_type_to_sqla = {
@@ -65,3 +70,88 @@ def schema_from_table(table):
         types.append(t)
 
     return dt.Schema(names, types)
+
+
+def _fixed_arity_call(sa_func, arity):
+    def formatter(translator, expr):
+        op = expr.op()
+        if arity != len(op.args):
+            raise com.IbisError('incorrect number of args')
+
+        trans_args = [translator.translate(arg) for arg in op.args]
+        return sa_func(*trans_args)
+
+    return formatter
+
+
+_expr_rewrites = {
+
+}
+
+
+_operation_registry = {
+    ops.And: _fixed_arity_call(sql.and_, 2),
+    ops.Or: _fixed_arity_call(sql.or_, 2),
+}
+
+
+class AlchemyExprTranslator(ExprTranslator):
+
+    _registry = _operation_registry
+    _rewrites = _expr_rewrites
+
+    def name(self, translated, name, force=True):
+        pass
+
+
+class AlchemySelect(Select):
+
+    def compile(self):
+        # Can't tell if this is a hack or not. Revisit later
+        self.context.set_query(self)
+
+        table_set = self._compile_table_set()
+
+        frag = self._add_select_clauses(table_set)
+        frag = self._add_groupby_clauses(frag)
+        frag = self._add_where_clauses(frag)
+        frag = self._add_order_by_clauses(frag)
+
+    def _compile_table_set(self):
+        pass
+
+    def _add_select_clauses(self, table_set):
+        pass
+
+    def _add_groupby_clauses(self, fragment):
+        # GROUP BY and HAVING
+        pass
+
+    def _add_where_clauses(self, fragment):
+        pass
+
+    def _add_order_by(self, fragment):
+        pass
+
+    def _translate(self, expr, context=None, named=False,
+                   permit_subquery=False):
+        translator = AlchemyExprTranslator(expr, context=context, named=named,
+                                           permit_subquery=permit_subquery)
+        return translator.get_result()
+
+
+class AlchemyUnion(Union):
+
+    def compile(self):
+        context = self.context
+
+        if self.distinct:
+            union_keyword = 'UNION'
+        else:
+            union_keyword = 'UNION ALL'
+
+        left_set = context.get_formatted_query(self.left)
+        right_set = context.get_formatted_query(self.right)
+
+        query = '{0}\n{1}\n{2}'.format(left_set, union_keyword, right_set)
+        return query

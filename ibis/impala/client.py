@@ -32,7 +32,6 @@ from ibis.sql.ddl import DDL
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-import ibis.sql.compiler as sql
 import ibis.util as util
 
 
@@ -40,6 +39,11 @@ if six.PY2:
     import Queue as queue
 else:
     import queue
+
+
+def _expr_to_ast(expr):
+    from ibis.sql.compiler import build_ast
+    return build_ast(expr)
 
 
 class ImpalaConnection(object):
@@ -223,6 +227,9 @@ class ImpalaClient(SQLClient):
         self._temp_objects = weakref.WeakValueDictionary()
 
         self._ensure_temp_db_exists()
+
+    def _build_ast(self, expr):
+        return _expr_to_ast(expr)
 
     @property
     def hdfs(self):
@@ -526,7 +533,7 @@ class ImpalaClient(SQLClient):
         expr : ibis TableExpr
         database : string, default None
         """
-        ast = sql.build_ast(expr)
+        ast = self._build_ast(expr)
         select = ast.queries[0]
         statement = ddl.CreateView(name, select, database=database)
         self._execute(statement)
@@ -583,7 +590,7 @@ class ImpalaClient(SQLClient):
             raise NotImplementedError
 
         if expr is not None:
-            ast = sql.build_ast(expr)
+            ast = self._build_ast(expr)
             select = ast.queries[0]
 
             if partition is not None:
@@ -862,7 +869,7 @@ class ImpalaClient(SQLClient):
             if not insert_schema.equals(existing_schema):
                 _validate_compatible(insert_schema, existing_schema)
 
-        ast = sql.build_ast(expr)
+        ast = self._build_ast(expr)
         select = ast.queries[0]
         statement = ddl.InsertSelect(table_name, select,
                                      database=database,
