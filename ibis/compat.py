@@ -47,7 +47,10 @@ if PY3:
 else:
     import cPickle
 
-    from cdecimal import Decimal
+    try:
+        from cdecimal import Decimal
+    except ImportError:
+        from decimal import Decimal
 
     unicode_type = unicode
     lzip = zip

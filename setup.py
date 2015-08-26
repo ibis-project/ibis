@@ -73,9 +73,6 @@ if PY26:
     requirements.append('argparse')
     requirements.append('unittest2')
 
-if PY2:
-    requirements.append('cdecimal')
-
 
 if COMMS_EXT_ENABLED:
     import numpy as np
