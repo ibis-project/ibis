@@ -43,8 +43,11 @@ if PY3:
     pickle_load = pickle.loads
     def dict_values(x):
         return list(x.values())
+    from decimal import Decimal
 else:
     import cPickle
+
+    from cdecimal import Decimal
 
     unicode_type = unicode
     lzip = zip

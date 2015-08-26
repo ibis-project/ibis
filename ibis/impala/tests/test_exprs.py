@@ -15,11 +15,10 @@
 import pytest
 
 import pandas as pd
-from decimal import Decimal
 
 import ibis
 
-from ibis.compat import unittest, StringIO
+from ibis.compat import unittest, StringIO, Decimal
 from ibis.expr.datatypes import Category
 from ibis.expr.tests.mocks import MockConnection
 from ibis.impala.exprs import ExprTranslator

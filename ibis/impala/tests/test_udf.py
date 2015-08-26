@@ -11,7 +11,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from decimal import Decimal
 from posixpath import join as pjoin
 import pytest
 
@@ -23,7 +22,7 @@ from ibis.impala import ddl
 import ibis.impala as api
 
 from ibis.common import IbisTypeError
-from ibis.compat import unittest
+from ibis.compat import unittest, Decimal
 from ibis.expr.datatypes import validate_type
 from ibis.expr.tests.mocks import MockConnection
 from ibis.impala.tests.common import ImpalaE2E
