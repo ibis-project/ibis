@@ -138,6 +138,15 @@ class HasSchema(object):
 
 class DataType(object):
 
+    def __init__(self, nullable=True):
+        self.nullable = nullable
+
+    def __call__(self, nullable=True):
+        return self._factory(nullable=nullable)
+
+    def _factory(self, nullable=True):
+        return type(self)(nullable=nullable)
+
     def __eq__(self, other):
         return self.equals(other)
 
@@ -148,7 +157,10 @@ class DataType(object):
         return hash(type(self))
 
     def __repr__(self):
-        return self.name()
+        name = self.name()
+        if not self.nullable:
+            name = '{0}[non-nullable]'.format(name)
+        return name
 
     def name(self):
         return type(self).__name__.lower()
@@ -157,7 +169,8 @@ class DataType(object):
         if isinstance(other, six.string_types):
             other = validate_type(other)
 
-        return isinstance(other, type(self))
+        return (isinstance(other, type(self)) and
+                self.nullable == other.nullable)
 
     def can_implicit_cast(self, other):
         return self.equals(other)
@@ -262,9 +275,10 @@ class Double(Floating):
 class Decimal(DataType):
     # Decimal types are parametric, we store the parameters in this object
 
-    def __init__(self, precision, scale):
+    def __init__(self, precision, scale, nullable=True):
         self.precision = precision
         self.scale = scale
+        DataType.__init__(self, nullable=nullable)
 
     def _base_type(self):
         return 'decimal'
@@ -305,8 +319,9 @@ class Decimal(DataType):
 
 class Category(DataType):
 
-    def __init__(self, cardinality=None):
+    def __init__(self, cardinality=None, nullable=True):
         self.cardinality = cardinality
+        DataType.__init__(self, nullable=nullable)
 
     def _base_type(self):
         return 'category'
@@ -352,26 +367,26 @@ class Category(DataType):
 
 class Struct(DataType):
 
-    def __init__(self, names, types):
-        pass
+    def __init__(self, names, types, nullable=True):
+        DataType.__init__(self, nullable=nullable)
 
 
 class Array(Variadic):
 
-    def __init__(self, value_type):
-        pass
+    def __init__(self, value_type, nullable=True):
+        Variadic.__init__(self, nullable=nullable)
 
 
 class Enum(DataType):
 
-    def __init__(self, rep_type, value_type):
-        pass
+    def __init__(self, rep_type, value_type, nullable=True):
+        DataType.__init__(self, nullable=nullable)
 
 
 class Map(DataType):
 
-    def __init__(self, key_type, value_type):
-        pass
+    def __init__(self, key_type, value_type, nullable=True):
+        DataType.__init__(self, nullable=nullable)
 
 
 # ---------------------------------------------------------------------
