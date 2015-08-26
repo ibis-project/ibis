@@ -13,21 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
+import os
 import shutil
 import tempfile
 import os.path as osp
 from os.path import join as pjoin
 from subprocess import check_call
 
-import pandas as pd
 from click import group, option
 
 import ibis
 from ibis.compat import BytesIO
 from ibis.common import IbisError
 from ibis.impala.tests.common import IbisTestEnv
+from ibis.util import guid
 
+import numpy as np
+
+import pandas as pd
+import pandas.util.testing as tm
 
 ENV = IbisTestEnv()
 IBIS_TEST_DATA_S3_BUCKET = 'ibis-test-resources'
@@ -157,7 +161,7 @@ def create_avro_tables(con):
         schema = schemas[table_name]
         path = pjoin(ENV.test_data_dir, 'avro', table_name)
         table = con.avro_file(path, schema, name=table_name,
-                          database=ENV.test_data_db, persist=True)
+                              database=ENV.test_data_db, persist=True)
         tables.append(table)
     return tables
 
@@ -229,6 +233,28 @@ def copy_tarball_to_versioned_backup(bucket):
         key.copy(IBIS_TEST_DATA_S3_BUCKET, next_key)
         key.delete()
     assert bucket.get_key(IBIS_TEST_DATA_TARBALL) is None
+
+
+_sql_tables = ['functional_alltypes', 'tpch_lineitem', 'tpch_customer',
+               'tpch_region', 'tpch_nation', 'tpch_orders']
+
+
+def generate_sql_csv_sources(output_path, db):
+    ibis.options.sql.default_limit = None
+    for name in _sql_tables:
+        print(name)
+        table = db[name]
+        df = table.execute()
+        path = osp.join(output_path, name)
+        df.to_csv(path, na_rep='\\N')
+
+
+def make_sqlite_testing_db(csv_dir, con):
+    for name in _sql_tables:
+        print(name)
+        path = osp.join(csv_dir, name)
+        df = pd.read_csv(path, na_rep='\\N')
+        pd.io.sql.to_sql(df, name, con)
 
 
 # ==========================================

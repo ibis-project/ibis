@@ -15,6 +15,7 @@
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
+from ibis.client import SQLClient
 from ibis.sql.ddl import ExprTranslator, Select, Union
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -40,16 +41,18 @@ _ibis_type_to_sqla = {
     dt.Decimal: sa.types.NUMERIC,
 }
 
-_sqla_overrides = {
+_sqla_type_mapping = {
     sa.types.SmallInteger: dt.Int16,
     sa.types.FLOAT: dt.Double,
     sa.types.REAL: dt.Double,
+
     sa.types.NullType: dt.String,
+    sa.types.Text: dt.String,
 }
 
 _sqla_type_to_ibis = dict((v, k) for k, v in
                           _ibis_type_to_sqla.items())
-_sqla_type_to_ibis.update(_sqla_overrides)
+_sqla_type_to_ibis.update(_sqla_type_mapping)
 
 
 def schema_from_table(table):
@@ -93,6 +96,21 @@ _operation_registry = {
     ops.And: _fixed_arity_call(sql.and_, 2),
     ops.Or: _fixed_arity_call(sql.or_, 2),
 }
+
+
+class AlchemyTable(ops.DatabaseTable):
+
+    def __init__(self, table, source):
+        schema = schema_from_table(table)
+        name = table.name
+        ops.DatabaseTable.__init__(self, name, schema, source)
+
+
+class AlchemyClient(SQLClient):
+
+    def _sqla_table_to_expr(self, table):
+        node = AlchemyTable(table, self)
+        return self._table_expr_klass(node)
 
 
 class AlchemyExprTranslator(ExprTranslator):
