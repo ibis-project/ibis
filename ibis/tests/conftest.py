@@ -15,7 +15,7 @@
 from pytest import skip
 
 
-groups = ['impala', 'madlib', 'sqlite']
+groups = ['hdfs', 'impala', 'madlib', 'sqlite']
 
 
 def pytest_addoption(parser):
