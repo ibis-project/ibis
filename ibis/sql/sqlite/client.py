@@ -18,6 +18,10 @@ import ibis.sql.alchemy as alchemy
 import sqlalchemy as sa
 
 
+class SQLiteTable(alchemy.AlchemyTable):
+    pass
+
+
 class SQLiteDatabase(SQLClient, Database):
 
     def __init__(self, path):
@@ -44,7 +48,7 @@ class SQLiteDatabase(SQLClient, Database):
         table : TableExpr
         """
         alch_table = self._get_sqla_table(name)
-        node = alchemy.AlchemyTable(alch_table, self)
+        node = SQLiteTable(alch_table, self)
         return self._table_expr_klass(node)
 
     def _get_sqla_table(self, name):
