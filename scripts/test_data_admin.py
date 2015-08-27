@@ -239,21 +239,51 @@ _sql_tables = ['functional_alltypes', 'tpch_lineitem', 'tpch_customer',
                'tpch_region', 'tpch_nation', 'tpch_orders']
 
 
+def _project_tpch_lineitem(t):
+    return t['l_orderkey',
+             'l_partkey',
+             'l_suppkey',
+             'l_linenumber',
+             t.l_quantity.cast('double')
+             .name('l_quantity'),
+             t.l_extendedprice.cast('double')
+             .name('l_extendedprice'),
+             t.l_discount.cast('double')
+             .name('l_discount'),
+             t.l_tax.cast('double').name('l_tax'),
+             'l_returnflag',
+             'l_linestatus',
+             'l_shipdate',
+             'l_commitdate',
+             'l_receiptdate',
+             'l_shipinstruct',
+             'l_shipmode']
+
+
+_projectors = {
+    'tpch_lineitem': _project_tpch_lineitem
+}
+
+
 def generate_sql_csv_sources(output_path, db):
     ibis.options.sql.default_limit = None
     for name in _sql_tables:
         print(name)
         table = db[name]
+
+        if name in _projectors:
+            table = _projectors[name](table)
+
         df = table.execute()
         path = osp.join(output_path, name)
-        df.to_csv(path, na_rep='\\N')
+        df.to_csv('{0}.csv'.format(path), na_rep='\\N')
 
 
 def make_sqlite_testing_db(csv_dir, con):
     for name in _sql_tables:
         print(name)
-        path = osp.join(csv_dir, name)
-        df = pd.read_csv(path, na_rep='\\N')
+        path = osp.join(csv_dir, '{0}.csv'.format(name))
+        df = pd.read_csv(path, na_values=['\\N'])
         pd.io.sql.to_sql(df, name, con)
 
 
