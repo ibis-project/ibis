@@ -63,6 +63,20 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
 
         assert_equal(enriched, expected)
 
+    def test_mutate_sorts_keys(self):
+        t = self.con.table('airlines')
+
+        m = t.arrdelay.mean()
+
+        g = t.group_by('dest')
+
+        result = g.mutate(zzz=m, yyy=m, ddd=m, ccc=m, bbb=m, aaa=m)
+
+        expected = g.mutate([m.name('aaa'), m.name('bbb'), m.name('ccc'),
+                             m.name('ddd'), m.name('yyy'), m.name('zzz')])
+
+        assert_equal(result, expected)
+
     def test_window_bind_to_table(self):
         w = ibis.window(group_by='g', order_by=ibis.desc('f'))
 

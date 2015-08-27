@@ -117,7 +117,7 @@ class GroupedTableExpr(object):
         else:
             exprs = util.promote_list(exprs)
 
-        for k, v in kwds.items():
+        for k, v in sorted(kwds.items()):
             exprs.append(v.name(k))
 
         return self.projection([self.table] + exprs)
