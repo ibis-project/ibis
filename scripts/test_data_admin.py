@@ -244,13 +244,10 @@ def _project_tpch_lineitem(t):
              'l_partkey',
              'l_suppkey',
              'l_linenumber',
-             t.l_quantity.cast('double')
-             .name('l_quantity'),
-             t.l_extendedprice.cast('double')
-             .name('l_extendedprice'),
-             t.l_discount.cast('double')
-             .name('l_discount'),
-             t.l_tax.cast('double').name('l_tax'),
+             t.l_quantity.cast('double'),
+             t.l_extendedprice.cast('double'),
+             t.l_discount.cast('double'),
+             t.l_tax.cast('double'),
              'l_returnflag',
              'l_linestatus',
              'l_shipdate',
@@ -260,13 +257,39 @@ def _project_tpch_lineitem(t):
              'l_shipmode']
 
 
+def _project_tpch_orders(t):
+    return t['o_orderkey',
+             'o_custkey',
+             'o_orderstatus',
+             t.o_totalprice.cast('double'),
+             'o_orderdate',
+             'o_orderpriority',
+             'o_clerk',
+             'o_shippriority']
+
+
+def _project_tpch_customer(t):
+    return t['c_custkey',
+             'c_name',
+             'c_nationkey',
+             'c_phone',
+             'c_acctbal',
+             'c_mktsegment']
+
+
 _projectors = {
-    'tpch_lineitem': _project_tpch_lineitem
+    'tpch_customer': _project_tpch_customer,
+    'tpch_lineitem': _project_tpch_lineitem,
+    'tpch_orders': _project_tpch_orders,
 }
 
 
 def generate_sql_csv_sources(output_path, db):
     ibis.options.sql.default_limit = None
+
+    if not osp.exists(output_path):
+        os.mkdir(output_path)
+
     for name in _sql_tables:
         print(name)
         table = db[name]
@@ -284,7 +307,7 @@ def make_sqlite_testing_db(csv_dir, con):
         print(name)
         path = osp.join(csv_dir, '{0}.csv'.format(name))
         df = pd.read_csv(path, na_values=['\\N'])
-        pd.io.sql.to_sql(df, name, con)
+        pd.io.sql.to_sql(df, name, con, chunksize=10000)
 
 
 # ==========================================

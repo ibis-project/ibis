@@ -349,10 +349,9 @@ class TestTypeCasting(BasicTestCase, unittest.TestCase):
         assert isinstance(casted_literal, api.StringScalar)
         assert casted_literal.get_name() == 'bar'
 
-    def test_casted_exprs_are_unnamed(self):
+    def test_casted_exprs_are_named(self):
         expr = self.table.f.cast('string')
-        with self.assertRaises(Exception):
-            expr.get_name()
+        assert expr.get_name() == 'f'
 
         # it works! per GH #396
         expr.value_counts()

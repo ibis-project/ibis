@@ -388,7 +388,12 @@ def cast(arg, target_type):
         # noop case if passed type is the same
         return arg
     else:
-        return op.to_expr()
+        result = op.to_expr()
+        try:
+            result = result.name(arg.get_name())
+        except:
+            pass
+        return result
 
 cast.__doc__ = """
 Cast value(s) to indicated data type. Values that cannot be
