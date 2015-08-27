@@ -21,8 +21,10 @@ import sqlalchemy as sa
 class SQLiteDatabase(SQLClient, Database):
 
     def __init__(self, path):
+        self.name = path
         uri = 'sqlite:///{0}'.format(path)
         self.con = sa.create_engine(uri)
+        self.meta = sa.MetaData(bind=self.con)
 
     @property
     def client(self):
@@ -46,7 +48,7 @@ class SQLiteDatabase(SQLClient, Database):
         return self._table_expr_klass(node)
 
     def _get_sqla_table(self, name):
-        pass
+        return sa.Table(name, self.meta, autoload=True)
 
     @property
     def _table_expr_klass(self):

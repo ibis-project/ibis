@@ -27,6 +27,7 @@ import ibis.expr.types as ir
 from ibis.expr.api import *
 
 import ibis.impala.api as impala
+import ibis.sql.sqlite.api as sqlite
 
 import ibis.config_init
 from ibis.config import options
