@@ -12,12 +12,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.client import SQLClient
+from ibis.client import SQLClient, Database
+import ibis.expr.types as ir
+import ibis.sql.alchemy as alchemy
 import sqlalchemy as sa
 
 
-class SQLiteClient(SQLClient):
+class SQLiteDatabase(SQLClient, Database):
 
     def __init__(self, path):
         uri = 'sqlite:///{0}'.format(path)
-        self.engine = sa.create_engine(path)
+        self.con = sa.create_engine(uri)
+
+    @property
+    def client(self):
+        return self
+
+    def table(self, name):
+        """
+        Create a table expression that references a particular table in the
+        SQLite database
+
+        Parameters
+        ----------
+        name : string
+
+        Returns
+        -------
+        table : TableExpr
+        """
+        alch_table = self._get_sqla_table(name)
+        node = alchemy.AlchemyTable(alch_table, self)
+        return self._table_expr_klass(node)
+
+    def _get_sqla_table(self, name):
+        pass
+
+    @property
+    def _table_expr_klass(self):
+        return ir.TableExpr
+
+    def list_tables(self):
+        pass
+
+    def drop_table(self):
+        pass
+
+    def create_table(self, name, expr=None):
+        pass
