@@ -216,7 +216,24 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
             self._compare_sqla(case, ex_sqla)
 
     def test_limit(self):
-        pass
+        cases = self._case_limit()
+
+        st = self.sa_star1
+        base = sa.select([st])
+
+        expected = [
+            base.limit(10),
+            base.limit(10).offset(5),
+            base.where(st.c.f > 0).limit(10),
+        ]
+
+        # TODO, subqueries not working yet
+        # case4 = base.limit(10)
+        # case4 = case4.where(case4.c.f > 0)
+        # expected.append(case4)
+
+        for case, ex in zip(cases, expected):
+            self._compare_sqla(case, ex)
 
     def test_cte_extract(self):
         pass

@@ -166,6 +166,7 @@ _operation_registry = {
 
     ops.Count: _reduction(sa.func.count),
     ops.Sum: _reduction(sa.func.sum),
+    ops.Mean: _reduction(sa.func.avg),
 
     ir.Literal: _literal,
 
@@ -239,13 +240,24 @@ class AlchemyContext(comp.QueryContext):
         return to_sql(expr, context=sub_ctx)
 
     def record_table(self, expr):
-        # Store SQLAlchemy table
         op = expr.op()
 
-        if not isinstance(op, AlchemyTable):
-            raise TypeError(type(op))
+        key = self._get_table_key(expr)
+        ctx = self
+        while ctx.parent is not None:
+            ctx = ctx.parent
 
-        self.set_ref(expr, op.sqla_table)
+            if key in ctx.table_refs:
+                ref = ctx.table_refs[key]
+                self.set_ref(expr, ref)
+                return
+
+        if isinstance(op, AlchemyTable):
+            table = op.sqla_table
+        else:
+            table = self._compile_subquery(expr)
+
+        self.set_ref(expr, table)
 
 
 class AlchemyTable(ops.DatabaseTable):
@@ -357,6 +369,13 @@ class AlchemySelect(ddl.Select):
     def _add_limit(self, fragment):
         if self.limit is None:
             return fragment
+
+        n, offset = self.limit['n'], self.limit['offset']
+        fragment = fragment.limit(n)
+        if offset is not None and offset != 0:
+            fragment = fragment.offset(offset)
+
+        return fragment
 
     def _translate(self, expr, context=None, named=False,
                    permit_subquery=False):

@@ -541,6 +541,20 @@ class SelectTestCases(object):
             table.sort_by(['c', ('f', 0)])
         ]
 
+    def _case_limit(self):
+        star1 = self.con.table('star1')
+
+        cases = [
+            star1.limit(10),
+            star1.limit(10, offset=5),
+            star1[star1.f > 0].limit(10),
+
+            # Semantically, this should produce a subquery
+            star1.limit(10)[lambda x: x.f > 0]
+        ]
+
+        return cases
+
 
 class TestSelectSQL(unittest.TestCase, SelectTestCases):
 
@@ -1603,49 +1617,31 @@ ORDER BY `c`, `f` DESC"""
             assert result == ex
 
     def test_limit(self):
-        table = self.con.table('star1').limit(10)
-        result = to_sql(table)
-        expected = """SELECT *
+        cases = self._case_limit()
+
+        expected = [
+            """SELECT *
 FROM star1
-LIMIT 10"""
-        assert result == expected
-
-        table = self.con.table('star1').limit(10, offset=5)
-        result = to_sql(table)
-        expected = """SELECT *
+LIMIT 10""",
+            """SELECT *
 FROM star1
-LIMIT 10 OFFSET 5"""
-        assert result == expected
-
-        # Put the limit in a couple places in the stack
-        table = self.con.table('star1')
-        table = table[table.f > 0].limit(10)
-        result = to_sql(table)
-
-        expected = """SELECT *
+LIMIT 10 OFFSET 5""",
+            """SELECT *
 FROM star1
 WHERE `f` > 0
-LIMIT 10"""
-
-        assert result == expected
-
-        table = self.con.table('star1')
-
-        # Semantically, this should produce a subquery
-        table = table.limit(10)
-        table = table[table.f > 0]
-
-        result2 = to_sql(table)
-
-        expected2 = """SELECT *
+LIMIT 10""",
+            """SELECT *
 FROM (
   SELECT *
   FROM star1
   LIMIT 10
 ) t0
 WHERE `f` > 0"""
+        ]
 
-        assert result2 == expected2
+        for case, ex in zip(cases, expected):
+            result = to_sql(case)
+            assert result == ex
 
     def test_join_with_limited_table(self):
         t1 = self.con.table('star1')
@@ -1764,9 +1760,6 @@ FROM (
 ) t0"""
         assert result == expected
 
-    def test_union_extract_with_block(self):
-        pass
-
     def test_union_in_subquery(self):
         pass
 
@@ -1802,7 +1795,8 @@ FROM functional_alltypes"""
         expr = t[t.bigint_col > 0].group_by('string_col').aggregate([metric])
 
         result = to_sql(expr)
-        expected = """SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `nunique`
+        expected = """\
+SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `nunique`
 FROM functional_alltypes
 WHERE `bigint_col` > 0
 GROUP BY 1"""
@@ -1819,7 +1813,8 @@ GROUP BY 1"""
         expr = t.group_by('string_col').aggregate(metrics)
 
         result = to_sql(expr)
-        expected = """SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `int_card`,
+        expected = """\
+SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `int_card`,
        COUNT(DISTINCT `smallint_col`) AS `smallint_card`
 FROM functional_alltypes
 GROUP BY 1"""
