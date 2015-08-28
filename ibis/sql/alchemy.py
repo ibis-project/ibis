@@ -344,6 +344,16 @@ class AlchemySelect(ddl.Select):
         if not len(self.order_by):
             return fragment
 
+        clauses = []
+        for expr in self.order_by:
+            key = expr.op()
+            arg = self._translate(key.expr)
+            if not key.ascending:
+                arg = arg.desc()
+            clauses.append(arg)
+
+        return fragment.order_by(*clauses)
+
     def _add_limit(self, fragment):
         if self.limit is None:
             return fragment

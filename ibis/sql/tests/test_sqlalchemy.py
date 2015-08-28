@@ -202,8 +202,18 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
         for case, ex_sqla in zip(cases, expected):
             self._compare_sqla(case, ex_sqla)
 
-    def test_order_by(self):
-        pass
+    def test_sort_by(self):
+        st = self.sa_star1
+        cases = self._case_sort_by()
+
+        base = sa.select([st])
+        expected = [
+            base.order_by(st.c.f),
+            base.order_by(st.c.f.desc()),
+            base.order_by(st.c.c, st.c.f.desc()),
+        ]
+        for case, ex_sqla in zip(cases, expected):
+            self._compare_sqla(case, ex_sqla)
 
     def test_limit(self):
         pass

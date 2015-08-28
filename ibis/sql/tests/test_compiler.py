@@ -102,134 +102,6 @@ class TestASTBuilder(unittest.TestCase):
         assert len(stmt.where) == 1
         assert stmt.where[0].equals(filter_pred)
 
-    def test_sort_by(self):
-        table = self.con.table('star1')
-
-        what = table.sort_by('f')
-        result = to_sql(what)
-        expected = """SELECT *
-FROM star1
-ORDER BY `f`"""
-        assert result == expected
-
-        what = table.sort_by(('f', 0))
-        result = to_sql(what)
-        expected = """SELECT *
-FROM star1
-ORDER BY `f` DESC"""
-        assert result == expected
-
-        what = table.sort_by(['c', ('f', 0)])
-        result = to_sql(what)
-        expected = """SELECT *
-FROM star1
-ORDER BY `c`, `f` DESC"""
-        assert result == expected
-
-    def test_limit(self):
-        table = self.con.table('star1').limit(10)
-        result = to_sql(table)
-        expected = """SELECT *
-FROM star1
-LIMIT 10"""
-        assert result == expected
-
-        table = self.con.table('star1').limit(10, offset=5)
-        result = to_sql(table)
-        expected = """SELECT *
-FROM star1
-LIMIT 10 OFFSET 5"""
-        assert result == expected
-
-        # Put the limit in a couple places in the stack
-        table = self.con.table('star1')
-        table = table[table.f > 0].limit(10)
-        result = to_sql(table)
-
-        expected = """SELECT *
-FROM star1
-WHERE `f` > 0
-LIMIT 10"""
-
-        assert result == expected
-
-        table = self.con.table('star1')
-
-        # Semantically, this should produce a subquery
-        table = table.limit(10)
-        table = table[table.f > 0]
-
-        result2 = to_sql(table)
-
-        expected2 = """SELECT *
-FROM (
-  SELECT *
-  FROM star1
-  LIMIT 10
-) t0
-WHERE `f` > 0"""
-
-        assert result2 == expected2
-
-    def test_join_with_limited_table(self):
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
-
-        limited = t1.limit(100)
-        joined = (limited.inner_join(t2, [limited.foo_id == t2.foo_id])
-                  [[limited]])
-
-        result = to_sql(joined)
-        expected = """SELECT t0.*
-FROM (
-  SELECT *
-  FROM star1
-  LIMIT 100
-) t0
-  INNER JOIN star2 t1
-    ON t0.`foo_id` = t1.`foo_id`"""
-
-        assert result == expected
-
-    def test_sort_by_on_limit_yield_subquery(self):
-        # x.limit(...).sort_by(...)
-        #   is semantically different from
-        # x.sort_by(...).limit(...)
-        #   and will often yield different results
-        t = self.con.table('functional_alltypes')
-        expr = (t.group_by('string_col')
-                .aggregate([t.count().name('nrows')])
-                .limit(5)
-                .sort_by('string_col'))
-
-        result = to_sql(expr)
-        expected = """SELECT *
-FROM (
-  SELECT `string_col`, count(*) AS `nrows`
-  FROM functional_alltypes
-  GROUP BY 1
-  LIMIT 5
-) t0
-ORDER BY `string_col`"""
-        assert result == expected
-
-    def test_multiple_limits(self):
-        t = self.con.table('functional_alltypes')
-
-        expr = t.limit(20).limit(10)
-        stmt = build_ast(expr).queries[0]
-
-        assert stmt.limit['n'] == 10
-
-    def test_top_convenience(self):
-        # x.top(10, by=field)
-        # x.top(10, by=[field1, field2])
-        pass
-
-    def test_self_aggregate_in_predicate(self):
-        # Per ibis #43
-        pass
-
 
 class TestNonTabularResults(unittest.TestCase):
 
@@ -650,31 +522,51 @@ class SelectTestCases(object):
 
         return e1, e2
 
+    def _case_aggregate_count_joined(self):
+        # count on more complicated table
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+        join_expr = region.r_regionkey == nation.n_regionkey
+        joined = region.inner_join(nation, join_expr)
+        table_ref = joined[nation, region.r_name.name('region')]
+
+        return table_ref.count()
+
+    def _case_sort_by(self):
+        table = self.con.table('star1')
+
+        return [
+            table.sort_by('f'),
+            table.sort_by(('f', 0)),
+            table.sort_by(['c', ('f', 0)])
+        ]
+
 
 class TestSelectSQL(unittest.TestCase, SelectTestCases):
 
-    def setUp(self):
-        self.con = MockConnection()
+    @classmethod
+    def setUpClass(cls):
+        cls.con = MockConnection()
 
-        self.foo = api.table([
+        cls.foo = api.table([
             ('job', 'string'),
             ('dept_id', 'string'),
             ('year', 'int32'),
             ('y', 'double')
         ], 'foo')
 
-        self.bar = api.table([
+        cls.bar = api.table([
             ('x', 'double'),
             ('job', 'string')
         ], 'bar')
 
-        self.t1 = api.table([
+        cls.t1 = api.table([
             ('key1', 'string'),
             ('key2', 'string'),
             ('value1', 'double')
         ], 'foo')
 
-        self.t2 = api.table([
+        cls.t2 = api.table([
             ('key1', 'string'),
             ('key2', 'string')
         ], 'bar')
@@ -999,14 +891,9 @@ HAVING count(*) > 100"""
 FROM star1"""
         assert result == expected
 
-        # count on more complicated table
-        region = self.con.table('tpch_region')
-        nation = self.con.table('tpch_nation')
-        join_expr = region.r_regionkey == nation.n_regionkey
-        joined = region.inner_join(nation, join_expr)
-        table_ref = joined[nation, region.r_name.name('region')]
+    def test_aggregate_count_joined(self):
+        expr = self._case_aggregate_count_joined()
 
-        expr = table_ref.count()
         result = to_sql(expr)
         expected = """SELECT count(*) AS `tmp`
 FROM (
@@ -1695,6 +1582,129 @@ WHERE NOT EXISTS (
   WHERE t0.`key1` = t1.`key1`
 )"""
         assert result == expected
+
+    def test_sort_by(self):
+        cases = self._case_sort_by()
+
+        expected = [
+            """SELECT *
+FROM star1
+ORDER BY `f`""",
+            """SELECT *
+FROM star1
+ORDER BY `f` DESC""",
+            """SELECT *
+FROM star1
+ORDER BY `c`, `f` DESC"""
+        ]
+
+        for case, ex in zip(cases, expected):
+            result = to_sql(case)
+            assert result == ex
+
+    def test_limit(self):
+        table = self.con.table('star1').limit(10)
+        result = to_sql(table)
+        expected = """SELECT *
+FROM star1
+LIMIT 10"""
+        assert result == expected
+
+        table = self.con.table('star1').limit(10, offset=5)
+        result = to_sql(table)
+        expected = """SELECT *
+FROM star1
+LIMIT 10 OFFSET 5"""
+        assert result == expected
+
+        # Put the limit in a couple places in the stack
+        table = self.con.table('star1')
+        table = table[table.f > 0].limit(10)
+        result = to_sql(table)
+
+        expected = """SELECT *
+FROM star1
+WHERE `f` > 0
+LIMIT 10"""
+
+        assert result == expected
+
+        table = self.con.table('star1')
+
+        # Semantically, this should produce a subquery
+        table = table.limit(10)
+        table = table[table.f > 0]
+
+        result2 = to_sql(table)
+
+        expected2 = """SELECT *
+FROM (
+  SELECT *
+  FROM star1
+  LIMIT 10
+) t0
+WHERE `f` > 0"""
+
+        assert result2 == expected2
+
+    def test_join_with_limited_table(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        limited = t1.limit(100)
+        joined = (limited.inner_join(t2, [limited.foo_id == t2.foo_id])
+                  [[limited]])
+
+        result = to_sql(joined)
+        expected = """SELECT t0.*
+FROM (
+  SELECT *
+  FROM star1
+  LIMIT 100
+) t0
+  INNER JOIN star2 t1
+    ON t0.`foo_id` = t1.`foo_id`"""
+
+        assert result == expected
+
+    def test_sort_by_on_limit_yield_subquery(self):
+        # x.limit(...).sort_by(...)
+        #   is semantically different from
+        # x.sort_by(...).limit(...)
+        #   and will often yield different results
+        t = self.con.table('functional_alltypes')
+        expr = (t.group_by('string_col')
+                .aggregate([t.count().name('nrows')])
+                .limit(5)
+                .sort_by('string_col'))
+
+        result = to_sql(expr)
+        expected = """SELECT *
+FROM (
+  SELECT `string_col`, count(*) AS `nrows`
+  FROM functional_alltypes
+  GROUP BY 1
+  LIMIT 5
+) t0
+ORDER BY `string_col`"""
+        assert result == expected
+
+    def test_multiple_limits(self):
+        t = self.con.table('functional_alltypes')
+
+        expr = t.limit(20).limit(10)
+        stmt = build_ast(expr).queries[0]
+
+        assert stmt.limit['n'] == 10
+
+    def test_top_convenience(self):
+        # x.top(10, by=field)
+        # x.top(10, by=[field1, field2])
+        pass
+
+    def test_self_aggregate_in_predicate(self):
+        # Per ibis #43
+        pass
 
 
 class TestUnions(unittest.TestCase):
