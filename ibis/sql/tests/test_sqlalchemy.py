@@ -127,20 +127,29 @@ class TestSQLAlchemy(unittest.TestCase):
         ]
         self._check_expr_cases(cases, named=True)
 
-    def test_inner_join(self):
+    def test_joins(self):
         region = self.con.table('tpch_region')
         nation = self.con.table('tpch_nation')
 
         rt = self._to_sqla(region)
         nt = self._to_sqla(nation)
 
-        pred = region.r_regionkey == nation.n_regionkey
-        joined = region.inner_join(nation, pred)
+        ipred = region.r_regionkey == nation.n_regionkey
+        spred = rt.c.r_regionkey == nt.c.n_regionkey
 
-        joined_sqla = rt.join(nt, rt.c.r_regionkey == nt.c.n_regionkey)
-        expected = sa.select([rt, nt]).select_from(joined_sqla)
+        joins = [
+            (region.inner_join(nation, ipred),
+             rt.join(nt, spred)),
 
-        self._compare_sqla(joined, expected)
+            (region.left_join(nation, ipred),
+             rt.join(nt, spred, isouter=True)),
+
+            (region.outer_join(nation, ipred),
+             rt.outerjoin(nt, spred)),
+        ]
+        for ibis_joined, joined_sqla in joins:
+            expected = sa.select([rt, nt]).select_from(joined_sqla)
+            self._compare_sqla(ibis_joined, expected)
 
     def _compare_sqla(self, expr, sqla):
         result = alch.to_sqlalchemy(expr)

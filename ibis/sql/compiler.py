@@ -986,7 +986,6 @@ class QueryContext(object):
         table or inline view
         """
         key = self._get_table_key(table_expr)
-
         top = self.top_context
 
         if self.is_extracted(table_expr):

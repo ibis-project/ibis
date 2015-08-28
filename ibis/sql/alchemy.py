@@ -341,7 +341,7 @@ class _AlchemyTableSet(ddl._TableSetFormatter):
             elif jtype is ops.RightJoin:
                 result = table.join(result, onclause, isouter=True)
             elif jtype is ops.OuterJoin:
-                result = result.outerjoin(result, onclause)
+                result = result.outerjoin(table, onclause)
             else:
                 raise NotImplementedError(jtype)
 
