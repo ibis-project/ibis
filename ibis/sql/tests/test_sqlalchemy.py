@@ -16,6 +16,7 @@ import operator
 
 from ibis.compat import unittest
 from ibis.expr.tests.mocks import MockConnection
+from ibis.sql.tests.test_compiler import SelectTestCases
 from ibis.tests.util import assert_equal
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
@@ -38,12 +39,17 @@ class MockAlchemyConnection(MockConnection):
 
     def table(self, name):
         schema = self._get_table_schema(name)
-        table = alch.table_from_schema(name, self.meta, schema)
+
+        if name in self.meta.tables:
+            table = self.meta.tables[name]
+        else:
+            table = alch.table_from_schema(name, self.meta, schema)
+
         node = alch.AlchemyTable(table, self)
         return ir.TableExpr(node)
 
 
-class TestSQLAlchemy(unittest.TestCase):
+class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
 
     def setUp(self):
         self.con = MockAlchemyConnection()
@@ -152,7 +158,13 @@ class TestSQLAlchemy(unittest.TestCase):
             self._compare_sqla(ibis_joined, expected)
 
     def test_where(self):
-        pass
+        expr = self._case_where_simple_comparisons()
+        st = self._to_sqla(self.con.table('star1'))
+
+        clause = sql.and_(st.c.f > 0, st.c.c < (st.c.f * 2))
+        expected = sa.select([st]).where(clause)
+
+        self._compare_sqla(expr, expected)
 
     def test_group_by(self):
         pass

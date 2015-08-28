@@ -298,6 +298,11 @@ class AlchemySelect(ddl.Select):
         if not len(self.where):
             return fragment
 
+        args = [self._translate(pred, permit_subquery=True)
+                for pred in self.where]
+        clause = _and_all(args)
+        return fragment.where(clause)
+
     def _add_order_by(self, fragment):
         if not len(self.order_by):
             return fragment
