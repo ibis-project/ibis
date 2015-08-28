@@ -151,17 +151,16 @@ class TestSQLAlchemy(unittest.TestCase):
             expected = sa.select([rt, nt]).select_from(joined_sqla)
             self._compare_sqla(ibis_joined, expected)
 
-    def _compare_sqla(self, expr, sqla):
-        result = alch.to_sqlalchemy(expr)
-        assert str(result) == str(sqla)
-
-    def _to_sqla(self, table):
-        return table.op().sqla_table
-
-    def test_outer_join(self):
+    def test_where(self):
         pass
 
-    def test_left_right_join(self):
+    def test_group_by(self):
+        pass
+
+    def test_order_by(self):
+        pass
+
+    def test_limit(self):
         pass
 
     def test_cte_extract(self):
@@ -178,3 +177,10 @@ class TestSQLAlchemy(unittest.TestCase):
 
     def test_union(self):
         pass
+
+    def _compare_sqla(self, expr, sqla):
+        result = alch.to_sqlalchemy(expr)
+        assert str(result) == str(sqla)
+
+    def _to_sqla(self, table):
+        return table.op().sqla_table

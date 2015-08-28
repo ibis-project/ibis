@@ -364,7 +364,271 @@ customer = api.table([
 ], 'customer')
 
 
-class TestSelectSQL(unittest.TestCase):
+class SelectTestCases(object):
+
+    def _case_multiple_joins(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+        t3 = self.con.table('star3')
+
+        predA = t1['foo_id'] == t2['foo_id']
+        predB = t1['bar_id'] == t3['bar_id']
+
+        what = (t1.left_join(t2, [predA])
+                .inner_join(t3, [predB])
+                .projection([t1, t2['value1'], t3['value2']]))
+        return what
+
+    def _case_join_between_joins(self):
+        t1 = api.table([
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('value1', 'double'),
+        ], 'first')
+
+        t2 = api.table([
+            ('key1', 'string'),
+            ('value2', 'double'),
+        ], 'second')
+
+        t3 = api.table([
+            ('key2', 'string'),
+            ('key3', 'string'),
+            ('value3', 'double'),
+        ], 'third')
+
+        t4 = api.table([
+            ('key3', 'string'),
+            ('value4', 'double')
+        ], 'fourth')
+
+        left = t1.inner_join(t2, [('key1', 'key1')])[t1, t2.value2]
+        right = t3.inner_join(t4, [('key3', 'key3')])[t3, t4.value4]
+
+        joined = left.inner_join(right, [('key2', 'key2')])
+
+        # At one point, the expression simplification was resulting in bad refs
+        # here (right.value3 referencing the table inside the right join)
+        exprs = [left, right.value3, right.value4]
+        projected = joined.projection(exprs)
+
+        return projected
+
+    def _case_join_just_materialized(self):
+        t1 = self.con.table('tpch_nation')
+        t2 = self.con.table('tpch_region')
+        t3 = self.con.table('tpch_customer')
+
+        # GH #491
+        return (t1.inner_join(t2, t1.n_regionkey == t2.r_regionkey)
+                .inner_join(t3, t1.n_nationkey == t3.c_nationkey))
+
+    def _case_semi_anti_joins(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        sj = t1.semi_join(t2, [t1.foo_id == t2.foo_id])[[t1]]
+        aj = t1.anti_join(t2, [t1.foo_id == t2.foo_id])[[t1]]
+
+        return sj, aj
+
+    def _case_self_reference_simple(self):
+        t1 = self.con.table('star1')
+        return t1.view()
+
+    def _case_self_reference_join(self):
+        t1 = self.con.table('star1')
+        t2 = t1.view()
+        return t1.inner_join(t2, [t1.foo_id == t2.bar_id])[[t1]]
+
+    def _case_join_projection_subquery_bug(self):
+        # From an observed bug, derived from tpch tables
+        geo = (nation.inner_join(region, [('n_regionkey', 'r_regionkey')])
+               [nation.n_nationkey,
+                nation.n_name.name('nation'),
+                region.r_name.name('region')])
+
+        expr = (geo.inner_join(customer, [('n_nationkey', 'c_nationkey')])
+                [customer, geo])
+
+        return expr
+
+    def _case_where_simple_comparisons(self):
+        t1 = self.con.table('star1')
+
+        what = t1.filter([t1.f > 0, t1.c < t1.f * 2])
+
+        return what
+
+    def _case_where_with_join(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        # This also tests some cases of predicate pushdown
+        e1 = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
+              .projection([t1, t2.value1, t2.value3])
+              .filter([t1.f > 0, t2.value3 < 1000]))
+
+        e2 = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
+              .filter([t1.f > 0, t2.value3 < 1000])
+              .projection([t1, t2.value1, t2.value3]))
+
+        return e1, e2
+
+    def _case_subquery_used_for_self_join(self):
+        # There could be cases that should look in SQL like
+        # WITH t0 as (some subquery)
+        # select ...
+        # from t0 t1
+        #   join t0 t2
+        #     on t1.kind = t2.subkind
+        # ...
+        # However, the Ibis code will simply have an expression (projection or
+        # aggregation, say) built on top of the subquery expression, so we need
+        # to extract the subquery unit (we see that it appears multiple times
+        # in the tree).
+        t = self.con.table('alltypes')
+
+        agged = t.aggregate([t.f.sum().name('total')], by=['g', 'a', 'b'])
+        view = agged.view()
+        metrics = [(agged.total - view.total).max().name('metric')]
+        expr = (agged.inner_join(view, [agged.a == view.b])
+                .aggregate(metrics, by=[agged.g]))
+
+        return expr
+
+    def _case_subquery_factor_correlated_subquery(self):
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+        customer = self.con.table('tpch_customer')
+        orders = self.con.table('tpch_orders')
+
+        fields_of_interest = [customer,
+                              region.r_name.name('region'),
+                              orders.o_totalprice.name('amount'),
+                              orders.o_orderdate
+                              .cast('timestamp').name('odate')]
+
+        tpch = (region.join(nation, region.r_regionkey == nation.n_regionkey)
+                .join(customer, customer.c_nationkey == nation.n_nationkey)
+                .join(orders, orders.o_custkey == customer.c_custkey)
+                [fields_of_interest])
+
+        # Self-reference + correlated subquery complicates things
+        t2 = tpch.view()
+        conditional_avg = t2[t2.region == tpch.region].amount.mean()
+        amount_filter = tpch.amount > conditional_avg
+
+        return tpch[amount_filter].limit(10)
+
+    def _case_self_join_subquery_distinct_equal(self):
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+
+        j1 = (region.join(nation, region.r_regionkey == nation.n_regionkey)
+              [region, nation])
+
+        j2 = (region.join(nation, region.r_regionkey == nation.n_regionkey)
+              [region, nation].view())
+
+        expr = (j1.join(j2, j1.r_regionkey == j2.r_regionkey)
+                [j1.r_name, j2.n_name])
+
+        return expr
+
+    def _case_cte_factor_distinct_but_equal(self):
+        t = self.con.table('alltypes')
+        tt = self.con.table('alltypes')
+
+        expr1 = t.group_by('g').aggregate(t.f.sum().name('metric'))
+        expr2 = tt.group_by('g').aggregate(tt.f.sum().name('metric')).view()
+
+        expr = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
+
+        return expr
+
+    def _case_tpch_self_join_failure(self):
+        # duplicating the integration test here
+
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+        customer = self.con.table('tpch_customer')
+        orders = self.con.table('tpch_orders')
+
+        fields_of_interest = [
+            region.r_name.name('region'),
+            nation.n_name.name('nation'),
+            orders.o_totalprice.name('amount'),
+            orders.o_orderdate.cast('timestamp').name('odate')]
+
+        joined_all = (
+            region.join(nation, region.r_regionkey == nation.n_regionkey)
+            .join(customer, customer.c_nationkey == nation.n_nationkey)
+            .join(orders, orders.o_custkey == customer.c_custkey)
+            [fields_of_interest])
+
+        year = joined_all.odate.year().name('year')
+        total = joined_all.amount.sum().cast('double').name('total')
+        annual_amounts = (joined_all
+                          .group_by(['region', year])
+                          .aggregate(total))
+
+        current = annual_amounts
+        prior = annual_amounts.view()
+
+        yoy_change = (current.total - prior.total).name('yoy_change')
+        yoy = (current.join(prior, current.year == (prior.year - 1))
+               [current.region, current.year, yoy_change])
+        return yoy
+
+    def _case_subquery_in_filter_predicate(self):
+        # E.g. comparing against some scalar aggregate value. See Ibis #43
+        t1 = self.con.table('star1')
+
+        pred = t1.f > t1.f.mean()
+        expr = t1[pred]
+
+        # This brought out another expression rewriting bug, since the filtered
+        # table isn't found elsewhere in the expression.
+        pred2 = t1.f > t1[t1.foo_id == 'foo'].f.mean()
+        expr2 = t1[pred2]
+
+        return expr, expr2
+
+    def _case_filter_subquery_derived_reduction(self):
+        t1 = self.con.table('star1')
+
+        # Reduction can be nested inside some scalar expression
+        pred3 = t1.f > t1[t1.foo_id == 'foo'].f.mean().log()
+        pred4 = t1.f > (t1[t1.foo_id == 'foo'].f.mean().log() + 1)
+
+        expr3 = t1[pred3]
+        expr4 = t1[pred4]
+
+        return expr3, expr4
+
+    def _case_topk_operation(self):
+        # TODO: top K with filter in place
+
+        table = api.table([
+            ('foo', 'string'),
+            ('bar', 'string'),
+            ('city', 'string'),
+            ('v1', 'double'),
+            ('v2', 'double'),
+        ], 'tbl')
+
+        what = table.city.topk(10, by=table.v2.mean())
+        e1 = table[what]
+
+        # Test the default metric (count)
+        what = table.city.topk(10)
+        e2 = table[what]
+
+        return e1, e2
+
+
+class TestSelectSQL(unittest.TestCase, SelectTestCases):
 
     def setUp(self):
         self.con = MockConnection()
@@ -388,7 +652,7 @@ class TestSelectSQL(unittest.TestCase):
         expected = "SELECT *\nFROM alltypes"
         assert sql_string == expected
 
-    def test_simple_join_formatting(self):
+    def test_simple_joins(self):
         t1 = self.con.table('star1')
         t2 = self.con.table('star2')
 
@@ -423,17 +687,9 @@ FROM star1 t0
             result_sql = to_sql(expr)
             assert result_sql == expected_sql
 
-    def test_multiple_join_cases(self):
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
-        t3 = self.con.table('star3')
+    def test_multiple_joins(self):
+        what = self._case_multiple_joins()
 
-        predA = t1['foo_id'] == t2['foo_id']
-        predB = t1['bar_id'] == t3['bar_id']
-
-        what = (t1.left_join(t2, [predA])
-                .inner_join(t3, [predB])
-                .projection([t1, t2['value1'], t3['value2']]))
         result_sql = to_sql(what)
         expected_sql = """SELECT t0.*, t1.`value1`, t2.`value2`
 FROM star1 t0
@@ -444,37 +700,7 @@ FROM star1 t0
         assert result_sql == expected_sql
 
     def test_join_between_joins(self):
-        t1 = api.table([
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('value1', 'double'),
-        ], 'first')
-
-        t2 = api.table([
-            ('key1', 'string'),
-            ('value2', 'double'),
-        ], 'second')
-
-        t3 = api.table([
-            ('key2', 'string'),
-            ('key3', 'string'),
-            ('value3', 'double'),
-        ], 'third')
-
-        t4 = api.table([
-            ('key3', 'string'),
-            ('value4', 'double')
-        ], 'fourth')
-
-        left = t1.inner_join(t2, [('key1', 'key1')])[t1, t2.value2]
-        right = t3.inner_join(t4, [('key3', 'key3')])[t3, t4.value4]
-
-        joined = left.inner_join(right, [('key2', 'key2')])
-
-        # At one point, the expression simplification was resulting in bad refs
-        # here (right.value3 referencing the table inside the right join)
-        exprs = [left, right.value3, right.value4]
-        projected = joined.projection(exprs)
+        projected = self._case_join_between_joins()
 
         result = to_sql(projected)
         expected = """SELECT t0.*, t1.`value3`, t1.`value4`
@@ -494,13 +720,7 @@ FROM (
         assert result == expected
 
     def test_join_just_materialized(self):
-        t1 = self.con.table('tpch_nation')
-        t2 = self.con.table('tpch_region')
-        t3 = self.con.table('tpch_customer')
-
-        # GH #491
-        joined = (t1.inner_join(t2, t1.n_regionkey == t2.r_regionkey)
-                  .inner_join(t3, t1.n_nationkey == t3.c_nationkey))
+        joined = self._case_join_just_materialized()
         result = to_sql(joined)
         expected = """SELECT *
 FROM tpch_nation t0
@@ -535,20 +755,16 @@ FROM star1 t0
             assert result == expected
 
     def test_semi_anti_joins(self):
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
+        sj, aj = self._case_semi_anti_joins()
 
-        joined = t1.semi_join(t2, [t1.foo_id == t2.foo_id])[[t1]]
-
-        result = to_sql(joined)
+        result = to_sql(sj)
         expected = """SELECT t0.*
 FROM star1 t0
   LEFT SEMI JOIN star2 t1
     ON t0.`foo_id` = t1.`foo_id`"""
         assert result == expected
 
-        joined = t1.anti_join(t2, [t1.foo_id == t2.foo_id])[[t1]]
-        result = to_sql(joined)
+        result = to_sql(aj)
         expected = """SELECT t0.*
 FROM star1 t0
   LEFT ANTI JOIN star2 t1
@@ -556,17 +772,14 @@ FROM star1 t0
         assert result == expected
 
     def test_self_reference_simple(self):
-        t1 = self.con.table('star1')
+        expr = self._case_self_reference_simple()
 
-        result_sql = to_sql(t1.view())
+        result_sql = to_sql(expr)
         expected_sql = "SELECT *\nFROM star1"
         assert result_sql == expected_sql
 
     def test_join_self_reference(self):
-        t1 = self.con.table('star1')
-        t2 = t1.view()
-
-        result = t1.inner_join(t2, [t1.foo_id == t2.bar_id])[[t1]]
+        result = self._case_self_reference_join()
 
         result_sql = to_sql(result)
         expected_sql = """SELECT t0.*
@@ -576,14 +789,7 @@ FROM star1 t0
         assert result_sql == expected_sql
 
     def test_join_projection_subquery_broken_alias(self):
-        # From an observed bug, derived from tpch tables
-        geo = (nation.inner_join(region, [('n_regionkey', 'r_regionkey')])
-               [nation.n_nationkey,
-                nation.n_name.name('nation'),
-                region.r_name.name('region')])
-
-        expr = (geo.inner_join(customer, [('n_nationkey', 'c_nationkey')])
-                [customer, geo])
+        expr = self._case_join_projection_subquery_bug()
 
         result = to_sql(expr)
         expected = """SELECT t1.*, t0.*
@@ -598,10 +804,7 @@ FROM (
         assert result == expected
 
     def test_where_simple_comparisons(self):
-        t1 = self.con.table('star1')
-
-        what = t1.filter([t1.f > 0, t1.c < t1.f * 2])
-
+        what = self._case_where_simple_comparisons()
         result = to_sql(what)
         expected = """SELECT *
 FROM star1
@@ -615,17 +818,7 @@ WHERE `f` > 0 AND
         raise unittest.SkipTest
 
     def test_where_with_join(self):
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
-
-        # This also tests some cases of predicate pushdown
-        what = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
-                .projection([t1, t2.value1, t2.value3])
-                .filter([t1.f > 0, t2.value3 < 1000]))
-
-        what2 = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
-                 .filter([t1.f > 0, t2.value3 < 1000])
-                 .projection([t1, t2.value1, t2.value3]))
+        e1, e2 = self._case_where_with_join()
 
         expected_sql = """SELECT t0.*, t1.`value1`, t1.`value3`
 FROM star1 t0
@@ -634,10 +827,10 @@ FROM star1 t0
 WHERE t0.`f` > 0 AND
       t1.`value3` < 1000"""
 
-        result_sql = to_sql(what)
+        result_sql = to_sql(e1)
         assert result_sql == expected_sql
 
-        result2_sql = to_sql(what2)
+        result2_sql = to_sql(e2)
         assert result2_sql == expected_sql
 
     def test_where_no_pushdown_possible(self):
@@ -1075,26 +1268,9 @@ GROUP BY 1"""
         pass
 
     def test_subquery_used_for_self_join(self):
-        # There could be cases that should look in SQL like
-        # WITH t0 as (some subquery)
-        # select ...
-        # from t0 t1
-        #   join t0 t2
-        #     on t1.kind = t2.subkind
-        # ...
-        # However, the Ibis code will simply have an expression (projection or
-        # aggregation, say) built on top of the subquery expression, so we need
-        # to extract the subquery unit (we see that it appears multiple times
-        # in the tree).
-        t = self.con.table('alltypes')
+        expr = self._case_subquery_used_for_self_join()
 
-        agged = t.aggregate([t.f.sum().name('total')], by=['g', 'a', 'b'])
-        view = agged.view()
-        metrics = [(agged.total - view.total).max().name('metric')]
-        reagged = (agged.inner_join(view, [agged.a == view.b])
-                   .aggregate(metrics, by=[agged.g]))
-
-        result = to_sql(reagged)
+        result = to_sql(expr)
         expected = """WITH t0 AS (
   SELECT `g`, `a`, `b`, sum(`f`) AS `total`
   FROM alltypes
@@ -1109,28 +1285,8 @@ GROUP BY 1"""
 
     def test_subquery_factor_correlated_subquery(self):
         # #173, #183 and other issues
-        region = self.con.table('tpch_region')
-        nation = self.con.table('tpch_nation')
-        customer = self.con.table('tpch_customer')
-        orders = self.con.table('tpch_orders')
 
-        fields_of_interest = [customer,
-                              region.r_name.name('region'),
-                              orders.o_totalprice.name('amount'),
-                              orders.o_orderdate
-                              .cast('timestamp').name('odate')]
-
-        tpch = (region.join(nation, region.r_regionkey == nation.n_regionkey)
-                .join(customer, customer.c_nationkey == nation.n_nationkey)
-                .join(orders, orders.o_custkey == customer.c_custkey)
-                [fields_of_interest])
-
-        # Self-reference + correlated subquery complicates things
-        t2 = tpch.view()
-        conditional_avg = t2[t2.region == tpch.region].amount.mean()
-        amount_filter = tpch.amount > conditional_avg
-
-        expr = tpch[amount_filter].limit(10)
+        expr = self._case_subquery_factor_correlated_subquery()
 
         result = to_sql(expr)
         expected = """\
@@ -1156,17 +1312,7 @@ LIMIT 10"""
         assert result == expected
 
     def test_self_join_subquery_distinct_equal(self):
-        region = self.con.table('tpch_region')
-        nation = self.con.table('tpch_nation')
-
-        j1 = (region.join(nation, region.r_regionkey == nation.n_regionkey)
-              [region, nation])
-
-        j2 = (region.join(nation, region.r_regionkey == nation.n_regionkey)
-              [region, nation].view())
-
-        expr = (j1.join(j2, j1.r_regionkey == j2.r_regionkey)
-                [j1.r_name, j2.n_name])
+        expr = self._case_self_join_subquery_distinct_equal()
 
         result = to_sql(expr)
         expected = """\
@@ -1199,13 +1345,7 @@ FROM functional_alltypes t0
         assert result == expected
 
     def test_cte_factor_distinct_but_equal(self):
-        t = self.con.table('alltypes')
-        tt = self.con.table('alltypes')
-
-        expr1 = t.group_by('g').aggregate(t.f.sum().name('metric'))
-        expr2 = tt.group_by('g').aggregate(tt.f.sum().name('metric')).view()
-
-        expr = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
+        expr = self._case_cte_factor_distinct_but_equal()
 
         result = to_sql(expr)
         expected = """\
@@ -1222,37 +1362,7 @@ FROM t0
         assert result == expected
 
     def test_tpch_self_join_failure(self):
-        # duplicating the integration test here
-
-        region = self.con.table('tpch_region')
-        nation = self.con.table('tpch_nation')
-        customer = self.con.table('tpch_customer')
-        orders = self.con.table('tpch_orders')
-
-        fields_of_interest = [
-            region.r_name.name('region'),
-            nation.n_name.name('nation'),
-            orders.o_totalprice.name('amount'),
-            orders.o_orderdate.cast('timestamp').name('odate')]
-
-        joined_all = (
-            region.join(nation, region.r_regionkey == nation.n_regionkey)
-            .join(customer, customer.c_nationkey == nation.n_nationkey)
-            .join(orders, orders.o_custkey == customer.c_custkey)
-            [fields_of_interest])
-
-        year = joined_all.odate.year().name('year')
-        total = joined_all.amount.sum().cast('double').name('total')
-        annual_amounts = (joined_all
-                          .group_by(['region', year])
-                          .aggregate(total))
-
-        current = annual_amounts
-        prior = annual_amounts.view()
-
-        yoy_change = (current.total - prior.total).name('yoy_change')
-        yoy = (current.join(prior, current.year == (prior.year - 1))
-               [current.region, current.year, yoy_change])
+        yoy = self._case_tpch_self_join_failure()
         to_sql(yoy)
 
     def test_extract_subquery_nested_lower(self):
@@ -1263,16 +1373,7 @@ FROM t0
         pass
 
     def test_subquery_in_filter_predicate(self):
-        # E.g. comparing against some scalar aggregate value. See Ibis #43
-        t1 = self.con.table('star1')
-
-        pred = t1.f > t1.f.mean()
-        expr = t1[pred]
-
-        # This brought out another expression rewriting bug, since the filtered
-        # table isn't found elsewhere in the expression.
-        pred2 = t1.f > t1[t1.foo_id == 'foo'].f.mean()
-        expr2 = t1[pred2]
+        expr, expr2 = self._case_subquery_in_filter_predicate()
 
         result = to_sql(expr)
         expected = """SELECT *
@@ -1294,13 +1395,8 @@ WHERE `f` > (
         assert result == expected
 
     def test_filter_subquery_derived_reduction(self):
-        t1 = self.con.table('star1')
+        expr3, expr4 = self._case_filter_subquery_derived_reduction()
 
-        # Reduction can be nested inside some scalar expression
-        pred3 = t1.f > t1[t1.foo_id == 'foo'].f.mean().log()
-        pred4 = t1.f > (t1[t1.foo_id == 'foo'].f.mean().log() + 1)
-
-        expr3 = t1[pred3]
         result = to_sql(expr3)
         expected = """SELECT *
 FROM star1
@@ -1310,8 +1406,6 @@ WHERE `f` > (
   WHERE `foo_id` = 'foo'
 )"""
         assert result == expected
-
-        expr4 = t1[pred4]
 
         result = to_sql(expr4)
         expected = """SELECT *
@@ -1323,19 +1417,8 @@ WHERE `f` > (
 )"""
         assert result == expected
 
-    def test_topk_operation_to_semi_join(self):
-        # TODO: top K with filter in place
-
-        table = api.table([
-            ('foo', 'string'),
-            ('bar', 'string'),
-            ('city', 'string'),
-            ('v1', 'double'),
-            ('v2', 'double'),
-        ], 'tbl')
-
-        what = table.city.topk(10, by=table.v2.mean())
-        filtered = table[what]
+    def test_topk_operation(self):
+        filtered, filtered2 = self._case_topk_operation()
 
         query = to_sql(filtered)
         expected = """SELECT t0.*
@@ -1350,10 +1433,6 @@ FROM tbl t0
     ON t0.`city` = t1.`city`"""
         assert query == expected
 
-        # Test the default metric (count)
-
-        what = table.city.topk(10)
-        filtered2 = table[what]
         query = to_sql(filtered2)
         expected = """SELECT t0.*
 FROM tbl t0

@@ -255,13 +255,15 @@ class AlchemySelect(ddl.Select):
         # Can't tell if this is a hack or not. Revisit later
         self.context.set_query(self)
 
-        table_set = self._compile_table_set()
+        frag = self._compile_table_set()
+        steps = [self._add_select,
+                 self._add_groupby,
+                 self._add_where,
+                 self._add_order_by,
+                 self._add_limit]
 
-        frag = self._add_select(table_set)
-        frag = self._add_groupby(frag)
-        frag = self._add_where(frag)
-        frag = self._add_order_by(frag)
-        frag = self._add_limit(frag)
+        for step in steps:
+            frag = step(frag)
 
         return frag
 
