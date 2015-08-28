@@ -95,29 +95,27 @@ class Select(DDL):
         This method isn't yet idempotent; calling multiple times may yield
         unexpected results
         """
-        context = self.context
-
         # Can't tell if this is a hack or not. Revisit later
-        context.set_query(self)
+        self.context.set_query(self)
 
         # If any subqueries, translate them and add to beginning of query as
         # part of the WITH section
-        with_frag = self.format_subqueries(context)
+        with_frag = self.format_subqueries()
 
         # SELECT
-        select_frag = self.format_select_set(context)
+        select_frag = self.format_select_set()
 
         # FROM, JOIN, UNION
-        from_frag = self.format_table_set(context)
+        from_frag = self.format_table_set()
 
         # WHERE
-        where_frag = self.format_where(context)
+        where_frag = self.format_where()
 
         # GROUP BY and HAVING
-        groupby_frag = self.format_group_by(context)
+        groupby_frag = self.format_group_by()
 
         # ORDER BY and LIMIT
-        order_frag = self.format_postamble(context)
+        order_frag = self.format_postamble()
 
         # Glue together the query fragments and return
         query = _join_not_none('\n', [with_frag, select_frag, from_frag,
@@ -125,9 +123,11 @@ class Select(DDL):
 
         return query
 
-    def format_subqueries(self, context):
+    def format_subqueries(self):
         if len(self.subqueries) == 0:
             return
+
+        context = self.context
 
         buf = StringIO()
         buf.write('WITH ')
@@ -135,18 +135,19 @@ class Select(DDL):
         for i, expr in enumerate(self.subqueries):
             if i > 0:
                 buf.write(',\n')
-            formatted = util.indent(context.get_formatted_query(expr), 2)
+            formatted = util.indent(context.get_compiled_expr(expr), 2)
             alias = context.get_ref(expr)
             buf.write('{0} AS (\n{1}\n)'.format(alias, formatted))
 
         return buf.getvalue()
 
-    def format_select_set(self, context):
+    def format_select_set(self):
         # TODO:
+        context = self.context
         formatted = []
         for expr in self.select_set:
             if isinstance(expr, ir.ValueExpr):
-                expr_str = self._translate(expr, context=context, named=True)
+                expr_str = self._translate(expr, named=True)
             elif isinstance(expr, ir.TableExpr):
                 # A * selection, possibly prefixed
                 if context.need_aliases():
@@ -197,19 +198,19 @@ class Select(DDL):
 
         return '{0}{1}'.format(select_key, buf.getvalue())
 
-    def format_table_set(self, ctx):
+    def format_table_set(self):
         if self.table_set is None:
             return None
 
         fragment = 'FROM '
 
-        helper = _TableSetFormatter(self, ctx, self.table_set)
+        helper = _TableSetFormatter(self, self.table_set)
         fragment += helper.get_result()
 
         return fragment
 
-    def format_group_by(self, context):
-        if len(self.group_by) == 0:
+    def format_group_by(self):
+        if not len(self.group_by):
             # There is no aggregation, nothing to see here
             return None
 
@@ -222,26 +223,25 @@ class Select(DDL):
         if len(self.having) > 0:
             trans_exprs = []
             for expr in self.having:
-                translated = self._translate(expr, context=context)
+                translated = self._translate(expr)
                 trans_exprs.append(translated)
             lines.append('HAVING {0}'.format(' AND '.join(trans_exprs)))
 
         return '\n'.join(lines)
 
-    def format_where(self, context):
+    def format_where(self):
         if len(self.where) == 0:
             return None
 
         buf = StringIO()
         buf.write('WHERE ')
-        fmt_preds = [self._translate(pred, context=context,
-                                     permit_subquery=True)
+        fmt_preds = [self._translate(pred, permit_subquery=True)
                      for pred in self.where]
         conj = ' AND\n{0}'.format(' ' * 6)
         buf.write(conj.join(fmt_preds))
         return buf.getvalue()
 
-    def format_postamble(self, context):
+    def format_postamble(self):
         buf = StringIO()
         lines = 0
 
@@ -250,7 +250,7 @@ class Select(DDL):
             formatted = []
             for expr in self.order_by:
                 key = expr.op()
-                translated = self._translate(key.expr, context=context)
+                translated = self._translate(key.expr)
                 if not key.ascending:
                     translated += ' DESC'
                 formatted.append(translated)
@@ -274,7 +274,12 @@ class Select(DDL):
     def _translate(self, expr, context=None, named=False,
                    permit_subquery=False):
         from ibis.impala.exprs import ImpalaExprTranslator
-        translator = ImpalaExprTranslator(expr, context=context, named=named,
+
+        if context is None:
+            context = self.context
+
+        translator = ImpalaExprTranslator(expr, context=context,
+                                          named=named,
                                           permit_subquery=permit_subquery)
         return translator.get_result()
 
@@ -290,9 +295,9 @@ class _TableSetFormatter(object):
         ops.CrossJoin: 'CROSS JOIN'
     }
 
-    def __init__(self, parent, context, expr, indent=2):
+    def __init__(self, parent, expr, indent=2):
         self.parent = parent
-        self.context = context
+        self.context = parent.context
         self.expr = expr
         self.indent = indent
 
@@ -321,14 +326,16 @@ class _TableSetFormatter(object):
 
             if len(preds):
                 buf.write('\n')
-                fmt_preds = [self.parent._translate(pred, context=self.context)
-                             for pred in preds]
+                fmt_preds = [self._translate(pred) for pred in preds]
                 conj = ' AND\n{0}'.format(' ' * 3)
                 fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
                                         self.indent * 2)
                 buf.write(fmt_preds)
 
         return buf.getvalue()
+
+    def _translate(self, expr):
+        return self.parent._translate(expr, context=self.context)
 
     def _walk_join_tree(self, op):
         left = op.left.op()
@@ -340,11 +347,7 @@ class _TableSetFormatter(object):
 
         self._validate_join_predicates(op.predicates)
 
-        jname = self._join_names[type(op)]
-
-        # Impala requires this
-        if len(op.predicates) == 0:
-            jname = self._join_names[ops.CrossJoin]
+        jname = self._get_join_type(op)
 
         # Read off tables and join predicates left-to-right in
         # depth-first order
@@ -365,6 +368,15 @@ class _TableSetFormatter(object):
             self.join_tables.append(self._format_table(op.right))
             self.join_types.append(jname)
             self.join_predicates.append(op.predicates)
+
+    def _get_join_type(self, op):
+        jname = self._join_names[type(op)]
+
+        # Impala requires this
+        if len(op.predicates) == 0:
+            jname = self._join_names[ops.CrossJoin]
+
+        return jname
 
     def _format_table(self, expr):
         return _format_table(self.context, expr)
@@ -413,7 +425,7 @@ def _format_table(ctx, expr, indent=2):
             else:
                 return alias
 
-        subquery = ctx.get_formatted_query(expr)
+        subquery = ctx.get_compiled_expr(expr)
         result = '(\n{0}\n)'.format(util.indent(subquery, indent))
         is_subquery = True
 
@@ -441,8 +453,8 @@ class Union(DDL):
         else:
             union_keyword = 'UNION ALL'
 
-        left_set = context.get_formatted_query(self.left)
-        right_set = context.get_formatted_query(self.right)
+        left_set = context.get_compiled_expr(self.left)
+        right_set = context.get_compiled_expr(self.right)
 
         query = '{0}\n{1}\n{2}'.format(left_set, union_keyword, right_set)
         return query

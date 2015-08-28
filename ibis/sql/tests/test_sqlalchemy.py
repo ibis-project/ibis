@@ -128,7 +128,26 @@ class TestSQLAlchemy(unittest.TestCase):
         self._check_expr_cases(cases, named=True)
 
     def test_inner_join(self):
-        pass
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+
+        rt = self._to_sqla(region)
+        nt = self._to_sqla(nation)
+
+        pred = region.r_regionkey == nation.n_regionkey
+        joined = region.inner_join(nation, pred)
+
+        joined_sqla = rt.join(nt, rt.c.r_regionkey == nt.c.n_regionkey)
+        expected = sa.select([rt, nt]).select_from(joined_sqla)
+
+        self._compare_sqla(joined, expected)
+
+    def _compare_sqla(self, expr, sqla):
+        result = alch.to_sqlalchemy(expr)
+        assert str(result) == str(sqla)
+
+    def _to_sqla(self, table):
+        return table.op().sqla_table
 
     def test_outer_join(self):
         pass
@@ -137,6 +156,9 @@ class TestSQLAlchemy(unittest.TestCase):
         pass
 
     def test_cte_extract(self):
+        pass
+
+    def test_self_reference(self):
         pass
 
     def test_uncorrelated_subquery(self):

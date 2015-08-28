@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import operator
-import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
@@ -173,8 +172,15 @@ _binary_ops = {
     # TODO
 }
 
-for _k, _v in six.iteritems(_binary_ops):
+for _k, _v in _binary_ops.items():
     _operation_registry[_k] = _fixed_arity_call(_v, 2)
+
+
+def to_sqlalchemy(expr):
+    builder = AlchemyQueryBuilder(expr)
+    ast = builder.get_result()
+    query = ast.queries[0]
+    return query.compile()
 
 
 class AlchemyQueryBuilder(comp.QueryBuilder):
@@ -251,32 +257,120 @@ class AlchemySelect(ddl.Select):
 
         table_set = self._compile_table_set()
 
-        frag = self._add_select_clauses(table_set)
-        frag = self._add_groupby_clauses(frag)
-        frag = self._add_where_clauses(frag)
-        frag = self._add_order_by_clauses(frag)
+        frag = self._add_select(table_set)
+        frag = self._add_groupby(frag)
+        frag = self._add_where(frag)
+        frag = self._add_order_by(frag)
+        frag = self._add_limit(frag)
+
+        return frag
 
     def _compile_table_set(self):
-        pass
+        helper = _AlchemyTableSet(self, self.table_set)
+        return helper.get_result()
 
-    def _add_select_clauses(self, table_set):
-        pass
+    def _add_select(self, table_set):
+        to_select = []
+        for expr in self.select_set:
+            if isinstance(expr, ir.ValueExpr):
+                arg = self._translate(expr, named=True)
+            elif isinstance(expr, ir.TableExpr):
+                arg = self.context.get_ref(expr)
+            to_select.append(arg)
 
-    def _add_groupby_clauses(self, fragment):
+        return sa.select(to_select).select_from(table_set)
+
+    def _add_groupby(self, fragment):
         # GROUP BY and HAVING
-        pass
+        if not len(self.group_by):
+            return fragment
 
-    def _add_where_clauses(self, fragment):
-        pass
+    def _add_where(self, fragment):
+        if not len(self.where):
+            return fragment
 
     def _add_order_by(self, fragment):
-        pass
+        if not len(self.order_by):
+            return fragment
+
+    def _add_limit(self, fragment):
+        if self.limit is None:
+            return fragment
 
     def _translate(self, expr, context=None, named=False,
                    permit_subquery=False):
         translator = AlchemyExprTranslator(expr, context=context, named=named,
                                            permit_subquery=permit_subquery)
         return translator.get_result()
+
+
+class _AlchemyTableSet(ddl._TableSetFormatter):
+
+    def get_result(self):
+        # Got to unravel the join stack; the nesting order could be
+        # arbitrary, so we do a depth first search and push the join tokens
+        # and predicates onto a flat list, then format them
+        op = self.expr.op()
+
+        if isinstance(op, ops.Join):
+            self._walk_join_tree(op)
+        else:
+            self.join_tables.append(self._format_table(self.expr))
+
+        result = self.join_tables[0]
+        for jtype, table, preds in zip(self.join_types,
+                                       self.join_tables[1:],
+                                       self.join_predicates):
+            if len(preds):
+                sqla_preds = [self._translate(pred) for pred in preds]
+                onclause = _and_all(sqla_preds)
+            else:
+                onclause = None
+
+            if jtype in (ops.InnerJoin, ops.CrossJoin):
+                result = result.join(table, onclause)
+            elif jtype is ops.LeftJoin:
+                result = result.join(table, onclause, isouter=True)
+            elif jtype is ops.RightJoin:
+                result = table.join(result, onclause, isouter=True)
+            elif jtype is ops.OuterJoin:
+                result = result.outerjoin(result, onclause)
+            else:
+                raise NotImplementedError(jtype)
+
+        return result
+
+    def _get_join_type(self, op):
+        return type(op)
+
+    def _format_table(self, expr):
+        return _get_sqla_table(self.context, expr)
+
+
+def _and_all(clauses):
+    result = clauses[0]
+    for clause in clauses[1:]:
+        result = sql.and_(result, clause)
+    return result
+
+
+def _get_sqla_table(ctx, expr):
+    ref_expr = expr
+    op = ref_op = expr.op()
+    if isinstance(op, ops.SelfReference):
+        ref_expr = op.table
+        ref_op = ref_expr.op()
+
+    if isinstance(ref_op, AlchemyTable):
+        return ref_op.sqla_table
+    else:
+        # A subquery
+        if ctx.is_extracted(ref_expr):
+            # Was put elsewhere, e.g. WITH block, we just need to grab its
+            # alias
+            return ctx.get_ref(expr)
+
+        return ctx.get_compiled_expr(expr)
 
 
 class AlchemyUnion(ddl.Union):
@@ -289,8 +383,8 @@ class AlchemyUnion(ddl.Union):
         else:
             union_keyword = 'UNION ALL'
 
-        left_set = context.get_formatted_query(self.left)
-        right_set = context.get_formatted_query(self.right)
+        left_set = context.get_compiled_expr(self.left)
+        right_set = context.get_compiled_expr(self.right)
 
         query = '{0}\n{1}\n{2}'.format(left_set, union_keyword, right_set)
         return query

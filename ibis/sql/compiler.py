@@ -918,7 +918,7 @@ class QueryContext(object):
     def set_always_alias(self):
         self.always_alias = True
 
-    def get_formatted_query(self, expr):
+    def get_compiled_expr(self, expr):
         this = self.top_context
 
         key = self._get_table_key(expr)

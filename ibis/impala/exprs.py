@@ -578,7 +578,7 @@ def _category_label(translator, expr):
 def _table_array_view(translator, expr):
     ctx = translator.context
     table = expr.op().table
-    query = ctx.get_formatted_query(table)
+    query = ctx.get_compiled_expr(table)
     return '(\n{0}\n)'.format(util.indent(query, ctx.indent))
 
 
@@ -623,7 +623,7 @@ def _exists_subquery(translator, expr):
             .filter(op.predicates)
             .projection([ir.literal(1).name(ir.unnamed)]))
 
-    subquery = ctx.get_formatted_query(expr)
+    subquery = ctx.get_compiled_expr(expr)
 
     if isinstance(op, transforms.ExistsSubquery):
         key = 'EXISTS'
