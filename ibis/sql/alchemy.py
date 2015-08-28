@@ -24,6 +24,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.sql.ddl as ddl
+import ibis
 
 
 _ibis_type_to_sqla = {
@@ -130,6 +131,27 @@ def _table_column(translator, expr):
     return getattr(sa_table.c, op.name)
 
 
+def _reduction(sa_func):
+    def formatter(translator, expr):
+        op = expr.op()
+
+        # HACK: support trailing arguments
+        arg, where = op.args[:2]
+
+        return _reduction_format(translator, sa_func, arg, where)
+    return formatter
+
+
+def _reduction_format(translator, sa_func, arg, where):
+    if where is not None:
+        case = where.ifelse(arg, ibis.NA)
+        arg = translator.translate(case)
+    else:
+        arg = translator.translate(arg)
+
+    return sa_func(arg)
+
+
 def _literal(translator, expr):
     return expr.op().value
 
@@ -138,10 +160,12 @@ _expr_rewrites = {
 
 }
 
-
 _operation_registry = {
     ops.And: _fixed_arity_call(sql.and_, 2),
     ops.Or: _fixed_arity_call(sql.or_, 2),
+
+    ops.Count: _reduction(sa.func.count),
+    ops.Sum: _reduction(sa.func.sum),
 
     ir.Literal: _literal,
 
@@ -202,6 +226,9 @@ class AlchemySelectBuilder(comp.SelectBuilder):
     @property
     def _select_class(self):
         return AlchemySelect
+
+    def _convert_group_by(self, exprs):
+        return exprs
 
 
 class AlchemyContext(comp.QueryContext):
@@ -293,6 +320,16 @@ class AlchemySelect(ddl.Select):
         # GROUP BY and HAVING
         if not len(self.group_by):
             return fragment
+
+        group_keys = [self._translate(arg) for arg in self.group_by]
+        fragment = fragment.group_by(*group_keys)
+
+        if len(self.having) > 0:
+            having_args = [self._translate(arg) for arg in self.having]
+            having_clause = _and_all(having_args)
+            fragment = fragment.having(having_clause)
+
+        return fragment
 
     def _add_where(self, fragment):
         if not len(self.where):

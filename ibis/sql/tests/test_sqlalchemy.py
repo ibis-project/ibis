@@ -24,7 +24,7 @@ import ibis.sql.alchemy as alch
 import ibis.util as util
 import ibis
 
-from sqlalchemy import types as sat
+from sqlalchemy import types as sat, func
 import sqlalchemy.sql as sql
 import sqlalchemy as sa
 
@@ -56,6 +56,8 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
         self.alltypes = self.con.table('functional_alltypes')
         self.sa_alltypes = self.con.meta.tables['functional_alltypes']
         self.meta = sa.MetaData()
+
+        self.sa_star1 = self._to_sqla(self.con.table('star1'))
 
     def _check_expr_cases(self, cases, named=False):
         for expr, expected in cases:
@@ -157,17 +159,48 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
             expected = sa.select([rt, nt]).select_from(joined_sqla)
             self._compare_sqla(ibis_joined, expected)
 
-    def test_where(self):
+    def test_where_simple_comparisons(self):
         expr = self._case_where_simple_comparisons()
-        st = self._to_sqla(self.con.table('star1'))
+
+        st = self.sa_star1
 
         clause = sql.and_(st.c.f > 0, st.c.c < (st.c.f * 2))
         expected = sa.select([st]).where(clause)
 
         self._compare_sqla(expr, expected)
 
-    def test_group_by(self):
-        pass
+    def test_simple_aggregate_query(self):
+        st = self.sa_star1
+
+        cases = self._case_simple_aggregate_query()
+
+        metric = func.sum(st.c.f).label('total')
+        k1 = st.c.foo_id
+        k2 = st.c.bar_id
+        expected = [
+            sa.select([k1, metric]).group_by(k1),
+            sa.select([k1, k2, metric]).group_by(k1, k2)
+        ]
+
+        for case, ex_sqla in zip(cases, expected):
+            self._compare_sqla(case, ex_sqla)
+
+    def test_aggregate_having(self):
+        st = self.sa_star1
+
+        cases = self._case_aggregate_having()
+
+        metric = func.sum(st.c.f)
+        k1 = st.c.foo_id
+        expected = [
+            sa.select([k1, metric.label('total')]).group_by(k1)
+            .having(metric > 10),
+            sa.select([k1, metric.label('total')]).group_by(k1)
+            .having(func.count('*') > 100)
+        ]
+
+        for case, ex_sqla in zip(cases, expected):
+            self._compare_sqla(case, ex_sqla)
 
     def test_order_by(self):
         pass

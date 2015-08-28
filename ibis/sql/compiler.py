@@ -435,12 +435,15 @@ class SelectBuilder(object):
             subbed_expr = self._sub(expr)
             sub_op = subbed_expr.op()
 
-            self.group_by = range(len(sub_op.by))
+            self.group_by = self._convert_group_by(sub_op.by)
             self.having = sub_op.having
             self.select_set = sub_op.by + sub_op.agg_exprs
             self.table_set = sub_op.table
 
             self._collect(expr.op().table)
+
+    def _convert_group_by(self, exprs):
+        return list(range(len(exprs)))
 
     def _collect_Distinct(self, expr, toplevel=False):
         if toplevel:

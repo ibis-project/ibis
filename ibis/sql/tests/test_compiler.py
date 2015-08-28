@@ -627,11 +627,57 @@ class SelectTestCases(object):
 
         return e1, e2
 
+    def _case_simple_aggregate_query(self):
+        t1 = self.con.table('star1')
+        cases = [
+            t1.aggregate([t1['f'].sum().name('total')],
+                         [t1['foo_id']]),
+            t1.aggregate([t1['f'].sum().name('total')],
+                         ['foo_id', 'bar_id'])
+        ]
+
+        return cases
+
+    def _case_aggregate_having(self):
+        # Filtering post-aggregation predicate
+        t1 = self.con.table('star1')
+
+        total = t1.f.sum().name('total')
+        metrics = [total]
+
+        e1 = t1.aggregate(metrics, by=['foo_id'], having=[total > 10])
+        e2 = t1.aggregate(metrics, by=['foo_id'], having=[t1.count() > 100])
+
+        return e1, e2
+
 
 class TestSelectSQL(unittest.TestCase, SelectTestCases):
 
     def setUp(self):
         self.con = MockConnection()
+
+        self.foo = api.table([
+            ('job', 'string'),
+            ('dept_id', 'string'),
+            ('year', 'int32'),
+            ('y', 'double')
+        ], 'foo')
+
+        self.bar = api.table([
+            ('x', 'double'),
+            ('job', 'string')
+        ], 'bar')
+
+        self.t1 = api.table([
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('value1', 'double')
+        ], 'foo')
+
+        self.t2 = api.table([
+            ('key1', 'string'),
+            ('key2', 'string')
+        ], 'bar')
 
     def test_nameless_table(self):
         # Ensure that user gets some kind of sensible error
@@ -914,43 +960,31 @@ LIMIT 10"""
         assert result == expected
 
     def test_simple_aggregate_query(self):
-        t1 = self.con.table('star1')
-
-        cases = [
-            (t1.aggregate([t1['f'].sum().name('total')],
-                          [t1['foo_id']]),
-             """SELECT `foo_id`, sum(`f`) AS `total`
+        expected = [
+            """SELECT `foo_id`, sum(`f`) AS `total`
 FROM star1
-GROUP BY 1"""),
-            (t1.aggregate([t1['f'].sum().name('total')],
-                          ['foo_id', 'bar_id']),
-             """SELECT `foo_id`, `bar_id`, sum(`f`) AS `total`
+GROUP BY 1""",
+            """SELECT `foo_id`, `bar_id`, sum(`f`) AS `total`
 FROM star1
-GROUP BY 1, 2""")
+GROUP BY 1, 2"""
         ]
-        for expr, expected_sql in cases:
+
+        cases = self._case_simple_aggregate_query()
+        for expr, expected_sql in zip(cases, expected):
             result_sql = to_sql(expr)
             assert result_sql == expected_sql
 
     def test_aggregate_having(self):
-        # Filtering post-aggregation predicate
-        t1 = self.con.table('star1')
+        e1, e2 = self._case_aggregate_having()
 
-        total = t1.f.sum().name('total')
-        metrics = [total]
-
-        expr = t1.aggregate(metrics, by=['foo_id'],
-                            having=[total > 10])
-        result = to_sql(expr)
+        result = to_sql(e1)
         expected = """SELECT `foo_id`, sum(`f`) AS `total`
 FROM star1
 GROUP BY 1
 HAVING sum(`f`) > 10"""
         assert result == expected
 
-        expr = t1.aggregate(metrics, by=['foo_id'],
-                            having=[t1.count() > 100])
-        result = to_sql(expr)
+        result = to_sql(e2)
         expected = """SELECT `foo_id`, sum(`f`) AS `total`
 FROM star1
 GROUP BY 1
@@ -1570,6 +1604,98 @@ FROM alltypes"""
 FROM `table`"""
         assert result == expected
 
+    def test_scalar_subquery_different_table(self):
+        t1, t2 = self.foo, self.bar
+        expr = t1[t1.y > t2.x.max()]
+
+        result = to_sql(expr)
+        expected = """SELECT *
+FROM foo
+WHERE `y` > (
+  SELECT max(`x`) AS `tmp`
+  FROM bar
+)"""
+        assert result == expected
+
+    def test_where_uncorrelated_subquery(self):
+        expr = self.foo[self.foo.job.isin(self.bar.job)]
+
+        result = to_sql(expr)
+        expected = """SELECT *
+FROM foo
+WHERE `job` IN (
+  SELECT `job`
+  FROM bar
+)"""
+        assert result == expected
+
+    def test_where_correlated_subquery(self):
+        t1 = self.foo
+        t2 = t1.view()
+
+        stat = t2[t1.dept_id == t2.dept_id].y.mean()
+        expr = t1[t1.y > stat]
+
+        result = to_sql(expr)
+        expected = """SELECT t0.*
+FROM foo t0
+WHERE t0.`y` > (
+  SELECT avg(t1.`y`) AS `tmp`
+  FROM foo t1
+  WHERE t0.`dept_id` = t1.`dept_id`
+)"""
+        assert result == expected
+
+    def test_where_array_correlated(self):
+        # Test membership in some record-dependent values, if this is supported
+        pass
+
+    def test_exists_semi_join_case(self):
+        t1, t2 = self.t1, self.t2
+
+        cond = (t1.key1 == t2.key1).any()
+        expr = t1[cond]
+
+        result = to_sql(expr)
+        expected = """SELECT t0.*
+FROM foo t0
+WHERE EXISTS (
+  SELECT 1
+  FROM bar t1
+  WHERE t0.`key1` = t1.`key1`
+)"""
+        assert result == expected
+
+        cond2 = ((t1.key1 == t2.key1) & (t2.key2 == 'foo')).any()
+        expr2 = t1[cond2]
+
+        result = to_sql(expr2)
+        expected = """SELECT t0.*
+FROM foo t0
+WHERE EXISTS (
+  SELECT 1
+  FROM bar t1
+  WHERE t0.`key1` = t1.`key1` AND
+        t1.`key2` = 'foo'
+)"""
+        assert result == expected
+
+    def test_not_exists_anti_join_case(self):
+        t1, t2 = self.t1, self.t2
+
+        cond = (t1.key1 == t2.key1).any()
+        expr = t1[-cond]
+
+        result = to_sql(expr)
+        expected = """SELECT t0.*
+FROM foo t0
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM bar t1
+  WHERE t0.`key1` = t1.`key1`
+)"""
+        assert result == expected
+
 
 class TestUnions(unittest.TestCase):
 
@@ -1687,124 +1813,4 @@ GROUP BY 1"""
        COUNT(DISTINCT `smallint_col`) AS `smallint_card`
 FROM functional_alltypes
 GROUP BY 1"""
-        assert result == expected
-
-
-class TestSubqueriesEtc(unittest.TestCase):
-
-    def setUp(self):
-        self.foo = api.table(
-            [
-                ('job', 'string'),
-                ('dept_id', 'string'),
-                ('year', 'int32'),
-                ('y', 'double')
-            ], 'foo')
-
-        self.bar = api.table([
-            ('x', 'double'),
-            ('job', 'string')
-        ], 'bar')
-
-        self.t1 = api.table([
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('value1', 'double')
-        ], 'foo')
-
-        self.t2 = api.table([
-            ('key1', 'string'),
-            ('key2', 'string')
-        ], 'bar')
-
-    def test_scalar_subquery_different_table(self):
-        t1, t2 = self.foo, self.bar
-        expr = t1[t1.y > t2.x.max()]
-
-        result = to_sql(expr)
-        expected = """SELECT *
-FROM foo
-WHERE `y` > (
-  SELECT max(`x`) AS `tmp`
-  FROM bar
-)"""
-        assert result == expected
-
-    def test_where_uncorrelated_subquery(self):
-        expr = self.foo[self.foo.job.isin(self.bar.job)]
-
-        result = to_sql(expr)
-        expected = """SELECT *
-FROM foo
-WHERE `job` IN (
-  SELECT `job`
-  FROM bar
-)"""
-        assert result == expected
-
-    def test_where_correlated_subquery(self):
-        t1 = self.foo
-        t2 = t1.view()
-
-        stat = t2[t1.dept_id == t2.dept_id].y.mean()
-        expr = t1[t1.y > stat]
-
-        result = to_sql(expr)
-        expected = """SELECT t0.*
-FROM foo t0
-WHERE t0.`y` > (
-  SELECT avg(t1.`y`) AS `tmp`
-  FROM foo t1
-  WHERE t0.`dept_id` = t1.`dept_id`
-)"""
-        assert result == expected
-
-    def test_where_array_correlated(self):
-        # Test membership in some record-dependent values, if this is supported
-        pass
-
-    def test_exists_semi_join_case(self):
-        t1, t2 = self.t1, self.t2
-
-        cond = (t1.key1 == t2.key1).any()
-        expr = t1[cond]
-
-        result = to_sql(expr)
-        expected = """SELECT t0.*
-FROM foo t0
-WHERE EXISTS (
-  SELECT 1
-  FROM bar t1
-  WHERE t0.`key1` = t1.`key1`
-)"""
-        assert result == expected
-
-        cond2 = ((t1.key1 == t2.key1) & (t2.key2 == 'foo')).any()
-        expr2 = t1[cond2]
-
-        result = to_sql(expr2)
-        expected = """SELECT t0.*
-FROM foo t0
-WHERE EXISTS (
-  SELECT 1
-  FROM bar t1
-  WHERE t0.`key1` = t1.`key1` AND
-        t1.`key2` = 'foo'
-)"""
-        assert result == expected
-
-    def test_not_exists_anti_join_case(self):
-        t1, t2 = self.t1, self.t2
-
-        cond = (t1.key1 == t2.key1).any()
-        expr = t1[-cond]
-
-        result = to_sql(expr)
-        expected = """SELECT t0.*
-FROM foo t0
-WHERE NOT EXISTS (
-  SELECT 1
-  FROM bar t1
-  WHERE t0.`key1` = t1.`key1`
-)"""
         assert result == expected
