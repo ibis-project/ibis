@@ -240,7 +240,7 @@ class AlchemyExprTranslator(ddl.ExprTranslator):
     _rewrites = _expr_rewrites
 
     def name(self, translated, name, force=True):
-        pass
+        return translated.label(name)
 
 
 class AlchemySelect(ddl.Select):

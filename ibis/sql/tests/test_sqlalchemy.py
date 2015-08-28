@@ -51,10 +51,12 @@ class TestSQLAlchemy(unittest.TestCase):
         self.sa_alltypes = self.con.meta.tables['functional_alltypes']
         self.meta = sa.MetaData()
 
-    def _check_expr_cases(self, cases):
+    def _check_expr_cases(self, cases, named=False):
         for expr, expected in cases:
-            result = self._translate(expr)
-            assert result.compare(expected)
+            result = self._translate(expr, named=named)
+            assert str(result) == str(expected)
+            if named:
+                assert result.name == expected.name
 
     def _translate(self, expr, named=False, context=None):
         translator = alch.AlchemyExprTranslator(expr, context=context,
@@ -116,7 +118,22 @@ class TestSQLAlchemy(unittest.TestCase):
 
         self._check_expr_cases(cases)
 
-    def test_joins(self):
+    def test_named_expr(self):
+        sat = self.sa_alltypes
+        d = self.alltypes.double_col
+
+        cases = [
+            ((d * 2).name('foo'), (sat.c.double_col * 2).label('foo'))
+        ]
+        self._check_expr_cases(cases, named=True)
+
+    def test_inner_join(self):
+        pass
+
+    def test_outer_join(self):
+        pass
+
+    def test_left_right_join(self):
         pass
 
     def test_cte_extract(self):
