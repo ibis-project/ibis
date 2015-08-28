@@ -89,8 +89,6 @@ class TestSQLAlchemy(unittest.TestCase):
         pass
 
     def test_boolean_conjunctions(self):
-        pytest.skip()
-
         sat = self.sa_alltypes
         cases = [
             (self.alltypes.double_col > 5, sat.c.double_col > 5)
@@ -99,6 +97,9 @@ class TestSQLAlchemy(unittest.TestCase):
         self._check_expr_cases(cases)
 
     def test_joins(self):
+        pass
+
+    def test_cte_extract(self):
         pass
 
     def test_uncorrelated_subquery(self):

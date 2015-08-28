@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.client import SQLClient, Database
+from ibis.client import SQLClient
 import ibis.expr.types as ir
 import ibis.sql.alchemy as alchemy
 import sqlalchemy as sa

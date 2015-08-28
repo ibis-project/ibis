@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import operator
+import six
+
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
 from ibis.client import SQLClient
-from ibis.sql.compiler import QueryContext
-from ibis.sql.ddl import ExprTranslator, Select, Union
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
+import ibis.sql.compiler as comp
+import ibis.sql.ddl as ddl
 
 
 _ibis_type_to_sqla = {
@@ -120,8 +124,15 @@ def _table_column(translator, expr):
     #     proj_expr = table.projection([field_name]).to_array()
     #     return _table_array_view(translator, proj_expr)
 
-    sa_table = ctx.get_table(table)
-    return sa_table[op.name]
+    sa_table = ctx.get_ref(table)
+    if sa_table is None:
+        sa_table = table.op().sqla_table
+
+    return getattr(sa_table.c, op.name)
+
+
+def _literal(translator, expr):
+    return expr.op().value
 
 
 _expr_rewrites = {
@@ -133,28 +144,87 @@ _operation_registry = {
     ops.And: _fixed_arity_call(sql.and_, 2),
     ops.Or: _fixed_arity_call(sql.or_, 2),
 
+    ir.Literal: _literal,
+
     ops.TableColumn: _table_column,
 }
 
 
-class AlchemyContext(QueryContext):
+# TODO: unit tests for each of these
+_binary_ops = {
+    # Binary arithmetic
+    ops.Add: operator.add,
+    ops.Subtract: operator.sub,
+    ops.Multiply: operator.mul,
+    ops.Divide: operator.truediv,
+    ops.Power: operator.pow,
+    ops.Modulus: operator.mod,
 
-    def get_table(self, table):
-        key = self._get_table_key(table)
-        top = self.top_context
+    # Comparisons
+    ops.Equals: operator.eq,
+    ops.NotEquals: operator.ne,
+    ops.Less: operator.lt,
+    ops.LessEqual: operator.le,
+    ops.Greater: operator.gt,
+    ops.GreaterEqual: operator.ge,
 
-        if self.is_extracted(table):
-            return top.table_aliases.get(key)
+    # Boolean comparisons
 
-        return self.table_aliases.get(key)
+    # TODO
+}
+
+for _k, _v in six.iteritems(_binary_ops):
+    _operation_registry[_k] = _fixed_arity_call(_v, 2)
+
+
+class AlchemyQueryBuilder(comp.QueryBuilder):
+
+    @property
+    def _context_class(self):
+        return AlchemyContext
+
+    def _make_union(self):
+        raise NotImplementedError
+
+    def _make_select(self):
+        builder = AlchemySelectBuilder(self.expr, self.context)
+        return builder.get_result()
+
+
+class AlchemySelectBuilder(comp.SelectBuilder):
+
+    @property
+    def _select_class(self):
+        return AlchemySelect
+
+
+class AlchemyContext(comp.QueryContext):
+
+    def _compile_subquery(self, expr):
+        from ibis.sql.compiler import to_sql
+        sub_ctx = self.subcontext()
+        return to_sql(expr, context=sub_ctx)
+
+    def record_table(self, expr):
+        # Store SQLAlchemy table
+        op = expr.op()
+
+        if not isinstance(op, AlchemyTable):
+            raise TypeError(type(op))
+
+        self.set_ref(expr, op.sqla_table)
 
 
 class AlchemyTable(ops.DatabaseTable):
 
     def __init__(self, table, source):
+        self.sqla_table = table
+
         schema = schema_from_table(table)
         name = table.name
-        ops.DatabaseTable.__init__(self, name, schema, source)
+
+        ops.TableNode.__init__(self, [name, schema, source])
+        ops.HasSchema.__init__(self, schema, name=name)
 
 
 class AlchemyClient(SQLClient):
@@ -164,7 +234,7 @@ class AlchemyClient(SQLClient):
         return self._table_expr_klass(node)
 
 
-class AlchemyExprTranslator(ExprTranslator):
+class AlchemyExprTranslator(ddl.ExprTranslator):
 
     _registry = _operation_registry
     _rewrites = _expr_rewrites
@@ -173,7 +243,7 @@ class AlchemyExprTranslator(ExprTranslator):
         pass
 
 
-class AlchemySelect(Select):
+class AlchemySelect(ddl.Select):
 
     def compile(self):
         # Can't tell if this is a hack or not. Revisit later
@@ -209,7 +279,7 @@ class AlchemySelect(Select):
         return translator.get_result()
 
 
-class AlchemyUnion(Union):
+class AlchemyUnion(ddl.Union):
 
     def compile(self):
         context = self.context

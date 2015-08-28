@@ -58,9 +58,13 @@ class QueryBuilder(object):
         self.expr = expr
 
         if context is None:
-            context = QueryContext()
+            context = self._context_class()
 
         self.context = context
+
+    @property
+    def _context_class(self):
+        return QueryContext
 
     def get_result(self):
         op = self.expr.op()
@@ -145,6 +149,10 @@ class SelectBuilder(object):
     def _generate_teardown_queries(self):
         return []
 
+    @property
+    def _select_class(self):
+        return ddl.Select
+
     def _build_result_query(self):
         self._collect_elements()
 
@@ -153,17 +161,19 @@ class SelectBuilder(object):
         self._analyze_subqueries()
         self._populate_context()
 
-        return ddl.Select(self.table_set, self.select_set,
-                          subqueries=self.subqueries,
-                          where=self.filters,
-                          group_by=self.group_by,
-                          having=self.having,
-                          limit=self.limit,
-                          order_by=self.sort_by,
-                          distinct=self.distinct,
-                          result_handler=self.result_handler,
-                          parent_expr=self.query_expr,
-                          context=self.context)
+        klass = self._select_class
+
+        return klass(self.table_set, self.select_set,
+                     subqueries=self.subqueries,
+                     where=self.filters,
+                     group_by=self.group_by,
+                     having=self.having,
+                     limit=self.limit,
+                     order_by=self.sort_by,
+                     distinct=self.distinct,
+                     result_handler=self.result_handler,
+                     parent_expr=self.query_expr,
+                     context=self.context)
 
     def _populate_context(self):
         # Populate aliases for the distinct relations used to output this
@@ -863,14 +873,10 @@ def _reduction_to_aggregation(expr, agg_name='tmp'):
     return table.aggregate([expr.name(agg_name)])
 
 
-# ---------------------------------------------------------------------
-# The QueryContext (temporary name) will store useful information like table
-# alias names for converting value expressions to SQL.
-
 class QueryContext(object):
 
     """
-
+    Records bits of information used during ibis AST to SQL translation
     """
 
     def __init__(self, indent=2, parent=None):
@@ -911,15 +917,6 @@ class QueryContext(object):
 
     def set_always_alias(self):
         self.always_alias = True
-
-    def is_extracted(self, expr):
-        key = self._get_table_key(expr)
-        return key in self.top_context.extracted_subexprs
-
-    def set_extracted(self, expr):
-        key = self._get_table_key(expr)
-        self.extracted_subexprs.add(key)
-        self.record_table(expr)
 
     def get_formatted_query(self, expr):
         this = self.top_context
@@ -996,6 +993,15 @@ class QueryContext(object):
             return top.table_refs.get(key)
 
         return self.table_refs.get(key)
+
+    def is_extracted(self, expr):
+        key = self._get_table_key(expr)
+        return key in self.top_context.extracted_subexprs
+
+    def set_extracted(self, expr):
+        key = self._get_table_key(expr)
+        self.extracted_subexprs.add(key)
+        self.record_table(expr)
 
     def subcontext(self):
         return QueryContext(indent=self.indent, parent=self)

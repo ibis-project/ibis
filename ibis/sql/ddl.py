@@ -455,12 +455,16 @@ class ExprTranslator(object):
         self.permit_subquery = permit_subquery
 
         if context is None:
-            from ibis.sql.compiler import QueryContext
-            context = QueryContext()
+            context = self._context_class()
         self.context = context
 
         # For now, governing whether the result will have a name
         self.named = named
+
+    @property
+    def _context_class(self):
+        from ibis.sql.compiler import QueryContext
+        return QueryContext
 
     def get_result(self):
         """
