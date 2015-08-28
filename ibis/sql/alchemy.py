@@ -275,7 +275,14 @@ class AlchemySelect(ddl.Select):
             if isinstance(expr, ir.ValueExpr):
                 arg = self._translate(expr, named=True)
             elif isinstance(expr, ir.TableExpr):
-                arg = self.context.get_ref(expr)
+                if expr.equals(self.table_set):
+                    # the select * case
+                    arg = table_set
+                else:
+                    arg = self.context.get_ref(expr)
+                    if arg is None:
+                        raise ValueError(expr)
+
             to_select.append(arg)
 
         return sa.select(to_select).select_from(table_set)
