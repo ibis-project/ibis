@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
+import operator
 
 from ibis.compat import unittest
 from ibis.expr.tests.mocks import MockConnection
@@ -24,6 +24,7 @@ import ibis.util as util
 import ibis
 
 from sqlalchemy import types as sat
+import sqlalchemy.sql as sql
 import sqlalchemy as sa
 
 # SQL engine-independent unit tests
@@ -88,10 +89,29 @@ class TestSQLAlchemy(unittest.TestCase):
     def test_ibis_to_sqla_conversion(self):
         pass
 
-    def test_boolean_conjunctions(self):
+    def test_comparisons(self):
         sat = self.sa_alltypes
+
+        ops = ['ge', 'gt', 'lt', 'le', 'eq', 'ne']
+
+        cases = []
+
+        for op in ops:
+            f = getattr(operator, op)
+            case = (f(self.alltypes.double_col, 5),
+                    f(sat.c.double_col, 5))
+            cases.append(case)
+
+        self._check_expr_cases(cases)
+
+    def test_boolean_conjunction(self):
+        sat = self.sa_alltypes
+        sd = sat.c.double_col
+
+        d = self.alltypes.double_col
         cases = [
-            (self.alltypes.double_col > 5, sat.c.double_col > 5)
+            ((d > 0) & (d < 5), sql.and_(sd > 0, sd < 5)),
+            ((d < 0) | (d > 5), sql.or_(sd < 0, sd > 5))
         ]
 
         self._check_expr_cases(cases)
