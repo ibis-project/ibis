@@ -20,7 +20,6 @@ import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
-from ibis.sql.context import QueryContext
 import ibis.sql.ddl as ddl
 import ibis.sql.transforms as transforms
 import ibis.util as util
@@ -170,7 +169,7 @@ class SelectBuilder(object):
         # Populate aliases for the distinct relations used to output this
         # select statement.
         if self.table_set is not None:
-            self._make_table_aliases(self.table_set)
+            self._record_table_refs(self.table_set)
 
         # XXX: This is a temporary solution to the table-aliasing / correlated
         # subquery problem. Will need to revisit and come up with a cleaner
@@ -188,17 +187,17 @@ class SelectBuilder(object):
             if needs_alias:
                 self.context.set_always_alias()
 
-    def _make_table_aliases(self, expr):
+    def _record_table_refs(self, expr):
         ctx = self.context
         node = expr.op()
         if isinstance(node, ops.Join):
             for arg in node.args:
                 if not isinstance(arg, ir.TableExpr):
                     continue
-                self._make_table_aliases(arg)
+                self._record_table_refs(arg)
         else:
             if not ctx.is_extracted(expr):
-                ctx.make_alias(expr)
+                ctx.record_table(expr)
 
     # ---------------------------------------------------------------------
     # Expr analysis / rewrites
@@ -749,7 +748,7 @@ class _CorrelatedRefCheck(object):
                 self._visit(arg, in_subquery=in_subquery)
 
     def _ref_check(self, node, in_subquery=False):
-        is_aliased = self.ctx.has_alias(node)
+        is_aliased = self.ctx.has_ref(node)
 
         if self._is_root(node):
             if in_subquery:
@@ -758,11 +757,11 @@ class _CorrelatedRefCheck(object):
             if in_subquery:
                 self.has_foreign_root = True
                 if (not is_aliased and
-                        self.ctx.has_alias(node, parent_contexts=True)):
-                    self.ctx.make_alias(node)
+                        self.ctx.has_ref(node, parent_contexts=True)):
+                    self.ctx.record_table(node)
 
-            elif not self.ctx.has_alias(node):
-                self.ctx.make_alias(node)
+            elif not self.ctx.has_ref(node):
+                self.ctx.record_table(node)
 
     def _is_root(self, what):
         if isinstance(what, ir.Expr):
@@ -862,3 +861,158 @@ def _adapt_expr(expr):
 def _reduction_to_aggregation(expr, agg_name='tmp'):
     table = ir.find_base_table(expr)
     return table.aggregate([expr.name(agg_name)])
+
+
+# ---------------------------------------------------------------------
+# The QueryContext (temporary name) will store useful information like table
+# alias names for converting value expressions to SQL.
+
+class QueryContext(object):
+
+    """
+
+    """
+
+    def __init__(self, indent=2, parent=None):
+        self.table_refs = {}
+        self.extracted_subexprs = set()
+        self.subquery_memo = {}
+        self.indent = indent
+        self.parent = parent
+
+        self.always_alias = False
+
+        self.query = None
+
+        self._table_key_memo = {}
+
+    def _compile_subquery(self, expr):
+        sub_ctx = self.subcontext()
+        return to_sql(expr, context=sub_ctx)
+
+    @property
+    def top_context(self):
+        if self.parent is None:
+            return self
+        else:
+            return self.parent.top_context
+
+    def _get_table_key(self, table):
+        if isinstance(table, ir.TableExpr):
+            table = table.op()
+
+        k = id(table)
+        if k in self._table_key_memo:
+            return self._table_key_memo[k]
+        else:
+            val = table._repr()
+            self._table_key_memo[k] = val
+            return val
+
+    def set_always_alias(self):
+        self.always_alias = True
+
+    def is_extracted(self, expr):
+        key = self._get_table_key(expr)
+        return key in self.top_context.extracted_subexprs
+
+    def set_extracted(self, expr):
+        key = self._get_table_key(expr)
+        self.extracted_subexprs.add(key)
+        self.record_table(expr)
+
+    def get_formatted_query(self, expr):
+        this = self.top_context
+
+        key = self._get_table_key(expr)
+        if key in this.subquery_memo:
+            return this.subquery_memo[key]
+
+        op = expr.op()
+        if isinstance(op, ops.SQLQueryResult):
+            result = op.query
+        else:
+            result = self._compile_subquery(expr)
+
+        this.subquery_memo[key] = result
+        return result
+
+    def record_table(self, table_expr):
+        i = len(self.table_refs)
+
+        key = self._get_table_key(table_expr)
+
+        # Get total number of aliases up and down the tree at this point; if we
+        # find the table prior-aliased along the way, however, we reuse that
+        # alias
+        ctx = self
+        while ctx.parent is not None:
+            ctx = ctx.parent
+
+            if key in ctx.table_refs:
+                alias = ctx.table_refs[key]
+                self.set_ref(table_expr, alias)
+                return
+
+            i += len(ctx.table_refs)
+
+        alias = 't%d' % i
+        self.set_ref(table_expr, alias)
+
+    def has_ref(self, table_expr, parent_contexts=False):
+        key = self._get_table_key(table_expr)
+        return self._key_in(key, 'table_refs',
+                            parent_contexts=parent_contexts)
+
+    def _key_in(self, key, memo_attr, parent_contexts=False):
+        if key in getattr(self, memo_attr):
+            return True
+
+        ctx = self
+        while parent_contexts and ctx.parent is not None:
+            ctx = ctx.parent
+            if key in getattr(ctx, memo_attr):
+                return True
+
+        return False
+
+    def need_aliases(self):
+        return self.always_alias or len(self.table_refs) > 1
+
+    def set_ref(self, table_expr, alias):
+        key = self._get_table_key(table_expr)
+        self.table_refs[key] = alias
+
+    def get_ref(self, table_expr):
+        """
+        Get the alias being used throughout a query to refer to a particular
+        table or inline view
+        """
+        key = self._get_table_key(table_expr)
+
+        top = self.top_context
+
+        if self.is_extracted(table_expr):
+            return top.table_refs.get(key)
+
+        return self.table_refs.get(key)
+
+    def subcontext(self):
+        return QueryContext(indent=self.indent, parent=self)
+
+    # Maybe temporary hacks for correlated / uncorrelated subqueries
+
+    def set_query(self, query):
+        self.query = query
+
+    def is_foreign_expr(self, expr):
+        from ibis.expr.analysis import ExprValidator
+
+        # The expression isn't foreign to us. For example, the parent table set
+        # in a correlated WHERE subquery
+        if self.has_ref(expr, parent_contexts=True):
+            return False
+
+        exprs = [self.query.table_set] + self.query.select_set
+        validator = ExprValidator(exprs)
+        return not validator.validate(expr)

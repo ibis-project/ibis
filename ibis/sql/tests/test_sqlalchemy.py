@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from ibis.compat import unittest
+from ibis.expr.tests.mocks import MockConnection
 from ibis.tests.util import assert_equal
 import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
+import ibis.util as util
 import ibis
 
 from sqlalchemy import types as sat
@@ -24,10 +29,36 @@ import sqlalchemy as sa
 # SQL engine-independent unit tests
 
 
+class MockAlchemyConnection(MockConnection):
+
+    def __init__(self):
+        self.meta = sa.MetaData()
+        MockConnection.__init__(self)
+
+    def table(self, name):
+        schema = self._get_table_schema(name)
+        table = alch.table_from_schema(name, self.meta, schema)
+        node = alch.AlchemyTable(table, self)
+        return ir.TableExpr(node)
+
+
 class TestSQLAlchemy(unittest.TestCase):
 
     def setUp(self):
+        self.con = MockAlchemyConnection()
+        self.alltypes = self.con.table('functional_alltypes')
+        self.sa_alltypes = self.con.meta.tables['functional_alltypes']
         self.meta = sa.MetaData()
+
+    def _check_expr_cases(self, cases):
+        for expr, expected in cases:
+            result = self._translate(expr)
+            assert result.compare(expected)
+
+    def _translate(self, expr, named=False, context=None):
+        translator = alch.AlchemyExprTranslator(expr, context=context,
+                                                named=named)
+        return translator.get_result()
 
     def test_sqla_schema_conversion(self):
         typespec = [
@@ -54,7 +85,26 @@ class TestSQLAlchemy(unittest.TestCase):
 
         assert_equal(schema, expected)
 
+    def test_ibis_to_sqla_conversion(self):
+        pass
+
+    def test_boolean_conjunctions(self):
+        pytest.skip()
+
+        sat = self.sa_alltypes
+        cases = [
+            (self.alltypes.double_col > 5, sat.c.double_col > 5)
+        ]
+
+        self._check_expr_cases(cases)
+
     def test_joins(self):
+        pass
+
+    def test_uncorrelated_subquery(self):
+        pass
+
+    def test_general_sql_function(self):
         pass
 
     def test_union(self):

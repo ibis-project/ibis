@@ -22,7 +22,7 @@ class SQLiteTable(alchemy.AlchemyTable):
     pass
 
 
-class SQLiteDatabase(SQLClient, Database):
+class SQLiteDatabase(SQLClient):
 
     def __init__(self, path):
         self.name = path

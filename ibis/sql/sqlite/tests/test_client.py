@@ -38,12 +38,12 @@ class TestSQLiteClient(unittest.TestCase, SQLiteTests):
     @classmethod
     def setUpClass(cls):
         cls.env = SQLiteTestEnv()
+        cls.db = api.connect(cls.env.db_path)
 
-        cls.db = api.open(cls.env.db_path)
+    @classmethod
+    def tearDownClass(cls):
+        pass
 
     def test_table(self):
-        table = self.db.functional_alltypes
-        assert isinstance(table, ir.TableExpr)
-
-        table = self.db['functional_alltypes']
+        table = self.db.table('functional_alltypes')
         assert isinstance(table, ir.TableExpr)

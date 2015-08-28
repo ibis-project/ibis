@@ -450,11 +450,11 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
 
         # impala user has trouble writing to jenkins-owned dir so here we give
         # the tmp dir 777
-        superuser_hdfs= ibis.hdfs_connect(host=ENV.nn_host,
-                                          port=ENV.webhdfs_port,
-                                          use_kerberos=ENV.use_kerberos,
-                                          verify=(not ENV.use_kerberos),
-                                          user=ENV.hdfs_superuser)
+        superuser_hdfs = ibis.hdfs_connect(host=ENV.nn_host,
+                                           port=ENV.webhdfs_port,
+                                           use_kerberos=ENV.use_kerberos,
+                                           verify=(not ENV.use_kerberos),
+                                           user=ENV.hdfs_superuser)
         superuser_hdfs.mkdir(base)
         superuser_hdfs.chmod(base, '777')
 

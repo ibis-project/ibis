@@ -136,7 +136,7 @@ class Select(DDL):
             if i > 0:
                 buf.write(',\n')
             formatted = util.indent(context.get_formatted_query(expr), 2)
-            alias = context.get_alias(expr)
+            alias = context.get_ref(expr)
             buf.write('{0} AS (\n{1}\n)'.format(alias, formatted))
 
         return buf.getvalue()
@@ -150,7 +150,7 @@ class Select(DDL):
             elif isinstance(expr, ir.TableExpr):
                 # A * selection, possibly prefixed
                 if context.need_aliases():
-                    alias = context.get_alias(expr)
+                    alias = context.get_ref(expr)
 
                     # materialized join will not have an alias. see #491
                     expr_str = '{0}.*'.format(alias) if alias else '*'
@@ -405,11 +405,11 @@ def _format_table(ctx, expr, indent=2):
         if ctx.is_extracted(ref_expr):
             # Was put elsewhere, e.g. WITH block, we just need to grab its
             # alias
-            alias = ctx.get_alias(expr)
+            alias = ctx.get_ref(expr)
 
             # HACK: self-references have to be treated more carefully here
             if isinstance(op, ops.SelfReference):
-                return '{0} {1}'.format(ctx.get_alias(ref_expr), alias)
+                return '{0} {1}'.format(ctx.get_ref(ref_expr), alias)
             else:
                 return alias
 
@@ -418,7 +418,7 @@ def _format_table(ctx, expr, indent=2):
         is_subquery = True
 
     if is_subquery or ctx.need_aliases():
-        result += ' {0}'.format(ctx.get_alias(expr))
+        result += ' {0}'.format(ctx.get_ref(expr))
 
     return result
 

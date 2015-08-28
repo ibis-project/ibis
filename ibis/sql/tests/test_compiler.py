@@ -849,9 +849,9 @@ FROM t0 t2
         query = _get_query(expr)
         context = query.context
 
-        assert context.get_alias(t1) == 't0'
-        assert context.get_alias(t2) == 't1'
-        assert context.get_alias(t3) == 't2'
+        assert context.get_ref(t1) == 't0'
+        assert context.get_ref(t2) == 't1'
+        assert context.get_ref(t3) == 't2'
 
     def test_fuse_projections(self):
         table = api.table([

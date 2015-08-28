@@ -104,8 +104,8 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
             ('value and2', 'double')
         ])
 
-        context.set_alias(table1, 't0')
-        context.set_alias(table2, 't1')
+        context.set_ref(table1, 't0')
+        context.set_ref(table2, 't1')
 
         expr = table1['value1'] - table2['value and2']
 
@@ -307,12 +307,12 @@ FROM alltypes"""
         expr = t0.g == t1.g
 
         ctx = QueryContext()
-        ctx.make_alias(t0)
+        ctx.record_table(t0)
 
         # Grab alias from parent context
         subctx = ctx.subcontext()
-        subctx.make_alias(t1)
-        subctx.make_alias(t0)
+        subctx.record_table(t1)
+        subctx.record_table(t0)
 
         result = self._translate(expr, context=subctx)
         expected = "t0.`g` = t1.`g`"

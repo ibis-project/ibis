@@ -650,7 +650,7 @@ def _table_column(translator, expr):
         return _table_array_view(translator, proj_expr)
 
     if ctx.need_aliases():
-        alias = ctx.get_alias(table)
+        alias = ctx.get_ref(table)
         if alias is not None:
             quoted_name = '{0}.{1}'.format(alias, quoted_name)
 

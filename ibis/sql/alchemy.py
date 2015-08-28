@@ -16,6 +16,7 @@ import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
 from ibis.client import SQLClient
+from ibis.sql.compiler import QueryContext
 from ibis.sql.ddl import ExprTranslator, Select, Union
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -59,6 +60,7 @@ _sqla_type_to_ibis.update(_sqla_type_mapping)
 
 
 def schema_from_table(table):
+    # Convert SQLA table to Ibis schema
     names = table.columns.keys()
 
     types = []
@@ -78,16 +80,48 @@ def schema_from_table(table):
     return dt.Schema(names, types)
 
 
+def table_from_schema(name, meta, schema):
+    # Convert Ibis schema to SQLA table
+    sqla_cols = []
+
+    for cname, itype in zip(schema.names, schema.types):
+        ctype = _ibis_type_to_sqla[type(itype)]
+
+        col = sa.Column(cname, ctype, nullable=itype.nullable)
+        sqla_cols.append(col)
+
+    return sa.Table(name, meta, *sqla_cols)
+
+
 def _fixed_arity_call(sa_func, arity):
     def formatter(translator, expr):
-        op = expr.op()
-        if arity != len(op.args):
+        if arity != len(expr.op().args):
             raise com.IbisError('incorrect number of args')
 
-        trans_args = [translator.translate(arg) for arg in op.args]
-        return sa_func(*trans_args)
+        return _varargs_call(sa_func, translator, expr)
 
     return formatter
+
+
+def _varargs_call(sa_func, translator, expr):
+    op = expr.op()
+    trans_args = [translator.translate(arg) for arg in op.args]
+    return sa_func(*trans_args)
+
+
+def _table_column(translator, expr):
+    op = expr.op()
+    table = op.table
+    ctx = translator.context
+
+    # If the column does not originate from the table set in the current SELECT
+    # context, we should format as a subquery
+    # if translator.permit_subquery and ctx.is_foreign_expr(table):
+    #     proj_expr = table.projection([field_name]).to_array()
+    #     return _table_array_view(translator, proj_expr)
+
+    sa_table = ctx.get_table(table)
+    return sa_table[op.name]
 
 
 _expr_rewrites = {
@@ -98,7 +132,21 @@ _expr_rewrites = {
 _operation_registry = {
     ops.And: _fixed_arity_call(sql.and_, 2),
     ops.Or: _fixed_arity_call(sql.or_, 2),
+
+    ops.TableColumn: _table_column,
 }
+
+
+class AlchemyContext(QueryContext):
+
+    def get_table(self, table):
+        key = self._get_table_key(table)
+        top = self.top_context
+
+        if self.is_extracted(table):
+            return top.table_aliases.get(key)
+
+        return self.table_aliases.get(key)
 
 
 class AlchemyTable(ops.DatabaseTable):
