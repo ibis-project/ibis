@@ -296,6 +296,8 @@ class AlchemySelect(ddl.Select):
         # Can't tell if this is a hack or not. Revisit later
         self.context.set_query(self)
 
+        self._compile_subqueries()
+
         frag = self._compile_table_set()
         steps = [self._add_select,
                  self._add_groupby,
@@ -307,6 +309,16 @@ class AlchemySelect(ddl.Select):
             frag = step(frag)
 
         return frag
+
+    def _compile_subqueries(self):
+        if len(self.subqueries) == 0:
+            return
+
+        for expr in self.subqueries:
+            result = self.context.get_compiled_expr(expr)
+            alias = self.context.get_ref(expr)
+            result = result.cte(alias)
+            self.context.set_table(expr, result)
 
     def _compile_table_set(self):
         helper = _AlchemyTableSet(self, self.table_set)
@@ -322,7 +334,7 @@ class AlchemySelect(ddl.Select):
                     # the select * case
                     arg = table_set
                 else:
-                    arg, alias = self.context.get_ref(expr)
+                    arg = self.context.get_table(expr)
                     if arg is None:
                         raise ValueError(expr)
 
@@ -451,7 +463,10 @@ class _AlchemyTableSet(ddl._TableSetFormatter):
 
                 # hack
                 if isinstance(op, ops.SelfReference):
-                    return ctx.get_table(ref_expr)
+                    table = ctx.get_table(ref_expr)
+                    self_ref = table.alias(alias)
+                    ctx.set_table(expr, self_ref)
+                    return self_ref
                 else:
                     return ctx.get_table(expr)
 

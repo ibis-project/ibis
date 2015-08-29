@@ -24,7 +24,7 @@ import ibis.sql.alchemy as alch
 import ibis.util as util
 import ibis
 
-from sqlalchemy import types as sat, func
+from sqlalchemy import types as sat, func as F
 import sqlalchemy.sql as sql
 import sqlalchemy as sa
 
@@ -174,7 +174,7 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
 
         cases = self._case_simple_aggregate_query()
 
-        metric = func.sum(st.c.f).label('total')
+        metric = F.sum(st.c.f).label('total')
         k1 = st.c.foo_id
         k2 = st.c.bar_id
         expected = [
@@ -190,13 +190,13 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
 
         cases = self._case_aggregate_having()
 
-        metric = func.sum(st.c.f)
+        metric = F.sum(st.c.f)
         k1 = st.c.foo_id
         expected = [
             sa.select([k1, metric.label('total')]).group_by(k1)
             .having(metric > 10),
             sa.select([k1, metric.label('total')]).group_by(k1)
-            .having(func.count('*') > 100)
+            .having(F.count('*') > 100)
         ]
 
         for case, ex_sqla in zip(cases, expected):
@@ -227,7 +227,6 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
             base.where(st.c.f > 0).limit(10),
         ]
 
-        # TODO, subqueries not working yet
         st = self.sa_star1.alias('t1')
         base = sa.select([st])
         aliased = base.limit(10).alias('t0')
@@ -237,8 +236,21 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
         for case, ex in zip(cases, expected):
             self._compare_sqla(case, ex)
 
-    def test_cte_extract(self):
-        pass
+    def test_cte_factor_distinct_but_equal(self):
+        expr = self._case_cte_factor_distinct_but_equal()
+
+        alltypes = self._to_sqla(self.con.table('alltypes'))
+
+        t2 = alltypes.alias('t2')
+        t0 = (sa.select([t2.c.g, F.sum(t2.c.f).label('metric')])
+              .group_by(t2.c.g)
+              .cte('t0'))
+
+        t1 = t0.alias('t1')
+        table_set = t0.join(t1, t0.c.g == t1.c.g)
+        stmt = sa.select([t0]).select_from(table_set)
+
+        self._compare_sqla(expr, stmt)
 
     def test_self_reference(self):
         pass
