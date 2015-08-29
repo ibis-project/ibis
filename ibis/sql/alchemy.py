@@ -118,8 +118,12 @@ def _table_column(translator, expr):
     table = op.table
     ctx = translator.context
 
-    if ctx.has_table(table):
-        sa_table = ctx.get_table(table)
+    if ctx.has_ref(table):
+        ctx_level = ctx
+        sa_table = ctx_level.get_table(table)
+        while sa_table is None and ctx_level.parent is not ctx_level:
+            ctx_level = ctx_level.parent
+            sa_table = ctx_level.get_table(table)
     else:
         sa_table = table.op().sqla_table
 
@@ -131,6 +135,12 @@ def _table_column(translator, expr):
         return sa.select([out_expr])
 
     return out_expr
+
+
+def _table_array_view(translator, expr):
+    ctx = translator.context
+    table = ctx.get_compiled_expr(expr.op().table)
+    return table
 
 
 def _contains(translator, expr):
@@ -182,6 +192,7 @@ _operation_registry = {
     ir.Literal: _literal,
 
     ops.TableColumn: _table_column,
+    ops.TableArrayView: _table_array_view,
 }
 
 
@@ -463,7 +474,6 @@ class _AlchemyTableSet(ddl._TableSetFormatter):
 
         if isinstance(ref_op, AlchemyTable):
             result = ref_op.sqla_table
-            is_subquery = False
         else:
             # A subquery
             if ctx.is_extracted(ref_expr):
@@ -482,7 +492,6 @@ class _AlchemyTableSet(ddl._TableSetFormatter):
 
             result = ctx.get_compiled_expr(expr)
             alias = ctx.get_ref(expr)
-            is_subquery = True
 
         result = result.alias(alias)
         ctx.set_table(expr, result)

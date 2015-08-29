@@ -582,6 +582,13 @@ class SelectTestCases(object):
     def _case_where_uncorrelated_subquery(self):
         return self.foo[self.foo.job.isin(self.bar.job)]
 
+    def _case_where_correlated_subquery(self):
+        t1 = self.foo
+        t2 = t1.view()
+
+        stat = t2[t1.dept_id == t2.dept_id].y.mean()
+        return t1[t1.y > stat]
+
 
 class TestSelectSQL(unittest.TestCase, SelectTestCases):
 
@@ -1546,12 +1553,7 @@ WHERE `job` IN (
         assert result == expected
 
     def test_where_correlated_subquery(self):
-        t1 = self.foo
-        t2 = t1.view()
-
-        stat = t2[t1.dept_id == t2.dept_id].y.mean()
-        expr = t1[t1.y > stat]
-
+        expr = self._case_where_correlated_subquery()
         result = to_sql(expr)
         expected = """SELECT t0.*
 FROM foo t0

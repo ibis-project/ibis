@@ -274,6 +274,17 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
         stmt = sa.select([foo]).where(foo.c.job.in_(subq))
         self._compare_sqla(expr, stmt)
 
+    def test_where_correlated_subquery(self):
+        expr = self._case_where_correlated_subquery()
+
+        foo = self._to_sqla(self._table_from_schema('foo'))
+        t0 = foo.alias('t0')
+        t1 = foo.alias('t1')
+        subq = (sa.select([F.avg(t1.c.y).label('tmp')])
+                .where(t0.c.dept_id == t1.c.dept_id))
+        stmt = sa.select([t0]).where(t0.c.y > subq)
+        self._compare_sqla(expr, stmt)
+
     def test_general_sql_function(self):
         pass
 
