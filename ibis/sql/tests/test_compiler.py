@@ -620,6 +620,15 @@ class SelectTestCases(object):
         cond = (t1.key1 == t2.key1).any()
         return t1[-cond]
 
+    def _case_join_with_limited_table(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        limited = t1.limit(100)
+        joined = (limited.inner_join(t2, [limited.foo_id == t2.foo_id])
+                  [[limited]])
+        return joined
+
 
 class TestSelectSQL(unittest.TestCase, SelectTestCases):
 
@@ -1671,12 +1680,7 @@ WHERE `f` > 0"""
             assert result == ex
 
     def test_join_with_limited_table(self):
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
-
-        limited = t1.limit(100)
-        joined = (limited.inner_join(t2, [limited.foo_id == t2.foo_id])
-                  [[limited]])
+        joined = self._case_join_with_limited_table()
 
         result = to_sql(joined)
         expected = """SELECT t0.*

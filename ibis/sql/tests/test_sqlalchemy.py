@@ -303,8 +303,8 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
     def test_exists(self):
         e1, e2 = self._case_exists()
 
-        t1 = self._to_sqla(self.t1)
-        t2 = self._to_sqla(self.t2)
+        t1 = self._to_sqla(self.t1).alias('t0')
+        t2 = self._to_sqla(self.t2).alias('t1')
 
         cond1 = sa.exists([1]).where(t1.c.key1 == t2.c.key1)
         ex1 = sa.select([t1]).where(cond1)
@@ -314,13 +314,21 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
                      t2.c.key2 == 'foo'))
         ex2 = sa.select([t1]).where(cond2)
 
-        pytest.skip('not yet implemented')
+        # pytest.skip('not yet implemented')
 
         self._compare_sqla(e1, ex1)
         self._compare_sqla(e2, ex2)
 
     def test_not_exists(self):
-        pass
+        expr = self._case_not_exists()
+
+        t1 = self._to_sqla(self.t1).alias('t0')
+        t2 = self._to_sqla(self.t2).alias('t1')
+
+        cond1 = sa.exists([1]).where(t1.c.key1 == t2.c.key1)
+        expected = sa.select([t1]).where(-cond1)
+
+        self._compare_sqla(expr, expected)
 
     def test_general_sql_function(self):
         pass

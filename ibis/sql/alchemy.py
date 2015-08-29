@@ -153,13 +153,11 @@ def _exists_subquery(translator, expr):
     op = expr.op()
     ctx = translator.context
 
-    filtered = (op.foreign_table
-                .filter(op.predicates)
+    filtered = (op.foreign_table.filter(op.predicates)
                 .projection([ir.literal(1).name(ir.unnamed)]))
 
-    subq_clause = _and_all([translator.translate(x)
-                            for x in op.predicates])
-    clause = sa.exists([1]).where(subq_clause)
+    sub_ctx = ctx.subcontext()
+    clause = to_sqlalchemy(filtered, context=sub_ctx, exists=True)
 
     if isinstance(op, transforms.NotExistsSubquery):
         clause = -clause
@@ -250,10 +248,14 @@ for _k, _v in _binary_ops.items():
     _operation_registry[_k] = _fixed_arity_call(_v, 2)
 
 
-def to_sqlalchemy(expr, context=None):
+def to_sqlalchemy(expr, context=None, exists=False):
     builder = AlchemyQueryBuilder(expr, context=context)
     ast = builder.get_result()
     query = ast.queries[0]
+
+    if exists:
+        query.exists = exists
+
     return query.compile()
 
 
@@ -289,6 +291,10 @@ class AlchemyContext(comp.QueryContext):
 
     def _to_sql(self, expr, ctx):
         return to_sqlalchemy(expr, context=ctx)
+
+    def _compile_subquery(self, expr):
+        sub_ctx = self.subcontext()
+        return self._to_sql(expr, sub_ctx)
 
     def has_table(self, expr, parent_contexts=False):
         key = self._get_table_key(expr)
@@ -340,6 +346,10 @@ class AlchemyExprTranslator(ddl.ExprTranslator):
 
 class AlchemySelect(ddl.Select):
 
+    def __init__(self, *args, **kwargs):
+        self.exists = kwargs.pop('exists', False)
+        ddl.Select.__init__(self, *args, **kwargs)
+
     def compile(self):
         # Can't tell if this is a hack or not. Revisit later
         self.context.set_query(self)
@@ -388,7 +398,10 @@ class AlchemySelect(ddl.Select):
 
             to_select.append(arg)
 
-        return sa.select(to_select).select_from(table_set)
+        if self.exists:
+            return sa.exists(to_select).select_from(table_set)
+        else:
+            return sa.select(to_select).select_from(table_set)
 
     def _add_groupby(self, fragment):
         # GROUP BY and HAVING
