@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import operator
+import pytest
 
 from ibis.compat import unittest
 from ibis.expr.tests.mocks import MockConnection
@@ -51,6 +52,14 @@ class MockAlchemyConnection(MockConnection):
         return ir.TableExpr(node)
 
 
+def _table_wrapper(name, tname=None):
+    @property
+    def f(self):
+        t = self._table_from_schema(name, tname)
+        return t
+    return f
+
+
 class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
 
     def setUp(self):
@@ -61,9 +70,15 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
 
         self.sa_star1 = self._get_sqla('star1')
 
-    def _table_from_schema(self, name):
+    foo = _table_wrapper('foo')
+    bar = _table_wrapper('bar')
+    t1 = _table_wrapper('t1', 'foo')
+    t2 = _table_wrapper('t2', 'bar')
+
+    def _table_from_schema(self, name, tname=None):
+        tname = tname or name
         schema = ibis.schema(self._schemas[name])
-        return self.con._inject_table(name, schema)
+        return self.con._inject_table(tname, schema)
 
     def _get_sqla(self, name):
         return self._to_sqla(self.con.table(name))
@@ -267,8 +282,8 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
     def test_where_uncorrelated_subquery(self):
         expr = self._case_where_uncorrelated_subquery()
 
-        foo = self._to_sqla(self._table_from_schema('foo')).alias('t0')
-        bar = self._to_sqla(self._table_from_schema('bar'))
+        foo = self._to_sqla(self.foo).alias('t0')
+        bar = self._to_sqla(self.bar)
 
         subq = sa.select([bar.c.job])
         stmt = sa.select([foo]).where(foo.c.job.in_(subq))
@@ -277,13 +292,35 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
     def test_where_correlated_subquery(self):
         expr = self._case_where_correlated_subquery()
 
-        foo = self._to_sqla(self._table_from_schema('foo'))
+        foo = self._to_sqla(self.foo)
         t0 = foo.alias('t0')
         t1 = foo.alias('t1')
         subq = (sa.select([F.avg(t1.c.y).label('tmp')])
                 .where(t0.c.dept_id == t1.c.dept_id))
         stmt = sa.select([t0]).where(t0.c.y > subq)
         self._compare_sqla(expr, stmt)
+
+    def test_exists(self):
+        e1, e2 = self._case_exists()
+
+        t1 = self._to_sqla(self.t1)
+        t2 = self._to_sqla(self.t2)
+
+        cond1 = sa.exists([1]).where(t1.c.key1 == t2.c.key1)
+        ex1 = sa.select([t1]).where(cond1)
+
+        cond2 = sa.exists([1]).where(
+            sql.and_(t1.c.key1 == t2.c.key1,
+                     t2.c.key2 == 'foo'))
+        ex2 = sa.select([t1]).where(cond2)
+
+        pytest.skip('not yet implemented')
+
+        self._compare_sqla(e1, ex1)
+        self._compare_sqla(e2, ex2)
+
+    def test_not_exists(self):
+        pass
 
     def test_general_sql_function(self):
         pass

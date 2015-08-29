@@ -236,6 +236,13 @@ customer = api.table([
 ], 'customer')
 
 
+def _table_wrapper(name, tname=None):
+    @property
+    def f(self):
+        return self._table_from_schema(name, tname)
+    return f
+
+
 class SelectTestCases(object):
 
     _schemas = {
@@ -248,11 +255,21 @@ class SelectTestCases(object):
         'bar': [
             ('x', 'double'),
             ('job', 'string')
+        ],
+        't1': [
+            ('key1', 'string'),
+            ('key2', 'string'),
+            ('value1', 'double')
+        ],
+        't2': [
+            ('key1', 'string'),
+            ('key2', 'string')
         ]
     }
 
-    def _table_from_schema(self, name):
-        return api.table(self._schemas[name], name)
+    def _table_from_schema(self, name, tname=None):
+        tname = tname or name
+        return api.table(self._schemas[name], tname)
 
     def _case_multiple_joins(self):
         t1 = self.con.table('star1')
@@ -571,13 +588,10 @@ class SelectTestCases(object):
 
         return cases
 
-    @property
-    def foo(self):
-        return self._table_from_schema('foo')
-
-    @property
-    def bar(self):
-        return self._table_from_schema('bar')
+    foo = _table_wrapper('foo')
+    bar = _table_wrapper('bar')
+    t1 = _table_wrapper('t1', 'foo')
+    t2 = _table_wrapper('t2', 'bar')
 
     def _case_where_uncorrelated_subquery(self):
         return self.foo[self.foo.job.isin(self.bar.job)]
@@ -589,19 +603,25 @@ class SelectTestCases(object):
         stat = t2[t1.dept_id == t2.dept_id].y.mean()
         return t1[t1.y > stat]
 
+    def _case_exists(self):
+        t1, t2 = self.t1, self.t2
+
+        cond = (t1.key1 == t2.key1).any()
+        expr = t1[cond]
+
+        cond2 = ((t1.key1 == t2.key1) & (t2.key2 == 'foo')).any()
+        expr2 = t1[cond2]
+
+        return expr, expr2
+
+    def _case_not_exists(self):
+        t1, t2 = self.t1, self.t2
+
+        cond = (t1.key1 == t2.key1).any()
+        return t1[-cond]
+
 
 class TestSelectSQL(unittest.TestCase, SelectTestCases):
-
-    t1 = api.table([
-        ('key1', 'string'),
-        ('key2', 'string'),
-        ('value1', 'double')
-    ], 'foo')
-
-    t2 = api.table([
-        ('key1', 'string'),
-        ('key2', 'string')
-    ], 'bar')
 
     @classmethod
     def setUpClass(cls):
@@ -1568,13 +1588,10 @@ WHERE t0.`y` > (
         # Test membership in some record-dependent values, if this is supported
         pass
 
-    def test_exists_semi_join_case(self):
-        t1, t2 = self.t1, self.t2
+    def test_exists(self):
+        e1, e2 = self._case_exists()
 
-        cond = (t1.key1 == t2.key1).any()
-        expr = t1[cond]
-
-        result = to_sql(expr)
+        result = to_sql(e1)
         expected = """SELECT t0.*
 FROM foo t0
 WHERE EXISTS (
@@ -1584,10 +1601,7 @@ WHERE EXISTS (
 )"""
         assert result == expected
 
-        cond2 = ((t1.key1 == t2.key1) & (t2.key2 == 'foo')).any()
-        expr2 = t1[cond2]
-
-        result = to_sql(expr2)
+        result = to_sql(e2)
         expected = """SELECT t0.*
 FROM foo t0
 WHERE EXISTS (
@@ -1598,12 +1612,8 @@ WHERE EXISTS (
 )"""
         assert result == expected
 
-    def test_not_exists_anti_join_case(self):
-        t1, t2 = self.t1, self.t2
-
-        cond = (t1.key1 == t2.key1).any()
-        expr = t1[-cond]
-
+    def test_not_exists(self):
+        expr = self._case_not_exists()
         result = to_sql(expr)
         expected = """SELECT t0.*
 FROM foo t0

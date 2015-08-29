@@ -24,6 +24,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.sql.ddl as ddl
+import ibis.sql.transforms as transforms
 import ibis
 
 
@@ -115,18 +116,10 @@ def _varargs_call(sa_func, translator, expr):
 
 def _table_column(translator, expr):
     op = expr.op()
-    table = op.table
     ctx = translator.context
+    table = op.table
 
-    if ctx.has_ref(table):
-        ctx_level = ctx
-        sa_table = ctx_level.get_table(table)
-        while sa_table is None and ctx_level.parent is not ctx_level:
-            ctx_level = ctx_level.parent
-            sa_table = ctx_level.get_table(table)
-    else:
-        sa_table = table.op().sqla_table
-
+    sa_table = _get_sqla_table(ctx, table)
     out_expr = getattr(sa_table.c, op.name)
 
     # If the column does not originate from the table set in the current SELECT
@@ -137,10 +130,41 @@ def _table_column(translator, expr):
     return out_expr
 
 
+def _get_sqla_table(ctx, table):
+    if ctx.has_ref(table):
+        ctx_level = ctx
+        sa_table = ctx_level.get_table(table)
+        while sa_table is None and ctx_level.parent is not ctx_level:
+            ctx_level = ctx_level.parent
+            sa_table = ctx_level.get_table(table)
+    else:
+        sa_table = table.op().sqla_table
+
+    return sa_table
+
+
 def _table_array_view(translator, expr):
     ctx = translator.context
     table = ctx.get_compiled_expr(expr.op().table)
     return table
+
+
+def _exists_subquery(translator, expr):
+    op = expr.op()
+    ctx = translator.context
+
+    filtered = (op.foreign_table
+                .filter(op.predicates)
+                .projection([ir.literal(1).name(ir.unnamed)]))
+
+    subq_clause = _and_all([translator.translate(x)
+                            for x in op.predicates])
+    clause = sa.exists([1]).where(subq_clause)
+
+    if isinstance(op, transforms.NotExistsSubquery):
+        clause = -clause
+
+    return clause
 
 
 def _contains(translator, expr):
@@ -193,6 +217,9 @@ _operation_registry = {
 
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
+
+    transforms.ExistsSubquery: _exists_subquery,
+    transforms.NotExistsSubquery: _exists_subquery,
 }
 
 
