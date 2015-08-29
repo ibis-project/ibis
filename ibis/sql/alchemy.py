@@ -118,18 +118,26 @@ def _table_column(translator, expr):
     table = op.table
     ctx = translator.context
 
-    # If the column does not originate from the table set in the current SELECT
-    # context, we should format as a subquery
-    # if translator.permit_subquery and ctx.is_foreign_expr(table):
-    #     proj_expr = table.projection([field_name]).to_array()
-    #     return _table_array_view(translator, proj_expr)
-
     if ctx.has_table(table):
         sa_table = ctx.get_table(table)
     else:
         sa_table = table.op().sqla_table
 
-    return getattr(sa_table.c, op.name)
+    out_expr = getattr(sa_table.c, op.name)
+
+    # If the column does not originate from the table set in the current SELECT
+    # context, we should format as a subquery
+    if translator.permit_subquery and ctx.is_foreign_expr(table):
+        return sa.select([out_expr])
+
+    return out_expr
+
+
+def _contains(translator, expr):
+    op = expr.op()
+
+    left, right = [translator.translate(arg) for arg in op.args]
+    return left.in_(right)
 
 
 def _reduction(sa_func):
@@ -164,6 +172,8 @@ _expr_rewrites = {
 _operation_registry = {
     ops.And: _fixed_arity_call(sql.and_, 2),
     ops.Or: _fixed_arity_call(sql.or_, 2),
+
+    ops.Contains: _contains,
 
     ops.Count: _reduction(sa.func.count),
     ops.Sum: _reduction(sa.func.sum),

@@ -39,7 +39,9 @@ class MockAlchemyConnection(MockConnection):
 
     def table(self, name):
         schema = self._get_table_schema(name)
+        return self._inject_table(name, schema)
 
+    def _inject_table(self, name, schema):
         if name in self.meta.tables:
             table = self.meta.tables[name]
         else:
@@ -57,7 +59,14 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
         self.sa_alltypes = self.con.meta.tables['functional_alltypes']
         self.meta = sa.MetaData()
 
-        self.sa_star1 = self._to_sqla(self.con.table('star1'))
+        self.sa_star1 = self._get_sqla('star1')
+
+    def _table_from_schema(self, name):
+        schema = ibis.schema(self._schemas[name])
+        return self.con._inject_table(name, schema)
+
+    def _get_sqla(self, name):
+        return self._to_sqla(self.con.table(name))
 
     def _check_expr_cases(self, cases, named=False):
         for expr, expected in cases:
@@ -239,7 +248,7 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
     def test_cte_factor_distinct_but_equal(self):
         expr = self._case_cte_factor_distinct_but_equal()
 
-        alltypes = self._to_sqla(self.con.table('alltypes'))
+        alltypes = self._get_sqla('alltypes')
 
         t2 = alltypes.alias('t2')
         t0 = (sa.select([t2.c.g, F.sum(t2.c.f).label('metric')])
@@ -255,8 +264,15 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
     def test_self_reference(self):
         pass
 
-    def test_uncorrelated_subquery(self):
-        pass
+    def test_where_uncorrelated_subquery(self):
+        expr = self._case_where_uncorrelated_subquery()
+
+        foo = self._to_sqla(self._table_from_schema('foo')).alias('t0')
+        bar = self._to_sqla(self._table_from_schema('bar'))
+
+        subq = sa.select([bar.c.job])
+        stmt = sa.select([foo]).where(foo.c.job.in_(subq))
+        self._compare_sqla(expr, stmt)
 
     def test_general_sql_function(self):
         pass

@@ -238,6 +238,22 @@ customer = api.table([
 
 class SelectTestCases(object):
 
+    _schemas = {
+        'foo': [
+            ('job', 'string'),
+            ('dept_id', 'string'),
+            ('year', 'int32'),
+            ('y', 'double')
+        ],
+        'bar': [
+            ('x', 'double'),
+            ('job', 'string')
+        ]
+    }
+
+    def _table_from_schema(self, name):
+        return api.table(self._schemas[name], name)
+
     def _case_multiple_joins(self):
         t1 = self.con.table('star1')
         t2 = self.con.table('star2')
@@ -555,35 +571,34 @@ class SelectTestCases(object):
 
         return cases
 
+    @property
+    def foo(self):
+        return self._table_from_schema('foo')
+
+    @property
+    def bar(self):
+        return self._table_from_schema('bar')
+
+    def _case_where_uncorrelated_subquery(self):
+        return self.foo[self.foo.job.isin(self.bar.job)]
+
 
 class TestSelectSQL(unittest.TestCase, SelectTestCases):
+
+    t1 = api.table([
+        ('key1', 'string'),
+        ('key2', 'string'),
+        ('value1', 'double')
+    ], 'foo')
+
+    t2 = api.table([
+        ('key1', 'string'),
+        ('key2', 'string')
+    ], 'bar')
 
     @classmethod
     def setUpClass(cls):
         cls.con = MockConnection()
-
-        cls.foo = api.table([
-            ('job', 'string'),
-            ('dept_id', 'string'),
-            ('year', 'int32'),
-            ('y', 'double')
-        ], 'foo')
-
-        cls.bar = api.table([
-            ('x', 'double'),
-            ('job', 'string')
-        ], 'bar')
-
-        cls.t1 = api.table([
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('value1', 'double')
-        ], 'foo')
-
-        cls.t2 = api.table([
-            ('key1', 'string'),
-            ('key2', 'string')
-        ], 'bar')
 
     def test_nameless_table(self):
         # Ensure that user gets some kind of sensible error
@@ -1519,7 +1534,7 @@ WHERE `y` > (
         assert result == expected
 
     def test_where_uncorrelated_subquery(self):
-        expr = self.foo[self.foo.job.isin(self.bar.job)]
+        expr = self._case_where_uncorrelated_subquery()
 
         result = to_sql(expr)
         expected = """SELECT *
