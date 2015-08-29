@@ -179,7 +179,7 @@ class SelectBuilder(object):
         # Populate aliases for the distinct relations used to output this
         # select statement.
         if self.table_set is not None:
-            self._record_table_refs(self.table_set)
+            self._make_table_aliases(self.table_set)
 
         # XXX: This is a temporary solution to the table-aliasing / correlated
         # subquery problem. Will need to revisit and come up with a cleaner
@@ -197,17 +197,17 @@ class SelectBuilder(object):
             if needs_alias:
                 self.context.set_always_alias()
 
-    def _record_table_refs(self, expr):
+    def _make_table_aliases(self, expr):
         ctx = self.context
         node = expr.op()
         if isinstance(node, ops.Join):
             for arg in node.args:
                 if not isinstance(arg, ir.TableExpr):
                     continue
-                self._record_table_refs(arg)
+                self._make_table_aliases(arg)
         else:
             if not ctx.is_extracted(expr):
-                ctx.record_table(expr)
+                ctx.make_alias(expr)
 
     # ---------------------------------------------------------------------
     # Expr analysis / rewrites
@@ -771,10 +771,10 @@ class _CorrelatedRefCheck(object):
                 self.has_foreign_root = True
                 if (not is_aliased and
                         self.ctx.has_ref(node, parent_contexts=True)):
-                    self.ctx.record_table(node)
+                    self.ctx.make_alias(node)
 
             elif not self.ctx.has_ref(node):
-                self.ctx.record_table(node)
+                self.ctx.make_alias(node)
 
     def _is_root(self, what):
         if isinstance(what, ir.Expr):
@@ -883,7 +883,7 @@ class QueryContext(object):
     """
 
     def __init__(self, indent=2, parent=None):
-        self.table_refs = {}
+        self._table_refs = {}
         self.extracted_subexprs = set()
         self.subquery_memo = {}
         self.indent = indent
@@ -897,7 +897,10 @@ class QueryContext(object):
 
     def _compile_subquery(self, expr):
         sub_ctx = self.subcontext()
-        return to_sql(expr, context=sub_ctx)
+        return self._to_sql(expr, sub_ctx)
+
+    def _to_sql(self, expr, ctx):
+        return to_sql(expr, context=ctx)
 
     @property
     def top_context(self):
@@ -905,18 +908,6 @@ class QueryContext(object):
             return self
         else:
             return self.parent.top_context
-
-    def _get_table_key(self, table):
-        if isinstance(table, ir.TableExpr):
-            table = table.op()
-
-        k = id(table)
-        if k in self._table_key_memo:
-            return self._table_key_memo[k]
-        else:
-            val = table._repr()
-            self._table_key_memo[k] = val
-            return val
 
     def set_always_alias(self):
         self.always_alias = True
@@ -937,10 +928,10 @@ class QueryContext(object):
         this.subquery_memo[key] = result
         return result
 
-    def record_table(self, table_expr):
-        i = len(self.table_refs)
+    def make_alias(self, expr):
+        i = len(self._table_refs)
 
-        key = self._get_table_key(table_expr)
+        key = self._get_table_key(expr)
 
         # Get total number of aliases up and down the tree at this point; if we
         # find the table prior-aliased along the way, however, we reuse that
@@ -949,52 +940,34 @@ class QueryContext(object):
         while ctx.parent is not None:
             ctx = ctx.parent
 
-            if key in ctx.table_refs:
-                alias = ctx.table_refs[key]
-                self.set_ref(table_expr, alias)
+            if key in ctx._table_refs:
+                alias = ctx._table_refs[key]
+                self.set_ref(expr, alias)
                 return
 
-            i += len(ctx.table_refs)
+            i += len(ctx._table_refs)
 
         alias = 't%d' % i
-        self.set_ref(table_expr, alias)
-
-    def has_ref(self, table_expr, parent_contexts=False):
-        key = self._get_table_key(table_expr)
-        return self._key_in(key, 'table_refs',
-                            parent_contexts=parent_contexts)
-
-    def _key_in(self, key, memo_attr, parent_contexts=False):
-        if key in getattr(self, memo_attr):
-            return True
-
-        ctx = self
-        while parent_contexts and ctx.parent is not None:
-            ctx = ctx.parent
-            if key in getattr(ctx, memo_attr):
-                return True
-
-        return False
+        self.set_ref(expr, alias)
 
     def need_aliases(self):
-        return self.always_alias or len(self.table_refs) > 1
+        return self.always_alias or len(self._table_refs) > 1
 
-    def set_ref(self, table_expr, alias):
-        key = self._get_table_key(table_expr)
-        self.table_refs[key] = alias
+    def has_ref(self, expr, parent_contexts=False):
+        key = self._get_table_key(expr)
+        return self._key_in(key, '_table_refs',
+                            parent_contexts=parent_contexts)
 
-    def get_ref(self, table_expr):
+    def set_ref(self, expr, alias):
+        key = self._get_table_key(expr)
+        self._table_refs[key] = alias
+
+    def get_ref(self, expr):
         """
         Get the alias being used throughout a query to refer to a particular
         table or inline view
         """
-        key = self._get_table_key(table_expr)
-        top = self.top_context
-
-        if self.is_extracted(table_expr):
-            return top.table_refs.get(key)
-
-        return self.table_refs.get(key)
+        return self._get_table_item('_table_refs', expr)
 
     def is_extracted(self, expr):
         key = self._get_table_key(expr)
@@ -1003,10 +976,10 @@ class QueryContext(object):
     def set_extracted(self, expr):
         key = self._get_table_key(expr)
         self.extracted_subexprs.add(key)
-        self.record_table(expr)
+        self.make_alias(expr)
 
     def subcontext(self):
-        return QueryContext(indent=self.indent, parent=self)
+        return type(self)(indent=self.indent, parent=self)
 
     # Maybe temporary hacks for correlated / uncorrelated subqueries
 
@@ -1024,3 +997,36 @@ class QueryContext(object):
         exprs = [self.query.table_set] + self.query.select_set
         validator = ExprValidator(exprs)
         return not validator.validate(expr)
+
+    def _get_table_item(self, item, expr):
+        key = self._get_table_key(expr)
+        top = self.top_context
+
+        if self.is_extracted(expr):
+            return getattr(top, item).get(key)
+
+        return getattr(self, item).get(key)
+
+    def _get_table_key(self, table):
+        if isinstance(table, ir.TableExpr):
+            table = table.op()
+
+        k = id(table)
+        if k in self._table_key_memo:
+            return self._table_key_memo[k]
+        else:
+            val = table._repr()
+            self._table_key_memo[k] = val
+            return val
+
+    def _key_in(self, key, memo_attr, parent_contexts=False):
+        if key in getattr(self, memo_attr):
+            return True
+
+        ctx = self
+        while parent_contexts and ctx.parent is not None:
+            ctx = ctx.parent
+            if key in getattr(ctx, memo_attr):
+                return True
+
+        return False

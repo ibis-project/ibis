@@ -307,12 +307,12 @@ FROM alltypes"""
         expr = t0.g == t1.g
 
         ctx = QueryContext()
-        ctx.record_table(t0)
+        ctx.make_alias(t0)
 
         # Grab alias from parent context
         subctx = ctx.subcontext()
-        subctx.record_table(t1)
-        subctx.record_table(t0)
+        subctx.make_alias(t1)
+        subctx.make_alias(t0)
 
         result = self._translate(expr, context=subctx)
         expected = "t0.`g` = t1.`g`"

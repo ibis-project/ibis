@@ -139,8 +139,8 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
         region = self.con.table('tpch_region')
         nation = self.con.table('tpch_nation')
 
-        rt = self._to_sqla(region)
-        nt = self._to_sqla(nation)
+        rt = self._to_sqla(region).alias('t0')
+        nt = self._to_sqla(nation).alias('t1')
 
         ipred = region.r_regionkey == nation.n_regionkey
         spred = rt.c.r_regionkey == nt.c.n_regionkey
@@ -162,7 +162,7 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
     def test_where_simple_comparisons(self):
         expr = self._case_where_simple_comparisons()
 
-        st = self.sa_star1
+        st = self.sa_star1.alias('t0')
 
         clause = sql.and_(st.c.f > 0, st.c.c < (st.c.f * 2))
         expected = sa.select([st]).where(clause)
@@ -170,7 +170,7 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
         self._compare_sqla(expr, expected)
 
     def test_simple_aggregate_query(self):
-        st = self.sa_star1
+        st = self.sa_star1.alias('t0')
 
         cases = self._case_simple_aggregate_query()
 
@@ -186,7 +186,7 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
             self._compare_sqla(case, ex_sqla)
 
     def test_aggregate_having(self):
-        st = self.sa_star1
+        st = self.sa_star1.alias('t0')
 
         cases = self._case_aggregate_having()
 
@@ -203,7 +203,7 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
             self._compare_sqla(case, ex_sqla)
 
     def test_sort_by(self):
-        st = self.sa_star1
+        st = self.sa_star1.alias('t0')
         cases = self._case_sort_by()
 
         base = sa.select([st])
@@ -218,7 +218,7 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
     def test_limit(self):
         cases = self._case_limit()
 
-        st = self.sa_star1
+        st = self.sa_star1.alias('t0')
         base = sa.select([st])
 
         expected = [
@@ -228,9 +228,11 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
         ]
 
         # TODO, subqueries not working yet
-        # case4 = base.limit(10)
-        # case4 = case4.where(case4.c.f > 0)
-        # expected.append(case4)
+        st = self.sa_star1.alias('t1')
+        base = sa.select([st])
+        aliased = base.limit(10).alias('t0')
+        case4 = sa.select([aliased]).where(aliased.c.f > 0)
+        expected.append(case4)
 
         for case, ex in zip(cases, expected):
             self._compare_sqla(case, ex)

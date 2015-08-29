@@ -379,7 +379,45 @@ class _TableSetFormatter(object):
         return jname
 
     def _format_table(self, expr):
-        return _format_table(self.context, expr)
+        # TODO: This could probably go in a class and be significantly nicer
+        from ibis.impala.exprs import quote_identifier
+
+        ctx = self.context
+
+        ref_expr = expr
+        op = ref_op = expr.op()
+        if isinstance(op, ops.SelfReference):
+            ref_expr = op.table
+            ref_op = ref_expr.op()
+
+        if isinstance(ref_op, ops.PhysicalTable):
+            name = ref_op.name
+            if name is None:
+                raise com.RelationError('Table did not have a name: {0!r}'
+                                        .format(expr))
+            result = quote_identifier(name)
+            is_subquery = False
+        else:
+            # A subquery
+            if ctx.is_extracted(ref_expr):
+                # Was put elsewhere, e.g. WITH block, we just need to grab its
+                # alias
+                alias = ctx.get_ref(expr)
+
+                # HACK: self-references have to be treated more carefully here
+                if isinstance(op, ops.SelfReference):
+                    return '{0} {1}'.format(ctx.get_ref(ref_expr), alias)
+                else:
+                    return alias
+
+            subquery = ctx.get_compiled_expr(expr)
+            result = '(\n{0}\n)'.format(util.indent(subquery, self.indent))
+            is_subquery = True
+
+        if is_subquery or ctx.need_aliases():
+            result += ' {0}'.format(ctx.get_ref(expr))
+
+        return result
 
     # Placeholder; revisit when supporting other databases
     _non_equijoin_supported = True
@@ -393,46 +431,6 @@ class _TableSetFormatter(object):
                 raise com.TranslationError(
                     'Non-equality join predicates, '
                     'i.e. non-equijoins, are not supported')
-
-
-def _format_table(ctx, expr, indent=2):
-    # TODO: This could probably go in a class and be significantly nicer
-    from ibis.impala.exprs import quote_identifier
-
-    ref_expr = expr
-    op = ref_op = expr.op()
-    if isinstance(op, ops.SelfReference):
-        ref_expr = op.table
-        ref_op = ref_expr.op()
-
-    if isinstance(ref_op, ops.PhysicalTable):
-        name = ref_op.name
-        if name is None:
-            raise com.RelationError('Table did not have a name: {0!r}'
-                                    .format(expr))
-        result = quote_identifier(name)
-        is_subquery = False
-    else:
-        # A subquery
-        if ctx.is_extracted(ref_expr):
-            # Was put elsewhere, e.g. WITH block, we just need to grab its
-            # alias
-            alias = ctx.get_ref(expr)
-
-            # HACK: self-references have to be treated more carefully here
-            if isinstance(op, ops.SelfReference):
-                return '{0} {1}'.format(ctx.get_ref(ref_expr), alias)
-            else:
-                return alias
-
-        subquery = ctx.get_compiled_expr(expr)
-        result = '(\n{0}\n)'.format(util.indent(subquery, indent))
-        is_subquery = True
-
-    if is_subquery or ctx.need_aliases():
-        result += ' {0}'.format(ctx.get_ref(expr))
-
-    return result
 
 
 class Union(DDL):

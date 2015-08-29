@@ -124,8 +124,9 @@ def _table_column(translator, expr):
     #     proj_expr = table.projection([field_name]).to_array()
     #     return _table_array_view(translator, proj_expr)
 
-    sa_table = ctx.get_ref(table)
-    if sa_table is None:
+    if ctx.has_table(table):
+        sa_table = ctx.get_table(table)
+    else:
         sa_table = table.op().sqla_table
 
     return getattr(sa_table.c, op.name)
@@ -201,8 +202,8 @@ for _k, _v in _binary_ops.items():
     _operation_registry[_k] = _fixed_arity_call(_v, 2)
 
 
-def to_sqlalchemy(expr):
-    builder = AlchemyQueryBuilder(expr)
+def to_sqlalchemy(expr, context=None):
+    builder = AlchemyQueryBuilder(expr, context=context)
     ast = builder.get_result()
     query = ast.queries[0]
     return query.compile()
@@ -234,30 +235,27 @@ class AlchemySelectBuilder(comp.SelectBuilder):
 
 class AlchemyContext(comp.QueryContext):
 
-    def _compile_subquery(self, expr):
-        from ibis.sql.compiler import to_sql
-        sub_ctx = self.subcontext()
-        return to_sql(expr, context=sub_ctx)
+    def __init__(self, *args, **kwargs):
+        self._table_objects = {}
+        comp.QueryContext.__init__(self, *args, **kwargs)
 
-    def record_table(self, expr):
-        op = expr.op()
+    def _to_sql(self, expr, ctx):
+        return to_sqlalchemy(expr, context=ctx)
 
+    def has_table(self, expr, parent_contexts=False):
         key = self._get_table_key(expr)
-        ctx = self
-        while ctx.parent is not None:
-            ctx = ctx.parent
+        return self._key_in(key, '_table_objects',
+                            parent_contexts=parent_contexts)
 
-            if key in ctx.table_refs:
-                ref = ctx.table_refs[key]
-                self.set_ref(expr, ref)
-                return
+    def set_table(self, expr, obj):
+        key = self._get_table_key(expr)
+        self._table_objects[key] = obj
 
-        if isinstance(op, AlchemyTable):
-            table = op.sqla_table
-        else:
-            table = self._compile_subquery(expr)
-
-        self.set_ref(expr, table)
+    def get_table(self, expr):
+        """
+        Get the memoized SQLAlchemy expression object
+        """
+        return self._get_table_item('_table_objects', expr)
 
 
 class AlchemyTable(ops.DatabaseTable):
@@ -286,6 +284,10 @@ class AlchemyExprTranslator(ddl.ExprTranslator):
 
     def name(self, translated, name, force=True):
         return translated.label(name)
+
+    @property
+    def _context_class(self):
+        return AlchemyContext
 
 
 class AlchemySelect(ddl.Select):
@@ -320,7 +322,7 @@ class AlchemySelect(ddl.Select):
                     # the select * case
                     arg = table_set
                 else:
-                    arg = self.context.get_ref(expr)
+                    arg, alias = self.context.get_ref(expr)
                     if arg is None:
                         raise ValueError(expr)
 
@@ -379,6 +381,9 @@ class AlchemySelect(ddl.Select):
 
     def _translate(self, expr, context=None, named=False,
                    permit_subquery=False):
+        if context is None:
+            context = self.context
+
         translator = AlchemyExprTranslator(expr, context=context, named=named,
                                            permit_subquery=permit_subquery)
         return translator.get_result()
@@ -424,7 +429,39 @@ class _AlchemyTableSet(ddl._TableSetFormatter):
         return type(op)
 
     def _format_table(self, expr):
-        return _get_sqla_table(self.context, expr)
+        ctx = self.context
+        ref_expr = expr
+        op = ref_op = expr.op()
+
+        if isinstance(op, ops.SelfReference):
+            ref_expr = op.table
+            ref_op = ref_expr.op()
+
+        alias = ctx.get_ref(expr)
+
+        if isinstance(ref_op, AlchemyTable):
+            result = ref_op.sqla_table
+            is_subquery = False
+        else:
+            # A subquery
+            if ctx.is_extracted(ref_expr):
+                # Was put elsewhere, e.g. WITH block, we just need to grab
+                # its alias
+                alias = ctx.get_ref(expr)
+
+                # hack
+                if isinstance(op, ops.SelfReference):
+                    return ctx.get_table(ref_expr)
+                else:
+                    return ctx.get_table(expr)
+
+            result = ctx.get_compiled_expr(expr)
+            alias = ctx.get_ref(expr)
+            is_subquery = True
+
+        result = result.alias(alias)
+        ctx.set_table(expr, result)
+        return result
 
 
 def _and_all(clauses):
@@ -432,25 +469,6 @@ def _and_all(clauses):
     for clause in clauses[1:]:
         result = sql.and_(result, clause)
     return result
-
-
-def _get_sqla_table(ctx, expr):
-    ref_expr = expr
-    op = ref_op = expr.op()
-    if isinstance(op, ops.SelfReference):
-        ref_expr = op.table
-        ref_op = ref_expr.op()
-
-    if isinstance(ref_op, AlchemyTable):
-        return ref_op.sqla_table
-    else:
-        # A subquery
-        if ctx.is_extracted(ref_expr):
-            # Was put elsewhere, e.g. WITH block, we just need to grab its
-            # alias
-            return ctx.get_ref(expr)
-
-        return ctx.get_compiled_expr(expr)
 
 
 class AlchemyUnion(ddl.Union):
