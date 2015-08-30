@@ -13,16 +13,14 @@
 # limitations under the License.
 
 import operator
-import pytest
 
 from ibis.compat import unittest
 from ibis.expr.tests.mocks import MockConnection
-from ibis.sql.tests.test_compiler import SelectTestCases
+from ibis.sql.tests.test_compiler import ExprTestCases
 from ibis.tests.util import assert_equal
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
-import ibis.util as util
 import ibis
 
 from sqlalchemy import types as sat, func as F
@@ -60,7 +58,7 @@ def _table_wrapper(name, tname=None):
     return f
 
 
-class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
+class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
     def setUp(self):
         self.con = MockAlchemyConnection()
@@ -338,7 +336,7 @@ class TestSQLAlchemySelect(unittest.TestCase, SelectTestCases):
 
     def _compare_sqla(self, expr, sqla):
         result = alch.to_sqlalchemy(expr)
-        assert str(result) == str(sqla)
+        assert str(result.compile()) == str(sqla.compile())
 
     def _to_sqla(self, table):
         return table.op().sqla_table

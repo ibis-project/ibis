@@ -243,7 +243,7 @@ def _table_wrapper(name, tname=None):
     return f
 
 
-class SelectTestCases(object):
+class ExprTestCases(object):
 
     _schemas = {
         'foo': [
@@ -629,8 +629,22 @@ class SelectTestCases(object):
                   [[limited]])
         return joined
 
+    def _case_union(self, distinct=False):
+        table = self.con.table('functional_alltypes')
 
-class TestSelectSQL(unittest.TestCase, SelectTestCases):
+        t1 = (table[table.int_col > 0]
+              [table.string_col.name('key'),
+               table.float_col.cast('double').name('value')])
+        t2 = (table[table.int_col <= 0]
+                   [table.string_col.name('key'),
+                    table.double_col.name('value')])
+
+        expr = t1.union(t2, distinct=distinct)
+
+        return expr
+
+
+class TestSelectSQL(unittest.TestCase, ExprTestCases):
 
     @classmethod
     def setUpClass(cls):
@@ -1734,24 +1748,15 @@ ORDER BY `string_col`"""
         pass
 
 
-class TestUnions(unittest.TestCase):
+class TestUnions(unittest.TestCase, ExprTestCases):
 
     def setUp(self):
         self.con = MockConnection()
 
-        table = self.con.table('functional_alltypes')
-
-        self.t1 = (table[table.int_col > 0]
-                   [table.string_col.name('key'),
-                    table.float_col.cast('double').name('value')])
-        self.t2 = (table[table.int_col <= 0]
-                   [table.string_col.name('key'),
-                    table.double_col.name('value')])
-
-        self.union1 = self.t1.union(self.t2)
-
     def test_union(self):
-        result = to_sql(self.union1)
+        union1 = self._case_union()
+
+        result = to_sql(union1)
         expected = """\
 SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
 FROM functional_alltypes
@@ -1763,7 +1768,7 @@ WHERE `int_col` <= 0"""
         assert result == expected
 
     def test_union_distinct(self):
-        union = self.t1.union(self.t2, distinct=True)
+        union = self._case_union(distinct=True)
         result = to_sql(union)
         expected = """\
 SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
@@ -1777,7 +1782,8 @@ WHERE `int_col` <= 0"""
 
     def test_union_project_column(self):
         # select a column, get a subquery
-        expr = self.union1[[self.union1.key]]
+        union1 = self._case_union()
+        expr = union1[[union1.key]]
         result = to_sql(expr)
         expected = """SELECT `key`
 FROM (
@@ -1790,9 +1796,6 @@ FROM (
   WHERE `int_col` <= 0
 ) t0"""
         assert result == expected
-
-    def test_union_in_subquery(self):
-        pass
 
 
 class TestDistinct(unittest.TestCase):
