@@ -40,6 +40,8 @@ class TestSQLiteClient(unittest.TestCase, SQLiteTests):
         cls.env = SQLiteTestEnv()
         cls.db = api.connect(cls.env.db_path)
 
+        cls.alltypes = cls.db.table('functional_alltypes')
+
     @classmethod
     def tearDownClass(cls):
         pass
@@ -47,3 +49,7 @@ class TestSQLiteClient(unittest.TestCase, SQLiteTests):
     def test_table(self):
         table = self.db.table('functional_alltypes')
         assert isinstance(table, ir.TableExpr)
+
+    def test_simple_aggregate_execute(self):
+        d = self.alltypes.double_col
+        # d.execute()

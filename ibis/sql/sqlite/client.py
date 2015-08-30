@@ -17,6 +17,8 @@ import ibis.expr.types as ir
 import ibis.sql.alchemy as alchemy
 import sqlalchemy as sa
 
+from .compiler import SQLiteDialect
+
 
 class SQLiteTable(alchemy.AlchemyTable):
     pass
@@ -33,6 +35,9 @@ class SQLiteDatabase(SQLClient):
     @property
     def client(self):
         return self
+
+    def _build_ast(self, expr):
+        return alchemy.build_ast(expr, dialect=SQLiteDialect)
 
     def table(self, name):
         """

@@ -28,6 +28,7 @@ from ibis.client import SQLClient, Database, DatabaseEntity
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
+from ibis.sql.compiler import build_ast
 from ibis.sql.ddl import DDL
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
@@ -39,11 +40,6 @@ if six.PY2:
     import Queue as queue
 else:
     import queue
-
-
-def _expr_to_ast(expr):
-    from ibis.sql.compiler import build_ast
-    return build_ast(expr)
 
 
 class ImpalaConnection(object):
@@ -229,7 +225,7 @@ class ImpalaClient(SQLClient):
         self._ensure_temp_db_exists()
 
     def _build_ast(self, expr):
-        return _expr_to_ast(expr)
+        return build_ast(expr)
 
     @property
     def hdfs(self):

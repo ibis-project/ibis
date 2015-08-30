@@ -248,31 +248,6 @@ for _k, _v in _binary_ops.items():
     _operation_registry[_k] = _fixed_arity_call(_v, 2)
 
 
-def to_sqlalchemy(expr, context=None, exists=False):
-    builder = AlchemyQueryBuilder(expr, context=context)
-    ast = builder.get_result()
-    query = ast.queries[0]
-
-    if exists:
-        query.exists = exists
-
-    return query.compile()
-
-
-class AlchemyQueryBuilder(comp.QueryBuilder):
-
-    @property
-    def _context_class(self):
-        return AlchemyContext
-
-    def _make_union(self):
-        raise NotImplementedError
-
-    def _make_select(self):
-        builder = AlchemySelectBuilder(self.expr, self.context)
-        return builder.get_result()
-
-
 class AlchemySelectBuilder(comp.SelectBuilder):
 
     @property
@@ -287,6 +262,7 @@ class AlchemyContext(comp.QueryContext):
 
     def __init__(self, *args, **kwargs):
         self._table_objects = {}
+        self.dialect = kwargs.pop('dialect', AlchemyDialect)
         comp.QueryContext.__init__(self, *args, **kwargs)
 
     def _to_sql(self, expr, ctx):
@@ -310,6 +286,43 @@ class AlchemyContext(comp.QueryContext):
         Get the memoized SQLAlchemy expression object
         """
         return self._get_table_item('_table_objects', expr)
+
+
+class AlchemyQueryBuilder(comp.QueryBuilder):
+
+    select_builder = AlchemySelectBuilder
+
+    def __init__(self, expr, context=None, dialect=None):
+        if dialect is None:
+            dialect = AlchemyDialect
+
+        self.dialect = dialect
+        comp.QueryBuilder.__init__(self, expr, context=context)
+
+    def _make_context(self):
+        return AlchemyContext(dialect=self.dialect)
+
+    def _make_union(self):
+        raise NotImplementedError
+
+    def _make_select(self):
+        builder = self.select_builder(self.expr, self.context)
+        return builder.get_result()
+
+
+def to_sqlalchemy(expr, context=None, exists=False, dialect=None):
+    ast = build_ast(expr, context=context, dialect=dialect)
+    query = ast.queries[0]
+
+    if exists:
+        query.exists = exists
+
+    return query.compile()
+
+
+def build_ast(expr, context=None, dialect=None):
+    builder = AlchemyQueryBuilder(expr, context=context, dialect=dialect)
+    return builder.get_result()
 
 
 class AlchemyTable(ops.DatabaseTable):
@@ -342,6 +355,11 @@ class AlchemyExprTranslator(ddl.ExprTranslator):
     @property
     def _context_class(self):
         return AlchemyContext
+
+
+class AlchemyDialect(object):
+
+    translator = AlchemyExprTranslator
 
 
 class AlchemySelect(ddl.Select):
@@ -452,14 +470,13 @@ class AlchemySelect(ddl.Select):
 
         return fragment
 
-    def _translate(self, expr, context=None, named=False,
-                   permit_subquery=False):
-        if context is None:
-            context = self.context
+    @property
+    def translator(self):
+        return self.dialect.translator
 
-        translator = AlchemyExprTranslator(expr, context=context, named=named,
-                                           permit_subquery=permit_subquery)
-        return translator.get_result()
+    @property
+    def dialect(self):
+        return self.context.dialect
 
 
 class _AlchemyTableSet(ddl._TableSetFormatter):

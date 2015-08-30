@@ -273,15 +273,19 @@ class Select(DDL):
 
     def _translate(self, expr, context=None, named=False,
                    permit_subquery=False):
-        from ibis.impala.exprs import ImpalaExprTranslator
 
         if context is None:
             context = self.context
 
-        translator = ImpalaExprTranslator(expr, context=context,
-                                          named=named,
-                                          permit_subquery=permit_subquery)
+        translator = self.translator(expr, context=context,
+                                     named=named,
+                                     permit_subquery=permit_subquery)
         return translator.get_result()
+
+    @property
+    def translator(self):
+        from ibis.impala.exprs import ImpalaExprTranslator
+        return ImpalaExprTranslator
 
 
 class _TableSetFormatter(object):

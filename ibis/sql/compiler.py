@@ -58,12 +58,12 @@ class QueryBuilder(object):
         self.expr = expr
 
         if context is None:
-            context = self._context_class()
+            context = self._make_context()
 
         self.context = context
 
     @property
-    def _context_class(self):
+    def _make_context(self):
         return QueryContext
 
     def get_result(self):
