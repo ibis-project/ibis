@@ -27,6 +27,8 @@ from sqlalchemy import types as sat, func as F
 import sqlalchemy.sql as sql
 import sqlalchemy as sa
 
+L = sa.literal
+
 # SQL engine-independent unit tests
 
 
@@ -130,8 +132,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         for op in ops:
             f = getattr(operator, op)
-            case = (f(self.alltypes.double_col, 5),
-                    f(sat.c.double_col, 5))
+            case = f(self.alltypes.double_col, 5), f(sat.c.double_col, L(5))
             cases.append(case)
 
         self._check_expr_cases(cases)
@@ -142,8 +143,8 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         d = self.alltypes.double_col
         cases = [
-            ((d > 0) & (d < 5), sql.and_(sd > 0, sd < 5)),
-            ((d < 0) | (d > 5), sql.or_(sd < 0, sd > 5))
+            ((d > 0) & (d < 5), sql.and_(sd > L(0), sd < L(5))),
+            ((d < 0) | (d > 5), sql.or_(sd < L(0), sd > L(5)))
         ]
 
         self._check_expr_cases(cases)
@@ -153,7 +154,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         d = self.alltypes.double_col
 
         cases = [
-            ((d * 2).name('foo'), (sat.c.double_col * 2).label('foo'))
+            ((d * 2).name('foo'), (sat.c.double_col * L(2)).label('foo'))
         ]
         self._check_expr_cases(cases, named=True)
 
@@ -186,7 +187,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         st = self.sa_star1.alias('t0')
 
-        clause = sql.and_(st.c.f > 0, st.c.c < (st.c.f * 2))
+        clause = sql.and_(st.c.f > L(0), st.c.c < (st.c.f * L(2)))
         expected = sa.select([st]).where(clause)
 
         self._compare_sqla(expr, expected)
@@ -216,9 +217,9 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         k1 = st.c.foo_id
         expected = [
             sa.select([k1, metric.label('total')]).group_by(k1)
-            .having(metric > 10),
+            .having(metric > L(10)),
             sa.select([k1, metric.label('total')]).group_by(k1)
-            .having(F.count('*') > 100)
+            .having(F.count('*') > L(100))
         ]
 
         for case, ex_sqla in zip(cases, expected):
@@ -246,13 +247,13 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         expected = [
             base.limit(10),
             base.limit(10).offset(5),
-            base.where(st.c.f > 0).limit(10),
+            base.where(st.c.f > L(0)).limit(10),
         ]
 
         st = self.sa_star1.alias('t1')
         base = sa.select([st])
         aliased = base.limit(10).alias('t0')
-        case4 = sa.select([aliased]).where(aliased.c.f > 0)
+        case4 = sa.select([aliased]).where(aliased.c.f > L(0))
         expected.append(case4)
 
         for case, ex in zip(cases, expected):
@@ -304,12 +305,11 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         t1 = self._to_sqla(self.t1).alias('t0')
         t2 = self._to_sqla(self.t2).alias('t1')
 
-        cond1 = sa.exists([1]).where(t1.c.key1 == t2.c.key1)
+        cond1 = sa.exists([L(1)]).where(t1.c.key1 == t2.c.key1)
         ex1 = sa.select([t1]).where(cond1)
 
-        cond2 = sa.exists([1]).where(
-            sql.and_(t1.c.key1 == t2.c.key1,
-                     t2.c.key2 == 'foo'))
+        cond2 = sa.exists([L(1)]).where(
+            sql.and_(t1.c.key1 == t2.c.key1, t2.c.key2 == L('foo')))
         ex2 = sa.select([t1]).where(cond2)
 
         # pytest.skip('not yet implemented')
@@ -323,7 +323,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         t1 = self._to_sqla(self.t1).alias('t0')
         t2 = self._to_sqla(self.t2).alias('t1')
 
-        cond1 = sa.exists([1]).where(t1.c.key1 == t2.c.key1)
+        cond1 = sa.exists([L(1)]).where(t1.c.key1 == t2.c.key1)
         expected = sa.select([t1]).where(-cond1)
 
         self._compare_sqla(expr, expected)

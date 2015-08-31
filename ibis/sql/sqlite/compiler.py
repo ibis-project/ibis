@@ -32,6 +32,7 @@ class SQLiteExprTranslator(alch.AlchemyExprTranslator):
         dt.Double: sa.types.REAL
     })
 
+
 class SQLiteDialect(alch.AlchemyDialect):
 
     translator = SQLiteExprTranslator

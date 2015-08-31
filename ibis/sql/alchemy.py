@@ -206,7 +206,7 @@ def _reduction_format(translator, sa_func, arg, where):
 
 
 def _literal(translator, expr):
-    return expr.op().value
+    return sa.literal(expr.op().value)
 
 
 _expr_rewrites = {
@@ -459,8 +459,11 @@ class AlchemySelect(Select):
             self.context.set_table(expr, result)
 
     def _compile_table_set(self):
-        helper = _AlchemyTableSet(self, self.table_set)
-        return helper.get_result()
+        if self.table_set is not None:
+            helper = _AlchemyTableSet(self, self.table_set)
+            return helper.get_result()
+        else:
+            return None
 
     def _add_select(self, table_set):
         to_select = []
@@ -479,9 +482,14 @@ class AlchemySelect(Select):
             to_select.append(arg)
 
         if self.exists:
-            return sa.exists(to_select).select_from(table_set)
+            clause = sa.exists(to_select)
         else:
-            return sa.select(to_select).select_from(table_set)
+            clause = sa.select(to_select)
+
+        if table_set is not None:
+            return clause.select_from(table_set)
+        else:
+            return clause
 
     def _add_groupby(self, fragment):
         # GROUP BY and HAVING

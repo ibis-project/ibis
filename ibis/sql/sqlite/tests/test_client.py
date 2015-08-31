@@ -14,11 +14,10 @@
 
 import pandas as pd
 
-from .common import SQLiteTests, SQLiteTestEnv
+from .common import SQLiteTests
 from ibis.compat import unittest
 import ibis.expr.types as ir
-
-import ibis.sql.sqlite.api as api
+import ibis
 
 
 class TestSQLiteClient(SQLiteTests, unittest.TestCase):
@@ -36,6 +35,11 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
         s = d.execute()
         assert isinstance(s, pd.Series)
         assert len(s) == 10
+
+    def test_literal_execute(self):
+        expr = ibis.literal('1234')
+        result = self.db.execute(expr)
+        assert result == '1234'
 
     def test_simple_aggregate_execute(self):
         d = self.alltypes.double_col.sum()
