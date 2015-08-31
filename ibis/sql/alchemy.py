@@ -343,6 +343,15 @@ class AlchemyClient(SQLClient):
         node = AlchemyTable(table, self)
         return self._table_expr_klass(node)
 
+    def _fetch_from_cursor(self, cursor):
+        # No guarantees that the DBAPI cursor has data types
+        import pandas as pd
+        proxy = cursor.proxy
+        rows = proxy.fetchall()
+        colnames = proxy.keys()
+        return pd.DataFrame.from_records(rows, columns=colnames,
+                                         coerce_float=True)
+
 
 class AlchemyExprTranslator(ddl.ExprTranslator):
 
@@ -577,3 +586,27 @@ class AlchemyUnion(ddl.Union):
 
         query = '{0}\n{1}\n{2}'.format(left_set, union_keyword, right_set)
         return query
+
+
+class AlchemyProxy(object):
+    """
+    Wraps a SQLAlchemy ResultProxy and ensures that .close() is called on
+    garbage collection
+    """
+    def __init__(self, proxy):
+        self.proxy = proxy
+
+    def __del__(self):
+        self._close_cursor()
+
+    def _close_cursor(self):
+        self.proxy.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self._close_cursor()
+
+    def fetchall(self):
+        return self.proxy.fetchall()

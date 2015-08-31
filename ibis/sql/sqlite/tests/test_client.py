@@ -15,6 +15,8 @@
 import os
 import pytest
 
+import pandas as pd
+
 from ibis.compat import unittest
 import ibis.expr.types as ir
 
@@ -50,6 +52,13 @@ class TestSQLiteClient(unittest.TestCase, SQLiteTests):
         table = self.db.table('functional_alltypes')
         assert isinstance(table, ir.TableExpr)
 
+    def test_array_execute(self):
+        d = self.alltypes.limit(10).double_col
+        s = d.execute()
+        assert isinstance(s, pd.Series)
+        assert len(s) == 10
+
     def test_simple_aggregate_execute(self):
-        d = self.alltypes.double_col
-        # d.execute()
+        d = self.alltypes.double_col.sum()
+        v = d.execute()
+        assert isinstance(v, float)

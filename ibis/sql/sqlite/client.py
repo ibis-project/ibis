@@ -14,17 +14,17 @@
 
 from ibis.client import SQLClient
 import ibis.expr.types as ir
-import ibis.sql.alchemy as alchemy
+import ibis.sql.alchemy as alch
 import sqlalchemy as sa
 
 from .compiler import SQLiteDialect
 
 
-class SQLiteTable(alchemy.AlchemyTable):
+class SQLiteTable(alch.AlchemyTable):
     pass
 
 
-class SQLiteDatabase(SQLClient):
+class SQLiteDatabase(alch.AlchemyClient):
 
     def __init__(self, path):
         self.name = path
@@ -37,7 +37,10 @@ class SQLiteDatabase(SQLClient):
         return self
 
     def _build_ast(self, expr):
-        return alchemy.build_ast(expr, dialect=SQLiteDialect)
+        return alch.build_ast(expr, dialect=SQLiteDialect)
+
+    def _execute(self, query, results=True):
+        return alch.AlchemyProxy(self.con.execute(query))
 
     def table(self, name):
         """

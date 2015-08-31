@@ -119,10 +119,9 @@ LIMIT 0""".format(query)
         # TODO: create some query pipeline executor abstraction
         output = None
         for query in ast.queries:
-            sql_string = query.compile()
+            compiled_sql = query.compile()
 
-            with self._execute(sql_string, results=True) as cur:
-                result = self._fetch_from_cursor(cur)
+            result = self._execute_and_fetch(compiled_sql)
 
             if isinstance(query, ddl.Select):
                 if query.result_handler is not None:
@@ -131,6 +130,10 @@ LIMIT 0""".format(query)
                 output = result
 
         return output
+
+    def _execute_and_fetch(self, compiled_query):
+        with self._execute(compiled_query, results=True) as cur:
+            return self._fetch_from_cursor(cur)
 
     def _build_ast_ensure_limit(self, expr, limit):
         ast = self._build_ast(expr)
