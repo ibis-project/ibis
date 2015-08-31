@@ -165,6 +165,18 @@ def _exists_subquery(translator, expr):
     return clause
 
 
+def _cast(translator, expr):
+    op = expr.op()
+    arg, target_type = op.args
+    sa_arg = translator.translate(arg)
+    sa_type = translator.get_sqla_type(target_type)
+
+    if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
+        return sa_arg
+    else:
+        return sa.cast(sa_arg, sa_type)
+
+
 def _contains(translator, expr):
     op = expr.op()
 
@@ -204,6 +216,8 @@ _expr_rewrites = {
 _operation_registry = {
     ops.And: _fixed_arity_call(sql.and_, 2),
     ops.Or: _fixed_arity_call(sql.or_, 2),
+
+    ops.Cast: _cast,
 
     ops.Contains: _contains,
 
@@ -337,6 +351,7 @@ class AlchemyExprTranslator(comp.ExprTranslator):
 
     _registry = _operation_registry
     _rewrites = _expr_rewrites
+    _type_map = _ibis_type_to_sqla
 
     def name(self, translated, name, force=True):
         return translated.label(name)
@@ -344,6 +359,9 @@ class AlchemyExprTranslator(comp.ExprTranslator):
     @property
     def _context_class(self):
         return AlchemyContext
+
+    def get_sqla_type(self, data_type):
+        return self._type_map[type(data_type)]
 
 
 class AlchemyDialect(object):

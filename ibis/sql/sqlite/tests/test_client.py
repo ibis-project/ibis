@@ -12,37 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import pytest
-
 import pandas as pd
 
+from .common import SQLiteTests, SQLiteTestEnv
 from ibis.compat import unittest
 import ibis.expr.types as ir
 
 import ibis.sql.sqlite.api as api
 
 
-@pytest.mark.sqlite
-class SQLiteTests(object):
-    pass
-
-
-class SQLiteTestEnv(object):
-
-    def __init__(self):
-        self.db_path = os.environ.get('IBIS_TEST_SQLITE_DB_PATH',
-                                      'ibis_testing.db')
-
-
-class TestSQLiteClient(unittest.TestCase, SQLiteTests):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.env = SQLiteTestEnv()
-        cls.db = api.connect(cls.env.db_path)
-
-        cls.alltypes = cls.db.table('functional_alltypes')
+class TestSQLiteClient(SQLiteTests, unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):

@@ -12,4 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .common import SQLiteTests
 from ibis.compat import unittest
+
+import sqlalchemy as sa
+
+
+class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
+
+    def test_cast(self):
+        at = self._to_sqla(self.alltypes)
+
+        d = self.alltypes.double_col
+        s = self.alltypes.string_col
+
+        sa_d = at.c.double_col
+        sa_s = at.c.string_col
+
+        cases = [
+            (d.cast('int8'), sa.cast(sa_d, sa.types.SMALLINT)),
+            (s.cast('double'), sa.cast(sa_s, sa.types.REAL)),
+        ]
+        self._check_expr_cases(cases)
+
+    def test_decimal_cast(self):
+        pass
