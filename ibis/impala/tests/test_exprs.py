@@ -21,9 +21,8 @@ import ibis
 from ibis.compat import unittest, StringIO, Decimal
 from ibis.expr.datatypes import Category
 from ibis.expr.tests.mocks import MockConnection
-from ibis.impala.exprs import ImpalaExprTranslator
+from ibis.impala.compiler import ImpalaExprTranslator, to_sql, ImpalaContext
 from ibis.impala.tests.common import ImpalaE2E
-from ibis.sql.compiler import to_sql, QueryContext
 import ibis.expr.types as ir
 import ibis.expr.api as api
 
@@ -92,7 +91,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         self._check_literals(cases)
 
     def test_column_ref_table_aliases(self):
-        context = QueryContext()
+        context = ImpalaContext()
 
         table1 = ibis.table([
             ('key1', 'string'),
@@ -306,7 +305,7 @@ FROM alltypes"""
 
         expr = t0.g == t1.g
 
-        ctx = QueryContext()
+        ctx = ImpalaContext()
         ctx.make_alias(t0)
 
         # Grab alias from parent context

@@ -14,7 +14,7 @@
 
 import ibis
 
-from ibis.sql.compiler import build_ast, to_sql
+from ibis.impala.compiler import build_ast, to_sql
 from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest
 import ibis.common as com

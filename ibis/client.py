@@ -16,7 +16,7 @@ from ibis.compat import zip as czip
 from ibis.config import options
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-import ibis.sql.ddl as ddl
+import ibis.sql.compiler as comp
 import ibis.common as com
 import ibis.util as util
 
@@ -123,7 +123,7 @@ LIMIT 0""".format(query)
 
             result = self._execute_and_fetch(compiled_sql)
 
-            if isinstance(query, ddl.Select):
+            if isinstance(query, comp.Select):
                 if query.result_handler is not None:
                     result = query.result_handler(result)
 
@@ -140,7 +140,7 @@ LIMIT 0""".format(query)
         # note: limit can still be None at this point, if the global
         # default_limit is None
         for query in reversed(ast.queries):
-            if (isinstance(query, ddl.Select) and
+            if (isinstance(query, comp.Select) and
                     not isinstance(expr, ir.ScalarExpr) and
                     query.table_set is not None):
                 if query.limit is None:

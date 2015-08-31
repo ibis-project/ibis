@@ -20,26 +20,8 @@ import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
-import ibis.sql.ddl as ddl
 import ibis.sql.transforms as transforms
 import ibis.util as util
-
-
-def build_ast(expr, context=None):
-    builder = QueryBuilder(expr, context=context)
-    return builder.get_result()
-
-
-def _get_query(expr, context):
-    ast = build_ast(expr, context)
-    query = ast.queries[0]
-
-    return query
-
-
-def to_sql(expr, context=None):
-    query = _get_query(expr, context)
-    return query.compile()
 
 
 # ---------------------------------------------------------------------
@@ -50,42 +32,6 @@ class QueryAST(object):
     def __init__(self, context, queries):
         self.context = context
         self.queries = queries
-
-
-class QueryBuilder(object):
-
-    def __init__(self, expr, context=None):
-        self.expr = expr
-
-        if context is None:
-            context = self._make_context()
-
-        self.context = context
-
-    @property
-    def _make_context(self):
-        return QueryContext
-
-    def get_result(self):
-        op = self.expr.op()
-
-        # TODO: any setup / teardown DDL statements will need to be done prior
-        # to building the result set-generating statements.
-        if isinstance(op, ops.Union):
-            query = self._make_union()
-        else:
-            query = self._make_select()
-
-        return QueryAST(self.context, [query])
-
-    def _make_union(self):
-        op = self.expr.op()
-        return ddl.Union(op.left, op.right, distinct=op.distinct,
-                         context=self.context)
-
-    def _make_select(self):
-        builder = SelectBuilder(self.expr, self.context)
-        return builder.get_result()
 
 
 class SelectBuilder(object):
@@ -148,10 +94,6 @@ class SelectBuilder(object):
 
     def _generate_teardown_queries(self):
         return []
-
-    @property
-    def _select_class(self):
-        return ddl.Select
 
     def _build_result_query(self):
         self._collect_elements()
@@ -876,6 +818,45 @@ def _reduction_to_aggregation(expr, agg_name='tmp'):
     return table.aggregate([expr.name(agg_name)])
 
 
+class QueryBuilder(object):
+
+    select_builder = SelectBuilder
+
+    def __init__(self, expr, context=None):
+        self.expr = expr
+
+        if context is None:
+            context = self._make_context()
+
+        self.context = context
+
+    @property
+    def _make_context(self):
+        raise NotImplementedError
+
+    def get_result(self):
+        op = self.expr.op()
+
+        # TODO: any setup / teardown DDL statements will need to be done prior
+        # to building the result set-generating statements.
+        if isinstance(op, ops.Union):
+            query = self._make_union()
+        else:
+            query = self._make_select()
+
+        return QueryAST(self.context, [query])
+
+    def _make_union(self):
+        op = self.expr.op()
+        return self._union_class(op.left, op.right,
+                                 distinct=op.distinct,
+                                 context=self.context)
+
+    def _make_select(self):
+        builder = self.select_builder(self.expr, self.context)
+        return builder.get_result()
+
+
 class QueryContext(object):
 
     """
@@ -900,7 +881,7 @@ class QueryContext(object):
         return self._to_sql(expr, sub_ctx)
 
     def _to_sql(self, expr, ctx):
-        return to_sql(expr, context=ctx)
+        raise NotImplementedError
 
     @property
     def top_context(self):
@@ -1030,3 +1011,228 @@ class QueryContext(object):
                 return True
 
         return False
+
+
+class ExprTranslator(object):
+
+    def __init__(self, expr, context=None, named=False, permit_subquery=False):
+        self.expr = expr
+        self.permit_subquery = permit_subquery
+
+        if context is None:
+            context = self._context_class()
+        self.context = context
+
+        # For now, governing whether the result will have a name
+        self.named = named
+
+    @property
+    def _context_class(self):
+        raise NotImplementedError
+
+    def get_result(self):
+        """
+        Build compiled SQL expression from the bottom up and return as a string
+        """
+        translated = self.translate(self.expr)
+        if self._needs_name(self.expr):
+            # TODO: this could fail in various ways
+            name = self.expr.get_name()
+            translated = self.name(translated, name)
+        return translated
+
+    def _needs_name(self, expr):
+        if not self.named:
+            return False
+
+        op = expr.op()
+        if isinstance(op, ops.TableColumn):
+            # This column has been given an explicitly different name
+            if expr.get_name() != op.name:
+                return True
+            return False
+
+        if expr.get_name() is ir.unnamed:
+            return False
+
+        return True
+
+    def translate(self, expr):
+        # The operation node type the typed expression wraps
+        op = expr.op()
+
+        if type(op) in self._rewrites:
+            expr = self._rewrites[type(op)](expr)
+            op = expr.op()
+
+        # TODO: use op MRO for subclasses instead of this isinstance spaghetti
+        if isinstance(op, ir.Parameter):
+            return self._trans_param(expr)
+        elif isinstance(op, ops.TableNode):
+            # HACK/TODO: revisit for more complex cases
+            return '*'
+        elif type(op) in self._registry:
+            formatter = self._registry[type(op)]
+            return formatter(self, expr)
+        else:
+            raise com.TranslationError('No translator rule for {0}'
+                                       .format(type(op)))
+
+    def _trans_param(self, expr):
+        raise NotImplementedError
+
+
+class DDL(object):
+    pass
+
+
+class Select(DDL):
+
+    """
+    A SELECT statement which, after execution, might yield back to the user a
+    table, array/list, or scalar value, depending on the expression that
+    generated it
+    """
+
+    def __init__(self, table_set, select_set,
+                 subqueries=None, where=None, group_by=None, having=None,
+                 order_by=None, limit=None,
+                 distinct=False, indent=2,
+                 result_handler=None, parent_expr=None,
+                 context=None):
+        self.context = context
+
+        self.select_set = select_set
+        self.table_set = table_set
+        self.distinct = distinct
+
+        self.parent_expr = parent_expr
+
+        self.where = where or []
+
+        # Group keys and post-predicates for aggregations
+        self.group_by = group_by or []
+        self.having = having or []
+        self.order_by = order_by or []
+
+        self.limit = limit
+        self.subqueries = subqueries or []
+
+        self.indent = indent
+
+        self.result_handler = result_handler
+
+    translator = None
+
+    def _translate(self, expr, context=None, named=False,
+                   permit_subquery=False):
+
+        if context is None:
+            context = self.context
+
+        translator = self.translator(expr, context=context,
+                                     named=named,
+                                     permit_subquery=permit_subquery)
+        return translator.get_result()
+
+    def equals(self, other):
+        if not isinstance(other, Select):
+            return False
+
+        this_exprs = self._all_exprs()
+        other_exprs = other._all_exprs()
+
+        if self.limit != other.limit:
+            return False
+
+        for x, y in zip(this_exprs, other_exprs):
+            if not x.equals(y):
+                return False
+
+        return True
+
+    def _all_exprs(self):
+        # Gnarly, maybe we can improve this somehow
+        expr_attrs = ['select_set', 'table_set', 'where', 'group_by', 'having',
+                      'order_by', 'subqueries']
+        exprs = []
+        for attr in expr_attrs:
+            val = getattr(self, attr)
+            if isinstance(val, list):
+                exprs.extend(val)
+            else:
+                exprs.append(val)
+
+        return exprs
+
+
+class TableSetFormatter(object):
+
+    def __init__(self, parent, expr, indent=2):
+        self.parent = parent
+        self.context = parent.context
+        self.expr = expr
+        self.indent = indent
+
+        self.join_tables = []
+        self.join_types = []
+        self.join_predicates = []
+
+    def _translate(self, expr):
+        return self.parent._translate(expr, context=self.context)
+
+    def _walk_join_tree(self, op):
+        left = op.left.op()
+        right = op.right.op()
+
+        if util.all_of([left, right], ops.Join):
+            raise NotImplementedError('Do not support joins between '
+                                      'joins yet')
+
+        self._validate_join_predicates(op.predicates)
+
+        jname = self._get_join_type(op)
+
+        # Read off tables and join predicates left-to-right in
+        # depth-first order
+        if isinstance(left, ops.Join):
+            self._walk_join_tree(left)
+            self.join_tables.append(self._format_table(op.right))
+            self.join_types.append(jname)
+            self.join_predicates.append(op.predicates)
+        elif isinstance(right, ops.Join):
+            # When rewrites are possible at the expression IR stage, we should
+            # do them. Otherwise subqueries might be necessary in some cases
+            # here
+            raise NotImplementedError('not allowing joins on right '
+                                      'side yet')
+        else:
+            # Both tables
+            self.join_tables.append(self._format_table(op.left))
+            self.join_tables.append(self._format_table(op.right))
+            self.join_types.append(jname)
+            self.join_predicates.append(op.predicates)
+
+    # Placeholder; revisit when supporting other databases
+    _non_equijoin_supported = True
+
+    def _validate_join_predicates(self, predicates):
+        for pred in predicates:
+            op = pred.op()
+
+            if (not isinstance(op, ops.Equals) and
+                    not self._non_equijoin_supported):
+                raise com.TranslationError('Non-equality join predicates, '
+                                           'i.e. non-equijoins, are not '
+                                           'supported')
+
+
+class Union(DDL):
+
+    def __init__(self, left_table, right_table, distinct=False,
+                 context=None):
+        self.context = context
+        self.left = left_table
+        self.right = right_table
+
+        self.distinct = distinct

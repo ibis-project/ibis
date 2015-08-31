@@ -28,8 +28,8 @@ from ibis.client import SQLClient, Database, DatabaseEntity
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
-from ibis.sql.compiler import build_ast
-from ibis.sql.ddl import DDL
+from ibis.sql.compiler import DDL
+from ibis.impala.compiler import build_ast
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops

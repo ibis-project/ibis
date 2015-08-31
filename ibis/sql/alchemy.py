@@ -18,12 +18,12 @@ import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
 from ibis.client import SQLClient
+from ibis.sql.compiler import Select, Union, TableSetFormatter
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
-import ibis.sql.ddl as ddl
 import ibis.sql.transforms as transforms
 import ibis
 
@@ -305,10 +305,6 @@ class AlchemyQueryBuilder(comp.QueryBuilder):
     def _make_union(self):
         raise NotImplementedError
 
-    def _make_select(self):
-        builder = self.select_builder(self.expr, self.context)
-        return builder.get_result()
-
 
 def to_sqlalchemy(expr, context=None, exists=False, dialect=None):
     ast = build_ast(expr, context=context, dialect=dialect)
@@ -337,7 +333,7 @@ class AlchemyTable(ops.DatabaseTable):
         ops.HasSchema.__init__(self, schema, name=name)
 
 
-class AlchemyExprTranslator(ddl.ExprTranslator):
+class AlchemyExprTranslator(comp.ExprTranslator):
 
     _registry = _operation_registry
     _rewrites = _expr_rewrites
@@ -410,11 +406,11 @@ class AlchemyClient(SQLClient):
                                          coerce_float=True)
 
 
-class AlchemySelect(ddl.Select):
+class AlchemySelect(Select):
 
     def __init__(self, *args, **kwargs):
         self.exists = kwargs.pop('exists', False)
-        ddl.Select.__init__(self, *args, **kwargs)
+        Select.__init__(self, *args, **kwargs)
 
     def compile(self):
         # Can't tell if this is a hack or not. Revisit later
@@ -527,7 +523,7 @@ class AlchemySelect(ddl.Select):
         return self.context.dialect
 
 
-class _AlchemyTableSet(ddl._TableSetFormatter):
+class _AlchemyTableSet(TableSetFormatter):
 
     def get_result(self):
         # Got to unravel the join stack; the nesting order could be
@@ -610,7 +606,7 @@ def _and_all(clauses):
     return result
 
 
-class AlchemyUnion(ddl.Union):
+class AlchemyUnion(Union):
 
     def compile(self):
         context = self.context
