@@ -13,21 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
+import os
 import shutil
 import tempfile
 import os.path as osp
 from os.path import join as pjoin
 from subprocess import check_call
 
-import pandas as pd
 from click import group, option
 
 import ibis
 from ibis.compat import BytesIO
 from ibis.common import IbisError
 from ibis.impala.tests.common import IbisTestEnv
+from ibis.util import guid
 
+import numpy as np
+
+import pandas as pd
+import pandas.util.testing as tm
 
 ENV = IbisTestEnv()
 IBIS_TEST_DATA_S3_BUCKET = 'ibis-test-resources'
@@ -157,7 +161,7 @@ def create_avro_tables(con):
         schema = schemas[table_name]
         path = pjoin(ENV.test_data_dir, 'avro', table_name)
         table = con.avro_file(path, schema, name=table_name,
-                          database=ENV.test_data_db, persist=True)
+                              database=ENV.test_data_db, persist=True)
         tables.append(table)
     return tables
 
@@ -229,6 +233,81 @@ def copy_tarball_to_versioned_backup(bucket):
         key.copy(IBIS_TEST_DATA_S3_BUCKET, next_key)
         key.delete()
     assert bucket.get_key(IBIS_TEST_DATA_TARBALL) is None
+
+
+_sql_tables = ['functional_alltypes', 'tpch_lineitem', 'tpch_customer',
+               'tpch_region', 'tpch_nation', 'tpch_orders']
+
+
+def _project_tpch_lineitem(t):
+    return t['l_orderkey',
+             'l_partkey',
+             'l_suppkey',
+             'l_linenumber',
+             t.l_quantity.cast('double'),
+             t.l_extendedprice.cast('double'),
+             t.l_discount.cast('double'),
+             t.l_tax.cast('double'),
+             'l_returnflag',
+             'l_linestatus',
+             'l_shipdate',
+             'l_commitdate',
+             'l_receiptdate',
+             'l_shipinstruct',
+             'l_shipmode']
+
+
+def _project_tpch_orders(t):
+    return t['o_orderkey',
+             'o_custkey',
+             'o_orderstatus',
+             t.o_totalprice.cast('double'),
+             'o_orderdate',
+             'o_orderpriority',
+             'o_clerk',
+             'o_shippriority']
+
+
+def _project_tpch_customer(t):
+    return t['c_custkey',
+             'c_name',
+             'c_nationkey',
+             'c_phone',
+             'c_acctbal',
+             'c_mktsegment']
+
+
+_projectors = {
+    'tpch_customer': _project_tpch_customer,
+    'tpch_lineitem': _project_tpch_lineitem,
+    'tpch_orders': _project_tpch_orders,
+}
+
+
+def generate_sql_csv_sources(output_path, db):
+    ibis.options.sql.default_limit = None
+
+    if not osp.exists(output_path):
+        os.mkdir(output_path)
+
+    for name in _sql_tables:
+        print(name)
+        table = db[name]
+
+        if name in _projectors:
+            table = _projectors[name](table)
+
+        df = table.execute()
+        path = osp.join(output_path, name)
+        df.to_csv('{0}.csv'.format(path), na_rep='\\N')
+
+
+def make_sqlite_testing_db(csv_dir, con):
+    for name in _sql_tables:
+        print(name)
+        path = osp.join(csv_dir, '{0}.csv'.format(name))
+        df = pd.read_csv(path, na_values=['\\N'])
+        pd.io.sql.to_sql(df, name, con, chunksize=10000)
 
 
 # ==========================================

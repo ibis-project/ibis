@@ -71,7 +71,7 @@ class TestHDFSRandom(unittest.TestCase):
         assert result == '0.parq'
 
 
-@pytest.mark.impala
+@pytest.mark.hdfs
 class TestHDFSE2E(unittest.TestCase):
 
     @classmethod
@@ -404,7 +404,7 @@ class TestHDFSE2E(unittest.TestCase):
         return dirname
 
 
-@pytest.mark.impala
+@pytest.mark.hdfs
 @pytest.mark.superuser
 class TestSuperUserHDFSE2E(unittest.TestCase):
 

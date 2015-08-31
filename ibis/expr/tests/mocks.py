@@ -346,6 +346,10 @@ class MockConnection(SQLClient):
         name = name.replace('`', '')
         return Schema.from_tuples(self._tables[name])
 
+    def _build_ast(self, expr):
+        from ibis.impala.compiler import build_ast
+        return build_ast(expr)
+
     def execute(self, expr, limit=None):
         ast = self._build_ast_ensure_limit(expr, limit)
         for query in ast.queries:

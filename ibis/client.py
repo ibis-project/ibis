@@ -14,12 +14,9 @@
 
 from ibis.compat import zip as czip
 from ibis.config import options
-
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-
-import ibis.sql.compiler as sql
-import ibis.sql.ddl as ddl
+import ibis.sql.compiler as comp
 import ibis.common as com
 import ibis.util as util
 
@@ -122,12 +119,11 @@ LIMIT 0""".format(query)
         # TODO: create some query pipeline executor abstraction
         output = None
         for query in ast.queries:
-            sql_string = query.compile()
+            compiled_sql = query.compile()
 
-            with self._execute(sql_string, results=True) as cur:
-                result = self._fetch_from_cursor(cur)
+            result = self._execute_and_fetch(compiled_sql)
 
-            if isinstance(query, ddl.Select):
+            if isinstance(query, comp.Select):
                 if query.result_handler is not None:
                     result = query.result_handler(result)
 
@@ -135,12 +131,16 @@ LIMIT 0""".format(query)
 
         return output
 
+    def _execute_and_fetch(self, compiled_query):
+        with self._execute(compiled_query, results=True) as cur:
+            return self._fetch_from_cursor(cur)
+
     def _build_ast_ensure_limit(self, expr, limit):
-        ast = sql.build_ast(expr)
+        ast = self._build_ast(expr)
         # note: limit can still be None at this point, if the global
         # default_limit is None
         for query in reversed(ast.queries):
-            if (isinstance(query, ddl.Select) and
+            if (isinstance(query, comp.Select) and
                     not isinstance(expr, ir.ScalarExpr) and
                     query.table_set is not None):
                 if query.limit is None:
@@ -165,7 +165,7 @@ LIMIT 0""".format(query)
         plan : string
         """
         if isinstance(expr, ir.Expr):
-            ast = sql.build_ast(expr)
+            ast = self._build_ast(expr)
             if len(ast.queries) > 1:
                 raise Exception('Multi-query expression')
 
@@ -180,6 +180,10 @@ LIMIT 0""".format(query)
 
         return 'Query:\n{0}\n\n{1}'.format(util.indent(query, 2),
                                            '\n'.join(result))
+
+    def _build_ast(self, expr):
+        # Implement in clients
+        raise NotImplementedError
 
     def _db_type_to_dtype(self, db_type):
         raise NotImplementedError
@@ -229,3 +233,129 @@ def find_backend(expr):
         return default
 
     return backends[0]
+
+
+class Database(object):
+
+    def __init__(self, name, client):
+        self.name = name
+        self.client = client
+
+    def __repr__(self):
+        return "{0}('{1}')".format('Database', self.name)
+
+    def __dir__(self):
+        attrs = dir(type(self))
+        unqualified_tables = [self._unqualify(x) for x in self.tables]
+        return list(sorted(set(attrs + unqualified_tables)))
+
+    def __contains__(self, key):
+        return key in self.tables
+
+    @property
+    def tables(self):
+        return self.list_tables()
+
+    def __getitem__(self, key):
+        return self.table(key)
+
+    def __getattr__(self, key):
+        special_attrs = ['_ipython_display_', 'trait_names',
+                         '_getAttributeNames']
+
+        try:
+            return object.__getattribute__(self, key)
+        except AttributeError:
+            if key in special_attrs:
+                raise
+            return self.table(key)
+
+    def _qualify(self, value):
+        return value
+
+    def _unqualify(self, value):
+        return value
+
+    def drop(self, force=False):
+        """
+        Drop the database
+
+        Parameters
+        ----------
+        drop : boolean, default False
+          Drop any objects if they exist, and do not fail if the databaes does
+          not exist
+        """
+        self.client.drop_database(self.name, force=force)
+
+    def namespace(self, ns):
+        """
+        Creates a derived Database instance for collections of objects having a
+        common prefix. For example, for tables fooa, foob, and fooc, creating
+        the "foo" namespace would enable you to reference those objects as a,
+        b, and c, respectively.
+
+        Returns
+        -------
+        ns : DatabaseNamespace
+        """
+        return DatabaseNamespace(self, ns)
+
+    def table(self, name):
+        """
+        Return a table expression referencing a table in this database
+
+        Returns
+        -------
+        table : TableExpr
+        """
+        qualified_name = self._qualify(name)
+        return self.client.table(qualified_name, self.name)
+
+    def list_tables(self, like=None):
+        return self.client.list_tables(like=self._qualify_like(like),
+                                       database=self.name)
+
+    def _qualify_like(self, like):
+        return like
+
+
+class DatabaseNamespace(Database):
+
+    def __init__(self, parent, namespace):
+        self.parent = parent
+        self.namespace = namespace
+
+    def __repr__(self):
+        return ("{0}(database={1!r}, namespace={2!r})"
+                .format('DatabaseNamespace', self.name, self.namespace))
+
+    @property
+    def client(self):
+        return self.parent.client
+
+    @property
+    def name(self):
+        return self.parent.name
+
+    def _qualify(self, value):
+        return self.namespace + value
+
+    def _unqualify(self, value):
+        return value.replace(self.namespace, '', 1)
+
+    def _qualify_like(self, like):
+        if like:
+            return self.namespace + like
+        else:
+            return '{0}*'.format(self.namespace)
+
+
+class DatabaseEntity(object):
+    pass
+
+
+class View(DatabaseEntity):
+
+    def drop(self):
+        pass

@@ -15,7 +15,7 @@ from ibis.expr.datatypes import validate_type
 import ibis.expr.datatypes as _dt
 import ibis.expr.operations as _ops
 import ibis.expr.rules as rules
-import ibis.impala.exprs as _expr
+import ibis.impala.compiler as comp
 import ibis.common as com
 import ibis.util as util
 
@@ -285,12 +285,12 @@ def add_operation(op, func_name, db):
     """
     full_name = '{0}.{1}'.format(db, func_name)
     if isinstance(op.input_type, rules.VarArgs):
-        translator = _expr._varargs(full_name)
+        translator = comp._varargs(full_name)
     else:
         arity = len(op.input_type.types)
-        translator = _expr._fixed_arity_call(full_name, arity)
+        translator = comp._fixed_arity_call(full_name, arity)
 
-    _expr._operation_registry[op] = translator
+    comp._operation_registry[op] = translator
 
 
 def _impala_type_to_ibis(tval):
@@ -300,7 +300,7 @@ def _impala_type_to_ibis(tval):
 
 
 def _ibis_string_to_impala(tval):
-    from ibis.impala.exprs import _sql_type_names
+    from ibis.impala.compiler import _sql_type_names
 
     if tval in _sql_type_names:
         return _sql_type_names[tval]

@@ -12,22 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ibis
+import sqlalchemy as sa
 
-from ibis.impala.compiler import to_sql
-from ibis.compat import unittest
+import ibis.sql.alchemy as alch
+import ibis.expr.datatypes as dt
+
+_operation_registry = alch._operation_registry.copy()
 
 
-class TestImpalaSQL(unittest.TestCase):
+def add_operation(op, translation_func):
+    _operation_registry[op] = translation_func
 
-    def test_relabel_projection(self):
-        # GH #551
-        types = ['int32', 'string', 'double']
-        table = ibis.table(zip(['foo', 'bar', 'baz'], types), 'table')
-        relabeled = table.relabel({'foo': 'one', 'baz': 'three'})
 
-        result = to_sql(relabeled)
-        expected = """\
-SELECT `foo` AS `one`, `bar`, `baz` AS `three`
-FROM `table`"""
-        assert result == expected
+class SQLiteExprTranslator(alch.AlchemyExprTranslator):
+
+    _registry = _operation_registry
+    _type_map = alch.AlchemyExprTranslator._type_map.copy()
+    _type_map.update({
+        dt.Double: sa.types.REAL
+    })
+
+
+class SQLiteDialect(alch.AlchemyDialect):
+
+    translator = SQLiteExprTranslator

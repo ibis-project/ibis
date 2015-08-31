@@ -5,3 +5,6 @@ all:
 
 impala-test:
 	pushd scripts && python load_test_data.py --udf && popd
+
+clean-pyc:
+	find . -name "*.pyc" -exec rm -rf {} \;

@@ -25,7 +25,7 @@ from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest
 from ibis.impala import ddl
 from ibis.impala.compat import HS2Error, ImpylaError
-from ibis.sql.compiler import build_ast
+from ibis.impala.client import build_ast
 from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E, connect_test
 from ibis.tests.util import assert_equal
 import ibis.common as com
@@ -450,11 +450,11 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
 
         # impala user has trouble writing to jenkins-owned dir so here we give
         # the tmp dir 777
-        superuser_hdfs= ibis.hdfs_connect(host=ENV.nn_host,
-                                          port=ENV.webhdfs_port,
-                                          use_kerberos=ENV.use_kerberos,
-                                          verify=(not ENV.use_kerberos),
-                                          user=ENV.hdfs_superuser)
+        superuser_hdfs = ibis.hdfs_connect(host=ENV.nn_host,
+                                           port=ENV.webhdfs_port,
+                                           use_kerberos=ENV.use_kerberos,
+                                           verify=(not ENV.use_kerberos),
+                                           user=ENV.hdfs_superuser)
         superuser_hdfs.mkdir(base)
         superuser_hdfs.chmod(base, '777')
 

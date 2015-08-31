@@ -23,12 +23,366 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.expr.temporal as tempo
 
+import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 
 import ibis.impala.identifiers as identifiers
 
 import ibis.common as com
 import ibis.util as util
+
+
+def build_ast(expr, context=None):
+    builder = ImpalaQueryBuilder(expr, context=context)
+    return builder.get_result()
+
+
+def _get_query(expr, context):
+    ast = build_ast(expr, context)
+    query = ast.queries[0]
+
+    return query
+
+
+def to_sql(expr, context=None):
+    query = _get_query(expr, context)
+    return query.compile()
+
+
+# ----------------------------------------------------------------------
+# Select compilation
+
+class ImpalaSelectBuilder(comp.SelectBuilder):
+
+    @property
+    def _select_class(self):
+        return ImpalaSelect
+
+
+class ImpalaQueryBuilder(comp.QueryBuilder):
+
+    select_builder = ImpalaSelectBuilder
+
+    @property
+    def _make_context(self):
+        return ImpalaContext
+
+    @property
+    def _union_class(self):
+        return ImpalaUnion
+
+
+class ImpalaContext(comp.QueryContext):
+
+    def _to_sql(self, expr, ctx):
+        return to_sql(expr, context=ctx)
+
+
+class ImpalaSelect(comp.Select):
+
+    """
+    A SELECT statement which, after execution, might yield back to the user a
+    table, array/list, or scalar value, depending on the expression that
+    generated it
+    """
+
+    def compile(self):
+        """
+        This method isn't yet idempotent; calling multiple times may yield
+        unexpected results
+        """
+        # Can't tell if this is a hack or not. Revisit later
+        self.context.set_query(self)
+
+        # If any subqueries, translate them and add to beginning of query as
+        # part of the WITH section
+        with_frag = self.format_subqueries()
+
+        # SELECT
+        select_frag = self.format_select_set()
+
+        # FROM, JOIN, UNION
+        from_frag = self.format_table_set()
+
+        # WHERE
+        where_frag = self.format_where()
+
+        # GROUP BY and HAVING
+        groupby_frag = self.format_group_by()
+
+        # ORDER BY and LIMIT
+        order_frag = self.format_postamble()
+
+        # Glue together the query fragments and return
+        query = _join_not_none('\n', [with_frag, select_frag, from_frag,
+                                      where_frag, groupby_frag, order_frag])
+
+        return query
+
+    def format_subqueries(self):
+        if len(self.subqueries) == 0:
+            return
+
+        context = self.context
+
+        buf = StringIO()
+        buf.write('WITH ')
+
+        for i, expr in enumerate(self.subqueries):
+            if i > 0:
+                buf.write(',\n')
+            formatted = util.indent(context.get_compiled_expr(expr), 2)
+            alias = context.get_ref(expr)
+            buf.write('{0} AS (\n{1}\n)'.format(alias, formatted))
+
+        return buf.getvalue()
+
+    def format_select_set(self):
+        # TODO:
+        context = self.context
+        formatted = []
+        for expr in self.select_set:
+            if isinstance(expr, ir.ValueExpr):
+                expr_str = self._translate(expr, named=True)
+            elif isinstance(expr, ir.TableExpr):
+                # A * selection, possibly prefixed
+                if context.need_aliases():
+                    alias = context.get_ref(expr)
+
+                    # materialized join will not have an alias. see #491
+                    expr_str = '{0}.*'.format(alias) if alias else '*'
+                else:
+                    expr_str = '*'
+            formatted.append(expr_str)
+
+        buf = StringIO()
+        line_length = 0
+        max_length = 70
+        tokens = 0
+        for i, val in enumerate(formatted):
+            # always line-break for multi-line expressions
+            if val.count('\n'):
+                if i:
+                    buf.write(',')
+                buf.write('\n')
+                indented = util.indent(val, self.indent)
+                buf.write(indented)
+
+                # set length of last line
+                line_length = len(indented.split('\n')[-1])
+                tokens = 1
+            elif (tokens > 0 and line_length and
+                  len(val) + line_length > max_length):
+                # There is an expr, and adding this new one will make the line
+                # too long
+                buf.write(',\n       ') if i else buf.write('\n')
+                buf.write(val)
+                line_length = len(val) + 7
+                tokens = 1
+            else:
+                if i:
+                    buf.write(',')
+                buf.write(' ')
+                buf.write(val)
+                tokens += 1
+                line_length += len(val) + 2
+
+        if self.distinct:
+            select_key = 'SELECT DISTINCT'
+        else:
+            select_key = 'SELECT'
+
+        return '{0}{1}'.format(select_key, buf.getvalue())
+
+    def format_table_set(self):
+        if self.table_set is None:
+            return None
+
+        fragment = 'FROM '
+
+        helper = _TableSetFormatter(self, self.table_set)
+        fragment += helper.get_result()
+
+        return fragment
+
+    def format_group_by(self):
+        if not len(self.group_by):
+            # There is no aggregation, nothing to see here
+            return None
+
+        lines = []
+        if len(self.group_by) > 0:
+            clause = 'GROUP BY {0}'.format(', '.join([
+                str(x + 1) for x in self.group_by]))
+            lines.append(clause)
+
+        if len(self.having) > 0:
+            trans_exprs = []
+            for expr in self.having:
+                translated = self._translate(expr)
+                trans_exprs.append(translated)
+            lines.append('HAVING {0}'.format(' AND '.join(trans_exprs)))
+
+        return '\n'.join(lines)
+
+    def format_where(self):
+        if len(self.where) == 0:
+            return None
+
+        buf = StringIO()
+        buf.write('WHERE ')
+        fmt_preds = [self._translate(pred, permit_subquery=True)
+                     for pred in self.where]
+        conj = ' AND\n{0}'.format(' ' * 6)
+        buf.write(conj.join(fmt_preds))
+        return buf.getvalue()
+
+    def format_postamble(self):
+        buf = StringIO()
+        lines = 0
+
+        if len(self.order_by) > 0:
+            buf.write('ORDER BY ')
+            formatted = []
+            for expr in self.order_by:
+                key = expr.op()
+                translated = self._translate(key.expr)
+                if not key.ascending:
+                    translated += ' DESC'
+                formatted.append(translated)
+            buf.write(', '.join(formatted))
+            lines += 1
+
+        if self.limit is not None:
+            if lines:
+                buf.write('\n')
+            n, offset = self.limit['n'], self.limit['offset']
+            buf.write('LIMIT {0}'.format(n))
+            if offset is not None and offset != 0:
+                buf.write(' OFFSET {0}'.format(offset))
+            lines += 1
+
+        if not lines:
+            return None
+
+        return buf.getvalue()
+
+    @property
+    def translator(self):
+        return ImpalaExprTranslator
+
+
+def _join_not_none(sep, pieces):
+    pieces = [x for x in pieces if x is not None]
+    return sep.join(pieces)
+
+
+class _TableSetFormatter(comp.TableSetFormatter):
+
+    def get_result(self):
+        # Got to unravel the join stack; the nesting order could be
+        # arbitrary, so we do a depth first search and push the join tokens
+        # and predicates onto a flat list, then format them
+        op = self.expr.op()
+
+        if isinstance(op, ops.Join):
+            self._walk_join_tree(op)
+        else:
+            self.join_tables.append(self._format_table(self.expr))
+
+        # TODO: Now actually format the things
+        buf = StringIO()
+        buf.write(self.join_tables[0])
+        for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
+                                       self.join_predicates):
+            buf.write('\n')
+            buf.write(util.indent('{0} {1}'.format(jtype, table), self.indent))
+
+            if len(preds):
+                buf.write('\n')
+                fmt_preds = [self._translate(pred) for pred in preds]
+                conj = ' AND\n{0}'.format(' ' * 3)
+                fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
+                                        self.indent * 2)
+                buf.write(fmt_preds)
+
+        return buf.getvalue()
+
+    _join_names = {
+        ops.InnerJoin: 'INNER JOIN',
+        ops.LeftJoin: 'LEFT OUTER JOIN',
+        ops.RightJoin: 'RIGHT OUTER JOIN',
+        ops.OuterJoin: 'FULL OUTER JOIN',
+        ops.LeftAntiJoin: 'LEFT ANTI JOIN',
+        ops.LeftSemiJoin: 'LEFT SEMI JOIN',
+        ops.CrossJoin: 'CROSS JOIN'
+    }
+
+    def _get_join_type(self, op):
+        jname = self._join_names[type(op)]
+
+        # Impala requires this
+        if len(op.predicates) == 0:
+            jname = self._join_names[ops.CrossJoin]
+
+        return jname
+
+    def _format_table(self, expr):
+        # TODO: This could probably go in a class and be significantly nicer
+        ctx = self.context
+
+        ref_expr = expr
+        op = ref_op = expr.op()
+        if isinstance(op, ops.SelfReference):
+            ref_expr = op.table
+            ref_op = ref_expr.op()
+
+        if isinstance(ref_op, ops.PhysicalTable):
+            name = ref_op.name
+            if name is None:
+                raise com.RelationError('Table did not have a name: {0!r}'
+                                        .format(expr))
+            result = quote_identifier(name)
+            is_subquery = False
+        else:
+            # A subquery
+            if ctx.is_extracted(ref_expr):
+                # Was put elsewhere, e.g. WITH block, we just need to grab its
+                # alias
+                alias = ctx.get_ref(expr)
+
+                # HACK: self-references have to be treated more carefully here
+                if isinstance(op, ops.SelfReference):
+                    return '{0} {1}'.format(ctx.get_ref(ref_expr), alias)
+                else:
+                    return alias
+
+            subquery = ctx.get_compiled_expr(expr)
+            result = '(\n{0}\n)'.format(util.indent(subquery, self.indent))
+            is_subquery = True
+
+        if is_subquery or ctx.need_aliases():
+            result += ' {0}'.format(ctx.get_ref(expr))
+
+        return result
+
+
+class ImpalaUnion(comp.Union):
+
+    def compile(self):
+        context = self.context
+
+        if self.distinct:
+            union_keyword = 'UNION'
+        else:
+            union_keyword = 'UNION ALL'
+
+        left_set = context.get_compiled_expr(self.left)
+        right_set = context.get_compiled_expr(self.right)
+
+        query = '{0}\n{1}\n{2}'.format(left_set, union_keyword, right_set)
+        return query
+
 
 # ---------------------------------------------------------------------
 # Scalar and array expression formatting
@@ -577,7 +931,7 @@ def _category_label(translator, expr):
 def _table_array_view(translator, expr):
     ctx = translator.context
     table = expr.op().table
-    query = ctx.get_formatted_query(table)
+    query = ctx.get_compiled_expr(table)
     return '(\n{0}\n)'.format(util.indent(query, ctx.indent))
 
 
@@ -622,7 +976,7 @@ def _exists_subquery(translator, expr):
             .filter(op.predicates)
             .projection([ir.literal(1).name(ir.unnamed)]))
 
-    subquery = ctx.get_formatted_query(expr)
+    subquery = ctx.get_compiled_expr(expr)
 
     if isinstance(op, transforms.ExistsSubquery):
         key = 'EXISTS'
@@ -649,7 +1003,7 @@ def _table_column(translator, expr):
         return _table_array_view(translator, proj_expr)
 
     if ctx.need_aliases():
-        alias = ctx.get_alias(table)
+        alias = ctx.get_ref(table)
         if alias is not None:
             quoted_name = '{0}.{1}'.format(alias, quoted_name)
 
@@ -866,10 +1220,6 @@ def _value_list(translator, expr):
     return '({0})'.format(', '.join(formatted))
 
 
-def _not_implemented(translator, expr):
-    raise NotImplementedError
-
-
 _subtract_one = '{0} - 1'.format
 
 
@@ -1047,67 +1397,12 @@ _operation_registry = {
 _operation_registry.update(_binary_infix_ops)
 
 
-class ExprTranslator(object):
+class ImpalaExprTranslator(comp.ExprTranslator):
 
-    def __init__(self, expr, context=None, named=False, permit_subquery=False):
-        self.expr = expr
-        self.permit_subquery = permit_subquery
+    _registry = _operation_registry
+    _rewrites = _expr_rewrites
+    _context_class = ImpalaContext
 
-        if context is None:
-            from ibis.sql.compiler import QueryContext
-            context = QueryContext()
-        self.context = context
-
-        # For now, governing whether the result will have a name
-        self.named = named
-
-    def get_result(self):
-        """
-        Build compiled SQL expression from the bottom up and return as a string
-        """
-        translated = self.translate(self.expr)
-        if self._needs_name(self.expr):
-            # TODO: this could fail in various ways
-            name = self.expr.get_name()
-            translated = _name_expr(translated,
-                                    quote_identifier(name, force=True))
-        return translated
-
-    def _needs_name(self, expr):
-        if not self.named:
-            return False
-
-        op = expr.op()
-        if isinstance(op, ops.TableColumn):
-            # This column has been given an explicitly different name
-            if expr.get_name() != op.name:
-                return True
-            return False
-
-        if expr.get_name() is ir.unnamed:
-            return False
-
-        return True
-
-    def translate(self, expr):
-        # The operation node type the typed expression wraps
-        op = expr.op()
-
-        if type(op) in _expr_rewrites:
-            expr = _expr_rewrites[type(op)](expr)
-            op = expr.op()
-
-        # TODO: use op MRO for subclasses instead of this isinstance spaghetti
-        if isinstance(op, ir.Parameter):
-            return self._trans_param(expr)
-        elif isinstance(op, ops.TableNode):
-            # HACK/TODO: revisit for more complex cases
-            return '*'
-        elif type(op) in _operation_registry:
-            formatter = _operation_registry[type(op)]
-            return formatter(self, expr)
-        else:
-            raise com.TranslationError('No translator rule for {0}'.format(op))
-
-    def _trans_param(self, expr):
-        raise NotImplementedError
+    def name(self, translated, name, force=True):
+        return _name_expr(translated,
+                          quote_identifier(name, force=force))

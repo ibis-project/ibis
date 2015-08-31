@@ -15,11 +15,22 @@
 from pytest import skip
 
 
+groups = ['hdfs', 'impala', 'madlib', 'sqlite']
+
+
 def pytest_addoption(parser):
-    parser.addoption('--impala', action='store_true', default=False,
-                     help='Enable the impala (end-to-end) tests')
-    parser.addoption('--madlib', action='store_true', default=False,
-                     help='Enable the madlib (end-to-end) tests')
+    for group in groups:
+        parser.addoption('--{0}'.format(group), action='store_true',
+                         default=False,
+                         help=('Enable the {0} (end-to-end) tests'
+                               .format(group)))
+
+    for group in groups:
+        parser.addoption('--only-{0}'.format(group), action='store_true',
+                         default=False,
+                         help=('Enable only the {0} (end-to-end) tests'
+                               .format(group)))
+
     parser.addoption('--skip-udf', action='store_true', default=False,
                      help='Skip tests marked udf')
     parser.addoption('--skip-superuser', action='store_true', default=False,
@@ -27,17 +38,28 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    # the test item is marked impala
-    if getattr(item.obj, 'impala', None):
-        # but --impala option not set
-        if not item.config.getoption('--impala'):
-            skip('--impala NOT enabled')
+    only_set = False
 
-    # the test item is marked madlib
-    if getattr(item.obj, 'madlib', None):
-        # but --madlib option not set
-        if not item.config.getoption('--madlib'):
-            skip('--madlib NOT enabled')
+    for group in groups:
+        only_flag = '--only-{0}'.format(group)
+        flag = '--{0}'.format(group)
+
+        if item.config.getoption(only_flag):
+            only_set = True
+        elif getattr(item.obj, group, None):
+            if not item.config.getoption(flag):
+                skip('{0} NOT enabled'.format(flag))
+
+    if only_set:
+        skip_item = True
+        for group in groups:
+            only_flag = '--only-{0}'.format(group)
+            if (getattr(item.obj, group, False) and
+                    item.config.getoption(only_flag)):
+                skip_item = False
+
+        if skip_item:
+            skip('Only running some groups with only flags')
 
     if getattr(item.obj, 'udf', None):
         if item.config.getoption('--skip-udf'):

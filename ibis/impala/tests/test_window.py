@@ -16,7 +16,7 @@
 from ibis import window
 import ibis
 
-from ibis.sql.compiler import to_sql
+from ibis.impala.compiler import to_sql
 from ibis.expr.tests.mocks import BasicTestCase
 from ibis.compat import unittest
 import ibis.common as com
