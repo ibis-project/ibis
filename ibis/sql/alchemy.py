@@ -337,7 +337,32 @@ class AlchemyTable(ops.DatabaseTable):
         ops.HasSchema.__init__(self, schema, name=name)
 
 
+class AlchemyExprTranslator(ddl.ExprTranslator):
+
+    _registry = _operation_registry
+    _rewrites = _expr_rewrites
+
+    def name(self, translated, name, force=True):
+        return translated.label(name)
+
+    @property
+    def _context_class(self):
+        return AlchemyContext
+
+
+class AlchemyDialect(object):
+
+    translator = AlchemyExprTranslator
+
+
 class AlchemyClient(SQLClient):
+
+    dialect = AlchemyDialect
+
+    def __init__(self, uri):
+        self.uri = uri
+        self.con = sa.create_engine(self.uri)
+        self.meta = sa.MetaData(bind=self.con)
 
     def create_table(self, name, expr=None, schema=None, database=None):
         pass
@@ -362,6 +387,15 @@ class AlchemyClient(SQLClient):
             names = [x for x in names if like in x]
         return names
 
+    def _execute(self, query, results=True):
+        return AlchemyProxy(self.con.execute(query))
+
+    def _build_ast(self, expr):
+        return build_ast(expr, dialect=self.dialect)
+
+    def _get_sqla_table(self, name):
+        return sa.Table(name, self.meta, autoload=True)
+
     def _sqla_table_to_expr(self, table):
         node = AlchemyTable(table, self)
         return self._table_expr_klass(node)
@@ -374,24 +408,6 @@ class AlchemyClient(SQLClient):
         colnames = proxy.keys()
         return pd.DataFrame.from_records(rows, columns=colnames,
                                          coerce_float=True)
-
-
-class AlchemyExprTranslator(ddl.ExprTranslator):
-
-    _registry = _operation_registry
-    _rewrites = _expr_rewrites
-
-    def name(self, translated, name, force=True):
-        return translated.label(name)
-
-    @property
-    def _context_class(self):
-        return AlchemyContext
-
-
-class AlchemyDialect(object):
-
-    translator = AlchemyExprTranslator
 
 
 class AlchemySelect(ddl.Select):

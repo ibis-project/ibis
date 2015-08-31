@@ -26,21 +26,16 @@ class SQLiteTable(alch.AlchemyTable):
 
 class SQLiteDatabase(alch.AlchemyClient):
 
+    dialect = SQLiteDialect
+
     def __init__(self, path):
         self.name = path
         uri = 'sqlite:///{0}'.format(path)
-        self.con = sa.create_engine(uri)
-        self.meta = sa.MetaData(bind=self.con)
+        alch.AlchemyClient.__init__(self, uri)
 
     @property
     def client(self):
         return self
-
-    def _build_ast(self, expr):
-        return alch.build_ast(expr, dialect=SQLiteDialect)
-
-    def _execute(self, query, results=True):
-        return alch.AlchemyProxy(self.con.execute(query))
 
     def table(self, name):
         """
@@ -59,15 +54,12 @@ class SQLiteDatabase(alch.AlchemyClient):
         node = SQLiteTable(alch_table, self)
         return self._table_expr_klass(node)
 
-    def _get_sqla_table(self, name):
-        return sa.Table(name, self.meta, autoload=True)
-
-    @property
-    def _table_expr_klass(self):
-        return ir.TableExpr
-
     def drop_table(self):
         pass
 
     def create_table(self, name, expr=None):
         pass
+
+    @property
+    def _table_expr_klass(self):
+        return ir.TableExpr
