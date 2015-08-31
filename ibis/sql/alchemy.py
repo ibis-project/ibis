@@ -339,6 +339,29 @@ class AlchemyTable(ops.DatabaseTable):
 
 class AlchemyClient(SQLClient):
 
+    def create_table(self, name, expr=None, schema=None, database=None):
+        pass
+
+    def list_tables(self, like=None, database=None):
+        """
+        List tables in the current (or indicated) database.
+
+        Parameters
+        ----------
+        like : string, default None
+          Checks for this string contained in name
+        database : string, default None
+          If not passed, uses the current/default database
+
+        Returns
+        -------
+        tables : list of strings
+        """
+        names = self.con.table_names(schema=database)
+        if like is not None:
+            names = [x for x in names if like in x]
+        return names
+
     def _sqla_table_to_expr(self, table):
         node = AlchemyTable(table, self)
         return self._table_expr_klass(node)

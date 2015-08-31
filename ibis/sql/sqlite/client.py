@@ -66,9 +66,6 @@ class SQLiteDatabase(alch.AlchemyClient):
     def _table_expr_klass(self):
         return ir.TableExpr
 
-    def list_tables(self):
-        pass
-
     def drop_table(self):
         pass
 

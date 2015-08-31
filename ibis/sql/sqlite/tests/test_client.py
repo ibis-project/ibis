@@ -62,3 +62,7 @@ class TestSQLiteClient(unittest.TestCase, SQLiteTests):
         d = self.alltypes.double_col.sum()
         v = d.execute()
         assert isinstance(v, float)
+
+    def test_list_tables(self):
+        assert len(self.db.list_tables()) > 0
+        assert len(self.db.list_tables(like='functional')) == 1
