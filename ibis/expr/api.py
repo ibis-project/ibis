@@ -413,6 +413,17 @@ cast_expr : ValueExpr
 """.format(_data_type_docs)
 
 
+def typeof(arg):
+    """
+    Return the data type of the argument according to the current backend
+
+    Returns
+    -------
+    typeof_arg : string
+    """
+    return _ops.TypeOf(arg).to_expr()
+
+
 def hash(arg, how='fnv'):
     """
     Compute an integer hash value for the indicated value expression.
@@ -653,6 +664,7 @@ rdiv = _rbinop_expr('__rdiv__', _ops.Divide)
 _generic_value_methods = dict(
     hash=hash,
     cast=cast,
+    typeof=typeof,
     fillna=fillna,
     nullif=nullif,
     between=between,
@@ -1406,6 +1418,28 @@ def regex_replace(arg, pattern, replacement):
     return _ops.RegexReplace(arg, pattern, replacement).to_expr()
 
 
+def _string_replace(arg, pattern, replacement):
+    """
+    Replaces each exactly occurrence of pattern with given replacement
+    string. Like Python built-in str.replace
+
+    Parameters
+    ----------
+    pattern : string
+    replacement : string
+
+    Examples
+    --------
+    table.strings.replace('aaa', 'foo')
+    'aaabbbaaa' becomes 'foobbbfoo'
+
+    Returns
+    -------
+    replaced : string
+    """
+    return _ops.StringReplace(arg, pattern, replacement).to_expr()
+
+
 def parse_url(arg, extract, key=None):
     """
     Returns the portion of a URL corresponding to a part specified
@@ -1467,6 +1501,7 @@ _string_value_methods = dict(
     contains=_string_contains,
     like=_string_like,
     rlike=re_search,
+    replace=_string_replace,
     re_search=re_search,
     re_extract=regex_extract,
     re_replace=regex_replace,
@@ -1514,7 +1549,25 @@ def _timestamp_truncate(arg, unit):
     return _ops.Truncate(arg, unit).to_expr()
 
 
+def _timestamp_strftime(arg, format_str):
+    """
+    Format timestamp according to the passed format string. Format string may
+    depend on backend, but we try to conform to ANSI strftime (e.g. Python
+    built-in datetime.strftime)
+
+    Parameters
+    ----------
+    format_str : string
+
+    Returns
+    -------
+    formatted : string
+    """
+    return _ops.Strftime(arg, format_str).to_expr()
+
+
 _timestamp_value_methods = dict(
+    strftime=_timestamp_strftime,
     year=_extract_field('year', _ops.ExtractYear),
     month=_extract_field('month', _ops.ExtractMonth),
     day=_extract_field('day', _ops.ExtractDay),

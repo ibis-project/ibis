@@ -27,8 +27,8 @@ class SQLiteTests(object):
     def setUpClass(cls):
         cls.env = SQLiteTestEnv()
         cls.dialect = sqlite_dialect()
-        cls.db = api.connect(cls.env.db_path)
-        cls.alltypes = cls.db.table('functional_alltypes')
+        cls.con = api.connect(cls.env.db_path)
+        cls.alltypes = cls.con.table('functional_alltypes')
 
     def _check_expr_cases(self, cases, context=None, named=False):
         for expr, expected in cases:
@@ -45,6 +45,11 @@ class SQLiteTests(object):
 
     def _to_sqla(self, table):
         return table.op().sqla_table
+
+    def _check_e2e_cases(self, cases):
+        for expr, expected in cases:
+            result = self.con.execute(expr)
+            assert result == expected
 
 
 class SQLiteTestEnv(object):

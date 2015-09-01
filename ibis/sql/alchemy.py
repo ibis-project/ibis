@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import operator
+import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
@@ -98,25 +99,36 @@ def table_from_schema(name, meta, schema):
     return sa.Table(name, meta, *sqla_cols)
 
 
-def _fixed_arity_call(sa_func, arity):
-    def formatter(translator, expr):
+def fixed_arity(sa_func, arity):
+    if isinstance(sa_func, six.string_types):
+        sa_func = getattr(sa.func, sa_func)
+
+    def formatter(t, expr):
         if arity != len(expr.op().args):
             raise com.IbisError('incorrect number of args')
 
-        return _varargs_call(sa_func, translator, expr)
+        return _varargs_call(sa_func, t, expr)
 
     return formatter
 
 
-def _varargs_call(sa_func, translator, expr):
+def varargs(sa_func):
+    def formatter(t, expr):
+        op = expr.op()
+        trans_args = [t.translate(arg) for arg in op.args]
+        return sa_func(*trans_args)
+    return formatter
+
+
+def _varargs_call(sa_func, t, expr):
     op = expr.op()
-    trans_args = [translator.translate(arg) for arg in op.args]
+    trans_args = [t.translate(arg) for arg in op.args]
     return sa_func(*trans_args)
 
 
-def _table_column(translator, expr):
+def _table_column(t, expr):
     op = expr.op()
-    ctx = translator.context
+    ctx = t.context
     table = op.table
 
     sa_table = _get_sqla_table(ctx, table)
@@ -124,7 +136,7 @@ def _table_column(translator, expr):
 
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery
-    if translator.permit_subquery and ctx.is_foreign_expr(table):
+    if t.permit_subquery and ctx.is_foreign_expr(table):
         return sa.select([out_expr])
 
     return out_expr
@@ -143,15 +155,15 @@ def _get_sqla_table(ctx, table):
     return sa_table
 
 
-def _table_array_view(translator, expr):
-    ctx = translator.context
+def _table_array_view(t, expr):
+    ctx = t.context
     table = ctx.get_compiled_expr(expr.op().table)
     return table
 
 
-def _exists_subquery(translator, expr):
+def _exists_subquery(t, expr):
     op = expr.op()
-    ctx = translator.context
+    ctx = t.context
 
     filtered = (op.foreign_table.filter(op.predicates)
                 .projection([ir.literal(1).name(ir.unnamed)]))
@@ -165,11 +177,11 @@ def _exists_subquery(translator, expr):
     return clause
 
 
-def _cast(translator, expr):
+def _cast(t, expr):
     op = expr.op()
     arg, target_type = op.args
-    sa_arg = translator.translate(arg)
-    sa_type = translator.get_sqla_type(target_type)
+    sa_arg = t.translate(arg)
+    sa_type = t.get_sqla_type(target_type)
 
     if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
         return sa_arg
@@ -177,36 +189,90 @@ def _cast(translator, expr):
         return sa.cast(sa_arg, sa_type)
 
 
-def _contains(translator, expr):
+def _contains(t, expr):
     op = expr.op()
 
-    left, right = [translator.translate(arg) for arg in op.args]
+    left, right = [t.translate(arg) for arg in op.args]
     return left.in_(right)
 
 
 def _reduction(sa_func):
-    def formatter(translator, expr):
+    def formatter(t, expr):
         op = expr.op()
 
         # HACK: support trailing arguments
         arg, where = op.args[:2]
 
-        return _reduction_format(translator, sa_func, arg, where)
+        return _reduction_format(t, sa_func, arg, where)
     return formatter
 
 
-def _reduction_format(translator, sa_func, arg, where):
+def _reduction_format(t, sa_func, arg, where):
     if where is not None:
         case = where.ifelse(arg, ibis.NA)
-        arg = translator.translate(case)
+        arg = t.translate(case)
     else:
-        arg = translator.translate(arg)
+        arg = t.translate(arg)
 
     return sa_func(arg)
 
 
-def _literal(translator, expr):
+def _literal(t, expr):
     return sa.literal(expr.op().value)
+
+
+def _value_list(t, expr):
+    return [t.translate(x) for x in expr.op().values]
+
+
+def _is_null(t, expr):
+    arg = t.translate(expr.op().args[0])
+    return arg.is_(sa.null())
+
+
+def _not_null(t, expr):
+    arg = t.translate(expr.op().args[0])
+    return arg.isnot(sa.null())
+
+
+def _round(t, expr):
+    op = expr.op()
+    arg, digits = op.args
+    sa_arg = t.translate(arg)
+
+    f = sa.func.round
+
+    if digits is not None:
+        sa_digits = t.translate(digits)
+        return f(sa_arg, sa_digits)
+    else:
+        return f(sa_arg)
+
+
+def _simple_case(t, expr):
+    op = expr.op()
+
+    cases = [op.base == case for case in op.cases]
+    return _translate_case(t, cases, op.results, op.default)
+
+
+def _searched_case(t, expr):
+    op = expr.op()
+    return _translate_case(t, op.cases, op.results, op.default)
+
+
+def _translate_case(t, cases, results, default):
+    case_args = [t.translate(arg) for arg in cases]
+    result_args = [t.translate(arg) for arg in results]
+
+    whens = zip(case_args, result_args)
+    default = t.translate(default)
+
+    return sa.case(whens, else_=default)
+
+
+def unary(sa_func):
+    return fixed_arity(sa_func, 1)
 
 
 _expr_rewrites = {
@@ -214,18 +280,43 @@ _expr_rewrites = {
 }
 
 _operation_registry = {
-    ops.And: _fixed_arity_call(sql.and_, 2),
-    ops.Or: _fixed_arity_call(sql.or_, 2),
+    ops.And: fixed_arity(sql.and_, 2),
+    ops.Or: fixed_arity(sql.or_, 2),
+
+    ops.Abs: unary(sa.func.abs),
 
     ops.Cast: _cast,
+
+    ops.Coalesce: varargs(sa.func.coalesce),
+
+    ops.NullIf: fixed_arity(sa.func.nullif, 2),
 
     ops.Contains: _contains,
 
     ops.Count: _reduction(sa.func.count),
     ops.Sum: _reduction(sa.func.sum),
     ops.Mean: _reduction(sa.func.avg),
+    ops.Min: _reduction(sa.func.min),
+    ops.Max: _reduction(sa.func.max),
+
+    ops.GroupConcat: fixed_arity(sa.func.group_concat, 2),
+
+    ops.Between: fixed_arity(sa.between, 3),
+
+    ops.IsNull: _is_null,
+    ops.NotNull: _not_null,
+    ops.Negate: unary(sa.not_),
+
+    ops.Round: _round,
+
+    ops.TypeOf: unary(sa.func.typeof),
 
     ir.Literal: _literal,
+    ir.ValueList: _value_list,
+    ir.NullLiteral: lambda *args: sa.null(),
+
+    ops.SimpleCase: _simple_case,
+    ops.SearchedCase: _searched_case,
 
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
@@ -259,7 +350,7 @@ _binary_ops = {
 }
 
 for _k, _v in _binary_ops.items():
-    _operation_registry[_k] = _fixed_arity_call(_v, 2)
+    _operation_registry[_k] = fixed_arity(_v, 2)
 
 
 class AlchemySelectBuilder(comp.SelectBuilder):
@@ -316,8 +407,9 @@ class AlchemyQueryBuilder(comp.QueryBuilder):
     def _make_context(self):
         return AlchemyContext(dialect=self.dialect)
 
-    def _make_union(self):
-        raise NotImplementedError
+    @property
+    def _union_class(self):
+        return AlchemyUnion
 
 
 def to_sqlalchemy(expr, context=None, exists=False, dialect=None):
@@ -638,15 +730,14 @@ class AlchemyUnion(Union):
         context = self.context
 
         if self.distinct:
-            union_keyword = 'UNION'
+            sa_func = sa.union
         else:
-            union_keyword = 'UNION ALL'
+            sa_func = sa.union_all
 
         left_set = context.get_compiled_expr(self.left)
         right_set = context.get_compiled_expr(self.right)
 
-        query = '{0}\n{1}\n{2}'.format(left_set, union_keyword, right_set)
-        return query
+        return sa_func(left_set, right_set)
 
 
 class AlchemyProxy(object):

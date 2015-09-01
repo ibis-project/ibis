@@ -148,6 +148,13 @@ class Cast(ValueOp):
         return rules.shape_like(self.args[0], self.args[1])
 
 
+class TypeOf(ValueOp):
+
+    input_type = [value]
+    output_type = rules.shape_like_arg(0, 'string')
+
+
+
 class Negate(UnaryOp):
 
     input_type = [number]
@@ -508,8 +515,13 @@ class RegexExtract(ValueOp):
 
 class RegexReplace(ValueOp):
 
-    input_type = [string, string(name='pattern'),
-                  string(name='replacement')]
+    input_type = [string, string(name='pattern'), string(name='replacement')]
+    output_type = rules.shape_like_arg(0, 'string')
+
+
+class StringReplace(ValueOp):
+
+    input_type = [string, string(name='pattern'), string(name='replacement')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
@@ -2072,6 +2084,12 @@ class Truncate(ValueOp):
         rules.string_options(_truncate_units, name='unit',
                              validator=_truncate_unit_validate)]
     output_type = rules.shape_like_arg(0, 'timestamp')
+
+
+class Strftime(ValueOp):
+
+    input_type = [rules.timestamp, rules.string(name='format_str')]
+    output_type = rules.shape_like_arg(0, 'string')
 
 
 class ExtractTimestampField(TimestampUnaryOp):
