@@ -64,6 +64,18 @@ def _unary_op(sa_func):
     return alch._fixed_arity_call(sa_func, 1)
 
 
+def _infix_op(infix_sym):
+    def formatter(translator, expr):
+        op = expr.op()
+        left, right = op.args
+
+        left_arg = translator.translate(left)
+        right_arg = translator.translate(right)
+        return left_arg.op(infix_sym)(right_arg)
+
+    return formatter
+
+
 _operation_registry.update({
     ops.Substring: _substr,
     ops.StrRight: _string_right,
@@ -78,6 +90,8 @@ _operation_registry.update({
     ops.Strip: _unary_op('trim'),
     ops.LStrip: _unary_op('ltrim'),
     ops.RStrip: _unary_op('rtrim'),
+
+    ops.StringSQLLike: _infix_op('LIKE'),
 })
 
 

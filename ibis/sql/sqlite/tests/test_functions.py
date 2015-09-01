@@ -70,8 +70,15 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             (L('FOO').lower(), 'foo'),
 
             (L('foobar').find('bar'), 3),
-            (L('foobar').find('baz'), -1)
+            (L('foobar').find('baz'), -1),
 
+            (L('foobar').like('%bar'), True),
+            (L('foobar').like('foo%'), True),
+            (L('foobar').like('%baz%'), False),
+
+            (L('foobar').contains('bar'), True),
+            (L('foobar').contains('foo'), True),
+            (L('foobar').contains('baz'), False),
         ]
         self._check_e2e_cases(cases)
 
