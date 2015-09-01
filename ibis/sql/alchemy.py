@@ -99,7 +99,7 @@ def table_from_schema(name, meta, schema):
     return sa.Table(name, meta, *sqla_cols)
 
 
-def _fixed_arity_call(sa_func, arity):
+def fixed_arity(sa_func, arity):
     if isinstance(sa_func, six.string_types):
         sa_func = getattr(sa.func, sa_func)
 
@@ -109,6 +109,14 @@ def _fixed_arity_call(sa_func, arity):
 
         return _varargs_call(sa_func, t, expr)
 
+    return formatter
+
+
+def varargs(sa_func):
+    def formatter(t, expr):
+        op = expr.op()
+        trans_args = [t.translate(arg) for arg in op.args]
+        return sa_func(*trans_args)
     return formatter
 
 
@@ -249,15 +257,23 @@ def _translate_case(t, cases, results, default):
     return sa.case(whens, else_=default)
 
 
+def unary(sa_func):
+    return fixed_arity(sa_func, 1)
+
+
 _expr_rewrites = {
 
 }
 
 _operation_registry = {
-    ops.And: _fixed_arity_call(sql.and_, 2),
-    ops.Or: _fixed_arity_call(sql.or_, 2),
+    ops.And: fixed_arity(sql.and_, 2),
+    ops.Or: fixed_arity(sql.or_, 2),
+
+    ops.Abs: unary(sa.func.abs),
 
     ops.Cast: _cast,
+
+    ops.Coalesce: varargs(sa.func.coalesce),
 
     ops.Contains: _contains,
 
@@ -267,13 +283,13 @@ _operation_registry = {
     ops.Min: _reduction(sa.func.min),
     ops.Max: _reduction(sa.func.max),
 
-    ops.GroupConcat: _fixed_arity_call(sa.func.group_concat, 2),
+    ops.GroupConcat: fixed_arity(sa.func.group_concat, 2),
 
-    ops.Between: _fixed_arity_call(sa.between, 3),
+    ops.Between: fixed_arity(sa.between, 3),
 
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,
-    ops.Negate: _fixed_arity_call(sa.not_, 1),
+    ops.Negate: fixed_arity(sa.not_, 1),
 
     ir.Literal: _literal,
     ir.ValueList: _value_list,
@@ -314,7 +330,7 @@ _binary_ops = {
 }
 
 for _k, _v in _binary_ops.items():
-    _operation_registry[_k] = _fixed_arity_call(_v, 2)
+    _operation_registry[_k] = fixed_arity(_v, 2)
 
 
 class AlchemySelectBuilder(comp.SelectBuilder):

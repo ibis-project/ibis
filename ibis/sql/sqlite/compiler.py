@@ -14,6 +14,7 @@
 
 import sqlalchemy as sa
 
+from ibis.sql.alchemy import unary, varargs
 import ibis.sql.alchemy as alch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -60,10 +61,6 @@ def _string_find(translator, expr):
     return f(sa_arg, sa_substr) - 1
 
 
-def _unary_op(sa_func):
-    return alch._fixed_arity_call(sa_func, 1)
-
-
 def _infix_op(infix_sym):
     def formatter(translator, expr):
         op = expr.op()
@@ -82,14 +79,17 @@ _operation_registry.update({
 
     ops.StringFind: _string_find,
 
-    ops.StringLength: _unary_op('length'),
+    ops.StringLength: unary('length'),
 
-    ops.Lowercase: _unary_op('lower'),
-    ops.Uppercase: _unary_op('upper'),
+    ops.Least: varargs(sa.func.min),
+    ops.Greatest: varargs(sa.func.max),
 
-    ops.Strip: _unary_op('trim'),
-    ops.LStrip: _unary_op('ltrim'),
-    ops.RStrip: _unary_op('rtrim'),
+    ops.Lowercase: unary('lower'),
+    ops.Uppercase: unary('upper'),
+
+    ops.Strip: unary('trim'),
+    ops.LStrip: unary('ltrim'),
+    ops.RStrip: unary('rtrim'),
 
     ops.StringSQLLike: _infix_op('LIKE'),
 })

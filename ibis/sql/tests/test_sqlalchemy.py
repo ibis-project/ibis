@@ -180,6 +180,26 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         self._check_expr_cases(cases)
 
+    def test_coalesce(self):
+        sat = self.sa_alltypes
+        sd = sat.c.double_col
+        sf = sat.c.float_col
+
+        d = self.alltypes.double_col
+        f = self.alltypes.float_col
+        null = sa.null()
+
+        v1 = ibis.NA
+        v2 = (d > 30).ifelse(d, ibis.NA)
+        v3 = f
+
+        cases = [
+            (ibis.coalesce(v2, v1, v3),
+             sa.func.coalesce(sa.case([(sd > L(30), sd)], else_=null),
+                              null, sf))
+        ]
+        self._check_expr_cases(cases)
+
     def test_named_expr(self):
         sat = self.sa_alltypes
         d = self.alltypes.double_col
@@ -212,6 +232,12 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         for ibis_joined, joined_sqla in joins:
             expected = sa.select([rt, nt]).select_from(joined_sqla)
             self._compare_sqla(ibis_joined, expected)
+
+    def test_simple_case(self):
+        pass
+
+    def test_searched_case(self):
+        pass
 
     def test_where_simple_comparisons(self):
         expr = self._case_where_simple_comparisons()

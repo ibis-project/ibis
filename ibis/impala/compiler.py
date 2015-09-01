@@ -1058,7 +1058,7 @@ def _from_unixtime(translator, expr):
     return 'from_unixtime({0}, "yyyy-MM-dd HH:mm:ss")'.format(arg)
 
 
-def _varargs(func_name):
+def varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
         return _format_call(translator, func_name, *op.args)
@@ -1354,9 +1354,9 @@ _operation_registry = {
 
     ops.Cast: _cast,
 
-    ops.Coalesce: _varargs('coalesce'),
-    ops.Greatest: _varargs('greatest'),
-    ops.Least: _varargs('least'),
+    ops.Coalesce: varargs('coalesce'),
+    ops.Greatest: varargs('greatest'),
+    ops.Least: varargs('least'),
 
     ops.Where: _fixed_arity_call('if', 3),
 

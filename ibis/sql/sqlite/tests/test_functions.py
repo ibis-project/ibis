@@ -15,6 +15,7 @@
 from .common import SQLiteTests
 from ibis.compat import unittest
 from ibis import literal as L
+import ibis
 
 import sqlalchemy as sa
 
@@ -81,6 +82,29 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_math_functions(self):
+        cases = [
+            (L(-5).abs(), 5),
+            (L(5).abs(), 5),
+            (ibis.least(L(5), L(10), L(1)), 1),
+            (ibis.greatest(L(5), L(10), L(1)), 10),
+        ]
+        self._check_e2e_cases(cases)
+
+    def test_coalesce(self):
+        pass
+
+    def test_misc_builtins_work(self):
+        t = self.alltypes
+
+        d = t.double_col
+
+        exprs = [
+            (d > 20).ifelse(10, -20),
+            (d > 20).ifelse(10, -20).abs(),
+        ]
+        self._execute_projection(t, exprs)
+
     def test_aggregations_execute(self):
         table = self.alltypes.limit(100)
 
@@ -111,3 +135,10 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
         agged_table = table.aggregate(agg_exprs)
         agged_table.execute()
+
+    def _execute_projection(self, table, exprs):
+        agg_exprs = [expr.name('e%d' % i)
+                     for i, expr in enumerate(exprs)]
+
+        proj = table.projection(agg_exprs)
+        proj.execute()
