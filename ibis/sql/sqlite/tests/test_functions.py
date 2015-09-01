@@ -77,6 +77,7 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             (v.hour(), 14),
             (v.minute(), 48),
             (v.second(), 5),
+            (v.millisecond(), 359),
         ]
         self._check_e2e_cases(cases)
 

@@ -113,6 +113,13 @@ def _strftime_int(fmt):
     return translator
 
 
+def _millisecond(t, expr):
+    arg, = expr.op().args
+    sa_arg = t.translate(arg)
+    fractional_second = sa.func.strftime('%f', sa_arg)
+    return (fractional_second * 1000) % 1000
+
+
 _operation_registry.update({
     ops.Cast: _cast,
 
@@ -145,6 +152,7 @@ _operation_registry.update({
     ops.ExtractHour: _strftime_int('%H'),
     ops.ExtractMinute: _strftime_int('%M'),
     ops.ExtractSecond: _strftime_int('%S'),
+    ops.ExtractMillisecond: _millisecond,
 })
 
 
