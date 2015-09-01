@@ -1069,7 +1069,6 @@ def _substring(translator, expr):
     op = expr.op()
     arg, start, length = op.args
     arg_formatted = translator.translate(arg)
-
     start_formatted = translator.translate(start)
 
     # Impala is 1-indexed

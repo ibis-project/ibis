@@ -51,6 +51,26 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_string_functions(self):
+        cases = [
+            (L('foo_bar').length(), 7),
+
+            (L('foo_bar').left(3), 'foo'),
+            (L('foo_bar').right(3), 'bar'),
+
+            (L('foo_bar').substr(0, 3), 'foo'),
+            (L('foo_bar').substr(4, 3), 'bar'),
+            (L('foo_bar').substr(1), 'oo_bar'),
+
+            (L('   foo   ').lstrip(), 'foo   '),
+            (L('   foo   ').rstrip(), '   foo'),
+            (L('   foo   ').strip(), 'foo'),
+
+            (L('foo').upper(), 'FOO'),
+            (L('FOO').lower(), 'foo'),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_aggregations_execute(self):
         table = self.alltypes.limit(100)
 

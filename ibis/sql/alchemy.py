@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import operator
+import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
@@ -99,6 +100,9 @@ def table_from_schema(name, meta, schema):
 
 
 def _fixed_arity_call(sa_func, arity):
+    if isinstance(sa_func, six.string_types):
+        sa_func = getattr(sa.func, sa_func)
+
     def formatter(translator, expr):
         if arity != len(expr.op().args):
             raise com.IbisError('incorrect number of args')
