@@ -259,6 +259,8 @@ _operation_registry = {
 
     ops.GroupConcat: _fixed_arity_call(sa.func.group_concat, 2),
 
+    ops.Negate: _fixed_arity_call(sa.not_, 1),
+
     ir.Literal: _literal,
     ir.ValueList: _value_list,
     ir.NullLiteral: lambda *args: sa.null(),

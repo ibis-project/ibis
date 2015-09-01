@@ -15,7 +15,6 @@
 from .common import SQLiteTests
 from ibis.compat import unittest
 from ibis import literal as L
-import ibis
 
 import sqlalchemy as sa
 

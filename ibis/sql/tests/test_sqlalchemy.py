@@ -149,6 +149,17 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         self._check_expr_cases(cases)
 
+    def test_negate(self):
+        sat = self.sa_alltypes
+        sd = sat.c.double_col
+
+        d = self.alltypes.double_col
+        cases = [
+            (-(d > 0), sql.not_(sd > L(0)))
+        ]
+
+        self._check_expr_cases(cases)
+
     def test_named_expr(self):
         sat = self.sa_alltypes
         d = self.alltypes.double_col
