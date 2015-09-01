@@ -148,6 +148,13 @@ class Cast(ValueOp):
         return rules.shape_like(self.args[0], self.args[1])
 
 
+class TypeOf(ValueOp):
+
+    input_type = [value]
+    output_type = rules.shape_like_arg(0, 'string')
+
+
+
 class Negate(UnaryOp):
 
     input_type = [number]

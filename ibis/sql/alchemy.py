@@ -291,7 +291,9 @@ _operation_registry = {
 
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,
-    ops.Negate: fixed_arity(sa.not_, 1),
+    ops.Negate: unary(sa.not_),
+
+    ops.TypeOf: unary(sa.func.typeof),
 
     ir.Literal: _literal,
     ir.ValueList: _value_list,

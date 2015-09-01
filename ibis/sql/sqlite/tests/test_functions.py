@@ -53,6 +53,15 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_typeof(self):
+        cases = [
+            (L('foo_bar').typeof(), 'text'),
+            (L(5).typeof(), 'integer'),
+            (ibis.NA.typeof(), 'null'),
+            (L(1.2345).typeof(), 'real'),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_string_functions(self):
         cases = [
             (L('foo_bar').length(), 7),

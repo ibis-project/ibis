@@ -413,6 +413,17 @@ cast_expr : ValueExpr
 """.format(_data_type_docs)
 
 
+def typeof(arg):
+    """
+    Return the data type of the argument according to the current backend
+
+    Returns
+    -------
+    typeof_arg : string
+    """
+    return _ops.TypeOf(arg).to_expr()
+
+
 def hash(arg, how='fnv'):
     """
     Compute an integer hash value for the indicated value expression.
@@ -653,6 +664,7 @@ rdiv = _rbinop_expr('__rdiv__', _ops.Divide)
 _generic_value_methods = dict(
     hash=hash,
     cast=cast,
+    typeof=typeof,
     fillna=fillna,
     nullif=nullif,
     between=between,
