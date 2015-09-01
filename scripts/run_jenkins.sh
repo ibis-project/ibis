@@ -103,12 +103,12 @@ scripts/test_data_admin.py load --data --no-udf
 
 if [ -z "$WORKSPACE" ]; then
     # on kerberized cluster, skip UDF work
-    py.test --skip-udf --skip-superuser --impala --hdfs ibis
+    py.test --skip-udf --skip-superuser --sqlite --impala --hdfs ibis
 else
     # build and load the UDFs
     scripts/test_data_admin.py load --no-data --udf --overwrite
     # run the full test suite
-    py.test --impala --hdfs ibis
+    py.test --impala --hdfs ibis --sqlite
 fi
 
 # cleanup temporary data (but not testing data)
