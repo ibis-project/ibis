@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest  # noqa
+
 from .common import SQLiteTests
 from ibis.compat import unittest
 from ibis import literal as L
@@ -104,6 +106,24 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             (d > 20).ifelse(10, -20).abs(),
         ]
         self._execute_projection(t, exprs)
+
+    def test_union(self):
+        pytest.skip('union not working yet')
+
+        t = self.alltypes
+
+        expr = (t.group_by('string_col')
+                .aggregate(t.double_col.sum().name('foo'))
+                .sort_by('string_col'))
+
+        t1 = expr.limit(4)
+        t2 = expr.limit(4, offset=4)
+        t3 = expr.limit(8)
+
+        result = t1.union(t2).execute()
+        expected = t3.execute()
+
+        assert (result.string_col == expected.string_col).all()
 
     def test_aggregations_execute(self):
         table = self.alltypes.limit(100)

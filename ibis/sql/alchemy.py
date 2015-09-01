@@ -387,8 +387,9 @@ class AlchemyQueryBuilder(comp.QueryBuilder):
     def _make_context(self):
         return AlchemyContext(dialect=self.dialect)
 
-    def _make_union(self):
-        raise NotImplementedError
+    @property
+    def _union_class(self):
+        return AlchemyUnion
 
 
 def to_sqlalchemy(expr, context=None, exists=False, dialect=None):
@@ -709,15 +710,14 @@ class AlchemyUnion(Union):
         context = self.context
 
         if self.distinct:
-            union_keyword = 'UNION'
+            sa_func = sa.union
         else:
-            union_keyword = 'UNION ALL'
+            sa_func = sa.union_all
 
         left_set = context.get_compiled_expr(self.left)
         right_set = context.get_compiled_expr(self.right)
 
-        query = '{0}\n{1}\n{2}'.format(left_set, union_keyword, right_set)
-        return query
+        return sa_func(left_set, right_set)
 
 
 class AlchemyProxy(object):
