@@ -17,6 +17,7 @@ import pytest  # noqa
 from .common import SQLiteTests
 from ibis.compat import unittest
 from ibis import literal as L
+import ibis.expr.types as ir
 import ibis
 
 import sqlalchemy as sa
@@ -41,6 +42,30 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
     def test_decimal_cast(self):
         pass
+
+    def test_timestamp_cast_noop(self):
+        # SQLite does not have a physical date/time/timestamp type, so
+        # unfortunately cast to typestamp must be a no-op, and we have to trust
+        # that the user's data can actually be correctly parsed by SQLite.
+
+        at = self._to_sqla(self.alltypes)
+
+        tc = self.alltypes.timestamp_col
+        ic = self.alltypes.int_col
+
+        tc_casted = tc.cast('timestamp')
+        ic_casted = ic.cast('timestamp')
+
+        # Logically, it's a timestamp
+        assert isinstance(tc_casted, ir.TimestampArray)
+        assert isinstance(ic_casted, ir.TimestampArray)
+
+        # But it's a no-op when translated to SQLAlchemy
+        cases = [
+            (tc_casted, at.c.timestamp_col),
+            (ic_casted, at.c.int_col)
+        ]
+        self._check_expr_cases(cases)
 
     def test_binary_arithmetic(self):
         cases = [

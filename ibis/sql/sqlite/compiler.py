@@ -18,8 +18,30 @@ from ibis.sql.alchemy import unary, varargs, fixed_arity
 import ibis.sql.alchemy as alch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
+import ibis.common as com
 
 _operation_registry = alch._operation_registry.copy()
+
+
+def _cast(t, expr):
+    # It's not all fun and games with SQLite
+
+    op = expr.op()
+    arg, target_type = op.args
+    sa_arg = t.translate(arg)
+    sa_type = t.get_sqla_type(target_type)
+
+    if isinstance(target_type, dt.Timestamp):
+        if not isinstance(arg, (ir.IntegerValue, ir.StringValue)):
+            raise com.TranslationError(type(arg))
+
+        return sa_arg
+
+    if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
+        return sa_arg
+    else:
+        return sa.cast(sa_arg, sa_type)
 
 
 def _substr(translator, expr):
@@ -74,6 +96,8 @@ def _infix_op(infix_sym):
 
 
 _operation_registry.update({
+    ops.Cast: _cast,
+
     ops.Substring: _substr,
     ops.StrRight: _string_right,
 
