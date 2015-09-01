@@ -149,10 +149,30 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         self._check_expr_cases(cases)
 
+    def test_between(self):
+        sat = self.sa_alltypes
+        sd = sat.c.double_col
+        d = self.alltypes.double_col
+
+        cases = [
+            (d.between(5, 10), sd.between(L(5), L(10))),
+        ]
+        self._check_expr_cases(cases)
+
+    def test_isnull_notnull(self):
+        sat = self.sa_alltypes
+        sd = sat.c.double_col
+        d = self.alltypes.double_col
+
+        cases = [
+            (d.isnull(), sd.is_(sa.null())),
+            (d.notnull(), sd.isnot(sa.null())),
+        ]
+        self._check_expr_cases(cases)
+
     def test_negate(self):
         sat = self.sa_alltypes
         sd = sat.c.double_col
-
         d = self.alltypes.double_col
         cases = [
             (-(d > 0), sql.not_(sd > L(0)))

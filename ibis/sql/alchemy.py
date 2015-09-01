@@ -103,24 +103,24 @@ def _fixed_arity_call(sa_func, arity):
     if isinstance(sa_func, six.string_types):
         sa_func = getattr(sa.func, sa_func)
 
-    def formatter(translator, expr):
+    def formatter(t, expr):
         if arity != len(expr.op().args):
             raise com.IbisError('incorrect number of args')
 
-        return _varargs_call(sa_func, translator, expr)
+        return _varargs_call(sa_func, t, expr)
 
     return formatter
 
 
-def _varargs_call(sa_func, translator, expr):
+def _varargs_call(sa_func, t, expr):
     op = expr.op()
-    trans_args = [translator.translate(arg) for arg in op.args]
+    trans_args = [t.translate(arg) for arg in op.args]
     return sa_func(*trans_args)
 
 
-def _table_column(translator, expr):
+def _table_column(t, expr):
     op = expr.op()
-    ctx = translator.context
+    ctx = t.context
     table = op.table
 
     sa_table = _get_sqla_table(ctx, table)
@@ -128,7 +128,7 @@ def _table_column(translator, expr):
 
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery
-    if translator.permit_subquery and ctx.is_foreign_expr(table):
+    if t.permit_subquery and ctx.is_foreign_expr(table):
         return sa.select([out_expr])
 
     return out_expr
@@ -147,15 +147,15 @@ def _get_sqla_table(ctx, table):
     return sa_table
 
 
-def _table_array_view(translator, expr):
-    ctx = translator.context
+def _table_array_view(t, expr):
+    ctx = t.context
     table = ctx.get_compiled_expr(expr.op().table)
     return table
 
 
-def _exists_subquery(translator, expr):
+def _exists_subquery(t, expr):
     op = expr.op()
-    ctx = translator.context
+    ctx = t.context
 
     filtered = (op.foreign_table.filter(op.predicates)
                 .projection([ir.literal(1).name(ir.unnamed)]))
@@ -169,11 +169,11 @@ def _exists_subquery(translator, expr):
     return clause
 
 
-def _cast(translator, expr):
+def _cast(t, expr):
     op = expr.op()
     arg, target_type = op.args
-    sa_arg = translator.translate(arg)
-    sa_type = translator.get_sqla_type(target_type)
+    sa_arg = t.translate(arg)
+    sa_type = t.get_sqla_type(target_type)
 
     if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
         return sa_arg
@@ -181,60 +181,70 @@ def _cast(translator, expr):
         return sa.cast(sa_arg, sa_type)
 
 
-def _contains(translator, expr):
+def _contains(t, expr):
     op = expr.op()
 
-    left, right = [translator.translate(arg) for arg in op.args]
+    left, right = [t.translate(arg) for arg in op.args]
     return left.in_(right)
 
 
 def _reduction(sa_func):
-    def formatter(translator, expr):
+    def formatter(t, expr):
         op = expr.op()
 
         # HACK: support trailing arguments
         arg, where = op.args[:2]
 
-        return _reduction_format(translator, sa_func, arg, where)
+        return _reduction_format(t, sa_func, arg, where)
     return formatter
 
 
-def _reduction_format(translator, sa_func, arg, where):
+def _reduction_format(t, sa_func, arg, where):
     if where is not None:
         case = where.ifelse(arg, ibis.NA)
-        arg = translator.translate(case)
+        arg = t.translate(case)
     else:
-        arg = translator.translate(arg)
+        arg = t.translate(arg)
 
     return sa_func(arg)
 
 
-def _literal(translator, expr):
+def _literal(t, expr):
     return sa.literal(expr.op().value)
 
 
-def _value_list(translator, expr):
-    return [translator.translate(x) for x in expr.op().values]
+def _value_list(t, expr):
+    return [t.translate(x) for x in expr.op().values]
 
 
-def _simple_case(translator, expr):
+def _is_null(t, expr):
+    arg = t.translate(expr.op().args[0])
+    return arg.is_(sa.null())
+
+
+def _not_null(t, expr):
+    arg = t.translate(expr.op().args[0])
+    return arg.isnot(sa.null())
+
+
+def _simple_case(t, expr):
     op = expr.op()
 
     cases = [op.base == case for case in op.cases]
-    return _translate_case(translator, cases, op.results, op.default)
+    return _translate_case(t, cases, op.results, op.default)
 
 
-def _searched_case(translator, expr):
+def _searched_case(t, expr):
     op = expr.op()
-    return _translate_case(translator, op.cases, op.results, op.default)
+    return _translate_case(t, op.cases, op.results, op.default)
 
 
-def _translate_case(translator, cases, results, default):
-    case_args = [translator.translate(arg) for arg in cases]
-    result_args = [translator.translate(arg) for arg in results]
+def _translate_case(t, cases, results, default):
+    case_args = [t.translate(arg) for arg in cases]
+    result_args = [t.translate(arg) for arg in results]
 
     whens = zip(case_args, result_args)
-    default = translator.translate(default)
+    default = t.translate(default)
 
     return sa.case(whens, else_=default)
 
@@ -259,6 +269,10 @@ _operation_registry = {
 
     ops.GroupConcat: _fixed_arity_call(sa.func.group_concat, 2),
 
+    ops.Between: _fixed_arity_call(sa.between, 3),
+
+    ops.IsNull: _is_null,
+    ops.NotNull: _not_null,
     ops.Negate: _fixed_arity_call(sa.not_, 1),
 
     ir.Literal: _literal,
