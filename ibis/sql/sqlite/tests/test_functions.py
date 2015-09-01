@@ -105,6 +105,18 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_regexp(self):
+        pytest.skip('NYI: Requires adding regex udf with sqlite3')
+
+        v = L('abcd')
+        v2 = L('1222')
+        cases = [
+            (v.re_search('[a-z]'), True),
+            (v.re_search('[\d]+'), False),
+            (v2.re_search('[\d]+'), True),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_fillna_nullif(self):
         cases = [
             (ibis.NA.fillna(5), 5),

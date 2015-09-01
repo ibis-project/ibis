@@ -93,6 +93,7 @@ _operation_registry.update({
     ops.RStrip: unary('rtrim'),
 
     ops.StringSQLLike: _infix_op('LIKE'),
+    ops.RegexSearch: _infix_op('REGEXP'),
 })
 
 
