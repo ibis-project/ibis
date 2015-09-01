@@ -44,9 +44,7 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         pass
 
     def test_timestamp_cast_noop(self):
-        # SQLite does not have a physical date/time/timestamp type, so
-        # unfortunately cast to typestamp must be a no-op, and we have to trust
-        # that the user's data can actually be correctly parsed by SQLite.
+        # See GH #592
 
         at = self._to_sqla(self.alltypes)
 
@@ -66,6 +64,24 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             (ic_casted, at.c.int_col)
         ]
         self._check_expr_cases(cases)
+
+    def test_timestamp_functions(self):
+        v = L('2015-09-01 14:48:05.359').cast('timestamp')
+
+        cases = [
+            (v.strftime('%Y%m%d'), '20150901'),
+
+            (v.year(), 2015),
+            (v.month(), 9),
+            (v.day(), 1),
+            (v.hour(), 14),
+            (v.minute(), 48),
+            (v.second(), 5),
+        ]
+        self._check_e2e_cases(cases)
+
+    def test_timestamp_now(self):
+        pass
 
     def test_binary_arithmetic(self):
         cases = [

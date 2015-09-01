@@ -1549,7 +1549,25 @@ def _timestamp_truncate(arg, unit):
     return _ops.Truncate(arg, unit).to_expr()
 
 
+def _timestamp_strftime(arg, format_str):
+    """
+    Format timestamp according to the passed format string. Format string may
+    depend on backend, but we try to conform to ANSI strftime (e.g. Python
+    built-in datetime.strftime)
+
+    Parameters
+    ----------
+    format_str : string
+
+    Returns
+    -------
+    formatted : string
+    """
+    return _ops.Strftime(arg, format_str).to_expr()
+
+
 _timestamp_value_methods = dict(
+    strftime=_timestamp_strftime,
     year=_extract_field('year', _ops.ExtractYear),
     month=_extract_field('month', _ops.ExtractMonth),
     day=_extract_field('day', _ops.ExtractDay),

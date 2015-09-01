@@ -2086,6 +2086,12 @@ class Truncate(ValueOp):
     output_type = rules.shape_like_arg(0, 'timestamp')
 
 
+class Strftime(ValueOp):
+
+    input_type = [rules.timestamp, rules.string(name='format_str')]
+    output_type = rules.shape_like_arg(0, 'string')
+
+
 class ExtractTimestampField(TimestampUnaryOp):
 
     output_type = rules.shape_like_arg(0, 'int32')

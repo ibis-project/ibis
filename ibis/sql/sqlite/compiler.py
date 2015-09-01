@@ -32,6 +32,9 @@ def _cast(t, expr):
     sa_arg = t.translate(arg)
     sa_type = t.get_sqla_type(target_type)
 
+    # SQLite does not have a physical date/time/timestamp type, so
+    # unfortunately cast to typestamp must be a no-op, and we have to trust
+    # that the user's data can actually be correctly parsed by SQLite.
     if isinstance(target_type, dt.Timestamp):
         if not isinstance(arg, (ir.IntegerValue, ir.StringValue)):
             raise com.TranslationError(type(arg))
@@ -44,55 +47,70 @@ def _cast(t, expr):
         return sa.cast(sa_arg, sa_type)
 
 
-def _substr(translator, expr):
+def _substr(t, expr):
     f = sa.func.substr
 
     arg, start, length = expr.op().args
 
-    sa_arg = translator.translate(arg)
-    sa_start = translator.translate(start)
+    sa_arg = t.translate(arg)
+    sa_start = t.translate(start)
 
     if length is None:
         return f(sa_arg, sa_start + 1)
     else:
-        sa_length = translator.translate(length)
+        sa_length = t.translate(length)
         return f(sa_arg, sa_start + 1, sa_length)
 
 
-def _string_right(translator, expr):
+def _string_right(t, expr):
     f = sa.func.substr
 
     arg, length = expr.op().args
 
-    sa_arg = translator.translate(arg)
-    sa_length = translator.translate(length)
+    sa_arg = t.translate(arg)
+    sa_length = t.translate(length)
 
     return f(sa_arg, -sa_length, sa_length)
 
 
-def _string_find(translator, expr):
+def _string_find(t, expr):
     arg, substr, start, _ = expr.op().args
 
     if start is not None:
         raise NotImplementedError
 
-    sa_arg = translator.translate(arg)
-    sa_substr = translator.translate(substr)
+    sa_arg = t.translate(arg)
+    sa_substr = t.translate(substr)
 
     f = sa.func.instr
     return f(sa_arg, sa_substr) - 1
 
 
 def _infix_op(infix_sym):
-    def formatter(translator, expr):
+    def formatter(t, expr):
         op = expr.op()
         left, right = op.args
 
-        left_arg = translator.translate(left)
-        right_arg = translator.translate(right)
+        left_arg = t.translate(left)
+        right_arg = t.translate(right)
         return left_arg.op(infix_sym)(right_arg)
 
     return formatter
+
+
+def _strftime(t, expr):
+    arg, format = expr.op().args
+    sa_arg = t.translate(arg)
+    sa_format = t.translate(format)
+    return sa.func.strftime(sa_format, sa_arg)
+
+
+def _strftime_int(fmt):
+    def translator(t, expr):
+        arg, = expr.op().args
+        sa_arg = t.translate(arg)
+        return sa.cast(sa.func.strftime(fmt, sa_arg), sa.types.INTEGER)
+    return translator
 
 
 _operation_registry.update({
@@ -119,6 +137,14 @@ _operation_registry.update({
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: _infix_op('LIKE'),
     ops.RegexSearch: _infix_op('REGEXP'),
+
+    ops.Strftime: _strftime,
+    ops.ExtractYear: _strftime_int('%Y'),
+    ops.ExtractMonth: _strftime_int('%m'),
+    ops.ExtractDay: _strftime_int('%d'),
+    ops.ExtractHour: _strftime_int('%H'),
+    ops.ExtractMinute: _strftime_int('%M'),
+    ops.ExtractSecond: _strftime_int('%S'),
 })
 
 
