@@ -66,6 +66,8 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         self._check_expr_cases(cases)
 
     def test_timestamp_functions(self):
+        from datetime import datetime
+
         v = L('2015-09-01 14:48:05.359').cast('timestamp')
 
         cases = [
@@ -78,11 +80,12 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             (v.minute(), 48),
             (v.second(), 5),
             (v.millisecond(), 359),
+
+            # there could be pathological failure at midnight somewhere, but
+            # that's okay
+            (ibis.now().strftime('%Y%m%d'), datetime.now().strftime('%Y%m%d'))
         ]
         self._check_e2e_cases(cases)
-
-    def test_timestamp_now(self):
-        pass
 
     def test_binary_arithmetic(self):
         cases = [

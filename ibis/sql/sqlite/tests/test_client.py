@@ -27,7 +27,7 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
         pass
 
     def test_table(self):
-        table = self.db.table('functional_alltypes')
+        table = self.con.table('functional_alltypes')
         assert isinstance(table, ir.TableExpr)
 
     def test_array_execute(self):
@@ -38,7 +38,7 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
 
     def test_literal_execute(self):
         expr = ibis.literal('1234')
-        result = self.db.execute(expr)
+        result = self.con.execute(expr)
         assert result == '1234'
 
     def test_simple_aggregate_execute(self):
@@ -47,5 +47,5 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
         assert isinstance(v, float)
 
     def test_list_tables(self):
-        assert len(self.db.list_tables()) > 0
-        assert len(self.db.list_tables(like='functional')) == 1
+        assert len(self.con.list_tables()) > 0
+        assert len(self.con.list_tables(like='functional')) == 1

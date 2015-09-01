@@ -113,6 +113,10 @@ def _strftime_int(fmt):
     return translator
 
 
+def _now(t, expr):
+    return sa.func.datetime('now')
+
+
 def _millisecond(t, expr):
     arg, = expr.op().args
     sa_arg = t.translate(arg)
@@ -153,6 +157,7 @@ _operation_registry.update({
     ops.ExtractMinute: _strftime_int('%M'),
     ops.ExtractSecond: _strftime_int('%S'),
     ops.ExtractMillisecond: _millisecond,
+    ops.TimestampNow: _now
 })
 
 
