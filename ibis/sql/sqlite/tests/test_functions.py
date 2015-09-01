@@ -93,10 +93,12 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
-    def test_fillna(self):
+    def test_fillna_nullif(self):
         cases = [
             (ibis.NA.fillna(5), 5),
             (L(5).fillna(10), 5),
+            (L(5).nullif(5), None),
+            (L(10).nullif(5), 10),
         ]
         self._check_e2e_cases(cases)
 

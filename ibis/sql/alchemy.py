@@ -275,6 +275,8 @@ _operation_registry = {
 
     ops.Coalesce: varargs(sa.func.coalesce),
 
+    ops.NullIf: fixed_arity(sa.func.nullif, 2),
+
     ops.Contains: _contains,
 
     ops.Count: _reduction(sa.func.count),
