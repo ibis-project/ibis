@@ -47,6 +47,19 @@ def _string_right(translator, expr):
     return f(sa_arg, -sa_length, sa_length)
 
 
+def _string_find(translator, expr):
+    arg, substr, start, _ = expr.op().args
+
+    if start is not None:
+        raise NotImplementedError
+
+    sa_arg = translator.translate(arg)
+    sa_substr = translator.translate(substr)
+
+    f = sa.func.instr
+    return f(sa_arg, sa_substr) - 1
+
+
 def _unary_op(sa_func):
     return alch._fixed_arity_call(sa_func, 1)
 
@@ -54,6 +67,8 @@ def _unary_op(sa_func):
 _operation_registry.update({
     ops.Substring: _substr,
     ops.StrRight: _string_right,
+
+    ops.StringFind: _string_find,
 
     ops.StringLength: _unary_op('length'),
 
