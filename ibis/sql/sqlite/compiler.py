@@ -92,6 +92,7 @@ _operation_registry.update({
     ops.LStrip: unary('ltrim'),
     ops.RStrip: unary('rtrim'),
 
+    ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: _infix_op('LIKE'),
     ops.RegexSearch: _infix_op('REGEXP'),
 })

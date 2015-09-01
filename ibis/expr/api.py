@@ -1418,6 +1418,28 @@ def regex_replace(arg, pattern, replacement):
     return _ops.RegexReplace(arg, pattern, replacement).to_expr()
 
 
+def _string_replace(arg, pattern, replacement):
+    """
+    Replaces each exactly occurrence of pattern with given replacement
+    string. Like Python built-in str.replace
+
+    Parameters
+    ----------
+    pattern : string
+    replacement : string
+
+    Examples
+    --------
+    table.strings.replace('aaa', 'foo')
+    'aaabbbaaa' becomes 'foobbbfoo'
+
+    Returns
+    -------
+    replaced : string
+    """
+    return _ops.StringReplace(arg, pattern, replacement).to_expr()
+
+
 def parse_url(arg, extract, key=None):
     """
     Returns the portion of a URL corresponding to a part specified
@@ -1479,6 +1501,7 @@ _string_value_methods = dict(
     contains=_string_contains,
     like=_string_like,
     rlike=re_search,
+    replace=_string_replace,
     re_search=re_search,
     re_extract=regex_extract,
     re_replace=regex_replace,

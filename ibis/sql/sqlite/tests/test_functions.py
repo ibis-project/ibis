@@ -90,6 +90,8 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             (L('foobar').contains('bar'), True),
             (L('foobar').contains('foo'), True),
             (L('foobar').contains('baz'), False),
+
+            (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
         ]
         self._check_e2e_cases(cases)
 

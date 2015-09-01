@@ -515,8 +515,13 @@ class RegexExtract(ValueOp):
 
 class RegexReplace(ValueOp):
 
-    input_type = [string, string(name='pattern'),
-                  string(name='replacement')]
+    input_type = [string, string(name='pattern'), string(name='replacement')]
+    output_type = rules.shape_like_arg(0, 'string')
+
+
+class StringReplace(ValueOp):
+
+    input_type = [string, string(name='pattern'), string(name='replacement')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
