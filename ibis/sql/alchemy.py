@@ -209,6 +209,32 @@ def _literal(translator, expr):
     return sa.literal(expr.op().value)
 
 
+def _value_list(translator, expr):
+    return [translator.translate(x) for x in expr.op().values]
+
+
+def _simple_case(translator, expr):
+    op = expr.op()
+
+    cases = [op.base == case for case in op.cases]
+    return _translate_case(translator, cases, op.results, op.default)
+
+
+def _searched_case(translator, expr):
+    op = expr.op()
+    return _translate_case(translator, op.cases, op.results, op.default)
+
+
+def _translate_case(translator, cases, results, default):
+    case_args = [translator.translate(arg) for arg in cases]
+    result_args = [translator.translate(arg) for arg in results]
+
+    whens = zip(case_args, result_args)
+    default = translator.translate(default)
+
+    return sa.case(whens, else_=default)
+
+
 _expr_rewrites = {
 
 }
@@ -224,8 +250,17 @@ _operation_registry = {
     ops.Count: _reduction(sa.func.count),
     ops.Sum: _reduction(sa.func.sum),
     ops.Mean: _reduction(sa.func.avg),
+    ops.Min: _reduction(sa.func.min),
+    ops.Max: _reduction(sa.func.max),
+
+    ops.GroupConcat: _fixed_arity_call(sa.func.group_concat, 2),
 
     ir.Literal: _literal,
+    ir.ValueList: _value_list,
+    ir.NullLiteral: lambda *args: sa.null(),
+
+    ops.SimpleCase: _simple_case,
+    ops.SearchedCase: _searched_case,
 
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,

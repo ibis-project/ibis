@@ -14,6 +14,8 @@
 
 from .common import SQLiteTests
 from ibis.compat import unittest
+from ibis import literal as L
+import ibis
 
 import sqlalchemy as sa
 
@@ -37,3 +39,45 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
     def test_decimal_cast(self):
         pass
+
+    def test_binary_arithmetic(self):
+        cases = [
+            (L(3) + L(4), 7),
+            (L(3) - L(4), -1),
+            (L(3) * L(4), 12),
+            (L(12) / L(4), 3),
+            # (L(12) ** L(2), 144),
+            (L(12) % L(5), 2)
+        ]
+        self._check_e2e_cases(cases)
+
+    def test_aggregations_execute(self):
+        table = self.alltypes.limit(100)
+
+        d = table.double_col
+        s = table.string_col
+
+        cond = table.string_col.isin(['1', '7'])
+
+        exprs = [
+            table.bool_col.count(),
+
+            d.sum(),
+            d.mean(),
+            d.min(),
+            d.max(),
+
+            table.bool_col.count(where=cond),
+            d.sum(where=cond),
+            d.mean(where=cond),
+            d.min(where=cond),
+            d.max(where=cond),
+
+            s.group_concat(),
+        ]
+
+        agg_exprs = [expr.name('e%d' % i)
+                     for i, expr in enumerate(exprs)]
+
+        agged_table = table.aggregate(agg_exprs)
+        agged_table.execute()

@@ -46,6 +46,11 @@ class SQLiteTests(object):
     def _to_sqla(self, table):
         return table.op().sqla_table
 
+    def _check_e2e_cases(self, cases):
+        for expr, expected in cases:
+            result = self.db.execute(expr)
+            assert result == expected
+
 
 class SQLiteTestEnv(object):
 
