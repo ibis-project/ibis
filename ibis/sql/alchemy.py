@@ -235,6 +235,20 @@ def _not_null(t, expr):
     return arg.isnot(sa.null())
 
 
+def _round(t, expr):
+    op = expr.op()
+    arg, digits = op.args
+    sa_arg = t.translate(arg)
+
+    f = sa.func.round
+
+    if digits is not None:
+        sa_digits = t.translate(digits)
+        return f(sa_arg, sa_digits)
+    else:
+        return f(sa_arg)
+
+
 def _simple_case(t, expr):
     op = expr.op()
 
@@ -292,6 +306,8 @@ _operation_registry = {
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,
     ops.Negate: unary(sa.not_),
+
+    ops.Round: _round,
 
     ops.TypeOf: unary(sa.func.typeof),
 

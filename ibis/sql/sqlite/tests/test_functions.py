@@ -99,6 +99,9 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             (L(5).abs(), 5),
             (ibis.least(L(5), L(10), L(1)), 1),
             (ibis.greatest(L(5), L(10), L(1)), 10),
+
+            (L(5.5).round(), 6.0),
+            (L(5.556).round(2), 5.56),
         ]
         self._check_e2e_cases(cases)
 
