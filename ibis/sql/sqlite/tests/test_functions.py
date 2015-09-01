@@ -93,6 +93,13 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_fillna(self):
+        cases = [
+            (ibis.NA.fillna(5), 5),
+            (L(5).fillna(10), 5),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_coalesce(self):
         pass
 

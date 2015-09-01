@@ -14,7 +14,7 @@
 
 import sqlalchemy as sa
 
-from ibis.sql.alchemy import unary, varargs
+from ibis.sql.alchemy import unary, varargs, fixed_arity
 import ibis.sql.alchemy as alch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -83,6 +83,7 @@ _operation_registry.update({
 
     ops.Least: varargs(sa.func.min),
     ops.Greatest: varargs(sa.func.max),
+    ops.IfNull: fixed_arity(sa.func.ifnull, 2),
 
     ops.Lowercase: unary('lower'),
     ops.Uppercase: unary('upper'),
