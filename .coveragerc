@@ -1,0 +1,5 @@
+[run]
+branch: True
+omit: ibis/tests/*,
+      ibis/*/tests/*,
+      ibis/cloudpickle.py

@@ -17,7 +17,9 @@
 # ibis.impala.tests.common.IbisTestEnv, so it needs those variables set
 # correctly.  It also assumes that WORKSPACE is set (i.e., that it is being run
 # as a Jenkins job).  If the latter is not true, you can instead set GIT_URL
-# and GIT_BRANCH to check them out manually.
+# and GIT_BRANCH to check them out manually.  For pulling in a pull request,
+# set GITHUB_PR.  For reporting to codecov.io, set CODECOV_TOKEN.  Set
+# PYTHON_VERSION to specify which version to run the tests on.
 
 set -e
 set -x
@@ -74,6 +76,7 @@ CONDA_ENV_NAME=pyenv-ibis-test
 conda create -y -q -n $CONDA_ENV_NAME python=$PYTHON_VERSION numpy pandas
 source activate $CONDA_ENV_NAME
 pip install click
+pip install pytest-cov
 # preempt the requirements.txt file by installing impyla master
 pip install git+https://github.com/cloudera/impyla.git
 pip install $IBIS_HOME
@@ -103,13 +106,23 @@ scripts/test_data_admin.py load --data --no-udf
 
 if [ -z "$WORKSPACE" ]; then
     # on kerberized cluster, skip UDF work
-    py.test --skip-udf --skip-superuser --sqlite --impala --hdfs ibis
-else
-    # build and load the UDFs
-    scripts/test_data_admin.py load --no-data --udf --overwrite
-    # run the full test suite
-    py.test --impala --hdfs ibis --sqlite
+    PYTEST_KERB_ARGS="--skip-udf --skip-superuser"
 fi
+
+if [ -n "$WORKSPACE" ]; then
+    # non-kerb cluster: build and load the UDFs
+    scripts/test_data_admin.py load --no-data --udf --overwrite
+fi
+
+PYTEST_COV_ARGS="--cov ibis --cov-report xml --cov-report term --cov-config .coveragerc"
+
+# run the test suite
+py.test $PYTEST_KERB_ARGS $PYTEST_COV_ARGS --impala --hdfs --sqlite ibis
 
 # cleanup temporary data (but not testing data)
 scripts/test_data_admin.py cleanup --tmp-data --tmp-db
+
+# Report code coverage to codecov.io
+if [ -n $CODECOV_TOKEN ]; then
+    bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN
+fi

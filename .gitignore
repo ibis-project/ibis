@@ -34,6 +34,7 @@ dist
 *.egg-info
 # coverage
 .coverage
+coverage.xml
 
 # OS generated files
 .directory
