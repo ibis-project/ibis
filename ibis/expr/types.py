@@ -49,9 +49,11 @@ class Expr(object):
             try:
                 result = self.execute()
                 return repr(result)
-            except com.TranslationError:
-                output = ('Translation to backend failed, repr follows:\n%s'
-                          % self._repr())
+            except com.TranslationError as e:
+                output = ('Translation to backend failed\n'
+                          'Error message: {0}\n'
+                          'Expression repr follows:\n{1}'
+                          .format(e.args[0], self._repr()))
                 return output
         else:
             return self._repr()

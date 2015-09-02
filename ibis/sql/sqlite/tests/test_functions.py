@@ -261,6 +261,17 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._execute_aggregation(table, exprs)
 
+    def test_interactive_repr_shows_error(self):
+        # #591. Doing this in SQLite because so many built-in functions are not
+        # available
+        import ibis.config as config
+
+        expr = self.alltypes.double_col.approx_nunique()
+
+        with config.option_context('interactive', True):
+            result = repr(expr)
+            assert 'no translator rule' in result.lower()
+
     def _execute_aggregation(self, table, exprs):
         agg_exprs = [expr.name('e%d' % i)
                      for i, expr in enumerate(exprs)]
