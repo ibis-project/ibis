@@ -97,7 +97,7 @@ def dnload_ibis_test_data_from_s3(local_path):
     url = 'https://{0}.s3.amazonaws.com/{1}'.format(
         IBIS_TEST_DATA_S3_BUCKET, IBIS_TEST_DATA_TARBALL)
     cmd = 'cd {0} && wget -q {1} && tar -xzf {2}'.format(
-        local_path, url, IBIS_TEST_DATA_TARBALL)
+        local_path, url, TARBALL_NAME)
     check_call(cmd, shell=True)
     data_dir = pjoin(local_path, IBIS_TEST_DATA_LOCAL_DIR)
     print('Downloaded {0} and unpacked it to {1}'.format(url, data_dir))
