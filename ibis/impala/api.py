@@ -15,12 +15,13 @@ from ibis.impala.client import (ImpalaConnection, ImpalaClient,  # noqa
                                 Database, ImpalaTable)
 from ibis.impala.udf import *  # noqa
 from ibis.impala.madlib import MADLibAPI  # noqa
+from ibis.config import options
 
 
 def connect(host='localhost', port=21050, database='default', timeout=45,
             use_ssl=False, ca_cert=None, user=None, password=None,
             auth_mechanism='NOSASL', kerberos_service_name='impala',
-            pool_size=8):
+            pool_size=8, hdfs_client=None):
     """
     Create an Impala Client for use with Ibis
 
@@ -37,9 +38,14 @@ def connect(host='localhost', port=21050, database='default', timeout=45,
     auth_mechanism : {'NOSASL' <- default, 'PLAIN', 'GSSAPI', 'LDAP'}
     kerberos_service_name : string, default 'impala'
 
+    Examples
+    --------
+    >>> hdfs = ibis.hdfs_connect(**hdfs_params)
+    >>> client = ibis.impala.connect(hdfs_client=hdfs, **impala_params)
+
     Returns
     -------
-    con : ImpalaConnection
+    con : ImpalaClient
     """
     params = {
         'host': host,
@@ -54,4 +60,10 @@ def connect(host='localhost', port=21050, database='default', timeout=45,
         'kerberos_service_name': kerberos_service_name
     }
 
-    return ImpalaConnection(pool_size=pool_size, **params)
+    con = ImpalaConnection(pool_size=pool_size, **params)
+    client = ImpalaClient(con, hdfs_client=hdfs_client)
+
+    if options.default_backend is None:
+        options.default_backend = client
+
+    return client

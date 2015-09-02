@@ -68,6 +68,11 @@ def make_client(db, hdfs_client=None):
 
     return client
 
+make_client = util.deprecate(
+    make_client, ('make_client is deprecated. '
+                  'Use ibis.impala.connect '
+                  ' with hdfs_client=hdfs_client'))
+
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
                  auth_mechanism='NOSASL', verify=True, **kwds):
@@ -109,7 +114,6 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
         url = 'http://{0}:{1}'.format(host, port)
         hdfs_client = InsecureClient(url, **kwds)
     return WebHDFS(hdfs_client)
-
 
 def test(impala=False):
     import pytest

@@ -59,11 +59,6 @@ class IbisTestEnv(object):
 
 
 def connect_test(env, with_hdfs=True):
-    con = ibis.impala.connect(host=env.impala_host,
-                              database=env.test_data_db,
-                              port=env.impala_port,
-                              auth_mechanism=env.auth_mechanism,
-                              pool_size=2)
     if with_hdfs:
         if env.auth_mechanism in ['GSSAPI', 'LDAP']:
             print("Warning: ignoring invalid Certificate Authority errors")
@@ -74,7 +69,13 @@ def connect_test(env, with_hdfs=True):
                                                 not in ['GSSAPI', 'LDAP']))
     else:
         hdfs_client = None
-    return ibis.make_client(con, hdfs_client)
+
+    return ibis.impala.connect(host=env.impala_host,
+                               database=env.test_data_db,
+                               port=env.impala_port,
+                               auth_mechanism=env.auth_mechanism,
+                               pool_size=2,
+                               hdfs_client=hdfs_client)
 
 
 @pytest.mark.impala

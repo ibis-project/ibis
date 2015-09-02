@@ -18,7 +18,6 @@ entry to using Ibis.
 .. autosummary::
    :toctree: generated/
 
-   make_client
    hdfs_connect
 
 Impala client

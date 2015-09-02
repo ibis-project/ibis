@@ -44,16 +44,15 @@ Creating a client
 -----------------
 
 To create an Ibis "client", you must first connect your services and assemble
-the client using ``ibis.make_client``:
+the client using ``ibis.impala.connect``:
 
 .. code-block:: python
 
    import ibis
 
-   ic = ibis.impala.connect(host=impala_host, port=impala_port)
    hdfs = ibis.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
-
-   con = ibis.make_client(ic, hdfs_client=hdfs)
+   con = ibis.impala.connect(host=impala_host, port=impala_port,
+                             hdfs_client=hdfs
 
 Both method calls can take ``auth_mechanism='GSSAPI'`` or
 ``auth_mechanism='LDAP'`` to connect to Kerberos clusters.  Depending on your
