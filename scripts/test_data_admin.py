@@ -41,13 +41,13 @@ IBIS_TEST_DATA_TARBALL = 'ibis-testing-data.tar.gz'
 
 def make_ibis_client():
     ic = ibis.impala.connect(host=ENV.impala_host, port=ENV.impala_port,
-                             protocol=ENV.impala_protocol,
-                             use_kerberos=ENV.use_kerberos)
-    if ENV.use_kerberos:
+                             auth_mechanism=ENV.auth_mechanism)
+    if ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
         print("Warning: ignoring invalid Certificate Authority errors")
     hc = ibis.hdfs_connect(host=ENV.nn_host, port=ENV.webhdfs_port,
-                           use_kerberos=ENV.use_kerberos,
-                           verify=(not ENV.use_kerberos))
+                           auth_mechanism=ENV.auth_mechanism,
+                           verify=(ENV.auth_mechanism
+                                   not in ['GSSAPI', 'LDAP']))
     return ibis.make_client(ic, hdfs_client=hc)
 
 

@@ -29,8 +29,6 @@ class IbisTestEnv(object):
     def __init__(self):
         # TODO: allow initializing values through a constructor
         self.impala_host = os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
-        self.impala_protocol = os.environ.get('IBIS_TEST_IMPALA_PROTOCOL',
-                                              'hiveserver2')
         self.impala_port = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
         self.tmp_db = os.environ.get('IBIS_TEST_TMP_DB',
                                      '__ibis_tmp_{0}'.format(util.guid()))
@@ -48,8 +46,7 @@ class IbisTestEnv(object):
                                           'False').lower() == 'true'
         self.cleanup_test_data = os.environ.get('IBIS_TEST_CLEANUP_TEST_DATA',
                                                 'True').lower() == 'true'
-        self.use_kerberos = os.environ.get('IBIS_TEST_USE_KERBEROS',
-                                           'False').lower() == 'true'
+        self.auth_mechanism = os.environ.get('IBIS_TEST_AUTH_MECH', 'NOSASL')
         self.llvm_config = os.environ.get('IBIS_TEST_LLVM_CONFIG', None)
         # update global Ibis config where relevant
         options.impala.temp_db = self.tmp_db
@@ -63,18 +60,18 @@ class IbisTestEnv(object):
 
 def connect_test(env, with_hdfs=True):
     con = ibis.impala.connect(host=env.impala_host,
-                              protocol=env.impala_protocol,
                               database=env.test_data_db,
                               port=env.impala_port,
-                              use_kerberos=env.use_kerberos,
+                              auth_mechanism=env.auth_mechanism,
                               pool_size=2)
     if with_hdfs:
-        if env.use_kerberos:
+        if env.auth_mechanism in ['GSSAPI', 'LDAP']:
             print("Warning: ignoring invalid Certificate Authority errors")
         hdfs_client = ibis.hdfs_connect(host=env.nn_host,
                                         port=env.webhdfs_port,
-                                        use_kerberos=env.use_kerberos,
-                                        verify=(not env.use_kerberos))
+                                        auth_mechanism=env.auth_mechanism,
+                                        verify=(env.auth_mechanism
+                                                not in ['GSSAPI', 'LDAP']))
     else:
         hdfs_client = None
     return ibis.make_client(con, hdfs_client)

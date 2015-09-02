@@ -452,8 +452,9 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
         # the tmp dir 777
         superuser_hdfs = ibis.hdfs_connect(host=ENV.nn_host,
                                            port=ENV.webhdfs_port,
-                                           use_kerberos=ENV.use_kerberos,
-                                           verify=(not ENV.use_kerberos),
+                                           auth_mechanism=ENV.auth_mechanism,
+                                           verify=(ENV.auth_mechanism
+                                                   not in ['GSSAPI', 'LDAP']),
                                            user=ENV.hdfs_superuser)
         superuser_hdfs.mkdir(base)
         superuser_hdfs.chmod(base, '777')

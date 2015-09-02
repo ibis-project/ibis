@@ -17,10 +17,9 @@ from ibis.impala.udf import *  # noqa
 from ibis.impala.madlib import MADLibAPI  # noqa
 
 
-def connect(host='localhost', port=21050, protocol='hiveserver2',
-            database='default', timeout=45, use_ssl=False, ca_cert=None,
-            use_ldap=False, ldap_user=None, ldap_password=None,
-            use_kerberos=False, kerberos_service_name='impala',
+def connect(host='localhost', port=21050, database='default', timeout=45,
+            use_ssl=False, ca_cert=None, user=None, password=None,
+            auth_mechanism='NOSASL', kerberos_service_name='impala',
             pool_size=8):
     """
     Create an Impala Client for use with Ibis
@@ -29,15 +28,13 @@ def connect(host='localhost', port=21050, protocol='hiveserver2',
     ----------
     host : host name
     port : int, default 21050 (HiveServer 2)
-    protocol : {'hiveserver2', 'beeswax'}
     database :
     timeout :
-    use_ssl :
+    use_ssl : boolean
     ca_cert :
-    use_ldap : boolean, default False
-    ldap_user :
-    ldap_password :
-    use_kerberos : boolean, default False
+    user :
+    password :
+    auth_mechanism : {'NOSASL' <- default, 'PLAIN', 'GSSAPI', 'LDAP'}
     kerberos_service_name : string, default 'impala'
 
     Returns
@@ -47,15 +44,13 @@ def connect(host='localhost', port=21050, protocol='hiveserver2',
     params = {
         'host': host,
         'port': port,
-        'protocol': protocol,
         'database': database,
         'timeout': timeout,
         'use_ssl': use_ssl,
         'ca_cert': ca_cert,
-        'use_ldap': use_ldap,
-        'ldap_user': ldap_user,
-        'ldap_password': ldap_password,
-        'use_kerberos': use_kerberos,
+        'user': user,
+        'password': password,
+        'auth_mechanism': auth_mechanism,
         'kerberos_service_name': kerberos_service_name
     }
 
