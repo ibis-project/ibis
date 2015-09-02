@@ -83,7 +83,8 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
             # there could be pathological failure at midnight somewhere, but
             # that's okay
-            (ibis.now().strftime('%Y%m%d'), datetime.now().strftime('%Y%m%d'))
+            (ibis.now().strftime('%Y%m%d'),
+             datetime.utcnow().strftime('%Y%m%d'))
         ]
         self._check_e2e_cases(cases)
 
@@ -107,34 +108,55 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
-    def test_string_functions(self):
+    def test_string_length(self):
         cases = [
             (L('foo_bar').length(), 7),
+            (L('').length(), 0),
+        ]
+        self._check_e2e_cases(cases)
 
+    def test_string_substring(self):
+        cases = [
             (L('foo_bar').left(3), 'foo'),
             (L('foo_bar').right(3), 'bar'),
 
             (L('foo_bar').substr(0, 3), 'foo'),
             (L('foo_bar').substr(4, 3), 'bar'),
             (L('foo_bar').substr(1), 'oo_bar'),
+        ]
+        self._check_e2e_cases(cases)
 
+    def test_string_strip(self):
+        cases = [
             (L('   foo   ').lstrip(), 'foo   '),
             (L('   foo   ').rstrip(), '   foo'),
             (L('   foo   ').strip(), 'foo'),
+        ]
+        self._check_e2e_cases(cases)
 
+    def test_string_upper_lower(self):
+        cases = [
             (L('foo').upper(), 'FOO'),
             (L('FOO').lower(), 'foo'),
+        ]
+        self._check_e2e_cases(cases)
 
+    def test_string_contains(self):
+        cases = [
+            (L('foobar').contains('bar'), True),
+            (L('foobar').contains('foo'), True),
+            (L('foobar').contains('baz'), False),
+        ]
+        self._check_e2e_cases(cases)
+
+    def test_string_functions(self):
+        cases = [
             (L('foobar').find('bar'), 3),
             (L('foobar').find('baz'), -1),
 
             (L('foobar').like('%bar'), True),
             (L('foobar').like('foo%'), True),
             (L('foobar').like('%baz%'), False),
-
-            (L('foobar').contains('bar'), True),
-            (L('foobar').contains('foo'), True),
-            (L('foobar').contains('baz'), False),
 
             (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
         ]
