@@ -351,7 +351,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         foo = self._to_sqla(self.foo)
         t0 = foo.alias('t0')
         t1 = foo.alias('t1')
-        subq = (sa.select([F.avg(t1.c.y).label('tmp')])
+        subq = (sa.select([F.avg(t1.c.y).label('mean')])
                 .where(t0.c.dept_id == t1.c.dept_id))
         stmt = sa.select([t0]).where(t0.c.y > subq)
         self._compare_sqla(expr, stmt)
@@ -390,6 +390,47 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
     def test_union(self):
         pass
+
+    def test_table_distinct(self):
+        t = self.alltypes
+        sat = self.sa_alltypes.alias('t0')
+
+        cases = [
+            (t.distinct(), sa.select([sat]).distinct()),
+            (t['string_col', 'int_col'].distinct(),
+             sa.select([sat.c.string_col, sat.c.int_col]).distinct())
+        ]
+        for case, ex in cases:
+            self._compare_sqla(case, ex)
+
+    def test_array_distinct(self):
+        t = self.alltypes
+        sat = self.sa_alltypes.alias('t0')
+
+        cases = [
+            (t.string_col.distinct(),
+             sa.select([sat.c.string_col.distinct()]))
+        ]
+        for case, ex in cases:
+            self._compare_sqla(case, ex)
+
+    def test_count_distinct(self):
+        t = self.alltypes
+        sat = self.sa_alltypes.alias('t0')
+
+        cases = [
+            (t.int_col.nunique().name('nunique'),
+             sa.select([F.count(sat.c.int_col.distinct())
+                        .label('nunique')])),
+            (t.group_by('string_col')
+             .aggregate(t.int_col.nunique().name('nunique')),
+             sa.select([sat.c.string_col,
+                        F.count(sat.c.int_col.distinct())
+                        .label('nunique')])
+             .group_by(sat.c.string_col)),
+        ]
+        for case, ex in cases:
+            self._compare_sqla(case, ex)
 
     def _compare_sqla(self, expr, sqla):
         result = alch.to_sqlalchemy(expr)

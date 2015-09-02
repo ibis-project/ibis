@@ -249,6 +249,12 @@ def _round(t, expr):
         return f(sa_arg)
 
 
+def _count_distinct(t, expr):
+    arg, = expr.op().args
+    sa_arg = t.translate(arg)
+    return sa.func.count(sa_arg.distinct())
+
+
 def _simple_case(t, expr):
     op = expr.op()
 
@@ -298,6 +304,8 @@ _operation_registry = {
     ops.Mean: _reduction(sa.func.avg),
     ops.Min: _reduction(sa.func.min),
     ops.Max: _reduction(sa.func.max),
+
+    ops.CountDistinct: _count_distinct,
 
     ops.GroupConcat: fixed_arity(sa.func.group_concat, 2),
 
@@ -577,6 +585,9 @@ class AlchemySelect(Select):
             clause = sa.exists(to_select)
         else:
             clause = sa.select(to_select)
+
+        if self.distinct:
+            clause = clause.distinct()
 
         if table_set is not None:
             return clause.select_from(table_set)
