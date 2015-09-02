@@ -86,3 +86,8 @@ FROM functional_alltypes"""
         with config.option_context('interactive', True):
             expr._repr()
         assert self.con.executed_queries == []
+
+    def test_compile_no_execute(self):
+        t = self.con.table('functional_alltypes')
+        t.double_col.sum().compile()
+        assert self.con.executed_queries == []

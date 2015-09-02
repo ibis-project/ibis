@@ -206,6 +206,13 @@ LIMIT 10"""
             assert table.count().execute() == 25
             assert table.count().execute(limit=10) == 25
 
+    def test_compile_verify(self):
+        table = self.db.functional_alltypes
+        expr = table.double_col.sum()
+
+        assert isinstance(expr.compile(), str)
+        assert expr.verify()
+
     def test_database_repr(self):
         assert self.test_data_db in repr(self.db)
 

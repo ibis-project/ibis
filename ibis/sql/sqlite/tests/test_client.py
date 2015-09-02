@@ -49,3 +49,10 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
     def test_list_tables(self):
         assert len(self.con.list_tables()) > 0
         assert len(self.con.list_tables(like='functional')) == 1
+
+    def test_compile_verify(self):
+        unsupported_expr = self.alltypes.string_col.approx_nunique()
+        assert not unsupported_expr.verify()
+
+        supported_expr = self.alltypes.double_col.sum()
+        assert supported_expr.verify()

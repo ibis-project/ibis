@@ -165,6 +165,22 @@ These methods are available directly in the ``ibis`` module namespace.
    trailing_window
    cumulative_window
 
+.. _api.expr:
+
+General expression methods
+--------------------------
+
+.. currentmodule:: ibis.expr.api
+
+.. autosummary::
+   :toctree: generated/
+
+   Expr.compile
+   Expr.equals
+   Expr.execute
+   Expr.pipe
+   Expr.verify
+
 .. _api.table:
 
 Table methods
@@ -186,9 +202,8 @@ Table methods
    TableExpr.group_by
    TableExpr.limit
    TableExpr.mutate
-   TableExpr.pipe
    TableExpr.projection
-   TableExpr.rename
+   TableExpr.relabel
    TableExpr.schema
    TableExpr.set_column
    TableExpr.sort_by
@@ -240,6 +255,7 @@ Scalar or array methods
    ValueExpr.isnull
    ValueExpr.notnull
    ValueExpr.over
+   ValueExpr.typeof
 
    ValueExpr.add
    ValueExpr.sub

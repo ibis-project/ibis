@@ -356,6 +356,11 @@ class MockConnection(SQLClient):
             self.executed_queries.append(query.compile())
         return None
 
+    def compile(self, expr, limit=None):
+        ast = self._build_ast_ensure_limit(expr, limit)
+        queries = [q.compile() for q in ast.queries]
+        return queries[0] if len(queries) == 1 else queries
+
 
 _all_types_schema = [
     ('a', 'int8'),

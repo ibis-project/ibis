@@ -129,6 +129,28 @@ class Expr(object):
         from ibis.client import execute
         return execute(self, limit=limit)
 
+    def compile(self, limit=None):
+        """
+        Compile expression to whatever execution target, to verify
+
+        Returns
+        -------
+        compiled : value or list
+           query representation or list thereof
+        """
+        from ibis.client import compile
+        return compile(self, limit=limit)
+
+    def verify(self):
+        """
+        Returns True if expression can be compiled to its attached client
+        """
+        try:
+            self.compile()
+            return True
+        except:
+            return False
+
     def equals(self, other):
         if type(self) != type(other):
             return False

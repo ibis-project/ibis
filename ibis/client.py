@@ -131,6 +131,18 @@ LIMIT 0""".format(query)
 
         return output
 
+    def compile(self, expr, params=None, limit=None):
+        """
+        Translate expression to one or more queries according to backend target
+
+        Returns
+        -------
+        output : single query or list of queries
+        """
+        ast = self._build_ast_ensure_limit(expr, limit)
+        queries = [query.compile() for query in ast.queries]
+        return queries[0] if len(queries) == 1 else queries
+
     def _execute_and_fetch(self, compiled_query):
         with self._execute(compiled_query, results=True) as cur:
             return self._fetch_from_cursor(cur)
@@ -207,6 +219,11 @@ LIMIT 0""".format(query)
 def execute(expr, limit=None):
     backend = find_backend(expr)
     return backend.execute(expr, limit=limit)
+
+
+def compile(expr, limit=None):
+    backend = find_backend(expr)
+    return backend.compile(expr, limit=limit)
 
 
 def find_backend(expr):
