@@ -351,7 +351,7 @@ class TestTypeCasting(BasicTestCase, unittest.TestCase):
 
     def test_casted_exprs_are_named(self):
         expr = self.table.f.cast('string')
-        assert expr.get_name() == 'f'
+        assert expr.get_name() == 'cast(f, string)'
 
         # it works! per GH #396
         expr.value_counts()

@@ -1285,6 +1285,12 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase):
         expr = t.double_col.histogram(10).value_counts()
         expr.execute()
 
+    def test_casted_expr_impala_bug(self):
+        # Per GH #396. Prior to Impala 2.3.0, there was a bug in the query
+        # planner that caused this expression to fail
+        expr = self.alltypes.string_col.cast('double').value_counts()
+        expr.execute()
+
     def test_decimal_timestamp_builtins(self):
         table = self.con.table('tpch_lineitem')
 
