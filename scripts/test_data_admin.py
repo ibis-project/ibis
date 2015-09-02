@@ -41,8 +41,8 @@ TARBALL_NAME = 'ibis-testing-data.tar.gz'
 IBIS_TEST_DATA_TARBALL = 'testing/{0}'.format(TARBALL_NAME)
 
 
-IBIS_TEST_AWS_KEY_ID = os.environ['IBIS_TEST_AWS_KEY_ID']
-IBIS_TEST_AWS_SECRET = os.environ['IBIS_TEST_AWS_SECRET']
+IBIS_TEST_AWS_KEY_ID = os.environ.get('IBIS_TEST_AWS_KEY_ID')
+IBIS_TEST_AWS_SECRET = os.environ.get('IBIS_TEST_AWS_SECRET')
 
 
 def make_ibis_client():
