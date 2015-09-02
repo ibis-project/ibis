@@ -83,8 +83,8 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
             # there could be pathological failure at midnight somewhere, but
             # that's okay
-            (ibis.now().strftime('%Y%m%d'),
-             datetime.utcnow().strftime('%Y%m%d'))
+            (ibis.now().strftime('%Y%m%d %H'),
+             datetime.utcnow().strftime('%Y%m%d %H'))
         ]
         self._check_e2e_cases(cases)
 
