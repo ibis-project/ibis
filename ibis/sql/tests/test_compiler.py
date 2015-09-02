@@ -125,7 +125,7 @@ class TestNonTabularResults(unittest.TestCase):
         query = ast.queries[0]
 
         sql_query = query.compile()
-        expected = """SELECT sum(`f`) AS `tmp`
+        expected = """SELECT sum(`f`) AS `sum`
 FROM alltypes
 WHERE `c` > 0"""
 
@@ -133,7 +133,7 @@ WHERE `c` > 0"""
 
         # Maybe the result handler should act on the cursor. Not sure.
         handler = query.result_handler
-        output = DataFrame({'tmp': [5]})
+        output = DataFrame({'sum': [5]})
         assert handler(output) == 5
 
     def test_table_column_unbox(self):
@@ -209,7 +209,7 @@ SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
 
         result = to_sql(reduction)
         expected = """\
-SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `tmp`
+SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `sum`
 FROM alltypes"""
         assert result == expected
 
@@ -900,7 +900,7 @@ WHERE `a` > 0 AND
 
         result = to_sql(expr)
         expected = """\
-SELECT count(*) AS `tmp`
+SELECT count(*) AS `count`
 FROM functional_alltypes
 WHERE `timestamp_col` < months_add('2010-01-01 00:00:00', 3) AND
       `timestamp_col` < days_add(now(), 10)"""
@@ -966,7 +966,7 @@ HAVING count(*) > 100"""
         expr = self.con.table('star1').count()
 
         result = to_sql(expr)
-        expected = """SELECT count(*) AS `tmp`
+        expected = """SELECT count(*) AS `count`
 FROM star1"""
         assert result == expected
 
@@ -974,7 +974,7 @@ FROM star1"""
         expr = self._case_aggregate_count_joined()
 
         result = to_sql(expr)
-        expected = """SELECT count(*) AS `tmp`
+        expected = """SELECT count(*) AS `count`
 FROM (
   SELECT t2.*, t1.`r_name` AS `region`
   FROM tpch_region t1
@@ -1304,7 +1304,7 @@ WITH t0 AS (
 SELECT t0.*
 FROM t0
 WHERE t0.`amount` > (
-  SELECT avg(t4.`amount`) AS `tmp`
+  SELECT avg(t4.`amount`) AS `mean`
   FROM t0 t4
   WHERE t4.`region` = t0.`region`
 )
@@ -1338,7 +1338,7 @@ FROM t0
         # it works
         result = to_sql(expr)
         expected = """\
-SELECT count(*) AS `tmp`
+SELECT count(*) AS `count`
 FROM functional_alltypes t0
   INNER JOIN functional_alltypes t1
     ON t0.`tinyint_col` < extract(t1.`timestamp_col`, 'minute')"""
@@ -1379,7 +1379,7 @@ FROM t0
         expected = """SELECT *
 FROM star1
 WHERE `f` > (
-  SELECT avg(`f`) AS `tmp`
+  SELECT avg(`f`) AS `mean`
   FROM star1
 )"""
         assert result == expected
@@ -1388,7 +1388,7 @@ WHERE `f` > (
         expected = """SELECT *
 FROM star1
 WHERE `f` > (
-  SELECT avg(`f`) AS `tmp`
+  SELECT avg(`f`) AS `mean`
   FROM star1
   WHERE `foo_id` = 'foo'
 )"""
@@ -1578,7 +1578,7 @@ FROM `table`"""
         expected = """SELECT *
 FROM foo
 WHERE `y` > (
-  SELECT max(`x`) AS `tmp`
+  SELECT max(`x`) AS `max`
   FROM bar
 )"""
         assert result == expected
@@ -1601,7 +1601,7 @@ WHERE `job` IN (
         expected = """SELECT t0.*
 FROM foo t0
 WHERE t0.`y` > (
-  SELECT avg(t1.`y`) AS `tmp`
+  SELECT avg(t1.`y`) AS `mean`
   FROM foo t1
   WHERE t0.`dept_id` = t1.`dept_id`
 )"""
@@ -1803,7 +1803,7 @@ class TestDistinct(unittest.TestCase):
     def setUp(self):
         self.con = MockConnection()
 
-    def test_simple_table_distinct(self):
+    def test_table_distinct(self):
         t = self.con.table('functional_alltypes')
 
         expr = t[t.string_col, t.int_col].distinct()

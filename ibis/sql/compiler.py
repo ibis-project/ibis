@@ -288,7 +288,7 @@ class SelectBuilder(object):
         # TODO: what about reductions that reference a join that isn't visible
         # at this level? Means we probably have the wrong design, but will have
         # to revisit when it becomes a problem.
-        aggregation = _reduction_to_aggregation(expr, agg_name='tmp')
+        aggregation, _ = _reduction_to_aggregation(expr, default_name='tmp')
         return aggregation.to_array()
 
     def _visit_filter_Any(self, expr):
@@ -740,18 +740,22 @@ def _adapt_expr(expr):
     def _scalar_reduce(x):
         return isinstance(x, ir.ScalarExpr) and ops.is_reduction(x)
 
-    if isinstance(expr, ir.ScalarExpr):
+    def _get_scalar(field):
         def scalar_handler(results):
-            return results['tmp'][0]
+            return results[field][0]
+        return scalar_handler
+
+    if isinstance(expr, ir.ScalarExpr):
 
         if _scalar_reduce(expr):
-            table_expr = _reduction_to_aggregation(expr, agg_name='tmp')
-            return table_expr, scalar_handler
+            table_expr, name = _reduction_to_aggregation(
+                expr, default_name='tmp')
+            return table_expr, _get_scalar(name)
         else:
             base_table = ir.find_base_table(expr)
             if base_table is None:
                 # expr with no table refs
-                return expr.name('tmp'), scalar_handler
+                return expr.name('tmp'), _get_scalar('tmp')
             else:
                 raise NotImplementedError(expr._repr())
 
@@ -813,9 +817,17 @@ def _adapt_expr(expr):
                                    .format(type(expr)))
 
 
-def _reduction_to_aggregation(expr, agg_name='tmp'):
+def _reduction_to_aggregation(expr, default_name='tmp'):
     table = ir.find_base_table(expr)
-    return table.aggregate([expr.name(agg_name)])
+
+    try:
+        name = expr.get_name()
+        named_expr = expr
+    except:
+        name = default_name
+        named_expr = expr.name(default_name)
+
+    return table.aggregate([named_expr]), name
 
 
 class QueryBuilder(object):
