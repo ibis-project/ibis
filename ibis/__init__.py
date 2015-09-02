@@ -70,7 +70,7 @@ def make_client(db, hdfs_client=None):
 
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
-                 use_kerberos=False, verify=True, **kwds):
+                 auth_mechanism='NOSASL', verify=True, **kwds):
     """
     Connect to HDFS
 
@@ -79,7 +79,7 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
     host : string
     port : int, default 50070 (webhdfs default)
     protocol : {'webhdfs'}
-    use_kerberos : boolean, default False
+    auth_mechanism : {'NOSASL' <- default, 'GSSAPI', 'LDAP', 'PLAIN'}
     verify : boolean, default False
         Set to False to turn off verifying SSL certificates
 
@@ -92,7 +92,7 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
     import requests
     session = kwds.setdefault('session', requests.Session())
     session.verify = verify
-    if use_kerberos:
+    if auth_mechanism in ['GSSAPI', 'LDAP']:
         try:
             import requests_kerberos
         except ImportError:
