@@ -61,12 +61,8 @@ def make_client(db, hdfs_client=None):
     -------
     client : IbisClient
     """
-    client = impala.ImpalaClient(db, hdfs_client=hdfs_client)
-
-    if options.default_backend is None:
-        options.default_backend = client
-
-    return client
+    db._hdfs = hdfs_client
+    return db
 
 make_client = util.deprecate(
     make_client, ('make_client is deprecated. '
