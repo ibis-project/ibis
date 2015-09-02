@@ -34,9 +34,15 @@ import pandas as pd
 import pandas.util.testing as tm
 
 ENV = IbisTestEnv()
-IBIS_TEST_DATA_S3_BUCKET = 'ibis-test-resources'
+IBIS_TEST_DATA_S3_BUCKET = 'ibis-data'
 IBIS_TEST_DATA_LOCAL_DIR = 'ibis-testing-data'
-IBIS_TEST_DATA_TARBALL = 'ibis-testing-data.tar.gz'
+
+TARBALL_NAME = 'ibis-testing-data.tar.gz'
+IBIS_TEST_DATA_TARBALL = 'testing/{0}'.format(TARBALL_NAME)
+
+
+IBIS_TEST_AWS_KEY_ID = os.environ.get('IBIS_TEST_AWS_KEY_ID')
+IBIS_TEST_AWS_SECRET = os.environ.get('IBIS_TEST_AWS_SECRET')
 
 
 def make_ibis_client():
@@ -91,7 +97,7 @@ def dnload_ibis_test_data_from_s3(local_path):
     url = 'https://{0}.s3.amazonaws.com/{1}'.format(
         IBIS_TEST_DATA_S3_BUCKET, IBIS_TEST_DATA_TARBALL)
     cmd = 'cd {0} && wget -q {1} && tar -xzf {2}'.format(
-        local_path, url, IBIS_TEST_DATA_TARBALL)
+        local_path, url, TARBALL_NAME)
     check_call(cmd, shell=True)
     data_dir = pjoin(local_path, IBIS_TEST_DATA_LOCAL_DIR)
     print('Downloaded {0} and unpacked it to {1}'.format(url, data_dir))
@@ -183,7 +189,7 @@ def upload_udfs(con):
     con.hdfs.put(bitcode_dir, build_dir, verbose=True)
 
 
-def scrape_parquet_files(con):
+def scrape_parquet_files(tmp_db, con):
     to_scrape = [('tpch', x) for x in con.list_tables(database='tpch')]
     to_scrape.append(('functional', 'alltypes'))
     for db, tname in to_scrape:
@@ -197,6 +203,19 @@ def download_parquet_files(con, tmp_db_hdfs_path):
     parquet_path = pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'parquet')
     print("Downloading {0}".format(parquet_path))
     con.hdfs.get(tmp_db_hdfs_path, parquet_path)
+
+
+def generate_sqlite_db(con):
+    from sqlalchemy import create_engine
+
+    path = pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'ibis_testing.db')
+    csv_path = guid()
+
+    engine = create_engine('sqlite:///{0}'.format(path))
+
+    generate_sql_csv_sources(csv_path, con.database('ibis_testing'))
+    make_sqlite_testing_db(csv_path, engine)
+    shutil.rmtree(csv_path)
 
 
 def download_avro_files(con):
@@ -235,8 +254,10 @@ def copy_tarball_to_versioned_backup(bucket):
     assert bucket.get_key(IBIS_TEST_DATA_TARBALL) is None
 
 
-_sql_tables = ['functional_alltypes', 'tpch_lineitem', 'tpch_customer',
-               'tpch_region', 'tpch_nation', 'tpch_orders']
+_sql_tpch_tables = ['tpch_lineitem', 'tpch_customer',
+                    'tpch_region', 'tpch_nation', 'tpch_orders']
+
+_sql_tables = ['functional_alltypes']
 
 
 def _project_tpch_lineitem(t):
@@ -360,27 +381,29 @@ def create(create_tarball, push_to_s3):
         print('Created database {0} at {1}'.format(tmp_db, tmp_db_hdfs_path))
 
         # create the local data set
-        scrape_parquet_files(con)
+        scrape_parquet_files(tmp_db, con)
         download_parquet_files(con, tmp_db_hdfs_path)
         download_avro_files(con)
         generate_csv_files()
+        generate_sqlite_db(con)
     finally:
         con.drop_database(tmp_db, force=True)
-        assert not con.hdfs.exists(TMP_DB_HDFS_PATH)
+        assert not con.hdfs.exists(tmp_db_hdfs_path)
 
     if create_tarball:
-        check_call('tar -xzf {0} {1}'.format(IBIS_TEST_DATA_TARBALL,
-                                             IBIS_TEST_DATA_LOCAL_DIR),
+        check_call('tar -zc {0} > {1}'
+                   .format(IBIS_TEST_DATA_LOCAL_DIR, TARBALL_NAME),
                    shell=True)
 
     if push_to_s3:
-        from boto.s3 import connect_to_region
-        s3_conn = connect_to_region('us-west-2')
+        import boto
+        s3_conn = boto.connect_s3(IBIS_TEST_AWS_KEY_ID,
+                                  IBIS_TEST_AWS_SECRET)
         bucket = s3_conn.get_bucket(IBIS_TEST_DATA_S3_BUCKET)
-        copy_tarball_to_versioned_backup(bucket)
+        # copy_tarball_to_versioned_backup(bucket)
         key = bucket.new_key(IBIS_TEST_DATA_TARBALL)
         print('Upload tarball to S3')
-        key.set_contents_from_filename(IBIS_TEST_DATA_TARBALL, replace=False)
+        key.set_contents_from_filename(TARBALL_NAME, replace=True)
 
 
 @main.command()
@@ -416,6 +439,10 @@ def load(data, udf, data_dir, overwrite):
             for table in parquet_tables + avro_tables:
                 print('Computing stats for {0}'.format(table.op().name))
                 table.compute_stats()
+
+            # sqlite database
+            sqlite_src = osp.join(data_dir, 'ibis_testing.db')
+            shutil.copy(sqlite_src, '.')
         finally:
             shutil.rmtree(tmp_dir)
 
