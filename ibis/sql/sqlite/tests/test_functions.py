@@ -251,7 +251,17 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
             s.group_concat(),
         ]
+        self._execute_aggregation(table, exprs)
 
+    def test_distinct_aggregates(self):
+        table = self.alltypes.limit(100)
+
+        exprs = [
+            table.double_col.nunique()
+        ]
+        self._execute_aggregation(table, exprs)
+
+    def _execute_aggregation(self, table, exprs):
         agg_exprs = [expr.name('e%d' % i)
                      for i, expr in enumerate(exprs)]
 
