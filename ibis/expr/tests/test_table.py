@@ -1285,6 +1285,28 @@ class TestLateBindingFunctions(BasicTestCase, unittest.TestCase):
         expected = self.table.mutate(foo=g)
         assert_equal(result, expected)
 
+    def test_groupby_mutate(self):
+        t = self.table
+
+        g = t.group_by('g').order_by('f')
+        expr = g.mutate(foo=lambda x: x.f.lag(),
+                        bar=lambda x: x.f.rank())
+        expected = g.mutate(foo=t.f.lag(),
+                            bar=t.f.rank())
+
+        assert_equal(expr, expected)
+
+    def test_groupby_projection(self):
+        t = self.table
+
+        g = t.group_by('g').order_by('f')
+        expr = g.projection([lambda x: x.f.lag().name('foo'),
+                             lambda x: x.f.rank().name('bar')])
+        expected = g.projection([t.f.lag().name('foo'),
+                                 t.f.rank().name('bar')])
+
+        assert_equal(expr, expected)
+
     def test_set_column(self):
         def g(x):
             return x.f * 2

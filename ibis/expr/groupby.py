@@ -41,7 +41,7 @@ class GroupedTableExpr(object):
 
     def __getitem__(self, args):
         # Shortcut for projection with window functions
-        return self.projection(args)
+        return self.projection(list(args))
 
     def __getattr__(self, attr):
         if hasattr(self.table, attr):
@@ -99,14 +99,21 @@ class GroupedTableExpr(object):
 
     def mutate(self, exprs=None, **kwds):
         """
-        Returns a table projection with analytic / window functions applied
+        Returns a table projection with analytic / window functions
+        applied. Any arguments can be functions.
+
+        Parameters
+        ----------
+        exprs : list, default None
+        kwds : key=value pairs
 
         Examples
         --------
         expr = (table
                 .group_by('foo')
                 .order_by(ibis.desc('bar'))
-                .mutate(qux=table.baz.lag()))
+                .mutate(qux=lambda x: x.baz.lag(),
+                        qux2=table.baz.lead()))
 
         Returns
         -------
@@ -117,14 +124,22 @@ class GroupedTableExpr(object):
         else:
             exprs = util.promote_list(exprs)
 
-        for k, v in sorted(kwds.items()):
+        kwd_names = list(kwds.keys())
+        kwd_values = list(kwds.values())
+        kwd_values = self.table._resolve(kwd_values)
+
+        for k, v in sorted(zip(kwd_names, kwd_values)):
             exprs.append(v.name(k))
 
         return self.projection([self.table] + exprs)
 
     def projection(self, exprs):
+        """
+        Like mutate, but do not include existing table columns
+        """
         w = self._get_window()
         windowed_exprs = []
+        exprs = self.table._resolve(exprs)
         for expr in exprs:
             expr = L.windowize_function(expr, w=w)
             windowed_exprs.append(expr)
