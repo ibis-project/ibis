@@ -22,6 +22,7 @@ from ibis.compat import unittest, StringIO, Decimal
 from ibis.expr.datatypes import Category
 from ibis.expr.tests.mocks import MockConnection
 from ibis.impala.compiler import ImpalaExprTranslator, to_sql, ImpalaContext
+from ibis.sql.tests.test_compiler import ExprTestCases
 from ibis.impala.tests.common import ImpalaE2E
 import ibis.expr.types as ir
 import ibis.expr.api as api
@@ -412,7 +413,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
                 reduction(where=condbad_literal)
 
 
-class TestCaseExprs(unittest.TestCase, ExprSQLTest):
+class TestCaseExprs(unittest.TestCase, ExprSQLTest, ExprTestCases):
 
     def setUp(self):
         self.con = MockConnection()
@@ -431,12 +432,7 @@ class TestCaseExprs(unittest.TestCase, ExprSQLTest):
         assert result == expected
 
     def test_simple_case(self):
-        expr = (self.table.g.case()
-                .when('foo', 'bar')
-                .when('baz', 'qux')
-                .else_('default')
-                .end())
-
+        expr = self._case_simple_case()
         result = self._translate(expr)
         expected = """CASE `g`
   WHEN 'foo' THEN 'bar'
@@ -446,11 +442,7 @@ END"""
         assert result == expected
 
     def test_search_case(self):
-        expr = (ibis.case()
-                .when(self.table.f > 0, self.table.d * 2)
-                .when(self.table.c < 0, self.table.a * 2)
-                .end())
-
+        expr = self._case_search_case()
         result = self._translate(expr)
         expected = """CASE
   WHEN `f` > 0 THEN `d` * 2

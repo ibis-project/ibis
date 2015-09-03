@@ -234,10 +234,29 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             self._compare_sqla(ibis_joined, expected)
 
     def test_simple_case(self):
-        pass
+        self.con.table('alltypes')
+        st = self.con.meta.tables['alltypes']
+
+        expr = self._case_simple_case()
+
+        cases = [
+            (expr, sa.case([(st.c.g == L('foo'), L('bar')),
+                            (st.c.g == L('baz'), L('qux'))],
+                           else_='default')),
+        ]
+        self._check_expr_cases(cases)
 
     def test_searched_case(self):
-        pass
+        self.con.table('alltypes')
+        st = self.con.meta.tables['alltypes']
+
+        expr = self._case_search_case()
+        cases = [
+            (expr, sa.case([(st.c.f > L(0), st.c.d * L(2)),
+                            (st.c.c < L(0), st.c.a * L(2))],
+                           else_=sa.null())),
+        ]
+        self._check_expr_cases(cases)
 
     def test_where_simple_comparisons(self):
         expr = self._case_where_simple_comparisons()

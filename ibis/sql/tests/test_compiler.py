@@ -643,6 +643,21 @@ class ExprTestCases(object):
 
         return expr
 
+    def _case_simple_case(self):
+        t = self.con.table('alltypes')
+        return (t.g.case()
+                .when('foo', 'bar')
+                .when('baz', 'qux')
+                .else_('default')
+                .end())
+
+    def _case_search_case(self):
+        t = self.con.table('alltypes')
+        return (ibis.case()
+                .when(t.f > 0, t.d * 2)
+                .when(t.c < 0, t.a * 2)
+                .end())
+
 
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
 
