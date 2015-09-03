@@ -211,3 +211,26 @@ def trailing_window(periods, group_by=None, order_by=None):
     """
     return Window(preceding=periods, following=0,
                   group_by=group_by, order_by=order_by)
+
+
+def propagate_down_window(expr, window):
+    op = expr.op()
+
+    clean_args = []
+    unchanged = True
+    for arg in op.args:
+        if (isinstance(arg, ir.Expr) and
+                not isinstance(op, ops.WindowOp)):
+            new_arg = propagate_down_window(arg, window)
+            if isinstance(new_arg.op(), ops.AnalyticOp):
+                new_arg = ops.WindowOp(new_arg, window).to_expr()
+            if arg is not new_arg:
+                unchanged = False
+            arg = new_arg
+
+        clean_args.append(arg)
+
+    if unchanged:
+        return expr
+    else:
+        return type(op)(*clean_args).to_expr()
