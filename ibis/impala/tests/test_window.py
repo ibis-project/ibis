@@ -19,6 +19,7 @@ import ibis
 from ibis.impala.compiler import to_sql
 from ibis.expr.tests.mocks import BasicTestCase
 from ibis.compat import unittest
+from ibis.tests.util import assert_equal
 import ibis.common as com
 
 
@@ -213,6 +214,26 @@ FROM alltypes"""
             with self.assertRaises(com.TranslationError):
                 proj = t.projection([expr.over(w).name('foo')])
                 to_sql(proj)
+
+    def test_propagate_nested_windows(self):
+        # GH #469
+        t = self.con.table('alltypes')
+
+        w = ibis.window(group_by=t.g, order_by=t.f)
+
+        col = (t.f - t.f.lag()).lag()
+
+        # propagate down here!
+        result = col.over(w)
+        ex_expr = (t.f - t.f.lag().over(w)).lag().over(w)
+        assert_equal(result, ex_expr)
+
+        expr = t.projection(col.over(w).name('foo'))
+        expected = """\
+SELECT lag(`f` - lag(`f`) OVER (PARTITION BY `g` ORDER BY `f`)) \
+OVER (PARTITION BY `g` ORDER BY `f`) AS `foo`
+FROM alltypes"""
+        self._check_sql(expr, expected)
 
     def test_math_on_windowed_expr(self):
         # Window clause may not be found at top level of expression

@@ -754,9 +754,17 @@ class WindowOp(ValueOp):
     output_type = rules.type_of_arg(0)
 
     def __init__(self, expr, window):
+        from ibis.expr.window import propagate_down_window
         if not is_analytic(expr):
             raise com.IbisInputError('Expression does not contain a valid '
                                      'window operation')
+
+        table = ir.find_base_table(expr)
+        if table is not None:
+            window = window.bind(table)
+
+        expr = propagate_down_window(expr, window)
+
         ValueOp.__init__(self, expr, window)
 
     def over(self, window):

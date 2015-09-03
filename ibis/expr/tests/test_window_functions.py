@@ -45,7 +45,46 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
         assert_equal(expr, expr3)
 
     def test_combine_windows(self):
-        pass
+        t = self.t
+        w1 = ibis.window(group_by=t.g, order_by=t.f)
+        w2 = ibis.window(preceding=5, following=5)
+
+        w3 = w1.combine(w2)
+        expected = ibis.window(group_by=t.g, order_by=t.f,
+                               preceding=5, following=5)
+        assert_equal(w3, expected)
+
+        w4 = ibis.window(group_by=t.a, order_by=t.e)
+        w5 = w3.combine(w4)
+        expected = ibis.window(group_by=[t.g, t.a],
+                               order_by=[t.f, t.e],
+                               preceding=5, following=5)
+        assert_equal(w5, expected)
+
+    def test_over_auto_bind(self):
+        # GH #542
+        t = self.t
+
+        w = ibis.window(group_by='g', order_by='f')
+
+        expr = t.f.lag().over(w)
+
+        actual_window = expr.op().args[1]
+        expected = ibis.window(group_by=t.g, order_by=t.f)
+        assert_equal(actual_window, expected)
+
+    def test_window_function_bind(self):
+        # GH #532
+        t = self.t
+
+        w = ibis.window(group_by=lambda x: x.g,
+                        order_by=lambda x: x.f)
+
+        expr = t.f.lag().over(w)
+
+        actual_window = expr.op().args[1]
+        expected = ibis.window(group_by=t.g, order_by=t.f)
+        assert_equal(actual_window, expected)
 
     def test_auto_windowize_analysis_bug(self):
         # GH #544
