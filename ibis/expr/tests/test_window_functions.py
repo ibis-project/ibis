@@ -61,6 +61,20 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
                                preceding=5, following=5)
         assert_equal(w5, expected)
 
+    def test_over_auto_bind(self):
+        t = self.t
+
+        w = ibis.window(group_by='g', order_by='f')
+
+        expr = t.f.lag().over(w)
+
+        actual_window = expr.op().args[1]
+        expected = ibis.window(group_by=t.g, order_by=t.f)
+        assert_equal(actual_window, expected)
+
+    def test_window_function_bind(self):
+        pass
+
     def test_auto_windowize_analysis_bug(self):
         # GH #544
         t = self.con.table('airlines')

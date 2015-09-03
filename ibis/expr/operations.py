@@ -757,6 +757,11 @@ class WindowOp(ValueOp):
         if not is_analytic(expr):
             raise com.IbisInputError('Expression does not contain a valid '
                                      'window operation')
+
+        table = ir.find_base_table(expr)
+        if table is not None:
+            window = window.bind(table)
+
         ValueOp.__init__(self, expr, window)
 
     def over(self, window):
