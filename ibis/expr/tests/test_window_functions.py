@@ -62,6 +62,7 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
         assert_equal(w5, expected)
 
     def test_over_auto_bind(self):
+        # GH #542
         t = self.t
 
         w = ibis.window(group_by='g', order_by='f')
@@ -73,7 +74,17 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
         assert_equal(actual_window, expected)
 
     def test_window_function_bind(self):
-        pass
+        # GH #532
+        t = self.t
+
+        w = ibis.window(group_by=lambda x: x.g,
+                        order_by=lambda x: x.f)
+
+        expr = t.f.lag().over(w)
+
+        actual_window = expr.op().args[1]
+        expected = ibis.window(group_by=t.g, order_by=t.f)
+        assert_equal(actual_window, expected)
 
     def test_auto_windowize_analysis_bug(self):
         # GH #544
