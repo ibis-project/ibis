@@ -866,54 +866,6 @@ def _searched_case(translator, expr):
     return formatter.get_result()
 
 
-def _bucket(translator, expr):
-    import operator
-
-    op = expr.op()
-    stmt = ibis.case()
-
-    if op.closed == 'left':
-        l_cmp = operator.le
-        r_cmp = operator.lt
-    else:
-        l_cmp = operator.lt
-        r_cmp = operator.le
-
-    user_num_buckets = len(op.buckets) - 1
-
-    bucket_id = 0
-    if op.include_under:
-        if user_num_buckets > 0:
-            cmp = operator.lt if op.close_extreme else r_cmp
-        else:
-            cmp = operator.le if op.closed == 'right' else operator.lt
-        stmt = stmt.when(cmp(op.arg, op.buckets[0]), bucket_id)
-        bucket_id += 1
-
-    for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
-        if (op.close_extreme and
-            ((op.closed == 'right' and j == 0) or
-             (op.closed == 'left' and j == (user_num_buckets - 1)))):
-            stmt = stmt.when((lower <= op.arg) & (op.arg <= upper),
-                             bucket_id)
-        else:
-            stmt = stmt.when(l_cmp(lower, op.arg) & r_cmp(op.arg, upper),
-                             bucket_id)
-        bucket_id += 1
-
-    if op.include_over:
-        if user_num_buckets > 0:
-            cmp = operator.lt if op.close_extreme else l_cmp
-        else:
-            cmp = operator.lt if op.closed == 'right' else operator.le
-
-        stmt = stmt.when(cmp(op.buckets[-1], op.arg), bucket_id)
-        bucket_id += 1
-
-    case_expr = stmt.end().name(expr._name)
-    return _searched_case(translator, case_expr)
-
-
 def _category_label(translator, expr):
     op = expr.op()
 
@@ -1228,13 +1180,14 @@ _expr_transforms = {
     ops.MinRank: _subtract_one,
 }
 
+_expr_rewrites = comp.ExprTranslator._rewrites.copy()
 
-_expr_rewrites = {
+_expr_rewrites.update({
     ops.Any: _any_expand,
     ops.All: _all_expand,
     ops.NotAny: _notany_expand,
     ops.NotAll: _notall_expand,
-}
+})
 
 
 _binary_infix_ops = {
@@ -1364,7 +1317,6 @@ _operation_registry = {
     ops.Contains: _binary_infix_op('IN'),
     ops.NotContains: _binary_infix_op('NOT IN'),
 
-    analytics.Bucket: _bucket,
     analytics.CategoryLabel: _category_label,
 
     ops.SimpleCase: _simple_case,

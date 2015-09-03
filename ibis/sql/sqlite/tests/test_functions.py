@@ -206,6 +206,12 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         exprs = [
             (d > 20).ifelse(10, -20),
             (d > 20).ifelse(10, -20).abs(),
+
+            # tier and histogram
+            d.bucket([0, 10, 25, 50, 100]),
+            d.bucket([0, 10, 25, 50], include_over=True),
+            d.bucket([0, 10, 25, 50], include_over=True, close_extreme=False),
+            d.bucket([10, 25, 50, 100], include_under=True),
         ]
         self._execute_projection(t, exprs)
 

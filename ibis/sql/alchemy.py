@@ -281,9 +281,8 @@ def unary(sa_func):
     return fixed_arity(sa_func, 1)
 
 
-_expr_rewrites = {
+_expr_rewrites = comp.ExprTranslator._rewrites.copy()
 
-}
 
 _operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),

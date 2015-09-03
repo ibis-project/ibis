@@ -17,11 +17,13 @@ from collections import defaultdict
 from ibis.compat import lzip
 import ibis.common as com
 import ibis.expr.analysis as L
+import ibis.expr.analytics as analytics
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 import ibis.sql.transforms as transforms
 import ibis.util as util
+import ibis
 
 
 # ---------------------------------------------------------------------
@@ -1025,7 +1027,58 @@ class QueryContext(object):
         return False
 
 
+def _bucket(expr):
+    import operator
+
+    op = expr.op()
+    stmt = ibis.case()
+
+    if op.closed == 'left':
+        l_cmp = operator.le
+        r_cmp = operator.lt
+    else:
+        l_cmp = operator.lt
+        r_cmp = operator.le
+
+    user_num_buckets = len(op.buckets) - 1
+
+    bucket_id = 0
+    if op.include_under:
+        if user_num_buckets > 0:
+            cmp = operator.lt if op.close_extreme else r_cmp
+        else:
+            cmp = operator.le if op.closed == 'right' else operator.lt
+        stmt = stmt.when(cmp(op.arg, op.buckets[0]), bucket_id)
+        bucket_id += 1
+
+    for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
+        if (op.close_extreme and
+            ((op.closed == 'right' and j == 0) or
+             (op.closed == 'left' and j == (user_num_buckets - 1)))):
+            stmt = stmt.when((lower <= op.arg) & (op.arg <= upper),
+                             bucket_id)
+        else:
+            stmt = stmt.when(l_cmp(lower, op.arg) & r_cmp(op.arg, upper),
+                             bucket_id)
+        bucket_id += 1
+
+    if op.include_over:
+        if user_num_buckets > 0:
+            cmp = operator.lt if op.close_extreme else l_cmp
+        else:
+            cmp = operator.lt if op.closed == 'right' else operator.le
+
+        stmt = stmt.when(cmp(op.buckets[-1], op.arg), bucket_id)
+        bucket_id += 1
+
+    return stmt.end().name(expr._name)
+
+
 class ExprTranslator(object):
+
+    _rewrites = {
+        analytics.Bucket: _bucket,
+    }
 
     def __init__(self, expr, context=None, named=False, permit_subquery=False):
         self.expr = expr
