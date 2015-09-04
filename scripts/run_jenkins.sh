@@ -117,7 +117,7 @@ fi
 PYTEST_COV_ARGS="--cov ibis --cov-report xml --cov-report term --cov-config .coveragerc"
 
 # run the test suite
-py.test $PYTEST_KERB_ARGS $PYTEST_COV_ARGS --impala --hdfs --sqlite ibis
+py.test -vv -r sxX $PYTEST_KERB_ARGS $PYTEST_COV_ARGS --impala --hdfs --sqlite ibis
 
 # cleanup temporary data (but not testing data)
 scripts/test_data_admin.py cleanup --tmp-data --tmp-db
