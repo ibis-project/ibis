@@ -16,6 +16,7 @@ import pandas as pd
 
 from .common import SQLiteTests
 from ibis.compat import unittest
+from ibis.tests.util import assert_equal
 import ibis.expr.types as ir
 import ibis
 
@@ -56,3 +57,14 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
 
         supported_expr = self.alltypes.double_col.sum()
         assert supported_expr.verify()
+
+    def test_attach_file(self):
+        pass
+
+    def test_database_layer(self):
+        db = self.con.database()
+
+        t = db.functional_alltypes
+        assert_equal(t, self.alltypes)
+
+        assert db.list_tables() == self.con.list_tables()

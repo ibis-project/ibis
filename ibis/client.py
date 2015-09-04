@@ -55,6 +55,26 @@ class SQLClient(Client):
     def current_database(self):
         return self.con.database
 
+    def database(self, name=None):
+        """
+        Create a Database object for a given database name that can be used for
+        exploring and manipulating the objects (tables, functions, views, etc.)
+        inside
+
+        Parameters
+        ----------
+        name : string
+          Name of database
+
+        Returns
+        -------
+        database : Database
+        """
+        # TODO: validate existence of database
+        if name is None:
+            name = self.current_database
+        return self.database_class(name, self)
+
     def _fully_qualified_name(self, name, database):
         # XXX
         return name

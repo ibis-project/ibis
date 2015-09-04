@@ -225,6 +225,10 @@ LIMIT 10"""
         db.drop()
         assert not self.con.exists_database(tmp_name)
 
+    def test_database_default_current_database(self):
+        db = self.con.database()
+        assert db.name == self.con.current_database
+
     def test_namespace(self):
         ns = self.db.namespace('tpch_')
 

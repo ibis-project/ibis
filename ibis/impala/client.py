@@ -42,6 +42,17 @@ else:
     import queue
 
 
+class ImpalaDatabase(Database):
+
+    def list_udfs(self, like=None):
+        return self.client.list_udfs(like=self._qualify_like(like),
+                                     database=self.name)
+
+    def list_udas(self, like=None):
+        return self.client.list_udas(like=self._qualify_like(like),
+                                     database=self.name)
+
+
 class ImpalaConnection(object):
 
     """
@@ -210,6 +221,8 @@ class ImpalaClient(SQLClient):
         'CHAR': 'string'
     }
 
+    database_class = ImpalaDatabase
+
     def __init__(self, con, hdfs_client=None, **params):
         self.con = con
 
@@ -276,24 +289,6 @@ class ImpalaClient(SQLClient):
 
     def _db_type_to_dtype(self, db_type):
         return self._HS2_TTypeId_to_dtype[db_type]
-
-    def database(self, name):
-        """
-        Create a Database object for a given database name that can be used for
-        exploring and manipulating the objects (tables, functions, views, etc.)
-        inside
-
-        Parameters
-        ----------
-        name : string
-          Name of database
-
-        Returns
-        -------
-        database : Database
-        """
-        # TODO: validate existence of database
-        return ImpalaDatabase(name, self)
 
     def list_tables(self, like=None, database=None):
         """
@@ -1182,17 +1177,6 @@ def to_stdout(x):
 
 # ----------------------------------------------------------------------
 # ORM-ish usability layer
-
-
-class ImpalaDatabase(Database):
-
-    def list_udfs(self, like=None):
-        return self.client.list_udfs(like=self._qualify_like(like),
-                                     database=self.name)
-
-    def list_udas(self, like=None):
-        return self.client.list_udas(like=self._qualify_like(like),
-                                     database=self.name)
 
 
 class ScalarFunction(DatabaseEntity):

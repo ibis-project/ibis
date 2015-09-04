@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sqlalchemy as sa
+
 import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
+from ibis.client import Database
 from .compiler import SQLiteDialect
 
 
@@ -21,20 +24,35 @@ class SQLiteTable(alch.AlchemyTable):
     pass
 
 
+class SQLiteDatabase(Database):
+    pass
+
+
 class SQLiteDatabase(alch.AlchemyClient):
 
     dialect = SQLiteDialect
+    database_class = SQLiteDatabase
 
     def __init__(self, path):
         self.name = path
-        uri = 'sqlite:///{0}'.format(path)
-        alch.AlchemyClient.__init__(self, uri)
+        self.database_name = 'default'
+
+        self.con = sa.create_engine('sqlite://')
+        self.attach(self.database_name, path)
+        self.meta = sa.MetaData(bind=self.con)
+
+    @property
+    def current_database(self):
+        return self.database_name
+
+    def attach(self, name, path):
+        self.con.execute("ATTACH DATABASE '{0}' AS '{1}'".format(path, name))
 
     @property
     def client(self):
         return self
 
-    def table(self, name):
+    def table(self, name, database=None):
         """
         Create a table expression that references a particular table in the
         SQLite database

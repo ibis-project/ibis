@@ -472,11 +472,6 @@ class AlchemyClient(SQLClient):
 
     dialect = AlchemyDialect
 
-    def __init__(self, uri):
-        self.uri = uri
-        self.con = sa.create_engine(self.uri)
-        self.meta = sa.MetaData(bind=self.con)
-
     def create_table(self, name, expr=None, schema=None, database=None):
         pass
 
@@ -495,6 +490,8 @@ class AlchemyClient(SQLClient):
         -------
         tables : list of strings
         """
+        if database is None:
+            database = self.current_database
         names = self.con.table_names(schema=database)
         if like is not None:
             names = [x for x in names if like in x]
