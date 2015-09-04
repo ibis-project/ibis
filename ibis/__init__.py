@@ -77,18 +77,19 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
 
     Parameters
     ----------
-    host : string
-    port : int, default 50070 (webhdfs default)
+    host : string, Host name of the HDFS NameNode
+    port : int, NameNode's WebHDFS port (default 50070)
     protocol : {'webhdfs'}
-    auth_mechanism : {'NOSASL' <- default, 'GSSAPI', 'LDAP', 'PLAIN'}
-    verify : boolean, default False
-        Set to False to turn off verifying SSL certificates
+    auth_mechanism : string, Set to NOSASL or PLAIN for non-secure clusters.
+        Set to GSSAPI or LDAP for Kerberos-secured clusters.
+    verify : boolean, Set to False to turn off verifying SSL certificates.
+        (default True)
 
     Other keywords are forwarded to hdfs library classes
 
     Returns
     -------
-    client : ibis HDFS client
+    client : WebHDFS
     """
     import requests
     session = kwds.setdefault('session', requests.Session())
