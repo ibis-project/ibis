@@ -23,8 +23,9 @@ import hdfs
 import ibis.common as com
 
 from ibis.config import options
+from ibis.client import (Query, AsyncQuery, Database,
+                         DatabaseEntity, SQLClient)
 from ibis.compat import lzip
-from ibis.client import SQLClient, Database, DatabaseEntity
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
@@ -199,29 +200,42 @@ class ImpalaCursor(object):
         return self.cursor.fetchall()
 
 
+class ImpalaQuery(Query):
+
+    def _db_type_to_dtype(self, db_type):
+        return _HS2_TTypeId_to_dtype[db_type]
+
+
+class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
+    pass
+
+
+_HS2_TTypeId_to_dtype = {
+    'BOOLEAN': 'bool',
+    'TINYINT': 'int8',
+    'SMALLINT': 'int16',
+    'INT': 'int32',
+    'BIGINT': 'int64',
+    'TIMESTAMP': 'datetime64[ns]',
+    'FLOAT': 'float32',
+    'DOUBLE': 'float64',
+    'STRING': 'string',
+    'DECIMAL': 'object',
+    'BINARY': 'string',
+    'VARCHAR': 'string',
+    'CHAR': 'string'
+}
+
+
 class ImpalaClient(SQLClient):
 
     """
     An Ibis client interface that uses Impala
     """
 
-    _HS2_TTypeId_to_dtype = {
-        'BOOLEAN': 'bool',
-        'TINYINT': 'int8',
-        'SMALLINT': 'int16',
-        'INT': 'int32',
-        'BIGINT': 'int64',
-        'TIMESTAMP': 'datetime64[ns]',
-        'FLOAT': 'float32',
-        'DOUBLE': 'float64',
-        'STRING': 'string',
-        'DECIMAL': 'object',
-        'BINARY': 'string',
-        'VARCHAR': 'string',
-        'CHAR': 'string'
-    }
-
     database_class = ImpalaDatabase
+    sync_query = ImpalaQuery
+    async_query = ImpalaAsyncQuery
 
     def __init__(self, con, hdfs_client=None, **params):
         self.con = con
@@ -286,9 +300,6 @@ class ImpalaClient(SQLClient):
 
         database = database or self.current_database
         return '{0}.`{1}`'.format(database, name)
-
-    def _db_type_to_dtype(self, db_type):
-        return self._HS2_TTypeId_to_dtype[db_type]
 
     def list_tables(self, like=None, database=None):
         """
@@ -452,19 +463,16 @@ class ImpalaClient(SQLClient):
         qualified_name = self._fully_qualified_name(table_name, database)
 
         schema = self.get_schema(table_name, database=database)
-
         name_to_type = dict(zip(schema.names, schema.types))
-
         query = 'SHOW PARTITIONS {0}'.format(qualified_name)
 
-        partition_fields = []
-        with self._execute(query, results=True) as cur:
-            result = self._fetch_from_cursor(cur)
+        result = self.execute(query)
 
-            for x in result.columns:
-                if x not in name_to_type:
-                    break
-                partition_fields.append((x, name_to_type[x]))
+        partition_fields = []
+        for x in result.columns:
+            if x not in name_to_type:
+                break
+            partition_fields.append((x, name_to_type[x]))
 
         pnames, ptypes = zip(*partition_fields)
         return dt.Schema(pnames, ptypes)
