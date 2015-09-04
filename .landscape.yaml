@@ -1,0 +1,25 @@
+strictness: medium
+
+output-format: grouped
+
+test-warnings: true
+doc-warnings: false
+
+ignore-paths:
+    - dev/merge-pr.py
+    - ibis/wire.py
+
+ignore-patterns:
+    - ^build
+    - ^scripts
+
+pep8:
+    run: true
+    options:
+        max-line-length: 79
+
+mccabe:
+    run: false
+
+pylint:
+    run: false

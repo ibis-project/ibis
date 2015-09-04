@@ -135,7 +135,7 @@ class TestPandasSchemaInference(unittest.TestCase):
     def test_dtype_uint64(self):
         df = pd.DataFrame({'col': np.uint64([666, 2, 3])})
         with self.assertRaises(IbisTypeError):
-            inferred = pandas_to_ibis_schema(df)
+            inferred = pandas_to_ibis_schema(df)  # noqa
 
     def test_dtype_datetime64(self):
         df = pd.DataFrame({
@@ -219,6 +219,6 @@ class TestPandasRoundTrip(ImpalaE2E, unittest.TestCase):
         self.con.con.cursor.execute(insert_query)
 
         table = self.con.table('missing_ints', database=self.tmp_db)
-        df = table.execute()
+        df = table.execute()  # noqa  # REMOVE LATER
 
         # WHAT NOW?

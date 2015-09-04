@@ -17,7 +17,6 @@ import datetime
 
 import ibis
 import ibis.expr.analysis as L
-import ibis.expr.analytics as analytics
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops

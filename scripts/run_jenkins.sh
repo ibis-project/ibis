@@ -122,6 +122,12 @@ py.test -vv -r sxX $PYTEST_KERB_ARGS $PYTEST_COV_ARGS --impala --hdfs --sqlite i
 # cleanup temporary data (but not testing data)
 scripts/test_data_admin.py cleanup --tmp-data --tmp-db
 
+# Enforce flake8 etc
+if [ $PYTHON_VERSION != "2.6" ]; then
+    pip install prospector
+    prospector
+fi
+
 # Report code coverage to codecov.io
 if [ -n $CODECOV_TOKEN ]; then
     bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN
