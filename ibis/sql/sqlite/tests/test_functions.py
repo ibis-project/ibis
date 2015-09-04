@@ -200,7 +200,6 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
     def test_misc_builtins_work(self):
         t = self.alltypes
-
         d = t.double_col
 
         exprs = [
@@ -212,6 +211,17 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             d.bucket([0, 10, 25, 50], include_over=True),
             d.bucket([0, 10, 25, 50], include_over=True, close_extreme=False),
             d.bucket([10, 25, 50, 100], include_under=True),
+        ]
+        self._execute_projection(t, exprs)
+
+    def test_category_label(self):
+        t = self.alltypes
+        d = t.double_col
+
+        bucket = d.bucket([0, 10, 25, 50, 100])
+
+        exprs = [
+            bucket.label(['a', 'b', 'c', 'd'])
         ]
         self._execute_projection(t, exprs)
 

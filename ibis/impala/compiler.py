@@ -866,20 +866,6 @@ def _searched_case(translator, expr):
     return formatter.get_result()
 
 
-def _category_label(translator, expr):
-    op = expr.op()
-
-    stmt = op.args[0].case()
-    for i, label in enumerate(op.labels):
-        stmt = stmt.when(i, label)
-
-    if op.nulls is not None:
-        stmt = stmt.else_(op.nulls)
-
-    case_expr = stmt.end().name(expr._name)
-    return _simple_case(translator, case_expr)
-
-
 def _table_array_view(translator, expr):
     ctx = translator.context
     table = expr.op().table
@@ -1316,8 +1302,6 @@ _operation_registry = {
     ops.Between: _between,
     ops.Contains: _binary_infix_op('IN'),
     ops.NotContains: _binary_infix_op('NOT IN'),
-
-    analytics.CategoryLabel: _category_label,
 
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,

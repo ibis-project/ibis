@@ -1074,10 +1074,24 @@ def _bucket(expr):
     return stmt.end().name(expr._name)
 
 
+def _category_label(expr):
+    op = expr.op()
+
+    stmt = op.args[0].case()
+    for i, label in enumerate(op.labels):
+        stmt = stmt.when(i, label)
+
+    if op.nulls is not None:
+        stmt = stmt.else_(op.nulls)
+
+    return stmt.end().name(expr._name)
+
+
 class ExprTranslator(object):
 
     _rewrites = {
         analytics.Bucket: _bucket,
+        analytics.CategoryLabel: _category_label
     }
 
     def __init__(self, expr, context=None, named=False, permit_subquery=False):
