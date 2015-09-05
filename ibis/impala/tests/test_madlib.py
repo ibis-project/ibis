@@ -22,7 +22,6 @@ from ibis.impala import madlib
 import ibis.util as util
 
 
-@pytest.mark.madlib
 class TestMADLib(ImpalaE2E, unittest.TestCase):
 
     @classmethod
@@ -47,6 +46,7 @@ class TestMADLib(ImpalaE2E, unittest.TestCase):
 
         self.api = madlib.MADLibAPI(self.madlib_so, self.db)
 
+    @pytest.mark.madlib
     def test_create_functions(self):
         self.api.create_functions(self.con)
 
