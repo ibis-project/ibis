@@ -88,7 +88,7 @@ class ImpalaConnection(object):
     def disable_codegen(self, disabled=True):
         self.codegen_disabled = disabled
 
-    def execute(self, query):
+    def execute(self, query, async=False):
         if isinstance(query, DDL):
             query = query.compile()
 
@@ -96,7 +96,7 @@ class ImpalaConnection(object):
         self.log(query)
 
         try:
-            cursor.execute(query)
+            cursor.execute(query, async=async)
         except:
             cursor.release()
             self.error('Exception caused by {0}'.format(query))
@@ -193,8 +193,20 @@ class ImpalaCursor(object):
     def release(self):
         self.con.connection_pool.put(self)
 
-    def execute(self, stmt):
-        self.cursor.execute(stmt)
+    def execute(self, stmt, async=False):
+        if async:
+            self.cursor.execute_async(stmt)
+        else:
+            self.cursor.execute(stmt)
+
+    def is_finished(self):
+        return not self.is_executing()
+
+    def is_executing(self):
+        return self.cursor.is_executing()
+
+    def cancel(self):
+        self.cursor.cancel_operation()
 
     def fetchall(self):
         return self.cursor.fetchall()
@@ -207,7 +219,77 @@ class ImpalaQuery(Query):
 
 
 class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
-    pass
+
+    def __init__(self, client, ddl):
+        super(ImpalaAsyncQuery, self).__init__(client, ddl)
+        self._cursor = None
+        self._exception = None
+        self._execute_thread = None
+        self._execute_complete = False
+        self._operation_active = False
+
+    def execute(self):
+        if self._operation_active:
+            raise com.IbisError('operation already active')
+        con = self.client.con
+
+        # XXX: there is codegen overhead somewhere which causes execute_async
+        # to block, unfortunately. This threading hack works around it
+        def _async_execute():
+            try:
+                self._cursor = con.execute(self.compiled_ddl, async=True)
+            except Exception as e:
+                self._exception = e
+            self._execute_finished = True
+
+        self._execute_complete = False
+        self._operation_active = True
+        self._execute_thread = threading.Thread(target=_async_execute)
+        self._execute_thread.start()
+
+    def _wait_execute(self):
+        if not self._operation_active:
+            raise com.IbisError('No active query')
+        if self._execute_thread.is_alive():
+            self._execute_thread.wait()
+        elif self._exception is not None:
+            raise self._exception
+
+    def is_finished(self):
+        """
+        Return True if the operation is finished
+        """
+        self._wait_execute()
+        return self._cursor.is_finished()
+
+    def cancel(self):
+        """
+        Cancel the query (or attempt to)
+        """
+        self._wait_execute()
+        return self._cursor.cancel()
+
+    def status(self):
+        """
+        Retrieve Impala query status
+        """
+        self._wait_execute()
+        from impala.hiveserver2 import get_operation_status
+        cur = self._cursor
+        handle = cur._last_operation_handle
+        return get_operation_status(cur.service, handle)
+
+    def wait(self, progress_bar=True):
+        raise NotImplementedError
+
+    def get_result(self):
+        """
+        Presuming the operation is completed, return the cursor result as would
+        be returned by the synchronous query API
+        """
+        self._wait_execute()
+        result = self._fetch_from_cursor(self._cursor)
+        return self._wrap_result(result)
 
 
 _HS2_TTypeId_to_dtype = {

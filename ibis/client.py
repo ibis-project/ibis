@@ -85,9 +85,6 @@ class AsyncQuery(Query):
     def is_finished(self):
         raise NotImplementedError
 
-    def status(self):
-        raise NotImplementedError
-
     def cancel(self):
         raise NotImplementedError
 
