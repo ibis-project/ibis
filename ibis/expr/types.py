@@ -118,7 +118,7 @@ class Expr(object):
     def _can_implicit_cast(self, arg):
         return False
 
-    def execute(self, limit=None):
+    def execute(self, limit=None, async=False):
         """
         If this expression is based on physical tables in a database backend,
         execute it against that backend.
@@ -129,7 +129,7 @@ class Expr(object):
           Result of compiling expression and executing in backend
         """
         from ibis.client import execute
-        return execute(self, limit=limit)
+        return execute(self, limit=limit, async=async)
 
     def compile(self, limit=None):
         """

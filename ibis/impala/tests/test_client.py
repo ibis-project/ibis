@@ -255,3 +255,31 @@ LIMIT 10"""
         client.close()
 
         assert not self.con.exists_table(name)
+
+    def test_execute_async_simple(self):
+        t = self.db.functional_alltypes
+        expr = t.double_col.sum()
+
+        q = expr.execute(async=True)
+        result = q.get_result()
+        expected = expr.execute()
+        assert result == expected
+
+    def test_query_cancel(self):
+        import time
+        t = self.db.functional_alltypes
+
+        t2 = t.union(t).union(t)
+
+        # WM: this query takes about 90 seconds to execute for me locally, so
+        # I'm eyeballing an acceptable time frame for the cancel to work
+        expr = t2.join(t2).count()
+
+        start = time.clock()
+        q = expr.execute(async=True)
+        q.cancel()
+        end = time.clock()
+        elapsed = end - start
+        assert elapsed < 5
+
+        assert q.is_finished()

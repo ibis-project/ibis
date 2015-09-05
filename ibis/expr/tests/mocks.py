@@ -350,7 +350,9 @@ class MockConnection(SQLClient):
         from ibis.impala.compiler import build_ast
         return build_ast(expr)
 
-    def execute(self, expr, limit=None):
+    def execute(self, expr, limit=None, async=False):
+        if async:
+            raise NotImplementedError
         ast = self._build_ast_ensure_limit(expr, limit)
         for query in ast.queries:
             self.executed_queries.append(query.compile())

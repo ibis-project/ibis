@@ -228,6 +228,10 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
         self._execute_complete = False
         self._operation_active = False
 
+    def __del__(self):
+        if self._cursor is not None:
+            self._cursor.release()
+
     def execute(self):
         if self._operation_active:
             raise com.IbisError('operation already active')
@@ -240,18 +244,19 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
                 self._cursor = con.execute(self.compiled_ddl, async=True)
             except Exception as e:
                 self._exception = e
-            self._execute_finished = True
+            self._execute_complete = True
 
         self._execute_complete = False
         self._operation_active = True
         self._execute_thread = threading.Thread(target=_async_execute)
         self._execute_thread.start()
+        return self
 
     def _wait_execute(self):
         if not self._operation_active:
             raise com.IbisError('No active query')
         if self._execute_thread.is_alive():
-            self._execute_thread.wait()
+            self._execute_thread.join()
         elif self._exception is not None:
             raise self._exception
 
@@ -259,8 +264,14 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
         """
         Return True if the operation is finished
         """
+        from impala.error import ProgrammingError
         self._wait_execute()
-        return self._cursor.is_finished()
+        try:
+            return self._cursor.is_finished()
+        except ProgrammingError as e:
+            if 'state is not available' in e.args[0]:
+                return True
+            raise
 
     def cancel(self):
         """

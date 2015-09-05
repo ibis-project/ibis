@@ -228,10 +228,8 @@ LIMIT 0""".format(query)
             return self._execute_query(ast.queries[0], async=async)
 
     def _execute_query(self, query, async=False):
-        if async:
-            return self.async_query(self, query)
-        else:
-            return self.sync_query(self, query).execute()
+        klass = self.async_query if async else self.sync_query
+        return klass(self, query).execute()
 
     def compile(self, expr, params=None, limit=None):
         """
@@ -306,9 +304,9 @@ class QueryPipeline(object):
     pass
 
 
-def execute(expr, limit=None):
+def execute(expr, limit=None, async=False):
     backend = find_backend(expr)
-    return backend.execute(expr, limit=limit)
+    return backend.execute(expr, limit=limit, async=async)
 
 
 def compile(expr, limit=None):
