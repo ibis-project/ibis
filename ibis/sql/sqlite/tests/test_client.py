@@ -68,3 +68,16 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
         assert_equal(t, self.alltypes)
 
         assert db.list_tables() == self.con.list_tables()
+
+    def test_compile_toplevel(self):
+        # t = ibis.table([
+        #     ('foo', 'double')
+        # ])
+
+        # # it works!
+        # expr = t.foo.sum()
+        # ibis.sqlite.compile(expr)
+
+        # This does not work yet because if the compiler encounters a
+        # non-SQLAlchemy table it fails
+        pass

@@ -15,6 +15,9 @@
 import ibis
 
 from ibis.impala.compiler import build_ast, to_sql
+
+from ibis import impala
+
 from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest
 import ibis.common as com
@@ -166,7 +169,7 @@ GROUP BY 1"""
                 .aggregate([self.table.count().name('count')]))
         expr2 = expr.g.cast('double')
 
-        query = to_sql(expr2)
+        query = impala.compile(expr2)
         expected = """SELECT CAST(`g` AS double) AS `tmp`
 FROM (
   SELECT `g`, count(*) AS `count`
@@ -190,14 +193,14 @@ SELECT 1 + 2 AS `tmp`"""
         ]
 
         for expr, expected in cases:
-            result = to_sql(expr)
+            result = impala.compile(expr)
             assert result == expected
 
     def test_expr_list_no_table_refs(self):
         exlist = ibis.api.expr_list([ibis.literal(1).name('a'),
                                      ibis.now().name('b'),
                                      ibis.literal(2).log().name('c')])
-        result = to_sql(exlist)
+        result = impala.compile(exlist)
         expected = """\
 SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
         assert result == expected
@@ -207,7 +210,7 @@ SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
         # aggregation
         reduction = self.table.g.isnull().ifelse(1, 0).sum()
 
-        result = to_sql(reduction)
+        result = impala.compile(reduction)
         expected = """\
 SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `sum`
 FROM alltypes"""

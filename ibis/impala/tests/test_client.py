@@ -206,12 +206,23 @@ LIMIT 10"""
             assert table.count().execute() == 25
             assert table.count().execute(limit=10) == 25
 
-    def test_compile_verify(self):
+    def test_expr_compile_verify(self):
         table = self.db.functional_alltypes
         expr = table.double_col.sum()
 
         assert isinstance(expr.compile(), str)
         assert expr.verify()
+
+    def test_api_compile_verify(self):
+        t = self.db.functional_alltypes
+
+        s = t.string_col
+
+        supported = s.lower()
+        unsupported = s.replace('foo', 'bar')
+
+        assert ibis.impala.verify(supported)
+        assert not ibis.impala.verify(unsupported)
 
     def test_database_repr(self):
         assert self.test_data_db in repr(self.db)
