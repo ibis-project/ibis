@@ -2,6 +2,39 @@
 Release Notes
 =============
 
+0.5.0 (September 8, 2015)
+-------------------------
+
+Highlights in this release are the SQLite, Python 3, Impala UDA support, and an
+asynchronous execution API. There are also many usability improvements, bug
+fixes, and other new features.
+
+New features
+------------
+* SQLite client and built-in function support
+* Ibis now supports Python 3.4 as well as 2.6 and 2.7
+* Ibis can utilize Impala user-defined aggregate (UDA) functions
+* SQLAlchemy-based translation toolchain to enable more SQL engines having
+  SQLAlchemy dialects to be supported
+* Many window function usability improvements (nested analytic functions and
+  deferred binding conveniences)
+* More convenient aggregation with keyword arguments in ``aggregate`` functions
+* Built priliminary wrapper API for MADLib-on-Impala
+* Add ``var`` and ``std`` aggregation methods and support in Impala
+* Add ``rename`` method to Impala tables (for renaming tables in the Hive
+  metastore)
+* Add ``close`` method to ``ImpalaClient`` for session cleanup (#533)
+* Add ``relabel`` method to table expressions
+* Add ``insert`` method to Impala tables
+* Add ``compile`` and ``verify`` methods to all expressions to test compilation
+  and ability to compile (since many operations are unavailable in SQLite, for
+  example)
+
+API changes
+-----------
+* Impala Ibis client creation now uses only ``ibis.impala.connect``, and
+  ``ibis.make_client`` has been deprecated
+
 0.4.0 (August 14, 2015)
 -----------------------
 
@@ -33,6 +66,17 @@ New features
   to cluster, for better usability.
 * Add conda installation recipes
 
+Contributors
+~~~~~~~~~~~~
+::
+
+    $ git log v0.3.0..v0.4.0 --pretty=format:%aN | sort | uniq -c | sort -rn
+         38 Wes McKinney
+          9 Uri Laserson
+          2 Meghana Vuyyuru
+          2 Kristopher Overholt
+          1 Marius van Niekerk
+
 0.3.0 (July 20, 2015)
 ---------------------
 
@@ -60,6 +104,16 @@ New features
 * Test data load script in ``scripts/load_test_data.py``
 * Add an internal operation type signature API to enhance developer
   productivity.
+
+Contributors
+~~~~~~~~~~~~
+::
+
+    $ git log v0.2.0..v0.3.0 --pretty=format:%aN | sort | uniq -c | sort -rn
+         59 Wes McKinney
+         29 Uri Laserson
+          4 Isaac Hodes
+          2 Meghana Vuyyuru
 
 0.2.0 (June 16, 2015)
 ---------------------
@@ -117,6 +171,15 @@ API Changes
 Bug fixes
 ~~~~~~~~~
 * Numerous expression API bug fixes and rough edges fixed
+
+Contributors
+~~~~~~~~~~~~
+::
+
+    $ git log v0.1.0..v0.2.0 --pretty=format:%aN | sort | uniq -c | sort -rn
+         71 Wes McKinney
+          1 Juliet Hougland
+          1 Isaac Hodes
 
 0.1.0 (March 26, 2015)
 ----------------------
