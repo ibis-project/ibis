@@ -26,7 +26,78 @@ class Client(object):
     pass
 
 
+class Query(object):
+
+    """
+    Abstraction for DDL query execution to enable both synchronous and
+    asynchronous queries, progress, cancellation and more (for backends
+    supporting such functionality).
+    """
+
+    def __init__(self, client, ddl):
+        self.client = client
+
+        if isinstance(ddl, comp.DDL):
+            self.compiled_ddl = ddl.compile()
+        else:
+            self.compiled_ddl = ddl
+
+        self.result_wrapper = getattr(ddl, 'result_handler', None)
+
+    def execute(self):
+        # synchronous by default
+        with self.client._execute(self.compiled_ddl, results=True) as cur:
+            result = self._fetch_from_cursor(cur)
+
+        return self._wrap_result(result)
+
+    def _wrap_result(self, result):
+        if self.result_wrapper is not None:
+            result = self.result_wrapper(result)
+        return result
+
+    def _fetch_from_cursor(self, cursor):
+        import pandas as pd
+        rows = cursor.fetchall()
+        # TODO(wesm): please evaluate/reimpl to optimize for perf/memory
+        dtypes = [self._db_type_to_dtype(x[1]) for x in cursor.description]
+        names = [x[0] for x in cursor.description]
+        cols = {}
+        for (col, name, dtype) in czip(czip(*rows), names, dtypes):
+            try:
+                cols[name] = pd.Series(col, dtype=dtype)
+            except TypeError:
+                # coercing to specified dtype failed, e.g. NULL vals in int col
+                cols[name] = pd.Series(col)
+        return pd.DataFrame(cols, columns=names)
+
+    def _db_type_to_dtype(self, db_type):
+        raise NotImplementedError
+
+
+class AsyncQuery(Query):
+
+    """
+    Abstract asynchronous query
+    """
+
+    def execute(self):
+        raise NotImplementedError
+
+    def is_finished(self):
+        raise NotImplementedError
+
+    def cancel(self):
+        raise NotImplementedError
+
+    def get_result(self):
+        raise NotImplementedError
+
+
 class SQLClient(Client):
+
+    sync_query = Query
+    async_query = Query
 
     def table(self, name, database=None):
         """
@@ -130,26 +201,37 @@ LIMIT 0""".format(query)
         """
         return self._execute(query, results=results)
 
-    def execute(self, expr, params=None, limit=None):
+    def execute(self, expr, params=None, limit=None, async=False):
         """
+        Compile and execute Ibis expression using this backend client
+        interface, returning results in-memory in the appropriate object type
 
+        Parameters
+        ----------
+        expr : Expr
+        limit : int, default None
+          For expressions yielding result yets; retrieve at most this number of
+          values/rows. Overrides any limit already set on the expression.
+        params : not yet implemented
+        async : boolean, default False
+
+        Returns
+        -------
+        output : input type dependent
+          Table expressions: pandas.DataFrame
+          Array expressions: pandas.Series
+          Scalar expressions: Python scalar value
         """
         ast = self._build_ast_ensure_limit(expr, limit)
 
-        # TODO: create some query pipeline executor abstraction
-        output = None
-        for query in ast.queries:
-            compiled_sql = query.compile()
+        if len(ast.queries) > 1:
+            raise NotImplementedError
+        else:
+            return self._execute_query(ast.queries[0], async=async)
 
-            result = self._execute_and_fetch(compiled_sql)
-
-            if isinstance(query, comp.Select):
-                if query.result_handler is not None:
-                    result = query.result_handler(result)
-
-                output = result
-
-        return output
+    def _execute_query(self, ddl, async=False):
+        klass = self.async_query if async else self.sync_query
+        return klass(self, ddl).execute()
 
     def compile(self, expr, params=None, limit=None):
         """
@@ -162,10 +244,6 @@ LIMIT 0""".format(query)
         ast = self._build_ast_ensure_limit(expr, limit)
         queries = [query.compile() for query in ast.queries]
         return queries[0] if len(queries) == 1 else queries
-
-    def _execute_and_fetch(self, compiled_query):
-        with self._execute(compiled_query, results=True) as cur:
-            return self._fetch_from_cursor(cur)
 
     def _build_ast_ensure_limit(self, expr, limit):
         ast = self._build_ast(expr)
@@ -217,28 +295,20 @@ LIMIT 0""".format(query)
         # Implement in clients
         raise NotImplementedError
 
-    def _db_type_to_dtype(self, db_type):
-        raise NotImplementedError
 
-    def _fetch_from_cursor(self, cursor):
-        import pandas as pd
-        rows = cursor.fetchall()
-        # TODO(wesm): please evaluate/reimpl to optimize for perf/memory
-        dtypes = [self._db_type_to_dtype(x[1]) for x in cursor.description]
-        names = [x[0] for x in cursor.description]
-        cols = {}
-        for (col, name, dtype) in czip(czip(*rows), names, dtypes):
-            try:
-                cols[name] = pd.Series(col, dtype=dtype)
-            except TypeError:
-                # coercing to specified dtype failed, e.g. NULL vals in int col
-                cols[name] = pd.Series(col)
-        return pd.DataFrame(cols, columns=names)
+class QueryPipeline(object):
+    """
+    Execute a series of queries, possibly asynchronously, and capture any
+    result sets generated
+
+    Note: No query pipelines have yet been implemented
+    """
+    pass
 
 
-def execute(expr, limit=None):
+def execute(expr, limit=None, async=False):
     backend = find_backend(expr)
-    return backend.execute(expr, limit=limit)
+    return backend.execute(expr, limit=limit, async=async)
 
 
 def compile(expr, limit=None):

@@ -23,8 +23,9 @@ import hdfs
 import ibis.common as com
 
 from ibis.config import options
+from ibis.client import (Query, AsyncQuery, Database,
+                         DatabaseEntity, SQLClient)
 from ibis.compat import lzip
-from ibis.client import SQLClient, Database, DatabaseEntity
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
@@ -87,7 +88,7 @@ class ImpalaConnection(object):
     def disable_codegen(self, disabled=True):
         self.codegen_disabled = disabled
 
-    def execute(self, query):
+    def execute(self, query, async=False):
         if isinstance(query, DDL):
             query = query.compile()
 
@@ -95,7 +96,7 @@ class ImpalaConnection(object):
         self.log(query)
 
         try:
-            cursor.execute(query)
+            cursor.execute(query, async=async)
         except:
             cursor.release()
             self.error('Exception caused by {0}'.format(query))
@@ -192,11 +193,131 @@ class ImpalaCursor(object):
     def release(self):
         self.con.connection_pool.put(self)
 
-    def execute(self, stmt):
-        self.cursor.execute(stmt)
+    def execute(self, stmt, async=False):
+        if async:
+            self.cursor.execute_async(stmt)
+        else:
+            self.cursor.execute(stmt)
+
+    def is_finished(self):
+        return not self.is_executing()
+
+    def is_executing(self):
+        return self.cursor.is_executing()
+
+    def cancel(self):
+        self.cursor.cancel_operation()
 
     def fetchall(self):
         return self.cursor.fetchall()
+
+
+class ImpalaQuery(Query):
+
+    def _db_type_to_dtype(self, db_type):
+        return _HS2_TTypeId_to_dtype[db_type]
+
+
+class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
+
+    def __init__(self, client, ddl):
+        super(ImpalaAsyncQuery, self).__init__(client, ddl)
+        self._cursor = None
+        self._exception = None
+        self._execute_thread = None
+        self._execute_complete = False
+        self._operation_active = False
+
+    def __del__(self):
+        if self._cursor is not None:
+            self._cursor.release()
+
+    def execute(self):
+        if self._operation_active:
+            raise com.IbisError('operation already active')
+        con = self.client.con
+
+        # XXX: there is codegen overhead somewhere which causes execute_async
+        # to block, unfortunately. This threading hack works around it
+        def _async_execute():
+            try:
+                self._cursor = con.execute(self.compiled_ddl, async=True)
+            except Exception as e:
+                self._exception = e
+            self._execute_complete = True
+
+        self._execute_complete = False
+        self._operation_active = True
+        self._execute_thread = threading.Thread(target=_async_execute)
+        self._execute_thread.start()
+        return self
+
+    def _wait_execute(self):
+        if not self._operation_active:
+            raise com.IbisError('No active query')
+        if self._execute_thread.is_alive():
+            self._execute_thread.join()
+        elif self._exception is not None:
+            raise self._exception
+
+    def is_finished(self):
+        """
+        Return True if the operation is finished
+        """
+        from impala.error import ProgrammingError
+        self._wait_execute()
+        try:
+            return self._cursor.is_finished()
+        except ProgrammingError as e:
+            if 'state is not available' in e.args[0]:
+                return True
+            raise
+
+    def cancel(self):
+        """
+        Cancel the query (or attempt to)
+        """
+        self._wait_execute()
+        return self._cursor.cancel()
+
+    def status(self):
+        """
+        Retrieve Impala query status
+        """
+        self._wait_execute()
+        from impala.hiveserver2 import get_operation_status
+        cur = self._cursor
+        handle = cur._last_operation_handle
+        return get_operation_status(cur.service, handle)
+
+    def wait(self, progress_bar=True):
+        raise NotImplementedError
+
+    def get_result(self):
+        """
+        Presuming the operation is completed, return the cursor result as would
+        be returned by the synchronous query API
+        """
+        self._wait_execute()
+        result = self._fetch_from_cursor(self._cursor)
+        return self._wrap_result(result)
+
+
+_HS2_TTypeId_to_dtype = {
+    'BOOLEAN': 'bool',
+    'TINYINT': 'int8',
+    'SMALLINT': 'int16',
+    'INT': 'int32',
+    'BIGINT': 'int64',
+    'TIMESTAMP': 'datetime64[ns]',
+    'FLOAT': 'float32',
+    'DOUBLE': 'float64',
+    'STRING': 'string',
+    'DECIMAL': 'object',
+    'BINARY': 'string',
+    'VARCHAR': 'string',
+    'CHAR': 'string'
+}
 
 
 class ImpalaClient(SQLClient):
@@ -205,23 +326,9 @@ class ImpalaClient(SQLClient):
     An Ibis client interface that uses Impala
     """
 
-    _HS2_TTypeId_to_dtype = {
-        'BOOLEAN': 'bool',
-        'TINYINT': 'int8',
-        'SMALLINT': 'int16',
-        'INT': 'int32',
-        'BIGINT': 'int64',
-        'TIMESTAMP': 'datetime64[ns]',
-        'FLOAT': 'float32',
-        'DOUBLE': 'float64',
-        'STRING': 'string',
-        'DECIMAL': 'object',
-        'BINARY': 'string',
-        'VARCHAR': 'string',
-        'CHAR': 'string'
-    }
-
     database_class = ImpalaDatabase
+    sync_query = ImpalaQuery
+    async_query = ImpalaAsyncQuery
 
     def __init__(self, con, hdfs_client=None, **params):
         self.con = con
@@ -286,9 +393,6 @@ class ImpalaClient(SQLClient):
 
         database = database or self.current_database
         return '{0}.`{1}`'.format(database, name)
-
-    def _db_type_to_dtype(self, db_type):
-        return self._HS2_TTypeId_to_dtype[db_type]
 
     def list_tables(self, like=None, database=None):
         """
@@ -452,19 +556,16 @@ class ImpalaClient(SQLClient):
         qualified_name = self._fully_qualified_name(table_name, database)
 
         schema = self.get_schema(table_name, database=database)
-
         name_to_type = dict(zip(schema.names, schema.types))
-
         query = 'SHOW PARTITIONS {0}'.format(qualified_name)
 
-        partition_fields = []
-        with self._execute(query, results=True) as cur:
-            result = self._fetch_from_cursor(cur)
+        result = self._execute_query(query)
 
-            for x in result.columns:
-                if x not in name_to_type:
-                    break
-                partition_fields.append((x, name_to_type[x]))
+        partition_fields = []
+        for x in result.columns:
+            if x not in name_to_type:
+                break
+            partition_fields.append((x, name_to_type[x]))
 
         pnames, ptypes = zip(*partition_fields)
         return dt.Schema(pnames, ptypes)

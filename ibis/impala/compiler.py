@@ -621,8 +621,8 @@ def _parenthesize(what):
     return '({0!s})'.format(what)
 
 
-def _unary_op(func_name):
-    return _fixed_arity_call(func_name, 1)
+def unary(func_name):
+    return fixed_arity(func_name, 1)
 
 
 def _reduction_format(translator, func_name, arg, where):
@@ -680,7 +680,7 @@ def _notall_expand(expr):
     return arg.sum() < t.count()
 
 
-def _fixed_arity_call(func_name, arity):
+def fixed_arity(func_name, arity):
 
     def formatter(translator, expr):
         op = expr.op()
@@ -1181,7 +1181,7 @@ _binary_infix_ops = {
     ops.Subtract: _binary_infix_op('-'),
     ops.Multiply: _binary_infix_op('*'),
     ops.Divide: _binary_infix_op('/'),
-    ops.Power: _fixed_arity_call('pow', 2),
+    ops.Power: fixed_arity('pow', 2),
     ops.Modulus: _binary_infix_op('%'),
 
     # Comparisons
@@ -1206,29 +1206,29 @@ _operation_registry = {
     ops.Negate: _negate,
 
     ops.IfNull: _ifnull_workaround,
-    ops.NullIf: _fixed_arity_call('nullif', 2),
+    ops.NullIf: fixed_arity('nullif', 2),
 
-    ops.ZeroIfNull: _unary_op('zeroifnull'),
+    ops.ZeroIfNull: unary('zeroifnull'),
 
-    ops.Abs: _unary_op('abs'),
-    ops.BaseConvert: _fixed_arity_call('conv', 3),
-    ops.Ceil: _unary_op('ceil'),
-    ops.Floor: _unary_op('floor'),
-    ops.Exp: _unary_op('exp'),
+    ops.Abs: unary('abs'),
+    ops.BaseConvert: fixed_arity('conv', 3),
+    ops.Ceil: unary('ceil'),
+    ops.Floor: unary('floor'),
+    ops.Exp: unary('exp'),
     ops.Round: _round,
 
-    ops.Sign: _unary_op('sign'),
-    ops.Sqrt: _unary_op('sqrt'),
+    ops.Sign: unary('sign'),
+    ops.Sqrt: unary('sqrt'),
 
     ops.Hash: _hash,
 
     ops.Log: _log,
-    ops.Ln: _unary_op('ln'),
-    ops.Log2: _unary_op('log2'),
-    ops.Log10: _unary_op('log10'),
+    ops.Ln: unary('ln'),
+    ops.Log2: unary('log2'),
+    ops.Log10: unary('log10'),
 
-    ops.DecimalPrecision: _unary_op('precision'),
-    ops.DecimalScale: _unary_op('scale'),
+    ops.DecimalPrecision: unary('precision'),
+    ops.DecimalScale: unary('scale'),
 
     # Unary aggregates
     ops.CMSMedian: _reduction('appx_median'),
@@ -1241,34 +1241,34 @@ _operation_registry = {
     ops.StandardDev: _variance_like('stddev'),
     ops.Variance: _variance_like('variance'),
 
-    ops.GroupConcat: _fixed_arity_call('group_concat', 2),
+    ops.GroupConcat: fixed_arity('group_concat', 2),
 
     ops.Count: _reduction('count'),
     ops.CountDistinct: _count_distinct,
 
     # string operations
-    ops.StringLength: _unary_op('length'),
-    ops.StringAscii: _unary_op('ascii'),
-    ops.Lowercase: _unary_op('lower'),
-    ops.Uppercase: _unary_op('upper'),
-    ops.Reverse: _unary_op('reverse'),
-    ops.Strip: _unary_op('trim'),
-    ops.LStrip: _unary_op('ltrim'),
-    ops.RStrip: _unary_op('rtrim'),
-    ops.Capitalize: _unary_op('initcap'),
+    ops.StringLength: unary('length'),
+    ops.StringAscii: unary('ascii'),
+    ops.Lowercase: unary('lower'),
+    ops.Uppercase: unary('upper'),
+    ops.Reverse: unary('reverse'),
+    ops.Strip: unary('trim'),
+    ops.LStrip: unary('ltrim'),
+    ops.RStrip: unary('rtrim'),
+    ops.Capitalize: unary('initcap'),
     ops.Substring: _substring,
-    ops.StrRight: _fixed_arity_call('strright', 2),
-    ops.Repeat: _fixed_arity_call('repeat', 2),
+    ops.StrRight: fixed_arity('strright', 2),
+    ops.Repeat: fixed_arity('repeat', 2),
     ops.StringFind: _string_find,
-    ops.Translate: _fixed_arity_call('translate', 3),
+    ops.Translate: fixed_arity('translate', 3),
     ops.FindInSet: _find_in_set,
-    ops.LPad: _fixed_arity_call('lpad', 3),
-    ops.RPad: _fixed_arity_call('rpad', 3),
+    ops.LPad: fixed_arity('lpad', 3),
+    ops.RPad: fixed_arity('rpad', 3),
     ops.StringJoin: _string_join,
     ops.StringSQLLike: _binary_infix_op('LIKE'),
     ops.RegexSearch: _binary_infix_op('RLIKE'),
-    ops.RegexExtract: _fixed_arity_call('regexp_extract', 3),
-    ops.RegexReplace: _fixed_arity_call('regexp_replace', 3),
+    ops.RegexExtract: fixed_arity('regexp_extract', 3),
+    ops.RegexReplace: fixed_arity('regexp_replace', 3),
     ops.ParseURL: _parse_url,
 
     # Timestamp operations
@@ -1296,7 +1296,7 @@ _operation_registry = {
     ops.Greatest: varargs('greatest'),
     ops.Least: varargs('least'),
 
-    ops.Where: _fixed_arity_call('if', 3),
+    ops.Where: fixed_arity('if', 3),
 
     ops.Between: _between,
     ops.Contains: _binary_infix_op('IN'),
@@ -1320,8 +1320,8 @@ _operation_registry = {
     ops.DenseRank: lambda *args: 'dense_rank()',
     ops.MinRank: lambda *args: 'rank()',
 
-    ops.FirstValue: _unary_op('first_value'),
-    ops.LastValue: _unary_op('last_value'),
+    ops.FirstValue: unary('first_value'),
+    ops.LastValue: unary('last_value'),
     ops.NthValue: _nth_value,
     ops.Lag: _shift_like('lag'),
     ops.Lead: _shift_like('lead'),

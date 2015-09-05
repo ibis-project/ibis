@@ -285,10 +285,10 @@ def add_operation(op, func_name, db):
     """
     full_name = '{0}.{1}'.format(db, func_name)
     if isinstance(op.input_type, rules.VarArgs):
-        translator = comp._varargs(full_name)
+        translator = comp.varargs(full_name)
     else:
         arity = len(op.input_type.types)
-        translator = comp._fixed_arity_call(full_name, arity)
+        translator = comp.fixed_arity(full_name, arity)
 
     comp._operation_registry[op] = translator
 

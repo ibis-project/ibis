@@ -109,11 +109,11 @@ class GroupedTableExpr(object):
 
         Examples
         --------
-        expr = (table
-                .group_by('foo')
-                .order_by(ibis.desc('bar'))
-                .mutate(qux=lambda x: x.baz.lag(),
-                        qux2=table.baz.lead()))
+        >>> expr = (table
+                    .group_by('foo')
+                    .order_by(ibis.desc('bar'))
+                    .mutate(qux=lambda x: x.baz.lag(),
+                            qux2=table.baz.lead()))
 
         Returns
         -------

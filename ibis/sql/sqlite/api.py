@@ -15,5 +15,14 @@
 from .client import SQLiteDatabase
 
 
+def compile(expr):
+    """
+    Force compilation of expression for the SQLite target
+    """
+    from .client import SQLiteDialect
+    from ibis.sql.alchemy import to_sqlalchemy
+    return to_sqlalchemy(expr, dialect=SQLiteDialect)
+
+
 def connect(path):
     return SQLiteDatabase(path)

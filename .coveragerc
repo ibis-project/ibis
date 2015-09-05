@@ -3,3 +3,6 @@ branch: True
 omit: ibis/tests/*,
       ibis/*/tests/*,
       ibis/cloudpickle.py
+      ibis/tasks.py
+      ibis/server.py
+      ibis/wire.py

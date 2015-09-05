@@ -18,7 +18,7 @@ import six
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
-from ibis.client import SQLClient
+from ibis.client import SQLClient, AsyncQuery, Query
 from ibis.sql.compiler import Select, Union, TableSetFormatter
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -463,6 +463,22 @@ class AlchemyExprTranslator(comp.ExprTranslator):
         return self._type_map[type(data_type)]
 
 
+class AlchemyQuery(Query):
+
+    def _fetch_from_cursor(self, cursor):
+        # No guarantees that the DBAPI cursor has data types
+        import pandas as pd
+        proxy = cursor.proxy
+        rows = proxy.fetchall()
+        colnames = proxy.keys()
+        return pd.DataFrame.from_records(rows, columns=colnames,
+                                         coerce_float=True)
+
+
+class AlchemyAsyncQuery(AsyncQuery):
+    pass
+
+
 class AlchemyDialect(object):
 
     translator = AlchemyExprTranslator
@@ -471,6 +487,11 @@ class AlchemyDialect(object):
 class AlchemyClient(SQLClient):
 
     dialect = AlchemyDialect
+    sync_query = AlchemyQuery
+
+    @property
+    def async_query(self):
+        raise NotImplementedError
 
     def create_table(self, name, expr=None, schema=None, database=None):
         pass
@@ -509,15 +530,6 @@ class AlchemyClient(SQLClient):
     def _sqla_table_to_expr(self, table):
         node = AlchemyTable(table, self)
         return self._table_expr_klass(node)
-
-    def _fetch_from_cursor(self, cursor):
-        # No guarantees that the DBAPI cursor has data types
-        import pandas as pd
-        proxy = cursor.proxy
-        rows = proxy.fetchall()
-        colnames = proxy.keys()
-        return pd.DataFrame.from_records(rows, columns=colnames,
-                                         coerce_float=True)
 
 
 class AlchemySelect(Select):
