@@ -73,7 +73,7 @@ conda info -a
 
 # Install ibis and deps into new environment
 CONDA_ENV_NAME=pyenv-ibis-test
-conda create -y -q -n $CONDA_ENV_NAME python=$PYTHON_VERSION numpy pandas
+conda create -y -q -n $CONDA_ENV_NAME python=$PYTHON_VERSION pip numpy pandas
 source activate $CONDA_ENV_NAME
 pip install click
 pip install pytest-cov
