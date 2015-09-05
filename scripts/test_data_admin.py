@@ -71,11 +71,21 @@ def can_write_to_hdfs(con):
 def can_build_udfs():
     try:
         check_call('which cmake', shell=True)
-        check_call('which make', shell=True)
-        check_call('which clang++', shell=True)
-        return True
     except:
+        print('Could not find cmake on PATH')
         return False
+    try:
+        check_call('which make', shell=True)
+    except:
+        print('Could not find make on PATH')
+        return False
+    try:
+        check_call('which clang++', shell=True)
+    except:
+        print('Could not find LLVM on PATH; if IBIS_TEST_LLVM_CONFIG is set, '
+              'try setting PATH="$($IBIS_TEST_LLVM_CONFIG --bindir):$PATH"')
+        return False
+    return True
 
 
 def is_data_loaded(con):
@@ -425,31 +435,53 @@ def load(data, udf, data_dir, overwrite):
         raise IbisError('Build environment does not support building UDFs')
 
     # load the data files
-    if data and (overwrite or not is_data_loaded(con)):
-        try:
+    if data:
+        already_loaded = is_data_loaded(con)
+        print('Attempting to load Ibis test data (--data)')
+        if already_loaded and not overwrite:
+            print('Data is already loaded and not overwriting; moving on')
+        else:
+            if already_loaded:
+                print('Data is already loaded; attempting to overwrite')
             tmp_dir = tempfile.mkdtemp(prefix='__ibis_tmp_')
-            if not data_dir:
-                print('Did not specify a local dir with the test data, so '
-                      'downloading it from S3')
-                data_dir = dnload_ibis_test_data_from_s3(tmp_dir)
-            upload_ibis_test_data_to_hdfs(con, data_dir)
-            create_test_database(con)
-            parquet_tables = create_parquet_tables(con)
-            avro_tables = create_avro_tables(con)
-            for table in parquet_tables + avro_tables:
-                print('Computing stats for {0}'.format(table.op().name))
-                table.compute_stats()
+            try:
+                if not data_dir:
+                    print('Did not specify a local dir with the test data, so '
+                          'downloading it from S3')
+                    data_dir = dnload_ibis_test_data_from_s3(tmp_dir)
+                print('Uploading to HDFS')
+                upload_ibis_test_data_to_hdfs(con, data_dir)
+                print('Creating Ibis test data database')
+                create_test_database(con)
+                parquet_tables = create_parquet_tables(con)
+                avro_tables = create_avro_tables(con)
+                for table in parquet_tables + avro_tables:
+                    print('Computing stats for {0}'.format(table.op().name))
+                    table.compute_stats()
 
-            # sqlite database
-            sqlite_src = osp.join(data_dir, 'ibis_testing.db')
-            shutil.copy(sqlite_src, '.')
-        finally:
-            shutil.rmtree(tmp_dir)
+                # sqlite database
+                sqlite_src = osp.join(data_dir, 'ibis_testing.db')
+                shutil.copy(sqlite_src, '.')
+            finally:
+                shutil.rmtree(tmp_dir)
+    else:
+        print('Skipping Ibis test data load (--no-data)')
 
     # build and upload the UDFs
-    if udf and (overwrite or not is_udf_loaded(con)):
-        build_udfs()
-        upload_udfs(con)
+    if udf:
+        already_loaded = is_udf_loaded(con)
+        print('Attempting to build and load test UDFs')
+        if already_loaded and not overwrite:
+            print('UDFs already loaded and not overwriting; moving on')
+        else:
+            if already_loaded:
+                print('UDFs already loaded; attempting to overwrite')
+            print('Building UDFs')
+            build_udfs()
+            print('Uploading UDFs')
+            upload_udfs(con)
+    else:
+        print('Skipping UDF build/load (--no-udf)')
 
 
 @main.command()
