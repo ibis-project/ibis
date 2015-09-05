@@ -559,7 +559,7 @@ class ImpalaClient(SQLClient):
         name_to_type = dict(zip(schema.names, schema.types))
         query = 'SHOW PARTITIONS {0}'.format(qualified_name)
 
-        result = self.execute(query)
+        result = self._execute_query(query)
 
         partition_fields = []
         for x in result.columns:

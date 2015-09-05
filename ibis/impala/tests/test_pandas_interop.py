@@ -180,7 +180,7 @@ class TestPandasRoundTrip(ImpalaE2E, unittest.TestCase):
         assert (df1 == df2).all().all()
 
     def test_round_trip_non_int_missing_data(self):
-        pytest.skip('hangs -- will investigate later')
+        pytest.skip('WM: hangs -- will investigate later')
         df1 = functional_alltypes_with_nulls
         table = self.con.pandas(df1, 'fawn', database=self.tmp_db)
         df2 = table.execute()

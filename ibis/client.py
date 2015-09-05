@@ -36,11 +36,13 @@ class Query(object):
 
     def __init__(self, client, ddl):
         self.client = client
-        self.ddl = ddl
-        self.compiled_ddl = ddl.compile()
 
-        # if not isinstance(ddl, comp.Select):
-        #     raise NotImplementedError
+        if isinstance(ddl, comp.DDL):
+            self.compiled_ddl = ddl.compile()
+        else:
+            self.compiled_ddl = ddl
+
+        self.result_wrapper = getattr(ddl, 'result_handler', None)
 
     def execute(self):
         # synchronous by default
@@ -50,8 +52,8 @@ class Query(object):
         return self._wrap_result(result)
 
     def _wrap_result(self, result):
-        if self.ddl.result_handler is not None:
-            result = self.ddl.result_handler(result)
+        if self.result_wrapper is not None:
+            result = self.result_wrapper(result)
         return result
 
     def _fetch_from_cursor(self, cursor):
@@ -227,9 +229,9 @@ LIMIT 0""".format(query)
         else:
             return self._execute_query(ast.queries[0], async=async)
 
-    def _execute_query(self, query, async=False):
+    def _execute_query(self, ddl, async=False):
         klass = self.async_query if async else self.sync_query
-        return klass(self, query).execute()
+        return klass(self, ddl).execute()
 
     def compile(self, expr, params=None, limit=None):
         """
