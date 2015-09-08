@@ -42,6 +42,8 @@ SQL engine support near on the horizon:
 - PostgreSQL
 - Redshift
 - Vertica
+- Spark SQL
+- Presto
 - Hive
 - MySQL / MariaDB
 
