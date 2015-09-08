@@ -50,6 +50,7 @@ _ibis_type_to_sqla = {
 
 _sqla_type_mapping = {
     sa.types.SmallInteger: dt.Int16,
+    sa.types.INTEGER: dt.Int64,
     sa.types.BOOLEAN: dt.Boolean,
     sa.types.BIGINT: dt.Int64,
     sa.types.FLOAT: dt.Double,
