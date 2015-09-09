@@ -44,18 +44,36 @@ class SQLiteDatabase(alch.AlchemyClient):
         self.name = path
         self.database_name = 'default'
 
-        if not os.path.exists(path) and not create:
-            raise com.IbisError('File {0} does not exist'.format(path))
-
         self.con = sa.create_engine('sqlite://')
-        self.attach(self.database_name, path)
+        self.attach(self.database_name, path, create=create)
         self.meta = sa.MetaData(bind=self.con)
 
     @property
     def current_database(self):
         return self.database_name
 
-    def attach(self, name, path):
+    def list_databases(self):
+        raise NotImplementedError
+
+    def set_database(self):
+        raise NotImplementedError
+
+    def attach(self, name, path, create=False):
+        """
+        Connect another SQLite database file
+
+        Parameters
+        ----------
+        name : string
+          Database name within SQLite
+        path : string
+          Path to sqlite3 file
+        create : boolean, default False
+          If file does not exist, create file if True otherwise raise Exception
+        """
+        if not os.path.exists(path) and not create:
+            raise com.IbisError('File {0} does not exist'.format(path))
+
         self.con.execute("ATTACH DATABASE '{0}' AS '{1}'".format(path, name))
 
     @property
