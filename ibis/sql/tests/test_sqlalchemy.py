@@ -220,7 +220,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         ipred = region.r_regionkey == nation.n_regionkey
         spred = rt.c.r_regionkey == nt.c.n_regionkey
 
-        joins = [
+        fully_mat_joins = [
             (region.inner_join(nation, ipred),
              rt.join(nt, spred)),
 
@@ -230,9 +230,46 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             (region.outer_join(nation, ipred),
              rt.outerjoin(nt, spred)),
         ]
-        for ibis_joined, joined_sqla in joins:
-            expected = sa.select([rt, nt]).select_from(joined_sqla)
+        for ibis_joined, joined_sqla in fully_mat_joins:
+            expected = sa.select(['*']).select_from(joined_sqla)
             self._compare_sqla(ibis_joined, expected)
+
+        subselect_joins = [
+            (region.inner_join(nation, ipred).projection(nation),
+             rt.join(nt, spred)),
+
+            (region.left_join(nation, ipred).projection(nation),
+             rt.join(nt, spred, isouter=True)),
+
+            (region.outer_join(nation, ipred).projection(nation),
+             rt.outerjoin(nt, spred)),
+        ]
+        for ibis_joined, joined_sqla in subselect_joins:
+            expected = sa.select([nt]).select_from(joined_sqla)
+            self._compare_sqla(ibis_joined, expected)
+
+    def test_join_just_materialized(self):
+        joined = self._case_join_just_materialized()
+
+        rt, nt, ct = self._sqla_tables(['tpch_region', 'tpch_nation',
+                                        'tpch_customer'])
+        nt = nt.alias('t0')
+        rt = rt.alias('t1')
+        ct = ct.alias('t2')
+
+        sqla_joined = (nt.join(rt, nt.c.n_regionkey == rt.c.r_regionkey)
+                       .join(ct, nt.c.n_nationkey == ct.c.c_nationkey))
+
+        expected = sa.select(['*']).select_from(sqla_joined)
+
+        self._compare_sqla(joined, expected)
+
+    def _sqla_tables(self, tables):
+        result = []
+        for t in tables:
+            ibis_table = self.con.table(t)
+            result.append(self._to_sqla(ibis_table))
+        return result
 
     def test_simple_case(self):
         self.con.table('alltypes')

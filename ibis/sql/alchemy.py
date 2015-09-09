@@ -74,14 +74,19 @@ def schema_from_table(table):
     for c in table.columns.values():
         type_class = type(c.type)
 
-        if c.type in _sqla_type_to_ibis:
-            ibis_class = _sqla_type_to_ibis[c.type]
-        elif type_class in _sqla_type_to_ibis:
-            ibis_class = _sqla_type_to_ibis[type_class]
+        if isinstance(c.type, sa.types.NUMERIC):
+            t = dt.Decimal(c.type.precision,
+                           c.type.scale,
+                           nullable=c.nullable)
         else:
-            raise NotImplementedError(c.type)
+            if c.type in _sqla_type_to_ibis:
+                ibis_class = _sqla_type_to_ibis[c.type]
+            elif type_class in _sqla_type_to_ibis:
+                ibis_class = _sqla_type_to_ibis[type_class]
+            else:
+                raise NotImplementedError(c.type)
+            t = ibis_class(c.nullable)
 
-        t = ibis_class(c.nullable)
         types.append(t)
 
     return dt.Schema(names, types)
@@ -92,12 +97,19 @@ def table_from_schema(name, meta, schema):
     sqla_cols = []
 
     for cname, itype in zip(schema.names, schema.types):
-        ctype = _ibis_type_to_sqla[type(itype)]
+        ctype = _to_sqla_type(itype)
 
         col = sa.Column(cname, ctype, nullable=itype.nullable)
         sqla_cols.append(col)
 
     return sa.Table(name, meta, *sqla_cols)
+
+
+def _to_sqla_type(itype):
+    if isinstance(itype, dt.Decimal):
+        return sa.types.NUMERIC(itype.precision, itype.scale)
+    else:
+        return _ibis_type_to_sqla[type(itype)]
 
 
 def fixed_arity(sa_func, arity):
@@ -587,8 +599,12 @@ class AlchemySelect(Select):
                 arg = self._translate(expr, named=True)
             elif isinstance(expr, ir.TableExpr):
                 if expr.equals(self.table_set):
-                    # the select * case
-                    arg = table_set
+                    cached_table = self.context.get_table(expr)
+                    if cached_table is None:
+                        # the select * case from materialized join
+                        arg = '*'
+                    else:
+                        arg = table_set
                 else:
                     arg = self.context.get_table(expr)
                     if arg is None:
