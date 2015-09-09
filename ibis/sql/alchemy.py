@@ -378,6 +378,9 @@ class AlchemyContext(comp.QueryContext):
         self.dialect = kwargs.pop('dialect', AlchemyDialect)
         comp.QueryContext.__init__(self, *args, **kwargs)
 
+    def subcontext(self):
+        return type(self)(dialect=self.dialect, parent=self)
+
     def _to_sql(self, expr, ctx):
         return to_sqlalchemy(expr, context=ctx)
 
@@ -421,6 +424,9 @@ class AlchemyQueryBuilder(comp.QueryBuilder):
 
 
 def to_sqlalchemy(expr, context=None, exists=False, dialect=None):
+    if context is not None:
+        dialect = dialect or context.dialect
+
     ast = build_ast(expr, context=context, dialect=dialect)
     query = ast.queries[0]
 

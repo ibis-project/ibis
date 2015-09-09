@@ -198,6 +198,15 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
     def test_coalesce(self):
         pass
 
+    def test_numeric_builtins_work(self):
+        t = self.alltypes
+        d = t.double_col
+
+        exprs = [
+            d.fillna(0),
+        ]
+        self._execute_projection(t, exprs)
+
     def test_misc_builtins_work(self):
         t = self.alltypes
         d = t.double_col
@@ -296,6 +305,15 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         with config.option_context('interactive', True):
             result = repr(expr)
             assert 'no translator rule' in result.lower()
+
+    def test_subquery_invokes_sqlite_compiler(self):
+        t = self.alltypes
+
+        expr = (t.mutate(d=t.double_col.fillna(0))
+                .limit(1000)
+                .group_by('string_col')
+                .size())
+        expr.execute()
 
     def _execute_aggregation(self, table, exprs):
         agg_exprs = [expr.name('e%d' % i)
