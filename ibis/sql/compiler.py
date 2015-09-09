@@ -620,6 +620,7 @@ class _ExtractSubqueries(object):
         self.visit(expr.op().table)
 
     def _visit_Limit(self, expr):
+        self.observe(expr)
         self.visit(expr.op().table)
 
     def _visit_Union(self, expr):
