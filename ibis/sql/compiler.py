@@ -606,8 +606,15 @@ class _ExtractSubqueries(object):
         self.visit(node.right)
 
     _visit_physical_table = _extract_noop
-    _visit_ExistsSubquery = _extract_noop
-    _visit_NotExistsSubquery = _extract_noop
+
+    def _visit_Exists(self, expr):
+        node = expr.op()
+        self.visit(node.foreign_table)
+        for pred in node.predicates:
+            self.visit(pred)
+
+    _visit_ExistsSubquery = _visit_Exists
+    _visit_NotExistsSubquery = _visit_Exists
 
     def _visit_Aggregation(self, expr):
         self.observe(expr)
@@ -620,6 +627,7 @@ class _ExtractSubqueries(object):
         self.visit(expr.op().table)
 
     def _visit_Limit(self, expr):
+        self.observe(expr)
         self.visit(expr.op().table)
 
     def _visit_Union(self, expr):

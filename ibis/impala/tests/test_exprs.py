@@ -910,7 +910,7 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
 
-class TestImpalaExprs(ImpalaE2E, unittest.TestCase):
+class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
 
     def test_embedded_identifier_quoting(self):
         t = self.con.table('functional_alltypes')
@@ -1433,6 +1433,10 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase):
 
         proj_table = g.mutate(proj_exprs)
         proj_table.execute()
+
+    def test_anti_join_self_reference_works(self):
+        case = self._case_self_reference_limit_exists()
+        self.con.explain(case)
 
     def test_tpch_self_join_failure(self):
         region = self.con.table('tpch_region')

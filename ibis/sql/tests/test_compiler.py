@@ -671,12 +671,28 @@ class ExprTestCases(object):
 
         return semi, anti
 
+    def _case_self_reference_limit_exists(self):
+        alltypes = self.con.table('functional_alltypes')
+        t = alltypes.limit(100)
+        t2 = t.view()
+        return t[-(t.string_col == t2.string_col).any()]
+
+    def _case_limit_cte_extract(self):
+        alltypes = self.con.table('functional_alltypes')
+        t = alltypes.limit(100)
+        t2 = t.view()
+        return t.join(t2).projection(t)
+
 
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
 
     @classmethod
     def setUpClass(cls):
         cls.con = MockConnection()
+
+    def _compare_sql(self, expr, expected):
+        result = to_sql(expr)
+        assert result == expected
 
     def test_nameless_table(self):
         # Ensure that user gets some kind of sensible error
@@ -1699,6 +1715,39 @@ WHERE NOT EXISTS (
   WHERE t0.`string_col` = t1.`string_col`
 )"""
         assert result == expected
+
+    def test_self_reference_limit_exists(self):
+        case = self._case_self_reference_limit_exists()
+
+        expected = """\
+WITH t0 AS (
+  SELECT *
+  FROM functional_alltypes
+  LIMIT 100
+)
+SELECT t0.*
+FROM t0
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM t0 t1
+  WHERE t0.`string_col` = t1.`string_col`
+)"""
+        self._compare_sql(case, expected)
+
+    def test_limit_cte_extract(self):
+        case = self._case_limit_cte_extract()
+
+        expected = """\
+WITH t0 AS (
+  SELECT *
+  FROM functional_alltypes
+  LIMIT 100
+)
+SELECT t0.*
+FROM t0
+  CROSS JOIN t0 t1"""
+
+        self._compare_sql(case, expected)
 
     def test_sort_by(self):
         cases = self._case_sort_by()
