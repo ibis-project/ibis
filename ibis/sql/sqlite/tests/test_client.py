@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 import pandas as pd
 
 from .common import SQLiteTests
 from ibis.compat import unittest
 from ibis.tests.util import assert_equal
+from ibis.util import guid
 import ibis.expr.types as ir
+import ibis.common as com
 import ibis
 
 
@@ -26,6 +30,16 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         pass
+
+    def test_file_not_exist_and_create(self):
+        path = '__ibis_tmp_{0}.db'.format(guid())
+
+        with self.assertRaises(com.IbisError):
+            ibis.sqlite.connect(path)
+
+        ibis.sqlite.connect(path, create=True)
+        assert os.path.exists(path)
+        os.remove(path)
 
     def test_table(self):
         table = self.con.table('functional_alltypes')

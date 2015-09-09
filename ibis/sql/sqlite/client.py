@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 import sqlalchemy as sa
 
-import ibis.expr.types as ir
-import ibis.sql.alchemy as alch
 from ibis.client import Database
 from .compiler import SQLiteDialect
+import ibis.expr.types as ir
+import ibis.sql.alchemy as alch
+import ibis.common as com
 
 
 class SQLiteTable(alch.AlchemyTable):
@@ -30,12 +33,19 @@ class SQLiteDatabase(Database):
 
 class SQLiteDatabase(alch.AlchemyClient):
 
+    """
+    The Ibis SQLite client class
+    """
+
     dialect = SQLiteDialect
     database_class = SQLiteDatabase
 
-    def __init__(self, path):
+    def __init__(self, path, create=False):
         self.name = path
         self.database_name = 'default'
+
+        if not os.path.exists(path) and not create:
+            raise com.IbisError('File {0} does not exist'.format(path))
 
         self.con = sa.create_engine('sqlite://')
         self.attach(self.database_name, path)
