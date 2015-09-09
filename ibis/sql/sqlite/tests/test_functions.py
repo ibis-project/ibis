@@ -287,8 +287,6 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         self._execute_aggregation(table, exprs)
 
     def test_not_exists_works(self):
-        pytest.skip('blocked on self-reference bug')
-
         t = self.alltypes
         t2 = t.view()
 

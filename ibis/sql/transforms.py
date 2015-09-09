@@ -99,11 +99,7 @@ class AnyToExistsTransform(object):
             pass
         else:
             # Foreign ref
-            if isinstance(node, ops.SelfReference):
-                foreign_table = node.table
-            else:
-                foreign_table = expr
-
+            foreign_table = expr
             self.foreign_table = foreign_table
 
     def _is_root(self, what):

@@ -716,7 +716,6 @@ class _CorrelatedRefCheck(object):
                 if (not is_aliased and
                         self.ctx.has_ref(node, parent_contexts=True)):
                     self.ctx.make_alias(node)
-
             elif not self.ctx.has_ref(node):
                 self.ctx.make_alias(node)
 

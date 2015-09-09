@@ -352,8 +352,30 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
 
         self._compare_sqla(expr, stmt)
 
-    def test_self_reference(self):
-        pass
+    def test_self_reference_join(self):
+        t0 = self.sa_star1.alias('t0')
+        t1 = self.sa_star1.alias('t1')
+
+        case = self._case_self_reference_join()
+
+        table_set = t0.join(t1, t0.c.foo_id == t1.c.bar_id)
+        expected = sa.select([t0]).select_from(table_set)
+        self._compare_sqla(case, expected)
+
+    def test_self_reference_in_not_exists(self):
+        semi, anti = self._case_self_reference_in_exists()
+
+        s1 = self.sa_alltypes.alias('t0')
+        s2 = self.sa_alltypes.alias('t1')
+
+        cond = (sa.exists([L(1)]).select_from(s1)
+                .where(s1.c.string_col == s2.c.string_col))
+
+        ex_semi = sa.select([s1]).where(cond)
+        ex_anti = sa.select([s1]).where(~cond)
+
+        self._compare_sqla(semi, ex_semi)
+        self._compare_sqla(anti, ex_anti)
 
     def test_where_uncorrelated_subquery(self):
         expr = self._case_where_uncorrelated_subquery()

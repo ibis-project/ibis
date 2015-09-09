@@ -661,6 +661,16 @@ class ExprTestCases(object):
                 .when(t.c < 0, t.a * 2)
                 .end())
 
+    def _case_self_reference_in_exists(self):
+        t = self.con.table('functional_alltypes')
+        t2 = t.view()
+
+        cond = (t.string_col == t2.string_col).any()
+        semi = t[cond]
+        anti = t[-cond]
+
+        return semi, anti
+
 
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
 
@@ -1662,6 +1672,31 @@ WHERE NOT EXISTS (
   SELECT 1
   FROM bar t1
   WHERE t0.`key1` = t1.`key1`
+)"""
+        assert result == expected
+
+    def test_self_reference_in_exists(self):
+        semi, anti = self._case_self_reference_in_exists()
+
+        result = to_sql(semi)
+        expected = """\
+SELECT t0.*
+FROM functional_alltypes t0
+WHERE EXISTS (
+  SELECT 1
+  FROM functional_alltypes t1
+  WHERE t0.`string_col` = t1.`string_col`
+)"""
+        assert result == expected
+
+        result = to_sql(anti)
+        expected = """\
+SELECT t0.*
+FROM functional_alltypes t0
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM functional_alltypes t1
+  WHERE t0.`string_col` = t1.`string_col`
 )"""
         assert result == expected
 
