@@ -1722,15 +1722,15 @@ WHERE NOT EXISTS (
         expected = """\
 WITH t0 AS (
   SELECT *
-  FROM functional_alltypes t0
+  FROM functional_alltypes
   LIMIT 100
 )
-SELECT t1.*
-FROM t0 t1
+SELECT t0.*
+FROM t0
 WHERE NOT EXISTS (
   SELECT 1
-  FROM t0 t2
-  WHERE t1.`string_col` = t2.`string_col`
+  FROM t0 t1
+  WHERE t0.`string_col` = t1.`string_col`
 )"""
         self._compare_sql(case, expected)
 

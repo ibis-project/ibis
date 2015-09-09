@@ -85,12 +85,13 @@ class AnyToExistsTransform(object):
     def _visit_table(self, expr):
         node = expr.op()
 
-        if isinstance(node, (ops.PhysicalTable, ops.SelfReference)):
+        if isinstance(node, ir.BlockingTableNode):
             self._ref_check(expr)
 
-        for arg in node.flat_args():
-            if isinstance(arg, ir.Expr):
-                self._visit(arg)
+        if not isinstance(node, ir.BlockingTableNode):
+            for arg in node.flat_args():
+                if isinstance(arg, ir.Expr):
+                    self._visit(arg)
 
     def _ref_check(self, expr):
         node = expr.op()
