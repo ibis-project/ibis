@@ -100,6 +100,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             # name, type, nullable
             ('smallint', sat.SmallInteger, False, dt.int16),
             ('int', sat.Integer, True, dt.int32),
+            ('integer', sat.INTEGER(), True, dt.int64),
             ('bigint', sat.BigInteger, False, dt.int64),
             ('real', sat.REAL, True, dt.double),
             ('bool', sat.Boolean, True, dt.boolean),
@@ -450,6 +451,24 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         ]
         for case, ex in cases:
             self._compare_sqla(case, ex)
+
+    def test_sort_aggregation_translation_failure(self):
+        # This works around a nuance with our choice to hackishly fuse SortBy
+        # after Aggregate to produce a single select statement rather than an
+        # inline view.
+        t = self.alltypes
+        sat = self.sa_alltypes.alias('t0')
+
+        agg = (t.group_by('string_col')
+               .aggregate(t.double_col.max().name('foo')))
+        expr = agg.sort_by(ibis.desc('foo'))
+
+        ex = (sa.select([sat.c.string_col,
+                         F.max(sat.c.double_col).label('foo')])
+              .group_by(sat.c.string_col)
+              .order_by(sa.desc('foo')))
+
+        self._compare_sqla(expr, ex)
 
     def _compare_sqla(self, expr, sqla):
         result = alch.to_sqlalchemy(expr)

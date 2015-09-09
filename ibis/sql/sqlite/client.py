@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 import sqlalchemy as sa
 
-import ibis.expr.types as ir
-import ibis.sql.alchemy as alch
 from ibis.client import Database
 from .compiler import SQLiteDialect
+import ibis.expr.types as ir
+import ibis.sql.alchemy as alch
+import ibis.common as com
 
 
 class SQLiteTable(alch.AlchemyTable):
@@ -30,22 +33,47 @@ class SQLiteDatabase(Database):
 
 class SQLiteDatabase(alch.AlchemyClient):
 
+    """
+    The Ibis SQLite client class
+    """
+
     dialect = SQLiteDialect
     database_class = SQLiteDatabase
 
-    def __init__(self, path):
+    def __init__(self, path, create=False):
         self.name = path
         self.database_name = 'default'
 
         self.con = sa.create_engine('sqlite://')
-        self.attach(self.database_name, path)
+        self.attach(self.database_name, path, create=create)
         self.meta = sa.MetaData(bind=self.con)
 
     @property
     def current_database(self):
         return self.database_name
 
-    def attach(self, name, path):
+    def list_databases(self):
+        raise NotImplementedError
+
+    def set_database(self):
+        raise NotImplementedError
+
+    def attach(self, name, path, create=False):
+        """
+        Connect another SQLite database file
+
+        Parameters
+        ----------
+        name : string
+          Database name within SQLite
+        path : string
+          Path to sqlite3 file
+        create : boolean, default False
+          If file does not exist, create file if True otherwise raise Exception
+        """
+        if not os.path.exists(path) and not create:
+            raise com.IbisError('File {0} does not exist'.format(path))
+
         self.con.execute("ATTACH DATABASE '{0}' AS '{1}'".format(path, name))
 
     @property

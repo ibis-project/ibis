@@ -24,5 +24,19 @@ def compile(expr):
     return to_sqlalchemy(expr, dialect=SQLiteDialect)
 
 
-def connect(path):
-    return SQLiteDatabase(path)
+def connect(path, create=False):
+
+    """
+    Create an Ibis client connected to a SQLite database.
+
+    Multiple database files can be created using the attach() method
+
+    Parameters
+    ----------
+    path : string
+        File path to the SQLite database file
+    create : boolean, default False
+        If file does not exist, create it
+    """
+
+    return SQLiteDatabase(path, create=create)
