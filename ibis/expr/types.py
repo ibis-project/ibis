@@ -1098,3 +1098,19 @@ def find_base_table(expr):
             r = find_base_table(arg)
             if isinstance(r, TableExpr):
                 return r
+
+
+def find_all_base_tables(expr, memo=None):
+    if memo is None:
+        memo = {}
+
+    if isinstance(expr, TableExpr):
+        if id(expr) not in memo:
+            memo[id(expr)] = expr
+        return memo
+
+    for arg in expr.op().flat_args():
+        if isinstance(arg, Expr):
+            find_all_base_tables(arg, memo)
+
+    return memo

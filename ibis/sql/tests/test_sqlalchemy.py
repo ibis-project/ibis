@@ -453,23 +453,22 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             self._compare_sqla(case, ex)
 
     def test_sort_aggregation_translation_failure(self):
+        # This works around a nuance with our choice to hackishly fuse SortBy
+        # after Aggregate to produce a single select statement rather than an
+        # inline view.
         t = self.alltypes
         sat = self.sa_alltypes.alias('t0')
 
-        expr = (t.group_by('string_col')
-                .aggregate(t.double_col.max().name('foo'))
-                .sort_by(ibis.desc('foo')))
+        agg = (t.group_by('string_col')
+               .aggregate(t.double_col.max().name('foo')))
+        expr = agg.sort_by(ibis.desc('foo'))
 
-        expected = ('select string_col, max(double_col) as foo '
-                    'from functional_alltypes group by string_col '
-                    'order by foo desc')
+        ex = (sa.select([sat.c.string_col,
+                         F.max(sat.c.double_col).label('foo')])
+              .group_by(sat.c.string_col)
+              .order_by(sa.desc('foo')))
 
-        # ex = (sa.select([sat.c.string_col,
-        #              F.max(sat.c.double_col).label('max(double_col)')])
-        #   .group_by(sat.c.string_col)
-        #   .sort_by(sat.
-
-        assert str(alch.to_sqlalchemy(expr).compile()) == expected
+        self._compare_sqla(expr, ex)
 
     def _compare_sqla(self, expr, sqla):
         result = alch.to_sqlalchemy(expr)

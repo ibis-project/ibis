@@ -638,7 +638,7 @@ class AlchemySelect(Select):
 
             # here we have to determine if key.expr is in the select set (as it
             # will be in the case of order_by fused with an aggregation
-            if self._among_select_set(sort_expr):
+            if _can_lower_aggregate_column(self.table_set, sort_expr):
                 arg = sort_expr.get_name()
             else:
                 arg = self._translate(sort_expr)
@@ -750,6 +750,26 @@ class _AlchemyTableSet(TableSetFormatter):
         result = result.alias(alias)
         ctx.set_table(expr, result)
         return result
+
+
+def _can_lower_aggregate_column(table_set, expr):
+    # we can currently sort by just-appeared aggregate metrics, but the way
+    # these are references in the expression DSL is as a SortBy (blocking
+    # table operation) on an aggregation. There's a hack in _collect_SortBy
+    # in the generic SQL compiler that "fuses" the sort with the
+    # aggregation so they appear in same query. It's generally for
+    # cosmetics and doesn't really affect query semantics.
+    bases = ir.find_all_base_tables(expr)
+    if len(bases) > 1:
+        return False
+
+    base = list(bases.values())[0]
+    base_op = base.op()
+
+    if not isinstance(base_op, ops.Aggregation):
+        return False
+
+    return base_op.table.equals(table_set)
 
 
 def _and_all(clauses):
