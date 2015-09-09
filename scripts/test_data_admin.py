@@ -34,7 +34,7 @@ import pandas as pd
 import pandas.util.testing as tm
 
 ENV = IbisTestEnv()
-IBIS_TEST_DATA_S3_BUCKET = 'ibis-data'
+IBIS_TEST_DATA_S3_BUCKET = 'ibis-resources'
 IBIS_TEST_DATA_LOCAL_DIR = 'ibis-testing-data'
 
 TARBALL_NAME = 'ibis-testing-data.tar.gz'
