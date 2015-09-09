@@ -634,12 +634,27 @@ class AlchemySelect(Select):
         clauses = []
         for expr in self.order_by:
             key = expr.op()
-            arg = self._translate(key.expr)
+            sort_expr = key.expr
+
+            # here we have to determine if key.expr is in the select set (as it
+            # will be in the case of order_by fused with an aggregation
+            if self._among_select_set(sort_expr):
+                arg = sort_expr.get_name()
+            else:
+                arg = self._translate(sort_expr)
+
             if not key.ascending:
-                arg = arg.desc()
+                arg = sa.desc(arg)
+
             clauses.append(arg)
 
         return fragment.order_by(*clauses)
+
+    def _among_select_set(self, expr):
+        for other in self.select_set:
+            if expr.equals(other):
+                return True
+        return False
 
     def _add_limit(self, fragment):
         if self.limit is None:
