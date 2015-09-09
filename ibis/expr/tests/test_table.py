@@ -183,6 +183,12 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
          .mutate(leg=ibis.literal('-').join([t.origin, t.dest]))
          ['year', 'month', 'day', 'depdelay', 'leg'])
 
+    def test_projection_self(self):
+        result = self.table[self.table]
+        expected = self.table.projection(self.table)
+
+        assert_equal(result, expected)
+
     def test_add_column(self):
         # Creates a projection with a select-all on top of a non-projection
         # TableExpr
@@ -821,6 +827,17 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         joined = t.left_join(t2, [t['g'] == t2['g']])
         proj = joined.projection([t, t2['foo'], t2['bar']])
         repr(proj)
+
+    def test_join_getitem_projection(self):
+        region = self.con.table('tpch_region')
+        nation = self.con.table('tpch_nation')
+
+        pred = region.r_regionkey == nation.n_regionkey
+        joined = region.inner_join(nation, pred)
+
+        result = joined[nation]
+        expected = joined.projection(nation)
+        assert_equal(result, expected)
 
     def test_self_join(self):
         # Self-joins are problematic with this design because column

@@ -551,7 +551,7 @@ class TableExpr(Expr):
         if isinstance(what, AnalyticExpr):
             what = what._table_getitem()
 
-        if isinstance(what, (list, tuple)):
+        if isinstance(what, (list, tuple, TableExpr)):
             # Projection case
             return self.projection(what)
         elif isinstance(what, BooleanArray):
