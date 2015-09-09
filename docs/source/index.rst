@@ -6,10 +6,11 @@
 Ibis: Python Data Analysis Framework
 ====================================
 
-Ibis is a Python data analysis framework, designed to be an ideal companion for
-SQL engines and distributed storage systems like Hadoop. Ibis is being jointly
-developed with `Impala <http://impala.io>`_ to deliver a complete 100% Python
-user experience on tera- and petascale big data problems.
+Ibis is a productivity-centric Python data analysis framework, designed to be
+an ideal companion for SQL engines and distributed storage systems like
+Hadoop. Ibis is being jointly developed with `Impala <http://impala.io>`_ to
+deliver a complete 100% Python user experience on data of any size (small,
+medium, or big).
 
 At this item, Ibis supports the following SQL-based systems:
 
@@ -19,9 +20,9 @@ At this item, Ibis supports the following SQL-based systems:
 We have a handful of specific priority focus areas:
 
 - Enable data analysts to translation analytics using SQL engines to Python
-  instead of using the SQL language
-- Provide high level analytics APIs and workflow tools to accelerate
-  productivity.
+  instead of using the SQL language.
+- Provide high level analytics APIs and workflow tools to enhance productivity
+  and streamline common or tedious tasks.
 - Provide high performance extensions for the Impala MPP query engine to enable
   high performance Python code to operate in a scalable Hadoop-like environment
 - Abstract away database-specific SQL differences
@@ -34,7 +35,7 @@ Architecturally, Ibis features:
   analytics, aka **Ibis expressions**, that enable composable, reusable
   analytics on structured data. If you can express something with a SQL SELECT
   query, you can write it with Ibis.
-- A translation system that targets multiple SQL systems
+- An extensible translator-compiler system that targets multiple SQL systems
 - Tools for wrapping user-defined functions in Impala and eventually other SQL
   engines
 

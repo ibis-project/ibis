@@ -76,6 +76,13 @@ Since Ibis requires a running Impala cluster, we have provided a lean
 VirtualBox image to simplify the process for those looking to try out Ibis
 (without setting up a cluster) or start contributing code to the project.
 
+What follows are streamlined setup instructions for the VM. If you wish to
+download it directly and setup from the ``ova`` file, use this `download link
+<http://archive.cloudera.com/cloudera-ibis/ibis-demo.ova>`_.
+
+The VM was built with Oracle VirtualBox 4.3.28. We recommend using the latest
+version of the software for the best compatibility.
+
 TL;DR
 ~~~~~
 
@@ -89,7 +96,6 @@ Single Steps
 To use Ibis with the special Cloudera Quickstart VM follow the below
 instructions:
 
-  * Install Oracle VirtualBox
   * Make sure Anaconda is installed. You can get it from
     http://continuum.io/downloads. Now prepend the Anaconda Python
     to your path like this ``export PATH=$ANACONDA_HOME/bin:$PATH``
