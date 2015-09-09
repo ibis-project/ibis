@@ -401,7 +401,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         t2 = self._to_sqla(self.t2).alias('t1')
 
         cond1 = sa.exists([L(1)]).where(t1.c.key1 == t2.c.key1)
-        expected = sa.select([t1]).where(-cond1)
+        expected = sa.select([t1]).where(sa.not_(cond1))
 
         self._compare_sqla(expr, expected)
 

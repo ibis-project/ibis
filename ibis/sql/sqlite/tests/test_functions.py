@@ -277,6 +277,15 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._execute_aggregation(table, exprs)
 
+    def test_not_exists_works(self):
+        pytest.skip('blocked on self-reference bug')
+
+        t = self.alltypes
+        t2 = t.view()
+
+        expr = t[-(t.string_col == t2.string_col).any()]
+        expr.execute()
+
     def test_interactive_repr_shows_error(self):
         # #591. Doing this in SQLite because so many built-in functions are not
         # available

@@ -173,7 +173,7 @@ def _exists_subquery(t, expr):
     clause = to_sqlalchemy(filtered, context=sub_ctx, exists=True)
 
     if isinstance(op, transforms.NotExistsSubquery):
-        clause = -clause
+        clause = sa.not_(clause)
 
     return clause
 
