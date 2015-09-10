@@ -1,9 +1,8 @@
 [![codecov.io](http://codecov.io/github/cloudera/ibis/coverage.svg?branch=master)](http://codecov.io/github/cloudera/ibis?branch=master)
 
-Ibis
-===
+# Ibis: Python analysis framework for SQL systems
 
-Install ibis from PyPI with:
+Install Ibis from PyPI with:
 
     $ pip install ibis-framework
 
@@ -23,7 +22,7 @@ At this item, Ibis supports the following SQL-based systems:
 - Impala (on HDFS)
 - SQLite
 
-pandas is being designed and led by the creator of pandas
+Ibis is being designed and led by the creator of pandas
 (github.com/pydata/pandas) and is intended to have a familiar user interface
 for folks used to small data on single machines in Python.
 
@@ -47,4 +46,6 @@ SQL engine support near on the horizon:
 - Hive
 - MySQL / MariaDB
 
-Learn much more at http://ibis-project.org
+Read the project blog at http://blog.ibis-project.org.
+
+Learn much more at http://ibis-project.org.
