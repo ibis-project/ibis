@@ -1,6 +1,6 @@
 [![codecov.io](http://codecov.io/github/cloudera/ibis/coverage.svg?branch=master)](http://codecov.io/github/cloudera/ibis?branch=master)
 
-# Ibis: Python analysis framework for SQL systems
+# Ibis: Python data analysis framework for Hadoop and SQL engines
 
 Install Ibis from PyPI with:
 
