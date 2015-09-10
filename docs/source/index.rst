@@ -49,6 +49,8 @@ SQL engine support near on the horizon:
 - Hive
 - MySQL / MariaDB
 
+See the project blog http://blog.ibis-project.org for more frequent updates.
+
 To learn more about Ibis's vision and roadmap, please visit
 http://ibis-project.org.
 

@@ -2,6 +2,10 @@
 Release Notes
 =============
 
+    **Note**: These release notes will only include notable or major bug fixes
+    since most minor bug fixes tend to be esoteric and not generally
+    interesting.
+
 0.5.0 (September 10, 2015)
 --------------------------
 
@@ -21,6 +25,7 @@ New features
 * More convenient aggregation with keyword arguments in ``aggregate`` functions
 * Built preliminary wrapper API for MADLib-on-Impala
 * Add ``var`` and ``std`` aggregation methods and support in Impala
+* Add ``nullifzero`` numeric method for all SQL engines
 * Add ``rename`` method to Impala tables (for renaming tables in the Hive
   metastore)
 * Add ``close`` method to ``ImpalaClient`` for session cleanup (#533)
