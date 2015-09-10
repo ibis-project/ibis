@@ -338,13 +338,13 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         self.con = MockConnection()
         self.table = self.con.table('functional_alltypes')
 
-    def test_numeric_monadic_builtins(self):
+    def test_numeric_unary_builtins(self):
         # No argument functions
         functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt', 'sign',
                      ('log', 'ln'),
                      ('approx_median', 'appx_median'),
                      ('approx_nunique', 'ndv'),
-                     'ln', 'log2', 'log10', 'zeroifnull']
+                     'ln', 'log2', 'log10', 'nullifzero', 'zeroifnull']
 
         cases = []
         for what in functions:
@@ -1024,6 +1024,9 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             d.log2(),
             d.log10(),
             d.notnull(),
+
+            d.zeroifnull(),
+            d.nullifzero(),
 
             d.round(),
             d.round(2),

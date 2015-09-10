@@ -1034,72 +1034,9 @@ class QueryContext(object):
         return False
 
 
-def _bucket(expr):
-    import operator
-
-    op = expr.op()
-    stmt = ibis.case()
-
-    if op.closed == 'left':
-        l_cmp = operator.le
-        r_cmp = operator.lt
-    else:
-        l_cmp = operator.lt
-        r_cmp = operator.le
-
-    user_num_buckets = len(op.buckets) - 1
-
-    bucket_id = 0
-    if op.include_under:
-        if user_num_buckets > 0:
-            cmp = operator.lt if op.close_extreme else r_cmp
-        else:
-            cmp = operator.le if op.closed == 'right' else operator.lt
-        stmt = stmt.when(cmp(op.arg, op.buckets[0]), bucket_id)
-        bucket_id += 1
-
-    for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
-        if (op.close_extreme and
-            ((op.closed == 'right' and j == 0) or
-             (op.closed == 'left' and j == (user_num_buckets - 1)))):
-            stmt = stmt.when((lower <= op.arg) & (op.arg <= upper),
-                             bucket_id)
-        else:
-            stmt = stmt.when(l_cmp(lower, op.arg) & r_cmp(op.arg, upper),
-                             bucket_id)
-        bucket_id += 1
-
-    if op.include_over:
-        if user_num_buckets > 0:
-            cmp = operator.lt if op.close_extreme else l_cmp
-        else:
-            cmp = operator.lt if op.closed == 'right' else operator.le
-
-        stmt = stmt.when(cmp(op.buckets[-1], op.arg), bucket_id)
-        bucket_id += 1
-
-    return stmt.end().name(expr._name)
-
-
-def _category_label(expr):
-    op = expr.op()
-
-    stmt = op.args[0].case()
-    for i, label in enumerate(op.labels):
-        stmt = stmt.when(i, label)
-
-    if op.nulls is not None:
-        stmt = stmt.else_(op.nulls)
-
-    return stmt.end().name(expr._name)
-
-
 class ExprTranslator(object):
 
-    _rewrites = {
-        analytics.Bucket: _bucket,
-        analytics.CategoryLabel: _category_label
-    }
+    _rewrites = {}
 
     def __init__(self, expr, context=None, named=False, permit_subquery=False):
         self.expr = expr
@@ -1147,7 +1084,7 @@ class ExprTranslator(object):
         # The operation node type the typed expression wraps
         op = expr.op()
 
-        if type(op) in self._rewrites:
+        if type(op) in self._rewrites and type(op) not in self._registry:
             expr = self._rewrites[type(op)](expr)
             op = expr.op()
 
@@ -1166,6 +1103,107 @@ class ExprTranslator(object):
 
     def _trans_param(self, expr):
         raise NotImplementedError
+
+    @classmethod
+    def rewrites(cls, klass, f=None):
+        def decorator(f):
+            cls._rewrites[klass] = f
+
+        if f is None:
+            return decorator
+        else:
+            decorator(f)
+
+
+rewrites = ExprTranslator.rewrites
+
+
+@rewrites(analytics.Bucket)
+def _bucket(expr):
+    import operator
+
+    op = expr.op()
+    stmt = ibis.case()
+
+    if op.closed == 'left':
+        l_cmp = operator.le
+        r_cmp = operator.lt
+    else:
+        l_cmp = operator.lt
+        r_cmp = operator.le
+
+    user_num_buckets = len(op.buckets) - 1
+
+    bucket_id = 0
+    if op.include_under:
+        if user_num_buckets > 0:
+            cmp = operator.lt if op.close_extreme else r_cmp
+        else:
+            cmp = operator.le if op.closed == 'right' else operator.lt
+        stmt = stmt.when(cmp(op.arg, op.buckets[0]), bucket_id)
+        bucket_id += 1
+
+    for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
+        if (op.close_extreme and
+            ((op.closed == 'right' and j == 0) or
+             (op.closed == 'left' and j == (user_num_buckets - 1)))):
+            stmt = stmt.when((lower <= op.arg) & (op.arg <= upper),
+                             bucket_id)
+        else:
+            stmt = stmt.when(l_cmp(lower, op.arg) & r_cmp(op.arg, upper),
+                             bucket_id)
+        bucket_id += 1
+
+    if op.include_over:
+        if user_num_buckets > 0:
+            cmp = operator.lt if op.close_extreme else l_cmp
+        else:
+            cmp = operator.lt if op.closed == 'right' else operator.le
+
+        stmt = stmt.when(cmp(op.buckets[-1], op.arg), bucket_id)
+        bucket_id += 1
+
+    return stmt.end().name(expr._name)
+
+
+@rewrites(analytics.CategoryLabel)
+def _category_label(expr):
+    op = expr.op()
+
+    stmt = op.args[0].case()
+    for i, label in enumerate(op.labels):
+        stmt = stmt.when(i, label)
+
+    if op.nulls is not None:
+        stmt = stmt.else_(op.nulls)
+
+    return stmt.end().name(expr._name)
+
+
+@rewrites(ops.Any)
+def _any_expand(expr):
+    arg = expr.op().args[0]
+    return arg.sum() > 0
+
+
+@rewrites(ops.NotAny)
+def _notany_expand(expr):
+    arg = expr.op().args[0]
+    return arg.sum() == 0
+
+
+@rewrites(ops.All)
+def _all_expand(expr):
+    arg = expr.op().args[0]
+    t = ir.find_base_table(arg)
+    return arg.sum() == t.count()
+
+
+@rewrites(ops.NotAll)
+def _notall_expand(expr):
+    arg = expr.op().args[0]
+    t = ir.find_base_table(arg)
+    return arg.sum() < t.count()
 
 
 class DDL(object):

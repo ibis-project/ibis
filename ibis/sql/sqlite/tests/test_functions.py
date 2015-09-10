@@ -108,6 +108,13 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_nullifzero(self):
+        cases = [
+            (L(0).nullifzero(), None),
+            (L(5.5).nullifzero(), 5.5),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_string_length(self):
         cases = [
             (L('foo_bar').length(), 7),
@@ -262,6 +269,10 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
         exprs = [
             table.bool_col.count(),
+            table.bool_col.any(),
+            table.bool_col.all(),
+            table.bool_col.notany(),
+            table.bool_col.notall(),
 
             d.sum(),
             d.mean(),

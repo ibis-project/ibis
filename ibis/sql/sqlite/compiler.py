@@ -168,10 +168,14 @@ def add_operation(op, translation_func):
 class SQLiteExprTranslator(alch.AlchemyExprTranslator):
 
     _registry = _operation_registry
+    _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
     _type_map = alch.AlchemyExprTranslator._type_map.copy()
     _type_map.update({
         dt.Double: sa.types.REAL
     })
+
+
+rewrites = SQLiteExprTranslator.rewrites
 
 
 class SQLiteDialect(alch.AlchemyDialect):

@@ -309,6 +309,14 @@ Scalar or array methods
    NumericValue.floor
    NumericValue.sign
    NumericValue.exp
+   NumericValue.sqrt
+   NumericValue.log
+   NumericValue.ln
+   NumericValue.log2
+   NumericValue.log10
+   NumericValue.round
+   NumericValue.nullifzero
+   NumericValue.zeroifnull
 
 
 Array methods

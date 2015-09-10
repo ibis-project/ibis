@@ -294,9 +294,6 @@ def unary(sa_func):
     return fixed_arity(sa_func, 1)
 
 
-_expr_rewrites = comp.ExprTranslator._rewrites.copy()
-
-
 _operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
@@ -468,7 +465,7 @@ class AlchemyTable(ops.DatabaseTable):
 class AlchemyExprTranslator(comp.ExprTranslator):
 
     _registry = _operation_registry
-    _rewrites = _expr_rewrites
+    _rewrites = comp.ExprTranslator._rewrites.copy()
     _type_map = _ibis_type_to_sqla
 
     def name(self, translated, name, force=True):
@@ -480,6 +477,9 @@ class AlchemyExprTranslator(comp.ExprTranslator):
 
     def get_sqla_type(self, data_type):
         return self._type_map[type(data_type)]
+
+
+rewrites = AlchemyExprTranslator.rewrites
 
 
 class AlchemyQuery(Query):
@@ -839,3 +839,9 @@ class AlchemyProxy(object):
 
     def fetchall(self):
         return self.proxy.fetchall()
+
+
+@rewrites(ops.NullIfZero)
+def _nullifzero(expr):
+    arg = expr.op().args[0]
+    return (arg == 0).ifelse(ibis.NA, arg)

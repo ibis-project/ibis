@@ -1016,6 +1016,7 @@ _numeric_value_methods = dict(
     log2=log2,
     log10=log10,
     round=round,
+    nullifzero=_unary_op('nullifzero', _ops.NullIfZero),
     zeroifnull=_unary_op('zeroifnull', _ops.ZeroIfNull),
 )
 

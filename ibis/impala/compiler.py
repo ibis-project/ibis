@@ -445,7 +445,7 @@ _cumulative_to_reduction = {
 }
 
 
-def _cumulative_to_window(expr, window):
+def _cumulative_to_window(translator, expr, window):
     win = ibis.cumulative_window()
     win = (win.group_by(window._group_by)
            .order_by(window._order_by))
@@ -456,8 +456,8 @@ def _cumulative_to_window(expr, window):
     new_op = klass(*op.args)
     new_expr = expr._factory(new_op, name=expr._name)
 
-    if type(new_op) in _expr_rewrites:
-        new_expr = _expr_rewrites[type(new_op)](new_expr)
+    if type(new_op) in translator._rewrites:
+        new_expr = translator._rewrites[type(new_op)](new_expr)
 
     new_expr = L.windowize_function(new_expr, win)
     return new_expr
@@ -488,7 +488,7 @@ def _window(translator, expr):
                                    .format(type(window_op)))
 
     if isinstance(window_op, ops.CumulativeOp):
-        arg = _cumulative_to_window(arg, window)
+        arg = _cumulative_to_window(translator, arg, window)
         return translator.translate(arg)
 
     # Some analytic functions need to have the expression of interest in
@@ -656,28 +656,6 @@ def _variance_like(func_name):
         arg, where, how = expr.op().args
         return _reduction_format(translator, func_names[how], arg, where)
     return formatter
-
-
-def _any_expand(expr):
-    arg = expr.op().args[0]
-    return arg.sum() > 0
-
-
-def _notany_expand(expr):
-    arg = expr.op().args[0]
-    return arg.sum() == 0
-
-
-def _all_expand(expr):
-    arg = expr.op().args[0]
-    t = ir.find_base_table(arg)
-    return arg.sum() == t.count()
-
-
-def _notall_expand(expr):
-    arg = expr.op().args[0]
-    t = ir.find_base_table(arg)
-    return arg.sum() < t.count()
 
 
 def fixed_arity(func_name, arity):
@@ -1165,15 +1143,6 @@ _expr_transforms = {
     ops.MinRank: _subtract_one,
 }
 
-_expr_rewrites = comp.ExprTranslator._rewrites.copy()
-
-_expr_rewrites.update({
-    ops.Any: _any_expand,
-    ops.All: _all_expand,
-    ops.NotAny: _notany_expand,
-    ops.NotAll: _notall_expand,
-})
-
 
 _binary_infix_ops = {
     # Binary operations
@@ -1209,6 +1178,7 @@ _operation_registry = {
     ops.NullIf: fixed_arity('nullif', 2),
 
     ops.ZeroIfNull: unary('zeroifnull'),
+    ops.NullIfZero: unary('nullifzero'),
 
     ops.Abs: unary('abs'),
     ops.BaseConvert: fixed_arity('conv', 3),
@@ -1334,7 +1304,6 @@ _operation_registry.update(_binary_infix_ops)
 class ImpalaExprTranslator(comp.ExprTranslator):
 
     _registry = _operation_registry
-    _rewrites = _expr_rewrites
     _context_class = ImpalaContext
 
     def name(self, translated, name, force=True):

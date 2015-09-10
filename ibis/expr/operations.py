@@ -215,6 +215,23 @@ class NullIf(ValueOp):
     output_type = rules.type_of_arg(0)
 
 
+class NullIfZero(ValueOp):
+
+    """
+    Set values to NULL if they equal to zero. Commonly used in cases where
+    divide-by-zero would produce an overflow or infinity.
+
+    Equivalent to (value == 0).ifelse(ibis.NA, value)
+
+    Returns
+    -------
+    maybe_nulled : type of caller
+    """
+
+    input_type = [number]
+    output_type = rules.type_of_arg(0)
+
+
 def _coalesce_upcast(self):
     # TODO: how much validation is necessary that the call is valid and can
     # succeed?
