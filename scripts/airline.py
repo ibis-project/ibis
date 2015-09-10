@@ -37,7 +37,7 @@ schema = ibis.schema([
     ('depdelay', 'int32'),
     ('origin', 'string'),
     ('dest', 'string'),
-    ('distince', 'int32'),
+    ('distance', 'int32'),
     ('taxi_in', 'int32'),
     ('taxi_out', 'int32'),
     ('cancelled', 'int8'),

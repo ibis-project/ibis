@@ -2,8 +2,12 @@
 Release Notes
 =============
 
-0.5.0 (September 8, 2015)
--------------------------
+    **Note**: These release notes will only include notable or major bug fixes
+    since most minor bug fixes tend to be esoteric and not generally
+    interesting.
+
+0.5.0 (September 10, 2015)
+--------------------------
 
 Highlights in this release are the SQLite, Python 3, Impala UDA support, and an
 asynchronous execution API. There are also many usability improvements, bug
@@ -19,8 +23,9 @@ New features
 * Many window function usability improvements (nested analytic functions and
   deferred binding conveniences)
 * More convenient aggregation with keyword arguments in ``aggregate`` functions
-* Built priliminary wrapper API for MADLib-on-Impala
+* Built preliminary wrapper API for MADLib-on-Impala
 * Add ``var`` and ``std`` aggregation methods and support in Impala
+* Add ``nullifzero`` numeric method for all SQL engines
 * Add ``rename`` method to Impala tables (for renaming tables in the Hive
   metastore)
 * Add ``close`` method to ``ImpalaClient`` for session cleanup (#533)
@@ -183,3 +188,16 @@ Contributors
 
 0.1.0 (March 26, 2015)
 ----------------------
+
+First Ibis release.
+
+* Expression DSL design and type system
+* Expression to ImpalaSQL compiler toolchain
+* Impala built-in function wrappers
+
+::
+
+	$ git log 84d0435..v0.1.0 --pretty=format:%aN | sort | uniq -c | sort -rn
+		78 Wes McKinney
+		 1 srus
+		 1 Henry Robinson

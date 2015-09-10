@@ -25,11 +25,8 @@ Impala client
 .. currentmodule:: ibis.impala.api
 
 These methods are available on the Impala client object after connecting to
-your Impala cluster, HDFS cluster, and creating the client with
-``ibis.make_client``.
-
-Use ``ibis.impala.connect`` to create an Impala connection to use for
-assembling a client.
+your HDFS cluster (``ibis.hdfs_connect``) and connecting to Impala with
+``ibis.impala.connect``.
 
 .. autosummary::
    :toctree: generated/
@@ -110,6 +107,25 @@ Executing expressions
 
    ImpalaClient.execute
    ImpalaClient.disable_codegen
+
+.. _api.sqlite:
+
+SQLite client
+-------------
+.. currentmodule:: ibis.sqlite.sql.api
+
+The SQLite client is accessible through the ``ibis.sqlite`` namespace.
+
+Use ``ibis.sqlite.connect`` to create a SQLite client.
+
+.. autosummary::
+   :toctree: generated/
+
+   connect
+   SQLiteClient.attach
+   SQLiteClient.database
+   SQLiteClient.list_tables
+   SQLiteClient.table
 
 .. _api.hdfs:
 
@@ -327,6 +343,9 @@ Array methods
 
    NumericArray.sum
    NumericArray.mean
+
+   NumericArray.std
+   NumericArray.var
 
    NumericArray.cumsum
    NumericArray.cummean
