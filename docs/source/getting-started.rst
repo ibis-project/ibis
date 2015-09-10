@@ -15,8 +15,8 @@ Installation
 System dependencies
 ~~~~~~~~~~~~~~~~~~~
 
-Ibis requires a working Python 2.6 or 2.7 installation (3.x support will come
-in a future release). We recommend `Anaconda <http://continuum.io/downloads>`_.
+Ibis requires a working Python 2.6, 2.7, or 3.4 installation. We recommend
+`Anaconda <http://continuum.io/downloads>`_.
 
 Installing the Python package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -39,6 +39,14 @@ Some platforms will require that you have Kerberos installed to build properly.
 
 * Redhat / CentOS: ``yum install krb5-devel``
 * Ubuntu / Debian: ``apt-get install libkrb5-dev``
+
+.. _install.sqlite:
+
+Ibis SQLite Quickstart
+----------------------
+
+See http://blog.ibis-project.org/sqlite-crunchbase-quickstart/ for a quickstart
+using SQLite. Otherwise read on to try out Ibis on Impala.
 
 Creating a client
 -----------------
@@ -72,8 +80,8 @@ reproduced as part of the documentation.
 Using Ibis with the Cloudera Quickstart VM
 ------------------------------------------
 
-Since Ibis requires a running Impala cluster, we have provided a lean
-VirtualBox image to simplify the process for those looking to try out Ibis
+Using Ibis with Impala requires a running Impala cluster, so we have provided a
+lean VirtualBox image to simplify the process for those looking to try out Ibis
 (without setting up a cluster) or start contributing code to the project.
 
 What follows are streamlined setup instructions for the VM. If you wish to
