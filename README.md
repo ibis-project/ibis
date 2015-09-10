@@ -17,7 +17,7 @@ Ibis is a Python data analysis library with a handful of related goals:
 - Abstract away database-specific SQL differences
 - Integrate with the Python data ecosystem using the above tools
 
-At this item, Ibis supports the following SQL-based systems:
+At this time, Ibis supports the following SQL-based systems:
 
 - Impala (on HDFS)
 - SQLite

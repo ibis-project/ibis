@@ -12,7 +12,7 @@ Hadoop. Ibis is being jointly developed with `Impala <http://impala.io>`_ to
 deliver a complete 100% Python user experience on data of any size (small,
 medium, or big).
 
-At this item, Ibis supports the following SQL-based systems:
+At this time, Ibis supports the following SQL-based systems:
 
 - Impala (on HDFS)
 - SQLite
