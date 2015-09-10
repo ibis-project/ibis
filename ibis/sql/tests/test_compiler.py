@@ -683,6 +683,16 @@ class ExprTestCases(object):
         t2 = t.view()
         return t.join(t2).projection(t)
 
+    def _case_subquery_aliased(self):
+        t1 = self.con.table('star1')
+        t2 = self.con.table('star2')
+
+        agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
+        what = (agged.inner_join(t2, [agged.foo_id == t2.foo_id])
+                [agged, t2.value1])
+
+        return what
+
 
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
 
@@ -1236,14 +1246,8 @@ GROUP BY 1"""
         assert result == expected
 
     def test_subquery_aliased(self):
-        t1 = self.con.table('star1')
-        t2 = self.con.table('star2')
+        case = self._case_subquery_aliased()
 
-        agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
-        what = (agged.inner_join(t2, [agged.foo_id == t2.foo_id])
-                [agged, t2.value1])
-
-        result = to_sql(what)
         expected = """SELECT t0.*, t1.`value1`
 FROM (
   SELECT `foo_id`, sum(`f`) AS `total`
@@ -1252,7 +1256,7 @@ FROM (
 ) t0
   INNER JOIN star2 t1
     ON t0.`foo_id` = t1.`foo_id`"""
-        assert result == expected
+        self._compare_sql(case, expected)
 
     def test_double_nested_subquery_no_aliases(self):
         # We don't require any table aliasing anywhere

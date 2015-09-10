@@ -435,6 +435,49 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         stmt = sa.select([t0]).where(t0.c.y > subq)
         self._compare_sqla(expr, stmt)
 
+    def test_subquery_aliased(self):
+        expr = self._case_subquery_aliased()
+
+        s1 = self._get_sqla('star1').alias('t2')
+        s2 = self._get_sqla('star2').alias('t1')
+
+        agged = (sa.select([s1.c.foo_id, F.sum(s1.c.f).label('total')])
+                 .group_by(s1.c.foo_id)
+                 .alias('t0'))
+
+        joined = agged.join(s2, agged.c.foo_id == s2.c.foo_id)
+        expected = sa.select([agged, s2.c.value1]).select_from(joined)
+
+        self._compare_sqla(expr, expected)
+
+    def test_lower_projection_sort_key(self):
+        expr = self._case_subquery_aliased()
+
+        s1 = self._get_sqla('star1').alias('t2')
+        s2 = self._get_sqla('star2').alias('t1')
+
+        expr2 = (expr
+                 [expr.total > 100]
+                 .sort_by(ibis.desc('total')))
+
+        agged = (sa.select([s1.c.foo_id, F.sum(s1.c.f).label('total')])
+                 .group_by(s1.c.foo_id)
+                 .alias('t3'))
+
+        joined = agged.join(s2, agged.c.foo_id == s2.c.foo_id)
+        expected = sa.select([agged, s2.c.value1]).select_from(joined)
+
+        joined = agged.join(s2, agged.c.foo_id == s2.c.foo_id)
+        expected = sa.select([agged, s2.c.value1]).select_from(joined)
+
+        ex = expected.alias('t0')
+
+        expected2 = (sa.select([ex])
+                     .where(ex.c.total > L(100))
+                     .order_by(ex.c.total.desc()))
+
+        self._compare_sqla(expr2, expected2)
+
     def test_exists(self):
         e1, e2 = self._case_exists()
 

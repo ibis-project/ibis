@@ -4,10 +4,11 @@ Release Notes
 
     **Note**: These release notes will only include notable or major bug fixes
     since most minor bug fixes tend to be esoteric and not generally
-    interesting.
+    interesting. Point (minor, e.g. 0.5.1) releases will generally not be found
+    here and contain only bug fixes.
 
-0.5.0 (September 10, 2015)
---------------------------
+0.5 (September 10, 2015)
+------------------------
 
 Highlights in this release are the SQLite, Python 3, Impala UDA support, and an
 asynchronous execution API. There are also many usability improvements, bug
@@ -49,8 +50,8 @@ Contributors
           9 Uri Laserson
           1 Kristopher Overholt
 
-0.4.0 (August 14, 2015)
------------------------
+0.4 (August 14, 2015)
+---------------------
 
 New features
 ~~~~~~~~~~~~
@@ -91,8 +92,8 @@ Contributors
           2 Kristopher Overholt
           1 Marius van Niekerk
 
-0.3.0 (July 20, 2015)
----------------------
+0.3 (July 20, 2015)
+-------------------
 
 First public release. See http://ibis-project.org for more.
 
@@ -129,8 +130,8 @@ Contributors
           4 Isaac Hodes
           2 Meghana Vuyyuru
 
-0.2.0 (June 16, 2015)
----------------------
+0.2 (June 16, 2015)
+-------------------
 
 New features
 ~~~~~~~~~~~~
@@ -195,8 +196,8 @@ Contributors
           1 Juliet Hougland
           1 Isaac Hodes
 
-0.1.0 (March 26, 2015)
-----------------------
+0.1 (March 26, 2015)
+--------------------
 
 First Ibis release.
 

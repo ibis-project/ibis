@@ -1104,7 +1104,10 @@ def find_all_base_tables(expr, memo=None):
     if memo is None:
         memo = {}
 
-    if isinstance(expr, TableExpr):
+    node = expr.op()
+
+    if (isinstance(expr, TableExpr) and
+            isinstance(node, BlockingTableNode)):
         if id(expr) not in memo:
             memo[id(expr)] = expr
         return memo
