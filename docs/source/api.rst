@@ -112,7 +112,7 @@ Executing expressions
 
 SQLite client
 -------------
-.. currentmodule:: ibis.sqlite.sql.api
+.. currentmodule:: ibis.sql.sqlite.api
 
 The SQLite client is accessible through the ``ibis.sqlite`` namespace.
 

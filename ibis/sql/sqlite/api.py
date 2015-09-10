@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from .client import SQLiteDatabase
+from .client import SQLiteClient
 from .compiler import rewrites  # noqa
 
 
@@ -41,4 +41,4 @@ def connect(path, create=False):
         If file does not exist, create it
     """
 
-    return SQLiteDatabase(path, create=create)
+    return SQLiteClient(path, create=create)

@@ -31,7 +31,7 @@ class SQLiteDatabase(Database):
     pass
 
 
-class SQLiteDatabase(alch.AlchemyClient):
+class SQLiteClient(alch.AlchemyClient):
 
     """
     The Ibis SQLite client class

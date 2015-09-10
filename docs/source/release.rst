@@ -14,7 +14,7 @@ asynchronous execution API. There are also many usability improvements, bug
 fixes, and other new features.
 
 New features
-------------
+~~~~~~~~~~~~
 * SQLite client and built-in function support
 * Ibis now supports Python 3.4 as well as 2.6 and 2.7
 * Ibis can utilize Impala user-defined aggregate (UDA) functions
@@ -36,9 +36,18 @@ New features
   example)
 
 API changes
------------
+~~~~~~~~~~~
 * Impala Ibis client creation now uses only ``ibis.impala.connect``, and
   ``ibis.make_client`` has been deprecated
+
+Contributors
+~~~~~~~~~~~~
+::
+
+    $ git log v0.4.0..v0.5.0 --pretty=format:%aN | sort | uniq -c | sort -rn
+          55 Wes McKinney
+          9 Uri Laserson
+          1 Kristopher Overholt
 
 0.4.0 (August 14, 2015)
 -----------------------
@@ -197,7 +206,7 @@ First Ibis release.
 
 ::
 
-	$ git log 84d0435..v0.1.0 --pretty=format:%aN | sort | uniq -c | sort -rn
-		78 Wes McKinney
-		 1 srus
-		 1 Henry Robinson
+    $ git log 84d0435..v0.1.0 --pretty=format:%aN | sort | uniq -c | sort -rn
+        78 Wes McKinney
+         1 srus
+         1 Henry Robinson
