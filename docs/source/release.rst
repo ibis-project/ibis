@@ -2,8 +2,8 @@
 Release Notes
 =============
 
-0.5.0 (September 9, 2015)
--------------------------
+0.5.0 (September 10, 2015)
+--------------------------
 
 Highlights in this release are the SQLite, Python 3, Impala UDA support, and an
 asynchronous execution API. There are also many usability improvements, bug
