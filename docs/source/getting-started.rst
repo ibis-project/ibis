@@ -88,8 +88,7 @@ What follows are streamlined setup instructions for the VM. If you wish to
 download it directly and setup from the ``ova`` file, use this `download link
 <http://archive.cloudera.com/cloudera-ibis/ibis-demo.ova>`_.
 
-The VM was built with Oracle VirtualBox 4.3.28. We recommend using the latest
-version of the software for the best compatibility.
+The VM was built with Oracle VirtualBox 4.3.28.
 
 TL;DR
 ~~~~~
