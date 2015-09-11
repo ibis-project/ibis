@@ -1,39 +1,42 @@
 package:
   name: hdfs
-  version: "1.4.3"
+  version: "2.0.2"
 
 source:
-  fn: hdfs-1.4.3.tar.gz
-  url: https://pypi.python.org/packages/source/h/hdfs/hdfs-1.4.3.tar.gz
-  md5: 872034eb169d9315b71eb00cb7e28ead
+  fn: hdfs-2.0.2.tar.gz
+  url: https://pypi.python.org/packages/source/h/hdfs/hdfs-2.0.2.tar.gz
+  md5: ade3a92382e0889e2a845b9cc707c704
 
 build:
   entry_points:
-    - hdfs = hdfs.__main__:main
-    # - hdfs-avro = hdfs.ext.avro:main  # disabled
+    - hdfscli = hdfs.__main__:main
+    # - hdfscli-avro = hdfs.ext.avro.__main__:main  # disabled
 
 requirements:
   build:
     - python
     - setuptools
     - docopt
-    - requests >=2.0.1
+    - requests >=2.7.0
+    - six >=1.9.0
 
   run:
     - python
     - docopt
-    - requests >=2.0.1
+    - requests >=2.7.0
+    - six >=1.9.0
 
 test:
   imports:
     - hdfs
     - hdfs.ext
+    # - hdfs.ext.avro  # disabled
 
   commands:
-    - hdfs --help
-    # - hdfs-avro --help  # disabled
+    - hdfscli --help
+    # - hdfscli-avro --help  # disabled
 
 about:
   home: http://hdfscli.readthedocs.org
   license: MIT License
-  summary: 'HdfsCLI: a command line interface for WebHDFS.'
+  summary: 'HdfsCLI: API and command line interface for HDFS.'

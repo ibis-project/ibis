@@ -1,11 +1,11 @@
 package:
   name: impyla
-  version: "0.10.0"
+  version: "0.11.2"
 
 source:
-  fn: impyla-0.10.0.tar.gz
-  url: https://pypi.python.org/packages/source/i/impyla/impyla-0.10.0.tar.gz
-  md5: 52c35b16b3897dbb53fb59510c33cfaa
+  fn: impyla-0.11.2.tar.gz
+  url: https://pypi.python.org/packages/source/i/impyla/impyla-0.11.2.tar.gz
+  md5: 350385753a8eecf1408e419586df0e9d
 
 build:
   preserve_egg_dir: True
@@ -15,6 +15,8 @@ requirements:
     - python
     - setuptools
     - six
+    - thrift_sasl
+    - bitarray
     - thrift
     - llvmpy
     - numba
@@ -23,6 +25,8 @@ requirements:
     - python
     - setuptools
     - six
+    - thrift_sasl
+    - bitarray
     - thrift
     - llvmpy
     - numba
@@ -30,7 +34,6 @@ requirements:
 test:
   imports:
     - impala
-    - impala._rpc
     - impala._thrift_api
     - impala._thrift_gen
     - impala._thrift_gen.ExecStats
@@ -41,7 +44,6 @@ test:
     - impala._thrift_gen.beeswax
     - impala._thrift_gen.fb303
     - impala._thrift_gen.hive_metastore
-    - impala.dbapi
     - impala.tests
     - impala.thrift
     # - impala.udf  # Test fails on osx-64

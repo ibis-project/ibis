@@ -1,11 +1,11 @@
 package:
   name: ibis-framework
-  version: "0.4.0"
+  version: "0.5.1"
 
 source:
-  fn: ibis-framework-0.4.0.tar.gz
-  url: https://pypi.python.org/packages/source/i/ibis-framework/ibis-framework-0.4.0.tar.gz
-  md5: 87323b54e070a538912cbb8d8174854a
+  fn: ibis-framework-0.5.1.tar.gz
+  url: https://pypi.python.org/packages/source/i/ibis-framework/ibis-framework-0.5.1.tar.gz
+  md5: ff9242537cde30785faac3a551408c9b
 
 requirements:
   build:
@@ -16,7 +16,8 @@ requirements:
     - pandas >=0.12.0
     - impyla >=0.10.0
     - psutil ==0.6.1
-    - hdfs ==1.4.3
+    - hdfs >=2.0.0
+    - sqlalchemy >=1.0.0
     - six
 
   run:
@@ -26,7 +27,8 @@ requirements:
     - pandas >=0.12.0
     - impyla >=0.10.0
     - psutil ==0.6.1
-    - hdfs ==1.4.3
+    - hdfs >=2.0.0
+    - sqlalchemy >=1.0.0
     - six
 
 test:
