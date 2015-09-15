@@ -121,9 +121,6 @@ class TableArrayView(ValueNode):
 
         Node.__init__(self, [table])
 
-    def root_tables(self):
-        return self.table._root_tables()
-
     def to_expr(self):
         ctype = self.table._get_type(self.name)
         klass = ctype.array_type()
@@ -1026,9 +1023,6 @@ class DistinctArray(ValueNode):
     def output_type(self):
         return type(self.arg)
 
-    def root_tables(self):
-        return self.arg._root_tables()
-
     def count(self):
         """
         Only valid if the distinct contains a single column
@@ -1310,8 +1304,6 @@ class Where(ValueOp):
 class Join(TableNode):
 
     def __init__(self, left, right, predicates):
-        from ibis.expr.analysis import ExprValidator
-
         if not rules.is_table(left):
             raise TypeError('Can only join table expressions, got %s for '
                             'left table' % type(left))
@@ -1326,14 +1318,18 @@ class Join(TableNode):
 
         # Validate join predicates. Each predicate must be valid jointly when
         # considering the roots of each input table
-        validator = ExprValidator([self.left, self.right])
+
+        # from ibis.expr.analysis import ExprValidator
+        # validator = ExprValidator([self.left, self.right])
+        # validator.validate_all(self.predicates)
+
+        from ibis.expr.analysis import CommonSubexpr
+        validator = CommonSubexpr([self.left, self.right])
         validator.validate_all(self.predicates)
 
         Node.__init__(self, [self.left, self.right, self.predicates])
 
     def _make_distinct(self, left, right, predicates):
-        import ibis.expr.analysis as L
-
         # see GH #667
 
         # If left and right table have a common parent expression (e.g. they
@@ -2058,9 +2054,6 @@ class Constant(ValueOp):
 
     def __init__(self):
         ValueOp.__init__(self, [])
-
-    def root_tables(self):
-        return []
 
 
 class TimestampNow(Constant):

@@ -177,3 +177,23 @@ class TestExprFormatting(unittest.TestCase):
 
         # not really committing to a particular output yet
         assert 'baz' in result2
+
+    def test_memoize_filtered_tables_in_join(self):
+        # related: GH #667
+        purchases = ibis.table([('region', 'string'),
+                                ('kind', 'string'),
+                                ('user', 'int64'),
+                                ('amount', 'double')], 'purchases')
+
+        metric = purchases.amount.sum().name('total')
+        agged = (purchases.group_by(['region', 'kind'])
+                 .aggregate(metric))
+
+        left = agged[agged.kind == 'foo']
+        right = agged[agged.kind == 'bar']
+
+        cond = left.region == right.region
+        joined = left.join(right, cond)
+
+        result = repr(joined)
+        assert result.count('Filter') == 2

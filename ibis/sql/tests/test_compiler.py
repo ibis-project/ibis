@@ -695,9 +695,9 @@ class ExprTestCases(object):
 
     def _case_filter_self_join_analysis_bug(self):
         purchases = ibis.table([('region', 'string'),
-                               ('kind', 'string'),
-                               ('user', 'int64'),
-                               ('amount', 'double')], 'purchases')
+                                ('kind', 'string'),
+                                ('user', 'int64'),
+                                ('amount', 'double')], 'purchases')
 
         metric = purchases.amount.sum().name('total')
         agged = (purchases.group_by(['region', 'kind'])

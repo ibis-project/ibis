@@ -702,6 +702,69 @@ class ExprValidator(object):
                 'dependencies of the table expression.' % repr(expr))
 
 
+class CommonSubexpr(object):
+
+    def __init__(self, exprs):
+        self.parent_exprs = exprs
+
+    def validate(self, expr):
+        op = expr.op()
+
+        for arg in op.flat_args():
+            if not isinstance(arg, ir.Expr):
+                continue
+            elif not isinstance(arg, ir.TableExpr):
+                if not self.validate(arg):
+                    return False
+            else:
+                # Table expression. Must be found in a parent table expr a
+                # blocking root of one of the parent tables
+                if not self._check(arg):
+                    return False
+
+        return True
+
+    def _check(self, expr):
+        # Table dependency matches one of the parent exprs
+        is_valid = False
+        for parent in self.parent_exprs:
+            is_valid = is_valid or self._check_table(parent, expr)
+        return is_valid
+
+    def _check_table(self, parent, needle):
+        def _matches(expr):
+            op = expr.op()
+
+            if expr.equals(needle):
+                return True
+
+            if isinstance(op, ir.BlockingTableNode):
+                return False
+
+            for arg in op.flat_args():
+                if not isinstance(arg, ir.Expr):
+                    continue
+                if _matches(arg):
+                    return True
+
+            return True
+
+        return _matches(parent)
+
+    def validate_all(self, exprs):
+        for expr in exprs:
+            self.assert_valid(expr)
+
+    def assert_valid(self, expr):
+        if not self.validate(expr):
+            msg = self._error_message(expr)
+            raise RelationError(msg)
+
+    def _error_message(self, expr):
+        return ('The expression %s does not fully originate from '
+                'dependencies of the table expression.' % repr(expr))
+
+
 class FilterValidator(ExprValidator):
 
     """
