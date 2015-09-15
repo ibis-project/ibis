@@ -1318,11 +1318,6 @@ class Join(TableNode):
 
         # Validate join predicates. Each predicate must be valid jointly when
         # considering the roots of each input table
-
-        # from ibis.expr.analysis import ExprValidator
-        # validator = ExprValidator([self.left, self.right])
-        # validator.validate_all(self.predicates)
-
         from ibis.expr.analysis import CommonSubexpr
         validator = CommonSubexpr([self.left, self.right])
         validator.validate_all(self.predicates)
@@ -1331,32 +1326,8 @@ class Join(TableNode):
 
     def _make_distinct(self, left, right, predicates):
         # see GH #667
-
-        # If left and right table have a common parent expression (e.g. they
-        # have different filters), must add a self-reference and make the
-        # appropriate substitution in the join predicates
-
-        def _nonblocking_base(expr):
-            node = expr.op()
-            if isinstance(node, (ir.BlockingTableNode, Join)):
-                return expr
-            else:
-                for arg in expr.op().flat_args():
-                    if isinstance(arg, TableExpr):
-                        return _nonblocking_base(arg)
-
         if left.equals(right):
             right = right.view()
-
-        # left_base = _nonblocking_base(left)
-        # right_base = _nonblocking_base(right)
-
-        # if left_base.equals(right_base):
-        #     rview = right.view()
-
-        #     predicates = [L.sub_for(pred, [(right, rview)])
-        #                   for pred in predicates]
-        #     right = rview
 
         predicates = self._clean_predicates(left, right, predicates)
 
@@ -1669,12 +1640,12 @@ class Projection(ir.BlockingTableNode, HasSchema):
     _arg_names = ['table', 'selections']
 
     def __init__(self, table_expr, proj_exprs):
-        from ibis.expr.analysis import ExprValidator
+        from ibis.expr.analysis import ExprValidator as Validator
 
         # Need to validate that the column expressions are compatible with the
         # input table; this means they must either be scalar expressions or
         # array expressions originating from the same root table expression
-        validator = ExprValidator([table_expr])
+        validator = Validator([table_expr])
 
         # Resolve schema and initialize
         types = []

@@ -567,7 +567,6 @@ class Projector(object):
 
     def __init__(self, parent, proj_exprs):
         self.parent = parent
-
         self.input_exprs = proj_exprs
 
         node = self.parent.op()
@@ -580,15 +579,13 @@ class Projector(object):
         self.parent_roots = roots
 
         clean_exprs = []
-        validator = ExprValidator([parent])
+        # validator = ExprValidator([parent])
 
         for expr in proj_exprs:
             # Perform substitution only if we share common roots
-            if validator.shares_one_root(expr):
-                expr = substitute_parents(expr, past_projection=False)
-
+            # if validator.shares_one_root(expr):
+            #     expr = substitute_parents(expr, past_projection=False)
             expr = windowize_function(expr)
-
             clean_exprs.append(expr)
 
         self.clean_exprs = clean_exprs
@@ -708,6 +705,10 @@ class CommonSubexpr(object):
         self.parent_exprs = exprs
 
     def validate(self, expr):
+        if isinstance(expr, ir.TableExpr):
+            if not self._check(expr):
+                return False
+
         op = expr.op()
 
         for arg in op.flat_args():

@@ -712,6 +712,37 @@ class ExprTestCases(object):
 
         return result, purchases
 
+    def _case_projection_fuse_filter(self):
+        # Probably test this during the evaluation phase. In SQL, "fusable"
+        # table operations will be combined together into a single select
+        # statement
+        #
+        # see ibis #71 for more on this
+
+        t = ibis.table([
+            ('a', 'int8'),
+            ('b', 'int16'),
+            ('c', 'int32'),
+            ('d', 'int64'),
+            ('e', 'float'),
+            ('f', 'double'),
+            ('g', 'string'),
+            ('h', 'boolean')
+        ], 'foo')
+
+        proj = t['a', 'b', 'c']
+
+        # Rewrite a little more aggressively here
+        expr1 = proj[t.a > 0]
+
+        # at one point these yielded different results
+        filtered = t[t.a > 0]
+
+        expr2 = filtered[t.a, t.b, t.c]
+        expr3 = filtered.projection(['a', 'b', 'c'])
+
+        return expr1, expr2, expr3
+
 
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
 
@@ -1171,6 +1202,16 @@ WHERE `value` > 0"""
 
         assert table3.equals(expected)
         assert table3_filtered.equals(expected2)
+
+    def test_projection_filter_fuse(self):
+        expr1, expr2, expr3 = self._case_projection_fuse_filter()
+
+        sql1 = to_sql(expr1)
+        sql2 = to_sql(expr2)
+        sql3 = to_sql(expr3)
+
+        assert sql1 == sql2
+        assert sql1 == sql3
 
     def test_bug_project_multiple_times(self):
         # 108

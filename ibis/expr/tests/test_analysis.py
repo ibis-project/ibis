@@ -92,26 +92,6 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         result = L.substitute_parents(expr)
         assert result is expr
 
-    def test_projection_predicate_pushdown(self):
-        # Probably test this during the evaluation phase. In SQL, "fusable"
-        # table operations will be combined together into a single select
-        # statement
-        #
-        # see ibis #71 for more on this
-        t = self.table
-        proj = t['a', 'b', 'c']
-
-        # Rewrite a little more aggressively here
-        result = proj[t.a > 0]
-
-        # at one point these yielded different results
-        filtered = t[t.a > 0]
-        expected = filtered[t.a, t.b, t.c]
-        expected2 = filtered.projection(['a', 'b', 'c'])
-
-        assert_equal(result, expected)
-        assert_equal(result, expected2)
-
     def test_rewrite_expr_with_parent(self):
         table = self.con.table('test1')
 
@@ -279,7 +259,8 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert_equal(joined.op().predicates[0], cond)
 
         metric = (left.total - right.total).name('diff')
-        projected = joined[left.region, metric]
+        what = [left.region, metric]
+        projected = joined.projection(what)
 
         proj_exprs = projected.op().selections
 
