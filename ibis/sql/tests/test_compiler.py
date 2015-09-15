@@ -1749,6 +1749,16 @@ WHERE EXISTS (
 )"""
         assert result == expected
 
+    def test_exists_subquery_repr(self):
+        # GH #660
+        t1, t2 = self.t1, self.t2
+
+        cond = t1.key1 == t2.key1
+        expr = t1[cond.any()]
+        stmt = build_ast(expr).queries[0]
+
+        repr(stmt.where[0])
+
     def test_not_exists(self):
         expr = self._case_not_exists()
         result = to_sql(expr)

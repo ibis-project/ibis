@@ -19,6 +19,12 @@ import ibis.expr.types as ir
 import ibis.util as util
 
 
+class ExistsExpr(ir.AnalyticExpr):
+
+    def type(self):
+        return 'exists'
+
+
 class ExistsSubquery(ir.Node):
 
     """
@@ -30,6 +36,9 @@ class ExistsSubquery(ir.Node):
         self.predicates = predicates
         ir.Node.__init__(self, [foreign_table, predicates])
 
+    def output_type(self):
+        return ExistsExpr
+
 
 class NotExistsSubquery(ir.Node):
 
@@ -37,6 +46,9 @@ class NotExistsSubquery(ir.Node):
         self.foreign_table = foreign_table
         self.predicates = predicates
         ir.Node.__init__(self, [foreign_table, predicates])
+
+    def output_type(self):
+        return ExistsExpr
 
 
 class AnyToExistsTransform(object):
