@@ -58,7 +58,7 @@ class Expr(object):
         else:
             return self._repr()
 
-    def _repr(self):
+    def _repr(self, memo=None):
         from ibis.expr.format import ExprFormatter
         return ExprFormatter(self).get_result()
 
@@ -170,8 +170,8 @@ class Expr(object):
         pass
 
 
-def _safe_repr(x):
-    return x._repr() if isinstance(x, Expr) else repr(x)
+def _safe_repr(x, memo=None):
+    return x._repr(memo=memo) if isinstance(x, (Expr, Node)) else repr(x)
 
 
 class Node(object):
@@ -195,12 +195,27 @@ class Node(object):
     def __repr__(self):
         return self._repr()
 
-    def _repr(self):
+    def _repr(self, memo=None):
         # Quick and dirty to get us started
         opname = type(self).__name__
         pprint_args = []
 
-        _pp = _safe_repr
+        memo = memo or {}
+
+        if id(self) in memo:
+            return memo[id(self)]
+
+        def _pp(x):
+            if isinstance(x, Expr):
+                key = id(x.op())
+            else:
+                key = id(x)
+
+            if key in memo:
+                return memo[key]
+            result = _safe_repr(x, memo=memo)
+            memo[key] = result
+            return result
 
         for x in self.args:
             if isinstance(x, (tuple, list)):

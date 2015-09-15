@@ -27,12 +27,22 @@ class FormatMemo(object):
         self.aliases = {}
         self.ops = {}
         self.counts = defaultdict(lambda: 0)
+        self._repr_memo = {}
 
     def __contains__(self, obj):
         return self._key(obj) in self.formatted
 
     def _key(self, obj):
-        return obj._repr()
+        memo_key = id(obj)
+        if memo_key in self._repr_memo:
+            return self._repr_memo[memo_key]
+        result = self._format(obj)
+        self._repr_memo[memo_key] = result
+
+        return result
+
+    def _format(self, obj):
+        return obj._repr(memo=self._repr_memo)
 
     def observe(self, obj, formatter=lambda x: x._repr()):
         key = self._key(obj)
