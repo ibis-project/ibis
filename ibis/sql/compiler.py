@@ -315,7 +315,10 @@ class SelectBuilder(object):
             backup_metric_name='__tmp__',
             parent_table=self.table_set)
 
-        pred = (op.arg == getattr(rank_set, op.arg.get_name()))
+        # GH #667; this may reference a filtered version of self.table_set
+        arg = L.substitute_parents(op.arg)
+
+        pred = (arg == getattr(rank_set, op.arg.get_name()))
         self.table_set = self.table_set.semi_join(rank_set, [pred])
 
         return None
@@ -345,6 +348,7 @@ class SelectBuilder(object):
             if self.table_set is None:
                 raise com.InternalError('no table set')
         else:
+            # Expressions not depending on any table
             if isinstance(root_op, ir.ExpressionList):
                 self.select_set = source_expr.exprs()
             else:
@@ -369,25 +373,6 @@ class SelectBuilder(object):
             raise NotImplementedError(type(op))
 
         self.op_memo.add(op)
-
-    def _collect_Aggregation(self, expr, toplevel=False):
-        # The select set includes the grouping keys (if any), and these are
-        # duplicated in the group_by set. SQL translator can decide how to
-        # format these depending on the database. Most likely the
-        # GROUP BY 1, 2, ... style
-        if toplevel:
-            subbed_expr = self._sub(expr)
-            sub_op = subbed_expr.op()
-
-            self.group_by = self._convert_group_by(sub_op.by)
-            self.having = sub_op.having
-            self.select_set = sub_op.by + sub_op.agg_exprs
-            self.table_set = sub_op.table
-
-            self._collect(expr.op().table)
-
-    def _convert_group_by(self, exprs):
-        return list(range(len(exprs)))
 
     def _collect_Distinct(self, expr, toplevel=False):
         if toplevel:
@@ -421,6 +406,12 @@ class SelectBuilder(object):
 
         self._collect(op.table, toplevel=toplevel)
 
+    def _collect_Union(self, expr, toplevel=False):
+        if not toplevel:
+            return
+        else:
+            raise NotImplementedError
+
     def _collect_SortBy(self, expr, toplevel=False):
         op = expr.op()
 
@@ -437,50 +428,83 @@ class SelectBuilder(object):
 
         self._collect(op.table, toplevel=toplevel)
 
+    def _collect_Aggregation(self, expr, toplevel=False):
+        # The select set includes the grouping keys (if any), and these are
+        # duplicated in the group_by set. SQL translator can decide how to
+        # format these depending on the database. Most likely the
+        # GROUP BY 1, 2, ... style
+        if toplevel:
+            subbed_expr = self._sub(expr)
+            sub_op = subbed_expr.op()
+
+            self.group_by = self._convert_group_by(sub_op.by)
+            self.having = sub_op.having
+            self.select_set = sub_op.by + sub_op.agg_exprs
+            self.table_set = sub_op.table
+
+            self._collect(expr.op().table)
+
+    def _collect_Projection(self, expr, toplevel=False):
+        op = expr.op()
+        table = op.table
+
+        if toplevel:
+            subbed = self._sub(expr)
+            sop = subbed.op()
+
+            if isinstance(table.op(), ops.Join):
+                can_sub = self._collect_Join(table)
+            else:
+                can_sub = True
+                self._collect(table)
+
+            selections = op.selections
+
+            if can_sub:
+                selections = sop.selections
+                table = sop.table
+
+            self.select_set = selections
+            self.table_set = table
+
     def _collect_MaterializedJoin(self, expr, toplevel=False):
         op = expr.op()
-
         join = op.join
-        join_op = join.op()
 
         if toplevel:
             subbed = self._sub(join)
             self.table_set = subbed
             self.select_set = [subbed]
 
-        self._collect(join_op.left, toplevel=False)
-        self._collect(join_op.right, toplevel=False)
+        self._collect_Join(join, toplevel=False)
+
+    def _convert_group_by(self, exprs):
+        return list(range(len(exprs)))
 
     def _collect_Join(self, expr, toplevel=False):
-        op = expr.op()
         if toplevel:
             subbed = self._sub(expr)
             self.table_set = subbed
             self.select_set = [subbed]
 
-        self._collect(op.left, toplevel=False)
-        self._collect(op.right, toplevel=False)
+        subtables = _get_subtables(expr)
 
-    def _collect_Union(self, expr, toplevel=False):
-        if not toplevel:
-            return
-        else:
-            raise NotImplementedError
+        # If any of the joined tables are non-blocking modified versions
+        # (e.g. with Filter) of the same table, then it's not safe to continue
+        # walking down the tree (see #667), and we should instead have inline
+        # views rather than attempting to fuse things together into the same
+        # SELECT query.
+        can_substitute = _all_distinct_roots(subtables)
+        if can_substitute:
+            for table in subtables:
+                self._collect(table, toplevel=False)
 
-    def _collect_Projection(self, expr, toplevel=False):
-        op = expr.op()
-        if toplevel:
-            subbed = self._sub(expr)
-            sop = subbed.op()
-
-            self.select_set = sop.selections
-            self.table_set = sop.table
-            self._collect(op.table)
+        return can_substitute
 
     def _collect_PhysicalTable(self, expr, toplevel=False):
         if toplevel:
             self.select_set = [expr]
-            self.table_set = self._sub(expr)
+            self.table_set = expr  # self._sub(expr)
 
     def _collect_SelfReference(self, expr, toplevel=False):
         op = expr.op()
@@ -525,6 +549,42 @@ class SelectBuilder(object):
             if not self.context.is_extracted(expr):
                 self.subqueries.append(expr)
                 self.context.set_extracted(expr)
+
+
+def _get_subtables(expr):
+    subtables = []
+
+    def _walk(expr):
+        op = expr.op()
+        if isinstance(op, ops.Join):
+            _walk(op.left)
+            _walk(op.right)
+        else:
+            subtables.append(expr)
+    _walk(expr)
+
+    return subtables
+
+
+def _all_distinct_roots(subtables):
+    bases = []
+    for t in subtables:
+        base = _blocking_base(t)
+        for x in bases:
+            if base.equals(x):
+                return False
+        bases.append(base)
+    return True
+
+
+def _blocking_base(expr):
+    node = expr.op()
+    if isinstance(node, (ir.BlockingTableNode, ops.Join)):
+        return expr
+    else:
+        for arg in expr.op().flat_args():
+            if isinstance(arg, ir.TableExpr):
+                return _blocking_base(arg)
 
 
 def _extract_subqueries(select_stmt):

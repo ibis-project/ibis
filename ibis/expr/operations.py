@@ -1326,11 +1326,15 @@ class Join(TableNode):
 
     def _make_distinct(self, left, right, predicates):
         # see GH #667
+
+        # If left and right table have a common parent expression (e.g. they
+        # have different filters), must add a self-reference and make the
+        # appropriate substitution in the join predicates
+
         if left.equals(right):
             right = right.view()
 
         predicates = self._clean_predicates(left, right, predicates)
-
         return left, right, predicates
 
     def _clean_predicates(self, left, right, predicates):

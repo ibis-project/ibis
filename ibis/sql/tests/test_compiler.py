@@ -1266,6 +1266,12 @@ FROM (
 
         proj = t[t.f > 0][t, (t.a + t.b).name('foo')]
 
+        result = to_sql(proj)
+        expected = """SELECT *, `a` + `b` AS `foo`
+FROM alltypes
+WHERE `f` > 0"""
+        assert result == expected
+
         def agg(x):
             return x.aggregate([x.foo.sum().name('foo total')], by=['g'])
 
@@ -1922,12 +1928,18 @@ WITH t0 AS (
   FROM purchases
   GROUP BY 1, 2
 )
-SELECT t0.`region`, t0.`total` - t1.`total` AS `diff`
-FROM t0
-  INNER JOIN t0 t1
-    ON t0.`region` = t1.`region`
-WHERE t0.`kind` = 'foo' AND
-      t1.`kind` = 'bar'"""
+SELECT t1.`region`, t1.`total` - t2.`total` AS `diff`
+FROM (
+  SELECT *
+  FROM t0
+  WHERE `kind` = 'foo'
+) t1
+  INNER JOIN (
+    SELECT *
+    FROM t0
+    WHERE `kind` = 'bar'
+  ) t2
+    ON t1.`region` = t2.`region`"""
         self._compare_sql(expr, expected)
 
 
