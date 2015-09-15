@@ -584,7 +584,7 @@ class Projector(object):
 
         for expr in proj_exprs:
             # Perform substitution only if we share common roots
-            if validator.shares_some_roots(expr):
+            if validator.shares_one_root(expr):
                 expr = substitute_parents(expr, past_projection=False)
 
             expr = windowize_function(expr)
@@ -662,15 +662,31 @@ class ExprValidator(object):
         return True
 
     def _among_roots(self, node):
+        return self.roots_shared(node) > 0
+
+    def roots_shared(self, node):
+        count = 0
         for root in self.roots:
             if root.is_ancestor(node):
-                return True
-        return False
+                count += 1
+        return count
 
     def shares_some_roots(self, expr):
         expr_roots = expr._root_tables()
         return any(self._among_roots(root)
                    for root in expr_roots)
+
+    def shares_one_root(self, expr):
+        expr_roots = expr._root_tables()
+        total = sum(self.roots_shared(root)
+                    for root in expr_roots)
+        return total == 1
+
+    def shares_multiple_roots(self, expr):
+        expr_roots = expr._root_tables()
+        total = sum(self.roots_shared(expr_roots)
+                    for root in expr_roots)
+        return total > 1
 
     def validate_all(self, exprs):
         for expr in exprs:

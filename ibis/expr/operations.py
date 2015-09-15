@@ -1309,7 +1309,7 @@ class Where(ValueOp):
 
 class Join(TableNode):
 
-    def __init__(self, left, right, join_predicates):
+    def __init__(self, left, right, predicates):
         from ibis.expr.analysis import ExprValidator
 
         if not rules.is_table(left):
@@ -1320,12 +1320,9 @@ class Join(TableNode):
             raise TypeError('Can only join table expressions, got %s for '
                             'right table' % type(left))
 
-        if left.equals(right):
-            right = right.view()
-
-        self.left = left
-        self.right = right
-        self.predicates = self._clean_predicates(join_predicates)
+        (self.left,
+         self.right,
+         self.predicates) = self._make_distinct(left, right, predicates)
 
         # Validate join predicates. Each predicate must be valid jointly when
         # considering the roots of each input table
@@ -1334,7 +1331,42 @@ class Join(TableNode):
 
         Node.__init__(self, [self.left, self.right, self.predicates])
 
-    def _clean_predicates(self, predicates):
+    def _make_distinct(self, left, right, predicates):
+        import ibis.expr.analysis as L
+
+        # see GH #667
+
+        # If left and right table have a common parent expression (e.g. they
+        # have different filters), must add a self-reference and make the
+        # appropriate substitution in the join predicates
+
+        def _nonblocking_base(expr):
+            node = expr.op()
+            if isinstance(node, (ir.BlockingTableNode, Join)):
+                return expr
+            else:
+                for arg in expr.op().flat_args():
+                    if isinstance(arg, TableExpr):
+                        return _nonblocking_base(arg)
+
+        if left.equals(right):
+            right = right.view()
+
+        # left_base = _nonblocking_base(left)
+        # right_base = _nonblocking_base(right)
+
+        # if left_base.equals(right_base):
+        #     rview = right.view()
+
+        #     predicates = [L.sub_for(pred, [(right, rview)])
+        #                   for pred in predicates]
+        #     right = rview
+
+        predicates = self._clean_predicates(left, right, predicates)
+
+        return left, right, predicates
+
+    def _clean_predicates(self, left, right, predicates):
         import ibis.expr.analysis as L
 
         result = []
@@ -1348,11 +1380,12 @@ class Join(TableNode):
                     raise com.ExpressionError('Join key tuple must be '
                                               'length 2')
                 lk, rk = pred
-                lk = self.left._ensure_expr(lk)
-                rk = self.right._ensure_expr(rk)
+                lk = left._ensure_expr(lk)
+                rk = right._ensure_expr(rk)
                 pred = lk == rk
             else:
-                pred = L.substitute_parents(pred, past_projection=False)
+                # pred = L.substitute_parents(pred, past_projection=False)
+                pass
 
             if not isinstance(pred, ir.BooleanArray):
                 raise com.ExpressionError('Join predicate must be comparison')

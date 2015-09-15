@@ -693,6 +693,25 @@ class ExprTestCases(object):
 
         return what
 
+    def _case_filter_self_join_analysis_bug(self):
+        purchases = ibis.table([('region', 'string'),
+                               ('kind', 'string'),
+                               ('user', 'int64'),
+                               ('amount', 'double')], 'purchases')
+
+        metric = purchases.amount.sum().name('total')
+        agged = (purchases.group_by(['region', 'kind'])
+                 .aggregate(metric))
+
+        left = agged[agged.kind == 'foo']
+        right = agged[agged.kind == 'bar']
+
+        joined = left.join(right, left.region == right.region)
+        result = joined[left.region,
+                        (left.total - right.total).name('diff')]
+
+        return result, purchases
+
 
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
 
@@ -1852,6 +1871,23 @@ ORDER BY `string_col`"""
     def test_self_aggregate_in_predicate(self):
         # Per ibis #43
         pass
+
+    def test_self_join_filter_analysis_bug(self):
+        expr, _ = self._case_filter_self_join_analysis_bug()
+
+        expected = """\
+WITH t0 AS (
+  SELECT `region`, `kind`, sum(`amount`) AS `total`
+  FROM purchases
+  GROUP BY 1, 2
+)
+SELECT t0.`region`, t0.`total` - t1.`total` AS `diff`
+FROM t0
+  INNER JOIN t0 t1
+    ON t0.`region` = t1.`region`
+WHERE t0.`kind` = 'foo' AND
+      t1.`kind` = 'bar'"""
+        self._compare_sql(expr, expected)
 
 
 class TestUnions(unittest.TestCase, ExprTestCases):
