@@ -15,7 +15,6 @@
 from ibis.expr.types import ArrayExpr, TableExpr, RelationError
 from ibis.common import ExpressionError
 from ibis.expr.datatypes import array_type
-import ibis.expr.analysis as L
 import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -303,38 +302,6 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         result = interm.filter([interm['b'] > 0])
         assert_equal(result, expected)
 
-    def test_rewrite_expr_with_parent(self):
-        table = self.con.table('test1')
-
-        table2 = table[table['f'] > 0]
-
-        expr = table2['c'] == 2
-
-        result = L.substitute_parents(expr)
-        expected = table['c'] == 2
-        assert_equal(result, expected)
-
-        # Substitution not fully possible if we depend on a new expr in a
-        # projection
-
-        table4 = table[['c', (table['c'] * 2).name('foo')]]
-        expr = table4['c'] == table4['foo']
-        result = L.substitute_parents(expr)
-        expected = table['c'] == table4['foo']
-        assert_equal(result, expected)
-
-    def test_rewrite_distinct_but_equal_objects(self):
-        t = self.con.table('test1')
-        t_copy = self.con.table('test1')
-
-        table2 = t[t_copy['f'] > 0]
-
-        expr = table2['c'] == 2
-
-        result = L.substitute_parents(expr)
-        expected = t['c'] == 2
-        assert_equal(result, expected)
-
     def test_repr_same_but_distinct_objects(self):
         t = self.con.table('test1')
         t_copy = self.con.table('test1')
@@ -356,128 +323,6 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert repr(expr) == repr(expr2)
         assert_equal(expr, expr3)
         assert_equal(expr, expr4)
-
-    def test_rewrite_substitute_distinct_tables(self):
-        t = self.con.table('test1')
-        tt = self.con.table('test1')
-
-        expr = t[t.c > 0]
-        expr2 = tt[tt.c > 0]
-
-        metric = t.f.sum().name('metric')
-        expr3 = expr.aggregate(metric)
-
-        result = L.sub_for(expr3, [(expr2, t)])
-        expected = t.aggregate(metric)
-
-        assert_equal(result, expected)
-
-    def test_rewrite_join_projection_without_other_ops(self):
-        # Drop out filters and other commutative table operations. Join
-        # predicates are "lifted" to reference the base, unmodified join roots
-
-        # Star schema with fact table
-        table = self.con.table('star1')
-        table2 = self.con.table('star2')
-        table3 = self.con.table('star3')
-
-        filtered = table[table['f'] > 0]
-
-        pred1 = table['foo_id'] == table2['foo_id']
-        pred2 = filtered['bar_id'] == table3['bar_id']
-
-        j1 = filtered.left_join(table2, [pred1])
-        j2 = j1.inner_join(table3, [pred2])
-
-        # Project out the desired fields
-        view = j2[[filtered, table2['value1'], table3['value2']]]
-
-        # Construct the thing we expect to obtain
-        ex_pred2 = table['bar_id'] == table3['bar_id']
-        ex_expr = (table.left_join(table2, [pred1])
-                   .inner_join(table3, [ex_pred2]))
-
-        rewritten_proj = L.substitute_parents(view)
-        op = rewritten_proj.op()
-        assert_equal(op.table, ex_expr)
-
-        # Ensure that filtered table has been substituted with the base table
-        assert op.selections[0] is table
-
-    def test_rewrite_past_projection(self):
-        table = self.con.table('test1')
-
-        # Rewrite past a projection
-        table3 = table[['c', 'f']]
-        expr = table3['c'] == 2
-
-        result = L.substitute_parents(expr)
-        expected = table['c'] == 2
-        assert_equal(result, expected)
-
-        # Unsafe to rewrite past projection
-        table5 = table[(table.f * 2).name('c'), table.f]
-        expr = table5['c'] == 2
-        result = L.substitute_parents(expr)
-        assert result is expr
-
-    def test_projection_predicate_pushdown(self):
-        # Probably test this during the evaluation phase. In SQL, "fusable"
-        # table operations will be combined together into a single select
-        # statement
-        #
-        # see ibis #71 for more on this
-        t = self.table
-        proj = t['a', 'b', 'c']
-
-        # Rewrite a little more aggressively here
-        result = proj[t.a > 0]
-
-        # at one point these yielded different results
-        filtered = t[t.a > 0]
-        expected = filtered[t.a, t.b, t.c]
-        expected2 = filtered.projection(['a', 'b', 'c'])
-
-        assert_equal(result, expected)
-        assert_equal(result, expected2)
-
-    def test_projection_with_join_pushdown_rewrite_refs(self):
-        # Observed this expression IR issue in a TopK-rewrite context
-        table1 = api.table([
-            ('a_key1', 'string'),
-            ('a_key2', 'string'),
-            ('a_value', 'double')
-        ], 'foo')
-
-        table2 = api.table([
-            ('b_key1', 'string'),
-            ('b_name', 'string'),
-            ('b_value', 'double')
-        ], 'bar')
-
-        table3 = api.table([
-            ('c_key2', 'string'),
-            ('c_name', 'string')
-        ], 'baz')
-
-        proj = (table1.inner_join(table2, [('a_key1', 'b_key1')])
-                .inner_join(table3, [(table1.a_key2, table3.c_key2)])
-                [table1, table2.b_name.name('b'), table3.c_name.name('c'),
-                 table2.b_value])
-
-        cases = [
-            (proj.a_value > 0, table1.a_value > 0),
-            (proj.b_value > 0, table2.b_value > 0)
-        ]
-
-        for higher_pred, lower_pred in cases:
-            result = proj.filter([higher_pred])
-            op = result.op()
-            assert isinstance(op, ops.Projection)
-            filter_op = op.table.op()
-            assert isinstance(filter_op, ops.Filter)
-            new_pred = filter_op.predicates[0]
-            assert_equal(new_pred, lower_pred)
 
     def test_column_relabel(self):
         # GH #551. Keeping the test case very high level to not presume that
@@ -957,21 +802,6 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         # The user might have composed predicates through logical operations
         pass
 
-    def test_multiple_join_deeper_reference(self):
-        # Join predicates down the chain might reference one or more root
-        # tables in the hierarchy.
-        table1 = ibis.table({'key1': 'string', 'key2': 'string',
-                            'value1': 'double'})
-        table2 = ibis.table({'key3': 'string', 'value2': 'double'})
-        table3 = ibis.table({'key4': 'string', 'value3': 'double'})
-
-        joined = table1.inner_join(table2, [table1['key1'] == table2['key3']])
-        joined2 = joined.inner_join(table3, [table1['key2'] == table3['key4']])
-
-        # it works, what more should we test here?
-        materialized = joined2.materialize()
-        repr(materialized)
-
     def test_filter_join_unmaterialized(self):
         table1 = ibis.table({'key1': 'string', 'key2': 'string',
                             'value1': 'double'})
@@ -981,70 +811,6 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         joined = table1.inner_join(table2, [table1['key1'] == table2['key3']])
         filtered = joined.filter([table1.value1 > 0])
         repr(filtered)
-
-    def test_filter_on_projected_field(self):
-        # See #173. Impala and other SQL engines do not allow filtering on a
-        # just-created alias in a projection
-        region = self.con.table('tpch_region')
-        nation = self.con.table('tpch_nation')
-        customer = self.con.table('tpch_customer')
-        orders = self.con.table('tpch_orders')
-
-        fields_of_interest = [customer,
-                              region.r_name.name('region'),
-                              orders.o_totalprice.name('amount'),
-                              orders.o_orderdate
-                              .cast('timestamp').name('odate')]
-
-        all_join = (
-            region.join(nation, region.r_regionkey == nation.n_regionkey)
-            .join(customer, customer.c_nationkey == nation.n_nationkey)
-            .join(orders, orders.o_custkey == customer.c_custkey))
-
-        tpch = all_join[fields_of_interest]
-
-        # Correlated subquery, yikes!
-        t2 = tpch.view()
-        conditional_avg = t2[(t2.region == tpch.region)].amount.mean()
-
-        # `amount` is part of the projection above as an aliased field
-        amount_filter = tpch.amount > conditional_avg
-
-        result = tpch.filter([amount_filter])
-
-        # Now then! Predicate pushdown here is inappropriate, so we check that
-        # it didn't occur.
-
-        # If filter were pushed below projection, the top-level operator type
-        # would be Projection instead.
-        assert type(result.op()) == ops.Filter
-
-    def test_join_can_rewrite_errant_predicate(self):
-        # Join predicate references a derived table, but we can salvage and
-        # rewrite it to get the join semantics out
-        # see ibis #74
-        table = ibis.table([
-            ('c', 'int32'),
-            ('f', 'double'),
-            ('g', 'string')
-        ], 'foo_table')
-
-        table2 = ibis.table([
-            ('key', 'string'),
-            ('value', 'double')
-        ], 'bar_table')
-
-        filter_pred = table['f'] > 0
-        table3 = table[filter_pred]
-
-        result = table.inner_join(table2, [table3['g'] == table2['key']])
-        expected = table.inner_join(table2, [table['g'] == table2['key']])
-        assert_equal(result, expected)
-
-    def test_non_equijoins(self):
-        # Move non-equijoin predicates to WHERE during SQL translation if
-        # possible, per #107
-        pass
 
     def test_join_overlapping_column_names(self):
         pass

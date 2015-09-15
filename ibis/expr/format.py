@@ -14,7 +14,6 @@
 
 import ibis.util as util
 
-import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
@@ -81,7 +80,7 @@ class ExprFormatter(object):
         if self.memoize:
             self._memoize_tables()
 
-        if isinstance(what, dt.HasSchema):
+        if isinstance(what, ir.TableNode) and what.has_schema():
             # This should also catch aggregations
             if not self.memoize and what in self.memo:
                 text = 'Table: %s' % self.memo.get_alias(what)
@@ -137,7 +136,7 @@ class ExprFormatter(object):
                 visit(op.args)
                 if isinstance(op, table_memo_ops):
                     self.memo.observe(op, self._format_node)
-            elif isinstance(op, dt.HasSchema):
+            elif isinstance(op, ir.TableNode) and op.has_schema():
                 self.memo.observe(op, self._format_table)
 
         walk(self.expr)

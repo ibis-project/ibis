@@ -121,9 +121,6 @@ class TableArrayView(ValueNode):
 
         Node.__init__(self, [table])
 
-    def root_tables(self):
-        return self.table._root_tables()
-
     def to_expr(self):
         ctype = self.table._get_type(self.name)
         klass = ctype.array_type()
@@ -1026,9 +1023,6 @@ class DistinctArray(ValueNode):
     def output_type(self):
         return type(self.arg)
 
-    def root_tables(self):
-        return self.arg._root_tables()
-
     def count(self):
         """
         Only valid if the distinct contains a single column
@@ -1309,9 +1303,7 @@ class Where(ValueOp):
 
 class Join(TableNode):
 
-    def __init__(self, left, right, join_predicates):
-        from ibis.expr.analysis import ExprValidator
-
+    def __init__(self, left, right, predicates):
         if not rules.is_table(left):
             raise TypeError('Can only join table expressions, got %s for '
                             'left table' % type(left))
@@ -1320,21 +1312,32 @@ class Join(TableNode):
             raise TypeError('Can only join table expressions, got %s for '
                             'right table' % type(left))
 
-        if left.equals(right):
-            right = right.view()
-
-        self.left = left
-        self.right = right
-        self.predicates = self._clean_predicates(join_predicates)
+        (self.left,
+         self.right,
+         self.predicates) = self._make_distinct(left, right, predicates)
 
         # Validate join predicates. Each predicate must be valid jointly when
         # considering the roots of each input table
-        validator = ExprValidator([self.left, self.right])
+        from ibis.expr.analysis import CommonSubexpr
+        validator = CommonSubexpr([self.left, self.right])
         validator.validate_all(self.predicates)
 
         Node.__init__(self, [self.left, self.right, self.predicates])
 
-    def _clean_predicates(self, predicates):
+    def _make_distinct(self, left, right, predicates):
+        # see GH #667
+
+        # If left and right table have a common parent expression (e.g. they
+        # have different filters), must add a self-reference and make the
+        # appropriate substitution in the join predicates
+
+        if left.equals(right):
+            right = right.view()
+
+        predicates = self._clean_predicates(left, right, predicates)
+        return left, right, predicates
+
+    def _clean_predicates(self, left, right, predicates):
         import ibis.expr.analysis as L
 
         result = []
@@ -1348,11 +1351,12 @@ class Join(TableNode):
                     raise com.ExpressionError('Join key tuple must be '
                                               'length 2')
                 lk, rk = pred
-                lk = self.left._ensure_expr(lk)
-                rk = self.right._ensure_expr(rk)
+                lk = left._ensure_expr(lk)
+                rk = right._ensure_expr(rk)
                 pred = lk == rk
             else:
-                pred = L.substitute_parents(pred, past_projection=False)
+                # pred = L.substitute_parents(pred, past_projection=False)
+                pass
 
             if not isinstance(pred, ir.BooleanArray):
                 raise com.ExpressionError('Join predicate must be comparison')
@@ -1640,12 +1644,12 @@ class Projection(ir.BlockingTableNode, HasSchema):
     _arg_names = ['table', 'selections']
 
     def __init__(self, table_expr, proj_exprs):
-        from ibis.expr.analysis import ExprValidator
+        from ibis.expr.analysis import ExprValidator as Validator
 
         # Need to validate that the column expressions are compatible with the
         # input table; this means they must either be scalar expressions or
         # array expressions originating from the same root table expression
-        validator = ExprValidator([table_expr])
+        validator = Validator([table_expr])
 
         # Resolve schema and initialize
         types = []
@@ -2025,9 +2029,6 @@ class Constant(ValueOp):
 
     def __init__(self):
         ValueOp.__init__(self, [])
-
-    def root_tables(self):
-        return []
 
 
 class TimestampNow(Constant):

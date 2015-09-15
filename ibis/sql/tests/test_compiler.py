@@ -693,6 +693,56 @@ class ExprTestCases(object):
 
         return what
 
+    def _case_filter_self_join_analysis_bug(self):
+        purchases = ibis.table([('region', 'string'),
+                                ('kind', 'string'),
+                                ('user', 'int64'),
+                                ('amount', 'double')], 'purchases')
+
+        metric = purchases.amount.sum().name('total')
+        agged = (purchases.group_by(['region', 'kind'])
+                 .aggregate(metric))
+
+        left = agged[agged.kind == 'foo']
+        right = agged[agged.kind == 'bar']
+
+        joined = left.join(right, left.region == right.region)
+        result = joined[left.region,
+                        (left.total - right.total).name('diff')]
+
+        return result, purchases
+
+    def _case_projection_fuse_filter(self):
+        # Probably test this during the evaluation phase. In SQL, "fusable"
+        # table operations will be combined together into a single select
+        # statement
+        #
+        # see ibis #71 for more on this
+
+        t = ibis.table([
+            ('a', 'int8'),
+            ('b', 'int16'),
+            ('c', 'int32'),
+            ('d', 'int64'),
+            ('e', 'float'),
+            ('f', 'double'),
+            ('g', 'string'),
+            ('h', 'boolean')
+        ], 'foo')
+
+        proj = t['a', 'b', 'c']
+
+        # Rewrite a little more aggressively here
+        expr1 = proj[t.a > 0]
+
+        # at one point these yielded different results
+        filtered = t[t.a > 0]
+
+        expr2 = filtered[t.a, t.b, t.c]
+        expr3 = filtered.projection(['a', 'b', 'c'])
+
+        return expr1, expr2, expr3
+
 
 class TestSelectSQL(unittest.TestCase, ExprTestCases):
 
@@ -1153,6 +1203,16 @@ WHERE `value` > 0"""
         assert table3.equals(expected)
         assert table3_filtered.equals(expected2)
 
+    def test_projection_filter_fuse(self):
+        expr1, expr2, expr3 = self._case_projection_fuse_filter()
+
+        sql1 = to_sql(expr1)
+        sql2 = to_sql(expr2)
+        sql3 = to_sql(expr3)
+
+        assert sql1 == sql2
+        assert sql1 == sql3
+
     def test_bug_project_multiple_times(self):
         # 108
         customer = self.con.table('tpch_customer')
@@ -1205,6 +1265,12 @@ FROM (
         t = self.con.table('alltypes')
 
         proj = t[t.f > 0][t, (t.a + t.b).name('foo')]
+
+        result = to_sql(proj)
+        expected = """SELECT *, `a` + `b` AS `foo`
+FROM alltypes
+WHERE `f` > 0"""
+        assert result == expected
 
         def agg(x):
             return x.aggregate([x.foo.sum().name('foo total')], by=['g'])
@@ -1852,6 +1918,29 @@ ORDER BY `string_col`"""
     def test_self_aggregate_in_predicate(self):
         # Per ibis #43
         pass
+
+    def test_self_join_filter_analysis_bug(self):
+        expr, _ = self._case_filter_self_join_analysis_bug()
+
+        expected = """\
+WITH t0 AS (
+  SELECT `region`, `kind`, sum(`amount`) AS `total`
+  FROM purchases
+  GROUP BY 1, 2
+)
+SELECT t1.`region`, t1.`total` - t2.`total` AS `diff`
+FROM (
+  SELECT *
+  FROM t0
+  WHERE `kind` = 'foo'
+) t1
+  INNER JOIN (
+    SELECT *
+    FROM t0
+    WHERE `kind` = 'bar'
+  ) t2
+    ON t1.`region` = t2.`region`"""
+        self._compare_sql(expr, expected)
 
 
 class TestUnions(unittest.TestCase, ExprTestCases):
