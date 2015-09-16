@@ -483,17 +483,63 @@ Column expressions
 Type casts
 ~~~~~~~~~~
 
+Ibis's type system is independent of any SQL system. You cast Ibis expressions
+from one Ibis type to another. For example:
+
+.. ipython:: python
+
+   expr = t.mutate(date=t.one.cast('timestamp'),
+                   four=t.three.cast('double'))
+   print(ibis.impala.compile(expr))
+
 Case statements
 ~~~~~~~~~~~~~~~
 
-``IN`` / ``NOT IN``
-~~~~~~~~~~~~~~~~~~~
+Set membership: ``IN`` / ``NOT IN``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Let's look again at the population dataset. Suppose you wanted to combine the
+United States and Canada data into a "North America" category. Here would be
+some SQL to do it:
+
+.. code-block:: sql
+
+   CASE
+     WHEN upper(country) IN ('UNITED STATES', 'CANADA')
+       THEN 'North America'
+     ELSE country
+   END AS refined_group
+
+The Ibis equivalent of ``IN`` is the ``isin`` method. So we can write:
+
+.. ipython:: python
+
+   refined = (pop.country.upper()
+              .isin(['UNITED STATES', 'CANADA'])
+              .ifelse('North America', pop.country))
+
+   expr = pop.mutate(refined_group=refined)
+   print(ibis.impala.compile(expr))
+
+The opposite of ``isin`` is ``notin``.
 
 Constant columns
 ~~~~~~~~~~~~~~~~
 
+``IS NULL`` and ``IS NOT NULL``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ``BETWEEN``
 ~~~~~~~~~~~
+
+The ``between`` method on arrays and scalars compiles to the SQL ``BETWEEN``
+keyword. The result of ``between`` is boolean and can be used with any other
+boolean expression:
+
+.. ipython:: python
+
+   expr = t[t.two.between(10, 50) & t.one.notnull()]
+   print(ibis.impala.compile(expr))
 
 Joins
 -----
