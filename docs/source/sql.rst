@@ -477,8 +477,12 @@ The ``offset`` option in ``limit`` skips rows. So if you wanted rows 11 through
    limited = t.limit(10, offset=10)
    print(ibis.impala.compile(limited))
 
-Column expressions
-------------------
+Common column expressions
+-------------------------
+
+See the full :ref:`API documentation <api>` for all of the available value
+methods and tools for creating value expressions. We mention a few common ones
+here as they relate to common SQL queries.
 
 Type casts
 ~~~~~~~~~~
@@ -492,8 +496,80 @@ from one Ibis type to another. For example:
                    four=t.three.cast('double'))
    print(ibis.impala.compile(expr))
 
-Case statements
-~~~~~~~~~~~~~~~
+``CASE`` statements
+~~~~~~~~~~~~~~~~~~~
+
+SQL dialects typically support one or more kind of ``CASE`` statements. The
+first is the *simple case* that compares against exact values of an expression.
+
+.. code-block:: sql
+
+   CASE expr
+     WHEN value_1 THEN result_1
+     WHEN value_2 THEN result_2
+     ELSE default
+   END
+
+Value expressions in Ibis have a ``case`` method that allows us to emulate
+these semantics:
+
+.. ipython:: python
+
+   case = (t.one.cast('timestamp')
+           .year()
+           .case()
+           .when(2015, 'This year')
+           .when(2014, 'Last year')
+           .else_('Earlier')
+           .end())
+
+   expr = t.mutate(year_group=case)
+   print(ibis.impala.compile(expr))
+
+The more general case is that of an arbitrary list of boolean expressions and
+result values:
+
+.. code-block:: sql
+
+   CASE
+     WHEN boolean_expr1 THEN result_1
+     WHEN boolean_expr2 THEN result_2
+     WHEN boolean_expr3 THEN result_3
+     ELSE default
+   END
+
+To do this, use ``ibis.case``:
+
+.. ipython:: python
+
+   case = (ibis.case()
+           .when(t.two < 0, t.three * 2)
+           .when(t.two > 1, t.three)
+           .else_(t.two)
+           .end())
+   expr = t.mutate(cond_value=case)
+   print(ibis.impala.compile(expr))
+
+There are several places where Ibis builds cases for you in a simplified
+way. One example is the ``ifelse`` function:
+
+.. ipython:: python
+
+   switch = (t.two < 0).ifelse('Negative', 'Non-Negative')
+   expr = t.mutate(group=switch)
+   print(ibis.impala.compile(expr))
+
+Using ``NULL`` in expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use ``NULL`` in an expression, either use the special ``ibis.NA`` value or
+``ibis.null()``:
+
+.. ipython:: python
+
+   pos_two = (t.two > 0).ifelse(t.two, ibis.NA)
+   expr = t.mutate(two_positive=pos_two)
+   print(ibis.impala.compile(expr))
 
 Set membership: ``IN`` / ``NOT IN``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
