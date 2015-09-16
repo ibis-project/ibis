@@ -17,6 +17,8 @@ At this time, Ibis supports the following SQL-based systems:
 - Impala (on HDFS)
 - SQLite
 
+Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
+
 We have a handful of specific priority focus areas:
 
 - Enable data analysts to translation analytics using SQL engines to Python
