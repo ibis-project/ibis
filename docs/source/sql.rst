@@ -5,8 +5,8 @@
 Ibis for SQL Programmers
 ************************
 
-Ibis is intended to provide a full-featured replacement for SQL ``SELECT``
-queries, but expressed with Python code that is:
+Among other things, Ibis provides a full-featured replacement for SQL
+``SELECT`` queries, but expressed with Python code that is:
 
 * Easier to write. Pythonic function calls with tab completion in IPython.
 * Type-checked and validated as you go. No more debugging cryptic database
@@ -15,7 +15,9 @@ queries, but expressed with Python code that is:
 * Easier to reuse. Mix and match Ibis snippets to create expressions tailored
   for your analysis.
 
-We intend for all ``SELECT`` queries to be fully portable to Ibis.
+We intend for all ``SELECT`` queries to be fully portable to Ibis. Coverage of
+other DDL statements (e.g. ``CREATE TABLE`` or ``INSERT``) may vary from
+engine to engine.
 
 This document will use the Impala SQL compiler (i.e. ``ibis.impala.compile``)
 for convenience, but the code here is portable to whichever system you are
@@ -317,9 +319,70 @@ Now we have:
 
    print(ibis.impala.compile(stats))
 
-``count(*)`` convenience: ``size()``
+.. _sql.aggregate.subsets:
+
+Aggregates considering table subsets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+In analytics is it common to compare statistics from different subsets of a
+table. Let's consider a dataset containing people's name, age, gender, and
+nationality:
+
+.. ipython:: python
+
+   pop = ibis.table([('name', 'string'),
+                     ('country', 'string'),
+                     ('gender', 'string'),
+                     ('age', 'int16')], 'population')
+
+Now, suppose you wanted to know for each country:
+
+* Average overall age
+* Average male age
+* Average female age
+* Total number of persons
+
+In SQL, you may write:
+
+.. code-block:: sql
+
+   SELECT country,
+          count(*) AS num_persons,
+          AVG(age) AS avg_age
+          AVG(CASE WHEN gender = 'M'
+                THEN age
+                ELSE NULL
+              END) AS avg_male,
+          AVG(CASE WHEN gender = 'F'
+                THEN age
+                ELSE NULL
+              END) AS avg_female,
+   FROM population
+   GROUP BY 1
+
+Ibis makes this much simpler by giving you ``where`` option in aggregation
+functions:
+
+.. ipython:: python
+
+   stats = dict(
+      num_persons=pop.count(),
+      avg_age=pop.age.mean(),
+      avg_male=pop.age.mean(where=pop.gender == 'M'),
+      avg_female=pop.age.mean(where=pop.gender == 'F')
+   )
+   expr = pop.group_by('country').aggregate(**stats)
+
+This indeed generates the correct SQL. Note that SQL engines handle ``NULL``
+values differently in aggregation functions, but Ibis will write the SQL
+expression that is correct for your query engine.
+
+.. ipython:: python
+
+   print(ibis.impala.compile(expr))
+
+``count(*)`` convenience: ``size()``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Computing group frequencies is so common that, like pandas, we have a method
 ``size`` that is a shortcut for the ``count(*)`` idiom:
 
@@ -371,11 +434,66 @@ With Ibis, you can do:
 
    print(ibis.impala.compile(expr))
 
+Sorting
+-------
+
+To sort a table, use the ``sort_by`` method along with either column names or
+expressions that indicate the sorting keys:
+
+.. ipython:: python
+
+   sorted = events.sort_by([events.ts.year(),
+                            events.ts.month()])
+   print(ibis.impala.compile(sorted))
+
+The default for sorting is in ascending order. To reverse the sort direction of
+any key, either wrap it in ``ibis.desc`` or pass a tuple with ``False`` as the
+second value:
+
+.. ipython:: python
+
+   sorted = (events.sort_by([ibis.desc('event_type'),
+                             (events.ts.month(), False)])
+             .limit(100))
+   print(ibis.impala.compile(sorted))
+
 ``LIMIT`` and ``OFFSET``
 ------------------------
 
-Sorting
--------
+This one is easy. The table ``limit`` function truncates a table to the
+indicates number of rows. So if you only want the first 1000 rows (which may
+not be deterministic depending on the SQL engine), you can do:
+
+.. ipython:: python
+
+   limited = t.limit(1000)
+   print(ibis.impala.compile(limited))
+
+The ``offset`` option in ``limit`` skips rows. So if you wanted rows 11 through
+20, you could do:
+
+.. ipython:: python
+
+   limited = t.limit(10, offset=10)
+   print(ibis.impala.compile(limited))
+
+Column expressions
+------------------
+
+Type casts
+~~~~~~~~~~
+
+Case statements
+~~~~~~~~~~~~~~~
+
+``IN`` / ``NOT IN``
+~~~~~~~~~~~~~~~~~~~
+
+Constant columns
+~~~~~~~~~~~~~~~~
+
+``BETWEEN``
+~~~~~~~~~~~
 
 Joins
 -----
@@ -395,27 +513,6 @@ Join with ``SELECT *``
 Self joins
 ~~~~~~~~~~
 
-Column expressions
-------------------
-
-Type casts
-~~~~~~~~~~
-
-Conditional aggregates
-~~~~~~~~~~~~~~~~~~~~~~
-
-Case statements
-~~~~~~~~~~~~~~~
-
-``IN`` / ``NOT IN``
-~~~~~~~~~~~~~~~~~~~
-
-Constant columns
-~~~~~~~~~~~~~~~~
-
-``BETWEEN``
-~~~~~~~~~~~
-
 Subqueries
 ----------
 
@@ -433,6 +530,9 @@ Correlated ``EXISTS`` / ``NOT EXISTS`` filters
 
 ``DISTINCT`` expressions
 ------------------------
+
+Top-K operations
+----------------
 
 Window functions
 ----------------
