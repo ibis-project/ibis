@@ -171,7 +171,8 @@ class SQLiteExprTranslator(alch.AlchemyExprTranslator):
     _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
     _type_map = alch.AlchemyExprTranslator._type_map.copy()
     _type_map.update({
-        dt.Double: sa.types.REAL
+        dt.Double: sa.types.REAL,
+        dt.Float: sa.types.REAL
     })
 
 

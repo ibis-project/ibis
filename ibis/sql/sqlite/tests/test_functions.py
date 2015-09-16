@@ -37,6 +37,7 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         cases = [
             (d.cast('int8'), sa.cast(sa_d, sa.types.SMALLINT)),
             (s.cast('double'), sa.cast(sa_s, sa.types.REAL)),
+            (s.cast('float'), sa.cast(sa_s, sa.types.REAL))
         ]
         self._check_expr_cases(cases)
 
