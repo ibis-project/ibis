@@ -8,9 +8,9 @@ Ibis for SQL Programmers
 Among other things, Ibis provides a full-featured replacement for SQL
 ``SELECT`` queries, but expressed with Python code that is:
 
-* Easier to write. Pythonic function calls with tab completion in IPython.
 * Type-checked and validated as you go. No more debugging cryptic database
   errors; Ibis catches your mistakes right away.
+* Easier to write. Pythonic function calls with tab completion in IPython.
 * More composable. Break complex queries down into easier-to-digest pieces
 * Easier to reuse. Mix and match Ibis snippets to create expressions tailored
   for your analysis.
@@ -22,6 +22,9 @@ engine to engine.
 This document will use the Impala SQL compiler (i.e. ``ibis.impala.compile``)
 for convenience, but the code here is portable to whichever system you are
 using Ibis with.
+
+    **Note**: If you find any SQL idioms or use cases in your work that are not
+    represented here, please reach out so we can add more to this guide!
 
 .. ipython:: python
    :suppress:
@@ -434,8 +437,8 @@ With Ibis, you can do:
 
    print(ibis.impala.compile(expr))
 
-Sorting
--------
+Sorting / ``ORDER BY``
+----------------------
 
 To sort a table, use the ``sort_by`` method along with either column names or
 expressions that indicate the sorting keys:
@@ -680,11 +683,42 @@ boolean expression:
 Joins
 -----
 
-Ways to specify join keys
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Ibis supports several kinds of joins between table expressions:
 
-Join + aggregation
-~~~~~~~~~~~~~~~~~~
+* ``inner_join``: maps to SQL ``INNER JOIN``
+* ``cross_join``: a cartesian product join with no keys. Equivalent to
+  ``inner_join`` with no join predicates
+* ``left_join``: maps to SQL ``LEFT OUTER JOIN``
+* ``outer_join``: maps to SQL ``FULL OUTER JOIN``
+* ``semi_join``: maps to SQL ``LEFT SEMI JOIN``. May or may not be an explicit
+  join type in your query engine.
+* ``anti_join``: maps to SQL ``LEFT ANTI JOIN``. May or may not be an explicit
+  join type in your query engine.
+
+The ``join`` table method is by default the same as ``inner_join``.
+
+Let's look at a couple example tables to see how joins work in Ibis:
+
+.. ipython:: python
+
+   t1 = ibis.table([('value1', 'double'),
+                    ('key1', 'string'),
+                    ('key2', 'string')], 'table1')
+
+   t2 = ibis.table([('value2', 'double'),
+                    ('key3', 'string'),
+                    ('key4', 'string')], 'table2')
+
+
+Let's join on one key:
+
+.. ipython:: python
+
+   joined = t1.left_join(t2, t1.key1 == t2.key3)
+
+The immediate result of a join does not yet have a set schema. That is
+determined by the next action that you take. There's several ways forward from
+here that address the spectrum of SQL use cases.
 
 Join + projection
 ~~~~~~~~~~~~~~~~~
@@ -692,8 +726,20 @@ Join + projection
 Join with ``SELECT *``
 ~~~~~~~~~~~~~~~~~~~~~~
 
+Join + aggregation
+~~~~~~~~~~~~~~~~~~
+
+Multiple joins
+~~~~~~~~~~~~~~
+
+Ways to specify join keys
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Self joins
 ~~~~~~~~~~
+
+Non-equality join predicates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Subqueries
 ----------
@@ -707,16 +753,16 @@ Conditional aggregates
 Correlated ``EXISTS`` / ``NOT EXISTS`` filters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``IN`` / ``NOT IN`` filters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Subqueries with ``IN`` / ``NOT IN``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``DISTINCT`` expressions
 ------------------------
 
-Top-K operations
+Window functions
 ----------------
 
-Window functions
+Top-K operations
 ----------------
 
 Date / time data
