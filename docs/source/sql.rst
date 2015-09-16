@@ -599,11 +599,71 @@ The Ibis equivalent of ``IN`` is the ``isin`` method. So we can write:
 
 The opposite of ``isin`` is ``notin``.
 
-Constant columns
-~~~~~~~~~~~~~~~~
+Constant and literal expressions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Consider a SQL expression like:
+
+.. code-block:: sql
+
+   'foo' IN (column1, column2)
+
+which is equivalent to
+
+.. code-block:: sql
+
+   column1 = 'foo' OR column2 = 'foo'
+
+To build expressions off constant values, you must first convert the value
+(whether a Python string or number) to an Ibis expression using
+``ibis.literal``:
+
+
+.. ipython:: python
+
+   t3 = ibis.table([('column1', 'string'),
+                    ('column2', 'string'),
+                    ('column3', 'double')], 'data')
+
+   value = ibis.literal('foo')
+
+Once you've done this, you can use the literal expression like any other array
+or scalar expression:
+
+.. ipython:: python
+
+   has_foo = value.isin([t3.column1, t3.column2])
+
+   expr = t3.mutate(has_foo=has_foo)
+   print(ibis.impala.compile(expr))
+
+In many other situations, you can use constants without having to use
+``ibis.literal``. For example, we could add a column containing nothing but the
+number 5 like so:
+
+.. ipython:: python
+
+   expr = t3.mutate(number5=5)
+   print(ibis.impala.compile(expr))
 
 ``IS NULL`` and ``IS NOT NULL``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These are simple: use the ``isnull`` and ``notnull`` functions respectively,
+which yield boolean arrays:
+
+.. ipython:: python
+
+   indic = t.two.isnull().ifelse('valid', 'invalid')
+   expr = t.mutate(is_valid=indic)
+   print(ibis.impala.compile(expr))
+
+   agged = (expr
+            [expr.one.notnull()]
+            .group_by('is_valid')
+            .aggregate(expr.three.notnull()
+                       .sum().name('three_count')))
+   print(ibis.impala.compile(agged))
 
 ``BETWEEN``
 ~~~~~~~~~~~
@@ -665,8 +725,17 @@ Date / time data
 Timedeltas
 ~~~~~~~~~~
 
+Buckets and histograms
+----------------------
+
+Unions
+------
+
+Esoterica
+---------
+
 Common table expressions (CTEs)
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The simplest SQL CTE is a SQL statement that is used multiple times in a
 ``SELECT`` query, which can be "factored" out using the ``WITH`` keyword:
@@ -710,9 +779,3 @@ Ibis automatically creates a CTE for ``agged``:
 .. ipython:: python
 
    print(ibis.impala.compile(result))
-
-Unions
-------
-
-Esoterica
----------
