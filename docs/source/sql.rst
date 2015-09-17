@@ -920,6 +920,14 @@ This can now be used to filter ``events``:
    expr = events[cond]
    print(ibis.impala.compile(expr))
 
+If you negate the condition, it will instead give you only event data from user
+*that have not made a purchase*:
+
+.. ipython:: python
+
+   expr = events[-cond]
+   print(ibis.impala.compile(expr))
+
 Subqueries with ``IN`` / ``NOT IN``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
