@@ -1161,11 +1161,33 @@ Timedeltas
 Buckets and histograms
 ----------------------
 
+To appear.
+
 Unions
 ------
 
+SQL dialects often support two kinds of ``UNION`` operations:
+
+* ``UNION``: the combination of *distinct* rows from each table.
+* ``UNION ALL``: the combination of all rows from each table, whether or not
+  they are distinct.
+
+The Ibis ``union`` function by distinct is a ``UNION ALL``, and you can set
+``distinct=True`` to get the normal ``UNION`` behavior:
+
+.. ipython:: python
+
+   expr1 = t1.limit(10)
+   expr2 = t1.limit(10, offset=10)
+
+   expr = expr1.union(expr2)
+   print(ibis.impala.compile(expr))
+
 Esoterica
 ---------
+
+This area will be the spillover for miscellaneous SQL concepts and how queries
+featuring them can be ported to Ibis.
 
 Common table expressions (CTEs)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
