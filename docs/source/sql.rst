@@ -723,14 +723,93 @@ here that address the spectrum of SQL use cases.
 Join + projection
 ~~~~~~~~~~~~~~~~~
 
-Join with ``SELECT *``
-~~~~~~~~~~~~~~~~~~~~~~
+Consider the SQL:
+
+.. code-block:: sql
+
+   SELECT t0.*, t1.value2
+   FROM table1 t0
+     LEFT OUTER JOIN table2 t1
+       ON t0.key1 = t1.key3
+
+After one or more joins, you can reference any of the joined tables in a
+projection immediately after:
+
+.. ipython:: python
+
+   expr = joined[t1, t2.value2]
+   print(ibis.impala.compile(expr))
+
+If you need to compute an expression that involves both tables, you can do that
+also:
+
+.. ipython:: python
+
+   expr = joined[t1.key1, (t1.value1 - t2.value2).name('diff')]
+   print(ibis.impala.compile(expr))
 
 Join + aggregation
 ~~~~~~~~~~~~~~~~~~
 
+You can directly aggregate a join without need for projection, which also
+allows you to form statistics that reference any of the joined tables.
+
+Consider this SQL:
+
+.. code-block:: sql
+
+   SELECT t0.key1, avg(t0.value1 - t1.value2) AS avg_diff
+   FROM table1 t0
+     LEFT OUTER JOIN table2 t1
+       ON t0.key1 = t1.key3
+   GROUP BY 1
+
+As you would hope, the code is as follows:
+
+.. ipython:: python
+
+   avg_diff = (t1.value1 - t2.value2).mean()
+   expr = (t1.left_join(t2, t1.key1 == t2.key3)
+           .group_by(t1.key1)
+           .aggregate(avg_diff=avg_diff))
+   print(ibis.impala.compile(expr))
+
+Join with ``SELECT *``
+~~~~~~~~~~~~~~~~~~~~~~
+
+If you try to execute a join that has not been projected or aggregated, it will
+be *fully materialized*:
+
+.. ipython:: python
+
+   joined = t1.left_join(t2, t1.key1 == t2.key3)
+   print(ibis.impala.compile(joined))
+
+You can do this explicitly using the ``materialize`` method:
+
+.. ipython:: python
+
+   expr = joined.materialize()
+   print(ibis.impala.compile(expr))
+
 Multiple joins
 ~~~~~~~~~~~~~~
+
+You can join multiple tables together in succession without needing to address
+any of the above concerns.
+
+.. ipython:: python
+
+   t3 = ibis.table([('value3', 'double'),
+                    ('key5', 'string')], 'table3')
+
+   total = (t1.value1 + t2.value2 + t3.value3).sum()
+   expr = (t1.join(t2, [t1.key1 == t2.key3,
+                        t1.key2 == t2.key4])
+           .join(t3, t1.key1 == t3.key5)
+           .group_by([t2.key4, t3.key5])
+           .aggregate(total=total))
+   print(ibis.impala.compile(expr))
 
 Ways to specify join keys
 ~~~~~~~~~~~~~~~~~~~~~~~~~
