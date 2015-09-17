@@ -1155,8 +1155,37 @@ You can also use ``expr`` as a filter:
 Date / time data
 ----------------
 
+See :ref:`Timestamp methods <api.timestamp>` for a table of available date/time
+methods.
+
+For example, we can do:
+
+.. ipython:: python
+
+   expr = events.mutate(year=events.ts.year(),
+                        month=events.ts.month())
+   print(ibis.impala.compile(expr))
+
+Casting to date / time types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In many cases, you can convert string values to datetime / timestamp with
+``strings.cast('timestamp')``, but you may have to do some more reconnaissance
+into the data if this does not work.
+
 Timedeltas
 ~~~~~~~~~~
+
+Ibis has a set of *timedelta* object that allow you to do date/time
+arithmetic. For example:
+
+
+.. ipython:: python
+
+   expr = events[events.ts > (ibis.now() - ibis.year())]
+   print(ibis.impala.compile(expr))
+
+The implementation of each timedelta offset will depend on the query engine.
 
 Buckets and histograms
 ----------------------
