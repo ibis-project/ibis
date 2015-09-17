@@ -865,17 +865,69 @@ You can also pass a list of column names instead of forming boolean expressions:
 Subqueries
 ----------
 
+Ibis creates inline views and nested subqueries automatically. This section
+concerns more complex subqueries involving foreign references and other
+advanced relational algebra.
+
+Correlated ``EXISTS`` / ``NOT EXISTS`` filters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The SQL ``EXISTS`` and ``NOT EXISTS`` constructs are typically used for
+efficient filtering in large many-to-many relationships.
+
+Let's consider a web dataset involving website session / usage data and
+purchases:
+
+.. ipython:: python
+
+   events = ibis.table([('session_id', 'int64'),
+                        ('user_id', 'int64'),
+                        ('event_type', 'int32'),
+                        ('ts', 'timestamp')], 'events')
+
+   purchases = ibis.table([('item_id', 'int64'),
+                           ('user_id', 'int64'),
+                           ('price', 'double'),
+                           ('ts', 'timestamp')], 'purchases')
+
+Now, the key ``user_id`` appears with high frequency in both tables. But let's
+say you want to limit your analysis of the ``events`` table to only sessions by
+users who have made a purchase.
+
+In SQL, you can do this using the somewhat esoteric ``EXISTS`` construct:
+
+.. code-block:: sql
+
+   SELECT t0.*
+   FROM events t0
+   WHERE EXISTS (
+     SELECT 1
+     FROM purchases t1
+     WHERE t0.user_id = t1.user_id
+   )
+
+To describe this operation in Ibis, you compare the ``user_id`` columns and use
+the ``any`` reduction:
+
+.. ipython:: python
+
+   cond = (events.user_id == purchases.user_id).any()
+
+This can now be used to filter ``events``:
+
+.. ipython:: python
+
+   expr = events[cond]
+   print(ibis.impala.compile(expr))
+
+Subqueries with ``IN`` / ``NOT IN``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Comparison with scalar aggregates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Conditional aggregates
 ~~~~~~~~~~~~~~~~~~~~~~
-
-Correlated ``EXISTS`` / ``NOT EXISTS`` filters
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Subqueries with ``IN`` / ``NOT IN``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``DISTINCT`` expressions
 ------------------------
