@@ -931,20 +931,226 @@ If you negate the condition, it will instead give you only event data from user
 Subqueries with ``IN`` / ``NOT IN``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Subquery filters with ``IN`` (and ``NOT IN``) are functionally similar to
+``EXISTS`` subqueries. Let's look at some SQL:
+
+.. code-block:: sql
+
+   SELECT *
+   FROM events
+   WHERE user_id IN (
+     SELECT user_id
+     FROM purchases
+   )
+
+This is almost semantically the same as the ``EXISTS`` example. Indeed, you can
+write with Ibis:
+
+.. ipython:: python
+
+   cond = events.user_id.isin(purchases.user_id)
+   expr = events[cond]
+   print(ibis.impala.compile(expr))
+
+Depending on the query engine, the query planner/optimizer will often rewrite
+``IN`` or ``EXISTS`` subqueries into the same set of relational algebra
+operations.
+
 Comparison with scalar aggregates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometime you want to compare a value with an unconditional aggregate value from
+a different table. Take the SQL:
+
+.. code-block:: sql
+
+   SELECT *
+   FROM table1
+   WHERE value1 > (
+     SELECT max(value2)
+     FROM table2
+   )
+
+With Ibis, the code is simpler and more pandas-like:
+
+.. ipython:: python
+
+   expr = t1[t1.value1 > t2.value2.max()]
+   print(ibis.impala.compile(expr))
 
 Conditional aggregates
 ~~~~~~~~~~~~~~~~~~~~~~
 
+Suppose you want to compare a value with the aggregate value for some common
+group values between two tables. Here's some SQL:
+
+.. code-block:: sql
+
+   SELECT *
+   FROM table1 t0
+   WHERE value1 > (
+     SELECT avg(value2)
+     FROM table2 t1
+     WHERE t0.key1 = t1.key3
+   )
+
+This query computes the average for each distinct value of ``key3`` and uses
+the corresponding average for the comparison, rather than the whole-table
+average as above.
+
+With Ibis, the code is similar, but you add the correlated filter to the
+average statistic:
+
+.. ipython:: python
+
+   stat = t2[t1.key1 == t2.key3].value2.mean()
+   expr = t1[t1.value1 > stat]
+   print(ibis.impala.compile(expr))
+
 ``DISTINCT`` expressions
 ------------------------
+
+In SQL, the ``DISTINCT`` keyword is used in a couple of ways:
+
+* Deduplicating identical rows in some ``SELECT`` statement
+* Aggregating on the distinct values of some column expression
+
+Ibis supports both use cases. So let's have a look. The first case is the
+simplest: call ``distinct`` on a table expression. First, here's the SQL:
+
+.. code-block:: sql
+
+   SELECT DISTINCT *
+   FROM table1
+
+And the Ibis Python code:
+
+.. ipython:: python
+
+   expr = t1.distinct()
+   print(ibis.impala.compile(expr))
+
+For distinct aggregates, the most common case is ``COUNT(DISTINCT ...)``, which
+computes the number of unique values in an expression. So if we're looking at
+the ``events`` table, let's compute the number of distinct ``event_type``
+values for each ``user_id``. First, the SQL:
+
+.. code-block:: sql
+
+   SELECT user_id, COUNT(DISTINCT event_type) AS unique_events
+   FROM events
+   GROUP BY 1
+
+In Ibis this is:
+
+.. ipython:: python
+
+   metric = events.event_type.nunique()
+   expr = (events.group_by('user_id')
+           .aggregate(unique_events=metric))
+   print(ibis.impala.compile(expr))
+
+You can also write:
+
+.. code-block:: python
+
+   events.event_type.distinct().count()
 
 Window functions
 ----------------
 
+Window functions in SQL allow you to write expressions that involve
+possibly-ordered groups of a table. Each window function involves one of the
+following:
+
+* An analytic function. Most aggregate functions are valid analytic functions,
+  and there are additional ones such as ``LEAD``, ``LAG``, ``NTILE``, and
+  others.
+* A ``PARTITION BY`` clause. This may be omitted.
+* An ``ORDER BY`` clause. This may be omitted for many functions.
+* A window frame clause. The default is to use the entire partition.
+
+So you may see SQL like:
+
+.. code-block:: sql
+
+   AVG(value) OVER (PARTITION BY key1)
+
+Or simply
+
+.. code-block:: sql
+
+   AVG(value) OVER ()
+
+Ibis will automatically write window clauses when you use aggregate functions
+in a non-aggregate context. Suppose you wanted to subtract the mean of a column
+from itself:
+
+.. ipython:: python
+
+   expr = t.mutate(two_demean=t.two - t.two.mean())
+   print(ibis.impala.compile(expr))
+
+If you use ``mutate`` in conjunction with ``group_by``, it will add a
+``PARTITION BY`` to the ``OVER`` specification:
+
+.. ipython:: python
+
+   expr = (t.group_by('one')
+           .mutate(two_demean=t.two - t.two.mean()))
+   print(ibis.impala.compile(expr))
+
+For functions like ``LAG`` that require an ordering, we can add an ``order_by``
+call:
+
+.. ipython:: python
+
+   expr = (t.group_by('one')
+           .order_by(t.two)
+           .mutate(two_first_diff=t.two - t.two.lag()))
+   print(ibis.impala.compile(expr))
+
+For more precision, you can create a ``Window`` object that also includes a
+window frame clause:
+
+.. ipython:: python
+
+   w = ibis.window(group_by='one', preceding=5, following=5)
+   expr = t.mutate(group_demeaned=t.two - t.two.mean().over(w))
+   print(ibis.impala.compile(expr))
+
 Top-K operations
 ----------------
+
+A common SQL idiom is the "top-K" or "top-N" operation: subsetting a dimension
+by aggregate statistics:
+
+.. code-block:: sql
+
+   SELECT key1, count(*) AS `count`
+   FROM table1
+   GROUP BY 1
+   ORDER BY `count` DESC
+   LIMIT 10
+
+Ibis has a special analytic expression ``topk``:
+
+.. ipython:: python
+
+   expr = t1.key1.topk(10)
+
+This can be evaluated directly, yielding the above query:
+
+.. ipython:: python
+
+   print(ibis.impala.compile(expr))
+
+You can also use ``expr`` as a filter:
+
+.. ipython:: python
+
+   expr2 = t1[expr]
+   print(ibis.impala.compile(expr2))
 
 Date / time data
 ----------------
