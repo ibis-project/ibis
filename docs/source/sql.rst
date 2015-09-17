@@ -811,11 +811,34 @@ any of the above concerns.
            .aggregate(total=total))
    print(ibis.impala.compile(expr))
 
-Ways to specify join keys
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
 Self joins
 ~~~~~~~~~~
+
+What about when you need to join a table on itself? For example:
+
+.. code-block:: sql
+
+   SELECT t0.one, avg(t0.two - t1.three) AS metric
+   FROM my_data t0
+     INNER JOIN my_data t1
+       ON t0.one = t1.one
+   GROUP BY 1
+
+The table ``view`` method enables you to form a *self-reference* that is
+referentially distinct in expressions. Now you can proceed normally:
+
+.. ipython:: python
+
+   t_view = t.view()
+
+   stat = (t.two - t_view.three).mean()
+   expr = (t.join(t_view, t.one == t_view.one)
+           .group_by(t.one)
+           .aggregate(metric=stat))
+   print(ibis.impala.compile(expr))
+
+Other ways to specify join keys
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Non-equality join predicates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
