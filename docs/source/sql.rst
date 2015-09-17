@@ -832,16 +832,35 @@ referentially distinct in expressions. Now you can proceed normally:
    t_view = t.view()
 
    stat = (t.two - t_view.three).mean()
-   expr = (t.join(t_view, t.one == t_view.one)
+   expr = (t.join(t_view, t.three.cast('string') == t_view.one)
            .group_by(t.one)
            .aggregate(metric=stat))
+   print(ibis.impala.compile(expr))
+
+Non-equality join predicates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can join tables with boolean clauses that are not equality. Some query
+engines support these efficiently, some inefficiently, or some not at all. In
+the latter case, these conditions get moved by Ibis into the ``WHERE`` part of
+the ``SELECT`` query.
+
+.. ipython:: python
+
+   expr = (t1.join(t2, t1.value1 < t2.value2)
+           .group_by(t1.key1)
+           .size())
    print(ibis.impala.compile(expr))
 
 Other ways to specify join keys
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Non-equality join predicates
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+You can also pass a list of column names instead of forming boolean expressions:
+
+.. ipython:: python
+
+   joined = t1.join(t2, [('key1', 'key3'),
+                         ('key2', 'key4')])
 
 Subqueries
 ----------
