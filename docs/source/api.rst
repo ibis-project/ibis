@@ -406,6 +406,7 @@ All string operations are valid either on scalar or array values
    StringValue.re_extract
    StringValue.re_replace
 
+.. _api.timestamp:
 
 Timestamp methods
 -----------------
