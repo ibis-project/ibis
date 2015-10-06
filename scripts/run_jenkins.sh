@@ -84,15 +84,14 @@ pip install $IBIS_HOME
 python --version
 which python
 
-if [ $IBIS_TEST_USE_KERBEROS = "True" ]; then
+if [ $IBIS_TEST_AUTH_MECH = "GSSAPI" -o $IBIS_TEST_AUTH_MECH = "LDAP" ]; then
+    sudo yum install -y cyrus-sasl-devel
     pip install requests-kerberos
     pip install git+https://github.com/laserson/python-sasl.git@cython
 
     # CLOUDERA INTERNAL JENKINS/KERBEROS CONFIG
     kinit -l 4h -kt /cdep/keytabs/hive.keytab hive
     sudo -u hive PYTHON_EGG_CACHE=/dev/null impala-shell -k -q "GRANT ALL ON SERVER TO ROLE cdep_default_admin WITH GRANT OPTION"
-    sudo -u hive PYTHON_EGG_CACHE=/dev/null impala-shell -k -q "GRANT ALL ON DATABASE $IBIS_TEST_DATA_DB TO ROLE cdep_default_admin"
-    sudo -u hive PYTHON_EGG_CACHE=/dev/null impala-shell -k -q "GRANT ALL ON DATABASE $IBIS_TEST_TMP_DB TO ROLE cdep_default_admin"
     kdestroy
     kinit -l 4h -kt /cdep/keytabs/systest.keytab systest
 fi
