@@ -1821,11 +1821,16 @@ class Subtract(BinaryOp):
 
 class Divide(BinaryOp):
 
-    def output_type(self):
-        if not util.all_of(self.args, ir.NumericValue):
-            raise TypeError('One argument was non-numeric')
+    input_type = [number, number]
 
+    def output_type(self):
         return rules.shape_like_args(self.args, 'double')
+
+
+class FloorDivide(Divide):
+
+    def output_type(self):
+        return rules.shape_like_args(self.args, 'int64')
 
 
 class LogicalBinaryOp(BinaryOp):

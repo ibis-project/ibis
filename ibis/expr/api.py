@@ -657,11 +657,13 @@ add = _binop_expr('__add__', _ops.Add)
 sub = _binop_expr('__sub__', _ops.Subtract)
 mul = _binop_expr('__mul__', _ops.Multiply)
 div = _binop_expr('__div__', _ops.Divide)
+floordiv = _binop_expr('__floordiv__', _ops.FloorDivide)
 pow = _binop_expr('__pow__', _ops.Power)
 mod = _binop_expr('__mod__', _ops.Modulus)
 
 rsub = _rbinop_expr('__rsub__', _ops.Subtract)
 rdiv = _rbinop_expr('__rdiv__', _ops.Divide)
+rfloordiv = _rbinop_expr('__rfloordiv__', _ops.FloorDivide)
 
 
 _generic_value_methods = dict(
@@ -689,11 +691,15 @@ _generic_value_methods = dict(
 
     __div__=div,
     __truediv__=div,
+    __floordiv__=floordiv,
     div=div,
+    floordiv=floordiv,
 
     __rdiv__=rdiv,
     __rtruediv__=rdiv,
+    __rfloordiv__=rfloordiv,
     rdiv=rdiv,
+    rfloordiv=rfloordiv,
 
     __pow__=pow,
     pow=pow,

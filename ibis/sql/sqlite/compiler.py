@@ -21,6 +21,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.common as com
 
+
 _operation_registry = alch._operation_registry.copy()
 
 
@@ -177,6 +178,7 @@ class SQLiteExprTranslator(alch.AlchemyExprTranslator):
 
 
 rewrites = SQLiteExprTranslator.rewrites
+compiles = SQLiteExprTranslator.compiles
 
 
 class SQLiteDialect(alch.AlchemyDialect):

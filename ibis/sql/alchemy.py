@@ -26,6 +26,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
+import ibis.util as util
 import ibis
 
 
@@ -480,6 +481,7 @@ class AlchemyExprTranslator(comp.ExprTranslator):
 
 
 rewrites = AlchemyExprTranslator.rewrites
+compiles = AlchemyExprTranslator.compiles
 
 
 class AlchemyQuery(Query):
@@ -847,3 +849,27 @@ class AlchemyProxy(object):
 def _nullifzero(expr):
     arg = expr.op().args[0]
     return (arg == 0).ifelse(ibis.NA, arg)
+
+
+@compiles(ops.Divide)
+def _true_divide(t, expr):
+    op = expr.op()
+    left, right = op.args
+
+    if util.all_of(op.args, ir.IntegerValue):
+        new_expr = left.div(right.cast('double'))
+        return t.translate(new_expr)
+
+    return fixed_arity(lambda x, y: x / y, 2)(t, expr)
+
+
+@compiles(ops.FloorDivide)
+def _floor_divide(t, expr):
+    op = expr.op()
+    left, right = op.args
+
+    if util.any_of(op.args, ir.FloatingValue):
+        new_expr = expr.floor()
+        return t.translate(new_expr)
+
+    return fixed_arity(lambda x, y: x / y, 2)(t, expr)

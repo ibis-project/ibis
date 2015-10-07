@@ -100,6 +100,15 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_div_floordiv(self):
+        cases = [
+            (L(7) / L(2), 3.5),
+            (L(7) // L(2), 3),
+            (L(7).floordiv(2), 3),
+            (L(2).rfloordiv(7), 3),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_typeof(self):
         cases = [
             (L('foo_bar').typeof(), 'text'),

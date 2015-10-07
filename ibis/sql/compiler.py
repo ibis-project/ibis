@@ -1173,6 +1173,18 @@ class ExprTranslator(object):
             return decorator
         else:
             decorator(f)
+            return f
+
+    @classmethod
+    def compiles(cls, klass, f=None):
+        def decorator(f):
+            cls._registry[klass] = f
+
+        if f is None:
+            return decorator
+        else:
+            decorator(f)
+            return f
 
 
 rewrites = ExprTranslator.rewrites
