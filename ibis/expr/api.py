@@ -1488,7 +1488,25 @@ def _string_dunder_contains(arg, substr):
     raise TypeError('Use val.contains(arg)')
 
 
+def _string_getitem(self, key):
+    if isinstance(key, slice):
+        start, stop, step = key.start, key.stop, key.step
+        if step and step != 1:
+            raise ValueError('Step can only be 1')
+
+        start = start or 0
+
+        if start < 0 or stop < 0:
+            raise ValueError('negative slicing not yet supported')
+
+        return self.substr(start, stop - start)
+    else:
+        raise NotImplementedError
+
+
 _string_value_methods = dict(
+    __getitem__=_string_getitem,
+
     length=_unary_op('length', _ops.StringLength),
     lower=_unary_op('lower', _ops.Lowercase),
     upper=_unary_op('upper', _ops.Uppercase),

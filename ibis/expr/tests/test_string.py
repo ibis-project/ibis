@@ -18,6 +18,7 @@ import ibis.expr.operations as ops
 
 from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest
+from ibis.tests.util import assert_equal
 
 
 class TestStringOps(unittest.TestCase):
@@ -92,6 +93,15 @@ class TestStringOps(unittest.TestCase):
     def test_contains(self):
         expr = self.table.g.contains('foo')
         expected = self.table.g.like('%foo%')
-        assert expr.equals(expected)
+        assert_equal(expr, expected)
 
         self.assertRaises(Exception, lambda: 'foo' in self.table.g)
+
+    def test_getitem_slice(self):
+        cases = [
+            (self.table.g[:3], self.table.g.substr(0, 3)),
+            (self.table.g[2:6], self.table.g.substr(2, 4)),
+        ]
+
+        for case, expected in cases:
+            assert_equal(case, expected)
