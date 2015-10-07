@@ -1303,6 +1303,8 @@ class Where(ValueOp):
 
 class Join(TableNode):
 
+    _arg_names = ['left', 'right', 'predicates']
+
     def __init__(self, left, right, predicates):
         if not rules.is_table(left):
             raise TypeError('Can only join table expressions, got %s for '
@@ -1354,9 +1356,10 @@ class Join(TableNode):
                 lk = left._ensure_expr(lk)
                 rk = right._ensure_expr(rk)
                 pred = lk == rk
-            else:
-                # pred = L.substitute_parents(pred, past_projection=False)
-                pass
+            elif isinstance(pred, six.string_types):
+                pred = getattr(left, pred) == getattr(right, pred)
+            elif not isinstance(pred, ir.Expr):
+                raise NotImplementedError
 
             if not isinstance(pred, ir.BooleanArray):
                 raise com.ExpressionError('Join predicate must be comparison')

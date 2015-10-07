@@ -817,7 +817,21 @@ class TestJoinsUnions(BasicTestCase, unittest.TestCase):
         repr(filtered)
 
     def test_join_overlapping_column_names(self):
-        pass
+        t1 = ibis.table([('foo', 'string'),
+                         ('bar', 'string'),
+                         ('value1', 'double')])
+        t2 = ibis.table([('foo', 'string'),
+                         ('bar', 'string'),
+                         ('value2', 'double')])
+
+        joined = t1.join(t2, 'foo')
+        expected = t1.join(t2, t1.foo == t2.foo)
+        assert_equal(joined, expected)
+
+        joined = t1.join(t2, ['foo', 'bar'])
+        expected = t1.join(t2, [t1.foo == t2.foo,
+                                t1.bar == t2.bar])
+        assert_equal(joined, expected)
 
     def test_join_key_alternatives(self):
         t1 = self.con.table('star1')
