@@ -575,6 +575,9 @@ class TableExpr(Expr):
         else:
             raise NotImplementedError
 
+    def __len__(self):
+        raise com.ExpressionError('Use .count() instead')
+
     def __getattr__(self, key):
         try:
             return object.__getattribute__(self, key)
