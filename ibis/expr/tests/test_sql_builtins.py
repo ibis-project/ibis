@@ -14,9 +14,10 @@
 
 from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest
-import ibis.expr.api as api
+from ibis.tests.util import assert_equal
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis
 
 
 class TestBuiltins(unittest.TestCase):
@@ -83,8 +84,8 @@ class TestBuiltins(unittest.TestCase):
         assert type(cresult.op()) == ops.Ceil
         assert type(fresult.op()) == ops.Floor
 
-        cresult = api.literal(1.2345).ceil()
-        fresult = api.literal(1.2345).floor()
+        cresult = ibis.literal(1.2345).ceil()
+        fresult = ibis.literal(1.2345).floor()
         assert isinstance(cresult, ir.Int64Scalar)
         assert isinstance(fresult, ir.Int64Scalar)
 
@@ -102,7 +103,7 @@ class TestBuiltins(unittest.TestCase):
         assert isinstance(result, ir.FloatArray)
         assert type(result.op()) == ops.Sign
 
-        result = api.literal(1.2345).sign()
+        result = ibis.literal(1.2345).sign()
         assert isinstance(result, ir.FloatScalar)
 
         dec_col = self.lineitem.l_extendedprice
@@ -130,7 +131,7 @@ class TestBuiltins(unittest.TestCase):
         result = dec.round(2)
         assert isinstance(result, ir.DecimalArray)
 
-        result = api.literal(1.2345).round()
+        result = ibis.literal(1.2345).round()
         assert isinstance(result, ir.Int64Scalar)
 
     def _check_unary_op(self, expr, fname, ex_op, ex_type):
@@ -142,7 +143,7 @@ class TestBuiltins(unittest.TestCase):
 class TestCoalesceLikeFunctions(unittest.TestCase):
 
     def setUp(self):
-        self.table = api.table([
+        self.table = ibis.table([
             ('v1', 'decimal(12, 2)'),
             ('v2', 'decimal(10, 4)'),
             ('v3', 'int32'),
@@ -153,7 +154,16 @@ class TestCoalesceLikeFunctions(unittest.TestCase):
             ('v8', 'boolean')
         ], 'testing')
 
-        self.functions = [api.coalesce, api.greatest, api.least]
+        self.functions = [ibis.coalesce, ibis.greatest, ibis.least]
+
+    def test_coalesce_instance_method(self):
+        v7 = self.table.v7
+        v5 = self.table.v5.cast('string')
+        v8 = self.table.v8.cast('string')
+
+        result = v7.coalesce(v5, v8, 'foo')
+        expected = ibis.coalesce(v7, v5, v8, 'foo')
+        assert_equal(result, expected)
 
     def test_integer_promotions(self):
         t = self.table

@@ -670,6 +670,7 @@ rfloordiv = _rbinop_expr('__rfloordiv__', _ops.FloorDivide)
 _generic_value_methods = dict(
     hash=hash,
     cast=cast,
+    coalesce=coalesce,
     typeof=typeof,
     fillna=fillna,
     nullif=nullif,
