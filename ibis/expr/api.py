@@ -371,7 +371,8 @@ def _agg_function(name, klass, assign_default_name=True):
 
 def _extract_field(name, klass):
     def f(self):
-        return klass(self).to_expr()
+        expr = klass(self).to_expr()
+        return expr.name(name)
     f.__name__ = name
     return f
 

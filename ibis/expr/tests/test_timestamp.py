@@ -50,20 +50,15 @@ class TestTimestamp(unittest.TestCase):
             ('day', ops.ExtractDay, ir.Int32Array),
             ('hour', ops.ExtractHour, ir.Int32Array),
             ('minute', ops.ExtractMinute, ir.Int32Array),
-            ('second', ops.ExtractSecond, ir.Int32Array)
+            ('second', ops.ExtractSecond, ir.Int32Array),
+            ('millisecond', ops.ExtractMillisecond, ir.Int32Array),
         ]
 
         for attr, ex_op, ex_type in cases:
             result = getattr(self.col, attr)()
+            assert result.get_name() == attr
             assert isinstance(result, ex_type)
             assert isinstance(result.op(), ex_op)
-
-    def test_extract_no_propagate_name(self):
-        # see #146
-        table = self.con.table('functional_alltypes')
-
-        expr = table.timestamp_col.hour()
-        self.assertRaises(com.ExpressionError, expr.get_name)
 
     def test_now(self):
         result = api.now()
