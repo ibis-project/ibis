@@ -1309,3 +1309,12 @@ class ImpalaExprTranslator(comp.ExprTranslator):
     def name(self, translated, name, force=True):
         return _name_expr(translated,
                           quote_identifier(name, force=force))
+
+compiles = ImpalaExprTranslator.compiles
+rewrites = ImpalaExprTranslator.rewrites
+
+
+@rewrites(ops.FloorDivide)
+def _floor_divide(expr):
+    left, right = expr.op().args
+    return left.div(right).floor()
