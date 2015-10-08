@@ -15,7 +15,6 @@
 import pandas as pd
 
 import ibis
-import ibis.common as com
 import ibis.expr.api as api
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
