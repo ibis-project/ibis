@@ -97,25 +97,35 @@ class AnyToExistsTransform(object):
     def _visit_table(self, expr):
         node = expr.op()
 
-        if isinstance(node, ir.BlockingTableNode):
-            self._ref_check(expr)
-
-        if not isinstance(node, ir.BlockingTableNode):
-            for arg in node.flat_args():
-                if isinstance(arg, ir.Expr):
-                    self._visit(arg)
-
-    def _ref_check(self, expr):
-        node = expr.op()
-
-        if self._is_root(node):
-            pass
+        if isinstance(expr, ir.TableExpr):
+            base_table = _find_blocking_table(expr)
+            if base_table is not None:
+                base_node = base_table.op()
+                if self._is_root(base_node):
+                    pass
+                else:
+                    # Foreign ref
+                    self.foreign_table = expr
         else:
-            # Foreign ref
-            foreign_table = expr
-            self.foreign_table = foreign_table
+            if not isinstance(node, ir.BlockingTableNode):
+                for arg in node.flat_args():
+                    if isinstance(arg, ir.Expr):
+                        self._visit(arg)
 
     def _is_root(self, what):
         if isinstance(what, ir.Expr):
             what = what.op()
         return what in self.query_roots
+
+
+def _find_blocking_table(expr):
+    node = expr.op()
+
+    if isinstance(node, ir.BlockingTableNode):
+        return expr
+
+    for arg in node.flat_args():
+        if isinstance(arg, ir.Expr):
+            result = _find_blocking_table(arg)
+            if result is not None:
+                return result

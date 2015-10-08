@@ -1771,6 +1771,33 @@ WHERE NOT EXISTS (
 )"""
         assert result == expected
 
+    def test_filter_inside_exists(self):
+        events = ibis.table([('session_id', 'int64'),
+                             ('user_id', 'int64'),
+                             ('event_type', 'int32'),
+                             ('ts', 'timestamp')], 'events')
+
+        purchases = ibis.table([('item_id', 'int64'),
+                                ('user_id', 'int64'),
+                                ('price', 'double'),
+                                ('ts', 'timestamp')], 'purchases')
+        filt = purchases.ts > '2015-08-15'
+        cond = (events.user_id == purchases[filt].user_id).any()
+        expr = events[cond]
+
+        result = to_sql(expr)
+        expected = """\
+SELECT t0.*
+FROM events t0
+WHERE EXISTS (
+  SELECT 1
+  FROM purchases t1
+  WHERE t1.`ts` > '2015-08-15' AND
+        t0.`user_id` = t1.`user_id`
+)"""
+
+        assert result == expected
+
     def test_self_reference_in_exists(self):
         semi, anti = self._case_self_reference_in_exists()
 
