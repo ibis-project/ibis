@@ -123,3 +123,7 @@ def test(impala=False):
     if impala:
         args.append('--impala')
     pytest.main(args)
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions

@@ -32,26 +32,16 @@ if COMMS_EXT_ENABLED:
 
     cmdclass['build_ext'] = build_ext
 
-from setuptools import setup
-import os
-import sys
+from setuptools import setup  # noqa
+import os  # noqa
+import sys  # noqa
 
-from distutils.extension import Extension
-
-MAJOR = 0
-MINOR = 6
-MICRO = 0
-VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
-
-ISRELEASED = False
-
-if not ISRELEASED:
-    VERSION += '.dev'
-
-    # todo: acquire git hash
+from distutils.extension import Extension  # noqa
 
 
-from distutils.command.clean import clean as _clean
+from distutils.command.clean import clean as _clean  # noqa
+
+
 class clean(_clean):
     def run(self):
         _clean.run(self)
@@ -112,6 +102,8 @@ CLASSIFIERS = [
     'Topic :: Scientific/Engineering',
 ]
 
+import versioneer  # noqa
+
 setup(
     name='ibis-framework',
     packages=['ibis',
@@ -134,10 +126,10 @@ setup(
               'ibis.sql.vertica',
               'ibis.sql.vertica.tests',
               'ibis.tests'],
-    version=VERSION,
+    version=versioneer.get_version(),
     package_data={'ibis': ['*.pxd', '*.pyx']},
     ext_modules=extensions,
-    cmdclass=cmdclass,
+    cmdclass=versioneer.get_cmdclass(),
     install_requires=requirements,
     extras_require={'kerberos': ['requests-kerberos']},
     description="Productivity-centric Python Big Data Framework",
