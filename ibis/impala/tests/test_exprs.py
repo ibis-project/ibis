@@ -18,6 +18,7 @@ import pandas as pd
 
 import ibis
 
+from ibis import literal as L
 from ibis.compat import unittest, StringIO, Decimal
 from ibis.expr.datatypes import Category
 from ibis.expr.tests.mocks import MockConnection
@@ -57,7 +58,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def _check_literals(self, cases):
         for value, expected in cases:
-            lit_expr = ibis.literal(value)
+            lit_expr = L(value)
             result = self._translate(lit_expr)
             assert result == expected
 
@@ -69,7 +70,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         ]
 
         for value, expected in cases:
-            lit_expr = ibis.literal(value)
+            lit_expr = L(value)
             result = self._translate(lit_expr)
             assert result == expected
 
@@ -209,7 +210,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def test_decimal_casts(self):
         cases = [
-            (ibis.literal('9.9999999').cast('decimal(38,5)'),
+            (L('9.9999999').cast('decimal(38,5)'),
              "CAST('9.9999999' AS decimal(38,5))"),
             (self.table.f.cast('decimal(12,2)'), "CAST(`f` AS decimal(12,2))")
         ]
@@ -276,8 +277,8 @@ FROM alltypes"""
         ex1 = ("'2015-01-01 12:34:56'")
 
         cases = [
-            (ibis.literal(Timestamp(tv1)), ex1),
-            (ibis.literal(Timestamp(tv1).to_pydatetime()), ex1),
+            (L(Timestamp(tv1)), ex1),
+            (L(Timestamp(tv1).to_pydatetime()), ex1),
             (ibis.timestamp(tv1), ex1)
         ]
         self._check_expr_cases(cases)
@@ -406,7 +407,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_reduction_invalid_where(self):
-        condbad_literal = ibis.literal('T')
+        condbad_literal = L('T')
         c = self.table.double_col
         for reduction in [c.sum, c.count, c.mean, c.max, c.min]:
             with self.assertRaises(TypeError):
@@ -698,9 +699,9 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
 
     def test_literal_in_list(self):
         cases = [
-            (ibis.literal(2).isin([self.table.a, self.table.b, self.table.c]),
+            (L(2).isin([self.table.a, self.table.b, self.table.c]),
              '2 IN (`a`, `b`, `c`)'),
-            (ibis.literal(2).notin([self.table.a, self.table.b, self.table.c]),
+            (L(2).notin([self.table.a, self.table.b, self.table.c]),
              '2 NOT IN (`a`, `b`, `c`)')
         ]
         self._check_expr_cases(cases)
@@ -905,7 +906,7 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_string_join(self):
         cases = [
-            (ibis.literal(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")
+            (L(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")
         ]
         self._check_expr_cases(cases)
 
@@ -928,7 +929,7 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
 
     def test_execute_exprs_no_table_ref(self):
         cases = [
-            (ibis.literal(1) + ibis.literal(2), 3)
+            (L(1) + L(2), 3)
         ]
 
         for expr, expected in cases:
@@ -936,9 +937,9 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             assert result == expected
 
         # ExprList
-        exlist = ibis.api.expr_list([ibis.literal(1).name('a'),
+        exlist = ibis.api.expr_list([L(1).name('a'),
                                      ibis.now().name('b'),
-                                     ibis.literal(2).log().name('c')])
+                                     L(2).log().name('c')])
         self.con.execute(exlist)
 
     def test_summary_execute(self):
@@ -1133,8 +1134,8 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             assert result == expected, to_sql(expr)
 
     def test_int_builtins(self):
-        i8 = ibis.literal(50)
-        i32 = ibis.literal(50000)
+        i8 = L(50)
+        i32 = L(50000)
 
         mod_cases = [
             (i8 % 5, 0),
@@ -1162,8 +1163,8 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
         assert pd.core.common.is_datetime64_dtype(df.timestamp_col.dtype)
 
     def test_timestamp_builtins(self):
-        i32 = ibis.literal(50000)
-        i64 = ibis.literal(5 * 10 ** 8)
+        i32 = L(50000)
+        i64 = L(5 * 10 ** 8)
 
         stamp = ibis.timestamp('2009-05-17 12:34:56')
 
@@ -1182,9 +1183,9 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
         self.assert_cases_equality(timestamp_cases)
 
     def test_decimal_builtins(self):
-        d = ibis.literal(5.245)
+        d = L(5.245)
         general_cases = [
-            (ibis.literal(-5).abs(), 5),
+            (L(-5).abs(), 5),
             (d.cast('int32'), 5),
             (d.ceil(), 6),
             (d.isnull(), False),
@@ -1197,7 +1198,7 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
         self.assert_cases_equality(general_cases)
 
     def test_decimal_builtins_2(self):
-        d = ibis.literal('5.245')
+        d = L('5.245')
         dc = d.cast('decimal(12,5)')
         cases = [
             (dc % 5, Decimal('0.245')),
@@ -1222,12 +1223,12 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             approx_equal(result, expected, tol)
 
     def test_string_functions(self):
-        string = ibis.literal('abcd')
-        strip_string = ibis.literal('   a   ')
+        string = L('abcd')
+        strip_string = L('   a   ')
 
         cases = [
             (string.length(), 4),
-            (ibis.literal('ABCD').lower(), 'abcd'),
+            (L('ABCD').lower(), 'abcd'),
             (string.upper(), 'ABCD'),
             (string.reverse(), 'dcba'),
             (string.ascii_str(), 97),
@@ -1239,21 +1240,33 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             (string.left(2), 'ab'),
             (string.right(2), 'cd'),
             (string.repeat(2), 'abcdabcd'),
-            (ibis.literal('0123').translate('012', 'abc'), 'abc3'),
+            (L('0123').translate('012', 'abc'), 'abc3'),
             (string.find('a'), 0),
-            (ibis.literal('baaaab').find('b', 2), 5),
+            (L('baaaab').find('b', 2), 5),
             (string.lpad(1, '-'), 'a'),
             (string.lpad(5), ' abcd'),
             (string.rpad(1, '-'), 'a'),
             (string.rpad(5), 'abcd '),
             (string.find_in_set(['a', 'b', 'abcd']), 2),
-            (ibis.literal(', ').join(['a', 'b']), 'a, b'),
+            (L(', ').join(['a', 'b']), 'a, b'),
             (string.like('a%'), True),
             (string.re_search('[a-z]'), True),
-            (ibis.literal("https://www.cloudera.com").parse_url('HOST'),
+            (L("https://www.cloudera.com").parse_url('HOST'),
              "www.cloudera.com"),
             (string.re_extract('[a-z]', 0), 'a'),
             (string.re_replace('(b)', '2'), 'a2cd'),
+        ]
+
+        for expr, expected in cases:
+            result = self.con.execute(expr)
+            assert result == expected
+
+    def test_div_floordiv(self):
+        cases = [
+            (L(7) / 2, 3.5),
+            (L(7) // 2, 3),
+            (L(7).floordiv(2), 3),
+            (L(2).rfloordiv(7), 3),
         ]
 
         for expr, expected in cases:
