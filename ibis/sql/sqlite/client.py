@@ -40,12 +40,15 @@ class SQLiteClient(alch.AlchemyClient):
     dialect = SQLiteDialect
     database_class = SQLiteDatabase
 
-    def __init__(self, path, create=False):
+    def __init__(self, path=None, create=False):
         self.name = path
         self.database_name = 'default'
 
         self.con = sa.create_engine('sqlite://')
-        self.attach(self.database_name, path, create=create)
+
+        if path:
+            self.attach(self.database_name, path, create=create)
+
         self.meta = sa.MetaData(bind=self.con)
 
     @property

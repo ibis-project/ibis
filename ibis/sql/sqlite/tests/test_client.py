@@ -73,7 +73,15 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
         assert supported_expr.verify()
 
     def test_attach_file(self):
-        pass
+        client = ibis.sqlite.connect()
+
+        client.attach('foo', self.env.db_path)
+        client.attach('bar', self.env.db_path)
+
+        foo_tables = client.list_tables(database='foo')
+        bar_tables = client.list_tables(database='bar')
+
+        assert foo_tables == bar_tables
 
     def test_database_layer(self):
         db = self.con.database()

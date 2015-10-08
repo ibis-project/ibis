@@ -26,7 +26,7 @@ def compile(expr):
     return to_sqlalchemy(expr, dialect=SQLiteDialect)
 
 
-def connect(path, create=False):
+def connect(path=None, create=False):
 
     """
     Create an Ibis client connected to a SQLite database.
@@ -35,8 +35,9 @@ def connect(path, create=False):
 
     Parameters
     ----------
-    path : string
-        File path to the SQLite database file
+    path : string, default None
+        File path to the SQLite database file. If None, creates an in-memory
+        transient database and you can use attach() to add more files
     create : boolean, default False
         If file does not exist, create it
     """
