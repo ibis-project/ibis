@@ -1405,15 +1405,15 @@ GROUP BY 1"""
         result = to_sql(expr)
         expected = """\
 WITH t0 AS (
-  SELECT t5.*, t1.`r_name` AS `region`, t3.`o_totalprice` AS `amount`,
+  SELECT t6.*, t1.`r_name` AS `region`, t3.`o_totalprice` AS `amount`,
          CAST(t3.`o_orderdate` AS timestamp) AS `odate`
   FROM tpch_region t1
     INNER JOIN tpch_nation t2
       ON t1.`r_regionkey` = t2.`n_regionkey`
-    INNER JOIN tpch_customer t5
-      ON t5.`c_nationkey` = t2.`n_nationkey`
+    INNER JOIN tpch_customer t6
+      ON t6.`c_nationkey` = t2.`n_nationkey`
     INNER JOIN tpch_orders t3
-      ON t3.`o_custkey` = t5.`c_custkey`
+      ON t3.`o_custkey` = t6.`c_custkey`
 )
 SELECT t0.*
 FROM t0
@@ -1832,7 +1832,7 @@ WITH t0 AS (
   FROM functional_alltypes
   LIMIT 100
 )
-SELECT t0.*
+SELECT *
 FROM t0
 WHERE NOT EXISTS (
   SELECT 1
