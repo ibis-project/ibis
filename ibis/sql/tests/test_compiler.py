@@ -1405,15 +1405,15 @@ GROUP BY 1"""
         result = to_sql(expr)
         expected = """\
 WITH t0 AS (
-  SELECT t5.*, t1.`r_name` AS `region`, t3.`o_totalprice` AS `amount`,
+  SELECT t6.*, t1.`r_name` AS `region`, t3.`o_totalprice` AS `amount`,
          CAST(t3.`o_orderdate` AS timestamp) AS `odate`
   FROM tpch_region t1
     INNER JOIN tpch_nation t2
       ON t1.`r_regionkey` = t2.`n_regionkey`
-    INNER JOIN tpch_customer t5
-      ON t5.`c_nationkey` = t2.`n_nationkey`
+    INNER JOIN tpch_customer t6
+      ON t6.`c_nationkey` = t2.`n_nationkey`
     INNER JOIN tpch_orders t3
-      ON t3.`o_custkey` = t5.`c_custkey`
+      ON t3.`o_custkey` = t6.`c_custkey`
 )
 SELECT t0.*
 FROM t0
@@ -1771,6 +1771,33 @@ WHERE NOT EXISTS (
 )"""
         assert result == expected
 
+    def test_filter_inside_exists(self):
+        events = ibis.table([('session_id', 'int64'),
+                             ('user_id', 'int64'),
+                             ('event_type', 'int32'),
+                             ('ts', 'timestamp')], 'events')
+
+        purchases = ibis.table([('item_id', 'int64'),
+                                ('user_id', 'int64'),
+                                ('price', 'double'),
+                                ('ts', 'timestamp')], 'purchases')
+        filt = purchases.ts > '2015-08-15'
+        cond = (events.user_id == purchases[filt].user_id).any()
+        expr = events[cond]
+
+        result = to_sql(expr)
+        expected = """\
+SELECT t0.*
+FROM events t0
+WHERE EXISTS (
+  SELECT 1
+  FROM purchases t1
+  WHERE t1.`ts` > '2015-08-15' AND
+        t0.`user_id` = t1.`user_id`
+)"""
+
+        assert result == expected
+
     def test_self_reference_in_exists(self):
         semi, anti = self._case_self_reference_in_exists()
 
@@ -1805,7 +1832,7 @@ WITH t0 AS (
   FROM functional_alltypes
   LIMIT 100
 )
-SELECT t0.*
+SELECT *
 FROM t0
 WHERE NOT EXISTS (
   SELECT 1

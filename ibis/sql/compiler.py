@@ -742,7 +742,7 @@ class _CorrelatedRefCheck(object):
     def _visit(self, expr, in_subquery=False):
         node = expr.op()
 
-        in_subquery = self._is_subquery(node)
+        in_subquery = in_subquery or self._is_subquery(node)
 
         for arg in node.flat_args():
             if isinstance(arg, ir.TableExpr):
@@ -754,7 +754,9 @@ class _CorrelatedRefCheck(object):
 
     def _is_subquery(self, node):
         # XXX
-        if isinstance(node, ops.TableArrayView):
+        if isinstance(node, (ops.TableArrayView,
+                             transforms.ExistsSubquery,
+                             transforms.NotExistsSubquery)):
             return True
 
         if isinstance(node, ops.TableColumn):
