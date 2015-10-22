@@ -118,10 +118,16 @@ class Expr(object):
     def _can_implicit_cast(self, arg):
         return False
 
-    def execute(self, limit=None, async=False):
+    def execute(self, limit='default', async=False):
         """
         If this expression is based on physical tables in a database backend,
         execute it against that backend.
+
+        Parameters
+        ----------
+        limit : integer or None, default 'default'
+          Pass an integer to effect a specific row limit. limit=None means "no
+          limit". The default is whatever is in ibis.options.
 
         Returns
         -------

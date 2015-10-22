@@ -201,7 +201,7 @@ LIMIT 0""".format(query)
         """
         return self._execute(query, results=results)
 
-    def execute(self, expr, params=None, limit=None, async=False):
+    def execute(self, expr, params=None, limit='default', async=False):
         """
         Compile and execute Ibis expression using this backend client
         interface, returning results in-memory in the appropriate object type
@@ -254,13 +254,16 @@ LIMIT 0""".format(query)
                     not isinstance(expr, ir.ScalarExpr) and
                     query.table_set is not None):
                 if query.limit is None:
-                    query_limit = limit or options.sql.default_limit
+                    if limit == 'default':
+                        query_limit = options.sql.default_limit
+                    else:
+                        query_limit = limit
                     if query_limit:
                         query.limit = {
                             'n': query_limit,
                             'offset': 0
                         }
-                elif limit is not None:
+                elif limit is not None and limit != 'default':
                     query.limit = {'n': limit,
                                    'offset': query.limit['offset']}
         return ast
@@ -306,7 +309,7 @@ class QueryPipeline(object):
     pass
 
 
-def execute(expr, limit=None, async=False):
+def execute(expr, limit='default', async=False):
     backend = find_backend(expr)
     return backend.execute(expr, limit=limit, async=async)
 

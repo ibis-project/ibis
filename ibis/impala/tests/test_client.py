@@ -160,6 +160,13 @@ LIMIT 10"""
         result = self.con.execute(t.limit(10), limit=5)
         assert len(result) == 5
 
+    def test_limit_equals_none_no_limit(self):
+        t = self.alltypes
+
+        with config.option_context('sql.default_limit', 10):
+            result = t.execute(limit=None)
+            assert len(result) > 10
+
     def test_verbose_log_queries(self):
         queries = []
 

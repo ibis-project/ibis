@@ -1266,12 +1266,6 @@ class ImpalaClient(SQLClient):
         return names, adapted_types
 
 
-def _set_limit(query, k):
-    limited_query = '{0}\nLIMIT {1}'.format(query, k)
-
-    return limited_query
-
-
 def to_stdout(x):
     print(x)
 
