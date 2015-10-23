@@ -318,6 +318,8 @@ _impala_to_ibis_type = {
     'float': 'float',
     'double': 'double',
     'string': 'string',
+    'varchar': 'string',
+    'char': 'string',
     'timestamp': 'timestamp',
     'decimal': 'decimal'
 }

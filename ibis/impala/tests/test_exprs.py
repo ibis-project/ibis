@@ -1522,3 +1522,14 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
 
         # it works
         expr.execute()
+
+    def test_char_varchar_types(self):
+        sql = """\
+SELECT CAST(string_col AS varchar(20)) AS varchar_col,
+       CAST(string_col AS CHAR(5)) AS char_col
+FROM functional_alltypes"""
+
+        t = self.con.sql(sql)
+
+        assert isinstance(t.varchar_col, api.StringArray)
+        assert isinstance(t.char_col, api.StringArray)
