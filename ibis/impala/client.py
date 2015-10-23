@@ -16,6 +16,7 @@ from posixpath import join as pjoin
 import re
 import six
 import threading
+import time
 import weakref
 
 import hdfs
@@ -52,6 +53,12 @@ class ImpalaDatabase(Database):
     def list_udas(self, like=None):
         return self.client.list_udas(like=self._qualify_like(like),
                                      database=self.name)
+
+
+def hs2_cursor_status(cursor):
+    from impala.hiveserver2 import get_operation_status
+    handle = cursor._last_operation_handle
+    return get_operation_status(cursor.service, handle)
 
 
 class ImpalaConnection(object):
@@ -194,10 +201,42 @@ class ImpalaCursor(object):
         self.con.connection_pool.put(self)
 
     def execute(self, stmt, async=False):
+        self.cursor.execute_async(stmt)
         if async:
-            self.cursor.execute_async(stmt)
+            return
         else:
-            self.cursor.execute(stmt)
+            self._wait_synchronous()
+
+    def _wait_synchronous(self):
+        # Wait to finish, but cancel if KeyboardInterrupt
+        from impala.hiveserver2 import OperationalError
+        loop_start = time.time()
+
+        def _sleep_interval(start_time):
+            elapsed = time.time() - start_time
+            if elapsed < 0.05:
+                return 0.01
+            elif elapsed < 1.0:
+                return 0.05
+            elif elapsed < 10.0:
+                return 0.1
+            elif elapsed < 60.0:
+                return 0.5
+            return 1.0
+
+        cur = self.cursor
+        try:
+            while True:
+                state = hs2_cursor_status(cur)
+                if self.cursor._op_state_is_error(state):
+                    raise OperationalError("Operation is in ERROR_STATE")
+                if not cur._op_state_is_executing(state):
+                    break
+                time.sleep(_sleep_interval(loop_start))
+        except KeyboardInterrupt:
+            print('Canceling query')
+            self.cancel()
+            raise
 
     def is_finished(self):
         return not self.is_executing()
@@ -285,10 +324,7 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
         Retrieve Impala query status
         """
         self._wait_execute()
-        from impala.hiveserver2 import get_operation_status
-        cur = self._cursor
-        handle = cur._last_operation_handle
-        return get_operation_status(cur.service, handle)
+        return hs2_cursor_status(self._cursor)
 
     def wait(self, progress_bar=True):
         raise NotImplementedError
