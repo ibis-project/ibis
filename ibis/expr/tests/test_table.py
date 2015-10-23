@@ -188,6 +188,11 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         assert_equal(result, expected)
 
+    def test_projection_array_expr(self):
+        result = self.table[self.table.a]
+        expected = self.table[[self.table.a]]
+        assert_equal(result, expected)
+
     def test_add_column(self):
         # Creates a projection with a select-all on top of a non-projection
         # TableExpr

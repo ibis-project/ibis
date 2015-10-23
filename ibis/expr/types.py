@@ -578,6 +578,9 @@ class TableExpr(Expr):
         elif isinstance(what, BooleanArray):
             # Boolean predicate
             return self.filter([what])
+        elif isinstance(what, ArrayExpr):
+            # Projection convenience
+            return self.projection(what)
         else:
             raise NotImplementedError
 
