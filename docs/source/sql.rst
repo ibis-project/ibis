@@ -837,6 +837,41 @@ referentially distinct in expressions. Now you can proceed normally:
            .aggregate(metric=stat))
    print(ibis.impala.compile(expr))
 
+Overlapping join keys
+~~~~~~~~~~~~~~~~~~~~~
+
+In many cases the columns being joined between two tables or table expressions
+have the same name. Consider this example:
+
+.. ipython:: python
+
+   t4 = ibis.table([('key1', 'string'),
+                    ('key2', 'string'),
+                    ('key3', 'string'),
+                    ('value1', 'double')], 'table4')
+
+   t5 = ibis.table([('key1', 'string'),
+                    ('key2', 'string'),
+                    ('key3', 'string'),
+                    ('value2', 'double')], 'table5')
+
+In these case, we can specify a list of common join keys:
+
+.. ipython:: python
+
+   joined = t4.join(t5, ['key1', 'key2', 'key3'])
+   expr = joined[t4, t5.value2]
+   print(ibis.impala.compile(expr))
+
+You can mix the overlapping key names with other expressions:
+
+.. ipython:: python
+
+   joined = t4.join(t5, ['key1', 'key2',
+                         t4.key3.left(4) == t4.key3.left(4)])
+   expr = joined[t4, t5.value2]
+   print(ibis.impala.compile(expr))
+
 Non-equality join predicates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
