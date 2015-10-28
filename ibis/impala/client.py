@@ -794,7 +794,8 @@ class ImpalaClient(SQLClient):
         return self._wrap_new_table(name, database, persist)
 
     def delimited_file(self, hdfs_dir, schema, name=None, database=None,
-                       delimiter=',', escapechar=None, lineterminator=None,
+                       delimiter=',',
+                       na_rep=None, escapechar=None, lineterminator=None,
                        external=True, persist=False):
         """
         Interpret delimited text files (CSV / TSV / etc.) as an Ibis table. See
@@ -835,6 +836,7 @@ class ImpalaClient(SQLClient):
                                         database=database,
                                         delimiter=delimiter,
                                         external=external,
+                                        na_rep=na_rep,
                                         lineterminator=lineterminator,
                                         escapechar=escapechar)
         self._execute(stmt)
@@ -1609,6 +1611,7 @@ class DataFrameWriter(object):
         self.csv_dir = None
 
     def write_csv(self):
+        import csv
         import tempfile
 
         temp_hdfs_dir = pjoin(options.impala.temp_hdfs_path,
@@ -1618,7 +1621,11 @@ class DataFrameWriter(object):
             if options.verbose:
                 log('Writing DataFrame to temporary file')
 
-            self.df.to_csv(f, header=False, index=False, na_rep='\\N')
+            self.df.to_csv(f, header=False, index=False,
+                           sep=',',
+                           quoting=csv.QUOTE_NONE,
+                           escapechar='\\',
+                           na_rep='#NULL')
             f.seek(0)
 
             # Write the file to HDFS
@@ -1650,6 +1657,9 @@ class DataFrameWriter(object):
         return self.client.delimited_file(self.csv_dir, schema,
                                           name=temp_delimited_name,
                                           database=database,
+                                          delimiter=',',
+                                          na_rep='#NULL',
+                                          escapechar='\\\\',
                                           external=True,
                                           persist=False)
 

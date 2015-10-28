@@ -137,7 +137,7 @@ class TestPandasSchemaInference(unittest.TestCase):
         assert inferred == expected
 
 
-functional_alltypes_with_nulls = pd.DataFrame({
+exhaustive_df = pd.DataFrame({
     'bigint_col': np.int64([0, 10, 20, 30, 40, 50, 60, 70, 80, 90]),
     'bool_col': np.bool_([True, False, True, False, True, None,
                           True, False, True, False]),
@@ -156,7 +156,8 @@ functional_alltypes_with_nulls = pd.DataFrame({
     'int_col': np.int32([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
     'month': [11, 11, 11, 11, 2, 11, 11, 11, 11, 11],
     'smallint_col': np.int16([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    'string_col': ['0', '1', None, '3', '4', '5', '6', '7', '8', '9'],
+    'string_col': ['0', '1', None, 'double , \nwhammy', '4', '5',
+                   '6', '7', '8', '9'],
     'timestamp_col': [pd.Timestamp('2010-11-01 00:00:00'),
                       None,
                       pd.Timestamp('2010-11-01 00:02:00.100000'),
@@ -204,8 +205,8 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         df = table.execute()
         assert_frame_equal(df, self.alltypes)
 
-    def test_round_trip_non_int_missing_data(self):
-        self._check_roundtrip(functional_alltypes_with_nulls)
+    def test_round_trip_exhaustive(self):
+        self._check_roundtrip(exhaustive_df)
 
     def _check_roundtrip(self, df):
         writer = DataFrameWriter(self.con, df)
