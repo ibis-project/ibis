@@ -1662,6 +1662,8 @@ class DataFrameWriter(object):
     def cleanup(self):
         for path in self.temp_hdfs_dirs:
             self.hdfs.rmdir(path)
+        self.temp_hdfs_dirs = []
+        self.csv_dir = None
 
 
 def pandas_to_ibis_schema(frame):

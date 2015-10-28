@@ -182,7 +182,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         self._check_roundtrip(self.alltypes)
 
     def test_writer_cleanup_deletes_hdfs_dir(self):
-        writer = DataFrameWriter(self.alltypes)
+        writer = DataFrameWriter(self.con, self.alltypes)
         writer.write_csv()
 
         path = writer.csv_dir
