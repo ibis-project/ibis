@@ -106,7 +106,12 @@ class ImpalaConnection(object):
             cursor.execute(query, async=async)
         except:
             cursor.release()
-            self.error('Exception caused by {0}'.format(query))
+
+            import traceback
+            buf = six.BytesIO()
+            traceback.print_exc(file=buf)
+            self.error('Exception caused by {0}: {1}'.format(query,
+                                                             buf.getvalue()))
             raise
 
         return cursor
@@ -745,36 +750,6 @@ class ImpalaClient(SQLClient):
 
         self._execute(statement)
 
-    def pandas(self, df, name=None, database=None, persist=False):
-        """
-        Create a (possibly temp) parquet table from a local pandas DataFrame.
-        """
-        name, database = self._get_concrete_table_path(name, database,
-                                                       persist=persist)
-        qualified_name = self._fully_qualified_name(name, database)
-
-        # write df to a temp CSV file on HDFS
-        temp_csv_hdfs_dir = pjoin(options.impala.temp_hdfs_path, util.guid())
-        buf = six.BytesIO()
-        df.to_csv(buf, header=False, index=False, na_rep='\\N')
-        self.hdfs.put(pjoin(temp_csv_hdfs_dir, '0.csv'), buf)
-
-        # define a temporary table using delimited data
-        schema = pandas_to_ibis_schema(df)
-        table = self.delimited_file(
-            temp_csv_hdfs_dir, schema,
-            name='ibis_tmp_pandas_{0}'.format(util.guid()), database=database,
-            external=True, persist=False)
-
-        # CTAS into Parquet
-        self.create_table(name, expr=table, database=database,
-                          format='parquet', force=False)
-
-        # cleanup
-        self.hdfs.delete(temp_csv_hdfs_dir, recursive=True)
-
-        return self._wrap_new_table(qualified_name, persist)
-
     def avro_file(self, hdfs_dir, avro_schema, name=None, database=None,
                   external=True, persist=False):
         """
@@ -798,12 +773,11 @@ class ImpalaClient(SQLClient):
         name, database = self._get_concrete_table_path(name, database,
                                                        persist=persist)
 
-        qualified_name = self._fully_qualified_name(name, database)
         stmt = ddl.CreateTableAvro(name, hdfs_dir, avro_schema,
                                    database=database,
                                    external=external)
         self._execute(stmt)
-        return self._wrap_new_table(qualified_name, persist)
+        return self._wrap_new_table(name, database, persist)
 
     def delimited_file(self, hdfs_dir, schema, name=None, database=None,
                        delimiter=',', escapechar=None, lineterminator=None,
@@ -843,8 +817,6 @@ class ImpalaClient(SQLClient):
         name, database = self._get_concrete_table_path(name, database,
                                                        persist=persist)
 
-        qualified_name = self._fully_qualified_name(name, database)
-
         stmt = ddl.CreateTableDelimited(name, hdfs_dir, schema,
                                         database=database,
                                         delimiter=delimiter,
@@ -852,7 +824,7 @@ class ImpalaClient(SQLClient):
                                         lineterminator=lineterminator,
                                         escapechar=escapechar)
         self._execute(stmt)
-        return self._wrap_new_table(qualified_name, persist)
+        return self._wrap_new_table(name, database, persist)
 
     def parquet_file(self, hdfs_dir, schema=None, name=None, database=None,
                      external=True, like_file=None, like_table=None,
@@ -904,8 +876,6 @@ class ImpalaClient(SQLClient):
             file_name = self.hdfs._find_any_file(hdfs_dir)
             like_file = pjoin(hdfs_dir, file_name)
 
-        qualified_name = self._fully_qualified_name(name, database)
-
         stmt = ddl.CreateTableParquet(name, hdfs_dir,
                                       schema=schema,
                                       database=database,
@@ -914,7 +884,7 @@ class ImpalaClient(SQLClient):
                                       external=external,
                                       can_exist=False)
         self._execute(stmt)
-        return self._wrap_new_table(qualified_name, persist)
+        return self._wrap_new_table(name, database, persist)
 
     def _get_concrete_table_path(self, name, database, persist=False):
         if not persist:
@@ -936,7 +906,9 @@ class ImpalaClient(SQLClient):
         if not self.exists_database(name):
             self.create_database(name, path=path, force=True)
 
-    def _wrap_new_table(self, qualified_name, persist):
+    def _wrap_new_table(self, name, database, persist):
+        qualified_name = self._fully_qualified_name(name, database)
+
         if persist:
             t = self.table(qualified_name)
         else:
@@ -1546,6 +1518,10 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
             pass
 
 
+# ----------------------------------------------------------------------
+# pandas integration
+
+
 def pandas_col_to_ibis_type(col):
     import pandas.core.common as pdcom
     import ibis.expr.datatypes as dt
@@ -1600,6 +1576,71 @@ def pandas_col_to_ibis_type(col):
 
     raise com.IbisTypeError("Column {0} is dtype {1}"
                             .format(col.name, dty))
+
+
+class DataFrameWriter(object):
+
+    """
+    Interface class for writing pandas objects to Impala tables
+
+    Class takes ownership of any data written to HDFS
+    """
+    def __init__(self, client, df):
+        self.client = client
+        self.hdfs = client.hdfs
+
+        self.df = df
+
+        self.temp_hdfs_dirs = []
+        self.csv_dir = None
+
+    def write_csv(self):
+        import tempfile
+
+        temp_hdfs_dir = pjoin(options.impala.temp_hdfs_path,
+                              'pandas_{0}'.format(util.guid()))
+        with tempfile.NamedTemporaryFile() as f:
+            # Write the DataFrame to the temporary file path
+            self.df.to_csv(f, header=False, index=False, na_rep='\\N')
+            f.seek(0)
+
+            # Write the file to HDFS
+            hdfs_path = pjoin(temp_hdfs_dir, '0.csv')
+            self.hdfs.put(hdfs_path, f)
+
+            # Keep track of the temporary HDFS file
+            self.temp_hdfs_dirs.append(temp_hdfs_dir)
+
+            self.csv_dir = temp_hdfs_dir
+
+        return temp_hdfs_dir
+
+    def get_schema(self):
+        # define a temporary table using delimited data
+        return pandas_to_ibis_schema(self.df)
+
+    def delimited_table(self, name=None, database=None):
+        if self.csv_dir is None:
+            self.write_csv()
+
+        temp_delimited_name = 'ibis_tmp_pandas_{0}'.format(util.guid())
+        schema = self.get_schema()
+
+        return self.client.delimited_file(self.csv_dir, schema,
+                                          name=temp_delimited_name,
+                                          database=database,
+                                          external=True,
+                                          persist=False)
+
+    def __del__(self):
+        try:
+            self.cleanup()
+        except com.IbisError:
+            pass
+
+    def cleanup(self):
+        for path in self.temp_hdfs_dirs:
+            self.hdfs.rmdir(path)
 
 
 def pandas_to_ibis_schema(frame):
