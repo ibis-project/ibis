@@ -156,7 +156,7 @@ exhaustive_df = pd.DataFrame({
     'int_col': np.int32([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
     'month': [11, 11, 11, 11, 2, 11, 11, 11, 11, 11],
     'smallint_col': np.int16([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    'string_col': ['0', '1', None, 'double , \nwhammy', '4', '5',
+    'string_col': ['0', '1', None, 'double , whammy', '4', '5',
                    '6', '7', '8', '9'],
     'timestamp_col': [pd.Timestamp('2010-11-01 00:00:00'),
                       None,
@@ -204,6 +204,32 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         table = self.con.table(tname, database=self.tmp_db)
         df = table.execute()
         assert_frame_equal(df, self.alltypes)
+
+    def test_insert(self):
+        schema = pandas_to_ibis_schema(exhaustive_df)
+
+        table_name = 'tmp_pandas_{0}'.format(util.guid())
+        self.con.create_table(table_name, database=self.tmp_db,
+                              schema=schema)
+        self.temp_tables.append(table_name)
+
+        self.con.insert(table_name, exhaustive_df.iloc[:4],
+                        database=self.tmp_db)
+        self.con.insert(table_name, exhaustive_df.iloc[4:],
+                        database=self.tmp_db)
+
+        table = self.con.table(table_name, database=self.tmp_db)
+
+        result = (table.execute()
+                  .sort_index(by='tinyint_col')
+                  .reset_index(drop=True))
+        assert_frame_equal(result, exhaustive_df)
+
+    def test_insert_partition(self):
+        # overwrite
+
+        # no overwrite
+        pass
 
     def test_round_trip_exhaustive(self):
         self._check_roundtrip(exhaustive_df)

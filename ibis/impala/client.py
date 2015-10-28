@@ -956,7 +956,7 @@ class ImpalaClient(SQLClient):
         """
         pass
 
-    def insert(self, table_name, expr, database=None, overwrite=False,
+    def insert(self, table_name, obj, database=None, overwrite=False,
                validate=True):
         """
         Insert into existing table
@@ -964,7 +964,7 @@ class ImpalaClient(SQLClient):
         Parameters
         ----------
         table_name : string
-        expr : TableExpr
+        obj : TableExpr or pandas DataFrame
         database : string, default None
         overwrite : boolean, default False
           If True, will replace existing contents of table
@@ -979,6 +979,11 @@ class ImpalaClient(SQLClient):
         # Completely overwrite contents
         con.insert('my_table', table_expr, overwrite=True)
         """
+        if isinstance(obj, pd.DataFrame):
+            writer, expr = self._write_dataframe(obj)
+        else:
+            expr = obj
+
         if validate:
             existing_schema = self.get_schema(table_name, database=database)
             insert_schema = expr.schema()
