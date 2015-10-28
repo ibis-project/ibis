@@ -20,6 +20,7 @@ import time
 import weakref
 
 import hdfs
+import pandas as pd
 
 import ibis.common as com
 
@@ -33,8 +34,8 @@ from ibis.impala.compat import impyla, ImpylaError, HS2Error
 from ibis.impala.compiler import build_ast
 from ibis.sql.compiler import DDL
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.util as util
 
 
@@ -42,6 +43,11 @@ if six.PY2:
     import Queue as queue
 else:
     import queue
+
+
+def log(msg):
+    if options.verbose:
+        (options.verbose_log or to_stdout)(msg)
 
 
 class ImpalaDatabase(Database):
@@ -117,8 +123,7 @@ class ImpalaConnection(object):
         return cursor
 
     def log(self, msg):
-        if options.verbose:
-            (options.verbose_log or to_stdout)(msg)
+        log(msg)
 
     def error(self, msg):
         self.log(msg)
@@ -686,7 +691,7 @@ class ImpalaClient(SQLClient):
                                  must_exist=not force)
         self._execute(statement)
 
-    def create_table(self, table_name, expr=None, schema=None, database=None,
+    def create_table(self, table_name, obj=None, schema=None, database=None,
                      format='parquet', force=False, external=False,
                      path=None, partition=None, like_parquet=None):
         """
@@ -695,7 +700,7 @@ class ImpalaClient(SQLClient):
         Parameters
         ----------
         table_name : string
-        expr : TableExpr, optional
+        obj : TableExpr or pandas.DataFrame, optional
           If passed, creates table from select statement results
         schema : ibis.Schema, optional
           Mutually exclusive with expr, creates an empty table with a
@@ -722,8 +727,12 @@ class ImpalaClient(SQLClient):
         if like_parquet is not None:
             raise NotImplementedError
 
-        if expr is not None:
-            ast = self._build_ast(expr)
+        if obj is not None:
+            if isinstance(obj, pd.DataFrame):
+                writer, to_insert = self._write_dataframe(obj)
+            else:
+                to_insert = obj
+            ast = self._build_ast(to_insert)
             select = ast.queries[0]
 
             if partition is not None:
@@ -749,6 +758,11 @@ class ImpalaClient(SQLClient):
             raise com.IbisError('Must pass expr or schema')
 
         self._execute(statement)
+
+    def _write_dataframe(self, df):
+        writer = DataFrameWriter(self, df)
+        writer.write_csv()
+        return writer, writer.delimited_table()
 
     def avro_file(self, hdfs_dir, avro_schema, name=None, database=None,
                   external=True, persist=False):
@@ -1601,11 +1615,18 @@ class DataFrameWriter(object):
                               'pandas_{0}'.format(util.guid()))
         with tempfile.NamedTemporaryFile() as f:
             # Write the DataFrame to the temporary file path
+            if options.verbose:
+                log('Writing DataFrame to temporary file')
+
             self.df.to_csv(f, header=False, index=False, na_rep='\\N')
             f.seek(0)
 
             # Write the file to HDFS
             hdfs_path = pjoin(temp_hdfs_dir, '0.csv')
+
+            if options.verbose:
+                log('Writing CSV to HDFS: {0}'.format(hdfs_path))
+
             self.hdfs.put(hdfs_path, f)
 
             # Keep track of the temporary HDFS file

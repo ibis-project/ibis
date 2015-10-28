@@ -18,13 +18,14 @@ import pytest
 from pandas.util.testing import assert_frame_equal
 import pandas as pd
 
-import ibis
-import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
 from ibis.compat import unittest
 from ibis.common import IbisTypeError
 from ibis.impala.client import pandas_to_ibis_schema, DataFrameWriter
 from ibis.impala.tests.common import ImpalaE2E
+import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
+import ibis.util as util
+import ibis
 
 
 class TestPandasTypeInterop(unittest.TestCase):
@@ -170,44 +171,50 @@ functional_alltypes_with_nulls = pd.DataFrame({
     'year': [2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010]})
 
 
-class TestPandasRoundTrip(ImpalaE2E, unittest.TestCase):
+class TestPandasInterop(ImpalaE2E, unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super(TestPandasInterop, cls).setUpClass()
+        cls.alltypes = cls.alltypes.execute()
 
     def test_alltypes_roundtrip(self):
-        df1 = self.alltypes.execute()
+        self._check_roundtrip(self.alltypes)
 
-        writer = DataFrameWriter(self.con, df1)
+    def test_writer_cleanup_deletes_hdfs_dir(self):
+        writer = DataFrameWriter(self.alltypes)
+        writer.write_csv()
+
+        path = writer.csv_dir
+        assert self.con.hdfs.exists(path)
+
+        writer.cleanup()
+        assert not self.con.hdfs.exists(path)
+
+        # noop
+        writer.cleanup()
+        assert not self.con.hdfs.exists(path)
+
+    def test_create_table_from_dataframe(self):
+        tname = 'tmp_pandas_{0}'.format(util.guid())
+        self.con.create_table(tname, self.alltypes, database=self.tmp_db)
+        self.temp_tables.append(tname)
+
+        table = self.con.table(tname, database=self.tmp_db)
+        df = table.execute()
+        assert_frame_equal(df, self.alltypes)
+
+    def test_round_trip_non_int_missing_data(self):
+        self._check_roundtrip(functional_alltypes_with_nulls)
+
+    def _check_roundtrip(self, df):
+        writer = DataFrameWriter(self.con, df)
         writer.write_csv()
 
         table = writer.delimited_table()
         df2 = table.execute()
 
-        assert_frame_equal(df1, df2)
-
-    def test_round_trip_non_int_missing_data(self):
-        pytest.skip('WM: hangs -- will investigate later')
-        df1 = functional_alltypes_with_nulls
-        table = self.con.pandas(df1, 'fawn', database=self.tmp_db)
-        df2 = table.execute()
-        assert (df1.columns == df2.columns).all()
-        assert (df1.dtypes == df2.dtypes).all()
-        # bool/int cols should be exact
-        assert (df1.bool_col == df2.bool_col).all()
-        assert (df1.tinyint_col == df2.tinyint_col).all()
-        assert (df1.smallint_col == df2.smallint_col).all()
-        assert (df1.int_col == df2.int_col).all()
-        assert (df1.bigint_col == df2.bigint_col).all()
-        assert (df1.month == df2.month).all()
-        assert (df1.year == df2.year).all()
-        # string cols should be equal everywhere except for the NULLs
-        assert ((df1.string_col == df2.string_col) ==
-                [1, 1, 0, 1, 1, 1, 1, 1, 1, 1]).all()
-        assert ((df1.date_string_col == df2.date_string_col) ==
-                [1, 0, 1, 1, 1, 1, 1, 1, 1, 1]).all()
-        # float cols within tolerance, and NULLs should be False
-        assert ((df1.double_col - df2.double_col < 1e-9) ==
-                [1, 1, 0, 1, 1, 1, 1, 1, 1, 1]).all()
-        assert ((df1.float_col - df2.float_col < 1e-9) ==
-                [0, 1, 1, 1, 1, 1, 1, 1, 1, 1]).all()
+        assert_frame_equal(df2, df)
 
     def test_round_trip_missing_type_promotion(self):
         pytest.skip('unfinished')
