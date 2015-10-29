@@ -862,7 +862,7 @@ def _adapt_expr(expr):
             return column_handler
 
         if isinstance(op, ops.TableColumn):
-            table_expr = op.table
+            table_expr = op.table[[op.name]]
             result_handler = _get_column(op.name)
         else:
             # Something more complicated.

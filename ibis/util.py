@@ -15,6 +15,8 @@
 import types
 import ibis.compat as compat
 
+from ibis.config import options
+
 
 def guid():
     try:
@@ -163,3 +165,12 @@ def deprecate(f, message):
         print(message)
         return f(*args, **kwargs)
     return g
+
+
+def to_stdout(x):
+    print(x)
+
+
+def log(msg):
+    if options.verbose:
+        (options.verbose_log or to_stdout)(msg)

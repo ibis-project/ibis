@@ -20,6 +20,7 @@ import time
 import weakref
 
 import hdfs
+import numpy as np
 import pandas as pd
 
 import ibis.common as com
@@ -32,6 +33,7 @@ from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
 from ibis.impala.compiler import build_ast
+from ibis.util import log
 from ibis.sql.compiler import DDL
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -43,11 +45,6 @@ if six.PY2:
     import Queue as queue
 else:
     import queue
-
-
-def log(msg):
-    if options.verbose:
-        (options.verbose_log or to_stdout)(msg)
 
 
 class ImpalaDatabase(Database):
@@ -257,14 +254,78 @@ class ImpalaCursor(object):
     def cancel(self):
         self.cursor.cancel_operation()
 
-    def fetchall(self):
-        return self.cursor.fetchall()
+    def fetchall(self, columnar=False):
+        return self.cursor.fetchall(columnar=columnar)
 
 
 class ImpalaQuery(Query):
 
+    def _fetch(self, cursor):
+        batches = cursor.fetchall(columnar=True)
+        names = [x[0] for x in cursor.description]
+        return _column_batches_to_dataframe(names, batches)
+
     def _db_type_to_dtype(self, db_type):
         return _HS2_TTypeId_to_dtype[db_type]
+
+
+def _column_batches_to_dataframe(names, batches):
+    from ibis.compat import zip as czip
+    cols = {}
+    for name, chunks in czip(names, czip(*[b.columns for b in batches])):
+        cols[name] = _chunks_to_pandas_array(chunks)
+    return pd.DataFrame(cols, columns=names)
+
+
+def _chunks_to_pandas_array(chunks):
+    total_length = 0
+    have_nulls = False
+    for c in chunks:
+        total_length += len(c)
+        have_nulls = have_nulls or c.nulls.any()
+
+    type_ = chunks[0].data_type
+    numpy_type = _HS2_TTypeId_to_dtype[type_]
+
+    def fill_nonnull(target, chunks):
+        pos = 0
+        for c in chunks:
+            target[pos: pos + len(c)] = c.values
+            pos += len(c.values)
+
+    def fill(target, chunks, na_rep):
+        pos = 0
+        for c in chunks:
+            nulls = c.nulls.copy()
+            nulls.bytereverse()
+            bits = np.frombuffer(nulls.tobytes(), dtype='u1')
+            mask = np.unpackbits(bits).view(np.bool_)
+
+            k = len(c)
+
+            dest = target[pos: pos + k]
+            dest[:] = c.values
+            dest[mask[:k]] = na_rep
+
+            pos += k
+
+    if have_nulls:
+        if numpy_type in ('bool', 'datetime64[ns]'):
+            target = np.empty(total_length, dtype='O')
+            na_rep = np.nan
+        elif numpy_type.startswith('int'):
+            target = np.empty(total_length, dtype='f8')
+            na_rep = np.nan
+        else:
+            target = np.empty(total_length, dtype=numpy_type)
+            na_rep = np.nan
+
+        fill(target, chunks, na_rep)
+    else:
+        target = np.empty(total_length, dtype=numpy_type)
+        fill_nonnull(target, chunks)
+
+    return target
 
 
 class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
@@ -345,7 +406,7 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
         be returned by the synchronous query API
         """
         self._wait_execute()
-        result = self._fetch_from_cursor(self._cursor)
+        result = self._fetch(self._cursor)
         return self._wrap_result(result)
 
 
@@ -358,11 +419,11 @@ _HS2_TTypeId_to_dtype = {
     'TIMESTAMP': 'datetime64[ns]',
     'FLOAT': 'float32',
     'DOUBLE': 'float64',
-    'STRING': 'string',
+    'STRING': 'object',
     'DECIMAL': 'object',
-    'BINARY': 'string',
-    'VARCHAR': 'string',
-    'CHAR': 'string'
+    'BINARY': 'object',
+    'VARCHAR': 'object',
+    'CHAR': 'object'
 }
 
 
@@ -430,8 +491,7 @@ class ImpalaClient(SQLClient):
         self.con.disable_codegen(disabled)
 
     def log(self, msg):
-        if options.verbose:
-            (options.verbose_log or to_stdout)(msg)
+        log(msg)
 
     def _fully_qualified_name(self, name, database):
         if ddl._is_fully_qualified(name):
@@ -760,6 +820,7 @@ class ImpalaClient(SQLClient):
         self._execute(statement)
 
     def _write_dataframe(self, df):
+        from ibis.impala.pandas_interop import DataFrameWriter
         writer = DataFrameWriter(self, df)
         writer.write_csv()
         return writer, writer.delimited_table()
@@ -1392,10 +1453,6 @@ class ImpalaClient(SQLClient):
         return names, adapted_types
 
 
-def to_stdout(x):
-    print(x)
-
-
 # ----------------------------------------------------------------------
 # ORM-ish usability layer
 
@@ -1537,158 +1594,6 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
         except ImpylaError:
             # database might have been dropped
             pass
-
-
-# ----------------------------------------------------------------------
-# pandas integration
-
-
-def pandas_col_to_ibis_type(col):
-    import pandas.core.common as pdcom
-    import ibis.expr.datatypes as dt
-    import numpy as np
-    dty = col.dtype
-
-    # datetime types
-    if pdcom.is_datetime64_dtype(dty):
-        if pdcom.is_datetime64_ns_dtype(dty):
-            return 'timestamp'
-        else:
-            raise com.IbisTypeError("Column {0} has dtype {1}, which is "
-                                    "datetime64-like but does "
-                                    "not use nanosecond units"
-                                    .format(col.name, dty))
-    if pdcom.is_timedelta64_dtype(dty):
-        print("Warning: encoding a timedelta64 as an int64")
-        return 'int64'
-
-    if pdcom.is_categorical_dtype(dty):
-        return dt.Category(len(col.cat.categories))
-
-    if pdcom.is_bool_dtype(dty):
-        return 'boolean'
-
-    # simple numerical types
-    if issubclass(dty.type, np.int8):
-        return 'int8'
-    if issubclass(dty.type, np.int16):
-        return 'int16'
-    if issubclass(dty.type, np.int32):
-        return 'int32'
-    if issubclass(dty.type, np.int64):
-        return 'int64'
-    if issubclass(dty.type, np.float32):
-        return 'float'
-    if issubclass(dty.type, np.float64):
-        return 'double'
-    if issubclass(dty.type, np.uint8):
-        return 'int16'
-    if issubclass(dty.type, np.uint16):
-        return 'int32'
-    if issubclass(dty.type, np.uint32):
-        return 'int64'
-    if issubclass(dty.type, np.uint64):
-        raise com.IbisTypeError("Column {0} is an unsigned int64"
-                                .format(col.name))
-
-    if pdcom.is_object_dtype(dty):
-        # TODO: overly broad?
-        return 'string'
-
-    raise com.IbisTypeError("Column {0} is dtype {1}"
-                            .format(col.name, dty))
-
-
-class DataFrameWriter(object):
-
-    """
-    Interface class for writing pandas objects to Impala tables
-
-    Class takes ownership of any data written to HDFS
-    """
-    def __init__(self, client, df):
-        self.client = client
-        self.hdfs = client.hdfs
-
-        self.df = df
-
-        self.temp_hdfs_dirs = []
-        self.csv_dir = None
-
-    def write_csv(self):
-        import csv
-        import tempfile
-
-        temp_hdfs_dir = pjoin(options.impala.temp_hdfs_path,
-                              'pandas_{0}'.format(util.guid()))
-        with tempfile.NamedTemporaryFile() as f:
-            # Write the DataFrame to the temporary file path
-            if options.verbose:
-                log('Writing DataFrame to temporary file')
-
-            self.df.to_csv(f, header=False, index=False,
-                           sep=',',
-                           quoting=csv.QUOTE_NONE,
-                           escapechar='\\',
-                           na_rep='#NULL')
-            f.seek(0)
-
-            # Write the file to HDFS
-            hdfs_path = pjoin(temp_hdfs_dir, '0.csv')
-
-            if options.verbose:
-                log('Writing CSV to HDFS: {0}'.format(hdfs_path))
-
-            self.hdfs.put(hdfs_path, f)
-
-            # Keep track of the temporary HDFS file
-            self.temp_hdfs_dirs.append(temp_hdfs_dir)
-
-            self.csv_dir = temp_hdfs_dir
-
-        return temp_hdfs_dir
-
-    def get_schema(self):
-        # define a temporary table using delimited data
-        return pandas_to_ibis_schema(self.df)
-
-    def delimited_table(self, name=None, database=None):
-        if self.csv_dir is None:
-            self.write_csv()
-
-        temp_delimited_name = 'ibis_tmp_pandas_{0}'.format(util.guid())
-        schema = self.get_schema()
-
-        return self.client.delimited_file(self.csv_dir, schema,
-                                          name=temp_delimited_name,
-                                          database=database,
-                                          delimiter=',',
-                                          na_rep='#NULL',
-                                          escapechar='\\\\',
-                                          external=True,
-                                          persist=False)
-
-    def __del__(self):
-        try:
-            self.cleanup()
-        except com.IbisError:
-            pass
-
-    def cleanup(self):
-        for path in self.temp_hdfs_dirs:
-            self.hdfs.rmdir(path)
-        self.temp_hdfs_dirs = []
-        self.csv_dir = None
-
-
-def pandas_to_ibis_schema(frame):
-    from ibis.expr.api import schema
-    # no analog for decimal in pandas
-    pairs = []
-    for col_name in frame:
-        ibis_type = pandas_col_to_ibis_type(frame[col_name])
-        pairs.append((col_name, ibis_type))
-    return schema(pairs)
 
 
 def _validate_compatible(from_schema, to_schema):

@@ -20,7 +20,7 @@ import pandas as pd
 
 from ibis.compat import unittest
 from ibis.common import IbisTypeError
-from ibis.impala.client import pandas_to_ibis_schema, DataFrameWriter
+from ibis.impala.pandas_interop import pandas_to_ibis_schema, DataFrameWriter
 from ibis.impala.tests.common import ImpalaE2E
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
@@ -142,8 +142,8 @@ exhaustive_df = pd.DataFrame({
                            dtype='i8'),
     'bool_col': np.array([True, False, True, False, True, None,
                           True, False, True, False], dtype=np.bool_),
-    # 'bool_obj_col': np.array([True, False, np.nan, False, True, np.nan,
-    #                           True, np.nan, True, False], dtype=np.object_),
+    'bool_obj_col': np.array([True, False, np.nan, False, True, np.nan,
+                              True, np.nan, True, False], dtype=np.object_),
     'date_string_col': ['11/01/10', None, '11/01/10', '11/01/10',
                         '11/01/10', '11/01/10', '11/01/10', '11/01/10',
                         '11/01/10', '11/01/10'],

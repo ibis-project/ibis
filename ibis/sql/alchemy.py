@@ -486,7 +486,7 @@ compiles = AlchemyExprTranslator.compiles
 
 class AlchemyQuery(Query):
 
-    def _fetch_from_cursor(self, cursor):
+    def _fetch(self, cursor):
         # No guarantees that the DBAPI cursor has data types
         import pandas as pd
         proxy = cursor.proxy
