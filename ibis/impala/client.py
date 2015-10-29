@@ -1309,6 +1309,23 @@ class ImpalaClient(SQLClient):
 
         self._execute(stmt)
 
+    def invalidate_metadata(self, name=None, database=None):
+        """
+        Issue INVALIDATE METADATA command, optionally only applying to a
+        particular table. See Impala documentation.
+
+        Parameters
+        ----------
+        name : string, optional
+          Table name. Can be fully qualified (with database)
+        database : string, optional
+        """
+        stmt = 'INVALIDATE METADATA'
+        if name is not None:
+            qualified_name = self._fully_qualified_name(name, database)
+            stmt = '{0} {1}'.format(stmt, qualified_name)
+        self._execute(stmt)
+
     def _adapt_types(self, descr):
         names = []
         adapted_types = []

@@ -44,6 +44,7 @@ if PY3:
     def dict_values(x):
         return list(x.values())
     from decimal import Decimal
+    import unittest.mock as mock
 else:
     import cPickle
 
@@ -60,5 +61,7 @@ else:
 
     def dict_values(x):
         return x.values()
+
+    import mock
 
 integer_types = six.integer_types + (np.integer,)
