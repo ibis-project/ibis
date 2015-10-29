@@ -1286,6 +1286,29 @@ class ImpalaClient(SQLClient):
         """
         return len(self.list_udas(database=database, like=name)) > 0
 
+    def compute_stats(self, name, database=None, incremental=False,
+                      async=False):
+        """
+        Issue COMPUTE STATS command for a given table
+
+        Parameters
+        ----------
+        name : string
+          Can be fully qualified (with database name)
+        database : string, optional
+        incremental : boolean, default False
+          If True, issue COMPUTE INCREMENTAL STATS
+        """
+        # TODO async + cancellation
+        if async:
+            raise NotImplementedError
+
+        qualified_name = self._fully_qualified_name(name, database)
+        maybe_inc = 'INCREMENTAL ' if incremental else ''
+        stmt = 'COMPUTE {0}STATS {1}'.format(maybe_inc, qualified_name)
+
+        self._execute(stmt)
+
     def _adapt_types(self, descr):
         names = []
         adapted_types = []
@@ -1352,13 +1375,16 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
     def _database(self):
         return self._match_name()[0]
 
-    def compute_stats(self):
+    def compute_stats(self, incremental=False, async=False):
         """
         Invoke Impala COMPUTE STATS command to compute column, table, and
-        partition statistics. No return value.
+        partition statistics.
+
+        See also ImpalaClient.compute_stats
         """
-        stmt = 'COMPUTE STATS {0}'.format(self._qualified_name)
-        self._client._execute(stmt)
+        return self._client.compute_stats(self._qualified_name,
+                                          incremental=incremental,
+                                          async=async)
 
     def drop(self):
         """

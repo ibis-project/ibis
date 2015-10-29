@@ -564,7 +564,12 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
             t.insert(to_insert.limit(10))
 
     def test_compute_stats(self):
-        self.con.table('functional_alltypes').compute_stats()
+        t = self.con.table('functional_alltypes')
+
+        t.compute_stats()
+        t.compute_stats(incremental=True)
+
+        self.con.compute_stats('functional_alltypes')
 
     def test_drop_table_or_view(self):
         t = self.db.functional_alltypes
