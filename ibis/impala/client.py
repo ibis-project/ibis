@@ -1286,6 +1286,103 @@ class ImpalaClient(SQLClient):
         """
         return len(self.list_udas(database=database, like=name)) > 0
 
+    def compute_stats(self, name, database=None, incremental=False,
+                      async=False):
+        """
+        Issue COMPUTE STATS command for a given table
+
+        Parameters
+        ----------
+        name : string
+          Can be fully qualified (with database name)
+        database : string, optional
+        incremental : boolean, default False
+          If True, issue COMPUTE INCREMENTAL STATS
+        """
+        # TODO async + cancellation
+        if async:
+            raise NotImplementedError
+
+        maybe_inc = 'INCREMENTAL ' if incremental else ''
+        cmd = 'COMPUTE {0}STATS'.format(maybe_inc)
+
+        stmt = self._table_command(cmd, name, database=database)
+        self._execute(stmt)
+
+    def invalidate_metadata(self, name=None, database=None):
+        """
+        Issue INVALIDATE METADATA command, optionally only applying to a
+        particular table. See Impala documentation.
+
+        Parameters
+        ----------
+        name : string, optional
+          Table name. Can be fully qualified (with database)
+        database : string, optional
+        """
+        stmt = 'INVALIDATE METADATA'
+        if name is not None:
+            stmt = self._table_command(stmt, name, database=database)
+        self._execute(stmt)
+
+    def refresh(self, name, database=None):
+        """
+        Reload HDFS block location metadata for a table, for example after
+        ingesting data as part of an ETL pipeline. Related to INVALIDATE
+        METADATA. See Impala documentation for more.
+
+        Parameters
+        ----------
+        name : string
+          Table name. Can be fully qualified (with database)
+        database : string, optional
+        """
+        # TODO(wesm): can this statement be cancelled?
+        stmt = self._table_command('REFRESH', name, database=database)
+        self._execute(stmt)
+
+    def describe_formatted(self, name, database=None):
+        """
+        Retrieve results of DESCRIBE FORMATTED command. See Impala
+        documentation for more.
+
+        Parameters
+        ----------
+        name : string
+          Table name. Can be fully qualified (with database)
+        database : string, optional
+        """
+        stmt = self._table_command('DESCRIBE FORMATTED',
+                                   name, database=database)
+        query = ImpalaQuery(self, stmt)
+        result = query.execute()
+
+        # Leave formatting to pandas
+        for c in result.columns:
+            result[c] = result[c].str.strip()
+
+        return result
+
+    def show_files(self, name, database=None):
+        """
+        Retrieve results of SHOW FILES command for a table. See Impala
+        documentation for more.
+
+        Parameters
+        ----------
+        name : string
+          Table name. Can be fully qualified (with database)
+        database : string, optional
+        """
+        stmt = self._table_command('SHOW FILES IN',
+                                   name, database=database)
+        query = ImpalaQuery(self, stmt)
+        return query.execute()
+
+    def _table_command(self, cmd, name, database=None):
+        qualified_name = self._fully_qualified_name(name, database)
+        return '{0} {1}'.format(cmd, qualified_name)
+
     def _adapt_types(self, descr):
         names = []
         adapted_types = []
@@ -1352,13 +1449,34 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
     def _database(self):
         return self._match_name()[0]
 
-    def compute_stats(self):
+    def compute_stats(self, incremental=False, async=False):
         """
         Invoke Impala COMPUTE STATS command to compute column, table, and
-        partition statistics. No return value.
+        partition statistics.
+
+        See also ImpalaClient.compute_stats
         """
-        stmt = 'COMPUTE STATS {0}'.format(self._qualified_name)
-        self._client._execute(stmt)
+        return self._client.compute_stats(self._qualified_name,
+                                          incremental=incremental,
+                                          async=async)
+
+    def invalidate_metadata(self):
+        self._client.invalidate_metadata(self._qualified_name)
+
+    def refresh(self):
+        self._client.refresh(self._qualified_name)
+
+    def describe_formatted(self):
+        """
+        Return results of DESCRIBE FORMATTED statement
+        """
+        return self._client.describe_formatted(self._qualified_name)
+
+    def show_files(self):
+        """
+        Return results of SHOW FILES statement
+        """
+        return self._client.show_files(self._qualified_name)
 
     def drop(self):
         """
