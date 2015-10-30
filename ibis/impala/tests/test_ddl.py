@@ -16,7 +16,7 @@ from copy import copy
 import gc
 
 import ibis
-
+import pandas as pd
 
 from posixpath import join as pjoin
 import pytest
@@ -25,7 +25,7 @@ from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest, mock
 from ibis.impala import ddl
 from ibis.impala.compat import HS2Error, ImpylaError
-from ibis.impala.client import build_ast, ImpalaClient
+from ibis.impala.client import build_ast
 from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E, connect_test
 from ibis.tests.util import assert_equal
 import ibis.common as com
@@ -572,20 +572,51 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
         self.con.compute_stats('functional_alltypes')
 
     def test_invalidate_metadata(self):
-        with mock.patch.object(self.con, '_execute',
-                               wraps=self.con._execute) as ex_mock:
+        with self._patch_execute() as ex_mock:
             self.con.invalidate_metadata()
             ex_mock.assert_called_with('INVALIDATE METADATA')
 
         self.con.invalidate_metadata('functional_alltypes')
-        with mock.patch.object(self.con, '_execute',
-                               wraps=self.con._execute) as ex_mock:
+        t = self.con.table('functional_alltypes')
+        t.invalidate_metadata()
+
+        with self._patch_execute() as ex_mock:
             self.con.invalidate_metadata('functional_alltypes',
                                          database=self.test_data_db)
             ex_mock.assert_called_with('INVALIDATE METADATA '
                                        '{0}.`{1}`'
                                        .format(self.test_data_db,
                                                'functional_alltypes'))
+
+    def test_refresh(self):
+        tname = 'functional_alltypes'
+        with self._patch_execute() as ex_mock:
+            self.con.refresh(tname)
+            ex_cmd = 'REFRESH {0}.`{1}`'.format(self.test_data_db,
+                                                tname)
+            ex_mock.assert_called_with(ex_cmd)
+
+        t = self.con.table(tname)
+        with self._patch_execute() as ex_mock:
+            t.refresh()
+            ex_cmd = 'REFRESH {0}.`{1}`'.format(self.test_data_db,
+                                                tname)
+            ex_mock.assert_called_with(ex_cmd)
+
+    def _patch_execute(self):
+        return mock.patch.object(self.con, '_execute',
+                                 wraps=self.con._execute)
+
+    def test_describe_formatted(self):
+        t = self.con.table('functional_alltypes')
+        with self._patch_execute() as ex_mock:
+            desc = t.describe_formatted()
+            ex_mock.assert_called_with('DESCRIBE FORMATTED '
+                                       '{0}.`{1}`'
+                                       .format(self.test_data_db,
+                                               'functional_alltypes'),
+                                       results=True)
+            assert isinstance(desc, pd.DataFrame)
 
     def test_drop_table_or_view(self):
         t = self.db.functional_alltypes

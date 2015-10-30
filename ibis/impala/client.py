@@ -1303,10 +1303,10 @@ class ImpalaClient(SQLClient):
         if async:
             raise NotImplementedError
 
-        qualified_name = self._fully_qualified_name(name, database)
         maybe_inc = 'INCREMENTAL ' if incremental else ''
-        stmt = 'COMPUTE {0}STATS {1}'.format(maybe_inc, qualified_name)
+        cmd = 'COMPUTE {0}STATS'.format(maybe_inc)
 
+        stmt = self._table_command(cmd, name, database=database)
         self._execute(stmt)
 
     def invalidate_metadata(self, name=None, database=None):
@@ -1322,9 +1322,50 @@ class ImpalaClient(SQLClient):
         """
         stmt = 'INVALIDATE METADATA'
         if name is not None:
-            qualified_name = self._fully_qualified_name(name, database)
-            stmt = '{0} {1}'.format(stmt, qualified_name)
+            stmt = self._table_command(stmt, name, database=database)
         self._execute(stmt)
+
+    def refresh(self, name, database=None):
+        """
+        Reload HDFS block location metadata for a table, for example after
+        ingesting data as part of an ETL pipeline. Related to INVALIDATE
+        METADATA. See Impala documentation for more.
+
+        Parameters
+        ----------
+        name : string
+          Table name. Can be fully qualified (with database)
+        database : string, optional
+        """
+        # TODO(wesm): can this statement be cancelled?
+        stmt = self._table_command('REFRESH', name, database=database)
+        self._execute(stmt)
+
+    def describe_formatted(self, name, database=None):
+        """
+        Retrieve results of DESCRIBE FORMATTED command. See Impala
+        documentation for more.
+
+        Parameters
+        ----------
+        name : string, optional
+          Table name. Can be fully qualified (with database)
+        database : string, optional
+        """
+        stmt = self._table_command('DESCRIBE FORMATTED',
+                                   name, database=database)
+        query = ImpalaQuery(self, stmt)
+        result = query.execute()
+
+        # Leave formatting to pandas
+        for c in result.columns:
+            result[c] = result[c].str.strip()
+
+        return result
+
+    def _table_command(self, cmd, name, database=None):
+        qualified_name = self._fully_qualified_name(name, database)
+        return '{0} {1}'.format(cmd, qualified_name)
 
     def _adapt_types(self, descr):
         names = []
@@ -1402,6 +1443,18 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         return self._client.compute_stats(self._qualified_name,
                                           incremental=incremental,
                                           async=async)
+
+    def invalidate_metadata(self):
+        self._client.invalidate_metadata(self._qualified_name)
+
+    def refresh(self):
+        self._client.refresh(self._qualified_name)
+
+    def describe_formatted(self):
+        """
+        Return results of DESCRIBE FORMATTED statement
+        """
+        return self._client.describe_formatted(self._qualified_name)
 
     def drop(self):
         """
