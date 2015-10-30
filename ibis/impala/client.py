@@ -255,7 +255,10 @@ class ImpalaCursor(object):
         self.cursor.cancel_operation()
 
     def fetchall(self, columnar=False):
-        return self.cursor.fetchall(columnar=columnar)
+        if columnar:
+            return self.cursor.fetchcolumnar()
+        else:
+            return self.cursor.fetchall()
 
 
 class ImpalaQuery(Query):
