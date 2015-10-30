@@ -45,6 +45,7 @@ if PY3:
         return list(x.values())
     from decimal import Decimal
     import unittest.mock as mock
+    range = __builtin__.range
 else:
     import cPickle
 
@@ -63,5 +64,6 @@ else:
         return x.values()
 
     import mock
+    range = xrange
 
 integer_types = six.integer_types + (np.integer,)

@@ -13,50 +13,19 @@
 # limitations under the License.
 
 import numpy as np
-import pandas as pd
 import pytest
 
-import ibis
-import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
+from pandas.util.testing import assert_frame_equal
+import pandas as pd
+
 from ibis.compat import unittest
 from ibis.common import IbisTypeError
-from ibis.impala.client import pandas_to_ibis_schema
+from ibis.impala.pandas_interop import pandas_to_ibis_schema, DataFrameWriter
 from ibis.impala.tests.common import ImpalaE2E
-
-
-functional_alltypes_with_nulls = pd.DataFrame({
-    'bigint_col': np.int64([0, 10, 20, 30, 40, 50, 60, 70, 80, 90]),
-    'bool_col': np.bool_([True, False, True, False, True, None,
-                          True, False, True, False]),
-    'date_string_col': ['11/01/10', None, '11/01/10', '11/01/10',
-                        '11/01/10', '11/01/10', '11/01/10', '11/01/10',
-                        '11/01/10', '11/01/10'],
-    'double_col': np.float64([0.0, 10.1, None, 30.299999999999997,
-                              40.399999999999999, 50.5, 60.599999999999994,
-                              70.700000000000003, 80.799999999999997,
-                              90.899999999999991]),
-    'float_col': np.float32([None, 1.1000000238418579, 2.2000000476837158,
-                             3.2999999523162842, 4.4000000953674316, 5.5,
-                             6.5999999046325684, 7.6999998092651367,
-                             8.8000001907348633,
-                             9.8999996185302734]),
-    'int_col': np.int32([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    'month': [11, 11, 11, 11, 2, 11, 11, 11, 11, 11],
-    'smallint_col': np.int16([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    'string_col': ['0', '1', None, '3', '4', '5', '6', '7', '8', '9'],
-    'timestamp_col': [pd.Timestamp('2010-11-01 00:00:00'),
-                      None,
-                      pd.Timestamp('2010-11-01 00:02:00.100000'),
-                      pd.Timestamp('2010-11-01 00:03:00.300000'),
-                      pd.Timestamp('2010-11-01 00:04:00.600000'),
-                      pd.Timestamp('2010-11-01 00:05:00.100000'),
-                      pd.Timestamp('2010-11-01 00:06:00.150000'),
-                      pd.Timestamp('2010-11-01 00:07:00.210000'),
-                      pd.Timestamp('2010-11-01 00:08:00.280000'),
-                      pd.Timestamp('2010-11-01 00:09:00.360000')],
-    'tinyint_col': np.int8([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
-    'year': [2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010, 2010]})
+import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
+import ibis.util as util
+import ibis
 
 
 class TestPandasTypeInterop(unittest.TestCase):
@@ -168,42 +137,114 @@ class TestPandasSchemaInference(unittest.TestCase):
         assert inferred == expected
 
 
-class TestPandasRoundTrip(ImpalaE2E, unittest.TestCase):
+exhaustive_df = pd.DataFrame({
+    'bigint_col': np.array([0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+                           dtype='i8'),
+    'bool_col': np.array([True, False, True, False, True, None,
+                          True, False, True, False], dtype=np.bool_),
+    'bool_obj_col': np.array([True, False, np.nan, False, True, np.nan,
+                              True, np.nan, True, False], dtype=np.object_),
+    'date_string_col': ['11/01/10', None, '11/01/10', '11/01/10',
+                        '11/01/10', '11/01/10', '11/01/10', '11/01/10',
+                        '11/01/10', '11/01/10'],
+    'double_col': np.array([0.0, 10.1, np.nan, 30.299999999999997,
+                            40.399999999999999, 50.5, 60.599999999999994,
+                            70.700000000000003, 80.799999999999997,
+                            90.899999999999991], dtype=np.float64),
+    'float_col': np.array([np.nan, 1.1000000238418579, 2.2000000476837158,
+                           3.2999999523162842, 4.4000000953674316, 5.5,
+                           6.5999999046325684, 7.6999998092651367,
+                           8.8000001907348633,
+                           9.8999996185302734], dtype='f4'),
+    'int_col': np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype='i4'),
+    'month': [11, 11, 11, 11, 2, 11, 11, 11, 11, 11],
+    'smallint_col': np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype='i2'),
+    'string_col': ['0', '1', None, 'double , whammy', '4', '5',
+                   '6', '7', '8', '9'],
+    'timestamp_col': [pd.Timestamp('2010-11-01 00:00:00'),
+                      None,
+                      pd.Timestamp('2010-11-01 00:02:00.100000'),
+                      pd.Timestamp('2010-11-01 00:03:00.300000'),
+                      pd.Timestamp('2010-11-01 00:04:00.600000'),
+                      pd.Timestamp('2010-11-01 00:05:00.100000'),
+                      pd.Timestamp('2010-11-01 00:06:00.150000'),
+                      pd.Timestamp('2010-11-01 00:07:00.210000'),
+                      pd.Timestamp('2010-11-01 00:08:00.280000'),
+                      pd.Timestamp('2010-11-01 00:09:00.360000')],
+    'tinyint_col': np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype='i1'),
+    'year': [2010, 2010, 2010, 2010, 2010, 2009, 2009, 2009, 2009, 2009]})
 
-    def test_round_trip(self):
-        pytest.skip('fails')
 
-        df1 = self.alltypes.execute()
-        df2 = self.con.pandas(df1, 'bamboo', database=self.tmp_db).execute()
-        assert (df1.columns == df2.columns).all()
-        assert (df1.dtypes == df2.dtypes).all()
-        assert (df1 == df2).all().all()
+class TestPandasInterop(ImpalaE2E, unittest.TestCase):
 
-    def test_round_trip_non_int_missing_data(self):
-        pytest.skip('WM: hangs -- will investigate later')
-        df1 = functional_alltypes_with_nulls
-        table = self.con.pandas(df1, 'fawn', database=self.tmp_db)
+    @classmethod
+    def setUpClass(cls):
+        super(TestPandasInterop, cls).setUpClass()
+        cls.alltypes = cls.alltypes.execute()
+
+    def test_alltypes_roundtrip(self):
+        self._check_roundtrip(self.alltypes)
+
+    def test_writer_cleanup_deletes_hdfs_dir(self):
+        writer = DataFrameWriter(self.con, self.alltypes)
+        writer.write_csv()
+
+        path = writer.csv_dir
+        assert self.con.hdfs.exists(path)
+
+        writer.cleanup()
+        assert not self.con.hdfs.exists(path)
+
+        # noop
+        writer.cleanup()
+        assert not self.con.hdfs.exists(path)
+
+    def test_create_table_from_dataframe(self):
+        tname = 'tmp_pandas_{0}'.format(util.guid())
+        self.con.create_table(tname, self.alltypes, database=self.tmp_db)
+        self.temp_tables.append(tname)
+
+        table = self.con.table(tname, database=self.tmp_db)
+        df = table.execute()
+        assert_frame_equal(df, self.alltypes)
+
+    def test_insert(self):
+        schema = pandas_to_ibis_schema(exhaustive_df)
+
+        table_name = 'tmp_pandas_{0}'.format(util.guid())
+        self.con.create_table(table_name, database=self.tmp_db,
+                              schema=schema)
+        self.temp_tables.append(table_name)
+
+        self.con.insert(table_name, exhaustive_df.iloc[:4],
+                        database=self.tmp_db)
+        self.con.insert(table_name, exhaustive_df.iloc[4:],
+                        database=self.tmp_db)
+
+        table = self.con.table(table_name, database=self.tmp_db)
+
+        result = (table.execute()
+                  .sort_index(by='tinyint_col')
+                  .reset_index(drop=True))
+        assert_frame_equal(result, exhaustive_df)
+
+    def test_insert_partition(self):
+        # overwrite
+
+        # no overwrite
+        pass
+
+    def test_round_trip_exhaustive(self):
+        self._check_roundtrip(exhaustive_df)
+
+    def _check_roundtrip(self, df):
+        writer = DataFrameWriter(self.con, df)
+        writer.write_csv()
+
+        table = writer.delimited_table()
         df2 = table.execute()
-        assert (df1.columns == df2.columns).all()
-        assert (df1.dtypes == df2.dtypes).all()
-        # bool/int cols should be exact
-        assert (df1.bool_col == df2.bool_col).all()
-        assert (df1.tinyint_col == df2.tinyint_col).all()
-        assert (df1.smallint_col == df2.smallint_col).all()
-        assert (df1.int_col == df2.int_col).all()
-        assert (df1.bigint_col == df2.bigint_col).all()
-        assert (df1.month == df2.month).all()
-        assert (df1.year == df2.year).all()
-        # string cols should be equal everywhere except for the NULLs
-        assert ((df1.string_col == df2.string_col) ==
-                [1, 1, 0, 1, 1, 1, 1, 1, 1, 1]).all()
-        assert ((df1.date_string_col == df2.date_string_col) ==
-                [1, 0, 1, 1, 1, 1, 1, 1, 1, 1]).all()
-        # float cols within tolerance, and NULLs should be False
-        assert ((df1.double_col - df2.double_col < 1e-9) ==
-                [1, 1, 0, 1, 1, 1, 1, 1, 1, 1]).all()
-        assert ((df1.float_col - df2.float_col < 1e-9) ==
-                [0, 1, 1, 1, 1, 1, 1, 1, 1, 1]).all()
+
+        assert_frame_equal(df2, df)
 
     def test_round_trip_missing_type_promotion(self):
         pytest.skip('unfinished')

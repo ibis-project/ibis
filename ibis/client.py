@@ -47,7 +47,7 @@ class Query(object):
     def execute(self):
         # synchronous by default
         with self.client._execute(self.compiled_ddl, results=True) as cur:
-            result = self._fetch_from_cursor(cur)
+            result = self._fetch(cur)
 
         return self._wrap_result(result)
 
@@ -56,7 +56,7 @@ class Query(object):
             result = self.result_wrapper(result)
         return result
 
-    def _fetch_from_cursor(self, cursor):
+    def _fetch(self, cursor):
         import pandas as pd
         rows = cursor.fetchall()
         # TODO(wesm): please evaluate/reimpl to optimize for perf/memory

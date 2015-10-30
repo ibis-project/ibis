@@ -462,7 +462,7 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
         expr = self.alltypes
         table_name = _random_table_name()
 
-        self.con.create_table(table_name, expr=expr, path=tmp_path,
+        self.con.create_table(table_name, obj=expr, path=tmp_path,
                               database=self.test_data_db)
         self.temp_tables.append('.'.join([self.test_data_db, table_name]))
         assert self.hdfs.exists(tmp_path)
@@ -477,7 +477,7 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
         expr = self.alltypes.limit(50)
 
         table_name = util.guid()
-        self.con.create_table(table_name, expr=expr)
+        self.con.create_table(table_name, obj=expr)
         self.temp_tables.append(table_name)
 
         try:

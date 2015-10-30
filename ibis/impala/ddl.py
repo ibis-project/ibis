@@ -253,11 +253,12 @@ class NoFormat(object):
 class DelimitedFormat(object):
 
     def __init__(self, path, delimiter=None, escapechar=None,
-                 lineterminator=None):
+                 na_rep=None, lineterminator=None):
         self.path = path
         self.delimiter = delimiter
         self.escapechar = escapechar
         self.lineterminator = lineterminator
+        self.na_rep = na_rep
 
     def to_ddl(self):
         buf = StringIO()
@@ -275,6 +276,10 @@ class DelimitedFormat(object):
                       .format(self.lineterminator))
 
         buf.write("\nLOCATION '{0}'".format(self.path))
+
+        if self.na_rep is not None:
+            buf.write("\nTBLPROPERTIES('serialization.null.format'='{0}')"
+                      .format(self.na_rep))
 
         return buf.getvalue()
 
@@ -304,10 +309,11 @@ class CreateTableDelimited(CreateTableWithSchema):
 
     def __init__(self, table_name, path, schema,
                  delimiter=None, escapechar=None, lineterminator=None,
-                 external=True, **kwargs):
+                 na_rep=None, external=True, **kwargs):
         table_format = DelimitedFormat(path, delimiter=delimiter,
                                        escapechar=escapechar,
-                                       lineterminator=lineterminator)
+                                       lineterminator=lineterminator,
+                                       na_rep=na_rep)
         CreateTableWithSchema.__init__(self, table_name, schema,
                                        table_format, external=external,
                                        **kwargs)

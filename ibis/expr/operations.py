@@ -151,7 +151,6 @@ class TypeOf(ValueOp):
     output_type = rules.shape_like_arg(0, 'string')
 
 
-
 class Negate(UnaryOp):
 
     input_type = [number]

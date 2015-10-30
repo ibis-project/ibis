@@ -14,8 +14,14 @@
 
 from pytest import skip
 
+import ibis
 
 groups = ['hdfs', 'impala', 'madlib', 'sqlite']
+
+
+def pytest_configure(config):
+    if config.getvalue('iverbose'):
+        ibis.options.verbose = True
 
 
 def pytest_addoption(parser):
@@ -35,6 +41,9 @@ def pytest_addoption(parser):
                      help='Skip tests marked udf')
     parser.addoption('--skip-superuser', action='store_true', default=False,
                      help='Skip tests marked superuser')
+
+    parser.addoption('--iverbose', action='store_true', default=False,
+                     help='Set Ibis to verbose')
 
 
 def pytest_runtest_setup(item):
