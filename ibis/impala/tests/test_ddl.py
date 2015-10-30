@@ -618,6 +618,17 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
                                        results=True)
             assert isinstance(desc, pd.DataFrame)
 
+    def test_show_files(self):
+        t = self.con.table('functional_alltypes')
+        qualified_name = '{0}.`{1}`'.format(self.test_data_db,
+                                            'functional_alltypes')
+        with self._patch_execute() as ex_mock:
+            desc = t.show_files()
+            ex_mock.assert_called_with('SHOW FILES IN {0}'
+                                       .format(qualified_name),
+                                       results=True)
+            assert isinstance(desc, pd.DataFrame)
+
     def test_drop_table_or_view(self):
         t = self.db.functional_alltypes
 

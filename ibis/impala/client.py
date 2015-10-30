@@ -1348,7 +1348,7 @@ class ImpalaClient(SQLClient):
 
         Parameters
         ----------
-        name : string, optional
+        name : string
           Table name. Can be fully qualified (with database)
         database : string, optional
         """
@@ -1362,6 +1362,22 @@ class ImpalaClient(SQLClient):
             result[c] = result[c].str.strip()
 
         return result
+
+    def show_files(self, name, database=None):
+        """
+        Retrieve results of SHOW FILES command for a table. See Impala
+        documentation for more.
+
+        Parameters
+        ----------
+        name : string
+          Table name. Can be fully qualified (with database)
+        database : string, optional
+        """
+        stmt = self._table_command('SHOW FILES IN',
+                                   name, database=database)
+        query = ImpalaQuery(self, stmt)
+        return query.execute()
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
@@ -1455,6 +1471,12 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         Return results of DESCRIBE FORMATTED statement
         """
         return self._client.describe_formatted(self._qualified_name)
+
+    def show_files(self):
+        """
+        Return results of SHOW FILES statement
+        """
+        return self._client.show_files(self._qualified_name)
 
     def drop(self):
         """
