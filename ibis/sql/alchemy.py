@@ -31,34 +31,40 @@ import ibis
 
 
 _ibis_type_to_sqla = {
-    dt.Int8: sa.types.SmallInteger,
-    dt.Int16: sa.types.SmallInteger,
-    dt.Int32: sa.types.Integer,
-    dt.Int64: sa.types.BigInteger,
+    dt.Int8: sa.SmallInteger,
+    dt.Int16: sa.SmallInteger,
+    dt.Int32: sa.Integer,
+    dt.Int64: sa.BigInteger,
 
     # Mantissa-based
-    dt.Float: sa.types.Float(precision=24),
-    dt.Double: sa.types.Float(precision=53),
+    dt.Float: sa.Float(precision=24),
+    dt.Double: sa.Float(precision=53),
 
-    dt.Boolean: sa.types.Boolean,
+    dt.Boolean: sa.Boolean,
 
-    dt.String: sa.types.String,
+    dt.String: sa.String,
 
-    dt.Timestamp: sa.types.DateTime,
+    dt.Timestamp: sa.DateTime,
 
-    dt.Decimal: sa.types.NUMERIC,
+    dt.Decimal: sa.NUMERIC,
 }
 
 _sqla_type_mapping = {
-    sa.types.SmallInteger: dt.Int16,
-    sa.types.INTEGER: dt.Int64,
-    sa.types.BOOLEAN: dt.Boolean,
-    sa.types.BIGINT: dt.Int64,
-    sa.types.FLOAT: dt.Double,
-    sa.types.REAL: dt.Double,
+    sa.SmallInteger: dt.Int16,
+    sa.SMALLINT: dt.Int16,
+    sa.Integer: dt.Int32,
+    sa.INTEGER: dt.Int32,
+    sa.BigInteger: dt.Int64,
+    sa.BIGINT: dt.Int64,
+    sa.Boolean: dt.Boolean,
+    sa.BOOLEAN: dt.Boolean,
+    sa.FLOAT: dt.Double,
+    sa.REAL: dt.Float,
+    sa.VARCHAR: dt.String,
+    sa.Float: dt.Double,
 
     sa.types.TEXT: dt.String,
-    sa.types.NullType: dt.String,
+    sa.types.NullType: dt.Null,
     sa.types.Text: dt.String,
 }
 
@@ -84,8 +90,15 @@ def schema_from_table(table):
                 ibis_class = _sqla_type_to_ibis[c.type]
             elif type_class in _sqla_type_to_ibis:
                 ibis_class = _sqla_type_to_ibis[type_class]
+            elif isinstance(c.type, sa.DateTime):
+                ibis_class = dt.Timestamp()
             else:
-                raise NotImplementedError(c.type)
+                for k, v in _sqla_type_to_ibis.items():
+                    if isinstance(c.type, type(k)):
+                        ibis_class = v
+                        break
+                else:
+                    raise NotImplementedError(c.type)
             t = ibis_class(c.nullable)
 
         types.append(t)
