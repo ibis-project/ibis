@@ -3,12 +3,11 @@ package:
   version: "0.11.2"
 
 source:
-  fn: impyla-0.11.2.tar.gz
-  url: https://pypi.python.org/packages/source/i/impyla/impyla-0.11.2.tar.gz
-  md5: 350385753a8eecf1408e419586df0e9d
+  git_url: https://github.com/cloudera/impyla
 
 build:
-  preserve_egg_dir: True
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  string: py{{ environ.get('PY_VER').replace('.', '') }}_{{ environ.get('GIT_BUILD_STR', 'GIT_STUB') }}
 
 requirements:
   build:
