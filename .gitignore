@@ -50,3 +50,4 @@ docs/source/generated-notebooks
 testing/udf/CMakeCache.txt
 testing/udf/CMakeFiles/
 testing/udf/Makefile
+.cache/

@@ -23,8 +23,8 @@ import six
 from six import BytesIO, StringIO, string_types as py_string
 
 
-PY26 = sys.version_info[0] == 2 and sys.version_info[1] == 6
-PY3 = (sys.version_info[0] >= 3)
+PY26 = sys.version_info[:2] == (2, 6)
+PY3 = sys.version_info[0] == 3
 PY2 = sys.version_info[0] == 2
 
 
@@ -45,7 +45,7 @@ if PY3:
         return list(x.values())
     from decimal import Decimal
     import unittest.mock as mock
-    range = __builtin__.range
+    range = range
 else:
     import cPickle
 
