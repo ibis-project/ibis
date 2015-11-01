@@ -647,38 +647,6 @@ class ImpalaClient(SQLClient):
 
         return results
 
-    def get_partition_schema(self, table_name, database=None):
-        """
-        For partitioned tables, return the schema (names and types) for the
-        partition columns
-
-        Parameters
-        ----------
-        table_name : string
-          May be fully qualified
-        database : string, default None
-
-        Returns
-        -------
-        partition_schema : ibis Schema
-        """
-        qualified_name = self._fully_qualified_name(table_name, database)
-
-        schema = self.get_schema(table_name, database=database)
-        name_to_type = dict(zip(schema.names, schema.types))
-        query = 'SHOW PARTITIONS {0}'.format(qualified_name)
-
-        result = self._execute_query(query)
-
-        partition_fields = []
-        for x in result.columns:
-            if x not in name_to_type:
-                break
-            partition_fields.append((x, name_to_type[x]))
-
-        pnames, ptypes = zip(*partition_fields)
-        return dt.Schema(pnames, ptypes)
-
     def get_schema(self, table_name, database=None):
         """
         Return a Schema object for the indicated table and database
@@ -1436,6 +1404,12 @@ class ImpalaClient(SQLClient):
         query = ImpalaQuery(self, stmt)
         return query.execute()
 
+    def list_partitions(self, name, database=None):
+        stmt = self._table_command('SHOW PARTITIONS',
+                                   name, database=database)
+        query = ImpalaQuery(self, stmt)
+        return query.execute()
+
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
         return '{0} {1}'.format(cmd, qualified_name)
@@ -1581,6 +1555,32 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         # HACK. Not sure about the best API here...
         op = self.op().change_name(statement.new_qualified_name)
         self._arg = op
+
+    def partition_schema(self):
+        """
+        For partitioned tables, return the schema (names and types) for the
+        partition columns
+
+        Returns
+        -------
+        partition_schema : ibis Schema
+        """
+        schema = self.schema()
+        name_to_type = dict(zip(schema.names, schema.types))
+
+        result = self.show_partitions()
+
+        partition_fields = []
+        for x in result.columns:
+            if x not in name_to_type:
+                break
+            partition_fields.append((x, name_to_type[x]))
+
+        pnames, ptypes = zip(*partition_fields)
+        return dt.Schema(pnames, ptypes)
+
+    def show_partitions(self):
+        return self._client.list_partitions(self._qualified_name)
 
 
 class ImpalaTemporaryTable(ops.DatabaseTable):
