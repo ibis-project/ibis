@@ -182,9 +182,11 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         super(TestPandasInterop, cls).setUpClass()
         cls.alltypes = cls.alltypes.execute()
 
+    @pytest.mark.superuser
     def test_alltypes_roundtrip(self):
         self._check_roundtrip(self.alltypes)
 
+    @pytest.mark.superuser
     def test_writer_cleanup_deletes_hdfs_dir(self):
         writer = DataFrameWriter(self.con, self.alltypes)
         writer.write_csv()
@@ -199,6 +201,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         writer.cleanup()
         assert not self.con.hdfs.exists(path)
 
+    @pytest.mark.superuser
     def test_create_table_from_dataframe(self):
         tname = 'tmp_pandas_{0}'.format(util.guid())
         self.con.create_table(tname, self.alltypes, database=self.tmp_db)
@@ -208,6 +211,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         df = table.execute()
         assert_frame_equal(df, self.alltypes)
 
+    @pytest.mark.superuser
     def test_insert(self):
         schema = pandas_to_ibis_schema(exhaustive_df)
 
@@ -228,12 +232,14 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
                   .reset_index(drop=True))
         assert_frame_equal(result, exhaustive_df)
 
+    @pytest.mark.superuser
     def test_insert_partition(self):
         # overwrite
 
         # no overwrite
         pass
 
+    @pytest.mark.superuser
     def test_round_trip_exhaustive(self):
         self._check_roundtrip(exhaustive_df)
 
@@ -245,22 +251,3 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         df2 = table.execute()
 
         assert_frame_equal(df2, df)
-
-    def test_round_trip_missing_type_promotion(self):
-        pytest.skip('unfinished')
-
-        # prepare Impala table with missing ints
-        # TODO: switch to self.con.raw_sql once #412 is fixed
-        create_query = ('CREATE TABLE {0}.missing_ints '
-                        '  (tinyint_col TINYINT, bigint_col BIGINT) '
-                        'STORED AS PARQUET'.format(self.tmp_db))
-        insert_query = ('INSERT INTO {0}.missing_ints '
-                        'VALUES (NULL, 3), (-5, NULL), (19, 444444)'.format(
-                            self.tmp_db))
-        self.con.con.cursor.execute(create_query)
-        self.con.con.cursor.execute(insert_query)
-
-        table = self.con.table('missing_ints', database=self.tmp_db)
-        df = table.execute()  # noqa  # REMOVE LATER
-
-        # WHAT NOW?
