@@ -14,6 +14,7 @@
 
 
 from posixpath import join as pjoin
+import os
 
 import pandas.core.common as pdcom
 import pandas as pd
@@ -125,11 +126,14 @@ class DataFrameWriter(object):
 
     def write_csv(self):
         import csv
-        import tempfile
 
         temp_hdfs_dir = pjoin(options.impala.temp_hdfs_path,
                               'pandas_{0}'.format(util.guid()))
-        with tempfile.NamedTemporaryFile() as f:
+
+        tmp_path = 'tmp_{0}.csv'.format(util.guid())
+        f = open(tmp_path, 'w+')
+
+        try:
             # Write the DataFrame to the temporary file path
             if options.verbose:
                 log('Writing DataFrame to temporary file')
@@ -153,6 +157,12 @@ class DataFrameWriter(object):
             self.temp_hdfs_dirs.append(temp_hdfs_dir)
 
             self.csv_dir = temp_hdfs_dir
+        finally:
+            f.close()
+            try:
+                os.remove(tmp_path)
+            except os.error:
+                pass
 
         return temp_hdfs_dir
 

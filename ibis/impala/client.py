@@ -111,7 +111,7 @@ class ImpalaConnection(object):
             cursor.release()
 
             import traceback
-            buf = six.BytesIO()
+            buf = six.StringIO()
             traceback.print_exc(file=buf)
             self.error('Exception caused by {0}: {1}'.format(query,
                                                              buf.getvalue()))
