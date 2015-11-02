@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ibis
+import pytest
 
 from pandas.util.testing import assert_frame_equal
 import pandas as pd
@@ -21,7 +21,7 @@ from ibis.compat import unittest
 from ibis.impala.compat import ImpylaError
 from ibis.impala.tests.common import ImpalaE2E
 from ibis.tests.util import assert_equal
-
+import ibis
 import ibis.util as util
 
 
@@ -37,9 +37,9 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         df['id'] = df.index.values
 
         cls.df = df
-        db = cls.con.database(cls.tmp_db)
+        cls.db = cls.con.database(cls.tmp_db)
         cls.pd_name = util.guid()
-        db.create_table(cls.pd_name, df)
+        cls.db.create_table(cls.pd_name, df)
 
     def test_create_table_with_partition_column(self):
         schema = ibis.schema([('year', 'int32'),
@@ -66,7 +66,26 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         assert_equal(partition_schema, expected)
 
     def test_create_partitioned_separate_schema(self):
-        pass
+        schema = ibis.schema([('day', 'int8'),
+                              ('value', 'double')])
+        part_schema = ibis.schema([('year', 'int32'),
+                                   ('month', 'int8')])
+
+        name = util.guid()
+        self.con.create_table(name, schema=schema,
+                              partition=part_schema)
+        self.temp_tables.append(name)
+
+        # the partition column get put at the end of the table
+        ex_schema = ibis.schema([('day', 'int8'),
+                                 ('value', 'double'),
+                                 ('year', 'int32'),
+                                 ('month', 'int8')])
+        table_schema = self.con.get_schema(name)
+        assert_equal(table_schema, ex_schema)
+
+        partition_schema = self.con.table(name).partition_schema()
+        assert_equal(partition_schema, part_schema)
 
     def test_unpartitioned_table_get_schema(self):
         tname = 'functional_alltypes'
@@ -74,18 +93,20 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
             self.con.table(tname).partition_schema()
 
     def test_insert_select_partitioned_table(self):
+        pytest.skip('not yet implemented')
+
         df = self.df
 
-        db = self.con.database(self.tmp_db)
-        unpart_t = db.table(self.pd_name)
+        unpart_t = self.db.table(self.pd_name)
 
         part_name = util.guid()
 
         part_keys = ['year', 'month']
-        self.con.create_table(part_name, schema=unpart_t.schema(),
-                              partition=part_keys)
+        self.db.create_table(part_name,
+                             schema=unpart_t.schema(),
+                             partition=part_keys)
 
-        part_t = db.table(part_name)
+        part_t = self.db.table(part_name)
         unique_keys = df[part_keys].drop_duplicates()
 
         for year, month in unique_keys.itertuples(index=False):
@@ -98,6 +119,9 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         assert_frame_equal(result, df)
 
     def test_insert_overwrite_partition(self):
+        pass
+
+    def test_dynamic_partitioning(self):
         pass
 
     def test_add_partition_with_location(self):

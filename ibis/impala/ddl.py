@@ -209,7 +209,7 @@ class CreateTableWithSchema(CreateTable):
         CreateTable.__init__(self, table_name, **kwargs)
 
     def compile(self):
-        from ibis.expr.api import schema
+        from ibis.expr.api import Schema
 
         buf = StringIO()
         buf.write(self._create_line())
@@ -219,18 +219,25 @@ class CreateTableWithSchema(CreateTable):
             buf.write('{0}'.format(formatted))
 
         if self.partition is not None:
-            modified_schema = []
-            partition_schema = []
-            for name, dtype in zip(self.schema.names, self.schema.types):
-                if name in self.partition:
-                    partition_schema.append((name, dtype))
-                else:
-                    modified_schema.append((name, dtype))
+            main_schema = self.schema
+            part_schema = self.partition
+            if not isinstance(part_schema, Schema):
+                part_schema = Schema(
+                    part_schema,
+                    [self.schema[name] for name in part_schema])
+
+            to_delete = []
+            for name in self.partition:
+                if name in self.schema:
+                    to_delete.append(name)
+
+            if len(to_delete):
+                main_schema = main_schema.delete(to_delete)
 
             buf.write('\n')
-            _push_schema(schema(modified_schema))
+            _push_schema(main_schema)
             buf.write('\nPARTITIONED BY ')
-            _push_schema(schema(partition_schema))
+            _push_schema(part_schema)
         else:
             buf.write('\n')
             _push_schema(self.schema)
@@ -339,10 +346,12 @@ class CreateTableAvro(CreateTable):
 class InsertSelect(ImpalaDDL):
 
     def __init__(self, table_name, select_expr, database=None,
-                 overwrite=False):
+                 partition=None, overwrite=False):
         self.table_name = table_name
         self.database = database
         self.select = select_expr
+
+        self.partition = partition
 
         self.overwrite = overwrite
 
@@ -352,9 +361,16 @@ class InsertSelect(ImpalaDDL):
         else:
             cmd = 'INSERT INTO'
 
+        if self.partition is not None:
+            partition = self._format_partition()
+
         select_query = self.select.compile()
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return'{0} {1}\n{2}'.format(cmd, scoped_name, select_query)
+        return'{0} {1}{2}\n{3}'.format(cmd, partition,
+                                       scoped_name, select_query)
+
+    def _format_partition(self):
+        pass
 
 
 class AlterTable(ImpalaDDL):

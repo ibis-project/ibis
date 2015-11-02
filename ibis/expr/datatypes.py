@@ -48,6 +48,9 @@ class Schema(object):
     def __len__(self):
         return len(self.names)
 
+    def __iter__(self):
+        return iter(self.names)
+
     def _repr(self):
         buf = StringIO()
         space = 2 + max(len(x) for x in self.names)
@@ -58,6 +61,23 @@ class Schema(object):
 
     def __contains__(self, name):
         return name in self._name_locs
+
+    def __getitem__(self, name):
+        return self.types[self._name_locs[name]]
+
+    def delete(self, names_to_delete):
+        for name in names_to_delete:
+            if name not in self:
+                raise KeyError(name)
+
+        new_names, new_types = [], []
+        for name, type_ in zip(self.names, self.types):
+            if name in names_to_delete:
+                continue
+            new_names.append(name)
+            new_types.append(type_)
+
+        return Schema(new_names, new_types)
 
     @classmethod
     def from_tuples(cls, values):
@@ -90,6 +110,9 @@ class Schema(object):
         names = self.names + schema.names
         types = self.types + schema.types
         return Schema(names, types)
+
+    def items(self):
+        return zip(self.names, self.types)
 
 
 class HasSchema(object):

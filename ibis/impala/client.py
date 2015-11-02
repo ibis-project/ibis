@@ -49,6 +49,13 @@ else:
 
 class ImpalaDatabase(Database):
 
+    def create_table(self, table_name, obj=None, **kwargs):
+        """
+        Dispatch to ImpalaClient.create_table. See docs for more
+        """
+        return self.client.create_table(table_name, obj=obj,
+                                        database=self.name, **kwargs)
+
     def list_udfs(self, like=None):
         return self.client.list_udfs(like=self._qualify_like(like),
                                      database=self.name)
@@ -769,7 +776,9 @@ class ImpalaClient(SQLClient):
             if partition is not None:
                 # Fairly certain this is currently the case
                 raise ValueError('partition not supported with '
-                                 'create-table-as-select')
+                                 'create-table-as-select. Create an '
+                                 'empty partitioned table instead '
+                                 'and insert into those partitions.')
 
             statement = ddl.CTAS(table_name, select,
                                  database=database,
@@ -988,8 +997,8 @@ class ImpalaClient(SQLClient):
         """
         pass
 
-    def insert(self, table_name, obj, database=None, overwrite=False,
-               validate=True):
+    def insert(self, table_name, obj=None, database=None, overwrite=False,
+               partition=None, values=None, validate=True):
         """
         Insert into existing table
 
@@ -1000,6 +1009,12 @@ class ImpalaClient(SQLClient):
         database : string, default None
         overwrite : boolean, default False
           If True, will replace existing contents of table
+        partition : list or dict, optional
+          For partitioned tables, indicate the partition that's being inserted
+          into, either with an ordered list of partition keys or a dict of
+          partition field name to value. For example for the partition
+          (year=2007, month=7), this can be either (2007, 7) or {'year': 2007,
+          'month': 7}.
         validate : boolean, default True
           If True, do more rigorous validation that schema of table being
           inserted is compatible with the existing table
@@ -1016,6 +1031,9 @@ class ImpalaClient(SQLClient):
         else:
             expr = obj
 
+        if values is not None:
+            raise NotImplementedError
+
         if validate:
             existing_schema = self.get_schema(table_name, database=database)
             insert_schema = expr.schema()
@@ -1026,6 +1044,7 @@ class ImpalaClient(SQLClient):
         select = ast.queries[0]
         statement = ddl.InsertSelect(table_name, select,
                                      database=database,
+                                     partition=partition,
                                      overwrite=overwrite)
         self._execute(statement)
 
