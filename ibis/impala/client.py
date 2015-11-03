@@ -1040,11 +1040,19 @@ class ImpalaClient(SQLClient):
             if not insert_schema.equals(existing_schema):
                 _validate_compatible(insert_schema, existing_schema)
 
+        if partition is not None:
+            partition_schema = (self.table(table_name, database=database)
+                                .partition_schema())
+            expr = expr.drop(partition_schema.names)
+        else:
+            partition_schema = None
+
         ast = self._build_ast(expr)
         select = ast.queries[0]
         statement = ddl.InsertSelect(table_name, select,
                                      database=database,
                                      partition=partition,
+                                     partition_schema=partition_schema,
                                      overwrite=overwrite)
         self._execute(statement)
 
@@ -1530,7 +1538,8 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         """
         self._client.drop_table_or_view(self._qualified_name)
 
-    def insert(self, expr, overwrite=False, validate=True):
+    def insert(self, obj=None, overwrite=False, partition=None,
+               values=None, validate=True):
         """
         Insert into Impala table. Wraps ImpalaClient.insert
 
@@ -1550,7 +1559,8 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         # Completely overwrite contents
         t.insert(table_expr, overwrite=True)
         """
-        self._client.insert(self._qualified_name, expr, overwrite=overwrite,
+        self._client.insert(self._qualified_name, obj=obj, overwrite=overwrite,
+                            partition=partition, values=values,
                             validate=validate)
 
     def rename(self, new_name, database=None):
@@ -1619,10 +1629,12 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
 
 
 def _validate_compatible(from_schema, to_schema):
-    if from_schema.names != to_schema.names:
+    if set(from_schema.names) != set(to_schema.names):
         raise com.IbisInputError('Schemas have different names')
 
-    for lt, rt in zip(from_schema.types, to_schema.types):
+    for name in from_schema:
+        lt = from_schema[name]
+        rt = to_schema[name]
         if not rt.can_implicit_cast(lt):
             raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
                                      .format(lt, rt))

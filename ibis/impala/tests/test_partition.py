@@ -93,8 +93,6 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
             self.con.table(tname).partition_schema()
 
     def test_insert_select_partitioned_table(self):
-        pytest.skip('not yet implemented')
-
         df = self.df
 
         unpart_t = self.db.table(self.pd_name)
@@ -109,13 +107,22 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         part_t = self.db.table(part_name)
         unique_keys = df[part_keys].drop_duplicates()
 
-        for year, month in unique_keys.itertuples(index=False):
-            select_stmt = unpart_t[unpart_t.year == year &
-                                   unpart_t.month == month]
+        for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
+            select_stmt = unpart_t[(unpart_t.year == year) &
+                                   (unpart_t.month == month)]
 
-            part_t.insert(select_stmt, partition=[year, month])
+            # test both styles of insert
+            if i:
+                part = {'year': year, 'month': month}
+            else:
+                part = [year, month]
+            part_t.insert(select_stmt, partition=part)
 
-        result = part_t.execute().sort_index(by='id')
+        result = (part_t.execute()
+                  .sort_index(by='id')
+                  .reset_index(drop=True)
+                  [df.columns])
+
         assert_frame_equal(result, df)
 
     def test_insert_overwrite_partition(self):

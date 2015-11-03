@@ -346,12 +346,15 @@ class CreateTableAvro(CreateTable):
 class InsertSelect(ImpalaDDL):
 
     def __init__(self, table_name, select_expr, database=None,
-                 partition=None, overwrite=False):
+                 partition=None,
+                 partition_schema=None,
+                 overwrite=False):
         self.table_name = table_name
         self.database = database
         self.select = select_expr
 
         self.partition = partition
+        self.partition_schema = partition_schema
 
         self.overwrite = overwrite
 
@@ -363,14 +366,30 @@ class InsertSelect(ImpalaDDL):
 
         if self.partition is not None:
             partition = self._format_partition()
+        else:
+            partition = ''
 
         select_query = self.select.compile()
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return'{0} {1}{2}\n{3}'.format(cmd, partition,
-                                       scoped_name, select_query)
+        return'{0} {1}{2}\n{3}'.format(cmd, scoped_name, partition,
+                                       select_query)
 
     def _format_partition(self):
-        pass
+        tokens = []
+        if isinstance(self.partition, dict):
+            for name in self.partition_schema:
+                if name in self.partition:
+                    tok = '{0}={1}'.format(name, self.partition[name])
+                else:
+                    # dynamic partitioning
+                    tok = name
+                tokens.append(tok)
+        else:
+            for name, value in zip(self.partition_schema, self.partition):
+                tok = '{0}={1}'.format(name, value)
+                tokens.append(tok)
+
+        return ' partition({0}) '.format(', '.join(tokens))
 
 
 class AlterTable(ImpalaDDL):

@@ -2067,10 +2067,30 @@ def _table_view(self):
     return TableExpr(_ops.SelfReference(self))
 
 
+def _table_drop(self, fields):
+    if len(fields) == 0:
+        # noop
+        return self
+
+    fields = set(fields)
+    to_project = []
+    for name in self.schema():
+        if name in fields:
+            fields.remove(name)
+        else:
+            to_project.append(name)
+
+    if len(fields) > 0:
+        raise KeyError('Fields not in table: {0!s}'.format(fields))
+
+    return self.projection(to_project)
+
+
 _table_methods = dict(
     aggregate=aggregate,
     count=_table_count,
     distinct=_table_distinct,
+    drop=_table_drop,
     info=_table_info,
     limit=_table_limit,
     set_column=_table_set_column,
