@@ -8,8 +8,8 @@ Install Ibis from PyPI with:
 
 Ibis is a Python data analysis library with a handful of related goals:
 
-- Enable data analysts to translation analytics on SQL engines to
-  Python code instead of the SQL code.
+- Enable data analysts to transition analytics on SQL engines to
+  Python code instead of SQL code.
 - Provide high level analytics APIs and workflow tools to accelerate
   productivity.
 - Provide high performance extensions for the Impala MPP query engine to enable
