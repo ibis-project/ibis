@@ -49,6 +49,13 @@ else:
 
 class ImpalaDatabase(Database):
 
+    def create_table(self, table_name, obj=None, **kwargs):
+        """
+        Dispatch to ImpalaClient.create_table. See docs for more
+        """
+        return self.client.create_table(table_name, obj=obj,
+                                        database=self.name, **kwargs)
+
     def list_udfs(self, like=None):
         return self.client.list_udfs(like=self._qualify_like(like),
                                      database=self.name)
@@ -647,38 +654,6 @@ class ImpalaClient(SQLClient):
 
         return results
 
-    def get_partition_schema(self, table_name, database=None):
-        """
-        For partitioned tables, return the schema (names and types) for the
-        partition columns
-
-        Parameters
-        ----------
-        table_name : string
-          May be fully qualified
-        database : string, default None
-
-        Returns
-        -------
-        partition_schema : ibis Schema
-        """
-        qualified_name = self._fully_qualified_name(table_name, database)
-
-        schema = self.get_schema(table_name, database=database)
-        name_to_type = dict(zip(schema.names, schema.types))
-        query = 'SHOW PARTITIONS {0}'.format(qualified_name)
-
-        result = self._execute_query(query)
-
-        partition_fields = []
-        for x in result.columns:
-            if x not in name_to_type:
-                break
-            partition_fields.append((x, name_to_type[x]))
-
-        pnames, ptypes = zip(*partition_fields)
-        return dt.Schema(pnames, ptypes)
-
     def get_schema(self, table_name, database=None):
         """
         Return a Schema object for the indicated table and database
@@ -801,7 +776,9 @@ class ImpalaClient(SQLClient):
             if partition is not None:
                 # Fairly certain this is currently the case
                 raise ValueError('partition not supported with '
-                                 'create-table-as-select')
+                                 'create-table-as-select. Create an '
+                                 'empty partitioned table instead '
+                                 'and insert into those partitions.')
 
             statement = ddl.CTAS(table_name, select,
                                  database=database,
@@ -1020,8 +997,8 @@ class ImpalaClient(SQLClient):
         """
         pass
 
-    def insert(self, table_name, obj, database=None, overwrite=False,
-               validate=True):
+    def insert(self, table_name, obj=None, database=None, overwrite=False,
+               partition=None, values=None, validate=True):
         """
         Insert into existing table
 
@@ -1032,6 +1009,12 @@ class ImpalaClient(SQLClient):
         database : string, default None
         overwrite : boolean, default False
           If True, will replace existing contents of table
+        partition : list or dict, optional
+          For partitioned tables, indicate the partition that's being inserted
+          into, either with an ordered list of partition keys or a dict of
+          partition field name to value. For example for the partition
+          (year=2007, month=7), this can be either (2007, 7) or {'year': 2007,
+          'month': 7}.
         validate : boolean, default True
           If True, do more rigorous validation that schema of table being
           inserted is compatible with the existing table
@@ -1048,16 +1031,28 @@ class ImpalaClient(SQLClient):
         else:
             expr = obj
 
+        if values is not None:
+            raise NotImplementedError
+
         if validate:
             existing_schema = self.get_schema(table_name, database=database)
             insert_schema = expr.schema()
             if not insert_schema.equals(existing_schema):
                 _validate_compatible(insert_schema, existing_schema)
 
+        if partition is not None:
+            partition_schema = (self.table(table_name, database=database)
+                                .partition_schema())
+            expr = expr.drop(partition_schema.names)
+        else:
+            partition_schema = None
+
         ast = self._build_ast(expr)
         select = ast.queries[0]
         statement = ddl.InsertSelect(table_name, select,
                                      database=database,
+                                     partition=partition,
+                                     partition_schema=partition_schema,
                                      overwrite=overwrite)
         self._execute(statement)
 
@@ -1436,6 +1431,12 @@ class ImpalaClient(SQLClient):
         query = ImpalaQuery(self, stmt)
         return query.execute()
 
+    def list_partitions(self, name, database=None):
+        stmt = self._table_command('SHOW PARTITIONS',
+                                   name, database=database)
+        query = ImpalaQuery(self, stmt)
+        return query.execute()
+
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
         return '{0} {1}'.format(cmd, qualified_name)
@@ -1537,7 +1538,8 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         """
         self._client.drop_table_or_view(self._qualified_name)
 
-    def insert(self, expr, overwrite=False, validate=True):
+    def insert(self, obj=None, overwrite=False, partition=None,
+               values=None, validate=True):
         """
         Insert into Impala table. Wraps ImpalaClient.insert
 
@@ -1557,7 +1559,8 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         # Completely overwrite contents
         t.insert(table_expr, overwrite=True)
         """
-        self._client.insert(self._qualified_name, expr, overwrite=overwrite,
+        self._client.insert(self._qualified_name, obj=obj, overwrite=overwrite,
+                            partition=partition, values=values,
                             validate=validate)
 
     def rename(self, new_name, database=None):
@@ -1582,6 +1585,32 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         op = self.op().change_name(statement.new_qualified_name)
         self._arg = op
 
+    def partition_schema(self):
+        """
+        For partitioned tables, return the schema (names and types) for the
+        partition columns
+
+        Returns
+        -------
+        partition_schema : ibis Schema
+        """
+        schema = self.schema()
+        name_to_type = dict(zip(schema.names, schema.types))
+
+        result = self.show_partitions()
+
+        partition_fields = []
+        for x in result.columns:
+            if x not in name_to_type:
+                break
+            partition_fields.append((x, name_to_type[x]))
+
+        pnames, ptypes = zip(*partition_fields)
+        return dt.Schema(pnames, ptypes)
+
+    def show_partitions(self):
+        return self._client.list_partitions(self._qualified_name)
+
 
 class ImpalaTemporaryTable(ops.DatabaseTable):
 
@@ -1600,10 +1629,12 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
 
 
 def _validate_compatible(from_schema, to_schema):
-    if from_schema.names != to_schema.names:
+    if set(from_schema.names) != set(to_schema.names):
         raise com.IbisInputError('Schemas have different names')
 
-    for lt, rt in zip(from_schema.types, to_schema.types):
+    for name in from_schema:
+        lt = from_schema[name]
+        rt = to_schema[name]
         if not rt.can_implicit_cast(lt):
             raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
                                      .format(lt, rt))
