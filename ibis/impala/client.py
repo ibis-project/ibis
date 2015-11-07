@@ -257,7 +257,7 @@ class ImpalaCursor(object):
 
     def fetchall(self, columnar=False):
         if columnar:
-            return self.cursor.fetchcolumnar()
+            return self.cursor.fetchcolumnar(convert_types=True)
         else:
             return self.cursor.fetchall()
 
