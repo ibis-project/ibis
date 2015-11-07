@@ -65,12 +65,6 @@ class ImpalaDatabase(Database):
                                      database=self.name)
 
 
-def hs2_cursor_status(cursor):
-    from impala.hiveserver2 import get_operation_status
-    handle = cursor._last_operation_handle
-    return get_operation_status(cursor.service, handle)
-
-
 class ImpalaConnection(object):
 
     """
@@ -241,7 +235,7 @@ class ImpalaCursor(object):
         cur = self.cursor
         try:
             while True:
-                state = hs2_cursor_status(cur)
+                state = cur.status()
                 if self.cursor._op_state_is_error(state):
                     raise OperationalError("Operation is in ERROR_STATE")
                 if not cur._op_state_is_executing(state):
@@ -405,7 +399,7 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
         Retrieve Impala query status
         """
         self._wait_execute()
-        return hs2_cursor_status(self._cursor)
+        return self._cursor.status()
 
     def wait(self, progress_bar=True):
         raise NotImplementedError
