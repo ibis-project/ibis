@@ -36,21 +36,10 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         df = pd.concat([df] * 10, ignore_index=True)
         df['id'] = df.index.values
 
-        # manually use superuser hdfs
-        env = IbisTestEnv()
-        superuser_hdfs = ibis.hdfs_connect(host=env.nn_host,
-                                           port=env.webhdfs_port,
-                                           auth_mechanism=env.auth_mechanism,
-                                           verify=(env.auth_mechanism
-                                                   not in ['GSSAPI', 'LDAP']),
-                                           user=env.hdfs_superuser)
-        cls.con.hdfs = superuser_hdfs
-        cls.hdfs = cls.con.hdfs
-
         cls.df = df
         cls.db = cls.con.database(cls.tmp_db)
         cls.pd_name = util.guid()
-        cls.db.create_table(cls.pd_name, df)
+        cls.db.create_table(cls.pd_name, df, path=cls._create_777_tmp_dir())
 
     @pytest.mark.superuser
     def test_create_table_with_partition_column(self):
@@ -60,7 +49,8 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                               ('value', 'double')])
 
         name = util.guid()
-        self.con.create_table(name, schema=schema, partition=['year', 'month'])
+        self.con.create_table(name, schema=schema, partition=['year', 'month'],
+                              path=self._create_777_tmp_dir())
         self.temp_tables.append(name)
 
         # the partition column get put at the end of the table
@@ -85,8 +75,8 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                                    ('month', 'int8')])
 
         name = util.guid()
-        self.con.create_table(name, schema=schema,
-                              partition=part_schema)
+        self.con.create_table(name, schema=schema, partition=part_schema,
+                              path=self._create_777_tmp_dir())
         self.temp_tables.append(name)
 
         # the partition column get put at the end of the table
@@ -117,7 +107,8 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         part_keys = ['year', 'month']
         self.db.create_table(part_name,
                              schema=unpart_t.schema(),
-                             partition=part_keys)
+                             partition=part_keys,
+                             path=self._create_777_tmp_dir())
 
         part_t = self.db.table(part_name)
         unique_keys = df[part_keys].drop_duplicates()

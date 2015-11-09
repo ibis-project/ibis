@@ -15,6 +15,7 @@
 import os
 import time
 import six
+from posixpath import join as pjoin
 
 import pytest
 
@@ -114,6 +115,21 @@ class ImpalaE2E(object):
                     raise
 
                 time.sleep(0.1)
+
+    @classmethod
+    def _create_777_tmp_dir(cls):
+        base = pjoin(cls.tmp_dir, util.guid())
+        tmp_path = pjoin(base, util.guid())
+        env = IbisTestEnv()
+        superuser_hdfs = ibis.hdfs_connect(host=env.nn_host,
+                                           port=env.webhdfs_port,
+                                           auth_mechanism=env.auth_mechanism,
+                                           verify=(env.auth_mechanism
+                                                   not in ['GSSAPI', 'LDAP']),
+                                           user=env.hdfs_superuser)
+        superuser_hdfs.mkdir(base)
+        superuser_hdfs.chmod(base, '777')
+        return tmp_path
 
     def setUp(self):
         self.temp_databases = []
