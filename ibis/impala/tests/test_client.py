@@ -178,8 +178,7 @@ LIMIT 10"""
                 self.con.table('tpch_orders', database=self.test_data_db)
 
         assert len(queries) == 1
-        expected = 'SELECT * FROM {0}.`tpch_orders` LIMIT 0'.format(
-            self.test_data_db)
+        expected = 'DESCRIBE {0}.`tpch_orders`'.format(self.test_data_db)
         assert queries[0] == expected
 
     def test_sql_query_limits(self):

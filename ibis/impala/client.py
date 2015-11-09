@@ -1118,8 +1118,7 @@ class ImpalaClient(SQLClient):
         self._execute(statement)
 
     def _get_table_schema(self, tname):
-        query = 'SELECT * FROM {0} LIMIT 0'.format(tname)
-        return self._get_schema_using_query(query)
+        return self.get_schema(tname)
 
     def _get_schema_using_query(self, query):
         with self._execute(query, results=True) as cur:
