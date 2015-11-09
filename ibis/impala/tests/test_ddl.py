@@ -623,8 +623,27 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
         qualified_name = '{0}.`{1}`'.format(self.test_data_db,
                                             'functional_alltypes')
         with self._patch_execute() as ex_mock:
-            desc = t.show_files()
+            desc = t.files()
             ex_mock.assert_called_with('SHOW FILES IN {0}'
+                                       .format(qualified_name),
+                                       results=True)
+            assert isinstance(desc, pd.DataFrame)
+
+    def test_table_column_stats(self):
+        t = self.con.table('functional_alltypes')
+
+        qualified_name = '{0}.`{1}`'.format(self.test_data_db,
+                                            'functional_alltypes')
+        with self._patch_execute() as ex_mock:
+            desc = t.stats()
+            ex_mock.assert_called_with('SHOW TABLE STATS {0}'
+                                       .format(qualified_name),
+                                       results=True)
+            assert isinstance(desc, pd.Series)
+
+        with self._patch_execute() as ex_mock:
+            desc = t.column_stats()
+            ex_mock.assert_called_with('SHOW COLUMN STATS {0}'
                                        .format(qualified_name),
                                        results=True)
             assert isinstance(desc, pd.DataFrame)

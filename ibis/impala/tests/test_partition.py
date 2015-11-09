@@ -140,6 +140,11 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
         assert_frame_equal(result, df)
 
+        parts = part_t.partitions()
+
+        # allow for the total line
+        assert len(parts) == (len(unique_keys) + 1)
+
     @pytest.mark.superuser
     def test_insert_overwrite_partition(self):
         pass

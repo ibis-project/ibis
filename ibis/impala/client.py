@@ -1425,16 +1425,40 @@ class ImpalaClient(SQLClient):
           Table name. Can be fully qualified (with database)
         database : string, optional
         """
-        stmt = self._table_command('SHOW FILES IN',
-                                   name, database=database)
-        query = ImpalaQuery(self, stmt)
-        return query.execute()
+        stmt = self._table_command('SHOW FILES IN', name, database=database)
+        return self._exec_statement(stmt)
 
     def list_partitions(self, name, database=None):
-        stmt = self._table_command('SHOW PARTITIONS',
-                                   name, database=database)
+        stmt = self._table_command('SHOW PARTITIONS', name, database=database)
+        return self._exec_statement(stmt)
+
+    def table_stats(self, name, database=None):
+        """
+        Return results of SHOW TABLE STATS for indicated table. See also
+        ImpalaTable.stats
+        """
+        stmt = self._table_command('SHOW TABLE STATS', name, database=database)
+
+        def adapt(x):
+            return x.iloc[0]
+
+        return self._exec_statement(stmt, adapt)
+
+    def column_stats(self, name, database=None):
+        """
+        Return results of SHOW COLUMN STATS for indicated table. See also
+        ImpalaTable.column_stats
+        """
+        stmt = self._table_command('SHOW COLUMN STATS', name,
+                                   database=database)
+        return self._exec_statement(stmt)
+
+    def _exec_statement(self, stmt, adapter=None):
         query = ImpalaQuery(self, stmt)
-        return query.execute()
+        result = query.execute()
+        if adapter is not None:
+            result = adapter(result)
+        return result
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
@@ -1525,7 +1549,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         """
         return self._client.describe_formatted(self._qualified_name)
 
-    def show_files(self):
+    def files(self):
         """
         Return results of SHOW FILES statement
         """
@@ -1596,7 +1620,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         schema = self.schema()
         name_to_type = dict(zip(schema.names, schema.types))
 
-        result = self.show_partitions()
+        result = self.partitions()
 
         partition_fields = []
         for x in result.columns:
@@ -1607,8 +1631,36 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         pnames, ptypes = zip(*partition_fields)
         return dt.Schema(pnames, ptypes)
 
-    def show_partitions(self):
+    def partitions(self):
+        """
+        Return a pandas.DataFrame giving information about this table's
+        partitions. Raises an exception if the table is not partitioned.
+
+        Returns
+        -------
+        partitions : pandas.DataFrame
+        """
         return self._client.list_partitions(self._qualified_name)
+
+    def stats(self):
+        """
+        Return results of SHOW TABLE STATS as a pandas Series
+
+        Returns
+        -------
+        stats : pandas.Series
+        """
+        return self._client.table_stats(self._qualified_name)
+
+    def column_stats(self):
+        """
+        Return results of SHOW COLUMN STATS as a pandas DataFrame
+
+        Returns
+        -------
+        column_stats : pandas.DataFrame
+        """
+        return self._client.column_stats(self._qualified_name)
 
 
 class ImpalaTemporaryTable(ops.DatabaseTable):

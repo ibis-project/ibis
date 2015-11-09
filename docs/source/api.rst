@@ -75,10 +75,18 @@ Table methods
 .. autosummary::
    :toctree: generated/
 
+   ImpalaTable.column_stats
    ImpalaTable.compute_stats
+   ImpalaTable.describe_formatted
    ImpalaTable.drop
+   ImpalaTable.files
    ImpalaTable.insert
+   ImpalaTable.invalidate_metadata
+   ImpalaTable.partition_schema
+   ImpalaTable.partitions
+   ImpalaTable.refresh
    ImpalaTable.rename
+   ImpalaTable.stats
 
 Creating views is also possible:
 
