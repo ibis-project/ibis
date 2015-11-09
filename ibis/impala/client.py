@@ -154,7 +154,7 @@ class ImpalaConnection(object):
         self._connections[id(con)] = con
 
         # make sure the connection works
-        cursor = con.cursor()
+        cursor = con.cursor(convert_types=True)
         cursor.ping()
 
         wrapper = ImpalaCursor(cursor, self, con, self.database)
@@ -257,7 +257,7 @@ class ImpalaCursor(object):
 
     def fetchall(self, columnar=False):
         if columnar:
-            return self.cursor.fetchcolumnar(convert_types=True)
+            return self.cursor.fetchcolumnar()
         else:
             return self.cursor.fetchall()
 
@@ -458,13 +458,19 @@ class ImpalaClient(SQLClient):
     def _build_ast(self, expr):
         return build_ast(expr)
 
-    @property
-    def hdfs(self):
+    def _get_hdfs(self):
         if self._hdfs is None:
             raise com.IbisError('No HDFS connection; must pass connection '
                                 'using the hdfs_client argument to '
-                                'ibis.make_client')
+                                'ibis.impala.connect')
         return self._hdfs
+
+    def _set_hdfs(self, hdfs):
+        if not isinstance(hdfs, HDFS):
+            raise TypeError('must be HDFS instance')
+        self._hdfs = hdfs
+
+    hdfs = property(fget=_get_hdfs, fset=_set_hdfs)
 
     @property
     def _table_expr_klass(self):
