@@ -15,7 +15,6 @@
 import pytest
 
 import os
-import psutil
 import socket
 import struct
 import threading
@@ -28,6 +27,17 @@ import ibis.compat as compat
 # non-POSIX system (e.g. Windows)
 pytestmark = pytest.mark.skipif(compat.PY3 or not hasattr(os, 'setpgid'),
                                 reason='non-POSIX system')
+
+
+try:
+    import psutil
+except ImportError:
+    pass
+
+
+def get_proc(pid):
+    import psutil
+    return psutil.Process(pid)
 
 
 def port_is_closed(port):
@@ -151,7 +161,7 @@ class WorkerTestFixture(ImpalaServerFixture):
         sock.close()
 
         worker_port, worker_pid = struct.unpack('II', msg)
-        proc = psutil.Process(worker_pid)
+        proc = get_proc(worker_pid)
         assert proc.status != ('running', 'sleeping')
         return worker_port, worker_pid
 

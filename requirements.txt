@@ -2,7 +2,6 @@ pytest
 numpy>=1.7.0
 pandas>=0.12.0
 impyla>=0.12.0
-psutil==0.6.1
 hdfs>=2.0.0
 sqlalchemy>=1.0.0
 six
