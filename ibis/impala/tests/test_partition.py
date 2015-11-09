@@ -19,7 +19,7 @@ import pandas as pd
 
 from ibis.compat import unittest
 from ibis.impala.compat import ImpylaError
-from ibis.impala.tests.common import ImpalaE2E
+from ibis.impala.tests.common import ImpalaE2E, IbisTestEnv
 from ibis.tests.util import assert_equal
 import ibis
 import ibis.util as util
@@ -36,11 +36,23 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         df = pd.concat([df] * 10, ignore_index=True)
         df['id'] = df.index.values
 
+        # manually use superuser hdfs
+        env = IbisTestEnv()
+        superuser_hdfs = ibis.hdfs_connect(host=env.nn_host,
+                                           port=env.webhdfs_port,
+                                           auth_mechanism=env.auth_mechanism,
+                                           verify=(env.auth_mechanism
+                                                   not in ['GSSAPI', 'LDAP']),
+                                           user=env.hdfs_superuser)
+        cls.con.hdfs = superuser_hdfs
+        cls.hdfs = cls.con.hdfs
+
         cls.df = df
         cls.db = cls.con.database(cls.tmp_db)
         cls.pd_name = util.guid()
         cls.db.create_table(cls.pd_name, df)
 
+    @pytest.mark.superuser
     def test_create_table_with_partition_column(self):
         schema = ibis.schema([('year', 'int32'),
                               ('month', 'int8'),
@@ -65,6 +77,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                                 ('month', 'int8')])
         assert_equal(partition_schema, expected)
 
+    @pytest.mark.superuser
     def test_create_partitioned_separate_schema(self):
         schema = ibis.schema([('day', 'int8'),
                               ('value', 'double')])
@@ -87,11 +100,13 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         partition_schema = self.con.table(name).partition_schema()
         assert_equal(partition_schema, part_schema)
 
+    @pytest.mark.superuser
     def test_unpartitioned_table_get_schema(self):
         tname = 'functional_alltypes'
         with self.assertRaises(ImpylaError):
             self.con.table(tname).partition_schema()
 
+    @pytest.mark.superuser
     def test_insert_select_partitioned_table(self):
         df = self.df
 
@@ -125,20 +140,26 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
         assert_frame_equal(result, df)
 
+    @pytest.mark.superuser
     def test_insert_overwrite_partition(self):
         pass
 
+    @pytest.mark.superuser
     def test_dynamic_partitioning(self):
         pass
 
+    @pytest.mark.superuser
     def test_add_partition_with_location(self):
         pass
 
+    @pytest.mark.superuser
     def test_set_partition_location(self):
         pass
 
+    @pytest.mark.superuser
     def test_load_data_partition(self):
         pass
 
+    @pytest.mark.superuser
     def test_repartition_automated(self):
         pass

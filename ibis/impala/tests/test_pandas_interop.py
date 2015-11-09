@@ -182,11 +182,9 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         super(TestPandasInterop, cls).setUpClass()
         cls.alltypes = cls.alltypes.execute()
 
-    @pytest.mark.superuser
     def test_alltypes_roundtrip(self):
         self._check_roundtrip(self.alltypes)
 
-    @pytest.mark.superuser
     def test_writer_cleanup_deletes_hdfs_dir(self):
         writer = DataFrameWriter(self.con, self.alltypes)
         writer.write_csv()
@@ -232,14 +230,12 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
                   .reset_index(drop=True))
         assert_frame_equal(result, exhaustive_df)
 
-    @pytest.mark.superuser
     def test_insert_partition(self):
         # overwrite
 
         # no overwrite
         pass
 
-    @pytest.mark.superuser
     def test_round_trip_exhaustive(self):
         self._check_roundtrip(exhaustive_df)
 
