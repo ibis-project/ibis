@@ -65,12 +65,6 @@ class ImpalaDatabase(Database):
                                      database=self.name)
 
 
-def hs2_cursor_status(cursor):
-    from impala.hiveserver2 import get_operation_status
-    handle = cursor._last_operation_handle
-    return get_operation_status(cursor.service, handle)
-
-
 class ImpalaConnection(object):
 
     """
@@ -160,7 +154,7 @@ class ImpalaConnection(object):
         self._connections[id(con)] = con
 
         # make sure the connection works
-        cursor = con.cursor()
+        cursor = con.cursor(convert_types=True)
         cursor.ping()
 
         wrapper = ImpalaCursor(cursor, self, con, self.database)
@@ -241,7 +235,7 @@ class ImpalaCursor(object):
         cur = self.cursor
         try:
             while True:
-                state = hs2_cursor_status(cur)
+                state = cur.status()
                 if self.cursor._op_state_is_error(state):
                     raise OperationalError("Operation is in ERROR_STATE")
                 if not cur._op_state_is_executing(state):
@@ -405,7 +399,7 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
         Retrieve Impala query status
         """
         self._wait_execute()
-        return hs2_cursor_status(self._cursor)
+        return self._cursor.status()
 
     def wait(self, progress_bar=True):
         raise NotImplementedError
@@ -464,13 +458,19 @@ class ImpalaClient(SQLClient):
     def _build_ast(self, expr):
         return build_ast(expr)
 
-    @property
-    def hdfs(self):
+    def _get_hdfs(self):
         if self._hdfs is None:
             raise com.IbisError('No HDFS connection; must pass connection '
                                 'using the hdfs_client argument to '
-                                'ibis.make_client')
+                                'ibis.impala.connect')
         return self._hdfs
+
+    def _set_hdfs(self, hdfs):
+        if not isinstance(hdfs, HDFS):
+            raise TypeError('must be HDFS instance')
+        self._hdfs = hdfs
+
+    hdfs = property(fget=_get_hdfs, fset=_set_hdfs)
 
     @property
     def _table_expr_klass(self):
