@@ -19,7 +19,7 @@ import pandas as pd
 
 from ibis.compat import unittest
 from ibis.impala.compat import ImpylaError
-from ibis.impala.tests.common import ImpalaE2E, IbisTestEnv
+from ibis.impala.tests.common import ImpalaE2E
 from ibis.tests.util import assert_equal
 import ibis
 import ibis.util as util
