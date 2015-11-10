@@ -639,7 +639,7 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
             ex_mock.assert_called_with('SHOW TABLE STATS {0}'
                                        .format(qualified_name),
                                        results=True)
-            assert isinstance(desc, pd.Series)
+            assert isinstance(desc, pd.DataFrame)
 
         with self._patch_execute() as ex_mock:
             desc = t.column_stats()

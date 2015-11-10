@@ -1438,11 +1438,7 @@ class ImpalaClient(SQLClient):
         ImpalaTable.stats
         """
         stmt = self._table_command('SHOW TABLE STATS', name, database=database)
-
-        def adapt(x):
-            return x.iloc[0]
-
-        return self._exec_statement(stmt, adapt)
+        return self._exec_statement(stmt)
 
     def column_stats(self, name, database=None):
         """
@@ -1644,11 +1640,12 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
     def stats(self):
         """
-        Return results of SHOW TABLE STATS as a pandas Series
+        Return results of SHOW TABLE STATS as a DataFrame. If not partitioned,
+        contains only one row
 
         Returns
         -------
-        stats : pandas.Series
+        stats : pandas.DataFrame
         """
         return self._client.table_stats(self._qualified_name)
 
