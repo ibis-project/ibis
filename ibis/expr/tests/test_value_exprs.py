@@ -668,3 +668,27 @@ class TestExprList(unittest.TestCase):
         result = list1.concat(list2)
         expected = ibis.expr_list(exprs + exprs2)
         assert_equal(result, expected)
+
+
+class TestReplace(unittest.TestCase):
+
+    def setUp(self):
+        self.table = ibis.table([('foo', 'string'),
+                                 ('bar', 'string')], 't1')
+
+    def test_replace_dict(self):
+        subs = {'a': 'one', 'b': self.table.bar}
+
+        result = self.table.foo.replace(subs)
+        expected = (self.table.foo.case()
+                    .when('a', 'one')
+                    .when('b', self.table.bar)
+                    .else_(self.table.foo).end())
+        assert_equal(result, expected)
+
+        result = self.table.foo.replace(subs, else_=ibis.NA)
+        expected = (self.table.foo.case()
+                    .when('a', 'one')
+                    .when('b', self.table.bar)
+                    .else_(ibis.NA).end())
+        assert_equal(result, expected)

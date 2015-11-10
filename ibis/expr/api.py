@@ -667,6 +667,73 @@ rdiv = _rbinop_expr('__rdiv__', _ops.Divide)
 rfloordiv = _rbinop_expr('__rfloordiv__', _ops.FloorDivide)
 
 
+def replace(arg, value, replacement=None, else_=None):
+    """
+
+    Parameters
+    ----------
+    value : expr-like or dict
+    replacement : expr-like, optional
+      If an expression is passed to value, this must be passed
+    else_ : expr, optional
+
+    Returns
+    -------
+    replaced : case statement (for now!)
+    """
+    expr = arg.case()
+    if isinstance(value, dict):
+        for k, v in sorted(value.items()):
+            expr = expr.when(k, v)
+    else:
+        expr = expr.when(value, replacement)
+
+    if else_ is not None:
+        expr = expr.else_(else_)
+    else:
+        expr = expr.else_(arg)
+
+    return expr.end()
+
+
+def _case(arg):
+    """
+    Create a new SimpleCaseBuilder to chain multiple if-else
+    statements. Add new search expressions with the .when method. These
+    must be comparable with this array expression. Conclude by calling
+    .end()
+
+    Examples
+    --------
+    case_expr = (expr.case()
+                 .when(case1, output1)
+                 .when(case2, output2)
+                 .default(default_output)
+                 .end())
+
+    Returns
+    -------
+    builder : CaseBuilder
+    """
+    return _ops.SimpleCaseBuilder(arg)
+
+
+def cases(arg, case_result_pairs, default=None):
+    """
+    Create a case expression in one shot.
+
+    Returns
+    -------
+    case_expr : SimpleCase
+    """
+    builder = arg.case()
+    for case, result in case_result_pairs:
+        builder = builder.when(case, result)
+    if default is not None:
+        builder = builder.else_(default)
+    return builder.end()
+
+
 _generic_value_methods = dict(
     hash=hash,
     cast=cast,
@@ -681,6 +748,10 @@ _generic_value_methods = dict(
     notnull=_unary_op('notnull', _ops.NotNull),
 
     over=over,
+
+    case=_case,
+    cases=cases,
+    replace=replace,
 
     __add__=add,
     add=add,
@@ -799,44 +870,6 @@ def bottomk(arg, k, by=None):
     raise NotImplementedError
 
 
-def _case(arg):
-    """
-    Create a new SimpleCaseBuilder to chain multiple if-else
-    statements. Add new search expressions with the .when method. These
-    must be comparable with this array expression. Conclude by calling
-    .end()
-
-    Examples
-    --------
-    case_expr = (expr.case()
-                 .when(case1, output1)
-                 .when(case2, output2)
-                 .default(default_output)
-                 .end())
-
-    Returns
-    -------
-    builder : CaseBuilder
-    """
-    return _ops.SimpleCaseBuilder(arg)
-
-
-def cases(arg, case_result_pairs, default=None):
-    """
-    Create a case expression in one shot.
-
-    Returns
-    -------
-    case_expr : SimpleCase
-    """
-    builder = arg.case()
-    for case, result in case_result_pairs:
-        builder = builder.when(case, result)
-    if default is not None:
-        builder = builder.else_(default)
-    return builder.end()
-
-
 def _generic_summary(arg, exact_nunique=False, prefix=None):
     """
     Compute a set of summary metrics from the input value expression
@@ -914,8 +947,6 @@ def expr_list(exprs):
 
 
 _generic_array_methods = dict(
-    case=_case,
-    cases=cases,
     bottomk=bottomk,
     distinct=distinct,
     nunique=nunique,
@@ -1531,7 +1562,7 @@ _string_value_methods = dict(
     contains=_string_contains,
     like=_string_like,
     rlike=re_search,
-    replace=_string_replace,
+    str_replace=_string_replace,
     re_search=re_search,
     re_extract=regex_extract,
     re_replace=regex_replace,

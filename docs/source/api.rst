@@ -289,14 +289,16 @@ Scalar or array methods
    ValueExpr.rdiv
    ValueExpr.rsub
 
+   ValueExpr.case
+   ValueExpr.cases
+   ValueExpr.replace
+
 Array methods
 ~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
 
-   ArrayExpr.case
-   ArrayExpr.cases
    ArrayExpr.distinct
 
    ArrayExpr.count
@@ -413,6 +415,7 @@ All string operations are valid either on scalar or array values
    StringValue.re_search
    StringValue.re_extract
    StringValue.re_replace
+   StringValue.str_replace
 
 .. _api.timestamp:
 

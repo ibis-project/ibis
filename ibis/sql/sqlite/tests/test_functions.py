@@ -166,16 +166,24 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
-    def test_string_functions(self):
+    def test_string_find(self):
         cases = [
             (L('foobar').find('bar'), 3),
             (L('foobar').find('baz'), -1),
+        ]
+        self._check_e2e_cases(cases)
 
+    def test_string_like(self):
+        cases = [
             (L('foobar').like('%bar'), True),
             (L('foobar').like('foo%'), True),
             (L('foobar').like('%baz%'), False),
+        ]
+        self._check_e2e_cases(cases)
 
-            (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
+    def test_str_replace(self):
+        cases = [
+            (L('foobarfoo').str_replace('foo', 'H'), 'HbarH'),
         ]
         self._check_e2e_cases(cases)
 

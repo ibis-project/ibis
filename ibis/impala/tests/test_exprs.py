@@ -1240,6 +1240,10 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             (string.left(2), 'ab'),
             (string.right(2), 'cd'),
             (string.repeat(2), 'abcdabcd'),
+
+            # global replace not available in Impala yet
+            # (L('aabbaabbaa').replace('bb', 'B'), 'aaBaaBaa'),
+
             (L('0123').translate('012', 'abc'), 'abc3'),
             (string.find('a'), 0),
             (L('baaaab').find('b', 2), 5),
