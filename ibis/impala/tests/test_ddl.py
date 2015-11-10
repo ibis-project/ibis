@@ -49,7 +49,7 @@ class TestDropTable(unittest.TestCase):
         assert query == expected
 
 
-class TestInsert(unittest.TestCase):
+class TestInsertLoadData(unittest.TestCase):
 
     def setUp(self):
         self.con = MockConnection()
@@ -79,6 +79,43 @@ INSERT OVERWRITE foo.`testing123456`
 SELECT *
 FROM functional_alltypes
 LIMIT 10"""
+        assert result == expected
+
+    def test_load_data_unpartitioned(self):
+        path = '/path/to/data'
+        stmt = ddl.LoadData('functional_alltypes', path, database='foo')
+
+        result = stmt.compile()
+        expected = ("LOAD DATA INPATH '/path/to/data' "
+                    "INTO TABLE foo.`functional_alltypes`")
+        assert result == expected
+
+        stmt.overwrite = True
+        result = stmt.compile()
+        expected = ("LOAD DATA INPATH '/path/to/data' "
+                    "OVERWRITE INTO TABLE foo.`functional_alltypes`")
+        assert result == expected
+
+    def test_load_data_partitioned(self):
+        path = '/path/to/data'
+        part = {'year': 2007, 'month': 7}
+        part_schema = ibis.schema([('year', 'int32'), ('month', 'int32')])
+        stmt = ddl.LoadData('functional_alltypes', path,
+                            database='foo',
+                            partition=part,
+                            partition_schema=part_schema)
+
+        result = stmt.compile()
+        expected = """\
+LOAD DATA INPATH '/path/to/data' INTO TABLE foo.`functional_alltypes`
+PARTITION(year=2007, month=7)"""
+        assert result == expected
+
+        stmt.overwrite = True
+        result = stmt.compile()
+        expected = """\
+LOAD DATA INPATH '/path/to/data' OVERWRITE INTO TABLE foo.`functional_alltypes`
+PARTITION(year=2007, month=7)"""
         assert result == expected
 
     def test_select_overwrite(self):

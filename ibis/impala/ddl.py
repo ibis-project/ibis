@@ -365,7 +365,9 @@ class InsertSelect(ImpalaDDL):
             cmd = 'INSERT INTO'
 
         if self.partition is not None:
-            partition = self._format_partition()
+            part = _format_partition(self.partition,
+                                     self.partition_schema)
+            partition = ' {0} '.format(part)
         else:
             partition = ''
 
@@ -374,28 +376,66 @@ class InsertSelect(ImpalaDDL):
         return'{0} {1}{2}\n{3}'.format(cmd, scoped_name, partition,
                                        select_query)
 
-    def _format_partition(self):
-        tokens = []
-        if isinstance(self.partition, dict):
-            for name in self.partition_schema:
-                if name in self.partition:
-                    tok = '{0}={1}'.format(name, self.partition[name])
-                else:
-                    # dynamic partitioning
-                    tok = name
-                tokens.append(tok)
-        else:
-            for name, value in zip(self.partition_schema, self.partition):
-                tok = '{0}={1}'.format(name, value)
-                tokens.append(tok)
 
-        return ' partition({0}) '.format(', '.join(tokens))
+def _format_partition(partition, partition_schema):
+    tokens = []
+    if isinstance(partition, dict):
+        for name in partition_schema:
+            if name in partition:
+                tok = '{0}={1}'.format(name, partition[name])
+            else:
+                # dynamic partitioning
+                tok = name
+            tokens.append(tok)
+    else:
+        for name, value in zip(partition_schema, partition):
+            tok = '{0}={1}'.format(name, value)
+            tokens.append(tok)
+
+    return 'PARTITION({0})'.format(', '.join(tokens))
+
+
+class LoadData(ImpalaDDL):
+
+    """
+    Generate DDL for LOAD DATA command. Cannot be cancelled
+    """
+
+    def __init__(self, table_name, path, database=None,
+                 partition=None, partition_schema=None,
+                 overwrite=False):
+        self.table_name = table_name
+        self.database = database
+        self.path = path
+
+        self.partition = partition
+        self.partition_schema = partition_schema
+
+        self.overwrite = overwrite
+
+    def compile(self):
+        overwrite = 'OVERWRITE ' if self.overwrite else ''
+
+        if self.partition is not None:
+            partition = '\n' + _format_partition(self.partition,
+                                                 self.partition_schema)
+        else:
+            partition = ''
+
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+        return ("LOAD DATA INPATH '{0}' {1}INTO TABLE {2}{3}"
+                .format(self.path, overwrite, scoped_name, partition))
 
 
 class AlterTable(ImpalaDDL):
 
     def _wrap_command(self, cmd):
         return 'ALTER TABLE {0}'.format(cmd)
+
+
+class AlterPartition(AlterTable):
+
+    pass
 
 
 class RenameTable(AlterTable):
