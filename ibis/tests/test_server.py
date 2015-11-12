@@ -31,8 +31,9 @@ pytestmark = pytest.mark.skipif(compat.PY3 or not hasattr(os, 'setpgid'),
 
 try:
     import psutil
+    HAVE_PSUTIL = True
 except ImportError:
-    pass
+    HAVE_PSUTIL = False
 
 
 def get_proc(pid):
@@ -146,6 +147,9 @@ class WorkerTestFixture(ImpalaServerFixture):
         return sock
 
     def _spawn_worker(self):
+        if not HAVE_PSUTIL:
+            pytest.skip('no psutil')
+
         sock = self._connect()
 
         # Ask to create a worker; reply OK on successful fork
