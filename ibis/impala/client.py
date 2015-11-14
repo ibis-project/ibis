@@ -731,7 +731,8 @@ class ImpalaClient(SQLClient):
 
     def create_table(self, table_name, obj=None, schema=None, database=None,
                      format='parquet', force=False, external=False,
-                     path=None, partition=None, like_parquet=None):
+                     location=None, partition=None, like_parquet=None,
+                     path=None):
         """
         Create a new table in Impala using an Ibis table expression
 
@@ -750,8 +751,9 @@ class ImpalaClient(SQLClient):
         external : boolean, default False
           Create an external table; Impala will not delete the underlying data
           when the table is dropped
-        path : string, default None
-          Specify the path where Impala reads and writes files for the table
+        location : string, default None
+          Specify the directory location where Impala reads and writes files
+          for the table
         partition : list of strings
           Must pass a schema to use this. Cannot partition from an expression
           (create-table-as-select)
@@ -764,6 +766,10 @@ class ImpalaClient(SQLClient):
         """
         if like_parquet is not None:
             raise NotImplementedError
+
+        # TODO: deprecation warning
+        if path is not None:
+            location = path
 
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
@@ -785,7 +791,7 @@ class ImpalaClient(SQLClient):
                                  can_exist=force,
                                  format=format,
                                  external=external,
-                                 path=path)
+                                 path=location)
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
                 table_name, schema, ddl.NoFormat(),
@@ -793,7 +799,7 @@ class ImpalaClient(SQLClient):
                 format=format,
                 can_exist=force,
                 external=external,
-                path=path, partition=partition)
+                path=location, partition=partition)
         else:
             raise com.IbisError('Must pass expr or schema')
 
@@ -1448,6 +1454,32 @@ class ImpalaClient(SQLClient):
                 adapted_types.append(typename)
         return names, adapted_types
 
+    def write_dataframe(self, df, path, format='csv', async=False):
+        """
+        Write a pandas DataFrame to indicated file path (default: HDFS) in the
+        indicated format
+
+        Parameters
+        ----------
+        df : DataFrame
+        path : string
+          Absolute output path
+        format : {'csv'}, default 'csv'
+        async : boolean, default False
+          Not yet supported
+
+        Returns
+        -------
+        None (for now)
+        """
+        from ibis.impala.pandas_interop import DataFrameWriter
+
+        if async:
+            raise NotImplementedError
+
+        writer = DataFrameWriter(self, df)
+        return writer.write_csv(path)
+
 
 # ----------------------------------------------------------------------
 # ORM-ish usability layer
@@ -1586,26 +1618,6 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
                                      overwrite=overwrite)
         return self._execute(statement)
 
-    def write_dataframe(self, obj, path, format='csv', async=False):
-        """
-        Write a pandas DataFrame to indicated file path (default: HDFS) in the
-        indicated format
-
-        Parameters
-        ----------
-        obj : DataFrame
-        path : string
-          Absolute output path
-        format : {'csv'}, default 'csv'
-        async : boolean, default False
-          Not yet supported
-
-        Returns
-        -------
-        None (for now)
-        """
-        pass
-
     def load_data(self, path, overwrite=False, partition=None):
         """
         Wraps the LOAD DATA DDL statement. Loads data into an Impala table by
@@ -1618,6 +1630,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
           Overwrite the existing data in the entire table or indicated
           partition
         partition : dict, optional
+          If specified, the partition must already exist
 
         Returns
         -------
@@ -1681,6 +1694,12 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
         pnames, ptypes = zip(*partition_fields)
         return dt.Schema(pnames, ptypes)
+
+    def add_partition(self, spec, ):
+        pass
+
+    def drop_partition(self, spec):
+        pass
 
     def partitions(self):
         """

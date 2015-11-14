@@ -202,7 +202,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
     def test_create_table_from_dataframe(self):
         tname = 'tmp_pandas_{0}'.format(util.guid())
         self.con.create_table(tname, self.alltypes, database=self.tmp_db,
-                              path=self._create_777_tmp_dir())
+                              location=self._create_777_tmp_dir())
         self.temp_tables.append(tname)
 
         table = self.con.table(tname, database=self.tmp_db)
@@ -215,7 +215,8 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
 
         table_name = 'tmp_pandas_{0}'.format(util.guid())
         self.con.create_table(table_name, database=self.tmp_db,
-                              schema=schema, path=self._create_777_tmp_dir())
+                              schema=schema,
+                              location=self._create_777_tmp_dir())
         self.temp_tables.append(table_name)
 
         self.con.insert(table_name, exhaustive_df.iloc[:4],
