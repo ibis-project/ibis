@@ -187,9 +187,8 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
 
     def test_writer_cleanup_deletes_hdfs_dir(self):
         writer = DataFrameWriter(self.con, self.alltypes)
-        writer.write_csv()
 
-        path = writer.csv_dir
+        path = writer.write_temp_csv()
         assert self.con.hdfs.exists(path)
 
         writer.cleanup()
@@ -242,9 +241,9 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
 
     def _check_roundtrip(self, df):
         writer = DataFrameWriter(self.con, df)
-        writer.write_csv()
+        path = writer.write_temp_csv()
 
-        table = writer.delimited_table()
+        table = writer.delimited_table(path)
         df2 = table.execute()
 
         assert_frame_equal(df2, df)
