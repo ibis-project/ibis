@@ -153,7 +153,29 @@ class TestAlterTablePartition(unittest.TestCase):
         assert result == expected
 
     def test_add_partition_with_props(self):
-        pass
+        props = dict(
+            location='/users/foo/my-data',
+            format='parquet',
+            tbl_properties={
+                'foo': '1',
+                'bar': 2
+            },
+            serde_properties={
+                'baz': 3
+            }
+        )
+        stmt = ddl.AddPartition(self.table_name,
+                                {'year': 2007, 'month': 4},
+                                self.part_schema, **props)
+
+        result = stmt.compile()
+        expected = """\
+ALTER TABLE tbl ADD PARTITION (year=2007, month=4)
+SET LOCATION '/users/foo/my-data'
+    FILEFORMAT PARQUET
+    TBLPROPERTIES ('bar'='2', 'foo'='1')
+    SERDEPROPERTIES ('baz'='3')"""
+        assert result == expected
 
 
 class TestCreateTable(unittest.TestCase):

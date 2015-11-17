@@ -62,10 +62,18 @@ class CreateDDL(ImpalaDDL):
 def _sanitize_format(format):
     if format is None:
         return
-    format = format.lower()
-    if format not in ('parquet', 'avro'):
+    format = format.upper()
+    if format not in ('PARQUET', 'AVRO'):
         raise ValueError('Invalid format: {0}'.format(format))
     return format
+
+
+def _format_properties(props):
+    tokens = []
+    for k, v in sorted(props.items()):
+        tokens.append("'{0!s}'='{1!s}'".format(k, v))
+
+    return '({0})'.format(', '.join(tokens))
 
 
 class CreateTable(CreateDDL):
@@ -108,8 +116,8 @@ class CreateTable(CreateDDL):
 
     def _storage(self):
         storage_lines = {
-            'parquet': '\nSTORED AS PARQUET',
-            'avro': '\nSTORED AS AVRO'
+            'PARQUET': '\nSTORED AS PARQUET',
+            'AVRO': '\nSTORED AS AVRO'
         }
         return storage_lines[self.format]
 
@@ -450,16 +458,18 @@ class AlterTable(ImpalaDDL):
             tokens.append("LOCATION '{0}'".format(self.location))
 
         if self.format is not None:
-            tokens.append("FILEFORMAT ".format(self.format))
+            tokens.append("FILEFORMAT {0}".format(self.format))
 
         if self.tbl_properties is not None:
-            pass
+            props = _format_properties(self.tbl_properties)
+            tokens.append('TBLPROPERTIES {0}'.format(props))
 
         if self.serde_properties is not None:
-            pass
+            props = _format_properties(self.serde_properties)
+            tokens.append('SERDEPROPERTIES {0}'.format(props))
 
         if len(tokens) > 0:
-            return 'SET {0}'.format('\n    '.join(tokens))
+            return '\nSET {0}'.format('\n    '.join(tokens))
         else:
             return ''
 
