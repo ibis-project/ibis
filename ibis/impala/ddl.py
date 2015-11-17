@@ -59,6 +59,15 @@ class CreateDDL(ImpalaDDL):
         return 'IF NOT EXISTS ' if self.can_exist else ''
 
 
+def _sanitize_format(format):
+    if format is None:
+        return
+    format = format.lower()
+    if format not in ('parquet', 'avro'):
+        raise ValueError('Invalid format: {0}'.format(format))
+    return format
+
+
 class CreateTable(CreateDDL):
 
     """
@@ -78,13 +87,7 @@ class CreateTable(CreateDDL):
         self.path = path
         self.external = external
         self.can_exist = can_exist
-        self.format = self._validate_storage_format(format)
-
-    def _validate_storage_format(self, format):
-        format = format.lower()
-        if format not in ('parquet', 'avro'):
-            raise ValueError('Invalid format: {0}'.format(format))
-        return format
+        self.format = _sanitize_format(format)
 
     def _create_line(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
@@ -443,7 +446,7 @@ class PartitionProperties(AlterTable):
         self.partition_schema = partition_schema
 
         self.location = location
-        self.format = format
+        self.format = _sanitize_format(format)
         self.tbl_properties = tbl_properties
         self.serde_properties = serde_properties
 
@@ -458,11 +461,12 @@ class PartitionProperties(AlterTable):
 
     def _format_properties(self):
         tokens = []
+
         if self.location is not None:
-            pass
+            tokens.append("LOCATION '{0}'".format(self.location))
 
         if self.format is not None:
-            pass
+            tokens.append("FILEFORMAT ".format(self.format))
 
         if self.tbl_properties is not None:
             pass
@@ -470,7 +474,10 @@ class PartitionProperties(AlterTable):
         if self.serde_properties is not None:
             pass
 
-        return ''
+        if len(tokens) > 0:
+            return 'SET {0}'.format('\n    '.join(tokens))
+        else:
+            return ''
 
 
 class AddPartition(PartitionProperties):
