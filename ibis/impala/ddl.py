@@ -432,32 +432,16 @@ class LoadData(ImpalaDDL):
 
 class AlterTable(ImpalaDDL):
 
-    def _wrap_command(self, cmd):
-        return 'ALTER TABLE {0}'.format(cmd)
-
-
-class PartitionProperties(AlterTable):
-
-    def __init__(self, table, partition, partition_schema,
-                 location=None, format=None,
-                 tbl_properties=None, serde_properties=None):
+    def __init__(self, table, location=None, format=None, tbl_properties=None,
+                 serde_properties=None):
         self.table = table
-        self.partition = partition
-        self.partition_schema = partition_schema
-
         self.location = location
         self.format = _sanitize_format(format)
         self.tbl_properties = tbl_properties
         self.serde_properties = serde_properties
 
-    def _compile(self, cmd):
-        part = _format_partition(self.partition, self.partition_schema)
-        if cmd:
-            part = '{0} {1}'.format(cmd, part)
-
-        props = self._format_properties()
-        action = '{0} {1}{2}'.format(self.table, part, props)
-        return self._wrap_command(action)
+    def _wrap_command(self, cmd):
+        return 'ALTER TABLE {0}'.format(cmd)
 
     def _format_properties(self):
         tokens = []
@@ -478,6 +462,28 @@ class PartitionProperties(AlterTable):
             return 'SET {0}'.format('\n    '.join(tokens))
         else:
             return ''
+
+
+class PartitionProperties(AlterTable):
+
+    def __init__(self, table, partition, partition_schema,
+                 location=None, format=None,
+                 tbl_properties=None, serde_properties=None):
+        self.partition = partition
+        self.partition_schema = partition_schema
+
+        AlterTable.__init__(self, table, location=location, format=format,
+                            tbl_properties=tbl_properties,
+                            serde_properties=serde_properties)
+
+    def _compile(self, cmd):
+        part = _format_partition(self.partition, self.partition_schema)
+        if cmd:
+            part = '{0} {1}'.format(cmd, part)
+
+        props = self._format_properties()
+        action = '{0} {1}{2}'.format(self.table, part, props)
+        return self._wrap_command(action)
 
 
 class AddPartition(PartitionProperties):
