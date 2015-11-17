@@ -108,14 +108,14 @@ LIMIT 10"""
         result = stmt.compile()
         expected = """\
 LOAD DATA INPATH '/path/to/data' INTO TABLE foo.`functional_alltypes`
-PARTITION(year=2007, month=7)"""
+PARTITION (year=2007, month=7)"""
         assert result == expected
 
         stmt.overwrite = True
         result = stmt.compile()
         expected = """\
 LOAD DATA INPATH '/path/to/data' OVERWRITE INTO TABLE foo.`functional_alltypes`
-PARTITION(year=2007, month=7)"""
+PARTITION (year=2007, month=7)"""
         assert result == expected
 
     def test_select_overwrite(self):
@@ -134,6 +134,26 @@ class TestCacheTable(unittest.TestCase):
         query = statement.compile()
         expected = "ALTER TABLE bar.`foo` SET CACHED IN 'my_pool'"
         assert query == expected
+
+
+class TestAlterTablePartition(unittest.TestCase):
+
+    def setUp(self):
+        self.part_schema = ibis.schema([('year', 'int32'),
+                                        ('month', 'int32')])
+        self.table_name = 'tbl'
+
+    def test_add_partition(self):
+        stmt = ddl.AddPartition(self.table_name,
+                                {'year': 2007, 'month': 4},
+                                self.part_schema)
+
+        result = stmt.compile()
+        expected = 'ALTER TABLE tbl ADD PARTITION (year=2007, month=4)'
+        assert result == expected
+
+    def test_add_partition_with_props(self):
+        pass
 
 
 class TestCreateTable(unittest.TestCase):

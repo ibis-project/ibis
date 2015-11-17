@@ -164,10 +164,10 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
             else:
                 part = [year, month]
 
+            part_t.add_partition(part)
             part_t.load_data(chunk_path, partition=part)
 
         self.hdfs.rmdir(hdfs_dir)
-
         self._verify_partitioned_table(part_t, df, unique_keys)
 
     def _verify_partitioned_table(self, part_t, df, unique_keys):

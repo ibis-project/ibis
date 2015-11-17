@@ -1695,11 +1695,19 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         pnames, ptypes = zip(*partition_fields)
         return dt.Schema(pnames, ptypes)
 
-    def add_partition(self, spec, ):
-        pass
+    def add_partition(self, spec, location=None, format=None,
+                      tbl_properties=None,
+                      serde_properties=None):
+        part_schema = self.partition_schema()
+
+    def modify_partition(self, spec, location=None, format=None,
+                         tbl_properties=None,
+                         serde_properties=None):
+        part_schema = self.partition_schema()
 
     def drop_partition(self, spec):
-        pass
+        part_schema = self.partition_schema()
+
 
     def partitions(self):
         """

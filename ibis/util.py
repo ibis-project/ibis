@@ -174,3 +174,48 @@ def to_stdout(x):
 def log(msg):
     if options.verbose:
         (options.verbose_log or to_stdout)(msg)
+
+
+class cache_readonly(object):
+
+    def __init__(self, func=None, allow_setting=False):
+        if func is not None:
+            self.func = func
+            self.name = func.__name__
+        self.allow_setting = allow_setting
+
+    def __call__(self, func, doc=None):
+        self.func = func
+        self.name = func.__name__
+        return self
+
+    def __get__(self, obj, typ):
+        # Get the cache or set a default one if needed
+
+        cache = getattr(obj, '_cache', None)
+        if cache is None:
+            try:
+                cache = obj._cache = {}
+            except (AttributeError):
+                return
+
+        if self.name in cache:
+            val = cache[self.name]
+        else:
+            val = self.func(obj)
+            cache[self.name] = val
+        return val
+
+    def __set__(self, obj, value):
+        if not self.allow_setting:
+            raise Exception("cannot set values for [%s]" % self.name)
+
+        # Get the cache or set a default one if needed
+        cache = getattr(obj, '_cache', None)
+        if cache is None:
+            try:
+                cache = obj._cache = {}
+            except (AttributeError):
+                return
+
+        cache[self.name] = value

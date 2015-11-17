@@ -392,7 +392,7 @@ def _format_partition(partition, partition_schema):
             tok = '{0}={1}'.format(name, value)
             tokens.append(tok)
 
-    return 'PARTITION({0})'.format(', '.join(tokens))
+    return 'PARTITION ({0})'.format(', '.join(tokens))
 
 
 class LoadData(ImpalaDDL):
@@ -433,9 +433,62 @@ class AlterTable(ImpalaDDL):
         return 'ALTER TABLE {0}'.format(cmd)
 
 
-class AlterPartition(AlterTable):
+class PartitionProperties(AlterTable):
 
-    pass
+    def __init__(self, table, partition, partition_schema,
+                 location=None, format=None,
+                 tbl_properties=None, serde_properties=None):
+        self.table = table
+        self.partition = partition
+        self.partition_schema = partition_schema
+
+        self.location = location
+        self.format = format
+        self.tbl_properties = tbl_properties
+        self.serde_properties = serde_properties
+
+    def _compile(self, cmd):
+        part = _format_partition(self.partition, self.partition_schema)
+        if cmd:
+            part = '{0} {1}'.format(cmd, part)
+
+        props = self._format_properties()
+        action = '{0} {1}{2}'.format(self.table, part, props)
+        return self._wrap_command(action)
+
+    def _format_properties(self):
+        tokens = []
+        if self.location is not None:
+            pass
+
+        if self.format is not None:
+            pass
+
+        if self.tbl_properties is not None:
+            pass
+
+        if self.serde_properties is not None:
+            pass
+
+        return ''
+
+
+class AddPartition(PartitionProperties):
+
+    def compile(self):
+        return self._compile('ADD')
+
+
+class ModifyPartition(PartitionProperties):
+
+    def compile(self):
+        return self._compile('')
+
+
+class DropPartition(AlterTable):
+
+    def __init__(self, partition, partition_schema):
+        self.partition = partition
 
 
 class RenameTable(AlterTable):
