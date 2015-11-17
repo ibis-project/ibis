@@ -59,12 +59,19 @@ class CreateDDL(ImpalaDDL):
         return 'IF NOT EXISTS ' if self.can_exist else ''
 
 
+_format_aliases = {
+    'TEXT': 'TEXTFILE'
+}
+
+
 def _sanitize_format(format):
     if format is None:
         return
     format = format.upper()
-    if format not in ('PARQUET', 'AVRO'):
+    format = _format_aliases.get(format, format)
+    if format not in ('PARQUET', 'AVRO', 'TEXTFILE'):
         raise ValueError('Invalid format: {0}'.format(format))
+
     return format
 
 
@@ -451,7 +458,7 @@ class AlterTable(ImpalaDDL):
     def _wrap_command(self, cmd):
         return 'ALTER TABLE {0}'.format(cmd)
 
-    def _format_properties(self):
+    def _format_properties(self, prefix=''):
         tokens = []
 
         if self.location is not None:
@@ -469,7 +476,7 @@ class AlterTable(ImpalaDDL):
             tokens.append('SERDEPROPERTIES {0}'.format(props))
 
         if len(tokens) > 0:
-            return '\nSET {0}'.format('\n    '.join(tokens))
+            return '\n{0}{1}'.format(prefix, '\n'.join(tokens))
         else:
             return ''
 
@@ -486,17 +493,22 @@ class PartitionProperties(AlterTable):
                             tbl_properties=tbl_properties,
                             serde_properties=serde_properties)
 
-    def _compile(self, cmd):
+    def _compile(self, cmd, property_prefix=''):
         part = _format_partition(self.partition, self.partition_schema)
         if cmd:
             part = '{0} {1}'.format(cmd, part)
 
-        props = self._format_properties()
+        props = self._format_properties(property_prefix)
         action = '{0} {1}{2}'.format(self.table, part, props)
         return self._wrap_command(action)
 
 
 class AddPartition(PartitionProperties):
+
+    def __init__(self, table, partition, partition_schema, location=None):
+        PartitionProperties.__init__(self, table, partition,
+                                     partition_schema,
+                                     location=location)
 
     def compile(self):
         return self._compile('ADD')
@@ -505,7 +517,7 @@ class AddPartition(PartitionProperties):
 class ModifyPartition(PartitionProperties):
 
     def compile(self):
-        return self._compile('')
+        return self._compile('', 'SET ')
 
 
 class DropPartition(AlterTable):

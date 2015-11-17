@@ -30,7 +30,8 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestPartitioning, cls).setUpClass()
+        ImpalaE2E.setup_e2e(cls)
+
         df = pd.DataFrame({'year': [2009, 2009, 2009, 2010, 2010, 2010],
                            'month': [1, 2, 3, 1, 2, 3],
                            'value': [1, 2, 3, 4, 5, 6]})
@@ -139,8 +140,6 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
     @pytest.mark.superuser
     def test_load_data_partition(self):
-        pytest.skip('unfinished')
-
         df = self.df
 
         unpart_t = self.db.table(self.pd_name)
@@ -148,12 +147,22 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         part_t = self._create_partitioned_table(unpart_t.schema(),
                                                 part_keys)
 
+        # trim the runtime of this test
+        df = df[df.month == 1].reset_index(drop=True)
+
         unique_keys = df[part_keys].drop_duplicates()
 
         hdfs_dir = pjoin(self.tmp_dir, 'load-data-partition')
 
+        df2 = df.drop(['year', 'month'], axis='columns')
+
+        csv_props = {
+            'serialization.format': ',',
+            'field.delim': ','
+        }
+
         for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
-            chunk = df[(df.year == year) & (df.month == month)]
+            chunk = df2[(df.year == year) & (df.month == month)]
             chunk_path = pjoin(hdfs_dir, '{0}.csv'.format(i))
 
             self.con.write_dataframe(chunk, chunk_path)
@@ -165,6 +174,8 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                 part = [year, month]
 
             part_t.add_partition(part)
+            part_t.modify_partition(part, format='text',
+                                    serde_properties=csv_props)
             part_t.load_data(chunk_path, partition=part)
 
         self.hdfs.rmdir(hdfs_dir)

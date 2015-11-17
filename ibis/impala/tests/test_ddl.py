@@ -154,15 +154,7 @@ class TestAlterTablePartition(unittest.TestCase):
 
     def test_add_partition_with_props(self):
         props = dict(
-            location='/users/foo/my-data',
-            format='parquet',
-            tbl_properties={
-                'foo': '1',
-                'bar': 2
-            },
-            serde_properties={
-                'baz': 3
-            }
+            location='/users/foo/my-data'
         )
         stmt = ddl.AddPartition(self.table_name,
                                 {'year': 2007, 'month': 4},
@@ -171,11 +163,23 @@ class TestAlterTablePartition(unittest.TestCase):
         result = stmt.compile()
         expected = """\
 ALTER TABLE tbl ADD PARTITION (year=2007, month=4)
-SET LOCATION '/users/foo/my-data'
-    FILEFORMAT PARQUET
-    TBLPROPERTIES ('bar'='2', 'foo'='1')
-    SERDEPROPERTIES ('baz'='3')"""
+LOCATION '/users/foo/my-data'"""
         assert result == expected
+
+    def test_modify_table_properties(self):
+        format='parquet'
+        tbl_properties = {
+            'foo': '1',
+            'bar': 2
+        }
+        serde_properties = {
+            'baz': 3
+        }
+
+        expected = """\
+FILEFORMAT PARQUET
+TBLPROPERTIES ('bar'='2', 'foo'='1')
+SERDEPROPERTIES ('baz'='3')"""
 
 
 class TestCreateTable(unittest.TestCase):

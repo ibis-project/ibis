@@ -25,16 +25,26 @@ import ibis.compat as compat
 import ibis
 
 
+GLOBAL_TMP_DB = os.environ.get('IBIS_TEST_TMP_DB',
+                               '__ibis_tmp_{0}'.format(util.guid()))
+
+
+GLOBAL_TMP_DIR = os.environ.get('IBIS_TEST_TMP_HDFS_DIR',
+                                '/tmp/__ibis_test')
+
+# update global Ibis config where relevant
+options.impala.temp_db = GLOBAL_TMP_DB
+options.impala.temp_hdfs_path = GLOBAL_TMP_DIR
+
+
 class IbisTestEnv(object):
 
     def __init__(self):
         # TODO: allow initializing values through a constructor
         self.impala_host = os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
         self.impala_port = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
-        self.tmp_db = os.environ.get('IBIS_TEST_TMP_DB',
-                                     '__ibis_tmp_{0}'.format(util.guid()))
-        self.tmp_dir = os.environ.get('IBIS_TEST_TMP_HDFS_DIR',
-                                      '/tmp/__ibis_test')
+        self.tmp_db = GLOBAL_TMP_DB
+        self.tmp_dir = GLOBAL_TMP_DIR
         self.test_data_db = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
         self.test_data_dir = os.environ.get('IBIS_TEST_DATA_HDFS_DIR',
                                             '/__ibis/ibis-testing-data')
@@ -49,9 +59,6 @@ class IbisTestEnv(object):
                                                 'True').lower() == 'true'
         self.auth_mechanism = os.environ.get('IBIS_TEST_AUTH_MECH', 'NOSASL')
         self.llvm_config = os.environ.get('IBIS_TEST_LLVM_CONFIG', None)
-        # update global Ibis config where relevant
-        options.impala.temp_db = self.tmp_db
-        options.impala.temp_hdfs_path = self.tmp_dir
 
     def __repr__(self):
         kvs = ['{0}={1}'.format(k, v)
@@ -84,6 +91,14 @@ class ImpalaE2E(object):
 
     @classmethod
     def setUpClass(cls):
+        ImpalaE2E.setup_e2e(cls)
+
+    @classmethod
+    def tearDownClass(cls):
+        ImpalaE2E.teardown_e2e(cls)
+
+    @staticmethod
+    def setup_e2e(cls):
         ENV = IbisTestEnv()
         cls.con = connect_test(ENV)
         # Tests run generally faster without it
@@ -101,8 +116,8 @@ class ImpalaE2E(object):
         if not cls.con.exists_database(cls.tmp_db):
             cls.con.create_database(cls.tmp_db)
 
-    @classmethod
-    def tearDownClass(cls):
+    @staticmethod
+    def teardown_e2e(cls):
         i, retries = 0, 3
         while True:
             # reduce test flakiness

@@ -1695,19 +1695,59 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         pnames, ptypes = zip(*partition_fields)
         return dt.Schema(pnames, ptypes)
 
-    def add_partition(self, spec, location=None, format=None,
-                      tbl_properties=None,
-                      serde_properties=None):
+    def add_partition(self, spec, location=None):
+        """
+        Add a new table partition, creating any new directories in HDFS if
+        necessary.
+
+        Partition parameters can be set in a single DDL statement, or you can
+        use modify_partition to set them after the fact.
+
+        Returns
+        -------
+        None (for now)
+        """
         part_schema = self.partition_schema()
+        stmt = ddl.AddPartition(self._qualified_name, spec, part_schema,
+                                location=location)
+        return self._execute(stmt)
 
     def modify_partition(self, spec, location=None, format=None,
                          tbl_properties=None,
                          serde_properties=None):
+        """
+        Change setting and parameters of an existing partition
+
+        Returns
+        -------
+        None (for now)
+        """
         part_schema = self.partition_schema()
+        args = self._qualified_name, spec, part_schema
+
+        def _run_ddl(**kwds):
+            stmt = ddl.ModifyPartition(*args, **kwds)
+            return self._execute(stmt)
+
+        if location is not None:
+            _run_ddl(location=location)
+
+        if format is not None:
+            _run_ddl(format=format)
+
+        if tbl_properties is not None:
+            _run_ddl(tbl_properties=tbl_properties)
+
+        if serde_properties is not None:
+            _run_ddl(serde_properties=serde_properties)
 
     def drop_partition(self, spec):
+        """
+        Drop an existing table partition
+        """
         part_schema = self.partition_schema()
-
+        stmt = ddl.DropPartition(self._qualified_name, spec, part_schema)
+        return self._execute(stmt)
 
     def partitions(self):
         """
