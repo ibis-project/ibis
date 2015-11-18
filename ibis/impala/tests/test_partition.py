@@ -44,6 +44,9 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         cls.db.create_table(cls.pd_name, df,
                             location=cls._create_777_tmp_dir())
 
+    def test_is_partitioned(self):
+        pass
+
     @pytest.mark.superuser
     def test_create_table_with_partition_column(self):
         schema = ibis.schema([('year', 'int32'),

@@ -825,6 +825,9 @@ class TestAlterTable(ImpalaE2E, unittest.TestCase):
         t = self.con.table(new_name, database=tmp_db)
         assert_equal(table, t)
 
+    def test_change_location(self):
+        pass
+
 
 class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
 
