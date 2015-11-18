@@ -166,20 +166,75 @@ ALTER TABLE tbl ADD PARTITION (year=2007, month=4)
 LOCATION '/users/foo/my-data'"""
         assert result == expected
 
-    def test_modify_table_properties(self):
-        format='parquet'
-        tbl_properties = {
-            'foo': '1',
-            'bar': 2
-        }
-        serde_properties = {
-            'baz': 3
-        }
+    def test_alter_partition_properties(self):
+        part = {'year': 2007, 'month': 4}
 
+        def _get_ddl_string(props):
+            stmt = ddl.AlterPartition(self.table_name, part,
+                                       self.part_schema,
+                                       **props)
+            return stmt.compile()
+
+        result = _get_ddl_string({'location': '/users/foo/my-data'})
         expected = """\
-FILEFORMAT PARQUET
-TBLPROPERTIES ('bar'='2', 'foo'='1')
-SERDEPROPERTIES ('baz'='3')"""
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET LOCATION '/users/foo/my-data'"""
+        assert result == expected
+
+        result = _get_ddl_string({'format': 'avro'})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET FILEFORMAT AVRO"""
+        assert result == expected
+
+        result = _get_ddl_string({'tbl_properties': {
+            'bar': 2, 'foo': '1'
+        }})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET TBLPROPERTIES ('bar'='2', 'foo'='1')"""
+        assert result == expected
+
+        result = _get_ddl_string({'serde_properties': {'baz': 3}})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET SERDEPROPERTIES ('baz'='3')"""
+        assert result == expected
+
+    def test_alter_table_properties(self):
+        part = {'year': 2007, 'month': 4}
+
+        def _get_ddl_string(props):
+            stmt = ddl.AlterPartition(self.table_name, part,
+                                      self.part_schema,
+                                      **props)
+            return stmt.compile()
+
+        result = _get_ddl_string({'location': '/users/foo/my-data'})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET LOCATION '/users/foo/my-data'"""
+        assert result == expected
+
+        result = _get_ddl_string({'format': 'avro'})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET FILEFORMAT AVRO"""
+        assert result == expected
+
+        result = _get_ddl_string({'tbl_properties': {
+            'bar': 2, 'foo': '1'
+        }})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET TBLPROPERTIES ('bar'='2', 'foo'='1')"""
+        assert result == expected
+
+        result = _get_ddl_string({'serde_properties': {'baz': 3}})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET SERDEPROPERTIES ('baz'='3')"""
+        assert result == expected
 
 
 class TestCreateTable(unittest.TestCase):

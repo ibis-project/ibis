@@ -1701,7 +1701,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         necessary.
 
         Partition parameters can be set in a single DDL statement, or you can
-        use modify_partition to set them after the fact.
+        use alter_partition to set them after the fact.
 
         Returns
         -------
@@ -1712,34 +1712,71 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
                                 location=location)
         return self._execute(stmt)
 
-    def modify_partition(self, spec, location=None, format=None,
-                         tbl_properties=None,
-                         serde_properties=None):
+    def alter(self, location=None, format=None, tbl_properties=None,
+              serde_properties=None):
+        """
+        Change setting and parameters of the table.
+
+        Parameters
+        ----------
+        location : string, optional
+          For partitioned tables, you may want the alter_partition function
+        format : string, optional
+        tbl_properties : dict, optional
+        serde_properties : dict, optional
+
+        Returns
+        -------
+        None (for now)
+        """
+        def _run_ddl(**kwds):
+            stmt = ddl.AlterTable(self._qualified_name, **kwds)
+            return self._execute(stmt)
+
+        return self._alter_table_helper(_run_ddl, location=location,
+                                        format=format,
+                                        tbl_properties=tbl_properties,
+                                        serde_properties=serde_properties)
+
+    def alter_partition(self, spec, location=None, format=None,
+                        tbl_properties=None,
+                        serde_properties=None):
         """
         Change setting and parameters of an existing partition
+
+        Parameters
+        ----------
+        spec : dict or list
+          The partition keys for the partition being modified
+        location : string, optional
+        format : string, optional
+        tbl_properties : dict, optional
+        serde_properties : dict, optional
 
         Returns
         -------
         None (for now)
         """
         part_schema = self.partition_schema()
-        args = self._qualified_name, spec, part_schema
 
         def _run_ddl(**kwds):
-            stmt = ddl.ModifyPartition(*args, **kwds)
+            stmt = ddl.AlterPartition(self._qualified_name, spec,
+                                      part_schema, **kwds)
             return self._execute(stmt)
 
-        if location is not None:
-            _run_ddl(location=location)
+        return self._alter_table_helper(_run_ddl, location=location,
+                                        format=format,
+                                        tbl_properties=tbl_properties,
+                                        serde_properties=serde_properties)
 
-        if format is not None:
-            _run_ddl(format=format)
-
-        if tbl_properties is not None:
-            _run_ddl(tbl_properties=tbl_properties)
-
-        if serde_properties is not None:
-            _run_ddl(serde_properties=serde_properties)
+    def _alter_table_helper(self, f, **alterations):
+        results = []
+        for k, v in alterations.items():
+            if v is None:
+                continue
+            result = f(**{k: v})
+            results.append(result)
+        return results
 
     def drop_partition(self, spec):
         """

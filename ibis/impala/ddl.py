@@ -514,7 +514,7 @@ class AddPartition(PartitionProperties):
         return self._compile('ADD')
 
 
-class ModifyPartition(PartitionProperties):
+class AlterPartition(PartitionProperties):
 
     def compile(self):
         return self._compile('', 'SET ')
