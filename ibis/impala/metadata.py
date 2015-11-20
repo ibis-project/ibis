@@ -25,19 +25,37 @@ def _noop(tup):
     return None
 
 
-def _get_type(converter=None):
-    def _converter(tup):
-        result = tup[1]
-        if converter is not None:
-            result = converter(result)
-        return result
+def _item_converter(i):
+    def _get_item(converter=None):
+        def _converter(tup):
+            result = tup[i]
+            if converter is not None:
+                result = converter(result)
+            return result
 
-    return _converter
+        return _converter
+
+    return _get_item
+
+_get_type = _item_converter(1)
+_get_comment = _item_converter(2)
 
 
 def _try_timestamp(x):
     try:
         return pd.Timestamp(x)
+    except (ValueError, TypeError):
+        return x
+
+
+def _try_boolean(x):
+    try:
+        x = x.lower()
+        if x == 'true':
+            return True
+        elif x == 'false':
+            return False
+        return x
     except (ValueError, TypeError):
         return x
 
@@ -55,34 +73,21 @@ class MetadataParser(object):
     A simple state-ish machine to parse the results of DESCRIBE FORMATTED
     """
 
-    _info_cleaners = {
-        'database': _get_type(),
-        'owner': _get_type(),
-        'createtime': _get_type(_try_timestamp),
-        'lastaccesstime': _get_type(_try_timestamp),
-        'protect mode': _get_type(),
-        'retention': _get_type(_try_int),
-        'location': _get_type(),
-        'table type': _get_type()
-    }
-
     def __init__(self, table):
         self.table = table
         self.tuples = list(self.table.itertuples(index=False))
 
-        self.schema = None
-        self.partitions = None
-        self.info = None
-        self.storage = None
-
     def __repr__(self):
         buf = StringIO()
-
 
         return buf.getvalue()
 
     def _reset(self):
         self.pos = 0
+        self.schema = None
+        self.partitions = None
+        self.info = None
+        self.storage = None
 
     def _next_tuple(self):
         result = self.tuples[self.pos]
@@ -91,7 +96,28 @@ class MetadataParser(object):
 
     def parse(self):
         self._reset()
-        self._parse_schema()
+        self._parse()
+
+        return TableMetadata(self.schema, self.info, self.storage,
+                             partitions=self.partitions)
+
+    def _parse(self):
+        self.schema = self._parse_schema()
+
+        next_section = self._next_tuple()
+        if 'partition' in next_section[0].lower():
+            self._parse_partitions()
+        else:
+            self._parse_info()
+
+    def _parse_partitions(self):
+        self.partitions = self._parse_schema()
+
+        next_section = self._next_tuple()
+        if 'table information' not in next_section[0].lower():
+            raise ValueError('Table information not present')
+
+        self._parse_info()
 
     def _parse_schema(self):
         tup = self._next_tuple()
@@ -101,29 +127,23 @@ class MetadataParser(object):
                              .format(tup))
         self._next_tuple()
 
-        self.schema = []
+        # Use for both main schema and partition schema (if any)
+        schema = []
         while True:
             tup = self._next_tuple()
             if tup[0].strip() == '':
                 break
-            self.schema.append((tup[0], tup[1]))
+            schema.append((tup[0], tup[1]))
 
-        next_section = self._next_tuple()
-        if 'partition' in next_section[0].lower():
-            self._parse_partitions()
-        else:
-            self._parse_info()
-
-    def _parse_partitions(self):
-        pass
+        return schema
 
     def _parse_info(self):
         self.info = {}
         while True:
             tup = self._next_tuple()
-            key = tup[0].strip().strip(':').lower()
+            key = _clean_param_name(tup[0])
 
-            if key == '':
+            if key == '' or key.startswith('#'):
                 # section is done
                 break
 
@@ -135,8 +155,38 @@ class MetadataParser(object):
             else:
                 self.info[key.capitalize()] = tup[1]
 
+    _info_cleaners = {
+        'database': _get_type(),
+        'owner': _get_type(),
+        'createtime': _get_type(_try_timestamp),
+        'lastaccesstime': _get_type(_try_timestamp),
+        'protect mode': _get_type(),
+        'retention': _get_type(_try_int),
+        'location': _get_type(),
+        'table type': _get_type()
+    }
+
     def _parse_table_parameters(self):
         params = self.info['Table Parameters'] = {}
+        while True:
+            tup = self._next_tuple()
+            if pd.isnull(tup[1]):
+                break
+
+            key, value = tup[1:]
+
+            if key.lower() in self._table_param_cleaners:
+                cleaner = self._table_param_cleaners[key.lower()]
+                value = cleaner(value)
+
+            params[key] = value
+
+    _table_param_cleaners = {
+        'external': _try_boolean,
+        'stats_generated_via_stats_task': _try_boolean,
+        'numrows': _try_int,
+        # 'transient_lastddltime': _get_comment(_try_unix_timestamp),
+    }
 
     def _parse_storage_info(self):
         pass
@@ -145,13 +195,30 @@ class MetadataParser(object):
         pass
 
 
+def _clean_param_name(x):
+    return x.strip().strip(':').lower()
+
+
 class TableMetadata(object):
 
     """
     Container for the parsed and wrangled results of DESCRIBE FORMATTED for
     easier Ibis use (and testing).
     """
+    def __init__(self, schema, info, storage, partitions=None):
+        self.schema = schema
+        self.info = info
+        self.storage = storage
+        self.partitions = partitions
 
     @property
     def is_partitioned(self):
-        pass
+        return self.partitions is not None
+
+
+class TableInfo(object):
+    pass
+
+
+class TableStorageInfo(object):
+    pass

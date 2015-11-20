@@ -90,12 +90,24 @@ class TestMetadataParser(unittest.TestCase):
             columns=['name', 'type', 'comment'])
 
         cls.unpart_metadata = pd.DataFrame.from_records(
-            _glue_lists_spacer(cls.spacer, [cls.schema, cls.partitions,
-                                            cls.info, cls.storage_info]),
+            _glue_lists_spacer(cls.spacer, [cls.schema, cls.info,
+                                            cls.storage_info]),
             columns=['name', 'type', 'comment'])
 
         cls.parsed_part = parse_metadata(cls.part_metadata)
-        cls.unpart_metadata = parse_metadata(cls.part_metadata)
+        cls.parsed_unpart = parse_metadata(cls.unpart_metadata)
+
+    def test_table_params(self):
+        params = self.parsed_part.info['Table Parameters']
+
+        assert params['EXTERNAL'] is True
+        assert params['STATS_GENERATED_VIA_STATS_TASK'] is True
+        assert params['numRows'] == 183592
+        assert params['transient_lastDdlTime'] == '1447369741'
+
+    def test_partitions(self):
+        assert self.parsed_unpart.partitions is None
+        assert self.parsed_part.partitions == [('qux', 'bigint')]
 
     def test_schema(self):
         pass
