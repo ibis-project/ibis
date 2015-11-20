@@ -103,11 +103,27 @@ class TestMetadataParser(unittest.TestCase):
         assert params['EXTERNAL'] is True
         assert params['STATS_GENERATED_VIA_STATS_TASK'] is True
         assert params['numRows'] == 183592
-        assert params['transient_lastDdlTime'] == '1447369741'
+        assert (params['transient_lastDdlTime'] ==
+                pd.Timestamp('2015-11-18 13:56:42'))
 
     def test_partitions(self):
         assert self.parsed_unpart.partitions is None
         assert self.parsed_part.partitions == [('qux', 'bigint')]
 
     def test_schema(self):
-        pass
+        assert self.parsed_part.schema == [
+            ('foo', 'int'),
+            ('bar', 'tinyint'),
+            ('baz', 'bigint')
+        ]
+
+    def test_storage_info(self):
+        storage = self.parsed_part.storage
+        assert storage['Compressed'] is False
+        assert storage['Num Buckets'] == 0
+
+    def test_storage_params(self):
+        params = self.parsed_part.storage['Desc Params']
+
+        assert params['field.delim'] == '|'
+        assert params['serialization.format'] == '|'

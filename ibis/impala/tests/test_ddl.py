@@ -746,6 +746,8 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
                                  wraps=self.con._execute)
 
     def test_describe_formatted(self):
+        from ibis.impala.metadata import TableMetadata
+
         t = self.con.table('functional_alltypes')
         with self._patch_execute() as ex_mock:
             desc = t.describe_formatted()
@@ -754,7 +756,7 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
                                        .format(self.test_data_db,
                                                'functional_alltypes'),
                                        results=True)
-            assert isinstance(desc, pd.DataFrame)
+            assert isinstance(desc, TableMetadata)
 
     def test_show_files(self):
         t = self.con.table('functional_alltypes')

@@ -48,12 +48,19 @@ def _try_timestamp(x):
         return x
 
 
+def _try_unix_timestamp(x):
+    try:
+        return pd.Timestamp.fromtimestamp(int(x))
+    except (ValueError, TypeError):
+        return x
+
+
 def _try_boolean(x):
     try:
         x = x.lower()
-        if x == 'true':
+        if x in ('true', 'yes'):
             return True
-        elif x == 'false':
+        elif x in ('false', 'no'):
             return False
         return x
     except (ValueError, TypeError):
@@ -77,11 +84,6 @@ class MetadataParser(object):
         self.table = table
         self.tuples = list(self.table.itertuples(index=False))
 
-    def __repr__(self):
-        buf = StringIO()
-
-        return buf.getvalue()
-
     def _reset(self):
         self.pos = 0
         self.schema = None
@@ -90,6 +92,9 @@ class MetadataParser(object):
         self.storage = None
 
     def _next_tuple(self):
+        if self.pos == len(self.tuples):
+            raise StopIteration
+
         result = self.tuples[self.pos]
         self.pos += 1
         return result
@@ -141,6 +146,7 @@ class MetadataParser(object):
         self.info = {}
         while True:
             tup = self._next_tuple()
+            orig_key = tup[0].strip(':')
             key = _clean_param_name(tup[0])
 
             if key == '' or key.startswith('#'):
@@ -151,9 +157,14 @@ class MetadataParser(object):
                 self._parse_table_parameters()
             elif key in self._info_cleaners:
                 result = self._info_cleaners[key](tup)
-                self.info[key.capitalize()] = result
+                self.info[orig_key] = result
             else:
-                self.info[key.capitalize()] = tup[1]
+                self.info[orig_key] = tup[1]
+
+        if 'storage information' not in key:
+            raise ValueError('Storage information not present')
+
+        self._parse_storage_info()
 
     _info_cleaners = {
         'database': _get_type(),
@@ -167,32 +178,72 @@ class MetadataParser(object):
     }
 
     def _parse_table_parameters(self):
-        params = self.info['Table Parameters'] = {}
+        params = self._parse_nested_params(self._table_param_cleaners)
+        self.info['Table Parameters'] = params
+
+    _table_param_cleaners = {
+        'external': _try_boolean,
+        'column_stats_accurate': _try_boolean,
+        'numfiles': _try_int,
+        'totalsize': _try_int,
+        'stats_generated_via_stats_task': _try_boolean,
+        'numrows': _try_int,
+        'transient_lastddltime': _try_unix_timestamp,
+    }
+
+    def _parse_storage_info(self):
+        self.storage = {}
         while True:
-            tup = self._next_tuple()
+            # end of the road
+            try:
+                tup = self._next_tuple()
+            except StopIteration:
+                break
+
+            orig_key = tup[0].strip(':')
+            key = _clean_param_name(tup[0])
+
+            if key == '' or key.startswith('#'):
+                # section is done
+                break
+
+            if key == 'storage desc params':
+                self._parse_storage_desc_params()
+            elif key in self._storage_cleaners:
+                result = self._storage_cleaners[key](tup)
+                self.storage[orig_key] = result
+            else:
+                self.storage[orig_key] = tup[1]
+
+    _storage_cleaners = {
+        'compressed': _get_type(_try_boolean),
+        'num buckets': _get_type(_try_int),
+    }
+
+    def _parse_storage_desc_params(self):
+        params = self._parse_nested_params(self._storage_param_cleaners)
+        self.storage['Desc Params'] = params
+
+    _storage_param_cleaners = {}
+
+    def _parse_nested_params(self, cleaners):
+        params = {}
+        while True:
+            try:
+                tup = self._next_tuple()
+            except StopIteration:
+                break
             if pd.isnull(tup[1]):
                 break
 
             key, value = tup[1:]
 
-            if key.lower() in self._table_param_cleaners:
-                cleaner = self._table_param_cleaners[key.lower()]
+            if key.lower() in cleaners:
+                cleaner = cleaners[key.lower()]
                 value = cleaner(value)
-
             params[key] = value
 
-    _table_param_cleaners = {
-        'external': _try_boolean,
-        'stats_generated_via_stats_task': _try_boolean,
-        'numrows': _try_int,
-        # 'transient_lastddltime': _get_comment(_try_unix_timestamp),
-    }
-
-    def _parse_storage_info(self):
-        pass
-
-    def _parse_storage_desc_params(self):
-        pass
+        return params
 
 
 def _clean_param_name(x):
@@ -210,6 +261,26 @@ class TableMetadata(object):
         self.info = info
         self.storage = storage
         self.partitions = partitions
+
+    def __repr__(self):
+        import pprint
+
+        # Quick and dirty for now
+        buf = StringIO()
+        buf.write(str(type(self)))
+        buf.write('\n')
+
+        data = {
+            'schema': self.schema,
+            'info': self.info,
+            'storage info': self.storage
+        }
+        if self.partitions is not None:
+            data['partition schema'] = self.partitions
+
+        pprint.pprint(data, stream=buf)
+
+        return buf.getvalue()
 
     @property
     def is_partitioned(self):

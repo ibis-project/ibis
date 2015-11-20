@@ -1382,6 +1382,8 @@ class ImpalaClient(SQLClient):
           Table name. Can be fully qualified (with database)
         database : string, optional
         """
+        from ibis.impala.metadata import parse_metadata
+
         stmt = self._table_command('DESCRIBE FORMATTED',
                                    name, database=database)
         query = ImpalaQuery(self, stmt)
@@ -1391,7 +1393,7 @@ class ImpalaClient(SQLClient):
         for c in result.columns:
             result[c] = result[c].str.strip()
 
-        return result
+        return parse_metadata(result)
 
     def show_files(self, name, database=None):
         """
