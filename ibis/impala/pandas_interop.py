@@ -113,22 +113,33 @@ class DataFrameWriter(object):
     """
     Interface class for writing pandas objects to Impala tables
 
-    Class takes ownership of any data written to HDFS
+    Class takes ownership of any temporary data written to HDFS
     """
-    def __init__(self, client, df):
+    def __init__(self, client, df, path=None):
         self.client = client
         self.hdfs = client.hdfs
 
         self.df = df
 
         self.temp_hdfs_dirs = []
-        self.csv_dir = None
 
-    def write_csv(self):
-        import csv
-
+    def write_temp_csv(self):
         temp_hdfs_dir = pjoin(options.impala.temp_hdfs_path,
                               'pandas_{0}'.format(util.guid()))
+        self.hdfs.mkdir(temp_hdfs_dir)
+
+        # Keep track of the temporary HDFS file
+        self.temp_hdfs_dirs.append(temp_hdfs_dir)
+
+        # Write the file to HDFS
+        hdfs_path = pjoin(temp_hdfs_dir, '0.csv')
+
+        self.write_csv(hdfs_path)
+
+        return temp_hdfs_dir
+
+    def write_csv(self, path):
+        import csv
 
         tmp_path = 'tmp_{0}.csv'.format(util.guid())
         f = open(tmp_path, 'w+')
@@ -145,18 +156,10 @@ class DataFrameWriter(object):
                            na_rep='#NULL')
             f.seek(0)
 
-            # Write the file to HDFS
-            hdfs_path = pjoin(temp_hdfs_dir, '0.csv')
-
             if options.verbose:
-                log('Writing CSV to HDFS: {0}'.format(hdfs_path))
+                log('Writing CSV to: {0}'.format(path))
 
-            self.hdfs.put(hdfs_path, f)
-
-            # Keep track of the temporary HDFS file
-            self.temp_hdfs_dirs.append(temp_hdfs_dir)
-
-            self.csv_dir = temp_hdfs_dir
+            self.hdfs.put(path, f)
         finally:
             f.close()
             try:
@@ -164,20 +167,17 @@ class DataFrameWriter(object):
             except os.error:
                 pass
 
-        return temp_hdfs_dir
+        return path
 
     def get_schema(self):
         # define a temporary table using delimited data
         return pandas_to_ibis_schema(self.df)
 
-    def delimited_table(self, name=None, database=None):
-        if self.csv_dir is None:
-            self.write_csv()
-
+    def delimited_table(self, csv_dir, name=None, database=None):
         temp_delimited_name = 'ibis_tmp_pandas_{0}'.format(util.guid())
         schema = self.get_schema()
 
-        return self.client.delimited_file(self.csv_dir, schema,
+        return self.client.delimited_file(csv_dir, schema,
                                           name=temp_delimited_name,
                                           database=database,
                                           delimiter=',',

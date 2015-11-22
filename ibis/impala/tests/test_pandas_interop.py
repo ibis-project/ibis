@@ -187,9 +187,8 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
 
     def test_writer_cleanup_deletes_hdfs_dir(self):
         writer = DataFrameWriter(self.con, self.alltypes)
-        writer.write_csv()
 
-        path = writer.csv_dir
+        path = writer.write_temp_csv()
         assert self.con.hdfs.exists(path)
 
         writer.cleanup()
@@ -203,7 +202,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
     def test_create_table_from_dataframe(self):
         tname = 'tmp_pandas_{0}'.format(util.guid())
         self.con.create_table(tname, self.alltypes, database=self.tmp_db,
-                              path=self._create_777_tmp_dir())
+                              location=self._create_777_tmp_dir())
         self.temp_tables.append(tname)
 
         table = self.con.table(tname, database=self.tmp_db)
@@ -216,7 +215,8 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
 
         table_name = 'tmp_pandas_{0}'.format(util.guid())
         self.con.create_table(table_name, database=self.tmp_db,
-                              schema=schema, path=self._create_777_tmp_dir())
+                              schema=schema,
+                              location=self._create_777_tmp_dir())
         self.temp_tables.append(table_name)
 
         self.con.insert(table_name, exhaustive_df.iloc[:4],
@@ -242,9 +242,9 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
 
     def _check_roundtrip(self, df):
         writer = DataFrameWriter(self.con, df)
-        writer.write_csv()
+        path = writer.write_temp_csv()
 
-        table = writer.delimited_table()
+        table = writer.delimited_table(path)
         df2 = table.execute()
 
         assert_frame_equal(df2, df)

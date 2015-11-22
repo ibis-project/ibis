@@ -587,7 +587,7 @@ class ImpalaClient(SQLClient):
             # which is easier for manual cleanup, if necessary
             self.hdfs.mkdir(path)
         statement = ddl.CreateDatabase(name, path=path, can_exist=force)
-        self._execute(statement)
+        return self._execute(statement)
 
     def drop_database(self, name, force=False):
         """
@@ -629,7 +629,7 @@ class ImpalaClient(SQLClient):
                                          'being dropped, or set '
                                          'force=True'.format(name))
         statement = ddl.DropDatabase(name, must_exist=not force)
-        self._execute(statement)
+        return self._execute(statement)
 
     def list_databases(self, like=None):
         """
@@ -712,7 +712,7 @@ class ImpalaClient(SQLClient):
         ast = self._build_ast(expr)
         select = ast.queries[0]
         statement = ddl.CreateView(name, select, database=database)
-        self._execute(statement)
+        return self._execute(statement)
 
     def drop_view(self, name, database=None, force=False):
         """
@@ -727,11 +727,12 @@ class ImpalaClient(SQLClient):
         """
         statement = ddl.DropView(name, database=database,
                                  must_exist=not force)
-        self._execute(statement)
+        return self._execute(statement)
 
     def create_table(self, table_name, obj=None, schema=None, database=None,
                      format='parquet', force=False, external=False,
-                     path=None, partition=None, like_parquet=None):
+                     location=None, partition=None, like_parquet=None,
+                     path=None):
         """
         Create a new table in Impala using an Ibis table expression
 
@@ -750,8 +751,9 @@ class ImpalaClient(SQLClient):
         external : boolean, default False
           Create an external table; Impala will not delete the underlying data
           when the table is dropped
-        path : string, default None
-          Specify the path where Impala reads and writes files for the table
+        location : string, default None
+          Specify the directory location where Impala reads and writes files
+          for the table
         partition : list of strings
           Must pass a schema to use this. Cannot partition from an expression
           (create-table-as-select)
@@ -765,9 +767,13 @@ class ImpalaClient(SQLClient):
         if like_parquet is not None:
             raise NotImplementedError
 
+        # TODO: deprecation warning
+        if path is not None:
+            location = path
+
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
-                writer, to_insert = self._write_dataframe(obj)
+                writer, to_insert = _write_temp_dataframe(self, obj)
             else:
                 to_insert = obj
             ast = self._build_ast(to_insert)
@@ -785,7 +791,7 @@ class ImpalaClient(SQLClient):
                                  can_exist=force,
                                  format=format,
                                  external=external,
-                                 path=path)
+                                 path=location)
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
                 table_name, schema, ddl.NoFormat(),
@@ -793,17 +799,11 @@ class ImpalaClient(SQLClient):
                 format=format,
                 can_exist=force,
                 external=external,
-                path=path, partition=partition)
+                path=location, partition=partition)
         else:
             raise com.IbisError('Must pass expr or schema')
 
-        self._execute(statement)
-
-    def _write_dataframe(self, df):
-        from ibis.impala.pandas_interop import DataFrameWriter
-        writer = DataFrameWriter(self, df)
-        writer.write_csv()
-        return writer, writer.delimited_table()
+        return self._execute(statement)
 
     def avro_file(self, hdfs_dir, avro_schema, name=None, database=None,
                   external=True, persist=False):
@@ -1000,24 +1000,14 @@ class ImpalaClient(SQLClient):
     def insert(self, table_name, obj=None, database=None, overwrite=False,
                partition=None, values=None, validate=True):
         """
-        Insert into existing table
+        Insert into existing table.
+
+        See ImpalaTable.insert for other parameters.
 
         Parameters
         ----------
         table_name : string
-        obj : TableExpr or pandas DataFrame
         database : string, default None
-        overwrite : boolean, default False
-          If True, will replace existing contents of table
-        partition : list or dict, optional
-          For partitioned tables, indicate the partition that's being inserted
-          into, either with an ordered list of partition keys or a dict of
-          partition field name to value. For example for the partition
-          (year=2007, month=7), this can be either (2007, 7) or {'year': 2007,
-          'month': 7}.
-        validate : boolean, default True
-          If True, do more rigorous validation that schema of table being
-          inserted is compatible with the existing table
 
         Examples
         --------
@@ -1026,35 +1016,24 @@ class ImpalaClient(SQLClient):
         # Completely overwrite contents
         con.insert('my_table', table_expr, overwrite=True)
         """
-        if isinstance(obj, pd.DataFrame):
-            writer, expr = self._write_dataframe(obj)
-        else:
-            expr = obj
+        table = self.table(table_name, database=database)
+        return table.insert(obj=obj, overwrite=overwrite, partition=partition,
+                            values=values, validate=validate)
 
-        if values is not None:
-            raise NotImplementedError
+    def load_data(self, table_name, path, database=None, overwrite=False,
+                  partition=None):
+        """
+        Wraps the LOAD DATA DDL statement. Loads data into an Impala table by
+        physically moving data files.
 
-        if validate:
-            existing_schema = self.get_schema(table_name, database=database)
-            insert_schema = expr.schema()
-            if not insert_schema.equals(existing_schema):
-                _validate_compatible(insert_schema, existing_schema)
-
-        if partition is not None:
-            partition_schema = (self.table(table_name, database=database)
-                                .partition_schema())
-            expr = expr.drop(partition_schema.names)
-        else:
-            partition_schema = None
-
-        ast = self._build_ast(expr)
-        select = ast.queries[0]
-        statement = ddl.InsertSelect(table_name, select,
-                                     database=database,
-                                     partition=partition,
-                                     partition_schema=partition_schema,
-                                     overwrite=overwrite)
-        self._execute(statement)
+        Parameters
+        ----------
+        table_name : string
+        database : string, default None (optional)
+        """
+        table = self.table(table_name, database=database)
+        return table.load_data(path, overwrite=overwrite,
+                               partition=partition)
 
     def drop_table(self, table_name, database=None, force=False):
         """
@@ -1403,6 +1382,8 @@ class ImpalaClient(SQLClient):
           Table name. Can be fully qualified (with database)
         database : string, optional
         """
+        from ibis.impala.metadata import parse_metadata
+
         stmt = self._table_command('DESCRIBE FORMATTED',
                                    name, database=database)
         query = ImpalaQuery(self, stmt)
@@ -1412,7 +1393,7 @@ class ImpalaClient(SQLClient):
         for c in result.columns:
             result[c] = result[c].str.strip()
 
-        return result
+        return parse_metadata(result)
 
     def show_files(self, name, database=None):
         """
@@ -1474,6 +1455,32 @@ class ImpalaClient(SQLClient):
             else:
                 adapted_types.append(typename)
         return names, adapted_types
+
+    def write_dataframe(self, df, path, format='csv', async=False):
+        """
+        Write a pandas DataFrame to indicated file path (default: HDFS) in the
+        indicated format
+
+        Parameters
+        ----------
+        df : DataFrame
+        path : string
+          Absolute output path
+        format : {'csv'}, default 'csv'
+        async : boolean, default False
+          Not yet supported
+
+        Returns
+        -------
+        None (for now)
+        """
+        from ibis.impala.pandas_interop import DataFrameWriter
+
+        if async:
+            raise NotImplementedError
+
+        writer = DataFrameWriter(self, df)
+        return writer.write_csv(path)
 
 
 # ----------------------------------------------------------------------
@@ -1539,11 +1546,17 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
     def refresh(self):
         self._client.refresh(self._qualified_name)
 
-    def describe_formatted(self):
+    def metadata(self):
         """
-        Return results of DESCRIBE FORMATTED statement
+        Return parsed results of DESCRIBE FORMATTED statement
+
+        Returns
+        -------
+        meta : TableMetadata
         """
         return self._client.describe_formatted(self._qualified_name)
+
+    describe_formatted = metadata
 
     def files(self):
         """
@@ -1564,9 +1577,15 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
         Parameters
         ----------
-        expr : TableExpr
+        obj : TableExpr or pandas DataFrame
         overwrite : boolean, default False
           If True, will replace existing contents of table
+        partition : list or dict, optional
+          For partitioned tables, indicate the partition that's being inserted
+          into, either with an ordered list of partition keys or a dict of
+          partition field name to value. For example for the partition
+          (year=2007, month=7), this can be either (2007, 7) or {'year': 2007,
+          'month': 7}.
         validate : boolean, default True
           If True, do more rigorous validation that schema of table being
           inserted is compatible with the existing table
@@ -1578,9 +1597,63 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         # Completely overwrite contents
         t.insert(table_expr, overwrite=True)
         """
-        self._client.insert(self._qualified_name, obj=obj, overwrite=overwrite,
-                            partition=partition, values=values,
-                            validate=validate)
+        if isinstance(obj, pd.DataFrame):
+            writer, expr = _write_temp_dataframe(self._client, obj)
+        else:
+            expr = obj
+
+        if values is not None:
+            raise NotImplementedError
+
+        if validate:
+            existing_schema = self.schema()
+            insert_schema = expr.schema()
+            if not insert_schema.equals(existing_schema):
+                _validate_compatible(insert_schema, existing_schema)
+
+        if partition is not None:
+            partition_schema = self.partition_schema()
+            expr = expr.drop(partition_schema.names)
+        else:
+            partition_schema = None
+
+        ast = build_ast(expr)
+        select = ast.queries[0]
+        statement = ddl.InsertSelect(self._qualified_name,
+                                     select,
+                                     partition=partition,
+                                     partition_schema=partition_schema,
+                                     overwrite=overwrite)
+        return self._execute(statement)
+
+    def load_data(self, path, overwrite=False, partition=None):
+        """
+        Wraps the LOAD DATA DDL statement. Loads data into an Impala table by
+        physically moving data files.
+
+        Parameters
+        ----------
+        path : string
+        overwrite : boolean, default False
+          Overwrite the existing data in the entire table or indicated
+          partition
+        partition : dict, optional
+          If specified, the partition must already exist
+
+        Returns
+        -------
+        query : ImpalaQuery
+        """
+        if partition is not None:
+            partition_schema = self.partition_schema()
+        else:
+            partition_schema = None
+
+        stmt = ddl.LoadData(self._qualified_name, path,
+                            partition=partition,
+                            partition_schema=partition_schema)
+
+        return self._execute(stmt)
 
     def rename(self, new_name, database=None):
         """
@@ -1604,6 +1677,13 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         op = self.op().change_name(statement.new_qualified_name)
         self._arg = op
 
+    def _execute(self, stmt):
+        return self._client._execute(stmt)
+
+    @property
+    def is_partitioned(self):
+        return self.metadata().is_partitioned
+
     def partition_schema(self):
         """
         For partitioned tables, return the schema (names and types) for the
@@ -1626,6 +1706,97 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
         pnames, ptypes = zip(*partition_fields)
         return dt.Schema(pnames, ptypes)
+
+    def add_partition(self, spec, location=None):
+        """
+        Add a new table partition, creating any new directories in HDFS if
+        necessary.
+
+        Partition parameters can be set in a single DDL statement, or you can
+        use alter_partition to set them after the fact.
+
+        Returns
+        -------
+        None (for now)
+        """
+        part_schema = self.partition_schema()
+        stmt = ddl.AddPartition(self._qualified_name, spec, part_schema,
+                                location=location)
+        return self._execute(stmt)
+
+    def alter(self, location=None, format=None, tbl_properties=None,
+              serde_properties=None):
+        """
+        Change setting and parameters of the table.
+
+        Parameters
+        ----------
+        location : string, optional
+          For partitioned tables, you may want the alter_partition function
+        format : string, optional
+        tbl_properties : dict, optional
+        serde_properties : dict, optional
+
+        Returns
+        -------
+        None (for now)
+        """
+        def _run_ddl(**kwds):
+            stmt = ddl.AlterTable(self._qualified_name, **kwds)
+            return self._execute(stmt)
+
+        return self._alter_table_helper(_run_ddl, location=location,
+                                        format=format,
+                                        tbl_properties=tbl_properties,
+                                        serde_properties=serde_properties)
+
+    def alter_partition(self, spec, location=None, format=None,
+                        tbl_properties=None,
+                        serde_properties=None):
+        """
+        Change setting and parameters of an existing partition
+
+        Parameters
+        ----------
+        spec : dict or list
+          The partition keys for the partition being modified
+        location : string, optional
+        format : string, optional
+        tbl_properties : dict, optional
+        serde_properties : dict, optional
+
+        Returns
+        -------
+        None (for now)
+        """
+        part_schema = self.partition_schema()
+
+        def _run_ddl(**kwds):
+            stmt = ddl.AlterPartition(self._qualified_name, spec,
+                                      part_schema, **kwds)
+            return self._execute(stmt)
+
+        return self._alter_table_helper(_run_ddl, location=location,
+                                        format=format,
+                                        tbl_properties=tbl_properties,
+                                        serde_properties=serde_properties)
+
+    def _alter_table_helper(self, f, **alterations):
+        results = []
+        for k, v in alterations.items():
+            if v is None:
+                continue
+            result = f(**{k: v})
+            results.append(result)
+        return results
+
+    def drop_partition(self, spec):
+        """
+        Drop an existing table partition
+        """
+        part_schema = self.partition_schema()
+        stmt = ddl.DropPartition(self._qualified_name, spec, part_schema)
+        return self._execute(stmt)
 
     def partitions(self):
         """
@@ -1674,6 +1845,13 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
         except ImpylaError:
             # database might have been dropped
             pass
+
+
+def _write_temp_dataframe(client, df):
+    from ibis.impala.pandas_interop import DataFrameWriter
+    writer = DataFrameWriter(client, df)
+    path = writer.write_temp_csv()
+    return writer, writer.delimited_table(path)
 
 
 def _validate_compatible(from_schema, to_schema):

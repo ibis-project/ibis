@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from posixpath import join as pjoin
 import pytest
 
 from pandas.util.testing import assert_frame_equal
@@ -25,11 +26,16 @@ import ibis
 import ibis.util as util
 
 
+def _tmp_name():
+    return 'tmp_partition_{0}'.format(util.guid())
+
+
 class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestPartitioning, cls).setUpClass()
+        ImpalaE2E.setup_e2e(cls)
+
         df = pd.DataFrame({'year': [2009, 2009, 2009, 2010, 2010, 2010],
                            'month': [1, 2, 3, 1, 2, 3],
                            'value': [1, 2, 3, 4, 5, 6]})
@@ -38,8 +44,19 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
         cls.df = df
         cls.db = cls.con.database(cls.tmp_db)
-        cls.pd_name = util.guid()
-        cls.db.create_table(cls.pd_name, df, path=cls._create_777_tmp_dir())
+        cls.pd_name = _tmp_name()
+        cls.db.create_table(cls.pd_name, df,
+                            location=cls._create_777_tmp_dir())
+
+    def test_is_partitioned(self):
+        schema = ibis.schema([('foo', 'string'),
+                              ('year', 'int32'),
+                              ('month', 'int16')])
+        name = _tmp_name()
+        self.db.create_table(name, schema=schema,
+                             partition=['year', 'month'],
+                             location=self._create_777_tmp_dir())
+        assert self.db.table(name).is_partitioned
 
     @pytest.mark.superuser
     def test_create_table_with_partition_column(self):
@@ -48,9 +65,11 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                               ('day', 'int8'),
                               ('value', 'double')])
 
-        name = util.guid()
-        self.con.create_table(name, schema=schema, partition=['year', 'month'],
-                              path=self._create_777_tmp_dir())
+        name = _tmp_name()
+        self.con.create_table(name, schema=schema,
+                              database=self.tmp_db,
+                              partition=['year', 'month'],
+                              location=self._create_777_tmp_dir())
         self.temp_tables.append(name)
 
         # the partition column get put at the end of the table
@@ -58,10 +77,10 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                                  ('value', 'double'),
                                  ('year', 'int32'),
                                  ('month', 'int8')])
-        table_schema = self.con.get_schema(name)
+        table_schema = self.con.get_schema(name, database=self.tmp_db)
         assert_equal(table_schema, ex_schema)
 
-        partition_schema = self.con.table(name).partition_schema()
+        partition_schema = self.db.table(name).partition_schema()
 
         expected = ibis.schema([('year', 'int32'),
                                 ('month', 'int8')])
@@ -74,9 +93,9 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         part_schema = ibis.schema([('year', 'int32'),
                                    ('month', 'int8')])
 
-        name = util.guid()
+        name = _tmp_name()
         self.con.create_table(name, schema=schema, partition=part_schema,
-                              path=self._create_777_tmp_dir())
+                              location=self._create_777_tmp_dir())
         self.temp_tables.append(name)
 
         # the partition column get put at the end of the table
@@ -101,16 +120,9 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         df = self.df
 
         unpart_t = self.db.table(self.pd_name)
-
-        part_name = util.guid()
-
         part_keys = ['year', 'month']
-        self.db.create_table(part_name,
-                             schema=unpart_t.schema(),
-                             partition=part_keys,
-                             path=self._create_777_tmp_dir())
-
-        part_t = self.db.table(part_name)
+        part_t = self._create_partitioned_table(unpart_t.schema(),
+                                                part_keys)
         unique_keys = df[part_keys].drop_duplicates()
 
         for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
@@ -124,17 +136,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                 part = [year, month]
             part_t.insert(select_stmt, partition=part)
 
-        result = (part_t.execute()
-                  .sort_index(by='id')
-                  .reset_index(drop=True)
-                  [df.columns])
-
-        assert_frame_equal(result, df)
-
-        parts = part_t.partitions()
-
-        # allow for the total line
-        assert len(parts) == (len(unique_keys) + 1)
+        self._verify_partitioned_table(part_t, df, unique_keys)
 
     @pytest.mark.superuser
     def test_insert_overwrite_partition(self):
@@ -154,7 +156,69 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
     @pytest.mark.superuser
     def test_load_data_partition(self):
-        pass
+        df = self.df
+
+        unpart_t = self.db.table(self.pd_name)
+        part_keys = ['year', 'month']
+        part_t = self._create_partitioned_table(unpart_t.schema(),
+                                                part_keys)
+
+        # trim the runtime of this test
+        df = df[df.month == 1].reset_index(drop=True)
+
+        unique_keys = df[part_keys].drop_duplicates()
+
+        hdfs_dir = pjoin(self.tmp_dir, 'load-data-partition')
+
+        df2 = df.drop(['year', 'month'], axis='columns')
+
+        csv_props = {
+            'serialization.format': ',',
+            'field.delim': ','
+        }
+
+        for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
+            chunk = df2[(df.year == year) & (df.month == month)]
+            chunk_path = pjoin(hdfs_dir, '{0}.csv'.format(i))
+
+            self.con.write_dataframe(chunk, chunk_path)
+
+            # test both styles of insert
+            if i:
+                part = {'year': year, 'month': month}
+            else:
+                part = [year, month]
+
+            part_t.add_partition(part)
+            part_t.alter_partition(part, format='text',
+                                   serde_properties=csv_props)
+            part_t.load_data(chunk_path, partition=part)
+
+        self.hdfs.rmdir(hdfs_dir)
+        self._verify_partitioned_table(part_t, df, unique_keys)
+
+    def _verify_partitioned_table(self, part_t, df, unique_keys):
+        result = (part_t.execute()
+                  .sort_index(by='id')
+                  .reset_index(drop=True)
+                  [df.columns])
+
+        assert_frame_equal(result, df)
+
+        parts = part_t.partitions()
+
+        # allow for the total line
+        assert len(parts) == (len(unique_keys) + 1)
+
+    def _create_partitioned_table(self, schema, part_keys):
+        part_name = _tmp_name()
+
+        self.db.create_table(part_name,
+                             schema=schema,
+                             partition=part_keys,
+                             location=self._create_777_tmp_dir())
+        self.temp_tables.append(part_name)
+        return self.db.table(part_name)
 
     @pytest.mark.superuser
     def test_repartition_automated(self):

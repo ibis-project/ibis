@@ -51,3 +51,7 @@ testing/udf/CMakeCache.txt
 testing/udf/CMakeFiles/
 testing/udf/Makefile
 .cache/
+
+# test data
+scripts/ibis-testing*
+ibis_testing*

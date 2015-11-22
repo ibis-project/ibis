@@ -59,6 +59,30 @@ class CreateDDL(ImpalaDDL):
         return 'IF NOT EXISTS ' if self.can_exist else ''
 
 
+_format_aliases = {
+    'TEXT': 'TEXTFILE'
+}
+
+
+def _sanitize_format(format):
+    if format is None:
+        return
+    format = format.upper()
+    format = _format_aliases.get(format, format)
+    if format not in ('PARQUET', 'AVRO', 'TEXTFILE'):
+        raise ValueError('Invalid format: {0}'.format(format))
+
+    return format
+
+
+def _format_properties(props):
+    tokens = []
+    for k, v in sorted(props.items()):
+        tokens.append("'{0!s}'='{1!s}'".format(k, v))
+
+    return '({0})'.format(', '.join(tokens))
+
+
 class CreateTable(CreateDDL):
 
     """
@@ -78,13 +102,7 @@ class CreateTable(CreateDDL):
         self.path = path
         self.external = external
         self.can_exist = can_exist
-        self.format = self._validate_storage_format(format)
-
-    def _validate_storage_format(self, format):
-        format = format.lower()
-        if format not in ('parquet', 'avro'):
-            raise ValueError('Invalid format: {0}'.format(format))
-        return format
+        self.format = _sanitize_format(format)
 
     def _create_line(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
@@ -105,8 +123,8 @@ class CreateTable(CreateDDL):
 
     def _storage(self):
         storage_lines = {
-            'parquet': '\nSTORED AS PARQUET',
-            'avro': '\nSTORED AS AVRO'
+            'PARQUET': '\nSTORED AS PARQUET',
+            'AVRO': '\nSTORED AS AVRO'
         }
         return storage_lines[self.format]
 
@@ -365,7 +383,9 @@ class InsertSelect(ImpalaDDL):
             cmd = 'INSERT INTO'
 
         if self.partition is not None:
-            partition = self._format_partition()
+            part = _format_partition(self.partition,
+                                     self.partition_schema)
+            partition = ' {0} '.format(part)
         else:
             partition = ''
 
@@ -374,28 +394,141 @@ class InsertSelect(ImpalaDDL):
         return'{0} {1}{2}\n{3}'.format(cmd, scoped_name, partition,
                                        select_query)
 
-    def _format_partition(self):
-        tokens = []
-        if isinstance(self.partition, dict):
-            for name in self.partition_schema:
-                if name in self.partition:
-                    tok = '{0}={1}'.format(name, self.partition[name])
-                else:
-                    # dynamic partitioning
-                    tok = name
-                tokens.append(tok)
-        else:
-            for name, value in zip(self.partition_schema, self.partition):
-                tok = '{0}={1}'.format(name, value)
-                tokens.append(tok)
 
-        return ' partition({0}) '.format(', '.join(tokens))
+def _format_partition(partition, partition_schema):
+    tokens = []
+    if isinstance(partition, dict):
+        for name in partition_schema:
+            if name in partition:
+                tok = '{0}={1}'.format(name, partition[name])
+            else:
+                # dynamic partitioning
+                tok = name
+            tokens.append(tok)
+    else:
+        for name, value in zip(partition_schema, partition):
+            tok = '{0}={1}'.format(name, value)
+            tokens.append(tok)
+
+    return 'PARTITION ({0})'.format(', '.join(tokens))
+
+
+class LoadData(ImpalaDDL):
+
+    """
+    Generate DDL for LOAD DATA command. Cannot be cancelled
+    """
+
+    def __init__(self, table_name, path, database=None,
+                 partition=None, partition_schema=None,
+                 overwrite=False):
+        self.table_name = table_name
+        self.database = database
+        self.path = path
+
+        self.partition = partition
+        self.partition_schema = partition_schema
+
+        self.overwrite = overwrite
+
+    def compile(self):
+        overwrite = 'OVERWRITE ' if self.overwrite else ''
+
+        if self.partition is not None:
+            partition = '\n' + _format_partition(self.partition,
+                                                 self.partition_schema)
+        else:
+            partition = ''
+
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+        return ("LOAD DATA INPATH '{0}' {1}INTO TABLE {2}{3}"
+                .format(self.path, overwrite, scoped_name, partition))
 
 
 class AlterTable(ImpalaDDL):
 
+    def __init__(self, table, location=None, format=None, tbl_properties=None,
+                 serde_properties=None):
+        self.table = table
+        self.location = location
+        self.format = _sanitize_format(format)
+        self.tbl_properties = tbl_properties
+        self.serde_properties = serde_properties
+
     def _wrap_command(self, cmd):
         return 'ALTER TABLE {0}'.format(cmd)
+
+    def _format_properties(self, prefix=''):
+        tokens = []
+
+        if self.location is not None:
+            tokens.append("LOCATION '{0}'".format(self.location))
+
+        if self.format is not None:
+            tokens.append("FILEFORMAT {0}".format(self.format))
+
+        if self.tbl_properties is not None:
+            props = _format_properties(self.tbl_properties)
+            tokens.append('TBLPROPERTIES {0}'.format(props))
+
+        if self.serde_properties is not None:
+            props = _format_properties(self.serde_properties)
+            tokens.append('SERDEPROPERTIES {0}'.format(props))
+
+        if len(tokens) > 0:
+            return '\n{0}{1}'.format(prefix, '\n'.join(tokens))
+        else:
+            return ''
+
+    def compile(self):
+        props = self._format_properties()
+        action = '{0} SET {1}'.format(self.table, props)
+        return self._wrap_command(action)
+
+
+class PartitionProperties(AlterTable):
+
+    def __init__(self, table, partition, partition_schema,
+                 location=None, format=None,
+                 tbl_properties=None, serde_properties=None):
+        self.partition = partition
+        self.partition_schema = partition_schema
+
+        AlterTable.__init__(self, table, location=location, format=format,
+                            tbl_properties=tbl_properties,
+                            serde_properties=serde_properties)
+
+    def _compile(self, cmd, property_prefix=''):
+        part = _format_partition(self.partition, self.partition_schema)
+        if cmd:
+            part = '{0} {1}'.format(cmd, part)
+
+        props = self._format_properties(property_prefix)
+        action = '{0} {1}{2}'.format(self.table, part, props)
+        return self._wrap_command(action)
+
+
+class AddPartition(PartitionProperties):
+
+    def __init__(self, table, partition, partition_schema, location=None):
+        PartitionProperties.__init__(self, table, partition,
+                                     partition_schema,
+                                     location=location)
+
+    def compile(self):
+        return self._compile('ADD')
+
+
+class AlterPartition(PartitionProperties):
+
+    def compile(self):
+        return self._compile('', 'SET ')
+
+
+class DropPartition(AlterTable):
+
+    def __init__(self, partition, partition_schema):
+        self.partition = partition
 
 
 class RenameTable(AlterTable):

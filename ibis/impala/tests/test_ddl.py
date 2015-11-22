@@ -49,7 +49,7 @@ class TestDropTable(unittest.TestCase):
         assert query == expected
 
 
-class TestInsert(unittest.TestCase):
+class TestInsertLoadData(unittest.TestCase):
 
     def setUp(self):
         self.con = MockConnection()
@@ -81,6 +81,43 @@ FROM functional_alltypes
 LIMIT 10"""
         assert result == expected
 
+    def test_load_data_unpartitioned(self):
+        path = '/path/to/data'
+        stmt = ddl.LoadData('functional_alltypes', path, database='foo')
+
+        result = stmt.compile()
+        expected = ("LOAD DATA INPATH '/path/to/data' "
+                    "INTO TABLE foo.`functional_alltypes`")
+        assert result == expected
+
+        stmt.overwrite = True
+        result = stmt.compile()
+        expected = ("LOAD DATA INPATH '/path/to/data' "
+                    "OVERWRITE INTO TABLE foo.`functional_alltypes`")
+        assert result == expected
+
+    def test_load_data_partitioned(self):
+        path = '/path/to/data'
+        part = {'year': 2007, 'month': 7}
+        part_schema = ibis.schema([('year', 'int32'), ('month', 'int32')])
+        stmt = ddl.LoadData('functional_alltypes', path,
+                            database='foo',
+                            partition=part,
+                            partition_schema=part_schema)
+
+        result = stmt.compile()
+        expected = """\
+LOAD DATA INPATH '/path/to/data' INTO TABLE foo.`functional_alltypes`
+PARTITION (year=2007, month=7)"""
+        assert result == expected
+
+        stmt.overwrite = True
+        result = stmt.compile()
+        expected = """\
+LOAD DATA INPATH '/path/to/data' OVERWRITE INTO TABLE foo.`functional_alltypes`
+PARTITION (year=2007, month=7)"""
+        assert result == expected
+
     def test_select_overwrite(self):
         pass
 
@@ -97,6 +134,107 @@ class TestCacheTable(unittest.TestCase):
         query = statement.compile()
         expected = "ALTER TABLE bar.`foo` SET CACHED IN 'my_pool'"
         assert query == expected
+
+
+class TestAlterTablePartition(unittest.TestCase):
+
+    def setUp(self):
+        self.part_schema = ibis.schema([('year', 'int32'),
+                                        ('month', 'int32')])
+        self.table_name = 'tbl'
+
+    def test_add_partition(self):
+        stmt = ddl.AddPartition(self.table_name,
+                                {'year': 2007, 'month': 4},
+                                self.part_schema)
+
+        result = stmt.compile()
+        expected = 'ALTER TABLE tbl ADD PARTITION (year=2007, month=4)'
+        assert result == expected
+
+    def test_add_partition_with_props(self):
+        props = dict(
+            location='/users/foo/my-data'
+        )
+        stmt = ddl.AddPartition(self.table_name,
+                                {'year': 2007, 'month': 4},
+                                self.part_schema, **props)
+
+        result = stmt.compile()
+        expected = """\
+ALTER TABLE tbl ADD PARTITION (year=2007, month=4)
+LOCATION '/users/foo/my-data'"""
+        assert result == expected
+
+    def test_alter_partition_properties(self):
+        part = {'year': 2007, 'month': 4}
+
+        def _get_ddl_string(props):
+            stmt = ddl.AlterPartition(self.table_name, part,
+                                      self.part_schema,
+                                      **props)
+            return stmt.compile()
+
+        result = _get_ddl_string({'location': '/users/foo/my-data'})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET LOCATION '/users/foo/my-data'"""
+        assert result == expected
+
+        result = _get_ddl_string({'format': 'avro'})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET FILEFORMAT AVRO"""
+        assert result == expected
+
+        result = _get_ddl_string({'tbl_properties': {
+            'bar': 2, 'foo': '1'
+        }})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET TBLPROPERTIES ('bar'='2', 'foo'='1')"""
+        assert result == expected
+
+        result = _get_ddl_string({'serde_properties': {'baz': 3}})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET SERDEPROPERTIES ('baz'='3')"""
+        assert result == expected
+
+    def test_alter_table_properties(self):
+        part = {'year': 2007, 'month': 4}
+
+        def _get_ddl_string(props):
+            stmt = ddl.AlterPartition(self.table_name, part,
+                                      self.part_schema,
+                                      **props)
+            return stmt.compile()
+
+        result = _get_ddl_string({'location': '/users/foo/my-data'})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET LOCATION '/users/foo/my-data'"""
+        assert result == expected
+
+        result = _get_ddl_string({'format': 'avro'})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET FILEFORMAT AVRO"""
+        assert result == expected
+
+        result = _get_ddl_string({'tbl_properties': {
+            'bar': 2, 'foo': '1'
+        }})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET TBLPROPERTIES ('bar'='2', 'foo'='1')"""
+        assert result == expected
+
+        result = _get_ddl_string({'serde_properties': {'baz': 3}})
+        expected = """\
+ALTER TABLE tbl PARTITION (year=2007, month=4)
+SET SERDEPROPERTIES ('baz'='3')"""
+        assert result == expected
 
 
 class TestCreateTable(unittest.TestCase):
@@ -337,7 +475,31 @@ FROM functional_alltypes"""
         pass
 
 
-class TestDDLOperations(ImpalaE2E, unittest.TestCase):
+class TestDDLE2E(ImpalaE2E, unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        ImpalaE2E.setup_e2e(cls)
+
+        cls.path_uuid = 'change-location-{0}'.format(util.guid())
+        fake_path = pjoin(cls.tmp_dir, cls.path_uuid)
+
+        cls.table_name = 'table_{0}'.format(util.guid())
+
+        schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
+
+        cls.con.create_table(cls.table_name,
+                             database=cls.tmp_db,
+                             schema=schema,
+                             format='parquet',
+                             external=True,
+                             location=fake_path)
+        cls.table = cls.con.table(cls.table_name, database=cls.tmp_db)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.con.drop_table(cls.table_name, database=cls.tmp_db)
+        ImpalaE2E.teardown_e2e(cls)
 
     def test_list_databases(self):
         assert len(self.con.list_databases()) > 0
@@ -462,7 +624,7 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
         expr = self.alltypes
         table_name = _random_table_name()
 
-        self.con.create_table(table_name, obj=expr, path=tmp_path,
+        self.con.create_table(table_name, obj=expr, location=tmp_path,
                               database=self.test_data_db)
         self.temp_tables.append('.'.join([self.test_data_db, table_name]))
         assert self.hdfs.exists(tmp_path)
@@ -608,6 +770,8 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
                                  wraps=self.con._execute)
 
     def test_describe_formatted(self):
+        from ibis.impala.metadata import TableMetadata
+
         t = self.con.table('functional_alltypes')
         with self._patch_execute() as ex_mock:
             desc = t.describe_formatted()
@@ -616,7 +780,7 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
                                        .format(self.test_data_db,
                                                'functional_alltypes'),
                                        results=True)
-            assert isinstance(desc, pd.DataFrame)
+            assert isinstance(desc, TableMetadata)
 
     def test_show_files(self):
         t = self.con.table('functional_alltypes')
@@ -667,9 +831,6 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
         t3.drop()
         assert vname not in self.db
 
-
-class TestAlterTable(ImpalaE2E, unittest.TestCase):
-
     def test_rename_table(self):
         tmp_db = '__ibis_tmp_{0}'.format(util.guid()[:4])
         self.con.create_database(tmp_db)
@@ -687,8 +848,33 @@ class TestAlterTable(ImpalaE2E, unittest.TestCase):
         t = self.con.table(new_name, database=tmp_db)
         assert_equal(table, t)
 
+    def test_change_location(self):
+        old_loc = self.table.metadata().location
 
-class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
+        new_path = pjoin(self.tmp_dir, 'new-path')
+        self.table.alter(location=new_path)
+
+        new_loc = self.table.metadata().location
+        assert new_loc == old_loc.replace(self.path_uuid, 'new-path')
+
+    def test_change_properties(self):
+        props = {'foo': '1', 'bar': '2'}
+
+        self.table.alter(tbl_properties=props)
+        tbl_props = self.table.metadata().tbl_properties
+        for k, v in props.iteritems():
+            assert v == tbl_props[k]
+
+        self.table.alter(serde_properties=props)
+        serde_props = self.table.metadata().serde_properties
+        for k, v in props.iteritems():
+            assert v == serde_props[k]
+
+    def test_change_format(self):
+        self.table.alter(format='avro')
+
+        meta = self.table.metadata()
+        assert 'Avro' in meta.hive_format
 
     def test_cleanup_tmp_table_on_gc(self):
         hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
