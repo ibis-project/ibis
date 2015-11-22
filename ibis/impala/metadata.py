@@ -250,6 +250,22 @@ def _clean_param_name(x):
     return x.strip().strip(':').lower()
 
 
+def _get_meta(attr, key):
+    @property
+    def f(self):
+        data = getattr(self, attr)
+        if isinstance(key, list):
+            result = data
+            for k in key:
+                if k not in result:
+                    raise KeyError(k)
+                result = result[k]
+            return result
+        else:
+            return data[key]
+    return f
+
+
 class TableMetadata(object):
 
     """
@@ -285,6 +301,15 @@ class TableMetadata(object):
     @property
     def is_partitioned(self):
         return self.partitions is not None
+
+    create_time = _get_meta('info', 'CreateTime')
+    location = _get_meta('info', 'Location')
+    owner = _get_meta('info', 'Owner')
+    num_rows = _get_meta('info', ['Table Parameters', 'numRows'])
+    hive_format = _get_meta('storage', 'InputFormat')
+
+    tbl_properties = _get_meta('info', 'Table Parameters')
+    serde_properties = _get_meta('storage', 'Desc Params')
 
 
 class TableInfo(object):

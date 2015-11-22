@@ -1546,11 +1546,17 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
     def refresh(self):
         self._client.refresh(self._qualified_name)
 
-    def describe_formatted(self):
+    def metadata(self):
         """
-        Return results of DESCRIBE FORMATTED statement
+        Return parsed results of DESCRIBE FORMATTED statement
+
+        Returns
+        -------
+        meta : TableMetadata
         """
         return self._client.describe_formatted(self._qualified_name)
+
+    describe_formatted = metadata
 
     def files(self):
         """
@@ -1673,6 +1679,10 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
     def _execute(self, stmt):
         return self._client._execute(stmt)
+
+    @property
+    def is_partitioned(self):
+        return self.metadata().is_partitioned
 
     def partition_schema(self):
         """

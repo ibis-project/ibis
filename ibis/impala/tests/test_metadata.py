@@ -104,7 +104,7 @@ class TestMetadataParser(unittest.TestCase):
         assert params['STATS_GENERATED_VIA_STATS_TASK'] is True
         assert params['numRows'] == 183592
         assert (params['transient_lastDdlTime'] ==
-                pd.Timestamp('2015-11-18 13:56:42'))
+                pd.Timestamp('2015-11-12 15:09:01'))
 
     def test_partitions(self):
         assert self.parsed_unpart.partitions is None

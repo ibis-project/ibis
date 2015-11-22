@@ -480,6 +480,11 @@ class AlterTable(ImpalaDDL):
         else:
             return ''
 
+    def compile(self):
+        props = self._format_properties()
+        action = '{0} SET {1}'.format(self.table, props)
+        return self._wrap_command(action)
+
 
 class PartitionProperties(AlterTable):
 

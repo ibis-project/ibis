@@ -171,8 +171,8 @@ LOCATION '/users/foo/my-data'"""
 
         def _get_ddl_string(props):
             stmt = ddl.AlterPartition(self.table_name, part,
-                                       self.part_schema,
-                                       **props)
+                                      self.part_schema,
+                                      **props)
             return stmt.compile()
 
         result = _get_ddl_string({'location': '/users/foo/my-data'})
@@ -475,7 +475,31 @@ FROM functional_alltypes"""
         pass
 
 
-class TestDDLOperations(ImpalaE2E, unittest.TestCase):
+class TestDDLE2E(ImpalaE2E, unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        ImpalaE2E.setup_e2e(cls)
+
+        cls.path_uuid = 'change-location-{0}'.format(util.guid())
+        fake_path = pjoin(cls.tmp_dir, cls.path_uuid)
+
+        cls.table_name = 'table_{0}'.format(util.guid())
+
+        schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
+
+        cls.con.create_table(cls.table_name,
+                             database=cls.tmp_db,
+                             schema=schema,
+                             format='parquet',
+                             external=True,
+                             location=fake_path)
+        cls.table = cls.con.table(cls.table_name, database=cls.tmp_db)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.con.drop_table(cls.table_name, database=cls.tmp_db)
+        ImpalaE2E.teardown_e2e(cls)
 
     def test_list_databases(self):
         assert len(self.con.list_databases()) > 0
@@ -807,9 +831,6 @@ class TestDDLOperations(ImpalaE2E, unittest.TestCase):
         t3.drop()
         assert vname not in self.db
 
-
-class TestAlterTable(ImpalaE2E, unittest.TestCase):
-
     def test_rename_table(self):
         tmp_db = '__ibis_tmp_{0}'.format(util.guid()[:4])
         self.con.create_database(tmp_db)
@@ -828,10 +849,32 @@ class TestAlterTable(ImpalaE2E, unittest.TestCase):
         assert_equal(table, t)
 
     def test_change_location(self):
-        pass
+        old_loc = self.table.metadata().location
 
+        new_path = pjoin(self.tmp_dir, 'new-path')
+        self.table.alter(location=new_path)
 
-class TestQueryHDFSData(ImpalaE2E, unittest.TestCase):
+        new_loc = self.table.metadata().location
+        assert new_loc == old_loc.replace(self.path_uuid, 'new-path')
+
+    def test_change_properties(self):
+        props = {'foo': '1', 'bar': '2'}
+
+        self.table.alter(tbl_properties=props)
+        tbl_props = self.table.metadata().tbl_properties
+        for k, v in props.iteritems():
+            assert v == tbl_props[k]
+
+        self.table.alter(serde_properties=props)
+        serde_props = self.table.metadata().serde_properties
+        for k, v in props.iteritems():
+            assert v == serde_props[k]
+
+    def test_change_format(self):
+        self.table.alter(format='avro')
+
+        meta = self.table.metadata()
+        assert 'Avro' in meta.hive_format
 
     def test_cleanup_tmp_table_on_gc(self):
         hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')

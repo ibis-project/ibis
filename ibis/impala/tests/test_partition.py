@@ -26,6 +26,10 @@ import ibis
 import ibis.util as util
 
 
+def _tmp_name():
+    return 'tmp_partition_{0}'.format(util.guid())
+
+
 class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
     @classmethod
@@ -40,12 +44,19 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
         cls.df = df
         cls.db = cls.con.database(cls.tmp_db)
-        cls.pd_name = util.guid()
+        cls.pd_name = _tmp_name()
         cls.db.create_table(cls.pd_name, df,
                             location=cls._create_777_tmp_dir())
 
     def test_is_partitioned(self):
-        pass
+        schema = ibis.schema([('foo', 'string'),
+                              ('year', 'int32'),
+                              ('month', 'int16')])
+        name = _tmp_name()
+        self.db.create_table(name, schema=schema,
+                             partition=['year', 'month'],
+                             location=self._create_777_tmp_dir())
+        assert self.db.table(name).is_partitioned
 
     @pytest.mark.superuser
     def test_create_table_with_partition_column(self):
@@ -54,8 +65,10 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                               ('day', 'int8'),
                               ('value', 'double')])
 
-        name = util.guid()
-        self.con.create_table(name, schema=schema, partition=['year', 'month'],
+        name = _tmp_name()
+        self.con.create_table(name, schema=schema,
+                              database=self.tmp_db,
+                              partition=['year', 'month'],
                               location=self._create_777_tmp_dir())
         self.temp_tables.append(name)
 
@@ -64,10 +77,10 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                                  ('value', 'double'),
                                  ('year', 'int32'),
                                  ('month', 'int8')])
-        table_schema = self.con.get_schema(name)
+        table_schema = self.con.get_schema(name, database=self.tmp_db)
         assert_equal(table_schema, ex_schema)
 
-        partition_schema = self.con.table(name).partition_schema()
+        partition_schema = self.db.table(name).partition_schema()
 
         expected = ibis.schema([('year', 'int32'),
                                 ('month', 'int8')])
@@ -80,7 +93,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         part_schema = ibis.schema([('year', 'int32'),
                                    ('month', 'int8')])
 
-        name = util.guid()
+        name = _tmp_name()
         self.con.create_table(name, schema=schema, partition=part_schema,
                               location=self._create_777_tmp_dir())
         self.temp_tables.append(name)
@@ -198,7 +211,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         assert len(parts) == (len(unique_keys) + 1)
 
     def _create_partitioned_table(self, schema, part_keys):
-        part_name = util.guid()
+        part_name = _tmp_name()
 
         self.db.create_table(part_name,
                              schema=schema,
