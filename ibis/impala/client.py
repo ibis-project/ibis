@@ -73,10 +73,11 @@ class ImpalaConnection(object):
 
     def __init__(self, pool_size=8, database='default', **params):
         self.params = params
-        self.codegen_disabled = False
         self.database = database
 
         self.lock = threading.Lock()
+
+        self.options = {}
 
         self.connection_pool = queue.Queue(pool_size)
         self.connection_pool_size = 0
@@ -85,6 +86,9 @@ class ImpalaConnection(object):
         self._connections = weakref.WeakValueDictionary()
 
         self.ping()
+
+    def set_options(self, options):
+        self.options.update(options)
 
     def close(self):
         """
@@ -97,7 +101,11 @@ class ImpalaConnection(object):
         self.database = name
 
     def disable_codegen(self, disabled=True):
-        self.codegen_disabled = disabled
+        key = 'DISABLE_CODEGEN'
+        if disabled:
+            self.options[key] = '1'
+        elif key in self.options:
+            del self.options[key]
 
     def execute(self, query, async=False):
         if isinstance(query, DDL):
@@ -134,10 +142,10 @@ class ImpalaConnection(object):
     def _get_cursor(self):
         try:
             cur = self.connection_pool.get(False)
-            if cur.database != self.database:
+            if (cur.database != self.database or
+                    cur.options != self.options):
                 cur = self._new_cursor()
-            if cur.codegen_disabled != self.codegen_disabled:
-                cur.disable_codegen(self.codegen_disabled)
+
             return cur
         except queue.Empty:
             if self.connection_pool_size < self.max_pool_size:
@@ -157,26 +165,28 @@ class ImpalaConnection(object):
         cursor = con.cursor(convert_types=True)
         cursor.ping()
 
-        wrapper = ImpalaCursor(cursor, self, con, self.database)
-
-        if self.codegen_disabled:
-            wrapper.disable_codegen(self.codegen_disabled)
+        wrapper = ImpalaCursor(cursor, self, con, self.database,
+                               self.options.copy())
+        wrapper.set_options()
 
         return wrapper
 
     def ping(self):
         self._new_cursor()
 
+    def release(self, cur):
+        self.connection_pool.put(cur)
+
 
 class ImpalaCursor(object):
 
     def __init__(self, cursor, con, impyla_con, database,
-                 codegen_disabled=False):
+                 options):
         self.cursor = cursor
         self.con = con
         self.impyla_con = impyla_con
         self.database = database
-        self.codegen_disabled = codegen_disabled
+        self.options = options
 
     def __del__(self):
         self._close_cursor()
@@ -195,18 +205,17 @@ class ImpalaCursor(object):
     def __exit__(self, type, value, tb):
         self.release()
 
-    def disable_codegen(self, disabled=True):
-        self.codegen_disabled = disabled
-        query = ('SET disable_codegen={0}'
-                 .format('true' if disabled else 'false'))
-        self.cursor.execute(query)
+    def set_options(self):
+        for k, v in self.options.items():
+            query = 'SET {0}={1}'.format(k, v)
+            self.cursor.execute(query)
 
     @property
     def description(self):
         return self.cursor.description
 
     def release(self):
-        self.con.connection_pool.put(self)
+        self.con.release(self)
 
     def execute(self, stmt, async=False):
         self.cursor.execute_async(stmt)
@@ -683,6 +692,39 @@ class ImpalaClient(SQLClient):
         names = [x.lower() for x in names]
 
         return dt.Schema(names, ibis_types)
+
+    @property
+    def client_options(self):
+        return self.con.options
+
+    def get_options(self):
+        """
+        Return current query options for the Impala session
+        """
+        query = 'SET'
+        tuples = self.con.fetchall(query)
+        return dict(tuples)
+
+    def set_options(self, options):
+        self.con.set_options(options)
+
+    def reset_options(self):
+        # Must nuke all cursors
+        raise NotImplementedError
+
+    def set_compression_codec(self, codec):
+        """
+        Parameters
+        """
+        if codec is None:
+            codec = 'none'
+        else:
+            codec = codec.lower()
+
+        if codec not in ('none', 'gzip', 'snappy'):
+            raise ValueError('Unknown codec: {0}'.format(codec))
+
+        self.set_options({'COMPRESSION_CODEC': codec})
 
     def exists_table(self, name, database=None):
         """

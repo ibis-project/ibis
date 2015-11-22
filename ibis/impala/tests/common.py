@@ -66,6 +66,9 @@ class IbisTestEnv(object):
         return 'IbisTestEnv(\n    {0})'.format(',\n    '.join(kvs))
 
 
+ENV = IbisTestEnv()
+
+
 def connect_test(env, with_hdfs=True):
     if with_hdfs:
         if env.auth_mechanism in ['GSSAPI', 'LDAP']:
@@ -93,13 +96,16 @@ class ImpalaE2E(object):
     def setUpClass(cls):
         ImpalaE2E.setup_e2e(cls)
 
+        # make sure this never gets messed up
+        opts = cls.con.get_options()
+        assert opts['DISABLE_CODEGEN'] == '1'
+
     @classmethod
     def tearDownClass(cls):
         ImpalaE2E.teardown_e2e(cls)
 
     @staticmethod
     def setup_e2e(cls):
-        ENV = IbisTestEnv()
         cls.con = connect_test(ENV)
         # Tests run generally faster without it
         if not ENV.use_codegen:

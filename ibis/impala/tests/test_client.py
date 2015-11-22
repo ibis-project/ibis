@@ -300,3 +300,37 @@ LIMIT 10"""
         assert elapsed < 5
 
         assert q.is_finished()
+
+    def test_set_compression_codec(self):
+        old_opts = self.con.get_options()
+        assert old_opts['COMPRESSION_CODEC'].upper() == 'NONE'
+
+        self.con.set_compression_codec('snappy')
+        opts = self.con.get_options()
+        assert opts['COMPRESSION_CODEC'].upper() == 'SNAPPY'
+
+        self.con.set_compression_codec(None)
+        opts = self.con.get_options()
+        assert opts['COMPRESSION_CODEC'].upper() == 'NONE'
+
+    def test_disable_codegen(self):
+        self.con.disable_codegen(False)
+        opts = self.con.get_options()
+        assert opts['DISABLE_CODEGEN'] == '0'
+
+        self.con.disable_codegen()
+        opts = self.con.get_options()
+        assert opts['DISABLE_CODEGEN'] == '1'
+
+        impala_con = self.con.con
+        cur1 = impala_con.execute('SET')
+        cur2 = impala_con.execute('SET')
+
+        opts1 = dict(cur1.fetchall())
+        cur1.release()
+
+        opts2 = dict(cur2.fetchall())
+        cur2.release()
+
+        assert opts1['DISABLE_CODEGEN'] == '1'
+        assert opts2['DISABLE_CODEGEN'] == '1'
