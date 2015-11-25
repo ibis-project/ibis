@@ -1037,15 +1037,10 @@ def _parse_url(translator, expr):
 
     if key is None:
         return "parse_url({0}, '{1}')".format(arg_formatted, extract)
-    elif not isinstance(key.op(), ir.Literal):
+    else:
         key_fmt = translator.translate(key)
         return "parse_url({0}, '{1}', {2})".format(arg_formatted,
-                                                   extract,
-                                                   key_fmt)
-    else:
-        return "parse_url({0}, '{1}', {2})".format(arg_formatted,
-                                                   extract,
-                                                   key)
+                                                   extract, key_fmt)
 
 
 def _find_in_set(translator, expr):

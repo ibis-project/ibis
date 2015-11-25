@@ -1255,15 +1255,28 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             (L(', ').join(['a', 'b']), 'a, b'),
             (string.like('a%'), True),
             (string.re_search('[a-z]'), True),
-            (L("https://www.cloudera.com").parse_url('HOST'),
-             "www.cloudera.com"),
+
             (string.re_extract('[a-z]', 0), 'a'),
             (string.re_replace('(b)', '2'), 'a2cd'),
         ]
 
+        self._check_cases(cases)
+
+    def _check_cases(self, cases):
         for expr, expected in cases:
             result = self.con.execute(expr)
             assert result == expected
+
+    def test_parse_url(self):
+        cases = [
+            (L("https://www.cloudera.com").parse_url('HOST'),
+             "www.cloudera.com"),
+
+            (L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10')
+             .parse_url('QUERY', 'v'),
+             'kEuEcWfewf8'),
+        ]
+        self._check_cases(cases)
 
     def test_div_floordiv(self):
         cases = [
