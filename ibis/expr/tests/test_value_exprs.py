@@ -670,23 +670,23 @@ class TestExprList(unittest.TestCase):
         assert_equal(result, expected)
 
 
-class TestReplace(unittest.TestCase):
+class TestSubstitute(unittest.TestCase):
 
     def setUp(self):
         self.table = ibis.table([('foo', 'string'),
                                  ('bar', 'string')], 't1')
 
-    def test_replace_dict(self):
+    def test_substitute_dict(self):
         subs = {'a': 'one', 'b': self.table.bar}
 
-        result = self.table.foo.replace(subs)
+        result = self.table.foo.substitute(subs)
         expected = (self.table.foo.case()
                     .when('a', 'one')
                     .when('b', self.table.bar)
                     .else_(self.table.foo).end())
         assert_equal(result, expected)
 
-        result = self.table.foo.replace(subs, else_=ibis.NA)
+        result = self.table.foo.substitute(subs, else_=ibis.NA)
         expected = (self.table.foo.case()
                     .when('a', 'one')
                     .when('b', self.table.bar)

@@ -56,6 +56,10 @@ Database methods
 
 Table methods
 ~~~~~~~~~~~~~
+
+The ``ImpalaClient`` object itself has many helper utility methods. You'll find
+the most methods on ``ImpalaTable``.
+
 .. autosummary::
    :toctree: generated/
 
@@ -72,7 +76,9 @@ Table methods
    ImpalaClient.get_schema
    ImpalaClient.cache_table
    ImpalaClient.load_data
-   ImpalaClient.partition_schema
+
+The best way to interact with a single table is through the ``ImpalaTable``
+object you get back from ``ImpalaClient.table``.
 
 .. autosummary::
    :toctree: generated/
