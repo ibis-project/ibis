@@ -525,10 +525,14 @@ class AlterPartition(PartitionProperties):
         return self._compile('', 'SET ')
 
 
-class DropPartition(AlterTable):
+class DropPartition(PartitionProperties):
 
-    def __init__(self, partition, partition_schema):
-        self.partition = partition
+    def __init__(self, table, partition, partition_schema):
+        PartitionProperties.__init__(self, table, partition,
+                                     partition_schema)
+
+    def compile(self):
+        return self._compile('DROP')
 
 
 class RenameTable(AlterTable):

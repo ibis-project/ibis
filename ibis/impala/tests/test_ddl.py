@@ -152,6 +152,15 @@ class TestAlterTablePartition(unittest.TestCase):
         expected = 'ALTER TABLE tbl ADD PARTITION (year=2007, month=4)'
         assert result == expected
 
+    def test_drop_partition(self):
+        stmt = ddl.DropPartition(self.table_name,
+                                 {'year': 2007, 'month': 4},
+                                 self.part_schema)
+
+        result = stmt.compile()
+        expected = 'ALTER TABLE tbl DROP PARTITION (year=2007, month=4)'
+        assert result == expected
+
     def test_add_partition_with_props(self):
         props = dict(
             location='/users/foo/my-data'
