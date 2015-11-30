@@ -50,9 +50,10 @@ Database methods
 .. autosummary::
    :toctree: generated/
 
-   Database.drop
-   Database.namespace
-   Database.table
+   ImpalaDatabase.create_table
+   ImpalaDatabase.drop
+   ImpalaDatabase.namespace
+   ImpalaDatabase.table
 
 Table methods
 ~~~~~~~~~~~~~

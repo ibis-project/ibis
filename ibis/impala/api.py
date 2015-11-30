@@ -11,8 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.impala.client import (ImpalaConnection, ImpalaClient,  # noqa
-                                Database, ImpalaTable)
+from ibis.impala.client import (ImpalaConnection,  # noqa
+                                ImpalaClient,
+                                ImpalaDatabase,
+                                ImpalaTable)
 from ibis.impala.udf import *  # noqa
 from ibis.impala.madlib import MADLibAPI  # noqa
 from ibis.config import options
