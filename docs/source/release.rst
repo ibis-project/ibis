@@ -72,6 +72,12 @@ Contributors
 ::
 
     $ git log v0.5.0..v0.6.0 --pretty=format:%aN | sort | uniq -c | sort -rn
+	46 Wes McKinney
+	 3 Uri Laserson
+	 1 Phillip Cloud
+	 1 mariusvniekerk
+	 1 Kristopher Overholt
+
 
 0.5 (September 10, 2015)
 ------------------------
