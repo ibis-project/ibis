@@ -225,7 +225,7 @@ LIMIT 10"""
         s = t.string_col
 
         supported = s.lower()
-        unsupported = s.str_replace('foo', 'bar')
+        unsupported = s.replace('foo', 'bar')
 
         assert ibis.impala.verify(supported)
         assert not ibis.impala.verify(unsupported)

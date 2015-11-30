@@ -245,5 +245,9 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         return self.db.table(part_name)
 
     @pytest.mark.superuser
+    def test_drop_partition(self):
+        pass
+
+    @pytest.mark.superuser
     def test_repartition_automated(self):
         pass

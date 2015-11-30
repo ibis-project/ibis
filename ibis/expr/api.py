@@ -667,8 +667,9 @@ rdiv = _rbinop_expr('__rdiv__', _ops.Divide)
 rfloordiv = _rbinop_expr('__rfloordiv__', _ops.FloorDivide)
 
 
-def replace(arg, value, replacement=None, else_=None):
+def substitute(arg, value, replacement=None, else_=None):
     """
+    Substitute (replace) one or more values in a value expression
 
     Parameters
     ----------
@@ -680,6 +681,7 @@ def replace(arg, value, replacement=None, else_=None):
     Returns
     -------
     replaced : case statement (for now!)
+
     """
     expr = arg.case()
     if isinstance(value, dict):
@@ -751,7 +753,7 @@ _generic_value_methods = dict(
 
     case=_case,
     cases=cases,
-    replace=replace,
+    substitute=substitute,
 
     __add__=add,
     add=add,
@@ -1562,7 +1564,7 @@ _string_value_methods = dict(
     contains=_string_contains,
     like=_string_like,
     rlike=re_search,
-    str_replace=_string_replace,
+    replace=_string_replace,
     re_search=re_search,
     re_extract=regex_extract,
     re_replace=regex_replace,

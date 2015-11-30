@@ -50,12 +50,17 @@ Database methods
 .. autosummary::
    :toctree: generated/
 
-   Database.drop
-   Database.namespace
-   Database.table
+   ImpalaDatabase.create_table
+   ImpalaDatabase.drop
+   ImpalaDatabase.namespace
+   ImpalaDatabase.table
 
 Table methods
 ~~~~~~~~~~~~~
+
+The ``ImpalaClient`` object itself has many helper utility methods. You'll find
+the most methods on ``ImpalaTable``.
+
 .. autosummary::
    :toctree: generated/
 
@@ -71,17 +76,31 @@ Table methods
    ImpalaClient.truncate_table
    ImpalaClient.get_schema
    ImpalaClient.cache_table
+   ImpalaClient.load_data
+   ImpalaClient.get_options
+   ImpalaClient.set_options
+   ImpalaClient.set_compression_codec
+
+
+The best way to interact with a single table is through the ``ImpalaTable``
+object you get back from ``ImpalaClient.table``.
 
 .. autosummary::
    :toctree: generated/
 
+   ImpalaTable.add_partition
+   ImpalaTable.alter
+   ImpalaTable.alter_partition
    ImpalaTable.column_stats
    ImpalaTable.compute_stats
    ImpalaTable.describe_formatted
    ImpalaTable.drop
+   ImpalaTable.drop_partition
    ImpalaTable.files
    ImpalaTable.insert
    ImpalaTable.invalidate_metadata
+   ImpalaTable.load_data
+   ImpalaTable.metadata
    ImpalaTable.partition_schema
    ImpalaTable.partitions
    ImpalaTable.refresh
@@ -271,6 +290,7 @@ Scalar or array methods
 
    ValueExpr.between
    ValueExpr.cast
+   ValueExpr.coalesce
    ValueExpr.fillna
    ValueExpr.isin
    ValueExpr.notin
@@ -291,7 +311,7 @@ Scalar or array methods
 
    ValueExpr.case
    ValueExpr.cases
-   ValueExpr.replace
+   ValueExpr.substitute
 
 Array methods
 ~~~~~~~~~~~~~
@@ -408,6 +428,7 @@ All string operations are valid either on scalar or array values
    StringValue.translate
    StringValue.find_in_set
    StringValue.join
+   StringValue.replace
    StringValue.lpad
    StringValue.rpad
 
@@ -415,7 +436,6 @@ All string operations are valid either on scalar or array values
    StringValue.re_search
    StringValue.re_extract
    StringValue.re_replace
-   StringValue.str_replace
 
 .. _api.timestamp:
 

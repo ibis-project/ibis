@@ -67,10 +67,9 @@ places, but this will improve as things progress.
    getting-started
    configuration
    tutorial
-   impala-udf
+   impala
    api
    sql
-   impala
    release
    developer
    type-system

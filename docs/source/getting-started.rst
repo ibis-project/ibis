@@ -60,7 +60,7 @@ the client using ``ibis.impala.connect``:
 
    hdfs = ibis.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
    con = ibis.impala.connect(host=impala_host, port=impala_port,
-                             hdfs_client=hdfs
+                             hdfs_client=hdfs)
 
 Both method calls can take ``auth_mechanism='GSSAPI'`` or
 ``auth_mechanism='LDAP'`` to connect to Kerberos clusters.  Depending on your

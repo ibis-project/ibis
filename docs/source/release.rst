@@ -7,6 +7,67 @@ Release Notes
     interesting. Point (minor, e.g. 0.5.1) releases will generally not be found
     here and contain only bug fixes.
 
+0.6 (December 1, 2015)
+----------------------
+
+This release brings expanded pandas and Impala integration, including support
+for managing partitioned tables in Impala. See the new :ref:`Ibis for Impala
+Users <impala>` guide for more on using Ibis with Impala.
+
+The :ref:`Ibis for SQL Programmers <sql>` guide also was written since the 0.5
+release.
+
+This release also includes bug fixes affecting generated SQL correctness. All
+users should upgrade as soon as possible.
+
+New features
+~~~~~~~~~~~~
+
+* New integrated Impala functionality. See :ref:`Ibis for Impala Users
+  <impala>` for more details on these things.
+
+  * Improved Impala-pandas integration. Create tables or insert into existing
+    tables from pandas ``DataFrame`` objects.
+  * Partitioned table metadata management API. Add, drop, alter, and
+    insert into table partitions.
+  * Add ``is_partitioned`` property to ``ImpalaTable``.
+  * Added support for ``LOAD DATA`` DDL using the ``load_data`` function, also
+    supporting partitioned tables.
+  * Modify table metadata (location, format, SerDe properties etc.)  using
+    ``ImpalaTable.alter``
+  * Interrupting Impala expression execution with Control-C will attempt to
+    cancel the running query with the server.
+  * Set the compression codec (e.g. snappy) used with
+    ``ImpalaClient.set_compression_codec``.
+  * Get and set query options for a client session with
+    ``ImpalaClient.get_options`` and ``ImpalaClient.set_options``.
+  * Add ``ImpalaTable.metadata`` method that parses the output of the
+    ``DESCRIBE FORMATTED`` DDL to simplify table metadata inspection.
+  * Add ``ImpalaTable.stats`` and ``ImpalaTable.column_stats`` to see computed
+    table and partition statistics.
+  * Add ``CHAR`` and ``VARCHAR`` handling
+  * Add ``refresh``, ``invalidate_metadata`` DDL options and add
+    ``incremental`` option to ``compute_stats`` for ``COMPUTE INCREMENTAL
+    STATS``.
+
+* Add ``substitute`` method for performing multiple value substitutions in an
+  array or scalar expression.
+* Division is by default *true division* like Python 3 for all numeric
+  data. This means for SQL systems that use C-style division semantics, the
+  appropriate ``CAST`` will be automatically inserted in the generated SQL.
+* Easier joins on tables with overlapping column names. See :ref:`Ibis for SQL Programmers <sql>`.
+* Expressions like ``string_expr[:3]`` now work as expected.
+* Add ``coalesce`` instance method to all value expressions.
+* Passing ``limit=None`` to the ``execute`` method on expressions disables any
+  default row limits.
+
+Contributors
+~~~~~~~~~~~~
+
+::
+
+    $ git log v0.5.0..v0.6.0 --pretty=format:%aN | sort | uniq -c | sort -rn
+
 0.5 (September 10, 2015)
 ------------------------
 

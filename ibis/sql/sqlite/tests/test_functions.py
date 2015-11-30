@@ -183,7 +183,7 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
     def test_str_replace(self):
         cases = [
-            (L('foobarfoo').str_replace('foo', 'H'), 'HbarH'),
+            (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
         ]
         self._check_e2e_cases(cases)
 
