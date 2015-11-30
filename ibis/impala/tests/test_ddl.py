@@ -875,12 +875,12 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
 
         self.table.alter(tbl_properties=props)
         tbl_props = self.table.metadata().tbl_properties
-        for k, v in props.iteritems():
+        for k, v in props.items():
             assert v == tbl_props[k]
 
         self.table.alter(serde_properties=props)
         serde_props = self.table.metadata().serde_properties
-        for k, v in props.iteritems():
+        for k, v in props.items():
             assert v == serde_props[k]
 
     def test_change_format(self):
