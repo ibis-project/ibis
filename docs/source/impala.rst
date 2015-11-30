@@ -336,55 +336,13 @@ method.
 The ``TableMetadata`` object that is returned has a nicer console output and
 many attributes set that you can explore in IPython:
 
-.. code-block:: ipython
+.. ipython:: python
 
-   In [1]: t = c.table('ibis_testing.functional_alltypes')
-
-   In [2]: meta = t.metadata()
-
-   In [3]: meta
-   Out[3]:
-   <class 'ibis.impala.metadata.TableMetadata'>
-   {'info': {'CreateTime': Timestamp('2015-11-16 21:00:15-0800', tz='tzlocal()'),
-             'Database': 'ibis_testing',
-             'LastAccessTime': 'UNKNOWN',
-             'Location': 'hdfs://localhost:20500/__ibis/ibis-testing-data/parquet/functional_alltypes',
-             'Owner': 'wesm',
-             'Protect Mode': 'None',
-             'Retention': 0,
-             'Table Parameters': {'COLUMN_STATS_ACCURATE': True,
-                                  'EXTERNAL': True,
-                                  'numFiles': 0,
-                                  'numRows': 7300,
-                                  'totalSize': 0,
-                                  'transient_lastDdlTime': Timestamp('2015-11-29 14:21:18')},
-             'Table Type': 'EXTERNAL_TABLE'},
-    'schema': [('id', 'int'),
-               ('bool_col', 'boolean'),
-               ('tinyint_col', 'tinyint'),
-               ('smallint_col', 'smallint'),
-               ('int_col', 'int'),
-               ('bigint_col', 'bigint'),
-               ('float_col', 'float'),
-               ('double_col', 'double'),
-               ('date_string_col', 'string'),
-               ('string_col', 'string'),
-               ('timestamp_col', 'timestamp'),
-               ('year', 'int'),
-               ('month', 'int')],
-    'storage info': {'Bucket Columns': '[]',
-                     'Compressed': False,
-                     'InputFormat': 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat',
-                     'Num Buckets': 0,
-                     'OutputFormat': 'org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat',
-                     'SerDe Library': 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe',
-                     'Sort Columns': '[]'}}
-
-   In [4]: meta.location
-   Out[4]: 'hdfs://localhost:20500/__ibis/ibis-testing-data/parquet/functional_alltypes'
-
-   In [5]: meta.create_time
-   Out[5]: Timestamp('2015-11-16 21:00:15-0800', tz='tzlocal()')
+   t = client.table('ibis_testing.functional_alltypes')
+   meta = t.metadata()
+   meta
+   meta.location
+   meta.create_time
 
 The ``files`` function is also available to see all of the physical HDFS data
 files backing a table:
