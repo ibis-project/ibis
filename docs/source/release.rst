@@ -61,6 +61,11 @@ New features
 * Passing ``limit=None`` to the ``execute`` method on expressions disables any
   default row limits.
 
+API Changes
+~~~~~~~~~~~
+
+* ``ImpalaTable.rename`` no longer mutates the calling table expression.
+
 Contributors
 ~~~~~~~~~~~~
 

@@ -1697,16 +1697,23 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
         return self._execute(stmt)
 
+    @property
+    def name(self):
+        return self.op().name
+
     def rename(self, new_name, database=None):
         """
-        Rename table inside Impala.
-
-        Beware: mutates table expression in place.
+        Rename table inside Impala. References to the old table are no longer
+        valid.
 
         Parameters
         ----------
         new_name : string
         database : string
+
+        Returns
+        -------
+        renamed : ImpalaTable
         """
         m = ddl.fully_qualified_re.match(new_name)
         if not m and database is None:
@@ -1715,9 +1722,8 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
                                     new_database=database)
         self._client._execute(statement)
 
-        # HACK. Not sure about the best API here...
         op = self.op().change_name(statement.new_qualified_name)
-        self._arg = op
+        return ImpalaTable(op)
 
     def _execute(self, stmt):
         return self._client._execute(stmt)

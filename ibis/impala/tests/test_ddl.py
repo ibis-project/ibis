@@ -845,17 +845,21 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
         self.con.create_database(tmp_db)
         self.temp_databases.append(tmp_db)
 
-        self.con.create_table('tmp_rename_test',
+        orig_name = 'tmp_rename_test'
+        self.con.create_table(orig_name,
                               self.con.table('tpch_region'))
-        table = self.con.table('tmp_rename_test')
+        table = self.con.table(orig_name)
+
+        old_name = table.name
 
         new_name = 'rename_test'
-        table.rename(new_name, database=tmp_db)
-
-        table.execute()
+        renamed = table.rename(new_name, database=tmp_db)
+        renamed.execute()
 
         t = self.con.table(new_name, database=tmp_db)
-        assert_equal(table, t)
+        assert_equal(renamed, t)
+
+        assert table.name == old_name
 
     def test_change_location(self):
         old_loc = self.table.metadata().location
