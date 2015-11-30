@@ -96,6 +96,13 @@ can use to examine its schema:
 
    ImpalaTable.schema
 
+While the client has a ``drop_table`` method you can use to drop tables, the
+table itself has a method ``drop`` that you can use:
+
+.. code-block:: python
+
+   table.drop()
+
 Expression execution and asynchronous queries
 ---------------------------------------------
 
@@ -161,11 +168,19 @@ Creating tables from a table expression
 If you pass an Ibis expression to ``create_table``, Ibis issues a ``CREATE
 TABLE .. AS SELECT`` (CTAS) statement:
 
-.. code-block:: python
+.. ipython:: python
 
    table = db.table('functional_alltypes')
    expr = table.group_by('string_col').size()
    db.create_table('string_freqs', expr, format='parquet')
+
+   freqs = db.table('string_freqs')
+   freqs.execute()
+
+   files = freqs.files()
+   files.path[0]
+
+   freqs.drop()
 
 You can also choose to create an empty table and use ``insert`` (see below).
 
@@ -274,8 +289,33 @@ of the partition values:
 
 We'll cover partition metadata management and data loading below.
 
-Inserting data into existing tables
------------------------------------
+Inserting data into tables
+--------------------------
+
+If the schemas are compatible, you can insert into a table directly from an
+Ibis table expression:
+
+.. ipython:: python
+
+   t = db.functional_alltypes
+   db.create_table('insert_test', schema=t.schema())
+   target = db.table('insert_test')
+
+   target.insert(t[:3])
+   target.insert(t[:3])
+   target.insert(t[:3])
+
+   target.execute()
+
+   target.drop()
+
+If the table is partitioned, you must indicate the partition you are inserting
+into:
+
+.. code-block:: python
+
+   part = {'year': 2007, 'month': 4}
+   table.insert(expr, partition=part)
 
 Managing table metadata
 -----------------------
@@ -400,6 +440,15 @@ files, you could run the following command:
 
    table.alter(location=data_dir, format='text',
                serde_properties=csv_props)
+
+If the table is partitioned, you can modify only the properties of a particular
+partition:
+
+.. code-block:: python
+
+   table.alter_partition({'year': 2007, 'month': 5},
+                         location=data_dir, format='text',
+                         serde_properties=csv_props)
 
 Table statistics
 ----------------
@@ -553,6 +602,14 @@ Impala documentation):
 
    table.load_data(path)
    table.refresh()
+
+Like the other methods with support for partitioned tables, you can load into a
+particular partition with the ``partition`` keyword argument:
+
+.. code-block:: python
+
+   part = [2007, 5]
+   table.load_data(path, partition=part)
 
 Parquet and other session options
 ---------------------------------
