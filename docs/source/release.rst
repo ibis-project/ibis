@@ -7,8 +7,8 @@ Release Notes
     interesting. Point (minor, e.g. 0.5.1) releases will generally not be found
     here and contain only bug fixes.
 
-0.6 (November 25, 2015)
-------------------------
+0.6 (December 1, 2015)
+----------------------
 
 This release brings expanded pandas and Impala integration, including support
 for managing partitioned tables in Impala. See the new :ref:`Ibis for Impala
@@ -22,12 +22,12 @@ users should upgrade as soon as possible.
 
 New features
 ~~~~~~~~~~~~
-* Improved Impala-pandas integration. Create tables or insert into existing
-  tables from pandas ``DataFrame`` objects.
 
 * New integrated Impala functionality. See :ref:`Ibis for Impala Users
   <impala>` for more details on these things.
 
+  * Improved Impala-pandas integration. Create tables or insert into existing
+    tables from pandas ``DataFrame`` objects.
   * Partitioned table metadata management API. Add, drop, alter, and
     insert into table partitions.
   * Add ``is_partitioned`` property to ``ImpalaTable``.
@@ -60,7 +60,6 @@ New features
 * Add ``coalesce`` instance method to all value expressions.
 * Passing ``limit=None`` to the ``execute`` method on expressions disables any
   default row limits.
-
 
 Contributors
 ~~~~~~~~~~~~
