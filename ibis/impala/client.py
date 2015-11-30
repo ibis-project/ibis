@@ -1724,6 +1724,9 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
     @property
     def is_partitioned(self):
+        """
+        True if the table is partitioned
+        """
         return self.metadata().is_partitioned
 
     def partition_schema(self):

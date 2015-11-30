@@ -77,6 +77,10 @@ the most methods on ``ImpalaTable``.
    ImpalaClient.get_schema
    ImpalaClient.cache_table
    ImpalaClient.load_data
+   ImpalaClient.get_options
+   ImpalaClient.set_options
+   ImpalaClient.set_compression_codec
+
 
 The best way to interact with a single table is through the ``ImpalaTable``
 object you get back from ``ImpalaClient.table``.

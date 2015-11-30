@@ -2,9 +2,9 @@
 
 .. _impala:
 
-*********************
-Ibis for Impala users
-*********************
+**********************
+Using Ibis with Impala
+**********************
 
 One goal of Ibis is to provide an integrated Python API for an Impala cluster
 without requiring you to switch back and forth between Python code and the
@@ -17,11 +17,18 @@ While interoperability between the Hadoop / Spark ecosystems and pandas / the
 PyData stack is overall poor (but improving), we also show some ways that you
 can use pandas with Ibis and Impala.
 
+.. ipython:: python
+   :suppress:
+
+   import ibis
+   hdfs = ibis.hdfs_connect(port=5070)
+   client = ibis.impala.connect(hdfs_client=hdfs)
+
 The Impala client object
 ------------------------
 
 To use Ibis with Impala, you first must connect to a cluster using the
-``ibis.impala.connect`` API, *optionally* supplying an HDFS connection:
+``ibis.impala.connect`` function, *optionally* supplying an HDFS connection:
 
 .. code-block:: python
 
@@ -42,9 +49,6 @@ If you're doing analytics on a single table, you can get going by using the
 
    table = client.table(table_name, database=db_name)
 
-Expression execution and asynchronous queries
----------------------------------------------
-
 Database and Table objects
 --------------------------
 
@@ -57,23 +61,21 @@ Database and Table objects
 The client's ``table`` method allows you to create an Ibis table expression
 referencing a physical Impala table:
 
-.. code-block:: ipython
+.. ipython:: python
 
-   In [5]: table = client.table('functional_alltypes', database='ibis_testing')
+   table = client.table('functional_alltypes', database='ibis_testing')
 
 While you can get by fine with only table and client objects, Ibis has a notion
 of a "database object" that simplifies interactions with a single Impala
 database. It also gives you IPython tab completion of table names (that are
 valid Python variable names):
 
-.. code-block:: ipython
+.. ipython:: python
 
-   In [5]: db = client.database('ibis_testing')
-
-   In [6]: db
-   Out[6]: Database('ibis_testing')
-
-   In [7]: table = db.functional_alltypes
+   db = client.database('ibis_testing')
+   db
+   table = db.functional_alltypes
+   db.list_tables()
 
 So, these two lines of code are equivalent:
 
@@ -93,6 +95,47 @@ can use to examine its schema:
    :toctree: generated/
 
    ImpalaTable.schema
+
+Expression execution and asynchronous queries
+---------------------------------------------
+
+Ibis expressions have an ``execute`` method with compiles and runs the
+expressions on Impala or whichever backend is being referenced.
+
+For example:
+
+.. ipython:: python
+
+   fa = db.functional_alltypes
+   expr = fa.double_col.sum()
+   expr.execute()
+
+For longer-running queries, if you press Control-C (or whatever triggers the
+Python ``KeyboardInterrupt`` on your system), Ibis will attempt to cancel the
+query in progress.
+
+As of Ibis 0.5.0, there is an explicit asynchronous API:
+
+.. ipython:: python
+
+   query = expr.execute(async=True)
+
+With the returned ``AsyncQuery`` object, you have various methods available to
+check on the status of the executing expression:
+
+.. ipython:: python
+
+   import time
+   while not query.is_finished():
+       time.sleep(1)
+   query.is_finished()
+   query.get_result()
+
+If the query is still running, you can attempt to cancel it:
+
+.. code-block:: python
+
+   query.cancel()
 
 Creating tables
 ---------------
@@ -161,27 +204,10 @@ can force a particular path with the ``location`` option.
 If the schema matches a known table schema, you can always use the ``schema``
 method to get a schema object:
 
-.. code-block:: ipython
+.. ipython:: python
 
-   In [2]: t = db.table('functional_alltypes')
-
-   In [3]: t.schema()
-   Out[3]:
-   ibis.Schema {
-     id               int32
-     bool_col         boolean
-     tinyint_col      int8
-     smallint_col     int16
-     int_col          int32
-     bigint_col       int64
-     float_col        float
-     double_col       double
-     date_string_col  string
-     string_col       string
-     timestamp_col    timestamp
-     year             int32
-     month            int32
-   }
+   t = db.table('functional_alltypes')
+   t.schema()
 
 Creating a partitioned table
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -197,13 +223,64 @@ the partition keys.
    name = 'new_table'
    db.create_table(name, schema=schema, partition=['year', 'month'])
 
+Partitioned tables
+------------------
+
+Ibis enables you to manage partitioned tables in various ways. Since each
+partition behaves as its own "subtable" sharing a common schema, each partition
+can have its own file format, directory path, serialization properties, and so
+forth.
+
+There are a handful of table methods for adding and removing partitions and
+getting information about the partition schema and any existing partition data:
+
+.. autosummary::
+   :toctree: generated/
+
+   ImpalaTable.add_partition
+   ImpalaTable.drop_partition
+   ImpalaTable.is_partitioned
+   ImpalaTable.partition_schema
+   ImpalaTable.partitions
+
+For example:
+
+.. ipython:: python
+
+   ss = client.table('tpcds_parquet.store_sales')
+   ss.is_partitioned
+   ss.partitions()[:5]
+   ss.partition_schema()
+
+To address a specific partition in any method that is partition specific, you
+can either use a dict with the partition key names and values, or pass a list
+of the partition values:
+
+.. code-block:: python
+
+   schema = ibis.schema([('foo', 'string'),
+                         ('year', 'int32'),
+                         ('month', 'int16')])
+   name = 'new_table'
+   db.create_table(name, schema=schema, partition=['year', 'month'])
+
+   table = db.table(name)
+
+   table.add_partition({'year': 2007, 'month', 4})
+   table.add_partition([2007, 5])
+   table.add_partition([2007, 6])
+
+   table.drop_partition([2007, 6])
+
+We'll cover partition metadata management and data loading below.
+
 Inserting data into existing tables
 -----------------------------------
 
 Managing table metadata
 -----------------------
 
-Ibis has APIs that wrap many of the DDL commands for Impala table metadata.
+Ibis has functions that wrap many of the DDL commands for Impala table metadata.
 
 Detailed table metadata: ``DESCRIBE FORMATTED``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -301,12 +378,14 @@ Modifying table metadata
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 For unpartitioned tables, you can use the ``alter`` method to change its
-location, file format, and other properties.
+location, file format, and other properties. For partitioned tables, to change
+partition-specific metadata use ``alter_partition``.
 
 .. autosummary::
    :toctree: generated/
 
    ImpalaTable.alter
+   ImpalaTable.alter_partition
 
 For example, if you wanted to "point" an existing table at a directory of CSV
 files, you could run the following command:
@@ -357,9 +436,9 @@ Seeing table and column statistics
    ImpalaTable.column_stats
    ImpalaTable.stats
 
-The ``compute_stats`` and ``stats`` APIs return the results of ``SHOW COLUMN
-STATS`` and ``SHOW TABLE STATS``, respectively, and their output will depend,
-of course, on the last ``COMPUTE STATS`` call.
+The ``compute_stats`` and ``stats`` functions return the results of ``SHOW
+COLUMN STATS`` and ``SHOW TABLE STATS``, respectively, and their output will
+depend, of course, on the last ``COMPUTE STATS`` call.
 
 .. code-block:: ipython
 
@@ -438,26 +517,74 @@ You can invalidate the cached metadata for a single table or for all tables
 using ``invalidate_metadata``, and similarly invoke ``REFRESH
 db_name.table_name`` using the ``refresh`` method.
 
-Partitioned tables
-------------------
+.. code-block:: python
+
+   client.invalidate_metadata()
+
+   table = db.table(table_name)
+   table.invalidate_metadata()
+
+   table.refresh()
+
+These methods are often used in conjunction with the ``LOAD DATA`` commands and
+``COMPUTE STATS``. See the Impala documentation for full details.
+
+Issuing ``LOAD DATA`` commands
+------------------------------
+
+The ``LOAD DATA`` DDL physically moves a single data file or a directory of
+files into the correct location for a table or table partition. It is
+especially useful for partitioned tables as you do not have to construct the
+directory path for a partition by hand, so simpler and less error-prone than
+manually moving files with low level HDFS commands. It also deals with file
+name conflicts so data is not lost in such cases.
 
 .. autosummary::
    :toctree: generated/
 
-   ImpalaTable.add_partition
-   ImpalaTable.alter_partition
-   ImpalaTable.compute_stats
-   ImpalaTable.drop_partition
-   ImpalaTable.files
-   ImpalaTable.insert
+   ImpalaClient.load_data
    ImpalaTable.load_data
-   ImpalaTable.metadata
-   ImpalaTable.partition_schema
-   ImpalaTable.partitions
-   ImpalaTable.refresh
+
+To use these methods, pass the path of a single file or a directory of files
+you want to load. Afterward, you may want to update the table statistics (see
+Impala documentation):
+
+.. code-block:: python
+
+   table.load_data(path)
+   table.refresh()
+
+Parquet and other session options
+---------------------------------
+
+Ibis gives you access to Impala session-level variables that affect query
+execution:
+
+.. autosummary::
+   :toctree: generated/
+
+   ImpalaClient.disable_codegen
+   ImpalaClient.get_options
+   ImpalaClient.set_options
+   ImpalaClient.set_compression_codec
+
+For example:
+
+.. ipython:: python
+
+   client.get_options()
+
+To enable Snappy compression for Parquet files, you could do either of:
+
+.. ipython:: python
+
+   client.set_options({'COMPRESSION_CODEC': 'snappy'})
+   client.set_compression_codec('snappy')
+
+   client.get_options()['COMPRESSION_CODEC']
 
 Ingesting data from pandas
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 Overall interoperability between the Hadoop / Spark ecosystems and pandas / the
 PyData stack is poor, but it will improve in time (this is a major part of the
