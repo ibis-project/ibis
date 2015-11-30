@@ -609,8 +609,61 @@ Ibis's Impala tools currently interoperate with pandas in these ways:
 
 * Ibis expressions return pandas objects (i.e. DataFrame or Series) for
   non-scalar expressions when calling their ``execute`` method
-* The ``create_table`` and ``insert`` methods can accept pandas objects. It
-  currently uses CSV as the ingest route.
+* The ``create_table`` and ``insert`` methods can accept pandas objects. This
+  includes inserting into partitioned tables. It currently uses CSV as the
+  ingest route.
+
+For example:
+
+.. code-block:: ipython
+
+   In [2]: import pandas as pd
+
+   In [3]: data = pd.DataFrame({'foo': [1, 2, 3, 4], 'bar': ['a', 'b', 'c', 'd']})
+
+   In [4]: db.create_table('pandas_table', data)
+
+   In [5]: t = db.pandas_table
+
+   In [6]: t.execute()
+   Out[6]:
+	 bar  foo
+   0   a    1
+   1   b    2
+   2   c    3
+   3   d    4
+
+   In [7]: t.drop()
+
+   In [8]: db.create_table('empty_for_insert', schema=t.schema())
+
+   In [9]: to_insert = db.empty_for_insert
+
+   In [10]: to_insert.insert(data)
+
+   In [11]: to_insert.execute()
+   Out[11]:
+	 bar  foo
+   0   a    1
+   1   b    2
+   2   c    3
+   3   d    4
+
+   In [12]: to_insert.drop()
+
+.. .. ipython:: python
+
+..    import pandas as pd
+..    data = pd.DataFrame({'foo': [1, 2, 3, 4], 'bar': ['a', 'b', 'c', 'd']})
+..    db.create_table('pandas_table', data)
+..    t = db.pandas_table
+..    t.execute()
+..    t.drop()
+..    db.create_table('empty_for_insert', schema=t.schema())
+..    to_insert = db.empty_for_insert
+..    to_insert.insert(data)
+..    to_insert.execute()
+..    to_insert.drop()
 
 Using Impala UDFs in Ibis
 -------------------------
