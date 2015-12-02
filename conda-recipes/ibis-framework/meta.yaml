@@ -1,11 +1,9 @@
 package:
   name: ibis-framework
-  version: "0.6.0"
+  version: "SETBYINSTALL"
 
 source:
-  fn: ibis-framework-v0.6.0.tar.gz
-  url: https://pypi.python.org/packages/source/i/ibis-framework/ibis-framework-v0.6.0.tar.gz
-  md5: 44972ecee06c75cbd2e86d0d96b02794
+  path: ../..
 
 requirements:
   build:

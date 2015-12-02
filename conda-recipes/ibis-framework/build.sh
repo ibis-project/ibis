@@ -2,6 +2,8 @@
 
 $PYTHON setup.py install
 
+$PYTHON -c "import ibis; print(ibis.__version__)" > __conda_version__.txt
+
 # Add more build steps here, if they are necessary.
 
 # See

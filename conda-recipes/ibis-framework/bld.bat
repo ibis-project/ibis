@@ -1,6 +1,8 @@
 "%PYTHON%" setup.py install
 if errorlevel 1 exit 1
 
+"%PYTHON%" -c "import ibis; print(ibis.__version__)" > __conda_version__.txt
+
 :: Add more build steps here, if they are necessary.
 
 :: See
