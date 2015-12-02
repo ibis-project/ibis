@@ -1,9 +1,11 @@
 package:
   name: ibis-framework
-  version: "SETBYINSTALL"
+  version: "0.6.0"
 
 source:
-  path: ../..
+  fn: ibis-framework-v0.6.0.tar.gz
+  url: https://pypi.python.org/packages/source/i/ibis-framework/ibis-framework-v0.6.0.tar.gz
+  md5: 44972ecee06c75cbd2e86d0d96b02794
 
 requirements:
   build:
@@ -12,20 +14,22 @@ requirements:
     - pytest
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - impyla >=0.10.0
+    - impyla >=0.12.0
     - hdfs >=2.0.0
     - sqlalchemy >=1.0.0
     - six
+    - mock
 
   run:
     - python
     - pytest
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - impyla >=0.10.0
+    - impyla >=0.12.0
     - hdfs >=2.0.0
     - sqlalchemy >=1.0.0
     - six
+    - mock
 
 test:
   imports:

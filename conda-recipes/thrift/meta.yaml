@@ -1,11 +1,11 @@
 package:
   name: thrift
-  version: "0.9.2"
+  version: "0.9.3"
 
 source:
-  fn: thrift-0.9.2.tar.gz
-  url: https://pypi.python.org/packages/source/t/thrift/thrift-0.9.2.tar.gz
-  md5: 91f1c224c46a257bb428431943387dfd
+  fn: thrift-0.9.3.tar.gz
+  url: https://pypi.python.org/packages/source/t/thrift/thrift-0.9.3.tar.gz
+  md5: b519551d7a086bb0b4f222a8f566b7e8
 
 requirements:
   build:

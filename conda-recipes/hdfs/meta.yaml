@@ -1,16 +1,16 @@
 package:
   name: hdfs
-  version: "2.0.2"
+  version: "2.0.4"
 
 source:
-  fn: hdfs-2.0.2.tar.gz
-  url: https://pypi.python.org/packages/source/h/hdfs/hdfs-2.0.2.tar.gz
-  md5: ade3a92382e0889e2a845b9cc707c704
+  fn: hdfs-2.0.4.tar.gz
+  url: https://pypi.python.org/packages/source/h/hdfs/hdfs-2.0.4.tar.gz
+  md5: c48b86a0fb05d22b5f4eb4cb84fc6452
 
 build:
   entry_points:
     - hdfscli = hdfs.__main__:main
-    # - hdfscli-avro = hdfs.ext.avro.__main__:main  # disabled
+    # - hdfscli-avro = hdfs.ext.avro.__main__:main
 
 requirements:
   build:
@@ -30,11 +30,11 @@ test:
   imports:
     - hdfs
     - hdfs.ext
-    # - hdfs.ext.avro  # disabled
+    # - hdfs.ext.avro
 
   commands:
     - hdfscli --help
-    # - hdfscli-avro --help  # disabled
+    # - hdfscli-avro --help
 
 about:
   home: http://hdfscli.readthedocs.org

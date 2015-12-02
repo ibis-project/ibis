@@ -1,13 +1,14 @@
 package:
   name: impyla
-  version: "0.11.2"
+  version: "0.12.0"
 
 source:
-  git_url: https://github.com/cloudera/impyla
+  fn: impyla-0.12.0.tar.gz
+  url: https://pypi.python.org/packages/source/i/impyla/impyla-0.12.0.tar.gz
+  md5: 80c0374ba450c171661eade087216611
 
 build:
-  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
-  string: py{{ environ.get('PY_VER').replace('.', '') }}_{{ environ.get('GIT_BUILD_STR', 'GIT_STUB') }}
+  preserve_egg_dir: True
 
 requirements:
   build:
@@ -16,9 +17,7 @@ requirements:
     - six
     - thrift_sasl
     - bitarray
-    - thrift
-    - llvmpy
-    - numba
+    - thriftpy
 
   run:
     - python
@@ -26,26 +25,13 @@ requirements:
     - six
     - thrift_sasl
     - bitarray
-    - thrift
-    - llvmpy
-    - numba
+    - thriftpy
 
 test:
   imports:
     - impala
-    - impala._thrift_api
-    - impala._thrift_gen
-    - impala._thrift_gen.ExecStats
-    - impala._thrift_gen.ImpalaService
-    - impala._thrift_gen.Status
-    - impala._thrift_gen.TCLIService
-    - impala._thrift_gen.Types
-    - impala._thrift_gen.beeswax
-    - impala._thrift_gen.fb303
-    - impala._thrift_gen.hive_metastore
     - impala.tests
     - impala.thrift
-    # - impala.udf  # Test fails on osx-64
 
 about:
   home: https://github.com/cloudera/impyla

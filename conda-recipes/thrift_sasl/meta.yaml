@@ -12,10 +12,12 @@ requirements:
     - python
     - setuptools
     - thrift
+    - thriftpy
 
   run:
     - python
     - thrift
+    - thriftpy
 
 test:
   imports:
