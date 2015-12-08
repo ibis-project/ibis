@@ -183,6 +183,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         cls.alltypes = cls.alltypes.execute()
 
     def test_alltypes_roundtrip(self):
+        pytest.skip('IMPALA-2750')
         self._check_roundtrip(self.alltypes)
 
     def test_writer_cleanup_deletes_hdfs_dir(self):
@@ -199,6 +200,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         assert not self.con.hdfs.exists(path)
 
     def test_create_table_from_dataframe(self):
+        pytest.skip('IMPALA-2750')
         tname = 'tmp_pandas_{0}'.format(util.guid())
         self.con.create_table(tname, self.alltypes, database=self.tmp_db)
         self.temp_tables.append(tname)
@@ -208,6 +210,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         assert_frame_equal(df, self.alltypes)
 
     def test_insert(self):
+        pytest.skip('IMPALA-2750')
         schema = pandas_to_ibis_schema(exhaustive_df)
 
         table_name = 'tmp_pandas_{0}'.format(util.guid())
@@ -234,6 +237,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         pass
 
     def test_round_trip_exhaustive(self):
+        pytest.skip('IMPALA-2750')
         self._check_roundtrip(exhaustive_df)
 
     def _check_roundtrip(self, df):
