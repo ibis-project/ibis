@@ -45,12 +45,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         cls.df = df
         cls.db = cls.con.database(cls.tmp_db)
         cls.pd_name = _tmp_name()
-        cls.db.create_table(cls.pd_name, df,
-                            location=cls._temp_location())
-
-    @classmethod
-    def _temp_location(cls):
-        return cls._create_777_tmp_dir()
+        cls.db.create_table(cls.pd_name, df)
 
     def test_is_partitioned(self):
         schema = ibis.schema([('foo', 'string'),
@@ -58,11 +53,9 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                               ('month', 'int16')])
         name = _tmp_name()
         self.db.create_table(name, schema=schema,
-                             partition=['year', 'month'],
-                             location=self._temp_location())
+                             partition=['year', 'month'])
         assert self.db.table(name).is_partitioned
 
-    @pytest.mark.superuser
     def test_create_table_with_partition_column(self):
         schema = ibis.schema([('year', 'int32'),
                               ('month', 'int8'),
@@ -72,8 +65,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         name = _tmp_name()
         self.con.create_table(name, schema=schema,
                               database=self.tmp_db,
-                              partition=['year', 'month'],
-                              location=self._temp_location())
+                              partition=['year', 'month'])
         self.temp_tables.append(name)
 
         # the partition column get put at the end of the table
@@ -90,7 +82,6 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                                 ('month', 'int8')])
         assert_equal(partition_schema, expected)
 
-    @pytest.mark.superuser
     def test_create_partitioned_separate_schema(self):
         schema = ibis.schema([('day', 'int8'),
                               ('value', 'double')])
@@ -98,8 +89,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                                    ('month', 'int8')])
 
         name = _tmp_name()
-        self.con.create_table(name, schema=schema, partition=part_schema,
-                              location=self._temp_location())
+        self.con.create_table(name, schema=schema, partition=part_schema)
         self.temp_tables.append(name)
 
         # the partition column get put at the end of the table
@@ -113,14 +103,13 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         partition_schema = self.con.table(name).partition_schema()
         assert_equal(partition_schema, part_schema)
 
-    @pytest.mark.superuser
     def test_unpartitioned_table_get_schema(self):
         tname = 'functional_alltypes'
         with self.assertRaises(ImpylaError):
             self.con.table(tname).partition_schema()
 
-    @pytest.mark.superuser
     def test_insert_select_partitioned_table(self):
+        pytest.skip('IMPALA-2750')
         df = self.df
 
         unpart_t = self.db.table(self.pd_name)
@@ -142,24 +131,20 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
         self._verify_partitioned_table(part_t, df, unique_keys)
 
-    @pytest.mark.superuser
     def test_insert_overwrite_partition(self):
         pass
 
-    @pytest.mark.superuser
     def test_dynamic_partitioning(self):
         pass
 
-    @pytest.mark.superuser
     def test_add_drop_partition(self):
+        pytest.skip('HIVE-12613')
         schema = ibis.schema([('foo', 'string'),
                               ('year', 'int32'),
                               ('month', 'int16')])
         name = _tmp_name()
-        tmp_dir = self._temp_location()
         self.db.create_table(name, schema=schema,
-                             partition=['year', 'month'],
-                             location=tmp_dir)
+                             partition=['year', 'month'])
 
         table = self.db.table(name)
 
@@ -174,11 +159,9 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
         assert len(table.partitions()) == 1
 
-    @pytest.mark.superuser
     def test_set_partition_location(self):
         pass
 
-    @pytest.mark.superuser
     def test_load_data_partition(self):
         df = self.df
 
@@ -234,20 +217,17 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         # allow for the total line
         assert len(parts) == (len(unique_keys) + 1)
 
-    def _create_partitioned_table(self, schema, part_keys):
+    def _create_partitioned_table(self, schema, part_keys, location=None):
         part_name = _tmp_name()
 
         self.db.create_table(part_name,
                              schema=schema,
-                             partition=part_keys,
-                             location=self._temp_location())
+                             partition=part_keys)
         self.temp_tables.append(part_name)
         return self.db.table(part_name)
 
-    @pytest.mark.superuser
     def test_drop_partition(self):
         pass
 
-    @pytest.mark.superuser
     def test_repartition_automated(self):
         pass
