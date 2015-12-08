@@ -138,6 +138,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         pass
 
     def test_add_drop_partition(self):
+        pytest.skip('HIVE-12613')
         schema = ibis.schema([('foo', 'string'),
                               ('year', 'int32'),
                               ('month', 'int16')])
