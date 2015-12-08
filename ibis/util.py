@@ -219,3 +219,7 @@ class cache_readonly(object):
                 return
 
         cache[self.name] = value
+
+
+def approx_equal(a, b, eps):
+    assert abs(a - b) < eps

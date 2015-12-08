@@ -16,7 +16,7 @@ from pytest import skip
 
 import ibis
 
-groups = ['hdfs', 'impala', 'madlib', 'sqlite']
+groups = ['hdfs', 'impala', 'madlib', 'sqlite', 'kudu']
 
 
 def pytest_configure(config):
