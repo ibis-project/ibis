@@ -15,7 +15,6 @@
 import os
 import time
 import six
-from posixpath import join as pjoin
 
 import pytest
 
