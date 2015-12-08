@@ -198,25 +198,21 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         writer.cleanup()
         assert not self.con.hdfs.exists(path)
 
-    @pytest.mark.superuser
     def test_create_table_from_dataframe(self):
         tname = 'tmp_pandas_{0}'.format(util.guid())
-        self.con.create_table(tname, self.alltypes, database=self.tmp_db,
-                              location=self._create_777_tmp_dir())
+        self.con.create_table(tname, self.alltypes, database=self.tmp_db)
         self.temp_tables.append(tname)
 
         table = self.con.table(tname, database=self.tmp_db)
         df = table.execute()
         assert_frame_equal(df, self.alltypes)
 
-    @pytest.mark.superuser
     def test_insert(self):
         schema = pandas_to_ibis_schema(exhaustive_df)
 
         table_name = 'tmp_pandas_{0}'.format(util.guid())
         self.con.create_table(table_name, database=self.tmp_db,
-                              schema=schema,
-                              location=self._create_777_tmp_dir())
+                              schema=schema)
         self.temp_tables.append(table_name)
 
         self.con.insert(table_name, exhaustive_df.iloc[:4],

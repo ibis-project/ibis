@@ -613,22 +613,10 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
         self.con.drop_database(name)
         self.hdfs.rmdir(base)
 
-    @pytest.mark.superuser
     def test_create_table_with_location(self):
         base = pjoin(self.tmp_dir, util.guid())
         name = 'test_{0}'.format(util.guid())
         tmp_path = pjoin(base, name)
-
-        # impala user has trouble writing to jenkins-owned dir so here we give
-        # the tmp dir 777
-        superuser_hdfs = ibis.hdfs_connect(host=ENV.nn_host,
-                                           port=ENV.webhdfs_port,
-                                           auth_mechanism=ENV.auth_mechanism,
-                                           verify=(ENV.auth_mechanism
-                                                   not in ['GSSAPI', 'LDAP']),
-                                           user=ENV.hdfs_superuser)
-        superuser_hdfs.mkdir(base)
-        superuser_hdfs.chmod(base, '777')
 
         expr = self.alltypes
         table_name = _random_table_name()
