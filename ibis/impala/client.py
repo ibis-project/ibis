@@ -1809,6 +1809,12 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
                                         tbl_properties=tbl_properties,
                                         serde_properties=serde_properties)
 
+    def set_external(self, is_external=True):
+        """
+        Toggle EXTERNAL table property.
+        """
+        self.alter(tbl_properties={'EXTERNAL': is_external})
+
     def alter_partition(self, spec, location=None, format=None,
                         tbl_properties=None,
                         serde_properties=None):

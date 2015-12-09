@@ -130,18 +130,26 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
     def setUpClass(cls):
         ImpalaE2E.setup_e2e(cls, ENV)
 
+        cls.temp_tables = []
+
         cls.kclient = kudu.connect(cls.env.master_host, cls.env.master_port)
+
+        cls.con.kudu.connect(cls.env.master_host, cls.env.master_port)
+
+    def _new_kudu_example_table(self, kschema):
+        kudu_name = 'ibis-tmp-{0}'.format(util.guid())
+
+        self.kclient.create_table(kudu_name, kschema)
+        self.temp_tables.append(kudu_name)
+
+        return kudu_name
 
     @classmethod
     def tearDownClass(cls):
         cls.teardown_e2e(cls)
 
-    def setUp(self):
-        self.temp_tables = []
-
-    def tearDown(self):
-        for table in self.temp_tables:
-            self.kclient.delete_table(table)
+        for table in cls.temp_tables:
+            cls.kclient.delete_table(table)
 
     @classmethod
     def example_schema(cls):
@@ -167,16 +175,11 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
     @pytest.mark.kudu
     def test_kudu_table(self):
-        kudu_name = 'ibis-tmp-{0}'.format(util.guid())
         kschema = self.example_schema()
-
-        self.kclient.create_table(kudu_name, kschema)
-        self.temp_tables.append(kudu_name)
+        kudu_name = self._new_kudu_example_table(kschema)
 
         nrows = 100
         self._write_example_data(kudu_name, nrows)
-
-        self.con.kudu.connect(self.env.master_host, self.env.master_port)
 
         table = self.con.kudu.table(kudu_name)
         result = table.execute()
@@ -185,3 +188,27 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         ischema = ksupport.schema_kudu_to_ibis(kschema,
                                                drop_nn=True)
         assert_equal(table.schema(), ischema)
+
+    @pytest.mark.kudu
+    def test_internal_kudu_table(self):
+        kschema = self.example_schema()
+        kudu_name = self._new_kudu_example_table(kschema)
+
+        nrows = 100
+        self._write_example_data(kudu_name, nrows)
+
+        impala_name = 'kudu_{0}'.format(util.guid())
+        impala_db = self.env.test_data_db
+        self.con.kudu.table(kudu_name, name=impala_name,
+                            database=impala_db,
+                            external=True,
+                            persist=True)
+
+        t = self.con.table(impala_name, database=impala_db)
+        assert len(t.execute()) == nrows
+
+        # Make internal
+        t.set_external(False)
+        t.drop()
+
+        assert not self.con.kudu.table_exists(kudu_name)

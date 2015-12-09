@@ -17,6 +17,7 @@ from six import StringIO
 from ibis.common import IbisError
 from ibis.expr.api import schema
 from ibis.impala import ddl
+from ibis.util import implements as copydoc
 import ibis.expr.datatypes as dt
 import kudu
 
@@ -43,6 +44,14 @@ class KuduImpalaInterface(object):
     def __init__(self, impala_client):
         self.impala_client = impala_client
         self.client = None
+
+    @copydoc(kudu.client.Client.list_tables)
+    def list_tables(self, filter=''):
+        return self.client.list_tables(filter)
+
+    @copydoc(kudu.client.Client.table_exists)
+    def table_exists(self, name):
+        return self.client.table_exists(name)
 
     def connect(self, host_or_hosts, port_or_ports=7051, rpc_timeout=None):
         """
@@ -74,7 +83,8 @@ class KuduImpalaInterface(object):
         # crude check for now
         return self.client is not None
 
-    def table(self, kudu_name, name=None, database=None, persist=False):
+    def table(self, kudu_name, name=None, database=None, persist=False,
+              external=True):
         """
         Expose the indicated Kudu table (using CREATE TABLE) as an Impala
         table.
@@ -92,8 +102,12 @@ class KuduImpalaInterface(object):
         database : string, optional
           Database to create the table in. Uses the temp db if not provided
         persist : boolean, default False
-          Do not drop the table upon Ibis garbage collection / interpreter
-          shutdown
+          If True, do not drop the table upon Ibis garbage collection /
+          interpreter shutdown. Be careful using this in conjunction with the
+          `external` option.
+        external : boolean, default True
+          If True, create the Impala table as EXTERNAL so the Kudu data is not
+          deleted when the Impala table is dropped
 
         Returns
         -------
@@ -114,7 +128,8 @@ class KuduImpalaInterface(object):
         stmt = CreateTableKudu(name, kudu_name,
                                self.client.master_addrs,
                                ibis_schema, primary_keys,
-                               external=True, database=database,
+                               external=external,
+                               database=database,
                                can_exist=False)
         self.impala_client._execute(stmt)
         return self.impala_client._wrap_new_table(name, database, persist)
