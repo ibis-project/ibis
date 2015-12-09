@@ -133,6 +133,17 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         cls.kclient = kudu.connect(cls.env.master_host, cls.env.master_port)
 
     @classmethod
+    def tearDownClass(cls):
+        cls.teardown_e2e(cls)
+
+    def setUp(self):
+        self.temp_tables = []
+
+    def tearDown(self):
+        for table in self.temp_tables:
+            self.kclient.delete_table(table)
+
+    @classmethod
     def example_schema(cls):
         builder = kudu.schema_builder()
         builder.add_column('key', kudu.int32, nullable=False)
@@ -141,10 +152,6 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         builder.set_primary_keys(['key'])
 
         return builder.build()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.teardown_e2e(cls)
 
     def _write_example_data(self, table_name, nrows=100):
         table = self.kclient.table(table_name)
@@ -164,6 +171,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         kschema = self.example_schema()
 
         self.kclient.create_table(kudu_name, kschema)
+        self.temp_tables.append(kudu_name)
 
         nrows = 100
         self._write_example_data(kudu_name, nrows)
