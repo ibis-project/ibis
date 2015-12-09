@@ -26,13 +26,10 @@ from ibis.compat import unittest, mock
 from ibis.impala import ddl
 from ibis.impala.compat import HS2Error, ImpylaError
 from ibis.impala.client import build_ast
-from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E, connect_test
+from ibis.impala.tests.common import ENV, ImpalaE2E, connect_test
 from ibis.tests.util import assert_equal
 import ibis.common as com
 import ibis.util as util
-
-
-ENV = IbisTestEnv()
 
 
 class TestDropTable(unittest.TestCase):
@@ -500,7 +497,7 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ImpalaE2E.setup_e2e(cls)
+        ImpalaE2E.setup_e2e(cls, ENV)
 
         cls.path_uuid = 'change-location-{0}'.format(util.guid())
         fake_path = pjoin(cls.tmp_dir, cls.path_uuid)

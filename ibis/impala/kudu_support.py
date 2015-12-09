@@ -74,7 +74,7 @@ class KuduImpalaInterface(object):
         # crude check for now
         return self.client is not None
 
-    def kudu_table(self, kudu_name, name=None, database=None, persist=False):
+    def table(self, kudu_name, name=None, database=None, persist=False):
         """
         Expose the indicated Kudu table (using CREATE TABLE) as an Impala
         table.
@@ -99,6 +99,8 @@ class KuduImpalaInterface(object):
         -------
         parquet_table : ImpalaTable
         """
+        self._check_connected()
+
         # Law of demeter, but OK for now because internal class coupling
         name, database = (self.impala_client
                           ._get_concrete_table_path(name, database,
@@ -109,11 +111,13 @@ class KuduImpalaInterface(object):
         ibis_schema = schema_kudu_to_ibis(kschema)
         primary_keys = kschema.primary_keys()
 
-        stmt = CreateTableKudu(name, self.client.master_addrs,
+        stmt = CreateTableKudu(name, kudu_name,
+                               self.client.master_addrs,
                                ibis_schema, primary_keys,
-                               external=True, can_exist=False)
-        self._execute(stmt)
-        return self._wrap_new_table(name, database, persist)
+                               external=True, database=database,
+                               can_exist=False)
+        self.impala_client._execute(stmt)
+        return self.impala_client._wrap_new_table(name, database, persist)
 
 
 class CreateTableKudu(ddl.CreateTable):
@@ -173,13 +177,18 @@ class CreateTableKudu(ddl.CreateTable):
         return tbl_props
 
 
-def schema_kudu_to_ibis(kschema):
+def schema_kudu_to_ibis(kschema, drop_nn=False):
     ibis_types = []
     for i in range(len(kschema)):
         col = kschema[i]
 
         typeclass = _kudu_type_to_ibis_typeclass[col.type.name]
-        itype = typeclass(col.nullable)
+
+        if drop_nn:
+            # For testing, because Impala does not have nullable types
+            itype = typeclass(True)
+        else:
+            itype = typeclass(col.nullable)
 
         ibis_types.append((col.name, itype))
 

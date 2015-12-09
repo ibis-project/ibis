@@ -94,7 +94,7 @@ class ImpalaE2E(object):
 
     @classmethod
     def setUpClass(cls):
-        ImpalaE2E.setup_e2e(cls)
+        ImpalaE2E.setup_e2e(cls, ENV)
 
         # make sure this never gets messed up
         opts = cls.con.get_options()
@@ -105,19 +105,25 @@ class ImpalaE2E(object):
         ImpalaE2E.teardown_e2e(cls)
 
     @staticmethod
-    def setup_e2e(cls):
-        cls.con = connect_test(ENV)
+    def setup_e2e(cls, env):
+        cls.env = env
+        cls.con = connect_test(env)
+
         # Tests run generally faster without it
-        if not ENV.use_codegen:
+        if not env.use_codegen:
             cls.con.disable_codegen()
         cls.hdfs = cls.con.hdfs
-        cls.test_data_dir = ENV.test_data_dir
-        cls.test_data_db = ENV.test_data_db
-        cls.tmp_dir = ENV.tmp_dir
-        cls.tmp_db = ENV.tmp_db
-        cls.alltypes = cls.con.table('functional_alltypes')
+        cls.test_data_dir = env.test_data_dir
+        cls.test_data_db = env.test_data_db
+        cls.tmp_dir = env.tmp_dir
+        cls.tmp_db = env.tmp_db
 
-        cls.db = cls.con.database(ENV.test_data_db)
+        try:
+            cls.alltypes = cls.con.table('functional_alltypes')
+        except:
+            pass
+
+        cls.db = cls.con.database(env.test_data_db)
 
         if not cls.con.exists_database(cls.tmp_db):
             cls.con.create_database(cls.tmp_db)

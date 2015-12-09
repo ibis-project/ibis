@@ -459,6 +459,7 @@ class ImpalaClient(SQLClient):
             raise TypeError(hdfs_client)
 
         self._hdfs = hdfs_client
+        self._kudu = None
 
         self._temp_objects = weakref.WeakValueDictionary()
 
@@ -480,6 +481,13 @@ class ImpalaClient(SQLClient):
         self._hdfs = hdfs
 
     hdfs = property(fget=_get_hdfs, fset=_set_hdfs)
+
+    @property
+    def kudu(self):
+        from ibis.impala.kudu_support import KuduImpalaInterface
+        if self._kudu is None:
+            self._kudu = KuduImpalaInterface(self)
+        return self._kudu
 
     @property
     def _table_expr_klass(self):

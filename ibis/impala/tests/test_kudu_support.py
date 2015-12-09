@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import pytest
 
 from ibis.compat import unittest
 from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E
 from ibis.tests.util import assert_equal
 import ibis.expr.datatypes as dt
+import ibis.util as util
 import ibis
 
 try:
@@ -32,7 +34,28 @@ pytestmark = pytest.mark.skipif(not HAVE_KUDU_CLIENT,
                                 reason='Kudu client not installed')
 
 
-ENV = IbisTestEnv()
+class KuduImpalaTestEnv(IbisTestEnv):
+
+    def __init__(self):
+        IbisTestEnv.__init__(self)
+
+        # band-aid until Kudu support merged into Impala mainline
+        self.test_host = os.getenv('IBIS_TEST_KIMPALA_HOST',
+                                   'quickstart.cloudera')
+
+        # XXX
+        self.impala_host = self.test_host
+        self.impala_port = 21050
+        self.master_host = os.getenv('IBIS_TEST_KUDU_MASTER', self.test_host)
+        self.master_port = os.getenv('IBIS_TEST_KUDU_MASTER_PORT', 7051)
+        self.nn_host = os.environ.get('IBIS_TEST_KUDU_NN_HOST', self.test_host)
+
+        self.webhdfs_port = int(os.environ.get('IBIS_TEST_WEBHDFS_PORT',
+                                               50070))
+        self.hdfs_superuser = os.environ.get('IBIS_TEST_HDFS_SUPERUSER',
+                                             'hdfs')
+
+ENV = KuduImpalaTestEnv()
 
 
 class TestKuduTools(unittest.TestCase):
@@ -105,12 +128,52 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.setup_e2e(cls)
+        ImpalaE2E.setup_e2e(cls, ENV)
+
+        cls.kclient = kudu.connect(cls.env.master_host, cls.env.master_port)
+
+    @classmethod
+    def example_schema(cls):
+        builder = kudu.schema_builder()
+        builder.add_column('key', kudu.int32, nullable=False)
+        builder.add_column('int_val', kudu.int32)
+        builder.add_column('string_val', kudu.string)
+        builder.set_primary_keys(['key'])
+
+        return builder.build()
 
     @classmethod
     def tearDownClass(cls):
         cls.teardown_e2e(cls)
 
+    def _write_example_data(self, table_name, nrows=100):
+        table = self.kclient.table(table_name)
+        session = self.kclient.new_session()
+        for i in range(nrows):
+            op = table.insert()
+            row = i, i * 2, 'hello_%d' % i
+            op['key'] = row[0]
+            op['int_val'] = row[1]
+            op['string_val'] = row[2]
+            session.apply(op)
+        session.flush()
+
     @pytest.mark.kudu
     def test_kudu_table(self):
-        pass
+        kudu_name = 'ibis-tmp-{0}'.format(util.guid())
+        kschema = self.example_schema()
+
+        self.kclient.create_table(kudu_name, kschema)
+
+        nrows = 100
+        self._write_example_data(kudu_name, nrows)
+
+        self.con.kudu.connect(self.env.master_host, self.env.master_port)
+
+        table = self.con.kudu.table(kudu_name)
+        result = table.execute()
+        assert len(result) == 100
+
+        ischema = ksupport.schema_kudu_to_ibis(kschema,
+                                               drop_nn=True)
+        assert_equal(table.schema(), ischema)
