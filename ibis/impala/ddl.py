@@ -75,12 +75,22 @@ def _sanitize_format(format):
     return format
 
 
+def _serdeproperties(props):
+    formatted_props = _format_properties(props)
+    return 'SERDEPROPERTIES {0}'.format(formatted_props)
+
+
+def format_tblproperties(props):
+    formatted_props = _format_properties(props)
+    return 'TBLPROPERTIES {0}'.format(formatted_props)
+
+
 def _format_properties(props):
     tokens = []
     for k, v in sorted(props.items()):
-        tokens.append("'{0!s}'='{1!s}'".format(k, v))
+        tokens.append("  '{0!s}'='{1!s}'".format(k, v))
 
-    return '({0})'.format(', '.join(tokens))
+    return '(\n{0}\n)'.format(',\n'.join(tokens))
 
 
 class CreateTable(CreateDDL):
@@ -95,7 +105,8 @@ class CreateTable(CreateDDL):
 
     def __init__(self, table_name, database=None, external=False,
                  format='parquet', can_exist=False,
-                 partition=None, path=None):
+                 partition=None, path=None,
+                 tbl_properties=None):
         self.table_name = table_name
         self.database = database
         self.partition = partition
@@ -103,6 +114,8 @@ class CreateTable(CreateDDL):
         self.external = external
         self.can_exist = can_exist
         self.format = _sanitize_format(format)
+
+        self.tbl_properties = tbl_properties
 
     def _create_line(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
@@ -303,8 +316,11 @@ class DelimitedFormat(object):
         buf.write("\nLOCATION '{0}'".format(self.path))
 
         if self.na_rep is not None:
-            buf.write("\nTBLPROPERTIES('serialization.null.format'='{0}')"
-                      .format(self.na_rep))
+            props = {
+                'serialization.null.format': self.na_rep
+            }
+            buf.write('\n')
+            buf.write(format_tblproperties(props))
 
         return buf.getvalue()
 
@@ -324,9 +340,10 @@ class AvroFormat(object):
 
         schema = json.dumps(self.avro_schema, indent=2, sort_keys=True)
         schema = '\n'.join([x.rstrip() for x in schema.split('\n')])
-        buf.write("\nTBLPROPERTIES ('avro.schema.literal'='{0}')"
-                  .format(schema))
 
+        props = {'avro.schema.literal': schema}
+        buf.write('\n')
+        buf.write(format_tblproperties(props))
         return buf.getvalue()
 
 
@@ -468,12 +485,10 @@ class AlterTable(ImpalaDDL):
             tokens.append("FILEFORMAT {0}".format(self.format))
 
         if self.tbl_properties is not None:
-            props = _format_properties(self.tbl_properties)
-            tokens.append('TBLPROPERTIES {0}'.format(props))
+            tokens.append(format_tblproperties(self.tbl_properties))
 
         if self.serde_properties is not None:
-            props = _format_properties(self.serde_properties)
-            tokens.append('SERDEPROPERTIES {0}'.format(props))
+            tokens.append(_serdeproperties(self.serde_properties))
 
         if len(tokens) > 0:
             return '\n{0}{1}'.format(prefix, '\n'.join(tokens))

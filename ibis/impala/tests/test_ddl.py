@@ -201,13 +201,18 @@ SET FILEFORMAT AVRO"""
         }})
         expected = """\
 ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET TBLPROPERTIES ('bar'='2', 'foo'='1')"""
+SET TBLPROPERTIES (
+  'bar'='2',
+  'foo'='1'
+)"""
         assert result == expected
 
         result = _get_ddl_string({'serde_properties': {'baz': 3}})
         expected = """\
 ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET SERDEPROPERTIES ('baz'='3')"""
+SET SERDEPROPERTIES (
+  'baz'='3'
+)"""
         assert result == expected
 
     def test_alter_table_properties(self):
@@ -236,13 +241,18 @@ SET FILEFORMAT AVRO"""
         }})
         expected = """\
 ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET TBLPROPERTIES ('bar'='2', 'foo'='1')"""
+SET TBLPROPERTIES (
+  'bar'='2',
+  'foo'='1'
+)"""
         assert result == expected
 
         result = _get_ddl_string({'serde_properties': {'baz': 3}})
         expected = """\
 ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET SERDEPROPERTIES ('baz'='3')"""
+SET SERDEPROPERTIES (
+  'baz'='3'
+)"""
         assert result == expected
 
 
@@ -410,7 +420,8 @@ LOCATION '{0}'""".format(path)
 CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
 STORED AS AVRO
 LOCATION '%s'
-TBLPROPERTIES ('avro.schema.literal'='{
+TBLPROPERTIES (
+  'avro.schema.literal'='{
   "fields": [
     {
       "name": "a",
@@ -434,7 +445,8 @@ TBLPROPERTIES ('avro.schema.literal'='{
   ],
   "name": "my_record",
   "type": "record"
-}')""" % path
+}'
+)""" % path
         assert result == expected
 
     def test_create_table_parquet(self):

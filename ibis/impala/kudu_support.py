@@ -149,8 +149,9 @@ class CreateTableKudu(ddl.CreateTable):
         schema = ddl.format_schema(self.schema)
         buf.write('\n{0}'.format(schema))
 
-        buf.write(self._storage())
-        buf.write(self._location())
+        props = self._get_table_properties()
+        buf.write('\n')
+        buf.write(ddl.format_tblproperties(props))
         return buf.getvalue()
 
     _table_props_base = {

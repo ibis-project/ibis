@@ -76,6 +76,30 @@ class TestKuduTools(unittest.TestCase):
 
         assert_equal(ischema, expected)
 
+    def test_create_external_ddl(self):
+        schema = ibis.schema([('key1', 'int32'),
+                              ('key2', 'int64'),
+                              ('value1', 'double')])
+
+        stmt = ksupport.CreateTableKudu('impala_name', 'kudu_name',
+                                        ['master1.d.com:7051',
+                                         'master2.d.com:7051'],
+                                        schema, ['key1', 'key2'])
+
+        result = stmt.compile()
+        expected = """\
+CREATE EXTERNAL TABLE `impala_name`
+(`key1` int,
+ `key2` bigint,
+ `value1` double)
+TBLPROPERTIES (
+  'kudu.key_columns'='key1, key2',
+  'kudu.master_addresses'='master1.d.com:7051, master2.d.com:7051',
+  'kudu.table_name'='kudu_name',
+  'storage_handler'='com.cloudera.kudu.hive.KuduStorageHandler'
+)"""
+        assert result == expected
+
 
 class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
