@@ -16,6 +16,8 @@ import os
 import pytest
 
 from ibis.compat import unittest
+from ibis.expr.tests.mocks import MockConnection
+from ibis.impala.client import build_ast
 from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E
 from ibis.tests.util import assert_equal
 import ibis.expr.datatypes as dt
@@ -123,6 +125,28 @@ TBLPROPERTIES (
 )"""
         assert result == expected
 
+    def test_ctas_ddl(self):
+        con = MockConnection()
+
+        select = build_ast(con.table('test1')).queries[0]
+        statement = ksupport.CTASKudu(
+            'another_table', 'kudu_name', ['dom.d.com:7051'],
+            select, ['string_col'], external=True,
+            can_exist=False, database='foo')
+        result = statement.compile()
+
+        expected = """\
+CREATE EXTERNAL TABLE foo.`another_table`
+TBLPROPERTIES (
+  'kudu.key_columns'='string_col',
+  'kudu.master_addresses'='dom.d.com:7051',
+  'kudu.table_name'='kudu_name',
+  'storage_handler'='com.cloudera.kudu.hive.KuduStorageHandler'
+) AS
+SELECT *
+FROM test1"""
+        assert result == expected
+
 
 class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
@@ -215,4 +239,5 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
     @pytest.mark.kudu
     def test_create_table_as_select(self):
+        # TODO
         pass

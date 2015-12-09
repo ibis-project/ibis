@@ -195,6 +195,31 @@ class CreateTableKudu(ddl.CreateTable):
         return tbl_props
 
 
+class CTASKudu(CreateTableKudu):
+
+    def __init__(self, table_name, kudu_name, master_addrs,
+                 select, key_columns, database=None,
+                 external=False, can_exist=False):
+        self.select = select
+        CreateTableKudu.__init__(self, table_name, kudu_name,
+                                 master_addrs, None, key_columns,
+                                 database=database,
+                                 external=external,
+                                 can_exist=can_exist)
+
+    def compile(self):
+        buf = StringIO()
+        buf.write(self._create_line())
+
+        props = self._get_table_properties()
+        buf.write('\n')
+        buf.write(ddl.format_tblproperties(props))
+
+        select_query = self.select.compile()
+        buf.write(' AS\n{0}'.format(select_query))
+        return buf.getvalue()
+
+
 def schema_kudu_to_ibis(kschema, drop_nn=False):
     ibis_types = []
     for i in range(len(kschema)):

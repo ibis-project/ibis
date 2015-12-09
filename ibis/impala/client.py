@@ -780,12 +780,14 @@ class ImpalaClient(SQLClient):
         return self._execute(statement)
 
     def create_table(self, table_name, obj=None, schema=None, database=None,
-                     format='parquet', force=False, external=False,
-                     location=None, partition=None, like_parquet=None,
-                     path=None):
+                     external=False, force=False,
+                     # HDFS options
+                     format='parquet', location=None,
+                     partition=None, like_parquet=None):
         """
         Create a new table in Impala using an Ibis table expression. This is
-        currently designed for tables whose data is stored in HDFS.
+        currently designed for tables whose data is stored in HDFS (or
+        eventually other filesystems).
 
         Parameters
         ----------
@@ -796,12 +798,12 @@ class ImpalaClient(SQLClient):
           Mutually exclusive with expr, creates an empty table with a
           particular schema
         database : string, default None (optional)
-        format : {'parquet'}
         force : boolean, default False
           Do not create table if table with indicated name already exists
         external : boolean, default False
           Create an external table; Impala will not delete the underlying data
           when the table is dropped
+        format : {'parquet'}
         location : string, default None
           Specify the directory location where Impala reads and writes files
           for the table
@@ -817,10 +819,6 @@ class ImpalaClient(SQLClient):
         """
         if like_parquet is not None:
             raise NotImplementedError
-
-        # TODO: deprecation warning
-        if path is not None:
-            location = path
 
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
