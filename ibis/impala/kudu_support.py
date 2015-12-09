@@ -92,6 +92,9 @@ class KuduImpalaInterface(object):
         Note: all tables created are EXTERNAL for now. Creates a temporary
         table (like parquet_file and others) unless persist=True.
 
+        If you create a persistent table you can thereafter use it like any
+        other Impala table.
+
         Parameters
         ----------
         kudu_name : string

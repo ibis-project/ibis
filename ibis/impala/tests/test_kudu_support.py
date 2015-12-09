@@ -212,3 +212,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         t.drop()
 
         assert not self.con.kudu.table_exists(kudu_name)
+
+    @pytest.mark.kudu
+    def test_create_table_as_select(self):
+        pass

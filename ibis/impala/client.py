@@ -784,7 +784,8 @@ class ImpalaClient(SQLClient):
                      location=None, partition=None, like_parquet=None,
                      path=None):
         """
-        Create a new table in Impala using an Ibis table expression
+        Create a new table in Impala using an Ibis table expression. This is
+        currently designed for tables whose data is stored in HDFS.
 
         Parameters
         ----------
