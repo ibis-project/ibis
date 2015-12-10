@@ -83,11 +83,58 @@ class KuduImpalaInterface(object):
         # crude check for now
         return self.client is not None
 
+    def create_table(self, impala_name, kudu_name, obj=None, schema=None,
+                     database=None, external=False):
+        """
+        Create an Kudu-backed table in the connected Impala cluster. For
+        non-external tables, this will create a Kudu table with a compatible
+        storage schema.
+
+        This function is patterned after the ImpalaClient.create_table function
+        designed for physical filesystems (like HDFS).
+
+        Parameters
+        ----------
+        impala_name : string
+          Name of the created Impala table
+        kudu_name : string
+          Name of hte backing Kudu table. Will be created if external=False
+        obj : TableExpr or pandas.DataFrame, optional
+          If passed, creates table from select statement results
+        schema : ibis.Schema, optional
+          Mutually exclusive with expr, creates an empty table with a
+          particular schema
+        database : string, default None (optional)
+        external : boolean, default False
+          If False, a new Kudu table will be created. Otherwise, the Kudu table
+          must already exist.
+        """
+        self._check_connected()
+
+        if external:
+            ktable = self.client.table(kudu_name)
+            kschema = ktable.schema
+            schema = schema_kudu_to_ibis(kschema)
+        else:
+            pass
+
+        primary_keys = kschema.primary_keys()
+
+        stmt = CreateTableKudu(name, kudu_name,
+                               self.client.master_addrs,
+                               ibis_schema, primary_keys,
+                               external=external,
+                               database=database,
+                               can_exist=False)
+        self.impala_client._execute(stmt)
+        return self.impala_client._wrap_new_table(name, database, persist)
+
     def table(self, kudu_name, name=None, database=None, persist=False,
               external=True):
         """
-        Expose the indicated Kudu table (using CREATE TABLE) as an Impala
-        table.
+        Convenience to expose an existing Kudu table (using CREATE TABLE) as an
+        Impala table. To create a new table both in the Hive Metastore with
+        storage in Kudu, use create_table.
 
         Note: all tables created are EXTERNAL for now. Creates a temporary
         table (like parquet_file and others) unless persist=True.

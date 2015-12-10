@@ -221,7 +221,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         nrows = 100
         self._write_example_data(kudu_name, nrows)
 
-        impala_name = 'kudu_{0}'.format(util.guid())
+        impala_name = self._temp_impala_name()
         impala_db = self.env.test_data_db
         self.con.kudu.table(kudu_name, name=impala_name,
                             database=impala_db,
@@ -240,4 +240,35 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
     @pytest.mark.kudu
     def test_create_table_as_select(self):
         # TODO
-        pass
+        kschema = self.example_schema()
+        kudu_name = self._new_kudu_example_table(kschema)
+
+        nrows = 100
+        self._write_example_data(kudu_name, nrows)
+
+        impala_name = self._temp_impala_name()
+        impala_db = self.env.test_data_db
+        self.con.kudu.table(kudu_name, name=impala_name,
+                            database=impala_db,
+                            external=True,
+                            persist=True)
+
+        impala_name2 = self._temp_impala_name()
+        expr = self.con.table(impala_name, database=impala_db)
+
+        kudu_name2 = 'ibis-{0}'.format(util.guid())
+
+        self.con.kudu.create_table(impala_name2, expr,
+                                   database=impala_db,
+                                   kudu_name=kudu_name2,
+                                   key_columns=['key'])
+
+        # TODO: should some stats be automatically computed?
+        itable = self.con.table(impala_name2, database=impala_db)
+        assert len(itable.execute()) == len(expr.execute())
+
+        ktable = self.kclient.table(kudu_name2)
+        assert ktable.primary_keys() == ['key']
+
+    def _temp_impala_name(self):
+        return 'kudu_test_{0}'.format(util.guid())
