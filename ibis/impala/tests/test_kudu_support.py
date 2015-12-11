@@ -189,7 +189,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         table = self.kclient.table(table_name)
         session = self.kclient.new_session()
         for i in range(nrows):
-            op = table.insert()
+            op = table.new_insert()
             row = i, i * 2, 'hello_%d' % i
             op['key'] = row[0]
             op['int_val'] = row[1]
@@ -258,17 +258,16 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
         kudu_name2 = 'ibis-{0}'.format(util.guid())
 
-        self.con.kudu.create_table(impala_name2, expr,
-                                   database=impala_db,
-                                   kudu_name=kudu_name2,
-                                   key_columns=['key'])
+        self.con.kudu.create_table(impala_name2, kudu_name2,
+                                   primary_keys=['key'],
+                                   obj=expr, database=impala_db)
 
         # TODO: should some stats be automatically computed?
         itable = self.con.table(impala_name2, database=impala_db)
         assert len(itable.execute()) == len(expr.execute())
 
         ktable = self.kclient.table(kudu_name2)
-        assert ktable.primary_keys() == ['key']
+        assert ktable.schema.primary_keys() == ['key']
 
     def _temp_impala_name(self):
         return 'kudu_test_{0}'.format(util.guid())

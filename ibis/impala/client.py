@@ -1648,7 +1648,8 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         t.insert(table_expr, overwrite=True)
         """
         if isinstance(obj, pd.DataFrame):
-            writer, expr = _write_temp_dataframe(self._client, obj)
+            from ibis.impala.pandas_interop import write_temp_dataframe
+            writer, expr = write_temp_dataframe(self._client, obj)
         else:
             expr = obj
 
