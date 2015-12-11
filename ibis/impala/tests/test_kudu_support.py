@@ -238,7 +238,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         assert not self.con.kudu.table_exists(kudu_name)
 
     @pytest.mark.kudu
-    def test_create_table_as_select(self):
+    def test_create_table_as_select_ctas(self):
         # TODO
         kschema = self.example_schema()
         kudu_name = self._new_kudu_example_table(kschema)

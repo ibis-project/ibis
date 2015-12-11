@@ -822,7 +822,8 @@ class ImpalaClient(SQLClient):
 
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
-                writer, to_insert = _write_temp_dataframe(self, obj)
+                from ibis.impala.pandas_interop import write_temp_dataframe
+                writer, to_insert = write_temp_dataframe(self, obj)
             else:
                 to_insert = obj
             ast = self._build_ast(to_insert)
@@ -1909,13 +1910,6 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
         except ImpylaError:
             # database might have been dropped
             pass
-
-
-def _write_temp_dataframe(client, df):
-    from ibis.impala.pandas_interop import DataFrameWriter
-    writer = DataFrameWriter(client, df)
-    path = writer.write_temp_csv()
-    return writer, writer.delimited_table(path)
 
 
 def _validate_compatible(from_schema, to_schema):

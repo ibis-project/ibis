@@ -14,6 +14,8 @@
 
 from six import StringIO
 
+import pandas as pd
+
 from ibis.common import IbisError
 from ibis.expr.api import schema
 from ibis.impala import ddl
@@ -83,8 +85,9 @@ class KuduImpalaInterface(object):
         # crude check for now
         return self.client is not None
 
-    def create_table(self, impala_name, kudu_name, obj=None, schema=None,
-                     database=None, external=False):
+    def create_table(self, impala_name, kudu_name, primary_keys=None,
+                     obj=None, schema=None, database=None,
+                     external=False, force=False):
         """
         Create an Kudu-backed table in the connected Impala cluster. For
         non-external tables, this will create a Kudu table with a compatible
@@ -99,6 +102,8 @@ class KuduImpalaInterface(object):
           Name of the created Impala table
         kudu_name : string
           Name of hte backing Kudu table. Will be created if external=False
+        primary_keys : list of column names
+          List of
         obj : TableExpr or pandas.DataFrame, optional
           If passed, creates table from select statement results
         schema : ibis.Schema, optional
@@ -111,23 +116,47 @@ class KuduImpalaInterface(object):
         """
         self._check_connected()
 
-        if external:
-            ktable = self.client.table(kudu_name)
-            kschema = ktable.schema
-            schema = schema_kudu_to_ibis(kschema)
+        if not external and (primary_keys is None or len(primary_keys) == 0):
+            raise ValueError('Must specify primary keys when DDL creates a '
+                             'new Kudu table')
+
+        if obj is not None:
+            if external:
+                raise ValueError('Cannot create an external Kudu-Impala table '
+                                 'from an expression or DataFrame')
+
+            if isinstance(obj, pd.DataFrame):
+                from ibis.impala.pandas_interop import write_temp_dataframe
+                writer, to_insert = write_temp_dataframe(self.impala_client,
+                                                         obj)
+            else:
+                to_insert = obj
+            # XXX: exposing a lot of internals
+            ast = self.impala_client._build_ast(to_insert)
+            select = ast.queries[0]
+
+            stmt = CTASKudu(impala_name, kudu_name,
+                            self.client.master_addrs,
+                            select, primary_keys,
+                            database=database)
         else:
-            pass
+            if external:
+                ktable = self.client.table(kudu_name)
+                kschema = ktable.schema
+                schema = schema_kudu_to_ibis(kschema)
+                primary_keys = kschema.primary_keys()
+            elif schema is not None:
+                raise ValueError('Must specify schema for new empty '
+                                 'Kudu-backed table')
 
-        primary_keys = kschema.primary_keys()
+            stmt = CreateTableKudu(impala_name, kudu_name,
+                                   self.client.master_addrs,
+                                   schema, primary_keys,
+                                   external=external,
+                                   database=database,
+                                   can_exist=False)
 
-        stmt = CreateTableKudu(name, kudu_name,
-                               self.client.master_addrs,
-                               ibis_schema, primary_keys,
-                               external=external,
-                               database=database,
-                               can_exist=False)
         self.impala_client._execute(stmt)
-        return self.impala_client._wrap_new_table(name, database, persist)
 
     def table(self, kudu_name, name=None, database=None, persist=False,
               external=True):
