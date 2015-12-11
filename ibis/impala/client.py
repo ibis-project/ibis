@@ -459,6 +459,7 @@ class ImpalaClient(SQLClient):
             raise TypeError(hdfs_client)
 
         self._hdfs = hdfs_client
+        self._kudu = None
 
         self._temp_objects = weakref.WeakValueDictionary()
 
@@ -480,6 +481,13 @@ class ImpalaClient(SQLClient):
         self._hdfs = hdfs
 
     hdfs = property(fget=_get_hdfs, fset=_set_hdfs)
+
+    @property
+    def kudu(self):
+        from ibis.impala.kudu_support import KuduImpalaInterface
+        if self._kudu is None:
+            self._kudu = KuduImpalaInterface(self)
+        return self._kudu
 
     @property
     def _table_expr_klass(self):
@@ -772,11 +780,14 @@ class ImpalaClient(SQLClient):
         return self._execute(statement)
 
     def create_table(self, table_name, obj=None, schema=None, database=None,
-                     format='parquet', force=False, external=False,
-                     location=None, partition=None, like_parquet=None,
-                     path=None):
+                     external=False, force=False,
+                     # HDFS options
+                     format='parquet', location=None,
+                     partition=None, like_parquet=None):
         """
-        Create a new table in Impala using an Ibis table expression
+        Create a new table in Impala using an Ibis table expression. This is
+        currently designed for tables whose data is stored in HDFS (or
+        eventually other filesystems).
 
         Parameters
         ----------
@@ -787,12 +798,12 @@ class ImpalaClient(SQLClient):
           Mutually exclusive with expr, creates an empty table with a
           particular schema
         database : string, default None (optional)
-        format : {'parquet'}
         force : boolean, default False
           Do not create table if table with indicated name already exists
         external : boolean, default False
           Create an external table; Impala will not delete the underlying data
           when the table is dropped
+        format : {'parquet'}
         location : string, default None
           Specify the directory location where Impala reads and writes files
           for the table
@@ -809,13 +820,10 @@ class ImpalaClient(SQLClient):
         if like_parquet is not None:
             raise NotImplementedError
 
-        # TODO: deprecation warning
-        if path is not None:
-            location = path
-
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
-                writer, to_insert = _write_temp_dataframe(self, obj)
+                from ibis.impala.pandas_interop import write_temp_dataframe
+                writer, to_insert = write_temp_dataframe(self, obj)
             else:
                 to_insert = obj
             ast = self._build_ast(to_insert)
@@ -1640,7 +1648,8 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         t.insert(table_expr, overwrite=True)
         """
         if isinstance(obj, pd.DataFrame):
-            writer, expr = _write_temp_dataframe(self._client, obj)
+            from ibis.impala.pandas_interop import write_temp_dataframe
+            writer, expr = write_temp_dataframe(self._client, obj)
         else:
             expr = obj
 
@@ -1801,6 +1810,12 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
                                         tbl_properties=tbl_properties,
                                         serde_properties=serde_properties)
 
+    def set_external(self, is_external=True):
+        """
+        Toggle EXTERNAL table property.
+        """
+        self.alter(tbl_properties={'EXTERNAL': is_external})
+
     def alter_partition(self, spec, location=None, format=None,
                         tbl_properties=None,
                         serde_properties=None):
@@ -1896,13 +1911,6 @@ class ImpalaTemporaryTable(ops.DatabaseTable):
         except ImpylaError:
             # database might have been dropped
             pass
-
-
-def _write_temp_dataframe(client, df):
-    from ibis.impala.pandas_interop import DataFrameWriter
-    writer = DataFrameWriter(client, df)
-    path = writer.write_temp_csv()
-    return writer, writer.delimited_table(path)
 
 
 def _validate_compatible(from_schema, to_schema):

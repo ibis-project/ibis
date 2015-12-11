@@ -207,3 +207,9 @@ def pandas_to_ibis_schema(frame):
         ibis_type = pandas_col_to_ibis_type(frame[col_name])
         pairs.append((col_name, ibis_type))
     return schema(pairs)
+
+
+def write_temp_dataframe(client, df):
+    writer = DataFrameWriter(client, df)
+    path = writer.write_temp_csv()
+    return writer, writer.delimited_table(path)

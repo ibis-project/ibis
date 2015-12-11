@@ -21,18 +21,12 @@ import posixpath
 import six
 
 from ibis.config import options
+from ibis.util import implements
 import ibis.common as com
 
 
 class HDFSError(com.IbisError):
     pass
-
-
-def implements(f):
-    def decorator(g):
-        g.__doc__ = f.__doc__
-        return g
-    return decorator
 
 
 class HDFS(object):

@@ -26,13 +26,10 @@ from ibis.compat import unittest, mock
 from ibis.impala import ddl
 from ibis.impala.compat import HS2Error, ImpylaError
 from ibis.impala.client import build_ast
-from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E, connect_test
+from ibis.impala.tests.common import ENV, ImpalaE2E, connect_test
 from ibis.tests.util import assert_equal
 import ibis.common as com
 import ibis.util as util
-
-
-ENV = IbisTestEnv()
 
 
 class TestDropTable(unittest.TestCase):
@@ -201,13 +198,18 @@ SET FILEFORMAT AVRO"""
         }})
         expected = """\
 ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET TBLPROPERTIES ('bar'='2', 'foo'='1')"""
+SET TBLPROPERTIES (
+  'bar'='2',
+  'foo'='1'
+)"""
         assert result == expected
 
         result = _get_ddl_string({'serde_properties': {'baz': 3}})
         expected = """\
 ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET SERDEPROPERTIES ('baz'='3')"""
+SET SERDEPROPERTIES (
+  'baz'='3'
+)"""
         assert result == expected
 
     def test_alter_table_properties(self):
@@ -236,13 +238,18 @@ SET FILEFORMAT AVRO"""
         }})
         expected = """\
 ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET TBLPROPERTIES ('bar'='2', 'foo'='1')"""
+SET TBLPROPERTIES (
+  'bar'='2',
+  'foo'='1'
+)"""
         assert result == expected
 
         result = _get_ddl_string({'serde_properties': {'baz': 3}})
         expected = """\
 ALTER TABLE tbl PARTITION (year=2007, month=4)
-SET SERDEPROPERTIES ('baz'='3')"""
+SET SERDEPROPERTIES (
+  'baz'='3'
+)"""
         assert result == expected
 
 
@@ -410,7 +417,8 @@ LOCATION '{0}'""".format(path)
 CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
 STORED AS AVRO
 LOCATION '%s'
-TBLPROPERTIES ('avro.schema.literal'='{
+TBLPROPERTIES (
+  'avro.schema.literal'='{
   "fields": [
     {
       "name": "a",
@@ -434,7 +442,8 @@ TBLPROPERTIES ('avro.schema.literal'='{
   ],
   "name": "my_record",
   "type": "record"
-}')""" % path
+}'
+)""" % path
         assert result == expected
 
     def test_create_table_parquet(self):
@@ -488,7 +497,7 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ImpalaE2E.setup_e2e(cls)
+        ImpalaE2E.setup_e2e(cls, ENV)
 
         cls.path_uuid = 'change-location-{0}'.format(util.guid())
         fake_path = pjoin(cls.tmp_dir, cls.path_uuid)

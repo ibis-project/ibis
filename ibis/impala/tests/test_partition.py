@@ -20,7 +20,7 @@ import pandas as pd
 
 from ibis.compat import unittest
 from ibis.impala.compat import ImpylaError
-from ibis.impala.tests.common import ImpalaE2E
+from ibis.impala.tests.common import ImpalaE2E, ENV
 from ibis.tests.util import assert_equal
 import ibis
 import ibis.util as util
@@ -34,7 +34,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        ImpalaE2E.setup_e2e(cls)
+        ImpalaE2E.setup_e2e(cls, ENV)
 
         df = pd.DataFrame({'year': [2009, 2009, 2009, 2010, 2010, 2010],
                            'month': [1, 2, 3, 1, 2, 3],

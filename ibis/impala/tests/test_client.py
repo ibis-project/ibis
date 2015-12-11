@@ -25,10 +25,6 @@ import ibis.expr.types as ir
 import ibis.util as util
 
 
-def approx_equal(a, b, eps):
-    assert abs(a - b) < eps
-
-
 ENV = IbisTestEnv()
 
 
