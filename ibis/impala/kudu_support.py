@@ -145,7 +145,7 @@ class KuduImpalaInterface(object):
                 kschema = ktable.schema
                 schema = schema_kudu_to_ibis(kschema)
                 primary_keys = kschema.primary_keys()
-            elif schema is not None:
+            elif schema is None:
                 raise ValueError('Must specify schema for new empty '
                                  'Kudu-backed table')
 
@@ -192,25 +192,11 @@ class KuduImpalaInterface(object):
         -------
         parquet_table : ImpalaTable
         """
-        self._check_connected()
-
         # Law of demeter, but OK for now because internal class coupling
         name, database = (self.impala_client
                           ._get_concrete_table_path(name, database,
                                                     persist=persist))
-        ktable = self.client.table(kudu_name)
-        kschema = ktable.schema
-
-        ibis_schema = schema_kudu_to_ibis(kschema)
-        primary_keys = kschema.primary_keys()
-
-        stmt = CreateTableKudu(name, kudu_name,
-                               self.client.master_addrs,
-                               ibis_schema, primary_keys,
-                               external=external,
-                               database=database,
-                               can_exist=False)
-        self.impala_client._execute(stmt)
+        self.create_table(name, kudu_name, database=database, external=True)
         return self.impala_client._wrap_new_table(name, database, persist)
 
 

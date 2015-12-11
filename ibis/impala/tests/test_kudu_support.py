@@ -198,7 +198,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         session.flush()
 
     @pytest.mark.kudu
-    def test_kudu_table(self):
+    def test_external_kudu_table(self):
         kschema = self.example_schema()
         kudu_name = self._new_kudu_example_table(kschema)
 
@@ -209,8 +209,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         result = table.execute()
         assert len(result) == 100
 
-        ischema = ksupport.schema_kudu_to_ibis(kschema,
-                                               drop_nn=True)
+        ischema = ksupport.schema_kudu_to_ibis(kschema, drop_nn=True)
         assert_equal(table.schema(), ischema)
 
     @pytest.mark.kudu
@@ -256,7 +255,7 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         impala_name2 = self._temp_impala_name()
         expr = self.con.table(impala_name, database=impala_db)
 
-        kudu_name2 = 'ibis-{0}'.format(util.guid())
+        kudu_name2 = 'ibis-ctas-{0}'.format(util.guid())
 
         self.con.kudu.create_table(impala_name2, kudu_name2,
                                    primary_keys=['key'],
@@ -268,6 +267,23 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
         ktable = self.kclient.table(kudu_name2)
         assert ktable.schema.primary_keys() == ['key']
+
+    @pytest.mark.kudu
+    def test_create_empty_internal_table(self):
+        kschema = self.example_schema()
+        ischema = ksupport.schema_kudu_to_ibis(kschema, drop_nn=True)
+
+        impala_name = self._temp_impala_name()
+        kudu_name = 'ibis-empty-{0}'.format(util.guid())
+
+        self.con.kudu.create_table(impala_name, kudu_name,
+                                   primary_keys=['key'],
+                                   schema=ischema,
+                                   database=self.env.test_data_db)
+
+        ktable = self.kclient.table(kudu_name)
+        assert ktable.schema.equals(kschema)
+        self.temp_tables.append(kudu_name)
 
     def _temp_impala_name(self):
         return 'kudu_test_{0}'.format(util.guid())
