@@ -561,8 +561,9 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
         assert not self.con.exists_database(tmp_name)
 
     def test_exists_table(self):
+        tmp_name = _random_table_name()
         assert self.con.exists_table('functional_alltypes')
-        assert not self.con.exists_table(util.guid())
+        assert not self.con.exists_table(tmp_name)
 
     def text_exists_table_with_database(self):
         table_name = _random_table_name()
@@ -577,8 +578,7 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
         assert not self.con.exists_table(table_name, database=tmp_name)
 
     def test_create_exists_drop_view(self):
-        tmp_name = util.guid()
-
+        tmp_name = _random_table_name()
         assert not self.con.exists_table(tmp_name)
 
         expr = (self.con.table('functional_alltypes')
@@ -598,13 +598,15 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
 
     def test_drop_non_empty_database(self):
         tmp_db = '__ibis_test_{0}'.format(util.guid())
+        tmp_name = _random_table_name()
 
         self.con.create_database(tmp_db)
 
-        self.con.create_table(util.guid(), self.alltypes, database=tmp_db)
+        self.con.create_table(tmp_name, self.alltypes, database=tmp_db)
 
         # Has a view, too
-        self.con.create_view(util.guid(), self.alltypes,
+        tmp_name2 = _random_table_name()
+        self.con.create_view(tmp_name2, self.alltypes,
                              database=tmp_db)
 
         self.assertRaises(com.IntegrityError, self.con.drop_database, tmp_db)
@@ -636,15 +638,14 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
         assert self.hdfs.exists(tmp_path)
 
     def test_drop_table_not_exist(self):
-        random_name = util.guid()
+        random_name = _random_table_name()
         self.assertRaises(Exception, self.con.drop_table, random_name)
-
         self.con.drop_table(random_name, force=True)
 
     def test_truncate_table(self):
         expr = self.alltypes.limit(50)
 
-        table_name = util.guid()
+        table_name = _random_table_name()
         self.con.create_table(table_name, obj=expr)
         self.temp_tables.append(table_name)
 
@@ -672,7 +673,7 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
                               ('c', 'decimal(12,8)'),
                               ('d', 'double')])
 
-        table_name = util.guid()
+        table_name = _random_table_name()
         self.con.create_table(table_name, schema=schema)
         self.temp_tables.append(table_name)
 
@@ -821,11 +822,11 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
     def test_drop_table_or_view(self):
         t = self.db.functional_alltypes
 
-        tname = util.guid()
+        tname = _random_table_name()
         self.con.create_table(tname, t.limit(10))
         self.temp_tables.append(tname)
 
-        vname = util.guid()
+        vname = _random_table_name()
         self.con.create_view(vname, t.limit(10))
         self.temp_views.append(vname)
 
@@ -985,7 +986,7 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
         assert_equal(table.schema(), ex_schema)
 
     def test_create_table_persist_fails_if_called_twice(self):
-        tname = util.guid()
+        tname = _random_table_name()
 
         hdfs_path = pjoin(self.test_data_dir, 'parquet/tpch_region')
         self.con.parquet_file(hdfs_path, name=tname, persist=True)
