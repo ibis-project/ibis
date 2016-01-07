@@ -1764,15 +1764,16 @@ def _table_info(self, buf=None):
     counts = ['Non-null #', '----------'] + [str(x) for x in metrics[1:]]
     col_metrics = util.adjoin(2, names, types, counts)
 
-    if buf is None:
-        import sys
-        buf = sys.stdout
-
     result = ('Table rows: {0}\n\n'
               '{1}'
               .format(metrics[0], col_metrics))
 
-    buf.write(result)
+    if buf is None:
+        import sys
+        sys.stdout.write(result)
+        sys.stdout.write('\n')
+    else:
+        buf.write(result)
 
 
 def _table_set_column(table, name, expr):
