@@ -20,6 +20,7 @@ from .compiler import quote_identifier, _type_to_sql_string
 
 from ibis.expr.datatypes import validate_type
 from ibis.compat import py_string
+import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 
 
@@ -417,17 +418,27 @@ def _format_partition(partition, partition_schema):
     if isinstance(partition, dict):
         for name in partition_schema:
             if name in partition:
-                tok = '{0}={1}'.format(name, partition[name])
+                tok = _format_partition_kv(name, partition[name],
+                                           partition_schema[name])
             else:
                 # dynamic partitioning
                 tok = name
             tokens.append(tok)
     else:
         for name, value in zip(partition_schema, partition):
-            tok = '{0}={1}'.format(name, value)
+            tok = _format_partition_kv(name, value, partition_schema[name])
             tokens.append(tok)
 
     return 'PARTITION ({0})'.format(', '.join(tokens))
+
+
+def _format_partition_kv(k, v, type):
+    if type == dt.string:
+        value_formatted = '"{0}"'.format(v)
+    else:
+        value_formatted = str(v)
+
+    return '{0}={1}'.format(k, value_formatted)
 
 
 class LoadData(ImpalaDDL):

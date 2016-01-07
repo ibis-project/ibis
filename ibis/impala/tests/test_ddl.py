@@ -149,6 +149,17 @@ class TestAlterTablePartition(unittest.TestCase):
         expected = 'ALTER TABLE tbl ADD PARTITION (year=2007, month=4)'
         assert result == expected
 
+    def test_add_partition_string_key(self):
+        part_schema = ibis.schema([('foo', 'int32'),
+                                   ('bar', 'string')])
+        table_name = 'tbl'
+
+        stmt = ddl.AddPartition('tbl', {'foo': 5, 'bar': 'qux'}, part_schema)
+
+        result = stmt.compile()
+        expected = 'ALTER TABLE tbl ADD PARTITION (foo=5, bar="qux")'
+        assert result == expected
+
     def test_drop_partition(self):
         stmt = ddl.DropPartition(self.table_name,
                                  {'year': 2007, 'month': 4},

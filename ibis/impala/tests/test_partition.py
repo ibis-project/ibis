@@ -37,7 +37,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         ImpalaE2E.setup_e2e(cls, ENV)
 
         df = pd.DataFrame({'year': [2009, 2009, 2009, 2010, 2010, 2010],
-                           'month': [1, 2, 3, 1, 2, 3],
+                           'month': ['1', '2', '3', '1', '2', '3'],
                            'value': [1, 2, 3, 4, 5, 6]})
         df = pd.concat([df] * 10, ignore_index=True)
         df['id'] = df.index.values
@@ -50,7 +50,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
     def test_is_partitioned(self):
         schema = ibis.schema([('foo', 'string'),
                               ('year', 'int32'),
-                              ('month', 'int16')])
+                              ('month', 'string')])
         name = _tmp_name()
         self.db.create_table(name, schema=schema,
                              partition=['year', 'month'])
@@ -58,7 +58,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
     def test_create_table_with_partition_column(self):
         schema = ibis.schema([('year', 'int32'),
-                              ('month', 'int8'),
+                              ('month', 'string'),
                               ('day', 'int8'),
                               ('value', 'double')])
 
@@ -72,21 +72,21 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         ex_schema = ibis.schema([('day', 'int8'),
                                  ('value', 'double'),
                                  ('year', 'int32'),
-                                 ('month', 'int8')])
+                                 ('month', 'string')])
         table_schema = self.con.get_schema(name, database=self.tmp_db)
         assert_equal(table_schema, ex_schema)
 
         partition_schema = self.db.table(name).partition_schema()
 
         expected = ibis.schema([('year', 'int32'),
-                                ('month', 'int8')])
+                                ('month', 'string')])
         assert_equal(partition_schema, expected)
 
     def test_create_partitioned_separate_schema(self):
         schema = ibis.schema([('day', 'int8'),
                               ('value', 'double')])
         part_schema = ibis.schema([('year', 'int32'),
-                                   ('month', 'int8')])
+                                   ('month', 'string')])
 
         name = _tmp_name()
         self.con.create_table(name, schema=schema, partition=part_schema)
@@ -96,7 +96,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         ex_schema = ibis.schema([('day', 'int8'),
                                  ('value', 'double'),
                                  ('year', 'int32'),
-                                 ('month', 'int8')])
+                                 ('month', 'string')])
         table_schema = self.con.get_schema(name)
         assert_equal(table_schema, ex_schema)
 
@@ -171,7 +171,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
                                                 part_keys)
 
         # trim the runtime of this test
-        df = df[df.month == 1].reset_index(drop=True)
+        df = df[df.month == '1'].reset_index(drop=True)
 
         unique_keys = df[part_keys].drop_duplicates()
 
