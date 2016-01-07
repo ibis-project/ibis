@@ -152,8 +152,6 @@ class TestAlterTablePartition(unittest.TestCase):
     def test_add_partition_string_key(self):
         part_schema = ibis.schema([('foo', 'int32'),
                                    ('bar', 'string')])
-        table_name = 'tbl'
-
         stmt = ddl.AddPartition('tbl', {'foo': 5, 'bar': 'qux'}, part_schema)
 
         result = stmt.compile()
