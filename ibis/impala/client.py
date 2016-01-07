@@ -182,18 +182,21 @@ class ImpalaCursor(object):
 
     def __init__(self, cursor, con, impyla_con, database,
                  options):
-        self.cursor = cursor
+        self._cursor = cursor
         self.con = con
         self.impyla_con = impyla_con
         self.database = database
         self.options = options
+        self.released = False
 
     def __del__(self):
         self._close_cursor()
+        with self.con.lock:
+            self.con.connection_pool_size -= 1
 
     def _close_cursor(self):
         try:
-            self.cursor.close()
+            self._cursor.close()
         except HS2Error as e:
             # connection was closed elsewhere
             if 'invalid session' not in e.args[0].lower():
@@ -208,17 +211,19 @@ class ImpalaCursor(object):
     def set_options(self):
         for k, v in self.options.items():
             query = 'SET {0}={1}'.format(k, v)
-            self.cursor.execute(query)
+            self._cursor.execute(query)
 
     @property
     def description(self):
-        return self.cursor.description
+        return self._cursor.description
 
     def release(self):
-        self.con.release(self)
+        if not self.released:
+            self.con.release(self)
+            self.released = True
 
     def execute(self, stmt, async=False):
-        self.cursor.execute_async(stmt)
+        self._cursor.execute_async(stmt)
         if async:
             return
         else:
@@ -241,11 +246,11 @@ class ImpalaCursor(object):
                 return 0.5
             return 1.0
 
-        cur = self.cursor
+        cur = self._cursor
         try:
             while True:
                 state = cur.status()
-                if self.cursor._op_state_is_error(state):
+                if self._cursor._op_state_is_error(state):
                     raise OperationalError("Operation is in ERROR_STATE")
                 if not cur._op_state_is_executing(state):
                     break
@@ -259,16 +264,19 @@ class ImpalaCursor(object):
         return not self.is_executing()
 
     def is_executing(self):
-        return self.cursor.is_executing()
+        return self._cursor.is_executing()
 
     def cancel(self):
-        self.cursor.cancel_operation()
+        self._cursor.cancel_operation()
+
+    def fetchone(self):
+        return self._cursor.fetchone()
 
     def fetchall(self, columnar=False):
         if columnar:
-            return self.cursor.fetchcolumnar()
+            return self._cursor.fetchcolumnar()
         else:
-            return self.cursor.fetchall()
+            return self._cursor.fetchall()
 
 
 class ImpalaQuery(Query):

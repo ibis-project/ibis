@@ -43,6 +43,11 @@ class TestImpalaClient(ImpalaE2E, unittest.TestCase):
             result = expr.execute()
             assert result == expected
 
+    def test_cursor_garbage_collection(self):
+        for i in range(5):
+            self.con.raw_sql('select 1', True).fetchall()
+            self.con.raw_sql('select 1', True).fetchone()
+
     def test_raise_ibis_error_no_hdfs(self):
         # #299
         client = connect_test(ENV, with_hdfs=False)
