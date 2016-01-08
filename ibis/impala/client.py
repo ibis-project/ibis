@@ -1004,7 +1004,7 @@ class ImpalaClient(SQLClient):
     def _get_concrete_table_path(self, name, database, persist=False):
         if not persist:
             if name is None:
-                name = util.guid()
+                name = '__ibis_tmp_{0}'.format(util.guid())
 
             if database is None:
                 self._ensure_temp_db_exists()
