@@ -277,6 +277,8 @@ class CreateTableWithSchema(CreateTable):
         format_ddl = self.table_format.to_ddl()
         if format_ddl:
             buf.write(format_ddl)
+        else:
+            buf.write(self._storage())
 
         buf.write(self._location())
 
