@@ -263,37 +263,40 @@ def _strftime(t, expr):
 
 
 _operation_registry.update({
-    ops.Substring: _substr,
+    # types
     ops.Cast: _cast,
     ops.TypeOf: _typeof,
+
+    # miscellaneous varargs
+    ops.Least: varargs(sa.func.least),
+    ops.Greatest: varargs(sa.func.greatest),
+
+    # null handling
+    ops.IfNull: fixed_arity(sa.func.coalesce, 2),
+    ops.Coalesce: varargs(sa.func.coalesce),
+
+    # boolean reductions
     ops.Any: fixed_arity(sa.func.bool_or, 1),
     ops.All: fixed_arity(sa.func.bool_and, 1),
     ops.NotAny: fixed_arity(lambda x: sa.not_(sa.func.bool_or(x)), 1),
     ops.NotAll: fixed_arity(lambda x: sa.not_(sa.func.bool_and(x)), 1),
 
-    ops.GroupConcat: _string_agg,
+    # strings
+    ops.Substring: _substr,
     ops.StrRight: fixed_arity(sa.func.right, 2),
-
     ops.StringFind: _string_find,
-
     ops.StringLength: unary('length'),
-
-    ops.Least: varargs(sa.func.least),
-    ops.Greatest: varargs(sa.func.greatest),
-    ops.IfNull: fixed_arity(sa.func.coalesce, 2),
-    ops.Coalesce: varargs(sa.func.coalesce),
-
+    ops.GroupConcat: _string_agg,
     ops.Lowercase: unary('lower'),
     ops.Uppercase: unary('upper'),
-
     ops.Strip: unary('trim'),
     ops.LStrip: unary('ltrim'),
     ops.RStrip: unary('rtrim'),
-
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: _infix_op('LIKE'),
     ops.RegexSearch: _infix_op('~'),
 
+    # dates and times
     ops.Strftime: _strftime,
     ops.ExtractYear: _extract('year'),
     ops.ExtractMonth: _extract('month'),
