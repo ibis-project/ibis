@@ -229,7 +229,6 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
-    @pytest.mark.xfail(raises=AssertionError, reason='NYI')
     def test_coalesce(self):
         assert False
 
