@@ -281,6 +281,7 @@ _operation_registry.update({
     ops.Least: varargs(sa.func.least),
     ops.Greatest: varargs(sa.func.greatest),
     ops.IfNull: fixed_arity(sa.func.coalesce, 2),
+    ops.Coalesce: varargs(sa.func.coalesce),
 
     ops.Lowercase: unary('lower'),
     ops.Uppercase: unary('upper'),
