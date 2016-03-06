@@ -177,6 +177,12 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_string_reverse(self):
+        cases = [
+            (L('foo').reverse(), 'oof'),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_string_upper_lower(self):
         cases = [
             (L('foo').upper(), 'FOO'),
