@@ -170,6 +170,13 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_string_pad(self):
+        cases = [
+            (L('foo').lpad(6, ' '), '   foo'),
+            (L('foo').rpad(6, ' '), 'foo   '),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_string_upper_lower(self):
         cases = [
             (L('foo').upper(), 'FOO'),
