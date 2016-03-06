@@ -177,7 +177,7 @@ _scanner = re.Scanner([
     (r'%e', tokenize_noop),
 
     # double quotes need to be escaped
-    (r'"', lambda scanner, token: '\\"'),
+    (r'"', lambda scanner, token: re.escape(token)),
 
     # spaces should be greedily consumed and kept
     (r'\s+', tokenize_noop),
