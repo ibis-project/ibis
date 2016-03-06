@@ -294,6 +294,7 @@ _operation_registry.update({
     ops.RStrip: unary('rtrim'),
     ops.LPad: fixed_arity('lpad', 3),
     ops.RPad: fixed_arity('rpad', 3),
+    ops.Reverse: unary('reverse'),
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: _infix_op('LIKE'),
     ops.RegexSearch: _infix_op('~'),
