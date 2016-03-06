@@ -262,6 +262,36 @@ def _strftime(t, expr):
     return reduce(sa.sql.ColumnElement.concat, reduced)
 
 
+def _find_in_set(t, expr):
+    # postgresql 9.5 has array_position, but the code below works on any
+    # version with generate_subscripts
+    # TODO: could make it even more generic by not using generate_subscripts
+    # TODO: this works with *any* type, not just strings. should the operation
+    #       itself also have this property?
+    arg, haystack = expr.op().args
+    needle = t.translate(arg)
+    haystack = sa.select([sa.literal(
+        [element._arg.value for element in haystack],
+        type_=sa.dialects.postgresql.ARRAY(needle.type)
+    ).label('haystack')]).alias()
+    subscripts = sa.select([
+        sa.func.generate_subscripts(haystack.c.haystack, 1).label('i')
+    ]).alias()
+
+    # return a zero based index
+    result = sa.select([subscripts.c.i - 1]).where(
+        haystack.c.haystack[subscripts.c.i] == needle
+    ).order_by(subscripts.c.i).limit(1)
+    return result
+
+
+def _regex_replace(t, expr):
+    string, pattern, replacement = map(t.translate, expr.op().args)
+
+    # postgres defaults to replacing only the first occurrence
+    return sa.func.regexp_replace(string, pattern, replacement, 'g')
+
+
 _operation_registry.update({
     # types
     ops.Cast: _cast,
@@ -295,9 +325,15 @@ _operation_registry.update({
     ops.LPad: fixed_arity('lpad', 3),
     ops.RPad: fixed_arity('rpad', 3),
     ops.Reverse: unary('reverse'),
+    ops.Capitalize: unary('initcap'),
+    ops.Repeat: fixed_arity('repeat', 2),
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: _infix_op('LIKE'),
     ops.RegexSearch: _infix_op('~'),
+    ops.RegexReplace: _regex_replace,
+    ops.Translate: fixed_arity('translate', 3),
+    ops.FindInSet: _find_in_set,
+    # ops.RegexExtract: ...,
 
     # dates and times
     ops.Strftime: _strftime,
