@@ -198,6 +198,41 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_capitalize(self):
+        cases = [
+            (L('foo bar foo').capitalize(), 'Foo Bar Foo'),
+            (L('foobar Foo').capitalize(), 'Foobar Foo'),
+        ]
+        self._check_e2e_cases(cases)
+
+    def test_repeat(self):
+        cases = [
+            (L('bar ').repeat(3), 'bar bar bar '),
+        ]
+        self._check_e2e_cases(cases)
+
+    def test_re_replace(self):
+        cases = [
+            (
+                L('fudge|||chocolate||candy').re_replace('\\|{2,3}', ', '),
+                'fudge, chocolate, candy'
+            )
+        ]
+        self._check_e2e_cases(cases)
+
+    def test_translate(self):
+        cases = [
+            (L('faab').translate('a', 'b'), 'fbbb'),
+        ]
+        self._check_e2e_cases(cases)
+
+    def test_find_in_set(self):
+        cases = [
+            (L('a').find_in_set(list('abc')), 0),
+            (L('b').find_in_set(list('abc')), 1),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_string_functions(self):
         cases = [
             (L('foobar').find('bar'), 3),
