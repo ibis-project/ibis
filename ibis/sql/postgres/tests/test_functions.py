@@ -194,7 +194,7 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
             (L('foobar').like('foo%'), True),
             (L('foobar').like('%baz%'), False),
 
-            (L('foobarfoo').str_replace('foo', 'H'), 'HbarH'),
+            (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
         ]
         self._check_e2e_cases(cases)
 
