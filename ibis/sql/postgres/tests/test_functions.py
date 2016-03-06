@@ -230,7 +230,24 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         self._check_e2e_cases(cases)
 
     def test_coalesce(self):
-        assert False
+        cases = [
+            (ibis.coalesce(5, None, 4), 5),
+            (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
+            (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
+        ]
+        self._check_e2e_cases(cases)
+
+    @pytest.mark.xfail(raises=TypeError, reason='Ambiguous argument types')
+    def test_coalesce_all_na(self):
+        NA = ibis.NA
+        int8_na = ibis.NA.cast('int8')
+        cases = [
+            (ibis.coalesce(NA, NA), NA),
+            (ibis.coalesce(NA, NA, NA.cast('double')), NA),
+            (ibis.coalesce(int8_na, int8_na, int8_na), int8_na),
+        ]
+        self._check_e2e_cases(cases)
+
 
     def test_numeric_builtins_work(self):
         t = self.alltypes
