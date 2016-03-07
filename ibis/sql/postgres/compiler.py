@@ -262,27 +262,34 @@ def _strftime(t, expr):
     return reduce(sa.sql.ColumnElement.concat, reduced)
 
 
+def _not_distinct_from(a, b):
+    return ((a == None) & (b == None)) | sa.func.coalesce(a == b, False)
+
+
 def _find_in_set(t, expr):
     # postgresql 9.5 has array_position, but the code below works on any
     # version with generate_subscripts
-    # TODO: could make it even more generic by not using generate_subscripts
+    # TODO: could make it even more generic by using generate_series
     # TODO: this works with *any* type, not just strings. should the operation
     #       itself also have this property?
     arg, haystack = expr.op().args
     needle = t.translate(arg)
+
     haystack = sa.select([sa.literal(
         [element._arg.value for element in haystack],
         type_=sa.dialects.postgresql.ARRAY(needle.type)
-    ).label('haystack')]).alias()
+    ).label('haystack')]).cte()
+
     subscripts = sa.select([
         sa.func.generate_subscripts(haystack.c.haystack, 1).label('i')
-    ]).alias()
+    ]).cte()
+
 
     # return a zero based index
-    result = sa.select([subscripts.c.i - 1]).where(
+    return sa.select([subscripts.c.i - 1]).where(
+        # TODO: find_in_set isn't defined for needle is NULL
         haystack.c.haystack[subscripts.c.i] == needle
     ).order_by(subscripts.c.i).limit(1)
-    return result
 
 
 def _regex_replace(t, expr):
@@ -302,8 +309,8 @@ _operation_registry.update({
     ops.Greatest: varargs(sa.func.greatest),
 
     # null handling
-    ops.IfNull: fixed_arity(sa.func.coalesce, 2),
     ops.Coalesce: varargs(sa.func.coalesce),
+    ops.IfNull: fixed_arity(sa.func.coalesce, 2),
 
     # boolean reductions
     ops.Any: fixed_arity(sa.func.bool_or, 1),
