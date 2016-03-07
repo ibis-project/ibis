@@ -233,6 +233,16 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    @pytest.mark.xfail(
+        raises=AttributeError,
+        reason='find_in_set not currently allowed on NULL scalars'
+    )
+    def test_find_in_set_null_scalar_fails(self):
+        cases = [
+            (L(None).find_in_set(['a', 'b', None], 2)),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_string_functions(self):
         cases = [
             (L('foobar').find('bar'), 3),
