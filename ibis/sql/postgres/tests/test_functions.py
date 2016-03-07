@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
+
 import pytest  # noqa
 
 from .common import PostgreSQLTests
@@ -243,6 +245,15 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_isnull_notnull(self):
+        cases = [
+            (L(None).isnull(), True),
+            (L(1).isnull(), False),
+            (L(None).notnull(), False),
+            (L(1).notnull(), True),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_string_functions(self):
         cases = [
             (L('foobar').find('bar'), 3),
@@ -253,6 +264,7 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
             (L('foobar').like('%baz%'), False),
 
             (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
+            (L('a').ascii_str(), ord('a'))
         ]
         self._check_e2e_cases(cases)
 
@@ -265,6 +277,17 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
 
             (L(5.5).round(), 6.0),
             (L(5.556).round(2), 5.56),
+            (L(5.556).ceil(), 6.0),
+            (L(5.556).floor(), 5.0),
+            (L(5.556).exp(), math.exp(5.556)),
+            (L(5.556).sign(), 1),
+            (L(-5.556).sign(), -1),
+            (L(0).sign(), 0),
+            (L(5.556).sqrt(), math.sqrt(5.556)),
+            (L(5.556).log(2), math.log(5.556, 2)),
+            (L(5.556).ln(), math.log(5.556)),
+            (L(5.556).log2(), math.log2(5.556)),
+            (L(5.556).log10(), math.log10(5.556)),
         ]
         self._check_e2e_cases(cases)
 
@@ -380,12 +403,20 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
             d.mean(),
             d.min(),
             d.max(),
+            d.var(),
+            d.std(),
+            d.var(how='sample'),
+            d.std(how='pop'),
 
             table.bool_col.count(where=cond),
             d.sum(where=cond),
             d.mean(where=cond),
             d.min(where=cond),
             d.max(where=cond),
+            d.var(where=cond),
+            d.std(where=cond),
+            d.var(where=cond, how='sample'),
+            d.std(where=cond, how='pop'),
 
             s.group_concat(),
         ]
