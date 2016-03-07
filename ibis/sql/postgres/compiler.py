@@ -299,6 +299,29 @@ def _regex_replace(t, expr):
     return sa.func.regexp_replace(string, pattern, replacement, 'g')
 
 
+def _variance_reduction(func_name):
+    suffix = {
+        'sample': 'samp',
+        'pop': 'pop'
+    }
+    def variance_compiler(t, expr):
+        arg, where, how = expr.op().args
+        func = getattr(sa.func, '%s_%s' % (func_name, suffix.get(how, 'samp')))
+        result = func(t.translate(arg))
+        return result if where is not None else sa.funcfilter(result, where)
+
+    return variance_compiler
+
+
+def _log(t, expr):
+    arg, base = expr.op().args
+    arg = t.translate(arg)
+    if base is not None:
+        return sa.func.log(t.translate(base), arg)
+    else:
+        return sa.func.ln(arg)
+
+
 _operation_registry.update({
     # types
     ops.Cast: _cast,
@@ -309,7 +332,6 @@ _operation_registry.update({
     ops.Greatest: varargs(sa.func.greatest),
 
     # null handling
-    ops.Coalesce: varargs(sa.func.coalesce),
     ops.IfNull: fixed_arity(sa.func.coalesce, 2),
 
     # boolean reductions
@@ -339,8 +361,20 @@ _operation_registry.update({
     ops.RegexSearch: _infix_op('~'),
     ops.RegexReplace: _regex_replace,
     ops.Translate: fixed_arity('translate', 3),
-    ops.FindInSet: _find_in_set,
+    ops.StringAscii: fixed_arity(sa.func.ascii, 1),
     # ops.RegexExtract: ...,
+
+    ops.FindInSet: _find_in_set,
+
+    ops.Ceil: fixed_arity(sa.func.ceil, 1),
+    ops.Floor: fixed_arity(sa.func.floor, 1),
+    ops.Exp: fixed_arity(sa.func.exp, 1),
+    ops.Sign: fixed_arity(sa.func.sign, 1),
+    ops.Sqrt: fixed_arity(sa.func.sqrt, 1),
+    ops.Log: _log,
+    ops.Ln: fixed_arity(sa.func.ln, 1),
+    ops.Log2: fixed_arity(lambda x: sa.func.log(2, x), 1),
+    ops.Log10: fixed_arity(sa.func.log, 1),
 
     # dates and times
     ops.Strftime: _strftime,
@@ -351,6 +385,8 @@ _operation_registry.update({
     ops.ExtractMinute: _extract('minute'),
     ops.ExtractSecond: _second,
     ops.ExtractMillisecond: _millisecond,
+    ops.Variance: _variance_reduction('var'),
+    ops.StandardDev: _variance_reduction('stddev'),
 
     # now is in the timezone of the server, but we want UTC
     ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
