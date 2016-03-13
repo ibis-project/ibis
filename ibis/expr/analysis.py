@@ -15,7 +15,6 @@
 from ibis.common import RelationError, ExpressionError
 from ibis.expr.datatypes import HasSchema
 from ibis.expr.window import window
-from ibis.expr.operations import BlockingTableNode
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.util as util
@@ -48,7 +47,7 @@ class _Substitutor(object):
         expr = self.expr
         node = expr.op()
 
-        if getattr(node, 'blocking', False):
+        if node.blocks():
             return expr
 
         subbed_args = []
@@ -202,8 +201,6 @@ class ExprSimplifier(object):
 
         if isinstance(op, ops.ValueNode):
             return self._sub(expr, block=block)
-        elif isinstance(op, ops.Filter):
-            result = self.lift(op.table, block=block)
         elif isinstance(op, ops.Selection):
             result = self._lift_Selection(expr, block=block)
         elif isinstance(op, ops.Join):
@@ -299,8 +296,17 @@ class ExprSimplifier(object):
 
         lifted_selections, unch_sel = self._lift_arg(op.selections, block=True)
         unchanged = unch and unch_sel
+
+        lifted_predicates, unch_sel = self._lift_arg(op.predicates, block=True)
+        unchanged = unch and unch_sel
+
+        lifted_sort_keys, unch_sel = self._lift_arg(op.sort_keys, block=True)
+        unchanged = unch and unch_sel
+
         if not unchanged:
-            lifted_projection = ops.Selection(lifted_table, lifted_selections)
+            lifted_projection = ops.Selection(lifted_table, lifted_selections,
+                                              lifted_predicates,
+                                              lifted_sort_keys)
             result = ir.TableExpr(lifted_projection)
         else:
             result = expr
@@ -344,7 +350,7 @@ class ExprSimplifier(object):
 
 def _base_table(table_node):
     # Find the aggregate or projection root. Not proud of this
-    if isinstance(table_node, BlockingTableNode):
+    if table_node.blocks():
         return table_node
     else:
         return _base_table(table_node.table.op())
@@ -356,14 +362,14 @@ def apply_filter(expr, predicates):
 
     op = expr.op()
 
-    if isinstance(op, ops.Filter):
-        # Potential fusion opportunity. The predicates may need to be rewritten
-        # in terms of the child table. This prevents the broken ref issue
-        # (described in more detail in #59)
-        predicates = [sub_for(x, [(expr, op.table)]) for x in predicates]
-        return ops.Filter(op.table, op.predicates + predicates)
+    # if isinstance(op, ops.Selection):
+    #     # Potential fusion opportunity. The predicates may need to be
+    #     # rewritten in terms of the child table. This prevents the broken ref
+    #     # issue (described in more detail in #59)
+    #     predicates = [sub_for(x, [(expr, op.table)]) for x in predicates]
+    #     result = ops.Filter(op.table, op.predicates + predicates)
 
-    elif isinstance(op, (ops.Selection, ops.Aggregation)):
+    if isinstance(op, (ops.Selection, ops.Aggregation)):
         # if any of the filter predicates have the parent expression among
         # their roots, then pushdown (at least of that predicate) is not
         # possible
@@ -396,16 +402,17 @@ def apply_filter(expr, predicates):
 
         if can_pushdown:
             predicates = [substitute_parents(x) for x in predicates]
-
-            # this will further fuse, if possible
-            filtered = op.table.filter(predicates)
-            result = op.substitute_table(filtered)
+            result = ops.Selection(op.table,
+                                   proj_exprs=op.selections,
+                                   predicates=predicates,
+                                   sort_keys=op.sort_keys)
         else:
-            result = ops.Filter(expr, predicates)
+            result = ops.Selection(expr, proj_exprs=[],
+                                   predicates=predicates)
     else:
-        result = ops.Filter(expr, predicates)
+        result = ops.Selection(expr, [], predicates)
 
-    return result
+    return ir.TableExpr(result)
 
 
 def _can_pushdown(op, predicates):
@@ -737,7 +744,7 @@ class CommonSubexpr(object):
             if expr.equals(needle):
                 return True
 
-            if isinstance(op, BlockingTableNode):
+            if op.blocks():
                 return False
 
             for arg in op.flat_args():

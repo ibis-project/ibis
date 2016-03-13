@@ -232,6 +232,11 @@ class Node(object):
 
         return '%s(%s)' % (opname, ', '.join(pprint_args))
 
+    def blocks(self):
+        # The contents of this node at referentially distinct and may not be
+        # analyzed deeper
+        return False
+
     def flat_args(self):
         for arg in self.args:
             if isinstance(arg, (tuple, list)):
@@ -528,7 +533,7 @@ class TableExpr(Expr):
 
     def _is_valid(self, exprs):
         try:
-            self._assert_valid(exprs)
+            self._assert_valid(util.promote_list(exprs))
             return True
         except:
             return False

@@ -128,8 +128,8 @@ class ExprFormatter(object):
         return self._indent(text, self.base_level)
 
     def _memoize_tables(self):
-        table_memo_ops = (ops.Aggregation, ops.Filter,
-                          ops.Selection, ops.SelfReference)
+        table_memo_ops = (ops.Aggregation, ops.Selection,
+                          ops.SelfReference)
 
         def walk(expr):
             op = expr.op()

@@ -1023,7 +1023,10 @@ WHERE `timestamp_col` < months_add('2010-01-01 00:00:00', 3) AND
                 .mutate(dest_avg=t.arrdelay.mean(),
                         dev=t.arrdelay - t.arrdelay.mean()))
 
-        worst = expr[expr.dev.notnull()].sort_by(ibis.desc('dev')).limit(10)
+        tmp1 = expr[expr.dev.notnull()]
+        tmp2 = tmp1.sort_by(ibis.desc('dev'))
+        worst = tmp2.limit(10)
+
         result = to_sql(worst)
         expected = """\
 SELECT *

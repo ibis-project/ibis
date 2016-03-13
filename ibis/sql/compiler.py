@@ -19,7 +19,6 @@ import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
 
-from ibis.expr.operations import BlockingTableNode
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
@@ -382,16 +381,6 @@ class SelectBuilder(object):
 
         self._collect(expr.op().table, toplevel=toplevel)
 
-    def _collect_Filter(self, expr, toplevel=False):
-        op = expr.op()
-
-        self.filters.extend(op.predicates)
-        if toplevel:
-            self.select_set = [op.table]
-            self.table_set = op.table
-
-        self._collect(op.table)
-
     def _collect_Limit(self, expr, toplevel=False):
         if not toplevel:
             return
@@ -413,22 +402,6 @@ class SelectBuilder(object):
             return
         else:
             raise NotImplementedError
-
-    def _collect_SortBy(self, expr, toplevel=False):
-        op = expr.op()
-
-        self.sort_by = op.keys
-        if toplevel:
-            # HACK: yuck, need a better way to know if we should perform a
-            # select * from a subquery here
-            parent_op = op.table.op()
-            if (isinstance(parent_op, BlockingTableNode) and
-                    not isinstance(parent_op, ops.Aggregation)):
-                self.select_set = [op.table]
-                self.table_set = op.table
-                toplevel = False
-
-        self._collect(op.table, toplevel=toplevel)
 
     def _collect_Aggregation(self, expr, toplevel=False):
         # The select set includes the grouping keys (if any), and these are
@@ -457,17 +430,27 @@ class SelectBuilder(object):
             if isinstance(table.op(), ops.Join):
                 can_sub = self._collect_Join(table)
             else:
-                can_sub = True
+                can_sub = False
                 self._collect(table)
 
             selections = op.selections
+            sort_keys = op.sort_keys
+            filters = op.predicates
 
             if can_sub:
                 selections = sop.selections
+                filters = sop.predicates
+                sort_keys = sop.sort_keys
                 table = sop.table
 
+            if len(selections) == 0:
+                # select *
+                selections = [table]
+
+            self.sort_by = sort_keys
             self.select_set = selections
             self.table_set = table
+            self.filters = filters
 
     def _collect_MaterializedJoin(self, expr, toplevel=False):
         op = expr.op()
@@ -491,11 +474,10 @@ class SelectBuilder(object):
 
         subtables = _get_subtables(expr)
 
-        # If any of the joined tables are non-blocking modified versions
-        # (e.g. with Filter) of the same table, then it's not safe to continue
-        # walking down the tree (see #667), and we should instead have inline
-        # views rather than attempting to fuse things together into the same
-        # SELECT query.
+        # If any of the joined tables are non-blocking modified versions of the
+        # same table, then it's not safe to continue walking down the tree (see
+        # #667), and we should instead have inline views rather than attempting
+        # to fuse things together into the same SELECT query.
         can_substitute = _all_distinct_roots(subtables)
         if can_substitute:
             for table in subtables:
@@ -581,7 +563,7 @@ def _all_distinct_roots(subtables):
 
 def _blocking_base(expr):
     node = expr.op()
-    if isinstance(node, (BlockingTableNode, ops.Join)):
+    if node.blocks() or isinstance(node, ops.Join):
         return expr
     else:
         for arg in expr.op().flat_args():
@@ -685,9 +667,6 @@ class _ExtractSubqueries(object):
     def _visit_Distinct(self, expr):
         self.observe(expr)
 
-    def _visit_Filter(self, expr):
-        self.visit(expr.op().table)
-
     def _visit_Limit(self, expr):
         self.observe(expr)
         self.visit(expr.op().table)
@@ -708,10 +687,6 @@ class _ExtractSubqueries(object):
             self.visit(table)
 
     def _visit_SelfReference(self, expr):
-        self.visit(expr.op().table)
-
-    def _visit_SortBy(self, expr):
-        self.observe(expr)
         self.visit(expr.op().table)
 
 

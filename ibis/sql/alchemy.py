@@ -777,6 +777,9 @@ class _AlchemyTableSet(TableSetFormatter):
 
 
 def _can_lower_sort_column(table_set, expr):
+    # TODO(wesm): This code is pending removal through cleaner internal
+    # semantics
+
     # we can currently sort by just-appeared aggregate metrics, but the way
     # these are references in the expression DSL is as a SortBy (blocking
     # table operation) on an aggregation. There's a hack in _collect_SortBy

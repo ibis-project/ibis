@@ -15,7 +15,6 @@
 
 import ibis.expr.analysis as L
 
-from ibis.expr.operations import BlockingTableNode
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
@@ -109,7 +108,7 @@ class AnyToExistsTransform(object):
                     # Foreign ref
                     self.foreign_table = expr
         else:
-            if not isinstance(node, BlockingTableNode):
+            if not node.blocks():
                 for arg in node.flat_args():
                     if isinstance(arg, ir.Expr):
                         self._visit(arg)
@@ -123,7 +122,7 @@ class AnyToExistsTransform(object):
 def _find_blocking_table(expr):
     node = expr.op()
 
-    if isinstance(node, BlockingTableNode):
+    if node.blocks():
         return expr
 
     for arg in node.flat_args():

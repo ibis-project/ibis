@@ -151,7 +151,7 @@ class TestExprFormatting(unittest.TestCase):
         delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
 
         result = repr(delay_filter)
-        assert result.count('Filter') == 1
+        assert result.count('Selection') == 1
 
     def test_memoize_insert_sort_key(self):
         table = self.con.table('airlines')
@@ -196,4 +196,4 @@ class TestExprFormatting(unittest.TestCase):
         joined = left.join(right, cond)
 
         result = repr(joined)
-        assert result.count('Filter') == 2
+        assert result.count('Selection') == 2

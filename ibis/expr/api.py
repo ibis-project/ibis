@@ -1835,20 +1835,22 @@ def filter(table, predicates):
     -------
     filtered_expr : TableExpr
     """
+    resolved_predicates = _resolve_predicates(table, predicates)
+    return _L.apply_filter(table, resolved_predicates)
+
+
+def _resolve_predicates(table, predicates):
     if isinstance(predicates, Expr):
         predicates = _L.unwrap_ands(predicates)
     predicates = util.promote_list(predicates)
-
     predicates = [ir.bind_expr(table, x) for x in predicates]
-
     resolved_predicates = []
     for pred in predicates:
         if isinstance(pred, ir.AnalyticExpr):
             pred = pred.to_filter()
         resolved_predicates.append(pred)
 
-    op = _L.apply_filter(table, resolved_predicates)
-    return TableExpr(op)
+    return resolved_predicates
 
 
 def aggregate(table, metrics=None, by=None, having=None, **kwds):

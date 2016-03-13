@@ -278,7 +278,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
     def test_add_predicate(self):
         pred = self.table['a'] > 5
         result = self.table[pred]
-        assert isinstance(result.op(), ops.Filter)
+        assert isinstance(result.op(), ops.Selection)
 
     def test_filter_root_table_preserved(self):
         result = self.table[self.table['a'] > 5]
@@ -353,7 +353,9 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         # Default is ascending for anything coercable to an expression,
         # and we'll have ascending/descending wrappers to help.
         result = self.table.sort_by(['f'])
-        sort_key = result.op().keys[0].op()
+
+        sort_key = result.op().sort_keys[0].op()
+
         assert_equal(sort_key.expr, self.table.f)
         assert sort_key.ascending
 
@@ -365,9 +367,9 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         result3 = self.table.sort_by([('f', 'descending')])
         result4 = self.table.sort_by([('f', 0)])
 
-        key2 = result2.op().keys[0].op()
-        key3 = result3.op().keys[0].op()
-        key4 = result4.op().keys[0].op()
+        key2 = result2.op().sort_keys[0].op()
+        key3 = result3.op().sort_keys[0].op()
+        key4 = result4.op().sort_keys[0].op()
 
         assert not key2.ascending
         assert not key3.ascending
@@ -972,7 +974,7 @@ class TestSemiAntiJoinPredicates(unittest.TestCase):
 
         # it works!
         expr = self.t1[cond]
-        assert isinstance(expr.op(), ops.Filter)
+        assert isinstance(expr.op(), ops.Selection)
 
     def test_cannot_use_existence_expression_in_join(self):
         # Join predicates must consist only of comparisons

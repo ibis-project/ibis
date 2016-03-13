@@ -92,38 +92,6 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         result = L.substitute_parents(expr)
         assert result is expr
 
-    def test_rewrite_expr_with_parent(self):
-        table = self.con.table('test1')
-
-        table2 = table[table['f'] > 0]
-
-        expr = table2['c'] == 2
-
-        result = L.substitute_parents(expr)
-        expected = table['c'] == 2
-        assert_equal(result, expected)
-
-        # Substitution not fully possible if we depend on a new expr in a
-        # projection
-
-        table4 = table[['c', (table['c'] * 2).name('foo')]]
-        expr = table4['c'] == table4['foo']
-        result = L.substitute_parents(expr)
-        expected = table['c'] == table4['foo']
-        assert_equal(result, expected)
-
-    def test_rewrite_distinct_but_equal_objects(self):
-        t = self.con.table('test1')
-        t_copy = self.con.table('test1')
-
-        table2 = t[t_copy['f'] > 0]
-
-        expr = table2['c'] == 2
-
-        result = L.substitute_parents(expr)
-        expected = t['c'] == 2
-        assert_equal(result, expected)
-
     def test_projection_with_join_pushdown_rewrite_refs(self):
         # Observed this expression IR issue in a TopK-rewrite context
         table1 = ibis.table([
@@ -157,9 +125,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
             result = proj.filter([higher_pred])
             op = result.op()
             assert isinstance(op, ops.Selection)
-            filter_op = op.table.op()
-            assert isinstance(filter_op, ops.Filter)
-            new_pred = filter_op.predicates[0]
+            new_pred = op.predicates[0]
             assert_equal(new_pred, lower_pred)
 
     def test_multiple_join_deeper_reference(self):
@@ -209,10 +175,8 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         # Now then! Predicate pushdown here is inappropriate, so we check that
         # it didn't occur.
-
-        # If filter were pushed below projection, the top-level operator type
-        # would be Selection instead.
-        assert type(result.op()) == ops.Filter
+        assert isinstance(result.op(), ops.Selection)
+        assert result.op().table is tpch
 
     def test_bad_join_predicate_raises(self):
         # Join predicate references a derived table, but we can salvage and
@@ -285,3 +249,39 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
     def test_fuse_filter_sort_by(self):
         pass
+
+    # Refactoring deadpool
+
+    def test_no_rewrite(self):
+        table = self.con.table('test1')
+
+        # Substitution not fully possible if we depend on a new expr in a
+        # projection
+        table4 = table[['c', (table['c'] * 2).name('foo')]]
+        expr = table4['c'] == table4['foo']
+        result = L.substitute_parents(expr)
+        expected = table['c'] == table4['foo']
+        assert_equal(result, expected)
+
+    # def test_rewrite_expr_with_parent(self):
+    #     table = self.con.table('test1')
+
+    #     table2 = table[table['f'] > 0]
+
+    #     expr = table2['c'] == 2
+
+    #     result = L.substitute_parents(expr)
+    #     expected = table['c'] == 2
+    #     assert_equal(result, expected)
+
+    # def test_rewrite_distinct_but_equal_objects(self):
+    #     t = self.con.table('test1')
+    #     t_copy = self.con.table('test1')
+
+    #     table2 = t[t_copy['f'] > 0]
+
+    #     expr = table2['c'] == 2
+
+    #     result = L.substitute_parents(expr)
+    #     expected = t['c'] == 2
+    #     assert_equal(result, expected)
