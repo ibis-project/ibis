@@ -267,3 +267,21 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         # proj exprs unaffected by analysis
         assert_equal(proj_exprs[0], left.region)
         assert_equal(proj_exprs[1], metric)
+
+    # def test_fuse_filter_projection(self):
+    #     data = ibis.table([('kind', 'string'),
+    #                        ('year', 'int64')], 'data')
+
+    #     pred = data.year == 2010
+
+    #     result = data.projection(['kind'])[pred]
+    #     expected = data.filter(pred).kind
+
+    #     assert isinstance(result, ops.Projection)
+    #     assert result.equals(expected)
+
+    def test_fuse_projection_sort_by(self):
+        pass
+
+    def test_fuse_filter_sort_by(self):
+        pass

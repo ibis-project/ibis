@@ -18,6 +18,8 @@ from ibis.compat import lzip
 import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
+
+from ibis.expr.operations import BlockingTableNode
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
@@ -420,7 +422,7 @@ class SelectBuilder(object):
             # HACK: yuck, need a better way to know if we should perform a
             # select * from a subquery here
             parent_op = op.table.op()
-            if (isinstance(parent_op, ir.BlockingTableNode) and
+            if (isinstance(parent_op, BlockingTableNode) and
                     not isinstance(parent_op, ops.Aggregation)):
                 self.select_set = [op.table]
                 self.table_set = op.table
@@ -579,7 +581,7 @@ def _all_distinct_roots(subtables):
 
 def _blocking_base(expr):
     node = expr.op()
-    if isinstance(node, (ir.BlockingTableNode, ops.Join)):
+    if isinstance(node, (BlockingTableNode, ops.Join)):
         return expr
     else:
         for arg in expr.op().flat_args():

@@ -20,9 +20,9 @@ from ibis.expr.types import TableColumn  # noqa
 from ibis.compat import py_string
 from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
-from ibis.expr.types import (Node, as_value_expr,
+from ibis.expr.types import (Node, as_value_expr, Expr,
                              ValueExpr, ArrayExpr, TableExpr,
-                             TableNode, ValueNode, _safe_repr)
+                             ValueNode, _safe_repr)
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
@@ -35,6 +35,43 @@ def _arg_getter(i):
     def arg_accessor(self):
         return self.args[i]
     return arg_accessor
+
+
+class TableNode(Node):
+
+    def get_type(self, name):
+        return self.get_schema().get_type(name)
+
+    def to_expr(self):
+        return TableExpr(self)
+
+    def sort_by(self, expr, sort_exprs):
+        return SortBy(expr, sort_exprs)
+
+
+class BlockingTableNode(TableNode):
+    # Try to represent the fact that whatever lies here is a semantically
+    # distinct table. Like projections, aggregations, and so forth
+    pass
+
+
+def find_all_base_tables(expr, memo=None):
+    if memo is None:
+        memo = {}
+
+    node = expr.op()
+
+    if (isinstance(expr, TableExpr) and
+            isinstance(node, BlockingTableNode)):
+        if id(expr) not in memo:
+            memo[id(expr)] = expr
+        return memo
+
+    for arg in expr.op().flat_args():
+        if isinstance(arg, Expr):
+            find_all_base_tables(arg, memo)
+
+    return memo
 
 
 class ValueOperationMeta(type):
@@ -61,7 +98,7 @@ class ValueOp(six.with_metaclass(ValueOperationMeta, ValueNode)):
     pass
 
 
-class PhysicalTable(ir.BlockingTableNode, HasSchema):
+class PhysicalTable(BlockingTableNode, HasSchema):
 
     pass
 
@@ -89,7 +126,7 @@ class DatabaseTable(PhysicalTable):
         return type(self)(new_name, self.args[1], self.source)
 
 
-class SQLQueryResult(ir.BlockingTableNode, HasSchema):
+class SQLQueryResult(BlockingTableNode, HasSchema):
 
     """
     A table sourced from the result set of a select query
@@ -982,7 +1019,7 @@ class LargestValue(AnalyticOp):
 # Distinct stuff
 
 
-class Distinct(ir.BlockingTableNode, HasSchema):
+class Distinct(BlockingTableNode, HasSchema):
 
     """
     Distinct is a table-level unique-ing operation.
@@ -999,7 +1036,7 @@ class Distinct(ir.BlockingTableNode, HasSchema):
     def __init__(self, table):
         self.table = table
 
-        ir.BlockingTableNode.__init__(self, [table])
+        BlockingTableNode.__init__(self, [table])
         schema = self.table.schema()
         HasSchema.__init__(self, schema)
 
@@ -1437,7 +1474,7 @@ class LeftAntiJoin(Join):
         return self.left.schema()
 
 
-class MaterializedJoin(ir.BlockingTableNode, HasSchema):
+class MaterializedJoin(BlockingTableNode, HasSchema):
 
     def __init__(self, join_expr):
         assert isinstance(join_expr.op(), Join)
@@ -1472,7 +1509,7 @@ class CrossJoin(InnerJoin):
         InnerJoin.__init__(self, left, right, [])
 
 
-class Union(ir.BlockingTableNode, HasSchema):
+class Union(BlockingTableNode, HasSchema):
 
     def __init__(self, left, right, distinct=False):
         self.left = left
@@ -1515,7 +1552,7 @@ class Filter(TableNode):
         return self.table._root_tables()
 
 
-class Limit(ir.BlockingTableNode):
+class Limit(BlockingTableNode):
 
     _arg_names = [None, 'n', 'offset']
 
@@ -1627,7 +1664,7 @@ class DeferredSortKey(object):
         return SortKey(what, ascending=self.ascending).to_expr()
 
 
-class SelfReference(ir.BlockingTableNode, HasSchema):
+class SelfReference(BlockingTableNode, HasSchema):
 
     def __init__(self, table_expr):
         self.table = table_expr
@@ -1641,7 +1678,7 @@ class SelfReference(ir.BlockingTableNode, HasSchema):
         return [self]
 
 
-class Projection(ir.BlockingTableNode, HasSchema):
+class Projection(BlockingTableNode, HasSchema):
 
     _arg_names = ['table', 'selections']
 
@@ -1699,7 +1736,7 @@ class Projection(ir.BlockingTableNode, HasSchema):
 
         table = self.table
         exist_layers = False
-        while not isinstance(table.op(), (ir.BlockingTableNode, Join)):
+        while not isinstance(table.op(), (BlockingTableNode, Join)):
             table = table.op().table
             exist_layers = True
 
@@ -1710,7 +1747,7 @@ class Projection(ir.BlockingTableNode, HasSchema):
             return False
 
 
-class Aggregation(ir.BlockingTableNode, HasSchema):
+class Aggregation(BlockingTableNode, HasSchema):
 
     """
     agg_exprs : per-group scalar aggregates
@@ -1735,9 +1772,11 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
 
         self.having = having or []
         self.having = self._rewrite_exprs(self.having)
+
         self._validate()
 
-        TableNode.__init__(self, [table, self.agg_exprs, self.by, self.having])
+        TableNode.__init__(self, [table, self.agg_exprs, self.by,
+                                  self.having])
 
         schema = self._result_schema()
         HasSchema.__init__(self, schema)

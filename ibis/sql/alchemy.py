@@ -783,7 +783,7 @@ def _can_lower_sort_column(table_set, expr):
     # in the generic SQL compiler that "fuses" the sort with the
     # aggregation so they appear in same query. It's generally for
     # cosmetics and doesn't really affect query semantics.
-    bases = ir.find_all_base_tables(expr)
+    bases = ops.find_all_base_tables(expr)
     if len(bases) > 1:
         return False
 

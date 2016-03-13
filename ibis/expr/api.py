@@ -1929,8 +1929,10 @@ def _table_sort_by(table, sort_exprs):
     -------
     sorted : TableExpr
     """
-    op = _ops.SortBy(table, sort_exprs)
-    return TableExpr(op)
+    op = table.op()
+    result = op.sort_by(table, sort_exprs)
+
+    return TableExpr(result)
 
 
 def _table_union(left, right, distinct=False):

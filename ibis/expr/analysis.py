@@ -15,6 +15,7 @@
 from ibis.common import RelationError, ExpressionError
 from ibis.expr.datatypes import HasSchema
 from ibis.expr.window import window
+from ibis.expr.operations import BlockingTableNode
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.util as util
@@ -343,7 +344,7 @@ class ExprSimplifier(object):
 
 def _base_table(table_node):
     # Find the aggregate or projection root. Not proud of this
-    if isinstance(table_node, ir.BlockingTableNode):
+    if isinstance(table_node, BlockingTableNode):
         return table_node
     else:
         return _base_table(table_node.table.op())
@@ -579,12 +580,9 @@ class Projector(object):
         self.parent_roots = roots
 
         clean_exprs = []
-        # validator = ExprValidator([parent])
 
         for expr in proj_exprs:
             # Perform substitution only if we share common roots
-            # if validator.shares_one_root(expr):
-            #     expr = substitute_parents(expr, past_projection=False)
             expr = windowize_function(expr)
             clean_exprs.append(expr)
 
@@ -739,7 +737,7 @@ class CommonSubexpr(object):
             if expr.equals(needle):
                 return True
 
-            if isinstance(op, ir.BlockingTableNode):
+            if isinstance(op, BlockingTableNode):
                 return False
 
             for arg in op.flat_args():
