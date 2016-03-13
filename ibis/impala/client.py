@@ -51,7 +51,8 @@ class ImpalaDatabase(Database):
 
     def create_table(self, table_name, obj=None, **kwargs):
         """
-        Dispatch to ImpalaClient.create_table. See docs for more
+        Dispatch to ImpalaClient.create_table. See that function's docstring
+        for more
         """
         return self.client.create_table(table_name, obj=obj,
                                         database=self.name, **kwargs)
@@ -852,7 +853,7 @@ class ImpalaClient(SQLClient):
                                  path=location)
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
-                table_name, schema, ddl.NoFormat(),
+                table_name, schema,
                 database=database,
                 format=format,
                 can_exist=force,
