@@ -366,9 +366,11 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         ]
         self._execute_projection(t, exprs)
 
+    @pytest.mark.xfail(
+        raises=sa.exc.ProgrammingError,
+        reason='union not working yet'
+    )
     def test_union(self):
-        pytest.skip('union not working yet')
-
         t = self.alltypes
 
         expr = (t.group_by('string_col')
