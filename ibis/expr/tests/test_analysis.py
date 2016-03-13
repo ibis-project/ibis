@@ -44,8 +44,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         assert_equal(result, expected)
 
     def test_rewrite_join_projection_without_other_ops(self):
-        # Drop out filters and other commutative table operations. Join
-        # predicates are "lifted" to reference the base, unmodified join roots
+        # See #790, predicate pushdown in joins not supported
 
         # Star schema with fact table
         table = self.con.table('star1')
@@ -70,10 +69,8 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         rewritten_proj = L.substitute_parents(view)
         op = rewritten_proj.op()
-        assert_equal(op.table, ex_expr)
 
-        # Ensure that filtered table has been substituted with the base table
-        assert op.selections[0] is table
+        assert not op.table.equals(ex_expr)
 
     def test_rewrite_past_projection(self):
         table = self.con.table('test1')
