@@ -186,7 +186,7 @@ def build_udfs():
     print('Building UDFs')
     ibis_home_dir = osp.dirname(osp.dirname(osp.abspath(__file__)))
     udf_dir = pjoin(ibis_home_dir, 'testing', 'udf')
-    check_call('cmake . && make', shell=True, cwd=udf_dir)
+    check_call('cmake . && make VERBOSE=1', shell=True, cwd=udf_dir)
 
 
 def upload_udfs(con):

@@ -1320,7 +1320,8 @@ class ImpalaClient(SQLClient):
         tuples = cur.fetchall()
         if len(tuples) > 0:
             result = []
-            for out_type, sig in tuples:
+            for tup in tuples:
+                out_type, sig = tup[:2]
                 name, types = _split_signature(sig)
                 types = _type_parser(types).types
 
