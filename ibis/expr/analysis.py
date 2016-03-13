@@ -141,8 +141,8 @@ class ExprSimplifier(object):
             if result is not expr:
                 return result
         # Temporary hacks around issues addressed in #109
-        elif isinstance(node, ops.Projection):
-            return self._lift_Projection(expr, block=self.block_projection)
+        elif isinstance(node, ops.Selection):
+            return self._lift_Selection(expr, block=self.block_projection)
         elif isinstance(node, ops.Aggregation):
             return self._lift_Aggregation(expr, block=self.block_projection)
 
@@ -204,8 +204,8 @@ class ExprSimplifier(object):
             return self._sub(expr, block=block)
         elif isinstance(op, ops.Filter):
             result = self.lift(op.table, block=block)
-        elif isinstance(op, ops.Projection):
-            result = self._lift_Projection(expr, block=block)
+        elif isinstance(op, ops.Selection):
+            result = self._lift_Selection(expr, block=block)
         elif isinstance(op, ops.Join):
             result = self._lift_Join(expr, block=block)
         elif isinstance(op, (ops.TableNode, HasSchema)):
@@ -225,7 +225,7 @@ class ExprSimplifier(object):
         root = _base_table(tnode)
 
         result = expr
-        if isinstance(root, ops.Projection):
+        if isinstance(root, ops.Selection):
             can_lift = False
 
             for val in root.selections:
@@ -285,7 +285,7 @@ class ExprSimplifier(object):
 
         return result
 
-    def _lift_Projection(self, expr, block=None):
+    def _lift_Selection(self, expr, block=None):
         if block is None:
             block = self.block_projection
 
@@ -300,7 +300,7 @@ class ExprSimplifier(object):
         lifted_selections, unch_sel = self._lift_arg(op.selections, block=True)
         unchanged = unch and unch_sel
         if not unchanged:
-            lifted_projection = ops.Projection(lifted_table, lifted_selections)
+            lifted_projection = ops.Selection(lifted_table, lifted_selections)
             result = ir.TableExpr(lifted_projection)
         else:
             result = expr
@@ -363,7 +363,7 @@ def apply_filter(expr, predicates):
         predicates = [sub_for(x, [(expr, op.table)]) for x in predicates]
         return ops.Filter(op.table, op.predicates + predicates)
 
-    elif isinstance(op, (ops.Projection, ops.Aggregation)):
+    elif isinstance(op, (ops.Selection, ops.Aggregation)):
         # if any of the filter predicates have the parent expression among
         # their roots, then pushdown (at least of that predicate) is not
         # possible
@@ -376,7 +376,7 @@ def apply_filter(expr, predicates):
         # If the filter references any new or derived aliases in the
         #
         # in pseudocode
-        # c = Projection(Join(a, b, jpreds), ppreds)
+        # c = Selection(Join(a, b, jpreds), ppreds)
         # filter_pred = c.field1 == c.field2
         # Filter(c, [filter_pred])
         #
@@ -387,7 +387,7 @@ def apply_filter(expr, predicates):
         # TODO: is partial pushdown (one or more, but not all of the passed
         # predicates) something we should consider doing? Could be reasonable
 
-        # if isinstance(op, ops.Projection):
+        # if isinstance(op, ops.Selection):
         # else:
         #     # Aggregation
         #     can_pushdown = op.table.is_an
@@ -457,7 +457,7 @@ class _PushdownValidate(object):
             # Skip other types of exprs
 
     def _validate_column(self, expr):
-        if isinstance(self.parent, ops.Projection):
+        if isinstance(self.parent, ops.Selection):
             return self._validate_projection(expr)
         else:
             validator = ExprValidator([self.parent.table])
@@ -572,7 +572,7 @@ class Projector(object):
 
         node = self.parent.op()
 
-        if isinstance(node, ops.Projection):
+        if isinstance(node, ops.Selection):
             roots = [node]
         else:
             roots = node.root_tables()
@@ -591,12 +591,12 @@ class Projector(object):
     def get_result(self):
         roots = self.parent_roots
 
-        if len(roots) == 1 and isinstance(roots[0], ops.Projection):
+        if len(roots) == 1 and isinstance(roots[0], ops.Selection):
             fused_op = self._check_fusion(roots[0])
             if fused_op is not None:
                 return fused_op
 
-        return ops.Projection(self.parent, self.clean_exprs)
+        return ops.Selection(self.parent, self.clean_exprs)
 
     def _check_fusion(self, root):
         roots = root.table._root_tables()
@@ -624,7 +624,7 @@ class Projector(object):
                 fused_exprs.append(val)
 
         if can_fuse:
-            return ops.Projection(root.table, fused_exprs)
+            return ops.Selection(root.table, fused_exprs)
         else:
             return None
 
@@ -646,7 +646,7 @@ class ExprValidator(object):
         if isinstance(op, ops.TableColumn):
             if self._among_roots(op.table.op()):
                 return True
-        elif isinstance(op, ops.Projection):
+        elif isinstance(op, ops.Selection):
             if self._among_roots(op):
                 return True
 

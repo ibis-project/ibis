@@ -792,7 +792,7 @@ def _can_lower_sort_column(table_set, expr):
 
     if isinstance(base_op, ops.Aggregation):
         return base_op.table.equals(table_set)
-    elif isinstance(base_op, ops.Projection):
+    elif isinstance(base_op, ops.Selection):
         return base.equals(table_set)
     else:
         return False

@@ -129,7 +129,7 @@ class ExprFormatter(object):
 
     def _memoize_tables(self):
         table_memo_ops = (ops.Aggregation, ops.Filter,
-                          ops.Projection, ops.SelfReference)
+                          ops.Selection, ops.SelfReference)
 
         def walk(expr):
             op = expr.op()

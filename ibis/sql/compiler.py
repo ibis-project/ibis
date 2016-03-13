@@ -446,7 +446,7 @@ class SelectBuilder(object):
 
             self._collect(expr.op().table)
 
-    def _collect_Projection(self, expr, toplevel=False):
+    def _collect_Selection(self, expr, toplevel=False):
         op = expr.op()
         table = op.table
 
@@ -695,7 +695,7 @@ class _ExtractSubqueries(object):
     def _visit_Union(self, expr):
         self.observe(expr)
 
-    def _visit_Projection(self, expr):
+    def _visit_Selection(self, expr):
         self.observe(expr)
         self.visit(expr.op().table)
 

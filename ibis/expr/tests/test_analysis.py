@@ -156,7 +156,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         for higher_pred, lower_pred in cases:
             result = proj.filter([higher_pred])
             op = result.op()
-            assert isinstance(op, ops.Projection)
+            assert isinstance(op, ops.Selection)
             filter_op = op.table.op()
             assert isinstance(filter_op, ops.Filter)
             new_pred = filter_op.predicates[0]
@@ -211,7 +211,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         # it didn't occur.
 
         # If filter were pushed below projection, the top-level operator type
-        # would be Projection instead.
+        # would be Selection instead.
         assert type(result.op()) == ops.Filter
 
     def test_bad_join_predicate_raises(self):
@@ -277,7 +277,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
     #     result = data.projection(['kind'])[pred]
     #     expected = data.filter(pred).kind
 
-    #     assert isinstance(result, ops.Projection)
+    #     assert isinstance(result, ops.Selection)
     #     assert result.equals(expected)
 
     def test_fuse_projection_sort_by(self):

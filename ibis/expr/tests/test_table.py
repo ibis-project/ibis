@@ -88,7 +88,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         proj = self.table[cols]
         assert isinstance(proj, TableExpr)
-        assert isinstance(proj.op(), ops.Projection)
+        assert isinstance(proj.op(), ops.Selection)
 
         assert proj.schema().names == cols
         for c in cols:

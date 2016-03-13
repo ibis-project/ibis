@@ -51,7 +51,7 @@ class TableNode(Node):
 
 class BlockingTableNode(TableNode):
     # Try to represent the fact that whatever lies here is a semantically
-    # distinct table. Like projections, aggregations, and so forth
+    # distinct table. Like selections, aggregations, and so forth
     pass
 
 
@@ -1431,7 +1431,7 @@ class Join(TableNode):
 
     def root_tables(self):
         if util.all_of([self.left.op(), self.right.op()],
-                       (Join, Projection)):
+                       (Join, Selection)):
             # Unraveling is not possible
             return [self.left.op(), self.right.op()]
         else:
@@ -1678,7 +1678,7 @@ class SelfReference(BlockingTableNode, HasSchema):
         return [self]
 
 
-class Projection(BlockingTableNode, HasSchema):
+class Selection(BlockingTableNode, HasSchema):
 
     _arg_names = ['table', 'selections']
 
@@ -1722,7 +1722,7 @@ class Projection(BlockingTableNode, HasSchema):
         self.selections = clean_exprs
 
     def substitute_table(self, table_expr):
-        return Projection(table_expr, self.selections)
+        return Selection(table_expr, self.selections)
 
     def root_tables(self):
         return [self]
@@ -1741,7 +1741,7 @@ class Projection(BlockingTableNode, HasSchema):
             exist_layers = True
 
         if exist_layers:
-            reboxed = Projection(table, self.selections)
+            reboxed = Selection(table, self.selections)
             return reboxed.is_ancestor(other)
         else:
             return False
