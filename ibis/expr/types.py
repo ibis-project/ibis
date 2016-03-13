@@ -389,7 +389,7 @@ class Literal(ValueNode):
         self.value = value
 
     def __repr__(self):
-        return 'Literal(%s)' % repr(self.value)
+        return 'Literal(%r)' % self.value
 
     @property
     def args(self):
