@@ -234,7 +234,7 @@ class CreateTableParquet(CreateTable):
 
 class CreateTableWithSchema(CreateTable):
 
-    def __init__(self, table_name, schema, table_format, **kwargs):
+    def __init__(self, table_name, schema, table_format=None, **kwargs):
         self.schema = schema
         self.table_format = table_format
 
@@ -274,9 +274,10 @@ class CreateTableWithSchema(CreateTable):
             buf.write('\n')
             _push_schema(self.schema)
 
-        format_ddl = self.table_format.to_ddl()
-        if format_ddl:
-            buf.write(format_ddl)
+        if self.table_format is not None:
+            buf.write(self.table_format.to_ddl())
+        else:
+            buf.write(self._storage())
 
         buf.write(self._location())
 
@@ -286,7 +287,7 @@ class CreateTableWithSchema(CreateTable):
 class NoFormat(object):
 
     def to_ddl(self):
-        return None
+        return ''
 
 
 class DelimitedFormat(object):
@@ -345,6 +346,18 @@ class AvroFormat(object):
         props = {'avro.schema.literal': schema}
         buf.write('\n')
         buf.write(format_tblproperties(props))
+        return buf.getvalue()
+
+
+class ParquetFormat(object):
+
+    def __init__(self, path):
+        self.path = path
+
+    def to_ddl(self):
+        buf = StringIO()
+        buf.write('\nSTORED AS PARQUET')
+        buf.write("\nLOCATION '{0}'".format(self.path))
         return buf.getvalue()
 
 

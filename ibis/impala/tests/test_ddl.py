@@ -296,8 +296,8 @@ FROM test1""".format(path)
                               ('bar', 'int8'),
                               ('baz', 'int16')])
         statement = ddl.CreateTableWithSchema('another_table', schema,
-                                              ddl.NoFormat(),
                                               can_exist=False,
+                                              format='parquet',
                                               path=path, database='foo')
         result = statement.compile()
 
@@ -306,6 +306,7 @@ CREATE TABLE foo.`another_table`
 (`foo` string,
  `bar` tinyint,
  `baz` smallint)
+STORED AS PARQUET
 LOCATION '{0}'""".format(path)
         assert result == expected
 
