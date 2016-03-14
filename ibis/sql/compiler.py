@@ -416,6 +416,8 @@ class SelectBuilder(object):
             self.having = sub_op.having
             self.select_set = sub_op.by + sub_op.agg_exprs
             self.table_set = sub_op.table
+            self.filters = sub_op.predicates
+            self.sort_by = sub_op.sort_keys
 
             self._collect(expr.op().table)
 

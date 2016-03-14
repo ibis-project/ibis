@@ -1750,13 +1750,24 @@ class Selection(TableNode, HasSchema):
     # Operator combination / fusion logic
 
     def aggregate(self, this, metrics, by=None, having=None):
+        import ibis.expr.analysis as L
+
         if len(self.selections) > 0:
             return Aggregation(this, metrics, by=by, having=having)
         else:
-            # sort keys cannot be discarded
-            return Aggregation(self.table, metrics, by=by, having=having,
-                               predicates=self.predicates,
-                               sort_keys=self.sort_keys)
+            # sort keys cannot be discarded because of order-dependent
+            # aggregate functions like GROUP_CONCAT
+
+            if not self.blocks():
+                subbed_metrics = [L.sub_for(x, [(this, self.table)])
+                                  for x in metrics]
+                if self.table._is_valid(subbed_metrics):
+                    return Aggregation(self.table, subbed_metrics,
+                                       by=by, having=having,
+                                       predicates=self.predicates,
+                                       sort_keys=self.sort_keys)
+            else:
+                return Aggregation(this, metrics, by=by, having=having)
 
     def sort_by(self, expr, sort_exprs):
         return Selection(expr, [], sort_keys=sort_exprs)

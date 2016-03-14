@@ -54,18 +54,16 @@ class TestASTBuilder(unittest.TestCase):
             return result
 
         assert len(stmt.select_set) == 2
-        assert len(stmt.where) == 1
-        assert stmt.where[0] is filter_pred
 
-        # Check that the join has been rebuilt to only include the root tables
+        # #790, make sure the filter stays put
+        assert len(stmt.where) == 0
+
+        # Check that the joined tables are not altered
         tbl = stmt.table_set
         tbl_node = tbl.op()
         assert isinstance(tbl_node, ops.InnerJoin)
         assert tbl_node.left is table2
-        assert tbl_node.right is table
-
-        # table expression substitution has been made in the predicate
-        assert tbl_node.predicates[0].equals(table['g'] == table2['key'])
+        assert tbl_node.right is table3
 
     def test_ast_with_aggregation_join_filter(self):
         table = self.con.table('test1')
@@ -84,26 +82,24 @@ class TestASTBuilder(unittest.TestCase):
         ast = build_ast(result)
         stmt = ast.queries[0]
 
-        # hoisted metrics
-        ex_metrics = [(table['f'] - table2['value']).mean().name('foo'),
-                      table['f'].sum().name('bar')]
-        ex_by = [table['g'], table2['key']]
-
-        # hoisted join and aggregate
+        # #790, this behavior was different before
+        ex_pred = [table3['g'] == table2['key']]
         expected_table_set = \
-            table2.inner_join(table, [table['g'] == table2['key']])
+            table2.inner_join(table3, ex_pred)
         assert stmt.table_set.equals(expected_table_set)
 
         # Check various exprs
+        ex_metrics = [(table3['f'] - table2['value']).mean().name('foo'),
+                      table3['f'].sum().name('bar')]
+        ex_by = [table3['g'], table2['key']]
         for res, ex in zip(stmt.select_set, ex_by + ex_metrics):
             assert res.equals(ex)
 
         for res, ex in zip(stmt.group_by, ex_by):
             assert stmt.select_set[res].equals(ex)
 
-        # Check we got the filter
-        assert len(stmt.where) == 1
-        assert stmt.where[0].equals(filter_pred)
+        # The filter is in the joined subtable
+        assert len(stmt.where) == 0
 
 
 class TestNonTabularResults(unittest.TestCase):
@@ -1308,13 +1304,13 @@ GROUP BY 1"""
         agged2 = agg(proj[proj.foo < 10])
 
         result = to_sql(agged2)
-        expected = """SELECT t0.`g`, sum(t0.`foo`) AS `foo total`
+        expected = """SELECT `g`, sum(`foo`) AS `foo total`
 FROM (
   SELECT *, `a` + `b` AS `foo`
   FROM alltypes
   WHERE `f` > 0
 ) t0
-WHERE t0.`foo` < 10
+WHERE `foo` < 10
 GROUP BY 1"""
         assert result == expected
 
@@ -2068,7 +2064,7 @@ SELECT `string_col` AS `key`, CAST(`float_col` AS double) AS `value`
 FROM functional_alltypes
 WHERE `int_col` > 0
 UNION
-SELECT `string_col` AS `key`, `double_col` AS `value`
+SELECT `string_col` AS `key`, `double_col` AS `vaglue`
 FROM functional_alltypes
 WHERE `int_col` <= 0"""
         assert result == expected
