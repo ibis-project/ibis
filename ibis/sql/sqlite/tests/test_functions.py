@@ -367,3 +367,10 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ).sort('float_col').float_col
 
         assert len(result) == len(expected)
+
+    def test_column_access_after_sort(self):
+        t = self.alltypes
+        expr = t.sort_by('float_col').string_col
+
+        # it works!
+        expr.execute(limit=10)
