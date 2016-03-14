@@ -357,7 +357,6 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         proj.execute()
 
     def test_filter_has_sqla_table(self):
-        import pandas.util.testing as tm
         t = self.alltypes
         pred = t.year == 2010
         filt = t.filter(pred).sort_by('float_col').float_col
