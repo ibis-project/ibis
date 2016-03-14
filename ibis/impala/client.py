@@ -703,7 +703,7 @@ class ImpalaClient(SQLClient):
         ibis_types = []
         for t in types:
             t = t.lower()
-            t = udf._impala_to_ibis_type.get(t, t)
+            t = udf.parse_type(t)
             ibis_types.append(t)
 
         names = [x.lower() for x in names]
