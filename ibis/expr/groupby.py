@@ -34,7 +34,7 @@ class GroupedTableExpr(object):
 
     def __init__(self, table, by, having=None, order_by=None, window=None):
         self.table = table
-        self.by = _resolve_exprs(table, by)
+        self.by = by
         self._order_by = order_by or []
         self._having = having or []
         self._window = window

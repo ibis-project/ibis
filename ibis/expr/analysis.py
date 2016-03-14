@@ -634,13 +634,19 @@ class Projector(object):
                  # detect?
                  len(roots) == 1 and val._root_tables()[0] is roots[0])):
                 can_fuse = True
-                fused_exprs.append(root.table)
 
+                have_root = False
                 for y in root.selections:
                     # Don't add the * projection twice
                     if y.equals(root.table):
+                        fused_exprs.append(root.table)
+                        have_root = True
                         continue
                     fused_exprs.append(y)
+
+                # This was a filter, so implicitly a select *
+                if not have_root and len(root.selections) == 0:
+                    fused_exprs = [root.table] + fused_exprs
             elif validator.validate(lifted_val):
                 fused_exprs.append(lifted_val)
             elif not validator.validate(val):
