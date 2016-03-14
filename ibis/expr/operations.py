@@ -1750,29 +1750,11 @@ class Selection(TableNode, HasSchema):
     # Operator combination / fusion logic
 
     def aggregate(self, this, metrics, by=None, having=None):
-        import ibis.expr.analysis as L
-
         if len(self.selections) > 0:
             return Aggregation(this, metrics, by=by, having=having)
         else:
-            # sort keys cannot be discarded because of order-dependent
-            # aggregate functions like GROUP_CONCAT
-
-            resolved = _maybe_resolve_exprs(self.table, metrics)
-
-            if resolved is not None and not self.blocks():
-                subbed_metrics = []
-                for x in util.promote_list(resolved):
-                    subbed = L.sub_for(x, [(this, self.table)])
-                    subbed_metrics.append(subbed)
-
-                if self.table._is_valid(subbed_metrics):
-                    return Aggregation(self.table, subbed_metrics,
-                                       by=by, having=having,
-                                       predicates=self.predicates,
-                                       sort_keys=self.sort_keys)
-            else:
-                return Aggregation(this, metrics, by=by, having=having)
+            helper = AggregateSelection(this, metrics, by, having)
+            return helper.get_result()
 
     def sort_by(self, expr, sort_exprs):
         sort_exprs = util.promote_list(sort_exprs)
@@ -1784,6 +1766,61 @@ class Selection(TableNode, HasSchema):
                                  sort_keys=self.sort_keys + resolved_keys)
 
         return Selection(expr, [], sort_keys=sort_exprs)
+
+
+class AggregateSelection(object):
+    # sort keys cannot be discarded because of order-dependent
+    # aggregate functions like GROUP_CONCAT
+
+    def __init__(self, parent, metrics, by, having):
+        self.parent = parent
+        self.op = parent.op()
+        self.metrics = metrics
+        self.by = by
+        self.having = having
+
+    def get_result(self):
+        if self.op.blocks():
+            return self._plain_subquery()
+        else:
+            return self._attempt_pushdown()
+
+    def _plain_subquery(self):
+        return Aggregation(self.selection, self.metrics,
+                           by=self.by, having=self.having)
+
+    def _attempt_pushdown(self):
+        metrics_valid, lowered_metrics = self._pushdown_exprs(self.metrics)
+        by_valid, lowered_by = self._pushdown_exprs(self.by)
+
+        if metrics_valid and by_valid:
+            return Aggregation(self.op.table, lowered_metrics,
+                               by=lowered_by,
+                               having=self.having,
+                               predicates=self.op.predicates,
+                               sort_keys=self.op.sort_keys)
+        else:
+            return self._plain_subquery()
+
+    def _pushdown_exprs(self, exprs):
+        import ibis.expr.analysis as L
+
+        if exprs is None:
+            return True, []
+
+        resolved = _maybe_resolve_exprs(self.op.table, exprs)
+        subbed_exprs = []
+
+        valid = False
+        if resolved:
+            for x in util.promote_list(resolved):
+                subbed = L.sub_for(x, [(self.parent, self.op.table)])
+                subbed_exprs.append(subbed)
+            valid = self.op.table._is_valid(subbed_exprs)
+        else:
+            valid = False
+
+        return valid, subbed_exprs
 
 
 def _maybe_convert_sort_keys(table, exprs):

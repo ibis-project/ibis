@@ -559,15 +559,19 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         # after Aggregate to produce a single select statement rather than an
         # inline view.
         t = self.alltypes
-        sat = self.sa_alltypes.alias('t0')
 
         agg = (t.group_by('string_col')
                .aggregate(t.double_col.max().name('foo')))
         expr = agg.sort_by(ibis.desc('foo'))
 
-        ex = (sa.select([sat.c.string_col,
-                         F.max(sat.c.double_col).label('foo')])
-              .group_by(sat.c.string_col)
+        sat = self.sa_alltypes.alias('t1')
+        base = (sa.select([sat.c.string_col,
+                           F.max(sat.c.double_col).label('foo')])
+                .group_by(sat.c.string_col)).alias('t0')
+
+        ex = (sa.select([base.c.string_col,
+                         base.c.foo])
+              .select_from(base)
               .order_by(sa.desc('foo')))
 
         self._compare_sqla(expr, ex)
