@@ -1838,6 +1838,7 @@ class Aggregation(TableNode, HasSchema):
         self.sort_keys = self._rewrite_exprs(self.sort_keys)
 
         self._validate()
+        self._validate_predicates()
 
         TableNode.__init__(self, [table, self.agg_exprs, self.by,
                                   self.having, self.predicates,
@@ -1883,8 +1884,13 @@ class Aggregation(TableNode, HasSchema):
 
         # All non-scalar refs originate from the input table
         all_exprs = (self.agg_exprs + self.by + self.having +
-                     self.predicates + self.sort_keys)
+                     self.sort_keys)
         self.table._assert_valid(all_exprs)
+
+    def _validate_predicates(self):
+        from ibis.expr.analysis import FilterValidator
+        validator = FilterValidator([self.table])
+        validator.validate_all(self.predicates)
 
     def _result_schema(self):
         names = []
