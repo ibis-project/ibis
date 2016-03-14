@@ -300,8 +300,14 @@ def parse_type(t):
     if t in _impala_to_ibis_type:
         return _impala_to_ibis_type[t]
     else:
-        if 'varchar' in t:
+        if 'varchar' in t or 'char' in t:
             return 'string'
+        elif 'decimal' in t:
+            result = _dt._parse_decimal(t)
+            if result:
+                return t
+            else:
+                return ValueError(t)
         else:
             raise Exception(t)
 
