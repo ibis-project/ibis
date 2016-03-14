@@ -177,10 +177,12 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         t = self.con.table('airlines')
 
+        filtered = t[t.depdelay.notnull()]
+        leg = ibis.literal('-').join([t.origin, t.dest])
+        mutated = filtered.mutate(leg=leg)
+
         # it works!
-        (t[t.depdelay.notnull()]
-         .mutate(leg=ibis.literal('-').join([t.origin, t.dest]))
-         ['year', 'month', 'day', 'depdelay', 'leg'])
+        mutated['year', 'month', 'day', 'depdelay', 'leg']
 
     def test_projection_self(self):
         result = self.table[self.table]
@@ -279,11 +281,6 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         pred = self.table['a'] > 5
         result = self.table[pred]
         assert isinstance(result.op(), ops.Selection)
-
-    def test_filter_root_table_preserved(self):
-        result = self.table[self.table['a'] > 5]
-        roots = result.op().root_tables()
-        assert roots[0] is self.table.op()
 
     def test_invalid_predicate(self):
         # a lookalike

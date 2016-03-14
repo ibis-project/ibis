@@ -97,28 +97,28 @@ class TestExprFormatting(unittest.TestCase):
             ('f', 'double'),
             ('foo_id', 'string'),
             ('bar_id', 'string'),
-        ])
+        ], 'one')
 
         table2 = ibis.table([
             ('foo_id', 'string'),
             ('value1', 'double')
-        ])
+        ], 'two')
 
         table3 = ibis.table([
             ('bar_id', 'string'),
             ('value2', 'double')
-        ])
+        ], 'three')
 
         filtered = table[table['f'] > 0]
 
-        pred1 = table['foo_id'] == table2['foo_id']
+        pred1 = filtered['foo_id'] == table2['foo_id']
         pred2 = filtered['bar_id'] == table3['bar_id']
 
         j1 = filtered.left_join(table2, [pred1])
         j2 = j1.inner_join(table3, [pred2])
 
         # Project out the desired fields
-        view = j2[[table, table2['value1'], table3['value2']]]
+        view = j2[[filtered, table2['value1'], table3['value2']]]
 
         # it works!
         repr(view)

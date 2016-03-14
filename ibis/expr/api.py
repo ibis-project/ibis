@@ -1878,7 +1878,7 @@ def aggregate(table, metrics=None, by=None, having=None, **kwds):
         v = table._ensure_expr(v)
         metrics.append(v.name(k))
 
-    op = _ops.Aggregation(table, metrics, by=by, having=having)
+    op = table.op().aggregate(table, metrics, by=by, having=having)
     return TableExpr(op)
 
 

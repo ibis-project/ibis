@@ -358,45 +358,38 @@ def _base_table(table_node):
 
 def apply_filter(expr, predicates):
     # This will attempt predicate pushdown in the cases where we can do it
-    # easily and safely
+    # easily and safely, to make both cleaner SQL and fewer referential errors
+    # for users
 
     op = expr.op()
 
-    # if isinstance(op, ops.Selection):
-    #     # Potential fusion opportunity. The predicates may need to be
-    #     # rewritten in terms of the child table. This prevents the broken ref
-    #     # issue (described in more detail in #59)
-    #     predicates = [sub_for(x, [(expr, op.table)]) for x in predicates]
-    #     result = ops.Filter(op.table, op.predicates + predicates)
+    # if any of the filter predicates have the parent expression among
+    # their roots, then pushdown (at least of that predicate) is not
+    # possible
 
-    if isinstance(op, (ops.Selection, ops.Aggregation)):
-        # if any of the filter predicates have the parent expression among
-        # their roots, then pushdown (at least of that predicate) is not
-        # possible
+    # It's not unusual for the filter to reference the projection
+    # itself. If a predicate can be pushed down, in this case we must
+    # rewrite replacing the table refs with the roots internal to the
+    # projection we are referencing
+    #
+    # Assuming that the fields referenced by the filter predicate originate
+    # below the projection, we need to rewrite the predicate referencing
+    # the parent tables in the join being projected
 
-        # It's not unusual for the filter to reference the projection
-        # itself. If a predicate can be pushed down, in this case we must
-        # rewrite replacing the table refs with the roots internal to the
-        # projection we are referencing
-        #
-        # If the filter references any new or derived aliases in the
-        #
-        # in pseudocode
-        # c = Selection(Join(a, b, jpreds), ppreds)
-        # filter_pred = c.field1 == c.field2
-        # Filter(c, [filter_pred])
-        #
-        # Assuming that the fields referenced by the filter predicate originate
-        # below the projection, we need to rewrite the predicate referencing
-        # the parent tables in the join being projected
+    if isinstance(op, ops.Selection):
+        if not op.blocks():
+            # Potential fusion opportunity. The predicates may need to be
+            # rewritten in terms of the child table. This prevents the broken
+            # ref issue (described in more detail in #59)
+            simplified_predicates = [sub_for(x, [(expr, op.table)])
+                                     for x in predicates]
 
-        # TODO: is partial pushdown (one or more, but not all of the passed
-        # predicates) something we should consider doing? Could be reasonable
-
-        # if isinstance(op, ops.Selection):
-        # else:
-        #     # Aggregation
-        #     can_pushdown = op.table.is_an
+            if op.table._is_valid(simplified_predicates):
+                result = ops.Selection(
+                    op.table, [],
+                    predicates=op.predicates + simplified_predicates,
+                    sort_keys=op.sort_keys)
+                return ir.TableExpr(result)
 
         can_pushdown = _can_pushdown(op, predicates)
 
@@ -409,9 +402,23 @@ def apply_filter(expr, predicates):
         else:
             result = ops.Selection(expr, proj_exprs=[],
                                    predicates=predicates)
-    else:
-        result = ops.Selection(expr, [], predicates)
 
+    elif isinstance(op, ops.Aggregation):
+        # Potential fusion opportunity
+        simplified_predicates = [sub_for(x, [(expr, op.table)])
+                                 for x in predicates]
+
+        if op.table._is_valid(simplified_predicates):
+            result = ops.Aggregation(
+                op.table, op.agg_exprs, by=op.by, having=op.having,
+                predicates=op.predicates + simplified_predicates,
+                sort_keys=op.sort_keys)
+
+            return ir.TableExpr(result)
+    elif isinstance(op, ops.Join):
+        expr = expr.materialize()
+
+    result = ops.Selection(expr, [], predicates)
     return ir.TableExpr(result)
 
 
@@ -621,7 +628,13 @@ class Projector(object):
                  # detect?
                  len(roots) == 1 and val._root_tables()[0] is roots[0])):
                 can_fuse = True
-                fused_exprs.extend(root.selections)
+                fused_exprs.append(root.table)
+
+                for y in root.selections:
+                    # Don't add the * projection twice
+                    if y.equals(root.table):
+                        continue
+                    fused_exprs.append(y)
             elif validator.validate(lifted_val):
                 fused_exprs.append(lifted_val)
             elif not validator.validate(val):
@@ -631,7 +644,9 @@ class Projector(object):
                 fused_exprs.append(val)
 
         if can_fuse:
-            return ops.Selection(root.table, fused_exprs)
+            return ops.Selection(root.table, fused_exprs,
+                                 predicates=root.predicates,
+                                 sort_keys=root.sort_keys)
         else:
             return None
 

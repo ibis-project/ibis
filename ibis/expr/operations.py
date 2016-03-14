@@ -45,6 +45,9 @@ class TableNode(Node):
     def to_expr(self):
         return TableExpr(self)
 
+    def aggregate(self, this, metrics, by=None, having=None):
+        return Aggregation(this, metrics, by=by, having=having)
+
     def sort_by(self, expr, sort_exprs):
         return Selection(expr, [], sort_keys=sort_exprs)
 
@@ -1668,6 +1671,7 @@ class Selection(TableNode, HasSchema):
 
         dependent_exprs = clean_exprs + self.sort_keys
         self._validate(dependent_exprs)
+        self._validate_predicates()
 
         HasSchema.__init__(self, schema)
         Node.__init__(self, [table_expr] + [clean_exprs] +
@@ -1743,8 +1747,18 @@ class Selection(TableNode, HasSchema):
         else:
             return False
 
+    # Operator combination / fusion logic
+
+    def aggregate(self, this, metrics, by=None, having=None):
+        if len(self.selections) > 0:
+            return Aggregation(this, metrics, by=by, having=having)
+        else:
+            # sort keys cannot be discarded
+            return Aggregation(self.table, metrics, by=by, having=having,
+                               predicates=self.predicates,
+                               sort_keys=self.sort_keys)
+
     def sort_by(self, expr, sort_exprs):
-        # if self.table._is_valid(sort_exprs):
         return Selection(expr, [], sort_keys=sort_exprs)
 
 
@@ -1759,9 +1773,11 @@ class Aggregation(TableNode, HasSchema):
     where : pre-aggregation predicate
     """
 
-    _arg_names = ['table', 'metrics', 'by', 'having']
+    _arg_names = ['table', 'metrics', 'by', 'having',
+                  'predicates', 'sort_keys']
 
-    def __init__(self, table, agg_exprs, by=None, having=None):
+    def __init__(self, table, agg_exprs, by=None, having=None,
+                 predicates=None, sort_keys=None):
         # For tables, like joins, that are not materialized
         self.table = table
 
@@ -1769,15 +1785,24 @@ class Aggregation(TableNode, HasSchema):
 
         by = by or []
         self.by = self.table._resolve(by)
-        self.by = self._rewrite_exprs(self.by)
 
         self.having = having or []
+
+        self.predicates = predicates or []
+        sort_keys = sort_keys or []
+        self.sort_keys = [to_sort_key(self.table, k)
+                          for k in util.promote_list(sort_keys)]
+
+        self.by = self._rewrite_exprs(self.by)
         self.having = self._rewrite_exprs(self.having)
+        self.predicates = self._rewrite_exprs(self.predicates)
+        self.sort_keys = self._rewrite_exprs(self.sort_keys)
 
         self._validate()
 
         TableNode.__init__(self, [table, self.agg_exprs, self.by,
-                                  self.having])
+                                  self.having, self.predicates,
+                                  self.sort_keys])
 
         schema = self._result_schema()
         HasSchema.__init__(self, schema)
@@ -1818,7 +1843,8 @@ class Aggregation(TableNode, HasSchema):
                                           .format(_safe_repr(expr)))
 
         # All non-scalar refs originate from the input table
-        all_exprs = self.agg_exprs + self.by + self.having
+        all_exprs = (self.agg_exprs + self.by + self.having +
+                     self.predicates + self.sort_keys)
         self.table._assert_valid(all_exprs)
 
     def _result_schema(self):
