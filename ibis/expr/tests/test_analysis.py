@@ -89,42 +89,6 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         result = L.substitute_parents(expr)
         assert result is expr
 
-    def test_projection_with_join_pushdown_rewrite_refs(self):
-        # Observed this expression IR issue in a TopK-rewrite context
-        table1 = ibis.table([
-            ('a_key1', 'string'),
-            ('a_key2', 'string'),
-            ('a_value', 'double')
-        ], 'foo')
-
-        table2 = ibis.table([
-            ('b_key1', 'string'),
-            ('b_name', 'string'),
-            ('b_value', 'double')
-        ], 'bar')
-
-        table3 = ibis.table([
-            ('c_key2', 'string'),
-            ('c_name', 'string')
-        ], 'baz')
-
-        proj = (table1.inner_join(table2, [('a_key1', 'b_key1')])
-                .inner_join(table3, [(table1.a_key2, table3.c_key2)])
-                [table1, table2.b_name.name('b'), table3.c_name.name('c'),
-                 table2.b_value])
-
-        cases = [
-            (proj.a_value > 0, table1.a_value > 0),
-            (proj.b_value > 0, table2.b_value > 0)
-        ]
-
-        for higher_pred, lower_pred in cases:
-            result = proj.filter([higher_pred])
-            op = result.op()
-            assert isinstance(op, ops.Selection)
-            new_pred = op.predicates[0]
-            assert_equal(new_pred, lower_pred)
-
     def test_multiple_join_deeper_reference(self):
         # Join predicates down the chain might reference one or more root
         # tables in the hierarchy.
@@ -259,6 +223,42 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         result = L.substitute_parents(expr)
         expected = table['c'] == table4['foo']
         assert_equal(result, expected)
+
+    # def test_projection_with_join_pushdown_rewrite_refs(self):
+    #     # Observed this expression IR issue in a TopK-rewrite context
+    #     table1 = ibis.table([
+    #         ('a_key1', 'string'),
+    #         ('a_key2', 'string'),
+    #         ('a_value', 'double')
+    #     ], 'foo')
+
+    #     table2 = ibis.table([
+    #         ('b_key1', 'string'),
+    #         ('b_name', 'string'),
+    #         ('b_value', 'double')
+    #     ], 'bar')
+
+    #     table3 = ibis.table([
+    #         ('c_key2', 'string'),
+    #         ('c_name', 'string')
+    #     ], 'baz')
+
+    #     proj = (table1.inner_join(table2, [('a_key1', 'b_key1')])
+    #             .inner_join(table3, [(table1.a_key2, table3.c_key2)])
+    #             [table1, table2.b_name.name('b'), table3.c_name.name('c'),
+    #              table2.b_value])
+
+    #     cases = [
+    #         (proj.a_value > 0, table1.a_value > 0),
+    #         (proj.b_value > 0, table2.b_value > 0)
+    #     ]
+
+    #     for higher_pred, lower_pred in cases:
+    #         result = proj.filter([higher_pred])
+    #         op = result.op()
+    #         assert isinstance(op, ops.Selection)
+    #         new_pred = op.predicates[0]
+    #         assert_equal(new_pred, lower_pred)
 
     # def test_rewrite_expr_with_parent(self):
     #     table = self.con.table('test1')

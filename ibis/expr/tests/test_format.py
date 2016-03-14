@@ -193,7 +193,10 @@ class TestExprFormatting(unittest.TestCase):
         right = agged[agged.kind == 'bar']
 
         cond = left.region == right.region
-        joined = left.join(right, cond)
+        joined = (left.join(right, cond)
+                  [left, right.total.name('right_total')])
 
         result = repr(joined)
-        assert result.count('Selection') == 2
+
+        # Join, and one for each aggregation
+        assert result.count('predicates') == 3

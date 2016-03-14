@@ -363,46 +363,8 @@ def apply_filter(expr, predicates):
 
     op = expr.op()
 
-    # if any of the filter predicates have the parent expression among
-    # their roots, then pushdown (at least of that predicate) is not
-    # possible
-
-    # It's not unusual for the filter to reference the projection
-    # itself. If a predicate can be pushed down, in this case we must
-    # rewrite replacing the table refs with the roots internal to the
-    # projection we are referencing
-    #
-    # Assuming that the fields referenced by the filter predicate originate
-    # below the projection, we need to rewrite the predicate referencing
-    # the parent tables in the join being projected
-
     if isinstance(op, ops.Selection):
-        if not op.blocks():
-            # Potential fusion opportunity. The predicates may need to be
-            # rewritten in terms of the child table. This prevents the broken
-            # ref issue (described in more detail in #59)
-            simplified_predicates = [sub_for(x, [(expr, op.table)])
-                                     for x in predicates]
-
-            if op.table._is_valid(simplified_predicates):
-                result = ops.Selection(
-                    op.table, [],
-                    predicates=op.predicates + simplified_predicates,
-                    sort_keys=op.sort_keys)
-                return ir.TableExpr(result)
-
-        can_pushdown = _can_pushdown(op, predicates)
-
-        if can_pushdown:
-            predicates = [substitute_parents(x) for x in predicates]
-            result = ops.Selection(op.table,
-                                   proj_exprs=op.selections,
-                                   predicates=predicates,
-                                   sort_keys=op.sort_keys)
-        else:
-            result = ops.Selection(expr, proj_exprs=[],
-                                   predicates=predicates)
-
+        return _filter_selection(expr, predicates)
     elif isinstance(op, ops.Aggregation):
         # Potential fusion opportunity
         simplified_predicates = [sub_for(x, [(expr, op.table)])
@@ -419,6 +381,51 @@ def apply_filter(expr, predicates):
         expr = expr.materialize()
 
     result = ops.Selection(expr, [], predicates)
+    return ir.TableExpr(result)
+
+
+def _filter_selection(expr, predicates):
+    # if any of the filter predicates have the parent expression among
+    # their roots, then pushdown (at least of that predicate) is not
+    # possible
+
+    # It's not unusual for the filter to reference the projection
+    # itself. If a predicate can be pushed down, in this case we must
+    # rewrite replacing the table refs with the roots internal to the
+    # projection we are referencing
+    #
+    # Assuming that the fields referenced by the filter predicate originate
+    # below the projection, we need to rewrite the predicate referencing
+    # the parent tables in the join being projected
+
+    op = expr.op()
+    if not op.blocks():
+        # Potential fusion opportunity. The predicates may need to be
+        # rewritten in terms of the child table. This prevents the broken
+        # ref issue (described in more detail in #59)
+        simplified_predicates = [sub_for(x, [(expr, op.table)])
+                                 for x in predicates]
+
+        if op.table._is_valid(simplified_predicates):
+            result = ops.Selection(
+                op.table, [],
+                predicates=op.predicates + simplified_predicates,
+                sort_keys=op.sort_keys)
+            return ir.TableExpr(result)
+
+    can_pushdown = _can_pushdown(op, predicates)
+
+    if can_pushdown:
+        simplified_predicates = [substitute_parents(x) for x in predicates]
+        fused_predicates = op.predicates + simplified_predicates
+        result = ops.Selection(op.table,
+                               proj_exprs=op.selections,
+                               predicates=fused_predicates,
+                               sort_keys=op.sort_keys)
+    else:
+        result = ops.Selection(expr, proj_exprs=[],
+                               predicates=predicates)
+
     return ir.TableExpr(result)
 
 
@@ -467,7 +474,6 @@ class _PushdownValidate(object):
         for arg in node.flat_args():
             if isinstance(arg, ir.ValueExpr):
                 self._walk(arg)
-
             # Skip other types of exprs
 
     def _validate_column(self, expr):
@@ -814,6 +820,9 @@ class FilterValidator(ExprValidator):
                 if isinstance(arg, ir.ScalarExpr):
                     # arg_valid = True
                     pass
+                elif isinstance(arg, ops.TopKExpr):
+                    # TopK not subjected to further analysis for now
+                    roots_valid.append(True)
                 elif isinstance(arg, (ir.ArrayExpr, ir.AnalyticExpr)):
                     roots_valid.append(self.shares_some_roots(arg))
                 elif isinstance(arg, ir.Expr):
