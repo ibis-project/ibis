@@ -158,6 +158,8 @@ class GroupedTableExpr(object):
 
         sorts = [ops.to_sort_key(self.table, k) for k in sorts]
 
+        groups = _resolve_exprs(self.table, groups)
+
         return _window.window(preceding=preceding, following=following,
                               group_by=groups, order_by=sorts)
 
