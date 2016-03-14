@@ -335,3 +335,23 @@ LIMIT 10"""
 
         assert opts1['DISABLE_CODEGEN'] == '1'
         assert opts2['DISABLE_CODEGEN'] == '1'
+
+    def test_attr_name_conflict(self):
+        LEFT = 'testing_{0}'.format(util.guid())
+        RIGHT = 'testing_{0}'.format(util.guid())
+
+        schema = ibis.schema([('id', 'int32'), ('name', 'string'),
+                              ('files', 'int32')])
+
+        db = self.con.database(self.tmp_db)
+
+        for tablename in (LEFT, RIGHT):
+            db.create_table(tablename, schema=schema,
+                            format='parquet')
+
+        left = db[LEFT]
+        right = db[RIGHT]
+
+        left.join(right, ['id'])
+        left.join(right, ['id', 'name'])
+        left.join(right, ['id', 'files'])

@@ -1396,7 +1396,7 @@ class Join(TableNode):
                 rk = right._ensure_expr(rk)
                 pred = lk == rk
             elif isinstance(pred, six.string_types):
-                pred = getattr(left, pred) == getattr(right, pred)
+                pred = left[pred] == right[pred]
             elif not isinstance(pred, ir.Expr):
                 raise NotImplementedError
 
