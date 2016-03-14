@@ -71,7 +71,8 @@ make_client = util.deprecate(
 
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
-                 auth_mechanism='NOSASL', verify=True, **kwds):
+                 use_https='default', auth_mechanism='NOSASL',
+                 verify=True, **kwds):
     """
     Connect to HDFS
 
@@ -80,6 +81,9 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
     host : string, Host name of the HDFS NameNode
     port : int, NameNode's WebHDFS port (default 50070)
     protocol : {'webhdfs'}
+    use_https : boolean, default 'default'
+        Connect to WebHDFS with HTTPS, otherwise plain HTTP. For secure
+        authentication, the default for this is True, otherwise False
     auth_mechanism : string, Set to NOSASL or PLAIN for non-secure clusters.
         Set to GSSAPI or LDAP for Kerberos-secured clusters.
     verify : boolean, Set to False to turn off verifying SSL certificates.
@@ -95,6 +99,10 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
     session = kwds.setdefault('session', requests.Session())
     session.verify = verify
     if auth_mechanism in ['GSSAPI', 'LDAP']:
+        if use_https == 'default':
+            prefix = 'https'
+        else:
+            prefix = 'https' if use_https else 'http'
         try:
             import requests_kerberos
         except ImportError:
@@ -103,12 +111,17 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
                 "Kerberos HDFS support. Install it by executing `pip install "
                 "requests-kerberos` or `pip install hdfs[kerberos]`.")
         from hdfs.ext.kerberos import KerberosClient
-        url = 'https://{0}:{1}'.format(host, port) # note SSL
+        # note SSL
+        url = '{0}://{1}:{2}'.format(prefix, host, port)
         kwds.setdefault('mutual_auth', 'OPTIONAL')
         hdfs_client = KerberosClient(url, **kwds)
     else:
+        if use_https == 'default':
+            prefix = 'http'
+        else:
+            prefix = 'https' if use_https else 'http'
         from hdfs.client import InsecureClient
-        url = 'http://{0}:{1}'.format(host, port)
+        url = '{0}://{1}:{2}'.format(prefix, host, port)
         hdfs_client = InsecureClient(url, **kwds)
     return WebHDFS(hdfs_client)
 
