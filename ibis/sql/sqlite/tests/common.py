@@ -32,13 +32,6 @@ class SQLiteTests(object):
         cls.con = api.connect(cls.env.db_path)
         cls.alltypes = cls.con.table('functional_alltypes')
 
-    @classmethod
-    def tearDownClass(cls):
-        try:
-            os.remove(cls.tmp_path)
-        except os.error:
-            pass
-
     def _check_expr_cases(self, cases, context=None, named=False):
         for expr, expected in cases:
             result = self._translate(expr, named=named, context=context)

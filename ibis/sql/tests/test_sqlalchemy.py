@@ -231,7 +231,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
              rt.outerjoin(nt, spred)),
         ]
         for ibis_joined, joined_sqla in fully_mat_joins:
-            expected = sa.select(['*']).select_from(joined_sqla)
+            expected = sa.select([joined_sqla])
             self._compare_sqla(ibis_joined, expected)
 
         subselect_joins = [
@@ -260,7 +260,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         sqla_joined = (nt.join(rt, nt.c.n_regionkey == rt.c.r_regionkey)
                        .join(ct, nt.c.n_nationkey == ct.c.c_nationkey))
 
-        expected = sa.select(['*']).select_from(sqla_joined)
+        expected = sa.select([sqla_joined])
 
         self._compare_sqla(joined, expected)
 

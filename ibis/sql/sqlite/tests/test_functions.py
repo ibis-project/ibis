@@ -389,6 +389,8 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
             t1 = con.table('mj1')
             t2 = con.table('mj2')
-            t1.join(t2, t1.id1 == t2.id2).materialize().val2.compile()
+            joined = t1.join(t2, t1.id1 == t2.id2).materialize()
+            result = joined.val2.execute()
+            assert len(result) == 2
         finally:
             os.remove(path)
