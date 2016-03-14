@@ -17,6 +17,8 @@ import pytest
 
 from ibis.sql.sqlite.compiler import SQLiteExprTranslator
 import ibis.sql.sqlite.api as api
+import ibis.util as util
+
 from sqlalchemy.dialects.sqlite import dialect as sqlite_dialect
 
 

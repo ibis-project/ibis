@@ -164,7 +164,11 @@ def _get_sqla_table(ctx, table):
             ctx_level = ctx_level.parent
             sa_table = ctx_level.get_table(table)
     else:
-        sa_table = table.op().sqla_table
+        op = table.op()
+        if isinstance(op, AlchemyTable):
+            sa_table = op.sqla_table
+        else:
+            sa_table = ctx.get_compiled_expr(table)
 
     return sa_table
 
@@ -596,6 +600,8 @@ class AlchemySelect(Select):
 
     def _add_select(self, table_set):
         to_select = []
+
+        has_select_star = False
         for expr in self.select_set:
             if isinstance(expr, ir.ValueExpr):
                 arg = self._translate(expr, named=True)
@@ -604,7 +610,8 @@ class AlchemySelect(Select):
                     cached_table = self.context.get_table(expr)
                     if cached_table is None:
                         # the select * case from materialized join
-                        arg = '*'
+                        has_select_star = True
+                        continue
                     else:
                         arg = table_set
                 else:
@@ -614,18 +621,29 @@ class AlchemySelect(Select):
 
             to_select.append(arg)
 
-        if self.exists:
-            clause = sa.exists(to_select)
+        if has_select_star:
+            if table_set is None:
+                raise ValueError('table_set cannot be None here')
+
+            clauses = [table_set] + to_select
         else:
-            clause = sa.select(to_select)
+            clauses = to_select
+
+        if self.exists:
+            result = sa.exists(clauses)
+        else:
+            result = sa.select(clauses)
 
         if self.distinct:
-            clause = clause.distinct()
+            result = result.distinct()
 
-        if table_set is not None:
-            return clause.select_from(table_set)
+        if not has_select_star:
+            if table_set is not None:
+                return result.select_from(table_set)
+            else:
+                return result
         else:
-            return clause
+            return result
 
     def _add_groupby(self, fragment):
         # GROUP BY and HAVING

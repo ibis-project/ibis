@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import pytest  # noqa
 
 from .common import SQLiteTests
@@ -374,3 +375,22 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
         # it works!
         expr.execute(limit=10)
+
+    def test_materialized_join(self):
+        path = '__ibis_tmp_{0}.db'.format(ibis.util.guid())
+
+        con = ibis.sqlite.connect(path, create=True)
+
+        try:
+            con.raw_sql("create table mj1 (id1 integer, val1 real)")
+            con.raw_sql("insert into mj1 values (1, 10), (2, 20)")
+            con.raw_sql("create table mj2 (id2 integer, val2 real)")
+            con.raw_sql("insert into mj2 values (1, 15), (2, 25)")
+
+            t1 = con.table('mj1')
+            t2 = con.table('mj2')
+            joined = t1.join(t2, t1.id1 == t2.id2).materialize()
+            result = joined.val2.execute()
+            assert len(result) == 2
+        finally:
+            os.remove(path)

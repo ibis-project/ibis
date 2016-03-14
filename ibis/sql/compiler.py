@@ -676,6 +676,10 @@ class _ExtractSubqueries(object):
     def _visit_Union(self, expr):
         self.observe(expr)
 
+    def _visit_MaterializedJoin(self, expr):
+        self.observe(expr)
+        self.visit(expr.op().join)
+
     def _visit_Selection(self, expr):
         self.observe(expr)
         self.visit(expr.op().table)
