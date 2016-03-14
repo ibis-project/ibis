@@ -208,7 +208,7 @@ class ExprSimplifier(object):
         elif isinstance(op, (ops.TableNode, HasSchema)):
             return expr
         else:
-            raise NotImplementedError
+            return self._sub(expr, block=block)
 
         # If we get here, time to record the modified expression in our memo to
         # avoid excessive graph-walking
