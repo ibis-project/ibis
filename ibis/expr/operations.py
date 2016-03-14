@@ -1758,7 +1758,7 @@ class Selection(TableNode, HasSchema):
             # sort keys cannot be discarded because of order-dependent
             # aggregate functions like GROUP_CONCAT
 
-            resolved = _resolve_metrics(self.table, metrics)
+            resolved = _maybe_resolve_exprs(self.table, metrics)
 
             if resolved is not None and not self.blocks():
                 subbed_metrics = []
@@ -1776,17 +1776,27 @@ class Selection(TableNode, HasSchema):
 
     def sort_by(self, expr, sort_exprs):
         sort_exprs = util.promote_list(sort_exprs)
-        if not self.blocks() and self.table._is_valid(sort_exprs):
-            return Selection(self.table, self.selections,
-                             predicates=self.predicates,
-                             sort_keys=self.sort_keys + sort_exprs)
-        else:
-            return Selection(expr, [], sort_keys=sort_exprs)
+        if not self.blocks():
+            resolved_keys = _maybe_convert_sort_keys(self.table, sort_exprs)
+            if resolved_keys and self.table._is_valid(resolved_keys):
+                return Selection(self.table, self.selections,
+                                 predicates=self.predicates,
+                                 sort_keys=self.sort_keys + resolved_keys)
+
+        return Selection(expr, [], sort_keys=sort_exprs)
 
 
-def _resolve_metrics(table, metrics):
+def _maybe_convert_sort_keys(table, exprs):
     try:
-        return table._resolve(metrics)
+        return [to_sort_key(table, k)
+                for k in util.promote_list(exprs)]
+    except:
+        return None
+
+
+def _maybe_resolve_exprs(table, exprs):
+    try:
+        return table._resolve(exprs)
     except:
         return None
 
@@ -1887,6 +1897,18 @@ class Aggregation(TableNode, HasSchema):
             types.append(e.type())
 
         return Schema(names, types)
+
+    def sort_by(self, expr, sort_exprs):
+        sort_exprs = util.promote_list(sort_exprs)
+
+        resolved_keys = _maybe_convert_sort_keys(self.table, sort_exprs)
+        if resolved_keys and self.table._is_valid(resolved_keys):
+            return Aggregation(self.table, self.agg_exprs,
+                               by=self.by, having=self.having,
+                               predicates=self.predicates,
+                               sort_keys=self.sort_keys + resolved_keys)
+
+        return Selection(expr, [], sort_keys=sort_exprs)
 
 
 class Add(BinaryOp):

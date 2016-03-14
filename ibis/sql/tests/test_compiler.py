@@ -1250,13 +1250,16 @@ FROM (
     INNER JOIN tpch_region t3
       ON t2.`n_regionkey` = t3.`r_regionkey`
     LEFT SEMI JOIN (
-      SELECT t2.`n_name`, sum(CAST(t1.`c_acctbal` AS double)) AS `sum`
-      FROM tpch_customer t1
-        INNER JOIN tpch_nation t2
-          ON t1.`c_nationkey` = t2.`n_nationkey`
-        INNER JOIN tpch_region t3
-          ON t2.`n_regionkey` = t3.`r_regionkey`
-      GROUP BY 1
+      SELECT *
+      FROM (
+        SELECT t2.`n_name`, sum(CAST(t1.`c_acctbal` AS double)) AS `sum`
+        FROM tpch_customer t1
+          INNER JOIN tpch_nation t2
+            ON t1.`c_nationkey` = t2.`n_nationkey`
+          INNER JOIN tpch_region t3
+            ON t2.`n_regionkey` = t3.`r_regionkey`
+        GROUP BY 1
+      ) t5
       ORDER BY `sum` DESC
       LIMIT 10
     ) t4
