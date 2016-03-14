@@ -777,13 +777,16 @@ class _AlchemyTableSet(TableSetFormatter):
 
 
 def _can_lower_sort_column(table_set, expr):
+    # TODO(wesm): This code is pending removal through cleaner internal
+    # semantics
+
     # we can currently sort by just-appeared aggregate metrics, but the way
     # these are references in the expression DSL is as a SortBy (blocking
     # table operation) on an aggregation. There's a hack in _collect_SortBy
     # in the generic SQL compiler that "fuses" the sort with the
     # aggregation so they appear in same query. It's generally for
     # cosmetics and doesn't really affect query semantics.
-    bases = ir.find_all_base_tables(expr)
+    bases = ops.find_all_base_tables(expr)
     if len(bases) > 1:
         return False
 
@@ -792,7 +795,7 @@ def _can_lower_sort_column(table_set, expr):
 
     if isinstance(base_op, ops.Aggregation):
         return base_op.table.equals(table_set)
-    elif isinstance(base_op, ops.Projection):
+    elif isinstance(base_op, ops.Selection):
         return base.equals(table_set)
     else:
         return False

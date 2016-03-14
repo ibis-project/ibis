@@ -232,6 +232,11 @@ class Node(object):
 
         return '%s(%s)' % (opname, ', '.join(pprint_args))
 
+    def blocks(self):
+        # The contents of this node at referentially distinct and may not be
+        # analyzed deeper
+        return False
+
     def flat_args(self):
         for arg in self.args:
             if isinstance(arg, (tuple, list)):
@@ -423,21 +428,6 @@ class Literal(ValueNode):
         return []
 
 
-class TableNode(Node):
-
-    def get_type(self, name):
-        return self.get_schema().get_type(name)
-
-    def to_expr(self):
-        return TableExpr(self)
-
-
-class BlockingTableNode(TableNode):
-    # Try to represent the fact that whatever lies here is a semantically
-    # distinct table. Like projections, aggregations, and so forth
-    pass
-
-
 def distinct_roots(*args):
     all_roots = []
     for arg in args:
@@ -540,6 +530,13 @@ class TableExpr(Expr):
         def factory(arg):
             return TableExpr(arg)
         return factory
+
+    def _is_valid(self, exprs):
+        try:
+            self._assert_valid(util.promote_list(exprs))
+            return True
+        except:
+            return False
 
     def _assert_valid(self, exprs):
         from ibis.expr.analysis import ExprValidator
@@ -1125,22 +1122,3 @@ def find_base_table(expr):
             r = find_base_table(arg)
             if isinstance(r, TableExpr):
                 return r
-
-
-def find_all_base_tables(expr, memo=None):
-    if memo is None:
-        memo = {}
-
-    node = expr.op()
-
-    if (isinstance(expr, TableExpr) and
-            isinstance(node, BlockingTableNode)):
-        if id(expr) not in memo:
-            memo[id(expr)] = expr
-        return memo
-
-    for arg in expr.op().flat_args():
-        if isinstance(arg, Expr):
-            find_all_base_tables(arg, memo)
-
-    return memo

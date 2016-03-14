@@ -355,3 +355,15 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
         proj = table.projection(agg_exprs)
         proj.execute()
+
+    def test_filter_has_sqla_table(self):
+        t = self.alltypes
+        pred = t.year == 2010
+        filt = t.filter(pred).sort_by('float_col').float_col
+        s = filt.execute()
+        result = s.squeeze().reset_index(drop=True)
+        expected = t.execute().query(
+            'year == 2010'
+        ).sort('float_col').float_col
+
+        assert len(result) == len(expected)

@@ -381,7 +381,7 @@ class BasicTestCase(object):
     def setUp(self):
         self.schema = _all_types_schema
         self.schema_dict = dict(self.schema)
-        self.table = ibis.table(self.schema)
+        self.table = ibis.table(self.schema, 'schema')
 
         self.int_cols = ['a', 'b', 'c', 'd']
         self.bool_cols = ['h']

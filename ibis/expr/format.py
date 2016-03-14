@@ -90,7 +90,7 @@ class ExprFormatter(object):
         if self.memoize:
             self._memoize_tables()
 
-        if isinstance(what, ir.TableNode) and what.has_schema():
+        if isinstance(what, ops.TableNode) and what.has_schema():
             # This should also catch aggregations
             if not self.memoize and what in self.memo:
                 text = 'Table: %s' % self.memo.get_alias(what)
@@ -128,8 +128,8 @@ class ExprFormatter(object):
         return self._indent(text, self.base_level)
 
     def _memoize_tables(self):
-        table_memo_ops = (ops.Aggregation, ops.Filter,
-                          ops.Projection, ops.SelfReference)
+        table_memo_ops = (ops.Aggregation, ops.Selection,
+                          ops.SelfReference)
 
         def walk(expr):
             op = expr.op()
@@ -146,7 +146,7 @@ class ExprFormatter(object):
                 visit(op.args)
                 if isinstance(op, table_memo_ops):
                     self.memo.observe(op, self._format_node)
-            elif isinstance(op, ir.TableNode) and op.has_schema():
+            elif isinstance(op, ops.TableNode) and op.has_schema():
                 self.memo.observe(op, self._format_table)
 
         walk(self.expr)

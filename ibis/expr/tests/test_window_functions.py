@@ -90,9 +90,12 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
         # GH #544
         t = self.con.table('airlines')
 
+        def metric(x):
+            return x.arrdelay.mean().name('avg_delay')
+
         annual_delay = (t[t.dest.isin(['JFK', 'SFO'])]
                         .group_by(['dest', 'year'])
-                        .aggregate(t.arrdelay.mean().name('avg_delay')))
+                        .aggregate(metric))
         what = annual_delay.group_by('dest')
         enriched = what.mutate(grand_avg=annual_delay.avg_delay.mean())
 
@@ -104,9 +107,7 @@ class TestWindowFunctions(BasicTestCase, unittest.TestCase):
 
     def test_mutate_sorts_keys(self):
         t = self.con.table('airlines')
-
         m = t.arrdelay.mean()
-
         g = t.group_by('dest')
 
         result = g.mutate(zzz=m, yyy=m, ddd=m, ccc=m, bbb=m, aaa=m)

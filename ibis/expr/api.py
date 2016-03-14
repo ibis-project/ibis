@@ -1835,20 +1835,22 @@ def filter(table, predicates):
     -------
     filtered_expr : TableExpr
     """
+    resolved_predicates = _resolve_predicates(table, predicates)
+    return _L.apply_filter(table, resolved_predicates)
+
+
+def _resolve_predicates(table, predicates):
     if isinstance(predicates, Expr):
         predicates = _L.unwrap_ands(predicates)
     predicates = util.promote_list(predicates)
-
     predicates = [ir.bind_expr(table, x) for x in predicates]
-
     resolved_predicates = []
     for pred in predicates:
         if isinstance(pred, ir.AnalyticExpr):
             pred = pred.to_filter()
         resolved_predicates.append(pred)
 
-    op = _L.apply_filter(table, resolved_predicates)
-    return TableExpr(op)
+    return resolved_predicates
 
 
 def aggregate(table, metrics=None, by=None, having=None, **kwds):
@@ -1876,7 +1878,7 @@ def aggregate(table, metrics=None, by=None, having=None, **kwds):
         v = table._ensure_expr(v)
         metrics.append(v.name(k))
 
-    op = _ops.Aggregation(table, metrics, by=by, having=having)
+    op = table.op().aggregate(table, metrics, by=by, having=having)
     return TableExpr(op)
 
 
@@ -1929,8 +1931,10 @@ def _table_sort_by(table, sort_exprs):
     -------
     sorted : TableExpr
     """
-    op = _ops.SortBy(table, sort_exprs)
-    return TableExpr(op)
+    op = table.op()
+    result = op.sort_by(table, sort_exprs)
+
+    return TableExpr(result)
 
 
 def _table_union(left, right, distinct=False):
@@ -2047,8 +2051,9 @@ def projection(table, exprs):
     if isinstance(exprs, (Expr,) + six.string_types):
         exprs = [exprs]
 
-    exprs = [table._ensure_expr(e) for e in exprs]
-    op = L.Projector(table, exprs).get_result()
+    projector = L.Projector(table, exprs)
+
+    op = projector.get_result()
     return TableExpr(op)
 
 

@@ -88,7 +88,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         proj = self.table[cols]
         assert isinstance(proj, TableExpr)
-        assert isinstance(proj.op(), ops.Projection)
+        assert isinstance(proj.op(), ops.Selection)
 
         assert proj.schema().names == cols
         for c in cols:
@@ -177,10 +177,12 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
 
         t = self.con.table('airlines')
 
+        filtered = t[t.depdelay.notnull()]
+        leg = ibis.literal('-').join([t.origin, t.dest])
+        mutated = filtered.mutate(leg=leg)
+
         # it works!
-        (t[t.depdelay.notnull()]
-         .mutate(leg=ibis.literal('-').join([t.origin, t.dest]))
-         ['year', 'month', 'day', 'depdelay', 'leg'])
+        mutated['year', 'month', 'day', 'depdelay', 'leg']
 
     def test_projection_self(self):
         result = self.table[self.table]
@@ -278,12 +280,7 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
     def test_add_predicate(self):
         pred = self.table['a'] > 5
         result = self.table[pred]
-        assert isinstance(result.op(), ops.Filter)
-
-    def test_filter_root_table_preserved(self):
-        result = self.table[self.table['a'] > 5]
-        roots = result.op().root_tables()
-        assert roots[0] is self.table.op()
+        assert isinstance(result.op(), ops.Selection)
 
     def test_invalid_predicate(self):
         # a lookalike
@@ -353,7 +350,9 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         # Default is ascending for anything coercable to an expression,
         # and we'll have ascending/descending wrappers to help.
         result = self.table.sort_by(['f'])
-        sort_key = result.op().keys[0].op()
+
+        sort_key = result.op().sort_keys[0].op()
+
         assert_equal(sort_key.expr, self.table.f)
         assert sort_key.ascending
 
@@ -365,9 +364,9 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
         result3 = self.table.sort_by([('f', 'descending')])
         result4 = self.table.sort_by([('f', 0)])
 
-        key2 = result2.op().keys[0].op()
-        key3 = result3.op().keys[0].op()
-        key4 = result4.op().keys[0].op()
+        key2 = result2.op().sort_keys[0].op()
+        key3 = result3.op().sort_keys[0].op()
+        key4 = result4.op().sort_keys[0].op()
 
         assert not key2.ascending
         assert not key3.ascending
@@ -972,7 +971,7 @@ class TestSemiAntiJoinPredicates(unittest.TestCase):
 
         # it works!
         expr = self.t1[cond]
-        assert isinstance(expr.op(), ops.Filter)
+        assert isinstance(expr.op(), ops.Selection)
 
     def test_cannot_use_existence_expression_in_join(self):
         # Join predicates must consist only of comparisons

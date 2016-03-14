@@ -54,18 +54,16 @@ class TestASTBuilder(unittest.TestCase):
             return result
 
         assert len(stmt.select_set) == 2
-        assert len(stmt.where) == 1
-        assert stmt.where[0] is filter_pred
 
-        # Check that the join has been rebuilt to only include the root tables
+        # #790, make sure the filter stays put
+        assert len(stmt.where) == 0
+
+        # Check that the joined tables are not altered
         tbl = stmt.table_set
         tbl_node = tbl.op()
         assert isinstance(tbl_node, ops.InnerJoin)
         assert tbl_node.left is table2
-        assert tbl_node.right is table
-
-        # table expression substitution has been made in the predicate
-        assert tbl_node.predicates[0].equals(table['g'] == table2['key'])
+        assert tbl_node.right is table3
 
     def test_ast_with_aggregation_join_filter(self):
         table = self.con.table('test1')
@@ -84,26 +82,24 @@ class TestASTBuilder(unittest.TestCase):
         ast = build_ast(result)
         stmt = ast.queries[0]
 
-        # hoisted metrics
-        ex_metrics = [(table['f'] - table2['value']).mean().name('foo'),
-                      table['f'].sum().name('bar')]
-        ex_by = [table['g'], table2['key']]
-
-        # hoisted join and aggregate
+        # #790, this behavior was different before
+        ex_pred = [table3['g'] == table2['key']]
         expected_table_set = \
-            table2.inner_join(table, [table['g'] == table2['key']])
+            table2.inner_join(table3, ex_pred)
         assert stmt.table_set.equals(expected_table_set)
 
         # Check various exprs
+        ex_metrics = [(table3['f'] - table2['value']).mean().name('foo'),
+                      table3['f'].sum().name('bar')]
+        ex_by = [table3['g'], table2['key']]
         for res, ex in zip(stmt.select_set, ex_by + ex_metrics):
             assert res.equals(ex)
 
         for res, ex in zip(stmt.group_by, ex_by):
             assert stmt.select_set[res].equals(ex)
 
-        # Check we got the filter
-        assert len(stmt.where) == 1
-        assert stmt.where[0].equals(filter_pred)
+        # The filter is in the joined subtable
+        assert len(stmt.where) == 0
 
 
 class TestNonTabularResults(unittest.TestCase):
@@ -381,11 +377,13 @@ class ExprTestCases(object):
               .projection([t1, t2.value1, t2.value3])
               .filter([t1.f > 0, t2.value3 < 1000]))
 
-        e2 = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
-              .filter([t1.f > 0, t2.value3 < 1000])
-              .projection([t1, t2.value1, t2.value3]))
+        # e2 = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
+        #       .filter([t1.f > 0, t2.value3 < 1000])
+        #       .projection([t1, t2.value1, t2.value3]))
 
-        return e1, e2
+        # return e1, e2
+
+        return e1
 
     def _case_subquery_used_for_self_join(self):
         # There could be cases that should look in SQL like
@@ -943,7 +941,7 @@ WHERE `f` > 0 AND
         raise unittest.SkipTest
 
     def test_where_with_join(self):
-        e1, e2 = self._case_where_with_join()
+        e1 = self._case_where_with_join()
 
         expected_sql = """SELECT t0.*, t1.`value1`, t1.`value3`
 FROM star1 t0
@@ -955,8 +953,8 @@ WHERE t0.`f` > 0 AND
         result_sql = to_sql(e1)
         assert result_sql == expected_sql
 
-        result2_sql = to_sql(e2)
-        assert result2_sql == expected_sql
+        # result2_sql = to_sql(e2)
+        # assert result2_sql == expected_sql
 
     def test_where_no_pushdown_possible(self):
         t1 = self.con.table('star1')
@@ -1023,7 +1021,10 @@ WHERE `timestamp_col` < months_add('2010-01-01 00:00:00', 3) AND
                 .mutate(dest_avg=t.arrdelay.mean(),
                         dev=t.arrdelay - t.arrdelay.mean()))
 
-        worst = expr[expr.dev.notnull()].sort_by(ibis.desc('dev')).limit(10)
+        tmp1 = expr[expr.dev.notnull()]
+        tmp2 = tmp1.sort_by(ibis.desc('dev'))
+        worst = tmp2.limit(10)
+
         result = to_sql(worst)
         expected = """\
 SELECT *
@@ -1242,27 +1243,27 @@ WHERE `value` > 0"""
         # it works!
         result = to_sql(expr)
         expected = """\
-SELECT `c_name`, `r_name`, `n_name`
-FROM (
-  SELECT t1.*, t2.`n_name`, t3.`r_name`
-  FROM tpch_customer t1
-    INNER JOIN tpch_nation t2
-      ON t1.`c_nationkey` = t2.`n_nationkey`
-    INNER JOIN tpch_region t3
-      ON t2.`n_regionkey` = t3.`r_regionkey`
-    LEFT SEMI JOIN (
-      SELECT t2.`n_name`, sum(CAST(t1.`c_acctbal` AS double)) AS `sum`
-      FROM tpch_customer t1
-        INNER JOIN tpch_nation t2
-          ON t1.`c_nationkey` = t2.`n_nationkey`
-        INNER JOIN tpch_region t3
-          ON t2.`n_regionkey` = t3.`r_regionkey`
+SELECT t0.`c_name`, t2.`r_name`, t1.`n_name`
+FROM tpch_customer t0
+  INNER JOIN tpch_nation t1
+    ON t0.`c_nationkey` = t1.`n_nationkey`
+  INNER JOIN tpch_region t2
+    ON t1.`n_regionkey` = t2.`r_regionkey`
+  LEFT SEMI JOIN (
+    SELECT *
+    FROM (
+      SELECT t1.`n_name`, sum(CAST(t0.`c_acctbal` AS double)) AS `sum`
+      FROM tpch_customer t0
+        INNER JOIN tpch_nation t1
+          ON t0.`c_nationkey` = t1.`n_nationkey`
+        INNER JOIN tpch_region t2
+          ON t1.`n_regionkey` = t2.`r_regionkey`
       GROUP BY 1
-      ORDER BY `sum` DESC
-      LIMIT 10
     ) t4
-      ON t2.`n_name` = t4.`n_name`
-) t0"""
+    ORDER BY `sum` DESC
+    LIMIT 10
+  ) t3
+    ON t1.`n_name` = t3.`n_name`"""
         assert result == expected
 
     def test_aggregate_projection_subquery(self):
@@ -1305,13 +1306,13 @@ GROUP BY 1"""
         agged2 = agg(proj[proj.foo < 10])
 
         result = to_sql(agged2)
-        expected = """SELECT t0.`g`, sum(t0.`foo`) AS `foo total`
+        expected = """SELECT `g`, sum(`foo`) AS `foo total`
 FROM (
   SELECT *, `a` + `b` AS `foo`
   FROM alltypes
   WHERE `f` > 0
 ) t0
-WHERE t0.`foo` < 10
+WHERE `foo` < 10
 GROUP BY 1"""
         assert result == expected
 
@@ -1542,22 +1543,29 @@ WHERE `f` > (
         expected = """SELECT t0.*
 FROM tbl t0
   LEFT SEMI JOIN (
-    SELECT `city`, avg(`v2`) AS `mean`
-    FROM tbl
-    GROUP BY 1
+    SELECT *
+    FROM (
+      SELECT `city`, avg(`v2`) AS `mean`
+      FROM tbl
+      GROUP BY 1
+    ) t2
     ORDER BY `mean` DESC
     LIMIT 10
   ) t1
     ON t0.`city` = t1.`city`"""
+
         assert query == expected
 
         query = to_sql(filtered2)
         expected = """SELECT t0.*
 FROM tbl t0
   LEFT SEMI JOIN (
-    SELECT `city`, count(`city`) AS `count`
-    FROM tbl
-    GROUP BY 1
+    SELECT *
+    FROM (
+      SELECT `city`, count(`city`) AS `count`
+      FROM tbl
+      GROUP BY 1
+    ) t2
     ORDER BY `count` DESC
     LIMIT 10
   ) t1
@@ -1585,17 +1593,21 @@ FROM customer t0
   INNER JOIN region t2
     ON t1.`n_regionkey` = t2.`r_regionkey`
   LEFT SEMI JOIN (
-    SELECT t1.`n_name`, sum(t0.`c_acctbal`) AS `sum`
-    FROM customer t0
-      INNER JOIN nation t1
-        ON t0.`c_nationkey` = t1.`n_nationkey`
-      INNER JOIN region t2
-        ON t1.`n_regionkey` = t2.`r_regionkey`
-    GROUP BY 1
+    SELECT *
+    FROM (
+      SELECT t1.`n_name`, sum(t0.`c_acctbal`) AS `sum`
+      FROM customer t0
+        INNER JOIN nation t1
+          ON t0.`c_nationkey` = t1.`n_nationkey`
+        INNER JOIN region t2
+          ON t1.`n_regionkey` = t2.`r_regionkey`
+      GROUP BY 1
+    ) t4
     ORDER BY `sum` DESC
     LIMIT 10
   ) t3
     ON t1.`n_name` = t3.`n_name`"""
+
         assert result == expected
 
     def test_topk_analysis_bug(self):
@@ -1605,8 +1617,8 @@ FROM customer t0
                                ('arrdelay', 'int32')], 'airlines')
 
         dests = ['ORD', 'JFK', 'SFO']
+        delay_filter = airlines.dest.topk(10, by=airlines.arrdelay.mean())
         t = airlines[airlines.dest.isin(dests)]
-        delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
         expr = t[delay_filter].group_by('origin').size()
 
         result = to_sql(expr)
@@ -1614,10 +1626,12 @@ FROM customer t0
 SELECT t0.`origin`, count(*) AS `count`
 FROM airlines t0
   LEFT SEMI JOIN (
-    SELECT `dest`, avg(`arrdelay`) AS `mean`
-    FROM airlines
-    WHERE `dest` IN ('ORD', 'JFK', 'SFO')
-    GROUP BY 1
+    SELECT *
+    FROM (
+      SELECT `dest`, avg(`arrdelay`) AS `mean`
+      FROM airlines
+      GROUP BY 1
+    ) t2
     ORDER BY `mean` DESC
     LIMIT 10
   ) t1
@@ -1795,9 +1809,12 @@ SELECT t0.*
 FROM events t0
 WHERE EXISTS (
   SELECT 1
-  FROM purchases t1
-  WHERE t1.`ts` > '2015-08-15' AND
-        t0.`user_id` = t1.`user_id`
+  FROM (
+    SELECT *
+    FROM purchases
+    WHERE `ts` > '2015-08-15'
+  ) t1
+  WHERE t0.`user_id` = t1.`user_id`
 )"""
 
         assert result == expected
@@ -1964,24 +1981,108 @@ ORDER BY `string_col`"""
         expr, _ = self._case_filter_self_join_analysis_bug()
 
         expected = """\
-WITH t0 AS (
+SELECT t0.`region`, t0.`total` - t1.`total` AS `diff`
+FROM (
   SELECT `region`, `kind`, sum(`amount`) AS `total`
   FROM purchases
+  WHERE `kind` = 'foo'
   GROUP BY 1, 2
-)
-SELECT t1.`region`, t1.`total` - t2.`total` AS `diff`
+) t0
+  INNER JOIN (
+    SELECT `region`, `kind`, sum(`amount`) AS `total`
+    FROM purchases
+    WHERE `kind` = 'bar'
+    GROUP BY 1, 2
+  ) t1
+    ON t0.`region` = t1.`region`"""
+        self._compare_sql(expr, expected)
+
+    def test_join_filtered_tables_no_pushdown(self):
+        # #790, #781
+        tbl_a = ibis.table([('year', 'int32'),
+                            ('month', 'int32'),
+                            ('day', 'int32'),
+                            ('value_a', 'double')], 'a')
+
+        tbl_b = ibis.table([('year', 'int32'),
+                            ('month', 'int32'),
+                            ('day', 'int32'),
+                            ('value_b', 'double')], 'b')
+
+        tbl_a_filter = tbl_a.filter([
+            tbl_a.year == 2016,
+            tbl_a.month == 2,
+            tbl_a.day == 29
+        ])
+
+        tbl_b_filter = tbl_b.filter([
+            tbl_b.year == 2016,
+            tbl_b.month == 2,
+            tbl_b.day == 29
+        ])
+
+        joined = tbl_a_filter.left_join(tbl_b_filter, ['year', 'month', 'day'])
+        result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b]
+
+        join_op = result.op().table.op()
+        assert join_op.left.equals(tbl_a_filter)
+        assert join_op.right.equals(tbl_b_filter)
+
+        result_sql = ibis.impala.compile(result)
+        expected_sql = """\
+SELECT t0.`value_a`, t1.`value_b`
 FROM (
   SELECT *
-  FROM t0
-  WHERE `kind` = 'foo'
-) t1
-  INNER JOIN (
+  FROM a
+  WHERE `year` = 2016 AND
+        `month` = 2 AND
+        `day` = 29
+) t0
+  LEFT OUTER JOIN (
     SELECT *
-    FROM t0
-    WHERE `kind` = 'bar'
-  ) t2
-    ON t1.`region` = t2.`region`"""
-        self._compare_sql(expr, expected)
+    FROM b
+    WHERE `year` = 2016 AND
+          `month` = 2 AND
+          `day` = 29
+  ) t1
+    ON t0.`year` = t1.`year` AND
+       t0.`month` = t1.`month` AND
+       t0.`day` = t1.`day`"""
+
+        assert result_sql == expected_sql
+
+    def test_loj_subquery_filter_handling(self):
+        # #781
+        left = ibis.table([('id', 'int32'), ('desc', 'string')], 'foo')
+
+        right = ibis.table([('id', 'int32'), ('desc', 'string')], 'bar')
+        left = left[left.id < 2]
+        right = right[right.id < 3]
+
+        joined = left.left_join(right, ['id', 'desc'])
+        joined = joined[
+            [left[name].name('left_' + name) for name in left.columns] +
+            [right[name].name('right_' + name) for name in right.columns]
+        ]
+
+        result = to_sql(joined)
+        expected = """\
+SELECT t0.`id` AS `left_id`, t0.`desc` AS `left_desc`, t1.`id` AS `right_id`,
+       t1.`desc` AS `right_desc`
+FROM (
+  SELECT *
+  FROM foo
+  WHERE `id` < 2
+) t0
+  LEFT OUTER JOIN (
+    SELECT *
+    FROM bar
+    WHERE `id` < 3
+  ) t1
+    ON t0.`id` = t1.`id` AND
+       t0.`desc` = t1.`desc`"""
+
+        assert result == expected
 
 
 class TestUnions(unittest.TestCase, ExprTestCases):

@@ -97,28 +97,28 @@ class TestExprFormatting(unittest.TestCase):
             ('f', 'double'),
             ('foo_id', 'string'),
             ('bar_id', 'string'),
-        ])
+        ], 'one')
 
         table2 = ibis.table([
             ('foo_id', 'string'),
             ('value1', 'double')
-        ])
+        ], 'two')
 
         table3 = ibis.table([
             ('bar_id', 'string'),
             ('value2', 'double')
-        ])
+        ], 'three')
 
         filtered = table[table['f'] > 0]
 
-        pred1 = table['foo_id'] == table2['foo_id']
+        pred1 = filtered['foo_id'] == table2['foo_id']
         pred2 = filtered['bar_id'] == table3['bar_id']
 
         j1 = filtered.left_join(table2, [pred1])
         j2 = j1.inner_join(table3, [pred2])
 
         # Project out the desired fields
-        view = j2[[table, table2['value1'], table3['value2']]]
+        view = j2[[filtered, table2['value1'], table3['value2']]]
 
         # it works!
         repr(view)
@@ -151,7 +151,7 @@ class TestExprFormatting(unittest.TestCase):
         delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
 
         result = repr(delay_filter)
-        assert result.count('Filter') == 1
+        assert result.count('Selection') == 1
 
     def test_memoize_insert_sort_key(self):
         table = self.con.table('airlines')
@@ -161,7 +161,9 @@ class TestExprFormatting(unittest.TestCase):
                 .mutate(dest_avg=t.arrdelay.mean(),
                         dev=t.arrdelay - t.arrdelay.mean()))
 
-        worst = expr[expr.dev.notnull()].sort_by(ibis.desc('dev')).limit(10)
+        worst = (expr[expr.dev.notnull()]
+                 .sort_by(ibis.desc('dev'))
+                 .limit(10))
 
         result = repr(worst)
         assert result.count('airlines') == 1
@@ -193,7 +195,10 @@ class TestExprFormatting(unittest.TestCase):
         right = agged[agged.kind == 'bar']
 
         cond = left.region == right.region
-        joined = left.join(right, cond)
+        joined = (left.join(right, cond)
+                  [left, right.total.name('right_total')])
 
         result = repr(joined)
-        assert result.count('Filter') == 2
+
+        # Join, and one for each aggregation
+        assert result.count('predicates') == 3
