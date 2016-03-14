@@ -1758,9 +1758,14 @@ class Selection(TableNode, HasSchema):
             # sort keys cannot be discarded because of order-dependent
             # aggregate functions like GROUP_CONCAT
 
-            if not self.blocks():
-                subbed_metrics = [L.sub_for(x, [(this, self.table)])
-                                  for x in metrics]
+            resolved = _resolve_metrics(self.table, metrics)
+
+            if resolved is not None and not self.blocks():
+                subbed_metrics = []
+                for x in util.promote_list(resolved):
+                    subbed = L.sub_for(x, [(this, self.table)])
+                    subbed_metrics.append(subbed)
+
                 if self.table._is_valid(subbed_metrics):
                     return Aggregation(self.table, subbed_metrics,
                                        by=by, having=having,
@@ -1770,7 +1775,20 @@ class Selection(TableNode, HasSchema):
                 return Aggregation(this, metrics, by=by, having=having)
 
     def sort_by(self, expr, sort_exprs):
-        return Selection(expr, [], sort_keys=sort_exprs)
+        sort_exprs = util.promote_list(sort_exprs)
+        if not self.blocks() and self.table._is_valid(sort_exprs):
+            return Selection(self.table, self.selections,
+                             predicates=self.predicates,
+                             sort_keys=self.sort_keys + sort_exprs)
+        else:
+            return Selection(expr, [], sort_keys=sort_exprs)
+
+
+def _resolve_metrics(table, metrics):
+    try:
+        return table._resolve(metrics)
+    except:
+        return None
 
 
 class Aggregation(TableNode, HasSchema):
