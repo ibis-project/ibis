@@ -1020,7 +1020,11 @@ class ImpalaClient(SQLClient):
         # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
         name, path = options.impala.temp_db, options.impala.temp_hdfs_path
         if not self.exists_database(name):
-            self.create_database(name, path=path, force=True)
+            if self._hdfs is None:
+                print('Without an HDFS connection, certain functionality'
+                      ' may be disabled')
+            else:
+                self.create_database(name, path=path, force=True)
 
     def _wrap_new_table(self, name, database, persist):
         qualified_name = self._fully_qualified_name(name, database)
