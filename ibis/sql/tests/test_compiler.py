@@ -1986,6 +1986,60 @@ FROM (
     ON t1.`region` = t2.`region`"""
         self._compare_sql(expr, expected)
 
+    def test_join_filtered_tables_no_pushdown(self):
+        # #790, #781
+        tbl_a = ibis.table([('year', 'int32'),
+                            ('month', 'int32'),
+                            ('day', 'int32'),
+                            ('value_a', 'double')], 'a')
+
+        tbl_b = ibis.table([('year', 'int32'),
+                            ('month', 'int32'),
+                            ('day', 'int32'),
+                            ('value_b', 'double')], 'b')
+
+        tbl_a_filter = tbl_a.filter([
+            tbl_a.year == 2016,
+            tbl_a.month == 2,
+            tbl_a.day == 29
+        ])
+
+        tbl_b_filter = tbl_b.filter([
+            tbl_b.year == 2016,
+            tbl_b.month == 2,
+            tbl_b.day == 29
+        ])
+
+        joined = tbl_a_filter.left_join(tbl_b_filter, ['year', 'month', 'day'])
+        result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b]
+
+        join_op = result.op().table.op()
+        assert join_op.left.equals(tbl_a_filter)
+        assert join_op.right.equals(tbl_b_filter)
+
+        result_sql = ibis.impala.compile(result)
+        expected_sql = """\
+SELECT t0.`value_a`, t1.`value_b`
+FROM (
+  SELECT *
+  FROM a
+  WHERE `year` = 2016 AND
+        `month` = 2 AND
+        `day` = 29
+) t0
+  LEFT OUTER JOIN (
+    SELECT *
+    FROM b
+    WHERE `year` = 2016 AND
+          `month` = 2 AND
+          `day` = 29
+  ) t1
+    ON t0.`year` = t1.`year` AND
+       t0.`month` = t1.`month` AND
+       t0.`day` = t1.`day`"""
+
+        assert result_sql == expected_sql
+
 
 class TestUnions(unittest.TestCase, ExprTestCases):
 
