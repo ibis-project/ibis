@@ -17,6 +17,8 @@ import pytest
 
 from ibis.sql.sqlite.compiler import SQLiteExprTranslator
 import ibis.sql.sqlite.api as api
+import ibis.util as util
+
 from sqlalchemy.dialects.sqlite import dialect as sqlite_dialect
 
 
@@ -29,6 +31,13 @@ class SQLiteTests(object):
         cls.dialect = sqlite_dialect()
         cls.con = api.connect(cls.env.db_path)
         cls.alltypes = cls.con.table('functional_alltypes')
+
+    @classmethod
+    def tearDownClass(cls):
+        try:
+            os.remove(cls.tmp_path)
+        except os.error:
+            pass
 
     def _check_expr_cases(self, cases, context=None, named=False):
         for expr, expected in cases:
