@@ -164,7 +164,11 @@ def _get_sqla_table(ctx, table):
             ctx_level = ctx_level.parent
             sa_table = ctx_level.get_table(table)
     else:
-        sa_table = table.op().sqla_table
+        op = table.op()
+        if isinstance(op, AlchemyTable):
+            sa_table = op.sqla_table
+        else:
+            sa_table = ctx.get_compiled_expr(table)
 
     return sa_table
 
