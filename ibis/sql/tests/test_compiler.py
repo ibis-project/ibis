@@ -1241,30 +1241,27 @@ WHERE `value` > 0"""
         # it works!
         result = to_sql(expr)
         expected = """\
-SELECT `c_name`, `r_name`, `n_name`
-FROM (
-  SELECT t1.*, t2.`n_name`, t3.`r_name`
-  FROM tpch_customer t1
-    INNER JOIN tpch_nation t2
-      ON t1.`c_nationkey` = t2.`n_nationkey`
-    INNER JOIN tpch_region t3
-      ON t2.`n_regionkey` = t3.`r_regionkey`
-    LEFT SEMI JOIN (
-      SELECT *
-      FROM (
-        SELECT t2.`n_name`, sum(CAST(t1.`c_acctbal` AS double)) AS `sum`
-        FROM tpch_customer t1
-          INNER JOIN tpch_nation t2
-            ON t1.`c_nationkey` = t2.`n_nationkey`
-          INNER JOIN tpch_region t3
-            ON t2.`n_regionkey` = t3.`r_regionkey`
-        GROUP BY 1
-      ) t5
-      ORDER BY `sum` DESC
-      LIMIT 10
+SELECT t0.`c_name`, t2.`r_name`, t1.`n_name`
+FROM tpch_customer t0
+  INNER JOIN tpch_nation t1
+    ON t0.`c_nationkey` = t1.`n_nationkey`
+  INNER JOIN tpch_region t2
+    ON t1.`n_regionkey` = t2.`r_regionkey`
+  LEFT SEMI JOIN (
+    SELECT *
+    FROM (
+      SELECT t1.`n_name`, sum(CAST(t0.`c_acctbal` AS double)) AS `sum`
+      FROM tpch_customer t0
+        INNER JOIN tpch_nation t1
+          ON t0.`c_nationkey` = t1.`n_nationkey`
+        INNER JOIN tpch_region t2
+          ON t1.`n_regionkey` = t2.`r_regionkey`
+      GROUP BY 1
     ) t4
-      ON t2.`n_name` = t4.`n_name`
-) t0"""
+    ORDER BY `sum` DESC
+    LIMIT 10
+  ) t3
+    ON t1.`n_name` = t3.`n_name`"""
         assert result == expected
 
     def test_aggregate_projection_subquery(self):
@@ -1797,9 +1794,12 @@ SELECT t0.*
 FROM events t0
 WHERE EXISTS (
   SELECT 1
-  FROM purchases t1
-  WHERE t1.`ts` > '2015-08-15' AND
-        t0.`user_id` = t1.`user_id`
+  FROM (
+    SELECT *
+    FROM purchases
+    WHERE `ts` > '2015-08-15'
+  ) t1
+  WHERE t0.`user_id` = t1.`user_id`
 )"""
 
         assert result == expected
@@ -1966,23 +1966,20 @@ ORDER BY `string_col`"""
         expr, _ = self._case_filter_self_join_analysis_bug()
 
         expected = """\
-WITH t0 AS (
+SELECT t0.`region`, t0.`total` - t1.`total` AS `diff`
+FROM (
   SELECT `region`, `kind`, sum(`amount`) AS `total`
   FROM purchases
-  GROUP BY 1, 2
-)
-SELECT t1.`region`, t1.`total` - t2.`total` AS `diff`
-FROM (
-  SELECT *
-  FROM t0
   WHERE `kind` = 'foo'
-) t1
+  GROUP BY 1, 2
+) t0
   INNER JOIN (
-    SELECT *
-    FROM t0
+    SELECT `region`, `kind`, sum(`amount`) AS `total`
+    FROM purchases
     WHERE `kind` = 'bar'
-  ) t2
-    ON t1.`region` = t2.`region`"""
+    GROUP BY 1, 2
+  ) t1
+    ON t0.`region` = t1.`region`"""
         self._compare_sql(expr, expected)
 
     def test_join_filtered_tables_no_pushdown(self):

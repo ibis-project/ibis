@@ -2051,8 +2051,9 @@ def projection(table, exprs):
     if isinstance(exprs, (Expr,) + six.string_types):
         exprs = [exprs]
 
-    exprs = [table._ensure_expr(e) for e in exprs]
-    op = L.Projector(table, exprs).get_result()
+    projector = L.Projector(table, exprs)
+
+    op = projector.get_result()
     return TableExpr(op)
 
 

@@ -288,7 +288,7 @@ class ExprSimplifier(object):
 
         op = expr.op()
 
-        if block:
+        if block and op.blocks():
             # GH #549: dig no further
             return expr
         else:
@@ -589,6 +589,7 @@ class Projector(object):
     def __init__(self, parent, proj_exprs):
         self.parent = parent
         self.input_exprs = proj_exprs
+        self.resolved_exprs = [parent._ensure_expr(e) for e in proj_exprs]
 
         node = self.parent.op()
 
@@ -601,7 +602,7 @@ class Projector(object):
 
         clean_exprs = []
 
-        for expr in proj_exprs:
+        for expr in self.resolved_exprs:
             # Perform substitution only if we share common roots
             expr = windowize_function(expr)
             clean_exprs.append(expr)
@@ -623,7 +624,12 @@ class Projector(object):
         validator = ExprValidator([root.table])
         fused_exprs = []
         can_fuse = False
-        for val in self.clean_exprs:
+
+        resolved = _maybe_resolve_exprs(root.table, self.input_exprs)
+        if not resolved:
+            return None
+
+        for val in resolved:
             # XXX
             lifted_val = substitute_parents(val)
 
@@ -648,6 +654,7 @@ class Projector(object):
                 if not have_root and len(root.selections) == 0:
                     fused_exprs = [root.table] + fused_exprs
             elif validator.validate(lifted_val):
+                can_fuse = True
                 fused_exprs.append(lifted_val)
             elif not validator.validate(val):
                 can_fuse = False
@@ -661,6 +668,13 @@ class Projector(object):
                                  sort_keys=root.sort_keys)
         else:
             return None
+
+
+def _maybe_resolve_exprs(table, exprs):
+    try:
+        return table._resolve(exprs)
+    except:
+        return None
 
 
 class ExprValidator(object):

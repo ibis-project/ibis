@@ -889,8 +889,9 @@ def _exists_subquery(translator, expr):
 
     dummy = ir.literal(1).name(ir.unnamed)
 
-    expr = ir.TableExpr(ops.Selection(op.foreign_table, [dummy],
-                                      predicates=op.predicates))
+    filtered = op.foreign_table.filter(op.predicates)
+    expr = filtered.projection([dummy])
+
     subquery = ctx.get_compiled_expr(expr)
 
     if isinstance(op, transforms.ExistsSubquery):
