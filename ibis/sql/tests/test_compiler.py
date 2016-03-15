@@ -135,6 +135,51 @@ WHERE `c` > 0"""
         output = DataFrame({'sum': [5]})
         assert handler(output) == 5
 
+    def test_scalar_aggregates_multiple_tables(self):
+        # #740
+        table = ibis.table([('flag', 'string'),
+                            ('value', 'double')],
+                           'tbl')
+
+        flagged = table[table.flag == '1']
+        unflagged = table[table.flag == '0']
+
+        expr = flagged.value.mean() / unflagged.value.mean() - 1
+
+        result = to_sql(expr)
+        expected = """\
+SELECT (t0.`mean` / t1.`mean`) - 1 AS `tmp`
+FROM (
+  SELECT avg(`value`) AS `mean`
+  FROM tbl
+  WHERE `flag` = '1'
+) t0
+  CROSS JOIN (
+    SELECT avg(`value`) AS `mean`
+    FROM tbl
+    WHERE `flag` = '0'
+  ) t1"""
+        assert result == expected
+
+        fv = flagged.value
+        uv = unflagged.value
+
+        expr = (fv.mean() / fv.sum()) - (uv.mean() / uv.sum())
+        result = to_sql(expr)
+        expected = """\
+SELECT t0.`tmp` - t1.`tmp` AS `tmp`
+FROM (
+  SELECT avg(`value`) / sum(`value`) AS `tmp`
+  FROM tbl
+  WHERE `flag` = '1'
+) t0
+  CROSS JOIN (
+    SELECT avg(`value`) / sum(`value`) AS `tmp`
+    FROM tbl
+    WHERE `flag` = '0'
+  ) t1"""
+        assert result == expected
+
     def test_table_column_unbox(self):
         from pandas import DataFrame
 

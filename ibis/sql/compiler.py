@@ -291,7 +291,7 @@ class SelectBuilder(object):
         # TODO: what about reductions that reference a join that isn't visible
         # at this level? Means we probably have the wrong design, but will have
         # to revisit when it becomes a problem.
-        aggregation, _ = _reduction_to_aggregation(expr, default_name='tmp')
+        aggregation, _ = L.reduction_to_aggregation(expr, default_name='tmp')
         return aggregation.to_array()
 
     def _visit_filter_Any(self, expr):
@@ -791,9 +791,6 @@ def _adapt_expr(expr):
     if isinstance(expr, ir.TableExpr):
         return expr, as_is
 
-    def _scalar_reduce(x):
-        return isinstance(x, ir.ScalarExpr) and ops.is_reduction(x)
-
     def _get_scalar(field):
         def scalar_handler(results):
             return results[field][0]
@@ -801,8 +798,8 @@ def _adapt_expr(expr):
 
     if isinstance(expr, ir.ScalarExpr):
 
-        if _scalar_reduce(expr):
-            table_expr, name = _reduction_to_aggregation(
+        if L.is_scalar_reduce(expr):
+            table_expr, name = L.reduction_to_aggregation(
                 expr, default_name='tmp')
             return table_expr, _get_scalar(name)
         else:
@@ -823,7 +820,7 @@ def _adapt_expr(expr):
         any_aggregation = False
 
         for x in exprs:
-            if not _scalar_reduce(x):
+            if not L.is_scalar_reduce(x):
                 is_aggregation = False
             else:
                 any_aggregation = True
@@ -869,19 +866,6 @@ def _adapt_expr(expr):
     else:
         raise com.TranslationError('Do not know how to execute: {0}'
                                    .format(type(expr)))
-
-
-def _reduction_to_aggregation(expr, default_name='tmp'):
-    table = ir.find_base_table(expr)
-
-    try:
-        name = expr.get_name()
-        named_expr = expr
-    except:
-        name = default_name
-        named_expr = expr.name(default_name)
-
-    return table.aggregate([named_expr]), name
 
 
 class QueryBuilder(object):

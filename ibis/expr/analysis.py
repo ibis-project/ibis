@@ -104,6 +104,113 @@ class _Substitutor(object):
         return helper.get_result()
 
 
+class ScalarAggregate(object):
+
+    def __init__(self, expr, memo=None, default_name='tmp'):
+        self.expr = expr
+        self.memo = memo or {}
+        self.tables = []
+        self.default_name = default_name
+
+    def get_result(self):
+        expr = self.expr
+
+        subbed_expr = self._visit(expr)
+
+        try:
+            name = subbed_expr.get_name()
+            named_expr = subbed_expr
+        except:
+            name = self.default_name
+            named_expr = subbed_expr.name(self.default_name)
+
+        tables = list(self.memo.values())
+        table = self.tables[0]
+        for other in self.tables[1:]:
+            table = table.cross_join(other)
+
+        return table.projection([named_expr]), name
+
+    def _visit(self, expr):
+        if is_scalar_reduce(expr) and not has_multiple_bases(expr):
+            # An aggregation unit
+            key = self._key(expr)
+            if key not in self.memo:
+                agg_expr, name = reduction_to_aggregation(expr)
+                self.memo[key] = agg_expr, name
+                self.tables.append(agg_expr)
+            else:
+                agg_expr, name = self.memo[key]
+            return agg_expr[name]
+
+        elif not isinstance(expr, ir.Expr):
+            return expr
+
+        node = expr.op()
+        subbed_args = []
+        for arg in node.args:
+            if isinstance(arg, (tuple, list)):
+                subbed_arg = [self._visit(x) for x in arg]
+            else:
+                subbed_arg = self._visit(arg)
+            subbed_args.append(subbed_arg)
+
+        subbed_node = type(node)(*subbed_args)
+        if isinstance(expr, ir.ValueExpr):
+            result = expr._factory(subbed_node, name=expr._name)
+        else:
+            result = expr._factory(subbed_node)
+
+        return result
+
+    def _key(self, expr):
+        return repr(expr.op())
+
+
+def has_multiple_bases(expr):
+    return len(find_all_tables(expr)) > 1
+
+
+def reduction_to_aggregation(expr, default_name='tmp'):
+    tables = find_all_tables(expr)
+
+    try:
+        name = expr.get_name()
+        named_expr = expr
+    except:
+        name = default_name
+        named_expr = expr.name(default_name)
+
+    if len(tables) == 1:
+        table = list(tables.values())[0]
+        return table.aggregate([named_expr]), name
+    else:
+        return ScalarAggregate(expr, None, default_name).get_result()
+
+
+def find_all_tables(expr, memo=None):
+    if memo is None:
+        memo = {}
+
+    node = expr.op()
+
+    if isinstance(expr, ir.TableExpr):
+        key = id(node)
+        if key not in memo:
+            memo[key] = expr
+        return memo
+
+    for arg in node.flat_args():
+        if isinstance(arg, ir.Expr):
+            find_all_tables(arg, memo)
+
+    return memo
+
+
+def is_scalar_reduce(x):
+    return isinstance(x, ir.ScalarExpr) and ops.is_reduction(x)
+
+
 def substitute_parents(expr, lift_memo=None, past_projection=True):
     rewriter = ExprSimplifier(expr, lift_memo=lift_memo,
                               block_projection=not past_projection)

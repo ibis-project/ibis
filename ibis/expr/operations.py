@@ -60,7 +60,7 @@ def find_all_base_tables(expr, memo=None):
 
     if isinstance(expr, TableExpr) and node.blocks():
         if id(expr) not in memo:
-            memo[id(expr)] = expr
+            memo[id(node)] = expr
         return memo
 
     for arg in expr.op().flat_args():
@@ -1786,7 +1786,7 @@ class AggregateSelection(object):
             return self._attempt_pushdown()
 
     def _plain_subquery(self):
-        return Aggregation(self.selection, self.metrics,
+        return Aggregation(self.parent, self.metrics,
                            by=self.by, having=self.having)
 
     def _attempt_pushdown(self):
