@@ -7,6 +7,80 @@ Release Notes
     interesting. Point (minor, e.g. 0.5.1) releases will generally not be found
     here and contain only bug fixes.
 
+0.7 (March 16, 2016)
+--------------------
+
+This release brings initial Kudu-Impala integration and improved Impala and
+SQLite support, along with several critical bug fixes.
+
+New features
+~~~~~~~~~~~~
+* Apache Kudu (incubating) integration for Impala users. See the `blog post <http://blog.ibis-project.org/kudu-impala-ibis>`_ for now. Will add some documentation here when possible.
+* Add ``use_https`` option to ``ibis.hdfs_connect`` for WebHDFS connections in
+  secure (Kerberized) clusters without SSL enabled.
+* Correctly compile aggregate expressions involving multiple subqueries.
+
+To explain this last point in more detail, suppose you had:
+
+.. code-block:: python
+
+   table = ibis.table([('flag', 'string'),
+                       ('value', 'double')],
+                      'tbl')
+
+   flagged = table[table.flag == '1']
+   unflagged = table[table.flag == '0']
+
+   fv = flagged.value
+   uv = unflagged.value
+
+   expr = (fv.mean() / fv.sum()) - (uv.mean() / uv.sum())
+
+The last expression now generates the correct Impala or SQLite SQL:
+
+.. code-block:: sql
+
+   SELECT t0.`tmp` - t1.`tmp` AS `tmp`
+   FROM (
+     SELECT avg(`value`) / sum(`value`) AS `tmp`
+     FROM tbl
+     WHERE `flag` = '1'
+   ) t0
+     CROSS JOIN (
+       SELECT avg(`value`) / sum(`value`) AS `tmp`
+       FROM tbl
+       WHERE `flag` = '0'
+     ) t1
+
+Bug fixes
+~~~~~~~~~
+* ``CHAR(n)`` and ``VARCHAR(n)`` Impala types now correctly map to Ibis string
+  expressions
+* Fix inappropriate projection-join-filter expression rewrites resulting in
+  incorrect generated SQL.
+* ``ImpalaClient.create_table`` correctly passes ``STORED AS PARQUET`` for
+  ``format='parquet'``.
+* Fixed several issues with Ibis dependencies (impyla, thriftpy, sasl,
+  thrift_sasl), especially for secure clusters. Upgrading will pull in these
+  new dependencies.
+* Do not fail in ``ibis.impala.connect`` when trying to create the temporary
+  Ibis database if no HDFS connection passed.
+* Fix join predicate evaluation bug when column names overlap with table
+  attributes.
+* Fix handling of fully-materialized joins (aka ``select *`` joins) in
+  SQLAlchemy / SQLite.
+
+Contributors
+~~~~~~~~~~~~
+Thank you to all who contributed patches to this release.
+
+::
+
+  $ git log v0.6.0..v0.7.0 --pretty=format:%aN | sort | uniq -c | sort -rn
+      21 Wes McKinney
+       1 Uri Laserson
+       1 Kristopher Overholt
+
 0.6 (December 1, 2015)
 ----------------------
 
@@ -72,11 +146,11 @@ Contributors
 ::
 
     $ git log v0.5.0..v0.6.0 --pretty=format:%aN | sort | uniq -c | sort -rn
-	46 Wes McKinney
-	 3 Uri Laserson
-	 1 Phillip Cloud
-	 1 mariusvniekerk
-	 1 Kristopher Overholt
+    46 Wes McKinney
+     3 Uri Laserson
+     1 Phillip Cloud
+     1 mariusvniekerk
+     1 Kristopher Overholt
 
 
 0.5 (September 10, 2015)
