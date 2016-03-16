@@ -7,7 +7,7 @@ Release Notes
     interesting. Point (minor, e.g. 0.5.1) releases will generally not be found
     here and contain only bug fixes.
 
-0.7 (March 17, 2016)
+0.7 (March 16, 2016)
 --------------------
 
 This release brings initial Kudu-Impala integration and improved Impala and
