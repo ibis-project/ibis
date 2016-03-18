@@ -1,9 +1,10 @@
 package:
   name: impyla
-  version: "0.12.0"
+  version: "0.13.5"
 
 source:
   git_url: https://github.com/cloudera/impyla
+  git_rev: v0.13.5
 
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
@@ -16,7 +17,7 @@ requirements:
     - six
     - thrift_sasl
     - bitarray
-    - thriftpy
+    - thriftpy >=0.3.5
 
   run:
     - python
@@ -25,6 +26,7 @@ requirements:
     - thrift_sasl
     - bitarray
     - thriftpy
+    - sasl >=0.2.1
 
 test:
   imports:
