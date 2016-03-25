@@ -3,9 +3,7 @@ package:
   version: "0.13.5"
 
 source:
-  git_url: https://github.com/cloudera/impyla
-  git_rev: v0.13.5
-
+  path: ../../../impyla
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
   string: py{{ environ.get('PY_VER').replace('.', '') }}_{{ environ.get('GIT_BUILD_STR', 'GIT_STUB') }}
@@ -15,18 +13,17 @@ requirements:
     - python
     - setuptools
     - six
-    - thrift_sasl
     - bitarray
+    - thrift
     - thriftpy >=0.3.5
 
   run:
     - python
     - setuptools
     - six
-    - thrift_sasl
     - bitarray
     - thriftpy
-    - sasl >=0.2.1
+    - thrift
 
 test:
   imports:
