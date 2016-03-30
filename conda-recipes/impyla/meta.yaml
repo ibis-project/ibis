@@ -24,7 +24,7 @@ requirements:
     - setuptools
     - six
     - bitarray
-    - thriftpy
+    - thriftpy >=0.3.5
     - thrift
 
 test:
