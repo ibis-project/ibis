@@ -23,6 +23,8 @@ import ibis.expr.types as ir
 import ibis
 
 import sqlalchemy as sa
+
+import pandas as pd
 import pandas.util.testing as tm
 
 
@@ -474,11 +476,53 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         proj = table.projection(agg_exprs)
         proj.execute()
 
-
     def test_simple_window(self):
         t = self.alltypes
         df = t.execute()
-        for func in ['mean', 'sum', 'min', 'max']:
-            result = t.mutate(demean=t.double_col - getattr(t.double_col, func)()).execute()
-            expected = df.assign(demean=df.double_col - getattr(df.double_col, func)())
-            tm.assert_frame_equal(result, expected)
+        for func in 'mean sum min max'.split():
+            f = getattr(t.double_col, func)
+            df_f = getattr(df.double_col, func)
+            result = t.projection([(t.double_col - f()).name('double_col')]).execute().double_col
+            expected = df.double_col - df_f()
+            tm.assert_series_equal(result, expected)
+
+    def test_rolling_window(self):
+        t = self.alltypes
+        df = t[['double_col', 'timestamp_col']].execute().sort_values('timestamp_col').reset_index(drop=True)
+        window = ibis.window(
+            order_by=t.timestamp_col,
+            preceding=6,
+            following=0
+        )
+        for func in 'mean sum min max'.split():
+            f = getattr(t.double_col, func)
+            df_f = getattr(df.double_col.rolling(7, min_periods=0), func)
+            result = t.projection([f().over(window).name('double_col')]).execute().double_col
+            expected = df_f()
+            tm.assert_series_equal(result, expected)
+
+    def test_partitioned_window(self):
+        t = self.alltypes
+        df = t.execute()
+        window = ibis.window(
+            group_by=t.string_col,
+            order_by=t.timestamp_col,
+            preceding=6,
+            following=0,
+        )
+
+        def roller(func):
+            def rolled(df):
+                torder = df.sort_values('timestamp_col')
+                rolling = torder.double_col.rolling(7, min_periods=0)
+                return getattr(rolling, func)()
+            return rolled
+
+        for func in 'mean sum min max'.split():
+            f = getattr(t.double_col, func)
+            expr = f().over(window).name('double_col')
+            result = t.projection([expr]).execute().double_col
+            expected = df.groupby('string_col').apply(
+                roller(func)
+            ).reset_index(drop=True)
+            tm.assert_series_equal(result, expected)
