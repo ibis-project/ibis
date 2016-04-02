@@ -21,7 +21,7 @@ from operator import add
 
 import sqlalchemy as sa
 
-from ibis.sql.alchemy import unary, varargs, fixed_arity
+from ibis.sql.alchemy import unary, varargs, fixed_arity, Over
 import ibis.sql.alchemy as alch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -380,9 +380,12 @@ def _window(t, expr):
 
     partition_by = list(map(t.translate, window._group_by))
 
-    result = reduction.over(
+    result = Over(
+        reduction,
         partition_by=partition_by or None,
         order_by=order_by or None,
+        preceding=window.preceding,
+        following=window.following,
     )
 
     if isinstance(window_op, (ops.RowNumber, ops.DenseRank, ops.MinRank)):
