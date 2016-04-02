@@ -921,6 +921,9 @@ def _sort_key(t, expr):
     return sort_direction(t.translate(by))
 
 
+_valid_frame_types = numbers.Integral, str, type(None)
+
+
 class Over(_Over):
     def __init__(
         self,
@@ -933,13 +936,13 @@ class Over(_Over):
         super(Over, self).__init__(
             element, order_by=order_by, partition_by=partition_by
         )
-        if not isinstance(preceding, (numbers.Integral, str, type(None))):
+        if not isinstance(preceding, _valid_frame_types):
             raise TypeError(
                 'preceding must be a string, integer or None, got %r' % (
                     type(preceding).__name__
                 )
             )
-        if not isinstance(following, (numbers.Integral, str, type(None))):
+        if not isinstance(following, _valid_frame_types):
             raise TypeError(
                 'following must be a string, integer or None, got %r' % (
                     type(following).__name__
