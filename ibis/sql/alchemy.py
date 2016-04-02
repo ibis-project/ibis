@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numbers
 import operator
 import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
+
+from sqlalchemy.sql.elements import Over as _Over
+from sqlalchemy.ext.compiler import compiles as sa_compiles
 
 from ibis.client import SQLClient, AsyncQuery, Query
 from ibis.sql.compiler import Select, Union, TableSetFormatter
@@ -907,3 +911,58 @@ def _floor_divide(t, expr):
         return t.translate(new_expr)
 
     return fixed_arity(lambda x, y: x / y, 2)(t, expr)
+
+
+@compiles(ops.SortKey)
+def _sort_key(t, expr):
+    # We need to define this for window functions that have an order by
+    by, ascending = expr.op().args
+    sort_direction = sa.asc if ascending else sa.desc
+    return sort_direction(t.translate(by))
+
+
+class Over(_Over):
+    def __init__(
+        self,
+        element,
+        order_by=None,
+        partition_by=None,
+        preceding=None,
+        following=None,
+    ):
+        super(Over, self).__init__(
+            element, order_by=order_by, partition_by=partition_by
+        )
+        if not isinstance(preceding, (numbers.Integral, str, type(None))):
+            raise TypeError(
+                'preceding must be a string, integer or None, got %r' % (
+                    type(preceding).__name__
+                )
+            )
+        if not isinstance(following, (numbers.Integral, str, type(None))):
+            raise TypeError(
+                'following must be a string, integer or None, got %r' % (
+                    type(following).__name__
+                )
+            )
+        self.preceding = preceding if preceding is not None else 'UNBOUNDED'
+        self.following = following if following is not None else 'UNBOUNDED'
+
+
+@sa_compiles(Over)
+def compile_over_with_frame(element, compiler, **kw):
+    clauses = ' '.join(
+        '%s BY %s' % (word, compiler.process(clause, **kw))
+        for word, clause in (
+            ('PARTITION', element.partition_by),
+            ('ORDER', element.order_by),
+        )
+        if clause is not None and len(clause)
+    )
+    return '%s OVER (%s%sROWS BETWEEN %s PRECEDING AND %s FOLLOWING)' % (
+        compiler.process(getattr(element, 'element', element.func), **kw),
+        clauses,
+        ' ' if clauses else '',
+        str(element.preceding).upper(),
+        str(element.following).upper(),
+    )
