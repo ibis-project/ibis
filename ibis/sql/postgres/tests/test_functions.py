@@ -23,6 +23,7 @@ import ibis.expr.types as ir
 import ibis
 
 import sqlalchemy as sa
+import pandas.util.testing as tm
 
 
 class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
@@ -472,3 +473,12 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
 
         proj = table.projection(agg_exprs)
         proj.execute()
+
+
+    def test_simple_window(self):
+        t = self.alltypes
+        df = t.execute()
+        for func in ['mean', 'sum', 'min', 'max']:
+            result = t.mutate(demean=t.double_col - getattr(t.double_col, func)()).execute()
+            expected = df.assign(demean=df.double_col - getattr(df.double_col, func)())
+            tm.assert_frame_equal(result, expected)
