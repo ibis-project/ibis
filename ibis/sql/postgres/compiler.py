@@ -269,7 +269,7 @@ def _not_distinct_from(a, b):
 
 def _find_in_set(t, expr):
     # postgresql 9.5 has array_position, but the code below works on any
-    # version with generate_subscripts
+    # version of postgres with generate_subscripts
     # TODO: could make it even more generic by using generate_series
     # TODO: this works with *any* type, not just strings. should the operation
     #       itself also have this property?
@@ -284,7 +284,6 @@ def _find_in_set(t, expr):
     subscripts = sa.select([
         sa.func.generate_subscripts(haystack.c.haystack, 1).label('i')
     ]).cte()
-
 
     # return a zero based index
     return sa.select([subscripts.c.i - 1]).where(
