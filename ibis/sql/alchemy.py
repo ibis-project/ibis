@@ -965,7 +965,7 @@ def compile_over_with_frame(element, compiler, **kw):
     return '%s OVER (%s%sROWS BETWEEN %s PRECEDING AND %s FOLLOWING)' % (
         compiler.process(getattr(element, 'element', element.func), **kw),
         clauses,
-        ' ' if clauses else '',
+        ' ' if clauses else '',  # only add a space if we order by or group by
         str(element.preceding).upper(),
         str(element.following).upper(),
     )
