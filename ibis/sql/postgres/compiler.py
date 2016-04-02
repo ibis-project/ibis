@@ -16,7 +16,8 @@ import re
 import locale
 import string
 
-from functools import reduce
+from functools import reduce, partial
+from operator import add
 
 import sqlalchemy as sa
 
@@ -322,6 +323,74 @@ def _log(t, expr):
         return sa.func.ln(arg)
 
 
+_cumulative_to_reduction = {
+    ops.CumulativeSum: ops.Sum,
+    ops.CumulativeMin: ops.Min,
+    ops.CumulativeMax: ops.Max,
+    ops.CumulativeMean: ops.Mean,
+    ops.CumulativeAny: ops.Any,
+    ops.CumulativeAll: ops.All,
+}
+
+
+def _cumulative_to_window(translator, expr, window):
+    win = ibis.cumulative_window()
+    win = win.group_by(window._group_by).order_by(window._order_by)
+
+    op = expr.op()
+
+    klass = _cumulative_to_reduction[type(op)]
+    new_op = klass(*op.args)
+    new_expr = expr._factory(new_op, name=expr._name)
+
+    if type(new_op) in translator._rewrites:
+        new_expr = translator._rewrites[type(new_op)](new_expr)
+
+    return L.windowize_function(new_expr, win)
+
+
+def _window(t, expr):
+    op = expr.op()
+
+    arg, window = op.args
+    reduction = t.translate(arg)
+
+    window_op = arg.op()
+
+    _require_order_by = (
+        ops.Lag,
+        ops.Lead,
+        ops.DenseRank,
+        ops.MinRank,
+        ops.FirstValue,
+        ops.LastValue,
+    )
+
+    # TODO: handle cumulative window
+    # if isinstance(window_op, ops.CumulativeOp):
+        # arg = _cumulative_to_window(translator, arg, window)
+        # return translator.translate(arg)
+
+    # Some analytic functions need to have the expression of interest in
+    # the ORDER BY part of the window clause
+    if isinstance(window_op, _require_order_by) and not window._order_by:
+        order_by = t.translate(window_op.args[0])
+    else:
+        order_by = list(map(t.translate, window._order_by))
+
+    partition_by = list(map(t.translate, window._group_by))
+
+    result = reduction.over(
+        partition_by=partition_by or None,
+        order_by=order_by or None,
+    )
+
+    if isinstance(window_op, (ops.RowNumber, ops.DenseRank, ops.MinRank)):
+        return result - 1
+    else:
+        return result
+
+
 _operation_registry.update({
     # types
     ops.Cast: _cast,
@@ -390,6 +459,7 @@ _operation_registry.update({
 
     # now is in the timezone of the server, but we want UTC
     ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
+    ops.WindowOp: _window,
 })
 
 
