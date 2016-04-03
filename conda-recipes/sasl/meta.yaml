@@ -1,11 +1,11 @@
 package:
-  name: thrift_sasl
-  version: "0.2.0"
+  name: sasl
+  version: "0.2.1"
 
 source:
-  fn: thrift_sasl-0.2.0.tar.gz
-  url: https://pypi.python.org/packages/source/t/thrift_sasl/thrift_sasl-0.2.0.tar.gz
-  md5: 689cbd85d570b2494cdc338d7d261376
+  fn: sasl-0.2.1.tar.gz
+  url: https://pypi.python.org/packages/source/s/sasl/sasl-0.2.1.tar.gz
+  md5: ca093d9a3d6f20b79b964a5e5add0202
 #  patches:
    # List any patch files here
    # - fix.patch
@@ -17,9 +17,9 @@ source:
     # Put any entry points (scripts to be generated automatically) here. The
     # syntax is module:function.  For example
     #
-    # - thrift_sasl = thrift_sasl:main
+    # - sasl = sasl:main
     #
-    # Would create an entry point called thrift_sasl that calls thrift_sasl.main()
+    # Would create an entry point called sasl that calls sasl.main()
 
 
   # If this is a new build for the same version, increment the build
@@ -30,18 +30,16 @@ requirements:
   build:
     - python
     - setuptools
-    - sasl >=0.2.1
-    - thrift
+    - six
 
   run:
     - python
-    - sasl >=0.2.1
-    - thrift
+    - six
 
 test:
   # Python imports
   imports:
-    - thrift_sasl
+    - sasl
 
   # commands:
     # You can put test commands to be run here.  Use this to test that the
@@ -56,9 +54,9 @@ test:
     # - nose
 
 about:
-  home: https://github.com/cloudera/thrift_sasl
-  license: Apache License, Version 2.0
-  summary: 'Thrift SASL Python module that implements SASL transports for Thrift (`TSaslClientTransport`).'
+  home: http://github.com/toddlipcon/python-sasl
+  license: UNKNOWN
+  summary: 'Cyrus-SASL bindings for Python'
 
 # See
 # http://docs.continuum.io/conda/build.html for
