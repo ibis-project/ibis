@@ -20,13 +20,15 @@ from functools import reduce, partial
 from operator import add
 
 import sqlalchemy as sa
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import GenericFunction
 
 from ibis.sql.alchemy import unary, varargs, fixed_arity, Over
-import ibis.sql.alchemy as alch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 
+import ibis.sql.alchemy as alch
 _operation_registry = alch._operation_registry.copy()
 
 
@@ -393,6 +395,36 @@ def _window(t, expr):
         return result
 
 
+class regex_extract(GenericFunction):
+    def __init__(self, string, pattern, index):
+        super(regex_extract, self).__init__(string, pattern, index)
+        self.string = string
+        self.pattern = pattern
+        self.index = index
+
+
+@compiles(regex_extract, 'postgresql')
+def compile_regex_extract(element, compiler, **kw):
+    return '(REGEXP_MATCHES(%s, %s))[%s]' % (
+        compiler.process(element.string, **kw),
+        compiler.process(element.pattern, **kw),
+        compiler.process(element.index, **kw),
+    )
+
+
+def _regex_extract(t, expr):
+    string, pattern, index = map(t.translate, expr.op().args)
+    return sa.case(
+        [
+            (
+                sa.func.textregexeq(string, pattern),
+                sa.func.regex_extract(string, pattern, index + 1)
+            )
+        ],
+        else_=''
+    )
+
+
 _operation_registry.update({
     # types
     ops.Cast: _cast,
@@ -433,7 +465,7 @@ _operation_registry.update({
     ops.RegexReplace: _regex_replace,
     ops.Translate: fixed_arity('translate', 3),
     ops.StringAscii: fixed_arity(sa.func.ascii, 1),
-    # ops.RegexExtract: ...,
+    ops.RegexExtract: _regex_extract,
 
     ops.FindInSet: _find_in_set,
 
