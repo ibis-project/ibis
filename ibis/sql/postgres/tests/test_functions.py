@@ -304,6 +304,19 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    def test_regexp_extract(self):
+        cases = [
+            (L('abcd').re_extract('([a-z]+)', 0), 'abcd'),
+            (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),
+
+            # valid group number but no match => empty string
+            (L('abcd').re_extract('(\d)', 0), ''),
+
+            # match but not a valid group number => NULL
+            (L('abcd').re_extract('abcd', 3), None),
+        ]
+        self._check_e2e_cases(cases)
+
     def test_fillna_nullif(self):
         cases = [
             (ibis.NA.fillna(5), 5),
