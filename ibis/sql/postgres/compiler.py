@@ -265,8 +265,8 @@ def _strftime(t, expr):
     return reduce(sa.sql.ColumnElement.concat, reduced)
 
 
-def _not_distinct_from(a, b):
-    return ((a == None) & (b == None)) | sa.func.coalesce(a == b, False)
+def _distinct_from(a, b):
+    return ((a != None) | (b != None)) & sa.func.coalesce(a != b, True)
 
 
 def _find_in_set(t, expr):
@@ -277,7 +277,6 @@ def _find_in_set(t, expr):
     #       itself also have this property?
     arg, haystack = expr.op().args
     needle = t.translate(arg)
-
     haystack = sa.select([sa.literal(
         [element._arg.value for element in haystack],
         type_=sa.dialects.postgresql.ARRAY(needle.type)
@@ -289,8 +288,7 @@ def _find_in_set(t, expr):
 
     # return a zero based index
     return sa.select([subscripts.c.i - 1]).where(
-        # TODO: find_in_set isn't defined for needle is NULL
-        haystack.c.haystack[subscripts.c.i] == needle
+        ~_distinct_from(haystack.c.haystack[subscripts.c.i], needle)
     ).order_by(subscripts.c.i).limit(1)
 
 
