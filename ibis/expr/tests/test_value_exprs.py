@@ -34,6 +34,7 @@ class TestLiterals(BasicTestCase, unittest.TestCase):
         expr = ibis.literal(None)
         assert isinstance(expr, ir.NullScalar)
         assert isinstance(expr.op(), ir.NullLiteral)
+        assert expr._arg.value is None
 
         expr2 = ibis.null()
         assert_equal(expr, expr2)

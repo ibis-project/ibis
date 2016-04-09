@@ -1065,11 +1065,11 @@ class NullLiteral(ValueNode):
     """
 
     def __init__(self):
-        pass
+        self.value = None
 
     @property
     def args(self):
-        return [None]
+        return [self.value]
 
     def equals(self, other):
         return isinstance(other, NullLiteral)
