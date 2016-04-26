@@ -49,3 +49,5 @@ SQL engine support near on the horizon:
 Read the project blog at http://blog.ibis-project.org.
 
 Learn much more at http://ibis-project.org.
+
+Current release from Anaconda.org [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)
