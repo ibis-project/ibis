@@ -539,3 +539,46 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
                 roller(func)
             ).reset_index(drop=True)
             tm.assert_series_equal(result, expected)
+
+    def test_cumulative_simple_window(self):
+        t = self.alltypes
+        df = t.execute()
+        for func in 'sum min max'.split():
+            f = getattr(t.double_col, func)
+            expr = t.projection([(t.double_col - f().over(ibis.cumulative_window())).name('double_col')])
+            result = expr.execute().double_col
+            expected = df.double_col - getattr(df.double_col, 'cum%s' % func)()
+            tm.assert_series_equal(result, expected)
+
+    def test_cumulative_partitioned_window(self):
+        t = self.alltypes
+        df = t.execute().sort_values('string_col').reset_index(drop=True)
+        window = ibis.cumulative_window(group_by=t.string_col)
+        for func in 'sum min max'.split():
+            f = getattr(t.double_col, func)
+            expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
+            result = expr.execute().double_col
+            expected = df.groupby(df.string_col).double_col.transform(lambda c: c - getattr(c, 'cum%s' % func)())
+            tm.assert_series_equal(result, expected)
+
+    def test_cumulative_ordered_window(self):
+        t = self.alltypes
+        df = t.execute().sort_values('timestamp_col').reset_index(drop=True)
+        window = ibis.cumulative_window(order_by=t.timestamp_col)
+        for func in 'sum min max'.split():
+            f = getattr(t.double_col, func)
+            expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
+            result = expr.execute().double_col
+            expected = df.double_col - getattr(df.double_col, 'cum%s' % func)()
+            tm.assert_series_equal(result, expected)
+
+    def test_cumulative_partitioned_ordered_window(self):
+        t = self.alltypes
+        df = t.execute().sort_values(['string_col', 'timestamp_col']).reset_index(drop=True)
+        window = ibis.cumulative_window(order_by=t.timestamp_col, group_by=t.string_col)
+        for func in 'sum min max'.split():
+            f = getattr(t.double_col, func)
+            expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
+            result = expr.execute().double_col
+            expected = df.groupby(df.string_col).double_col.transform(lambda c: c - getattr(c, 'cum%s' % func)())
+            tm.assert_series_equal(result, expected)

@@ -365,10 +365,9 @@ def _window(t, expr):
         ops.LastValue,
     )
 
-    # TODO: handle cumulative window
-    # if isinstance(window_op, ops.CumulativeOp):
-        # arg = _cumulative_to_window(translator, arg, window)
-        # return translator.translate(arg)
+    if isinstance(window_op, ops.CumulativeOp):
+        arg = _cumulative_to_window(translator, arg, window)
+        return translator.translate(arg)
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
@@ -492,6 +491,7 @@ _operation_registry.update({
     # now is in the timezone of the server, but we want UTC
     ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
     ops.WindowOp: _window,
+    ops.CumulativeOp: _window,
 })
 
 
