@@ -215,16 +215,22 @@ def download_parquet_files(con, tmp_db_hdfs_path):
     con.hdfs.get(tmp_db_hdfs_path, parquet_path)
 
 
-def generate_sqlite_db(con):
+def generate_dbs(con):
     from sqlalchemy import create_engine
 
     path = pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'ibis_testing.db')
     csv_path = guid()
 
-    engine = create_engine('sqlite:///{0}'.format(path))
+    engines = [
+        create_engine('sqlite:///{0}'.format(path)),
+        create_engine('postgresql://postgres@localhost/ibis_testing').format(
+            getpass.getuser()
+        ),
+    ]
 
     generate_sql_csv_sources(csv_path, con.database('ibis_testing'))
-    make_sqlite_testing_db(csv_path, engine)
+    for engine in engines:
+        make_testing_db(csv_path, engine)
     shutil.rmtree(csv_path)
 
 
@@ -333,12 +339,12 @@ def generate_sql_csv_sources(output_path, db):
         df.to_csv('{0}.csv'.format(path), na_rep='\\N')
 
 
-def make_sqlite_testing_db(csv_dir, con):
+def make_testing_db(csv_dir, con):
     for name in _sql_tables:
         print(name)
         path = osp.join(csv_dir, '{0}.csv'.format(name))
         df = pd.read_csv(path, na_values=['\\N'])
-        pd.io.sql.to_sql(df, name, con, chunksize=10000)
+        df.to_sql(name, con, chunksize=10000, if_exists='replace')
 
 
 # ==========================================
@@ -395,7 +401,7 @@ def create(create_tarball, push_to_s3):
         download_parquet_files(con, tmp_db_hdfs_path)
         download_avro_files(con)
         generate_csv_files()
-        generate_sqlite_db(con)
+        generate_dbs(con)
     finally:
         con.drop_database(tmp_db, force=True)
         assert not con.hdfs.exists(tmp_db_hdfs_path)

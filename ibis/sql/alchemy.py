@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numbers
 import operator
 import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
+
+from sqlalchemy.sql.elements import Over as _Over
+from sqlalchemy.ext.compiler import compiles as sa_compiles
 
 from ibis.client import SQLClient, AsyncQuery, Query
 from ibis.sql.compiler import Select, Union, TableSetFormatter
@@ -31,34 +35,40 @@ import ibis
 
 
 _ibis_type_to_sqla = {
-    dt.Int8: sa.types.SmallInteger,
-    dt.Int16: sa.types.SmallInteger,
-    dt.Int32: sa.types.Integer,
-    dt.Int64: sa.types.BigInteger,
+    dt.Int8: sa.SmallInteger,
+    dt.Int16: sa.SmallInteger,
+    dt.Int32: sa.Integer,
+    dt.Int64: sa.BigInteger,
 
     # Mantissa-based
-    dt.Float: sa.types.Float(precision=24),
-    dt.Double: sa.types.Float(precision=53),
+    dt.Float: sa.Float(precision=24),
+    dt.Double: sa.Float(precision=53),
 
-    dt.Boolean: sa.types.Boolean,
+    dt.Boolean: sa.Boolean,
 
-    dt.String: sa.types.String,
+    dt.String: sa.String,
 
-    dt.Timestamp: sa.types.DateTime,
+    dt.Timestamp: sa.DateTime,
 
-    dt.Decimal: sa.types.NUMERIC,
+    dt.Decimal: sa.NUMERIC,
 }
 
 _sqla_type_mapping = {
-    sa.types.SmallInteger: dt.Int16,
-    sa.types.INTEGER: dt.Int64,
-    sa.types.BOOLEAN: dt.Boolean,
-    sa.types.BIGINT: dt.Int64,
-    sa.types.FLOAT: dt.Double,
-    sa.types.REAL: dt.Double,
+    sa.SmallInteger: dt.Int16,
+    sa.SMALLINT: dt.Int16,
+    sa.Integer: dt.Int32,
+    sa.INTEGER: dt.Int32,
+    sa.BigInteger: dt.Int64,
+    sa.BIGINT: dt.Int64,
+    sa.Boolean: dt.Boolean,
+    sa.BOOLEAN: dt.Boolean,
+    sa.FLOAT: dt.Double,
+    sa.REAL: dt.Float,
+    sa.VARCHAR: dt.String,
+    sa.Float: dt.Double,
 
     sa.types.TEXT: dt.String,
-    sa.types.NullType: dt.String,
+    sa.types.NullType: dt.Null,
     sa.types.Text: dt.String,
 }
 
@@ -84,8 +94,15 @@ def schema_from_table(table):
                 ibis_class = _sqla_type_to_ibis[c.type]
             elif type_class in _sqla_type_to_ibis:
                 ibis_class = _sqla_type_to_ibis[type_class]
+            elif isinstance(c.type, sa.DateTime):
+                ibis_class = dt.Timestamp()
             else:
-                raise NotImplementedError(c.type)
+                for k, v in _sqla_type_to_ibis.items():
+                    if isinstance(c.type, type(k)):
+                        ibis_class = v
+                        break
+                else:
+                    raise NotImplementedError(c.type)
             t = ibis_class(c.nullable)
 
         types.append(t)
@@ -894,3 +911,61 @@ def _floor_divide(t, expr):
         return t.translate(new_expr)
 
     return fixed_arity(lambda x, y: x / y, 2)(t, expr)
+
+
+@compiles(ops.SortKey)
+def _sort_key(t, expr):
+    # We need to define this for window functions that have an order by
+    by, ascending = expr.op().args
+    sort_direction = sa.asc if ascending else sa.desc
+    return sort_direction(t.translate(by))
+
+
+_valid_frame_types = numbers.Integral, str, type(None)
+
+
+class Over(_Over):
+    def __init__(
+        self,
+        element,
+        order_by=None,
+        partition_by=None,
+        preceding=None,
+        following=None,
+    ):
+        super(Over, self).__init__(
+            element, order_by=order_by, partition_by=partition_by
+        )
+        if not isinstance(preceding, _valid_frame_types):
+            raise TypeError(
+                'preceding must be a string, integer or None, got %r' % (
+                    type(preceding).__name__
+                )
+            )
+        if not isinstance(following, _valid_frame_types):
+            raise TypeError(
+                'following must be a string, integer or None, got %r' % (
+                    type(following).__name__
+                )
+            )
+        self.preceding = preceding if preceding is not None else 'UNBOUNDED'
+        self.following = following if following is not None else 'UNBOUNDED'
+
+
+@sa_compiles(Over)
+def compile_over_with_frame(element, compiler, **kw):
+    clauses = ' '.join(
+        '%s BY %s' % (word, compiler.process(clause, **kw))
+        for word, clause in (
+            ('PARTITION', element.partition_by),
+            ('ORDER', element.order_by),
+        )
+        if clause is not None and len(clause)
+    )
+    return '%s OVER (%s%sROWS BETWEEN %s PRECEDING AND %s FOLLOWING)' % (
+        compiler.process(getattr(element, 'element', element.func), **kw),
+        clauses,
+        ' ' if clauses else '',  # only add a space if we order by or group by
+        str(element.preceding).upper(),
+        str(element.following).upper(),
+    )

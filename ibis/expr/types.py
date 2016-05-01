@@ -67,8 +67,8 @@ class Expr(object):
         Generic composition function to enable expression pipelining
 
         >>> (expr
-             .pipe(f, *args, **kwargs)
-             .pipe(g, *args2, **kwargs2))
+        >>>  .pipe(f, *args, **kwargs)
+        >>>  .pipe(g, *args2, **kwargs2))
 
         is equivalent to
 
@@ -86,9 +86,9 @@ class Expr(object):
         Examples
         --------
         >>> def foo(data, a=None, b=None):
-                pass
+        ...     pass
         >>> def bar(a, b, data=None):
-                pass
+        ...     pass
         >>> expr.pipe(foo, a=5, b=10)
         >>> expr.pipe((bar, 'data'), 1, 2)
 
@@ -1065,11 +1065,11 @@ class NullLiteral(ValueNode):
     """
 
     def __init__(self):
-        pass
+        self.value = None
 
     @property
     def args(self):
-        return [None]
+        return [self.value]
 
     def equals(self, other):
         return isinstance(other, NullLiteral)
