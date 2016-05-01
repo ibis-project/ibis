@@ -77,6 +77,10 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         from datetime import datetime
 
         v = L('2015-09-01 14:48:05.359').cast('timestamp')
+        vt = datetime(
+            year=2015, month=9, day=1,
+            hour=14, minute=48, second=5, microsecond=359000
+        )
 
         cases = [
             (v.strftime('%Y%m%d'), '20150901'),
@@ -91,23 +95,23 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
 
             # there could be pathological failure at midnight somewhere, but
             # that's okay
+            (v.strftime('%Y%m%d %H'), vt.strftime('%Y%m%d %H')),
 
-            (ibis.now().strftime('%Y%m%d %H'),
-             datetime.utcnow().strftime('%Y%m%d %H')),
-            (ibis.now().strftime('DD BAR %w FOO "DD"'),
-             datetime.utcnow().strftime('DD BAR %w FOO "DD"')),
-            (ibis.now().strftime('DD BAR %w FOO "D'),
-             datetime.utcnow().strftime('DD BAR %w FOO "D')),
-            (ibis.now().strftime('DD BAR "%w" FOO "D'),
-             datetime.utcnow().strftime('DD BAR "%w" FOO "D')),
-            (ibis.now().strftime('DD BAR "%d" FOO "D'),
-             datetime.utcnow().strftime('DD BAR "%d" FOO "D')),
-            (ibis.now().strftime('DD BAR "%c" FOO "D'),
-             datetime.utcnow().strftime('DD BAR "%c" FOO "D')),
-            (ibis.now().strftime('DD BAR "%x" FOO "D'),
-             datetime.utcnow().strftime('DD BAR "%x" FOO "D')),
-            (ibis.now().strftime('DD BAR "%X" FOO "D'),
-             datetime.utcnow().strftime('DD BAR "%X" FOO "D'))
+            # test quoting behavior
+            (v.strftime('DD BAR %w FOO "DD"'),
+             vt.strftime('DD BAR %w FOO "DD"')),
+            (v.strftime('DD BAR %w FOO "D'),
+             vt.strftime('DD BAR %w FOO "D')),
+            (v.strftime('DD BAR "%w" FOO "D'),
+             vt.strftime('DD BAR "%w" FOO "D')),
+            (v.strftime('DD BAR "%d" FOO "D'),
+             vt.strftime('DD BAR "%d" FOO "D')),
+            (v.strftime('DD BAR "%c" FOO "D'),
+             vt.strftime('DD BAR "%c" FOO "D')),
+            (v.strftime('DD BAR "%x" FOO "D'),
+             vt.strftime('DD BAR "%x" FOO "D')),
+            (v.strftime('DD BAR "%X" FOO "D'),
+             vt.strftime('DD BAR "%X" FOO "D'))
         ]
         self._check_e2e_cases(cases)
 
