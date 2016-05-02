@@ -355,7 +355,7 @@ class Category(DataType):
         return ('category(K=%s)' % card)
 
     def __hash__(self):
-        return hash((self.cardinality))
+        return hash(self.cardinality)
 
     def __eq__(self, other):
         if not isinstance(other, Category):

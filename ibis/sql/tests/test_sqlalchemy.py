@@ -100,9 +100,9 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             # name, type, nullable
             ('smallint', sat.SmallInteger, False, dt.int16),
             ('int', sat.Integer, True, dt.int32),
-            ('integer', sat.INTEGER(), True, dt.int64),
+            ('integer', sat.INTEGER(), True, dt.int32),
             ('bigint', sat.BigInteger, False, dt.int64),
-            ('real', sat.REAL, True, dt.double),
+            ('real', sat.REAL, True, dt.float),
             ('bool', sat.Boolean, True, dt.boolean),
             ('timestamp', sat.DateTime, True, dt.timestamp),
         ]
