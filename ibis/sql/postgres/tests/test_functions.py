@@ -289,7 +289,7 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
             (L(5.556).sqrt(), math.sqrt(5.556)),
             (L(5.556).log(2), math.log(5.556, 2)),
             (L(5.556).ln(), math.log(5.556)),
-            (L(5.556).log2(), math.log2(5.556)),
+            (L(5.556).log2(), math.log(5.556, 2)),
             (L(5.556).log10(), math.log10(5.556)),
         ]
         self._check_e2e_cases(cases)

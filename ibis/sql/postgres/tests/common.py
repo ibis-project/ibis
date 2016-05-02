@@ -12,11 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import getpass
+import os
+
 import pytest
 
 from ibis.sql.postgres.compiler import PostgreSQLExprTranslator
 import ibis.sql.postgres.api as api
 from sqlalchemy.dialects.postgres import dialect as postgres_dialect
+
+
+PG_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
+PG_PASS = os.environ.get('IBIS_POSTGRES_PASS')
 
 
 @pytest.mark.postgresql
@@ -56,4 +63,9 @@ class PostgreSQLTests(object):
 class PostgreSQLTestEnv(object):
 
     def __init__(self):
-        self.db_path = 'postgresql://localhost/ibis_testing'
+        if PG_PASS:
+            creds = '{0}:{1}'.format(PG_USER, PG_PASS)
+        else:
+            creds = PG_USER
+
+        self.db_path = 'postgresql://{0}@localhost/ibis_testing'.format(creds)

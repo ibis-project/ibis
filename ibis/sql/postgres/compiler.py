@@ -26,7 +26,7 @@ from sqlalchemy.sql.functions import GenericFunction
 from ibis.sql.alchemy import unary, varargs, fixed_arity, Over
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
+import ibis.expr.types as ir
 
 import ibis.sql.alchemy as alch
 _operation_registry = alch._operation_registry.copy()
@@ -304,11 +304,19 @@ def _variance_reduction(func_name):
         'sample': 'samp',
         'pop': 'pop'
     }
+
     def variance_compiler(t, expr):
         arg, where, how = expr.op().args
         func = getattr(sa.func, '%s_%s' % (func_name, suffix.get(how, 'samp')))
-        result = func(t.translate(arg))
-        return result if where is not None else sa.funcfilter(result, where)
+
+        if where is None:
+            return func(t.translate(arg))
+        else:
+            # TODO(wesm): PostgreSQL 9.4 stuff
+            # where_compiled = t.translate(where)
+            # return sa.funcfilter(result, where_compiled)
+            filtered = where.ifelse(ir.null(), arg)
+            return func(t.translate(filtered))
 
     return variance_compiler
 
