@@ -22,6 +22,7 @@ from os.path import join as pjoin
 from subprocess import check_call
 
 from click import group, option
+import sqlalchemy as sa
 from sqlalchemy import create_engine
 
 import ibis
@@ -354,8 +355,29 @@ def make_testing_db(csv_dir, con):
     for name in _sql_tables:
         print(name)
         path = osp.join(csv_dir, '{0}.csv'.format(name))
-        df = pd.read_csv(path, na_values=['\\N'])
-        df.to_sql(name, con, chunksize=10000, if_exists='replace')
+        df = pd.read_csv(path, na_values=['\\N'], dtype={'bool_col': 'bool'})
+        df.to_sql(
+            name,
+            con,
+            chunksize=10000,
+            if_exists='replace',
+            dtype={
+                'index': sa.INTEGER,
+                'id': sa.INTEGER,
+                'bool_col': sa.BOOLEAN,
+                'tinyint_col': sa.SMALLINT,
+                'smallint_col': sa.SMALLINT,
+                'int_col': sa.INTEGER,
+                'bigint_col': sa.BIGINT,
+                'float_col': sa.REAL,
+                'double_col': sa.FLOAT,
+                'date_string_col': sa.TEXT,
+                'string_col': sa.TEXT,
+                'timestamp_col': sa.TIMESTAMP,
+                'year': sa.INTEGER,
+                'month': sa.INTEGER,
+            }
+        )
 
 
 # ==========================================
