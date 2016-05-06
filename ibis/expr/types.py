@@ -328,7 +328,9 @@ class TableColumn(ValueNode):
         Node.__init__(self, [name, table_expr])
 
         if name not in table_expr.schema():
-            raise KeyError("'{0}' is not a field".format(name))
+            raise com.IbisTypeError(
+                "'{0}' is not a field in {1}".format(name, table_expr.columns)
+            )
 
         self.name = name
         self.table = table_expr
