@@ -204,6 +204,8 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
             (L('foobar').contains('bar'), True),
             (L('foobar').contains('foo'), True),
             (L('foobar').contains('baz'), False),
+            (L('100%').contains('%'), True),
+            (L('a_b_c').contains('_'), True)
         ]
         self._check_e2e_cases(cases)
 

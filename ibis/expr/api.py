@@ -1522,7 +1522,7 @@ def _string_contains(arg, substr):
     -------
     contains : boolean
     """
-    return arg.like('%{0}%'.format(substr))
+    return arg.find(substr) >= 0
 
 
 def _string_dunder_contains(arg, substr):
