@@ -58,6 +58,10 @@ class Expr(object):
         else:
             return self._repr()
 
+    def __bool__(self):
+        raise ValueError("The truth value of an Ibis expression is not "
+                         "defined")
+
     def _repr(self, memo=None):
         from ibis.expr.format import ExprFormatter
         return ExprFormatter(self).get_result()
