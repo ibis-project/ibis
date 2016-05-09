@@ -19,7 +19,8 @@ import pytest
 
 from ibis.sql.postgres.compiler import PostgreSQLExprTranslator
 import ibis.sql.postgres.api as api
-from sqlalchemy.dialects.postgres import dialect as postgres_dialect
+
+from sqlalchemy.dialects.postgresql import dialect as postgres_dialect
 
 
 PG_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
