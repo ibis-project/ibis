@@ -1859,13 +1859,13 @@ class Aggregation(TableNode, HasSchema):
 
         self.agg_exprs = self._rewrite_exprs(agg_exprs)
 
-        by = by or []
+        by = [] if by is None else by
         self.by = self.table._resolve(by)
 
-        self.having = having or []
+        self.having = [] if having is None else having
 
-        self.predicates = predicates or []
-        sort_keys = sort_keys or []
+        self.predicates = [] if predicates is None else predicates
+        sort_keys = [] if sort_keys is None else sort_keys
         self.sort_keys = [to_sort_key(self.table, k)
                           for k in util.promote_list(sort_keys)]
 

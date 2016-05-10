@@ -485,6 +485,10 @@ class TestComparisons(BasicTestCase, unittest.TestCase):
         self.assertRaises(TypeError, self.table.f.between, 0, '1')
         self.assertRaises(TypeError, self.table.f.between, '0', 1)
 
+    def test_chained_comparisons_not_allowed(self):
+        with self.assertRaises(ValueError):
+            0 < self.table.f < 1
+
 
 class TestBinaryArithOps(BasicTestCase, unittest.TestCase):
 
