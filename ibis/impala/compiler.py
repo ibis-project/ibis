@@ -230,8 +230,14 @@ class ImpalaSelect(comp.Select):
 
         buf = StringIO()
         buf.write('WHERE ')
-        fmt_preds = [self._translate(pred, permit_subquery=True)
-                     for pred in self.where]
+        fmt_preds = []
+        for pred in self.where:
+            new_pred = self._translate(pred, permit_subquery=True)
+            if isinstance(pred.op(), ops.Or):
+                # parens for OR exprs because it binds looser than AND
+                new_pred = _parenthesize(new_pred)
+            fmt_preds.append(new_pred)
+
         conj = ' AND\n{0}'.format(' ' * 6)
         buf.write(conj.join(fmt_preds))
         return buf.getvalue()

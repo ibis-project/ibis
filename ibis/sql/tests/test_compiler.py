@@ -2235,3 +2235,22 @@ SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `int_card`,
 FROM functional_alltypes
 GROUP BY 1"""
         assert result == expected
+
+
+def test_pushdown_with_or():
+    t = ibis.table(
+        [('double_col', 'double'),
+         ('string_col', 'string'),
+         ('int_col', 'int32'),
+         ('float_col', 'float')],
+        'functional_alltypes',
+    )
+    subset = t[(t.double_col > 3.14) & t.string_col.contains('foo')]
+    filt = subset[(subset.int_col - 1 == 0) | (subset.float_col <= 1.34)]
+    result = to_sql(filt)
+    expected = """\
+SELECT *
+FROM functional_alltypes
+WHERE (`double_col` > 3.14) AND (locate('foo', `string_col`) - 1 >= 0) AND
+      (((`int_col` - 1) = 0) OR (`float_col` <= 1.34))"""
+    assert result == expected
