@@ -282,3 +282,11 @@ class TestTableExprBasics(BasicTestCase, unittest.TestCase):
     #     result = L.substitute_parents(expr)
     #     expected = t['c'] == 2
     #     assert_equal(result, expected)
+
+
+def test_join_table_choice():
+    # GH807
+    x = ibis.table(ibis.schema([('n', 'int64')]), 'x')
+    t = x.aggregate(cnt=x.n.count())
+    predicate = t.cnt > 0
+    assert L.sub_for(predicate, [(t, t.op().table)]).equals(predicate)

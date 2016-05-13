@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.common import RelationError, ExpressionError
+from ibis.common import RelationError, ExpressionError, IbisTypeError
 from ibis.expr.datatypes import HasSchema
 from ibis.expr.window import window
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.util as util
+import toolz
 
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
@@ -25,83 +26,43 @@ import ibis.util as util
 
 
 def sub_for(expr, substitutions):
-    helper = _Substitutor(expr, substitutions)
-    return helper.get_result()
+    mapping = dict((repr(k.op()), v) for k, v in substitutions)
+    return _subs(expr, mapping)
 
 
-class _Substitutor(object):
-
-    def __init__(self, expr, substitutions, sub_memo=None):
-        self.expr = expr
-
-        self.substitutions = substitutions
-
-        self._id_to_expr = {}
-        for k, v in substitutions:
-            self._id_to_expr[self._key(k)] = v
-
-        self.sub_memo = sub_memo or {}
-        self.unchanged = True
-
-    def get_result(self):
-        expr = self.expr
-        node = expr.op()
-
-        if node.blocks():
-            return expr
-
-        subbed_args = []
-        for arg in node.args:
-            if isinstance(arg, (tuple, list)):
-                subbed_arg = [self._sub_arg(x) for x in arg]
-            else:
-                subbed_arg = self._sub_arg(arg)
-            subbed_args.append(subbed_arg)
-
-        # Do not modify unnecessarily
-        if self.unchanged:
-            return expr
-
-        subbed_node = type(node)(*subbed_args)
-        if isinstance(expr, ir.ValueExpr):
-            result = expr._factory(subbed_node, name=expr._name)
-        else:
-            result = expr._factory(subbed_node)
-
-        return result
-
-    def _sub_arg(self, arg):
-        if isinstance(arg, ir.Expr):
-            subbed_arg = self.sub(arg)
-            if subbed_arg is not arg:
-                self.unchanged = False
-        else:
-            # a string or some other thing
-            subbed_arg = arg
-
-        return subbed_arg
-
-    def _key(self, expr):
+def _expr_key(expr):
+    try:
         return repr(expr.op())
+    except AttributeError:
+        return expr
 
-    def sub(self, expr):
-        key = self._key(expr)
 
-        if key in self.sub_memo:
-            return self.sub_memo[key]
+@toolz.memoize(key=lambda args, kwargs: _expr_key(args[0]))
+def _subs(expr, mapping):
+    """Substitute expressions with other expressions
+    """
+    node = expr.op()
+    key = repr(node)
+    if key in mapping:
+        return mapping[key]
+    if node.blocks():
+        return expr
 
-        if key in self._id_to_expr:
-            return self._id_to_expr[key]
+    new_args = list(node.args)
+    unchanged = True
+    for i, arg in enumerate(new_args):
+        if isinstance(arg, ir.Expr):
+            new_arg = _subs(arg, mapping)
+            unchanged = unchanged and new_arg is arg
+            new_args[i] = new_arg
+    if unchanged:
+        return expr
+    try:
+        new_node = type(node)(*new_args)
+    except IbisTypeError:
+        return expr
 
-        result = self._sub(expr)
-
-        self.sub_memo[key] = result
-        return result
-
-    def _sub(self, expr):
-        helper = _Substitutor(expr, self.substitutions,
-                              sub_memo=self.sub_memo)
-        return helper.get_result()
+    return expr._factory(new_node, name=getattr(expr, '_name', None))
 
 
 class ScalarAggregate(object):
@@ -474,8 +435,9 @@ def apply_filter(expr, predicates):
         return _filter_selection(expr, predicates)
     elif isinstance(op, ops.Aggregation):
         # Potential fusion opportunity
-        simplified_predicates = [sub_for(x, [(expr, op.table)])
-                                 for x in predicates]
+        simplified_predicates = [
+            sub_for(predicate, [(expr, op.table)]) for predicate in predicates
+        ]
 
         if op.table._is_valid(simplified_predicates):
             result = ops.Aggregation(
