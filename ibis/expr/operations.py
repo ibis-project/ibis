@@ -1792,11 +1792,12 @@ class AggregateSelection(object):
     def _attempt_pushdown(self):
         metrics_valid, lowered_metrics = self._pushdown_exprs(self.metrics)
         by_valid, lowered_by = self._pushdown_exprs(self.by)
+        having_valid, lowered_having = self._pushdown_exprs(self.having or None)
 
-        if metrics_valid and by_valid:
+        if metrics_valid and by_valid and having_valid:
             return Aggregation(self.op.table, lowered_metrics,
                                by=lowered_by,
-                               having=self.having,
+                               having=lowered_having,
                                predicates=self.op.predicates,
                                sort_keys=self.op.sort_keys)
         else:
