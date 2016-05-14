@@ -2254,3 +2254,20 @@ FROM functional_alltypes
 WHERE (`double_col` > 3.14) AND (locate('foo', `string_col`) - 1 >= 0) AND
       (((`int_col` - 1) = 0) OR (`float_col` <= 1.34))"""
     assert result == expected
+
+
+def test_having_size():
+    t = ibis.table(
+        [('double_col', 'double'),
+         ('string_col', 'string'),
+         ('int_col', 'int32'),
+         ('float_col', 'float')],
+        'functional_alltypes',
+    )
+    expr = t.group_by(t.string_col).having(t.double_col.max() == 1).size()
+    result = to_sql(expr)
+    assert result == """\
+SELECT `string_col`, count(*) AS `count`
+FROM functional_alltypes
+GROUP BY 1
+HAVING max(`double_col`) = 1"""

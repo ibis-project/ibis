@@ -187,7 +187,7 @@ class GroupedTableExpr(object):
           The aggregated table
         """
         metric = self.table.count().name(metric_name)
-        return self.table.aggregate([metric], by=self.by)
+        return self.table.aggregate([metric], by=self.by, having=self._having)
 
     size = count
 
