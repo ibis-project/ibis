@@ -2254,3 +2254,19 @@ FROM functional_alltypes
 WHERE (`double_col` > 3.14) AND (locate('foo', `string_col`) - 1 >= 0) AND
       (((`int_col` - 1) = 0) OR (`float_col` <= 1.34))"""
     assert result == expected
+
+
+def test_having_from_filter():
+    t = ibis.table([('a', 'int64'), ('b', 'string')], 't')
+    filt = t[t.b == 'm']
+    gb = filt.group_by(filt.b)
+    having = gb.having(filt.a.max() == 2)
+    agg = having.aggregate(filt.a.sum().name('sum'))
+    result = to_sql(agg)
+    expected = """\
+SELECT `b`, sum(`a`) AS `sum`
+FROM t
+WHERE `b` = 'm'
+GROUP BY 1
+HAVING max(`a`) = 2"""
+    assert result == expected
