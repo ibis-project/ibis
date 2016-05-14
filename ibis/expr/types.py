@@ -693,7 +693,7 @@ class TableExpr(Expr):
 
         return self.projection([self, expr])
 
-    def group_by(self, by):
+    def group_by(self, by=None, **additional_grouping_expressions):
         """
         Create an intermediate grouped table expression, pending some group
         operation to be applied with it.
@@ -707,7 +707,7 @@ class TableExpr(Expr):
         grouped_expr : GroupedTableExpr
         """
         from ibis.expr.groupby import GroupedTableExpr
-        return GroupedTableExpr(self, by)
+        return GroupedTableExpr(self, by, **additional_grouping_expressions)
 
 
 # -----------------------------------------------------------------------------
