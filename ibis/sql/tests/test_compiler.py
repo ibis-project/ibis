@@ -2271,3 +2271,19 @@ SELECT `string_col`, count(*) AS `count`
 FROM functional_alltypes
 GROUP BY 1
 HAVING max(`double_col`) = 1"""
+
+
+def test_having_from_filter():
+    t = ibis.table([('a', 'int64'), ('b', 'string')], 't')
+    filt = t[t.b == 'm']
+    gb = filt.group_by(filt.b)
+    having = gb.having(filt.a.max() == 2)
+    agg = having.aggregate(filt.a.sum().name('sum'))
+    result = to_sql(agg)
+    expected = """\
+SELECT `b`, sum(`a`) AS `sum`
+FROM t
+WHERE `b` = 'm'
+GROUP BY 1
+HAVING max(`a`) = 2"""
+    assert result == expected
