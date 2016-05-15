@@ -63,7 +63,10 @@ else:
     def dict_values(x):
         return x.values()
 
-    import mock
+    try:
+        import mock  # mock is an optional dependency
+    except ImportError:
+        pass
     range = xrange
 
 integer_types = six.integer_types + (np.integer,)
