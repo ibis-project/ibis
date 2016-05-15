@@ -543,6 +543,14 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         expected = self.table.aggregate(metric, by='g', having=postp)
         assert_equal(expr, expected)
 
+    def test_group_by_kwargs(self):
+        t = self.table
+        expr = (t.group_by(['f', t.h], z='g', z2=t.d)
+                 .aggregate(t.d.mean().name('foo')))
+        expected = (t.group_by(['f', t.h, t.g.name('z'), t.d.name('z2')])
+                    .aggregate(t.d.mean().name('foo')))
+        assert_equal(expr, expected)
+
     def test_aggregate_root_table_internal(self):
         pass
 
