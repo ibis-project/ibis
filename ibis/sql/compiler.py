@@ -926,8 +926,8 @@ class QueryContext(object):
 
         self._table_key_memo = {}
 
-    def _compile_subquery(self, expr):
-        sub_ctx = self.subcontext()
+    def _compile_subquery(self, expr, isolated=False):
+        sub_ctx = self.subcontext(isolated=isolated)
         return self._to_sql(expr, sub_ctx)
 
     def _to_sql(self, expr, ctx):
@@ -943,7 +943,7 @@ class QueryContext(object):
     def set_always_alias(self):
         self.always_alias = True
 
-    def get_compiled_expr(self, expr):
+    def get_compiled_expr(self, expr, isolated=False):
         this = self.top_context
 
         key = self._get_table_key(expr)
@@ -954,7 +954,7 @@ class QueryContext(object):
         if isinstance(op, ops.SQLQueryResult):
             result = op.query
         else:
-            result = self._compile_subquery(expr)
+            result = self._compile_subquery(expr, isolated=isolated)
 
         this.subquery_memo[key] = result
         return result
@@ -1009,8 +1009,11 @@ class QueryContext(object):
         self.extracted_subexprs.add(key)
         self.make_alias(expr)
 
-    def subcontext(self):
-        return type(self)(indent=self.indent, parent=self)
+    def subcontext(self, isolated=False):
+        if not isolated:
+            return type(self)(indent=self.indent, parent=self)
+        else:
+            return type(self)(indent=self.indent)
 
     # Maybe temporary hacks for correlated / uncorrelated subqueries
 

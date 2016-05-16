@@ -409,14 +409,17 @@ class AlchemyContext(comp.QueryContext):
         self.dialect = kwargs.pop('dialect', AlchemyDialect)
         comp.QueryContext.__init__(self, *args, **kwargs)
 
-    def subcontext(self):
-        return type(self)(dialect=self.dialect, parent=self)
+    def subcontext(self, isolated=False):
+        if not isolated:
+            return type(self)(dialect=self.dialect, parent=self)
+        else:
+            return type(self)(dialect=self.dialect)
 
     def _to_sql(self, expr, ctx):
         return to_sqlalchemy(expr, context=ctx)
 
-    def _compile_subquery(self, expr):
-        sub_ctx = self.subcontext()
+    def _compile_subquery(self, expr, isolated=False):
+        sub_ctx = self.subcontext(isolated=isolated)
         return self._to_sql(expr, sub_ctx)
 
     def has_table(self, expr, parent_contexts=False):

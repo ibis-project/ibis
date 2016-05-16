@@ -382,11 +382,16 @@ class ImpalaUnion(comp.Union):
         else:
             union_keyword = 'UNION ALL'
 
-        left_set = context.get_compiled_expr(self.left)
-        right_set = context.get_compiled_expr(self.right)
+        left_set = context.get_compiled_expr(self.left, isolated=True)
+        right_set = context.get_compiled_expr(self.right, isolated=True)
 
-        query = '{0}\n{1}\n{2}'.format(left_set, union_keyword, right_set)
-        return query
+        # XXX: hack of all trades - our right relation has a CTE
+        # TODO: factor out common subqueries in the union
+        if right_set.startswith('WITH'):
+            format_string = '({0})\n{1}\n({2})'
+        else:
+            format_string = '{0}\n{1}\n{2}'
+        return format_string.format(left_set, union_keyword, right_set)
 
 
 # ---------------------------------------------------------------------
