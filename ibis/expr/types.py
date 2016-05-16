@@ -702,12 +702,19 @@ class TableExpr(Expr):
         --------
         x.group_by([b1, b2]).aggregate(metrics)
 
+        Notes
+        -----
+        group_by and groupby are equivalent, with `groupby` being provided for
+        ease-of-use for pandas users.
+
         Returns
         -------
         grouped_expr : GroupedTableExpr
         """
         from ibis.expr.groupby import GroupedTableExpr
         return GroupedTableExpr(self, by, **additional_grouping_expressions)
+
+    groupby = group_by
 
 
 # -----------------------------------------------------------------------------

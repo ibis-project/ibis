@@ -485,6 +485,13 @@ class TestAggregation(BasicTestCase, unittest.TestCase):
         assert_equal(expr, expected)
         assert_equal(expr2, expected)
 
+    def test_groupby_alias(self):
+        t = self.table
+
+        result = t.groupby('g').size()
+        expected = t.group_by('g').size()
+        assert_equal(result, expected)
+
     def test_summary_expand_list(self):
         summ = self.table.f.summary()
 
