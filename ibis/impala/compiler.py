@@ -382,8 +382,8 @@ class ImpalaUnion(comp.Union):
         else:
             union_keyword = 'UNION ALL'
 
-        left_set = context.get_compiled_expr(self.left)
-        right_set = context.get_compiled_expr(self.right)
+        left_set = context.get_compiled_expr(self.left, isolated=True)
+        right_set = context.get_compiled_expr(self.right, isolated=True)
 
         # XXX: hack of all trades - our right relation has a CTE
         # TODO: factor out common subqueries in the union
