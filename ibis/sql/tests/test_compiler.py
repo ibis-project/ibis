@@ -1449,7 +1449,6 @@ GROUP BY 1"""
 
     def test_subquery_in_union(self):
         t = self.con.table('alltypes')
-        tt = self.con.table('alltypes')
 
         expr1 = t.group_by(['a', 'g']).aggregate(t.f.sum().name('metric'))
         expr2 = expr1.view()
