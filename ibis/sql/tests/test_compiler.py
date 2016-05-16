@@ -1447,6 +1447,56 @@ FROM t0
 GROUP BY 1"""
         assert result == expected
 
+    def test_subquery_in_union(self):
+        t = self.con.table('alltypes')
+        tt = self.con.table('alltypes')
+
+        expr1 = t.group_by(['a', 'g']).aggregate(t.f.sum().name('metric'))
+        expr2 = expr1.view()
+
+        join1 = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
+        join2 = join1.view()
+
+        expr = join1.union(join2)
+        result = to_sql(expr)
+        expected = """\
+(WITH t1 AS (
+  SELECT `a`, `g`, sum(`f`) AS `metric`
+  FROM alltypes
+  GROUP BY 1, 2
+)
+SELECT t1.*
+FROM (
+  SELECT `a`, `g`, sum(`f`) AS `metric`
+  FROM alltypes
+  GROUP BY 1, 2
+) t1
+  INNER JOIN (
+    SELECT `a`, `g`, sum(`f`) AS `metric`
+    FROM alltypes
+    GROUP BY 1, 2
+  ) t1
+    ON t1.`g` = t1.`g`)
+UNION ALL
+(WITH t1 AS (
+  SELECT `a`, `g`, sum(`f`) AS `metric`
+  FROM alltypes
+  GROUP BY 1, 2
+)
+SELECT t1.*
+FROM (
+  SELECT `a`, `g`, sum(`f`) AS `metric`
+  FROM alltypes
+  GROUP BY 1, 2
+) t1
+  INNER JOIN (
+    SELECT `a`, `g`, sum(`f`) AS `metric`
+    FROM alltypes
+    GROUP BY 1, 2
+  ) t1
+    ON t1.`g` = t1.`g`)"""
+        assert result == expected
+
     def test_subquery_factor_correlated_subquery(self):
         # #173, #183 and other issues
 
