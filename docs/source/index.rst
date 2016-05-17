@@ -15,6 +15,7 @@ medium, or big).
 At this time, Ibis supports the following SQL-based systems:
 
 - Impala (on HDFS)
+- PostgreSQL
 - SQLite
 
 Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
@@ -41,9 +42,8 @@ Architecturally, Ibis features:
 - Tools for wrapping user-defined functions in Impala and eventually other SQL
   engines
 
-SQL engine support near on the horizon:
+SQL engine support needing code contributors:
 
-- PostgreSQL
 - Redshift
 - Vertica
 - Spark SQL
