@@ -491,6 +491,15 @@ def _array_repeat(t, expr):
     return sa.func.array(selected.as_scalar())
 
 
+def _identical_to(t, expr):
+    left, right = args = expr.op().args
+    if left.equals(right):
+        return True
+    else:
+        left, right = map(t.translate, args)
+        return left.op('IS NOT DISTINCT FROM')(right)
+
+
 _operation_registry.update({
     # types
     ops.Cast: _cast,
@@ -572,6 +581,7 @@ _operation_registry.update({
     ops.ArrayIndex: fixed_arity(operator.getitem, 2),
     ops.ArrayConcat: fixed_arity(operator.add, 2),
     ops.ArrayRepeat: _array_repeat,
+    ops.IdenticalTo: _identical_to,
 })
 
 

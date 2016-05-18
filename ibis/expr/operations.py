@@ -2027,6 +2027,10 @@ class Less(Comparison):
     pass
 
 
+class IdenticalTo(Comparison):
+    pass
+
+
 class Between(BooleanValueOp):
 
     input_type = [rules.value, rules.value(name='lower_bound'),

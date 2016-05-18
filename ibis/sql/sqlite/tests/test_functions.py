@@ -15,13 +15,12 @@
 import os
 import pytest  # noqa
 
-import pandas.util.testing as tm
-
 from .common import SQLiteTests
 from ibis.compat import unittest
 from ibis import literal as L
 import ibis.expr.types as ir
 import ibis
+import pandas.util.testing as tm
 
 import sqlalchemy as sa
 
@@ -412,6 +411,17 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         result = t.head().execute()
         expected = t.limit(5).execute()
         tm.assert_frame_equal(result, expected)
+
+    def test_identical_to(self):
+        t = self.alltypes
+        dt = t[['tinyint_col', 'double_col']].execute()
+        expr = t.tinyint_col.identical_to(t.double_col)
+        result = expr.execute()
+        expected = (dt.tinyint_col.isnull() & dt.double_col.isnull()) | (
+            dt.tinyint_col == dt.double_col
+        )
+        expected.name = result.name
+        tm.assert_series_equal(result, expected)
 
 
 def test_compile_with_named_table():

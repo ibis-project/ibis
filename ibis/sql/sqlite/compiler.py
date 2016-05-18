@@ -125,6 +125,18 @@ def _millisecond(t, expr):
     return (fractional_second * 1000) % 1000
 
 
+def _identical_to(t, expr):
+    left, right = args = expr.op().args
+    if left.equals(right):
+        return True
+    else:
+        left, right = map(t.translate, args)
+        return sa.func.coalesce(
+            (left.is_(None) & right.is_(None)) | (left == right),
+            False
+        )
+
+
 _operation_registry.update({
     ops.Cast: _cast,
 
@@ -158,7 +170,8 @@ _operation_registry.update({
     ops.ExtractMinute: _strftime_int('%M'),
     ops.ExtractSecond: _strftime_int('%S'),
     ops.ExtractMillisecond: _millisecond,
-    ops.TimestampNow: _now
+    ops.TimestampNow: _now,
+    ops.IdenticalTo: _identical_to,
 })
 
 

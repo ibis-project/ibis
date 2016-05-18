@@ -411,6 +411,7 @@ _binary_ops = {
     ops.LessEqual: operator.le,
     ops.Greater: operator.gt,
     ops.GreaterEqual: operator.ge,
+    ops.IdenticalTo: lambda x, y: x.op('IS NOT DISTINCT FROM')(y),
 
     # Boolean comparisons
 

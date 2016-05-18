@@ -490,6 +490,21 @@ END"""
         ]
         self._check_expr_cases(cases)
 
+    def test_identical_to(self):
+        t = self.con.table('functional_alltypes')
+        expr = t.tinyint_col.identical_to(t.double_col)
+        result = to_sql(expr)
+        expected = """\
+SELECT `tinyint_col` IS NOT DISTINCT FROM `double_col` AS `tmp`
+FROM functional_alltypes"""
+        assert result == expected
+
+    def test_identical_to_special_case(self):
+        expr = ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64'))
+        result = to_sql(expr)
+        assert result == 'SELECT TRUE AS `tmp`'
+
+
 
 class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
 
@@ -1576,6 +1591,21 @@ FROM functional_alltypes"""
         result = t.head().execute()
         expected = t.limit(5).execute()
         tm.assert_frame_equal(result, expected)
+
+    def test_identical_to(self):
+        cases = [
+            (ibis.NA.cast('int64'), ibis.NA.cast('int64'), True),
+            (L(1), L(1), True),
+            (ibis.NA.cast('int64'), L(1), False),
+            (L(1), ibis.NA.cast('int64'), False),
+            (L(0), L(1), False),
+            (L(1), L(0), False),
+        ]
+        con = self.con
+        for left, right, expected in cases:
+            expr = left.identical_to(right)
+            result = con.execute(expr)
+            assert result == expected
 
 
 def test_where_with_timestamp():

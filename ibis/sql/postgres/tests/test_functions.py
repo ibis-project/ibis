@@ -901,3 +901,17 @@ def test_head(con):
     result = t.head().execute()
     expected = t.limit(5).execute()
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.postgresql
+def test_identical_to(con):
+    # TODO: abstract this testing logic out into parameterized fixtures
+    t = con.table('functional_alltypes')
+    dt = t[['tinyint_col', 'double_col']].execute()
+    expr = t.tinyint_col.identical_to(t.double_col)
+    result = expr.execute()
+    expected = (dt.tinyint_col.isnull() & dt.double_col.isnull()) | (
+        dt.tinyint_col == dt.double_col
+    )
+    expected.name = result.name
+    tm.assert_series_equal(result, expected)
