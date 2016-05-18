@@ -135,6 +135,26 @@ Executing expressions
    ImpalaClient.execute
    ImpalaClient.disable_codegen
 
+.. _api.postgres:
+
+PostgreSQL client
+-----------------
+.. currentmodule:: ibis.sql.postgres.api
+
+The PostgreSQL client is accessible through the ``ibis.postgres`` namespace.
+
+Use ``ibis.postgres.connect`` with a SQLAlchemy-compatible connection string to
+create a client.
+
+.. autosummary::
+   :toctree: generated/
+
+   connect
+   PostgreSQLClient.database
+   PostgreSQLClient.list_tables
+   PostgreSQLClient.list_databases
+   PostgreSQLClient.table
+
 .. _api.sqlite:
 
 SQLite client
