@@ -35,42 +35,6 @@ from ibis.config import options
 import ibis.util as util
 
 
-# Deprecated
-impala_connect = util.deprecate(impala.connect,
-                                'impala_connect is deprecated, use'
-                                ' ibis.impala.connect instead')
-
-
-def make_client(db, hdfs_client=None):
-    """
-    Create an Ibis client from a database connection and optional additional
-    connections (like HDFS)
-
-    Parameters
-    ----------
-    db : Connection
-      e.g. produced by ibis.impala.connect
-    hdfs_client : ibis HDFS client
-
-    Examples
-    --------
-    >>> con = ibis.impala.connect(**impala_params)
-    >>> hdfs = ibis.hdfs_connect(**hdfs_params)
-    >>> client = ibis.make_client(con, hdfs_client=hdfs)
-
-    Returns
-    -------
-    client : IbisClient
-    """
-    db._hdfs = hdfs_client
-    return db
-
-make_client = util.deprecate(
-    make_client, ('make_client is deprecated. '
-                  'Use ibis.impala.connect '
-                  ' with hdfs_client=hdfs_client'))
-
-
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
                  use_https='default', auth_mechanism='NOSASL',
                  verify=True, **kwds):
