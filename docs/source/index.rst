@@ -3,34 +3,50 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Ibis: Python Data Analysis Framework
-====================================
+Ibis: Python Data Analysis Productivity Framework
+=================================================
 
-Ibis is a productivity-centric Python data analysis framework, designed to be
-an ideal companion for SQL engines and distributed storage systems like
-Hadoop. Ibis is being jointly developed with `Impala <http://impala.io>`_ to
-deliver a complete 100% Python user experience on data of any size (small,
-medium, or big).
-
-At this time, Ibis supports the following SQL-based systems:
-
-- Impala (on HDFS)
-- PostgreSQL
-- SQLite
-
-Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
+Ibis is a toolbox to bridge the gap between local Python environments and
+remote storage and execution systems like Hadoop components (HDFS, Impala,
+Hive, Spark) and SQL databases (Postgres, etc.). Its goal is to simplify
+analytical workflows and make you more productive.
 
 We have a handful of specific priority focus areas:
 
-- Enable data analysts to translation analytics using SQL engines to Python
-  instead of using the SQL language.
+- Enable data analysts to translate local, single-node data idioms to scalable
+  computation representations (e.g. SQL or Spark)
+- Integration with pandas and other Python data ecosystem components
 - Provide high level analytics APIs and workflow tools to enhance productivity
   and streamline common or tedious tasks.
-- Provide high performance extensions for the Impala MPP query engine to enable
-  high performance Python code to operate in a scalable Hadoop-like environment
-- Abstract away database-specific SQL differences
 - Integration with community standard data formats (e.g. Parquet and Avro)
-- Integrate with the Python data ecosystem using the above tools
+- Abstract away database-specific SQL differences
+
+To learn more about Ibis's vision, roadmap, and updates, please follow
+http://ibis-project.org.
+
+Source code is on GitHub: http://github.com/cloudera/ibis
+
+Install Ibis from PyPI with:
+
+::
+
+  pip install ibis-framework
+
+Or from `conda-forge <http://conda-forge.github.io>`_ with
+
+::
+
+  conda install ibis-framework -c conda-forge
+
+At this time, Ibis offers some level of support for the following systems:
+
+- `Apache Impala (incubating) <http://impala.io/>`_
+- `Apache Kudu (incubating) <http://getkudu.io>`_
+- Hadoop Distributed File System (HDFS)
+- PostgreSQL (Experimental)
+- SQLite
+
+Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
 
 Architecturally, Ibis features:
 
@@ -38,9 +54,8 @@ Architecturally, Ibis features:
   analytics, aka **Ibis expressions**, that enable composable, reusable
   analytics on structured data. If you can express something with a SQL SELECT
   query, you can write it with Ibis.
+- Integrated user interfaces to HDFS and other storage systems.
 - An extensible translator-compiler system that targets multiple SQL systems
-- Tools for wrapping user-defined functions in Impala and eventually other SQL
-  engines
 
 SQL engine support needing code contributors:
 
@@ -50,13 +65,6 @@ SQL engine support needing code contributors:
 - Presto
 - Hive
 - MySQL / MariaDB
-
-See the project blog http://blog.ibis-project.org for more frequent updates.
-
-To learn more about Ibis's vision and roadmap, please visit
-http://ibis-project.org.
-
-Source code is on GitHub: http://github.com/cloudera/ibis
 
 Since this is a young project, the documentation is definitely patchy in
 places, but this will improve as things progress.

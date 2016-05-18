@@ -7,6 +7,14 @@ Release Notes
     interesting. Point (minor, e.g. 0.5.1) releases will generally not be found
     here and contain only bug fixes.
 
+0.8 (Not yet released)
+----------------------
+
+This release brings initial PostgreSQL backend support along with a number of
+critical bug fixes and usability improvements. As several correctness bugs with
+the SQL compiler were fixed, we recommend that all users upgrade from earlier
+versions of Ibis.
+
 0.7 (March 16, 2016)
 --------------------
 
