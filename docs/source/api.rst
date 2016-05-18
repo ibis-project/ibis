@@ -263,6 +263,7 @@ Table methods
    TableExpr.get_column
    TableExpr.get_columns
    TableExpr.group_by
+   TableExpr.groupby
    TableExpr.limit
    TableExpr.mutate
    TableExpr.projection

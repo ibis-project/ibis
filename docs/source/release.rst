@@ -15,6 +15,24 @@ critical bug fixes and usability improvements. As several correctness bugs with
 the SQL compiler were fixed, we recommend that all users upgrade from earlier
 versions of Ibis.
 
+New features
+~~~~~~~~~~~~
+* Initial PostgreSQL backend contributed by Philip Cloud.
+* Add ``groupby`` as an alias for ``group_by`` to table expressions
+
+Bug fixes
+~~~~~~~~~
+* Fix an expression error when filtering based on a new field
+* Fix Impala's SQL compilation of using ``OR`` with compound filters
+* Various fixes with the ``having(...)`` function in grouped table expressions
+* Fix CTE (``WITH``) extraction inside ``UNION ALL`` expressions.
+* Fix ``ImportError`` on Python 2 when ``mock`` library not installed
+
+API changes
+~~~~~~~~~~~
+* The deprecated ``ibis.impala_connect`` and ``ibis.make_client`` APIs have
+  been removed
+
 0.7 (March 16, 2016)
 --------------------
 

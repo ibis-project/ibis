@@ -21,6 +21,10 @@ We have a handful of specific priority focus areas:
 - Integration with community standard data formats (e.g. Parquet and Avro)
 - Abstract away database-specific SQL differences
 
+As the `Apache Arrow <http://arrow.apache.org/>`_ project develops, we will
+look to use Arrow to enable computational code written in Python to be executed
+natively within other systems like Apache Spark and Apache Impala (incubating).
+
 To learn more about Ibis's vision, roadmap, and updates, please follow
 http://ibis-project.org.
 
