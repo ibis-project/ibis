@@ -37,8 +37,31 @@ class PostgreSQLClient(alch.AlchemyClient):
     dialect = PostgreSQLDialect
     database_class = PostgreSQLDatabase
 
-    def __init__(self, path=None, create=False):
-        url = sa.engine.url.make_url(path)
+    def __init__(self, host=None, user=None, password=None, port=None,
+                 database=None, url=None, driver=None):
+        if url is None:
+            if user is not None:
+                if password is None:
+                    userpass = user
+                else:
+                    userpass = '{0}:{1}'.format(user, password)
+
+                address = '{0}@{1}'.format(userpass, host)
+            else:
+                address = host
+
+            if port is not None:
+                address = '{0}:{1}'.format(address, port)
+
+            if database is not None:
+                address = '{0}/{1}'.format(address, database)
+
+            if driver is not None and driver != 'psycopg2':
+                raise NotImplementedError(driver)
+
+            url = 'postgresql://{0}'.format(address)
+
+        url = sa.engine.url.make_url(url)
         self.name = url.database
         self.database_name = 'public'
         self.con = sa.create_engine(url)

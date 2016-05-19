@@ -26,7 +26,8 @@ def compile(expr):
     return to_sqlalchemy(expr, dialect=PostgreSQLDialect)
 
 
-def connect(path=None, create=False):
+def connect(host=None, user=None, password=None, port=None, database=None,
+            url=None, driver=None):
 
     """
     Create an Ibis client connected to a PostgreSQL database.
@@ -35,11 +36,15 @@ def connect(path=None, create=False):
 
     Parameters
     ----------
-    path : string, default None
-        File path to the PostgreSQL database file. If None, creates an
-        in-memory transient database and you can use attach() to add more files
-    create : boolean, default False
-        If file does not exist, create it
+    host : string, default None
+    user : string, default None
+    password : string, default None
+    port : string or integer, default None
+    database : string, default None
+    url : string, default None
+        Complete SQLAlchemy connection string. If passed, the other connection
+        arguments are ignored.
+    driver : string, default 'psycopg2'
     """
-
-    return PostgreSQLClient(path, create=create)
+    return PostgreSQLClient(host=host, user=user, password=password, port=port,
+                            database=database, url=url, driver=driver)
