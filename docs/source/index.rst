@@ -6,10 +6,11 @@
 Ibis: Python Data Analysis Productivity Framework
 =================================================
 
-Ibis is a toolbox to bridge the gap between local Python environments and
-remote storage and execution systems like Hadoop components (HDFS, Impala,
-Hive, Spark) and SQL databases (Postgres, etc.). Its goal is to simplify
-analytical workflows and make you more productive.
+Ibis is a toolbox to bridge the gap between local Python environments (like
+pandas and scikit-learn) and remote storage and execution systems like Hadoop
+components (like HDFS, Impala, Hive, Spark) and SQL databases (Postgres,
+etc.). Its goal is to simplify analytical workflows and make you more
+productive.
 
 We have a handful of specific priority focus areas:
 
