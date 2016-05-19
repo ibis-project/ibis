@@ -7,8 +7,8 @@ Release Notes
     interesting. Point (minor, e.g. 0.5.1) releases will generally not be found
     here and contain only bug fixes.
 
-0.8 (Not yet released)
-----------------------
+0.8 (May 19, 2016)
+------------------
 
 This release brings initial PostgreSQL backend support along with a number of
 critical bug fixes and usability improvements. As several correctness bugs with
