@@ -34,7 +34,11 @@ class PostgreSQLTests(object):
     def setUpClass(cls):
         cls.env = PostgreSQLTestEnv()
         cls.dialect = postgres_dialect()
-        cls.con = api.connect(cls.env.db_path)
+
+        E = cls.env
+
+        cls.con = api.connect(host=E.host, user=E.user, password=E.password,
+                              database=E.database_name)
         cls.alltypes = cls.con.table('functional_alltypes')
 
     def _check_expr_cases(self, cases, context=None, named=False):
@@ -69,4 +73,9 @@ class PostgreSQLTestEnv(object):
         else:
             creds = PG_USER
 
-        self.db_path = 'postgresql://{0}@localhost/ibis_testing'.format(creds)
+        self.user = PG_USER
+        self.password = PG_PASS
+        self.host = 'localhost'
+        self.database_name = 'ibis_testing'
+
+        self.db_url = 'postgresql://{0}@localhost/ibis_testing'.format(creds)
