@@ -15,6 +15,8 @@
 import re
 import locale
 import string
+import platform
+import warnings
 
 from functools import reduce, partial
 from operator import add
@@ -159,10 +161,19 @@ _strftime_to_postgresql_rules = {
     '%-j': 'FMDDD',  # day of year
     '%U': 'WW',  # 1-based week of year
     # 'W': ?,  # meh
-    '%c': locale.nl_langinfo(locale.D_T_FMT),  # locale date and time
-    '%x': locale.nl_langinfo(locale.D_FMT),  # locale date
-    '%X': locale.nl_langinfo(locale.T_FMT)  # locale time
 }
+
+try:
+    _strftime_to_postgresql_rules.update({
+        '%c': locale.nl_langinfo(locale.D_T_FMT),  # locale date and time
+        '%x': locale.nl_langinfo(locale.D_FMT),  # locale date
+        '%X': locale.nl_langinfo(locale.T_FMT)  # locale time
+    })
+except AttributeError:
+    warnings.warn(
+        'locale specific date formats (%%c, %%x, %%X) are not yet implemented '
+        'for %s' % platform.system()
+    )
 
 
 def tokenize_noop(scanner, token):
@@ -228,9 +239,15 @@ def _reduce_tokens(tokens, arg):
                 value = sa.cast(sa.func.to_char(arg, 'WW'), sa.SMALLINT) - 1
             elif token == '%c' or token == '%x' or token == '%X':
                 # re scan and tokenize this pattern
-                new_tokens, _ = _scanner.scan(
-                    _strftime_to_postgresql_rules[token]
-                )
+                try:
+                    new_pattern = _strftime_to_postgresql_rules[token]
+                except KeyError:
+                    raise ValueError(
+                        'locale specific date formats (%%c, %%x, %%X) are '
+                        'not yet implemented for %s' % platform.system()
+                    )
+
+                new_tokens, _ = _scanner.scan(new_pattern)
                 value = reduce(
                     sa.sql.ColumnElement.concat,
                     _reduce_tokens(new_tokens, arg)
