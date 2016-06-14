@@ -96,8 +96,7 @@ class Schema(object):
         return Schema(names, types)
 
     def equals(self, other):
-        return ((self.names == other.names) and
-                (self.types == other.types))
+        return self.names == other.names and self.types == other.types
 
     def __eq__(self, other):
         return self.equals(other)
