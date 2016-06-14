@@ -546,7 +546,16 @@ Token = namedtuple('Token', ('type', 'value'))
 
 
 class TypeParser(object):
-    """A type parser for complex types
+    """A type parser for complex types.
+
+    Parameters
+    ----------
+    text : str
+        The text to parse
+
+    Notes
+    -----
+    Adapted from David Beazley's and Brian Jones's Python Cookbook
     """
 
     scanner = re.Scanner(
