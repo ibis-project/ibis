@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import re
+
+from collections import namedtuple
+
 import six
 
 import ibis.expr.types as ir
@@ -504,45 +507,225 @@ _primitive_types = {
 }
 
 
+class Tokens(object):
+    """Class to hold tokens for lexing
+    """
+    __slots__ = ()
+
+    ANY = 0
+    NULL = 1
+    PRIMITIVE = 2
+    DECIMAL = 3
+    ARRAY = 4
+    MAP = 5
+    STRUCT = 6
+    INTEGER = 7
+    FIELD = 8
+    COMMA = 9
+    COLON = 10
+    LPAREN = 11
+    RPAREN = 12
+    LBRACKET = 13
+    RBRACKET = 14
+
+    @staticmethod
+    def name(value):
+        return _token_names[value]
+
+
+_token_names = dict(
+    (getattr(Tokens, n), n)
+    for n in dir(Tokens) if n.isalpha() and n.isupper()
+)
+
+
+Token = namedtuple('Token', ('type', 'value'))
+
+
+class TypeParser(object):
+    """A type parser for complex types
+    """
+
+    scanner = re.Scanner(
+        [
+            # any, null
+            ('any', lambda scanner, token: Token(Tokens.ANY, any)),
+            ('null', lambda scanner, token: Token(Tokens.NULL, null)),
+        ] + [
+            # primitive types
+            (
+                token,
+                lambda scanner, token, value=value: Token(
+                    Tokens.PRIMITIVE,
+                    value
+                )
+            ) for token, value in _primitive_types.items()
+            if token != 'any' and token != 'null'
+        ] + [
+            # decimal + complex types
+            (
+                token,
+                lambda scanner, token, toktype=toktype: Token(toktype, token)
+            ) for token, toktype in zip(
+                ('decimal', 'array', 'map', 'struct'),
+                (Tokens.DECIMAL, Tokens.ARRAY, Tokens.MAP, Tokens.STRUCT),
+            )
+        ] + [
+            # numbers, for decimal spec
+            (r'\d+', lambda scanner, token: Token(Tokens.INTEGER, int(token))),
+
+            # struct fields
+            (
+                r'[a-zA-Z_][a-zA-Z_0-9]*',
+                lambda scanner, token: Token(Tokens.FIELD, token)
+            ),
+            (',', lambda scanner, token: Token(Tokens.COMMA, token)),
+            (':', lambda scanner, token: Token(Tokens.COLON, token)),
+            (r'\(', lambda scanner, token: Token(Tokens.LPAREN, token)),
+            (r'\)', lambda scanner, token: Token(Tokens.RPAREN, token)),
+            ('<', lambda scanner, token: Token(Tokens.LBRACKET, token)),
+            ('>', lambda scanner, token: Token(Tokens.RBRACKET, token)),
+            (r'\s+', None),
+        ],
+        flags=re.IGNORECASE,
+    )
+
+    def __init__(self, text):
+        self.text = text
+        tokens, _ = self.scanner.scan(text)
+        self.tokens = iter(tokens)
+        self.tok = None
+        self.nexttok = None
+
+    def _advance(self):
+        self.tok, self.nexttok = self.nexttok, next(self.tokens, None)
+
+    def _accept(self, toktype):
+        if self.nexttok is not None and self.nexttok.type == toktype:
+            self._advance()
+            return True
+        return False
+
+    def _expect(self, toktype):
+        if not self._accept(toktype):
+            raise SyntaxError('Expected {0}'.format(Tokens.name(toktype)))
+
+    def parse(self):
+        self._advance()
+
+        # any and null types cannot be nested
+        if self._accept(Tokens.ANY) or self._accept(Tokens.NULL):
+            return self.tok.value
+
+        t = self.type()
+        if self.nexttok is None:
+            return t
+        else:
+            # additional junk was passed at the end, throw an error
+            additional_tokens = []
+            while self.nexttok is not None:
+                additional_tokens.append(self.nexttok.value)
+                self._advance()
+            raise SyntaxError(
+                'Found additional tokens {0}'.format(additional_tokens)
+            )
+
+    def type(self):
+        """
+        type : primitive
+             | decimal
+             | array
+             | map
+             | struct
+
+        primitive : "any"
+                  | "null"
+                  | "boolean"
+                  | "int8"
+                  | "int16"
+                  | "int32"
+                  | "int64"
+                  | "float"
+                  | "double"
+                  | "string"
+                  | "timestamp"
+
+        decimal : "decimal"
+                | "decimal" "(" integer "," integer ")"
+
+        integer : [0-9]+
+
+        array : "array" "<" type ">"
+
+        map : "map" "<" type "," type ">"
+
+        struct : "struct" "<" field ":" type ("," field ":" type)* ">"
+        """
+        if self._accept(Tokens.PRIMITIVE):
+            return self.tok.value
+
+        elif self._accept(Tokens.DECIMAL):
+            if self._accept(Tokens.LPAREN) and self._accept(Tokens.INTEGER):
+                precision = self.tok.value
+                self._expect(Tokens.COMMA)
+                self._expect(Tokens.INTEGER)
+                scale = self.tok.value
+                self._expect(Tokens.RPAREN)
+            else:
+                precision = 9
+                scale = 0
+            return Decimal(precision, scale)
+
+        elif self._accept(Tokens.ARRAY):
+            self._expect(Tokens.LBRACKET)
+
+            value_type = self.type()
+
+            self._expect(Tokens.RBRACKET)
+            return Array(value_type)
+
+        elif self._accept(Tokens.MAP):
+            self._expect(Tokens.LBRACKET)
+
+            self._expect(Tokens.PRIMITIVE)
+            key_type = self.tok.value
+
+            self._expect(Tokens.COMMA)
+
+            value_type = self.type()
+
+            self._expect(Tokens.RBRACKET)
+
+            return Map(key_type, value_type)
+
+        elif self._accept(Tokens.STRUCT):
+            self._expect(Tokens.LBRACKET)
+
+            self._expect(Tokens.FIELD)
+            names = [self.tok.value]
+
+            self._expect(Tokens.COLON)
+
+            types = [self.type()]
+
+            while self._accept(Tokens.COMMA):
+
+                self._expect(Tokens.FIELD)
+                names.append(self.tok.value)
+
+                self._expect(Tokens.COLON)
+                types.append(self.type())
+
+            self._expect(Tokens.RBRACKET)
+            return Struct(names, types)
+        else:
+            raise SyntaxError('Type cannot be parsed: {0}'.format(self.text))
+
+
 def validate_type(t):
     if isinstance(t, DataType):
         return t
-
-    parsed_type = _parse_type(t)
-    if parsed_type is not None:
-        return parsed_type
-
-    if t in _primitive_types:
-        return _primitive_types[t]
-    else:
-        raise ValueError('Invalid type: %s' % repr(t))
-
-
-_DECIMAL_RE = re.compile('decimal\((\d+),[\s]*(\d+)\)')
-
-
-def _parse_decimal(t):
-    m = _DECIMAL_RE.match(t)
-    if m:
-        precision, scale = m.groups()
-        return Decimal(int(precision), int(scale))
-
-    if t == 'decimal':
-        # From the Impala documentation
-        return Decimal(9, 0)
-
-
-_type_parsers = [
-    _parse_decimal
-]
-
-
-def _parse_type(t):
-    for parse_fn in _type_parsers:
-        parsed = parse_fn(t)
-        if parsed is not None:
-            return parsed
-    return None
+    return TypeParser(t).parse()
 
 
 def array_type(t):
