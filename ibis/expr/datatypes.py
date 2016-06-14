@@ -398,29 +398,82 @@ class Category(DataType):
 class Struct(DataType):
 
     def __init__(self, names, types, nullable=True):
-        DataType.__init__(self, nullable=nullable)
+        super(Struct, self).__init__(nullable=nullable)
+        self.names = names
+        self.types = types
+
+    def __repr__(self):
+        return '{0}({1})'.format(
+            self.name,
+            list(zip(self.names, self.types))
+        )
+
+    def __str__(self):
+        return '{0}<{1}>'.format(
+            self.name.lower(),
+            ', '.join(
+                '{0}: {1}'.format(n, t) for n, t in zip(self.names, self.types)
+            )
+        )
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.names == other.names and self.types == other.types
+
+    @classmethod
+    def from_tuples(self, pairs):
+        return Struct(*map(list, zip(*pairs)))
 
 
 class Array(Variadic):
 
     def __init__(self, value_type, nullable=True):
-        Variadic.__init__(self, nullable=nullable)
+        super(Array, self).__init__(nullable=nullable)
+        self.value_type = value_type
+
+    def __repr__(self):
+        return '{0}({1})'.format(self.name, repr(self.value_type))
+
+    def __str__(self):
+        return '{0}<{1}>'.format(self.name.lower(), self.value_type)
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.value_type == other.value_type
 
 
 class Enum(DataType):
 
     def __init__(self, rep_type, value_type, nullable=True):
-        DataType.__init__(self, nullable=nullable)
+        super(Enum, self).__init__(nullable=nullable)
+        self.rep_type = rep_type
+        self.value_type = value_type
 
 
 class Map(DataType):
 
     def __init__(self, key_type, value_type, nullable=True):
-        DataType.__init__(self, nullable=nullable)
+        super(Map, self).__init__(nullable=nullable)
+        self.key_type = key_type
+        self.value_type = value_type
+
+    def __repr__(self):
+        return '{0}({1}, {2})'.format(
+            self.name,
+            repr(self.key_type),
+            repr(self.value_type),
+        )
+
+    def __str__(self):
+        return '{0}<{1}, {2}>'.format(
+            self.name.lower(),
+            self.key_type,
+            self.value_type,
+        )
+
+    def __eq__(self, other):
+        return isinstance(other, type(self)) and self.key_type == other.key_type and self.value_type == other.value_type
 
 
 # ---------------------------------------------------------------------
-
 
 any = Any()
 null = Null()
