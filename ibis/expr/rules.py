@@ -165,7 +165,7 @@ class _TypePrecedence(object):
         for k, v in self.type_counts.items():
             if not v:
                 continue
-            score = self._precedence[k.name()]
+            score = self._precedence[k.name.lower()]
 
             scores.append((score, k))
 
@@ -234,7 +234,7 @@ class ImplicitCast(object):
         self.implicit_targets = implicit_targets
 
     def can_cast(self, target):
-        base_type = target.name()
+        base_type = target.name.lower()
         return (base_type in self.implicit_targets or
                 target == self.value_type)
 
