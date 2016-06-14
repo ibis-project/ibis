@@ -19,11 +19,6 @@ import ibis.expr.types as ir
 import ibis.common as com
 import ibis.util as util
 
-if six.PY3:
-    from io import StringIO
-else:
-    from io import BytesIO as StringIO
-
 
 class Schema(object):
 
@@ -43,21 +38,22 @@ class Schema(object):
             raise com.IntegrityError('Duplicate column names')
 
     def __repr__(self):
-        return self._repr()
+        space = 2 + max(map(len, self.names))
+        return "ibis.Schema {{{0}\n}}".format(
+            util.indent(
+                ''.join(
+                    '\n{0}{1}'.format(name.ljust(space), str(tipo))
+                    for name, tipo in zip(self.names, self.types)
+                ),
+                2
+            )
+        )
 
     def __len__(self):
         return len(self.names)
 
     def __iter__(self):
         return iter(self.names)
-
-    def _repr(self):
-        buf = StringIO()
-        space = 2 + max(len(x) for x in self.names)
-        for name, tipo in zip(self.names, self.types):
-            buf.write('\n{0}{1}'.format(name.ljust(space), str(tipo)))
-
-        return "ibis.Schema {{{0}\n}}".format(util.indent(buf.getvalue(), 2))
 
     def __contains__(self, name):
         return name in self._name_locs
@@ -180,13 +176,14 @@ class DataType(object):
         return hash(type(self))
 
     def __repr__(self):
-        name = self.name()
+        name = self.name.lower()
         if not self.nullable:
             name = '{0}[non-nullable]'.format(name)
         return name
 
+    @property
     def name(self):
-        return type(self).__name__.lower()
+        return type(self).__name__
 
     def equals(self, other):
         if isinstance(other, six.string_types):
@@ -307,8 +304,18 @@ class Decimal(DataType):
         return 'decimal'
 
     def __repr__(self):
-        return ('decimal(precision=%s, scale=%s)'
-                % (self.precision, self.scale))
+        return '{0}(precision={1:d}, scale={2:d})'.format(
+            self.name,
+            self.precision,
+            self.scale,
+        )
+
+    def __str__(self):
+        return '{0}({1:d}, {2:d})'.format(
+            self.name.lower(),
+            self.precision,
+            self.scale,
+        )
 
     def __hash__(self):
         return hash((self.precision, self.scale))
