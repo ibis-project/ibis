@@ -659,6 +659,8 @@ class TypeParser(object):
         map : "map" "<" type "," type ">"
 
         struct : "struct" "<" field ":" type ("," field ":" type)* ">"
+
+        field : [a-zA-Z_][a-zA-Z_0-9]*
         """
         if self._accept(Tokens.PRIMITIVE):
             return self.tok.value
