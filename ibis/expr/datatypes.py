@@ -472,7 +472,11 @@ class Map(DataType):
         )
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and self.key_type == other.key_type and self.value_type == other.value_type
+        return (
+            isinstance(other, type(self)) and
+            self.key_type == other.key_type and
+            self.value_type == other.value_type
+        )
 
 
 # ---------------------------------------------------------------------
