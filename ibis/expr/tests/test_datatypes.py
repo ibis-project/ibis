@@ -101,3 +101,60 @@ def test_whole_schema():
         ],
         name='customers',
     )
+    expected = ibis.Schema.from_tuples(
+        [
+            ('cid', dt.int64),
+            ('mktsegment', dt.string),
+            (
+                'address',
+                dt.Struct.from_tuples([
+                    ('city', dt.string),
+                    ('street', dt.string),
+                    ('street_number', dt.int32),
+                    ('zip', dt.int16)
+                ]),
+            ),
+            ('phone_numbers', dt.Array(dt.string)),
+            (
+                'orders', dt.Array(dt.Struct.from_tuples([
+                            ('oid', dt.int64),
+                            ('status', dt.string),
+                            ('totalprice', dt.Decimal(12, 2)),
+                            ('order_date', dt.string),
+                            (
+                                'items',
+                                dt.Array(dt.Struct.from_tuples([
+                                    ('iid', dt.int64),
+                                    ('name', dt.string),
+                                    ('price', dt.Decimal(12, 2)),
+                                    ('discount_perc', dt.Decimal(12, 2)),
+                                    ('shipdate', dt.string),
+                                ]))
+                            )
+                        ]))
+            ),
+            (
+                'web_visits',
+                dt.Map(
+                    dt.string,
+                    dt.Struct.from_tuples([
+                        ('user_agent', dt.string),
+                        ('client_ip', dt.string),
+                        ('visit_date', dt.string),
+                        ('duration_ms', dt.int32),
+                    ])
+                )
+            ),
+            (
+                'support_calls',
+                dt.Array(dt.Struct.from_tuples([
+                    ('agent_id', dt.int64),
+                    ('call_date', dt.string),
+                    ('duration_ms', dt.int64),
+                    ('issue_resolved', dt.boolean),
+                    ('agent_comment', dt.string)
+                ]))
+            ),
+        ],
+    )
+    assert customers.schema() == expected
