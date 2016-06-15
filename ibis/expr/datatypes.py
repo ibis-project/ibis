@@ -620,7 +620,11 @@ class TypeParser(object):
 
     def _expect(self, toktype):
         if not self._accept(toktype):
-            raise SyntaxError('Expected {0}'.format(Tokens.name(toktype)))
+            raise SyntaxError('Expected {0} after {1!r} in {2!r}'.format(
+                Tokens.name(toktype),
+                self.tok.value,
+                self.text,
+            ))
 
     def parse(self):
         self._advance()
