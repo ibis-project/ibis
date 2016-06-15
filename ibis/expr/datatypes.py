@@ -679,11 +679,16 @@ class TypeParser(object):
             return self.tok.value
 
         elif self._accept(Tokens.DECIMAL):
-            if self._accept(Tokens.LPAREN) and self._accept(Tokens.INTEGER):
+            if self._accept(Tokens.LPAREN):
+
+                self._expect(Tokens.INTEGER)
                 precision = self.tok.value
+
                 self._expect(Tokens.COMMA)
+
                 self._expect(Tokens.INTEGER)
                 scale = self.tok.value
+
                 self._expect(Tokens.RPAREN)
             else:
                 precision = 9
