@@ -74,6 +74,11 @@ def test_struct():
     assert dt.validate_type(orders) == expected
 
 
+def test_decimal():
+    with pytest.raises(SyntaxError):
+        dt.validate_type('decimal(')
+
+
 def test_whole_schema():
     customers = ibis.table(
         [
