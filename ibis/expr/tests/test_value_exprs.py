@@ -472,6 +472,13 @@ def test_boolean_logical_ops(table, operation):
     assert isinstance(result, api.BooleanScalar)
 
 
+def test_null_column(self):
+    t = ibis.table([('a', 'string')], name='t')
+    s = t.mutate(b=ibis.NA)
+    assert s.b.type() == dt.null
+    assert isinstance(s.b, ir.NullArray)
+
+
 def test_string_compare_numeric_array(table):
     with pytest.raises(TypeError):
         table.g == table.f
