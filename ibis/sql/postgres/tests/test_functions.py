@@ -584,3 +584,10 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
             result = expr.execute().double_col
             expected = df.groupby(df.string_col).double_col.transform(lambda c: c - getattr(c, 'cum%s' % func)())
             tm.assert_series_equal(result, expected)
+
+    def test_null_column(self):
+        t = self.alltypes
+        nrows = self.alltypes.count().execute()
+        expr = self.alltypes.mutate(foo=ibis.NA)
+        result = expr.foo.execute()
+        assert list(result) == [None] * nrows
