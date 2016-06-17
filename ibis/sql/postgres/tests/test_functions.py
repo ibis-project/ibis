@@ -588,6 +588,9 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
     def test_null_column(self):
         t = self.alltypes
         nrows = self.alltypes.count().execute()
-        expr = self.alltypes.mutate(foo=ibis.NA)
-        result = expr.foo.execute()
-        assert list(result) == [None] * nrows
+        expr = self.alltypes.mutate(na_column=ibis.NA).na_column
+        result = expr.execute()
+        tm.assert_series_equal(
+            result,
+            pd.Series([None] * nrows, name='na_column')
+        )
