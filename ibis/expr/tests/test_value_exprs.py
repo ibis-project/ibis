@@ -479,6 +479,16 @@ def test_null_column(self):
     assert isinstance(s.b, ir.NullArray)
 
 
+def test_null_column_union(self):
+    s = ibis.table([('a', 'string'), ('b', 'double')])
+    t = ibis.table([('a', 'string')])
+    with pytest.raises(ibis.common.RelationError):
+        s.union(t.mutate(b=ibis.NA))  # needs a type
+    assert (
+        s.union(t.mutate(b=ibis.NA.cast('double'))).schema() == s.schema()
+    )
+
+
 def test_string_compare_numeric_array(table):
     with pytest.raises(TypeError):
         table.g == table.f

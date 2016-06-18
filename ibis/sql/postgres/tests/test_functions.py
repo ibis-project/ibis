@@ -594,3 +594,27 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
             result,
             pd.Series([None] * nrows, name='na_column')
         )
+
+    def test_null_column_union(self):
+        t = self.alltypes
+        s = self.alltypes[['double_col']].mutate(
+            string_col=ibis.NA.cast('string'),
+        )
+        expr = t[['double_col', 'string_col']].union(s)
+        result = expr.execute()
+        nrows = t.count().execute()
+        expected = pd.concat(
+            [
+                t[['double_col', 'string_col']].execute(),
+                pd.concat(
+                    [
+                        t[['double_col']].execute(),
+                        pd.DataFrame({'string_col': [None] * nrows})
+                    ],
+                    axis=1,
+                )
+            ],
+            axis=0,
+            ignore_index=True
+        )
+        tm.assert_frame_equal(result, expected)
