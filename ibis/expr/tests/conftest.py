@@ -44,35 +44,28 @@ def table(schema):
     return ibis.table(schema, name='schema')
 
 
-@pytest.fixture
-def int_cols(schema):
-    schema = ibis.schema(schema)
-    return [
-        col for col, type in zip(schema.names, schema.types)
-        if isinstance(type, dt.Integer)
-    ]
+@pytest.fixture(params=list('abcdh'))
+def int_col(request):
+    return request.param
 
 
-@pytest.fixture
-def bool_cols(schema):
-    schema = ibis.schema(schema)
-    return [
-        col for col, type in zip(schema.names, schema.types)
-        if isinstance(type, dt.Boolean)
-    ]
+@pytest.fixture(params=list('h'))
+def bool_col(request):
+    return request.param
 
 
-@pytest.fixture
-def float_cols(schema):
-    schema = ibis.schema(schema)
-    return [
-        col for col, type in zip(schema.names, schema.types)
-        if isinstance(type, dt.Floating)
-    ]
+@pytest.fixture(params=list('ef'))
+def float_col(request):
+    return request.param
 
 
 @pytest.fixture(params=list('abcdefh'))
-def numeric_cols(request):
+def numeric_col(request):
+    return request.param
+
+
+@pytest.fixture(params=list('abcdefgh'))
+def col(request):
     return request.param
 
 
