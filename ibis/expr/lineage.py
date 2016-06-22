@@ -161,20 +161,14 @@ def lineage(expr, container=Stack):
     if not isinstance(expr, ir.ArrayExpr):
         raise TypeError('Input expression must be a column')
 
-    current_name = expr._name
-    c = container([(expr, current_name)])
+    c = container([(expr, expr._name)])
 
     seen = set()
     visitor = c.visitor
 
     # while we haven't visited everything
     while not c.empty:
-        node, proposed_name = c.get()
-
-        # if a new column name to traverse has appeared, look for that
-        # TODO: enforce that all columns are named?
-        if proposed_name is not None:
-            current_name = proposed_name
+        node, name = c.get()
 
         if node not in seen:
             seen.add(node)
@@ -182,6 +176,6 @@ def lineage(expr, container=Stack):
 
         # add our dependencies to the stack if they match our name or
         # are a valid expression to traverse
-        for arg in visitor(_get_args(node.op(), current_name)):
+        for arg in visitor(_get_args(node.op(), name)):
             if isinstance(arg, types):
-                c.put((arg, getattr(arg, '_name', None)))
+                c.put((arg, getattr(arg, '_name', name)))
