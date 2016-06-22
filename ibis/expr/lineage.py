@@ -107,26 +107,19 @@ def _get_args(op, name):
     if isinstance(op, ops.Selection):
         result = op.selections
 
-        if name is None:
-            if isinstance(op.table, ops.Join):
-                result.append(op.table)
-            return result
-        else:
-            # if Selection.selections is always columnar, could use an
-            # OrderedDict to prevent scanning the whole thing
-            result = [col for col in result if col._name == name]
-            if isinstance(op.table, ops.Join):
-                result.append(op.table)
-            return result
+        # if Selection.selections is always columnar, could use an
+        # OrderedDict to prevent scanning the whole thing
+        result = [col for col in result if col._name == name]
+        if isinstance(op.table, ops.Join):
+            result.append(op.table)
+        return result
     elif isinstance(op, ops.Aggregation):
         return [
             col for col in chain(op.by, op.agg_exprs)
             if col._name == name
         ]
     elif isinstance(op, ops.Join):
-        if name is None or (
-            name not in op.left.columns and name not in op.right.columns
-        ):
+        if name not in op.left.columns and name not in op.right.columns:
             return [op.left, op.right]
         else:
             return [op.left if name in op.left.columns else op.right]
