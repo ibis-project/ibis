@@ -154,3 +154,18 @@ def test_lineage_join(companies, rounds):
     assert len(results) == len(expected)
     for i, (r, e) in enumerate(list(zip(results, expected))):
         assert_equal(r, e)
+
+    results = list(lin.lineage(perc_raised, container=lin.Queue))
+    expected = [
+        perc_raised,
+        expr.raised_amount_usd,
+        expr.funding_total_usd,
+        expr,
+        rounds.raised_amount_usd,
+        companies.funding_total_usd,
+        rounds,
+        companies
+    ]
+    assert len(results) == len(expected)
+    for i, (r, e) in enumerate(list(zip(results, expected))):
+        assert_equal(r, e)
