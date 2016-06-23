@@ -58,8 +58,8 @@ def test_lineage(companies):
     results = list(lin.lineage(bucket))
     expected = [
         bucket,
-        bucket.op().args[0],
-        bucket.op().args[0].op().args[1]
+        companies.funding_total_usd,
+        companies,
     ]
     for r, e in zip(results, expected):
         assert_equal(r, e)
@@ -68,7 +68,7 @@ def test_lineage(companies):
     expected = [
         mutated.bucket,
         mutated,
-        mutated.op().selections[-1],
+        bucket.name('bucket'),
         companies.funding_total_usd,
         companies,
     ]
@@ -79,7 +79,7 @@ def test_lineage(companies):
     expected = [
         filtered.bucket,
         filtered,
-        mutated.op().selections[-1],
+        bucket.name('bucket'),
         companies.funding_total_usd,
         companies,
     ]
@@ -90,9 +90,9 @@ def test_lineage(companies):
     expected = [
         grouped.bucket,
         grouped,
-        grouped.op().by[0],
-        grouped.op().by[0].op().args[1],
-        grouped.op().by[0].op().args[1].op().selections[-1],
+        filtered.bucket,
+        filtered,
+        bucket.name('bucket'),
         companies.funding_total_usd,
         companies
     ]
