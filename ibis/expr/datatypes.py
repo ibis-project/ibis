@@ -519,17 +519,19 @@ class Tokens(object):
     NULL = 1
     PRIMITIVE = 2
     DECIMAL = 3
-    ARRAY = 4
-    MAP = 5
-    STRUCT = 6
-    INTEGER = 7
-    FIELD = 8
-    COMMA = 9
-    COLON = 10
-    LPAREN = 11
-    RPAREN = 12
-    LBRACKET = 13
-    RBRACKET = 14
+    VARCHAR = 4
+    CHAR = 5
+    ARRAY = 6
+    MAP = 7
+    STRUCT = 8
+    INTEGER = 9
+    FIELD = 10
+    COMMA = 11
+    COLON = 12
+    LPAREN = 13
+    RPAREN = 14
+    LBRACKET = 15
+    RBRACKET = 16
 
     @staticmethod
     def name(value):
@@ -579,8 +581,15 @@ class TypeParser(object):
                 token,
                 lambda scanner, token, toktype=toktype: Token(toktype, token)
             ) for token, toktype in zip(
-                ('decimal', 'array', 'map', 'struct'),
-                (Tokens.DECIMAL, Tokens.ARRAY, Tokens.MAP, Tokens.STRUCT),
+                ('decimal', 'varchar', 'char', 'array', 'map', 'struct'),
+                (
+                    Tokens.DECIMAL,
+                    Tokens.VARCHAR,
+                    Tokens.CHAR,
+                    Tokens.ARRAY,
+                    Tokens.MAP,
+                    Tokens.STRUCT
+                ),
             )
         ] + [
             # numbers, for decimal spec
@@ -698,6 +707,14 @@ class TypeParser(object):
                 precision = 9
                 scale = 0
             return Decimal(precision, scale)
+
+        elif self._accept(Tokens.VARCHAR) or self._accept(Tokens.CHAR):
+            # VARCHAR, VARCHAR(n), CHAR, and CHAR(n) all parse as STRING
+            if self._accept(Tokens.LPAREN):
+                self._expect(Tokens.INTEGER)
+                self._expect(Tokens.RPAREN)
+                return string
+            return string
 
         elif self._accept(Tokens.ARRAY):
             self._expect(Tokens.LBRACKET)
