@@ -118,7 +118,6 @@ def _get_args(op, name):
         return op.args
 
 
-
 def lineage(expr, container=Stack):
     """Show the expression tree that comprises a column expression
 

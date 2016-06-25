@@ -127,7 +127,9 @@ def test_lineage_multiple_parents(companies):
 def test_lineage_join(companies, rounds):
     joined = companies.join(
         rounds,
-        companies.first_funding_at.cast('timestamp').year() == rounds.funded_year
+        companies.first_funding_at.cast(
+            'timestamp'
+        ).year() == rounds.funded_year
     )
     expr = joined[
         companies.funding_total_usd,
