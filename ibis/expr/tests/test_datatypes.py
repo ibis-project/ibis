@@ -87,6 +87,15 @@ def test_char_varchar(spec):
     assert dt.validate_type(spec) == dt.string
 
 
+@pytest.mark.parametrize(
+    'spec',
+    ['varchar(', 'varchar)', 'varchar()', 'char(', 'char)', 'char()']
+)
+def test_char_varchar_invalid(spec):
+    with pytest.raises(SyntaxError):
+        dt.validate_type(spec)
+
+
 @pytest.mark.parametrize('spec', dt._primitive_types.keys())
 def test_primitive(spec):
     assert dt.validate_type(spec) == dt._primitive_types[spec]
