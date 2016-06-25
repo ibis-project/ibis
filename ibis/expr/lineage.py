@@ -105,6 +105,7 @@ def _get_args(op, name):
     """
     # Could use multipledispatch here to avoid the pasta
     if isinstance(op, ops.Selection):
+        assert name is not None, 'name is None'
         result = op.selections
 
         # if Selection.selections is always columnar, could use an
@@ -114,17 +115,17 @@ def _get_args(op, name):
             result.append(op.table)
         return result
     elif isinstance(op, ops.Aggregation):
+        assert name is not None, 'name is None'
         return [
             col for col in chain(op.by, op.agg_exprs)
             if col._name == name
         ]
     elif isinstance(op, ops.Join):
-        if name not in op.left.columns and name not in op.right.columns:
-            return [op.left, op.right]
-        else:
-            return [op.left if name in op.left.columns else op.right]
+        assert name is not None, 'name is None'
+        return [op.left if name in op.left.columns else op.right]
     else:
         return op.args
+
 
 
 def lineage(expr, container=Stack):
@@ -143,14 +144,6 @@ def lineage(expr, container=Stack):
     ------
     node : Expr
     """
-    # TODO: seems a bit brittle, is everything fair game here?
-    types = (
-        ir.ArrayExpr,
-        ir.TableExpr,
-        ir.TableColumn,
-        ops.TableNode,  # includes Selection, Aggregation, Join
-    )
-
     if not isinstance(expr, ir.ArrayExpr):
         raise TypeError('Input expression must be a column')
 
@@ -168,7 +161,7 @@ def lineage(expr, container=Stack):
             yield node
 
         # add our dependencies to the stack if they match our name or
-        # are a valid expression to traverse
+        # are an ibis expression
         for arg in visitor(_get_args(node.op(), name)):
-            if isinstance(arg, types):
+            if isinstance(arg, ir.Expr):
                 c.put((arg, getattr(arg, '_name', name)))
