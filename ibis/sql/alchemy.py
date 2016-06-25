@@ -790,6 +790,16 @@ class _AlchemyTableSet(TableSetFormatter):
 
         if isinstance(ref_op, AlchemyTable):
             result = ref_op.sqla_table
+        elif isinstance(ref_op, ops.UnboundTable):
+            # use SQLAlchemy's TableClause and ColumnClause for unbound tables
+            schema = ref_op.schema
+            result = sa.table(
+                ref_op.name if ref_op.name is not None else ctx.get_ref(expr),
+                *(
+                    sa.column(n, _to_sqla_type(t))
+                    for n, t in zip(schema.names, schema.types)
+                )
+            )
         else:
             # A subquery
             if ctx.is_extracted(ref_expr):
