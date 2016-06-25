@@ -13,3 +13,4 @@
 # limitations under the License.
 
 from ibis.tests.conftest import *  # noqa
+from ibis.expr.tests.conftest import con

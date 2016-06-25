@@ -15,6 +15,8 @@
 import itertools
 import operator
 
+import pytest
+
 from ibis.common import IbisTypeError
 import ibis.expr.api as api
 import ibis.expr.datatypes as dt
@@ -23,677 +25,702 @@ import ibis.expr.operations as ops
 import ibis
 
 from ibis.compat import unittest
-from ibis.expr.tests.mocks import MockConnection, BasicTestCase
 
 from ibis.tests.util import assert_equal
 
 
-class TestLiterals(BasicTestCase, unittest.TestCase):
+def test_null():
+    expr = ibis.literal(None)
+    assert isinstance(expr, ir.NullScalar)
+    assert isinstance(expr.op(), ir.NullLiteral)
+    assert expr._arg.value is None
 
-    def test_null(self):
-        expr = ibis.literal(None)
-        assert isinstance(expr, ir.NullScalar)
-        assert isinstance(expr.op(), ir.NullLiteral)
-        assert expr._arg.value is None
-
-        expr2 = ibis.null()
-        assert_equal(expr, expr2)
-
-    def test_boolean(self):
-        val = True
-        expr = ibis.literal(val)
-        self._check_literal(expr, api.BooleanScalar, val)
-
-        val = False
-        expr = ibis.literal(val)
-        self._check_literal(expr, api.BooleanScalar, val)
-
-    def test_float(self):
-        val = 1.5
-        expr = ibis.literal(val)
-        self._check_literal(expr, api.DoubleScalar, val)
-
-    def test_string(self):
-        val = 'foo'
-        expr = ibis.literal(val)
-        self._check_literal(expr, api.StringScalar, val)
-
-    def _check_literal(self, expr, ex_klass, val):
-        assert isinstance(expr, ex_klass)
-
-        arg = expr.op()
-        assert isinstance(arg, ir.Literal)
-        assert arg.value == val
-
-        # Console formatting works
-        repr(expr)
-
-    def test_unicode(self):
-        # UTF-8 support in Impala non-existent at the moment?
-        pass
-
-    def test_int_literal_cases(self):
-        cases = [
-            (5, 'int8'),
-            (127, 'int8'),
-            (128, 'int16'),
-            (32767, 'int16'),
-            (32768, 'int32'),
-            (2147483647, 'int32'),
-            (2147483648, 'int64'),
-            (-5, 'int8'),
-            (-128, 'int8'),
-            (-129, 'int16'),
-            (-32769, 'int32'),
-            (-2147483649, 'int64'),
-            (1.5, 'double'),
-            ('foo', 'string')
-        ]
-
-        for value, ex_type in cases:
-            expr = ibis.literal(value)
-            klass = dt.scalar_type(ex_type)
-            assert isinstance(expr, klass)
-            assert isinstance(expr.op(), ir.Literal)
-            assert expr.op().value is value
-
-    def test_literal_list(self):
-        what = [1, 2, 1000]
-        expr = api.as_value_expr(what)
-
-        assert isinstance(expr, ir.ArrayExpr)
-        assert isinstance(expr.op(), ir.ValueList)
-        assert isinstance(expr.op().values[2], ir.Int16Scalar)
-
-        # it works!
-        repr(expr)
-
-    def test_mixed_arity(self):
-        table = self.table
-        what = ["bar", table.g, "foo"]
-        expr = api.as_value_expr(what)
-
-        values = expr.op().values
-        assert isinstance(values[1], ir.StringArray)
-
-        # it works!
-        repr(expr)
+    expr2 = ibis.null()
+    assert_equal(expr, expr2)
 
 
-class TestContains(BasicTestCase, unittest.TestCase):
-
-    def test_isin_notin_list(self):
-        vals = [1, 2, 3]
-
-        expr = self.table.a.isin(vals)
-        not_expr = self.table.a.notin(vals)
-
-        assert isinstance(expr, ir.BooleanArray)
-        assert isinstance(expr.op(), ops.Contains)
-
-        assert isinstance(not_expr, ir.BooleanArray)
-        assert isinstance(not_expr.op(), ops.NotContains)
-
-    def test_isin_not_comparable(self):
-        pass
-
-    def test_isin_array_expr(self):
-        #
-        pass
-
-    def test_isin_invalid_cases(self):
-        # For example, array expression in a list of values, where the inner
-        # array values originate from some other table
-        pass
-
-    def test_isin_notin_scalars(self):
-        a, b, c = [ibis.literal(x) for x in [1, 1, 2]]
-
-        result = a.isin([1, 2])
-        assert isinstance(result, ir.BooleanScalar)
-
-        result = a.notin([b, c])
-        assert isinstance(result, ir.BooleanScalar)
-
-    def test_isin_null(self):
-        pass
-
-    def test_negate_isin(self):
-        # Should yield a NotContains
-        pass
-
-    def test_scalar_isin_list_with_array(self):
-        val = ibis.literal(2)
-
-        options = [self.table.a, self.table.b, self.table.c]
-
-        expr = val.isin(options)
-        assert isinstance(expr, ir.BooleanArray)
-
-        not_expr = val.notin(options)
-        assert isinstance(not_expr, ir.BooleanArray)
+@pytest.mark.xfail(
+    raises=AssertionError,
+    reason='UTF-8 support in Impala non-existent at the moment?'
+)
+def test_unicode():
+    assert False
 
 
-class TestDistinct(unittest.TestCase):
+@pytest.mark.parametrize(
+    ['value', 'expected_type'],
+    [
+        (5, 'int8'),
+        (127, 'int8'),
+        (128, 'int16'),
+        (32767, 'int16'),
+        (32768, 'int32'),
+        (2147483647, 'int32'),
+        (2147483648, 'int64'),
+        (-5, 'int8'),
+        (-128, 'int8'),
+        (-129, 'int16'),
+        (-32769, 'int32'),
+        (-2147483649, 'int64'),
+        (1.5, 'double'),
+        ('foo', 'string'),
+    ]
+)
+def test_literal_cases(value, expected_type):
+    expr = ibis.literal(value)
+    klass = dt.scalar_type(expected_type)
+    assert isinstance(expr, klass)
+    assert isinstance(expr.op(), ir.Literal)
+    assert expr.op().value is value
 
-    def setUp(self):
-        self.con = MockConnection()
-        self.table = self.con.table('functional_alltypes')
 
-    def test_distinct_basic(self):
-        expr = self.table.distinct()
-        assert isinstance(expr.op(), ops.Distinct)
-        assert isinstance(expr, ir.TableExpr)
-        assert expr.op().table is self.table
+def test_literal_list():
+    what = [1, 2, 1000]
+    expr = api.as_value_expr(what)
 
-        expr = self.table.string_col.distinct()
-        assert isinstance(expr.op(), ops.DistinctArray)
-        assert isinstance(expr, ir.StringArray)
+    assert isinstance(expr, ir.ArrayExpr)
+    assert isinstance(expr.op(), ir.ValueList)
+    assert isinstance(expr.op().values[2], ir.Int16Scalar)
 
-    # def test_distinct_array_interactions(self):
-    # TODO
+    # it works!
+    repr(expr)
 
+
+def test_mixed_arity(table):
+    what = ["bar", table.g, "foo"]
+    expr = api.as_value_expr(what)
+
+    values = expr.op().values
+    assert isinstance(values[1], ir.StringArray)
+
+    # it works!
+    repr(expr)
+
+
+def test_isin_notin_list(table):
+    vals = [1, 2, 3]
+
+    expr = table.a.isin(vals)
+    not_expr = table.a.notin(vals)
+
+    assert isinstance(expr, ir.BooleanArray)
+    assert isinstance(expr.op(), ops.Contains)
+
+    assert isinstance(not_expr, ir.BooleanArray)
+    assert isinstance(not_expr.op(), ops.NotContains)
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_isin_not_comparable():
+    assert False
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_isin_array_expr():
+    assert False
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_isin_invalid_cases():
+    # For example, array expression in a list of values, where the inner
+    # array values originate from some other table
+    assert False
+
+
+def test_isin_notin_scalars():
+    a, b, c = [ibis.literal(x) for x in [1, 1, 2]]
+
+    result = a.isin([1, 2])
+    assert isinstance(result, ir.BooleanScalar)
+
+    result = a.notin([b, c])
+    assert isinstance(result, ir.BooleanScalar)
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_isin_null():
+    assert False
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_negate_isin():
+    # Should yield a NotContains
+    assert False
+
+
+def test_scalar_isin_list_with_array(table):
+    val = ibis.literal(2)
+
+    options = [table.a, table.b, table.c]
+
+    expr = val.isin(options)
+    assert isinstance(expr, ir.BooleanArray)
+
+    not_expr = val.notin(options)
+    assert isinstance(not_expr, ir.BooleanArray)
+
+
+@pytest.fixture
+def dtable(con):
+    return con.table('functional_alltypes')
+
+
+def test_distinct_basic(dtable):
+    expr = dtable.distinct()
+    assert isinstance(expr.op(), ops.Distinct)
+    assert isinstance(expr, ir.TableExpr)
+    assert expr.op().table is dtable
+
+    expr = dtable.string_col.distinct()
+    assert isinstance(expr.op(), ops.DistinctArray)
+
+    assert isinstance(expr, ir.StringArray)
+
+
+@pytest.mark.xfail(reason='NYT')
+def test_distinct_array_interactions(dtable):
     # array cardinalities / shapes are likely to be different.
-    #     a = self.table.int_col.distinct()
-    #     b = self.table.bigint_col
+    a = dtable.int_col.distinct()
+    b = dtable.bigint_col
 
-    #     self.assertRaises(ir.RelationError, a.__add__, b)
+    with pytest.raises(ir.RelationError):
+        a + b
 
-    def test_distinct_count(self):
-        result = self.table.string_col.distinct().count()
-        expected = self.table.string_col.nunique().name('count')
-        assert_equal(result, expected)
-        assert isinstance(result.op(), ops.CountDistinct)
 
-    def test_distinct_unnamed_array_expr(self):
-        table = ibis.table([('year', 'int32'),
-                            ('month', 'int32'),
-                            ('day', 'int32')], 'foo')
+def test_distinct_count(dtable):
+    result = dtable.string_col.distinct().count()
+    expected = dtable.string_col.nunique().name('count')
+    assert_equal(result, expected)
+    assert isinstance(result.op(), ops.CountDistinct)
 
-        # it works!
-        expr = (ibis.literal('-')
-                .join([table.year.cast('string'),
-                       table.month.cast('string'),
-                       table.day.cast('string')])
-                .distinct())
-        repr(expr)
 
-    def test_distinct_count_numeric_types(self):
-        table = self.table
-        metric = (table.bigint_col.distinct().count()
-                  .name('unique_bigints'))
+def test_distinct_unnamed_array_expr():
+    table = ibis.table([('year', 'int32'),
+                        ('month', 'int32'),
+                        ('day', 'int32')], 'foo')
 
-        table.group_by('string_col').aggregate(metric)
+    # it works!
+    expr = (ibis.literal('-')
+            .join([table.year.cast('string'),
+                   table.month.cast('string'),
+                   table.day.cast('string')])
+            .distinct())
+    repr(expr)
 
-    def test_nunique(self):
-        expr = self.table.string_col.nunique()
-        assert isinstance(expr.op(), ops.CountDistinct)
 
-    def test_project_with_distinct(self):
-        pass
+def test_distinct_count_numeric_types(dtable):
+    metric = dtable.bigint_col.distinct().count().name('unique_bigints')
+    dtable.group_by('string_col').aggregate(metric)
 
 
-class TestNullOps(BasicTestCase, unittest.TestCase):
+def test_nunique(dtable):
+    expr = dtable.string_col.nunique()
+    assert isinstance(expr.op(), ops.CountDistinct)
 
-    def test_isnull(self):
-        expr = self.table['g'].isnull()
-        assert isinstance(expr, api.BooleanArray)
-        assert isinstance(expr.op(), ops.IsNull)
 
-        expr = ibis.literal('foo').isnull()
-        assert isinstance(expr, api.BooleanScalar)
-        assert isinstance(expr.op(), ops.IsNull)
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_project_with_distinct():
+    assert False
 
-    def test_notnull(self):
-        expr = self.table['g'].notnull()
-        assert isinstance(expr, api.BooleanArray)
-        assert isinstance(expr.op(), ops.NotNull)
 
-        expr = ibis.literal('foo').notnull()
-        assert isinstance(expr, api.BooleanScalar)
-        assert isinstance(expr.op(), ops.NotNull)
+def test_isnull(table):
+    expr = table['g'].isnull()
+    assert isinstance(expr, api.BooleanArray)
+    assert isinstance(expr.op(), ops.IsNull)
 
-    def test_null_literal(self):
-        pass
+    expr = ibis.literal('foo').isnull()
+    assert isinstance(expr, api.BooleanScalar)
+    assert isinstance(expr.op(), ops.IsNull)
 
 
-class TestCumulativeOps(BasicTestCase, unittest.TestCase):
+def test_notnull(table):
+    expr = table['g'].notnull()
+    assert isinstance(expr, api.BooleanArray)
+    assert isinstance(expr.op(), ops.NotNull)
 
-    def test_cumulative_yield_array_types(self):
-        d = self.table.f
-        h = self.table.h
+    expr = ibis.literal('foo').notnull()
+    assert isinstance(expr, api.BooleanScalar)
+    assert isinstance(expr.op(), ops.NotNull)
 
-        cases = [
-            d.cumsum(),
-            d.cummean(),
-            d.cummin(),
-            d.cummax(),
-            h.cumany(),
-            h.cumall()
-        ]
 
-        for expr in cases:
-            assert isinstance(expr, ir.ArrayExpr)
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_null_literal():
+    assert False
 
 
-class TestMathOps(BasicTestCase, unittest.TestCase):
+@pytest.mark.parametrize(
+    ['column', 'operation'],
+    [
+        ('d', 'cumsum'),
+        ('d', 'cummean'),
+        ('d', 'cummin'),
+        ('d', 'cummax'),
+        ('h', 'cumany'),
+        ('h', 'cumall'),
+    ]
+)
+def test_cumulative_yield_array_types(table, column, operation):
+    expr = getattr(getattr(table, column), operation)()
+    assert isinstance(expr, ir.ArrayExpr)
 
-    def test_log_variants(self):
-        opnames = ['ln', 'log', 'log2', 'log10']
 
-        columns = ['a', 'b', 'c', 'd', 'e', 'f']
+@pytest.fixture(params=['ln', 'log', 'log2', 'log10'])
+def log(request):
+    return operator.methodcaller(request.param)
 
-        for opname in opnames:
-            def f(x):
-                return getattr(x, opname)()
 
-            for c in columns:
-                result = f(self.table[c])
-                assert isinstance(result, api.DoubleArray)
+@pytest.mark.parametrize('column', list('abcdef'))
+def test_log(table, log, column):
+    result = log(table[column])
+    assert isinstance(result, api.DoubleArray)
 
-                # is this what we want?
-                # assert result.get_name() == c
+    # is this what we want?
+    # assert result.get_name() == c
 
-            assert isinstance(f(ibis.literal(5)), api.DoubleScalar)
-            assert isinstance(f(ibis.literal(5.5)), api.DoubleScalar)
 
-            klass = getattr(ops, opname.capitalize())
-            with self.assertRaises(IbisTypeError):
-                if opname == 'log':
-                    klass(self.table['g'], None).to_expr()
-                else:
-                    klass(self.table['g']).to_expr()
+def test_log_string(table):
+    g = table.g
 
-            # boolean not implemented for these
-            with self.assertRaises(IbisTypeError):
-                f(self.table['h'])
+    with pytest.raises(IbisTypeError):
+        ops.Log(g, None).to_expr()
 
-    def test_exp(self):
-        pass
 
-    def test_sqrt(self):
-        pass
+@pytest.mark.parametrize('klass', [ops.Ln, ops.Log2, ops.Log10])
+def test_log_variants_string(table, klass):
+    g = table.g
 
-    def test_trig_functions(self):
-        pass
+    with pytest.raises(IbisTypeError):
+        klass(g).to_expr()
 
-    def test_round(self):
-        pass
 
+def test_log_boolean(table, log):
+    # boolean not implemented for these
+    h = table['h']
+    with pytest.raises(IbisTypeError):
+        log(h)
 
-class TestTypeCasting(BasicTestCase, unittest.TestCase):
 
-    def test_cast_same_type_noop(self):
-        col = self.table['g']
-        result = col.cast('string')
-        assert result is col
+def test_log_literal(log):
+    assert isinstance(log(ibis.literal(5)), api.DoubleScalar)
+    assert isinstance(log(ibis.literal(5.5)), api.DoubleScalar)
 
-    def test_string_to_number(self):
-        types = ['int8', 'int32', 'double', 'float']
 
-        for t in types:
-            c = 'g'
-            casted = self.table[c].cast(t)
-            assert isinstance(casted, dt.array_type(t))
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_exp():
+    assert False
 
-            casted_literal = ibis.literal('5').cast(t).name('bar')
-            assert isinstance(casted_literal, dt.scalar_type(t))
-            assert casted_literal.get_name() == 'bar'
 
-    def test_number_to_string(self):
-        cols = ['a', 'b', 'c', 'd', 'e', 'f', 'h']
-        for c in cols:
-            casted = self.table[c].cast('string')
-            assert isinstance(casted, api.StringArray)
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_sqrt():
+    assert False
 
-        casted_literal = ibis.literal(5).cast('string').name('bar')
-        assert isinstance(casted_literal, api.StringScalar)
-        assert casted_literal.get_name() == 'bar'
 
-    def test_casted_exprs_are_named(self):
-        expr = self.table.f.cast('string')
-        assert expr.get_name() == 'cast(f, string)'
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_trig_functions():
+    assert False
 
-        # it works! per GH #396
-        expr.value_counts()
 
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_round():
+    assert False
 
-class TestBooleanOps(BasicTestCase, unittest.TestCase):
 
-    def test_nonzero(self):
-        pass
+def test_cast_same_type_noop(table):
+    c = table.g
+    assert c.cast('string') is c
 
-    def test_negate(self):
-        for name in self.int_cols + self.float_cols + self.bool_cols:
-            col = self.table[name]
-            result = -col
-            assert isinstance(result, type(col))
-            assert isinstance(result.op(), ops.Negate)
 
-        result = -ibis.literal(False)
-        assert isinstance(result, api.BooleanScalar)
-        assert isinstance(result.op(), ops.Negate)
+@pytest.mark.parametrize('type', ['int8', 'int32', 'double', 'float'])
+def test_string_to_number(table, type):
+    casted = table.g.cast(type)
+    assert isinstance(casted, dt.array_type(type))
 
-    def test_isnull_notnull(self):
-        pass
+    casted_literal = ibis.literal('5').cast(type).name('bar')
+    assert isinstance(casted_literal, dt.scalar_type(type))
+    assert casted_literal.get_name() == 'bar'
 
-    def test_any_all_notany(self):
-        col = self.table['h']
 
-        expr1 = col.any()
-        expr2 = col.notany()
-        expr3 = col.all()
-        expr4 = (self.table.c == 0).any()
-        expr5 = (self.table.c == 0).all()
+@pytest.mark.parametrize('col', list('abcdefh'))
+def test_number_to_string_column(table, col):
+    casted = table[col].cast('string')
+    assert isinstance(casted, api.StringArray)
 
-        for expr in [expr1, expr2, expr3, expr4, expr5]:
-            assert isinstance(expr, api.BooleanScalar)
-            assert ops.is_reduction(expr)
 
+def test_number_to_string_scalar():
+    casted_literal = ibis.literal(5).cast('string').name('bar')
+    assert isinstance(casted_literal, api.StringScalar)
+    assert casted_literal.get_name() == 'bar'
 
-class TestComparisons(BasicTestCase, unittest.TestCase):
 
-    def test_numbers_compare_numeric_literal(self):
-        opnames = ['lt', 'gt', 'ge', 'le', 'eq', 'ne']
+def test_casted_exprs_are_named(table):
+    expr = table.f.cast('string')
+    assert expr.get_name() == 'cast(f, string)'
 
-        ex_op_class = {
-            'eq': ops.Equals,
-            'ne': ops.NotEquals,
-            'le': ops.LessEqual,
-            'lt': ops.Less,
-            'ge': ops.GreaterEqual,
-            'gt': ops.Greater,
-        }
+    # it works! per GH #396
+    expr.value_counts()
 
-        columns = ['a', 'b', 'c', 'd', 'e', 'f']
 
-        cases = [2, 2 ** 9, 2 ** 17, 2 ** 33, 1.5]
-        for opname, cname, val in itertools.product(opnames, columns, cases):
-            f = getattr(operator, opname)
-            col = self.table[cname]
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_nonzero():
+    assert False
 
-            result = f(col, val)
-            assert isinstance(result, api.BooleanArray)
 
-            assert isinstance(result.op(), ex_op_class[opname])
+@pytest.mark.parametrize('col', list('abcdefh'))
+def test_negate(table, col):
+    c = table[col]
+    result = -c
+    assert isinstance(result, type(c))
+    assert isinstance(result.op(), ops.Negate)
 
-    def test_boolean_comparisons(self):
-        bool_col = self.table['h']
 
-        result = bool_col == True  # noqa
-        assert isinstance(result, api.BooleanArray)
+def test_negate_boolean_scalar():
+    result = -ibis.literal(False)
+    assert isinstance(result, api.BooleanScalar)
+    assert isinstance(result.op(), ops.Negate)
 
-        result = bool_col == False  # noqa
-        assert isinstance(result, api.BooleanArray)
 
-    def test_string_comparisons(self):
-        string_col = self.table['g']
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_isnull_notnull():
+    assert False
 
-        ops = ['lt', 'gt', 'ge', 'le', 'eq', 'ne']
 
-        for opname in ops:
-            f = getattr(operator, opname)
-            result = f(string_col, 'foo')
-            assert isinstance(result, api.BooleanArray)
+@pytest.mark.parametrize(
+    ['column', 'operation'],
+    [
+        ('h', lambda column: column.any()),
+        ('h', lambda column: column.notany()),
+        ('h', lambda column: column.all()),
+        ('c', lambda column: (column == 0).any()),
+        ('c', lambda column: (column == 0).all()),
+    ]
+)
+def test_any_all_notany(table, column, operation):
+    expr = operation(table[column])
+    assert isinstance(expr, api.BooleanScalar)
+    assert ops.is_reduction(expr)
 
-    def test_boolean_logical_ops(self):
-        expr = self.table['a'] > 0
-        ops = ['xor', 'or_', 'and_']
 
-        for opname in ops:
-            f = getattr(operator, opname)
-            result = f(expr, self.table['h'])
-            assert isinstance(result, api.BooleanArray)
+@pytest.mark.parametrize(
+    'operation',
+    [
+        operator.lt,
+        operator.gt,
+        operator.ge,
+        operator.le,
+        operator.eq,
+        operator.ne,
+    ]
+)
+@pytest.mark.parametrize('column', list('abcdef'))
+@pytest.mark.parametrize('case', [2, 2 ** 9, 2 ** 17, 2 ** 33, 1.5])
+def test_numbers_compare_numeric_literal(table, operation, column, case):
+    ex_op_class = {
+        operator.eq: ops.Equals,
+        operator.ne: ops.NotEquals,
+        operator.le: ops.LessEqual,
+        operator.lt: ops.Less,
+        operator.ge: ops.GreaterEqual,
+        operator.gt: ops.Greater,
+    }
 
-            result = f(expr, True)
-            refl_result = f(True, expr)
-            assert isinstance(result, api.BooleanArray)
-            assert isinstance(refl_result, api.BooleanArray)
+    col = table[column]
 
-            true = ibis.literal(True)
-            false = ibis.literal(False)
+    result = operation(col, case)
+    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result.op(), ex_op_class[operation])
 
-            result = f(true, false)
-            assert isinstance(result, api.BooleanScalar)
 
-    def test_string_compare_numeric_array(self):
-        self.assertRaises(TypeError, self.table.g.__eq__, self.table.f)
-        self.assertRaises(TypeError, self.table.g.__eq__, self.table.c)
+def test_boolean_comparisons(table):
+    bool_col = table.h
 
-    def test_string_compare_numeric_literal(self):
-        self.assertRaises(TypeError, self.table.g.__eq__, ibis.literal(1.5))
-        self.assertRaises(TypeError, self.table.g.__eq__, ibis.literal(5))
+    result = bool_col == True  # noqa
+    assert isinstance(result, api.BooleanArray)
 
-    def test_between(self):
-        result = self.table.f.between(0, 1)
+    result = bool_col == False  # noqa
+    assert isinstance(result, api.BooleanArray)
 
-        assert isinstance(result, ir.BooleanArray)
-        assert isinstance(result.op(), ops.Between)
 
-        # it works!
-        result = self.table.g.between('a', 'f')
-        assert isinstance(result, ir.BooleanArray)
+@pytest.mark.parametrize(
+    'operation',
+    [operator.lt, operator.gt, operator.ge, operator.le, operator.eq, operator.ne]
+)
+def test_string_comparisons(table, operation):
+    string_col = table.g
+    result = operation(string_col, 'foo')
+    assert isinstance(result, api.BooleanArray)
 
-        result = ibis.literal(1).between(self.table.a, self.table.c)
-        assert isinstance(result, ir.BooleanArray)
 
-        result = ibis.literal(7).between(5, 10)
-        assert isinstance(result, ir.BooleanScalar)
+@pytest.mark.parametrize(
+    'operation',
+    [operator.xor, operator.or_, operator.and_]
+)
+def test_boolean_logical_ops(table, operation):
+    expr = table.a > 0
 
-        # Cases where between should immediately fail, e.g. incomparables
-        self.assertRaises(TypeError, self.table.f.between, '0', '1')
-        self.assertRaises(TypeError, self.table.f.between, 0, '1')
-        self.assertRaises(TypeError, self.table.f.between, '0', 1)
-
-    def test_chained_comparisons_not_allowed(self):
-        with self.assertRaises(ValueError):
-            0 < self.table.f < 1
-
-
-class TestBinaryArithOps(BasicTestCase, unittest.TestCase):
-
-    def test_binop_string_type_error(self):
-        # Strings are not valid for any numeric arithmetic
-        ints = self.table['a']
-        strs = self.table['g']
-
-        ops = ['add', 'mul', 'truediv', 'sub']
-        for name in ops:
-            f = getattr(operator, name)
-            self.assertRaises(TypeError, f, ints, strs)
-            self.assertRaises(TypeError, f, strs, ints)
-
-    def test_add_literal_promotions(self):
-        cases = [
-            ('a', 0, 'int8'),
-            ('a', 5, 'int16'),
-            ('a', 100000, 'int32'),
-            ('a', -100000, 'int32'),
-
-            ('a', 1.5, 'double'),
-
-            ('b', 0, 'int16'),
-            ('b', 5, 'int32'),
-            ('b', -5, 'int32'),
-
-            ('c', 0, 'int32'),
-            ('c', 5, 'int64'),
-            ('c', -5, 'int64'),
-
-            # technically this can overflow, but we allow it
-            ('d', 5, 'int64')
-        ]
-        self._check_literal_promote_cases(operator.add, cases)
-
-    def test_multiply_literal_promotions(self):
-        cases = [
-            ('a', 0, 'int8'),
-            ('a', 5, 'int16'),
-            ('a', 2 ** 24, 'int32'),
-            ('a', -2 ** 24 + 1, 'int32'),
-
-            ('a', 1.5, 'double'),
+    result = operation(expr, table.h)
+    assert isinstance(result, api.BooleanArray)
 
-            ('b', 0, 'int16'),
-            ('b', 5, 'int32'),
-            ('b', -5, 'int32'),
-            ('c', 0, 'int32'),
-            ('c', 5, 'int64'),
-            ('c', -5, 'int64'),
+    result = operation(expr, True)
+    refl_result = operation(True, expr)
+    assert isinstance(result, api.BooleanArray)
+    assert isinstance(refl_result, api.BooleanArray)
 
-            # technically this can overflow, but we allow it
-            ('d', 5, 'int64')
-        ]
-        self._check_literal_promote_cases(operator.mul, cases)
+    true = ibis.literal(True)
+    false = ibis.literal(False)
 
-    def test_subtract_literal_promotions(self):
-        cases = [
-            ('a', 0, 'int8'),
-            ('a', 5, 'int16'),
-            ('a', 100000, 'int32'),
-            ('a', -100000, 'int32'),
+    result = operation(true, false)
+    assert isinstance(result, api.BooleanScalar)
 
-            ('a', 1.5, 'double'),
 
-            ('b', 0, 'int16'),
-            ('b', 5, 'int32'),
-            ('b', -5, 'int32'),
-            ('c', 0, 'int32'),
-            ('c', 5, 'int64'),
-            ('c', -5, 'int64'),
+def test_string_compare_numeric_array(table):
+    with pytest.raises(TypeError):
+        table.g == table.f
 
-            # technically this can overflow, but we allow it
-            ('d', 5, 'int64')
-        ]
-        self._check_literal_promote_cases(operator.sub, cases)
+    with pytest.raises(TypeError):
+        table.g == table.c
 
-    def test_divide_literal_promotions(self):
-        cases = [
-            ('a', 5, 'double'),
-            ('a', 1.5, 'double'),
-            ('b', 5, 'double'),
-            ('b', -5, 'double'),
-            ('c', 5, 'double'),
-        ]
-        self._check_literal_promote_cases(operator.truediv, cases)
 
-    def test_pow_literal_promotions(self):
-        cases = [
-            ('a', 0, 'int8'),
-            ('b', 0, 'int16'),
-            ('c', 0, 'int32'),
-            ('d', 0, 'int64'),
-            ('e', 0, 'float'),
-            ('f', 0, 'double'),
+def test_string_compare_numeric_literal(table):
+    with pytest.raises(TypeError):
+        table.g == ibis.literal(1.5)
 
-            ('a', 2, 'int16'),
-            ('b', 2, 'int32'),
-            ('c', 2, 'int64'),
-            ('d', 2, 'int64'),
+    with pytest.raises(TypeError):
+        table.g == ibis.literal(5)
 
-            ('a', 1.5, 'double'),
-            ('b', 1.5, 'double'),
-            ('c', 1.5, 'double'),
-            ('d', 1.5, 'double'),
 
-            ('a', -2, 'double'),
-            ('b', -2, 'double'),
-            ('c', -2, 'double'),
-            ('d', -2, 'double'),
+def test_between(table):
+    result = table.f.between(0, 1)
 
-            ('e', 2, 'float'),
-            ('f', 2, 'double')
-        ]
-        self._check_literal_promote_cases(operator.pow, cases)
+    assert isinstance(result, ir.BooleanArray)
+    assert isinstance(result.op(), ops.Between)
 
-    def _check_literal_promote_cases(self, op, cases):
-        for name, val, ex_type in cases:
-            col = self.table[name]
+    # it works!
+    result = table.g.between('a', 'f')
+    assert isinstance(result, ir.BooleanArray)
 
-            result = op(col, val)
-            ex_class = dt.array_type(ex_type)
-            assert isinstance(result, ex_class)
+    result = ibis.literal(1).between(table.a, table.c)
+    assert isinstance(result, ir.BooleanArray)
 
-            result = op(val, col)
-            ex_class = dt.array_type(ex_type)
-            assert isinstance(result, ex_class)
+    result = ibis.literal(7).between(5, 10)
+    assert isinstance(result, ir.BooleanScalar)
 
-    def test_add_array_promotions(self):
-        pass
+    # Cases where between should immediately fail, e.g. incomparables
+    with pytest.raises(TypeError):
+        table.f.between('0', '1')
 
-    def test_subtract_array_promotions(self):
-        pass
+    with pytest.raises(TypeError):
+        table.f.between(0, '1')
 
-    def test_multiply_array_promotions(self):
-        pass
+    with pytest.raises(TypeError):
+        table.f.between('0', 1)
 
-    def test_divide_array_promotions(self):
-        pass
 
-    def test_string_add_concat(self):
-        pass
+def test_chained_comparisons_not_allowed(table):
+    with pytest.raises(ValueError):
+        0 < table.f < 1
 
 
-class TestExprList(unittest.TestCase):
+@pytest.mark.parametrize(
+    'operation',
+    [
+        operator.add,
+        operator.mul,
+        operator.truediv,
+        operator.sub
+    ]
+)
+def test_binop_string_type_error(table, operation):
+    # Strings are not valid for any numeric arithmetic
+    ints = table.d
+    strs = table.g
 
-    def setUp(self):
-        exprs = [ibis.literal(1).name('a'),
-                 ibis.literal(2).name('b')]
+    with pytest.raises(TypeError):
+        operation(ints, strs)
 
-        self.expr = ibis.expr_list(exprs)
+    with pytest.raises(TypeError):
+        operation(strs, ints)
 
-    def test_names(self):
-        assert self.expr.names() == ['a', 'b']
 
-    def test_prefix(self):
-        prefixed = self.expr.prefix('foo_')
-        result = prefixed.names()
-        assert result == ['foo_a', 'foo_b']
+@pytest.mark.parametrize(
+    ['op', 'name', 'case', 'ex_type'],
+    [
+        (operator.add, 'a', 0, 'int8'),
+        (operator.add, 'a', 5, 'int16'),
+        (operator.add, 'a', 100000, 'int32'),
+        (operator.add, 'a', -100000, 'int32'),
 
-    def test_rename(self):
-        renamed = self.expr.rename(lambda x: 'foo({0})'.format(x))
-        result = renamed.names()
-        assert result == ['foo(a)', 'foo(b)']
+        (operator.add, 'a', 1.5, 'double'),
 
-    def test_suffix(self):
-        suffixed = self.expr.suffix('.x')
-        result = suffixed.names()
-        assert result == ['a.x', 'b.x']
+        (operator.add, 'b', 0, 'int16'),
+        (operator.add, 'b', 5, 'int32'),
+        (operator.add, 'b', -5, 'int32'),
 
-    def test_concat(self):
-        exprs = [ibis.literal(1).name('a'),
-                 ibis.literal(2).name('b')]
+        (operator.add, 'c', 0, 'int32'),
+        (operator.add, 'c', 5, 'int64'),
+        (operator.add, 'c', -5, 'int64'),
 
-        exprs2 = [ibis.literal(3).name('c'),
-                  ibis.literal(4).name('d')]
+        # technically this can overflow, but we allow it
+        (operator.add, 'd', 5, 'int64'),
 
-        list1 = ibis.expr_list(exprs)
-        list2 = ibis.expr_list(exprs2)
+        (operator.mul, 'a', 0, 'int8'),
+        (operator.mul, 'a', 5, 'int16'),
+        (operator.mul, 'a', 2 ** 24, 'int32'),
+        (operator.mul, 'a', -2 ** 24 + 1, 'int32'),
 
-        result = list1.concat(list2)
-        expected = ibis.expr_list(exprs + exprs2)
-        assert_equal(result, expected)
+        (operator.mul, 'a', 1.5, 'double'),
 
+        (operator.mul, 'b', 0, 'int16'),
+        (operator.mul, 'b', 5, 'int32'),
+        (operator.mul, 'b', -5, 'int32'),
+        (operator.mul, 'c', 0, 'int32'),
+        (operator.mul, 'c', 5, 'int64'),
+        (operator.mul, 'c', -5, 'int64'),
 
-class TestSubstitute(unittest.TestCase):
+        # technically this can overflow, but we allow it
+        (operator.mul, 'd', 5, 'int64'),
 
-    def setUp(self):
-        self.table = ibis.table([('foo', 'string'),
-                                 ('bar', 'string')], 't1')
+        (operator.sub, 'a', 0, 'int8'),
+        (operator.sub, 'a', 5, 'int16'),
+        (operator.sub, 'a', 100000, 'int32'),
+        (operator.sub, 'a', -100000, 'int32'),
 
-    def test_substitute_dict(self):
-        subs = {'a': 'one', 'b': self.table.bar}
 
-        result = self.table.foo.substitute(subs)
-        expected = (self.table.foo.case()
-                    .when('a', 'one')
-                    .when('b', self.table.bar)
-                    .else_(self.table.foo).end())
-        assert_equal(result, expected)
+        (operator.sub, 'a', 1.5, 'double'),
+        (operator.sub, 'b', 0, 'int16'),
+        (operator.sub, 'b', 5, 'int32'),
+        (operator.sub, 'b', -5, 'int32'),
+        (operator.sub, 'c', 0, 'int32'),
+        (operator.sub, 'c', 5, 'int64'),
+        (operator.sub, 'c', -5, 'int64'),
 
-        result = self.table.foo.substitute(subs, else_=ibis.NA)
-        expected = (self.table.foo.case()
-                    .when('a', 'one')
-                    .when('b', self.table.bar)
-                    .else_(ibis.NA).end())
-        assert_equal(result, expected)
+        # technically this can overflow, but we allow it
+        (operator.sub, 'd', 5, 'int64'),
+
+        (operator.truediv, 'a', 5, 'double'),
+        (operator.truediv, 'a', 1.5, 'double'),
+        (operator.truediv, 'b', 5, 'double'),
+        (operator.truediv, 'b', -5, 'double'),
+        (operator.truediv, 'c', 5, 'double'),
+
+        (operator.pow, 'a', 0, 'int8'),
+        (operator.pow, 'b', 0, 'int16'),
+        (operator.pow, 'c', 0, 'int32'),
+        (operator.pow, 'd', 0, 'int64'),
+        (operator.pow, 'e', 0, 'float'),
+        (operator.pow, 'f', 0, 'double'),
+
+        (operator.pow, 'a', 2, 'int16'),
+        (operator.pow, 'b', 2, 'int32'),
+        (operator.pow, 'c', 2, 'int64'),
+        (operator.pow, 'd', 2, 'int64'),
+
+        (operator.pow, 'a', 1.5, 'double'),
+        (operator.pow, 'b', 1.5, 'double'),
+        (operator.pow, 'c', 1.5, 'double'),
+        (operator.pow, 'd', 1.5, 'double'),
+
+        (operator.pow, 'a', -2, 'double'),
+        (operator.pow, 'b', -2, 'double'),
+        (operator.pow, 'c', -2, 'double'),
+        (operator.pow, 'd', -2, 'double'),
+
+        (operator.pow, 'e', 2, 'float'),
+        (operator.pow, 'f', 2, 'double'),
+    ]
+)
+def test_literal_promotions(table, op, name, case, ex_type):
+    col = table[name]
+
+    result = op(col, case)
+    ex_class = dt.array_type(ex_type)
+    assert isinstance(result, ex_class)
+
+    result = op(case, col)
+    ex_class = dt.array_type(ex_type)
+    assert isinstance(result, ex_class)
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_add_array_promotions():
+    assert False
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_subtract_array_promotions():
+    assert False
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_multiply_array_promotions():
+    assert False
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_divide_array_promotions():
+    assert False
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_string_add_concat():
+    assert False
+
+
+@pytest.fixture
+def expr():
+    exprs = [ibis.literal(1).name('a'),
+             ibis.literal(2).name('b')]
+
+    return ibis.expr_list(exprs)
+
+
+def test_names(expr):
+    assert expr.names() == ['a', 'b']
+
+
+def test_prefix(expr):
+    prefixed = expr.prefix('foo_')
+    result = prefixed.names()
+    assert result == ['foo_a', 'foo_b']
+
+
+def test_rename(expr):
+    renamed = expr.rename(lambda x: 'foo({0})'.format(x))
+    result = renamed.names()
+    assert result == ['foo(a)', 'foo(b)']
+
+
+def test_suffix(expr):
+    suffixed = expr.suffix('.x')
+    result = suffixed.names()
+    assert result == ['a.x', 'b.x']
+
+
+def test_concat():
+    exprs = [ibis.literal(1).name('a'), ibis.literal(2).name('b')]
+    exprs2 = [ibis.literal(3).name('c'), ibis.literal(4).name('d')]
+
+    list1 = ibis.expr_list(exprs)
+    list2 = ibis.expr_list(exprs2)
+
+    result = list1.concat(list2)
+    expected = ibis.expr_list(exprs + exprs2)
+    assert_equal(result, expected)
+
+
+def test_substitute_dict():
+    table = ibis.table([('foo', 'string'), ('bar', 'string')], 't1')
+    subs = {'a': 'one', 'b': table.bar}
+
+    result = table.foo.substitute(subs)
+    expected = (table.foo.case()
+                .when('a', 'one')
+                .when('b', table.bar)
+                .else_(table.foo).end())
+    assert_equal(result, expected)
+
+    result = table.foo.substitute(subs, else_=ibis.NA)
+    expected = (table.foo.case()
+                .when('a', 'one')
+                .when('b', table.bar)
+                .else_(ibis.NA).end())
+    assert_equal(result, expected)
