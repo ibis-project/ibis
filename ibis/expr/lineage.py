@@ -110,19 +110,10 @@ def _get_args(op, name):
 
         # if Selection.selections is always columnar, could use an
         # OrderedDict to prevent scanning the whole thing
-        result = [col for col in result if col._name == name]
-        if isinstance(op.table, ops.Join):
-            result.append(op.table)
-        return result
+        return [col for col in result if col._name == name]
     elif isinstance(op, ops.Aggregation):
         assert name is not None, 'name is None'
-        return [
-            col for col in chain(op.by, op.agg_exprs)
-            if col._name == name
-        ]
-    elif isinstance(op, ops.Join):
-        assert name is not None, 'name is None'
-        return [op.left if name in op.left.columns else op.right]
+        return [col for col in chain(op.by, op.agg_exprs) if col._name == name]
     else:
         return op.args
 
