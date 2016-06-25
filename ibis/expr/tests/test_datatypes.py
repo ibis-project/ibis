@@ -74,9 +74,22 @@ def test_struct():
     assert dt.validate_type(orders) == expected
 
 
-def test_decimal():
+def test_decimal_failure():
     with pytest.raises(SyntaxError):
         dt.validate_type('decimal(')
+
+
+@pytest.mark.parametrize(
+    'spec',
+    ['varchar', 'varchar(10)', 'char', 'char(10)']
+)
+def test_char_varchar(spec):
+    assert dt.validate_type(spec) == dt.string
+
+
+@pytest.mark.parametrize('spec', dt._primitive_types.keys())
+def test_primitive(spec):
+    assert dt.validate_type(spec) == dt._primitive_types[spec]
 
 
 def test_whole_schema():
