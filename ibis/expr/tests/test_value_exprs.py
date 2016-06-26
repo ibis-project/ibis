@@ -472,14 +472,14 @@ def test_boolean_logical_ops(table, operation):
     assert isinstance(result, api.BooleanScalar)
 
 
-def test_null_column(self):
+def test_null_column():
     t = ibis.table([('a', 'string')], name='t')
     s = t.mutate(b=ibis.NA)
     assert s.b.type() == dt.null
     assert isinstance(s.b, ir.NullArray)
 
 
-def test_null_column_union(self):
+def test_null_column_union():
     s = ibis.table([('a', 'string'), ('b', 'double')])
     t = ibis.table([('a', 'string')])
     with pytest.raises(ibis.common.RelationError):
