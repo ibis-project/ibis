@@ -859,6 +859,10 @@ class NullScalar(NullValue, ScalarExpr):
     pass
 
 
+class NullArray(ArrayExpr, NullValue):
+    pass
+
+
 class BooleanScalar(ScalarExpr, BooleanValue):
     pass
 
