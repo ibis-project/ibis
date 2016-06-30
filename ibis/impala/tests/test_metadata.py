@@ -64,7 +64,7 @@ class TestMetadataParser(unittest.TestCase):
             ('', 'EXTERNAL', 'TRUE'),
             ('', 'STATS_GENERATED_VIA_STATS_TASK', 'true'),
             ('', 'numRows', '183592'),
-            ('', 'transient_lastDdlTime', '1447369741'),
+            ('', 'transient_lastDdlTime', '1447340941'),
         ]
 
         cls.storage_info = [
