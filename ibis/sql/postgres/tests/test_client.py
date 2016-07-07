@@ -24,10 +24,6 @@ import ibis
 
 class TestPostgreSQLClient(PostgreSQLTests, unittest.TestCase):
 
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
     def test_table(self):
         table = self.con.table('functional_alltypes')
         assert isinstance(table, ir.TableExpr)
@@ -79,3 +75,6 @@ class TestPostgreSQLClient(PostgreSQLTests, unittest.TestCase):
         # This does not work yet because if the compiler encounters a
         # non-SQLAlchemy table it fails
         pass
+
+    def test_list_databases(self):
+        assert 'ibis_testing' in self.con.list_databases()
