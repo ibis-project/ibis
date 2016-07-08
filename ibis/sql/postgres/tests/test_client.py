@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 
 import pandas as pd
 
@@ -77,4 +78,9 @@ class TestPostgreSQLClient(PostgreSQLTests, unittest.TestCase):
         pass
 
     def test_list_databases(self):
-        assert 'ibis_testing' in self.con.list_databases()
+        postgres_test_db = os.environ.get(
+            'IBIS_TEST_POSTGRES_DB',
+            'ibis_testing'
+        )
+        assert postgres_test_db is not None
+        assert postgres_test_db in self.con.list_databases()

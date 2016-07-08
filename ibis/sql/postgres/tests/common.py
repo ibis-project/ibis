@@ -76,6 +76,9 @@ class PostgreSQLTestEnv(object):
         self.user = PG_USER
         self.password = PG_PASS
         self.host = 'localhost'
-        self.database_name = 'ibis_testing'
+        self.database_name = os.environ.get(
+            'IBIS_TEST_POSTGRES_DB',
+            'ibis_testing'
+        )
 
         self.db_url = 'postgresql://{0}@localhost/ibis_testing'.format(creds)

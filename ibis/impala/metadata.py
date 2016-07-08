@@ -43,15 +43,15 @@ _get_comment = _item_converter(2)
 
 def _try_timestamp(x):
     try:
-        ts = pd.Timestamp(x)
-        return ts.to_pydatetime()
+        ts = pd.Timestamp(x, tz='UTC')
+        return ts.to_pydatetime().replace(tzinfo=None)
     except (ValueError, TypeError):
         return x
 
 
 def _try_unix_timestamp(x):
     try:
-        ts = pd.Timestamp.fromtimestamp(int(x))
+        ts = pd.Timestamp.utcfromtimestamp(int(x))
         return ts.to_pydatetime()
     except (ValueError, TypeError):
         return x

@@ -25,8 +25,12 @@ import ibis.compat as compat
 
 
 # non-POSIX system (e.g. Windows)
-pytestmark = pytest.mark.skipif(compat.PY3 or not hasattr(os, 'setpgid'),
-                                reason='non-POSIX system')
+pytestmark = pytest.mark.skipif(
+    compat.PY3
+        or not hasattr(os, 'setpgid')
+        or os.environ.get('CIRCLE_PROJECT_REPONAME') == 'ibis',
+    reason='non-POSIX system'
+)
 
 
 try:
