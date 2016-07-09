@@ -65,7 +65,7 @@ class PostgreSQLClient(alch.AlchemyClient):
         self.name = url.database
         self.database_name = 'public'
         self.con = sa.create_engine(url)
-        self.meta = sa.MetaData(bind=self.con, reflect=True)
+        self.meta = sa.MetaData(bind=self.con)
 
     @property
     def current_database(self):

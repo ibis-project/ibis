@@ -23,6 +23,9 @@ import ibis.expr.types as ir
 import ibis
 
 
+POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
+
+
 class TestPostgreSQLClient(PostgreSQLTests, unittest.TestCase):
 
     def test_table(self):
@@ -78,9 +81,15 @@ class TestPostgreSQLClient(PostgreSQLTests, unittest.TestCase):
         pass
 
     def test_list_databases(self):
-        postgres_test_db = os.environ.get(
-            'IBIS_TEST_POSTGRES_DB',
-            'ibis_testing'
-        )
-        assert postgres_test_db is not None
-        assert postgres_test_db in self.con.list_databases()
+        assert POSTGRES_TEST_DB is not None
+        assert POSTGRES_TEST_DB in self.con.list_databases()
+
+
+def test_metadata_is_per_table():
+    con = ibis.postgres.connect(host='localhost', database=POSTGRES_TEST_DB)
+    assert len(con.meta.tables) == 0
+
+    # assert that we reflect only when a table is requested
+    t = con.table('functional_alltypes')
+    assert 'functional_alltypes' in con.meta.tables
+    assert len(con.meta.tables) == 1
