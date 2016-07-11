@@ -37,12 +37,12 @@ def roots(expr, types=(ops.PhysicalTable,)):
         if table not in seen:
             seen.add(table)
             yield table
-        else:
-            # flatten and reverse so that we traverse in preorder
-            stack.extend(reversed(list(chain.from_iterable(
-                arg.op().root_tables() for arg in table.flat_args()
-                if isinstance(arg, types)
-            ))))
+
+        # flatten and reverse so that we traverse in preorder
+        stack.extend(reversed(list(chain.from_iterable(
+            arg.op().root_tables() for arg in table.flat_args()
+            if isinstance(arg, types)
+        ))))
 
 
 class Stack(object):
