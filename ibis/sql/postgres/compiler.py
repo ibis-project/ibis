@@ -517,6 +517,7 @@ _operation_registry.update({
     ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
     ops.WindowOp: _window,
     ops.CumulativeOp: _window,
+    ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
 })
 
 

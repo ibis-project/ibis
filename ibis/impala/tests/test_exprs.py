@@ -772,7 +772,7 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
 
         cases = [
             (ibis.row_number().over(w),
-             'row_number() OVER (ORDER BY `float_col`) - 1'),
+             '(row_number() OVER (ORDER BY `float_col`) - 1)'),
             (t.string_col.lag(), 'lag(`string_col`)'),
             (t.string_col.lag(2), 'lag(`string_col`, 2)'),
             (t.string_col.lag(default=0), 'lag(`string_col`, 1, 0)'),
