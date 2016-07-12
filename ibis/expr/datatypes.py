@@ -14,7 +14,7 @@
 
 import re
 
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 
 import six
 
@@ -547,6 +547,66 @@ _token_names = dict(
 Token = namedtuple('Token', ('type', 'value'))
 
 
+TYPE_RULES = OrderedDict(
+    [
+        # any, null
+        ('(?P<ANY>any)', lambda token: Token(Tokens.ANY, any)),
+        ('(?P<NULL>null)', lambda token: Token(Tokens.NULL, null)),
+    ] + [
+        # primitive types
+        (
+            '(?P<{}>{})'.format(token.upper(), token),
+            lambda token, value=value: Token(Tokens.PRIMITIVE, value)
+        ) for token, value in _primitive_types.items()
+        if token != 'any' and token != 'null'
+    ] + [
+        # decimal + complex types
+        (
+            '(?P<{}>{})'.format(token.upper(), token),
+            lambda token, toktype=toktype: Token(toktype, token)
+        ) for token, toktype in zip(
+            ('decimal', 'varchar', 'char', 'array', 'map', 'struct'),
+            (
+                Tokens.DECIMAL,
+                Tokens.VARCHAR,
+                Tokens.CHAR,
+                Tokens.ARRAY,
+                Tokens.MAP,
+                Tokens.STRUCT
+            ),
+        )
+    ] + [
+        # numbers, for decimal spec
+        (r'(?P<INTEGER>\d+)', lambda token: Token(Tokens.INTEGER, int(token))),
+
+        # struct fields
+        (
+            r'(?P<FIELD>[a-zA-Z_][a-zA-Z_0-9]*)',
+            lambda token: Token(Tokens.FIELD, token)
+        ),
+        ('(?P<COMMA>,)', lambda token: Token(Tokens.COMMA, token)),
+        ('(?P<COLON>:)', lambda token: Token(Tokens.COLON, token)),
+        (r'(?P<LPAREN>\()', lambda token: Token(Tokens.LPAREN, token)),
+        (r'(?P<RPAREN>\))', lambda token: Token(Tokens.RPAREN, token)),
+        ('(?P<LBRACKET><)', lambda token: Token(Tokens.LBRACKET, token)),
+        ('(?P<RBRACKET>>)', lambda token: Token(Tokens.RBRACKET, token)),
+        (r'(?P<WHITESPACE>\s+)', None),
+    ]
+)
+
+TYPE_KEYS = tuple(TYPE_RULES.keys())
+TYPE_PATTERN = re.compile('|'.join(TYPE_KEYS), flags=re.IGNORECASE)
+
+
+def generate_tokens(pat, text, keys=TYPE_KEYS):
+    rules = TYPE_RULES
+    scanner = pat.scanner(text)
+    for m in iter(scanner.match, None):
+        func = rules[keys[pat.groupindex[m.lastgroup] - 1]]
+        if func is not None:
+            yield func(m.group(m.lastgroup))
+
+
 class TypeParser(object):
     """A type parser for complex types.
 
@@ -560,61 +620,9 @@ class TypeParser(object):
     Adapted from David Beazley's and Brian Jones's Python Cookbook
     """
 
-    scanner = re.Scanner(
-        [
-            # any, null
-            ('any', lambda scanner, token: Token(Tokens.ANY, any)),
-            ('null', lambda scanner, token: Token(Tokens.NULL, null)),
-        ] + [
-            # primitive types
-            (
-                token,
-                lambda scanner, token, value=value: Token(
-                    Tokens.PRIMITIVE,
-                    value
-                )
-            ) for token, value in _primitive_types.items()
-            if token != 'any' and token != 'null'
-        ] + [
-            # decimal + complex types
-            (
-                token,
-                lambda scanner, token, toktype=toktype: Token(toktype, token)
-            ) for token, toktype in zip(
-                ('decimal', 'varchar', 'char', 'array', 'map', 'struct'),
-                (
-                    Tokens.DECIMAL,
-                    Tokens.VARCHAR,
-                    Tokens.CHAR,
-                    Tokens.ARRAY,
-                    Tokens.MAP,
-                    Tokens.STRUCT
-                ),
-            )
-        ] + [
-            # numbers, for decimal spec
-            (r'\d+', lambda scanner, token: Token(Tokens.INTEGER, int(token))),
-
-            # struct fields
-            (
-                r'[a-zA-Z_][a-zA-Z_0-9]*',
-                lambda scanner, token: Token(Tokens.FIELD, token)
-            ),
-            (',', lambda scanner, token: Token(Tokens.COMMA, token)),
-            (':', lambda scanner, token: Token(Tokens.COLON, token)),
-            (r'\(', lambda scanner, token: Token(Tokens.LPAREN, token)),
-            (r'\)', lambda scanner, token: Token(Tokens.RPAREN, token)),
-            ('<', lambda scanner, token: Token(Tokens.LBRACKET, token)),
-            ('>', lambda scanner, token: Token(Tokens.RBRACKET, token)),
-            (r'\s+', None),
-        ],
-        flags=re.IGNORECASE,
-    )
-
     def __init__(self, text):
         self.text = text
-        tokens, _ = self.scanner.scan(text)
-        self.tokens = iter(tokens)
+        self.tokens = generate_tokens(TYPE_PATTERN, text)
         self.tok = None
         self.nexttok = None
 
