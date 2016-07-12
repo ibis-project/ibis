@@ -1,13 +1,20 @@
+import os
 import pytest
 import ibis
 import ibis.expr.lineage as lin
 from ibis.tests.util import assert_equal
 
 
+IBIS_TEST_CRUNCHBASE_DB = os.environ.get(
+    'IBIS_TEST_CRUNCHBASE_DB',
+    'crunchbase.db'
+)
+
+
 @pytest.fixture
 def con():
     # make sure this is in the directory where you run py.test
-    return ibis.sqlite.connect('crunchbase.db')
+    return ibis.sqlite.connect(IBIS_TEST_CRUNCHBASE_DB)
 
 
 @pytest.fixture

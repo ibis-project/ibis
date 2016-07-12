@@ -1,6 +1,7 @@
 import queue as q
 from itertools import chain
 from toolz import identity
+from collections import deque
 
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -45,53 +46,54 @@ def roots(expr, types=(ops.PhysicalTable,)):
         ))))
 
 
-class Stack(object):
+class Container(object):
+
+    __slots__ = 'data',
+
+    def __init__(self, data):
+        self.data = deque(data or [])
+
+    def append(self, item):
+        self.data.append(item)
+
+    def __len__(self):
+        return len(self.data)
+
+    def get(self):
+        raise NotImplementedError('Child classes must implement get')
+
+    @property
+    def visitor(self):
+        raise NotImplementedError('Child classes must implement visitor')
+
+    def extend(self, items):
+        return self.data.extend(items)
+
+
+class Stack(Container):
 
     """Wrapper around a list to provide a common API for graph traversal
     """
 
-    __slots__ = 'stack',
-
-    def __init__(self, stack=None):
-        self.stack = stack if stack is not None else []
-
-    def put(self, item):
-        self.stack.append(item)
+    __slots__ = 'data',
 
     def get(self):
-        return self.stack.pop()
-
-    @property
-    def empty(self):
-        return not self.stack
+        return self.data.pop()
 
     @property
     def visitor(self):
         return reversed
 
 
-class Queue(object):
+class Queue(Container):
 
     """Wrapper around a queue.Queue to provide a common API for graph traversal
     """
 
-    __slots__ = 'queue',
-
-    def __init__(self, queue=None):
-        self.queue = q.Queue()
-        if queue is not None:
-            for item in queue:
-                self.queue.put(item)
-
-    def put(self, item):
-        self.queue.put(item)
+    __slots__ = 'data',
 
     def get(self):
-        return self.queue.get()
-
-    @property
-    def empty(self):
-        return self.queue.empty()
+        return self.data.popleft()
 
     @property
     def visitor(self):
@@ -119,39 +121,45 @@ def _get_args(op, name):
 
 
 def lineage(expr, container=Stack):
-    """Show the expression tree that comprises a column expression
+    """Yield the path of the expression tree that comprises a column
+    expression.
 
     Parameters
     ----------
     expr : Expr
-
-    Notes
-    -----
-    The order of graph traversal is configurable through the `container`
-    parameter.
+        An ibis expression. It must be an instance of
+        :class:`ibis.expr.types.ArrayExpr`.
+    container : Container, {Stack, Queue}
+        Stack for depth-first traversal, and Queue for breadth-first.
+        Depth-first will reach root table nodes before continuing on to other
+        columns in a column that is derived from multiple column. Breadth-
+        first will traverse all columns at each level before reaching root
+        tables.
 
     Yields
     ------
     node : Expr
+        A column and its dependencies
     """
     if not isinstance(expr, ir.ArrayExpr):
-        raise TypeError('Input expression must be a column')
+        raise TypeError('Input expression must be an instance of ArrayExpr')
 
     c = container([(expr, expr._name)])
 
     seen = set()
-    visitor = c.visitor
 
     # while we haven't visited everything
-    while not c.empty:
+    while c:
         node, name = c.get()
 
         if node not in seen:
             seen.add(node)
             yield node
 
-        # add our dependencies to the stack if they match our name or
-        # are an ibis expression
-        for arg in visitor(_get_args(node.op(), name)):
-            if isinstance(arg, ir.Expr):
-                c.put((arg, getattr(arg, '_name', name)))
+        # add our dependencies to the container if they match our name
+        # and are ibis expressions
+        c.extend(
+            (arg, getattr(arg, '_name', name))
+            for arg in c.visitor(_get_args(node.op(), name))
+            if isinstance(arg, ir.Expr)
+        )
