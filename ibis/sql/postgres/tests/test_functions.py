@@ -618,3 +618,13 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
             ignore_index=True
         )
         tm.assert_frame_equal(result, expected)
+
+    def test_window_with_arithmetic(self):
+        t = self.alltypes
+        w = ibis.window(order_by=t.timestamp_col)
+        expr = t.mutate(new_col=ibis.row_number().over(w) / 2)
+
+        df = t.projection(['timestamp_col']).sort_by('timestamp_col').execute()
+        expected = df.assign(new_col=[x / 2 for x in range(len(df))])
+        result = expr['timestamp_col', 'new_col'].execute()
+        tm.assert_frame_equal(result, expected)
