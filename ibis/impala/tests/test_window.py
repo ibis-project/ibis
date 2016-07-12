@@ -146,8 +146,8 @@ def test_rank_functions(con):
     proj = t[t.g, t.f.rank().name('minr'),
              t.f.dense_rank().name('denser')]
     expected = """\
-SELECT `g`, rank() OVER (ORDER BY `f`) - 1 AS `minr`,
-       dense_rank() OVER (ORDER BY `f`) - 1 AS `denser`
+SELECT `g`, (rank() OVER (ORDER BY `f`) - 1) AS `minr`,
+       (dense_rank() OVER (ORDER BY `f`) - 1) AS `denser`
 FROM alltypes"""
     assert_sql_equal(proj, expected)
 
@@ -171,7 +171,7 @@ def test_order_by_desc(con):
 
     proj = t[t.f, ibis.row_number().over(w).name('revrank')]
     expected = """\
-SELECT `f`, row_number() OVER (ORDER BY `f` DESC) - 1 AS `revrank`
+SELECT `f`, (row_number() OVER (ORDER BY `f` DESC) - 1) AS `revrank`
 FROM alltypes"""
     assert_sql_equal(proj, expected)
 
@@ -196,7 +196,18 @@ def test_row_number_requires_order_by(con):
             .mutate(ibis.row_number().name('foo')))
 
     expected = """\
-SELECT *, row_number() OVER (PARTITION BY `g` ORDER BY `f`) - 1 AS `foo`
+SELECT *, (row_number() OVER (PARTITION BY `g` ORDER BY `f`) - 1) AS `foo`
+FROM alltypes"""
+    assert_sql_equal(expr, expected)
+
+
+def test_row_number_properly_composes_with_arithmetic(con):
+    t = con.table('alltypes')
+    w = ibis.window(order_by=t.f)
+    expr = t.mutate(new=ibis.row_number().over(w) / 2)
+
+    expected = """\
+SELECT *, (row_number() OVER (ORDER BY `f`) - 1) / 2 AS `new`
 FROM alltypes"""
     assert_sql_equal(expr, expected)
 

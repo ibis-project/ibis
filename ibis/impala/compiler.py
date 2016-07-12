@@ -1141,7 +1141,7 @@ def _value_list(translator, expr):
     return '({0})'.format(', '.join(formatted))
 
 
-_subtract_one = '{0} - 1'.format
+_subtract_one = '({0} - 1)'.format
 
 
 _expr_transforms = {
