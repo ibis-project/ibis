@@ -547,7 +547,7 @@ _token_names = dict(
 Token = namedtuple('Token', ('type', 'value'))
 
 
-TYPE_RULES = OrderedDict(
+_TYPE_RULES = OrderedDict(
     [
         # any, null
         ('(?P<ANY>any)', lambda token: Token(Tokens.ANY, any)),
@@ -594,16 +594,27 @@ TYPE_RULES = OrderedDict(
     ]
 )
 
-TYPE_KEYS = tuple(TYPE_RULES.keys())
-TYPE_PATTERN = re.compile('|'.join(TYPE_KEYS), flags=re.IGNORECASE)
+_TYPE_KEYS = tuple(_TYPE_RULES.keys())
+_TYPE_PATTERN = re.compile('|'.join(_TYPE_KEYS), flags=re.IGNORECASE)
 
 
-def generate_tokens(pat, text, keys=TYPE_KEYS):
-    rules = TYPE_RULES
-    scanner = pat.scanner(text)
-    for m in iter(scanner.match, None):
-        func = rules[keys[pat.groupindex[m.lastgroup] - 1]]
+def _generate_tokens(pat, text):
+    """Generate a sequence of tokens from `text` that match `pat`
+
+    Parameters
+    ----------
+    pat : compiled regex
+        The pattern to use for tokenization
+    text : str
+        The text to tokenize
+    """
+    rules = _TYPE_RULES
+    keys = _TYPE_KEYS
+    groupindex = pat.groupindex
+    for m in iter(pat.scanner(text).match, None):
+        func = rules[keys[groupindex[m.lastgroup] - 1]]
         if func is not None:
+            assert callable(func), 'func must be callable'
             yield func(m.group(m.lastgroup))
 
 
@@ -622,7 +633,7 @@ class TypeParser(object):
 
     def __init__(self, text):
         self.text = text
-        self.tokens = generate_tokens(TYPE_PATTERN, text)
+        self.tokens = _generate_tokens(_TYPE_PATTERN, text)
         self.tok = None
         self.nexttok = None
 
