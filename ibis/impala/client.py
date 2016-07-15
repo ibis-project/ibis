@@ -146,6 +146,7 @@ class ImpalaConnection(object):
             if (cur.database != self.database or
                     cur.options != self.options):
                 cur = self._new_cursor()
+            cur.released = False
 
             return cur
         except queue.Empty:
