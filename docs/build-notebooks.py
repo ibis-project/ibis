@@ -5,7 +5,7 @@ import glob
 
 
 def rstify_notebook(path, outpath):
-    cmd = ('ipython nbconvert --execute --to=rst {0} --output {1}'
+    cmd = ('jupyter nbconvert --execute --to=rst {0} --output {1}'
            .format(path, outpath))
 
     print cmd

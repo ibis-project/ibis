@@ -1,0 +1,60 @@
+machine:
+  python:
+    version: 3.4.3
+  pre:
+    - sudo apt-get install --only-upgrade sqlite3  # make sure we have instr
+  environment:
+    IBIS_TEST_SQLITE_DB_PATH: $HOME/ibis-testing-data/ibis_testing.db
+    IBIS_TEST_POSTGRES_DB: circle_test
+  post:
+    # download the data
+    - wget https://ibis-resources.s3.amazonaws.com/testing/ibis-testing-data.tar.gz
+
+    # untar it
+    - tar xvzf ibis-testing-data.tar.gz
+
+  services:
+    - docker
+
+dependencies:
+  post:
+    - docker info
+    #- docker pull cloudera/impala-dev:minimal
+    #- docker run --name impala -d -t cloudera/impala-dev:minimal
+    #- sudo lxc-attach -n "$(docker inspect --format "{{.Id}}" impala)" -- sudo -H -u dev bash 'docker-boot && cd ~/Impala && JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64 . bin/impala-config.sh && JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64 ./buildall.sh -format -notests -release && run-all.sh && start-impala-cluster.py'
+
+database:
+  override:
+    # dump the data to a CSV file
+    - sqlite3 -separator ',' -csv -noheader $IBIS_TEST_SQLITE_DB_PATH <<< 'SELECT * FROM functional_alltypes;' > dump.csv
+
+    # create the Postgres table
+    - >
+      psql -U ubuntu -d circle_test <<EOF
+        CREATE TABLE functional_alltypes (
+          "index" BIGINT,
+          other BIGINT,
+          id BIGINT,
+          bool_col BOOLEAN,
+          tinyint_col SMALLINT,
+          smallint_col SMALLINT,
+          int_col INTEGER,
+          bigint_col BIGINT,
+          float_col FLOAT4,
+          double_col FLOAT8,
+          date_string_col TEXT,
+          string_col TEXT,
+          timestamp_col TIMESTAMP,
+          year BIGINT,
+          month BIGINT
+        );
+        CREATE INDEX ON functional_alltypes ("index");
+      EOF
+
+    # load the sqlite dump into the pg table
+    - cat dump.csv | psql -U ubuntu -d circle_test -c "COPY functional_alltypes FROM STDIN WITH (FORMAT CSV, HEADER FALSE, DELIMITER ',')"
+    - rm dump.csv
+
+test:
+  override:
+    - py.test ibis --postgresql --sqlite --tb=short --junitxml="$CIRCLE_TEST_REPORTS/junit.xml"

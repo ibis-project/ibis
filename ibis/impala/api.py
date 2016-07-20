@@ -46,9 +46,9 @@ def verify(expr):
 
 
 def connect(host='localhost', port=21050, database='default', timeout=45,
-            use_ssl=False, ca_cert=None, user=None, password=None,
-            auth_mechanism='NOSASL', kerberos_service_name='impala',
-            pool_size=8, hdfs_client=None):
+            use_ssl=False, ca_cert=None, user=None,
+            password=None, auth_mechanism='NOSASL',
+            kerberos_service_name='impala', pool_size=8, hdfs_client=None):
     """
     Create an ImpalaClient for use with Ibis.
 

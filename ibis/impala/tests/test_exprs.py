@@ -772,7 +772,7 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
 
         cases = [
             (ibis.row_number().over(w),
-             'row_number() OVER (ORDER BY `float_col`) - 1'),
+             '(row_number() OVER (ORDER BY `float_col`) - 1)'),
             (t.string_col.lag(), 'lag(`string_col`)'),
             (t.string_col.lag(2), 'lag(`string_col`, 2)'),
             (t.string_col.lag(default=0), 'lag(`string_col`, 1, 0)'),
@@ -1550,3 +1550,17 @@ FROM functional_alltypes"""
 
         assert isinstance(t.varchar_col, api.StringArray)
         assert isinstance(t.char_col, api.StringArray)
+
+    def test_unions_with_ctes(self):
+        t = self.con.table('functional_alltypes')
+
+        expr1 = (t.group_by(['tinyint_col', 'string_col'])
+                 .aggregate(t.double_col.sum().name('metric')))
+        expr2 = expr1.view()
+
+        join1 = (expr1.join(expr2, expr1.string_col == expr2.string_col)
+                 [[expr1]])
+        join2 = join1.view()
+
+        expr = join1.union(join2)
+        self.con.explain(expr)

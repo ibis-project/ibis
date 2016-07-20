@@ -178,7 +178,7 @@ TABLE .. AS SELECT`` (CTAS) statement:
    freqs.execute()
 
    files = freqs.files()
-   files.path[0]
+   files
 
    freqs.drop()
 

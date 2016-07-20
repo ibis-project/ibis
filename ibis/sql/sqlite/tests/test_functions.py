@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import pytest  # noqa
 
 from .common import SQLiteTests
@@ -355,3 +356,79 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
         proj = table.projection(agg_exprs)
         proj.execute()
+
+    def test_filter_has_sqla_table(self):
+        t = self.alltypes
+        pred = t.year == 2010
+        filt = t.filter(pred).sort_by('float_col').float_col
+        s = filt.execute()
+        result = s.squeeze().reset_index(drop=True)
+        expected = t.execute().query(
+            'year == 2010'
+        ).sort('float_col').float_col
+
+        assert len(result) == len(expected)
+
+    def test_column_access_after_sort(self):
+        t = self.alltypes
+        expr = t.sort_by('float_col').string_col
+
+        # it works!
+        expr.execute(limit=10)
+
+    def test_materialized_join(self):
+        path = '__ibis_tmp_{0}.db'.format(ibis.util.guid())
+
+        con = ibis.sqlite.connect(path, create=True)
+
+        try:
+            con.raw_sql("create table mj1 (id1 integer, val1 real)")
+            con.raw_sql("insert into mj1 values (1, 10), (2, 20)")
+            con.raw_sql("create table mj2 (id2 integer, val2 real)")
+            con.raw_sql("insert into mj2 values (1, 15), (2, 25)")
+
+            t1 = con.table('mj1')
+            t2 = con.table('mj2')
+            joined = t1.join(t2, t1.id1 == t2.id2).materialize()
+            result = joined.val2.execute()
+            assert len(result) == 2
+        finally:
+            os.remove(path)
+
+
+def test_compile_with_named_table():
+    t = ibis.table([('a', 'string')], name='t')
+    result = ibis.sqlite.compile(t.a)
+    st = sa.table('t', sa.column('a', sa.String)).alias('t0')
+    assert str(result) == str(sa.select([st.c.a]))
+
+
+def test_compile_with_unnamed_table():
+    t = ibis.table([('a', 'string')])
+    result = ibis.sqlite.compile(t.a)
+    st = sa.table('t0', sa.column('a', sa.String)).alias('t0')
+    assert str(result) == str(sa.select([st.c.a]))
+
+
+def test_compile_with_multiple_unnamed_tables():
+    t = ibis.table([('a', 'string')])
+    s = ibis.table([('b', 'string')])
+    join = t.join(s, t.a == s.b)
+    result = ibis.sqlite.compile(join)
+    sqla_t = sa.table('t0', sa.column('a', sa.String)).alias('t0')
+    sqla_s = sa.table('t1', sa.column('b', sa.String)).alias('t1')
+    sqla_join = sqla_t.join(sqla_s, sqla_t.c.a == sqla_s.c.b)
+    expected = sa.select([sqla_t.c.a, sqla_s.c.b]).select_from(sqla_join)
+    assert str(result) == str(expected)
+
+
+def test_compile_with_one_unnamed_table():
+    t = ibis.table([('a', 'string')])
+    s = ibis.table([('b', 'string')], name='s')
+    join = t.join(s, t.a == s.b)
+    result = ibis.sqlite.compile(join)
+    sqla_t = sa.table('t0', sa.column('a', sa.String)).alias('t0')
+    sqla_s = sa.table('s', sa.column('b', sa.String)).alias('t1')
+    sqla_join = sqla_t.join(sqla_s, sqla_t.c.a == sqla_s.c.b)
+    expected = sa.select([sqla_t.c.a, sqla_s.c.b]).select_from(sqla_join)
+    assert str(result) == str(expected)

@@ -29,6 +29,7 @@ from ibis.impala.client import build_ast
 from ibis.impala.tests.common import ENV, ImpalaE2E, connect_test
 from ibis.tests.util import assert_equal
 import ibis.common as com
+import ibis.expr.types as ir
 import ibis.util as util
 
 
@@ -296,8 +297,8 @@ FROM test1""".format(path)
                               ('bar', 'int8'),
                               ('baz', 'int16')])
         statement = ddl.CreateTableWithSchema('another_table', schema,
-                                              ddl.NoFormat(),
                                               can_exist=False,
+                                              format='parquet',
                                               path=path, database='foo')
         result = statement.compile()
 
@@ -306,6 +307,7 @@ CREATE TABLE foo.`another_table`
 (`foo` string,
  `bar` tinyint,
  `baz` smallint)
+STORED AS PARQUET
 LOCATION '{0}'""".format(path)
         assert result == expected
 
@@ -1035,6 +1037,24 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
             expr.execute()
         finally:
             self.con.drop_table(name, database=self.tmp_db)
+
+    def test_varchar_char_support(self):
+        statement = """\
+CREATE EXTERNAL TABLE {0}
+(`group1` varchar(10),
+ `group2` char(10))
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LOCATION '/tmp'"""
+
+        full_path = '{0}.testing_{1}'.format(self.tmp_db, util.guid())
+        sql = statement.format(full_path)
+
+        self.con._execute(sql, results=False)
+
+        table = self.con.table(full_path)
+        assert isinstance(table['group1'], ir.StringValue)
+        assert isinstance(table['group2'], ir.StringValue)
 
     def test_temp_table_concurrency(self):
         pytest.skip('Cannot get this test to run under pytest')

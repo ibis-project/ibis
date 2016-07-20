@@ -13,3 +13,62 @@
 # limitations under the License.
 
 from ibis.tests.conftest import *  # noqa
+from ibis.expr.tests.mocks import MockConnection
+
+import pytest
+import ibis
+import ibis.expr.datatypes as dt
+
+
+@pytest.fixture
+def schema():
+    return [
+        ('a', 'int8'),
+        ('b', 'int16'),
+        ('c', 'int32'),
+        ('d', 'int64'),
+        ('e', 'float'),
+        ('f', 'double'),
+        ('g', 'string'),
+        ('h', 'boolean'),
+    ]
+
+
+@pytest.fixture
+def schema_dict(schema):
+    return dict(schema)
+
+
+@pytest.fixture
+def table(schema):
+    return ibis.table(schema, name='schema')
+
+
+@pytest.fixture(params=list('abcdh'))
+def int_col(request):
+    return request.param
+
+
+@pytest.fixture(params=list('h'))
+def bool_col(request):
+    return request.param
+
+
+@pytest.fixture(params=list('ef'))
+def float_col(request):
+    return request.param
+
+
+@pytest.fixture(params=list('abcdefh'))
+def numeric_col(request):
+    return request.param
+
+
+@pytest.fixture(params=list('abcdefgh'))
+def col(request):
+    return request.param
+
+
+@pytest.fixture
+def con():
+    return MockConnection()

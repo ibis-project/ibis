@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numbers
 import operator
 import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
+
+from sqlalchemy.sql.elements import Over as _Over
+from sqlalchemy.ext.compiler import compiles as sa_compiles
 
 from ibis.client import SQLClient, AsyncQuery, Query
 from ibis.sql.compiler import Select, Union, TableSetFormatter
@@ -31,34 +35,40 @@ import ibis
 
 
 _ibis_type_to_sqla = {
-    dt.Int8: sa.types.SmallInteger,
-    dt.Int16: sa.types.SmallInteger,
-    dt.Int32: sa.types.Integer,
-    dt.Int64: sa.types.BigInteger,
+    dt.Int8: sa.SmallInteger,
+    dt.Int16: sa.SmallInteger,
+    dt.Int32: sa.Integer,
+    dt.Int64: sa.BigInteger,
 
     # Mantissa-based
-    dt.Float: sa.types.Float(precision=24),
-    dt.Double: sa.types.Float(precision=53),
+    dt.Float: sa.Float(precision=24),
+    dt.Double: sa.Float(precision=53),
 
-    dt.Boolean: sa.types.Boolean,
+    dt.Boolean: sa.Boolean,
 
-    dt.String: sa.types.String,
+    dt.String: sa.String,
 
-    dt.Timestamp: sa.types.DateTime,
+    dt.Timestamp: sa.DateTime,
 
-    dt.Decimal: sa.types.NUMERIC,
+    dt.Decimal: sa.NUMERIC,
 }
 
 _sqla_type_mapping = {
-    sa.types.SmallInteger: dt.Int16,
-    sa.types.INTEGER: dt.Int64,
-    sa.types.BOOLEAN: dt.Boolean,
-    sa.types.BIGINT: dt.Int64,
-    sa.types.FLOAT: dt.Double,
-    sa.types.REAL: dt.Double,
+    sa.SmallInteger: dt.Int16,
+    sa.SMALLINT: dt.Int16,
+    sa.Integer: dt.Int32,
+    sa.INTEGER: dt.Int32,
+    sa.BigInteger: dt.Int64,
+    sa.BIGINT: dt.Int64,
+    sa.Boolean: dt.Boolean,
+    sa.BOOLEAN: dt.Boolean,
+    sa.FLOAT: dt.Double,
+    sa.REAL: dt.Float,
+    sa.VARCHAR: dt.String,
+    sa.Float: dt.Double,
 
     sa.types.TEXT: dt.String,
-    sa.types.NullType: dt.String,
+    sa.types.NullType: dt.Null,
     sa.types.Text: dt.String,
 }
 
@@ -84,8 +94,15 @@ def schema_from_table(table):
                 ibis_class = _sqla_type_to_ibis[c.type]
             elif type_class in _sqla_type_to_ibis:
                 ibis_class = _sqla_type_to_ibis[type_class]
+            elif isinstance(c.type, sa.DateTime):
+                ibis_class = dt.Timestamp()
             else:
-                raise NotImplementedError(c.type)
+                for k, v in _sqla_type_to_ibis.items():
+                    if isinstance(c.type, type(k)):
+                        ibis_class = v
+                        break
+                else:
+                    raise NotImplementedError(c.type)
             t = ibis_class(c.nullable)
 
         types.append(t)
@@ -164,7 +181,11 @@ def _get_sqla_table(ctx, table):
             ctx_level = ctx_level.parent
             sa_table = ctx_level.get_table(table)
     else:
-        sa_table = table.op().sqla_table
+        op = table.op()
+        if isinstance(op, AlchemyTable):
+            sa_table = op.sqla_table
+        else:
+            sa_table = ctx.get_compiled_expr(table)
 
     return sa_table
 
@@ -388,14 +409,17 @@ class AlchemyContext(comp.QueryContext):
         self.dialect = kwargs.pop('dialect', AlchemyDialect)
         comp.QueryContext.__init__(self, *args, **kwargs)
 
-    def subcontext(self):
-        return type(self)(dialect=self.dialect, parent=self)
+    def subcontext(self, isolated=False):
+        if not isolated:
+            return type(self)(dialect=self.dialect, parent=self)
+        else:
+            return type(self)(dialect=self.dialect)
 
     def _to_sql(self, expr, ctx):
         return to_sqlalchemy(expr, context=ctx)
 
-    def _compile_subquery(self, expr):
-        sub_ctx = self.subcontext()
+    def _compile_subquery(self, expr, isolated=False):
+        sub_ctx = self.subcontext(isolated=isolated)
         return self._to_sql(expr, sub_ctx)
 
     def has_table(self, expr, parent_contexts=False):
@@ -596,6 +620,8 @@ class AlchemySelect(Select):
 
     def _add_select(self, table_set):
         to_select = []
+
+        has_select_star = False
         for expr in self.select_set:
             if isinstance(expr, ir.ValueExpr):
                 arg = self._translate(expr, named=True)
@@ -604,7 +630,8 @@ class AlchemySelect(Select):
                     cached_table = self.context.get_table(expr)
                     if cached_table is None:
                         # the select * case from materialized join
-                        arg = '*'
+                        has_select_star = True
+                        continue
                     else:
                         arg = table_set
                 else:
@@ -614,18 +641,29 @@ class AlchemySelect(Select):
 
             to_select.append(arg)
 
-        if self.exists:
-            clause = sa.exists(to_select)
+        if has_select_star:
+            if table_set is None:
+                raise ValueError('table_set cannot be None here')
+
+            clauses = [table_set] + to_select
         else:
-            clause = sa.select(to_select)
+            clauses = to_select
+
+        if self.exists:
+            result = sa.exists(clauses)
+        else:
+            result = sa.select(clauses)
 
         if self.distinct:
-            clause = clause.distinct()
+            result = result.distinct()
 
-        if table_set is not None:
-            return clause.select_from(table_set)
+        if not has_select_star:
+            if table_set is not None:
+                return result.select_from(table_set)
+            else:
+                return result
         else:
-            return clause
+            return result
 
     def _add_groupby(self, fragment):
         # GROUP BY and HAVING
@@ -752,6 +790,16 @@ class _AlchemyTableSet(TableSetFormatter):
 
         if isinstance(ref_op, AlchemyTable):
             result = ref_op.sqla_table
+        elif isinstance(ref_op, ops.UnboundTable):
+            # use SQLAlchemy's TableClause and ColumnClause for unbound tables
+            schema = ref_op.schema
+            result = sa.table(
+                ref_op.name if ref_op.name is not None else ctx.get_ref(expr),
+                *(
+                    sa.column(n, _to_sqla_type(t))
+                    for n, t in zip(schema.names, schema.types)
+                )
+            )
         else:
             # A subquery
             if ctx.is_extracted(ref_expr):
@@ -777,13 +825,16 @@ class _AlchemyTableSet(TableSetFormatter):
 
 
 def _can_lower_sort_column(table_set, expr):
+    # TODO(wesm): This code is pending removal through cleaner internal
+    # semantics
+
     # we can currently sort by just-appeared aggregate metrics, but the way
     # these are references in the expression DSL is as a SortBy (blocking
     # table operation) on an aggregation. There's a hack in _collect_SortBy
     # in the generic SQL compiler that "fuses" the sort with the
     # aggregation so they appear in same query. It's generally for
     # cosmetics and doesn't really affect query semantics.
-    bases = ir.find_all_base_tables(expr)
+    bases = ops.find_all_base_tables(expr)
     if len(bases) > 1:
         return False
 
@@ -792,7 +843,7 @@ def _can_lower_sort_column(table_set, expr):
 
     if isinstance(base_op, ops.Aggregation):
         return base_op.table.equals(table_set)
-    elif isinstance(base_op, ops.Projection):
+    elif isinstance(base_op, ops.Selection):
         return base.equals(table_set)
     else:
         return False
@@ -873,3 +924,61 @@ def _floor_divide(t, expr):
         return t.translate(new_expr)
 
     return fixed_arity(lambda x, y: x / y, 2)(t, expr)
+
+
+@compiles(ops.SortKey)
+def _sort_key(t, expr):
+    # We need to define this for window functions that have an order by
+    by, ascending = expr.op().args
+    sort_direction = sa.asc if ascending else sa.desc
+    return sort_direction(t.translate(by))
+
+
+_valid_frame_types = numbers.Integral, str, type(None)
+
+
+class Over(_Over):
+    def __init__(
+        self,
+        element,
+        order_by=None,
+        partition_by=None,
+        preceding=None,
+        following=None,
+    ):
+        super(Over, self).__init__(
+            element, order_by=order_by, partition_by=partition_by
+        )
+        if not isinstance(preceding, _valid_frame_types):
+            raise TypeError(
+                'preceding must be a string, integer or None, got %r' % (
+                    type(preceding).__name__
+                )
+            )
+        if not isinstance(following, _valid_frame_types):
+            raise TypeError(
+                'following must be a string, integer or None, got %r' % (
+                    type(following).__name__
+                )
+            )
+        self.preceding = preceding if preceding is not None else 'UNBOUNDED'
+        self.following = following if following is not None else 'UNBOUNDED'
+
+
+@sa_compiles(Over)
+def compile_over_with_frame(element, compiler, **kw):
+    clauses = ' '.join(
+        '%s BY %s' % (word, compiler.process(clause, **kw))
+        for word, clause in (
+            ('PARTITION', element.partition_by),
+            ('ORDER', element.order_by),
+        )
+        if clause is not None and len(clause)
+    )
+    return '%s OVER (%s%sROWS BETWEEN %s PRECEDING AND %s FOLLOWING)' % (
+        compiler.process(getattr(element, 'element', element.func), **kw),
+        clauses,
+        ' ' if clauses else '',  # only add a space if we order by or group by
+        str(element.preceding).upper(),
+        str(element.following).upper(),
+    )

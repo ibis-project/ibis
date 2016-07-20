@@ -230,8 +230,14 @@ class ImpalaSelect(comp.Select):
 
         buf = StringIO()
         buf.write('WHERE ')
-        fmt_preds = [self._translate(pred, permit_subquery=True)
-                     for pred in self.where]
+        fmt_preds = []
+        for pred in self.where:
+            new_pred = self._translate(pred, permit_subquery=True)
+            if isinstance(pred.op(), ops.Or):
+                # parens for OR exprs because it binds looser than AND
+                new_pred = _parenthesize(new_pred)
+            fmt_preds.append(new_pred)
+
         conj = ' AND\n{0}'.format(' ' * 6)
         buf.write(conj.join(fmt_preds))
         return buf.getvalue()
@@ -376,11 +382,16 @@ class ImpalaUnion(comp.Union):
         else:
             union_keyword = 'UNION ALL'
 
-        left_set = context.get_compiled_expr(self.left)
-        right_set = context.get_compiled_expr(self.right)
+        left_set = context.get_compiled_expr(self.left, isolated=True)
+        right_set = context.get_compiled_expr(self.right, isolated=True)
 
-        query = '{0}\n{1}\n{2}'.format(left_set, union_keyword, right_set)
-        return query
+        # XXX: hack of all trades - our right relation has a CTE
+        # TODO: factor out common subqueries in the union
+        if right_set.startswith('WITH'):
+            format_string = '({0})\n{1}\n({2})'
+        else:
+            format_string = '{0}\n{1}\n{2}'
+        return format_string.format(left_set, union_keyword, right_set)
 
 
 # ---------------------------------------------------------------------
@@ -887,9 +898,10 @@ def _exists_subquery(translator, expr):
     op = expr.op()
     ctx = translator.context
 
-    expr = (op.foreign_table
-            .filter(op.predicates)
-            .projection([ir.literal(1).name(ir.unnamed)]))
+    dummy = ir.literal(1).name(ir.unnamed)
+
+    filtered = op.foreign_table.filter(op.predicates)
+    expr = filtered.projection([dummy])
 
     subquery = ctx.get_compiled_expr(expr)
 
@@ -988,7 +1000,7 @@ def _substring(translator, expr):
 
     # Impala is 1-indexed
     if length is None or isinstance(length.op(), ir.Literal):
-        lvalue = length.op().value if length else None
+        lvalue = length.op().value if length is not None else None
         if lvalue:
             return 'substr({0}, {1} + 1, {2})'.format(arg_formatted,
                                                       start_formatted,
@@ -1009,12 +1021,12 @@ def _string_find(translator, expr):
     arg_formatted = translator.translate(arg)
     substr_formatted = translator.translate(substr)
 
-    if start and not isinstance(start.op(), ir.Literal):
+    if start is not None and not isinstance(start.op(), ir.Literal):
         start_fmt = translator.translate(start)
         return 'locate({0}, {1}, {2} + 1) - 1'.format(substr_formatted,
                                                       arg_formatted,
                                                       start_fmt)
-    elif start and start.op().value:
+    elif start is not None and start.op().value:
         sval = start.op().value
         return 'locate({0}, {1}, {2}) - 1'.format(substr_formatted,
                                                   arg_formatted,
@@ -1129,7 +1141,7 @@ def _value_list(translator, expr):
     return '({0})'.format(', '.join(formatted))
 
 
-_subtract_one = '{0} - 1'.format
+_subtract_one = '({0} - 1)'.format
 
 
 _expr_transforms = {

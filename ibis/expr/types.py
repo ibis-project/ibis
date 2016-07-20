@@ -58,6 +58,13 @@ class Expr(object):
         else:
             return self._repr()
 
+    def __bool__(self):
+        raise ValueError("The truth value of an Ibis expression is not "
+                         "defined")
+
+    def __nonzero__(self):
+        return self.__bool__()
+
     def _repr(self, memo=None):
         from ibis.expr.format import ExprFormatter
         return ExprFormatter(self).get_result()
@@ -67,8 +74,8 @@ class Expr(object):
         Generic composition function to enable expression pipelining
 
         >>> (expr
-             .pipe(f, *args, **kwargs)
-             .pipe(g, *args2, **kwargs2))
+        >>>  .pipe(f, *args, **kwargs)
+        >>>  .pipe(g, *args2, **kwargs2))
 
         is equivalent to
 
@@ -86,9 +93,9 @@ class Expr(object):
         Examples
         --------
         >>> def foo(data, a=None, b=None):
-                pass
+        ...     pass
         >>> def bar(a, b, data=None):
-                pass
+        ...     pass
         >>> expr.pipe(foo, a=5, b=10)
         >>> expr.pipe((bar, 'data'), 1, 2)
 
@@ -232,6 +239,11 @@ class Node(object):
 
         return '%s(%s)' % (opname, ', '.join(pprint_args))
 
+    def blocks(self):
+        # The contents of this node at referentially distinct and may not be
+        # analyzed deeper
+        return False
+
     def flat_args(self):
         for arg in self.args:
             if isinstance(arg, (tuple, list)):
@@ -316,7 +328,9 @@ class TableColumn(ValueNode):
         Node.__init__(self, [name, table_expr])
 
         if name not in table_expr.schema():
-            raise KeyError("'{0}' is not a field".format(name))
+            raise com.IbisTypeError(
+                "'{0}' is not a field in {1}".format(name, table_expr.columns)
+            )
 
         self.name = name
         self.table = table_expr
@@ -423,21 +437,6 @@ class Literal(ValueNode):
         return []
 
 
-class TableNode(Node):
-
-    def get_type(self, name):
-        return self.get_schema().get_type(name)
-
-    def to_expr(self):
-        return TableExpr(self)
-
-
-class BlockingTableNode(TableNode):
-    # Try to represent the fact that whatever lies here is a semantically
-    # distinct table. Like projections, aggregations, and so forth
-    pass
-
-
 def distinct_roots(*args):
     all_roots = []
     for arg in args:
@@ -540,6 +539,13 @@ class TableExpr(Expr):
         def factory(arg):
             return TableExpr(arg)
         return factory
+
+    def _is_valid(self, exprs):
+        try:
+            self._assert_valid(util.promote_list(exprs))
+            return True
+        except:
+            return False
 
     def _assert_valid(self, exprs):
         from ibis.expr.analysis import ExprValidator
@@ -687,7 +693,7 @@ class TableExpr(Expr):
 
         return self.projection([self, expr])
 
-    def group_by(self, by):
+    def group_by(self, by=None, **additional_grouping_expressions):
         """
         Create an intermediate grouped table expression, pending some group
         operation to be applied with it.
@@ -696,12 +702,19 @@ class TableExpr(Expr):
         --------
         x.group_by([b1, b2]).aggregate(metrics)
 
+        Notes
+        -----
+        group_by and groupby are equivalent, with `groupby` being provided for
+        ease-of-use for pandas users.
+
         Returns
         -------
         grouped_expr : GroupedTableExpr
         """
         from ibis.expr.groupby import GroupedTableExpr
-        return GroupedTableExpr(self, by)
+        return GroupedTableExpr(self, by, **additional_grouping_expressions)
+
+    groupby = group_by
 
 
 # -----------------------------------------------------------------------------
@@ -843,6 +856,10 @@ class NullScalar(NullValue, ScalarExpr):
     """
     A scalar value expression representing NULL
     """
+    pass
+
+
+class NullArray(ArrayExpr, NullValue):
     pass
 
 
@@ -1068,11 +1085,11 @@ class NullLiteral(ValueNode):
     """
 
     def __init__(self):
-        pass
+        self.value = None
 
     @property
     def args(self):
-        return [None]
+        return [self.value]
 
     def equals(self, other):
         return isinstance(other, NullLiteral)
@@ -1125,22 +1142,3 @@ def find_base_table(expr):
             r = find_base_table(arg)
             if isinstance(r, TableExpr):
                 return r
-
-
-def find_all_base_tables(expr, memo=None):
-    if memo is None:
-        memo = {}
-
-    node = expr.op()
-
-    if (isinstance(expr, TableExpr) and
-            isinstance(node, BlockingTableNode)):
-        if id(expr) not in memo:
-            memo[id(expr)] = expr
-        return memo
-
-    for arg in expr.op().flat_args():
-        if isinstance(arg, Expr):
-            find_all_base_tables(arg, memo)
-
-    return memo

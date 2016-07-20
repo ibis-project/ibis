@@ -120,6 +120,8 @@ setup(
               'ibis.spark.tests',
               'ibis.sql',
               'ibis.sql.tests',
+              'ibis.sql.postgres',
+              'ibis.sql.postgres.tests',
               'ibis.sql.presto',
               'ibis.sql.presto.tests',
               'ibis.sql.redshift',

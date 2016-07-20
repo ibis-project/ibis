@@ -12,24 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import getpass
 import os
+
 import pytest
 
-from ibis.sql.sqlite.compiler import SQLiteExprTranslator
-import ibis.sql.sqlite.api as api
-import ibis.util as util
+from ibis.sql.postgres.compiler import PostgreSQLExprTranslator
+import ibis.sql.postgres.api as api
 
-from sqlalchemy.dialects.sqlite import dialect as sqlite_dialect
+from sqlalchemy.dialects.postgresql import dialect as postgres_dialect
 
 
-@pytest.mark.sqlite
-class SQLiteTests(object):
+PG_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
+PG_PASS = os.environ.get('IBIS_POSTGRES_PASS')
+
+
+@pytest.mark.postgresql
+class PostgreSQLTests(object):
 
     @classmethod
     def setUpClass(cls):
-        cls.env = SQLiteTestEnv()
-        cls.dialect = sqlite_dialect()
-        cls.con = api.connect(cls.env.db_path)
+        cls.env = PostgreSQLTestEnv()
+        cls.dialect = postgres_dialect()
+
+        E = cls.env
+
+        cls.con = api.connect(host=E.host, user=E.user, password=E.password,
+                              database=E.database_name)
         cls.alltypes = cls.con.table('functional_alltypes')
 
     def _check_expr_cases(self, cases, context=None, named=False):
@@ -42,7 +51,9 @@ class SQLiteTests(object):
             assert str(compiled) == str(ex_compiled)
 
     def _translate(self, expr, named=False, context=None):
-        translator = SQLiteExprTranslator(expr, context=context, named=named)
+        translator = PostgreSQLExprTranslator(
+            expr, context=context, named=named
+        )
         return translator.get_result()
 
     def _to_sqla(self, table):
@@ -54,8 +65,20 @@ class SQLiteTests(object):
             assert result == expected
 
 
-class SQLiteTestEnv(object):
+class PostgreSQLTestEnv(object):
 
     def __init__(self):
-        self.db_path = os.environ.get('IBIS_TEST_SQLITE_DB_PATH',
-                                      'ibis_testing.db')
+        if PG_PASS:
+            creds = '{0}:{1}'.format(PG_USER, PG_PASS)
+        else:
+            creds = PG_USER
+
+        self.user = PG_USER
+        self.password = PG_PASS
+        self.host = 'localhost'
+        self.database_name = os.environ.get(
+            'IBIS_TEST_POSTGRES_DB',
+            'ibis_testing'
+        )
+
+        self.db_url = 'postgresql://{0}@localhost/ibis_testing'.format(creds)

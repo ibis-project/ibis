@@ -51,7 +51,8 @@ class ImpalaDatabase(Database):
 
     def create_table(self, table_name, obj=None, **kwargs):
         """
-        Dispatch to ImpalaClient.create_table. See docs for more
+        Dispatch to ImpalaClient.create_table. See that function's docstring
+        for more
         """
         return self.client.create_table(table_name, obj=obj,
                                         database=self.name, **kwargs)
@@ -703,7 +704,7 @@ class ImpalaClient(SQLClient):
         ibis_types = []
         for t in types:
             t = t.lower()
-            t = udf._impala_to_ibis_type.get(t, t)
+            t = udf.parse_type(t)
             ibis_types.append(t)
 
         names = [x.lower() for x in names]
@@ -853,7 +854,7 @@ class ImpalaClient(SQLClient):
                                  path=location)
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
-                table_name, schema, ddl.NoFormat(),
+                table_name, schema,
                 database=database,
                 format=format,
                 can_exist=force,
@@ -1020,7 +1021,11 @@ class ImpalaClient(SQLClient):
         # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
         name, path = options.impala.temp_db, options.impala.temp_hdfs_path
         if not self.exists_database(name):
-            self.create_database(name, path=path, force=True)
+            if self._hdfs is None:
+                print('Without an HDFS connection, certain functionality'
+                      ' may be disabled')
+            else:
+                self.create_database(name, path=path, force=True)
 
     def _wrap_new_table(self, name, database, persist):
         qualified_name = self._fully_qualified_name(name, database)
@@ -1321,7 +1326,8 @@ class ImpalaClient(SQLClient):
         tuples = cur.fetchall()
         if len(tuples) > 0:
             result = []
-            for out_type, sig in tuples:
+            for tup in tuples:
+                out_type, sig = tup[:2]
                 name, types = _split_signature(sig)
                 types = _type_parser(types).types
 

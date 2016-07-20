@@ -20,9 +20,9 @@ from ibis.expr.types import TableColumn  # noqa
 from ibis.compat import py_string
 from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
-from ibis.expr.types import (Node, as_value_expr,
+from ibis.expr.types import (Node, as_value_expr, Expr,
                              ValueExpr, ArrayExpr, TableExpr,
-                             TableNode, ValueNode, _safe_repr)
+                             ValueNode, _safe_repr)
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
@@ -35,6 +35,39 @@ def _arg_getter(i):
     def arg_accessor(self):
         return self.args[i]
     return arg_accessor
+
+
+class TableNode(Node):
+
+    def get_type(self, name):
+        return self.get_schema().get_type(name)
+
+    def to_expr(self):
+        return TableExpr(self)
+
+    def aggregate(self, this, metrics, by=None, having=None):
+        return Aggregation(this, metrics, by=by, having=having)
+
+    def sort_by(self, expr, sort_exprs):
+        return Selection(expr, [], sort_keys=sort_exprs)
+
+
+def find_all_base_tables(expr, memo=None):
+    if memo is None:
+        memo = {}
+
+    node = expr.op()
+
+    if isinstance(expr, TableExpr) and node.blocks():
+        if id(expr) not in memo:
+            memo[id(node)] = expr
+        return memo
+
+    for arg in expr.op().flat_args():
+        if isinstance(arg, Expr):
+            find_all_base_tables(arg, memo)
+
+    return memo
 
 
 class ValueOperationMeta(type):
@@ -61,9 +94,10 @@ class ValueOp(six.with_metaclass(ValueOperationMeta, ValueNode)):
     pass
 
 
-class PhysicalTable(ir.BlockingTableNode, HasSchema):
+class PhysicalTable(TableNode, HasSchema):
 
-    pass
+    def blocks(self):
+        return True
 
 
 class UnboundTable(PhysicalTable):
@@ -89,7 +123,7 @@ class DatabaseTable(PhysicalTable):
         return type(self)(new_name, self.args[1], self.source)
 
 
-class SQLQueryResult(ir.BlockingTableNode, HasSchema):
+class SQLQueryResult(TableNode, HasSchema):
 
     """
     A table sourced from the result set of a select query
@@ -99,6 +133,9 @@ class SQLQueryResult(ir.BlockingTableNode, HasSchema):
         self.query = query
         TableNode.__init__(self, [query, schema, source])
         HasSchema.__init__(self, schema)
+
+    def blocks(self):
+        return True
 
 
 class TableArrayView(ValueNode):
@@ -982,7 +1019,7 @@ class LargestValue(AnalyticOp):
 # Distinct stuff
 
 
-class Distinct(ir.BlockingTableNode, HasSchema):
+class Distinct(TableNode, HasSchema):
 
     """
     Distinct is a table-level unique-ing operation.
@@ -999,9 +1036,12 @@ class Distinct(ir.BlockingTableNode, HasSchema):
     def __init__(self, table):
         self.table = table
 
-        ir.BlockingTableNode.__init__(self, [table])
+        TableNode.__init__(self, [table])
         schema = self.table.schema()
         HasSchema.__init__(self, schema)
+
+    def blocks(self):
+        return True
 
 
 class DistinctArray(ValueNode):
@@ -1356,7 +1396,7 @@ class Join(TableNode):
                 rk = right._ensure_expr(rk)
                 pred = lk == rk
             elif isinstance(pred, six.string_types):
-                pred = getattr(left, pred) == getattr(right, pred)
+                pred = left[pred] == right[pred]
             elif not isinstance(pred, ir.Expr):
                 raise NotImplementedError
 
@@ -1394,7 +1434,7 @@ class Join(TableNode):
 
     def root_tables(self):
         if util.all_of([self.left.op(), self.right.op()],
-                       (Join, Projection)):
+                       (Join, Selection)):
             # Unraveling is not possible
             return [self.left.op(), self.right.op()]
         else:
@@ -1437,7 +1477,7 @@ class LeftAntiJoin(Join):
         return self.left.schema()
 
 
-class MaterializedJoin(ir.BlockingTableNode, HasSchema):
+class MaterializedJoin(TableNode, HasSchema):
 
     def __init__(self, join_expr):
         assert isinstance(join_expr.op(), Join)
@@ -1449,6 +1489,9 @@ class MaterializedJoin(ir.BlockingTableNode, HasSchema):
 
     def root_tables(self):
         return self.join._root_tables()
+
+    def blocks(self):
+        return True
 
 
 class CrossJoin(InnerJoin):
@@ -1472,7 +1515,7 @@ class CrossJoin(InnerJoin):
         InnerJoin.__init__(self, left, right, [])
 
 
-class Union(ir.BlockingTableNode, HasSchema):
+class Union(TableNode, HasSchema):
 
     def __init__(self, left, right, distinct=False):
         self.left = left
@@ -1488,34 +1531,11 @@ class Union(ir.BlockingTableNode, HasSchema):
             raise com.RelationError('Table schemas must be equal '
                                     'to form union')
 
-
-class Filter(TableNode):
-
-    _arg_names = ['table', 'predicates']
-
-    def __init__(self, table_expr, predicates):
-        self.table = table_expr
-        self.predicates = predicates
-
-        TableNode.__init__(self, [table_expr, predicates])
-        self._validate()
-
-    def _validate(self):
-        from ibis.expr.analysis import FilterValidator
-        validator = FilterValidator([self.table])
-        validator.validate_all(self.predicates)
-
-    def get_schema(self):
-        return self.table.schema()
-
-    def has_schema(self):
-        return self.table.op().has_schema()
-
-    def root_tables(self):
-        return self.table._root_tables()
+    def blocks(self):
+        return True
 
 
-class Limit(ir.BlockingTableNode):
+class Limit(TableNode):
 
     _arg_names = [None, 'n', 'offset']
 
@@ -1524,6 +1544,9 @@ class Limit(ir.BlockingTableNode):
         self.n = n
         self.offset = offset
         TableNode.__init__(self, [table, n, offset])
+
+    def blocks(self):
+        return True
 
     def get_schema(self):
         return self.table.schema()
@@ -1537,29 +1560,6 @@ class Limit(ir.BlockingTableNode):
 
 # --------------------------------------------------------------------
 # Sorting
-
-
-class SortBy(TableNode):
-
-    # Q: Will SortBy always require a materialized schema?
-
-    def __init__(self, table_expr, sort_keys):
-        self.table = table_expr
-        self.keys = [to_sort_key(self.table, k)
-                     for k in util.promote_list(sort_keys)]
-
-        TableNode.__init__(self, [self.table, self.keys])
-
-    def get_schema(self):
-        return self.table.schema()
-
-    def has_schema(self):
-        return self.table.op().has_schema()
-
-    def root_tables(self):
-        tables = self.table._root_tables()
-        return tables
-
 
 def to_sort_key(table, key):
     if isinstance(key, DeferredSortKey):
@@ -1607,6 +1607,9 @@ class SortKey(ir.Node):
                 util.indent(_safe_repr(self.expr), 2)]
         return '\n'.join(rows)
 
+    def root_tables(self):
+        return self.expr._root_tables()
+
     def to_expr(self):
         return ir.SortExpr(self)
 
@@ -1627,7 +1630,7 @@ class DeferredSortKey(object):
         return SortKey(what, ascending=self.ascending).to_expr()
 
 
-class SelfReference(ir.BlockingTableNode, HasSchema):
+class SelfReference(TableNode, HasSchema):
 
     def __init__(self, table_expr):
         self.table = table_expr
@@ -1640,28 +1643,65 @@ class SelfReference(ir.BlockingTableNode, HasSchema):
         # expressions, so things like self-joins are possible
         return [self]
 
+    def blocks(self):
+        return True
 
-class Projection(ir.BlockingTableNode, HasSchema):
 
-    _arg_names = ['table', 'selections']
+class Selection(TableNode, HasSchema):
 
-    def __init__(self, table_expr, proj_exprs):
-        from ibis.expr.analysis import ExprValidator as Validator
+    _arg_names = ['table', 'selections', 'predicates', 'sort_keys']
 
+    def __init__(self, table_expr, proj_exprs=None, predicates=None,
+                 sort_keys=None):
+        self.table = table_expr
+
+        # Argument cleaning
+        proj_exprs = proj_exprs or []
+        if len(proj_exprs) > 0:
+            clean_exprs, schema = self._get_schema(proj_exprs)
+        else:
+            clean_exprs = []
+            schema = self.table.schema()
+
+        sort_keys = sort_keys or []
+        self.sort_keys = [to_sort_key(self.table, k)
+                          for k in util.promote_list(sort_keys)]
+
+        self.predicates = predicates or []
+
+        dependent_exprs = clean_exprs + self.sort_keys
+        self._validate(dependent_exprs)
+        self._validate_predicates()
+
+        HasSchema.__init__(self, schema)
+        Node.__init__(self, [table_expr] + [clean_exprs] +
+                      [self.predicates] + [self.sort_keys])
+
+        self.selections = clean_exprs
+
+    def blocks(self):
+        return len(self.selections) > 0
+
+    def _validate_predicates(self):
+        from ibis.expr.analysis import FilterValidator
+        validator = FilterValidator([self.table])
+        validator.validate_all(self.predicates)
+
+    def _validate(self, exprs):
         # Need to validate that the column expressions are compatible with the
         # input table; this means they must either be scalar expressions or
         # array expressions originating from the same root table expression
-        validator = Validator([table_expr])
+        self.table._assert_valid(exprs)
 
+    def _get_schema(self, proj_exprs):
         # Resolve schema and initialize
         types = []
         names = []
         clean_exprs = []
         for expr in proj_exprs:
             if isinstance(expr, py_string):
-                expr = table_expr[expr]
+                expr = self.table[expr]
 
-            validator.assert_valid(expr)
             if isinstance(expr, ValueExpr):
                 name = expr.get_name()
                 names.append(name)
@@ -1676,19 +1716,16 @@ class Projection(ir.BlockingTableNode, HasSchema):
             clean_exprs.append(expr)
 
         # validate uniqueness
-        schema = Schema(names, types)
-
-        HasSchema.__init__(self, schema)
-        Node.__init__(self, [table_expr] + [clean_exprs])
-
-        self.table = table_expr
-        self.selections = clean_exprs
+        return clean_exprs, Schema(names, types)
 
     def substitute_table(self, table_expr):
-        return Projection(table_expr, self.selections)
+        return Selection(table_expr, self.selections)
 
     def root_tables(self):
         return [self]
+
+    def can_add_filters(self, wrapped_expr, predicates):
+        pass
 
     def is_ancestor(self, other):
         if isinstance(other, ir.Expr):
@@ -1699,18 +1736,110 @@ class Projection(ir.BlockingTableNode, HasSchema):
 
         table = self.table
         exist_layers = False
-        while not isinstance(table.op(), (ir.BlockingTableNode, Join)):
+        op = table.op()
+        while not (op.blocks() or isinstance(op, Join)):
             table = table.op().table
             exist_layers = True
 
         if exist_layers:
-            reboxed = Projection(table, self.selections)
+            reboxed = Selection(table, self.selections)
             return reboxed.is_ancestor(other)
         else:
             return False
 
+    # Operator combination / fusion logic
 
-class Aggregation(ir.BlockingTableNode, HasSchema):
+    def aggregate(self, this, metrics, by=None, having=None):
+        if len(self.selections) > 0:
+            return Aggregation(this, metrics, by=by, having=having)
+        else:
+            helper = AggregateSelection(this, metrics, by, having)
+            return helper.get_result()
+
+    def sort_by(self, expr, sort_exprs):
+        sort_exprs = util.promote_list(sort_exprs)
+        if not self.blocks():
+            resolved_keys = _maybe_convert_sort_keys(self.table, sort_exprs)
+            if resolved_keys and self.table._is_valid(resolved_keys):
+                return Selection(self.table, self.selections,
+                                 predicates=self.predicates,
+                                 sort_keys=self.sort_keys + resolved_keys)
+
+        return Selection(expr, [], sort_keys=sort_exprs)
+
+
+class AggregateSelection(object):
+    # sort keys cannot be discarded because of order-dependent
+    # aggregate functions like GROUP_CONCAT
+
+    def __init__(self, parent, metrics, by, having):
+        self.parent = parent
+        self.op = parent.op()
+        self.metrics = metrics
+        self.by = by
+        self.having = having
+
+    def get_result(self):
+        if self.op.blocks():
+            return self._plain_subquery()
+        else:
+            return self._attempt_pushdown()
+
+    def _plain_subquery(self):
+        return Aggregation(self.parent, self.metrics,
+                           by=self.by, having=self.having)
+
+    def _attempt_pushdown(self):
+        metrics_valid, lowered_metrics = self._pushdown_exprs(self.metrics)
+        by_valid, lowered_by = self._pushdown_exprs(self.by)
+        having_valid, lowered_having = self._pushdown_exprs(self.having or None)
+
+        if metrics_valid and by_valid and having_valid:
+            return Aggregation(self.op.table, lowered_metrics,
+                               by=lowered_by,
+                               having=lowered_having,
+                               predicates=self.op.predicates,
+                               sort_keys=self.op.sort_keys)
+        else:
+            return self._plain_subquery()
+
+    def _pushdown_exprs(self, exprs):
+        import ibis.expr.analysis as L
+
+        if exprs is None:
+            return True, []
+
+        resolved = _maybe_resolve_exprs(self.op.table, exprs)
+        subbed_exprs = []
+
+        valid = False
+        if resolved:
+            for x in util.promote_list(resolved):
+                subbed = L.sub_for(x, [(self.parent, self.op.table)])
+                subbed_exprs.append(subbed)
+            valid = self.op.table._is_valid(subbed_exprs)
+        else:
+            valid = False
+
+        return valid, subbed_exprs
+
+
+def _maybe_convert_sort_keys(table, exprs):
+    try:
+        return [to_sort_key(table, k)
+                for k in util.promote_list(exprs)]
+    except:
+        return None
+
+
+def _maybe_resolve_exprs(table, exprs):
+    try:
+        return table._resolve(exprs)
+    except:
+        return None
+
+
+class Aggregation(TableNode, HasSchema):
 
     """
     agg_exprs : per-group scalar aggregates
@@ -1721,23 +1850,37 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
     where : pre-aggregation predicate
     """
 
-    _arg_names = ['table', 'metrics', 'by', 'having']
+    _arg_names = ['table', 'metrics', 'by', 'having',
+                  'predicates', 'sort_keys']
 
-    def __init__(self, table, agg_exprs, by=None, having=None):
+    def __init__(self, table, agg_exprs, by=None, having=None,
+                 predicates=None, sort_keys=None):
         # For tables, like joins, that are not materialized
         self.table = table
 
         self.agg_exprs = self._rewrite_exprs(agg_exprs)
 
-        by = by or []
+        by = [] if by is None else by
         self.by = self.table._resolve(by)
+
+        self.having = [] if having is None else having
+
+        self.predicates = [] if predicates is None else predicates
+        sort_keys = [] if sort_keys is None else sort_keys
+        self.sort_keys = [to_sort_key(self.table, k)
+                          for k in util.promote_list(sort_keys)]
+
         self.by = self._rewrite_exprs(self.by)
-
-        self.having = having or []
         self.having = self._rewrite_exprs(self.having)
-        self._validate()
+        self.predicates = self._rewrite_exprs(self.predicates)
+        self.sort_keys = self._rewrite_exprs(self.sort_keys)
 
-        TableNode.__init__(self, [table, self.agg_exprs, self.by, self.having])
+        self._validate()
+        self._validate_predicates()
+
+        TableNode.__init__(self, [table, self.agg_exprs, self.by,
+                                  self.having, self.predicates,
+                                  self.sort_keys])
 
         schema = self._result_schema()
         HasSchema.__init__(self, schema)
@@ -1757,6 +1900,9 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
         return [substitute_parents(x, past_projection=False)
                 for x in all_exprs]
 
+    def blocks(self):
+        return True
+
     def substitute_table(self, table_expr):
         return Aggregation(table_expr, self.agg_exprs, by=self.by,
                            having=self.having)
@@ -1775,8 +1921,14 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
                                           .format(_safe_repr(expr)))
 
         # All non-scalar refs originate from the input table
-        all_exprs = self.agg_exprs + self.by + self.having
+        all_exprs = (self.agg_exprs + self.by + self.having +
+                     self.sort_keys)
         self.table._assert_valid(all_exprs)
+
+    def _validate_predicates(self):
+        from ibis.expr.analysis import FilterValidator
+        validator = FilterValidator([self.table])
+        validator.validate_all(self.predicates)
 
     def _result_schema(self):
         names = []
@@ -1789,6 +1941,18 @@ class Aggregation(ir.BlockingTableNode, HasSchema):
             types.append(e.type())
 
         return Schema(names, types)
+
+    def sort_by(self, expr, sort_exprs):
+        sort_exprs = util.promote_list(sort_exprs)
+
+        resolved_keys = _maybe_convert_sort_keys(self.table, sort_exprs)
+        if resolved_keys and self.table._is_valid(resolved_keys):
+            return Aggregation(self.table, self.agg_exprs,
+                               by=self.by, having=self.having,
+                               predicates=self.predicates,
+                               sort_keys=self.sort_keys + resolved_keys)
+
+        return Selection(expr, [], sort_keys=sort_exprs)
 
 
 class Add(BinaryOp):
@@ -2009,8 +2173,8 @@ class SummaryFilter(ValueNode):
 
 class TopK(ValueNode):
 
-    # Substitutions under TopK are not allowed
-    blocking = True
+    def blocks(self):
+        return True
 
     def __init__(self, arg, k, by=None):
         if by is None:

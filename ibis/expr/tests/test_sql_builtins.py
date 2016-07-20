@@ -47,11 +47,11 @@ class TestBuiltins(unittest.TestCase):
         expr = col.group_concat()
         assert isinstance(expr.op(), ops.GroupConcat)
         arg, sep = expr.op().args
-        assert sep == ','
+        sep == ','
 
         expr = col.group_concat('|')
         arg, sep = expr.op().args
-        assert sep == '|'
+        sep == '|'
 
     def test_zeroifnull(self):
         dresult = self.alltypes.double_col.zeroifnull()
@@ -117,7 +117,7 @@ class TestBuiltins(unittest.TestCase):
 
         result = self.alltypes.double_col.round(2)
         assert isinstance(result, ir.DoubleArray)
-        assert result.op().args[1] == 2
+        assert result.op().args[1].equals(ibis.literal(2))
 
         # Even integers are double (at least in Impala, check with other DB
         # implementations)

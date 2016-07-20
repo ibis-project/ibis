@@ -76,7 +76,8 @@ class TestAnalytics(unittest.TestCase):
                               'airlines')
         dests = ['ORD', 'JFK', 'SFO']
         t = airlines[airlines.dest.isin(dests)]
-        delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
+        delay_filter = t.origin.topk(10, by=t.arrdelay.mean())
+
         filtered = t.filter([delay_filter])
 
         post_pred = filtered.op().predicates[1]

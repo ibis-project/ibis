@@ -362,29 +362,3 @@ class MockConnection(SQLClient):
         ast = self._build_ast_ensure_limit(expr, limit)
         queries = [q.compile() for q in ast.queries]
         return queries[0] if len(queries) == 1 else queries
-
-
-_all_types_schema = [
-    ('a', 'int8'),
-    ('b', 'int16'),
-    ('c', 'int32'),
-    ('d', 'int64'),
-    ('e', 'float'),
-    ('f', 'double'),
-    ('g', 'string'),
-    ('h', 'boolean')
-]
-
-
-class BasicTestCase(object):
-
-    def setUp(self):
-        self.schema = _all_types_schema
-        self.schema_dict = dict(self.schema)
-        self.table = ibis.table(self.schema)
-
-        self.int_cols = ['a', 'b', 'c', 'd']
-        self.bool_cols = ['h']
-        self.float_cols = ['e', 'f']
-
-        self.con = MockConnection()

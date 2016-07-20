@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import getpass
 import os
 import shutil
 import tempfile
@@ -21,6 +22,8 @@ from os.path import join as pjoin
 from subprocess import check_call
 
 from click import group, option
+import sqlalchemy as sa
+from sqlalchemy import create_engine
 
 import ibis
 from ibis.compat import BytesIO
@@ -88,7 +91,7 @@ def can_build_udfs():
     return True
 
 
-def is_data_loaded(con):
+def is_impala_loaded(con):
     if not con.hdfs.exists(ENV.test_data_dir):
         return False
     if not con.exists_database(ENV.test_data_db):
@@ -186,7 +189,7 @@ def build_udfs():
     print('Building UDFs')
     ibis_home_dir = osp.dirname(osp.dirname(osp.abspath(__file__)))
     udf_dir = pjoin(ibis_home_dir, 'testing', 'udf')
-    check_call('cmake . && make', shell=True, cwd=udf_dir)
+    check_call('cmake . && make VERBOSE=1', shell=True, cwd=udf_dir)
 
 
 def upload_udfs(con):
@@ -215,16 +218,31 @@ def download_parquet_files(con, tmp_db_hdfs_path):
     con.hdfs.get(tmp_db_hdfs_path, parquet_path)
 
 
-def generate_sqlite_db(con):
-    from sqlalchemy import create_engine
+def get_postgres_engine():
+    pg_user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
+    pg_pass = os.environ.get('IBIS_POSTGRES_PASS')
 
+    if pg_pass:
+        creds = '{0}:{1}'.format(pg_user, pg_pass)
+    else:
+        creds = pg_user
+
+    engine = (create_engine('postgresql://{0}@localhost/ibis_testing'
+                            .format(creds)))
+    return engine
+
+
+def get_sqlite_engine():
     path = pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'ibis_testing.db')
+    return create_engine('sqlite:///{0}'.format(path))
+
+
+def load_sql_databases(con, engines):
     csv_path = guid()
 
-    engine = create_engine('sqlite:///{0}'.format(path))
-
     generate_sql_csv_sources(csv_path, con.database('ibis_testing'))
-    make_sqlite_testing_db(csv_path, engine)
+    for engine in engines:
+        make_testing_db(csv_path, engine)
     shutil.rmtree(csv_path)
 
 
@@ -333,12 +351,33 @@ def generate_sql_csv_sources(output_path, db):
         df.to_csv('{0}.csv'.format(path), na_rep='\\N')
 
 
-def make_sqlite_testing_db(csv_dir, con):
+def make_testing_db(csv_dir, con):
     for name in _sql_tables:
         print(name)
         path = osp.join(csv_dir, '{0}.csv'.format(name))
-        df = pd.read_csv(path, na_values=['\\N'])
-        pd.io.sql.to_sql(df, name, con, chunksize=10000)
+        df = pd.read_csv(path, na_values=['\\N'], dtype={'bool_col': 'bool'})
+        df.to_sql(
+            name,
+            con,
+            chunksize=10000,
+            if_exists='replace',
+            dtype={
+                'index': sa.INTEGER,
+                'id': sa.INTEGER,
+                'bool_col': sa.BOOLEAN,
+                'tinyint_col': sa.SMALLINT,
+                'smallint_col': sa.SMALLINT,
+                'int_col': sa.INTEGER,
+                'bigint_col': sa.BIGINT,
+                'float_col': sa.REAL,
+                'double_col': sa.FLOAT,
+                'date_string_col': sa.TEXT,
+                'string_col': sa.TEXT,
+                'timestamp_col': sa.TIMESTAMP,
+                'year': sa.INTEGER,
+                'month': sa.INTEGER,
+            }
+        )
 
 
 # ==========================================
@@ -395,7 +434,10 @@ def create(create_tarball, push_to_s3):
         download_parquet_files(con, tmp_db_hdfs_path)
         download_avro_files(con)
         generate_csv_files()
-        generate_sqlite_db(con)
+
+        # Only populate SQLite here
+        engines = [get_sqlite_engine()]
+        load_sql_databases(con, engines)
     finally:
         con.drop_database(tmp_db, force=True)
         assert not con.hdfs.exists(tmp_db_hdfs_path)
@@ -436,34 +478,27 @@ def load(data, udf, data_dir, overwrite):
 
     # load the data files
     if data:
-        already_loaded = is_data_loaded(con)
-        print('Attempting to load Ibis test data (--data)')
-        if already_loaded and not overwrite:
-            print('Data is already loaded and not overwriting; moving on')
-        else:
-            if already_loaded:
-                print('Data is already loaded; attempting to overwrite')
-            tmp_dir = tempfile.mkdtemp(prefix='__ibis_tmp_')
-            try:
-                if not data_dir:
-                    print('Did not specify a local dir with the test data, so '
-                          'downloading it from S3')
-                    data_dir = dnload_ibis_test_data_from_s3(tmp_dir)
-                print('Uploading to HDFS')
-                upload_ibis_test_data_to_hdfs(con, data_dir)
-                print('Creating Ibis test data database')
-                create_test_database(con)
-                parquet_tables = create_parquet_tables(con)
-                avro_tables = create_avro_tables(con)
-                for table in parquet_tables + avro_tables:
-                    print('Computing stats for {0}'.format(table.op().name))
-                    table.compute_stats()
+        tmp_dir = tempfile.mkdtemp(prefix='__ibis_tmp_')
 
-                # sqlite database
-                sqlite_src = osp.join(data_dir, 'ibis_testing.db')
-                shutil.copy(sqlite_src, '.')
-            finally:
-                shutil.rmtree(tmp_dir)
+        if not data_dir:
+            # TODO(wesm): do not download if already downloaded
+            print('Did not specify a local dir with the test data, so '
+                  'downloading it from S3')
+            data_dir = dnload_ibis_test_data_from_s3(tmp_dir)
+        try:
+            load_impala_data(con, data_dir, overwrite)
+
+            # sqlite database
+            print('Setting up SQLite')
+            sqlite_src = osp.join(data_dir, 'ibis_testing.db')
+            shutil.copy(sqlite_src, '.')
+
+            print('Loading SQL engines')
+            # SQL engines
+            engines = [get_postgres_engine()]
+            load_sql_databases(con, engines)
+        finally:
+            shutil.rmtree(tmp_dir)
     else:
         print('Skipping Ibis test data load (--no-data)')
 
@@ -482,6 +517,26 @@ def load(data, udf, data_dir, overwrite):
             upload_udfs(con)
     else:
         print('Skipping UDF build/load (--no-udf)')
+
+
+def load_impala_data(con, data_dir, overwrite=False):
+    already_loaded = is_impala_loaded(con)
+    print('Attempting to load Ibis Impala test data (--data)')
+    if already_loaded and not overwrite:
+        print('Data is already loaded and not overwriting; moving on')
+    else:
+        if already_loaded:
+            print('Data is already loaded; attempting to overwrite')
+
+        print('Uploading to HDFS')
+        upload_ibis_test_data_to_hdfs(con, data_dir)
+        print('Creating Ibis test data database')
+        create_test_database(con)
+        parquet_tables = create_parquet_tables(con)
+        avro_tables = create_avro_tables(con)
+        for table in parquet_tables + avro_tables:
+            print('Computing stats for {0}'.format(table.op().name))
+            table.compute_stats()
 
 
 @main.command()

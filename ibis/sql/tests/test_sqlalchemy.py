@@ -100,9 +100,9 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             # name, type, nullable
             ('smallint', sat.SmallInteger, False, dt.int16),
             ('int', sat.Integer, True, dt.int32),
-            ('integer', sat.INTEGER(), True, dt.int64),
+            ('integer', sat.INTEGER(), True, dt.int32),
             ('bigint', sat.BigInteger, False, dt.int64),
-            ('real', sat.REAL, True, dt.double),
+            ('real', sat.REAL, True, dt.float),
             ('bool', sat.Boolean, True, dt.boolean),
             ('timestamp', sat.DateTime, True, dt.timestamp),
         ]
@@ -231,7 +231,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
              rt.outerjoin(nt, spred)),
         ]
         for ibis_joined, joined_sqla in fully_mat_joins:
-            expected = sa.select(['*']).select_from(joined_sqla)
+            expected = sa.select([joined_sqla])
             self._compare_sqla(ibis_joined, expected)
 
         subselect_joins = [
@@ -260,7 +260,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         sqla_joined = (nt.join(rt, nt.c.n_regionkey == rt.c.r_regionkey)
                        .join(ct, nt.c.n_nationkey == ct.c.c_nationkey))
 
-        expected = sa.select(['*']).select_from(sqla_joined)
+        expected = sa.select([sqla_joined])
 
         self._compare_sqla(joined, expected)
 
@@ -559,15 +559,19 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         # after Aggregate to produce a single select statement rather than an
         # inline view.
         t = self.alltypes
-        sat = self.sa_alltypes.alias('t0')
 
         agg = (t.group_by('string_col')
                .aggregate(t.double_col.max().name('foo')))
         expr = agg.sort_by(ibis.desc('foo'))
 
-        ex = (sa.select([sat.c.string_col,
-                         F.max(sat.c.double_col).label('foo')])
-              .group_by(sat.c.string_col)
+        sat = self.sa_alltypes.alias('t1')
+        base = (sa.select([sat.c.string_col,
+                           F.max(sat.c.double_col).label('foo')])
+                .group_by(sat.c.string_col)).alias('t0')
+
+        ex = (sa.select([base.c.string_col,
+                         base.c.foo])
+              .select_from(base)
               .order_by(sa.desc('foo')))
 
         self._compare_sqla(expr, ex)

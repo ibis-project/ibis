@@ -1,51 +1,29 @@
+[![circleci-badge](https://circleci.com/gh/cloudera/ibis.svg?style=shield&circle-token=b84ff8383cbb0d6788ee0f9635441cb962949a4f)](https://circleci.com/gh/cloudera/ibis/tree/master)
+
 [![codecov.io](http://codecov.io/github/cloudera/ibis/coverage.svg?branch=master)](http://codecov.io/github/cloudera/ibis?branch=master)
 
+Current release from Anaconda.org [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)
+
+
 # Ibis: Python data analysis framework for Hadoop and SQL engines
+
+Ibis is a toolbox to bridge the gap between local Python environments and
+remote storage and execution systems like Hadoop components (HDFS, Impala,
+Hive, Spark) and SQL databases (Postgres, etc.). Its goal is to simplify
+analytical workflows and make you more productive.
 
 Install Ibis from PyPI with:
 
     $ pip install ibis-framework
 
-Ibis is a Python data analysis library with a handful of related goals:
+At this time, Ibis provides tools for the interacting with the following
+systems:
 
-- Enable data analysts to transition analytics on SQL engines to Python code
-  instead of SQL code.
-- Provide high level analytics APIs and workflow tools to accelerate
-  productivity.
-- Provide high performance extensions for the Impala MPP query engine to enable
-  high performance Python code to operate in a scalable Hadoop-like environment
-- Abstract away database-specific SQL differences
-- Integrate with the Python data ecosystem using the above tools
-
-At this time, Ibis supports the following SQL-based systems:
-
-- Impala (on HDFS)
+- [Apache Impala (incubating)](http://impala.io/)
+- [Apache Kudu (incubating)](http://getkudu.io)
+- Hadoop Distributed File System (HDFS)
+- PostgreSQL (Experimental)
 - SQLite
 
-Ibis is being designed and led by the creator of pandas
-(github.com/pydata/pandas) and is intended to have a familiar user interface
-for folks used to small data on single machines in Python.
-
-Architecturally, Ibis features:
-
-- A pandas-like domain specific language (DSL) designed specifically for
-  analytics, aka **Ibis expressions**, that enable composable, reusable
-  analytics on structured data. If you can express something with a SQL SELECT
-  query, you can write it with Ibis.
-- A translation system that targets multiple SQL systems
-- Tools for wrapping user-defined functions in Impala and eventually other SQL
-  engines
-
-SQL engine support near on the horizon:
-
-- PostgreSQL
-- Redshift
-- Vertica
-- Spark SQL
-- Presto
-- Hive
-- MySQL / MariaDB
-
-Read the project blog at http://blog.ibis-project.org.
-
-Learn much more at http://ibis-project.org.
+Learn more about using the library at http://docs.ibis-project.org and read the
+project blog at http://ibis-project.org for news and updates.

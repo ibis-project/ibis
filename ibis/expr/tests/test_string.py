@@ -92,7 +92,7 @@ class TestStringOps(unittest.TestCase):
 
     def test_contains(self):
         expr = self.table.g.contains('foo')
-        expected = self.table.g.like('%foo%')
+        expected = self.table.g.find('foo') >= 0
         assert_equal(expr, expected)
 
         self.assertRaises(Exception, lambda: 'foo' in self.table.g)

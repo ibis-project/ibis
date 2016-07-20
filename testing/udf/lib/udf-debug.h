@@ -40,4 +40,3 @@ inline std::string DebugString(const StringVal& val) {
 }
 
 #endif
-

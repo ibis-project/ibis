@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
+
 from ibis.expr.datatypes import validate_type
 import ibis.expr.datatypes as _dt
 import ibis.expr.operations as _ops
@@ -291,6 +293,31 @@ def add_operation(op, func_name, db):
         translator = comp.fixed_arity(full_name, arity)
 
     comp._operation_registry[op] = translator
+
+
+def parse_type(t):
+    t = t.lower()
+    if t in _impala_to_ibis_type:
+        return _impala_to_ibis_type[t]
+    else:
+        if 'varchar' in t or 'char' in t:
+            return 'string'
+        elif 'decimal' in t:
+            result = _dt._parse_decimal(t)
+            if result:
+                return t
+            else:
+                return ValueError(t)
+        else:
+            raise Exception(t)
+
+_VARCHAR_RE = re.compile('varchar\((\d+)\)')
+
+
+def _parse_varchar(t):
+    m = _VARCHAR_RE.match(t)
+    if m:
+        return 'string'
 
 
 def _impala_type_to_ibis(tval):

@@ -55,7 +55,8 @@ class TestWrapping(unittest.TestCase):
         func.register('identity', 'udf_testing')
 
         result = func('hello world')
-        assert result == "SELECT udf_testing.identity('hello world')"
+        assert (ibis.impala.compile(result) ==
+                "SELECT udf_testing.identity('hello world') AS `tmp`")
 
     def test_sql_generation_from_infoclass(self):
         func = api.wrap_udf('test.so', ['string'], 'string', 'info_test')
@@ -63,7 +64,8 @@ class TestWrapping(unittest.TestCase):
 
         func.register('info_test', 'udf_testing')
         result = func('hello world')
-        assert result == "SELECT udf_testing.info_test('hello world')"
+        assert (ibis.impala.compile(result) ==
+                "SELECT udf_testing.info_test('hello world') AS `tmp`")
 
     def test_udf_primitive_output_types(self):
         types = [

@@ -20,6 +20,9 @@ import ibis.expr.types as ir
 import ibis.expr.window as _window
 import ibis.util as util
 
+import six
+import toolz
+
 
 def _resolve_exprs(table, exprs):
     exprs = util.promote_list(exprs)
@@ -32,9 +35,14 @@ class GroupedTableExpr(object):
     Helper intermediate construct
     """
 
-    def __init__(self, table, by, having=None, order_by=None, window=None):
+    def __init__(
+        self, table, by, having=None, order_by=None, window=None, **expressions
+    ):
         self.table = table
-        self.by = _resolve_exprs(table, by)
+        self.by = util.promote_list(by if by is not None else []) + [
+            (table[v] if isinstance(v, six.string_types) else v).name(k)
+            for k, v in sorted(expressions.items(), key=toolz.first)
+        ]
         self._order_by = order_by or []
         self._having = having or []
         self._window = window
@@ -158,6 +166,8 @@ class GroupedTableExpr(object):
 
         sorts = [ops.to_sort_key(self.table, k) for k in sorts]
 
+        groups = _resolve_exprs(self.table, groups)
+
         return _window.window(preceding=preceding, following=following,
                               group_by=groups, order_by=sorts)
 
@@ -185,7 +195,7 @@ class GroupedTableExpr(object):
           The aggregated table
         """
         metric = self.table.count().name(metric_name)
-        return self.table.aggregate([metric], by=self.by)
+        return self.table.aggregate([metric], by=self.by, having=self._having)
 
     size = count
 

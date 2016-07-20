@@ -12,94 +12,104 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis
 
-from ibis.compat import unittest
-from ibis.expr.tests.mocks import BasicTestCase
 from ibis.tests.util import assert_equal
 
 
-class TestCaseExpressions(BasicTestCase, unittest.TestCase):
+def test_ifelse(table):
+    bools = table.g.isnull()
+    result = bools.ifelse("foo", "bar")
+    assert isinstance(result, ir.StringArray)
 
-    def test_ifelse(self):
-        bools = self.table.g.isnull()
-        result = bools.ifelse("foo", "bar")
-        assert isinstance(result, ir.StringArray)
 
-    def test_ifelse_literal(self):
-        pass
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_ifelse_literal():
+    assert False
 
-    def test_simple_case_expr(self):
-        case1, result1 = "foo", self.table.a
-        case2, result2 = "bar", self.table.c
-        default_result = self.table.b
 
-        expr1 = self.table.g.lower().cases(
-            [(case1, result1),
-             (case2, result2)],
-            default=default_result
-        )
+def test_simple_case_expr(table):
+    case1, result1 = "foo", table.a
+    case2, result2 = "bar", table.c
+    default_result = table.b
 
-        expr2 = (self.table.g.lower().case()
-                 .when(case1, result1)
-                 .when(case2, result2)
-                 .else_(default_result)
-                 .end())
+    expr1 = table.g.lower().cases(
+        [(case1, result1),
+         (case2, result2)],
+        default=default_result
+    )
 
-        assert_equal(expr1, expr2)
-        assert isinstance(expr1, ir.Int32Array)
+    expr2 = (table.g.lower().case()
+             .when(case1, result1)
+             .when(case2, result2)
+             .else_(default_result)
+             .end())
 
-    def test_multiple_case_expr(self):
-        case1 = self.table.a == 5
-        case2 = self.table.b == 128
-        case3 = self.table.c == 1000
+    assert_equal(expr1, expr2)
+    assert isinstance(expr1, ir.Int32Array)
 
-        result1 = self.table.f
-        result2 = self.table.b * 2
-        result3 = self.table.e
 
-        default = self.table.d
+def test_multiple_case_expr(table):
+    case1 = table.a == 5
+    case2 = table.b == 128
+    case3 = table.c == 1000
 
-        expr = (ibis.case()
-                .when(case1, result1)
-                .when(case2, result2)
-                .when(case3, result3)
-                .else_(default)
-                .end())
+    result1 = table.f
+    result2 = table.b * 2
+    result3 = table.e
 
-        op = expr.op()
-        assert isinstance(expr, ir.DoubleArray)
-        assert isinstance(op, ops.SearchedCase)
-        assert op.default is default
+    default = table.d
 
-    def test_simple_case_no_default(self):
-        # TODO: this conflicts with the null else cases below. Make a decision
-        # about what to do, what to make the default behavior based on what the
-        # user provides. SQL behavior is to use NULL when nothing else
-        # provided. The .replace convenience API could use the field values as
-        # the default, getting us around this issue.
-        pass
+    expr = (ibis.case()
+            .when(case1, result1)
+            .when(case2, result2)
+            .when(case3, result3)
+            .else_(default)
+            .end())
 
-    def test_simple_case_null_else(self):
-        expr = self.table.g.case().when("foo", "bar").end()
-        op = expr.op()
+    op = expr.op()
+    assert isinstance(expr, ir.DoubleArray)
+    assert isinstance(op, ops.SearchedCase)
+    assert op.default is default
 
-        assert isinstance(expr, ir.StringArray)
-        assert isinstance(op.default, ir.ValueExpr)
-        assert isinstance(op.default.op(), ir.NullLiteral)
 
-    def test_multiple_case_null_else(self):
-        expr = ibis.case().when(self.table.g == "foo", "bar").end()
-        op = expr.op()
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_simple_case_no_default():
+    # TODO: this conflicts with the null else cases below. Make a decision
+    # about what to do, what to make the default behavior based on what the
+    # user provides. SQL behavior is to use NULL when nothing else
+    # provided. The .replace convenience API could use the field values as
+    # the default, getting us around this issue.
+    assert False
 
-        assert isinstance(expr, ir.StringArray)
-        assert isinstance(op.default, ir.ValueExpr)
-        assert isinstance(op.default.op(), ir.NullLiteral)
 
-    def test_case_type_precedence(self):
-        pass
+def test_simple_case_null_else(table):
+    expr = table.g.case().when("foo", "bar").end()
+    op = expr.op()
 
-    def test_no_implicit_cast_possible(self):
-        pass
+    assert isinstance(expr, ir.StringArray)
+    assert isinstance(op.default, ir.ValueExpr)
+    assert isinstance(op.default.op(), ir.NullLiteral)
+
+
+def test_multiple_case_null_else(table):
+    expr = ibis.case().when(table.g == "foo", "bar").end()
+    op = expr.op()
+
+    assert isinstance(expr, ir.StringArray)
+    assert isinstance(op.default, ir.ValueExpr)
+    assert isinstance(op.default.op(), ir.NullLiteral)
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_case_type_precedence():
+    assert False
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_no_implicit_cast_possible():
+    assert False
