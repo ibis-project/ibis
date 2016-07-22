@@ -428,6 +428,8 @@ class Literal(ValueNode):
             klass = StringScalar
         elif isinstance(self.value, datetime.datetime):
             klass = TimestampScalar
+        elif isinstance(self.value, datetime.date):
+            klass = DateScalar
         else:
             raise com.InputTypeError(self.value)
 
@@ -824,6 +826,30 @@ class DecimalValue(NumericValue):
         return constructor
 
 
+class DateValue(AnyValue):
+
+    _typename = 'date'
+
+    def _can_implicit_cast(self, arg):
+        op = arg.op()
+        if isinstance(op, Literal):
+            try:
+                import pandas as pd
+                pd.Timestamp(op.value)
+                return True
+            except ValueError:
+                return False
+        return False
+
+    def _can_compare(self, other):
+        return isinstance(other, DateValue)
+
+    def _implicit_cast(self, arg):
+        # assume we've checked this is OK at this point...
+        op = arg.op()
+        return DateScalar(op)
+
+
 class TimestampValue(AnyValue):
 
     _typename = 'timestamp'
@@ -924,6 +950,14 @@ class StringScalar(ScalarExpr, StringValue):
 
 
 class StringArray(ArrayExpr, StringValue):
+    pass
+
+
+class DateScalar(ScalarExpr, DateValue):
+    pass
+
+
+class DateArray(ArrayExpr, DateValue):
     pass
 
 
