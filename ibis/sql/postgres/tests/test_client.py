@@ -15,6 +15,7 @@
 import os
 
 import pandas as pd
+import pytest
 
 from .common import PostgreSQLTests
 from ibis.compat import unittest
@@ -85,11 +86,12 @@ class TestPostgreSQLClient(PostgreSQLTests, unittest.TestCase):
         assert POSTGRES_TEST_DB in self.con.list_databases()
 
 
+@pytest.mark.postgresql
 def test_metadata_is_per_table():
     con = ibis.postgres.connect(host='localhost', database=POSTGRES_TEST_DB)
     assert len(con.meta.tables) == 0
 
     # assert that we reflect only when a table is requested
-    t = con.table('functional_alltypes')
+    t = con.table('functional_alltypes')  # noqa
     assert 'functional_alltypes' in con.meta.tables
     assert len(con.meta.tables) == 1
