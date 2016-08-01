@@ -357,11 +357,20 @@ LIMIT 10"""
         left.join(right, ['id', 'files'])
 
     def test_rerelease_cursor(self):
-        with self.con.raw_sql('select 1', True) as cur1:
+        con = connect_test(self.env)
+
+        with con.raw_sql('select 1', True) as cur1:
             pass
-        with self.con.raw_sql('select 1', True) as cur2:
+
+        cur1.release()
+
+        with con.raw_sql('select 1', True) as cur2:
             pass
-        with self.con.raw_sql('select 1', True) as cur3:
+
+        cur2.release()
+
+        with con.raw_sql('select 1', True) as cur3:
             pass
+
         assert cur1 == cur2
         assert cur2 == cur3

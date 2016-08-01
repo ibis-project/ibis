@@ -530,6 +530,13 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
         cls.con.drop_table(cls.table_name, database=cls.tmp_db)
         ImpalaE2E.teardown_e2e(cls)
 
+    def setUp(self):
+        ImpalaE2E.setUp(self)
+
+    def tearDown(self):
+        ImpalaE2E.tearDown(self)
+        gc.collect()
+
     def test_list_databases(self):
         assert len(self.con.list_databases()) > 0
 
@@ -1028,15 +1035,13 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
         table = self.con.delimited_file(hdfs_path, schema, name=name,
                                         database=self.tmp_db,
                                         delimiter=',')
-        try:
-            expr = (table
-                    [table.bar > 0]
-                    .group_by('foo')
-                    .aggregate([table.bar.sum().name('sum(bar)'),
-                                table.baz.sum().name('mean(baz)')]))
-            expr.execute()
-        finally:
-            self.con.drop_table(name, database=self.tmp_db)
+
+        expr = (table
+                [table.bar > 0]
+                .group_by('foo')
+                .aggregate([table.bar.sum().name('sum(bar)'),
+                            table.baz.sum().name('mean(baz)')]))
+        expr.execute()
 
     def test_varchar_char_support(self):
         statement = """\
