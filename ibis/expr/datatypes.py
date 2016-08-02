@@ -241,6 +241,10 @@ class String(Variadic):
     pass
 
 
+class Date(Primitive):
+    pass
+
+
 class Timestamp(Primitive):
     pass
 
@@ -426,6 +430,7 @@ int64 = Int64()
 float = Float()
 double = Double()
 string = String()
+date = Date()
 timestamp = Timestamp()
 
 
@@ -440,6 +445,7 @@ _primitive_types = {
     'float': float,
     'double': double,
     'string': string,
+    'date': date,
     'timestamp': timestamp
 }
 

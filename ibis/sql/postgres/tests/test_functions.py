@@ -51,6 +51,18 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
     def test_decimal_cast(self):
         assert False
 
+    def test_date_cast(self):
+        at = self._to_sqla(self.alltypes)
+
+        dt = self.alltypes.date_string_col
+
+        sa_dt = at.c.date_string_col
+
+        cases = [
+            (dt.cast('date'), sa.cast(sa_dt, sa.DATE))
+        ]
+        self._check_expr_cases(cases)
+
     def test_timestamp_cast_noop(self):
         # See GH #592
 
@@ -143,6 +155,20 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
 
             # TODO: this should really be double
             (L(1.2345).typeof(), 'numeric'),
+        ]
+        self._check_e2e_cases(cases)
+
+    def test_typeof_date(self):
+        from datetime import datetime
+
+        vt = datetime(
+            year=2015, month=9, day=1,
+            hour=14, minute=48, second=5, microsecond=359000
+        )
+
+        cases = [
+            (L(vt).typeof(), 'timestamp without time zone'),
+            (L(vt.date()).typeof(), 'date')
         ]
         self._check_e2e_cases(cases)
 
@@ -625,6 +651,6 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         expr = t.mutate(new_col=ibis.row_number().over(w) / 2)
 
         df = t.projection(['timestamp_col']).sort_by('timestamp_col').execute()
-        expected = df.assign(new_col=[x / 2 for x in range(len(df))])
+        expected = df.assign(new_col=[x / 2. for x in range(len(df))])
         result = expr['timestamp_col', 'new_col'].execute()
         tm.assert_frame_equal(result, expected)
