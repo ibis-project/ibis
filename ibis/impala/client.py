@@ -80,12 +80,10 @@ class ImpalaConnection(object):
 
         self.options = {}
 
-        self.connection_pool = queue.Queue(pool_size)
-        self.connection_pool_size = 0
         self.max_pool_size = pool_size
+        self._connections = None
 
-        self._connections = weakref.WeakValueDictionary()
-
+        self.reset_connection_pool()
         self.ping()
 
     def set_options(self, options):
@@ -95,8 +93,14 @@ class ImpalaConnection(object):
         """
         Close all open Impyla sessions
         """
-        for k, con in self._connections.items():
-            con.close()
+
+    def reset_connection_pool(self):
+        if self._connections is not None:
+            for k, con in self._connections.items():
+                con.close()
+        self._connections = weakref.WeakValueDictionary()
+        self.connection_pool = queue.Queue(self.max_pool_size)
+        self.connection_pool_size = 0
 
     def set_database(self, name):
         self.database = name
@@ -146,6 +150,7 @@ class ImpalaConnection(object):
             if (cur.database != self.database or
                     cur.options != self.options):
                 cur = self._new_cursor()
+            cur.released = False
 
             return cur
         except queue.Empty:
