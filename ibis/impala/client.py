@@ -205,7 +205,7 @@ class ImpalaCursor(object):
             self._cursor.close()
         except HS2Error as e:
             # connection was closed elsewhere
-            if 'invalid session' not in e.args[0].lower():
+            if 'invalid query handle' not in e.args[0].lower():
                 raise
 
     def __enter__(self):
