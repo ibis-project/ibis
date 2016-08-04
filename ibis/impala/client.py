@@ -93,6 +93,7 @@ class ImpalaConnection(object):
         """
         Close all open Impyla sessions
         """
+        self.reset_connection_pool()
 
     def reset_connection_pool(self):
         if self._connections is not None:
