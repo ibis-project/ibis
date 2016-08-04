@@ -4,6 +4,17 @@
 
 Current release from Anaconda.org [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)
 
+# Deepfield users
+## How to make a change
+First use a personal fork to make the changes that you need to make.
+This allows you to make a pull request into both the cloudera offical repo and the deepfield repo.
+Once you're pull request has been merged into the deepfield fork, make a new tag.
+The tag schema is vx.x.x.x where the first three x's are the same as the cloudera release you're working off of.
+For example, if you are working off of v0.8.1 then the new tag should be v0.8.1.0.
+If this tag already exists, then your tag should be one higher, v0.8.1.1.
+After making the tag, update the conda build and anaconda-deps.
+Keep the anaconda version the same as the tag for consistency.
+
 
 # Ibis: Python data analysis framework for Hadoop and SQL engines
 
