@@ -95,9 +95,13 @@ def connect(host='localhost', port=21050, database='default', timeout=45,
     }
 
     con = ImpalaConnection(pool_size=pool_size, **params)
-    client = ImpalaClient(con, hdfs_client=hdfs_client)
+    try:
+        client = ImpalaClient(con, hdfs_client=hdfs_client)
 
-    if options.default_backend is None:
-        options.default_backend = client
+        if options.default_backend is None:
+            options.default_backend = client
+    except:
+        con.close()
+        raise
 
     return client
