@@ -17,6 +17,9 @@ machine:
     - docker
 
 dependencies:
+  override:
+    - pip install -U pip
+    - pip install -r requirements.txt
   post:
     - docker info
     #- docker pull cloudera/impala-dev:minimal
