@@ -6,7 +6,11 @@ machine:
   environment:
     IBIS_TEST_SQLITE_DB_PATH: $HOME/ibis-testing-data/ibis_testing.db
     IBIS_TEST_POSTGRES_DB: circle_test
+    IBIS_TEST_CRUNCHBASE_DB: $HOME/crunchbase.db
   post:
+    # download the crunchbase sqlite database, for lineage testing
+    - wget https://ibis-resources.s3.amazonaws.com/data/crunchbase/crunchbase.db
+
     # download the data
     - wget https://ibis-resources.s3.amazonaws.com/testing/ibis-testing-data.tar.gz
 
