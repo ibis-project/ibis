@@ -67,7 +67,7 @@ class Expr(object):
 
     def _repr(self, memo=None):
         from ibis.expr.format import ExprFormatter
-        return ExprFormatter(self).get_result()
+        return ExprFormatter(self, memo=memo).get_result()
 
     def pipe(self, f, *args, **kwargs):
         """
@@ -166,10 +166,10 @@ class Expr(object):
         except:
             return False
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
         if type(self) != type(other):
             return False
-        return self._arg.equals(other._arg)
+        return self._arg.equals(other._arg, cache=cache)
 
     def _can_compare(self, other):
         return False
@@ -213,22 +213,9 @@ class Node(object):
         opname = type(self).__name__
         pprint_args = []
 
-        memo = memo or {}
-
-        if id(self) in memo:
-            return memo[id(self)]
 
         def _pp(x):
-            if isinstance(x, Expr):
-                key = id(x.op())
-            else:
-                key = id(x)
-
-            if key in memo:
-                return memo[key]
-            result = _safe_repr(x, memo=memo)
-            memo[key] = result
-            return result
+            return _safe_repr(x, memo=memo)
 
         for x in self.args:
             if isinstance(x, (tuple, list)):
@@ -252,16 +239,30 @@ class Node(object):
             else:
                 yield arg
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
+        if cache is None:
+            cache = {}
+
+        if (self, other) in cache:
+            return cache[(self, other)]
+
+        if id(self) == id(other):
+            cache[(self, other)] = True
+            return True
+
         if type(self) != type(other):
+            cache[(self, other)] = False
             return False
 
         if len(self.args) != len(other.args):
+            cache[(self, other)] = False
             return False
 
         for left, right in zip(self.args, other.args):
-            if not all_equal(left, right):
+            if not all_equal(left, right, cache=cache):
+                cache[(self, other)] = False
                 return False
+        cache[(self, other)] = True
         return True
 
     def is_ancestor(self, other):
@@ -282,17 +283,17 @@ class Node(object):
         raise NotImplementedError
 
 
-def all_equal(left, right):
+def all_equal(left, right, cache=None):
     if isinstance(left, list):
         if not isinstance(right, list):
             return False
         for a, b in zip(left, right):
-            if not all_equal(a, b):
+            if not all_equal(a, b, cache=cache):
                 return False
         return True
 
     if hasattr(left, 'equals'):
-        return left.equals(right)
+        return left.equals(right, cache=cache)
     else:
         return left == right
     return True
@@ -317,6 +318,9 @@ class ValueNode(Node):
     def resolve_name(self):
         raise com.ExpressionError('Expression is not named: %s' % repr(self))
 
+    def has_resolved_name(self):
+        return False
+
 
 class TableColumn(ValueNode):
 
@@ -340,6 +344,9 @@ class TableColumn(ValueNode):
 
     def resolve_name(self):
         return self.name
+
+    def has_resolved_name(self):
+        return True
 
     def root_tables(self):
         return self.table._root_tables()
@@ -409,7 +416,7 @@ class Literal(ValueNode):
     def args(self):
         return [self.value]
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
         if not isinstance(other, Literal):
             return False
         return (isinstance(other.value, type(self.value)) and
@@ -463,14 +470,14 @@ class ValueExpr(Expr):
         Expr.__init__(self, arg)
         self._name = name
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
         if not isinstance(other, ValueExpr):
             return False
 
         if self._name != other._name:
             return False
 
-        return Expr.equals(self, other)
+        return Expr.equals(self, other, cache=cache)
 
     def type(self):
         import ibis.expr.datatypes as dt
@@ -484,6 +491,11 @@ class ValueExpr(Expr):
         from ibis.expr.rules import ImplicitCast
         rule = ImplicitCast(self.type(), self._implicit_casts)
         return rule.can_cast(typename)
+
+    def has_name(self):
+        if self._name is not None:
+            return True
+        return self.op().has_resolved_name()
 
     def get_name(self):
         if self._name is not None:
@@ -1125,7 +1137,7 @@ class NullLiteral(ValueNode):
     def args(self):
         return [self.value]
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
         return isinstance(other, NullLiteral)
 
     def output_type(self):
