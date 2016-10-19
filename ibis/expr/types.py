@@ -308,7 +308,6 @@ def all_equal(left, right, cache=None):
     if hasattr(left, 'equals'):
         return left.equals(right, cache=cache)
     else:
-        print type(left), type(right)
         return left == right
     return True
 
