@@ -67,7 +67,7 @@ class Expr(object):
 
     def _repr(self, memo=None):
         from ibis.expr.format import ExprFormatter
-        return ExprFormatter(self).get_result()
+        return ExprFormatter(self, memo=memo).get_result()
 
     def pipe(self, f, *args, **kwargs):
         """
@@ -213,22 +213,9 @@ class Node(object):
         opname = type(self).__name__
         pprint_args = []
 
-        memo = memo or {}
-
-        if id(self) in memo:
-            return memo[id(self)]
 
         def _pp(x):
-            if isinstance(x, Expr):
-                key = id(x.op())
-            else:
-                key = id(x)
-
-            if key in memo:
-                return memo[key]
-            result = _safe_repr(x, memo=memo)
-            memo[key] = result
-            return result
+            return _safe_repr(x, memo=memo)
 
         for x in self.args:
             if isinstance(x, (tuple, list)):
@@ -317,6 +304,9 @@ class ValueNode(Node):
     def resolve_name(self):
         raise com.ExpressionError('Expression is not named: %s' % repr(self))
 
+    def has_resolved_name(self):
+        return False
+
 
 class TableColumn(ValueNode):
 
@@ -340,6 +330,9 @@ class TableColumn(ValueNode):
 
     def resolve_name(self):
         return self.name
+
+    def has_resolved_name(self):
+        return True
 
     def root_tables(self):
         return self.table._root_tables()
@@ -484,6 +477,11 @@ class ValueExpr(Expr):
         from ibis.expr.rules import ImplicitCast
         rule = ImplicitCast(self.type(), self._implicit_casts)
         return rule.can_cast(typename)
+
+    def has_name(self):
+        if self._name is not None:
+            return True
+        return self.op().has_resolved_name()
 
     def get_name(self):
         if self._name is not None:

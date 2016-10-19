@@ -21,6 +21,7 @@ import ibis.expr.analytics as analytics
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.expr.format
 
 import ibis.sql.transforms as transforms
 import ibis.util as util
@@ -889,6 +890,7 @@ class QueryBuilder(object):
     def _make_context(self):
         raise NotImplementedError
 
+
     def get_result(self):
         op = self.expr.op()
 
@@ -918,7 +920,7 @@ class QueryContext(object):
     Records bits of information used during ibis AST to SQL translation
     """
 
-    def __init__(self, indent=2, parent=None):
+    def __init__(self, indent=2, parent=None, memo=None):
         self._table_refs = {}
         self.extracted_subexprs = set()
         self.subquery_memo = {}
@@ -930,6 +932,7 @@ class QueryContext(object):
         self.query = None
 
         self._table_key_memo = {}
+        self.memo = memo or ibis.expr.format.FormatMemo()
 
     def _compile_subquery(self, expr, isolated=False):
         sub_ctx = self.subcontext(isolated=isolated)

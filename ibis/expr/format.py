@@ -42,9 +42,11 @@ class FormatMemo(object):
         return result
 
     def _format(self, obj):
-        return obj._repr(memo=self._repr_memo)
+        return obj._repr(memo=self)
 
-    def observe(self, obj, formatter=lambda x: x._repr()):
+    def observe(self, obj, formatter=None):
+        if formatter is None:
+            formatter = self._format
         key = self._key(obj)
         if key not in self.formatted:
             self.aliases[key] = 'ref_%d' % len(self.formatted)
@@ -103,7 +105,7 @@ class ExprFormatter(object):
             text = self._format_column(self.expr)
         elif isinstance(what, ir.Node):
             text = self._format_node(what)
-        elif isinstance(what, ops.Literal):
+        elif isinstance(what, ir.Literal):
             text = 'Literal[%s] %s' % (self._get_type_display(),
                                        str(what.value))
 

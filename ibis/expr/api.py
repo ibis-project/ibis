@@ -390,6 +390,8 @@ def cast(arg, target_type):
         return arg
     else:
         result = op.to_expr()
+        if not arg.has_name():
+            return result
         try:
             expr_name = ('cast({0}, {1!s})'
                          .format(arg.get_name(),
