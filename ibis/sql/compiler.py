@@ -1310,20 +1310,34 @@ class Select(DDL):
                                      permit_subquery=permit_subquery)
         return translator.get_result()
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
+        if cache is None:
+            cache = {}
+
+        if (self, other) in cache:
+            return cache[(self, other)]
+
+        if id(self) == id(other):
+            cache[(self, other)] = True
+            return True
+
         if not isinstance(other, Select):
+            cache[(self, other)] = False
             return False
 
         this_exprs = self._all_exprs()
         other_exprs = other._all_exprs()
 
         if self.limit != other.limit:
+            cache[(self, other)] = False
             return False
 
         for x, y in zip(this_exprs, other_exprs):
             if not x.equals(y):
+                cache[(self, other)] = False
                 return False
 
+        cache[(self, other)] = True
         return True
 
     def _all_exprs(self):
