@@ -890,7 +890,6 @@ class QueryBuilder(object):
     def _make_context(self):
         raise NotImplementedError
 
-
     def get_result(self):
         op = self.expr.op()
 
