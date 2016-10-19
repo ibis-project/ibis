@@ -95,7 +95,7 @@ class Schema(object):
         types = values.values()
         return Schema(names, types)
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
         return self.names == other.names and self.types == other.types
 
     def __eq__(self, other):
@@ -148,10 +148,10 @@ class HasSchema(object):
     def name(self):
         return self._name
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
         if type(self) != type(other):
             return False
-        return self.schema.equals(other.schema)
+        return self.schema.equals(other.schema, cache=cache)
 
     def root_tables(self):
         return [self]
@@ -187,7 +187,7 @@ class DataType(object):
     def name(self):
         return type(self).__name__
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
         if isinstance(other, six.string_types):
             other = validate_type(other)
 
