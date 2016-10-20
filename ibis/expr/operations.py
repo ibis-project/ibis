@@ -1613,9 +1613,9 @@ class SortKey(ir.Node):
     def to_expr(self):
         return ir.SortExpr(self)
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
         return (isinstance(other, SortKey) and
-                self.expr.equals(other.expr) and
+                self.expr.equals(other.expr, cache=cache) and
                 self.ascending == other.ascending)
 
 
