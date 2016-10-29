@@ -140,6 +140,7 @@ OVER (ORDER BY `f`) AS `foo`
 FROM alltypes"""
     assert_sql_equal(result, expected)
 
+
 def test_rank_functions(con):
     t = con.table('alltypes')
 
@@ -150,6 +151,7 @@ SELECT `g`, (rank() OVER (ORDER BY `f`) - 1) AS `minr`,
        (dense_rank() OVER (ORDER BY `f`) - 1) AS `denser`
 FROM alltypes"""
     assert_sql_equal(proj, expected)
+
 
 def test_multiple_windows(con):
     t = con.table('alltypes')
@@ -163,6 +165,7 @@ def test_multiple_windows(con):
 SELECT `g`, sum(`f`) OVER (PARTITION BY `g`) - sum(`f`) OVER () AS `result`
 FROM alltypes"""
     assert_sql_equal(proj, expected)
+
 
 def test_order_by_desc(con):
     t = con.table('alltypes')
@@ -183,6 +186,7 @@ SELECT lag(`d`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `foo`,
        max(`a`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `max`
 FROM alltypes"""
     assert_sql_equal(expr, expected)
+
 
 def test_row_number_requires_order_by(con):
     t = con.table('alltypes')

@@ -266,7 +266,7 @@ def test_mutate(table):
 
     expr = table.mutate(foo, one=one, two=2)
     expected = table[table, foo, one.name('one'),
-                          ibis.literal(2).name('two')]
+                     ibis.literal(2).name('two')]
     assert_equal(expr, expected)
 
 
@@ -897,7 +897,7 @@ def test_join_compound_boolean_predicate(table):
 
 def test_filter_join_unmaterialized(table):
     table1 = ibis.table({'key1': 'string', 'key2': 'string',
-                        'value1': 'double'})
+                         'value1': 'double'})
     table2 = ibis.table({'key3': 'string', 'value2': 'double'})
 
     # It works!
@@ -1100,7 +1100,7 @@ def test_aggregate_metrics(table):
 
 def test_group_by_keys(table):
     m = table.mutate(foo=table.f * 2,
-                          bar=table.e / 2)
+                     bar=table.e / 2)
 
     expr = m.group_by(lambda x: x.foo).size()
     expected = m.group_by('foo').size()
@@ -1113,7 +1113,7 @@ def test_group_by_keys(table):
 
 def test_having(table):
     m = table.mutate(foo=table.f * 2,
-                          bar=table.e / 2)
+                     bar=table.e / 2)
 
     expr = (m.group_by('foo')
             .having(lambda x: x.foo.sum() > 10)
@@ -1127,7 +1127,7 @@ def test_having(table):
 
 def test_filter(table):
     m = table.mutate(foo=table.f * 2,
-                          bar=table.e / 2)
+                     bar=table.e / 2)
 
     result = m.filter(lambda x: x.foo > 10)
     result2 = m[lambda x: x.foo > 10]
