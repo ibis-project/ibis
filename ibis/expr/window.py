@@ -124,20 +124,35 @@ class Window(object):
         new_sorts = self._order_by + util.promote_list(expr)
         return self._replace(order_by=new_sorts)
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
+        if cache is None:
+            cache = {}
+
+        if (self, other) in cache:
+            return cache[(self, other)]
+
+        if id(self) == id(other):
+            cache[(self, other)] = True
+            return True
+
         if not isinstance(other, Window):
+            cache[(self, other)] = False
             return False
 
         if (len(self._group_by) != len(other._group_by) or
-                not ir.all_equal(self._group_by, other._group_by)):
+                not ir.all_equal(self._group_by, other._group_by, cache=cache)):
+            cache[(self, other)] = False
             return False
 
         if (len(self._order_by) != len(other._order_by) or
-                not ir.all_equal(self._order_by, other._order_by)):
+                not ir.all_equal(self._order_by, other._order_by, cache=cache)):
+            cache[(self, other)] = False
             return False
 
-        return (self.preceding == other.preceding and
+        equal = (self.preceding == other.preceding and
                 self.following == other.following)
+        cache[(self, other)] = equal
+        return equal
 
 
 def window(preceding=None, following=None, group_by=None, order_by=None):
