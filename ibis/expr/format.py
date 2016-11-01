@@ -28,41 +28,44 @@ class FormatMemo(object):
         self.ops = {}
         self.counts = defaultdict(lambda: 0)
         self._repr_memo = {}
+        self.subexprs = {}
+        self.visit_memo = set()
 
     def __contains__(self, obj):
         return self._key(obj) in self.formatted
 
-    def _key(self, obj):
-        memo_key = id(obj)
+    def _key(self, expr):
+        memo_key = id(expr)
         if memo_key in self._repr_memo:
             return self._repr_memo[memo_key]
-        result = self._format(obj)
+
+        result = self._format(expr)
         self._repr_memo[memo_key] = result
 
         return result
 
-    def _format(self, obj):
-        return obj._repr(memo=self)
+    def _format(self, expr):
+        return expr.op()._repr(memo=self)
 
-    def observe(self, obj, formatter=None):
+    def observe(self, expr, formatter=None):
         if formatter is None:
             formatter = self._format
-        key = self._key(obj)
+        key = self._key(expr)
         if key not in self.formatted:
             self.aliases[key] = 'ref_%d' % len(self.formatted)
-            self.formatted[key] = formatter(obj)
-            self.ops[key] = obj
+            self.formatted[key] = formatter(expr)
+            self.ops[key] = expr.op()
 
         self.counts[key] += 1
 
-    def count(self, obj):
-        return self.counts[self._key(obj)]
+    def count(self, expr):
+        return self.counts[self._key(expr)]
 
-    def get_alias(self, obj):
-        return self.aliases[self._key(obj)]
+    def get_alias(self, expr):
+        return self.aliases[self._key(expr)]
 
-    def get_formatted(self, obj):
-        return self.formatted[self._key(obj)]
+    def get_formatted(self, expr):
+        return self.formatted[self._key(expr)]
 
 
 class ExprFormatter(object):
@@ -84,7 +87,10 @@ class ExprFormatter(object):
 
         # For tracking "extracted" objects, like tables, that we don't want to
         # print out more than once, and simply alias in the expression tree
-        self.memo = memo or FormatMemo()
+        if memo is None:
+            memo = FormatMemo()
+
+        self.memo = memo
 
     def get_result(self):
         what = self.expr.op()
@@ -94,17 +100,17 @@ class ExprFormatter(object):
 
         if isinstance(what, ops.TableNode) and what.has_schema():
             # This should also catch aggregations
-            if not self.memoize and what in self.memo:
-                text = 'Table: %s' % self.memo.get_alias(what)
+            if not self.memoize and self.expr in self.memo:
+                text = 'Table: %s' % self.memo.get_alias(self.expr)
             elif isinstance(what, ops.PhysicalTable):
-                text = self._format_table(what)
+                text = self._format_table(self.expr)
             else:
                 # Any other node type
-                text = self._format_node(what)
+                text = self._format_node(self.expr)
         elif isinstance(what, ops.TableColumn):
             text = self._format_column(self.expr)
         elif isinstance(what, ir.Node):
-            text = self._format_node(what)
+            text = self._format_node(self.expr)
         elif isinstance(what, ir.Literal):
             text = 'Literal[%s] %s' % (self._get_type_display(),
                                        str(what.value))
@@ -134,6 +140,9 @@ class ExprFormatter(object):
                           ops.SelfReference)
 
         def walk(expr):
+            if id(expr) in self.memo.visit_memo:
+                return
+
             op = expr.op()
 
             def visit(arg):
@@ -143,26 +152,29 @@ class ExprFormatter(object):
                     walk(arg)
 
             if isinstance(op, ops.PhysicalTable):
-                self.memo.observe(op, self._format_table)
+                self.memo.observe(expr, self._format_table)
             elif isinstance(op, ir.Node):
                 visit(op.args)
                 if isinstance(op, table_memo_ops):
-                    self.memo.observe(op, self._format_node)
+                    self.memo.observe(expr, self._format_node)
             elif isinstance(op, ops.TableNode) and op.has_schema():
-                self.memo.observe(op, self._format_table)
+                self.memo.observe(expr, self._format_table)
+
+            self.memo.visit_memo.add(id(expr))
 
         walk(self.expr)
 
     def _indent(self, text, indents=1):
         return util.indent(text, self.indent_size * indents)
 
-    def _format_table(self, table):
+    def _format_table(self, expr):
+        table = expr.op()
         # format the schema
         rows = ['name: {0!s}\nschema:'.format(table.name)]
         rows.extend(['  %s : %s' % tup for tup in
                      zip(table.schema.names, table.schema.types)])
         opname = type(table).__name__
-        type_display = self._get_type_display(table)
+        type_display = self._get_type_display(expr)
         opline = '%s[%s]' % (opname, type_display)
         return '{0}\n{1}'.format(opline, self._indent('\n'.join(rows)))
 
@@ -170,16 +182,20 @@ class ExprFormatter(object):
         # HACK: if column is pulled from a Filter of another table, this parent
         # will not be found in the memo
         col = expr.op()
-        parent_op = col.parent().op()
-        if parent_op in self.memo:
-            table_formatted = self.memo.get_alias(parent_op)
-        else:
-            table_formatted = '\n' + self._indent(self._format_node(parent_op))
+        parent = col.parent()
+
+        if parent not in self.memo:
+            self.memo.observe(parent, formatter=self._format_node)
+
+        table_formatted = self.memo.get_alias(parent)
+        table_formatted = '\n' + self._indent(table_formatted)
+
         type_display = self._get_type_display(self.expr)
         return ("Column[{0}] '{1}' from table {2}"
                 .format(type_display, col.name, table_formatted))
 
-    def _format_node(self, op):
+    def _format_node(self, expr):
+        op = expr.op()
         formatted_args = []
 
         def visit(what, extra_indents=0):
@@ -223,22 +239,22 @@ class ExprFormatter(object):
                     visit(arg, extra_indents=indents)
 
         opname = type(op).__name__
-        type_display = self._get_type_display(op)
+        type_display = self._get_type_display(expr)
         opline = '%s[%s]' % (opname, type_display)
 
         return '\n'.join([opline] + formatted_args)
 
     def _format_subexpr(self, expr):
-        formatter = ExprFormatter(expr, base_level=1, memo=self.memo,
-                                  memoize=False)
-        return formatter.get_result()
+        key = id(expr)
+        if key not in self.memo.subexprs:
+            formatter = ExprFormatter(expr, memo=self.memo, memoize=False)
+            self.memo.subexprs[key] = self._indent(formatter.get_result(), 1)
+
+        return self.memo.subexprs[key]
 
     def _get_type_display(self, expr=None):
         if expr is None:
             expr = self.expr
-
-        if isinstance(expr, ir.Node):
-            expr = expr.to_expr()
 
         if isinstance(expr, ir.TableExpr):
             return 'table'

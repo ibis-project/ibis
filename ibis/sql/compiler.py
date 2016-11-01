@@ -21,7 +21,7 @@ import ibis.expr.analytics as analytics
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.expr.format
+import ibis.expr.format as format
 
 import ibis.sql.transforms as transforms
 import ibis.util as util
@@ -931,7 +931,7 @@ class QueryContext(object):
         self.query = None
 
         self._table_key_memo = {}
-        self.memo = memo or ibis.expr.format.FormatMemo()
+        self.memo = memo or format.FormatMemo()
 
     def _compile_subquery(self, expr, isolated=False):
         sub_ctx = self.subcontext(isolated=isolated)
