@@ -189,5 +189,6 @@ def test_whole_schema():
 
 
 def test_precedence_with_no_arguments():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError) as e:
         highest_precedence_type([])
+    assert str(e.value) == 'Must pass at least one expression'
