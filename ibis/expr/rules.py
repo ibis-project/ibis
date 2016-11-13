@@ -15,6 +15,8 @@
 from collections import defaultdict
 import operator
 
+from toolz import first
+
 from ibis.common import IbisTypeError
 from ibis.compat import py_string
 import ibis.expr.datatypes as dt
@@ -130,6 +132,7 @@ class _TypePrecedence(object):
     # string
 
     _precedence = {
+        'timestamp': 10,
         'double': 9,
         'float': 8,
         'decimal': 7,
@@ -145,10 +148,10 @@ class _TypePrecedence(object):
     def __init__(self, exprs):
         self.exprs = exprs
 
-        if len(exprs) == 0:
+        if not len(exprs):
             raise ValueError('Must pass at least one expression')
 
-        self.type_counts = defaultdict(lambda: 0)
+        self.type_counts = defaultdict(int)
         self._count_types()
 
     def get_result(self):
@@ -161,16 +164,12 @@ class _TypePrecedence(object):
             self.type_counts[expr.type()] += 1
 
     def _get_highest_type(self):
-        scores = []
-        for k, v in self.type_counts.items():
-            if not v:
-                continue
-            score = self._precedence[k.name.lower()]
-
-            scores.append((score, k))
-
-        scores.sort()
-        return scores[-1][1]
+        scores = (
+            (self._precedence[k.name.lower()], k)
+            for k, v in self.type_counts.items() if v
+        )
+        _, key = max(scores, key=first)
+        return key
 
     def _check_casts(self, typename):
         for expr in self.exprs:
