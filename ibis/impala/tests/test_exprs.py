@@ -1567,7 +1567,6 @@ FROM functional_alltypes"""
 
 
 def test_where_with_timestamp():
-    # ta.group_by('uuid').aggregate(min_date=ta.ts.min(where=ta.search_level==1)).compile()
     t = ibis.table(
         [
             ('uuid', 'string'),
