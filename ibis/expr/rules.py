@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import defaultdict
+from collections import Counter
+
 import operator
+
+from toolz import first
 
 from ibis.common import IbisTypeError
 from ibis.compat import py_string
@@ -108,76 +111,55 @@ class PowerPromoter(BinaryPromoter):
             raise NotImplementedError
 
 
+# Impala type precedence (more complex in other database implementations)
+# timestamp
+# double
+# float
+# decimal
+# bigint
+# int
+# smallint
+# tinyint
+# boolean
+# string
+
+
+_TYPE_PRECEDENCE = {
+    'timestamp': 10,
+    'double': 9,
+    'float': 8,
+    'decimal': 7,
+    'int64': 6,
+    'int32': 5,
+    'int16': 4,
+    'int8': 3,
+    'boolean': 2,
+    'string': 1,
+    'null': 0
+}
+
+
 def highest_precedence_type(exprs):
     # Return the highest precedence type from the passed expressions. Also
     # verifies that there are valid implicit casts between any of the types and
     # the selected highest precedence type
-    selector = _TypePrecedence(exprs)
-    return selector.get_result()
+    if not exprs:
+        raise ValueError('Must pass at least one expression')
 
+    type_counts = Counter(expr.type() for expr in exprs)
+    scores = (
+        (_TYPE_PRECEDENCE[k.name.lower()], k) for k, v in type_counts.items()
+    )
+    _, highest_type = max(scores, key=first)
 
-class _TypePrecedence(object):
-    # Impala type precedence (more complex in other database implementations)
-    # timestamp
-    # double
-    # float
-    # decimal
-    # bigint
-    # int
-    # smallint
-    # tinyint
-    # boolean
-    # string
+    for expr in exprs:
+        if not expr._can_cast_implicit(highest_type):
+            raise TypeError(
+                'Expression with type {0} cannot be implicitly casted to {1}'
+                .format(expr.type(), highest_type)
+            )
 
-    _precedence = {
-        'double': 9,
-        'float': 8,
-        'decimal': 7,
-        'int64': 6,
-        'int32': 5,
-        'int16': 4,
-        'int8': 3,
-        'boolean': 2,
-        'string': 1,
-        'null': 0
-    }
-
-    def __init__(self, exprs):
-        self.exprs = exprs
-
-        if len(exprs) == 0:
-            raise ValueError('Must pass at least one expression')
-
-        self.type_counts = defaultdict(lambda: 0)
-        self._count_types()
-
-    def get_result(self):
-        highest_type = self._get_highest_type()
-        self._check_casts(highest_type)
-        return highest_type
-
-    def _count_types(self):
-        for expr in self.exprs:
-            self.type_counts[expr.type()] += 1
-
-    def _get_highest_type(self):
-        scores = []
-        for k, v in self.type_counts.items():
-            if not v:
-                continue
-            score = self._precedence[k.name.lower()]
-
-            scores.append((score, k))
-
-        scores.sort()
-        return scores[-1][1]
-
-    def _check_casts(self, typename):
-        for expr in self.exprs:
-            if not expr._can_cast_implicit(typename):
-                raise ValueError('Expression with type {0} cannot be '
-                                 'implicitly casted to {1}'
-                                 .format(expr.type(), typename))
+    return highest_type
 
 
 def _int_bounds_promotion(ltype, rtype, op):

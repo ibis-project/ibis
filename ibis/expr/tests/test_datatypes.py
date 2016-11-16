@@ -1,6 +1,7 @@
 import pytest
 import ibis
 from ibis.expr import datatypes as dt
+from ibis.expr.rules import highest_precedence_type
 
 
 def test_array():
@@ -185,3 +186,9 @@ def test_whole_schema():
         ],
     )
     assert customers.schema() == expected
+
+
+def test_precedence_with_no_arguments():
+    with pytest.raises(ValueError) as e:
+        highest_precedence_type([])
+    assert str(e.value) == 'Must pass at least one expression'
