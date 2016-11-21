@@ -1459,25 +1459,24 @@ GROUP BY 1"""
         expr = join1.union(join2)
         result = to_sql(expr)
         expected = """\
-(WITH t0 AS (
+WITH t0 AS (
   SELECT `a`, `g`, sum(`f`) AS `metric`
   FROM alltypes
   GROUP BY 1, 2
+),
+t1 AS (
+  SELECT t0.*
+  FROM t0
+    INNER JOIN t0 t3
+      ON t0.`g` = t3.`g`
 )
-SELECT t0.*
-FROM t0
-  INNER JOIN t0 t1
-    ON t0.`g` = t1.`g`)
+SELECT *
+FROM t1
 UNION ALL
-(WITH t0 AS (
-  SELECT `a`, `g`, sum(`f`) AS `metric`
-  FROM alltypes
-  GROUP BY 1, 2
-)
 SELECT t0.*
 FROM t0
-  INNER JOIN t0 t1
-    ON t0.`g` = t1.`g`)"""
+  INNER JOIN t0 t3
+    ON t0.`g` = t3.`g`"""
         assert result == expected
 
     def test_subquery_factor_correlated_subquery(self):
