@@ -1564,3 +1564,24 @@ FROM functional_alltypes"""
 
         expr = join1.union(join2)
         self.con.explain(expr)
+
+
+def test_where_with_timestamp():
+    t = ibis.table(
+        [
+            ('uuid', 'string'),
+            ('ts', 'timestamp'),
+            ('search_level', 'int64'),
+        ],
+        name='t'
+    )
+    expr = t.group_by(t.uuid).aggregate(
+        min_date=t.ts.min(where=t.search_level == 1)
+    )
+    result = ibis.impala.compile(expr)
+    expected = """\
+SELECT `uuid`,
+       min(CASE WHEN `search_level` = 1 THEN `ts` ELSE NULL END) AS `min_date`
+FROM t
+GROUP BY 1"""
+    assert result == expected

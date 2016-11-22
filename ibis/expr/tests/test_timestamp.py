@@ -13,11 +13,13 @@
 # limitations under the License.
 
 import pandas as pd
+from datetime import datetime
 
 import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.expr.rules import highest_precedence_type
 
 from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest
@@ -107,3 +109,10 @@ class TestTimestamp(unittest.TestCase):
         # op = expr2.op()
         # assert isinstance(op, ops.Greater)
         # assert isinstance(op.right, ir.TimestampScalar)
+
+
+def test_timestamp_precedence():
+    ts = ibis.literal(datetime.now())
+    null_ts = ibis.NA
+    highest_type = highest_precedence_type([ts, null_ts])
+    assert highest_type == 'timestamp'

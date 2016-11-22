@@ -42,7 +42,7 @@ class TableNode(Node):
     def get_type(self, name):
         return self.get_schema().get_type(name)
 
-    def to_expr(self):
+    def _make_expr(self):
         return TableExpr(self)
 
     def aggregate(self, this, metrics, by=None, having=None):
@@ -158,7 +158,7 @@ class TableArrayView(ValueNode):
 
         Node.__init__(self, [table])
 
-    def to_expr(self):
+    def _make_expr(self):
         ctype = self.table._get_type(self.name)
         klass = ctype.array_type()
         return klass(self, name=self.name)
@@ -1610,7 +1610,7 @@ class SortKey(ir.Node):
     def root_tables(self):
         return self.expr._root_tables()
 
-    def to_expr(self):
+    def _make_expr(self):
         return ir.SortExpr(self)
 
     def equals(self, other, cache=None):
