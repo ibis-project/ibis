@@ -74,7 +74,7 @@ class TestExprFormatting(unittest.TestCase):
         formatter = ExprFormatter(result)
         formatted = formatter.get_result()
 
-        alias = formatter.memo.get_alias(table.op())
+        alias = formatter.memo.get_alias(table)
         assert formatted.count(alias) == 7
 
     def test_aggregate_arg_names(self):

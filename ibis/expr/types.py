@@ -209,10 +209,12 @@ class Node(object):
         return self._repr()
 
     def _repr(self, memo=None):
-        # Quick and dirty to get us started
+        if memo is None:
+            from ibis.expr.format import FormatMemo
+            memo = FormatMemo()
+
         opname = type(self).__name__
         pprint_args = []
-
 
         def _pp(x):
             return _safe_repr(x, memo=memo)
@@ -271,7 +273,15 @@ class Node(object):
 
         return self.equals(other)
 
+    _expr_cached = None
+
     def to_expr(self):
+        if self._expr_cached is None:
+            self._expr_cached = self._make_expr()
+        return self._expr_cached
+        # return self._make_expr()
+
+    def _make_expr(self):
         klass = self.output_type()
         return klass(self)
 
@@ -351,7 +361,7 @@ class TableColumn(ValueNode):
     def root_tables(self):
         return self.table._root_tables()
 
-    def to_expr(self):
+    def _make_expr(self):
         ctype = self.table._get_type(self.name)
         klass = ctype.array_type()
         return klass(self, name=self.name)
@@ -1168,7 +1178,7 @@ class ValueList(ValueNode):
     def root_tables(self):
         return distinct_roots(*self.values)
 
-    def to_expr(self):
+    def _make_expr(self):
         return ListExpr(self)
 
 
