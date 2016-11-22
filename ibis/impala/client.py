@@ -23,6 +23,7 @@ import hdfs
 import numpy as np
 import pandas as pd
 
+
 import ibis.common as com
 
 from ibis.config import options
@@ -169,7 +170,7 @@ class ImpalaConnection(object):
         self._connections[id(con)] = con
 
         # make sure the connection works
-        cursor = con.cursor(convert_types=True)
+        cursor = con.cursor(convert_types=True, user=params.get('user'))
         cursor.ping()
 
         wrapper = ImpalaCursor(cursor, self, con, self.database,
@@ -1683,17 +1684,27 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         if values is not None:
             raise NotImplementedError
 
+        if partition is not None:
+            partition_schema = self.partition_schema()
+        else:
+            partition_schema = None
+
         if validate:
             existing_schema = self.schema()
             insert_schema = expr.schema()
             if not insert_schema.equals(existing_schema):
-                _validate_compatible(insert_schema, existing_schema)
+                try:
+                    _validate_compatible(insert_schema, existing_schema)
+                except com.IbisInputError:
+                    partless_items = existing_schema.items()[:-1*len(partition_schema)]
+                    partless_names = [x[0] for x in partless_items]
+                    partless_types = [x[1] for x in partless_items]
+                    partless_schema = dt.Schema(partless_names, partless_types)
+                    _validate_compatible(insert_schema, partless_schema)
 
         if partition is not None:
-            partition_schema = self.partition_schema()
-            expr = expr.drop(partition_schema.names)
-        else:
-            partition_schema = None
+            if set(partition_schema.names).intersection(expr.schema().names):
+                expr = expr.drop(partition_schema.names)
 
         ast = build_ast(expr)
         select = ast.queries[0]

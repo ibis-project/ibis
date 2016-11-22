@@ -109,11 +109,36 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
             self.con.table(tname).partition_schema()
 
     def test_insert_select_partitioned_table(self):
-        pytest.skip('IMPALA-2750')
         df = self.df
 
         unpart_t = self.db.table(self.pd_name)
         part_keys = ['year', 'month']
+        part_t = self._create_partitioned_table(unpart_t.schema(),
+                                                part_keys)
+        unique_keys = df[part_keys].drop_duplicates()
+
+        for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
+            select_stmt = unpart_t[(unpart_t.year == year) &
+                                   (unpart_t.month == month)]
+
+            # test both styles of insert
+            if i:
+                part = {'year': year, 'month': month}
+            else:
+                part = [year, month]
+            part_t.insert(select_stmt, partition=part)
+
+        self._verify_partitioned_table(part_t, df, unique_keys)
+
+    def test_insert_select_partitionless_expr(self):
+        df = self.df
+
+        unpart_t = self.db.table(self.pd_name)
+        part_keys = ['year', 'month']
+
+        sel_cols = [x for x in unpart_t.columns if x not in part_keys]
+        unpart_t = unpart_t[sel_cols]
+
         part_t = self._create_partitioned_table(unpart_t.schema(),
                                                 part_keys)
         unique_keys = df[part_keys].drop_duplicates()

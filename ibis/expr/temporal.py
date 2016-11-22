@@ -84,7 +84,7 @@ class Timedelta(object):
         klass = type(self)
         return klass(self.n + other.n)
 
-    def equals(self, other):
+    def equals(self, other, cache=None):
         if type(self) != type(other):
             return False
 
