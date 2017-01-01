@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import math
+import os
 
 import pytest  # noqa
 
@@ -20,6 +21,7 @@ from .common import PostgreSQLTests
 from ibis.compat import unittest
 from ibis import literal as L
 import ibis.expr.types as ir
+import ibis.expr.datatypes as dt
 import ibis
 
 import sqlalchemy as sa
@@ -658,7 +660,10 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
 
 @pytest.fixture
 def con():
-    return ibis.postgres.connect(host='localhost', database='ibis_testing')
+    return ibis.postgres.connect(
+        host='localhost',
+        database=os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing'),
+    )
 
 
 @pytest.fixture
@@ -674,9 +679,27 @@ def test_array_length(array_types):
     ])
     result = expr.execute()
     expected = pd.DataFrame({
-        'x_length': [3, 5, 3],
-        'y_length': [3, 5, 5],
-        'z_length': [3, 5, None],
+        'x_length': [3, 2, 2, 3, 3, 4],
+        'y_length': [3, 2, 2, 3, 3, 4],
+        'z_length': [3, 2, 2, 0, None, 4],
     })
 
+    tm.assert_frame_equal(result, expected)
+
+
+def test_array_schema(array_types):
+    assert array_types.x.type() == dt.Array(dt.int64)
+    assert array_types.y.type() == dt.Array(dt.string)
+    assert array_types.z.type() == dt.Array(dt.double)
+
+
+def test_array_collect(array_types):
+    expr = array_types.group_by(
+        array_types.grouper
+    ).aggregate(collected=array_types.scalar_column.collect())
+    result = expr.execute().sort_values('grouper').reset_index(drop=True)
+    expected = pd.DataFrame({
+        'grouper': list('abc'),
+        'collected': [[1.0, 2.0, 3.0], [4.0, 5.0], [6.0]],
+    })[['grouper', 'collected']]
     tm.assert_frame_equal(result, expected)
