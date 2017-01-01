@@ -225,14 +225,16 @@ class Boolean(Primitive):
     pass
 
 
+Bounds = namedtuple('Bounds', ('upper', 'lower'))
+
+
 class Integer(Primitive):
 
     @property
     def bounds(self):
         exp = self._nbytes * 8 - 1
         lower = -1 << exp
-        upper = ~lower
-        return lower, upper
+        return Bounds(lower=lower, upper=~lower)
 
     def can_implicit_cast(self, other):
         return (
@@ -299,13 +301,36 @@ class Double(Floating):
     _nbytes = 8
 
 
+def parametric(cls):
+    type_name = cls.__name__
+    array_type_name = '{0}Array'.format(type_name)
+    scalar_type_name = '{0}Scalar'.format(type_name)
+
+    def array_type(self):
+        def constructor(op, name=None):
+            import ibis.expr.types as ir
+            return getattr(ir, array_type_name)(op, self, name=name)
+        return constructor
+
+    def scalar_type(self):
+        def constructor(op, name=None):
+            import ibis.expr.types as ir
+            return getattr(ir, scalar_type_name)(op, self, name=name)
+        return constructor
+
+    cls.array_type = array_type
+    cls.scalar_type = scalar_type
+    return cls
+
+
+@parametric
 class Decimal(DataType):
     # Decimal types are parametric, we store the parameters in this object
 
     def __init__(self, precision, scale, nullable=True):
+        super(Decimal, self).__init__(nullable=nullable)
         self.precision = precision
         self.scale = scale
-        super(Decimal, self).__init__(nullable=nullable)
 
     def __repr__(self):
         return '{0}(precision={1:d}, scale={2:d})'.format(
@@ -328,39 +353,30 @@ class Decimal(DataType):
         return not self.__eq__(other)
 
     def __eq__(self, other):
-        if not isinstance(other, Decimal):
-            return False
-
-        return (self.precision == other.precision and
-                self.scale == other.scale)
+        return (
+            isinstance(other, Decimal) and
+            self.precision == other.precision and
+            self.scale == other.scale
+        )
 
     @classmethod
     def can_implicit_cast(cls, other):
         return isinstance(other, (Floating, Decimal))
 
-    def array_type(self):
-        def constructor(op, name=None):
-            from ibis.expr.types import DecimalArray
-            return DecimalArray(op, self, name=name)
-        return constructor
 
-    def scalar_type(self):
-        def constructor(op, name=None):
-            from ibis.expr.types import DecimalScalar
-            return DecimalScalar(op, self, name=name)
-        return constructor
-
-
+@parametric
 class Category(DataType):
 
     def __init__(self, cardinality=None, nullable=True):
+        super(Category, self).__init__(nullable=nullable)
         self.cardinality = cardinality
-        DataType.__init__(self, nullable=nullable)
 
     def __repr__(self):
-        card = (self.cardinality if self.cardinality is not None
-                else 'unknown')
-        return ('category(K=%s)' % card)
+        if self.cardinality is not None:
+            cardinality = self.cardinality
+        else:
+            cardinality = 'unknown'
+        return 'category(K={0})'.format(cardinality)
 
     def __hash__(self):
         return hash(self.cardinality)
@@ -372,30 +388,21 @@ class Category(DataType):
         return self.cardinality == other.cardinality
 
     def to_integer_type(self):
-        if self.cardinality is None:
-            return 'int64'
-        elif self.cardinality < (2 ** 7 - 1):
-            return 'int8'
-        elif self.cardinality < (2 ** 15 - 1):
-            return 'int16'
-        elif self.cardinality < (2 ** 31 - 1):
-            return 'int32'
+        cardinality = self.cardinality
+
+        if cardinality is None:
+            return dt.int64
+        elif cardinality < dt.int8.bounds.upper:
+            return dt.int8
+        elif cardinality < dt.int16.bounds.upper:
+            return dt.int16
+        elif cardinality < dt.int32.bounds.upper:
+            return dt.int32
         else:
-            return 'int64'
-
-    def array_type(self):
-        def constructor(op, name=None):
-            from ibis.expr.types import CategoryArray
-            return CategoryArray(op, self, name=name)
-        return constructor
-
-    def scalar_type(self):
-        def constructor(op, name=None):
-            from ibis.expr.types import CategoryScalar
-            return CategoryScalar(op, self, name=name)
-        return constructor
+            return dt.int64
 
 
+@parametric
 class Struct(DataType):
 
     def __init__(self, names, types, nullable=True):
@@ -425,6 +432,7 @@ class Struct(DataType):
         return Struct(*map(list, zip(*pairs)))
 
 
+@parametric
 class Array(Variadic):
 
     def __init__(self, value_type, nullable=True):
@@ -438,9 +446,13 @@ class Array(Variadic):
         return '{0}<{1}>'.format(self.name.lower(), self.value_type)
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and self.value_type == other.value_type
+        return (
+            isinstance(other, type(self)) and
+            self.value_type == other.value_type
+        )
 
 
+@parametric
 class Enum(DataType):
 
     def __init__(self, rep_type, value_type, nullable=True):
@@ -449,6 +461,7 @@ class Enum(DataType):
         self.value_type = value_type
 
 
+@parametric
 class Map(DataType):
 
     def __init__(self, key_type, value_type, nullable=True):
