@@ -518,6 +518,10 @@ _operation_registry.update({
     ops.WindowOp: _window,
     ops.CumulativeOp: _window,
     ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
+
+    # array operations
+    ops.ArrayLength: fixed_arity(sa.func.cardinality, 1),
+    ops.ArrayCollect: fixed_arity(sa.func.array_agg, 1),
 })
 
 
