@@ -18,7 +18,6 @@ from collections import namedtuple, OrderedDict
 
 import six
 
-import ibis.expr.types as ir
 import ibis.common as com
 import ibis.util as util
 
@@ -198,12 +197,12 @@ class DataType(object):
         return self.equals(other)
 
     def scalar_type(self):
-        name = type(self).__name__
-        return getattr(ir, '{0}Scalar'.format(name))
+        import ibis.expr.types as ir
+        return getattr(ir, '{0}Scalar'.format(type(self).__name__))
 
     def array_type(self):
-        name = type(self).__name__
-        return getattr(ir, '{0}Array'.format(name))
+        import ibis.expr.types as ir
+        return getattr(ir, '{0}Array'.format(type(self).__name__))
 
 
 class Any(DataType):
@@ -306,9 +305,6 @@ class Decimal(DataType):
         self.scale = scale
         DataType.__init__(self, nullable=nullable)
 
-    def _base_type(self):
-        return 'decimal'
-
     def __repr__(self):
         return '{0}(precision={1:d}, scale={2:d})'.format(
             self.name,
@@ -358,9 +354,6 @@ class Category(DataType):
     def __init__(self, cardinality=None, nullable=True):
         self.cardinality = cardinality
         DataType.__init__(self, nullable=nullable)
-
-    def _base_type(self):
-        return 'category'
 
     def __repr__(self):
         card = (self.cardinality if self.cardinality is not None

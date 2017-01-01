@@ -20,6 +20,7 @@ import ibis.common as com
 import ibis.compat as compat
 import ibis.config as config
 import ibis.util as util
+import ibis.expr.datatypes as dt
 
 
 class Parameter(object):
@@ -420,37 +421,46 @@ class Literal(ValueNode):
         self.value = value
 
     def __repr__(self):
-        return 'Literal(%s)' % repr(self.value)
+        return '{0}({1})'.format(
+            type(self).__name__,
+            ', '.join(map(repr, self.args))
+        )
 
     @property
     def args(self):
         return [self.value]
 
     def equals(self, other, cache=None):
-        if not isinstance(other, Literal):
-            return False
-        return (isinstance(other.value, type(self.value)) and
-                self.value == other.value)
+        return (
+            isinstance(other, Literal) and
+            isinstance(other.value, type(self.value)) and
+            self.value == other.value
+        )
 
     def output_type(self):
         import ibis.expr.rules as rules
-        if isinstance(self.value, bool):
-            klass = BooleanScalar
-        elif isinstance(self.value, compat.integer_types):
-            int_type = rules.int_literal_class(self.value)
-            klass = int_type.scalar_type()
-        elif isinstance(self.value, float):
-            klass = DoubleScalar
-        elif isinstance(self.value, six.string_types):
-            klass = StringScalar
-        elif isinstance(self.value, datetime.datetime):
-            klass = TimestampScalar
-        elif isinstance(self.value, datetime.date):
-            klass = DateScalar
-        else:
-            raise com.InputTypeError(self.value)
 
-        return klass
+        value = self.value
+
+        if isinstance(value, bool):
+            return BooleanScalar
+        elif isinstance(value, compat.integer_types):
+            return rules.int_literal_class(value).scalar_type()
+        elif isinstance(value, float):
+            return DoubleScalar
+        elif isinstance(value, six.string_types):
+            return StringScalar
+        elif isinstance(value, datetime.datetime):
+            return TimestampScalar
+        elif isinstance(value, datetime.date):
+            return DateScalar
+        elif isinstance(value, list):
+            value_type = rules.highest_precedence_type(map(literal, value))
+            return lambda value, value_type=value_type: ArrayScalar(
+                value, value_type
+            )
+
+        raise com.InputTypeError(value)
 
     def root_tables(self):
         return []
@@ -474,28 +484,25 @@ class ValueExpr(Expr):
     either a single value (scalar)
     """
 
-    _implicit_casts = set()
+    _implicit_casts = frozenset()
 
     def __init__(self, arg, name=None):
-        Expr.__init__(self, arg)
+        super(ValueExpr, self).__init__(arg)
         self._name = name
 
     def equals(self, other, cache=None):
-        if not isinstance(other, ValueExpr):
-            return False
-
-        if self._name != other._name:
-            return False
-
-        return Expr.equals(self, other, cache=cache)
+        return (
+            isinstance(other, ValueExpr) and
+            self._name == other._name and
+            super(ValueExpr, self).equals(other, cache=cache)
+        )
 
     def type(self):
-        import ibis.expr.datatypes as dt
-        return dt._primitive_types[self._typename]
-
-    def _base_type(self):
-        # Parametric types like "decimal"
-        return self.type()
+        raise NotImplementedError(
+            'Expressions of type {0} must implement a type method'.format(
+                type(self).__name__
+            )
+        )
 
     def _can_cast_implicit(self, typename):
         from ibis.expr.rules import ImplicitCast
@@ -749,12 +756,14 @@ class TableExpr(Expr):
 
 class AnyValue(ValueExpr):
 
-    _typename = 'any'
+    def type(self):
+        return dt.any
 
 
 class NullValue(AnyValue):
 
-    _typename = 'null'
+    def type(self):
+        return dt.null
 
     def _can_cast_implicit(self, typename):
         return True
@@ -772,32 +781,42 @@ class IntegerValue(NumericValue):
 
 class BooleanValue(NumericValue):
 
-    _typename = 'boolean'
+    def type(self):
+        return dt.boolean
 
 
 class Int8Value(IntegerValue):
 
-    _typename = 'int8'
-    _implicit_casts = set(['int16', 'int32', 'int64', 'float', 'double',
-                           'decimal'])
+    _implicit_casts = set([
+        'int16', 'int32', 'int64', 'float', 'double', 'decimal'
+    ])
+
+    def type(self):
+        return dt.int8
 
 
 class Int16Value(IntegerValue):
 
-    _typename = 'int16'
     _implicit_casts = set(['int32', 'int64', 'float', 'double', 'decimal'])
+
+    def type(self):
+        return dt.int16
 
 
 class Int32Value(IntegerValue):
 
-    _typename = 'int32'
     _implicit_casts = set(['int64', 'float', 'double', 'decimal'])
+
+    def type(self):
+        return dt.int32
 
 
 class Int64Value(IntegerValue):
 
-    _typename = 'int64'
     _implicit_casts = set(['float', 'double', 'decimal'])
+
+    def type(self):
+        return dt.int64
 
 
 class FloatingValue(NumericValue):
@@ -806,19 +825,24 @@ class FloatingValue(NumericValue):
 
 class FloatValue(FloatingValue):
 
-    _typename = 'float'
     _implicit_casts = set(['double', 'decimal'])
+
+    def type(self):
+        return dt.float
 
 
 class DoubleValue(FloatingValue):
 
-    _typename = 'double'
     _implicit_casts = set(['decimal'])
+
+    def type(self):
+        return dt.double
 
 
 class StringValue(AnyValue):
 
-    _typename = 'string'
+    def type(self):
+        return dt.string
 
     def _can_compare(self, other):
         return isinstance(other, StringValue)
@@ -826,7 +850,6 @@ class StringValue(AnyValue):
 
 class DecimalValue(NumericValue):
 
-    _typename = 'decimal'
     _implicit_casts = set(['float', 'double'])
 
     def __init__(self, meta):
@@ -835,11 +858,7 @@ class DecimalValue(NumericValue):
         self._scale = meta.scale
 
     def type(self):
-        from ibis.expr.datatypes import Decimal
-        return Decimal(self._precision, self._scale)
-
-    def _base_type(self):
-        return 'decimal'
+        return dt.Decimal(self._precision, self._scale)
 
     @classmethod
     def _make_constructor(cls, meta):
@@ -850,7 +869,8 @@ class DecimalValue(NumericValue):
 
 class DateValue(AnyValue):
 
-    _typename = 'date'
+    def type(self):
+        return dt.date
 
     def _can_implicit_cast(self, arg):
         op = arg.op()
@@ -874,7 +894,8 @@ class DateValue(AnyValue):
 
 class TimestampValue(AnyValue):
 
-    _typename = 'timestamp'
+    def type(self):
+        return dt.timestamp
 
     def _can_implicit_cast(self, arg):
         op = arg.op()
@@ -894,6 +915,22 @@ class TimestampValue(AnyValue):
         # assume we've checked this is OK at this point...
         op = arg.op()
         return TimestampScalar(op)
+
+
+class ArrayValue(AnyValue):
+
+    def __init__(self, value_type, name=None):
+        super(ArrayValue, self).__init__(value_type)
+        self.value_type = value_type
+
+    def type(self):
+        return dt.Array(self.value_type)
+
+    def _can_implicit_cast(self, arg):
+        return False
+
+    def _can_compare(self, other):
+        return isinstance(other, ListValue)
 
 
 class NumericArray(ArrayExpr, NumericValue):
@@ -1008,7 +1045,7 @@ class DecimalArray(DecimalValue, NumericArray):
 
     def __init__(self, arg, meta, name=None):
         DecimalValue.__init__(self, meta)
-        ArrayExpr.__init__(self, arg, name=name)
+        NumericArray.__init__(self, arg, name=name)
 
     @property
     def _factory(self):
@@ -1024,7 +1061,6 @@ class CategoryValue(AnyValue):
     until explicitly
     """
 
-    _typename = 'category'
     _implicit_casts = Int16Value._implicit_casts
 
     def __init__(self, meta):
@@ -1032,9 +1068,6 @@ class CategoryValue(AnyValue):
 
     def type(self):
         return self.meta
-
-    def _base_type(self):
-        return 'category'
 
     def _can_compare(self, other):
         return isinstance(other, IntegerValue)
@@ -1063,6 +1096,32 @@ class CategoryArray(CategoryValue, ArrayExpr):
     def _factory(self):
         def factory(arg, name=None):
             return CategoryArray(arg, self.meta, name=name)
+        return factory
+
+
+class ArrayScalar(ArrayValue, ScalarExpr):
+
+    def __init__(self, arg, meta, name=None):
+        ArrayValue.__init__(self, meta)
+        ScalarExpr.__init__(self, arg, name=name)
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return ArrayScalar(arg, self.meta, name=name)
+        return factory
+
+
+class ArrayArray(ArrayValue, ArrayExpr):
+
+    def __init__(self, arg, meta, name=None):
+        ArrayValue.__init__(self, meta)
+        ArrayExpr.__init__(self, arg, name=name)
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return ArrayArray(arg, self.meta, name=name)
         return factory
 
 
