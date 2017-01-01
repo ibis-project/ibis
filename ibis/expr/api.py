@@ -31,6 +31,7 @@ from ibis.expr.types import (Expr,  # noqa
                              StringValue, StringScalar, StringArray,
                              DecimalValue, DecimalScalar, DecimalArray,
                              TimestampValue, TimestampScalar, TimestampArray,
+                             ArrayValue, ArrayScalar, ArrayArray,
                              CategoryValue, unnamed, as_value_expr, literal,
                              null, sequence)
 
@@ -797,7 +798,8 @@ _generic_value_methods = dict(
     __ge__=_binop_expr('__ge__', _ops.GreaterEqual),
     __gt__=_binop_expr('__gt__', _ops.Greater),
     __le__=_binop_expr('__le__', _ops.LessEqual),
-    __lt__=_binop_expr('__lt__', _ops.Less)
+    __lt__=_binop_expr('__lt__', _ops.Less),
+    collect=_unary_op('any', _ops.ArrayCollect),
 )
 
 
@@ -1586,6 +1588,15 @@ _string_value_methods = dict(
 
 
 _add_methods(StringValue, _string_value_methods)
+
+
+# ---------------------------------------------------------------------
+# Array API
+_array_value_methods = dict(
+    length=_unary_op('length', _ops.ArrayLength),
+)
+
+_add_methods(ArrayValue, _array_value_methods)
 
 
 # ---------------------------------------------------------------------
