@@ -654,3 +654,29 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         expected = df.assign(new_col=[x / 2. for x in range(len(df))])
         result = expr['timestamp_col', 'new_col'].execute()
         tm.assert_frame_equal(result, expected)
+
+
+@pytest.fixture
+def con():
+    return ibis.postgres.connect(host='localhost', database='ibis_testing')
+
+
+@pytest.fixture
+def array_types(con):
+    return con.table('array_types')
+
+
+def test_array_length(array_types):
+    expr = array_types.projection([
+        array_types.x.length().name('x_length'),
+        array_types.y.length().name('y_length'),
+        array_types.z.length().name('z_length'),
+    ])
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'x_length': [3, 5, 3],
+        'y_length': [3, 5, 5],
+        'z_length': [3, 5, None],
+    })
+
+    tm.assert_frame_equal(result, expected)
