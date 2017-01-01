@@ -309,15 +309,13 @@ def parametric(cls):
     def array_type(self):
         def constructor(op, name=None):
             import ibis.expr.types as ir
-            return getattr(ir, array_type_name)(op, self.value_type, name=name)
+            return getattr(ir, array_type_name)(op, self.meta, name=name)
         return constructor
 
     def scalar_type(self):
         def constructor(op, name=None):
             import ibis.expr.types as ir
-            return getattr(ir, scalar_type_name)(
-                op, self.value_type, name=name
-            )
+            return getattr(ir, scalar_type_name)(op, self.meta, name=name)
         return constructor
 
     cls.array_type = array_type
