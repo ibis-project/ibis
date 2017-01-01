@@ -2342,3 +2342,17 @@ class TimestampDelta(ValueOp):
 
     input_type = [rules.timestamp, rules.timedelta(name='offset')]
     output_type = rules.shape_like_arg(0, 'timestamp')
+
+
+class ArrayLength(ValueOp):
+
+    input_type = [rules.array_array(dt.any)]
+    output_type = rules.shape_like_arg(0, 'int64')
+
+
+class ArrayCollect(Reduction):
+
+    input_type = [rules.array]
+    output_type = rules.scalar_output(
+        lambda self: dt.Array(self.args[0].type())
+    )
