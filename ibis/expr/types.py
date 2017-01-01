@@ -457,7 +457,7 @@ class Literal(ValueNode):
         elif isinstance(value, list):
             value_type = rules.highest_precedence_type(map(literal, value))
             return lambda value, value_type=value_type: ArrayScalar(
-                value, value_type
+                value, dt.Array(value_type)
             )
 
         raise com.InputTypeError(value)
@@ -919,9 +919,9 @@ class TimestampValue(AnyValue):
 
 class ArrayValue(AnyValue):
 
-    def __init__(self, value_type, name=None):
-        super(ArrayValue, self).__init__(value_type)
-        self.value_type = value_type
+    def __init__(self, type, name=None):
+        super(ArrayValue, self).__init__(type.value_type)
+        self.value_type = type.value_type
 
     def type(self):
         return dt.Array(self.value_type)
@@ -1108,7 +1108,7 @@ class ArrayScalar(ArrayValue, ScalarExpr):
     @property
     def _factory(self):
         def factory(arg, name=None):
-            return ArrayScalar(arg, self.type().value_type, name=name)
+            return ArrayScalar(arg, self.type(), name=name)
         return factory
 
 
@@ -1121,7 +1121,7 @@ class ArrayArray(ArrayValue, ArrayExpr):
     @property
     def _factory(self):
         def factory(arg, name=None):
-            return ArrayArray(arg, self.type().value_type, name=name)
+            return ArrayArray(arg, self.type(), name=name)
         return factory
 
 
