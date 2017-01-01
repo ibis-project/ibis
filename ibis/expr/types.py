@@ -1108,7 +1108,7 @@ class ArrayScalar(ArrayValue, ScalarExpr):
     @property
     def _factory(self):
         def factory(arg, name=None):
-            return ArrayScalar(arg, self.meta, name=name)
+            return ArrayScalar(arg, self.type().value_type, name=name)
         return factory
 
 
@@ -1121,7 +1121,7 @@ class ArrayArray(ArrayValue, ArrayExpr):
     @property
     def _factory(self):
         def factory(arg, name=None):
-            return ArrayArray(arg, self.meta, name=name)
+            return ArrayArray(arg, self.type().value_type, name=name)
         return factory
 
 
