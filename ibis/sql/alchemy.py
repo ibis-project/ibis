@@ -80,37 +80,47 @@ _sqla_type_to_ibis = dict((v, k) for k, v in
 _sqla_type_to_ibis.update(_sqla_type_mapping)
 
 
+def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
+    type_class = type(column_type)
+
+    if isinstance(column_type, sa.types.NUMERIC):
+        return dt.Decimal(
+            column_type.precision, column_type.scale, nullable=nullable
+        )
+    else:
+        if column_type in _sqla_type_to_ibis:
+            ibis_class = _sqla_type_to_ibis[column_type]
+        elif type_class in _sqla_type_to_ibis:
+            ibis_class = _sqla_type_to_ibis[type_class]
+        elif isinstance(column_type, sa.DateTime):
+            ibis_class = dt.Timestamp()
+        elif isinstance(column_type, sa.ARRAY):
+            dimensions = column_type.dimensions
+            if dimensions is not None and dimensions != 1:
+                raise NotImplementedError(
+                    'Nested array types not yet supported'
+                )
+            value_type = sqlalchemy_type_to_ibis_type(column_type.item_type)
+            ibis_class = lambda nullable, value_type=value_type: dt.Array(
+                value_type, nullable=nullable
+            )
+        else:
+            for k, v in _sqla_type_to_ibis.items():
+                if isinstance(column_type, type(k)):
+                    ibis_class = v
+                    break
+            else:
+                raise NotImplementedError(column_type)
+        return ibis_class(nullable)
+
+
 def schema_from_table(table):
     # Convert SQLA table to Ibis schema
-    names = table.columns.keys()
-
-    types = []
-    for c in table.columns.values():
-        type_class = type(c.type)
-
-        if isinstance(c.type, sa.types.NUMERIC):
-            t = dt.Decimal(c.type.precision,
-                           c.type.scale,
-                           nullable=c.nullable)
-        else:
-            if c.type in _sqla_type_to_ibis:
-                ibis_class = _sqla_type_to_ibis[c.type]
-            elif type_class in _sqla_type_to_ibis:
-                ibis_class = _sqla_type_to_ibis[type_class]
-            elif isinstance(c.type, sa.DateTime):
-                ibis_class = dt.Timestamp()
-            else:
-                for k, v in _sqla_type_to_ibis.items():
-                    if isinstance(c.type, type(k)):
-                        ibis_class = v
-                        break
-                else:
-                    raise NotImplementedError(c.type)
-            t = ibis_class(c.nullable)
-
-        types.append(t)
-
-    return dt.Schema(names, types)
+    types = [
+        sqlalchemy_type_to_ibis_type(column.type, column.nullable)
+        for column in table.columns.values()
+    ]
+    return dt.Schema(table.columns.keys(), types)
 
 
 def table_from_schema(name, meta, schema):
