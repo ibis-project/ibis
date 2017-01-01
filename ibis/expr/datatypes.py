@@ -227,6 +227,13 @@ class Boolean(Primitive):
 
 class Integer(Primitive):
 
+    @property
+    def bounds(self):
+        exp = self._nbytes * 8 - 1
+        lower = -1 << exp
+        upper = ~lower
+        return lower, upper
+
     def can_implicit_cast(self, other):
         if isinstance(other, Integer):
             return ((type(self) == Integer) or
@@ -266,25 +273,21 @@ class Floating(Primitive):
 class Int8(Integer):
 
     _nbytes = 1
-    bounds = (-128, 127)
 
 
 class Int16(Integer):
 
     _nbytes = 2
-    bounds = (-32768, 32767)
 
 
 class Int32(Integer):
 
     _nbytes = 4
-    bounds = (-2147483648, 2147483647)
 
 
 class Int64(Integer):
 
     _nbytes = 8
-    bounds = (-9223372036854775808, 9223372036854775807)
 
 
 class Float(Floating):
@@ -303,7 +306,7 @@ class Decimal(DataType):
     def __init__(self, precision, scale, nullable=True):
         self.precision = precision
         self.scale = scale
-        DataType.__init__(self, nullable=nullable)
+        super(Decimal, self).__init__(nullable=nullable)
 
     def __repr__(self):
         return '{0}(precision={1:d}, scale={2:d})'.format(
