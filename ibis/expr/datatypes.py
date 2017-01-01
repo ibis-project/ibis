@@ -235,11 +235,10 @@ class Integer(Primitive):
         return lower, upper
 
     def can_implicit_cast(self, other):
-        if isinstance(other, Integer):
-            return ((type(self) == Integer) or
-                    (other._nbytes <= self._nbytes))
-        else:
-            return False
+        return (
+            isinstance(other, Integer) and
+            (type(self) is Integer or other._nbytes <= self._nbytes)
+        )
 
 
 class String(Variadic):
