@@ -88,9 +88,7 @@ def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
             column_type.precision, column_type.scale, nullable=nullable
         )
     else:
-        if column_type in _sqla_type_to_ibis:
-            ibis_class = _sqla_type_to_ibis[column_type]
-        elif type_class in _sqla_type_to_ibis:
+        if type_class in _sqla_type_to_ibis:
             ibis_class = _sqla_type_to_ibis[type_class]
         elif isinstance(column_type, sa.DateTime):
             ibis_class = dt.Timestamp()
@@ -105,12 +103,17 @@ def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
                 value_type, nullable=nullable
             )
         else:
-            for k, v in _sqla_type_to_ibis.items():
-                if isinstance(column_type, type(k)):
-                    ibis_class = v
-                    break
-            else:
-                raise NotImplementedError(column_type)
+            try:
+                ibis_class = next(
+                    v for k, v in _sqla_type_mapping.items()
+                    if isinstance(column_type, k)
+                )
+            except StopIteration:
+                raise NotImplementedError(
+                    'Unable to convert SQLAlchemy type {} to ibis type'.format(
+                        column_type
+                    )
+                )
         return ibis_class(nullable)
 
 
