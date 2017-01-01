@@ -3,13 +3,15 @@ import ibis
 import ibis.expr.datatypes as dt
 
 
-def test_array_literal():
-    x = ibis.literal([1, 2, 3])
-    assert x._arg.value == [1, 2, 3]
-    assert x.type() == dt.Array(dt.int8)
-
-
-def test_array_literal_mixed():
-    x = ibis.literal([1, 2, 3.0])
-    assert x._arg.value == [1, 2, 3.0]
-    assert x.type() == dt.Array(dt.double)
+@pytest.mark.parametrize(
+    ['arg', 'type'],
+    [
+        ([1, 2, 3], dt.Array(dt.int8)),
+        ([1, 2, 3.0], dt.Array(dt.double)),
+        (['a', 'b', 'c'], dt.Array(dt.string))
+    ]
+)
+def test_array_literal(arg, type):
+    x = ibis.literal(arg)
+    assert x._arg.value == arg
+    assert x.type() == type
