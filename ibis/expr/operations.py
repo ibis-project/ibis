@@ -2350,6 +2350,54 @@ class ArrayLength(ValueOp):
     output_type = rules.shape_like_arg(0, 'int64')
 
 
+class ArraySlice(ValueOp):
+
+    input_type = [
+        rules.array_array(dt.any),
+        rules.integer(name='start'),
+        rules.integer(name='stop')
+    ]
+    output_type = rules.array_output(lambda self: self.args[0].type())
+
+
+class ArrayIndex(ValueOp):
+
+    input_type = [rules.array_array(dt.any), rules.integer(name='index')]
+    output_type = rules.array_output(
+        lambda self: self.args[0].type().value_type
+    )
+
+
+def _array_concat_output_type(self):
+    """Find the leaf type of each of the left and right arrays in a concat
+    operation and build an output type respecting the nesting level of the
+    original array.
+
+    Notes
+    -----
+    What do other systems do when casting ARRAY<T> to ARRAY<U> where
+    CAST(T AS U) is a valid operation? Postgres allows this for numeric types.
+    """
+    left, right = self.args[:2]
+    if not left._can_implicit_cast(right):
+        raise TypeError(
+            "Can't implicitly cast {} to {}".format(left.type(), right.type())
+        )
+    return left.type()
+
+
+class ArrayConcat(ValueOp):
+
+    input_type = [rules.array_array(dt.any), rules.array_array(dt.any)]
+    output_type = rules.array_output(_array_concat_output_type)
+
+
+class ArrayRepeat(ValueOp):
+
+    input_type = [rules.array_array(dt.any), integer(name='times')]
+    output_type = rules.array_output(lambda self: self.args[0].type())
+
+
 class ArrayCollect(Reduction):
 
     input_type = [rules.array]
