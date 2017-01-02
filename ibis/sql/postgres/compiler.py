@@ -465,7 +465,8 @@ def _array_repeat(t, expr):
     # expression to workaround this.
     array = sa.column(raw.name, type_=raw.type)
 
-    # We still need to prefix the table, so make the column knows its origin
+    # We still need to prefix the table name to the column name in the final
+    # query, so make sure the column knows its origin
     array.table = raw.table
 
     array_length = sa.func.cardinality(array)
