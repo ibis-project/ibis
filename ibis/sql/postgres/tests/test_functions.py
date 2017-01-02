@@ -703,3 +703,72 @@ def test_array_collect(array_types):
         'collected': [[1.0, 2.0, 3.0], [4.0, 5.0], [6.0]],
     })[['grouper', 'collected']]
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ['start', 'stop'],
+    [
+        (1, 3),
+        (1, 1),
+        (2, 3),
+        (2, 5),
+    ]
+)
+def test_array_slice(array_types, start, stop):
+    expr = array_types[array_types.y[start:stop].name('sliced')]
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'sliced': array_types.y.execute().map(lambda x: x[start:stop])
+    })
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize('index', [1, 3, 4, 11])
+def test_array_index(array_types, index):
+    expr = array_types[array_types.y[index].name('indexed')]
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'indexed': array_types.y.execute().map(
+            lambda x: x[index] if index < len(x) else None
+        )
+    })
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize('n', [1, 3, 4, 7])
+def test_array_repeat(array_types, n):
+    expr = array_types.projection([(array_types.x * n).name('repeated')])
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'repeated': array_types.x.execute().map(lambda x, n=n: x * n)
+    })
+    tm.assert_frame_equal(result, expected)
+
+
+def test_array_concat(array_types):
+    """TODO: test for API misuse like ARRAY[STRING] + ARRAY[NOT STRING]
+    """
+    expr = array_types.projection([
+        (array_types.x + array_types.x).name('catted')
+    ])
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'catted': array_types.x.execute().map(lambda x: x + x)
+    })
+    tm.assert_frame_equal(result, expected)
+
+
+def test_array_concat_mixed_types(array_types):
+    """TODO: test for API misuse like ARRAY[STRING] + ARRAY[NOT STRING]
+    """
+    expr = array_types.projection([
+        (array_types.x + array_types.x.cast('array<double>')).name('catted')
+    ])
+    assert expr.type() == dt.Array(dt.double)
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'catted': array_types.x.execute().map(
+            lambda x: x + list(map(float, x))
+        )
+    })
+    tm.assert_frame_equal(result, expected)
