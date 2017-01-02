@@ -139,11 +139,18 @@ def table_from_schema(name, meta, schema):
     return sa.Table(name, meta, *sqla_cols)
 
 
-def _to_sqla_type(itype):
+def _to_sqla_type(itype, type_map=None):
+    if type_map is None:
+        type_map = _ibis_type_to_sqla
     if isinstance(itype, dt.Decimal):
         return sa.types.NUMERIC(itype.precision, itype.scale)
+    elif isinstance(itype, dt.Array):
+        value_type = _to_sqla_type(itype.value_type)
+        if not isinstance(itype.value_type, dt.Primitive):
+            raise TypeError()
+        return sa.ARRAY(value_type)
     else:
-        return _ibis_type_to_sqla[type(itype)]
+        return type_map[type(itype)]
 
 
 def fixed_arity(sa_func, arity):
@@ -514,7 +521,7 @@ class AlchemyExprTranslator(comp.ExprTranslator):
         return AlchemyContext
 
     def get_sqla_type(self, data_type):
-        return self._type_map[type(data_type)]
+        return _to_sqla_type(data_type, type_map=self._type_map)
 
 
 rewrites = AlchemyExprTranslator.rewrites

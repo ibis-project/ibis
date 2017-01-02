@@ -451,6 +451,9 @@ class Array(Variadic):
             self.value_type == other.value_type
         )
 
+    def equals(self, other, cache=None):
+        return self == other
+
 
 @parametric
 class Enum(DataType):
