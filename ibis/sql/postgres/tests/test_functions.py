@@ -759,16 +759,5 @@ def test_array_concat(array_types):
 
 
 def test_array_concat_mixed_types(array_types):
-    """TODO: test for API misuse like ARRAY[STRING] + ARRAY[NOT STRING]
-    """
-    expr = array_types.projection([
-        (array_types.x + array_types.x.cast('array<double>')).name('catted')
-    ])
-    assert expr.type() == dt.Array(dt.double)
-    result = expr.execute()
-    expected = pd.DataFrame({
-        'catted': array_types.x.execute().map(
-            lambda x: x + list(map(float, x))
-        )
-    })
-    tm.assert_frame_equal(result, expected)
+    with pytest.raises(TypeError):
+        array_types.x + array_types.x.cast('array<double>')
