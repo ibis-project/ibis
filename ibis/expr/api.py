@@ -799,7 +799,7 @@ _generic_value_methods = dict(
     __gt__=_binop_expr('__gt__', _ops.Greater),
     __le__=_binop_expr('__le__', _ops.LessEqual),
     __lt__=_binop_expr('__lt__', _ops.Less),
-    collect=_unary_op('any', _ops.ArrayCollect),
+    collect=_unary_op('collect', _ops.ArrayCollect),
 )
 
 
@@ -1619,8 +1619,8 @@ def _array_slice(array, index):
 _array_array_methods = dict(
     length=_unary_op('length', _ops.ArrayLength),
     __getitem__=_array_slice,
-    __add__=lambda *args, **kwargs: _ops.ArrayConcat(*args, **kwargs).to_expr(),
-    __mul__=lambda *args, **kwargs: _ops.ArrayRepeat(*args, **kwargs).to_expr(),
+    __add__=_binop_expr('__add__', _ops.ArrayConcat),
+    __mul__=_binop_expr('__mul__', _ops.ArrayRepeat),
 )
 
 _add_methods(ArrayValue, _array_array_methods)
