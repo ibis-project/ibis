@@ -1592,11 +1592,38 @@ _add_methods(StringValue, _string_value_methods)
 
 # ---------------------------------------------------------------------
 # Array API
-_array_value_methods = dict(
-    length=_unary_op('length', _ops.ArrayLength),
+
+
+def _array_slice(array, index):
+    if isinstance(index, slice):
+        start = index.start
+        stop = index.stop
+        if (start is not None and start < 0) or (stop is not None and stop < 0):
+            raise ValueError('negative slicing not yet supported')
+
+        step = index.step
+
+        if step is not None and step != 1:
+            raise NotImplementedError('step can only be 1')
+
+        result = _ops.ArraySlice(
+            array,
+            start + 1 if start is not None else 1,
+            stop if stop is not None else array.length(),
+        )
+    else:
+        result = _ops.ArrayIndex(array, index + 1)
+    return result.to_expr()
+
+
+_array_array_methods = dict(
+    length=lambda *args, **kwargs: _ops.ArrayLength(*args, **kwargs).to_expr(),#_unary_op('length', _ops.ArrayLength),
+    __getitem__=_array_slice,
+    __add__=lambda *args, **kwargs: _ops.ArrayConcat(*args, **kwargs).to_expr(),
+    __mul__=lambda *args, **kwargs: _ops.ArrayRepeat(*args, **kwargs).to_expr(),
 )
 
-_add_methods(ArrayValue, _array_value_methods)
+_add_methods(ArrayValue, _array_array_methods)
 
 
 # ---------------------------------------------------------------------
