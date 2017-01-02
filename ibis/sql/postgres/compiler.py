@@ -461,15 +461,18 @@ def _array_repeat(t, expr):
     """
     raw, times = map(t.translate, expr.op().args)
 
-    # sqlalchemy uses our column's table in the FROM clause. We need
-    # a simpler less magical expression to workaround this.
+    # SQLAlchemy uses our column's table in the FROM clause. We need a simpler
+    # expression to workaround this.
     array = sa.column(raw.name, type_=raw.type)
+
+    # We still need to prefix the table, so make the column knows its origin
+    array.table = raw.table
 
     array_length = sa.func.cardinality(array)
 
     # sequence from 1 to the total number of elements desired
-    series = sa.func.generate_series(1, times * array_length).alias('i')
-    series_column = sa.column('i', type_=sa.BIGINT)
+    series = sa.func.generate_series(1, times * array_length).alias()
+    series_column = sa.column(series.name, type_=sa.INTEGER)
 
     # if our current index modulo the array's length
     # is a multiple of the array's length, then the index is the array's length
