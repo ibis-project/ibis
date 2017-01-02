@@ -1617,7 +1617,7 @@ def _array_slice(array, index):
 
 
 _array_array_methods = dict(
-    length=lambda *args, **kwargs: _ops.ArrayLength(*args, **kwargs).to_expr(),#_unary_op('length', _ops.ArrayLength),
+    length=_unary_op('length', _ops.ArrayLength),
     __getitem__=_array_slice,
     __add__=lambda *args, **kwargs: _ops.ArrayConcat(*args, **kwargs).to_expr(),
     __mul__=lambda *args, **kwargs: _ops.ArrayRepeat(*args, **kwargs).to_expr(),
