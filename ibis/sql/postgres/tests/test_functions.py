@@ -746,8 +746,6 @@ def test_array_repeat(array_types, n):
 
 
 def test_array_concat(array_types):
-    """TODO: test for API misuse like ARRAY[STRING] + ARRAY[NOT STRING]
-    """
     expr = array_types.projection([
         (array_types.x + array_types.x).name('catted')
     ])
