@@ -303,7 +303,7 @@ def parse_type(t):
         if 'varchar' in t or 'char' in t:
             return 'string'
         elif 'decimal' in t:
-            result = _dt._parse_decimal(t)
+            result = validate_type(t)
             if result:
                 return t
             else:
@@ -331,7 +331,7 @@ def _ibis_string_to_impala(tval):
 
     if tval in _sql_type_names:
         return _sql_type_names[tval]
-    result = _dt._parse_decimal(tval)
+    result = validate_type(tval)
     if result:
         return repr(result)
 
