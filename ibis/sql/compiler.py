@@ -770,7 +770,6 @@ class _CorrelatedRefCheck(object):
 
         node = expr.op()
 
-
         if isinstance(node, (ops.PhysicalTable, ops.SelfReference)):
             self._ref_check(node, in_subquery=in_subquery)
 
