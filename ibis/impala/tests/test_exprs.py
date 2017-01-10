@@ -1585,3 +1585,33 @@ SELECT `uuid`,
 FROM t
 GROUP BY 1"""
     assert result == expected
+
+
+def test_filter_with_analytic():
+    x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
+    with_filter_col = x[x.columns + [ibis.null().name('filter')]]
+    filtered = with_filter_col[with_filter_col['filter'].isnull()]
+    subquery = filtered[filtered.columns]
+
+    with_analytic = subquery[['col', subquery.count().name('analytic')]]
+    expr = with_analytic[with_analytic.columns]
+
+    result = ibis.impala.compile(expr)
+    expected = """\
+SELECT `col`, `analytic`
+FROM (
+  SELECT `col`, count(*) OVER () AS `analytic`
+  FROM (
+    SELECT `col`, `filter`
+    FROM (
+      SELECT *
+      FROM (
+        SELECT `col`, NULL AS `filter`
+        FROM x
+      ) t3
+      WHERE `filter` IS NULL
+    ) t2
+  ) t1
+) t0"""
+
+    assert result == expected
