@@ -728,7 +728,8 @@ class _CorrelatedRefCheck(object):
         self._visit(self.expr)
         return self.has_query_root and self.has_foreign_root
 
-    def _visit(self, expr, in_subquery=False, visit_cache=None, visit_table_cache=None):
+    def _visit(self, expr, in_subquery=False, visit_cache=None,
+               visit_table_cache=None):
         if visit_cache is None:
             visit_cache = set()
 
@@ -742,9 +743,13 @@ class _CorrelatedRefCheck(object):
 
         for arg in node.flat_args():
             if isinstance(arg, ir.TableExpr):
-                self._visit_table(arg, in_subquery=in_subquery, visit_cache=visit_cache, visit_table_cache=visit_table_cache)
+                self._visit_table(arg, in_subquery=in_subquery,
+                                  visit_cache=visit_cache,
+                                  visit_table_cache=visit_table_cache)
             elif isinstance(arg, ir.Expr):
-                self._visit(arg, in_subquery=in_subquery, visit_cache=visit_cache, visit_table_cache=visit_table_cache)
+                self._visit(arg, in_subquery=in_subquery,
+                            visit_cache=visit_cache,
+                            visit_table_cache=visit_table_cache)
             else:
                 continue
 
@@ -760,7 +765,8 @@ class _CorrelatedRefCheck(object):
 
         return False
 
-    def _visit_table(self, expr, in_subquery=False, visit_cache=None, visit_table_cache=None):
+    def _visit_table(self, expr, in_subquery=False, visit_cache=None,
+                     visit_table_cache=None):
         if visit_table_cache is None:
             visit_table_cache = set()
 
@@ -775,7 +781,9 @@ class _CorrelatedRefCheck(object):
 
         for arg in node.flat_args():
             if isinstance(arg, ir.Expr):
-                self._visit(arg, in_subquery=in_subquery, visit_cache=visit_cache, visit_table_cache=visit_table_cache)
+                self._visit(arg, in_subquery=in_subquery,
+                            visit_cache=visit_cache,
+                            visit_table_cache=visit_table_cache)
 
     def _ref_check(self, node, in_subquery=False):
         is_aliased = self.ctx.has_ref(node)
