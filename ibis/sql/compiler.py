@@ -404,10 +404,8 @@ class SelectBuilder(object):
         self._collect(op.table, toplevel=toplevel)
 
     def _collect_Union(self, expr, toplevel=False):
-        if not toplevel:
-            return
-        else:
-            raise NotImplementedError
+        if toplevel:
+            raise NotImplementedError()
 
     def _collect_Aggregation(self, expr, toplevel=False):
         # The select set includes the grouping keys (if any), and these are
@@ -680,7 +678,9 @@ class _ExtractSubqueries(object):
         self.visit(expr.op().table)
 
     def _visit_Union(self, expr):
-        self.observe(expr)
+        op = expr.op()
+        self.visit(op.left)
+        self.visit(op.right)
 
     def _visit_MaterializedJoin(self, expr):
         self.observe(expr)
@@ -728,7 +728,8 @@ class _CorrelatedRefCheck(object):
         self._visit(self.expr)
         return self.has_query_root and self.has_foreign_root
 
-    def _visit(self, expr, in_subquery=False, visit_cache=None, visit_table_cache=None):
+    def _visit(self, expr, in_subquery=False, visit_cache=None,
+               visit_table_cache=None):
         if visit_cache is None:
             visit_cache = set()
 
@@ -742,9 +743,13 @@ class _CorrelatedRefCheck(object):
 
         for arg in node.flat_args():
             if isinstance(arg, ir.TableExpr):
-                self._visit_table(arg, in_subquery=in_subquery, visit_cache=visit_cache, visit_table_cache=visit_table_cache)
+                self._visit_table(arg, in_subquery=in_subquery,
+                                  visit_cache=visit_cache,
+                                  visit_table_cache=visit_table_cache)
             elif isinstance(arg, ir.Expr):
-                self._visit(arg, in_subquery=in_subquery, visit_cache=visit_cache, visit_table_cache=visit_table_cache)
+                self._visit(arg, in_subquery=in_subquery,
+                            visit_cache=visit_cache,
+                            visit_table_cache=visit_table_cache)
             else:
                 continue
 
@@ -760,7 +765,8 @@ class _CorrelatedRefCheck(object):
 
         return False
 
-    def _visit_table(self, expr, in_subquery=False, visit_cache=None, visit_table_cache=None):
+    def _visit_table(self, expr, in_subquery=False, visit_cache=None,
+                     visit_table_cache=None):
         if visit_table_cache is None:
             visit_table_cache = set()
 
@@ -775,7 +781,9 @@ class _CorrelatedRefCheck(object):
 
         for arg in node.flat_args():
             if isinstance(arg, ir.Expr):
-                self._visit(arg, in_subquery=in_subquery, visit_cache=visit_cache, visit_table_cache=visit_table_cache)
+                self._visit(arg, in_subquery=in_subquery,
+                            visit_cache=visit_cache,
+                            visit_table_cache=visit_table_cache)
 
     def _ref_check(self, node, in_subquery=False):
         is_aliased = self.ctx.has_ref(node)
@@ -918,7 +926,7 @@ class QueryBuilder(object):
 
     def _make_union(self):
         op = self.expr.op()
-        return self._union_class(op.left, op.right,
+        return self._union_class(op.left, op.right, self.expr,
                                  distinct=op.distinct,
                                  context=self.context)
 
@@ -947,8 +955,8 @@ class QueryContext(object):
         self._table_key_memo = {}
         self.memo = memo or format.FormatMemo()
 
-    def _compile_subquery(self, expr, isolated=False):
-        sub_ctx = self.subcontext(isolated=isolated)
+    def _compile_subquery(self, expr):
+        sub_ctx = self.subcontext()
         return self._to_sql(expr, sub_ctx)
 
     def _to_sql(self, expr, ctx):
@@ -964,7 +972,7 @@ class QueryContext(object):
     def set_always_alias(self):
         self.always_alias = True
 
-    def get_compiled_expr(self, expr, isolated=False):
+    def get_compiled_expr(self, expr):
         this = self.top_context
 
         key = self._get_table_key(expr)
@@ -975,7 +983,7 @@ class QueryContext(object):
         if isinstance(op, ops.SQLQueryResult):
             result = op.query
         else:
-            result = self._compile_subquery(expr, isolated=isolated)
+            result = self._compile_subquery(expr)
 
         this.subquery_memo[key] = result
         return result
@@ -1030,11 +1038,8 @@ class QueryContext(object):
         self.extracted_subexprs.add(key)
         self.make_alias(expr)
 
-    def subcontext(self, isolated=False):
-        if not isolated:
-            return type(self)(indent=self.indent, parent=self)
-        else:
-            return type(self)(indent=self.indent)
+    def subcontext(self):
+        return type(self)(indent=self.indent, parent=self)
 
     # Maybe temporary hacks for correlated / uncorrelated subqueries
 
@@ -1432,10 +1437,10 @@ class TableSetFormatter(object):
 
 class Union(DDL):
 
-    def __init__(self, left_table, right_table, distinct=False,
-                 context=None):
+    def __init__(self, left_table, right_table, expr, distinct=False, context=None):
         self.context = context
         self.left = left_table
         self.right = right_table
-
         self.distinct = distinct
+        self.table_set = expr
+        self.filters = []
