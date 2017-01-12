@@ -767,6 +767,7 @@ class _CorrelatedRefCheck(object):
 
     def _visit_table(self, expr, in_subquery=False, visit_cache=None,
                      visit_table_cache=None):
+
         if visit_table_cache is None:
             visit_table_cache = set()
 
