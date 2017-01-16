@@ -14,6 +14,7 @@
 
 import math
 import os
+import uuid
 
 import pytest  # noqa
 
@@ -779,3 +780,33 @@ def test_array_concat(array_types, catop):
 def test_array_concat_mixed_types(array_types):
     with pytest.raises(TypeError):
         array_types.x + array_types.x.cast('array<double>')
+
+
+@pytest.yield_fixture
+def t(con):
+    pass
+
+
+@pytest.yield_fixture
+def s(con):
+    pass
+
+
+@pytest.yield_fixture
+def trunc(con):
+    pass
+
+def test_anti_join():
+    pass
+
+
+def test_semi_join():
+    pass
+
+
+def test_create_table():
+    pass
+
+
+def test_truncate_table(trunc):
+    pass
