@@ -563,7 +563,45 @@ class AlchemyClient(SQLClient):
         raise NotImplementedError
 
     def create_table(self, name, expr=None, schema=None, database=None):
-        pass
+        if database is not None and database != self.engine.url.database:
+            raise NotImplementedError(
+                'Creating tables from a different database is not yet '
+                'implemented'
+            )
+
+        if expr is None and schema is None:
+            raise ValueError('You must pass either an expression or a schema')
+
+        if expr is not None and schema is not None:
+            if not expr.schema().equals(ibis.schema(schema)):
+                raise TypeError(
+                    'Expression schema is not equal to passed schema. '
+                    'Try passing the expression without the schema'
+                )
+        t = table_from_schema(name, self.meta, schema or expr.schema())
+        with self.con.begin() as bind:
+            t.create(bind=bind)
+            if expr is not None:
+                bind.execute(
+                    t.insert().from_select(list(expr.columns), expr.compile())
+                )
+
+    def drop_table(self, table_name, database=None, force=False):
+        if database is not None and database != self.engine.url.database:
+            raise NotImplementedError(
+                'Dropping tables from a different database is not yet '
+                'implemented'
+            )
+        t = self.meta.tables[table_name]
+        t.drop(checkfirst=force)
+        if t.exists():
+            raise RuntimeError(
+                'Something went wrong during DROP of table {}'.format(t.name)
+            )
+        self.meta.remove(t)
+
+    def truncate_table(self, table_name, database=None):
+        self.meta.tables[table_name].delete().execute()
 
     def list_tables(self, like=None, database=None):
         """
@@ -793,6 +831,10 @@ class _AlchemyTableSet(TableSetFormatter):
                 result = table.join(result, onclause, isouter=True)
             elif jtype is ops.OuterJoin:
                 result = result.outerjoin(table, onclause)
+            elif jtype is ops.LeftSemiJoin:
+                result = sa.select([result]).where(sa.exists(sa.select([1]).where(onclause)))
+            elif jtype is ops.LeftAntiJoin:
+                result = sa.select([result]).where(~sa.exists(sa.select([1]).where(onclause)))
             else:
                 raise NotImplementedError(jtype)
 
