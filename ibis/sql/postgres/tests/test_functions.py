@@ -870,4 +870,4 @@ def test_create_table(con, trunc):
 def test_truncate_table(con, trunc):
     assert list(trunc.name.execute()) == list('abc')
     con.truncate_table(trunc.op().name)
-    assert list(trunc.execute()) == []
+    assert not len(trunc.execute())
