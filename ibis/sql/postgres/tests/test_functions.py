@@ -784,29 +784,90 @@ def test_array_concat_mixed_types(array_types):
 
 @pytest.yield_fixture
 def t(con):
-    pass
+    name = 'left_t'
+    con.raw_sql(
+        """
+        CREATE TABLE {} (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        )
+        """.format(name)
+    )
+    try:
+        yield con.table(name)
+    finally:
+        con.drop_table(name)
 
 
 @pytest.yield_fixture
-def s(con):
-    pass
+def s(con, t):
+    name = 'right_t'
+    con.raw_sql(
+        """
+        CREATE TABLE {} (
+          id SERIAL PRIMARY KEY,
+          left_t_id INTEGER REFERENCES left_t,
+          cost DOUBLE PRECISION
+        )
+        """.format(name)
+    )
+    try:
+        yield con.table(name)
+    finally:
+        con.drop_table(name)
 
 
 @pytest.yield_fixture
 def trunc(con):
-    pass
+    name = str(uuid.uuid1())
+    con.raw_sql(
+        """
+        CREATE TABLE "{}" (
+          id SERIAL PRIMARY KEY,
+          name TEXT
+        )
+        """.format(name)
+    )
+    con.raw_sql(
+        """INSERT INTO "{}" (name) VALUES ('a'), ('b'), ('c')""".format(name)
+    )
+    try:
+        yield con.table(name)
+    finally:
+        con.drop_table(name)
 
-def test_anti_join():
-    pass
+
+def test_semi_join(t, s):
+    t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
+    expr = t.semi_join(s, t.id == s.id)
+    result = expr.compile().compile(compile_kwargs=dict(literal_binds=True))
+    base = sa.select([t_a.c.id, t_a.c.name]).where(
+        sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id))
+    )
+    expected = sa.select([base.c.id, base.c.name])
+    assert str(result) == str(expected)
 
 
-def test_semi_join():
-    pass
+def test_anti_join(t, s):
+    t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
+    expr = t.anti_join(s, t.id == s.id)
+    result = expr.compile().compile(compile_kwargs=dict(literal_binds=True))
+    expected = sa.select([sa.column('id'), sa.column('name')]).select_from(
+        sa.select([t_a.c.id, t_a.c.name]).where(
+            ~sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id))
+        )
+    )
+    assert str(result) == str(expected)
 
 
-def test_create_table():
-    pass
+def test_create_table(con, trunc):
+    name = str(uuid.uuid1())
+    con.create_table(name, expr=trunc)
+    t = con.table(name)
+    assert list(t.name.execute()) == list('abc')
 
 
-def test_truncate_table(trunc):
-    pass
+def test_truncate_table(con, trunc):
+    assert list(trunc.name.execute()) == list('abc')
+    con.truncate_table(trunc.op().name)
+    assert list(trunc.execute()) == []
