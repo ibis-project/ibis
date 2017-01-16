@@ -413,10 +413,6 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         ]
         self._execute_projection(t, exprs)
 
-    @pytest.mark.xfail(
-        raises=sa.exc.ProgrammingError,
-        reason='union not working yet'
-    )
     def test_union(self):
         t = self.alltypes
 
