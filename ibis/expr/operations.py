@@ -2379,9 +2379,14 @@ def _array_concat_output_type(self):
     CAST(T AS U) is a valid operation? Postgres allows this for numeric types.
     """
     left, right = self.args[:2]
-    if left.type() != right.type():
-        raise TypeError('Array types must match exactly to concatenate')
-    return left.type()
+    left_type = left.type()
+    right_type = right.type()
+    if left_type != right_type:
+        raise TypeError(
+            'Array types must match exactly to concatenate. '
+            'Left type {} != Right type {}'.format(left_type, right_type)
+        )
+    return left_type
 
 
 class ArrayConcat(ValueOp):
