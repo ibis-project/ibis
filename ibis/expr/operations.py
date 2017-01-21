@@ -2368,23 +2368,19 @@ class ArrayIndex(ValueOp):
     )
 
 
-def _array_concat_output_type(self):
-    """Find the leaf type of each of the left and right arrays in a concat
-    operation and build an output type respecting the nesting level of the
-    original array.
-
-    Notes
-    -----
-    What do other systems do when casting ARRAY<T> to ARRAY<U> where
-    CAST(T AS U) is a valid operation? Postgres allows this for numeric types.
+def _array_binop_invariant_output_type(self):
+    """Check whether two arrays in an array OP array binary operation have
+    the same type.
     """
-    left, right = self.args[:2]
-    left_type = left.type()
-    right_type = right.type()
+    args = self.args
+    left_type = args[0].type()
+    right_type = args[1].type()
     if left_type != right_type:
         raise TypeError(
-            'Array types must match exactly to concatenate. '
-            'Left type {} != Right type {}'.format(left_type, right_type)
+            'Array types must match exactly in a {} operation. '
+            'Left type {} != Right type {}'.format(
+                type(self).__name__, left_type, right_type
+            )
         )
     return left_type
 
@@ -2392,7 +2388,7 @@ def _array_concat_output_type(self):
 class ArrayConcat(ValueOp):
 
     input_type = [rules.array_array(dt.any), rules.array_array(dt.any)]
-    output_type = rules.array_output(_array_concat_output_type)
+    output_type = rules.array_output(_array_binop_invariant_output_type)
 
 
 class ArrayRepeat(ValueOp):
