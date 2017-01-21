@@ -46,7 +46,7 @@ _ibis_type_to_sqla = {
 
     dt.Boolean: sa.Boolean,
 
-    dt.String: sa.String,
+    dt.String: sa.Text,
 
     dt.Date: sa.Date,
 
@@ -64,19 +64,19 @@ _sqla_type_mapping = {
     sa.BIGINT: dt.Int64,
     sa.Boolean: dt.Boolean,
     sa.BOOLEAN: dt.Boolean,
+    sa.Float: dt.Double,
     sa.FLOAT: dt.Double,
     sa.REAL: dt.Float,
+    sa.String: dt.String,
     sa.VARCHAR: dt.String,
-    sa.Float: dt.Double,
+    sa.CHAR: dt.String,
+    sa.Text: dt.String,
+    sa.TEXT: dt.String,
     sa.DATE: dt.Date,
-
-    sa.types.TEXT: dt.String,
     sa.types.NullType: dt.Null,
-    sa.types.Text: dt.String,
 }
 
-_sqla_type_to_ibis = dict((v, k) for k, v in
-                          _ibis_type_to_sqla.items())
+_sqla_type_to_ibis = dict((v, k) for k, v in _ibis_type_to_sqla.items())
 _sqla_type_to_ibis.update(_sqla_type_mapping)
 
 
@@ -145,10 +145,14 @@ def _to_sqla_type(itype, type_map=None):
     if isinstance(itype, dt.Decimal):
         return sa.types.NUMERIC(itype.precision, itype.scale)
     elif isinstance(itype, dt.Array):
-        value_type = _to_sqla_type(itype.value_type)
-        if not isinstance(itype.value_type, dt.Primitive):
-            raise TypeError()
-        return sa.ARRAY(value_type)
+        ibis_type = itype.value_type
+        if not isinstance(ibis_type, (dt.Primitive, dt.String)):
+            raise TypeError(
+                'Type {} is not a primitive type or string type'.format(
+                    ibis_type
+                )
+            )
+        return sa.ARRAY(_to_sqla_type(ibis_type, type_map=type_map))
     else:
         return type_map[type(itype)]
 
