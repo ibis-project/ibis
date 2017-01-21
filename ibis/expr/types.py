@@ -926,9 +926,6 @@ class ArrayValue(AnyValue):
     def type(self):
         return dt.Array(self.value_type)
 
-    def _can_implicit_cast(self, arg):
-        return self.type().can_implicit_cast(arg.type())
-
     def _can_compare(self, other):
         return isinstance(other, ArrayValue)
 
