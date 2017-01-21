@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import six
+import toolz
 
 from ibis.expr.datatypes import Schema  # noqa
 from ibis.expr.types import (Expr,  # noqa
@@ -1620,7 +1621,9 @@ _array_array_methods = dict(
     length=_unary_op('length', _ops.ArrayLength),
     __getitem__=_array_slice,
     __add__=_binop_expr('__add__', _ops.ArrayConcat),
+    __radd__=toolz.flip(_binop_expr('__radd__', _ops.ArrayConcat)),
     __mul__=_binop_expr('__mul__', _ops.ArrayRepeat),
+    __rmul__=_binop_expr('__rmul__', _ops.ArrayRepeat),
 )
 
 _add_methods(ArrayValue, _array_array_methods)
