@@ -756,24 +756,36 @@ def test_array_index(array_types, index):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.parametrize('n', [1, 3, 4, 7])
-def test_array_repeat(array_types, n):
-    expr = array_types.projection([(array_types.x * n).name('repeated')])
+@pytest.mark.parametrize(
+    'n',
+    [
+        1,
+        3,
+        4,
+        7,
+        pytest.mark.xfail(
+            -2,
+            raises=ValueError,
+            reason='Negative repeat does not make sense'
+        )
+    ]
+)
+@pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
+def test_array_repeat(array_types, n, mul):
+    expr = array_types.projection([mul(array_types.x, n).name('repeated')])
     result = expr.execute()
-    expected = pd.DataFrame({
-        'repeated': array_types.x.execute().map(lambda x, n=n: x * n)
-    })
+    expected = pd.DataFrame({'repeated': array_types.x.execute().map(lambda x, n=n: mul(x, n))})
     tm.assert_frame_equal(result, expected)
 
 
-def test_array_concat(array_types):
-    expr = array_types.projection([
-        (array_types.x + array_types.x).name('catted')
-    ])
+@pytest.mark.parametrize('catop', [lambda x, y: x + y, lambda x, y: y + x])
+def test_array_concat(array_types, catop):
+    t = array_types
+    x, y = t.x.cast('array<string>').name('x'), t.y
+    expr = t.projection([catop(x, y).name('catted')])
     result = expr.execute()
-    expected = pd.DataFrame({
-        'catted': array_types.x.execute().map(lambda x: x + x)
-    })
+    tuples = t.projection([x, y]).execute().itertuples(index=False)
+    expected = pd.DataFrame({'catted': [catop(x, y) for x, y in tuples]})
     tm.assert_frame_equal(result, expected)
 
 
