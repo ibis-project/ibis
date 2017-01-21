@@ -471,8 +471,12 @@ def _array_repeat(t, expr):
 
     array_length = sa.func.cardinality(array)
 
-    # sequence from 1 to the total number of elements desired
-    series = sa.func.generate_series(1, times * array_length).alias()
+    # sequence from 1 to the total number of elements desired in steps of 1.
+    # the call to greatest isn't necessary, but it provides clearer intent
+    # rather than depending on the implicit postgres generate_series behavior
+    start = step = 1
+    stop = sa.func.greatest(times, 0) * array_length
+    series = sa.func.generate_series(start, stop, step).alias()
     series_column = sa.column(series.name, type_=sa.INTEGER)
 
     # if our current index modulo the array's length
