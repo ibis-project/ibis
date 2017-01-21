@@ -756,20 +756,7 @@ def test_array_index(array_types, index):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    'n',
-    [
-        1,
-        3,
-        4,
-        7,
-        pytest.mark.xfail(
-            -2,
-            raises=ValueError,
-            reason='Negative repeat does not make sense'
-        )
-    ]
-)
+@pytest.mark.parametrize('n', [1, 3, 4, 7, -2])
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(array_types, n, mul):
     expr = array_types.projection([mul(array_types.x, n).name('repeated')])
