@@ -712,6 +712,27 @@ def test_array_collect(array_types):
         (1, 1),
         (2, 3),
         (2, 5),
+
+        (None, 3),
+        (None, None),
+        (3, None),
+
+        # negative slices are not supported
+        pytest.mark.xfail(
+            (-3, None),
+            raises=ValueError,
+            reason='Negative slicing not supported'
+        ),
+        pytest.mark.xfail(
+            (None, -3),
+            raises=ValueError,
+            reason='Negative slicing not supported'
+        ),
+        pytest.mark.xfail(
+            (-3, -1),
+            raises=ValueError,
+            reason='Negative slicing not supported'
+        ),
     ]
 )
 def test_array_slice(array_types, start, stop):
