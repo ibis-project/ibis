@@ -17,6 +17,7 @@ import locale
 import string
 import platform
 import warnings
+import operator
 
 from functools import reduce, partial
 from operator import add
@@ -447,6 +448,47 @@ def _regex_extract(t, expr):
     )
 
 
+def _array_repeat(t, expr):
+    """Is this really that useful?
+
+    Repeat an array like a Python list using modular arithmetic,
+    scalar subqueries, and PostgreSQL's ARRAY function.
+
+    This is inefficient if PostgreSQL allocates memory for the entire sequence
+    and the output column. A quick glance at PostgreSQL's C code shows the
+    sequence is evaluated stepwise, which suggests that it's roughly constant
+    memory for the sequence generation.
+    """
+    raw, times = map(t.translate, expr.op().args)
+
+    # SQLAlchemy uses our column's table in the FROM clause. We need a simpler
+    # expression to workaround this.
+    array = sa.column(raw.name, type_=raw.type)
+
+    # We still need to prefix the table name to the column name in the final
+    # query, so make sure the column knows its origin
+    array.table = raw.table
+
+    array_length = sa.func.cardinality(array)
+
+    # sequence from 1 to the total number of elements desired in steps of 1.
+    # the call to greatest isn't necessary, but it provides clearer intent
+    # rather than depending on the implicit postgres generate_series behavior
+    start = step = 1
+    stop = sa.func.greatest(times, 0) * array_length
+    series = sa.func.generate_series(start, stop, step).alias()
+    series_column = sa.column(series.name, type_=sa.INTEGER)
+
+    # if our current index modulo the array's length
+    # is a multiple of the array's length, then the index is the array's length
+    index_expression = series_column % array_length
+    index = sa.func.coalesce(sa.func.nullif(index_expression, 0), array_length)
+
+    # tie it all together in a scalar subquery and collapse that into an ARRAY
+    selected = sa.select([array[index]]).select_from(series)
+    return sa.func.array(selected.as_scalar())
+
+
 _operation_registry.update({
     # types
     ops.Cast: _cast,
@@ -518,6 +560,16 @@ _operation_registry.update({
     ops.WindowOp: _window,
     ops.CumulativeOp: _window,
     ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
+
+    # array operations
+    ops.ArrayLength: fixed_arity(sa.func.cardinality, 1),
+    ops.ArrayCollect: fixed_arity(sa.func.array_agg, 1),
+    ops.ArraySlice: fixed_arity(
+        lambda array, start, stop: array[start:stop], 3
+    ),
+    ops.ArrayIndex: fixed_arity(operator.getitem, 2),
+    ops.ArrayConcat: fixed_arity(operator.add, 2),
+    ops.ArrayRepeat: _array_repeat,
 })
 
 

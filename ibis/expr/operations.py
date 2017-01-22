@@ -2342,3 +2342,64 @@ class TimestampDelta(ValueOp):
 
     input_type = [rules.timestamp, rules.timedelta(name='offset')]
     output_type = rules.shape_like_arg(0, 'timestamp')
+
+
+class ArrayLength(ValueOp):
+
+    input_type = [rules.array_array(dt.any)]
+    output_type = rules.shape_like_arg(0, 'int64')
+
+
+class ArraySlice(ValueOp):
+
+    input_type = [
+        rules.array_array(dt.any),
+        rules.integer(name='start'),
+        rules.integer(name='stop')
+    ]
+    output_type = rules.array_output(lambda self: self.args[0].type())
+
+
+class ArrayIndex(ValueOp):
+
+    input_type = [rules.array_array(dt.any), rules.integer(name='index')]
+    output_type = rules.array_output(
+        lambda self: self.args[0].type().value_type
+    )
+
+
+def _array_binop_invariant_output_type(self):
+    """Check whether two arrays in an array OP array binary operation have
+    the same type.
+    """
+    args = self.args
+    left_type = args[0].type()
+    right_type = args[1].type()
+    if left_type != right_type:
+        raise TypeError(
+            'Array types must match exactly in a {} operation. '
+            'Left type {} != Right type {}'.format(
+                type(self).__name__, left_type, right_type
+            )
+        )
+    return left_type
+
+
+class ArrayConcat(ValueOp):
+
+    input_type = [rules.array_array(dt.any), rules.array_array(dt.any)]
+    output_type = rules.array_output(_array_binop_invariant_output_type)
+
+
+class ArrayRepeat(ValueOp):
+
+    input_type = [rules.array_array(dt.any), integer(name='times')]
+    output_type = rules.array_output(lambda self: self.args[0].type())
+
+
+class ArrayCollect(Reduction):
+
+    input_type = [rules.array]
+    output_type = rules.scalar_output(
+        lambda self: dt.Array(self.args[0].type())
+    )

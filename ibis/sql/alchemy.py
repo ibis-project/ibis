@@ -46,7 +46,7 @@ _ibis_type_to_sqla = {
 
     dt.Boolean: sa.Boolean,
 
-    dt.String: sa.String,
+    dt.String: sa.Text,
 
     dt.Date: sa.Date,
 
@@ -64,53 +64,66 @@ _sqla_type_mapping = {
     sa.BIGINT: dt.Int64,
     sa.Boolean: dt.Boolean,
     sa.BOOLEAN: dt.Boolean,
+    sa.Float: dt.Double,
     sa.FLOAT: dt.Double,
     sa.REAL: dt.Float,
+    sa.String: dt.String,
     sa.VARCHAR: dt.String,
-    sa.Float: dt.Double,
+    sa.CHAR: dt.String,
+    sa.Text: dt.String,
+    sa.TEXT: dt.String,
     sa.DATE: dt.Date,
-
-    sa.types.TEXT: dt.String,
     sa.types.NullType: dt.Null,
-    sa.types.Text: dt.String,
 }
 
-_sqla_type_to_ibis = dict((v, k) for k, v in
-                          _ibis_type_to_sqla.items())
+_sqla_type_to_ibis = dict((v, k) for k, v in _ibis_type_to_sqla.items())
 _sqla_type_to_ibis.update(_sqla_type_mapping)
+
+
+def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
+    type_class = type(column_type)
+
+    if isinstance(column_type, sa.types.NUMERIC):
+        return dt.Decimal(
+            column_type.precision, column_type.scale, nullable=nullable
+        )
+    else:
+        if type_class in _sqla_type_to_ibis:
+            ibis_class = _sqla_type_to_ibis[type_class]
+        elif isinstance(column_type, sa.DateTime):
+            ibis_class = dt.Timestamp()
+        elif isinstance(column_type, sa.ARRAY):
+            dimensions = column_type.dimensions
+            if dimensions is not None and dimensions != 1:
+                raise NotImplementedError(
+                    'Nested array types not yet supported'
+                )
+            value_type = sqlalchemy_type_to_ibis_type(column_type.item_type)
+            ibis_class = lambda nullable, value_type=value_type: dt.Array(
+                value_type, nullable=nullable
+            )
+        else:
+            try:
+                ibis_class = next(
+                    v for k, v in _sqla_type_mapping.items()
+                    if isinstance(column_type, k)
+                )
+            except StopIteration:
+                raise NotImplementedError(
+                    'Unable to convert SQLAlchemy type {} to ibis type'.format(
+                        column_type
+                    )
+                )
+        return ibis_class(nullable)
 
 
 def schema_from_table(table):
     # Convert SQLA table to Ibis schema
-    names = table.columns.keys()
-
-    types = []
-    for c in table.columns.values():
-        type_class = type(c.type)
-
-        if isinstance(c.type, sa.types.NUMERIC):
-            t = dt.Decimal(c.type.precision,
-                           c.type.scale,
-                           nullable=c.nullable)
-        else:
-            if c.type in _sqla_type_to_ibis:
-                ibis_class = _sqla_type_to_ibis[c.type]
-            elif type_class in _sqla_type_to_ibis:
-                ibis_class = _sqla_type_to_ibis[type_class]
-            elif isinstance(c.type, sa.DateTime):
-                ibis_class = dt.Timestamp()
-            else:
-                for k, v in _sqla_type_to_ibis.items():
-                    if isinstance(c.type, type(k)):
-                        ibis_class = v
-                        break
-                else:
-                    raise NotImplementedError(c.type)
-            t = ibis_class(c.nullable)
-
-        types.append(t)
-
-    return dt.Schema(names, types)
+    types = [
+        sqlalchemy_type_to_ibis_type(column.type, column.nullable)
+        for column in table.columns.values()
+    ]
+    return dt.Schema(table.columns.keys(), types)
 
 
 def table_from_schema(name, meta, schema):
@@ -126,11 +139,22 @@ def table_from_schema(name, meta, schema):
     return sa.Table(name, meta, *sqla_cols)
 
 
-def _to_sqla_type(itype):
+def _to_sqla_type(itype, type_map=None):
+    if type_map is None:
+        type_map = _ibis_type_to_sqla
     if isinstance(itype, dt.Decimal):
         return sa.types.NUMERIC(itype.precision, itype.scale)
+    elif isinstance(itype, dt.Array):
+        ibis_type = itype.value_type
+        if not isinstance(ibis_type, (dt.Primitive, dt.String)):
+            raise TypeError(
+                'Type {} is not a primitive type or string type'.format(
+                    ibis_type
+                )
+            )
+        return sa.ARRAY(_to_sqla_type(ibis_type, type_map=type_map))
     else:
-        return _ibis_type_to_sqla[type(itype)]
+        return type_map[type(itype)]
 
 
 def fixed_arity(sa_func, arity):
@@ -501,7 +525,7 @@ class AlchemyExprTranslator(comp.ExprTranslator):
         return AlchemyContext
 
     def get_sqla_type(self, data_type):
-        return self._type_map[type(data_type)]
+        return _to_sqla_type(data_type, type_map=self._type_map)
 
 
 rewrites = AlchemyExprTranslator.rewrites

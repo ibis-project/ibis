@@ -35,9 +35,9 @@ database:
     # dump the data to a CSV file
     - sqlite3 -separator ',' -csv -noheader $IBIS_TEST_SQLITE_DB_PATH <<< 'SELECT * FROM functional_alltypes;' > dump.csv
 
-    # create the Postgres table
+    # create the Postgres tables
     - >
-      psql -U ubuntu -d circle_test <<EOF
+      psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB <<EOF
         CREATE TABLE functional_alltypes (
           "index" BIGINT,
           other BIGINT,
@@ -59,8 +59,27 @@ database:
       EOF
 
     # load the sqlite dump into the pg table
-    - cat dump.csv | psql -U ubuntu -d circle_test -c "COPY functional_alltypes FROM STDIN WITH (FORMAT CSV, HEADER FALSE, DELIMITER ',')"
+    - cat dump.csv | psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB -c "COPY functional_alltypes FROM STDIN WITH (FORMAT CSV, HEADER FALSE, DELIMITER ',')"
     - rm dump.csv
+
+    - >
+      psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB <<EOF
+        CREATE TABLE array_types (
+          x BIGINT[],
+          y TEXT[],
+          z FLOAT8[],
+          grouper TEXT,
+          scalar_column float8
+        );
+
+        INSERT INTO array_types VALUES
+          (ARRAY[1, 2, 3], ARRAY['a', 'b', 'c'], ARRAY[1.0, 2.0, 3.0], 'a', 1.0),
+          (ARRAY[4, 5], ARRAY['d', 'e'], ARRAY[4.0, 5.0], 'a', 2.0),
+          (ARRAY[6, NULL], ARRAY['f', NULL], ARRAY[6.0, NULL], 'a', 3.0),
+          (ARRAY[NULL, 1, NULL], ARRAY[NULL, 'a', NULL], ARRAY[]::float8[], 'b', 4.0),
+          (ARRAY[2, NULL, 3], ARRAY['b', NULL, 'c'], NULL, 'b', 5.0),
+          (ARRAY[4, NULL, NULL, 5], ARRAY['d', NULL, NULL, 'e'], ARRAY[4.0, NULL, NULL, 5.0], 'c', 6.0);
+      EOF
 
 test:
   override:

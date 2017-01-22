@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import six
+import toolz
 
 from ibis.expr.datatypes import Schema  # noqa
 from ibis.expr.types import (Expr,  # noqa
@@ -31,6 +32,7 @@ from ibis.expr.types import (Expr,  # noqa
                              StringValue, StringScalar, StringArray,
                              DecimalValue, DecimalScalar, DecimalArray,
                              TimestampValue, TimestampScalar, TimestampArray,
+                             ArrayValue, ArrayScalar, ArrayArray,
                              CategoryValue, unnamed, as_value_expr, literal,
                              null, sequence)
 
@@ -797,7 +799,8 @@ _generic_value_methods = dict(
     __ge__=_binop_expr('__ge__', _ops.GreaterEqual),
     __gt__=_binop_expr('__gt__', _ops.Greater),
     __le__=_binop_expr('__le__', _ops.LessEqual),
-    __lt__=_binop_expr('__lt__', _ops.Less)
+    __lt__=_binop_expr('__lt__', _ops.Less),
+    collect=_unary_op('collect', _ops.ArrayCollect),
 )
 
 
@@ -1586,6 +1589,44 @@ _string_value_methods = dict(
 
 
 _add_methods(StringValue, _string_value_methods)
+
+
+# ---------------------------------------------------------------------
+# Array API
+
+
+def _array_slice(array, index):
+    if isinstance(index, slice):
+        start = index.start
+        stop = index.stop
+        if (start is not None and start < 0) or (stop is not None and stop < 0):
+            raise ValueError('negative slicing not yet supported')
+
+        step = index.step
+
+        if step is not None and step != 1:
+            raise NotImplementedError('step can only be 1')
+
+        result = _ops.ArraySlice(
+            array,
+            start + 1 if start is not None else 1,
+            stop if stop is not None else array.length(),
+        )
+    else:
+        result = _ops.ArrayIndex(array, index + 1)
+    return result.to_expr()
+
+
+_array_array_methods = dict(
+    length=_unary_op('length', _ops.ArrayLength),
+    __getitem__=_array_slice,
+    __add__=_binop_expr('__add__', _ops.ArrayConcat),
+    __radd__=toolz.flip(_binop_expr('__radd__', _ops.ArrayConcat)),
+    __mul__=_binop_expr('__mul__', _ops.ArrayRepeat),
+    __rmul__=_binop_expr('__rmul__', _ops.ArrayRepeat),
+)
+
+_add_methods(ArrayValue, _array_array_methods)
 
 
 # ---------------------------------------------------------------------
