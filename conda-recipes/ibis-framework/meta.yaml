@@ -1,6 +1,6 @@
 package:
   name: ibis-framework
-  version: "SETBYINSTALL"
+  version: {{ environ.get('GIT_DESCRIBE_TAG') }}
 
 source:
   path: ../..
@@ -9,10 +9,10 @@ requirements:
   build:
     - python
     - setuptools
-    - pytest
+    - pytest <=2.9.2
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - impyla >=0.13.6
+    - impyla >=0.13.7
     - hdfs >=2.0.0
     - sqlalchemy >=1.0.0
     - six
@@ -20,10 +20,11 @@ requirements:
 
   run:
     - python
-    - pytest
+    - setuptools
+    - pytest <=2.9.2
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - impyla >=0.13.6
+    - impyla >=0.13.7
     - hdfs >=2.0.0
     - sqlalchemy >=1.0.0
     - six
