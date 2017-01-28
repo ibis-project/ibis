@@ -107,7 +107,7 @@ setup(
             'psycopg2',
             'sqlalchemy>=1.0.0',
         ],
-        'dev': [
+        'develop': [
             'hdfs>=2.0.0',
             'impyla>=0.13.7',
             'psycopg2',

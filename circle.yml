@@ -83,4 +83,13 @@ database:
 
 test:
   override:
+    - >
+
+      python - <<EOF
+      import ibis
+      from pkg_resources import parse_version, SetuptoolsLegacyVersion
+      print(ibis.__version__)
+      assert not isinstance(parse_version(ibis.__version__), SetuptoolsLegacyVersion)
+      EOF
+
     - py.test ibis --postgresql --sqlite --tb=short --junitxml="$CIRCLE_TEST_REPORTS/junit.xml"
