@@ -32,13 +32,13 @@ if COMMS_EXT_ENABLED:
 
     cmdclass['build_ext'] = build_ext
 
-from setuptools import setup  # noqa
+from setuptools import setup, find_packages  # noqa
 import os  # noqa
 import sys  # noqa
 
+import versioneer  # noqa
+
 from distutils.extension import Extension  # noqa
-
-
 from distutils.command.clean import clean as _clean  # noqa
 
 
@@ -92,54 +92,47 @@ Ibis is a productivity-centric Python big data framework.
 See http://ibis-project.org
 """
 
-CLASSIFIERS = [
-    'Development Status :: 4 - Beta',
-    'Operating System :: OS Independent',
-    'Intended Audience :: Science/Research',
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 2',
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 2.6',
-    'Programming Language :: Python :: 2.7',
-    'Programming Language :: Cython',
-    'Topic :: Scientific/Engineering',
-]
-
-import versioneer  # noqa
-
 setup(
     name='ibis-framework',
-    packages=['ibis',
-              'ibis.expr',
-              'ibis.expr.tests',
-              'ibis.hive',
-              'ibis.hive.tests',
-              'ibis.impala',
-              'ibis.impala.tests',
-              'ibis.spark',
-              'ibis.spark.tests',
-              'ibis.sql',
-              'ibis.sql.tests',
-              'ibis.sql.postgres',
-              'ibis.sql.postgres.tests',
-              'ibis.sql.presto',
-              'ibis.sql.presto.tests',
-              'ibis.sql.redshift',
-              'ibis.sql.redshift.tests',
-              'ibis.sql.sqlite',
-              'ibis.sql.sqlite.tests',
-              'ibis.sql.vertica',
-              'ibis.sql.vertica.tests',
-              'ibis.tests'],
+    packages=find_packages(),
     version=versioneer.get_version(),
     package_data={'ibis': ['*.pxd', '*.pyx']},
     ext_modules=extensions,
     cmdclass=versioneer.get_cmdclass(),
     install_requires=requirements,
-    extras_require={'kerberos': ['requests-kerberos']},
+    extras_require={
+        'all': [
+            'hdfs>=2.0.0',
+            'impyla>=0.13.7',
+            'psycopg2',
+            'sqlalchemy>=1.0.0',
+        ],
+        'dev': [
+            'hdfs>=2.0.0',
+            'impyla>=0.13.7',
+            'psycopg2',
+            'pytest<=2.9.2',
+            'sqlalchemy>=1.0.0',
+        ],
+        'impala': ['hdfs>=2.0.0', 'impyla>=0.13.7', 'sqlalchemy>=1.0.0'],
+        'kerberos': ['requests-kerberos'],
+        'postgres': ['psycopg2', 'sqlalchemy>=1.0.0'],
+        'sqlite': ['sqlalchemy>=1.0.0'],
+    },
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,
-    classifiers=CLASSIFIERS,
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Operating System :: OS Independent',
+        'Intended Audience :: Science/Research',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Cython',
+        'Topic :: Scientific/Engineering',
+    ],
     license='Apache License, Version 2.0',
     maintainer="Wes McKinney",
     maintainer_email="wes@cloudera.com"
