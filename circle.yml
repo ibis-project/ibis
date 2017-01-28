@@ -23,7 +23,7 @@ machine:
 dependencies:
   override:
     - pip install -U pip
-    - pip install -r requirements.txt
+    - pip install -e .[develop]
   post:
     - docker info
     #- docker pull cloudera/impala-dev:minimal
