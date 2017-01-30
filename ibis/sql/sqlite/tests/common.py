@@ -15,9 +15,9 @@
 import os
 import pytest
 
-from ibis.sql.sqlite.compiler import SQLiteExprTranslator
-import ibis.sql.sqlite.api as api
 import ibis.util as util
+
+pytest.importorskip('sqlalchemy')
 
 from sqlalchemy.dialects.sqlite import dialect as sqlite_dialect
 
@@ -27,6 +27,7 @@ class SQLiteTests(object):
 
     @classmethod
     def setUpClass(cls):
+        import ibis.sql.sqlite.api as api
         cls.env = SQLiteTestEnv()
         cls.dialect = sqlite_dialect()
         cls.con = api.connect(cls.env.db_path)
@@ -42,6 +43,7 @@ class SQLiteTests(object):
             assert str(compiled) == str(ex_compiled)
 
     def _translate(self, expr, named=False, context=None):
+        from ibis.sql.sqlite.compiler import SQLiteExprTranslator
         translator = SQLiteExprTranslator(expr, context=context, named=named)
         return translator.get_result()
 
