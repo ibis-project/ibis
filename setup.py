@@ -110,6 +110,7 @@ setup(
         'develop': [
             'hdfs>=2.0.0',
             'impyla>=0.13.7',
+            'mock',
             'psycopg2',
             'pytest<=2.9.2',
             'sqlalchemy>=1.0.0',
