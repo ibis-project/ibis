@@ -32,10 +32,8 @@ dependencies:
 
 database:
   override:
-    - mkfifo /tmp/sqlitedump
-
     # dump the data to a CSV file
-    - sqlite3 -separator ',' -csv -noheader $IBIS_TEST_SQLITE_DB_PATH <<< 'SELECT * FROM functional_alltypes;' > /tmp/sqlitedump
+    - sqlite3 -separator ',' -csv -noheader $IBIS_TEST_SQLITE_DB_PATH <<< 'SELECT * FROM functional_alltypes;' > dump.csv
 
     # create the Postgres tables
     - >
@@ -61,8 +59,8 @@ database:
       EOF
 
     # load the sqlite dump into the pg table
-    - psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB -c "COPY functional_alltypes FROM '/tmp/sqlitedump' WITH (FORMAT CSV, HEADER FALSE, DELIMITER ',')"
-    - rm /tmp/sqlitedump
+    - psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB -c "COPY functional_alltypes FROM STDIN WITH (FORMAT CSV, HEADER FALSE, DELIMITER ',')" < dump.csv
+    - rm dump.csv
 
     - >
       psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB <<EOF
