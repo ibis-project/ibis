@@ -12,39 +12,29 @@ source:
 
 requirements:
   build:
-    - hdfs >=2.0.0
-    - impyla >=0.14.0
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - psycopg2
     - python
     - setuptools
     - six
-    - sqlalchemy >=1.0.0
+    - toolz
   run:
-    - hdfs >=2.0.0
-    - impyla >=0.14.0
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - psycopg2
     - python
     - setuptools
     - six
-    - sqlalchemy >=1.0.0
+    - toolz
 
 test:
   requires:
-    - hdfs >=2.0.0
-    - impyla >=0.14.0
     - mock
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - psycopg2
     - pytest <=2.9.2
     - python
-    - setuptools
     - six
-    - sqlalchemy >=1.0.0
+    - toolz
   imports:
     - ibis
     - ibis.expr
