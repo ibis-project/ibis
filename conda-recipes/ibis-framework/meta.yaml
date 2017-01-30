@@ -12,30 +12,43 @@ source:
 
 requirements:
   build:
-    - python
-    - setuptools
-    - pytest <=2.9.2
+    - hdfs >=2.0.0
+    - impyla >=0.14.0
+    - mock
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - impyla >=0.14.0
-    - hdfs >=2.0.0
-    - sqlalchemy >=1.0.0
+    - psycopg2
+    - pytest <=2.9.2
+    - python
+    - setuptools
     - six
-    - mock
-
+    - sqlalchemy >=1.0.0
   run:
-    - python
-    - setuptools
-    - pytest <=2.9.2
+    - hdfs >=2.0.0
+    - impyla >=0.14.0
+    - mock
     - numpy >=1.7.0
     - pandas >=0.12.0
-    - impyla >=0.14.0
-    - hdfs >=2.0.0
-    - sqlalchemy >=1.0.0
+    - psycopg2
+    - pytest <=2.9.2
+    - python
+    - setuptools
     - six
-    - mock
+    - sqlalchemy >=1.0.0
 
 test:
+  requires:
+    - hdfs >=2.0.0
+    - impyla >=0.14.0
+    - mock
+    - numpy >=1.7.0
+    - pandas >=0.12.0
+    - psycopg2
+    - pytest <=2.9.2
+    - python
+    - setuptools
+    - six
+    - sqlalchemy >=1.0.0
   imports:
     - ibis
     - ibis.expr
@@ -57,7 +70,7 @@ test:
     - ibis.sql.vertica
     - ibis.sql.vertica.tests
     - ibis.tests
-  script:
+  commands:
     - py.test ibis -v --tb=short
 
 about:
