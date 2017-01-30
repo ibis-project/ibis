@@ -14,11 +14,9 @@ requirements:
   build:
     - hdfs >=2.0.0
     - impyla >=0.14.0
-    - mock
     - numpy >=1.7.0
     - pandas >=0.12.0
     - psycopg2
-    - pytest <=2.9.2
     - python
     - setuptools
     - six
@@ -26,11 +24,9 @@ requirements:
   run:
     - hdfs >=2.0.0
     - impyla >=0.14.0
-    - mock
     - numpy >=1.7.0
     - pandas >=0.12.0
     - psycopg2
-    - pytest <=2.9.2
     - python
     - setuptools
     - six
@@ -71,7 +67,7 @@ test:
     - ibis.sql.vertica.tests
     - ibis.tests
   commands:
-    - py.test ibis -v --tb=short
+    - py.test --tb=short --pyargs ibis
 
 about:
   license: Apache License, Version 2.0
