@@ -32,8 +32,10 @@ dependencies:
 
 database:
   override:
+    - mkfifo /tmp/sqlitedump
+
     # dump the data to a CSV file
-    - sqlite3 -separator ',' -csv -noheader $IBIS_TEST_SQLITE_DB_PATH <<< 'SELECT * FROM functional_alltypes;' > dump.csv
+    - sqlite3 -separator ',' -csv -noheader $IBIS_TEST_SQLITE_DB_PATH <<< 'SELECT * FROM functional_alltypes;' > /tmp/sqlitedump
 
     # create the Postgres tables
     - >
@@ -59,8 +61,8 @@ database:
       EOF
 
     # load the sqlite dump into the pg table
-    - cat dump.csv | psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB -c "COPY functional_alltypes FROM STDIN WITH (FORMAT CSV, HEADER FALSE, DELIMITER ',')"
-    - rm dump.csv
+    - psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB -c "COPY functional_alltypes FROM '/tmp/sqlitedump' WITH (FORMAT CSV, HEADER FALSE, DELIMITER ',')"
+    - rm /tmp/sqlitedump
 
     - >
       psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB <<EOF
@@ -83,13 +85,4 @@ database:
 
 test:
   override:
-    - >
-
-      python - <<EOF
-      import ibis
-      from pkg_resources import parse_version, SetuptoolsLegacyVersion
-      print(ibis.__version__)
-      assert not isinstance(parse_version(ibis.__version__), SetuptoolsLegacyVersion)
-      EOF
-
     - py.test ibis --postgresql --sqlite --tb=short --junitxml="$CIRCLE_TEST_REPORTS/junit.xml"
