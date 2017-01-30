@@ -15,6 +15,12 @@
 import os
 import pytest
 
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impyla')
+
+ksupport = pytest.importorskip('ibis.impala.kudu_support')
+kudu = pytest.importorskip('kudu')
+
 from ibis.compat import unittest
 from ibis.expr.tests.mocks import MockConnection
 from ibis.impala.client import build_ast
@@ -24,22 +30,11 @@ import ibis.expr.datatypes as dt
 import ibis.util as util
 import ibis
 
-try:
-    from ibis.impala import kudu_support as ksupport
-    import kudu
-    HAVE_KUDU_CLIENT = True
-except ImportError:
-    HAVE_KUDU_CLIENT = False
-
-
-pytestmark = pytest.mark.skipif(not HAVE_KUDU_CLIENT,
-                                reason='Kudu client not installed')
-
 
 class KuduImpalaTestEnv(IbisTestEnv):
 
     def __init__(self):
-        IbisTestEnv.__init__(self)
+        super(KuduImpalaTestEnv, self).__init__()
 
         # band-aid until Kudu support merged into Impala mainline
         self.test_host = os.getenv('IBIS_TEST_KIMPALA_HOST',

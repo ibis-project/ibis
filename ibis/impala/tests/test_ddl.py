@@ -21,6 +21,9 @@ import pandas as pd
 from posixpath import join as pjoin
 import pytest
 
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impyla')
+
 from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest, mock
 from ibis.impala import ddl

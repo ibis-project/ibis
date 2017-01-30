@@ -14,6 +14,9 @@
 
 import pytest
 
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impyla')
+
 import pandas as pd
 
 import ibis

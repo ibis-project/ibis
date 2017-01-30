@@ -15,6 +15,9 @@
 from posixpath import join as pjoin
 import pytest
 
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impyla')
+
 from pandas.util.testing import assert_frame_equal
 import pandas as pd
 
