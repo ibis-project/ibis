@@ -23,6 +23,9 @@ from ibis.tests.util import assert_equal
 import ibis.expr.types as ir
 import ibis
 
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('psycopg2')
+
 
 POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
 
