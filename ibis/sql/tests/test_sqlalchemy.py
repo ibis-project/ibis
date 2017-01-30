@@ -14,6 +14,10 @@
 
 import operator
 
+import pytest
+
+sa = pytest.importorskip('sqlalchemy')
+
 from ibis.compat import unittest
 from ibis.expr.tests.mocks import MockConnection
 from ibis.sql.tests.test_compiler import ExprTestCases
@@ -23,9 +27,10 @@ import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
 import ibis
 
+
 from sqlalchemy import types as sat, func as F
 import sqlalchemy.sql as sql
-import sqlalchemy as sa
+
 
 L = sa.literal
 
