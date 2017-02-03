@@ -40,13 +40,41 @@ Some platforms will require that you have Kerberos installed to build properly.
 * Redhat / CentOS: ``yum install krb5-devel``
 * Ubuntu / Debian: ``apt-get install libkrb5-dev``
 
+.. _install.impala:
+
+Ibis Impala Quickstart
+----------------------
+
+To install dependencies for Ibis's Impala dialect:
+
+::
+
+  pip install ibis-framework[impala]
+
 .. _install.sqlite:
 
 Ibis SQLite Quickstart
 ----------------------
 
+To install dependencies for Ibis's SQLite dialect:
+
+::
+
+  pip install ibis-framework[sqlite]
+
 See http://blog.ibis-project.org/sqlite-crunchbase-quickstart/ for a quickstart
 using SQLite. Otherwise read on to try out Ibis on Impala.
+
+.. _install.postgres:
+
+Ibis PostgreSQL Quickstart
+--------------------------
+
+To install dependencies for Ibis's PostgreSQL dialect:
+
+::
+
+  pip install ibis-framework[postgres]
 
 Creating a client
 -----------------
