@@ -256,17 +256,4 @@ class ExprFormatter(object):
         if expr is None:
             expr = self.expr
 
-        if isinstance(expr, ir.TableExpr):
-            return 'table'
-        elif isinstance(expr, ir.ArrayExpr):
-            return 'array(%s)' % expr.type()
-        elif isinstance(expr, ir.SortExpr):
-            return 'array-sort'
-        elif isinstance(expr, (ir.ScalarExpr, ir.AnalyticExpr)):
-            return '%s' % expr.type()
-        elif isinstance(expr, ir.ExprList):
-            list_args = [self._get_type_display(arg)
-                         for arg in expr.op().args]
-            return ', '.join(list_args)
-        else:
-            raise NotImplementedError
+        return expr._type_display()
