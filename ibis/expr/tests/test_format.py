@@ -38,6 +38,22 @@ class TestExprFormatting(unittest.TestCase):
         self.table = ibis.table(self.schema)
         self.con = MockConnection()
 
+
+    def test_format_custom_expr(self):
+        from ibis.expr.types import Expr, Literal
+
+        class CustomExpr(Expr):
+            def _type_display(self):
+                return 'my-custom'
+
+        op = Literal(5)
+        expr = CustomExpr(op)
+
+        result = repr(expr)
+        expected = """Literal[my-custom]
+  5"""
+        assert result == expected
+
     def test_format_table_column(self):
         # GH #507
         result = repr(self.table.f)

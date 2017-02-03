@@ -41,6 +41,9 @@ class Expr(object):
 
     """
 
+    def _type_display(self):
+        return type(self).__name__
+
     def __init__(self, arg):
         # TODO: all inputs must inherit from a common table API
         self._arg = arg
@@ -383,6 +386,11 @@ class ExpressionList(Node):
 
 class ExprList(Expr):
 
+    def _type_display(self):
+        list_args = [arg._type_display()
+                     for arg in self.op().args]
+        return ', '.join(list_args)
+
     def exprs(self):
         return self.op().args
 
@@ -529,10 +537,14 @@ class ValueExpr(Expr):
 
 class ScalarExpr(ValueExpr):
 
-    pass
+    def _type_display(self):
+        return str(self.type())
 
 
 class ArrayExpr(ValueExpr):
+
+    def _type_display(self):
+        return 'array({0!s})'.format(self.type())
 
     def parent(self):
         return self._arg
@@ -559,6 +571,9 @@ class AnalyticExpr(Expr):
             return type(self)(arg)
         return factory
 
+    def _type_display(self):
+        return str(self.type())
+
     def type(self):
         return 'analytic'
 
@@ -570,6 +585,9 @@ class TableExpr(Expr):
         def factory(arg):
             return TableExpr(arg)
         return factory
+
+    def _type_display(self):
+        return 'table'
 
     def _is_valid(self, exprs):
         try:
@@ -1218,7 +1236,9 @@ class ListExpr(ArrayExpr, AnyValue):
 
 
 class SortExpr(Expr):
-    pass
+
+    def _type_display(self):
+        return 'array-sort'
 
 
 class ValueList(ValueNode):
