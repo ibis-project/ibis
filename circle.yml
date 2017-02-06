@@ -17,19 +17,17 @@ machine:
     # untar it
     - tar xvzf ibis-testing-data.tar.gz
 
-  services:
-    - docker
-
 dependencies:
   override:
     - pip install -U pip
-    - pip install -e .[develop]
     - pip install flake8 pylint
-  post:
-    - docker info
-    #- docker pull cloudera/impala-dev:minimal
-    #- docker run --name impala -d -t cloudera/impala-dev:minimal
-    #- sudo lxc-attach -n "$(docker inspect --format "{{.Id}}" impala)" -- sudo -H -u dev bash 'docker-boot && cd ~/Impala && JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64 . bin/impala-config.sh && JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64 ./buildall.sh -format -notests -release && run-all.sh && start-impala-cluster.py'
+    - cd $(pyenv root); git pull
+    - pip install -U tox tox-pyenv
+    - pyenv install --skip-existing 2.7.9
+    - pyenv install --skip-existing 3.4.3
+    - pyenv install --skip-existing 3.5.0
+    - pyenv install --skip-existing 3.6.0
+    - pyenv local 2.7.9 3.4.3 3.5.0 3.6.0
 
 database:
   override:
@@ -81,8 +79,7 @@ database:
           (ARRAY[2, NULL, 3], ARRAY['b', NULL, 'c'], NULL, 'b', 5.0),
           (ARRAY[4, NULL, NULL, 5], ARRAY['d', NULL, NULL, 'e'], ARRAY[4.0, NULL, NULL, 5.0], 'c', 6.0);
       EOF
-
 test:
   override:
-    - py.test ibis --postgresql --sqlite --tb=short --junitxml="$CIRCLE_TEST_REPORTS/junit.xml"
-    - flake8 --exclude=docs,versioneer.py
+    - tox
+    - flake8 --exclude=docs,versioneer.py,.svn,CVS,.bzr,.hg,.git,__pycache__,.tox,.eggs,*.egg

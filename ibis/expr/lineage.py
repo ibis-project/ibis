@@ -1,3 +1,8 @@
+try:
+    import queue as q
+except ImportError:
+    import Queue as q  # noqa
+
 from itertools import chain
 from toolz import identity
 from collections import deque

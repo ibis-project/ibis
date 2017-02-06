@@ -706,7 +706,7 @@ def test_array_collect(array_types):
         'grouper': list('abc'),
         'collected': [[1.0, 2.0, 3.0], [4.0, 5.0], [6.0]],
     })[['grouper', 'collected']]
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result, expected, check_column_type=False)
 
 
 @pytest.mark.postgresql

@@ -15,13 +15,13 @@ Installation
 System dependencies
 ~~~~~~~~~~~~~~~~~~~
 
-Ibis requires a working Python 2.6, 2.7, or 3.4 installation. We recommend
+Ibis requires a working Python 2.7 or >= 3.4 installation. We recommend
 `Anaconda <http://continuum.io/downloads>`_.
 
 Installing the Python package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Install ibis using ``pip`` (or ``conda``, whenever it becomes available):
+Install ibis using ``pip`` or ``conda``:
 
 ::
 
@@ -39,6 +39,7 @@ Some platforms will require that you have Kerberos installed to build properly.
 
 * Redhat / CentOS: ``yum install krb5-devel``
 * Ubuntu / Debian: ``apt-get install libkrb5-dev``
+* Arch Linux     : ``pacman -S krb5``
 
 .. _install.impala:
 
