@@ -2346,14 +2346,14 @@ class TimestampDelta(ValueOp):
 
 class ArrayLength(ValueOp):
 
-    input_type = [rules.array_array(dt.any)]
+    input_type = [rules.array_column(dt.any)]
     output_type = rules.shape_like_arg(0, 'int64')
 
 
 class ArraySlice(ValueOp):
 
     input_type = [
-        rules.array_array(dt.any),
+        rules.array_column(dt.any),
         rules.integer(name='start'),
         rules.integer(name='stop')
     ]
@@ -2362,7 +2362,7 @@ class ArraySlice(ValueOp):
 
 class ArrayIndex(ValueOp):
 
-    input_type = [rules.array_array(dt.any), rules.integer(name='index')]
+    input_type = [rules.array_column(dt.any), rules.integer(name='index')]
     output_type = rules.array_output(
         lambda self: self.args[0].type().value_type
     )
@@ -2387,13 +2387,13 @@ def _array_binop_invariant_output_type(self):
 
 class ArrayConcat(ValueOp):
 
-    input_type = [rules.array_array(dt.any), rules.array_array(dt.any)]
+    input_type = [rules.array_column(dt.any), rules.array_column(dt.any)]
     output_type = rules.array_output(_array_binop_invariant_output_type)
 
 
 class ArrayRepeat(ValueOp):
 
-    input_type = [rules.array_array(dt.any), integer(name='times')]
+    input_type = [rules.array_column(dt.any), integer(name='times')]
     output_type = rules.array_output(lambda self: self.args[0].type())
 
 
