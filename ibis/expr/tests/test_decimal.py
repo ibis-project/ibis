@@ -34,7 +34,7 @@ def lineitem(con):
 
 def test_type_metadata(lineitem):
     col = lineitem.l_extendedprice
-    assert isinstance(col, ir.DecimalArray)
+    assert isinstance(col, ir.DecimalColumn)
 
     assert col._precision == 12
     assert col._scale == 2
@@ -72,11 +72,11 @@ def test_where(lineitem):
     expr = api.where(table.l_discount > 0,
                      q * table.l_discount, api.null)
 
-    assert isinstance(expr, ir.DecimalArray)
+    assert isinstance(expr, ir.DecimalColumn)
 
     expr = api.where(table.l_discount > 0,
                      (q * table.l_discount).sum(), api.null)
-    assert isinstance(expr, ir.DecimalArray)
+    assert isinstance(expr, ir.DecimalColumn)
 
     expr = api.where(table.l_discount.sum() > 0,
                      (q * table.l_discount).sum(), api.null)
@@ -85,10 +85,10 @@ def test_where(lineitem):
 
 def test_fillna(lineitem):
     expr = lineitem.l_extendedprice.fillna(0)
-    assert isinstance(expr, ir.DecimalArray)
+    assert isinstance(expr, ir.DecimalColumn)
 
     expr = lineitem.l_extendedprice.fillna(lineitem.l_quantity)
-    assert isinstance(expr, ir.DecimalArray)
+    assert isinstance(expr, ir.DecimalColumn)
 
 
 def test_precision_scale(lineitem):

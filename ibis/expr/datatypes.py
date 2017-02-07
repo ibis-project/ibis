@@ -202,7 +202,7 @@ class DataType(object):
 
     def array_type(self):
         import ibis.expr.types as ir
-        return getattr(ir, '{0}Array'.format(type(self).__name__))
+        return getattr(ir, '{0}Column'.format(type(self).__name__))
 
 
 class Any(DataType):
@@ -303,7 +303,7 @@ class Double(Floating):
 
 def parametric(cls):
     type_name = cls.__name__
-    array_type_name = '{0}Array'.format(type_name)
+    array_type_name = '{0}Column'.format(type_name)
     scalar_type_name = '{0}Scalar'.format(type_name)
 
     def array_type(self):

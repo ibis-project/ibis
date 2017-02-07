@@ -622,7 +622,7 @@ def string(**arg_kwds):
     return ValueTyped(dt.string, 'not string', **arg_kwds)
 
 
-def array_array(value_type):
+def array_column(value_type):
     return lambda **arg_kwds: ValueTyped(
         dt.Array(value_type),
         'not array with value_type {0}'.format(value_type),

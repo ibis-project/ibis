@@ -1063,7 +1063,7 @@ def t2():
 def test_simple_existence_predicate(t1, t2):
     cond = (t1.key1 == t2.key1).any()
 
-    assert isinstance(cond, ir.BooleanArray)
+    assert isinstance(cond, ir.BooleanColumn)
     op = cond.op()
     assert isinstance(op, ops.Any)
 

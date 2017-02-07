@@ -91,7 +91,7 @@ def test_mixed_arity(table):
     expr = api.as_value_expr(what)
 
     values = expr.op().values
-    assert isinstance(values[1], ir.StringArray)
+    assert isinstance(values[1], ir.StringColumn)
 
     # it works!
     repr(expr)
@@ -103,10 +103,10 @@ def test_isin_notin_list(table):
     expr = table.a.isin(vals)
     not_expr = table.a.notin(vals)
 
-    assert isinstance(expr, ir.BooleanArray)
+    assert isinstance(expr, ir.BooleanColumn)
     assert isinstance(expr.op(), ops.Contains)
 
-    assert isinstance(not_expr, ir.BooleanArray)
+    assert isinstance(not_expr, ir.BooleanColumn)
     assert isinstance(not_expr.op(), ops.NotContains)
 
 
@@ -154,10 +154,10 @@ def test_scalar_isin_list_with_array(table):
     options = [table.a, table.b, table.c]
 
     expr = val.isin(options)
-    assert isinstance(expr, ir.BooleanArray)
+    assert isinstance(expr, ir.BooleanColumn)
 
     not_expr = val.notin(options)
-    assert isinstance(not_expr, ir.BooleanArray)
+    assert isinstance(not_expr, ir.BooleanColumn)
 
 
 @pytest.fixture
@@ -172,9 +172,9 @@ def test_distinct_basic(dtable):
     assert expr.op().table is dtable
 
     expr = dtable.string_col.distinct()
-    assert isinstance(expr.op(), ops.DistinctArray)
+    assert isinstance(expr.op(), ops.DistinctColumn)
 
-    assert isinstance(expr, ir.StringArray)
+    assert isinstance(expr, ir.StringColumn)
 
 
 @pytest.mark.xfail(reason='NYT')
@@ -225,7 +225,7 @@ def test_project_with_distinct():
 
 def test_isnull(table):
     expr = table['g'].isnull()
-    assert isinstance(expr, api.BooleanArray)
+    assert isinstance(expr, api.BooleanColumn)
     assert isinstance(expr.op(), ops.IsNull)
 
     expr = ibis.literal('foo').isnull()
@@ -235,7 +235,7 @@ def test_isnull(table):
 
 def test_notnull(table):
     expr = table['g'].notnull()
-    assert isinstance(expr, api.BooleanArray)
+    assert isinstance(expr, api.BooleanColumn)
     assert isinstance(expr.op(), ops.NotNull)
 
     expr = ibis.literal('foo').notnull()
@@ -272,7 +272,7 @@ def log(request):
 @pytest.mark.parametrize('column', list('abcdef'))
 def test_log(table, log, column):
     result = log(table[column])
-    assert isinstance(result, api.DoubleArray)
+    assert isinstance(result, api.DoubleColumn)
 
     # is this what we want?
     # assert result.get_name() == c
@@ -343,7 +343,7 @@ def test_string_to_number(table, type):
 @pytest.mark.parametrize('col', list('abcdefh'))
 def test_number_to_string_column(table, col):
     casted = table[col].cast('string')
-    assert isinstance(casted, api.StringArray)
+    assert isinstance(casted, api.StringColumn)
 
 
 def test_number_to_string_scalar():
@@ -426,7 +426,7 @@ def test_numbers_compare_numeric_literal(table, operation, column, case):
     col = table[column]
 
     result = operation(col, case)
-    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result, api.BooleanColumn)
     assert isinstance(result.op(), ex_op_class[operation])
 
 
@@ -434,10 +434,10 @@ def test_boolean_comparisons(table):
     bool_col = table.h
 
     result = bool_col == True  # noqa
-    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result, api.BooleanColumn)
 
     result = bool_col == False  # noqa
-    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result, api.BooleanColumn)
 
 
 @pytest.mark.parametrize(
@@ -447,7 +447,7 @@ def test_boolean_comparisons(table):
 def test_string_comparisons(table, operation):
     string_col = table.g
     result = operation(string_col, 'foo')
-    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result, api.BooleanColumn)
 
 
 @pytest.mark.parametrize(
@@ -458,12 +458,12 @@ def test_boolean_logical_ops(table, operation):
     expr = table.a > 0
 
     result = operation(expr, table.h)
-    assert isinstance(result, api.BooleanArray)
+    assert isinstance(result, api.BooleanColumn)
 
     result = operation(expr, True)
     refl_result = operation(True, expr)
-    assert isinstance(result, api.BooleanArray)
-    assert isinstance(refl_result, api.BooleanArray)
+    assert isinstance(result, api.BooleanColumn)
+    assert isinstance(refl_result, api.BooleanColumn)
 
     true = ibis.literal(True)
     false = ibis.literal(False)
@@ -476,7 +476,7 @@ def test_null_column():
     t = ibis.table([('a', 'string')], name='t')
     s = t.mutate(b=ibis.NA)
     assert s.b.type() == dt.null
-    assert isinstance(s.b, ir.NullArray)
+    assert isinstance(s.b, ir.NullColumn)
 
 
 def test_null_column_union():
@@ -508,15 +508,15 @@ def test_string_compare_numeric_literal(table):
 def test_between(table):
     result = table.f.between(0, 1)
 
-    assert isinstance(result, ir.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
     assert isinstance(result.op(), ops.Between)
 
     # it works!
     result = table.g.between('a', 'f')
-    assert isinstance(result, ir.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
 
     result = ibis.literal(1).between(table.a, table.c)
-    assert isinstance(result, ir.BooleanArray)
+    assert isinstance(result, ir.BooleanColumn)
 
     result = ibis.literal(7).between(5, 10)
     assert isinstance(result, ir.BooleanScalar)

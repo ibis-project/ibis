@@ -162,12 +162,12 @@ class TestFixedOffsets(unittest.TestCase):
         x = T.timedelta(days=1)
 
         expr = x + c
-        assert isinstance(expr, ir.TimestampArray)
+        assert isinstance(expr, ir.TimestampColumn)
         assert isinstance(expr.op(), ops.TimestampDelta)
 
         # test radd
         expr = c + x
-        assert isinstance(expr, ir.TimestampArray)
+        assert isinstance(expr, ir.TimestampColumn)
         assert isinstance(expr.op(), ops.TimestampDelta)
 
 

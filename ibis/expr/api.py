@@ -19,20 +19,20 @@ from ibis.expr.datatypes import Schema  # noqa
 from ibis.expr.types import (Expr,  # noqa
                              ValueExpr, ScalarExpr, ArrayExpr,
                              TableExpr,
-                             NumericValue, NumericArray,
+                             NumericValue, NumericColumn,
                              IntegerValue,
-                             Int8Value, Int8Scalar, Int8Array,
-                             Int16Value, Int16Scalar, Int16Array,
-                             Int32Value, Int32Scalar, Int32Array,
-                             Int64Value, Int64Scalar, Int64Array,
+                             Int8Value, Int8Scalar, Int8Column,
+                             Int16Value, Int16Scalar, Int16Column,
+                             Int32Value, Int32Scalar, Int32Column,
+                             Int64Value, Int64Scalar, Int64Column,
                              NullScalar,
-                             BooleanValue, BooleanScalar, BooleanArray,
-                             FloatValue, FloatScalar, FloatArray,
-                             DoubleValue, DoubleScalar, DoubleArray,
-                             StringValue, StringScalar, StringArray,
-                             DecimalValue, DecimalScalar, DecimalArray,
-                             TimestampValue, TimestampScalar, TimestampArray,
-                             ArrayValue, ArrayScalar, ArrayArray,
+                             BooleanValue, BooleanScalar, BooleanColumn,
+                             FloatValue, FloatScalar, FloatColumn,
+                             DoubleValue, DoubleScalar, DoubleColumn,
+                             StringValue, StringScalar, StringColumn,
+                             DecimalValue, DecimalScalar, DecimalColumn,
+                             TimestampValue, TimestampScalar, TimestampColumn,
+                             ArrayValue, ArrayScalar, ArrayColumn,
                              CategoryValue, unnamed, as_value_expr, literal,
                              null, sequence)
 
@@ -280,7 +280,7 @@ def count(expr, where=None):
     counts : int64 type
     """
     op = expr.op()
-    if isinstance(op, _ops.DistinctArray):
+    if isinstance(op, _ops.DistinctColumn):
         if where is not None:
             raise NotImplementedError
         result = op.count().to_expr()
@@ -849,7 +849,7 @@ def distinct(arg):
     in conjunction with other array expressions from the same context
     (because it's a cardinality-modifying pseudo-reduction).
     """
-    op = _ops.DistinctArray(arg)
+    op = _ops.DistinctColumn(arg)
     return op.to_expr()
 
 
@@ -953,7 +953,7 @@ def expr_list(exprs):
     return ir.ExpressionList(exprs).to_expr()
 
 
-_generic_array_methods = dict(
+_generic_column_methods = dict(
     bottomk=bottomk,
     distinct=distinct,
     nunique=nunique,
@@ -980,7 +980,7 @@ _generic_array_methods = dict(
 
 
 _add_methods(ValueExpr, _generic_value_methods)
-_add_methods(ArrayExpr, _generic_array_methods)
+_add_methods(ArrayExpr, _generic_column_methods)
 
 
 # ---------------------------------------------------------------------
@@ -1131,7 +1131,7 @@ def variance(arg, where=None, how='sample'):
     return expr
 
 
-_numeric_array_methods = dict(
+_numeric_column_methods = dict(
     mean=mean,
     cummean=cummean,
 
@@ -1149,7 +1149,7 @@ _numeric_array_methods = dict(
 _add_methods(NumericValue, _numeric_value_methods)
 _add_methods(IntegerValue, _integer_value_methods)
 
-_add_methods(NumericArray, _numeric_array_methods)
+_add_methods(NumericColumn, _numeric_column_methods)
 
 
 # ----------------------------------------------------------------------
@@ -1184,7 +1184,7 @@ _boolean_value_methods = dict(
 )
 
 
-_boolean_array_methods = dict(
+_boolean_column_methods = dict(
     any=_unary_op('any', _ops.Any),
     notany=_unary_op('notany', _ops.NotAny),
     all=_unary_op('all', _ops.All),
@@ -1195,7 +1195,7 @@ _boolean_array_methods = dict(
 
 
 _add_methods(BooleanValue, _boolean_value_methods)
-_add_methods(BooleanArray, _boolean_array_methods)
+_add_methods(BooleanColumn, _boolean_column_methods)
 
 
 # ---------------------------------------------------------------------
@@ -1617,7 +1617,7 @@ def _array_slice(array, index):
     return result.to_expr()
 
 
-_array_array_methods = dict(
+_array_column_methods = dict(
     length=_unary_op('length', _ops.ArrayLength),
     __getitem__=_array_slice,
     __add__=_binop_expr('__add__', _ops.ArrayConcat),
@@ -1626,7 +1626,7 @@ _array_array_methods = dict(
     __rmul__=_binop_expr('__rmul__', _ops.ArrayRepeat),
 )
 
-_add_methods(ArrayValue, _array_array_methods)
+_add_methods(ArrayValue, _array_column_methods)
 
 
 # ---------------------------------------------------------------------

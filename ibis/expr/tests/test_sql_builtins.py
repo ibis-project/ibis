@@ -58,29 +58,29 @@ class TestBuiltins(unittest.TestCase):
         iresult = self.alltypes.int_col.zeroifnull()
 
         assert type(dresult.op()) == ops.ZeroIfNull
-        assert type(dresult) == ir.DoubleArray
+        assert type(dresult) == ir.DoubleColumn
 
         # Impala upconverts all ints to bigint. Hmm.
         assert type(iresult) == type(iresult)
 
     def test_fillna(self):
         result = self.alltypes.double_col.fillna(5)
-        assert isinstance(result, ir.DoubleArray)
+        assert isinstance(result, ir.DoubleColumn)
 
         assert isinstance(result.op(), ops.IfNull)
 
         result = self.alltypes.bool_col.fillna(True)
-        assert isinstance(result, ir.BooleanArray)
+        assert isinstance(result, ir.BooleanColumn)
 
         # Retains type of caller (for now)
         result = self.alltypes.int_col.fillna(self.alltypes.bigint_col)
-        assert isinstance(result, ir.Int32Array)
+        assert isinstance(result, ir.Int32Column)
 
     def test_ceil_floor(self):
         cresult = self.alltypes.double_col.ceil()
         fresult = self.alltypes.double_col.floor()
-        assert isinstance(cresult, ir.Int64Array)
-        assert isinstance(fresult, ir.Int64Array)
+        assert isinstance(cresult, ir.Int64Column)
+        assert isinstance(fresult, ir.Int64Column)
         assert type(cresult.op()) == ops.Ceil
         assert type(fresult.op()) == ops.Floor
 
@@ -92,15 +92,15 @@ class TestBuiltins(unittest.TestCase):
         dec_col = self.lineitem.l_extendedprice
         cresult = dec_col.ceil()
         fresult = dec_col.floor()
-        assert isinstance(cresult, ir.DecimalArray)
+        assert isinstance(cresult, ir.DecimalColumn)
         assert cresult.meta == dec_col.meta
 
-        assert isinstance(fresult, ir.DecimalArray)
+        assert isinstance(fresult, ir.DecimalColumn)
         assert fresult.meta == dec_col.meta
 
     def test_sign(self):
         result = self.alltypes.double_col.sign()
-        assert isinstance(result, ir.FloatArray)
+        assert isinstance(result, ir.FloatColumn)
         assert type(result.op()) == ops.Sign
 
         result = ibis.literal(1.2345).sign()
@@ -108,28 +108,28 @@ class TestBuiltins(unittest.TestCase):
 
         dec_col = self.lineitem.l_extendedprice
         result = dec_col.sign()
-        assert isinstance(result, ir.FloatArray)
+        assert isinstance(result, ir.FloatColumn)
 
     def test_round(self):
         result = self.alltypes.double_col.round()
-        assert isinstance(result, ir.Int64Array)
+        assert isinstance(result, ir.Int64Column)
         assert result.op().args[1] is None
 
         result = self.alltypes.double_col.round(2)
-        assert isinstance(result, ir.DoubleArray)
+        assert isinstance(result, ir.DoubleColumn)
         assert result.op().args[1].equals(ibis.literal(2))
 
         # Even integers are double (at least in Impala, check with other DB
         # implementations)
         result = self.alltypes.int_col.round(2)
-        assert isinstance(result, ir.DoubleArray)
+        assert isinstance(result, ir.DoubleColumn)
 
         dec = self.lineitem.l_extendedprice
         result = dec.round()
-        assert isinstance(result, ir.DecimalArray)
+        assert isinstance(result, ir.DecimalColumn)
 
         result = dec.round(2)
-        assert isinstance(result, ir.DecimalArray)
+        assert isinstance(result, ir.DecimalColumn)
 
         result = ibis.literal(1.2345).round()
         assert isinstance(result, ir.Int64Scalar)
@@ -170,10 +170,10 @@ class TestCoalesceLikeFunctions(unittest.TestCase):
 
         for f in self.functions:
             expr = f(t.v3, t.v4)
-            assert isinstance(expr, ir.Int64Array)
+            assert isinstance(expr, ir.Int64Column)
 
             expr = f(5, t.v3)
-            assert isinstance(expr, ir.Int64Array)
+            assert isinstance(expr, ir.Int64Column)
 
             expr = f(5, 12)
             assert isinstance(expr, ir.Int64Scalar)
@@ -183,10 +183,10 @@ class TestCoalesceLikeFunctions(unittest.TestCase):
 
         for f in self.functions:
             expr = f(t.v5)
-            assert isinstance(expr, ir.DoubleArray)
+            assert isinstance(expr, ir.DoubleColumn)
 
             expr = f(5.5, t.v5)
-            assert isinstance(expr, ir.DoubleArray)
+            assert isinstance(expr, ir.DoubleColumn)
 
             expr = f(5.5, 5)
             assert isinstance(expr, ir.DoubleScalar)

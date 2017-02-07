@@ -382,7 +382,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_hash(self):
         expr = self.table.int_col.hash()
-        assert isinstance(expr, ir.Int64Array)
+        assert isinstance(expr, ir.Int64Column)
         assert isinstance(self.table.int_col.sum().hash(),
                           ir.Int64Scalar)
 
@@ -1551,8 +1551,8 @@ FROM functional_alltypes"""
 
         t = self.con.sql(sql)
 
-        assert isinstance(t.varchar_col, api.StringArray)
-        assert isinstance(t.char_col, api.StringArray)
+        assert isinstance(t.varchar_col, api.StringColumn)
+        assert isinstance(t.char_col, api.StringColumn)
 
     def test_unions_with_ctes(self):
         t = self.con.table('functional_alltypes')

@@ -857,7 +857,7 @@ class Lead(ShiftBase):
 class RankBase(AnalyticOp):
 
     def output_type(self):
-        return ir.Int64Array
+        return ir.Int64Column
 
 
 class MinRank(RankBase):
@@ -878,7 +878,7 @@ class MinRank(RankBase):
 
     Returns
     -------
-    ranks : Int64Array, starting from 0
+    ranks : Int64Column, starting from 0
     """
 
     # Equivalent to SQL RANK()
@@ -903,7 +903,7 @@ class DenseRank(RankBase):
 
     Returns
     -------
-    ranks : Int64Array, starting from 0
+    ranks : Int64Column, starting from 0
     """
 
     # Equivalent to SQL DENSE_RANK()
@@ -930,7 +930,7 @@ class RowNumber(RankBase):
 
     Returns
     -------
-    row_number : Int64Array, starting from 0
+    row_number : Int64Column, starting from 0
     """
 
     # Equivalent to SQL ROW_NUMBER()
@@ -1044,7 +1044,7 @@ class Distinct(TableNode, HasSchema):
         return True
 
 
-class DistinctArray(ValueNode):
+class DistinctColumn(ValueNode):
 
     """
     COUNT(DISTINCT ...) is really just syntactic suger, but we provide a
@@ -1093,7 +1093,7 @@ class Any(ValueOp):
         return len(roots) < 2
 
     def output_type(self):
-        return ir.BooleanScalar if self._reduction else ir.BooleanArray
+        return ir.BooleanScalar if self._reduction else ir.BooleanColumn
 
     def negate(self):
         return NotAny(self.args[0])
@@ -1400,7 +1400,7 @@ class Join(TableNode):
             elif not isinstance(pred, ir.Expr):
                 raise NotImplementedError
 
-            if not isinstance(pred, ir.BooleanArray):
+            if not isinstance(pred, ir.BooleanColumn):
                 raise com.ExpressionError('Join predicate must be comparison')
 
             preds = L.unwrap_ands(pred)
@@ -2157,7 +2157,7 @@ class SummaryFilter(ValueNode):
         ValueNode.__init__(self, expr)
 
     def output_type(self):
-        return ir.BooleanArray
+        return ir.BooleanColumn
 
 
 class TopK(ValueNode):
@@ -2346,14 +2346,14 @@ class TimestampDelta(ValueOp):
 
 class ArrayLength(ValueOp):
 
-    input_type = [rules.array_array(dt.any)]
+    input_type = [rules.array_column(dt.any)]
     output_type = rules.shape_like_arg(0, 'int64')
 
 
 class ArraySlice(ValueOp):
 
     input_type = [
-        rules.array_array(dt.any),
+        rules.array_column(dt.any),
         rules.integer(name='start'),
         rules.integer(name='stop')
     ]
@@ -2362,7 +2362,7 @@ class ArraySlice(ValueOp):
 
 class ArrayIndex(ValueOp):
 
-    input_type = [rules.array_array(dt.any), rules.integer(name='index')]
+    input_type = [rules.array_column(dt.any), rules.integer(name='index')]
     output_type = rules.array_output(
         lambda self: self.args[0].type().value_type
     )
@@ -2387,13 +2387,13 @@ def _array_binop_invariant_output_type(self):
 
 class ArrayConcat(ValueOp):
 
-    input_type = [rules.array_array(dt.any), rules.array_array(dt.any)]
+    input_type = [rules.array_column(dt.any), rules.array_column(dt.any)]
     output_type = rules.array_output(_array_binop_invariant_output_type)
 
 
 class ArrayRepeat(ValueOp):
 
-    input_type = [rules.array_array(dt.any), integer(name='times')]
+    input_type = [rules.array_column(dt.any), integer(name='times')]
     output_type = rules.array_output(lambda self: self.args[0].type())
 
 

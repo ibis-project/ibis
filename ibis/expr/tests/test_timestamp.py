@@ -33,11 +33,11 @@ class TestTimestamp(unittest.TestCase):
         self.col = self.alltypes.i
 
     def test_field_select(self):
-        assert isinstance(self.col, ir.TimestampArray)
+        assert isinstance(self.col, ir.TimestampColumn)
 
     def test_string_cast_to_timestamp(self):
         casted = self.alltypes.g.cast('timestamp')
-        assert isinstance(casted, ir.TimestampArray)
+        assert isinstance(casted, ir.TimestampColumn)
 
         string = api.literal('2000-01-01')
         casted = string.cast('timestamp')
@@ -46,13 +46,13 @@ class TestTimestamp(unittest.TestCase):
     def test_extract_fields(self):
         # type-size may be database specific
         cases = [
-            ('year', ops.ExtractYear, ir.Int32Array),
-            ('month', ops.ExtractMonth, ir.Int32Array),
-            ('day', ops.ExtractDay, ir.Int32Array),
-            ('hour', ops.ExtractHour, ir.Int32Array),
-            ('minute', ops.ExtractMinute, ir.Int32Array),
-            ('second', ops.ExtractSecond, ir.Int32Array),
-            ('millisecond', ops.ExtractMillisecond, ir.Int32Array),
+            ('year', ops.ExtractYear, ir.Int32Column),
+            ('month', ops.ExtractMonth, ir.Int32Column),
+            ('day', ops.ExtractDay, ir.Int32Column),
+            ('hour', ops.ExtractHour, ir.Int32Column),
+            ('minute', ops.ExtractMinute, ir.Int32Column),
+            ('second', ops.ExtractSecond, ir.Int32Column),
+            ('millisecond', ops.ExtractMillisecond, ir.Int32Column),
         ]
 
         for attr, ex_op, ex_type in cases:
@@ -84,7 +84,7 @@ class TestTimestamp(unittest.TestCase):
 
     def test_comparison_timestamp(self):
         expr = self.col > (self.col.min() + ibis.day(3))
-        assert isinstance(expr, ir.BooleanArray)
+        assert isinstance(expr, ir.BooleanColumn)
 
     def test_comparisons_string(self):
         val = '2015-01-01 00:00:00'
