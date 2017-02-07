@@ -24,6 +24,11 @@ import ibis.config as config
 import ibis.expr.types as ir
 import ibis.util as util
 
+import pytest
+
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impyla')
+
 
 ENV = IbisTestEnv()
 

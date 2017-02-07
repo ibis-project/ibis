@@ -17,8 +17,9 @@ import os
 
 import pytest
 
-from ibis.sql.postgres.compiler import PostgreSQLExprTranslator
-import ibis.sql.postgres.api as api
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('psycopg2')
+
 
 from sqlalchemy.dialects.postgresql import dialect as postgres_dialect
 
@@ -32,6 +33,7 @@ class PostgreSQLTests(object):
 
     @classmethod
     def setUpClass(cls):
+        import ibis.sql.postgres.api as api
         cls.env = PostgreSQLTestEnv()
         cls.dialect = postgres_dialect()
 
@@ -51,6 +53,7 @@ class PostgreSQLTests(object):
             assert str(compiled) == str(ex_compiled)
 
     def _translate(self, expr, named=False, context=None):
+        from ibis.sql.postgres.compiler import PostgreSQLExprTranslator
         translator = PostgreSQLExprTranslator(
             expr, context=context, named=named
         )
@@ -68,11 +71,6 @@ class PostgreSQLTests(object):
 class PostgreSQLTestEnv(object):
 
     def __init__(self):
-        if PG_PASS:
-            creds = '{0}:{1}'.format(PG_USER, PG_PASS)
-        else:
-            creds = PG_USER
-
         self.user = PG_USER
         self.password = PG_PASS
         self.host = 'localhost'
@@ -81,4 +79,6 @@ class PostgreSQLTestEnv(object):
             'ibis_testing'
         )
 
-        self.db_url = 'postgresql://{0}@localhost/ibis_testing'.format(creds)
+        self.db_url = 'postgresql://{0}@localhost/ibis_testing'.format(
+            ':'.join(filter(None, (PG_USER, PG_PASS)))
+        )

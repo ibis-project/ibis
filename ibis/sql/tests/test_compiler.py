@@ -14,6 +14,11 @@
 
 import ibis
 
+import pytest
+
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impyla')
+
 from ibis.impala.compiler import build_ast, to_sql
 
 from ibis import impala

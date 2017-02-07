@@ -15,8 +15,6 @@
 
 # flake8: noqa
 
-__version__ = '0.5.0'
-
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.common import IbisError
 
@@ -26,9 +24,20 @@ import ibis.expr.types as ir
 # __all__ is defined
 from ibis.expr.api import *
 
-import ibis.impala.api as impala
-import ibis.sql.sqlite.api as sqlite
-import ibis.sql.postgres.api as postgres
+try:
+    import ibis.impala.api as impala
+except ImportError:  # pip install ibis-framework[impala]
+    pass
+
+try:
+    import ibis.sql.sqlite.api as sqlite
+except ImportError:  # pip install ibis-framework[sqlite]
+    pass
+
+try:
+    import ibis.sql.postgres.api as postgres
+except ImportError:  # pip install ibis-framework[postgres]
+    pass
 
 import ibis.config_init
 from ibis.config import options

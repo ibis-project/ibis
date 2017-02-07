@@ -10,6 +10,12 @@ IBIS_TEST_CRUNCHBASE_DB = os.environ.get(
     'crunchbase.db'
 )
 
+pytestmark = pytest.mark.skipif(
+    not os.path.exists(IBIS_TEST_CRUNCHBASE_DB),
+    reason='{} does not exist'.format(IBIS_TEST_CRUNCHBASE_DB)
+)
+pytest.importorskip('sqlalchemy')
+
 
 @pytest.fixture
 def con():

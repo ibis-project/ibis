@@ -1,8 +1,7 @@
 #!/bin/bash
 
 $PYTHON setup.py install
-
-$PYTHON -c "import ibis; print(ibis.__version__.replace('v', '').replace('+', '_'))" > __conda_version__.txt
+$PYTHON -c "import ibis; print(ibis.__version__.replace('v', ''))" > ibis/.version
 
 # Add more build steps here, if they are necessary.
 

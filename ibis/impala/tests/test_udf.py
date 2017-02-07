@@ -14,6 +14,9 @@
 from posixpath import join as pjoin
 import pytest
 
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impyla')
+
 import ibis
 
 import ibis.expr.types as ir

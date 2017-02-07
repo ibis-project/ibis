@@ -26,7 +26,8 @@ import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis
 
-import sqlalchemy as sa
+sa = pytest.importorskip('sqlalchemy')
+pytest.importorskip('psycopg2')
 
 import pandas as pd
 import pandas.util.testing as tm
