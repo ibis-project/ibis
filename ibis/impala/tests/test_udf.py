@@ -116,7 +116,7 @@ class TestWrapping(unittest.TestCase):
         expr = func(1.0)
         assert type(expr) == ir.DecimalScalar
         expr = func(self.dec)
-        assert type(expr) == ir.DecimalArray
+        assert type(expr) == ir.DecimalColumn
 
     def test_udf_invalid_typecasting(self):
         cases = [

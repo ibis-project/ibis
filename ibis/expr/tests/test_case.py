@@ -24,7 +24,7 @@ from ibis.tests.util import assert_equal
 def test_ifelse(table):
     bools = table.g.isnull()
     result = bools.ifelse("foo", "bar")
-    assert isinstance(result, ir.StringArray)
+    assert isinstance(result, ir.StringColumn)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
@@ -50,7 +50,7 @@ def test_simple_case_expr(table):
              .end())
 
     assert_equal(expr1, expr2)
-    assert isinstance(expr1, ir.Int32Array)
+    assert isinstance(expr1, ir.Int32Column)
 
 
 def test_multiple_case_expr(table):
@@ -72,7 +72,7 @@ def test_multiple_case_expr(table):
             .end())
 
     op = expr.op()
-    assert isinstance(expr, ir.DoubleArray)
+    assert isinstance(expr, ir.DoubleColumn)
     assert isinstance(op, ops.SearchedCase)
     assert op.default is default
 
@@ -91,7 +91,7 @@ def test_simple_case_null_else(table):
     expr = table.g.case().when("foo", "bar").end()
     op = expr.op()
 
-    assert isinstance(expr, ir.StringArray)
+    assert isinstance(expr, ir.StringColumn)
     assert isinstance(op.default, ir.ValueExpr)
     assert isinstance(op.default.op(), ir.NullLiteral)
 
@@ -100,7 +100,7 @@ def test_multiple_case_null_else(table):
     expr = ibis.case().when(table.g == "foo", "bar").end()
     op = expr.op()
 
-    assert isinstance(expr, ir.StringArray)
+    assert isinstance(expr, ir.StringColumn)
     assert isinstance(op.default, ir.ValueExpr)
     assert isinstance(op.default.op(), ir.NullLiteral)
 

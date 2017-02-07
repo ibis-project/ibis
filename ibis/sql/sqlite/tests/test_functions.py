@@ -57,8 +57,8 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ic_casted = ic.cast('timestamp')
 
         # Logically, it's a timestamp
-        assert isinstance(tc_casted, ir.TimestampArray)
-        assert isinstance(ic_casted, ir.TimestampArray)
+        assert isinstance(tc_casted, ir.TimestampColumn)
+        assert isinstance(ic_casted, ir.TimestampColumn)
 
         # But it's a no-op when translated to SQLAlchemy
         cases = [

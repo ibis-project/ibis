@@ -876,7 +876,7 @@ def _adapt_expr(expr):
             # Something more complicated.
             base_table = L.find_source_table(expr)
 
-            if isinstance(op, ops.DistinctArray):
+            if isinstance(op, ops.DistinctColumn):
                 expr = op.arg
                 try:
                     name = op.arg.get_name()

@@ -78,7 +78,7 @@ class AnyToExistsTransform(object):
         else:
             op = NotExistsSubquery(self.foreign_table, self.predicates)
 
-        return ir.BooleanArray(op)
+        return ir.BooleanColumn(op)
 
     def _visit(self, expr):
         node = expr.op()
@@ -86,7 +86,7 @@ class AnyToExistsTransform(object):
         for arg in node.flat_args():
             if isinstance(arg, ir.TableExpr):
                 self._visit_table(arg)
-            elif isinstance(arg, ir.BooleanArray):
+            elif isinstance(arg, ir.BooleanColumn):
                 for sub_expr in L.unwrap_ands(arg):
                     self.predicates.append(sub_expr)
                     self._visit(sub_expr)

@@ -31,8 +31,8 @@ class TestStringOps(unittest.TestCase):
         lresult = self.table.g.lower()
         uresult = self.table.g.upper()
 
-        assert isinstance(lresult, ir.StringArray)
-        assert isinstance(uresult, ir.StringArray)
+        assert isinstance(lresult, ir.StringColumn)
+        assert isinstance(uresult, ir.StringColumn)
 
         assert isinstance(lresult.op(), ops.Lowercase)
         assert isinstance(uresult.op(), ops.Uppercase)
@@ -50,7 +50,7 @@ class TestStringOps(unittest.TestCase):
         result = self.table.g.substr(2, 4)
         lit_result = lit.substr(0, 2)
 
-        assert isinstance(result, ir.StringArray)
+        assert isinstance(result, ir.StringColumn)
         assert isinstance(lit_result, ir.StringScalar)
 
         op = result.op()
@@ -76,7 +76,7 @@ class TestStringOps(unittest.TestCase):
         result = self.table.g.length()
         lit_result = lit.length()
 
-        assert isinstance(result, ir.Int32Array)
+        assert isinstance(result, ir.Int32Column)
         assert isinstance(lit_result, ir.Int32Scalar)
         assert isinstance(result.op(), ops.StringLength)
 
@@ -85,7 +85,7 @@ class TestStringOps(unittest.TestCase):
 
         expr = dash.join([self.table.f.cast('string'),
                           self.table.g])
-        assert isinstance(expr, ir.StringArray)
+        assert isinstance(expr, ir.StringColumn)
 
         expr = dash.join([literal('ab'), literal('cd')])
         assert isinstance(expr, ir.StringScalar)

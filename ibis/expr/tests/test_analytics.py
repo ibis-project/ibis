@@ -32,14 +32,14 @@ class TestAnalytics(unittest.TestCase):
         tier = t.double_col.bucket([0, 50, 100]).name('tier')
         expr = t[tier, t]
 
-        assert isinstance(expr.tier, ir.CategoryArray)
+        assert isinstance(expr.tier, ir.CategoryColumn)
 
     def test_bucket(self):
         d = self.alltypes.double_col
         bins = [0, 10, 50, 100]
 
         expr = d.bucket(bins)
-        assert isinstance(expr, ir.CategoryArray)
+        assert isinstance(expr, ir.CategoryColumn)
         assert expr.op().nbuckets == 3
 
         expr = d.bucket(bins, include_over=True)

@@ -630,7 +630,7 @@ class TableExpr(Expr):
         if isinstance(what, (list, tuple, TableExpr)):
             # Projection case
             return self.projection(what)
-        elif isinstance(what, BooleanArray):
+        elif isinstance(what, BooleanColumn):
             # Boolean predicate
             return self.filter([what])
         elif isinstance(what, ArrayExpr):
@@ -948,7 +948,7 @@ class ArrayValue(AnyValue):
         return isinstance(other, ArrayValue)
 
 
-class NumericArray(ArrayExpr, NumericValue):
+class NumericColumn(ArrayExpr, NumericValue):
     pass
 
 
@@ -959,7 +959,7 @@ class NullScalar(NullValue, ScalarExpr):
     pass
 
 
-class NullArray(ArrayExpr, NullValue):
+class NullColumn(ArrayExpr, NullValue):
     pass
 
 
@@ -967,7 +967,7 @@ class BooleanScalar(ScalarExpr, BooleanValue):
     pass
 
 
-class BooleanArray(NumericArray, BooleanValue):
+class BooleanColumn(NumericColumn, BooleanValue):
     pass
 
 
@@ -975,7 +975,7 @@ class Int8Scalar(ScalarExpr, Int8Value):
     pass
 
 
-class Int8Array(NumericArray, Int8Value):
+class Int8Column(NumericColumn, Int8Value):
     pass
 
 
@@ -983,7 +983,7 @@ class Int16Scalar(ScalarExpr, Int16Value):
     pass
 
 
-class Int16Array(NumericArray, Int16Value):
+class Int16Column(NumericColumn, Int16Value):
     pass
 
 
@@ -991,7 +991,7 @@ class Int32Scalar(ScalarExpr, Int32Value):
     pass
 
 
-class Int32Array(NumericArray, Int32Value):
+class Int32Column(NumericColumn, Int32Value):
     pass
 
 
@@ -999,7 +999,7 @@ class Int64Scalar(ScalarExpr, Int64Value):
     pass
 
 
-class Int64Array(NumericArray, Int64Value):
+class Int64Column(NumericColumn, Int64Value):
     pass
 
 
@@ -1007,7 +1007,7 @@ class FloatScalar(ScalarExpr, FloatValue):
     pass
 
 
-class FloatArray(NumericArray, FloatValue):
+class FloatColumn(NumericColumn, FloatValue):
     pass
 
 
@@ -1015,7 +1015,7 @@ class DoubleScalar(ScalarExpr, DoubleValue):
     pass
 
 
-class DoubleArray(NumericArray, DoubleValue):
+class DoubleColumn(NumericColumn, DoubleValue):
     pass
 
 
@@ -1023,7 +1023,7 @@ class StringScalar(ScalarExpr, StringValue):
     pass
 
 
-class StringArray(ArrayExpr, StringValue):
+class StringColumn(ArrayExpr, StringValue):
     pass
 
 
@@ -1031,7 +1031,7 @@ class DateScalar(ScalarExpr, DateValue):
     pass
 
 
-class DateArray(ArrayExpr, DateValue):
+class DateColumn(ArrayExpr, DateValue):
     pass
 
 
@@ -1039,7 +1039,7 @@ class TimestampScalar(ScalarExpr, TimestampValue):
     pass
 
 
-class TimestampArray(ArrayExpr, TimestampValue):
+class TimestampColumn(ArrayExpr, TimestampValue):
     pass
 
 
@@ -1056,16 +1056,16 @@ class DecimalScalar(DecimalValue, ScalarExpr):
         return factory
 
 
-class DecimalArray(DecimalValue, NumericArray):
+class DecimalColumn(DecimalValue, NumericColumn):
 
     def __init__(self, arg, meta, name=None):
         DecimalValue.__init__(self, meta)
-        NumericArray.__init__(self, arg, name=name)
+        NumericColumn.__init__(self, arg, name=name)
 
     @property
     def _factory(self):
         def factory(arg, name=None):
-            return DecimalArray(arg, self.meta, name=name)
+            return DecimalColumn(arg, self.meta, name=name)
         return factory
 
 
@@ -1101,7 +1101,7 @@ class CategoryScalar(CategoryValue, ScalarExpr):
         return factory
 
 
-class CategoryArray(CategoryValue, ArrayExpr):
+class CategoryColumn(CategoryValue, ArrayExpr):
 
     def __init__(self, arg, meta, name=None):
         CategoryValue.__init__(self, meta)
@@ -1110,7 +1110,7 @@ class CategoryArray(CategoryValue, ArrayExpr):
     @property
     def _factory(self):
         def factory(arg, name=None):
-            return CategoryArray(arg, self.meta, name=name)
+            return CategoryColumn(arg, self.meta, name=name)
         return factory
 
 
@@ -1127,7 +1127,7 @@ class ArrayScalar(ArrayValue, ScalarExpr):
         return factory
 
 
-class ArrayArray(ArrayValue, ArrayExpr):
+class ArrayColumn(ArrayValue, ArrayExpr):
 
     def __init__(self, arg, meta, name=None):
         ArrayValue.__init__(self, meta)
@@ -1136,7 +1136,7 @@ class ArrayArray(ArrayValue, ArrayExpr):
     @property
     def _factory(self):
         def factory(arg, name=None):
-            return ArrayArray(arg, self.type(), name=name)
+            return ArrayColumn(arg, self.type(), name=name)
         return factory
 
 
