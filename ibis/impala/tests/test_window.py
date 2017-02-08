@@ -19,9 +19,18 @@ from ibis import window
 import ibis
 
 from ibis.impala.compiler import to_sql
-from ibis.compat import unittest
+from ibis.impala.tests.common import ImpalaE2E
 from ibis.tests.util import assert_equal
 import ibis.common as com
+
+
+@pytest.yield_fixture(scope='module')
+def con(request):
+    try:
+        ImpalaE2E.setUpClass()
+        yield ImpalaE2E.con
+    finally:
+        ImpalaE2E.tearDownClass()
 
 
 def assert_sql_equal(expr, expected):
@@ -29,6 +38,7 @@ def assert_sql_equal(expr, expected):
     assert result == expected
 
 
+@pytest.mark.impala
 def test_aggregate_in_projection(con):
     t = con.table('alltypes')
     proj = t[t, (t.f / t.f.sum()).name('normed_f')]
@@ -39,6 +49,7 @@ FROM alltypes"""
     assert_sql_equal(proj, expected)
 
 
+@pytest.mark.impala
 def test_add_default_order_by(con):
     t = con.table('alltypes')
 
@@ -59,6 +70,7 @@ FROM alltypes"""
     assert_sql_equal(proj, expected)
 
 
+@pytest.mark.impala
 @pytest.mark.parametrize(
     ['window', 'frame'],
     [
@@ -107,6 +119,7 @@ FROM alltypes"""
     assert_sql_equal(expr, expected)
 
 
+@pytest.mark.impala
 def test_cumulative_functions(con):
     t = con.table('alltypes')
 
@@ -128,6 +141,7 @@ def test_cumulative_functions(con):
         assert to_sql(expr1) == to_sql(expr2)
 
 
+@pytest.mark.impala
 def test_nested_analytic_function(con):
     t = con.table('alltypes')
 
@@ -141,6 +155,7 @@ FROM alltypes"""
     assert_sql_equal(result, expected)
 
 
+@pytest.mark.impala
 def test_rank_functions(con):
     t = con.table('alltypes')
 
@@ -153,6 +168,7 @@ FROM alltypes"""
     assert_sql_equal(proj, expected)
 
 
+@pytest.mark.impala
 def test_multiple_windows(con):
     t = con.table('alltypes')
 
@@ -167,6 +183,7 @@ FROM alltypes"""
     assert_sql_equal(proj, expected)
 
 
+@pytest.mark.impala
 def test_order_by_desc(con):
     t = con.table('alltypes')
 
@@ -188,6 +205,7 @@ FROM alltypes"""
     assert_sql_equal(expr, expected)
 
 
+@pytest.mark.impala
 def test_row_number_requires_order_by(con):
     t = con.table('alltypes')
 
@@ -205,6 +223,7 @@ FROM alltypes"""
     assert_sql_equal(expr, expected)
 
 
+@pytest.mark.impala
 def test_row_number_properly_composes_with_arithmetic(con):
     t = con.table('alltypes')
     w = ibis.window(order_by=t.f)
@@ -216,6 +235,7 @@ FROM alltypes"""
     assert_sql_equal(expr, expected)
 
 
+@pytest.mark.impala
 @pytest.mark.parametrize(
     ['column', 'op'],
     [
@@ -233,6 +253,7 @@ def test_unsupported_aggregate_functions(con, column, op):
         to_sql(proj)
 
 
+@pytest.mark.impala
 def test_propagate_nested_windows(con):
     # GH #469
     t = con.table('alltypes')

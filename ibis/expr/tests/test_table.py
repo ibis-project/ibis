@@ -22,9 +22,6 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis
 
-from ibis.compat import unittest
-from ibis.expr.tests.mocks import MockConnection
-
 import ibis.common as com
 import ibis.config as config
 
@@ -461,7 +458,7 @@ def test_sum_expr_basics(table, int_col):
     # Impala gives bigint for all integer types
     ex_class = api.Int64Scalar
     result = table[int_col].sum()
-    assert isinstance(result, api.Int64Scalar)
+    assert isinstance(result, ex_class)
     assert isinstance(result.op(), ops.Sum)
 
 
@@ -469,7 +466,7 @@ def test_sum_expr_basics_floats(table, float_col):
     # Impala gives double for all floating point types
     ex_class = api.DoubleScalar
     result = table[float_col].sum()
-    assert isinstance(result, api.DoubleScalar)
+    assert isinstance(result, ex_class)
     assert isinstance(result.op(), ops.Sum)
 
 
@@ -1142,7 +1139,7 @@ def test_filter(table):
     assert_equal(result, expected)
 
 
-def test_sort_by(table):
+def test_sort_by2(table):
     m = table.mutate(foo=table.e + table.f)
 
     result = m.sort_by(lambda x: -x.foo)
@@ -1158,7 +1155,7 @@ def test_sort_by(table):
     assert_equal(result, expected)
 
 
-def test_projection(table):
+def test_projection2(table):
     m = table.mutate(foo=table.f * 2)
 
     def f(x):
@@ -1171,7 +1168,7 @@ def test_projection(table):
     assert_equal(result2, expected)
 
 
-def test_mutate(table):
+def test_mutate2(table):
     m = table.mutate(foo=table.f * 2)
 
     def g(x):
@@ -1188,7 +1185,7 @@ def test_mutate(table):
     assert_equal(result, expected)
 
 
-def test_add_column(table):
+def test_add_column2(table):
     def g(x):
         return x.f * 2
 

@@ -16,7 +16,6 @@ import pytest
 
 import ibis
 
-from ibis.compat import unittest
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.common as com
@@ -309,6 +308,7 @@ def test_is_ancestor_analytic():
     filtered = with_filter_col[with_filter_col['filter'].isnull()]
     subquery = filtered[filtered.columns]
 
-    with_analytic = subquery[subquery.columns + [subquery.count().name('analytic')]]
+    with_analytic = subquery[subquery.columns +
+                             [subquery.count().name('analytic')]]
 
     assert not subquery.op().is_ancestor(with_analytic)

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import itertools
 import operator
 
 import pytest
@@ -23,8 +22,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis
-
-from ibis.compat import unittest
 
 from ibis.tests.util import assert_equal
 
@@ -442,7 +439,8 @@ def test_boolean_comparisons(table):
 
 @pytest.mark.parametrize(
     'operation',
-    [operator.lt, operator.gt, operator.ge, operator.le, operator.eq, operator.ne]
+    [operator.lt, operator.gt, operator.ge, operator.le,
+     operator.eq, operator.ne]
 )
 def test_string_comparisons(table, operation):
     string_col = table.g

@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# flake8: noqa=E402
+
 from posixpath import join as pjoin
 import pytest
 

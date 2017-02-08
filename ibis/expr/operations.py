@@ -22,19 +22,12 @@ from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr, Expr,
                              ValueExpr, ArrayExpr, TableExpr,
-                             ValueNode, _safe_repr)
+                             ValueOp, _safe_repr)
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
-
-
-def _arg_getter(i):
-    @property
-    def arg_accessor(self):
-        return self.args[i]
-    return arg_accessor
 
 
 class TableNode(Node):
@@ -68,30 +61,6 @@ def find_all_base_tables(expr, memo=None):
             find_all_base_tables(arg, memo)
 
     return memo
-
-
-class ValueOperationMeta(type):
-
-    def __new__(cls, name, parents, dct):
-
-        if 'input_type' in dct:
-            sig = dct['input_type']
-            if not isinstance(sig, rules.TypeSignature):
-                dct['input_type'] = sig = rules.signature(sig)
-
-                for i, t in enumerate(sig.types):
-                    if t.name is None:
-                        continue
-
-                    if t.name not in dct:
-                        dct[t.name] = _arg_getter(i)
-
-        return super(ValueOperationMeta, cls).__new__(cls, name, parents, dct)
-
-
-class ValueOp(six.with_metaclass(ValueOperationMeta, ValueNode)):
-
-    pass
 
 
 class PhysicalTable(TableNode, HasSchema):
@@ -138,7 +107,7 @@ class SQLQueryResult(TableNode, HasSchema):
         return True
 
 
-class TableArrayView(ValueNode):
+class TableArrayView(ValueOp):
 
     """
     (Temporary?) Helper operation class for SQL translation (fully formed table
@@ -1044,7 +1013,7 @@ class Distinct(TableNode, HasSchema):
         return True
 
 
-class DistinctColumn(ValueNode):
+class DistinctColumn(ValueOp):
 
     """
     COUNT(DISTINCT ...) is really just syntactic suger, but we provide a
@@ -1057,7 +1026,7 @@ class DistinctColumn(ValueNode):
 
     def __init__(self, arg):
         self.arg = arg
-        ValueNode.__init__(self, arg)
+        ValueOp.__init__(self, arg)
 
     def output_type(self):
         return type(self.arg)
@@ -1781,7 +1750,8 @@ class AggregateSelection(object):
     def _attempt_pushdown(self):
         metrics_valid, lowered_metrics = self._pushdown_exprs(self.metrics)
         by_valid, lowered_by = self._pushdown_exprs(self.by)
-        having_valid, lowered_having = self._pushdown_exprs(self.having or None)
+        having_valid, lowered_having = self._pushdown_exprs(
+            self.having or None)
 
         if metrics_valid and by_valid and having_valid:
             return Aggregation(self.op.table, lowered_metrics,
@@ -2097,7 +2067,7 @@ class NotContains(Contains):
     pass
 
 
-class ReplaceValues(ValueNode):
+class ReplaceValues(ValueOp):
 
     """
     Apply a multi-value replacement on a particular column. As an example from
@@ -2151,16 +2121,16 @@ class TopKExpr(ir.AnalyticExpr):
         return agg.sort_by([(by.get_name(), False)]).limit(op.k)
 
 
-class SummaryFilter(ValueNode):
+class SummaryFilter(ValueOp):
 
     def __init__(self, expr):
-        ValueNode.__init__(self, expr)
+        ValueOp.__init__(self, expr)
 
     def output_type(self):
         return ir.BooleanColumn
 
 
-class TopK(ValueNode):
+class TopK(ValueOp):
 
     def blocks(self):
         return True

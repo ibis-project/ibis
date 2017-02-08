@@ -15,11 +15,9 @@
 import os
 import pytest
 
-import ibis.util as util
-
 pytest.importorskip('sqlalchemy')
 
-from sqlalchemy.dialects.sqlite import dialect as sqlite_dialect
+from sqlalchemy.dialects.sqlite import dialect as sqlite_dialect  # noqa
 
 
 @pytest.mark.sqlite

@@ -1,7 +1,11 @@
 import pytest
 import ibis
+from ibis import IbisError
 from ibis.expr import datatypes as dt
 from ibis.expr.rules import highest_precedence_type
+import ibis.expr.api as api
+import ibis.expr.types as types
+import ibis.expr.rules as rules
 
 
 def test_array():
@@ -107,7 +111,8 @@ def test_whole_schema():
         [
             ('cid', 'int64'),
             ('mktsegment', 'string'),
-            ('address', 'struct<city: string, street: string, street_number: int32, zip: int16>'),
+            ('address', ('struct<city: string, street: string, '
+                         'street_number: int32, zip: int16>')),
             ('phone_numbers', 'array<string>'),
             (
                 'orders', """array<struct<
@@ -124,8 +129,13 @@ def test_whole_schema():
                                 >>
                             >>"""
             ),
-            ('web_visits', 'map<string, struct<user_agent: string, client_ip: string, visit_date: string, duration_ms: int32>>'),
-            ('support_calls', 'array<struct<agent_id: int64, call_date: string, duration_ms: int64, issue_resolved: boolean, agent_comment: string>>')
+            ('web_visits', ('map<string, struct<user_agent: string, '
+                            'client_ip: string, visit_date: string, '
+                            'duration_ms: int32>>')),
+            ('support_calls', ('array<struct<agent_id: int64, '
+                               'call_date: string, duration_ms: int64, '
+                               'issue_resolved: boolean, '
+                               'agent_comment: string>>'))
         ],
         name='customers',
     )
@@ -192,3 +202,14 @@ def test_precedence_with_no_arguments():
     with pytest.raises(ValueError) as e:
         highest_precedence_type([])
     assert str(e.value) == 'Must pass at least one expression'
+
+
+def test_rule_instance_of():
+    class MyOperation(types.Node):
+
+        input_type = [rules.instance_of(types.IntegerValue)]
+
+    MyOperation([api.literal(5)])
+
+    with pytest.raises(IbisError):
+        MyOperation([api.literal('string')])

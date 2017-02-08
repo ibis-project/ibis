@@ -14,7 +14,6 @@
 
 from ibis.client import SQLClient
 from ibis.expr.datatypes import Schema
-import ibis
 
 
 class MockConnection(SQLClient):

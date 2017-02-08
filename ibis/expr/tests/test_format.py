@@ -38,7 +38,6 @@ class TestExprFormatting(unittest.TestCase):
         self.table = ibis.table(self.schema)
         self.con = MockConnection()
 
-
     def test_format_custom_expr(self):
         from ibis.expr.types import Expr, Literal
 

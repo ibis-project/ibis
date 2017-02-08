@@ -182,7 +182,7 @@ class SelectBuilder(object):
 
         unchanged = True
 
-        if isinstance(op, ops.ValueNode):
+        if isinstance(op, ops.ValueOp):
             new_args = []
             for arg in op.args:
                 if isinstance(arg, ir.Expr):
@@ -276,7 +276,7 @@ class SelectBuilder(object):
         elif isinstance(op, (ops.Any, ops.BooleanValueOp,
                              ops.TableColumn, ir.Literal)):
             return expr
-        elif isinstance(op, ops.ValueNode):
+        elif isinstance(op, ops.ValueOp):
             visited = [self._visit_filter(arg)
                        if isinstance(arg, ir.Expr) else arg
                        for arg in op.args]
@@ -642,7 +642,7 @@ class _ExtractSubqueries(object):
             self._visit_join(expr)
         elif isinstance(node, ops.PhysicalTable):
             self._visit_physical_table(expr)
-        elif isinstance(node, ops.ValueNode):
+        elif isinstance(node, ops.ValueOp):
             for arg in node.flat_args():
                 if not isinstance(arg, ir.Expr):
                     continue
@@ -1437,7 +1437,8 @@ class TableSetFormatter(object):
 
 class Union(DDL):
 
-    def __init__(self, left_table, right_table, expr, distinct=False, context=None):
+    def __init__(self, left_table, right_table, expr, distinct=False,
+                 context=None):
         self.context = context
         self.left = left_table
         self.right = right_table

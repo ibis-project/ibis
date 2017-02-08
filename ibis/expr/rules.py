@@ -638,6 +638,11 @@ def one_of(args, **arg_kwds):
     return OneOf(args, **arg_kwds)
 
 
+def instance_of(type_, **arg_kwds):
+    fail_message = 'not a {0}'.format(str(type_))
+    return AnyTyped(type_, fail_message, **arg_kwds)
+
+
 class StringOptions(Argument):
 
     def __init__(self, options, **arg_kwds):

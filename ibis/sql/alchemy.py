@@ -99,9 +99,11 @@ def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
                     'Nested array types not yet supported'
                 )
             value_type = sqlalchemy_type_to_ibis_type(column_type.item_type)
-            ibis_class = lambda nullable, value_type=value_type: dt.Array(
-                value_type, nullable=nullable
-            )
+
+            def make_array_type(nullable, value_type=value_type):
+                return dt.Array(value_type, nullable=nullable)
+
+            ibis_class = make_array_type
         else:
             try:
                 ibis_class = next(
@@ -832,9 +834,13 @@ class _AlchemyTableSet(TableSetFormatter):
             elif jtype is ops.OuterJoin:
                 result = result.outerjoin(table, onclause)
             elif jtype is ops.LeftSemiJoin:
-                result = sa.select([result]).where(sa.exists(sa.select([1]).where(onclause)))
+                result = (sa.select([result])
+                          .where(sa.exists(sa.select([1])
+                                           .where(onclause))))
             elif jtype is ops.LeftAntiJoin:
-                result = sa.select([result]).where(~sa.exists(sa.select([1]).where(onclause)))
+                result = (sa.select([result])
+                          .where(~sa.exists(sa.select([1])
+                                            .where(onclause))))
             else:
                 raise NotImplementedError(jtype)
 
