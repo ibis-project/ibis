@@ -391,15 +391,15 @@ class Category(DataType):
         cardinality = self.cardinality
 
         if cardinality is None:
-            return dt.int64
-        elif cardinality < dt.int8.bounds.upper:
-            return dt.int8
-        elif cardinality < dt.int16.bounds.upper:
-            return dt.int16
-        elif cardinality < dt.int32.bounds.upper:
-            return dt.int32
+            return int64
+        elif cardinality < int8.bounds.upper:
+            return int8
+        elif cardinality < int16.bounds.upper:
+            return int16
+        elif cardinality < int32.bounds.upper:
+            return int32
         else:
-            return dt.int64
+            return int64
 
 
 @parametric
@@ -425,7 +425,9 @@ class Struct(DataType):
         )
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and self.names == other.names and self.types == other.types
+        return (isinstance(other, type(self)) and
+                self.names == other.names and
+                self.types == other.types)
 
     @classmethod
     def from_tuples(self, pairs):

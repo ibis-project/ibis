@@ -17,7 +17,6 @@ from ibis.expr.tests.mocks import MockConnection
 
 import pytest
 import ibis
-import ibis.expr.datatypes as dt
 
 
 @pytest.fixture

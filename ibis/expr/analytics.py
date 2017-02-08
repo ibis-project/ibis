@@ -19,7 +19,7 @@ import ibis.expr.rules as rules
 import ibis.expr.operations as ops
 
 
-class BucketLike(ir.ValueNode):
+class BucketLike(ir.ValueOp):
 
     def _validate_closed(self, closed):
         closed = closed.lower()
@@ -55,9 +55,9 @@ class Bucket(BucketLike):
                 raise ValueError('If one bucket edge provided, must have'
                                  ' include_under=True and include_over=True')
 
-        ir.ValueNode.__init__(self, self.arg, self.buckets, self.closed,
-                              self.close_extreme, self.include_under,
-                              self.include_over)
+        ir.ValueOp.__init__(self, self.arg, self.buckets, self.closed,
+                            self.close_extreme, self.include_under,
+                            self.include_over)
 
     @property
     def nbuckets(self):
@@ -85,8 +85,8 @@ class Histogram(BucketLike):
         self.closed = self._validate_closed(closed)
 
         self.aux_hash = aux_hash
-        ir.ValueNode.__init__(self, self.arg, self.nbins, self.binwidth,
-                              self.base, self.closed, self.aux_hash)
+        ir.ValueOp.__init__(self, self.arg, self.nbins, self.binwidth,
+                            self.base, self.closed, self.aux_hash)
 
     def output_type(self):
         # always undefined cardinality (for now)
@@ -94,7 +94,7 @@ class Histogram(BucketLike):
         return ctype.array_type()
 
 
-class CategoryLabel(ir.ValueNode):
+class CategoryLabel(ir.ValueOp):
 
     def __init__(self, arg, labels, nulls):
         self.arg = ops.as_value_expr(arg)
@@ -106,7 +106,7 @@ class CategoryLabel(ir.ValueNode):
                              'categories: %d' % card)
 
         self.nulls = nulls
-        ir.ValueNode.__init__(self, self.arg, self.labels, self.nulls)
+        ir.ValueOp.__init__(self, self.arg, self.labels, self.nulls)
 
     def output_type(self):
         return rules.shape_like(self.arg, 'string')

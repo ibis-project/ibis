@@ -85,7 +85,6 @@ class ScalarAggregate(object):
             name = self.default_name
             named_expr = subbed_expr.name(self.default_name)
 
-        tables = list(self.memo.values())
         table = self.tables[0]
         for other in self.tables[1:]:
             table = table.cross_join(other)
@@ -267,7 +266,7 @@ class ExprSimplifier(object):
 
         op = expr.op()
 
-        if isinstance(op, ops.ValueNode):
+        if isinstance(op, ops.ValueOp):
             return self._sub(expr, block=block)
         elif isinstance(op, ops.Selection):
             result = self._lift_Selection(expr, block=block)

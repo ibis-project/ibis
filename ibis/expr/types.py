@@ -191,7 +191,26 @@ def _safe_repr(x, memo=None):
     return x._repr(memo=memo) if isinstance(x, (Expr, Node)) else repr(x)
 
 
-class Node(object):
+class OperationMeta(type):
+
+    def __new__(cls, name, parents, dct):
+        if 'input_type' in dct:
+            from ibis.expr.rules import TypeSignature, signature
+            sig = dct['input_type']
+            if not isinstance(sig, TypeSignature):
+                dct['input_type'] = sig = signature(sig)
+
+                for i, t in enumerate(sig.types):
+                    if t.name is None:
+                        continue
+
+                    if t.name not in dct:
+                        dct[t.name] = _arg_getter(i)
+
+        return super(OperationMeta, cls).__new__(cls, name, parents, dct)
+
+
+class Node(six.with_metaclass(OperationMeta, object)):
 
     """
     Node is the base class for all relational algebra and analytical
@@ -207,7 +226,13 @@ class Node(object):
     """
 
     def __init__(self, args):
-        self.args = args
+        self.args = self._validate_args(args)
+
+    def _validate_args(self, args):
+        if not hasattr(self, 'input_type'):
+            return args
+
+        return self.input_type.validate(args)
 
     def __repr__(self):
         return self._repr()
@@ -313,17 +338,17 @@ def all_equal(left, right, cache=None):
     return True
 
 
-class ValueNode(Node):
+def _arg_getter(i):
+    @property
+    def arg_accessor(self):
+        return self.args[i]
+    return arg_accessor
+
+
+class ValueOp(Node):
 
     def __init__(self, *args):
-        args = self._validate_args(args)
         Node.__init__(self, args)
-
-    def _validate_args(self, args):
-        if not hasattr(self, 'input_type'):
-            return args
-
-        return self.input_type.validate(args)
 
     def root_tables(self):
         exprs = [arg for arg in self.args if isinstance(arg, Expr)]
@@ -336,7 +361,7 @@ class ValueNode(Node):
         return False
 
 
-class TableColumn(ValueNode):
+class TableColumn(ValueOp):
 
     """
     Selects a column from a TableExpr
@@ -423,7 +448,7 @@ class ExprList(Expr):
         return ExpressionList(exprs).to_expr()
 
 
-class Literal(ValueNode):
+class Literal(ValueOp):
 
     def __init__(self, value):
         self.value = value
@@ -1208,7 +1233,7 @@ def sequence(values):
     return ValueList(values).to_expr()
 
 
-class NullLiteral(ValueNode):
+class NullLiteral(ValueOp):
 
     """
     Typeless NULL literal
@@ -1241,7 +1266,7 @@ class SortExpr(Expr):
         return 'array-sort'
 
 
-class ValueList(ValueNode):
+class ValueList(ValueOp):
 
     """
     Data structure for a list of value expressions
@@ -1249,7 +1274,7 @@ class ValueList(ValueNode):
 
     def __init__(self, args):
         self.values = [as_value_expr(x) for x in args]
-        ValueNode.__init__(self, self.values)
+        ValueOp.__init__(self, self.values)
 
     def root_tables(self):
         return distinct_roots(*self.values)

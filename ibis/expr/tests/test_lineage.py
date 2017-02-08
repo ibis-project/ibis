@@ -64,7 +64,8 @@ def test_lineage(companies):
 
     grouped = filtered.group_by(['bucket', 'status']).size()
 
-    joined = grouped.mutate(
+    # TODO(cpcloud): Should this be used?
+    joined = grouped.mutate(  # noqa
         bucket_name=lambda x: x.bucket.label(bucket_names).fillna('Unknown')
     )
 

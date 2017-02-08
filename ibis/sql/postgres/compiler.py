@@ -19,17 +19,18 @@ import platform
 import warnings
 import operator
 
-from functools import reduce, partial
-from operator import add
+from functools import reduce
 
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 from ibis.sql.alchemy import unary, varargs, fixed_arity, Over
+import ibis.expr.analytics as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.expr.window as W
 
 import ibis.sql.alchemy as alch
 _operation_registry = alch._operation_registry.copy()
@@ -284,7 +285,7 @@ def _strftime(t, expr):
 
 
 def _distinct_from(a, b):
-    return ((a != None) | (b != None)) & sa.func.coalesce(a != b, True)
+    return ((a is not None) | (b is not None)) & sa.func.coalesce(a != b, True)
 
 
 def _find_in_set(t, expr):
@@ -359,7 +360,7 @@ _cumulative_to_reduction = {
 
 
 def _cumulative_to_window(translator, expr, window):
-    win = ibis.cumulative_window()
+    win = W.cumulative_window()
     win = win.group_by(window._group_by).order_by(window._order_by)
 
     op = expr.op()
@@ -392,8 +393,8 @@ def _window(t, expr):
     )
 
     if isinstance(window_op, ops.CumulativeOp):
-        arg = _cumulative_to_window(translator, arg, window)
-        return translator.translate(arg)
+        arg = _cumulative_to_window(t, arg, window)
+        return t.translate(arg)
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause

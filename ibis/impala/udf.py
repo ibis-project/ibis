@@ -14,7 +14,6 @@
 import re
 
 from ibis.expr.datatypes import validate_type
-import ibis.expr.datatypes as _dt
 import ibis.expr.operations as _ops
 import ibis.expr.rules as rules
 import ibis.impala.compiler as comp

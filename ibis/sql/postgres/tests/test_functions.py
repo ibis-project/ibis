@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# flake8: noqa=E402
+
 import math
 import os
 import uuid
-import os
 
 import pytest  # noqa
 
@@ -33,6 +34,7 @@ import pandas as pd
 import pandas.util.testing as tm
 
 
+@pytest.mark.postgresql
 class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
 
     def test_cast(self):
@@ -670,6 +672,7 @@ def array_types(con):
     return con.table('array_types')
 
 
+@pytest.mark.postgresql
 def test_array_length(array_types):
     expr = array_types.projection([
         array_types.x.length().name('x_length'),
@@ -686,12 +689,14 @@ def test_array_length(array_types):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.postgresql
 def test_array_schema(array_types):
     assert array_types.x.type() == dt.Array(dt.int64)
     assert array_types.y.type() == dt.Array(dt.string)
     assert array_types.z.type() == dt.Array(dt.double)
 
 
+@pytest.mark.postgresql
 def test_array_collect(array_types):
     expr = array_types.group_by(
         array_types.grouper
@@ -704,6 +709,7 @@ def test_array_collect(array_types):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.postgresql
 @pytest.mark.parametrize(
     ['start', 'stop'],
     [
@@ -743,6 +749,7 @@ def test_array_slice(array_types, start, stop):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.postgresql
 @pytest.mark.parametrize('index', [1, 3, 4, 11])
 def test_array_index(array_types, index):
     expr = array_types[array_types.y[index].name('indexed')]
@@ -755,6 +762,7 @@ def test_array_index(array_types, index):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.postgresql
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(array_types, n, mul):
@@ -764,6 +772,7 @@ def test_array_repeat(array_types, n, mul):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.postgresql
 @pytest.mark.parametrize('catop', [lambda x, y: x + y, lambda x, y: y + x])
 def test_array_concat(array_types, catop):
     t = array_types
@@ -775,11 +784,13 @@ def test_array_concat(array_types, catop):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.postgresql
 def test_array_concat_mixed_types(array_types):
     with pytest.raises(TypeError):
         array_types.x + array_types.x.cast('array<double>')
 
 
+@pytest.mark.postgresql
 @pytest.yield_fixture
 def t(con):
     name = 'left_t'
@@ -797,6 +808,7 @@ def t(con):
         con.drop_table(name)
 
 
+@pytest.mark.postgresql
 @pytest.yield_fixture
 def s(con, t):
     name = 'right_t'
@@ -815,6 +827,7 @@ def s(con, t):
         con.drop_table(name)
 
 
+@pytest.mark.postgresql
 @pytest.yield_fixture
 def trunc(con):
     name = str(uuid.uuid1())
@@ -835,6 +848,7 @@ def trunc(con):
         con.drop_table(name)
 
 
+@pytest.mark.postgresql
 def test_semi_join(t, s):
     t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
     expr = t.semi_join(s, t.id == s.id)
@@ -846,6 +860,7 @@ def test_semi_join(t, s):
     assert str(result) == str(expected)
 
 
+@pytest.mark.postgresql
 def test_anti_join(t, s):
     t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
     expr = t.anti_join(s, t.id == s.id)
@@ -858,6 +873,7 @@ def test_anti_join(t, s):
     assert str(result) == str(expected)
 
 
+@pytest.mark.postgresql
 def test_create_table(con, trunc):
     name = str(uuid.uuid1())
     con.create_table(name, expr=trunc)
@@ -865,6 +881,7 @@ def test_create_table(con, trunc):
     assert list(t.name.execute()) == list('abc')
 
 
+@pytest.mark.postgresql
 def test_truncate_table(con, trunc):
     assert list(trunc.name.execute()) == list('abc')
     con.truncate_table(trunc.op().name)

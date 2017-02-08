@@ -21,7 +21,7 @@ pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
 
 
-from sqlalchemy.dialects.postgresql import dialect as postgres_dialect
+from sqlalchemy.dialects.postgresql import dialect as postgres_dialect  # noqa
 
 
 PG_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())

@@ -1,4 +1,3 @@
-import queue as q
 from itertools import chain
 from toolz import identity
 from collections import deque
@@ -14,7 +13,8 @@ def roots(expr, types=(ops.PhysicalTable,)):
     ----------
     expr : Expr
         The expression to analyze
-    types : tuple(type), optional, default (:mod:`ibis.expr.operations.PhysicalTable`,)
+    types : tuple(type), optional, default
+            (:mod:`ibis.expr.operations.PhysicalTable`,)
         The node types to traverse
 
     Yields
