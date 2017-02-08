@@ -285,7 +285,8 @@ def _strftime(t, expr):
 
 
 def _distinct_from(a, b):
-    return ((a is not None) | (b is not None)) & sa.func.coalesce(a != b, True)
+    return (((a != None) | (b != None)) &  # noqa
+            sa.func.coalesce(a != b, True))
 
 
 def _find_in_set(t, expr):
