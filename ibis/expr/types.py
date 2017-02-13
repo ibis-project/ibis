@@ -225,7 +225,8 @@ class Node(six.with_metaclass(OperationMeta, object)):
     of Node as merely a typed expression builder.
     """
 
-    def __init__(self, args):
+    def __init__(self, args=None):
+        args = args or []
         self.args = self._validate_args(args)
 
     def _validate_args(self, args):

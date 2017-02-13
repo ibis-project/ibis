@@ -2123,9 +2123,6 @@ class TopKExpr(ir.AnalyticExpr):
 
 class SummaryFilter(ValueOp):
 
-    def __init__(self, expr):
-        ValueOp.__init__(self, expr)
-
     def output_type(self):
         return ir.BooleanColumn
 
@@ -2156,9 +2153,7 @@ class TopK(ValueOp):
 
 
 class Constant(ValueOp):
-
-    def __init__(self):
-        ValueOp.__init__(self, [])
+    pass
 
 
 class TimestampNow(Constant):
