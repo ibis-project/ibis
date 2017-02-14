@@ -234,6 +234,7 @@ def _delta_factory(name, unit):
 
     return factory
 
+
 nanosecond = _delta_factory('nanosecond', 'ns')
 microsecond = _delta_factory('microsecond', 'us')
 millisecond = _delta_factory('millisecond', 'ms')

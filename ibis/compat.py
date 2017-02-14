@@ -23,17 +23,12 @@ import six
 from six import BytesIO, StringIO, string_types as py_string
 
 
-PY26 = sys.version_info[:2] == (2, 6)
-PY3 = sys.version_info[0] == 3
 PY2 = sys.version_info[0] == 2
 
 
-if PY26:
-    import unittest2 as unittest
-else:
-    import unittest
+import unittest
 
-if PY3:
+if not PY2:
     import pickle
     unicode_type = str
     def lzip(*x):

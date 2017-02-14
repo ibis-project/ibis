@@ -1338,6 +1338,7 @@ class ImpalaExprTranslator(comp.ExprTranslator):
         return _name_expr(translated,
                           quote_identifier(name, force=force))
 
+
 compiles = ImpalaExprTranslator.compiles
 rewrites = ImpalaExprTranslator.rewrites
 

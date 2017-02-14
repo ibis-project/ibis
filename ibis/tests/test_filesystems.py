@@ -532,7 +532,7 @@ def _get_all_files(path):
 
 
 def guidbytes():
-    if compat.PY3:
+    if not compat.PY2:
         return util.guid().encode('utf8')
     else:
         return util.guid()

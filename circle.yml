@@ -24,6 +24,7 @@ dependencies:
   override:
     - pip install -U pip
     - pip install -e .[develop]
+    - pip install flake8 pylint
   post:
     - docker info
     #- docker pull cloudera/impala-dev:minimal
@@ -84,3 +85,4 @@ database:
 test:
   override:
     - py.test ibis --postgresql --sqlite --tb=short --junitxml="$CIRCLE_TEST_REPORTS/junit.xml"
+    - flake8 --exclude=docs,versioneer.py

@@ -1,6 +1,7 @@
 from ibis.comms import IPCLock
 import threading
 
+
 class Counter:
 
     def __init__(self):
@@ -8,6 +9,7 @@ class Counter:
 
     def inc(self):
         self.total += 1
+
 
 def run_test():
     counter = Counter()

@@ -38,6 +38,7 @@ def _nuke(path):
     except os.error:
         pass
 
+
 pytestmark = pytest.mark.skipif(SKIP_TESTS,
                                 reason='Comms extension disabled')
 

@@ -37,6 +37,7 @@ def _item_converter(i):
 
     return _get_item
 
+
 _get_type = _item_converter(1)
 _get_comment = _item_converter(2)
 

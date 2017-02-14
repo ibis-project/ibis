@@ -51,6 +51,7 @@ class clean(_clean):
             except OSError:
                 pass
 
+
 cmdclass['clean'] = clean
 
 with open('requirements.txt') as f:

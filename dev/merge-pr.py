@@ -239,8 +239,8 @@ if not bool(pr["mergeable"]):
            "Continue? (experts only!)".format(pr_num))
     continue_maybe(msg)
 
-print ("\n=== Pull Request #%s ===" % pr_num)
-print ("title\t%s\nsource\t%s\ntarget\t%s\nurl\t%s" % (
+print("\n=== Pull Request #%s ===" % pr_num)
+print("title\t%s\nsource\t%s\ntarget\t%s\nurl\t%s" % (
     title, pr_repo_desc, target_ref, url))
 continue_maybe("Proceed with merging pull request #%s?" % pr_num)
 

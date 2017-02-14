@@ -10,12 +10,11 @@ def wrangle_csvs():
         path = '%d.csv.bz2' % year
         outpath = os.path.expanduser('~/data/%d_clean.csv' % year)
 
-        print 'Working on %s' % path
+        print('Working on %s' % path)
 
         df = pandas.read_csv(path, compression='bz2')
         df.to_csv(outpath, header=False, index=False,
-                  float_format='%g', na_rep='\N')
-
+                  float_format='%g', na_rep='\\N')
 
 
 schema = ibis.schema([
