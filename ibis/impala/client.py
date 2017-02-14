@@ -1691,7 +1691,11 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
         if partition is not None:
             partition_schema = self.partition_schema()
-            expr = expr.drop(partition_schema.names)
+            partition_schema_names = frozenset(partition_schema.names)
+            expr = expr.projection([
+                column for column in expr.columns
+                if column not in partition_schema_names
+            ])
         else:
             partition_schema = None
 
