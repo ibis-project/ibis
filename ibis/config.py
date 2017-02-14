@@ -27,14 +27,14 @@ import sys
 
 from six import StringIO
 
-PY3 = (sys.version_info[0] >= 3)
+PY2 = sys.version_info[0] == 2
 
-if PY3:
+if not PY2:
     def u(s):
         return s
 else:
     def u(s):
-        return unicode(s, "unicode_escape")
+        return unicode(s, "unicode_escape")  # noqa
 
 
 DeprecatedOption = namedtuple('DeprecatedOption', 'key msg rkey removal_ver')
@@ -210,6 +210,7 @@ class CallableDynamicDoc(object):
         opts_list = pp_options_list(list(_registered_options.keys()))
         return self.__doc_tmpl__.format(opts_desc=opts_desc,
                                         opts_list=opts_list)
+
 
 _get_option_tmpl = """
 get_option(pat)
@@ -714,6 +715,7 @@ def is_one_of_factory(legal_values):
                              % str("|".join(pp_values)))
 
     return inner
+
 
 # common type validators, for convenience
 # usage: register_option(... , validator = is_int)

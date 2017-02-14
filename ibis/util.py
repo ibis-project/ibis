@@ -25,7 +25,7 @@ def guid():
     except ImportError:
         from uuid import uuid4
         guid = uuid4()
-        return guid.hex if compat.PY3 else guid.get_hex()
+        return guid.hex if not compat.PY2 else guid.get_hex()
 
 
 def bytes_to_uint8_array(val, width=70):

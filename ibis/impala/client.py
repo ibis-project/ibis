@@ -1956,6 +1956,7 @@ def _split_signature(x):
     name, rest = x.split('(', 1)
     return name, rest[:-1]
 
+
 _arg_type = re.compile('(.*)\.\.\.|([^\.]*)')
 
 

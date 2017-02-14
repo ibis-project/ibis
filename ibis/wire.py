@@ -29,7 +29,7 @@ class PackedMessageReader(object):
     def __init__(self, msg):
         self.msg = msg
 
-        if isinstance(msg, basestring):
+        if isinstance(msg, bytes):
             self.buf = BytesIO(msg)
         elif hasattr(msg, 'read'):
             self.buf = msg

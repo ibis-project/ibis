@@ -257,13 +257,13 @@ def download_avro_files(con):
 def generate_csv_files():
     N = 10
     nfiles = 10
-    df = pd.DataFrame({'foo': [tm.rands(10) for _ in xrange(N)],
+    df = pd.DataFrame({'foo': [tm.rands(10) for _ in range(N)],
                        'bar': np.random.randn(N),
                        'baz': np.random.randint(0, 100, size=N)},
                       columns=['foo', 'bar', 'baz'])
     csv_base = pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'csv')
     os.mkdir(csv_base)
-    for i in xrange(nfiles):
+    for i in range(nfiles):
         csv_path = pjoin(csv_base, '{0}.csv'.format(i))
         print('Writing {0}'.format(csv_path))
         df.to_csv(csv_path, index=False, header=False)

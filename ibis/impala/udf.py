@@ -310,6 +310,7 @@ def parse_type(t):
         else:
             raise Exception(t)
 
+
 _VARCHAR_RE = re.compile('varchar\((\d+)\)')
 
 

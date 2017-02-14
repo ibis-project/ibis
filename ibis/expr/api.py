@@ -403,6 +403,7 @@ def cast(arg, target_type):
             pass
         return result
 
+
 cast.__doc__ = """
 Cast value(s) to indicated data type. Values that cannot be
 successfully casted

@@ -36,7 +36,7 @@ except ImportError:
     SKIP_TESTS = True
 
 
-pytestmark = pytest.mark.skipif(SKIP_TESTS or compat.PY3,
+pytestmark = pytest.mark.skipif(SKIP_TESTS or not compat.PY2,
                                 reason='Comms extension disabled')
 
 
