@@ -209,9 +209,9 @@ class ExprFormatter(object):
 
             formatted_args.append(result)
 
-        arg_names = getattr(op, '_arg_names', None)
+        arg_names = op._arg_names
 
-        if arg_names is None:
+        if not arg_names:
             for arg in op.args:
                 if isinstance(arg, list):
                     for x in arg:
@@ -241,7 +241,6 @@ class ExprFormatter(object):
         opname = type(op).__name__
         type_display = self._get_type_display(expr)
         opline = '%s[%s]' % (opname, type_display)
-
         return '\n'.join([opline] + formatted_args)
 
     def _format_subexpr(self, expr):

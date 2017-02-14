@@ -217,3 +217,23 @@ class TestExprFormatting(unittest.TestCase):
 
         # Join, and one for each aggregation
         assert result.count('predicates') == 3
+
+
+def test_argument_repr_shows_name():
+    t = ibis.table([('a', 'int64')])
+    expr = t.a.nullif(2)
+    result = repr(expr)
+    expected = """\
+ref_0
+UnboundTable[table]
+  name: None
+  schema:
+    a : int64
+
+NullIf[array(int64)]
+  a = Column[array(int64)] 'a' from table 
+    ref_0
+  null_if_expr:
+    Literal[int8]
+      2"""
+    assert result == expected

@@ -322,6 +322,15 @@ class Node(six.with_metaclass(OperationMeta, object)):
         """
         raise NotImplementedError
 
+    @property
+    def _arg_names(self):
+        try:
+            input_type = self.__class__.input_type
+        except AttributeError:
+            return []
+        else:
+            return [t.name for t in input_type.types]
+
 
 def all_equal(left, right, cache=None):
     if isinstance(left, list):
@@ -349,7 +358,7 @@ def _arg_getter(i):
 class ValueOp(Node):
 
     def __init__(self, *args):
-        Node.__init__(self, args)
+        super(ValueOp, self).__init__(args)
 
     def root_tables(self):
         exprs = [arg for arg in self.args if isinstance(arg, Expr)]
