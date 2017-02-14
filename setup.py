@@ -66,6 +66,9 @@ if PY26:
 if PY2:
     requirements.append('mock')
 
+with open('requirements.txt') as f:
+    file_reqs = f.read().splitlines()
+    requirements = requirements + file_reqs
 
 if COMMS_EXT_ENABLED:
     import numpy as np
