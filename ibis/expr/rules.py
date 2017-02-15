@@ -660,6 +660,44 @@ class StringOptions(Argument):
 string_options = StringOptions
 
 
+class Enum(Argument):
+    def __init__(self, enum, **arg_kwds):
+        super(Enum, self).__init__(**arg_kwds)
+        self.enum = enum
+
+    def _validate(self, args, i):
+        arg = args[i]
+
+        # if our passed value wasn't specified directly from the enum
+        if not isinstance(arg, self.enum):
+            value_set = Counter(
+                key.value for key in self.enum.__members__.values()
+            )
+
+            # not in the value_set, so can't be valid
+            if arg not in value_set:
+                raise IbisTypeError(
+                    ('Value {} is not a member of the {} enum, '
+                     'whose values are {}').format(
+                         arg, self.enum.__name__, list(self.enum)
+                    )
+                )
+
+            # if it's in the value set and the value set has duplicates, then
+            # we can't validate it because we don't know which one the user
+            # meant
+            if value_set[arg] > 1:
+                raise IbisTypeError(
+                    (
+                        'Value {0} is a member of {1}, but {1} is not unique. '
+                        'Please explicitly pass the desired enum attribute.'
+                    ).format(arg, self.enum.__name__)
+                )
+
+
+enum = Enum
+
+
 class ListOf(Argument):
 
     def __init__(self, value_type, min_length=0, **arg_kwds):
