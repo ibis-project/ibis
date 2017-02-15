@@ -231,7 +231,7 @@ UnboundTable[table]
     a : int64
 
 NullIf[array(int64)]
-  a = Column[array(int64)] 'a' from table 
+  a = Column[array(int64)] 'a' from table
     ref_0
   null_if_expr:
     Literal[int8]
