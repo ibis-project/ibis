@@ -58,6 +58,7 @@ class IbisTestEnv(object):
                                                 'True').lower() == 'true'
         self.auth_mechanism = os.environ.get('IBIS_TEST_AUTH_MECH', 'NOSASL')
         self.llvm_config = os.environ.get('IBIS_TEST_LLVM_CONFIG', None)
+        self.webhdfs_user = os.environ.get('IBIS_TEST_WEBHDFS_USER', None)
 
     def __repr__(self):
         kvs = ['{0}={1}'.format(k, v)
@@ -76,7 +77,8 @@ def connect_test(env, with_hdfs=True):
                                         port=env.webhdfs_port,
                                         auth_mechanism=env.auth_mechanism,
                                         verify=(env.auth_mechanism
-                                                not in ['GSSAPI', 'LDAP']))
+                                                not in ['GSSAPI', 'LDAP']),
+                                        user=env.webhdfs_user)
     else:
         hdfs_client = None
 

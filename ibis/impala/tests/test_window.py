@@ -45,7 +45,7 @@ def test_aggregate_in_projection(con):
 
     expected = """\
 SELECT *, `f` / sum(`f`) OVER () AS `normed_f`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
 
@@ -66,7 +66,7 @@ SELECT *, lag(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `lag`,
        first_value(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `first`,
        last_value(`f`) OVER (PARTITION BY `g` ORDER BY `f`) AS `last`,
        lag(`f`) OVER (PARTITION BY `g` ORDER BY `d`) AS `lag2`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
 
@@ -111,7 +111,7 @@ def test_window_frame_specs(con, window, frame):
 
     ex_template = """\
 SELECT sum(`d`) OVER (ORDER BY `f` {0}) AS `foo`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
 
     w2 = window.order_by(t.f)
     expr = t.projection([t.d.sum().over(w2).name('foo')])
@@ -151,7 +151,7 @@ def test_nested_analytic_function(con):
     expected = """\
 SELECT lag(`f` - lag(`f`) OVER (ORDER BY `f`)) \
 OVER (ORDER BY `f`) AS `foo`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
     assert_sql_equal(result, expected)
 
 
@@ -164,7 +164,7 @@ def test_rank_functions(con):
     expected = """\
 SELECT `g`, (rank() OVER (ORDER BY `f`) - 1) AS `minr`,
        (dense_rank() OVER (ORDER BY `f`) - 1) AS `denser`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
 
@@ -179,7 +179,7 @@ def test_multiple_windows(con):
 
     expected = """\
 SELECT `g`, sum(`f`) OVER (PARTITION BY `g`) - sum(`f`) OVER () AS `result`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
 
@@ -192,7 +192,7 @@ def test_order_by_desc(con):
     proj = t[t.f, ibis.row_number().over(w).name('revrank')]
     expected = """\
 SELECT `f`, (row_number() OVER (ORDER BY `f` DESC) - 1) AS `revrank`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
     expr = (t.group_by('g')
@@ -201,7 +201,7 @@ FROM alltypes"""
     expected = """\
 SELECT lag(`d`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `foo`,
        max(`a`) OVER (PARTITION BY `g` ORDER BY `f` DESC) AS `max`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)
 
 
@@ -219,7 +219,7 @@ def test_row_number_requires_order_by(con):
 
     expected = """\
 SELECT *, (row_number() OVER (PARTITION BY `g` ORDER BY `f`) - 1) AS `foo`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)
 
 
@@ -231,7 +231,7 @@ def test_row_number_properly_composes_with_arithmetic(con):
 
     expected = """\
 SELECT *, (row_number() OVER (ORDER BY `f`) - 1) / 2 AS `new`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)
 
 
@@ -271,7 +271,7 @@ def test_propagate_nested_windows(con):
     expected = """\
 SELECT lag(`f` - lag(`f`) OVER (PARTITION BY `g` ORDER BY `f`)) \
 OVER (PARTITION BY `g` ORDER BY `f`) AS `foo`
-FROM alltypes"""
+FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)
 
 
