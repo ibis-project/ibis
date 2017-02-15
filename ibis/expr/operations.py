@@ -673,7 +673,6 @@ def _mean_output_type(self):
 
 
 class Sum(Reduction):
-
     output_type = rules.scalar_output(_sum_output_type)
 
 

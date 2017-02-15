@@ -474,6 +474,7 @@ class ImpalaClient(SQLClient):
 
     def __init__(self, con, hdfs_client=None, **params):
         self.con = con
+        self.flavor = 'Impala'
 
         if isinstance(hdfs_client, hdfs.Client):
             hdfs_client = WebHDFS(hdfs_client)

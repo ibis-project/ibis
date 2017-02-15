@@ -27,7 +27,6 @@ import ibis.sql.transforms as transforms
 import ibis.util as util
 import ibis
 
-
 # ---------------------------------------------------------------------
 
 
@@ -1252,6 +1251,7 @@ def _category_label(expr):
 
 @rewrites(ops.Any)
 def _any_expand(expr):
+    print 'tt'
     arg = expr.op().args[0]
     return arg.sum() > 0
 

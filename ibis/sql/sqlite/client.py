@@ -43,6 +43,7 @@ class SQLiteClient(alch.AlchemyClient):
     def __init__(self, path=None, create=False):
         self.name = path
         self.database_name = 'default'
+        self.flavor = 'SQLite'
 
         self.con = sa.create_engine('sqlite://')
 

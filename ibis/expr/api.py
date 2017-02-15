@@ -898,12 +898,13 @@ def _generic_summary(arg, exact_nunique=False, prefix=None):
         arg.isnull().sum().name('nulls')
     ]
 
-    if exact_nunique:
-        unique_metric = arg.nunique().name('uniques')
-    else:
-        unique_metric = arg.approx_nunique().name('uniques')
+    if con.flavor in ['Impala']:
+        if exact_nunique:
+            unique_metric = arg.nunique().name('uniques')
+        else:
+            unique_metric = arg.approx_nunique().name('uniques')
+        metrics.append(unique_metric)
 
-    metrics.append(unique_metric)
     return _wrap_summary_metrics(metrics, prefix)
 
 
@@ -931,12 +932,13 @@ def _numeric_summary(arg, exact_nunique=False, prefix=None):
         arg.mean()
     ]
 
-    if exact_nunique:
-        unique_metric = arg.nunique().name('nunique')
-    else:
-        unique_metric = arg.approx_nunique().name('approx_nunique')
+    if con.flavor in ['Impala']:
+        if exact_nunique:
+            unique_metric = arg.nunique().name('nunique')
+        else:
+            unique_metric = arg.approx_nunique().name('approx_nunique')
+        metrics.append(unique_metric)
 
-    metrics.append(unique_metric)
     return _wrap_summary_metrics(metrics, prefix)
 
 
