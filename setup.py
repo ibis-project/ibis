@@ -59,10 +59,6 @@ with open('requirements.txt') as f:
     requirements = requirements + file_reqs
 
 PY2 = sys.version_info[0] == 2
-PY26 = sys.version_info[0] == 2 and sys.version_info[1] == 6
-if PY26:
-    requirements.append('argparse')
-    requirements.append('unittest2')
 
 if PY2:
     requirements.append('mock')

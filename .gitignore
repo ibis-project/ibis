@@ -55,3 +55,4 @@ testing/udf/Makefile
 # test data
 scripts/ibis-testing*
 ibis_testing*
+.tox/
