@@ -18,7 +18,7 @@ import os
 import pytest
 
 pytest.importorskip('sqlalchemy')
-pytest.importorskip('impyla')
+pytest.importorskip('impala.dbapi')
 
 ksupport = pytest.importorskip('ibis.impala.kudu_support')
 kudu = pytest.importorskip('kudu')

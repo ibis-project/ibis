@@ -19,7 +19,7 @@ import ibis
 import pytest
 
 pytest.importorskip('sqlalchemy')
-pytest.importorskip('impyla')
+pytest.importorskip('impala.dbapi')
 
 from ibis.impala.compiler import build_ast, to_sql
 

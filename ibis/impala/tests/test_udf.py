@@ -17,7 +17,7 @@ from posixpath import join as pjoin
 import pytest
 
 pytest.importorskip('sqlalchemy')
-pytest.importorskip('impyla')
+pytest.importorskip('impala.dbapi')
 
 import ibis
 
@@ -178,6 +178,11 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         self.udf_ll = pjoin(self.test_data_dir, 'udf/udf-sample.ll')
         self.uda_ll = pjoin(self.test_data_dir, 'udf/uda-sample.ll')
         self.uda_so = pjoin(self.test_data_dir, 'udf/libudasample.so')
+        self.con.disable_codegen(False)
+
+    def tearDown(self):
+        super(TestUDFE2E, self).tearDown()
+        self.con.disable_codegen(True)
 
     @pytest.mark.udf
     def test_identity_primitive_types(self):

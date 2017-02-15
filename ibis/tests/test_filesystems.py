@@ -84,7 +84,8 @@ class TestHDFSE2E(unittest.TestCase):
                                      port=cls.ENV.webhdfs_port,
                                      auth_mechanism=cls.ENV.auth_mechanism,
                                      verify=(cls.ENV.auth_mechanism
-                                             not in ['GSSAPI', 'LDAP']))
+                                             not in ['GSSAPI', 'LDAP']),
+                                     user=cls.ENV.webhdfs_user)
         cls.hdfs.mkdir(cls.tmp_dir)
 
     @classmethod

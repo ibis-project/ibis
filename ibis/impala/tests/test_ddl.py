@@ -24,7 +24,7 @@ from posixpath import join as pjoin
 import pytest
 
 pytest.importorskip('sqlalchemy')
-pytest.importorskip('impyla')
+pytest.importorskip('impala.dbapi')
 
 from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest, mock
