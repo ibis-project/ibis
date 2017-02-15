@@ -188,10 +188,10 @@ class ExprFormatter(object):
             self.memo.observe(parent, formatter=self._format_node)
 
         table_formatted = self.memo.get_alias(parent)
-        table_formatted = '\n' + self._indent(table_formatted)
+        table_formatted = self._indent(table_formatted)
 
         type_display = self._get_type_display(self.expr)
-        return ("Column[{0}] '{1}' from table {2}"
+        return ("Column[{0}] '{1}' from table\n{2}"
                 .format(type_display, col.name, table_formatted))
 
     def _format_node(self, expr):
