@@ -43,6 +43,9 @@ def test_enum_validator():
     op = MyOp(Foo.a)
     assert op._validate_args(op.args) == [Foo.a]
 
+    op = MyOp(2)
+    assert op._validate_args(op.args) == [Foo.b]
+
 
 def test_duplicate_enum():
     enum = pytest.importorskip('enum')
