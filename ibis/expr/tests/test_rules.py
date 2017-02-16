@@ -40,6 +40,9 @@ def test_enum_validator():
     with pytest.raises(IbisTypeError):
         MyOp(Bar.a)
 
+    op = MyOp(Foo.a)
+    assert op._validate_args(op.args) == [Foo.a]
+
 
 def test_duplicate_enum():
     enum = pytest.importorskip('enum')

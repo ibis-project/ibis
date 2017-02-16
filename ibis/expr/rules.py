@@ -693,6 +693,7 @@ class Enum(Argument):
                         'Please explicitly pass the desired enum attribute.'
                     ).format(arg, self.enum.__name__)
                 )
+        return arg
 
 
 enum = Enum
