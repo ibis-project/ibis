@@ -670,9 +670,9 @@ class Enum(Argument):
 
         # if our passed value wasn't specified directly from the enum
         if not isinstance(arg, self.enum):
-            value_set = Counter(
-                key.value for key in self.enum.__members__.values()
-            )
+            value_set = {}
+            for key, value in self.enum.__members__.items():
+                value_set.setdefault(value.value, []).append(key)
 
             # not in the value_set, so can't be valid
             if arg not in value_set:
@@ -686,13 +686,14 @@ class Enum(Argument):
             # if it's in the value set and the value set has duplicates, then
             # we can't validate it because we don't know which one the user
             # meant
-            if value_set[arg] > 1:
+            if len(value_set[arg]) > 1:
                 raise IbisTypeError(
                     (
                         'Value {0} is a member of {1}, but {1} is not unique. '
                         'Please explicitly pass the desired enum attribute.'
                     ).format(arg, self.enum.__name__)
                 )
+            return self.enum[value_set[arg].pop()]
         return arg
 
 
