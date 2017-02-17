@@ -155,7 +155,7 @@ class TestWrapping(unittest.TestCase):
                                   'int64', 'mult_types')
 
         expr = func(self.i32, self.d, self.s, self.b, self.t)
-        assert issubclass(type(expr), ir.ArrayExpr)
+        assert issubclass(type(expr), ir.ColumnExpr)
 
         expr = func(1, 1.0, 'a', True, ibis.timestamp('1961-04-10'))
         assert issubclass(type(expr), ir.ScalarExpr)
@@ -214,7 +214,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         assert result == Decimal(1)
 
         expr = func(col)
-        assert issubclass(type(expr), ir.ArrayExpr)
+        assert issubclass(type(expr), ir.ColumnExpr)
         self.con.execute(expr)
 
     @pytest.mark.udf
@@ -226,11 +226,11 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         func = self._udf_creation_to_op(name, symbol, inputs, output)
 
         expr = func(self.alltypes.int_col, 1)
-        assert issubclass(type(expr), ir.ArrayExpr)
+        assert issubclass(type(expr), ir.ColumnExpr)
         self.con.execute(expr)
 
         expr = func(1, self.alltypes.int_col)
-        assert issubclass(type(expr), ir.ArrayExpr)
+        assert issubclass(type(expr), ir.ColumnExpr)
         self.con.execute(expr)
 
         expr = func(self.alltypes.int_col, self.alltypes.tinyint_col)
@@ -262,7 +262,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
                 self.assertAlmostEqual(result, self.con.execute(literal), 5)
 
         expr = func(column)
-        assert issubclass(type(expr), ir.ArrayExpr)
+        assert issubclass(type(expr), ir.ColumnExpr)
         self.con.execute(expr)
 
     @pytest.mark.udf

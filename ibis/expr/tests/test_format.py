@@ -56,7 +56,7 @@ class TestExprFormatting(unittest.TestCase):
     def test_format_table_column(self):
         # GH #507
         result = repr(self.table.f)
-        assert 'Column[array(double)]' in result
+        assert 'Column[double*]' in result
 
     def test_format_projection(self):
         # This should produce a ref to the projection
@@ -230,8 +230,8 @@ UnboundTable[table]
   schema:
     a : int64
 
-NullIf[array(int64)]
-  a = Column[array(int64)] 'a' from table
+NullIf[int64*]
+  a = Column[int64*] 'a' from table
     ref_0
   null_if_expr:
     Literal[int8]

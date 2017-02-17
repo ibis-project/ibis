@@ -235,7 +235,7 @@ def shape_like(arg, out_type):
 
 def shape_like_args(args, out_type):
     out_type = dt.validate_type(out_type)
-    if util.any_of(args, ir.ArrayExpr):
+    if util.any_of(args, ir.ColumnExpr):
         return out_type.array_type()
     else:
         return out_type.scalar_type()
@@ -246,7 +246,7 @@ def is_table(e):
 
 
 def is_array(e):
-    return isinstance(e, ir.ArrayExpr)
+    return isinstance(e, ir.ColumnExpr)
 
 
 def is_scalar(e):
@@ -254,7 +254,7 @@ def is_scalar(e):
 
 
 def is_collection(expr):
-    return isinstance(expr, (ir.ArrayExpr, ir.TableExpr))
+    return isinstance(expr, (ir.ColumnExpr, ir.TableExpr))
 
 
 class Argument(object):
@@ -549,7 +549,7 @@ def value_typed_as(types, **arg_kwds):
 
 
 def array(value_type=None, name=None, optional=False):
-    array_checker = ValueTyped(ir.ArrayExpr, 'not an array expr',
+    array_checker = ValueTyped(ir.ColumnExpr, 'not an array expr',
                                name=name,
                                optional=optional)
     if value_type is None:
@@ -566,7 +566,7 @@ def scalar(name=None, optional=False):
 
 
 def collection(name=None, optional=False):
-    return ValueTyped((ir.ArrayExpr, ir.TableExpr), 'not a collection',
+    return ValueTyped((ir.ColumnExpr, ir.TableExpr), 'not a collection',
                       name=name, optional=optional)
 
 

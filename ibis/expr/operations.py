@@ -21,7 +21,7 @@ from ibis.compat import py_string
 from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr, Expr,
-                             ValueExpr, ArrayExpr, TableExpr,
+                             ValueExpr, ColumnExpr, TableExpr,
                              ValueOp, _safe_repr)
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -2055,7 +2055,7 @@ class Contains(BooleanValueOp):
         options = self.options.op()
         if isinstance(options, ir.ValueList):
             all_args += options.values
-        elif isinstance(self.options, ArrayExpr):
+        elif isinstance(self.options, ColumnExpr):
             all_args += [self.options]
         else:
             raise TypeError(type(options))
@@ -2136,7 +2136,7 @@ class TopK(ValueOp):
         if by is None:
             by = arg.count()
 
-        if not isinstance(arg, ArrayExpr):
+        if not isinstance(arg, ColumnExpr):
             raise TypeError(arg)
 
         if not isinstance(k, int) or k < 0:

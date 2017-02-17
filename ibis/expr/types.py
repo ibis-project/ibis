@@ -578,10 +578,10 @@ class ScalarExpr(ValueExpr):
         return str(self.type())
 
 
-class ArrayExpr(ValueExpr):
+class ColumnExpr(ValueExpr):
 
     def _type_display(self):
-        return 'array({0!s})'.format(self.type())
+        return '{}*'.format(self.type())
 
     def parent(self):
         return self._arg
@@ -670,7 +670,7 @@ class TableExpr(Expr):
         elif isinstance(what, BooleanColumn):
             # Boolean predicate
             return self.filter([what])
-        elif isinstance(what, ArrayExpr):
+        elif isinstance(what, ColumnExpr):
             # Projection convenience
             return self.projection(what)
         else:
@@ -771,7 +771,7 @@ class TableExpr(Expr):
         """
         expr = self._ensure_expr(expr)
 
-        if not isinstance(expr, ArrayExpr):
+        if not isinstance(expr, ColumnExpr):
             raise com.InputTypeError('Must pass array expression')
 
         if name is not None:
@@ -985,7 +985,7 @@ class ArrayValue(AnyValue):
         return isinstance(other, ArrayValue)
 
 
-class NumericColumn(ArrayExpr, NumericValue):
+class NumericColumn(ColumnExpr, NumericValue):
     pass
 
 
@@ -996,7 +996,7 @@ class NullScalar(NullValue, ScalarExpr):
     pass
 
 
-class NullColumn(ArrayExpr, NullValue):
+class NullColumn(ColumnExpr, NullValue):
     pass
 
 
@@ -1060,7 +1060,7 @@ class StringScalar(ScalarExpr, StringValue):
     pass
 
 
-class StringColumn(ArrayExpr, StringValue):
+class StringColumn(ColumnExpr, StringValue):
     pass
 
 
@@ -1068,7 +1068,7 @@ class DateScalar(ScalarExpr, DateValue):
     pass
 
 
-class DateColumn(ArrayExpr, DateValue):
+class DateColumn(ColumnExpr, DateValue):
     pass
 
 
@@ -1076,7 +1076,7 @@ class TimestampScalar(ScalarExpr, TimestampValue):
     pass
 
 
-class TimestampColumn(ArrayExpr, TimestampValue):
+class TimestampColumn(ColumnExpr, TimestampValue):
     pass
 
 
@@ -1138,11 +1138,11 @@ class CategoryScalar(CategoryValue, ScalarExpr):
         return factory
 
 
-class CategoryColumn(CategoryValue, ArrayExpr):
+class CategoryColumn(CategoryValue, ColumnExpr):
 
     def __init__(self, arg, meta, name=None):
         CategoryValue.__init__(self, meta)
-        ArrayExpr.__init__(self, arg, name=name)
+        ColumnExpr.__init__(self, arg, name=name)
 
     @property
     def _factory(self):
@@ -1164,11 +1164,11 @@ class ArrayScalar(ArrayValue, ScalarExpr):
         return factory
 
 
-class ArrayColumn(ArrayValue, ArrayExpr):
+class ArrayColumn(ArrayValue, ColumnExpr):
 
     def __init__(self, arg, meta, name=None):
         ArrayValue.__init__(self, meta)
-        ArrayExpr.__init__(self, arg, name=name)
+        ColumnExpr.__init__(self, arg, name=name)
 
     @property
     def _factory(self):
@@ -1268,7 +1268,7 @@ class NullLiteral(ValueOp):
         return []
 
 
-class ListExpr(ArrayExpr, AnyValue):
+class ListExpr(ColumnExpr, AnyValue):
     pass
 
 
