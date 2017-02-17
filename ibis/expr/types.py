@@ -498,7 +498,9 @@ class Literal(ValueOp):
         elif isinstance(value, datetime.date):
             return DateScalar
         elif isinstance(value, list):
-            value_type = rules.highest_precedence_type(map(literal, value))
+            value_type = rules.highest_precedence_type(
+                list(map(literal, value))
+            )
             return lambda value, value_type=value_type: ArrayScalar(
                 value, dt.Array(value_type)
             )
