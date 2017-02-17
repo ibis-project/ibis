@@ -579,7 +579,7 @@ class ScalarExpr(ValueExpr):
 class ColumnExpr(ValueExpr):
 
     def _type_display(self):
-        return 'array({0!s})'.format(self.type())
+        return '{}*'.format(self.type())
 
     def parent(self):
         return self._arg
