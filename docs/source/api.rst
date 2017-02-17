@@ -340,27 +340,27 @@ Array methods
 .. autosummary::
    :toctree: generated/
 
-   ArrayExpr.distinct
+   ColumnExpr.distinct
 
-   ArrayExpr.count
-   ArrayExpr.min
-   ArrayExpr.max
-   ArrayExpr.approx_median
-   ArrayExpr.approx_nunique
-   ArrayExpr.group_concat
-   ArrayExpr.nunique
-   ArrayExpr.summary
+   ColumnExpr.count
+   ColumnExpr.min
+   ColumnExpr.max
+   ColumnExpr.approx_median
+   ColumnExpr.approx_nunique
+   ColumnExpr.group_concat
+   ColumnExpr.nunique
+   ColumnExpr.summary
 
-   ArrayExpr.value_counts
+   ColumnExpr.value_counts
 
-   ArrayExpr.first
-   ArrayExpr.last
-   ArrayExpr.dense_rank
-   ArrayExpr.rank
-   ArrayExpr.lag
-   ArrayExpr.lead
-   ArrayExpr.cummin
-   ArrayExpr.cummax
+   ColumnExpr.first
+   ColumnExpr.last
+   ColumnExpr.dense_rank
+   ColumnExpr.rank
+   ColumnExpr.lag
+   ColumnExpr.lead
+   ColumnExpr.cummin
+   ColumnExpr.cummax
 
 General numeric methods
 -----------------------

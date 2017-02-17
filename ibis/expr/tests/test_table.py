@@ -14,7 +14,7 @@
 
 import pytest
 
-from ibis.expr.types import ArrayExpr, TableExpr, RelationError
+from ibis.expr.types import ColumnExpr, TableExpr, RelationError
 from ibis.common import ExpressionError
 from ibis.expr.datatypes import array_type
 import ibis.expr.api as api
@@ -65,7 +65,7 @@ def test_getitem_column_select(table, schema_dict):
         col = table[k]
 
         # Make sure it's the right type
-        assert isinstance(col, ArrayExpr)
+        assert isinstance(col, ColumnExpr)
         assert isinstance(col, array_type(v))
 
         # Ensure we have a field selection with back-reference to the table
@@ -83,7 +83,7 @@ def test_getitem_attribute(table):
     # Project and add a name that conflicts with a TableExpr built-in
     # attribute
     view = table[[table, table['a'].name('schema')]]
-    assert not isinstance(view.schema, ArrayExpr)
+    assert not isinstance(view.schema, ColumnExpr)
 
 
 def test_projection(table):

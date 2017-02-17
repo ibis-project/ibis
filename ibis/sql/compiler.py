@@ -861,7 +861,7 @@ def _adapt_expr(expr):
         else:
             raise NotImplementedError(expr._repr())
 
-    elif isinstance(expr, ir.ArrayExpr):
+    elif isinstance(expr, ir.ColumnExpr):
         op = expr.op()
 
         def _get_column(name):

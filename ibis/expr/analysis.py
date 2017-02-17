@@ -911,7 +911,7 @@ class FilterValidator(ExprValidator):
                 elif isinstance(arg, ops.TopKExpr):
                     # TopK not subjected to further analysis for now
                     roots_valid.append(True)
-                elif isinstance(arg, (ir.ArrayExpr, ir.AnalyticExpr)):
+                elif isinstance(arg, (ir.ColumnExpr, ir.AnalyticExpr)):
                     roots_valid.append(self.shares_some_roots(arg))
                 elif isinstance(arg, ir.Expr):
                     raise NotImplementedError

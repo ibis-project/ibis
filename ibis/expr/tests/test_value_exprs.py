@@ -75,7 +75,7 @@ def test_literal_list():
     what = [1, 2, 1000]
     expr = api.as_value_expr(what)
 
-    assert isinstance(expr, ir.ArrayExpr)
+    assert isinstance(expr, ir.ColumnExpr)
     assert isinstance(expr.op(), ir.ValueList)
     assert isinstance(expr.op().values[2], ir.Int16Scalar)
 
@@ -258,7 +258,7 @@ def test_null_literal():
 )
 def test_cumulative_yield_array_types(table, column, operation):
     expr = getattr(getattr(table, column), operation)()
-    assert isinstance(expr, ir.ArrayExpr)
+    assert isinstance(expr, ir.ColumnExpr)
 
 
 @pytest.fixture(params=['ln', 'log', 'log2', 'log10'])

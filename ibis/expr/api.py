@@ -17,7 +17,7 @@ import toolz
 
 from ibis.expr.datatypes import Schema  # noqa
 from ibis.expr.types import (Expr,  # noqa
-                             ValueExpr, ScalarExpr, ArrayExpr,
+                             ValueExpr, ScalarExpr, ColumnExpr,
                              TableExpr,
                              NumericValue, NumericColumn,
                              IntegerValue,
@@ -981,7 +981,7 @@ _generic_column_methods = dict(
 
 
 _add_methods(ValueExpr, _generic_value_methods)
-_add_methods(ArrayExpr, _generic_column_methods)
+_add_methods(ColumnExpr, _generic_column_methods)
 
 
 # ---------------------------------------------------------------------
