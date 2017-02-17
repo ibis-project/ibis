@@ -2,11 +2,19 @@ machine:
   python:
     version: 3.4.3
   pre:
-    - sudo apt-get install --only-upgrade sqlite3  # make sure we have instr
+    - sudo apt-get -qq install --only-upgrade sqlite3  # make sure we have instr
+    - sudo apt-get -qq install sshpass -y
+    - sudo apt-get -qq autoremove -y
+    - sudo apt-get -qq autoclean -y
   environment:
     IBIS_TEST_SQLITE_DB_PATH: $HOME/ibis-testing-data/ibis_testing.db
     IBIS_TEST_POSTGRES_DB: circle_test
     IBIS_TEST_CRUNCHBASE_DB: $HOME/crunchbase.db
+    IBIS_TEST_IMPALA_HOST: impala
+    IBIS_TEST_IMPALA_PORT: 21050
+    IBIS_TEST_NN_HOST: impala
+    IBIS_TEST_WEBHDFS_PORT: 50070
+    IBIS_TEST_WEBHDFS_USER: ubuntu
   post:
     # download the crunchbase sqlite database, for lineage testing
     - wget https://ibis-resources.s3.amazonaws.com/data/crunchbase/crunchbase.db
@@ -16,11 +24,13 @@ machine:
 
     # untar it
     - tar xvzf ibis-testing-data.tar.gz
+  services:
+    - docker
 
 dependencies:
   override:
     - pip install -U pip
-    - pip install flake8 pylint
+    - pip install click flake8 pylint
     - cd $(pyenv root); git pull
     - pip install -U tox tox-pyenv
     - pyenv install --skip-existing 2.7.9
@@ -28,39 +38,17 @@ dependencies:
     - pyenv install --skip-existing 3.5.0
     - pyenv install --skip-existing 3.6.0
     - pyenv local 2.7.9 3.4.3 3.5.0 3.6.0
+  post:
+    - docker pull cpcloud86/impala:latest
+    - docker run -it -d --name impala --hostname impala -p 9000:9000 -p 50010:50010 -p 50020:50020 -p 50070:50070 -p 50075:50075 -p 21000:21000 -p 21050:21050 -p 25000:25000 -p 25010:25010 -p 25020:25020 cpcloud86/impala
+    - echo "$(docker inspect --format '{{.NetworkSettings.IPAddress}}' impala) impala" | sudo tee -a /etc/hosts
+    - ping -c 1 impala
+    - sudo lxc-attach -n "$(docker inspect --format '{{.Id}}' impala)" -- cat '/home/ubuntu/.ssh/id_rsa.pub' >> $HOME/.ssh/known_hosts
+    - dev/wait_for_docker_impala.sh
+    - scripts/test_data_admin.py load --data --no-udf --overwrite --data-dir "$HOME/ibis-testing-data"
 
 database:
   override:
-    # dump the data to a CSV file
-    - sqlite3 -separator ',' -csv -noheader $IBIS_TEST_SQLITE_DB_PATH <<< 'SELECT * FROM functional_alltypes;' > dump.csv
-
-    # create the Postgres tables
-    - >
-      psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB <<EOF
-        CREATE TABLE functional_alltypes (
-          "index" BIGINT,
-          other BIGINT,
-          id BIGINT,
-          bool_col BOOLEAN,
-          tinyint_col SMALLINT,
-          smallint_col SMALLINT,
-          int_col INTEGER,
-          bigint_col BIGINT,
-          float_col FLOAT4,
-          double_col FLOAT8,
-          date_string_col TEXT,
-          string_col TEXT,
-          timestamp_col TIMESTAMP,
-          year BIGINT,
-          month BIGINT
-        );
-        CREATE INDEX ON functional_alltypes ("index");
-      EOF
-
-    # load the sqlite dump into the pg table
-    - psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB -c "COPY functional_alltypes FROM STDIN WITH (FORMAT CSV, HEADER FALSE, DELIMITER ',')" < dump.csv
-    - rm dump.csv
-
     - >
       psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB <<EOF
         CREATE TABLE array_types (

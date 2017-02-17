@@ -329,7 +329,7 @@ class Node(six.with_metaclass(OperationMeta, object)):
         except AttributeError:
             return []
         else:
-            return [t.name for t in input_type.types]
+            return [t.name for t in getattr(input_type, 'types', [])]
 
 
 def all_equal(left, right, cache=None):

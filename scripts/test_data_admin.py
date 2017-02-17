@@ -49,13 +49,15 @@ IBIS_TEST_AWS_SECRET = os.environ.get('IBIS_TEST_AWS_SECRET')
 
 
 def make_ibis_client():
-    hc = ibis.hdfs_connect(host=ENV.nn_host, port=ENV.webhdfs_port,
+    hc = ibis.hdfs_connect(host=ENV.nn_host,
+                           port=ENV.webhdfs_port,
                            auth_mechanism=ENV.auth_mechanism,
-                           verify=(ENV.auth_mechanism
-                                   not in ['GSSAPI', 'LDAP']))
+                           verify=ENV.auth_mechanism not in ['GSSAPI', 'LDAP'],
+                           user=ENV.webhdfs_user)
     if ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
         print("Warning: ignoring invalid Certificate Authority errors")
-    return ibis.impala.connect(host=ENV.impala_host, port=ENV.impala_port,
+    return ibis.impala.connect(host=ENV.impala_host,
+                               port=ENV.impala_port,
                                auth_mechanism=ENV.auth_mechanism,
                                hdfs_client=hc)
 
@@ -128,6 +130,21 @@ def create_test_database(con):
     if con.exists_database(ENV.test_data_db):
         con.drop_database(ENV.test_data_db, force=True)
     con.create_database(ENV.test_data_db)
+    con.create_table(
+        'alltypes',
+        schema=ibis.schema([
+            ('a', 'int8'),
+            ('b', 'int16'),
+            ('c', 'int32'),
+            ('d', 'int64'),
+            ('e', 'float'),
+            ('f', 'double'),
+            ('g', 'string'),
+            ('h', 'boolean'),
+            ('i', 'timestamp')
+        ]),
+        database=ENV.test_data_db
+    )
     print('Created database {0}'.format(ENV.test_data_db))
 
 
@@ -221,15 +238,16 @@ def download_parquet_files(con, tmp_db_hdfs_path):
 def get_postgres_engine():
     pg_user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
     pg_pass = os.environ.get('IBIS_POSTGRES_PASS')
+    database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
 
     if pg_pass:
         creds = '{0}:{1}'.format(pg_user, pg_pass)
     else:
         creds = pg_user
 
-    engine = (create_engine('postgresql://{0}@localhost/ibis_testing'
-                            .format(creds)))
-    return engine
+    return create_engine(
+        'postgresql://{0}@localhost/{1}'.format(creds, database)
+    )
 
 
 def get_sqlite_engine():
