@@ -213,3 +213,9 @@ def test_rule_instance_of():
 
     with pytest.raises(IbisError):
         MyOperation([api.literal('string')])
+
+
+def test_literal_mixed_type_fails():
+    data = [1, 'a']
+    with pytest.raises(TypeError):
+        ibis.literal(data)
