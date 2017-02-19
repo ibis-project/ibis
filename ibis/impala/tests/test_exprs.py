@@ -17,7 +17,7 @@
 import pytest
 
 pytest.importorskip('sqlalchemy')
-pytest.importorskip('impyla')
+pytest.importorskip('impala.dbapi')
 
 import pandas as pd
 

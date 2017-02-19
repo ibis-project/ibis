@@ -2,14 +2,15 @@ machine:
   python:
     version: 3.4.3
   pre:
-    - sudo apt-get -qq install --only-upgrade sqlite3  # make sure we have instr
-    - sudo apt-get -qq install sshpass -y
-    - sudo apt-get -qq autoremove -y
-    - sudo apt-get -qq autoclean -y
+    # upgrade sqlite3 to # make sure we have instr
+    - sudo apt-get -qq install --only-upgrade sqlite3
+    - sudo apt-get -qq install clang libboost-dev
   environment:
     IBIS_TEST_SQLITE_DB_PATH: $HOME/ibis-testing-data/ibis_testing.db
     IBIS_TEST_POSTGRES_DB: circle_test
     IBIS_TEST_CRUNCHBASE_DB: $HOME/crunchbase.db
+
+    # The following environment variables are necessary to run impala tests
     IBIS_TEST_IMPALA_HOST: impala
     IBIS_TEST_IMPALA_PORT: 21050
     IBIS_TEST_NN_HOST: impala
@@ -39,16 +40,33 @@ dependencies:
     - pyenv install --skip-existing 3.6.0
     - pyenv local 2.7.9 3.4.3 3.5.0 3.6.0
   post:
-    - docker pull cpcloud86/impala:latest
-    - docker run -it -d --name impala --hostname impala -p 9000:9000 -p 50010:50010 -p 50020:50020 -p 50070:50070 -p 50075:50075 -p 21000:21000 -p 21050:21050 -p 25000:25000 -p 25010:25010 -p 25020:25020 cpcloud86/impala
+    # pull down the docker image
+    - docker pull cpcloud86/impala:metastore
+
+    # run the docker image, exposing relevant ports
+    - docker run -it -d --name impala --hostname impala -p 9000:9000 -p 50010:50010 -p 50020:50020 -p 50070:50070 -p 50075:50075 -p 21000:21000 -p 21050:21050 -p 25000:25000 -p 25010:25010 -p 25020:25020 cpcloud86/impala:metastore
+
+    # map the docker container's IP address to a human-readable hostname
     - echo "$(docker inspect --format '{{.NetworkSettings.IPAddress}}' impala) impala" | sudo tee -a /etc/hosts
+
+    # make sure the previous step worked
     - ping -c 1 impala
-    - sudo lxc-attach -n "$(docker inspect --format '{{.Id}}' impala)" -- cat '/home/ubuntu/.ssh/id_rsa.pub' >> $HOME/.ssh/known_hosts
-    - dev/wait_for_docker_impala.sh
-    - scripts/test_data_admin.py load --data --no-udf --overwrite --data-dir "$HOME/ibis-testing-data"
+
+    # wait for impala to start accepting queries
+    - while ! sudo lxc-attach -n "$(docker inspect --format '{{.Id}}' impala)" -- impala-shell -i impala -q 'SELECT VERSION() AS version' 2> /dev/null; do sleep 0; done
+
+    # make sure hiveuser has permissions on tables in the public schema in the metastore database
+    - sudo lxc-attach -n "$(docker inspect --format '{{.Id}}' impala)" -- psql -U hiveuser -d metastore -c 'SELECT * FROM "VERSION"'
+
+    # make sure the hive metastore is working
+    - sudo lxc-attach -n "$(docker inspect --format '{{.Id}}' impala)" -- hive -e 'show tables'
+
+    # load the ibis test data into impala and postgres
+    - scripts/test_data_admin.py load --data --overwrite --data-dir "$HOME/ibis-testing-data"
 
 database:
   override:
+    # load some additional test data for postgres ARRAY types
     - >
       psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB <<EOF
         CREATE TABLE array_types (
@@ -67,6 +85,7 @@ database:
           (ARRAY[2, NULL, 3], ARRAY['b', NULL, 'c'], NULL, 'b', 5.0),
           (ARRAY[4, NULL, NULL, 5], ARRAY['d', NULL, NULL, 'e'], ARRAY[4.0, NULL, NULL, 5.0], 'c', 6.0);
       EOF
+
 test:
   override:
     - tox
