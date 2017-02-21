@@ -407,6 +407,12 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         )
         tm.assert_frame_equal(result, expected)
 
+    def test_head(self):
+        t = self.alltypes
+        result = t.head().execute()
+        expected = t.limit(5).execute()
+        tm.assert_frame_equal(result, expected)
+
 
 def test_compile_with_named_table():
     t = ibis.table([('a', 'string')], name='t')

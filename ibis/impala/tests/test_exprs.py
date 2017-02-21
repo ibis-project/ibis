@@ -20,6 +20,7 @@ pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
 import pandas as pd
+import pandas.util.testing as tm
 
 import ibis
 
@@ -1569,6 +1570,12 @@ FROM functional_alltypes"""
 
         expr = join1.union(join2)
         self.con.explain(expr)
+
+    def test_head(self):
+        t = self.con.table('functional_alltypes')
+        result = t.head().execute()
+        expected = t.limit(5).execute()
+        tm.assert_frame_equal(result, expected)
 
 
 def test_where_with_timestamp():

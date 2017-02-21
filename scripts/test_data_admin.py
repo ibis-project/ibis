@@ -130,6 +130,8 @@ def create_test_database(con):
     if con.exists_database(ENV.test_data_db):
         con.drop_database(ENV.test_data_db, force=True)
     con.create_database(ENV.test_data_db)
+    print('Created database {0}'.format(ENV.test_data_db))
+
     con.create_table(
         'alltypes',
         schema=ibis.schema([
@@ -145,7 +147,7 @@ def create_test_database(con):
         ]),
         database=ENV.test_data_db
     )
-    print('Created database {0}'.format(ENV.test_data_db))
+    print('Created empty table {}.`alltypes`'.format(ENV.test_data_db))
 
 
 def create_parquet_tables(con):

@@ -800,7 +800,6 @@ def test_array_concat_mixed_types(array_types):
         array_types.x + array_types.x.cast('array<double>')
 
 
-@pytest.mark.postgresql
 @pytest.yield_fixture
 def t(con):
     name = 'left_t'
@@ -818,7 +817,6 @@ def t(con):
         con.drop_table(name)
 
 
-@pytest.mark.postgresql
 @pytest.yield_fixture
 def s(con, t):
     name = 'right_t'
@@ -837,7 +835,6 @@ def s(con, t):
         con.drop_table(name)
 
 
-@pytest.mark.postgresql
 @pytest.yield_fixture
 def trunc(con):
     name = str(uuid.uuid1())
@@ -896,3 +893,11 @@ def test_truncate_table(con, trunc):
     assert list(trunc.name.execute()) == list('abc')
     con.truncate_table(trunc.op().name)
     assert not len(trunc.execute())
+
+
+@pytest.mark.postgresql
+def test_head(con):
+    t = con.table('functional_alltypes')
+    result = t.head().execute()
+    expected = t.limit(5).execute()
+    tm.assert_frame_equal(result, expected)

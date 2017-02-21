@@ -1938,12 +1938,12 @@ def _table_distinct(self):
 def _table_limit(table, n, offset=0):
     """
     Select the first n rows at beginning of table (may not be deterministic
-    depending on implementatino and presence of a sorting).
+    depending on implementation and presence of a sorting).
 
     Parameters
     ----------
     n : int
-      Rows to include
+      Number of rows to include
     offset : int, default 0
       Number of rows to skip first
 
@@ -1953,6 +1953,27 @@ def _table_limit(table, n, offset=0):
     """
     op = _ops.Limit(table, n, offset=offset)
     return TableExpr(op)
+
+
+def _head(table, n=5):
+    """
+    Select the first n rows at beginning of a table (may not be deterministic
+    depending on implementation and presence of a sorting).
+
+    Parameters
+    ----------
+    n : int
+      Number of rows to include, defaults to 5
+
+    Returns
+    -------
+    limited : TableExpr
+
+    See Also
+    --------
+    ibis.expr.types.TableExpr.limit
+    """
+    return _table_limit(table, n=n)
 
 
 def _table_sort_by(table, sort_exprs):
@@ -2177,6 +2198,7 @@ _table_methods = dict(
     drop=_table_drop,
     info=_table_info,
     limit=_table_limit,
+    head=_head,
     set_column=_table_set_column,
     filter=filter,
     materialize=_table_materialize,
