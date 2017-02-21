@@ -658,6 +658,16 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         result = expr['timestamp_col', 'new_col'].execute()
         tm.assert_frame_equal(result, expected)
 
+    def test_anonymous_aggregate(self):
+        t = self.alltypes
+        expr = t[t.double_col > t.double_col.mean()]
+        result = expr.execute()
+        df = t.execute()
+        expected = df[df.double_col > df.double_col.mean()].reset_index(
+            drop=True
+        )
+        tm.assert_frame_equal(result, expected)
+
 
 @pytest.fixture
 def con():

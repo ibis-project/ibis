@@ -15,6 +15,8 @@
 import os
 import pytest  # noqa
 
+import pandas.util.testing as tm
+
 from .common import SQLiteTests
 from ibis.compat import unittest
 from ibis import literal as L
@@ -394,6 +396,16 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             assert len(result) == 2
         finally:
             os.remove(path)
+
+    def test_anonymous_aggregate(self):
+        t = self.alltypes
+        expr = t[t.double_col > t.double_col.mean()]
+        result = expr.execute()
+        df = t.execute()
+        expected = df[df.double_col > df.double_col.mean()].reset_index(
+            drop=True
+        )
+        tm.assert_frame_equal(result, expected)
 
 
 def test_compile_with_named_table():
