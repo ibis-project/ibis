@@ -148,8 +148,7 @@ class ImpalaConnection(object):
     def _get_cursor(self):
         try:
             cur = self.connection_pool.get(False)
-            if (cur.database != self.database or
-                    cur.options != self.options):
+            if cur.database != self.database or cur.options != self.options:
                 cur = self._new_cursor()
             cur.released = False
 
@@ -179,7 +178,7 @@ class ImpalaConnection(object):
         return wrapper
 
     def ping(self):
-        self._new_cursor()
+        self._get_cursor()._cursor.ping()
 
     def release(self, cur):
         self.connection_pool.put(cur)
@@ -200,6 +199,7 @@ class ImpalaCursor(object):
         self._close_cursor()
         with self.con.lock:
             self.con.connection_pool_size -= 1
+            assert self.con.connection_pool_size >= 0
 
     def _close_cursor(self):
         try:
