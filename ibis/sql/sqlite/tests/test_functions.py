@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import os
+import uuid
+
 import pytest  # noqa
 
 from .common import SQLiteTests
@@ -423,7 +425,19 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         expected.name = result.name
         tm.assert_series_equal(result, expected)
 
+    @pytest.mark.xfail(raises=AttributeError, reason='NYI')
+    def test_truncate(self):
+        expr = self.alltypes.limit(5)
+        name = str(uuid.uuid4())
+        self.con.create_table(name, expr)
+        t = self.con.table(name)
+        assert len(t.execute()) == 5
+        t.truncate()
+        assert len(t.execute()) == 0
+        t.drop()
 
+
+@pytest.mark.sqlite
 def test_compile_with_named_table():
     t = ibis.table([('a', 'string')], name='t')
     result = ibis.sqlite.compile(t.a)
@@ -431,6 +445,7 @@ def test_compile_with_named_table():
     assert str(result) == str(sa.select([st.c.a]))
 
 
+@pytest.mark.sqlite
 def test_compile_with_unnamed_table():
     t = ibis.table([('a', 'string')])
     result = ibis.sqlite.compile(t.a)
@@ -438,6 +453,7 @@ def test_compile_with_unnamed_table():
     assert str(result) == str(sa.select([st.c.a]))
 
 
+@pytest.mark.sqlite
 def test_compile_with_multiple_unnamed_tables():
     t = ibis.table([('a', 'string')])
     s = ibis.table([('b', 'string')])
@@ -450,6 +466,7 @@ def test_compile_with_multiple_unnamed_tables():
     assert str(result) == str(expected)
 
 
+@pytest.mark.sqlite
 def test_compile_with_one_unnamed_table():
     t = ibis.table([('a', 'string')])
     s = ibis.table([('b', 'string')], name='s')
