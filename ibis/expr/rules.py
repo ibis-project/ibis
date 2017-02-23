@@ -645,15 +645,26 @@ def instance_of(type_, **arg_kwds):
 
 class StringOptions(Argument):
 
-    def __init__(self, options, **arg_kwds):
-        self.options = options
-        Argument.__init__(self, **arg_kwds)
+    def __init__(self, options, case_sensitive=True, **arg_kwds):
+        if not case_sensitive:
+            (is_lower, _), = Counter(map(str.islower, options)).most_common(1)
+            self._preferred_case = str.lower if is_lower else str.upper
+            self.options = list(map(self._preferred_case, options))
+        else:
+            self.options = options
+        self.case_sensitive = case_sensitive
+        super(StringOptions, self).__init__(**arg_kwds)
 
     def _validate(self, args, i):
         arg = args[i]
+
+        if not self.case_sensitive:
+            arg = self._preferred_case(arg)
+
         if arg not in self.options:
-            raise IbisTypeError('{0} not among options {1}'
-                                .format(arg, repr(self.options)))
+            raise IbisTypeError(
+                '{} not among options {}'.format(arg, self.options)
+            )
         return arg
 
 
