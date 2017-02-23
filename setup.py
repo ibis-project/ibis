@@ -14,23 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-COMMS_EXT_ENABLED = False
-
 requirements = []
 extensions = []
 cmdclass = {}
-
-if COMMS_EXT_ENABLED:
-    requirements.append('cython >= 0.21')
-
-    from Cython.Distutils import build_ext
-    from Cython.Build import cythonize
-    import Cython
-
-    if Cython.__version__ < '0.19.1':
-        raise Exception('Please upgrade to Cython 0.19.1 or newer')
-
-    cmdclass['build_ext'] = build_ext
 
 from setuptools import setup, find_packages  # noqa
 import os  # noqa
@@ -64,25 +50,6 @@ if PY2:
     requirements.append('mock')
 
 
-if COMMS_EXT_ENABLED:
-    import numpy as np
-
-    common_include = ['ibis/src', np.get_include()]
-    comms_ext_libraries = []
-    if sys.platform != 'darwin':
-        # libuuid is available without additional linking as part of the base
-        # BSD system on OS X, needs to be installed and linked on Linux,
-        # though.
-        comms_ext_libraries.append('uuid')
-
-    comms_ext = Extension('ibis.comms',
-                          ['ibis/comms.pyx',
-                           'ibis/src/ipc_support.c'],
-                          depends=['ibis/src/ipc_support.h'],
-                          libraries=comms_ext_libraries,
-                          include_dirs=common_include)
-    extensions = cythonize([comms_ext])
-
 LONG_DESCRIPTION = """
 Ibis is a productivity-centric Python big data framework.
 
@@ -93,7 +60,6 @@ setup(
     name='ibis-framework',
     packages=find_packages(),
     version=versioneer.get_version(),
-    package_data={'ibis': ['*.pxd', '*.pyx']},
     ext_modules=extensions,
     cmdclass=versioneer.get_cmdclass(),
     install_requires=requirements,
