@@ -1647,6 +1647,9 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         """
         self._client.drop_table_or_view(self._qualified_name)
 
+    def truncate(self):
+        self._client.truncate_table(self._qualified_name)
+
     def insert(self, obj=None, overwrite=False, partition=None,
                values=None, validate=True):
         """

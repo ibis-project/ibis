@@ -682,6 +682,16 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
         result = self.con.table(table_name).execute()
         assert len(result) == 0
 
+    def test_truncate_table_expression(self):
+        expr = self.alltypes.limit(5)
+
+        table_name = _random_table_name()
+        self.con.create_table(table_name, obj=expr)
+        self.temp_tables.append(table_name)
+        t = self.con.table(table_name)
+        t.truncate()
+        assert len(t.execute()) == 0
+
     def test_ctas_from_table_expr(self):
         expr = self.alltypes
         table_name = _random_table_name()

@@ -100,12 +100,6 @@ class SQLiteClient(alch.AlchemyClient):
         node = SQLiteTable(alch_table, self)
         return self._table_expr_klass(node)
 
-    def drop_table(self):
-        pass
-
-    def create_table(self, name, expr=None):
-        pass
-
     @property
     def _table_expr_klass(self):
         return ir.TableExpr
