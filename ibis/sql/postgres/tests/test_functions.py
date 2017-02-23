@@ -17,6 +17,7 @@
 import math
 import os
 import uuid
+import operator
 
 import pytest  # noqa
 
@@ -953,9 +954,41 @@ FROM functional_alltypes AS t0"""
     assert result == expected
 
 
-def test_not(con):
+@pytest.mark.parametrize('op', [operator.invert, operator.neg])
+def test_not_and_negate_bool(con, op):
     t = con.table('functional_alltypes').limit(10)
-    expr = t.projection([(~t.double_col.isnull()).name('double_col')])
-    result = expr.execute().double_col
-    expected = ~t.execute().double_col.isnull()
+    expr = t.projection([op(t.bool_col).name('bool_col')])
+    result = expr.execute().bool_col
+    expected = op(t.execute().bool_col)
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.postgresql
+@pytest.mark.parametrize(
+    'field',
+    [
+        'tinyint_col',
+        'smallint_col',
+        'int_col',
+        'bigint_col',
+        'float_col',
+        'double_col',
+        'year',
+        'month',
+    ]
+)
+def test_negate_non_boolean(con, field):
+    t = con.table('functional_alltypes').limit(10)
+    expr = t.projection([(-t[field]).name(field)])
+    result = expr.execute()[field]
+    expected = -t.execute()[field]
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.postgresql
+def test_negate_boolean(con):
+    t = con.table('functional_alltypes').limit(10)
+    expr = t.projection([(-t.bool_col).name('bool_col')])
+    result = expr.execute().bool_col
+    expected = -t.execute().bool_col
     tm.assert_series_equal(result, expected)
