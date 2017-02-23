@@ -114,7 +114,6 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
             self.con.table(tname).partition_schema()
 
     def test_insert_select_partitioned_table(self):
-        pytest.skip('IMPALA-2750')
         df = self.df
 
         unpart_t = self.db.table(self.pd_name)
