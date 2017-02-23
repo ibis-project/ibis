@@ -88,5 +88,6 @@ database:
 
 test:
   override:
-    - tox
     - flake8 --exclude=docs,versioneer.py,.svn,CVS,.bzr,.hg,.git,__pycache__,.tox,.eggs,*.egg
+    - case $CIRCLE_NODE_INDEX in 0) tox -e py27 ;; 1) tox -e py34 ;; 2) tox -e py35 ;; 3) tox -e py36 ;; esac:
+        parallel: true
