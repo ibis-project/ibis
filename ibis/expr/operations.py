@@ -1967,6 +1967,12 @@ class LogicalBinaryOp(BinaryOp):
         return rules.shape_like_args(self.args, 'boolean')
 
 
+class Not(UnaryOp):
+
+    input_type = [rules.boolean]
+    output_type = rules.shape_like_arg(0, 'boolean')
+
+
 class Modulus(BinaryOp):
 
     def output_type(self):
@@ -2046,7 +2052,7 @@ class Between(BooleanValueOp):
 
     def _assert_can_compare(self):
         expr, lower, upper = self.args
-        if (not expr._can_compare(lower) or not expr._can_compare(upper)):
+        if not expr._can_compare(lower) or not expr._can_compare(upper):
             raise TypeError('Arguments are not comparable')
 
 
@@ -2055,7 +2061,7 @@ class Contains(BooleanValueOp):
     def __init__(self, value, options):
         self.value = as_value_expr(value)
         self.options = as_value_expr(options)
-        BooleanValueOp.__init__(self, self.value, self.options)
+        super(Contains, self).__init__(self.value, self.options)
 
     def output_type(self):
         all_args = [self.value]

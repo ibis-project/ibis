@@ -341,6 +341,12 @@ def _translate_case(t, cases, results, default):
     return sa.case(whens, else_=default)
 
 
+def _negate(t, expr):
+    op = expr.op()
+    arg, = map(t.translate, op.args)
+    return sa.not_(arg) if isinstance(expr, ir.BooleanValue) else -arg
+
+
 def unary(sa_func):
     return fixed_arity(sa_func, 1)
 
@@ -348,6 +354,7 @@ def unary(sa_func):
 _operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
+    ops.Not: unary(sa.not_),
 
     ops.Abs: unary(sa.func.abs),
 
@@ -373,7 +380,7 @@ _operation_registry = {
 
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,
-    ops.Negate: unary(sa.not_),
+    ops.Negate: _negate,
 
     ops.Round: _round,
 

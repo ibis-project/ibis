@@ -436,6 +436,17 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         assert len(t.execute()) == 0
         t.drop()
 
+    @pytest.mark.xfail(
+        raises=AssertionError,
+        reason='SQLite returns bools as integers, Ibis should recast them'
+    )
+    def test_not(self):
+        t = self.alltypes.limit(10)
+        expr = t.projection([(~t.double_col.isnull()).name('double_col')])
+        result = expr.execute().double_col
+        expected = ~t.execute().double_col.isnull()
+        tm.assert_series_equal(result, expected)
+
 
 @pytest.mark.sqlite
 def test_compile_with_named_table():

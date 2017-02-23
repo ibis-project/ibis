@@ -657,6 +657,10 @@ def _negate(translator, expr):
         return '-{0!s}'.format(formatted_arg)
 
 
+def _not(translator, expr):
+    return 'NOT {}'.format(*map(translator.translate, expr.op().args))
+
+
 def _parenthesize(what):
     return '({0!s})'.format(what)
 
@@ -1222,6 +1226,7 @@ _operation_registry = {
     ops.NotNull: _not_null,
     ops.IsNull: _is_null,
     ops.Negate: _negate,
+    ops.Not: _not,
 
     ops.IfNull: _ifnull_workaround,
     ops.NullIf: fixed_arity('nullif', 2),
