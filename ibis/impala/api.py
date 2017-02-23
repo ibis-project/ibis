@@ -16,7 +16,6 @@ from ibis.impala.client import (ImpalaConnection,  # noqa
                                 ImpalaDatabase,
                                 ImpalaTable)
 from ibis.impala.udf import *  # noqa
-from ibis.impala.madlib import MADLibAPI  # noqa
 from ibis.config import options
 import ibis.common as com
 
