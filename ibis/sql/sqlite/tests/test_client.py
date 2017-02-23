@@ -15,6 +15,9 @@
 import os
 
 import pandas as pd
+import pandas.util.testing as tm
+
+import uuid
 
 from .common import SQLiteTests
 from ibis.compat import unittest
@@ -103,3 +106,12 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
         # This does not work yet because if the compiler encounters a
         # non-SQLAlchemy table it fails
         pass
+
+    def test_create_and_drop_table(self):
+        t = self.con.table('functional_alltypes')
+        name = str(uuid.uuid4())
+        self.con.create_table(name, t.limit(5))
+        new_table = self.con.table(name)
+        tm.assert_frame_equal(new_table.execute(), t.limit(5).execute())
+        self.con.drop_table(name)
+        assert name not in self.con.list_tables()
