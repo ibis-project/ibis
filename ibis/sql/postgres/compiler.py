@@ -389,6 +389,8 @@ def _window(t, expr):
         ops.Lead,
         ops.DenseRank,
         ops.MinRank,
+        ops.NTile,
+        ops.PercentRank,
         ops.FirstValue,
         ops.LastValue,
     )
@@ -408,16 +410,25 @@ def _window(t, expr):
 
     result = Over(
         reduction,
-        partition_by=partition_by or None,
-        order_by=order_by or None,
+        partition_by=partition_by,
+        order_by=order_by,
         preceding=window.preceding,
         following=window.following,
     )
 
-    if isinstance(window_op, (ops.RowNumber, ops.DenseRank, ops.MinRank)):
+    if isinstance(
+        window_op, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)
+    ):
         return result - 1
     else:
         return result
+
+
+def _ntile(t, expr):
+    op = expr.op()
+    args = op.args
+    arg, buckets = map(t.translate, args)
+    return sa.func.ntile(buckets)
 
 
 class regex_extract(GenericFunction):
@@ -571,6 +582,10 @@ _operation_registry.update({
     ops.WindowOp: _window,
     ops.CumulativeOp: _window,
     ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
+    ops.DenseRank: fixed_arity(lambda arg: sa.func.dense_rank(), 1),
+    ops.MinRank: fixed_arity(lambda arg: sa.func.rank(), 1),
+    ops.PercentRank: fixed_arity(lambda arg: sa.func.percent_rank(), 1),
+    ops.NTile: _ntile,
 
     # array operations
     ops.ArrayLength: fixed_arity(sa.func.cardinality, 1),
