@@ -1969,6 +1969,7 @@ class LogicalBinaryOp(BinaryOp):
 
 class Not(UnaryOp):
 
+    input_type = [rules.boolean]
     output_type = rules.shape_like_arg(0, 'boolean')
 
 
