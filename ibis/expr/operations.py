@@ -948,11 +948,15 @@ class CumulativeMin(CumulativeOp):
 
 
 class PercentRank(AnalyticOp):
-    pass
+
+    input_type = [rules.array]
+    output_type = rules.shape_like_arg(0, 'double')
 
 
 class NTile(AnalyticOp):
-    pass
+
+    input_type = [rules.array, rules.integer(name='buckets')]
+    output_type = rules.shape_like_arg(0, 'int64')
 
 
 class FirstValue(AnalyticOp):
