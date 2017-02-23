@@ -348,6 +348,7 @@ def unary(sa_func):
 _operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
+    ops.Not: unary(sa.not_),
 
     ops.Abs: unary(sa.func.abs),
 

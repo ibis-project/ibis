@@ -951,3 +951,11 @@ def test_ntile(con):
 SELECT ntile(7) OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp 
 FROM functional_alltypes AS t0"""
     assert result == expected
+
+
+def test_not(con):
+    t = con.table('functional_alltypes').limit(10)
+    expr = t.projection([(~t.double_col.isnull()).name('double_col')])
+    result = expr.execute().double_col
+    expected = ~t.execute().double_col.isnull()
+    tm.assert_series_equal(result, expected)

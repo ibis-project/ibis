@@ -1611,6 +1611,13 @@ FROM functional_alltypes"""
             result = con.execute(expr)
             assert result == expected
 
+    def test_not(self):
+        t = self.con.table('functional_alltypes').limit(10)
+        expr = t.projection([(~t.double_col.isnull()).name('double_col')])
+        result = expr.execute().double_col
+        expected = ~t.execute().double_col.isnull()
+        tm.assert_series_equal(result, expected)
+
 
 def test_where_with_timestamp():
     t = ibis.table(

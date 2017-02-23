@@ -347,6 +347,13 @@ def _boolean_binary_op(name, klass):
     return f
 
 
+def _boolean_unary_op(name, klass):
+    def f(self):
+        return klass(self).to_expr()
+    f.__name__ = name
+    return f
+
+
 def _boolean_binary_rop(name, klass):
     def f(self, other):
         other = as_value_expr(other)
@@ -1189,7 +1196,8 @@ _boolean_value_methods = dict(
     __xor__=_boolean_binary_op('__xor__', _ops.Xor),
     __rand__=_boolean_binary_rop('__rand__', _ops.And),
     __ror__=_boolean_binary_rop('__ror__', _ops.Or),
-    __rxor__=_boolean_binary_rop('__rxor__', _ops.Xor)
+    __rxor__=_boolean_binary_rop('__rxor__', _ops.Xor),
+    __invert__=_boolean_unary_op('__invert__', _ops.Not),
 )
 
 
