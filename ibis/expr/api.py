@@ -824,8 +824,13 @@ first = _unary_op('first', _ops.FirstValue)
 last = _unary_op('last', _ops.LastValue)
 rank = _unary_op('rank', _ops.MinRank)
 dense_rank = _unary_op('dense_rank', _ops.DenseRank)
+percent_rank = _unary_op('percent_rank', _ops.PercentRank)
 cummin = _unary_op('cummin', _ops.CumulativeMin)
 cummax = _unary_op('cummax', _ops.CumulativeMax)
+
+
+def ntile(arg, buckets):
+    return _ops.NTile(arg, buckets).to_expr()
 
 
 def nth(arg, k):
@@ -973,7 +978,9 @@ _generic_column_methods = dict(
     last=last,
     dense_rank=dense_rank,
     rank=rank,
+    percent_rank=percent_rank,
     # nth=nth,
+    ntile=ntile,
     lag=lag,
     lead=lead,
     cummin=cummin,

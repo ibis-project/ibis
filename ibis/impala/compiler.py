@@ -506,7 +506,9 @@ def _window(translator, expr):
                          ops.DenseRank,
                          ops.MinRank,
                          ops.FirstValue,
-                         ops.LastValue)
+                         ops.LastValue,
+                         ops.PercentRank,
+                         ops.NTile,)
 
     _unsupported_reductions = (
         ops.CMSMedian,
@@ -636,6 +638,12 @@ def _nth_value(translator, expr):
 
     return 'first_value(lag({0}, {1}))'.format(arg_formatted,
                                                rank_formatted)
+
+
+def _ntile(translator, expr):
+    op = expr.op()
+    arg, buckets = map(translator.translate, op.args)
+    return 'ntile({})'.format(buckets)
 
 
 def _negate(translator, expr):
@@ -1180,6 +1188,7 @@ _expr_transforms = {
     ops.RowNumber: _subtract_one,
     ops.DenseRank: _subtract_one,
     ops.MinRank: _subtract_one,
+    ops.NTile: _subtract_one,
 }
 
 
@@ -1329,13 +1338,15 @@ _operation_registry = {
     ops.RowNumber: lambda *args: 'row_number()',
     ops.DenseRank: lambda *args: 'dense_rank()',
     ops.MinRank: lambda *args: 'rank()',
+    ops.PercentRank: lambda *args: 'percent_rank()',
 
     ops.FirstValue: unary('first_value'),
     ops.LastValue: unary('last_value'),
     ops.NthValue: _nth_value,
     ops.Lag: _shift_like('lag'),
     ops.Lead: _shift_like('lead'),
-    ops.WindowOp: _window
+    ops.WindowOp: _window,
+    ops.NTile: _ntile,
 }
 
 _operation_registry.update(_binary_infix_ops)

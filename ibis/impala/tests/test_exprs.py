@@ -803,6 +803,8 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
             (t.double_col.first(), 'first_value(`double_col`)'),
             (t.double_col.last(), 'last_value(`double_col`)'),
             # (t.double_col.nth(4), 'first_value(lag(double_col, 4 - 1))')
+            (t.double_col.ntile(3), 'ntile(3)'),
+            (t.double_col.percent_rank(), 'percent_rank()'),
         ]
         self._check_expr_cases(cases)
 
@@ -1459,6 +1461,8 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             f.lead(),
             f.rank(),
             f.dense_rank(),
+            f.percent_rank(),
+            f.ntile(buckets=7),
 
             f.first(),
             f.last(),
