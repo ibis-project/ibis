@@ -802,6 +802,7 @@ _generic_value_methods = dict(
     __le__=_binop_expr('__le__', _ops.LessEqual),
     __lt__=_binop_expr('__lt__', _ops.Less),
     collect=_unary_op('collect', _ops.ArrayCollect),
+    identical_to=_binop_expr('identical_to', _ops.IdenticalTo),
 )
 
 

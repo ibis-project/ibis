@@ -1162,6 +1162,17 @@ def _value_list(translator, expr):
     return '({0})'.format(', '.join(formatted))
 
 
+def _identical_to(translator, expr):
+    op = expr.op()
+    if op.args[0].equals(op.args[1]):
+        return 'TRUE'
+
+    left, right = map(translator.translate, op.args)
+    return '{left} IS NOT DISTINCT FROM {right}'.format(
+        left=left, right=right
+    )
+
+
 _subtract_one = '({0} - 1)'.format
 
 
@@ -1188,6 +1199,7 @@ _binary_infix_ops = {
     ops.Greater: _binary_infix_op('>'),
     ops.LessEqual: _binary_infix_op('<='),
     ops.Less: _binary_infix_op('<'),
+    ops.IdenticalTo: _identical_to,
 
     # Boolean comparisons
     ops.And: _binary_infix_op('AND'),
