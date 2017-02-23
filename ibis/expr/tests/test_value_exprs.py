@@ -739,3 +739,20 @@ def test_substitute_dict():
                 .when('b', table.bar)
                 .else_(ibis.NA).end())
     assert_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    'typ',
+    [
+        'array<map<string, array<array<double>>>>',
+        'string',
+        'double',
+        'float',
+        'int64',
+    ]
+)
+def test_not_without_boolean(typ):
+    t = ibis.table([('a', typ)], name='t')
+    c = t.a
+    with pytest.raises(TypeError):
+        ~c
