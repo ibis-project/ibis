@@ -40,11 +40,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
 
-
-if six.PY2:
-    import Queue as queue
-else:
-    import queue
+from collections import deque
 
 
 class ImpalaDatabase(Database):
@@ -76,14 +72,13 @@ class ImpalaConnection(object):
         self.params = params
         self.database = database
 
-        self.lock = threading.Lock()
-
         self.options = {}
 
         self.max_pool_size = pool_size
-        self._connections = None
+        self.lock = threading.Lock()
 
-        self.reset_connection_pool()
+        self.connection_pool = deque(maxlen=pool_size)
+        self.connection_pool_size = 0
         self.ping()
 
     def set_options(self, options):
@@ -93,15 +88,8 @@ class ImpalaConnection(object):
         """
         Close all open Impyla sessions
         """
-        self.reset_connection_pool()
-
-    def reset_connection_pool(self):
-        if self._connections is not None:
-            for k, con in self._connections.items():
-                con.close()
-        self._connections = weakref.WeakValueDictionary()
-        self.connection_pool = queue.Queue(self.max_pool_size)
-        self.connection_pool_size = 0
+        while self.connection_pool:
+            self.connection_pool.popleft().impyla_con.close()
 
     def set_database(self, name):
         self.database = name
@@ -147,8 +135,8 @@ class ImpalaConnection(object):
 
     def _get_cursor(self):
         try:
-            cursor = self.connection_pool.get(False)
-        except queue.Empty:
+            cursor = self.connection_pool.popleft()
+        except IndexError:  # deque is empty
             if self.connection_pool_size < self.max_pool_size:
                 return self._new_cursor()
             raise com.InternalError('Too many concurrent / hung queries')
@@ -162,8 +150,6 @@ class ImpalaConnection(object):
     def _new_cursor(self):
         params = self.params.copy()
         con = impyla.connect(database=self.database, **params)
-
-        self._connections[id(con)] = con
 
         # make sure the connection works
         cursor = con.cursor(convert_types=True)
@@ -179,7 +165,7 @@ class ImpalaConnection(object):
         self._get_cursor()._cursor.ping()
 
     def release(self, cur):
-        self.connection_pool.put(cur)
+        self.connection_pool.append(cur)
 
 
 class ImpalaCursor(object):
