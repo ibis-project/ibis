@@ -150,15 +150,12 @@ class ImpalaConnection(object):
             cur = self.connection_pool.get(False)
             if cur.database != self.database or cur.options != self.options:
                 cur = self._new_cursor()
-                self.connection_pool_size += 1
             cur.released = False
 
             return cur
         except queue.Empty:
             if self.connection_pool_size < self.max_pool_size:
-                cursor = self._new_cursor()
-                self.connection_pool_size += 1
-                return cursor
+                return self._new_cursor()
             else:
                 raise com.InternalError('Too many concurrent / hung queries')
 
@@ -176,6 +173,7 @@ class ImpalaConnection(object):
                                self.options.copy())
         wrapper.set_options()
 
+        self.connection_pool_size += 1
         return wrapper
 
     def ping(self):
