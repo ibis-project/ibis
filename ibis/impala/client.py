@@ -173,7 +173,6 @@ class ImpalaConnection(object):
                                self.options.copy())
         wrapper.set_options()
 
-        self.connection_pool_size += 1
         return wrapper
 
     def ping(self):
@@ -193,6 +192,7 @@ class ImpalaCursor(object):
         self.database = database
         self.options = options
         self.released = False
+        self.con.connection_pool_size += 1
 
     def __del__(self):
         self._close_cursor()
