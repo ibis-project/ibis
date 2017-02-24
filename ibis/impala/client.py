@@ -150,6 +150,7 @@ class ImpalaConnection(object):
             cur = self.connection_pool.get(False)
             if cur.database != self.database or cur.options != self.options:
                 cur = self._new_cursor()
+                self.connection_pool_size += 1
             cur.released = False
 
             return cur
