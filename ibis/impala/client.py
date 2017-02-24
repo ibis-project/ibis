@@ -147,17 +147,17 @@ class ImpalaConnection(object):
 
     def _get_cursor(self):
         try:
-            cur = self.connection_pool.get(False)
-            if cur.database != self.database or cur.options != self.options:
-                cur = self._new_cursor()
-            cur.released = False
-
-            return cur
+            cursor = self.connection_pool.get(False)
         except queue.Empty:
             if self.connection_pool_size < self.max_pool_size:
                 return self._new_cursor()
-            else:
-                raise com.InternalError('Too many concurrent / hung queries')
+            raise com.InternalError('Too many concurrent / hung queries')
+        else:
+            if (cursor.database != self.database or
+                    cursor.options != self.options):
+                return self._new_cursor()
+            cursor.released = False
+            return cursor
 
     def _new_cursor(self):
         params = self.params.copy()
