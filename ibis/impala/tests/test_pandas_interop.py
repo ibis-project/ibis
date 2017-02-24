@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import numpy as np
-import pytest
 
 from pandas.util.testing import assert_frame_equal
 import pandas as pd
