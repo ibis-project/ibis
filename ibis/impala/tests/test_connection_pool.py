@@ -43,4 +43,3 @@ def test_connection_pool_size_after_close(env, hdfs_client):
     )
     client.close()
     assert client.con.connection_pool_size == 0
-
