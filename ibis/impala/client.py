@@ -92,21 +92,11 @@ class ImpalaConnection(object):
         """
         Close all open Impyla sessions
         """
-        assert self.connection_pool_size >= 0, \
-            'connection_pool_size == {:d}, should be >= 0'.format(
-                self.connection_pool_size
-            )
-
         for impyla_connection in self._connections:
             impyla_connection.close()
 
         self._connections.clear()
         self.connection_pool.clear()
-
-        assert not self.connection_pool_size, \
-            'connection_pool_size == {:d}, should be == 0'.format(
-                self.connection_pool_size
-            )
 
     def set_database(self, name):
         self.database = name
@@ -199,7 +189,6 @@ class ImpalaCursor(object):
         self._close_cursor()
         with self.con.lock:
             self.con.connection_pool_size -= 1
-            assert self.con.connection_pool_size >= 0
 
     def _close_cursor(self):
         try:
