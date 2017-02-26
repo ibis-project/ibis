@@ -75,6 +75,7 @@ class ImpalaConnection(object):
         self.options = {}
 
         self.max_pool_size = pool_size
+        self._connections = weakref.WeakSet()
         self.lock = threading.Lock()
 
         self.connection_pool = deque(maxlen=pool_size)
@@ -88,8 +89,21 @@ class ImpalaConnection(object):
         """
         Close all open Impyla sessions
         """
-        while self.connection_pool:
-            self.connection_pool.popleft().impyla_con.close()
+        assert self.connection_pool_size >= 0, \
+            'connection_pool_size == {:d}, should be >= 0'.format(
+                self.connection_pool_size
+            )
+
+        for impyla_connection in self._connections:
+            impyla_connection.close()
+
+        self._connections.clear()
+        self.connection_pool.clear()
+
+        assert not self.connection_pool_size, \
+            'connection_pool_size == {:d}, should be == 0'.format(
+                self.connection_pool_size
+            )
 
     def set_database(self, name):
         self.database = name
@@ -150,6 +164,8 @@ class ImpalaConnection(object):
     def _new_cursor(self):
         params = self.params.copy()
         con = impyla.connect(database=self.database, **params)
+
+        self._connections.add(con)
 
         # make sure the connection works
         cursor = con.cursor(convert_types=True)
