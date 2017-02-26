@@ -73,14 +73,16 @@ class ImpalaConnection(object):
         self.params = params
         self.database = database
 
+        self.lock = threading.Lock()
+
         self.options = {}
 
         self.max_pool_size = pool_size
         self._connections = weakref.WeakSet()
-        self.lock = threading.Lock()
 
         self.connection_pool = deque(maxlen=pool_size)
         self.connection_pool_size = 0
+
         self.ping()
 
     def set_options(self, options):
