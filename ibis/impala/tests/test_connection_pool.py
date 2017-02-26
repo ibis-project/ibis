@@ -1,10 +1,10 @@
 import pytest
+import ibis
 
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-import ibis
-from ibis.impala.tests.common import IbisTestEnv
+from ibis.impala.tests.common import IbisTestEnv  # noqa
 
 
 @pytest.fixture
