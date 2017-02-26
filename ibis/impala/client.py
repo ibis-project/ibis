@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from posixpath import join as pjoin
 import re
 import six
 import threading
 import time
 import weakref
+import traceback
+
+from posixpath import join as pjoin
+from collections import deque
 
 import hdfs
 import numpy as np
@@ -39,8 +42,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
-
-from collections import deque
 
 
 class ImpalaDatabase(Database):
@@ -125,13 +126,9 @@ class ImpalaConnection(object):
         try:
             cursor.execute(query, async=async)
         except:
+            exc = traceback.format_exc()
             cursor.release()
-
-            import traceback
-            buf = six.StringIO()
-            traceback.print_exc(file=buf)
-            self.error('Exception caused by {0}: {1}'.format(query,
-                                                             buf.getvalue()))
+            self.error('Exception caused by {}: {}'.format(query, exc))
             raise
 
         return cursor
