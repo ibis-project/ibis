@@ -182,9 +182,10 @@ class cache_readonly(object):
         if func is not None:
             self.func = func
             self.name = func.__name__
+            self.__doc__ = func.__doc__
         self.allow_setting = allow_setting
 
-    def __call__(self, func, doc=None):
+    def __call__(self, func):
         self.func = func
         self.name = func.__name__
         return self
