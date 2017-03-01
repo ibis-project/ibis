@@ -138,11 +138,13 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
         self._verify_partitioned_table(part_t, df, unique_keys)
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_insert_overwrite_partition(self):
-        pass
+        assert False
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_dynamic_partitioning(self):
-        pass
+        assert False
 
     def test_add_drop_partition_no_location(self):
         schema = ibis.schema([('foo', 'string'),
@@ -221,8 +223,9 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
         table.drop()
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_set_partition_location(self):
-        pass
+        assert False
 
     def test_load_data_partition(self):
         df = self.df
@@ -288,8 +291,10 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         self.temp_tables.append(part_name)
         return self.db.table(part_name)
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_drop_partition(self):
-        pass
+        assert False
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_repartition_automated(self):
-        pass
+        assert False
