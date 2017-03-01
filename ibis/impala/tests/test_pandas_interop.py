@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 import numpy as np
 
 from pandas.util.testing import assert_frame_equal
@@ -226,11 +228,12 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
                   .reset_index(drop=True))
         assert_frame_equal(result, exhaustive_df)
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_insert_partition(self):
         # overwrite
 
         # no overwrite
-        pass
+        assert False
 
     def test_round_trip_exhaustive(self):
         self._check_roundtrip(exhaustive_df)

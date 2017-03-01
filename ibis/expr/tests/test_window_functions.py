@@ -159,5 +159,6 @@ def test_preceding_following_validate(t):
             case()
 
 
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_window_equals(t):
-    pass
+    assert False

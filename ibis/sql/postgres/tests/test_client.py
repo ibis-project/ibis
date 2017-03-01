@@ -72,17 +72,17 @@ class TestPostgreSQLClient(PostgreSQLTests, unittest.TestCase):
         assert db.list_tables() == self.con.list_tables()
 
     def test_compile_toplevel(self):
-        # t = ibis.table([
-        #     ('foo', 'double')
-        # ])
+        t = ibis.table([
+            ('foo', 'double')
+        ])
 
-        # # it works!
-        # expr = t.foo.sum()
-        # ibis.postgres.compile(expr)
-
-        # This does not work yet because if the compiler encounters a
-        # non-SQLAlchemy table it fails
-        pass
+        # it works!
+        expr = t.foo.sum()
+        result = ibis.postgres.compile(expr)
+        expected = """\
+SELECT sum(t0.foo) AS sum 
+FROM t0 AS t0"""  # noqa
+        assert str(result) == expected
 
     def test_list_databases(self):
         assert POSTGRES_TEST_DB is not None

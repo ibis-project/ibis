@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 import pandas as pd
 from datetime import datetime
 
@@ -78,9 +80,10 @@ class TestTimestamp(unittest.TestCase):
 
         self.assertRaises(ValueError, ibis.timestamp, '2015-01-01 00:71')
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_integer_to_timestamp(self):
         # #246
-        pass
+        assert False
 
     def test_comparison_timestamp(self):
         expr = self.col > (self.col.min() + ibis.day(3))

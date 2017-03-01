@@ -101,7 +101,6 @@ class TestHDFSE2E(unittest.TestCase):
 
     def tearDown(self):
         self._delete_test_files()
-        pass
 
     def _delete_test_files(self):
         for path in self.test_files:
@@ -206,8 +205,9 @@ class TestHDFSE2E(unittest.TestCase):
             self.hdfs.rm(fpath)
             assert not self.hdfs.exists(fpath)
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_overwrite_file(self):
-        pass
+        assert False
 
     def test_put_get_directory(self):
         local_dir = util.guid()
@@ -278,9 +278,10 @@ class TestHDFSE2E(unittest.TestCase):
         self.hdfs.get(remote_path, local_path)
         assert open(local_path, 'rb').read() == data
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_get_logging(self):
         # TODO write a test for this
-        pass
+        assert False
 
     def test_get_directory_nested_dirs(self):
         local_dir = util.guid()
@@ -438,7 +439,6 @@ class TestSuperUserHDFSE2E(unittest.TestCase):
 
     def tearDown(self):
         self._delete_test_files()
-        pass
 
     def _delete_test_files(self):
         for path in self.test_files:
