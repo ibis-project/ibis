@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from ibis.expr.tests.mocks import MockConnection
 from ibis.compat import unittest
 from ibis.tests.util import assert_equal
@@ -191,8 +193,10 @@ class TestCoalesceLikeFunctions(unittest.TestCase):
             expr = f(5.5, 5)
             assert isinstance(expr, ir.DoubleScalar)
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_bools(self):
-        pass
+        assert False
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_decimal_promotions(self):
-        pass
+        assert False

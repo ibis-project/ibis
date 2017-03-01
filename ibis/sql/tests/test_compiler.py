@@ -1144,12 +1144,13 @@ FROM (
 ) t0"""
         assert result == expected
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_expr_template_field_name_binding(self):
         # Given an expression with no concrete links to actual database tables,
         # indicate a mapping between the distinct unbound table leaves of the
         # expression and some database tables with compatible schemas but
         # potentially different column names
-        pass
+        assert False
 
     def test_no_aliases_needed(self):
         table = api.table([
@@ -1434,9 +1435,10 @@ FROM (
 GROUP BY 1"""
         assert result == expected
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_aggregate_fuse_with_projection(self):
         # see above test case
-        pass
+        assert False
 
     def test_subquery_used_for_self_join(self):
         expr = self._case_subquery_used_for_self_join()
@@ -1568,12 +1570,13 @@ FROM t0
         yoy = self._case_tpch_self_join_failure()
         to_sql(yoy)
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_extract_subquery_nested_lower(self):
         # We may have a join between two tables requiring subqueries, and
         # buried inside these there may be a common subquery. Let's test that
         # we find it and pull it out to the top level to avoid repeating
         # ourselves.
-        pass
+        assert False
 
     def test_subquery_in_filter_predicate(self):
         expr, expr2 = self._case_subquery_in_filter_predicate()
@@ -1736,12 +1739,14 @@ GROUP BY 1"""
         expected = to_sql(top.to_aggregation())
         assert result == expected
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_bottomk(self):
-        pass
+        assert False
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_topk_antijoin(self):
         # Get the "other" category somehow
-        pass
+        assert False
 
     def test_case_in_projection(self):
         t = self.con.table('alltypes')
@@ -1823,9 +1828,10 @@ WHERE t0.`y` > (
 )"""
         assert result == expected
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_where_array_correlated(self):
         # Test membership in some record-dependent values, if this is supported
-        pass
+        assert False
 
     def test_exists(self):
         e1, e2 = self._case_exists()
@@ -2052,14 +2058,16 @@ ORDER BY `string_col`"""
 
         assert stmt.limit['n'] == 10
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_top_convenience(self):
         # x.top(10, by=field)
         # x.top(10, by=[field1, field2])
-        pass
+        assert False
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_self_aggregate_in_predicate(self):
         # Per ibis #43
-        pass
+        assert False
 
     def test_self_join_filter_analysis_bug(self):
         expr, _ = self._case_filter_self_join_analysis_bug()

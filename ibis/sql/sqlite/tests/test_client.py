@@ -30,10 +30,6 @@ import ibis
 
 class TestSQLiteClient(SQLiteTests, unittest.TestCase):
 
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
     def test_file_not_exist_and_create(self):
         path = '__ibis_tmp_{0}.db'.format(guid())
 
@@ -95,17 +91,17 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
         assert db.list_tables() == self.con.list_tables()
 
     def test_compile_toplevel(self):
-        # t = ibis.table([
-        #     ('foo', 'double')
-        # ])
+        t = ibis.table([
+            ('foo', 'double')
+        ])
 
-        # # it works!
-        # expr = t.foo.sum()
-        # ibis.sqlite.compile(expr)
-
-        # This does not work yet because if the compiler encounters a
-        # non-SQLAlchemy table it fails
-        pass
+        # it works!
+        expr = t.foo.sum()
+        result = ibis.sqlite.compile(expr)
+        expected = """\
+SELECT sum(t0.foo) AS sum 
+FROM t0 AS t0"""  # noqa
+        assert str(result) == expected
 
     def test_create_and_drop_table(self):
         t = self.con.table('functional_alltypes')

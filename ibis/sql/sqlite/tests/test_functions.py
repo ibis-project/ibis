@@ -45,8 +45,9 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_expr_cases(cases)
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYI')
     def test_decimal_cast(self):
-        pass
+        assert False
 
     def test_timestamp_cast_noop(self):
         # See GH #592
@@ -224,8 +225,9 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYI')
     def test_coalesce(self):
-        pass
+        assert False
 
     def test_numeric_builtins_work(self):
         t = self.alltypes

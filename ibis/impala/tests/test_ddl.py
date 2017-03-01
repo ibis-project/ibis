@@ -121,8 +121,9 @@ LOAD DATA INPATH '/path/to/data' OVERWRITE INTO TABLE foo.`functional_alltypes`
 PARTITION (year=2007, month=7)"""
         assert result == expected
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_select_overwrite(self):
-        pass
+        assert False
 
 
 class TestCacheTable(unittest.TestCase):
@@ -505,8 +506,9 @@ FROM functional_alltypes"""
         self.assertRaises(ValueError, _create_table, 'tname', self.t,
                           format='foo')
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_partition_by(self):
-        pass
+        assert False
 
 
 class TestDDLE2E(ImpalaE2E, unittest.TestCase):
@@ -1037,8 +1039,9 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
         t = self.con.table(table_name)
         t.limit(10).execute()
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_query_text_file_regex(self):
-        pass
+        assert False
 
     def test_query_delimited_file_directory(self):
         hdfs_path = pjoin(self.test_data_dir, 'csv')

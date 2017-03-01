@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from ibis.common import IbisError
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -173,9 +175,11 @@ class TestFixedOffsets(unittest.TestCase):
 
 class TestTimedelta(unittest.TestCase):
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYI')
     def test_compound_offset(self):
         # These are not yet allowed (e.g. 1 month + 1 hour)
-        pass
+        assert False
 
+    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_offset_months(self):
-        pass
+        assert False
