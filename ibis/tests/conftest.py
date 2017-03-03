@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import ibis
-import pytest
 
 
 def pytest_configure(config):
