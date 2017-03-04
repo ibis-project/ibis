@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.tests.conftest import *  # noqa
 from ibis.expr.tests.mocks import MockConnection
 
 import pytest
