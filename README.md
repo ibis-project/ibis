@@ -20,7 +20,7 @@ At this time, Ibis provides tools for the interacting with the following
 systems:
 
 - [Apache Impala (incubating)](http://impala.io/)
-- [Apache Kudu (incubating)](http://getkudu.io)
+- [Apache Kudu](http://getkudu.io)
 - Hadoop Distributed File System (HDFS)
 - PostgreSQL (Experimental)
 - SQLite
