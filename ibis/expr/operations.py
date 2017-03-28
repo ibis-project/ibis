@@ -602,7 +602,7 @@ class BinaryOp(ValueOp):
 
 class Reduction(ValueOp):
 
-    input_type = [rules.array, boolean(name='where', optional=True)]
+    input_type = [rules.column, boolean(name='where', optional=True)]
     _reduction = True
 
 
@@ -684,7 +684,7 @@ class Mean(Reduction):
 
 class VarianceBase(Reduction):
 
-    input_type = [rules.array, boolean(name='where', optional=True),
+    input_type = [rules.column, boolean(name='where', optional=True),
                   rules.string_options(['sample', 'pop'],
                                        name='how', optional=True)]
     output_type = rules.scalar_output(_mean_output_type)
@@ -741,7 +741,7 @@ class HLLCardinality(Reduction):
 
 class GroupConcat(Reduction):
 
-    input_type = [rules.array, string(name='sep', default=',')]
+    input_type = [rules.column, string(name='sep', default=',')]
     # boolean(name='where', optional=True)]
 
     def output_type(self):
@@ -810,7 +810,7 @@ def is_analytic(expr, exclude_windows=False):
 
 class ShiftBase(AnalyticOp):
 
-    input_type = [rules.array, rules.integer(name='offset', optional=True),
+    input_type = [rules.column, rules.integer(name='offset', optional=True),
                   rules.value(name='default', optional=True)]
     output_type = rules.type_of_arg(0)
 
@@ -851,7 +851,7 @@ class MinRank(RankBase):
     """
 
     # Equivalent to SQL RANK()
-    input_type = [rules.array]
+    input_type = [rules.column]
 
 
 class DenseRank(RankBase):
@@ -876,7 +876,7 @@ class DenseRank(RankBase):
     """
 
     # Equivalent to SQL DENSE_RANK()
-    input_type = [rules.array]
+    input_type = [rules.column]
 
 
 class RowNumber(RankBase):
@@ -908,7 +908,7 @@ class RowNumber(RankBase):
 
 class CumulativeOp(AnalyticOp):
 
-    input_type = [rules.array]
+    input_type = [rules.column]
 
 
 class CumulativeSum(CumulativeOp):
@@ -949,31 +949,31 @@ class CumulativeMin(CumulativeOp):
 
 class PercentRank(AnalyticOp):
 
-    input_type = [rules.array]
+    input_type = [rules.column]
     output_type = rules.shape_like_arg(0, 'double')
 
 
 class NTile(AnalyticOp):
 
-    input_type = [rules.array, rules.integer(name='buckets')]
+    input_type = [rules.column, rules.integer(name='buckets')]
     output_type = rules.shape_like_arg(0, 'int64')
 
 
 class FirstValue(AnalyticOp):
 
-    input_type = [rules.array]
+    input_type = [rules.column]
     output_type = rules.type_of_arg(0)
 
 
 class LastValue(AnalyticOp):
 
-    input_type = [rules.array]
+    input_type = [rules.column]
     output_type = rules.type_of_arg(0)
 
 
 class NthValue(AnalyticOp):
 
-    input_type = [rules.array, rules.integer]
+    input_type = [rules.column, rules.integer]
     output_type = rules.type_of_arg(0)
 
 
@@ -1044,7 +1044,7 @@ class DistinctColumn(ValueOp):
 
 class CountDistinct(Reduction):
 
-    input_type = [rules.array]
+    input_type = [rules.column]
 
     def output_type(self):
         return ir.Int64Scalar
@@ -1058,7 +1058,7 @@ class Any(ValueOp):
     # Depending on the kind of input boolean array, the result might either be
     # array-like (an existence-type predicate) or scalar (a reduction)
 
-    input_type = [rules.array(boolean)]
+    input_type = [rules.column(boolean)]
 
     @property
     def _reduction(self):
@@ -1074,7 +1074,7 @@ class Any(ValueOp):
 
 class All(ValueOp):
 
-    input_type = [rules.array(boolean)]
+    input_type = [rules.column(boolean)]
     _reduction = True
 
     def output_type(self):
@@ -2323,16 +2323,16 @@ class TimestampDelta(ValueOp):
     output_type = rules.shape_like_arg(0, 'timestamp')
 
 
-class ArrayLength(ValueOp):
+class ArrayLength(UnaryOp):
 
-    input_type = [rules.array_column(dt.any)]
+    input_type = [rules.array(dt.any)]
     output_type = rules.shape_like_arg(0, 'int64')
 
 
 class ArraySlice(ValueOp):
 
     input_type = [
-        rules.array_column(dt.any),
+        rules.array(dt.any),
         rules.integer(name='start'),
         rules.integer(name='stop')
     ]
@@ -2341,7 +2341,7 @@ class ArraySlice(ValueOp):
 
 class ArrayIndex(ValueOp):
 
-    input_type = [rules.array_column(dt.any), rules.integer(name='index')]
+    input_type = [rules.array(dt.any), rules.integer(name='index')]
     output_type = rules.array_output(
         lambda self: self.args[0].type().value_type
     )
@@ -2366,19 +2366,19 @@ def _array_binop_invariant_output_type(self):
 
 class ArrayConcat(ValueOp):
 
-    input_type = [rules.array_column(dt.any), rules.array_column(dt.any)]
+    input_type = [rules.array(dt.any), rules.array(dt.any)]
     output_type = rules.array_output(_array_binop_invariant_output_type)
 
 
 class ArrayRepeat(ValueOp):
 
-    input_type = [rules.array_column(dt.any), integer(name='times')]
+    input_type = [rules.array(dt.any), integer(name='times')]
     output_type = rules.array_output(lambda self: self.args[0].type())
 
 
 class ArrayCollect(Reduction):
 
-    input_type = [rules.array]
+    input_type = [rules.column]
     output_type = rules.scalar_output(
         lambda self: dt.Array(self.args[0].type())
     )

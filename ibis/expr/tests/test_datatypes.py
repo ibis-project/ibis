@@ -219,3 +219,21 @@ def test_literal_mixed_type_fails():
     data = [1, 'a']
     with pytest.raises(TypeError):
         ibis.literal(data)
+
+
+def test_array_type_not_equals():
+    left = dt.Array(dt.string)
+    right = dt.Array(dt.int32)
+
+    assert not left.equals(right)
+    assert left != right
+    assert not (left == right)
+
+
+def test_array_type_equals():
+    left = dt.Array(dt.string)
+    right = dt.Array(dt.string)
+
+    assert left.equals(right)
+    assert left == right
+    assert not (left != right)
