@@ -190,8 +190,10 @@ class DataType(object):
         if isinstance(other, six.string_types):
             other = validate_type(other)
 
-        return (isinstance(other, type(self)) and
-                self.nullable == other.nullable)
+        return (
+            isinstance(other, type(self)) and
+            self.nullable == other.nullable
+        ) or isinstance(self, Any) or isinstance(other, Any)
 
     def can_implicit_cast(self, other):
         return self.equals(other)
@@ -447,10 +449,10 @@ class Array(Variadic):
     def __str__(self):
         return '{0}<{1}>'.format(self.name.lower(), self.value_type)
 
-    def __eq__(self, other):
+    def equals(self, other, cache=None):
         return (
-            isinstance(other, type(self)) and
-            self.value_type == other.value_type
+            super(Array, self).equals(other, cache=cache) and
+            self.value_type.equals(other.value_type, cache=cache)
         )
 
 
@@ -485,11 +487,11 @@ class Map(DataType):
             self.value_type,
         )
 
-    def __eq__(self, other):
+    def equals(self, other, cache=None):
         return (
-            isinstance(other, type(self)) and
-            self.key_type == other.key_type and
-            self.value_type == other.value_type
+            super(Map, self).equals(other, cache=cache) and
+            self.key_type.equals(other.key_type, cache=cache) and
+            self.value_type.equals(other.value_type, cache=cache)
         )
 
 

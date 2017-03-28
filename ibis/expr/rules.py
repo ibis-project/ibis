@@ -548,8 +548,8 @@ def value_typed_as(types, **arg_kwds):
     return ValueTyped(types, fail_message, **arg_kwds)
 
 
-def array(value_type=None, name=None, optional=False):
-    array_checker = ValueTyped(ir.ColumnExpr, 'not an array expr',
+def column(value_type=None, name=None, optional=False):
+    array_checker = ValueTyped(ir.ColumnExpr, 'not a column expr',
                                name=name,
                                optional=optional)
     if value_type is None:
@@ -622,8 +622,8 @@ def string(**arg_kwds):
     return ValueTyped(dt.string, 'not string', **arg_kwds)
 
 
-def array_column(value_type):
-    return lambda **arg_kwds: ValueTyped(
+def array(value_type, **arg_kwds):
+    return ValueTyped(
         dt.Array(value_type),
         'not array with value_type {0}'.format(value_type),
         **arg_kwds
