@@ -409,8 +409,8 @@ class Struct(DataType):
 
     def __init__(self, names, types, nullable=True):
         super(Struct, self).__init__(nullable=nullable)
-        self.names = names
-        self.types = types
+        self.names = list(names)
+        self.types = list(map(validate_type, types))
 
     def __repr__(self):
         return '{0}({1})'.format(
@@ -426,10 +426,11 @@ class Struct(DataType):
             )
         )
 
-    def __eq__(self, other):
-        return (isinstance(other, type(self)) and
-                self.names == other.names and
-                self.types == other.types)
+    def equals(self, other, cache=None):
+        return (
+            super(Struct, self).equals(other, cache=cache) and
+            self.names == other.names and self.types == other.types
+        )
 
     @classmethod
     def from_tuples(self, pairs):
@@ -441,7 +442,7 @@ class Array(Variadic):
 
     def __init__(self, value_type, nullable=True):
         super(Array, self).__init__(nullable=nullable)
-        self.value_type = value_type
+        self.value_type = validate_type(value_type)
 
     def __repr__(self):
         return '{0}({1})'.format(self.name, repr(self.value_type))
@@ -461,8 +462,15 @@ class Enum(DataType):
 
     def __init__(self, rep_type, value_type, nullable=True):
         super(Enum, self).__init__(nullable=nullable)
-        self.rep_type = rep_type
-        self.value_type = value_type
+        self.rep_type = validate_type(rep_type)
+        self.value_type = validate_type(value_type)
+
+    def equals(self, other, cache=None):
+        return (
+            super(Enum, self).equals(other, cache=cache) and
+            self.rep_type.equals(other.rep_type, cache=cache) and
+            self.value_type.equals(other.value_type, cache=cache)
+        )
 
 
 @parametric
@@ -470,8 +478,8 @@ class Map(DataType):
 
     def __init__(self, key_type, value_type, nullable=True):
         super(Map, self).__init__(nullable=nullable)
-        self.key_type = key_type
-        self.value_type = value_type
+        self.key_type = validate_type(key_type)
+        self.value_type = validate_type(value_type)
 
     def __repr__(self):
         return '{0}({1}, {2})'.format(
