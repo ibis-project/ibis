@@ -18,6 +18,13 @@ def test_nested_array():
     ) == dt.Array(dt.Array(dt.string))
 
 
+def test_array_with_string_value_type():
+    assert dt.Array('int32') == dt.Array(dt.int32)
+    assert dt.Array(dt.Array('array<map<string, double>>')) == (
+        dt.Array(dt.Array(dt.Array(dt.Map(dt.string, dt.double))))
+    )
+
+
 def test_map():
     assert dt.validate_type(
         'map<string, double>'
@@ -28,6 +35,12 @@ def test_nested_map():
     assert dt.validate_type(
         'map<int64, array<map<string, int8>>>'
     ) == dt.Map(dt.int64, dt.Array(dt.Map(dt.string, dt.int8)))
+
+
+def test_map_with_string_value_type():
+    assert dt.Map('int32', 'double') == dt.Map(dt.int32, dt.double)
+    assert dt.Map('int32', 'array<double>') == \
+        dt.Map(dt.int32, dt.Array(dt.double))
 
 
 def test_map_does_not_allow_non_primitive_keys():
@@ -77,6 +90,26 @@ def test_struct():
     ]))
 
     assert dt.validate_type(orders) == expected
+
+
+def test_struct_with_string_types():
+    result = dt.Struct.from_tuples(
+        [
+            ('a', 'map<double, string>'),
+            ('b', 'array<map<string, array<int32>>>'),
+            ('c', 'array<string>'),
+            ('d', 'int8'),
+        ]
+    )
+
+    assert result == dt.Struct.from_tuples(
+        [
+            ('a', dt.Map(dt.double, dt.string)),
+            ('b', dt.Array(dt.Map(dt.string, dt.Array(dt.int32)))),
+            ('c', dt.Array(dt.string)),
+            ('d', dt.int8),
+        ]
+    )
 
 
 def test_decimal_failure():
