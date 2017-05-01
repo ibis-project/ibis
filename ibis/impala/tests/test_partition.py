@@ -138,6 +138,22 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
         self._verify_partitioned_table(part_t, df, unique_keys)
 
+    def test_create_partitioned_table_from_expr(self):
+        t = self.con.table('functional_alltypes')
+        expr = t[t.id <= 10][['id', 'double_col', 'month', 'year']]
+        name = 'tmppart_{}'.format(util.guid())
+        try:
+            self.con.create_table(name, expr, partition=[t.year])
+        except:
+            raise
+        else:
+            new = self.con.table(name)
+            expected = expr.execute().sort_values('id').reset_index(drop=True)
+            result = new.execute().sort_values('id').reset_index(drop=True)
+            assert_frame_equal(result, expected)
+        finally:
+            self.con.drop_table(name, force=True)
+
     @pytest.mark.xfail(raises=AssertionError, reason='NYT')
     def test_insert_overwrite_partition(self):
         assert False
