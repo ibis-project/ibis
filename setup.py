@@ -39,12 +39,14 @@ sqlite_requires = ['sqlalchemy>=1.0.0']
 postgres_requires = sqlite_requires + ['psycopg2']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
+pandas_requires = ['multipledispatch']
 
 all_requires = (
     impala_requires +
     postgres_requires +
     kerberos_requires +
-    visualization_requires
+    visualization_requires +
+    pandas_requires
 )
 
 develop_requires = all_requires + [
@@ -72,6 +74,7 @@ setup(
         'postgres': postgres_requires,
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
+        'pandas': pandas_requires,
     },
     scripts=[
         os.path.join(

@@ -27,7 +27,7 @@ development roadmap:
 
 * Documentation
 * Use cases and IPython notebooks
-* Other SQL-based backends (Presto, Hive, Spark SQL, PostgreSQL)
+* Other SQL-based backends (Presto, Hive, Spark SQL)
 * S3 filesytem support
 * Integration with MLLib via PySpark
 
