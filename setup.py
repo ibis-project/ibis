@@ -77,7 +77,7 @@ setup(
             'impyla>=0.13.7',
             'mock',
             'psycopg2',
-            'pytest<=2.9.2',
+            'pytest',
             'sqlalchemy>=1.0.0',
             'thrift<=0.9.3',
         ] + (['thriftpy<=0.3.9'] if sys.version_info[0] >= 3 else []),

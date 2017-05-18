@@ -31,14 +31,14 @@ machine:
 dependencies:
   override:
     - pip install -U pip
-    - pip install click flake8 pylint
     - cd $(pyenv root); git pull
-    - pip install -U tox tox-pyenv
+    - pip install -U click flake8 pylint tox tox-pyenv
     - pyenv install --skip-existing 2.7.9
     - pyenv install --skip-existing 3.4.3
     - pyenv install --skip-existing 3.5.0
     - pyenv install --skip-existing 3.6.0
     - pyenv local 2.7.9 3.4.3 3.5.0 3.6.0
+    - pip install -e .[develop]
   post:
     # pull down the docker image
     - docker pull cpcloud86/impala:metastore
@@ -88,6 +88,6 @@ database:
 
 test:
   override:
-    - flake8 --exclude=docs,versioneer.py,.svn,CVS,.bzr,.hg,.git,__pycache__,.tox,.eggs,*.egg
+    - flake8
     - case $CIRCLE_NODE_INDEX in 0) tox -e py27 ;; 1) tox -e py34 ;; 2) tox -e py35 ;; 3) tox -e py36 ;; esac:
         parallel: true
