@@ -365,13 +365,10 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
     def test_filter_has_sqla_table(self):
         t = self.alltypes
         pred = t.year == 2010
-        filt = t.filter(pred).sort_by('float_col').float_col
+        filt = t.filter(pred).float_col
         s = filt.execute()
         result = s.squeeze().reset_index(drop=True)
-        expected = t.execute().query(
-            'year == 2010'
-        ).sort('float_col').float_col
-
+        expected = t.execute().query('year == 2010').float_col
         assert len(result) == len(expected)
 
     def test_column_access_after_sort(self):
