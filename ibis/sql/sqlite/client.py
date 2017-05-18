@@ -15,6 +15,7 @@
 import os
 
 import sqlalchemy as sa
+from sqlalchemy.engine.reflection import Inspector
 
 from ibis.client import Database
 from .compiler import SQLiteDialect
@@ -45,6 +46,7 @@ class SQLiteClient(alch.AlchemyClient):
         self.database_name = 'default'
 
         self.con = sa.create_engine('sqlite://')
+        self.inspector = Inspector.from_engine(self.con)
 
         if path:
             self.attach(self.database_name, path, create=create)
