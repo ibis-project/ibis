@@ -13,26 +13,49 @@
 # limitations under the License.
 
 
-from .client import PostgreSQLClient
+from ibis.sql.alchemy import to_sqlalchemy
+
+from .client import PostgreSQLClient, PostgreSQLDialect
 from .compiler import rewrites  # noqa
 
 
 def compile(expr):
+    """Compile an ibis expression to the PostgreSQL target.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+        The ibis expression to compile
+
+    Returns
+    -------
+    sqlalchemy_expression : sqlalchemy.sql.expression.ClauseElement
+
+    Examples
+    --------
+    >>> con = connect(database='ibis_testing')  # localhost/default
+    >>> t = con.table('functional_alltypes')
+    >>> expr = t.a + 1
+    >>> sqla = compile(expr)
+    >>> print(str(sqla))
+    SELECT t0.double_col + %(param_1)s AS tmp
+    FROM functional_alltypes AS t0
     """
-    Force compilation of expression for the PostgreSQL target
-    """
-    from .client import PostgreSQLDialect
-    from ibis.sql.alchemy import to_sqlalchemy
     return to_sqlalchemy(expr, dialect=PostgreSQLDialect)
 
 
-def connect(host=None, user=None, password=None, port=None, database=None,
-            url=None, driver=None):
+def connect(
+    host=None,
+    user=None,
+    password=None,
+    port=None,
+    database=None,
+    url=None,
+    driver=None
+):
 
-    """
-    Create an Ibis client connected to a PostgreSQL database.
-
-    Multiple database files can be created using the attach() method
+    """Create an Ibis client located at `user`:`password`@`host`:`port`
+    connected to a PostgreSQL database named `database`.
 
     Parameters
     ----------
@@ -45,6 +68,43 @@ def connect(host=None, user=None, password=None, port=None, database=None,
         Complete SQLAlchemy connection string. If passed, the other connection
         arguments are ignored.
     driver : string, default 'psycopg2'
+
+    Returns
+    -------
+    PostgreSQLClient
+
+    Examples
+    --------
+    >>> con = connect(database='ibis_testing')  # localhost/default
+    >>> con.list_tables()  # doctest: +ELLIPSIS
+    [...]
+    >>> t = con.table('functional_alltypes')
+    >>> t
+    PostgreSQLTable[table]
+      name: functional_alltypes
+      schema:
+        index : int64
+        Unnamed: 0 : int64
+        id : int32
+        bool_col : boolean
+        tinyint_col : int16
+        smallint_col : int16
+        int_col : int32
+        bigint_col : int64
+        float_col : float
+        double_col : double
+        date_string_col : string
+        string_col : string
+        timestamp_col : timestamp
+        year : int32
+        month : int32
     """
-    return PostgreSQLClient(host=host, user=user, password=password, port=port,
-                            database=database, url=url, driver=driver)
+    return PostgreSQLClient(
+        host=host,
+        user=user,
+        password=password,
+        port=port,
+        database=database,
+        url=url,
+        driver=driver,
+    )
