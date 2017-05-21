@@ -54,12 +54,12 @@ class PostgreSQLClient(alch.AlchemyClient):
                     'psycopg2 is currently the only supported driver'
                 )
             url = sa.engine.url.URL(
-                driver or 'postgresql+psycopg2',
-                username=user if user is not None else getpass.getuser(),
+                'postgresql+psycopg2',
+                username=user or getpass.getuser(),
                 password=password,
-                host=host if host is not None else 'localhost',
+                host=host or 'localhost',
                 port=port,
-                database=database,
+                database=database or self.__class__.default_database_name,
             )
         else:
             url = sa.engine.url.make_url(url)
