@@ -33,11 +33,11 @@ def compile(expr):
 
     Examples
     --------
-    >>> con = connect(database='ibis_testing')  # localhost/default
+    >>> con = connect(database='ibis_testing', host='localhost')
     >>> t = con.table('functional_alltypes')
-    >>> expr = t.a + 1
+    >>> expr = t.double_col + 1
     >>> sqla = compile(expr)
-    >>> print(str(sqla))
+    >>> print(str(sqla))  # doctest: +NORMALIZE_WHITESPACE
     SELECT t0.double_col + %(param_1)s AS tmp
     FROM functional_alltypes AS t0
     """
@@ -75,7 +75,7 @@ def connect(
 
     Examples
     --------
-    >>> con = connect(database='ibis_testing')  # localhost/default
+    >>> con = connect(database='ibis_testing', host='localhost')
     >>> con.list_tables()  # doctest: +ELLIPSIS
     [...]
     >>> t = con.table('functional_alltypes')
