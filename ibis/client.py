@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pandas as pd
+
 from ibis.compat import zip as czip
 from ibis.config import options
+
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as comp
@@ -22,7 +25,6 @@ import ibis.util as util
 
 
 class Client(object):
-
     pass
 
 
@@ -57,7 +59,6 @@ class Query(object):
         return result
 
     def _fetch(self, cursor):
-        import pandas as pd
         rows = cursor.fetchall()
         # TODO(wesm): please evaluate/reimpl to optimize for perf/memory
         dtypes = [self._db_type_to_dtype(x[1]) for x in cursor.description]
@@ -77,9 +78,7 @@ class Query(object):
 
 class AsyncQuery(Query):
 
-    """
-    Abstract asynchronous query
-    """
+    """Abstract asynchronous query"""
 
     def execute(self):
         raise NotImplementedError
@@ -437,8 +436,9 @@ class DatabaseNamespace(Database):
         self.namespace = namespace
 
     def __repr__(self):
-        return ("{0}(database={1!r}, namespace={2!r})"
-                .format('DatabaseNamespace', self.name, self.namespace))
+        return "{}(database={!r}, namespace={!r})".format(
+            type(self).__name__, self.name, self.namespace
+        )
 
     @property
     def client(self):
