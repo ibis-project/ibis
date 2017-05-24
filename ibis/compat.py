@@ -33,6 +33,7 @@ if not PY2:
     def lzip(*x):
         return list(zip(*x))
     zip = zip
+    zip_longest = itertools.zip_longest
     def dict_values(x):
         return list(x.values())
     from decimal import Decimal
@@ -47,6 +48,7 @@ else:
     unicode_type = unicode
     lzip = zip
     zip = itertools.izip
+    zip_longest = itertools.izip_longest
 
     def dict_values(x):
         return x.values()

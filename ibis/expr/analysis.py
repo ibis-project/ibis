@@ -334,7 +334,7 @@ class ExprSimplifier(object):
 
         unch = lifted_table is op.table
 
-        lifted_aggs, unch1 = self._lift_arg(op.agg_exprs, block=True)
+        lifted_aggs, unch1 = self._lift_arg(op.metrics, block=True)
         lifted_by, unch2 = self._lift_arg(op.by, block=True)
         lifted_having, unch3 = self._lift_arg(op.having, block=True)
 
@@ -440,7 +440,7 @@ def apply_filter(expr, predicates):
 
         if op.table._is_valid(simplified_predicates):
             result = ops.Aggregation(
-                op.table, op.agg_exprs, by=op.by, having=op.having,
+                op.table, op.metrics, by=op.by, having=op.having,
                 predicates=op.predicates + simplified_predicates,
                 sort_keys=op.sort_keys)
 

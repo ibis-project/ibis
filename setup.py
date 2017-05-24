@@ -14,40 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-requirements = []
-extensions = []
-cmdclass = {}
+from setuptools import setup, find_packages
+import sys
 
-from setuptools import setup, find_packages  # noqa
-import os  # noqa
-import sys  # noqa
-
-import versioneer  # noqa
-
-from distutils.extension import Extension  # noqa
-from distutils.command.clean import clean as _clean  # noqa
-
-
-class clean(_clean):
-    def run(self):
-        _clean.run(self)
-        for x in []:
-            try:
-                os.remove(x)
-            except OSError:
-                pass
-
-
-cmdclass['clean'] = clean
+import versioneer
 
 with open('requirements.txt') as f:
-    file_reqs = f.read().splitlines()
-    requirements = requirements + file_reqs
-
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    requirements.append('mock')
+    requirements = f.read().splitlines()
 
 
 LONG_DESCRIPTION = """
@@ -60,7 +33,6 @@ setup(
     name='ibis-framework',
     packages=find_packages(),
     version=versioneer.get_version(),
-    ext_modules=extensions,
     cmdclass=versioneer.get_cmdclass(),
     install_requires=requirements,
     extras_require={
@@ -71,28 +43,30 @@ setup(
             'sqlalchemy>=1.0.0',
             'thrift<=0.9.3',
             'thriftpy<=0.3.9',
-        ] + (['thriftpy<=0.3.9'] if sys.version_info[0] >= 3 else []),
+            'graphviz',
+        ] + (['thriftpy<=0.3.9'] if sys.version_info.major >= 3 else []),
         'develop': [
             'flake8',
             'hdfs>=2.0.0',
             'impyla>=0.13.7',
-            'mock',
-            'click',
-            'requests',
             'psycopg2',
-            'pytest',
+            'pytest>=3' if sys.version_info.major >= 3 else 'pytest<3',
             'sqlalchemy>=1.0.0',
             'thrift<=0.9.3',
-        ] + (['thriftpy<=0.3.9'] if sys.version_info[0] >= 3 else []),
+            'graphviz',
+        ] + (['thriftpy<=0.3.9'] if sys.version_info.major >= 3 else []) + (
+            [] if sys.version_info.major >= 3 else ['mock']
+        ),
         'impala': [
             'hdfs>=2.0.0',
             'impyla>=0.13.7',
             'sqlalchemy>=1.0.0',
             'thrift<=0.9.3',
-        ] + (['thriftpy<=0.3.9'] if sys.version_info[0] >= 3 else []),
+        ] + (['thriftpy<=0.3.9'] if sys.version_info.major >= 3 else []),
         'kerberos': ['requests-kerberos'],
         'postgres': ['psycopg2', 'sqlalchemy>=1.0.0'],
         'sqlite': ['sqlalchemy>=1.0.0'],
+        'visualization': ['graphviz'],
     },
     scripts=[
         os.path.join(
@@ -108,9 +82,7 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Cython',
         'Topic :: Scientific/Engineering',
     ],
     license='Apache License, Version 2.0',

@@ -5,6 +5,13 @@ machine:
     # upgrade sqlite3 to # make sure we have instr
     - sudo apt-get -qq install --only-upgrade sqlite3
     - sudo apt-get -qq install clang libboost-dev
+    # installing graphviz naively doesn't work
+    # https://askubuntu.com/a/567127
+    - sudo apt-get -qq update
+    - sudo apt-get -qq remove graphviz libcdt4 libpathplan4
+    - sudo apt-get -qq autoremove
+    - sudo apt-get -qq autoclean
+    - sudo apt-get install graphviz
   environment:
     IBIS_TEST_SQLITE_DB_PATH: $HOME/ibis-testing-data/ibis_testing.db
     IBIS_TEST_POSTGRES_DB: circle_test

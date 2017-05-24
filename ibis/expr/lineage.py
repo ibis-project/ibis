@@ -120,7 +120,7 @@ def _get_args(op, name):
         return [col for col in result if col._name == name]
     elif isinstance(op, ops.Aggregation):
         assert name is not None, 'name is None'
-        return [col for col in chain(op.by, op.agg_exprs) if col._name == name]
+        return [col for col in chain(op.by, op.metrics) if col._name == name]
     else:
         return op.args
 

@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import datetime
+import webbrowser
+
 import six
 
 from ibis.common import IbisError, RelationError
@@ -72,6 +75,38 @@ class Expr(object):
     def _repr(self, memo=None):
         from ibis.expr.format import ExprFormatter
         return ExprFormatter(self, memo=memo).get_result()
+
+    def _repr_png_(self):
+        try:
+            import ibis.expr.visualize as viz
+        except ImportError:
+            return None
+        else:
+            return viz.to_graph(self).pipe(format='png')
+
+    def visualize(self, format='png'):
+        """Visualize an expression in the browser as a PNG image.
+
+        Parameters
+        ----------
+        format : str, optional
+            Defaults to ``'png'``. Some additional formats are
+            ``'jpeg'`` and ``'svg'``. These are specified by the ``graphviz``
+            Python library.
+
+        Notes
+        -----
+        This method opens a web browser tab showing the image of the expression
+        graph created by the code in :module:`ibis.expr.visualize`.
+
+        Raises
+        ------
+        ImportError
+            If ``graphviz`` is not installed.
+        """
+        import ibis.expr.visualize as viz
+        path = viz.draw(viz.to_graph(self), format=format)
+        webbrowser.open('file://{}'.format(os.path.abspath(path)))
 
     def pipe(self, f, *args, **kwargs):
         """Generic composition function to enable expression pipelining.

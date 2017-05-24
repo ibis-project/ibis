@@ -418,7 +418,7 @@ class SelectBuilder(object):
 
             self.group_by = self._convert_group_by(sub_op.by)
             self.having = sub_op.having
-            self.select_set = sub_op.by + sub_op.agg_exprs
+            self.select_set = sub_op.by + sub_op.metrics
             self.table_set = sub_op.table
             self.filters = sub_op.predicates
             self.sort_by = sub_op.sort_keys
