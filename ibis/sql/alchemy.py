@@ -509,29 +509,6 @@ def build_ast(expr, context=None, dialect=None):
     return builder.get_result()
 
 
-class AlchemyDatabase(Database):
-    """
-    
-    Attributes
-    ----------
-    client : AlchemyClient
-    
-    """
-    schema_class = AlchemyDatabaseSchema
-
-    def table(self, name, schema=None):
-        return self.client.table(name, schema=schema)
-
-    def list_tables(self, like=None, schema=None):
-        return self.client.list_tables(
-            schema=schema,
-            like=self._qualify_like(like),
-            database=self.name)
-
-    def schema(self, name):
-        return self.schema_class(name, self)
-
-
 class AlchemyDatabaseSchema(Database):
 
     def __init__(self, name, database):
@@ -574,6 +551,29 @@ class AlchemyDatabaseSchema(Database):
 
     def list_tables(self, like=None):
         return self.database.list_tables(schema=self.name, like=self._qualify_like(like))
+
+
+class AlchemyDatabase(Database):
+    """
+
+    Attributes
+    ----------
+    client : AlchemyClient
+
+    """
+    schema_class = AlchemyDatabaseSchema
+
+    def table(self, name, schema=None):
+        return self.client.table(name, schema=schema)
+
+    def list_tables(self, like=None, schema=None):
+        return self.client.list_tables(
+            schema=schema,
+            like=self._qualify_like(like),
+            database=self.name)
+
+    def schema(self, name):
+        return self.schema_class(name, self)
 
 
 class AlchemyTable(ops.DatabaseTable):

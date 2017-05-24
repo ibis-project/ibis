@@ -27,12 +27,12 @@ class PostgreSQLTable(alch.AlchemyTable):
     pass
 
 
-class PostgreSQLDatabase(alch.AlchemyDatabase):
-    schema_class = PostgreSQLSchema
-
-
 class PostgreSQLSchema(alch.AlchemyDatabaseSchema):
     pass
+
+
+class PostgreSQLDatabase(alch.AlchemyDatabase):
+    schema_class = PostgreSQLSchema
 
 
 class PostgreSQLClient(alch.AlchemyClient):

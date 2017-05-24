@@ -89,8 +89,12 @@ FROM t0 AS t0"""  # noqa
         assert str(result) == expected
 
     def test_list_databases(self):
-        assert 'public' in self.con.list_databases()
-        assert 'information_schema' in self.con.list_databases()
+        assert POSTGRES_TEST_DB is not None
+        assert POSTGRES_TEST_DB in self.con.list_databases()
+
+    def test_list_schemas(self):
+        assert 'public' in self.con.list_schemas()
+        assert 'information_schema' in self.con.list_schemas()
 
 
 @pytest.mark.postgresql
@@ -110,6 +114,6 @@ def test_schema_table():
 
     # ensure that we can reflect the information schema (which is guaranteed
     # to exist)
-    db = con.database('information_schema')
+    schema = con.schema('information_schema')
 
-    assert isinstance(db['tables'], ir.TableExpr)
+    assert isinstance(schema['tables'], ir.TableExpr)
