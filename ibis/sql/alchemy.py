@@ -19,13 +19,17 @@ import functools
 import six
 
 import sqlalchemy as sa
+import sqlalchemy.dialects.postgresql as postgresql
 import sqlalchemy.sql as sql
 
 from sqlalchemy.sql.elements import Over as _Over
 from sqlalchemy.ext.compiler import compiles as sa_compiles
 
+import tzlocal
+
 from ibis.client import SQLClient, AsyncQuery, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter
+
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -51,8 +55,6 @@ _ibis_type_to_sqla = {
     dt.String: sa.Text,
 
     dt.Date: sa.Date,
-
-    dt.Timestamp: sa.DateTime,
 
     dt.Decimal: sa.NUMERIC,
 }
@@ -82,7 +84,16 @@ _sqla_type_to_ibis = dict((v, k) for k, v in _ibis_type_to_sqla.items())
 _sqla_type_to_ibis.update(_sqla_type_mapping)
 
 
-def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
+_DIALECT_TIMEZONES = {
+    # postgres stores everything as UTC and displays in the local timezone
+    # or whatever is in the timezone setting.
+    postgresql.dialect: 'SHOW TIMEZONE',
+}
+
+
+def sqlalchemy_type_to_ibis_type(
+    column_type, nullable=True, default_timezone=None
+):
     type_class = type(column_type)
 
     if isinstance(column_type, sa.types.NUMERIC):
@@ -93,14 +104,17 @@ def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
         if type_class in _sqla_type_to_ibis:
             ibis_class = _sqla_type_to_ibis[type_class]
         elif isinstance(column_type, sa.DateTime):
-            ibis_class = dt.Timestamp()
+            return dt.Timestamp(timezone=default_timezone, nullable=nullable)
         elif isinstance(column_type, sa.ARRAY):
             dimensions = column_type.dimensions
             if dimensions is not None and dimensions != 1:
                 raise NotImplementedError(
                     'Nested array types not yet supported'
                 )
-            value_type = sqlalchemy_type_to_ibis_type(column_type.item_type)
+            value_type = sqlalchemy_type_to_ibis_type(
+                column_type.item_type,
+                default_timezone=default_timezone,
+            )
 
             def make_array_type(nullable, value_type=value_type):
                 return dt.Array(value_type, nullable=nullable)
@@ -121,10 +135,48 @@ def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
         return ibis_class(nullable)
 
 
+def get_default_timezone(engine):
+    """Get the default timezone from a given database.
+
+    Parameters
+    ----------
+    engine : sa.engine.Engine
+
+    Returns
+    -------
+    tz : str or None
+        None if the engine is None, The default timezone of the dialect if it's
+        known how to retrieve it, otherwise the system local time zone,
+    """
+    timezone_code = _DIALECT_TIMEZONES.get(type(engine.dialect))
+    if timezone_code:
+        return engine.execute(timezone_code).scalar()
+    else:
+        return str(tzlocal.get_localzone())
+
+
 def schema_from_table(table):
+    """Retrieve an ibis schema from a SQLAlchemy ``Table``.
+
+    Parameters
+    ----------
+    table : sa.Table
+
+    Returns
+    -------
+    schema : ibis.expr.datatypes.Schema
+        An ibis schema corresponding to the types of the columns in `table`.
+    """
     # Convert SQLA table to Ibis schema
+    engine = getattr(table, 'bind', None)
     types = [
-        sqlalchemy_type_to_ibis_type(column.type, column.nullable)
+        sqlalchemy_type_to_ibis_type(
+            column.type,
+            nullable=column.nullable,
+            default_timezone=None if engine is None else get_default_timezone(
+                engine
+            ),
+        )
         for column in table.columns.values()
     ]
     return dt.Schema(table.columns.keys(), types)
@@ -148,6 +200,10 @@ def _to_sqla_type(itype, type_map=None):
         type_map = _ibis_type_to_sqla
     if isinstance(itype, dt.Decimal):
         return sa.types.NUMERIC(itype.precision, itype.scale)
+    elif isinstance(itype, dt.Timestamp):
+        # SQLAlchemy DateTimes do not store the timezone, just whether the db
+        # supports timezones.
+        return sa.TIMESTAMP(bool(itype.timezone))
     elif isinstance(itype, dt.Array):
         ibis_type = itype.value_type
         if not isinstance(ibis_type, (dt.Primitive, dt.String)):

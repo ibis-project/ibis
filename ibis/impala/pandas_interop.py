@@ -30,7 +30,7 @@ import ibis.common as com
 from ibis.config import options
 from ibis.util import log
 import ibis.compat as compat
-import ibis.expr.datatypes as itypes
+import ibis.expr.datatypes as dt
 import ibis.util as util
 
 
@@ -43,9 +43,12 @@ def pandas_col_to_ibis_type(col):
     dty = col.dtype
 
     # datetime types
+    if pdcom.is_datetime64tz_dtype(dty):
+        return dt.Timestamp(str(dty.tz))
+
     if pdcom.is_datetime64_dtype(dty):
         if pdcom.is_datetime64_ns_dtype(dty):
-            return 'timestamp'
+            return dt.timestamp
         else:
             raise com.IbisTypeError("Column {0} has dtype {1}, which is "
                                     "datetime64-like but does "
@@ -53,36 +56,37 @@ def pandas_col_to_ibis_type(col):
                                     .format(col.name, dty))
     if pdcom.is_timedelta64_dtype(dty):
         print("Warning: encoding a timedelta64 as an int64")
-        return 'int64'
+        return dt.int64
 
     if pdcom.is_categorical_dtype(dty):
-        return itypes.Category(len(col.cat.categories))
+        return dt.Category(len(col.cat.categories))
 
     if pdcom.is_bool_dtype(dty):
-        return 'boolean'
+        return dt.boolean
 
     # simple numerical types
     if issubclass(dty.type, np.int8):
-        return 'int8'
+        return dt.int8
     if issubclass(dty.type, np.int16):
-        return 'int16'
+        return dt.int16
     if issubclass(dty.type, np.int32):
-        return 'int32'
+        return dt.int32
     if issubclass(dty.type, np.int64):
-        return 'int64'
+        return dt.int64
     if issubclass(dty.type, np.float32):
-        return 'float'
+        return dt.float
     if issubclass(dty.type, np.float64):
-        return 'double'
+        return dt.double
     if issubclass(dty.type, np.uint8):
-        return 'int16'
+        return dt.int16
     if issubclass(dty.type, np.uint16):
-        return 'int32'
+        return dt.int32
     if issubclass(dty.type, np.uint32):
-        return 'int64'
+        return dt.int64
     if issubclass(dty.type, np.uint64):
-        raise com.IbisTypeError("Column {0} is an unsigned int64"
-                                .format(col.name))
+        raise com.IbisTypeError(
+            "Column {} is an unsigned int64".format(col.name)
+        )
 
     if pdcom.is_object_dtype(dty):
         return _infer_object_dtype(col)
@@ -107,9 +111,9 @@ def _infer_object_dtype(arr):
             elif state == STRING:
                 break
         if state == BOOLEAN:
-            return 'boolean'
+            return dt.boolean
         elif state == STRING:
-            return 'string'
+            return dt.string
     else:
         return infer_dtype(avalues)
 

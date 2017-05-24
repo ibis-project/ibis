@@ -270,3 +270,50 @@ def test_array_type_equals():
     assert left.equals(right)
     assert left == right
     assert not (left != right)
+
+
+def test_timestamp_with_timezone_parser_single_quote():
+    t = dt.validate_type("timestamp('US/Eastern')")
+    assert isinstance(t, dt.Timestamp)
+    assert t.timezone == 'US/Eastern'
+
+
+def test_timestamp_with_timezone_parser_double_quote():
+    t = dt.validate_type("timestamp('US/Eastern')")
+    assert isinstance(t, dt.Timestamp)
+    assert t.timezone == 'US/Eastern'
+
+
+def test_timestamp_with_timezone_parser_invalid_timezone():
+    with pytest.raises(SyntaxError):
+        dt.validate_type("timestamp('US/Ea')")
+
+
+def test_timestamp_with_timezone_parser_no_quotes():
+    with pytest.raises(SyntaxError):
+        dt.validate_type("timestamp(US/Ea)")
+
+
+def test_timestamp_with_invalid_timezone():
+    with pytest.raises(ValueError):
+        dt.Timestamp('Foo/Bar&234')
+
+
+def test_timestamp_with_timezone_repr():
+    ts = dt.Timestamp('UTC')
+    assert repr(ts) == "Timestamp(timezone='UTC')"
+
+
+def test_timestamp_with_timezone_str():
+    ts = dt.Timestamp('UTC')
+    assert str(ts) == "timestamp('UTC')"
+
+
+def test_timestamp_with_timezone_mixed_quoting_single_quote():
+    with pytest.raises(SyntaxError):
+        dt.validate_type("timestamp('US/Eastern\")")
+
+
+def test_timestamp_with_timezone_mixed_quoting_double_quote():
+    with pytest.raises(SyntaxError):
+        dt.validate_type('timestamp("US/Eastern\')')

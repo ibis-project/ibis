@@ -244,5 +244,14 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
 
         table = writer.delimited_table(path)
         df2 = table.execute()
-
         assert_frame_equal(df2, df)
+
+
+def test_timestamp_with_timezone():
+    df = pd.DataFrame({
+        'A': pd.date_range('20130101', periods=3, tz='US/Eastern')
+    })
+    schema = pandas_to_ibis_schema(df)
+    expected = ibis.schema([('A', "timestamp('US/Eastern')")])
+    assert schema.equals(expected)
+    assert schema.types[0].equals(dt.Timestamp('US/Eastern'))

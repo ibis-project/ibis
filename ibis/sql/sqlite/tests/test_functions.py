@@ -15,16 +15,16 @@
 import os
 import uuid
 
-import pytest  # noqa
+import pytest
 
-from .common import SQLiteTests
-from ibis.compat import unittest
-from ibis import literal as L
-import ibis.expr.types as ir
-import ibis
-import pandas.util.testing as tm
+sa = pytest.importorskip('sqlalchemy')
 
-import sqlalchemy as sa
+from .common import SQLiteTests  # noqa: E402
+from ibis.compat import unittest  # noqa: E402
+from ibis import literal as L  # noqa: E402
+import ibis.expr.types as ir  # noqa: E402
+import ibis  # noqa: E402
+import pandas.util.testing as tm  # noqa: E402
 
 
 class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
