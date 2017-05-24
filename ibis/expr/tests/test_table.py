@@ -16,7 +16,6 @@ import pytest
 
 from ibis.expr.types import ColumnExpr, TableExpr, RelationError
 from ibis.common import ExpressionError
-from ibis.expr.datatypes import array_type
 import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -66,7 +65,6 @@ def test_getitem_column_select(table, schema_dict):
 
         # Make sure it's the right type
         assert isinstance(col, ColumnExpr)
-        assert isinstance(col, array_type(v))
 
         # Ensure we have a field selection with back-reference to the table
         parent = col.parent()

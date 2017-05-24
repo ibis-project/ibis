@@ -289,7 +289,7 @@ class ImpalaQuery(Query):
         names = [x[0] for x in cursor.description]
         return _column_batches_to_dataframe(names, batches)
 
-    def _db_type_to_dtype(self, db_type):
+    def _db_type_to_dtype(self, db_type, column):
         return _HS2_TTypeId_to_dtype[db_type]
 
 

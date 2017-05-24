@@ -8,6 +8,11 @@ import six
 import numpy as np
 import pandas as pd
 
+try:
+    from pandas.api.types import DatetimeTZDtype
+except ImportError:
+    from pandas.core.dtypes.dtypes import DatetimeTZDtype
+
 from pandas.core.groupby import SeriesGroupBy, DataFrameGroupBy
 
 import toolz
@@ -19,7 +24,9 @@ import ibis.expr.operations as ops
 
 from ibis import util
 
-from ibis.pandas.core import integer_types, simple_types, numeric_types
+from ibis.pandas.core import (
+    integer_types, simple_types, numeric_types, fixed_width_types
+)
 from ibis.pandas.dispatch import execute, execute_node
 
 
@@ -42,10 +49,6 @@ _IBIS_TYPE_TO_PANDAS_TYPE = {
 }
 
 
-def ibis_type_to_pandas_type(ibis_type):
-    return _IBIS_TYPE_TO_PANDAS_TYPE[ibis_type]
-
-
 @execute_node.register(ops.Limit, pd.DataFrame, integer_types, integer_types)
 def execute_limit_frame(op, data, limit, offset, scope=None):
     return data.iloc[offset:offset + limit]
@@ -53,7 +56,16 @@ def execute_limit_frame(op, data, limit, offset, scope=None):
 
 @execute_node.register(ops.Cast, pd.Series, dt.DataType)
 def execute_cast_series_generic(op, data, type, scope=None):
-    return data.astype(ibis_type_to_pandas_type(type))
+    return data.astype(_IBIS_TYPE_TO_PANDAS_TYPE[type])
+
+
+@execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
+def execute_cast_series_timestamp(op, data, type, scope=None):
+    # TODO(phillipc): Consistent units
+    tz = type.timezone
+    return data.astype(
+        'datetime64[ns]' if tz is None else DatetimeTZDtype('ns', tz)
+    )
 
 
 @execute_node.register(ops.Cast, pd.Series, dt.Date)
@@ -69,7 +81,6 @@ _LITERAL_CAST_TYPES = {
     dt.int16: int,
     dt.int8: int,
     dt.string: str,
-    dt.timestamp: pd.Timestamp,
     dt.date: lambda x: pd.Timestamp(x).to_pydatetime().date(),
 }
 
@@ -82,14 +93,82 @@ def frame_chunks(df):
         yield None, df
 
 
-@execute_node.register(ops.Cast, simple_types, dt.DataType)
+@execute_node.register(ops.Cast, datetime.datetime, dt.String)
+def execute_cast_datetime_or_timestamp_to_string(op, data, type, scope=None):
+    """Cast timestamps to strings"""
+    return str(data)
+
+
+@execute_node.register(ops.Cast, datetime.datetime, dt.Int64)
+def execute_cast_datetime_to_integer(op, data, type, scope=None):
+    """Cast datetimes to integers"""
+    return pd.Timestamp(data).value
+
+
+@execute_node.register(ops.Cast, pd.Timestamp, dt.Int64)
+def execute_cast_timestamp_to_integer(op, data, type, scope=None):
+    """Cast timestamps to integers"""
+    return data.value
+
+
+@execute_node.register(
+    ops.Cast,
+    (np.bool_, bool),
+    dt.Timestamp
+)
+def execute_cast_bool_to_timestamp(op, data, type, scope=None):
+    raise TypeError(
+        'Casting boolean values to timestamps does not make sense. If you '
+        'really want to cast boolean values to timestamps please cast to '
+        'int64 first then to timestamp: '
+        "value.cast('int64').cast('timestamp')"
+    )
+
+
+@execute_node.register(
+    ops.Cast,
+    six.integer_types + six.string_types,
+    dt.Timestamp
+)
+def execute_cast_simple_literal_to_timestamp(op, data, type, scope=None):
+    """Cast integer and strings to timestamps"""
+    return pd.Timestamp(data, tz=type.timezone)
+
+
+@execute_node.register(ops.Cast, pd.Timestamp, dt.Timestamp)
+def execute_cast_timestamp_to_timestamp(op, data, type, scope=None):
+    """Cast timestamps to other timestamps including timezone if necessary"""
+    input_timezone = data.tz
+    target_timezone = type.timezone
+
+    if input_timezone == target_timezone:
+        return data
+
+    if input_timezone is None or target_timezone is None:
+        return data.tz_localize(target_timezone)
+
+    return data.tz_convert(target_timezone)
+
+
+@execute_node.register(ops.Cast, datetime.datetime, dt.Timestamp)
+def execute_cast_datetime_to_datetime(op, data, type, scope=None):
+    return execute_cast_timestamp_to_timestamp(
+        op, data, type, scope=scope
+    ).to_pydatetime()
+
+
+@execute_node.register(
+    ops.Cast, fixed_width_types + six.string_types, dt.DataType
+)
 def execute_cast_string_literal(op, data, type, scope=None):
     try:
-        return _LITERAL_CAST_TYPES[type](data)
+        cast_function = _LITERAL_CAST_TYPES[type]
     except KeyError:
         raise TypeError(
             "Don't know how to cast {!r} to type {}".format(data, type)
         )
+    else:
+        return cast_function(data)
 
 
 @execute_node.register(ops.TableColumn, (pd.DataFrame, DataFrameGroupBy))

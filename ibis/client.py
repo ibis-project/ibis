@@ -40,6 +40,9 @@ class Query(object):
 
     def __init__(self, client, ddl):
         self.client = client
+        self.expr = getattr(
+            ddl, 'parent_expr', getattr(ddl, 'table_set', None)
+        )
 
         if isinstance(ddl, comp.DDL):
             self.compiled_ddl = ddl.compile()
@@ -74,7 +77,7 @@ class Query(object):
                 cols[name] = pd.Series(col)
         return pd.DataFrame(cols, columns=names)
 
-    def _db_type_to_dtype(self, db_type):
+    def _db_type_to_dtype(self, db_type, column):
         raise NotImplementedError
 
 

@@ -116,7 +116,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         for name, t, nullable, ibis_type in typespec:
             sqla_type = sa.Column(name, t, nullable=nullable)
             sqla_types.append(sqla_type)
-            ibis_types.append((name, ibis_type(nullable)))
+            ibis_types.append((name, ibis_type(nullable=nullable)))
 
         table = sa.Table('tname', self.meta, *sqla_types)
 

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import getpass
+import contextlib
 
 import sqlalchemy as sa
 
@@ -74,6 +75,12 @@ class PostgreSQLClient(alch.AlchemyClient):
         super(PostgreSQLClient, self).__init__(sa.create_engine(url))
         self.name = url.database
         self.database_name = self.__class__.default_database_name
+
+    @contextlib.contextmanager
+    def begin(self):
+        with super(PostgreSQLClient, self).begin() as bind:
+            bind.execute('SET LOCAL TIMEZONE = UTC')
+            yield bind
 
     def database(self, name=None):
         """Connect to a database called `name`.
@@ -179,7 +186,7 @@ class PostgreSQLClient(alch.AlchemyClient):
             )
         else:
             alch_table = self._get_sqla_table(name, schema=schema)
-            node = PostgreSQLTable(alch_table, self)
+            node = PostgreSQLTable(alch_table, self, self._schemas.get(name))
             return self._table_expr_klass(node)
 
     def list_tables(self, like=None, database=None, schema=None):

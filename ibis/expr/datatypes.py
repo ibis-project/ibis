@@ -304,7 +304,52 @@ class Date(Primitive):
         return isinstance(value, six.string_types + (datetime.date,))
 
 
+def parametric(cls):
+    type_name = cls.__name__
+    array_type_name = '{0}Column'.format(type_name)
+    scalar_type_name = '{0}Scalar'.format(type_name)
+
+    def array_type(self):
+        def constructor(op, name=None):
+            import ibis.expr.types as ir
+            return getattr(ir, array_type_name)(op, self, name=name)
+        return constructor
+
+    def scalar_type(self):
+        def constructor(op, name=None):
+            import ibis.expr.types as ir
+            return getattr(ir, scalar_type_name)(op, self, name=name)
+        return constructor
+
+    cls.array_type = array_type
+    cls.scalar_type = scalar_type
+    return cls
+
+
+@parametric
 class Timestamp(Primitive):
+
+    def __init__(self, timezone=None, nullable=True):
+        super(Timestamp, self).__init__(nullable=nullable)
+        self.timezone = timezone
+
+    def equals(self, other, cache=None):
+        return super(Timestamp, self).equals(other, cache=cache) and (
+            self.timezone == validate_type(other).timezone
+        )
+
+    def __call__(self, timezone=None, nullable=True):
+        return type(self)(timezone=timezone, nullable=nullable)
+
+    def __str__(self):
+        timezone = self.timezone
+        typename = '{0.__class__.__name__}'.format(self).lower()
+        if timezone is None:
+            return typename
+        return '{}({!r})'.format(typename, timezone)
+
+    def __repr__(self):
+        return '{0.__class__.__name__}(timezone={0.timezone!r})'.format(self)
 
     def valid_literal(self, value):
         return isinstance(value, six.string_types + (datetime.datetime,))
@@ -360,28 +405,6 @@ class Float(Floating):
 class Double(Floating):
 
     _nbytes = 8
-
-
-def parametric(cls):
-    type_name = cls.__name__
-    array_type_name = '{0}Column'.format(type_name)
-    scalar_type_name = '{0}Scalar'.format(type_name)
-
-    def array_type(self):
-        def constructor(op, name=None):
-            import ibis.expr.types as ir
-            return getattr(ir, array_type_name)(op, self, name=name)
-        return constructor
-
-    def scalar_type(self):
-        def constructor(op, name=None):
-            import ibis.expr.types as ir
-            return getattr(ir, scalar_type_name)(op, self, name=name)
-        return constructor
-
-    cls.array_type = array_type
-    cls.scalar_type = scalar_type
-    return cls
 
 
 @parametric
@@ -620,6 +643,8 @@ class Tokens(object):
     RPAREN = 14
     LBRACKET = 15
     RBRACKET = 16
+    TIMEZONE = 17
+    TIMESTAMP = 18
 
     @staticmethod
     def name(value):
@@ -635,6 +660,10 @@ _token_names = dict(
 Token = namedtuple('Token', ('type', 'value'))
 
 
+# Adapted from tokenize.String
+_STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""  # noqa: E501
+
+
 _TYPE_RULES = OrderedDict(
     [
         # any, null
@@ -646,7 +675,13 @@ _TYPE_RULES = OrderedDict(
             '(?P<{}>{})'.format(token.upper(), token),
             lambda token, value=value: Token(Tokens.PRIMITIVE, value)
         ) for token, value in _primitive_types.items()
-        if token != 'any' and token != 'null'
+        if token not in {'any', 'null', 'timestamp'}
+    ] + [
+        # timestamp
+        (
+            r'(?P<TIMESTAMP>timestamp)',
+            lambda token: Token(Tokens.TIMESTAMP, token),
+        ),
     ] + [
         # decimal + complex types
         (
@@ -664,7 +699,7 @@ _TYPE_RULES = OrderedDict(
             ),
         )
     ] + [
-        # numbers, for decimal spec
+        # integers, for decimal spec
         (r'(?P<INTEGER>\d+)', lambda token: Token(Tokens.INTEGER, int(token))),
 
         # struct fields
@@ -672,6 +707,7 @@ _TYPE_RULES = OrderedDict(
             r'(?P<FIELD>[a-zA-Z_][a-zA-Z_0-9]*)',
             lambda token: Token(Tokens.FIELD, token)
         ),
+        # timezones
         ('(?P<COMMA>,)', lambda token: Token(Tokens.COMMA, token)),
         ('(?P<COLON>:)', lambda token: Token(Tokens.COLON, token)),
         (r'(?P<LPAREN>\()', lambda token: Token(Tokens.LPAREN, token)),
@@ -679,6 +715,10 @@ _TYPE_RULES = OrderedDict(
         ('(?P<LBRACKET><)', lambda token: Token(Tokens.LBRACKET, token)),
         ('(?P<RBRACKET>>)', lambda token: Token(Tokens.RBRACKET, token)),
         (r'(?P<WHITESPACE>\s+)', None),
+        (
+            '(?P<TIMEZONE>{})'.format(_STRING_REGEX),
+            lambda token: Token(Tokens.TIMEZONE, token),
+        ),
     ]
 )
 
@@ -780,7 +820,10 @@ class TypeParser(object):
                   | "float"
                   | "double"
                   | "string"
-                  | "timestamp"
+                  | timestamp
+
+        timestamp : "timestamp"
+                  | "timestamp" "(" timezone ")"
 
         decimal : "decimal"
                 | "decimal" "(" integer "," integer ")"
@@ -797,6 +840,14 @@ class TypeParser(object):
         """
         if self._accept(Tokens.PRIMITIVE):
             return self.tok.value
+
+        elif self._accept(Tokens.TIMESTAMP):
+            if self._accept(Tokens.LPAREN):
+                self._expect(Tokens.TIMEZONE)
+                timezone = self.tok.value[1:-1]  # remove surrounding quotes
+                self._expect(Tokens.RPAREN)
+                return Timestamp(timezone=timezone)
+            return timestamp
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):
@@ -866,7 +917,7 @@ class TypeParser(object):
             self._expect(Tokens.RBRACKET)
             return Struct(names, types)
         else:
-            raise SyntaxError('Type cannot be parsed: {0}'.format(self.text))
+            raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
 
 
 def validate_type(t):
