@@ -28,9 +28,7 @@ class PostgreSQLTable(alch.AlchemyTable):
 
 
 class PostgreSQLDatabase(alch.AlchemyDatabase):
-
-    def schema(self, name):
-        return PostgreSQLSchema(name, self)
+    schema_class = PostgreSQLSchema
 
 
 class PostgreSQLSchema(alch.AlchemyDatabaseSchema):
@@ -49,7 +47,6 @@ class PostgreSQLClient(alch.AlchemyClient):
     dialect = PostgreSQLDialect
     database_class = PostgreSQLDatabase
     default_database_name = 'public'
-    schema_class = PostgreSQLSchema
 
     def __init__(
         self,
