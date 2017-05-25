@@ -78,7 +78,6 @@ class PostgreSQLClient(alch.AlchemyClient):
         self.con = sa.create_engine(url)
         self.inspector = Inspector.from_engine(self.con)
         self.meta = sa.MetaData(bind=self.con)
-        self.schema_name = None
 
     def database(self, name=None):
         """Connect to a database called `name`.
@@ -91,8 +90,8 @@ class PostgreSQLClient(alch.AlchemyClient):
 
         Returns
         -------
-        db : Database
-            An :class:`ibis.client.Database` instance.
+        db : PostgreSQLDatabase
+            An :class:`ibis.sql.postgres.client.PostgreSQLDatabase` instance.
 
         Notes
         -----
@@ -116,6 +115,18 @@ class PostgreSQLClient(alch.AlchemyClient):
             return self.database_class(name, new_client)
 
     def schema(self, name):
+        """Create a database schema reflection object for the schema named `name`.
+
+        Parameters
+        ----------
+        name : str
+
+        Returns
+        -------
+        schema : PostgreSQLSchema
+            An :class:`ibis.sql.postgres.client.PostgreSQLSchema` instance.
+
+        """
         return self.database().schema(name)
 
     @property
@@ -123,13 +134,8 @@ class PostgreSQLClient(alch.AlchemyClient):
         """The name of the current database this client is connected to."""
         return self.database_name
 
-    @property
-    def current_schema(self):
-        return self.current_schema
-
     def list_databases(self):
         # http://dba.stackexchange.com/a/1304/58517
-
         return [
             row.datname for row in self.con.execute(
                 'SELECT datname FROM pg_database WHERE NOT datistemplate'
@@ -137,7 +143,7 @@ class PostgreSQLClient(alch.AlchemyClient):
         ]
 
     def list_schemas(self):
-        """list databases here means list schemas"""
+        """List all the schemas in the current database."""
         return self.inspector.get_schema_names()
 
     def set_database(self, name):
@@ -145,9 +151,6 @@ class PostgreSQLClient(alch.AlchemyClient):
             'Cannot set database with PostgreSQL client. To use a different'
             ' database, use client.database({!r})'.format(name)
         )
-
-    def set_schema(self, name):
-        self.schema_name = name
 
     @property
     def client(self):
