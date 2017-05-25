@@ -29,21 +29,16 @@ PY2 = sys.version_info[0] == 2
 import unittest
 
 if not PY2:
-    import pickle
     unicode_type = str
     def lzip(*x):
         return list(zip(*x))
     zip = zip
-    pickle_dump = pickle.dumps
-    pickle_load = pickle.loads
     def dict_values(x):
         return list(x.values())
     from decimal import Decimal
     import unittest.mock as mock
     range = range
 else:
-    import cPickle
-
     try:
         from cdecimal import Decimal
     except ImportError:
@@ -52,8 +47,6 @@ else:
     unicode_type = unicode
     lzip = zip
     zip = itertools.izip
-    from ibis.cloudpickle import dumps as pickle_dump
-    pickle_load = cPickle.loads
 
     def dict_values(x):
         return x.values()
@@ -62,6 +55,7 @@ else:
         import mock  # mock is an optional dependency
     except ImportError:
         pass
+
     range = xrange
 
 integer_types = six.integer_types + (np.integer,)

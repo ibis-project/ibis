@@ -1773,29 +1773,73 @@ def join(left, right, predicates=(), how='inner'):
     return TableExpr(op)
 
 
-def cross_join(*args, **kwargs):
+def cross_join(*tables, **kwargs):
     """
     Perform a cross join (cartesian product) amongst a list of tables, with
     optional set of prefixes to apply to overlapping column names
 
     Parameters
     ----------
-    positional args: tables to join
-    prefixes keyword : prefixes for each table
-      Not yet implemented
-
-    Examples
-    --------
-    >>> joined1 = ibis.cross_join(a, b, c, d, e)
-    >>> joined2 = ibis.cross_join(a, b, c, prefixes=['a_', 'b_', 'c_']))
+    tables : ibis.expr.types.TableExpr
 
     Returns
     -------
     joined : TableExpr
-      If prefixes not provided, the result schema is not yet materialized
+
+    Examples
+    --------
+    >>> import ibis
+    >>> schemas = [(name, 'int64') for name in 'abcde']
+    >>> a, b, c, d, e = [
+    ...     ibis.table([(name, type)], name=name) for name, type in schemas
+    ... ]
+    >>> joined1 = ibis.cross_join(a, b, c, d, e)
+    >>> joined1  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: a
+      schema:
+        a : int64
+    ref_1
+    UnboundTable[table]
+      name: b
+      schema:
+        b : int64
+    ref_2
+    UnboundTable[table]
+      name: c
+      schema:
+        c : int64
+    ref_3
+    UnboundTable[table]
+      name: d
+      schema:
+        d : int64
+    ref_4
+    UnboundTable[table]
+      name: e
+      schema:
+        e : int64
+    CrossJoin[table]
+      left:
+        Table: ref_0
+      right:
+        CrossJoin[table]
+          left:
+            CrossJoin[table]
+              left:
+                CrossJoin[table]
+                  left:
+                    Table: ref_1
+                  right:
+                    Table: ref_2
+              right:
+                Table: ref_3
+          right:
+            Table: ref_4
     """
-    op = _ops.CrossJoin(*args, **kwargs)
-    return TableExpr(op)
+    # TODO(phillipc): Implement prefix keyword argument
+    return TableExpr(_ops.CrossJoin(*tables, **kwargs))
 
 
 def _table_count(self):

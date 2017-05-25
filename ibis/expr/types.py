@@ -74,16 +74,7 @@ class Expr(object):
         return ExprFormatter(self, memo=memo).get_result()
 
     def pipe(self, f, *args, **kwargs):
-        """
-        Generic composition function to enable expression pipelining
-
-        >>> (expr
-        >>>  .pipe(f, *args, **kwargs)
-        >>>  .pipe(g, *args2, **kwargs2))
-
-        is equivalent to
-
-        >>> g(f(expr, *args, **kwargs), *args2, **kwargs2)
+        """Generic composition function to enable expression pipelining.
 
         Parameters
         ----------
@@ -96,12 +87,33 @@ class Expr(object):
 
         Examples
         --------
-        >>> def foo(data, a=None, b=None):
-        ...     pass
-        >>> def bar(a, b, data=None):
-        ...     pass
-        >>> expr.pipe(foo, a=5, b=10)
-        >>> expr.pipe((bar, 'data'), 1, 2)
+        >>> import ibis
+        >>> t = ibis.table([('a', 'int64'), ('b', 'string')], name='t')
+        >>> f = lambda a: (a + 1).name('a')
+        >>> g = lambda a: (a * 2).name('a')
+        >>> result1 = t.a.pipe(f).pipe(g)
+        >>> result1  # doctest: +NORMALIZE_WHITESPACE
+        ref_0
+        UnboundTable[table]
+          name: t
+          schema:
+            a : int64
+            b : string
+        a = Multiply[int64*]
+          left:
+            a = Add[int64*]
+              left:
+                a = Column[int64*] 'a' from table
+                  ref_0
+              right:
+                Literal[int8]
+                  1
+          right:
+            Literal[int8]
+              2
+        >>> result2 = g(f(t.a))  # equivalent to the above
+        >>> result1.equals(result2)
+        True
 
         Returns
         -------

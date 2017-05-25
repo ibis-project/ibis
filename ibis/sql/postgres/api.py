@@ -33,7 +33,9 @@ def compile(expr):
 
     Examples
     --------
-    >>> con = connect(database='ibis_testing', host='localhost')
+    >>> import os
+    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
+    >>> con = connect(database=database, host='localhost')
     >>> t = con.table('functional_alltypes')
     >>> expr = t.double_col + 1
     >>> sqla = compile(expr)
@@ -75,7 +77,9 @@ def connect(
 
     Examples
     --------
-    >>> con = connect(database='ibis_testing', host='localhost')
+    >>> import os
+    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
+    >>> con = connect(database=database, host='localhost')
     >>> con.list_tables()  # doctest: +ELLIPSIS
     [...]
     >>> t = con.table('functional_alltypes')

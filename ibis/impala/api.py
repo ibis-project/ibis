@@ -48,37 +48,49 @@ def connect(host='localhost', port=21050, database='default', timeout=45,
             use_ssl=False, ca_cert=None, user=None,
             password=None, auth_mechanism='NOSASL',
             kerberos_service_name='impala', pool_size=8, hdfs_client=None):
-    """
-    Create an ImpalaClient for use with Ibis.
+    """Create an ImpalaClient for use with Ibis.
 
     Parameters
     ----------
-    host : string, Host name of the impalad or HiveServer2 in Hive
-    port : int, Defaults to 21050 (Impala's HiveServer2)
-    database : string, Default database when obtaining new cursors
-    timeout : int, Connection timeout (seconds) when communicating with
-        HiveServer2
-    use_ssl : boolean, Use SSL when connecting to HiveServer2
-    ca_cert : string, Local path to 3rd party CA certificate or copy of server
-        certificate for self-signed certificates. If SSL is enabled, but this
-        argument is None, then certificate validation is skipped.
-    user : string, LDAP user to authenticate
-    password : string, LDAP password to authenticate
-    auth_mechanism : string, {'NOSASL' <- default, 'PLAIN', 'GSSAPI', 'LDAP'}.
+    host : str, optional
+        Host name of the impalad or HiveServer2 in Hive
+    port : int, optional
+        Impala's HiveServer2 port
+    database : str, optional
+        Default database when obtaining new cursors
+    timeout : int, optional
+        Connection timeout in seconds when communicating with HiveServer2
+    use_ssl : bool, optional
+        Use SSL when connecting to HiveServer2
+    ca_cert : str, optional
+        Local path to 3rd party CA certificate or copy of server certificate
+        for self-signed certificates. If SSL is enabled, but this argument is
+        ``None``, then certificate validation is skipped.
+    user : str, optional
+        LDAP user to authenticate
+    password : str, optional
+        LDAP password to authenticate
+    auth_mechanism : str, optional
+        {'NOSASL' <- default, 'PLAIN', 'GSSAPI', 'LDAP'}.
         Use NOSASL for non-secured Impala connections.  Use PLAIN for
         non-secured Hive clusters.  Use LDAP for LDAP authenticated
         connections.  Use GSSAPI for Kerberos-secured clusters.
-    kerberos_service_name : string, Specify particular impalad service
-        principal.
+    kerberos_service_name : str, optional
+        Specify particular impalad service principal.
 
     Examples
     --------
-    >>> hdfs = ibis.hdfs_connect(**hdfs_params)
-    >>> client = ibis.impala.connect(hdfs_client=hdfs, **impala_params)
+    >>> import ibis
+    >>> hdfs = ibis.hdfs_connect(host='impala', port=50070)
+    >>> hdfs  # doctest: +ELLIPSIS
+    <ibis.filesystems.WebHDFS object at 0x...>
+    >>> client = ibis.impala.connect(hdfs_client=hdfs, port=21050)
+    >>> client  # doctest: +ELLIPSIS
+    <ibis.impala.client.ImpalaClient object at 0x...>
 
     Returns
     -------
-    con : ImpalaClient
+    ImpalaClient
     """
     params = {
         'host': host,
