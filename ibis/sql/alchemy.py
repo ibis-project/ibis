@@ -524,7 +524,7 @@ class AlchemyDatabaseSchema(Database):
         self.client = database.client
 
     def __repr__(self):
-        return "{0}('{1}')".format('Schema', self.name)
+        return "Schema({!r})".format(self.name)
 
     def drop(self, force=False):
         """
@@ -533,14 +533,15 @@ class AlchemyDatabaseSchema(Database):
         Parameters
         ----------
         force : boolean, default False
-          Drop any objects if they exist, and do not fail if the database does
+          Drop any objects if they exist, and do not fail if the schema does
           not exist.
         """
-        raise NotImplementedError()
+        raise NotImplementedError(
+            "Drop is not implemented yet for sqlalchemy schemas")
 
     def table(self, name):
         """
-        Return a table expression referencing a table in this database
+        Return a table expression referencing a table in this schema
 
         Returns
         -------

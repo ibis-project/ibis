@@ -114,7 +114,7 @@ class PostgreSQLClient(alch.AlchemyClient):
             return self.database_class(name, new_client)
 
     def schema(self, name):
-        """Create a database schema reflection object for the schema named `name`.
+        """Get a schema object from the current database for the schema named `name`.
 
         Parameters
         ----------
@@ -167,8 +167,8 @@ class PostgreSQLClient(alch.AlchemyClient):
             The database in which the table referred to by `name` resides. If
             ``None`` then the ``current_database`` is used.
         schema : str, optional
-            The schema to in which the table referred to resides.  If
-            ``None`` then the ``current_schema`` is used.
+            The schema in which the table resides.  If ``None`` then the 
+            `public` schema is assumed.
 
         Returns
         -------
