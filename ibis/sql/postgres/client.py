@@ -176,7 +176,6 @@ class PostgreSQLClient(alch.AlchemyClient):
         table : TableExpr
             A table expression.
         """
-        schema = schema or self.current_schema
         if database is not None and database != self.current_database:
             return self.database(name=database).table(name=name, schema=schema)
         else:
@@ -185,7 +184,6 @@ class PostgreSQLClient(alch.AlchemyClient):
             return self._table_expr_klass(node)
 
     def list_tables(self, like=None, database=None, schema=None):
-        schema = schema or self.current_schema
         if database is not None and database != self.current_database:
             return self.database(name=database).list_tables(like=like, schema=schema)
         else:
