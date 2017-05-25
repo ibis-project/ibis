@@ -17,7 +17,6 @@ import getpass
 import sqlalchemy as sa
 from sqlalchemy.engine.reflection import Inspector
 
-from ibis.client import Database
 from ibis.sql.postgres.compiler import PostgreSQLDialect
 import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
