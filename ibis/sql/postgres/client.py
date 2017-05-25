@@ -85,8 +85,8 @@ class PostgreSQLClient(alch.AlchemyClient):
         Parameters
         ----------
         name : str, optional
-            The name of the database to connect to. If ``None``, return the
-            database named ``self.current_database``.
+            The name of the database to connect to. If ``None``, return
+            the database named ``self.current_database``.
 
         Returns
         -------
@@ -168,7 +168,7 @@ class PostgreSQLClient(alch.AlchemyClient):
             The database in which the table referred to by `name` resides. If
             ``None`` then the ``current_database`` is used.
         schema : str, optional
-            The schema to in which the table referred to resides.  If 
+            The schema to in which the table referred to resides.  If
             ``None`` then the ``current_schema`` is used.
 
         Returns
@@ -177,7 +177,10 @@ class PostgreSQLClient(alch.AlchemyClient):
             A table expression.
         """
         if database is not None and database != self.current_database:
-            return self.database(name=database).table(name=name, schema=schema)
+            return (
+                self.database(name=database)
+                    .table(name=name, schema=schema)
+            )
         else:
             alch_table = self._get_sqla_table(name, schema=schema)
             node = PostgreSQLTable(alch_table, self)
@@ -185,9 +188,13 @@ class PostgreSQLClient(alch.AlchemyClient):
 
     def list_tables(self, like=None, database=None, schema=None):
         if database is not None and database != self.current_database:
-            return self.database(name=database).list_tables(like=like, schema=schema)
+            return (
+                self.database(name=database)
+                    .list_tables(like=like, schema=schema)
+            )
         else:
-            return super(PostgreSQLClient, self).list_tables(like=like, schema=schema)
+            return super(PostgreSQLClient, self).list_tables(
+                like=like, schema=schema)
 
     @property
     def _table_expr_klass(self):

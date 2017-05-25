@@ -22,7 +22,7 @@ import sqlalchemy.sql as sql
 from sqlalchemy.sql.elements import Over as _Over
 from sqlalchemy.ext.compiler import compiles as sa_compiles
 
-from ibis.client import SQLClient, AsyncQuery, Query, DatabaseNamespace, Database
+from ibis.client import SQLClient, AsyncQuery, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -516,7 +516,7 @@ class AlchemyDatabaseSchema(Database):
 
         Parameters
         ----------
-        name : str 
+        name : str
         database : AlchemyDatabase
         """
         self.name = name
@@ -532,9 +532,9 @@ class AlchemyDatabaseSchema(Database):
 
         Parameters
         ----------
-        drop : boolean, default False
-          Drop any objects if they exist, and do not fail if the databaes does
-          not exist
+        force : boolean, default False
+          Drop any objects if they exist, and do not fail if the database does
+          not exist.
         """
         raise NotImplementedError()
 
@@ -550,7 +550,9 @@ class AlchemyDatabaseSchema(Database):
         return self.database.table(qualified_name, self.name)
 
     def list_tables(self, like=None):
-        return self.database.list_tables(schema=self.name, like=self._qualify_like(like))
+        return self.database.list_tables(
+            schema=self.name,
+            like=self._qualify_like(like))
 
 
 class AlchemyDatabase(Database):

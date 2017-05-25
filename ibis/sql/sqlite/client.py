@@ -46,12 +46,12 @@ class SQLiteClient(alch.AlchemyClient):
         self.database_name = 'default'
 
         self.con = sa.create_engine('sqlite://')
-        self.inspector = Inspector.from_engine(self.con)
 
         if path:
             self.attach(self.database_name, path, create=create)
 
         self.meta = sa.MetaData(bind=self.con)
+        self.inspector = Inspector.from_engine(self.con)
 
     @property
     def current_database(self):
@@ -93,6 +93,8 @@ class SQLiteClient(alch.AlchemyClient):
         Parameters
         ----------
         name : string
+        database : string, optional
+          name of the attached database that the table is located in.
 
         Returns
         -------
@@ -105,7 +107,7 @@ class SQLiteClient(alch.AlchemyClient):
     def list_tables(self, like=None, database=None, schema=None):
         if database is None:
             database = self.database_name
-        return super().list_tables(like, schema=database)
+        return super(SQLiteClient, self).list_tables(like, schema=database)
 
     @property
     def _table_expr_klass(self):
