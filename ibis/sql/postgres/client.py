@@ -167,7 +167,7 @@ class PostgreSQLClient(alch.AlchemyClient):
             The database in which the table referred to by `name` resides. If
             ``None`` then the ``current_database`` is used.
         schema : str, optional
-            The schema in which the table resides.  If ``None`` then the 
+            The schema in which the table resides.  If ``None`` then the
             `public` schema is assumed.
 
         Returns
