@@ -15,6 +15,7 @@
 import os
 
 import sqlalchemy as sa
+from sqlalchemy.engine.reflection import Inspector
 
 from ibis.client import Database
 from .compiler import SQLiteDialect
@@ -50,6 +51,7 @@ class SQLiteClient(alch.AlchemyClient):
             self.attach(self.database_name, path, create=create)
 
         self.meta = sa.MetaData(bind=self.con)
+        self.inspector = Inspector.from_engine(self.con)
 
     @property
     def current_database(self):
@@ -91,14 +93,21 @@ class SQLiteClient(alch.AlchemyClient):
         Parameters
         ----------
         name : string
+        database : string, optional
+          name of the attached database that the table is located in.
 
         Returns
         -------
         table : TableExpr
         """
-        alch_table = self._get_sqla_table(name)
+        alch_table = self._get_sqla_table(name, schema=database)
         node = SQLiteTable(alch_table, self)
         return self._table_expr_klass(node)
+
+    def list_tables(self, like=None, database=None, schema=None):
+        if database is None:
+            database = self.database_name
+        return super(SQLiteClient, self).list_tables(like, schema=database)
 
     @property
     def _table_expr_klass(self):

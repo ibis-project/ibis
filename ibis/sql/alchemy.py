@@ -22,7 +22,7 @@ import sqlalchemy.sql as sql
 from sqlalchemy.sql.elements import Over as _Over
 from sqlalchemy.ext.compiler import compiles as sa_compiles
 
-from ibis.client import SQLClient, AsyncQuery, Query
+from ibis.client import SQLClient, AsyncQuery, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -509,6 +509,76 @@ def build_ast(expr, context=None, dialect=None):
     return builder.get_result()
 
 
+class AlchemyDatabaseSchema(Database):
+
+    def __init__(self, name, database):
+        """
+
+        Parameters
+        ----------
+        name : str
+        database : AlchemyDatabase
+        """
+        self.name = name
+        self.database = database
+        self.client = database.client
+
+    def __repr__(self):
+        return "Schema({!r})".format(self.name)
+
+    def drop(self, force=False):
+        """
+        Drop the schema
+
+        Parameters
+        ----------
+        force : boolean, default False
+          Drop any objects if they exist, and do not fail if the schema does
+          not exist.
+        """
+        raise NotImplementedError(
+            "Drop is not implemented yet for sqlalchemy schemas")
+
+    def table(self, name):
+        """
+        Return a table expression referencing a table in this schema
+
+        Returns
+        -------
+        table : TableExpr
+        """
+        qualified_name = self._qualify(name)
+        return self.database.table(qualified_name, self.name)
+
+    def list_tables(self, like=None):
+        return self.database.list_tables(
+            schema=self.name,
+            like=self._qualify_like(like))
+
+
+class AlchemyDatabase(Database):
+    """
+
+    Attributes
+    ----------
+    client : AlchemyClient
+
+    """
+    schema_class = AlchemyDatabaseSchema
+
+    def table(self, name, schema=None):
+        return self.client.table(name, schema=schema)
+
+    def list_tables(self, like=None, schema=None):
+        return self.client.list_tables(
+            schema=schema,
+            like=self._qualify_like(like),
+            database=self.name)
+
+    def schema(self, name):
+        return self.schema_class(name, self)
+
+
 class AlchemyTable(ops.DatabaseTable):
 
     def __init__(self, table, source):
@@ -613,9 +683,9 @@ class AlchemyClient(SQLClient):
     def truncate_table(self, table_name, database=None):
         self.meta.tables[table_name].delete().execute()
 
-    def list_tables(self, like=None, database=None):
+    def list_tables(self, like=None, database=None, schema=None):
         """
-        List tables in the current (or indicated) database.
+        List tables/views in the current (or indicated) database.
 
         Parameters
         ----------
@@ -628,12 +698,11 @@ class AlchemyClient(SQLClient):
         -------
         tables : list of strings
         """
-        if database is None:
-            database = self.current_database
-        names = self.con.table_names(schema=database)
+        names = self.inspector.get_table_names(schema=schema)
+        names.extend(self.inspector.get_view_names(schema=schema))
         if like is not None:
             names = [x for x in names if like in x]
-        return names
+        return sorted(names)
 
     def _execute(self, query, results=True):
         return AlchemyProxy(self.con.execute(query))
@@ -641,8 +710,8 @@ class AlchemyClient(SQLClient):
     def _build_ast(self, expr):
         return build_ast(expr, dialect=self.dialect)
 
-    def _get_sqla_table(self, name):
-        return sa.Table(name, self.meta, autoload=True)
+    def _get_sqla_table(self, name, schema=None):
+        return sa.Table(name, self.meta, schema=schema, autoload=True)
 
     def _sqla_table_to_expr(self, table):
         node = AlchemyTable(table, self)

@@ -15,8 +15,8 @@
 import getpass
 
 import sqlalchemy as sa
+from sqlalchemy.engine.reflection import Inspector
 
-from ibis.client import Database
 from ibis.sql.postgres.compiler import PostgreSQLDialect
 import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
@@ -26,13 +26,22 @@ class PostgreSQLTable(alch.AlchemyTable):
     pass
 
 
-class PostgreSQLDatabase(Database):
+class PostgreSQLSchema(alch.AlchemyDatabaseSchema):
     pass
+
+
+class PostgreSQLDatabase(alch.AlchemyDatabase):
+    schema_class = PostgreSQLSchema
 
 
 class PostgreSQLClient(alch.AlchemyClient):
 
-    """The Ibis PostgreSQL client class"""
+    """The Ibis PostgreSQL client class
+
+    Attributes
+    ----------
+    con : sqlalchemy.engine.Engine
+    """
 
     dialect = PostgreSQLDialect
     database_class = PostgreSQLDatabase
@@ -66,6 +75,7 @@ class PostgreSQLClient(alch.AlchemyClient):
         self.name = url.database
         self.database_name = self.__class__.default_database_name
         self.con = sa.create_engine(url)
+        self.inspector = Inspector.from_engine(self.con)
         self.meta = sa.MetaData(bind=self.con)
 
     def database(self, name=None):
@@ -74,13 +84,13 @@ class PostgreSQLClient(alch.AlchemyClient):
         Parameters
         ----------
         name : str, optional
-            The name of the database to connect to. If ``None``, return the
-            database named ``self.current_database``.
+            The name of the database to connect to. If ``None``, return
+            the database named ``self.current_database``.
 
         Returns
         -------
-        db : Database
-            An :class:`ibis.client.Database` instance.
+        db : PostgreSQLDatabase
+            An :class:`ibis.sql.postgres.client.PostgreSQLDatabase` instance.
 
         Notes
         -----
@@ -103,6 +113,21 @@ class PostgreSQLClient(alch.AlchemyClient):
             )
             return self.database_class(name, new_client)
 
+    def schema(self, name):
+        """Get a schema object from the current database for the schema named `name`.
+
+        Parameters
+        ----------
+        name : str
+
+        Returns
+        -------
+        schema : PostgreSQLSchema
+            An :class:`ibis.sql.postgres.client.PostgreSQLSchema` instance.
+
+        """
+        return self.database().schema(name)
+
     @property
     def current_database(self):
         """The name of the current database this client is connected to."""
@@ -116,6 +141,10 @@ class PostgreSQLClient(alch.AlchemyClient):
             )
         ]
 
+    def list_schemas(self):
+        """List all the schemas in the current database."""
+        return self.inspector.get_schema_names()
+
     def set_database(self, name):
         raise NotImplementedError(
             'Cannot set database with PostgreSQL client. To use a different'
@@ -126,7 +155,7 @@ class PostgreSQLClient(alch.AlchemyClient):
     def client(self):
         return self
 
-    def table(self, name, database=None):
+    def table(self, name, database=None, schema=None):
         """Create a table expression that references a particular a table
         called `name` in a PostgreSQL database called `database`.
 
@@ -137,6 +166,9 @@ class PostgreSQLClient(alch.AlchemyClient):
         database : str, optional
             The database in which the table referred to by `name` resides. If
             ``None`` then the ``current_database`` is used.
+        schema : str, optional
+            The schema in which the table resides.  If ``None`` then the
+            `public` schema is assumed.
 
         Returns
         -------
@@ -144,11 +176,24 @@ class PostgreSQLClient(alch.AlchemyClient):
             A table expression.
         """
         if database is not None and database != self.current_database:
-            return self.database(name=database).table(name=name)
+            return (
+                self.database(name=database)
+                    .table(name=name, schema=schema)
+            )
         else:
-            alch_table = self._get_sqla_table(name)
+            alch_table = self._get_sqla_table(name, schema=schema)
             node = PostgreSQLTable(alch_table, self)
             return self._table_expr_klass(node)
+
+    def list_tables(self, like=None, database=None, schema=None):
+        if database is not None and database != self.current_database:
+            return (
+                self.database(name=database)
+                    .list_tables(like=like, schema=schema)
+            )
+        else:
+            return super(PostgreSQLClient, self).list_tables(
+                like=like, schema=schema)
 
     @property
     def _table_expr_klass(self):

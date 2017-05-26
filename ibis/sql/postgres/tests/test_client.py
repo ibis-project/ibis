@@ -71,6 +71,10 @@ class TestPostgreSQLClient(PostgreSQLTests, unittest.TestCase):
 
         assert db.list_tables() == self.con.list_tables()
 
+        db_schema = self.con.schema("information_schema")
+
+        assert db_schema.list_tables() != self.con.list_tables()
+
     def test_compile_toplevel(self):
         t = ibis.table([
             ('foo', 'double')
@@ -88,6 +92,10 @@ FROM t0 AS t0"""  # noqa
         assert POSTGRES_TEST_DB is not None
         assert POSTGRES_TEST_DB in self.con.list_databases()
 
+    def test_list_schemas(self):
+        assert 'public' in self.con.list_schemas()
+        assert 'information_schema' in self.con.list_schemas()
+
 
 @pytest.mark.postgresql
 def test_metadata_is_per_table():
@@ -98,3 +106,14 @@ def test_metadata_is_per_table():
     t = con.table('functional_alltypes')  # noqa
     assert 'functional_alltypes' in con.meta.tables
     assert len(con.meta.tables) == 1
+
+
+@pytest.mark.postgresql
+def test_schema_table():
+    con = ibis.postgres.connect(host='localhost', database=POSTGRES_TEST_DB)
+
+    # ensure that we can reflect the information schema (which is guaranteed
+    # to exist)
+    schema = con.schema('information_schema')
+
+    assert isinstance(schema['tables'], ir.TableExpr)
