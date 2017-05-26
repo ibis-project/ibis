@@ -15,11 +15,9 @@
 import os
 
 import sqlalchemy as sa
-from sqlalchemy.engine.reflection import Inspector
 
 from ibis.client import Database
 from .compiler import SQLiteDialect
-import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
 import ibis.common as com
 
@@ -42,26 +40,24 @@ class SQLiteClient(alch.AlchemyClient):
     database_class = SQLiteDatabase
 
     def __init__(self, path=None, create=False):
+        super(SQLiteClient, self).__init__(sa.create_engine('sqlite://'))
         self.name = path
         self.database_name = 'default'
 
-        self.con = sa.create_engine('sqlite://')
-
         if path:
             self.attach(self.database_name, path, create=create)
-
-        self.meta = sa.MetaData(bind=self.con)
-        self.inspector = Inspector.from_engine(self.con)
 
     @property
     def current_database(self):
         return self.database_name
 
     def list_databases(self):
-        raise NotImplementedError
+        raise NotImplementedError(
+            'Listing databases in SQLite is not implemented'
+        )
 
-    def set_database(self):
-        raise NotImplementedError
+    def set_database(self, name):
+        raise NotImplementedError('set_database is not implemented for SQLite')
 
     def attach(self, name, path, create=False):
         """
@@ -108,7 +104,3 @@ class SQLiteClient(alch.AlchemyClient):
         if database is None:
             database = self.database_name
         return super(SQLiteClient, self).list_tables(like, schema=database)
-
-    @property
-    def _table_expr_klass(self):
-        return ir.TableExpr

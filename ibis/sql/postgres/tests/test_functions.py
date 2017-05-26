@@ -816,6 +816,7 @@ def t(con):
         yield con.table(name)
     finally:
         con.drop_table(name)
+        assert name not in con.list_tables()
 
 
 @pytest.yield_fixture
@@ -834,6 +835,7 @@ def s(con, t):
         yield con.table(name)
     finally:
         con.drop_table(name)
+        assert name not in con.list_tables()
 
 
 @pytest.yield_fixture
@@ -854,6 +856,7 @@ def trunc(con):
         yield con.table(name)
     finally:
         con.drop_table(name)
+        assert name not in con.list_tables()
 
 
 @pytest.mark.postgresql

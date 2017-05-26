@@ -14,6 +14,8 @@
 
 import numbers
 import operator
+import functools
+
 import six
 
 import sqlalchemy as sa
@@ -633,15 +635,52 @@ class AlchemyDialect(object):
     translator = AlchemyExprTranslator
 
 
+def invalidates_reflection_cache(f):
+    """Invalidate the SQLAlchemy reflection cache if `f` performs an operation
+    that mutates database or table metadata such as ``CREATE TABLE``,
+    ``DROP TABLE``, etc.
+
+    Parameters
+    ----------
+    f : callable
+        A method on :class:`ibis.sql.alchemy.AlchemyClient`
+    """
+    @functools.wraps(f)
+    def wrapped(self, *args, **kwargs):
+        result = f(self, *args, **kwargs)
+
+        # only invalidate the cache after we've succesfully called the wrapped
+        # function
+        self._reflection_cache_is_dirty = True
+        return result
+    return wrapped
+
+
 class AlchemyClient(SQLClient):
 
     dialect = AlchemyDialect
     sync_query = AlchemyQuery
 
+    def __init__(self, con):
+        super(AlchemyClient, self).__init__()
+        self.con = con
+        self.meta = sa.MetaData(bind=con)
+        self._inspector = sa.inspect(con)
+        self._reflection_cache_is_dirty = False
+
     @property
     def async_query(self):
-        raise NotImplementedError
+        raise NotImplementedError(
+            'async_query not implemented in {}'.format(type(self).__name__)
+        )
 
+    @property
+    def inspector(self):
+        if self._reflection_cache_is_dirty:
+            self._inspector.info_cache.clear()
+        return self._inspector
+
+    @invalidates_reflection_cache
     def create_table(self, name, expr=None, schema=None, database=None):
         if database is not None and database != self.engine.url.database:
             raise NotImplementedError(
@@ -666,6 +705,7 @@ class AlchemyClient(SQLClient):
                     t.insert().from_select(list(expr.columns), expr.compile())
                 )
 
+    @invalidates_reflection_cache
     def drop_table(self, table_name, database=None, force=False):
         if database is not None and database != self.engine.url.database:
             raise NotImplementedError(
@@ -698,12 +738,14 @@ class AlchemyClient(SQLClient):
         -------
         tables : list of strings
         """
-        names = self.inspector.get_table_names(schema=schema)
-        names.extend(self.inspector.get_view_names(schema=schema))
+        inspector = self.inspector
+        names = inspector.get_table_names(schema=schema)
+        names.extend(inspector.get_view_names(schema=schema))
         if like is not None:
             names = [x for x in names if like in x]
         return sorted(names)
 
+    @invalidates_reflection_cache
     def _execute(self, query, results=True):
         return AlchemyProxy(self.con.execute(query))
 
@@ -722,7 +764,7 @@ class AlchemySelect(Select):
 
     def __init__(self, *args, **kwargs):
         self.exists = kwargs.pop('exists', False)
-        Select.__init__(self, *args, **kwargs)
+        super(AlchemySelect, self).__init__(*args, **kwargs)
 
     def compile(self):
         # Can't tell if this is a hack or not. Revisit later
