@@ -32,13 +32,12 @@ dependencies:
   override:
     - pip install -U pip
     - cd $(pyenv root); git pull
-    - pip install -U click flake8 pylint tox tox-pyenv
+    - pip install -U tox tox-pyenv
     - pyenv install --skip-existing 2.7.9
     - pyenv install --skip-existing 3.4.3
     - pyenv install --skip-existing 3.5.0
     - pyenv install --skip-existing 3.6.0
     - pyenv local 2.7.9 3.4.3 3.5.0 3.6.0
-    - pip install -e .[develop]
   post:
     # pull down the docker image
     - docker pull cpcloud86/impala:metastore
@@ -61,11 +60,7 @@ dependencies:
     # make sure the hive metastore is working
     - sudo lxc-attach -n "$(docker inspect --format '{{.Id}}' impala)" -- hive -e 'show tables'
 
-    # load the ibis test data into impala and postgres
-    - scripts/test_data_admin.py load --data --overwrite --data-dir "$HOME/ibis-testing-data"
-
 test:
   override:
-    - flake8
     - case $CIRCLE_NODE_INDEX in 0) tox -e py27 ;; 1) tox -e py34 ;; 2) tox -e py35 ;; 3) tox -e py36 ;; esac:
         parallel: true
