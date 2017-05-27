@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import os
+import re
+import inspect
+import functools
 
 import sqlalchemy as sa
 
@@ -30,6 +33,97 @@ class SQLiteDatabase(Database):
     pass
 
 
+def _ibis_sqlite_regex_search(string, regex):
+    """Return whether `regex` exists in `string`.
+
+    Parameters
+    ----------
+    string : str
+    regex : str
+
+    Returns
+    -------
+    found : bool
+    """
+    if string is None or regex is None:
+        return None
+    return re.search(regex, string) is not None
+
+
+def _ibis_sqlite_regex_replace(string, pattern, replacement):
+    """Replace occurences of `pattern` in `string` with `replacement`.
+
+    Parameters
+    ----------
+    string : str
+    pattern : str
+    replacement : str
+
+    Returns
+    -------
+    result : str
+    """
+    if string is None or pattern is None or replacement is None:
+        return None
+    return re.sub(pattern, replacement, string)
+
+
+def _ibis_sqlite_regex_extract(string, pattern, index):
+    """Extract match of regular expression `pattern` from `string` at `index`.
+
+    Parameters
+    ----------
+    string : str
+    pattern : str
+    index : int
+
+    Returns
+    -------
+    result : str or None
+    """
+    if string is None or pattern is None or index is None:
+        return None
+
+    result = re.search(pattern, string)
+    if result is not None and 0 <= index <= result.lastindex:
+        return result.group(index)
+    else:
+        return None
+
+
+def _register_function(func, con):
+    """Register a Python callable with a SQLite connection `con`.
+
+    Parameters
+    ----------
+    func : callable
+    con : sqlalchemy.Connection
+    """
+    argspec = inspect.getargspec(func)
+
+    if argspec.varargs is not None:
+        raise TypeError(
+            'Variable length arguments not supported in Ibis SQLite function '
+            'registration'
+        )
+
+    if argspec.keywords is not None:
+        raise NotImplementedError(
+            'Keyword arguments not implemented for Ibis SQLite function '
+            'registration'
+        )
+
+    if argspec.defaults is not None:
+        raise NotImplementedError(
+            'Keyword arguments not implemented for Ibis SQLite function '
+            'registration'
+        )
+
+    con.connection.connection.create_function(
+        func.__name__, len(argspec.args), func
+    )
+
+
 class SQLiteClient(alch.AlchemyClient):
 
     """
@@ -44,8 +138,15 @@ class SQLiteClient(alch.AlchemyClient):
         self.name = path
         self.database_name = 'default'
 
-        if path:
+        if path is not None:
             self.attach(self.database_name, path, create=create)
+
+        for func in (
+            _ibis_sqlite_regex_search,
+            _ibis_sqlite_regex_replace,
+            _ibis_sqlite_regex_extract,
+        ):
+            self.con.run_callable(functools.partial(_register_function, func))
 
     @property
     def current_database(self):
@@ -60,22 +161,27 @@ class SQLiteClient(alch.AlchemyClient):
         raise NotImplementedError('set_database is not implemented for SQLite')
 
     def attach(self, name, path, create=False):
-        """
-        Connect another SQLite database file
+        """Connect another SQLite database file
 
         Parameters
         ----------
         name : string
-          Database name within SQLite
+            Database name within SQLite
         path : string
-          Path to sqlite3 file
-        create : boolean, default False
-          If file does not exist, create file if True otherwise raise Exception
+            Path to sqlite3 file
+        create : boolean, optional
+            If file does not exist, create file if True otherwise raise an
+            Exception
         """
         if not os.path.exists(path) and not create:
-            raise com.IbisError('File {0} does not exist'.format(path))
+            raise com.IbisError('File {!r} does not exist'.format(path))
 
-        self.con.execute("ATTACH DATABASE '{0}' AS '{1}'".format(path, name))
+        self.raw_sql(
+            "ATTACH DATABASE {path!r} AS {name}".format(
+                path=path,
+                name=self.con.dialect.identifier_preparer.quote(name),
+            )
+        )
 
     @property
     def client(self):
