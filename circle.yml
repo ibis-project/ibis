@@ -44,7 +44,7 @@ dependencies:
     - docker pull cpcloud86/impala:metastore
 
     # run the docker image, exposing relevant ports
-    - docker run -it -d --name impala --hostname impala -p 9000:9000 -p 50010:50010 -p 50020:50020 -p 50070:50070 -p 50075:50075 -p 21000:21000 -p 21050:21050 -p 25000:25000 -p 25010:25010 -p 25020:25020 cpcloud86/impala:metastore
+    - docker run -it -d --name impala --hostname impala -p 50070:50070 -p 21050:21050 cpcloud86/impala:metastore
 
     # map the docker container's IP address to a human-readable hostname
     - echo "$(docker inspect --format '{{.NetworkSettings.IPAddress}}' impala) impala" | sudo tee -a /etc/hosts
@@ -63,28 +63,6 @@ dependencies:
 
     # load the ibis test data into impala and postgres
     - scripts/test_data_admin.py load --data --overwrite --data-dir "$HOME/ibis-testing-data"
-
-database:
-  override:
-    # load some additional test data for postgres ARRAY types
-    - >
-      psql -U ubuntu -d $IBIS_TEST_POSTGRES_DB <<EOF
-        CREATE TABLE array_types (
-          x BIGINT[],
-          y TEXT[],
-          z FLOAT8[],
-          grouper TEXT,
-          scalar_column float8
-        );
-
-        INSERT INTO array_types VALUES
-          (ARRAY[1, 2, 3], ARRAY['a', 'b', 'c'], ARRAY[1.0, 2.0, 3.0], 'a', 1.0),
-          (ARRAY[4, 5], ARRAY['d', 'e'], ARRAY[4.0, 5.0], 'a', 2.0),
-          (ARRAY[6, NULL], ARRAY['f', NULL], ARRAY[6.0, NULL], 'a', 3.0),
-          (ARRAY[NULL, 1, NULL], ARRAY[NULL, 'a', NULL], ARRAY[]::float8[], 'b', 4.0),
-          (ARRAY[2, NULL, 3], ARRAY['b', NULL, 'c'], NULL, 'b', 5.0),
-          (ARRAY[4, NULL, NULL, 5], ARRAY['d', NULL, NULL, 'e'], ARRAY[4.0, NULL, NULL, 5.0], 'c', 6.0);
-      EOF
 
 test:
   override:

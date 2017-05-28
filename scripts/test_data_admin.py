@@ -13,17 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
 import getpass
 import os
 import shutil
 import tempfile
-import os.path as osp
-from os.path import join as pjoin
+import datetime
+import tarfile
+
 from subprocess import check_call
 
+import requests
 from click import group, option
 import sqlalchemy as sa
-from sqlalchemy import create_engine
 
 import ibis
 from ibis.compat import BytesIO
@@ -41,29 +43,37 @@ IBIS_TEST_DATA_S3_BUCKET = 'ibis-resources'
 IBIS_TEST_DATA_LOCAL_DIR = 'ibis-testing-data'
 
 TARBALL_NAME = 'ibis-testing-data.tar.gz'
-IBIS_TEST_DATA_TARBALL = 'testing/{0}'.format(TARBALL_NAME)
+IBIS_TEST_DATA_TARBALL = os.path.join('testing', TARBALL_NAME)
 
 
 IBIS_TEST_AWS_KEY_ID = os.environ.get('IBIS_TEST_AWS_KEY_ID')
 IBIS_TEST_AWS_SECRET = os.environ.get('IBIS_TEST_AWS_SECRET')
+IBIS_POSTGRES_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
+IBIS_POSTGRES_PASS = os.environ.get('IBIS_POSTGRES_PASS')
+IBIS_TEST_POSTGRES_DB = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
 
 
 def make_ibis_client():
-    hc = ibis.hdfs_connect(host=ENV.nn_host,
-                           port=ENV.webhdfs_port,
-                           auth_mechanism=ENV.auth_mechanism,
-                           verify=ENV.auth_mechanism not in ['GSSAPI', 'LDAP'],
-                           user=ENV.webhdfs_user)
-    if ENV.auth_mechanism in ['GSSAPI', 'LDAP']:
+    hc = ibis.hdfs_connect(
+        host=ENV.nn_host,
+        port=ENV.webhdfs_port,
+        auth_mechanism=ENV.auth_mechanism,
+        verify=ENV.auth_mechanism not in ['GSSAPI', 'LDAP'],
+        user=ENV.webhdfs_user
+    )
+    auth_mechanism = ENV.auth_mechanism
+    if auth_mechanism == 'GSSAPI' or auth_mechanism == 'LDAP':
         print("Warning: ignoring invalid Certificate Authority errors")
-    return ibis.impala.connect(host=ENV.impala_host,
-                               port=ENV.impala_port,
-                               auth_mechanism=ENV.auth_mechanism,
-                               hdfs_client=hc)
+    return ibis.impala.connect(
+        host=ENV.impala_host,
+        port=ENV.impala_port,
+        auth_mechanism=ENV.auth_mechanism,
+        hdfs_client=hc
+    )
 
 
 def can_write_to_hdfs(con):
-    test_path = pjoin(ENV.test_data_dir, ibis.util.guid())
+    test_path = os.path.join(ENV.test_data_dir, ibis.util.guid())
     test_file = BytesIO(ibis.util.guid().encode('utf-8'))
     try:
         con.hdfs.put(test_path, test_file)
@@ -102,20 +112,31 @@ def is_impala_loaded(con):
 
 
 def is_udf_loaded(con):
-    bitcode_dir = pjoin(ENV.test_data_dir, 'udf')
+    bitcode_dir = os.path.join(ENV.test_data_dir, 'udf')
     if con.hdfs.exists(bitcode_dir):
         return True
     return False
 
 
-def dnload_ibis_test_data_from_s3(local_path):
-    url = 'https://{0}.s3.amazonaws.com/{1}'.format(
-        IBIS_TEST_DATA_S3_BUCKET, IBIS_TEST_DATA_TARBALL)
-    cmd = 'cd {0} && wget -q {1} && tar -xzf {2}'.format(
-        local_path, url, TARBALL_NAME)
-    check_call(cmd, shell=True)
-    data_dir = pjoin(local_path, IBIS_TEST_DATA_LOCAL_DIR)
-    print('Downloaded {0} and unpacked it to {1}'.format(url, data_dir))
+def dnload_ibis_test_data_from_s3(
+    local_path,
+    bucket=IBIS_TEST_DATA_S3_BUCKET,
+    tarball=IBIS_TEST_DATA_TARBALL
+):
+    url = 'https://{}.s3.amazonaws.com/{}'.format(bucket, tarball)
+    resp = requests.get(url, stream=True)
+    resp.raise_for_status()
+
+    tarball_path = os.path.join(local_path, TARBALL_NAME)
+    with open(tarball_path, 'wb') as f:
+        for chunk in resp.iter_content(io.DEFAULT_BUFFER_SIZE):
+            f.write(chunk)
+
+    with tarfile.TarFile(tarball_path, mode='rb') as f:
+        f.extractall(local_path)
+
+    data_dir = os.path.join(local_path, IBIS_TEST_DATA_LOCAL_DIR)
+    print('Downloaded {} and unpacked it to {}'.format(url, data_dir))
     return data_dir
 
 
@@ -130,7 +151,7 @@ def create_test_database(con):
     if con.exists_database(ENV.test_data_db):
         con.drop_database(ENV.test_data_db, force=True)
     con.create_database(ENV.test_data_db)
-    print('Created database {0}'.format(ENV.test_data_db))
+    print('Created database {}'.format(ENV.test_data_db))
 
     con.create_table(
         'alltypes',
@@ -151,7 +172,7 @@ def create_test_database(con):
 
 
 def create_parquet_tables(con):
-    parquet_files = con.hdfs.ls(pjoin(ENV.test_data_dir, 'parquet'))
+    parquet_files = con.hdfs.ls(os.path.join(ENV.test_data_dir, 'parquet'))
     schemas = {
         'functional_alltypes': ibis.schema(
             [('id', 'int32'),
@@ -173,10 +194,10 @@ def create_parquet_tables(con):
              ('r_comment', 'string')])}
     tables = []
     for table_name in parquet_files:
-        print('Creating {0}'.format(table_name))
+        print('Creating {}'.format(table_name))
         # if no schema infer!
         schema = schemas.get(table_name)
-        path = pjoin(ENV.test_data_dir, 'parquet', table_name)
+        path = os.path.join(ENV.test_data_dir, 'parquet', table_name)
         table = con.parquet_file(path, schema=schema, name=table_name,
                                  database=ENV.test_data_db, persist=True)
         tables.append(table)
@@ -184,7 +205,7 @@ def create_parquet_tables(con):
 
 
 def create_avro_tables(con):
-    avro_files = con.hdfs.ls(pjoin(ENV.test_data_dir, 'avro'))
+    avro_files = con.hdfs.ls(os.path.join(ENV.test_data_dir, 'avro'))
     schemas = {
         'tpch_region_avro': {
             'type': 'record',
@@ -195,9 +216,9 @@ def create_avro_tables(con):
                 {'name': 'R_COMMENT', 'type': ['null', 'string']}]}}
     tables = []
     for table_name in avro_files:
-        print('Creating {0}'.format(table_name))
+        print('Creating {}'.format(table_name))
         schema = schemas[table_name]
-        path = pjoin(ENV.test_data_dir, 'avro', table_name)
+        path = os.path.join(ENV.test_data_dir, 'avro', table_name)
         table = con.avro_file(path, schema, name=table_name,
                               database=ENV.test_data_db, persist=True)
         tables.append(table)
@@ -206,16 +227,16 @@ def create_avro_tables(con):
 
 def build_udfs():
     print('Building UDFs')
-    ibis_home_dir = osp.dirname(osp.dirname(osp.abspath(__file__)))
-    udf_dir = pjoin(ibis_home_dir, 'testing', 'udf')
+    ibis_home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    udf_dir = os.path.join(ibis_home_dir, 'testing', 'udf')
     check_call('cmake . && make VERBOSE=1', shell=True, cwd=udf_dir)
 
 
 def upload_udfs(con):
-    ibis_home_dir = osp.dirname(osp.dirname(osp.abspath(__file__)))
-    build_dir = pjoin(ibis_home_dir, 'testing', 'udf', 'build')
-    bitcode_dir = pjoin(ENV.test_data_dir, 'udf')
-    print('Uploading UDFs to {0}'.format(bitcode_dir))
+    ibis_home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    build_dir = os.path.join(ibis_home_dir, 'testing', 'udf', 'build')
+    bitcode_dir = os.path.join(ENV.test_data_dir, 'udf')
+    print('Uploading UDFs to {}'.format(bitcode_dir))
     if con.hdfs.exists(bitcode_dir):
         con.hdfs.rmdir(bitcode_dir)
     con.hdfs.put(bitcode_dir, build_dir, verbose=True)
@@ -226,35 +247,95 @@ def scrape_parquet_files(tmp_db, con):
     to_scrape.append(('functional', 'alltypes'))
     for db, tname in to_scrape:
         table = con.table(tname, database=db)
-        new_name = '{0}_{1}'.format(db, tname)
-        print('Creating {0}'.format(new_name))
+        new_name = '{}_{}'.format(db, tname)
+        print('Creating {}'.format(new_name))
         con.create_table(new_name, table, database=tmp_db)
 
 
 def download_parquet_files(con, tmp_db_hdfs_path):
-    parquet_path = pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'parquet')
-    print("Downloading {0}".format(parquet_path))
+    parquet_path = os.path.join(IBIS_TEST_DATA_LOCAL_DIR, 'parquet')
+    print("Downloading {}".format(parquet_path))
     con.hdfs.get(tmp_db_hdfs_path, parquet_path)
 
 
-def get_postgres_engine():
-    pg_user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
-    pg_pass = os.environ.get('IBIS_POSTGRES_PASS')
-    database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
-
-    if pg_pass:
-        creds = '{0}:{1}'.format(pg_user, pg_pass)
-    else:
-        creds = pg_user
-
-    return create_engine(
-        'postgresql://{0}@localhost/{1}'.format(creds, database)
+def create_sqlalchemy_array_table(con):
+    metadata = sa.MetaData(bind=con)
+    t = sa.Table(
+        'array_types',
+        metadata,
+        sa.Column('x', sa.ARRAY(sa.BIGINT())),
+        sa.Column('y', sa.ARRAY(sa.TEXT())),
+        sa.Column('z', sa.ARRAY(sa.FLOAT())),
+        sa.Column('grouper', sa.TEXT()),
+        sa.Column('scalar_column', sa.FLOAT())
     )
+    t.create(checkfirst=True)
+    insert = t.insert().values([
+        ([1, 2, 3], ['a', 'b', 'c'], [1.0, 2.0, 3.0], 'a', 1.0),
+        ([4, 5], ['d', 'e'], [4.0, 5.0], 'a', 2.0),
+        ([6, None], ['f', None], [6.0, None], 'a', 3.0),
+        ([None, 1, None], [None, 'a', None], [], 'b', 4.0),
+        ([2, None, 3], ['b', None, 'c'], None, 'b', 5.0),
+        (
+            [4, None, None, 5],
+            ['d', None, None, 'e'],
+            [4.0, None, None, 5.0],
+            'c',
+            6.0
+        ),
+    ])
+    con.execute(insert)
+
+
+def create_sqlalchemy_time_zone_table(con):
+    metadata = sa.MetaData(bind=con)
+    t = sa.Table(
+        'tzone',
+        metadata,
+        sa.Column('ts', sa.TIMESTAMP(timezone=True)),
+        sa.Column('key', sa.TEXT()),
+        sa.Column('value', sa.FLOAT()),
+    )
+    t.create(checkfirst=True)
+    timestamp = datetime.datetime(
+        year=2017, month=5, day=28,
+        hour=11, minute=1, second=41, microsecond=400
+    )
+    insert = t.insert().values([
+        (
+            timestamp + datetime.timedelta(days=1, microseconds=1),
+            chr(97 + i),
+            float(i) + i / 10.0
+        ) for i in range(10)
+    ])
+    con.execute(insert)
+
+
+def get_postgres_engine(
+    user=IBIS_POSTGRES_USER,
+    password=IBIS_POSTGRES_PASS,
+    host='localhost',
+    database=IBIS_TEST_POSTGRES_DB
+):
+    assert database != 'postgres'
+    url = sa.engine.url.URL(
+        'postgresql',
+        username=user, password=password, host=host, database='postgres'
+    )
+    engine = sa.create_engine(str(url), isolation_level='AUTOCOMMIT')
+    engine.execute('DROP DATABASE IF EXISTS {}'.format(database))
+    engine.execute('CREATE DATABASE {}'.format(database))
+
+    url.database = database
+    test_engine = sa.create_engine(str(url))
+    create_sqlalchemy_array_table(test_engine)
+    create_sqlalchemy_time_zone_table(test_engine)
+    return test_engine
 
 
 def get_sqlite_engine():
-    path = pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'ibis_testing.db')
-    return create_engine('sqlite:///{0}'.format(path))
+    path = os.path.join(IBIS_TEST_DATA_LOCAL_DIR, 'ibis_testing.db')
+    return sa.create_engine('sqlite:///{}'.format(path))
 
 
 def load_sql_databases(con, engines):
@@ -268,10 +349,12 @@ def load_sql_databases(con, engines):
 
 def download_avro_files(con):
     avro_hdfs_path = '/test-warehouse/tpch.region_avro'
-    avro_local_path = pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'avro')
+    avro_local_path = os.path.join(IBIS_TEST_DATA_LOCAL_DIR, 'avro')
     os.mkdir(avro_local_path)
-    print("Downloading {0}".format(avro_hdfs_path))
-    con.hdfs.get(avro_hdfs_path, pjoin(avro_local_path, 'tpch_region_avro'))
+    print("Downloading {}".format(avro_hdfs_path))
+    con.hdfs.get(
+        avro_hdfs_path, os.path.join(avro_local_path, 'tpch_region_avro')
+    )
 
 
 def generate_csv_files():
@@ -281,11 +364,11 @@ def generate_csv_files():
                        'bar': np.random.randn(N),
                        'baz': np.random.randint(0, 100, size=N)},
                       columns=['foo', 'bar', 'baz'])
-    csv_base = pjoin(IBIS_TEST_DATA_LOCAL_DIR, 'csv')
+    csv_base = os.path.join(IBIS_TEST_DATA_LOCAL_DIR, 'csv')
     os.mkdir(csv_base)
     for i in range(nfiles):
-        csv_path = pjoin(csv_base, '{0}.csv'.format(i))
-        print('Writing {0}'.format(csv_path))
+        csv_path = os.path.join(csv_base, '{}.csv'.format(i))
+        print('Writing {}'.format(csv_path))
         df.to_csv(csv_path, index=False, header=False)
 
 
@@ -296,7 +379,7 @@ def copy_tarball_to_versioned_backup(bucket):
         names.remove(IBIS_TEST_DATA_TARBALL)
         # get the highest number for this key name
         last = sorted([int(names.split('.')[-1]) for name in names])[-1]
-        next_key = '{0}.{1}'.format(IBIS_TEST_DATA_TARBALL, last + 1)
+        next_key = '{}.{}'.format(IBIS_TEST_DATA_TARBALL, last + 1)
         key.copy(IBIS_TEST_DATA_S3_BUCKET, next_key)
         key.delete()
     assert bucket.get_key(IBIS_TEST_DATA_TARBALL) is None
@@ -356,7 +439,7 @@ _projectors = {
 def generate_sql_csv_sources(output_path, db):
     ibis.options.sql.default_limit = None
 
-    if not osp.exists(output_path):
+    if not os.path.exists(output_path):
         os.mkdir(output_path)
 
     for name in _sql_tables:
@@ -367,14 +450,14 @@ def generate_sql_csv_sources(output_path, db):
             table = _projectors[name](table)
 
         df = table.execute()
-        path = osp.join(output_path, name)
-        df.to_csv('{0}.csv'.format(path), na_rep='\\N')
+        path = os.path.join(output_path, name)
+        df.to_csv('{}.csv'.format(path), na_rep='\\N')
 
 
 def make_testing_db(csv_dir, con):
     for name in _sql_tables:
         print(name)
-        path = osp.join(csv_dir, '{0}.csv'.format(name))
+        path = os.path.join(csv_dir, '{}.csv'.format(name))
         df = pd.read_csv(path, na_values=['\\N'], dtype={'bool_col': 'bool'})
         df.to_sql(
             name,
@@ -430,9 +513,9 @@ def create(create_tarball, push_to_s3):
     if push_to_s3 and not create_tarball:
         raise IbisError(
             "Must specify --create-tarball if specifying --push-to-s3")
-    if osp.exists(IBIS_TEST_DATA_LOCAL_DIR):
+    if os.path.exists(IBIS_TEST_DATA_LOCAL_DIR):
         raise IbisError(
-            'Local dir {0} already exists; please remove it first'.format(
+            'Local dir {} already exists; please remove it first'.format(
                 IBIS_TEST_DATA_LOCAL_DIR))
     if not con.exists_database('tpch'):
         raise IbisError('`tpch` database does not exist')
@@ -441,13 +524,13 @@ def create(create_tarball, push_to_s3):
             'HDFS dir /test-warehouse/tpch.region_avro does not exist')
 
     # generate tmp identifiers
-    tmp_db_hdfs_path = pjoin(ENV.tmp_dir, guid())
+    tmp_db_hdfs_path = os.path.join(ENV.tmp_dir, guid())
     tmp_db = guid()
     os.mkdir(IBIS_TEST_DATA_LOCAL_DIR)
     try:
         # create the tmp data locally
         con.create_database(tmp_db, path=tmp_db_hdfs_path)
-        print('Created database {0} at {1}'.format(tmp_db, tmp_db_hdfs_path))
+        print('Created database {} at {}'.format(tmp_db, tmp_db_hdfs_path))
 
         # create the local data set
         scrape_parquet_files(tmp_db, con)
@@ -463,7 +546,7 @@ def create(create_tarball, push_to_s3):
         assert not con.hdfs.exists(tmp_db_hdfs_path)
 
     if create_tarball:
-        check_call('tar -zc {0} > {1}'
+        check_call('tar -zc {} > {}'
                    .format(IBIS_TEST_DATA_LOCAL_DIR, TARBALL_NAME),
                    shell=True)
 
@@ -510,7 +593,7 @@ def load(data, udf, data_dir, overwrite):
 
             # sqlite database
             print('Setting up SQLite')
-            sqlite_src = osp.join(data_dir, 'ibis_testing.db')
+            sqlite_src = os.path.join(data_dir, 'ibis_testing.db')
             shutil.copy(sqlite_src, '.')
 
             print('Loading SQL engines')
@@ -555,7 +638,7 @@ def load_impala_data(con, data_dir, overwrite=False):
         parquet_tables = create_parquet_tables(con)
         avro_tables = create_avro_tables(con)
         for table in parquet_tables + avro_tables:
-            print('Computing stats for {0}'.format(table.op().name))
+            print('Computing stats for', table.op().name)
             table.compute_stats()
 
 
@@ -575,7 +658,7 @@ def cleanup(test_data, udfs, tmp_data, tmp_db):
 
     if udfs:
         # this comes before test_data bc the latter clobbers this too
-        con.hdfs.rmdir(pjoin(ENV.test_data_dir, 'udf'))
+        con.hdfs.rmdir(os.path.join(ENV.test_data_dir, 'udf'))
 
     if test_data:
         con.drop_database(ENV.test_data_db, force=True)
