@@ -76,6 +76,8 @@ setup(
             'hdfs>=2.0.0',
             'impyla>=0.13.7',
             'mock',
+            'click',
+            'requests',
             'psycopg2',
             'pytest',
             'sqlalchemy>=1.0.0',
