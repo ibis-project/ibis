@@ -15,10 +15,8 @@
 import getpass
 
 import sqlalchemy as sa
-from sqlalchemy.engine.reflection import Inspector
 
 from ibis.sql.postgres.compiler import PostgreSQLDialect
-import ibis.expr.types as ir
 import ibis.sql.alchemy as alch
 
 
@@ -72,11 +70,10 @@ class PostgreSQLClient(alch.AlchemyClient):
             )
         else:
             url = sa.engine.url.make_url(url)
+
+        super(PostgreSQLClient, self).__init__(sa.create_engine(url))
         self.name = url.database
         self.database_name = self.__class__.default_database_name
-        self.con = sa.create_engine(url)
-        self.inspector = Inspector.from_engine(self.con)
-        self.meta = sa.MetaData(bind=self.con)
 
     def database(self, name=None):
         """Connect to a database called `name`.
@@ -192,9 +189,5 @@ class PostgreSQLClient(alch.AlchemyClient):
                     .list_tables(like=like, schema=schema)
             )
         else:
-            return super(PostgreSQLClient, self).list_tables(
-                like=like, schema=schema)
-
-    @property
-    def _table_expr_klass(self):
-        return ir.TableExpr
+            parent = super(PostgreSQLClient, self)
+            return parent.list_tables(like=like, schema=schema)
