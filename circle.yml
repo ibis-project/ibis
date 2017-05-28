@@ -44,7 +44,7 @@ dependencies:
     - docker pull cpcloud86/impala:metastore
 
     # run the docker image, exposing relevant ports
-    - docker run -it -d --name impala --hostname impala -p 9000:9000 -p 50010:50010 -p 50020:50020 -p 50070:50070 -p 50075:50075 -p 21000:21000 -p 21050:21050 -p 25000:25000 -p 25010:25010 -p 25020:25020 cpcloud86/impala:metastore
+    - docker run -it -d --name impala --hostname impala -p 50070:50070 -p 21050:21050 cpcloud86/impala:metastore
 
     # map the docker container's IP address to a human-readable hostname
     - echo "$(docker inspect --format '{{.NetworkSettings.IPAddress}}' impala) impala" | sudo tee -a /etc/hosts
