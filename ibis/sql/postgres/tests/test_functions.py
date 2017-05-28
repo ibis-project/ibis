@@ -35,6 +35,11 @@ import pandas as pd
 import pandas.util.testing as tm
 
 
+@pytest.fixture
+def guid():
+    return ibis.util.guid()
+
+
 @pytest.mark.postgresql
 class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
 
@@ -839,24 +844,23 @@ def s(con, t):
 
 
 @pytest.yield_fixture
-def trunc(con):
-    name = str(uuid.uuid1())
+def trunc(con, guid):
     con.raw_sql(
         """
         CREATE TABLE "{}" (
           id SERIAL PRIMARY KEY,
           name TEXT
         )
-        """.format(name)
+        """.format(guid)
     )
     con.raw_sql(
-        """INSERT INTO "{}" (name) VALUES ('a'), ('b'), ('c')""".format(name)
+        """INSERT INTO "{}" (name) VALUES ('a'), ('b'), ('c')""".format(guid)
     )
     try:
-        yield con.table(name)
+        yield con.table(guid)
     finally:
-        con.drop_table(name)
-        assert name not in con.list_tables()
+        con.drop_table(guid)
+        assert guid not in con.list_tables()
 
 
 @pytest.mark.postgresql
@@ -885,10 +889,10 @@ def test_anti_join(t, s):
 
 
 @pytest.mark.postgresql
-def test_create_table(con, trunc):
-    name = str(uuid.uuid1())
-    con.create_table(name, expr=trunc)
-    t = con.table(name)
+def test_create_table_from_expr(con, trunc):
+    guid = ibis.util.guid()
+    con.create_table(guid, expr=trunc)
+    t = con.table(guid)
     assert list(t.name.execute()) == list('abc')
 
 
