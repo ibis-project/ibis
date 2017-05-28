@@ -745,9 +745,12 @@ class AlchemyClient(SQLClient):
             names = [x for x in names if like in x]
         return sorted(names)
 
-    @invalidates_reflection_cache
     def _execute(self, query, results=True):
         return AlchemyProxy(self.con.execute(query))
+
+    @invalidates_reflection_cache
+    def raw_sql(self, query, results=False):
+        return super(AlchemyClient, self).raw_sql(query, results=results)
 
     def _build_ast(self, expr):
         return build_ast(expr, dialect=self.dialect)
