@@ -11,7 +11,7 @@ without requiring you to switch back and forth between Python code and the
 Impala shell (where one would be using a mix of DDL and SQL statements).
 
 If you find an Impala task that you cannot perform with Ibis, please get in
-touch on the `GitHub issue tracker <http://github.com/cloudera/ibis>`_.
+touch on the `GitHub issue tracker <http://github.com/pandas-dev/ibis>`_.
 
 While interoperability between the Hadoop / Spark ecosystems and pandas / the
 PyData stack is overall poor (but improving), we also show some ways that you
