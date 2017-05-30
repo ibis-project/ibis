@@ -20,9 +20,6 @@ from setuptools import setup, find_packages
 
 import versioneer
 
-with open('requirements.txt') as f:
-    requirements = f.read().splitlines()
-
 
 LONG_DESCRIPTION = """
 Ibis is a productivity-centric Python big data framework.
@@ -30,47 +27,51 @@ Ibis is a productivity-centric Python big data framework.
 See http://ibis-project.org
 """
 
+impala_requires = [
+    'hdfs>=2.0.0',
+    'impyla>=0.13.7',
+    'sqlalchemy>=1.0.0',
+    'thrift<=0.9.3',
+    "thriftpy<=0.3.9; python_version < '3'",
+]
+
+sqlite_requires = ['sqlalchemy>=1.0.0']
+postgres_requires = sqlite_requires + ['psycopg2']
+kerberos_requires = ['requests-kerberos']
+visualization_requires = ['graphviz']
+
+all_requires = (
+    impala_requires +
+    postgres_requires +
+    kerberos_requires +
+    visualization_requires
+)
+
+develop_requires = all_requires + [
+    'click',
+    'flake8',
+    "mock; python_version < '3'",
+    "pytest>=3; python_version >= '3'",
+    "pytest<3; python_version < '3'",
+]
+
+with open('requirements.txt', 'rt') as f:
+    install_requires = list(map(str.strip, f))
+
 setup(
     name='ibis-framework',
     packages=find_packages(),
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    install_requires=requirements,
+    install_requires=install_requires,
     extras_require={
-        'all': [
-            'graphviz',
-            'hdfs>=2.0.0',
-            'impyla>=0.13.7',
-            'psycopg2',
-            'sqlalchemy>=1.0.0',
-            'thrift<=0.9.3',
-            "thriftpy<=0.3.9; python_version < '3'",
-        ],
-        'develop': [
-            'click',
-            'flake8',
-            'graphviz',
-            'hdfs>=2.0.0',
-            'impyla>=0.13.7',
-            "mock; python_version < '3'",
-            'psycopg2',
-            "pytest>=3; python_version >= '3'",
-            "pytest<3; python_version < '3'",
-            'sqlalchemy>=1.0.0',
-            'thrift<=0.9.3',
-            "thriftpy<=0.3.9; python_version < '3'",
-        ],
-        'impala': [
-            'hdfs>=2.0.0',
-            'impyla>=0.13.7',
-            'sqlalchemy>=1.0.0',
-            'thrift<=0.9.3',
-            "thriftpy<=0.3.9; python_version < '3'",
-        ],
-        'kerberos': ['requests-kerberos'],
-        'postgres': ['psycopg2', 'sqlalchemy>=1.0.0'],
-        'sqlite': ['sqlalchemy>=1.0.0'],
-        'visualization': ['graphviz'],
+        'all': all_requires,
+        'develop': develop_requires,
+        'impala': impala_requires,
+        'kerberos': kerberos_requires,
+        'postgres': postgres_requires,
+        'sqlite': sqlite_requires,
+        'visualization': visualization_requires,
     },
     scripts=[
         os.path.join(
