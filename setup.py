@@ -47,6 +47,7 @@ setup(
             "thriftpy<=0.3.9; python_version < '3'",
         ],
         'develop': [
+            'click',
             'flake8',
             'graphviz',
             'hdfs>=2.0.0',
