@@ -16,8 +16,14 @@
 from posixpath import join as pjoin
 import os
 
-import pandas.core.common as pdcom
 import pandas as pd
+
+try:
+    import pandas.api.types as pdcom
+    from pandas.api.types import infer_dtype
+except ImportError:
+    import pandas.core.common as pdcom
+    from pandas.lib import infer_dtype
 
 import ibis.common as com
 
@@ -105,7 +111,7 @@ def _infer_object_dtype(arr):
         elif state == STRING:
             return 'string'
     else:
-        return pd.lib.infer_dtype(avalues)
+        return infer_dtype(avalues)
 
 
 class DataFrameWriter(object):

@@ -73,6 +73,7 @@ setup(
             'thriftpy<=0.3.9',
         ] + (['thriftpy<=0.3.9'] if sys.version_info[0] >= 3 else []),
         'develop': [
+            'flake8',
             'hdfs>=2.0.0',
             'impyla>=0.13.7',
             'mock',
@@ -93,6 +94,11 @@ setup(
         'postgres': ['psycopg2', 'sqlalchemy>=1.0.0'],
         'sqlite': ['sqlalchemy>=1.0.0'],
     },
+    scripts=[
+        os.path.join(
+            os.path.dirname(__file__), 'scripts', 'test_data_admin.py'
+        ),
+    ],
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,
     classifiers=[
