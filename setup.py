@@ -14,8 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 from setuptools import setup, find_packages
-import sys
 
 import versioneer
 
@@ -37,32 +38,34 @@ setup(
     install_requires=requirements,
     extras_require={
         'all': [
+            'graphviz',
             'hdfs>=2.0.0',
             'impyla>=0.13.7',
             'psycopg2',
             'sqlalchemy>=1.0.0',
             'thrift<=0.9.3',
-            'thriftpy<=0.3.9',
-            'graphviz',
-        ] + (['thriftpy<=0.3.9'] if sys.version_info.major >= 3 else []),
+            "thriftpy<=0.3.9; python_version < '3'",
+        ],
         'develop': [
             'flake8',
+            'graphviz',
             'hdfs>=2.0.0',
             'impyla>=0.13.7',
+            "mock; python_version < '3'",
             'psycopg2',
-            'pytest>=3' if sys.version_info.major >= 3 else 'pytest<3',
+            "pytest>=3; python_version >= '3'",
+            "pytest<3; python_version < '3'",
             'sqlalchemy>=1.0.0',
             'thrift<=0.9.3',
-            'graphviz',
-        ] + (['thriftpy<=0.3.9'] if sys.version_info.major >= 3 else []) + (
-            [] if sys.version_info.major >= 3 else ['mock']
-        ),
+            "thriftpy<=0.3.9; python_version < '3'",
+        ],
         'impala': [
             'hdfs>=2.0.0',
             'impyla>=0.13.7',
             'sqlalchemy>=1.0.0',
             'thrift<=0.9.3',
-        ] + (['thriftpy<=0.3.9'] if sys.version_info.major >= 3 else []),
+            "thriftpy<=0.3.9; python_version < '3'",
+        ],
         'kerberos': ['requests-kerberos'],
         'postgres': ['psycopg2', 'sqlalchemy>=1.0.0'],
         'sqlite': ['sqlalchemy>=1.0.0'],
