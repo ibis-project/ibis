@@ -1816,12 +1816,12 @@ class Aggregation(TableNode, HasSchema):
     _arg_names = ['table', 'metrics', 'by', 'having',
                   'predicates', 'sort_keys']
 
-    def __init__(self, table, agg_exprs, by=None, having=None,
+    def __init__(self, table, metrics, by=None, having=None,
                  predicates=None, sort_keys=None):
         # For tables, like joins, that are not materialized
         self.table = table
 
-        self.agg_exprs = self._rewrite_exprs(agg_exprs)
+        self.metrics = self._rewrite_exprs(metrics)
 
         by = [] if by is None else by
         self.by = self.table._resolve(by)
@@ -1841,7 +1841,7 @@ class Aggregation(TableNode, HasSchema):
         self._validate()
         self._validate_predicates()
 
-        TableNode.__init__(self, [table, self.agg_exprs, self.by,
+        TableNode.__init__(self, [table, self.metrics, self.by,
                                   self.having, self.predicates,
                                   self.sort_keys])
 
@@ -1867,12 +1867,12 @@ class Aggregation(TableNode, HasSchema):
         return True
 
     def substitute_table(self, table_expr):
-        return Aggregation(table_expr, self.agg_exprs, by=self.by,
+        return Aggregation(table_expr, self.metrics, by=self.by,
                            having=self.having)
 
     def _validate(self):
         # All aggregates are valid
-        for expr in self.agg_exprs:
+        for expr in self.metrics:
             if not rules.is_scalar(expr) or not is_reduction(expr):
                 raise TypeError('Passed a non-aggregate expression: %s' %
                                 _safe_repr(expr))
@@ -1884,7 +1884,7 @@ class Aggregation(TableNode, HasSchema):
                                           .format(_safe_repr(expr)))
 
         # All non-scalar refs originate from the input table
-        all_exprs = (self.agg_exprs + self.by + self.having +
+        all_exprs = (self.metrics + self.by + self.having +
                      self.sort_keys)
         self.table._assert_valid(all_exprs)
 
@@ -1899,7 +1899,7 @@ class Aggregation(TableNode, HasSchema):
 
         # All exprs must be named
 
-        for e in self.by + self.agg_exprs:
+        for e in self.by + self.metrics:
             names.append(e.get_name())
             types.append(e.type())
 
@@ -1910,7 +1910,7 @@ class Aggregation(TableNode, HasSchema):
 
         resolved_keys = _maybe_convert_sort_keys(self.table, sort_exprs)
         if resolved_keys and self.table._is_valid(resolved_keys):
-            return Aggregation(self.table, self.agg_exprs,
+            return Aggregation(self.table, self.metrics,
                                by=self.by, having=self.having,
                                predicates=self.predicates,
                                sort_keys=self.sort_keys + resolved_keys)
@@ -1947,7 +1947,7 @@ class Subtract(BinaryOp):
 
 class Divide(BinaryOp):
 
-    input_type = [number, number]
+    input_type = [number(name='left'), number(name='right')]
 
     def output_type(self):
         return rules.shape_like_args(self.args, 'double')
