@@ -15,8 +15,11 @@
 import math
 import os
 import operator
+import string
 
-import pytest  # noqa
+import pytest  # noqa: E401
+
+import numpy as np
 
 from .common import PostgreSQLTests
 from ibis.compat import unittest
@@ -1028,6 +1031,39 @@ def test_timestamp_with_timezone(con):
     t = con.table('tzone')
     result = t.ts.execute()
     assert str(result.dtype.tz)
+
+
+@pytest.yield_fixture
+def tzone_compute(con, guid):
+    schema = [
+        ('ts', dt.timestamp('America/Los_Angeles')),
+        ('b', 'double'),
+        ('c', 'string'),
+    ]
+    con.create_table(guid, schema=ibis.schema(schema))
+    t = con.table(guid)
+
+    n = 10
+    df = pd.DataFrame({
+        'ts': pd.date_range('2017-04-01', periods=n),
+        'b': np.arange(n).astype('float64'),
+        'c': list(string.ascii_lowercase[:n]),
+    })
+
+    con.insert(t, df)
+
+    try:
+        yield t
+    finally:
+        con.drop_table(guid)
+        assert guid not in con.list_tables()
+
+
+@pytest.mark.postgresql
+def test_timestamp_with_timezone_create_and_select(tzone_compute):
+    t = tzone_compute
+    ts = t.ts.execute()
+    assert str(ts.dtype.tz) == 'America/Los_Angeles'
 
 
 @pytest.mark.postgresql
