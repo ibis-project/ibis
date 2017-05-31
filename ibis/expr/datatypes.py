@@ -649,7 +649,7 @@ _TYPE_RULES = collections.OrderedDict(
             # These must come after everything else that could match this
             # pattern, otherwise we'll match a timezone before matching a field
             # name (for example).
-            '(?P<TIMEZONE>[A-Za-z0-9+-/_]+?)',
+            '(?P<TIMEZONE>[A-Za-z0-9+-/_]+)',
             lambda token: Token(Tokens.TIMEZONE, token)
         ),
         ('(?P<COMMA>,)', lambda token: Token(Tokens.COMMA, token)),
