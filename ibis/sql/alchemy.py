@@ -818,6 +818,17 @@ class AlchemyClient(SQLClient):
         node = AlchemyTable(table, self)
         return self._table_expr_klass(node)
 
+    def insert(self, table, df):
+        t = self.meta.tables[table.op().name]
+        columns = list(t.columns.keys())
+        df.to_sql(
+            t.name,
+            con=self.con,
+            if_exists='append',
+            index=False,
+            dtype=dict(zip(columns, (t.c[c].type for c in columns)))
+        )
+
 
 class AlchemySelect(Select):
 
