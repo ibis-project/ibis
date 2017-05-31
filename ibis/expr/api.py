@@ -282,12 +282,14 @@ def count(expr, where=None):
     op = expr.op()
     if isinstance(op, _ops.DistinctColumn):
         if where is not None:
-            raise NotImplementedError
+            raise NotImplementedError(
+                'where not implemented for count distinct'
+            )
         result = op.count().to_expr()
     else:
         result = _ops.Count(expr, where).to_expr()
 
-    return result.name('count')
+    return result
 
 
 def group_concat(arg, sep=','):
@@ -368,11 +370,9 @@ def _boolean_binary_rop(name, klass):
     return f
 
 
-def _agg_function(name, klass, assign_default_name=True):
+def _agg_function(name, klass):
     def f(self, where=None):
         expr = klass(self, where).to_expr()
-        if assign_default_name:
-            expr = expr.name(name)
         return expr
     f.__name__ = name
     return f
@@ -813,10 +813,10 @@ _generic_value_methods = dict(
 )
 
 
-approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality, True)
-approx_median = _agg_function('approx_median', _ops.CMSMedian, True)
-max = _agg_function('max', _ops.Max, True)
-min = _agg_function('min', _ops.Min, True)
+approx_nunique = _agg_function('approx_nunique', _ops.ApproxNUnique)
+approx_median = _agg_function('approx_median', _ops.ApproxMedian)
+max = _agg_function('max', _ops.Max)
+min = _agg_function('min', _ops.Min)
 
 
 def lag(arg, offset=None, default=None):
@@ -1106,10 +1106,10 @@ _integer_value_methods = dict(
 )
 
 
-mean = _agg_function('mean', _ops.Mean, True)
+mean = _agg_function('mean', _ops.Mean)
 cummean = _unary_op('cummean', _ops.CumulativeMean)
 
-sum = _agg_function('sum', _ops.Sum, True)
+sum = _agg_function('sum', _ops.Sum)
 cumsum = _unary_op('cumsum', _ops.CumulativeSum)
 
 

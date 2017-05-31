@@ -233,7 +233,7 @@ UnboundTable[table]
   schema:
     a : int64
 
-NullIf[int64*]
+a = NullIf[int64*]
   a = Column[int64*] 'a' from table
     ref_0
   null_if_expr:

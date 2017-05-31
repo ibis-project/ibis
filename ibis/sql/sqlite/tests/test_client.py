@@ -99,8 +99,8 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
         expr = t.foo.sum()
         result = ibis.sqlite.compile(expr)
         expected = """\
-SELECT sum(t0.foo) AS sum 
-FROM t0 AS t0"""  # noqa
+SELECT sum(t0.foo) AS sum_foo 
+FROM t0 AS t0"""  # noqa: W291
         assert str(result) == expected
 
     def test_create_and_drop_table(self):

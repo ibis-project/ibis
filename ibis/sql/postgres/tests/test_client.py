@@ -84,8 +84,8 @@ class TestPostgreSQLClient(PostgreSQLTests, unittest.TestCase):
         expr = t.foo.sum()
         result = ibis.postgres.compile(expr)
         expected = """\
-SELECT sum(t0.foo) AS sum 
-FROM t0 AS t0"""  # noqa
+SELECT sum(t0.foo) AS sum_foo 
+FROM t0 AS t0"""  # noqa: W291
         assert str(result) == expected
 
     def test_list_databases(self):

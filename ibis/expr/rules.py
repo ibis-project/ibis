@@ -300,13 +300,7 @@ def _to_argument(val):
 class TypeSignature(object):
 
     def __init__(self, type_specs):
-        types = []
-
-        for val in type_specs:
-            val = _to_argument(val)
-            types.append(val)
-
-        self.types = types
+        self.types = [_to_argument(val) for val in type_specs]
 
     def __repr__(self):
         types = '\n    '.join('arg {0}: {1}'.format(i, repr(x))
@@ -340,6 +334,16 @@ class TypeSignature(object):
                 raise IbisTypeError(msg)
 
         return clean_args
+
+    def __iter__(self):
+        return iter(self.types)
+
+    def __len__(self):
+        return len(self.types)
+
+    @property
+    def required(self):
+        return type(self)(t for t in self.types if t.optional)
 
 
 class VarArgs(TypeSignature):

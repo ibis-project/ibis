@@ -185,7 +185,7 @@ def test_distinct_array_interactions(dtable):
 
 
 def test_distinct_count(dtable):
-    result = dtable.string_col.distinct().count()
+    result = dtable.string_col.distinct().count().name('count')
     expected = dtable.string_col.nunique().name('count')
     assert_equal(result, expected)
     assert isinstance(result.op(), ops.CountDistinct)
@@ -756,3 +756,10 @@ def test_not_without_boolean(typ):
     c = t.a
     with pytest.raises(TypeError):
         ~c
+
+
+def test_reduction_naming():
+    t = ibis.table([('a', 'double')], name='t')
+    expr = t.a.sum()
+    name = expr.op().resolve_name()
+    assert name == 'sum_a'
