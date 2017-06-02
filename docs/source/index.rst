@@ -50,6 +50,7 @@ At this time, Ibis offers some level of support for the following systems:
 - Hadoop Distributed File System (HDFS)
 - PostgreSQL (Experimental)
 - SQLite
+- Direct execution of ibis expressions against pandas objects (Experimental)
 
 Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
 

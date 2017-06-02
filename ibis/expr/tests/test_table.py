@@ -480,22 +480,26 @@ def test_mean_expr_basics(table, numeric_col):
 
 
 def test_aggregate_no_keys(table):
-    agg_exprs = [table['a'].sum().name('sum(a)'),
-                 table['c'].mean().name('mean(c)')]
+    metrics = [
+        table['a'].sum().name('sum(a)'),
+        table['c'].mean().name('mean(c)'),
+    ]
 
     # A TableExpr, which in SQL at least will yield a table with a single
     # row
-    result = table.aggregate(agg_exprs)
+    result = table.aggregate(metrics)
     assert isinstance(result, TableExpr)
 
 
 def test_aggregate_keys_basic(table):
-    agg_exprs = [table['a'].sum().name('sum(a)'),
-                 table['c'].mean().name('mean(c)')]
+    metrics = [
+        table['a'].sum().name('sum(a)'),
+        table['c'].mean().name('mean(c)'),
+    ]
 
     # A TableExpr, which in SQL at least will yield a table with a single
     # row
-    result = table.aggregate(agg_exprs, by=['g'])
+    result = table.aggregate(metrics, by=['g'])
     assert isinstance(result, TableExpr)
 
     # it works!
@@ -873,9 +877,11 @@ def test_semi_join_schema(table):
 
 
 def test_cross_join(table):
-    agg_exprs = [table['a'].sum().name('sum_a'),
-                 table['b'].mean().name('mean_b')]
-    scalar_aggs = table.aggregate(agg_exprs)
+    metrics = [
+        table['a'].sum().name('sum_a'),
+        table['b'].mean().name('mean_b'),
+    ]
+    scalar_aggs = table.aggregate(metrics)
 
     joined = table.cross_join(scalar_aggs).materialize()
     agg_schema = api.Schema(['sum_a', 'mean_b'], ['int64', 'double'])

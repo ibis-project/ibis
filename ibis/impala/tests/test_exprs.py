@@ -1444,10 +1444,9 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             d.var(where=cond),
         ]
 
-        agg_exprs = [expr.name('e%d' % i)
-                     for i, expr in enumerate(exprs)]
+        metrics = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
 
-        agged_table = table.aggregate(agg_exprs)
+        agged_table = table.aggregate(metrics)
         agged_table.execute()
 
     def test_analytic_functions(self):

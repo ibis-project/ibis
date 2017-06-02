@@ -81,10 +81,13 @@ class TestExprFormatting(unittest.TestCase):
         table = self.table
 
         agg_expr = (table['c'].sum() / table['c'].mean() - 1).name('analysis')
-        agg_exprs = [table['a'].sum().name('sum(a)'),
-                     table['b'].mean().name('mean(b)'), agg_expr]
+        metrics = [
+            table['a'].sum().name('sum(a)'),
+            table['b'].mean().name('mean(b)'),
+            agg_expr,
+        ]
 
-        result = table.aggregate(agg_exprs, by=['g'])
+        result = table.aggregate(metrics, by=['g'])
 
         formatter = ExprFormatter(result)
         formatted = formatter.get_result()
@@ -98,9 +101,9 @@ class TestExprFormatting(unittest.TestCase):
         t = self.table
 
         by_exprs = [t.g.name('key1'), t.f.round().name('key2')]
-        agg_exprs = [t.c.sum().name('c'), t.d.mean().name('d')]
+        metrics = [t.c.sum().name('c'), t.d.mean().name('d')]
 
-        expr = self.table.group_by(by_exprs).aggregate(agg_exprs)
+        expr = self.table.group_by(by_exprs).aggregate(metrics)
         result = repr(expr)
         assert 'metrics' in result
         assert 'by' in result

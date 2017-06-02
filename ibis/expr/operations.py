@@ -1805,7 +1805,7 @@ def _maybe_resolve_exprs(table, exprs):
 class Aggregation(TableNode, HasSchema):
 
     """
-    agg_exprs : per-group scalar aggregates
+    metrics : per-group scalar aggregates
     by : group expressions
     having : post-aggregation predicate
 

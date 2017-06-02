@@ -22,6 +22,7 @@ systems:
 - Hadoop Distributed File System (HDFS)
 - PostgreSQL (Experimental)
 - SQLite
+- Direct execution of ibis expressions against pandas object (Experimental)
 
 Learn more about using the library at http://docs.ibis-project.org and read the
 project blog at http://ibis-project.org for news and updates.

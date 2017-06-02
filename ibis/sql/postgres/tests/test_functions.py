@@ -513,17 +513,13 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         expr.execute()
 
     def _execute_aggregation(self, table, exprs):
-        agg_exprs = [expr.name('e%d' % i)
-                     for i, expr in enumerate(exprs)]
-
-        agged_table = table.aggregate(agg_exprs)
+        metrics = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
+        agged_table = table.aggregate(metrics)
         agged_table.execute()
 
     def _execute_projection(self, table, exprs):
-        agg_exprs = [expr.name('e%d' % i)
-                     for i, expr in enumerate(exprs)]
-
-        proj = table.projection(agg_exprs)
+        metrics = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
+        proj = table.projection(metrics)
         proj.execute()
 
     def test_simple_window(self):
