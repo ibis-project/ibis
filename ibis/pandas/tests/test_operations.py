@@ -3,15 +3,17 @@ import datetime
 
 import pytest
 
-import numpy as np
+pytest.importorskip('multipledispatch')
 
-import pandas as pd
-import pandas.util.testing as tm
+import numpy as np  # noqa: E402
 
-import ibis
-import ibis.expr.datatypes as dt
-from ibis import literal as L
-from ibis.pandas.api import connect, execute
+import pandas as pd  # noqa: E402
+import pandas.util.testing as tm  # noqa: E402
+
+import ibis  # noqa: E402
+import ibis.expr.datatypes as dt  # noqa: E402
+from ibis import literal as L  # noqa: E402
+from ibis.pandas.api import connect, execute  # noqa: E402
 
 
 @pytest.fixture

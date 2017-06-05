@@ -44,7 +44,7 @@ test:
   imports:
     - ibis
     - ibis.expr
-    - ibis.expr.visualization
+    - ibis.expr.visualize
     - ibis.expr.tests
     - ibis.hive
     - ibis.hive.tests
@@ -64,7 +64,7 @@ test:
     - ibis.sql.vertica.tests
     - ibis.tests
   commands:
-    - py.test --tb=short --pyargs ibis
+    - py.test --tb=short --pyargs ibis -m 'not impala and not hdfs'
 
 about:
   license: Apache License, Version 2.0
