@@ -205,14 +205,40 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
         self._check_e2e_cases(cases)
 
     def test_regexp(self):
-        pytest.skip('NYI: Requires adding regex udf with sqlite3')
-
         v = L('abcd')
         v2 = L('1222')
+        ns = L(None).cast('string')
+        ni = L(None).cast('int64')
         cases = [
             (v.re_search('[a-z]'), True),
             (v.re_search('[\d]+'), False),
             (v2.re_search('[\d]+'), True),
+            (v.re_replace('[ab]', ''), 'cd'),
+            (v2.re_extract(r'1(22)\d+', 1).cast('int64'), 22),
+            (v.re_extract('(\d+)', 1), None),
+            (v2.re_extract('([a-z]+)', 1), None),
+            (v2.re_extract(r'1(22)\d+', 2), None),
+        ] + [
+            # search nulls
+            (v.re_search(None), None),
+            (ns.re_search('[a-z]'), None),
+            (ns.re_search(ns), None),
+        ] + [
+            # replace nulls
+            (ns.re_replace(ns, ns), None),
+            (v.re_replace(ns, ns), None),
+            (v.re_replace('a', ns), None),
+            (v.re_replace(ns, 'a'), None),
+            (ns.re_replace('a', ns), None),
+            (ns.re_replace(ns, 'a'), None),
+        ] + [
+            # extract nulls
+            (ns.re_extract(ns, ni), None),
+            (v.re_extract(ns, ni), None),
+            (v.re_extract('a', ni), None),
+            (v.re_extract(ns, 1), None),
+            (ns.re_extract('a', ni), None),
+            (ns.re_extract(ns, 1), None),
         ]
         self._check_e2e_cases(cases)
 

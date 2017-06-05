@@ -99,6 +99,22 @@ def _infix_op(infix_sym):
     return formatter
 
 
+def _re_search(t, expr):
+    return sa.func._ibis_sqlite_regex_search(*map(t.translate, expr.op().args))
+
+
+def _re_replace(t, expr):
+    return sa.func._ibis_sqlite_regex_replace(
+        *map(t.translate, expr.op().args)
+    )
+
+
+def _re_extract(t, expr):
+    return sa.func._ibis_sqlite_regex_extract(
+        *map(t.translate, expr.op().args)
+    )
+
+
 def _strftime(t, expr):
     arg, format = expr.op().args
     sa_arg = t.translate(arg)
@@ -172,6 +188,9 @@ _operation_registry.update({
     ops.ExtractMillisecond: _millisecond,
     ops.TimestampNow: _now,
     ops.IdenticalTo: _identical_to,
+    ops.RegexSearch: _re_search,
+    ops.RegexReplace: _re_replace,
+    ops.RegexExtract: _re_extract,
 })
 
 
