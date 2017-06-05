@@ -1,9 +1,11 @@
 import pytest
 
-import pandas as pd
-import pandas.util.testing as tm
+pytest.importorskip('multipledispatch')
 
-from ibis.pandas.api import connect
+import pandas as pd  # noqa: E402
+import pandas.util.testing as tm  # noqa: E402
+
+from ibis.pandas.api import connect  # noqa: E402
 
 
 @pytest.fixture
