@@ -93,7 +93,7 @@ def _cast(t, expr):
     sa_type = t.get_sqla_type(typ)
 
     # specialize going from an integer type to a timestamp
-    if isinstance(arg.type(), dt.Integer) and issubclass(sa_type, sa.DateTime):
+    if isinstance(arg.type(), dt.Integer) and isinstance(sa_type, sa.DateTime):
         return sa.func.timezone('UTC', sa.func.to_timestamp(sa_arg))
     return sa.cast(sa_arg, sa_type)
 

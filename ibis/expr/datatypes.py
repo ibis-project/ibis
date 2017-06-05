@@ -13,8 +13,7 @@
 # limitations under the License.
 
 import re
-
-from collections import namedtuple, OrderedDict
+import collections
 
 import six
 
@@ -123,7 +122,12 @@ class HasSchema(object):
     """
 
     def __init__(self, schema, name=None):
-        assert isinstance(schema, Schema)
+        if not isinstance(schema, Schema):
+            raise TypeError(
+                'schema argument is not an instance of {}, got {}'.format(
+                    type(self).__name__, type(schema).__name__
+                )
+            )
         self._schema = schema
         self._name = name
 
@@ -227,7 +231,7 @@ class Boolean(Primitive):
     pass
 
 
-Bounds = namedtuple('Bounds', ('upper', 'lower'))
+Bounds = collections.namedtuple('Bounds', ('upper', 'lower'))
 
 
 class Integer(Primitive):
@@ -254,7 +258,28 @@ class Date(Primitive):
 
 
 class Timestamp(Primitive):
-    pass
+
+    def __init__(self, timezone=None, nullable=True):
+        super(Timestamp, self).__init__(nullable=nullable)
+
+        # We can't validate timezones because we're accepting input from
+        # systems out of our control
+        self.timezone = timezone
+
+    def __repr__(self):
+        typename = type(self).__name__
+        if self.timezone is not None:
+            return '{}(timezone={!r})'.format(typename, self.timezone)
+        return typename
+
+    def __str__(self):
+        typename = type(self).__name__.lower()
+        if self.timezone is not None:
+            return '{}({!r})'.format(typename, self.timezone)
+        return typename
+
+    def __hash__(self):
+        return hash((type(self), self.timezone))
 
 
 class SignedInteger(Integer):
@@ -544,20 +569,24 @@ class Tokens(object):
     ANY = 0
     NULL = 1
     PRIMITIVE = 2
-    DECIMAL = 3
-    VARCHAR = 4
-    CHAR = 5
-    ARRAY = 6
-    MAP = 7
-    STRUCT = 8
-    INTEGER = 9
-    FIELD = 10
-    COMMA = 11
-    COLON = 12
-    LPAREN = 13
-    RPAREN = 14
-    LBRACKET = 15
-    RBRACKET = 16
+    TIMESTAMP = 3
+    TIMEZONE = 4
+    DECIMAL = 5
+    VARCHAR = 6
+    CHAR = 7
+    ARRAY = 8
+    MAP = 9
+    STRUCT = 10
+    INTEGER = 11
+    FIELD = 12
+    COMMA = 13
+    COLON = 14
+    LPAREN = 15
+    RPAREN = 16
+    LBRACKET = 17
+    RBRACKET = 18
+    SINGLEQUOTE = 19
+    DOUBLEQUOTE = 20
 
     @staticmethod
     def name(value):
@@ -570,10 +599,10 @@ _token_names = dict(
 )
 
 
-Token = namedtuple('Token', ('type', 'value'))
+Token = collections.namedtuple('Token', ('type', 'value'))
 
 
-_TYPE_RULES = OrderedDict(
+_TYPE_RULES = collections.OrderedDict(
     [
         # any, null
         ('(?P<ANY>any)', lambda token: Token(Tokens.ANY, any)),
@@ -585,6 +614,12 @@ _TYPE_RULES = OrderedDict(
             lambda token, value=value: Token(Tokens.PRIMITIVE, value)
         ) for token, value in _primitive_types.items()
         if token != 'any' and token != 'null'
+    ] + [
+        # timestamp
+        (
+            '(?P<TIMESTAMP>timestamp)',
+            lambda token: Token(Tokens.TIMESTAMP, timestamp)
+        ),
     ] + [
         # decimal + complex types
         (
@@ -602,7 +637,7 @@ _TYPE_RULES = OrderedDict(
             ),
         )
     ] + [
-        # numbers, for decimal spec
+        # Base ten digits, for decimal precision and scale
         (r'(?P<INTEGER>\d+)', lambda token: Token(Tokens.INTEGER, int(token))),
 
         # struct fields
@@ -610,12 +645,21 @@ _TYPE_RULES = OrderedDict(
             r'(?P<FIELD>[a-zA-Z_][a-zA-Z_0-9]*)',
             lambda token: Token(Tokens.FIELD, token)
         ),
+        (
+            # These must come after everything else that could match this
+            # pattern, otherwise we'll match a timezone before matching a field
+            # name (for example).
+            '(?P<TIMEZONE>[A-Za-z0-9+-/_]+)',
+            lambda token: Token(Tokens.TIMEZONE, token)
+        ),
         ('(?P<COMMA>,)', lambda token: Token(Tokens.COMMA, token)),
         ('(?P<COLON>:)', lambda token: Token(Tokens.COLON, token)),
         (r'(?P<LPAREN>\()', lambda token: Token(Tokens.LPAREN, token)),
         (r'(?P<RPAREN>\))', lambda token: Token(Tokens.RPAREN, token)),
         ('(?P<LBRACKET><)', lambda token: Token(Tokens.LBRACKET, token)),
         ('(?P<RBRACKET>>)', lambda token: Token(Tokens.RBRACKET, token)),
+        ("(?P<SINGLEQUOTE>')", lambda token: Token(Tokens.SINGLEQUOTE, token)),
+        ('(?P<DOUBLEQUOTE>")', lambda token: Token(Tokens.DOUBLEQUOTE, token)),
         (r'(?P<WHITESPACE>\s+)', None),
     ]
 )
@@ -703,6 +747,7 @@ class TypeParser(object):
     def type(self):
         """
         type : primitive
+             | timestamp
              | decimal
              | array
              | map
@@ -718,7 +763,9 @@ class TypeParser(object):
                   | "float"
                   | "double"
                   | "string"
-                  | "timestamp"
+
+        timestamp : "timestamp"
+                  | "timestamp" "(" timezone ")"
 
         decimal : "decimal"
                 | "decimal" "(" integer "," integer ")"
@@ -732,9 +779,27 @@ class TypeParser(object):
         struct : "struct" "<" field ":" type ("," field ":" type)* ">"
 
         field : [a-zA-Z_][a-zA-Z_0-9]*
+
+        timezone : [A-Za-z0-9_+-/]+
         """
         if self._accept(Tokens.PRIMITIVE):
             return self.tok.value
+
+        elif self._accept(Tokens.TIMESTAMP):
+            if self._accept(Tokens.LPAREN):
+                # we have a timezone
+                if self._accept(Tokens.SINGLEQUOTE):
+                    expected_closing_quote = Tokens.SINGLEQUOTE
+                elif self._accept(Tokens.DOUBLEQUOTE):
+                    expected_closing_quote = Tokens.DOUBLEQUOTE
+
+                self._expect(Tokens.TIMEZONE)
+                timezone = self.tok.value
+                self._expect(expected_closing_quote)
+                self._expect(Tokens.RPAREN)
+                return Timestamp(timezone)
+            else:
+                return timestamp
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):
