@@ -22,10 +22,10 @@ machine:
     IBIS_TEST_WEBHDFS_USER: ubuntu
   post:
     # download the crunchbase sqlite database, for lineage testing
-    - wget https://ibis-resources.s3.amazonaws.com/data/crunchbase/crunchbase.db
+    - wget https://storage.googleapis.com/ibis-ci-data/crunchbase.db
 
     # download the data
-    - wget https://ibis-resources.s3.amazonaws.com/testing/ibis-testing-data.tar.gz
+    - wget https://storage.googleapis.com/ibis-ci-data/ibis-testing-data.tar.gz
 
     # untar it
     - tar xvzf ibis-testing-data.tar.gz

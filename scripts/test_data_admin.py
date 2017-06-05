@@ -39,17 +39,16 @@ import pandas as pd
 import pandas.util.testing as tm
 
 ENV = IbisTestEnv()
-IBIS_TEST_DATA_S3_BUCKET = 'ibis-resources'
+IBIS_TEST_DATA_BUCKET = 'ibis-ci-data'
 IBIS_TEST_DATA_LOCAL_DIR = 'ibis-testing-data'
 
 TARBALL_NAME = 'ibis-testing-data.tar.gz'
 IBIS_TEST_DATA_TARBALL = os.path.join('testing', TARBALL_NAME)
 
 
-IBIS_TEST_AWS_KEY_ID = os.environ.get('IBIS_TEST_AWS_KEY_ID')
-IBIS_TEST_AWS_SECRET = os.environ.get('IBIS_TEST_AWS_SECRET')
 IBIS_POSTGRES_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
 IBIS_POSTGRES_PASS = os.environ.get('IBIS_POSTGRES_PASS')
+
 IBIS_TEST_POSTGRES_DB = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
 
 
@@ -118,21 +117,21 @@ def is_udf_loaded(con):
     return False
 
 
-def dnload_ibis_test_data_from_s3(
+def dnload_ibis_test_data(
     local_path,
-    bucket=IBIS_TEST_DATA_S3_BUCKET,
+    bucket=IBIS_TEST_DATA_BUCKET,
     tarball=IBIS_TEST_DATA_TARBALL
 ):
-    url = 'https://{}.s3.amazonaws.com/{}'.format(bucket, tarball)
+    url = 'https://storage.googleapis.com/{}/{}'.format(bucket, tarball)
     resp = requests.get(url, stream=True)
     resp.raise_for_status()
 
     tarball_path = os.path.join(local_path, TARBALL_NAME)
-    with open(tarball_path, 'wb') as f:
+    with open(tarball_path, mode='wb') as f:
         for chunk in resp.iter_content(io.DEFAULT_BUFFER_SIZE):
             f.write(chunk)
 
-    with tarfile.TarFile(tarball_path, mode='rb') as f:
+    with tarfile.open(tarball_path, mode='r') as f:
         f.extractall(local_path)
 
     data_dir = os.path.join(local_path, IBIS_TEST_DATA_LOCAL_DIR)
@@ -372,19 +371,6 @@ def generate_csv_files():
         df.to_csv(csv_path, index=False, header=False)
 
 
-def copy_tarball_to_versioned_backup(bucket):
-    key = bucket.get_key(IBIS_TEST_DATA_TARBALL)
-    if key:
-        names = [k.name for k in bucket.list(prefix=IBIS_TEST_DATA_TARBALL)]
-        names.remove(IBIS_TEST_DATA_TARBALL)
-        # get the highest number for this key name
-        last = sorted([int(names.split('.')[-1]) for name in names])[-1]
-        next_key = '{}.{}'.format(IBIS_TEST_DATA_TARBALL, last + 1)
-        key.copy(IBIS_TEST_DATA_S3_BUCKET, next_key)
-        key.delete()
-    assert bucket.get_key(IBIS_TEST_DATA_TARBALL) is None
-
-
 _sql_tpch_tables = ['tpch_lineitem', 'tpch_customer',
                     'tpch_region', 'tpch_nation', 'tpch_orders']
 
@@ -499,20 +485,13 @@ def printenv():
 
 
 @main.command()
-@option('--create-tarball', is_flag=True,
-        help="Create a gzipped tarball")
-@option('--push-to-s3', is_flag=True,
-        help="Also push the tarball to s3://ibis-test-resources")
-def create(create_tarball, push_to_s3):
+def create():
     """Create Ibis test data"""
     print(str(ENV))
 
     con = make_ibis_client()
 
     # verify some assumptions before proceeding
-    if push_to_s3 and not create_tarball:
-        raise IbisError(
-            "Must specify --create-tarball if specifying --push-to-s3")
     if os.path.exists(IBIS_TEST_DATA_LOCAL_DIR):
         raise IbisError(
             'Local dir {} already exists; please remove it first'.format(
@@ -545,27 +524,20 @@ def create(create_tarball, push_to_s3):
         con.drop_database(tmp_db, force=True)
         assert not con.hdfs.exists(tmp_db_hdfs_path)
 
-    if create_tarball:
-        check_call('tar -zc {} > {}'
-                   .format(IBIS_TEST_DATA_LOCAL_DIR, TARBALL_NAME),
-                   shell=True)
-
-    if push_to_s3:
-        import boto
-        s3_conn = boto.connect_s3(IBIS_TEST_AWS_KEY_ID,
-                                  IBIS_TEST_AWS_SECRET)
-        bucket = s3_conn.get_bucket(IBIS_TEST_DATA_S3_BUCKET)
-        # copy_tarball_to_versioned_backup(bucket)
-        key = bucket.new_key(IBIS_TEST_DATA_TARBALL)
-        print('Upload tarball to S3')
-        key.set_contents_from_filename(TARBALL_NAME, replace=True)
+    with tarfile.open(TARBALL_NAME, mode='w:gz') as tf:
+        tf.add(IBIS_TEST_DATA_LOCAL_DIR)
 
 
 @main.command()
 @option('--data/--no-data', default=True, help='Load (skip) ibis testing data')
 @option('--udf/--no-udf', default=True, help='Build/upload (skip) test UDFs')
-@option('--data-dir',
-        help='Path to testing data; dnloads data from S3 if unset')
+@option(
+    '--data-dir',
+    help=(
+        'Path to testing data. This downloads data from Google Cloud Storage '
+        'if unset'
+    )
+)
 @option('--overwrite', is_flag=True, help='Forces overwriting of data/UDFs')
 def load(data, udf, data_dir, overwrite):
     """Load Ibis test data and build/upload UDFs"""
@@ -586,8 +558,8 @@ def load(data, udf, data_dir, overwrite):
         if not data_dir:
             # TODO(wesm): do not download if already downloaded
             print('Did not specify a local dir with the test data, so '
-                  'downloading it from S3')
-            data_dir = dnload_ibis_test_data_from_s3(tmp_dir)
+                  'downloading it')
+            data_dir = dnload_ibis_test_data(tmp_dir)
         try:
             load_impala_data(con, data_dir, overwrite)
 
