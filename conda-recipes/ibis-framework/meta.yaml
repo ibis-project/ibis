@@ -31,16 +31,17 @@ requirements:
 test:
   requires:
     - enum34  # [py27]
+    - graphviz
     - mock  # [py27]
+    - multipledispatch
     - numpy >=1.7.0
     - pandas >=0.12.0
     - pytest <3 # [py27]
     - pytest >=3  # [py3k]
     - python
+    - python-graphviz
     - six
     - toolz
-    - python-graphviz
-    - graphviz
   imports:
     - ibis
     - ibis.expr
