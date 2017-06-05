@@ -180,9 +180,7 @@ def execute_aggregation_dataframe(op, data, scope=None):
             for piece, first_arg_name in zip(pieces, first_arg_names)
         ],
         axis=1
-    ).rename(
-        columns=dict(zip(first_arg_names, metric_names))
-    ).reset_index(drop=True)
+    ).rename(columns=dict(zip(first_arg_names, metric_names))).reset_index()
 
 
 @execute_node.register(
