@@ -1,13 +1,10 @@
 machine:
   python:
-    version: 3.4.3
+    version: 3.6.1
   pre:
-    # installing graphviz naively doesn't work: https://askubuntu.com/a/567127
-    - sudo apt-get -qq update  # appears to fail, but enables graphviz install
-    - sudo apt-get -qq remove graphviz libcdt4 libpathplan4
-    - sudo apt-get -qq autoremove
     # upgrade sqlite3 to # make sure we have the "instr" function available
     - sudo apt-get -qq install --only-upgrade sqlite3
+    # clang/boost for UDFs and graphviz for visualization
     - sudo apt-get -qq install clang libboost-dev graphviz
   environment:
     IBIS_TEST_SQLITE_DB_PATH: $HOME/ibis-testing-data/ibis_testing.db
@@ -38,11 +35,11 @@ dependencies:
     - pip install -U pip
     - cd $(pyenv root); git pull
     - pip install -U tox tox-pyenv
-    - pyenv install --skip-existing 2.7.9
-    - pyenv install --skip-existing 3.4.3
-    - pyenv install --skip-existing 3.5.0
-    - pyenv install --skip-existing 3.6.0
-    - pyenv local 2.7.9 3.4.3 3.5.0 3.6.0
+    - pyenv install --skip-existing 2.7.12
+    - pyenv install --skip-existing 3.4.4
+    - pyenv install --skip-existing 3.5.3
+    - pyenv install --skip-existing 3.6.1
+    - pyenv local 2.7.12 3.4.4 3.5.3 3.6.1
   post:
     # pull down the docker image
     - docker pull cpcloud86/impala:metastore
