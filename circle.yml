@@ -47,11 +47,6 @@ dependencies:
     - pip install -U pip
     - cd $(pyenv root); git pull
     - pip install -U tox tox-pyenv
-    - pyenv install --skip-existing 2.7.12
-    - pyenv install --skip-existing 3.4.4
-    - pyenv install --skip-existing 3.5.3
-    - pyenv install --skip-existing 3.6.1
-    - pyenv local 2.7.12 3.4.4 3.5.3 3.6.1
   post:
 
     # run the docker image, exposing relevant ports
@@ -74,5 +69,5 @@ dependencies:
 
 test:
   override:
-    - case $CIRCLE_NODE_INDEX in 0) tox -e py27 ;; 1) tox -e py34 ;; 2) tox -e py35 ;; 3) tox -e py36 ;; esac:
+    - case $CIRCLE_NODE_INDEX in 0) ci/run.sh 2.7.12 ;; 1) ci/run.sh 3.4.4 ;; 2) ci/run.sh 3.5.3 ;; 3) ci/run.sh 3.6.1 ;; esac:
         parallel: true
