@@ -14,6 +14,7 @@
 
 import operator
 import six
+import itertools
 
 from ibis.expr.types import TableColumn  # noqa
 
@@ -1376,7 +1377,7 @@ class Join(TableNode):
             if not isinstance(pred, ir.BooleanColumn):
                 raise com.ExpressionError('Join predicate must be comparison')
 
-            preds = L.unwrap_ands(pred)
+            preds = L.flatten_predicate(pred)
             result.extend(preds)
 
         return result
@@ -1626,6 +1627,7 @@ class Selection(TableNode, HasSchema):
 
     def __init__(self, table_expr, proj_exprs=None, predicates=None,
                  sort_keys=None):
+        import ibis.expr.analysis as L
         self.table = table_expr
 
         # Argument cleaning
@@ -1640,17 +1642,22 @@ class Selection(TableNode, HasSchema):
         self.sort_keys = [to_sort_key(self.table, k)
                           for k in util.promote_list(sort_keys)]
 
-        self.predicates = predicates or []
+        self.predicates = list(
+            itertools.chain.from_iterable(
+                map(L.flatten_predicate, predicates or [])
+            )
+        )
 
         dependent_exprs = clean_exprs + self.sort_keys
+
         self._validate(dependent_exprs)
         self._validate_predicates()
 
-        HasSchema.__init__(self, schema)
-        Node.__init__(self, [table_expr] + [clean_exprs] +
-                      [self.predicates] + [self.sort_keys])
-
         self.selections = clean_exprs
+
+        HasSchema.__init__(self, schema)
+        Node.__init__(self, [table_expr] + [self.selections] +
+                      [self.predicates] + [self.sort_keys])
 
     def blocks(self):
         return len(self.selections) > 0

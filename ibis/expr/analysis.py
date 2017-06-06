@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.common import RelationError, ExpressionError, IbisTypeError
-from ibis.expr.datatypes import HasSchema
-from ibis.expr.window import window
+import toolz
+
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-import ibis.util as util
-import toolz
+
+from ibis.expr.datatypes import HasSchema
+from ibis.expr.window import window
+
+from ibis.common import RelationError, ExpressionError, IbisTypeError
 
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
@@ -26,7 +28,7 @@ import toolz
 
 
 def sub_for(expr, substitutions):
-    mapping = dict((repr(k.op()), v) for k, v in substitutions)
+    mapping = {repr(k.op()): v for k, v in substitutions}
     return _subs(expr, mapping)
 
 
@@ -900,7 +902,7 @@ class FilterValidator(ExprValidator):
         is_valid = True
 
         if isinstance(op, ops.Contains):
-            value_valid = ExprValidator.validate(self, op.value)
+            value_valid = super(FilterValidator, self).validate(op.value)
             is_valid = value_valid
         else:
             roots_valid = []
@@ -925,48 +927,154 @@ class FilterValidator(ExprValidator):
 
 
 def find_source_table(expr):
-    # A more complex version of _find_base_table.
-    # TODO: Revisit/refactor this all at some point
-    node = expr.op()
+    """Find the first table expression observed for each argument that the
+    expression depends on
 
-    # First table expression observed for each argument that the expr
-    # depends on
+    Parameters
+    ----------
+    expr : ir.Expr
+
+    Returns
+    -------
+    table_expr : ir.TableExpr
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table([('a', 'double'), ('b', 'string')])
+    >>> expr = t.mutate(c=t.a + 42.0)
+    >>> expr  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: None
+      schema:
+        a : double
+        b : string
+    Selection[table]
+      table:
+        Table: ref_0
+      selections:
+        Table: ref_0
+        c = Add[double*]
+          left:
+            a = Column[double*] 'a' from table
+              ref_0
+          right:
+            Literal[double]
+              42.0
+    >>> find_source_table(expr)
+    UnboundTable[table]
+      name: None
+      schema:
+        a : double
+        b : string
+    >>> left = ibis.table([('a', 'int64'), ('b', 'string')])
+    >>> right = ibis.table([('c', 'int64'), ('d', 'string')])
+    >>> result = left.inner_join(right, left.a == right.c)
+    >>> find_source_table(result)  # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: More than one base table not implemented
+    """
     first_tables = []
 
-    def push_first(arg):
-        if not isinstance(arg, ir.Expr):
-            return
-        if isinstance(arg, ir.TableExpr):
-            first_tables.append(arg)
-        else:
-            collect(arg.op())
+    stack = [expr]
+    seen = set()
 
-    def collect(node):
-        for arg in node.flat_args():
-            push_first(arg)
+    while stack:
+        e = stack.pop()
+        op = e.op()
 
-    collect(node)
-    options = util.unique_by_key(first_tables, id)
+        if op not in seen:
+            seen.add(op)
+
+            arguments = [
+                arg for arg in reversed(list(op.flat_args()))
+                if isinstance(arg, ir.Expr)
+            ]
+            first_tables.extend(
+                arg for arg in arguments if isinstance(arg, ir.TableExpr)
+            )
+            stack.extend(
+                arg for arg in arguments if not isinstance(arg, ir.TableExpr)
+            )
+
+    options = list(toolz.unique(first_tables, key=id))
 
     if len(options) > 1:
-        raise NotImplementedError
+        raise NotImplementedError('More than one base table not implemented')
 
     return options[0]
 
 
-def unwrap_ands(expr):
-    out_exprs = []
+def flatten_predicate(expr):
+    """Yield the expressions corresponding to the `And` nodes of a predicate.
 
-    def walk(expr):
-        op = expr.op()
-        if isinstance(op, ops.Comparison):
-            out_exprs.append(expr)
-        elif isinstance(op, ops.And):
-            walk(op.left)
-            walk(op.right)
-        else:
-            raise Exception('Invalid predicate: {0!s}'
-                            .format(expr._repr()))
+    Parameters
+    ----------
+    expr : ir.BooleanColumn
 
-    walk(expr)
-    return out_exprs
+    Returns
+    -------
+    exprs : List[ir.BooleanColumn]
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table([('a', 'int64'), ('b', 'string')])
+    >>> filt = (t.a == 1) & (t.b == 'foo')
+    >>> predicates = flatten_predicate(filt)
+    >>> len(predicates)
+    2
+    >>> predicates[0]  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: None
+      schema:
+        a : int64
+        b : string
+    Equals[boolean*]
+      left:
+        a = Column[int64*] 'a' from table
+          ref_0
+      right:
+        Literal[int8]
+          1
+    >>> predicates[1]  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: None
+      schema:
+        a : int64
+        b : string
+    Equals[boolean*]
+      left:
+        b = Column[string*] 'b' from table
+          ref_0
+      right:
+        Literal[string]
+          foo
+    """
+    predicates = []
+    stack = [expr]
+    seen = set()
+
+    while stack:
+        e = stack.pop()
+
+        if not isinstance(e, ir.BooleanColumn):
+            raise TypeError(
+                'Predicate component is not an instance of ir.BooleanColumn'
+            )
+
+        op = e.op()
+
+        if op not in seen:
+            seen.add(op)
+
+            if isinstance(op, ops.And):
+                stack.append(op.right)
+                stack.append(op.left)
+            else:
+                predicates.append(e)
+    return predicates
