@@ -17,7 +17,6 @@ import six
 
 from ibis.expr.types import TableColumn  # noqa
 
-from ibis.compat import py_string
 from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr, Expr,
@@ -1551,7 +1550,7 @@ def to_sort_key(table, key):
         if isinstance(key, (ir.SortExpr, DeferredSortKey)):
             return to_sort_key(table, key)
 
-    if isinstance(sort_order, py_string):
+    if isinstance(sort_order, six.string_types):
         if sort_order.lower() in ('desc', 'descending'):
             sort_order = False
         elif not isinstance(sort_order, bool):
@@ -1672,7 +1671,7 @@ class Selection(TableNode, HasSchema):
         names = []
         clean_exprs = []
         for expr in proj_exprs:
-            if isinstance(expr, py_string):
+            if isinstance(expr, six.string_types):
                 expr = self.table[expr]
 
             if isinstance(expr, ValueExpr):

@@ -12,30 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# flake8: noqa
-
 import itertools
 
 import numpy as np
 
 import sys
 import six
-from six import BytesIO, StringIO, string_types as py_string
+from six import BytesIO, StringIO, string_types  # noqa: F401
 
 
 PY2 = sys.version_info[0] == 2
 
 
-import unittest
-
 if not PY2:
     unicode_type = str
+
     def lzip(*x):
         return list(zip(*x))
+
     zip = zip
     zip_longest = itertools.zip_longest
+
     def dict_values(x):
         return list(x.values())
+
     from decimal import Decimal
     import unittest.mock as mock
     range = range
@@ -43,9 +43,9 @@ else:
     try:
         from cdecimal import Decimal
     except ImportError:
-        from decimal import Decimal
+        from decimal import Decimal  # noqa: F401
 
-    unicode_type = unicode
+    unicode_type = unicode  # noqa: F821
     lzip = zip
     zip = itertools.izip
     zip_longest = itertools.izip_longest
@@ -54,10 +54,10 @@ else:
         return x.values()
 
     try:
-        import mock  # mock is an optional dependency
+        import mock  # noqa: F401
     except ImportError:
         pass
 
-    range = xrange
+    range = xrange  # noqa: F821
 
 integer_types = six.integer_types + (np.integer,)

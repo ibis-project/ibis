@@ -11,29 +11,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# flake8: noqa=E402
-
+import unittest
 from posixpath import join as pjoin
 import pytest
-
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
 
 import ibis
 
 import ibis.expr.types as ir
 
-from ibis.impala import ddl
-import ibis.impala as api
-
 from ibis.common import IbisTypeError
-from ibis.compat import unittest, Decimal
+from ibis.compat import Decimal
 from ibis.expr.datatypes import validate_type
 from ibis.expr.tests.mocks import MockConnection
-from ibis.impala.tests.common import ImpalaE2E
+
 import ibis.expr.rules as rules
 import ibis.common as com
 import ibis.util as util
+
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
+
+from ibis.impala import ddl  # noqa: E402
+import ibis.impala as api  # noqa: E402
+from ibis.impala.tests.common import ImpalaE2E  # noqa: E402
 
 
 class TestWrapping(unittest.TestCase):

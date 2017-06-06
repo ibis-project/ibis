@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
+
 import pytest
 
 import numpy as np
@@ -19,14 +21,14 @@ import numpy as np
 from pandas.util.testing import assert_frame_equal
 import pandas as pd
 
-from ibis.compat import unittest
+import ibis
+import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
+
 from ibis.common import IbisTypeError
 from ibis.impala.pandas_interop import pandas_to_ibis_schema, DataFrameWriter
 from ibis.impala.tests.common import ImpalaE2E
-import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
 import ibis.util as util
-import ibis
 
 
 class TestPandasTypeInterop(unittest.TestCase):

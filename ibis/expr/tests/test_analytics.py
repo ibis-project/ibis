@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.expr.tests.mocks import MockConnection
-from ibis.compat import unittest
-import ibis.expr.types as ir
-import ibis
+import unittest
 
+import ibis
+import ibis.expr.types as ir
+
+from ibis.expr.tests.mocks import MockConnection
 from ibis.tests.util import assert_equal
 
 

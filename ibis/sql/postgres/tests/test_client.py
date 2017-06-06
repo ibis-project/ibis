@@ -13,12 +13,12 @@
 # limitations under the License.
 
 import os
+import unittest
 
 import pandas as pd
 import pytest
 
 from .common import PostgreSQLTests
-from ibis.compat import unittest
 from ibis.tests.util import assert_equal
 import ibis.expr.types as ir
 import ibis

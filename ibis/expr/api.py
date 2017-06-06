@@ -41,7 +41,6 @@ from ibis.expr.temporal import *  # noqa
 
 import ibis.common as _com
 
-from ibis.compat import py_string
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import window, trailing_window, cumulative_window
@@ -149,7 +148,7 @@ def timestamp(value):
     """
     Returns a timestamp literal if value is likely coercible to a timestamp
     """
-    if isinstance(value, py_string):
+    if isinstance(value, six.string_types):
         from pandas import Timestamp
         value = Timestamp(value)
     op = ir.Literal(value)

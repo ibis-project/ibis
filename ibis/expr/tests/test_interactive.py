@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.compat import unittest
+import unittest
+
 from ibis.expr.tests.mocks import MockConnection
 import ibis.config as config
 

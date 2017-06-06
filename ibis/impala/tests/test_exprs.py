@@ -12,27 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# flake8: noqa=E402
+import unittest
 
 import pytest
-
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
 
 import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
-
-from ibis import literal as L
-from ibis.compat import unittest, StringIO, Decimal
-from ibis.expr.datatypes import Category
-from ibis.expr.tests.mocks import MockConnection
-from ibis.impala.compiler import ImpalaExprTranslator, to_sql, ImpalaContext
-from ibis.sql.tests.test_compiler import ExprTestCases
-from ibis.impala.tests.common import ImpalaE2E
 import ibis.expr.types as ir
 import ibis.expr.api as api
+
+from ibis import literal as L
+from ibis.expr.datatypes import Category
+
+from ibis.compat import StringIO, Decimal
+from ibis.expr.tests.mocks import MockConnection
+
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
+
+from ibis.impala.compiler import ImpalaExprTranslator, to_sql  # noqa: E402
+from ibis.impala.compiler import ImpalaContext  # noqa: E402
+from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
+from ibis.impala.tests.common import ImpalaE2E  # noqa: E402
 
 
 def approx_equal(a, b, eps):
@@ -503,7 +506,6 @@ FROM functional_alltypes"""
         expr = ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64'))
         result = to_sql(expr)
         assert result == 'SELECT TRUE AS `tmp`'
-
 
 
 class TestBucketHistogram(unittest.TestCase, ExprSQLTest):

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
 import os
 
 import pandas as pd
@@ -20,7 +21,6 @@ import pandas.util.testing as tm
 import uuid
 
 from .common import SQLiteTests
-from ibis.compat import unittest
 from ibis.tests.util import assert_equal
 from ibis.util import guid
 import ibis.expr.types as ir

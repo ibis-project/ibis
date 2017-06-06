@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# flake8: noqa=E402
+import unittest
 
 from posixpath import join as pjoin
 
@@ -21,17 +21,16 @@ import pytest
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-import impala
+import impala  # noqa: E402
 
-from pandas.util.testing import assert_frame_equal
-import pandas as pd
+from pandas.util.testing import assert_frame_equal  # noqa: E402
+import pandas as pd  # noqa: E402
 
-from ibis.compat import unittest
-from ibis.impala.compat import ImpylaError
-from ibis.impala.tests.common import ImpalaE2E, ENV
-from ibis.tests.util import assert_equal
-import ibis
-import ibis.util as util
+from ibis.impala.compat import ImpylaError  # noqa: E402
+from ibis.impala.tests.common import ImpalaE2E, ENV  # noqa: E402
+from ibis.tests.util import assert_equal  # noqa: E402
+import ibis  # noqa: E402
+import ibis.util as util  # noqa: E402
 
 
 def _tmp_name():
