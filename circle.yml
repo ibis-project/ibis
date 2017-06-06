@@ -42,7 +42,7 @@ dependencies:
         echo "Pulling impala docker image from Docker Hub"
         docker pull cpcloud86/impala:metastore
         mkdir -p ~/docker
-        docker save -o ~/docker/impala.tar impala:metastore
+        docker save -o ~/docker/impala.tar cpcloud86/impala:metastore
       fi
     - pip install -U pip
     - cd $(pyenv root); git pull
