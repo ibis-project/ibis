@@ -495,7 +495,7 @@ def test_group_concat(t, df):
         foo=t.plain_int64.group_concat(',')
     )
     result = expr.execute()
-    expected = df.groupby('dup_strings').plain_int64.apply(
-        lambda x: ','.join(x.astype(str))
-    ).to_frame().reset_index(drop=True).rename(columns={'plain_int64': 'foo'})
+    expected = df.groupby('dup_strings').apply(
+        lambda df: ','.join(df.plain_int64.astype(str))
+    ).reset_index().rename(columns={0: 'foo'})
     tm.assert_frame_equal(result, expected)
