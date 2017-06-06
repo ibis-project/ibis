@@ -32,7 +32,7 @@ machine:
 
 dependencies:
   cache_directories:
-    - "~/docker"
+    - ~/docker
   override:
     - >
       if [[ -e ~/docker/impala.tar ]]; then
