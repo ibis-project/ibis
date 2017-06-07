@@ -83,7 +83,7 @@ deployment:
     # Make sure PRs don't introduce any regressions
     branch: /^(?!master$).*$/
     commands:
-      - ci/benchmark.sh asv "continuous -e master ${CIRCLE_SHA1}"
+      - ci/benchmark.sh asv "continuous -f 1.5 -e master ${CIRCLE_SHA1}"
   master:
     # Continuously benchmark master
     branch: master
