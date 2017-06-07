@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
+
 import ibis
 
 from ibis.impala.compiler import to_sql
-from ibis.compat import unittest
 
 
 class TestImpalaSQL(unittest.TestCase):

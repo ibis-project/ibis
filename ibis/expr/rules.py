@@ -16,10 +16,11 @@ from collections import Counter
 
 import operator
 
+import six
+
 from toolz import first
 
 from ibis.common import IbisTypeError
-from ibis.compat import py_string
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.common as com
@@ -459,7 +460,7 @@ class AnyTyped(Argument):
         arg = args[i]
 
         if not self._type_matches(arg):
-            if isinstance(self.fail_message, py_string):
+            if isinstance(self.fail_message, six.string_types):
                 exc = self.fail_message
             else:
                 exc = self.fail_message(self.types, arg)
@@ -754,7 +755,7 @@ class DataTypeArgument(Argument):
     def _validate(self, args, i):
         arg = args[i]
 
-        if isinstance(arg, py_string):
+        if isinstance(arg, six.string_types):
             arg = arg.lower()
 
         arg = args[i] = dt.validate_type(arg)

@@ -12,17 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# flake8: noqa=E402
-
 import math
 import os
-import uuid
 import operator
+import unittest
 
 import pytest  # noqa
 
 from .common import PostgreSQLTests
-from ibis.compat import unittest
 from ibis import literal as L
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
@@ -31,8 +28,8 @@ import ibis
 sa = pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
 
-import pandas as pd
-import pandas.util.testing as tm
+import pandas as pd  # noqa: E402
+import pandas.util.testing as tm  # noqa: E402
 
 
 @pytest.fixture
@@ -386,7 +383,6 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         ]
         self._check_e2e_cases(cases)
 
-
     def test_numeric_builtins_work(self):
         t = self.alltypes
         d = t.double_col
@@ -528,13 +524,17 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         for func in 'mean sum min max'.split():
             f = getattr(t.double_col, func)
             df_f = getattr(df.double_col, func)
-            result = t.projection([(t.double_col - f()).name('double_col')]).execute().double_col
+            result = t.projection([
+                (t.double_col - f()).name('double_col')
+            ]).execute().double_col
             expected = df.double_col - df_f()
             tm.assert_series_equal(result, expected)
 
     def test_rolling_window(self):
         t = self.alltypes
-        df = t[['double_col', 'timestamp_col']].execute().sort_values('timestamp_col').reset_index(drop=True)
+        df = t[['double_col', 'timestamp_col']].execute().sort_values(
+            'timestamp_col'
+        ).reset_index(drop=True)
         window = ibis.window(
             order_by=t.timestamp_col,
             preceding=6,
@@ -543,7 +543,9 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         for func in 'mean sum min max'.split():
             f = getattr(t.double_col, func)
             df_f = getattr(df.double_col.rolling(7, min_periods=0), func)
-            result = t.projection([f().over(window).name('double_col')]).execute().double_col
+            result = t.projection([
+                f().over(window).name('double_col')
+            ]).execute().double_col
             expected = df_f()
             tm.assert_series_equal(result, expected)
 
@@ -578,7 +580,8 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         df = t.execute()
         for func in 'sum min max'.split():
             f = getattr(t.double_col, func)
-            expr = t.projection([(t.double_col - f().over(ibis.cumulative_window())).name('double_col')])
+            col = t.double_col - f().over(ibis.cumulative_window())
+            expr = t.projection([col.name('double_col')])
             result = expr.execute().double_col
             expected = df.double_col - getattr(df.double_col, 'cum%s' % func)()
             tm.assert_series_equal(result, expected)
@@ -589,9 +592,13 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         window = ibis.cumulative_window(group_by=t.string_col)
         for func in 'sum min max'.split():
             f = getattr(t.double_col, func)
-            expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
+            expr = t.projection([
+                (t.double_col - f().over(window)).name('double_col')
+            ])
             result = expr.execute().double_col
-            expected = df.groupby(df.string_col).double_col.transform(lambda c: c - getattr(c, 'cum%s' % func)())
+            expected = df.groupby(df.string_col).double_col.transform(
+                lambda c: c - getattr(c, 'cum%s' % func)()
+            )
             tm.assert_series_equal(result, expected)
 
     def test_cumulative_ordered_window(self):
@@ -600,26 +607,36 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         window = ibis.cumulative_window(order_by=t.timestamp_col)
         for func in 'sum min max'.split():
             f = getattr(t.double_col, func)
-            expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
+            expr = t.projection([
+                (t.double_col - f().over(window)).name('double_col')
+            ])
             result = expr.execute().double_col
             expected = df.double_col - getattr(df.double_col, 'cum%s' % func)()
             tm.assert_series_equal(result, expected)
 
     def test_cumulative_partitioned_ordered_window(self):
         t = self.alltypes
-        df = t.execute().sort_values(['string_col', 'timestamp_col']).reset_index(drop=True)
-        window = ibis.cumulative_window(order_by=t.timestamp_col, group_by=t.string_col)
+        df = t.execute().sort_values(
+            ['string_col', 'timestamp_col']
+        ).reset_index(drop=True)
+        window = ibis.cumulative_window(
+            order_by=t.timestamp_col, group_by=t.string_col
+        )
         for func in 'sum min max'.split():
             f = getattr(t.double_col, func)
-            expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
+            expr = t.projection([
+                (t.double_col - f().over(window)).name('double_col')
+            ])
             result = expr.execute().double_col
-            expected = df.groupby(df.string_col).double_col.transform(lambda c: c - getattr(c, 'cum%s' % func)())
+            expected = df.groupby(df.string_col).double_col.transform(
+                lambda c: c - getattr(c, 'cum%s' % func)()
+            )
             tm.assert_series_equal(result, expected)
 
     def test_null_column(self):
         t = self.alltypes
-        nrows = self.alltypes.count().execute()
-        expr = self.alltypes.mutate(na_column=ibis.NA).na_column
+        nrows = t.count().execute()
+        expr = t.mutate(na_column=ibis.NA).na_column
         result = expr.execute()
         tm.assert_series_equal(
             result,
@@ -780,7 +797,9 @@ def test_array_index(array_types, index):
 def test_array_repeat(array_types, n, mul):
     expr = array_types.projection([mul(array_types.x, n).name('repeated')])
     result = expr.execute()
-    expected = pd.DataFrame({'repeated': array_types.x.execute().map(lambda x, n=n: mul(x, n))})
+    expected = pd.DataFrame({
+        'repeated': array_types.x.execute().map(lambda x, n=n: mul(x, n))
+    })
     tm.assert_frame_equal(result, expected)
 
 
@@ -792,7 +811,7 @@ def test_array_concat(array_types, catop):
     expr = t.projection([catop(x, y).name('catted')])
     result = expr.execute()
     tuples = t.projection([x, y]).execute().itertuples(index=False)
-    expected = pd.DataFrame({'catted': [catop(x, y) for x, y in tuples]})
+    expected = pd.DataFrame({'catted': [catop(i, j) for i, j in tuples]})
     tm.assert_frame_equal(result, expected)
 
 
@@ -929,7 +948,7 @@ def test_rank(con):
     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = """\
 SELECT rank() OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp 
-FROM functional_alltypes AS t0"""
+FROM functional_alltypes AS t0"""  # noqa: E501, W291
     assert result == expected
 
 
@@ -941,7 +960,7 @@ def test_percent_rank(con):
     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = """\
 SELECT percent_rank() OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS tmp 
-FROM functional_alltypes AS t0"""
+FROM functional_alltypes AS t0"""  # noqa: E501, W291
     assert result == expected
 
 
@@ -953,7 +972,7 @@ def test_ntile(con):
     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = """\
 SELECT ntile(7) OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp 
-FROM functional_alltypes AS t0"""
+FROM functional_alltypes AS t0"""  # noqa: E501, W291
     assert result == expected
 
 

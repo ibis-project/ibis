@@ -29,6 +29,7 @@ def schema():
         ('f', 'double'),
         ('g', 'string'),
         ('h', 'boolean'),
+        ('i', 'timestamp'),
     ]
 
 

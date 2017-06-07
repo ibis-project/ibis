@@ -12,96 +12,97 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from ibis import literal
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
-from ibis.expr.tests.mocks import MockConnection
-from ibis.compat import unittest
 from ibis.tests.util import assert_equal
 
 
-class TestStringOps(unittest.TestCase):
+def test_lower_upper(table):
+    lresult = table.g.lower()
+    uresult = table.g.upper()
 
-    def setUp(self):
-        self.con = MockConnection()
-        self.table = self.con.table('alltypes')
+    assert isinstance(lresult, ir.StringColumn)
+    assert isinstance(uresult, ir.StringColumn)
 
-    def test_lower_upper(self):
-        lresult = self.table.g.lower()
-        uresult = self.table.g.upper()
+    assert isinstance(lresult.op(), ops.Lowercase)
+    assert isinstance(uresult.op(), ops.Uppercase)
 
-        assert isinstance(lresult, ir.StringColumn)
-        assert isinstance(uresult, ir.StringColumn)
+    lit = literal('FoO')
 
-        assert isinstance(lresult.op(), ops.Lowercase)
-        assert isinstance(uresult.op(), ops.Uppercase)
+    lresult = lit.lower()
+    uresult = lit.upper()
+    assert isinstance(lresult, ir.StringScalar)
+    assert isinstance(uresult, ir.StringScalar)
 
-        lit = literal('FoO')
 
-        lresult = lit.lower()
-        uresult = lit.upper()
-        assert isinstance(lresult, ir.StringScalar)
-        assert isinstance(uresult, ir.StringScalar)
+def test_substr(table):
+    lit = literal('FoO')
 
-    def test_substr(self):
-        lit = literal('FoO')
+    result = table.g.substr(2, 4)
+    lit_result = lit.substr(0, 2)
 
-        result = self.table.g.substr(2, 4)
-        lit_result = lit.substr(0, 2)
+    assert isinstance(result, ir.StringColumn)
+    assert isinstance(lit_result, ir.StringScalar)
 
-        assert isinstance(result, ir.StringColumn)
-        assert isinstance(lit_result, ir.StringScalar)
+    op = result.op()
+    assert isinstance(op, ops.Substring)
 
-        op = result.op()
-        assert isinstance(op, ops.Substring)
+    start, length = op.args[1:]
 
-        start, length = op.args[1:]
+    assert start.equals(literal(2))
+    assert length.equals(literal(4))
 
-        assert start.equals(literal(2))
-        assert length.equals(literal(4))
 
-    def test_left_right(self):
-        result = self.table.g.left(5)
-        expected = self.table.g.substr(0, 5)
-        assert result.equals(expected)
+def test_left_right(table):
+    result = table.g.left(5)
+    expected = table.g.substr(0, 5)
+    assert result.equals(expected)
 
-        result = self.table.g.right(5)
-        op = result.op()
-        assert isinstance(op, ops.StrRight)
-        assert op.args[1].equals(literal(5))
+    result = table.g.right(5)
+    op = result.op()
+    assert isinstance(op, ops.StrRight)
+    assert op.args[1].equals(literal(5))
 
-    def test_length(self):
-        lit = literal('FoO')
-        result = self.table.g.length()
-        lit_result = lit.length()
 
-        assert isinstance(result, ir.Int32Column)
-        assert isinstance(lit_result, ir.Int32Scalar)
-        assert isinstance(result.op(), ops.StringLength)
+def test_length(table):
+    lit = literal('FoO')
+    result = table.g.length()
+    lit_result = lit.length()
 
-    def test_join(self):
-        dash = literal('-')
+    assert isinstance(result, ir.Int32Column)
+    assert isinstance(lit_result, ir.Int32Scalar)
+    assert isinstance(result.op(), ops.StringLength)
 
-        expr = dash.join([self.table.f.cast('string'),
-                          self.table.g])
-        assert isinstance(expr, ir.StringColumn)
 
-        expr = dash.join([literal('ab'), literal('cd')])
-        assert isinstance(expr, ir.StringScalar)
+def test_join(table):
+    dash = literal('-')
 
-    def test_contains(self):
-        expr = self.table.g.contains('foo')
-        expected = self.table.g.find('foo') >= 0
-        assert_equal(expr, expected)
+    expr = dash.join([table.f.cast('string'),
+                      table.g])
+    assert isinstance(expr, ir.StringColumn)
 
-        self.assertRaises(Exception, lambda: 'foo' in self.table.g)
+    expr = dash.join([literal('ab'), literal('cd')])
+    assert isinstance(expr, ir.StringScalar)
 
-    def test_getitem_slice(self):
-        cases = [
-            (self.table.g[:3], self.table.g.substr(0, 3)),
-            (self.table.g[2:6], self.table.g.substr(2, 4)),
-        ]
 
-        for case, expected in cases:
-            assert_equal(case, expected)
+def test_contains(table):
+    expr = table.g.contains('foo')
+    expected = table.g.find('foo') >= 0
+    assert_equal(expr, expected)
+
+    with pytest.raises(Exception):
+        'foo' in table.g
+
+
+def test_getitem_slice(table):
+    cases = [
+        (table.g[:3], table.g.substr(0, 3)),
+        (table.g[2:6], table.g.substr(2, 4)),
+    ]
+
+    for case, expected in cases:
+        assert_equal(case, expected)

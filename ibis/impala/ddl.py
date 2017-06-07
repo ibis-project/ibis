@@ -15,11 +15,12 @@
 import re
 import json
 
+import six
+
 from ibis.sql.compiler import DDL
 from .compiler import quote_identifier, _type_to_sql_string
 
 from ibis.expr.datatypes import validate_type
-from ibis.compat import py_string
 
 from ibis.expr.api import Schema
 import ibis.expr.datatypes as dt
@@ -800,7 +801,7 @@ def _arg_to_string(arg):
         if len(types) > 1:
             raise NotImplementedError
         return _type_to_sql_string(types[0])
-    elif isinstance(arg, py_string):
+    elif isinstance(arg, six.string_types):
         return _type_to_sql_string(validate_type(arg))
     else:
         raise NotImplementedError
