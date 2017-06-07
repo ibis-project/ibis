@@ -499,3 +499,23 @@ def test_group_concat(t, df):
         lambda df: ','.join(df.plain_int64.astype(str))
     ).reset_index().rename(columns={0: 'foo'})
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize('offset', [0, 2])
+def test_frame_limit(t, df, offset):
+    n = 5
+    df_expr = t.limit(n, offset=offset)
+    result = df_expr.execute()
+    expected = df.iloc[offset:offset + n]
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.xfail(
+    raises=AttributeError, reason='TableColumn does not implement limit'
+)
+@pytest.mark.parametrize('offset', [0, 2])
+def test_series_limit(t, df, offset):
+    n = 5
+    s_expr = t.plain_int64.limit(n, offset=offset)
+    result = s_expr.execute()
+    tm.assert_series_equal(result, df.plain_int64.iloc[offset:offset + n])
