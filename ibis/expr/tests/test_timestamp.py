@@ -141,3 +141,37 @@ def test_timestamp_precedence():
     null_ts = ibis.NA
     highest_type = highest_precedence_type([ts, null_ts])
     assert highest_type == 'timestamp'
+
+
+@pytest.mark.parametrize(
+    ('field', 'expected_operation', 'expected_type'),
+    [
+        ('year', ops.ExtractYear, ir.Int32Column),
+        ('month', ops.ExtractMonth, ir.Int32Column),
+        ('day', ops.ExtractDay, ir.Int32Column),
+    ]
+)
+def test_timestamp_field_access_on_date(
+    field, expected_operation, expected_type, col
+):
+    date_col = col.cast('date')
+    result = getattr(date_col, field)()
+    assert isinstance(result, expected_type)
+    assert isinstance(result.op(), expected_operation)
+
+
+@pytest.mark.parametrize(
+    ('field', 'expected_operation', 'expected_type'),
+    [
+        ('hour', ops.ExtractHour, ir.Int32Column),
+        ('minute', ops.ExtractMinute, ir.Int32Column),
+        ('second', ops.ExtractSecond, ir.Int32Column),
+        ('millisecond', ops.ExtractMillisecond, ir.Int32Column),
+    ]
+)
+def test_timestamp_field_access_on_date_failure(
+    field, expected_operation, expected_type, col
+):
+    date_col = col.cast('date')
+    with pytest.raises(AttributeError):
+        getattr(date_col, field)

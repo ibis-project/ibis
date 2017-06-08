@@ -17,19 +17,24 @@ import os
 import operator
 import unittest
 
-import pytest  # noqa
+import pytest
 
-from .common import PostgreSQLTests
+from ibis.sql.postgres.tests.common import PostgreSQLTests
 from ibis import literal as L
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis
 
+import pandas as pd
+import pandas.util.testing as tm
+
 sa = pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
 
-import pandas as pd  # noqa: E402
-import pandas.util.testing as tm  # noqa: E402
+
+@pytest.fixture
+def db(con):
+    return con.database()
 
 
 @pytest.fixture
@@ -1014,3 +1019,19 @@ def test_negate_boolean(con):
     result = expr.execute().bool_col
     expected = -t.execute().bool_col
     tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.postgresql
+@pytest.mark.parametrize(
+    ('attr', 'expected'),
+    [
+        (operator.methodcaller('year'), {2009, 2010}),
+        (operator.methodcaller('month'), set(range(1, 13))),
+        (operator.methodcaller('day'), set(range(1, 32)))
+    ]
+)
+def test_date_extract_field(db, attr, expected):
+    t = db.functional_alltypes
+    expr = attr(t.timestamp_col.cast('date')).distinct()
+    result = expr.execute().astype(int)
+    assert set(result) == expected

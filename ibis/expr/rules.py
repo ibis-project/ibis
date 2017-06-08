@@ -611,7 +611,11 @@ def decimal(**arg_kwds):
 
 
 def timestamp(**arg_kwds):
-    return ValueTyped(ir.TimestampValue, 'not decimal', **arg_kwds)
+    return ValueTyped(ir.TimestampValue, 'not timestamp', **arg_kwds)
+
+
+def date(**arg_kwds):
+    return ValueTyped(ir.DateValue, 'not date', **arg_kwds)
 
 
 def timedelta(**arg_kwds):
@@ -637,6 +641,9 @@ def boolean(**arg_kwds):
 
 def one_of(args, **arg_kwds):
     return OneOf(args, **arg_kwds)
+
+
+temporal = one_of((dt.timestamp, dt.date))
 
 
 def instance_of(type_, **arg_kwds):
