@@ -2188,6 +2188,11 @@ class E(Constant):
         return ir.DoubleScalar
 
 
+class TemporalUnaryOp(UnaryOp):
+
+    input_type = [rules.temporal]
+
+
 class TimestampUnaryOp(UnaryOp):
 
     input_type = [rules.timestamp]
@@ -2259,8 +2264,13 @@ class Truncate(ValueOp):
 
 class Strftime(ValueOp):
 
-    input_type = [rules.timestamp, rules.string(name='format_str')]
+    input_type = [rules.temporal, rules.string(name='format_str')]
     output_type = rules.shape_like_arg(0, 'string')
+
+
+class ExtractTemporalField(TemporalUnaryOp):
+
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class ExtractTimestampField(TimestampUnaryOp):
@@ -2268,15 +2278,15 @@ class ExtractTimestampField(TimestampUnaryOp):
     output_type = rules.shape_like_arg(0, 'int32')
 
 
-class ExtractYear(ExtractTimestampField):
+class ExtractYear(ExtractTemporalField):
     pass
 
 
-class ExtractMonth(ExtractTimestampField):
+class ExtractMonth(ExtractTemporalField):
     pass
 
 
-class ExtractDay(ExtractTimestampField):
+class ExtractDay(ExtractTemporalField):
     pass
 
 

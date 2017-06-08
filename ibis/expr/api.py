@@ -32,6 +32,7 @@ from ibis.expr.types import (Expr,  # noqa
                              StringValue, StringScalar, StringColumn,
                              DecimalValue, DecimalScalar, DecimalColumn,
                              TimestampValue, TimestampScalar, TimestampColumn,
+                             DateValue,
                              ArrayValue, ArrayScalar, ArrayColumn,
                              CategoryValue, unnamed, as_value_expr, literal,
                              null, sequence)
@@ -1702,7 +1703,16 @@ _timestamp_value_methods = dict(
 )
 
 
+_date_value_methods = dict(
+    strftime=_timestamp_strftime,
+    year=_extract_field('year', _ops.ExtractYear),
+    month=_extract_field('month', _ops.ExtractMonth),
+    day=_extract_field('day', _ops.ExtractDay),
+)
+
+
 _add_methods(TimestampValue, _timestamp_value_methods)
+_add_methods(DateValue, _date_value_methods)
 
 
 # ---------------------------------------------------------------------
