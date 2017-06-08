@@ -47,8 +47,13 @@ dependencies:
     - pip install -U pip
     - cd $(pyenv root); git pull
     - pip install -U tox tox-pyenv
-  post:
 
+    # these are used for benchmarking
+    - pip install -U asv
+    - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O $HOME/miniconda.sh
+    - bash $HOME/miniconda.sh -b -p $HOME/miniconda
+    - ci/asvconfig.py | tee $HOME/.asv-machine.json
+  post:
     # run the docker image, exposing relevant ports
     - docker run -it -d --name impala --hostname impala -p 50070:50070 -p 21050:21050 cpcloud86/impala:metastore
 
@@ -71,3 +76,17 @@ test:
   override:
     - case $CIRCLE_NODE_INDEX in 0) ci/run.sh 2.7.12 ;; 1) ci/run.sh 3.4.4 ;; 2) ci/run.sh 3.5.3 ;; 3) ci/run.sh 3.6.1 ;; esac:
         parallel: true
+
+# Run benchmarks and push to ibis-project/ibis-benchmarks
+deployment:
+  pr:
+    # Make sure PRs don't introduce any regressions
+    branch: /^(?!master$).*$/
+    commands:
+      - ci/benchmark.sh asv "continuous -e master ${CIRCLE_SHA1}"
+  master:
+    # Continuously benchmark master
+    branch: master
+    owner: ibis-project
+    commands:
+      - ci/benchmark.sh asv "run -e master^..master" --publish
