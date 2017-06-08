@@ -1766,7 +1766,7 @@ def join(left, right, predicates=(), how='inner'):
     """
     klass = _join_classes[how.lower()]
     if isinstance(predicates, Expr):
-        predicates = _L.unwrap_ands(predicates)
+        predicates = _L.flatten_predicate(predicates)
 
     op = klass(left, right, predicates)
     return TableExpr(op)
@@ -1945,7 +1945,7 @@ def filter(table, predicates):
 
 def _resolve_predicates(table, predicates):
     if isinstance(predicates, Expr):
-        predicates = _L.unwrap_ands(predicates)
+        predicates = _L.flatten_predicate(predicates)
     predicates = util.promote_list(predicates)
     predicates = [ir.bind_expr(table, x) for x in predicates]
     resolved_predicates = []

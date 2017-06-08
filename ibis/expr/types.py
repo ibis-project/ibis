@@ -390,9 +390,7 @@ def all_equal(left, right, cache=None):
 
     if hasattr(left, 'equals'):
         return left.equals(right, cache=cache)
-    else:
-        return left == right
-    return True
+    return left == right
 
 
 def _arg_getter(i):
