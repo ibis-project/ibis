@@ -56,3 +56,4 @@ testing/udf/Makefile
 scripts/ibis-testing*
 ibis_testing*
 .tox/
+.asv/
