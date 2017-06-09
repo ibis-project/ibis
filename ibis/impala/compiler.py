@@ -511,9 +511,9 @@ def _window(translator, expr):
                          ops.NTile,)
 
     _unsupported_reductions = (
-        ops.CMSMedian,
+        ops.ApproxMedian,
         ops.GroupConcat,
-        ops.HLLCardinality,
+        ops.ApproxNUnique,
     )
 
     if isinstance(window_op, _unsupported_reductions):
@@ -1255,8 +1255,8 @@ _operation_registry = {
     ops.DecimalScale: unary('scale'),
 
     # Unary aggregates
-    ops.CMSMedian: _reduction('appx_median'),
-    ops.HLLCardinality: _reduction('ndv'),
+    ops.ApproxMedian: _reduction('appx_median'),
+    ops.ApproxNUnique: _reduction('ndv'),
     ops.Mean: _reduction('avg'),
     ops.Sum: _reduction('sum'),
     ops.Max: _reduction('max'),

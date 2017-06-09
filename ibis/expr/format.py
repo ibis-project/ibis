@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
+
+import six
+
 import ibis.util as util
 
 import ibis.expr.types as ir
@@ -22,11 +26,10 @@ class FormatMemo(object):
     # A little sanity hack to simplify the below
 
     def __init__(self):
-        from collections import defaultdict
         self.formatted = {}
         self.aliases = {}
         self.ops = {}
-        self.counts = defaultdict(lambda: 0)
+        self.counts = collections.defaultdict(int)
         self._repr_memo = {}
         self.subexprs = {}
         self.visit_memo = set()
@@ -115,8 +118,10 @@ class ExprFormatter(object):
             text = 'Literal[%s] %s' % (self._get_type_display(),
                                        str(what.value))
 
-        if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
-            text = '{0} = {1}'.format(self.expr.get_name(), text)
+        if isinstance(self.expr, ir.ValueExpr) and self.expr.has_name():
+            name = self.expr.get_name()
+            if name is not None:
+                text = '{0} = {1}'.format(name, text)
 
         if self.memoize:
             alias_to_text = [(self.memo.aliases[x],
@@ -146,8 +151,10 @@ class ExprFormatter(object):
             op = expr.op()
 
             def visit(arg):
-                if isinstance(arg, list):
-                    [visit(x) for x in arg]
+                if (isinstance(arg, collections.Sequence) and
+                        not isinstance(arg, six.string_types)):
+                    for x in arg:
+                        visit(x)
                 elif isinstance(arg, ir.Expr):
                     walk(arg)
 

@@ -416,14 +416,45 @@ class ValueOp(Node):
         return False
 
 
-class TableColumn(ValueOp):
+class NamedValueOp(ValueOp):
+
+    def __init__(self, *args):
+        super(NamedValueOp, self).__init__(*args)
+
+    def resolve_name(self):
+        return self.name
+
+    def has_resolved_name(self):
+        return True
+
+    @property
+    def operation_name(self):
+        return type(self).__name__.lower()
+
+
+class AutomaticallyNamedValueOp(NamedValueOp):
+
+    def __init__(self, *args):
+        super(AutomaticallyNamedValueOp, self).__init__(*args)
+
+    def resolve_name(self):
+        try:
+            return super(AutomaticallyNamedValueOp, self).resolve_name()
+        except AttributeError:
+            try:
+                return self.args[0].get_name()
+            except com.ExpressionError:
+                return None
+
+
+class TableColumn(NamedValueOp):
 
     """
     Selects a column from a TableExpr
     """
 
     def __init__(self, name, table_expr):
-        Node.__init__(self, [name, table_expr])
+        super(TableColumn, self).__init__(name, table_expr)
 
         if name not in table_expr.schema():
             raise com.IbisTypeError(
@@ -454,8 +485,7 @@ class TableColumn(ValueOp):
 class ExpressionList(Node):
 
     def __init__(self, exprs):
-        exprs = [as_value_expr(x) for x in exprs]
-        Node.__init__(self, exprs)
+        super(ExpressionList, self).__init__([as_value_expr(x) for x in exprs])
 
     def root_tables(self):
         return distinct_roots(*self.args)
@@ -581,11 +611,21 @@ class ValueExpr(Expr):
         self._name = name
 
     def equals(self, other, cache=None):
-        return (
-            isinstance(other, ValueExpr) and
-            self._name == other._name and
-            super(ValueExpr, self).equals(other, cache=cache)
-        )
+        if not isinstance(other, ValueExpr):
+            return False
+
+        this_has_name = self.has_name()
+        other_has_name = other.has_name()
+
+        if this_has_name != other_has_name:
+            return False
+
+        if this_has_name and other_has_name and (
+            self.get_name() != other.get_name()
+        ):
+            return False
+
+        return super(ValueExpr, self).equals(other, cache=cache)
 
     def type(self):
         raise NotImplementedError(

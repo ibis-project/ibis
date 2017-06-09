@@ -128,7 +128,7 @@ class TestNonTabularResults(unittest.TestCase):
         query = ast.queries[0]
 
         sql_query = query.compile()
-        expected = """SELECT sum(`f`) AS `sum`
+        expected = """SELECT sum(`f`) AS `sum_f`
 FROM alltypes
 WHERE `c` > 0"""
 
@@ -136,7 +136,7 @@ WHERE `c` > 0"""
 
         # Maybe the result handler should act on the cursor. Not sure.
         handler = query.result_handler
-        output = DataFrame({'sum': [5]})
+        output = DataFrame({'sum_f': [5]})
         assert handler(output) == 5
 
     def test_scalar_aggregates_multiple_tables(self):
@@ -152,14 +152,14 @@ WHERE `c` > 0"""
 
         result = to_sql(expr)
         expected = """\
-SELECT (t0.`mean` / t1.`mean`) - 1 AS `tmp`
+SELECT (t0.`mean_value` / t1.`mean_value`) - 1 AS `divide_mean_value_mean_value`
 FROM (
-  SELECT avg(`value`) AS `mean`
+  SELECT avg(`value`) AS `mean_value`
   FROM tbl
   WHERE `flag` = '1'
 ) t0
   CROSS JOIN (
-    SELECT avg(`value`) AS `mean`
+    SELECT avg(`value`) AS `mean_value`
     FROM tbl
     WHERE `flag` = '0'
   ) t1"""
@@ -171,14 +171,14 @@ FROM (
         expr = (fv.mean() / fv.sum()) - (uv.mean() / uv.sum())
         result = to_sql(expr)
         expected = """\
-SELECT t0.`tmp` - t1.`tmp` AS `tmp`
+SELECT t0.`divide_mean_value_sum_value` - t1.`divide_mean_value_sum_value` AS `subtract_divide_mean_value_sum_value_divide_mean_value_sum_value`
 FROM (
-  SELECT avg(`value`) / sum(`value`) AS `tmp`
+  SELECT avg(`value`) / sum(`value`) AS `divide_mean_value_sum_value`
   FROM tbl
   WHERE `flag` = '1'
 ) t0
   CROSS JOIN (
-    SELECT avg(`value`) / sum(`value`) AS `tmp`
+    SELECT avg(`value`) / sum(`value`) AS `divide_mean_value_sum_value`
     FROM tbl
     WHERE `flag` = '0'
   ) t1"""
@@ -261,7 +261,7 @@ SELECT 1 AS `a`, now() AS `b`, ln(2) AS `c`"""
 
         result = impala.compile(reduction)
         expected = """\
-SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `sum`
+SELECT sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END) AS `tmp`
 FROM alltypes"""
         assert result == expected
 
@@ -1303,7 +1303,8 @@ FROM tpch_customer t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT t1.`n_name`, sum(CAST(t0.`c_acctbal` AS double)) AS `sum`
+      SELECT t1.`n_name`,
+             sum(CAST(t0.`c_acctbal` AS double)) AS `sum_cast(c_acctbal, double)`
       FROM tpch_customer t0
         INNER JOIN tpch_nation t1
           ON t0.`c_nationkey` = t1.`n_nationkey`
@@ -1311,7 +1312,7 @@ FROM tpch_customer t0
           ON t1.`n_regionkey` = t2.`r_regionkey`
       GROUP BY 1
     ) t4
-    ORDER BY `sum` DESC
+    ORDER BY `sum_cast(c_acctbal, double)` DESC
     LIMIT 10
   ) t3
     ON t1.`n_name` = t3.`n_name`"""
@@ -1507,7 +1508,7 @@ WITH t0 AS (
 SELECT t0.*
 FROM t0
 WHERE t0.`amount` > (
-  SELECT avg(t4.`amount`) AS `mean`
+  SELECT avg(t4.`amount`) AS `mean_amount`
   FROM t0 t4
   WHERE t4.`region` = t0.`region`
 )
@@ -1583,7 +1584,7 @@ FROM t0
         expected = """SELECT *
 FROM star1
 WHERE `f` > (
-  SELECT avg(`f`) AS `mean`
+  SELECT avg(`f`) AS `mean_f`
   FROM star1
 )"""
         assert result == expected
@@ -1592,7 +1593,7 @@ WHERE `f` > (
         expected = """SELECT *
 FROM star1
 WHERE `f` > (
-  SELECT avg(`f`) AS `mean`
+  SELECT avg(`f`) AS `mean_f`
   FROM star1
   WHERE `foo_id` = 'foo'
 )"""
@@ -1605,7 +1606,7 @@ WHERE `f` > (
         expected = """SELECT *
 FROM star1
 WHERE `f` > (
-  SELECT ln(avg(`f`)) AS `tmp`
+  SELECT ln(avg(`f`)) AS `mean_f`
   FROM star1
   WHERE `foo_id` = 'foo'
 )"""
@@ -1615,7 +1616,7 @@ WHERE `f` > (
         expected = """SELECT *
 FROM star1
 WHERE `f` > (
-  SELECT ln(avg(`f`)) + 1 AS `tmp`
+  SELECT ln(avg(`f`)) + 1 AS `mean_f`
   FROM star1
   WHERE `foo_id` = 'foo'
 )"""
@@ -1630,11 +1631,11 @@ FROM tbl t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT `city`, avg(`v2`) AS `mean`
+      SELECT `city`, avg(`v2`) AS `mean_v2`
       FROM tbl
       GROUP BY 1
     ) t2
-    ORDER BY `mean` DESC
+    ORDER BY `mean_v2` DESC
     LIMIT 10
   ) t1
     ON t0.`city` = t1.`city`"""
@@ -1647,7 +1648,7 @@ FROM tbl t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT `city`, count(`city`) AS `count`
+      SELECT `city`, count(`city`) AS `count_city`
       FROM tbl
       GROUP BY 1
     ) t2
@@ -1680,7 +1681,7 @@ FROM customer t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT t1.`n_name`, sum(t0.`c_acctbal`) AS `sum`
+      SELECT t1.`n_name`, sum(t0.`c_acctbal`) AS `sum_c_acctbal`
       FROM customer t0
         INNER JOIN nation t1
           ON t0.`c_nationkey` = t1.`n_nationkey`
@@ -1688,7 +1689,7 @@ FROM customer t0
           ON t1.`n_regionkey` = t2.`r_regionkey`
       GROUP BY 1
     ) t4
-    ORDER BY `sum` DESC
+    ORDER BY `sum_c_acctbal` DESC
     LIMIT 10
   ) t3
     ON t1.`n_name` = t3.`n_name`"""
@@ -1713,11 +1714,11 @@ FROM airlines t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT `dest`, avg(`arrdelay`) AS `mean`
+      SELECT `dest`, avg(`arrdelay`) AS `mean_arrdelay`
       FROM airlines
       GROUP BY 1
     ) t2
-    ORDER BY `mean` DESC
+    ORDER BY `mean_arrdelay` DESC
     LIMIT 10
   ) t1
     ON t0.`dest` = t1.`dest`
@@ -1797,7 +1798,7 @@ FROM `table`"""
         expected = """SELECT *
 FROM foo
 WHERE `y` > (
-  SELECT max(`x`) AS `max`
+  SELECT max(`x`) AS `max_x`
   FROM bar
 )"""
         assert result == expected
@@ -1820,7 +1821,7 @@ WHERE `job` IN (
         expected = """SELECT t0.*
 FROM foo t0
 WHERE t0.`y` > (
-  SELECT avg(t1.`y`) AS `mean`
+  SELECT avg(t1.`y`) AS `mean_y`
   FROM foo t1
   WHERE t0.`dept_id` = t1.`dept_id`
 )"""

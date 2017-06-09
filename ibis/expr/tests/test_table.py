@@ -15,7 +15,6 @@
 import pytest
 
 from ibis.expr.types import ColumnExpr, TableExpr, RelationError
-from ibis.common import ExpressionError
 from ibis.expr.datatypes import array_type
 import ibis.expr.api as api
 import ibis.expr.types as ir
@@ -119,8 +118,8 @@ def test_projection_with_exprs(table):
     assert schema.types == ['double', 'double', 'string']
 
     # Test with unnamed expr
-    with pytest.raises(ExpressionError):
-        table.projection(['g', table['a'] - table['c']])
+    proj = table.projection(['g', table['a'] - table['c']])
+    assert proj.columns == ['g', 'subtract_a_c']
 
 
 def test_projection_duplicate_names(table):
@@ -694,27 +693,29 @@ def test_value_counts_unnamed_expr(con):
     nation = con.table('tpch_nation')
 
     expr = nation.n_name.lower().value_counts()
-    expected = nation.n_name.lower().name('unnamed').value_counts()
+    expected = nation.n_name.lower().name('n_name').value_counts()
     assert_equal(expr, expected)
 
 
 def test_aggregate_unnamed_expr(con):
     nation = con.table('tpch_nation')
     expr = nation.n_name.lower().left(1)
-    with pytest.raises(com.ExpressionError):
-        nation.group_by(expr).aggregate(nation.count().name('metric'))
+    result = nation.group_by(expr).aggregate(nation.count().name('metric'))
+    assert result.schema().equals(
+        ibis.schema([('n_name', 'string'), ('metric', 'int64')])
+    )
 
 
 def test_default_reduction_names(table):
     d = table.f
     cases = [
-        (d.count(), 'count'),
-        (d.sum(), 'sum'),
-        (d.mean(), 'mean'),
-        (d.approx_nunique(), 'approx_nunique'),
-        (d.approx_median(), 'approx_median'),
-        (d.min(), 'min'),
-        (d.max(), 'max')
+        (d.count(), 'count_f'),
+        (d.sum(), 'sum_f'),
+        (d.mean(), 'mean_f'),
+        (d.approx_nunique(), 'approxnunique_f'),
+        (d.approx_median(), 'approxmedian_f'),
+        (d.min(), 'min_f'),
+        (d.max(), 'max_f'),
     ]
 
     for expr, ex_name in cases:

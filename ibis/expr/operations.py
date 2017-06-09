@@ -22,7 +22,8 @@ from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr, Expr,
                              ValueExpr, ColumnExpr, TableExpr,
-                             ValueOp, _safe_repr)
+                             ValueOp, _safe_repr, AutomaticallyNamedValueOp,
+                             NamedValueOp)
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
@@ -133,25 +134,21 @@ class TableArrayView(ValueOp):
         return klass(self, name=self.name)
 
 
-class UnaryOp(ValueOp):
+class UnaryOp(AutomaticallyNamedValueOp):
 
     input_type = [value]
 
 
-class Cast(ValueOp):
+class Cast(AutomaticallyNamedValueOp):
 
     input_type = [value, rules.data_type]
-
-    # see #396 for the issue preventing this
-    # def resolve_name(self):
-    #     return self.args[0].get_name()
 
     def output_type(self):
         # TODO: error handling for invalid casts
         return rules.shape_like(self.args[0], self.args[1])
 
 
-class TypeOf(ValueOp):
+class TypeOf(AutomaticallyNamedValueOp):
 
     input_type = [value]
     output_type = rules.shape_like_arg(0, 'string')
@@ -194,7 +191,7 @@ class ZeroIfNull(UnaryOp):
     output_type = rules.type_of_arg(0)
 
 
-class IfNull(ValueOp):
+class IfNull(AutomaticallyNamedValueOp):
 
     """
     Equivalent to (but perhaps implemented differently):
@@ -207,7 +204,7 @@ class IfNull(ValueOp):
     output_type = rules.type_of_arg(0)
 
 
-class NullIf(ValueOp):
+class NullIf(AutomaticallyNamedValueOp):
 
     """
     Set values to NULL if they equal the null_if_expr
@@ -217,7 +214,7 @@ class NullIf(ValueOp):
     output_type = rules.type_of_arg(0)
 
 
-class NullIfZero(ValueOp):
+class NullIfZero(AutomaticallyNamedValueOp):
 
     """
     Set values to NULL if they equal to zero. Commonly used in cases where
@@ -320,7 +317,7 @@ class Floor(UnaryOp):
     output_type = _ceil_floor_output
 
 
-class Round(ValueOp):
+class Round(AutomaticallyNamedValueOp):
 
     input_type = [value, integer(name='digits', optional=True)]
 
@@ -334,7 +331,7 @@ class Round(ValueOp):
             return rules.shape_like(arg, 'double')
 
 
-class BaseConvert(ValueOp):
+class BaseConvert(AutomaticallyNamedValueOp):
 
     input_type = [rules.one_of([integer, string]),
                   integer(name='from_base'),
@@ -449,26 +446,26 @@ class Capitalize(StringUnaryOp):
     pass
 
 
-class Substring(ValueOp):
+class Substring(AutomaticallyNamedValueOp):
 
     input_type = [string, integer(name='start'),
                   integer(name='length', optional=True)]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class StrRight(ValueOp):
+class StrRight(AutomaticallyNamedValueOp):
 
     input_type = [string, integer(name='nchars')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class Repeat(ValueOp):
+class Repeat(AutomaticallyNamedValueOp):
 
     input_type = [string, integer(name='times')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class StringFind(ValueOp):
+class StringFind(AutomaticallyNamedValueOp):
 
     input_type = [string, string(name='substr'),
                   integer(name='start', optional=True, default=None),
@@ -476,13 +473,13 @@ class StringFind(ValueOp):
     output_type = rules.shape_like_arg(0, 'int64')
 
 
-class Translate(ValueOp):
+class Translate(AutomaticallyNamedValueOp):
 
     input_type = [string, string(name='from_str'), string(name='to_str')]
     output_type = rules.shape_like_arg(0, 'string')
 
 
-class LPad(ValueOp):
+class LPad(AutomaticallyNamedValueOp):
 
     input_type = [string, integer(name='length'),
                   string(name='pad', optional=True)]
@@ -572,7 +569,7 @@ class StringAscii(UnaryOp):
     output_type = rules.shape_like_arg(0, 'int32')
 
 
-class BinaryOp(ValueOp):
+class BinaryOp(NamedValueOp):
 
     """
     A binary operation
@@ -588,6 +585,7 @@ class BinaryOp(ValueOp):
 
     def __init__(self, left, right):
         left, right = self._maybe_cast_args(left, right)
+        super(BinaryOp, self).__init__(left, right)
         ValueOp.__init__(self, left, right)
 
     def _maybe_cast_args(self, left, right):
@@ -596,14 +594,42 @@ class BinaryOp(ValueOp):
     def output_type(self):
         raise NotImplementedError
 
+    def resolve_name(self):
+        left = self.left
+        right = self.right
+        left_name = left.get_name() if left.has_name() else None
+        right_name = right.get_name() if right.has_name() else None
+
+        if left_name is None and right_name is None:
+            return None
+        elif left_name is None and right_name is not None:
+            return right_name
+        elif left_name is not None and right_name is None:
+            return left_name
+        else:
+            return '{}_{}_{}'.format(
+                self.operation_name,
+                left_name,
+                right_name,
+            )
+
 
 # ----------------------------------------------------------------------
 
 
-class Reduction(ValueOp):
+class Reduction(NamedValueOp):
 
     input_type = [rules.column, boolean(name='where', optional=True)]
     _reduction = True
+
+    def resolve_name(self):
+        return '{}_{}'.format(
+            self.operation_name,
+            '_'.join(
+                x.get_name() if x.has_name() else None
+                for x in self.args if x is not None
+            )
+        )
 
 
 def is_reduction(expr):
@@ -727,7 +753,7 @@ class Min(Reduction):
     output_type = rules.scalar_output(_min_max_output_rule)
 
 
-class HLLCardinality(Reduction):
+class ApproxNUnique(Reduction):
 
     """
     Approximate number of unique values using HyperLogLog algorithm. Impala
@@ -748,7 +774,7 @@ class GroupConcat(Reduction):
         return ir.StringScalar
 
 
-class CMSMedian(Reduction):
+class ApproxMedian(Reduction):
 
     """
     Compute the approximate median of a set of comparable values using the
@@ -784,7 +810,7 @@ class WindowOp(ValueOp):
 
         expr = propagate_down_window(expr, window)
 
-        ValueOp.__init__(self, expr, window)
+        super(WindowOp, self).__init__(expr, window)
 
     def over(self, window):
         existing_window = self.args[1]
@@ -1029,8 +1055,8 @@ class DistinctColumn(ValueOp):
     """
 
     def __init__(self, arg):
+        super(DistinctColumn, self).__init__(arg)
         self.arg = arg
-        ValueOp.__init__(self, arg)
 
     def output_type(self):
         return type(self.arg)

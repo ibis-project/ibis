@@ -435,7 +435,7 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         foo = self._to_sqla(self.foo)
         t0 = foo.alias('t0')
         t1 = foo.alias('t1')
-        subq = (sa.select([F.avg(t1.c.y).label('mean')])
+        subq = (sa.select([F.avg(t1.c.y).label('mean_y')])
                 .where(t0.c.dept_id == t1.c.dept_id))
         stmt = sa.select([t0]).where(t0.c.y > subq)
         self._compare_sqla(expr, stmt)
