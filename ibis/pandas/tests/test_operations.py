@@ -519,3 +519,38 @@ def test_series_limit(t, df, offset):
     s_expr = t.plain_int64.limit(n, offset=offset)
     result = s_expr.execute()
     tm.assert_series_equal(result, df.plain_int64.iloc[offset:offset + n])
+
+
+@pytest.mark.parametrize(
+    ('key', 'pandas_by', 'pandas_ascending'),
+    [
+        (lambda t: [ibis.desc(t.plain_datetimes)], ['plain_datetimes'], False),
+        (
+            lambda t: [t.plain_datetimes, ibis.desc(t.plain_int64)],
+            ['plain_datetimes', 'plain_int64'],
+            [True, False]
+        ),
+        (
+            lambda t: [ibis.desc(t.plain_int64 * 2)],
+            ['plain_int64'],
+            False,
+        ),
+    ]
+)
+def test_sort_by(t, df, key, pandas_by, pandas_ascending):
+    expr = t.sort_by(key(t))
+    result = expr.execute()
+    expected = df.sort_values(pandas_by, ascending=pandas_ascending)
+    tm.assert_frame_equal(result, expected)
+
+
+def test_complex_sort_by(t, df):
+    expr = t.sort_by([
+        ibis.desc(t.plain_int64 * t.plain_float64), t.plain_float64
+    ])
+    result = expr.execute()
+    expected = df.assign(
+        foo=df.plain_int64 * df.plain_float64
+    ).sort_values(['foo', 'plain_float64'], ascending=[False, True])
+
+    tm.assert_frame_equal(result, expected.loc[:, expr.columns])
