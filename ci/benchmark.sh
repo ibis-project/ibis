@@ -9,6 +9,7 @@ function benchmark()
     pushd ..
     git clone git@github.com:ibis-project/ibis-benchmarks
     [ -e "asv/results" ] && mv asv/results ../ibis/.asv
+    [ -e "asv/html " ] && mv asv/html ../ibis/.asv
     popd
 
     # run an asv command
@@ -33,6 +34,9 @@ function benchmark()
 	git config --global user.email ""
 
 	pushd ../ibis-benchmarks
+	echo
+	ls -1 asv/results/circle/*.json
+	echo
 	git add --verbose --ignore-removal .
 	git commit --message="Update benchmarks ibis-project/ibis@${CIRCLE_SHA1:-$(git rev-parse HEAD)}"
 	git push origin master
