@@ -19,11 +19,12 @@ from ibis.pandas.api import connect, execute  # noqa: E402
 @pytest.fixture
 def df():
     return pd.DataFrame({
-        'plain_int64': [1, 2, 3],
+        'plain_int64': list(range(1, 4)),
         'plain_strings': list('abc'),
         'plain_float64': [4.0, 5.0, 6.0],
         'plain_datetimes': pd.date_range('now', periods=3).values,
         'dup_strings': list('dad'),
+        'dup_ints': [1, 2, 1],
         'float64_as_strings': ['1.0', '2', '3.234'],
         'int64_as_strings': list(map(str, range(1, 4))),
         'strings_with_space': list(' ad'),
@@ -335,8 +336,9 @@ def test_mutate(t, df):
 @pytest.mark.parametrize(
     'where',
     [
-        lambda t: t.dup_strings == 'd',
         lambda t: None,
+        lambda t: t.dup_strings == 'd',
+        lambda t: (t.dup_strings == 'd') | (t.plain_int64 < 100),
     ]
 )
 def test_aggregation_group_by(t, df, where):
@@ -344,21 +346,28 @@ def test_aggregation_group_by(t, df, where):
     expr = t.group_by(t.dup_strings).aggregate(
         avg_plain_int64=t.plain_int64.mean(where=ibis_where),
         sum_plain_float64=t.plain_float64.sum(where=ibis_where),
+        nunique_dup_ints=t.dup_ints.nunique(),
     )
-    result = expr.execute()[['avg_plain_int64', 'sum_plain_float64']]
+    columns = ['avg_plain_int64', 'sum_plain_float64', 'nunique_dup_ints']
+    result = expr.execute()
 
     pandas_where = where(df)
     mask = slice(None) if pandas_where is None else pandas_where
     expected = df.groupby('dup_strings').agg({
         'plain_int64': lambda x, mask=mask: x[mask].mean(),
         'plain_float64': lambda x, mask=mask: x[mask].sum(),
+        'dup_ints': 'nunique',
     }).reset_index().rename(
         columns={
             'plain_int64': 'avg_plain_int64',
             'plain_float64': 'sum_plain_float64',
+            'dup_ints': 'nunique_dup_ints',
         }
-    )[['avg_plain_int64', 'sum_plain_float64']]
-    tm.assert_frame_equal(result, expected)
+    )
+    # TODO(phillipc): Why does pandas not return floating point values here?
+    tm.assert_frame_equal(
+        result[columns], expected[columns], check_dtype=False
+    )
 
 
 def test_aggregation_without_group_by(t, df):
@@ -397,10 +406,7 @@ def test_group_by_with_having(t, df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    'reduction',
-    ['mean', 'sum', 'count', 'std', 'var']
-)
+@pytest.mark.parametrize('reduction', ['mean', 'sum', 'count', 'std', 'var'])
 @pytest.mark.parametrize(
     'where',
     [
@@ -519,3 +525,35 @@ def test_series_limit(t, df, offset):
     s_expr = t.plain_int64.limit(n, offset=offset)
     result = s_expr.execute()
     tm.assert_series_equal(result, df.plain_int64.iloc[offset:offset + n])
+
+
+def test_distinct(t, df):
+    expr = t.dup_strings.distinct()
+    result = expr.execute()
+    expected = pd.Series(df.dup_strings.unique(), name='dup_strings')
+    tm.assert_series_equal(result, expected)
+
+
+def test_count_distinct(t, df):
+    expr = t.dup_strings.nunique()
+    result = expr.execute()
+    expected = df.dup_strings.nunique()
+    assert result == expected
+
+
+def test_value_counts(t, df):
+    expr = t.dup_strings.value_counts()
+    result = expr.execute()
+    expected = df.dup_strings.value_counts().reset_index().rename(
+        columns={'dup_strings': 'count'}
+    ).rename(
+        columns={'index': 'dup_strings'}
+    ).sort_values(['dup_strings']).reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
+
+
+def test_table_count(t, df):
+    expr = t.count()
+    result = expr.execute()
+    expected = len(df)
+    assert result == expected
