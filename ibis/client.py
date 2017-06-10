@@ -14,6 +14,8 @@
 
 import pandas as pd
 
+import toolz
+
 from ibis.compat import zip as czip
 from ibis.config import options
 
@@ -321,24 +323,31 @@ def compile(expr, limit=None):
 def find_backend(expr):
     backends = []
 
-    def walk(expr):
-        node = expr.op()
-        for arg in node.flat_args():
-            if isinstance(arg, Client):
-                backends.append(arg)
-            elif isinstance(arg, ir.Expr):
-                walk(arg)
+    stack = [expr.op()]
+    seen = set()
 
-    walk(expr)
-    backends = util.unique_by_key(backends, id)
+    while stack:
+        node = stack.pop()
+
+        if node not in seen:
+            seen.add(node)
+
+            for arg in node.flat_args():
+                if isinstance(arg, Client):
+                    backends.append(arg)
+                elif isinstance(arg, ir.Expr):
+                    stack.append(arg.op())
+
+    backends = list(toolz.unique(backends, key=id))
 
     if len(backends) > 1:
         raise ValueError('Multiple backends found')
-    elif len(backends) == 0:
+    elif not backends:
         default = options.default_backend
         if default is None:
-            raise com.IbisError('Expression depends on no backends, '
-                                'and found no default')
+            raise com.IbisError(
+                'Expression depends on no backends, and found no default'
+            )
         return default
 
     return backends[0]

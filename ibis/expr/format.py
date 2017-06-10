@@ -138,31 +138,33 @@ class ExprFormatter(object):
     def _memoize_tables(self):
         table_memo_ops = (ops.Aggregation, ops.Selection,
                           ops.SelfReference)
+        if id(self.expr) in self.memo.visit_memo:
+            return
 
-        def walk(expr):
-            if id(expr) in self.memo.visit_memo:
-                return
+        stack = [self.expr]
+        seen = set()
+        memo = self.memo
 
-            op = expr.op()
+        while stack:
+            e = stack.pop()
+            op = e.op()
 
-            def visit(arg):
-                if isinstance(arg, list):
-                    [visit(x) for x in arg]
-                elif isinstance(arg, ir.Expr):
-                    walk(arg)
+            if op not in seen:
+                seen.add(op)
 
-            if isinstance(op, ops.PhysicalTable):
-                self.memo.observe(expr, self._format_table)
-            elif isinstance(op, ir.Node):
-                visit(op.args)
-                if isinstance(op, table_memo_ops):
-                    self.memo.observe(expr, self._format_node)
-            elif isinstance(op, ops.TableNode) and op.has_schema():
-                self.memo.observe(expr, self._format_table)
+                if isinstance(op, ops.PhysicalTable):
+                    memo.observe(e, self._format_table)
+                elif isinstance(op, ir.Node):
+                    stack.extend(
+                        arg for arg in reversed(op.args)
+                        if isinstance(arg, ir.Expr)
+                    )
+                    if isinstance(op, table_memo_ops):
+                        memo.observe(e, self._format_node)
+                elif isinstance(op, ops.TableNode) and op.has_schema():
+                    memo.observe(e, self._format_table)
 
-            self.memo.visit_memo.add(id(expr))
-
-        walk(self.expr)
+                memo.visit_memo.add(id(e))
 
     def _indent(self, text, indents=1):
         return util.indent(text, self.indent_size * indents)

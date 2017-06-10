@@ -130,11 +130,11 @@ class ScalarAggregate(object):
 
 
 def has_multiple_bases(expr):
-    return len(find_all_tables(expr)) > 1
+    return toolz.count(find_immediate_parent_tables(expr)) > 1
 
 
 def reduction_to_aggregation(expr, default_name='tmp'):
-    tables = find_all_tables(expr)
+    tables = list(find_immediate_parent_tables(expr))
 
     try:
         name = expr.get_name()
@@ -144,29 +144,72 @@ def reduction_to_aggregation(expr, default_name='tmp'):
         named_expr = expr.name(default_name)
 
     if len(tables) == 1:
-        table = list(tables.values())[0]
+        table, = tables
         return table.aggregate([named_expr]), name
     else:
         return ScalarAggregate(expr, None, default_name).get_result()
 
 
-def find_all_tables(expr, memo=None):
-    if memo is None:
-        memo = {}
+def find_immediate_parent_tables(expr):
+    """Find every first occurrence of a :class:`ibis.expr.types.TableExpr`
+    object in `expr`.
 
-    node = expr.op()
+    Parameters
+    ----------
+    expr : ir.Expr
 
-    if isinstance(expr, ir.TableExpr):
-        key = id(node)
-        if key not in memo:
-            memo[key] = expr
-        return memo
+    Yields
+    ------
+    e : ir.Expr
 
-    for arg in node.flat_args():
-        if isinstance(arg, ir.Expr):
-            find_all_tables(arg, memo)
+    Notes
+    -----
+    This function does not traverse into TableExpr objects. This means that the
+    underlying PhysicalTable of a Selection will not be yielded, for example.
 
-    return memo
+    Examples
+    --------
+    >>> import ibis, toolz
+    >>> t = ibis.table([('a', 'int64')])
+    >>> expr = t.mutate(foo=t.a + 1)
+    >>> result = list(find_immediate_parent_tables(expr))
+    >>> len(result)
+    1
+    >>> result[0]  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: None
+      schema:
+        a : int64
+    Selection[table]
+      table:
+        Table: ref_0
+      selections:
+        Table: ref_0
+        foo = Add[int64*]
+          left:
+            a = Column[int64*] 'a' from table
+              ref_0
+          right:
+            Literal[int8]
+              1
+    """
+    stack = [expr]
+    seen = set()
+
+    while stack:
+        e = stack.pop()
+        node = e.op()
+
+        if node not in seen:
+            seen.add(node)
+
+            if isinstance(e, ir.TableExpr):
+                yield e
+            else:  # Only traverse into non TableExpr objects
+                stack.extend(
+                    arg for arg in node.flat_args() if isinstance(arg, ir.Expr)
+                )
 
 
 def is_scalar_reduce(x):
@@ -536,15 +579,23 @@ class _PushdownValidate(object):
         return self.valid
 
     def _walk(self, expr):
-        node = expr.op()
-        if isinstance(node, ops.TableColumn):
-            is_valid = self._validate_column(expr)
-            self.valid = self.valid and is_valid
+        stack = [expr]
+        seen = set()
 
-        for arg in node.flat_args():
-            if isinstance(arg, ir.ValueExpr):
-                self._walk(arg)
-            # Skip other types of exprs
+        while stack:
+            e = stack.pop()
+            node = e.op()
+
+            if node not in seen:
+                seen.add(node)
+
+                if isinstance(node, ops.TableColumn):
+                    self.valid = self.valid and self._validate_column(e)
+
+                stack.extend(
+                    arg for arg in node.flat_args()
+                    if isinstance(arg, ir.ValueExpr)
+                )
 
     def _validate_column(self, expr):
         if isinstance(self.parent, ops.Selection):
