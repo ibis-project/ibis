@@ -981,6 +981,7 @@ FROM functional_alltypes AS t0"""  # noqa: E501, W291
     assert result == expected
 
 
+@pytest.mark.postgresql
 @pytest.mark.parametrize('op', [operator.invert, operator.neg])
 def test_not_and_negate_bool(con, op):
     t = con.table('functional_alltypes').limit(10)
