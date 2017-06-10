@@ -31,13 +31,14 @@ import ibis
 class TestSQLiteClient(SQLiteTests, unittest.TestCase):
 
     def test_file_not_exist_and_create(self):
-        path = '__ibis_tmp_{0}.db'.format(guid())
+        path = '__ibis_tmp_{}.db'.format(guid())
 
         with self.assertRaises(com.IbisError):
             ibis.sqlite.connect(path)
 
-        ibis.sqlite.connect(path, create=True)
+        con = ibis.sqlite.connect(path, create=True)
         assert os.path.exists(path)
+        con.con.dispose()
         os.remove(path)
 
     def test_table(self):

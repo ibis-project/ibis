@@ -434,6 +434,7 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             result = joined.val2.execute()
             assert len(result) == 2
         finally:
+            con.con.dispose()
             os.remove(path)
 
     def test_anonymous_aggregate(self):
