@@ -1,7 +1,6 @@
 import numbers
 import operator
 import datetime
-import collections
 import functools
 
 import six
@@ -9,21 +8,16 @@ import six
 import numpy as np
 import pandas as pd
 
+from pandas.core.groupby import SeriesGroupBy, DataFrameGroupBy
+
 import toolz
 
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
+from ibis.pandas.core import integer_types, simple_types
 from ibis.pandas.dispatch import execute, execute_node
-
-
-integer_types = six.integer_types + (np.integer,)
-
-scalar_types = (
-    numbers.Real, datetime.datetime, datetime.date, np.number, np.bool_,
-    np.datetime64, np.timedelta64,
-)
 
 
 @execute_node.register(ir.Literal)
@@ -81,10 +75,11 @@ _LITERAL_CAST_TYPES = {
     dt.int8: int,
     dt.string: str,
     dt.timestamp: pd.Timestamp,
+    dt.date: lambda x: pd.Timestamp(x).to_pydatetime().date(),
 }
 
 
-@execute_node.register(ops.Cast, scalar_types + six.string_types, dt.DataType)
+@execute_node.register(ops.Cast, simple_types, dt.DataType)
 def execute_cast_string_literal(op, data, type, scope=None):
     try:
         return _LITERAL_CAST_TYPES[type](data)
@@ -94,8 +89,8 @@ def execute_cast_string_literal(op, data, type, scope=None):
         )
 
 
-@execute_node.register(ops.TableColumn, pd.DataFrame)
-def execute_table_column_dataframe(op, data, scope=None):
+@execute_node.register(ops.TableColumn, (pd.DataFrame, DataFrameGroupBy))
+def execute_table_column_dataframe_or_dataframe_groupby(op, data, scope=None):
     return data[op.name]
 
 
@@ -167,47 +162,58 @@ def execute_aggregation_dataframe(op, data, scope=None):
     ops = [metric.op() for metric in metrics]
     metric_names = [metric.get_name() for metric in metrics]
     first_args = [metric_op.args[0] for metric_op in ops]
-    first_arg_names = [arg.get_name() for arg in first_args]
+    first_arg_names = []
+    for arg in first_args:
+        try:
+            first_arg_name = arg.get_name()
+        except AttributeError:
+            first_arg_name = None
+        first_arg_names.append(first_arg_name)
 
     pieces = [
-        execute(
-            metric,
-            toolz.merge(scope, {first_arg: source[first_arg_name]})
-        ) for metric, first_arg, first_arg_name in zip(
-            metrics, first_args, first_arg_names
-        )
+        execute(metric, toolz.merge(scope, {op.table: source}))
+        for metric, first_arg in zip(metrics, first_args)
     ]
 
     return pd.concat(
         [
             piece if isinstance(piece, (pd.Series, pd.DataFrame))
-            else pd.Series(piece, name=first_arg_name)
-            for piece, first_arg_name in zip(pieces, first_arg_names)
+            else pd.Series(piece, name=name)
+            for piece, name in zip(pieces, first_arg_names)
         ],
         axis=1
     ).rename(columns=dict(zip(first_arg_names, metric_names))).reset_index()
 
 
-@execute_node.register(
-    ops.Reduction, pd.core.groupby.SeriesGroupBy, type(None)
-)
+@execute_node.register(ops.Reduction, SeriesGroupBy, type(None))
 def execute_reduction_series_groupby(op, data, mask, scope=None):
     return getattr(data, type(op).__name__.lower())()
 
 
-@execute_node.register(ops.Reduction, pd.core.groupby.SeriesGroupBy, pd.Series)
-def execute_reduction_series_groupby_with_mask(op, data, mask, scope=None):
+@execute_node.register(ops.CountDistinct, SeriesGroupBy)
+def execute_count_distinct_series_groupby(op, data, scope=None):
+    return data.nunique()
+
+
+@execute_node.register(ops.Reduction, SeriesGroupBy, pd.Series)
+def execute_reduction_series_groupby_mask(op, data, mask, scope=None):
     method = operator.methodcaller(type(op).__name__.lower())
     return data.apply(
         lambda x, mask=mask, method=method: method(x[mask[x.index]])
     )
 
 
-@execute_node.register(
-    ops.GroupConcat, pd.core.groupby.SeriesGroupBy, six.string_types
-)
+@execute_node.register(ops.GroupConcat, SeriesGroupBy, six.string_types)
 def execute_group_concat_series_groupby(op, data, sep, scope=None):
     return data.apply(lambda x, sep=sep: sep.join(x.astype(str)))
+
+
+@execute_node.register(ops.Count, DataFrameGroupBy, type(None))
+def execute_count_frame_groupby(op, data, _, scope=None):
+    result = data.size()
+    # FIXME(phillipc): We should not hard code this column name
+    result.name = 'count'
+    return result
 
 
 @execute_node.register(ops.Reduction, pd.Series, (pd.Series, type(None)))
@@ -237,6 +243,17 @@ def execute_group_concat_series(op, data, sep, mask, scope=None):
 @execute_node.register((ops.Any, ops.All), pd.Series)
 def execute_any_all_series(op, data, scope=None):
     return getattr(data, type(op).__name__.lower())()
+
+
+@execute_node.register(ops.CountDistinct, pd.Series)
+def execute_count_distinct_series(op, data, scope=None):
+    # TODO(phillipc): Does count distinct have a mask?
+    return data.nunique()
+
+
+@execute_node.register(ops.Count, pd.DataFrame, type(None))
+def execute_count_frame(op, data, _, scope=None):
+    return len(data)
 
 
 @execute_node.register(ops.Not, (bool, np.bool_))
@@ -311,9 +328,7 @@ _BINARY_OPERATIONS = {
 }
 
 
-@execute_node.register(
-    ops.BinaryOp, pd.Series, (pd.Series, numbers.Real) + six.string_types
-)
+@execute_node.register(ops.BinaryOp, pd.Series, (pd.Series,) + simple_types)
 def execute_binary_operation_series(op, left, right, scope=None):
     op_type = type(op)
     try:
@@ -324,6 +339,18 @@ def execute_binary_operation_series(op, left, right, scope=None):
         )
     else:
         return operation(left, right)
+
+
+@execute_node.register(ops.Comparison, SeriesGroupBy, SeriesGroupBy)
+def execute_binary_operation_series_group_by(op, left, right, scope=None):
+    return execute_binary_operation_series(op, left.obj, right.obj)
+
+
+@execute_node.register(ops.Comparison, SeriesGroupBy, simple_types)
+def execute_binary_operation_series_group_by_scalar(
+    op, left, right, scope=None
+):
+    return execute_binary_operation_series(op, left.obj, right)
 
 
 @execute_node.register(ops.Not, pd.Series)
@@ -465,56 +492,11 @@ def execute_between(op, data, lower, upper, scope=None):
     return data.between(lower, upper)
 
 
+@execute_node.register(ops.DistinctColumn, pd.Series)
+def execute_series_distinct(op, data, scope=None):
+    return pd.Series(data.unique(), name=data.name)
+
+
 @execute_node.register(ops.Union, pd.DataFrame, pd.DataFrame)
 def execute_union_dataframe_dataframe(op, left, right, scope=None):
     return pd.concat([left, right], axis=0)
-
-
-# Core execution
-
-def find_data(expr):
-    stack = [expr]
-    seen = set()
-    data = collections.OrderedDict()
-
-    while stack:
-        e = stack.pop()
-        node = e.op()
-
-        if node not in seen:
-            seen.add(node)
-
-            if hasattr(node, 'source'):
-                data[e] = node.source.dictionary[node.name]
-            elif isinstance(node, ir.Literal):
-                data[e] = node.value
-
-            stack.extend(arg for arg in node.args if isinstance(arg, ir.Expr))
-    return data
-
-
-_VALID_INPUT_TYPES = (ir.Expr, dt.DataType, type(None)) + scalar_types
-
-
-@execute.register(ir.Expr, dict)
-def execute_with_scope(expr, scope):
-    if expr in scope:
-        return scope[expr]
-
-    op = expr.op()
-    args = op.args
-
-    computed_args = [
-        execute(arg, scope) if hasattr(arg, 'op') else arg
-        for arg in args if isinstance(arg, _VALID_INPUT_TYPES)
-    ] or [scope.get(arg, arg) for arg in args]
-
-    return execute_node(op, *computed_args, scope=scope)
-
-
-@execute.register(ir.Expr)
-def execute_without_scope(expr):
-    scope = find_data(expr)
-    if not scope:
-        raise ValueError('No data sources found')
-    return execute(expr, scope)
