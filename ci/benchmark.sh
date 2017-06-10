@@ -33,7 +33,7 @@ function benchmark()
 	git config --global user.email ""
 
 	pushd ../ibis-benchmarks
-	git add --verbose --all .
+	git add --verbose --ignore-removal .
 	git commit --message="Update benchmarks ibis-project/ibis@${CIRCLE_SHA1:-$(git rev-parse HEAD)}"
 	git push origin master
 	popd
