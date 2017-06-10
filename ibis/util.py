@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import types
+
 import ibis.compat as compat
 
 from ibis.config import options
@@ -28,36 +31,9 @@ def guid():
         return guid.hex if not compat.PY2 else guid.get_hex()
 
 
-def bytes_to_uint8_array(val, width=70):
-    """
-    Formats a byte string for use as a uint8_t* literal in C/C++
-    """
-    if len(val) == 0:
-        return '{}'
-
-    lines = []
-    line = '{' + str(ord(val[0]))
-    for x in val[1:]:
-        token = str(ord(x))
-        if len(line) + len(token) > width:
-            lines.append(line + ',')
-            line = token
-        else:
-            line += ',%s' % token
-    lines.append(line)
-    return '\n'.join(lines) + '}'
-
-
-def unique_by_key(values, key):
-    id_to_table = {}
-    for x in values:
-        id_to_table[key(x)] = x
-    return compat.dict_values(id_to_table)
-
-
 def indent(text, spaces):
-    block = ' ' * spaces
-    return '\n'.join(block + x for x in text.split('\n'))
+    prefix = ' ' * spaces
+    return ''.join(prefix + line for line in text.splitlines(True))
 
 
 def any_of(values, t):
@@ -167,13 +143,9 @@ def deprecate(f, message):
     return g
 
 
-def to_stdout(x):
-    print(x)
-
-
 def log(msg):
     if options.verbose:
-        (options.verbose_log or to_stdout)(msg)
+        (options.verbose_log or print)(msg)
 
 
 class cache_readonly(object):
