@@ -77,16 +77,14 @@ test:
     - case $CIRCLE_NODE_INDEX in 0) ci/run.sh 2.7.12 ;; 1) ci/run.sh 3.4.4 ;; 2) ci/run.sh 3.5.3 ;; 3) ci/run.sh 3.6.1 ;; esac:
         parallel: true
 
-# Run benchmarks and push to ibis-project/ibis-benchmarks
+# Run benchmarks
 deployment:
-  pr:
-    # Make sure PRs don't introduce any regressions
+  pr:  # PRs
     branch: /^(?!master$).*$/
     commands:
-      - ci/benchmark.sh asv "continuous -f 1.5 -e master ${CIRCLE_SHA1}"
-  master:
-    # Continuously benchmark master
+      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e master ${CIRCLE_SHA1}
+  master:  # Merges to master
     branch: master
     owner: ibis-project
     commands:
-      - ci/benchmark.sh asv "run -e master^..master"
+      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e master^ ${CIRCLE_SHA1}
