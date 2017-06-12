@@ -210,11 +210,16 @@ def execute_aggregation_dataframe(op, data, scope=None):
 
     pieces = []
 
-    index_name = None if not op.by else op.by[0].get_name()
+    index_name = [None] if not op.by else [b.get_name() for b in op.by]
 
     for metric, first_arg, first_arg_name in zip(
         metrics, first_args, first_arg_names
     ):
+        pairs = [
+            key if isinstance(key, tuple) else (key,)
+            for key, _ in frame_chunks(source)
+        ]
+        index = pd.MultiIndex.from_tuples(pairs, names=index_name)
         piece = pd.Series(
             [
                 execute(
@@ -223,21 +228,19 @@ def execute_aggregation_dataframe(op, data, scope=None):
                 ) for _, chunk in frame_chunks(source)
             ],
             name=metric.get_name(),
-            index=pd.Index(
-                [key for key, _ in frame_chunks(source)],
-                name=index_name
-            )
+            index=index
         )
         pieces.append(piece)
 
-    return pd.concat(
-        [
-            p if isinstance(p, (pd.Series, pd.DataFrame))
-            else pd.Series(p, name=name)
-            for p, name in zip(pieces, first_arg_names)
-        ],
-        axis=1
-    ).rename(columns=dict(zip(first_arg_names, metric_names))).reset_index()
+    data_pieces = [
+        p if isinstance(p, (pd.Series, pd.DataFrame))
+        else pd.Series(p, name=name)
+        for p, name in zip(pieces, first_arg_names)
+    ]
+
+    return pd.concat(data_pieces, axis=1).rename(
+        columns=dict(zip(first_arg_names, metric_names))
+    ).reset_index()
 
 
 @execute_node.register(ops.Reduction, SeriesGroupBy, type(None))
