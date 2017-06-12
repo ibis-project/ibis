@@ -9,6 +9,7 @@ function benchmark()
     pushd ..
     git clone git@github.com:ibis-project/ibis-benchmarks
     [ -e "asv/results" ] && mv asv/results ../ibis/.asv
+    [ -e "asv/html " ] && mv asv/html ../ibis/.asv
     popd
 
     # run an asv command
