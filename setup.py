@@ -40,13 +40,15 @@ postgres_requires = sqlite_requires + ['psycopg2']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 pandas_requires = ['multipledispatch']
+turbodbc_requires = ['turbodbc>=2.0.0']
 
 all_requires = (
     impala_requires +
     postgres_requires +
     kerberos_requires +
     visualization_requires +
-    pandas_requires
+    pandas_requires +
+    turbodbc_requires
 )
 
 develop_requires = all_requires + [
@@ -75,6 +77,7 @@ setup(
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
         'pandas': pandas_requires,
+        'turbodbc': turbodbc_requires,
     },
     scripts=[
         os.path.join(
