@@ -82,9 +82,9 @@ deployment:
   pr:  # PRs
     branch: /^(?!master$).*$/
     commands:
-      - asv continuous -f 1.5 -e master ${CIRCLE_SHA1}
+      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e master ${CIRCLE_SHA1}
   master:  # Merges to master
     branch: master
     owner: ibis-project
     commands:
-      - asv continuous -f 1.5 -e master^ ${CIRCLE_SHA1}
+      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e master^ ${CIRCLE_SHA1}
