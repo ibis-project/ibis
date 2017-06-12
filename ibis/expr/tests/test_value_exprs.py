@@ -71,6 +71,44 @@ def test_literal_cases(value, expected_type):
     assert expr.op().value is value
 
 
+@pytest.mark.parametrize(
+    ['value', 'expected_type'],
+    [
+        (5, 'int16'),
+        (127, 'double'),
+        (128, 'int64'),
+        (32767, 'double'),
+        (32768, 'float'),
+        (2147483647, 'int64'),
+        (-5, 'int16'),
+        (-128, 'int32'),
+        (-129, 'int64'),
+        (-32769, 'float'),
+        (-2147483649, 'double'),
+        (1.5, 'double'),
+        ('foo', 'string'),
+    ]
+)
+def test_literal_with_different_type(value, expected_type):
+    expr = ibis.literal(value, type=expected_type)
+    assert expr.type().equals(dt.validate_type(expected_type))
+
+
+@pytest.mark.parametrize(
+    ['value', 'expected_type'],
+    [
+        (32767, 'int8'),
+        (32768, 'int16'),
+        (2147483647, 'int16'),
+        (2147483648, 'int32'),
+        ('foo', 'double'),
+    ]
+)
+def test_literal_with_different_type_failure(value, expected_type):
+    with pytest.raises(TypeError):
+        ibis.literal(value, type=expected_type)
+
+
 def test_literal_list():
     what = [1, 2, 1000]
     expr = api.as_value_expr(what)

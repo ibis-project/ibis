@@ -152,8 +152,7 @@ def timestamp(value):
     if isinstance(value, six.string_types):
         from pandas import Timestamp
         value = Timestamp(value)
-    op = ir.Literal(value)
-    return ir.TimestampScalar(op)
+    return ir.TimestampScalar(ir.literal(value).op())
 
 
 schema.__doc__ = """\
