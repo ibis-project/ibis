@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.expr.tests.mocks import MockConnection
+import collections
 
 import pytest
+
 import ibis
+
+from ibis.expr.tests.mocks import MockConnection
 
 
 @pytest.fixture
@@ -35,7 +38,7 @@ def schema():
 
 @pytest.fixture
 def schema_dict(schema):
-    return dict(schema)
+    return collections.OrderedDict(schema)
 
 
 @pytest.fixture
