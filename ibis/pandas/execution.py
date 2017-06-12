@@ -11,18 +11,23 @@ import pandas as pd
 
 import toolz
 
+import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
+from ibis import util
 from ibis.pandas.dispatch import execute, execute_node
 
 
+floating_types = numbers.Real, np.floating
 integer_types = six.integer_types + (np.integer,)
+numeric_types = floating_types + integer_types
+boolean_types = bool, np.bool_
 
-scalar_types = (
-    numbers.Real, datetime.datetime, datetime.date, np.number, np.bool_,
-    np.datetime64, np.timedelta64,
+scalar_types = numeric_types + boolean_types + (
+    datetime.datetime, datetime.date, np.datetime64,
+    datetime.timedelta, np.timedelta64,
 )
 
 
@@ -68,8 +73,8 @@ def execute_cast_series_generic(op, data, type, scope=None):
 
 
 @execute_node.register(ops.Cast, pd.Series, dt.Date)
-def execute_cast_series_date(op, data, type, scope=None):
-    return data.dt.date
+def execute_cast_series_date(op, data, _, scope=None):
+    return data.dt.date.astype('datetime64[ns]')
 
 
 _LITERAL_CAST_TYPES = {
@@ -97,6 +102,17 @@ def execute_cast_string_literal(op, data, type, scope=None):
 @execute_node.register(ops.TableColumn, pd.DataFrame)
 def execute_table_column_dataframe(op, data, scope=None):
     return data[op.name]
+
+
+def _compute_sort_key(key, scope):
+    by = key.args[0]
+    try:
+        return by.get_name(), None
+    except com.ExpressionError:
+        name = util.guid()
+        new_column = execute(by, scope)
+        new_column.name = name
+        return name, new_column
 
 
 @execute_node.register(ops.Selection, pd.DataFrame)
@@ -133,9 +149,25 @@ def execute_selection_dataframe(op, data, scope=None):
         )
         result = result.loc[where]
 
+    column_names = list(result.columns)
     if sort_keys:
-        return result.sort_values(sort_keys)
-    return result
+
+        computed_sort_keys = [None] * len(sort_keys)
+        ascending = [key.op().ascending for key in sort_keys]
+        temporary_columns = [None] * len(sort_keys)
+
+        for i, key in enumerate(map(operator.methodcaller('op'), sort_keys)):
+            computed_sort_keys[i], temporary_columns[i] = _compute_sort_key(
+                key, {op.table: result}
+            )
+
+        if temporary_columns:
+            result = pd.concat(
+                [result] + [c for c in temporary_columns if c is not None],
+                axis=1
+            )
+        result = result.sort_values(computed_sort_keys, ascending=ascending)
+    return result.loc[:, column_names]
 
 
 @execute_node.register(ops.Aggregation, pd.DataFrame)
