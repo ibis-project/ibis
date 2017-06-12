@@ -89,4 +89,4 @@ deployment:
     branch: master
     owner: ibis-project
     commands:
-      - ci/benchmark.sh asv "run -e master^..master" --publish
+      - ci/benchmark.sh asv "run -e master^..master"
