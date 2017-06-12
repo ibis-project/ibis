@@ -38,7 +38,7 @@ def lineitem(con):
 
 
 @pytest.fixture
-def table():
+def sql_table():
     return ibis.table([
         ('v1', 'decimal(12, 2)'),
         ('v2', 'decimal(10, 4)'),
@@ -183,18 +183,18 @@ def _check_unary_op(expr, fname, ex_op, ex_type):
     assert type(result) == ex_type
 
 
-def test_coalesce_instance_method(table):
-    v7 = table.v7
-    v5 = table.v5.cast('string')
-    v8 = table.v8.cast('string')
+def test_coalesce_instance_method(sql_table):
+    v7 = sql_table.v7
+    v5 = sql_table.v5.cast('string')
+    v8 = sql_table.v8.cast('string')
 
     result = v7.coalesce(v5, v8, 'foo')
     expected = ibis.coalesce(v7, v5, v8, 'foo')
     assert_equal(result, expected)
 
 
-def test_integer_promotions(table, function):
-    t = table
+def test_integer_promotions(sql_table, function):
+    t = sql_table
 
     expr = function(t.v3, t.v4)
     assert isinstance(expr, ir.Int64Column)
@@ -206,8 +206,8 @@ def test_integer_promotions(table, function):
     assert isinstance(expr, ir.Int64Scalar)
 
 
-def test_floats(table, function):
-    t = table
+def test_floats(sql_table, function):
+    t = sql_table
 
     expr = function(t.v5)
     assert isinstance(expr, ir.DoubleColumn)
