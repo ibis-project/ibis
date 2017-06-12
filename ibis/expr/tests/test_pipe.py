@@ -17,7 +17,7 @@ import ibis
 
 
 @pytest.fixture
-def table():
+def pipe_table():
     return ibis.table([
         ('key1', 'string'),
         ('key2', 'string'),
@@ -26,37 +26,37 @@ def table():
     ], 'foo_table')
 
 
-def test_pipe_positional_args(table):
+def test_pipe_positional_args(pipe_table):
     def my_func(data, foo, bar):
         return data[bar] + foo
 
-    result = table.pipe(my_func, 4, 'value')
-    expected = table['value'] + 4
+    result = pipe_table.pipe(my_func, 4, 'value')
+    expected = pipe_table['value'] + 4
 
     assert result.equals(expected)
 
 
-def test_pipe_keyword_args(table):
+def test_pipe_keyword_args(pipe_table):
     def my_func(data, foo=None, bar=None):
         return data[bar] + foo
 
-    result = table.pipe(my_func, foo=4, bar='value')
-    expected = table['value'] + 4
+    result = pipe_table.pipe(my_func, foo=4, bar='value')
+    expected = pipe_table['value'] + 4
 
     assert result.equals(expected)
 
 
-def test_pipe_pass_to_keyword(table):
+def test_pipe_pass_to_keyword(pipe_table):
     def my_func(x, y, data=None):
         return data[x] + y
 
-    result = table.pipe((my_func, 'data'), 'value', 4)
-    expected = table['value'] + 4
+    result = pipe_table.pipe((my_func, 'data'), 'value', 4)
+    expected = pipe_table['value'] + 4
 
     assert result.equals(expected)
 
 
-def test_call_pipe_equivalence(table):
-    result = table(lambda x: x['key1'].cast('double').sum())
-    expected = table.key1.cast('double').sum()
+def test_call_pipe_equivalence(pipe_table):
+    result = pipe_table(lambda x: x['key1'].cast('double').sum())
+    expected = pipe_table.key1.cast('double').sum()
     assert result.equals(expected)
