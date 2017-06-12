@@ -33,14 +33,19 @@ def _cast(t, expr):
     sa_arg = t.translate(arg)
     sa_type = t.get_sqla_type(target_type)
 
-    # SQLite does not have a physical date/time/timestamp type, so
-    # unfortunately cast to typestamp must be a no-op, and we have to trust
-    # that the user's data can actually be correctly parsed by SQLite.
     if isinstance(target_type, dt.Timestamp):
-        if not isinstance(arg, (ir.IntegerValue, ir.StringValue)):
-            raise com.TranslationError(type(arg))
+        if isinstance(arg, ir.IntegerValue):
+            return sa.func.datetime(sa_arg, 'unixepoch')
+        elif isinstance(arg, ir.StringValue):
+            return sa.func.strftime('%Y-%m-%d %H:%M:%f', sa_arg)
+        raise com.TranslationError(type(arg))
 
-        return sa_arg
+    if isinstance(target_type, dt.Date):
+        if isinstance(arg, ir.IntegerValue):
+            return sa.func.date(sa.func.datetime(sa_arg, 'unixepoch'))
+        elif isinstance(arg, ir.StringValue):
+            return sa.func.date(sa_arg)
+        raise com.TranslationError(type(arg))
 
     if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
         return sa_arg
@@ -126,7 +131,7 @@ def _strftime_int(fmt):
     def translator(t, expr):
         arg, = expr.op().args
         sa_arg = t.translate(arg)
-        return sa.cast(sa.func.strftime(fmt, sa_arg), sa.types.INTEGER)
+        return sa.cast(sa.func.strftime(fmt, sa_arg), sa.INTEGER)
     return translator
 
 

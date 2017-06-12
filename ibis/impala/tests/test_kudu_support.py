@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# flake8: noqa=E402
-
+import unittest
 import os
+
 import pytest
 
 pytest.importorskip('sqlalchemy')
@@ -23,14 +23,13 @@ pytest.importorskip('impala.dbapi')
 ksupport = pytest.importorskip('ibis.impala.kudu_support')
 kudu = pytest.importorskip('kudu')
 
-from ibis.compat import unittest
-from ibis.expr.tests.mocks import MockConnection
-from ibis.impala.client import build_ast
-from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E
-from ibis.tests.util import assert_equal
-import ibis.expr.datatypes as dt
-import ibis.util as util
-import ibis
+from ibis.expr.tests.mocks import MockConnection  # noqa: E402
+from ibis.impala.client import build_ast  # noqa: E402
+from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E  # noqa: E402
+from ibis.tests.util import assert_equal  # noqa: E402
+import ibis.expr.datatypes as dt  # noqa: E402
+import ibis.util as util  # noqa: E402
+import ibis  # noqa: E402
 
 
 class KuduImpalaTestEnv(IbisTestEnv):
@@ -53,6 +52,7 @@ class KuduImpalaTestEnv(IbisTestEnv):
                                                50070))
         self.hdfs_superuser = os.environ.get('IBIS_TEST_HDFS_SUPERUSER',
                                              'hdfs')
+
 
 ENV = KuduImpalaTestEnv()
 

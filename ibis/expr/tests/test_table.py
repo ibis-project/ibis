@@ -277,6 +277,7 @@ def test_mutate_alter_existing_columns(table):
 
     expected = table['a', 'b', 'c', 'd', 'e',
                           new_f.name('f'), 'g', 'h',
+                          'i',
                           foo.name('foo')]
 
     assert_equal(expr, expected)

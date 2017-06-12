@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
+
 import pandas as pd
 
 from numpy import nan
 
-from ibis.compat import unittest
 from ibis.impala.metadata import parse_metadata
 
 

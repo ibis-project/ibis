@@ -12,25 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# flake8: noqa=E402
-
-import ibis
+import unittest
 
 import pytest
+
+import ibis
+import ibis.common as com
+import ibis.expr.api as api
+import ibis.expr.operations as ops
+
+from ibis.expr.tests.mocks import MockConnection
 
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-from ibis.impala.compiler import build_ast, to_sql
-
-from ibis import impala
-
-from ibis.expr.tests.mocks import MockConnection
-from ibis.compat import unittest
-import ibis.common as com
-
-import ibis.expr.api as api
-import ibis.expr.operations as ops
+from ibis.impala.compiler import build_ast, to_sql  # noqa: E402
+from ibis import impala  # noqa: E402
 
 
 class TestASTBuilder(unittest.TestCase):
@@ -272,6 +269,7 @@ FROM alltypes"""
 def _get_query(expr):
     ast = build_ast(expr)
     return ast.queries[0]
+
 
 nation = api.table([
     ('n_regionkey', 'int32'),
@@ -2298,7 +2296,8 @@ def test_pushdown_with_or():
     expected = """\
 SELECT *
 FROM functional_alltypes
-WHERE (`double_col` > 3.14) AND (locate('foo', `string_col`) - 1 >= 0) AND
+WHERE `double_col` > 3.14 AND
+      locate('foo', `string_col`) - 1 >= 0 AND
       (((`int_col` - 1) = 0) OR (`float_col` <= 1.34))"""
     assert result == expected
 

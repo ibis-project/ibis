@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from six import BytesIO
+import unittest
 
 from posixpath import join as pjoin
 from os import path as osp
 import os
 import shutil
 
+from six import BytesIO
+
 import pytest
 
 from ibis.filesystems import HDFS
-from ibis.compat import unittest
 from ibis.impala.tests.common import IbisTestEnv
 import ibis.compat as compat
 import ibis.util as util

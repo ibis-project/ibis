@@ -12,48 +12,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.compat import unittest
+import pytest
 import ibis
 
 
-class TestPipe(unittest.TestCase):
+@pytest.fixture
+def table():
+    return ibis.table([
+        ('key1', 'string'),
+        ('key2', 'string'),
+        ('key3', 'string'),
+        ('value', 'double')
+    ], 'foo_table')
 
-    def setUp(self):
-        self.table = ibis.table([
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('key3', 'string'),
-            ('value', 'double')
-        ], 'foo_table')
 
-    def test_pipe_positional_args(self):
-        def my_func(data, foo, bar):
-            return data[bar] + foo
+def test_pipe_positional_args(table):
+    def my_func(data, foo, bar):
+        return data[bar] + foo
 
-        result = self.table.pipe(my_func, 4, 'value')
-        expected = self.table['value'] + 4
+    result = table.pipe(my_func, 4, 'value')
+    expected = table['value'] + 4
 
-        assert result.equals(expected)
+    assert result.equals(expected)
 
-    def test_pipe_keyword_args(self):
-        def my_func(data, foo=None, bar=None):
-            return data[bar] + foo
 
-        result = self.table.pipe(my_func, foo=4, bar='value')
-        expected = self.table['value'] + 4
+def test_pipe_keyword_args(table):
+    def my_func(data, foo=None, bar=None):
+        return data[bar] + foo
 
-        assert result.equals(expected)
+    result = table.pipe(my_func, foo=4, bar='value')
+    expected = table['value'] + 4
 
-    def test_pipe_pass_to_keyword(self):
-        def my_func(x, y, data=None):
-            return data[x] + y
+    assert result.equals(expected)
 
-        result = self.table.pipe((my_func, 'data'), 'value', 4)
-        expected = self.table['value'] + 4
 
-        assert result.equals(expected)
+def test_pipe_pass_to_keyword(table):
+    def my_func(x, y, data=None):
+        return data[x] + y
 
-    def test_call_pipe_equivalence(self):
-        result = self.table(lambda x: x['key1'].cast('double').sum())
-        expected = self.table.key1.cast('double').sum()
-        assert result.equals(expected)
+    result = table.pipe((my_func, 'data'), 'value', 4)
+    expected = table['value'] + 4
+
+    assert result.equals(expected)
+
+
+def test_call_pipe_equivalence(table):
+    result = table(lambda x: x['key1'].cast('double').sum())
+    expected = table.key1.cast('double').sum()
+    assert result.equals(expected)

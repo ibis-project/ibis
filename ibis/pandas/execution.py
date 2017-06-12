@@ -23,7 +23,7 @@ integer_types = six.integer_types + (np.integer,)
 scalar_types = (
     numbers.Real, datetime.datetime, datetime.date, np.number, np.bool_,
     np.datetime64, np.timedelta64,
-) + six.string_types
+)
 
 
 @execute_node.register(ir.Literal)
@@ -57,6 +57,11 @@ def ibis_type_to_pandas_type(ibis_type):
     return _IBIS_TYPE_TO_PANDAS_TYPE[ibis_type]
 
 
+@execute_node.register(ops.Limit, pd.DataFrame, integer_types, integer_types)
+def execute_limit_frame(op, data, limit, offset, scope=None):
+    return data.iloc[offset:offset + limit]
+
+
 @execute_node.register(ops.Cast, pd.Series, dt.DataType)
 def execute_cast_series_generic(op, data, type, scope=None):
     return data.astype(ibis_type_to_pandas_type(type))
@@ -79,7 +84,7 @@ _LITERAL_CAST_TYPES = {
 }
 
 
-@execute_node.register(ops.Cast, scalar_types, dt.DataType)
+@execute_node.register(ops.Cast, scalar_types + six.string_types, dt.DataType)
 def execute_cast_string_literal(op, data, type, scope=None):
     try:
         return _LITERAL_CAST_TYPES[type](data)
@@ -336,7 +341,10 @@ def execute_strftime_series_str(op, data, format_string, scope=None):
     return data.dt.strftime(format_string)
 
 
-@execute_node.register(ops.ExtractTimestampField, pd.Timestamp)
+@execute_node.register(
+    (ops.ExtractTimestampField, ops.ExtractTemporalField),
+    pd.Timestamp
+)
 def execute_extract_timestamp_field_timestamp(op, data, scope=None):
     field_name = type(op).__name__.lower().replace('extract', '')
     return getattr(data, field_name)
@@ -347,7 +355,10 @@ def execute_extract_millisecond_timestamp(op, data, scope=None):
     return int(data.microsecond // 1000.0)
 
 
-@execute_node.register(ops.ExtractTimestampField, pd.Series)
+@execute_node.register(
+    (ops.ExtractTimestampField, ops.ExtractTemporalField),
+    pd.Series
+)
 def execute_extract_timestamp_field_series(op, data, scope=None):
     field_name = type(op).__name__.lower().replace('extract', '')
     return getattr(data.dt, field_name)
@@ -482,6 +493,9 @@ def find_data(expr):
     return data
 
 
+_VALID_INPUT_TYPES = (ir.Expr, dt.DataType, type(None)) + scalar_types
+
+
 @execute.register(ir.Expr, dict)
 def execute_with_scope(expr, scope):
     if expr in scope:
@@ -492,7 +506,7 @@ def execute_with_scope(expr, scope):
 
     computed_args = [
         execute(arg, scope) if hasattr(arg, 'op') else arg
-        for arg in args if isinstance(arg, (ir.Expr, dt.DataType, type(None)))
+        for arg in args if isinstance(arg, _VALID_INPUT_TYPES)
     ] or [scope.get(arg, arg) for arg in args]
 
     return execute_node(op, *computed_args, scope=scope)

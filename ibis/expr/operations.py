@@ -14,10 +14,10 @@
 
 import operator
 import six
+import itertools
 
 from ibis.expr.types import TableColumn  # noqa
 
-from ibis.compat import py_string
 from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr, Expr,
@@ -1376,7 +1376,7 @@ class Join(TableNode):
             if not isinstance(pred, ir.BooleanColumn):
                 raise com.ExpressionError('Join predicate must be comparison')
 
-            preds = L.unwrap_ands(pred)
+            preds = L.flatten_predicate(pred)
             result.extend(preds)
 
         return result
@@ -1551,7 +1551,7 @@ def to_sort_key(table, key):
         if isinstance(key, (ir.SortExpr, DeferredSortKey)):
             return to_sort_key(table, key)
 
-    if isinstance(sort_order, py_string):
+    if isinstance(sort_order, six.string_types):
         if sort_order.lower() in ('desc', 'descending'):
             sort_order = False
         elif not isinstance(sort_order, bool):
@@ -1626,6 +1626,7 @@ class Selection(TableNode, HasSchema):
 
     def __init__(self, table_expr, proj_exprs=None, predicates=None,
                  sort_keys=None):
+        import ibis.expr.analysis as L
         self.table = table_expr
 
         # Argument cleaning
@@ -1640,17 +1641,22 @@ class Selection(TableNode, HasSchema):
         self.sort_keys = [to_sort_key(self.table, k)
                           for k in util.promote_list(sort_keys)]
 
-        self.predicates = predicates or []
+        self.predicates = list(
+            itertools.chain.from_iterable(
+                map(L.flatten_predicate, predicates or [])
+            )
+        )
 
         dependent_exprs = clean_exprs + self.sort_keys
+
         self._validate(dependent_exprs)
         self._validate_predicates()
 
-        HasSchema.__init__(self, schema)
-        Node.__init__(self, [table_expr] + [clean_exprs] +
-                      [self.predicates] + [self.sort_keys])
-
         self.selections = clean_exprs
+
+        HasSchema.__init__(self, schema)
+        Node.__init__(self, [table_expr] + [self.selections] +
+                      [self.predicates] + [self.sort_keys])
 
     def blocks(self):
         return len(self.selections) > 0
@@ -1672,7 +1678,7 @@ class Selection(TableNode, HasSchema):
         names = []
         clean_exprs = []
         for expr in proj_exprs:
-            if isinstance(expr, py_string):
+            if isinstance(expr, six.string_types):
                 expr = self.table[expr]
 
             if isinstance(expr, ValueExpr):
@@ -2182,6 +2188,11 @@ class E(Constant):
         return ir.DoubleScalar
 
 
+class TemporalUnaryOp(UnaryOp):
+
+    input_type = [rules.temporal]
+
+
 class TimestampUnaryOp(UnaryOp):
 
     input_type = [rules.timestamp]
@@ -2253,8 +2264,13 @@ class Truncate(ValueOp):
 
 class Strftime(ValueOp):
 
-    input_type = [rules.timestamp, rules.string(name='format_str')]
+    input_type = [rules.temporal, rules.string(name='format_str')]
     output_type = rules.shape_like_arg(0, 'string')
+
+
+class ExtractTemporalField(TemporalUnaryOp):
+
+    output_type = rules.shape_like_arg(0, 'int32')
 
 
 class ExtractTimestampField(TimestampUnaryOp):
@@ -2262,15 +2278,15 @@ class ExtractTimestampField(TimestampUnaryOp):
     output_type = rules.shape_like_arg(0, 'int32')
 
 
-class ExtractYear(ExtractTimestampField):
+class ExtractYear(ExtractTemporalField):
     pass
 
 
-class ExtractMonth(ExtractTimestampField):
+class ExtractMonth(ExtractTemporalField):
     pass
 
 
-class ExtractDay(ExtractTimestampField):
+class ExtractDay(ExtractTemporalField):
     pass
 
 

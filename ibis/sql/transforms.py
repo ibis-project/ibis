@@ -87,7 +87,7 @@ class AnyToExistsTransform(object):
             if isinstance(arg, ir.TableExpr):
                 self._visit_table(arg)
             elif isinstance(arg, ir.BooleanColumn):
-                for sub_expr in L.unwrap_ands(arg):
+                for sub_expr in L.flatten_predicate(arg):
                     self.predicates.append(sub_expr)
                     self._visit(sub_expr)
             elif isinstance(arg, ir.Expr):

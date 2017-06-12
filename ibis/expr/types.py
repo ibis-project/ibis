@@ -17,6 +17,7 @@ import datetime
 import webbrowser
 
 import six
+import toolz
 
 from ibis.common import IbisError, RelationError
 import ibis.common as com
@@ -390,9 +391,7 @@ def all_equal(left, right, cache=None):
 
     if hasattr(left, 'equals'):
         return left.equals(right, cache=cache)
-    else:
-        return left == right
-    return True
+    return left == right
 
 
 def _arg_getter(i):
@@ -562,7 +561,7 @@ def distinct_roots(*args):
     all_roots = []
     for arg in args:
         all_roots.extend(arg._root_tables())
-    return util.unique_by_key(all_roots, id)
+    return list(toolz.unique(all_roots, key=id))
 
 
 # ---------------------------------------------------------------------

@@ -12,27 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# flake8: noqa=E402
-
+import unittest
 import operator
 
 import pytest
 
-sa = pytest.importorskip('sqlalchemy')
-
-from ibis.compat import unittest
-from ibis.expr.tests.mocks import MockConnection
-from ibis.sql.tests.test_compiler import ExprTestCases
-from ibis.tests.util import assert_equal
+import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-import ibis.sql.alchemy as alch
-import ibis
+from ibis.expr.tests.mocks import MockConnection
+from ibis.tests.util import assert_equal
 
+sa = pytest.importorskip('sqlalchemy')
 
-from sqlalchemy import types as sat, func as F
-import sqlalchemy.sql as sql
+from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
+import ibis.sql.alchemy as alch  # noqa: E402
 
+from sqlalchemy import types as sat, func as F  # noqa: E402
+import sqlalchemy.sql as sql  # noqa: E402
 
 L = sa.literal
 

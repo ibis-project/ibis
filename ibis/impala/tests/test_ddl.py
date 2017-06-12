@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# flake8: noqa=E402
+import unittest
 
 from copy import copy
 import gc
@@ -23,19 +23,20 @@ import pandas as pd
 from posixpath import join as pjoin
 import pytest
 
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('impala.dbapi')
-
 from ibis.expr.tests.mocks import MockConnection
-from ibis.compat import unittest, mock
-from ibis.impala import ddl
-from ibis.impala.compat import HS2Error, ImpylaError
-from ibis.impala.client import build_ast
-from ibis.impala.tests.common import ENV, ImpalaE2E, connect_test
-from ibis.tests.util import assert_equal
+from ibis.compat import mock
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.util as util
+from ibis.tests.util import assert_equal
+
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
+
+from ibis.impala import ddl  # noqa: E402
+from ibis.impala.compat import HS2Error, ImpylaError  # noqa: E402
+from ibis.impala.client import build_ast  # noqa: E402
+from ibis.impala.tests.common import ENV, ImpalaE2E, connect_test  # noqa: E402
 
 
 class TestDropTable(unittest.TestCase):

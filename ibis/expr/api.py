@@ -32,6 +32,7 @@ from ibis.expr.types import (Expr,  # noqa
                              StringValue, StringScalar, StringColumn,
                              DecimalValue, DecimalScalar, DecimalColumn,
                              TimestampValue, TimestampScalar, TimestampColumn,
+                             DateValue,
                              ArrayValue, ArrayScalar, ArrayColumn,
                              CategoryValue, unnamed, as_value_expr, literal,
                              null, sequence)
@@ -41,7 +42,6 @@ from ibis.expr.temporal import *  # noqa
 
 import ibis.common as _com
 
-from ibis.compat import py_string
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import window, trailing_window, cumulative_window
@@ -149,7 +149,7 @@ def timestamp(value):
     """
     Returns a timestamp literal if value is likely coercible to a timestamp
     """
-    if isinstance(value, py_string):
+    if isinstance(value, six.string_types):
         from pandas import Timestamp
         value = Timestamp(value)
     op = ir.Literal(value)
@@ -1703,7 +1703,16 @@ _timestamp_value_methods = dict(
 )
 
 
+_date_value_methods = dict(
+    strftime=_timestamp_strftime,
+    year=_extract_field('year', _ops.ExtractYear),
+    month=_extract_field('month', _ops.ExtractMonth),
+    day=_extract_field('day', _ops.ExtractDay),
+)
+
+
 _add_methods(TimestampValue, _timestamp_value_methods)
+_add_methods(DateValue, _date_value_methods)
 
 
 # ---------------------------------------------------------------------
@@ -1767,7 +1776,7 @@ def join(left, right, predicates=(), how='inner'):
     """
     klass = _join_classes[how.lower()]
     if isinstance(predicates, Expr):
-        predicates = _L.unwrap_ands(predicates)
+        predicates = _L.flatten_predicate(predicates)
 
     op = klass(left, right, predicates)
     return TableExpr(op)
@@ -1946,7 +1955,7 @@ def filter(table, predicates):
 
 def _resolve_predicates(table, predicates):
     if isinstance(predicates, Expr):
-        predicates = _L.unwrap_ands(predicates)
+        predicates = _L.flatten_predicate(predicates)
     predicates = util.promote_list(predicates)
     predicates = [ir.bind_expr(table, x) for x in predicates]
     resolved_predicates = []

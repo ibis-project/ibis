@@ -14,17 +14,28 @@
 
 import os
 import uuid
+import unittest
+import operator
 
-import pytest  # noqa
+import pytest
 
 from .common import SQLiteTests
-from ibis.compat import unittest
 from ibis import literal as L
 import ibis.expr.types as ir
 import ibis
 import pandas.util.testing as tm
 
 import sqlalchemy as sa
+
+
+@pytest.fixture
+def con():
+    return ibis.sqlite.connect(os.environ['IBIS_TEST_SQLITE_DB_PATH'])
+
+
+@pytest.fixture
+def db(con):
+    return con.database()
 
 
 class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
@@ -66,8 +77,14 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
         # But it's a no-op when translated to SQLAlchemy
         cases = [
-            (tc_casted, at.c.timestamp_col),
-            (ic_casted, at.c.int_col)
+            (
+                tc_casted.cast('timestamp'),
+                sa.func.strftime('%Y-%m-%d %H:%M:%f', at.c.timestamp_col)
+            ),
+            (
+                ic_casted.cast('timestamp'),
+                sa.func.datetime(at.c.int_col, 'unixepoch')
+            ),
         ]
         self._check_expr_cases(cases)
 
@@ -417,6 +434,7 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             result = joined.val2.execute()
             assert len(result) == 2
         finally:
+            con.con.dispose()
             os.remove(path)
 
     def test_anonymous_aggregate(self):
@@ -509,3 +527,19 @@ def test_compile_with_one_unnamed_table():
     sqla_join = sqla_t.join(sqla_s, sqla_t.c.a == sqla_s.c.b)
     expected = sa.select([sqla_t.c.a, sqla_s.c.b]).select_from(sqla_join)
     assert str(result) == str(expected)
+
+
+@pytest.mark.sqlite
+@pytest.mark.parametrize(
+    ('attr', 'expected'),
+    [
+        (operator.methodcaller('year'), {2009, 2010}),
+        (operator.methodcaller('month'), set(range(1, 13))),
+        (operator.methodcaller('day'), set(range(1, 32)))
+    ]
+)
+def test_date_extract_field(db, attr, expected):
+    t = db.functional_alltypes
+    expr = attr(t.timestamp_col.cast('date')).distinct()
+    result = expr.execute().astype(int)
+    assert set(result) == expected

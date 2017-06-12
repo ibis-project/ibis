@@ -544,14 +544,21 @@ class SelectBuilder(object):
 def _get_subtables(expr):
     subtables = []
 
-    def _walk(expr):
-        op = expr.op()
-        if isinstance(op, ops.Join):
-            _walk(op.left)
-            _walk(op.right)
-        else:
-            subtables.append(expr)
-    _walk(expr)
+    stack = [expr]
+    seen = set()
+
+    while stack:
+        e = stack.pop()
+        op = e.op()
+
+        if op not in seen:
+            seen.add(op)
+
+            if isinstance(op, ops.Join):
+                stack.append(op.right)
+                stack.append(op.left)
+            else:
+                subtables.append(e)
 
     return subtables
 
