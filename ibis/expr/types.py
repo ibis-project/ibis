@@ -253,7 +253,7 @@ class OperationMeta(type):
                         continue
 
                     if t.name not in dct:
-                        dct[t.name] = _arg_getter(i)
+                        dct[t.name] = _arg_getter(i, doc=t.doc)
 
         return super(OperationMeta, cls).__new__(cls, name, parents, dct)
 
@@ -394,11 +394,10 @@ def all_equal(left, right, cache=None):
     return left == right
 
 
-def _arg_getter(i):
-    @property
+def _arg_getter(i, doc=None):
     def arg_accessor(self):
         return self.args[i]
-    return arg_accessor
+    return property(arg_accessor, doc=doc)
 
 
 class ValueOp(Node):
