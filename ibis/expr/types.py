@@ -531,7 +531,7 @@ def infer_literal_type(value):
 class Literal(ValueOp):
 
     def __init__(self, value, type=None):
-        super(Literal, self).__init__(value)
+        super(Literal, self).__init__(value, type)
         self.value = value
         self._output_type = type.scalar_type()
 
