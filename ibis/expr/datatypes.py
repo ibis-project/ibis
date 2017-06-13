@@ -246,7 +246,6 @@ class Boolean(Primitive):
             isinstance(value, six.integer_types + (np.integer,)) and
             (value == 0 or value == 1)
         )
-        return value in (True, False, 0, 1)
 
 
 Bounds = namedtuple('Bounds', ('lower', 'upper'))
