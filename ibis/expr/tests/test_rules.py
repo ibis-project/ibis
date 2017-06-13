@@ -103,3 +103,20 @@ def test_string_options_case_insensitive(options, expected_case, option):
 
     op = MyOp(option)
     assert op._validate_args(op.args) == [expected_case(option)]
+
+
+def test_argument_docstring():
+    doc = 'A wonderful integer'
+
+    class MyExpr(ir.Expr):
+        pass
+
+    class MyOp(ops.ValueOp):
+
+        input_type = [rules.integer(name='foo', doc=doc)]
+
+        def output_type(self):
+            return MyExpr
+
+    op = MyOp(1)
+    assert type(op).foo.__doc__ == doc
