@@ -424,9 +424,12 @@ class TableColumn(ValueOp):
     """
 
     def __init__(self, name, table_expr):
-        Node.__init__(self, [name, table_expr])
+        schema = table_expr.schema()
+        if isinstance(name, six.integer_types):
+            name = schema.name_at_position(name)
 
-        if name not in table_expr.schema():
+        super(TableColumn, self).__init__(name, table_expr)
+        if name not in schema:
             raise com.IbisTypeError(
                 "'{0}' is not a field in {1}".format(name, table_expr.columns)
             )
@@ -685,7 +688,7 @@ class TableExpr(Expr):
         return name in self.schema()
 
     def __getitem__(self, what):
-        if isinstance(what, six.string_types):
+        if isinstance(what, six.string_types + six.integer_types):
             return self.get_column(what)
 
         if isinstance(what, slice):
@@ -718,7 +721,10 @@ class TableExpr(Expr):
             # Projection convenience
             return self.projection(what)
         else:
-            raise NotImplementedError
+            raise NotImplementedError(
+                'Selection rows or columns with {} objects is not '
+                'supported'.format(type(what).__name__)
+            )
 
     def __len__(self):
         raise com.ExpressionError('Use .count() instead')
@@ -751,6 +757,8 @@ class TableExpr(Expr):
     def _ensure_expr(self, expr):
         if isinstance(expr, six.string_types):
             return self[expr]
+        elif isinstance(expr, six.integer_types):
+            return self[self.schema().name_at_position(expr)]
         elif not isinstance(expr, Expr):
             return expr(self)
         else:

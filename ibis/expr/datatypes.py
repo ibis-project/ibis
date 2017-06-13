@@ -30,15 +30,24 @@ from ibis.compat import builtins
 
 class Schema(object):
 
-    """
-    Holds table schema information
+    """An object for holding table schema information, i.e., column names and
+    types.
+
+    Parameters
+    ----------
+    names : Sequence[str]
+        A sequence of ``str`` indicating the name of each column.
+    types : Sequence[DataType]
+        A sequence of :class:`ibis.expr.datatypes.DataType` objects
+        representing type of each column.
     """
 
     def __init__(self, names, types):
         if not isinstance(names, list):
             names = list(names)
+
         self.names = names
-        self.types = [validate_type(x) for x in types]
+        self.types = [validate_type(typ) for typ in types]
 
         self._name_locs = dict((v, i) for i, v in enumerate(self.names))
 
@@ -96,9 +105,7 @@ class Schema(object):
 
     @classmethod
     def from_dict(cls, values):
-        names = list(values.keys())
-        types = values.values()
-        return Schema(names, types)
+        return Schema(list(values.keys()), values.values())
 
     def equals(self, other, cache=None):
         return self.names == other.names and self.types == other.types
@@ -116,6 +123,18 @@ class Schema(object):
 
     def items(self):
         return zip(self.names, self.types)
+
+    def name_at_position(self, i):
+        """
+        """
+        upper = len(self.names) - 1
+        if not 0 <= i <= upper:
+            raise ValueError(
+                'Column index must be between 0 and {:d}, inclusive'.format(
+                    upper
+                )
+            )
+        return self.names[i]
 
 
 class HasSchema(object):

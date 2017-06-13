@@ -794,3 +794,29 @@ def test_not_without_boolean(typ):
     c = t.a
     with pytest.raises(TypeError):
         ~c
+
+
+@pytest.mark.parametrize(
+    ('position', 'names'),
+    [
+        (0, 'foo'),
+        (1, 'bar'),
+        ([0], ['foo']),
+        ([1], ['bar']),
+        ([0, 1], ['foo', 'bar']),
+        ([1, 0], ['bar', 'foo']),
+    ]
+)
+@pytest.mark.parametrize(
+    'expr_func',
+    [
+        lambda t, args: t[args],
+        lambda t, args: t.sort_by(args),
+        lambda t, args: t.group_by(args).aggregate(bar_avg=t.bar.mean())
+    ]
+)
+def test_table_operations_with_integer_column(position, names, expr_func):
+    t = ibis.table([('foo', 'string'), ('bar', 'double')])
+    result = expr_func(t, position)
+    expected = expr_func(t, names)
+    assert result.equals(expected)
