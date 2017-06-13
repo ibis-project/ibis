@@ -820,3 +820,28 @@ def test_table_operations_with_integer_column(position, names, expr_func):
     result = expr_func(t, position)
     expected = expr_func(t, names)
     assert result.equals(expected)
+
+
+@pytest.mark.parametrize(
+    'value',
+    [
+        'abcdefg',
+        ['a', 'b', 'c'],
+        [1, 2, 3],
+    ]
+)
+@pytest.mark.parametrize(
+    'operation',
+    [
+        'pow',
+        'sub',
+        'truediv',
+        'floordiv',
+        'mod',
+    ]
+)
+def test_generic_value_api_no_arithmetic(value, operation):
+    func = getattr(operator, operation)
+    expr = ibis.literal(value)
+    with pytest.raises(TypeError):
+        func(expr, expr)
