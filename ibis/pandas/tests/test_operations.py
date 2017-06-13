@@ -604,3 +604,14 @@ def test_weighted_average(t, df):
         ).sum() / df.plain_int64.sum()
     ).reset_index().rename(columns={0: 'avg'})
     tm.assert_frame_equal(result, expected)
+
+
+def test_group_by_multiple_keys(t, df):
+    expr = t.groupby([t.dup_strings, t.dup_ints]).aggregate(
+        avg_plain_float64=t.plain_float64.mean()
+    )
+    result = expr.execute()
+    expected = df.groupby(['dup_strings', 'dup_ints']).agg(
+        {'plain_float64': 'mean'}
+    ).reset_index().rename(columns={'plain_float64': 'avg_plain_float64'})
+    tm.assert_frame_equal(result, expected)
