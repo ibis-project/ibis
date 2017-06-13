@@ -109,14 +109,15 @@ class ExprFormatter(object):
                 text = self._format_node(self.expr)
         elif isinstance(what, ops.TableColumn):
             text = self._format_column(self.expr)
+        elif isinstance(what, ir.Literal):
+            text = 'Literal[{}]\n  {}'.format(
+                self._get_type_display(), str(what.value)
+            )
         elif isinstance(what, ir.Node):
             text = self._format_node(self.expr)
-        elif isinstance(what, ir.Literal):
-            text = 'Literal[%s] %s' % (self._get_type_display(),
-                                       str(what.value))
 
         if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
-            text = '{0} = {1}'.format(self.expr.get_name(), text)
+            text = '{} = {}'.format(self.expr.get_name(), text)
 
         if self.memoize:
             alias_to_text = [(self.memo.aliases[x],
