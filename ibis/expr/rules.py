@@ -265,12 +265,12 @@ class Argument(object):
     """
 
     def __init__(self, name=None, default=None, optional=False,
-                 validator=None):
+                 validator=None, doc=None):
         self.name = name
         self.default = default
         self.optional = optional
-
         self.validator = validator
+        self.doc = doc
 
     def validate(self, args, i):
         arg = args[i]
