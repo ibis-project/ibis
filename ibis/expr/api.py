@@ -766,41 +766,6 @@ _generic_value_methods = dict(
     cases=cases,
     substitute=substitute,
 
-    __add__=add,
-    add=add,
-
-    __sub__=sub,
-    sub=sub,
-
-    __mul__=mul,
-    mul=mul,
-
-    __div__=div,
-    __truediv__=div,
-    __floordiv__=floordiv,
-    div=div,
-    floordiv=floordiv,
-
-    __rdiv__=rdiv,
-    __rtruediv__=rdiv,
-    __rfloordiv__=rfloordiv,
-    rdiv=rdiv,
-    rfloordiv=rfloordiv,
-
-    __pow__=pow,
-    pow=pow,
-
-    __radd__=add,
-
-    __rsub__=rsub,
-    rsub=rsub,
-
-    __rmul__=_rbinop_expr('__rmul__', _ops.Multiply),
-    __rpow__=_binop_expr('__rpow__', _ops.Power),
-
-    __mod__=mod,
-    __rmod__=_rbinop_expr('__rmod__', _ops.Modulus),
-
     __eq__=_binop_expr('__eq__', _ops.Equals),
     __ne__=_binop_expr('__ne__', _ops.NotEquals),
     __ge__=_binop_expr('__ge__', _ops.GreaterEqual),
@@ -1079,6 +1044,41 @@ _numeric_value_methods = dict(
     round=round,
     nullifzero=_unary_op('nullifzero', _ops.NullIfZero),
     zeroifnull=_unary_op('zeroifnull', _ops.ZeroIfNull),
+
+    __add__=add,
+    add=add,
+
+    __sub__=sub,
+    sub=sub,
+
+    __mul__=mul,
+    mul=mul,
+
+    __div__=div,
+    __truediv__=div,
+    __floordiv__=floordiv,
+    div=div,
+    floordiv=floordiv,
+
+    __rdiv__=rdiv,
+    __rtruediv__=rdiv,
+    __rfloordiv__=rfloordiv,
+    rdiv=rdiv,
+    rfloordiv=rfloordiv,
+
+    __pow__=pow,
+    pow=pow,
+
+    __radd__=add,
+
+    __rsub__=rsub,
+    rsub=rsub,
+
+    __rmul__=_rbinop_expr('__rmul__', _ops.Multiply),
+    __rpow__=_binop_expr('__rpow__', _ops.Power),
+
+    __mod__=mod,
+    __rmod__=_rbinop_expr('__rmod__', _ops.Modulus),
 )
 
 
@@ -1601,6 +1601,9 @@ _string_value_methods = dict(
     join=_string_join,
     lpad=_lpad,
     rpad=_rpad,
+    __add__=add,
+    __mul__=mul,
+    __rmul__=mul,
 )
 
 
