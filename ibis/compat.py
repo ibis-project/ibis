@@ -60,7 +60,7 @@ else:
     except ImportError:
         pass
 
-    import __builtin__ as builtins
+    import __builtin__ as builtins  # noqa: F401
 
     range = xrange  # noqa: F821
 
