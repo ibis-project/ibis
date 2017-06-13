@@ -24,18 +24,10 @@ from ibis.pandas.dispatch import execute, execute_node
 
 
 @execute_node.register(ir.Literal)
-def execute_node_literal(op, scope=None):
-    return op.value
-
-
 @execute_node.register(ir.Literal, object)
-def execute_node_literal_object(op, _, scope=None):
+@execute_node.register(ir.Literal, object, dt.DataType)
+def execute_node_literal(op, *args, **kwargs):
     return op.value
-
-
-@execute.register(ir.Literal)
-def execute_literal(literal):
-    return literal.value
 
 
 _IBIS_TYPE_TO_PANDAS_TYPE = {

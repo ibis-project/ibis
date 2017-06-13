@@ -16,6 +16,7 @@ import unittest
 
 import ibis
 
+from ibis.expr.types import Expr
 from ibis.expr.format import ExprFormatter
 from ibis.expr.tests.mocks import MockConnection
 
@@ -40,13 +41,12 @@ class TestExprFormatting(unittest.TestCase):
         self.con = MockConnection()
 
     def test_format_custom_expr(self):
-        from ibis.expr.types import Expr, Literal
 
         class CustomExpr(Expr):
             def _type_display(self):
                 return 'my-custom'
 
-        op = Literal(5)
+        op = ibis.literal(5).op()
         expr = CustomExpr(op)
 
         result = repr(expr)

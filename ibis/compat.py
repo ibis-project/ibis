@@ -39,6 +39,8 @@ if not PY2:
     from decimal import Decimal
     import unittest.mock as mock
     range = range
+    import builtins
+
 else:
     try:
         from cdecimal import Decimal
@@ -57,6 +59,8 @@ else:
         import mock  # noqa: F401
     except ImportError:
         pass
+
+    import __builtin__ as builtins  # noqa: F401
 
     range = xrange  # noqa: F821
 
