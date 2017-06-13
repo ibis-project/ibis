@@ -1268,6 +1268,10 @@ def literal(value, type=None):
     >>> y = ibis.literal(42, type='double')
     >>> y.type()
     double
+    >>> ibis.literal('foobar', type='int64')  # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    TypeError: Value 'foobar' cannot be safely coerced to int64
     """
 
     if type is None:
@@ -1277,7 +1281,7 @@ def literal(value, type=None):
 
     if not type.valid_literal(value):
         raise TypeError(
-            'Value {} cannot be safely coerced to {}'.format(value, type)
+            'Value {!r} cannot be safely coerced to {}'.format(value, type)
         )
 
     if value is None or value is _NULL or value is null:
