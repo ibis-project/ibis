@@ -504,20 +504,42 @@ class ExprList(Expr):
         return ExpressionList(exprs).to_expr()
 
 
+def infer_literal_type(value):
+    import ibis.expr.rules as rules
+
+    if value is None or value is null:
+        return dt.null
+    elif isinstance(value, bool):
+        return dt.boolean
+    elif isinstance(value, compat.integer_types):
+        return rules.int_literal_class(value)
+    elif isinstance(value, float):
+        return dt.double
+    elif isinstance(value, six.string_types):
+        return dt.string
+    elif isinstance(value, datetime.datetime):
+        return dt.timestamp
+    elif isinstance(value, datetime.date):
+        return dt.date
+    elif isinstance(value, list):
+        return dt.Array(rules.highest_precedence_type(
+            list(map(literal, value))
+        ))
+    raise com.InputTypeError(value)
+
+
 class Literal(ValueOp):
 
-    def __init__(self, value):
+    def __init__(self, value, type=None):
+        super(Literal, self).__init__(value, type)
         self.value = value
+        self._output_type = type.scalar_type()
 
     def __repr__(self):
-        return '{0}({1})'.format(
+        return '{}({})'.format(
             type(self).__name__,
             ', '.join(map(repr, self.args))
         )
-
-    @property
-    def args(self):
-        return [self.value]
 
     def equals(self, other, cache=None):
         return (
@@ -527,31 +549,7 @@ class Literal(ValueOp):
         )
 
     def output_type(self):
-        import ibis.expr.rules as rules
-
-        value = self.value
-
-        if isinstance(value, bool):
-            return BooleanScalar
-        elif isinstance(value, compat.integer_types):
-            return rules.int_literal_class(value).scalar_type()
-        elif isinstance(value, float):
-            return DoubleScalar
-        elif isinstance(value, six.string_types):
-            return StringScalar
-        elif isinstance(value, datetime.datetime):
-            return TimestampScalar
-        elif isinstance(value, datetime.date):
-            return DateScalar
-        elif isinstance(value, list):
-            value_type = rules.highest_precedence_type(
-                list(map(literal, value))
-            )
-            return lambda value, value_type=value_type: ArrayScalar(
-                value, dt.Array(value_type)
-            )
-
-        raise com.InputTypeError(value)
+        return self._output_type
 
     def root_tables(self):
         return []
@@ -1243,22 +1241,54 @@ def as_value_expr(val):
     return val
 
 
-def literal(value):
-    """
-    Create a scalar expression from a Python value
+def literal(value, type=None):
+    """Create a scalar expression from a Python value.
 
     Parameters
     ----------
     value : some Python basic type
+        A Python value
+    type : ibis type or string, optional
+        An instance of :class:`ibis.expr.datatypes.DataType` or a string
+        indicating the ibis type of `value`. This parameter should only be used
+        in cases where ibis's type inference isn't sufficient for discovering
+        the type of `value`.
 
     Returns
     -------
-    lit_value : value expression, type depending on input value
+    literal_value : Literal
+        An expression representing a literal value
+
+    Examples
+    --------
+    >>> import ibis
+    >>> x = ibis.literal(42)
+    >>> x.type()
+    int8
+    >>> y = ibis.literal(42, type='double')
+    >>> y.type()
+    double
+    >>> ibis.literal('foobar', type='int64')  # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    TypeError: Value 'foobar' cannot be safely coerced to int64
     """
-    if value is None or value is null:
-        return null()
+
+    if type is None:
+        type = infer_literal_type(value)
     else:
-        return Literal(value).to_expr()
+        type = dt.validate_type(type)
+
+    if not type.valid_literal(value):
+        raise TypeError(
+            'Value {!r} cannot be safely coerced to {}'.format(value, type)
+        )
+
+    if value is None or value is _NULL or value is null:
+        result = null().cast(type)
+    else:
+        result = Literal(value, type=type).to_expr()
+    return result
 
 
 _NULL = None

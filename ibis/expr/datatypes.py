@@ -13,13 +13,19 @@
 # limitations under the License.
 
 import re
+import datetime
 
 from collections import namedtuple, OrderedDict
 
 import six
 
+import numpy as np
+
+import ibis
 import ibis.common as com
 import ibis.util as util
+
+from ibis.compat import builtins
 
 
 class Schema(object):
@@ -206,9 +212,18 @@ class DataType(object):
         import ibis.expr.types as ir
         return getattr(ir, '{0}Column'.format(type(self).__name__))
 
+    def valid_literal(self, value):
+        raise NotImplementedError(
+            'valid_literal not implemented for datatype {}'.format(
+                type(self).__name__
+            )
+        )
+
 
 class Any(DataType):
-    pass
+
+    def valid_literal(self, value):
+        return True
 
 
 class Primitive(DataType):
@@ -216,7 +231,9 @@ class Primitive(DataType):
 
 
 class Null(DataType):
-    pass
+
+    def valid_literal(self, value):
+        return value is None or value is ibis.null
 
 
 class Variadic(DataType):
@@ -224,10 +241,15 @@ class Variadic(DataType):
 
 
 class Boolean(Primitive):
-    pass
+
+    def valid_literal(self, value):
+        return isinstance(value, bool) or (
+            isinstance(value, six.integer_types + (np.integer,)) and
+            (value == 0 or value == 1)
+        )
 
 
-Bounds = namedtuple('Bounds', ('upper', 'lower'))
+Bounds = namedtuple('Bounds', ('lower', 'upper'))
 
 
 class Integer(Primitive):
@@ -244,17 +266,29 @@ class Integer(Primitive):
             (type(self) is Integer or other._nbytes <= self._nbytes)
         )
 
+    def valid_literal(self, value):
+        lower, upper = self.bounds
+        return isinstance(
+            value, six.integer_types + (np.integer,)
+        ) and lower <= value <= upper
+
 
 class String(Variadic):
-    pass
+
+    def valid_literal(self, value):
+        return isinstance(value, six.string_types)
 
 
 class Date(Primitive):
-    pass
+
+    def valid_literal(self, value):
+        return isinstance(value, six.string_types + (datetime.date,))
 
 
 class Timestamp(Primitive):
-    pass
+
+    def valid_literal(self, value):
+        return isinstance(value, six.string_types + (datetime.datetime,))
 
 
 class SignedInteger(Integer):
@@ -271,6 +305,12 @@ class Floating(Primitive):
             return True
         else:
             return False
+
+    def valid_literal(self, value):
+        valid_floating_types = (
+            builtins.float, np.floating, np.integer
+        ) + six.integer_types
+        return isinstance(value, valid_floating_types)
 
 
 class Int8(Integer):
@@ -455,6 +495,9 @@ class Array(Variadic):
             super(Array, self).equals(other, cache=cache) and
             self.value_type.equals(other.value_type, cache=cache)
         )
+
+    def valid_literal(self, value):
+        return isinstance(value, (list, tuple))
 
 
 @parametric
