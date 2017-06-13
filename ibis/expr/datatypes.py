@@ -14,7 +14,6 @@
 
 import re
 import datetime
-import builtins
 
 from collections import namedtuple, OrderedDict
 
@@ -25,6 +24,8 @@ import numpy as np
 import ibis
 import ibis.common as com
 import ibis.util as util
+
+from ibis.compat import builtins
 
 
 class Schema(object):
