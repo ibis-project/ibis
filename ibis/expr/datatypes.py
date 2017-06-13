@@ -242,6 +242,10 @@ class Variadic(DataType):
 class Boolean(Primitive):
 
     def valid_literal(self, value):
+        return isinstance(value, bool) or (
+            isinstance(value, six.integer_types + (np.integer,)) and
+            (value == 0 or value == 1)
+        )
         return value in (True, False, 0, 1)
 
 
