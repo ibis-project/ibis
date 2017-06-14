@@ -138,8 +138,7 @@ def test_greater_comparison_pandas_timestamp(col):
 
 def test_timestamp_precedence():
     ts = ibis.literal(datetime.now())
-    null_ts = ibis.NA
-    highest_type = highest_precedence_type([ts, null_ts])
+    highest_type = highest_precedence_type([ibis.NA, ts])
     assert highest_type == 'timestamp'
 
 

@@ -147,9 +147,9 @@ def highest_precedence_type(exprs):
     if not exprs:
         raise ValueError('Must pass at least one expression')
 
-    type_counts = Counter(expr.type() for expr in exprs)
+    expr_types = {expr.type() for expr in exprs}
     scores = (
-        (_TYPE_PRECEDENCE[k.name.lower()], k) for k, v in type_counts.items()
+        (_TYPE_PRECEDENCE[t.name.lower()], t) for t in expr_types
     )
     _, highest_type = max(scores, key=first)
 
