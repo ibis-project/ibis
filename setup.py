@@ -40,7 +40,7 @@ postgres_requires = sqlite_requires + ['psycopg2']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 pandas_requires = ['multipledispatch']
-turbodbc_requires = ['turbodbc>=2.0.0']
+turbodbc_requires = ['pybind11','pyarrow','turbodbc>=2.0.0']
 
 all_requires = (
     impala_requires +

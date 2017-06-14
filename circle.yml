@@ -5,7 +5,7 @@ machine:
     # upgrade sqlite3 to # make sure we have the "instr" function available
     - sudo apt-get -qq install --only-upgrade sqlite3
     # clang/boost for UDFs and graphviz for visualization
-    - sudo apt-get -qq install clang libboost-dev graphviz
+    - sudo apt-get -qq install clang libboost-dev graphviz unixodbc-dev unixodbc-bin unixodbc
   environment:
     IBIS_TEST_SQLITE_DB_PATH: $HOME/ibis-testing-data/ibis_testing.db
     IBIS_TEST_POSTGRES_DB: circle_test
