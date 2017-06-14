@@ -204,7 +204,11 @@ class IfNull(ValueOp):
     """
 
     input_type = [value, value(name='ifnull_expr')]
-    output_type = rules.type_of_arg(0)
+
+    def output_type(self):
+        args = self.args
+        highest_type = rules.highest_precedence_type(args)
+        return rules.shape_like(args[0], highest_type)
 
 
 class NullIf(ValueOp):
