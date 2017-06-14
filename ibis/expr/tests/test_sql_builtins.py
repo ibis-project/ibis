@@ -111,9 +111,9 @@ def test_fillna(alltypes):
     result = alltypes.bool_col.fillna(True)
     assert isinstance(result, ir.BooleanColumn)
 
-    # Retains type of caller (for now)
+    # Highest precedence type
     result = alltypes.int_col.fillna(alltypes.bigint_col)
-    assert isinstance(result, ir.Int32Column)
+    assert isinstance(result, ir.Int64Column)
 
 
 def test_ceil_floor(alltypes, lineitem):

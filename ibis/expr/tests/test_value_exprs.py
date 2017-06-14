@@ -845,3 +845,15 @@ def test_generic_value_api_no_arithmetic(value, operation):
     expr = ibis.literal(value)
     with pytest.raises(TypeError):
         func(expr, expr)
+
+
+@pytest.mark.parametrize(
+    ('value', 'expected'),
+    [
+        (5, dt.int8),
+        (5.4, dt.double),
+        ('abc', dt.string),
+    ]
+)
+def test_fillna_null(value, expected):
+    assert ibis.NA.fillna(value).type().equals(expected)
