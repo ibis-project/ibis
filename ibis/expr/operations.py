@@ -600,8 +600,7 @@ class BinaryOp(ValueOp):
     input_type = [rules.value(name='left'), rules.value(name='right')]
 
     def __init__(self, left, right):
-        left, right = self._maybe_cast_args(left, right)
-        ValueOp.__init__(self, left, right)
+        super(BinaryOp, self).__init__(*self._maybe_cast_args(left, right))
 
     def _maybe_cast_args(self, left, right):
         return left, right
@@ -714,10 +713,6 @@ class Variance(VarianceBase):
 def _decimal_scalar_ctor(precision, scale):
     out_type = dt.Decimal(precision, scale)
     return ir.DecimalScalar._make_constructor(out_type)
-
-
-class StdDeviation(Reduction):
-    pass
 
 
 def _min_max_output_rule(self):

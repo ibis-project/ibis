@@ -57,7 +57,7 @@ class TestPostgreSQLClient(PostgreSQLTests, unittest.TestCase):
         assert len(self.con.list_tables(like='functional')) == 1
 
     def test_compile_verify(self):
-        unsupported_expr = self.alltypes.string_col.approx_nunique()
+        unsupported_expr = self.alltypes.double_col.approx_median()
         assert not unsupported_expr.verify()
 
         supported_expr = self.alltypes.double_col.sum()

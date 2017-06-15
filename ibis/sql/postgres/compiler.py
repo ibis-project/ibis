@@ -29,7 +29,6 @@ from ibis.sql.alchemy import unary, varargs, fixed_arity, Over
 import ibis.expr.analytics as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 import ibis.expr.window as W
 
 import ibis.sql.alchemy as alch
@@ -327,18 +326,35 @@ def _variance_reduction(func_name):
 
     def variance_compiler(t, expr):
         arg, where, how = expr.op().args
-        func = getattr(sa.func, '%s_%s' % (func_name, suffix.get(how, 'samp')))
 
-        if where is None:
-            return func(t.translate(arg))
-        else:
-            # TODO(wesm): PostgreSQL 9.4 stuff
-            # where_compiled = t.translate(where)
-            # return sa.funcfilter(result, where_compiled)
-            filtered = where.ifelse(ir.null(), arg)
-            return func(t.translate(filtered))
+        if arg.type().equals(dt.boolean):
+            arg = arg.cast('int32')
+
+        func = getattr(
+            sa.func,
+            '{}_{}'.format(func_name, suffix.get(how, 'samp'))
+        )
+
+        if where is not None:
+            arg = where.ifelse(arg, None)
+        return func(t.translate(arg))
 
     return variance_compiler
+
+
+def _reduction(func_name):
+    def reduction_compiler(t, expr):
+        arg, where = expr.op().args
+
+        if arg.type().equals(dt.boolean):
+            arg = arg.cast('int32')
+
+        func = getattr(sa.func, func_name)
+
+        if where is not None:
+            arg = where.ifelse(arg, None)
+        return func(t.translate(arg))
+    return reduction_compiler
 
 
 def _log(t, expr):
@@ -511,6 +527,14 @@ def _identical_to(t, expr):
         return left.op('IS NOT DISTINCT FROM')(right)
 
 
+def _hll_cardinality(t, expr):
+    # postgres doesn't have a builtin HLL algorithm, so we default to standard
+    # count distinct for now
+    arg, _ = expr.op().args
+    sa_arg = t.translate(arg)
+    return sa.func.count(sa.distinct(sa_arg))
+
+
 _operation_registry.update({
     # types
     ops.Cast: _cast,
@@ -574,6 +598,10 @@ _operation_registry.update({
     ops.ExtractMinute: _extract('minute'),
     ops.ExtractSecond: _second,
     ops.ExtractMillisecond: _millisecond,
+    ops.Sum: _reduction('sum'),
+    ops.Mean: _reduction('avg'),
+    ops.Min: _reduction('min'),
+    ops.Max: _reduction('max'),
     ops.Variance: _variance_reduction('var'),
     ops.StandardDev: _variance_reduction('stddev'),
 
@@ -597,6 +625,7 @@ _operation_registry.update({
     ops.ArrayConcat: fixed_arity(operator.add, 2),
     ops.ArrayRepeat: _array_repeat,
     ops.IdenticalTo: _identical_to,
+    ops.HLLCardinality: _hll_cardinality,
 })
 
 
