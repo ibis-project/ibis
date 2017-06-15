@@ -83,7 +83,12 @@ class Expr(object):
         except ImportError:
             return None
         else:
-            return viz.to_graph(self).pipe(format='png')
+            try:
+                return viz.to_graph(self).pipe(format='png')
+            except Exception:
+                # Something may go wrong, and we can't error in the notebook
+                # so fallback to the default text representation.
+                return None
 
     def visualize(self, format='png'):
         """Visualize an expression in the browser as a PNG image.

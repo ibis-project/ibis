@@ -30,6 +30,13 @@ import ibis.expr.types as ir
 import ibis.util as util
 
 
+_table_names = ('t{:d}'.format(i) for i in itertools.count())
+
+
+def genname():
+    return next(_table_names)
+
+
 class TableNode(Node):
 
     def get_type(self, name):
@@ -72,6 +79,8 @@ class PhysicalTable(TableNode, HasSchema):
 class UnboundTable(PhysicalTable):
 
     def __init__(self, schema, name=None):
+        if name is None:
+            name = genname()
         TableNode.__init__(self, [schema, name])
         HasSchema.__init__(self, schema, name=name)
 

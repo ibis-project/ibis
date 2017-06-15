@@ -56,3 +56,21 @@ def test_custom_expr():
     expr = op.to_expr()
     graph = viz.to_graph(expr)
     assert str(hash(repr(op))) in graph.source
+
+
+@pytest.mark.parametrize(
+    'how',
+    [
+        'inner',
+        'left',
+        pytest.mark.xfail('right', raises=KeyError, reason='NYI'),
+        'outer',
+    ]
+)
+def test_join(how):
+    left = ibis.table([('a', 'int64'), ('b', 'string')])
+    right = ibis.table([('b', 'string'), ('c', 'int64')])
+    joined = left.join(right, left.b == right.b, how=how)
+    result = joined[left.a, right.c]
+    graph = viz.to_graph(result)
+    assert str(hash(repr(result.op()))) in graph.source

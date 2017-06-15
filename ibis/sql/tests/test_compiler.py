@@ -17,7 +17,6 @@ import unittest
 import pytest
 
 import ibis
-import ibis.common as com
 import ibis.expr.api as api
 import ibis.expr.operations as ops
 
@@ -807,9 +806,11 @@ class TestSelectSQL(unittest.TestCase, ExprTestCases):
         assert result == expected
 
     def test_nameless_table(self):
-        # Ensure that user gets some kind of sensible error
+        # Generate a unique table name when we haven't passed on
         nameless = api.table([('key', 'string')])
-        self.assertRaises(com.RelationError, to_sql, nameless)
+        assert to_sql(nameless) == 'SELECT *\nFROM {}'.format(
+            nameless.op().name
+        )
 
         with_name = api.table([('key', 'string')], name='baz')
         result = to_sql(with_name)
