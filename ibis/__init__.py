@@ -41,7 +41,7 @@ except ImportError:  # pip install ibis-framework[postgres]
 
 try:
     import ibis.pandas.api as pandas
-except ImportError:  # pip install  ibis-framework[pandas]
+except ImportError:  # pip install ibis-framework[pandas]
     pass
 
 import ibis.config_init

@@ -10,6 +10,7 @@ machine:
     IBIS_TEST_SQLITE_DB_PATH: $HOME/ibis-testing-data/ibis_testing.db
     IBIS_TEST_POSTGRES_DB: circle_test
     IBIS_TEST_CRUNCHBASE_DB: $HOME/crunchbase.db
+    IBIS_DIAMONDS_CSV: $HOME/diamonds.csv
 
     # The following environment variables are necessary to run impala tests
     IBIS_TEST_IMPALA_HOST: impala
@@ -20,6 +21,9 @@ machine:
   post:
     # download the crunchbase sqlite database, for lineage testing
     - wget https://storage.googleapis.com/ibis-ci-data/crunchbase.db
+
+    # diamonds csv for dplyr API
+    - wget https://storage.googleapis.com/ibis-ci-data/diamonds.csv
 
     # download the data
     - wget https://storage.googleapis.com/ibis-ci-data/ibis-testing-data.tar.gz
