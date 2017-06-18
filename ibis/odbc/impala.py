@@ -45,6 +45,9 @@ def connect(dsn=None, connection_string=None, turbodbc_options=None,
     ImpalaClient
     """
 
+    if turbodbc_options is None:
+        turbodbc_options = {}
+
     con = ImpalaODBCConnection(pool_size=pool_size,
                                connection_string=connection_string,
                                dsn=dsn, nthreads=nthreads,
