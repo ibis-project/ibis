@@ -104,18 +104,14 @@ class ImpalaODBCConnection(ImpalaConnection):
 
         return cursor
 
-    def fetchall(self, query):
-        with self.execute(query) as cur:
-            results = cur.fetchall(self.params['nthreads'])
-        return results
-
 
 class ImpalaODBCCursor(ImpalaCursor):
     def execute(self, stmt):
         self._cursor.execute(stmt)
 
-    def fetchall(self, nthreads):
-        return self._cursor.fetchallarrow().to_pandas()
+    def fetchall(self):
+        nthreads = self.con.params['nthreads']
+        return self._cursor.fetchallarrow().to_pandas(nthreads=nthreads)
 
 
 class ImpalaODBCQuery(Query):
