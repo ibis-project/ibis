@@ -18,11 +18,12 @@ from ibis.impala.client import (ImpalaConnection,
                                 ImpalaClient,
                                 ImpalaCursor)
 from ibis.config import options
-from ibis.client import (Query)
+from ibis.client import Query
+from ibis.sql.compiler import DDL
 
 
 def connect(dsn=None, connection_string=None, turbodbc_options=None,
-            hdfs_client=None, pool_size=8):
+            nthreads=None, hdfs_client=None, pool_size=8):
     """
     Using ODBC  to create ImpalaClient connection.
 
@@ -36,6 +37,8 @@ def connect(dsn=None, connection_string=None, turbodbc_options=None,
         same time raises ParameterError
     turbodbc_options : dict, optional
         to be passed to turbodbc_options
+    nthreads : int, default max(1, multiprocessing.cpu_count() / 2)
+        to be passed to pyarrow.to_pandas() from turbodbc
 
     Returns
     -------
@@ -44,7 +47,7 @@ def connect(dsn=None, connection_string=None, turbodbc_options=None,
 
     con = ImpalaODBCConnection(pool_size=pool_size,
                                connection_string=connection_string,
-                               dsn=dsn,
+                               dsn=dsn, nthreads=nthreads,
                                turbodbc_options=turbodbc_options)
 
     try:
@@ -83,7 +86,7 @@ class ImpalaODBCConnection(ImpalaConnection):
         self._get_cursor()
 
     def execute(self, query, async=False):
-        if isinstance(query):
+        if isinstance(query, DDL):
             query = query.compile()
 
         cursor = self._get_cursor()
@@ -98,12 +101,17 @@ class ImpalaODBCConnection(ImpalaConnection):
 
         return cursor
 
+    def fetchall(self, query):
+        with self.execute(query) as cur:
+            results = cur.fetchall(self.params['nthreads'])
+        return results
+
 
 class ImpalaODBCCursor(ImpalaCursor):
     def execute(self, stmt):
         self._cursor.execute(stmt)
 
-    def fetchall(self):
+    def fetchall(self, nthreads):
         return self._cursor.fetchallarrow().to_pandas()
 
 
