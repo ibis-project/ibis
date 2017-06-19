@@ -13,7 +13,6 @@ import pandas.util.testing as tm  # noqa: E402
 import ibis  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 from ibis import literal as L  # noqa: E402
-from ibis.pandas.api import connect, execute  # noqa: E402
 
 
 @pytest.fixture
@@ -49,7 +48,7 @@ def df2():
 
 @pytest.fixture
 def client(df, df1, df2):
-    return connect(
+    return ibis.pandas.connect(
         {'df': df, 'df1': df1, 'df2': df2, 'left': df1, 'right': df2}
     )
 
@@ -171,7 +170,7 @@ def test_timestamp_functions(case_func, expected_func):
     )
     result = case_func(v)
     expected = expected_func(vt)
-    assert execute(result) == expected
+    assert ibis.pandas.execute(result) == expected
 
 
 @pytest.mark.parametrize(
