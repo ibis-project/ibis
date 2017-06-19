@@ -15,6 +15,7 @@
 import os
 import datetime
 import webbrowser
+import warnings
 
 import six
 import toolz
@@ -1011,6 +1012,13 @@ class TimestampValue(AnyValue):
     def _can_implicit_cast(self, arg):
         op = arg.op()
         if isinstance(op, Literal):
+            if isinstance(op.value, six.integer_types):
+                warnings.warn(
+                    'Integer values for timestamp literals are deprecated in '
+                    '0.11.0 and will be removed in 0.12.0. To pass integers '
+                    'as timestamp literals, use '
+                    'pd.Timestamp({:d}, unit=...)'.format(op.value)
+                )
             try:
                 import pandas as pd
                 pd.Timestamp(op.value)
