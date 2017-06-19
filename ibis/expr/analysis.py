@@ -170,7 +170,7 @@ def find_immediate_parent_tables(expr):
     Examples
     --------
     >>> import ibis, toolz
-    >>> t = ibis.table([('a', 'int64')])
+    >>> t = ibis.table([('a', 'int64')], name='t')
     >>> expr = t.mutate(foo=t.a + 1)
     >>> result = list(find_immediate_parent_tables(expr))
     >>> len(result)
@@ -178,7 +178,7 @@ def find_immediate_parent_tables(expr):
     >>> result[0]  # doctest: +NORMALIZE_WHITESPACE
     ref_0
     UnboundTable[table]
-      name: None
+      name: t
       schema:
         a : int64
     Selection[table]
@@ -992,12 +992,12 @@ def find_source_table(expr):
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.table([('a', 'double'), ('b', 'string')])
+    >>> t = ibis.table([('a', 'double'), ('b', 'string')], name='t')
     >>> expr = t.mutate(c=t.a + 42.0)
     >>> expr  # doctest: +NORMALIZE_WHITESPACE
     ref_0
     UnboundTable[table]
-      name: None
+      name: t
       schema:
         a : double
         b : string
@@ -1015,7 +1015,7 @@ def find_source_table(expr):
               42.0
     >>> find_source_table(expr)
     UnboundTable[table]
-      name: None
+      name: t
       schema:
         a : double
         b : string
@@ -1072,7 +1072,7 @@ def flatten_predicate(expr):
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.table([('a', 'int64'), ('b', 'string')])
+    >>> t = ibis.table([('a', 'int64'), ('b', 'string')], name='t')
     >>> filt = (t.a == 1) & (t.b == 'foo')
     >>> predicates = flatten_predicate(filt)
     >>> len(predicates)
@@ -1080,7 +1080,7 @@ def flatten_predicate(expr):
     >>> predicates[0]  # doctest: +NORMALIZE_WHITESPACE
     ref_0
     UnboundTable[table]
-      name: None
+      name: t
       schema:
         a : int64
         b : string
@@ -1094,7 +1094,7 @@ def flatten_predicate(expr):
     >>> predicates[1]  # doctest: +NORMALIZE_WHITESPACE
     ref_0
     UnboundTable[table]
-      name: None
+      name: t
       schema:
         a : int64
         b : string

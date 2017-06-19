@@ -224,13 +224,13 @@ class TestExprFormatting(unittest.TestCase):
 
 
 def test_argument_repr_shows_name():
-    t = ibis.table([('a', 'int64')])
+    t = ibis.table([('a', 'int64')], name='t')
     expr = t.a.nullif(2)
     result = repr(expr)
     expected = """\
 ref_0
 UnboundTable[table]
-  name: None
+  name: t
   schema:
     a : int64
 
