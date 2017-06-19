@@ -151,6 +151,8 @@ def test_timestamp_cast_noop(alltypes, at, translate):
         (methodcaller('minute'), 48),
         (methodcaller('second'), 5),
         (methodcaller('millisecond'), 359),
+        (lambda x: x.day_of_week.index(), 3),
+        (lambda x: x.day_of_week.name(), 'Tuesday'),
     ]
 )
 def test_simple_datetime_operations(con, func, expected, translate):

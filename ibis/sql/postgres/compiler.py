@@ -587,6 +587,16 @@ def _literal(t, expr):
         return sa.literal(expr.op().value)
 
 
+def _day_of_week_index(t, expr):
+    sa_arg, = map(t.translate, expr.op().args)
+    return sa.cast(sa.func.to_char(sa_arg, 'D'), sa.INTEGER)
+
+
+def _day_of_week_name(t, expr):
+    sa_arg, = map(t.translate, expr.op().args)
+    return sa.func.trim(sa.func.to_char(sa_arg, 'Day'))
+
+
 _operation_registry.update({
     ir.Literal: _literal,
 
@@ -647,6 +657,8 @@ _operation_registry.update({
     ops.ExtractMinute: _extract('minute'),
     ops.ExtractSecond: _second,
     ops.ExtractMillisecond: _millisecond,
+    ops.DayOfWeekIndex: _day_of_week_index,
+    ops.DayOfWeekName: _day_of_week_name,
     ops.Sum: _reduction('sum'),
     ops.Mean: _reduction('avg'),
     ops.Min: _reduction('min'),

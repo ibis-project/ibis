@@ -2469,6 +2469,18 @@ class ExtractMonth(ExtractTemporalField):
     pass
 
 
+class DayOfWeekIndex(UnaryOp):
+
+    input_type = [rules.temporal]
+    output_type = rules.shape_like_arg(0, 'int32')
+
+
+class DayOfWeekName(UnaryOp):
+
+    input_type = [rules.temporal]
+    output_type = rules.shape_like_arg(0, 'string')
+
+
 class ExtractDay(ExtractTemporalField):
     pass
 
