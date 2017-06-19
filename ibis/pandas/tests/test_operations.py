@@ -615,3 +615,16 @@ def test_group_by_multiple_keys(t, df):
         {'plain_float64': 'mean'}
     ).reset_index().rename(columns={'plain_float64': 'avg_plain_float64'})
     tm.assert_frame_equal(result, expected)
+
+
+def test_mutate_after_group_by(t, df):
+    gb = t.groupby(t.dup_strings).aggregate(
+        avg_plain_float64=t.plain_float64.mean()
+    )
+    expr = gb.mutate(x=gb.avg_plain_float64)
+    result = expr.execute()
+    expected = df.groupby('dup_strings').agg(
+        {'plain_float64': 'mean'}
+    ).reset_index().rename(columns={'plain_float64': 'avg_plain_float64'})
+    expected = expected.assign(x=expected.avg_plain_float64)
+    tm.assert_frame_equal(result, expected)

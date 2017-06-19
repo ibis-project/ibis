@@ -117,24 +117,32 @@ def execute_selection_dataframe(op, data, scope=None):
     result = data
 
     if selections:
-        columns = []
+        data_pieces = []
         for s in selections:
-            try:
-                # TODO(phillipc): This is kind of a hack. We need a way to
-                # evaluate whether we can pull the columns directly out of a
-                # materialized join, or possibly invent new expressions that
-                # let us do so
-                new_scope = {s.op().table: data}
-            except AttributeError:
-                new_scope = scope
+            if op.table is s:
+                pandas_object = data
+            elif isinstance(s, ir.ColumnExpr):
+                if isinstance(op.table.op(), ops.Join):
+                    pandas_object = execute(
+                        s, toolz.merge(scope, {s.op().table: data})
+                    )
+                else:
+                    pandas_object = execute(
+                        s, toolz.merge(scope, {op.table: data})
+                    )
+            else:
+                raise TypeError(
+                    "Don't know how to compute selection of type {}".format(
+                        type(s).__name__
+                    )
+                )
 
-            pandas_object = execute(s, new_scope)
             if isinstance(pandas_object, pd.Series):
                 pandas_object = pandas_object.rename(
                     getattr(s, '_name', pandas_object.name)
                 )
-            columns.append(pandas_object)
-        result = pd.concat(columns, axis=1)
+            data_pieces.append(pandas_object)
+        result = pd.concat(data_pieces, axis=1)
 
     if predicates:
         where = functools.reduce(
@@ -143,6 +151,7 @@ def execute_selection_dataframe(op, data, scope=None):
         result = result.loc[where]
 
     column_names = list(result.columns)
+
     if sort_keys:
 
         computed_sort_keys = [None] * len(sort_keys)
