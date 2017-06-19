@@ -18,7 +18,6 @@ from ibis.impala.client import (ImpalaConnection,
                                 ImpalaClient,
                                 ImpalaCursor)
 from ibis.config import options
-from ibis.client import Query
 from ibis.sql.compiler import DDL
 
 
@@ -116,4 +115,3 @@ class ImpalaODBCCursor(ImpalaCursor):
             return self._cursor.fetchallarrow().to_pandas(nthreads=nthreads)
         else:
             return self._cursor.fetchall()
-
