@@ -92,9 +92,7 @@ class TestSQLiteClient(SQLiteTests, unittest.TestCase):
         assert db.list_tables() == self.con.list_tables()
 
     def test_compile_toplevel(self):
-        t = ibis.table([
-            ('foo', 'double')
-        ])
+        t = ibis.table([('foo', 'double')], name='t0')
 
         # it works!
         expr = t.foo.sum()

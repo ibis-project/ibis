@@ -5,6 +5,8 @@ import graphviz as g
 
 from ibis.compat import zip_longest
 
+import ibis
+import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
@@ -13,6 +15,8 @@ def get_args(node):
 
     if isinstance(node, (ops.Aggregation, ops.Selection)):
         return get_args_selection_aggregation(node)
+    elif isinstance(node, ops.Join):
+        return get_args_join(node)
     else:
         args = (arg for arg in node.args if isinstance(arg, ir.Expr))
         try:
@@ -46,6 +50,19 @@ def get_args_selection_aggregation(node):
     )
 
 
+def get_args_join(node):
+    return zip(
+        [node.left, node.right] + node.predicates,
+        ['left', 'right'] + list(itertools.chain.from_iterable(
+            [
+                '{}[{:d}]'.format(argname, i)
+                for i in range(len(getattr(node, argname)))
+            ] or [None]
+            for argname in node._arg_names if argname not in {'left', 'right'}
+        ))
+    )
+
+
 def get_type(expr):
     try:
         return str(expr.type())
@@ -55,18 +72,31 @@ def get_type(expr):
     try:
         schema = expr.schema()
     except AttributeError:
-        pass
-    else:
-        return ''.join(
-            '<BR ALIGN="LEFT" />  <I>{}</I>: {}'.format(name, type)
-            for name, type in zip(schema.names, schema.types)
-        ) + '<BR ALIGN="LEFT" />'
+        try:
+            # As a last resort try get the name of the output_type class
+            return expr.op().output_type().__name__
+        except AttributeError:
+            return '\u2205'  # empty set character
+    except com.IbisError:
+        op = expr.op()
+        assert isinstance(op, ops.Join)
+        left_table_name = op.left.op().name or ops.genname()
+        left_schema = op.left.schema()
+        right_table_name = op.right.op().name or ops.genname()
+        right_schema = op.right.schema()
+        pairs = [
+            ('{}.{}'.format(left_table_name, left_column), type)
+            for left_column, type in left_schema.items()
+        ] + [
+            ('{}.{}'.format(right_table_name, right_column), type)
+            for right_column, type in right_schema.items()
+        ]
+        schema = ibis.schema(pairs)
 
-    try:
-        # As a last resort try get the name of the output_type class
-        return expr.op().output_type().__name__
-    except AttributeError:
-        return '\u2205'  # empty set character
+    return ''.join(
+        '<BR ALIGN="LEFT" />  <I>{}</I>: {}'.format(name, type)
+        for name, type in zip(schema.names, schema.types)
+    ) + '<BR ALIGN="LEFT" />'
 
 
 def get_label(expr, argname=None):
@@ -158,14 +188,16 @@ def draw(graph, path=None, format='png'):
 
 
 if __name__ == '__main__':
-    import ibis
-
     t = ibis.table(
         [('a', 'int64'), ('b', 'double'), ('c', 'string')], name='t'
     )
-    a = t.a
-    b = t.b
-    filt = t[(a + b * 2 * b / b ** 3 > 4) & (b > 5)]
+    left = ibis.table([('a', 'int64'), ('b', 'string')])
+    right = ibis.table([('b', 'string'), ('c', 'int64'), ('d', 'string')])
+    joined = left.inner_join(right, left.b == right.b)
+    df = joined[left.a, right.c.name('b'), right.d.name('c')]
+    a = df.a
+    b = df.b
+    filt = df[(a + b * 2 * b / b ** 3 > 4) & (b > 5)]
     expr = filt.groupby(filt.c).aggregate(
         amean=filt.a.mean(),
         bsum=filt.b.sum(),
