@@ -286,8 +286,11 @@ class ImpalaQuery(Query):
 
     def _fetch(self, cursor):
         batches = cursor.fetchall(columnar=True)
-        names = [x[0] for x in cursor.description]
-        return _column_batches_to_dataframe(names, batches)
+        try:
+            names = [x[0] for x in cursor.description]
+            return _column_batches_to_dataframe(names, batches)
+        except AttributeError:
+            return batches
 
     def _db_type_to_dtype(self, db_type):
         return _HS2_TTypeId_to_dtype[db_type]

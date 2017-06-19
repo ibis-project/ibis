@@ -54,7 +54,7 @@ def connect(dsn=None, connection_string=None, turbodbc_options=None,
                                turbodbc_options=turbodbc_options)
 
     try:
-        client = ImpalaODBCCLient(con, hdfs_client=hdfs_client)
+        client = ImpalaClient(con, hdfs_client=hdfs_client)
 
         if options.default_backend is None:
             options.default_backend = client
@@ -105,39 +105,39 @@ class ImpalaODBCConnection(ImpalaConnection):
         return cursor
 
 
-class ImpalaODBCCLient(ImpalaClient):
-
-    def describe_formatted(self, name, database=None):
-        """
-        Retrieve results of DESCRIBE FORMATTED command. See Impala
-        documentation for more.
-
-        Parameters
-        ----------
-        name : string
-          Table name. Can be fully qualified (with database)
-        database : string, optional
-        """
-        from ibis.impala.metadata import parse_metadata
-
-        stmt = self._table_command('DESCRIBE FORMATTED',
-                                   name, database=database)
-        query = ImpalaODBCQuery(self, stmt)
-        result = query.execute()
-
-        # Leave formatting to pandas
-        for c in result.columns:
-            result[c] = result[c].str.strip()
-
-        return parse_metadata(result)
-
-
-    def _exec_statement(self, stmt, adapter=None):
-        query = ImpalaODBCQuery(self, stmt)
-        result = query.execute()
-        if adapter is not None:
-            result = adapter(result)
-        return result
+# class ImpalaODBCCLient(ImpalaClient):
+#
+#     def describe_formatted(self, name, database=None):
+#         """
+#         Retrieve results of DESCRIBE FORMATTED command. See Impala
+#         documentation for more.
+#
+#         Parameters
+#         ----------
+#         name : string
+#           Table name. Can be fully qualified (with database)
+#         database : string, optional
+#         """
+#         from ibis.impala.metadata import parse_metadata
+#
+#         stmt = self._table_command('DESCRIBE FORMATTED',
+#                                    name, database=database)
+#         query = ImpalaODBCQuery(self, stmt)
+#         result = query.execute()
+#
+#         # Leave formatting to pandas
+#         for c in result.columns:
+#             result[c] = result[c].str.strip()
+#
+#         return parse_metadata(result)
+#
+#
+#     def _exec_statement(self, stmt, adapter=None):
+#         query = ImpalaODBCQuery(self, stmt)
+#         result = query.execute()
+#         if adapter is not None:
+#             result = adapter(result)
+#         return result
 
 class ImpalaODBCCursor(ImpalaCursor):
 
