@@ -498,7 +498,7 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
         # not available
         import ibis.config as config
 
-        expr = self.alltypes.double_col.approx_nunique()
+        expr = self.alltypes.double_col.approx_median()
 
         with config.option_context('interactive', True):
             result = repr(expr)
@@ -1036,3 +1036,35 @@ def test_date_extract_field(db, attr, expected):
     expr = attr(t.timestamp_col.cast('date')).distinct()
     result = expr.execute().astype(int)
     assert set(result) == expected
+
+
+@pytest.mark.postgresql
+@pytest.mark.parametrize(
+    'op',
+    list(map(
+        operator.methodcaller, ['sum', 'mean', 'min', 'max', 'std', 'var']
+    ))
+)
+def test_boolean_reduction(con, op):
+    t = con.table('functional_alltypes').bool_col
+    result = op(t).execute()
+    assert result == op(t.execute()).sum()
+
+
+@pytest.mark.postgresql
+def test_boolean_summary(con):
+    t = con.table('functional_alltypes').bool_col
+    result = t.summary().execute()
+    expected = pd.DataFrame(
+        [[7300, 0, 0, 1, 3650, 0.5, 2]],
+        columns=[
+            'count',
+            'nulls',
+            'min',
+            'max',
+            'sum',
+            'mean',
+            'approx_nunique',
+        ]
+    )
+    tm.assert_frame_equal(result, expected)
