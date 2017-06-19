@@ -9,9 +9,9 @@ import ibis.expr.types as ir
 
 
 try:
-    infer_dtype = pd.lib.infer_dtype
-except AttributeError:
     infer_dtype = pd.api.types.infer_dtype
+except AttributeError:
+    infer_dtype = pd.lib.infer_dtype
 
 
 _DTYPE_TO_IBIS_TYPE = {
