@@ -494,7 +494,7 @@ class MultipleTypes(Argument):
 
     def __init__(self, types, **arg_kwds):
         self.types = [_to_argument(t) for t in types]
-        Argument.__init__(self, **arg_kwds)
+        super(MultipleTypes, self).__init__(**arg_kwds)
 
     def _validate(self, args, i):
         for t in self.types:
@@ -556,14 +556,21 @@ def column(value_type=None, name=None, optional=False):
     if value_type is None:
         return array_checker
     else:
-        return MultipleTypes([array_checker, value_type],
-                             name=name,
-                             optional=optional)
+        return MultipleTypes(
+            [array_checker, value_type], name=name, optional=optional
+        )
 
 
-def scalar(name=None, optional=False):
-    return ValueTyped(ir.ScalarExpr, 'not a scalar expr', name=name,
-                      optional=optional)
+def scalar(value_type=None, name=None, optional=False):
+    scalar_checker = ValueTyped(
+        ir.ScalarExpr, 'not a scalar expr', name=name, optional=optional
+    )
+    if value_type is None:
+        return scalar_checker
+    else:
+        return MultipleTypes(
+            [scalar_checker, value_type], name=name, optional=optional
+        )
 
 
 def collection(name=None, optional=False):
