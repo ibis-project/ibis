@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
+
 import six
 import toolz
 
@@ -152,6 +154,12 @@ def timestamp(value):
     if isinstance(value, six.string_types):
         from pandas import Timestamp
         value = Timestamp(value)
+    if isinstance(value, six.integer_types):
+        warnings.warn(
+            'Integer values for timestamp literals are deprecated in 0.11.0 '
+            'and will be removed in 0.12.0. To pass integers as timestamp '
+            'literals, use pd.Timestamp({:d}, unit=...)'.format(value)
+        )
     return ir.TimestampScalar(ir.literal(value).op())
 
 
