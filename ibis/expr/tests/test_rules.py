@@ -1,5 +1,6 @@
 import pytest
 
+import ibis
 from ibis.common import IbisTypeError
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -120,3 +121,17 @@ def test_argument_docstring():
 
     op = MyOp(1)
     assert type(op).foo.__doc__ == doc
+
+
+def test_scalar_value_type():
+
+    class MyOp(ops.ValueOp):
+
+        input_type = [rules.scalar(value_type=rules.number)]
+        output_type = rules.double
+
+    with pytest.raises(IbisTypeError):
+        MyOp('a')
+
+    assert MyOp(1).args[0].equals(ibis.literal(1))
+    assert MyOp(1.42).args[0].equals(ibis.literal(1.42))
