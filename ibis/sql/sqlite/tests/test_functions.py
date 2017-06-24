@@ -16,6 +16,7 @@ import os
 import uuid
 import unittest
 import operator
+import math
 
 import pytest
 
@@ -117,7 +118,7 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             (L(3) - L(4), -1),
             (L(3) * L(4), 12),
             (L(12) / L(4), 3),
-            # (L(12) ** L(2), 144),
+            (L(12) ** L(2), 144),
             (L(12) % L(5), 2)
         ]
         self._check_e2e_cases(cases)
@@ -218,6 +219,7 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
 
             (L(5.5).round(), 6.0),
             (L(5.556).round(2), 5.56),
+            (L(5.556).sqrt(), math.sqrt(5.556)),
         ]
         self._check_e2e_cases(cases)
 
@@ -345,12 +347,16 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             d.mean(),
             d.min(),
             d.max(),
+            d.std(),
+            d.var(),
 
             table.bool_col.count(where=cond),
             d.sum(where=cond),
             d.mean(where=cond),
             d.min(where=cond),
             d.max(where=cond),
+            d.std(where=cond),
+            d.var(where=cond),
 
             s.group_concat(),
         ]

@@ -161,6 +161,30 @@ def _to_sqla_type(itype, type_map=None):
         return type_map[type(itype)]
 
 
+def _variance_reduction(func_name):
+    suffix = {
+        'sample': 'samp',
+        'pop': 'pop'
+    }
+
+    def variance_compiler(t, expr):
+        arg, where, how = expr.op().args
+
+        if arg.type().equals(dt.boolean):
+            arg = arg.cast('int32')
+
+        func = getattr(
+            sa.func,
+            '{}_{}'.format(func_name, suffix.get(how, 'samp'))
+        )
+
+        if where is not None:
+            arg = where.ifelse(arg, None)
+        return func(t.translate(arg))
+
+    return variance_compiler
+
+
 def fixed_arity(sa_func, arity):
     if isinstance(sa_func, six.string_types):
         sa_func = getattr(sa.func, sa_func)
