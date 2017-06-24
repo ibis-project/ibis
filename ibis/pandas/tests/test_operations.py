@@ -627,3 +627,16 @@ def test_mutate_after_group_by(t, df):
     ).reset_index().rename(columns={'plain_float64': 'avg_plain_float64'})
     expected = expected.assign(x=expected.avg_plain_float64)
     tm.assert_frame_equal(result, expected)
+
+
+def test_groupby_with_unnamed_arithmetic(t, df):
+    expr = t.groupby(t.dup_strings).aggregate(
+        naive_variance=(
+            (t.plain_float64 ** 2).sum() - t.plain_float64.mean() ** 2
+        ) / t.plain_float64.count()
+    )
+    result = expr.execute()
+    expected = df.groupby('dup_strings').agg({
+        'plain_float64': lambda x: ((x ** 2).sum() - x.mean() ** 2) / x.count()
+    }).reset_index().rename(columns={'plain_float64': 'naive_variance'})
+    tm.assert_frame_equal(result, expected)

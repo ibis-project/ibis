@@ -186,11 +186,10 @@ def execute_aggregation_dataframe(op, data, scope=None):
 
     predicates = op.predicates
     if predicates:
-        data = data.loc[
-            functools.reduce(
-                operator.and_, (execute(p, scope) for p in predicates)
-            )
-        ]
+        predicate = functools.reduce(
+            operator.and_, (execute(p, scope) for p in predicates)
+        )
+        data = data.loc[predicate]
 
     if op.by:
         source = data.groupby([execute(by, scope) for by in op.by])
@@ -205,13 +204,13 @@ def execute_aggregation_dataframe(op, data, scope=None):
     for arg in first_args:
         try:
             first_arg_name = arg.get_name()
-        except AttributeError:
+        except (AttributeError, com.ExpressionError):
             first_arg_name = None
         first_arg_names.append(first_arg_name)
 
     pieces = []
 
-    index_name = [None] if not op.by else [b.get_name() for b in op.by]
+    index_name = [b.get_name() for b in op.by] if op.by else [None]
 
     for metric, first_arg, first_arg_name in zip(
         metrics, first_args, first_arg_names
