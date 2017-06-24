@@ -588,6 +588,7 @@ _operation_registry.update({
     ops.Ln: fixed_arity(sa.func.ln, 1),
     ops.Log2: fixed_arity(lambda x: sa.func.log(2, x), 1),
     ops.Log10: fixed_arity(sa.func.log, 1),
+    ops.Power: fixed_arity(sa.func.power, 2),
 
     # dates and times
     ops.Strftime: _strftime,
