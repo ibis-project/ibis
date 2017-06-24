@@ -148,7 +148,7 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
             (L(3) - L(4), -1),
             (L(3) * L(4), 12),
             (L(12) / L(4), 3),
-            # (L(12) ** L(2), 144),
+            (L(12) ** L(2), 144),
             (L(12) % L(5), 2)
         ]
         self._check_e2e_cases(cases)
