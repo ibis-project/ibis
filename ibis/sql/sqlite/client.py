@@ -14,6 +14,7 @@
 
 import os
 import re
+import math
 import inspect
 import functools
 
@@ -91,15 +92,80 @@ def _ibis_sqlite_regex_extract(string, pattern, index):
         return None
 
 
-def _register_function(func, con):
-    """Register a Python callable with a SQLite connection `con`.
+def _ibis_sqlite_power(arg, power):
+    """Raise `arg` to the `power` power.
 
     Parameters
     ----------
-    func : callable
-    con : sqlalchemy.Connection
+    arg : number
+        Number to raise to `power`.
+    power : number
+        Number to raise `arg` to.
+
+    Returns
+    -------
+    result : Optional[number]
+        None If either argument is None or we're trying to take a fractional
+        power or a negative number
     """
-    argspec = inspect.getargspec(func)
+    if arg is None or power is None or (arg < 0.0 and not power.is_integer()):
+        return None
+    return arg ** power
+
+
+def _ibis_sqlite_sqrt(arg):
+    """Square root of `arg`.
+
+    Parameters
+    ----------
+    arg : Optional[number]
+        Number to take the square root of
+
+    Returns
+    -------
+    result : Optional[number]
+        None if `arg` is None or less than 0 otherwise the square root
+    """
+    return None if arg is None or arg < 0.0 else math.sqrt(arg)
+
+
+class _ibis_sqlite_var(object):
+
+    def __init__(self, offset):
+        self.mean = 0.0
+        self.sum_of_squares_of_differences = 0.0
+        self.count = 0
+        self.offset = offset
+
+    def step(self, value):
+        if value is None:
+            return
+
+        self.count += 1
+        delta = value - self.mean
+        self.mean = delta
+        self.sum_of_squares_of_differences += delta * (value - self.mean)
+
+    def finalize(self):
+        if not self.count:
+            return None
+        return self.sum_of_squares_of_differences / (self.count - self.offset)
+
+
+class _ibis_sqlite_var_pop(_ibis_sqlite_var):
+
+    def __init__(self):
+        super(_ibis_sqlite_var_pop, self).__init__(0)
+
+
+class _ibis_sqlite_var_samp(_ibis_sqlite_var):
+
+    def __init__(self):
+        super(_ibis_sqlite_var_samp, self).__init__(1)
+
+
+def number_of_arguments(callable):
+    argspec = inspect.getargspec(callable)
 
     if argspec.varargs is not None:
         raise TypeError(
@@ -118,10 +184,31 @@ def _register_function(func, con):
             'Keyword arguments not implemented for Ibis SQLite function '
             'registration'
         )
+    return len(argspec.args)
 
-    con.connection.connection.create_function(
-        func.__name__, len(argspec.args), func
-    )
+
+def _register_function(func, con):
+    """Register a Python callable with a SQLite connection `con`.
+
+    Parameters
+    ----------
+    func : callable
+    con : sqlalchemy.Connection
+    """
+    nargs = number_of_arguments(func)
+    con.connection.connection.create_function(func.__name__, nargs, func)
+
+
+def _register_aggregate(agg, con):
+    """Register a Python class that performs aggregation in SQLite.
+
+    Parameters
+    ----------
+    agg : type
+    con : sqlalchemy.Connection
+    """
+    nargs = number_of_arguments(agg.step) - 1  # because self
+    con.connection.connection.create_aggregate(agg.__name__, nargs, agg)
 
 
 class SQLiteClient(alch.AlchemyClient):
@@ -145,8 +232,13 @@ class SQLiteClient(alch.AlchemyClient):
             _ibis_sqlite_regex_search,
             _ibis_sqlite_regex_replace,
             _ibis_sqlite_regex_extract,
+            _ibis_sqlite_power,
+            _ibis_sqlite_sqrt,
         ):
             self.con.run_callable(functools.partial(_register_function, func))
+
+        for agg in (_ibis_sqlite_var_pop, _ibis_sqlite_var_samp):
+            self.con.run_callable(functools.partial(_register_aggregate, agg))
 
     @property
     def current_database(self):

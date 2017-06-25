@@ -14,7 +14,9 @@
 
 import sqlalchemy as sa
 
-from ibis.sql.alchemy import unary, varargs, fixed_arity
+import toolz
+
+from ibis.sql.alchemy import unary, varargs, fixed_arity, _variance_reduction
 import ibis.sql.alchemy as alch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -104,22 +106,6 @@ def _infix_op(infix_sym):
     return formatter
 
 
-def _re_search(t, expr):
-    return sa.func._ibis_sqlite_regex_search(*map(t.translate, expr.op().args))
-
-
-def _re_replace(t, expr):
-    return sa.func._ibis_sqlite_regex_replace(
-        *map(t.translate, expr.op().args)
-    )
-
-
-def _re_extract(t, expr):
-    return sa.func._ibis_sqlite_regex_extract(
-        *map(t.translate, expr.op().args)
-    )
-
-
 def _strftime(t, expr):
     arg, format = expr.op().args
     sa_arg = t.translate(arg)
@@ -193,9 +179,16 @@ _operation_registry.update({
     ops.ExtractMillisecond: _millisecond,
     ops.TimestampNow: _now,
     ops.IdenticalTo: _identical_to,
-    ops.RegexSearch: _re_search,
-    ops.RegexReplace: _re_replace,
-    ops.RegexExtract: _re_extract,
+    ops.RegexSearch: fixed_arity(sa.func._ibis_sqlite_regex_search, 2),
+    ops.RegexReplace: fixed_arity(sa.func._ibis_sqlite_regex_replace, 3),
+    ops.RegexExtract: fixed_arity(sa.func._ibis_sqlite_regex_extract, 3),
+    ops.Sqrt: fixed_arity(sa.func._ibis_sqlite_sqrt, 1),
+    ops.Power: fixed_arity(sa.func._ibis_sqlite_power, 2),
+    ops.Variance: _variance_reduction('_ibis_sqlite_var'),
+    ops.StandardDev: toolz.compose(
+        sa.func._ibis_sqlite_sqrt,
+        _variance_reduction('_ibis_sqlite_var')
+    ),
 })
 
 

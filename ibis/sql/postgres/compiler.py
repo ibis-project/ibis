@@ -25,7 +25,9 @@ import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
-from ibis.sql.alchemy import unary, varargs, fixed_arity, Over
+from ibis.sql.alchemy import (
+    unary, varargs, fixed_arity, Over, _variance_reduction
+)
 import ibis.expr.analytics as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -316,30 +318,6 @@ def _regex_replace(t, expr):
 
     # postgres defaults to replacing only the first occurrence
     return sa.func.regexp_replace(string, pattern, replacement, 'g')
-
-
-def _variance_reduction(func_name):
-    suffix = {
-        'sample': 'samp',
-        'pop': 'pop'
-    }
-
-    def variance_compiler(t, expr):
-        arg, where, how = expr.op().args
-
-        if arg.type().equals(dt.boolean):
-            arg = arg.cast('int32')
-
-        func = getattr(
-            sa.func,
-            '{}_{}'.format(func_name, suffix.get(how, 'samp'))
-        )
-
-        if where is not None:
-            arg = where.ifelse(arg, None)
-        return func(t.translate(arg))
-
-    return variance_compiler
 
 
 def _reduction(func_name):
