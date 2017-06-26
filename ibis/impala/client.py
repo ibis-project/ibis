@@ -266,8 +266,7 @@ class ImpalaCursor(object):
             while True:
                 state = cur.status()
                 if self._cursor._op_state_is_error(state):
-                    import ipdb; ipdb.set_trace();
-                    raise OperationalError(self._cursor.cursor_log())
+                    raise OperationalError(self._cursor.get_log())
                 if not cur._op_state_is_executing(state):
                     break
                 time.sleep(_sleep_interval(loop_start))
