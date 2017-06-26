@@ -266,7 +266,7 @@ class ImpalaCursor(object):
             while True:
                 state = cur.status()
                 if self._cursor._op_state_is_error(state):
-                    raise OperationalError("Operation is in ERROR_STATE")
+                    raise OperationalError(self._cursor.cursor_log())
                 if not cur._op_state_is_executing(state):
                     break
                 time.sleep(_sleep_interval(loop_start))
