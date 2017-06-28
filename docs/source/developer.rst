@@ -30,17 +30,3 @@ development roadmap:
 * Other SQL-based backends (Presto, Hive, Spark SQL)
 * S3 filesytem support
 * Integration with MLLib via PySpark
-
-Contributor License Agreements
-------------------------------
-
-While Ibis is an Apache-licensed open source project, we require individual and
-corporate contributors to execute a `contributor license agreement
-<https://en.wikipedia.org/wiki/Contributor_License_Agreement>`_ to enable any
-copyright issues to be avoided and to protect the user base from
-disruption. This agreement only needs to be signed once.
-
-We'll use the same CLA's that Impala uses:
-
-* `Individual CLA <https://github.com/cloudera/Impala/wiki/Individual-Contributor-License-Agreement-(ICLA)>`_
-* `Corporate CLA <https://github.com/cloudera/Impala/wiki/Corporate-Contributor-License-Agreement-(CCLA)>`_
