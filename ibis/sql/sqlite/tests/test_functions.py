@@ -20,18 +20,22 @@ import math
 
 import pytest
 
-from .common import SQLiteTests
-from ibis import literal as L
-import ibis.expr.types as ir
-import ibis
-import pandas.util.testing as tm
+sa = pytest.importorskip('sqlalchemy')
 
-import sqlalchemy as sa
+from .common import SQLiteTests  # noqa: E402
+from ibis import literal as L  # noqa: E402
+import ibis.expr.types as ir  # noqa: E402
+import ibis  # noqa: E402
+import pandas.util.testing as tm  # noqa: E402
 
 
 @pytest.fixture
 def con():
-    return ibis.sqlite.connect(os.environ['IBIS_TEST_SQLITE_DB_PATH'])
+    # If we haven't defined an environment variable with the path of the SQLite
+    # database, assume it's in $PWD
+    return ibis.sqlite.connect(
+        os.environ.get('IBIS_TEST_SQLITE_DB_PATH', 'ibis_testing.db')
+    )
 
 
 @pytest.fixture

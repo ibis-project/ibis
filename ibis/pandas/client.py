@@ -1,11 +1,13 @@
 import six
 
+import numpy as np
 import pandas as pd
 
 import ibis
 import ibis.client as client
-import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 
 try:
@@ -15,9 +17,9 @@ except AttributeError:
 
 
 _DTYPE_TO_IBIS_TYPE = {
-    'float64': 'double',
-    'float32': 'float',
-    'datetime64[ns]': 'timestamp',
+    'float64': dt.double,
+    'float32': dt.float,
+    'datetime64[ns]': dt.timestamp,
 }
 
 
@@ -38,13 +40,15 @@ def pandas_dtypes_to_ibis_schema(df):
             raise TypeError(
                 'Column names must be strings to use the pandas backend'
             )
-        dtype_string = str(dtype)
 
-        if dtype_string == 'object':
+        if dtype == np.object_:
             ibis_type = _INFERRED_DTYPE_TO_IBIS_TYPE[
                 infer_dtype(df[column_name])
             ]
+        elif hasattr(dtype, 'tz'):
+            ibis_type = dt.Timestamp(str(dtype.tz))
         else:
+            dtype_string = str(dtype)
             ibis_type = _DTYPE_TO_IBIS_TYPE.get(dtype_string, dtype_string)
 
         pairs.append((column_name, ibis_type))

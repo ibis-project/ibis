@@ -26,7 +26,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 from ibis.sql.alchemy import (
-    unary, varargs, fixed_arity, Over, _variance_reduction
+    unary, varargs, fixed_arity, Over, _variance_reduction, _get_sqla_table
 )
 import ibis.expr.analytics as L
 import ibis.expr.datatypes as dt
@@ -94,7 +94,7 @@ def _cast(t, expr):
     sa_type = t.get_sqla_type(typ)
 
     # specialize going from an integer type to a timestamp
-    if isinstance(arg.type(), dt.Integer) and issubclass(sa_type, sa.DateTime):
+    if isinstance(arg.type(), dt.Integer) and isinstance(sa_type, sa.DateTime):
         return sa.func.timezone('UTC', sa.func.to_timestamp(sa_arg))
     return sa.cast(sa_arg, sa_type)
 
@@ -513,7 +513,33 @@ def _hll_cardinality(t, expr):
     return sa.func.count(sa.distinct(sa_arg))
 
 
+def _table_column(t, expr):
+    op = expr.op()
+    ctx = t.context
+    table = op.table
+
+    sa_table = _get_sqla_table(ctx, table)
+    out_expr = getattr(sa_table.c, op.name)
+
+    expr_type = expr.type()
+
+    if isinstance(expr_type, dt.Timestamp):
+        timezone = expr_type.timezone
+        if timezone is not None:
+            out_expr = out_expr.op('AT TIME ZONE')(timezone).label(op.name)
+
+    # If the column does not originate from the table set in the current SELECT
+    # context, we should format as a subquery
+    if t.permit_subquery and ctx.is_foreign_expr(table):
+        return sa.select([out_expr])
+
+    return out_expr
+
+
 _operation_registry.update({
+    # We override this here to support time zones
+    ops.TableColumn: _table_column,
+
     # types
     ops.Cast: _cast,
     ops.TypeOf: _typeof,

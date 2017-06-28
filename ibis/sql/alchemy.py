@@ -15,6 +15,7 @@
 import numbers
 import operator
 import functools
+import contextlib
 
 import six
 
@@ -24,8 +25,12 @@ import sqlalchemy.sql as sql
 from sqlalchemy.sql.elements import Over as _Over
 from sqlalchemy.ext.compiler import compiles as sa_compiles
 
+import numpy as np
+import pandas as pd
+
 from ibis.client import SQLClient, AsyncQuery, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter
+
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -52,9 +57,8 @@ _ibis_type_to_sqla = {
 
     dt.Date: sa.Date,
 
-    dt.Timestamp: sa.DateTime,
-
     dt.Decimal: sa.NUMERIC,
+    dt.Null: sa.types.NullType,
 }
 
 _sqla_type_mapping = {
@@ -82,7 +86,9 @@ _sqla_type_to_ibis = dict((v, k) for k, v in _ibis_type_to_sqla.items())
 _sqla_type_to_ibis.update(_sqla_type_mapping)
 
 
-def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
+def sqlalchemy_type_to_ibis_type(
+    column_type, nullable=True, default_timezone=None
+):
     type_class = type(column_type)
 
     if isinstance(column_type, sa.types.NUMERIC):
@@ -93,14 +99,20 @@ def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
         if type_class in _sqla_type_to_ibis:
             ibis_class = _sqla_type_to_ibis[type_class]
         elif isinstance(column_type, sa.DateTime):
-            ibis_class = dt.Timestamp()
+            return dt.Timestamp(
+                timezone=default_timezone if column_type.timezone else None,
+                nullable=nullable
+            )
         elif isinstance(column_type, sa.ARRAY):
             dimensions = column_type.dimensions
             if dimensions is not None and dimensions != 1:
                 raise NotImplementedError(
                     'Nested array types not yet supported'
                 )
-            value_type = sqlalchemy_type_to_ibis_type(column_type.item_type)
+            value_type = sqlalchemy_type_to_ibis_type(
+                column_type.item_type,
+                default_timezone=default_timezone,
+            )
 
             def make_array_type(nullable, value_type=value_type):
                 return dt.Array(value_type, nullable=nullable)
@@ -122,9 +134,24 @@ def sqlalchemy_type_to_ibis_type(column_type, nullable=True):
 
 
 def schema_from_table(table):
+    """Retrieve an ibis schema from a SQLAlchemy ``Table``.
+
+    Parameters
+    ----------
+    table : sa.Table
+
+    Returns
+    -------
+    schema : ibis.expr.datatypes.Schema
+        An ibis schema corresponding to the types of the columns in `table`.
+    """
     # Convert SQLA table to Ibis schema
     types = [
-        sqlalchemy_type_to_ibis_type(column.type, column.nullable)
+        sqlalchemy_type_to_ibis_type(
+            column.type,
+            nullable=column.nullable,
+            default_timezone='UTC',
+        )
         for column in table.columns.values()
     ]
     return dt.Schema(table.columns.keys(), types)
@@ -148,6 +175,10 @@ def _to_sqla_type(itype, type_map=None):
         type_map = _ibis_type_to_sqla
     if isinstance(itype, dt.Decimal):
         return sa.types.NUMERIC(itype.precision, itype.scale)
+    elif isinstance(itype, dt.Timestamp):
+        # SQLAlchemy DateTimes do not store the timezone, just whether the db
+        # supports timezones.
+        return sa.TIMESTAMP(bool(itype.timezone))
     elif isinstance(itype, dt.Array):
         ibis_type = itype.value_type
         if not isinstance(ibis_type, (dt.Primitive, dt.String)):
@@ -607,14 +638,13 @@ class AlchemyDatabase(Database):
 
 class AlchemyTable(ops.DatabaseTable):
 
-    def __init__(self, table, source):
+    def __init__(self, table, source, schema=None):
+        super(AlchemyTable, self).__init__(
+            table.name,
+            schema or schema_from_table(table),
+            source,
+        )
         self.sqla_table = table
-
-        schema = schema_from_table(table)
-        name = table.name
-
-        ops.TableNode.__init__(self, [name, schema, source])
-        ops.HasSchema.__init__(self, schema, name=name)
 
 
 class AlchemyExprTranslator(comp.ExprTranslator):
@@ -641,13 +671,47 @@ compiles = AlchemyExprTranslator.compiles
 class AlchemyQuery(Query):
 
     def _fetch(self, cursor):
-        # No guarantees that the DBAPI cursor has data types
-        import pandas as pd
-        proxy = cursor.proxy
-        rows = proxy.fetchall()
-        colnames = proxy.keys()
-        return pd.DataFrame.from_records(rows, columns=colnames,
-                                         coerce_float=True)
+        df = pd.DataFrame.from_records(
+            cursor.proxy.fetchall(),
+            columns=cursor.proxy.keys(),
+            coerce_float=True
+        )
+        dtypes = df.dtypes
+        for column in df.columns:
+            existing_dtype = dtypes[column]
+            try:
+                db_type = _to_sqla_type(self.schema[column])
+            except KeyError:
+                new_dtype = existing_dtype
+            else:
+                try:
+                    new_dtype = self._db_type_to_dtype(db_type, column)
+                except TypeError:
+                    new_dtype = existing_dtype
+
+            if getattr(
+                existing_dtype, 'tz', None
+            ) != getattr(new_dtype, 'tz', None):
+                df[column] = df[column].astype(new_dtype)
+        return df
+
+    def _db_type_to_dtype(self, db_type, column):
+        if isinstance(db_type, sa.DateTime):
+            if not db_type.timezone:
+                return np.dtype('datetime64[ns]')
+            else:
+                return pd.api.types.DatetimeTZDtype(
+                    'ns', self.schema[column].timezone
+                )
+        raise TypeError(repr(db_type))
+
+    @property
+    def schema(self):
+        expr = self.expr
+        try:
+            return expr.schema()
+        except AttributeError:
+            return ibis.schema([(expr.get_name(), expr.type())])
 
 
 class AlchemyAsyncQuery(AsyncQuery):
@@ -691,6 +755,7 @@ class AlchemyClient(SQLClient):
         self.meta = sa.MetaData(bind=con)
         self._inspector = sa.inspect(con)
         self._reflection_cache_is_dirty = False
+        self._schemas = {}
 
     @property
     def async_query(self):
@@ -703,6 +768,11 @@ class AlchemyClient(SQLClient):
         if self._reflection_cache_is_dirty:
             self._inspector.info_cache.clear()
         return self._inspector
+
+    @contextlib.contextmanager
+    def begin(self):
+        with self.con.begin() as bind:
+            yield bind
 
     @invalidates_reflection_cache
     def create_table(self, name, expr=None, schema=None, database=None):
@@ -721,8 +791,13 @@ class AlchemyClient(SQLClient):
                     'Expression schema is not equal to passed schema. '
                     'Try passing the expression without the schema'
                 )
-        t = table_from_schema(name, self.meta, schema or expr.schema())
-        with self.con.begin() as bind:
+        if schema is None:
+            schema = expr.schema()
+
+        self._schemas[self._fully_qualified_name(name, database)] = schema
+        t = table_from_schema(name, self.meta, schema)
+
+        with self.begin() as bind:
             t.create(bind=bind)
             if expr is not None:
                 bind.execute(
@@ -743,6 +818,13 @@ class AlchemyClient(SQLClient):
                 'Something went wrong during DROP of table {}'.format(t.name)
             )
         self.meta.remove(t)
+
+        qualified_name = self._fully_qualified_name(table_name, database)
+
+        try:
+            del self._schemas[qualified_name]
+        except KeyError:  # schemas won't be cached if created with raw_sql
+            pass
 
     def truncate_table(self, table_name, database=None):
         self.meta.tables[table_name].delete().execute()
@@ -770,7 +852,8 @@ class AlchemyClient(SQLClient):
         return sorted(names)
 
     def _execute(self, query, results=True):
-        return AlchemyProxy(self.con.execute(query))
+        with self.begin() as con:
+            return AlchemyProxy(con.execute(query))
 
     @invalidates_reflection_cache
     def raw_sql(self, query, results=False):

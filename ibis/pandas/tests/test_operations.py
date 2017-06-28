@@ -15,13 +15,20 @@ import ibis.expr.datatypes as dt  # noqa: E402
 from ibis import literal as L  # noqa: E402
 
 
+@pytest.fixture(params=[None, 'UTC', 'America/New_York'])
+def tz(request):
+    return request.param
+
+
 @pytest.fixture
-def df():
+def df(tz):
     return pd.DataFrame({
         'plain_int64': list(range(1, 4)),
         'plain_strings': list('abc'),
         'plain_float64': [4.0, 5.0, 6.0],
-        'plain_datetimes': pd.date_range('now', periods=3).values,
+        'plain_datetimes': pd.Series(
+            pd.date_range('now', periods=3).values,
+        ).dt.tz_localize(tz),
         'dup_strings': list('dad'),
         'dup_ints': [1, 2, 1],
         'float64_as_strings': ['1.0', '2', '3.234'],
@@ -117,17 +124,43 @@ def test_cast_string(t, df, from_, to, expected):
         ('string', 'object'),
         ('int64', 'int64'),
         pytest.mark.xfail(('double', 'float64'), raises=TypeError),
+        (
+            dt.Timestamp('America/Los_Angeles'),
+            'datetime64[ns, America/Los_Angeles]'
+        )
     ]
 )
-def test_cast_timestamp(t, df, to, expected):
+def test_cast_timestamp_column(t, df, to, expected):
     c = t.plain_datetimes.cast(to)
     result = c.execute()
     assert str(result.dtype) == expected
 
 
-def test_cast_date(t, df):
-    assert t.plain_datetimes.type() == dt.timestamp
+@pytest.mark.parametrize(
+    ('to', 'expected'),
+    [
+        ('string', str),
+        ('int64', lambda x: x.value),
+        pytest.mark.xfail(('double', float), raises=NotImplementedError),
+        (
+            dt.Timestamp('America/Los_Angeles'),
+            lambda x: pd.Timestamp(x, tz='America/Los_Angeles')
+        )
+    ]
+)
+def test_cast_timestamp_scalar(to, expected, tz):
+    literal_expr = ibis.literal(pd.Timestamp('now', tz=tz))
+    value = literal_expr.cast(to)
+    result = ibis.pandas.execute(value)
+    raw = ibis.pandas.execute(literal_expr)
+    assert result == expected(raw)
 
+
+def test_timestamp_with_timezone_is_inferred_correctly(t, df, tz):
+    assert t.plain_datetimes.type().equals(dt.Timestamp(tz))
+
+
+def test_cast_date(t, df):
     expr = t.plain_datetimes.cast('date').cast('string')
     result = expr.execute()
     expected = df.plain_datetimes.dt.date.astype(str)

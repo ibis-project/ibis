@@ -112,9 +112,20 @@ def test_struct_with_string_types():
     )
 
 
-def test_decimal_failure():
+@pytest.mark.parametrize(
+    'case',
+    [
+        'decimal(',
+        'decimal()',
+        'decimal(3)',
+        'decimal(,)',
+        'decimal(3,)',
+        'decimal(3,',
+    ]
+)
+def test_decimal_failure(case):
     with pytest.raises(SyntaxError):
-        dt.validate_type('decimal(')
+        dt.validate_type(case)
 
 
 @pytest.mark.parametrize(
@@ -270,3 +281,48 @@ def test_array_type_equals():
     assert left.equals(right)
     assert left == right
     assert not (left != right)
+
+
+def test_timestamp_with_timezone_parser_single_quote():
+    t = dt.validate_type("timestamp('US/Eastern')")
+    assert isinstance(t, dt.Timestamp)
+    assert t.timezone == 'US/Eastern'
+
+
+def test_timestamp_with_timezone_parser_double_quote():
+    t = dt.validate_type("timestamp('US/Eastern')")
+    assert isinstance(t, dt.Timestamp)
+    assert t.timezone == 'US/Eastern'
+
+
+def test_timestamp_with_timezone_parser_invalid_timezone():
+    ts = dt.validate_type("timestamp('US/Ea')")
+    assert str(ts) == "timestamp('US/Ea')"
+
+
+@pytest.mark.parametrize(
+    'case',
+    [
+        "timestamp(US/Ea)",
+        "timestamp('US/Eastern\")",
+        'timestamp("US/Eastern\')',
+    ]
+)
+def test_timestamp_parsing_failure_mode(case):
+    with pytest.raises(SyntaxError):
+        dt.validate_type(case)
+
+
+def test_timestamp_with_invalid_timezone():
+    ts = dt.Timestamp('Foo/Bar&234')
+    assert str(ts) == "timestamp('Foo/Bar&234')"
+
+
+def test_timestamp_with_timezone_repr():
+    ts = dt.Timestamp('UTC')
+    assert repr(ts) == "Timestamp(timezone='UTC')"
+
+
+def test_timestamp_with_timezone_str():
+    ts = dt.Timestamp('UTC')
+    assert str(ts) == "timestamp('UTC')"

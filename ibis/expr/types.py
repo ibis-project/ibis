@@ -363,7 +363,6 @@ class Node(six.with_metaclass(OperationMeta, object)):
         if self._expr_cached is None:
             self._expr_cached = self._make_expr()
         return self._expr_cached
-        # return self._make_expr()
 
     def _make_expr(self):
         klass = self.output_type()
@@ -1006,8 +1005,18 @@ class DateValue(AnyValue):
 
 class TimestampValue(AnyValue):
 
+    def __init__(self, meta=None):
+        self.meta = meta
+        self._timezone = getattr(meta, 'timezone', None)
+
     def type(self):
-        return dt.timestamp
+        return dt.Timestamp(timezone=self._timezone)
+
+    @classmethod
+    def _make_constructor(cls, meta):
+        def constructor(arg, name=None):
+            return cls(arg, meta, name=name)
+        return constructor
 
     def _can_implicit_cast(self, arg):
         op = arg.op()
@@ -1137,11 +1146,29 @@ class DateColumn(ColumnExpr, DateValue):
 
 
 class TimestampScalar(ScalarExpr, TimestampValue):
-    pass
+
+    def __init__(self, arg, meta=None, name=None):
+        ScalarExpr.__init__(self, arg, name=name)
+        TimestampValue.__init__(self, meta=meta)
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return type(self)(arg, self.meta, name=name)
+        return factory
 
 
 class TimestampColumn(ColumnExpr, TimestampValue):
-    pass
+
+    def __init__(self, arg, meta=None, name=None):
+        ColumnExpr.__init__(self, arg, name=name)
+        TimestampValue.__init__(self, meta=meta)
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return type(self)(arg, self.meta, name=name)
+        return factory
 
 
 class DecimalScalar(DecimalValue, ScalarExpr):

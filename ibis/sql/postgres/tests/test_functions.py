@@ -18,6 +18,9 @@ import operator
 import unittest
 
 import pytest
+import string
+
+import numpy as np
 
 from ibis.sql.postgres.tests.common import PostgreSQLTests
 from ibis import literal as L
@@ -1068,3 +1071,86 @@ def test_boolean_summary(con):
         ]
     )
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.postgresql
+def test_timestamp_with_timezone(con):
+    t = con.table('tzone')
+    result = t.ts.execute()
+    assert str(result.dtype.tz)
+
+
+@pytest.fixture(
+    params=[
+        None,
+        'UTC',
+        'America/New_York',
+        'America/Los_Angeles',
+        'Europe/Paris',
+        'Chile/Continental',
+        'Asia/Tel_Aviv',
+        'Asia/Tokyo',
+        'Africa/Nairobi',
+        'Australia/Sydney',
+    ]
+)
+def tz(request):
+    return request.param
+
+
+@pytest.yield_fixture
+def tzone_compute(con, guid, tz):
+    schema = ibis.schema([
+        ('ts', dt.timestamp(tz)),
+        ('b', 'double'),
+        ('c', 'string'),
+    ])
+    con.create_table(guid, schema=schema)
+    t = con.table(guid)
+
+    n = 10
+    df = pd.DataFrame({
+        'ts': pd.date_range('2017-04-01', periods=n, tz=tz).values,
+        'b': np.arange(n).astype('float64'),
+        'c': list(string.ascii_lowercase[:n]),
+    })
+
+    df.to_sql(
+        guid,
+        con.con,
+        index=False,
+        if_exists='append',
+        dtype={
+            'ts': sa.TIMESTAMP(timezone=True),
+            'b': sa.FLOAT,
+            'c': sa.TEXT,
+        }
+    )
+
+    try:
+        yield t
+    finally:
+        con.drop_table(guid)
+        assert guid not in con.list_tables()
+
+
+@pytest.mark.postgresql
+def test_ts_timezone_is_preserved(tzone_compute, tz):
+    assert dt.Timestamp(tz).equals(tzone_compute.ts.type())
+
+
+@pytest.mark.postgresql
+def test_timestamp_with_timezone_select(tzone_compute, tz):
+    ts = tzone_compute.ts.execute()
+    assert str(getattr(ts.dtype, 'tz', None)) == str(tz)
+
+
+@pytest.mark.postgresql
+def test_timestamp_type_accepts_all_timezones():
+    zones = [
+        row.name for row in sa.create_engine(
+            'postgresql://localhost/postgres'
+        ).execute('SELECT name FROM pg_timezone_names')
+    ]
+    for zone in zones:
+        assert dt.Timestamp(zone).timezone == zone
