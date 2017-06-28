@@ -164,7 +164,10 @@ class ImpalaConnection(object):
 
     def _new_cursor(self):
         params = self.params.copy()
-        con = impyla.connect(database=self.database, **params)
+        database = None
+        if self.database != 'default':
+            database = self.database
+        con = impyla.connect(database=database, **params)
 
         self._connections[id(con)] = con
 
