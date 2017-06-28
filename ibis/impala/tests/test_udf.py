@@ -90,9 +90,9 @@ class TestWrapping(unittest.TestCase):
             ibis_type = validate_type(t)
 
             expr = func(sv)
-            assert type(expr) == ibis_type.scalar_type()
+            assert type(expr) == type(ibis_type.scalar_type()(expr.op()))  # noqa: E501, E721
             expr = func(av)
-            assert type(expr) == ibis_type.array_type()
+            assert type(expr) == type(ibis_type.array_type()(expr.op()))  # noqa: E501, E721
 
     def test_uda_primitive_output_types(self):
         types = [
@@ -113,8 +113,10 @@ class TestWrapping(unittest.TestCase):
 
             expr1 = func(sv)
             expr2 = func(sv)
-            assert isinstance(expr1, ibis_type.scalar_type())
-            assert isinstance(expr2, ibis_type.scalar_type())
+            expected_type1 = type(ibis_type.scalar_type()(expr1.op()))
+            expected_type2 = type(ibis_type.scalar_type()(expr2.op()))
+            assert isinstance(expr1, expected_type1)
+            assert isinstance(expr2, expected_type2)
 
     def test_decimal(self):
         func = self._register_udf(['decimal(9,0)'], 'decimal(9,0)', 'test')
