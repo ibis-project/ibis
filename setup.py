@@ -77,9 +77,10 @@ setup(
         'pandas': pandas_requires,
     },
     scripts=[
-        os.path.join(
-            os.path.dirname(__file__), 'scripts', 'test_data_admin.py'
-        ),
+        os.path.relpath(
+            os.path.join('scripts', 'test_data_admin.py'),
+            os.path.dirname(__file__),
+        )
     ],
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,
