@@ -165,7 +165,10 @@ class ImpalaConnection(object):
 
     def _new_cursor(self):
         params = self.params.copy()
-        con = impyla.connect(database=self.database, **params)
+        database = None
+        if self.database != 'default':
+            database = self.database
+        con = impyla.connect(database=database, **params)
 
         self._connections[id(con)] = con
 
@@ -486,7 +489,7 @@ class ImpalaClient(SQLClient):
 
         self._temp_objects = weakref.WeakValueDictionary()
 
-        self._ensure_temp_db_exists()
+        self._ensured = False
 
     def _build_ast(self, expr):
         return build_ast(expr)
@@ -1017,6 +1020,7 @@ class ImpalaClient(SQLClient):
         return self._wrap_new_table(name, database, persist)
 
     def _get_concrete_table_path(self, name, database, persist=False):
+        self._ensure_temp_db_exists()
         if not persist:
             if name is None:
                 name = '__ibis_tmp_{0}'.format(util.guid())
@@ -1032,6 +1036,8 @@ class ImpalaClient(SQLClient):
 
     def _ensure_temp_db_exists(self):
         # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
+        if self._ensured:
+            return
         name, path = options.impala.temp_db, options.impala.temp_hdfs_path
         if not self.exists_database(name):
             if self._hdfs is None:
@@ -1039,6 +1045,7 @@ class ImpalaClient(SQLClient):
                       ' may be disabled')
             else:
                 self.create_database(name, path=path, force=True)
+        self._ensured = True
 
     def _wrap_new_table(self, name, database, persist):
         qualified_name = self._fully_qualified_name(name, database)
