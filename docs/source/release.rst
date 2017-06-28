@@ -7,6 +7,59 @@ Release Notes
     interesting. Point (minor, e.g. 0.5.1) releases will generally not be found
     here and contain only bug fixes.
 
+0.11.0 (June 28, 2017)
+----------------------
+
+This release brings initial Pandas backend support along with a number of
+bug fixes and reliability enhancements. We recommend that all users upgrade
+from earlier versions of Ibis.
+
+New features
+~~~~~~~~~~~~
+* Experimental pandas backend to allow execution of ibis expression against
+  pandas DataFrames
+* Graphviz visualization of ibis expressions. Implements ``_repr_png_`` for
+  Jupyter Notebook functionality
+* Ability to create a partitioned table from an ibis expression
+* Support for missing operations in the SQLite backend: sqrt, power, variance,
+  and standard deviation, regular expression functions, and missing power
+  support for PostgreSQL
+* Support for schemas inside databases with the PostgreSQL backend
+* Appveyor testing on core ibis across all supported Python versions
+* Add ``year``/``month``/``day`` methods to ``date`` types
+* Ability to sort, group by and project columns according to positional index
+  rather than only by name
+* Added a ``type`` parameter to ``ibis.literal`` to allow user specification of
+  literal types
+
+Bug fixes
+~~~~~~~~~
+* Fix broken conda recipe
+* Fix incorrectly typed fillna operation
+* Fix postgres boolean summary operations
+* Fix kudu support to reflect client API changes
+* Fix equality of nested types and construction of nested types when the value
+  type is specified as a string
+
+API changes
+~~~~~~~~~~~
+* Deprecate passing integer values to the ``ibis.timestamp`` literal
+  constructor, this will be removed in 0.12.0
+* Added the ``admin_timeout`` parameter to the kudu client ``connect`` function
+
+Contributors
+~~~~~~~~~~~~
+
+::
+
+    $ git shortlog --summary --numbered v0.10.0..v0.11.0
+
+      58 Phillip Cloud
+       1 Greg Rahn
+       1 Marius van Niekerk
+       1 Tarun Gogineni
+       1 Wes McKinney
+
 0.8 (May 19, 2016)
 ------------------
 
@@ -17,7 +70,7 @@ versions of Ibis.
 
 New features
 ~~~~~~~~~~~~
-* Initial PostgreSQL backend contributed by Philip Cloud.
+* Initial PostgreSQL backend contributed by Phillip Cloud.
 * Add ``groupby`` as an alias for ``group_by`` to table expressions
 
 Bug fixes
