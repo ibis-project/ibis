@@ -56,7 +56,7 @@ class KuduImpalaInterface(object):
         return self.client.table_exists(name)
 
     def connect(self, host_or_hosts, port_or_ports=7051,
-                rpc_timeout=None, admin_timeout_ms=None):
+                rpc_timeout=None, admin_timeout=None):
         """
         Pass-through connection interface to the Kudu client
 
@@ -68,7 +68,7 @@ class KuduImpalaInterface(object):
           If you pass multiple host names, pass multiple ports
         rpc_timeout : kudu.TimeDelta
           See Kudu client documentation for details
-        admin_timeout_ms : kudu.TimeDelta
+        admin_timeout : kudu.TimeDelta
           See Kudu client documentation for details
 
         Returns
@@ -77,7 +77,7 @@ class KuduImpalaInterface(object):
         """
         self.client = kudu.connect(host_or_hosts, port_or_ports,
                                    rpc_timeout_ms=rpc_timeout,
-                                   admin_timeout_ms=admin_timeout_ms)
+                                   admin_timeout_ms=admin_timeout)
 
     def _check_connected(self):
         if not self.is_connected:
