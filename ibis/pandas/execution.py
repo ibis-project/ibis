@@ -8,14 +8,11 @@ import six
 import numpy as np
 import pandas as pd
 
-try:
-    from pandas.api.types import DatetimeTZDtype
-except ImportError:
-    from pandas.core.dtypes.dtypes import DatetimeTZDtype
-
 from pandas.core.groupby import SeriesGroupBy, DataFrameGroupBy
 
 import toolz
+
+from ibis import compat
 
 import ibis.common as com
 import ibis.expr.types as ir
@@ -64,13 +61,13 @@ def execute_cast_series_timestamp(op, data, type, scope=None):
     # TODO(phillipc): Consistent units
     tz = type.timezone
     return data.astype(
-        'datetime64[ns]' if tz is None else DatetimeTZDtype('ns', tz)
+        'datetime64[ns]' if tz is None else compat.DatetimeTZDtype('ns', tz)
     )
 
 
 @execute_node.register(ops.Cast, pd.Series, dt.Date)
 def execute_cast_series_date(op, data, _, scope=None):
-    return data.dt.date.astype('datetime64[ns]')
+    return data.dt.date.astype('datetime64[D]')
 
 
 _LITERAL_CAST_TYPES = {
