@@ -624,6 +624,15 @@ def execute_string_contains(op, data, needle, start, end, scope=None):
 
 
 @execute_node.register(
+    ops.StringSQLLike,
+    pd.Series,
+    (pd.Series,) + six.string_types,
+)
+def execute_string_like(op, data, pattern, scope=None):
+    return data.str.contains(pattern, regex=True)
+
+
+@execute_node.register(
     ops.Between,
     pd.Series,
     (pd.Series, numbers.Real, str, datetime.datetime),
