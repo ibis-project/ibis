@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
+
 import itertools
 
 import numpy as np
@@ -65,3 +67,9 @@ else:
     range = xrange  # noqa: F821
 
 integer_types = six.integer_types + (np.integer,)
+
+
+try:
+    from pandas.api.types import DatetimeTZDtype  # noqa: F401
+except ImportError:
+    from pandas.types.dtypes import DatetimeTZDtype  # noqa: F401

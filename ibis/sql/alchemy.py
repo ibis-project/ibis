@@ -31,6 +31,8 @@ import pandas as pd
 from ibis.client import SQLClient, AsyncQuery, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter
 
+from ibis import compat
+
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -700,7 +702,7 @@ class AlchemyQuery(Query):
             if not db_type.timezone:
                 return np.dtype('datetime64[ns]')
             else:
-                return pd.api.types.DatetimeTZDtype(
+                return compat.DatetimeTZDtype(
                     'ns', self.schema[column].timezone
                 )
         raise TypeError(repr(db_type))
