@@ -13,16 +13,16 @@ source:
 requirements:
   build:
     - enum34  # [py27]
-    - numpy >=1.7.0
-    - pandas >=0.12.0
+    - numpy >=1.10.0
+    - pandas >=0.18.1
     - python
     - setuptools
     - six
     - toolz
   run:
     - enum34  # [py27]
-    - numpy >=1.7.0
-    - pandas >=0.12.0
+    - numpy >=1.10.0
+    - pandas >=0.18.1
     - python
     - setuptools
     - six
