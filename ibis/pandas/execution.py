@@ -1,7 +1,10 @@
+from __future__ import absolute_import
+
 import numbers
 import operator
 import datetime
 import functools
+import decimal
 
 import six
 
@@ -135,6 +138,34 @@ _LITERAL_CAST_TYPES = {
 }
 
 
+@execute_node.register(ops.UnaryOp, pd.Series)
+def execute_series_unary_op(op, data, scope=None):
+    function = getattr(np, type(op).__name__.lower())
+    if data.dtype == np.dtype(np.object_):
+        return data.apply(functools.partial(execute_node, op, scope=scope))
+    return function(data)
+
+
+@execute_node.register(
+    ops.Log, pd.Series, (pd.Series, numbers.Real, decimal.Decimal, type(None))
+)
+def execute_series_log_with_base(op, data, base, scope=None):
+    if data.dtype == np.dtype(np.object_):
+        func = np.vectorize(functools.partial(execute_node, op, scope=scope))
+        return pd.Series(func(data, base), index=data.index, name=data.name)
+
+    if base is None:
+        return np.log(data)
+    return np.log(data) / np.log(base)
+
+
+@execute_node.register(ops.Ln, pd.Series)
+def execute_series_natural_log(op, data, scope=None):
+    if data.dtype == np.dtype(np.object_):
+        return data.apply(functools.partial(execute_node, op, scope=scope))
+    return np.log(data)
+
+
 @execute_node.register(ops.Cast, datetime.datetime, dt.String)
 def execute_cast_datetime_or_timestamp_to_string(op, data, type, scope=None):
     """Cast timestamps to strings"""
@@ -211,6 +242,18 @@ def execute_cast_string_literal(op, data, type, scope=None):
         )
     else:
         return cast_function(data)
+
+
+@execute_node.register(
+    ops.Round,
+    pd.Series,
+    (pd.Series, np.integer, type(None)) + six.integer_types
+)
+def execute_round_series(op, data, places, scope=None):
+    if data.dtype == np.dtype(np.object_):
+        func = np.vectorize(functools.partial(execute_node, op, scope=scope))
+        return pd.Series(func(data, places), index=data.index, name=data.name)
+    return data.round(places if places is not None else 0)
 
 
 @execute_node.register(ops.TableColumn, (pd.DataFrame, DataFrameGroupBy))
