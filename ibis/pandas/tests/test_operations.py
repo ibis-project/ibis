@@ -1,5 +1,6 @@
 import operator
 import datetime
+import decimal
 
 import pytest
 
@@ -37,6 +38,7 @@ def df(tz):
         'int64_with_zeros': [0, 1, 0],
         'float64_with_zeros': [1.0, 0.0, 1.0],
         'strings_with_nulls': ['a', None, 'b'],
+        'decimal': list(map(decimal.Decimal, ['1.0', '2', '3.234'])),
     })
 
 
@@ -63,7 +65,7 @@ def client(df, df1, df2):
 
 @pytest.fixture
 def t(client):
-    return client.table('df')
+    return client.table('df', schema={'decimal': dt.Decimal(4, 3)})
 
 
 @pytest.fixture
@@ -84,6 +86,11 @@ def test_table_column(t, df):
 
 def test_literal(client):
     assert client.execute(ibis.literal(1)) == 1
+
+
+def test_read_with_undiscoverable_type(client):
+    with pytest.raises(TypeError):
+        client.table('df')
 
 
 @pytest.mark.parametrize('from_', ['plain_float64', 'plain_int64'])
@@ -710,4 +717,21 @@ def test_notnull(t, df):
     expr = t.strings_with_nulls.notnull()
     result = expr.execute()
     expected = df.strings_with_nulls.notnull()
+    tm.assert_series_equal(result, expected)
+
+
+def test_cast_to_decimal(t, df):
+    expr = t.float64_as_strings.cast('decimal(12, 3)')
+    result = expr.execute()
+    expected = t.float64_as_strings.execute().apply(decimal.Decimal)
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('places', [-2, 0, 1, 2, None])
+def test_round(t, df, places):
+    expr = t.float64_as_strings.cast('double').round(places)
+    result = expr.execute()
+    expected = t.execute().float64_as_strings.astype('float64').round(
+        places if places is not None else 0
+    )
     tm.assert_series_equal(result, expected)

@@ -82,9 +82,11 @@ deployment:
   pr:  # PRs
     branch: /^(?!master$).*$/
     commands:
+      - rm -rf $PWD/.asv
       - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e master ${CIRCLE_SHA1}
   master:  # Merges to master
     branch: master
     owner: ibis-project
     commands:
+      - rm -rf $PWD/.asv
       - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e master^ ${CIRCLE_SHA1}
