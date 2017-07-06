@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import warnings
+import operator
+import functools
 
 import six
 import toolz
@@ -1418,7 +1420,7 @@ def _string_join(self, strings):
     return _ops.StringJoin(self, strings).to_expr()
 
 
-def _string_like(self, pattern):
+def _string_like(self, patterns):
     """
     Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
     % as a multiple-character wildcard or _ (underscore) as a single-character
@@ -1428,13 +1430,22 @@ def _string_like(self, pattern):
 
     Parameters
     ----------
-    pattern : string
+    pattern : str or List[str]
+        A pattern or list of patterns to match. If `pattern` is a list, then if
+        **any** pattern matches the input then the corresponding row in the
+        output is ``True``.
 
     Returns
     -------
-    matched : boolean value
+    matched : ir.BooleanColumn
     """
-    return _ops.StringSQLLike(self, pattern).to_expr()
+    return functools.reduce(
+        operator.or_,
+        (
+            _ops.StringSQLLike(self, pattern).to_expr()
+            for pattern in util.promote_list(patterns)
+        )
+    )
 
 
 def re_search(arg, pattern):

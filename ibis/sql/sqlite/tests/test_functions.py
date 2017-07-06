@@ -205,6 +205,13 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             (L('foobar').like('%bar'), True),
             (L('foobar').like('foo%'), True),
             (L('foobar').like('%baz%'), False),
+
+            (L('foobar').like(['%bar']), True),
+            (L('foobar').like(['foo%']), True),
+            (L('foobar').like(['%baz%']), False),
+
+            (L('foobar').like(['%bar', 'foo%']), True),
+
         ]
         self._check_e2e_cases(cases)
 
