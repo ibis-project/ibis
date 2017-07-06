@@ -312,6 +312,12 @@ class TestPostgreSQLFunctions(PostgreSQLTests, unittest.TestCase):
             (L('foobar').like('foo%'), True),
             (L('foobar').like('%baz%'), False),
 
+            (L('foobar').like(['%bar']), True),
+            (L('foobar').like(['foo%']), True),
+            (L('foobar').like(['%baz%']), False),
+
+            (L('foobar').like(['%bar', 'foo%']), True),
+
             (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
             (L('a').ascii_str(), ord('a'))
         ]

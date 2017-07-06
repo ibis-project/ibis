@@ -33,7 +33,7 @@ def df(tz):
         'dup_ints': [1, 2, 1],
         'float64_as_strings': ['1.0', '2', '3.234'],
         'int64_as_strings': list(map(str, range(1, 4))),
-        'strings_with_space': list(' ad'),
+        'strings_with_space': [' ', 'abab', 'ddeeffgg'],
         'int64_with_zeros': [0, 1, 0],
         'float64_with_zeros': [1.0, 0.0, 1.0],
     })
@@ -508,8 +508,29 @@ def test_null_if_zero(t, df, column):
         (lambda s: s.upper(), lambda s: s.str.upper()),
         (lambda s: s.capitalize(), lambda s: s.str.capitalize()),
         (lambda s: s.repeat(2), lambda s: s * 2),
-        (lambda s: s.contains('a'), lambda s: s.str.contains('a')),
-        (lambda s: ~s.contains('a'), lambda s: ~s.str.contains('a')),
+        (
+            lambda s: s.contains('a'),
+            lambda s: s.str.contains('a', regex=False)
+        ),
+        (
+            lambda s: ~s.contains('a'),
+            lambda s: ~s.str.contains('a', regex=False)
+        ),
+        (
+            lambda s: s.like('a'),
+            lambda s: s.str.contains('a', regex=True),
+        ),
+        (
+            lambda s: s.like('(ab)+'),
+            lambda s: s.str.contains('(ab)+', regex=True),
+        ),
+        (
+            lambda s: s.like(['(ab)+', 'd{1,2}ee']),
+            lambda s: (
+                s.str.contains('(ab)+', regex=True) |
+                s.str.contains('d{1,2}ee')
+            )
+        ),
         pytest.mark.xfail(
             (
                 lambda s: s + s.rpad(3, 'a'),

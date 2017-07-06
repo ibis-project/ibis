@@ -849,7 +849,11 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_like(self):
         cases = [
-            (self.table.string_col.like('foo%'), "`string_col` LIKE 'foo%'")
+            (self.table.string_col.like('foo%'), "`string_col` LIKE 'foo%'"),
+            (
+                self.table.string_col.like(['foo%', '%bar']),
+                "`string_col` LIKE 'foo%' OR `string_col` LIKE '%bar'"
+            )
         ]
         self._check_expr_cases(cases)
 
