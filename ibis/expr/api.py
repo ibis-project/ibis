@@ -152,6 +152,14 @@ def desc(expr):
 def timestamp(value):
     """
     Returns a timestamp literal if value is likely coercible to a timestamp
+
+    Parameters
+    ----------
+    value : timestamp value as string
+
+    Examples
+    --------
+    result : Timestamp scalar
     """
     if isinstance(value, six.string_types):
         from pandas import Timestamp
