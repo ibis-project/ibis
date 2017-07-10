@@ -9,8 +9,10 @@ environment:
   IBIS_TEST_POSTGRES_DB: "ibis_testing"
   IBIS_TEST_CRUNCHBASE_DB: "%USERPROFILE%\\crunchbase.db"
   IBIS_TEST_SQLITE_DB_PATH: "%USERPROFILE%\\ibis_testing.db"
-  PG: "\"C:\\Program Files\\PostgreSQL\\9.6\\bin\\createdb\" ibis_testing"
+  IBIS_DIAMONDS_CSV: "%USERPROFILE%\\diamonds.csv"
+  PG: "\"C:\\Program Files\\PostgreSQL\\9.6\\bin\""
   CHOCO: "C:\\ProgramData\\chocolatey\\bin"
+  PYTHON_EXE: "%PYTHON%\\python.exe"
 
   matrix:
     - PYTHON: "C:\\Python27-x64"
@@ -22,18 +24,17 @@ services:
   - postgresql
 
 test_script:
-  - "%PYTHON%\\python.exe -m pip install -U pip"
-  - "%PYTHON%\\python.exe -m pip install -U setuptools"
-  - "%PYTHON%\\python.exe -m pip install -e .\"[sqlite, postgres, visualization, pandas]\""
-  - "%PYTHON%\\python.exe -m pip install flake8 mock pytest"
-  - "%PYTHON%\\python.exe -m flake8"
+  - "%PYTHON_EXE% -m pip install -U pip"
+  - "%PYTHON_EXE% -m pip install -U setuptools"
+  - "%PYTHON_EXE% -m pip install -e .\"[sqlite, postgres, visualization, pandas]\""
+  - "%PYTHON_EXE% -m pip install -U flake8 mock pytest"
+  - "%PYTHON_EXE% -m flake8"
 
-  - "curl -o crunchbase.db https://storage.googleapis.com/ibis-ci-data/crunchbase.db"
-  - "mv crunchbase.db %IBIS_TEST_CRUNCHBASE_DB%"
+  - "curl -o %IBIS_TEST_CRUNCHBASE_DB% https://storage.googleapis.com/ibis-ci-data/crunchbase.db"
+  - "curl -o %IBIS_DIAMONDS_CSV% https://storage.googleapis.com/ibis-ci-data/diamonds.csv"
   - "curl -o ibis-testing-data.tar.gz https://storage.googleapis.com/ibis-ci-data/ibis-testing-data.tar.gz"
   - "7z x ibis-testing-data.tar.gz"
   - "7z x ibis-testing-data.tar"
   - "mv ibis-testing-data\\ibis_testing.db %IBIS_TEST_SQLITE_DB_PATH%"
   - "%PG%\\createdb.exe %IBIS_TEST_POSTGRES_DB%"
-
-  - "%PYTHON%\\python.exe -m pytest --tb=short -m \"not impala and not hdfs and not postgresql\" ibis"
+  - "%PYTHON_EXE% -m pytest --tb=short -m \"not impala and not hdfs and not postgresql\" ibis"

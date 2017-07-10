@@ -171,6 +171,9 @@ class Expr(object):
 
     __call__ = pipe
 
+    def __rshift__(self, other):
+        return other(self)
+
     def op(self):
         return self._arg
 
