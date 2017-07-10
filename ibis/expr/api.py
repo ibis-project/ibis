@@ -157,9 +157,9 @@ def timestamp(value):
     ----------
     value : timestamp value as string
 
-    Examples
+    Returns
     --------
-    result : Timestamp scalar
+    result : TimestampScalar
     """
     if isinstance(value, six.string_types):
         from pandas import Timestamp
