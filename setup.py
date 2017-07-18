@@ -32,7 +32,6 @@ impala_requires = [
     'impyla>=0.13.7',
     'sqlalchemy>=1.0.0',
     'thrift<=0.9.3',
-    "thriftpy<=0.3.9; python_version < '3'",
 ]
 
 sqlite_requires = ['sqlalchemy>=1.0.0']
@@ -52,9 +51,6 @@ all_requires = (
 develop_requires = all_requires + [
     'click',
     'flake8',
-    "mock; python_version < '3'",
-    "pytest>=3; python_version >= '3'",
-    "pytest<3; python_version < '3'",
 ]
 
 with open('requirements.txt', 'rt') as f:
@@ -69,7 +65,12 @@ setup(
     extras_require={
         'all': all_requires,
         'develop': develop_requires,
+        'develop:python_version < "3"': develop_requires + [
+            'thriftpy<=0.3.9', 'pytest<3', 'mock',
+        ],
+        'develop:python_version >= "3"': develop_requires + ['pytest>=3'],
         'impala': impala_requires,
+        'impala:python_version < "3"': impala_requires + ['thriftpy<=0.3.9'],
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
         'sqlite': sqlite_requires,
