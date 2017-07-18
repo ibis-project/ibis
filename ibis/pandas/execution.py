@@ -650,3 +650,13 @@ def execute_series_distinct(op, data, scope=None):
 @execute_node.register(ops.Union, pd.DataFrame, pd.DataFrame)
 def execute_union_dataframe_dataframe(op, left, right, scope=None):
     return pd.concat([left, right], axis=0)
+
+
+@execute_node.register(ops.IsNull, pd.Series)
+def execute_series_isnull(op, data, scope=None):
+    return data.isnull()
+
+
+@execute_node.register(ops.NotNull, pd.Series)
+def execute_series_notnnull(op, data, scope=None):
+    return data.notnull()
