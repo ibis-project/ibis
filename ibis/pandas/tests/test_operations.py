@@ -1,10 +1,10 @@
 import math
-from warnings import catch_warnings
 import operator
 import datetime
 import decimal
 import functools
 
+from warnings import catch_warnings
 from operator import methodcaller
 
 import pytest
@@ -17,11 +17,10 @@ import pandas as pd  # noqa: E402
 import pandas.util.testing as tm  # noqa: E402
 
 import ibis  # noqa: E402
+import ibis.expr.types as ir  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
-from ibis import literal as L  # noqa: E402
 from ibis.common import IbisTypeError  # noqa: E402
 from ibis.compat import PY2  # noqa: E402
-
 
 pytestmark = pytest.mark.pandas
 
@@ -29,57 +28,53 @@ pytestmark = pytest.mark.pandas
 def test_table_column(t, df):
     expr = t.plain_int64
     result = expr.execute()
-    tm.assert_series_equal(result, df.plain_int64)
+    expected = df.plain_int64
+    tm.assert_series_equal(result, expected)
 
 
 def test_literal(client):
     assert client.execute(ibis.literal(1)) == 1
 
 
-def test_read_with_undiscoverable_type(client):
-    with pytest.raises(TypeError):
-        client.table('df')
-
-
 @pytest.mark.parametrize('from_', ['plain_float64', 'plain_int64'])
 @pytest.mark.parametrize(
-    ('to', 'expected'),
+    ('to', 'expected_dtype'),
     [
-        ('double', 'float64'),
-        ('float', 'float32'),
-        ('int8', 'int8'),
-        ('int16', 'int16'),
-        ('int32', 'int32'),
-        ('int64', 'int64'),
-        ('string', 'object'),
+        (dt.double, 'float64'),
+        (dt.float, 'float32'),
+        (dt.int8, 'int8'),
+        (dt.int16, 'int16'),
+        (dt.int32, 'int32'),
+        (dt.int64, 'int64'),
+        (dt.string, 'object'),
     ],
 )
-def test_cast_numeric(t, df, from_, to, expected):
+def test_cast_numeric(t, from_, to, expected_dtype):
     c = t[from_].cast(to)
     result = c.execute()
-    assert str(result.dtype) == expected
+    assert str(result.dtype) == expected_dtype
 
 
 @pytest.mark.parametrize('from_', ['float64_as_strings', 'int64_as_strings'])
 @pytest.mark.parametrize(
-    ('to', 'expected'),
+    ('to', 'expected_dtype'),
     [
-        ('double', 'float64'),
-        ('string', 'object'),
+        (dt.double, 'float64'),
+        (dt.string, 'object'),
     ]
 )
-def test_cast_string(t, df, from_, to, expected):
+def test_cast_string(t, from_, to, expected_dtype):
     c = t[from_].cast(to)
     result = c.execute()
-    assert str(result.dtype) == expected
+    assert str(result.dtype) == expected_dtype
 
 
 @pytest.mark.parametrize(
-    ('to', 'expected'),
+    ('to', 'expected_dtype'),
     [
-        ('string', 'object'),
-        ('int64', 'int64'),
-        pytest.mark.xfail(('double', 'float64'), raises=TypeError),
+        (dt.string, 'object'),
+        (dt.int64, 'int64'),
+        pytest.mark.xfail((dt.double, 'float64'), raises=TypeError),
         (
             dt.Timestamp('America/Los_Angeles'),
             'datetime64[ns, America/Los_Angeles]'
@@ -94,18 +89,18 @@ def test_cast_string(t, df, from_, to, expected):
         'plain_datetimes_utc',
     ]
 )
-def test_cast_timestamp_column(t, df, column, to, expected):
+def test_cast_timestamp_column(t, df, column, to, expected_dtype):
     c = t[column].cast(to)
     result = c.execute()
-    assert str(result.dtype) == expected
+    assert str(result.dtype) == expected_dtype
 
 
 @pytest.mark.parametrize(
     ('to', 'expected'),
     [
-        ('string', str),
-        ('int64', lambda x: x.value),
-        pytest.mark.xfail(('double', float), raises=NotImplementedError),
+        (dt.string, str),
+        (dt.int64, lambda x: x.value),
+        pytest.mark.xfail((dt.double, float), raises=NotImplementedError),
         (
             dt.Timestamp('America/Los_Angeles'),
             lambda x: pd.Timestamp(x, tz='America/Los_Angeles')
@@ -113,11 +108,11 @@ def test_cast_timestamp_column(t, df, column, to, expected):
     ]
 )
 @pytest.mark.parametrize('tz', [None, 'UTC', 'America/New_York'])
-def test_cast_timestamp_scalar(to, expected, tz):
+def test_cast_timestamp_scalar(client, to, expected, tz):
     literal_expr = ibis.literal(pd.Timestamp('now', tz=tz))
     value = literal_expr.cast(to)
-    result = ibis.pandas.execute(value)
-    raw = ibis.pandas.execute(literal_expr)
+    result = client.execute(value)
+    raw = client.execute(literal_expr)
     assert result == expected(raw)
 
 
@@ -168,15 +163,15 @@ def test_cast_date(t, df, column):
         ]
     ]
 )
-def test_timestamp_functions(case_func, expected_func):
-    v = L('2015-09-01 14:48:05.359').cast('timestamp')
+def test_timestamp_functions(client, case_func, expected_func):
+    v = ibis.timestamp('2015-09-01 14:48:05.359')
     vt = datetime.datetime(
         year=2015, month=9, day=1,
         hour=14, minute=48, second=5, microsecond=359000
     )
     result = case_func(v)
     expected = expected_func(vt)
-    assert ibis.pandas.execute(result) == expected
+    assert client.execute(result) == expected
 
 
 @pytest.mark.skipif(PY2, reason="not enabled on PY2")
@@ -241,7 +236,6 @@ def test_binary_boolean_operations(t, df, op):
         'outer',
 
         pytest.mark.xfail('right', raises=KeyError),
-
         pytest.mark.xfail('semi', raises=NotImplementedError),
         pytest.mark.xfail('anti', raises=NotImplementedError),
     ]
@@ -354,7 +348,7 @@ def test_selection(t, df):
     expected = df[
         ((df.plain_strings == 'a') | (df.plain_int64 == 3)) &
         (df.dup_strings == 'd')
-    ]
+    ].reset_index(drop=True)
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -609,7 +603,9 @@ def test_series_limit(t, df, offset):
 def test_sort_by(t, df, column, key, pandas_by, pandas_ascending):
     expr = t.sort_by(key(t, column))
     result = expr.execute()
-    expected = df.sort_values(pandas_by(column), ascending=pandas_ascending)
+    expected = df.sort_values(
+        pandas_by(column), ascending=pandas_ascending
+    ).reset_index(drop=True)
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -622,7 +618,7 @@ def test_complex_sort_by(t, df):
         foo=df.plain_int64 * df.plain_float64
     ).sort_values(['foo', 'plain_float64'], ascending=[False, True]).drop(
         ['foo'], axis=1
-    )
+    ).reset_index(drop=True)
 
     tm.assert_frame_equal(result[expected.columns], expected)
 
@@ -889,7 +885,7 @@ def test_round_decimal_with_negative_places(t, df):
     expr = t.float64_as_strings.cast(type).round(-1)
     result = expr.execute()
     expected = pd.Series(
-        list(map(decimal.Decimal, ['1.0E+2', '2.3E+2', '-1.00E+3'])),
+        list(map(decimal.Decimal, ['1.0E+2', '2.3E+2', '-1.0E+3'])),
         name='float64_as_strings'
     )
     tm.assert_series_equal(result, expected)
@@ -1193,3 +1189,260 @@ def test_quantile_array_access(client, t, df):
     result = tuple(map(client.execute, expr))
     expected = tuple(df.float64_with_zeros.quantile([0.25, 0.5]))
     assert result == expected
+
+
+def test_lead(t, df):
+    expr = t.dup_strings.lead()
+    result = expr.execute()
+    expected = df.dup_strings.shift(-1)
+    tm.assert_series_equal(result, expected)
+
+
+def test_lag(t, df):
+    expr = t.dup_strings.lag()
+    result = expr.execute()
+    expected = df.dup_strings.shift(1)
+    tm.assert_series_equal(result, expected)
+
+
+def test_first(t, df):
+    expr = t.dup_strings.first()
+    result = expr.execute()
+    assert result == df.dup_strings.iloc[0]
+
+
+def test_last(t, df):
+    expr = t.dup_strings.last()
+    result = expr.execute()
+    assert result == df.dup_strings.iloc[-1]
+
+
+def test_group_by_mutate_analytic(t, df):
+    gb = t.groupby(t.dup_strings)
+    expr = gb.mutate(
+        first_value=t.plain_int64.first(),
+        last_value=t.plain_strings.last(),
+        avg_broadcast=t.plain_float64 - t.plain_float64.mean(),
+        delta=(t.plain_int64 - t.plain_int64.lag()) / (
+            t.plain_float64 - t.plain_float64.lag()
+        )
+    )
+    result = expr.execute()
+
+    gb = df.groupby('dup_strings')
+    expected = df.assign(
+        last_value=gb.plain_strings.transform('last'),
+        first_value=gb.plain_int64.transform('first'),
+        avg_broadcast=df.plain_float64 - gb.plain_float64.transform('mean'),
+        delta=(
+            (df.plain_int64 - gb.plain_int64.shift(1)) /
+            (df.plain_float64 - gb.plain_float64.shift(1))
+        )
+    )
+
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+@pytest.fixture(scope='module')
+def sel_cols(batting):
+    assert isinstance(batting, ir.TableExpr)
+    cols = batting.columns
+    start, end = cols.index('AB'), cols.index('H') + 1
+    return ['playerID', 'yearID', 'teamID', 'G'] + cols[start:end]
+
+
+@pytest.fixture(scope='module')
+def players_base(batting, sel_cols):
+    return batting[sel_cols].sort_by(sel_cols[:3])
+
+
+@pytest.fixture(scope='module')
+def players(players_base):
+    return players_base.groupby('playerID')
+
+
+@pytest.fixture(scope='module')
+def players_df(players_base):
+    return players_base.execute().reset_index(drop=True)
+
+
+def test_players(players, players_df):
+    lagged = players.mutate(pct=lambda t: t.G - t.G.lag())
+    result = lagged.execute()
+    expected = players_df.assign(
+        pct=players_df.G - players_df.groupby('playerID').G.shift(1)
+    )
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_batting_filter_mean(batting, batting_df):
+    expr = batting[batting.G > batting.G.mean()]
+    result = expr.execute()
+    expected = batting_df[batting_df.G > batting_df.G.mean()].reset_index(
+        drop=True
+    )
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_batting_zscore(players, players_df):
+    expr = players.mutate(g_z=lambda t: (t.G - t.G.mean()) / t.G.std())
+    result = expr.execute()
+
+    gb = players_df.groupby('playerID')
+    expected = players_df.assign(
+        g_z=(players_df.G - gb.G.transform('mean')) / gb.G.transform('std')
+    )
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_batting_avg_change_in_games_per_year(players, players_df):
+    expr = players.mutate(
+        delta=lambda t: (t.G - t.G.lag()) / (t.yearID - t.yearID.lag())
+    )
+    result = expr.execute()
+
+    gb = players_df.groupby('playerID')
+    expected = players_df.assign(
+        delta=(players_df.G - gb.G.shift(1)) / (
+            players_df.yearID - gb.yearID.shift(1)
+        )
+    )
+
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+@pytest.mark.xfail(AssertionError, reason='NYI')
+def test_batting_most_hits(players, players_df):
+    expr = players.mutate(
+        hits_rank=lambda t: t.H.rank().over(
+            ibis.cumulative_window(order_by=ibis.desc(t.H))
+        )
+    )
+    result = expr.execute()
+    hits_rank = players_df.groupby('playerID').H.rank(
+        method='min', ascending=False
+    )
+    expected = players_df.assign(hits_rank=hits_rank)
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_batting_quantile(players, players_df):
+    expr = players.mutate(hits_quantile=lambda t: t.H.quantile(0.25))
+    result = expr.execute()
+    hits_quantile = players_df.groupby('playerID').H.transform(
+        'quantile', 0.25
+    )
+    expected = players_df.assign(hits_quantile=hits_quantile)
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+@pytest.mark.parametrize('op', ['sum', 'mean', 'min', 'max'])
+def test_batting_specific_cumulative(batting, batting_df, op):
+    ibis_method = methodcaller('cum{}'.format(op))
+    expr = ibis_method(batting.sort_by([batting.yearID]).G)
+    result = expr.execute().astype('float64')
+
+    pandas_method = methodcaller(op)
+    expected = pandas_method(
+        batting_df[['G', 'yearID']].sort_values('yearID').G.expanding()
+    ).reset_index(drop=True)
+    tm.assert_series_equal(result, expected)
+
+
+def test_batting_cumulative(batting, batting_df):
+    expr = batting.mutate(
+        more_values=lambda t: t.G.sum().over(
+            ibis.cumulative_window(order_by=t.yearID)
+        )
+    )
+    result = expr.execute()
+
+    columns = ['G', 'yearID']
+    more_values = batting_df[columns].sort_values('yearID').G.cumsum()
+    expected = batting_df.assign(more_values=more_values)
+
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_batting_cumulative_partitioned(batting, batting_df):
+    expr = batting.mutate(
+        more_values=lambda t: t.G.sum().over(
+            ibis.cumulative_window(order_by=t.yearID, group_by=t.lgID)
+        )
+    )
+    result = expr.execute().more_values
+
+    columns = ['G', 'yearID', 'lgID']
+    key = 'lgID'
+    expected_result = batting_df[columns].groupby(
+        key, sort=False, as_index=False
+    ).apply(lambda df: df.sort_values('yearID')).groupby(
+        key, sort=False
+    ).G.cumsum().sort_index(level=-1)
+    expected = expected_result.reset_index(
+        list(range(expected_result.index.nlevels - 1)),
+        drop=True
+    ).reindex(batting_df.index)
+    expected.name = result.name
+
+    tm.assert_series_equal(result, expected)
+
+
+def test_batting_rolling(batting, batting_df):
+    expr = batting.mutate(
+        more_values=lambda t: t.G.sum().over(
+            ibis.trailing_window(5, order_by=t.yearID)
+        )
+    )
+    result = expr.execute()
+
+    columns = ['G', 'yearID']
+    more_values = batting_df[columns].sort_values('yearID').G.rolling(5).sum()
+    expected = batting_df.assign(more_values=more_values)
+
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_batting_rolling_partitioned(batting, batting_df):
+    expr = batting.mutate(
+        more_values=lambda t: t.G.sum().over(
+            ibis.trailing_window(3, order_by=t.yearID, group_by=t.lgID)
+        )
+    )
+    result = expr.execute().more_values
+
+    columns = ['G', 'yearID', 'lgID']
+    key = 'lgID'
+    expected_result = batting_df[columns].groupby(
+        key, sort=False, as_index=False
+    ).apply(lambda df: df.sort_values('yearID')).groupby(
+        key, sort=False
+    ).G.rolling(3).sum().sort_index(level=-1)
+    expected = expected_result.reset_index(
+        list(range(expected_result.index.nlevels - 1)),
+        drop=True
+    ).reindex(batting_df.index)
+    expected.name = result.name
+
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    'window',
+    [
+        ibis.window(order_by='yearID'),
+        ibis.window(order_by='yearID', group_by='playerID'),
+    ]
+)
+def test_window_failure_mode(batting, batting_df, window):
+    # can't have order by without a following value of 0
+    expr = batting.mutate(more_values=batting.G.sum().over(window))
+    with pytest.raises(ValueError):
+        expr.execute()
+
+
+def test_scalar_broadcasting(batting, batting_df):
+    expr = batting.mutate(demeaned=batting.G - batting.G.mean())
+    result = expr.execute()
+    expected = batting_df.assign(demeaned=batting_df.G - batting_df.G.mean())
+    tm.assert_frame_equal(result, expected)

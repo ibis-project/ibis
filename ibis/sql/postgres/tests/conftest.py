@@ -19,15 +19,22 @@ import pytest
 
 import ibis
 
-PG_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
-PG_PASS = os.environ.get('IBIS_POSTGRES_PASS')
-IBIS_TEST_POSTGRES_DB = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
+PG_USER = os.environ.get(
+    'IBIS_POSTGRES_USER',
+    os.environ.get('PGUSER', getpass.getuser())
+)
+PG_PASS = os.environ.get('IBIS_POSTGRES_PASS', os.environ.get('PGPASSWORD'))
+PG_HOST = os.environ.get('PGHOST', 'localhost')
+IBIS_TEST_POSTGRES_DB = os.environ.get(
+    'IBIS_TEST_POSTGRES_DB',
+    os.environ.get('PGDATABASE', 'ibis_testing')
+)
 
 
 @pytest.fixture(scope='module')
 def con():
     return ibis.postgres.connect(
-        host='localhost',
+        host=PG_HOST,
         user=PG_USER,
         password=PG_PASS,
         database=IBIS_TEST_POSTGRES_DB,
