@@ -16,6 +16,7 @@ import os
 import datetime
 import webbrowser
 import warnings
+import sys
 
 import six
 import toolz
@@ -239,6 +240,12 @@ class Expr(object):
         # The expression graph may contain one or more tables of a particular
         # known schema
         pass
+
+
+if sys.version_info.major == 2:
+    # Python 2.7 doesn't return NotImplemented unless the other operand has
+    # an attribute called "timetuple". This is a bug that's fixed in Python 3
+    Expr.timetuple = None
 
 
 def _safe_repr(x, memo=None):
@@ -956,7 +963,7 @@ class StringValue(AnyValue):
         return dt.string
 
     def _can_compare(self, other):
-        return isinstance(other, StringValue)
+        return isinstance(other, (StringValue, TemporalValue))
 
 
 class DecimalValue(NumericValue):
@@ -978,7 +985,11 @@ class DecimalValue(NumericValue):
         return constructor
 
 
-class DateValue(AnyValue):
+class TemporalValue(AnyValue):
+    pass
+
+
+class DateValue(TemporalValue):
 
     def type(self):
         return dt.date
@@ -995,7 +1006,7 @@ class DateValue(AnyValue):
         return False
 
     def _can_compare(self, other):
-        return isinstance(other, DateValue)
+        return isinstance(other, (TemporalValue, StringValue))
 
     def _implicit_cast(self, arg):
         # assume we've checked this is OK at this point...
@@ -1003,7 +1014,7 @@ class DateValue(AnyValue):
         return DateScalar(op)
 
 
-class TimestampValue(AnyValue):
+class TimestampValue(TemporalValue):
 
     def __init__(self, meta=None):
         self.meta = meta
@@ -1037,7 +1048,7 @@ class TimestampValue(AnyValue):
         return False
 
     def _can_compare(self, other):
-        return isinstance(other, TimestampValue)
+        return isinstance(other, (TemporalValue, StringValue))
 
     def _implicit_cast(self, arg):
         # assume we've checked this is OK at this point...
@@ -1320,6 +1331,8 @@ def literal(value, type=None):
       ...
     TypeError: Value 'foobar' cannot be safely coerced to int64
     """
+    if hasattr(value, 'op') and isinstance(value.op(), Literal):
+        return value
 
     if type is None:
         type = infer_literal_type(value)
