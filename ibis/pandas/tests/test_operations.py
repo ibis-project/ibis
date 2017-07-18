@@ -36,6 +36,7 @@ def df(tz):
         'strings_with_space': [' ', 'abab', 'ddeeffgg'],
         'int64_with_zeros': [0, 1, 0],
         'float64_with_zeros': [1.0, 0.0, 1.0],
+        'strings_with_nulls': ['a', None, 'b'],
     })
 
 
@@ -49,7 +50,7 @@ def df1():
 @pytest.fixture
 def df2():
     return pd.DataFrame(
-            {'key': list('ac'), 'other_value': [4.0, 6.0], 'key3': list('fe')}
+        {'key': list('ac'), 'other_value': [4.0, 6.0], 'key3': list('fe')}
     )
 
 
@@ -694,3 +695,17 @@ def test_groupby_with_unnamed_arithmetic(t, df):
         'plain_float64': lambda x: ((x ** 2).sum() - x.mean() ** 2) / x.count()
     }).reset_index().rename(columns={'plain_float64': 'naive_variance'})
     tm.assert_frame_equal(result, expected)
+
+
+def test_isnull(t, df):
+    expr = t.strings_with_nulls.isnull()
+    result = expr.execute()
+    expected = df.strings_with_nulls.isnull()
+    tm.assert_series_equal(result, expected)
+
+
+def test_notnull(t, df):
+    expr = t.strings_with_nulls.notnull()
+    result = expr.execute()
+    expected = df.strings_with_nulls.notnull()
+    tm.assert_series_equal(result, expected)

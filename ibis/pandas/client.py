@@ -43,7 +43,7 @@ def pandas_dtypes_to_ibis_schema(df):
 
         if dtype == np.object_:
             ibis_type = _INFERRED_DTYPE_TO_IBIS_TYPE[
-                infer_dtype(df[column_name])
+                infer_dtype(df[column_name].dropna())
             ]
         elif hasattr(dtype, 'tz'):
             ibis_type = dt.Timestamp(str(dtype.tz))
