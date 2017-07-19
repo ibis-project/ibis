@@ -82,14 +82,6 @@ _LITERAL_CAST_TYPES = {
 }
 
 
-def frame_chunks(df):
-    if isinstance(df, DataFrameGroupBy):
-        for name, chunk in df:
-            yield name, chunk
-    else:
-        yield None, df
-
-
 @execute_node.register(ops.Cast, datetime.datetime, dt.String)
 def execute_cast_datetime_or_timestamp_to_string(op, data, type, scope=None):
     """Cast timestamps to strings"""
@@ -272,51 +264,13 @@ def execute_aggregation_dataframe(op, data, scope=None):
     else:
         source = data
 
-    metrics = op.metrics
-    ops = [metric.op() for metric in metrics]
-    metric_names = [metric.get_name() for metric in metrics]
-    first_args = [metric_op.args[0] for metric_op in ops]
-    first_arg_names = []
-    for arg in first_args:
-        try:
-            first_arg_name = arg.get_name()
-        except (AttributeError, com.ExpressionError):
-            first_arg_name = None
-        first_arg_names.append(first_arg_name)
-
-    pieces = []
-
-    index_name = [b.get_name() for b in op.by] if op.by else [None]
-
-    for metric, first_arg, first_arg_name in zip(
-        metrics, first_args, first_arg_names
-    ):
-        pairs = [
-            key if isinstance(key, tuple) else (key,)
-            for key, _ in frame_chunks(source)
-        ]
-        index = pd.MultiIndex.from_tuples(pairs, names=index_name)
-        piece = pd.Series(
-            [
-                execute(
-                    metric,
-                    toolz.merge(scope, {op.table: chunk})
-                ) for _, chunk in frame_chunks(source)
-            ],
-            name=metric.get_name(),
-            index=index
-        )
-        pieces.append(piece)
-
-    data_pieces = [
-        p if isinstance(p, (pd.Series, pd.DataFrame))
-        else pd.Series(p, name=name)
-        for p, name in zip(pieces, first_arg_names)
+    new_scope = toolz.merge(scope, {op.table: source})
+    pieces = [
+        pd.Series(execute(metric, new_scope), name=metric.get_name())
+        for metric in op.metrics
     ]
 
-    return pd.concat(data_pieces, axis=1).rename(
-        columns=dict(zip(first_arg_names, metric_names))
-    ).reset_index()
+    return pd.concat(pieces, axis=1).reset_index()
 
 
 @execute_node.register(ops.Reduction, SeriesGroupBy, type(None))
@@ -329,11 +283,11 @@ def execute_count_distinct_series_groupby(op, data, scope=None):
     return data.nunique()
 
 
-@execute_node.register(ops.Reduction, SeriesGroupBy, pd.Series)
+@execute_node.register(ops.Reduction, SeriesGroupBy, SeriesGroupBy)
 def execute_reduction_series_groupby_mask(op, data, mask, scope=None):
     method = operator.methodcaller(type(op).__name__.lower())
     return data.apply(
-        lambda x, mask=mask, method=method: method(x[mask[x.index]])
+        lambda x, mask=mask.obj, method=method: method(x[mask[x.index]])
     )
 
 
@@ -467,10 +421,10 @@ _BINARY_OPERATIONS = {
 }
 
 
-@execute_node.register(ops.BinaryOp, (pd.Series,), (pd.Series,) + simple_types)
+@execute_node.register(ops.BinaryOp, pd.Series, (pd.Series,) + simple_types)
 @execute_node.register(ops.BinaryOp, numeric_types, numeric_types)
 @execute_node.register(ops.BinaryOp, six.string_types, six.string_types)
-def execute_binary_operation_series(op, left, right, scope=None):
+def execute_binary_op(op, left, right, scope=None):
     op_type = type(op)
     try:
         operation = _BINARY_OPERATIONS[op_type]
@@ -482,16 +436,23 @@ def execute_binary_operation_series(op, left, right, scope=None):
         return operation(left, right)
 
 
-@execute_node.register(ops.Comparison, SeriesGroupBy, SeriesGroupBy)
-def execute_binary_operation_series_group_by(op, left, right, scope=None):
-    return execute_binary_operation_series(op, left.obj, right.obj)
+@execute_node.register(ops.BinaryOp, SeriesGroupBy, SeriesGroupBy)
+def execute_binary_op_series_group_by(op, left, right, scope=None):
+    left_groupings = left.grouper.groupings
+    right_groupings = right.grouper.groupings
+    if left_groupings != right_groupings:
+        raise ValueError(
+            'Cannot perform {} operation on two series with '
+            'different groupings'.format(type(op).__name__)
+        )
+    result = execute_binary_op(op, left.obj, right.obj)
+    return result.groupby(left_groupings)
 
 
-@execute_node.register(ops.Comparison, SeriesGroupBy, simple_types)
-def execute_binary_operation_series_group_by_scalar(
-    op, left, right, scope=None
-):
-    return execute_binary_operation_series(op, left.obj, right)
+@execute_node.register(ops.BinaryOp, SeriesGroupBy, simple_types)
+def execute_binary_op_series_group_by_scalar(op, left, right, scope=None):
+    result = execute_binary_op(op, left.obj, right)
+    return result.groupby(left.grouper.groupings)
 
 
 @execute_node.register(ops.Not, pd.Series)
