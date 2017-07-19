@@ -2014,7 +2014,7 @@ class Comparison(BinaryOp, BooleanValueOp):
             return left, left._implicit_cast(right)
 
         if right._can_implicit_cast(left):
-            return right, right._implicit_cast(left)
+            return right._implicit_cast(left), right
 
         return left, right
 

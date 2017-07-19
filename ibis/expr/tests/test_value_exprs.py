@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import operator
+from datetime import date, datetime
 
 import pytest
 
@@ -23,6 +24,7 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis
 
+from ibis import literal
 from ibis.tests.util import assert_equal
 
 
@@ -857,3 +859,34 @@ def test_generic_value_api_no_arithmetic(value, operation):
 )
 def test_fillna_null(value, expected):
     assert ibis.NA.fillna(value).type().equals(expected)
+
+
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (literal('2017-04-01'), date(2017, 4, 2)),
+        (date(2017, 4, 2), literal('2017-04-01')),
+        (literal('2017-04-01 01:02:33'), datetime(2017, 4, 1, 1, 3, 34)),
+        (datetime(2017, 4, 1, 1, 3, 34), literal('2017-04-01 01:02:33')),
+    ]
+)
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.eq,
+        operator.ne,
+        operator.lt,
+        operator.le,
+        operator.gt,
+        operator.ge,
+        lambda left, right: ibis.timestamp(
+            '2017-04-01 00:02:34'
+        ).between(left, right),
+        lambda left, right: ibis.timestamp(
+            '2017-04-01'
+        ).cast(dt.date).between(left, right)
+    ]
+)
+def test_string_temporal_compare(op, left, right):
+    result = op(left, right)
+    assert result.type().equals(dt.boolean)
