@@ -67,7 +67,7 @@ def execute_cast_series_timestamp(op, data, type, scope=None):
 
 @execute_node.register(ops.Cast, pd.Series, dt.Date)
 def execute_cast_series_date(op, data, _, scope=None):
-    return data.dt.date.astype('datetime64[D]')
+    return data.dt.normalize()
 
 
 _LITERAL_CAST_TYPES = {

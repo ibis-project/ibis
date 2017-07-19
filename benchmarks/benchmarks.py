@@ -1,6 +1,8 @@
-import ibis
 import numpy as np
 import pandas as pd
+
+import ibis
+import ibis.expr.datatypes as dt
 
 
 class Suite:
@@ -94,9 +96,18 @@ class PandasBackend:
         data = pd.DataFrame({
             'key': np.random.choice(16000, size=n),
             'value': np.random.rand(n),
+            'timestamps': pd.date_range(
+                start='now', periods=n, freq='s'
+            ).values,
         })
         t = ibis.pandas.connect({'df': data}).table('df')
-        self.expr = t.groupby(t.key).aggregate(avg_value=t.value.mean())
+        self.high_card_groupby = t.groupby(t.key).aggregate(
+            avg_value=t.value.mean()
+        )
+        self.cast_to_dates = t.timestamps.cast(dt.date)
 
     def time_high_cardinality_group_by(self):
-        self.expr.execute()
+        self.high_card_groupby.execute()
+
+    def time_cast_to_date(self):
+        self.cast_to_dates.execute()
