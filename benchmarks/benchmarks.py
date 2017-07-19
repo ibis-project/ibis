@@ -93,7 +93,7 @@ class PandasBackend:
         n = int(5e6)
         data = pd.DataFrame({
             'key': np.random.choice(16000, size=n),
-            'value': np.random.rand(size=n),
+            'value': np.random.rand(n),
         })
         t = ibis.pandas.connect({'df': data}).table('df')
         self.expr = t.groupby(t.key).aggregate(avg_value=t.value.mean())
