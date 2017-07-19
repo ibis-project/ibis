@@ -91,10 +91,12 @@ class PandasBackend:
 
     def setup(self):
         n = int(5e6)
-        self.data = pd.DataFrame({
+        data = pd.DataFrame({
             'key': np.random.choice(16000, size=n),
             'value': np.random.rand(size=n),
         })
+        t = ibis.pandas.connect({'df': data}).table('df')
+        self.expr = t.groupby(t.key).aggregate(avg_value=t.value.mean())
 
     def time_high_cardinality_group_by(self):
-        self.data.groupby('key').value.mean()
+        self.expr.execute()
