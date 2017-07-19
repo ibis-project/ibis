@@ -1,4 +1,6 @@
 import ibis
+import numpy as np
+import pandas as pd
 
 
 class Suite:
@@ -83,3 +85,16 @@ class Compilation(Suite):
 
     def time_impala_large_expr_compile(self):
         ibis.impala.compile(self.expr)
+
+
+class PandasBackend:
+
+    def setup(self):
+        n = int(5e6)
+        self.data = pd.DataFrame({
+            'key': np.random.choice(16000, size=n),
+            'value': np.random.rand(size=n),
+        })
+
+    def time_high_cardinality_group_by(self):
+        self.data.groupby('key').value.mean()
