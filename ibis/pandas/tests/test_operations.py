@@ -261,7 +261,7 @@ def test_join(how, left, right, df1, df2):
     expr = left.join(right, left.key == right.key, how=how)
     result = expr.execute()
     expected = pd.merge(df1, df2, how=how, on='key')
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
@@ -276,7 +276,7 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
         left_on=['key', 'key2'],
         right_on=['key', 'key3'],
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
@@ -292,7 +292,7 @@ def test_join_with_multiple_predicates_written_as_one(
         left_on=['key', 'key2'],
         right_on=['key', 'key3'],
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
@@ -332,7 +332,7 @@ def test_join_with_duplicate_non_key_columns_not_selected(
         how=how,
         on='key',
     )
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
@@ -343,7 +343,7 @@ def test_join_with_post_expression_selection(how, left, right, df1, df2):
     expected = pd.merge(df1, df2, on='key', how=how)[[
         'key', 'value', 'other_value'
     ]]
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_selection(t, df):
@@ -356,14 +356,14 @@ def test_selection(t, df):
         ((df.plain_strings == 'a') | (df.plain_int64 == 3)) &
         (df.dup_strings == 'd')
     ]
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_mutate(t, df):
     expr = t.mutate(x=t.plain_int64 + 1, y=t.plain_int64 * 2)
     result = expr.execute()
     expected = df.assign(x=df.plain_int64 + 1, y=df.plain_int64 * 2)
-    tm.assert_frame_equal(result[expected.columns], expected[expected.columns])
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @pytest.mark.parametrize(
@@ -381,7 +381,6 @@ def test_aggregation_group_by(t, df, where):
         sum_plain_float64=t.plain_float64.sum(where=ibis_where),
         nunique_dup_ints=t.dup_ints.nunique(),
     )
-    columns = ['avg_plain_int64', 'sum_plain_float64', 'nunique_dup_ints']
     result = expr.execute()
 
     pandas_where = where(df)
@@ -399,7 +398,8 @@ def test_aggregation_group_by(t, df, where):
     )
     # TODO(phillipc): Why does pandas not return floating point values here?
     expected['avg_plain_int64'] = expected.avg_plain_int64.astype('float64')
-    tm.assert_frame_equal(result[columns], expected[columns])
+    result['avg_plain_int64'] = result.avg_plain_int64.astype('float64')
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_aggregation_without_group_by(t, df):
@@ -416,7 +416,7 @@ def test_aggregation_without_group_by(t, df):
         [df['plain_int64'].mean(), df['plain_float64'].sum()],
         index=['plain_int64', 'plain_float64'],
     ).to_frame().T.rename(columns=new_names)
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @pytest.mark.xfail(raises=NotImplementedError)
@@ -435,7 +435,7 @@ def test_group_by_with_having(t, df):
     }).reset_index().rename(columns={'a': 'avg_a', 'c': 'sum_c'})
     expected = expected.loc[expected.sum_c == 5, ['avg_a', 'sum_c']]
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @pytest.mark.parametrize('reduction', ['mean', 'sum', 'count', 'std', 'var'])
@@ -557,7 +557,7 @@ def test_group_concat(t, df):
     expected = df.groupby('dup_strings').apply(
         lambda df: ','.join(df.plain_int64.astype(str))
     ).reset_index().rename(columns={0: 'foo'})
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @pytest.mark.parametrize('offset', [0, 2])
@@ -566,7 +566,7 @@ def test_frame_limit(t, df, offset):
     df_expr = t.limit(n, offset=offset)
     result = df_expr.execute()
     expected = df.iloc[offset:offset + n]
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @pytest.mark.xfail(
@@ -600,7 +600,7 @@ def test_sort_by(t, df, key, pandas_by, pandas_ascending):
     expr = t.sort_by(key(t))
     result = expr.execute()
     expected = df.sort_values(pandas_by, ascending=pandas_ascending)
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_complex_sort_by(t, df):
@@ -610,9 +610,11 @@ def test_complex_sort_by(t, df):
     result = expr.execute()
     expected = df.assign(
         foo=df.plain_int64 * df.plain_float64
-    ).sort_values(['foo', 'plain_float64'], ascending=[False, True])
+    ).sort_values(['foo', 'plain_float64'], ascending=[False, True]).drop(
+        ['foo'], axis=1
+    )
 
-    tm.assert_frame_equal(result, expected.loc[:, expr.columns])
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_distinct(t, df):
@@ -637,7 +639,7 @@ def test_value_counts(t, df):
     ).rename(
         columns={'index': 'dup_strings'}
     ).sort_values(['dup_strings']).reset_index(drop=True)
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_table_count(t, df):
@@ -657,7 +659,7 @@ def test_weighted_average(t, df):
             df.plain_int64 * df.plain_float64
         ).sum() / df.plain_int64.sum()
     ).reset_index().rename(columns={0: 'avg'})
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_group_by_multiple_keys(t, df):
@@ -668,7 +670,7 @@ def test_group_by_multiple_keys(t, df):
     expected = df.groupby(['dup_strings', 'dup_ints']).agg(
         {'plain_float64': 'mean'}
     ).reset_index().rename(columns={'plain_float64': 'avg_plain_float64'})
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_mutate_after_group_by(t, df):
@@ -681,7 +683,7 @@ def test_mutate_after_group_by(t, df):
         {'plain_float64': 'mean'}
     ).reset_index().rename(columns={'plain_float64': 'avg_plain_float64'})
     expected = expected.assign(x=expected.avg_plain_float64)
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_groupby_with_unnamed_arithmetic(t, df):
@@ -694,7 +696,7 @@ def test_groupby_with_unnamed_arithmetic(t, df):
     expected = df.groupby('dup_strings').agg({
         'plain_float64': lambda x: ((x ** 2).sum() - x.mean() ** 2) / x.count()
     }).reset_index().rename(columns={'plain_float64': 'naive_variance'})
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_isnull(t, df):
