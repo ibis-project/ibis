@@ -2,6 +2,8 @@ import numbers
 import operator
 import datetime
 import functools
+import decimal
+import math
 
 import six
 
@@ -56,6 +58,11 @@ def execute_cast_series_generic(op, data, type, scope=None):
     return data.astype(_IBIS_TYPE_TO_PANDAS_TYPE[type])
 
 
+@execute_node.register(ops.Cast, pd.Series, dt.Decimal)
+def execute_cast_series_to_decimal(op, data, type, scope=None):
+    return data.apply(decimal.Decimal)
+
+
 @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
 def execute_cast_series_timestamp(op, data, type, scope=None):
     # TODO(phillipc): Consistent units
@@ -80,6 +87,42 @@ _LITERAL_CAST_TYPES = {
     dt.string: str,
     dt.date: lambda x: pd.Timestamp(x).to_pydatetime().date(),
 }
+
+
+@execute_node.register(ops.UnaryOp, pd.Series)
+def execute_series_unary_op(op, data, scope=None):
+    function = getattr(np, type(op).__name__.lower())
+    if data.dtype == np.dtype(np.object_):
+        return data.apply(functools.partial(execute_node, op, scope=scope))
+    return function(data)
+
+
+@execute_node.register(ops.Ln, pd.Series)
+def execute_series_natural_log(op, data, scope=None):
+    if data.dtype == np.dtype(np.object_):
+        return data.apply(functools.partial(execute_node, op, scope=scope))
+    return np.log(data)
+
+
+@execute_node.register(ops.Ln, decimal.Decimal)
+def execute_decimal_natural_log(op, data, scope=None):
+    return math.log(data)
+
+
+@execute_node.register(ops.UnaryOp, decimal.Decimal)
+def execute_decimal_unary(op, data, scope=None):
+    function = getattr(math, type(op).__name__.lower())
+    return function(data)
+
+
+@execute_node.register(ops.Sign, decimal.Decimal)
+def execute_decimal_sign(op, data, scope=None):
+    return math.copysign(1, data)
+
+
+@execute_node.register(ops.Abs, decimal.Decimal)
+def execute_decimal_abs(op, data, scope=None):
+    return abs(data)
 
 
 @execute_node.register(ops.Cast, datetime.datetime, dt.String)
@@ -158,6 +201,11 @@ def execute_cast_string_literal(op, data, type, scope=None):
         )
     else:
         return cast_function(data)
+
+
+@execute_node.register(ops.Round, pd.Series, (pd.Series, int, type(None)))
+def execute_round_series(op, data, places, scope=None):
+    return data.round(places if places is not None else 0)
 
 
 @execute_node.register(ops.TableColumn, (pd.DataFrame, DataFrameGroupBy))

@@ -536,6 +536,34 @@ def _table_column(t, expr):
     return out_expr
 
 
+def _round(t, expr):
+    arg, digits = expr.op().args
+    sa_arg = t.translate(arg)
+
+    if digits is None:
+        return sa.func.round(sa_arg)
+
+    result = sa.func.round(sa.cast(sa_arg, sa.NUMERIC), t.translate(digits))
+    if digits is not None and isinstance(arg.type(), dt.Decimal):
+        return result
+    return sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
+
+
+def _mod(t, expr):
+    left, right = map(t.translate, expr.op().args)
+    if not isinstance(left.type, sa.Integer) or not isinstance(
+        right.type, sa.Integer
+    ):
+        left = sa.cast(left, sa.NUMERIC)
+        right = sa.cast(right, sa.NUMERIC)
+    return left % right
+
+
+def _floor_divide(t, expr):
+    left, right = map(t.translate, expr.op().args)
+    return sa.func.floor(left / right)
+
+
 _operation_registry.update({
     # We override this here to support time zones
     ops.TableColumn: _table_column,
@@ -585,6 +613,7 @@ _operation_registry.update({
 
     ops.Ceil: fixed_arity(sa.func.ceil, 1),
     ops.Floor: fixed_arity(sa.func.floor, 1),
+    ops.FloorDivide: _floor_divide,
     ops.Exp: fixed_arity(sa.func.exp, 1),
     ops.Sign: fixed_arity(sa.func.sign, 1),
     ops.Sqrt: fixed_arity(sa.func.sqrt, 1),
@@ -593,6 +622,8 @@ _operation_registry.update({
     ops.Log2: fixed_arity(lambda x: sa.func.log(2, x), 1),
     ops.Log10: fixed_arity(sa.func.log, 1),
     ops.Power: fixed_arity(sa.func.power, 2),
+    ops.Round: _round,
+    ops.Modulus: _mod,
 
     # dates and times
     ops.Strftime: _strftime,
