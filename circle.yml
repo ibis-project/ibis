@@ -82,9 +82,13 @@ deployment:
   pr:  # PRs
     branch: /^(?!master$).*$/
     commands:
-      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e master ${CIRCLE_SHA1}
+      - git remote add upstream git://github.com/ibis-project/ibis.git
+      - git fetch upstream
+      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e upstream/master ${CIRCLE_SHA1} || echo > /dev/null
   master:  # Merges to master
     branch: master
     owner: ibis-project
     commands:
-      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e master^ ${CIRCLE_SHA1}
+      - git remote add upstream git://github.com/ibis-project/ibis.git
+      - git fetch upstream
+      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e upstream/master^ ${CIRCLE_SHA1} || echo > /dev/null
