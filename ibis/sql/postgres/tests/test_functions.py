@@ -17,6 +17,8 @@ import os
 import operator
 import unittest
 
+from datetime import date, datetime
+
 import pytest
 import string
 
@@ -1160,3 +1162,75 @@ def test_timestamp_type_accepts_all_timezones():
     ]
     for zone in zones:
         assert dt.Timestamp(zone).timezone == zone
+
+
+@pytest.mark.postgresql
+@pytest.mark.parametrize(
+    ('left', 'right', 'type'),
+    [
+        (L('2017-04-01'), date(2017, 4, 2), dt.date),
+        (date(2017, 4, 2), L('2017-04-01'), dt.date),
+        (
+            L('2017-04-01 01:02:33'),
+            datetime(2017, 4, 1, 1, 3, 34),
+            dt.timestamp
+        ),
+        (
+            datetime(2017, 4, 1, 1, 3, 34),
+            L('2017-04-01 01:02:33'),
+            dt.timestamp
+        ),
+    ]
+)
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.eq,
+        operator.ne,
+        operator.lt,
+        operator.le,
+        operator.gt,
+        operator.ge,
+    ]
+)
+def test_string_temporal_compare(con, op, left, right, type):
+    expr = op(left, right)
+    result = con.execute(expr)
+    left_raw = con.execute(L(left).cast(type))
+    right_raw = con.execute(L(right).cast(type))
+    expected = op(left_raw, right_raw)
+    assert result == expected
+
+
+@pytest.mark.postgresql
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (L('2017-03-31').cast(dt.date), date(2017, 4, 2)),
+        (date(2017, 3, 31), L('2017-04-02').cast(dt.date)),
+        (
+            L('2017-03-31 00:02:33').cast(dt.timestamp),
+            datetime(2017, 4, 1, 1, 3, 34),
+        ),
+        (
+            datetime(2017, 3, 31, 0, 2, 33),
+            L('2017-04-01 01:03:34').cast(dt.timestamp),
+        ),
+    ]
+)
+@pytest.mark.parametrize(
+    'op',
+    [
+        lambda left, right: ibis.timestamp('2017-04-01 00:02:34').between(
+            left, right
+        ),
+        lambda left, right: ibis.timestamp('2017-04-01').cast(dt.date).between(
+            left, right
+        ),
+    ]
+)
+def test_string_temporal_compare_between(con, op, left, right):
+    expr = op(left, right)
+    result = con.execute(expr)
+    assert isinstance(result, (bool, np.bool_))
+    assert result
