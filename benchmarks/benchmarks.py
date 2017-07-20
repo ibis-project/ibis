@@ -95,19 +95,54 @@ class PandasBackend:
         n = int(5e6)
         data = pd.DataFrame({
             'key': np.random.choice(16000, size=n),
+            'low_card_key': np.random.choice(30, size=n),
             'value': np.random.rand(n),
             'timestamps': pd.date_range(
                 start='now', periods=n, freq='s'
             ).values,
         })
+
         t = ibis.pandas.connect({'df': data}).table('df')
-        self.high_card_groupby = t.groupby(t.key).aggregate(
+
+        self.high_card_group_by = t.groupby(t.key).aggregate(
             avg_value=t.value.mean()
         )
+
         self.cast_to_dates = t.timestamps.cast(dt.date)
 
+        self.multikey_group_by_with_mutate = t.mutate(
+            dates=t.timestamps.cast('date')
+        ).groupby(['low_card_key', 'dates']).aggregate(
+            avg_value=lambda t: t.value.mean()
+        )
+
+        self.simple_sort = t.sort_by([t.key])
+
+        self.simple_sort_projection = t[['key', 'value']].sort_by(['key'])
+
+        self.multikey_sort = t.sort_by(['low_card_key', 'key'])
+
+        self.multikey_sort_projection = t[[
+            'low_card_key', 'key', 'value'
+        ]].sort_by(['low_card_key', 'key'])
+
     def time_high_cardinality_group_by(self):
-        self.high_card_groupby.execute()
+        self.high_card_group_by.execute()
 
     def time_cast_to_date(self):
         self.cast_to_dates.execute()
+
+    def time_multikey_group_by_with_mutate(self):
+        self.multikey_group_by_with_mutate.execute()
+
+    def time_simple_sort(self):
+        self.simple_sort.execute()
+
+    def time_multikey_sort(self):
+        self.multikey_sort.execute()
+
+    def time_simple_sort_projection(self):
+        self.simple_sort_projection.execute()
+
+    def time_multikey_sort_projection(self):
+        self.multikey_sort_projection.execute()

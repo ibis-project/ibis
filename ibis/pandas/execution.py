@@ -237,26 +237,24 @@ def execute_selection_dataframe(op, data, scope=None):
         )
         result = result.loc[where]
 
-    column_names = list(result.columns)
-
     if sort_keys:
-
-        computed_sort_keys = [None] * len(sort_keys)
+        computed_sort_keys = []
         ascending = [key.op().ascending for key in sort_keys]
-        temporary_columns = [None] * len(sort_keys)
+        new_columns = {}
 
         for i, key in enumerate(map(operator.methodcaller('op'), sort_keys)):
-            computed_sort_keys[i], temporary_columns[i] = _compute_sort_key(
+            computed_sort_key, temporary_column = _compute_sort_key(
                 key, {op.table: result}
             )
+            computed_sort_keys.append(computed_sort_key)
 
-        if temporary_columns:
-            result = pd.concat(
-                [result] + [c for c in temporary_columns if c is not None],
-                axis=1
-            )
-        result = result.sort_values(computed_sort_keys, ascending=ascending)
-    return result.loc[:, column_names]
+            if temporary_column is not None:
+                new_columns[computed_sort_key] = temporary_column
+
+        result = result.assign(**new_columns).sort_values(
+            computed_sort_keys, ascending=ascending
+        ).drop(new_columns.keys(), axis=1)
+    return result
 
 
 @execute_node.register(ops.Aggregation, pd.DataFrame)
@@ -279,7 +277,14 @@ def execute_aggregation_dataframe(op, data, scope=None):
         data = data.loc[predicate]
 
     if op.by:
-        source = data.groupby([execute(by, scope) for by in op.by])
+        grouping_keys = [
+            by_op.name if isinstance(by_op, ir.TableColumn)
+            else execute(by, scope)
+            for by, by_op in zip(
+                op.by, map(operator.methodcaller('op'), op.by)
+            )
+        ]
+        source = data.groupby(grouping_keys)
     else:
         source = data
 
