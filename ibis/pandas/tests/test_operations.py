@@ -265,6 +265,16 @@ def test_join(how, left, right, df1, df2):
 
 
 @pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
+def test_join_project_left_table(how, left, right, df1, df2):
+    expr = left.join(right, left.key == right.key, how=how)[left, right.key3]
+    result = expr.execute()
+    expected = pd.merge(df1, df2, how=how, on='key')[
+        list(left.columns) + ['key3']
+    ]
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+@pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
 def test_join_with_multiple_predicates(how, left, right, df1, df2):
     expr = left.join(
         right, [left.key == right.key, left.key2 == right.key3], how=how
