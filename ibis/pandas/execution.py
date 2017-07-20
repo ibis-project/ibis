@@ -186,28 +186,47 @@ def execute_selection_dataframe(op, data, scope=None):
 
     if selections:
         data_pieces = []
-        for s in selections:
-            if op.table is s:
+        for selection in selections:
+            table_op = op.table.op()
+            selection_operation = selection.op()
+
+            if op.table is selection:
                 pandas_object = data
-            elif isinstance(s, ir.ColumnExpr):
-                if isinstance(op.table.op(), ops.Join):
+            elif isinstance(selection, ir.ColumnExpr):
+                if isinstance(selection_operation, ir.TableColumn):
+                    # slightly faster path for simple column selection
+                    pandas_object = data[selection_operation.name]
+                elif isinstance(table_op, ops.Join):
                     pandas_object = execute(
-                        s, toolz.merge(scope, {s.op().table: data})
+                        selection,
+                        toolz.merge(scope, {selection_operation.table: data})
                     )
                 else:
                     pandas_object = execute(
-                        s, toolz.merge(scope, {op.table: data})
+                        selection, toolz.merge(scope, {op.table: data})
                     )
+            elif isinstance(selection, ir.TableExpr):
+                # These two statements should never raise unless our
+                # assumptions are wrong because:
+                # 1. If we're selecting ourself, then we've already caught that
+                #    case above
+                # 2. We've checked that `s` originates from its parent before
+                #    executing
+                assert isinstance(table_op, ops.Join)
+                assert selection.equals(table_op.left) or selection.equals(
+                    table_op.right
+                )
+                pandas_object = data[selection.columns]
             else:
                 raise TypeError(
                     "Don't know how to compute selection of type {}".format(
-                        type(s).__name__
+                        type(selection_operation).__name__
                     )
                 )
 
             if isinstance(pandas_object, pd.Series):
                 pandas_object = pandas_object.rename(
-                    getattr(s, '_name', pandas_object.name)
+                    getattr(selection, '_name', pandas_object.name)
                 )
             data_pieces.append(pandas_object)
         result = pd.concat(data_pieces, axis=1)
