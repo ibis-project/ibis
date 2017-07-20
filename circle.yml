@@ -84,11 +84,11 @@ deployment:
     commands:
       - git remote add upstream git://github.com/ibis-project/ibis.git
       - git fetch upstream
-      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e upstream/master ${CIRCLE_SHA1}
+      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e upstream/master ${CIRCLE_SHA1} || echo > /dev/null
   master:  # Merges to master
     branch: master
     owner: ibis-project
     commands:
       - git remote add upstream git://github.com/ibis-project/ibis.git
       - git fetch upstream
-      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e upstream/master^ ${CIRCLE_SHA1}
+      - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e upstream/master^ ${CIRCLE_SHA1} || echo > /dev/null
