@@ -19,13 +19,16 @@ from .client import PostgreSQLClient, PostgreSQLDialect
 from .compiler import rewrites  # noqa
 
 
-def compile(expr):
+def compile(expr, params=None):
     """Compile an ibis expression to the PostgreSQL target.
 
     Parameters
     ----------
     expr : ibis.expr.types.Expr
         The ibis expression to compile
+    params : dict or None
+        ``dict`` mapping :class:`ibis.expr.types.ScalarParameter` objects to
+        values
 
     Returns
     -------
@@ -51,7 +54,7 @@ def compile(expr):
     SELECT t0.double_col + %(param_1)s AS tmp
     FROM functional_alltypes AS t0
     """
-    return to_sqlalchemy(expr, dialect=PostgreSQLDialect)
+    return to_sqlalchemy(expr, dialect=PostgreSQLDialect, params=params)
 
 
 def connect(

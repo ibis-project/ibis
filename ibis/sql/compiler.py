@@ -50,7 +50,7 @@ class SelectBuilder(object):
     relevant query unit aliases to be used when actually generating SQL.
     """
 
-    def __init__(self, expr, context):
+    def __init__(self, expr, context, params):
         self.expr = expr
 
         self.query_expr, self.result_handler = _adapt_expr(self.expr)
@@ -71,6 +71,7 @@ class SelectBuilder(object):
         self.distinct = False
 
         self.op_memo = util.IbisSet()
+        self.params = params
 
     def get_result(self):
         # make idempotent
@@ -119,7 +120,8 @@ class SelectBuilder(object):
                      distinct=self.distinct,
                      result_handler=self.result_handler,
                      parent_expr=self.query_expr,
-                     context=self.context)
+                     context=self.context,
+                     params=self.params)
 
     def _populate_context(self):
         # Populate aliases for the distinct relations used to output this
@@ -907,13 +909,14 @@ class QueryBuilder(object):
 
     select_builder = SelectBuilder
 
-    def __init__(self, expr, context=None):
+    def __init__(self, expr, context=None, params=None):
         self.expr = expr
 
         if context is None:
             context = self._make_context()
 
         self.context = context
+        self.params = params if params is not None else {}
 
     @property
     def _make_context(self):
@@ -935,10 +938,11 @@ class QueryBuilder(object):
         op = self.expr.op()
         return self._union_class(op.left, op.right, self.expr,
                                  distinct=op.distinct,
-                                 context=self.context)
+                                 context=self.context,
+                                 params=self.params)
 
     def _make_select(self):
-        builder = self.select_builder(self.expr, self.context)
+        builder = self.select_builder(self.expr, self.context, self.params)
         return builder.get_result()
 
 
@@ -1103,16 +1107,17 @@ class ExprTranslator(object):
 
     _rewrites = {}
 
-    def __init__(self, expr, context=None, named=False, permit_subquery=False):
+    def __init__(
+        self,
+        expr, context=None, named=False, permit_subquery=False, params=None
+    ):
         self.expr = expr
         self.permit_subquery = permit_subquery
-
-        if context is None:
-            context = self._context_class()
-        self.context = context
+        self.context = self._context_class() if context is None else context
 
         # For now, governing whether the result will have a name
         self.named = named
+        self.params = params
 
     @property
     def _context_class(self):
@@ -1154,7 +1159,7 @@ class ExprTranslator(object):
             op = expr.op()
 
         # TODO: use op MRO for subclasses instead of this isinstance spaghetti
-        if isinstance(op, ir.Parameter):
+        if isinstance(op, ir.ScalarParameter):
             return self._trans_param(expr)
         elif isinstance(op, ops.TableNode):
             # HACK/TODO: revisit for more complex cases
@@ -1167,7 +1172,7 @@ class ExprTranslator(object):
                                        .format(type(op)))
 
     def _trans_param(self, expr):
-        raise NotImplementedError
+        return self.params[expr]
 
     @classmethod
     def rewrites(cls, klass, f=None):
@@ -1300,7 +1305,7 @@ class Select(DDL):
                  order_by=None, limit=None,
                  distinct=False, indent=2,
                  result_handler=None, parent_expr=None,
-                 context=None):
+                 context=None, params=None):
         self.context = context
 
         self.select_set = select_set
@@ -1322,18 +1327,19 @@ class Select(DDL):
         self.indent = indent
 
         self.result_handler = result_handler
+        self.params = params
 
     translator = None
 
     def _translate(self, expr, context=None, named=False,
                    permit_subquery=False):
-
         if context is None:
             context = self.context
 
         translator = self.translator(expr, context=context,
                                      named=named,
-                                     permit_subquery=permit_subquery)
+                                     permit_subquery=permit_subquery,
+                                     params=self.params)
         return translator.get_result()
 
     def equals(self, other, cache=None):
@@ -1445,10 +1451,11 @@ class TableSetFormatter(object):
 class Union(DDL):
 
     def __init__(self, left_table, right_table, expr, distinct=False,
-                 context=None):
+                 context=None, params=None):
         self.context = context
         self.left = left_table
         self.right = right_table
         self.distinct = distinct
         self.table_set = expr
         self.filters = []
+        self.params = params

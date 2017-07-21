@@ -292,7 +292,9 @@ def _exists_subquery(t, expr):
                 .projection([ir.literal(1).name(ir.unnamed)]))
 
     sub_ctx = ctx.subcontext()
-    clause = to_sqlalchemy(filtered, context=sub_ctx, exists=True)
+    clause = to_sqlalchemy(
+        filtered, context=sub_ctx, exists=True, params=t.params
+    )
 
     if isinstance(op, transforms.NotExistsSubquery):
         clause = sa.not_(clause)
@@ -503,17 +505,17 @@ class AlchemyContext(comp.QueryContext):
     def __init__(self, *args, **kwargs):
         self._table_objects = {}
         self.dialect = kwargs.pop('dialect', AlchemyDialect)
-        comp.QueryContext.__init__(self, *args, **kwargs)
+        super(AlchemyContext, self).__init__(*args, **kwargs)
 
     def subcontext(self):
         return type(self)(dialect=self.dialect, parent=self)
 
-    def _to_sql(self, expr, ctx):
-        return to_sqlalchemy(expr, context=ctx)
+    def _to_sql(self, expr, ctx, params=None):
+        return to_sqlalchemy(expr, context=ctx, params=params)
 
-    def _compile_subquery(self, expr):
+    def _compile_subquery(self, expr, params=None):
         sub_ctx = self.subcontext()
-        return self._to_sql(expr, sub_ctx)
+        return self._to_sql(expr, sub_ctx, params=params)
 
     def has_table(self, expr, parent_contexts=False):
         key = self._get_table_key(expr)
@@ -535,12 +537,11 @@ class AlchemyQueryBuilder(comp.QueryBuilder):
 
     select_builder = AlchemySelectBuilder
 
-    def __init__(self, expr, context=None, dialect=None):
-        if dialect is None:
-            dialect = AlchemyDialect
-
-        self.dialect = dialect
-        comp.QueryBuilder.__init__(self, expr, context=context)
+    def __init__(self, expr, context=None, dialect=None, params=None):
+        self.dialect = dialect if dialect is not None else AlchemyDialect
+        super(AlchemyQueryBuilder, self).__init__(
+            expr, context=context, params=params
+        )
 
     def _make_context(self):
         return AlchemyContext(dialect=self.dialect)
@@ -550,11 +551,11 @@ class AlchemyQueryBuilder(comp.QueryBuilder):
         return AlchemyUnion
 
 
-def to_sqlalchemy(expr, context=None, exists=False, dialect=None):
+def to_sqlalchemy(expr, context=None, exists=False, dialect=None, params=None):
     if context is not None:
         dialect = dialect or context.dialect
 
-    ast = build_ast(expr, context=context, dialect=dialect)
+    ast = build_ast(expr, context=context, dialect=dialect, params=params)
     query = ast.queries[0]
 
     if exists:
@@ -563,8 +564,10 @@ def to_sqlalchemy(expr, context=None, exists=False, dialect=None):
     return query.compile()
 
 
-def build_ast(expr, context=None, dialect=None):
-    builder = AlchemyQueryBuilder(expr, context=context, dialect=dialect)
+def build_ast(expr, context=None, dialect=None, params=None):
+    builder = AlchemyQueryBuilder(
+        expr, context=context, dialect=dialect, params=params
+    )
     return builder.get_result()
 
 
@@ -862,8 +865,8 @@ class AlchemyClient(SQLClient):
     def raw_sql(self, query, results=False):
         return super(AlchemyClient, self).raw_sql(query, results=results)
 
-    def _build_ast(self, expr):
-        return build_ast(expr, dialect=self.dialect)
+    def _build_ast(self, expr, params=None):
+        return build_ast(expr, dialect=self.dialect, params=params)
 
     def _get_sqla_table(self, name, schema=None):
         return sa.Table(name, self.meta, schema=schema, autoload=True)
@@ -898,7 +901,7 @@ class AlchemySelect(Select):
         return frag
 
     def _compile_subqueries(self):
-        if len(self.subqueries) == 0:
+        if not self.subqueries:
             return
 
         for expr in self.subqueries:

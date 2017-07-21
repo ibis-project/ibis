@@ -40,7 +40,7 @@ from ibis.expr.types import (Expr,  # noqa
                              DateValue, TimeValue,
                              ArrayValue, ArrayScalar, ArrayColumn,
                              CategoryValue, unnamed, as_value_expr, literal,
-                             null, sequence)
+                             param, null, sequence)
 
 # __all__ is defined
 from ibis.expr.temporal import *  # noqa
@@ -60,7 +60,7 @@ import ibis.util as util
 
 __all__ = [
     'schema', 'table', 'literal', 'expr_list',
-    'timestamp', 'time',
+    'timestamp', 'time', 'param',
     'case', 'where', 'sequence',
     'now', 'desc', 'null', 'NA',
     'cast', 'coalesce', 'greatest', 'least',
@@ -69,7 +69,7 @@ __all__ = [
     'row_number',
     'negate', 'ifelse',
     'Expr', 'Schema',
-    'window', 'trailing_window', 'cumulative_window'
+    'window', 'trailing_window', 'cumulative_window',
 ]
 __all__ += _T.__all__
 

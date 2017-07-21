@@ -79,8 +79,19 @@ class PandasClient(client.Client):
         )
         return ops.DatabaseTable(name, schema, self).to_expr()
 
-    def execute(self, query, *args, **kwargs):
+    def execute(self, query, params=None, limit='default', async=False):
         from ibis.pandas.execution import execute
 
+        if limit != 'default':
+            raise ValueError(
+                'limit parameter to execute is not yet implemented in the '
+                'pandas backend'
+            )
+
+        if async:
+            raise ValueError(
+                'async is not yet supported in the pandas backend'
+            )
+
         assert isinstance(query, ir.Expr)
-        return execute(query)
+        return execute(query, params=params)

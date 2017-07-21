@@ -1436,3 +1436,15 @@ def test_string_temporal_compare_between(con, op, left, right):
     result = con.execute(expr)
     assert isinstance(result, (bool, np.bool_))
     assert result
+
+
+def test_scalar_parameter(con):
+    start = ibis.param(dt.date)
+    end = ibis.param(dt.date)
+    t = con.table('functional_alltypes')
+    col = t.date_string_col.cast('date')
+    expr = col.between(start, end)
+    start_string, end_string = '2009-03-01', '2010-07-03'
+    result = expr.execute(params={start: start_string, end: end_string})
+    expected = col.between(start_string, end_string).execute()
+    tm.assert_series_equal(result, expected)

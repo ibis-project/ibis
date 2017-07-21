@@ -9,18 +9,18 @@ from operator import methodcaller
 
 import pytest
 
+import numpy as np
+
+import pandas as pd
+import pandas.util.testing as tm
+
+import ibis
+import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
+from ibis.common import IbisTypeError
+from ibis.compat import PY2
+
 pytest.importorskip('multipledispatch')
-
-import numpy as np  # noqa: E402
-
-import pandas as pd  # noqa: E402
-import pandas.util.testing as tm  # noqa: E402
-
-import ibis  # noqa: E402
-import ibis.expr.types as ir  # noqa: E402
-import ibis.expr.datatypes as dt  # noqa: E402
-from ibis.common import IbisTypeError  # noqa: E402
-from ibis.compat import PY2  # noqa: E402
 
 pytestmark = pytest.mark.pandas
 
@@ -1446,3 +1446,12 @@ def test_scalar_broadcasting(batting, batting_df):
     result = expr.execute()
     expected = batting_df.assign(demeaned=batting_df.G - batting_df.G.mean())
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize('raw_value', [0.0, 1.0])
+def test_scalar_parameter(t, df, raw_value):
+    value = ibis.param(dt.double)
+    expr = t.float64_with_zeros == value
+    result = expr.execute(params={value: raw_value})
+    expected = df.float64_with_zeros == raw_value
+    tm.assert_series_equal(result, expected)

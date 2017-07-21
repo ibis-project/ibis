@@ -27,7 +27,6 @@ import pytest
 sa = pytest.importorskip('sqlalchemy')
 
 from ibis import literal as L  # noqa: E402
-
 import ibis  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 import ibis.config as config  # noqa: E402
@@ -770,3 +769,15 @@ def test_date_extract_field(alltypes, attr, expected):
     expr = attr(t.timestamp_col.cast('date')).distinct()
     result = expr.execute().astype(int)
     assert set(result) == expected
+
+
+def test_scalar_parameter(db):
+    start = ibis.param(dt.date)
+    end = ibis.param(dt.date)
+    t = db.functional_alltypes
+    col = t.date_string_col.cast('date')
+    expr = col.between(start, end)
+    start_string, end_string = '2009-03-01', '2010-07-03'
+    result = expr.execute(params={start: start_string, end: end_string})
+    expected = col.between(start_string, end_string).execute()
+    tm.assert_series_equal(result, expected)
