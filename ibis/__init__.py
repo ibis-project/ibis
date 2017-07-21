@@ -40,7 +40,10 @@ except ImportError:  # pip install ibis-framework[postgres]
     pass
 
 try:
+    from multipledispatch import halt_ordering, restart_ordering
+    halt_ordering()
     import ibis.pandas.api as pandas
+    restart_ordering()
 except ImportError:  # pip install  ibis-framework[pandas]
     pass
 
