@@ -100,6 +100,9 @@ class PandasBackend:
             'timestamps': pd.date_range(
                 start='now', periods=n, freq='s'
             ).values,
+            'timestamp_strings': pd.date_range(
+                start='now', periods=n, freq='s'
+            ).values.astype(str),
         })
 
         t = ibis.pandas.connect({'df': data}).table('df')
@@ -109,6 +112,7 @@ class PandasBackend:
         )
 
         self.cast_to_dates = t.timestamps.cast(dt.date)
+        self.cast_to_dates_from_strings = t.timestamp_strings.cast(dt.date)
 
         self.multikey_group_by_with_mutate = t.mutate(
             dates=t.timestamps.cast('date')
@@ -131,6 +135,9 @@ class PandasBackend:
 
     def time_cast_to_date(self):
         self.cast_to_dates.execute()
+
+    def time_cast_to_date_from_string(self):
+        self.cast_to_dates_from_strings.execute()
 
     def time_multikey_group_by_with_mutate(self):
         self.multikey_group_by_with_mutate.execute()
