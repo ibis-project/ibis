@@ -58,16 +58,69 @@ def execute_cast_series_generic(op, data, type, scope=None):
 
 @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
 def execute_cast_series_timestamp(op, data, type, scope=None):
-    # TODO(phillipc): Consistent units
+    arg = op.args[0]
+    from_type = arg.type()
+
+    if from_type.equals(type):  # noop cast
+        return data
+
     tz = type.timezone
-    return data.astype(
-        'datetime64[ns]' if tz is None else compat.DatetimeTZDtype('ns', tz)
-    )
+
+    if isinstance(from_type, (dt.Timestamp, dt.Date)):
+        return data.astype(
+            'M8[ns]' if tz is None else compat.DatetimeTZDtype('ns', tz)
+        )
+
+    if isinstance(from_type, (dt.String, dt.Integer)):
+        timestamps = pd.to_datetime(
+            data.values, infer_datetime_format=True, unit='ns',
+        ).tz_localize(tz)
+        return pd.Series(timestamps, index=data.index, name=data.name)
+
+    raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
+
+
+def _normalize(values, original_index, name, timezone=None):
+    index = pd.DatetimeIndex(values, tz=timezone)
+    return pd.Series(index.normalize(), index=original_index, name=name)
 
 
 @execute_node.register(ops.Cast, pd.Series, dt.Date)
-def execute_cast_series_date(op, data, _, scope=None):
-    return data.dt.normalize()
+def execute_cast_series_date(op, data, type, scope=None):
+    arg = op.args[0]
+    from_type = arg.type()
+
+    if from_type.equals(type):
+        return data
+
+    if isinstance(from_type, dt.Timestamp):
+        return _normalize(
+            data.values, data.index, data.name, timezone=from_type.timezone
+        )
+
+    if from_type.equals(dt.string):
+        try:
+            date_values = data.values.astype('datetime64[D]').astype(
+                'datetime64[ns]'
+            )
+        except TypeError:
+            date_values = _normalize(
+                pd.to_datetime(
+                    data.values, infer_datetime_format=True, box=False
+                ),
+                data.index,
+                data.name,
+            )
+        return pd.Series(date_values, index=data.index, name=data.name)
+
+    if isinstance(from_type, dt.Integer):
+        return pd.Series(
+            pd.to_datetime(data.values, box=False, unit='D'),
+            index=data.index,
+            name=data.name
+        )
+
+    raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
 
 
 _LITERAL_CAST_TYPES = {

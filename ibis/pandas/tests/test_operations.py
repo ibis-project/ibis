@@ -27,7 +27,7 @@ def df(tz):
         'plain_strings': list('abc'),
         'plain_float64': [4.0, 5.0, 6.0],
         'plain_datetimes': pd.Series(
-            pd.date_range('now', periods=3).values,
+            pd.date_range(start='2017-01-02 01:02:03.234', periods=3).values,
         ).dt.tz_localize(tz),
         'dup_strings': list('dad'),
         'dup_ints': [1, 2, 1],
@@ -37,6 +37,9 @@ def df(tz):
         'int64_with_zeros': [0, 1, 0],
         'float64_with_zeros': [1.0, 0.0, 1.0],
         'strings_with_nulls': ['a', None, 'b'],
+        'datetime_strings': pd.Series(
+            pd.date_range(start='2017-01-02 01:02:03.234', periods=3).values,
+        ).dt.tz_localize(tz).astype(str),
     })
 
 
@@ -162,9 +165,9 @@ def test_timestamp_with_timezone_is_inferred_correctly(t, df, tz):
 
 
 def test_cast_date(t, df):
-    expr = t.plain_datetimes.cast('date').cast('string')
+    expr = t.plain_datetimes.cast('date')
     result = expr.execute()
-    expected = df.plain_datetimes.dt.normalize().astype(str)
+    expected = df.plain_datetimes.dt.normalize()
     tm.assert_series_equal(result, expected)
 
 
@@ -720,4 +723,42 @@ def test_notnull(t, df):
     expr = t.strings_with_nulls.notnull()
     result = expr.execute()
     expected = df.strings_with_nulls.notnull()
+    tm.assert_series_equal(result, expected)
+
+
+def test_cast_datetime_strings_to_date(t, df):
+    expr = t.datetime_strings.cast('date')
+    result = expr.execute()
+    expected = pd.to_datetime(
+        df.datetime_strings, infer_datetime_format=True
+    ).dt.normalize()
+    tm.assert_series_equal(result, expected)
+
+
+def test_cast_datetime_strings_to_timestamp(t, df):
+    expr = t.datetime_strings.cast('timestamp')
+    result = expr.execute()
+    expected = pd.to_datetime(df.datetime_strings, infer_datetime_format=True)
+    tm.assert_series_equal(result, expected)
+
+
+def test_cast_integer_to_temporal_type(t, df):
+    expr = t.plain_int64.cast(t.plain_datetimes.type())
+    result = expr.execute()
+    expected = pd.Series(
+        pd.to_datetime(df.plain_int64.values, unit='ns').values,
+        index=df.index,
+        name='plain_int64',
+    ).dt.tz_localize(t.plain_datetimes.type().timezone)
+    tm.assert_series_equal(result, expected)
+
+
+def test_cast_integer_to_date(t, df):
+    expr = t.plain_int64.cast('date')
+    result = expr.execute()
+    expected = pd.Series(
+        pd.to_datetime(df.plain_int64.values, unit='D').values,
+        index=df.index,
+        name='plain_int64',
+    )
     tm.assert_series_equal(result, expected)
