@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import math
-import os
 import operator
 
 from operator import methodcaller
@@ -29,7 +28,6 @@ import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.config as config
 
-from ibis.sql.postgres.compiler import PostgreSQLExprTranslator
 from ibis import literal as L
 
 import pandas as pd
@@ -38,46 +36,12 @@ import pandas.util.testing as tm
 sa = pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
 
-
 pytestmark = pytest.mark.postgresql
-
-
-@pytest.fixture(scope='module')
-def con():
-    return ibis.postgres.connect(
-        host='localhost',
-        database=os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing'),
-    )
-
-
-@pytest.fixture(scope='module')
-def db(con):
-    return con.database()
 
 
 @pytest.fixture
 def guid():
     return ibis.util.guid()
-
-
-@pytest.fixture(scope='module')
-def alltypes(db):
-    return db.functional_alltypes
-
-
-@pytest.fixture(scope='module')
-def df(alltypes):
-    return alltypes.execute()
-
-
-@pytest.fixture(scope='module')
-def at(alltypes):
-    return alltypes.op().sqla_table
-
-
-@pytest.fixture
-def translate():
-    return lambda expr: PostgreSQLExprTranslator(expr).get_result()
 
 
 @pytest.mark.parametrize(
