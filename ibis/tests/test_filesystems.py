@@ -91,10 +91,7 @@ class TestHDFSE2E(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        try:
-            cls.hdfs.rmdir(cls.tmp_dir)
-        except:
-            pass
+        cls.hdfs.rmdir(cls.tmp_dir)
 
     def setUp(self):
         self.test_files = []
@@ -429,10 +426,7 @@ class TestSuperUserHDFSE2E(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        try:
-            cls.hdfs.rmdir(cls.tmp_dir)
-        except:
-            pass
+        cls.hdfs.rmdir(cls.tmp_dir)
 
     def setUp(self):
         self.test_files = []

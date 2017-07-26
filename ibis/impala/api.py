@@ -81,10 +81,19 @@ def connect(host='localhost', port=21050, database='default', timeout=45,
     Examples
     --------
     >>> import ibis
-    >>> hdfs = ibis.hdfs_connect(host='impala', port=50070)
+    >>> import os
+    >>> hdfs_host = os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
+    >>> hdfs_port = int(os.environ.get('IBIS_TEST_NN_PORT', 50070))
+    >>> impala_host = os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
+    >>> impala_port = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
+    >>> hdfs = ibis.hdfs_connect(host=hdfs_host, port=hdfs_port)
     >>> hdfs  # doctest: +ELLIPSIS
     <ibis.filesystems.WebHDFS object at 0x...>
-    >>> client = ibis.impala.connect(hdfs_client=hdfs, port=21050)
+    >>> client = ibis.impala.connect(
+    ...     host=impala_host,
+    ...     port=impala_port,
+    ...     hdfs_client=hdfs,
+    ... )
     >>> client  # doctest: +ELLIPSIS
     <ibis.impala.client.ImpalaClient object at 0x...>
 
@@ -108,11 +117,11 @@ def connect(host='localhost', port=21050, database='default', timeout=45,
     con = ImpalaConnection(pool_size=pool_size, **params)
     try:
         client = ImpalaClient(con, hdfs_client=hdfs_client)
-
-        if options.default_backend is None:
-            options.default_backend = client
     except:
         con.close()
         raise
+    else:
+        if options.default_backend is None:
+            options.default_backend = client
 
     return client

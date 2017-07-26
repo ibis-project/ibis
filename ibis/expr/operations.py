@@ -1786,7 +1786,7 @@ class AggregateSelection(object):
         if exprs is None:
             return True, []
 
-        resolved = _maybe_resolve_exprs(self.op.table, exprs)
+        resolved = self.op.table._resolve(exprs)
         subbed_exprs = []
 
         valid = False
@@ -1803,16 +1803,8 @@ class AggregateSelection(object):
 
 def _maybe_convert_sort_keys(table, exprs):
     try:
-        return [to_sort_key(table, k)
-                for k in util.promote_list(exprs)]
-    except:
-        return None
-
-
-def _maybe_resolve_exprs(table, exprs):
-    try:
-        return table._resolve(exprs)
-    except:
+        return [to_sort_key(table, k) for k in util.promote_list(exprs)]
+    except com.IbisError:
         return None
 
 

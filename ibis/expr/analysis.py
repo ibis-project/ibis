@@ -94,7 +94,7 @@ class ScalarAggregate(object):
         try:
             name = subbed_expr.get_name()
             named_expr = subbed_expr
-        except:
+        except ExpressionError:
             name = self.default_name
             named_expr = subbed_expr.name(self.default_name)
 
@@ -150,7 +150,7 @@ def reduction_to_aggregation(expr, default_name='tmp'):
     try:
         name = expr.get_name()
         named_expr = expr
-    except:
+    except ExpressionError:
         name = default_name
         named_expr = expr.name(default_name)
 
@@ -805,7 +805,7 @@ class Projector(object):
 def _maybe_resolve_exprs(table, exprs):
     try:
         return table._resolve(exprs)
-    except:
+    except AttributeError:
         return None
 
 

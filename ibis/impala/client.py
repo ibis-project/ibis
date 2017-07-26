@@ -118,9 +118,12 @@ class ImpalaConnection(object):
         try:
             cursor.execute(query, async=async)
         except:
-            exc = traceback.format_exc()
             cursor.release()
-            self.error('Exception caused by {}: {}'.format(query, exc))
+            self.error(
+                'Exception caused by {}: {}'.format(
+                    query, traceback.format_exc()
+                )
+            )
             raise
 
         return cursor
@@ -1134,7 +1137,7 @@ class ImpalaClient(SQLClient):
         except Exception as e:
             try:
                 self.drop_view(name, database=database)
-            except:
+            except Exception:
                 raise e
 
     def cache_table(self, table_name, database=None, pool='default'):
