@@ -71,7 +71,11 @@ def _subs(expr, mapping):
     except IbisTypeError:
         return expr
 
-    return expr._factory(new_node, name=getattr(expr, '_name', None))
+    try:
+        name = expr.get_name()
+    except ExpressionError:
+        name = None
+    return expr._factory(new_node, name=name)
 
 
 class ScalarAggregate(object):
