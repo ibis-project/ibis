@@ -34,9 +34,16 @@ def sub_for(expr, substitutions):
 
 def _expr_key(expr):
     try:
-        return repr(expr.op())
+        name = expr.get_name()
+    except (AttributeError, ExpressionError):
+        name = None
+
+    try:
+        op = expr.op()
     except AttributeError:
-        return expr
+        return expr, name
+    else:
+        return repr(op), name
 
 
 @toolz.memoize(key=lambda args, kwargs: _expr_key(args[0]))
