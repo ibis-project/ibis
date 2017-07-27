@@ -72,18 +72,6 @@ dependencies:
         sleep 1
       done
 
-    # make sure hiveuser has permissions on tables in the public schema in the metastore database
-    - >
-      CID=$(docker inspect --format '{{.Id}}' impala)
-
-      sudo lxc-attach -n $CID -f /var/lib/docker/containers/$CID/config.lxc -- psql -U hiveuser -d metastore -c 'SELECT * FROM "VERSION"'
-
-    # make sure the hive metastore is working
-    - >
-      CID=$(docker inspect --format '{{.Id}}' impala)
-
-      sudo lxc-attach -n $CID -f /var/lib/docker/containers/$CID/config.lxc -- hive -e 'show tables'
-
 test:
   override:
     - case $CIRCLE_NODE_INDEX in 0) ci/run.sh 2.7.12 ;; 1) ci/run.sh 3.4.4 ;; 2) ci/run.sh 3.5.3 ;; 3) ci/run.sh 3.6.1 ;; esac:
