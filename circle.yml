@@ -17,6 +17,7 @@ machine:
     IBIS_TEST_NN_HOST: impala
     IBIS_TEST_WEBHDFS_PORT: 50070
     IBIS_TEST_WEBHDFS_USER: ubuntu
+    DOCKER_IMAGE: cpcloud86/impala:java8
   post:
     # download the crunchbase sqlite database, for lineage testing
     - wget https://storage.googleapis.com/ibis-ci-data/crunchbase.db
@@ -40,9 +41,9 @@ dependencies:
         docker load -i ~/docker/impala.tar
       else
         echo "Pulling impala docker image from Docker Hub"
-        docker pull cpcloud86/impala:java8
+        docker pull $DOCKER_IMAGE
         mkdir -p ~/docker
-        docker save -o ~/docker/impala.tar cpcloud86/impala:java8
+        docker save -o ~/docker/impala.tar $DOCKER_IMAGE
       fi
     - pip install -U pip
     - cd $(pyenv root); git pull
@@ -55,7 +56,7 @@ dependencies:
     - ci/asvconfig.py | tee $HOME/.asv-machine.json
   post:
     # run the docker image, exposing relevant ports
-    - docker run --detach --name impala --hostname impala -p $IBIS_TEST_WEBHDFS_PORT -p $IBIS_TEST_IMPALA_PORT cpcloud86/impala:java8
+    - docker run --detach --name impala --hostname impala -p $IBIS_TEST_WEBHDFS_PORT -p $IBIS_TEST_IMPALA_PORT $DOCKER_IMAGE
 
     # map the docker container's IP address to a human-readable hostname
     - echo "$(docker inspect --format '{{.NetworkSettings.IPAddress}}' impala) impala" | sudo tee -a /etc/hosts
