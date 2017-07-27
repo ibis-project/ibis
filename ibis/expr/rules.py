@@ -513,10 +513,10 @@ class OneOf(Argument):
         for t in self.types:
             try:
                 arg = t.validate(args, i)
-                validated = True
-            except:
+            except com.IbisTypeError:
                 pass
             else:
+                validated = True
                 break
 
         if not validated:

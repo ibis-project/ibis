@@ -1147,8 +1147,6 @@ def _assert_table_not_exists(con, table_name, database=None):
         con.table(tname)
     except ImpylaError:
         pass
-    except:
-        raise
 
 
 def _ensure_drop(con, table_name, database=None):

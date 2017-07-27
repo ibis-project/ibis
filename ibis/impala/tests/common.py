@@ -118,12 +118,7 @@ class ImpalaE2E(object):
         cls.test_data_db = env.test_data_db
         cls.tmp_dir = env.tmp_dir
         cls.tmp_db = env.tmp_db
-
-        try:
-            cls.alltypes = cls.con.table('functional_alltypes')
-        except:
-            pass
-
+        cls.alltypes = cls.con.table('functional_alltypes')
         cls.db = cls.con.database(env.test_data_db)
 
         if not cls.con.exists_database(cls.tmp_db):
@@ -140,13 +135,14 @@ class ImpalaE2E(object):
             # reduce test flakiness
             try:
                 cls.con.drop_database(cls.tmp_db, force=True)
-                break
-            except:
+            except Exception:
                 i += 1
                 if i >= retries:
                     raise
 
                 time.sleep(0.1)
+            else:
+                break
 
     def setUp(self):
         self.temp_databases = []

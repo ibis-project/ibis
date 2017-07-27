@@ -1673,3 +1673,24 @@ FROM (
 ) t0"""
 
     assert result == expected
+
+
+def test_named_from_filter_groupby():
+    t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
+    gb = t.filter(t.value == 42).groupby(t.key)
+    sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()  # noqa: E731
+    expr = gb.aggregate(abc=sum_expr)
+    expected = """\
+SELECT `key`, sum(((`value` + 1) + 2) + 3) AS `abc`
+FROM t0
+WHERE `value` = 42
+GROUP BY 1"""
+    assert ibis.impala.compile(expr) == expected
+
+    expr = gb.aggregate(foo=sum_expr)
+    expected = """\
+SELECT `key`, sum(((`value` + 1) + 2) + 3) AS `foo`
+FROM t0
+WHERE `value` = 42
+GROUP BY 1"""
+    assert ibis.impala.compile(expr) == expected
