@@ -17,7 +17,7 @@ machine:
     IBIS_TEST_NN_HOST: impala
     IBIS_TEST_WEBHDFS_PORT: 50070
     IBIS_TEST_WEBHDFS_USER: ubuntu
-    DOCKER_IMAGE: cpcloud86/impala:java8
+    DOCKER_IMAGE: cpcloud86/impala:java7
   post:
     # download the crunchbase sqlite database, for lineage testing
     - wget https://storage.googleapis.com/ibis-ci-data/crunchbase.db
