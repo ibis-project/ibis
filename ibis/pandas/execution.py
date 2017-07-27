@@ -146,8 +146,8 @@ def execute_series_unary_op(op, data, scope=None):
     return function(data)
 
 
-def vectorize_object(op, arg, *args, scope=None):
-    func = np.vectorize(functools.partial(execute_node, op, scope=scope))
+def vectorize_object(op, arg, *args, **kwargs):
+    func = np.vectorize(functools.partial(execute_node, op, **kwargs))
     return pd.Series(func(arg, *args), index=arg.index, name=arg.name)
 
 
