@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import math
 import operator
 
@@ -730,13 +731,20 @@ def test_subquery(alltypes, df):
             .limit(1000)
             .group_by('string_col')
             .size())
-    result = expr.execute().sort_values(['string_col']).reset_index(drop=True)
+    result = expr.execute().sort_values('string_col').reset_index(drop=True)
     expected = df.assign(
         d=df.double_col.fillna(0)
     ).head(1000).groupby('string_col').string_col.count().reset_index(
         name='count'
-    ).sort_values(['string_col']).reset_index(drop=True)
-    tm.assert_frame_equal(result, expected)
+    ).sort_values('string_col').reset_index(drop=True)
+    tm.assert_frame_equal(
+        result,
+        expected,
+
+        # Python 2 + pandas inferred type here is 'mixed' because of SQLAlchemy
+        # string type subclasses
+        check_column_type=sys.version_info.major >= 3
+    )
 
 
 @pytest.mark.parametrize('func', ['mean', 'sum', 'min', 'max'])
@@ -841,9 +849,7 @@ def test_cumulative_ordered_window(alltypes, func, df):
 @pytest.mark.parametrize('func', ['sum', 'min', 'max'])
 def test_cumulative_partitioned_ordered_window(alltypes, func, df):
     t = alltypes
-    df = df.sort_values(
-        ['string_col', 'timestamp_col']
-    ).reset_index(drop=True)
+    df = df.sort_values(['string_col', 'timestamp_col']).reset_index(drop=True)
     window = ibis.cumulative_window(
         order_by=t.timestamp_col, group_by=t.string_col
     )
@@ -899,9 +905,9 @@ def test_window_with_arithmetic(alltypes, df):
     w = ibis.window(order_by=t.timestamp_col)
     expr = t.mutate(new_col=ibis.row_number().over(w) / 2)
 
-    df = df[['timestamp_col']].sort_values(
-        ['timestamp_col']
-    ).reset_index(drop=True)
+    df = df[['timestamp_col']].sort_values('timestamp_col').reset_index(
+        drop=True
+    )
     expected = df.assign(new_col=[x / 2. for x in range(len(df))])
     result = expr['timestamp_col', 'new_col'].execute()
     tm.assert_frame_equal(result, expected)
