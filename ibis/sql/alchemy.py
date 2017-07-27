@@ -675,7 +675,7 @@ class AlchemyQuery(Query):
     def _fetch(self, cursor):
         df = pd.DataFrame.from_records(
             cursor.proxy.fetchall(),
-            columns=cursor.proxy.keys(),
+            columns=list(map(six.text_type, cursor.proxy.keys())),
             coerce_float=True
         )
         dtypes = df.dtypes
