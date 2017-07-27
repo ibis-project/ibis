@@ -40,9 +40,9 @@ dependencies:
         docker load -i ~/docker/impala.tar
       else
         echo "Pulling impala docker image from Docker Hub"
-        docker pull cpcloud86/impala:metastore
+        docker pull cpcloud86/impala:java8
         mkdir -p ~/docker
-        docker save -o ~/docker/impala.tar cpcloud86/impala:metastore
+        docker save -o ~/docker/impala.tar cpcloud86/impala:java8
       fi
     - pip install -U pip
     - cd $(pyenv root); git pull
@@ -55,7 +55,7 @@ dependencies:
     - ci/asvconfig.py | tee $HOME/.asv-machine.json
   post:
     # run the docker image, exposing relevant ports
-    - docker run --detach --name impala --hostname impala -p $IBIS_TEST_WEBHDFS_PORT -p $IBIS_TEST_IMPALA_PORT cpcloud86/impala:metastore
+    - docker run --detach --name impala --hostname impala -p $IBIS_TEST_WEBHDFS_PORT -p $IBIS_TEST_IMPALA_PORT cpcloud86/impala:java8
 
     # map the docker container's IP address to a human-readable hostname
     - echo "$(docker inspect --format '{{.NetworkSettings.IPAddress}}' impala) impala" | sudo tee -a /etc/hosts
