@@ -19,13 +19,14 @@ import ibis.expr.rules as rules
 import ibis.expr.operations as ops
 
 
-class BucketLike(ir.ValueOp):
+def _validate_closed(closed):
+    closed = closed.lower()
+    if closed not in {'left', 'right'}:
+        raise ValueError("closed must be 'left' or 'right'")
+    return closed
 
-    def _validate_closed(self, closed):
-        closed = closed.lower()
-        if closed not in ['left', 'right']:
-            raise ValueError("closed must be 'left' or 'right'")
-        return closed
+
+class BucketLike(ir.ValueOp):
 
     @property
     def nbuckets(self):
@@ -42,36 +43,37 @@ class Bucket(BucketLike):
                  include_under=False, include_over=False):
         self.arg = arg
         self.buckets = buckets
-        self.closed = self._validate_closed(closed)
+        self.closed = _validate_closed(closed)
 
         self.close_extreme = bool(close_extreme)
         self.include_over = bool(include_over)
         self.include_under = bool(include_under)
 
-        if len(buckets) == 0:
+        if not len(buckets):
             raise ValueError('Must be at least one bucket edge')
         elif len(buckets) == 1:
             if not self.include_under or not self.include_over:
-                raise ValueError('If one bucket edge provided, must have'
-                                 ' include_under=True and include_over=True')
+                raise ValueError(
+                    'If one bucket edge provided, must have '
+                    'include_under=True and include_over=True'
+                )
 
-        ir.ValueOp.__init__(self, self.arg, self.buckets, self.closed,
-                            self.close_extreme, self.include_under,
-                            self.include_over)
+        super(Bucket, self).__init__(
+            arg, buckets, self.closed,
+            self.close_extreme, self.include_under, self.include_over
+        )
 
     @property
     def nbuckets(self):
-        k = len(self.buckets) - 1
-        k += int(self.include_over) + int(self.include_under)
-        return k
+        return len(self.buckets) - 1 + self.include_over + self.include_under
 
 
 class Histogram(BucketLike):
 
-    def __init__(self, arg, nbins, binwidth, base, closed='left',
-                 aux_hash=None):
+    def __init__(
+        self, arg, nbins, binwidth, base, closed='left', aux_hash=None
+    ):
         self.arg = arg
-
         self.nbins = nbins
         self.binwidth = binwidth
         self.base = base
@@ -82,11 +84,12 @@ class Histogram(BucketLike):
         elif self.binwidth is not None:
             raise ValueError('nbins and binwidth are mutually exclusive')
 
-        self.closed = self._validate_closed(closed)
-
+        self.closed = _validate_closed(closed)
         self.aux_hash = aux_hash
-        ir.ValueOp.__init__(self, self.arg, self.nbins, self.binwidth,
-                            self.base, self.closed, self.aux_hash)
+
+        super(Histogram, self).__init__(
+            arg, nbins, binwidth, base, self.closed, aux_hash
+        )
 
     def output_type(self):
         # always undefined cardinality (for now)
@@ -101,12 +104,12 @@ class CategoryLabel(ir.ValueOp):
         self.labels = labels
 
         card = self.arg.type().cardinality
-        if len(self.labels) != card:
+        if len(labels) != card:
             raise ValueError('Number of labels must match number of '
                              'categories: %d' % card)
 
         self.nulls = nulls
-        ir.ValueOp.__init__(self, self.arg, self.labels, self.nulls)
+        super(CategoryLabel, self).__init__(self.arg, labels, nulls)
 
     def output_type(self):
         return rules.shape_like(self.arg, 'string')
