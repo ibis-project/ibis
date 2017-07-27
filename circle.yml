@@ -76,7 +76,6 @@ dependencies:
       while ! sudo lxc-attach -n $CID -f /var/lib/docker/containers/$CID/config.lxc -- impala-shell -i impala -q 'SELECT VERSION() AS version' 2> /dev/null; do
         sleep 1
       done
-    - rm -rf ~/docker
 
 test:
   override:
