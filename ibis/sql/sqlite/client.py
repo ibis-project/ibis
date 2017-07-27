@@ -34,6 +34,21 @@ class SQLiteDatabase(Database):
     pass
 
 
+_SQLITE_UDF_REGISTRY = set()
+_SQLITE_UDAF_REGISTRY = set()
+
+
+def udf(f):
+    _SQLITE_UDF_REGISTRY.add(f)
+    return f
+
+
+def udaf(f):
+    _SQLITE_UDAF_REGISTRY.add(f)
+    return f
+
+
+@udf
 def _ibis_sqlite_regex_search(string, regex):
     """Return whether `regex` exists in `string`.
 
@@ -51,6 +66,7 @@ def _ibis_sqlite_regex_search(string, regex):
     return re.search(regex, string) is not None
 
 
+@udf
 def _ibis_sqlite_regex_replace(string, pattern, replacement):
     """Replace occurences of `pattern` in `string` with `replacement`.
 
@@ -69,6 +85,7 @@ def _ibis_sqlite_regex_replace(string, pattern, replacement):
     return re.sub(pattern, replacement, string)
 
 
+@udf
 def _ibis_sqlite_regex_extract(string, pattern, index):
     """Extract match of regular expression `pattern` from `string` at `index`.
 
@@ -92,6 +109,73 @@ def _ibis_sqlite_regex_extract(string, pattern, index):
         return None
 
 
+@udf
+def _ibis_sqlite_exp(arg):
+    """Exponentiate `arg`.
+
+    Parameters
+    ----------
+    arg : number
+        Number to raise to `e`.
+
+    Returns
+    -------
+    result : Optional[number]
+        None If the input is None
+    """
+    return math.exp(arg) if arg is not None else None
+
+
+@udf
+def _ibis_sqlite_log(arg, base):
+    if arg is None or base is None or arg < 0 or base < 0:
+        return None
+    return math.log(arg, base)
+
+
+@udf
+def _ibis_sqlite_ln(arg):
+    if arg is None or arg < 0:
+        return None
+    return math.log(arg)
+
+
+@udf
+def _ibis_sqlite_log2(arg):
+    return _ibis_sqlite_log(arg, 2)
+
+
+@udf
+def _ibis_sqlite_log10(arg):
+    return _ibis_sqlite_log(arg, 10)
+
+
+@udf
+def _ibis_sqlite_floor(arg):
+    return math.floor(arg) if arg is not None else None
+
+
+@udf
+def _ibis_sqlite_ceil(arg):
+    return math.ceil(arg) if arg is not None else None
+
+
+@udf
+def _ibis_sqlite_sign(arg):
+    if arg is None:
+        return None
+    elif arg == 0:
+        return 0
+    else:
+        return math.copysign(1, arg)
+
+
+@udf
+def _ibis_sqlite_floordiv(left, right):
+    return left // right
+
+
+@udf
 def _ibis_sqlite_power(arg, power):
     """Raise `arg` to the `power` power.
 
@@ -113,6 +197,7 @@ def _ibis_sqlite_power(arg, power):
     return arg ** power
 
 
+@udf
 def _ibis_sqlite_sqrt(arg):
     """Square root of `arg`.
 
@@ -152,12 +237,14 @@ class _ibis_sqlite_var(object):
         return self.sum_of_squares_of_differences / (self.count - self.offset)
 
 
+@udaf
 class _ibis_sqlite_var_pop(_ibis_sqlite_var):
 
     def __init__(self):
         super(_ibis_sqlite_var_pop, self).__init__(0)
 
 
+@udaf
 class _ibis_sqlite_var_samp(_ibis_sqlite_var):
 
     def __init__(self):
@@ -228,16 +315,10 @@ class SQLiteClient(alch.AlchemyClient):
         if path is not None:
             self.attach(self.database_name, path, create=create)
 
-        for func in (
-            _ibis_sqlite_regex_search,
-            _ibis_sqlite_regex_replace,
-            _ibis_sqlite_regex_extract,
-            _ibis_sqlite_power,
-            _ibis_sqlite_sqrt,
-        ):
+        for func in _SQLITE_UDF_REGISTRY:
             self.con.run_callable(functools.partial(_register_function, func))
 
-        for agg in (_ibis_sqlite_var_pop, _ibis_sqlite_var_samp):
+        for agg in _SQLITE_UDAF_REGISTRY:
             self.con.run_callable(functools.partial(_register_aggregate, agg))
 
     @property

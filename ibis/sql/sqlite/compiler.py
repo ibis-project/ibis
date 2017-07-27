@@ -144,6 +144,14 @@ def _identical_to(t, expr):
         )
 
 
+def _log(t, expr):
+    arg, base = expr.op().args
+    sa_arg = t.translate(arg)
+    if base is None:
+        return sa.func._ibis_sqlite_ln(sa_arg)
+    return sa.func._ibis_sqlite_log(sa_arg, t.translate(base))
+
+
 _operation_registry.update({
     ops.Cast: _cast,
 
@@ -179,11 +187,23 @@ _operation_registry.update({
     ops.ExtractMillisecond: _millisecond,
     ops.TimestampNow: _now,
     ops.IdenticalTo: _identical_to,
+
     ops.RegexSearch: fixed_arity(sa.func._ibis_sqlite_regex_search, 2),
     ops.RegexReplace: fixed_arity(sa.func._ibis_sqlite_regex_replace, 3),
     ops.RegexExtract: fixed_arity(sa.func._ibis_sqlite_regex_extract, 3),
+
     ops.Sqrt: fixed_arity(sa.func._ibis_sqlite_sqrt, 1),
     ops.Power: fixed_arity(sa.func._ibis_sqlite_power, 2),
+    ops.Exp: fixed_arity(sa.func._ibis_sqlite_exp, 1),
+    ops.Ln: fixed_arity(sa.func._ibis_sqlite_ln, 1),
+    ops.Log: _log,
+    ops.Log10: fixed_arity(sa.func._ibis_sqlite_log10, 1),
+    ops.Log2: fixed_arity(sa.func._ibis_sqlite_log2, 1),
+    ops.Floor: fixed_arity(sa.func._ibis_sqlite_floor, 1),
+    ops.Ceil: fixed_arity(sa.func._ibis_sqlite_ceil, 1),
+    ops.Sign: fixed_arity(sa.func._ibis_sqlite_sign, 1),
+    ops.FloorDivide: fixed_arity(sa.func._ibis_sqlite_floordiv, 2),
+
     ops.Variance: _variance_reduction('_ibis_sqlite_var'),
     ops.StandardDev: toolz.compose(
         sa.func._ibis_sqlite_sqrt,

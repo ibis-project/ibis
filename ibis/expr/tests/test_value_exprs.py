@@ -890,3 +890,18 @@ def test_fillna_null(value, expected):
 def test_string_temporal_compare(op, left, right):
     result = op(left, right)
     assert result.type().equals(dt.boolean)
+
+
+@pytest.mark.parametrize(
+    ('value', 'type', 'expected_type_class'),
+    [
+        (2.21, 'decimal', dt.Decimal),
+        (3.14, 'double', dt.Double),
+        (4.2, 'int64', dt.Double),
+        (4, 'int64', dt.Int64),
+    ]
+)
+def test_decimal_modulo_output_type(value, type, expected_type_class):
+    t = ibis.table([('a', type)])
+    expr = t.a % value
+    assert isinstance(expr.type(), expected_type_class)

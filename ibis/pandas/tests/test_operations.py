@@ -1,5 +1,10 @@
+import math
 import operator
 import datetime
+import decimal
+import functools
+
+from operator import methodcaller
 
 import pytest
 
@@ -31,7 +36,7 @@ def df(tz):
         ).dt.tz_localize(tz),
         'dup_strings': list('dad'),
         'dup_ints': [1, 2, 1],
-        'float64_as_strings': ['1.0', '2', '3.234'],
+        'float64_as_strings': ['100.01', '234.23', '-999.34'],
         'int64_as_strings': list(map(str, range(1, 4))),
         'strings_with_space': [' ', 'abab', 'ddeeffgg'],
         'int64_with_zeros': [0, 1, 0],
@@ -40,6 +45,7 @@ def df(tz):
         'datetime_strings': pd.Series(
             pd.date_range(start='2017-01-02 01:02:03.234', periods=3).values,
         ).dt.tz_localize(tz).astype(str),
+        'decimal': list(map(decimal.Decimal, ['1.0', '2', '3.234'])),
     })
 
 
@@ -66,7 +72,7 @@ def client(df, df1, df2):
 
 @pytest.fixture
 def t(client):
-    return client.table('df')
+    return client.table('df', schema={'decimal': dt.Decimal(4, 3)})
 
 
 @pytest.fixture
@@ -87,6 +93,11 @@ def test_table_column(t, df):
 
 def test_literal(client):
     assert client.execute(ibis.literal(1)) == 1
+
+
+def test_read_with_undiscoverable_type(client):
+    with pytest.raises(TypeError):
+        client.table('df')
 
 
 @pytest.mark.parametrize('from_', ['plain_float64', 'plain_int64'])
@@ -184,10 +195,8 @@ def test_cast_date(t, df):
         (lambda v: v.second(), lambda vt: vt.second),
         (lambda v: v.millisecond(), lambda vt: int(vt.microsecond / 1e3)),
     ] + [
-        (
-            operator.methodcaller('strftime', pattern),
-            operator.methodcaller('strftime', pattern),
-        ) for pattern in [
+        (methodcaller('strftime', pattern), methodcaller('strftime', pattern))
+        for pattern in [
             '%Y%m%d %H',
             'DD BAR %w FOO "DD"',
             'DD BAR %w FOO "D',
@@ -762,3 +771,136 @@ def test_cast_integer_to_date(t, df):
         name='plain_int64',
     )
     tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('places', [-2, 0, 1, 2, None])
+def test_round(t, df, places):
+    expr = t.float64_as_strings.cast('double').round(places)
+    result = expr.execute()
+    expected = t.execute().float64_as_strings.astype('float64').round(
+        places if places is not None else 0
+    )
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('ibis_func', 'pandas_func'),
+    [
+        (methodcaller('round'), methodcaller('round')),
+        (methodcaller('round', 2), methodcaller('round', 2)),
+        (methodcaller('round', -2), methodcaller('round', -2)),
+        (methodcaller('round', 0), methodcaller('round', 0)),
+        (methodcaller('ceil'), np.ceil),
+        (methodcaller('floor'), np.floor),
+        (methodcaller('exp'), np.exp),
+        (methodcaller('sign'), np.sign),
+        (methodcaller('sqrt'), np.sqrt),
+        (methodcaller('log', 2), lambda x: np.log(x) / np.log(2)),
+        (methodcaller('ln'), np.log),
+        (methodcaller('log2'), np.log2),
+        (methodcaller('log10'), np.log10),
+    ]
+)
+def test_math_functions(t, df, ibis_func, pandas_func):
+    result = ibis_func(t.float64_with_zeros).execute()
+    expected = pandas_func(df.float64_with_zeros)
+    tm.assert_series_equal(result, expected)
+
+
+def operate(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except decimal.InvalidOperation:
+            return decimal.Decimal('NaN')
+    return wrapper
+
+
+@pytest.mark.parametrize(
+    ('ibis_func', 'pandas_func'),
+    [
+        (methodcaller('round'), lambda x: np.int64(round(x))),
+        (
+            methodcaller('round', 2),
+            lambda x: x.quantize(decimal.Decimal('.00'))
+        ),
+        (
+            methodcaller('round', 0),
+            lambda x: x.quantize(decimal.Decimal('0.'))
+        ),
+        (methodcaller('ceil'), lambda x: decimal.Decimal(math.ceil(x))),
+        (methodcaller('floor'), lambda x: decimal.Decimal(math.floor(x))),
+        (methodcaller('exp'), methodcaller('exp')),
+        (
+            methodcaller('sign'),
+            lambda x: x if not x else decimal.Decimal(1).copy_sign(x)
+        ),
+        (methodcaller('sqrt'), operate(lambda x: x.sqrt())),
+        (
+            methodcaller('log', 2),
+            operate(lambda x: x.ln() / decimal.Decimal(2).ln())
+        ),
+        (methodcaller('ln'), operate(lambda x: x.ln())),
+        (
+            methodcaller('log2'),
+            operate(lambda x: x.ln() / decimal.Decimal(2).ln())
+        ),
+        (methodcaller('log10'), operate(lambda x: x.log10())),
+    ]
+)
+def test_math_functions_decimal(t, df, ibis_func, pandas_func):
+    type = dt.Decimal(12, 3)
+    result = ibis_func(t.float64_as_strings.cast(type)).execute()
+    context = decimal.Context(prec=type.precision)
+    expected = df.float64_as_strings.apply(
+        lambda x: context.create_decimal(x).quantize(
+            decimal.Decimal(
+                '{}.{}'.format(
+                    '0' * (type.precision - type.scale),
+                    '0' * type.scale
+                )
+            )
+        )
+    ).apply(pandas_func)
+
+    result[result.apply(math.isnan)] = -99999
+    expected[expected.apply(math.isnan)] = -99999
+    tm.assert_series_equal(result, expected)
+
+
+def test_round_decimal_with_negative_places(t, df):
+    type = dt.Decimal(12, 3)
+    expr = t.float64_as_strings.cast(type).round(-1)
+    result = expr.execute()
+    expected = pd.Series(
+        list(map(decimal.Decimal, ['1.0E+2', '2.3E+2', '-1.00E+3'])),
+        name='float64_as_strings'
+    )
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('type', [dt.Decimal(9, 0), dt.Decimal(12, 3)])
+def test_cast_to_decimal(t, df, type):
+    expr = t.float64_as_strings.cast(type)
+    result = expr.execute()
+    context = decimal.Context(prec=type.precision)
+    expected = df.float64_as_strings.apply(
+        lambda x: context.create_decimal(x).quantize(
+            decimal.Decimal(
+                '{}.{}'.format(
+                    '0' * (type.precision - type.scale),
+                    '0' * type.scale
+                )
+            )
+        )
+    )
+    tm.assert_series_equal(result, expected)
+    assert all(
+        abs(element.as_tuple().exponent) == type.scale
+        for element in result.values
+    )
+    assert all(
+        1 <= len(element.as_tuple().digits) <= type.precision
+        for element in result.values
+    )
