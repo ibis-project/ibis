@@ -146,13 +146,17 @@ def execute_series_unary_op(op, data, scope=None):
     return function(data)
 
 
+def vectorize_object(op, arg, *args, scope=None):
+    func = np.vectorize(functools.partial(execute_node, op, scope=scope))
+    return pd.Series(func(arg, *args), index=arg.index, name=arg.name)
+
+
 @execute_node.register(
     ops.Log, pd.Series, (pd.Series, numbers.Real, decimal.Decimal, type(None))
 )
 def execute_series_log_with_base(op, data, base, scope=None):
     if data.dtype == np.dtype(np.object_):
-        func = np.vectorize(functools.partial(execute_node, op, scope=scope))
-        return pd.Series(func(data, base), index=data.index, name=data.name)
+        return vectorize_object(op, data, base, scope=scope)
 
     if base is None:
         return np.log(data)
@@ -251,8 +255,7 @@ def execute_cast_string_literal(op, data, type, scope=None):
 )
 def execute_round_series(op, data, places, scope=None):
     if data.dtype == np.dtype(np.object_):
-        func = np.vectorize(functools.partial(execute_node, op, scope=scope))
-        return pd.Series(func(data, places), index=data.index, name=data.name)
+        return vectorize_object(op, data, places, scope=scope)
     return data.round(places if places is not None else 0)
 
 
