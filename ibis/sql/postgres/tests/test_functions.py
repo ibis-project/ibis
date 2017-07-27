@@ -1160,7 +1160,7 @@ def test_rank(con):
     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = """\
 SELECT rank() OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp 
-FROM functional_alltypes AS t0"""  # noqa: E501, W291
+FROM functional_alltypes AS t0"""  # noqa: E501,W291
     assert result == expected
 
 
@@ -1171,7 +1171,7 @@ def test_percent_rank(con):
     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = """\
 SELECT percent_rank() OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS tmp 
-FROM functional_alltypes AS t0"""  # noqa: E501, W291
+FROM functional_alltypes AS t0"""  # noqa: E501,W291
     assert result == expected
 
 
@@ -1182,7 +1182,7 @@ def test_ntile(con):
     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
     expected = """\
 SELECT ntile(7) OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp 
-FROM functional_alltypes AS t0"""  # noqa: E501, W291
+FROM functional_alltypes AS t0"""  # noqa: E501,W291
     assert result == expected
 
 

@@ -40,6 +40,9 @@ dependencies:
   cache_directories:
     - ~/docker
   override:
+    - echo $CACHED_DOCKER_IMAGE
+    - ls ~/docker
+    - du -h ~/docker
     - >
       if [[ -e ~/docker/$CACHED_DOCKER_IMAGE.tar ]]; then
         echo "Loading impala docker image from cache"
@@ -73,9 +76,25 @@ dependencies:
     - >
       CID=$(docker inspect --format '{{.Id}}' impala)
 
-      while ! sudo lxc-attach -n $CID -f /var/lib/docker/containers/$CID/config.lxc -- impala-shell -i impala -q 'SELECT VERSION() AS version' 2> /dev/null; do
-        sleep 1
+      CID_PATH=/var/lib/docker/containers/$CID/config.lxc
+
+      while ! sudo lxc-attach -n $CID -f $CID_PATH -- impala-shell -i impala -q 'SELECT VERSION() AS version'; do
+        sleep 10
       done
+
+    - >
+      CID=$(docker inspect --format '{{.Id}}' impala)
+
+      CID_PATH=/var/lib/docker/containers/$CID/config.lxc
+
+      sudo lxc-attach -n $CID -f $CID_PATH -- psql -U hiveuser -d metastore -c 'SELECT * FROM "VERSION"'
+
+    - >
+      CID=$(docker inspect --format '{{.Id}}' impala)
+
+      CID_PATH=/var/lib/docker/containers/$CID/config.lxc
+
+      sudo lxc-attach -n $CID -f $CID_PATH -- hive -e 'SHOW TABLES'
 
 test:
   override:
@@ -88,12 +107,12 @@ deployment:
     branch: /^(?!master$).*$/
     commands:
       - git remote add upstream git://github.com/ibis-project/ibis.git
-      - git fetch upstream
+      - git fetch upstream refs/heads/master
       - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e upstream/master ${CIRCLE_SHA1} || echo > /dev/null
   master:  # Merges to master
     branch: master
     owner: ibis-project
     commands:
       - git remote add upstream git://github.com/ibis-project/ibis.git
-      - git fetch upstream
+      - git fetch upstream refs/heads/master
       - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e upstream/master^ ${CIRCLE_SHA1} || echo > /dev/null
