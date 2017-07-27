@@ -231,6 +231,17 @@ class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
             (L(5.5).round(), 6.0),
             (L(5.556).round(2), 5.56),
             (L(5.556).sqrt(), math.sqrt(5.556)),
+
+            (L(5.556).ceil(), 6.0),
+            (L(5.556).floor(), 5.0),
+            (L(5.556).exp(), math.exp(5.556)),
+            (L(5.556).sign(), 1),
+            (L(-5.556).sign(), -1),
+            (L(0).sign(), 0),
+            (L(5.556).log(2), math.log(5.556, 2)),
+            (L(5.556).ln(), math.log(5.556)),
+            (L(5.556).log2(), math.log(5.556, 2)),
+            (L(5.556).log10(), math.log10(5.556)),
         ]
         self._check_e2e_cases(cases)
 

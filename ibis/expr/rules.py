@@ -43,15 +43,15 @@ class BinaryPromoter(object):
         return shape_like_args(self.args, promoted_type)
 
     def _get_type(self):
-        if util.any_of(self.args, ir.FloatingValue):
+        if util.any_of(self.args, ir.DecimalValue):
+            return _decimal_promoted_type(self.args)
+        elif util.any_of(self.args, ir.FloatingValue):
             if util.any_of(self.args, ir.DoubleValue):
                 return 'double'
             else:
                 return 'float'
         elif util.all_of(self.args, ir.IntegerValue):
             return self._get_int_type()
-        elif util.any_of(self.args, ir.DecimalValue):
-            return _decimal_promoted_type(self.args)
         else:
             raise NotImplementedError
 

@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import six
 
 import numpy as np
@@ -30,7 +32,7 @@ _INFERRED_DTYPE_TO_IBIS_TYPE = {
 }
 
 
-def pandas_dtypes_to_ibis_schema(df):
+def pandas_dtypes_to_ibis_schema(df, schema):
     dtypes = df.dtypes
 
     pairs = []
@@ -41,10 +43,20 @@ def pandas_dtypes_to_ibis_schema(df):
                 'Column names must be strings to use the pandas backend'
             )
 
-        if dtype == np.object_:
-            ibis_type = _INFERRED_DTYPE_TO_IBIS_TYPE[
-                infer_dtype(df[column_name].dropna())
-            ]
+        if column_name in schema:
+            ibis_type = dt.validate_type(schema[column_name])
+        elif dtype == np.object_:
+            inferred_dtype = infer_dtype(df[column_name].dropna())
+
+            if inferred_dtype == 'mixed':
+                raise TypeError(
+                    'Unable to infer type of column {0!r}. Try instantiating '
+                    'your table from the client with client.table('
+                    "'my_table', schema={{{0!r}: <explicit type>}})".format(
+                        column_name
+                    )
+                )
+            ibis_type = _INFERRED_DTYPE_TO_IBIS_TYPE[inferred_dtype]
         elif hasattr(dtype, 'tz'):
             ibis_type = dt.Timestamp(str(dtype.tz))
         else:
@@ -60,9 +72,11 @@ class PandasClient(client.Client):
     def __init__(self, dictionary):
         self.dictionary = dictionary
 
-    def table(self, name):
+    def table(self, name, schema=None):
         df = self.dictionary[name]
-        schema = pandas_dtypes_to_ibis_schema(df)
+        schema = pandas_dtypes_to_ibis_schema(
+            df, schema if schema is not None else {}
+        )
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     def execute(self, query, *args, **kwargs):
