@@ -410,22 +410,17 @@ def _extract_field(name, klass):
 def cast(arg, target_type):
     # validate
     op = _ops.Cast(arg, target_type)
+    to = op.args[1]
 
-    if op.args[1] == arg.type():
+    if to.equals(arg.type()):
         # noop case if passed type is the same
         return arg
     else:
         result = op.to_expr()
         if not arg.has_name():
             return result
-        try:
-            expr_name = ('cast({0}, {1!s})'
-                         .format(arg.get_name(),
-                                 op.args[1]))
-            result = result.name(expr_name)
-        except:
-            pass
-        return result
+        expr_name = 'cast({}, {})'.format(arg.get_name(), op.args[1])
+        return result.name(expr_name)
 
 
 cast.__doc__ = """
@@ -583,9 +578,11 @@ def over(expr, window):
     result = op.to_expr()
 
     try:
-        result = result.name(expr.get_name())
-    except:
+        name = expr.get_name()
+    except _com.ExpressionError:
         pass
+    else:
+        result = result.name(name)
 
     return result
 

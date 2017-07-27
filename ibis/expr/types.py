@@ -221,9 +221,10 @@ class Expr(object):
         """
         try:
             self.compile()
-            return True
-        except:
+        except Exception:
             return False
+        else:
+            return True
 
     def equals(self, other, cache=None):
         if type(self) != type(other):
@@ -687,9 +688,10 @@ class TableExpr(Expr):
     def _is_valid(self, exprs):
         try:
             self._assert_valid(util.promote_list(exprs))
-            return True
-        except:
+        except com.RelationError:
             return False
+        else:
+            return True
 
     def _assert_valid(self, exprs):
         from ibis.expr.analysis import ExprValidator

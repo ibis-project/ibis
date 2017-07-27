@@ -17,6 +17,7 @@ machine:
     IBIS_TEST_NN_HOST: impala
     IBIS_TEST_WEBHDFS_PORT: 50070
     IBIS_TEST_WEBHDFS_USER: ubuntu
+    DOCKER_IMAGE: cpcloud86/impala:java7
   post:
     # download the crunchbase sqlite database, for lineage testing
     - wget https://storage.googleapis.com/ibis-ci-data/crunchbase.db
@@ -40,9 +41,9 @@ dependencies:
         docker load -i ~/docker/impala.tar
       else
         echo "Pulling impala docker image from Docker Hub"
-        docker pull cpcloud86/impala:metastore
+        docker pull $DOCKER_IMAGE
         mkdir -p ~/docker
-        docker save -o ~/docker/impala.tar cpcloud86/impala:metastore
+        docker save -o ~/docker/impala.tar $DOCKER_IMAGE
       fi
     - pip install -U pip
     - cd $(pyenv root); git pull
@@ -55,7 +56,7 @@ dependencies:
     - ci/asvconfig.py | tee $HOME/.asv-machine.json
   post:
     # run the docker image, exposing relevant ports
-    - docker run -it -d --name impala --hostname impala -p 50070:50070 -p 21050:21050 cpcloud86/impala:metastore
+    - docker run --detach --name impala --hostname impala -p $IBIS_TEST_WEBHDFS_PORT -p $IBIS_TEST_IMPALA_PORT $DOCKER_IMAGE
 
     # map the docker container's IP address to a human-readable hostname
     - echo "$(docker inspect --format '{{.NetworkSettings.IPAddress}}' impala) impala" | sudo tee -a /etc/hosts
@@ -64,13 +65,12 @@ dependencies:
     - ping -c 1 impala
 
     # wait for impala to start accepting queries
-    - while ! sudo lxc-attach -n "$(docker inspect --format '{{.Id}}' impala)" -- impala-shell -i impala -q 'SELECT VERSION() AS version' 2> /dev/null; do sleep 0; done
+    - >
+      CID=$(docker inspect --format '{{.Id}}' impala)
 
-    # make sure hiveuser has permissions on tables in the public schema in the metastore database
-    - sudo lxc-attach -n "$(docker inspect --format '{{.Id}}' impala)" -- psql -U hiveuser -d metastore -c 'SELECT * FROM "VERSION"'
-
-    # make sure the hive metastore is working
-    - sudo lxc-attach -n "$(docker inspect --format '{{.Id}}' impala)" -- hive -e 'show tables'
+      while ! sudo lxc-attach -n $CID -f /var/lib/docker/containers/$CID/config.lxc -- impala-shell -i impala -q 'SELECT VERSION() AS version' 2> /dev/null; do
+        sleep 1
+      done
 
 test:
   override:

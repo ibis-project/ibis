@@ -34,9 +34,16 @@ def sub_for(expr, substitutions):
 
 def _expr_key(expr):
     try:
-        return repr(expr.op())
+        name = expr.get_name()
+    except (AttributeError, ExpressionError):
+        name = None
+
+    try:
+        op = expr.op()
     except AttributeError:
-        return expr
+        return expr, name
+    else:
+        return repr(op), name
 
 
 @toolz.memoize(key=lambda args, kwargs: _expr_key(args[0]))
@@ -64,7 +71,11 @@ def _subs(expr, mapping):
     except IbisTypeError:
         return expr
 
-    return expr._factory(new_node, name=getattr(expr, '_name', None))
+    try:
+        name = expr.get_name()
+    except ExpressionError:
+        name = None
+    return expr._factory(new_node, name=name)
 
 
 class ScalarAggregate(object):
@@ -83,7 +94,7 @@ class ScalarAggregate(object):
         try:
             name = subbed_expr.get_name()
             named_expr = subbed_expr
-        except:
+        except ExpressionError:
             name = self.default_name
             named_expr = subbed_expr.name(self.default_name)
 
@@ -139,7 +150,7 @@ def reduction_to_aggregation(expr, default_name='tmp'):
     try:
         name = expr.get_name()
         named_expr = expr
-    except:
+    except ExpressionError:
         name = default_name
         named_expr = expr.name(default_name)
 
@@ -794,7 +805,7 @@ class Projector(object):
 def _maybe_resolve_exprs(table, exprs):
     try:
         return table._resolve(exprs)
-    except:
+    except AttributeError:
         return None
 
 
