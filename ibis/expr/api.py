@@ -330,9 +330,7 @@ def count(expr, where=None):
     """
     op = expr.op()
     if isinstance(op, _ops.DistinctColumn):
-        if where is not None:
-            raise NotImplementedError
-        result = op.count().to_expr()
+        result = _ops.CountDistinct(op.args[0], where).to_expr()
     else:
         result = _ops.Count(expr, where).to_expr()
 
@@ -886,18 +884,24 @@ def distinct(arg):
     return op.to_expr()
 
 
-def nunique(arg):
+def nunique(expr, where=None):
     """
     Shorthand for foo.distinct().count(); computing the number of unique
     values in an array.
+
+    Parameters
+    -----------
+    expr : ibis.expr.types.Expr
+
+    Returns
+    -------
+    ScalarExpr
     """
-    return _ops.CountDistinct(arg).to_expr()
+    return _ops.CountDistinct(expr, where).to_expr()
 
 
 def topk(arg, k, by=None):
     """
-    Produces
-
     Returns
     -------
     topk : TopK filter expression

@@ -374,9 +374,13 @@ def execute_reduction_series_groupby_std(op, data, _, context=None, **kwargs):
     return context.agg(data, 'std')
 
 
-@execute_node.register(ops.CountDistinct, SeriesGroupBy)
-def execute_count_distinct_series_groupby(op, data, context=None, **kwargs):
+@execute_node.register(ops.CountDistinct, SeriesGroupBy, type(None))
+def execute_count_distinct_series_groupby(op, data, _, context=None, **kwargs):
     return context.agg(data, 'nunique')
+
+
+def _filtered_reduction(mask, method, data):
+    return method(data[mask[data.index]])
 
 
 @execute_node.register(ops.Reduction, SeriesGroupBy, SeriesGroupBy)
@@ -384,7 +388,17 @@ def execute_reduction_series_gb_mask(op, data, mask, context=None, **kwargs):
     method = operator.methodcaller(type(op).__name__.lower())
     return context.agg(
         data,
-        lambda x, mask=mask.obj, method=method: method(x[mask[x.index]])
+        functools.partial(_filtered_reduction, mask.obj, method)
+    )
+
+
+@execute_node.register(ops.CountDistinct, SeriesGroupBy, SeriesGroupBy)
+def execute_count_distinct_series_groupby_mask(
+    op, data, mask, context=None, **kwargs
+):
+    return context.agg(
+        data,
+        functools.partial(_filtered_reduction, mask.obj, pd.Series.nunique)
     )
 
 
@@ -417,6 +431,11 @@ def execute_reduction_series_mask(op, data, mask, context=None, **kwargs):
     return context.agg(operand, type(op).__name__.lower())
 
 
+@execute_node.register(ops.CountDistinct, pd.Series, (pd.Series, type(None)))
+def execute_count_distinct_series_mask(op, data, mask, scope=None):
+    return (data[mask] if mask is not None else data).nunique()
+
+
 @execute_node.register(ops.StandardDev, pd.Series, (pd.Series, type(None)))
 def execute_standard_dev_series(op, data, mask, context=None, **kwargs):
     return context.agg(data[mask] if mask is not None else data, 'std')
@@ -443,12 +462,6 @@ def execute_group_concat_series(op, data, sep, **kwargs):
 @execute_node.register((ops.Any, ops.All), pd.Series)
 def execute_any_all_series(op, data, context=None, **kwargs):
     return context.agg(data, type(op).__name__.lower())
-
-
-@execute_node.register(ops.CountDistinct, pd.Series)
-def execute_count_distinct_series(op, data, **kwargs):
-    # TODO(phillipc): Does count distinct have a mask?
-    return data.nunique()
 
 
 @execute_node.register(ops.Count, pd.DataFrame, type(None))
