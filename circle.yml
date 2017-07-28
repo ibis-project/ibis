@@ -41,8 +41,6 @@ dependencies:
     - ~/docker
   override:
     - echo $CACHED_DOCKER_IMAGE
-    - ls ~/docker
-    - du -h ~/docker
     - >
       if [[ -e ~/docker/$CACHED_DOCKER_IMAGE.tar ]]; then
         echo "Loading impala docker image from cache"
@@ -50,6 +48,7 @@ dependencies:
       else
         echo "Pulling impala docker image from Docker Hub"
         docker pull $DOCKER_IMAGE
+        rm -rf ~/docker
         mkdir -p ~/docker
         docker save -o ~/docker/$CACHED_DOCKER_IMAGE.tar $DOCKER_IMAGE
       fi
