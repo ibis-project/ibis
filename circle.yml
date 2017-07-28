@@ -47,7 +47,9 @@ dependencies:
       else
         echo "Pulling impala docker image from Docker Hub"
         docker pull $DOCKER_IMAGE
+        rm -rf ~/docker
         mkdir -p ~/docker
+        echo "Saving image $DOCKER_IMAGE to $HOME/docker/$CACHED_DOCKER_IMAGE.tar"
         docker save -o ~/docker/$CACHED_DOCKER_IMAGE.tar $DOCKER_IMAGE
       fi
     - pip install -U pip
@@ -73,9 +75,25 @@ dependencies:
     - >
       CID=$(docker inspect --format '{{.Id}}' impala)
 
-      while ! sudo lxc-attach -n $CID -f /var/lib/docker/containers/$CID/config.lxc -- impala-shell -i impala -q 'SELECT VERSION() AS version' 2> /dev/null; do
-        sleep 1
+      CID_PATH=/var/lib/docker/containers/$CID/config.lxc
+
+      while ! sudo lxc-attach -n $CID -f $CID_PATH -- impala-shell -i impala -q 'SELECT VERSION() AS version'; do
+        sleep 10
       done
+
+    - >
+      CID=$(docker inspect --format '{{.Id}}' impala)
+
+      CID_PATH=/var/lib/docker/containers/$CID/config.lxc
+
+      sudo lxc-attach -n $CID -f $CID_PATH -- psql -U hiveuser -d metastore -c 'SELECT * FROM "VERSION"'
+
+    - >
+      CID=$(docker inspect --format '{{.Id}}' impala)
+
+      CID_PATH=/var/lib/docker/containers/$CID/config.lxc
+
+      sudo lxc-attach -n $CID -f $CID_PATH -- hive -e 'SHOW TABLES'
 
 test:
   override:
@@ -88,12 +106,12 @@ deployment:
     branch: /^(?!master$).*$/
     commands:
       - git remote add upstream git://github.com/ibis-project/ibis.git
-      - git fetch upstream
+      - git fetch upstream refs/heads/master
       - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e upstream/master ${CIRCLE_SHA1} || echo > /dev/null
   master:  # Merges to master
     branch: master
     owner: ibis-project
     commands:
       - git remote add upstream git://github.com/ibis-project/ibis.git
-      - git fetch upstream
+      - git fetch upstream refs/heads/master
       - PATH="$HOME/miniconda/bin:$PATH" asv continuous -f 1.5 -e upstream/master^ ${CIRCLE_SHA1} || echo > /dev/null
