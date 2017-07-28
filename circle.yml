@@ -40,7 +40,6 @@ dependencies:
   cache_directories:
     - ~/docker
   override:
-    - echo $CACHED_DOCKER_IMAGE
     - >
       if [[ -e ~/docker/$CACHED_DOCKER_IMAGE.tar ]]; then
         echo "Loading impala docker image from cache"
