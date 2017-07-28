@@ -50,7 +50,7 @@ dependencies:
         docker pull $DOCKER_IMAGE
         rm -rf ~/docker
         mkdir -p ~/docker
-        echo "Saving image $DOCKER_IMAGE to $CACHED_DOCKER_IMAGE"
+        echo "Saving image $DOCKER_IMAGE to $HOME/docker/$CACHED_DOCKER_IMAGE.tar"
         docker save -o ~/docker/$CACHED_DOCKER_IMAGE.tar $DOCKER_IMAGE
       fi
     - pip install -U pip
