@@ -22,7 +22,6 @@ import traceback
 from posixpath import join as pjoin
 from collections import deque
 
-import hdfs
 import numpy as np
 import pandas as pd
 
@@ -465,6 +464,7 @@ class ImpalaClient(SQLClient):
     async_query = ImpalaAsyncQuery
 
     def __init__(self, con, hdfs_client=None, **params):
+        import hdfs
         self.con = con
 
         if isinstance(hdfs_client, hdfs.Client):

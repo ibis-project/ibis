@@ -29,6 +29,7 @@ import ibis.compat as compat
 import ibis.util as util
 import ibis
 
+pytest.importorskip('hdfs')
 
 ENV = IbisTestEnv()
 
