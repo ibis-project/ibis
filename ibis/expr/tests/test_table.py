@@ -964,6 +964,17 @@ def test_join_invalid_refs(con):
         t1.inner_join(t2, [predicate])
 
 
+def test_join_invalid_expr_type(con):
+    left = con.table('star1')
+    invalid_right = left.foo_id
+    join_key = ['bar_id']
+
+    with pytest.raises(TypeError) as e:
+        left.inner_join(invalid_right, join_key)
+
+    assert str(e).endswith('right table')
+
+
 def test_join_non_boolean_expr(con):
     t1 = con.table('star1')
     t2 = con.table('star2')
