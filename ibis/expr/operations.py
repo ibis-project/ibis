@@ -1327,12 +1327,12 @@ class Join(TableNode):
 
     def __init__(self, left, right, predicates):
         if not rules.is_table(left):
-            raise TypeError('Can only join table expressions, got %s for '
-                            'left table' % type(left))
+            raise TypeError('Can only join table expressions, got {} for '
+                            'left table'.format(type(left).__name__))
 
         if not rules.is_table(right):
-            raise TypeError('Can only join table expressions, got %s for '
-                            'right table' % type(left))
+            raise TypeError('Can only join table expressions, got {} for '
+                            'right table'.format(type(right).__name__))
 
         (self.left,
          self.right,
