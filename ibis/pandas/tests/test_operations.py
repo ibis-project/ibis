@@ -1,4 +1,5 @@
 import math
+from warnings import catch_warnings
 import operator
 import datetime
 import decimal
@@ -18,6 +19,7 @@ import pandas.util.testing as tm  # noqa: E402
 import ibis  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 from ibis import literal as L  # noqa: E402
+from ibis.common import IbisTypeError  # noqa: E402
 
 
 @pytest.fixture(params=[None, 'UTC', 'America/New_York'])
@@ -565,10 +567,13 @@ def test_null_if_zero(t, df, column):
     ]
 )
 def test_string_ops(t, df, case_func, expected_func):
-    expr = case_func(t.strings_with_space)
-    result = expr.execute()
-    series = expected_func(df.strings_with_space)
-    tm.assert_series_equal(result, series)
+
+    # ignore matching UserWarnings
+    with catch_warnings(record=True):
+        expr = case_func(t.strings_with_space)
+        result = expr.execute()
+        series = expected_func(df.strings_with_space)
+        tm.assert_series_equal(result, series)
 
 
 def test_group_concat(t, df):
@@ -802,9 +807,12 @@ def test_round(t, df, places):
     ]
 )
 def test_math_functions(t, df, ibis_func, pandas_func):
-    result = ibis_func(t.float64_with_zeros).execute()
-    expected = pandas_func(df.float64_with_zeros)
-    tm.assert_series_equal(result, expected)
+
+    # ignore divide by zero
+    with catch_warnings(record=True):
+        result = ibis_func(t.float64_with_zeros).execute()
+        expected = pandas_func(df.float64_with_zeros)
+        tm.assert_series_equal(result, expected)
 
 
 def operate(func):
@@ -904,3 +912,63 @@ def test_cast_to_decimal(t, df, type):
         1 <= len(element.as_tuple().digits) <= type.precision
         for element in result.values
     )
+
+
+@pytest.mark.parametrize(
+    ('ibis_func', 'pandas_func'),
+    [
+        (lambda x: x.clip(lower=0), lambda x: x.clip(lower=0)),
+        (lambda x: x.clip(lower=0.0), lambda x: x.clip(lower=0.0)),
+        (lambda x: x.clip(upper=0), lambda x: x.clip(upper=0)),
+        (lambda x: x.clip(lower=x - 1, upper=x + 1),
+         lambda x: x.clip(lower=x - 1, upper=x + 1)),
+        (lambda x: x.clip(lower=0, upper=1),
+         lambda x: x.clip(lower=0, upper=1)),
+        (lambda x: x.clip(lower=0, upper=1.0),
+         lambda x: x.clip(lower=0, upper=1.0)),
+    ]
+)
+def test_arraylike_functions_transforms(t, df, ibis_func, pandas_func):
+    if isinstance(pandas_func, Exception):
+        with pytest.raises(pandas_func):
+            ibis_func(t.float64_with_zeros).execute()
+    else:
+        result = ibis_func(t.float64_with_zeros).execute()
+        expected = pandas_func(df.float64_with_zeros)
+        tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('ibis_func', 'exc'),
+    [
+        # no lower/upper specified
+        (lambda x: x.clip(), ValueError),
+
+        # out of range on quantile
+        (lambda x: x.quantile(5.0), ValueError),
+
+        # array specified for quantile
+        (lambda x: x.quantile([0.25, 0.75]), IbisTypeError),
+
+        # invalid interpolation arg
+        (lambda x: x.quantile(0.5, interpolation='foo'), IbisTypeError),
+    ]
+)
+def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
+    with pytest.raises(exc):
+        ibis_func(t.float64_with_zeros).execute()
+
+
+@pytest.mark.parametrize(
+    ('ibis_func', 'pandas_func'),
+    [
+        (lambda x: x.quantile(0.5),
+         lambda x: x.quantile(0.5)),
+        (lambda x: x.quantile(0.5, interpolation='linear'),
+         lambda x: x.quantile(0.5, interpolation='linear')),
+    ]
+)
+def test_arraylike_functions_returning_scalar(t, df, ibis_func, pandas_func):
+    result = ibis_func(t.float64_with_zeros).execute()
+    expected = pandas_func(df.float64_with_zeros)
+    assert result == expected

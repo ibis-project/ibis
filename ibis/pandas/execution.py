@@ -170,6 +170,23 @@ def execute_series_natural_log(op, data, scope=None):
     return np.log(data)
 
 
+@execute_node.register(
+    ops.Clip, pd.Series,
+    (pd.Series, float, integer_types, type(None)),
+    (pd.Series, float, integer_types, type(None))
+)
+def execute_series_clip(op, data, lower, upper, scope=None):
+    return data.clip(lower=lower, upper=upper)
+
+
+@execute_node.register(
+    ops.Quantile, pd.Series, float,
+)
+def execute_series_quantile_with_interpolation(
+        op, data, quantile, scope=None):
+    return data.quantile(q=quantile, interpolation=op.interpolation)
+
+
 @execute_node.register(ops.Cast, datetime.datetime, dt.String)
 def execute_cast_datetime_or_timestamp_to_string(op, data, type, scope=None):
     """Cast timestamps to strings"""

@@ -1016,6 +1016,55 @@ def log(arg, base=None):
     return op.to_expr()
 
 
+def clip(arg, lower=None, upper=None):
+    """
+    Trim values at input threshold(s).
+
+    Parameters
+    ----------
+    lower : float
+    upper : float
+
+    Returns
+    -------
+    clipped : same as type of the input
+    """
+    if lower is None and upper is None:
+        raise ValueError("at least one of lower and "
+                         "upper must be provided")
+
+    op = _ops.Clip(arg, lower, upper)
+    return op.to_expr()
+
+
+def quantile(arg, quantile, interpolation='linear'):
+    """
+    Return value at the given quantile, a la numpy.percentile.
+
+    Parameters
+    ----------
+    quantile : float, default 0.5 (50% quantile)
+        0 <= quantile <= 1, the quantile(s) to compute
+    interpolation : {'linear', 'lower', 'higher', 'midpoint', 'nearest'}
+
+        This optional parameter specifies the interpolation method to use,
+        when the desired quantile lies between two data points `i` and `j`:
+
+        * linear: `i + (j - i) * fraction`, where `fraction` is the
+          fractional part of the index surrounded by `i` and `j`.
+        * lower: `i`.
+        * higher: `j`.
+        * nearest: `i` or `j` whichever is nearest.
+        * midpoint: (`i` + `j`) / 2.
+
+    Returns
+    -------
+    quantile : scalar type, same as input
+    """
+    op = _ops.Quantile(arg, quantile, interpolation)
+    return op.to_expr()
+
+
 def _integer_to_timestamp(arg, unit='s'):
     """
     Convert integer UNIX timestamp (at some resolution) to a timestamp type
@@ -1059,6 +1108,7 @@ _numeric_value_methods = dict(
     round=round,
     nullifzero=_unary_op('nullifzero', _ops.NullIfZero),
     zeroifnull=_unary_op('zeroifnull', _ops.ZeroIfNull),
+    clip=clip,
 
     __add__=add,
     add=add,
@@ -1167,6 +1217,8 @@ _numeric_column_methods = dict(
 
     sum=sum,
     cumsum=cumsum,
+
+    quantile=quantile,
 
     std=std,
     var=variance,
