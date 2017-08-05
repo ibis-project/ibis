@@ -16,6 +16,8 @@ import operator
 import six
 import itertools
 
+import toolz
+
 from ibis.expr.types import TableColumn  # noqa
 
 from ibis.expr.datatypes import HasSchema, Schema
@@ -1635,72 +1637,78 @@ class Selection(TableNode, HasSchema):
     def __init__(self, table_expr, proj_exprs=None, predicates=None,
                  sort_keys=None):
         import ibis.expr.analysis as L
-        self.table = table_expr
 
         # Argument cleaning
-        proj_exprs = proj_exprs or []
-        if len(proj_exprs) > 0:
-            clean_exprs, schema = self._get_schema(proj_exprs)
-        else:
-            clean_exprs = []
-            schema = self.table.schema()
-
-        sort_keys = sort_keys or []
-        self.sort_keys = [to_sort_key(self.table, k)
-                          for k in util.promote_list(sort_keys)]
-
-        self.predicates = list(
-            itertools.chain.from_iterable(
-                map(L.flatten_predicate, predicates or [])
-            )
+        proj_exprs = util.promote_list(
+            proj_exprs if proj_exprs is not None else []
         )
+        clean_exprs, schema = self._get_schema(table_expr, proj_exprs)
+
+        self.sort_keys = [
+            to_sort_key(table_expr, k)
+            for k in util.promote_list(
+                sort_keys if sort_keys is not None else []
+            )
+        ]
+
+        self.predicates = list(toolz.concat(map(
+            L.flatten_predicate,
+            predicates if predicates is not None else []
+        )))
 
         dependent_exprs = clean_exprs + self.sort_keys
 
-        self._validate(dependent_exprs)
-        self._validate_predicates()
+        table_expr._assert_valid(dependent_exprs)
+        self._validate_predicates(table_expr)
 
         self.selections = clean_exprs
+        self.table = table_expr
 
         HasSchema.__init__(self, schema)
         Node.__init__(self, [table_expr] + [self.selections] +
                       [self.predicates] + [self.sort_keys])
 
     def blocks(self):
-        return len(self.selections) > 0
+        return bool(self.selections)
 
-    def _validate_predicates(self):
+    def _validate_predicates(self, table):
         from ibis.expr.analysis import FilterValidator
-        validator = FilterValidator([self.table])
+        validator = FilterValidator([table])
         validator.validate_all(self.predicates)
 
-    def _validate(self, exprs):
+    def _validate(self, table, exprs):
         # Need to validate that the column expressions are compatible with the
         # input table; this means they must either be scalar expressions or
         # array expressions originating from the same root table expression
-        self.table._assert_valid(exprs)
+        table._assert_valid(exprs)
 
-    def _get_schema(self, proj_exprs):
+    def _get_schema(self, table, projections):
+        if not projections:
+            return projections, table.schema()
+
         # Resolve schema and initialize
         types = []
         names = []
         clean_exprs = []
-        for expr in proj_exprs:
-            if isinstance(expr, six.string_types):
-                expr = self.table[expr]
+        for projection in projections:
+            if isinstance(projection, six.string_types):
+                projection = self.table[projection]
 
-            if isinstance(expr, ValueExpr):
-                name = expr.get_name()
-                names.append(name)
-                types.append(expr.type())
-            elif rules.is_table(expr):
-                schema = expr.schema()
+            if isinstance(projection, ValueExpr):
+                names.append(projection.get_name())
+                types.append(projection.type())
+            elif rules.is_table(projection):
+                schema = projection.schema()
                 names.extend(schema.names)
                 types.extend(schema.types)
             else:
-                raise NotImplementedError
+                raise TypeError(
+                    "Don't know how to clean expression of type {}".format(
+                        type(projection).__name__
+                    )
+                )
 
-            clean_exprs.append(expr)
+            clean_exprs.append(projection)
 
         # validate uniqueness
         return clean_exprs, Schema(names, types)
