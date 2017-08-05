@@ -287,7 +287,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
 
     def _verify_partitioned_table(self, part_t, df, unique_keys):
         result = (part_t.execute()
-                  .sort_index(by='id')
+                  .sort_values(by='id')
                   .reset_index(drop=True)
                   [df.columns])
 

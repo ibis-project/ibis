@@ -226,7 +226,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         table = self.con.table(table_name, database=self.tmp_db)
 
         result = (table.execute()
-                  .sort_index(by='tinyint_col')
+                  .sort_values(by='tinyint_col')
                   .reset_index(drop=True))
         assert_frame_equal(result, exhaustive_df)
 

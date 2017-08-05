@@ -24,7 +24,7 @@ import tarfile
 from subprocess import check_call
 
 import requests
-from click import group, option
+import click
 import sqlalchemy as sa
 
 import ibis
@@ -472,7 +472,7 @@ def make_testing_db(csv_dir, con):
 # ==========================================
 
 
-@group(context_settings={'help_option_names': ['-h', '--help']})
+@click.group(context_settings={'help_option_names': ['-h', '--help']})
 def main():
     """Manage test data for Ibis"""
     pass
@@ -529,16 +529,23 @@ def create():
 
 
 @main.command()
-@option('--data/--no-data', default=True, help='Load (skip) ibis testing data')
-@option('--udf/--no-udf', default=True, help='Build/upload (skip) test UDFs')
-@option(
+@click.option(
+    '--data/--no-data', default=True, help='Load (skip) ibis testing data'
+)
+@click.option(
+    '--udf/--no-udf', default=True, help='Build/upload (skip) test UDFs'
+)
+@click.option(
     '--data-dir',
     help=(
         'Path to testing data. This downloads data from Google Cloud Storage '
         'if unset'
-    )
+    ),
+    type=click.Path(exists=True)
 )
-@option('--overwrite', is_flag=True, help='Forces overwriting of data/UDFs')
+@click.option(
+    '--overwrite', is_flag=True, help='Forces overwriting of data/UDFs'
+)
 def load(data, udf, data_dir, overwrite):
     """Load Ibis test data and build/upload UDFs"""
     print(str(ENV))
@@ -615,13 +622,16 @@ def load_impala_data(con, data_dir, overwrite=False):
 
 
 @main.command()
-@option('--test-data', is_flag=True,
-        help='Cleanup Ibis test data, test database, and also the test UDFs '
-             'if they are stored in the test data directory/database')
-@option('--udfs', is_flag=True, help='Cleanup Ibis test UDFs only')
-@option('--tmp-data', is_flag=True,
-        help='Cleanup Ibis temporary HDFS directory')
-@option('--tmp-db', is_flag=True, help='Cleanup Ibis temporary database')
+@click.option(
+    '--test-data', is_flag=True,
+    help='Cleanup Ibis test data, test database, and also the test UDFs if '
+    'they are stored in the test data directory/database'
+)
+@click.option('--udfs', is_flag=True, help='Cleanup Ibis test UDFs only')
+@click.option(
+    '--tmp-data', is_flag=True, help='Cleanup Ibis temporary HDFS directory'
+)
+@click.option('--tmp-db', is_flag=True, help='Cleanup Ibis temporary database')
 def cleanup(test_data, udfs, tmp_data, tmp_db):
     """Cleanup Ibis test data and UDFs"""
     print(str(ENV))

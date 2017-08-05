@@ -1,0 +1,22 @@
+channels:
+  - conda-forge
+dependencies:
+  - click
+  - cmake
+  - flake8
+  - graphviz
+  - impyla>=0.13.7
+  - multipledispatch
+  - numpy
+  - pandas
+  - psycopg2
+  - pytest
+  - python=3.6
+  - python-graphviz
+  - six
+  - sqlalchemy>=1.0.0
+  - thrift
+  - thriftpy<=0.3.9
+  - toolz
+  - pip:
+    - hdfs>=2.0.0
