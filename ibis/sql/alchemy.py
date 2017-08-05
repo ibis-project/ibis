@@ -1163,16 +1163,17 @@ class AlchemyUnion(Union):
 
     def compile(self):
         context = self.context
-
-        if self.distinct:
-            sa_func = sa.union
-        else:
-            sa_func = sa.union_all
+        sa_func = sa.union if self.distinct else sa.union_all
 
         left_set = context.get_compiled_expr(self.left)
-        right_set = context.get_compiled_expr(self.right)
+        left_cte = left_set.cte()
+        left_select = left_cte.select()
 
-        return sa_func(left_set, right_set)
+        right_set = context.get_compiled_expr(self.right)
+        right_cte = right_set.cte()
+        right_select = right_cte.select()
+
+        return sa_func(left_select, right_select)
 
 
 class AlchemyProxy(object):

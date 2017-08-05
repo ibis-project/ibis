@@ -12,510 +12,711 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+import sys
 import uuid
-import unittest
 import operator
 import math
+import datetime
+import sqlite3
+
+import numpy as np
+import pandas as pd
 
 import pytest
 
 sa = pytest.importorskip('sqlalchemy')
 
-from .common import SQLiteTests  # noqa: E402
 from ibis import literal as L  # noqa: E402
-import ibis.expr.types as ir  # noqa: E402
+
 import ibis  # noqa: E402
+import ibis.expr.datatypes as dt  # noqa: E402
+import ibis.config as config  # noqa: E402
+
 import pandas.util.testing as tm  # noqa: E402
 
 
-@pytest.fixture
-def con():
-    # If we haven't defined an environment variable with the path of the SQLite
-    # database, assume it's in $PWD
-    return ibis.sqlite.connect(
-        os.environ.get('IBIS_TEST_SQLITE_DB_PATH', 'ibis_testing.db')
+try:
+    from packaging.version import parse as get_version
+except ImportError:
+    from distutils.version import LooseVersion as get_version
+
+
+pytestmark = pytest.mark.sqlite
+
+
+@pytest.mark.parametrize(
+    ('func', 'expected'),
+    [
+        (
+            lambda t: t.double_col.cast(dt.int8),
+            lambda at: sa.cast(at.c.double_col, sa.SMALLINT),
+        ),
+        (
+            lambda t: t.string_col.cast(dt.double),
+            lambda at: sa.cast(at.c.string_col, sa.REAL)
+        ),
+        (
+            lambda t: t.string_col.cast(dt.float),
+            lambda at: sa.cast(at.c.string_col, sa.REAL)
+        ),
+    ]
+)
+def test_cast(alltypes, alltypes_sqla, translate, func, expected):
+    assert translate(func(alltypes)) == str(expected(alltypes_sqla))
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYI')
+def test_decimal_cast():
+    assert False
+
+
+@pytest.mark.parametrize(
+    ('func', 'expected_func'),
+    [
+        (
+            lambda t: t.timestamp_col.cast(dt.timestamp),
+            lambda at: sa.func.strftime(
+                '%Y-%m-%d %H:%M:%f', at.c.timestamp_col,
+            ),
+        ),
+        (
+            lambda t: t.int_col.cast(dt.timestamp),
+            lambda at: sa.func.datetime(at.c.int_col, 'unixepoch'),
+        ),
+    ]
+)
+def test_timestamp_cast_noop(
+    alltypes, func, translate, alltypes_sqla, expected_func, sqla_compile
+):
+    # See GH #592
+    result = func(alltypes)
+    expected = expected_func(alltypes_sqla)
+    assert translate(result) == sqla_compile(expected)
+
+
+TIMESTAMP_CONSTANT = ibis.literal('2015-09-01 14:48:05.359').cast('timestamp')
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (TIMESTAMP_CONSTANT.strftime('%Y%m%d'), '20150901'),
+
+        (TIMESTAMP_CONSTANT.year(), 2015),
+        (TIMESTAMP_CONSTANT.month(), 9),
+        (TIMESTAMP_CONSTANT.day(), 1),
+        (TIMESTAMP_CONSTANT.hour(), 14),
+        (TIMESTAMP_CONSTANT.minute(), 48),
+        (TIMESTAMP_CONSTANT.second(), 5),
+        (TIMESTAMP_CONSTANT.millisecond(), 359),
+
+        # there could be pathological failure at midnight somewhere, but
+        # that's okay
+        (ibis.now().strftime('%Y%m%d %H'),
+         datetime.datetime.utcnow().strftime('%Y%m%d %H'))
+    ]
+)
+def test_timestamp_functions(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L(3) + L(4), 7),
+        (L(3) - L(4), -1),
+        (L(3) * L(4), 12),
+        (L(12) / L(4), 3),
+        (L(12) ** L(2), 144),
+        (L(12) % L(5), 2)
+    ]
+)
+def test_binary_arithmetic(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L(7) / L(2), 3.5),
+        (L(7) // L(2), 3),
+        (L(7).floordiv(2), 3),
+        (L(2).rfloordiv(7), 3),
+    ]
+)
+def test_div_floordiv(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('foo_bar').typeof(), 'text'),
+        (L(5).typeof(), 'integer'),
+        (ibis.NA.typeof(), 'null'),
+        (L(1.2345).typeof(), 'real'),
+    ]
+)
+def test_typeof(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L(0).nullifzero(), None),
+        (L(5.5).nullifzero(), 5.5),
+    ]
+)
+def test_nullifzero(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('foo_bar').length(), 7),
+        (L('').length(), 0),
+    ]
+)
+def test_string_length(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('foo_bar').left(3), 'foo'),
+        (L('foo_bar').right(3), 'bar'),
+
+        (L('foo_bar').substr(0, 3), 'foo'),
+        (L('foo_bar').substr(4, 3), 'bar'),
+        (L('foo_bar').substr(1), 'oo_bar'),
+    ]
+)
+def test_string_substring(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('   foo   ').lstrip(), 'foo   '),
+        (L('   foo   ').rstrip(), '   foo'),
+        (L('   foo   ').strip(), 'foo'),
+    ]
+)
+def test_string_strip(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('foo').upper(), 'FOO'),
+        (L('FOO').lower(), 'foo'),
+    ]
+)
+def test_string_upper_lower(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('foobar').contains('bar'), True),
+        (L('foobar').contains('foo'), True),
+        (L('foobar').contains('baz'), False),
+    ]
+)
+def test_string_contains(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('foobar').find('bar'), 3),
+        (L('foobar').find('baz'), -1),
+    ]
+)
+def test_string_find(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('foobar').like('%bar'), True),
+        (L('foobar').like('foo%'), True),
+        (L('foobar').like('%baz%'), False),
+
+        (L('foobar').like(['%bar']), True),
+        (L('foobar').like(['foo%']), True),
+        (L('foobar').like(['%baz%']), False),
+
+        (L('foobar').like(['%bar', 'foo%']), True),
+    ]
+)
+def test_string_like(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+def test_str_replace(con):
+    expr = L('foobarfoo').replace('foo', 'H')
+    expected = 'HbarH'
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L(-5).abs(), 5),
+        (L(5).abs(), 5),
+        (ibis.least(L(5), L(10), L(1)), 1),
+        (ibis.greatest(L(5), L(10), L(1)), 10),
+
+        (L(5.5).round(), 6.0),
+        (L(5.556).round(2), 5.56),
+        (L(5.556).sqrt(), math.sqrt(5.556)),
+
+        (L(5.556).ceil(), 6.0),
+        (L(5.556).floor(), 5.0),
+        (L(5.556).exp(), math.exp(5.556)),
+        (L(5.556).sign(), 1),
+        (L(-5.556).sign(), -1),
+        (L(0).sign(), 0),
+        (L(5.556).log(2), math.log(5.556, 2)),
+        (L(5.556).ln(), math.log(5.556)),
+        (L(5.556).log2(), math.log(5.556, 2)),
+        (L(5.556).log10(), math.log10(5.556)),
+    ]
+)
+def test_math_functions(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+NULL_STRING = L(None).cast(dt.string)
+NULL_INT64 = L(None).cast(dt.int64)
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('abcd').re_search('[a-z]'), True),
+        (L('abcd').re_search('[\d]+'), False),
+        (L('1222').re_search('[\d]+'), True),
+        (L('abcd').re_search(None), None),
+        (NULL_STRING.re_search('[a-z]'), None),
+        (NULL_STRING.re_search(NULL_STRING), None),
+    ]
+)
+def test_regexp_search(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('abcd').re_replace('[ab]', ''), 'cd'),
+        (L(None).cast(dt.string).re_replace(NULL_STRING, NULL_STRING), None),
+        (L('abcd').re_replace(NULL_STRING, NULL_STRING), None),
+        (L('abcd').re_replace('a', NULL_STRING), None),
+        (L('abcd').re_replace(NULL_STRING, 'a'), None),
+        (NULL_STRING.re_replace('a', NULL_STRING), None),
+        (NULL_STRING.re_replace(NULL_STRING, 'a'), None),
+    ]
+)
+def test_regexp_replace(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L('1222').re_extract(r'1(22)\d+', 1).cast('int64'), 22),
+        (L('abcd').re_extract('(\d+)', 1), None),
+        (L('1222').re_extract('([a-z]+)', 1), None),
+        (L('1222').re_extract(r'1(22)\d+', 2), None),
+
+        # extract nulls
+        (NULL_STRING.re_extract(NULL_STRING, NULL_INT64), None),
+        (L('abcd').re_extract(NULL_STRING, NULL_INT64), None),
+        (L('abcd').re_extract('a', NULL_INT64), None),
+        (L('abcd').re_extract(NULL_STRING, 1), None),
+        (NULL_STRING.re_extract('a', NULL_INT64), None),
+        (NULL_STRING.re_extract(NULL_STRING, 1), None),
+    ]
+)
+def test_regexp_extract(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (ibis.NA.fillna(5), 5),
+        (L(5).fillna(10), 5),
+        (L(5).nullif(5), None),
+        (L(10).nullif(5), 10),
+    ]
+)
+def test_fillna_nullif(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYI')
+def test_coalesce():
+    assert False
+
+
+def test_numeric_builtins_work(alltypes, df):
+    expr = alltypes.double_col.fillna(0)
+    result = expr.execute()
+    expected = df.double_col.fillna(0)
+    expected.name = 'tmp'
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('func', 'expected_func'),
+    [
+        (
+            lambda t: (t.double_col > 20).ifelse(10, -20),
+            lambda df: pd.Series(
+                np.where(df.double_col > 20, 10, -20),
+                name='tmp',
+                dtype='int64'
+            ),
+        ),
+        (
+            lambda t: (t.double_col > 20).ifelse(10, -20).abs(),
+            lambda df: pd.Series(
+                np.where(df.double_col > 20, 10, -20),
+                name='tmp',
+                dtype='int64'
+            ).abs(),
+        )
+    ]
+)
+def test_ifelse(alltypes, df, func, expected_func):
+    result = func(alltypes).execute()
+    expected = expected_func(df)
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('func', 'expected_func'),
+    [
+        # tier and histogram
+        (
+            lambda d: d.bucket([0, 10, 25, 50, 100]),
+            lambda s: pd.cut(
+                s, [0, 10, 25, 50, 100], right=False, labels=False,
+            )
+        ),
+        (
+            lambda d: d.bucket([0, 10, 25, 50], include_over=True),
+            lambda s: pd.cut(
+                s, [0, 10, 25, 50, np.inf], right=False, labels=False
+            )
+        ),
+        (
+            lambda d: d.bucket([0, 10, 25, 50], close_extreme=False),
+            lambda s: pd.cut(s, [0, 10, 25, 50], right=False, labels=False),
+        ),
+        (
+            lambda d: d.bucket(
+                [0, 10, 25, 50], closed='right', close_extreme=False
+            ),
+            lambda s: pd.cut(
+                s, [0, 10, 25, 50],
+                include_lowest=False,
+                right=True,
+                labels=False,
+            )
+        ),
+        (
+            lambda d: d.bucket([10, 25, 50, 100], include_under=True),
+            lambda s: pd.cut(
+                s, [0, 10, 25, 50, 100], right=False, labels=False
+            ),
+        ),
+    ]
+)
+def test_bucket(alltypes, df, func, expected_func):
+    expr = func(alltypes.double_col)
+    result = expr.execute()
+    expected = expected_func(df.double_col)
+    tm.assert_series_equal(result, expected, check_names=False)
+
+
+def test_category_label(alltypes, df):
+    bins = [0, 10, 25, 50, 100]
+    labels = ['a', 'b', 'c', 'd']
+    expr = alltypes.double_col.bucket(bins).label(labels)
+
+    result = expr.execute().astype('category', ordered=True)
+    result.name = 'double_col'
+
+    expected = pd.cut(df.double_col, bins, labels=labels, right=False)
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.xfail(
+    get_version(sqlite3.sqlite_version) < get_version('3.8.3'),
+    raises=sa.exc.OperationalError,
+    reason='SQLite versions < 3.8.3 do not support the WITH statement',
+)
+def test_union(alltypes):
+    t = alltypes
+
+    expr = (t.group_by('string_col')
+            .aggregate(t.double_col.sum().name('foo'))
+            .sort_by('string_col'))
+
+    t1 = expr.limit(4)
+    t2 = expr.limit(4, offset=4)
+    t3 = expr.limit(8)
+
+    result = t1.union(t2).execute()
+    expected = t3.execute()
+
+    assert (result.string_col == expected.string_col).all()
+
+
+@pytest.mark.parametrize(
+    ('func', 'expected_func'),
+    [
+        (
+            lambda t, cond: t.bool_col.count(),
+            lambda df, cond: df.bool_col.count(),
+        ),
+        (
+            lambda t, cond: t.bool_col.any(),
+            lambda df, cond: df.bool_col.any(),
+        ),
+        (
+            lambda t, cond: t.bool_col.all(),
+            lambda df, cond: df.bool_col.all(),
+        ),
+        (
+            lambda t, cond: t.bool_col.notany(),
+            lambda df, cond: ~df.bool_col.any(),
+        ),
+        (
+            lambda t, cond: t.bool_col.notall(),
+            lambda df, cond: ~df.bool_col.all(),
+        ),
+
+        (
+            lambda t, cond: t.double_col.sum(),
+            lambda df, cond: df.double_col.sum(),
+        ),
+        (
+            lambda t, cond: t.double_col.mean(),
+            lambda df, cond: df.double_col.mean(),
+        ),
+        (
+            lambda t, cond: t.double_col.min(),
+            lambda df, cond: df.double_col.min(),
+        ),
+        (
+            lambda t, cond: t.double_col.max(),
+            lambda df, cond: df.double_col.max(),
+        ),
+        (
+            lambda t, cond: t.double_col.var(),
+            lambda df, cond: df.double_col.var(),
+        ),
+        (
+            lambda t, cond: t.double_col.std(),
+            lambda df, cond: df.double_col.std(),
+        ),
+        (
+            lambda t, cond: t.double_col.var(how='sample'),
+            lambda df, cond: df.double_col.var(ddof=1),
+        ),
+        (
+            lambda t, cond: t.double_col.std(how='pop'),
+            lambda df, cond: df.double_col.std(ddof=0),
+        ),
+        (
+            lambda t, cond: t.bool_col.count(where=cond),
+            lambda df, cond: df.bool_col[cond].count(),
+        ),
+        (
+            lambda t, cond: t.double_col.sum(where=cond),
+            lambda df, cond: df.double_col[cond].sum(),
+        ),
+        (
+            lambda t, cond: t.double_col.mean(where=cond),
+            lambda df, cond: df.double_col[cond].mean(),
+        ),
+        (
+            lambda t, cond: t.double_col.min(where=cond),
+            lambda df, cond: df.double_col[cond].min(),
+        ),
+        (
+            lambda t, cond: t.double_col.max(where=cond),
+            lambda df, cond: df.double_col[cond].max(),
+        ),
+        (
+            lambda t, cond: t.double_col.var(where=cond),
+            lambda df, cond: df.double_col[cond].var(),
+        ),
+        (
+            lambda t, cond: t.double_col.std(where=cond),
+            lambda df, cond: df.double_col[cond].std(),
+        ),
+        (
+            lambda t, cond: t.double_col.var(where=cond, how='sample'),
+            lambda df, cond: df.double_col[cond].var(),
+        ),
+        (
+            lambda t, cond: t.double_col.std(where=cond, how='pop'),
+            lambda df, cond: df.double_col[cond].std(ddof=0),
+        ),
+    ]
+)
+def test_aggregations_execute(alltypes, func, df, expected_func):
+    cond = alltypes.string_col.isin(['1', '7'])
+    expr = func(alltypes, cond)
+    result = expr.execute()
+    expected = expected_func(df, df.string_col.isin(['1', '7']))
+
+    np.testing.assert_allclose(result, expected)
+
+
+def test_distinct_aggregates(alltypes, df):
+    expr = alltypes.double_col.nunique()
+    result = expr.execute()
+    expected = df.double_col.nunique()
+    assert result == expected
+
+
+def test_not_exists_works(alltypes):
+    t = alltypes
+    t2 = t.view()
+
+    expr = t[-(t.string_col == t2.string_col).any()]
+    expr.execute()
+
+
+def test_interactive_repr_shows_error(alltypes):
+    # #591. Doing this in SQLite because so many built-in functions are not
+    # available
+
+    expr = alltypes.double_col.approx_nunique()
+
+    with config.option_context('interactive', True):
+        result = repr(expr)
+        assert 'no translator rule' in result.lower()
+
+
+def test_subquery(alltypes, df):
+    t = alltypes
+
+    expr = (t.mutate(d=t.double_col.fillna(0))
+            .limit(1000)
+            .group_by('string_col')
+            .size())
+    result = expr.execute()
+    expected = df.assign(d=df.double_col.fillna(0)).head(1000).groupby(
+        'string_col'
+    ).size().reset_index().rename(columns={0: 'count'})
+    tm.assert_frame_equal(
+        result,
+        expected,
+
+        # Python 2 + pandas inferred type here is 'mixed' because of SQLAlchemy
+        # string type subclasses
+        check_column_type=sys.version_info.major >= 3
     )
 
 
-@pytest.fixture
-def db(con):
-    return con.database()
-
-
-class TestSQLiteFunctions(SQLiteTests, unittest.TestCase):
-
-    def test_cast(self):
-        at = self._to_sqla(self.alltypes)
-
-        d = self.alltypes.double_col
-        s = self.alltypes.string_col
-
-        sa_d = at.c.double_col
-        sa_s = at.c.string_col
-
-        cases = [
-            (d.cast('int8'), sa.cast(sa_d, sa.types.SMALLINT)),
-            (s.cast('double'), sa.cast(sa_s, sa.types.REAL)),
-            (s.cast('float'), sa.cast(sa_s, sa.types.REAL))
-        ]
-        self._check_expr_cases(cases)
-
-    @pytest.mark.xfail(raises=AssertionError, reason='NYI')
-    def test_decimal_cast(self):
-        assert False
-
-    def test_timestamp_cast_noop(self):
-        # See GH #592
-
-        at = self._to_sqla(self.alltypes)
-
-        tc = self.alltypes.timestamp_col
-        ic = self.alltypes.int_col
-
-        tc_casted = tc.cast('timestamp')
-        ic_casted = ic.cast('timestamp')
-
-        # Logically, it's a timestamp
-        assert isinstance(tc_casted, ir.TimestampColumn)
-        assert isinstance(ic_casted, ir.TimestampColumn)
-
-        # But it's a no-op when translated to SQLAlchemy
-        cases = [
-            (
-                tc_casted.cast('timestamp'),
-                sa.func.strftime('%Y-%m-%d %H:%M:%f', at.c.timestamp_col)
-            ),
-            (
-                ic_casted.cast('timestamp'),
-                sa.func.datetime(at.c.int_col, 'unixepoch')
-            ),
-        ]
-        self._check_expr_cases(cases)
-
-    def test_timestamp_functions(self):
-        from datetime import datetime
-
-        v = L('2015-09-01 14:48:05.359').cast('timestamp')
-
-        cases = [
-            (v.strftime('%Y%m%d'), '20150901'),
-
-            (v.year(), 2015),
-            (v.month(), 9),
-            (v.day(), 1),
-            (v.hour(), 14),
-            (v.minute(), 48),
-            (v.second(), 5),
-            (v.millisecond(), 359),
-
-            # there could be pathological failure at midnight somewhere, but
-            # that's okay
-            (ibis.now().strftime('%Y%m%d %H'),
-             datetime.utcnow().strftime('%Y%m%d %H'))
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_binary_arithmetic(self):
-        cases = [
-            (L(3) + L(4), 7),
-            (L(3) - L(4), -1),
-            (L(3) * L(4), 12),
-            (L(12) / L(4), 3),
-            (L(12) ** L(2), 144),
-            (L(12) % L(5), 2)
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_div_floordiv(self):
-        cases = [
-            (L(7) / L(2), 3.5),
-            (L(7) // L(2), 3),
-            (L(7).floordiv(2), 3),
-            (L(2).rfloordiv(7), 3),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_typeof(self):
-        cases = [
-            (L('foo_bar').typeof(), 'text'),
-            (L(5).typeof(), 'integer'),
-            (ibis.NA.typeof(), 'null'),
-            (L(1.2345).typeof(), 'real'),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_nullifzero(self):
-        cases = [
-            (L(0).nullifzero(), None),
-            (L(5.5).nullifzero(), 5.5),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_string_length(self):
-        cases = [
-            (L('foo_bar').length(), 7),
-            (L('').length(), 0),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_string_substring(self):
-        cases = [
-            (L('foo_bar').left(3), 'foo'),
-            (L('foo_bar').right(3), 'bar'),
-
-            (L('foo_bar').substr(0, 3), 'foo'),
-            (L('foo_bar').substr(4, 3), 'bar'),
-            (L('foo_bar').substr(1), 'oo_bar'),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_string_strip(self):
-        cases = [
-            (L('   foo   ').lstrip(), 'foo   '),
-            (L('   foo   ').rstrip(), '   foo'),
-            (L('   foo   ').strip(), 'foo'),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_string_upper_lower(self):
-        cases = [
-            (L('foo').upper(), 'FOO'),
-            (L('FOO').lower(), 'foo'),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_string_contains(self):
-        cases = [
-            (L('foobar').contains('bar'), True),
-            (L('foobar').contains('foo'), True),
-            (L('foobar').contains('baz'), False),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_string_find(self):
-        cases = [
-            (L('foobar').find('bar'), 3),
-            (L('foobar').find('baz'), -1),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_string_like(self):
-        cases = [
-            (L('foobar').like('%bar'), True),
-            (L('foobar').like('foo%'), True),
-            (L('foobar').like('%baz%'), False),
-
-            (L('foobar').like(['%bar']), True),
-            (L('foobar').like(['foo%']), True),
-            (L('foobar').like(['%baz%']), False),
-
-            (L('foobar').like(['%bar', 'foo%']), True),
-
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_str_replace(self):
-        cases = [
-            (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_math_functions(self):
-        cases = [
-            (L(-5).abs(), 5),
-            (L(5).abs(), 5),
-            (ibis.least(L(5), L(10), L(1)), 1),
-            (ibis.greatest(L(5), L(10), L(1)), 10),
-
-            (L(5.5).round(), 6.0),
-            (L(5.556).round(2), 5.56),
-            (L(5.556).sqrt(), math.sqrt(5.556)),
-
-            (L(5.556).ceil(), 6.0),
-            (L(5.556).floor(), 5.0),
-            (L(5.556).exp(), math.exp(5.556)),
-            (L(5.556).sign(), 1),
-            (L(-5.556).sign(), -1),
-            (L(0).sign(), 0),
-            (L(5.556).log(2), math.log(5.556, 2)),
-            (L(5.556).ln(), math.log(5.556)),
-            (L(5.556).log2(), math.log(5.556, 2)),
-            (L(5.556).log10(), math.log10(5.556)),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_regexp(self):
-        v = L('abcd')
-        v2 = L('1222')
-        ns = L(None).cast('string')
-        ni = L(None).cast('int64')
-        cases = [
-            (v.re_search('[a-z]'), True),
-            (v.re_search('[\d]+'), False),
-            (v2.re_search('[\d]+'), True),
-            (v.re_replace('[ab]', ''), 'cd'),
-            (v2.re_extract(r'1(22)\d+', 1).cast('int64'), 22),
-            (v.re_extract('(\d+)', 1), None),
-            (v2.re_extract('([a-z]+)', 1), None),
-            (v2.re_extract(r'1(22)\d+', 2), None),
-        ] + [
-            # search nulls
-            (v.re_search(None), None),
-            (ns.re_search('[a-z]'), None),
-            (ns.re_search(ns), None),
-        ] + [
-            # replace nulls
-            (ns.re_replace(ns, ns), None),
-            (v.re_replace(ns, ns), None),
-            (v.re_replace('a', ns), None),
-            (v.re_replace(ns, 'a'), None),
-            (ns.re_replace('a', ns), None),
-            (ns.re_replace(ns, 'a'), None),
-        ] + [
-            # extract nulls
-            (ns.re_extract(ns, ni), None),
-            (v.re_extract(ns, ni), None),
-            (v.re_extract('a', ni), None),
-            (v.re_extract(ns, 1), None),
-            (ns.re_extract('a', ni), None),
-            (ns.re_extract(ns, 1), None),
-        ]
-        self._check_e2e_cases(cases)
-
-    def test_fillna_nullif(self):
-        cases = [
-            (ibis.NA.fillna(5), 5),
-            (L(5).fillna(10), 5),
-            (L(5).nullif(5), None),
-            (L(10).nullif(5), 10),
-        ]
-        self._check_e2e_cases(cases)
-
-    @pytest.mark.xfail(raises=AssertionError, reason='NYI')
-    def test_coalesce(self):
-        assert False
-
-    def test_numeric_builtins_work(self):
-        t = self.alltypes
-        d = t.double_col
-
-        exprs = [
-            d.fillna(0),
-        ]
-        self._execute_projection(t, exprs)
-
-    def test_misc_builtins_work(self):
-        t = self.alltypes
-        d = t.double_col
-
-        exprs = [
-            (d > 20).ifelse(10, -20),
-            (d > 20).ifelse(10, -20).abs(),
-
-            # tier and histogram
-            d.bucket([0, 10, 25, 50, 100]),
-            d.bucket([0, 10, 25, 50], include_over=True),
-            d.bucket([0, 10, 25, 50], include_over=True, close_extreme=False),
-            d.bucket([10, 25, 50, 100], include_under=True),
-        ]
-        self._execute_projection(t, exprs)
-
-    def test_category_label(self):
-        t = self.alltypes
-        d = t.double_col
-
-        bucket = d.bucket([0, 10, 25, 50, 100])
-
-        exprs = [
-            bucket.label(['a', 'b', 'c', 'd'])
-        ]
-        self._execute_projection(t, exprs)
-
-    def test_union(self):
-        pytest.skip('union not working yet')
-
-        t = self.alltypes
-
-        expr = (t.group_by('string_col')
-                .aggregate(t.double_col.sum().name('foo'))
-                .sort_by('string_col'))
-
-        t1 = expr.limit(4)
-        t2 = expr.limit(4, offset=4)
-        t3 = expr.limit(8)
-
-        result = t1.union(t2).execute()
-        expected = t3.execute()
-
-        assert (result.string_col == expected.string_col).all()
-
-    def test_aggregations_execute(self):
-        table = self.alltypes.limit(100)
-
-        d = table.double_col
-        s = table.string_col
-
-        cond = table.string_col.isin(['1', '7'])
-
-        exprs = [
-            table.bool_col.count(),
-            table.bool_col.any(),
-            table.bool_col.all(),
-            table.bool_col.notany(),
-            table.bool_col.notall(),
-
-            d.sum(),
-            d.mean(),
-            d.min(),
-            d.max(),
-            d.std(),
-            d.var(),
-
-            table.bool_col.count(where=cond),
-            d.sum(where=cond),
-            d.mean(where=cond),
-            d.min(where=cond),
-            d.max(where=cond),
-            d.std(where=cond),
-            d.var(where=cond),
-
-            s.group_concat(),
-        ]
-        self._execute_aggregation(table, exprs)
-
-    def test_distinct_aggregates(self):
-        table = self.alltypes.limit(100)
-
-        exprs = [
-            table.double_col.nunique()
-        ]
-        self._execute_aggregation(table, exprs)
-
-    def test_not_exists_works(self):
-        t = self.alltypes
-        t2 = t.view()
-
-        expr = t[-(t.string_col == t2.string_col).any()]
-        expr.execute()
-
-    def test_interactive_repr_shows_error(self):
-        # #591. Doing this in SQLite because so many built-in functions are not
-        # available
-        import ibis.config as config
-
-        expr = self.alltypes.double_col.approx_nunique()
-
-        with config.option_context('interactive', True):
-            result = repr(expr)
-            assert 'no translator rule' in result.lower()
-
-    def test_subquery_invokes_sqlite_compiler(self):
-        t = self.alltypes
-
-        expr = (t.mutate(d=t.double_col.fillna(0))
-                .limit(1000)
-                .group_by('string_col')
-                .size())
-        expr.execute()
-
-    def _execute_aggregation(self, table, exprs):
-        metrics = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
-        agged_table = table.aggregate(metrics)
-        agged_table.execute()
-
-    def _execute_projection(self, table, exprs):
-        metrics = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
-        proj = table.projection(metrics)
-        proj.execute()
-
-    def test_filter_has_sqla_table(self):
-        t = self.alltypes
-        pred = t.year == 2010
-        filt = t.filter(pred).float_col
-        s = filt.execute()
-        result = s.squeeze().reset_index(drop=True)
-        expected = t.execute().query('year == 2010').float_col
-        assert len(result) == len(expected)
-
-    def test_column_access_after_sort(self):
-        t = self.alltypes
-        expr = t.sort_by('float_col').string_col
-
-        # it works!
-        expr.execute(limit=10)
-
-    def test_materialized_join(self):
-        path = '__ibis_tmp_{0}.db'.format(ibis.util.guid())
-
-        con = ibis.sqlite.connect(path, create=True)
-
-        try:
-            con.raw_sql("create table mj1 (id1 integer, val1 real)")
-            con.raw_sql("insert into mj1 values (1, 10), (2, 20)")
-            con.raw_sql("create table mj2 (id2 integer, val2 real)")
-            con.raw_sql("insert into mj2 values (1, 15), (2, 25)")
-
-            t1 = con.table('mj1')
-            t2 = con.table('mj2')
-            joined = t1.join(t2, t1.id1 == t2.id2).materialize()
-            result = joined.val2.execute()
-            assert len(result) == 2
-        finally:
-            con.con.dispose()
-            os.remove(path)
-
-    def test_anonymous_aggregate(self):
-        t = self.alltypes
-        expr = t[t.double_col > t.double_col.mean()]
-        result = expr.execute()
-        df = t.execute()
-        expected = df[df.double_col > df.double_col.mean()].reset_index(
-            drop=True
-        )
-        tm.assert_frame_equal(result, expected)
-
-    def test_head(self):
-        t = self.alltypes
-        result = t.head().execute()
-        expected = t.limit(5).execute()
-        tm.assert_frame_equal(result, expected)
-
-    def test_identical_to(self):
-        t = self.alltypes
-        dt = t[['tinyint_col', 'double_col']].execute()
-        expr = t.tinyint_col.identical_to(t.double_col)
-        result = expr.execute()
-        expected = (dt.tinyint_col.isnull() & dt.double_col.isnull()) | (
-            dt.tinyint_col == dt.double_col
-        )
-        expected.name = result.name
-        tm.assert_series_equal(result, expected)
-
-    @pytest.mark.xfail(raises=AttributeError, reason='NYI')
-    def test_truncate(self):
-        expr = self.alltypes.limit(5)
-        name = str(uuid.uuid4())
-        self.con.create_table(name, expr)
-        t = self.con.table(name)
-        assert len(t.execute()) == 5
-        t.truncate()
-        assert len(t.execute()) == 0
-        t.drop()
-
-    @pytest.mark.xfail(
-        raises=AssertionError,
-        reason='SQLite returns bools as integers, Ibis should recast them'
+def test_filter(alltypes, df):
+    expr = alltypes.filter(alltypes.year == 2010).float_col
+    result = expr.execute().squeeze().reset_index(drop=True)
+    expected = df.query('year == 2010').float_col
+    assert len(result) == len(expected)
+
+
+@pytest.mark.parametrize(
+    'column',
+    [lambda t: 'float_col', lambda t: t['float_col']]
+)
+def test_column_access_after_sort(alltypes, df, column):
+    expr = alltypes.sort_by(column(alltypes)).head(10).string_col
+    result = expr.execute()
+    expected = df.sort_values(
+        'float_col'
+    ).string_col.head(10).reset_index(drop=True)
+    tm.assert_series_equal(result, expected)
+
+
+def test_materialized_join(con):
+    con.raw_sql('CREATE TABLE mj1 (id1 INTEGER, val1 REAL)')
+    con.raw_sql('INSERT INTO mj1 VALUES (1, 10), (2, 20)')
+    con.raw_sql('CREATE TABLE mj2 (id2 INTEGER, val2 REAL)')
+    con.raw_sql('INSERT INTO mj2 VALUES (1, 15), (2, 25)')
+
+    t1 = con.table('mj1')
+    t2 = con.table('mj2')
+    joined = t1.join(t2, t1.id1 == t2.id2).materialize()
+    result = joined.val2.execute()
+    assert len(result) == 2
+
+
+def test_anonymous_aggregate(alltypes, df):
+    expr = alltypes[alltypes.double_col > alltypes.double_col.mean()]
+    result = expr.execute()
+    expected = df[df.double_col > df.double_col.mean()].reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
+
+
+def test_head(alltypes):
+    t = alltypes
+    result = t.head().execute()
+    expected = t.limit(5).execute()
+    tm.assert_frame_equal(result, expected)
+
+
+def test_identical_to(alltypes):
+    t = alltypes
+    dt = t[['tinyint_col', 'double_col']].execute()
+    expr = t.tinyint_col.identical_to(t.double_col)
+    result = expr.execute()
+    expected = (dt.tinyint_col.isnull() & dt.double_col.isnull()) | (
+        dt.tinyint_col == dt.double_col
     )
-    def test_not(self):
-        t = self.alltypes.limit(10)
-        expr = t.projection([(~t.double_col.isnull()).name('double_col')])
-        result = expr.execute().double_col
-        expected = ~t.execute().double_col.isnull()
-        tm.assert_series_equal(result, expected)
+    expected.name = result.name
+    tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.sqlite
+@pytest.mark.xfail(raises=AttributeError, reason='NYI')
+def test_truncate(con, alltypes):
+    expr = alltypes.limit(5)
+    name = str(uuid.uuid4())
+    con.create_table(name, expr)
+    t = con.table(name)
+    assert len(t.execute()) == 5
+    t.truncate()
+    assert len(t.execute()) == 0
+
+
+@pytest.mark.xfail(
+    raises=AssertionError,
+    reason='SQLite returns bools as integers, Ibis should recast them'
+)
+def test_not(alltypes):
+    t = alltypes.limit(10)
+    expr = t.projection([(~t.double_col.isnull()).name('double_col')])
+    result = expr.execute().double_col
+    expected = ~t.execute().double_col.isnull()
+    tm.assert_series_equal(result, expected)
+
+
 def test_compile_with_named_table():
     t = ibis.table([('a', 'string')], name='t')
     result = ibis.sqlite.compile(t.a)
@@ -523,7 +724,6 @@ def test_compile_with_named_table():
     assert str(result) == str(sa.select([st.c.a]))
 
 
-@pytest.mark.sqlite
 def test_compile_with_unnamed_table():
     t = ibis.table([('a', 'string')])
     result = ibis.sqlite.compile(t.a)
@@ -531,7 +731,6 @@ def test_compile_with_unnamed_table():
     assert str(result) == str(sa.select([st.c.a]))
 
 
-@pytest.mark.sqlite
 def test_compile_with_multiple_unnamed_tables():
     t = ibis.table([('a', 'string')])
     s = ibis.table([('b', 'string')])
@@ -544,7 +743,6 @@ def test_compile_with_multiple_unnamed_tables():
     assert str(result) == str(expected)
 
 
-@pytest.mark.sqlite
 def test_compile_with_one_unnamed_table():
     t = ibis.table([('a', 'string')])
     s = ibis.table([('b', 'string')], name='s')
@@ -557,7 +755,6 @@ def test_compile_with_one_unnamed_table():
     assert str(result) == str(expected)
 
 
-@pytest.mark.sqlite
 @pytest.mark.parametrize(
     ('attr', 'expected'),
     [
@@ -566,8 +763,8 @@ def test_compile_with_one_unnamed_table():
         (operator.methodcaller('day'), set(range(1, 32)))
     ]
 )
-def test_date_extract_field(db, attr, expected):
-    t = db.functional_alltypes
+def test_date_extract_field(alltypes, attr, expected):
+    t = alltypes
     expr = attr(t.timestamp_col.cast('date')).distinct()
     result = expr.execute().astype(int)
     assert set(result) == expected

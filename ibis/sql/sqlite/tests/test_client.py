@@ -12,101 +12,110 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 import os
-
-import pandas as pd
-import pandas.util.testing as tm
-
 import uuid
 
-from .common import SQLiteTests
-from ibis.tests.util import assert_equal
-from ibis.util import guid
+import pytest
+
+import numpy as np
+
+import pandas.util.testing as tm
+
+import ibis
 import ibis.expr.types as ir
 import ibis.common as com
-import ibis
+from ibis.util import guid
 
 
-class TestSQLiteClient(SQLiteTests, unittest.TestCase):
+sa = pytest.importorskip('sqlalchemy')
 
-    def test_file_not_exist_and_create(self):
-        path = '__ibis_tmp_{}.db'.format(guid())
 
-        with self.assertRaises(com.IbisError):
-            ibis.sqlite.connect(path)
+pytestmark = pytest.mark.sqlite
 
-        con = ibis.sqlite.connect(path, create=True)
-        assert os.path.exists(path)
-        con.con.dispose()
-        os.remove(path)
 
-    def test_table(self):
-        table = self.con.table('functional_alltypes')
-        assert isinstance(table, ir.TableExpr)
+def test_file_not_exist_and_create():
+    path = '__ibis_tmp_{}.db'.format(guid())
 
-    def test_array_execute(self):
-        d = self.alltypes.limit(10).double_col
-        s = d.execute()
-        assert isinstance(s, pd.Series)
-        assert len(s) == 10
+    with pytest.raises(com.IbisError):
+        ibis.sqlite.connect(path)
 
-    def test_literal_execute(self):
-        expr = ibis.literal('1234')
-        result = self.con.execute(expr)
-        assert result == '1234'
+    con = ibis.sqlite.connect(path, create=True)
+    assert os.path.exists(path)
+    con.con.dispose()
+    os.remove(path)
 
-    def test_simple_aggregate_execute(self):
-        d = self.alltypes.double_col.sum()
-        v = d.execute()
-        assert isinstance(v, float)
 
-    def test_list_tables(self):
-        assert len(self.con.list_tables()) > 0
-        assert len(self.con.list_tables(like='functional')) == 1
+def test_table(con):
+    table = con.table('functional_alltypes')
+    assert isinstance(table, ir.TableExpr)
 
-    def test_compile_verify(self):
-        unsupported_expr = self.alltypes.string_col.approx_nunique()
-        assert not unsupported_expr.verify()
 
-        supported_expr = self.alltypes.double_col.sum()
-        assert supported_expr.verify()
+def test_array_execute(alltypes, df):
+    expr = alltypes.double_col
+    result = expr.execute()
+    expected = df.double_col
+    tm.assert_series_equal(result, expected)
 
-    def test_attach_file(self):
-        client = ibis.sqlite.connect()
 
-        client.attach('foo', self.env.db_path)
-        client.attach('bar', self.env.db_path)
+def test_literal_execute(con):
+    expr = ibis.literal('1234')
+    result = con.execute(expr)
+    assert result == '1234'
 
-        foo_tables = client.list_tables(database='foo')
-        bar_tables = client.list_tables(database='bar')
 
-        assert foo_tables == bar_tables
+def test_simple_aggregate_execute(alltypes, df):
+    expr = alltypes.double_col.sum()
+    result = expr.execute()
+    expected = df.double_col.sum()
+    np.testing.assert_allclose(result, expected)
 
-    def test_database_layer(self):
-        db = self.con.database()
 
-        t = db.functional_alltypes
-        assert_equal(t, self.alltypes)
+def test_list_tables(con):
+    assert con.list_tables()
+    assert len(con.list_tables(like='functional')) == 1
 
-        assert db.list_tables() == self.con.list_tables()
 
-    def test_compile_toplevel(self):
-        t = ibis.table([('foo', 'double')], name='t0')
+def test_compile_verify(alltypes):
+    unsupported_expr = alltypes.string_col.approx_nunique()
+    assert not unsupported_expr.verify()
 
-        # it works!
-        expr = t.foo.sum()
-        result = ibis.sqlite.compile(expr)
-        expected = """\
+    supported_expr = alltypes.double_col.sum()
+    assert supported_expr.verify()
+
+
+def test_attach_file(dbpath):
+    client = ibis.sqlite.connect()
+
+    client.attach('foo', dbpath)
+    client.attach('bar', dbpath)
+
+    foo_tables = client.list_tables(database='foo')
+    bar_tables = client.list_tables(database='bar')
+
+    assert foo_tables == bar_tables
+
+
+def test_database_layer(con, db):
+    assert db.list_tables() == con.list_tables()
+
+
+def test_compile_toplevel():
+    t = ibis.table([('foo', 'double')], name='t0')
+
+    # it works!
+    expr = t.foo.sum()
+    result = ibis.sqlite.compile(expr)
+    expected = """\
 SELECT sum(t0.foo) AS sum 
 FROM t0 AS t0"""  # noqa
-        assert str(result) == expected
+    assert str(result) == expected
 
-    def test_create_and_drop_table(self):
-        t = self.con.table('functional_alltypes')
-        name = str(uuid.uuid4())
-        self.con.create_table(name, t.limit(5))
-        new_table = self.con.table(name)
-        tm.assert_frame_equal(new_table.execute(), t.limit(5).execute())
-        self.con.drop_table(name)
-        assert name not in self.con.list_tables()
+
+def test_create_and_drop_table(con):
+    t = con.table('functional_alltypes')
+    name = str(uuid.uuid4())
+    con.create_table(name, t.limit(5))
+    new_table = con.table(name)
+    tm.assert_frame_equal(new_table.execute(), t.limit(5).execute())
+    con.drop_table(name)
+    assert name not in con.list_tables()

@@ -228,7 +228,7 @@ class _ibis_sqlite_var(object):
 
         self.count += 1
         delta = value - self.mean
-        self.mean = delta
+        self.mean += delta / self.count
         self.sum_of_squares_of_differences += delta * (value - self.mean)
 
     def finalize(self):
