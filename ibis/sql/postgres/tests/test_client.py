@@ -84,9 +84,7 @@ def test_compile_toplevel():
     # it works!
     expr = t.foo.sum()
     result = ibis.postgres.compile(expr)
-    expected = """\
-SELECT sum(t0.foo) AS sum 
-FROM t0 AS t0"""  # noqa
+    expected = "SELECT sum(t0.foo) AS sum \nFROM t0 AS t0"  # noqa
     assert str(result) == expected
 
 
@@ -100,6 +98,8 @@ def test_list_schemas(con):
     assert 'information_schema' in con.list_schemas()
 
 
+@pytest.mark.skip(not os.path.exists(POSTGRES_TEST_DB),
+                  reason="postgres tests db does not exist")
 def test_metadata_is_per_table():
     con = ibis.postgres.connect(host='localhost', database=POSTGRES_TEST_DB)
     assert len(con.meta.tables) == 0
@@ -110,6 +110,8 @@ def test_metadata_is_per_table():
     assert len(con.meta.tables) == 1
 
 
+@pytest.mark.skip(not os.path.exists(POSTGRES_TEST_DB),
+                  reason="postgres tests db does not exist")
 def test_schema_table():
     con = ibis.postgres.connect(host='localhost', database=POSTGRES_TEST_DB)
 
