@@ -28,6 +28,8 @@ IBIS_TEST_POSTGRES_DB = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
 
 @pytest.fixture(scope='module')
 def con():
+    if not os.path.exists(IBIS_TEST_POSTGRES_DB):
+        pytest.skip("postgress testing db does not exist!")
     return ibis.postgres.connect(
         host='localhost',
         user=PG_USER,
