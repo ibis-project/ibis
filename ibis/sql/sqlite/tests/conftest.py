@@ -13,7 +13,10 @@ from ibis.sql.sqlite.compiler import SQLiteExprTranslator  # noqa: E402
 def dbpath():
     # If we haven't defined an environment variable with the path of the SQLite
     # database, assume it's in $PWD
-    return os.environ.get('IBIS_TEST_SQLITE_DB_PATH', 'ibis_testing.db')
+    path = os.environ.get('IBIS_TEST_SQLITE_DB_PATH', 'ibis_testing.db')
+    if not os.path.exists(path):
+        pytest.skip("sql testing db does not exist!")
+    return path
 
 
 @pytest.yield_fixture(scope='module')

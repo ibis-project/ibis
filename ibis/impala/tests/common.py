@@ -23,6 +23,8 @@ import ibis.util as util
 import ibis.compat as compat
 import ibis
 
+pytest.importorskip('impala')
+pytest.importorskip('hdfs')
 
 GLOBAL_TMP_DB = os.environ.get('IBIS_TEST_TMP_DB',
                                '__ibis_tmp_{0}'.format(util.guid()))

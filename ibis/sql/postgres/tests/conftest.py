@@ -19,9 +19,6 @@ import pytest
 
 import ibis
 
-pytest.importorskip('sqlalchemy')
-pytest.importorskip('psycopg2')
-
 from ibis.sql.postgres.compiler import PostgreSQLExprTranslator  # noqa: E402
 
 PG_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
