@@ -349,6 +349,14 @@ class Round(ValueOp):
             return rules.shape_like(arg, 'double')
 
 
+class Clip(ValueOp):
+    input_type = [value,
+                  number(name='lower', allow_boolean=False, optional=True),
+                  number(name='upper', allow_boolean=False, optional=True)]
+
+    output_type = rules.type_of_arg(0)
+
+
 class BaseConvert(ValueOp):
 
     input_type = [rules.one_of([integer, string]),
@@ -686,6 +694,10 @@ def _mean_output_type(self):
     return t
 
 
+def _array_reduced_type(self):
+    return dt.Array(self.args[0].type())
+
+
 class Sum(Reduction):
 
     output_type = rules.scalar_output(_sum_output_type)
@@ -694,6 +706,18 @@ class Sum(Reduction):
 class Mean(Reduction):
 
     output_type = rules.scalar_output(_mean_output_type)
+
+
+class Quantile(Reduction):
+
+    input_type = [value,
+                  number(name='quantile', allow_boolean=False),
+                  rules.string_options(
+                      ['linear', 'lower', 'higher',
+                       'midpoint', 'nearest'],
+                      name='interpolation',
+                      default='linear')]
+    output_type = rules.type_of_arg(1)
 
 
 class VarianceBase(Reduction):
@@ -2403,6 +2427,4 @@ class ArrayRepeat(ValueOp):
 class ArrayCollect(Reduction):
 
     input_type = [rules.column]
-    output_type = rules.scalar_output(
-        lambda self: dt.Array(self.args[0].type())
-    )
+    output_type = rules.scalar_output(_array_reduced_type)
