@@ -15,6 +15,7 @@
 import warnings
 import operator
 import functools
+import collections
 
 import six
 import toolz
@@ -1043,7 +1044,7 @@ def quantile(arg, quantile, interpolation='linear'):
 
     Parameters
     ----------
-    quantile : float, default 0.5 (50% quantile)
+    quantile : float or array-like
         0 <= quantile <= 1, the quantile(s) to compute
     interpolation : {'linear', 'lower', 'higher', 'midpoint', 'nearest'}
 
@@ -1059,9 +1060,14 @@ def quantile(arg, quantile, interpolation='linear'):
 
     Returns
     -------
-    quantile : scalar type, same as input
+    quantile
+        if scalar input, scalar type, same as input
+        if array input, list of scalar type
     """
-    op = _ops.Quantile(arg, quantile, interpolation)
+    if isinstance(quantile, collections.Sequence):
+        op = _ops.MultiQuantile(arg, quantile, interpolation)
+    else:
+        op = _ops.Quantile(arg, quantile, interpolation)
     return op.to_expr()
 
 

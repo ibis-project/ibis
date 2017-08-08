@@ -928,35 +928,23 @@ def test_cast_to_decimal(t, df, type):
          lambda x: x.clip(lower=0, upper=1.0)),
     ]
 )
-def test_arraylike_functions_transforms(t, df, ibis_func, pandas_func):
-    if isinstance(pandas_func, Exception):
-        with pytest.raises(pandas_func):
-            ibis_func(t.float64_with_zeros).execute()
-    else:
-        result = ibis_func(t.float64_with_zeros).execute()
-        expected = pandas_func(df.float64_with_zeros)
-        tm.assert_series_equal(result, expected)
+def test_clip(t, df, ibis_func, pandas_func):
+    result = ibis_func(t.float64_with_zeros).execute()
+    expected = pandas_func(df.float64_with_zeros)
+    tm.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(
-    ('ibis_func', 'exc'),
+    ('ibis_func', 'pandas_func'),
     [
-        # no lower/upper specified
-        (lambda x: x.clip(), ValueError),
-
-        # out of range on quantile
-        (lambda x: x.quantile(5.0), ValueError),
-
-        # array specified for quantile
-        (lambda x: x.quantile([0.25, 0.75]), IbisTypeError),
-
-        # invalid interpolation arg
-        (lambda x: x.quantile(0.5, interpolation='foo'), IbisTypeError),
+        (lambda x: x.quantile([0.25, 0.75]),
+         lambda x: list(x.quantile([0.25, 0.75]))),
     ]
 )
-def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
-    with pytest.raises(exc):
-        ibis_func(t.float64_with_zeros).execute()
+def test_quantile_list(t, df, ibis_func, pandas_func):
+    result = ibis_func(t.float64_with_zeros).execute()
+    expected = pandas_func(df.float64_with_zeros)
+    tm.assert_almost_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -968,7 +956,25 @@ def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
          lambda x: x.quantile(0.5, interpolation='linear')),
     ]
 )
-def test_arraylike_functions_returning_scalar(t, df, ibis_func, pandas_func):
+def test_quantile_scalar(t, df, ibis_func, pandas_func):
     result = ibis_func(t.float64_with_zeros).execute()
     expected = pandas_func(df.float64_with_zeros)
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('ibis_func', 'exc'),
+    [
+        # no lower/upper specified
+        (lambda x: x.clip(), ValueError),
+
+        # out of range on quantile
+        (lambda x: x.quantile(5.0), ValueError),
+
+        # invalid interpolation arg
+        (lambda x: x.quantile(0.5, interpolation='foo'), IbisTypeError),
+    ]
+)
+def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
+    with pytest.raises(exc):
+        ibis_func(t.float64_with_zeros).execute()

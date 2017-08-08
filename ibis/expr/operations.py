@@ -720,6 +720,17 @@ class Quantile(Reduction):
     output_type = rules.type_of_arg(1)
 
 
+class MultiQuantile(Quantile):
+
+    input_type = [value,
+                  rules.array(dt.double),
+                  rules.string_options(
+                      ['linear', 'lower', 'higher',
+                       'midpoint', 'nearest'],
+                      name='interpolation',
+                      default='linear')]
+
+
 class VarianceBase(Reduction):
 
     input_type = [rules.column, boolean(name='where', optional=True),
