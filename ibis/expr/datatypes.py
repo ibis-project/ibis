@@ -215,10 +215,14 @@ class DataType(object):
         if isinstance(other, six.string_types):
             other = validate_type(other)
 
-        return (
+        return isinstance(self, Any) or isinstance(other, Any) or (
             isinstance(other, type(self)) and
-            self.nullable == other.nullable
-        ) or isinstance(self, Any) or isinstance(other, Any)
+            self.nullable == other.nullable and
+            self._equal_part(other, cache=cache)
+        )
+
+    def _equal_part(self, other, cache=None):
+        return True
 
     def can_implicit_cast(self, other):
         return self.equals(other)
@@ -333,10 +337,8 @@ class Timestamp(Primitive):
         super(Timestamp, self).__init__(nullable=nullable)
         self.timezone = timezone
 
-    def equals(self, other, cache=None):
-        return super(Timestamp, self).equals(other, cache=cache) and (
-            self.timezone == validate_type(other).timezone
-        )
+    def _equal_part(self, other, cache=None):
+        return self.timezone == other.timezone
 
     def __call__(self, timezone=None, nullable=True):
         return type(self)(timezone=timezone, nullable=nullable)
@@ -508,11 +510,8 @@ class Struct(DataType):
             )
         )
 
-    def equals(self, other, cache=None):
-        return (
-            super(Struct, self).equals(other, cache=cache) and
-            self.names == other.names and self.types == other.types
-        )
+    def _equal_part(self, other, cache=None):
+        return self.names == other.names and self.types == other.types
 
     @classmethod
     def from_tuples(self, pairs):
@@ -532,11 +531,8 @@ class Array(Variadic):
     def __str__(self):
         return '{0}<{1}>'.format(self.name.lower(), self.value_type)
 
-    def equals(self, other, cache=None):
-        return (
-            super(Array, self).equals(other, cache=cache) and
-            self.value_type.equals(other.value_type, cache=cache)
-        )
+    def _equal_part(self, other, cache=None):
+        return self.value_type.equals(other.value_type, cache=cache)
 
     def valid_literal(self, value):
         return isinstance(value, (list, tuple))
@@ -550,9 +546,8 @@ class Enum(DataType):
         self.rep_type = validate_type(rep_type)
         self.value_type = validate_type(value_type)
 
-    def equals(self, other, cache=None):
+    def _equal_part(self, other, cache=None):
         return (
-            super(Enum, self).equals(other, cache=cache) and
             self.rep_type.equals(other.rep_type, cache=cache) and
             self.value_type.equals(other.value_type, cache=cache)
         )
@@ -580,9 +575,8 @@ class Map(DataType):
             self.value_type,
         )
 
-    def equals(self, other, cache=None):
+    def _equal_part(self, other, cache=None):
         return (
-            super(Map, self).equals(other, cache=cache) and
             self.key_type.equals(other.key_type, cache=cache) and
             self.value_type.equals(other.value_type, cache=cache)
         )

@@ -265,12 +265,13 @@ class Argument(object):
     """
 
     def __init__(self, name=None, default=None, optional=False,
-                 validator=None, doc=None):
+                 validator=None, doc=None, as_value_expr=None):
         self.name = name
         self.default = default
         self.optional = optional
         self.validator = validator
         self.doc = doc
+        self.as_value_expr = as_value_expr or ir.literal
 
     def validate(self, args, i):
         arg = args[i]
@@ -280,7 +281,7 @@ class Argument(object):
 
         if arg is None:
             if not self.optional:
-                return ir.as_value_expr(self.default)
+                return self.as_value_expr(self.default)
             elif self.optional:
                 return arg
 
@@ -444,7 +445,7 @@ class ValueArgument(Argument):
     def _validate(self, args, i):
         arg = args[i]
         if not isinstance(arg, ir.Expr):
-            arg = args[i] = ir.as_value_expr(arg)
+            arg = args[i] = self.as_value_expr(arg)
 
         return arg
 
@@ -452,9 +453,9 @@ class ValueArgument(Argument):
 class AnyTyped(Argument):
 
     def __init__(self, types, fail_message, **arg_kwds):
+        super(AnyTyped, self).__init__(**arg_kwds)
         self.types = util.promote_list(types)
         self.fail_message = fail_message
-        Argument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
         arg = args[i]
@@ -493,8 +494,8 @@ class ValueTyped(AnyTyped, ValueArgument):
 class MultipleTypes(Argument):
 
     def __init__(self, types, **arg_kwds):
-        self.types = [_to_argument(t) for t in types]
         super(MultipleTypes, self).__init__(**arg_kwds)
+        self.types = [_to_argument(t) for t in types]
 
     def _validate(self, args, i):
         for t in self.types:
@@ -505,8 +506,8 @@ class MultipleTypes(Argument):
 class OneOf(Argument):
 
     def __init__(self, types, **arg_kwds):
+        super(OneOf, self).__init__(**arg_kwds)
         self.types = [_to_argument(t) for t in types]
-        Argument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
         validated = False
@@ -528,11 +529,11 @@ class OneOf(Argument):
 class CastIfDecimal(ValueArgument):
 
     def __init__(self, ref_j, **arg_kwds):
+        super(CastIfDecimal, self).__init__(**arg_kwds)
         self.ref_j = ref_j
-        ValueArgument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
-        ValueArgument._validate(self, args, i)
+        super(CastIfDecimal, self)._validate(args, i)
 
         ref_arg = args[self.ref_j]
         if isinstance(ref_arg, ir.DecimalValue):
@@ -590,11 +591,13 @@ def table(name=None):
 class Number(ValueTyped):
 
     def __init__(self, allow_boolean=True, **arg_kwds):
+        super(Number, self).__init__(
+            ir.NumericValue, 'not numeric', **arg_kwds
+        )
         self.allow_boolean = allow_boolean
-        ValueTyped.__init__(self, ir.NumericValue, 'not numeric', **arg_kwds)
 
     def _validate(self, args, i):
-        arg = ValueTyped._validate(self, args, i)
+        arg = super(Number, self)._validate(args, i)
 
         if isinstance(arg, ir.BooleanValue) and not self.allow_boolean:
             raise IbisTypeError('not implemented for boolean values')
@@ -661,6 +664,7 @@ def instance_of(type_, **arg_kwds):
 class StringOptions(Argument):
 
     def __init__(self, options, case_sensitive=True, **arg_kwds):
+        super(StringOptions, self).__init__(**arg_kwds)
         if not case_sensitive:
             (is_lower, _), = Counter(map(str.islower, options)).most_common(1)
             self._preferred_case = str.lower if is_lower else str.upper
@@ -668,7 +672,6 @@ class StringOptions(Argument):
         else:
             self.options = options
         self.case_sensitive = case_sensitive
-        super(StringOptions, self).__init__(**arg_kwds)
 
     def _validate(self, args, i):
         arg = args[i]
@@ -729,9 +732,9 @@ enum = Enum
 class ListOf(Argument):
 
     def __init__(self, value_type, min_length=0, **arg_kwds):
+        super(ListOf, self).__init__(**arg_kwds)
         self.value_type = _to_argument(value_type)
         self.min_length = min_length
-        Argument.__init__(self, **arg_kwds)
 
     def _validate(self, args, i):
         arg = args[i]
