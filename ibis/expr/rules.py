@@ -265,12 +265,13 @@ class Argument(object):
     """
 
     def __init__(self, name=None, default=None, optional=False,
-                 validator=None, doc=None):
+                 validator=None, doc=None, as_value_expr=None):
         self.name = name
         self.default = default
         self.optional = optional
         self.validator = validator
         self.doc = doc
+        self.as_value_expr = as_value_expr or ir.literal
 
     def validate(self, args, i):
         arg = args[i]
@@ -280,7 +281,7 @@ class Argument(object):
 
         if arg is None:
             if not self.optional:
-                return ir.as_value_expr(self.default)
+                return self.as_value_expr(self.default)
             elif self.optional:
                 return arg
 
@@ -444,7 +445,7 @@ class ValueArgument(Argument):
     def _validate(self, args, i):
         arg = args[i]
         if not isinstance(arg, ir.Expr):
-            arg = args[i] = ir.as_value_expr(arg)
+            arg = args[i] = self.as_value_expr(arg)
 
         return arg
 
