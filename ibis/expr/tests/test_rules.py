@@ -4,6 +4,7 @@ import ibis
 from ibis.common import IbisTypeError
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.expr.datatypes as dt
 from ibis.expr import rules
 
 
@@ -135,3 +136,17 @@ def test_scalar_value_type():
 
     assert MyOp(1).args[0].equals(ibis.literal(1))
     assert MyOp(1.42).args[0].equals(ibis.literal(1.42))
+
+
+def test_array_rule():
+
+    class MyOp(ops.ValueOp):
+
+        input_type = [rules.array(dt.double, name='value')]
+        output_type = rules.type_of_arg(0)
+
+    raw_value = [1.0, 2.0, 3.0]
+    op = MyOp(raw_value)
+    result = op.value
+    expected = ibis.literal(raw_value)
+    assert result.equals(expected)
