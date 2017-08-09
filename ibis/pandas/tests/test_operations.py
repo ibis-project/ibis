@@ -108,6 +108,7 @@ def test_cast_timestamp_column(t, df, column, to, expected):
         )
     ]
 )
+@pytest.mark.parametrize('tz', [None, 'UTC', 'America/New_York'])
 def test_cast_timestamp_scalar(to, expected, tz):
     literal_expr = ibis.literal(pd.Timestamp('now', tz=tz))
     value = literal_expr.cast(to)

@@ -8,11 +8,6 @@ import ibis
 import ibis.expr.datatypes as dt
 
 
-@pytest.fixture(params=[None, 'UTC', 'America/New_York'])
-def tz(request):
-    return request.param
-
-
 @pytest.fixture
 def df():
     return pd.DataFrame({
