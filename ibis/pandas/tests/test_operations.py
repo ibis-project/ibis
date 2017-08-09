@@ -22,6 +22,9 @@ from ibis import literal as L  # noqa: E402
 from ibis.common import IbisTypeError  # noqa: E402
 
 
+pytestmark = pytest.mark.pandas
+
+
 def test_table_column(t, df):
     expr = t.plain_int64
     result = expr.execute()
