@@ -708,6 +708,16 @@ class Mean(Reduction):
     output_type = rules.scalar_output(_mean_output_type)
 
 
+def _coerce_integer_to_double_type(self):
+    first_arg = self.args[0]
+    first_arg_type = first_arg.type()
+    if isinstance(first_arg_type, dt.Integer):
+        result_type = dt.double
+    else:
+        result_type = first_arg_type
+    return result_type
+
+
 class Quantile(Reduction):
 
     input_type = [value,
@@ -717,7 +727,18 @@ class Quantile(Reduction):
                        'midpoint', 'nearest'],
                       name='interpolation',
                       default='linear')]
-    output_type = rules.type_of_arg(1)
+    output_type = rules.scalar_output(_coerce_integer_to_double_type)
+
+
+class MultiQuantile(Quantile):
+
+    input_type = [value,
+                  rules.array(dt.double),
+                  rules.string_options(
+                      ['linear', 'lower', 'higher',
+                       'midpoint', 'nearest'],
+                      name='interpolation',
+                      default='linear')]
 
 
 class VarianceBase(Reduction):

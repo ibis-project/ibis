@@ -180,11 +180,20 @@ def execute_series_clip(op, data, lower, upper, scope=None):
 
 
 @execute_node.register(
-    ops.Quantile, pd.Series, float,
+    ops.Quantile, pd.Series, (float, integer_types),
 )
-def execute_series_quantile_with_interpolation(
+def execute_series_quantile_float(
         op, data, quantile, scope=None):
     return data.quantile(q=quantile, interpolation=op.interpolation)
+
+
+@execute_node.register(
+    ops.MultiQuantile, pd.Series, list,
+)
+def execute_series_quantile_list(
+        op, data, quantile, scope=None):
+    result = data.quantile(q=quantile, interpolation=op.interpolation)
+    return list(result)
 
 
 @execute_node.register(ops.Cast, datetime.datetime, dt.String)
