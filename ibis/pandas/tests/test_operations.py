@@ -22,69 +22,7 @@ from ibis import literal as L  # noqa: E402
 from ibis.common import IbisTypeError  # noqa: E402
 
 
-@pytest.fixture(params=[None, 'UTC', 'America/New_York'])
-def tz(request):
-    return request.param
-
-
-@pytest.fixture
-def df(tz):
-    return pd.DataFrame({
-        'plain_int64': list(range(1, 4)),
-        'plain_strings': list('abc'),
-        'plain_float64': [4.0, 5.0, 6.0],
-        'plain_datetimes': pd.Series(
-            pd.date_range(start='2017-01-02 01:02:03.234', periods=3).values,
-        ).dt.tz_localize(tz),
-        'dup_strings': list('dad'),
-        'dup_ints': [1, 2, 1],
-        'float64_as_strings': ['100.01', '234.23', '-999.34'],
-        'int64_as_strings': list(map(str, range(1, 4))),
-        'strings_with_space': [' ', 'abab', 'ddeeffgg'],
-        'int64_with_zeros': [0, 1, 0],
-        'float64_with_zeros': [1.0, 0.0, 1.0],
-        'strings_with_nulls': ['a', None, 'b'],
-        'datetime_strings': pd.Series(
-            pd.date_range(start='2017-01-02 01:02:03.234', periods=3).values,
-        ).dt.tz_localize(tz).astype(str),
-        'decimal': list(map(decimal.Decimal, ['1.0', '2', '3.234'])),
-    })
-
-
-@pytest.fixture
-def df1():
-    return pd.DataFrame(
-        {'key': list('abcd'), 'value': [3, 4, 5, 6], 'key2': list('eeff')}
-    )
-
-
-@pytest.fixture
-def df2():
-    return pd.DataFrame(
-        {'key': list('ac'), 'other_value': [4.0, 6.0], 'key3': list('fe')}
-    )
-
-
-@pytest.fixture
-def client(df, df1, df2):
-    return ibis.pandas.connect(
-        {'df': df, 'df1': df1, 'df2': df2, 'left': df1, 'right': df2}
-    )
-
-
-@pytest.fixture
-def t(client):
-    return client.table('df', schema={'decimal': dt.Decimal(4, 3)})
-
-
-@pytest.fixture
-def left(client):
-    return client.table('left')
-
-
-@pytest.fixture
-def right(client):
-    return client.table('right')
+pytestmark = pytest.mark.pandas
 
 
 def test_table_column(t, df):
@@ -147,8 +85,16 @@ def test_cast_string(t, df, from_, to, expected):
         )
     ]
 )
-def test_cast_timestamp_column(t, df, to, expected):
-    c = t.plain_datetimes.cast(to)
+@pytest.mark.parametrize(
+    'column',
+    [
+        'plain_datetimes_naive',
+        'plain_datetimes_ny',
+        'plain_datetimes_utc',
+    ]
+)
+def test_cast_timestamp_column(t, df, column, to, expected):
+    c = t[column].cast(to)
     result = c.execute()
     assert str(result.dtype) == expected
 
@@ -165,6 +111,7 @@ def test_cast_timestamp_column(t, df, to, expected):
         )
     ]
 )
+@pytest.mark.parametrize('tz', [None, 'UTC', 'America/New_York'])
 def test_cast_timestamp_scalar(to, expected, tz):
     literal_expr = ibis.literal(pd.Timestamp('now', tz=tz))
     value = literal_expr.cast(to)
@@ -173,14 +120,24 @@ def test_cast_timestamp_scalar(to, expected, tz):
     assert result == expected(raw)
 
 
-def test_timestamp_with_timezone_is_inferred_correctly(t, df, tz):
-    assert t.plain_datetimes.type().equals(dt.Timestamp(tz))
+def test_timestamp_with_timezone_is_inferred_correctly(t, df):
+    assert t.plain_datetimes_naive.type().equals(dt.timestamp)
+    assert t.plain_datetimes_ny.type().equals(dt.Timestamp('America/New_York'))
+    assert t.plain_datetimes_utc.type().equals(dt.Timestamp('UTC'))
 
 
-def test_cast_date(t, df):
-    expr = t.plain_datetimes.cast('date')
+@pytest.mark.parametrize(
+    'column',
+    [
+        'plain_datetimes_naive',
+        'plain_datetimes_ny',
+        'plain_datetimes_utc',
+    ]
+)
+def test_cast_date(t, df, column):
+    expr = t[column].cast('date')
     result = expr.execute()
-    expected = df.plain_datetimes.dt.normalize()
+    expected = df[column].dt.normalize()
     tm.assert_series_equal(result, expected)
 
 
@@ -610,23 +567,31 @@ def test_series_limit(t, df, offset):
 @pytest.mark.parametrize(
     ('key', 'pandas_by', 'pandas_ascending'),
     [
-        (lambda t: [ibis.desc(t.plain_datetimes)], ['plain_datetimes'], False),
+        (lambda t, col: [ibis.desc(t[col])], lambda col: [col], False),
         (
-            lambda t: [t.plain_datetimes, ibis.desc(t.plain_int64)],
-            ['plain_datetimes', 'plain_int64'],
+            lambda t, col: [t[col], ibis.desc(t.plain_int64)],
+            lambda col: [col, 'plain_int64'],
             [True, False]
         ),
         (
-            lambda t: [ibis.desc(t.plain_int64 * 2)],
-            ['plain_int64'],
+            lambda t, col: [ibis.desc(t.plain_int64 * 2)],
+            lambda col: ['plain_int64'],
             False,
         ),
     ]
 )
-def test_sort_by(t, df, key, pandas_by, pandas_ascending):
-    expr = t.sort_by(key(t))
+@pytest.mark.parametrize(
+    'column',
+    [
+        'plain_datetimes_naive',
+        'plain_datetimes_ny',
+        'plain_datetimes_utc',
+    ]
+)
+def test_sort_by(t, df, column, key, pandas_by, pandas_ascending):
+    expr = t.sort_by(key(t, column))
     result = expr.execute()
-    expected = df.sort_values(pandas_by, ascending=pandas_ascending)
+    expected = df.sort_values(pandas_by(column), ascending=pandas_ascending)
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -740,30 +705,54 @@ def test_notnull(t, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_cast_datetime_strings_to_date(t, df):
-    expr = t.datetime_strings.cast('date')
+@pytest.mark.parametrize(
+    'column',
+    [
+        'datetime_strings_naive',
+        'datetime_strings_ny',
+        'datetime_strings_utc',
+    ]
+)
+def test_cast_datetime_strings_to_date(t, df, column):
+    expr = t[column].cast('date')
     result = expr.execute()
     expected = pd.to_datetime(
-        df.datetime_strings, infer_datetime_format=True
+        df[column], infer_datetime_format=True
     ).dt.normalize()
     tm.assert_series_equal(result, expected)
 
 
-def test_cast_datetime_strings_to_timestamp(t, df):
-    expr = t.datetime_strings.cast('timestamp')
+@pytest.mark.parametrize(
+    'column',
+    [
+        'datetime_strings_naive',
+        'datetime_strings_ny',
+        'datetime_strings_utc',
+    ]
+)
+def test_cast_datetime_strings_to_timestamp(t, df, column):
+    expr = t[column].cast('timestamp')
     result = expr.execute()
-    expected = pd.to_datetime(df.datetime_strings, infer_datetime_format=True)
+    expected = pd.to_datetime(df[column], infer_datetime_format=True)
     tm.assert_series_equal(result, expected)
 
 
-def test_cast_integer_to_temporal_type(t, df):
-    expr = t.plain_int64.cast(t.plain_datetimes.type())
+@pytest.mark.parametrize(
+    'column',
+    [
+        'plain_datetimes_naive',
+        'plain_datetimes_ny',
+        'plain_datetimes_utc',
+    ]
+)
+def test_cast_integer_to_temporal_type(t, df, column):
+    expr = t.plain_int64.cast(t[column].type())
     result = expr.execute()
     expected = pd.Series(
         pd.to_datetime(df.plain_int64.values, unit='ns').values,
         index=df.index,
         name='plain_int64',
-    ).dt.tz_localize(t.plain_datetimes.type().timezone)
+    ).dt.tz_localize(t[column].type().timezone)
     tm.assert_series_equal(result, expected)
 
 
