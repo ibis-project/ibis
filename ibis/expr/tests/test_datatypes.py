@@ -326,3 +326,12 @@ def test_timestamp_with_timezone_repr():
 def test_timestamp_with_timezone_str():
     ts = dt.Timestamp('UTC')
     assert str(ts) == "timestamp('UTC')"
+
+
+def test_time():
+    ts = dt.time
+    assert str(ts) == "time"
+
+
+def test_time_valid():
+    assert dt.validate_type('time').equals(dt.time)

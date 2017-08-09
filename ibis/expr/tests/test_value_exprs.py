@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import operator
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 import pytest
 
@@ -23,6 +23,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis
+from ibis.compat import PY2
 
 from ibis import literal
 from ibis.tests.util import assert_equal
@@ -902,3 +903,62 @@ def test_decimal_modulo_output_type(value, type, expected_type_class):
     t = ibis.table([('a', type)])
     expr = t.a % value
     assert isinstance(expr.type(), expected_type_class)
+
+
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (literal('10:00'), time(10, 0)),
+        (time(10, 0), literal('10:00')),
+    ]
+)
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.eq,
+        operator.ne,
+        operator.lt,
+        operator.le,
+        operator.gt,
+        operator.ge,
+        lambda left, right: ibis.time(
+            '10:00'
+        ).between(left, right),
+    ]
+)
+@pytest.mark.skipif(PY2, reason="time comparsions not available on PY2")
+def test_time_compare(op, left, right):
+    result = op(left, right)
+    assert result.type().equals(dt.boolean)
+
+
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (literal('10:00'), date(2017, 4, 2)),
+        (literal('10:00'), datetime(2017, 4, 2, 1, 1)),
+        (literal('10:00'), literal('2017-04-01')),
+    ]
+)
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.eq,
+        operator.lt,
+        operator.le,
+        operator.gt,
+        operator.ge,
+        ]
+)
+def test_time_timestamp_invalid_compare(op, left, right):
+    result = op(left, right)
+    assert result.type().equals(dt.boolean)
+
+
+@pytest.mark.skipif(not PY2, reason="invalid compare of time on PY2")
+def test_time_invalid_compare_on_py2():
+
+    # we cannot actually compare datetime.time objects and literals
+    # in a deferred way in python 2, they short circuit in the CPython
+    result = operator.eq(time(10, 0), literal('10:00'))
+    assert not result

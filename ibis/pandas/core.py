@@ -20,7 +20,7 @@ numeric_types = integer_types + floating_types
 boolean_types = bool, np.bool_
 fixed_width_types = numeric_types + boolean_types
 temporal_types = (
-    datetime.datetime, datetime.date, datetime.timedelta,
+    datetime.datetime, datetime.date, datetime.timedelta, datetime.time,
     np.datetime64, np.timedelta64,
 )
 scalar_types = fixed_width_types + temporal_types
