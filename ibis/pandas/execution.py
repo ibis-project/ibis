@@ -180,7 +180,7 @@ def execute_series_clip(op, data, lower, upper, scope=None):
 
 
 @execute_node.register(
-    ops.Quantile, pd.Series, float,
+    ops.Quantile, pd.Series, (float, integer_types),
 )
 def execute_series_quantile_float(
         op, data, quantile, scope=None):

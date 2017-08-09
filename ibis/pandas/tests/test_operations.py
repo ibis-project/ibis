@@ -946,12 +946,18 @@ def test_quantile_list(t, df, ibis_func, pandas_func):
     expected = pandas_func(df.float64_with_zeros)
     tm.assert_almost_equal(result, expected)
 
+    result = ibis_func(t.int64_with_zeros).execute()
+    expected = pandas_func(df.int64_with_zeros)
+    tm.assert_almost_equal(result, expected)
+
 
 @pytest.mark.parametrize(
     ('ibis_func', 'pandas_func'),
     [
-        (lambda x: x.quantile(0.5),
-         lambda x: x.quantile(0.5)),
+        (lambda x: x.quantile(0),
+         lambda x: x.quantile(0)),
+        (lambda x: x.quantile(1),
+         lambda x: x.quantile(1)),
         (lambda x: x.quantile(0.5, interpolation='linear'),
          lambda x: x.quantile(0.5, interpolation='linear')),
     ]
@@ -959,6 +965,9 @@ def test_quantile_list(t, df, ibis_func, pandas_func):
 def test_quantile_scalar(t, df, ibis_func, pandas_func):
     result = ibis_func(t.float64_with_zeros).execute()
     expected = pandas_func(df.float64_with_zeros)
+
+    result = ibis_func(t.int64_with_zeros).execute()
+    expected = pandas_func(df.int64_with_zeros)
     assert result == expected
 
 

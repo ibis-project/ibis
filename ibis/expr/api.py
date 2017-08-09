@@ -1044,7 +1044,7 @@ def quantile(arg, quantile, interpolation='linear'):
 
     Parameters
     ----------
-    quantile : float or array-like
+    quantile : float/int or array-like
         0 <= quantile <= 1, the quantile(s) to compute
     interpolation : {'linear', 'lower', 'higher', 'midpoint', 'nearest'}
 
