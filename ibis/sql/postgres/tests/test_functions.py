@@ -40,9 +40,22 @@ pytest.importorskip('psycopg2')
 pytestmark = pytest.mark.postgresql
 
 
-@pytest.fixture
-def guid():
-    return ibis.util.guid()
+@pytest.yield_fixture
+def guid(con):
+    name = ibis.util.guid()
+    try:
+        yield name
+    finally:
+        con.drop_table(name, force=True)
+
+
+@pytest.yield_fixture
+def guid2(con):
+    name = ibis.util.guid()
+    try:
+        yield name
+    finally:
+        con.drop_table(name, force=True)
 
 
 @pytest.mark.parametrize(
@@ -1040,44 +1053,37 @@ def test_array_concat_mixed_types(array_types):
         array_types.x + array_types.x.cast('array<double>')
 
 
-@pytest.yield_fixture
-def t(con):
-    name = 'left_t'
+@pytest.fixture
+def t(con, guid):
     con.raw_sql(
         """
-        CREATE TABLE {} (
+        CREATE TABLE "{}" (
           id SERIAL PRIMARY KEY,
           name TEXT
         )
-        """.format(name)
+        """.format(guid)
     )
-    try:
-        yield con.table(name)
-    finally:
-        con.drop_table(name)
-        assert name not in con.list_tables()
+    return con.table(guid)
 
 
-@pytest.yield_fixture
-def s(con, t):
-    name = 'right_t'
+@pytest.fixture
+def s(con, t, guid, guid2):
+    assert t.op().name == guid
+    assert t.op().name != guid2
+
     con.raw_sql(
         """
-        CREATE TABLE {} (
+        CREATE TABLE "{}" (
           id SERIAL PRIMARY KEY,
-          left_t_id INTEGER REFERENCES left_t,
+          left_t_id INTEGER REFERENCES "{}",
           cost DOUBLE PRECISION
         )
-        """.format(name)
+        """.format(guid2, guid)
     )
-    try:
-        yield con.table(name)
-    finally:
-        con.drop_table(name)
-        assert name not in con.list_tables()
+    return con.table(guid2)
 
 
-@pytest.yield_fixture
+@pytest.fixture
 def trunc(con, guid):
     con.raw_sql(
         """
@@ -1088,13 +1094,11 @@ def trunc(con, guid):
         """.format(guid)
     )
     con.raw_sql(
-        """INSERT INTO "{}" (name) VALUES ('a'), ('b'), ('c')""".format(guid)
+        """INSERT INTO "{}" (name) VALUES ('a'), ('b'), ('c')""".format(
+            guid
+        )
     )
-    try:
-        yield con.table(guid)
-    finally:
-        con.drop_table(guid)
-        assert guid not in con.list_tables()
+    return con.table(guid)
 
 
 def test_semi_join(t, s):
@@ -1120,10 +1124,9 @@ def test_anti_join(t, s):
     assert str(result) == str(expected)
 
 
-def test_create_table_from_expr(con, trunc):
-    guid = ibis.util.guid()
-    con.create_table(guid, expr=trunc)
-    t = con.table(guid)
+def test_create_table_from_expr(con, trunc, guid2):
+    con.create_table(guid2, expr=trunc)
+    t = con.table(guid2)
     assert list(t.name.execute()) == list('abc')
 
 
