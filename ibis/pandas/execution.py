@@ -59,6 +59,22 @@ def execute_cast_series_generic(op, data, type, scope=None):
     return data.astype(_IBIS_TYPE_TO_PANDAS_TYPE[type])
 
 
+@execute_node.register(ops.Cast, pd.Series, dt.Array)
+def execute_cast_series_array(op, data, type, scope=None):
+    value_type = type.value_type
+    numpy_type = _IBIS_TYPE_TO_PANDAS_TYPE.get(value_type, None)
+    if numpy_type is None:
+        raise ValueError(
+            'Array value type must be a primitive type '
+            '(e.g., number, string, or timestamp)'
+        )
+    return data.map(
+        lambda array, numpy_type=numpy_type: [
+            numpy_type(element) for element in array
+        ]
+    )
+
+
 @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
 def execute_cast_series_timestamp(op, data, type, scope=None):
     arg = op.args[0]
@@ -770,3 +786,70 @@ def execute_series_isnull(op, data, scope=None):
 @execute_node.register(ops.NotNull, pd.Series)
 def execute_series_notnnull(op, data, scope=None):
     return data.notnull()
+
+
+@execute_node.register(ops.ArrayLength, pd.Series)
+def execute_array_length(op, data, scope=None):
+    return data.apply(len)
+
+
+@execute_node.register(ops.ArrayLength, list)
+def execute_array_length_scalar(op, data, scope=None):
+    return len(data)
+
+
+@execute_node.register(
+    ops.ArraySlice,
+    pd.Series, six.integer_types, (six.integer_types, type(None))
+)
+def execute_array_slice(op, data, start, stop, scope=None):
+    return data.apply(operator.itemgetter(slice(start, stop)))
+
+
+@execute_node.register(
+    ops.ArraySlice,
+    list, six.integer_types, (six.integer_types, type(None))
+)
+def execute_array_slice_scalar(op, data, start, stop, scope=None):
+    return data[start:stop]
+
+
+@execute_node.register(ops.ArrayIndex, pd.Series, six.integer_types)
+def execute_array_index(op, data, index, scope=None):
+    return data.apply(
+        lambda array, op=op, index=index, scope=scope: (
+            array[index] if -len(array) <= index < len(array) else None
+        )
+    )
+
+
+@execute_node.register(ops.ArrayIndex, list, six.integer_types)
+def execute_array_index_scalar(op, data, index, scope=None):
+    try:
+        return data[index]
+    except IndexError:
+        return None
+
+
+@execute_node.register(ops.ArrayConcat, pd.Series, (pd.Series, list))
+@execute_node.register(ops.ArrayConcat, list, pd.Series)
+@execute_node.register(ops.ArrayConcat, list, list)
+def execute_array_concat(op, left, right, scope=None):
+    return left + right
+
+
+@execute_node.register(ops.ArrayRepeat, pd.Series, pd.Series)
+@execute_node.register(ops.ArrayRepeat, six.integer_types, (pd.Series, list))
+@execute_node.register(ops.ArrayRepeat, (pd.Series, list), six.integer_types)
+def execute_array_repeat(op, left, right, scope=None):
+    return left * right
+
+
+@execute_node.register(ops.ArrayCollect, pd.Series)
+def execute_array_collect(op, data, scope=None):
+    return list(data)
+
+
+@execute_node.register(ops.ArrayCollect, SeriesGroupBy)
+def execute_array_collect_group_by(op, data, scope=None):
+    return data.apply(list)

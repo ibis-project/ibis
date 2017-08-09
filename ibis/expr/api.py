@@ -1709,14 +1709,14 @@ def _array_slice(array, index):
         if step is not None and step != 1:
             raise NotImplementedError('step can only be 1')
 
-        result = _ops.ArraySlice(
+        op = _ops.ArraySlice(
             array,
-            start + 1 if start is not None else 1,
-            stop if stop is not None else array.length(),
+            start if start is not None else 0,
+            stop,
         )
     else:
-        result = _ops.ArrayIndex(array, index + 1)
-    return result.to_expr()
+        op = _ops.ArrayIndex(array, index)
+    return op.to_expr()
 
 
 _array_column_methods = dict(

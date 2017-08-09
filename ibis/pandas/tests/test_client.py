@@ -7,6 +7,8 @@ import pandas.util.testing as tm  # noqa: E402
 
 from ibis.pandas.api import connect  # noqa: E402
 
+pytestmark = pytest.mark.pandas
+
 
 @pytest.fixture
 def df():
