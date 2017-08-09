@@ -813,12 +813,13 @@ class AlchemyClient(SQLClient):
                 'Dropping tables from a different database is not yet '
                 'implemented'
             )
-        t = self.meta.tables[table_name]
+
+        t = sa.Table(table_name, self.meta)
         t.drop(checkfirst=force)
-        if t.exists():
-            raise RuntimeError(
-                'Something went wrong during DROP of table {}'.format(t.name)
-            )
+
+        assert not t.exists(), \
+            'Something went wrong during DROP of table {!r}'.format(t.name)
+
         self.meta.remove(t)
 
         qualified_name = self._fully_qualified_name(table_name, database)
