@@ -92,7 +92,7 @@ def execute_with_scope(expr, scope, **kwargs):
     computed_args = [
         execute(arg, scope, **kwargs) if hasattr(arg, 'op') else arg
         for arg in args if isinstance(arg, _VALID_INPUT_TYPES)
-    ] or [scope.get(arg, arg) for arg in args]
+    ]
 
     # Compute our op, with its computed arguments
     return execute_node(op, *computed_args, scope=scope, **kwargs)
