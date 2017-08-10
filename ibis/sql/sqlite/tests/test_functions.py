@@ -109,15 +109,17 @@ TIMESTAMP_CONSTANT = ibis.literal('2015-09-01 14:48:05.359').cast('timestamp')
         (TIMESTAMP_CONSTANT.minute(), 48),
         (TIMESTAMP_CONSTANT.second(), 5),
         (TIMESTAMP_CONSTANT.millisecond(), 359),
-
-        # there could be pathological failure at midnight somewhere, but
-        # that's okay
-        (ibis.now().strftime('%Y%m%d %H'),
-         datetime.datetime.utcnow().strftime('%Y%m%d %H'))
     ]
 )
 def test_timestamp_functions(con, expr, expected):
     assert con.execute(expr) == expected
+
+
+def test_now(con):
+    expr = ibis.now().strftime('%Y%m%d %H')
+    result = con.execute(expr)
+    expected = datetime.datetime.utcnow().strftime('%Y%m%d %H')
+    assert result == expected
 
 
 @pytest.mark.parametrize(

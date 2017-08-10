@@ -50,11 +50,13 @@ def find_data(expr):
             seen.add(node)
 
             if hasattr(node, 'source'):
-                data[e] = node.source.dictionary[node.name]
+                data[node] = node.source.dictionary[node.name]
             elif isinstance(node, ir.Literal):
-                data[e] = node.value
+                data[node] = node.value
 
-            stack.extend(arg for arg in node.args if isinstance(arg, ir.Expr))
+            stack.extend(
+                arg for arg in reversed(node.args) if isinstance(arg, ir.Expr)
+            )
     return data
 
 
@@ -62,24 +64,65 @@ _VALID_INPUT_TYPES = (ir.Expr, dt.DataType, type(None)) + scalar_types
 
 
 @execute.register(ir.Expr, dict)
-def execute_with_scope(expr, scope):
-    if expr in scope:
-        return scope[expr]
+def execute_with_scope(expr, scope, **kwargs):
+    """Execute an expression `expr`, with data provided in `scope`.
 
+    Parameters
+    ----------
+    expr : ir.Expr
+        The expression to execute.
+    scope : dict
+        A dictionary mapping :class:`~ibis.expr.types.Node` subclass instances
+        to concrete data such as a pandas DataFrame.
+
+    Returns
+    -------
+    result : scalar, pd.Series, pd.DataFrame
+    """
     op = expr.op()
+
+    # base case: our op has been computed (or is a leaf data node), so
+    # return the corresponding value
+    if op in scope:
+        return scope[op]
+
     args = op.args
 
+    # recursively compute the op's arguments
     computed_args = [
-        execute(arg, scope) if hasattr(arg, 'op') else arg
+        execute(arg, scope, **kwargs) if hasattr(arg, 'op') else arg
         for arg in args if isinstance(arg, _VALID_INPUT_TYPES)
-    ] or [scope.get(arg, arg) for arg in args]
+    ]
 
-    return execute_node(op, *computed_args, scope=scope)
+    # Compute our op, with its computed arguments
+    return execute_node(op, *computed_args, scope=scope, **kwargs)
 
 
 @execute.register(ir.Expr)
 def execute_without_scope(expr):
+    """Execute an expression against data that are bound to it. If no data
+    are bound, raise an Exception.
+
+    Parameters
+    ----------
+    expr : ir.Expr
+        The expression to execute
+
+    Returns
+    -------
+    result : scalar, pd.Series, pd.DataFrame
+
+    Raises
+    ------
+    ValueError
+        * If no data are bound to the input expression
+    """
+
     scope = find_data(expr)
     if not scope:
-        raise ValueError('No data sources found')
+        raise ValueError(
+            'No data sources found while trying to execute against the pandas '
+            'backend'
+        )
+
     return execute(expr, scope)
