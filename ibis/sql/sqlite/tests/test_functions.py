@@ -115,9 +115,9 @@ def test_timestamp_functions(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-def test_now():
+def test_now(con):
     expr = ibis.now().strftime('%Y%m%d %H')
-    result = expr.execute()
+    result = con.execute(expr)
     expected = datetime.datetime.utcnow().strftime('%Y%m%d %H')
     assert result == expected
 
