@@ -573,6 +573,18 @@ def _floor_divide(t, expr):
     return sa.func.floor(left / right)
 
 
+def _array_slice(t, expr):
+    arg, start, stop = expr.op().args
+    sa_arg = t.translate(arg)
+    sa_start = t.translate(start)
+
+    if stop is None:
+        sa_stop = sa.func.array_length(sa_arg, 1)
+    else:
+        sa_stop = t.translate(stop)
+    return sa_arg[sa_start + 1:sa_stop]
+
+
 _operation_registry.update({
     # We override this here to support time zones
     ops.TableColumn: _table_column,
@@ -663,10 +675,8 @@ _operation_registry.update({
     # array operations
     ops.ArrayLength: fixed_arity(sa.func.cardinality, 1),
     ops.ArrayCollect: fixed_arity(sa.func.array_agg, 1),
-    ops.ArraySlice: fixed_arity(
-        lambda array, start, stop: array[start:stop], 3
-    ),
-    ops.ArrayIndex: fixed_arity(operator.getitem, 2),
+    ops.ArraySlice: _array_slice,
+    ops.ArrayIndex: fixed_arity(lambda array, index: array[index + 1], 2),
     ops.ArrayConcat: fixed_arity(operator.add, 2),
     ops.ArrayRepeat: _array_repeat,
     ops.IdenticalTo: _identical_to,

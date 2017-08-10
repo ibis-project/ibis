@@ -727,6 +727,7 @@ class Quantile(Reduction):
                        'midpoint', 'nearest'],
                       name='interpolation',
                       default='linear')]
+
     output_type = rules.scalar_output(_coerce_integer_to_double_type)
 
 
@@ -739,6 +740,9 @@ class MultiQuantile(Quantile):
                        'midpoint', 'nearest'],
                       name='interpolation',
                       default='linear')]
+
+    def output_type(self):
+        return dt.Array(_coerce_integer_to_double_type(self)).scalar_type()
 
 
 class VarianceBase(Reduction):
@@ -2403,9 +2407,9 @@ class ArraySlice(ValueOp):
     input_type = [
         rules.array(dt.any),
         rules.integer(name='start'),
-        rules.integer(name='stop')
+        rules.integer(name='stop', optional=True)
     ]
-    output_type = rules.array_output(lambda self: self.args[0].type())
+    output_type = rules.type_of_arg(0)
 
 
 class ArrayIndex(ValueOp):
