@@ -11,7 +11,7 @@ import numpy as np
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 
-from ibis.pandas.dispatch import execute, execute_node, execute_first
+from ibis.pandas.dispatch import execute, execute_node
 
 
 integer_types = six.integer_types + (np.integer,)
@@ -85,18 +85,6 @@ def execute_with_scope(expr, scope, **kwargs):
     # return the corresponding value
     if op in scope:
         return scope[op]
-
-    try:
-        computed_args = [scope[t] for t in op.root_tables()]
-    except KeyError:
-        pass
-    else:
-        try:
-            # special case: we have a definition of execute_first that matches
-            # our current operation and data leaves
-            return execute_first(op, *computed_args, **kwargs)
-        except NotImplementedError:
-            pass
 
     args = op.args
 
