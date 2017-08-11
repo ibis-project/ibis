@@ -241,7 +241,9 @@ def test_distinct_unnamed_array_expr():
 
 
 def test_distinct_count_numeric_types(functional_alltypes):
-    metric = functional_alltypes.bigint_col.distinct().count().name('unique_bigints')
+    metric = functional_alltypes.bigint_col.distinct().count().name(
+        'unique_bigints'
+    )
     functional_alltypes.group_by('string_col').aggregate(metric)
 
 
