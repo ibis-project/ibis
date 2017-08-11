@@ -19,13 +19,8 @@ import ibis
 from ibis.tests.util import assert_equal
 
 
-@pytest.fixture
-def t(con):
-    return con.table('alltypes')
-
-
-def test_compose_group_by_apis(t):
-    t = t
+def test_compose_group_by_apis(alltypes):
+    t = alltypes
     w = ibis.window(group_by=t.g, order_by=t.f)
 
     diff = t.d - t.d.lag()
@@ -43,8 +38,8 @@ def test_compose_group_by_apis(t):
     assert_equal(expr, expr3)
 
 
-def test_combine_windows(t):
-    t = t
+def test_combine_windows(alltypes):
+    t = alltypes
     w1 = ibis.window(group_by=t.g, order_by=t.f)
     w2 = ibis.window(preceding=5, following=5)
 
@@ -61,9 +56,9 @@ def test_combine_windows(t):
     assert_equal(w5, expected)
 
 
-def test_over_auto_bind(t):
+def test_over_auto_bind(alltypes):
     # GH #542
-    t = t
+    t = alltypes
 
     w = ibis.window(group_by='g', order_by='f')
 
@@ -74,9 +69,9 @@ def test_over_auto_bind(t):
     assert_equal(actual_window, expected)
 
 
-def test_window_function_bind(t):
+def test_window_function_bind(alltypes):
     # GH #532
-    t = t
+    t = alltypes
 
     w = ibis.window(group_by=lambda x: x.g,
                     order_by=lambda x: x.f)
@@ -121,17 +116,18 @@ def test_mutate_sorts_keys(con):
     assert_equal(result, expected)
 
 
-def test_window_bind_to_table(t):
+def test_window_bind_to_table(alltypes):
+    t = alltypes
     w = ibis.window(group_by='g', order_by=ibis.desc('f'))
 
-    w2 = w.bind(t)
+    w2 = w.bind(alltypes)
     expected = ibis.window(group_by=t.g,
                            order_by=ibis.desc(t.f))
 
     assert_equal(w2, expected)
 
 
-def test_preceding_following_validate(t):
+def test_preceding_following_validate(alltypes):
     # these all work
     [
         ibis.window(preceding=0),
@@ -160,5 +156,5 @@ def test_preceding_following_validate(t):
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_window_equals(t):
+def test_window_equals(alltypes):
     assert False

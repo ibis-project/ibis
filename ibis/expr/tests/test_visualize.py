@@ -9,13 +9,6 @@ import ibis.expr.visualize as viz  # noqa: E402
 from ibis.expr import rules  # noqa: E402
 
 
-@pytest.fixture
-def t():
-    return ibis.table(
-        [('a', 'int64'), ('b', 'double'), ('c', 'string')], name='t'
-    )
-
-
 @pytest.mark.parametrize(
     'expr_func',
     [

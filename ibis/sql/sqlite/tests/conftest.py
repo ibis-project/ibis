@@ -4,10 +4,6 @@ import pytest
 
 import ibis
 
-sa = pytest.importorskip('sqlalchemy')
-
-from ibis.sql.sqlite.compiler import SQLiteExprTranslator  # noqa: E402
-
 
 @pytest.fixture(scope='module')
 def dbpath():
@@ -35,11 +31,13 @@ def db(con):
 
 @pytest.fixture(scope='module')
 def dialect():
+    import sqlalchemy as sa
     return sa.dialects.sqlite.dialect()
 
 
 @pytest.fixture(scope='module')
 def translate(dialect):
+    from ibis.sql.sqlite.compiler import SQLiteExprTranslator
     return lambda expr: str(
         SQLiteExprTranslator(expr).get_result().compile(
             dialect=dialect,

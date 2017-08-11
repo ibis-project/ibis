@@ -23,26 +23,9 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.expr.rules import highest_precedence_type
 
-from ibis.expr.tests.mocks import MockConnection
 
-
-@pytest.fixture
-def con():
-    return MockConnection()
-
-
-@pytest.fixture
-def alltypes(con):
-    return con.table('alltypes')
-
-
-@pytest.fixture
-def col(alltypes):
-    return alltypes.i
-
-
-def test_field_select(col):
-    assert isinstance(col, ir.TimestampColumn)
+def test_field_select(alltypes):
+    assert isinstance(alltypes.i, ir.TimestampColumn)
 
 
 def test_string_cast_to_timestamp(alltypes):
@@ -66,9 +49,9 @@ def test_string_cast_to_timestamp(alltypes):
         ('millisecond', ops.ExtractMillisecond, ir.Int32Column),
     ]
 )
-def test_extract_fields(field, expected_operation, expected_type, col):
+def test_extract_fields(field, expected_operation, expected_type, alltypes):
     # type-size may be database specific
-    result = getattr(col, field)()
+    result = getattr(alltypes.i, field)()
     assert result.get_name() == field
     assert isinstance(result, expected_type)
     assert isinstance(result.op(), expected_operation)
@@ -103,34 +86,34 @@ def test_integer_to_timestamp():
     assert False
 
 
-def test_comparison_timestamp(col):
-    expr = col > (col.min() + ibis.day(3))
+def test_comparison_timestamp(alltypes):
+    expr = alltypes.i > (alltypes.i.min() + ibis.day(3))
     assert isinstance(expr, ir.BooleanColumn)
 
 
-def test_comparisons_string(col):
+def test_comparisons_string(alltypes):
     val = '2015-01-01 00:00:00'
-    expr = col > val
+    expr = alltypes.i > val
     op = expr.op()
     assert isinstance(op.right, ir.TimestampScalar)
 
-    expr2 = val < col
+    expr2 = val < alltypes.i
     op = expr2.op()
     assert isinstance(op, ops.Greater)
     assert isinstance(op.right, ir.TimestampScalar)
 
 
-def test_comparisons_pandas_timestamp(col):
+def test_comparisons_pandas_timestamp(alltypes):
     val = pd.Timestamp('2015-01-01 00:00:00')
-    expr = col > val
+    expr = alltypes.i > val
     op = expr.op()
     assert isinstance(op.right, ir.TimestampScalar)
 
 
 @pytest.mark.xfail(raises=TypeError, reason='Upstream pandas bug')
-def test_greater_comparison_pandas_timestamp(col):
+def test_greater_comparison_pandas_timestamp(alltypes):
     val = pd.Timestamp('2015-01-01 00:00:00')
-    expr2 = val < col
+    expr2 = val < alltypes.i
     op = expr2.op()
     assert isinstance(op, ops.Greater)
     assert isinstance(op.right, ir.TimestampScalar)
@@ -151,9 +134,9 @@ def test_timestamp_precedence():
     ]
 )
 def test_timestamp_field_access_on_date(
-    field, expected_operation, expected_type, col
+    field, expected_operation, expected_type, alltypes
 ):
-    date_col = col.cast('date')
+    date_col = alltypes.i.cast('date')
     result = getattr(date_col, field)()
     assert isinstance(result, expected_type)
     assert isinstance(result.op(), expected_operation)
@@ -169,9 +152,9 @@ def test_timestamp_field_access_on_date(
     ]
 )
 def test_timestamp_field_access_on_date_failure(
-    field, expected_operation, expected_type, col
+    field, expected_operation, expected_type, alltypes
 ):
-    date_col = col.cast('date')
+    date_col = alltypes.i.cast('date')
     with pytest.raises(AttributeError):
         getattr(date_col, field)
 

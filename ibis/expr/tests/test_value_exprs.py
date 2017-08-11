@@ -197,36 +197,31 @@ def test_scalar_isin_list_with_array(table):
     assert isinstance(not_expr, ir.BooleanColumn)
 
 
-@pytest.fixture
-def dtable(con):
-    return con.table('functional_alltypes')
-
-
-def test_distinct_basic(dtable):
-    expr = dtable.distinct()
+def test_distinct_basic(functional_alltypes):
+    expr = functional_alltypes.distinct()
     assert isinstance(expr.op(), ops.Distinct)
     assert isinstance(expr, ir.TableExpr)
-    assert expr.op().table is dtable
+    assert expr.op().table is functional_alltypes
 
-    expr = dtable.string_col.distinct()
+    expr = functional_alltypes.string_col.distinct()
     assert isinstance(expr.op(), ops.DistinctColumn)
 
     assert isinstance(expr, ir.StringColumn)
 
 
 @pytest.mark.xfail(reason='NYT')
-def test_distinct_array_interactions(dtable):
+def test_distinct_array_interactions(functional_alltypes):
     # array cardinalities / shapes are likely to be different.
-    a = dtable.int_col.distinct()
-    b = dtable.bigint_col
+    a = functional_alltypes.int_col.distinct()
+    b = functional_alltypes.bigint_col
 
     with pytest.raises(ir.RelationError):
         a + b
 
 
-def test_distinct_count(dtable):
-    result = dtable.string_col.distinct().count()
-    expected = dtable.string_col.nunique().name('count')
+def test_distinct_count(functional_alltypes):
+    result = functional_alltypes.string_col.distinct().count()
+    expected = functional_alltypes.string_col.nunique().name('count')
     assert_equal(result, expected)
     assert isinstance(result.op(), ops.CountDistinct)
 
@@ -245,13 +240,13 @@ def test_distinct_unnamed_array_expr():
     repr(expr)
 
 
-def test_distinct_count_numeric_types(dtable):
-    metric = dtable.bigint_col.distinct().count().name('unique_bigints')
-    dtable.group_by('string_col').aggregate(metric)
+def test_distinct_count_numeric_types(functional_alltypes):
+    metric = functional_alltypes.bigint_col.distinct().count().name('unique_bigints')
+    functional_alltypes.group_by('string_col').aggregate(metric)
 
 
-def test_nunique(dtable):
-    expr = dtable.string_col.nunique()
+def test_nunique(functional_alltypes):
+    expr = functional_alltypes.string_col.nunique()
     assert isinstance(expr.op(), ops.CountDistinct)
 
 
