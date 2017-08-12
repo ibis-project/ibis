@@ -17,11 +17,15 @@ import pytest
 
 from ibis import window
 import ibis
-
-from ibis.impala.compiler import to_sql
-from ibis.impala.tests.common import ImpalaE2E
-from ibis.tests.util import assert_equal
 import ibis.common as com
+from ibis.tests.util import assert_equal
+
+pytest.importorskip('hdfs')
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
+
+from ibis.impala.compiler import to_sql  # noqa: E402
+from ibis.impala.tests.common import ImpalaE2E  # noqa: E402
 
 
 @pytest.yield_fixture(scope='module')

@@ -29,6 +29,7 @@ from ibis.expr.datatypes import Category
 from ibis.compat import StringIO, Decimal
 from ibis.expr.tests.mocks import MockConnection
 
+pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
