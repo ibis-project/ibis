@@ -9,13 +9,6 @@ import ibis.expr.visualize as viz  # noqa: E402
 from ibis.expr import rules  # noqa: E402
 
 
-@pytest.fixture
-def t():
-    return ibis.table(
-        [('a', 'int64'), ('b', 'double'), ('c', 'string')], name='t'
-    )
-
-
 @pytest.mark.parametrize(
     'expr_func',
     [
@@ -31,10 +24,10 @@ def t():
         )
     ]
 )
-def test_exprs(t, expr_func):
-    expr = expr_func(t)
+def test_exprs(table, expr_func):
+    expr = expr_func(table)
     graph = viz.to_graph(expr)
-    assert str(hash(repr(t.op()))) in graph.source
+    assert str(hash(repr(table.op()))) in graph.source
     assert str(hash(repr(expr.op()))) in graph.source
 
 

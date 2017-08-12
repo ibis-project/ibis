@@ -19,8 +19,6 @@ import pytest
 
 import ibis
 
-from ibis.sql.postgres.compiler import PostgreSQLExprTranslator  # noqa: E402
-
 PG_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
 PG_PASS = os.environ.get('IBIS_POSTGRES_PASS')
 IBIS_TEST_POSTGRES_DB = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
@@ -58,4 +56,5 @@ def at(alltypes):
 
 @pytest.fixture
 def translate():
+    from ibis.sql.postgres.compiler import PostgreSQLExprTranslator
     return lambda expr: PostgreSQLExprTranslator(expr).get_result()
