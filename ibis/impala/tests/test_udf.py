@@ -28,6 +28,7 @@ import ibis.expr.rules as rules
 import ibis.common as com
 import ibis.util as util
 
+pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
