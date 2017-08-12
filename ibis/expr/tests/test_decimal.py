@@ -16,19 +16,7 @@ import ibis.expr.api as api
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
-from ibis.expr.tests.mocks import MockConnection
-
 import pytest
-
-
-@pytest.fixture
-def con():
-    return MockConnection()
-
-
-@pytest.fixture
-def lineitem(con):
-    return con.table('tpch_lineitem')
 
 
 def test_type_metadata(lineitem):

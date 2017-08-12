@@ -74,3 +74,18 @@ def col(request):
 @pytest.fixture
 def con():
     return MockConnection()
+
+
+@pytest.fixture
+def alltypes(con):
+    return con.table('alltypes')
+
+
+@pytest.fixture
+def functional_alltypes(con):
+    return con.table('functional_alltypes')
+
+
+@pytest.fixture
+def lineitem(con):
+    return con.table('tpch_lineitem')

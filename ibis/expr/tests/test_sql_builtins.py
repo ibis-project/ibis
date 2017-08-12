@@ -19,22 +19,6 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 from ibis.tests.util import assert_equal
-from ibis.expr.tests.mocks import MockConnection
-
-
-@pytest.fixture
-def con():
-    return MockConnection()
-
-
-@pytest.fixture
-def alltypes(con):
-    return con.table('functional_alltypes')
-
-
-@pytest.fixture
-def lineitem(con):
-    return con.table('tpch_lineitem')
 
 
 @pytest.fixture
@@ -67,19 +51,19 @@ def function(request):
         'double_col',
     ]
 )
-def test_abs(alltypes, lineitem, colname):
+def test_abs(functional_alltypes, lineitem, colname):
     fname = 'abs'
     op = ops.Abs
 
-    expr = alltypes[colname]
+    expr = functional_alltypes[colname]
     _check_unary_op(expr, fname, op, type(expr))
 
     expr = lineitem.l_extendedprice
     _check_unary_op(expr, fname, op, type(expr))
 
 
-def test_group_concat(alltypes):
-    col = alltypes.string_col
+def test_group_concat(functional_alltypes):
+    col = functional_alltypes.string_col
 
     expr = col.group_concat()
     assert isinstance(expr.op(), ops.GroupConcat)
@@ -91,9 +75,9 @@ def test_group_concat(alltypes):
     sep == '|'
 
 
-def test_zeroifnull(alltypes):
-    dresult = alltypes.double_col.zeroifnull()
-    iresult = alltypes.int_col.zeroifnull()
+def test_zeroifnull(functional_alltypes):
+    dresult = functional_alltypes.double_col.zeroifnull()
+    iresult = functional_alltypes.int_col.zeroifnull()
 
     assert type(dresult.op()) == ops.ZeroIfNull
     assert type(dresult) == ir.DoubleColumn
@@ -102,23 +86,23 @@ def test_zeroifnull(alltypes):
     assert type(iresult) == type(iresult)
 
 
-def test_fillna(alltypes):
-    result = alltypes.double_col.fillna(5)
+def test_fillna(functional_alltypes):
+    result = functional_alltypes.double_col.fillna(5)
     assert isinstance(result, ir.DoubleColumn)
 
     assert isinstance(result.op(), ops.IfNull)
 
-    result = alltypes.bool_col.fillna(True)
+    result = functional_alltypes.bool_col.fillna(True)
     assert isinstance(result, ir.BooleanColumn)
 
     # Highest precedence type
-    result = alltypes.int_col.fillna(alltypes.bigint_col)
+    result = functional_alltypes.int_col.fillna(functional_alltypes.bigint_col)
     assert isinstance(result, ir.Int64Column)
 
 
-def test_ceil_floor(alltypes, lineitem):
-    cresult = alltypes.double_col.ceil()
-    fresult = alltypes.double_col.floor()
+def test_ceil_floor(functional_alltypes, lineitem):
+    cresult = functional_alltypes.double_col.ceil()
+    fresult = functional_alltypes.double_col.floor()
     assert isinstance(cresult, ir.Int64Column)
     assert isinstance(fresult, ir.Int64Column)
     assert type(cresult.op()) == ops.Ceil
@@ -139,8 +123,8 @@ def test_ceil_floor(alltypes, lineitem):
     assert fresult.meta == dec_col.meta
 
 
-def test_sign(alltypes, lineitem):
-    result = alltypes.double_col.sign()
+def test_sign(functional_alltypes, lineitem):
+    result = functional_alltypes.double_col.sign()
     assert isinstance(result, ir.FloatColumn)
     assert type(result.op()) == ops.Sign
 
@@ -152,18 +136,18 @@ def test_sign(alltypes, lineitem):
     assert isinstance(result, ir.FloatColumn)
 
 
-def test_round(alltypes, lineitem):
-    result = alltypes.double_col.round()
+def test_round(functional_alltypes, lineitem):
+    result = functional_alltypes.double_col.round()
     assert isinstance(result, ir.Int64Column)
     assert result.op().args[1] is None
 
-    result = alltypes.double_col.round(2)
+    result = functional_alltypes.double_col.round(2)
     assert isinstance(result, ir.DoubleColumn)
     assert result.op().args[1].equals(ibis.literal(2))
 
     # Even integers are double (at least in Impala, check with other DB
     # implementations)
-    result = alltypes.int_col.round(2)
+    result = functional_alltypes.int_col.round(2)
     assert isinstance(result, ir.DoubleColumn)
 
     dec = lineitem.l_extendedprice
