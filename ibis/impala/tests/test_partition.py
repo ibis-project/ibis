@@ -18,6 +18,7 @@ from posixpath import join as pjoin
 
 import pytest
 
+pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 

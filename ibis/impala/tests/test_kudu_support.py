@@ -17,6 +17,7 @@ import os
 
 import pytest
 
+pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
