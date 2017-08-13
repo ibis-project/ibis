@@ -6,34 +6,30 @@ platform:
 environment:
   PGUSER: "postgres"
   PGPASSWORD: "Password12!"
+  IBIS_POSTGRES_USER: "%PGUSER%"
+  IBIS_POSTGRES_PASS: "%PGPASSWORD%"
+  DATA_DIR: "%USERPROFILE%\\ibis-testing-data"
+  DATA_URL: "https://storage.googleapis.com/ibis-ci-data"
   IBIS_TEST_POSTGRES_DB: "ibis_testing"
   IBIS_TEST_CRUNCHBASE_DB: "%USERPROFILE%\\crunchbase.db"
   IBIS_TEST_SQLITE_DB_PATH: "%USERPROFILE%\\ibis_testing.db"
-  PG: "\"C:\\Program Files\\PostgreSQL\\9.6\\bin\\createdb\" ibis_testing"
-  CHOCO: "C:\\ProgramData\\chocolatey\\bin"
 
   matrix:
-    - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python34-x64"
-    - PYTHON: "C:\\Python35-x64"
-    - PYTHON: "C:\\Python36-x64"
+    - PYTHON: "C:\\Python27-x64\\python.exe"
+    - PYTHON: "C:\\Python34-x64\\python.exe"
+    - PYTHON: "C:\\Python35-x64\\python.exe"
+    - PYTHON: "C:\\Python36-x64\\python.exe"
 
 services:
-  - postgresql
+  - postgresql93
 
 test_script:
-  - "%PYTHON%\\python.exe -m pip install -U pip"
-  - "%PYTHON%\\python.exe -m pip install -U setuptools"
-  - "%PYTHON%\\python.exe -m pip install -e .\"[sqlite, postgres, visualization, pandas]\""
-  - "%PYTHON%\\python.exe -m pip install flake8 mock pytest"
-  - "%PYTHON%\\python.exe -m flake8"
-
-  - "curl -o crunchbase.db https://storage.googleapis.com/ibis-ci-data/crunchbase.db"
-  - "mv crunchbase.db %IBIS_TEST_CRUNCHBASE_DB%"
-  - "curl -o ibis-testing-data.tar.gz https://storage.googleapis.com/ibis-ci-data/ibis-testing-data.tar.gz"
-  - "7z x ibis-testing-data.tar.gz"
-  - "7z x ibis-testing-data.tar"
-  - "mv ibis-testing-data\\ibis_testing.db %IBIS_TEST_SQLITE_DB_PATH%"
-  - "%PG%\\createdb.exe %IBIS_TEST_POSTGRES_DB%"
-
-  - "%PYTHON%\\python.exe -m pytest --tb=short -m \"not impala and not hdfs and not postgresql\" ibis"
+  - "%PYTHON% -m pip install -U pip"
+  - "%PYTHON% -m pip install -U setuptools"
+  - "%PYTHON% -m pip install -e .\"[sqlite, postgres, visualization, pandas]\""
+  - "%PYTHON% -m pip install flake8 mock pytest click \"pbs==0.110\""
+  - "%PYTHON% -m flake8"
+  - "%PYTHON% ci\\datamgr.py download --directory \"%USERPROFILE%\""
+  - "%PYTHON% ci\\datamgr.py sqlite --database \"%IBIS_TEST_SQLITE_DB_PATH%\" --data-directory \"%DATA_DIR%\" --script ci\\sqlite_load.sql functional_alltypes batting awards_players diamonds"
+  - "%PYTHON% ci\\datamgr.py postgres --database \"%IBIS_TEST_POSTGRES_DB%\" --data-directory \"%DATA_DIR%\" --script ci\\postgresql_load.sql functional_alltypes batting awards_players diamonds"
+  - "%PYTHON% -m pytest --tb=short -m \"not impala and not hdfs\" ibis"

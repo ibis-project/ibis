@@ -19,4 +19,5 @@ dependencies:
   - thriftpy<=0.3.9
   - toolz
   - pip:
+    - sh>=1.12
     - hdfs>=2.0.0
