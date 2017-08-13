@@ -308,6 +308,12 @@ class Date(Primitive):
         return isinstance(value, six.string_types + (datetime.date,))
 
 
+class Time(Primitive):
+
+    def valid_literal(self, value):
+        return isinstance(value, six.string_types + (datetime.time,))
+
+
 def parametric(cls):
     type_name = cls.__name__
     array_type_name = '{0}Column'.format(type_name)
@@ -596,6 +602,7 @@ float = Float()
 double = Double()
 string = String()
 date = Date()
+time = Time()
 timestamp = Timestamp()
 
 
@@ -611,6 +618,7 @@ _primitive_types = {
     'double': double,
     'string': string,
     'date': date,
+    'time': time,
     'timestamp': timestamp
 }
 
@@ -639,6 +647,7 @@ class Tokens(object):
     RBRACKET = 16
     TIMEZONE = 17
     TIMESTAMP = 18
+    TIME = 19
 
     @staticmethod
     def name(value):
@@ -669,12 +678,18 @@ _TYPE_RULES = OrderedDict(
             '(?P<{}>{})'.format(token.upper(), token),
             lambda token, value=value: Token(Tokens.PRIMITIVE, value)
         ) for token, value in _primitive_types.items()
-        if token not in {'any', 'null', 'timestamp'}
+        if token not in {'any', 'null', 'timestamp', 'time'}
     ] + [
         # timestamp
         (
             r'(?P<TIMESTAMP>timestamp)',
             lambda token: Token(Tokens.TIMESTAMP, token),
+        ),
+    ] + [
+        # time
+        (
+            r'(?P<TIME>time)',
+            lambda token: Token(Tokens.TIME, token),
         ),
     ] + [
         # decimal + complex types
@@ -814,6 +829,7 @@ class TypeParser(object):
                   | "float"
                   | "double"
                   | "string"
+                  | "time"
                   | timestamp
 
         timestamp : "timestamp"
@@ -842,6 +858,9 @@ class TypeParser(object):
                 self._expect(Tokens.RPAREN)
                 return Timestamp(timezone=timezone)
             return timestamp
+
+        elif self._accept(Tokens.TIME):
+            return Time()
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):

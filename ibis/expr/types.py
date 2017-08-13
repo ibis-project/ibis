@@ -536,6 +536,8 @@ def infer_literal_type(value):
         return dt.timestamp
     elif isinstance(value, datetime.date):
         return dt.date
+    elif isinstance(value, datetime.time):
+        return dt.time
     elif isinstance(value, list):
         return dt.Array(rules.highest_precedence_type(
             list(map(literal, value))
@@ -988,7 +990,8 @@ class DecimalValue(NumericValue):
 
 
 class TemporalValue(AnyValue):
-    pass
+    def _can_compare(self, other):
+        return isinstance(other, (TemporalValue, StringValue))
 
 
 class DateValue(TemporalValue):
@@ -1007,13 +1010,35 @@ class DateValue(TemporalValue):
                 return False
         return False
 
-    def _can_compare(self, other):
-        return isinstance(other, (TemporalValue, StringValue))
-
     def _implicit_cast(self, arg):
         # assume we've checked this is OK at this point...
         op = arg.op()
         return DateScalar(op)
+
+
+class TimeValue(TemporalValue):
+
+    def type(self):
+        return dt.time
+
+    def _can_implicit_cast(self, arg):
+        op = arg.op()
+        if isinstance(op, Literal):
+            try:
+                from ibis.compat import to_time
+                to_time(op.value)
+                return True
+            except ValueError:
+                return False
+        return False
+
+    def _can_compare(self, other):
+        return isinstance(other, (TimeValue, StringValue))
+
+    def _implicit_cast(self, arg):
+        # assume we've checked this is OK at this point...
+        op = arg.op()
+        return TimeScalar(op)
 
 
 class TimestampValue(TemporalValue):
@@ -1048,9 +1073,6 @@ class TimestampValue(TemporalValue):
             except ValueError:
                 return False
         return False
-
-    def _can_compare(self, other):
-        return isinstance(other, (TemporalValue, StringValue))
 
     def _implicit_cast(self, arg):
         # assume we've checked this is OK at this point...
@@ -1155,6 +1177,14 @@ class DateScalar(ScalarExpr, DateValue):
 
 
 class DateColumn(ColumnExpr, DateValue):
+    pass
+
+
+class TimeScalar(ScalarExpr, TimeValue):
+    pass
+
+
+class TimeColumn(ColumnExpr, TimeValue):
     pass
 
 

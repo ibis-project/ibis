@@ -20,6 +20,7 @@ import ibis  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 from ibis import literal as L  # noqa: E402
 from ibis.common import IbisTypeError  # noqa: E402
+from ibis.compat import PY2  # noqa: E402
 
 
 pytestmark = pytest.mark.pandas
@@ -176,6 +177,23 @@ def test_timestamp_functions(case_func, expected_func):
     result = case_func(v)
     expected = expected_func(vt)
     assert ibis.pandas.execute(result) == expected
+
+
+@pytest.mark.skipif(PY2, reason="not enabled on PY2")
+def test_times_ops(t, df):
+    result = t.plain_datetimes_naive.time().between('10:00', '10:00').execute()
+    expected = np.zeros(len(df), dtype=bool)
+    tm.assert_numpy_array_equal(result, expected)
+
+    result = t.plain_datetimes_naive.time().between('01:00', '02:00').execute()
+    expected = np.ones(len(df), dtype=bool)
+    tm.assert_numpy_array_equal(result, expected)
+
+
+@pytest.mark.skipif(not PY2, reason="testing for PY2")
+def test_times_ops_py2(t, df):
+    with pytest.raises(ValueError):
+        t.plain_datetimes_naive.time()
 
 
 @pytest.mark.parametrize(

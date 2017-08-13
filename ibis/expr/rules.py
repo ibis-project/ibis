@@ -628,6 +628,10 @@ def date(**arg_kwds):
     return ValueTyped(ir.DateValue, 'not date', **arg_kwds)
 
 
+def time(**arg_kwds):
+    return ValueTyped(ir.TimeValue, 'not time', **arg_kwds)
+
+
 def timedelta(**arg_kwds):
     from ibis.expr.temporal import Timedelta
     return AnyTyped(Timedelta, 'not a timedelta', **arg_kwds)
@@ -653,7 +657,7 @@ def one_of(args, **arg_kwds):
     return OneOf(args, **arg_kwds)
 
 
-temporal = one_of((dt.timestamp, dt.date))
+temporal = one_of((dt.timestamp, dt.date, dt.time))
 
 
 def instance_of(type_, **arg_kwds):
