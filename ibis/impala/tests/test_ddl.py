@@ -1070,10 +1070,10 @@ CREATE EXTERNAL TABLE {0}
  `group2` char(10))
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
-LOCATION '/tmp'"""
+LOCATION '/tmp/{1}'"""
 
         full_path = '{0}.testing_{1}'.format(self.tmp_db, util.guid())
-        sql = statement.format(full_path)
+        sql = statement.format(full_path, util.guid())
 
         self.con._execute(sql, results=False)
 

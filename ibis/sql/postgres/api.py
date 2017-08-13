@@ -34,8 +34,16 @@ def compile(expr):
     Examples
     --------
     >>> import os
+    >>> import getpass
+    >>> user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
+    >>> password = os.environ.get('IBIS_POSTGRES_PASS')
     >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
-    >>> con = connect(database=database, host='localhost')
+    >>> con = connect(
+    ...     database=database,
+    ...     host='localhost',
+    ...     user=user,
+    ...     password=password
+    ... )
     >>> t = con.table('functional_alltypes')
     >>> expr = t.double_col + 1
     >>> sqla = compile(expr)
@@ -78,8 +86,16 @@ def connect(
     Examples
     --------
     >>> import os
+    >>> import getpass
+    >>> user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
+    >>> password = os.environ.get('IBIS_POSTGRES_PASS')
     >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
-    >>> con = connect(database=database, host='localhost')
+    >>> con = connect(
+    ...     database=database,
+    ...     host='localhost',
+    ...     user=user,
+    ...     password=password
+    ... )
     >>> con.list_tables()  # doctest: +ELLIPSIS
     [...]
     >>> t = con.table('functional_alltypes')

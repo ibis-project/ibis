@@ -1,0 +1,218 @@
+version: 2
+
+environment: &environment
+  - IBIS_TEST_POSTGRES_DB: ubuntu
+  - IBIS_POSTGRES_USER: ubuntu
+  - IBIS_POSTGRES_PASS: ubuntu
+
+  - DATA_URL: https://storage.googleapis.com/ibis-ci-data
+
+  # The following environment variables are necessary to run impala tests
+  - IBIS_TEST_IMPALA_HOST: localhost
+  - IBIS_TEST_IMPALA_PORT: 21050
+  - IBIS_TEST_NN_HOST: localhost
+  - IBIS_TEST_WEBHDFS_PORT: 50070
+  - IBIS_TEST_WEBHDFS_USER: ubuntu
+
+python_test_steps: &python_test_steps
+  - checkout
+  - attach_workspace:
+      at: ~/workspace
+  - run: cat "$HOME/workspace/envars.sh" >> $BASH_ENV
+  - run: echo 'export ENV_NAME=ibis_${PYTHON_VERSION}' >> $BASH_ENV
+  - run: sudo apt-get install -qq clang libboost-dev
+  - run: conda env create --quiet --name "${ENV_NAME}" --file "ci/requirements-dev-${PYTHON_VERSION}.yml"
+  - run: echo 'source activate ${ENV_NAME}' >> $BASH_ENV
+  - run: flake8
+  - run: python setup.py develop
+  - run: dockerize -wait tcp://localhost:5432 -wait tcp://localhost:21050 -wait tcp://localhost:50070 -timeout 1m
+  - run: test_data_admin.py load --data --data-dir "$HOME/workspace/ibis-testing-data"
+  - run: pytest -m 'not impala and not hdfs' --doctest-modules --doctest-ignore-import-errors -rsxX --tb=short ibis
+  - run: pytest -m 'impala or hdfs' --doctest-modules --doctest-ignore-import-errors -rsxX --tb=short ibis --durations=20
+
+conda_build_steps: &conda_build_steps
+  - checkout
+  - attach_workspace:
+      at: ~/workspace
+  - run: cat "$HOME/workspace/envars.sh" >> $BASH_ENV
+  - run: conda install conda-build --yes --channel conda-forge
+  - run: conda build conda-recipes/ibis-framework --python "${PYTHON_VERSION}" --channel conda-forge
+
+jobs:
+  setup_envars:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+    steps:
+      - run: mkdir -p $HOME/workspace
+      - run: |
+          cat <<EOF >> $HOME/workspace/envars.sh
+          export PATH="$HOME/workspace/miniconda/bin:$PATH"
+          export IBIS_TEST_CRUNCHBASE_DB="$HOME/workspace/crunchbase.db"
+          export IBIS_TEST_SQLITE_DB_PATH="$HOME/workspace/ibis-testing-data/ibis_testing.db"
+          EOF
+      - persist_to_workspace:
+          root: ~/workspace
+          paths:
+            - envars.sh
+
+  download_data:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+    steps:
+      - run: mkdir -p $HOME/workspace
+      - run: curl -o $HOME/workspace/crunchbase.db $DATA_URL/crunchbase.db
+      - run: curl $DATA_URL/ibis-testing-data.tar.gz | tar xvzf - -C $HOME/workspace
+      - persist_to_workspace:
+          root: ~/workspace
+          paths:
+            - crunchbase.db
+            - ibis-testing-data
+
+  install_miniconda:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+    steps:
+      - run: mkdir -p $HOME/workspace
+      - run: curl -o $HOME/miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+      - run: bash $HOME/miniconda.sh -b -p $HOME/workspace/miniconda
+      - persist_to_workspace:
+          root: ~/workspace
+          paths:
+            - miniconda
+
+  ################# TESTS ##################
+
+  python27_test:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+        environment:
+          PYTHON_VERSION: 2.7
+      - image: cpcloud86/impala:java8
+    steps: *python_test_steps
+
+  python34_test:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+        environment:
+          PYTHON_VERSION: 3.4
+      - image: cpcloud86/impala:java8
+    steps: *python_test_steps
+
+  python35_test:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+        environment:
+          PYTHON_VERSION: 3.5
+      - image: cpcloud86/impala:java8
+    steps: *python_test_steps
+
+  python36_test:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+        environment:
+          PYTHON_VERSION: 3.6
+      - image: cpcloud86/impala:java8
+    steps: *python_test_steps
+
+  ################# CONDA BUILD ##################
+
+  python27_conda_build:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+        environment:
+          PYTHON_VERSION: 2.7
+    steps: *conda_build_steps
+
+  python34_conda_build:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+        environment:
+          PYTHON_VERSION: 3.4
+    steps: *conda_build_steps
+
+  python35_conda_build:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+        environment:
+          PYTHON_VERSION: 3.5
+    steps: *conda_build_steps
+
+  python36_conda_build:
+    environment: *environment
+    docker:
+      - image: circleci/python:latest
+        environment:
+          PYTHON_VERSION: 3.6
+    steps: *conda_build_steps
+
+  ################### BENCHMARKING #################
+  benchmark:
+    docker:
+      - image: circleci/python:latest
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/workspace
+      - run: cat "$HOME/workspace/envars.sh" >> $BASH_ENV
+      - run: pip install asv
+      - run: ci/asvconfig.py | tee $HOME/.asv-machine.json
+      - run: git remote add upstream git://github.com/ibis-project/ibis.git
+      - run: git fetch upstream refs/heads/master
+      - run: asv continuous -f 1.5 -e upstream/master "${CIRCLE_SHA1}" || echo > /dev/null
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - setup_envars
+      - download_data
+      - install_miniconda
+
+      - python27_test:
+          requires:
+            - setup_envars
+            - download_data
+            - install_miniconda
+      - python34_test:
+          requires:
+            - setup_envars
+            - download_data
+            - install_miniconda
+      - python35_test:
+          requires:
+            - setup_envars
+            - download_data
+            - install_miniconda
+      - python36_test:
+          requires:
+            - setup_envars
+            - download_data
+            - install_miniconda
+
+      - python27_conda_build:
+          requires:
+            - python27_test
+      - python34_conda_build:
+          requires:
+            - python34_test
+      - python35_conda_build:
+          requires:
+            - python35_test
+      - python36_conda_build:
+          requires:
+            - python36_test
+
+      - benchmark:
+          requires:
+            - setup_envars
+            - install_miniconda

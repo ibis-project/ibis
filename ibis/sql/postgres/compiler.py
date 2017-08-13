@@ -455,6 +455,13 @@ def _regex_extract(t, expr):
     )
 
 
+def _cardinality(array):
+    return sa.case(
+        [(array == None, None)],  # noqa: E711
+        else_=sa.func.coalesce(sa.func.array_length(array, 1), 0),
+    )
+
+
 def _array_repeat(t, expr):
     """Is this really that useful?
 
@@ -476,7 +483,7 @@ def _array_repeat(t, expr):
     # query, so make sure the column knows its origin
     array.table = raw.table
 
-    array_length = sa.func.cardinality(array)
+    array_length = _cardinality(array)
 
     # sequence from 1 to the total number of elements desired in steps of 1.
     # the call to greatest isn't necessary, but it provides clearer intent
@@ -579,7 +586,7 @@ def _array_slice(t, expr):
     sa_start = t.translate(start)
 
     if stop is None:
-        sa_stop = sa.func.array_length(sa_arg, 1)
+        sa_stop = _cardinality(sa_arg)
     else:
         sa_stop = t.translate(stop)
     return sa_arg[sa_start + 1:sa_stop]
@@ -673,7 +680,7 @@ _operation_registry.update({
     ops.NTile: _ntile,
 
     # array operations
-    ops.ArrayLength: fixed_arity(sa.func.cardinality, 1),
+    ops.ArrayLength: fixed_arity(_cardinality, 1),
     ops.ArrayCollect: fixed_arity(sa.func.array_agg, 1),
     ops.ArraySlice: _array_slice,
     ops.ArrayIndex: fixed_arity(lambda array, index: array[index + 1], 2),

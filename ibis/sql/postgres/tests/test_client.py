@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import getpass
 
 import pandas as pd
 import pytest
@@ -27,6 +28,8 @@ pytest.importorskip('psycopg2')
 pytestmark = pytest.mark.postgresql
 
 POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
+IBIS_POSTGRES_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
+IBIS_POSTGRES_PASS = os.environ.get('IBIS_POSTGRES_PASS')
 
 
 def test_table(alltypes):
@@ -101,7 +104,12 @@ def test_list_schemas(con):
 
 
 def test_metadata_is_per_table():
-    con = ibis.postgres.connect(host='localhost', database=POSTGRES_TEST_DB)
+    con = ibis.postgres.connect(
+        host='localhost',
+        database=POSTGRES_TEST_DB,
+        user=IBIS_POSTGRES_USER,
+        password=IBIS_POSTGRES_PASS,
+    )
     assert len(con.meta.tables) == 0
 
     # assert that we reflect only when a table is requested
@@ -111,7 +119,12 @@ def test_metadata_is_per_table():
 
 
 def test_schema_table():
-    con = ibis.postgres.connect(host='localhost', database=POSTGRES_TEST_DB)
+    con = ibis.postgres.connect(
+        host='localhost',
+        database=POSTGRES_TEST_DB,
+        user=IBIS_POSTGRES_USER,
+        password=IBIS_POSTGRES_PASS,
+    )
 
     # ensure that we can reflect the information schema (which is guaranteed
     # to exist)

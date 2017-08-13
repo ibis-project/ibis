@@ -51,6 +51,7 @@ all_requires = (
 develop_requires = all_requires + [
     'click',
     'flake8',
+    'pytest',
 ]
 
 with open('requirements.txt', 'rt') as f:
@@ -66,9 +67,9 @@ setup(
         'all': all_requires,
         'develop': develop_requires,
         'develop:python_version < "3"': develop_requires + [
-            'thriftpy<=0.3.9', 'pytest<3', 'mock',
+            'thriftpy<=0.3.9', 'mock',
         ],
-        'develop:python_version >= "3"': develop_requires + ['pytest>=3'],
+        'develop:python_version >= "3"': develop_requires,
         'impala': impala_requires,
         'impala:python_version < "3"': impala_requires + ['thriftpy<=0.3.9'],
         'kerberos': kerberos_requires,
