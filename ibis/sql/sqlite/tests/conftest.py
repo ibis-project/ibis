@@ -11,8 +11,9 @@ def dbpath():
     # database, assume it's in $PWD
     path = os.environ.get('IBIS_TEST_SQLITE_DB_PATH', 'ibis_testing.db')
     if not os.path.exists(path):
-        pytest.skip("sql testing db does not exist!")
-    return path
+        pytest.skip('SQLite testing db {} does not exist'.format(path))
+    else:
+        return path
 
 
 @pytest.yield_fixture(scope='module')
@@ -29,13 +30,13 @@ def db(con):
     return con.database()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def dialect():
     import sqlalchemy as sa
     return sa.dialects.sqlite.dialect()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def translate(dialect):
     from ibis.sql.sqlite.compiler import SQLiteExprTranslator
     return lambda expr: str(
@@ -46,7 +47,7 @@ def translate(dialect):
     )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture
 def sqla_compile(dialect):
     return lambda expr: str(
         expr.compile(dialect=dialect, compile_kwargs=dict(literal_binds=True))

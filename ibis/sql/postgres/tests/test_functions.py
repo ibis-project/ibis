@@ -1340,14 +1340,13 @@ def test_timestamp_with_timezone_select(tzone_compute, tz):
     assert str(getattr(ts.dtype, 'tz', None)) == str(tz)
 
 
-def test_timestamp_type_accepts_all_timezones():
-    zones = [
-        row.name for row in sa.create_engine(
-            'postgresql://localhost/postgres'
-        ).execute('SELECT name FROM pg_timezone_names')
-    ]
-    for zone in zones:
-        assert dt.Timestamp(zone).timezone == zone
+def test_timestamp_type_accepts_all_timezones(con):
+    assert all(
+        dt.Timestamp(row.name).timezone == row.name
+        for row in con.con.execute(
+            'SELECT name FROM pg_timezone_names'
+        )
+    )
 
 
 @pytest.mark.parametrize(

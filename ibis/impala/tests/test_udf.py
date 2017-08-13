@@ -14,6 +14,7 @@
 import unittest
 from posixpath import join as pjoin
 import pytest
+import pandas as pd
 
 import ibis
 
@@ -260,8 +261,7 @@ class TestUDFE2E(ImpalaE2E, unittest.TestCase):
         result = self.con.execute(expr)
         # Hacky
         if datatype is 'timestamp':
-            import pandas as pd
-            assert type(result) == pd.tslib.Timestamp
+            assert type(result) == pd.Timestamp
         else:
             lop = literal.op()
             if isinstance(lop, ir.Literal):
