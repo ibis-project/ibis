@@ -37,7 +37,7 @@ from ibis.expr.types import (Expr,  # noqa
                              StringValue, StringScalar, StringColumn,
                              DecimalValue, DecimalScalar, DecimalColumn,
                              TimestampValue, TimestampScalar, TimestampColumn,
-                             DateValue,
+                             DateValue, TimeValue,
                              ArrayValue, ArrayScalar, ArrayColumn,
                              CategoryValue, unnamed, as_value_expr, literal,
                              null, sequence)
@@ -46,7 +46,7 @@ from ibis.expr.types import (Expr,  # noqa
 from ibis.expr.temporal import *  # noqa
 
 import ibis.common as _com
-
+from ibis.compat import PY2, to_time
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import window, trailing_window, cumulative_window
@@ -59,7 +59,8 @@ import ibis.util as util
 
 
 __all__ = [
-    'schema', 'table', 'literal', 'expr_list', 'timestamp',
+    'schema', 'table', 'literal', 'expr_list',
+    'timestamp', 'time',
     'case', 'where', 'sequence',
     'now', 'desc', 'null', 'NA',
     'cast', 'coalesce', 'greatest', 'least',
@@ -172,6 +173,26 @@ def timestamp(value):
             'literals, use pd.Timestamp({:d}, unit=...)'.format(value)
         )
     return ir.TimestampScalar(ir.literal(value).op())
+
+
+def time(value):
+    """
+    Returns a time literal if value is likely coercible to a time
+
+    Parameters
+    ----------
+    value : time value as string
+
+    Returns
+    --------
+    result : TimeScalar
+    """
+    if PY2:
+        raise ValueError("time support is not enabled on python 2")
+
+    if isinstance(value, six.string_types):
+        value = to_time(value)
+    return ir.TimeScalar(ir.literal(value).op())
 
 
 schema.__doc__ = """\
@@ -643,7 +664,11 @@ def between(arg, lower, upper):
     """
     lower = _ops.as_value_expr(lower)
     upper = _ops.as_value_expr(upper)
-    op = _ops.Between(arg, lower, upper)
+
+    if isinstance(arg.op(), _ops.Time):
+        op = _ops.BetweenTime(arg.op().args[0], lower, upper)
+    else:
+        op = _ops.Between(arg, lower, upper)
     return op.to_expr()
 
 
@@ -1774,6 +1799,22 @@ def _timestamp_strftime(arg, format_str):
     return _ops.Strftime(arg, format_str).to_expr()
 
 
+def _timestamp_time(arg):
+    """
+    Return a Time node for a Timestamp
+    We can then perform certain operations on this node
+    w/o actually instantiating the underlying structure
+    (which is inefficient in pandas/numpy)
+
+    Returns
+    -------
+    Time node
+    """
+    if PY2:
+        raise ValueError("time support is not enabled on python 2")
+    return _ops.Time(arg).to_expr()
+
+
 _timestamp_value_methods = dict(
     strftime=_timestamp_strftime,
     year=_extract_field('year', _ops.ExtractYear),
@@ -1783,7 +1824,8 @@ _timestamp_value_methods = dict(
     minute=_extract_field('minute', _ops.ExtractMinute),
     second=_extract_field('second', _ops.ExtractSecond),
     millisecond=_extract_field('millisecond', _ops.ExtractMillisecond),
-    truncate=_timestamp_truncate
+    truncate=_timestamp_truncate,
+    time=_timestamp_time,
 )
 
 
@@ -1797,6 +1839,16 @@ _date_value_methods = dict(
 
 _add_methods(TimestampValue, _timestamp_value_methods)
 _add_methods(DateValue, _date_value_methods)
+
+
+# ---------------------------------------------------------------------
+# Time API
+
+_time_value_methods = dict(
+    between=between,
+)
+
+_add_methods(TimeValue, _time_value_methods)
 
 
 # ---------------------------------------------------------------------

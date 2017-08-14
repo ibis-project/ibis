@@ -2119,6 +2119,10 @@ class Between(BooleanValueOp):
             raise TypeError('Arguments are not comparable')
 
 
+class BetweenTime(Between):
+    pass
+
+
 class Contains(BooleanValueOp):
 
     def __init__(self, value, options):
@@ -2361,6 +2365,11 @@ class ExtractSecond(ExtractTimestampField):
 
 class ExtractMillisecond(ExtractTimestampField):
     pass
+
+
+class Time(UnaryOp):
+
+    output_type = rules.shape_like_arg(0, 'time')
 
 
 class TimestampFromUNIX(ValueOp):

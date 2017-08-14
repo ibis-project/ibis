@@ -773,6 +773,20 @@ def execute_between(op, data, lower, upper, **kwargs):
     return data.between(lower, upper)
 
 
+@execute_node.register(
+    ops.BetweenTime,
+    pd.Series,
+    (pd.Series, str, datetime.time),
+    (pd.Series, str, datetime.time),
+)
+def execute_between_time(op, data, lower, upper, scope=None):
+    indexer = pd.DatetimeIndex(data).indexer_between_time(
+        lower, upper)
+    result = np.zeros(len(data), dtype=np.bool_)
+    result[indexer] = True
+    return result
+
+
 @execute_node.register(ops.DistinctColumn, pd.Series)
 def execute_series_distinct(op, data, **kwargs):
     return pd.Series(data.unique(), name=data.name)
