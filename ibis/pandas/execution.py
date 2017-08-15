@@ -5,6 +5,8 @@ import operator
 import datetime
 import functools
 import decimal
+import collections
+import re
 
 import six
 
@@ -24,10 +26,11 @@ import ibis.expr.operations as ops
 
 from ibis import util
 
+import ibis.pandas.context as ctx
 from ibis.pandas.core import (
-    integer_types, simple_types, numeric_types, fixed_width_types
+    integer_types, simple_types, numeric_types, fixed_width_types,
 )
-from ibis.pandas.dispatch import execute, execute_node
+from ibis.pandas.dispatch import execute, execute_node, execute_first
 
 
 @execute_node.register(ir.Literal)
@@ -196,19 +199,20 @@ def execute_series_clip(op, data, lower, upper, **kwargs):
 
 
 @execute_node.register(
-    ops.Quantile, pd.Series, (float, integer_types),
+    ops.Quantile,
+    (pd.Series, SeriesGroupBy), (float,) + six.integer_types
 )
-def execute_series_quantile_float(
-        op, data, quantile, **kwargs):
-    return data.quantile(q=quantile, interpolation=op.interpolation)
+def execute_series_quantile(op, data, quantile, context=None, **kwargs):
+    return context.agg(
+        data, 'quantile', q=quantile, interpolation=op.interpolation
+    )
 
 
-@execute_node.register(
-    ops.MultiQuantile, pd.Series, list,
-)
-def execute_series_quantile_list(
-        op, data, quantile, **kwargs):
-    result = data.quantile(q=quantile, interpolation=op.interpolation)
+@execute_node.register(ops.MultiQuantile, pd.Series, list)
+def execute_series_quantile_list(op, data, quantile, context=None, **kwargs):
+    result = context.agg(
+        data, 'quantile', q=quantile, interpolation=op.interpolation
+    )
     return list(result)
 
 
@@ -246,7 +250,7 @@ def execute_cast_bool_to_timestamp(op, data, type, **kwargs):
 
 @execute_node.register(
     ops.Cast,
-    six.integer_types + six.string_types,
+    integer_types + six.string_types,
     dt.Timestamp
 )
 def execute_cast_simple_literal_to_timestamp(op, data, type, **kwargs):
@@ -302,19 +306,40 @@ def execute_round_series(op, data, places, **kwargs):
 
 
 @execute_node.register(ops.TableColumn, (pd.DataFrame, DataFrameGroupBy))
-def execute_table_column_dataframe_or_dataframe_groupby(op, data, **kwargs):
+def execute_table_column_df_or_df_groupby(op, data, **kwargs):
     return data[op.name]
 
 
-def _compute_sort_key(key, scope, **kwargs):
+def _compute_sort_key(key, data, **kwargs):
     by = key.args[0]
     try:
         return by.get_name(), None
     except com.ExpressionError:
         name = util.guid()
-        new_column = execute(by, scope, **kwargs)
+        new_scope = {t: data for t in by.op().root_tables()}
+        new_column = execute(by, new_scope, **kwargs)
         new_column.name = name
         return name, new_column
+
+
+def _compute_sorted_frame(sort_keys, df, **kwargs):
+    computed_sort_keys = []
+    ascending = [key.op().ascending for key in sort_keys]
+    new_columns = {}
+
+    for i, key in enumerate(map(operator.methodcaller('op'), sort_keys)):
+        computed_sort_key, temporary_column = _compute_sort_key(
+            key, df, **kwargs
+        )
+        computed_sort_keys.append(computed_sort_key)
+
+        if temporary_column is not None:
+            new_columns[computed_sort_key] = temporary_column
+
+    result = df.assign(**new_columns)
+    result = result.sort_values(computed_sort_keys, ascending=ascending)
+    result = result.drop(new_columns.keys(), axis=1)
+    return result
 
 
 @execute_node.register(ops.Selection, pd.DataFrame)
@@ -333,6 +358,17 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
 
             if op.table is selection:
                 pandas_object = data
+            elif isinstance(selection, ir.ScalarExpr):
+                root_tables = selection_operation.root_tables()
+                additional_scope = collections.OrderedDict(
+                    zip(root_tables, (data for _ in range(len(root_tables))))
+                )
+                new_scope = toolz.merge(
+                    scope,
+                    additional_scope,
+                    factory=collections.OrderedDict,
+                )
+                pandas_object = execute(selection, new_scope, **kwargs)
             elif isinstance(selection, ir.ColumnExpr):
                 if isinstance(selection_operation, ir.TableColumn):
                     # slightly faster path for simple column selection
@@ -384,23 +420,8 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
         result = result.loc[where]
 
     if sort_keys:
-        computed_sort_keys = []
-        ascending = [key.op().ascending for key in sort_keys]
-        new_columns = {}
-
-        for i, key in enumerate(map(operator.methodcaller('op'), sort_keys)):
-            computed_sort_key, temporary_column = _compute_sort_key(
-                key, {op.table.op(): result}, **kwargs
-            )
-            computed_sort_keys.append(computed_sort_key)
-
-            if temporary_column is not None:
-                new_columns[computed_sort_key] = temporary_column
-
-        result = result.assign(**new_columns).sort_values(
-            computed_sort_keys, ascending=ascending
-        ).drop(new_columns.keys(), axis=1)
-    return result
+        result = _compute_sorted_frame(sort_keys, result, **kwargs)
+    return result.reset_index(drop=True)
 
 
 @execute_node.register(ops.Aggregation, pd.DataFrame)
@@ -444,13 +465,23 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
 
 
 @execute_node.register(ops.Reduction, SeriesGroupBy, type(None))
-def execute_reduction_series_groupby(op, data, mask, **kwargs):
-    return getattr(data, type(op).__name__.lower())()
+def execute_reduction_series_groupby(op, data, mask, context=None, **kwargs):
+    return context.agg(data, type(op).__name__.lower())
+
+
+@execute_node.register(ops.Variance, SeriesGroupBy, type(None))
+def execute_reduction_series_groupby_var(op, data, _, context=None, **kwargs):
+    return context.agg(data, 'var')
+
+
+@execute_node.register(ops.StandardDev, SeriesGroupBy, type(None))
+def execute_reduction_series_groupby_std(op, data, _, context=None, **kwargs):
+    return context.agg(data, 'std')
 
 
 @execute_node.register(ops.CountDistinct, SeriesGroupBy)
-def execute_count_distinct_series_groupby(op, data, **kwargs):
-    return data.nunique()
+def execute_count_distinct_series_groupby(op, data, context=None, **kwargs):
+    return context.agg(data, 'nunique')
 
 
 @execute_node.register(ops.Reduction, SeriesGroupBy, SeriesGroupBy)
@@ -461,9 +492,19 @@ def execute_reduction_series_groupby_mask(op, data, mask, **kwargs):
     )
 
 
+@execute_node.register(ops.Variance, SeriesGroupBy, SeriesGroupBy)
+def execute_reduction_series_groupby_mask_var(op, data, mask, **kwargs):
+    return data.apply(lambda x, mask=mask.obj: x[mask[x.index]].var())
+
+
+@execute_node.register(ops.StandardDev, SeriesGroupBy, SeriesGroupBy)
+def execute_reduction_series_groupby_mask_std(op, data, mask, **kwargs):
+    return data.apply(lambda x, mask=mask.obj: x[mask[x.index]].std())
+
+
 @execute_node.register(ops.GroupConcat, SeriesGroupBy, six.string_types)
-def execute_group_concat_series_groupby(op, data, sep, **kwargs):
-    return data.apply(lambda x, sep=sep: sep.join(x.astype(str)))
+def execute_group_concat_series_gb(op, data, sep, context=None, **kwargs):
+    return context.agg(data, lambda x, sep=sep: sep.join(x.astype(str)))
 
 
 @execute_node.register(ops.Count, DataFrameGroupBy, type(None))
@@ -475,19 +516,19 @@ def execute_count_frame_groupby(op, data, _, **kwargs):
 
 
 @execute_node.register(ops.Reduction, pd.Series, (pd.Series, type(None)))
-def execute_reduction_series_mask(op, data, mask, **kwargs):
+def execute_reduction_series_mask(op, data, mask, context=None, **kwargs):
     operand = data[mask] if mask is not None else data
-    return getattr(operand, type(op).__name__.lower())()
+    return context.agg(operand, type(op).__name__.lower())
 
 
 @execute_node.register(ops.StandardDev, pd.Series, (pd.Series, type(None)))
-def execute_standard_dev_series(op, data, mask, **kwargs):
-    return (data[mask] if mask is not None else data).std()
+def execute_standard_dev_series(op, data, mask, context=None, **kwargs):
+    return context.agg(data[mask] if mask is not None else data, 'std')
 
 
 @execute_node.register(ops.Variance, pd.Series, (pd.Series, type(None)))
-def execute_variance_series(op, data, mask, **kwargs):
-    return (data[mask] if mask is not None else data).var()
+def execute_variance_series(op, data, mask, context=None, **kwargs):
+    return context.agg(data[mask] if mask is not None else data, 'var')
 
 
 @execute_node.register(
@@ -504,8 +545,8 @@ def execute_group_concat_series(op, data, sep, **kwargs):
 
 
 @execute_node.register((ops.Any, ops.All), pd.Series)
-def execute_any_all_series(op, data, **kwargs):
-    return getattr(data, type(op).__name__.lower())()
+def execute_any_all_series(op, data, context=None, **kwargs):
+    return context.agg(data, type(op).__name__.lower())
 
 
 @execute_node.register(ops.CountDistinct, pd.Series)
@@ -620,7 +661,7 @@ def execute_binary_op_series_group_by(op, left, right, **kwargs):
 
 
 @execute_node.register(ops.BinaryOp, SeriesGroupBy, simple_types)
-def execute_binary_op_series_group_by_scalar(op, left, right, **kwargs):
+def execute_binary_op_series_gb(op, left, right, **kwargs):
     result = execute_binary_op(op, left.obj, right)
     return result.groupby(left.grouper.groupings)
 
@@ -779,7 +820,7 @@ def execute_between(op, data, lower, upper, **kwargs):
     (pd.Series, str, datetime.time),
     (pd.Series, str, datetime.time),
 )
-def execute_between_time(op, data, lower, upper, scope=None):
+def execute_between_time(op, data, lower, upper, **kwargs):
     indexer = pd.DatetimeIndex(data).indexer_between_time(
         lower, upper)
     result = np.zeros(len(data), dtype=np.bool_)
@@ -872,3 +913,182 @@ def execute_array_collect(op, data, **kwargs):
 @execute_node.register(ops.ArrayCollect, SeriesGroupBy)
 def execute_array_collect_group_by(op, data, **kwargs):
     return data.apply(list)
+
+
+@execute_node.register(ops.CumulativeSum, pd.Series)
+def execute_series_cumsum(op, data, **kwargs):
+    return data.cumsum()
+
+
+@execute_node.register(ops.CumulativeMin, pd.Series)
+def execute_series_cummin(op, data, **kwargs):
+    return data.cummin()
+
+
+@execute_node.register(ops.CumulativeMax, pd.Series)
+def execute_series_cummax(op, data, **kwargs):
+    return data.cummax()
+
+
+@execute_node.register(ops.CumulativeOp, pd.Series)
+def execute_series_cumulative_op(op, data, **kwargs):
+    typename = type(op).__name__
+    match = re.match(r'^Cumulative([A-Za-z_][A-Za-z0-9_]*)$', typename)
+    if match is None:
+        raise ValueError('Unknown operation {}'.format(typename))
+
+    try:
+        operation_name, = match.groups()
+    except ValueError:
+        raise ValueError(
+            'More than one operation name found in {} class'.format(typename)
+        )
+    return ctx.Cumulative().agg(data, operation_name.lower())
+
+
+@execute_node.register(
+    ops.Lag, (pd.Series, SeriesGroupBy),
+    integer_types + (type(None),),
+    type(None),
+)
+def execute_series_lag(op, data, offset, default, **kwargs):
+    return data.shift(1 if offset is None else offset)
+
+
+@execute_node.register(
+    ops.Lead, (pd.Series, SeriesGroupBy),
+    integer_types + (type(None),),
+    type(None),
+)
+def execute_series_lead(op, data, offset, default, **kwargs):
+    return data.shift(-(1 if offset is None else offset))
+
+
+@execute_node.register(ops.FirstValue, pd.Series)
+def execute_series_first_value(op, data, **kwargs):
+    return data.iloc[0]
+
+
+@execute_node.register(ops.FirstValue, SeriesGroupBy)
+def execute_series_group_by_first_value(op, data, context=None, **kwargs):
+    return context.agg(data, 'first')
+
+
+@execute_node.register(ops.LastValue, pd.Series)
+def execute_series_last_value(op, data, **kwargs):
+    return data.iloc[-1]
+
+
+@execute_node.register(ops.LastValue, SeriesGroupBy)
+def execute_series_group_by_last_value(op, data, context=None, **kwargs):
+    return context.agg(data, 'last')
+
+
+@execute_node.register(ops.MinRank, (pd.Series, SeriesGroupBy))
+def execute_series_min_rank(op, data, **kwargs):
+    # TODO(phillipc): Handle ORDER BY
+    return data.rank(method='min', ascending=True)
+
+
+@execute_node.register(ops.DenseRank, (pd.Series, SeriesGroupBy))
+def execute_series_dense_rank(op, data, **kwargs):
+    # TODO(phillipc): Handle ORDER BY
+    return data.rank(method='dense', ascending=True)
+
+
+@execute_node.register(ops.PercentRank, (pd.Series, SeriesGroupBy))
+def execute_series_percent_rank(op, data, **kwargs):
+    # TODO(phillipc): Handle ORDER BY
+    return data.rank(method='min', ascending=True, pct=True)
+
+
+def _post_process_empty(scalar, index):
+    return pd.Series(scalar, index=index)
+
+
+def _post_process_group_by(series, index):
+    return series
+
+
+def _post_process_order_by(series, index):
+    return series.reindex(index)
+
+
+def _post_process_group_by_order_by(series, index):
+    level_list = list(range(series.index.nlevels - 1))
+    series_with_reset_index = series.reset_index(level=level_list, drop=True)
+    reindexed_series = series_with_reset_index.reindex(index)
+    return reindexed_series
+
+
+@execute_first.register(ops.WindowOp, pd.DataFrame)
+def execute_frame_window_op(op, data, context=None, **kwargs):
+    operand, window = op.args
+
+    following = window.following
+    order_by = window._order_by
+
+    if order_by and following != 0:
+        raise ValueError(
+            'Following with a value other than 0 (current row) with order_by '
+            'is not yet implemented in the pandas backend. Use '
+            'ibis.trailing_window or ibis.cumulative_window to '
+            'construct windows when using pandas.'
+        )
+
+    group_by = window._group_by
+    grouping_keys = [
+        key_op.name if isinstance(key_op, ir.TableColumn) else execute(
+            key,
+            context=context,
+            **kwargs
+        )
+        for key, key_op in zip(
+            group_by, map(operator.methodcaller('op'), group_by)
+        )
+    ]
+
+    order_by = window._order_by
+
+    if grouping_keys:
+        source = data.groupby(grouping_keys, sort=False, as_index=not order_by)
+
+        if order_by:
+            sorted_df = source.apply(
+                lambda df, order_by=order_by, kwargs=kwargs: (
+                    _compute_sorted_frame(order_by, df, **kwargs)
+                )
+            )
+            source = sorted_df.groupby(grouping_keys, sort=False)
+            post_process = _post_process_group_by_order_by
+        else:
+            post_process = _post_process_group_by
+    else:
+        if order_by:
+            source = _compute_sorted_frame(order_by, data, **kwargs)
+            post_process = _post_process_order_by
+        else:
+            source = data
+            post_process = _post_process_empty
+
+    new_scope = {t: source for t in operand.op().root_tables()}
+
+    # no order by or group by: default summarization context
+    #
+    # if we're reducing and we have an order by expression then we need to
+    # expand or roll.
+    #
+    # otherwise we're transforming
+    if not grouping_keys and not order_by:
+        context = ctx.Summarize()
+    elif isinstance(operand.op(), ops.Reduction) and order_by:
+        preceding = window.preceding
+        if preceding is not None:
+            context = ctx.Trailing(preceding)
+        else:
+            context = ctx.Cumulative()
+    else:
+        context = ctx.Transform()
+
+    result = execute(operand, new_scope, context=context, **kwargs)
+    return post_process(result, data.index)

@@ -1035,18 +1035,6 @@ class NthValue(AnalyticOp):
     input_type = [rules.column, rules.integer]
     output_type = rules.type_of_arg(0)
 
-
-class SmallestValue(AnalyticOp):
-    pass
-
-
-class NthLargestValue(AnalyticOp):
-    pass
-
-
-class LargestValue(AnalyticOp):
-    pass
-
 # ----------------------------------------------------------------------
 # Distinct stuff
 
