@@ -9,8 +9,10 @@ import pandas as pd
 import ibis
 import ibis.expr.datatypes as dt
 
+import os
 
-@pytest.fixture
+
+@pytest.fixture(scope='module')
 def df():
     return pd.DataFrame({
         'plain_int64': list(range(1, 4)),
@@ -49,28 +51,48 @@ def df():
     })
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
+def batting_df():
+    path = os.environ.get('BATTING_CSV', 'batting.csv')
+    if not os.path.exists(path):
+        pytest.skip('{} not found'.format(path))
+    else:
+        df = pd.read_csv(path, index_col=None, sep=',')
+        num_rows = int(0.01 * len(df))
+        return df.iloc[30:30 + num_rows].reset_index(drop=True)
+
+
+@pytest.fixture(scope='module')
+def awards_players_df():
+    path = os.environ.get('AWARDS_PLAYERS_CSV', 'awards_players.csv')
+    if not os.path.exists(path):
+        pytest.skip('{} not found'.format(path))
+    else:
+        return pd.read_csv(path, index_col=None, sep=',')
+
+
+@pytest.fixture(scope='module')
 def df1():
     return pd.DataFrame(
         {'key': list('abcd'), 'value': [3, 4, 5, 6], 'key2': list('eeff')}
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def df2():
     return pd.DataFrame(
         {'key': list('ac'), 'other_value': [4.0, 6.0], 'key3': list('fe')}
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def client(df, df1, df2):
     return ibis.pandas.connect(
         {'df': df, 'df1': df1, 'df2': df2, 'left': df1, 'right': df2}
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def t(client):
     return client.table(
         'df',
@@ -83,11 +105,29 @@ def t(client):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
+def lahman(batting_df, awards_players_df):
+    return ibis.pandas.connect({
+        'batting': batting_df,
+        'awards_players': awards_players_df,
+    })
+
+
+@pytest.fixture(scope='module')
 def left(client):
     return client.table('left')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def right(client):
     return client.table('right')
+
+
+@pytest.fixture(scope='module')
+def batting(lahman):
+    return lahman.table('batting')
+
+
+@pytest.fixture(scope='module')
+def awards_players(lahman):
+    return lahman.table('awards_players')

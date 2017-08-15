@@ -11,7 +11,8 @@ import numpy as np
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 
-from ibis.pandas.dispatch import execute, execute_node
+import ibis.pandas.context as ctx
+from ibis.pandas.dispatch import execute, execute_node, execute_first
 
 
 integer_types = six.integer_types + (np.integer,)
@@ -86,6 +87,18 @@ def execute_with_scope(expr, scope, **kwargs):
     if op in scope:
         return scope[op]
 
+    try:
+        computed_args = [scope[t] for t in op.root_tables()]
+    except KeyError:
+        pass
+    else:
+        try:
+            # special case: we have a definition of execute_first that matches
+            # our current operation and data leaves
+            return execute_first(op, *computed_args, **kwargs)
+        except NotImplementedError:
+            pass
+
     args = op.args
 
     # recursively compute the op's arguments
@@ -125,4 +138,5 @@ def execute_without_scope(expr):
             'backend'
         )
 
-    return execute(expr, scope)
+    # By default, our aggregate functions are N -> 1
+    return execute(expr, scope, context=ctx.Summarize())
