@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 import math
 import operator
@@ -169,9 +170,21 @@ def test_simple_datetime_operations(con, func, expected, translate):
         methodcaller('strftime', 'DD BAR %w FOO "D'),
         methodcaller('strftime', 'DD BAR "%w" FOO "D'),
         methodcaller('strftime', 'DD BAR "%d" FOO "D'),
-        methodcaller('strftime', 'DD BAR "%c" FOO "D'),
-        methodcaller('strftime', 'DD BAR "%x" FOO "D'),
-        methodcaller('strftime', 'DD BAR "%X" FOO "D'),
+        pytest.mark.xfail(
+            methodcaller('strftime', 'DD BAR "%c" FOO "D'),
+            condition=os.name == 'nt',
+            reason='Locale-specific format specs not available on Windows',
+        ),
+        pytest.mark.xfail(
+            methodcaller('strftime', 'DD BAR "%x" FOO "D'),
+            condition=os.name == 'nt',
+            reason='Locale-specific format specs not available on Windows',
+        ),
+        pytest.mark.xfail(
+            methodcaller('strftime', 'DD BAR "%X" FOO "D'),
+            condition=os.name == 'nt',
+            reason='Locale-specific format specs not available on Windows',
+        ),
     ]
 )
 def test_strftime(con, func):
@@ -495,11 +508,17 @@ def test_numeric_builtins_work(alltypes, df):
     [
         (
             lambda t: (t.double_col > 20).ifelse(10, -20),
-            lambda df: pd.Series(np.where(df.double_col > 20, 10, -20)),
+            lambda df: pd.Series(
+                np.where(df.double_col > 20, 10, -20),
+                dtype='int64'
+            ),
         ),
         (
             lambda t: (t.double_col > 20).ifelse(10, -20).abs(),
-            lambda df: pd.Series(np.where(df.double_col > 20, 10, -20)).abs(),
+            lambda df: pd.Series(
+                np.where(df.double_col > 20, 10, -20),
+                dtype='int64'
+            ).abs(),
         ),
     ]
 )
