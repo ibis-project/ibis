@@ -788,7 +788,17 @@ class TableExpr(Expr):
 
         Examples
         --------
-        a, b, c = table.get_columns(['a', 'b', 'c'])
+        >>> import ibis
+        >>> table = ibis.table(
+        ...    [
+        ...        ('a', 'int64'),
+        ...        ('b', 'string'),
+        ...        ('c', 'timestamp'),
+        ...        ('d', 'float'),
+        ...    ],
+        ...    name='t'
+        ... )
+        >>> a, b, c = table.get_columns(['a', 'b', 'c'])
 
         Returns
         -------
@@ -853,7 +863,11 @@ class TableExpr(Expr):
 
         Examples
         --------
-        x.group_by([b1, b2]).aggregate(metrics)
+        >>> import ibis
+        >>> pairs = [('a', 'int32'), ('b', 'timestamp'), ('c', 'double')]
+        >>> t = ibis.table(pairs)
+        >>> b1, b2 = t.a, t.b
+        >>> result = t.group_by([b1, b2]).aggregate(sum_of_c=t.c.sum())
 
         Notes
         -----

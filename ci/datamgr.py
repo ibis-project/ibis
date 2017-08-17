@@ -4,6 +4,7 @@ import os
 import getpass
 import tempfile
 import tarfile
+import operator
 
 import sqlalchemy as sa
 
@@ -126,7 +127,7 @@ else:
 @click.option('-D', '--directory', default='.', type=click.Path(exists=False))
 def download(base_url, data, directory):
     if not data:
-        data = 'ibis-testing-data.tar.gz', 'crunchbase.db'
+        data = 'ibis-testing-data.tar.gz',
 
     if not os.path.exists(directory):
         os.mkdir(directory)
@@ -144,6 +145,62 @@ def download(base_url, data, directory):
         if piece.endswith(('.tar', '.gz', '.bz2', '.xz')):
             with tarfile.open(path, mode='r|gz') as f:
                 f.extractall(path=directory)
+
+
+def parse_env(ctx, param, values):
+    pairs = []
+    for envar in values:
+        try:
+            name, value = envar.split('=', 1)
+        except ValueError:
+            raise click.ClickException(
+                'Environment variables must be of the form NAME=VALUE. '
+                '{} is not in this format'.format(envar)
+            )
+        pairs.append((name, value))
+    return dict(pairs)
+
+
+@cli.command()
+@click.argument('data_directory', type=click.Path(exists=True))
+@click.option('-e', '--environment', multiple=True, callback=parse_env)
+def env(data_directory, environment):
+    envars = dict([
+        ('IBIS_TEST_IMPALA_HOST', 'impala'),
+        ('IBIS_TEST_NN_HOST', 'impala'),
+        ('IBIS_TEST_IMPALA_POST', 21050),
+        ('IBIS_TEST_WEBHDFS_PORT', 50070),
+        ('IBIS_TEST_WEBHDFS_USER', 'ubuntu'),
+        (
+            'IBIS_TEST_SQLITE_DB_PATH',
+            os.path.join(data_directory, 'ibis_testing.db'),
+        ),
+        (
+            'DIAMONDS_CSV',
+            os.path.join(data_directory, 'diamonds.csv')
+        ),
+        (
+            'BATTING_CSV',
+            os.path.join(data_directory, 'batting.csv')
+        ),
+        (
+            'AWARDS_PLAYERS_CSV',
+            os.path.join(data_directory, 'awards_players.csv')
+        ),
+        (
+            'FUNCTIONAL_ALLTYPES_CSV',
+            os.path.join(data_directory, 'functional_alltypes.csv')
+        ),
+        ('IBIS_TEST_POSTGRES_DB', 'ibis_testing'),
+        ('IBIS_POSTGRES_USER', getpass.getuser()),
+        ('IBIS_POSTGRES_PASS', ''),
+    ])
+    envars.update(environment)
+    string = '\n'.join(
+        '='.join((name, str(value)))
+        for name, value in sorted(envars.items(), key=operator.itemgetter(0))
+    )
+    click.echo(string)
 
 
 if __name__ == '__main__':
