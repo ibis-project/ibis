@@ -1,5 +1,15 @@
 version: '2'
 services:
+
+  postgres:
+    image: library/postgres:latest
+    environment:
+      - POSTGRES_DB=ibis_testing
+      - POSTGRES_USER=ibis
+      - POSTGRES_PASSWORD=ibis
+    ports:
+      - "5432:5432"
+
   cloudera:
     hostname: "quickstart.cloudera"
     image: cloudera/quickstart:latest
