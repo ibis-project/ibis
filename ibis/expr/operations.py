@@ -945,16 +945,11 @@ class RowNumber(RankBase):
 
     Examples
     --------
-    w = window(order_by=values)
-    row_number().over(w)
-
-    values   number
-    1        0
-    1        1
-    2        2
-    2        3
-    2        4
-    3        5
+    >>> import ibis
+    >>> t = ibis.table([('values', 'int64')])
+    >>> w = ibis.window(order_by=t.values)
+    >>> row_num = ibis.row_number().over(w)
+    >>> result = t[t.values, row_num.name('row_num')]
 
     Returns
     -------

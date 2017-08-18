@@ -141,9 +141,9 @@ def desc(expr):
 
     Examples
     --------
-    result = (self.table.group_by('g')
-              .size('count')
-              .sort_by(ibis.desc('count')))
+    >>> import ibis
+    >>> t = ibis.table([('g', 'string')])
+    >>> result = t.group_by('g').size('count').sort_by(ibis.desc('count'))
     """
     if not isinstance(expr, Expr):
         return _ops.DeferredSortKey(expr, ascending=False)
@@ -211,12 +211,12 @@ types : list of string
 
 Examples
 --------
-sc = schema([('foo', 'string'),
-             ('bar', 'int64'),
-             ('baz', 'boolean')])
-
-sc2 = schema(names=['foo', 'bar', 'baz'],
-             types=['string', 'int64', 'boolean'])
+>>> from ibis import schema
+>>> sc = schema([('foo', 'string'),
+...              ('bar', 'int64'),
+...              ('baz', 'boolean')])
+>>> sc2 = schema(names=['foo', 'bar', 'baz'],
+...              types=['string', 'int64', 'boolean'])
 
 Returns
 -------
@@ -235,9 +235,14 @@ def case():
 
     Examples
     --------
-    expr = (ibis.case()
-            .when(cond1, result1)
-            .when(cond2, result2).end())
+    >>> import ibis
+    >>> cond1 = ibis.literal(1) == 1
+    >>> cond2 = ibis.literal(2) == 1
+    >>> result1 = 3
+    >>> result2 = 4
+    >>> expr = (ibis.case()
+    ...         .when(cond1, result1)
+    ...         .when(cond2, result2).end())
 
     Returns
     -------
@@ -501,8 +506,10 @@ def fillna(arg, fill_value):
 
     Examples
     --------
-    result = table.col.fillna(5)
-    result2 = table.col.fillna(table.other_col * 3)
+    >>> import ibis
+    >>> table = ibis.table([('col', 'int64'), ('other_col', 'int64')])
+    >>> result = table.col.fillna(5)
+    >>> result2 = table.col.fillna(table.other_col * 3)
 
     Returns
     -------
@@ -522,7 +529,10 @@ def coalesce(*args):
 
     Examples
     --------
-    result = coalesce(expr1, expr2, 5)
+    >>> import ibis
+    >>> expr1 = None
+    >>> expr2 = 4
+    >>> result = ibis.coalesce(expr1, expr2, 5)
 
     Returns
     -------
@@ -685,9 +695,11 @@ def isin(arg, values):
 
     Examples
     --------
-    expr = table.strings.isin(['foo', 'bar', 'baz'])
-
-    expr2 = table.strings.isin(table2.other_string_col)
+    >>> import ibis
+    >>> table = ibis.table([('string_col', 'string')])
+    >>> table2 = ibis.table([('other_string_col', 'string')])
+    >>> expr = table.string_col.isin(['foo', 'bar', 'baz'])
+    >>> expr2 = table.string_col.isin(table2.other_string_col)
 
     Returns
     -------
@@ -759,11 +771,11 @@ def _case(arg):
 
     Examples
     --------
-    case_expr = (expr.case()
-                 .when(case1, output1)
-                 .when(case2, output2)
-                 .default(default_output)
-                 .end())
+    >>> case_expr = (expr.case()
+    ...              .when(case1, output1)
+    ...              .when(case2, output2)
+    ...              .default(default_output)
+    ...              .end())  # doctest: +SKIP
 
     Returns
     -------
@@ -1390,8 +1402,11 @@ def _translate(self, from_str, to_str):
 
     Examples
     --------
-    expr = table.strings.translate('a', 'b')
-    expr = table.string.translate('a', 'bc')
+    >>> import ibis
+    >>> table = ibis.table([('string_col', 'string')])
+    >>> expr = table.string_col.translate('a', 'b')
+    >>> expr = table.string_col.translate('a', 'bc')
+
     Returns
     -------
     translated : string
@@ -1432,9 +1447,11 @@ def _lpad(self, length, pad=' '):
 
     Examples
     --------
-    table.strings.lpad(5, '-')
-    'a' becomes '----a'
-    'abcdefg' becomes 'abcde'
+    >>> import ibis
+    >>> table = ibis.table([('strings', 'string')])
+    >>> expr = table.strings.lpad(5, '-')
+    >>> expr = ibis.literal('a').lpad(5, '-')  # 'a' becomes '----a'
+    >>> expr = ibis.literal('abcdefg').lpad(5, '-')  # 'abcdefg' becomes 'abcde'  # noqa: E501
 
     Returns
     -------
@@ -1455,9 +1472,11 @@ def _rpad(self, length, pad=' '):
 
     Examples
     --------
-    table.strings.rpad(5, '-')
-    'a' becomes 'a----'
-    'abcdefg' becomes 'abcde'
+    >>> import ibis
+    >>> table = ibis.table([('string_col', 'string')])
+    >>> expr = table.string_col.rpad(5, '-')
+    >>> expr = ibis.literal('a').rpad(5, '-')  # 'a' becomes 'a----'
+    >>> expr = ibis.literal('abcdefg').rpad(5, '-')  # 'abcdefg' becomes 'abcde'  # noqa: E501
 
     Returns
     -------
@@ -1479,7 +1498,9 @@ def _find_in_set(self, str_list):
 
     Examples
     --------
-    table.strings.find_in_set(['a', 'b'])
+    >>> import ibis
+    >>> table = ibis.table([('strings', 'string')])
+    >>> result = table.strings.find_in_set(['a', 'b'])
 
     Returns
     -------
@@ -1498,8 +1519,9 @@ def _string_join(self, strings):
 
     Examples
     --------
-    sep = ibis.literal(',')
-    sep.join(['a','b','c'])
+    >>> import ibis
+    >>> sep = ibis.literal(',')
+    >>> result = sep.join(['a', 'b', 'c'])
 
     Returns
     -------
@@ -1581,8 +1603,9 @@ def regex_replace(arg, pattern, replacement):
 
     Examples
     --------
-    table.strings.replace('(b+)', r'<\1>')
-    'aaabbbaa' becomes 'aaa<bbb>aaa'
+    >>> import ibis
+    >>> table = ibis.table([('strings', 'string')])
+    >>> result = table.strings.replace('(b+)', r'<\1>')  # 'aaabbbaa' becomes 'aaa<bbb>aaa'  # noqa: E501
 
     Returns
     -------
@@ -1603,8 +1626,9 @@ def _string_replace(arg, pattern, replacement):
 
     Examples
     --------
-    table.strings.replace('aaa', 'foo')
-    'aaabbbaaa' becomes 'foobbbfoo'
+    >>> import ibis
+    >>> table = ibis.table([('strings', 'string')])
+    >>> result = table.strings.replace('aaa', 'foo')  # 'aaabbbaaa' becomes 'foobbbfoo'  # noqa: E501
 
     Returns
     -------
@@ -1628,8 +1652,9 @@ def parse_url(arg, extract, key=None):
 
     Examples
     --------
-    parse_url("https://www.youtube.com/watch?v=kEuEcWfewf8&t=10", 'QUERY', 'v')
-    yields 'kEuEcWfewf8'
+    >>> url = "https://www.youtube.com/watch?v=kEuEcWfewf8&t=10"
+    >>> parse_url(url, 'QUERY', 'v')  # doctest: +SKIP
+    'kEuEcWfewf8'
 
     Returns
     -------
@@ -2196,7 +2221,9 @@ def _table_sort_by(table, sort_exprs):
 
     Examples
     --------
-    sorted = table.sort_by([('a', True), ('b', False)])
+    >>> import ibis
+    >>> t = ibis.table([('a', 'int64'), ('b', 'string')])
+    >>> ab_sorted = t.sort_by([('a', True), ('b', False)])
 
     Returns
     -------
@@ -2260,7 +2287,7 @@ def mutate(table, exprs=None, **kwds):
 
     Examples
     --------
-    expr = table.mutate(qux=table.foo + table.bar, baz=5)
+    >>> expr = table.mutate(qux=table.foo + table.bar, baz=5)  # doctest: +SKIP
 
     Returns
     -------

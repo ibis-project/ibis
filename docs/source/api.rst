@@ -303,8 +303,8 @@ Generic value methods
 
 .. _api.functions:
 
-Scalar or array methods
-~~~~~~~~~~~~~~~~~~~~~~~
+Scalar or column methods
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -322,20 +322,12 @@ Scalar or array methods
    ValueExpr.over
    ValueExpr.typeof
 
-   ValueExpr.add
-   ValueExpr.sub
-   ValueExpr.mul
-   ValueExpr.div
-   ValueExpr.pow
-   ValueExpr.rdiv
-   ValueExpr.rsub
-
    ValueExpr.case
    ValueExpr.cases
    ValueExpr.substitute
 
-Array methods
-~~~~~~~~~~~~~
+Column methods
+~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -365,8 +357,8 @@ Array methods
 General numeric methods
 -----------------------
 
-Scalar or array methods
-~~~~~~~~~~~~~~~~~~~~~~~
+Scalar or column methods
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -384,33 +376,41 @@ Scalar or array methods
    NumericValue.round
    NumericValue.nullifzero
    NumericValue.zeroifnull
+   NumericValue.add
+   NumericValue.sub
+   NumericValue.mul
+   NumericValue.div
+   NumericValue.pow
+   NumericValue.rdiv
+   NumericValue.rsub
 
 
-Array methods
-~~~~~~~~~~~~~
+
+Column methods
+~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
 
-   NumericArray.sum
-   NumericArray.mean
+   NumericColumn.sum
+   NumericColumn.mean
 
-   NumericArray.std
-   NumericArray.var
+   NumericColumn.std
+   NumericColumn.var
 
-   NumericArray.cumsum
-   NumericArray.cummean
+   NumericColumn.cumsum
+   NumericColumn.cummean
 
-   NumericArray.bottomk
-   NumericArray.topk
-   NumericArray.bucket
-   NumericArray.histogram
+   NumericColumn.bottomk
+   NumericColumn.topk
+   NumericColumn.bucket
+   NumericColumn.histogram
 
 Integer methods
 ---------------
 
-Scalar or array methods
-~~~~~~~~~~~~~~~~~~~~~~~
+Scalar or column methods
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
    :toctree: generated/
@@ -489,10 +489,10 @@ Boolean methods
 .. autosummary::
    :toctree: generated/
 
-   BooleanArray.any
-   BooleanArray.all
-   BooleanArray.cumany
-   BooleanArray.cumall
+   BooleanColumn.any
+   BooleanColumn.all
+   BooleanColumn.cumany
+   BooleanColumn.cumall
 
 Category methods
 ----------------

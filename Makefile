@@ -1,10 +1,9 @@
+.PHONY: all clean-pyc develop lint test docclean docs docserve
+
 SHELL := /bin/bash
 
 all:
 	python setup.py build_ext --inplace
-
-impala-test:
-	pushd scripts && python load_test_data.py --udf && popd
 
 clean-pyc:
 	find . -name "*.pyc" -exec rm -rf {} \;
@@ -17,3 +16,12 @@ lint:
 
 test:
 	pytest --pyargs ibis -m 'not impala and not hdfs'
+
+docclean:
+	$(MAKE) -C docs clean
+
+docs:
+	$(MAKE) -C docs html
+
+docserve: docs
+	pushd docs/build/html && python -m http.server --bind localhost
