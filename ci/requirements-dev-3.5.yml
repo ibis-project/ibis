@@ -14,10 +14,10 @@ dependencies:
   - python=3.5
   - python-graphviz
   - six
+  - sh
   - sqlalchemy>=1.0.0
   - thrift<=0.9.3
   - thriftpy<=0.3.9
   - toolz
   - pip:
-    - sh>=1.12
     - hdfs>=2.0.0

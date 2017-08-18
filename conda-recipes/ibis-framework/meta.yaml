@@ -30,16 +30,16 @@ requirements:
 
 test:
   requires:
-    - graphviz
+    - graphviz  # [not (py34 and win)]
     - mock  # [py27]
     - multipledispatch
     - pytest >=3
-    - python-graphviz
+    - python-graphviz  # [not (py34 and win)]
   imports:
     - ibis
     - ibis.expr
     - ibis.expr.tests
-    - ibis.expr.visualize
+    - ibis.expr.visualize  # [not (py34 and win)]
     - ibis.hive
     - ibis.hive.tests
     - ibis.impala  # [linux]
@@ -59,7 +59,7 @@ test:
     - ibis.tests
   commands:
     - pytest --version
-    - pytest --tb=short --pyargs ibis -m 'not impala and not hdfs'
+    - pytest --tb=short --pyargs ibis -m "not impala and not hdfs"
 
 about:
   license: Apache License, Version 2.0
