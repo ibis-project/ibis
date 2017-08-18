@@ -829,7 +829,7 @@ class ImpalaClient(SQLClient):
 
         Examples
         --------
-        con.create_table('new_table_name', table_expr)
+        >>> con.create_table('new_table_name', table_expr)  # doctest: +SKIP
         """
         if like_parquet is not None:
             raise NotImplementedError
@@ -1073,10 +1073,11 @@ class ImpalaClient(SQLClient):
 
         Examples
         --------
-        con.insert('my_table', table_expr)
+        >>> table = 'my_table'
+        >>> con.insert(table, table_expr)  # doctest: +SKIP
 
         # Completely overwrite contents
-        con.insert('my_table', table_expr, overwrite=True)
+        >>> con.insert(table, table_expr, overwrite=True)  # doctest: +SKIP
         """
         table = self.table(table_name, database=database)
         return table.insert(obj=obj, overwrite=overwrite, partition=partition,
@@ -1110,7 +1111,9 @@ class ImpalaClient(SQLClient):
 
         Examples
         --------
-        con.drop_table('my_table', database='operations', force=True)
+        >>> table = 'my_table'
+        >>> db = 'operations'
+        >>> con.drop_table(table, database=db, force=True)  # doctest: +SKIP
         """
         statement = ddl.DropTable(table_name, database=database,
                                   must_exist=not force)
@@ -1153,7 +1156,10 @@ class ImpalaClient(SQLClient):
 
         Examples
         --------
-        con.cache_table('my_table', database='operations', pool='op_4GB_pool')
+        >>> table = 'my_table'
+        >>> db = 'operations'
+        >>> pool = 'op_4GB_pool'
+        >>> con.cache_table('my_table', database=db, pool=pool)  # noqa: E501 # doctest: +SKIP
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self._execute(statement)
@@ -1658,10 +1664,10 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
 
         Examples
         --------
-        t.insert(table_expr)
+        >>> t.insert(table_expr)  # doctest: +SKIP
 
         # Completely overwrite contents
-        t.insert(table_expr, overwrite=True)
+        >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
         """
         if isinstance(obj, pd.DataFrame):
             from ibis.impala.pandas_interop import write_temp_dataframe

@@ -1,2 +1,4 @@
 sphinx_rtd_theme
 numpydoc
+ipython
+matplotlib

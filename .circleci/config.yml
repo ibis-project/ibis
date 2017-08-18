@@ -204,6 +204,31 @@ jobs:
       - run: git fetch upstream refs/heads/master
       - run: asv continuous -f 1.5 -e upstream/master "${CIRCLE_SHA1}" || echo > /dev/null
 
+  ####### DOC BUILD ########
+  build_docs:
+    docker:
+      - image: circleci/python:latest
+        environment:
+          PYTHON_VERSION: 3.6
+    steps:
+      - checkout
+      - attach_workspace:
+          at: /tmp/workspace
+      - run: cat /tmp/workspace/envars.sh | tee -a $BASH_ENV
+      - run: |
+          conda env create --name ibis-docs --quiet \
+            --file "ci/requirements-dev-${PYTHON_VERSION}.yml"
+      - run: |
+          conda install --yes --name ibis-docs \
+            --quiet --file=docs/requirements-docs.txt
+      - run: echo 'source activate ibis-docs' >> $BASH_ENV
+      - run: python setup.py develop
+      - run: make docs
+      - run: mv docs/build/html /tmp
+      - store_artifacts:
+          path: /tmp/html
+
+
 workflows:
   version: 2
   build:
@@ -225,6 +250,12 @@ workflows:
             - install_miniconda
       - python36_test:
           requires:
+            - setup_envars
+            - install_miniconda
+
+      - build_docs:
+          requires:
+            - python36_test  # only build docs if we pass ibis tests
             - setup_envars
             - install_miniconda
 
