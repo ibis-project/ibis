@@ -13,6 +13,7 @@ dependencies:
   - pytest
   - python=3.6
   - python-graphviz
+  - sh
   - six
   - sqlalchemy>=1.0.0
   - thrift
@@ -20,4 +21,3 @@ dependencies:
   - toolz
   - pip:
     - hdfs>=2.0.0
-    - sh>=1.12
