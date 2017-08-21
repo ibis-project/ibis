@@ -113,6 +113,8 @@ class ExprFormatter(object):
             text = 'Literal[{}]\n  {}'.format(
                 self._get_type_display(), str(what.value)
             )
+        elif isinstance(what, ir.ScalarParameter):
+            text = 'ScalarParameter[{}]'.format(self._get_type_display())
         elif isinstance(what, ir.Node):
             text = self._format_node(self.expr)
 

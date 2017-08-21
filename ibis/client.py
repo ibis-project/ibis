@@ -226,7 +226,7 @@ LIMIT 0""".format(query)
           Array expressions: pandas.Series
           Scalar expressions: Python scalar value
         """
-        ast = self._build_ast_ensure_limit(expr, limit)
+        ast = self._build_ast_ensure_limit(expr, limit, params=params)
 
         if len(ast.queries) > 1:
             raise NotImplementedError
@@ -245,12 +245,12 @@ LIMIT 0""".format(query)
         -------
         output : single query or list of queries
         """
-        ast = self._build_ast_ensure_limit(expr, limit)
+        ast = self._build_ast_ensure_limit(expr, limit, params=params)
         queries = [query.compile() for query in ast.queries]
         return queries[0] if len(queries) == 1 else queries
 
-    def _build_ast_ensure_limit(self, expr, limit):
-        ast = self._build_ast(expr)
+    def _build_ast_ensure_limit(self, expr, limit, params=None):
+        ast = self._build_ast(expr, params=params)
         # note: limit can still be None at this point, if the global
         # default_limit is None
         for query in reversed(ast.queries):
@@ -298,7 +298,7 @@ LIMIT 0""".format(query)
         return 'Query:\n{0}\n\n{1}'.format(util.indent(query, 2),
                                            '\n'.join(result))
 
-    def _build_ast(self, expr):
+    def _build_ast(self, expr, params=None):
         # Implement in clients
         raise NotImplementedError
 
@@ -313,14 +313,14 @@ class QueryPipeline(object):
     pass
 
 
-def execute(expr, limit='default', async=False):
+def execute(expr, limit='default', async=False, params=None):
     backend = find_backend(expr)
-    return backend.execute(expr, limit=limit, async=async)
+    return backend.execute(expr, limit=limit, async=async, params=params)
 
 
-def compile(expr, limit=None):
+def compile(expr, limit=None, params=None):
     backend = find_backend(expr)
-    return backend.compile(expr, limit=limit)
+    return backend.compile(expr, limit=limit, params=params)
 
 
 def find_backend(expr):

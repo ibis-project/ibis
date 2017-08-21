@@ -28,7 +28,7 @@ from ibis import util
 
 import ibis.pandas.context as ctx
 from ibis.pandas.core import (
-    integer_types, simple_types, numeric_types, fixed_width_types,
+    integer_types, simple_types, numeric_types, fixed_width_types
 )
 from ibis.pandas.dispatch import execute, execute_node, execute_first
 
@@ -485,21 +485,22 @@ def execute_count_distinct_series_groupby(op, data, context=None, **kwargs):
 
 
 @execute_node.register(ops.Reduction, SeriesGroupBy, SeriesGroupBy)
-def execute_reduction_series_groupby_mask(op, data, mask, **kwargs):
+def execute_reduction_series_gb_mask(op, data, mask, context=None, **kwargs):
     method = operator.methodcaller(type(op).__name__.lower())
-    return data.apply(
+    return context.agg(
+        data,
         lambda x, mask=mask.obj, method=method: method(x[mask[x.index]])
     )
 
 
 @execute_node.register(ops.Variance, SeriesGroupBy, SeriesGroupBy)
-def execute_reduction_series_groupby_mask_var(op, data, mask, **kwargs):
-    return data.apply(lambda x, mask=mask.obj: x[mask[x.index]].var())
+def execute_var_series_groupby_mask(op, data, mask, context=None, **kwargs):
+    return context.agg(data, lambda x, mask=mask.obj: x[mask[x.index]].var())
 
 
 @execute_node.register(ops.StandardDev, SeriesGroupBy, SeriesGroupBy)
-def execute_reduction_series_groupby_mask_std(op, data, mask, **kwargs):
-    return data.apply(lambda x, mask=mask.obj: x[mask[x.index]].std())
+def execute_std_series_groupby_mask(op, data, mask, context=None, **kwargs):
+    return context.agg(data, lambda x, mask=mask.obj: x[mask[x.index]].std())
 
 
 @execute_node.register(ops.GroupConcat, SeriesGroupBy, six.string_types)
