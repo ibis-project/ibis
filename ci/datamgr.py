@@ -75,15 +75,14 @@ def clickhouse(script, tables, database, data_directory):
             if len(stmt.strip()):
                 con.execute(stmt)
 
-    # correct dtypes per table to be able to insert
     table_paths = [
         os.path.join(data_directory, '{}.csv'.format(table))
         for table in tables
     ]
     dtype = {'bool_col': np.bool_}
     for table, path in zip(tables, table_paths):
-        print(table, path)
-
+        # correct dtypes per table to be able to insert
+        # TODO: cleanup, kinda ugly
         df = pd.read_csv(path, index_col=None, header=0, dtype=dtype)
         if table == 'functional_alltypes':
             df = df.rename(columns={'Unnamed: 0': 'Unnamed_0'})
