@@ -153,8 +153,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
             (a != b, '`a` != `b`'),
             (h & bool_col, '`h` AND (`a` > 0)'),
             (h | bool_col, '`h` OR (`a` > 0)'),
-            # xor is brute force
-            (h ^ bool_col, '(`h` OR (`a` > 0)) AND NOT (`h` AND (`a` > 0))')
+            (h ^ bool_col, 'xor(`h`, (`a` > 0))')
         ]
         self._check_expr_cases(cases)
 

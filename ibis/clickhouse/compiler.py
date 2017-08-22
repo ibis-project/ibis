@@ -441,31 +441,14 @@ def _cast(translator, expr):
     if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
         return arg_formatted
     else:
-        sql_type = _type_to_sql_string(target_type)
+        sql_type = _sql_type_names[target_type.name.lower()]
         return 'CAST({0!s} AS {1!s})'.format(arg_formatted, sql_type)
-
-
-def _type_to_sql_string(tval):
-    if isinstance(tval, dt.Decimal):
-        return 'decimal({0},{1})'.format(tval.precision, tval.scale)
-    else:
-        return _sql_type_names[tval.name.lower()]
 
 
 def _between(translator, expr):
     op = expr.op()
     comp, lower, upper = [translator.translate(x) for x in op.args]
     return '{0!s} BETWEEN {1!s} AND {2!s}'.format(comp, lower, upper)
-
-
-def _is_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().args[0])
-    return '{0!s} IS NULL'.format(formatted_arg)
-
-
-def _not_null(translator, expr):
-    formatted_arg = translator.translate(expr.op().args[0])
-    return '{0!s} IS NOT NULL'.format(formatted_arg)
 
 
 _cumulative_to_reduction = {
@@ -476,129 +459,6 @@ _cumulative_to_reduction = {
     ops.CumulativeAny: ops.Any,
     ops.CumulativeAll: ops.All,
 }
-
-
-def _cumulative_to_window(translator, expr, window):
-    win = ibis.cumulative_window()
-    win = (win.group_by(window._group_by)
-           .order_by(window._order_by))
-
-    op = expr.op()
-
-    klass = _cumulative_to_reduction[type(op)]
-    new_op = klass(*op.args)
-    new_expr = expr._factory(new_op, name=expr._name)
-
-    if type(new_op) in translator._rewrites:
-        new_expr = translator._rewrites[type(new_op)](new_expr)
-
-    new_expr = L.windowize_function(new_expr, win)
-    return new_expr
-
-
-def _window(translator, expr):
-    op = expr.op()
-
-    arg, window = op.args
-    window_op = arg.op()
-
-    _require_order_by = (ops.Lag,
-                         ops.Lead,
-                         ops.DenseRank,
-                         ops.MinRank,
-                         ops.FirstValue,
-                         ops.LastValue,
-                         ops.PercentRank,
-                         ops.NTile,)
-
-    _unsupported_reductions = (
-        ops.CMSMedian,
-        ops.GroupConcat,
-        ops.HLLCardinality,
-    )
-
-    if isinstance(window_op, _unsupported_reductions):
-        raise com.TranslationError('{0!s} is not supported in '
-                                   'window functions'
-                                   .format(type(window_op)))
-
-    if isinstance(window_op, ops.CumulativeOp):
-        arg = _cumulative_to_window(translator, arg, window)
-        return translator.translate(arg)
-
-    # Some analytic functions need to have the expression of interest in
-    # the ORDER BY part of the window clause
-    if (isinstance(window_op, _require_order_by) and
-            len(window._order_by) == 0):
-        window = window.order_by(window_op.args[0])
-
-    window_formatted = _format_window(translator, window)
-
-    arg_formatted = translator.translate(arg)
-    result = '{0} {1}'.format(arg_formatted, window_formatted)
-
-    if type(window_op) in _expr_transforms:
-        return _expr_transforms[type(window_op)](result)
-    else:
-        return result
-
-
-def _format_window(translator, window):
-    components = []
-
-    if len(window._group_by) > 0:
-        partition_args = [translator.translate(x)
-                          for x in window._group_by]
-        components.append('PARTITION BY {0}'.format(', '.join(partition_args)))
-
-    if len(window._order_by) > 0:
-        order_args = []
-        for expr in window._order_by:
-            key = expr.op()
-            translated = translator.translate(key.expr)
-            if not key.ascending:
-                translated += ' DESC'
-            order_args.append(translated)
-
-        components.append('ORDER BY {0}'.format(', '.join(order_args)))
-
-    p, f = window.preceding, window.following
-
-    def _prec(p):
-        return '{0} PRECEDING'.format(p) if p > 0 else 'CURRENT ROW'
-
-    def _foll(f):
-        return '{0} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
-
-    if p is not None and f is not None:
-        frame = ('ROWS BETWEEN {0} AND {1}'
-                 .format(_prec(p), _foll(f)))
-    elif p is not None:
-        if isinstance(p, tuple):
-            start, end = p
-            frame = ('ROWS BETWEEN {0} AND {1}'
-                     .format(_prec(start), _prec(end)))
-        else:
-            kind = 'ROWS' if p > 0 else 'RANGE'
-            frame = ('{0} BETWEEN {1} AND UNBOUNDED FOLLOWING'
-                     .format(kind, _prec(p)))
-    elif f is not None:
-        if isinstance(f, tuple):
-            start, end = f
-            frame = ('ROWS BETWEEN {0} AND {1}'
-                     .format(_foll(start), _foll(end)))
-        else:
-            kind = 'ROWS' if f > 0 else 'RANGE'
-            frame = ('{0} BETWEEN UNBOUNDED PRECEDING AND {1}'
-                     .format(kind, _foll(f)))
-    else:
-        # no-op, default is full sample
-        frame = None
-
-    if frame is not None:
-        components.append(frame)
-
-    return 'OVER ({0})'.format(' '.join(components))
 
 
 def _shift_like(name):
@@ -754,9 +614,7 @@ def _xor(translator, expr):
     if _needs_parens(op.right):
         right_arg = _parenthesize(right_arg)
 
-    return ('{0} AND NOT {1}'
-            .format('({0} {1} {2})'.format(left_arg, 'OR', right_arg),
-                    '({0} {1} {2})'.format(left_arg, 'AND', right_arg)))
+    return 'xor({0}, {1})'.format(left_arg, right_arg)
 
 
 def _name_expr(formatted_expr, quoted_name):
@@ -957,24 +815,6 @@ def _table_column(translator, expr):
             quoted_name = '{0}.{1}'.format(alias, quoted_name)
 
     return quoted_name
-
-
-def _truncate(translator, expr):
-    op = expr.op()
-
-    arg = translator.translate(op.args[0])
-
-    _clickhouse_unit_names = {
-        'M': 'MONTH',
-        'D': 'J',
-        'J': 'D',
-        'H': 'HH'
-    }
-
-    unit = op.args[1]
-    unit = _clickhouse_unit_names.get(unit, unit)
-
-    return "trunc({0!s}, '{1!s}')".format(arg, unit)
 
 
 def _timestamp_from_unix(translator, expr):
@@ -1281,13 +1121,13 @@ _operation_registry = {
     ops.ExtractHour: unary('toHour'),
     ops.ExtractMinute: unary('toMinute'),
     ops.ExtractSecond: unary('toSecond'),
-    ops.Truncate: _truncate,
+    # ops.Truncate: _truncate,
 
     # Other operations
     ops.E: lambda *args: 'e()',
 
     ir.Literal: _literal,
-    ir.NullLiteral: _null_literal,
+    # ir.NullLiteral: _null_literal,
 
     ir.ValueList: _value_list,
 
@@ -1327,7 +1167,7 @@ _operation_registry = {
     ops.NthValue: _nth_value,
     ops.Lag: _shift_like('lag'),
     ops.Lead: _shift_like('lead'),
-    ops.WindowOp: _window,
+    # ops.WindowOp: _window,
     ops.NTile: _ntile,
 }
 
