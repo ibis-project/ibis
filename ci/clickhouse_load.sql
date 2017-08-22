@@ -62,7 +62,7 @@ CREATE TABLE functional_alltypes (
     `Unnamed_0` Int64,
     id Int32,
     bool_col UInt8,
-    tinyint_col Int16,
+    tinyint_col Int8,
     smallint_col Int16,
     int_col Int32,
     bigint_col Int64,
