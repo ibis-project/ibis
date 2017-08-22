@@ -355,8 +355,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
     def test_reduction_where(self):
         cond = self.table.bigint_col < 70
         c = self.table.double_col
-        tmp = ('{0}(CASE WHEN `bigint_col` < 70 THEN `double_col` '
-               'ELSE NULL END)')
+        tmp = '{0}If(`double_col`, `bigint_col` < 70)'
         cases = [
             (c.sum(where=cond), tmp.format('sum')),
             (c.count(where=cond), tmp.format('count')),
@@ -394,15 +393,16 @@ class TestCaseExprs(unittest.TestCase, ExprSQLTest, ExprTestCases):
 END"""
         assert result == expected
 
-    def test_search_case(self):
-        expr = self._case_search_case()
-        result = self._translate(expr)
-        expected = """CASE
-  WHEN `f` > 0 THEN `d` * 2
-  WHEN `c` < 0 THEN `a` * 2
-  ELSE NULL
-END"""
-        assert result == expected
+#     def test_search_case(self):
+#         expr = self._case_search_case()
+#         print(expr)
+#         result = self._translate(expr)
+#         expected = """CASE
+#   WHEN `f` > 0 THEN `d` * 2
+#   WHEN `c` < 0 THEN `a` * 2
+#   ELSE NULL
+# END"""
+#         assert result == expected
 
     def test_where_use_if(self):
         expr = ibis.where(self.table.f > 0, self.table.e, self.table.a)
@@ -427,201 +427,202 @@ FROM functional_alltypes"""
         assert result == 'SELECT 1 AS `tmp`'
 
 
-class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
+# TODO: Clickhouse doesn't support null literal
+# class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
 
-    def setUp(self):
-        self.con = MockConnection()
-        self.table = self.con.table('alltypes')
+#     def setUp(self):
+#         self.con = MockConnection()
+#         self.table = self.con.table('alltypes')
 
-    def test_bucket_to_case(self):
-        buckets = [0, 10, 25, 50]
+#     def test_bucket_to_case(self):
+#         buckets = [0, 10, 25, 50]
 
-        expr1 = self.table.f.bucket(buckets)
-        expected1 = """\
-CASE
-  WHEN (`f` >= 0) AND (`f` < 10) THEN 0
-  WHEN (`f` >= 10) AND (`f` < 25) THEN 1
-  WHEN (`f` >= 25) AND (`f` <= 50) THEN 2
-  ELSE NULL
-END"""
+#         expr1 = self.table.f.bucket(buckets)
+#         expected1 = """\
+# CASE
+#   WHEN (`f` >= 0) AND (`f` < 10) THEN 0
+#   WHEN (`f` >= 10) AND (`f` < 25) THEN 1
+#   WHEN (`f` >= 25) AND (`f` <= 50) THEN 2
+#   ELSE NULL
+# END"""
 
-        expr2 = self.table.f.bucket(buckets, close_extreme=False)
-        expected2 = """\
-CASE
-  WHEN (`f` >= 0) AND (`f` < 10) THEN 0
-  WHEN (`f` >= 10) AND (`f` < 25) THEN 1
-  WHEN (`f` >= 25) AND (`f` < 50) THEN 2
-  ELSE NULL
-END"""
+#         expr2 = self.table.f.bucket(buckets, close_extreme=False)
+#         expected2 = """\
+# CASE
+#   WHEN (`f` >= 0) AND (`f` < 10) THEN 0
+#   WHEN (`f` >= 10) AND (`f` < 25) THEN 1
+#   WHEN (`f` >= 25) AND (`f` < 50) THEN 2
+#   ELSE NULL
+# END"""
 
-        expr3 = self.table.f.bucket(buckets, closed='right')
-        expected3 = """\
-CASE
-  WHEN (`f` >= 0) AND (`f` <= 10) THEN 0
-  WHEN (`f` > 10) AND (`f` <= 25) THEN 1
-  WHEN (`f` > 25) AND (`f` <= 50) THEN 2
-  ELSE NULL
-END"""
+#         expr3 = self.table.f.bucket(buckets, closed='right')
+#         expected3 = """\
+# CASE
+#   WHEN (`f` >= 0) AND (`f` <= 10) THEN 0
+#   WHEN (`f` > 10) AND (`f` <= 25) THEN 1
+#   WHEN (`f` > 25) AND (`f` <= 50) THEN 2
+#   ELSE NULL
+# END"""
 
-        expr4 = self.table.f.bucket(buckets, closed='right',
-                                    close_extreme=False)
-        expected4 = """\
-CASE
-  WHEN (`f` > 0) AND (`f` <= 10) THEN 0
-  WHEN (`f` > 10) AND (`f` <= 25) THEN 1
-  WHEN (`f` > 25) AND (`f` <= 50) THEN 2
-  ELSE NULL
-END"""
+#         expr4 = self.table.f.bucket(buckets, closed='right',
+#                                     close_extreme=False)
+#         expected4 = """\
+# CASE
+#   WHEN (`f` > 0) AND (`f` <= 10) THEN 0
+#   WHEN (`f` > 10) AND (`f` <= 25) THEN 1
+#   WHEN (`f` > 25) AND (`f` <= 50) THEN 2
+#   ELSE NULL
+# END"""
 
-        expr5 = self.table.f.bucket(buckets, include_under=True)
-        expected5 = """\
-CASE
-  WHEN `f` < 0 THEN 0
-  WHEN (`f` >= 0) AND (`f` < 10) THEN 1
-  WHEN (`f` >= 10) AND (`f` < 25) THEN 2
-  WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
-  ELSE NULL
-END"""
+#         expr5 = self.table.f.bucket(buckets, include_under=True)
+#         expected5 = """\
+# CASE
+#   WHEN `f` < 0 THEN 0
+#   WHEN (`f` >= 0) AND (`f` < 10) THEN 1
+#   WHEN (`f` >= 10) AND (`f` < 25) THEN 2
+#   WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
+#   ELSE NULL
+# END"""
 
-        expr6 = self.table.f.bucket(buckets,
-                                    include_under=True,
-                                    include_over=True)
-        expected6 = """\
-CASE
-  WHEN `f` < 0 THEN 0
-  WHEN (`f` >= 0) AND (`f` < 10) THEN 1
-  WHEN (`f` >= 10) AND (`f` < 25) THEN 2
-  WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
-  WHEN `f` > 50 THEN 4
-  ELSE NULL
-END"""
+#         expr6 = self.table.f.bucket(buckets,
+#                                     include_under=True,
+#                                     include_over=True)
+#         expected6 = """\
+# CASE
+#   WHEN `f` < 0 THEN 0
+#   WHEN (`f` >= 0) AND (`f` < 10) THEN 1
+#   WHEN (`f` >= 10) AND (`f` < 25) THEN 2
+#   WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
+#   WHEN `f` > 50 THEN 4
+#   ELSE NULL
+# END"""
 
-        expr7 = self.table.f.bucket(buckets,
-                                    close_extreme=False,
-                                    include_under=True,
-                                    include_over=True)
-        expected7 = """\
-CASE
-  WHEN `f` < 0 THEN 0
-  WHEN (`f` >= 0) AND (`f` < 10) THEN 1
-  WHEN (`f` >= 10) AND (`f` < 25) THEN 2
-  WHEN (`f` >= 25) AND (`f` < 50) THEN 3
-  WHEN `f` >= 50 THEN 4
-  ELSE NULL
-END"""
+#         expr7 = self.table.f.bucket(buckets,
+#                                     close_extreme=False,
+#                                     include_under=True,
+#                                     include_over=True)
+#         expected7 = """\
+# CASE
+#   WHEN `f` < 0 THEN 0
+#   WHEN (`f` >= 0) AND (`f` < 10) THEN 1
+#   WHEN (`f` >= 10) AND (`f` < 25) THEN 2
+#   WHEN (`f` >= 25) AND (`f` < 50) THEN 3
+#   WHEN `f` >= 50 THEN 4
+#   ELSE NULL
+# END"""
 
-        expr8 = self.table.f.bucket(buckets, closed='right',
-                                    close_extreme=False,
-                                    include_under=True)
-        expected8 = """\
-CASE
-  WHEN `f` <= 0 THEN 0
-  WHEN (`f` > 0) AND (`f` <= 10) THEN 1
-  WHEN (`f` > 10) AND (`f` <= 25) THEN 2
-  WHEN (`f` > 25) AND (`f` <= 50) THEN 3
-  ELSE NULL
-END"""
+#         expr8 = self.table.f.bucket(buckets, closed='right',
+#                                     close_extreme=False,
+#                                     include_under=True)
+#         expected8 = """\
+# CASE
+#   WHEN `f` <= 0 THEN 0
+#   WHEN (`f` > 0) AND (`f` <= 10) THEN 1
+#   WHEN (`f` > 10) AND (`f` <= 25) THEN 2
+#   WHEN (`f` > 25) AND (`f` <= 50) THEN 3
+#   ELSE NULL
+# END"""
 
-        expr9 = self.table.f.bucket([10], closed='right',
-                                    include_over=True,
-                                    include_under=True)
-        expected9 = """\
-CASE
-  WHEN `f` <= 10 THEN 0
-  WHEN `f` > 10 THEN 1
-  ELSE NULL
-END"""
+#         expr9 = self.table.f.bucket([10], closed='right',
+#                                     include_over=True,
+#                                     include_under=True)
+#         expected9 = """\
+# CASE
+#   WHEN `f` <= 10 THEN 0
+#   WHEN `f` > 10 THEN 1
+#   ELSE NULL
+# END"""
 
-        expr10 = self.table.f.bucket([10], include_over=True,
-                                     include_under=True)
-        expected10 = """\
-CASE
-  WHEN `f` < 10 THEN 0
-  WHEN `f` >= 10 THEN 1
-  ELSE NULL
-END"""
+#         expr10 = self.table.f.bucket([10], include_over=True,
+#                                      include_under=True)
+#         expected10 = """\
+# CASE
+#   WHEN `f` < 10 THEN 0
+#   WHEN `f` >= 10 THEN 1
+#   ELSE NULL
+# END"""
 
-        cases = [
-            (expr1, expected1),
-            (expr2, expected2),
-            (expr3, expected3),
-            (expr4, expected4),
-            (expr5, expected5),
-            (expr6, expected6),
-            (expr7, expected7),
-            (expr8, expected8),
-            (expr9, expected9),
-            (expr10, expected10),
-        ]
-        self._check_expr_cases(cases)
+#         cases = [
+#             (expr1, expected1),
+#             (expr2, expected2),
+#             (expr3, expected3),
+#             (expr4, expected4),
+#             (expr5, expected5),
+#             (expr6, expected6),
+#             (expr7, expected7),
+#             (expr8, expected8),
+#             (expr9, expected9),
+#             (expr10, expected10),
+#         ]
+#         self._check_expr_cases(cases)
 
-    def test_cast_category_to_int_noop(self):
-        # Because the bucket result is an integer, no explicit cast is
-        # necessary
-        expr = (self.table.f.bucket([10], include_over=True,
-                                    include_under=True)
-                .cast('int32'))
+#     def test_cast_category_to_int_noop(self):
+#         # Because the bucket result is an integer, no explicit cast is
+#         # necessary
+#         expr = (self.table.f.bucket([10], include_over=True,
+#                                     include_under=True)
+#                 .cast('int32'))
 
-        expected = """\
-CASE
-  WHEN `f` < 10 THEN 0
-  WHEN `f` >= 10 THEN 1
-  ELSE NULL
-END"""
+#         expected = """\
+# CASE
+#   WHEN `f` < 10 THEN 0
+#   WHEN `f` >= 10 THEN 1
+#   ELSE NULL
+# END"""
 
-        expr2 = (self.table.f.bucket([10], include_over=True,
-                                     include_under=True)
-                 .cast('double'))
+#         expr2 = (self.table.f.bucket([10], include_over=True,
+#                                      include_under=True)
+#                  .cast('double'))
 
-        expected2 = """\
-CAST(CASE
-  WHEN `f` < 10 THEN 0
-  WHEN `f` >= 10 THEN 1
-  ELSE NULL
-END AS Float64)"""
+#         expected2 = """\
+# CAST(CASE
+#   WHEN `f` < 10 THEN 0
+#   WHEN `f` >= 10 THEN 1
+#   ELSE NULL
+# END AS Float64)"""
 
-        self._check_expr_cases([(expr, expected),
-                                (expr2, expected2)])
+#         self._check_expr_cases([(expr, expected),
+#                                 (expr2, expected2)])
 
-    def test_bucket_assign_labels(self):
-        buckets = [0, 10, 25, 50]
-        bucket = self.table.f.bucket(buckets, include_under=True)
+#     def test_bucket_assign_labels(self):
+#         buckets = [0, 10, 25, 50]
+#         bucket = self.table.f.bucket(buckets, include_under=True)
 
-        size = self.table.group_by(bucket.name('tier')).size()
-        labelled = size.tier.label(['Under 0', '0 to 10',
-                                    '10 to 25', '25 to 50'],
-                                   nulls='error').name('tier2')
-        expr = size[labelled, size['count']]
+#         size = self.table.group_by(bucket.name('tier')).size()
+#         labelled = size.tier.label(['Under 0', '0 to 10',
+#                                     '10 to 25', '25 to 50'],
+#                                    nulls='error').name('tier2')
+#         expr = size[labelled, size['count']]
 
-        expected = """\
-SELECT
-  CASE `tier`
-    WHEN 0 THEN 'Under 0'
-    WHEN 1 THEN '0 to 10'
-    WHEN 2 THEN '10 to 25'
-    WHEN 3 THEN '25 to 50'
-    ELSE 'error'
-  END AS `tier2`, `count`
-FROM (
-  SELECT
-    CASE
-      WHEN `f` < 0 THEN 0
-      WHEN (`f` >= 0) AND (`f` < 10) THEN 1
-      WHEN (`f` >= 10) AND (`f` < 25) THEN 2
-      WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
-      ELSE NULL
-    END AS `tier`, count(*) AS `count`
-  FROM alltypes
-  GROUP BY 1
-) t0"""
+#         expected = """\
+# SELECT
+#   CASE `tier`
+#     WHEN 0 THEN 'Under 0'
+#     WHEN 1 THEN '0 to 10'
+#     WHEN 2 THEN '10 to 25'
+#     WHEN 3 THEN '25 to 50'
+#     ELSE 'error'
+#   END AS `tier2`, `count`
+# FROM (
+#   SELECT
+#     CASE
+#       WHEN `f` < 0 THEN 0
+#       WHEN (`f` >= 0) AND (`f` < 10) THEN 1
+#       WHEN (`f` >= 10) AND (`f` < 25) THEN 2
+#       WHEN (`f` >= 25) AND (`f` <= 50) THEN 3
+#       ELSE NULL
+#     END AS `tier`, count(*) AS `count`
+#   FROM alltypes
+#   GROUP BY 1
+# ) t0"""
 
-        result = to_sql(expr)
+#         result = to_sql(expr)
 
-        assert result == expected
+#         assert result == expected
 
-        self.assertRaises(ValueError, size.tier.label, ['a', 'b', 'c'])
-        self.assertRaises(ValueError, size.tier.label,
-                          ['a', 'b', 'c', 'd', 'e'])
+#         self.assertRaises(ValueError, size.tier.label, ['a', 'b', 'c'])
+#         self.assertRaises(ValueError, size.tier.label,
+#                           ['a', 'b', 'c', 'd', 'e'])
 
 
 class TestInNotIn(unittest.TestCase, ExprSQLTest):
@@ -707,27 +708,28 @@ class TestAnalyticFunctions(unittest.TestCase, ExprSQLTest):
         self.con = MockConnection()
         self.table = self.con.table('functional_alltypes')
 
-    def test_analytic_exprs(self):
-        t = self.table
+    # TODO: clickhouse any, anyLast etc.
+    # def test_analytic_exprs(self):
+    #     t = self.table
 
-        w = ibis.window(order_by=t.float_col)
+    #     w = ibis.window(order_by=t.float_col)
 
-        cases = [
-            (ibis.row_number().over(w),
-             '(row_number() OVER (ORDER BY `float_col`) - 1)'),
-            (t.string_col.lag(), 'lag(`string_col`)'),
-            (t.string_col.lag(2), 'lag(`string_col`, 2)'),
-            (t.string_col.lag(default=0), 'lag(`string_col`, 1, 0)'),
-            (t.string_col.lead(), 'lead(`string_col`)'),
-            (t.string_col.lead(2), 'lead(`string_col`, 2)'),
-            (t.string_col.lead(default=0), 'lead(`string_col`, 1, 0)'),
-            (t.double_col.first(), 'first_value(`double_col`)'),
-            (t.double_col.last(), 'last_value(`double_col`)'),
-            # (t.double_col.nth(4), 'first_value(lag(double_col, 4 - 1))')
-            (t.double_col.ntile(3), 'ntile(3)'),
-            (t.double_col.percent_rank(), 'percent_rank()'),
-        ]
-        self._check_expr_cases(cases)
+    #     cases = [
+    #         (ibis.row_number().over(w),
+    #          '(row_number() OVER (ORDER BY `float_col`) - 1)'),
+    #         (t.string_col.lag(), 'lag(`string_col`)'),
+    #         (t.string_col.lag(2), 'lag(`string_col`, 2)'),
+    #         (t.string_col.lag(default=0), 'lag(`string_col`, 1, 0)'),
+    #         (t.string_col.lead(), 'lead(`string_col`)'),
+    #         (t.string_col.lead(2), 'lead(`string_col`, 2)'),
+    #         (t.string_col.lead(default=0), 'lead(`string_col`, 1, 0)'),
+    #         (t.double_col.first(), 'first_value(`double_col`)'),
+    #         (t.double_col.last(), 'last_value(`double_col`)'),
+    #         # (t.double_col.nth(4), 'first_value(lag(double_col, 4 - 1))')
+    #         (t.double_col.ntile(3), 'ntile(3)'),
+    #         (t.double_col.percent_rank(), 'percent_rank()'),
+    #     ]
+    #     self._check_expr_cases(cases)
 
 
 class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
@@ -1557,8 +1559,7 @@ def test_where_with_timestamp():
     )
     result = ibis.clickhouse.compile(expr)
     expected = """\
-SELECT `uuid`,
-       min(CASE WHEN `search_level` = 1 THEN `ts` ELSE NULL END) AS `min_date`
+SELECT `uuid`, minIf(`ts`, `search_level` = 1) AS `min_date`
 FROM t
 GROUP BY 1"""
     assert result == expected

@@ -441,8 +441,12 @@ def _cast(translator, expr):
     if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
         return arg_formatted
     else:
-        sql_type = _sql_type_names[target_type.name.lower()]
+        sql_type = _type_to_sql_string(target_type)
         return 'CAST({0!s} AS {1!s})'.format(arg_formatted, sql_type)
+
+
+def _type_to_sql_string(tval):
+    return _sql_type_names[tval.name.lower()]
 
 
 def _between(translator, expr):
@@ -531,13 +535,12 @@ def unary(func_name):
 
 
 def _reduction_format(translator, func_name, arg, where):
+    arg = translator.translate(arg)
     if where is not None:
-        case = where.ifelse(arg, ibis.NA)
-        arg = translator.translate(case)
+        cond = translator.translate(where)
+        return '{0!s}If({1!s}, {2})'.format(func_name, arg, cond)
     else:
-        arg = translator.translate(arg)
-
-    return '{0!s}({1!s})'.format(func_name, arg)
+        return '{0!s}({1!s})'.format(func_name, arg)
 
 
 def _reduction(func_name):
@@ -677,6 +680,10 @@ class CaseFormatter(object):
         self.base = base
         self.cases = cases
         self.results = results
+
+        if default.equals(ir.null()):
+            raise TypeError('Null is not supported, default '
+                            'value must be explicitly defined!')
         self.default = default
 
         # HACK

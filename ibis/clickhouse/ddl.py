@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import re
-import json
-
 import six
 
 from ibis.sql.compiler import DDL
