@@ -3,7 +3,7 @@ import unittest
 import pytest
 
 import pandas as pd
-# import pandas.util.testing as tm
+import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.types as ir
@@ -1084,24 +1084,24 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
             result = self.con.execute(expr)
             assert result == expected, to_sql(expr)
 
-#     def test_int_builtins(self):
-#         i8 = L(50)
-#         i32 = L(50000)
+    def test_int_builtins(self):
+        i8 = L(50)
+        i32 = L(50000)
 
-#         mod_cases = [
-#             (i8 % 5, 0),
-#             (i32 % 10, 0),
-#             (250 % i8, 0),
-#         ]
+        mod_cases = [
+            (i8 % 5, 0),
+            (i32 % 10, 0),
+            (250 % i8, 0),
+        ]
 
-#         nullif_cases = [
-#             (5 / i8.nullif(0), 0.1),
-#             (5 / i8.nullif(i32), 0.1),
-#             (5 / i32.nullif(0), 0.0001),
-#             (i32.zeroifnull(), 50000),
-#         ]
+        # nullif_cases = [
+        #     (5 / i8.nullif(0), 0.1),
+        #     (5 / i8.nullif(i32), 0.1),
+        #     (5 / i32.nullif(0), 0.0001),
+        #     (i32.zeroifnull(), 50000),
+        # ]
 
-#         self.assert_cases_equality(mod_cases + nullif_cases)
+        self.assert_cases_equality(mod_cases)
 
     def test_column_types(self):
         df = self.alltypes.execute()
@@ -1231,10 +1231,10 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
 
         expr.execute()
 
-#     def test_histogram_value_counts(self):
-#         t = self.alltypes
-#         expr = t.double_col.histogram(10).value_counts()
-#         expr.execute()
+    # def test_histogram_value_counts(self):
+    #     t = self.alltypes
+    #     expr = t.double_col.histogram(10).value_counts()
+    #     expr.execute()
 
     def test_casted_expr_value_counts(self):
         expr = self.alltypes.string_col.cast('double').value_counts()
@@ -1294,104 +1294,104 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
 #         projection = table[proj_exprs].limit(10)
 #         projection.execute()
 
-#     def test_timestamp_scalar_in_filter(self):
-#         # #310
-#         table = self.alltypes
+    # def test_timestamp_scalar_in_filter(self):
+    #     # #310
+    #     table = self.alltypes
 
-#         expr = (table.filter([table.timestamp_col <
-#                              (ibis.timestamp('2010-01-01') + ibis.month(3)),
-#                              table.timestamp_col < (ibis.now() +
-#                                                     ibis.day(10))
-#                               ])
-#                 .count())
-#         expr.execute()
+    #     expr = (table.filter([table.timestamp_col <
+    #                          (ibis.timestamp('2010-01-01') + ibis.month(3)),
+    #                          table.timestamp_col < (ibis.now() +
+    #                                                 ibis.day(10))
+    #                           ])
+    #             .count())
+    #     expr.execute()
 
-#     def test_aggregations(self):
-#         table = self.alltypes.limit(100)
+    def test_aggregations(self):
+        table = self.alltypes.limit(100)
 
-#         d = table.double_col
-#         s = table.string_col
+        d = table.double_col
+        # s = table.string_col
 
-#         cond = table.string_col.isin(['1', '7'])
+        cond = table.string_col.isin(['1', '7'])
 
-#         exprs = [
-#             table.bool_col.count(),
-#             d.sum(),
-#             d.mean(),
-#             d.min(),
-#             d.max(),
-#             s.approx_nunique(),
-#             d.approx_median(),
-#             s.group_concat(),
+        exprs = [
+            table.bool_col.count(),
+            d.sum(),
+            d.mean(),
+            d.min(),
+            d.max(),
+            # s.approx_nunique(),
+            # d.approx_median(),
+            # s.group_concat(),
 
-#             d.std(),
-#             d.std(how='pop'),
-#             d.var(),
-#             d.var(how='pop'),
+            # d.std(),
+            # d.std(how='pop'),
+            # d.var(),
+            # d.var(how='pop'),
 
-#             table.bool_col.any(),
-#             table.bool_col.notany(),
-#             -table.bool_col.any(),
+            # table.bool_col.any(),
+            # table.bool_col.notany(),
+            # -table.bool_col.any(),
 
-#             table.bool_col.all(),
-#             table.bool_col.notall(),
-#             -table.bool_col.all(),
+            # table.bool_col.all(),
+            # table.bool_col.notall(),
+            # -table.bool_col.all(),
 
-#             table.bool_col.count(where=cond),
-#             d.sum(where=cond),
-#             d.mean(where=cond),
-#             d.min(where=cond),
-#             d.max(where=cond),
-#             d.std(where=cond),
-#             d.var(where=cond),
-#         ]
+            table.bool_col.count(where=cond),
+            d.sum(where=cond),
+            d.mean(where=cond),
+            d.min(where=cond),
+            d.max(where=cond),
+            # d.std(where=cond),
+            # d.var(where=cond),
+        ]
 
-#         metrics = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
+        metrics = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
 
-#         agged_table = table.aggregate(metrics)
-#         agged_table.execute()
+        agged_table = table.aggregate(metrics)
+        agged_table.execute()
 
-#     def test_analytic_functions(self):
-#         t = self.alltypes.limit(1000)
+    # def test_analytic_functions(self):
+    #     t = self.alltypes.limit(1000)
 
-#         g = t.group_by('string_col').order_by('double_col')
-#         f = t.float_col
+    #     g = t.group_by('string_col').order_by('double_col')
+    #     f = t.float_col
 
-#         exprs = [
-#             f.lag(),
-#             f.lead(),
-#             f.rank(),
-#             f.dense_rank(),
-#             f.percent_rank(),
-#             f.ntile(buckets=7),
+    #     exprs = [
+    #         # f.lag(),
+    #         # f.lead(),
+    #         # f.rank(),
+    #         # f.dense_rank(),
+    #         # f.percent_rank(),
+    #         # f.ntile(buckets=7),
 
-#             f.first(),
-#             f.last(),
+    #         # f.first(),
+    #         # f.last(),
 
-#             f.first().over(ibis.window(preceding=10)),
-#             f.first().over(ibis.window(following=10)),
+    #         # f.first().over(ibis.window(preceding=10)),
+    #         # f.first().over(ibis.window(following=10)),
 
-#             ibis.row_number(),
-#             f.cumsum(),
-#             f.cummean(),
-#             f.cummin(),
-#             f.cummax(),
+    #         # ibis.row_number(),
+    #         # f.cumsum(),
+    #         # f.cummean(),
+    #         # f.cummin(),
+    #         # f.cummax(),
 
-#             # boolean cumulative reductions
-#             (f == 0).cumany(),
-#             (f == 0).cumall(),
+    #         # # boolean cumulative reductions
+    #         # (f == 0).cumany(),
+    #         # (f == 0).cumall(),
 
-#             f.sum(),
-#             f.mean(),
-#             f.min(),
-#             f.max()
-#         ]
+    #         f.sum(),
+    #         # f.mean(),
+    #         # f.min(),
+    #         # f.max()
+    #     ]
 
-#         proj_exprs = [expr.name('e%d' % i)
-#                       for i, expr in enumerate(exprs)]
+    #     proj_exprs = [expr.name('e%d' % i)
+    #                   for i, expr in enumerate(exprs)]
 
-#         proj_table = g.mutate(proj_exprs)
-#         proj_table.execute()
+    #     proj_table = g.mutate(proj_exprs)
+    #     proj_table.execute()
 
 #     def test_anti_join_self_reference_works(self):
 #         case = self._case_self_reference_limit_exists()
@@ -1477,25 +1477,25 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
 #         assert isinstance(t.varchar_col, api.StringColumn)
 #         assert isinstance(t.char_col, api.StringColumn)
 
-#     def test_unions_with_ctes(self):
-#         t = self.con.table('functional_alltypes')
+    # def test_unions_with_ctes(self):
+    #     t = self.con.table('functional_alltypes')
 
-#         expr1 = (t.group_by(['tinyint_col', 'string_col'])
-#                  .aggregate(t.double_col.sum().name('metric')))
-#         expr2 = expr1.view()
+    #     expr1 = (t.group_by(['tinyint_col', 'string_col'])
+    #              .aggregate(t.double_col.sum().name('metric')))
+    #     expr2 = expr1.view()
 
-#         join1 = (expr1.join(expr2, expr1.string_col == expr2.string_col)
-#                  [[expr1]])
-#         join2 = join1.view()
+    #     join1 = (expr1.join(expr2, expr1.string_col == expr2.string_col)
+    #              [[expr1]])
+    #     join2 = join1.view()
 
-#         expr = join1.union(join2)
-#         self.con.explain(expr)
+    #     expr = join1.union(join2)
+    #     self.con.explain(expr)
 
-#     def test_head(self):
-#         t = self.con.table('functional_alltypes')
-#         result = t.head().execute()
-#         expected = t.limit(5).execute()
-#         tm.assert_frame_equal(result, expected)
+    def test_head(self):
+        t = self.con.table('functional_alltypes')
+        result = t.head().execute()
+        expected = t.limit(5).execute()
+        tm.assert_frame_equal(result, expected)
 
 #     def test_identical_to(self):
 #         cases = [
@@ -1512,12 +1512,12 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
 #             result = con.execute(expr)
 #             assert result == expected
 
-#     def test_not(self):
-#         t = self.con.table('functional_alltypes').limit(10)
-#         expr = t.projection([(~t.double_col.isnull()).name('double_col')])
-#         result = expr.execute().double_col
-#         expected = ~t.execute().double_col.isnull()
-#         tm.assert_series_equal(result, expected)
+    # def test_not(self):
+    #     t = self.con.table('functional_alltypes').limit(10)
+    #     expr = t.projection([(~t.double_col.isnull()).name('double_col')])
+    #     result = expr.execute().double_col
+    #     expected = ~t.execute().double_col.isnull()
+    #     tm.assert_series_equal(result, expected)
 
 
 def test_where_with_timestamp():
@@ -1536,7 +1536,7 @@ def test_where_with_timestamp():
     expected = """\
 SELECT `uuid`, minIf(`ts`, `search_level` = 1) AS `min_date`
 FROM t
-GROUP BY 1"""
+GROUP BY `uuid`"""
     assert result == expected
 
 
@@ -1570,7 +1570,6 @@ GROUP BY 1"""
 #     assert result == expected
 
 
-@pytest.mark.skip
 def test_named_from_filter_groupby():
     t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
     gb = t.filter(t.value == 42).groupby(t.key)
