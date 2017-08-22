@@ -4,6 +4,10 @@ environment: &environment
   - IBIS_TEST_POSTGRES_DB: ibis_testing
   - IBIS_POSTGRES_USER: ubuntu
   - IBIS_POSTGRES_PASS: ubuntu
+  - IBIS_TEST_CLICKHOUSE_DB: ibis_testing
+  - IBIS_CLICKHOUSE_USER: default
+  - IBIS_CLICKHOUSE_HOST: localhost
+  - IBIS_CLICKHOUSE_PASS: ''
 
   - DATA_URL: https://storage.googleapis.com/ibis-ci-data
 
@@ -47,6 +51,13 @@ python_test_steps: &python_test_steps
         --database "$IBIS_TEST_POSTGRES_DB" \
         --data-directory "$DATA_DIR" \
         --script ci/postgresql_load.sql \
+        functional_alltypes diamonds awards_players batting
+
+  - run: |
+      ci/datamgr.py clickhouse \
+        --database "$IBIS_TEST_POSTGRES_DB" \
+        --data-directory "$DATA_DIR" \
+        --script ci/clickhouse_load.sql \
         functional_alltypes diamonds awards_players batting
 
   - run: test_data_admin.py load --data --data-dir "$DATA_DIR"

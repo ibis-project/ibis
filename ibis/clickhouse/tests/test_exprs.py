@@ -15,8 +15,7 @@ from ibis.expr.datatypes import Category
 from ibis.compat import StringIO, Decimal
 from ibis.expr.tests.mocks import MockConnection
 
-# pytest.importorskip('sqlalchemy')
-# pytest.importorskip('clickhouse.dbapi')
+pytest.importorskip('clickhouse_driver')
 
 from ibis.clickhouse.compiler import ClickhouseExprTranslator, to_sql  # noqa: E402
 from ibis.clickhouse.compiler import ClickhouseContext  # noqa: E402
