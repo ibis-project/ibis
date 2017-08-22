@@ -43,7 +43,7 @@ def schema_dict(schema):
 
 @pytest.fixture
 def table(schema):
-    return ibis.table(schema, name='schema')
+    return ibis.table(schema, name='table')
 
 
 @pytest.fixture(params=list('abcdh'))

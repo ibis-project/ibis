@@ -31,20 +31,20 @@ import ibis.common as com
 import ibis.util as util
 
 
-def build_ast(expr, context=None):
-    builder = ImpalaQueryBuilder(expr, context=context)
+def build_ast(expr, context=None, params=None):
+    builder = ImpalaQueryBuilder(expr, context=context, params=params)
     return builder.get_result()
 
 
-def _get_query(expr, context):
-    ast = build_ast(expr, context)
+def _get_query(expr, context, params=None):
+    ast = build_ast(expr, context, params=params)
     query = ast.queries[0]
 
     return query
 
 
-def to_sql(expr, context=None):
-    query = _get_query(expr, context)
+def to_sql(expr, context=None, params=None):
+    query = _get_query(expr, context, params=params)
     return query.compile()
 
 
@@ -113,28 +113,33 @@ class ImpalaSelect(comp.Select):
         order_frag = self.format_postamble()
 
         # Glue together the query fragments and return
-        query = _join_not_none('\n', [with_frag, select_frag, from_frag,
-                                      where_frag, groupby_frag, order_frag])
-
+        query = '\n'.join(filter(
+            None,
+            [
+                with_frag,
+                select_frag,
+                from_frag,
+                where_frag,
+                groupby_frag,
+                order_frag,
+            ]
+        ))
         return query
 
     def format_subqueries(self):
-        if len(self.subqueries) == 0:
+        if not self.subqueries:
             return
 
         context = self.context
 
-        buf = StringIO()
-        buf.write('WITH ')
+        buf = []
 
         for i, expr in enumerate(self.subqueries):
-            if i > 0:
-                buf.write(',\n')
             formatted = util.indent(context.get_compiled_expr(expr), 2)
             alias = context.get_ref(expr)
-            buf.write('{0} AS (\n{1}\n)'.format(alias, formatted))
+            buf.append('{} AS (\n{}\n)'.format(alias, formatted))
 
-        return buf.getvalue()
+        return 'WITH {}'.format(',\n'.join(buf))
 
     def format_select_set(self):
         # TODO:
@@ -225,7 +230,7 @@ class ImpalaSelect(comp.Select):
         return '\n'.join(lines)
 
     def format_where(self):
-        if len(self.where) == 0:
+        if not self.where:
             return None
 
         buf = StringIO()
@@ -275,11 +280,6 @@ class ImpalaSelect(comp.Select):
     @property
     def translator(self):
         return ImpalaExprTranslator
-
-
-def _join_not_none(sep, pieces):
-    pieces = [x for x in pieces if x is not None]
-    return sep.join(pieces)
 
 
 class _TableSetFormatter(comp.TableSetFormatter):

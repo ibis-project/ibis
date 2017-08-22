@@ -8,6 +8,8 @@ import six
 
 import numpy as np
 
+import toolz
+
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 
@@ -65,7 +67,7 @@ _VALID_INPUT_TYPES = (ir.Expr, dt.DataType, type(None)) + scalar_types
 
 
 @execute.register(ir.Expr, dict)
-def execute_with_scope(expr, scope, **kwargs):
+def execute_with_scope(expr, scope, context=None, **kwargs):
     """Execute an expression `expr`, with data provided in `scope`.
 
     Parameters
@@ -87,6 +89,9 @@ def execute_with_scope(expr, scope, **kwargs):
     if op in scope:
         return scope[op]
 
+    if context is None:
+        context = ctx.Summarize()
+
     try:
         computed_args = [scope[t] for t in op.root_tables()]
     except KeyError:
@@ -95,7 +100,7 @@ def execute_with_scope(expr, scope, **kwargs):
         try:
             # special case: we have a definition of execute_first that matches
             # our current operation and data leaves
-            return execute_first(op, *computed_args, **kwargs)
+            return execute_first(op, *computed_args, context=context, **kwargs)
         except NotImplementedError:
             pass
 
@@ -103,16 +108,22 @@ def execute_with_scope(expr, scope, **kwargs):
 
     # recursively compute the op's arguments
     computed_args = [
-        execute(arg, scope, **kwargs) if hasattr(arg, 'op') else arg
+        execute(arg, scope, context=context, **kwargs)
+        if hasattr(arg, 'op') else arg
         for arg in args if isinstance(arg, _VALID_INPUT_TYPES)
     ]
 
     # Compute our op, with its computed arguments
-    return execute_node(op, *computed_args, scope=scope, **kwargs)
+    return execute_node(
+        op, *computed_args,
+        scope=scope,
+        context=context,
+        **kwargs
+    )
 
 
 @execute.register(ir.Expr)
-def execute_without_scope(expr):
+def execute_without_scope(expr, params=None):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
 
@@ -138,5 +149,15 @@ def execute_without_scope(expr):
             'backend'
         )
 
+    factory = type(scope)
+    new_scope = toolz.merge(
+        scope,
+        {
+            k.op() if hasattr(k, 'op') else k: v
+            for k, v in (params or factory()).items()
+        },
+        factory=factory
+    )
+
     # By default, our aggregate functions are N -> 1
-    return execute(expr, scope, context=ctx.Summarize())
+    return execute(expr, new_scope, context=ctx.Summarize())

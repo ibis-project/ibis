@@ -345,19 +345,19 @@ class MockConnection(SQLClient):
         name = name.replace('`', '')
         return Schema.from_tuples(self._tables[name])
 
-    def _build_ast(self, expr):
+    def _build_ast(self, expr, params=None):
         from ibis.impala.compiler import build_ast
-        return build_ast(expr)
+        return build_ast(expr, params=params)
 
-    def execute(self, expr, limit=None, async=False):
+    def execute(self, expr, limit=None, async=False, params=None):
         if async:
             raise NotImplementedError
-        ast = self._build_ast_ensure_limit(expr, limit)
+        ast = self._build_ast_ensure_limit(expr, limit, params=params)
         for query in ast.queries:
             self.executed_queries.append(query.compile())
         return None
 
-    def compile(self, expr, limit=None):
-        ast = self._build_ast_ensure_limit(expr, limit)
+    def compile(self, expr, limit=None, params=None):
+        ast = self._build_ast_ensure_limit(expr, limit, params=params)
         queries = [q.compile() for q in ast.queries]
         return queries[0] if len(queries) == 1 else queries

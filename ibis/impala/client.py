@@ -479,8 +479,8 @@ class ImpalaClient(SQLClient):
 
         self._ensure_temp_db_exists()
 
-    def _build_ast(self, expr):
-        return build_ast(expr)
+    def _build_ast(self, expr, params=None):
+        return build_ast(expr, params=params)
 
     def _get_hdfs(self):
         if self._hdfs is None:

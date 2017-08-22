@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import datetime
-import webbrowser
-import warnings
+import itertools
+import os
 import sys
+import warnings
+import webbrowser
 
 import six
 import toolz
@@ -27,18 +28,6 @@ import ibis.compat as compat
 import ibis.config as config
 import ibis.util as util
 import ibis.expr.datatypes as dt
-
-
-class Parameter(object):
-
-    """
-    Placeholder, to be implemented
-    """
-
-    pass
-
-
-# ---------------------------------------------------------------------
 
 
 class Expr(object):
@@ -184,7 +173,7 @@ class Expr(object):
     def _can_implicit_cast(self, arg):
         return False
 
-    def execute(self, limit='default', async=False):
+    def execute(self, limit='default', async=False, params=None):
         """
         If this expression is based on physical tables in a database backend,
         execute it against that backend.
@@ -201,9 +190,9 @@ class Expr(object):
           Result of compiling expression and executing in backend
         """
         from ibis.client import execute
-        return execute(self, limit=limit, async=async)
+        return execute(self, limit=limit, async=async, params=params)
 
-    def compile(self, limit=None):
+    def compile(self, limit=None, params=None):
         """
         Compile expression to whatever execution target, to verify
 
@@ -213,7 +202,7 @@ class Expr(object):
            query representation or list thereof
         """
         from ibis.client import compile
-        return compile(self, limit=limit)
+        return compile(self, limit=limit, params=params)
 
     def verify(self):
         """
@@ -570,6 +559,69 @@ class Literal(ValueOp):
 
     def root_tables(self):
         return []
+
+
+_parameter_counter = itertools.count()
+
+
+def _parameter_name():
+    return 'param[{:d}]'.format(next(_parameter_counter))
+
+
+class ScalarParameter(ValueOp):
+
+    def __init__(self, type, name=None):
+        super(ScalarParameter, self).__init__(type)
+        self.name = name
+        self.output_type = type.scalar_type
+
+    def __repr__(self):
+        return '{}(name={!r}, type={})'.format(
+            type(self).__name__, self.name, self.type
+        )
+
+    def equals(self, other, cache=None):
+        return self.name == other.name and self.type.equals(
+            other.type, cache=cache
+        )
+
+    def root_tables(self):
+        return []
+
+    def resolve_name(self):
+        return self.name
+
+
+def param(type, name=None):
+    """Create a parameter of a particular type to be defined just before
+    execution.
+
+    Parameters
+    ----------
+    type : dt.DataType
+        The type of the unbound parameter, e.g., double, int64, date, etc.
+    name : str, optional
+        The name of the parameter
+
+    Returns
+    -------
+    ScalarExpr
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.expr.datatypes as dt
+    >>> start = ibis.param(dt.date)
+    >>> end = ibis.param(dt.date)
+    >>> schema = [('timestamp_col', 'timestamp'), ('value', 'double')]
+    >>> t = ibis.table(schema)
+    >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
+    >>> expr = t.filter(predicates).value.sum()
+    """
+    if name is None:
+        name = _parameter_name()
+    expr = ScalarParameter(dt.validate_type(type), name=name).to_expr()
+    return expr.name(name)
 
 
 def distinct_roots(*args):
