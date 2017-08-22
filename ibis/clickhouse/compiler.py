@@ -420,16 +420,16 @@ class ClickhouseUnion(comp.Union):
 # Scalar and array expression formatting
 
 _sql_type_names = {
-    'int8': 'tinyint',
-    'int16': 'smallint',
-    'int32': 'int',
-    'int64': 'bigint',
-    'float': 'float',
-    'double': 'double',
-    'string': 'string',
-    'boolean': 'boolean',
-    'timestamp': 'timestamp',
-    'decimal': 'decimal',
+    'int8': 'Int8',
+    'int16': 'Int16',
+    'int32': 'Int32',
+    'int64': 'Int64',
+    'float': 'Float32',
+    'double': 'Float64',
+    'string': 'String',
+    'boolean': 'UInt8',
+    'timestamp': 'DateTime',
+    'decimal': 'UInt64',  # see Clickhouse issue #253
 }
 
 
@@ -714,18 +714,6 @@ def fixed_arity(func_name, arity):
     return formatter
 
 
-def _ifnull_workaround(translator, expr):
-    op = expr.op()
-    a, b = op.args
-
-    # work around per #345, #360
-    if (isinstance(a, ir.DecimalValue) and
-            isinstance(b, ir.IntegerValue)):
-        b = b.cast(a.type())
-
-    return _format_call(translator, 'isnull', a, b)
-
-
 def _format_call(translator, func, *args):
     formatted_args = []
     for arg in args:
@@ -794,7 +782,7 @@ def _need_parenthesize_args(op):
 
 def _boolean_literal_format(expr):
     value = expr.op().value
-    return 'TRUE' if value else 'FALSE'
+    return '1' if value else '0'
 
 
 def _number_literal_format(expr):
@@ -971,17 +959,6 @@ def _table_column(translator, expr):
     return quoted_name
 
 
-def _extract_field(sql_attr):
-    def extract_field_formatter(translator, expr):
-        op = expr.op()
-        arg = translator.translate(op.args[0])
-
-        # This is pre-2.0 Clickhouse-style, which did not used to support the
-        # SQL-99 format extract($FIELD from expr)
-        return "extract({0!s}, '{1!s}')".format(arg, sql_attr)
-    return extract_field_formatter
-
-
 def _truncate(translator, expr):
     op = expr.op()
 
@@ -1006,17 +983,12 @@ def _timestamp_from_unix(translator, expr):
     val, unit = op.args
 
     if unit == 'ms':
-        val = (val / 1000).cast('int32')
+        raise ValueError('`ms` unit is not supported!')
     elif unit == 'us':
-        val = (val / 1000000).cast('int32')
+        raise ValueError('`us` unit is not supported!')
 
-    arg = _from_unixtime(translator, val)
-    return 'CAST({0} AS timestamp)'.format(arg)
-
-
-def _from_unixtime(translator, expr):
-    arg = translator.translate(expr)
-    return 'from_unixtime({0}, "yyyy-MM-dd HH:mm:ss")'.format(arg)
+    arg = translator.translate(val)
+    return 'toUInt32({0})'.format(arg)
 
 
 def varargs(func_name):
@@ -1112,6 +1084,7 @@ def _round(translator, expr):
         return 'round({0})'.format(arg_formatted)
 
 
+# TODO there are a lot of hash functions in clickhouse
 def _hash(translator, expr):
     op = expr.op()
     arg, how = op.args
@@ -1129,11 +1102,15 @@ def _log(translator, expr):
     arg, base = op.args
     arg_formatted = translator.translate(arg)
 
+    # I don't know how to check base value properly
     if base is None:
-        return 'ln({0})'.format(arg_formatted)
+        return 'log({0})'.format(arg_formatted)
+    elif base._arg.value == 2:
+        return 'log2({0})'.format(arg_formatted)
+    elif base._arg.value == 10:
+        return 'log10({0})'.format(arg_formatted)
     else:
-        return 'log({0}, {1})'.format(arg_formatted,
-                                      translator.translate(base))
+        raise ValueError('Base {} for logarithm not supported!'.format(base))
 
 
 def _count_distinct(translator, expr):
@@ -1178,7 +1155,7 @@ def _value_list(translator, expr):
 def _identical_to(translator, expr):
     op = expr.op()
     if op.args[0].equals(op.args[1]):
-        return 'TRUE'
+        return '1'
 
     left, right = map(translator.translate, op.args)
     return '{left} IS NOT DISTINCT FROM {right}'.format(
@@ -1224,19 +1201,19 @@ _binary_infix_ops = {
 
 _operation_registry = {
     # Unary operations
-    ops.NotNull: _not_null,
-    ops.IsNull: _is_null,
+    # ops.NotNull: _not_null,
+    # ops.IsNull: _is_null,
     ops.Negate: _negate,
     ops.Not: _not,
 
-    ops.IfNull: _ifnull_workaround,
-    ops.NullIf: fixed_arity('nullif', 2),
+    # ops.IfNull: _ifnull_workaround,
+    # ops.NullIf: fixed_arity('nullif', 2),
 
-    ops.ZeroIfNull: unary('zeroifnull'),
-    ops.NullIfZero: unary('nullifzero'),
+    # ops.ZeroIfNull: unary('zeroifnull'),
+    # ops.NullIfZero: unary('nullifzero'),
 
     ops.Abs: unary('abs'),
-    ops.BaseConvert: fixed_arity('conv', 3),
+    # ops.BaseConvert: fixed_arity('conv', 3),
     ops.Ceil: unary('ceil'),
     ops.Floor: unary('floor'),
     ops.Exp: unary('exp'),
@@ -1248,16 +1225,16 @@ _operation_registry = {
     ops.Hash: _hash,
 
     ops.Log: _log,
-    ops.Ln: unary('ln'),
+    ops.Ln: unary('log'),
     ops.Log2: unary('log2'),
     ops.Log10: unary('log10'),
 
-    ops.DecimalPrecision: unary('precision'),
-    ops.DecimalScale: unary('scale'),
+    # ops.DecimalPrecision: unary('precision'),
+    # ops.DecimalScale: unary('scale'),
 
     # Unary aggregates
-    ops.CMSMedian: _reduction('appx_median'),
-    ops.HLLCardinality: _reduction('ndv'),
+    # ops.CMSMedian: _reduction('appx_median'),
+    # ops.HLLCardinality: _reduction('ndv'),
     ops.Mean: _reduction('avg'),
     ops.Sum: _reduction('sum'),
     ops.Max: _reduction('max'),
@@ -1298,13 +1275,12 @@ _operation_registry = {
 
     # Timestamp operations
     ops.TimestampNow: lambda *args: 'now()',
-    ops.ExtractYear: _extract_field('year'),
-    ops.ExtractMonth: _extract_field('month'),
-    ops.ExtractDay: _extract_field('day'),
-    ops.ExtractHour: _extract_field('hour'),
-    ops.ExtractMinute: _extract_field('minute'),
-    ops.ExtractSecond: _extract_field('second'),
-    ops.ExtractMillisecond: _extract_field('millisecond'),
+    ops.ExtractYear: unary('toYear'),
+    ops.ExtractMonth: unary('toMonth'),
+    ops.ExtractDay: unary('toDay'),
+    ops.ExtractHour: unary('toHour'),
+    ops.ExtractMinute: unary('toMinute'),
+    ops.ExtractSecond: unary('toSecond'),
     ops.Truncate: _truncate,
 
     # Other operations

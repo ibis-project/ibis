@@ -39,7 +39,8 @@ class ExprSQLTest(object):
             assert result == expected
 
     def _translate(self, expr, named=False, context=None):
-        translator = ClickhouseExprTranslator(expr, context=context, named=named)
+        translator = ClickhouseExprTranslator(expr, context=context,
+                                              named=named)
         return translator.get_result()
 
 
@@ -126,7 +127,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         a, b, g = self.table.get_columns(['a', 'b', 'g'])
 
         cases = [
-            (g.cast('double').name('g_dub'), 'CAST(`g` AS double) AS `g_dub`'),
+            (g.cast('double').name('g_dub'), 'CAST(`g` AS Float64) AS `g_dub`'),
             (g.name('has a space'), '`g` AS `has a space`'),
             (((a - b) * a).name('expr'), '(`a` - `b`) * `a` AS `expr`')
         ]
@@ -162,7 +163,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
         cases = [
             ((a + b) + c, '(`a` + `b`) + `c`'),
-            (a.log() + c, 'ln(`a`) + `c`'),
+            (a.log() + c, 'log(`a`) + `c`'),
             (b + (-(a + c)), '`b` + (-(`a` + `c`))')
         ]
 
@@ -174,42 +175,18 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
-    def test_isnull_notnull(self):
-        cases = [
-            (self.table['g'].isnull(), '`g` IS NULL'),
-            (self.table['a'].notnull(), '`a` IS NOT NULL'),
-            ((self.table['a'] + self.table['b']).isnull(),
-             '`a` + `b` IS NULL')
-        ]
-        self._check_expr_cases(cases)
-
     def test_casts(self):
         a, d, g = self.table.get_columns(['a', 'd', 'g'])
         cases = [
-            (a.cast('int16'), 'CAST(`a` AS smallint)'),
-            (a.cast('int32'), 'CAST(`a` AS int)'),
-            (a.cast('int64'), 'CAST(`a` AS bigint)'),
-            (a.cast('float'), 'CAST(`a` AS float)'),
-            (a.cast('double'), 'CAST(`a` AS double)'),
-            (a.cast('string'), 'CAST(`a` AS string)'),
-            (d.cast('int8'), 'CAST(`d` AS tinyint)'),
-            (g.cast('double'), 'CAST(`g` AS double)'),
-            (g.cast('timestamp'), 'CAST(`g` AS timestamp)')
-        ]
-        self._check_expr_cases(cases)
-
-    def test_misc_conditionals(self):
-        a = self.table.a
-        cases = [
-            (a.nullif(0), 'nullif(`a`, 0)')
-        ]
-        self._check_expr_cases(cases)
-
-    def test_decimal_casts(self):
-        cases = [
-            (L('9.9999999').cast('decimal(38,5)'),
-             "CAST('9.9999999' AS decimal(38,5))"),
-            (self.table.f.cast('decimal(12,2)'), "CAST(`f` AS decimal(12,2))")
+            (a.cast('int16'), 'CAST(`a` AS Int16)'),
+            (a.cast('int32'), 'CAST(`a` AS Int32)'),
+            (a.cast('int64'), 'CAST(`a` AS Int64)'),
+            (a.cast('float'), 'CAST(`a` AS Float32)'),
+            (a.cast('double'), 'CAST(`a` AS Float64)'),
+            (a.cast('string'), 'CAST(`a` AS String)'),
+            (d.cast('int8'), 'CAST(`d` AS Int8)'),
+            (g.cast('double'), 'CAST(`g` AS Float64)'),
+            (g.cast('timestamp'), 'CAST(`g` AS DateTime)')
         ]
         self._check_expr_cases(cases)
 
@@ -223,10 +200,10 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def test_timestamp_extract_field(self):
         fields = ['year', 'month', 'day', 'hour', 'minute',
-                  'second', 'millisecond']
+                  'second']
 
         cases = [(getattr(self.table.i, field)(),
-                  "extract(`i`, '{0}')".format(field))
+                  "to{0}(`i`)".format(field.title()))
                  for field in fields]
         self._check_expr_cases(cases)
 
@@ -237,8 +214,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
         result = to_sql(expr)
         expected = \
-            """SELECT extract(`i`, 'year') AS `year`, extract(`i`, 'month') AS `month`,
-       extract(`i`, 'day') AS `day`
+            """SELECT toYear(`i`) AS `year`, toMonth(`i`) AS `month`, toDay(`i`) AS `day`
 FROM alltypes"""
         assert result == expected
 
@@ -284,17 +260,7 @@ FROM alltypes"""
         col = self.table.c
 
         cases = [
-            (col.to_timestamp(),
-             'CAST(from_unixtime(`c`, "yyyy-MM-dd HH:mm:ss") '
-             'AS timestamp)'),
-            (col.to_timestamp('ms'),
-             'CAST(from_unixtime(CAST(`c` / 1000 AS int), '
-             '"yyyy-MM-dd HH:mm:ss") '
-             'AS timestamp)'),
-            (col.to_timestamp('us'),
-             'CAST(from_unixtime(CAST(`c` / 1000000 AS int), '
-             '"yyyy-MM-dd HH:mm:ss") '
-             'AS timestamp)'),
+            (col.to_timestamp(), 'toUInt32(`c`)')
         ]
         self._check_expr_cases(cases)
 
@@ -339,10 +305,10 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
     def test_numeric_unary_builtins(self):
         # No argument functions
         functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt', 'sign',
-                     ('log', 'ln'),
-                     ('approx_median', 'appx_median'),
-                     ('approx_nunique', 'ndv'),
-                     'ln', 'log2', 'log10', 'nullifzero', 'zeroifnull']
+                     ('log', 'log'),
+                     #('approx_median', 'appx_median'),
+                     #('approx_nunique', 'ndv'),
+                     'log', 'log2', 'log10']
 
         cases = []
         for what in functions:
@@ -359,8 +325,10 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_log_other_bases(self):
+        # TODO assert raises on other bases
         cases = [
-            (self.table.double_col.log(5), 'log(`double_col`, 5)')
+            (self.table.double_col.log(2), 'log2(`double_col`)'),
+            (self.table.double_col.log(10), 'log10(`double_col`)')
         ]
         self._check_expr_cases(cases)
 
@@ -417,18 +385,6 @@ class TestCaseExprs(unittest.TestCase, ExprSQLTest, ExprTestCases):
         self.con = MockConnection()
         self.table = self.con.table('alltypes')
 
-    def test_isnull_1_0(self):
-        expr = self.table.g.isnull().ifelse(1, 0)
-
-        result = self._translate(expr)
-        expected = 'CASE WHEN `g` IS NULL THEN 1 ELSE 0 END'
-        assert result == expected
-
-        # inside some other function
-        result = self._translate(expr.sum())
-        expected = 'sum(CASE WHEN `g` IS NULL THEN 1 ELSE 0 END)'
-        assert result == expected
-
     def test_simple_case(self):
         expr = self._case_simple_case()
         result = self._translate(expr)
@@ -457,30 +413,6 @@ END"""
         expected = "if(`f` > 0, `e`, `a`)"
         assert result == expected
 
-    def test_nullif_ifnull(self):
-        table = self.con.table('tpch_lineitem')
-
-        f = table.l_quantity
-
-        cases = [
-            (f.nullif(f == 0),
-             'nullif(`l_quantity`, `l_quantity` = 0)'),
-            (f.fillna(0),
-             'isnull(`l_quantity`, CAST(0 AS decimal(12,2)))'),
-        ]
-        self._check_expr_cases(cases)
-
-    def test_decimal_fillna_cast_arg(self):
-        table = self.con.table('tpch_lineitem')
-        f = table.l_extendedprice
-
-        cases = [
-            (f.fillna(0),
-             'isnull(`l_extendedprice`, CAST(0 AS decimal(12,2)))'),
-            (f.fillna(0.0), 'isnull(`l_extendedprice`, 0.0)'),
-        ]
-        self._check_expr_cases(cases)
-
     def test_identical_to(self):
         t = self.con.table('functional_alltypes')
         expr = t.tinyint_col.identical_to(t.double_col)
@@ -493,7 +425,7 @@ FROM functional_alltypes"""
     def test_identical_to_special_case(self):
         expr = ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64'))
         result = to_sql(expr)
-        assert result == 'SELECT TRUE AS `tmp`'
+        assert result == 'SELECT 1 AS `tmp`'
 
 
 class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
@@ -647,7 +579,7 @@ CAST(CASE
   WHEN `f` < 10 THEN 0
   WHEN `f` >= 10 THEN 1
   ELSE NULL
-END AS double)"""
+END AS Float64)"""
 
         self._check_expr_cases([(expr, expected),
                                 (expr2, expected2)])
@@ -1633,34 +1565,34 @@ GROUP BY 1"""
     assert result == expected
 
 
-def test_filter_with_analytic():
-    x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
-    with_filter_col = x[x.columns + [ibis.null().name('filter')]]
-    filtered = with_filter_col[with_filter_col['filter'].isnull()]
-    subquery = filtered[filtered.columns]
+# def test_filter_with_analytic():
+#     x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
+#     with_filter_col = x[x.columns + [ibis.null().name('filter')]]
+#     filtered = with_filter_col[with_filter_col['filter'].isnull()]
+#     subquery = filtered[filtered.columns]
 
-    with_analytic = subquery[['col', subquery.count().name('analytic')]]
-    expr = with_analytic[with_analytic.columns]
+#     with_analytic = subquery[['col', subquery.count().name('analytic')]]
+#     expr = with_analytic[with_analytic.columns]
 
-    result = ibis.clickhouse.compile(expr)
-    expected = """\
-SELECT `col`, `analytic`
-FROM (
-  SELECT `col`, count(*) OVER () AS `analytic`
-  FROM (
-    SELECT `col`, `filter`
-    FROM (
-      SELECT *
-      FROM (
-        SELECT `col`, NULL AS `filter`
-        FROM x
-      ) t3
-      WHERE `filter` IS NULL
-    ) t2
-  ) t1
-) t0"""
+#     result = ibis.clickhouse.compile(expr)
+#     expected = """\
+# SELECT `col`, `analytic`
+# FROM (
+#   SELECT `col`, count(*) OVER () AS `analytic`
+#   FROM (
+#     SELECT `col`, `filter`
+#     FROM (
+#       SELECT *
+#       FROM (
+#         SELECT `col`, NULL AS `filter`
+#         FROM x
+#       ) t3
+#       WHERE `filter` IS NULL
+#     ) t2
+#   ) t1
+# ) t0"""
 
-    assert result == expected
+#     assert result == expected
 
 
 def test_named_from_filter_groupby():
