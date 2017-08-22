@@ -58,6 +58,9 @@ class ClickhouseSelectBuilder(comp.SelectBuilder):
     def _select_class(self):
         return ClickhouseSelect
 
+    def _convert_group_by(self, exprs):
+        return exprs
+
 
 class ClickhouseQueryBuilder(comp.QueryBuilder):
 
@@ -212,8 +215,9 @@ class ClickhouseSelect(comp.Select):
 
         lines = []
         if len(self.group_by) > 0:
-            clause = 'GROUP BY {0}'.format(', '.join([
-                str(x + 1) for x in self.group_by]))
+            columns = ['`{0}`'.format(expr.get_name())
+                       for expr in self.group_by]
+            clause = 'GROUP BY {0}'.format(', '.join(columns))
             lines.append(clause)
 
         if len(self.having) > 0:
@@ -1066,7 +1070,7 @@ _operation_registry = {
     ops.Exp: unary('exp'),
     ops.Round: _round,
 
-    ops.Sign: unary('sign'),
+    # ops.Sign: unary('sign'),
     ops.Sqrt: unary('sqrt'),
 
     ops.Hash: _hash,
