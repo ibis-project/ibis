@@ -11,11 +11,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.clickhouse.client import (ClickhouseClient,  # noqa
-                                    #ClickhouseConnection,
-                                    #ClickhouseDatabase,
-                                    #ClickhouseTable
-)
+from ibis.clickhouse.client import ClickhouseClient  # noqa
+# ClickhouseConnection, ClickhouseDatabase, ClickhouseTable
+
 from ibis.config import options
 import ibis.common as com
 
@@ -35,7 +33,8 @@ def compile(expr):
 
 def verify(expr):
     """
-    Determine if expression can be successfully translated to execute on Clickhouse
+    Determine if expression can be successfully translated to execute on
+    Clickhouse
     """
     try:
         compile(expr)

@@ -3,7 +3,7 @@ import unittest
 import pytest
 
 import pandas as pd
-import pandas.util.testing as tm
+# import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.types as ir
@@ -12,12 +12,13 @@ import ibis.expr.api as api
 from ibis import literal as L
 from ibis.expr.datatypes import Category
 
-from ibis.compat import StringIO, Decimal
+from ibis.compat import StringIO  # , Decimal
 from ibis.expr.tests.mocks import MockConnection
 
 pytest.importorskip('clickhouse_driver')
 
-from ibis.clickhouse.compiler import ClickhouseExprTranslator, to_sql  # noqa: E402
+from ibis.clickhouse.compiler import ClickhouseExprTranslator  # noqa: E402
+from ibis.clickhouse.compiler import to_sql  # noqa: E402
 from ibis.clickhouse.compiler import ClickhouseContext  # noqa: E402
 from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
 from ibis.clickhouse.tests.common import ClickhouseE2E  # noqa: E402
@@ -126,7 +127,8 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         a, b, g = self.table.get_columns(['a', 'b', 'g'])
 
         cases = [
-            (g.cast('double').name('g_dub'), 'CAST(`g` AS Float64) AS `g_dub`'),
+            (g.cast('double').name('g_dub'),
+             'CAST(`g` AS Float64) AS `g_dub`'),
             (g.name('has a space'), '`g` AS `has a space`'),
             (((a - b) * a).name('expr'), '(`a` - `b`) * `a` AS `expr`')
         ]
@@ -304,8 +306,8 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
         # No argument functions
         functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt', 'sign',
                      ('log', 'log'),
-                     #('approx_median', 'appx_median'),
-                     #('approx_nunique', 'ndv'),
+                     # ('approx_median', 'appx_median'),
+                     # s('approx_nunique', 'ndv'),
                      'log', 'log2', 'log10']
 
         cases = []
@@ -827,14 +829,16 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
     # def test_lpad(self):
     #     cases = [
-    #         (self.table.string_col.lpad(1, 'a'), "lpad(`string_col`, 1, 'a')"),
+    #         (self.table.string_col.lpad(1, 'a'),
+    #          "lpad(`string_col`, 1, 'a')"),
     #         (self.table.string_col.lpad(25), "lpad(`string_col`, 25, ' ')")
     #     ]
     #     self._check_expr_cases(cases)
 
     # def test_rpad(self):
     #     cases = [
-    #         (self.table.string_col.rpad(1, 'a'), "rpad(`string_col`, 1, 'a')"),
+    #         (self.table.string_col.rpad(1, 'a'),
+    #          "rpad(`string_col`, 1, 'a')"),
     #         (self.table.string_col.rpad(25), "rpad(`string_col`, 25, ' ')")
     #     ]
     #     self._check_expr_cases(cases)
@@ -855,56 +859,56 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
     #     self._check_expr_cases(cases)
 
 
-# class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
+class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
 
-#     def test_embedded_identifier_quoting(self):
-#         t = self.con.table('functional_alltypes')
+    def test_embedded_identifier_quoting(self):
+        t = self.con.table('functional_alltypes')
 
-#         expr = (t[[(t.double_col * 2).name('double(fun)')]]
-#                 ['double(fun)'].sum())
-#         expr.execute()
+        expr = (t[[(t.double_col * 2).name('double(fun)')]]
+                ['double(fun)'].sum())
+        expr.execute()
 
-#     def test_table_info(self):
-#         t = self.con.table('functional_alltypes')
-#         buf = StringIO()
-#         t.info(buf=buf)
+    def test_table_info(self):
+        t = self.con.table('functional_alltypes')
+        buf = StringIO()
+        t.info(buf=buf)
 
-#         assert buf.getvalue() is not None
+        assert buf.getvalue() is not None
 
-#     def test_execute_exprs_no_table_ref(self):
-#         cases = [
-#             (L(1) + L(2), 3)
-#         ]
+    def test_execute_exprs_no_table_ref(self):
+        cases = [
+            (L(1) + L(2), 3)
+        ]
 
-#         for expr, expected in cases:
-#             result = self.con.execute(expr)
-#             assert result == expected
+        for expr, expected in cases:
+            result = self.con.execute(expr)
+            assert result == expected
 
-#         # ExprList
-#         exlist = ibis.api.expr_list([L(1).name('a'),
-#                                      ibis.now().name('b'),
-#                                      L(2).log().name('c')])
-#         self.con.execute(exlist)
+        # ExprList
+        exlist = ibis.api.expr_list([L(1).name('a'),
+                                     ibis.now().name('b'),
+                                     L(2).log().name('c')])
+        self.con.execute(exlist)
 
-#     def test_summary_execute(self):
-#         table = self.alltypes
+    # def test_summary_execute(self):
+    #     table = self.alltypes
 
-#         # also test set_column while we're at it
-#         table = table.set_column('double_col',
-#                                  table.double_col * 2)
+    #     # also test set_column while we're at it
+    #     table = table.set_column('double_col',
+    #                              table.double_col * 2)
 
-#         expr = table.double_col.summary()
-#         repr(expr)
+    #     expr = table.double_col.summary()
+    #     repr(expr)
 
-#         result = expr.execute()
-#         assert isinstance(result, pd.DataFrame)
+    #     result = expr.execute()
+    #     assert isinstance(result, pd.DataFrame)
 
-#         expr = (table.group_by('string_col')
-#                 .aggregate([table.double_col.summary().prefix('double_'),
-#                             table.float_col.summary().prefix('float_'),
-#                             table.string_col.summary().suffix('_string')]))
-#         result = expr.execute()
-#         assert isinstance(result, pd.DataFrame)
+    #     expr = (table.group_by('string_col')
+    #             .aggregate([table.double_col.summary().prefix('double_'),
+    #                         table.float_col.summary().prefix('float_'),
+    #                         table.string_col.summary().suffix('_string')]))
+    #     result = expr.execute()
+    #     assert isinstance(result, pd.DataFrame)
 
 #     def test_distinct_array(self):
 #         table = self.alltypes
@@ -922,155 +926,157 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
 #         # TODO: what if user impyla version does not have decimal Metadata?
 
-#     def test_builtins_1(self):
-#         table = self.alltypes
+    @pytest.mark.skip
+    def test_builtins_1(self):
+        table = self.alltypes
 
-#         i1 = table.tinyint_col
-#         i4 = table.int_col
-#         i8 = table.bigint_col
-#         d = table.double_col
-#         s = table.string_col
+        # i1 = table.tinyint_col
+        i4 = table.int_col
+        i8 = table.bigint_col
+        # d = table.double_col
+        # s = table.string_col
 
-#         exprs = [
-#             api.now(),
-#             api.e,
+        exprs = [
+            api.now(),
+            # api.e,
 
-#             # hash functions
-#             i4.hash(),
-#             d.hash(),
-#             s.hash(),
+            # # hash functions
+            # i4.hash(),
+            # d.hash(),
+            # s.hash(),
 
-#             # modulus cases
-#             i1 % 5,
-#             i4 % 10,
-#             20 % i1,
-#             d % 5,
+            # modulus cases
+            # i1 % 5,
+            # i4 % 10,
+            # 20 % i1,
+            # d % 5,
 
-#             i1.zeroifnull(),
-#             i4.zeroifnull(),
-#             i8.zeroifnull(),
+            # i1.zeroifnull(),
+            # i4.zeroifnull(),
+            # i8.zeroifnull(),
 
-#             i4.to_timestamp('s'),
-#             i4.to_timestamp('ms'),
-#             i4.to_timestamp('us'),
+            i4.to_timestamp('s'),
+            # i4.to_timestamp('ms'),
+            # i4.to_timestamp('us'),
 
-#             i8.to_timestamp(),
+            i8.to_timestamp(),
 
-#             d.abs(),
-#             d.cast('decimal(12, 2)'),
-#             d.cast('int32'),
-#             d.ceil(),
-#             d.exp(),
-#             d.isnull(),
-#             d.fillna(0),
-#             d.floor(),
-#             d.log(),
-#             d.ln(),
-#             d.log2(),
-#             d.log10(),
-#             d.notnull(),
+            # d.abs(),
+            # # d.cast('decimal(12, 2)'),
+            # d.cast('int32'),
+            # d.ceil(),
+            # d.exp(),
+            # # d.isnull(),
+            # # d.fillna(0),
+            # # d.floor(),
+            # # d.log(),
+            # # d.log(),
+            # # d.log2(),
+            # # d.log10(),
+            # # d.notnull(),
 
-#             d.zeroifnull(),
-#             d.nullifzero(),
+            # # d.zeroifnull(),
+            # # d.nullifzero(),
 
-#             d.round(),
-#             d.round(2),
-#             d.round(i1),
+            # # d.round(),
+            # # d.round(2),
+            # # d.round(i1),
 
-#             i1.sign(),
-#             i4.sign(),
-#             d.sign(),
+            # # i1.sign(),
+            # # i4.sign(),
+            # # d.sign(),
 
-#             # conv
-#             i1.convert_base(10, 2),
-#             i4.convert_base(10, 2),
-#             i8.convert_base(10, 2),
-#             s.convert_base(10, 2),
+            # # # conv
+            # # i1.convert_base(10, 2),
+            # # i4.convert_base(10, 2),
+            # # i8.convert_base(10, 2),
+            # # s.convert_base(10, 2),
 
-#             d.sqrt(),
-#             d.zeroifnull(),
+            # d.sqrt(),
+            # # d.zeroifnull(),
 
-#             # nullif cases
-#             5 / i1.nullif(0),
-#             5 / i1.nullif(i4),
-#             5 / i4.nullif(0),
-#             5 / d.nullif(0),
+            # # # nullif cases
+            # # 5 / i1.nullif(0),
+            # # 5 / i1.nullif(i4),
+            # # 5 / i4.nullif(0),
+            # # 5 / d.nullif(0),
 
-#             api.literal(5).isin([i1, i4, d]),
+            # # api.literal(5).isin([i1, i4, d]),
 
-#             # tier and histogram
-#             d.bucket([0, 10, 25, 50, 100]),
-#             d.bucket([0, 10, 25, 50], include_over=True),
-#             d.bucket([0, 10, 25, 50], include_over=True, close_extreme=False),
-#             d.bucket([10, 25, 50, 100], include_under=True),
+            # # # tier and histogram
+            # # d.bucket([0, 10, 25, 50, 100]),
+            # # d.bucket([0, 10, 25, 50], include_over=True),
+            # d.bucket([0, 10, 25, 50], include_over=True,
+            #          close_extreme=False),
+            # # d.bucket([10, 25, 50, 100], include_under=True),
 
-#             d.histogram(10),
-#             d.histogram(5, base=10),
-#             d.histogram(base=10, binwidth=5),
+            # # d.histogram(10),
+            # # d.histogram(5, base=10),
+            # # d.histogram(base=10, binwidth=5),
 
-#             # coalesce-like cases
-#             api.coalesce(table.int_col,
-#                          api.null(),
-#                          table.smallint_col,
-#                          table.bigint_col, 5),
-#             api.greatest(table.float_col,
-#                          table.double_col, 5),
-#             api.least(table.string_col, 'foo'),
+            # # coalesce-like cases
+            # # api.coalesce(table.int_col,
+            # #              api.null(),
+            # #              table.smallint_col,
+            # #              table.bigint_col, 5),
+            # # api.greatest(table.float_col,
+            # #              table.double_col, 5),
+            # # api.least(table.string_col, 'foo'),
 
-#             # string stuff
-#             s.contains('6'),
-#             s.like('6%'),
-#             s.re_search('[\d]+'),
-#             s.re_extract('[\d]+', 0),
-#             s.re_replace('[\d]+', 'a'),
-#             s.repeat(2),
-#             s.translate("a", "b"),
-#             s.find("a"),
-#             s.lpad(10, 'a'),
-#             s.rpad(10, 'a'),
-#             s.find_in_set(["a"]),
-#             s.lower(),
-#             s.upper(),
-#             s.reverse(),
-#             s.ascii_str(),
-#             s.length(),
-#             s.strip(),
-#             s.lstrip(),
-#             s.strip(),
+            # # string stuff
+            # # s.contains('6'),
+            # s.like('6%'),
+            # s.re_search('[\d]+'),
+            # # s.re_extract('[\d]+', 0),
+            # s.re_replace('[\d]+', 'a'),
+            # # s.repeat(2),
+            # # s.translate("a", "b"),
+            # # s.find("a"),
+            # # s.lpad(10, 'a'),
+            # # s.rpad(10, 'a'),
+            # s.find_in_set(["a"]),
+            # s.lower(),
+            # s.upper(),
+            # s.reverse(),
+            # # s.ascii_str(),
+            # s.length(),
+            # # s.strip(),
+            # # s.lstrip(),
+            # # s.strip(),
 
-#             # strings with int expr inputs
-#             s.left(i1),
-#             s.right(i1),
-#             s.substr(i1, i1 + 2),
-#             s.repeat(i1)
-#         ]
+            # # strings with int expr inputs
+            # # s.left(i1),
+            # # s.right(i1),
+            # # s.substr(i1, i1 + 2),
+            # # s.repeat(i1)
+        ]
 
-#         proj_exprs = [expr.name('e%d' % i)
-#                       for i, expr in enumerate(exprs)]
+        proj_exprs = [expr.name('e%d' % i)
+                      for i, expr in enumerate(exprs)]
 
-#         projection = table[proj_exprs]
-#         projection.limit(10).execute()
+        projection = table[proj_exprs]
+        projection.limit(10).execute()
 
-#         self._check_clickhouse_output_types_match(projection)
+        self._check_clickhouse_output_types_match(projection)
 
-#     def _check_clickhouse_output_types_match(self, table):
-#         query = to_sql(table)
-#         t = self.con.sql(query)
+    def _check_clickhouse_output_types_match(self, table):
+        query = to_sql(table)
+        t = self.con.sql(query)
 
-#         def _clean_type(x):
-#             if isinstance(x, Category):
-#                 x = x.to_integer_type()
-#             return x
+        def _clean_type(x):
+            if isinstance(x, Category):
+                x = x.to_integer_type()
+            return x
 
-#         left, right = t.schema(), table.schema()
-#         for i, (n, l, r) in enumerate(zip(left.names, left.types,
-#                                           right.types)):
-#             l = _clean_type(l)
-#             r = _clean_type(r)
+        left, right = t.schema(), table.schema()
+        for i, (n, l, r) in enumerate(zip(left.names, left.types,
+                                          right.types)):
+            l = _clean_type(l)
+            r = _clean_type(r)
 
-#             if l != r:
-#                 pytest.fail('Value for {0} had left type {1}'
-#                             ' and right type {2}'.format(n, l, r))
+            if l != r:
+                pytest.fail('Value for {0} had left type {1}'
+                            ' and right type {2}'.format(n, l, r))
 
 #     def assert_cases_equality(self, cases):
 #         for expr, expected in cases:
@@ -1096,15 +1102,15 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
 #         self.assert_cases_equality(mod_cases + nullif_cases)
 
-#     def test_column_types(self):
-#         df = self.alltypes.execute()
-#         assert df.tinyint_col.dtype.name == 'int8'
-#         assert df.smallint_col.dtype.name == 'int16'
-#         assert df.int_col.dtype.name == 'int32'
-#         assert df.bigint_col.dtype.name == 'int64'
-#         assert df.float_col.dtype.name == 'float32'
-#         assert df.double_col.dtype.name == 'float64'
-#         assert pd.core.common.is_datetime64_dtype(df.timestamp_col.dtype)
+    def test_column_types(self):
+        df = self.alltypes.execute()
+        assert df.tinyint_col.dtype.name == 'int8'
+        assert df.smallint_col.dtype.name == 'int16'
+        assert df.int_col.dtype.name == 'int32'
+        assert df.bigint_col.dtype.name == 'int64'
+        assert df.float_col.dtype.name == 'float32'
+        assert df.double_col.dtype.name == 'float64'
+        assert pd.core.common.is_datetime64_dtype(df.timestamp_col.dtype)
 
 #     def test_timestamp_builtins(self):
 #         i32 = L(50000)
@@ -1254,11 +1260,9 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 #         expr = t.double_col.histogram(10).value_counts()
 #         expr.execute()
 
-#     # def test_casted_expr_clickhouse_bug(self):
-#     #     # Per GH #396. Prior to Clickhouse 2.3.0, there was a bug in the query
-#     #     # planner that caused this expression to fail
-#     #     expr = self.alltypes.string_col.cast('double').value_counts()
-#     #     expr.execute()
+    # def test_casted_expr_clickhouse_bug(self):
+    #     expr = self.alltypes.string_col.cast('double').value_counts()
+    #     expr.execute()
 
 #     def test_decimal_timestamp_builtins(self):
 #         table = self.con.table('tpch_lineitem')
@@ -1320,7 +1324,8 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
 
 #         expr = (table.filter([table.timestamp_col <
 #                              (ibis.timestamp('2010-01-01') + ibis.month(3)),
-#                              table.timestamp_col < (ibis.now() + ibis.day(10))
+#                              table.timestamp_col < (ibis.now() +
+#                                                     ibis.day(10))
 #                               ])
 #                 .count())
 #         expr.execute()

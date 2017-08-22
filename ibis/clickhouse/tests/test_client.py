@@ -14,14 +14,15 @@
 
 import unittest
 
-import numpy as np
+# import numpy as np
 import pandas as pd
 
-from ibis.clickhouse.tests.common import IbisTestEnv, ClickhouseE2E, connect_test
+from ibis.clickhouse.tests.common import IbisTestEnv, ClickhouseE2E
+from ibis.clickhouse.tests.common import connect_test
 from ibis.tests.util import assert_equal
 import ibis
 
-import ibis.common as com
+# import ibis.common as com
 import ibis.config as config
 import ibis.expr.types as ir
 import ibis.util as util

@@ -15,9 +15,9 @@
 from six import StringIO
 import datetime
 
-import ibis
-import ibis.expr.analysis as L
-import ibis.expr.datatypes as dt
+# import ibis
+# import ibis.expr.analysis as L
+# import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.expr.temporal as tempo
@@ -1113,10 +1113,16 @@ _operation_registry = {
     ops.FindInSet: _index_of,
     # ops.LPad: fixed_arity('lpad', 3),
     # ops.RPad: fixed_arity('rpad', 3),
-    # ops.StringJoin: varargs('concat'),  #  there are no concat_ws in clickhouse
+
+    # there are no concat_ws in clickhouse
+    # ops.StringJoin: varargs('concat'),
+
     ops.StringSQLLike: _binary_infix_op('LIKE'),
     ops.RegexSearch: fixed_arity('match', 2),
-    ops.RegexExtract: fixed_arity('extractAll', 3),  # TODO: extractAll(haystack, pattern)[index + 1]
+
+    # TODO: extractAll(haystack, pattern)[index + 1]
+    ops.RegexExtract: fixed_arity('extractAll', 3),
+
     ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
     ops.ParseURL: _parse_url,
 

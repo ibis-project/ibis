@@ -486,7 +486,8 @@ class AlterTable(ImpalaDDL):
 # class DropPartition(PartitionProperties):
 
 #     def __init__(self, table, partition, partition_schema):
-#         super(DropPartition, self).__init__(table, partition, partition_schema)
+#         super(DropPartition, self).__init__(table, partition,
+#                                             partition_schema)
 
 #     def compile(self):
 #         return self._compile('DROP')

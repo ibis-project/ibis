@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
-import six
-import threading
-import time
-import weakref
-import traceback
+# import re
+# import six
+# import threading
+# import time
+# import weakref
+# import traceback
 
-from posixpath import join as pjoin
-from collections import deque
+# from posixpath import join as pjoin
+# from collections import deque
 
-import numpy as np
+# import numpy as np
 import pandas as pd
 
 import ibis.common as com
@@ -30,7 +30,7 @@ import ibis.common as com
 from ibis.config import options
 from ibis.client import (Query, AsyncQuery, Database,
                          DatabaseEntity, SQLClient)
-from ibis.compat import lzip
+# from ibis.compat import lzip
 from ibis.clickhouse import ddl
 from ibis.clickhouse.compiler import build_ast
 from ibis.util import log
@@ -41,7 +41,7 @@ import ibis.expr.types as ir
 import ibis.util as util
 
 from clickhouse_driver.client import Client as _DriverClient
-from toolz import keymap, itemmap, merge, pluck
+from toolz import itemmap, merge, pluck
 
 
 _dtypes = {'object': 'String',
@@ -83,8 +83,8 @@ class ClickhouseDatabase(Database):
 
     def create_table(self, table_name, obj=None, **kwargs):
         """
-        Dispatch to ClickhouseClient.create_table. See that function's docstring
-        for more
+        Dispatch to ClickhouseClient.create_table. See that function's
+        docstring for more
         """
         return self.client.create_table(table_name, obj=obj,
                                         database=self.name, **kwargs)
@@ -94,7 +94,8 @@ class ClickhouseQuery(Query):
 
     def execute(self):
         # synchronous by default
-        data, types = self.client._execute(self.compiled_ddl, with_column_types=True)
+        data, types = self.client._execute(self.compiled_ddl,
+                                           with_column_types=True)
         dtypes = [(col, CH2PD[typ]) for col, typ in types]
 
         # Wes: naive approach, I could use some help to make it more efficient
@@ -256,8 +257,8 @@ class ClickhouseClient(SQLClient):
 
     def list_databases(self, like=None):
         """
-        List databases in the Clickhouse cluster. Like the SHOW DATABASES command
-        in the clickhouse-shell.
+        List databases in the Clickhouse cluster.
+        Like the SHOW DATABASES command in the clickhouse-shell.
 
         Parameters
         ----------
@@ -381,7 +382,7 @@ class ClickhouseClient(SQLClient):
     #                  format='parquet', location=None,
     #                  partition=None, like_parquet=None):
     #     """
-    #     Create a new table in Clickhouse using an Ibis table expression. This is
+    #     Create a new table in CH using an Ibis table expression. This is
     #     currently designed for tables whose data is stored in HDFS (or
     #     eventually other filesystems).
 
@@ -397,11 +398,11 @@ class ClickhouseClient(SQLClient):
     #     force : boolean, default False
     #       Do not create table if table with indicated name already exists
     #     external : boolean, default False
-    #       Create an external table; Clickhouse will not delete the underlying data
+    #       Create an external table; CH will not delete the underlying data
     #       when the table is dropped
     #     format : {'parquet'}
     #     location : string, default None
-    #       Specify the directory location where Clickhouse reads and writes files
+    #       Specify the directory location where CH reads and writes files
     #       for the table
     #     partition : list of strings
     #       Must pass a schema to use this. Cannot partition from an expression
@@ -418,7 +419,7 @@ class ClickhouseClient(SQLClient):
 
     #     if obj is not None:
     #         if isinstance(obj, pd.DataFrame):
-    #             from ibis.clickhouse.pandas_interop import write_temp_dataframe
+    #             from ibis.clickh.pandas_interop import write_temp_dataframe
     #             writer, to_insert = write_temp_dataframe(self, obj)
     #         else:
     #             to_insert = obj
@@ -461,13 +462,9 @@ class ClickhouseClient(SQLClient):
 
     def _ensure_temp_db_exists(self):
         # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
-        name, path = options.clickhouse.temp_db, options.clickhouse.temp_hdfs_path
+        name = options.clickhouse.temp_db,
         if not self.exists_database(name):
-            if self._hdfs is None:
-                print('Without an HDFS connection, certain functionality'
-                      ' may be disabled')
-            else:
-                self.create_database(name, path=path, force=True)
+            self.create_database(name, force=True)
 
     def _wrap_new_table(self, name, database, persist):
         qualified_name = self._fully_qualified_name(name, database)
@@ -511,14 +508,15 @@ class ClickhouseClient(SQLClient):
     #     >>> con.insert(table, table_expr, overwrite=True)  # doctest: +SKIP
     #     """
     #     table = self.table(table_name, database=database)
-    #     return table.insert(obj=obj, overwrite=overwrite, partition=partition,
+    #     return table.insert(obj=obj, overwrite=overwrite,
+    #                         partition=partition,
     #                         values=values, validate=validate)
 
     # def load_data(self, table_name, path, database=None, overwrite=False,
     #               partition=None):
     #     """
-    #     Wraps the LOAD DATA DDL statement. Loads data into an Clickhouse table by
-    #     physically moving data files.
+    #     Wraps the LOAD DATA DDL statement.
+    #     Loads data into an Clickhouse table by physically moving data files.
 
     #     Parameters
     #     ----------
@@ -597,7 +595,8 @@ class ClickhouseClient(SQLClient):
 
     # TODO: detatch/drop/attach/freeze/fetch partition
     # def list_partitions(self, name, database=None):
-    #     stmt = self._table_command('SHOW PARTITIONS', name, database=database)
+    #     stmt = self._table_command('SHOW PARTITIONS', name,
+    #                                database=database)
     #     return self._exec_statement(stmt)
 
     def _exec_statement(self, stmt, adapter=None):
@@ -613,7 +612,7 @@ class ClickhouseClient(SQLClient):
 
     # def write_dataframe(self, df, path, format='csv', async=False):
     #     """
-    #     Write a pandas DataFrame to indicated file path (default: HDFS) in the
+    #     Write a pandas DataFrame to indicated file path in the
     #     indicated format
 
     #     Parameters
@@ -712,10 +711,10 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
     #     overwrite : boolean, default False
     #       If True, will replace existing contents of table
     #     partition : list or dict, optional
-    #       For partitioned tables, indicate the partition that's being inserted
+    #       For partitioned tables, indicate the partition that's being inserte
     #       into, either with an ordered list of partition keys or a dict of
     #       partition field name to value. For example for the partition
-    #       (year=2007, month=7), this can be either (2007, 7) or {'year': 2007,
+    #       (year=2007, month=7), this can be either (2007, 7) or {'year': 2007
     #       'month': 7}.
     #     validate : boolean, default True
     #       If True, do more rigorous validation that schema of table being
@@ -764,7 +763,7 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
 
     # def load_data(self, path, overwrite=False, partition=None):
     #     """
-    #     Wraps the LOAD DATA DDL statement. Loads data into an Clickhouse table by
+    #     Wraps the LOAD DATA DDL statement. Loads data into an CH table by
     #     physically moving data files.
 
     #     Parameters
@@ -966,7 +965,7 @@ class ClickhouseTemporaryTable(ops.DatabaseTable):
     def drop(self):
         try:
             self.source.drop_table(self.name)
-        except ImpylaError:
+        except:  # ClickhouseError
             # database might have been dropped
             pass
 
