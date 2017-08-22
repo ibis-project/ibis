@@ -908,13 +908,13 @@ def _parse_url(translator, expr):
                                                    extract, key_fmt)
 
 
-def _find_in_set(translator, expr):
+def _index_of(translator, expr):
     op = expr.op()
 
-    arg, str_list = op.args
+    arg, arr = op.args
     arg_formatted = translator.translate(arg)
-    str_formatted = ','.join([x._arg.value for x in str_list])
-    return "find_in_set({0}, '{1}') - 1".format(arg_formatted, str_formatted)
+    arr_formatted = ','.join(map(translator.translate, arr))
+    return "indexOf([{0}], {1}) - 1".format(arr_formatted, arg_formatted)
 
 
 def _round(translator, expr):
@@ -1101,23 +1101,23 @@ _operation_registry = {
     ops.Lowercase: unary('lower'),
     ops.Uppercase: unary('upper'),
     ops.Reverse: unary('reverse'),
-    ops.Strip: unary('trim'),
-    ops.LStrip: unary('ltrim'),
-    ops.RStrip: unary('rtrim'),
-    ops.Capitalize: unary('initcap'),
+    # ops.Strip: unary('trim'),
+    # ops.LStrip: unary('ltrim'),
+    # ops.RStrip: unary('rtrim'),
+    # ops.Capitalize: unary('initcap'),
     ops.Substring: _substring,
-    ops.StrRight: fixed_arity('strright', 2),
+    # ops.StrRight: fixed_arity('strright', 2),
     ops.Repeat: fixed_arity('repeat', 2),
     ops.StringFind: _string_find,
     ops.Translate: fixed_arity('translate', 3),
-    ops.FindInSet: _find_in_set,
-    ops.LPad: fixed_arity('lpad', 3),
-    ops.RPad: fixed_arity('rpad', 3),
-    ops.StringJoin: _string_join,
+    ops.FindInSet: _index_of,
+    # ops.LPad: fixed_arity('lpad', 3),
+    # ops.RPad: fixed_arity('rpad', 3),
+    # ops.StringJoin: varargs('concat'),  #  there are no concat_ws in clickhouse
     ops.StringSQLLike: _binary_infix_op('LIKE'),
-    ops.RegexSearch: _binary_infix_op('RLIKE'),
-    ops.RegexExtract: fixed_arity('regexp_extract', 3),
-    ops.RegexReplace: fixed_arity('regexp_replace', 3),
+    ops.RegexSearch: fixed_arity('match', 2),
+    ops.RegexExtract: fixed_arity('extractAll', 3),  # TODO: extractAll(haystack, pattern)[index + 1]
+    ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
     ops.ParseURL: _parse_url,
 
     # Timestamp operations

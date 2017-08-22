@@ -744,12 +744,12 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
             (s.lower(), 'lower(`string_col`)'),
             (s.upper(), 'upper(`string_col`)'),
             (s.reverse(), 'reverse(`string_col`)'),
-            (s.strip(), 'trim(`string_col`)'),
-            (s.lstrip(), 'ltrim(`string_col`)'),
-            (s.rstrip(), 'rtrim(`string_col`)'),
-            (s.capitalize(), 'initcap(`string_col`)'),
+            # (s.strip(), 'trim(`string_col`)'),
+            # (s.lstrip(), 'ltrim(`string_col`)'),
+            # (s.rstrip(), 'rtrim(`string_col`)'),
+            # (s.capitalize(), 'initcap(`string_col`)'),
             (s.length(), 'length(`string_col`)'),
-            (s.ascii_str(), 'ascii(`string_col`)')
+            # (s.ascii_str(), 'ascii(`string_col`)')
         ]
         self._check_expr_cases(cases)
 
@@ -759,12 +759,6 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
             (self.table.string_col.substr(2), 'substr(`string_col`, 2 + 1)'),
             (self.table.string_col.substr(0, 3),
              'substr(`string_col`, 0 + 1, 3)')
-        ]
-        self._check_expr_cases(cases)
-
-    def test_strright(self):
-        cases = [
-            (self.table.string_col.right(4), 'strright(`string_col`, 4)')
         ]
         self._check_expr_cases(cases)
 
@@ -779,46 +773,47 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_rlike(self):
-        ex = "`string_col` RLIKE '[\d]+'"
+        ex = "match(`string_col`, '[\d]+')"
         cases = [
             (self.table.string_col.rlike('[\d]+'), ex),
             (self.table.string_col.re_search('[\d]+'), ex),
         ]
         self._check_expr_cases(cases)
 
-    def test_re_extract(self):
-        sql = "regexp_extract(`string_col`, '[\d]+', 0)"
-        cases = [
-            (self.table.string_col.re_extract('[\d]+', 0), sql)
-        ]
-        self._check_expr_cases(cases)
+    # TODO
+    # def test_re_extract(self):
+    #     sql = "extractAll(`string_col`, '[\d]+')[3]"
+    #     cases = [
+    #         (self.table.string_col.re_extract('[\d]+', 3), sql)
+    #     ]
+    #     self._check_expr_cases(cases)
 
     def test_re_replace(self):
-        sql = "regexp_replace(`string_col`, '[\d]+', 'aaa')"
+        sql = "replaceRegexpAll(`string_col`, '[\d]+', 'aaa')"
         cases = [
             (self.table.string_col.re_replace('[\d]+', 'aaa'), sql)
         ]
         self._check_expr_cases(cases)
 
-    def test_parse_url(self):
-        sql = "parse_url(`string_col`, 'HOST')"
-        cases = [
-            (self.table.string_col.parse_url('HOST'), sql)
-        ]
-        self._check_expr_cases(cases)
+    # def test_parse_url(self):
+    #     sql = "parse_url(`string_col`, 'HOST')"
+    #     cases = [
+    #         (self.table.string_col.parse_url('HOST'), sql)
+    #     ]
+    #     self._check_expr_cases(cases)
 
-    def test_repeat(self):
-        cases = [
-            (self.table.string_col.repeat(2), 'repeat(`string_col`, 2)')
-        ]
-        self._check_expr_cases(cases)
+    # def test_repeat(self):
+    #     cases = [
+    #         (self.table.string_col.repeat(2), 'repeat(`string_col`, 2)')
+    #     ]
+    #     self._check_expr_cases(cases)
 
-    def test_translate(self):
-        cases = [
-            (self.table.string_col.translate('a', 'b'),
-             "translate(`string_col`, 'a', 'b')")
-        ]
-        self._check_expr_cases(cases)
+    # def test_translate(self):
+    #     cases = [
+    #         (self.table.string_col.translate('a', 'b'),
+    #          "translate(`string_col`, 'a', 'b')")
+    #     ]
+    #     self._check_expr_cases(cases)
 
     def test_find(self):
         s = self.table.string_col
@@ -831,34 +826,34 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         ]
         self._check_expr_cases(cases)
 
-    def test_lpad(self):
-        cases = [
-            (self.table.string_col.lpad(1, 'a'), "lpad(`string_col`, 1, 'a')"),
-            (self.table.string_col.lpad(25), "lpad(`string_col`, 25, ' ')")
-        ]
-        self._check_expr_cases(cases)
+    # def test_lpad(self):
+    #     cases = [
+    #         (self.table.string_col.lpad(1, 'a'), "lpad(`string_col`, 1, 'a')"),
+    #         (self.table.string_col.lpad(25), "lpad(`string_col`, 25, ' ')")
+    #     ]
+    #     self._check_expr_cases(cases)
 
-    def test_rpad(self):
-        cases = [
-            (self.table.string_col.rpad(1, 'a'), "rpad(`string_col`, 1, 'a')"),
-            (self.table.string_col.rpad(25), "rpad(`string_col`, 25, ' ')")
-        ]
-        self._check_expr_cases(cases)
+    # def test_rpad(self):
+    #     cases = [
+    #         (self.table.string_col.rpad(1, 'a'), "rpad(`string_col`, 1, 'a')"),
+    #         (self.table.string_col.rpad(25), "rpad(`string_col`, 25, ' ')")
+    #     ]
+    #     self._check_expr_cases(cases)
 
     def test_find_in_set(self):
         cases = [
             (self.table.string_col.find_in_set(['a']),
-             "find_in_set(`string_col`, 'a') - 1"),
+             "indexOf(['a'], `string_col`) - 1"),
             (self.table.string_col.find_in_set(['a', 'b']),
-             "find_in_set(`string_col`, 'a,b') - 1")
+             "indexOf(['a','b'], `string_col`) - 1")
         ]
         self._check_expr_cases(cases)
 
-    def test_string_join(self):
-        cases = [
-            (L(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")
-        ]
-        self._check_expr_cases(cases)
+    # def test_string_join(self):
+    #     cases = [
+    #         (L(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")
+    #     ]
+    #     self._check_expr_cases(cases)
 
 
 # class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
