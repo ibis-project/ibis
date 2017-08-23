@@ -100,7 +100,9 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
         try:
             # special case: we have a definition of execute_first that matches
             # our current operation and data leaves
-            return execute_first(op, *computed_args, context=context, **kwargs)
+            return execute_first(
+                op, *computed_args, scope=scope, context=context, **kwargs
+            )
         except NotImplementedError:
             pass
 
@@ -123,7 +125,8 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
 
 
 @execute.register(ir.Expr)
-def execute_without_scope(expr, params=None):
+def execute_without_scope(
+        expr, params=None, scope=None, context=None, **kwargs):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
 
@@ -131,6 +134,7 @@ def execute_without_scope(expr, params=None):
     ----------
     expr : ir.Expr
         The expression to execute
+    params : Dict[Expr, object]
 
     Returns
     -------
@@ -142,22 +146,28 @@ def execute_without_scope(expr, params=None):
         * If no data are bound to the input expression
     """
 
-    scope = find_data(expr)
-    if not scope:
+    data_scope = find_data(expr)
+    if not data_scope:
         raise ValueError(
             'No data sources found while trying to execute against the pandas '
             'backend'
         )
 
-    factory = type(scope)
+    factory = type(data_scope)
     new_scope = toolz.merge(
-        scope,
+        scope or factory(),
+        data_scope,
         {
             k.op() if hasattr(k, 'op') else k: v
             for k, v in (params or factory()).items()
-        },
+        },  # TODO(phillipc): Consider using ChainMap here
         factory=factory
     )
 
     # By default, our aggregate functions are N -> 1
-    return execute(expr, new_scope, context=ctx.Summarize())
+    return execute(
+        expr,
+        new_scope,
+        context=context if context is not None else ctx.Summarize(),
+        **kwargs
+    )
