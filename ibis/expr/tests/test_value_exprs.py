@@ -962,3 +962,56 @@ def test_time_invalid_compare_on_py2():
     # in a deferred way in python 2, they short circuit in the CPython
     result = operator.eq(time(10, 0), literal('10:00'))
     assert not result
+
+
+def test_scalar_parameter_repr():
+    value = ibis.param(dt.timestamp, name='value')
+    assert repr(value) == 'value = ScalarParameter[timestamp]'
+
+    value_op = value.op()
+    assert repr(value_op) == "ScalarParameter(name='value', type=timestamp)"
+
+
+@pytest.mark.parametrize(
+    ('left', 'right', 'expected'),
+    [
+        (
+            # same value type, same name
+            ibis.param(dt.timestamp, name='value1'),
+            ibis.param(dt.timestamp, name='value1'),
+            True,
+        ),
+        (
+            # different value type, same name
+            ibis.param(dt.date, name='value1'),
+            ibis.param(dt.timestamp, name='value1'),
+            False,
+        ),
+        (
+            # same value type, different name
+            ibis.param(dt.timestamp, name='value1'),
+            ibis.param(dt.timestamp, name='value2'),
+            False,
+        ),
+        (
+            # different value type, different name
+            ibis.param(dt.date, name='value1'),
+            ibis.param(dt.timestamp, name='value2'),
+            False,
+        ),
+        (
+            # different Python class, left side is param
+            ibis.param(dt.timestamp, 'value'),
+            dt.date,
+            False
+        ),
+        (
+            # different Python class, right side is param
+            dt.date,
+            ibis.param(dt.timestamp, 'value'),
+            False
+        ),
+    ]
+)
+def test_scalar_parameter_compare(left, right, expected):
+    assert left.equals(right) == expected
