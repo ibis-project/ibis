@@ -580,9 +580,15 @@ class ScalarParameter(ValueOp):
             type(self).__name__, self.name, self.type
         )
 
+    @property
+    def type(self):
+        return self.args[0]
+
     def equals(self, other, cache=None):
-        return self.name == other.name and self.type.equals(
-            other.type, cache=cache
+        return (
+            isinstance(other, ScalarParameter) and
+            self.name == other.name and
+            self.type.equals(other.type, cache=cache)
         )
 
     def root_tables(self):
