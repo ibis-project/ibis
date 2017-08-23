@@ -432,6 +432,7 @@ _sql_type_names = {
     'double': 'Float64',
     'string': 'String',
     'boolean': 'UInt8',
+    'date': 'DateTime',
     'timestamp': 'DateTime',
     'decimal': 'UInt64',  # see Clickhouse issue #253
 }
@@ -560,8 +561,8 @@ def _reduction(func_name):
 
 def _variance_like(func_name):
     func_names = {
-        'sample': func_name,
-        'pop': '{0}_pop'.format(func_name)
+        'sample': '{0}Samp'.format(func_name),
+        'pop': '{0}Pop'.format(func_name)
     }
 
     def formatter(translator, expr):
@@ -571,23 +572,19 @@ def _variance_like(func_name):
 
 
 def fixed_arity(func_name, arity):
-
     def formatter(translator, expr):
         op = expr.op()
-        if arity != len(op.args):
-            raise com.IbisError('incorrect number of args')
-        return _format_call(translator, func_name, *op.args)
-
+        arg_count = len(op.args)
+        if arity != arg_count:
+            msg = 'Incorrect number of args {0} instead of {1}'
+            raise com.IbisError(msg.format(arg_count, arity))
+        return _function_call(translator, func_name, *op.args)
     return formatter
 
 
-def _format_call(translator, func, *args):
-    formatted_args = []
-    for arg in args:
-        fmt_arg = translator.translate(arg)
-        formatted_args.append(fmt_arg)
-
-    return '{0!s}({1!s})'.format(func, ', '.join(formatted_args))
+def _function_call(translator, func, *args):
+    args_ = ', '.join(map(translator.translate, args))
+    return '{0!s}({1!s})'.format(func, args_)
 
 
 def _binary_infix_op(infix_sym):
@@ -645,29 +642,54 @@ def _need_parenthesize_args(op):
             op_klass in [ops.Negate])
 
 
-def _boolean_literal_format(expr):
+def _boolean_literal(expr):
     value = expr.op().value
     return '1' if value else '0'
 
 
-def _number_literal_format(expr):
+def _number_literal(expr):
     value = expr.op().value
     return repr(value)
 
 
-def _string_literal_format(expr):
+def _string_literal(expr):
     value = expr.op().value
     return "'{0!s}'".format(value.replace("'", "\\'"))
 
 
-def _timestamp_literal_format(expr):
+def _date_literal(expr):
+    value = expr.op().value
+    if isinstance(value, datetime.date):
+        value = value.strftime('%Y-%m-%d')
+    return "toDate('{0!s}')".format(value)
+
+
+def _timestamp_literal(expr):
     value = expr.op().value
     if isinstance(value, datetime.datetime):
         if value.microsecond != 0:
-            raise ValueError(value)
+            raise ValueError('Unspoorted subsecond accuracy {}'.format(value))
         value = value.strftime('%Y-%m-%d %H:%M:%S')
+    return "toDateTime('{0!s}')".format(value)
 
-    return "'{0!s}'".format(value)
+
+# def _null_literal_format(translator, expr):
+#     return 'NULL'
+
+
+def _literal(translator, expr):
+    if isinstance(expr, ir.BooleanValue):
+        return _boolean_literal(expr)
+    elif isinstance(expr, ir.StringValue):
+        return _string_literal(expr)
+    elif isinstance(expr, ir.NumericValue):
+        return _number_literal(expr)
+    elif isinstance(expr, ir.TimestampValue):
+        return _timestamp_literal(expr)
+    elif isinstance(expr, ir.DateValue):
+        return _date_literal(expr)
+    else:
+        raise NotImplementedError
 
 
 def quote_identifier(name, quotechar='`', force=False):
@@ -845,57 +867,54 @@ def _timestamp_from_unix(translator, expr):
 def varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
-        return _format_call(translator, func_name, *op.args)
+        return _function_call(translator, func_name, *op.args)
     return varargs_formatter
 
 
 def _substring(translator, expr):
+    # arg_ is the formatted notation
     op = expr.op()
     arg, start, length = op.args
-    arg_formatted = translator.translate(arg)
-    start_formatted = translator.translate(start)
+    arg_, start_ = translator.translate(arg), translator.translate(start)
 
     # Clickhouse is 1-indexed
     if length is None or isinstance(length.op(), ir.Literal):
-        lvalue = length.op().value if length is not None else None
-        if lvalue:
-            return 'substr({0}, {1} + 1, {2})'.format(arg_formatted,
-                                                      start_formatted,
-                                                      lvalue)
+        if length is not None:
+            length_ = length.op().value
+            return 'substring({0}, {1} + 1, {2})'.format(arg_, start_, length_)
         else:
-            return 'substr({0}, {1} + 1)'.format(arg_formatted,
-                                                 start_formatted)
+            return 'substring({0}, {1} + 1)'.format(arg_, start_)
     else:
-        length_formatted = translator.translate(length)
-        return 'substr({0}, {1} + 1, {2})'.format(arg_formatted,
-                                                  start_formatted,
-                                                  length_formatted)
+        length_ = translator.translate(length)
+        return 'substring({0}, {1} + 1, {2})'.format(arg_, start_, length_)
 
 
 def _string_find(translator, expr):
     op = expr.op()
     arg, substr, start, _ = op.args
-    arg_formatted = translator.translate(arg)
-    substr_formatted = translator.translate(substr)
+    if start is not None:
+        raise com.IbisError('String find doesn\'t support start argument')
 
-    if start is not None and not isinstance(start.op(), ir.Literal):
-        start_fmt = translator.translate(start)
-        return 'locate({0}, {1}, {2} + 1) - 1'.format(substr_formatted,
-                                                      arg_formatted,
-                                                      start_fmt)
-    elif start is not None and start.op().value:
-        sval = start.op().value
-        return 'locate({0}, {1}, {2}) - 1'.format(substr_formatted,
-                                                  arg_formatted,
-                                                  sval + 1)
-    else:
-        return 'locate({0}, {1}) - 1'.format(substr_formatted, arg_formatted)
+    arg_, substr_ = translator.translate(arg), translator.translate(substr)
+    return 'position({0}, {1}) - 1'.format(arg_, substr_)
+
+
+def _regex_extract(translator, expr):
+    op = expr.op()
+    arg, pattern, index = op.args
+    arg_, pattern_ = translator.translate(arg), translator.translate(pattern)
+
+    if index is not None:
+        index_ = translator.translate(index)
+        return 'extractAll({0}, {1})[{2} + 1]'.format(arg_, pattern_, index_)
+
+    return 'extractAll({0}, {1})'.format(arg_, pattern_)
 
 
 def _string_join(translator, expr):
     op = expr.op()
     arg, strings = op.args
-    return _format_call(translator, 'concat_ws', arg, *strings)
+    return _function_call(translator, 'concat_ws', arg, *strings)
 
 
 def _parse_url(translator, expr):
@@ -921,18 +940,24 @@ def _index_of(translator, expr):
     return "indexOf([{0}], {1}) - 1".format(arr_formatted, arg_formatted)
 
 
+def _sign(translator, expr):
+    """Workaround for missing sign function"""
+    op = expr.op()
+    arg, = op.args
+    arg_ = translator.translate(arg)
+    return 'intDivOrZero({0}, abs({0}))'.format(arg_)
+
+
 def _round(translator, expr):
     op = expr.op()
     arg, digits = op.args
 
-    arg_formatted = translator.translate(arg)
-
+    arg_ = translator.translate(arg)
     if digits is not None:
-        digits_formatted = translator.translate(digits)
-        return 'round({0}, {1})'.format(arg_formatted,
-                                        digits_formatted)
+        digits_ = translator.translate(digits)
+        return 'round({0}, {1})'.format(arg_, digits_)
     else:
-        return 'round({0})'.format(arg_formatted)
+        return 'round({0})'.format(arg_)
 
 
 # TODO there are a lot of hash functions in clickhouse
@@ -970,33 +995,6 @@ def _count_distinct(translator, expr):
     return 'COUNT(DISTINCT {0})'.format(arg_formatted)
 
 
-def _literal(translator, expr):
-    if isinstance(expr, ir.BooleanValue):
-        typeclass = 'boolean'
-    elif isinstance(expr, ir.StringValue):
-        typeclass = 'string'
-    elif isinstance(expr, ir.NumericValue):
-        typeclass = 'number'
-    elif isinstance(expr, ir.TimestampValue):
-        typeclass = 'timestamp'
-    else:
-        raise NotImplementedError
-
-    return _literal_formatters[typeclass](expr)
-
-
-def _null_literal(translator, expr):
-    return 'NULL'
-
-
-_literal_formatters = {
-    'boolean': _boolean_literal_format,
-    'number': _number_literal_format,
-    'string': _string_literal_format,
-    'timestamp': _timestamp_literal_format
-}
-
-
 def _value_list(translator, expr):
     op = expr.op()
     formatted = [translator.translate(x) for x in op.values]
@@ -1025,6 +1023,9 @@ _expr_transforms = {
 }
 
 
+# TODO: clickhouse uses differenct string functions
+#       for ascii and utf-8 encodings,
+
 _binary_infix_ops = {
     # Binary operations
     ops.Add: _binary_infix_op('+'),
@@ -1052,6 +1053,7 @@ _binary_infix_ops = {
 
 _operation_registry = {
     # Unary operations
+    ops.TypeOf: unary('toTypeName'),
     # ops.NotNull: _not_null,
     # ops.IsNull: _is_null,
     ops.Negate: _negate,
@@ -1070,7 +1072,7 @@ _operation_registry = {
     ops.Exp: unary('exp'),
     ops.Round: _round,
 
-    # ops.Sign: unary('sign'),
+    ops.Sign: _sign,
     ops.Sqrt: unary('sqrt'),
 
     ops.Hash: _hash,
@@ -1084,49 +1086,40 @@ _operation_registry = {
     # ops.DecimalScale: unary('scale'),
 
     # Unary aggregates
-    # ops.CMSMedian: _reduction('appx_median'),
-    # ops.HLLCardinality: _reduction('ndv'),
+    ops.CMSMedian: _reduction('median'),
+    # TODO: there is also a `uniq` function which is the
+    #       recommended way to approximate cardinality
+    ops.HLLCardinality: _reduction('uniqHLL12'),
     ops.Mean: _reduction('avg'),
     ops.Sum: _reduction('sum'),
     ops.Max: _reduction('max'),
     ops.Min: _reduction('min'),
 
     ops.StandardDev: _variance_like('stddev'),
-    ops.Variance: _variance_like('variance'),
+    ops.Variance: _variance_like('var'),
 
-    ops.GroupConcat: fixed_arity('group_concat', 2),
+    # ops.GroupConcat: fixed_arity('group_concat', 2),
 
     ops.Count: _reduction('count'),
     ops.CountDistinct: _count_distinct,
 
     # string operations
     ops.StringLength: unary('length'),
-    ops.StringAscii: unary('ascii'),
     ops.Lowercase: unary('lower'),
     ops.Uppercase: unary('upper'),
     ops.Reverse: unary('reverse'),
-    # ops.Strip: unary('trim'),
-    # ops.LStrip: unary('ltrim'),
-    # ops.RStrip: unary('rtrim'),
-    # ops.Capitalize: unary('initcap'),
     ops.Substring: _substring,
-    # ops.StrRight: fixed_arity('strright', 2),
-    ops.Repeat: fixed_arity('repeat', 2),
     ops.StringFind: _string_find,
-    ops.Translate: fixed_arity('translate', 3),
     ops.FindInSet: _index_of,
-    # ops.LPad: fixed_arity('lpad', 3),
-    # ops.RPad: fixed_arity('rpad', 3),
+    ops.StringReplace: fixed_arity('replaceAll', 3),
 
-    # there are no concat_ws in clickhouse
+    # TODO: there are no concat_ws in clickhouse
     # ops.StringJoin: varargs('concat'),
 
     ops.StringSQLLike: _binary_infix_op('LIKE'),
     ops.RegexSearch: fixed_arity('match', 2),
-
     # TODO: extractAll(haystack, pattern)[index + 1]
-    ops.RegexExtract: fixed_arity('extractAll', 3),
-
+    ops.RegexExtract: _regex_extract,
     ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
     ops.ParseURL: _parse_url,
 
@@ -1134,7 +1127,7 @@ _operation_registry = {
     ops.TimestampNow: lambda *args: 'now()',
     ops.ExtractYear: unary('toYear'),
     ops.ExtractMonth: unary('toMonth'),
-    ops.ExtractDay: unary('toDay'),
+    ops.ExtractDay: unary('toDayOfMonth'),
     ops.ExtractHour: unary('toHour'),
     ops.ExtractMinute: unary('toMinute'),
     ops.ExtractSecond: unary('toSecond'),
@@ -1174,10 +1167,10 @@ _operation_registry = {
     transforms.NotExistsSubquery: _exists_subquery,
 
     # RowNumber, and rank functions starts with 0 in Ibis-land
-    ops.RowNumber: lambda *args: 'row_number()',
-    ops.DenseRank: lambda *args: 'dense_rank()',
-    ops.MinRank: lambda *args: 'rank()',
-    ops.PercentRank: lambda *args: 'percent_rank()',
+    # ops.RowNumber: lambda *args: 'row_number()',
+    # ops.DenseRank: lambda *args: 'dense_rank()',
+    # ops.MinRank: lambda *args: 'rank()',
+    # ops.PercentRank: lambda *args: 'percent_rank()',
 
     ops.FirstValue: unary('first_value'),
     ops.LastValue: unary('last_value'),

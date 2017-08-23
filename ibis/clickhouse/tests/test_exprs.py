@@ -201,10 +201,10 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
     def test_timestamp_extract_field(self):
         fields = ['year', 'month', 'day', 'hour', 'minute',
                   'second']
+        expected = ['toYear', 'toMonth', 'toDayOfMonth', 'toHour', 'toMinute']
 
-        cases = [(getattr(self.table.i, field)(),
-                  "to{0}(`i`)".format(field.title()))
-                 for field in fields]
+        cases = [(getattr(self.table.i, field)(), "{0}(`i`)".format(exp))
+                 for field, exp in zip(fields, expected)]
         self._check_expr_cases(cases)
 
         # integration with SQL translation
@@ -213,8 +213,9 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
                           self.table.i.day().name('day')]
 
         result = to_sql(expr)
-        expected = \
-            """SELECT toYear(`i`) AS `year`, toMonth(`i`) AS `month`, toDay(`i`) AS `day`
+        expected = """\
+SELECT toYear(`i`) AS `year`, toMonth(`i`) AS `month`,
+       toDayOfMonth(`i`) AS `day`
 FROM alltypes"""
         assert result == expected
 
@@ -247,7 +248,7 @@ FROM alltypes"""
         from pandas import Timestamp
 
         tv1 = '2015-01-01 12:34:56'
-        ex1 = ("'2015-01-01 12:34:56'")
+        ex1 = ("toDateTime('2015-01-01 12:34:56')")
 
         cases = [
             (L(Timestamp(tv1)), ex1),
@@ -364,10 +365,10 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
             (c.mean(where=cond), tmp.format('avg')),
             (c.max(where=cond), tmp.format('max')),
             (c.min(where=cond), tmp.format('min')),
-            (c.std(where=cond), tmp.format('stddev')),
-            (c.std(where=cond, how='pop'), tmp.format('stddev_pop')),
-            (c.var(where=cond), tmp.format('variance')),
-            (c.var(where=cond, how='pop'), tmp.format('variance_pop')),
+            (c.std(where=cond), tmp.format('stddevSamp')),
+            (c.std(where=cond, how='pop'), tmp.format('stddevPop')),
+            (c.var(where=cond), tmp.format('varSamp')),
+            (c.var(where=cond, how='pop'), tmp.format('varPop')),
         ]
         self._check_expr_cases(cases)
 
@@ -758,9 +759,9 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
     def test_substr(self):
         # Database numbers starting from 1
         cases = [
-            (self.table.string_col.substr(2), 'substr(`string_col`, 2 + 1)'),
+            (self.table.string_col.substr(2), 'substring(`string_col`, 2 + 1)'),
             (self.table.string_col.substr(0, 3),
-             'substr(`string_col`, 0 + 1, 3)')
+             'substring(`string_col`, 0 + 1, 3)')
         ]
         self._check_expr_cases(cases)
 
@@ -821,10 +822,10 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         s = self.table.string_col
         i1 = self.table.tinyint_col
         cases = [
-            (s.find('a'), "locate('a', `string_col`) - 1"),
-            (s.find('a', 2), "locate('a', `string_col`, 3) - 1"),
-            (s.find('a', start=i1),
-             "locate('a', `string_col`, `tinyint_col` + 1) - 1")
+            (s.find('a'), "position(`string_col`, 'a') - 1"),
+            (s.find('a'), "position(`string_col`, 'a') - 1"),
+            # (s.find('a', start=i1),
+            # "locate('a', `string_col`, `tinyint_col` + 1) - 1")
         ]
         self._check_expr_cases(cases)
 
@@ -911,12 +912,12 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
     #     result = expr.execute()
     #     assert isinstance(result, pd.DataFrame)
 
-#     def test_distinct_array(self):
-#         table = self.alltypes
+    def test_distinct_array(self):
+        table = self.alltypes
 
-#         expr = table.string_col.distinct()
-#         result = self.con.execute(expr)
-#         assert isinstance(result, pd.Series)
+        expr = table.string_col.distinct()
+        result = self.con.execute(expr)
+        assert isinstance(result, pd.Series)
 
 #     def test_decimal_metadata(self):
 #         table = self.con.table('tpch_lineitem')
@@ -925,9 +926,7 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
 #         assert expr._precision == 12
 #         assert expr._scale == 2
 
-#         # TODO: what if user impyla version does not have decimal Metadata?
 
-    @pytest.mark.skip
     def test_builtins_1(self):
         table = self.alltypes
 
@@ -956,11 +955,11 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
             # i4.zeroifnull(),
             # i8.zeroifnull(),
 
-            i4.to_timestamp('s'),
+            # i4.to_timestamp('s'),
             # i4.to_timestamp('ms'),
             # i4.to_timestamp('us'),
 
-            i8.to_timestamp(),
+            # i8.to_timestamp(),
 
             # d.abs(),
             # # d.cast('decimal(12, 2)'),
@@ -1310,7 +1309,7 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
         table = self.alltypes.limit(100)
 
         d = table.double_col
-        # s = table.string_col
+        s = table.string_col
 
         cond = table.string_col.isin(['1', '7'])
 
@@ -1320,14 +1319,14 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
             d.mean(),
             d.min(),
             d.max(),
-            # s.approx_nunique(),
-            # d.approx_median(),
+            s.approx_nunique(),
+            d.approx_median(),
             # s.group_concat(),
 
-            # d.std(),
-            # d.std(how='pop'),
-            # d.var(),
-            # d.var(how='pop'),
+            d.std(),
+            d.std(how='pop'),
+            d.var(),
+            d.var(how='pop'),
 
             # table.bool_col.any(),
             # table.bool_col.notany(),
@@ -1342,8 +1341,8 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
             d.mean(where=cond),
             d.min(where=cond),
             d.max(where=cond),
-            # d.std(where=cond),
-            # d.var(where=cond),
+            d.std(where=cond),
+            d.var(where=cond),
         ]
 
         metrics = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
