@@ -1023,7 +1023,7 @@ def _post_process_group_by_order_by(series, index):
 
 
 @execute_first.register(ops.WindowOp, pd.DataFrame)
-def execute_frame_window_op(op, data, context=None, **kwargs):
+def execute_frame_window_op(op, data, scope=None, context=None, **kwargs):
     operand, window = op.args
 
     following = window.following
@@ -1072,7 +1072,13 @@ def execute_frame_window_op(op, data, context=None, **kwargs):
             source = data
             post_process = _post_process_empty
 
-    new_scope = {t: source for t in operand.op().root_tables()}
+    new_scope = toolz.merge(
+        scope,
+        collections.OrderedDict(
+            (t, source) for t in operand.op().root_tables()
+        ),
+        factory=collections.OrderedDict,
+    )
 
     # no order by or group by: default summarization context
     #
