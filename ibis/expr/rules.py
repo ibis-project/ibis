@@ -776,9 +776,6 @@ class DataTypeArgument(Argument):
     def _validate(self, args, i):
         arg = args[i]
 
-        if isinstance(arg, six.string_types):
-            arg = arg.lower()
-
         arg = args[i] = dt.validate_type(arg)
         return arg
 
