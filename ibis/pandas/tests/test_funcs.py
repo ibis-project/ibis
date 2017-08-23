@@ -14,6 +14,9 @@ import ibis.expr.datatypes as dt  # noqa: E402
 from ibis.common import IbisTypeError  # noqa: E402
 
 
+pytestmark = pytest.mark.pandas
+
+
 @pytest.mark.parametrize(
     'op',
     [
