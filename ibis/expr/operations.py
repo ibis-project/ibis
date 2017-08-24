@@ -1086,7 +1086,7 @@ class DistinctColumn(ValueOp):
 
 class CountDistinct(Reduction):
 
-    input_type = [rules.column]
+    input_type = [rules.column, boolean(name='where', optional=True)]
 
     def output_type(self):
         return ir.Int64Scalar

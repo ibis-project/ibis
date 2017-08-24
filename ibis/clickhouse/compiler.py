@@ -26,7 +26,7 @@ import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 
 # TODO: create absolute import
-from . import identifiers
+from .identifiers import quote_identifier
 
 import ibis.common as com
 import ibis.util as util
@@ -432,7 +432,7 @@ _sql_type_names = {
     'double': 'Float64',
     'string': 'String',
     'boolean': 'UInt8',
-    'date': 'DateTime',
+    'date': 'Date',
     'timestamp': 'DateTime',
     'decimal': 'UInt64',  # see Clickhouse issue #253
 }
@@ -539,35 +539,41 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
-def _reduction_format(translator, func_name, arg, where):
-    arg = translator.translate(arg)
+# def _if_combinator(translator, func_name, arg, where):
+#     arg = translator.translate(arg)
+#     if where is not None:
+#         cond = translator.translate(where)
+#         return '{0!s}If({1!s}, {2})'.format(func_name, arg, cond)
+#     else:
+#         return '{0!s}({1!s})'.format(func_name, arg)
+
+
+def _function_call(translator, func, *args):
+    args_ = ', '.join(map(translator.translate, args))
+    return '{0!s}({1!s})'.format(func, args_)
+
+
+def _aggregate(translator, func, arg, where=None):
     if where is not None:
-        cond = translator.translate(where)
-        return '{0!s}If({1!s}, {2})'.format(func_name, arg, cond)
+        return _function_call(translator, func + 'If', arg, where)
     else:
-        return '{0!s}({1!s})'.format(func_name, arg)
+        return _function_call(translator, func, arg)
 
 
-def _reduction(func_name):
+def agg(func):
     def formatter(translator, expr):
-        op = expr.op()
-
-        # HACK: support trailing arguments
-        arg, where = op.args[:2]
-
-        return _reduction_format(translator, func_name, arg, where)
+        return _aggregate(translator, func, *expr.op().args)
     return formatter
 
 
-def _variance_like(func_name):
-    func_names = {
-        'sample': '{0}Samp'.format(func_name),
-        'pop': '{0}Pop'.format(func_name)
-    }
+def agg_variance_like(func):
+    variants = {'sample': '{0}Samp'.format(func),
+                'pop': '{0}Pop'.format(func)}
 
     def formatter(translator, expr):
         arg, where, how = expr.op().args
-        return _reduction_format(translator, func_names[how], arg, where)
+        return _aggregate(translator, variants[how], arg, where)
+
     return formatter
 
 
@@ -580,11 +586,6 @@ def fixed_arity(func_name, arity):
             raise com.IbisError(msg.format(arg_count, arity))
         return _function_call(translator, func_name, *op.args)
     return formatter
-
-
-def _function_call(translator, func, *args):
-    args_ = ', '.join(map(translator.translate, args))
-    return '{0!s}({1!s})'.format(func, args_)
 
 
 def _binary_infix_op(infix_sym):
@@ -690,13 +691,6 @@ def _literal(translator, expr):
         return _date_literal(expr)
     else:
         raise NotImplementedError
-
-
-def quote_identifier(name, quotechar='`', force=False):
-    if force or name.count(' ') or name in identifiers.clickhouse_identifiers:
-        return '{0}{1}{0}'.format(quotechar, name)
-    else:
-        return name
 
 
 class CaseFormatter(object):
@@ -990,6 +984,7 @@ def _log(translator, expr):
 
 
 def _count_distinct(translator, expr):
+    # clickhouse supports both COUNT(DISTINCT x) and uniq()
     op = expr.op()
     arg_formatted = translator.translate(op.args[0])
     return 'COUNT(DISTINCT {0})'.format(arg_formatted)
@@ -1086,22 +1081,22 @@ _operation_registry = {
     # ops.DecimalScale: unary('scale'),
 
     # Unary aggregates
-    ops.CMSMedian: _reduction('median'),
+    ops.CMSMedian: agg('median'),
     # TODO: there is also a `uniq` function which is the
     #       recommended way to approximate cardinality
-    ops.HLLCardinality: _reduction('uniqHLL12'),
-    ops.Mean: _reduction('avg'),
-    ops.Sum: _reduction('sum'),
-    ops.Max: _reduction('max'),
-    ops.Min: _reduction('min'),
+    ops.HLLCardinality: agg('uniqHLL12'),
+    ops.Mean: agg('avg'),
+    ops.Sum: agg('sum'),
+    ops.Max: agg('max'),
+    ops.Min: agg('min'),
 
-    ops.StandardDev: _variance_like('stddev'),
-    ops.Variance: _variance_like('var'),
+    ops.StandardDev: agg_variance_like('stddev'),
+    ops.Variance: agg_variance_like('var'),
 
     # ops.GroupConcat: fixed_arity('group_concat', 2),
 
-    ops.Count: _reduction('count'),
-    ops.CountDistinct: _count_distinct,
+    ops.Count: agg('count'),
+    ops.CountDistinct: agg('uniq'), # _count_distinct,
 
     # string operations
     ops.StringLength: unary('length'),
