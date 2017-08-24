@@ -3,6 +3,9 @@ from warnings import catch_warnings
 import pandas.util.testing as tm  # noqa: E402
 
 
+pytestmark = pytest.mark.pandas
+
+
 @pytest.mark.parametrize(
     ('case_func', 'expected_func'),
     [
