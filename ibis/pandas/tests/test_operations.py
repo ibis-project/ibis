@@ -38,9 +38,19 @@ def test_read_with_undiscoverable_type(client):
         'left',
         'outer',
 
-        pytest.mark.xfail('right', raises=KeyError),
-        pytest.mark.xfail('semi', raises=NotImplementedError),
-        pytest.mark.xfail('anti', raises=NotImplementedError),
+        pytest.mark.xfail(
+            'right', raises=KeyError, reason='Right join not implemented'
+        ),
+        pytest.mark.xfail(
+            'semi',
+            raises=NotImplementedError,
+            reason='Semi join not implemented'
+        ),
+        pytest.mark.xfail(
+            'anti',
+            raises=NotImplementedError,
+            reason='Anti join not implemented'
+        ),
     ]
 )
 def test_join(how, left, right, df1, df2):
@@ -105,10 +115,14 @@ def test_join_with_invalid_predicates(how, left, right):
 
 
 @pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
+@pytest.mark.xfail(reason='Hard to detect this case')
 def test_join_with_duplicate_non_key_columns(how, left, right, df1, df2):
     left = left.mutate(x=left.value * 2)
     right = right.mutate(x=right.other_value * 3)
     expr = left.join(right, left.key == right.key, how=how)
+
+    # This is undefined behavior because `x` is duplicated. This is difficult
+    # to detect
     with pytest.raises(ValueError):
         expr.execute()
 
@@ -139,6 +153,23 @@ def test_join_with_post_expression_selection(how, left, right, df1, df2):
     expected = pd.merge(df1, df2, on='key', how=how)[[
         'key', 'value', 'other_value'
     ]]
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+@pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
+def test_join_with_non_trivial_key(how, left, right, df1, df2):
+    # also test that the order of operands in the predicate doesn't matter
+    join = left.join(right, right.key.length() == left.key.length(), how=how)
+    expr = join[left.key, left.value, right.other_value]
+    expected = pd.merge(
+        df1.assign(key_len=df1.key.str.len()),
+        df2.assign(key_len=df2.key.str.len()),
+        on='key_len',
+        how=how,
+    ).drop(['key_len', 'key_y', 'key2', 'key3'], axis=1).rename(
+        columns={'key_x': 'key'}
+    )
+    result = expr.execute()
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
