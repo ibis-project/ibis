@@ -5,6 +5,8 @@ import ibis
 from pandas.util import testing as tm
 import ibis.expr.types as ir
 
+pytestmark = pytest.mark.pandas
+
 
 def test_lead(t, df):
     expr = t.dup_strings.lead()

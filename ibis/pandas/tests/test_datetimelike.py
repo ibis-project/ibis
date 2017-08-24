@@ -10,6 +10,9 @@ from ibis import literal as L  # noqa: E402
 from ibis.compat import PY2
 
 
+pytestmark = pytest.mark.pandas
+
+
 @pytest.mark.parametrize(
     ('case_func', 'expected_func'),
     [
