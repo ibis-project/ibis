@@ -212,20 +212,6 @@ END"""
         expected = "if(`f` > 0, `e`, `a`)"
         assert result == expected
 
-    def test_identical_to(self):
-        t = self.con.table('functional_alltypes')
-        expr = t.tinyint_col.identical_to(t.double_col)
-        result = to_sql(expr)
-        expected = """\
-SELECT `tinyint_col` IS NOT DISTINCT FROM `double_col` AS `tmp`
-FROM functional_alltypes"""
-        assert result == expected
-
-    def test_identical_to_special_case(self):
-        expr = ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64'))
-        result = to_sql(expr)
-        assert result == 'SELECT 1 AS `tmp`'
-
 
 # TODO: Clickhouse doesn't support null literal
 # class TestBucketHistogram(unittest.TestCase, ExprSQLTest):
