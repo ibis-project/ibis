@@ -27,7 +27,6 @@ services:
 test_script:
   - "%CONDA% config --set always_yes true"
   - "%CONDA% update conda --channel conda-forge"
-  - "%CONDA% install conda-build --channel conda-forge"
   - "%CONDA% create --name \"ibis_%PYTHON_VERSION%\" python=%PYTHON_VERSION% -c conda-forge"
   - "%ACTIVATE% \"ibis_%PYTHON_VERSION%\""
   - "pip install -e .\"[sqlite, postgres, visualization, pandas]\""
@@ -37,4 +36,3 @@ test_script:
   - "python ci\\datamgr.py sqlite --database \"%IBIS_TEST_SQLITE_DB_PATH%\" --data-directory \"%DATA_DIR%\" --script ci\\sqlite_load.sql functional_alltypes batting awards_players diamonds"
   - "python ci\\datamgr.py postgres --database \"%IBIS_TEST_POSTGRES_DB%\" --data-directory \"%DATA_DIR%\" --script ci\\postgresql_load.sql functional_alltypes batting awards_players diamonds"
   - "pytest --tb=short -m \"not impala and not hdfs\" ibis"
-  - "%CONDA% build conda-recipes\\ibis-framework --python %PYTHON_VERSION%"
