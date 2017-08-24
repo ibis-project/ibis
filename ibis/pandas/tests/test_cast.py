@@ -49,6 +49,10 @@ def test_cast_string(t, df, from_, to, expected):
         (
             dt.Timestamp('America/Los_Angeles'),
             'datetime64[ns, America/Los_Angeles]'
+        ),
+        (
+            "timestamp('America/Los_Angeles')",
+            'datetime64[ns, America/Los_Angeles]'
         )
     ]
 )
