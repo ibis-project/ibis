@@ -67,6 +67,10 @@ def pandas_dtypes_to_ibis_schema(df, schema):
     return ibis.schema(pairs)
 
 
+class PandasTable(ops.DatabaseTable):
+    pass
+
+
 class PandasClient(client.Client):
 
     def __init__(self, dictionary):
@@ -77,7 +81,7 @@ class PandasClient(client.Client):
         schema = pandas_dtypes_to_ibis_schema(
             df, schema if schema is not None else {}
         )
-        return ops.DatabaseTable(name, schema, self).to_expr()
+        return PandasTable(name, schema, self).to_expr()
 
     def execute(self, query, params=None, limit='default', async=False):
         from ibis.pandas.execution import execute
