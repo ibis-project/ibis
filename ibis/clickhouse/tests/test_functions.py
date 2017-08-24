@@ -927,19 +927,6 @@ def test_distinct_aggregates(alltypes, df, translate):
 #     tm.assert_frame_equal(result, expected)
 
 
-# def test_identical_to(con, df):
-#     # TODO: abstract this testing logic out into parameterized fixtures
-#     t = con.table('functional_alltypes')
-#     dt = df[['tinyint_col', 'double_col']]
-#     expr = t.tinyint_col.identical_to(t.double_col)
-#     result = expr.execute()
-#     expected = (dt.tinyint_col.isnull() & dt.double_col.isnull()) | (
-#         dt.tinyint_col == dt.double_col
-#     )
-#     expected.name = result.name
-#     tm.assert_series_equal(result, expected)
-
-
 # def test_rank(con):
 #     t = con.table('functional_alltypes')
 #     expr = t.double_col.rank()
@@ -982,59 +969,62 @@ def test_distinct_aggregates(alltypes, df, translate):
 #     tm.assert_series_equal(result, expected)
 
 
-# @pytest.mark.parametrize(
-#     'field',
-#     [
-#         'tinyint_col',
-#         'smallint_col',
-#         'int_col',
-#         'bigint_col',
-#         'float_col',
-#         'double_col',
-#         'year',
-#         'month',
-#     ]
-# )
-# def test_negate_non_boolean(con, field, df):
-#     t = con.table('functional_alltypes').limit(10)
-#     expr = t.projection([(-t[field]).name(field)])
-#     result = expr.execute()[field]
-#     expected = -df.head(10)[field]
-#     tm.assert_series_equal(result, expected)
+@pytest.mark.parametrize(
+    'field',
+    [
+        'tinyint_col',
+        'smallint_col',
+        'int_col',
+        'bigint_col',
+        'float_col',
+        'double_col',
+        'year',
+        'month',
+    ]
+)
+def test_negate_non_boolean(con, alltypes, field, df):
+    t = alltypes.limit(10)
+    expr = t.projection([(-t[field]).name(field)])
+    result = expr.execute()[field]
+    expected = -df.head(10)[field]
+    tm.assert_series_equal(result, expected)
 
 
-# def test_negate_boolean(con, df):
-#     t = con.table('functional_alltypes').limit(10)
-#     expr = t.projection([(-t.bool_col).name('bool_col')])
+# def test_negate_boolean(con, alltypes, df):
+#     t = alltypes.limit(10)
+#     expr = t.projection([(~t.bool_col).name('bool_col')])
 #     result = expr.execute().bool_col
-#     expected = -df.head(10).bool_col
+#     print(result)
+#     expected = ~df.head(10).bool_col
 #     tm.assert_series_equal(result, expected)
 
 
-# @pytest.mark.parametrize(
-#     ('attr', 'expected'),
-#     [
-#         (operator.methodcaller('year'), {2009, 2010}),
-#         (operator.methodcaller('month'), set(range(1, 13))),
-#         (operator.methodcaller('day'), set(range(1, 32)))
-#     ]
-# )
-# def test_date_extract_field(db, attr, expected):
-#     t = db.functional_alltypes
-#     expr = attr(t.timestamp_col.cast('date')).distinct()
-#     result = expr.execute().astype(int)
-#     assert set(result) == expected
+@pytest.mark.parametrize(
+    ('attr', 'expected'),
+    [
+        (operator.methodcaller('year'), {2009, 2010}),
+        (operator.methodcaller('month'), set(range(1, 13))),
+        (operator.methodcaller('day'), set(range(1, 32)))
+    ]
+)
+def test_date_extract_field(db, alltypes, attr, expected):
+    t = alltypes
+    expr = attr(t.timestamp_col.cast('date')).distinct()
+    result = expr.execute().astype(int)
+    assert set(result) == expected
 
 
-# @pytest.mark.parametrize(
-#     'op',
-#     list(map(
-#         operator.methodcaller, ['sum', 'mean', 'min', 'max', 'std', 'var']
-#     ))
-# )
-# def test_boolean_reduction(alltypes, op, df):
-#     result = op(alltypes.bool_col).execute()
-#     assert result == op(df.bool_col)
+@pytest.mark.parametrize('op', [
+    methodcaller('sum'),
+    methodcaller('mean'),
+    methodcaller('min'),
+    methodcaller('max'),
+    methodcaller('std'),
+    methodcaller('var')
+])
+def test_boolean_reduction(alltypes, op, df):
+    result = op(alltypes.bool_col).execute()
+    assert result == op(df.bool_col)
 
 
 # def test_boolean_summary(alltypes):
@@ -1133,71 +1123,70 @@ def test_distinct_aggregates(alltypes, df, translate):
 #     )
 
 
-# @pytest.mark.parametrize(
-#     ('left', 'right', 'type'),
-#     [
-#         (L('2017-04-01'), date(2017, 4, 2), dt.date),
-#         (date(2017, 4, 2), L('2017-04-01'), dt.date),
-#         (
-#             L('2017-04-01 01:02:33'),
-#             datetime(2017, 4, 1, 1, 3, 34),
-#             dt.timestamp
-#         ),
-#         (
-#             datetime(2017, 4, 1, 1, 3, 34),
-#             L('2017-04-01 01:02:33'),
-#             dt.timestamp
-#         ),
-#     ]
-# )
-# @pytest.mark.parametrize(
-#     'op',
-#     [
-#         operator.eq,
-#         operator.ne,
-#         operator.lt,
-#         operator.le,
-#         operator.gt,
-#         operator.ge,
-#     ]
-# )
-# def test_string_temporal_compare(con, op, left, right, type):
-#     expr = op(left, right)
-#     result = con.execute(expr)
-#     left_raw = con.execute(L(left).cast(type))
-#     right_raw = con.execute(L(right).cast(type))
-#     expected = op(left_raw, right_raw)
-#     assert result == expected
+@pytest.mark.parametrize(
+    ('left', 'right', 'type'),
+    [
+        (L('2017-04-01'), date(2017, 4, 2), dt.date),
+        (date(2017, 4, 2), L('2017-04-01'), dt.date),
+        (
+            L('2017-04-01 01:02:33'),
+            datetime(2017, 4, 1, 1, 3, 34),
+            dt.timestamp
+        ),
+        (
+            datetime(2017, 4, 1, 1, 3, 34),
+            L('2017-04-01 01:02:33'),
+            dt.timestamp
+        ),
+    ]
+)
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.eq,
+        operator.ne,
+        operator.lt,
+        operator.le,
+        operator.gt,
+        operator.ge,
+    ]
+)
+def test_string_temporal_compare(con, op, left, right, type):
+    expr = op(left, right)
+    result = con.execute(expr)
+    left_raw = con.execute(L(left).cast(type))
+    right_raw = con.execute(L(right).cast(type))
+    expected = op(left_raw, right_raw)
+    assert result == expected
 
 
-# @pytest.mark.parametrize(
-#     ('left', 'right'),
-#     [
-#         (L('2017-03-31').cast(dt.date), date(2017, 4, 2)),
-#         (date(2017, 3, 31), L('2017-04-02').cast(dt.date)),
-#         (
-#             L('2017-03-31 00:02:33').cast(dt.timestamp),
-#             datetime(2017, 4, 1, 1, 3, 34),
-#         ),
-#         (
-#             datetime(2017, 3, 31, 0, 2, 33),
-#             L('2017-04-01 01:03:34').cast(dt.timestamp),
-#         ),
-#     ]
-# )
-# @pytest.mark.parametrize(
-#     'op',
-#     [
-#         lambda left, right: ibis.timestamp('2017-04-01 00:02:34').between(
-#             left, right
-#         ),
-#         lambda left, right: ibis.timestamp('2017-04-01').cast(dt.date).between(
-#             left, right
-#         ),
-#     ]
-# )
-# def test_string_temporal_compare_between(con, op, left, right):
-#     expr = op(left, right)
-#     result = con.execute(expr)
-#     assert isinstance(result, (bool, np.bool_))
-#     assert result
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (L('2017-03-31').cast(dt.date), date(2017, 4, 2)),
+        (date(2017, 3, 31), L('2017-04-02').cast(dt.date)),
+    ]
+)
+def test_string_temporal_compare_between_dates(con, left, right):
+    expr = ibis.timestamp('2017-04-01').cast(dt.date).between(left, right)
+    result = con.execute(expr)
+    assert result
+
+
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (
+            L('2017-03-31 00:02:33').cast(dt.timestamp),
+            datetime(2017, 4, 1, 1, 3, 34),
+        ),
+        (
+            datetime(2017, 3, 31, 0, 2, 33),
+            L('2017-04-01 01:03:34').cast(dt.timestamp),
+        )
+    ]
+)
+def test_string_temporal_compare_between_datetimes(con, left, right):
+    expr = ibis.timestamp('2017-04-01 00:02:34').between(left, right)
+    result = con.execute(expr)
+    assert result
