@@ -8,11 +8,12 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.expr.temporal as tempo
 
-import ibis.sql.compiler as comp
+# import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 
 # TODO: create absolute import
 from .identifiers import quote_identifier
+from .types import _type_to_sql_string
 
 import ibis.common as com
 import ibis.util as util
@@ -21,35 +22,17 @@ import ibis.util as util
 # ---------------------------------------------------------------------
 # Scalar and array expression formatting
 
-_sql_type_names = {
-    'int8': 'Int8',
-    'int16': 'Int16',
-    'int32': 'Int32',
-    'int64': 'Int64',
-    'float': 'Float32',
-    'double': 'Float64',
-    'string': 'String',
-    'boolean': 'UInt8',
-    'date': 'Date',
-    'timestamp': 'DateTime',
-    'decimal': 'UInt64',  # see Clickhouse issue #253
-}
-
 
 def _cast(translator, expr):
     op = expr.op()
-    arg, target_type = op.args
-    arg_formatted = translator.translate(arg)
+    arg, target = op.args
+    arg_ = translator.translate(arg)
 
-    if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
-        return arg_formatted
+    if isinstance(arg, ir.CategoryValue) and target == 'int32':
+        return arg_
     else:
-        sql_type = _type_to_sql_string(target_type)
-        return 'CAST({0!s} AS {1!s})'.format(arg_formatted, sql_type)
-
-
-def _type_to_sql_string(tval):
-    return _sql_type_names[tval.name.lower()]
+        type_ = _type_to_sql_string(target)
+        return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
 
 
 def _between(translator, expr):
@@ -58,33 +41,33 @@ def _between(translator, expr):
     return '{0!s} BETWEEN {1!s} AND {2!s}'.format(arg, lower, upper)
 
 
-def _shift_like(name):
+# def _shift_like(name):
 
-    def formatter(translator, expr):
-        op = expr.op()
-        arg, offset, default = op.args
+#     def formatter(translator, expr):
+#         op = expr.op()
+#         arg, offset, default = op.args
 
-        arg_formatted = translator.translate(arg)
+#         arg_formatted = translator.translate(arg)
 
-        if default is not None:
-            if offset is None:
-                offset_formatted = '1'
-            else:
-                offset_formatted = translator.translate(offset)
+#         if default is not None:
+#             if offset is None:
+#                 offset_formatted = '1'
+#             else:
+#                 offset_formatted = translator.translate(offset)
 
-            default_formatted = translator.translate(default)
+#             default_formatted = translator.translate(default)
 
-            return '{0}({1}, {2}, {3})'.format(name, arg_formatted,
-                                               offset_formatted,
-                                               default_formatted)
-        elif offset is not None:
-            offset_formatted = translator.translate(offset)
-            return '{0}({1}, {2})'.format(name, arg_formatted,
-                                          offset_formatted)
-        else:
-            return '{0}({1})'.format(name, arg_formatted)
+#             return '{0}({1}, {2}, {3})'.format(name, arg_formatted,
+#                                                offset_formatted,
+#                                                default_formatted)
+#         elif offset is not None:
+#             offset_formatted = translator.translate(offset)
+#             return '{0}({1}, {2})'.format(name, arg_formatted,
+#                                           offset_formatted)
+#         else:
+#             return '{0}({1})'.format(name, arg_formatted)
 
-    return formatter
+#     return formatter
 
 
 # def _nth_value(translator, expr):
@@ -197,20 +180,6 @@ def _name_expr(formatted_expr, quoted_name):
     return '{0!s} AS {1!s}'.format(formatted_expr, quoted_name)
 
 
-def _timestamp_from_unix(translator, expr):
-    op = expr.op()
-
-    val, unit = op.args
-
-    if unit == 'ms':
-        raise ValueError('`ms` unit is not supported!')
-    elif unit == 'us':
-        raise ValueError('`us` unit is not supported!')
-
-    arg = translator.translate(val)
-    return 'toUInt32({0})'.format(arg)
-
-
 def varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
@@ -263,6 +232,7 @@ def _string_join(translator, expr):
     return _call(translator, 'concat_ws', arg, *strings)
 
 
+# TODO
 def _parse_url(translator, expr):
     op = expr.op()
 
@@ -335,17 +305,10 @@ def _log(translator, expr):
         raise ValueError('Base {} for logarithm not supported!'.format(base))
 
 
-def _count_distinct(translator, expr):
-    # clickhouse supports both COUNT(DISTINCT x) and uniq()
-    op = expr.op()
-    arg_formatted = translator.translate(op.args[0])
-    return 'COUNT(DISTINCT {0})'.format(arg_formatted)
-
-
 def _value_list(translator, expr):
     op = expr.op()
-    formatted = [translator.translate(x) for x in op.values]
-    return '({0})'.format(', '.join(formatted))
+    values_ = map(translator.translate, op.values)
+    return '({0})'.format(', '.join(values_))
 
 
 def literal(translator, expr):
@@ -449,6 +412,20 @@ def _table_array_view(translator, expr):
 # ---------------------------------------------------------------------
 # Timestamp arithmetic and other functions
 
+
+def _timestamp_from_unix(translator, expr):
+    op = expr.op()
+    val, unit = op.args
+
+    if unit == 'ms':
+        raise ValueError('`ms` unit is not supported!')
+    elif unit == 'us':
+        raise ValueError('`us` unit is not supported!')
+
+    arg = translator.translate(val)
+    return 'toUInt32({0})'.format(arg)
+
+
 def _timestamp_delta(translator, expr):
     op = expr.op()
     arg, offset = op.args
@@ -522,16 +499,13 @@ def _table_column(translator, expr):
     return quoted_name
 
 
-
-_subtract_one = '({0} - 1)'.format
-
-
-_expr_transforms = {
-    ops.RowNumber: _subtract_one,
-    ops.DenseRank: _subtract_one,
-    ops.MinRank: _subtract_one,
-    ops.NTile: _subtract_one,
-}
+# _subtract_one = '({0} - 1)'.format
+# _expr_transforms = {
+#     ops.RowNumber: _subtract_one,
+#     ops.DenseRank: _subtract_one,
+#     ops.MinRank: _subtract_one,
+#     ops.NTile: _subtract_one,
+# }
 
 
 # TODO: clickhouse uses differenct string functions
@@ -585,7 +559,6 @@ _operation_registry = {
     ops.Ln: unary('log'),
     ops.Log2: unary('log2'),
     ops.Log10: unary('log10'),
-
 
     # Unary aggregates
     ops.CMSMedian: agg('median'),
@@ -656,7 +629,6 @@ _operation_registry = {
     ops.SearchedCase: _searched_case,
 
     ops.TableColumn: _table_column,
-
     ops.TableArrayView: _table_array_view,
 
     ops.TimestampDelta: _timestamp_delta,
@@ -671,11 +643,11 @@ _operation_registry = {
     # ops.MinRank: lambda *args: 'rank()',
     # ops.PercentRank: lambda *args: 'percent_rank()',
 
-    ops.FirstValue: unary('first_value'),
-    ops.LastValue: unary('last_value'),
+    # ops.FirstValue: unary('first_value'),
+    # ops.LastValue: unary('last_value'),
     # ops.NthValue: _nth_value,
-    ops.Lag: _shift_like('lag'),
-    ops.Lead: _shift_like('lead'),
+    # ops.Lag: _shift_like('lag'),
+    # ops.Lead: _shift_like('lead'),
     # ops.NTile: _ntile,
 }
 
