@@ -2,9 +2,6 @@ import unittest
 
 import pytest
 
-import pandas as pd
-import pandas.util.testing as tm
-
 import ibis
 import ibis.expr.types as ir
 import ibis.expr.api as api
@@ -19,12 +16,12 @@ pytest.importorskip('clickhouse_driver')
 
 from ibis.clickhouse.compiler import ClickhouseExprTranslator  # noqa: E402
 from ibis.clickhouse.compiler import to_sql  # noqa: E402
-from ibis.clickhouse.compiler import ClickhouseContext  # noqa: E402
+from ibis.clickhouse.compiler import ClickhouseQueryContext  # noqa: E402
 from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
 from ibis.clickhouse.tests.common import ClickhouseE2E  # noqa: E402
 
 
-# TODO: adapt tests cases to clickhouse syntax, most of them are correct though
+# TODO: move these cases to other test files
 
 def approx_equal(a, b, eps):
     return abs(a - b) < eps
@@ -72,7 +69,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
 
     def test_column_ref_table_aliases(self):
-        context = ClickhouseContext()
+        context = ClickhouseQueryContext()
 
         table1 = ibis.table([
             ('key1', 'string'),
@@ -151,7 +148,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
         expr = t0.g == t1.g
 
-        ctx = ClickhouseContext()
+        ctx = ClickhouseQueryContext()
         ctx.make_alias(t0)
 
         # Grab alias from parent context
@@ -493,12 +490,6 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
     #     result = expr.execute()
     #     assert isinstance(result, pd.DataFrame)
 
-    def test_distinct_array(self):
-        table = self.alltypes
-
-        expr = table.string_col.distinct()
-        result = self.con.execute(expr)
-        assert isinstance(result, pd.Series)
 
 #     def test_decimal_metadata(self):
 #         table = self.con.table('tpch_lineitem')
@@ -683,15 +674,6 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
 
         self.assert_cases_equality(mod_cases)
 
-    def test_column_types(self):
-        df = self.alltypes.execute()
-        assert df.tinyint_col.dtype.name == 'int8'
-        assert df.smallint_col.dtype.name == 'int16'
-        assert df.int_col.dtype.name == 'int32'
-        assert df.bigint_col.dtype.name == 'int64'
-        assert df.float_col.dtype.name == 'float32'
-        assert df.double_col.dtype.name == 'float64'
-        assert pd.core.common.is_datetime64_dtype(df.timestamp_col.dtype)
 
     # def test_timestamp_builtins(self):
     #     i32 = L(50000)
@@ -787,29 +769,11 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
 #         ]
 #         self.assert_cases_equality(cases)
 
-    def test_filter_predicates(self):
-        t = self.con.table('diamonds')
-
-        predicates = [
-            lambda x: x.color.lower().like('%de%'),
-            # lambda x: x.color.lower().contains('de'),
-            lambda x: x.color.lower().rlike('.*ge.*')
-        ]
-
-        expr = t
-        for pred in predicates:
-            expr = expr[pred(expr)].projection([expr])
-
-        expr.execute()
 
     # def test_histogram_value_counts(self):
     #     t = self.alltypes
     #     expr = t.double_col.histogram(10).value_counts()
     #     expr.execute()
-
-    def test_casted_expr_value_counts(self):
-        expr = self.alltypes.string_col.cast('double').value_counts()
-        expr.execute()
 
 #     def test_decimal_timestamp_builtins(self):
 #         table = self.con.table('tpch_lineitem')
@@ -919,10 +883,6 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
     #     proj_table = g.mutate(proj_exprs)
     #     proj_table.execute()
 
-#     def test_anti_join_self_reference_works(self):
-#         case = self._case_self_reference_limit_exists()
-#         self.con.explain(case)
-
 #     def test_tpch_self_join_failure(self):
 #         region = self.con.table('tpch_region')
 #         nation = self.con.table('tpch_nation')
@@ -983,25 +943,6 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
 #         expr = tpch[amount_filter].limit(0)
 #         self.con.explain(expr)
 
-#     def test_non_equijoin(self):
-#         t = self.con.table('functional_alltypes').limit(100)
-#         t2 = t.view()
-
-#         expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
-
-#         # it works
-#         expr.execute()
-
-#     def test_char_varchar_types(self):
-#         sql = """\
-# SELECT CAST(string_col AS varchar(20)) AS varchar_col,
-#        CAST(string_col AS CHAR(5)) AS char_col
-# FROM functional_alltypes"""
-
-#         t = self.con.sql(sql)
-
-#         assert isinstance(t.varchar_col, api.StringColumn)
-#         assert isinstance(t.char_col, api.StringColumn)
 
     # def test_unions_with_ctes(self):
     #     t = self.con.table('functional_alltypes')
@@ -1017,101 +958,9 @@ class TestClickhouseExprs(ClickhouseE2E, unittest.TestCase, ExprTestCases):
     #     expr = join1.union(join2)
     #     self.con.explain(expr)
 
-    def test_head(self):
-        t = self.con.table('functional_alltypes')
-        result = t.head().execute()
-        expected = t.limit(5).execute()
-        tm.assert_frame_equal(result, expected)
-
-#     def test_identical_to(self):
-#         cases = [
-#             (ibis.NA.cast('int64'), ibis.NA.cast('int64'), True),
-#             (L(1), L(1), True),
-#             (ibis.NA.cast('int64'), L(1), False),
-#             (L(1), ibis.NA.cast('int64'), False),
-#             (L(0), L(1), False),
-#             (L(1), L(0), False),
-#         ]
-#         con = self.con
-#         for left, right, expected in cases:
-#             expr = left.identical_to(right)
-#             result = con.execute(expr)
-#             assert result == expected
-
     # def test_not(self):
     #     t = self.con.table('functional_alltypes').limit(10)
     #     expr = t.projection([(~t.double_col.isnull()).name('double_col')])
     #     result = expr.execute().double_col
     #     expected = ~t.execute().double_col.isnull()
     #     tm.assert_series_equal(result, expected)
-
-
-def test_where_with_timestamp():
-    t = ibis.table(
-        [
-            ('uuid', 'string'),
-            ('ts', 'timestamp'),
-            ('search_level', 'int64'),
-        ],
-        name='t'
-    )
-    expr = t.group_by(t.uuid).aggregate(
-        min_date=t.ts.min(where=t.search_level == 1)
-    )
-    result = ibis.clickhouse.compile(expr)
-    expected = """\
-SELECT `uuid`, minIf(`ts`, `search_level` = 1) AS `min_date`
-FROM t
-GROUP BY `uuid`"""
-    assert result == expected
-
-
-# def test_filter_with_analytic():
-#     x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
-#     with_filter_col = x[x.columns + [ibis.null().name('filter')]]
-#     filtered = with_filter_col[with_filter_col['filter'].isnull()]
-#     subquery = filtered[filtered.columns]
-
-#     with_analytic = subquery[['col', subquery.count().name('analytic')]]
-#     expr = with_analytic[with_analytic.columns]
-
-#     result = ibis.clickhouse.compile(expr)
-#     expected = """\
-# SELECT `col`, `analytic`
-# FROM (
-#   SELECT `col`, count(*) OVER () AS `analytic`
-#   FROM (
-#     SELECT `col`, `filter`
-#     FROM (
-#       SELECT *
-#       FROM (
-#         SELECT `col`, NULL AS `filter`
-#         FROM x
-#       ) t3
-#       WHERE `filter` IS NULL
-#     ) t2
-#   ) t1
-# ) t0"""
-
-#     assert result == expected
-
-
-def test_named_from_filter_groupby():
-    t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
-    gb = t.filter(t.value == 42).groupby(t.key)
-    sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()  # noqa: E731
-    expr = gb.aggregate(abc=sum_expr)
-    expected = """\
-SELECT `key`, sum(((`value` + 1) + 2) + 3) AS `abc`
-FROM t0
-WHERE `value` = 42
-GROUP BY `key`"""
-    assert ibis.clickhouse.compile(expr) == expected
-
-    expr = gb.aggregate(foo=sum_expr)
-    expected = """\
-SELECT `key`, sum(((`value` + 1) + 2) + 3) AS `foo`
-FROM t0
-WHERE `value` = 42
-GROUP BY `key`"""
-    assert ibis.clickhouse.compile(expr) == expected

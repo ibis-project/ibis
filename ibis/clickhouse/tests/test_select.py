@@ -16,6 +16,11 @@ def table():
 
 
 @pytest.fixture(scope='module')
+def diamonds(con):
+    return con.table('diamonds')
+
+
+@pytest.fixture(scope='module')
 def batting(con):
     return con.table('batting')
 
@@ -60,6 +65,12 @@ WHERE `string_col` IN ('foo', 'bar')"""
 FROM ibis_testing.`functional_alltypes`
 WHERE `string_col` NOT IN ('foo', 'bar')"""
     assert result == expected
+
+
+def test_head(alltypes):
+    result = alltypes.head().execute()
+    expected = alltypes.limit(5).execute()
+    tm.assert_frame_equal(result, expected)
 
 
 def test_subquery(alltypes, df):
@@ -239,74 +250,66 @@ def test_physical_table_reference_translate(alltypes):
     assert sql_string == expected
 
 
-def test_join_with_predicate_raises(con, batting, awards_players):
+def test_non_equijoin(alltypes):
+    t = alltypes.limit(100)
+    t2 = t.view()
+    expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
+
+    with pytest.raises(com.TranslationError):
+        expr.execute()
+
+
+def test_join_with_predicate_on_different_columns_raises(con, batting,
+                                                         awards_players):
     t1 = batting
     t2 = awards_players
 
-    pred = t1['playerID'] == t2['playerID']
+    pred = t1['playerID'] == t2['awardID']
     expr = t1.inner_join(t2, [pred])[[t1]]
 
     with pytest.raises(com.TranslationError):
         to_sql(expr)
 
 
-def test_simple_joins(con, batting, awards_players):
+@pytest.mark.parametrize(('join_type', 'join_clause'), [
+    ('any_inner_join', 'ANY INNER JOIN'),
+    ('all_inner_join', 'ALL INNER JOIN'),
+    ('any_left_join', 'ANY LEFT JOIN'),
+    ('all_left_join', 'ALL LEFT JOIN')
+])
+def test_simple_joins(con, batting, awards_players, join_type, join_clause):
     t1, t2 = batting, awards_players
+    expr = getattr(t1, join_type)(t2, ['playerID'])[[t1]]
 
-    expr = t1.any_inner_join(t2, ['playerID'])[[t1]]
-    con.execute(expr)
+    expected = """SELECT t0.*
+FROM ibis_testing.`batting` t0
+  {join_clause} ibis_testing.`awards_players` t1
+    USING `playerID`""".format(join_clause=join_clause)
 
-    # cases = [
-#         (t1.inner_join(t2, [pred])[[t1]],
-#          """SELECT t0.*
-# FROM star1 t0
-#   INNER JOIN star2 t1
-#     ON t0.`foo_id` = t1.`foo_id`"""),
-#         (t1.left_join(t2, [pred])[[t1]],
-#          """SELECT t0.*
-# FROM star1 t0
-#   LEFT OUTER JOIN star2 t1
-#     ON t0.`foo_id` = t1.`foo_id`"""),
-#         (t1.outer_join(t2, [pred])[[t1]],
-#          """SELECT t0.*
-# FROM star1 t0
-#   FULL OUTER JOIN star2 t1
-#     ON t0.`foo_id` = t1.`foo_id`"""),
-#         # multiple predicates
-#         (t1.inner_join(t2, [pred, pred2])[[t1]],
-#          """SELECT t0.*
-# FROM star1 t0
-#   INNER JOIN star2 t1
-#     ON t0.`foo_id` = t1.`foo_id` AND
-#        t0.`bar_id` = t1.`foo_id`"""),
-#     ]
-
-#     for expr, expected_sql in cases:
-#         result_sql = to_sql(expr)
-#         assert result_sql == expected_sql
+    assert to_sql(expr) == expected
+    assert len(con.execute(expr))
 
 
-# def test_semi_join(t, s):
-#     t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
-#     expr = t.semi_join(s, t.id == s.id)
-#     result = expr.compile().compile(compile_kwargs=dict(literal_binds=True))
-#     base = sa.select([t_a.c.id, t_a.c.name]).where(
-#         sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id))
-#     )
-#     expected = sa.select([base.c.id, base.c.name])
-#     assert str(result) == str(expected)
+def test_self_reference_simple(con, alltypes):
+    expr = alltypes.view()
+    result_sql = to_sql(expr)
+    expected_sql = "SELECT *\nFROM ibis_testing.`functional_alltypes`"
+    assert result_sql == expected_sql
+    assert len(con.execute(expr))
 
 
-# def test_anti_join(t, s):
-#     t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
-#     expr = t.anti_join(s, t.id == s.id)
-#     result = expr.compile().compile(compile_kwargs=dict(literal_binds=True))
-#     expected = sa.select([sa.column('id'), sa.column('name')]).select_from(
-#         sa.select([t_a.c.id, t_a.c.name]).where(
-#             ~sa.exists(sa.select([1]).where(t_a.c.id == s_a.c.id))
-#         )
-#     )
-#     assert str(result) == str(expected)
+def test_join_self_reference(con, alltypes):
+    t1 = alltypes
+    t2 = t1.view()
+    expr = t1.any_inner_join(t2, ['id'])[[t1]]
+
+    result_sql = to_sql(expr)
+    expected_sql = """SELECT t0.*
+FROM ibis_testing.`functional_alltypes` t0
+  ANY INNER JOIN ibis_testing.`functional_alltypes` t1
+    USING `id`"""
+    assert result_sql == expected_sql
+    assert len(con.execute(expr))
 
 
 # def test_union(alltypes):
@@ -323,3 +326,90 @@ def test_simple_joins(con, batting, awards_players):
 #     result = t1.union(t2).execute()
 #     expected = t3.execute()
 #     tm.assert_frame_equal(result, expected)
+
+
+def test_filter_predicates(diamonds):
+    t = diamonds
+
+    predicates = [
+        lambda x: x.color.lower().like('%de%'),
+        # lambda x: x.color.lower().contains('de'),
+        lambda x: x.color.lower().rlike('.*ge.*')
+    ]
+
+    expr = t
+    for pred in predicates:
+        expr = expr[pred(expr)].projection([expr])
+
+    expr.execute()
+
+
+def test_where_with_timestamp():
+    t = ibis.table(
+        [
+            ('uuid', 'string'),
+            ('ts', 'timestamp'),
+            ('search_level', 'int64'),
+        ],
+        name='t'
+    )
+    expr = t.group_by(t.uuid).aggregate(
+        min_date=t.ts.min(where=t.search_level == 1)
+    )
+    result = ibis.clickhouse.compile(expr)
+    expected = """\
+SELECT `uuid`, minIf(`ts`, `search_level` = 1) AS `min_date`
+FROM t
+GROUP BY `uuid`"""
+    assert result == expected
+
+
+def test_named_from_filter_groupby():
+    t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
+    gb = t.filter(t.value == 42).groupby(t.key)
+    sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()  # noqa: E731
+    expr = gb.aggregate(abc=sum_expr)
+    expected = """\
+SELECT `key`, sum(((`value` + 1) + 2) + 3) AS `abc`
+FROM t0
+WHERE `value` = 42
+GROUP BY `key`"""
+    assert ibis.clickhouse.compile(expr) == expected
+
+    expr = gb.aggregate(foo=sum_expr)
+    expected = """\
+SELECT `key`, sum(((`value` + 1) + 2) + 3) AS `foo`
+FROM t0
+WHERE `value` = 42
+GROUP BY `key`"""
+    assert ibis.clickhouse.compile(expr) == expected
+
+
+# def test_filter_with_analytic():
+#     x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
+#     with_filter_col = x[x.columns + [ibis.null().name('filter')]]
+#     filtered = with_filter_col[with_filter_col['filter'].isnull()]
+#     subquery = filtered[filtered.columns]
+
+#     with_analytic = subquery[['col', subquery.count().name('analytic')]]
+#     expr = with_analytic[with_analytic.columns]
+
+#     result = ibis.clickhouse.compile(expr)
+#     expected = """\
+# SELECT `col`, `analytic`
+# FROM (
+#   SELECT `col`, count(*) OVER () AS `analytic`
+#   FROM (
+#     SELECT `col`, `filter`
+#     FROM (
+#       SELECT *
+#       FROM (
+#         SELECT `col`, NULL AS `filter`
+#         FROM x
+#       ) t3
+#       WHERE `filter` IS NULL
+#     ) t2
+#   ) t1
+# ) t0"""
+
+#     assert result == expected

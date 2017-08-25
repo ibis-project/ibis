@@ -50,11 +50,6 @@ def df(alltypes):
     return alltypes.execute()
 
 
-# @pytest.fixture(scope='module')
-# def at(alltypes):
-#     return alltypes.op().sqla_table
-
-
 @pytest.fixture
 def translate():
     from ibis.clickhouse.compiler import ClickhouseExprTranslator

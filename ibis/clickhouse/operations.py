@@ -663,18 +663,18 @@ def _null_literal(translator, expr):
 _undocumented_operations = {
     ir.NullLiteral: _null_literal,  # undocumented
     ops.IsNull: unary('isNull'),
-    ops.NotNull: unary('isNotNull')
+    ops.NotNull: unary('isNotNull'),
+    ops.IfNull: fixed_arity('ifNull', 2),
+    ops.NullIf: fixed_arity('nullIf', 2),
+    ops.Coalesce: varargs('coalesce')
 }
 
 
 _unsupported_ops = [
-    ops.Coalesce,  # coalesce as well
     ops.Truncate,
     ops.WindowOp,
     ops.DecimalPrecision,
     ops.DecimalScale,
-    ops.IfNull,
-    ops.NullIf,
     ops.ZeroIfNull,
     ops.NullIfZero,
     ops.BaseConvert,

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+# import os
+# import sys
 import math
 import operator
 
@@ -21,14 +21,14 @@ from operator import methodcaller
 from datetime import date, datetime
 
 import pytest
-import string
+# import string
 
 import numpy as np
 
 import ibis
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
-import ibis.config as config
+# import ibis.config as config
 
 from ibis import literal as L
 
@@ -40,6 +40,8 @@ ch = pytest.importorskip('clickhouse_driver')
 
 pytestmark = pytest.mark.clickhouse
 
+
+# TODO: move type related test cases to test_types
 
 # @pytest.yield_fixture
 # def guid(con):
@@ -66,8 +68,8 @@ pytestmark = pytest.mark.clickhouse
     ('double', 'CAST(`double_col` AS Float64)')
 ])
 def test_cast_double_col(alltypes, translate, to_type, expected):
-     expr = alltypes.double_col.cast(to_type)
-     assert translate(expr) == expected
+    expr = alltypes.double_col.cast(to_type)
+    assert translate(expr) == expected
 
 
 @pytest.mark.parametrize(('to_type', 'expected'), [
@@ -77,9 +79,9 @@ def test_cast_double_col(alltypes, translate, to_type, expected):
     ('timestamp', 'CAST(`string_col` AS DateTime)'),
     ('date', 'CAST(`string_col` AS Date)')
 ])
-def test_cast_double_col(alltypes, translate, to_type, expected):
-     expr = alltypes.string_col.cast(to_type)
-     assert translate(expr) == expected
+def test_cast_string_col(alltypes, translate, to_type, expected):
+    expr = alltypes.string_col.cast(to_type)
+    assert translate(expr) == expected
 
 
 @pytest.mark.xfail(raises=AssertionError,
@@ -224,6 +226,71 @@ def test_between(con, alltypes, translate):
     assert len(con.execute(expr))
 
 
+# TODO
+# @pytest.mark.parametrize(('value', 'expected'), [(0, None), (5.5, 5.5)])
+# def test_nullifzero(con, value, expected):
+#     assert con.execute(L(value).nullifzero()) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (L(None).isnull(), True),
+        (L(1).isnull(), False),
+        (L(None).notnull(), False),
+        (L(1).notnull(), True),
+    ]
+)
+def test_isnull_notnull(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (ibis.coalesce(5, None, 4), 5),
+        (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
+        (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
+    ]
+)
+def test_coalesce(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
+# TODO: clickhouse cannot cast NULL to other types
+# @pytest.mark.parametrize(
+#     ('expr', 'expected'),
+#     [
+#         (ibis.coalesce(ibis.NA, ibis.NA), None),
+#         (ibis.coalesce(ibis.NA, ibis.NA, ibis.NA.cast('double')), None),
+#         (
+#             ibis.coalesce(
+#                 ibis.NA.cast('int8'),
+#                 ibis.NA.cast('int8'),
+#                 ibis.NA.cast('int8'),
+#             ),
+#             None,
+#         ),
+#     ]
+# )
+# def test_coalesce_all_na(con, expr, expected):
+#     assert con.execute(expr) == expected
+
+
+# TODO
+@pytest.mark.parametrize(
+    ('expr', 'expected'),
+    [
+        (ibis.NA.fillna(5), 5),
+        (L(5).fillna(10), 5),
+        # (L(5).nullif(5), None),
+        # (L(10).nullif(5), 10),
+    ]
+)
+def test_fillna_nullif(con, expr, expected):
+    assert con.execute(expr) == expected
+
+
 @pytest.mark.parametrize(
     ('value', 'expected'),
     [
@@ -232,6 +299,7 @@ def test_between(con, alltypes, translate):
         (L(1.2345), 'Float64'),
         (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), 'DateTime'),
         (L(date(2015, 9, 1)), 'Date'),
+        (ibis.NA, 'Null')
     ]
 )
 def test_typeof(con, value, expected):
@@ -340,6 +408,23 @@ def test_string_column_find_in_set(con, alltypes, translate):
 #         (L(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")
 #     ]
 #     self._check_expr_cases(cases)
+
+
+# TODO
+# def test_identical_to(self):
+#     cases = [
+#          (ibis.NA.cast('int64'), ibis.NA.cast('int64'), True),
+#          (L(1), L(1), True),
+#          (ibis.NA.cast('int64'), L(1), False),
+#          (L(1), ibis.NA.cast('int64'), False),
+#          (L(0), L(1), False),
+#          (L(1), L(0), False),
+#     ]
+#     con = self.con
+#     for left, right, expected in cases:
+#          expr = left.identical_to(right)
+#          result = con.execute(expr)
+#          assert result == expected
 
 
 @pytest.mark.parametrize(
@@ -577,37 +662,6 @@ def test_reduction_invalid_where(con, alltypes, reduction):
 #         (self.table.int_col.hash(), 'fnv_hash(`int_col`)')
 #     ]
 #     self._check_expr_cases(cases)
-
-# @pytest.mark.parametrize(
-#     ('expr', 'expected'),
-#     [
-#         (ibis.NA.fillna(5), 5),
-#         (L(5).fillna(10), 5),
-#         (L(5).nullif(5), None),
-#         (L(10).nullif(5), 10),
-#     ]
-# )
-# def test_fillna_nullif(con, expr, expected):
-#     assert con.execute(expr) == expected
-
-
-# @pytest.mark.parametrize(
-#     ('expr', 'expected'),
-#     [
-#         (ibis.coalesce(ibis.NA, ibis.NA), None),
-#         (ibis.coalesce(ibis.NA, ibis.NA, ibis.NA.cast('double')), None),
-#         (
-#             ibis.coalesce(
-#                 ibis.NA.cast('int8'),
-#                 ibis.NA.cast('int8'),
-#                 ibis.NA.cast('int8'),
-#             ),
-#             None,
-#         ),
-#     ]
-# )
-# def test_coalesce_all_na(con, expr, expected):
-#     assert con.execute(expr) == expected
 
 
 def test_numeric_builtins_work(con, alltypes, df, translate):
@@ -852,6 +906,13 @@ def test_distinct_aggregates(alltypes, df, translate):
     assert result == df.head(100).double_col.nunique()
 
 
+# TODO
+# def test_distinct_array(con, alltypes, translate):
+#     expr = alltypes.string_col.distinct()
+#     result = con.execute(expr)
+#     assert isinstance(result, pd.Series)
+
+
 # def test_not_exists(alltypes, df):
 #     t = alltypes
 #     t2 = t.view()
@@ -881,15 +942,15 @@ def test_distinct_aggregates(alltypes, df, translate):
 #     assert 'no translator rule' in result.lower()
 
 
-# def test_null_column(alltypes):
-#     t = alltypes
-#     nrows = t.count().execute()
-#     expr = t.mutate(na_column=ibis.NA).na_column
-#     result = expr.execute()
-#     tm.assert_series_equal(
-#         result,
-#         pd.Series([None] * nrows, name='na_column')
-#     )
+def test_null_column(alltypes, translate):
+    t = alltypes
+    nrows = t.count().execute()
+    expr = t.mutate(na_column=ibis.NA).na_column
+    result = expr.execute()
+    tm.assert_series_equal(
+        result,
+        pd.Series([None] * nrows, name='na_column')
+    )
 
 
 # def test_null_column_union(alltypes, df):
@@ -917,7 +978,7 @@ def test_distinct_aggregates(alltypes, df, translate):
 #     tm.assert_frame_equal(result, expected)
 
 
-# def test_anonymous_aggregate(alltypes, df):
+# def test_anonymus_aggregate(alltypes, df):
 #     t = alltypes
 #     expr = t[t.double_col > t.double_col.mean()]
 #     result = expr.execute()
