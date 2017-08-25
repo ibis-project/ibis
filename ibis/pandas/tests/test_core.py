@@ -11,6 +11,8 @@ pytest.importorskip('multipledispatch')
 from ibis.pandas.execution import (
     execute, execute_node, execute_first
 )  # noqa: E402
+from ibis.pandas.client import PandasTable  # noqa: E402
+from ibis.pandas.core import data_preload  # noqa: E402
 from multipledispatch.conflict import ambiguities  # noqa: E402
 
 pytestmark = pytest.mark.pandas
@@ -36,3 +38,17 @@ def test_execute_first_accepts_scope_keyword_argument(t, df):
     del execute_first.funcs[types]
     execute_first.reorder()
     execute_first._cache.clear()
+
+
+def test_data_preload(t, df):
+    @data_preload.register(PandasTable, pd.DataFrame)
+    def data_preload_check_a_thing(_, df, **kwargs):
+        assert isinstance(df, list)
+        return df
+
+    with pytest.raises(AssertionError):
+        t.execute()
+
+    del data_preload.funcs[PandasTable, pd.DataFrame]
+    data_preload.reorder()
+    data_preload._cache.clear()
