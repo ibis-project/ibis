@@ -1469,7 +1469,23 @@ class InnerJoin(Join):
     pass
 
 
+class AnyInnerJoin(InnerJoin):
+    pass
+
+
+class AllInnerJoin(InnerJoin):
+    pass
+
+
 class LeftJoin(Join):
+    pass
+
+
+class AnyLeftJoin(LeftJoin):
+    pass
+
+
+class AllLeftJoin(LeftJoin):
     pass
 
 

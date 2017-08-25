@@ -68,14 +68,14 @@ class ClickhouseQueryBuilder(comp.QueryBuilder):
 
     @property
     def _make_context(self):
-        return ClickhouseContext
+        return ClickhouseQueryContext
 
     @property
     def _union_class(self):
         return ClickhouseUnion
 
 
-class ClickhouseContext(comp.QueryContext):
+class ClickhouseQueryContext(comp.QueryContext):
 
     def _to_sql(self, expr, ctx):
         return to_sql(expr, context=ctx)
@@ -310,32 +310,39 @@ class _TableSetFormatter(comp.TableSetFormatter):
 
             if len(preds):
                 buf.write('\n')
-                fmt_preds = [self._translate(pred) for pred in preds]
-                conj = ' AND\n{0}'.format(' ' * 3)
-                fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
+                fmt_preds = map(self._format_predicate, preds)
+                # fmt_preds = [self._translate(pred) for pred in preds]
+                fmt_preds = util.indent('USING ' + ', '.join(fmt_preds),
                                         self.indent * 2)
                 buf.write(fmt_preds)
 
         return buf.getvalue()
 
     _join_names = {
-        ops.InnerJoin: 'INNER JOIN',
-        ops.LeftJoin: 'LEFT OUTER JOIN',
-        ops.RightJoin: 'RIGHT OUTER JOIN',
-        ops.OuterJoin: 'FULL OUTER JOIN',
-        ops.LeftAntiJoin: 'LEFT ANTI JOIN',
-        ops.LeftSemiJoin: 'LEFT SEMI JOIN',
-        ops.CrossJoin: 'CROSS JOIN'
+        ops.AnyInnerJoin: 'ANY INNER JOIN',
+        ops.AllInnerJoin: 'ALL INNER JOIN',
+        ops.AnyLeftJoin: 'ANY LEFT JOIN',
+        ops.AllLeftJoin: 'ALL LEFT JOIN'
     }
 
+    def _validate_join_predicates(self, predicates):
+        for pred in predicates:
+            op = pred.op()
+            if not isinstance(op, ops.Equals):
+                raise com.TranslationError('Non-equality join predicates are '
+                                           'not supported')
+
+            left_on, right_on = op.args
+            if left_on.get_name() != right_on.get_name():
+                raise com.TranslationError('Joining on different column names '
+                                           'is not supported')
+
     def _get_join_type(self, op):
-        jname = self._join_names[type(op)]
+        return self._join_names[type(op)]
 
-        # Clickhouse requires this
-        if len(op.predicates) == 0:
-            jname = self._join_names[ops.CrossJoin]
-
-        return jname
+    def _format_predicate(self, predicate):
+        column = predicate.op().args[0]
+        return quote_identifier(column.get_name(), force=True)
 
     def _format_table(self, expr):
         # TODO: This could probably go in a class and be significantly nicer
@@ -426,7 +433,7 @@ from .operations import _operation_registry, _name_expr, _type_to_sql_string
 class ClickhouseExprTranslator(comp.ExprTranslator):
 
     _registry = _operation_registry
-    _context_class = ClickhouseContext
+    _context_class = ClickhouseQueryContext
 
     def name(self, translated, name, force=True):
         return _name_expr(translated,

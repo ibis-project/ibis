@@ -123,7 +123,7 @@ def fixed_arity(func_name, arity):
         arg_count = len(op.args)
         if arity != arg_count:
             msg = 'Incorrect number of args {0} instead of {1}'
-            raise com.IbisError(msg.format(arg_count, arity))
+            raise com.TranslationError(msg.format(arg_count, arity))
         return _call(translator, func_name, *op.args)
     return formatter
 
@@ -209,7 +209,7 @@ def _string_find(translator, expr):
     op = expr.op()
     arg, substr, start, _ = op.args
     if start is not None:
-        raise com.IbisError('String find doesn\'t support start argument')
+        raise com.TranslationError('String find doesn\'t support start argument')
 
     return _call(translator, 'position', arg, substr) + ' - 1'
 
@@ -481,7 +481,6 @@ def _table_column(translator, expr):
     op = expr.op()
     field_name = op.name
     quoted_name = quote_identifier(field_name, force=True)
-
     table = op.table
     ctx = translator.context
 
@@ -615,7 +614,6 @@ _operation_registry = {
 
     ops.Cast: _cast,
 
-    ops.Coalesce: varargs('coalesce'),
     ops.Greatest: varargs('greatest'),
     ops.Least: varargs('least'),
 
@@ -655,11 +653,22 @@ _operation_registry = {
 def raise_error(translator, expr, *args):
     msg = 'Clickhouse backend doesn\'t support {0} operation!'
     op = expr.op()
-    raise com.IbisError(msg.format(type(op)))
+    raise com.TranslationError(msg.format(type(op)))
+
+
+def _null_literal(translator, expr):
+    return 'NULL'
+
+
+_undocumented_operations = {
+    ir.NullLiteral: _null_literal,  # undocumented
+    ops.IsNull: unary('isNull'),
+    ops.NotNull: unary('isNotNull')
+}
 
 
 _unsupported_ops = [
-    ir.NullLiteral,
+    ops.Coalesce,  # coalesce as well
     ops.Truncate,
     ops.WindowOp,
     ops.DecimalPrecision,
@@ -668,8 +677,6 @@ _unsupported_ops = [
     ops.NullIf,
     ops.ZeroIfNull,
     ops.NullIfZero,
-    ops.NotNull,
-    ops.IsNull,
     ops.BaseConvert,
     ops.CumulativeSum,
     ops.CumulativeMin,
@@ -682,6 +689,7 @@ _unsupported_ops = [
 _unsupported_ops = {k: raise_error for k in _unsupported_ops}
 
 # TODO: toolz merge
+_operation_registry.update(_undocumented_operations)
 _operation_registry.update(_unsupported_ops)
 _operation_registry.update(_unary_ops)
 _operation_registry.update(_binary_infix_ops)
