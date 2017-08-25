@@ -21,6 +21,7 @@ import six
 import toolz
 
 from ibis.expr.datatypes import Schema  # noqa
+from ibis.expr import datatypes as dt
 from ibis.expr.types import (Expr,  # noqa
                              ValueExpr, ScalarExpr, ColumnExpr,
                              TableExpr,
@@ -675,10 +676,7 @@ def between(arg, lower, upper):
     lower = _ops.as_value_expr(lower)
     upper = _ops.as_value_expr(upper)
 
-    if isinstance(arg.op(), _ops.Time):
-        op = _ops.BetweenTime(arg.op().args[0], lower, upper)
-    else:
-        op = _ops.Between(arg, lower, upper)
+    op = _ops.Between(arg, lower, upper)
     return op.to_expr()
 
 
@@ -1869,8 +1867,33 @@ _add_methods(DateValue, _date_value_methods)
 # ---------------------------------------------------------------------
 # Time API
 
+def between_time(arg, lower, upper, timezone=None):
+    """
+    Check if the input expr falls between the lower/upper bounds
+    passed. Bounds are inclusive. All arguments must be comparable.
+
+    Parameters
+    ----------
+    lower : str, datetime.time
+    upper : str, datetime.time
+    timezone : str, timezone, default None
+
+    Returns
+    -------
+    is_between : BooleanValue
+    """
+
+    if isinstance(arg.op(), _ops.Time):
+        arg = arg.op().args[0].cast(dt.Timestamp(timezone=timezone))
+        op = _ops.BetweenTime(arg, lower, upper)
+    else:
+        op = _ops.Between(arg, lower, upper)
+
+    return op.to_expr()
+
+
 _time_value_methods = dict(
-    between=between,
+    between=between_time,
 )
 
 _add_methods(TimeValue, _time_value_methods)
