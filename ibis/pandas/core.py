@@ -14,7 +14,9 @@ import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 
 import ibis.pandas.context as ctx
-from ibis.pandas.dispatch import execute, execute_node, execute_first
+from ibis.pandas.dispatch import (
+    execute, execute_node, execute_first, data_preload
+)
 
 
 integer_types = six.integer_types + (np.integer,)
@@ -154,14 +156,19 @@ def execute_without_scope(
         )
 
     factory = type(data_scope)
-    new_scope = toolz.merge(
-        scope or factory(),
-        data_scope,
-        {
-            k.op() if hasattr(k, 'op') else k: v
-            for k, v in (params or factory()).items()
-        },  # TODO(phillipc): Consider using ChainMap here
-        factory=factory
+
+    if scope is None:
+        scope = factory()
+
+    if params is None:
+        params = factory()
+
+    params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
+
+    new_scope = toolz.merge(scope, data_scope, params, factory=factory)
+    new_scope.update(
+        (node, data_preload(node, data, scope=new_scope))
+        for node, data in new_scope.items()
     )
 
     # By default, our aggregate functions are N -> 1
