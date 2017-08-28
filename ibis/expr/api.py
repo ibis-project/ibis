@@ -1884,7 +1884,15 @@ def between_time(arg, lower, upper, timezone=None):
     """
 
     if isinstance(arg.op(), _ops.Time):
-        arg = arg.op().args[0].cast(dt.Timestamp(timezone=timezone))
+        # Here we pull out the first argument to the underlying Time operation
+        # which is by definition (in _timestamp_value_methods) a
+        # TimestampValue. We do this so that we can potentially specialize the
+        # "between time" operation for timestamp_value_expr.time().between().
+        # A similar mechanism is triggered when creating expressions like
+        # t.column.distinct().count(), which is turned into t.column.nunique().
+        arg = arg.op().args[0]
+        if timezone is not None:
+            arg = arg.cast(dt.Timestamp(timezone=timezone))
         op = _ops.BetweenTime(arg, lower, upper)
     else:
         op = _ops.Between(arg, lower, upper)
