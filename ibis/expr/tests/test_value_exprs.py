@@ -924,9 +924,6 @@ def test_decimal_modulo_output_type(value, type, expected_type_class):
         operator.le,
         operator.gt,
         operator.ge,
-        lambda left, right: ibis.time(
-            '10:00'
-        ).between(left, right),
     ]
 )
 @pytest.mark.skipif(PY2, reason="time comparsions not available on PY2")

@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pandas.util.testing as tm  # noqa: E402
 import ibis
+from ibis.expr import datatypes as dt
 from ibis import literal as L  # noqa: E402
 from ibis.compat import PY2
 
@@ -120,6 +121,30 @@ def test_times_ops(t, df):
 
     result = t.plain_datetimes_naive.time().between('01:00', '02:00').execute()
     expected = np.ones(len(df), dtype=bool)
+    tm.assert_numpy_array_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "tz, rconstruct",
+    [('US/Eastern', np.zeros),
+     ('UTC', np.ones),
+     (None, np.ones)])
+@pytest.mark.skipif(PY2, reason="not enabled on PY2")
+def test_times_ops_with_tz(t, df, tz, rconstruct):
+    result = t.plain_datetimes_utc.time().between(
+        '01:00', '02:00', timezone=tz).execute()
+    expected = rconstruct(len(df), dtype=bool)
+    tm.assert_numpy_array_equal(result, expected)
+
+    result = t.plain_datetimes_naive.time().between(
+        '01:00', '02:00', timezone=tz).execute()
+    expected = rconstruct(len(df), dtype=bool)
+    tm.assert_numpy_array_equal(result, expected)
+
+    # equivalence
+    expected = np.ones(len(df), dtype=bool)
+    ts = t.plain_datetimes_utc.cast(dt.Timestamp(timezone=tz))
+    result = ts.time().between('01:00', '02:00').execute()
     tm.assert_numpy_array_equal(result, expected)
 
 
