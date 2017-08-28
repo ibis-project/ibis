@@ -1884,7 +1884,9 @@ def between_time(arg, lower, upper, timezone=None):
     """
 
     if isinstance(arg.op(), _ops.Time):
-        arg = arg.op().args[0].cast(dt.Timestamp(timezone=timezone))
+        arg = arg.op().args[0]
+        if timezone is not None:
+            arg = arg.cast(dt.Timestamp(timezone=timezone))
         op = _ops.BetweenTime(arg, lower, upper)
     else:
         op = _ops.Between(arg, lower, upper)

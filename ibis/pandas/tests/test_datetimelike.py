@@ -125,26 +125,32 @@ def test_times_ops(t, df):
 
 
 @pytest.mark.parametrize(
-    "tz, rconstruct",
-    [('US/Eastern', np.zeros),
-     ('UTC', np.ones),
-     (None, np.ones)])
+    'tz, rconstruct',
+    [
+        ('US/Eastern', np.zeros),
+        ('UTC', np.ones),
+        (None, np.ones)
+    ]
+)
+@pytest.mark.parametrize(
+    'column',
+    [
+        'plain_datetimes_utc',
+        'plain_datetimes_naive'
+    ]
+)
 @pytest.mark.skipif(PY2, reason="not enabled on PY2")
-def test_times_ops_with_tz(t, df, tz, rconstruct):
-    result = t.plain_datetimes_utc.time().between(
-        '01:00', '02:00', timezone=tz).execute()
+def test_times_ops_with_tz(t, df, tz, rconstruct, column):
     expected = rconstruct(len(df), dtype=bool)
+
+    expr = t[column].time().between('01:00', '02:00', timezone=tz)
+    result = expr.execute()
     tm.assert_numpy_array_equal(result, expected)
 
-    result = t.plain_datetimes_naive.time().between(
-        '01:00', '02:00', timezone=tz).execute()
-    expected = rconstruct(len(df), dtype=bool)
-    tm.assert_numpy_array_equal(result, expected)
-
-    # equivalence
-    expected = np.ones(len(df), dtype=bool)
-    ts = t.plain_datetimes_utc.cast(dt.Timestamp(timezone=tz))
-    result = ts.time().between('01:00', '02:00').execute()
+    # Test that casting behavior is the same as using the timezone kwarg
+    ts = t[column].cast(dt.Timestamp(timezone=tz))
+    expr = ts.time().between('01:00', '02:00')
+    result = expr.execute()
     tm.assert_numpy_array_equal(result, expected)
 
 
