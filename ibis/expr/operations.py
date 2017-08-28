@@ -2089,8 +2089,11 @@ class IdenticalTo(Comparison):
 
 class Between(BooleanValueOp):
 
-    input_type = [rules.value, rules.value(name='lower_bound'),
-                  rules.value(name='upper_bound')]
+    input_type = [
+        rules.value,
+        rules.value(name='lower_bound'),
+        rules.value(name='upper_bound')
+    ]
 
     def output_type(self):
         self._assert_can_compare()
@@ -2103,7 +2106,12 @@ class Between(BooleanValueOp):
 
 
 class BetweenTime(Between):
-    pass
+
+    input_type = [
+        rules.one_of((rules.timestamp, rules.time)),
+        rules.one_of((rules.time, rules.string), name='lower_bound'),
+        rules.one_of((rules.time, rules.string), name='upper_bound')
+    ]
 
 
 class Contains(BooleanValueOp):

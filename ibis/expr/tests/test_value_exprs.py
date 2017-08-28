@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import operator
+from operator import methodcaller
 from datetime import date, datetime, time
 
 import pytest
@@ -27,6 +28,8 @@ from ibis.compat import PY2
 
 from ibis import literal
 from ibis.tests.util import assert_equal
+
+import toolz
 
 
 def test_null():
@@ -1015,3 +1018,28 @@ def test_scalar_parameter_repr():
 )
 def test_scalar_parameter_compare(left, right, expected):
     assert left.equals(right) == expected
+
+
+@pytest.mark.parametrize(
+    ('case', 'creator'),
+    [
+        (datetime.now(), toolz.compose(methodcaller('time'), ibis.timestamp)),
+        ('now', toolz.compose(methodcaller('time'), ibis.timestamp)),
+        (datetime.now().time(), ibis.time),
+        ('10:37', ibis.time),
+    ]
+)
+@pytest.mark.parametrize(
+    ('left', 'right'),
+    [
+        (1, 'a'),
+        ('a', 1),
+        (1.0, 2.0),
+        (['a'], [1]),
+    ]
+)
+@pytest.mark.xfail(PY2, reason='Not supported on Python 2')
+def test_between_time_failure_time(case, creator, left, right):
+    value = creator(case)
+    with pytest.raises(TypeError):
+        value.between(left, right)
