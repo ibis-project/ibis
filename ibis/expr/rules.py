@@ -52,8 +52,10 @@ class BinaryPromoter(object):
                 return 'float'
         elif util.all_of(self.args, ir.IntegerValue):
             return self._get_int_type()
+        elif self.left.type().equals(self.right.type()):
+            return self.left.type()
         else:
-            raise com.InputTypeError(
+            raise NotImplementedError(
                 'Operands {}, {} not supported for binary operation {}'.format(
                     type(self.left).__name__, type(self.right).__name__,
                     self.op.__name__
@@ -114,7 +116,7 @@ class PowerPromoter(BinaryPromoter):
         elif util.all_of(self.args, ir.IntegerValue):
             return self._get_int_type()
         else:
-            raise com.InputTypeError(
+            raise NotImplementedError(
                 'Operands {}, {} not supported for binary operation {}'.format(
                     type(self.left).__name__, type(self.right).__name__,
                     self.op.__name__
