@@ -358,7 +358,7 @@ def _binop_expr(name, klass):
             other = as_value_expr(other)
             op = klass(self, other)
             return op.to_expr()
-        except _com.InputTypeError:
+        except NotImplementedError:
             return NotImplemented
 
     f.__name__ = name

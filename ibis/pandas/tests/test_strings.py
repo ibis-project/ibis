@@ -50,13 +50,9 @@ pytestmark = pytest.mark.pandas
                 s.str.contains('d{1,2}ee')
             )
         ),
-        pytest.mark.xfail(
-            (
-                lambda s: s + s.rpad(3, 'a'),
-                lambda s: s + s.str.pad(3, side='right', fillchar='a')
-            ),
-            raises=NotImplementedError,
-            reason='Implement string concat with plus'
+        (
+            lambda s: s + s.rpad(3, 'a'),
+            lambda s: s + s.str.pad(3, side='right', fillchar='a')
         ),
     ]
 )
