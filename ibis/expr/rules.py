@@ -53,7 +53,12 @@ class BinaryPromoter(object):
         elif util.all_of(self.args, ir.IntegerValue):
             return self._get_int_type()
         else:
-            raise NotImplementedError
+            raise com.InputTypeError(
+                'Operands {}, {} not supported for binary operation {}'.format(
+                    type(self.left).__name__, type(self.right).__name__,
+                    self.op.__name__
+                )
+            )
 
     def _get_int_type(self):
         deps = [x.op() for x in self.args]
@@ -109,7 +114,12 @@ class PowerPromoter(BinaryPromoter):
         elif util.all_of(self.args, ir.IntegerValue):
             return self._get_int_type()
         else:
-            raise NotImplementedError
+            raise com.InputTypeError(
+                'Operands {}, {} not supported for binary operation {}'.format(
+                    type(self.left).__name__, type(self.right).__name__,
+                    self.op.__name__
+                )
+            )
 
 
 # Impala type precedence (more complex in other database implementations)
