@@ -1998,6 +1998,7 @@ _join_classes = {
     'any_inner': _ops.AnyInnerJoin,
     'any_left': _ops.AnyLeftJoin,
     'outer': _ops.OuterJoin,
+    'right': _ops.RightJoin,
     'left_semi': _ops.LeftSemiJoin,
     'semi': _ops.LeftSemiJoin,
     'anti': _ops.LeftAntiJoin,
@@ -2019,6 +2020,7 @@ def join(left, right, predicates=(), how='inner'):
       - 'inner': inner join
       - 'left': left join
       - 'outer': full outer join
+      - 'right': right outer join
       - 'semi' or 'left_semi': left semi join
       - 'anti': anti join
 
