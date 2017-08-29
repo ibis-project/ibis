@@ -26,8 +26,7 @@ services:
 
 test_script:
   - "%CONDA% config --set always_yes true"
-  - "%CONDA% update conda --channel conda-forge"
-  - "%CONDA% create --name \"ibis_%PYTHON_VERSION%\" python=%PYTHON_VERSION% -c conda-forge"
+  - "%CONDA% create --name \"ibis_%PYTHON_VERSION%\" python=%PYTHON_VERSION% --channel conda-forge"
   - "%ACTIVATE% \"ibis_%PYTHON_VERSION%\""
   - "pip install -e .\"[sqlite, postgres, visualization, pandas]\""
   - "pip install flake8 mock pytest click \"pbs==0.110\""
