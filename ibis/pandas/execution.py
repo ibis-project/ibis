@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import datetime
 import decimal
 import functools
-import itertools
 import numbers
 import operator
 import re
@@ -587,16 +586,16 @@ _JOIN_TYPES = {
 }
 
 
-def compute_join_column(column_expr, **kwargs):
+def _compute_join_column(column_expr, **kwargs):
     column_op = column_expr.op()
+
     if isinstance(column_op, ops.TableColumn):
-        name, new_column = column_op.name, None
+        new_column = column_op.name
     else:
-        name = util.guid()
         new_column = execute(column_expr, **kwargs)
 
     root_table, = column_op.root_tables()
-    return name, new_column, root_table
+    return new_column, root_table
 
 
 _LEFT_JOIN_SUFFIX = '_ibis_left_{}'.format(util.guid())
@@ -615,46 +614,29 @@ def execute_materialized_join(op, left, right, **kwargs):
     right_op = op.right.op()
 
     on = {left_op: [], right_op: []}
-    new_columns = {left_op: {}, right_op: {}}
 
     for predicate in map(operator.methodcaller('op'), op.predicates):
         if not isinstance(predicate, ops.Equals):
             raise TypeError(
                 'Only equality join predicates supported with pandas'
             )
-        left_name, new_left_column, left_pred_root = compute_join_column(
+        new_left_column, left_pred_root = _compute_join_column(
             predicate.left,
             **kwargs
         )
-        assert left_pred_root in new_columns
+        on[left_pred_root].append(new_left_column)
 
-        if new_left_column is not None:
-            new_columns[left_pred_root][left_name] = new_left_column
-
-        on[left_pred_root].append(left_name)
-
-        right_name, new_right_column, right_pred_root = compute_join_column(
+        new_right_column, right_pred_root = _compute_join_column(
             predicate.right,
             **kwargs
         )
-        assert right_pred_root in new_columns
+        on[right_pred_root].append(new_right_column)
 
-        if new_right_column is not None:
-            new_columns[right_pred_root][right_name] = new_right_column
-
-        on[right_pred_root].append(right_name)
-
-    left_rel = left.assign(**new_columns[left_op])
-    right_rel = right.assign(**new_columns[right_op])
-
-    to_drop = list(itertools.chain.from_iterable(new_columns.values()))
-
-    result = pd.merge(
-        left_rel, right_rel,
+    return pd.merge(
+        left, right,
         how=how, left_on=on[left_op], right_on=on[right_op],
         suffixes=_JOIN_SUFFIXES,
     )
-    return result.drop(to_drop, axis=1)
 
 
 _BINARY_OPERATIONS = {
