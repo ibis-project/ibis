@@ -234,6 +234,21 @@ def test_group_by_with_having(t, df):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
+def test_group_by_rename_key(t, df):
+    expr = t.groupby(t.dup_strings.name('foo')).aggregate(
+        dup_string_count=t.dup_strings.count()
+    )
+
+    assert 'foo' in expr.schema()
+    result = expr.execute()
+    assert 'foo' in result.columns
+
+    expected = df.groupby('dup_strings').dup_strings.count().rename(
+        'dup_string_count'
+    ).reset_index().rename(columns={'dup_strings': 'foo'})
+    tm.assert_frame_equal(result, expected)
+
+
 @pytest.mark.parametrize('reduction', ['mean', 'sum', 'count', 'std', 'var'])
 @pytest.mark.parametrize(
     'where',

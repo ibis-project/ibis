@@ -443,14 +443,21 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         )
         data = data.loc[predicate]
 
+    columns = {}
+
     if op.by:
+        grouping_key_pairs = list(
+            zip(op.by, map(operator.methodcaller('op'), op.by))
+        )
         grouping_keys = [
             by_op.name if isinstance(by_op, ir.TableColumn)
-            else execute(by, scope, **kwargs)
-            for by, by_op in zip(
-                op.by, map(operator.methodcaller('op'), op.by)
-            )
+            else execute(by, scope, **kwargs).rename(by.get_name())
+            for by, by_op in grouping_key_pairs
         ]
+        columns.update(
+            (by_op.name, by.get_name()) for by, by_op in grouping_key_pairs
+            if hasattr(by_op, 'name')
+        )
         source = data.groupby(grouping_keys)
     else:
         source = data
@@ -461,7 +468,9 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         for metric in op.metrics
     ]
 
-    return pd.concat(pieces, axis=1).reset_index()
+    df = pd.concat(pieces, axis=1).reset_index()
+    df.columns = [columns.get(c, c) for c in df.columns]
+    return df
 
 
 @execute_node.register(ops.Reduction, SeriesGroupBy, type(None))
