@@ -1040,3 +1040,32 @@ def test_between_time_failure_time(case, creator, left, right):
     value = creator(case)
     with pytest.raises(TypeError):
         value.between(left, right)
+
+
+def test_custom_type_binary_operations():
+    class Foo(ir.ValueExpr):
+
+        def __add__(self, other):
+            op = self.op()
+            return type(op)(op.value + other).to_expr()
+
+        __radd__ = __add__
+
+    class FooNode(ops.ValueOp):
+
+        input_type = [ibis.expr.rules.integer(name='value')]
+
+        def output_type(self):
+            return Foo
+
+    left = ibis.literal(2)
+    right = FooNode(3).to_expr()
+    result = left + right
+    assert isinstance(result, Foo)
+    assert isinstance(result.op(), FooNode)
+
+    left = FooNode(3).to_expr()
+    right = ibis.literal(2)
+    result = left + right
+    assert isinstance(result, Foo)
+    assert isinstance(result.op(), FooNode)
