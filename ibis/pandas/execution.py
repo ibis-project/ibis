@@ -1,12 +1,13 @@
 from __future__ import absolute_import
 
+import datetime
+import decimal
+import functools
 import numbers
 import operator
-import datetime
-import functools
-import decimal
-import collections
 import re
+
+from collections import OrderedDict
 
 import six
 
@@ -360,19 +361,31 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
                 pandas_object = data
             elif isinstance(selection, ir.ScalarExpr):
                 root_tables = selection_operation.root_tables()
-                additional_scope = collections.OrderedDict(
+                additional_scope = OrderedDict(
                     zip(root_tables, (data for _ in range(len(root_tables))))
                 )
                 new_scope = toolz.merge(
                     scope,
                     additional_scope,
-                    factory=collections.OrderedDict,
+                    factory=OrderedDict,
                 )
                 pandas_object = execute(selection, new_scope, **kwargs)
             elif isinstance(selection, ir.ColumnExpr):
                 if isinstance(selection_operation, ir.TableColumn):
                     # slightly faster path for simple column selection
-                    pandas_object = data[selection_operation.name]
+                    name = selection_operation.name
+
+                    if name in data:
+                        key = name
+                        pandas_object = data[name]
+                    elif name + _LEFT_JOIN_SUFFIX in data:
+                        key = name + _LEFT_JOIN_SUFFIX
+                    elif name + _RIGHT_JOIN_SUFFIX in data:
+                        key = name + _RIGHT_JOIN_SUFFIX
+                    else:
+                        raise KeyError(name)
+
+                    pandas_object = data[key]
                 elif isinstance(table_op, ops.Join):
                     pandas_object = execute(
                         selection,
@@ -582,6 +595,23 @@ _JOIN_TYPES = {
 }
 
 
+def _compute_join_column(column_expr, **kwargs):
+    column_op = column_expr.op()
+
+    if isinstance(column_op, ops.TableColumn):
+        new_column = column_op.name
+    else:
+        new_column = execute(column_expr, **kwargs)
+
+    root_table, = column_op.root_tables()
+    return new_column, root_table
+
+
+_LEFT_JOIN_SUFFIX = '_ibis_left_{}'.format(util.guid())
+_RIGHT_JOIN_SUFFIX = '_ibis_right_{}'.format(util.guid())
+_JOIN_SUFFIXES = _LEFT_JOIN_SUFFIX, _RIGHT_JOIN_SUFFIX
+
+
 @execute_node.register(ops.Join, pd.DataFrame, pd.DataFrame)
 def execute_materialized_join(op, left, right, **kwargs):
     try:
@@ -589,35 +619,33 @@ def execute_materialized_join(op, left, right, **kwargs):
     except KeyError:
         raise NotImplementedError('{} not supported'.format(type(op).__name__))
 
-    overlapping_columns = set(left.columns) & set(right.columns)
+    left_op = op.left.op()
+    right_op = op.right.op()
 
-    left_on = []
-    right_on = []
+    on = {left_op: [], right_op: []}
 
     for predicate in map(operator.methodcaller('op'), op.predicates):
         if not isinstance(predicate, ops.Equals):
             raise TypeError(
                 'Only equality join predicates supported with pandas'
             )
-        left_name = predicate.left._name
-        right_name = predicate.right._name
-        left_on.append(left_name)
-        right_on.append(right_name)
-
-        # TODO(phillipc): Is this the correct approach? That is, can we safely
-        #                 ignore duplicate join keys?
-        overlapping_columns -= {left_name, right_name}
-
-    if overlapping_columns:
-        raise ValueError(
-            'left and right DataFrame columns overlap on {} in a join. '
-            'Please specify the columns you want to select from the join, '
-            'e.g., join[left.column1, right.column2, ...]'.format(
-                overlapping_columns
-            )
+        new_left_column, left_pred_root = _compute_join_column(
+            predicate.left,
+            **kwargs
         )
+        on[left_pred_root].append(new_left_column)
 
-    return pd.merge(left, right, how=how, left_on=left_on, right_on=right_on)
+        new_right_column, right_pred_root = _compute_join_column(
+            predicate.right,
+            **kwargs
+        )
+        on[right_pred_root].append(new_right_column)
+
+    return pd.merge(
+        left, right,
+        how=how, left_on=on[left_op], right_on=on[right_op],
+        suffixes=_JOIN_SUFFIXES,
+    )
 
 
 _BINARY_OPERATIONS = {
@@ -1083,10 +1111,8 @@ def execute_frame_window_op(op, data, scope=None, context=None, **kwargs):
 
     new_scope = toolz.merge(
         scope,
-        collections.OrderedDict(
-            (t, source) for t in operand.op().root_tables()
-        ),
-        factory=collections.OrderedDict,
+        OrderedDict((t, source) for t in operand.op().root_tables()),
+        factory=OrderedDict,
     )
 
     # no order by or group by: default summarization context
