@@ -77,7 +77,7 @@ Clickhouse
    .. code:: sh
 
       # Keeping this running as long as you want to test ibis
-      docker run --rm -p 9000:9000 yandex/clickhouse-server
+      docker run --rm -p 9000:9000 --tty yandex/clickhouse-server
 
 #. **Load data**:
 

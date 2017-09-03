@@ -16,7 +16,8 @@ import re
 import six
 
 from ibis.sql.compiler import DDL
-from .compiler import quote_identifier, _type_to_sql_string
+from .compiler import quote_identifier
+from .operations import _type_to_sql_string
 
 from ibis.expr.datatypes import validate_type
 
