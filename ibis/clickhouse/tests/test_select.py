@@ -272,10 +272,10 @@ def test_join_with_predicate_on_different_columns_raises(con, batting,
 
 
 @pytest.mark.parametrize(('join_type', 'join_clause'), [
-    ('any_inner_join', 'ANY INNER JOIN'),
-    ('all_inner_join', 'ALL INNER JOIN'),
-    ('any_left_join', 'ANY LEFT JOIN'),
-    ('all_left_join', 'ALL LEFT JOIN')
+    ('inner_semi_join', 'ANY INNER JOIN'),
+    ('inner_join', 'ALL INNER JOIN'),
+    ('left_semi_join', 'ANY LEFT JOIN'),
+    ('left_join', 'ALL LEFT JOIN')
 ])
 def test_simple_joins(con, batting, awards_players, join_type, join_clause):
     t1, t2 = batting, awards_players
@@ -301,7 +301,7 @@ def test_self_reference_simple(con, alltypes):
 def test_join_self_reference(con, alltypes):
     t1 = alltypes
     t2 = t1.view()
-    expr = t1.any_inner_join(t2, ['id'])[[t1]]
+    expr = t1.inner_semi_join(t2, ['id'])[[t1]]
 
     result_sql = to_sql(expr)
     expected_sql = """SELECT t0.*

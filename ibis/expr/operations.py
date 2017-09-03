@@ -1469,23 +1469,7 @@ class InnerJoin(Join):
     pass
 
 
-class AnyInnerJoin(InnerJoin):
-    pass
-
-
-class AllInnerJoin(InnerJoin):
-    pass
-
-
 class LeftJoin(Join):
-    pass
-
-
-class AnyLeftJoin(LeftJoin):
-    pass
-
-
-class AllLeftJoin(LeftJoin):
     pass
 
 
@@ -1497,21 +1481,19 @@ class OuterJoin(Join):
     pass
 
 
+class InnerSemiJoin(Join):
+
+    def _get_schema(self):
+        return self.left.schema()
+
+
 class LeftSemiJoin(Join):
-
-    """
-
-    """
 
     def _get_schema(self):
         return self.left.schema()
 
 
 class LeftAntiJoin(Join):
-
-    """
-
-    """
 
     def _get_schema(self):
         return self.left.schema()

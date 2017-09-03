@@ -305,10 +305,10 @@ class _TableSetFormatter(comp.TableSetFormatter):
         return buf.getvalue()
 
     _join_names = {
-        ops.AnyInnerJoin: 'ANY INNER JOIN',
-        ops.AllInnerJoin: 'ALL INNER JOIN',
-        ops.AnyLeftJoin: 'ANY LEFT JOIN',
-        ops.AllLeftJoin: 'ALL LEFT JOIN'
+        ops.InnerJoin: 'ALL INNER JOIN',
+        ops.LeftJoin: 'ALL LEFT JOIN',
+        ops.InnerSemiJoin: 'ANY INNER JOIN',
+        ops.LeftSemiJoin: 'ANY LEFT JOIN'
     }
 
     def _validate_join_predicates(self, predicates):
