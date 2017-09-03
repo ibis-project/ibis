@@ -357,15 +357,3 @@ class ClickhouseTemporaryTable(ops.DatabaseTable):
         except:  # ClickhouseError
             # database might have been dropped
             pass
-
-
-def _validate_compatible(from_schema, to_schema):
-    if set(from_schema.names) != set(to_schema.names):
-        raise com.IbisInputError('Schemas have different names')
-
-    for name in from_schema:
-        lt = from_schema[name]
-        rt = to_schema[name]
-        if not rt.can_implicit_cast(lt):
-            raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
-                                     .format(lt, rt))

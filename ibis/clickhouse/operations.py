@@ -342,9 +342,9 @@ class CaseFormatter(object):
         self.cases = cases
         self.results = results
 
-        if default.equals(ir.null()):
-            raise TypeError('Null is not supported, default '
-                            'value must be explicitly defined!')
+        # if default.equals(ir.null()):
+        #     raise TypeError('Null is not supported, default '
+        #                     'value must be explicitly defined!')
         self.default = default
 
         # HACK
@@ -657,7 +657,7 @@ def raise_error(translator, expr, *args):
 
 
 def _null_literal(translator, expr):
-    return 'NULL'
+    return 'Null'
 
 
 _undocumented_operations = {

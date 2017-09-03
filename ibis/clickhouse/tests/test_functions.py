@@ -267,6 +267,19 @@ def test_string_column_find_in_set(con, alltypes, translate):
 #     ]
 #     self._check_expr_cases(cases)
 
+
+# def test_parse_url(self):
+#     cases = [
+#         (L("https://www.cloudera.com").parse_url('HOST'),
+#          "www.cloudera.com"),
+
+#         (L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10')
+#          .parse_url('QUERY', 'v'),
+#          'kEuEcWfewf8'),
+#     ]
+#     self.assert_cases_equality(cases)
+
+
 # def test_string_join(self):
 #     cases = [
 #         (L(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")

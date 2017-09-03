@@ -222,12 +222,52 @@ def test_ifelse(alltypes, df, op, pandas_op, translate):
     tm.assert_series_equal(result, expected)
 
 
-# def test_simple_case(self):
-#     expr = self._case_simple_case()
-#     result = self._translate(expr)
-#     expected = """CASE `g`
-#   WHEN 'foo' THEN 'bar'
-#   WHEN 'baz' THEN 'qux'
-#   ELSE 'default'
+def test_simple_case(con, alltypes, translate):
+    t = alltypes
+    expr = (t.string_col.case()
+            .when('foo', 'bar')
+            .when('baz', 'qux')
+            .else_('default')
+            .end())
+
+    expected = """CASE `string_col`
+  WHEN 'foo' THEN 'bar'
+  WHEN 'baz' THEN 'qux'
+  ELSE 'default'
+END"""
+    assert translate(expr) == expected
+    assert len(con.execute(expr))
+
+
+def test_search_case(con, alltypes, translate):
+    t = alltypes
+    expr = (ibis.case()
+            .when(t.float_col > 0, t.int_col * 2)
+            .when(t.float_col < 0, t.int_col)
+            .else_(0)
+            .end())
+
+    expected = """CASE
+  WHEN `float_col` > 0 THEN `int_col` * 2
+  WHEN `float_col` < 0 THEN `int_col`
+  ELSE 0
+END"""
+    assert translate(expr) == expected
+    assert len(con.execute(expr))
+
+
+# TODO: Clickhouse raises incompatible type error
+# def test_bucket_to_case(con, alltypes, translate):
+#     buckets = [0, 10, 25, 50]
+
+#     expr1 = alltypes.float_col.bucket(buckets)
+#     expected1 = """\
+# CASE
+#   WHEN (`float_col` >= 0) AND (`float_col` < 10) THEN 0
+#   WHEN (`float_col` >= 10) AND (`float_col` < 25) THEN 1
+#   WHEN (`float_col` >= 25) AND (`float_col` <= 50) THEN 2
+#   ELSE Null
 # END"""
-#     assert result == expected
+
+#     assert translate(expr1) == expected1
+#     assert len(con.execute(expr1))
