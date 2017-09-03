@@ -1,16 +1,8 @@
-import math
 import pytest
-import operator
 import numpy as np
-import pandas as pd
-import pandas.util.testing as tm
 
 from operator import methodcaller
-from datetime import date, datetime
 
-import ibis
-import ibis.expr.types as ir
-import ibis.expr.datatypes as dt
 from ibis import literal as L
 
 
