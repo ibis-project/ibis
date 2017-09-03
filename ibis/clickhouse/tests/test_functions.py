@@ -1,64 +1,15 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# import os
-# import sys
 import math
+import pytest
 import operator
+import pandas as pd
+import pandas.util.testing as tm
 
 from operator import methodcaller
 from datetime import date, datetime
 
-import pytest
-# import string
-
-import numpy as np
-
 import ibis
 import ibis.expr.types as ir
-import ibis.expr.datatypes as dt
-# import ibis.config as config
-
 from ibis import literal as L
-
-import pandas as pd
-import pandas.util.testing as tm
-
-ch = pytest.importorskip('clickhouse_driver')
-
-
-pytestmark = pytest.mark.clickhouse
-
-
-# TODO: move type related test cases to test_types
-
-# @pytest.yield_fixture
-# def guid(con):
-#     name = ibis.util.guid()
-#     try:
-#         yield name
-#     finally:
-#         con.drop_table(name, force=True)
-
-
-# @pytest.yield_fixture
-# def guid2(con):
-#     name = ibis.util.guid()
-#     try:
-#         yield name
-#     finally:
-#         con.drop_table(name, force=True)
 
 
 @pytest.mark.parametrize(('to_type', 'expected'), [
@@ -84,32 +35,40 @@ def test_cast_string_col(alltypes, translate, to_type, expected):
     assert translate(expr) == expected
 
 
+# def test_char_varchar_types(con):
+#     sql = """\
+# SELECT CAST(string_col AS varchar(20)) AS varchar_col,
+#        CAST(string_col AS CHAR(5)) AS char_col
+# FROM ibis_testing.`functional_alltypes`"""
+
+#     t = con.sql(sql)
+#     assert isinstance(t.varchar_col, api.StringColumn)
+#     assert isinstance(t.char_col, api.StringColumn)
+
+
 @pytest.mark.xfail(raises=AssertionError,
                    reason='Clickhouse doesn\'t have decimal type')
 def test_decimal_cast():
     assert False
 
 
-@pytest.mark.parametrize(
-    'column',
-    [
-        'index',
-        'Unnamed_0',  # FIXME rename to `Unnamed: 0`
-        'id',
-        'bool_col',
-        'tinyint_col',
-        'smallint_col',
-        'int_col',
-        'bigint_col',
-        'float_col',
-        'double_col',
-        'date_string_col',
-        'string_col',
-        'timestamp_col',
-        'year',
-        'month',
-    ]
-)
+@pytest.mark.parametrize('column', [
+    'index',
+    'Unnamed_0',  # FIXME rename to `Unnamed: 0`
+    'id',
+    'bool_col',
+    'tinyint_col',
+    'smallint_col',
+    'int_col',
+    'bigint_col',
+    'float_col',
+    'double_col',
+    'date_string_col',
+    'string_col',
+    'timestamp_col',
+    'year',
+    'month',
+])
 def test_noop_cast(alltypes, translate, column):
     col = alltypes[column]
     result = col.cast(col.type())
@@ -135,17 +94,14 @@ def test_timestamp_now(con, translate):
     # assert con.execute(expr) == now
 
 
-@pytest.mark.parametrize(
-    ('func', 'expected'),
-    [
-        (methodcaller('year'), 2015),
-        (methodcaller('month'), 9),
-        (methodcaller('day'), 1),
-        (methodcaller('hour'), 14),
-        (methodcaller('minute'), 48),
-        (methodcaller('second'), 5),
-    ]
-)
+@pytest.mark.parametrize(('func', 'expected'), [
+    (methodcaller('year'), 2015),
+    (methodcaller('month'), 9),
+    (methodcaller('day'), 1),
+    (methodcaller('hour'), 14),
+    (methodcaller('minute'), 48),
+    (methodcaller('second'), 5),
+])
 def test_simple_datetime_operations(con, func, expected):
     value = ibis.timestamp('2015-09-01 14:48:05.359')
     with pytest.raises(ValueError):
@@ -155,104 +111,27 @@ def test_simple_datetime_operations(con, func, expected):
     con.execute(func(value)) == expected
 
 
-@pytest.mark.parametrize(
-    ('func', 'left', 'right', 'expected'),
-    [
-        (operator.add, L(3), L(4), 7),
-        (operator.sub, L(3), L(4), -1),
-        (operator.mul, L(3), L(4), 12),
-        (operator.truediv, L(12), L(4), 3),
-        (operator.pow, L(12), L(2), 144),
-        (operator.mod, L(12), L(5), 2),
-        (operator.truediv, L(7), L(2), 3.5),
-        (operator.floordiv, L(7), L(2), 3),
-        (lambda x, y: x.floordiv(y), L(7), 2, 3),
-        (lambda x, y: x.rfloordiv(y), L(2), 7, 3),
-    ]
-)
-def test_binary_arithmetic(con, func, left, right, expected):
-    expr = func(left, right)
-    result = con.execute(expr)
-    assert result == expected
-
-
-@pytest.mark.parametrize(('op', 'expected'), [
-    (lambda a, b: a + b, '`int_col` + `tinyint_col`'),
-    (lambda a, b: a - b, '`int_col` - `tinyint_col`'),
-    (lambda a, b: a * b, '`int_col` * `tinyint_col`'),
-    (lambda a, b: a / b, '`int_col` / `tinyint_col`'),
-    (lambda a, b: a ** b, 'pow(`int_col`, `tinyint_col`)'),
-    (lambda a, b: a < b, '`int_col` < `tinyint_col`'),
-    (lambda a, b: a <= b, '`int_col` <= `tinyint_col`'),
-    (lambda a, b: a > b, '`int_col` > `tinyint_col`'),
-    (lambda a, b: a >= b, '`int_col` >= `tinyint_col`'),
-    (lambda a, b: a == b, '`int_col` = `tinyint_col`'),
-    (lambda a, b: a != b, '`int_col` != `tinyint_col`')
-])
-def test_binary_infix_operators(con, alltypes, translate, op, expected):
-    a, b = alltypes.int_col, alltypes.tinyint_col
-    expr = op(a, b)
-    assert translate(expr) == expected
-    assert len(con.execute(expr))
-
-
-# TODO: test boolean operators
-# (h & bool_col, '`h` AND (`a` > 0)'),
-# (h | bool_col, '`h` OR (`a` > 0)'),
-# (h ^ bool_col, 'xor(`h`, (`a` > 0))')
-
-
-@pytest.mark.parametrize(('op', 'expected'), [
-    (lambda a, b, c: (a + b) + c,
-     '(`int_col` + `tinyint_col`) + `double_col`'),
-    (lambda a, b, c: a.log() + c,
-     'log(`int_col`) + `double_col`'),
-    (lambda a, b, c: (b + (-(a + c))),
-     '`tinyint_col` + (-(`int_col` + `double_col`))')
-])
-def test_binary_infix_parenthesization(con, alltypes, translate, op, expected):
-    a = alltypes.int_col
-    b = alltypes.tinyint_col
-    c = alltypes.double_col
-
-    expr = op(a, b, c)
-    assert translate(expr) == expected
-    assert len(con.execute(expr))
-
-
-def test_between(con, alltypes, translate):
-    expr = alltypes.int_col.between(0, 10)
-    assert translate(expr) == '`int_col` BETWEEN 0 AND 10'
-    assert len(con.execute(expr))
-
-
 # TODO
 # @pytest.mark.parametrize(('value', 'expected'), [(0, None), (5.5, 5.5)])
 # def test_nullifzero(con, value, expected):
 #     assert con.execute(L(value).nullifzero()) == expected
 
 
-@pytest.mark.parametrize(
-    ('expr', 'expected'),
-    [
-        (L(None).isnull(), True),
-        (L(1).isnull(), False),
-        (L(None).notnull(), False),
-        (L(1).notnull(), True),
-    ]
-)
+@pytest.mark.parametrize(('expr', 'expected'), [
+    (L(None).isnull(), True),
+    (L(1).isnull(), False),
+    (L(None).notnull(), False),
+    (L(1).notnull(), True),
+])
 def test_isnull_notnull(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-@pytest.mark.parametrize(
-    ('expr', 'expected'),
-    [
-        (ibis.coalesce(5, None, 4), 5),
-        (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
-        (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
-    ]
-)
+@pytest.mark.parametrize(('expr', 'expected'), [
+    (ibis.coalesce(5, None, 4), 5),
+    (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
+    (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
+])
 def test_coalesce(con, expr, expected):
     assert con.execute(expr) == expected
 
@@ -278,30 +157,24 @@ def test_coalesce(con, expr, expected):
 
 
 # TODO
-@pytest.mark.parametrize(
-    ('expr', 'expected'),
-    [
-        (ibis.NA.fillna(5), 5),
-        (L(5).fillna(10), 5),
-        # (L(5).nullif(5), None),
-        # (L(10).nullif(5), 10),
-    ]
-)
+@pytest.mark.parametrize(('expr', 'expected'), [
+    (ibis.NA.fillna(5), 5),
+    (L(5).fillna(10), 5),
+    # (L(5).nullif(5), None),
+    # (L(10).nullif(5), 10),
+])
 def test_fillna_nullif(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-@pytest.mark.parametrize(
-    ('value', 'expected'),
-    [
-        (L('foo_bar'), 'String'),
-        (L(5), 'UInt8'),
-        (L(1.2345), 'Float64'),
-        (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), 'DateTime'),
-        (L(date(2015, 9, 1)), 'Date'),
-        (ibis.NA, 'Null')
-    ]
-)
+@pytest.mark.parametrize(('value', 'expected'), [
+    (L('foo_bar'), 'String'),
+    (L(5), 'UInt8'),
+    (L(1.2345), 'Float64'),
+    (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), 'DateTime'),
+    (L(date(2015, 9, 1)), 'Date'),
+    (ibis.NA, 'Null')
+])
 def test_typeof(con, value, expected):
     assert con.execute(value.typeof()) == expected
 
@@ -311,14 +184,11 @@ def test_string_length(con, value, expected):
     assert con.execute(L(value).length()) == expected
 
 
-@pytest.mark.parametrize(
-    ('op', 'expected'),
-    [
-        (methodcaller('substr', 0, 3), 'foo'),
-        (methodcaller('substr', 4, 3), 'bar'),
-        (methodcaller('substr', 1), 'oo_bar'),
-    ]
-)
+@pytest.mark.parametrize(('op', 'expected'), [
+    (methodcaller('substr', 0, 3), 'foo'),
+    (methodcaller('substr', 4, 3), 'bar'),
+    (methodcaller('substr', 1), 'oo_bar'),
+])
 def test_string_substring(con, op, expected):
     value = L('foo_bar')
     assert con.execute(op(value)) == expected
@@ -350,16 +220,13 @@ def test_string_lenght(con):
     assert con.execute(L('FOO').length()) == 3
 
 
-@pytest.mark.parametrize(
-    ('value', 'op', 'expected'),
-    [
-        (L('foobar'), methodcaller('contains', 'bar'), True),
-        (L('foobar'), methodcaller('contains', 'foo'), True),
-        (L('foobar'), methodcaller('contains', 'baz'), False),
-        (L('100%'), methodcaller('contains', '%'), True),
-        (L('a_b_c'), methodcaller('contains', '_'), True),
-    ]
-)
+@pytest.mark.parametrize(('value', 'op', 'expected'), [
+    (L('foobar'), methodcaller('contains', 'bar'), True),
+    (L('foobar'), methodcaller('contains', 'foo'), True),
+    (L('foobar'), methodcaller('contains', 'baz'), False),
+    (L('100%'), methodcaller('contains', '%'), True),
+    (L('a_b_c'), methodcaller('contains', '_'), True),
+])
 def test_string_contains(con, op, value, expected):
     assert con.execute(op(value)) == expected
 
@@ -373,14 +240,11 @@ def test_re_replace(con, translate):
     assert con.execute(expr2) == 'here: Hello, World!'
 
 
-@pytest.mark.parametrize(
-    ('value', 'expected'),
-    [
-        (L('a'), 0),
-        (L('b'), 1),
-        (L('d'), -1),  # TODO: what's the expected?
-    ]
-)
+@pytest.mark.parametrize(('value', 'expected'), [
+    (L('a'), 0),
+    (L('b'), 1),
+    (L('d'), -1),  # TODO: what's the expected?
+])
 def test_find_in_set(con, value, expected, translate):
     vals = list('abc')
     expr = value.find_in_set(vals)
@@ -427,25 +291,22 @@ def test_string_column_find_in_set(con, alltypes, translate):
 #          assert result == expected
 
 
-@pytest.mark.parametrize(
-    ('expr', 'expected'),
-    [
-        (L('foobar').find('bar'), 3),
-        (L('foobar').find('baz'), -1),
+@pytest.mark.parametrize(('expr', 'expected'), [
+    (L('foobar').find('bar'), 3),
+    (L('foobar').find('baz'), -1),
 
-        (L('foobar').like('%bar'), True),
-        (L('foobar').like('foo%'), True),
-        (L('foobar').like('%baz%'), False),
+    (L('foobar').like('%bar'), True),
+    (L('foobar').like('foo%'), True),
+    (L('foobar').like('%baz%'), False),
 
-        (L('foobar').like(['%bar']), True),
-        (L('foobar').like(['foo%']), True),
-        (L('foobar').like(['%baz%']), False),
+    (L('foobar').like(['%bar']), True),
+    (L('foobar').like(['foo%']), True),
+    (L('foobar').like(['%baz%']), False),
 
-        (L('foobar').like(['%bar', 'foo%']), True),
+    (L('foobar').like(['%bar', 'foo%']), True),
 
-        (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
-    ]
-)
+    (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
+])
 def test_string_find_like(con, expr, expected):
     assert con.execute(expr) == expected
 
@@ -473,49 +334,43 @@ def test_string_column_find(con, alltypes, translate):
     assert len(con.execute(expr))
 
 
-@pytest.mark.parametrize(
-    ('call', 'expected'),
-    [
-        (methodcaller('log'), 'log(`double_col`)'),
-        (methodcaller('log2'), 'log2(`double_col`)'),
-        (methodcaller('log10'), 'log10(`double_col`)'),
-        (methodcaller('round'), 'round(`double_col`)'),
-        (methodcaller('round', 0), 'round(`double_col`, 0)'),
-        (methodcaller('round', 2), 'round(`double_col`, 2)'),
-        (methodcaller('exp'), 'exp(`double_col`)'),
-        (methodcaller('abs'), 'abs(`double_col`)'),
-        (methodcaller('ceil'), 'ceil(`double_col`)'),
-        (methodcaller('floor'), 'floor(`double_col`)'),
-        (methodcaller('sqrt'), 'sqrt(`double_col`)'),
-        (methodcaller('sign'), 'intDivOrZero(`double_col`, abs(`double_col`))')
-    ]
-)
+@pytest.mark.parametrize(('call', 'expected'), [
+    (methodcaller('log'), 'log(`double_col`)'),
+    (methodcaller('log2'), 'log2(`double_col`)'),
+    (methodcaller('log10'), 'log10(`double_col`)'),
+    (methodcaller('round'), 'round(`double_col`)'),
+    (methodcaller('round', 0), 'round(`double_col`, 0)'),
+    (methodcaller('round', 2), 'round(`double_col`, 2)'),
+    (methodcaller('exp'), 'exp(`double_col`)'),
+    (methodcaller('abs'), 'abs(`double_col`)'),
+    (methodcaller('ceil'), 'ceil(`double_col`)'),
+    (methodcaller('floor'), 'floor(`double_col`)'),
+    (methodcaller('sqrt'), 'sqrt(`double_col`)'),
+    (methodcaller('sign'), 'intDivOrZero(`double_col`, abs(`double_col`))')
+])
 def test_translate_math_functions(con, alltypes, translate, call, expected):
     expr = call(alltypes.double_col)
     assert translate(expr) == expected
     assert len(con.execute(expr))
 
 
-@pytest.mark.parametrize(
-    ('expr', 'expected'),
-    [
-        (L(-5).abs(), 5),
-        (L(5).abs(), 5),
-        (L(5.5).round(), 6.0),
-        (L(5.556).round(2), 5.56),
-        (L(5.556).ceil(), 6.0),
-        (L(5.556).floor(), 5.0),
-        (L(5.556).exp(), math.exp(5.556)),
-        (L(5.556).sign(), 1),
-        (L(-5.556).sign(), -1),
-        (L(0).sign(), 0),
-        (L(5.556).sqrt(), math.sqrt(5.556)),
-        (L(5.556).log(2), math.log(5.556, 2)),
-        (L(5.556).ln(), math.log(5.556)),
-        (L(5.556).log2(), math.log(5.556, 2)),
-        (L(5.556).log10(), math.log10(5.556)),
-    ]
-)
+@pytest.mark.parametrize(('expr', 'expected'), [
+    (L(-5).abs(), 5),
+    (L(5).abs(), 5),
+    (L(5.5).round(), 6.0),
+    (L(5.556).round(2), 5.56),
+    (L(5.556).ceil(), 6.0),
+    (L(5.556).floor(), 5.0),
+    (L(5.556).exp(), math.exp(5.556)),
+    (L(5.556).sign(), 1),
+    (L(-5.556).sign(), -1),
+    (L(0).sign(), 0),
+    (L(5.556).sqrt(), math.sqrt(5.556)),
+    (L(5.556).log(2), math.log(5.556, 2)),
+    (L(5.556).ln(), math.log(5.556)),
+    (L(5.556).log2(), math.log(5.556, 2)),
+    (L(5.556).log10(), math.log10(5.556)),
+])
 def test_math_functions(con, expr, expected, translate):
     assert con.execute(expr) == expected
 
@@ -542,32 +397,26 @@ def test_least(con, alltypes, translate):
 
 
 # TODO: clickhouse-driver escaping bug
-@pytest.mark.parametrize(
-    ('expr', 'expected'),
-    [
-        (L('abcd').re_search('[a-z]'), True),
-        (L('abcd').re_search('[\\\d]+'), False),
-        (L('1222').re_search('[\\\d]+'), True),
-    ]
-)
+@pytest.mark.parametrize(('expr', 'expected'), [
+    (L('abcd').re_search('[a-z]'), True),
+    (L('abcd').re_search('[\\\d]+'), False),
+    (L('1222').re_search('[\\\d]+'), True),
+])
 def test_regexp(con, expr, expected):
     assert con.execute(expr) == expected
 
 
 # TODO: two cases are failing
-@pytest.mark.parametrize(
-    ('expr', 'expected'),
-    [
-        (L('abcd').re_extract('([a-z]+)', 0), 'abcd'),
-        # (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),
+@pytest.mark.parametrize(('expr', 'expected'), [
+    (L('abcd').re_extract('([a-z]+)', 0), 'abcd'),
+    # (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),
 
-        # valid group number but no match => empty string
-        (L('abcd').re_extract('(\\\d)', 0), ''),
+    # valid group number but no match => empty string
+    (L('abcd').re_extract('(\\\d)', 0), ''),
 
-        # match but not a valid group number => NULL
-        # (L('abcd').re_extract('abcd', 3), None),
-    ]
-)
+    # match but not a valid group number => NULL
+    # (L('abcd').re_extract('abcd', 3), None),
+])
 def test_regexp_extract(con, expr, expected, translate):
     assert con.execute(expr) == expected
 
@@ -588,70 +437,6 @@ def test_column_regexp_replace(con, alltypes, translate):
     assert len(con.execute(expr))
 
 
-@pytest.mark.parametrize('column', ['int_col', 'float_col', 'bool_col'])
-def test_negate(con, alltypes, translate, column):
-    # clickhouse represent boolean as UInt8
-    # TODO: how should I identify boolean cols?
-
-    expr = -getattr(alltypes, column)
-    assert translate(expr) == '-`{0}`'.format(column)
-    assert len(con.execute(expr))
-
-
-def test_field_in_literals(con, alltypes, translate):
-    expr = alltypes.string_col.isin(['foo', 'bar', 'baz'])
-    assert translate(expr) == "`string_col` IN ('foo', 'bar', 'baz')"
-    assert len(con.execute(expr))
-
-    expr = alltypes.string_col.notin(['foo', 'bar', 'baz'])
-    assert translate(expr) == "`string_col` NOT IN ('foo', 'bar', 'baz')"
-    assert len(con.execute(expr))
-
-
-@pytest.mark.parametrize(
-    ('reduction', 'func_translated'),
-    [
-        ('sum', 'sum'),
-        ('count', 'count'),
-        ('mean', 'avg'),
-        ('max', 'max'),
-        ('min', 'min'),
-        ('std', 'stddevSamp'),
-        ('var', 'varSamp')
-    ]
-)
-def test_reduction_where(con, alltypes, translate, reduction, func_translated):
-    template = '{0}If(`double_col`, `bigint_col` < 70)'
-    expected = template.format(func_translated)
-
-    method = getattr(alltypes.double_col, reduction)
-    cond = alltypes.bigint_col < 70
-    expr = method(where=cond)
-
-    assert translate(expr) == expected
-    assert isinstance(con.execute(expr), (np.float, np.uint))
-
-
-def test_std_var_pop(con, alltypes, translate):
-    cond = alltypes.bigint_col < 70
-    expr1 = alltypes.double_col.std(where=cond, how='pop')
-    expr2 = alltypes.double_col.var(where=cond, how='pop')
-
-    assert translate(expr1) == 'stddevPopIf(`double_col`, `bigint_col` < 70)'
-    assert translate(expr2) == 'varPopIf(`double_col`, `bigint_col` < 70)'
-    assert isinstance(con.execute(expr1), np.float)
-    assert isinstance(con.execute(expr2), np.float)
-
-
-@pytest.mark.parametrize('reduction', ['sum', 'count', 'max', 'min'])
-def test_reduction_invalid_where(con, alltypes, reduction):
-    condbad_literal = L('T')
-
-    with pytest.raises(TypeError):
-        fn = methodcaller(reduction, where=condbad_literal)
-        expr = fn(alltypes.double_col)
-
-
 # def test_hash(self):
 #     expr = self.table.int_col.hash()
 #     assert isinstance(expr, ir.Int64Column)
@@ -669,241 +454,6 @@ def test_numeric_builtins_work(con, alltypes, df, translate):
     result = expr.execute()
     expected = df.double_col.fillna(0)
     tm.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize(
-    ('op', 'pandas_op'),
-    [
-        (
-            lambda t: (t.double_col > 20).ifelse(10, -20),
-            lambda df: pd.Series(np.where(df.double_col > 20, 10, -20),
-                                 dtype='int16')
-        ),
-        (
-            lambda t: (t.double_col > 20).ifelse(10, -20).abs(),
-            lambda df: (pd.Series(np.where(df.double_col > 20, 10, -20))
-                          .abs()
-                          .astype('uint16'))
-        ),
-    ]
-)
-def test_ifelse(alltypes, df, op, pandas_op, translate):
-    expr = op(alltypes)
-    result = expr.execute()
-    result.name = None
-    expected = pandas_op(df)
-
-    tm.assert_series_equal(result, expected)
-
-
-# @pytest.mark.parametrize(
-#     ('func', 'pandas_func'),
-#     [
-#         # tier and histogram
-#         (
-#             lambda d: d.bucket([0, 10, 25, 50, 100]),
-#             lambda s: pd.cut(
-#                 s, [0, 10, 25, 50, 100], right=False, labels=False,
-#             )
-#         ),
-#         (
-#             lambda d: d.bucket([0, 10, 25, 50], include_over=True),
-#             lambda s: pd.cut(
-#                 s, [0, 10, 25, 50, np.inf], right=False, labels=False
-#             )
-#         ),
-#         (
-#             lambda d: d.bucket([0, 10, 25, 50], close_extreme=False),
-#             lambda s: pd.cut(s, [0, 10, 25, 50], right=False, labels=False),
-#         ),
-#         (
-#             lambda d: d.bucket(
-#                 [0, 10, 25, 50], closed='right', close_extreme=False
-#             ),
-#             lambda s: pd.cut(
-#                 s, [0, 10, 25, 50],
-#                 include_lowest=False,
-#                 right=True,
-#                 labels=False,
-#             )
-#         ),
-#         (
-#             lambda d: d.bucket([10, 25, 50, 100], include_under=True),
-#             lambda s: pd.cut(
-#                 s, [0, 10, 25, 50, 100], right=False, labels=False
-#             ),
-#         ),
-#     ]
-# )
-# def test_bucket(alltypes, df, func, pandas_func):
-#     expr = func(alltypes.double_col)
-#     result = expr.execute()
-#     expected = pandas_func(df.double_col)
-#     tm.assert_series_equal(result, expected, check_names=False)
-
-
-# def test_category_label(alltypes, df):
-#     t = alltypes
-#     d = t.double_col
-
-#     bins = [0, 10, 25, 50, 100]
-#     labels = ['a', 'b', 'c', 'd']
-#     bucket = d.bucket(bins)
-#     expr = bucket.label(labels)
-#     result = expr.execute().astype('category', ordered=True)
-#     result.name = 'double_col'
-
-#     expected = pd.cut(df.double_col, bins, labels=labels, right=False)
-
-#     tm.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize(
-    ('func', 'pandas_func'),
-    [
-        (
-            lambda t, cond: t.bool_col.count(),
-            lambda df, cond: df.bool_col.count(),
-        ),
-        (
-            lambda t, cond: t.bool_col.nunique(),
-            lambda df, cond: df.bool_col.nunique(),
-        ),
-        (
-            lambda t, cond: t.bool_col.approx_nunique(),
-            lambda df, cond: df.bool_col.nunique(),
-        ),
-        # group_concat
-        # (
-        #     lambda t, cond: t.bool_col.any(),
-        #     lambda df, cond: df.bool_col.any(),
-        # ),
-        # (
-        #     lambda t, cond: t.bool_col.all(),
-        #     lambda df, cond: df.bool_col.all(),
-        # ),
-        # (
-        #     lambda t, cond: t.bool_col.notany(),
-        #     lambda df, cond: ~df.bool_col.any(),
-        # ),
-        # (
-        #     lambda t, cond: t.bool_col.notall(),
-        #     lambda df, cond: ~df.bool_col.all(),
-        # ),
-        (
-            lambda t, cond: t.double_col.sum(),
-            lambda df, cond: df.double_col.sum(),
-        ),
-        (
-            lambda t, cond: t.double_col.mean(),
-            lambda df, cond: df.double_col.mean(),
-        ),
-        (
-            lambda t, cond: t.int_col.approx_median(),
-            lambda df, cond: df.int_col.median(),
-        ),
-        (
-            lambda t, cond: t.double_col.min(),
-            lambda df, cond: df.double_col.min(),
-        ),
-        (
-            lambda t, cond: t.double_col.max(),
-            lambda df, cond: df.double_col.max(),
-        ),
-        (
-            lambda t, cond: t.double_col.var(),
-            lambda df, cond: df.double_col.var(),
-        ),
-        (
-            lambda t, cond: t.double_col.std(),
-            lambda df, cond: df.double_col.std(),
-        ),
-        (
-            lambda t, cond: t.double_col.var(how='sample'),
-            lambda df, cond: df.double_col.var(ddof=1),
-        ),
-        (
-            lambda t, cond: t.double_col.std(how='pop'),
-            lambda df, cond: df.double_col.std(ddof=0),
-        ),
-        (
-            lambda t, cond: t.bool_col.count(where=cond),
-            lambda df, cond: df.bool_col[cond].count(),
-        ),
-        (
-            lambda t, cond: t.bool_col.nunique(where=cond),
-            lambda df, cond: df.bool_col[cond].nunique(),
-        ),
-        (
-            lambda t, cond: t.bool_col.approx_nunique(where=cond),
-            lambda df, cond: df.bool_col[cond].nunique(),
-        ),
-        (
-            lambda t, cond: t.double_col.sum(where=cond),
-            lambda df, cond: df.double_col[cond].sum(),
-        ),
-        (
-            lambda t, cond: t.double_col.mean(where=cond),
-            lambda df, cond: df.double_col[cond].mean(),
-        ),
-        (
-            lambda t, cond: t.int_col.approx_median(where=cond),
-            lambda df, cond: df.int_col[cond].median(),
-        ),
-        (
-            lambda t, cond: t.double_col.min(where=cond),
-            lambda df, cond: df.double_col[cond].min(),
-        ),
-        (
-            lambda t, cond: t.double_col.max(where=cond),
-            lambda df, cond: df.double_col[cond].max(),
-        ),
-        (
-            lambda t, cond: t.double_col.var(where=cond),
-            lambda df, cond: df.double_col[cond].var(),
-        ),
-        (
-            lambda t, cond: t.double_col.std(where=cond),
-            lambda df, cond: df.double_col[cond].std(),
-        ),
-        (
-            lambda t, cond: t.double_col.var(where=cond, how='sample'),
-            lambda df, cond: df.double_col[cond].var(),
-        ),
-        (
-            lambda t, cond: t.double_col.std(where=cond, how='pop'),
-            lambda df, cond: df.double_col[cond].std(ddof=0),
-        ),
-    ]
-)
-def test_aggregations(alltypes, df, func, pandas_func, translate):
-    table = alltypes.limit(100)
-    count = table.count().execute()
-    df = df.head(int(count))
-
-    cond = table.string_col.isin(['1', '7'])
-    mask = cond.execute().astype('bool')
-    expr = func(table, cond)
-
-    result = expr.execute()
-    expected = pandas_func(df, mask)
-
-    np.testing.assert_allclose(result, expected)
-
-
-# def test_group_concat(alltypes, df):
-#     expr = alltypes.string_col.group_concat()
-#     result = expr.execute()
-#     expected = ','.join(df.string_col.dropna())
-#     assert result == expected
-
-
-def test_distinct_aggregates(alltypes, df, translate):
-    expr = alltypes.limit(100).double_col.nunique()
-    result = expr.execute()
-
-    assert translate(expr) == 'uniq(`double_col`)'
-    assert result == df.head(100).double_col.nunique()
 
 
 # TODO
@@ -947,10 +497,8 @@ def test_null_column(alltypes, translate):
     nrows = t.count().execute()
     expr = t.mutate(na_column=ibis.NA).na_column
     result = expr.execute()
-    tm.assert_series_equal(
-        result,
-        pd.Series([None] * nrows, name='na_column')
-    )
+    expected = pd.Series([None] * nrows, name='na_column')
+    tm.assert_series_equal(result, expected)
 
 
 # def test_null_column_union(alltypes, df):
@@ -978,114 +526,16 @@ def test_null_column(alltypes, translate):
 #     tm.assert_frame_equal(result, expected)
 
 
-# def test_anonymus_aggregate(alltypes, df):
-#     t = alltypes
-#     expr = t[t.double_col > t.double_col.mean()]
-#     result = expr.execute()
-#     expected = df[df.double_col > df.double_col.mean()].reset_index(
-#         drop=True
-#     )
-#     tm.assert_frame_equal(result, expected)
-
-
-# def test_rank(con):
-#     t = con.table('functional_alltypes')
-#     expr = t.double_col.rank()
-#     sqla_expr = expr.compile()
-#     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
-#     expected = """\
-# SELECT rank() OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp
-# FROM functional_alltypes AS t0"""  # noqa: E501,W291
-#     assert result == expected
-
-
-# def test_percent_rank(con):
-#     t = con.table('functional_alltypes')
-#     expr = t.double_col.percent_rank()
-#     sqla_expr = expr.compile()
-#     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
-#     expected = """\
-# SELECT percent_rank() OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS tmp
-# FROM functional_alltypes AS t0"""  # noqa: E501,W291
-#     assert result == expected
-
-
-# def test_ntile(con):
-#     t = con.table('functional_alltypes')
-#     expr = t.double_col.ntile(7)
-#     sqla_expr = expr.compile()
-#     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
-#     expected = """\
-# SELECT ntile(7) OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp
-# FROM functional_alltypes AS t0"""  # noqa: E501,W291
-#     assert result == expected
-
-
-# @pytest.mark.parametrize('op', [operator.invert, operator.neg])
-# def test_not_and_negate_bool(con, op, df):
-#     t = con.table('functional_alltypes').limit(10)
-#     expr = t.projection([op(t.bool_col).name('bool_col')])
-#     result = expr.execute().bool_col
-#     expected = op(df.head(10).bool_col)
-#     tm.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize(
-    'field',
-    [
-        'tinyint_col',
-        'smallint_col',
-        'int_col',
-        'bigint_col',
-        'float_col',
-        'double_col',
-        'year',
-        'month',
-    ]
-)
-def test_negate_non_boolean(con, alltypes, field, df):
-    t = alltypes.limit(10)
-    expr = t.projection([(-t[field]).name(field)])
-    result = expr.execute()[field]
-    expected = -df.head(10)[field]
-    tm.assert_series_equal(result, expected)
-
-
-# def test_negate_boolean(con, alltypes, df):
-#     t = alltypes.limit(10)
-#     expr = t.projection([(~t.bool_col).name('bool_col')])
-#     result = expr.execute().bool_col
-#     print(result)
-#     expected = ~df.head(10).bool_col
-#     tm.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize(
-    ('attr', 'expected'),
-    [
-        (operator.methodcaller('year'), {2009, 2010}),
-        (operator.methodcaller('month'), set(range(1, 13))),
-        (operator.methodcaller('day'), set(range(1, 32)))
-    ]
-)
+@pytest.mark.parametrize(('attr', 'expected'), [
+    (operator.methodcaller('year'), {2009, 2010}),
+    (operator.methodcaller('month'), set(range(1, 13))),
+    (operator.methodcaller('day'), set(range(1, 32)))
+])
 def test_date_extract_field(db, alltypes, attr, expected):
     t = alltypes
     expr = attr(t.timestamp_col.cast('date')).distinct()
     result = expr.execute().astype(int)
     assert set(result) == expected
-
-
-@pytest.mark.parametrize('op', [
-    methodcaller('sum'),
-    methodcaller('mean'),
-    methodcaller('min'),
-    methodcaller('max'),
-    methodcaller('std'),
-    methodcaller('var')
-])
-def test_boolean_reduction(alltypes, op, df):
-    result = op(alltypes.bool_col).execute()
-    assert result == op(df.bool_col)
 
 
 # def test_boolean_summary(alltypes):
@@ -1104,6 +554,13 @@ def test_boolean_reduction(alltypes, op, df):
 #         ]
 #     )
 #     tm.assert_frame_equal(result, expected)
+
+
+# def test_timestamp_from_integer(con, alltypes, translate):
+#     # timestamp_col has datetime type
+#     expr = alltypes.date.to_timestamp()
+#     assert translate(expr) == 'toUInt32(`timestamp_col`)'
+#     assert len(con.execute(expr))
 
 
 # def test_timestamp_with_timezone(con):
@@ -1182,72 +639,3 @@ def test_boolean_reduction(alltypes, op, df):
 #             'SELECT name FROM pg_timezone_names'
 #         )
 #     )
-
-
-@pytest.mark.parametrize(
-    ('left', 'right', 'type'),
-    [
-        (L('2017-04-01'), date(2017, 4, 2), dt.date),
-        (date(2017, 4, 2), L('2017-04-01'), dt.date),
-        (
-            L('2017-04-01 01:02:33'),
-            datetime(2017, 4, 1, 1, 3, 34),
-            dt.timestamp
-        ),
-        (
-            datetime(2017, 4, 1, 1, 3, 34),
-            L('2017-04-01 01:02:33'),
-            dt.timestamp
-        ),
-    ]
-)
-@pytest.mark.parametrize(
-    'op',
-    [
-        operator.eq,
-        operator.ne,
-        operator.lt,
-        operator.le,
-        operator.gt,
-        operator.ge,
-    ]
-)
-def test_string_temporal_compare(con, op, left, right, type):
-    expr = op(left, right)
-    result = con.execute(expr)
-    left_raw = con.execute(L(left).cast(type))
-    right_raw = con.execute(L(right).cast(type))
-    expected = op(left_raw, right_raw)
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    ('left', 'right'),
-    [
-        (L('2017-03-31').cast(dt.date), date(2017, 4, 2)),
-        (date(2017, 3, 31), L('2017-04-02').cast(dt.date)),
-    ]
-)
-def test_string_temporal_compare_between_dates(con, left, right):
-    expr = ibis.timestamp('2017-04-01').cast(dt.date).between(left, right)
-    result = con.execute(expr)
-    assert result
-
-
-@pytest.mark.parametrize(
-    ('left', 'right'),
-    [
-        (
-            L('2017-03-31 00:02:33').cast(dt.timestamp),
-            datetime(2017, 4, 1, 1, 3, 34),
-        ),
-        (
-            datetime(2017, 3, 31, 0, 2, 33),
-            L('2017-04-01 01:03:34').cast(dt.timestamp),
-        )
-    ]
-)
-def test_string_temporal_compare_between_datetimes(con, left, right):
-    expr = ibis.timestamp('2017-04-01 00:02:34').between(left, right)
-    result = con.execute(expr)
-    assert result

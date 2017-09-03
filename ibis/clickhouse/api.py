@@ -1,8 +1,7 @@
-from ibis.clickhouse.client import ClickhouseClient
-# ClickhouseConnection, ClickhouseDatabase, ClickhouseTable
+import ibis.common as com
 
 from ibis.config import options
-import ibis.common as com
+from ibis.clickhouse.client import ClickhouseClient
 
 
 def compile(expr):

@@ -1,18 +1,9 @@
 import sys
 import pytest
-import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
 import ibis.common as com
-from ibis.clickhouse.compiler import to_sql
-from ibis.expr.tests.mocks import MockConnection
-
-
-@pytest.fixture(scope='module')
-def table():
-    con = MockConnection()
-    return con.table('alltypes')
 
 
 @pytest.fixture(scope='module')
@@ -30,7 +21,7 @@ def awards_players(con):
     return con.table('awards_players')
 
 
-def test_timestamp_extract_field(con, alltypes):
+def test_timestamp_extract_field(con, db, alltypes):
     t = alltypes.timestamp_col
     expr = alltypes[t.year().name('year'),
                     t.month().name('month'),
@@ -39,7 +30,7 @@ def test_timestamp_extract_field(con, alltypes):
                     t.minute().name('minute'),
                     t.second().name('second')]
 
-    result = to_sql(expr)
+    result = ibis.clickhouse.compile(expr)
 
     expected = """\
 SELECT toYear(`timestamp_col`) AS `year`, toMonth(`timestamp_col`) AS `month`,
@@ -47,24 +38,24 @@ SELECT toYear(`timestamp_col`) AS `year`, toMonth(`timestamp_col`) AS `month`,
        toHour(`timestamp_col`) AS `hour`,
        toMinute(`timestamp_col`) AS `minute`,
        toSecond(`timestamp_col`) AS `second`
-FROM ibis_testing.`functional_alltypes`"""
-    assert result == expected
+FROM {0}.`functional_alltypes`"""
+    assert result == expected.format(db.name)
 
 
-def test_isin_notin_in_select(con, alltypes, translate):
+def test_isin_notin_in_select(con, db, alltypes, translate):
     filtered = alltypes[alltypes.string_col.isin(['foo', 'bar'])]
-    result = to_sql(filtered)
+    result = ibis.clickhouse.compile(filtered)
     expected = """SELECT *
-FROM ibis_testing.`functional_alltypes`
+FROM {0}.`functional_alltypes`
 WHERE `string_col` IN ('foo', 'bar')"""
-    assert result == expected
+    assert result == expected.format(db.name)
 
     filtered = alltypes[alltypes.string_col.notin(['foo', 'bar'])]
-    result = to_sql(filtered)
+    result = ibis.clickhouse.compile(filtered)
     expected = """SELECT *
-FROM ibis_testing.`functional_alltypes`
+FROM {0}.`functional_alltypes`
 WHERE `string_col` NOT IN ('foo', 'bar')"""
-    assert result == expected
+    assert result == expected.format(db.name)
 
 
 def test_head(alltypes):
@@ -98,18 +89,18 @@ def test_subquery(alltypes, df):
                           check_column_type=check_column_type)
 
 
-def test_simple_scalar_aggregates(alltypes):
+def test_simple_scalar_aggregates(db, alltypes):
     # Things like table.column.{sum, mean, ...}()
     table = alltypes
 
     expr = table[table.int_col > 0].float_col.sum()
 
-    sql_query = to_sql(expr)
+    sql_query = ibis.clickhouse.compile(expr)
     expected = """SELECT sum(`float_col`) AS `sum`
-FROM ibis_testing.`functional_alltypes`
+FROM {0}.`functional_alltypes`
 WHERE `int_col` > 0"""
 
-    assert sql_query == expected
+    assert sql_query == expected.format(db.name)
 
 
 # def test_scalar_aggregates_multiple_tables(alltypes):
@@ -123,7 +114,7 @@ WHERE `int_col` > 0"""
 
 #     expr = flagged.value.mean() / unflagged.value.mean() - 1
 
-#     result = to_sql(expr)
+#     result = ibis.clickhouse.compile(expr)
 #     expected = """\
 # SELECT (t0.`mean` / t1.`mean`) - 1 AS `tmp`
 # FROM (
@@ -142,7 +133,7 @@ WHERE `int_col` > 0"""
 #     uv = unflagged.value
 
 #     expr = (fv.mean() / fv.sum()) - (uv.mean() / uv.sum())
-#     result = to_sql(expr)
+#     result = ibis.clickhouse.compile(expr)
 #     expected = """\
 # SELECT t0.`tmp` - t1.`tmp` AS `tmp`
 # FROM (
@@ -159,44 +150,40 @@ WHERE `int_col` > 0"""
 
 
 # TODO use alltypes
-def test_table_column_unbox(table):
-    m = table.f.sum().name('total')
-    agged = table[table.c > 0].group_by('g').aggregate([m])
-    expr = agged.g
+def test_table_column_unbox(db, alltypes):
+    m = alltypes.float_col.sum().name('total')
+    agged = (alltypes[alltypes.int_col > 0]
+             .group_by('string_col')
+             .aggregate([m]))
+    expr = agged.string_col
 
-    sql_query = to_sql(expr)
+    sql_query = ibis.clickhouse.compile(expr)
     expected = """\
-SELECT `g`
+SELECT `string_col`
 FROM (
-  SELECT `g`, sum(`f`) AS `total`
-  FROM alltypes
-  WHERE `c` > 0
-  GROUP BY `g`
+  SELECT `string_col`, sum(`float_col`) AS `total`
+  FROM {0}.`functional_alltypes`
+  WHERE `int_col` > 0
+  GROUP BY `string_col`
 ) t0"""
 
-    assert sql_query == expected
-
-    # Maybe the result handler should act on the cursor. Not sure.
-    # handler = query.result_handler
-    # output = DataFrame({'g': ['foo', 'bar', 'baz']})
-    # assert (handler(output) == output['g']).all()
+    assert sql_query == expected.format(db.name)
 
 
-# TODO: use alltypes
-def test_complex_array_expr_projection(table):
+def test_complex_array_expr_projection(db, alltypes):
     # May require finding the base table and forming a projection.
-    expr = (table.group_by('g')
-            .aggregate([table.count().name('count')]))
-    expr2 = expr.g.cast('double')
+    expr = (alltypes.group_by('string_col')
+            .aggregate([alltypes.count().name('count')]))
+    expr2 = expr.string_col.cast('double')
 
-    query = to_sql(expr2)
-    expected = """SELECT CAST(`g` AS Float64) AS `tmp`
+    query = ibis.clickhouse.compile(expr2)
+    expected = """SELECT CAST(`string_col` AS Float64) AS `tmp`
 FROM (
-  SELECT `g`, count(*) AS `count`
-  FROM alltypes
-  GROUP BY `g`
+  SELECT `string_col`, count(*) AS `count`
+  FROM {0}.`functional_alltypes`
+  GROUP BY `string_col`
 ) t0"""
-    assert query == expected
+    assert query == expected.format(db.name)
 
 
 @pytest.mark.parametrize(('expr', 'expected'), [
@@ -204,50 +191,50 @@ FROM (
     (ibis.literal(1) + ibis.literal(2), 'SELECT 1 + 2 AS `tmp`')
 ])
 def test_scalar_exprs_no_table_refs(expr, expected):
-    assert to_sql(expr) == expected
+    assert ibis.clickhouse.compile(expr) == expected
 
 
 def test_expr_list_no_table_refs():
     exlist = ibis.api.expr_list([ibis.literal(1).name('a'),
                                  ibis.now().name('b'),
                                  ibis.literal(2).log().name('c')])
-    result = to_sql(exlist)
+    result = ibis.clickhouse.compile(exlist)
     expected = """\
 SELECT 1 AS `a`, now() AS `b`, log(2) AS `c`"""
     assert result == expected
 
 
 # TODO: use alltypes
-def test_isnull_case_expr_rewrite_failure(table):
+def test_isnull_case_expr_rewrite_failure(db, alltypes):
     # #172, case expression that was not being properly converted into an
     # aggregation
-    reduction = table.g.isnull().ifelse(1, 0).sum()
+    reduction = alltypes.string_col.isnull().ifelse(1, 0).sum()
 
-    result = to_sql(reduction)
+    result = ibis.clickhouse.compile(reduction)
     expected = """\
-SELECT sum(CASE WHEN isNull(`g`) THEN 1 ELSE 0 END) AS `sum`
-FROM alltypes"""
-    assert result == expected
+SELECT sum(CASE WHEN isNull(`string_col`) THEN 1 ELSE 0 END) AS `sum`
+FROM {0}.`functional_alltypes`"""
+    assert result == expected.format(db.name)
 
 
 # def test_nameless_table(con):
 #     # Generate a unique table name when we haven't passed on
 #     nameless = con.table([('key', 'string')])
-#     assert to_sql(nameless) == 'SELECT *\nFROM {}'.format(
+#     assert ibis.clickhouse.compile(nameless) == 'SELECT *\nFROM {}'.format(
 #         nameless.op().name
 #     )
 
 #     with_name = con.table([('key', 'string')], name='baz')
-#     result = to_sql(with_name)
+#     result = ibis.clickhouse.compile(with_name)
 #     assert result == 'SELECT *\nFROM baz'
 
 
-def test_physical_table_reference_translate(alltypes):
+def test_physical_table_reference_translate(db, alltypes):
     # If an expression's table leaves all reference database tables, verify
     # we translate correctlys
-    sql_string = to_sql(alltypes)
-    expected = "SELECT *\nFROM ibis_testing.`functional_alltypes`"
-    assert sql_string == expected
+    sql_string = ibis.clickhouse.compile(alltypes)
+    expected = "SELECT *\nFROM {0}.`functional_alltypes`"
+    assert sql_string == expected.format(db.name)
 
 
 def test_non_equijoin(alltypes):
@@ -268,7 +255,7 @@ def test_join_with_predicate_on_different_columns_raises(con, batting,
     expr = t1.inner_join(t2, [pred])[[t1]]
 
     with pytest.raises(com.TranslationError):
-        to_sql(expr)
+        ibis.clickhouse.compile(expr)
 
 
 @pytest.mark.parametrize(('join_type', 'join_clause'), [
@@ -277,39 +264,76 @@ def test_join_with_predicate_on_different_columns_raises(con, batting,
     ('left_semi_join', 'ANY LEFT JOIN'),
     ('left_join', 'ALL LEFT JOIN')
 ])
-def test_simple_joins(con, batting, awards_players, join_type, join_clause):
+def test_simple_joins(con, db, batting, awards_players,
+                      join_type, join_clause):
     t1, t2 = batting, awards_players
     expr = getattr(t1, join_type)(t2, ['playerID'])[[t1]]
 
     expected = """SELECT t0.*
-FROM ibis_testing.`batting` t0
-  {join_clause} ibis_testing.`awards_players` t1
-    USING `playerID`""".format(join_clause=join_clause)
+FROM {0}.`batting` t0
+  {join_clause} {0}.`awards_players` t1
+    USING `playerID`""".format(db.name, join_clause=join_clause)
 
-    assert to_sql(expr) == expected
+    assert ibis.clickhouse.compile(expr) == expected
     assert len(con.execute(expr))
 
 
-def test_self_reference_simple(con, alltypes):
+def test_self_reference_simple(con, db, alltypes):
     expr = alltypes.view()
-    result_sql = to_sql(expr)
-    expected_sql = "SELECT *\nFROM ibis_testing.`functional_alltypes`"
-    assert result_sql == expected_sql
+    result_sql = ibis.clickhouse.compile(expr)
+    expected_sql = "SELECT *\nFROM {0}.`functional_alltypes`"
+    assert result_sql == expected_sql.format(db.name)
     assert len(con.execute(expr))
 
 
-def test_join_self_reference(con, alltypes):
+def test_join_self_reference(con, db, alltypes):
     t1 = alltypes
     t2 = t1.view()
     expr = t1.inner_semi_join(t2, ['id'])[[t1]]
 
-    result_sql = to_sql(expr)
+    result_sql = ibis.clickhouse.compile(expr)
     expected_sql = """SELECT t0.*
-FROM ibis_testing.`functional_alltypes` t0
-  ANY INNER JOIN ibis_testing.`functional_alltypes` t1
+FROM {0}.`functional_alltypes` t0
+  ANY INNER JOIN {0}.`functional_alltypes` t1
     USING `id`"""
-    assert result_sql == expected_sql
+    assert result_sql == expected_sql.format(db.name)
     assert len(con.execute(expr))
+
+
+def test_where_simple_comparisons(con, db, alltypes):
+    t1 = alltypes
+    expr = t1.filter([t1.float_col > 0, t1.int_col < t1.float_col * 2])
+
+    result = ibis.clickhouse.compile(expr)
+    expected = """SELECT *
+FROM {0}.`functional_alltypes`
+WHERE `float_col` > 0 AND
+      `int_col` < (`float_col` * 2)"""
+    assert result == expected.format(db.name)
+    assert len(con.execute(expr))
+
+
+def test_where_with_between(con, db, alltypes):
+    t = alltypes
+
+    expr = t.filter([t.int_col > 0, t.float_col.between(0, 1)])
+    result = ibis.clickhouse.compile(expr)
+    expected = """SELECT *
+FROM {0}.`functional_alltypes`
+WHERE `int_col` > 0 AND
+      `float_col` BETWEEN 0 AND 1"""
+    assert result == expected.format(db.name)
+    con.execute(expr)
+
+
+def test_where_use_if(con, alltypes, translate):
+    expr = ibis.where(alltypes.float_col > 0,
+                      alltypes.int_col, alltypes.bigint_col)
+
+    result = translate(expr)
+    expected = "if(`float_col` > 0, `int_col`, `bigint_col`)"
+    assert result == expected
+    con.execute(expr)
 
 
 # def test_union(alltypes):
@@ -326,6 +350,22 @@ FROM ibis_testing.`functional_alltypes` t0
 #     result = t1.union(t2).execute()
 #     expected = t3.execute()
 #     tm.assert_frame_equal(result, expected)
+
+
+# def test_unions_with_ctes(con, alltypes):
+#     t = alltypes
+
+#     expr1 = (t.group_by(['tinyint_col', 'string_col'])
+#              .aggregate(t.double_col.sum().name('metric')))
+#     expr2 = expr1.view()
+
+#     join1 = (expr1.join(expr2, expr1.string_col == expr2.string_col)
+#              [[expr1]])
+#     join2 = join1.view()
+
+#     expr = join1.union(join2)
+#     con.execute(expr)
+#     con.explain(expr)
 
 
 def test_filter_predicates(diamonds):
@@ -362,6 +402,18 @@ SELECT `uuid`, minIf(`ts`, `search_level` = 1) AS `min_date`
 FROM t
 GROUP BY `uuid`"""
     assert result == expected
+
+
+# def test_timestamp_scalar_in_filter(alltypes):
+#     table = alltypes
+
+#     expr = (table.filter([table.timestamp_col <
+#                          (ibis.timestamp('2010-01-01') + ibis.month(3)),
+#                          table.timestamp_col < (ibis.now() +
+#                                                 ibis.day(10))
+#                           ])
+#             .count())
+#     expr.execute()
 
 
 def test_named_from_filter_groupby():
