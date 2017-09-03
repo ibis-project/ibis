@@ -1,6 +1,11 @@
+import pytest
 import pandas as pd
 
 from ibis.clickhouse import api
+
+
+pytest.importorskip('clickhouse_driver')
+pytestmark = pytest.mark.clickhouse
 
 
 def test_column_types(alltypes):

@@ -6,6 +6,10 @@ import ibis
 import ibis.common as com
 
 
+pytest.importorskip('clickhouse_driver')
+pytestmark = pytest.mark.clickhouse
+
+
 @pytest.fixture(scope='module')
 def diamonds(con):
     return con.table('diamonds')

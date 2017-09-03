@@ -12,6 +12,10 @@ import ibis.expr.types as ir
 from ibis import literal as L
 
 
+pytest.importorskip('clickhouse_driver')
+pytestmark = pytest.mark.clickhouse
+
+
 @pytest.mark.parametrize(('to_type', 'expected'), [
     ('int8', 'CAST(`double_col` AS Int8)'),
     ('int16', 'CAST(`double_col` AS Int16)'),

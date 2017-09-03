@@ -2,8 +2,6 @@ import os
 import ibis
 import pytest
 
-pytest.importorskip('clickhouse_driver')
-pytestmark = pytest.mark.clickhouse
 
 CLICKHOUSE_HOST = os.environ.get('IBIS_CLICKHOUSE_HOST', 'localhost')
 CLICKHOUSE_PORT = int(os.environ.get('IBIS_CLICKHOUSE_PORT', 9000))

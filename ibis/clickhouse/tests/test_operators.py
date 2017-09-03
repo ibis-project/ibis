@@ -12,6 +12,10 @@ import ibis.expr.datatypes as dt
 from ibis import literal as L
 
 
+pytest.importorskip('clickhouse_driver')
+pytestmark = pytest.mark.clickhouse
+
+
 # def test_not(alltypes):
 #     t = alltypes.limit(10)
 #     expr = t.projection([(~t.double_col.isnull()).name('double_col')])

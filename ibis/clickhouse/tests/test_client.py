@@ -1,11 +1,16 @@
-import ibis
+import pytest
 import pandas as pd
 
+import ibis
 import ibis.config as config
 import ibis.expr.types as ir
 
 from ibis import literal as L
 from ibis.compat import StringIO
+
+
+pytest.importorskip('clickhouse_driver')
+pytestmark = pytest.mark.clickhouse
 
 
 def test_get_table_ref(db):

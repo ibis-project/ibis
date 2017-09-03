@@ -2,8 +2,10 @@ import pytest
 import numpy as np
 
 from operator import methodcaller
-
 from ibis import literal as L
+
+pytest.importorskip('clickhouse_driver')
+pytestmark = pytest.mark.clickhouse
 
 
 @pytest.mark.parametrize(('reduction', 'func_translated'), [
