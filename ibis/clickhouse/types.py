@@ -1,5 +1,6 @@
 from toolz import itemmap, merge, pluck
 
+# TODO: support Array, Tuple, Enum, Nested, AggregateFunction, UUID
 # TODO cleanup, reorganize
 
 _sql_type_names = {
@@ -42,7 +43,6 @@ CH2PD = merge(itemmap(reversed, _dtypes), {'Null': 'object'})
 
 
 # what is the correct signature of an unsigned ibis type?
-# TODO: set, enum, array
 CH2IB = {'UInt64': 'int64',
          'UInt32': 'int32',
          'UInt16': 'int16',

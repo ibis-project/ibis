@@ -1,26 +1,15 @@
 from six import StringIO
 from datetime import date, datetime
 
-# import ibis
-# import ibis.expr.analysis as L
-# import ibis.expr.datatypes as dt
+import ibis.common as com
+import ibis.util as util
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.expr.temporal as tempo
-
-# import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 
-# TODO: create absolute import
-from .identifiers import quote_identifier
-from .types import _type_to_sql_string
-
-import ibis.common as com
-import ibis.util as util
-
-
-# ---------------------------------------------------------------------
-# Scalar and array expression formatting
+from ibis.clickhouse.identifiers import quote_identifier
+from ibis.clickhouse.types import _type_to_sql_string
 
 
 def _cast(translator, expr):
@@ -39,52 +28,6 @@ def _between(translator, expr):
     op = expr.op()
     arg, lower, upper = [translator.translate(x) for x in op.args]
     return '{0!s} BETWEEN {1!s} AND {2!s}'.format(arg, lower, upper)
-
-
-# def _shift_like(name):
-
-#     def formatter(translator, expr):
-#         op = expr.op()
-#         arg, offset, default = op.args
-
-#         arg_formatted = translator.translate(arg)
-
-#         if default is not None:
-#             if offset is None:
-#                 offset_formatted = '1'
-#             else:
-#                 offset_formatted = translator.translate(offset)
-
-#             default_formatted = translator.translate(default)
-
-#             return '{0}({1}, {2}, {3})'.format(name, arg_formatted,
-#                                                offset_formatted,
-#                                                default_formatted)
-#         elif offset is not None:
-#             offset_formatted = translator.translate(offset)
-#             return '{0}({1}, {2})'.format(name, arg_formatted,
-#                                           offset_formatted)
-#         else:
-#             return '{0}({1})'.format(name, arg_formatted)
-
-#     return formatter
-
-
-# def _nth_value(translator, expr):
-#     op = expr.op()
-#     arg, rank = op.args
-
-#     arg_formatted = translator.translate(arg)
-#     rank_formatted = translator.translate(rank - 1)
-
-#     return 'first_value(lag({0}, {1}))'.format(arg_formatted,
-#                                                rank_formatted)
-
-
-# def _ntile(translator, expr):
-#     op = expr.op()
-#     arg, buckets = map(translator.translate, op.args)
-#     return 'ntile({})'.format(buckets)
 
 
 def _negate(translator, expr):
@@ -341,10 +284,6 @@ class CaseFormatter(object):
         self.base = base
         self.cases = cases
         self.results = results
-
-        # if default.equals(ir.null()):
-        #     raise TypeError('Null is not supported, default '
-        #                     'value must be explicitly defined!')
         self.default = default
 
         # HACK
@@ -409,10 +348,6 @@ def _table_array_view(translator, expr):
     return '(\n{0}\n)'.format(util.indent(query, ctx.indent))
 
 
-# ---------------------------------------------------------------------
-# Timestamp arithmetic and other functions
-
-
 def _timestamp_from_unix(translator, expr):
     op = expr.op()
     val, unit = op.args
@@ -450,10 +385,6 @@ _clickhouse_delta_functions = {
 def _timestamp_format_offset(offset, arg):
     f = _clickhouse_delta_functions[type(offset)]
     return '{0}({1}, {2})'.format(f, arg, offset.n)
-
-
-# ---------------------------------------------------------------------
-# Semi/anti-join supports
 
 
 def _exists_subquery(translator, expr):
@@ -496,15 +427,6 @@ def _table_column(translator, expr):
             quoted_name = '{0}.{1}'.format(alias, quoted_name)
 
     return quoted_name
-
-
-# _subtract_one = '({0} - 1)'.format
-# _expr_transforms = {
-#     ops.RowNumber: _subtract_one,
-#     ops.DenseRank: _subtract_one,
-#     ops.MinRank: _subtract_one,
-#     ops.NTile: _subtract_one,
-# }
 
 
 # TODO: clickhouse uses differenct string functions
@@ -633,20 +555,7 @@ _operation_registry = {
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery,
-
-    # RowNumber, and rank functions starts with 0 in Ibis-land
-    # ops.RowNumber: lambda *args: 'row_number()',
-    # ops.DenseRank: lambda *args: 'dense_rank()',
-    # ops.MinRank: lambda *args: 'rank()',
-    # ops.PercentRank: lambda *args: 'percent_rank()',
-
-    # ops.FirstValue: unary('first_value'),
-    # ops.LastValue: unary('last_value'),
-    # ops.NthValue: _nth_value,
-    # ops.Lag: _shift_like('lag'),
-    # ops.Lead: _shift_like('lead'),
-    # ops.NTile: _ntile,
+    transforms.NotExistsSubquery: _exists_subquery
 }
 
 
@@ -684,7 +593,20 @@ _unsupported_ops = [
     ops.CumulativeMean,
     ops.CumulativeAny,
     ops.CumulativeAll,
-    ops.IdenticalTo
+    ops.IdenticalTo,
+
+    # TODO: I'm not aware of these functions in clickhouse
+    ops.RowNumber,
+    ops.DenseRank,
+    ops.MinRank,
+    ops.PercentRank,
+
+    ops.FirstValue,
+    ops.LastValue,
+    ops.NthValue,
+    ops.Lag,
+    ops.Lead,
+    ops.NTile
 ]
 _unsupported_ops = {k: raise_error for k in _unsupported_ops}
 

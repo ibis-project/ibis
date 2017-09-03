@@ -180,8 +180,8 @@ def sqlite(script, tables, database, data_directory):
         os.path.join(data_directory, '{}.csv'.format(table))
         for table in tables
     ]
-    print(tables)
-    print(table_paths)
+    click.echo(tables)
+    click.echo(table_paths)
     for table, path in zip(tables, table_paths):
         df = pd.read_csv(path, index_col=None, header=0)
         with engine.begin() as con:
