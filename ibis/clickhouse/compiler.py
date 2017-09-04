@@ -1,25 +1,26 @@
 from six import StringIO
-import datetime
 
 # import ibis
 # import ibis.expr.analysis as L
 # import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-import ibis.expr.temporal as tempo
+# import ibis.expr.temporal as tempo
 
 import ibis.sql.compiler as comp
-import ibis.sql.transforms as transforms
+# import ibis.sql.transforms as transforms
 
 # TODO: create absolute import
 from .identifiers import quote_identifier
+# TODO: remove this import
+from .operations import _operation_registry, _name_expr
 
 import ibis.common as com
 import ibis.util as util
 
 
-def build_ast(expr, context=None):
-    builder = ClickhouseQueryBuilder(expr, context=context)
+def build_ast(expr, context=None, params=None):
+    builder = ClickhouseQueryBuilder(expr, context=context, params=params)
     return builder.get_result()
 
 
@@ -226,7 +227,7 @@ class ClickhouseSelect(comp.Select):
             new_pred = self._translate(pred, permit_subquery=True)
             if isinstance(pred.op(), ops.Or):
                 # parens for OR exprs because it binds looser than AND
-                new_pred = _parenthesize(new_pred)
+                new_pred = '({0!s})'.format(new_pred)
             fmt_preds.append(new_pred)
 
         conj = ' AND\n{0}'.format(' ' * 6)
@@ -411,9 +412,6 @@ class ClickhouseUnion(comp.Union):
         buf.extend([left_set, union_keyword, right_set])
 
         return '\n'.join(buf)
-
-
-from .operations import _operation_registry, _name_expr, _type_to_sql_string
 
 
 class ClickhouseExprTranslator(comp.ExprTranslator):
