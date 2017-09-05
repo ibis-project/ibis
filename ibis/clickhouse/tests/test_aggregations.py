@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import pandas as pd
 
 from operator import methodcaller
 from ibis import literal as L
@@ -310,3 +311,21 @@ def test_boolean_reduction(alltypes, op, df):
 #     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
 #     expected = """\
 #     assert result == expected
+
+
+def test_boolean_summary(alltypes):
+    expr = alltypes.bool_col.summary()
+    result = expr.execute()
+    expected = pd.DataFrame(
+        [[7300, 0, 0, 1, 3650, 0.5, 2]],
+        columns=[
+            'count',
+            'nulls',
+            'min',
+            'max',
+            'sum',
+            'mean',
+            'approx_nunique',
+        ]
+    )
+    assert result.values.tolist() == expected.values.tolist()

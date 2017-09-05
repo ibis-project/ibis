@@ -558,29 +558,11 @@ def test_date_extract_field(db, alltypes, attr, expected):
     assert set(result) == expected
 
 
-# def test_boolean_summary(alltypes):
-#     expr = alltypes.bool_col.summary()
-#     result = expr.execute()
-#     expected = pd.DataFrame(
-#         [[7300, 0, 0, 1, 3650, 0.5, 2]],
-#         columns=[
-#             'count',
-#             'nulls',
-#             'min',
-#             'max',
-#             'sum',
-#             'mean',
-#             'approx_nunique',
-#         ]
-#     )
-#     tm.assert_frame_equal(result, expected)
-
-
-# def test_timestamp_from_integer(con, alltypes, translate):
-#     # timestamp_col has datetime type
-#     expr = alltypes.date.to_timestamp()
-#     assert translate(expr) == 'toUInt32(`timestamp_col`)'
-#     assert len(con.execute(expr))
+def test_timestamp_from_integer(con, alltypes, translate):
+    # timestamp_col has datetime type
+    expr = alltypes.int_col.to_timestamp()
+    assert translate(expr) == 'toDateTime(`int_col`)'
+    assert len(con.execute(expr))
 
 
 # def test_timestamp_with_timezone(con):

@@ -216,12 +216,10 @@ def _round(translator, expr):
     op = expr.op()
     arg, digits = op.args
 
-    arg_ = translator.translate(arg)
     if digits is not None:
-        digits_ = translator.translate(digits)
-        return 'round({0}, {1})'.format(arg_, digits_)
+        return _call(translator, 'round', arg, digits)
     else:
-        return 'round({0})'.format(arg_)
+        return _call(translator, 'round', arg)
 
 
 def _hash(translator, expr):
@@ -244,17 +242,17 @@ def _hash(translator, expr):
 def _log(translator, expr):
     op = expr.op()
     arg, base = op.args
-    arg_formatted = translator.translate(arg)
 
-    # I don't know how to check base value properly
     if base is None:
-        return 'log({0})'.format(arg_formatted)
+        func = 'log'
     elif base._arg.value == 2:
-        return 'log2({0})'.format(arg_formatted)
+        func = 'log2'
     elif base._arg.value == 10:
-        return 'log10({0})'.format(arg_formatted)
+        func = 'log10'
     else:
         raise ValueError('Base {} for logarithm not supported!'.format(base))
+
+    return _call(translator, func, arg)
 
 
 def _value_list(translator, expr):
@@ -274,7 +272,7 @@ def literal(translator, expr):
     elif isinstance(expr, ir.TimestampValue):
         if isinstance(value, datetime):
             if value.microsecond != 0:
-                msg = 'Unspoorted subsecond accuracy {}'
+                msg = 'Unsupported subsecond accuracy {}'
                 raise ValueError(msg.format(value))
             value = value.strftime('%Y-%m-%d %H:%M:%S')
         return "toDateTime('{0!s}')".format(value)
@@ -359,15 +357,14 @@ def _table_array_view(translator, expr):
 
 def _timestamp_from_unix(translator, expr):
     op = expr.op()
-    val, unit = op.args
+    arg, unit = op.args
 
     if unit == 'ms':
         raise ValueError('`ms` unit is not supported!')
     elif unit == 'us':
         raise ValueError('`us` unit is not supported!')
 
-    arg = translator.translate(val)
-    return 'toUInt32({0})'.format(arg)
+    return _call(translator, 'toDateTime', arg)
 
 
 def _timestamp_delta(translator, expr):
