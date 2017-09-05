@@ -26,15 +26,15 @@ def _cast(translator, expr):
 
 def _between(translator, expr):
     op = expr.op()
-    arg, lower, upper = [translator.translate(x) for x in op.args]
-    return '{0!s} BETWEEN {1!s} AND {2!s}'.format(arg, lower, upper)
+    arg_, lower_, upper_ = map(translator.translate, op.args)
+    return '{0!s} BETWEEN {1!s} AND {2!s}'.format(arg_, lower_, upper_)
 
 
 def _negate(translator, expr):
     arg = expr.op().args[0]
-    formatted_arg = translator.translate(arg)
     if isinstance(expr, ir.BooleanValue):
-        return 'NOT {0!s}'.format(formatted_arg)
+        arg_ = translator.translate(arg)
+        return 'NOT {0!s}'.format(arg_)
     else:
         arg_ = _parenthesize(translator, arg)
         return '-{0!s}'.format(arg_)
@@ -49,11 +49,11 @@ def _parenthesize(translator, expr):
     op_klass = type(op)
 
     # function calls don't need parens
-    what = translator.translate(expr)
+    what_ = translator.translate(expr)
     if (op_klass in _binary_infix_ops) or (op_klass in _unary_ops):
-        return '({0!s})'.format(what)
+        return '({0!s})'.format(what_)
     else:
-        return what
+        return what_
 
 
 def unary(func_name):
@@ -175,19 +175,24 @@ def _string_join(translator, expr):
     return _call(translator, 'concat_ws', arg, *strings)
 
 
-# TODO
 def _parse_url(translator, expr):
     op = expr.op()
-
     arg, extract, key = op.args
-    arg_formatted = translator.translate(arg)
 
-    if key is None:
-        return "parse_url({0}, '{1}')".format(arg_formatted, extract)
+    if extract == 'HOST':
+        return _call(translator, 'domain', arg)
+    elif extract == 'PROTOCOL':
+        return _call(translator, 'protocol', arg)
+    elif extract == 'PATH':
+        return _call(translator, 'path', arg)
+    elif extract == 'QUERY':
+        if key is not None:
+            return _call(translator, 'extractURLParameter', arg, key)
+        else:
+            return _call(translator, 'queryString', arg)
     else:
-        key_fmt = translator.translate(key)
-        return "parse_url({0}, '{1}', {2})".format(arg_formatted,
-                                                   extract, key_fmt)
+        raise com.TranslationError('Parse url with extrac {0} is not '
+                                   'supported'.format(extract))
 
 
 def _index_of(translator, expr):

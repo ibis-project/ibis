@@ -264,24 +264,26 @@ def test_string_column_find_in_set(con, alltypes, translate):
     assert len(con.execute(expr))
 
 
-# def test_parse_url(self):
-#     sql = "parse_url(`string_col`, 'HOST')"
-#     cases = [
-#         (self.table.string_col.parse_url('HOST'), sql)
-#     ]
-#     self._check_expr_cases(cases)
+@pytest.mark.parametrize(('url', 'extract', 'expected'), [
+    (L('https://www.cloudera.com'), 'HOST', 'www.cloudera.com'),
+    (L('https://www.cloudera.com'), 'PROTOCOL', 'https'),
+    (L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10'), 'PATH',
+     '/watch'),
+    (L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10'), 'QUERY',
+     'v=kEuEcWfewf8&t=10')
+])
+def test_parse_url(con, translate, url, extract, expected):
+    expr = url.parse_url(extract)
+    assert con.execute(expr) == expected
 
 
-# def test_parse_url(self):
-#     cases = [
-#         (L("https://www.cloudera.com").parse_url('HOST'),
-#          "www.cloudera.com"),
+def test_parse_url_query_parameter(con, translate):
+    url = L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10')
+    expr = url.parse_url('QUERY', 't')
+    assert con.execute(expr) == '10'
 
-#         (L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10')
-#          .parse_url('QUERY', 'v'),
-#          'kEuEcWfewf8'),
-#     ]
-#     self.assert_cases_equality(cases)
+    expr = url.parse_url('QUERY', 'v')
+    assert con.execute(expr) == 'kEuEcWfewf8'
 
 
 # def test_string_join(self):
