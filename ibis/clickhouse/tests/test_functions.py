@@ -456,16 +456,17 @@ def test_column_regexp_replace(con, alltypes, translate):
     assert len(con.execute(expr))
 
 
-# def test_hash(self):
-#     expr = self.table.int_col.hash()
-#     assert isinstance(expr, ir.Int64Column)
-#     assert isinstance(self.table.int_col.sum().hash(),
-#                       ir.Int64Scalar)
-
-#     cases = [
-#         (self.table.int_col.hash(), 'fnv_hash(`int_col`)')
-#     ]
-#     self._check_expr_cases(cases)
+# @pytest.mark.parametrize('how', [
+#     'MD5', 'halfMD5',
+#     'SHA1', 'SHA224', 'SHA256',
+#     'intHash32', 'intHash64',
+#     'cityHash64',
+#     'sipHash64', 'sipHash128'
+# ])
+# def test_hash(con, translate, how):
+#     expr = L('test').hash(how=how)
+#     assert translate(expr) == "{0}('test')".format(how)
+#     assert len(con.execute(expr))
 
 
 def test_numeric_builtins_work(con, alltypes, df, translate):

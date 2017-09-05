@@ -224,17 +224,21 @@ def _round(translator, expr):
         return 'round({0})'.format(arg_)
 
 
-# TODO there are a lot of hash functions in clickhouse
 def _hash(translator, expr):
     op = expr.op()
     arg, how = op.args
 
-    arg_formatted = translator.translate(arg)
+    algorithms = {'MD5', 'halfMD5',
+                  'SHA1', 'SHA224', 'SHA256',
+                  'intHash32', 'intHash64',
+                  'cityHash64',
+                  'sipHash64', 'sipHash128'}
 
-    if how == 'fnv':
-        return 'fnv_hash({0})'.format(arg_formatted)
-    else:
-        raise NotImplementedError(how)
+    if how not in algorithms:
+        raise com.TranslationError('Unsupported hash algorithm {0}'
+                                   .format(how))
+
+    return _call(translator, how, arg)
 
 
 def _log(translator, expr):
