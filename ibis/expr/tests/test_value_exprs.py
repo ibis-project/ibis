@@ -19,10 +19,9 @@ from datetime import date, datetime, time
 import pytest
 
 from ibis.common import IbisTypeError
-import ibis.expr.api as api
-import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
-import ibis.expr.operations as ops
+from ibis.expr import (
+    rules, api, datatypes as dt, types as ir, operations as ops
+)
 import ibis
 from ibis.compat import PY2
 
@@ -125,6 +124,13 @@ def test_literal_list():
 
     # it works!
     repr(expr)
+
+
+def test_literal_array():
+    what = []
+    expr = api.literal(what)
+    assert isinstance(expr, ir.ArrayValue)
+    assert expr.type().equals(dt.Array(dt.any))
 
 
 def test_mixed_arity(table):
@@ -1069,3 +1075,22 @@ def test_custom_type_binary_operations():
     result = left + right
     assert isinstance(result, Foo)
     assert isinstance(result.op(), FooNode)
+
+
+def test_empty_array_as_argument():
+    class Foo(ir.Expr):
+        pass
+
+    class FooNode(ops.ValueOp):
+
+        input_type = [rules.array(dt.int64, name='value')]
+
+        def output_type(self):
+            return Foo
+
+    node = FooNode([])
+    value = node.value
+    expected = literal([]).cast(dt.Array(dt.int64))
+    assert not value.type().equals(dt.Array(dt.any))
+    assert value.type().equals(dt.Array(dt.int64))
+    assert value.equals(expected)

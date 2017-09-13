@@ -211,11 +211,14 @@ class DataType(object):
     def name(self):
         return type(self).__name__
 
+    def issubtype(self, other, cache=None):
+        return isinstance(other, Any) or isinstance(self, type(other))
+
     def equals(self, other, cache=None):
         if isinstance(other, six.string_types):
             other = validate_type(other)
 
-        return isinstance(self, Any) or isinstance(other, Any) or (
+        return (
             isinstance(other, type(self)) and
             self.nullable == other.nullable and
             self._equal_part(other, cache=cache)
@@ -225,7 +228,7 @@ class DataType(object):
         return True
 
     def can_implicit_cast(self, other):
-        return self.equals(other)
+        return self.issubtype(other)
 
     def scalar_type(self):
         import ibis.expr.types as ir

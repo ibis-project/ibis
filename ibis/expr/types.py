@@ -528,6 +528,8 @@ def infer_literal_type(value):
     elif isinstance(value, datetime.time):
         return dt.time
     elif isinstance(value, list):
+        if not value:
+            return dt.Array(dt.any)
         return dt.Array(rules.highest_precedence_type(
             list(map(literal, value))
         ))
