@@ -496,11 +496,26 @@ class AnyTyped(Argument):
 class ValueTyped(AnyTyped, ValueArgument):
 
     def __repr__(self):
-        return 'ValueTyped({0})'.format(repr(self.types))
+        return '{}({})'.format(type(self).__name__, repr(self.types))
 
     def _validate(self, args, i):
         ValueArgument._validate(self, args, i)
         return AnyTyped._validate(self, args, i)
+
+
+class ArrayValueTyped(ValueTyped):
+
+    def __init__(self, value_type, *args, **kwargs):
+        super(ArrayValueTyped, self).__init__(
+            dt.Array(value_type), *args, **kwargs
+        )
+
+    def _validate(self, args, i):
+        arg = super(ArrayValueTyped, self)._validate(args, i)
+        type, = self.types
+        if arg.type().equals(dt.Array(dt.any)):
+            return arg.cast(type)
+        return arg
 
 
 class MultipleTypes(Argument):
@@ -654,8 +669,8 @@ def string(**arg_kwds):
 
 
 def array(value_type, **arg_kwds):
-    return ValueTyped(
-        dt.Array(value_type),
+    return ArrayValueTyped(
+        value_type,
         'not array with value_type {0}'.format(value_type),
         **arg_kwds
     )
