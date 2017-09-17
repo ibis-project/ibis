@@ -1935,8 +1935,9 @@ _add_methods(CategoryValue, _category_value_methods)
 
 _join_classes = {
     'inner': _ops.InnerJoin,
-    'inner_semi': _ops.InnerSemiJoin,
     'left': _ops.LeftJoin,
+    'any_inner': _ops.AnyInnerJoin,
+    'any_left': _ops.AnyLeftJoin,
     'outer': _ops.OuterJoin,
     'left_semi': _ops.LeftSemiJoin,
     'semi': _ops.LeftSemiJoin,
@@ -2496,9 +2497,9 @@ _table_methods = dict(
     join=join,
     cross_join=cross_join,
     inner_join=_regular_join_method('inner_join', 'inner'),
-    inner_semi_join=_regular_join_method('inner_semi_join', 'inner_semi'),
-    left_semi_join=_regular_join_method('left_semi_join', 'left_semi'),
     left_join=_regular_join_method('left_join', 'left'),
+    any_inner_join=_regular_join_method('any_inner_join', 'any_inner'),
+    any_left_join=_regular_join_method('any_left_join', 'any_left'),
     outer_join=_regular_join_method('outer_join', 'outer'),
     semi_join=_regular_join_method('semi_join', 'semi'),
     anti_join=_regular_join_method('anti_join', 'anti'),

@@ -308,8 +308,8 @@ class _TableSetFormatter(comp.TableSetFormatter):
     _join_names = {
         ops.InnerJoin: 'ALL INNER JOIN',
         ops.LeftJoin: 'ALL LEFT JOIN',
-        ops.InnerSemiJoin: 'ANY INNER JOIN',
-        ops.LeftSemiJoin: 'ANY LEFT JOIN'
+        ops.AnyInnerJoin: 'ANY INNER JOIN',
+        ops.AnyLeftJoin: 'ANY LEFT JOIN'
     }
 
     def _validate_join_predicates(self, predicates):
