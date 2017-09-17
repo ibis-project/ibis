@@ -3,12 +3,10 @@ import operator
 import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
-
 from datetime import date, datetime
 
 import ibis
 import ibis.expr.datatypes as dt
-
 from ibis import literal as L
 
 

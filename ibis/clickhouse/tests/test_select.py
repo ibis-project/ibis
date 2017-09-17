@@ -408,16 +408,16 @@ GROUP BY `uuid`"""
     assert result == expected
 
 
-# def test_timestamp_scalar_in_filter(alltypes):
-#     table = alltypes
+def test_timestamp_scalar_in_filter(alltypes, translate):
+    table = alltypes
 
-#     expr = (table.filter([table.timestamp_col <
-#                          (ibis.timestamp('2010-01-01') + ibis.month(3)),
-#                          table.timestamp_col < (ibis.now() +
-#                                                 ibis.day(10))
-#                           ])
-#             .count())
-#     expr.execute()
+    expr = (table.filter([table.timestamp_col <
+                         (ibis.timestamp('2010-01-01') + ibis.week(3)),
+                         table.timestamp_col < (ibis.now() +
+                                                ibis.day(10))
+                          ])
+            .count())
+    expr.execute()
 
 
 def test_named_from_filter_groupby():

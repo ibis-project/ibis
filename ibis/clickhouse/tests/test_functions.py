@@ -19,8 +19,8 @@ pytestmark = pytest.mark.clickhouse
 @pytest.mark.parametrize(('to_type', 'expected'), [
     ('int8', 'CAST(`double_col` AS Int8)'),
     ('int16', 'CAST(`double_col` AS Int16)'),
-    ('float', '`double_col`'),
-    ('double', 'CAST(`double_col` AS Float64)')
+    ('float', 'CAST(`double_col` AS Float32)'),
+    ('double', '`double_col`')
 ])
 def test_cast_double_col(alltypes, translate, to_type, expected):
     expr = alltypes.double_col.cast(to_type)

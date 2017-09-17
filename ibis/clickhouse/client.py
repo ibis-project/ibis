@@ -1,25 +1,23 @@
 import re
 import pandas as pd
 
+from toolz import pluck
+
+import ibis.util as util
 import ibis.common as com
-
-from ibis.config import options
-from ibis.client import Query, Database, DatabaseEntity, SQLClient
-
-from ibis.clickhouse.compiler import build_ast
-from ibis.util import log
-from ibis.sql.compiler import DDL
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.util as util
+
+from ibis.config import options
+from ibis.client import Query, Database, DatabaseEntity, SQLClient
+from ibis.clickhouse.compiler import build_ast
+from ibis.util import log
+from ibis.sql.compiler import DDL
 
 from clickhouse_driver.client import Client as _DriverClient
-from toolz import pluck
 
-from .types import PD2CH, CH2PD, CH2IB
-
-# TODO: move to types
+from .types import clickhouse_to_pandas, clickhouse_to_ibis
 
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
@@ -35,7 +33,7 @@ class ClickhouseQuery(Query):
         # synchronous by default
         data, types = self.client._execute(self.compiled_ddl,
                                            with_column_types=True)
-        dtypes = [(col, CH2PD[typ]) for col, typ in types]
+        dtypes = [(col, clickhouse_to_pandas[typ]) for col, typ in types]
 
         # Wes: naive approach, I could use some help to make it more efficient
         df = pd.DataFrame(data, columns=list(pluck(0, dtypes)))
@@ -57,8 +55,8 @@ class ClickhouseClient(SQLClient):
     def __init__(self, *args, **kwargs):
         self.con = _DriverClient(*args, **kwargs)
 
-    def _build_ast(self, expr):
-        return build_ast(expr)
+    def _build_ast(self, expr, params=None):
+        return build_ast(expr, params=params)
 
     @property
     def current_database(self):
@@ -179,7 +177,7 @@ class ClickhouseClient(SQLClient):
         data, types = self._execute(query, with_column_types=True)
 
         names = pluck(0, data)
-        ibis_types = map(CH2IB.get, pluck(1, data))
+        ibis_types = map(clickhouse_to_ibis.get, pluck(1, data))
 
         return dt.Schema(names, ibis_types)
 
@@ -278,7 +276,7 @@ class ClickhouseClient(SQLClient):
     def _get_schema_using_query(self, query):
         data, types = self._execute(query, with_column_types=True)
         names, clickhouse_types = zip(*types)
-        ibis_types = map(CH2IB.get, clickhouse_types)
+        ibis_types = map(clickhouse_to_ibis.get, clickhouse_types)
         return dt.Schema(names, ibis_types)
 
     def _exec_statement(self, stmt, adapter=None):

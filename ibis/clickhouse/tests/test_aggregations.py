@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-
+import pandas.util.testing as tm
 from operator import methodcaller
 from ibis import literal as L
 
@@ -276,14 +276,12 @@ def test_boolean_reduction(alltypes, op, df):
     assert result == op(df.bool_col)
 
 
-# def test_anonymus_aggregate(alltypes, df):
-#     t = alltypes
-#     expr = t[t.double_col > t.double_col.mean()]
-#     result = expr.execute()
-#     expected = df[df.double_col > df.double_col.mean()].reset_index(
-#         drop=True
-#     )
-#     tm.assert_frame_equal(result, expected)
+def test_anonymus_aggregate(alltypes, df, translate):
+    t = alltypes
+    expr = t[t.double_col > t.double_col.mean()]
+    result = expr.execute().set_index('id')
+    expected = df[df.double_col > df.double_col.mean()].set_index('id')
+    tm.assert_frame_equal(result, expected, check_like=True)
 
 
 # def test_rank(con):

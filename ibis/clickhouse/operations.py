@@ -9,7 +9,7 @@ import ibis.expr.temporal as tempo
 import ibis.sql.transforms as transforms
 
 from ibis.clickhouse.identifiers import quote_identifier
-from ibis.clickhouse.types import _type_to_sql_string
+from ibis.clickhouse.types import ibis_to_clickhouse
 
 
 def _cast(translator, expr):
@@ -20,7 +20,7 @@ def _cast(translator, expr):
     if isinstance(arg, ir.CategoryValue) and target == 'int32':
         return arg_
     else:
-        type_ = _type_to_sql_string(target)
+        type_ = ibis_to_clickhouse[target.name.lower()]
         return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
 
 
@@ -370,27 +370,16 @@ def _timestamp_from_unix(translator, expr):
 def _timestamp_delta(translator, expr):
     op = expr.op()
     arg, offset = op.args
-    formatted_arg = translator.translate(arg)
-    return _timestamp_format_offset(offset, formatted_arg)
 
+    if isinstance(arg, ir.TimestampValue):
+        offset_ = offset.to_unit('s').n
+    elif isinstance(arg, ir.DateValue):
+        offset_ = offset.to_unit('d').n
+    else:
+        raise com.TranslationError('Unsupported timedelta operation')
 
-_clickhouse_delta_functions = {
-    tempo.Year: 'years_add',
-    tempo.Month: 'months_add',
-    tempo.Week: 'weeks_add',
-    tempo.Day: 'days_add',
-    tempo.Hour: 'hours_add',
-    tempo.Minute: 'minutes_add',
-    tempo.Second: 'seconds_add',
-    tempo.Millisecond: 'milliseconds_add',
-    tempo.Microsecond: 'microseconds_add',
-    tempo.Nanosecond: 'nanoseconds_add'
-}
-
-
-def _timestamp_format_offset(offset, arg):
-    f = _clickhouse_delta_functions[type(offset)]
-    return '{0}({1}, {2})'.format(f, arg, offset.n)
+    arg_ = translator.translate(arg)
+    return '{0} + {1}'.format(arg_, offset_)
 
 
 def _exists_subquery(translator, expr):
