@@ -5,7 +5,6 @@ import ibis.common as com
 import ibis.util as util
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-import ibis.expr.temporal as tempo
 import ibis.sql.transforms as transforms
 
 from ibis.clickhouse.identifiers import quote_identifier
