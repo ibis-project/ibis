@@ -1075,7 +1075,7 @@ class ImpalaClient(SQLClient):
         pass
 
     def insert(self, table_name, obj=None, database=None, overwrite=False,
-               partition=None, values=None, validate=True):
+               partition=None, values=None, validate=True, results=False):
         """
         Insert into existing table.
 
@@ -1085,6 +1085,7 @@ class ImpalaClient(SQLClient):
         ----------
         table_name : string
         database : string, default None
+        results : boolean, default False
 
         Examples
         --------
@@ -1095,7 +1096,7 @@ class ImpalaClient(SQLClient):
         """
         table = self.table(table_name, database=database)
         return table.insert(obj=obj, overwrite=overwrite, partition=partition,
-                            values=values, validate=validate)
+                            values=values, validate=validate, results=results)
 
     def load_data(self, table_name, path, database=None, overwrite=False,
                   partition=None):
@@ -1649,7 +1650,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         self._client.drop_table_or_view(self._qualified_name)
 
     def insert(self, obj=None, overwrite=False, partition=None,
-               values=None, validate=True):
+               values=None, validate=True, results=False):
         """
         Insert into Impala table. Wraps ImpalaClient.insert
 
@@ -1667,6 +1668,9 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         validate : boolean, default True
           If True, do more rigorous validation that schema of table being
           inserted is compatible with the existing table
+        results : boolean, default True
+          If True, return a ibis cursor. This is useful for getting stats on
+          inserts.
 
         Examples
         --------
@@ -1713,7 +1717,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
                                      partition=partition,
                                      partition_schema=partition_schema,
                                      overwrite=overwrite)
-        return self._execute(statement)
+        return self._execute(statement, results=results)
 
     def load_data(self, path, overwrite=False, partition=None):
         """
@@ -1772,8 +1776,8 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         op = self.op().change_name(statement.new_qualified_name)
         return ImpalaTable(op)
 
-    def _execute(self, stmt):
-        return self._client._execute(stmt)
+    def _execute(self, stmt, results=False):
+        return self._client._execute(stmt, results=results)
 
     @property
     def is_partitioned(self):
