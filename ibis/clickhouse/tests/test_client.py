@@ -126,7 +126,7 @@ def test_api_compile_verify(alltypes):
     t = alltypes.timestamp_col
 
     supported = t.year()
-    unsupported = t.truncate('y')
+    unsupported = t.rank()
 
     assert ibis.clickhouse.verify(supported)
     assert not ibis.clickhouse.verify(unsupported)

@@ -624,7 +624,6 @@ _unsupported_ops = [
     ops.CumulativeAll,
     ops.IdenticalTo,
 
-    # TODO: I'm not aware of these functions in clickhouse
     ops.RowNumber,
     ops.DenseRank,
     ops.MinRank,
@@ -639,7 +638,7 @@ _unsupported_ops = [
 ]
 _unsupported_ops = {k: raise_error for k in _unsupported_ops}
 
-# TODO: toolz merge
+
 _operation_registry.update(_undocumented_operations)
 _operation_registry.update(_unsupported_ops)
 _operation_registry.update(_unary_ops)
