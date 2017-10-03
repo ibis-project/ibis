@@ -447,7 +447,6 @@ def test_regexp(con, expr, expected):
     assert con.execute(expr) == expected
 
 
-# TODO: two cases are failing
 @pytest.mark.parametrize(('expr', 'expected'), [
     (L('abcd').re_extract('([a-z]+)', 0), 'abcd'),
     # (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),

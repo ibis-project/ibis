@@ -1,18 +1,3 @@
-from toolz import keymap
-
-# TODO: support more type
-# Array, Tuple, Enum, Nested, AggregateFunction, UUID
-# Nullable(UInt8), FixedString(5) etc.
-
-
-# def type_to_sql_string(ibis_type):
-#     return ibis_to_clickhouse[ibis_type.name.lower()]
-
-
-# def sql_string_to_type(sql_type):
-#     return clickhouse_to_ibis[sql_type.name.lower()]
-
-
 pandas_to_clickhouse = {
     'object': 'String',
     'uint64': 'UInt64',
@@ -62,31 +47,35 @@ clickhouse_to_pandas = {
     'Nullable(DateTime)': 'DateTime'
 }
 
-ibis_to_clickhouse = {'null': 'Null',
-                      'int8': 'Int8',
-                      'int16': 'Int16',
-                      'int32': 'Int32',
-                      'int64': 'Int64',
-                      'float': 'Float32',
-                      'double': 'Float64',
-                      'string': 'String',
-                      'boolean': 'UInt8',
-                      'date': 'Date',
-                      'timestamp': 'DateTime',
-                      'decimal': 'UInt64'}  # see Clickhouse issue #253
+ibis_to_clickhouse = {
+    'null': 'Null',
+    'int8': 'Int8',
+    'int16': 'Int16',
+    'int32': 'Int32',
+    'int64': 'Int64',
+    'float': 'Float32',
+    'double': 'Float64',
+    'string': 'String',
+    'boolean': 'UInt8',
+    'date': 'Date',
+    'timestamp': 'DateTime',
+    'decimal': 'UInt64'  # see yandex/clickhouse#253
+}
 
-clickhouse_to_ibis = {'Null': 'null',
-                      'UInt64': 'int64',
-                      'UInt32': 'int32',
-                      'UInt16': 'int16',
-                      'UInt8': 'int8',
-                      'Int64': 'int64',
-                      'Int32': 'int32',
-                      'Int16': 'int16',
-                      'Int8': 'int8',
-                      'Float64': 'double',
-                      'Float32': 'float',
-                      'String': 'string',
-                      'FixedString': 'string',
-                      'Date': 'date',
-                      'DateTime': 'timestamp'}
+clickhouse_to_ibis = {
+    'Null': 'null',
+    'UInt64': 'int64',
+    'UInt32': 'int32',
+    'UInt16': 'int16',
+    'UInt8': 'int8',
+    'Int64': 'int64',
+    'Int32': 'int32',
+    'Int16': 'int16',
+    'Int8': 'int8',
+    'Float64': 'double',
+    'Float32': 'float',
+    'String': 'string',
+    'FixedString': 'string',
+    'Date': 'date',
+    'DateTime': 'timestamp'
+}
