@@ -98,6 +98,19 @@ def test_timestamp_now(con, translate):
     # assert con.execute(expr) == now
 
 
+@pytest.mark.parametrize(('unit', 'expected'), [
+    ('y', pd.Timestamp('2009-01-01')),
+    ('m', pd.Timestamp('2009-05-01')),
+    ('d', pd.Timestamp('2009-05-17')),
+    ('h', pd.Timestamp('2009-05-17 12:00:00')),
+    ('minute', pd.Timestamp('2009-05-17 12:34:00')),
+])
+def test_timestamp_truncate(con, translate, unit, expected):
+    stamp = ibis.timestamp('2009-05-17 12:34:56')
+    expr = stamp.truncate(unit)
+    assert con.execute(expr) == expected
+
+
 @pytest.mark.parametrize(('func', 'expected'), [
     (methodcaller('year'), 2015),
     (methodcaller('month'), 9),

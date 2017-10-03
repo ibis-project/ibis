@@ -381,6 +381,26 @@ def _timestamp_delta(translator, expr):
     return '{0} + {1}'.format(arg_, offset_)
 
 
+def _truncate(translator, expr):
+    op = expr.op()
+    arg, unit = op.args
+
+    converters = {
+        'Y': 'toStartOfYear',
+        'M': 'toStartOfMonth',
+        'D': 'toDate',
+        'H': 'toStartOfHour',
+        'MI': 'toStartOfMinute'
+    }
+
+    try:
+        converter = converters[unit]
+    except KeyError:
+        raise com.TranslationError('Unsupported concat unit {0}'.format(unit))
+
+    return _call(translator, converter, arg)
+
+
 def _exists_subquery(translator, expr):
     op = expr.op()
     ctx = translator.context
@@ -522,6 +542,7 @@ _operation_registry = {
     ops.ExtractHour: unary('toHour'),
     ops.ExtractMinute: unary('toMinute'),
     ops.ExtractSecond: unary('toSecond'),
+    ops.Truncate: _truncate,
 
     # Other operations
     ops.E: lambda *args: 'e()',
@@ -575,7 +596,6 @@ _undocumented_operations = {
 
 
 _unsupported_ops = [
-    ops.Truncate,
     ops.WindowOp,
     ops.DecimalPrecision,
     ops.DecimalScale,
