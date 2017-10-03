@@ -585,13 +585,29 @@ def _null_literal(translator, expr):
     return 'Null'
 
 
+def _null_if_zero(translator, expr):
+    op = expr.op()
+    arg = op.args[0]
+    arg_ = translator.translate(arg)
+    return 'nullIf({0}, 0)'.format(arg_)
+
+
+def _zero_if_null(translator, expr):
+    op = expr.op()
+    arg = op.args[0]
+    arg_ = translator.translate(arg)
+    return 'ifNull({0}, 0)'.format(arg_)
+
+
 _undocumented_operations = {
     ir.NullLiteral: _null_literal,  # undocumented
     ops.IsNull: unary('isNull'),
     ops.NotNull: unary('isNotNull'),
     ops.IfNull: fixed_arity('ifNull', 2),
     ops.NullIf: fixed_arity('nullIf', 2),
-    ops.Coalesce: varargs('coalesce')
+    ops.Coalesce: varargs('coalesce'),
+    ops.NullIfZero: _null_if_zero,
+    ops.ZeroIfNull: _zero_if_null
 }
 
 
@@ -599,8 +615,6 @@ _unsupported_ops = [
     ops.WindowOp,
     ops.DecimalPrecision,
     ops.DecimalScale,
-    ops.ZeroIfNull,
-    ops.NullIfZero,
     ops.BaseConvert,
     ops.CumulativeSum,
     ops.CumulativeMin,

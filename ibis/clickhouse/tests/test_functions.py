@@ -128,10 +128,16 @@ def test_simple_datetime_operations(con, func, expected):
     con.execute(func(value)) == expected
 
 
-# TODO
-# @pytest.mark.parametrize(('value', 'expected'), [(0, None), (5.5, 5.5)])
-# def test_nullifzero(con, value, expected):
-#     assert con.execute(L(value).nullifzero()) == expected
+@pytest.mark.parametrize(('value', 'expected'), [
+    (0, None),
+    (5.5, 5.5)
+])
+def test_nullifzero(con, value, expected):
+    result = con.execute(L(value).nullifzero())
+    if expected is None:
+        assert pd.isnull(result)
+    else:
+        assert result == expected
 
 
 @pytest.mark.parametrize(('expr', 'expected'), [
@@ -173,15 +179,18 @@ def test_coalesce(con, expr, expected):
 #     assert con.execute(expr) == expected
 
 
-# TODO
 @pytest.mark.parametrize(('expr', 'expected'), [
     (ibis.NA.fillna(5), 5),
     (L(5).fillna(10), 5),
-    # (L(5).nullif(5), None),
-    # (L(10).nullif(5), 10),
+    (L(5).nullif(5), None),
+    (L(10).nullif(5), 10),
 ])
 def test_fillna_nullif(con, expr, expected):
-    assert con.execute(expr) == expected
+    result = con.execute(expr)
+    if expected is None:
+        assert pd.isnull(result)
+    else:
+        assert result == expected
 
 
 @pytest.mark.parametrize(('value', 'expected'), [
