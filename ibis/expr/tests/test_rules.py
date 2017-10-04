@@ -150,3 +150,23 @@ def test_array_rule():
     result = op.value
     expected = ibis.literal(raw_value)
     assert result.equals(expected)
+
+
+def test_scalar_default_arg():
+    class MyOp(ops.ValueOp):
+
+        input_type = [
+            rules.scalar(
+                value_type=dt.boolean,
+                optional=True,
+                default=False,
+                name='value'
+            )
+        ]
+        output_type = rules.type_of_arg(0)
+
+    op = MyOp()
+    assert op.value.equals(ibis.literal(False))
+
+    op = MyOp(True)
+    assert op.value.equals(ibis.literal(True))
