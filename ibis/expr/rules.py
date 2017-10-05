@@ -577,42 +577,29 @@ def value_typed_as(types, **arg_kwds):
     return ValueTyped(types, fail_message, **arg_kwds)
 
 
-def column(value_type=None, name=None, optional=False):
-    array_checker = ValueTyped(ir.ColumnExpr, 'not a column expr',
-                               name=name,
-                               optional=optional)
+def column(value_type=None, **arg_kwds):
+    array_checker = ValueTyped(ir.ColumnExpr, 'not a column expr', **arg_kwds)
     if value_type is None:
         return array_checker
     else:
-        return MultipleTypes(
-            [array_checker, value_type], name=name, optional=optional
-        )
+        return MultipleTypes([array_checker, value_type], **arg_kwds)
 
 
-def scalar(value_type=None, name=None, optional=False):
-    scalar_checker = ValueTyped(
-        ir.ScalarExpr, 'not a scalar expr', name=name, optional=optional
-    )
+def scalar(value_type=None, **arg_kwds):
+    scalar_checker = ValueTyped(ir.ScalarExpr, 'not a scalar expr', **arg_kwds)
     if value_type is None:
         return scalar_checker
     else:
-        return MultipleTypes(
-            [scalar_checker, value_type], name=name, optional=optional
-        )
+        return MultipleTypes([scalar_checker, value_type], **arg_kwds)
 
 
-def collection(name=None, optional=False):
+def collection(**arg_kwds):
     return ValueTyped((ir.ColumnExpr, ir.TableExpr), 'not a collection',
-                      name=name, optional=optional)
+                      **arg_kwds)
 
 
-def value(name=None, optional=False):
-    return ValueTyped(ir.ValueExpr, 'not a value expr',
-                      name=name, optional=optional)
-
-
-def table(name=None):
-    pass
+def value(**arg_kwds):
+    return ValueTyped(ir.ValueExpr, 'not a value expr', **arg_kwds)
 
 
 class Number(ValueTyped):
