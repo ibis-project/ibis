@@ -1,6 +1,6 @@
 #!/bin/bash
 
-$PYTHON setup.py install
+$PYTHON setup.py install --single-version-externally-managed --record=installed-files.txt
 $PYTHON -c "import ibis; print(ibis.__version__.replace('v', ''))" > ibis/.version
 
 # Add more build steps here, if they are necessary.
