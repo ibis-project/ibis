@@ -1355,73 +1355,82 @@ class Where(ValueOp):
         return rules.shape_like(self.args[0], self.args[1].type())
 
 
+def _validate_join_tables(left, right):
+    if not rules.is_table(left):
+        raise TypeError('Can only join table expressions, got {} for '
+                        'left table'.format(type(left).__name__))
+
+    if not rules.is_table(right):
+        raise TypeError('Can only join table expressions, got {} for '
+                        'right table'.format(type(right).__name__))
+
+
+def _make_distinct_join_predicates(left, right, predicates):
+    # see GH #667
+
+    # If left and right table have a common parent expression (e.g. they
+    # have different filters), must add a self-reference and make the
+    # appropriate substitution in the join predicates
+
+    if left.equals(right):
+        right = right.view()
+
+    predicates = _clean_join_predicates(left, right, predicates)
+    return left, right, predicates
+
+
+def _clean_join_predicates(left, right, predicates):
+    import ibis.expr.analysis as L
+
+    result = []
+
+    if not isinstance(predicates, (list, tuple)):
+        predicates = [predicates]
+
+    for pred in predicates:
+        if isinstance(pred, tuple):
+            if len(pred) != 2:
+                raise com.ExpressionError('Join key tuple must be '
+                                          'length 2')
+            lk, rk = pred
+            lk = left._ensure_expr(lk)
+            rk = right._ensure_expr(rk)
+            pred = lk == rk
+        elif isinstance(pred, six.string_types):
+            pred = left[pred] == right[pred]
+        elif not isinstance(pred, ir.Expr):
+            raise NotImplementedError
+
+        if not isinstance(pred, ir.BooleanColumn):
+            raise com.ExpressionError('Join predicate must be comparison')
+
+        preds = L.flatten_predicate(pred)
+        result.extend(preds)
+
+    _validate_join_predicates(left, right, result)
+    return result
+
+
+def _validate_join_predicates(left, right, predicates):
+    # Validate join predicates. Each predicate must be valid jointly when
+    # considering the roots of each input table
+    from ibis.expr.analysis import CommonSubexpr
+    validator = CommonSubexpr([left, right])
+    validator.validate_all(predicates)
+
+
 class Join(TableNode):
 
     _arg_names = ['left', 'right', 'predicates']
 
     def __init__(self, left, right, predicates):
-        if not rules.is_table(left):
-            raise TypeError('Can only join table expressions, got {} for '
-                            'left table'.format(type(left).__name__))
-
-        if not rules.is_table(right):
-            raise TypeError('Can only join table expressions, got {} for '
-                            'right table'.format(type(right).__name__))
-
+        _validate_join_tables(left, right)
         (self.left,
          self.right,
-         self.predicates) = self._make_distinct(left, right, predicates)
-
-        # Validate join predicates. Each predicate must be valid jointly when
-        # considering the roots of each input table
-        from ibis.expr.analysis import CommonSubexpr
-        validator = CommonSubexpr([self.left, self.right])
-        validator.validate_all(self.predicates)
+         self.predicates) = _make_distinct_join_predicates(
+            left, right, predicates)
 
         Node.__init__(self, [self.left, self.right, self.predicates])
-
-    def _make_distinct(self, left, right, predicates):
-        # see GH #667
-
-        # If left and right table have a common parent expression (e.g. they
-        # have different filters), must add a self-reference and make the
-        # appropriate substitution in the join predicates
-
-        if left.equals(right):
-            right = right.view()
-
-        predicates = self._clean_predicates(left, right, predicates)
-        return left, right, predicates
-
-    def _clean_predicates(self, left, right, predicates):
-        import ibis.expr.analysis as L
-
-        result = []
-
-        if not isinstance(predicates, (list, tuple)):
-            predicates = [predicates]
-
-        for pred in predicates:
-            if isinstance(pred, tuple):
-                if len(pred) != 2:
-                    raise com.ExpressionError('Join key tuple must be '
-                                              'length 2')
-                lk, rk = pred
-                lk = left._ensure_expr(lk)
-                rk = right._ensure_expr(rk)
-                pred = lk == rk
-            elif isinstance(pred, six.string_types):
-                pred = left[pred] == right[pred]
-            elif not isinstance(pred, ir.Expr):
-                raise NotImplementedError
-
-            if not isinstance(pred, ir.BooleanColumn):
-                raise com.ExpressionError('Join predicate must be comparison')
-
-            preds = L.flatten_predicate(pred)
-            result.extend(preds)
-
-        return result
 
     def _get_schema(self):
         # For joins retaining both table schemas, merge them together here
@@ -1528,6 +1537,22 @@ class CrossJoin(InnerJoin):
         for t in args[2:]:
             right = right.cross_join(t)
         InnerJoin.__init__(self, left, right, [])
+
+
+class AsOfJoin(Join):
+    _arg_names = ['left', 'right', 'predicates', 'by']
+
+    def __init__(self, left, right, predicates, by_predicates):
+        _validate_join_tables(left, right)
+        (self.left,
+         self.right,
+         self.predicates) = _make_distinct_join_predicates(
+            left, right, predicates)
+        self.by_predicates = _clean_join_predicates(
+            self.left, self.right, by_predicates)
+
+        Node.__init__(
+            self, [self.left, self.right, self.predicates, self.by_predicates])
 
 
 class Union(TableNode, HasSchema):

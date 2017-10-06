@@ -50,6 +50,32 @@ def test_join(how, left, right, df1, df2):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
+def test_asof_join(time_left, time_right, time_df1, time_df2):
+    expr = time_left.asof_join(time_right, 'time')
+    _test_asof(expr, time_df1, time_df2)
+
+
+def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
+    expr = time_left.asof_join(
+        time_right, time_left.time == time_right.time)
+    _test_asof(expr, time_df1, time_df2)
+
+
+def _test_asof(expr, df1, df2):
+    result = expr.execute()
+    expected = pd.merge_asof(df1, df2, on='time')
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_keyed_asof_join(
+        time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2):
+    expr = time_keyed_left.asof_join(time_keyed_right, 'time', by='key')
+    result = expr.execute()
+    expected = pd.merge_asof(
+        time_keyed_df1, time_keyed_df2, on='time', by='key')
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
 @pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
 def test_join_project_left_table(how, left, right, df1, df2):
     expr = left.join(right, left.key == right.key, how=how)[left, right.key3]

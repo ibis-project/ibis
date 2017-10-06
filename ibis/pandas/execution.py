@@ -591,23 +591,51 @@ def execute_materialized_join(op, left, right, **kwargs):
 
     overlapping_columns = set(left.columns) & set(right.columns)
 
-    left_on = []
-    right_on = []
+    left_on, right_on = _extract_predicate_names(op.predicates)
+    _validate_columns(overlapping_columns, left_on, right_on)
 
-    for predicate in map(operator.methodcaller('op'), op.predicates):
+    return pd.merge(left, right, how=how, left_on=left_on, right_on=right_on)
+
+
+@execute_node.register(ops.AsOfJoin, pd.DataFrame, pd.DataFrame)
+def execute_asof_join(op, left, right, **kwargs):
+    overlapping_columns = set(left.columns) & set(right.columns)
+    left_on, right_on = _extract_predicate_names(op.predicates)
+    merge_asof_args = {
+        'left': left,
+        'right': right,
+        'left_on': left_on,
+        'right_on': right_on
+    }
+    left_by, right_by = _extract_predicate_names(op.by_predicates)
+    _validate_columns(
+        overlapping_columns, left_on, right_on, left_by, right_by)
+
+    if left_by and right_by:
+        merge_asof_args['left_by'] = left_by
+        merge_asof_args['right_by'] = right_by
+
+    return pd.merge_asof(**merge_asof_args)
+
+
+def _extract_predicate_names(predicates):
+    lefts = []
+    rights = []
+    for predicate in map(operator.methodcaller('op'), predicates):
         if not isinstance(predicate, ops.Equals):
             raise TypeError(
                 'Only equality join predicates supported with pandas'
             )
         left_name = predicate.left._name
         right_name = predicate.right._name
-        left_on.append(left_name)
-        right_on.append(right_name)
+        lefts.append(left_name)
+        rights.append(right_name)
+    return lefts, rights
 
-        # TODO(phillipc): Is this the correct approach? That is, can we safely
-        #                 ignore duplicate join keys?
-        overlapping_columns -= {left_name, right_name}
 
+def _validate_columns(orig_columns, *key_lists):
+    all_keys = set([item for sublist in key_lists for item in sublist])
+    overlapping_columns = orig_columns.difference(all_keys)
     if overlapping_columns:
         raise ValueError(
             'left and right DataFrame columns overlap on {} in a join. '
@@ -616,8 +644,6 @@ def execute_materialized_join(op, left, right, **kwargs):
                 overlapping_columns
             )
         )
-
-    return pd.merge(left, right, how=how, left_on=left_on, right_on=right_on)
 
 
 _BINARY_OPERATIONS = {
