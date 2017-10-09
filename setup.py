@@ -79,6 +79,7 @@ setup(
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
         'pandas': pandas_requires,
+        'clickhouse': clickhouse_requires
     },
     scripts=[
         os.path.relpath(
