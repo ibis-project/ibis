@@ -50,11 +50,16 @@ def test_join(how, left, right, df1, df2):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
+merge_asof_minversion = pytest.mark.skipif(
+    pd.__version__ < '0.19.2',
+    reason="at least pandas-0.19.2 required for merge_asof")
+
+@merge_asof_minversion
 def test_asof_join(time_left, time_right, time_df1, time_df2):
     expr = time_left.asof_join(time_right, 'time')
     _test_asof(expr, time_df1, time_df2)
 
-
+@merge_asof_minversion
 def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
     expr = time_left.asof_join(
         time_right, time_left.time == time_right.time)
@@ -66,7 +71,7 @@ def _test_asof(expr, df1, df2):
     expected = pd.merge_asof(df1, df2, on='time')
     tm.assert_frame_equal(result[expected.columns], expected)
 
-
+@merge_asof_minversion
 def test_keyed_asof_join(
         time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2):
     expr = time_keyed_left.asof_join(time_keyed_right, 'time', by='key')
