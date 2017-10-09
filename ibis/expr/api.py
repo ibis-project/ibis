@@ -1974,6 +1974,29 @@ def join(left, right, predicates=(), how='inner'):
     return TableExpr(op)
 
 
+def asof_join(left, right, predicates=(), by=()):
+    """
+    Perform an asof join between two tables.  Similar to a left join
+    except that the match is done on nearest key rather than equal keys.
+
+    Optionally, match keys with 'by' before joining with predicates.
+
+    Parameters
+    ----------
+    left : TableExpr
+    right : TableExpr
+    predicates : join expression(s)
+    by : string
+      column to group by before joining
+
+    Returns
+    -------
+    joined : TableExpr
+      Note, schema is not materialized yet
+    """
+    return _ops.AsOfJoin(left, right, predicates, by).to_expr()
+
+
 def cross_join(*tables, **kwargs):
     """
     Perform a cross join (cartesian product) amongst a list of tables, with
@@ -2476,6 +2499,7 @@ _table_methods = dict(
     outer_join=_regular_join_method('outer_join', 'outer'),
     semi_join=_regular_join_method('semi_join', 'semi'),
     anti_join=_regular_join_method('anti_join', 'anti'),
+    asof_join=asof_join,
     sort_by=_table_sort_by,
     to_array=_table_to_array,
     union=_table_union,
