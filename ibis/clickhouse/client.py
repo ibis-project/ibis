@@ -185,34 +185,12 @@ class ClickhouseClient(SQLClient):
     def client_options(self):
         return self.con.options
 
-    # def get_options(self):
-    #     """
-    #     Return current query options for the Clickhouse session
-    #     """
-    #     query = 'SET'
-    #     tuples = self.con.fetchall(query)
-    #     return dict(tuples)
-
     def set_options(self, options):
         self.con.set_options(options)
 
     def reset_options(self):
         # Must nuke all cursors
         raise NotImplementedError
-
-    def set_compression_codec(self, codec):
-        """
-        Parameters
-        """
-        if codec is None:
-            codec = 'none'
-        else:
-            codec = codec.lower()
-
-        if codec not in ('none', 'gzip', 'snappy'):
-            raise ValueError('Unknown codec: {0}'.format(codec))
-
-        self.set_options({'COMPRESSION_CODEC': codec})
 
     def exists_table(self, name, database=None):
         """
@@ -229,46 +207,10 @@ class ClickhouseClient(SQLClient):
         """
         return len(self.list_tables(like=name, database=database)) > 0
 
-    def _get_concrete_table_path(self, name, database, persist=False):
-        if not persist:
-            if name is None:
-                name = '__ibis_tmp_{0}'.format(util.guid())
-
-            if database is None:
-                self._ensure_temp_db_exists()
-                database = options.clickhouse.temp_db
-            return name, database
-        else:
-            if name is None:
-                raise com.IbisError('Must pass table name if persist=True')
-            return name, database
-
     def _ensure_temp_db_exists(self):
-        # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
         name = options.clickhouse.temp_db,
         if not self.exists_database(name):
             self.create_database(name, force=True)
-
-    def _wrap_new_table(self, name, database, persist):
-        qualified_name = self._fully_qualified_name(name, database)
-
-        if persist:
-            t = self.table(qualified_name)
-        else:
-            schema = self._get_table_schema(qualified_name)
-            node = ClickhouseTemporaryTable(qualified_name, schema, self)
-            t = self._table_expr_klass(node)
-
-        # Compute number of rows in table for better default query planning
-        cardinality = t.count().execute()
-        set_card = ("alter table {0} set tblproperties('numRows'='{1}', "
-                    "'STATS_GENERATED_VIA_STATS_TASK' = 'true')"
-                    .format(qualified_name, cardinality))
-        self._execute(set_card)
-
-        self._temp_objects[id(t)] = t
-
-        return t
 
     def _get_table_schema(self, tname):
         return self.get_schema(tname)
