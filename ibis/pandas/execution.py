@@ -605,16 +605,13 @@ def execute_asof_join(op, left, right, **kwargs):
     _validate_columns(
         overlapping_columns, left_on, right_on, left_by, right_by)
 
-    left_by = left_by if left_by else None
-    right_by = right_by if right_by else None
-
     return pd.merge_asof(
         left=left,
         right=right,
         left_on=left_on,
         right_on=right_on,
-        left_by=left_by,
-        right_by=right_by
+        left_by=left_by or None,
+        right_by=right_by or None
     )
 
 
