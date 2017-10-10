@@ -79,8 +79,12 @@ class PostgreSQLClient(alch.AlchemyClient):
     @contextlib.contextmanager
     def begin(self):
         with super(PostgreSQLClient, self).begin() as bind:
-            bind.execute('SET LOCAL TIMEZONE = UTC')
-            yield bind
+            previous_timezone = bind.execute('SHOW TIMEZONE').scalar()
+            bind.execute('SET TIMEZONE = UTC')
+            try:
+                yield bind
+            finally:
+                bind.execute('SET TIMEZONE = {!r}'.format(previous_timezone))
 
     def database(self, name=None):
         """Connect to a database called `name`.
