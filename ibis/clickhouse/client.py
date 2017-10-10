@@ -105,7 +105,7 @@ class ClickhouseClient(SQLClient):
         """
         statement = 'SHOW TABLES'
         if database:
-            statement += " FROM `{}`".format(database)
+            statement += " FROM `{0}`".format(database)
         if like:
             m = fully_qualified_re.match(like)
             if m:
