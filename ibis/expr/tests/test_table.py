@@ -729,6 +729,24 @@ def test_join_no_predicate_list(con):
     assert_equal(joined, expected)
 
 
+def test_asof_join():
+    left = ibis.table([('time', 'int32'), ('value', 'double')])
+    right = ibis.table([('time', 'int32'), ('value2', 'double')])
+    joined = api.asof_join(left, right, 'time')
+    pred = joined.op().predicates[0].op()
+    assert pred.left.op().name == pred.right.op().name == 'time'
+
+
+def test_asof_join_with_by():
+    left = ibis.table(
+        [('time', 'int32'), ('key', 'int32'), ('value', 'double')])
+    right = ibis.table(
+        [('time', 'int32'), ('key', 'int32'), ('value2', 'double')])
+    joined = api.asof_join(left, right, 'time', by='key')
+    by = joined.op().by_predicates[0].op()
+    assert by.left.op().name == by.right.op().name == 'key'
+
+
 def test_equijoin_schema_merge():
     table1 = ibis.table([('key1',  'string'), ('value1', 'double')])
     table2 = ibis.table([('key2',  'string'), ('stuff', 'int32')])

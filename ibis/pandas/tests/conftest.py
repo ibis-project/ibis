@@ -86,9 +86,47 @@ def df2():
 
 
 @pytest.fixture(scope='module')
-def client(df, df1, df2):
+def time_df1():
+    return pd.DataFrame(
+        {'time': pd.to_datetime([1, 2, 3, 4]), 'value': [1.1, 2.2, 3.3, 4.4]}
+    )
+
+
+@pytest.fixture(scope='module')
+def time_df2():
+    return pd.DataFrame(
+        {'time': pd.to_datetime([2, 4]), 'other_value': [1.2, 2.0]}
+    )
+
+
+@pytest.fixture(scope='module')
+def time_keyed_df1():
+    return pd.DataFrame(
+        {
+            'time': pd.to_datetime([1, 1, 2, 2, 3, 3, 4, 4]),
+            'key': [1, 2, 1, 2, 1, 2, 1, 2],
+            'value': [1.1, 1.2, 2.2, 2.4, 3.3, 3.6, 4.4, 4.8]
+        }
+    )
+
+
+@pytest.fixture(scope='module')
+def time_keyed_df2():
+    return pd.DataFrame(
+        {
+            'time': pd.to_datetime([2, 2, 4, 4]),
+            'key': [1, 2, 1, 2],
+            'other_value': [1.2, 1.4, 2.0, 4.0]
+        }
+    )
+
+
+@pytest.fixture(scope='module')
+def client(df, df1, df2, time_df1, time_df2, time_keyed_df1, time_keyed_df2):
     return ibis.pandas.connect(
-        {'df': df, 'df1': df1, 'df2': df2, 'left': df1, 'right': df2}
+        {'df': df, 'df1': df1, 'df2': df2, 'left': df1, 'right': df2,
+         'time_df1': time_df1, 'time_df2': time_df2,
+         'time_keyed_df1': time_keyed_df1, 'time_keyed_df2': time_keyed_df2}
     )
 
 
@@ -121,6 +159,26 @@ def left(client):
 @pytest.fixture(scope='module')
 def right(client):
     return client.table('right')
+
+
+@pytest.fixture(scope='module')
+def time_left(client):
+    return client.table('time_df1')
+
+
+@pytest.fixture(scope='module')
+def time_right(client):
+    return client.table('time_df2')
+
+
+@pytest.fixture(scope='module')
+def time_keyed_left(client):
+    return client.table('time_keyed_df1')
+
+
+@pytest.fixture(scope='module')
+def time_keyed_right(client):
+    return client.table('time_keyed_df2')
 
 
 @pytest.fixture(scope='module')
