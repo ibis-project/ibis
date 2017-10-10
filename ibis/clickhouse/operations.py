@@ -151,7 +151,8 @@ def _string_find(translator, expr):
     op = expr.op()
     arg, substr, start, _ = op.args
     if start is not None:
-        raise com.TranslationError('String find doesn\'t support start argument')
+        raise com.TranslationError('String find doesn\'t '
+                                   'support start argument')
 
     return _call(translator, 'position', arg, substr) + ' - 1'
 
