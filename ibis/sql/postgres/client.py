@@ -84,7 +84,7 @@ class PostgreSQLClient(alch.AlchemyClient):
             try:
                 yield bind
             finally:
-                bind.execute('SET TIMEZONE = {!r}'.format(previous_timezone))
+                bind.execute("SET TIMEZONE = '{}'".format(previous_timezone))
 
     def database(self, name=None):
         """Connect to a database called `name`.
