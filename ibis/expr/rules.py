@@ -14,6 +14,7 @@
 
 from collections import Counter
 
+import functools
 import operator
 
 import six
@@ -137,7 +138,7 @@ class PowerPromoter(BinaryPromoter):
 # string
 
 
-_TYPE_PRECEDENCE = {
+_SCALAR_TYPE_PRECEDENCE = {
     'timestamp': 10,
     'double': 9,
     'float': 8,
@@ -148,8 +149,43 @@ _TYPE_PRECEDENCE = {
     'int8': 3,
     'boolean': 2,
     'string': 1,
-    'null': 0
+    'null': 0,
 }
+
+
+def higher_precedence(left, right):
+    left_name = left.name.lower()
+    right_name = right.name.lower()
+
+    if (left_name in _SCALAR_TYPE_PRECEDENCE and
+            right_name in _SCALAR_TYPE_PRECEDENCE):
+        left_prec = _SCALAR_TYPE_PRECEDENCE[left_name]
+        right_prec = _SCALAR_TYPE_PRECEDENCE[right_name]
+        _, highest_type = max(
+            ((left_prec, left), (right_prec, right)),
+            key=first
+        )
+        return highest_type
+
+    if isinstance(left, dt.Array):
+        return dt.Array(higher_precedence(left.value_type, right.value_type))
+
+    if isinstance(left, dt.Map):
+        return dt.Map(
+            higher_precedence(left.key_type, right.key_type),
+            higher_precedence(left.value_type, right.value_type)
+        )
+
+    if isinstance(left, dt.Struct):
+        if left.names != right.names:
+            raise TypeError('Struct names are not equal')
+        return dt.Struct(
+            left.names,
+            list(map(higher_precedence, left.types))
+        )
+    raise TypeError(
+        'Cannot compute precedence for {} and {} types'.format(left, right)
+    )
 
 
 def highest_precedence_type(exprs):
@@ -160,10 +196,7 @@ def highest_precedence_type(exprs):
         raise ValueError('Must pass at least one expression')
 
     expr_types = {expr.type() for expr in exprs}
-    scores = (
-        (_TYPE_PRECEDENCE[t.name.lower()], t) for t in expr_types
-    )
-    _, highest_type = max(scores, key=first)
+    highest_type = functools.reduce(higher_precedence, expr_types)
 
     for expr in exprs:
         if not expr._can_cast_implicit(highest_type):
@@ -513,7 +546,24 @@ class ArrayValueTyped(ValueTyped):
     def _validate(self, args, i):
         arg = super(ArrayValueTyped, self)._validate(args, i)
         type, = self.types
-        if arg.type().equals(dt.Array(dt.any)):
+        arg_type = arg.type()
+        if (arg_type.equals(dt.Array(dt.any)) or
+                arg_type.equals(dt.Array(dt.null))):
+            return arg.cast(type)
+        return arg
+
+
+class MapValueTyped(ValueTyped):
+
+    def __init__(self, key_type, value_type, *args, **kwargs):
+        super(MapValueTyped, self).__init__(
+            dt.Map(key_type, value_type), *args, **kwargs
+        )
+
+    def _validate(self, args, i):
+        arg = super(MapValueTyped, self)._validate(args, i)
+        type, = self.types
+        if arg.type().equals(dt.Map(dt.any, dt.any)):
             return arg.cast(type)
         return arg
 
@@ -622,6 +672,19 @@ class Number(ValueTyped):
 number = Number
 
 
+def struct(**arg_kwds):
+    return ValueTyped(ir.StructValue, 'not struct', **arg_kwds)
+
+
+def map(key_type, value_type, **arg_kwds):
+    return MapValueTyped(
+        key_type,
+        value_type,
+        'not map<{}, {}>'.format(key_type, value_type),
+        **arg_kwds
+    )
+
+
 def integer(**arg_kwds):
     return ValueTyped(dt.int_, 'not integer', **arg_kwds)
 
@@ -631,7 +694,7 @@ def double(**arg_kwds):
 
 
 def decimal(**arg_kwds):
-    return ValueTyped(dt.Decimal, 'not decimal', **arg_kwds)
+    return ValueTyped(ir.DecimalValue, 'not decimal', **arg_kwds)
 
 
 def timestamp(**arg_kwds):
@@ -684,9 +747,13 @@ class StringOptions(Argument):
     def __init__(self, options, case_sensitive=True, **arg_kwds):
         super(StringOptions, self).__init__(**arg_kwds)
         if not case_sensitive:
-            (is_lower, _), = Counter(map(str.islower, options)).most_common(1)
+            (is_lower, _), = Counter(
+                opt.islower() for opt in options
+            ).most_common(1)
             self._preferred_case = str.lower if is_lower else str.upper
-            self.options = list(map(self._preferred_case, options))
+            self.options = [
+                self._preferred_case(opt) for opt in options
+            ]
         else:
             self.options = options
         self.case_sensitive = case_sensitive

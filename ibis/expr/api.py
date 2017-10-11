@@ -40,6 +40,8 @@ from ibis.expr.types import (Expr,  # noqa
                              TimestampValue, TimestampScalar, TimestampColumn,
                              DateValue, TimeValue,
                              ArrayValue, ArrayScalar, ArrayColumn,
+                             MapValue, MapScalar, MapColumn,
+                             StructValue, StructScalar, StructColumn,
                              CategoryValue, unnamed, as_value_expr, literal,
                              param, null, sequence)
 
@@ -1777,6 +1779,48 @@ _array_column_methods = dict(
 )
 
 _add_methods(ArrayValue, _array_column_methods)
+
+# ---------------------------------------------------------------------
+# Map API
+
+
+def _map_value_for_key(expr, key):
+    return _ops.MapValueForKey(expr, key).to_expr()
+
+
+def _map_keys(expr):
+    return _ops.MapKeys(expr).to_expr()
+
+
+def _map_values(expr):
+    return _ops.MapValues(expr).to_expr()
+
+
+_map_column_methods = dict(
+    length=_unary_op('length', _ops.MapLength),
+    __getitem__=_map_value_for_key,
+    keys=_map_keys,
+    values=_map_values,
+    __add__=_binop_expr('__add__', _ops.MapConcat),
+    __radd__=toolz.flip(_binop_expr('__radd__', _ops.MapConcat)),
+)
+
+_add_methods(MapValue, _map_column_methods)
+
+# ---------------------------------------------------------------------
+# Struct API
+
+
+def _struct_get_field(expr, field_name):
+    return _ops.StructField(expr, field_name).to_expr()
+
+
+_struct_column_methods = dict(
+    __getattr__=_struct_get_field,
+    __getitem__=_struct_get_field,
+)
+
+_add_methods(StructValue, _struct_column_methods)
 
 
 # ---------------------------------------------------------------------

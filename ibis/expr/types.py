@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
 import datetime
 import itertools
 import os
@@ -529,10 +530,25 @@ def infer_literal_type(value):
         return dt.time
     elif isinstance(value, list):
         if not value:
-            return dt.Array(dt.any)
+            return dt.Array(dt.null)
         return dt.Array(rules.highest_precedence_type(
             list(map(literal, value))
         ))
+    elif isinstance(value, collections.OrderedDict):
+        if not value:
+            raise TypeError('Empty struct type not supported')
+        return dt.Struct(
+            list(value.keys()),
+            [literal(element).type() for element in value.values()],
+        )
+    elif isinstance(value, dict):
+        if not value:
+            return dt.Map(dt.null, dt.null)
+        return dt.Map(
+            rules.highest_precedence_type(list(map(literal, value.keys()))),
+            rules.highest_precedence_type(list(map(literal, value.values()))),
+        )
+
     raise com.InputTypeError(value)
 
 
@@ -1044,17 +1060,25 @@ class StringValue(AnyValue):
         return isinstance(other, (StringValue, TemporalValue))
 
 
-class DecimalValue(NumericValue):
+class ParameterizedValue(AnyValue):
 
-    _implicit_casts = set(['float', 'double'])
-
-    def __init__(self, meta):
+    def __init__(self, meta, name=None):
+        super(ParameterizedValue, self).__init__(meta, name=name)
         self.meta = meta
-        self._precision = meta.precision
-        self._scale = meta.scale
 
     def type(self):
-        return dt.Decimal(self._precision, self._scale)
+        return self.meta
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return type(self)(arg, self.meta, name=name)
+        return factory
+
+
+class DecimalValue(ParameterizedValue, NumericValue):
+
+    _implicit_casts = set(['float', 'double'])
 
     @classmethod
     def _make_constructor(cls, meta):
@@ -1154,17 +1178,40 @@ class TimestampValue(TemporalValue):
         return TimestampScalar(op)
 
 
-class ArrayValue(AnyValue):
-
-    def __init__(self, type, name=None):
-        super(ArrayValue, self).__init__(type.value_type)
-        self.value_type = type.value_type
-
-    def type(self):
-        return dt.Array(self.value_type)
+class ArrayValue(ParameterizedValue):
 
     def _can_compare(self, other):
         return isinstance(other, ArrayValue)
+
+    def _can_cast_implicit(self, typename):
+        return (
+            super(ArrayValue, self)._can_cast_implicit(typename) or
+            (
+                self.type().equals(dt.Array(dt.null)) and
+                isinstance(typename, dt.Array)
+            )
+        )
+
+
+class MapValue(ParameterizedValue):
+
+    def _can_compare(self, other):
+        return isinstance(other, MapValue)
+
+    def _can_cast_implicit(self, typename):
+        return (
+            super(MapValue, self)._can_cast_implicit(typename) or
+            (
+                self.type().equals(dt.Map(dt.null, dt.null)) and
+                isinstance(typename, dt.Array)
+            )
+        )
+
+
+class StructValue(ParameterizedValue):
+
+    def _can_compare(self, other):
+        return isinstance(other, StructValue)
 
 
 class NumericColumn(ColumnExpr, NumericValue):
@@ -1268,24 +1315,12 @@ class TimestampScalar(ScalarExpr, TimestampValue):
         ScalarExpr.__init__(self, arg, name=name)
         TimestampValue.__init__(self, meta=meta)
 
-    @property
-    def _factory(self):
-        def factory(arg, name=None):
-            return type(self)(arg, self.meta, name=name)
-        return factory
-
 
 class TimestampColumn(ColumnExpr, TimestampValue):
 
     def __init__(self, arg, meta=None, name=None):
         ColumnExpr.__init__(self, arg, name=name)
         TimestampValue.__init__(self, meta=meta)
-
-    @property
-    def _factory(self):
-        def factory(arg, name=None):
-            return type(self)(arg, self.meta, name=name)
-        return factory
 
 
 class DecimalScalar(DecimalValue, ScalarExpr):
@@ -1294,12 +1329,6 @@ class DecimalScalar(DecimalValue, ScalarExpr):
         DecimalValue.__init__(self, meta)
         ScalarExpr.__init__(self, arg, name=name)
 
-    @property
-    def _factory(self):
-        def factory(arg, name=None):
-            return DecimalScalar(arg, self.meta, name=name)
-        return factory
-
 
 class DecimalColumn(DecimalValue, NumericColumn):
 
@@ -1307,14 +1336,8 @@ class DecimalColumn(DecimalValue, NumericColumn):
         DecimalValue.__init__(self, meta)
         NumericColumn.__init__(self, arg, name=name)
 
-    @property
-    def _factory(self):
-        def factory(arg, name=None):
-            return DecimalColumn(arg, self.meta, name=name)
-        return factory
 
-
-class CategoryValue(AnyValue):
+class CategoryValue(ParameterizedValue):
 
     """
     Represents some ordered data categorization; tracked as an int32 value
@@ -1322,12 +1345,6 @@ class CategoryValue(AnyValue):
     """
 
     _implicit_casts = Int16Value._implicit_casts
-
-    def __init__(self, meta):
-        self.meta = meta
-
-    def type(self):
-        return self.meta
 
     def _can_compare(self, other):
         return isinstance(other, IntegerValue)
@@ -1339,24 +1356,12 @@ class CategoryScalar(CategoryValue, ScalarExpr):
         CategoryValue.__init__(self, meta)
         ScalarExpr.__init__(self, arg, name=name)
 
-    @property
-    def _factory(self):
-        def factory(arg, name=None):
-            return CategoryScalar(arg, self.meta, name=name)
-        return factory
-
 
 class CategoryColumn(CategoryValue, ColumnExpr):
 
     def __init__(self, arg, meta, name=None):
         CategoryValue.__init__(self, meta)
         ColumnExpr.__init__(self, arg, name=name)
-
-    @property
-    def _factory(self):
-        def factory(arg, name=None):
-            return CategoryColumn(arg, self.meta, name=name)
-        return factory
 
 
 class ArrayScalar(ArrayValue, ScalarExpr):
@@ -1365,12 +1370,6 @@ class ArrayScalar(ArrayValue, ScalarExpr):
         ArrayValue.__init__(self, meta)
         ScalarExpr.__init__(self, arg, name=name)
 
-    @property
-    def _factory(self):
-        def factory(arg, name=None):
-            return ArrayScalar(arg, self.type(), name=name)
-        return factory
-
 
 class ArrayColumn(ArrayValue, ColumnExpr):
 
@@ -1378,11 +1377,33 @@ class ArrayColumn(ArrayValue, ColumnExpr):
         ArrayValue.__init__(self, meta)
         ColumnExpr.__init__(self, arg, name=name)
 
-    @property
-    def _factory(self):
-        def factory(arg, name=None):
-            return ArrayColumn(arg, self.type(), name=name)
-        return factory
+
+class MapScalar(MapValue, ScalarExpr):
+
+    def __init__(self, arg, meta, name=None):
+        MapValue.__init__(self, meta)
+        ScalarExpr.__init__(self, arg, name=name)
+
+
+class MapColumn(MapValue, ColumnExpr):
+
+    def __init__(self, arg, meta, name=None):
+        MapValue.__init__(self, meta)
+        ColumnExpr.__init__(self, arg, name=name)
+
+
+class StructScalar(StructValue, ScalarExpr):
+
+    def __init__(self, arg, meta, name=None):
+        StructValue.__init__(self, meta)
+        ScalarExpr.__init__(self, arg, name=name)
+
+
+class StructColumn(StructValue, ColumnExpr):
+
+    def __init__(self, arg, meta, name=None):
+        StructValue.__init__(self, meta)
+        ColumnExpr.__init__(self, arg, name=name)
 
 
 class UnnamedMarker(object):
