@@ -167,6 +167,8 @@ def higher_precedence(left, right):
         )
         return highest_type
 
+    # TODO(phillipc): Ensure that left and right are API compatible
+
     if isinstance(left, dt.Array):
         return dt.Array(higher_precedence(left.value_type, right.value_type))
 
