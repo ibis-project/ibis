@@ -181,7 +181,7 @@ def higher_precedence(left, right):
             raise TypeError('Struct names are not equal')
         return dt.Struct(
             left.names,
-            list(map(higher_precedence, left.types))
+            list(map(higher_precedence, left.types, right.types))
         )
     raise TypeError(
         'Cannot compute precedence for {} and {} types'.format(left, right)
