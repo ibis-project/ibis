@@ -180,6 +180,8 @@ def execute_without_scope(
     params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
 
     new_scope = toolz.merge(scope, data_scope, params, factory=factory)
+
+    # data_preload
     new_scope.update(
         (node, data_preload(node, data, scope=new_scope))
         for node, data in new_scope.items()

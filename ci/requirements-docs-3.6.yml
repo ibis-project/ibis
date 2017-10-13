@@ -16,6 +16,7 @@ dependencies:
   - pytest
   - python=3.6
   - python-graphviz
+  - pytables
   - sh
   - six
   - sphinx_rtd_theme
