@@ -69,6 +69,26 @@ Impala (with UDFs)
 
       test_data_admin.py load --data --data-dir=$DATA_DIR
 
+Clickhouse
+^^^^^^^^^^
+
+#. **Start the Clickhouse Server docker image in another terminal**:
+
+   .. code:: sh
+
+      # Keeping this running as long as you want to test ibis
+      docker run --rm -p 9000:9000 --tty yandex/clickhouse-server
+
+#. **Load data**:
+
+   .. code:: sh
+
+      ci/datamgr.py clickhouse \
+          --database $IBIS_TEST_CLICKHOUSE_DB \
+          --data-directory $DATA_DIR/ibis-testing-data \
+          --script ci/clickhouse_load.sql \
+          functional_alltypes batting diamonds awards_players
+
 PostgreSQL
 ^^^^^^^^^^
 
@@ -81,7 +101,7 @@ Here's how to load test data into PostgreSQL:
 
       ci/datamgr.py postgres \
           --database $IBIS_TEST_POSTGRES_DB \
-          --data-directory $DATA_DIR \
+          --data-directory $DATA_DIR/ibis-testing-data \
           --script ci/postgresql_load.sql \
           functional_alltypes batting diamonds awards_players
 
@@ -95,7 +115,7 @@ instructions above, then SQLite will be available in the conda environment.
 
       ci/datamgr.py sqlite \
           --database $IBIS_TEST_SQLITE_DB_PATH \
-          --data-directory $DATA_DIR \
+          --data-directory $DATA_DIR/ibis-testing-data \
           --script ci/sqlite_load.sql \
           functional_alltypes batting diamonds awards_players
 

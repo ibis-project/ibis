@@ -40,6 +40,11 @@ except ImportError:  # pip install ibis-framework[postgres]
     pass
 
 try:
+    import ibis.clickhouse.api as clickhouse
+except ImportError:  # pip install ibis-framework[clickhouse]
+    pass
+
+try:
     from multipledispatch import halt_ordering, restart_ordering
     halt_ordering()
     import ibis.pandas.api as pandas
