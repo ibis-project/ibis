@@ -21,6 +21,7 @@ New Backends
 
 * BigQuery backend (:issue:`1170`), thanks to @tsdlovell.
 * Clickhouse backend (:issue:`1127`), thanks to @kszucs.
+* File Support for CSV & HDF5 (:issue:`1165`)
 
 New Features
 ~~~~~~~~~~~~
