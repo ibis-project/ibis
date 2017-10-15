@@ -29,6 +29,83 @@ def cli():
 @click.option('-S', '--script', type=click.File('rt'), required=True)
 @click.option(
     '-d', '--database',
+    default=os.environ.get('IBIS_TEST_CLICKHOUSE_DB', 'ibis_testing')
+)
+@click.option(
+    '-D', '--data-directory',
+    default=tempfile.gettempdir(), type=click.Path(exists=True)
+)
+def clickhouse(script, tables, database, data_directory):
+    username = os.environ.get('IBIS_CLICKHOUSE_USER', 'default')
+    host = os.environ.get('IBIS_CLICKHOUSE_HOST', 'localhost')
+    password = os.environ.get('IBIS_CLICKHOUSE_PASS', '')
+
+    url = sa.engine.url.URL(
+        'clickhouse+native',
+        username=username,
+        host=host,
+        password=password,
+    )
+    engine = sa.create_engine(str(url))
+    engine.execute('DROP DATABASE IF EXISTS "{}"'.format(database))
+    engine.execute('CREATE DATABASE "{}"'.format(database))
+
+    url = sa.engine.url.URL(
+        'clickhouse+native',
+        username=username,
+        host=host,
+        password=password,
+        database=database,
+    )
+    engine = sa.create_engine(str(url))
+    script_text = script.read()
+
+    # missing stmt
+    # INSERT INTO array_types (x, y, z, grouper, scalar_column) VALUES
+    # ([1, 2, 3], ['a', 'b', 'c'], [1.0, 2.0, 3.0], 'a', 1.0),
+    # ([4, 5], ['d', 'e'], [4.0, 5.0], 'a', 2.0),
+    # ([6], ['f'], [6.0], 'a', 3.0),
+    # ([1], ['a'], [], 'b', 4.0),
+    # ([2, 3], ['b', 'c'], [], 'b', 5.0),
+    # ([4, 5], ['d', 'e'], [4.0, 5.0], 'c', 6.0);
+
+    with engine.begin() as con:
+        # doesn't support multiple statements
+        for stmt in script_text.split(';'):
+            if len(stmt.strip()):
+                con.execute(stmt)
+
+    table_paths = [
+        os.path.join(data_directory, '{}.csv'.format(table))
+        for table in tables
+    ]
+    dtype = {'bool_col': np.bool_}
+    for table, path in zip(tables, table_paths):
+        # correct dtypes per table to be able to insert
+        # TODO: cleanup, kinda ugly
+        df = pd.read_csv(path, index_col=None, header=0, dtype=dtype)
+        if table == 'functional_alltypes':
+            df = df.rename(columns={'Unnamed: 0': 'Unnamed_0'})
+            cols = ['date_string_col', 'string_col']
+            df[cols] = df[cols].astype(str)
+            df.timestamp_col = df.timestamp_col.astype('datetime64[s]')
+        elif table == 'batting':
+            cols = ['playerID', 'teamID', 'lgID']
+            df[cols] = df[cols].astype(str)
+            cols = df.select_dtypes([float]).columns
+            df[cols] = df[cols].fillna(0).astype(int)
+        elif table == 'awards_players':
+            cols = ['playerID', 'awardID', 'lgID', 'tie', 'notes']
+            df[cols] = df[cols].astype(str)
+
+        df.to_sql(table, engine, index=False, if_exists='append')
+
+
+@cli.command()
+@click.argument('tables', nargs=-1)
+@click.option('-S', '--script', type=click.File('rt'), required=True)
+@click.option(
+    '-d', '--database',
     default=os.environ.get(
         'IBIS_TEST_POSTGRES_DB', os.environ.get('PGDATABASE', 'ibis_testing')
     ),
@@ -103,6 +180,8 @@ def sqlite(script, tables, database, data_directory):
         os.path.join(data_directory, '{}.csv'.format(table))
         for table in tables
     ]
+    click.echo(tables)
+    click.echo(table_paths)
     for table, path in zip(tables, table_paths):
         df = pd.read_csv(path, index_col=None, header=0)
         with engine.begin() as con:

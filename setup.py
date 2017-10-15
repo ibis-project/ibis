@@ -39,13 +39,15 @@ postgres_requires = sqlite_requires + ['psycopg2']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 pandas_requires = ['multipledispatch']
+clickhouse_requires = ['clickhouse-driver']
 
 all_requires = (
     impala_requires +
     postgres_requires +
     kerberos_requires +
     visualization_requires +
-    pandas_requires
+    pandas_requires +
+    clickhouse_requires
 )
 
 develop_requires = all_requires + [
@@ -77,6 +79,7 @@ setup(
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
         'pandas': pandas_requires,
+        'clickhouse': clickhouse_requires
     },
     scripts=[
         os.path.relpath(

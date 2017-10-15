@@ -1481,21 +1481,21 @@ class OuterJoin(Join):
     pass
 
 
+class AnyInnerJoin(Join):
+    pass
+
+
+class AnyLeftJoin(Join):
+    pass
+
+
 class LeftSemiJoin(Join):
-
-    """
-
-    """
 
     def _get_schema(self):
         return self.left.schema()
 
 
 class LeftAntiJoin(Join):
-
-    """
-
-    """
 
     def _get_schema(self):
         return self.left.schema()

@@ -174,12 +174,7 @@ class SQLClient(Client):
         """
         # Get the schema by adding a LIMIT 0 on to the end of the query. If
         # there is already a limit in the query, we find and remove it
-        limited_query = """\
-SELECT *
-FROM (
-{0}
-) t0
-LIMIT 0""".format(query)
+        limited_query = 'SELECT * FROM ({}) t0 LIMIT 0'.format(query)
         schema = self._get_schema_using_query(limited_query)
 
         node = ops.SQLQueryResult(query, schema, self)
