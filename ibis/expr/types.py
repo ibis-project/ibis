@@ -1184,12 +1184,14 @@ class ArrayValue(ParameterizedValue):
         return isinstance(other, ArrayValue)
 
     def _can_cast_implicit(self, typename):
+        if not isinstance(typename, dt.Array):
+            return False
+
+        self_type = self.type()
         return (
             super(ArrayValue, self)._can_cast_implicit(typename) or
-            (
-                self.type().equals(dt.Array(dt.null)) and
-                isinstance(typename, dt.Array)
-            )
+            self_type.equals(dt.Array(dt.null)) or
+            self_type.equals(dt.Array(dt.any))
         )
 
 
@@ -1199,12 +1201,14 @@ class MapValue(ParameterizedValue):
         return isinstance(other, MapValue)
 
     def _can_cast_implicit(self, typename):
+        if not isinstance(typename, dt.Map):
+            return False
+
+        self_type = self.type()
         return (
             super(MapValue, self)._can_cast_implicit(typename) or
-            (
-                self.type().equals(dt.Map(dt.null, dt.null)) and
-                isinstance(typename, dt.Array)
-            )
+            self_type.equals(dt.Map(dt.null, dt.null)) or
+            self_type.equals(dt.Map(dt.any, dt.any))
         )
 
 
