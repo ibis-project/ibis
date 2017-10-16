@@ -80,9 +80,11 @@ def df1():
 
 @pytest.fixture(scope='module')
 def df2():
-    return pd.DataFrame(
-        {'key': list('ac'), 'other_value': [4.0, 6.0], 'key3': list('fe')}
-    )
+    return pd.DataFrame({
+        'key': list('ac'),
+        'other_value': [4.0, 6.0],
+        'key3': list('fe')
+    })
 
 
 @pytest.fixture(scope='module')
@@ -122,12 +124,33 @@ def time_keyed_df2():
 
 
 @pytest.fixture(scope='module')
-def client(df, df1, df2, time_df1, time_df2, time_keyed_df1, time_keyed_df2):
+def client(
+    df, df1, df2, df3, time_df1, time_df2, time_keyed_df1, time_keyed_df2
+):
     return ibis.pandas.connect(
-        {'df': df, 'df1': df1, 'df2': df2, 'left': df1, 'right': df2,
-         'time_df1': time_df1, 'time_df2': time_df2,
-         'time_keyed_df1': time_keyed_df1, 'time_keyed_df2': time_keyed_df2}
+        dict(
+            df=df,
+            df1=df1,
+            df2=df2,
+            df3=df3,
+            left=df1,
+            right=df2,
+            time_df1=time_df1,
+            time_df2=time_df2,
+            time_keyed_df1=time_keyed_df1,
+            time_keyed_df2=time_keyed_df2
+        )
     )
+
+
+@pytest.fixture(scope='module')
+def df3():
+    return pd.DataFrame({
+        'key': list('ac'),
+        'other_value': [4.0, 6.0],
+        'key2': list('ae'),
+        'key3': list('fe')
+    })
 
 
 @pytest.fixture(scope='module')
@@ -189,3 +212,25 @@ def batting(lahman):
 @pytest.fixture(scope='module')
 def awards_players(lahman):
     return lahman.table('awards_players')
+
+
+@pytest.fixture(scope='module')
+def sel_cols(batting):
+    cols = batting.columns
+    start, end = cols.index('AB'), cols.index('H') + 1
+    return ['playerID', 'yearID', 'teamID', 'G'] + cols[start:end]
+
+
+@pytest.fixture(scope='module')
+def players_base(batting, sel_cols):
+    return batting[sel_cols].sort_by(sel_cols[:3])
+
+
+@pytest.fixture(scope='module')
+def players(players_base):
+    return players_base.groupby('playerID')
+
+
+@pytest.fixture(scope='module')
+def players_df(players_base):
+    return players_base.execute().reset_index(drop=True)

@@ -31,25 +31,6 @@ def test_read_with_undiscoverable_type(client):
         client.table('df')
 
 
-@pytest.mark.parametrize(
-    'how',
-    [
-        'inner',
-        'left',
-        'outer',
-
-        pytest.mark.xfail('right', raises=KeyError),
-        pytest.mark.xfail('semi', raises=NotImplementedError),
-        pytest.mark.xfail('anti', raises=NotImplementedError),
-    ]
-)
-def test_join(how, left, right, df1, df2):
-    expr = left.join(right, left.key == right.key, how=how)
-    result = expr.execute()
-    expected = pd.merge(df1, df2, how=how, on='key')
-    tm.assert_frame_equal(result[expected.columns], expected)
-
-
 merge_asof_minversion = pytest.mark.skipif(
     pd.__version__ < '0.19.2',
     reason="at least pandas-0.19.2 required for merge_asof")
@@ -81,98 +62,6 @@ def test_keyed_asof_join(
     result = expr.execute()
     expected = pd.merge_asof(
         time_keyed_df1, time_keyed_df2, on='time', by='key')
-    tm.assert_frame_equal(result[expected.columns], expected)
-
-
-@pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
-def test_join_project_left_table(how, left, right, df1, df2):
-    expr = left.join(right, left.key == right.key, how=how)[left, right.key3]
-    result = expr.execute()
-    expected = pd.merge(df1, df2, how=how, on='key')[
-        list(left.columns) + ['key3']
-    ]
-    tm.assert_frame_equal(result[expected.columns], expected)
-
-
-@pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
-def test_join_with_multiple_predicates(how, left, right, df1, df2):
-    expr = left.join(
-        right, [left.key == right.key, left.key2 == right.key3], how=how
-    )
-    result = expr.execute()
-    expected = pd.merge(
-        df1, df2,
-        how=how,
-        left_on=['key', 'key2'],
-        right_on=['key', 'key3'],
-    )
-    tm.assert_frame_equal(result[expected.columns], expected)
-
-
-@pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
-def test_join_with_multiple_predicates_written_as_one(
-    how, left, right, df1, df2
-):
-    predicate = (left.key == right.key) & (left.key2 == right.key3)
-    expr = left.join(right, predicate, how=how)
-    result = expr.execute()
-    expected = pd.merge(
-        df1, df2,
-        how=how,
-        left_on=['key', 'key2'],
-        right_on=['key', 'key3'],
-    )
-    tm.assert_frame_equal(result[expected.columns], expected)
-
-
-@pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
-def test_join_with_invalid_predicates(how, left, right):
-    predicate = (left.key == right.key) & (left.key2 <= right.key3)
-    expr = left.join(right, predicate, how=how)
-    with pytest.raises(TypeError):
-        expr.execute()
-
-    predicate = left.key >= right.key
-    expr = left.join(right, predicate, how=how)
-    with pytest.raises(TypeError):
-        expr.execute()
-
-
-@pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
-def test_join_with_duplicate_non_key_columns(how, left, right, df1, df2):
-    left = left.mutate(x=left.value * 2)
-    right = right.mutate(x=right.other_value * 3)
-    expr = left.join(right, left.key == right.key, how=how)
-    with pytest.raises(ValueError):
-        expr.execute()
-
-
-@pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
-def test_join_with_duplicate_non_key_columns_not_selected(
-    how, left, right, df1, df2
-):
-    left = left.mutate(x=left.value * 2)
-    right = right.mutate(x=right.other_value * 3)
-    right = right[['key', 'other_value']]
-    expr = left.join(right, left.key == right.key, how=how)
-    result = expr.execute()
-    expected = pd.merge(
-        df1.assign(x=df1.value * 2),
-        df2[['key', 'other_value']],
-        how=how,
-        on='key',
-    )
-    tm.assert_frame_equal(result[expected.columns], expected)
-
-
-@pytest.mark.parametrize('how', ['inner', 'left', 'outer'])
-def test_join_with_post_expression_selection(how, left, right, df1, df2):
-    join = left.join(right, left.key == right.key, how=how)
-    expr = join[left.key, left.value, right.other_value]
-    result = expr.execute()
-    expected = pd.merge(df1, df2, on='key', how=how)[[
-        'key', 'value', 'other_value'
-    ]]
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -674,18 +563,16 @@ def test_array_repeat_scalar(client, n, mul):
     assert result == expected
 
 
-@pytest.mark.parametrize('catop', [lambda x, y: x + y, lambda x, y: y + x])
-def test_array_concat(t, df, catop):
+@pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
+def test_array_concat(t, df, op):
     x = t.array_of_float64.cast('array<string>')
     y = t.array_of_strings
-    expr = t[(x + y).name('catted')].catted
+    expr = op(x, y)
     result = expr.execute()
-    expected = pd.DataFrame({
-        'catted': (
-            df.array_of_float64.apply(lambda x: list(map(str, x))) +
-            df.array_of_strings
-        )
-    }).catted
+    expected = op(
+        df.array_of_float64.apply(lambda x: list(map(str, x))),
+        df.array_of_strings
+    )
     tm.assert_series_equal(result, expected)
 
 

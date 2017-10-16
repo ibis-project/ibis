@@ -3,7 +3,6 @@ from operator import methodcaller
 import pytest
 import ibis
 from pandas.util import testing as tm
-import ibis.expr.types as ir
 
 pytestmark = pytest.mark.pandas
 
@@ -58,29 +57,6 @@ def test_group_by_mutate_analytic(t, df):
     )
 
     tm.assert_frame_equal(result[expected.columns], expected)
-
-
-@pytest.fixture(scope='module')
-def sel_cols(batting):
-    assert isinstance(batting, ir.TableExpr)
-    cols = batting.columns
-    start, end = cols.index('AB'), cols.index('H') + 1
-    return ['playerID', 'yearID', 'teamID', 'G'] + cols[start:end]
-
-
-@pytest.fixture(scope='module')
-def players_base(batting, sel_cols):
-    return batting[sel_cols].sort_by(sel_cols[:3])
-
-
-@pytest.fixture(scope='module')
-def players(players_base):
-    return players_base.groupby('playerID')
-
-
-@pytest.fixture(scope='module')
-def players_df(players_base):
-    return players_base.execute().reset_index(drop=True)
 
 
 def test_players(players, players_df):

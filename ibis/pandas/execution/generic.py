@@ -1,12 +1,10 @@
 from __future__ import absolute_import
 
+import datetime
+import decimal
+import functools
 import numbers
 import operator
-import datetime
-import functools
-import decimal
-import collections
-import re
 
 import six
 
@@ -19,18 +17,15 @@ import toolz
 
 from ibis import compat
 
-import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-from ibis import util
-
-import ibis.pandas.context as ctx
 from ibis.pandas.core import (
     integer_types, simple_types, numeric_types, fixed_width_types
 )
-from ibis.pandas.dispatch import execute, execute_node, execute_first
+from ibis.pandas.dispatch import execute, execute_node
+from ibis.pandas.execution import constants
 
 
 @execute_node.register(ir.Literal)
@@ -40,18 +35,6 @@ def execute_node_literal(op, *args, **kwargs):
     return op.value
 
 
-_IBIS_TYPE_TO_PANDAS_TYPE = {
-    dt.float: np.float32,
-    dt.double: np.float64,
-    dt.int8: np.int8,
-    dt.int16: np.int16,
-    dt.int32: np.int32,
-    dt.int64: np.int64,
-    dt.string: str,
-    dt.timestamp: 'datetime64[ns]',
-}
-
-
 @execute_node.register(ops.Limit, pd.DataFrame, integer_types, integer_types)
 def execute_limit_frame(op, data, limit, offset, **kwargs):
     return data.iloc[offset:offset + limit]
@@ -59,13 +42,13 @@ def execute_limit_frame(op, data, limit, offset, **kwargs):
 
 @execute_node.register(ops.Cast, pd.Series, dt.DataType)
 def execute_cast_series_generic(op, data, type, **kwargs):
-    return data.astype(_IBIS_TYPE_TO_PANDAS_TYPE[type])
+    return data.astype(constants.IBIS_TYPE_TO_PANDAS_TYPE[type])
 
 
 @execute_node.register(ops.Cast, pd.Series, dt.Array)
 def execute_cast_series_array(op, data, type, **kwargs):
     value_type = type.value_type
-    numpy_type = _IBIS_TYPE_TO_PANDAS_TYPE.get(value_type, None)
+    numpy_type = constants.IBIS_TYPE_TO_PANDAS_TYPE.get(value_type, None)
     if numpy_type is None:
         raise ValueError(
             'Array value type must be a primitive type '
@@ -143,18 +126,6 @@ def execute_cast_series_date(op, data, type, **kwargs):
         )
 
     raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
-
-
-_LITERAL_CAST_TYPES = {
-    dt.double: float,
-    dt.float: float,
-    dt.int64: int,
-    dt.int32: int,
-    dt.int16: int,
-    dt.int8: int,
-    dt.string: str,
-    dt.date: lambda x: pd.Timestamp(x).to_pydatetime().date(),
-}
 
 
 @execute_node.register(ops.UnaryOp, pd.Series)
@@ -285,7 +256,7 @@ def execute_cast_datetime_to_datetime(op, data, type, **kwargs):
 )
 def execute_cast_string_literal(op, data, type, **kwargs):
     try:
-        cast_function = _LITERAL_CAST_TYPES[type]
+        cast_function = constants.IBIS_TO_PYTHON_LITERAL_TYPES[type]
     except KeyError:
         raise TypeError(
             "Don't know how to cast {!r} to type {}".format(data, type)
@@ -308,120 +279,6 @@ def execute_round_series(op, data, places, **kwargs):
 @execute_node.register(ops.TableColumn, (pd.DataFrame, DataFrameGroupBy))
 def execute_table_column_df_or_df_groupby(op, data, **kwargs):
     return data[op.name]
-
-
-def _compute_sort_key(key, data, **kwargs):
-    by = key.args[0]
-    try:
-        return by.get_name(), None
-    except com.ExpressionError:
-        name = util.guid()
-        new_scope = {t: data for t in by.op().root_tables()}
-        new_column = execute(by, new_scope, **kwargs)
-        new_column.name = name
-        return name, new_column
-
-
-def _compute_sorted_frame(sort_keys, df, **kwargs):
-    computed_sort_keys = []
-    ascending = [key.op().ascending for key in sort_keys]
-    new_columns = {}
-
-    for i, key in enumerate(map(operator.methodcaller('op'), sort_keys)):
-        computed_sort_key, temporary_column = _compute_sort_key(
-            key, df, **kwargs
-        )
-        computed_sort_keys.append(computed_sort_key)
-
-        if temporary_column is not None:
-            new_columns[computed_sort_key] = temporary_column
-
-    result = df.assign(**new_columns)
-    result = result.sort_values(computed_sort_keys, ascending=ascending)
-    result = result.drop(new_columns.keys(), axis=1)
-    return result
-
-
-@execute_node.register(ops.Selection, pd.DataFrame)
-def execute_selection_dataframe(op, data, scope=None, **kwargs):
-    selections = op.selections
-    predicates = op.predicates
-    sort_keys = op.sort_keys
-
-    result = data
-
-    if selections:
-        data_pieces = []
-        for selection in selections:
-            table_op = op.table.op()
-            selection_operation = selection.op()
-
-            if op.table is selection:
-                pandas_object = data
-            elif isinstance(selection, ir.ScalarExpr):
-                root_tables = selection_operation.root_tables()
-                additional_scope = collections.OrderedDict(
-                    zip(root_tables, (data for _ in range(len(root_tables))))
-                )
-                new_scope = toolz.merge(
-                    scope,
-                    additional_scope,
-                    factory=collections.OrderedDict,
-                )
-                pandas_object = execute(selection, new_scope, **kwargs)
-            elif isinstance(selection, ir.ColumnExpr):
-                if isinstance(selection_operation, ir.TableColumn):
-                    # slightly faster path for simple column selection
-                    pandas_object = data[selection_operation.name]
-                elif isinstance(table_op, ops.Join):
-                    pandas_object = execute(
-                        selection,
-                        toolz.merge(
-                            scope, {selection_operation.table.op(): data}
-                        ),
-                        **kwargs
-                    )
-                else:
-                    pandas_object = execute(
-                        selection,
-                        toolz.merge(scope, {op.table.op(): data}),
-                        **kwargs
-                    )
-            elif isinstance(selection, ir.TableExpr):
-                # These two statements should never raise unless our
-                # assumptions are wrong because:
-                # 1. If we're selecting ourself, then we've already caught that
-                #    case above
-                # 2. We've checked that `s` originates from its parent before
-                #    executing
-                assert isinstance(table_op, ops.Join)
-                assert selection.equals(table_op.left) or selection.equals(
-                    table_op.right
-                )
-                pandas_object = data[selection.columns]
-            else:
-                raise TypeError(
-                    "Don't know how to compute selection of type {}".format(
-                        type(selection_operation).__name__
-                    )
-                )
-
-            if isinstance(pandas_object, pd.Series):
-                pandas_object = pandas_object.rename(
-                    getattr(selection, '_name', pandas_object.name)
-                )
-            data_pieces.append(pandas_object)
-        result = pd.concat(data_pieces, axis=1)
-
-    if predicates:
-        where = functools.reduce(
-            operator.and_, (execute(p, scope, **kwargs) for p in predicates)
-        )
-        result = result.loc[where]
-
-    if sort_keys:
-        result = _compute_sorted_frame(sort_keys, result, **kwargs)
-    return result.reset_index(drop=True)
 
 
 @execute_node.register(ops.Aggregation, pd.DataFrame)
@@ -575,104 +432,13 @@ def execute_not_bool(op, data, **kwargs):
     return not data
 
 
-_JOIN_TYPES = {
-    ops.LeftJoin: 'left',
-    ops.InnerJoin: 'inner',
-    ops.OuterJoin: 'outer',
-}
-
-
-@execute_node.register(ops.Join, pd.DataFrame, pd.DataFrame)
-def execute_materialized_join(op, left, right, **kwargs):
-    try:
-        how = _JOIN_TYPES[type(op)]
-    except KeyError:
-        raise NotImplementedError('{} not supported'.format(type(op).__name__))
-
-    overlapping_columns = set(left.columns) & set(right.columns)
-
-    left_on, right_on = _extract_predicate_names(op.predicates)
-    _validate_columns(overlapping_columns, left_on, right_on)
-
-    return pd.merge(left, right, how=how, left_on=left_on, right_on=right_on)
-
-
-@execute_node.register(ops.AsOfJoin, pd.DataFrame, pd.DataFrame)
-def execute_asof_join(op, left, right, **kwargs):
-    overlapping_columns = set(left.columns) & set(right.columns)
-    left_on, right_on = _extract_predicate_names(op.predicates)
-    left_by, right_by = _extract_predicate_names(op.by_predicates)
-    _validate_columns(
-        overlapping_columns, left_on, right_on, left_by, right_by)
-
-    return pd.merge_asof(
-        left=left,
-        right=right,
-        left_on=left_on,
-        right_on=right_on,
-        left_by=left_by or None,
-        right_by=right_by or None
-    )
-
-
-def _extract_predicate_names(predicates):
-    lefts = []
-    rights = []
-    for predicate in map(operator.methodcaller('op'), predicates):
-        if not isinstance(predicate, ops.Equals):
-            raise TypeError(
-                'Only equality join predicates supported with pandas'
-            )
-        left_name = predicate.left._name
-        right_name = predicate.right._name
-        lefts.append(left_name)
-        rights.append(right_name)
-    return lefts, rights
-
-
-def _validate_columns(orig_columns, *key_lists):
-    overlapping_columns = orig_columns.difference(
-        item for sublist in key_lists for item in sublist
-    )
-    if overlapping_columns:
-        raise ValueError(
-            'left and right DataFrame columns overlap on {} in a join. '
-            'Please specify the columns you want to select from the join, '
-            'e.g., join[left.column1, right.column2, ...]'.format(
-                overlapping_columns
-            )
-        )
-
-
-_BINARY_OPERATIONS = {
-    ops.Greater: operator.gt,
-    ops.Less: operator.lt,
-    ops.LessEqual: operator.le,
-    ops.GreaterEqual: operator.ge,
-    ops.Equals: operator.eq,
-    ops.NotEquals: operator.ne,
-
-    ops.And: operator.and_,
-    ops.Or: operator.or_,
-    ops.Xor: operator.xor,
-
-    ops.Add: operator.add,
-    ops.Subtract: operator.sub,
-    ops.Multiply: operator.mul,
-    ops.Divide: operator.truediv,
-    ops.FloorDivide: operator.floordiv,
-    ops.Modulus: operator.mod,
-    ops.Power: operator.pow,
-}
-
-
 @execute_node.register(ops.BinaryOp, pd.Series, (pd.Series,) + simple_types)
 @execute_node.register(ops.BinaryOp, numeric_types, numeric_types)
 @execute_node.register(ops.BinaryOp, six.string_types, six.string_types)
 def execute_binary_op(op, left, right, **kwargs):
     op_type = type(op)
     try:
-        operation = _BINARY_OPERATIONS[op_type]
+        operation = constants.BINARY_OPERATIONS[op_type]
     except KeyError:
         raise NotImplementedError(
             'Binary operation {} not implemented'.format(op_type.__name__)
@@ -949,186 +715,6 @@ def execute_array_collect_group_by(op, data, **kwargs):
     return data.apply(list)
 
 
-@execute_node.register(ops.CumulativeSum, pd.Series)
-def execute_series_cumsum(op, data, **kwargs):
-    return data.cumsum()
-
-
-@execute_node.register(ops.CumulativeMin, pd.Series)
-def execute_series_cummin(op, data, **kwargs):
-    return data.cummin()
-
-
-@execute_node.register(ops.CumulativeMax, pd.Series)
-def execute_series_cummax(op, data, **kwargs):
-    return data.cummax()
-
-
-@execute_node.register(ops.CumulativeOp, pd.Series)
-def execute_series_cumulative_op(op, data, **kwargs):
-    typename = type(op).__name__
-    match = re.match(r'^Cumulative([A-Za-z_][A-Za-z0-9_]*)$', typename)
-    if match is None:
-        raise ValueError('Unknown operation {}'.format(typename))
-
-    try:
-        operation_name, = match.groups()
-    except ValueError:
-        raise ValueError(
-            'More than one operation name found in {} class'.format(typename)
-        )
-    return ctx.Cumulative().agg(data, operation_name.lower())
-
-
-@execute_node.register(
-    ops.Lag, (pd.Series, SeriesGroupBy),
-    integer_types + (type(None),),
-    type(None),
-)
-def execute_series_lag(op, data, offset, default, **kwargs):
-    return data.shift(1 if offset is None else offset)
-
-
-@execute_node.register(
-    ops.Lead, (pd.Series, SeriesGroupBy),
-    integer_types + (type(None),),
-    type(None),
-)
-def execute_series_lead(op, data, offset, default, **kwargs):
-    return data.shift(-(1 if offset is None else offset))
-
-
-@execute_node.register(ops.FirstValue, pd.Series)
-def execute_series_first_value(op, data, **kwargs):
-    return data.iloc[0]
-
-
-@execute_node.register(ops.FirstValue, SeriesGroupBy)
-def execute_series_group_by_first_value(op, data, context=None, **kwargs):
-    return context.agg(data, 'first')
-
-
-@execute_node.register(ops.LastValue, pd.Series)
-def execute_series_last_value(op, data, **kwargs):
-    return data.iloc[-1]
-
-
-@execute_node.register(ops.LastValue, SeriesGroupBy)
-def execute_series_group_by_last_value(op, data, context=None, **kwargs):
-    return context.agg(data, 'last')
-
-
-@execute_node.register(ops.MinRank, (pd.Series, SeriesGroupBy))
-def execute_series_min_rank(op, data, **kwargs):
-    # TODO(phillipc): Handle ORDER BY
-    return data.rank(method='min', ascending=True)
-
-
-@execute_node.register(ops.DenseRank, (pd.Series, SeriesGroupBy))
-def execute_series_dense_rank(op, data, **kwargs):
-    # TODO(phillipc): Handle ORDER BY
-    return data.rank(method='dense', ascending=True)
-
-
-@execute_node.register(ops.PercentRank, (pd.Series, SeriesGroupBy))
-def execute_series_percent_rank(op, data, **kwargs):
-    # TODO(phillipc): Handle ORDER BY
-    return data.rank(method='min', ascending=True, pct=True)
-
-
-def _post_process_empty(scalar, index):
-    return pd.Series(scalar, index=index)
-
-
-def _post_process_group_by(series, index):
-    return series
-
-
-def _post_process_order_by(series, index):
-    return series.reindex(index)
-
-
-def _post_process_group_by_order_by(series, index):
-    level_list = list(range(series.index.nlevels - 1))
-    series_with_reset_index = series.reset_index(level=level_list, drop=True)
-    reindexed_series = series_with_reset_index.reindex(index)
-    return reindexed_series
-
-
-@execute_first.register(ops.WindowOp, pd.DataFrame)
-def execute_frame_window_op(op, data, scope=None, context=None, **kwargs):
-    operand, window = op.args
-
-    following = window.following
-    order_by = window._order_by
-
-    if order_by and following != 0:
-        raise ValueError(
-            'Following with a value other than 0 (current row) with order_by '
-            'is not yet implemented in the pandas backend. Use '
-            'ibis.trailing_window or ibis.cumulative_window to '
-            'construct windows when using pandas.'
-        )
-
-    group_by = window._group_by
-    grouping_keys = [
-        key_op.name if isinstance(key_op, ir.TableColumn) else execute(
-            key,
-            context=context,
-            **kwargs
-        )
-        for key, key_op in zip(
-            group_by, map(operator.methodcaller('op'), group_by)
-        )
-    ]
-
-    order_by = window._order_by
-
-    if grouping_keys:
-        source = data.groupby(grouping_keys, sort=False, as_index=not order_by)
-
-        if order_by:
-            sorted_df = source.apply(
-                lambda df, order_by=order_by, kwargs=kwargs: (
-                    _compute_sorted_frame(order_by, df, **kwargs)
-                )
-            )
-            source = sorted_df.groupby(grouping_keys, sort=False)
-            post_process = _post_process_group_by_order_by
-        else:
-            post_process = _post_process_group_by
-    else:
-        if order_by:
-            source = _compute_sorted_frame(order_by, data, **kwargs)
-            post_process = _post_process_order_by
-        else:
-            source = data
-            post_process = _post_process_empty
-
-    new_scope = toolz.merge(
-        scope,
-        collections.OrderedDict(
-            (t, source) for t in operand.op().root_tables()
-        ),
-        factory=collections.OrderedDict,
-    )
-
-    # no order by or group by: default summarization context
-    #
-    # if we're reducing and we have an order by expression then we need to
-    # expand or roll.
-    #
-    # otherwise we're transforming
-    if not grouping_keys and not order_by:
-        context = ctx.Summarize()
-    elif isinstance(operand.op(), ops.Reduction) and order_by:
-        preceding = window.preceding
-        if preceding is not None:
-            context = ctx.Trailing(preceding)
-        else:
-            context = ctx.Cumulative()
-    else:
-        context = ctx.Transform()
-
-    result = execute(operand, new_scope, context=context, **kwargs)
-    return post_process(result, data.index)
+@execute_node.register(ops.SelfReference, pd.DataFrame)
+def execute_node_self_reference_dataframe(op, data, **kwargs):
+    return data
