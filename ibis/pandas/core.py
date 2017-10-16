@@ -13,7 +13,7 @@ import toolz
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 
-import ibis.pandas.context as ctx
+import ibis.pandas.aggcontext as agg_ctx
 from ibis.pandas.dispatch import (
     execute, execute_node, execute_first, data_preload
 )
@@ -92,7 +92,7 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
         return scope[op]
 
     if context is None:
-        context = ctx.Summarize()
+        context = agg_ctx.Summarize()
 
     try:
         computed_args = [scope[t] for t in op.root_tables()]
@@ -175,6 +175,6 @@ def execute_without_scope(
     return execute(
         expr,
         new_scope,
-        context=context if context is not None else ctx.Summarize(),
+        context=context if context is not None else agg_ctx.Summarize(),
         **kwargs
     )
