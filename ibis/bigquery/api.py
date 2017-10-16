@@ -1,5 +1,5 @@
-from ibis.bigquery.client import (BigQueryClient)
-from ibis.config import options
+from ibis.bigquery.client import BigQueryClient  # noqa: F401
+from ibis.config import options  # noqa: F401
 import ibis.common as com
 
 

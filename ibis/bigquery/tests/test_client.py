@@ -45,8 +45,10 @@ def test_list_tables(client_with_table):
 
 
 def test_database_layer(client_with_table):
+    bq_dataset = client_with_table._proxy.get_dataset(
+        client_with_table.dataset_id)
     actual = client_with_table.list_tables()
-    expected = [el.name.table_id for el in client_with_table._dataset.tables()]
+    expected = [el.name.table_id for el in bq_dataset.tables()]
     assert sorted(actual) == sorted(expected)
 
 
@@ -72,7 +74,7 @@ FROM t0"""  # noqa
     assert str(result) == expected
 
 
-@pytest.mark.xfail()
+@pytest.mark.xfail
 def test_df_upload(client):
     expected = pd.DataFrame(dict(a=[1], b=[2.], c=['a'], d=[True]))
     schema = bq.Schema.from_data(expected)
