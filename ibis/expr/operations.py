@@ -677,7 +677,7 @@ def _sum_output_type(self):
     elif isinstance(arg, ir.FloatingValue):
         t = 'double'
     elif isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg._precision, 38)
+        t = dt.Decimal(arg.meta.precision, 38)
     else:
         raise TypeError(arg)
     return t
@@ -686,7 +686,7 @@ def _sum_output_type(self):
 def _mean_output_type(self):
     arg = self.args[0]
     if isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg._precision, 38)
+        t = dt.Decimal(arg.meta.precision, 38)
     elif isinstance(arg, ir.NumericValue):
         t = 'double'
     else:
@@ -763,13 +763,13 @@ class Variance(VarianceBase):
 
 def _decimal_scalar_ctor(precision, scale):
     out_type = dt.Decimal(precision, scale)
-    return ir.DecimalScalar._make_constructor(out_type)
+    return out_type.scalar_type()
 
 
 def _min_max_output_rule(self):
     arg = self.args[0]
     if isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg._precision, 38)
+        t = dt.Decimal(arg.meta.precision, 38)
     else:
         t = arg.type()
 
@@ -2440,9 +2440,10 @@ class ArraySlice(ValueOp):
 class ArrayIndex(ValueOp):
 
     input_type = [rules.array(dt.any), rules.integer(name='index')]
-    output_type = rules.array_output(
-        lambda self: self.args[0].type().value_type
-    )
+
+    def output_type(self):
+        value_type = self.args[0].type().value_type
+        return rules.shape_like(self.args[0], value_type)
 
 
 def _array_binop_invariant_output_type(self):
@@ -2465,16 +2466,70 @@ def _array_binop_invariant_output_type(self):
 class ArrayConcat(ValueOp):
 
     input_type = [rules.array(dt.any), rules.array(dt.any)]
-    output_type = rules.array_output(_array_binop_invariant_output_type)
+
+    def output_type(self):
+        result_type = _array_binop_invariant_output_type(self)
+        return rules.shape_like(self.args[0], result_type)
 
 
 class ArrayRepeat(ValueOp):
 
     input_type = [rules.array(dt.any), integer(name='times')]
-    output_type = rules.array_output(lambda self: self.args[0].type())
+
+    def output_type(self):
+        array_type = self.args[0].type()
+        return rules.shape_like(self.args[0], array_type)
 
 
 class ArrayCollect(Reduction):
 
     input_type = [rules.column]
     output_type = rules.scalar_output(_array_reduced_type)
+
+
+class MapLength(ValueOp):
+
+    input_type = [rules.map(dt.any, dt.any)]
+    output_type = rules.shape_like_arg(0, 'int64')
+
+
+class MapValueForKey(ValueOp):
+
+    input_type = [
+        rules.map(dt.any, dt.any),
+        rules.one_of((dt.string, dt.int_), name='key')
+    ]
+
+    def output_type(self):
+        map_type = self.args[0].type()
+        return rules.shape_like(self.args[0], map_type.value_type)
+
+
+class MapKeys(ValueOp):
+
+    input_type = [rules.map(dt.any, dt.any)]
+    output_type = rules.type_of_arg(0)
+
+
+class MapValues(ValueOp):
+
+    input_type = [rules.map(dt.any, dt.any)]
+    output_type = rules.type_of_arg(0)
+
+
+class MapConcat(ValueOp):
+
+    input_type = [rules.map(dt.any, dt.any), rules.map(dt.any, dt.any)]
+    output_type = rules.type_of_arg(0)
+
+
+class StructField(ValueOp):
+
+    input_type = [
+        rules.struct,
+        rules.instance_of(six.string_types, name='field')
+    ]
+
+    def output_type(self):
+        struct_type = self.args[0].type()
+        return rules.shape_like(self.args[0], struct_type[self.field])
