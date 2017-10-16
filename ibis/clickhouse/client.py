@@ -37,14 +37,17 @@ class ClickhouseQuery(Query):
 
     def _fetch(self, cursor):
         data, columns = cursor
+        names, types = czip(*columns)
+
         cols = {}
-        for (col, (name, db_type)) in czip(data, columns):
+        for (col, name, db_type) in czip(data, names, types):
             dtype = self._db_type_to_dtype(db_type, name)
             try:
                 cols[name] = pd.Series(col, dtype=dtype)
             except TypeError:
                 cols[name] = pd.Series(col)
-        return pd.DataFrame(cols)
+
+        return pd.DataFrame(cols, columns=names)
 
     def _db_type_to_dtype(self, db_type, column):
         return clickhouse_to_pandas[db_type]

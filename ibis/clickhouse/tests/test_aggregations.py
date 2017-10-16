@@ -326,4 +326,5 @@ def test_boolean_summary(alltypes):
             'approx_nunique',
         ]
     )
-    assert result.values.tolist() == expected.values.tolist()
+    tm.assert_frame_equal(result, expected, check_column_type=False,
+                          check_dtype=False)
