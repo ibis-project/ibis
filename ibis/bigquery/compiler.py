@@ -36,7 +36,7 @@ def build_ast(expr, context=None, params=None):
 
 def _get_query(expr, context, params=None):
     ast = build_ast(expr, context, params=params)
-    (query, *rest) = ast.queries
+    (query, rest) = (ast.queries[0], ast.queries[1:])
     assert not rest
     return query
 
