@@ -1003,8 +1003,8 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
         table = self.con.table('tpch_lineitem')
 
         expr = table.l_quantity
-        assert expr._precision == 12
-        assert expr._scale == 2
+        assert expr.meta.precision == 12
+        assert expr.meta.scale == 2
 
         # TODO: what if user impyla version does not have decimal Metadata?
 

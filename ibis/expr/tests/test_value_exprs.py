@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import operator
+from collections import OrderedDict
 from operator import methodcaller
 from datetime import date, datetime, time
 
@@ -100,6 +101,64 @@ def test_literal_with_different_type(value, expected_type):
 
 
 @pytest.mark.parametrize(
+    ['value', 'expected_type', 'expected_class'],
+    [
+        (list('abc'), 'array<string>', ir.ArrayScalar),
+        ([1, 2, 3], 'array<int8>', ir.ArrayScalar),
+        ({'a': 1, 'b': 2, 'c': 3}, 'map<string, int8>', ir.MapScalar),
+        ({1: 2, 3: 4, 5: 6}, 'map<int8, int8>', ir.MapScalar),
+        (
+            {'a': [1.0, 2.0], 'b': [], 'c': [3.0]},
+            'map<string, array<double>>',
+            ir.MapScalar
+        ),
+        (
+            OrderedDict([
+                ('a', 1),
+                ('b', list('abc')),
+                ('c', OrderedDict([('foo', [1.0, 2.0])]))
+            ]),
+            'struct<a: int8, b: array<string>, c: struct<foo: array<double>>>',
+            ir.StructScalar
+        )
+    ]
+)
+def test_literal_complex_types(value, expected_type, expected_class):
+    expr = ibis.literal(value)
+    expr_type = expr.type()
+    assert expr_type.equals(dt.validate_type(expected_type))
+    assert isinstance(expr, expected_class)
+    assert isinstance(expr.op(), ir.Literal)
+    assert expr.op().value is value
+
+
+def test_struct_operations():
+    value = OrderedDict([
+        ('a', 1),
+        ('b', list('abc')),
+        ('c', OrderedDict([('foo', [1.0, 2.0])]))
+    ])
+    expr = ibis.literal(value)
+    assert isinstance(expr, ir.StructValue)
+    assert isinstance(expr.b, ir.ArrayValue)
+    assert isinstance(expr.a.op(), ops.StructField)
+
+
+def test_simple_map_operations():
+    value = {'a': [1.0, 2.0], 'b': [], 'c': [3.0]}
+    value2 = {'a': [1.0, 2.0], 'c': [3.0], 'd': [4.0, 5.0]}
+    expr = ibis.literal(value)
+    expr2 = ibis.literal(value2)
+    assert isinstance(expr, ir.MapValue)
+    assert isinstance(expr['b'].op(), ops.MapValueForKey)
+    assert isinstance(expr.length().op(), ops.MapLength)
+    assert isinstance(expr.keys().op(), ops.MapKeys)
+    assert isinstance(expr.values().op(), ops.MapValues)
+    assert isinstance((expr + expr2).op(), ops.MapConcat)
+    assert isinstance((expr2 + expr).op(), ops.MapConcat)
+
+
+@pytest.mark.parametrize(
     ['value', 'expected_type'],
     [
         (32767, 'int8'),
@@ -130,7 +189,7 @@ def test_literal_array():
     what = []
     expr = api.literal(what)
     assert isinstance(expr, ir.ArrayValue)
-    assert expr.type().equals(dt.Array(dt.any))
+    assert expr.type().equals(dt.Array(dt.null))
 
 
 def test_mixed_arity(table):
@@ -1091,6 +1150,6 @@ def test_empty_array_as_argument():
     node = FooNode([])
     value = node.value
     expected = literal([]).cast(dt.Array(dt.int64))
-    assert not value.type().equals(dt.Array(dt.any))
+    assert not value.type().equals(dt.Array(dt.null))
     assert value.type().equals(dt.Array(dt.int64))
     assert value.equals(expected)

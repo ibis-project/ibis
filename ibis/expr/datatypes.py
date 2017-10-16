@@ -502,8 +502,21 @@ class Struct(DataType):
 
     def __init__(self, names, types, nullable=True):
         super(Struct, self).__init__(nullable=nullable)
-        self.names = list(names)
-        self.types = list(map(validate_type, types))
+        self.pairs = OrderedDict(zip(names, types))
+
+    @property
+    def names(self):
+        return self.pairs.keys()
+
+    @property
+    def types(self):
+        return self.pairs.values()
+
+    def __getitem__(self, key):
+        return self.pairs[key]
+
+    def __iter__(self):
+        return iter(self.pairs.items())
 
     def __repr__(self):
         return '{0}({1})'.format(
@@ -520,11 +533,17 @@ class Struct(DataType):
         )
 
     def _equal_part(self, other, cache=None):
-        return self.names == other.names and self.types == other.types
+        return self.names == other.names and (
+            left.equals(right, cache=cache)
+            for left, right in zip(self.types, other.types)
+        )
 
     @classmethod
     def from_tuples(self, pairs):
         return Struct(*map(list, zip(*pairs)))
+
+    def valid_literal(self, value):
+        return isinstance(value, OrderedDict)
 
 
 @parametric
@@ -544,7 +563,7 @@ class Array(Variadic):
         return self.value_type.equals(other.value_type, cache=cache)
 
     def valid_literal(self, value):
-        return isinstance(value, (list, tuple))
+        return isinstance(value, list)
 
 
 @parametric
@@ -563,7 +582,7 @@ class Enum(DataType):
 
 
 @parametric
-class Map(DataType):
+class Map(Variadic):
 
     def __init__(self, key_type, value_type, nullable=True):
         super(Map, self).__init__(nullable=nullable)
@@ -589,6 +608,9 @@ class Map(DataType):
             self.key_type.equals(other.key_type, cache=cache) and
             self.value_type.equals(other.value_type, cache=cache)
         )
+
+    def valid_literal(self, value):
+        return isinstance(value, dict)
 
 
 # ---------------------------------------------------------------------
@@ -939,7 +961,9 @@ class TypeParser(object):
 def validate_type(t):
     if isinstance(t, DataType):
         return t
-    return TypeParser(t).parse()
+    elif isinstance(t, six.string_types):
+        return TypeParser(t).parse()
+    raise TypeError('Value {!r} is not a valid type or string'.format(t))
 
 
 def array_type(t):

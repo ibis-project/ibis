@@ -40,6 +40,8 @@ from ibis.expr.types import (Expr,  # noqa
                              TimestampValue, TimestampScalar, TimestampColumn,
                              DateValue, TimeValue,
                              ArrayValue, ArrayScalar, ArrayColumn,
+                             MapValue, MapScalar, MapColumn,
+                             StructValue, StructScalar, StructColumn,
                              CategoryValue, unnamed, as_value_expr, literal,
                              param, null, sequence)
 
@@ -1667,11 +1669,11 @@ def _string_contains(arg, substr):
 
     Parameters
     ----------
-    substr
+    substr : str or ibis.expr.types.StringValue
 
     Returns
     -------
-    contains : boolean
+    contains : ibis.expr.types.BooleanValue
     """
     return arg.find(substr) >= 0
 
@@ -1745,6 +1747,19 @@ _add_methods(StringValue, _string_value_methods)
 
 
 def _array_slice(array, index):
+    """Slice or index `array` at `index`.
+
+    Parameters
+    ----------
+    index : int or ibis.expr.types.IntegerValue or slice
+
+    Returns
+    -------
+    sliced_array : ibis.expr.types.ValueExpr
+        If `index` is an ``int`` or :class:`~ibis.expr.types.IntegerValue` then
+        the return type is the element type of `array`. If `index` is a
+        ``slice`` then the return type is the same type as the input.
+    """
     if isinstance(index, slice):
         start = index.start
         stop = index.stop
@@ -1777,6 +1792,50 @@ _array_column_methods = dict(
 )
 
 _add_methods(ArrayValue, _array_column_methods)
+
+# ---------------------------------------------------------------------
+# Map API
+
+
+_map_column_methods = dict(
+    length=_unary_op('length', _ops.MapLength),
+    __getitem__=_binop_expr('__getitem__', _ops.MapValueForKey),
+    keys=_unary_op('keys', _ops.MapKeys),
+    values=_unary_op('values', _ops.MapValues),
+    __add__=_binop_expr('__add__', _ops.MapConcat),
+    __radd__=toolz.flip(_binop_expr('__radd__', _ops.MapConcat)),
+)
+
+_add_methods(MapValue, _map_column_methods)
+
+# ---------------------------------------------------------------------
+# Struct API
+
+
+def _struct_get_field(expr, field_name):
+    """Get the `field_name` field from the ``Struct`` expression `expr`.
+
+    Parameters
+    ----------
+    field_name : str
+        The name of the field to access from the ``Struct`` typed expression
+        `expr`. Must be a Python ``str`` type; programmatic struct field
+        access is not yet supported.
+
+    Returns
+    -------
+    value_expr : ibis.expr.types.ValueExpr
+        An expression with the type of the field being accessed.
+    """
+    return _ops.StructField(expr, field_name).to_expr()
+
+
+_struct_column_methods = dict(
+    __getattr__=_struct_get_field,
+    __getitem__=_struct_get_field,
+)
+
+_add_methods(StructValue, _struct_column_methods)
 
 
 # ---------------------------------------------------------------------
