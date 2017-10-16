@@ -9,6 +9,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
 from ibis.config import options
+from ibis.compat import zip as czip
 from ibis.client import Query, Database, DatabaseEntity, SQLClient
 from ibis.clickhouse.compiler import build_ast
 from ibis.util import log
@@ -30,19 +31,23 @@ class ClickhouseQuery(Query):
 
     def execute(self):
         # synchronous by default
-        data, types = self.client._execute(self.compiled_ddl,
-                                           with_column_types=True)
-        dtypes = [(col, clickhouse_to_pandas[typ]) for col, typ in types]
-
-        # Wes: naive approach, I could use some help to make it more efficient
-        df = pd.DataFrame(data, columns=list(pluck(0, dtypes)))
-        for col, dtype in dtypes:
-            df[col] = df[col].astype(dtype)
-
-        return self._wrap_result(df)
+        cursor = self.client._execute(self.compiled_ddl)
+        result = self._fetch(cursor)
+        return self._wrap_result(result)
 
     def _fetch(self, cursor):
-        raise NotImplementedError
+        data, columns = cursor
+        cols = {}
+        for (col, (name, db_type)) in czip(data, columns):
+            dtype = self._db_type_to_dtype(db_type, name)
+            try:
+                cols[name] = pd.Series(col, dtype=dtype)
+            except TypeError:
+                cols[name] = pd.Series(col)
+        return pd.DataFrame(cols)
+
+    def _db_type_to_dtype(self, db_type, column):
+        return clickhouse_to_pandas[db_type]
 
 
 class ClickhouseClient(SQLClient):
@@ -73,12 +78,12 @@ class ClickhouseClient(SQLClient):
         """Close Clickhouse connection and drop any temporary objects"""
         self.con.disconnect()
 
-    def _execute(self, query, with_column_types=False):
+    def _execute(self, query):
         if isinstance(query, DDL):
             query = query.compile()
         self.log(query)
 
-        return self.con.execute(query, with_column_types=with_column_types)
+        return self.con.execute(query,  columnar=True, with_column_types=True)
 
     def _fully_qualified_name(self, name, database):
         if bool(fully_qualified_re.search(name)):
@@ -173,10 +178,10 @@ class ClickhouseClient(SQLClient):
         """
         qualified_name = self._fully_qualified_name(table_name, database)
         query = 'DESC {0}'.format(qualified_name)
-        data, types = self._execute(query, with_column_types=True)
+        data, _ = self._execute(query)
 
-        names = pluck(0, data)
-        ibis_types = map(clickhouse_to_ibis.get, pluck(1, data))
+        names, types = data[:2]
+        ibis_types = map(clickhouse_to_ibis.get, types)
 
         return dt.Schema(names, ibis_types)
 
@@ -215,7 +220,7 @@ class ClickhouseClient(SQLClient):
         return self.get_schema(tname)
 
     def _get_schema_using_query(self, query):
-        data, types = self._execute(query, with_column_types=True)
+        _, types = self._execute(query)
         names, clickhouse_types = zip(*types)
         ibis_types = map(clickhouse_to_ibis.get, clickhouse_types)
         return dt.Schema(names, ibis_types)
