@@ -29,6 +29,9 @@ python_test_steps: &python_test_steps
       conda env create --quiet \
         --name "${ENV_NAME}" \
         --file "ci/requirements-dev-${PYTHON_VERSION}.yml"
+  - run: curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-175.0.0-linux-x86_64.tar.gz
+  - run: tar xvzf google-cloud-sdk-175.0.0-linux-x86_64.tar.gz
+  - run: ./google-cloud-sdk/install.sh
   - run: echo 'source activate ${ENV_NAME}' | tee -a $BASH_ENV
   - run: flake8
   - run: python setup.py develop
