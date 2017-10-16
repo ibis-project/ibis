@@ -3,8 +3,8 @@ import pytest
 
 import ibis
 import pandas as pd
+bq = pytest.importorskip('google.datalab.bigquery')
 from ibis.bigquery import client as ibc
-import google.datalab.bigquery as bq
 
 
 PROJECT_ID = 'bq-for-ibis'
