@@ -10,6 +10,7 @@ environment: &environment
   - IBIS_CLICKHOUSE_PASS: ''
 
   - DATA_URL: https://storage.googleapis.com/ibis-ci-data
+  - GOOGLE_CLOUD_SDK_TARBALL: google-cloud-sdk-175.0.0-linux-x86_64.tar.gz
 
   # The following environment variables are necessary to run impala tests
   - IBIS_TEST_IMPALA_HOST: localhost
@@ -29,10 +30,13 @@ python_test_steps: &python_test_steps
       conda env create --quiet \
         --name "${ENV_NAME}" \
         --file "ci/requirements-dev-${PYTHON_VERSION}.yml"
-  - run: curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-175.0.0-linux-x86_64.tar.gz
-  - run: tar xvzf google-cloud-sdk-175.0.0-linux-x86_64.tar.gz
-  - run: ./google-cloud-sdk/install.sh
+        w
+  - run: curl -o ${HOME}/${GOOGLE_CLOUD_SDK_TARBALL} https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GOOGLE_CLOUD_SDK_TARBALL}
+  - run: tar xvzf ${HOME}/${GOOGLE_CLOUD_SDK_TARBALL}
+  - run: ${HOME}/google-cloud-sdk/install.sh
   - run: echo 'source activate ${ENV_NAME}' | tee -a $BASH_ENV
+  - run: echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
+  - run: gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
   - run: flake8
   - run: python setup.py develop
   - run: |
