@@ -42,7 +42,7 @@ def genname():
 class TableNode(Node):
 
     def get_type(self, name):
-        return self.get_schema().get_type(name)
+        return self.schema[name]
 
     def _make_expr(self):
         return TableExpr(self)
@@ -1580,15 +1580,16 @@ class Limit(TableNode):
     _arg_names = [None, 'n', 'offset']
 
     def __init__(self, table, n, offset=0):
+        super(Limit, self).__init__([table, n, offset])
         self.table = table
         self.n = n
         self.offset = offset
-        TableNode.__init__(self, [table, n, offset])
 
     def blocks(self):
         return True
 
-    def get_schema(self):
+    @property
+    def schema(self):
         return self.table.schema()
 
     def has_schema(self):
