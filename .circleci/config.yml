@@ -31,11 +31,15 @@ python_test_steps: &python_test_steps
         --name "${ENV_NAME}" \
         --file "ci/requirements-dev-${PYTHON_VERSION}.yml"
   - run: echo 'source activate ${ENV_NAME}' | tee -a $BASH_ENV
-  - run: curl -o ${HOME}/${GOOGLE_CLOUD_SDK_TARBALL} https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GOOGLE_CLOUD_SDK_TARBALL}
-  - run: tar xvzf ${HOME}/${GOOGLE_CLOUD_SDK_TARBALL} -C ${HOME}
-  - run: $HOME/google-cloud-sdk/install.sh
-  - run: echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
-  - run: ${HOME}/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
+  - run: |
+      if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
+        curl -o "${HOME}/${GOOGLE_CLOUD_SDK_TARBALL}" "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GOOGLE_CLOUD_SDK_TARBALL}"
+        tar xvzf "${HOME}/${GOOGLE_CLOUD_SDK_TARBALL}" -C "${HOME}"
+        ${HOME}/google-cloud-sdk/install.sh
+        echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > "${HOME}/gcloud-service-key.json"
+        "${GOOGLE_CLOUD_BIN}/gcloud" auth activate-service-account --key-file "${HOME}/gcloud-service-key.json"
+        "${GOOGLE_CLOUD_BIN}/bq" query --use_legacy_sql=false 'SELECT [1, 2, 3] AS array_of_numbers'
+      fi
   - run: flake8
   - run: python setup.py develop
   - run: |
@@ -116,6 +120,7 @@ jobs:
           export DIAMONDS_CSV="\$DATA_DIR/diamonds.csv"
           export BATTING_CSV="\$DATA_DIR/batting.csv"
           export AWARDS_PLAYERS_CSV="\$DATA_DIR/awards_players.csv"
+          export GOOGLE_CLOUD_BIN="\$HOME/google-cloud-sdk/bin"
           EOF
       - persist_to_workspace:
           root: /tmp/workspace
