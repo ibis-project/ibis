@@ -38,6 +38,7 @@ python_test_steps: &python_test_steps
         ${HOME}/google-cloud-sdk/install.sh --quiet --path-update false --command-completion false
         echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > "${HOME}/gcloud-service-key.json"
         "${GOOGLE_CLOUD_BIN}/gcloud" auth activate-service-account --key-file "${HOME}/gcloud-service-key.json"
+        "${GOOGLE_CLOUD_BIN}/gcloud" config set project ibis-gbq
         "${GOOGLE_CLOUD_BIN}/bq" query --use_legacy_sql=false 'SELECT [1, 2, 3] AS array_of_numbers'
       fi
   - run: flake8
