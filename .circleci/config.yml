@@ -33,7 +33,7 @@ python_test_steps: &python_test_steps
   - run: echo 'source activate ${ENV_NAME}' | tee -a $BASH_ENV
   - run: curl -o ${HOME}/${GOOGLE_CLOUD_SDK_TARBALL} https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GOOGLE_CLOUD_SDK_TARBALL}
   - run: tar xvzf ${HOME}/${GOOGLE_CLOUD_SDK_TARBALL} -C ${HOME}
-  - run: ${HOME}/google-cloud-sdk/install.sh
+  - run: $HOME/google-cloud-sdk/install.sh
   - run: echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
   - run: ${HOME}/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
   - run: flake8
