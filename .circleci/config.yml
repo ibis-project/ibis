@@ -10,6 +10,7 @@ environment: &environment
   - IBIS_CLICKHOUSE_PASS: ''
 
   - DATA_URL: https://storage.googleapis.com/ibis-ci-data
+  - GOOGLE_CLOUD_SDK_TARBALL: google-cloud-sdk-175.0.0-linux-x86_64.tar.gz
 
   # The following environment variables are necessary to run impala tests
   - IBIS_TEST_IMPALA_HOST: localhost
@@ -30,6 +31,17 @@ python_test_steps: &python_test_steps
         --name "${ENV_NAME}" \
         --file "ci/requirements-dev-${PYTHON_VERSION}.yml"
   - run: echo 'source activate ${ENV_NAME}' | tee -a $BASH_ENV
+  - run: |
+      if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
+        curl -o "${HOME}/${GOOGLE_CLOUD_SDK_TARBALL}" "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GOOGLE_CLOUD_SDK_TARBALL}"
+        tar xvzf "${HOME}/${GOOGLE_CLOUD_SDK_TARBALL}" -C "${HOME}"
+        ${HOME}/google-cloud-sdk/install.sh --quiet --path-update false --command-completion false
+        "${GOOGLE_CLOUD_BIN}/gcloud" components update --quiet
+        echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > "${HOME}/gcloud-service-key.json"
+        "${GOOGLE_CLOUD_BIN}/gcloud" auth activate-service-account --key-file "${HOME}/gcloud-service-key.json"
+        "${GOOGLE_CLOUD_BIN}/gcloud" config set project ibis-gbq
+        "${GOOGLE_CLOUD_BIN}/bq" query --use_legacy_sql=false 'SELECT [1, 2, 3] AS array_of_numbers'
+      fi
   - run: flake8
   - run: python setup.py develop
   - run: |
@@ -110,6 +122,7 @@ jobs:
           export DIAMONDS_CSV="\$DATA_DIR/diamonds.csv"
           export BATTING_CSV="\$DATA_DIR/batting.csv"
           export AWARDS_PLAYERS_CSV="\$DATA_DIR/awards_players.csv"
+          export GOOGLE_CLOUD_BIN="\$HOME/google-cloud-sdk/bin"
           EOF
       - persist_to_workspace:
           root: /tmp/workspace
