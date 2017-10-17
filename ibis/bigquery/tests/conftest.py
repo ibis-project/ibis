@@ -8,7 +8,7 @@ from ibis.bigquery import client as ibc  # noqa: E402
 
 PROJECT_ID = 'bq-for-ibis'
 DATASET_ID = 'ci_{}'.format(ibis.util.guid())
-TABLE = 'table_{}'.format(ibis.util.guid())
+TABLE_ID = 'table_{}'.format(ibis.util.guid())
 
 
 @pytest.fixture(scope='session')
@@ -26,29 +26,23 @@ def client():
 
 @pytest.fixture(scope='session')
 def client_with_table(client, df):
-    schema = bq.Schema.from_data(df)
+    schema = ibc.infer_schema_from_df(df)
+    tuples = list(tuple(v.tolist()) for (k, v) in df.iterrows())
+    #
     bq_dataset = client._proxy.get_dataset(client.dataset_id)
-    bq_table = client._proxy.get_table(TABLE, client.dataset_id)
-    assert not bq_dataset.exists()
-    assert not bq_table.exists()
-    #
-    assert client.project_id == bq_dataset.name.project_id
-    assert bq_dataset.name.project_id == bq_table._name_parts.project_id
-    assert client.dataset_id == bq_dataset.name.dataset_id
-    assert bq_dataset.name.dataset_id == bq_table._name_parts.dataset_id
-    #
     bq_dataset.create()
-    bq_table.create(schema)
-    bq_table.insert(df)
-    assert bq_dataset.exists()
-    assert bq_table.exists()
-    _df = bq_table.to_dataframe()
-    assert _df.equals(df)
-    yield client
-    bq_table.delete()
-    bq_dataset.delete()
+    bq_dataset.reload()
+    bq_table = bq_dataset.table(TABLE_ID, schema)
+    bq_table.create()
+    bq_table.reload()
+    bq_table.insert_data(tuples)
+    try:
+        yield client
+    finally:
+        bq_table.delete()
+        bq_dataset.delete()
 
 
 @pytest.fixture(scope='session')
 def table(client_with_table):
-    return client_with_table.table(TABLE)
+    return client_with_table.table(TABLE_ID)

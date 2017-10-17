@@ -1,5 +1,3 @@
-import uuid
-
 import numpy as np
 import pytest
 import pandas as pd
@@ -7,18 +5,32 @@ import pandas.util.testing as tm
 import google.datalab.bigquery as bq
 
 import ibis
+import ibis.util
 import ibis.expr.types as ir
 from ibis.bigquery.tests import conftest as conftest
 
 
+def test_fixture_state(client_with_table, df):
+    bq_dataset = client_with_table._proxy.get_dataset(
+        client_with_table.dataset_id)
+    bq_table = client_with_table._proxy.get_table(
+        conftest.TABLE_ID, client_with_table.dataset_id)
+    assert bq_dataset.exists()
+    assert bq_table.exists()
+
+    df_tuples = list(tuple(v.tolist()) for (k, v) in df.iterrows())
+    table_tuples = list(bq_table.fetch_data())
+    assert df_tuples == table_tuples
+
+
 def test_table(client_with_table):
     # table must exist
-    table = client_with_table.table(conftest.TABLE)
+    table = client_with_table.table(conftest.TABLE_ID)
     assert isinstance(table, ir.TableExpr)
 
 
 def test_array_execute(table, df):
-    col_name = df.select_dtypes(['float']).columns[0]
+    col_name = 'float_column'
     expr = table[col_name]
     result = expr.execute()[col_name]
     expected = df[col_name]
@@ -33,7 +45,7 @@ def test_literal_execute(client):
 
 
 def test_simple_aggregate_execute(table, df):
-    col_name = df.select_dtypes(['float']).columns[0]
+    col_name = 'float_column'
     expr = table[col_name].sum()
     result = expr.execute()
     expected = df[col_name].sum()
@@ -41,14 +53,14 @@ def test_simple_aggregate_execute(table, df):
 
 
 def test_list_tables(client_with_table):
-    assert len(client_with_table.list_tables(like=conftest.TABLE)) == 1
+    assert len(client_with_table.list_tables(like=conftest.TABLE_ID)) == 1
 
 
 def test_database_layer(client_with_table):
     bq_dataset = client_with_table._proxy.get_dataset(
         client_with_table.dataset_id)
     actual = client_with_table.list_tables()
-    expected = [el.name.table_id for el in bq_dataset.tables()]
+    expected = [el.name for el in bq_dataset.list_tables()]
     assert sorted(actual) == sorted(expected)
 
 
@@ -86,10 +98,10 @@ def test_df_upload(client):
     assert not t.exists()
 
 
-@pytest.mark.xfail()
+@pytest.mark.xfail
 def test_create_and_drop_table(client):
-    t = client.table(conftest.TABLE)
-    name = str(uuid.uuid4())
+    t = client.table(conftest.TABLE_ID)
+    name = ibis.util.guid()
     client.create_table(name, t.limit(5))
     new_table = client.table(name)
     tm.assert_frame_equal(new_table.execute(), t.limit(5).execute())
