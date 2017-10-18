@@ -25,4 +25,4 @@ dependencies:
     - hdfs>=2.0.0
     - clickhouse-driver
     - clickhouse-sqlalchemy
-    - google-cloud-library
+    - google-cloud-bigquery

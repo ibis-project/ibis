@@ -40,7 +40,7 @@ kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 pandas_requires = ['multipledispatch']
 clickhouse_requires = ['clickhouse-driver']
-bigquery_requires = ['google-cloud-library']
+bigquery_requires = ['google-cloud-bigquery']
 
 all_requires = (
     impala_requires +
