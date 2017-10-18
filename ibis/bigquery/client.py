@@ -43,7 +43,7 @@ class _BigQueryAPIProxy():
         # no need to .reload() to get info?
         return self.client.dataset(dataset_id)
 
-    def get_table(self, table_id, dataset_id, *, reload=True):
+    def get_table(self, table_id, dataset_id, reload=True):
         (table_id, dataset_id) = _ensure_split(table_id, dataset_id)
         table = self.client.dataset(dataset_id).table(table_id)
         if reload:
