@@ -387,7 +387,7 @@ LOCATION '{0}'""".format(directory)
         schema = ibis.schema([('a', 'string'),
                               ('b', 'int32'),
                               ('c', 'double'),
-                              ('d', 'decimal(12,2)')])
+                              ('d', 'decimal(12, 2)')])
 
         stmt = ddl.CreateTableDelimited('new_table', path, schema,
                                         delimiter='|',
@@ -402,7 +402,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
 (`a` string,
  `b` int,
  `c` double,
- `d` decimal(12,2))
+ `d` decimal(12, 2))
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY '|'
 ESCAPED BY '\\'
@@ -707,7 +707,7 @@ class TestDDLE2E(ImpalaE2E, unittest.TestCase):
     def test_create_empty_table(self):
         schema = ibis.schema([('a', 'string'),
                               ('b', 'timestamp'),
-                              ('c', 'decimal(12,8)'),
+                              ('c', 'decimal(12, 8)'),
                               ('d', 'double')])
 
         table_name = _random_table_name()
