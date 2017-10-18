@@ -6,6 +6,7 @@ from ibis.bigquery import client as ibc  # noqa: E402
 
 
 pytest.importorskip('google.cloud.bigquery')
+pytestmark = pytest.mark.bigquery
 
 
 PROJECT_ID = 'bq-for-ibis'

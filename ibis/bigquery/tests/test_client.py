@@ -10,6 +10,9 @@ from ibis.bigquery import client as ibc
 from ibis.bigquery.tests import conftest as conftest
 
 
+pytestmark = pytest.mark.bigquery
+
+
 def test_fixture_state(client_with_table, df):
     bq_dataset = client_with_table._proxy.get_dataset(
         client_with_table.dataset_id)
