@@ -26,3 +26,4 @@ dependencies:
     - clickhouse-driver
     - clickhouse-sqlalchemy
     - git+https://github.com/googledatalab/pydatalab@v1.1
+    - google-cloud-library

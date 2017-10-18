@@ -40,7 +40,10 @@ kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 pandas_requires = ['multipledispatch']
 clickhouse_requires = ['clickhouse-driver']
-bigquery_requires = ['git+https://github.com/googledatalab/pydatalab@v1.1']
+bigquery_requires = [
+    'git+https://github.com/googledatalab/pydatalab@v1.1',
+    'google-cloud-library',
+]
 
 all_requires = (
     impala_requires +
