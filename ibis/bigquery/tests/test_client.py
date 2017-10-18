@@ -2,11 +2,11 @@ import numpy as np
 import pytest
 import pandas as pd
 import pandas.util.testing as tm
-import google.datalab.bigquery as bq
 
 import ibis
 import ibis.util
 import ibis.expr.types as ir
+from ibis.bigquery import client as ibc
 from ibis.bigquery.tests import conftest as conftest
 
 
@@ -89,7 +89,7 @@ FROM t0"""  # noqa
 @pytest.mark.xfail
 def test_df_upload(client):
     expected = pd.DataFrame(dict(a=[1], b=[2.], c=['a'], d=[True]))
-    schema = bq.Schema.from_data(expected)
+    schema = ibc.infer_schema_from_df(expected)
     t = client.table('rando', schema)
     t.upload(expected)
     result = t.execute()

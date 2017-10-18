@@ -2,7 +2,6 @@ import pytest
 
 import pandas as pd
 import ibis.util
-bq = pytest.importorskip('google.datalab.bigquery')
 from ibis.bigquery import client as ibc  # noqa: E402
 
 

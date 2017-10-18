@@ -1,5 +1,6 @@
 import re
 
+import numpy as np
 import pandas as pd
 
 import ibis
@@ -7,7 +8,6 @@ import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 from ibis.client import (Database, SQLClient)
 from ibis.bigquery import compiler as comp
-import google.cloud.bigquery.query
 import google.cloud.bigquery
 
 
@@ -178,18 +178,22 @@ def _discover_type(field):
 
 def infer_schema_from_df(df):
 
-    import google.datalab.bigquery as bq
+    np_dtype_to_field_type = {
+        np.dtype('bool'): 'boolean',
+        np.dtype('float64'): 'float',
+        np.dtype('int64'): 'integer',
+        np.dtype('object'): 'string',
+    }
 
-    def f(schema_field):
+    def f(df_dtype_row):
+        (name, dtype) = df_dtype_row
         return google.cloud.bigquery.schema.SchemaField(
-            schema_field.name,
-            schema_field.type,
-            schema_field.mode or 'NULLABLE',
-            schema_field.description,
+            name,
+            np_dtype_to_field_type[dtype],
+            'NULLABLE',
         )
 
-    pydatalab_schema = bq.Schema.from_data(df)
-    lst = [f(el) for el in pydatalab_schema]
+    lst = [f(el) for el in df.dtypes.iteritems()]
     return lst
 
 
