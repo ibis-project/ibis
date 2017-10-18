@@ -5,6 +5,9 @@ import ibis.util
 from ibis.bigquery import client as ibc  # noqa: E402
 
 
+pytest.importorskip('google.cloud.bigquery')
+
+
 PROJECT_ID = 'bq-for-ibis'
 DATASET_ID = 'ci_{}'.format(ibis.util.guid())
 TABLE_ID = 'table_{}'.format(ibis.util.guid())
