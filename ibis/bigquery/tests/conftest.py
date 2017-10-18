@@ -1,3 +1,4 @@
+import six
 import pytest
 
 import pandas as pd
@@ -29,16 +30,23 @@ def client():
 
 @pytest.fixture(scope='session')
 def client_with_table(client, df):
+    json_file = six.BytesIO(
+        '\n'.join((v.to_json() for (k, v) in df.iterrows())).encode('UTF-8')
+    )
     schema = ibc.infer_schema_from_df(df)
-    tuples = list(tuple(v.tolist()) for (k, v) in df.iterrows())
     #
     bq_dataset = client._proxy.get_dataset(client.dataset_id)
     bq_dataset.create()
     bq_dataset.reload()
+    #
     bq_table = bq_dataset.table(TABLE_ID, schema)
     bq_table.create()
     bq_table.reload()
-    bq_table.insert_data(tuples)
+    load_job = bq_table.upload_from_file(
+        json_file, source_format='NEWLINE_DELIMITED_JSON',
+    )
+    # Wait for table load to complete.
+    load_job.result()
     try:
         yield client
     finally:
