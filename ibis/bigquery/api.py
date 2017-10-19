@@ -25,3 +25,7 @@ def verify(expr):
         return True
     except com.TranslationError:
         return False
+
+
+def connect(project_id, dataset_id):
+    return BigQueryClient(project_id, dataset_id)
