@@ -12,28 +12,13 @@ pytestmark = pytest.mark.bigquery
 pytest.importorskip('google.cloud.bigquery')
 
 
-def test_fixture_state(client_with_table, df, table_id):
-    bq_dataset = client_with_table._proxy.get_dataset(
-        client_with_table.dataset_id)
-    bq_table = client_with_table._proxy.get_table(
-        table_id, client_with_table.dataset_id)
-    assert bq_dataset.exists()
-    assert bq_table.exists()
-
-    df_tuples = list(tuple(v.tolist()) for (k, v) in df.iterrows())
-    table_tuples = list(bq_table.fetch_data())
-    assert df_tuples == table_tuples
+def test_table(alltypes):
+    assert isinstance(alltypes, ir.TableExpr)
 
 
-def test_table(client_with_table, table_id):
-    # table must exist
-    table = client_with_table.table(table_id)
-    assert isinstance(table, ir.TableExpr)
-
-
-def test_array_execute(table, df):
-    col_name = 'float_column'
-    expr = table[col_name]
+def test_array_execute(alltypes, df):
+    col_name = 'float_col'
+    expr = alltypes[col_name]
     result = expr.execute()[col_name]
     expected = df[col_name]
     tm.assert_series_equal(result, expected)
@@ -47,27 +32,26 @@ def test_literal_execute(client):
 
 
 def test_simple_aggregate_execute(table, df):
-    col_name = 'float_column'
+    col_name = 'float_col'
     expr = table[col_name].sum()
     result = expr.execute()
     expected = df[col_name].sum()
     np.testing.assert_allclose(result, expected)
 
 
-def test_list_tables(client_with_table, table_id):
-    assert len(client_with_table.list_tables(like=table_id)) == 1
+def test_list_tables(client, table_id):
+    assert len(client.list_tables(like=table_id)) == 1
 
 
-def test_database_layer(client_with_table):
-    bq_dataset = client_with_table._proxy.get_dataset(
-        client_with_table.dataset_id)
-    actual = client_with_table.list_tables()
+def test_database_layer(client):
+    bq_dataset = client._proxy.get_dataset(client.dataset_id)
+    actual = client.list_tables()
     expected = [el.name for el in bq_dataset.list_tables()]
     assert sorted(actual) == sorted(expected)
 
 
-def test_compile_verify(table):
-    column = table['string_column']
+def test_compile_verify(alltypes):
+    column = alltypes['string_col']
     unsupported_expr = column.replace('foo', 'bar')
     supported_expr = column.lower()
     assert not unsupported_expr.verify()
@@ -86,26 +70,3 @@ def test_compile_toplevel():
 SELECT sum(`foo`) AS `sum`
 FROM t0"""  # noqa
     assert str(result) == expected
-
-
-@pytest.mark.xfail
-def test_df_upload(client):
-    expected = pd.DataFrame(dict(a=[1], b=[2.], c=['a'], d=[True]))
-    schema = ibis.bigquery.client.infer_schema_from_df(expected)
-    t = client.table('rando', schema)
-    t.upload(expected)
-    result = t.execute()
-    t.delete()
-    assert result.equals(expected)
-    assert not t.exists()
-
-
-@pytest.mark.xfail
-def test_create_and_drop_table(client, table_id):
-    t = client.table(table_id)
-    name = ibis.util.guid()
-    client.create_table(name, t.limit(5))
-    new_table = client.table(name)
-    tm.assert_frame_equal(new_table.execute(), t.limit(5).execute())
-    client.drop_table(name)
-    assert name not in client.list_tables()
