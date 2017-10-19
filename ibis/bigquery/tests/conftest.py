@@ -2,18 +2,18 @@ import six
 import pytest
 
 import pandas as pd
-import ibis.util
-import ibis.bigquery
-from ibis.bigquery.client import infer_schema_from_df
 
-
-pytest.importorskip('google.cloud.bigquery')
-pytestmark = pytest.mark.bigquery
+import ibis
 
 
 PROJECT_ID = 'ibis-gbq'
 DATASET_ID = 'ci_{}'.format(ibis.util.guid())
 TABLE_ID = 'table_{}'.format(ibis.util.guid())
+
+
+@pytest.fixture(scope='session')
+def table_id():
+    return TABLE_ID
 
 
 @pytest.fixture(scope='session')
@@ -34,7 +34,7 @@ def client_with_table(client, df):
     json_file = six.BytesIO(
         '\n'.join((v.to_json() for (k, v) in df.iterrows())).encode('UTF-8')
     )
-    schema = infer_schema_from_df(df)
+    schema = ibis.bigquery.client.infer_schema_from_df(df)
     #
     bq_dataset = client._proxy.get_dataset(client.dataset_id)
     bq_dataset.create()

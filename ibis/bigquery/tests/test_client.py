@@ -1,23 +1,22 @@
-import numpy as np
 import pytest
+
+import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
-import ibis.util
 import ibis.expr.types as ir
-from ibis.bigquery import client as ibc
-from ibis.bigquery.tests import conftest as conftest
 
 
 pytestmark = pytest.mark.bigquery
+pytest.importorskip('google.cloud.bigquery')
 
 
-def test_fixture_state(client_with_table, df):
+def test_fixture_state(client_with_table, df, table_id):
     bq_dataset = client_with_table._proxy.get_dataset(
         client_with_table.dataset_id)
     bq_table = client_with_table._proxy.get_table(
-        conftest.TABLE_ID, client_with_table.dataset_id)
+        table_id, client_with_table.dataset_id)
     assert bq_dataset.exists()
     assert bq_table.exists()
 
@@ -26,9 +25,9 @@ def test_fixture_state(client_with_table, df):
     assert df_tuples == table_tuples
 
 
-def test_table(client_with_table):
+def test_table(client_with_table, table_id):
     # table must exist
-    table = client_with_table.table(conftest.TABLE_ID)
+    table = client_with_table.table(table_id)
     assert isinstance(table, ir.TableExpr)
 
 
@@ -55,8 +54,8 @@ def test_simple_aggregate_execute(table, df):
     np.testing.assert_allclose(result, expected)
 
 
-def test_list_tables(client_with_table):
-    assert len(client_with_table.list_tables(like=conftest.TABLE_ID)) == 1
+def test_list_tables(client_with_table, table_id):
+    assert len(client_with_table.list_tables(like=table_id)) == 1
 
 
 def test_database_layer(client_with_table):
@@ -92,7 +91,7 @@ FROM t0"""  # noqa
 @pytest.mark.xfail
 def test_df_upload(client):
     expected = pd.DataFrame(dict(a=[1], b=[2.], c=['a'], d=[True]))
-    schema = ibc.infer_schema_from_df(expected)
+    schema = ibis.bigquery.client.infer_schema_from_df(expected)
     t = client.table('rando', schema)
     t.upload(expected)
     result = t.execute()
@@ -102,8 +101,8 @@ def test_df_upload(client):
 
 
 @pytest.mark.xfail
-def test_create_and_drop_table(client):
-    t = client.table(conftest.TABLE_ID)
+def test_create_and_drop_table(client, table_id):
+    t = client.table(table_id)
     name = ibis.util.guid()
     client.create_table(name, t.limit(5))
     new_table = client.table(name)
