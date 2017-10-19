@@ -1,7 +1,4 @@
-import six
 import pytest
-
-import pandas as pd
 
 import ibis
 
