@@ -31,9 +31,9 @@ def test_literal_execute(client):
     assert result == expected
 
 
-def test_simple_aggregate_execute(table, df):
+def test_simple_aggregate_execute(alltypes, df):
     col_name = 'float_col'
-    expr = table[col_name].sum()
+    expr = alltypes[col_name].sum()
     result = expr.execute()
     expected = df[col_name].sum()
     np.testing.assert_allclose(result, expected)
