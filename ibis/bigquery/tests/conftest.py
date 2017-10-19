@@ -11,7 +11,7 @@ pytest.importorskip('google.cloud.bigquery')
 pytestmark = pytest.mark.bigquery
 
 
-PROJECT_ID = 'bq-for-ibis'
+PROJECT_ID = 'ibis-gbq'
 DATASET_ID = 'ci_{}'.format(ibis.util.guid())
 TABLE_ID = 'table_{}'.format(ibis.util.guid())
 
