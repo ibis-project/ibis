@@ -34,7 +34,7 @@ python_test_steps: &python_test_steps
   - run: |
       if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
         curl -o "${HOME}/${GOOGLE_CLOUD_SDK_TARBALL}" "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/${GOOGLE_CLOUD_SDK_TARBALL}"
-        tar xvzf "${HOME}/${GOOGLE_CLOUD_SDK_TARBALL}" -C "${HOME}"
+        tar xzf "${HOME}/${GOOGLE_CLOUD_SDK_TARBALL}" -C "${HOME}"
         ${HOME}/google-cloud-sdk/install.sh --quiet --path-update false --command-completion false
         "${GOOGLE_CLOUD_BIN}/gcloud" components update --quiet
         echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > "${HOME}/gcloud-service-key.json"
