@@ -3,7 +3,8 @@ import pytest
 
 import pandas as pd
 import ibis.util
-from ibis.bigquery import client as ibc  # noqa: E402
+import ibis.bigquery
+from ibis.bigquery.client import infer_schema_from_df
 
 
 pytest.importorskip('google.cloud.bigquery')
@@ -25,7 +26,7 @@ def df():
 
 @pytest.fixture(scope='session')
 def client():
-    return ibc.BigQueryClient(PROJECT_ID, DATASET_ID)
+    return ibis.bigquery.connect(PROJECT_ID, DATASET_ID)
 
 
 @pytest.fixture(scope='session')
@@ -33,7 +34,7 @@ def client_with_table(client, df):
     json_file = six.BytesIO(
         '\n'.join((v.to_json() for (k, v) in df.iterrows())).encode('UTF-8')
     )
-    schema = ibc.infer_schema_from_df(df)
+    schema = infer_schema_from_df(df)
     #
     bq_dataset = client._proxy.get_dataset(client.dataset_id)
     bq_dataset.create()
