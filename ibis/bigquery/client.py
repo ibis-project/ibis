@@ -67,7 +67,6 @@ class _BigQueryAPIProxy:
         return list(self.client.list_datasets())
 
     def get_dataset(self, dataset_id):
-        # no need to .reload() to get info?
         return self.client.dataset(dataset_id)
 
     def get_table(self, table_id, dataset_id, reload=True):
@@ -172,8 +171,6 @@ _DTYPE_TO_IBIS_TYPE = {
     'TIME': dt.time,
     'TIMESTAMP': dt.timestamp,
     # 'BYTES': None,
-    # 'ARRAY': None,
-    # 'STRUCT': None,
 }
 
 
