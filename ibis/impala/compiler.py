@@ -154,7 +154,7 @@ class ImpalaSelect(comp.Select):
                     alias = context.get_ref(expr)
 
                     # materialized join will not have an alias. see #491
-                    expr_str = '{0}.*'.format(alias) if alias else '*'
+                    expr_str = '{}.*'.format(alias) if alias else '*'
                 else:
                     expr_str = '*'
             formatted.append(expr_str)
@@ -196,7 +196,7 @@ class ImpalaSelect(comp.Select):
         else:
             select_key = 'SELECT'
 
-        return '{0}{1}'.format(select_key, buf.getvalue())
+        return '{}{}'.format(select_key, buf.getvalue())
 
     def format_table_set(self):
         if self.table_set is None:
@@ -216,7 +216,7 @@ class ImpalaSelect(comp.Select):
 
         lines = []
         if len(self.group_by) > 0:
-            clause = 'GROUP BY {0}'.format(', '.join([
+            clause = 'GROUP BY {}'.format(', '.join([
                 str(x + 1) for x in self.group_by]))
             lines.append(clause)
 
@@ -225,7 +225,7 @@ class ImpalaSelect(comp.Select):
             for expr in self.having:
                 translated = self._translate(expr)
                 trans_exprs.append(translated)
-            lines.append('HAVING {0}'.format(' AND '.join(trans_exprs)))
+            lines.append('HAVING {}'.format(' AND '.join(trans_exprs)))
 
         return '\n'.join(lines)
 
@@ -243,7 +243,7 @@ class ImpalaSelect(comp.Select):
                 new_pred = _parenthesize(new_pred)
             fmt_preds.append(new_pred)
 
-        conj = ' AND\n{0}'.format(' ' * 6)
+        conj = ' AND\n{}'.format(' ' * 6)
         buf.write(conj.join(fmt_preds))
         return buf.getvalue()
 
@@ -267,9 +267,9 @@ class ImpalaSelect(comp.Select):
             if lines:
                 buf.write('\n')
             n, offset = self.limit['n'], self.limit['offset']
-            buf.write('LIMIT {0}'.format(n))
+            buf.write('LIMIT {}'.format(n))
             if offset is not None and offset != 0:
-                buf.write(' OFFSET {0}'.format(offset))
+                buf.write(' OFFSET {}'.format(offset))
             lines += 1
 
         if not lines:
@@ -301,12 +301,12 @@ class _TableSetFormatter(comp.TableSetFormatter):
         for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
                                        self.join_predicates):
             buf.write('\n')
-            buf.write(util.indent('{0} {1}'.format(jtype, table), self.indent))
+            buf.write(util.indent('{} {}'.format(jtype, table), self.indent))
 
             if len(preds):
                 buf.write('\n')
                 fmt_preds = [self._translate(pred) for pred in preds]
-                conj = ' AND\n{0}'.format(' ' * 3)
+                conj = ' AND\n{}'.format(' ' * 3)
                 fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
                                         self.indent * 2)
                 buf.write(fmt_preds)
@@ -358,16 +358,16 @@ class _TableSetFormatter(comp.TableSetFormatter):
 
                 # HACK: self-references have to be treated more carefully here
                 if isinstance(op, ops.SelfReference):
-                    return '{0} {1}'.format(ctx.get_ref(ref_expr), alias)
+                    return '{} {}'.format(ctx.get_ref(ref_expr), alias)
                 else:
                     return alias
 
             subquery = ctx.get_compiled_expr(expr)
-            result = '(\n{0}\n)'.format(util.indent(subquery, self.indent))
+            result = '(\n{}\n)'.format(util.indent(subquery, self.indent))
             is_subquery = True
 
         if is_subquery or ctx.need_aliases():
-            result += ' {0}'.format(ctx.get_ref(expr))
+            result += ' {}'.format(ctx.get_ref(expr))
 
         return result
 
@@ -384,7 +384,7 @@ class ImpalaUnion(comp.Union):
         subqueries = self.subqueries
 
         return ',\n'.join([
-            '{0} AS (\n{1}\n)'.format(
+            '{} AS (\n{}\n)'.format(
                 context.get_ref(expr),
                 util.indent(context.get_compiled_expr(expr), 2)
             ) for expr in subqueries
@@ -393,7 +393,7 @@ class ImpalaUnion(comp.Union):
     def format_relation(self, expr):
         ref = self.context.get_ref(expr)
         if ref is not None:
-            return 'SELECT *\nFROM {0}'.format(ref)
+            return 'SELECT *\nFROM {}'.format(ref)
         return self.context.get_compiled_expr(expr)
 
     def compile(self):
@@ -408,7 +408,7 @@ class ImpalaUnion(comp.Union):
         buf = []
 
         if extracted:
-            buf.append('WITH {0}'.format(extracted))
+            buf.append('WITH {}'.format(extracted))
 
         buf.extend([left_set, union_keyword, right_set])
 
@@ -441,12 +441,12 @@ def _cast(translator, expr):
         return arg_formatted
     else:
         sql_type = _type_to_sql_string(target_type)
-        return 'CAST({0!s} AS {1!s})'.format(arg_formatted, sql_type)
+        return 'CAST({} AS {})'.format(arg_formatted, sql_type)
 
 
 def _type_to_sql_string(tval):
     if isinstance(tval, dt.Decimal):
-        return 'decimal({0},{1})'.format(tval.precision, tval.scale)
+        return 'decimal({}, {})'.format(tval.precision, tval.scale)
     else:
         return _sql_type_names[tval.name.lower()]
 
@@ -454,17 +454,17 @@ def _type_to_sql_string(tval):
 def _between(translator, expr):
     op = expr.op()
     comp, lower, upper = [translator.translate(x) for x in op.args]
-    return '{0!s} BETWEEN {1!s} AND {2!s}'.format(comp, lower, upper)
+    return '{} BETWEEN {} AND {}'.format(comp, lower, upper)
 
 
 def _is_null(translator, expr):
     formatted_arg = translator.translate(expr.op().args[0])
-    return '{0!s} IS NULL'.format(formatted_arg)
+    return '{} IS NULL'.format(formatted_arg)
 
 
 def _not_null(translator, expr):
     formatted_arg = translator.translate(expr.op().args[0])
-    return '{0!s} IS NOT NULL'.format(formatted_arg)
+    return '{} IS NOT NULL'.format(formatted_arg)
 
 
 _cumulative_to_reduction = {
@@ -517,7 +517,7 @@ def _window(translator, expr):
     )
 
     if isinstance(window_op, _unsupported_reductions):
-        raise com.TranslationError('{0!s} is not supported in '
+        raise com.TranslationError('{} is not supported in '
                                    'window functions'
                                    .format(type(window_op)))
 
@@ -534,7 +534,7 @@ def _window(translator, expr):
     window_formatted = _format_window(translator, window)
 
     arg_formatted = translator.translate(arg)
-    result = '{0} {1}'.format(arg_formatted, window_formatted)
+    result = '{} {}'.format(arg_formatted, window_formatted)
 
     if type(window_op) in _expr_transforms:
         return _expr_transforms[type(window_op)](result)
@@ -548,7 +548,7 @@ def _format_window(translator, window):
     if len(window._group_by) > 0:
         partition_args = [translator.translate(x)
                           for x in window._group_by]
-        components.append('PARTITION BY {0}'.format(', '.join(partition_args)))
+        components.append('PARTITION BY {}'.format(', '.join(partition_args)))
 
     if len(window._order_by) > 0:
         order_args = []
@@ -559,37 +559,36 @@ def _format_window(translator, window):
                 translated += ' DESC'
             order_args.append(translated)
 
-        components.append('ORDER BY {0}'.format(', '.join(order_args)))
+        components.append('ORDER BY {}'.format(', '.join(order_args)))
 
     p, f = window.preceding, window.following
 
     def _prec(p):
-        return '{0} PRECEDING'.format(p) if p > 0 else 'CURRENT ROW'
+        return '{} PRECEDING'.format(p) if p > 0 else 'CURRENT ROW'
 
     def _foll(f):
-        return '{0} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
+        return '{} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
 
     if p is not None and f is not None:
-        frame = ('ROWS BETWEEN {0} AND {1}'
-                 .format(_prec(p), _foll(f)))
+        frame = 'ROWS BETWEEN {} AND {}'.format(_prec(p), _foll(f))
     elif p is not None:
         if isinstance(p, tuple):
             start, end = p
-            frame = ('ROWS BETWEEN {0} AND {1}'
-                     .format(_prec(start), _prec(end)))
+            frame = 'ROWS BETWEEN {} AND {}'.format(_prec(start), _prec(end))
         else:
             kind = 'ROWS' if p > 0 else 'RANGE'
-            frame = ('{0} BETWEEN {1} AND UNBOUNDED FOLLOWING'
-                     .format(kind, _prec(p)))
+            frame = '{} BETWEEN {} AND UNBOUNDED FOLLOWING'.format(
+                kind, _prec(p)
+            )
     elif f is not None:
         if isinstance(f, tuple):
             start, end = f
-            frame = ('ROWS BETWEEN {0} AND {1}'
-                     .format(_foll(start), _foll(end)))
+            frame = 'ROWS BETWEEN {} AND {}'.format(_foll(start), _foll(end))
         else:
             kind = 'ROWS' if f > 0 else 'RANGE'
-            frame = ('{0} BETWEEN UNBOUNDED PRECEDING AND {1}'
-                     .format(kind, _foll(f)))
+            frame = '{} BETWEEN UNBOUNDED PRECEDING AND {}'.format(
+                kind, _foll(f)
+            )
     else:
         # no-op, default is full sample
         frame = None
@@ -597,7 +596,7 @@ def _format_window(translator, window):
     if frame is not None:
         components.append(frame)
 
-    return 'OVER ({0})'.format(' '.join(components))
+    return 'OVER ({})'.format(' '.join(components))
 
 
 def _shift_like(name):
@@ -616,15 +615,14 @@ def _shift_like(name):
 
             default_formatted = translator.translate(default)
 
-            return '{0}({1}, {2}, {3})'.format(name, arg_formatted,
-                                               offset_formatted,
-                                               default_formatted)
+            return '{}({}, {}, {})'.format(
+                name, arg_formatted, offset_formatted, default_formatted
+            )
         elif offset is not None:
             offset_formatted = translator.translate(offset)
-            return '{0}({1}, {2})'.format(name, arg_formatted,
-                                          offset_formatted)
+            return '{}({}, {})'.format(name, arg_formatted, offset_formatted)
         else:
-            return '{0}({1})'.format(name, arg_formatted)
+            return '{}({})'.format(name, arg_formatted)
 
     return formatter
 
@@ -636,8 +634,7 @@ def _nth_value(translator, expr):
     arg_formatted = translator.translate(arg)
     rank_formatted = translator.translate(rank - 1)
 
-    return 'first_value(lag({0}, {1}))'.format(arg_formatted,
-                                               rank_formatted)
+    return 'first_value(lag({}, {}))'.format(arg_formatted, rank_formatted)
 
 
 def _ntile(translator, expr):
@@ -650,19 +647,22 @@ def _negate(translator, expr):
     arg = expr.op().args[0]
     formatted_arg = translator.translate(arg)
     if isinstance(expr, ir.BooleanValue):
-        return 'NOT {0!s}'.format(formatted_arg)
+        return _not(translator, expr)
     else:
         if _needs_parens(arg):
             formatted_arg = _parenthesize(formatted_arg)
-        return '-{0!s}'.format(formatted_arg)
+        return '-{}'.format(formatted_arg)
 
 
 def _not(translator, expr):
-    return 'NOT {}'.format(*map(translator.translate, expr.op().args))
+    arg, = expr.op().args
+    formatted_arg = translator.translate(arg)
+    if _needs_parens(arg):
+        formatted_arg = _parenthesize(formatted_arg)
+    return 'NOT {}'.format(formatted_arg)
 
 
-def _parenthesize(what):
-    return '({0!s})'.format(what)
+_parenthesize = '({})'.format
 
 
 def unary(func_name):
@@ -676,7 +676,7 @@ def _reduction_format(translator, func_name, arg, where):
     else:
         arg = translator.translate(arg)
 
-    return '{0!s}({1!s})'.format(func_name, arg)
+    return '{}({})'.format(func_name, arg)
 
 
 def _reduction(func_name):
@@ -693,7 +693,7 @@ def _reduction(func_name):
 def _variance_like(func_name):
     func_names = {
         'sample': func_name,
-        'pop': '{0}_pop'.format(func_name)
+        'pop': '{}_pop'.format(func_name)
     }
 
     def formatter(translator, expr):
@@ -731,7 +731,7 @@ def _format_call(translator, func, *args):
         fmt_arg = translator.translate(arg)
         formatted_args.append(fmt_arg)
 
-    return '{0!s}({1!s})'.format(func, ', '.join(formatted_args))
+    return '{}({})'.format(func, ', '.join(formatted_args))
 
 
 def _binary_infix_op(infix_sym):
@@ -749,7 +749,7 @@ def _binary_infix_op(infix_sym):
         if _needs_parens(right):
             right_arg = _parenthesize(right_arg)
 
-        return '{0!s} {1!s} {2!s}'.format(left_arg, infix_sym, right_arg)
+        return '{} {} {}'.format(left_arg, infix_sym, right_arg)
     return formatter
 
 
@@ -765,13 +765,11 @@ def _xor(translator, expr):
     if _needs_parens(op.right):
         right_arg = _parenthesize(right_arg)
 
-    return ('{0} AND NOT {1}'
-            .format('({0} {1} {2})'.format(left_arg, 'OR', right_arg),
-                    '({0} {1} {2})'.format(left_arg, 'AND', right_arg)))
+    return '({0} OR {1}) AND NOT ({0} AND {1})'.format(left_arg, right_arg)
 
 
 def _name_expr(formatted_expr, quoted_name):
-    return '{0!s} AS {1!s}'.format(formatted_expr, quoted_name)
+    return '{} AS {}'.format(formatted_expr, quoted_name)
 
 
 def _needs_parens(op):
@@ -803,7 +801,7 @@ def _number_literal_format(expr):
 
 def _string_literal_format(expr):
     value = expr.op().value
-    return "'{0!s}'".format(value.replace("'", "\\'"))
+    return "'{}'".format(value.replace("'", "\\'"))
 
 
 def _timestamp_literal_format(expr):
@@ -813,7 +811,7 @@ def _timestamp_literal_format(expr):
             raise ValueError(value)
         value = value.strftime('%Y-%m-%d %H:%M:%S')
 
-    return "'{0!s}'".format(value)
+    return "'{}'".format(value)
 
 
 def quote_identifier(name, quotechar='`', force=False):
@@ -846,18 +844,18 @@ class CaseFormatter(object):
         self.buf.write('CASE')
         if self.base is not None:
             base_str = self._trans(self.base)
-            self.buf.write(' {0}'.format(base_str))
+            self.buf.write(' {}'.format(base_str))
 
         for case, result in zip(self.cases, self.results):
             self._next_case()
             case_str = self._trans(case)
             result_str = self._trans(result)
-            self.buf.write('WHEN {0} THEN {1}'.format(case_str, result_str))
+            self.buf.write('WHEN {} THEN {}'.format(case_str, result_str))
 
         if self.default is not None:
             self._next_case()
             default_str = self._trans(self.default)
-            self.buf.write('ELSE {0}'.format(default_str))
+            self.buf.write('ELSE {}'.format(default_str))
 
         if self.multiline:
             self.buf.write('\nEND')
@@ -868,7 +866,7 @@ class CaseFormatter(object):
 
     def _next_case(self):
         if self.multiline:
-            self.buf.write('\n{0}'.format(' ' * self.indent))
+            self.buf.write('\n{}'.format(' ' * self.indent))
         else:
             self.buf.write(' ')
 
@@ -891,7 +889,7 @@ def _table_array_view(translator, expr):
     ctx = translator.context
     table = expr.op().table
     query = ctx.get_compiled_expr(table)
-    return '(\n{0}\n)'.format(util.indent(query, ctx.indent))
+    return '(\n{}\n)'.format(util.indent(query, ctx.indent))
 
 
 # ---------------------------------------------------------------------
@@ -920,7 +918,7 @@ _impala_delta_functions = {
 
 def _timestamp_format_offset(offset, arg):
     f = _impala_delta_functions[type(offset)]
-    return '{0}({1}, {2})'.format(f, arg, offset.n)
+    return '{}({}, {})'.format(f, arg, offset.n)
 
 
 # ---------------------------------------------------------------------
@@ -945,7 +943,7 @@ def _exists_subquery(translator, expr):
     else:
         raise NotImplementedError
 
-    return '{0} (\n{1}\n)'.format(key, util.indent(subquery, ctx.indent))
+    return '{} (\n{}\n)'.format(key, util.indent(subquery, ctx.indent))
 
 
 def _table_column(translator, expr):
@@ -965,7 +963,7 @@ def _table_column(translator, expr):
     if ctx.need_aliases():
         alias = ctx.get_ref(table)
         if alias is not None:
-            quoted_name = '{0}.{1}'.format(alias, quoted_name)
+            quoted_name = '{}.{}'.format(alias, quoted_name)
 
     return quoted_name
 
@@ -977,7 +975,7 @@ def _extract_field(sql_attr):
 
         # This is pre-2.0 Impala-style, which did not used to support the
         # SQL-99 format extract($FIELD from expr)
-        return "extract({0!s}, '{1!s}')".format(arg, sql_attr)
+        return "extract({}, '{}')".format(arg, sql_attr)
     return extract_field_formatter
 
 
@@ -996,7 +994,7 @@ def _truncate(translator, expr):
     unit = op.args[1]
     unit = _impala_unit_names.get(unit, unit)
 
-    return "trunc({0!s}, '{1!s}')".format(arg, unit)
+    return "trunc({}, '{}')".format(arg, unit)
 
 
 def _timestamp_from_unix(translator, expr):
@@ -1010,12 +1008,12 @@ def _timestamp_from_unix(translator, expr):
         val = (val / 1000000).cast('int32')
 
     arg = _from_unixtime(translator, val)
-    return 'CAST({0} AS timestamp)'.format(arg)
+    return 'CAST({} AS timestamp)'.format(arg)
 
 
 def _from_unixtime(translator, expr):
     arg = translator.translate(expr)
-    return 'from_unixtime({0}, "yyyy-MM-dd HH:mm:ss")'.format(arg)
+    return 'from_unixtime({}, "yyyy-MM-dd HH:mm:ss")'.format(arg)
 
 
 def varargs(func_name):
@@ -1035,17 +1033,16 @@ def _substring(translator, expr):
     if length is None or isinstance(length.op(), ir.Literal):
         lvalue = length.op().value if length is not None else None
         if lvalue:
-            return 'substr({0}, {1} + 1, {2})'.format(arg_formatted,
-                                                      start_formatted,
-                                                      lvalue)
+            return 'substr({}, {} + 1, {})'.format(
+                arg_formatted, start_formatted, lvalue
+            )
         else:
-            return 'substr({0}, {1} + 1)'.format(arg_formatted,
-                                                 start_formatted)
+            return 'substr({}, {} + 1)'.format(arg_formatted, start_formatted)
     else:
         length_formatted = translator.translate(length)
-        return 'substr({0}, {1} + 1, {2})'.format(arg_formatted,
-                                                  start_formatted,
-                                                  length_formatted)
+        return 'substr({}, {} + 1, {})'.format(
+            arg_formatted, start_formatted, length_formatted
+        )
 
 
 def _string_find(translator, expr):
@@ -1056,16 +1053,16 @@ def _string_find(translator, expr):
 
     if start is not None and not isinstance(start.op(), ir.Literal):
         start_fmt = translator.translate(start)
-        return 'locate({0}, {1}, {2} + 1) - 1'.format(substr_formatted,
-                                                      arg_formatted,
-                                                      start_fmt)
+        return 'locate({}, {}, {} + 1) - 1'.format(
+            substr_formatted, arg_formatted, start_fmt
+        )
     elif start is not None and start.op().value:
         sval = start.op().value
-        return 'locate({0}, {1}, {2}) - 1'.format(substr_formatted,
-                                                  arg_formatted,
-                                                  sval + 1)
+        return 'locate({}, {}, {}) - 1'.format(
+            substr_formatted, arg_formatted, sval + 1
+        )
     else:
-        return 'locate({0}, {1}) - 1'.format(substr_formatted, arg_formatted)
+        return 'locate({}, {}) - 1'.format(substr_formatted, arg_formatted)
 
 
 def _string_join(translator, expr):
@@ -1081,11 +1078,12 @@ def _parse_url(translator, expr):
     arg_formatted = translator.translate(arg)
 
     if key is None:
-        return "parse_url({0}, '{1}')".format(arg_formatted, extract)
+        return "parse_url({}, '{}')".format(arg_formatted, extract)
     else:
         key_fmt = translator.translate(key)
-        return "parse_url({0}, '{1}', {2})".format(arg_formatted,
-                                                   extract, key_fmt)
+        return "parse_url({}, '{}', {})".format(
+            arg_formatted, extract, key_fmt
+        )
 
 
 def _find_in_set(translator, expr):
@@ -1094,7 +1092,7 @@ def _find_in_set(translator, expr):
     arg, str_list = op.args
     arg_formatted = translator.translate(arg)
     str_formatted = ','.join([x._arg.value for x in str_list])
-    return "find_in_set({0}, '{1}') - 1".format(arg_formatted, str_formatted)
+    return "find_in_set({}, '{}') - 1".format(arg_formatted, str_formatted)
 
 
 def _round(translator, expr):
@@ -1105,10 +1103,8 @@ def _round(translator, expr):
 
     if digits is not None:
         digits_formatted = translator.translate(digits)
-        return 'round({0}, {1})'.format(arg_formatted,
-                                        digits_formatted)
-    else:
-        return 'round({0})'.format(arg_formatted)
+        return 'round({}, {})'.format(arg_formatted, digits_formatted)
+    return 'round({})'.format(arg_formatted)
 
 
 def _hash(translator, expr):
@@ -1118,7 +1114,7 @@ def _hash(translator, expr):
     arg_formatted = translator.translate(arg)
 
     if how == 'fnv':
-        return 'fnv_hash({0})'.format(arg_formatted)
+        return 'fnv_hash({})'.format(arg_formatted)
     else:
         raise NotImplementedError(how)
 
@@ -1129,16 +1125,14 @@ def _log(translator, expr):
     arg_formatted = translator.translate(arg)
 
     if base is None:
-        return 'ln({0})'.format(arg_formatted)
-    else:
-        return 'log({0}, {1})'.format(arg_formatted,
-                                      translator.translate(base))
+        return 'ln({})'.format(arg_formatted)
+    return 'log({}, {})'.format(arg_formatted, translator.translate(base))
 
 
 def _count_distinct(translator, expr):
     op = expr.op()
     arg_formatted = translator.translate(op.args[0])
-    return 'COUNT(DISTINCT {0})'.format(arg_formatted)
+    return 'COUNT(DISTINCT {})'.format(arg_formatted)
 
 
 def _literal(translator, expr):
@@ -1171,7 +1165,7 @@ _literal_formatters = {
 def _value_list(translator, expr):
     op = expr.op()
     formatted = [translator.translate(x) for x in op.values]
-    return '({0})'.format(', '.join(formatted))
+    return _parenthesize(', '.join(formatted))
 
 
 def _identical_to(translator, expr):
@@ -1180,12 +1174,10 @@ def _identical_to(translator, expr):
         return 'TRUE'
 
     left, right = map(translator.translate, op.args)
-    return '{left} IS NOT DISTINCT FROM {right}'.format(
-        left=left, right=right
-    )
+    return '{} IS NOT DISTINCT FROM {}'.format(left, right)
 
 
-_subtract_one = '({0} - 1)'.format
+_subtract_one = '({} - 1)'.format
 
 
 _expr_transforms = {

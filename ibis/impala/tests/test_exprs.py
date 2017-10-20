@@ -220,9 +220,12 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
 
     def test_decimal_casts(self):
         cases = [
-            (L('9.9999999').cast('decimal(38,5)'),
-             "CAST('9.9999999' AS decimal(38,5))"),
-            (self.table.f.cast('decimal(12,2)'), "CAST(`f` AS decimal(12,2))")
+            (L('9.9999999').cast('decimal(38, 5)'),
+             "CAST('9.9999999' AS decimal(38, 5))"),
+            (
+                self.table.f.cast('decimal(12, 2)'),
+                "CAST(`f` AS decimal(12, 2))"
+            ),
         ]
         self._check_expr_cases(cases)
 
@@ -479,7 +482,7 @@ END"""
             (f.nullif(f == 0),
              'nullif(`l_quantity`, `l_quantity` = 0)'),
             (f.fillna(0),
-             'isnull(`l_quantity`, CAST(0 AS decimal(12,2)))'),
+             'isnull(`l_quantity`, CAST(0 AS decimal(12, 2)))'),
         ]
         self._check_expr_cases(cases)
 
@@ -489,7 +492,7 @@ END"""
 
         cases = [
             (f.fillna(0),
-             'isnull(`l_extendedprice`, CAST(0 AS decimal(12,2)))'),
+             'isnull(`l_extendedprice`, CAST(0 AS decimal(12, 2)))'),
             (f.fillna(0.0), 'isnull(`l_extendedprice`, 0.0)'),
         ]
         self._check_expr_cases(cases)
@@ -1229,7 +1232,7 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
 
     def test_decimal_builtins_2(self):
         d = L('5.245')
-        dc = d.cast('decimal(12,5)')
+        dc = d.cast('decimal(12, 5)')
         cases = [
             (dc % 5, Decimal('0.245')),
 
