@@ -30,13 +30,15 @@ python_test_steps: &python_test_steps
         --name "${ENV_NAME}" \
         --file "ci/requirements-dev-${PYTHON_VERSION}.yml"
   - run: echo 'source activate ${ENV_NAME}' | tee -a $BASH_ENV
+  - run: flake8
   - run: |
       if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
         [ -z "${GOOGLE_APPLICATION_CREDENTIALS}" ] && exit 1
         echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > "${GOOGLE_APPLICATION_CREDENTIALS}"
+
+        # confirm that we can connect to the bigquery test project
+        python -c 'from google.cloud.bigquery import Client; Client(os.environ["GOOGLE_BIGQUERY_PROJECT_ID"])'
       fi
-  - run: python -c 'from google.cloud.bigquery import Client; c = Client("ibis-gbq"); print("\n".join(list(c.list_datasets())))'
-  - run: flake8
   - run: python setup.py develop
   - run: |
       dockerize -wait tcp://localhost:5432 \
@@ -117,6 +119,7 @@ jobs:
           export BATTING_CSV="\$DATA_DIR/batting.csv"
           export AWARDS_PLAYERS_CSV="\$DATA_DIR/awards_players.csv"
           export GOOGLE_APPLICATION_CREDENTIALS="\$HOME/gcloud-service-key.json"
+          export GOOGLE_BIGQUERY_PROJECT_ID="ibis-gbq"
           EOF
       - persist_to_workspace:
           root: /tmp/workspace
