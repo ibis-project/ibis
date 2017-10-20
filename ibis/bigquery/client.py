@@ -1,12 +1,11 @@
 import re
 
-import numpy as np
 import pandas as pd
 
 import ibis
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
-from ibis.client import (Database, SQLClient)
+from ibis.client import Database, Query, SQLClient
 from ibis.bigquery import compiler as comp
 import google.cloud.bigquery
 
@@ -23,7 +22,35 @@ def _ensure_split(table_id, dataset_id):
     return (table_id, dataset_id)
 
 
-class _BigQueryAPIProxy():
+class BigQueryCursor(object):
+    """Cursor to allow the BigQuery client to reuse machinery in ibis/client.py
+    """
+
+    def __init__(self, query):
+        self.query = query
+
+    def fetchall(self):
+        return list(self.query.fetch_data())
+
+    @property
+    def columns(self):
+        return [field.name for field in self.query.schema]
+
+    def __enter__(self):
+        # For compatibility when constructed from Query.execute()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+
+class BigQuery(Query):
+
+    def _fetch(self, cursor):
+        return pd.DataFrame(cursor.fetchall(), columns=cursor.columns)
+
+
+class _BigQueryAPIProxy:
 
     def __init__(self, project_id):
         self._client = google.cloud.bigquery.Client(project_id)
@@ -53,16 +80,6 @@ class _BigQueryAPIProxy():
     def get_schema(self, table_id, dataset_id):
         return self.get_table(table_id, dataset_id).schema
 
-    def run_statement(self, stmt):
-        query = google.cloud.bigquery.query.QueryResults(
-            stmt.replace('`', ''), self.client,
-        )
-        query.use_legacy_sql = False
-        query.run()
-        columns = [el.name for el in query.schema]
-        df = pd.DataFrame(list(query.fetch_data()), columns=columns)
-        return df
-
 
 class BigQueryDataset(Database):
     pass
@@ -70,6 +87,7 @@ class BigQueryDataset(Database):
 
 class BigQueryClient(SQLClient):
 
+    sync_query = BigQuery
     database_class = BigQueryDataset
 
     def __init__(self, project_id, dataset_id):
@@ -98,16 +116,16 @@ class BigQueryClient(SQLClient):
     def _get_table_schema(self, qualified_name):
         return self.get_schema(qualified_name)
 
-    def execute(self, expr, limit='default', async=False, params=None,
-                output_options=None):
-        if limit != 'default' or async or params:
-            raise NotImplementedError()
-
-        stmt = ibis.bigquery.compile(expr)
+    def _execute(self, stmt, results=True):
+        # TODO(phillipc): Allow **kwargs in calls to execute
         # FIXME: determine why .replace is necessary
         stmt = stmt.replace('`', '')
-        result = self._proxy.run_statement(stmt)
-        return result
+        query = google.cloud.bigquery.query.QueryResults(
+            stmt.replace('`', ''), self.client,
+        )
+        query.use_legacy_sql = False
+        query.run()
+        return BigQueryCursor(query)
 
     def set_dataset(self, name):
         self._dataset_id = name
@@ -119,10 +137,10 @@ class BigQueryClient(SQLClient):
         results = [dataset.name
                    for dataset in self._proxy.get_datasets()]
         if like:
-            results = [dataset_name
-                       for dataset_name in results
-                       if re.match(like, dataset_name)
-                       ]
+            results = [
+                dataset_name for dataset_name in results
+                if re.match(like, dataset_name)
+            ]
         return results
 
     def exists_table(self, name, dataset=None):
@@ -133,8 +151,10 @@ class BigQueryClient(SQLClient):
         dataset = self._proxy.get_dataset(dataset or self.dataset_id)
         result = [table.name for table in dataset.list_tables()]
         if like:
-            result = [table_name
-                      for table_name in result if re.match(like, table_name)]
+            result = [
+                table_name for table_name in result
+                if re.match(like, table_name)
+            ]
         return result
 
     def get_schema(self, name, dataset=None):
