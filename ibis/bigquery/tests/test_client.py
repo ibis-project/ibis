@@ -19,7 +19,7 @@ def test_table(alltypes):
 def test_column_execute(alltypes, df):
     col_name = 'float_col'
     expr = alltypes[col_name]
-    result = expr.execute()[col_name]
+    result = expr.execute()
     expected = df[col_name]
     tm.assert_series_equal(result, expected)
 
@@ -27,7 +27,7 @@ def test_column_execute(alltypes, df):
 def test_literal_execute(client):
     expected = '1234'
     expr = ibis.literal(expected)
-    result = client.execute(expr).iloc[0, 0]
+    result = client.execute(expr)
     assert result == expected
 
 
