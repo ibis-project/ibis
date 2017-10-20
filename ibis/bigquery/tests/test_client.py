@@ -16,7 +16,7 @@ def test_table(alltypes):
     assert isinstance(alltypes, ir.TableExpr)
 
 
-def test_array_execute(alltypes, df):
+def test_column_execute(alltypes, df):
     col_name = 'float_col'
     expr = alltypes[col_name]
     result = expr.execute()[col_name]
@@ -77,3 +77,57 @@ def test_struct_field_access(struct_table):
     result = expr.execute()
     expected = pd.Series([None, 'a'], name='tmp')
     tm.assert_series_equal(result, expected)
+
+
+def test_array_index(struct_table):
+    expr = struct_table.array_of_structs_col[1]
+    result = expr.execute()
+    expected = pd.Series(
+        [
+            {'int_field': None, 'string_field': None},
+            {'int_field': None, 'string_field': 'hijklmnop'}
+        ],
+        name='tmp'
+    )
+    tm.assert_series_equal(result, expected)
+
+
+def test_array_concat(struct_table):
+    c = struct_table.array_of_structs_col
+    expr = c + c
+    result = expr.execute()
+    expected = pd.Series(
+        [
+            [
+                {'int_field': 12345, 'string_field': 'abcdefg'},
+                {'int_field': None, 'string_field': None},
+                {'int_field': 12345, 'string_field': 'abcdefg'},
+                {'int_field': None, 'string_field': None},
+            ],
+            [
+                {'int_field': 12345, 'string_field': 'abcdefg'},
+                {'int_field': None, 'string_field': 'hijklmnop'},
+                {'int_field': 12345, 'string_field': 'abcdefg'},
+                {'int_field': None, 'string_field': 'hijklmnop'},
+            ],
+        ],
+        name='tmp',
+    )
+    tm.assert_series_equal(result, expected)
+
+
+def test_array_length(struct_table):
+    expr = struct_table.array_of_structs_col.length()
+    result = expr.execute()
+    expected = pd.Series([2, 2], name='tmp')
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.xfail
+def test_array_collect(struct_table):
+    key = struct_table.array_of_structs_col[0].string_field
+    expr = struct_table.groupby(key).aggregate(
+        foo=lambda t: t.array_of_structs_col[0].int_field.collect()
+    )
+    result = expr.execute()
+    assert result == -1
