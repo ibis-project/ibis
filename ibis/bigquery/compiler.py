@@ -95,6 +95,35 @@ def _cast(translator, expr):
     return 'CAST({0!s} AS {1!s})'.format(arg_formatted, sql_type)
 
 
+def _struct_field(translator, expr):
+    arg, field = expr.op().args
+    arg_formatted = translator.translate(arg)
+    return '{}.`{}`'.format(arg_formatted, field)
+
+
+def _array_collect(translator, expr):
+    return 'ARRAY_AGG({})'.format(*map(translator.translate, expr.op().args))
+
+
+def _array_concat(translator, expr):
+    return 'ARRAY_CONCAT({})'.format(
+        ', '.join(map(translator.translate, expr.op().args))
+    )
+
+
+def _array_index(translator, expr):
+    # SAFE_OFFSET returns NULL if out of bounds
+    return '{}[SAFE_OFFSET({})]'.format(
+        *map(translator.translate, expr.op().args)
+    )
+
+
+def _array_length(translator, expr):
+    return 'ARRAY_LENGTH({})'.format(
+        *map(translator.translate, expr.op().args)
+    )
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -104,9 +133,20 @@ _operation_registry.update({
     ops.ExtractMinute: _extract_field('minute'),
     ops.ExtractSecond: _extract_field('second'),
     ops.ExtractMillisecond: _extract_field('millisecond'),
-    #
+
     ops.IfNull: _ifnull,
     ops.Cast: _cast,
+
+    ops.StructField: _struct_field,
+
+    ops.ArrayCollect: _array_collect,
+    ops.ArrayConcat: _array_concat,
+    ops.ArrayIndex: _array_index,
+    ops.ArrayLength: _array_length,
+
+    # BigQuery doesn't have these operations built in.
+    # ops.ArrayRepeat: _array_repeat,
+    # ops.ArraySlice: _array_slice,
 })
 
 
