@@ -53,6 +53,16 @@ class _BigQueryAPIProxy():
     def get_schema(self, table_id, dataset_id):
         return self.get_table(table_id, dataset_id).schema
 
+    def run_statement(self, stmt):
+        query = google.cloud.bigquery.query.QueryResults(
+            stmt.replace('`', ''), self.client,
+        )
+        query.use_legacy_sql = False
+        query.run()
+        columns = [el.name for el in query.schema]
+        df = pd.DataFrame(list(query.fetch_data()), columns=columns)
+        return df
+
 
 class BigQueryDataset(Database):
     pass
@@ -94,16 +104,10 @@ class BigQueryClient(SQLClient):
             raise NotImplementedError()
 
         stmt = ibis.bigquery.compile(expr)
-        # FIXME: specify standard (default is legacy?)
-        query = google.cloud.bigquery.query.QueryResults(
-            # FIXME: determine why .replace is necessary
-            stmt.replace('`', ''),
-            self._proxy.client,
-        )
-        query.run()
-        columns = [el.name for el in query.schema]
-        df = pd.DataFrame(list(query.fetch_data()), columns=columns)
-        return df
+        # FIXME: determine why .replace is necessary
+        stmt = stmt.replace('`', '')
+        result = self._proxy.run_statement(stmt)
+        return result
 
     def set_dataset(self, name):
         self._dataset_id = name
