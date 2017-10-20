@@ -1,11 +1,12 @@
+import os
+
 import pytest
 
 import ibis
 
 
-PROJECT_ID = 'ibis-gbq'
+PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
 DATASET_ID = 'testing'
-TABLE_ID = 'functional_alltypes'
 
 
 @pytest.fixture(scope='session')
@@ -15,7 +16,7 @@ def client():
 
 @pytest.fixture(scope='session')
 def alltypes(client):
-    return client.table(TABLE_ID)
+    return client.table('functional_alltypes')
 
 
 @pytest.fixture(scope='session')
@@ -24,5 +25,5 @@ def df(alltypes):
 
 
 @pytest.fixture(scope='session')
-def table_id():
-    return TABLE_ID
+def struct_table(client):
+    return client.table('struct_table')

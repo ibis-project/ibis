@@ -1,6 +1,7 @@
 import pytest
 
 import numpy as np
+import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
@@ -38,8 +39,8 @@ def test_simple_aggregate_execute(alltypes, df):
     np.testing.assert_allclose(result, expected)
 
 
-def test_list_tables(client, table_id):
-    assert len(client.list_tables(like=table_id)) == 1
+def test_list_tables(client):
+    assert len(client.list_tables(like='functional_alltypes')) == 1
 
 
 def test_database_layer(client):
@@ -69,3 +70,10 @@ def test_compile_toplevel():
 SELECT sum(`foo`) AS `sum`
 FROM t0"""  # noqa
     assert str(result) == expected
+
+
+def test_struct_field_access(struct_table):
+    expr = struct_table.struct_col.string_field
+    result = expr.execute()
+    expected = pd.Series([None, 'a'], name='tmp')
+    tm.assert_series_equal(result, expected)
