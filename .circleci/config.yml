@@ -37,7 +37,7 @@ python_test_steps: &python_test_steps
         echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > "${GOOGLE_APPLICATION_CREDENTIALS}"
 
         # confirm that we can connect to the bigquery test project
-        python -c 'from google.cloud.bigquery import Client; Client(os.environ["GOOGLE_BIGQUERY_PROJECT_ID"])'
+        python -c 'from google.cloud.bigquery import Client; import os; Client(os.environ["GOOGLE_BIGQUERY_PROJECT_ID"])'
       fi
   - run: python setup.py develop
   - run: |
