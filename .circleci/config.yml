@@ -42,6 +42,7 @@ python_test_steps: &python_test_steps
         "${GOOGLE_CLOUD_BIN}/gcloud" config set project ibis-gbq
         "${GOOGLE_CLOUD_BIN}/bq" query --use_legacy_sql=false 'SELECT [1, 2, 3] AS array_of_numbers'
       fi
+  - run: python -c 'from google.cloud.bigquery import Client; c = Client("ibis-gbq"); print(c.list_datasets())'
   - run: flake8
   - run: python setup.py develop
   - run: |
