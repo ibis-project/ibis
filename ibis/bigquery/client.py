@@ -118,10 +118,8 @@ class BigQueryClient(SQLClient):
 
     def _execute(self, stmt, results=True):
         # TODO(phillipc): Allow **kwargs in calls to execute
-        # FIXME: determine why .replace is necessary
-        stmt = stmt.replace('`', '')
         query = google.cloud.bigquery.query.QueryResults(
-            stmt.replace('`', ''), self.client,
+            stmt, self._proxy.client,
         )
         query.use_legacy_sql = False
         query.run()
