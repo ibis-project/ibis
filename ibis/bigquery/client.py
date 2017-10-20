@@ -74,27 +74,12 @@ class BigQueryClient(SQLClient):
     def dataset_id(self):
         return self._dataset_id
 
-    def _build_ast(self, expr, params=None):
-        return comp.build_ast(expr, params=params)
-
-    def execute(self, expr, limit='default', async=False, params=None,
-                output_options=None):
-        if limit != 'default' or async or params:
-            raise NotImplementedError()
-
-        stmt = ibis.bigquery.compile(expr)
-        query = google.cloud.bigquery.query.QueryResults(
-            stmt.replace('`', ''),
-            self._proxy.client,
-        )
-        query.run()
-        columns = [el.name for el in query.schema]
-        df = pd.DataFrame(list(query.fetch_data()), columns=columns)
-        return df
-
     @property
     def _table_expr_klass(self):
         return ir.TableExpr
+
+    def _build_ast(self, expr, params=None):
+        return comp.build_ast(expr, params=params)
 
     def _fully_qualified_name(self, table_id, dataset_id=None):
         dataset_id = dataset_id or self.dataset_id
@@ -103,13 +88,22 @@ class BigQueryClient(SQLClient):
     def _get_table_schema(self, qualified_name):
         return self.get_schema(qualified_name)
 
-    def list_tables(self, like=None, dataset=None):
-        dataset = self._proxy.get_dataset(dataset or self.dataset_id)
-        result = [table.name for table in dataset.list_tables()]
-        if like:
-            result = [table_name
-                      for table_name in result if re.match(like, table_name)]
-        return result
+    def execute(self, expr, limit='default', async=False, params=None,
+                output_options=None):
+        if limit != 'default' or async or params:
+            raise NotImplementedError()
+
+        stmt = ibis.bigquery.compile(expr)
+        # FIXME: specify standard (default is legacy?)
+        query = google.cloud.bigquery.query.QueryResults(
+            # FIXME: determine why .replace is necessary
+            stmt.replace('`', ''),
+            self._proxy.client,
+        )
+        query.run()
+        columns = [el.name for el in query.schema]
+        df = pd.DataFrame(list(query.fetch_data()), columns=columns)
+        return df
 
     def set_dataset(self, name):
         self._dataset_id = name
@@ -130,6 +124,14 @@ class BigQueryClient(SQLClient):
     def exists_table(self, name, dataset=None):
         (table_id, dataset_id) = _ensure_split(name, dataset)
         return self._proxy.get_table(table_id, dataset_id).exists()
+
+    def list_tables(self, like=None, dataset=None):
+        dataset = self._proxy.get_dataset(dataset or self.dataset_id)
+        result = [table.name for table in dataset.list_tables()]
+        if like:
+            result = [table_name
+                      for table_name in result if re.match(like, table_name)]
+        return result
 
     def get_schema(self, name, dataset=None):
         (table_id, dataset_id) = _ensure_split(name, dataset)
@@ -174,27 +176,6 @@ def _discover_type(field):
     if field.mode == 'REPEATED':
         ibis_type = dt.Array(ibis_type)
     return ibis_type
-
-
-def infer_schema_from_df(df):
-
-    np_dtype_to_field_type = {
-        np.dtype('bool'): 'boolean',
-        np.dtype('float64'): 'float',
-        np.dtype('int64'): 'integer',
-        np.dtype('object'): 'string',
-    }
-
-    def f(df_dtype_row):
-        (name, dtype) = df_dtype_row
-        return google.cloud.bigquery.schema.SchemaField(
-            name,
-            np_dtype_to_field_type[dtype],
-            'NULLABLE',
-        )
-
-    lst = [f(el) for el in df.dtypes.iteritems()]
-    return lst
 
 
 def bigquery_dtypes_to_ibis_schema(table):
