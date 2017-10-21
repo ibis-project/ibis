@@ -43,6 +43,17 @@ def test_list_tables(client):
     assert len(client.list_tables(like='functional_alltypes')) == 1
 
 
+def test_current_database(client):
+    assert client.current_database.name == 'testing'
+    assert client.current_database.name == client.dataset_id
+    assert client.current_database.tables == client.list_tables()
+
+
+def test_database(client):
+    database = client.database(client.dataset_id)
+    assert database.list_tables() == client.list_tables()
+
+
 def test_database_layer(client):
     bq_dataset = client._proxy.get_dataset(client.dataset_id)
     actual = client.list_tables()
