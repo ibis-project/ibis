@@ -28,4 +28,16 @@ def verify(expr):
 
 
 def connect(project_id, dataset_id):
+    """Create a BigQueryClient for use with Ibis
+
+    Parameters
+    ----------
+    project_id: str
+    dataset_id: str
+
+    Returns
+    -------
+    BigQueryClient
+    """
+
     return BigQueryClient(project_id, dataset_id)
