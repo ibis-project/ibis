@@ -53,7 +53,7 @@ all_requires = (
 develop_requires = all_requires + [
     'click',
     'flake8',
-    'pytest',
+    'pytest>=3',
 ]
 
 with open('requirements.txt', 'rt') as f:
