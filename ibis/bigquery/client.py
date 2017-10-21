@@ -166,7 +166,7 @@ class BigQueryClient(SQLClient):
     def get_schema(self, name, database=None):
         (table_id, dataset_id) = _ensure_split(name, database)
         bq_table = self._proxy.get_table(table_id, dataset_id)
-        return bigquery_dtypes_to_ibis_schema(bq_table)
+        return bigquery_table_to_ibis_schema(bq_table)
 
 
 _DTYPE_TO_IBIS_TYPE = {
@@ -206,9 +206,6 @@ def _discover_type(field):
     return ibis_type
 
 
-def bigquery_dtypes_to_ibis_schema(table):
-    schema = table.schema
-    names = [el.name for el in schema]
-    ibis_types = [_discover_type(el) for el in schema]
-    pairs = zip(names, ibis_types)
+def bigquery_table_to_ibis_schema(table):
+    pairs = ((el.name, _discover_type(el)) for el in table.schema)
     return ibis.schema(pairs)
