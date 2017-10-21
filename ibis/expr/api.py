@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import warnings
 import operator
 import functools
@@ -2155,17 +2157,9 @@ def _table_info(self, buf=None):
     types = ['Type', '----'] + [repr(x) for x in self.schema().types]
     counts = ['Non-null #', '----------'] + [str(x) for x in metrics[1:]]
     col_metrics = util.adjoin(2, names, types, counts)
+    result = 'Table rows: {}\n\n{}'.format(metrics[0], col_metrics)
 
-    result = ('Table rows: {0}\n\n'
-              '{1}'
-              .format(metrics[0], col_metrics))
-
-    if buf is None:
-        import sys
-        sys.stdout.write(result)
-        sys.stdout.write('\n')
-    else:
-        buf.write(result)
+    print(result, file=buf)
 
 
 def _table_set_column(table, name, expr):
