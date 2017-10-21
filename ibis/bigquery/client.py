@@ -80,14 +80,14 @@ class _BigQueryAPIProxy:
         return self.get_table(table_id, dataset_id).schema
 
 
-class BigQueryDataset(Database):
+class BigQueryDatabase(Database):
     pass
 
 
 class BigQueryClient(SQLClient):
 
     sync_query = BigQuery
-    database_class = BigQueryDataset
+    database_class = BigQueryDatabase
 
     def __init__(self, project_id, dataset_id):
         self._proxy = _BigQueryAPIProxy(project_id)
@@ -108,9 +108,9 @@ class BigQueryClient(SQLClient):
     def _build_ast(self, expr, params=None):
         return comp.build_ast(expr, params=params)
 
-    def _fully_qualified_name(self, table_id, dataset_id=None):
-        dataset_id = dataset_id or self.dataset_id
-        return dataset_id + '.' + table_id
+    def _fully_qualified_name(self, name, database):
+        dataset_id = database or self.dataset_id
+        return dataset_id + '.' + name
 
     def _get_table_schema(self, qualified_name):
         return self.get_schema(qualified_name)
@@ -124,13 +124,22 @@ class BigQueryClient(SQLClient):
         query.run()
         return BigQueryCursor(query)
 
-    def set_dataset(self, name):
+    def database(self, name=None):
+        if name is None:
+            name = self.dataset_id
+        return self.database_class(name, self)
+
+    @property
+    def current_database(self):
+        return self.database(self.dataset_id)
+
+    def set_database(self, name):
         self._dataset_id = name
 
-    def exists_dataset(self, name):
+    def exists_database(self, name):
         return self._proxy.get_dataset(name).exists()
 
-    def list_datasets(self, like=None):
+    def list_databases(self, like=None):
         results = [dataset.name
                    for dataset in self._proxy.get_datasets()]
         if like:
@@ -140,12 +149,12 @@ class BigQueryClient(SQLClient):
             ]
         return results
 
-    def exists_table(self, name, dataset=None):
-        (table_id, dataset_id) = _ensure_split(name, dataset)
+    def exists_table(self, name, database=None):
+        (table_id, dataset_id) = _ensure_split(name, database)
         return self._proxy.get_table(table_id, dataset_id).exists()
 
-    def list_tables(self, like=None, dataset=None):
-        dataset = self._proxy.get_dataset(dataset or self.dataset_id)
+    def list_tables(self, like=None, database=None):
+        dataset = self._proxy.get_dataset(database or self.dataset_id)
         result = [table.name for table in dataset.list_tables()]
         if like:
             result = [
@@ -154,8 +163,8 @@ class BigQueryClient(SQLClient):
             ]
         return result
 
-    def get_schema(self, name, dataset=None):
-        (table_id, dataset_id) = _ensure_split(name, dataset)
+    def get_schema(self, name, database=None):
+        (table_id, dataset_id) = _ensure_split(name, database)
         bq_table = self._proxy.get_table(table_id, dataset_id)
         return bigquery_dtypes_to_ibis_schema(bq_table)
 
