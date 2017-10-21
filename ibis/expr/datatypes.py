@@ -433,6 +433,32 @@ class Timestamp(Primitive):
         return isinstance(value, six.string_types + (datetime.datetime,))
 
 
+class SignedInteger(Integer):
+    pass
+
+
+class UnsignedInteger(Integer):
+
+    @property
+    def bounds(self):
+        exp = self._nbytes * 8 - 1
+        upper = 1 << exp
+        return Bounds(lower=0, upper=upper)
+
+    def can_implicit_cast(self, other):
+        return (
+            isinstance(other, Integer) and
+            other >= 0 and
+            (type(self) is Integer or other._nbytes <= self._nbytes)
+        )
+
+    def valid_literal(self, value):
+        lower, upper = self.bounds
+        return isinstance(
+            value, six.integer_types + (np.integer,)
+        ) and lower <= value <= upper
+
+
 class Floating(Primitive):
 
     __slots__ = ()
@@ -479,6 +505,31 @@ class Int64(Integer):
     __slots__ = ()
 
     _nbytes = 8
+
+
+class UnsignedInt8(UnsignedInteger):
+
+    _nbytes = 1
+
+
+class UnsignedInt16(UnsignedInteger):
+
+    _nbytes = 2
+
+
+class UnsignedInt32(UnsignedInteger):
+
+    _nbytes = 4
+
+
+class UnsignedInt64(UnsignedInteger):
+
+    _nbytes = 8
+
+
+class HalfFloat(Floating):
+
+    _nbytes = 2
 
 
 class Float(Floating):
@@ -712,7 +763,16 @@ int8 = Int8()
 int16 = Int16()
 int32 = Int32()
 int64 = Int64()
+uint_ = UnsignedInteger()
+uint8 = UnsignedInt8()
+uint16 = UnsignedInt16()
+uint32 = UnsignedInt32()
+uint64 = UnsignedInt64()
 float = Float()
+halffloat = HalfFloat()
+float16 = HalfFloat()
+float32 = Float()
+float64 = Double()
 double = Double()
 string = String()
 binary = Binary()
@@ -729,7 +789,12 @@ _primitive_types = {
     'int16': int16,
     'int32': int32,
     'int64': int64,
+    'uint8': uint8,
+    'uint16': uint16,
+    'uint32': uint32,
+    'uint64': uint64,
     'float': float,
+    'halffloat': float16,
     'double': double,
     'string': string,
     'binary': binary,
@@ -944,8 +1009,16 @@ class TypeParser(object):
                   | "int16"
                   | "int32"
                   | "int64"
+                  | "uint8"
+                  | "uint16"
+                  | "uint32"
+                  | "uint64"
+                  | "halffloat"
                   | "float"
                   | "double"
+                  | "float16"
+                  | "float32"
+                  | "float64"
                   | "string"
                   | "time"
                   | timestamp

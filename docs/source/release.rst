@@ -20,6 +20,7 @@ New Backends
 ~~~~~~~~~~~~
 
 * File Support for CSV & HDF5 (:issue:`1165`)
+* File Support for Parquet Format (:issue:`1175`)
 
   v0.12.0 (October 28, 2017)
 --------------------------
@@ -33,6 +34,7 @@ New Backends
 
 * BigQuery backend (:issue:`1170`), thanks to @tsdlovell.
 * Clickhouse backend (:issue:`1127`), thanks to @kszucs.
+
 
 New Features
 ~~~~~~~~~~~~

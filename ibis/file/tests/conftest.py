@@ -1,8 +1,6 @@
 import pytest
 import pandas as pd
 import numpy as np
-from ibis.file.csv import CSVClient
-from ibis.file.hdf5 import HDFClient
 
 
 @pytest.fixture
@@ -32,6 +30,7 @@ def data(opens, closes):
 
 @pytest.fixture
 def csv(tmpdir, data):
+    from ibis.file.csv import CSVClient
 
     csv = tmpdir.mkdir('csv_dir')
 
@@ -44,6 +43,7 @@ def csv(tmpdir, data):
 
 @pytest.fixture
 def csv2(tmpdir, data):
+    from ibis.file.csv import CSVClient
 
     csv2 = tmpdir.mkdir('csv_dir2')
     df = pd.merge(*data.values(), on=['time', 'ticker'])
@@ -55,6 +55,7 @@ def csv2(tmpdir, data):
 
 @pytest.fixture
 def hdf(tmpdir, data):
+    from ibis.file.hdf5 import HDFClient
 
     hdf = tmpdir.mkdir('hdf_dir')
     f = hdf / 'prices.h5'
@@ -63,3 +64,20 @@ def hdf(tmpdir, data):
         v.to_hdf(str(f), k, format='table', data_columns=True)
 
     return HDFClient(tmpdir).database()
+
+
+@pytest.fixture
+def parquet(tmpdir, data):
+    pa = pytest.importorskip('pyarrow')
+    import pyarrow.parquet as pq  # noqa: E402
+    from ibis.file.parquet import ParquetClient
+
+    # create single files
+    d = tmpdir.mkdir('pq')
+    for k, v in data.items():
+
+        f = d / "{}.parquet".format(k)
+        table = pa.Table.from_pandas(v)
+        pq.write_table(table, str(f))
+
+    return ParquetClient(tmpdir).database()
