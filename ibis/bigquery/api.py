@@ -6,7 +6,7 @@ from ibis.bigquery.client import BigQueryClient
 def compile(expr):
     """
     Force compilation of expression as though it were an expression depending
-    on Impala. Note you can also call expr.compile()
+    on BigQuery. Note you can also call expr.compile()
 
     Returns
     -------
@@ -18,7 +18,8 @@ def compile(expr):
 
 def verify(expr):
     """
-    Determine if expression can be successfully translated to execute on Impala
+    Determine if expression can be successfully translated to execute on
+    BigQuery
     """
     try:
         compile(expr)
