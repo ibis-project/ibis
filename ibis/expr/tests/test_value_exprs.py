@@ -1153,3 +1153,9 @@ def test_empty_array_as_argument():
     assert not value.type().equals(dt.Array(dt.null))
     assert value.type().equals(dt.Array(dt.int64))
     assert value.equals(expected)
+
+
+def test_struct_field_dir():
+    t = ibis.table([('struct_col', 'struct<my_field: string>')])
+    assert 'struct_col' in dir(t)
+    assert 'my_field' in dir(t.struct_col)

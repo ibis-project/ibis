@@ -832,7 +832,7 @@ class TableExpr(Expr):
     def __dir__(self):
         attrs = dir(type(self))
         if self._is_materialized():
-            attrs = list(sorted(set(attrs + self.schema().names)))
+            attrs = list(frozenset(attrs + self.schema().names))
         return attrs
 
     def _resolve(self, exprs):
@@ -1216,6 +1216,11 @@ class StructValue(ParameterizedValue):
 
     def _can_compare(self, other):
         return isinstance(other, StructValue)
+
+    def __dir__(self):
+        parent_attributes = dir(type(self))
+        field_names = self.type().names
+        return list(frozenset(itertools.chain(parent_attributes, field_names)))
 
 
 class NumericColumn(ColumnExpr, NumericValue):
