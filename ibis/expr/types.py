@@ -1217,6 +1217,13 @@ class StructValue(ParameterizedValue):
     def _can_compare(self, other):
         return isinstance(other, StructValue)
 
+    def __dir__(self):
+        parent_attributes = super(StructValue, self).__dir__()
+        field_names = self.type().names
+        return list(
+            toolz.unique(itertools.chain(parent_attributes, field_names))
+        )
+
 
 class NumericColumn(ColumnExpr, NumericValue):
     pass
