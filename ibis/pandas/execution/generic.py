@@ -347,7 +347,9 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
             operator.and_,
             (execute(having, new_scope, **kwargs) for having in op.having)
         )
-        result = result.loc[predicate].reset_index(drop=True)
+        assert len(predicate) == len(result), \
+            'length of predicate does not match length of DataFrame'
+        result = result.loc[predicate.values].reset_index(drop=True)
     return result
 
 
