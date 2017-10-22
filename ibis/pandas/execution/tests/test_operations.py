@@ -150,8 +150,12 @@ def test_aggregation_group_by(t, df, where, ibis_func, pandas_func):
     # TODO(phillipc): Why does pandas not return floating point values here?
     expected['avg_plain_int64'] = expected.avg_plain_int64.astype('float64')
     result['avg_plain_int64'] = result.avg_plain_int64.astype('float64')
-    expected['neg_mean_int64_with_zeros'] = expected.neg_mean_int64_with_zeros.astype('float64')
-    result['neg_mean_int64_with_zeros'] = result.neg_mean_int64_with_zeros.astype('float64')
+    expected['neg_mean_int64_with_zeros'] = (
+        expected.neg_mean_int64_with_zeros.astype('float64')
+    )
+    result['neg_mean_int64_with_zeros'] = (
+        result.neg_mean_int64_with_zeros.astype('float64')
+    )
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
