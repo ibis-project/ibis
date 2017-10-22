@@ -67,19 +67,20 @@ def test_round(t, df, places):
 @pytest.mark.parametrize(
     ('ibis_func', 'pandas_func'),
     [
-        (methodcaller('round'), methodcaller('round')),
-        (methodcaller('round', 2), methodcaller('round', 2)),
-        (methodcaller('round', -2), methodcaller('round', -2)),
-        (methodcaller('round', 0), methodcaller('round', 0)),
+        (methodcaller('abs'), np.abs),
         (methodcaller('ceil'), np.ceil),
-        (methodcaller('floor'), np.floor),
         (methodcaller('exp'), np.exp),
+        (methodcaller('floor'), np.floor),
+        (methodcaller('ln'), np.log),
+        (methodcaller('log10'), np.log10),
+        (methodcaller('log', 2), lambda x: np.log(x) / np.log(2)),
+        (methodcaller('log2'), np.log2),
+        (methodcaller('round', 0), methodcaller('round', 0)),
+        (methodcaller('round', -2), methodcaller('round', -2)),
+        (methodcaller('round', 2), methodcaller('round', 2)),
+        (methodcaller('round'), methodcaller('round')),
         (methodcaller('sign'), np.sign),
         (methodcaller('sqrt'), np.sqrt),
-        (methodcaller('log', 2), lambda x: np.log(x) / np.log(2)),
-        (methodcaller('ln'), np.log),
-        (methodcaller('log2'), np.log2),
-        (methodcaller('log10'), np.log10),
     ]
 )
 def test_math_functions(t, df, ibis_func, pandas_func):

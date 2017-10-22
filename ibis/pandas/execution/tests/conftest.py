@@ -34,6 +34,7 @@ def df():
         'strings_with_space': [' ', 'abab', 'ddeeffgg'],
         'int64_with_zeros': [0, 1, 0],
         'float64_with_zeros': [1.0, 0.0, 1.0],
+        'float64_positive': [1.0, 2.0, 1.0],
         'strings_with_nulls': ['a', None, 'b'],
         'datetime_strings_naive': pd.Series(
             pd.date_range(start='2017-01-02 01:02:03.234', periods=3).values,

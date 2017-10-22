@@ -128,6 +128,13 @@ def execute_cast_series_date(op, data, type, **kwargs):
     raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
 
 
+@execute_node.register(ops.Negate, pd.Series)
+def execute_series_unary_op_negate(op, data, **kwargs):
+    if data.dtype == np.dtype(np.object_):
+        return data.apply(functools.partial(execute_node, op, **kwargs))
+    return np.negative(data)
+
+
 @execute_node.register(ops.UnaryOp, pd.Series)
 def execute_series_unary_op(op, data, **kwargs):
     function = getattr(np, type(op).__name__.lower())
@@ -462,7 +469,29 @@ def execute_binary_op_series_group_by(op, left, right, **kwargs):
 
 @execute_node.register(ops.BinaryOp, SeriesGroupBy, simple_types)
 def execute_binary_op_series_gb(op, left, right, **kwargs):
-    result = execute_binary_op(op, left.obj, right)
+    result = execute_node(op, left.obj, right, **kwargs)
+    return result.groupby(left.grouper.groupings)
+
+
+@execute_node.register(ops.UnaryOp, SeriesGroupBy)
+def execute_unary_op_series_gb(op, operand, **kwargs):
+    result = execute_node(op, operand.obj, **kwargs)
+    return result.groupby(operand.grouper.groupings)
+
+
+@execute_node.register(
+    (ops.Log, ops.Round),
+    SeriesGroupBy,
+    (numbers.Real, decimal.Decimal, type(None))
+)
+def execute_log_series_gb_others(op, left, right, **kwargs):
+    result = execute_node(op, left.obj, right, **kwargs)
+    return result.groupby(left.grouper.groupings)
+
+
+@execute_node.register((ops.Log, ops.Round), SeriesGroupBy, SeriesGroupBy)
+def execute_log_series_gb_series_gb(op, left, right, **kwargs):
+    result = execute_node(op, left.obj, right.obj, **kwargs)
     return result.groupby(left.grouper.groupings)
 
 
