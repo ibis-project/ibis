@@ -45,6 +45,11 @@ except ImportError:  # pip install ibis-framework[clickhouse]
     pass
 
 try:
+    import ibis.bigquery.api as bigquery
+except ImportError:  # pip install ibis-framework[bigquery]
+    pass
+
+try:
     from multipledispatch import halt_ordering, restart_ordering
     halt_ordering()
     import ibis.pandas.api as pandas

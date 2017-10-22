@@ -40,6 +40,7 @@ kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 pandas_requires = ['multipledispatch']
 clickhouse_requires = ['clickhouse-driver']
+bigquery_requires = ['google-cloud-bigquery']
 
 all_requires = (
     impala_requires +
@@ -47,7 +48,8 @@ all_requires = (
     kerberos_requires +
     visualization_requires +
     pandas_requires +
-    clickhouse_requires
+    clickhouse_requires +
+    bigquery_requires
 )
 
 develop_requires = all_requires + [
@@ -79,7 +81,8 @@ setup(
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
         'pandas': pandas_requires,
-        'clickhouse': clickhouse_requires
+        'clickhouse': clickhouse_requires,
+        'bigquery': bigquery_requires,
     },
     scripts=[
         os.path.relpath(
