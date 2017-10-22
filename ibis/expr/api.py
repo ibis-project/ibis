@@ -858,6 +858,10 @@ def arbitrary(x, where=None):
     return _ops.Arbitrary(x, where).to_expr()
 
 
+def percentile(arg, percentile_rank, value_type='cont'):
+    return _ops.Percentile(arg, percentile_rank, value_type).to_expr()
+
+
 def ntile(arg, buckets):
     return _ops.NTile(arg, buckets).to_expr()
 
@@ -1005,6 +1009,7 @@ _generic_column_methods = dict(
     cummin=cummin,
     cummax=cummax,
     arbitrary=arbitrary,
+    percentile=percentile,
 )
 
 

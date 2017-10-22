@@ -135,6 +135,14 @@ def _arbitrary(translator, expr):
     return 'ANY_VALUE({})'.format(arg_formatted)
 
 
+def _percentile(translator, expr):
+    args = expr.op().args
+    (arg, percentile_rank) = map(translator.translate, args[:2])
+    value_type = args[2]
+    command = dict(cont='percentile_cont', disc='percentile_disc')[value_type]
+    return '{}({}, {})'.format(command, arg, percentile_rank)
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -159,6 +167,7 @@ _operation_registry.update({
     # ops.ArrayRepeat: _array_repeat,
     # ops.ArraySlice: _array_slice,
     ops.Arbitrary: _arbitrary,
+    ops.Percentile: _percentile,
 })
 
 

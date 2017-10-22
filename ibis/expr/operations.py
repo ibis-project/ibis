@@ -1027,6 +1027,24 @@ class NTile(AnalyticOp):
     output_type = rules.shape_like_arg(0, 'int64')
 
 
+class Percentile(AnalyticOp):
+
+    input_type = [value,
+                  number(name='quantile', allow_boolean=False),
+                  rules.string_options(
+                      ['cont', 'disc'],
+                      name='value_type',
+                      )]
+
+    def output_type(self):
+        (arg0, _, value_type) = self.args
+        if value_type == 'cont':
+            output_typ = rules.shape_like(arg0, 'double')
+        else:
+            output_typ = rules.shape_like(arg0, arg0.type())
+        return output_typ
+
+
 class FirstValue(AnalyticOp):
 
     input_type = [rules.column]
