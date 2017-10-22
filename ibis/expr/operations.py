@@ -2471,14 +2471,33 @@ class ExtractMonth(ExtractTemporalField):
 
 class DayOfWeekIndex(UnaryOp):
 
-    input_type = [rules.temporal]
+    input_type = [rules.one_of((dt.date, dt.timestamp))]
     output_type = rules.shape_like_arg(0, 'int32')
 
 
 class DayOfWeekName(UnaryOp):
 
-    input_type = [rules.temporal]
+    input_type = [rules.one_of((dt.date, dt.timestamp))]
     output_type = rules.shape_like_arg(0, 'string')
+
+
+class DayOfWeek(ir.Expr):
+
+    def index(self):
+        arg, = self.op().args
+        return DayOfWeekIndex(arg).to_expr()
+
+    def full_name(self):
+        arg, = self.op().args
+        return DayOfWeekName(arg).to_expr()
+
+
+class DayOfWeekNode(ir.Node):
+
+    input_type = [rules.one_of((dt.date, dt.timestamp))]
+
+    def output_type(self):
+        return DayOfWeek
 
 
 class ExtractDay(ExtractTemporalField):

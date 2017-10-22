@@ -2133,6 +2133,7 @@ _timestamp_value_methods = dict(
     radd=_timestamp_radd,
     day_of_week_index=_day_of_week_index,
     day_of_week_name=_day_of_week_name,
+    day_of_week=property(lambda self: _ops.DayOfWeekNode([self]).to_expr()),
 )
 
 
@@ -2171,6 +2172,7 @@ _date_value_methods = dict(
     day=_extract_field('day', _ops.ExtractDay),
     day_of_week_index=_day_of_week_index,
     day_of_week_name=_day_of_week_name,
+    day_of_week=property(lambda self: _ops.DayOfWeekNode([self]).to_expr()),
 
     truncate=_date_truncate,
 
