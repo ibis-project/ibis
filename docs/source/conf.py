@@ -28,8 +28,9 @@ import glob
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.mathjax',
     'sphinx.ext.autosummary',
+    'sphinx.ext.extlinks',
+    'sphinx.ext.mathjax',
     'numpydoc',
 
     'IPython.sphinxext.ipython_directive',
@@ -40,7 +41,6 @@ autosummary_generate = glob.glob("*.rst")
 
 # autosummary_generate = True
 
-import numpydoc
 numpydoc_show_class_members = False
 
 # Add any paths that contain templates here, relative to this directory.
@@ -238,6 +238,10 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_domain_indices = True
+
+
+# extlinks alias
+extlinks = {'issue': ('https://github.com/ibis-project/ibis/issues/%s', '#')}
 
 
 # -- Options for manual page output ---------------------------------------
