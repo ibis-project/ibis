@@ -290,10 +290,7 @@ def execute_table_column_df_or_df_groupby(op, data, **kwargs):
 
 @execute_node.register(ops.Aggregation, pd.DataFrame)
 def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
-    assert op.metrics
-
-    if op.having:
-        raise NotImplementedError('having expressions not yet implemented')
+    assert op.metrics, 'no metrics found during aggregation execution'
 
     if op.sort_keys:
         raise NotImplementedError(
@@ -303,7 +300,8 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
     predicates = op.predicates
     if predicates:
         predicate = functools.reduce(
-            operator.and_, (execute(p, scope, **kwargs) for p in predicates)
+            operator.and_,
+            (execute(p, scope, **kwargs) for p in predicates)
         )
         data = data.loc[predicate]
 
@@ -332,9 +330,27 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         for metric in op.metrics
     ]
 
-    df = pd.concat(pieces, axis=1).reset_index()
-    df.columns = [columns.get(c, c) for c in df.columns]
-    return df
+    result = pd.concat(pieces, axis=1).reset_index()
+    result.columns = [columns.get(c, c) for c in result.columns]
+
+    if op.having:
+        # .having(...) is only accessible on groupby, so this should never
+        # raise
+        if not op.by:
+            raise ValueError(
+                'Filtering out aggregation values is not allowed without at '
+                'least one grouping key'
+            )
+
+        # TODO(phillipc): Don't recompute identical subexpressions
+        predicate = functools.reduce(
+            operator.and_,
+            (execute(having, new_scope, **kwargs) for having in op.having)
+        )
+        assert len(predicate) == len(result), \
+            'length of predicate does not match length of DataFrame'
+        result = result.loc[predicate.values].reset_index(drop=True)
+    return result
 
 
 @execute_node.register(ops.Reduction, SeriesGroupBy, type(None))

@@ -330,13 +330,13 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
         result = pd.concat(data_pieces, axis=1)
 
     if predicates:
-        computed_predicates = _compute_predicates(
+        predicates = _compute_predicates(
             op.table.op(), predicates, data, scope, **kwargs
         )
-        where = functools.reduce(operator.and_, computed_predicates)
-        assert len(where) == len(result), \
+        predicate = functools.reduce(operator.and_, predicates)
+        assert len(predicate) == len(result), \
             'Selection predicate length does not match underlying table'
-        result = result.loc[where]
+        result = result.loc[predicate]
 
     if sort_keys:
         result = util.compute_sorted_frame(sort_keys, result, **kwargs)
