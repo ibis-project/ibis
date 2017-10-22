@@ -1,6 +1,9 @@
 import ibis.common as com
 from ibis.config import options  # noqa: F401
 from ibis.bigquery.client import BigQueryClient
+from ibis.bigquery.compiler import (  # noqa: F401
+    approx_quantile,
+)
 
 
 def compile(expr):

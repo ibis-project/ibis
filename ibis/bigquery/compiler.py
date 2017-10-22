@@ -1,6 +1,7 @@
 import ibis
 import ibis.sql.compiler as comp
 import ibis.expr.operations as ops
+from ibis.bigquery import operations as bq_ops
 from ibis.impala.compiler import ImpalaSelect
 from ibis.impala import compiler as impala_compiler
 
@@ -143,6 +144,20 @@ def _percentile(translator, expr):
     return '{}({}, {})'.format(command, arg, percentile_rank)
 
 
+def _approx_quantile(translator, expr):
+    args = expr.op().args
+    args = [translator.translate(arg) for arg in args[:2]]
+    # distinct?
+    return 'APPROX_QUANTILES({}, {})'.format(*args)
+
+
+def approx_quantile(arg, number, distinct=False, ignore_nulls=True):
+    if distinct or not ignore_nulls:
+        raise NotImplementedError()
+
+    return bq_ops.ApproxQuantile(arg, number, distinct, ignore_nulls).to_expr()
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -168,6 +183,7 @@ _operation_registry.update({
     # ops.ArraySlice: _array_slice,
     ops.Arbitrary: _arbitrary,
     ops.Percentile: _percentile,
+    bq_ops.ApproxQuantile: _approx_quantile,
 })
 
 
