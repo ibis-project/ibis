@@ -176,7 +176,6 @@ def test_aggregation_without_group_by(t, df):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
-@pytest.mark.xfail(raises=NotImplementedError)
 def test_group_by_with_having(t, df):
     expr = t.group_by(t.dup_strings).having(
         t.plain_float64.sum() == 5
@@ -184,12 +183,15 @@ def test_group_by_with_having(t, df):
         avg_a=t.plain_int64.mean(),
         sum_c=t.plain_float64.sum(),
     )
-    result = expr.execute()[['avg_a', 'sum_c']]
+    result = expr.execute()
 
     expected = df.groupby('dup_strings').agg({
-        'a': 'mean',
-        'c': 'sum',
-    }).reset_index().rename(columns={'a': 'avg_a', 'c': 'sum_c'})
+        'plain_int64': 'mean',
+        'plain_float64': 'sum',
+    }).reset_index().rename(columns={
+        'plain_int64': 'avg_a',
+        'plain_float64': 'sum_c'
+    })
     expected = expected.loc[expected.sum_c == 5, ['avg_a', 'sum_c']]
 
     tm.assert_frame_equal(result[expected.columns], expected)
