@@ -1,4 +1,7 @@
 import operator
+
+from operator import methodcaller
+
 import pytest
 
 import numpy as np
@@ -93,11 +96,34 @@ def test_mutate(t, df):
         lambda t: (t.dup_strings == 'd') | (t.plain_int64 < 100),
     ]
 )
-def test_aggregation_group_by(t, df, where):
+@pytest.mark.parametrize(
+    ('ibis_func', 'pandas_func'),
+    [
+        (methodcaller('abs'), np.abs),
+        (methodcaller('ceil'), np.ceil),
+        (methodcaller('exp'), np.exp),
+        (methodcaller('floor'), np.floor),
+        (methodcaller('ln'), np.log),
+        (methodcaller('log10'), np.log10),
+        (methodcaller('log', 2), lambda x: np.log(x) / np.log(2)),
+        (methodcaller('log2'), np.log2),
+        (methodcaller('round', 0), methodcaller('round', 0)),
+        (methodcaller('round', -2), methodcaller('round', -2)),
+        (methodcaller('round', 2), methodcaller('round', 2)),
+        (methodcaller('round'), methodcaller('round')),
+        (methodcaller('sign'), np.sign),
+        (methodcaller('sqrt'), np.sqrt),
+    ]
+)
+def test_aggregation_group_by(t, df, where, ibis_func, pandas_func):
     ibis_where = where(t)
     expr = t.group_by(t.dup_strings).aggregate(
         avg_plain_int64=t.plain_int64.mean(where=ibis_where),
         sum_plain_float64=t.plain_float64.sum(where=ibis_where),
+        mean_float64_positive=ibis_func(
+            t.float64_positive
+        ).mean(where=ibis_where),
+        neg_mean_int64_with_zeros=(-t.int64_with_zeros).mean(where=ibis_where),
         nunique_dup_ints=t.dup_ints.nunique(),
     )
     result = expr.execute()
@@ -108,16 +134,28 @@ def test_aggregation_group_by(t, df, where):
         'plain_int64': lambda x, mask=mask: x[mask].mean(),
         'plain_float64': lambda x, mask=mask: x[mask].sum(),
         'dup_ints': 'nunique',
+        'float64_positive': (
+            lambda x, mask=mask, func=pandas_func: func(x[mask]).mean()
+        ),
+        'int64_with_zeros': lambda x, mask=mask: (-x[mask]).mean(),
     }).reset_index().rename(
         columns={
             'plain_int64': 'avg_plain_int64',
             'plain_float64': 'sum_plain_float64',
             'dup_ints': 'nunique_dup_ints',
+            'float64_positive': 'mean_float64_positive',
+            'int64_with_zeros': 'neg_mean_int64_with_zeros',
         }
     )
     # TODO(phillipc): Why does pandas not return floating point values here?
     expected['avg_plain_int64'] = expected.avg_plain_int64.astype('float64')
     result['avg_plain_int64'] = result.avg_plain_int64.astype('float64')
+    expected['neg_mean_int64_with_zeros'] = (
+        expected.neg_mean_int64_with_zeros.astype('float64')
+    )
+    result['neg_mean_int64_with_zeros'] = (
+        result.neg_mean_int64_with_zeros.astype('float64')
+    )
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
