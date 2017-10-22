@@ -854,6 +854,10 @@ cummin = _unary_op('cummin', _ops.CumulativeMin)
 cummax = _unary_op('cummax', _ops.CumulativeMax)
 
 
+def arbitrary(x, where=None):
+    return _ops.Arbitrary(x, where).to_expr()
+
+
 def ntile(arg, buckets):
     return _ops.NTile(arg, buckets).to_expr()
 
@@ -1000,6 +1004,7 @@ _generic_column_methods = dict(
     lead=lead,
     cummin=cummin,
     cummax=cummax,
+    arbitrary=arbitrary,
 )
 
 

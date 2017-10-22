@@ -1044,6 +1044,15 @@ class NthValue(AnalyticOp):
     input_type = [rules.column, rules.integer]
     output_type = rules.type_of_arg(0)
 
+
+class Arbitrary(Reduction):
+
+    input_type = [rules.column, boolean(name='where', optional=True)]
+
+    def output_type(self):
+        return self.args[0].type().scalar_type()
+
+
 # ----------------------------------------------------------------------
 # Distinct stuff
 

@@ -1,3 +1,4 @@
+import ibis
 import ibis.sql.compiler as comp
 import ibis.expr.operations as ops
 from ibis.impala.compiler import ImpalaSelect
@@ -124,6 +125,15 @@ def _array_length(translator, expr):
     )
 
 
+def _arbitrary(translator, expr):
+    arg, where = expr.op().args
+    if where is not None:
+        arg_formatted = translator.translate(where.ifelse(arg, ibis.NA))
+    else:
+        arg_formatted = translator.translate(arg)
+    return 'ANY_VALUE({})'.format(arg_formatted)
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -147,6 +157,7 @@ _operation_registry.update({
     # BigQuery doesn't have these operations built in.
     # ops.ArrayRepeat: _array_repeat,
     # ops.ArraySlice: _array_slice,
+    ops.Arbitrary: _arbitrary,
 })
 
 
