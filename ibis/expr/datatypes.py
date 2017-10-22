@@ -305,6 +305,12 @@ class String(Variadic):
         return isinstance(value, six.string_types)
 
 
+class Binary(Variadic):
+
+    def valid_literal(self, value):
+        return isinstance(value, six.binary_type)
+
+
 class Date(Primitive):
 
     def valid_literal(self, value):
@@ -626,6 +632,7 @@ int64 = Int64()
 float = Float()
 double = Double()
 string = String()
+binary = Binary()
 date = Date()
 time = Time()
 timestamp = Timestamp()
@@ -642,6 +649,7 @@ _primitive_types = {
     'float': float,
     'double': double,
     'string': string,
+    'binary': binary,
     'date': date,
     'time': time,
     'timestamp': timestamp
