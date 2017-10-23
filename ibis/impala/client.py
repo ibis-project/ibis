@@ -116,7 +116,7 @@ class ImpalaConnection(object):
 
         try:
             cursor.execute(query, async=async)
-        except:
+        except Exception:
             cursor.release()
             self.error(
                 'Exception caused by {}: {}'.format(

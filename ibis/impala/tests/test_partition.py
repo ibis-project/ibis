@@ -144,7 +144,7 @@ class TestPartitioning(ImpalaE2E, unittest.TestCase):
         name = 'tmppart_{}'.format(util.guid())
         try:
             self.con.create_table(name, expr, partition=[t.year])
-        except:
+        except Exception:
             raise
         else:
             new = self.con.table(name)
