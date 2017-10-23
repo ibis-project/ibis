@@ -25,6 +25,7 @@ systems:
 - PostgreSQL (Experimental)
 - SQLite
 - Direct execution of ibis expressions against pandas object (Experimental)
+- [Clickhouse](https://clickhouse.yandex) (Experimental)
 
 Learn more about using the library at http://docs.ibis-project.org and read the
 project blog at http://ibis-project.org for news and updates.
