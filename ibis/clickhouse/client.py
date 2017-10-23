@@ -293,6 +293,6 @@ class ClickhouseTemporaryTable(ops.DatabaseTable):
     def drop(self):
         try:
             self.source.drop_table(self.name)
-        except:  # ClickhouseError
+        except Exception:  # ClickhouseError
             # database might have been dropped
             pass

@@ -1152,14 +1152,14 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             return x
 
         left, right = t.schema(), table.schema()
-        for i, (n, l, r) in enumerate(zip(left.names, left.types,
-                                          right.types)):
-            l = _clean_type(l)
-            r = _clean_type(r)
+        for i, (n, left, right) in enumerate(zip(
+                left.names, left.types, right.types)):
+            left = _clean_type(left)
+            right = _clean_type(right)
 
-            if l != r:
+            if left != right:
                 pytest.fail('Value for {0} had left type {1}'
-                            ' and right type {2}'.format(n, l, r))
+                            ' and right type {2}'.format(n, left, right))
 
     def assert_cases_equality(self, cases):
         for expr, expected in cases:
