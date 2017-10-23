@@ -4,6 +4,7 @@ from ibis.bigquery.client import BigQueryClient
 from ibis.bigquery.compiler import (  # noqa: F401
     percentile_aggregation,
     approx_quantile,
+    approx_count_distinct,
 )
 
 

@@ -15,3 +15,11 @@ class ApproxQuantile(_ops.Reduction):
 
     def output_type(self):
         return self.args[0].type().scalar_type()
+
+
+class ApproxCountDistinct(_ops.Reduction):
+
+    input_type = [value]
+
+    def output_type(self):
+        return self.args[0].type().scalar_type()
