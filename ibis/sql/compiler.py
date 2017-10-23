@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six import StringIO
 from collections import defaultdict
 
 from ibis.compat import lzip
@@ -26,9 +27,6 @@ import ibis.expr.format as format
 import ibis.sql.transforms as transforms
 import ibis.util as util
 import ibis
-
-
-# ---------------------------------------------------------------------
 
 
 class QueryAST(object):
@@ -1386,8 +1384,214 @@ class Select(DDL):
 
         return exprs
 
+    def compile(self):
+        """
+        This method isn't yet idempotent; calling multiple times may yield
+        unexpected results
+        """
+        # Can't tell if this is a hack or not. Revisit later
+        self.context.set_query(self)
+
+        # If any subqueries, translate them and add to beginning of query as
+        # part of the WITH section
+        with_frag = self.format_subqueries()
+
+        # SELECT
+        select_frag = self.format_select_set()
+
+        # FROM, JOIN, UNION
+        from_frag = self.format_table_set()
+
+        # WHERE
+        where_frag = self.format_where()
+
+        # GROUP BY and HAVING
+        groupby_frag = self.format_group_by()
+
+        # ORDER BY and LIMIT
+        order_frag = self.format_postamble()
+
+        # Glue together the query fragments and return
+        query = '\n'.join(filter(
+            None,
+            [
+                with_frag,
+                select_frag,
+                from_frag,
+                where_frag,
+                groupby_frag,
+                order_frag,
+            ]
+        ))
+        return query
+
+    def format_subqueries(self):
+        if not self.subqueries:
+            return
+
+        context = self.context
+
+        buf = []
+
+        for i, expr in enumerate(self.subqueries):
+            formatted = util.indent(context.get_compiled_expr(expr), 2)
+            alias = context.get_ref(expr)
+            buf.append('{} AS (\n{}\n)'.format(alias, formatted))
+
+        return 'WITH {}'.format(',\n'.join(buf))
+
+    def format_select_set(self):
+        # TODO:
+        context = self.context
+        formatted = []
+        for expr in self.select_set:
+            if isinstance(expr, ir.ValueExpr):
+                expr_str = self._translate(expr, named=True)
+            elif isinstance(expr, ir.TableExpr):
+                # A * selection, possibly prefixed
+                if context.need_aliases():
+                    alias = context.get_ref(expr)
+
+                    # materialized join will not have an alias. see #491
+                    expr_str = '{}.*'.format(alias) if alias else '*'
+                else:
+                    expr_str = '*'
+            formatted.append(expr_str)
+
+        buf = StringIO()
+        line_length = 0
+        max_length = 70
+        tokens = 0
+        for i, val in enumerate(formatted):
+            # always line-break for multi-line expressions
+            if val.count('\n'):
+                if i:
+                    buf.write(',')
+                buf.write('\n')
+                indented = util.indent(val, self.indent)
+                buf.write(indented)
+
+                # set length of last line
+                line_length = len(indented.split('\n')[-1])
+                tokens = 1
+            elif (tokens > 0 and line_length and
+                  len(val) + line_length > max_length):
+                # There is an expr, and adding this new one will make the line
+                # too long
+                buf.write(',\n       ') if i else buf.write('\n')
+                buf.write(val)
+                line_length = len(val) + 7
+                tokens = 1
+            else:
+                if i:
+                    buf.write(',')
+                buf.write(' ')
+                buf.write(val)
+                tokens += 1
+                line_length += len(val) + 2
+
+        if self.distinct:
+            select_key = 'SELECT DISTINCT'
+        else:
+            select_key = 'SELECT'
+
+        return '{}{}'.format(select_key, buf.getvalue())
+
+    @property
+    def table_set_formatter(self):
+        return TableSetFormatter
+
+    def format_table_set(self):
+        if self.table_set is None:
+            return None
+
+        fragment = 'FROM '
+
+        helper = self.table_set_formatter(self, self.table_set)
+        fragment += helper.get_result()
+
+        return fragment
+
+    def format_group_by(self):
+        if not len(self.group_by):
+            # There is no aggregation, nothing to see here
+            return None
+
+        lines = []
+        if len(self.group_by) > 0:
+            clause = 'GROUP BY {}'.format(', '.join([
+                str(x + 1) for x in self.group_by]))
+            lines.append(clause)
+
+        if len(self.having) > 0:
+            trans_exprs = []
+            for expr in self.having:
+                translated = self._translate(expr)
+                trans_exprs.append(translated)
+            lines.append('HAVING {}'.format(' AND '.join(trans_exprs)))
+
+        return '\n'.join(lines)
+
+    def format_where(self):
+        if not self.where:
+            return None
+
+        buf = StringIO()
+        buf.write('WHERE ')
+        fmt_preds = []
+        for pred in self.where:
+            new_pred = self._translate(pred, permit_subquery=True)
+            if isinstance(pred.op(), ops.Or):
+                # parens for OR exprs because it binds looser than AND
+                new_pred = '({})'.format(new_pred)
+            fmt_preds.append(new_pred)
+
+        conj = ' AND\n{}'.format(' ' * 6)
+        buf.write(conj.join(fmt_preds))
+        return buf.getvalue()
+
+    def format_postamble(self):
+        buf = StringIO()
+        lines = 0
+
+        if len(self.order_by) > 0:
+            buf.write('ORDER BY ')
+            formatted = []
+            for expr in self.order_by:
+                key = expr.op()
+                translated = self._translate(key.expr)
+                if not key.ascending:
+                    translated += ' DESC'
+                formatted.append(translated)
+            buf.write(', '.join(formatted))
+            lines += 1
+
+        if self.limit is not None:
+            if lines:
+                buf.write('\n')
+            n, offset = self.limit['n'], self.limit['offset']
+            buf.write('LIMIT {}'.format(n))
+            if offset is not None and offset != 0:
+                buf.write(' OFFSET {}'.format(offset))
+            lines += 1
+
+        if not lines:
+            return None
+
+        return buf.getvalue()
+
 
 class TableSetFormatter(object):
+
+    _join_names = {
+        ops.InnerJoin: 'INNER JOIN',
+        ops.LeftJoin: 'LEFT OUTER JOIN',
+        ops.RightJoin: 'RIGHT OUTER JOIN',
+        ops.OuterJoin: 'FULL OUTER JOIN',
+        ops.LeftAntiJoin: 'LEFT ANTI JOIN',
+        ops.LeftSemiJoin: 'LEFT SEMI JOIN',
+        ops.CrossJoin: 'CROSS JOIN'
+    }
 
     def __init__(self, parent, expr, indent=2):
         self.parent = parent
@@ -1446,6 +1650,80 @@ class TableSetFormatter(object):
                 raise com.TranslationError('Non-equality join predicates, '
                                            'i.e. non-equijoins, are not '
                                            'supported')
+
+    def _get_join_type(self, op):
+        return self._join_names[type(op)]
+
+    def _quote_identifier(self, name):
+        return name
+
+    def _format_table(self, expr):
+        # TODO: This could probably go in a class and be significantly nicer
+        ctx = self.context
+
+        ref_expr = expr
+        op = ref_op = expr.op()
+        if isinstance(op, ops.SelfReference):
+            ref_expr = op.table
+            ref_op = ref_expr.op()
+
+        if isinstance(ref_op, ops.PhysicalTable):
+            name = ref_op.name
+            if name is None:
+                raise com.RelationError('Table did not have a name: {0!r}'
+                                        .format(expr))
+            result = self._quote_identifier(name)
+            is_subquery = False
+        else:
+            # A subquery
+            if ctx.is_extracted(ref_expr):
+                # Was put elsewhere, e.g. WITH block, we just need to grab its
+                # alias
+                alias = ctx.get_ref(expr)
+
+                # HACK: self-references have to be treated more carefully here
+                if isinstance(op, ops.SelfReference):
+                    return '{} {}'.format(ctx.get_ref(ref_expr), alias)
+                else:
+                    return alias
+
+            subquery = ctx.get_compiled_expr(expr)
+            result = '(\n{}\n)'.format(util.indent(subquery, self.indent))
+            is_subquery = True
+
+        if is_subquery or ctx.need_aliases():
+            result += ' {}'.format(ctx.get_ref(expr))
+
+        return result
+
+    def get_result(self):
+        # Got to unravel the join stack; the nesting order could be
+        # arbitrary, so we do a depth first search and push the join tokens
+        # and predicates onto a flat list, then format them
+        op = self.expr.op()
+
+        if isinstance(op, ops.Join):
+            self._walk_join_tree(op)
+        else:
+            self.join_tables.append(self._format_table(self.expr))
+
+        # TODO: Now actually format the things
+        buf = StringIO()
+        buf.write(self.join_tables[0])
+        for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
+                                       self.join_predicates):
+            buf.write('\n')
+            buf.write(util.indent('{} {}'.format(jtype, table), self.indent))
+
+            if len(preds):
+                buf.write('\n')
+                fmt_preds = [self._translate(pred) for pred in preds]
+                conj = ' AND\n{}'.format(' ' * 3)
+                fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
+                                        self.indent * 2)
+                buf.write(fmt_preds)
+
+        return buf.getvalue()
 
 
 class Union(DDL):
