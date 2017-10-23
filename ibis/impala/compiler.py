@@ -66,10 +66,6 @@ class ImpalaQueryBuilder(comp.QueryBuilder):
     def _make_context(self):
         return ImpalaContext
 
-    @property
-    def _union_class(self):
-        return ImpalaUnion
-
 
 class ImpalaContext(comp.QueryContext):
 
@@ -117,10 +113,6 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
 
     def _quote_identifier(self, name):
         return quote_identifier(name)
-
-
-class ImpalaUnion(comp.Union):
-    pass
 
 
 # ---------------------------------------------------------------------

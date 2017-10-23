@@ -44,10 +44,6 @@ class ClickhouseQueryBuilder(comp.QueryBuilder):
     def _make_context(self):
         return ClickhouseQueryContext
 
-    @property
-    def _union_class(self):
-        return ClickhouseUnion
-
 
 class ClickhouseQueryContext(comp.QueryContext):
 
@@ -142,10 +138,6 @@ class ClickhouseTableSetFormatter(comp.TableSetFormatter):
 
     def _quote_identifier(self, name):
         return quote_identifier(name)
-
-
-class ClickhouseUnion(comp.Union):
-    pass
 
 
 class ClickhouseExprTranslator(comp.ExprTranslator):
