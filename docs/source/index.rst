@@ -48,8 +48,9 @@ At this time, Ibis offers some level of support for the following systems:
 - `Apache Impala (incubating) <http://impala.io/>`_
 - `Apache Kudu (incubating) <http://getkudu.io>`_
 - Hadoop Distributed File System (HDFS)
-- PostgreSQL (Experimental)
+- PostgreSQL
 - SQLite
+- Google BigQuery (experimental)
 - Direct execution of ibis expressions against pandas objects (Experimental)
 
 Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
@@ -84,9 +85,9 @@ places, but this will improve as things progress.
    impala
    api
    sql
-   release
    developer
    type-system
+   release
    legal
 
 Indices and tables

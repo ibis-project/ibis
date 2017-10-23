@@ -2,10 +2,76 @@
 Release Notes
 =============
 
-    **Note**: These release notes will only include notable or major bug fixes
-    since most minor bug fixes tend to be esoteric and not generally
-    interesting. Point (minor, e.g. 0.5.1) releases will generally not be found
-    here and contain only bug fixes.
+.. note::
+
+   These release notes will only include notable or major bug fixes since most
+   minor bug fixes tend to be esoteric and not generally interesting. Point
+   releases (e.g., ``0.5.1``) will generally not be found here and contain
+   only bug fixes.
+
+v0.12.0 (TBD)
+-------------
+
+This release brings Clickhouse and BigQuery SQL support along with a number of
+bug fixes and reliability enhancements. We recommend that all users upgrade
+from earlier versions of Ibis.
+
+New Backends
+~~~~~~~~~~~~
+
+* BigQuery backend (:issue:`1170`), thanks to @tsdlovell.
+* Clickhouse backend (:issue:`1127`), thanks to @kszucs.
+
+New Features
+~~~~~~~~~~~~
+
+* Add support for HAVING in the pandas backend (:issue:`1182`)
+* Add struct field tab completion (:issue:`1178`)
+* Add expressions for Map/Struct types and columns (:issue:`1166`)
+* Support Table.asof_join (:issue:`1162`)
+* Allow right side of arithmetic operations to take over (:issue:`1150`)
+* Add a data_preload step in pandas backend (:issue:`1142`)
+* expressions in join predicates in the pandas backend (:issue:`1138`)
+* Scalar parameters (:issue:`1075`)
+* Limited window function support for pandas (:issue:`1083`)
+* Implement Time datatype (:issue:`1105`)
+* Implement array ops for pandas (:issue:`1100`)
+* support for passing multiple quantiles in ``.quantile()`` (:issue:`1094`)
+* support for clip and quantile ops on DoubleColumns (:issue:`1090`)
+* Enable unary math operations for pandas, sqlite (:issue:`1071`)
+* Enable casting from strings to temporal types (:issue:`1076`)
+* Allow selection of whole tables in pandas joins (:issue:`1072`)
+* Implement comparison for string vs date and timestamp types (:issue:`1065`)
+* Implement isnull and notnull for pandas (:issue:`1066`)
+* Allow like operation to accept a list of conditions to match (:issue:`1061`)
+
+Bug Fixes
+~~~~~~~~~
+
+* Ensure that the pandas backend can deal with unary operations in groupby
+* (:issue:`1182`)
+* Incorrect impala code generated for NOT with complex argument (:issue:`1176`)
+* BUG/CLN: Fix predicates on Selections on Joins (:issue:`1149`)
+* Don't use SET LOCAL to allow redshift to work (:issue:`1163`)
+* Allow empty arrays as arguments (:issue:`1154`)
+* Fix column renaming in groupby keys (:issue:`1151`)
+* Ensure that we only cast if timezone is not None (:issue:`1147`)
+* Fix location of conftest.py (:issue:`1107`)
+* TST/Make sure we drop tables during postgres testing (:issue:`1101`)
+* Fix misleading join error message (:issue:`1086`)
+* BUG/TST: Make hdfs an optional dependency (:issue:`1082`)
+* Memoization should include expression name where available (:issue:`1080`)
+
+Performance Enhancements
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Speed up imports (:issue:`1074`)
+* Fix execution perf of groupby and selection (:issue:`1073`)
+* Use normalize for casting to dates in pandas (:issue:`1070`)
+* Speed up pandas groupby (:issue:`1067`)
+
+Contributors
+~~~~~~~~~~~~
 
 0.11.0 (June 28, 2017)
 ----------------------
@@ -14,7 +80,7 @@ This release brings initial Pandas backend support along with a number of
 bug fixes and reliability enhancements. We recommend that all users upgrade
 from earlier versions of Ibis.
 
-New features
+New Features
 ~~~~~~~~~~~~
 * Experimental pandas backend to allow execution of ibis expression against
   pandas DataFrames
@@ -32,16 +98,16 @@ New features
 * Added a ``type`` parameter to ``ibis.literal`` to allow user specification of
   literal types
 
-Bug fixes
+Bug Fixes
 ~~~~~~~~~
 * Fix broken conda recipe
 * Fix incorrectly typed fillna operation
 * Fix postgres boolean summary operations
-* Fix kudu support to reflect client API changes
+* Fix kudu support to reflect client API Changes
 * Fix equality of nested types and construction of nested types when the value
   type is specified as a string
 
-API changes
+API Changes
 ~~~~~~~~~~~
 * Deprecate passing integer values to the ``ibis.timestamp`` literal
   constructor, this will be removed in 0.12.0
@@ -68,12 +134,12 @@ critical bug fixes and usability improvements. As several correctness bugs with
 the SQL compiler were fixed, we recommend that all users upgrade from earlier
 versions of Ibis.
 
-New features
+New Features
 ~~~~~~~~~~~~
 * Initial PostgreSQL backend contributed by Phillip Cloud.
 * Add ``groupby`` as an alias for ``group_by`` to table expressions
 
-Bug fixes
+Bug Fixes
 ~~~~~~~~~
 * Fix an expression error when filtering based on a new field
 * Fix Impala's SQL compilation of using ``OR`` with compound filters
@@ -81,7 +147,7 @@ Bug fixes
 * Fix CTE (``WITH``) extraction inside ``UNION ALL`` expressions.
 * Fix ``ImportError`` on Python 2 when ``mock`` library not installed
 
-API changes
+API Changes
 ~~~~~~~~~~~
 * The deprecated ``ibis.impala_connect`` and ``ibis.make_client`` APIs have
   been removed
@@ -92,7 +158,7 @@ API changes
 This release brings initial Kudu-Impala integration and improved Impala and
 SQLite support, along with several critical bug fixes.
 
-New features
+New Features
 ~~~~~~~~~~~~
 * Apache Kudu (incubating) integration for Impala users. See the `blog post <http://blog.ibis-project.org/kudu-impala-ibis>`_ for now. Will add some documentation here when possible.
 * Add ``use_https`` option to ``ibis.hdfs_connect`` for WebHDFS connections in
@@ -131,7 +197,7 @@ The last expression now generates the correct Impala or SQLite SQL:
        WHERE `flag` = '0'
      ) t1
 
-Bug fixes
+Bug Fixes
 ~~~~~~~~~
 * ``CHAR(n)`` and ``VARCHAR(n)`` Impala types now correctly map to Ibis string
   expressions
@@ -173,7 +239,7 @@ release.
 This release also includes bug fixes affecting generated SQL correctness. All
 users should upgrade as soon as possible.
 
-New features
+New Features
 ~~~~~~~~~~~~
 
 * New integrated Impala functionality. See :ref:`Ibis for Impala Users
@@ -239,7 +305,7 @@ Highlights in this release are the SQLite, Python 3, Impala UDA support, and an
 asynchronous execution API. There are also many usability improvements, bug
 fixes, and other new features.
 
-New features
+New Features
 ~~~~~~~~~~~~
 * SQLite client and built-in function support
 * Ibis now supports Python 3.4 as well as 2.6 and 2.7
@@ -261,7 +327,7 @@ New features
   and ability to compile (since many operations are unavailable in SQLite, for
   example)
 
-API changes
+API Changes
 ~~~~~~~~~~~
 * Impala Ibis client creation now uses only ``ibis.impala.connect``, and
   ``ibis.make_client`` has been deprecated
@@ -278,7 +344,7 @@ Contributors
 0.4 (August 14, 2015)
 ---------------------
 
-New features
+New Features
 ~~~~~~~~~~~~
 * Add tooling to use Impala C++ scalar UDFs within Ibis (#262, #195)
 * Support and testing for Kerberos-enabled secure HDFS clusters
@@ -322,7 +388,7 @@ Contributors
 
 First public release. See http://ibis-project.org for more.
 
-New features
+New Features
 ~~~~~~~~~~~~
 * Implement window / analytic function support
 * Enable non-equijoins (join clauses with operations other than ``==``).
@@ -358,7 +424,7 @@ Contributors
 0.2 (June 16, 2015)
 -------------------
 
-New features
+New Features
 ~~~~~~~~~~~~
 * ``insert`` method on Ibis client for inserting data into existing tables.
 * ``parquet_file``, ``delimited_file``, and ``avro_file`` client methods for
@@ -408,7 +474,7 @@ API Changes
 * New Ibis client and Impala connection workflow. Client now combined from an
   Impala connection and an optional HDFS connection
 
-Bug fixes
+Bug Fixes
 ~~~~~~~~~
 * Numerous expression API bug fixes and rough edges fixed
 
