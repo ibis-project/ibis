@@ -46,7 +46,7 @@ Some platforms will require that you have Kerberos installed to build properly.
 Impala Quickstart
 -----------------
 
-Install dependencies for Ibis's Impala dialect:
+Install dependencies for Ibis's `Impala <https://impala.apache.org/>`_ dialect:
 
 ::
 
@@ -74,7 +74,7 @@ connection semantics are identical.
 SQLite Quickstart
 -----------------
 
-Install dependencies for Ibis's SQLite dialect:
+Install dependencies for Ibis's `SQLite <https://www.sqlite.org/>`_ dialect:
 
 ::
 
@@ -95,7 +95,8 @@ using SQLite.
 PostgreSQL Quickstart
 ---------------------
 
-Install dependencies for Ibis's PostgreSQL dialect:
+Install dependencies for Ibis's `PostgreSQL <https://www.postgresql.org/>`_
+dialect:
 
 ::
 
@@ -115,10 +116,29 @@ Create a client by passing a connection string or individual parameters to
 
 .. _install.bigquery:
 
+Clickhouse Quickstart
+---------------------
+
+Install dependencies for Ibis's `Clickhouse <https://clickhouse.yandex/>`_
+dialect:
+
+::
+
+  pip install ibis-framework[clickhouse]
+
+Create a client by passing in database connection parameters such as ``host``,
+``port``, ``database``, and ``user`` to :func:`~ibis.clickhouse.connect`:
+
+
+.. code-block:: python
+
+   >>> con = ibis.clickhouse.connect(host='localhost', port=9000)
+
 BigQuery Quickstart
 -------------------
 
-Install dependencies for Ibis's BigQuery dialect:
+Install dependencies for Ibis's `BigQuery
+<https://cloud.google.com/bigquery/>`_ dialect:
 
 ::
 
