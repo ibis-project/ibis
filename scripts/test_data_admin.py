@@ -57,7 +57,7 @@ def can_write_to_hdfs(con):
         con.hdfs.put(test_path, test_file)
         con.hdfs.rm(test_path)
         return True
-    except:
+    except Exception:
         return False
 
 
