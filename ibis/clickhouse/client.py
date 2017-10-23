@@ -1,8 +1,6 @@
 import re
 import pandas as pd
 
-from toolz import pluck
-
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
