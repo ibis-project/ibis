@@ -15,7 +15,7 @@ import ibis.expr.datatypes as dt
 
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.pandas.dispatch import (
-    execute, execute_node, execute_first, data_preload
+    execute, execute_node, execute_first, data_preload, pre_execute
 )
 
 
@@ -55,7 +55,7 @@ def find_data(expr):
             seen.add(node)
 
             if hasattr(node, 'source'):
-                data[node] = node.source.dictionary[node.name]
+                data[node] = node.source.dictionary.get(node.name, None)
             elif isinstance(node, ir.Literal):
                 data[node] = node.value
 
@@ -85,6 +85,8 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
     result : scalar, pd.Series, pd.DataFrame
     """
     op = expr.op()
+    pre_loaded_scope = pre_execute(op, scope=scope, context=context, **kwargs)
+    scope = toolz.merge(scope, pre_loaded_scope)
 
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value

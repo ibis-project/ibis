@@ -15,8 +15,17 @@ execute_first = Dispatcher('execute_first')
 # Possibly preload data from the client, given a node
 data_preload = Dispatcher('data_preload')
 
+# Given a node, compute a (possibly partial) scope prior to regular execution
+pre_execute = Dispatcher('pre_execute')
+
 
 # Default does nothing
 @data_preload.register(object, object)
 def data_preload_default(node, data, **kwargs):
     return data
+
+
+# Default returns an empty scope
+@pre_execute.register(object)
+def pre_execute_default(node, **kwargs):
+    return {}
