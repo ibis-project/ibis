@@ -920,6 +920,10 @@ class QueryBuilder(object):
     def _make_context(self):
         raise NotImplementedError
 
+    @property
+    def _union_class(self):
+        return Union
+
     def get_result(self):
         op = self.expr.op()
 
