@@ -145,46 +145,7 @@ class ClickhouseTableSetFormatter(comp.TableSetFormatter):
 
 
 class ClickhouseUnion(comp.Union):
-
-    def _extract_subqueries(self):
-        self.subqueries = comp._extract_subqueries(self)
-        for subquery in self.subqueries:
-            self.context.set_extracted(subquery)
-
-    def format_subqueries(self):
-        context = self.context
-        subqueries = self.subqueries
-
-        return ',\n'.join([
-            '{0} AS (\n{1}\n)'.format(
-                context.get_ref(expr),
-                util.indent(context.get_compiled_expr(expr), 2)
-            ) for expr in subqueries
-        ])
-
-    def format_relation(self, expr):
-        ref = self.context.get_ref(expr)
-        if ref is not None:
-            return 'SELECT *\nFROM {0}'.format(ref)
-        return self.context.get_compiled_expr(expr)
-
-    def compile(self):
-        union_keyword = 'UNION' if self.distinct else 'UNION ALL'
-
-        self._extract_subqueries()
-
-        left_set = self.format_relation(self.left)
-        right_set = self.format_relation(self.right)
-        extracted = self.format_subqueries()
-
-        buf = []
-
-        if extracted:
-            buf.append('WITH {0}'.format(extracted))
-
-        buf.extend([left_set, union_keyword, right_set])
-
-        return '\n'.join(buf)
+    pass
 
 
 class ClickhouseExprTranslator(comp.ExprTranslator):
