@@ -179,7 +179,7 @@ _DTYPE_TO_IBIS_TYPE = {
     'DATETIME': dt.timestamp,
     'TIME': dt.time,
     'TIMESTAMP': dt.timestamp,
-    # 'BYTES': None,
+    'BYTES': dt.binary,
 }
 
 

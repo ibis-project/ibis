@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import Counter
-
+import sys
 import functools
 import operator
+
+from collections import Counter
 
 import six
 
@@ -88,13 +89,12 @@ class BinaryPromoter(object):
 
 
 def _decimal_promoted_type(args):
-    precisions = []
-    scales = []
+    max_precision = max_scale = ~sys.maxsize
     for arg in args:
         if isinstance(arg, ir.DecimalValue):
-            precisions.append(arg.meta.precision)
-            scales.append(arg.meta.scale)
-    return dt.Decimal(max(precisions), max(scales))
+            max_precision = max(max_precision, arg.meta.precision)
+            max_scale = max(max_scale, arg.meta.scale)
+    return dt.Decimal(max_precision, max_precision)
 
 
 class PowerPromoter(BinaryPromoter):
@@ -136,19 +136,21 @@ class PowerPromoter(BinaryPromoter):
 # tinyint
 # boolean
 # string
+# binary
 
 
 _SCALAR_TYPE_PRECEDENCE = {
-    'timestamp': 10,
-    'double': 9,
-    'float': 8,
-    'decimal': 7,
-    'int64': 6,
-    'int32': 5,
-    'int16': 4,
-    'int8': 3,
-    'boolean': 2,
-    'string': 1,
+    'timestamp': 11,
+    'double': 10,
+    'float': 9,
+    'decimal': 8,
+    'int64': 7,
+    'int32': 6,
+    'int16': 5,
+    'int8': 4,
+    'boolean': 3,
+    'string': 2,
+    'binary': 1,
     'null': 0,
 }
 
@@ -720,7 +722,18 @@ def string(**arg_kwds):
     return ValueTyped(dt.string, 'not string', **arg_kwds)
 
 
+def binary(**arg_kwds):
+    return ValueTyped(dt.binary, 'not binary', **arg_kwds)
+
+
 def array(value_type, **arg_kwds):
+    """Require that an expression is an Array type whose value_type is
+    `value_type`.
+
+    Parameters
+    ----------
+    value_type : ibis.expr.datatypes.DataType
+    """
     return ArrayValueTyped(
         value_type,
         'not array with value_type {0}'.format(value_type),
@@ -729,6 +742,8 @@ def array(value_type, **arg_kwds):
 
 
 def boolean(**arg_kwds):
+    """Require that an expression has type boolean.
+    """
     return ValueTyped(dt.boolean, 'not string', **arg_kwds)
 
 
@@ -740,8 +755,17 @@ temporal = one_of((dt.timestamp, dt.date, dt.time))
 
 
 def instance_of(type_, **arg_kwds):
-    fail_message = 'not a {0}'.format(str(type_))
-    return AnyTyped(type_, fail_message, **arg_kwds)
+    """Require that a value has a particular Python type.
+
+    Parameters
+    ----------
+    type_ : Type
+
+    Returns
+    -------
+    rule : AnyTyped
+    """
+    return AnyTyped(type_, 'not a {}'.format(type_), **arg_kwds)
 
 
 class StringOptions(Argument):

@@ -16,12 +16,12 @@ import os
 import sys
 import math
 import operator
+import string
 
 from operator import methodcaller
 from datetime import date, datetime
 
 import pytest
-import string
 
 import numpy as np
 
@@ -1447,4 +1447,32 @@ def test_scalar_parameter(con):
     start_string, end_string = '2009-03-01', '2010-07-03'
     result = expr.execute(params={start: start_string, end: end_string})
     expected = col.between(start_string, end_string).execute()
+    tm.assert_series_equal(result, expected)
+
+
+def test_string_to_binary_cast(con):
+    t = con.table('functional_alltypes').limit(10)
+    expr = t.string_col.cast('binary')
+    result = expr.execute()
+    sql_string = (
+        "SELECT decode(string_col, 'escape') AS tmp "
+        "FROM functional_alltypes LIMIT 10"
+    )
+    raw_data = [row[0][0] for row in con.raw_sql(sql_string).fetchall()]
+    expected = pd.Series(raw_data, name='tmp')
+    tm.assert_series_equal(result, expected)
+
+
+def test_string_to_binary_round_trip(con):
+    t = con.table('functional_alltypes').limit(10)
+    expr = t.string_col.cast('binary').cast('string')
+    result = expr.execute()
+    sql_string = (
+        "SELECT encode(decode(string_col, 'escape'), 'escape') AS tmp "
+        "FROM functional_alltypes LIMIT 10"
+    )
+    expected = pd.Series(
+        [row[0][0] for row in con.raw_sql(sql_string).fetchall()],
+        name='tmp'
+    )
     tm.assert_series_equal(result, expected)

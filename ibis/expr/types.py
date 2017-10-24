@@ -1060,6 +1060,15 @@ class StringValue(AnyValue):
         return isinstance(other, (StringValue, TemporalValue))
 
 
+class BinaryValue(AnyValue):
+
+    def type(self):
+        return dt.binary
+
+    def _can_compare(self, other):
+        return isinstance(other, BinaryValue)
+
+
 class ParameterizedValue(AnyValue):
 
     def __init__(self, meta, name=None):
@@ -1299,6 +1308,14 @@ class StringScalar(ScalarExpr, StringValue):
 
 
 class StringColumn(ColumnExpr, StringValue):
+    pass
+
+
+class BinaryScalar(ScalarExpr, BinaryValue):
+    pass
+
+
+class BinaryColumn(ColumnExpr, BinaryValue):
     pass
 
 
