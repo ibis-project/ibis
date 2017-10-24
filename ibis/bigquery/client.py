@@ -118,7 +118,7 @@ class BigQueryClient(SQLClient):
 
     def _execute(self, stmt, results=True):
         # TODO(phillipc): Allow **kwargs in calls to execute
-        query = self._proxy.client.run_sync_query(stmt, self._proxy.client)
+        query = self._proxy.client.run_sync_query(stmt)
         query.use_legacy_sql = False
         query.run()
         return BigQueryCursor(query)
