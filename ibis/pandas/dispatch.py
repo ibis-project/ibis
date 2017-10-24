@@ -16,6 +16,9 @@ execute_first = Dispatcher('execute_first')
 data_preload = Dispatcher('data_preload')
 
 # Given a node, compute a (possibly partial) scope prior to regular execution
+# This is useful if parts of the tree structure need to be executed at the
+# same time or if there are other reasons to need to interrupt the
+# regular depth-first traversal of the tree
 pre_execute = Dispatcher('pre_execute')
 
 
