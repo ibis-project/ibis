@@ -26,6 +26,8 @@ New Features
 ~~~~~~~~~~~~
 
 * Add support for ``Binary`` data type (:issue:`1183`)
+* Allow users of the BigQuery client to define their own API proxy classes
+  (:issue:`1188`)
 * Add support for HAVING in the pandas backend (:issue:`1182`)
 * Add struct field tab completion (:issue:`1178`)
 * Add expressions for Map/Struct types and columns (:issue:`1166`)
