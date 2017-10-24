@@ -13,7 +13,7 @@ from ibis.pandas.execution import (
     execute, execute_node, execute_first
 )  # noqa: E402
 from ibis.pandas.client import PandasTable  # noqa: E402
-from ibis.pandas.core import data_preload  # noqa: E402
+from ibis.pandas.core import data_preload, pre_execute  # noqa: E402
 from multipledispatch.conflict import ambiguities  # noqa: E402
 
 pytestmark = pytest.mark.pandas
@@ -70,3 +70,22 @@ def test_data_preload(ibis_table, dataframe):
     del data_preload.funcs[PandasTable, pd.DataFrame]
     data_preload.reorder()
     data_preload._cache.clear()
+
+
+def test_pre_execute(ibis_table, dataframe):
+    """
+    Test that pre_execute has intercepted execution and provided its own
+    scope dict
+    """
+    @pre_execute.register(ir.Node)
+    def pre_execute_test(op, **kwargs):
+        df = dataframe.assign(plain_int64=dataframe['plain_int64'] + 1)
+        return {op: df}
+
+    result = ibis_table.execute()
+    tm.assert_frame_equal(
+        result, dataframe.assign(plain_int64=dataframe['plain_int64'] + 1))
+
+    del pre_execute.funcs[ir.Node, ]
+    pre_execute.reorder()
+    pre_execute._cache.clear()
