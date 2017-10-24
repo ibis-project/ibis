@@ -300,9 +300,31 @@ class Integer(Primitive):
 
 
 class String(Variadic):
+    """A type representing a string.
+
+    Notes
+    -----
+    Because of differences in the way different backends handle strings, we
+    cannot assume that strings are UTF-8 encoded.
+    """
 
     def valid_literal(self, value):
         return isinstance(value, six.string_types)
+
+
+class Binary(Variadic):
+    """A type representing a blob of bytes.
+
+    Notes
+    -----
+    Some databases treat strings and blobs of equally, and some do not. For
+    example, Impala doesn't make a distinction between string and binary types
+    but PostgreSQL has a TEXT type and a BYTEA type which are distinct types
+    that behave differently.
+    """
+
+    def valid_literal(self, value):
+        return isinstance(value, six.binary_type)
 
 
 class Date(Primitive):
@@ -626,6 +648,7 @@ int64 = Int64()
 float = Float()
 double = Double()
 string = String()
+binary = Binary()
 date = Date()
 time = Time()
 timestamp = Timestamp()
@@ -642,6 +665,7 @@ _primitive_types = {
     'float': float,
     'double': double,
     'string': string,
+    'binary': binary,
     'date': date,
     'time': time,
     'timestamp': timestamp

@@ -96,6 +96,15 @@ def _cast(t, expr):
     # specialize going from an integer type to a timestamp
     if isinstance(arg.type(), dt.Integer) and isinstance(sa_type, sa.DateTime):
         return sa.func.timezone('UTC', sa.func.to_timestamp(sa_arg))
+
+    if arg.type().equals(dt.binary) and typ.equals(dt.string):
+        return sa.func.encode(sa_arg, 'escape')
+
+    if typ.equals(dt.binary):
+        #  decode yields a column of memoryview which is annoying to deal with
+        # in pandas. CAST(expr AS BYTEA) is correct and returns byte strings.
+        return sa.cast(sa_arg, sa.Binary())
+
     return sa.cast(sa_arg, sa_type)
 
 

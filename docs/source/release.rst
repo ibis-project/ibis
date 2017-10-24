@@ -25,6 +25,7 @@ New Backends
 New Features
 ~~~~~~~~~~~~
 
+* Add support for ``Binary`` data type (:issue:`1183`)
 * Add support for HAVING in the pandas backend (:issue:`1182`)
 * Add struct field tab completion (:issue:`1178`)
 * Add expressions for Map/Struct types and columns (:issue:`1166`)
