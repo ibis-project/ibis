@@ -50,7 +50,7 @@ class BigQuery(Query):
         return pd.DataFrame(cursor.fetchall(), columns=cursor.columns)
 
 
-class _BigQueryAPIProxy:
+class BigQueryAPIProxy(object):
 
     def __init__(self, project_id):
         self._client = google.cloud.bigquery.Client(project_id)
@@ -88,9 +88,10 @@ class BigQueryClient(SQLClient):
 
     sync_query = BigQuery
     database_class = BigQueryDatabase
+    proxy_class = BigQueryAPIProxy
 
     def __init__(self, project_id, dataset_id):
-        self._proxy = _BigQueryAPIProxy(project_id)
+        self._proxy = self.__class__.proxy_class(project_id)
         self._dataset_id = dataset_id
 
     @property
@@ -117,9 +118,7 @@ class BigQueryClient(SQLClient):
 
     def _execute(self, stmt, results=True):
         # TODO(phillipc): Allow **kwargs in calls to execute
-        query = google.cloud.bigquery.query.QueryResults(
-            stmt, self._proxy.client,
-        )
+        query = self._proxy.client.run_sync_query(stmt)
         query.use_legacy_sql = False
         query.run()
         return BigQueryCursor(query)
