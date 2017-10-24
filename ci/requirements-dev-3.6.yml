@@ -19,8 +19,8 @@ dependencies:
   - thrift
   - thriftpy<=0.3.9
   - toolz
+  - clickhouse-driver>=0.0.8
+  - clickhouse-sqlalchemy
   - pip:
     - hdfs>=2.0.0
-    - clickhouse-driver
-    - clickhouse-sqlalchemy
     - google-cloud-bigquery

@@ -29,7 +29,7 @@ clickhouse_to_pandas = {
     'String': 'object',
     'FixedString': 'object',  # TODO
     'Null': 'object',
-    'Date': 'datetime64[D]',
+    'Date': 'datetime64[ns]',
     'DateTime': 'datetime64[ns]',
     'Nullable(UInt8)': 'float32',
     'Nullable(UInt16)': 'float32',

@@ -47,7 +47,7 @@ def test_result_as_dataframe(con, alltypes):
     result = con.execute(expr)
 
     assert isinstance(result, pd.DataFrame)
-    assert list(result.columns) == ex_names
+    assert result.columns.tolist() == ex_names
     assert len(result) == 10
 
 
