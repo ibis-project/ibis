@@ -47,6 +47,7 @@ New Features
 * Implement comparison for string vs date and timestamp types (:issue:`1065`)
 * Implement isnull and notnull for pandas (:issue:`1066`)
 * Allow like operation to accept a list of conditions to match (:issue:`1061`)
+* Add a pre_execute step in pandas backend (:issue:`1189`)
 
 Bug Fixes
 ~~~~~~~~~
