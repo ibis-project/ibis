@@ -29,7 +29,8 @@ from ibis.common import RelationError, ExpressionError, IbisTypeError
 
 def sub_for(expr, substitutions):
     mapping = {repr(k.op()): v for k, v in substitutions}
-    return _subs(expr, mapping)
+    substitutor = Substitutor()
+    return substitutor.substitute(expr, mapping)
 
 
 def _expr_key(expr):
@@ -46,36 +47,50 @@ def _expr_key(expr):
         return repr(op), name
 
 
-@toolz.memoize(key=lambda args, kwargs: _expr_key(args[0]))
-def _subs(expr, mapping):
-    """Substitute expressions with other expressions
-    """
-    node = expr.op()
-    key = repr(node)
-    if key in mapping:
-        return mapping[key]
-    if node.blocks():
-        return expr
+class Substitutor(object):
 
-    new_args = list(node.args)
-    unchanged = True
-    for i, arg in enumerate(new_args):
-        if isinstance(arg, ir.Expr):
-            new_arg = _subs(arg, mapping)
-            unchanged = unchanged and new_arg is arg
-            new_args[i] = new_arg
-    if unchanged:
-        return expr
-    try:
-        new_node = type(node)(*new_args)
-    except IbisTypeError:
-        return expr
+    def __init__(self):
+        cache = toolz.memoize(key=lambda args, kwargs: _expr_key(args[0]))
+        self.substitute = cache(self._substitute)
 
-    try:
-        name = expr.get_name()
-    except ExpressionError:
-        name = None
-    return expr._factory(new_node, name=name)
+    def _substitute(self, expr, mapping):
+        """Substitute expressions with other expressions.
+
+        Parameters
+        ----------
+        expr : ibis.expr.types.Expr
+        mapping : Dict, OrderedDict
+
+        Returns
+        -------
+        new_expr : ibis.expr.types.Expr
+        """
+        node = expr.op()
+        key = repr(node)
+        if key in mapping:
+            return mapping[key]
+        if node.blocks():
+            return expr
+
+        new_args = list(node.args)
+        unchanged = True
+        for i, arg in enumerate(new_args):
+            if isinstance(arg, ir.Expr):
+                new_arg = self.substitute(arg, mapping)
+                unchanged = unchanged and new_arg is arg
+                new_args[i] = new_arg
+        if unchanged:
+            return expr
+        try:
+            new_node = type(node)(*new_args)
+        except IbisTypeError:
+            return expr
+
+        try:
+            name = expr.get_name()
+        except ExpressionError:
+            name = None
+        return expr._factory(new_node, name=name)
 
 
 class ScalarAggregate(object):

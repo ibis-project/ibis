@@ -1900,7 +1900,9 @@ class Aggregation(TableNode, HasSchema):
         self.having = [] if having is None else having
 
         self.predicates = [] if predicates is None else predicates
-        sort_keys = [] if sort_keys is None else sort_keys
+
+        # order by only makes sense with group by in an aggregation
+        sort_keys = [] if not self.by or sort_keys is None else sort_keys
         self.sort_keys = [to_sort_key(self.table, k)
                           for k in util.promote_list(sort_keys)]
 
