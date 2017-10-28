@@ -99,13 +99,14 @@ def test_invalid_precision_scale_combo():
 def test_decimal_str(lineitem):
     col = lineitem.l_extendedprice
     t = col.type()
-    assert str(t) == 'decimal({0:d}, {1:d})'.format(t.precision, t.scale)
+    assert str(t) == 'decimal({:d}, {:d})'.format(t.precision, t.scale)
 
 
 def test_decimal_repr(lineitem):
     col = lineitem.l_extendedprice
     t = col.type()
-    assert repr(t) == 'Decimal(precision={0:d}, scale={1:d})'.format(
+    expected = 'Decimal(precision={:d}, scale={:d}, nullable=True)'.format(
         t.precision,
         t.scale,
     )
+    assert repr(t) == expected

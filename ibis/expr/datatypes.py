@@ -14,12 +14,15 @@
 
 import re
 import datetime
+import itertools
 
 from collections import namedtuple, OrderedDict
 
 import six
 
 import numpy as np
+
+import toolz
 
 import ibis
 import ibis.common as com
@@ -42,6 +45,8 @@ class Schema(object):
         representing type of each column.
     """
 
+    __slots__ = 'names', 'types', '_name_locs'
+
     def __init__(self, names, types):
         if not isinstance(names, list):
             names = list(names)
@@ -56,15 +61,18 @@ class Schema(object):
 
     def __repr__(self):
         space = 2 + max(map(len, self.names))
-        return "ibis.Schema {{{0}\n}}".format(
+        return "ibis.Schema {{{}\n}}".format(
             util.indent(
                 ''.join(
-                    '\n{0}{1}'.format(name.ljust(space), str(tipo))
-                    for name, tipo in zip(self.names, self.types)
+                    '\n{}{}'.format(name.ljust(space), str(type))
+                    for name, type in zip(self.names, self.types)
                 ),
                 2
             )
         )
+
+    def __hash__(self):
+        return hash((type(self), tuple(self.names), tuple(self.types)))
 
     def __len__(self):
         return len(self.names)
@@ -97,15 +105,12 @@ class Schema(object):
         if not isinstance(values, (list, tuple)):
             values = list(values)
 
-        if len(values):
-            names, types = zip(*values)
-        else:
-            names, types = [], []
+        names, types = zip(*values) if values else ([], [])
         return Schema(names, types)
 
     @classmethod
-    def from_dict(cls, values):
-        return Schema(list(values.keys()), values.values())
+    def from_dict(cls, dictionary):
+        return Schema(*zip(*dictionary.items()))
 
     def equals(self, other, cache=None):
         return self.names == other.names and self.types == other.types
@@ -113,13 +118,8 @@ class Schema(object):
     def __eq__(self, other):
         return self.equals(other)
 
-    def get_type(self, name):
-        return self.types[self._name_locs[name]]
-
     def append(self, schema):
-        names = self.names + schema.names
-        types = self.types + schema.types
-        return Schema(names, types)
+        return Schema(self.names + schema.names, self.types + schema.types)
 
     def items(self):
         return zip(self.names, self.types)
@@ -147,41 +147,34 @@ class HasSchema(object):
     concrete dataset or database table.
     """
 
+    __slots__ = 'schema', 'name'
+
     def __init__(self, schema, name=None):
-        assert isinstance(schema, Schema)
-        self._schema = schema
-        self._name = name
+        if not isinstance(schema, Schema):
+            raise TypeError(
+                'schema argument to HasSchema class must be a Schema instance'
+            )
+        self.schema = schema
+        self.name = name
 
     def __repr__(self):
-        return self._repr()
-
-    def _repr(self):
-        return "%s(%s)" % (type(self).__name__, repr(self.schema))
-
-    @property
-    def schema(self):
-        return self._schema
-
-    def get_schema(self):
-        return self._schema
+        return '{}({})'.format(type(self).__name__, repr(self.schema))
 
     def has_schema(self):
         return True
 
-    @property
-    def name(self):
-        return self._name
-
     def equals(self, other, cache=None):
-        if type(self) != type(other):
-            return False
-        return self.schema.equals(other.schema, cache=cache)
+        return type(self) == type(other) and self.schema.equals(
+            other.schema, cache=cache
+        )
 
     def root_tables(self):
         return [self]
 
 
 class DataType(object):
+
+    __slots__ = 'nullable',
 
     def __init__(self, nullable=True):
         self.nullable = nullable
@@ -196,16 +189,26 @@ class DataType(object):
         return self.equals(other)
 
     def __ne__(self, other):
-        return not (self == other)
+        return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(type(self))
+        custom_parts = tuple(
+            getattr(self, slot)
+            for slot in toolz.unique(self.__slots__ + ('nullable',))
+        )
+        return hash((type(self),) + custom_parts)
 
     def __repr__(self):
-        name = self.name.lower()
-        if not self.nullable:
-            name = '{0}[non-nullable]'.format(name)
-        return name
+        return '{}({})'.format(
+            self.name,
+            ', '.join(
+                '{}={!r}'.format(slot, getattr(self, slot))
+                for slot in toolz.unique(self.__slots__ + ('nullable',))
+            )
+        )
+
+    def __str__(self):
+        return self.name.lower()
 
     @property
     def name(self):
@@ -232,11 +235,11 @@ class DataType(object):
 
     def scalar_type(self):
         import ibis.expr.types as ir
-        return getattr(ir, '{0}Scalar'.format(type(self).__name__))
+        return getattr(ir, '{}Scalar'.format(self.name))
 
     def array_type(self):
         import ibis.expr.types as ir
-        return getattr(ir, '{0}Column'.format(type(self).__name__))
+        return getattr(ir, '{}Column'.format(self.name))
 
     def valid_literal(self, value):
         raise NotImplementedError(
@@ -248,25 +251,39 @@ class DataType(object):
 
 class Any(DataType):
 
+    __slots__ = ()
+
     def valid_literal(self, value):
         return True
 
 
 class Primitive(DataType):
-    pass
+
+    __slots__ = ()
+
+    def __repr__(self):
+        name = self.name.lower()
+        if not self.nullable:
+            return '{}[non-nullable]'.format(name)
+        return name
 
 
 class Null(DataType):
+
+    __slots__ = ()
 
     def valid_literal(self, value):
         return value is None or value is ibis.null
 
 
 class Variadic(DataType):
-    pass
+
+    __slots__ = ()
 
 
 class Boolean(Primitive):
+
+    __slots__ = ()
 
     def valid_literal(self, value):
         return isinstance(value, bool) or (
@@ -279,6 +296,8 @@ Bounds = namedtuple('Bounds', ('lower', 'upper'))
 
 
 class Integer(Primitive):
+
+    __slots__ = ()
 
     @property
     def bounds(self):
@@ -308,6 +327,8 @@ class String(Variadic):
     cannot assume that strings are UTF-8 encoded.
     """
 
+    __slots__ = ()
+
     def valid_literal(self, value):
         return isinstance(value, six.string_types)
 
@@ -329,11 +350,15 @@ class Binary(Variadic):
 
 class Date(Primitive):
 
+    __slots__ = ()
+
     def valid_literal(self, value):
         return isinstance(value, six.string_types + (datetime.date,))
 
 
 class Time(Primitive):
+
+    __slots__ = ()
 
     def valid_literal(self, value):
         return isinstance(value, six.string_types + (datetime.time,))
@@ -341,8 +366,8 @@ class Time(Primitive):
 
 def parametric(cls):
     type_name = cls.__name__
-    array_type_name = '{0}Column'.format(type_name)
-    scalar_type_name = '{0}Scalar'.format(type_name)
+    array_type_name = '{}Column'.format(type_name)
+    scalar_type_name = '{}Scalar'.format(type_name)
 
     def array_type(self):
         def constructor(op, name=None):
@@ -364,6 +389,8 @@ def parametric(cls):
 @parametric
 class Timestamp(Primitive):
 
+    __slots__ = 'timezone',
+
     def __init__(self, timezone=None, nullable=True):
         super(Timestamp, self).__init__(nullable=nullable)
         self.timezone = timezone
@@ -376,23 +403,21 @@ class Timestamp(Primitive):
 
     def __str__(self):
         timezone = self.timezone
-        typename = '{0.__class__.__name__}'.format(self).lower()
+        typename = self.name.lower()
         if timezone is None:
             return typename
         return '{}({!r})'.format(typename, timezone)
 
     def __repr__(self):
-        return '{0.__class__.__name__}(timezone={0.timezone!r})'.format(self)
+        return DataType.__repr__(self)
 
     def valid_literal(self, value):
         return isinstance(value, six.string_types + (datetime.datetime,))
 
 
-class SignedInteger(Integer):
-    pass
-
-
 class Floating(Primitive):
+
+    __slots__ = ()
 
     def can_implicit_cast(self, other):
         if isinstance(other, Integer):
@@ -412,77 +437,78 @@ class Floating(Primitive):
 
 class Int8(Integer):
 
+    __slots__ = ()
+
     _nbytes = 1
 
 
 class Int16(Integer):
+
+    __slots__ = ()
 
     _nbytes = 2
 
 
 class Int32(Integer):
 
+    __slots__ = ()
+
     _nbytes = 4
 
 
 class Int64(Integer):
+
+    __slots__ = ()
 
     _nbytes = 8
 
 
 class Float(Floating):
 
+    __slots__ = ()
+
     _nbytes = 4
 
 
 class Double(Floating):
+
+    __slots__ = ()
 
     _nbytes = 8
 
 
 @parametric
 class Decimal(DataType):
-    # Decimal types are parametric, we store the parameters in this object
+
+    __slots__ = 'precision', 'scale'
 
     def __init__(self, precision, scale, nullable=True):
         super(Decimal, self).__init__(nullable=nullable)
         self.precision = precision
         self.scale = scale
 
-    def __repr__(self):
-        return '{0}(precision={1:d}, scale={2:d})'.format(
-            self.name,
-            self.precision,
-            self.scale,
-        )
-
     def __str__(self):
-        return '{0}({1:d}, {2:d})'.format(
+        return '{}({:d}, {:d})'.format(
             self.name.lower(),
             self.precision,
             self.scale,
         )
 
-    def __hash__(self):
-        return hash((self.precision, self.scale))
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __eq__(self, other):
-        return (
-            isinstance(other, Decimal) and
-            self.precision == other.precision and
-            self.scale == other.scale
-        )
+    def _equal_part(self, other, cache=None):
+        return self.precision == other.precision and self.scale == other.scale
 
     @classmethod
     def can_implicit_cast(cls, other):
         return isinstance(other, (Floating, Decimal))
 
 
+assert hasattr(Decimal, '__hash__')
+
+
 @parametric
 class Category(DataType):
+
+    __slots__ = 'cardinality',
 
     def __init__(self, cardinality=None, nullable=True):
         super(Category, self).__init__(nullable=nullable)
@@ -493,16 +519,13 @@ class Category(DataType):
             cardinality = self.cardinality
         else:
             cardinality = 'unknown'
-        return 'category(K={0})'.format(cardinality)
+        return '{}(cardinality={!r})'.format(self.name, cardinality)
 
-    def __hash__(self):
-        return hash(self.cardinality)
-
-    def __eq__(self, other):
-        if not isinstance(other, Category):
-            return False
-
-        return self.cardinality == other.cardinality
+    def _equal_part(self, other, cache=None):
+        return (
+            self.cardinality == other.cardinality and
+            self.nullable == other.nullable
+        )
 
     def to_integer_type(self):
         cardinality = self.cardinality
@@ -522,9 +545,31 @@ class Category(DataType):
 @parametric
 class Struct(DataType):
 
+    __slots__ = 'pairs',
+
     def __init__(self, names, types, nullable=True):
+        """Construct a ``Struct`` type from a `names` and `types`.
+
+        Parameters
+        ----------
+        names : Sequence[str]
+            Sequence of strings indicating the name of each field in the
+            struct.
+        types : Sequence[Union[str, DataType]]
+            Sequence of strings or :class:`~ibis.expr.datatypes.DataType`
+            instances, one for each field
+        nullable : bool, optional
+            Whether the struct can be null
+        """
+        if len(names) != len(types):
+            raise ValueError('names and types must have the same length')
+
         super(Struct, self).__init__(nullable=nullable)
         self.pairs = OrderedDict(zip(names, types))
+
+    @classmethod
+    def from_tuples(self, pairs):
+        return Struct(*map(list, zip(*pairs)))
 
     @property
     def names(self):
@@ -537,21 +582,20 @@ class Struct(DataType):
     def __getitem__(self, key):
         return self.pairs[key]
 
-    def __iter__(self):
-        return iter(self.pairs.items())
+    def __hash__(self):
+        return hash((
+            type(self), tuple(self.names), tuple(self.types), self.nullable
+        ))
 
     def __repr__(self):
-        return '{0}({1})'.format(
-            self.name,
-            list(zip(self.names, self.types))
+        return '{}({}, nullable={})'.format(
+            self.name, list(self.pairs.items()), self.nullable
         )
 
     def __str__(self):
-        return '{0}<{1}>'.format(
+        return '{}<{}>'.format(
             self.name.lower(),
-            ', '.join(
-                '{0}: {1}'.format(n, t) for n, t in zip(self.names, self.types)
-            )
+            ', '.join(itertools.starmap('{}: {}'.format, self.pairs.items()))
         )
 
     def _equal_part(self, other, cache=None):
@@ -560,26 +604,34 @@ class Struct(DataType):
             for left, right in zip(self.types, other.types)
         )
 
-    @classmethod
-    def from_tuples(self, pairs):
-        return Struct(*map(list, zip(*pairs)))
-
     def valid_literal(self, value):
+        """Return whether the type of `value` is a Python literal type
+        that can be represented by an ibis ``Struct`` type.
+
+        Parameters
+        ----------
+        value : object
+            Any Python object
+
+        Returns
+        -------
+        is_valid : bool
+            Whether `value` can be used to represent an ibis ``Struct``.
+        """
         return isinstance(value, OrderedDict)
 
 
 @parametric
 class Array(Variadic):
 
+    __slots__ = 'value_type',
+
     def __init__(self, value_type, nullable=True):
         super(Array, self).__init__(nullable=nullable)
         self.value_type = validate_type(value_type)
 
-    def __repr__(self):
-        return '{0}({1})'.format(self.name, repr(self.value_type))
-
     def __str__(self):
-        return '{0}<{1}>'.format(self.name.lower(), self.value_type)
+        return '{}<{}>'.format(self.name.lower(), self.value_type)
 
     def _equal_part(self, other, cache=None):
         return self.value_type.equals(other.value_type, cache=cache)
@@ -590,6 +642,8 @@ class Array(Variadic):
 
 @parametric
 class Enum(DataType):
+
+    __slots__ = 'rep_type', 'value_type'
 
     def __init__(self, rep_type, value_type, nullable=True):
         super(Enum, self).__init__(nullable=nullable)
@@ -606,20 +660,15 @@ class Enum(DataType):
 @parametric
 class Map(Variadic):
 
+    __slots__ = 'key_type', 'value_type'
+
     def __init__(self, key_type, value_type, nullable=True):
         super(Map, self).__init__(nullable=nullable)
         self.key_type = validate_type(key_type)
         self.value_type = validate_type(value_type)
 
-    def __repr__(self):
-        return '{0}({1}, {2})'.format(
-            self.name,
-            repr(self.key_type),
-            repr(self.value_type),
-        )
-
     def __str__(self):
-        return '{0}<{1}, {2}>'.format(
+        return '{}<{}, {}>'.format(
             self.name.lower(),
             self.key_type,
             self.value_type,
@@ -817,6 +866,8 @@ class TypeParser(object):
     Adapted from David Beazley's and Brian Jones's Python Cookbook
     """
 
+    __slots__ = 'text', 'tokens', 'tok', 'nexttok'
+
     def __init__(self, text):
         self.text = text
         self.tokens = _generate_tokens(_TYPE_PATTERN, text)
@@ -834,7 +885,7 @@ class TypeParser(object):
 
     def _expect(self, toktype):
         if not self._accept(toktype):
-            raise SyntaxError('Expected {0} after {1!r} in {2!r}'.format(
+            raise SyntaxError('Expected {} after {!r} in {!r}'.format(
                 Tokens.name(toktype),
                 self.tok.value,
                 self.text,
@@ -857,7 +908,7 @@ class TypeParser(object):
                 additional_tokens.append(self.nexttok.value)
                 self._advance()
             raise SyntaxError(
-                'Found additional tokens {0}'.format(additional_tokens)
+                'Found additional tokens {}'.format(additional_tokens)
             )
 
     def type(self):

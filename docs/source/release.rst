@@ -56,6 +56,7 @@ Bug Fixes
   (:issue:`1179`, :issue:`1181`)
 * Fix ``ORDER BY`` generation without a ``GROUP BY`` (:issue:`1180`,
   :issue:`1181`)
+* Ensure that :class:`~ibis.expr.datatypes.DataType` and subclasses hash properly (:issue:`1172`)
 * Ensure that the pandas backend can deal with unary operations in groupby
 * (:issue:`1182`)
 * Incorrect impala code generated for NOT with complex argument (:issue:`1176`)

@@ -320,7 +320,7 @@ def test_timestamp_with_invalid_timezone():
 
 def test_timestamp_with_timezone_repr():
     ts = dt.Timestamp('UTC')
-    assert repr(ts) == "Timestamp(timezone='UTC')"
+    assert repr(ts) == "Timestamp(timezone='UTC', nullable=True)"
 
 
 def test_timestamp_with_timezone_str():

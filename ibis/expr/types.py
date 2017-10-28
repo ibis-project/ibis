@@ -907,7 +907,7 @@ class TableExpr(Expr):
         """
         if not self._is_materialized():
             raise IbisError('Table operation is not yet materialized')
-        return self.op().get_schema()
+        return self.op().schema
 
     def _is_materialized(self):
         # The operation produces a known schema
