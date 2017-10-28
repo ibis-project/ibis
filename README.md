@@ -7,21 +7,21 @@ Current release from Anaconda.org [![Anaconda-Server Badge](https://anaconda.org
 
 # Ibis: Python data analysis framework for Hadoop and SQL engines
 
-Ibis is a toolbox to bridge the gap between local Python environments and
-remote storage and execution systems like Hadoop components (HDFS, Impala,
-Hive, Spark) and SQL databases (Postgres, etc.). Its goal is to simplify
-analytical workflows and make you more productive.
+Ibis is a toolbox to bridge the gap between local Python environments, 
+remote storage, execution systems like Hadoop components (HDFS, Impala,
+Hive, Spark) and SQL databases. Its goal is to simplify analytical 
+workflows and make you more productive.
 
 Install Ibis from PyPI with:
 
     $ pip install ibis-framework
 
-At this time, Ibis provides tools for the interacting with the following
+At this time, Ibis provides tools for interacting with the following
 systems:
 
 - [Apache Impala (incubating)](http://impala.io/)
 - [Apache Kudu](http://getkudu.io)
-- Hadoop Distributed File System (HDFS)
+- [Hadoop Distributed File System (HDFS)](https://hadoop.apache.org/)
 - PostgreSQL (Experimental)
 - SQLite
 - Direct execution of ibis expressions against pandas object (Experimental)
