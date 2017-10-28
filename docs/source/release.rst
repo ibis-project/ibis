@@ -9,8 +9,8 @@ Release Notes
    releases (e.g., ``0.5.1``) will generally not be found here and contain
    only bug fixes.
 
-v0.12.0 (TBD)
--------------
+v0.12.0 (October 28, 2017)
+--------------------------
 
 This release brings Clickhouse and BigQuery SQL support along with a number of
 bug fixes and reliability enhancements. We recommend that all users upgrade
@@ -56,7 +56,8 @@ Bug Fixes
   (:issue:`1179`, :issue:`1181`)
 * Fix ``ORDER BY`` generation without a ``GROUP BY`` (:issue:`1180`,
   :issue:`1181`)
-* Ensure that :class:`~ibis.expr.datatypes.DataType` and subclasses hash properly (:issue:`1172`)
+* Ensure that :class:`~ibis.expr.datatypes.DataType` and subclasses hash
+  properly (:issue:`1172`)
 * Ensure that the pandas backend can deal with unary operations in groupby
 * (:issue:`1182`)
 * Incorrect impala code generated for NOT with complex argument (:issue:`1176`)
