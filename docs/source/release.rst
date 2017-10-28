@@ -83,6 +83,19 @@ Performance Enhancements
 Contributors
 ~~~~~~~~~~~~
 
+The following people contributed to the 0.12.0 release ::
+
+    $ git shortlog -sn --no-merges v0.11.2..v0.12.0
+    63	Phillip Cloud
+     8	Jeff Reback
+     2	Krisztián Szűcs
+     2	Tory Haavik
+     1	Anirudh
+     1	Szucs Krisztian
+     1	dlovell
+     1	kwangin
+
+
 0.11.0 (June 28, 2017)
 ----------------------
 
