@@ -14,8 +14,6 @@
 
 import pandas as pd
 
-import toolz
-
 from ibis.compat import zip as czip
 from ibis.config import options
 
@@ -323,17 +321,17 @@ def validate_backends(backends):
 
 
 def execute(expr, limit='default', async=False, params=None):
-    backend, = validate_backends(find_backends(expr))
+    backend, = validate_backends(list(find_backends(expr)))
     return backend.execute(expr, limit=limit, async=async, params=params)
 
 
 def compile(expr, limit=None, params=None):
-    backend, = validate_backends(find_backends(expr))
+    backend, = validate_backends(list(find_backends(expr)))
     return backend.compile(expr, limit=limit, params=params)
 
 
 def find_backends(expr):
-    backends = []
+    seen_backends = set()
 
     stack = [expr.op()]
     seen = set()
@@ -346,11 +344,11 @@ def find_backends(expr):
 
             for arg in node.flat_args():
                 if isinstance(arg, Client):
-                    backends.append(arg)
+                    if arg not in seen_backends:
+                        yield arg
+                        seen_backends.add(arg)
                 elif isinstance(arg, ir.Expr):
                     stack.append(arg.op())
-
-    return list(toolz.unique(backends, key=id))
 
 
 class Database(object):
