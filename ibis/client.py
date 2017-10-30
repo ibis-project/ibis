@@ -19,10 +19,10 @@ import toolz
 from ibis.compat import zip as czip
 from ibis.config import options
 
+import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as comp
-import ibis.common as com
 import ibis.util as util
 
 
@@ -308,19 +308,27 @@ class QueryPipeline(object):
     pass
 
 
-def execute(expr, limit='default', async=False, params=None):
-    try:
-        backend, = find_backends(expr)
-    except ValueError:
+def validate_backends(backends):
+    if not backends:
+        default = options.default_backend
+        if default is None:
+            raise com.IbisError(
+                'Expression depends on no backends, and found no default'
+            )
+        return [default]
+
+    if len(backends) > 1:
         raise ValueError('Multiple backends found')
+    return backends
+
+
+def execute(expr, limit='default', async=False, params=None):
+    backend, = validate_backends(find_backends(expr))
     return backend.execute(expr, limit=limit, async=async, params=params)
 
 
 def compile(expr, limit=None, params=None):
-    try:
-        backend, = find_backends(expr)
-    except ValueError:
-        raise ValueError('Multiple backends found')
+    backend, = validate_backends(find_backends(expr))
     return backend.compile(expr, limit=limit, params=params)
 
 
@@ -342,17 +350,7 @@ def find_backends(expr):
                 elif isinstance(arg, ir.Expr):
                     stack.append(arg.op())
 
-    backends = list(toolz.unique(backends, key=id))
-
-    if not backends:
-        default = options.default_backend
-        if default is None:
-            raise com.IbisError(
-                'Expression depends on no backends, and found no default'
-            )
-        return [default]
-
-    return backends
+    return list(toolz.unique(backends, key=id))
 
 
 class Database(object):

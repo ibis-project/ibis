@@ -13,7 +13,7 @@ import toolz
 
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
-from ibis.client import find_backend
+from ibis.client import find_backends
 
 
 import ibis.pandas.aggcontext as agg_ctx
@@ -93,7 +93,7 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
         scope,
         *map(
             functools.partial(pre_execute, op, scope=scope, **kwargs),
-            find_backend(expr)
+            find_backends(expr)
         )
     )
 
