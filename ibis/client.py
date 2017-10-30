@@ -358,7 +358,7 @@ class Database(object):
         self.client = client
 
     def __repr__(self):
-        return "{0}('{1}')".format('Database', self.name)
+        return '{}({!r})'.format(type(self).__name__, self.name)
 
     def __dir__(self):
         attrs = dir(type(self))
