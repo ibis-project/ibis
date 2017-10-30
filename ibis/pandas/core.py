@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import collections
 import numbers
 import datetime
+import functools
 
 import six
 
@@ -10,7 +11,6 @@ import numpy as np
 
 import toolz
 
-from ibis.common import IbisError
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 from ibis.client import find_backend
@@ -89,21 +89,13 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
     """
     op = expr.op()
 
-    # TODO(jreback), might be better to pass this thru as a kwargs
-    # or cache it on the op?
-    try:
-        backends = find_backend(expr)
-        if not isinstance(backends, list):
-            backends = [backends]
-        for client in backends:
-            pre_loaded_scope = pre_execute(op,
-                                           client,
-                                           scope=scope,
-                                           context=context,
-                                           **kwargs)
-            scope = toolz.merge(scope, pre_loaded_scope)
-    except IbisError:
-        pass
+    scope = toolz.merge(
+        scope,
+        *map(
+            functools.partial(pre_execute, op, scope=scope, **kwargs),
+            find_backend(expr)
+        )
+    )
 
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value

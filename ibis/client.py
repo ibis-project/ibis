@@ -309,16 +309,22 @@ class QueryPipeline(object):
 
 
 def execute(expr, limit='default', async=False, params=None):
-    backend = find_backend(expr)
+    try:
+        backend, = find_backends(expr)
+    except ValueError:
+        raise ValueError('Multiple backends found')
     return backend.execute(expr, limit=limit, async=async, params=params)
 
 
 def compile(expr, limit=None, params=None):
-    backend = find_backend(expr)
+    try:
+        backend, = find_backends(expr)
+    except ValueError:
+        raise ValueError('Multiple backends found')
     return backend.compile(expr, limit=limit, params=params)
 
 
-def find_backend(expr):
+def find_backends(expr):
     backends = []
 
     stack = [expr.op()]
@@ -338,17 +344,15 @@ def find_backend(expr):
 
     backends = list(toolz.unique(backends, key=id))
 
-    if len(backends) > 1:
-        raise ValueError('Multiple backends found')
-    elif not backends:
+    if not backends:
         default = options.default_backend
         if default is None:
             raise com.IbisError(
                 'Expression depends on no backends, and found no default'
             )
-        return default
+        return [default]
 
-    return backends[0]
+    return backends
 
 
 class Database(object):
