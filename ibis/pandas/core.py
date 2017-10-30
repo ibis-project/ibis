@@ -89,6 +89,9 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
     """
     op = expr.op()
 
+    # Call pre_execute, to allow clients to intercept the expression before
+    # computing anything *and* before associating leaf nodes with data. This
+    # allows clients to provide their own scope.
     scope = toolz.merge(
         scope,
         *map(
