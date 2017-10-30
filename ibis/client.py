@@ -365,7 +365,7 @@ class Database(object):
     def __dir__(self):
         attrs = dir(type(self))
         unqualified_tables = [self._unqualify(x) for x in self.tables]
-        return list(frozenset(attrs + unqualified_tables))
+        return sorted(frozenset(attrs + unqualified_tables))
 
     def __contains__(self, key):
         return key in self.tables
