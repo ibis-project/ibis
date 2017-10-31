@@ -86,15 +86,14 @@ class Schema(object):
     def __getitem__(self, name):
         return self.types[self._name_locs[name]]
 
-    if PY2:
-        def __getstate__(self):
-            return {
-                slot: getattr(self, slot) for slot in self.__class__.__slots__
-            }
+    def __getstate__(self):
+        return {
+            slot: getattr(self, slot) for slot in self.__class__.__slots__
+        }
 
-        def __setstate__(self, instance_dict):
-            for key, value in instance_dict.items():
-                setattr(self, key, value)
+    def __setstate__(self, instance_dict):
+        for key, value in instance_dict.items():
+            setattr(self, key, value)
 
     def delete(self, names_to_delete):
         for name in names_to_delete:
