@@ -29,6 +29,6 @@ def data_preload_default(node, data, **kwargs):
 
 
 # Default returns an empty scope
-@pre_execute.register(object)
-def pre_execute_default(node, **kwargs):
+@pre_execute.register(object, object)
+def pre_execute_default(node, client, **kwargs):
     return {}

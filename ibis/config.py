@@ -185,7 +185,7 @@ class DictWrapper(object):
             return _get_option(prefix)
 
     def __dir__(self):
-        return list(self.d.keys())
+        return sorted(self.d.keys())
 
 
 # For user convenience,  we'd like to have the available options described

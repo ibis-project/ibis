@@ -14,15 +14,13 @@
 
 import pandas as pd
 
-import toolz
-
 from ibis.compat import zip as czip
 from ibis.config import options
 
+import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as comp
-import ibis.common as com
 import ibis.util as util
 
 
@@ -308,18 +306,32 @@ class QueryPipeline(object):
     pass
 
 
+def validate_backends(backends):
+    if not backends:
+        default = options.default_backend
+        if default is None:
+            raise com.IbisError(
+                'Expression depends on no backends, and found no default'
+            )
+        return [default]
+
+    if len(backends) > 1:
+        raise ValueError('Multiple backends found')
+    return backends
+
+
 def execute(expr, limit='default', async=False, params=None):
-    backend = find_backend(expr)
+    backend, = validate_backends(list(find_backends(expr)))
     return backend.execute(expr, limit=limit, async=async, params=params)
 
 
 def compile(expr, limit=None, params=None):
-    backend = find_backend(expr)
+    backend, = validate_backends(list(find_backends(expr)))
     return backend.compile(expr, limit=limit, params=params)
 
 
-def find_backend(expr):
-    backends = []
+def find_backends(expr):
+    seen_backends = set()
 
     stack = [expr.op()]
     seen = set()
@@ -332,23 +344,11 @@ def find_backend(expr):
 
             for arg in node.flat_args():
                 if isinstance(arg, Client):
-                    backends.append(arg)
+                    if arg not in seen_backends:
+                        yield arg
+                        seen_backends.add(arg)
                 elif isinstance(arg, ir.Expr):
                     stack.append(arg.op())
-
-    backends = list(toolz.unique(backends, key=id))
-
-    if len(backends) > 1:
-        raise ValueError('Multiple backends found')
-    elif not backends:
-        default = options.default_backend
-        if default is None:
-            raise com.IbisError(
-                'Expression depends on no backends, and found no default'
-            )
-        return default
-
-    return backends[0]
 
 
 class Database(object):
@@ -358,12 +358,12 @@ class Database(object):
         self.client = client
 
     def __repr__(self):
-        return "{0}('{1}')".format('Database', self.name)
+        return '{}({!r})'.format(type(self).__name__, self.name)
 
     def __dir__(self):
         attrs = dir(type(self))
         unqualified_tables = [self._unqualify(x) for x in self.tables]
-        return list(frozenset(attrs + unqualified_tables))
+        return sorted(frozenset(attrs + unqualified_tables))
 
     def __contains__(self, key):
         return key in self.tables

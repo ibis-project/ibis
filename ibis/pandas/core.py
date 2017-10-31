@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import collections
 import numbers
 import datetime
+import functools
 
 import six
 
@@ -12,6 +13,8 @@ import toolz
 
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
+from ibis.client import find_backends
+
 
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.pandas.dispatch import (
@@ -85,8 +88,17 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
     result : scalar, pd.Series, pd.DataFrame
     """
     op = expr.op()
-    pre_loaded_scope = pre_execute(op, scope=scope, context=context, **kwargs)
-    scope = toolz.merge(scope, pre_loaded_scope)
+
+    # Call pre_execute, to allow clients to intercept the expression before
+    # computing anything *and* before associating leaf nodes with data. This
+    # allows clients to provide their own scope.
+    scope = toolz.merge(
+        scope,
+        *map(
+            functools.partial(pre_execute, op, scope=scope, **kwargs),
+            find_backends(expr)
+        )
+    )
 
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
