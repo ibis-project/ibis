@@ -10,8 +10,11 @@ import numpy as np
 
 import toolz
 
+from ibis.common import IbisError
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
+from ibis.client import find_backend
+
 
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.pandas.dispatch import (
@@ -85,8 +88,22 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
     result : scalar, pd.Series, pd.DataFrame
     """
     op = expr.op()
-    pre_loaded_scope = pre_execute(op, scope=scope, context=context, **kwargs)
-    scope = toolz.merge(scope, pre_loaded_scope)
+
+    # TODO(jreback), might be better to pass this thru as a kwargs
+    # or cache it on the op?
+    try:
+        backends = find_backend(expr)
+        if not isinstance(backends, list):
+            backends = [backends]
+        for client in backends:
+            pre_loaded_scope = pre_execute(op,
+                                           client,
+                                           scope=scope,
+                                           context=context,
+                                           **kwargs)
+            scope = toolz.merge(scope, pre_loaded_scope)
+    except IbisError:
+        pass
 
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
