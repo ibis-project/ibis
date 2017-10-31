@@ -589,6 +589,15 @@ def test_aggregations_execute(alltypes, func, df, expected_func):
     np.testing.assert_allclose(result, expected)
 
 
+def test_not_contains(alltypes, df):
+    n = 100
+    table = alltypes.limit(n)
+    expr = table.string_col.notin(['1', '7'])
+    result = expr.execute()
+    expected = ~df.head(n).string_col.isin(['1', '7'])
+    tm.assert_series_equal(result, expected, check_names=False)
+
+
 def test_distinct_aggregates(alltypes, df):
     expr = alltypes.double_col.nunique()
     result = expr.execute()
