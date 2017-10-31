@@ -28,7 +28,7 @@ import ibis
 import ibis.common as com
 import ibis.util as util
 
-from ibis.compat import builtins
+from ibis.compat import builtins, PY2
 
 
 class Schema(object):
@@ -85,6 +85,16 @@ class Schema(object):
 
     def __getitem__(self, name):
         return self.types[self._name_locs[name]]
+
+    if PY2:
+        def __getstate__(self):
+            return {
+                slot: getattr(self, slot) for slot in self.__class__.__slots__
+            }
+
+        def __setstate__(self, instance_dict):
+            for key, value in instance_dict.items():
+                setattr(self, key, value)
 
     def delete(self, names_to_delete):
         for name in names_to_delete:
@@ -147,8 +157,6 @@ class HasSchema(object):
     concrete dataset or database table.
     """
 
-    __slots__ = 'schema', 'name'
-
     def __init__(self, schema, name=None):
         if not isinstance(schema, Schema):
             raise TypeError(
@@ -206,6 +214,17 @@ class DataType(object):
                 for slot in toolz.unique(self.__slots__ + ('nullable',))
             )
         )
+
+    if PY2:
+        def __getstate__(self):
+            return {
+                slot: getattr(self, slot)
+                for slot in toolz.unique(self.__slots__ + ('nullable',))
+            }
+
+        def __setstate__(self, instance_dict):
+            for key, value in instance_dict.items():
+                setattr(self, key, value)
 
     def __str__(self):
         return self.name.lower()
