@@ -65,7 +65,7 @@ else:
     import __builtin__ as builtins  # noqa: F401
 
     range = xrange  # noqa: F821
-    import cPickle as pickle
+    import cPickle as pickle  # noqa: F401
 
 integer_types = six.integer_types + (np.integer,)
 
