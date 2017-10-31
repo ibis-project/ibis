@@ -325,6 +325,10 @@ def _contains(t, expr):
     return left.in_(right)
 
 
+def _not_contains(t, expr):
+    return sa.not_(_contains(t, expr))
+
+
 def _reduction(sa_func):
     def formatter(t, expr):
         op = expr.op()
@@ -430,6 +434,7 @@ _operation_registry = {
     ops.NullIf: fixed_arity(sa.func.nullif, 2),
 
     ops.Contains: _contains,
+    ops.NotContains: _not_contains,
 
     ops.Count: _reduction(sa.func.count),
     ops.Sum: _reduction(sa.func.sum),
