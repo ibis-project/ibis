@@ -42,7 +42,7 @@ if not PY2:
     import unittest.mock as mock
     range = range
     import builtins
-
+    import pickle
 else:
     try:
         from cdecimal import Decimal
@@ -65,6 +65,7 @@ else:
     import __builtin__ as builtins  # noqa: F401
 
     range = xrange  # noqa: F821
+    import cPickle as pickle
 
 integer_types = six.integer_types + (np.integer,)
 
