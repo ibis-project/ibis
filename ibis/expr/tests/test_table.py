@@ -14,6 +14,7 @@
 
 import pytest
 
+from ibis.compat import pickle
 from ibis.expr.types import ColumnExpr, TableExpr, RelationError
 from ibis.common import ExpressionError
 import ibis.expr.api as api
@@ -1270,3 +1271,11 @@ def test_set_column(table):
     result = table.set_column('f', g)
     expected = table.set_column('f', table.f * 2)
     assert_equal(result, expected)
+
+
+def test_pickle_table_expr():
+    schema = [('time', 'timestamp'), ('key', 'string'), ('value', 'double')]
+    t0 = ibis.table(schema, name='t0')
+    raw = pickle.dumps(t0)
+    t1 = pickle.loads(raw)
+    assert t1.equals(t0)

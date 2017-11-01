@@ -51,15 +51,7 @@ def test_custom_expr():
     assert str(hash(repr(op))) in graph.source
 
 
-@pytest.mark.parametrize(
-    'how',
-    [
-        'inner',
-        'left',
-        pytest.mark.xfail('right', raises=KeyError, reason='NYI'),
-        'outer',
-    ]
-)
+@pytest.mark.parametrize('how', ['inner', 'left', 'right', 'outer'])
 def test_join(how):
     left = ibis.table([('a', 'int64'), ('b', 'string')])
     right = ibis.table([('b', 'string'), ('c', 'int64')])

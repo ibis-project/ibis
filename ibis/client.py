@@ -376,15 +376,7 @@ class Database(object):
         return self.table(key)
 
     def __getattr__(self, key):
-        special_attrs = ['_ipython_display_', 'trait_names',
-                         '_getAttributeNames']
-
-        try:
-            return object.__getattribute__(self, key)
-        except AttributeError:
-            if key in special_attrs:
-                raise
-            return self.table(key)
+        return self.table(key)
 
     def _qualify(self, value):
         return value

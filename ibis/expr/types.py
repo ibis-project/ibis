@@ -820,14 +820,22 @@ class TableExpr(Expr):
     def __len__(self):
         raise com.ExpressionError('Use .count() instead')
 
+    def __setstate__(self, instance_dictionary):
+        self.__dict__ = instance_dictionary
+
     def __getattr__(self, key):
         try:
-            return object.__getattribute__(self, key)
-        except AttributeError:
-            if not self._is_materialized() or key not in self.schema():
-                raise
+            schema = self.schema()
+        except com.IbisError:
+            raise AttributeError(key)
 
+        if key not in schema:
+            raise AttributeError(key)
+
+        try:
             return self.get_column(key)
+        except com.IbisTypeError:
+            raise AttributeError(key)
 
     def __dir__(self):
         attrs = dir(type(self))
