@@ -59,3 +59,12 @@ def test_join(how):
     result = joined[left.a, right.c]
     graph = viz.to_graph(result)
     assert str(hash(repr(result.op()))) in graph.source
+
+
+def test_sort_by():
+    t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
+    expr = t.groupby(t.b).aggregate(
+        sum_a=t.a.sum().cast('double')
+    ).sort_by('c')
+    graph = viz.to_graph(expr)
+    assert str(hash(repr(expr.op()))) in graph.source
