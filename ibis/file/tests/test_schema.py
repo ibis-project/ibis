@@ -36,8 +36,10 @@ def test_convert_arrow(datatype, i):
     assert result == expected
 
 
-def alltypes_sample(size=100, seed=0):
-    np.random.seed(seed)
+@pytest.fixture
+def parquet_schema():
+    np.random.seed(0)
+    size = 100
     df = pd.DataFrame({
         'uint8': np.arange(size, dtype=np.uint8),
         'uint16': np.arange(size, dtype=np.uint16),
@@ -64,18 +66,14 @@ def alltypes_sample(size=100, seed=0):
                     'datetime', 'str', 'str_with_nulls', 'empty_str',
                     'bytes'])
 
-    return df
-
-
-def parquet_schema():
-
-    df = alltypes_sample()
-
     with tempfile.TemporaryFile() as path:
         table = pa.Table.from_pandas(df)
         pq.write_table(table, path)
         parquet_file = pq.ParquetFile(path)
+        return parquet_file.schema
 
+
+def test_convert_parquet(parquet_schema):
     # TODO(jreback)
     # not entirely sure this is correct
     # should these be strings in py2?
@@ -85,19 +83,16 @@ def parquet_schema():
         strings = [dt.string, dt.string, dt.string]
 
     # uint32, int8, int16 stored as upcasted types
-    return zip(parquet_file.schema,
-               [dt.uint8, dt.uint16, dt.int64, dt.uint64,
-                dt.int32, dt.int32, dt.int32,
-                dt.int64, dt.float32, dt.float64, dt.boolean,
-                dt.timestamp] + strings + [dt.binary])
+    types = [dt.uint8, dt.uint16, dt.int64, dt.uint64,
+             dt.int16, dt.int16, dt.int32,
+             dt.int64, dt.float32, dt.float64, dt.boolean,
+             dt.timestamp] + strings + [dt.binary, dt.int64]
+    names = ['uint8', 'uint16', 'uint32', 'uint64',
+             'int8', 'int16', 'int32',
+             'int64', 'float32', 'float64', 'bool',
+             'datetime', 'str', 'str_with_nulls', 'empty_str',
+             'bytes', '__index_level_0__']
+    expected = ibis.schema(zip(names, types))
 
-
-ps = list(parquet_schema())
-
-
-@pytest.mark.parametrize("pt, i", ps, ids=[pt.name for pt, i in ps])
-def test_convert_parquet(pt, i):
-
-    result = parquet_types_to_ibis_schema([pt])
-    expected = ibis.schema([(pt.name, i)])
+    result = parquet_types_to_ibis_schema(parquet_schema)
     assert result == expected

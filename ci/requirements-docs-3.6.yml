@@ -16,7 +16,7 @@ dependencies:
   - pytest
   - python=3.6
   - python-graphviz
-  - pyarrow>=0.6.0
+  - pyarrow>=0.7.1
   - pytables
   - sh
   - six

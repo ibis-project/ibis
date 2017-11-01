@@ -24,22 +24,10 @@ _ARROW_DTYPE_TO_IBIS_TYPE = {
     'float': dt.float32,
     'double': dt.float64,
     'string': dt.string,
+    'binary': dt.binary,
+    'bool': dt.boolean,
     'timestamp[ns]': dt.timestamp,
-}
-
-_PARQUET_DTYPE_TO_IBIS_TYPE = {
-    'UTF8': dt.string,
-    'BYTE_ARRAY': dt.binary,
-    'TIMESTAMP_MICROS': dt.timestamp,
-    'FLOAT': dt.float32,
-    'DOUBLE': dt.float64,
-    'BOOLEAN': dt.boolean,
-    'INT32': dt.int32,
-    'INT64': dt.int64,
-    'UINT_8': dt.uint8,
-    'UINT_16': dt.uint16,
-    'UINT_32': dt.uint32,
-    'UINT_64': dt.uint64,
+    'timestamp[us]': dt.timestamp,
 }
 
 
@@ -53,15 +41,8 @@ def arrow_types_to_ibis_schema(schema):
 
 
 def parquet_types_to_ibis_schema(schema):
-    pairs = []
-    for cs in schema:
-        column_name = cs.name
-        try:
-            ibis_type = _PARQUET_DTYPE_TO_IBIS_TYPE[cs.logical_type]
-        except KeyError:
-            ibis_type = _PARQUET_DTYPE_TO_IBIS_TYPE[cs.physical_type]
-        pairs.append((column_name, ibis_type))
-    return ibis.schema(pairs)
+    schema = schema.to_arrow_schema()
+    return arrow_types_to_ibis_schema(schema)
 
 
 class ParquetTable(ops.DatabaseTable):
