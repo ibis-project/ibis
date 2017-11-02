@@ -75,7 +75,7 @@ def get_type(expr):
         try:
             # As a last resort try get the name of the output_type class
             return expr.op().output_type().__name__
-        except AttributeError:
+        except (AttributeError, NotImplementedError):
             return '\u2205'  # empty set character
     except com.IbisError:
         op = expr.op()
