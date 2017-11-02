@@ -1,8 +1,13 @@
 from operator import methodcaller
 
-import pytest
-import ibis
+import numpy as np
+import pandas as pd
+
 from pandas.util import testing as tm
+
+import pytest
+
+import ibis
 
 pytestmark = pytest.mark.pandas
 
@@ -239,3 +244,74 @@ def test_scalar_broadcasting(batting, batting_df):
     result = expr.execute()
     expected = batting_df.assign(demeaned=batting_df.G - batting_df.G.mean())
     tm.assert_frame_equal(result, expected)
+
+
+def test_mutate_with_window_after_join():
+    left_df = pd.DataFrame({
+        'ints': [0, 1, 2],
+        'strings': ['a', 'b', 'c'],
+        'dates': pd.date_range('20170101', periods=3),
+    })
+    right_df = pd.DataFrame({
+        'group': [0, 1, 2] * 3,
+        'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
+    })
+    con = ibis.pandas.connect(dict(left=left_df, right=right_df))
+    left, right = map(con.table, ('left', 'right'))
+
+    joined = left.outer_join(right, left.ints == right.group)
+    proj = joined[left, right.value]
+    expr = proj.groupby('ints').mutate(sum=proj.value.sum())
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'dates': pd.concat(
+            [left_df.dates] * 3
+        ).sort_values().reset_index(drop=True),
+        'ints': [0] * 3 + [1] * 3 + [2] * 3,
+        'strings': ['a'] * 3 + ['b'] * 3 + ['c'] * 3,
+        'value': [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, np.nan, np.nan, 8.0],
+        'sum': [9.0] * 3 + [12.0] * 3 + [8.0] * 3,
+    })
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_mutate_scalar_with_window_after_join():
+    left_df = pd.DataFrame({'ints': range(3)})
+    right_df = pd.DataFrame({
+        'group': [0, 1, 2] * 3,
+        'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
+    })
+    con = ibis.pandas.connect(dict(left=left_df, right=right_df))
+    left, right = map(con.table, ('left', 'right'))
+
+    joined = left.outer_join(right, left.ints == right.group)
+    proj = joined[left, right.value]
+    expr = proj.mutate(sum=proj.value.sum(), const=1)
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'ints': [0] * 3 + [1] * 3 + [2] * 3,
+        'value': [0.0, 3.0, 6.0, 1.0, 4.0, 7.0, np.nan, np.nan, 8.0],
+        'sum': [29.0] * 9,
+        'const': [1] * 9,
+    })
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_project_scalar_after_join():
+    left_df = pd.DataFrame({'ints': range(3)})
+    right_df = pd.DataFrame({
+        'group': [0, 1, 2] * 3,
+        'value': [0, 1, np.nan, 3, 4, np.nan, 6, 7, 8],
+    })
+    con = ibis.pandas.connect(dict(left=left_df, right=right_df))
+    left, right = map(con.table, ('left', 'right'))
+
+    joined = left.outer_join(right, left.ints == right.group)
+    proj = joined[left, right.value]
+    expr = proj[proj.value.sum().name('sum'), ibis.literal(1).name('const')]
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'sum': [29.0] * 9,
+        'const': [1] * 9,
+    })
+    tm.assert_frame_equal(result[expected.columns], expected)

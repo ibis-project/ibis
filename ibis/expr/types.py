@@ -648,11 +648,11 @@ def param(type, name=None):
     return expr.name(name)
 
 
-def distinct_roots(*args):
-    all_roots = []
-    for arg in args:
-        all_roots.extend(arg._root_tables())
-    return list(toolz.unique(all_roots, key=id))
+def distinct_roots(*expressions):
+    roots = toolz.concat(
+        expression._root_tables() for expression in expressions
+    )
+    return list(toolz.unique(roots, key=id))
 
 
 # ---------------------------------------------------------------------

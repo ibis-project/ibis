@@ -24,7 +24,7 @@ from ibis.expr.datatypes import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr, Expr,
                              ValueExpr, ColumnExpr, TableExpr,
-                             ValueOp, _safe_repr)
+                             ValueOp, _safe_repr, distinct_roots)
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
@@ -829,26 +829,40 @@ class AnalyticOp(ValueOp):
 
 class WindowOp(ValueOp):
 
-    output_type = rules.type_of_arg(0)
+    def output_type(self):
+        return self.args[0].type().array_type()
 
     def __init__(self, expr, window):
         from ibis.expr.window import propagate_down_window
         if not is_analytic(expr):
-            raise com.IbisInputError('Expression does not contain a valid '
-                                     'window operation')
+            raise com.IbisInputError(
+                'Expression does not contain a valid window operation'
+            )
 
         table = ir.find_base_table(expr)
         if table is not None:
             window = window.bind(table)
 
         expr = propagate_down_window(expr, window)
-
-        ValueOp.__init__(self, expr, window)
+        super(WindowOp, self).__init__(expr, window)
 
     def over(self, window):
         existing_window = self.args[1]
         new_window = existing_window.combine(window)
         return WindowOp(self.args[0], new_window)
+
+    def root_tables(self):
+        window = self.args[1]
+        result = list(toolz.unique(
+            itertools.chain(
+                self.args[0]._root_tables(),
+                distinct_roots(
+                    *itertools.chain(window._order_by, window._group_by)
+                )
+            ),
+            key=id
+        ))
+        return result
 
 
 def is_analytic(expr, exclude_windows=False):

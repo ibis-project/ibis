@@ -1077,16 +1077,21 @@ WHERE `timestamp_col` < months_add('2010-01-01 00:00:00', 3) AND
         worst = tmp2.limit(10)
 
         result = to_sql(worst)
+
+        # TODO(cpcloud): We should be able to flatten the second subquery into
+        # the first
         expected = """\
-SELECT *
+SELECT t0.*
 FROM (
-  SELECT `arrdelay`, `dest`,
-         avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dest_avg`,
+  SELECT *, avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dest_avg`,
          `arrdelay` - avg(`arrdelay`) OVER (PARTITION BY `dest`) AS `dev`
-  FROM airlines
+  FROM (
+    SELECT `arrdelay`, `dest`
+    FROM airlines
+  ) t2
 ) t0
-WHERE `dev` IS NOT NULL
-ORDER BY `dev` DESC
+WHERE t0.`dev` IS NOT NULL
+ORDER BY t0.`dev` DESC
 LIMIT 10"""
         assert result == expected
 
