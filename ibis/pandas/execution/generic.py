@@ -763,3 +763,18 @@ def execute_array_collect_group_by(op, data, **kwargs):
 @execute_node.register(ops.SelfReference, pd.DataFrame)
 def execute_node_self_reference_dataframe(op, data, **kwargs):
     return data
+
+
+@execute_node.register(ir.ValueList)
+def execute_node_value_list(op, **kwargs):
+    return [execute(arg, **kwargs) for arg in op.values]
+
+
+@execute_node.register(ops.Contains, pd.Series, list)
+def execute_node_contains_series_list(op, data, elements, **kwargs):
+    return data.isin(elements)
+
+
+@execute_node.register(ops.NotContains, pd.Series, list)
+def execute_node_not_contains_series_list(op, data, elements, **kwargs):
+    return ~data.isin(elements)
