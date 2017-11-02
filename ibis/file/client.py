@@ -1,6 +1,6 @@
 import ibis
 import ibis.expr.types as ir
-from ibis.pandas.core import execute, execute_with_scope  # noqa
+from ibis.pandas.core import execute
 
 try:
     import pathlib
@@ -42,7 +42,7 @@ class FileClient(ibis.client.Client):
     def execute(self, expr, params=None, **kwargs):  # noqa
         assert isinstance(expr, ir.Expr)
         scope = kwargs.pop('scope', {})
-        return execute_with_scope(
+        return execute(
             expr, scope=scope,
             params=params, **kwargs)
 

@@ -447,9 +447,8 @@ class UnsignedInteger(Integer):
 
     def can_implicit_cast(self, other):
         return (
-            isinstance(other, Integer) and
-            other >= 0 and
-            (type(self) is Integer or other._nbytes <= self._nbytes)
+            isinstance(other, UnsignedInteger) and
+            other._nbytes <= self._nbytes
         )
 
     def valid_literal(self, value):
@@ -479,28 +478,28 @@ class Floating(Primitive):
         return isinstance(value, valid_floating_types)
 
 
-class Int8(Integer):
+class Int8(SignedInteger):
 
     __slots__ = ()
 
     _nbytes = 1
 
 
-class Int16(Integer):
+class Int16(SignedInteger):
 
     __slots__ = ()
 
     _nbytes = 2
 
 
-class Int32(Integer):
+class Int32(SignedInteger):
 
     __slots__ = ()
 
     _nbytes = 4
 
 
-class Int64(Integer):
+class Int64(SignedInteger):
 
     __slots__ = ()
 
