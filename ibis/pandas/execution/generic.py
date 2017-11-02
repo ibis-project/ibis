@@ -40,6 +40,12 @@ def execute_limit_frame(op, data, limit, offset, **kwargs):
     return data.iloc[offset:offset + limit]
 
 
+@execute_node.register(ops.Cast, SeriesGroupBy, dt.DataType)
+def execute_cast_series_group_by(op, data, type, **kwargs):
+    result = execute_node(op, data.obj, type, **kwargs)
+    return result.groupby(data.grouper.groupings)
+
+
 @execute_node.register(ops.Cast, pd.Series, dt.DataType)
 def execute_cast_series_generic(op, data, type, **kwargs):
     return data.astype(constants.IBIS_TYPE_TO_PANDAS_TYPE[type])

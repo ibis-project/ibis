@@ -670,3 +670,14 @@ def test_notin(t, df, elements):
     expected = ~df.plain_float64.isin(elements)
     result = expr.execute()
     tm.assert_series_equal(result, expected)
+
+
+def test_cast_on_group_by(t, df):
+    expr = t.groupby(t.dup_strings).aggregate(
+        casted=(t.float64_with_zeros == 0).cast('int64').sum()
+    )
+    result = expr.execute()
+    expected = df.groupby('dup_strings').float64_with_zeros.apply(
+        lambda s: (s == 0).astype('int64').sum()
+    ).reset_index().rename(columns={'float64_with_zeros': 'casted'})
+    tm.assert_frame_equal(result, expected)
