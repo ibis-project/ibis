@@ -681,3 +681,21 @@ def test_cast_on_group_by(t, df):
         lambda s: (s == 0).astype('int64').sum()
     ).reset_index().rename(columns={'float64_with_zeros': 'casted'})
     tm.assert_frame_equal(result, expected)
+
+
+def test_left_multiplication(t, df):
+    expr = 1.0 * t.float64_with_zeros
+    result = expr.execute()
+    expected = 1.0 * df.float64_with_zeros
+    tm.assert_series_equal(result, expected)
+
+
+def test_left_multiplication_gb(t, df):
+    expr = t.groupby('dup_strings').aggregate(
+        foo=(1.0 * t.float64_with_zeros).sum()
+    )
+    result = expr.execute()
+    expected = df.groupby('dup_strings').float64_with_zeros.apply(
+        lambda s: (1.0 * s).sum()
+        ).reset_index().rename(columns={'float64_with_zeros': 'foo'})
+    tm.assert_frame_equal(result, expected)
