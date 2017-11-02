@@ -103,8 +103,6 @@ class PowerPromoter(BinaryPromoter):
         super(PowerPromoter, self).__init__(left, right, operator.pow)
 
     def _get_type(self):
-        rval = self.args[1].op()
-
         if util.any_of(self.args, ir.FloatingValue):
             if util.any_of(self.args, ir.DoubleValue):
                 return 'double'
@@ -112,10 +110,8 @@ class PowerPromoter(BinaryPromoter):
                 return 'float'
         elif util.any_of(self.args, ir.DecimalValue):
             return _decimal_promoted_type(self.args)
-        elif isinstance(rval, ir.Literal) and rval.value < 0:
-            return 'double'
         elif util.all_of(self.args, ir.IntegerValue):
-            return self._get_int_type()
+            return 'double'
         else:
             raise NotImplementedError(
                 'Operands {}, {} not supported for binary operation {}'.format(

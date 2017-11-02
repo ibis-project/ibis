@@ -723,32 +723,32 @@ def test_binop_string_type_error(table, operation):
         (operator.truediv, 'b', -5, 'double'),
         (operator.truediv, 'c', 5, 'double'),
 
-        (operator.pow, 'a', 0, 'int8'),
-        (operator.pow, 'b', 0, 'int16'),
-        (operator.pow, 'c', 0, 'int32'),
-        (operator.pow, 'd', 0, 'int64'),
+        (operator.pow, 'a', 0, 'double'),
+        (operator.pow, 'b', 0, 'double'),
+        (operator.pow, 'c', 0, 'double'),
+        (operator.pow, 'd', 0, 'double'),
         (operator.pow, 'e', 0, 'float'),
         (operator.pow, 'f', 0, 'double'),
 
-        (operator.pow, 'a', 2, 'int16'),
-        (operator.pow, 'b', 2, 'int32'),
-        (operator.pow, 'c', 2, 'int64'),
-        (operator.pow, 'd', 2, 'int64'),
+        (operator.pow, 'a', 2, 'double'),
+        (operator.pow, 'b', 2, 'double'),
+        (operator.pow, 'c', 2, 'double'),
+        (operator.pow, 'd', 2, 'double'),
 
         (operator.pow, 'a', 1.5, 'double'),
         (operator.pow, 'b', 1.5, 'double'),
         (operator.pow, 'c', 1.5, 'double'),
         (operator.pow, 'd', 1.5, 'double'),
 
+        (operator.pow, 'e', 2, 'float'),
+        (operator.pow, 'f', 2, 'double'),
+
         (operator.pow, 'a', -2, 'double'),
         (operator.pow, 'b', -2, 'double'),
         (operator.pow, 'c', -2, 'double'),
         (operator.pow, 'd', -2, 'double'),
-
-        (operator.pow, 'e', 2, 'float'),
-        (operator.pow, 'f', 2, 'double'),
     ],
-    ids=str,
+    ids=lambda arg: str(getattr(arg, '__name__', arg))
 )
 def test_literal_promotions(table, op, name, case, ex_type):
     col = table[name]
