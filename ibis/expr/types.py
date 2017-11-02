@@ -1582,8 +1582,8 @@ class ValueList(ValueOp):
     """
 
     def __init__(self, args):
-        self.values = [as_value_expr(x) for x in args]
-        ValueOp.__init__(self, self.values)
+        self.values = list(map(as_value_expr, args))
+        super(ValueList, self).__init__(self.values)
 
     def root_tables(self):
         return distinct_roots(*self.values)
