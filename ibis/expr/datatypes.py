@@ -506,27 +506,27 @@ class Int64(SignedInteger):
     _nbytes = 8
 
 
-class UnsignedInt8(UnsignedInteger):
+class UInt8(UnsignedInteger):
 
     _nbytes = 1
 
 
-class UnsignedInt16(UnsignedInteger):
+class UInt16(UnsignedInteger):
 
     _nbytes = 2
 
 
-class UnsignedInt32(UnsignedInteger):
+class UInt32(UnsignedInteger):
 
     _nbytes = 4
 
 
-class UnsignedInt64(UnsignedInteger):
+class UInt64(UnsignedInteger):
 
     _nbytes = 8
 
 
-class HalfFloat(Floating):
+class Halffloat(Floating):
 
     _nbytes = 2
 
@@ -763,13 +763,13 @@ int16 = Int16()
 int32 = Int32()
 int64 = Int64()
 uint_ = UnsignedInteger()
-uint8 = UnsignedInt8()
-uint16 = UnsignedInt16()
-uint32 = UnsignedInt32()
-uint64 = UnsignedInt64()
+uint8 = UInt8()
+uint16 = UInt16()
+uint32 = UInt32()
+uint64 = UInt64()
 float = Float()
-halffloat = HalfFloat()
-float16 = HalfFloat()
+halffloat = Halffloat()
+float16 = Halffloat()
 float32 = Float()
 float64 = Double()
 double = Double()

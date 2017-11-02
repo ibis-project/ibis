@@ -22,7 +22,14 @@ New Backends
 * File Support for CSV & HDF5 (:issue:`1165`)
 * File Support for Parquet Format (:issue:`1175`)
 
-  v0.12.0 (October 28, 2017)
+New Features
+~~~~~~~~~~~~
+
+* Support for Unsigned Integer Types (:issue:`1194`)
+
+
+
+v0.12.0 (October 28, 2017)
 --------------------------
 
 This release brings Clickhouse and BigQuery SQL support along with a number of
