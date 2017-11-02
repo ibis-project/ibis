@@ -1279,3 +1279,9 @@ def test_pickle_table_expr():
     raw = pickle.dumps(t0)
     t1 = pickle.loads(raw)
     assert t1.equals(t0)
+
+
+def test_group_by_key_function():
+    t = ibis.table([('a', 'timestamp'), ('b', 'string'), ('c', 'double')])
+    expr = t.groupby(new_key=lambda t: t.b.length()).aggregate(foo=t.c.mean())
+    assert expr.columns == ['new_key', 'foo']
