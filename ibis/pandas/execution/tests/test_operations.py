@@ -683,19 +683,47 @@ def test_cast_on_group_by(t, df):
     tm.assert_frame_equal(result, expected)
 
 
-def test_left_multiplication(t, df):
-    expr = 1.0 * t.float64_with_zeros
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.add,
+        operator.mul,
+        operator.sub,
+        operator.truediv,
+        operator.floordiv,
+        operator.mod,
+        operator.pow,
+    ],
+    ids=operator.attrgetter('__name__'),
+)
+@pytest.mark.parametrize('args', [lambda c: (1.0, c), lambda c: (c, 1.0)])
+def test_left_binary_op(t, df, op, args):
+    expr = op(*args(t.float64_with_zeros))
     result = expr.execute()
-    expected = 1.0 * df.float64_with_zeros
+    expected = op(*args(df.float64_with_zeros))
     tm.assert_series_equal(result, expected)
 
 
-def test_left_multiplication_gb(t, df):
+@pytest.mark.parametrize(
+    'op',
+    [
+        operator.add,
+        operator.mul,
+        operator.sub,
+        operator.truediv,
+        operator.floordiv,
+        operator.mod,
+        operator.pow,
+    ],
+    ids=operator.attrgetter('__name__'),
+)
+@pytest.mark.parametrize('args', [lambda c: (1.0, c), lambda c: (c, 1.0)])
+def test_left_binary_op_gb(t, df, op, args):
     expr = t.groupby('dup_strings').aggregate(
-        foo=(1.0 * t.float64_with_zeros).sum()
+        foo=op(*args(t.float64_with_zeros)).sum()
     )
     result = expr.execute()
     expected = df.groupby('dup_strings').float64_with_zeros.apply(
-        lambda s: (1.0 * s).sum()
-        ).reset_index().rename(columns={'float64_with_zeros': 'foo'})
+        lambda s: op(*args(s)).sum()
+    ).reset_index().rename(columns={'float64_with_zeros': 'foo'})
     tm.assert_frame_equal(result, expected)

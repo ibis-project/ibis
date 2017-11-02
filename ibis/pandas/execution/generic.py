@@ -470,11 +470,9 @@ def execute_not_bool(op, data, **kwargs):
 @execute_node.register(ops.Add, six.string_types, six.string_types)
 @execute_node.register(ops.Add, pd.Series, six.string_types)
 @execute_node.register(ops.Add, six.string_types, pd.Series)
+# String comparison
 @execute_node.register(ops.Comparison, six.string_types, pd.Series)
 @execute_node.register(ops.Comparison, pd.Series, six.string_types)
-# @execute_node.register(ops.Equals, six.string_types, pd.Series)
-# @execute_node.register(ops.Equals, pd.Series, six.string_types)
-# @execute_node.register(ops.NotEquals, six.string_types, pd.Series)
 # String repeat
 @execute_node.register(ops.Multiply, integer_types, six.string_types)
 @execute_node.register(ops.Multiply, six.string_types, integer_types)

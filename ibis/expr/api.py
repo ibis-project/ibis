@@ -1185,7 +1185,7 @@ _numeric_value_methods = dict(
     rsub=rsub,
 
     __rmul__=_rbinop_expr('__rmul__', _ops.Multiply),
-    __rpow__=_binop_expr('__rpow__', _ops.Power),
+    __rpow__=_rbinop_expr('__rpow__', _ops.Power),
 
     __mod__=mod,
     __rmod__=_rbinop_expr('__rmod__', _ops.Modulus),
