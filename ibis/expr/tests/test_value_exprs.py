@@ -747,7 +747,8 @@ def test_binop_string_type_error(table, operation):
 
         (operator.pow, 'e', 2, 'float'),
         (operator.pow, 'f', 2, 'double'),
-    ]
+    ],
+    ids=str,
 )
 def test_literal_promotions(table, op, name, case, ex_type):
     col = table[name]
