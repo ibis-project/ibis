@@ -50,6 +50,9 @@ projection is a window operation.
 
 @compute_projection.register(ir.ScalarExpr, ops.Selection, pd.DataFrame)
 def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
+    name = expr._name
+    assert name is not None, 'Scalar selection name is None'
+
     op = expr.op()
     parent_table_op = parent.table.op()
 
@@ -69,11 +72,12 @@ def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
 
     new_scope = toolz.merge(scope, additional_scope, factory=OrderedDict)
     result = execute(expr, new_scope, **kwargs)
-    return result
+    return pd.Series([result], name=name, index=data.index)
 
 
 @compute_projection.register(ir.ColumnExpr, ops.Selection, pd.DataFrame)
 def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
+    result_name = getattr(expr, '_name', None)
     op = expr.op()
     parent_table_op = parent.table.op()
 
@@ -82,15 +86,20 @@ def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
         name = op.name
 
         if name in data:
-            return data[name]
+            return data[name].rename(result_name or name)
 
         if not isinstance(parent_table_op, ops.Join):
             raise KeyError(name)
 
         root_table, = op.root_tables()
-        suffixes = {parent_table_op.left.op(): constants.LEFT_JOIN_SUFFIX,
-                    parent_table_op.right.op(): constants.RIGHT_JOIN_SUFFIX}
-        return data.loc[:, name + suffixes[root_table]].rename(name)
+        left_root, right_root = ir.distinct_roots(
+            parent_table_op.left, parent_table_op.right
+        )
+        suffixes = {left_root: constants.LEFT_JOIN_SUFFIX,
+                    right_root: constants.RIGHT_JOIN_SUFFIX}
+        return data.loc[:, name + suffixes[root_table]].rename(
+            result_name or name
+        )
 
     data_columns = frozenset(data.columns)
     additional_scope = {
@@ -102,7 +111,8 @@ def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
 
     new_scope = toolz.merge(scope, additional_scope)
     result = execute(expr, new_scope, **kwargs)
-    return result
+    assert result_name is not None, 'Column selection name is None'
+    return result.rename(result_name)
 
 
 @compute_projection.register(ir.TableExpr, ops.Selection, pd.DataFrame)
@@ -152,8 +162,9 @@ def remap_overlapping_column_names(table_op, root_table, data_columns):
     if not isinstance(table_op, ops.Join):
         return None
 
-    suffixes = {table_op.left.op(): constants.LEFT_JOIN_SUFFIX,
-                table_op.right.op(): constants.RIGHT_JOIN_SUFFIX}
+    left_root, right_root = ir.distinct_roots(table_op.left, table_op.right)
+    suffixes = {left_root: constants.LEFT_JOIN_SUFFIX,
+                right_root: constants.RIGHT_JOIN_SUFFIX}
     column_names = [
         ({name, name + suffixes[root_table]} & data_columns, name)
         for name in root_table.schema.names
@@ -321,11 +332,6 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
             pandas_object = compute_projection(
                 selection, op, data, scope=scope, **kwargs
             )
-
-            if isinstance(pandas_object, pd.Series):
-                pandas_object = pandas_object.rename(
-                    getattr(selection, '_name', pandas_object.name)
-                )
             data_pieces.append(pandas_object)
         result = pd.concat(data_pieces, axis=1)
 
