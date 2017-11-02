@@ -28,9 +28,9 @@ class CSVTable(ops.DatabaseTable):
 class CSVClient(FileClient):
     extension = 'csv'
 
-    def insert(self, path, t, index=False, **kwargs):
+    def insert(self, path, expr, index=False, **kwargs):
         path = self.root / path
-        data = execute(t)
+        data = execute(expr)
         data.to_csv(str(path), index=index, **kwargs)
 
     def table(self, name, path=None):
@@ -50,32 +50,10 @@ class CSVClient(FileClient):
         return t
 
     def list_tables(self, path=None):
-        # tables are files in a dir
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_file():
-                    if str(d).endswith(self.extension):
-                        tables.append(d.stem)
-        elif path.is_file():
-            if str(path).endswith(self.extension):
-                tables.append(path.stem)
-        return tables
+        return self._list_tables_files(path)
 
     def list_databases(self, path=None):
-        # databases are dir
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_dir():
-                    tables.append(d.name)
-        return tables
+        return self._list_databases_dirs(path)
 
 
 @pre_execute.register(CSVTable, CSVClient)
@@ -87,6 +65,10 @@ def csv_pre_execute_table(op, client, scope=None, **kwargs):
 
 @pre_execute.register(ops.Selection, CSVClient)
 def csv_pre_execute(op, client, scope=None, **kwargs):
+
+    # we have alredy compute
+    if op in scope:
+        return scope
 
     pt = physical_tables(op.table.op())
     pt = pt[0]

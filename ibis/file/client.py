@@ -1,13 +1,18 @@
 import ibis
 import ibis.expr.types as ir
-from ibis.file.utils import pathlib
 from ibis.pandas.core import execute, execute_with_scope  # noqa
+
+try:
+    import pathlib
+except ImportError:
+
+    # py2 compat
+    import pathlib2 as pathlib
 
 
 class FileClient(ibis.client.Client):
 
     def __init__(self, root):
-        super(FileClient, self).__init__()
         self.root = pathlib.Path(str(root))
         self.dictionary = {}
 
@@ -28,9 +33,9 @@ class FileClient(ibis.client.Client):
 
         new_name = "{}.{}".format(name, self.extension)
         if (self.root / name).is_dir():
-            path = path / name
+            path /= name
         elif not str(path).endswith(new_name):
-            path = path / new_name
+            path /= new_name
 
         return FileDatabase(name, self, path=path)
 
@@ -44,8 +49,55 @@ class FileClient(ibis.client.Client):
     def list_tables(self, path=None):
         raise NotImplementedError
 
+    def _list_tables_files(self, path=None):
+        # tables are files in a dir
+        if path is None:
+            path = self.root
+
+        tables = []
+        if path.is_dir():
+            for d in path.iterdir():
+                if d.is_file():
+                    if str(d).endswith(self.extension):
+                        tables.append(d.stem)
+        elif path.is_file():
+            if str(path).endswith(self.extension):
+                tables.append(path.stem)
+        return tables
+
     def list_databases(self, path=None):
         raise NotImplementedError
+
+    def _list_databases_dirs(self, path=None):
+        # databases are dir
+        if path is None:
+            path = self.root
+
+        tables = []
+        if path.is_dir():
+            for d in path.iterdir():
+                if d.is_dir():
+                    tables.append(d.name)
+        return tables
+
+    def _list_databases_dirs_or_files(self, path=None):
+        # databases are dir & file
+        if path is None:
+            path = self.root
+
+        tables = []
+        if path.is_dir():
+            for d in path.iterdir():
+                if d.is_dir():
+                    tables.append(d.name)
+                elif d.is_file():
+                    if str(d).endswith(self.extension):
+                        tables.append(d.stem)
+        elif path.is_file():
+            # by definition we are at the db level at this point
+            pass
+
+        return tables
 
 
 class FileDatabase(ibis.client.Database):
@@ -60,16 +112,13 @@ class FileDatabase(ibis.client.Database):
     def __dir__(self):
         dbs = self.list_databases(path=self.path)
         tables = self.list_tables(path=self.path)
-        return sorted(list(set(dbs).union(set(tables))))
+        return sorted(set(dbs).union(set(tables)))
 
     def __getattr__(self, name):
         try:
-            return object.__getattribute__(self, name)
+            return self.table(name, path=self.path)
         except AttributeError:
-            try:
-                return self.table(name, path=self.path)
-            except AttributeError:
-                return self.database(name, path=self.path)
+            return self.database(name, path=self.path)
 
     def table(self, name, path):
         return self.client.table(name, path=path)

@@ -26,11 +26,11 @@ class HDFTable(ops.DatabaseTable):
 class HDFClient(FileClient):
     extension = 'h5'
 
-    def insert(self, path, key, t, format='table',
+    def insert(self, path, key, expr, format='table',
                data_columns=True, **kwargs):
 
         path = self.root / path
-        data = execute(t)
+        data = execute(expr)
         data.to_hdf(str(path), key, format=format,
                     data_columns=data_columns, **kwargs)
 
@@ -62,27 +62,12 @@ class HDFClient(FileClient):
         return []
 
     def list_databases(self, path=None):
-        # databases are dir & a .h5 file
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_dir():
-                    tables.append(d.name)
-                elif d.is_file():
-                    if str(d).endswith(self.extension):
-                        tables.append(d.stem)
-        elif path.is_file():
-            # by definition we are at the db level at this point
-            pass
-
-        return tables
+        return self._list_databases_dirs_or_files(path)
 
 
 @pre_execute.register(HDFTable, HDFClient)
 def hdf_pre_execute_table(op, client, scope=None, **kwargs):
+
     key = op.name
     path = client.dictionary[key]
     df = pd.read_hdf(str(path), key, mode='r')

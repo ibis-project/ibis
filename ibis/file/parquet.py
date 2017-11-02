@@ -11,6 +11,7 @@ def connect(dictionary):
         return ParquetClient(dictionary)
 
 
+# TODO(jreback) complex types are not implemented
 _ARROW_DTYPE_TO_IBIS_TYPE = {
     'int8': dt.int8,
     'int16': dt.int16,
@@ -52,10 +53,10 @@ class ParquetTable(ops.DatabaseTable):
 class ParquetClient(FileClient):
     extension = 'parquet'
 
-    def insert(self, path, t, **kwargs):
+    def insert(self, path, expr, **kwargs):
 
         path = self.root / path
-        df = execute(t)
+        df = execute(expr)
         table = pa.Table.from_pandas(df)
         pq.write_table(table, str(path))
 
@@ -76,32 +77,10 @@ class ParquetClient(FileClient):
         return t
 
     def list_tables(self, path=None):
-        # tables are files in a dir
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_file():
-                    if str(d).endswith(self.extension):
-                        tables.append(d.stem)
-        elif path.is_file():
-            if str(path).endswith(self.extension):
-                tables.append(path.stem)
-        return tables
+        return self._list_tables_files(path)
 
     def list_databases(self, path=None):
-        # databases are dir
-        if path is None:
-            path = self.root
-
-        tables = []
-        if path.is_dir():
-            for d in path.iterdir():
-                if d.is_dir():
-                    tables.append(d.name)
-        return tables
+        return self._list_databases_dirs(path)
 
 
 @pre_execute.register(ParquetTable, ParquetClient)
