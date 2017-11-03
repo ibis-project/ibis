@@ -66,28 +66,29 @@ def csv_pre_execute_table(op, client, scope=None, **kwargs):
 @pre_execute.register(ops.Selection, CSVClient)
 def csv_pre_execute(op, client, scope=None, **kwargs):
 
-    # we have alredy compute
-    if op in scope:
-        return scope
+    tables = physical_tables(op.table.op())
 
-    pt = physical_tables(op.table.op())
-    pt = pt[0]
+    ops = {}
+    for table in tables:
+        if table in scope:
+            continue
 
-    path = client.dictionary[pt.name]
+        path = client.dictionary[table.name]
 
-    if op.selections:
+        if op.selections:
 
-        header = pd.read_csv(str(path), header=0, nrows=1)
-        usecols = [getattr(s.op(), 'name', None) or s.get_name()
-                   for s in op.selections]
+            header = pd.read_csv(str(path), header=0, nrows=1)
+            usecols = [getattr(s.op(), 'name', None) or s.get_name()
+                       for s in op.selections]
 
-        # we cannot read all the columns taht we would like
-        if len(pd.Index(usecols) & header.columns) != len(usecols):
+            # we cannot read all the columns taht we would like
+            if len(pd.Index(usecols) & header.columns) != len(usecols):
+                usecols = None
+
+        else:
+
             usecols = None
 
-    else:
-
-        usecols = None
-
-    df = pd.read_csv(str(path), usecols=usecols, header=0)
-    return {op: df}
+        df = pd.read_csv(str(path), usecols=usecols, header=0)
+        ops[table] = df
+    return ops
