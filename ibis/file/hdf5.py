@@ -66,7 +66,11 @@ class HDFClient(FileClient):
 
 
 @pre_execute.register(HDFTable, HDFClient)
-def hdf_pre_execute_table(op, client, scope=None, **kwargs):
+def hdf_pre_execute_table(op, client, scope, **kwargs):
+
+    # cache
+    if isinstance(scope.get(op), pd.DataFrame):
+        return {}
 
     key = op.name
     path = client.dictionary[key]

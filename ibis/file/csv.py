@@ -57,14 +57,19 @@ class CSVClient(FileClient):
 
 
 @pre_execute.register(CSVTable, CSVClient)
-def csv_pre_execute_table(op, client, scope=None, **kwargs):
+def csv_pre_execute_table(op, client, scope, **kwargs):
+
+    # cache
+    if isinstance(scope.get(op), pd.DataFrame):
+        return {}
+
     path = client.dictionary[op.name]
     df = pd.read_csv(str(path), header=0)
     return {op: df}
 
 
 @pre_execute.register(ops.Selection, CSVClient)
-def csv_pre_execute(op, client, scope=None, **kwargs):
+def csv_pre_execute(op, client, scope, **kwargs):
 
     tables = physical_tables(op.table.op())
 

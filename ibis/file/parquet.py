@@ -3,6 +3,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.file.client import FileClient
 from ibis.pandas.core import pre_execute, execute
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -84,7 +85,11 @@ class ParquetClient(FileClient):
 
 
 @pre_execute.register(ParquetTable, ParquetClient)
-def parquet_data_preload_uri_client(op, client, scope=None, **kwargs):
+def parquet_pre_execute_client(op, client, scope, **kwargs):
+
+    # cache
+    if isinstance(scope.get(op), pd.DataFrame):
+        return {}
 
     path = client.dictionary[op.name]
     table = pq.read_table(str(path))
