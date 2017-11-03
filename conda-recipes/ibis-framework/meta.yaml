@@ -37,7 +37,7 @@ test:
     - multipledispatch
     - pytest >=3
     - python-graphviz  # [not (py34 and win)]
-    - pyarrow >=0.6.0 [not py34]
+    - pyarrow >=0.7.1 [not py34]
   imports:
     - ibis
     - ibis.expr
