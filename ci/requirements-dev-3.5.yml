@@ -15,7 +15,7 @@ dependencies:
   - python-graphviz
   - six
   - sh
-  - sqlalchemy>=1.0.0
+  - sqlalchemy>=1.0.0,<1.1.15
   - thrift<=0.9.3
   - thriftpy<=0.3.9
   - toolz
