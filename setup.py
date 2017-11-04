@@ -30,11 +30,11 @@ See http://ibis-project.org
 impala_requires = [
     'hdfs>=2.0.0',
     'impyla>=0.13.7',
-    'sqlalchemy>=1.0.0',
+    'sqlalchemy>=1.0.0,<1.1.15',
     'thrift<=0.9.3',
 ]
 
-sqlite_requires = ['sqlalchemy>=1.0.0']
+sqlite_requires = ['sqlalchemy>=1.0.0,<1.1.15']
 postgres_requires = sqlite_requires + ['psycopg2']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
