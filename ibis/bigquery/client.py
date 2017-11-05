@@ -170,6 +170,11 @@ class BigQueryClient(SQLClient):
         bq_table = self._proxy.get_table(table_id, dataset_id)
         return bigquery_table_to_ibis_schema(bq_table)
 
+    def raw_sql(self, stmt, results=False):
+        cur = self._execute(stmt, results=results)
+        if results:
+            return BigQuery(None, None)._fetch(cur)
+
 
 _DTYPE_TO_IBIS_TYPE = {
     'INT64': dt.int64,
