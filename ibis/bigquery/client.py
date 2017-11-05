@@ -121,7 +121,10 @@ class BigQueryClient(SQLClient):
         query = self._proxy.client.run_sync_query(stmt)
         query.use_legacy_sql = False
         query.run()
-        return BigQueryCursor(query)
+        if results:
+            return BigQueryCursor(query)
+        else:
+            pass
 
     def database(self, name=None):
         if name is None:
