@@ -461,9 +461,20 @@ def execute_not_bool(op, data, **kwargs):
     return not data
 
 
-@execute_node.register(ops.BinaryOp, pd.Series, (pd.Series,) + simple_types)
-@execute_node.register(ops.BinaryOp, numeric_types, numeric_types)
-@execute_node.register(ops.BinaryOp, six.string_types, six.string_types)
+@execute_node.register(
+    ops.BinaryOp, (pd.Series, numeric_types), (pd.Series, numeric_types)
+)
+@execute_node.register(
+    (ops.Add, ops.Comparison), six.string_types, six.string_types
+)
+@execute_node.register(
+    (ops.Add, ops.Comparison, ops.Multiply), pd.Series, six.string_types
+)
+@execute_node.register(
+    (ops.Add, ops.Comparison, ops.Multiply), six.string_types, pd.Series
+)
+@execute_node.register(ops.Multiply, integer_types, six.string_types)
+@execute_node.register(ops.Multiply, six.string_types, integer_types)
 def execute_binary_op(op, left, right, **kwargs):
     op_type = type(op)
     try:
@@ -485,14 +496,20 @@ def execute_binary_op_series_group_by(op, left, right, **kwargs):
             'Cannot perform {} operation on two series with '
             'different groupings'.format(type(op).__name__)
         )
-    result = execute_binary_op(op, left.obj, right.obj)
+    result = execute_node(op, left.obj, right.obj, **kwargs)
     return result.groupby(left_groupings)
 
 
 @execute_node.register(ops.BinaryOp, SeriesGroupBy, simple_types)
-def execute_binary_op_series_gb(op, left, right, **kwargs):
+def execute_binary_op_series_gb_simple(op, left, right, **kwargs):
     result = execute_node(op, left.obj, right, **kwargs)
     return result.groupby(left.grouper.groupings)
+
+
+@execute_node.register(ops.BinaryOp, simple_types, SeriesGroupBy)
+def execute_binary_op_simple_series_gb(op, left, right, **kwargs):
+    result = execute_node(op, left, right.obj, **kwargs)
+    return result.groupby(right.grouper.groupings)
 
 
 @execute_node.register(ops.UnaryOp, SeriesGroupBy)
