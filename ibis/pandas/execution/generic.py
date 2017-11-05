@@ -461,23 +461,20 @@ def execute_not_bool(op, data, **kwargs):
     return not data
 
 
-# Generic binary operations
-@execute_node.register(ops.BinaryOp, numeric_types, numeric_types)
-@execute_node.register(ops.BinaryOp, pd.Series, numeric_types)
-@execute_node.register(ops.BinaryOp, numeric_types, pd.Series)
-@execute_node.register(ops.BinaryOp, pd.Series, pd.Series)
-# String concat
-@execute_node.register(ops.Add, six.string_types, six.string_types)
-@execute_node.register(ops.Add, pd.Series, six.string_types)
-@execute_node.register(ops.Add, six.string_types, pd.Series)
-# String comparison
-@execute_node.register(ops.Comparison, six.string_types, pd.Series)
-@execute_node.register(ops.Comparison, pd.Series, six.string_types)
-# String repeat
+@execute_node.register(
+    ops.BinaryOp, (pd.Series, numeric_types), (pd.Series, numeric_types)
+)
+@execute_node.register(
+    (ops.Add, ops.Comparison), six.string_types, six.string_types
+)
+@execute_node.register(
+    (ops.Add, ops.Comparison, ops.Multiply), pd.Series, six.string_types
+)
+@execute_node.register(
+    (ops.Add, ops.Comparison, ops.Multiply), six.string_types, pd.Series
+)
 @execute_node.register(ops.Multiply, integer_types, six.string_types)
 @execute_node.register(ops.Multiply, six.string_types, integer_types)
-@execute_node.register(ops.Multiply, pd.Series, six.string_types)
-@execute_node.register(ops.Multiply, six.string_types, pd.Series)
 def execute_binary_op(op, left, right, **kwargs):
     op_type = type(op)
     try:
