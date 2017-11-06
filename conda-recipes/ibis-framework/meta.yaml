@@ -13,6 +13,8 @@ source:
 requirements:
   build:
     - enum34  # [py27]
+    - funcsigs # [py27]
+    - functools32 # [py27]
     - pathlib2  # [py27]
     - numpy >=1.10.0
     - pandas >=0.18.1
@@ -24,6 +26,8 @@ requirements:
     - toolz
   run:
     - enum34  # [py27]
+    - funcsigs # [py27]
+    - functools32 # [py27]
     - pathlib2  # [py27]
     - numpy >=1.10.0
     - pandas >=0.18.1

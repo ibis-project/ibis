@@ -3,7 +3,6 @@
 
 from __future__ import absolute_import
 
-import functools
 import itertools
 import operator
 
@@ -17,6 +16,8 @@ from multipledispatch import Dispatcher
 
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
+
+from ibis.compat import functools
 
 from ibis.pandas.dispatch import execute, execute_node
 from ibis.pandas.execution import constants, util

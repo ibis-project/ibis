@@ -18,14 +18,15 @@ import string
 import platform
 import warnings
 
-from functools import reduce
-
 import sqlalchemy as sa
+
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
+
+from ibis.compat import functools
 from ibis.sql.alchemy import (unary, fixed_arity, infix_op,
                               _variance_reduction, _get_sqla_table)
 import ibis.common as com
@@ -308,7 +309,7 @@ def _reduce_tokens(tokens, arg):
                     )
 
                 new_tokens, _ = _scanner.scan(new_pattern)
-                value = reduce(
+                value = functools.reduce(
                     sa.sql.ColumnElement.concat,
                     _reduce_tokens(new_tokens, arg)
                 )
@@ -339,7 +340,7 @@ def _strftime(t, expr):
     arg, pattern = map(t.translate, expr.op().args)
     tokens, _ = _scanner.scan(pattern.value)
     reduced = _reduce_tokens(tokens, arg)
-    return reduce(sa.sql.ColumnElement.concat, reduced)
+    return functools.reduce(sa.sql.ColumnElement.concat, reduced)
 
 
 class array_search(expression.FunctionElement):

@@ -36,6 +36,7 @@ New Features
   ``ORDER BY`` clause (:issue:`1371`)
 * Add ``.get()`` operation on a Map type (:issue:`1376`)
 * Allow visualization of custom defined expressions
+* Add experimental support for pandas UDFs/UDAFs (:issue:`1277`)
 
 Bug Fixes
 ~~~~~~~~~
