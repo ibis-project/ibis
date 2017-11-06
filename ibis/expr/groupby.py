@@ -14,6 +14,10 @@
 
 # User API for grouped data operations
 
+from __future__ import absolute_import
+
+import types
+
 import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -29,6 +33,29 @@ def _resolve_exprs(table, exprs):
     return table._resolve(exprs)
 
 
+_function_types = tuple(
+    filter(
+        None,
+        (
+            types.BuiltinFunctionType,
+            types.BuiltinMethodType,
+            types.FunctionType,
+            types.LambdaType,
+            types.MethodType,
+            getattr(types, 'UnboundMethodType', None),
+        )
+    )
+)
+
+
+def _get_group_by_key(table, value):
+    if isinstance(value, six.string_types):
+        return table[value]
+    if isinstance(value, _function_types):
+        return value(table)
+    return value
+
+
 class GroupedTableExpr(object):
 
     """
@@ -40,7 +67,7 @@ class GroupedTableExpr(object):
     ):
         self.table = table
         self.by = util.promote_list(by if by is not None else []) + [
-            (table[v] if isinstance(v, six.string_types) else v).name(k)
+            _get_group_by_key(table, v).name(k)
             for k, v in sorted(expressions.items(), key=toolz.first)
         ]
         self._order_by = order_by or []
