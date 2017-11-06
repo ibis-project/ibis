@@ -1698,3 +1698,13 @@ FROM t0
 WHERE `value` = 42
 GROUP BY 1"""
     assert ibis.impala.compile(expr) == expected
+
+
+def test_nunique_where():
+    t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
+    expr = t.key.nunique(where=t.value >= 1.0)
+    expected = """\
+SELECT COUNT(DISTINCT CASE WHEN `value` >= 1.0 THEN `key` ELSE NULL END) AS `tmp`
+FROM t0"""  # noqa: E501
+    result = ibis.impala.compile(expr)
+    assert result == expected
