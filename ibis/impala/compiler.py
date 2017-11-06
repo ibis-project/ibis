@@ -833,7 +833,7 @@ def _count_distinct(translator, expr):
     arg, where = expr.op().args
 
     if where is not None:
-        arg_formatted = translator.translate(arg.ifelse(where, None))
+        arg_formatted = translator.translate(where.ifelse(arg, None))
     else:
         arg_formatted = translator.translate(arg)
     return 'COUNT(DISTINCT {})'.format(arg_formatted)
