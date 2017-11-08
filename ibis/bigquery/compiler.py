@@ -85,6 +85,7 @@ _sql_type_names = {
     'string': 'string',
     'boolean': 'boolean',
     'timestamp': 'timestamp',
+    'date': 'date',
 }
 
 
