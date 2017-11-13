@@ -168,6 +168,15 @@ def approx_count_distinct(arg):
     return bq_ops.ApproxCountDistinct(arg).to_expr()
 
 
+def _format_date(translator, expr):
+    (arg, fmt) = map(translator.translate, expr.op().args)
+    return 'FORMAT_DATE({}, {})'.format(fmt, arg)
+
+
+def format_date(fmt, arg):
+    return bq_ops.FormatDate(arg, fmt).to_expr()
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -195,6 +204,7 @@ _operation_registry.update({
     ops.Percentile: _percentile,
     bq_ops.ApproxQuantile: _approx_quantile,
     bq_ops.ApproxCountDistinct: _approx_count_distinct,
+    bq_ops.FormatDate: _format_date,
 })
 
 
