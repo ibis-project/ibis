@@ -29,3 +29,17 @@ class FormatDate(_ops.ValueOp):
 
     input_type = [rules.date, rules.string]
     output_type = rules.shape_like_arg(0, 'string')
+
+
+class DateDiff(_ops.ValueOp):
+
+    input_type = [rules.date,
+                  rules.date,
+                  rules.string_options(
+                      ['DAY', 'MONTH', 'QUARTER', 'YEAR'],
+                      case_sensitive=False,
+                      name='date_part',
+                      default='DAY',
+                  ),
+                  ]
+    output_type = rules.shape_like_arg(0, 'int64')

@@ -5,6 +5,7 @@ from ibis.bigquery.compiler import (  # noqa: F401
     percentile_aggregation,
     approx_quantile,
     approx_count_distinct,
+    date_diff,
     format_date,
 )
 

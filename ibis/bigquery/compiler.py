@@ -177,6 +177,16 @@ def format_date(fmt, arg):
     return bq_ops.FormatDate(arg, fmt).to_expr()
 
 
+def _date_diff(translator, expr):
+    (arg0, arg1, date_part) = expr.op().args
+    (af0, af1) = [translator.translate(arg) for arg in (arg0, arg1)]
+    return 'DATE_DIFF({}, {}, {})'.format(af0, af1, date_part)
+
+
+def date_diff(arg0, arg1, date_part='DAY'):
+    return bq_ops.DateDiff(arg0, arg1, date_part).to_expr()
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -204,6 +214,7 @@ _operation_registry.update({
     ops.Percentile: _percentile,
     bq_ops.ApproxQuantile: _approx_quantile,
     bq_ops.ApproxCountDistinct: _approx_count_distinct,
+    bq_ops.DateDiff: _date_diff,
     bq_ops.FormatDate: _format_date,
 })
 
