@@ -43,3 +43,18 @@ class DateDiff(_ops.ValueOp):
                   ),
                   ]
     output_type = rules.shape_like_arg(0, 'int64')
+
+
+class TimestampDiff(_ops.ValueOp):
+
+    input_type = [rules.timestamp,
+                  rules.timestamp,
+                  rules.string_options(
+                      ['MICROSECOND', 'MILLISECOND', 'SECOND',
+                       'MINUTE', 'HOUR'],
+                      case_sensitive=False,
+                      name='timestamp_part',
+                      default='SECOND',
+                  ),
+                  ]
+    output_type = rules.shape_like_arg(0, 'int64')

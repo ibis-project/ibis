@@ -6,6 +6,7 @@ from ibis.bigquery.compiler import (  # noqa: F401
     approx_quantile,
     approx_count_distinct,
     date_diff,
+    timestamp_diff,
     format_date,
 )
 
