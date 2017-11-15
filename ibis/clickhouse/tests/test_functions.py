@@ -102,6 +102,7 @@ def test_timestamp_now(con, translate):
     ('y', pd.Timestamp('2009-01-01')),
     ('m', pd.Timestamp('2009-05-01')),
     ('d', pd.Timestamp('2009-05-17')),
+    ('w', pd.Timestamp('2009-05-11')),
     ('h', pd.Timestamp('2009-05-17 12:00:00')),
     ('minute', pd.Timestamp('2009-05-17 12:34:00')),
 ])
