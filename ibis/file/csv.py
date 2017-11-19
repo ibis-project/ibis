@@ -79,6 +79,7 @@ def csv_pre_execute(op, client, scope, **kwargs):
             continue
 
         path = client.dictionary[table.name]
+        usecols = None
 
         if op.selections:
 
@@ -89,10 +90,6 @@ def csv_pre_execute(op, client, scope, **kwargs):
             # we cannot read all the columns taht we would like
             if len(pd.Index(usecols) & header.columns) != len(usecols):
                 usecols = None
-
-        else:
-
-            usecols = None
 
         df = pd.read_csv(str(path), usecols=usecols, header=0)
         ops[table] = df
