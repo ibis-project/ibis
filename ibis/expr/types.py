@@ -1375,11 +1375,11 @@ class UInt64Column(NumericColumn, UInt64Value):
     pass
 
 
-class HalffloatScalar(ScalarExpr, FloatValue):
+class HalffloatScalar(ScalarExpr, HalffloatValue):
     pass
 
 
-class HalffloatColumn(NumericColumn, FloatValue):
+class HalffloatColumn(NumericColumn, HalffloatValue):
     pass
 
 
