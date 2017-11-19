@@ -363,6 +363,11 @@ def test_casting_int(left, right):
     right = ibis.literal(2).cast(right())
 
     # we assert that these validate
-    left < right
-    right > left
-    left != right
+    expr = left < right
+    assert expr is not None
+
+    expr = right > left
+    assert expr is not None
+
+    expr = left != right
+    assert expr is not None
