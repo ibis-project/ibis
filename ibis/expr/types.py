@@ -1075,11 +1075,7 @@ class UInt64Value(IntegerValue):
         return dt.uint64
 
 
-class HalffloatingValue(NumericValue):
-    pass
-
-
-class HalffloatValue(HalffloatingValue):
+class HalffloatValue(NumericValue):
 
     _implicit_casts = set(['double', 'decimal'])
 

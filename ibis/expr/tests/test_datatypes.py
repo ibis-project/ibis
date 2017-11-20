@@ -335,39 +335,3 @@ def test_time():
 
 def test_time_valid():
     assert dt.validate_type('time').equals(dt.time)
-
-
-# implicit casting
-# ----------------
-
-@pytest.mark.parametrize(
-    "left",
-    [dt.int8, dt.int16,
-     dt.int32, dt.int64,
-     dt.uint8, dt.uint16,
-     dt.uint32, dt.uint64,
-     dt.halffloat, dt.float,
-     dt.double,
-     dt.float16, dt.float32, dt.float64])
-@pytest.mark.parametrize(
-    "right",
-    [dt.int8, dt.int16,
-     dt.int32, dt.int64,
-     dt.uint8, dt.uint16,
-     dt.uint32, dt.uint64,
-     dt.halffloat, dt.float,
-     dt.double,
-     dt.float16, dt.float32, dt.float64])
-def test_casting_int(left, right):
-    left = ibis.literal(1).cast(left())
-    right = ibis.literal(2).cast(right())
-
-    # we assert that these validate
-    expr = left < right
-    assert expr is not None
-
-    expr = right > left
-    assert expr is not None
-
-    expr = left != right
-    assert expr is not None
