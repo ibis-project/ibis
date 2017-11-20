@@ -856,6 +856,7 @@ floordiv = _binop_expr('__floordiv__', _ops.FloorDivide)
 pow = _binop_expr('__pow__', _ops.Power)
 mod = _binop_expr('__mod__', _ops.Modulus)
 
+radd = _rbinop_expr('__radd__', _ops.Add)
 rsub = _rbinop_expr('__rsub__', _ops.Subtract)
 rdiv = _rbinop_expr('__rdiv__', _ops.Divide)
 rfloordiv = _rbinop_expr('__rfloordiv__', _ops.FloorDivide)
@@ -1823,6 +1824,25 @@ def _string_contains(arg, substr):
     return arg.find(substr) >= 0
 
 
+def _string_split(arg, delimiter):
+    """Split `arg` on `delimiter`.
+
+    Parameters
+    ----------
+    arg : str or ibis.expr.types.StringValue
+    delimiter : str or ibis.expr.types.StringValue
+
+    Returns
+    -------
+    splitsville : Array[String]
+    """
+    return _ops.StringSplit(arg, delimiter).to_expr()
+
+
+def _string_concat(*args):
+    return _ops.StringConcat(*args).to_expr()
+
+
 def _string_dunder_contains(arg, substr):
     raise TypeError('Use val.contains(arg)')
 
@@ -1839,8 +1859,12 @@ def _string_getitem(self, key):
             raise ValueError('negative slicing not yet supported')
 
         return self.substr(start, stop - start)
+    elif isinstance(key, six.integer_types):
+        return self.substr(key, 1)
     else:
-        raise NotImplementedError
+        raise NotImplementedError(
+            'string __getitem__[{}]'.format(type(key).__name__)
+        )
 
 
 _string_value_methods = dict(
@@ -1875,10 +1899,12 @@ _string_value_methods = dict(
     find=_string_find,
     translate=_translate,
     find_in_set=_find_in_set,
+    split=_string_split,
     join=_string_join,
     lpad=_lpad,
     rpad=_rpad,
-    __add__=add,
+    __add__=_string_concat,
+    __radd__=lambda *args: _string_concat(*args[::-1]),
     __mul__=mul,
     __rmul__=mul,
 )
