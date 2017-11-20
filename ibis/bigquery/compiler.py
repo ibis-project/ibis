@@ -66,14 +66,12 @@ def _extract_field(sql_attr):
     def extract_field_formatter(translator, expr):
         op = expr.op()
         arg = translator.translate(op.args[0])
-        return "extract({0!s} from {1!s})".format(sql_attr, arg)
+        return 'EXTRACT({} from {})'.format(sql_attr, arg)
     return extract_field_formatter
 
 
 def _ifnull(translator, expr):
-    (a, b) = (translator.translate(arg) for arg in expr.op().args)
-    return ('CASE WHEN {0!s} IS NULL THEN {1!s} ELSE {0!s} END'
-            .format(a, b))
+    return 'IFNULL({}, {})'.format(*map(translator.translate, expr.op().args))
 
 
 _sql_type_names = {
@@ -86,6 +84,7 @@ _sql_type_names = {
     'string': 'string',
     'boolean': 'boolean',
     'timestamp': 'timestamp',
+    'date': 'date',
 }
 
 
@@ -94,7 +93,7 @@ def _cast(translator, expr):
     arg, target_type = op.args
     arg_formatted = translator.translate(arg)
     sql_type = _sql_type_names[target_type.name.lower()]
-    return 'CAST({0!s} AS {1!s})'.format(arg_formatted, sql_type)
+    return 'CAST({} AS {})'.format(arg_formatted, sql_type.upper())
 
 
 def _struct_field(translator, expr):
@@ -179,6 +178,39 @@ def _string_repeat(translator, expr):
     return 'REPEAT({}, {})'.format(*map(translator.translate, expr.op().args))
 
 
+def _string_replace(translator, expr):
+    return 'REPLACE({}, {}, {})'.format(
+        *map(translator.translate, expr.op().args)
+    )
+
+
+def _string_split(translator, expr):
+    return 'SPLIT({}, {})'.format(
+        *map(translator.translate, expr.op().args)
+    )
+
+
+def _string_concat(translator, expr):
+    return 'CONCAT({})'.format(
+        ', '.join(map(translator.translate, expr.op().args))
+    )
+
+
+def _string_join(translator, expr):
+    sep, args = expr.op().args
+    return 'ARRAY_TO_STRING([{}], {})'.format(
+        ', '.join(map(translator.translate, args)),
+        translator.translate(sep)
+    )
+
+
+def _group_concat(translator, expr):
+    arg, sep = expr.op().args
+    return 'STRING_AGG({}, {})'.format(
+        translator.translate(arg), translator.translate(sep)
+    )
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -188,6 +220,12 @@ _operation_registry.update({
     ops.ExtractMinute: _extract_field('minute'),
     ops.ExtractSecond: _extract_field('second'),
     ops.ExtractMillisecond: _extract_field('millisecond'),
+
+    ops.StringReplace: _string_replace,
+    ops.StringSplit: _string_split,
+    ops.StringConcat: _string_concat,
+    ops.StringJoin: _string_join,
+    ops.GroupConcat: _group_concat,
 
     ops.IfNull: _ifnull,
     ops.Cast: _cast,
