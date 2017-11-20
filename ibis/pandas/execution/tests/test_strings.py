@@ -54,6 +54,10 @@ pytestmark = pytest.mark.pandas
             lambda s: s + s.rpad(3, 'a'),
             lambda s: s + s.str.pad(3, side='right', fillchar='a')
         ),
+        (
+            lambda s: s.split(' '),
+            lambda s: s.str.split(' '),
+        )
     ]
 )
 def test_string_ops(t, df, case_func, expected_func):

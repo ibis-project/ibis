@@ -5,6 +5,7 @@ import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
 
@@ -59,14 +60,6 @@ def test_database_layer(client):
     actual = client.list_tables()
     expected = [el.name for el in bq_dataset.list_tables()]
     assert sorted(actual) == sorted(expected)
-
-
-def test_compile_verify(alltypes):
-    column = alltypes['string_col']
-    unsupported_expr = column.replace('foo', 'bar')
-    supported_expr = column.lower()
-    assert not unsupported_expr.verify()
-    assert supported_expr.verify()
 
 
 def test_compile_toplevel():
@@ -159,3 +152,21 @@ def test_count_distinct_with_filter(alltypes):
     expected = alltypes.string_col.execute()
     expected = expected[expected.astype('int64') > 1].nunique()
     assert result == expected
+
+
+@pytest.mark.parametrize('type', ['date', dt.date])
+def test_cast_string_to_date(alltypes, df, type):
+    import toolz
+
+    string_col = alltypes.date_string_col
+    month, day, year = toolz.take(3, string_col.split('/'))
+
+    expr = '20' + ibis.literal('-').join([year, month, day])
+    expr = expr.cast(type)
+    result = expr.execute().astype(
+        'datetime64[ns]'
+    ).sort_values().reset_index(drop=True).rename('date_string_col')
+    expected = pd.to_datetime(
+        df.date_string_col
+    ).dt.normalize().sort_values().reset_index(drop=True)
+    tm.assert_series_equal(result, expected)
