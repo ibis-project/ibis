@@ -29,6 +29,7 @@ _INFERRED_DTYPE_TO_IBIS_TYPE = {
     'string': 'string',
     'unicode': 'string',
     'bytes': 'string',
+    'empty': 'string',
 }
 
 

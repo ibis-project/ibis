@@ -16,6 +16,8 @@ dependencies:
   - pytest
   - python=3.6
   - python-graphviz
+  - pyarrow>=0.6.0
+  - pytables
   - sh
   - six
   - sphinx_rtd_theme
