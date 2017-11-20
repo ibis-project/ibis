@@ -288,11 +288,17 @@ def test_distinct_array_interactions(functional_alltypes):
         a + b
 
 
-def test_distinct_count(functional_alltypes):
-    result = functional_alltypes.string_col.distinct().count()
-    expected = functional_alltypes.string_col.nunique().name('count')
-    assert_equal(result, expected)
+@pytest.mark.parametrize('where', [lambda t: None, lambda t: t.int_col != 0])
+def test_distinct_count(functional_alltypes, where):
+    result = functional_alltypes.string_col.distinct().count(
+        where=where(functional_alltypes)
+    )
     assert isinstance(result.op(), ops.CountDistinct)
+
+    expected = functional_alltypes.string_col.nunique(
+        where=where(functional_alltypes)
+    ).name('count')
+    assert result.equals(expected)
 
 
 def test_distinct_unnamed_array_expr():

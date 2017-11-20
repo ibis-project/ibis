@@ -330,9 +330,7 @@ def count(expr, where=None):
     """
     op = expr.op()
     if isinstance(op, _ops.DistinctColumn):
-        if where is not None:
-            raise NotImplementedError
-        result = op.count().to_expr()
+        result = _ops.CountDistinct(op.args[0], where).to_expr()
     else:
         result = _ops.Count(expr, where).to_expr()
 
@@ -836,6 +834,7 @@ approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality, True)
 approx_median = _agg_function('approx_median', _ops.CMSMedian, True)
 max = _agg_function('max', _ops.Max, True)
 min = _agg_function('min', _ops.Min, True)
+nunique = _agg_function('nunique', _ops.CountDistinct, True)
 
 
 def lag(arg, offset=None, default=None):
@@ -886,18 +885,8 @@ def distinct(arg):
     return op.to_expr()
 
 
-def nunique(arg):
-    """
-    Shorthand for foo.distinct().count(); computing the number of unique
-    values in an array.
-    """
-    return _ops.CountDistinct(arg).to_expr()
-
-
 def topk(arg, k, by=None):
     """
-    Produces
-
     Returns
     -------
     topk : TopK filter expression

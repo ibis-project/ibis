@@ -383,8 +383,13 @@ def _round(t, expr):
 
 
 def _count_distinct(t, expr):
-    arg, = expr.op().args
-    sa_arg = t.translate(arg)
+    arg, where = expr.op().args
+
+    if where is not None:
+        sa_arg = t.translate(where.ifelse(arg, None))
+    else:
+        sa_arg = t.translate(arg)
+
     return sa.func.count(sa_arg.distinct())
 
 
