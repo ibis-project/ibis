@@ -432,8 +432,8 @@ def execute_reduction_series_mask(op, data, mask, context=None, **kwargs):
 
 
 @execute_node.register(ops.CountDistinct, pd.Series, (pd.Series, type(None)))
-def execute_count_distinct_series_mask(op, data, mask, scope=None):
-    return (data[mask] if mask is not None else data).nunique()
+def execute_count_distinct_series_mask(op, data, mask, context=None, **kwargs):
+    return context.agg(data[mask] if mask is not None else data, 'nunique')
 
 
 @execute_node.register(ops.StandardDev, pd.Series, (pd.Series, type(None)))
