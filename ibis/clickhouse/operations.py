@@ -391,6 +391,7 @@ def _truncate(translator, expr):
         'M': 'toStartOfMonth',
         'D': 'toDate',
         'H': 'toStartOfHour',
+        'W': 'toMonday',
         'MI': 'toStartOfMinute'
     }
 
