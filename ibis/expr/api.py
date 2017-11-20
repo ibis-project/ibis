@@ -834,6 +834,7 @@ approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality, True)
 approx_median = _agg_function('approx_median', _ops.CMSMedian, True)
 max = _agg_function('max', _ops.Max, True)
 min = _agg_function('min', _ops.Min, True)
+nunique = _agg_function('nunique', _ops.CountDistinct, True)
 
 
 def lag(arg, offset=None, default=None):
@@ -882,22 +883,6 @@ def distinct(arg):
     """
     op = _ops.DistinctColumn(arg)
     return op.to_expr()
-
-
-def nunique(expr, where=None):
-    """
-    Shorthand for foo.distinct().count(); computing the number of unique
-    values in an array.
-
-    Parameters
-    -----------
-    expr : ibis.expr.types.Expr
-
-    Returns
-    -------
-    ScalarExpr
-    """
-    return _ops.CountDistinct(expr, where).to_expr()
 
 
 def topk(arg, k, by=None):

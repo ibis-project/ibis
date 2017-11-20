@@ -836,7 +836,7 @@ def _count_distinct(translator, expr):
         arg_formatted = translator.translate(where.ifelse(arg, None))
     else:
         arg_formatted = translator.translate(arg)
-    return 'COUNT(DISTINCT {})'.format(arg_formatted)
+    return 'count(DISTINCT {})'.format(arg_formatted)
 
 
 def _literal(translator, expr):
