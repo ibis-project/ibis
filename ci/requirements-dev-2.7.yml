@@ -9,12 +9,15 @@ dependencies:
   - impyla>=0.13.7
   - mock
   - multipledispatch
-  - numpy=1.10.0
+  - numpy=1.11.*
   - pandas=0.18.1
   - psycopg2
   - pytest
   - python=2.7
   - python-graphviz
+  - pytables
+  - pathlib2
+  - pyarrow>=0.6.0
   - sh
   - six
   - sqlalchemy>=1.0.0,<1.1.15

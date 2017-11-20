@@ -9,6 +9,26 @@ Release Notes
    releases (e.g., ``0.5.1``) will generally not be found here and contain
    only bug fixes.
 
+  v0.13.0 (????)
+----------------
+
+This release brings a new backend, File Support support along with a number of
+bug fixes and reliability enhancements. We recommend that all users upgrade
+from earlier versions of Ibis.
+
+New Backends
+~~~~~~~~~~~~
+
+* File Support for CSV & HDF5 (:issue:`1165`)
+* File Support for Parquet Format (:issue:`1175`)
+
+New Features
+~~~~~~~~~~~~
+
+* Support for Unsigned Integer Types (:issue:`1194`)
+
+
+
 v0.12.0 (October 28, 2017)
 --------------------------
 
@@ -21,6 +41,7 @@ New Backends
 
 * BigQuery backend (:issue:`1170`), thanks to @tsdlovell.
 * Clickhouse backend (:issue:`1127`), thanks to @kszucs.
+
 
 New Features
 ~~~~~~~~~~~~

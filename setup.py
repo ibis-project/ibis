@@ -41,6 +41,9 @@ visualization_requires = ['graphviz']
 pandas_requires = ['multipledispatch']
 clickhouse_requires = ['clickhouse-driver>=0.0.8']
 bigquery_requires = ['google-cloud-bigquery<0.28']
+csv_requires = pandas_requires
+hdf5_requires = pandas_requires + ['tables>=3.0.0']
+parquet_requires = ['pyarrow>=0.6.0']
 
 all_requires = (
     impala_requires +
@@ -49,7 +52,10 @@ all_requires = (
     visualization_requires +
     pandas_requires +
     clickhouse_requires +
-    bigquery_requires
+    bigquery_requires +
+    csv_requires +
+    hdf5_requires +
+    parquet_requires
 )
 
 develop_requires = all_requires + [
@@ -83,6 +89,12 @@ setup(
         'pandas': pandas_requires,
         'clickhouse': clickhouse_requires,
         'bigquery': bigquery_requires,
+        'csv': csv_requires,
+        'csv:python_version < "3"': csv_requires + ['pathlib2'],
+        'hdf5': hdf5_requires,
+        'hdf5:python_version < "3"': hdf5_requires + ['pathlib2'],
+        'parquet': parquet_requires,
+        'parquet:python_version < "3"': parquet_requires + ['pathlib2'],
     },
     scripts=[
         os.path.relpath(

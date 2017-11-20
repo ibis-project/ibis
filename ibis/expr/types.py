@@ -1039,6 +1039,50 @@ class Int64Value(IntegerValue):
         return dt.int64
 
 
+class UInt8Value(IntegerValue):
+
+    _implicit_casts = set([
+        'uint8', 'uint16', 'uint32', 'uint64',
+        'float', 'double', 'decimal'
+    ])
+
+    def type(self):
+        return dt.uint8
+
+
+class UInt16Value(IntegerValue):
+
+    _implicit_casts = set(['uint32', 'uint64',
+                           'float', 'double', 'decimal'])
+
+    def type(self):
+        return dt.uint16
+
+
+class UInt32Value(IntegerValue):
+
+    _implicit_casts = set(['uint64', 'float', 'double', 'decimal'])
+
+    def type(self):
+        return dt.uint32
+
+
+class UInt64Value(IntegerValue):
+
+    _implicit_casts = set(['float', 'double', 'decimal'])
+
+    def type(self):
+        return dt.uint64
+
+
+class HalffloatValue(NumericValue):
+
+    _implicit_casts = set(['double', 'decimal'])
+
+    def type(self):
+        return dt.halffloat
+
+
 class FloatingValue(NumericValue):
     pass
 
@@ -1292,6 +1336,46 @@ class Int64Scalar(ScalarExpr, Int64Value):
 
 
 class Int64Column(NumericColumn, Int64Value):
+    pass
+
+
+class UInt8Scalar(ScalarExpr, UInt8Value):
+    pass
+
+
+class UInt8Column(NumericColumn, UInt8Value):
+    pass
+
+
+class UInt16Scalar(ScalarExpr, UInt16Value):
+    pass
+
+
+class UInt16Column(NumericColumn, UInt16Value):
+    pass
+
+
+class UInt32Scalar(ScalarExpr, UInt32Value):
+    pass
+
+
+class UInt32Column(NumericColumn, UInt32Value):
+    pass
+
+
+class UInt64Scalar(ScalarExpr, UInt64Value):
+    pass
+
+
+class UInt64Column(NumericColumn, UInt64Value):
+    pass
+
+
+class HalffloatScalar(ScalarExpr, HalffloatValue):
+    pass
+
+
+class HalffloatColumn(NumericColumn, HalffloatValue):
     pass
 
 

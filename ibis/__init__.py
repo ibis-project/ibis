@@ -57,6 +57,21 @@ try:
 except ImportError:  # pip install  ibis-framework[pandas]
     pass
 
+try:
+    import ibis.file.csv as csv
+except ImportError:  # pip install  ibis-framework[csv]
+    pass
+
+try:
+    import ibis.file.hdf5 as hdf5
+except ImportError:  # pip install  ibis-framework[hdf5]
+    pass
+
+try:
+    import ibis.file.parquet as parquet
+except ImportError:  # pip install  ibis-framework[parquet]
+    pass
+
 import ibis.config_init
 from ibis.config import options
 import ibis.util as util
