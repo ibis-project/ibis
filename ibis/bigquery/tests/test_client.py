@@ -151,3 +151,11 @@ def test_array_collect(struct_table):
     tm.assert_frame_equal(result, expected)
 
 
+def test_count_distinct_with_filter(alltypes):
+    expr = alltypes.string_col.nunique(
+        where=alltypes.string_col.cast('int64') > 1
+    )
+    result = expr.execute()
+    expected = alltypes.string_col.execute()
+    expected = expected[expected.astype('int64') > 1].nunique()
+    assert result == expected
