@@ -663,3 +663,13 @@ def test_timestamp_from_integer(con, alltypes, translate):
 #             'SELECT name FROM pg_timezone_names'
 #         )
 #     )
+
+
+def test_count_distinct_with_filter(alltypes):
+    expr = alltypes.string_col.nunique(
+        where=alltypes.string_col.cast('int64') > 1
+    )
+    result = expr.execute()
+    expected = alltypes.string_col.execute()
+    expected = expected[expected.astype('int64') > 1].nunique()
+    assert result == expected
