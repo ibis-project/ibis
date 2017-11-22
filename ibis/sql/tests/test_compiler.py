@@ -2263,7 +2263,7 @@ FROM functional_alltypes"""
 
         result = to_sql(expr)
         expected = """\
-SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `nunique`
+SELECT `string_col`, count(DISTINCT `int_col`) AS `nunique`
 FROM functional_alltypes
 WHERE `bigint_col` > 0
 GROUP BY 1"""
@@ -2281,8 +2281,8 @@ GROUP BY 1"""
 
         result = to_sql(expr)
         expected = """\
-SELECT `string_col`, COUNT(DISTINCT `int_col`) AS `int_card`,
-       COUNT(DISTINCT `smallint_col`) AS `smallint_card`
+SELECT `string_col`, count(DISTINCT `int_col`) AS `int_card`,
+       count(DISTINCT `smallint_col`) AS `smallint_card`
 FROM functional_alltypes
 GROUP BY 1"""
         assert result == expected

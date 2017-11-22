@@ -830,9 +830,13 @@ def _log(translator, expr):
 
 
 def _count_distinct(translator, expr):
-    op = expr.op()
-    arg_formatted = translator.translate(op.args[0])
-    return 'COUNT(DISTINCT {})'.format(arg_formatted)
+    arg, where = expr.op().args
+
+    if where is not None:
+        arg_formatted = translator.translate(where.ifelse(arg, None))
+    else:
+        arg_formatted = translator.translate(arg)
+    return 'count(DISTINCT {})'.format(arg_formatted)
 
 
 def _literal(translator, expr):
