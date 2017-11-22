@@ -134,11 +134,20 @@ def test_array_length(struct_table):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.xfail
 def test_array_collect(struct_table):
     key = struct_table.array_of_structs_col[0].string_field
-    expr = struct_table.groupby(key).aggregate(
+    expr = struct_table.groupby(key=key).aggregate(
         foo=lambda t: t.array_of_structs_col[0].int_field.collect()
     )
     result = expr.execute()
-    assert result == -1
+    expected = struct_table.execute()
+    expected = expected.assign(
+        key=expected.array_of_structs_col.apply(lambda x: x[0]['string_field'])
+    ).groupby('key').apply(
+        lambda df: list(
+            df.array_of_structs_col.apply(lambda x: x[0]['int_field'])
+        )
+    ).reset_index().rename(columns={0: 'foo'})
+    tm.assert_frame_equal(result, expected)
+
+
