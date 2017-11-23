@@ -166,11 +166,12 @@ def _approx_nunique(translator, expr):
 
 def _format_date(translator, expr):
     (arg, fmt) = map(translator.translate, expr.op().args)
-    return 'FORMAT_DATE({}, {})'.format(fmt, arg)
-
-
-def format_date(fmt, arg):
-    return bq_ops.FormatDate(arg, fmt).to_expr()
+    klass_name = expr.op().args[0].type().__class__.__name__.upper()
+    if klass_name in ['TIMESTAMP', 'DATE', 'TIME']:
+        return 'FORMAT_{}({}, {})'.format(klass_name, fmt, arg)
+    else:
+        raise NotImplementedError(
+            "Don't know how to handle class {}".format(klass_name))
 
 
 def _date_diff(translator, expr):
@@ -222,7 +223,7 @@ _operation_registry.update({
     ops.HLLCardinality: _approx_nunique,
     bq_ops.DateDiff: _date_diff,
     bq_ops.TimestampDiff: _timestamp_diff,
-    bq_ops.FormatDate: _format_date,
+    ops.Strftime: _format_date,
 })
 
 

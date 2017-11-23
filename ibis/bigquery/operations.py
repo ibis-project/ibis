@@ -17,12 +17,6 @@ class ApproxQuantile(_ops.Reduction):
         return self.args[0].type().scalar_type()
 
 
-class FormatDate(_ops.ValueOp):
-
-    input_type = [rules.date, rules.string]
-    output_type = rules.shape_like_arg(0, 'string')
-
-
 class DateDiff(_ops.ValueOp):
 
     input_type = [rules.date,
