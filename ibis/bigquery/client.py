@@ -124,7 +124,7 @@ class BigQueryClient(SQLClient):
         if results:
             return BigQueryCursor(query)
         else:
-            pass
+            return None
 
     def database(self, name=None):
         if name is None:
