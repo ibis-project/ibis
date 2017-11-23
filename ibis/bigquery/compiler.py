@@ -158,14 +158,10 @@ def approx_quantile(arg, number, distinct=False, ignore_nulls=True):
     return bq_ops.ApproxQuantile(arg, number, distinct, ignore_nulls).to_expr()
 
 
-def _approx_count_distinct(translator, expr):
+def _approx_nunique(translator, expr):
     arg = expr.op().args[0]
     arg_formatted = translator.translate(arg)
     return 'APPROX_COUNT_DISTINCT({})'.format(arg_formatted)
-
-
-def approx_count_distinct(arg):
-    return bq_ops.ApproxCountDistinct(arg).to_expr()
 
 
 def _format_date(translator, expr):
@@ -223,7 +219,7 @@ _operation_registry.update({
     ops.Arbitrary: _arbitrary,
     ops.Percentile: _percentile,
     bq_ops.ApproxQuantile: _approx_quantile,
-    bq_ops.ApproxCountDistinct: _approx_count_distinct,
+    ops.HLLCardinality: _approx_nunique,
     bq_ops.DateDiff: _date_diff,
     bq_ops.TimestampDiff: _timestamp_diff,
     bq_ops.FormatDate: _format_date,

@@ -17,14 +17,6 @@ class ApproxQuantile(_ops.Reduction):
         return self.args[0].type().scalar_type()
 
 
-class ApproxCountDistinct(_ops.Reduction):
-
-    input_type = [value]
-
-    def output_type(self):
-        return self.args[0].type().scalar_type()
-
-
 class FormatDate(_ops.ValueOp):
 
     input_type = [rules.date, rules.string]
