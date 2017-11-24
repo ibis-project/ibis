@@ -26,6 +26,7 @@ class DateDiff(_ops.ValueOp):
                       case_sensitive=False,
                       name='date_part',
                       default='DAY',
+                      optional=True,
                   ),
                   ]
     output_type = rules.shape_like_arg(0, 'int64')
@@ -37,10 +38,27 @@ class TimestampDiff(_ops.ValueOp):
                   rules.timestamp,
                   rules.string_options(
                       ['MICROSECOND', 'MILLISECOND', 'SECOND',
+                       'MINUTE', 'HOUR', 'DAY', 'MONTH', 'QUARTER', 'YEAR'],
+                      case_sensitive=False,
+                      name='date_part',
+                      default='SECOND',
+                      optional=True,
+                  ),
+                  ]
+    output_type = rules.shape_like_arg(0, 'int64')
+
+
+class TimeDiff(_ops.ValueOp):
+
+    input_type = [rules.time,
+                  rules.time,
+                  rules.string_options(
+                      ['MICROSECOND', 'MILLISECOND', 'SECOND',
                        'MINUTE', 'HOUR'],
                       case_sensitive=False,
-                      name='timestamp_part',
+                      name='part',
                       default='SECOND',
+                      optional=True,
                   ),
                   ]
     output_type = rules.shape_like_arg(0, 'int64')

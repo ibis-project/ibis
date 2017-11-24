@@ -4,8 +4,7 @@ from ibis.bigquery.client import BigQueryClient
 from ibis.bigquery.compiler import (  # noqa: F401
     percentile_aggregation,
     approx_quantile,
-    date_diff,
-    timestamp_diff,
+    temporal_diff,
 )
 
 

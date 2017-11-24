@@ -167,31 +167,34 @@ def _approx_nunique(translator, expr):
 def _format_date(translator, expr):
     (arg, fmt) = map(translator.translate, expr.op().args)
     klass_name = expr.op().args[0].type().__class__.__name__.upper()
-    if klass_name in ['TIMESTAMP', 'DATE', 'TIME']:
-        return 'FORMAT_{}({}, {})'.format(klass_name, fmt, arg)
-    else:
-        raise NotImplementedError(
-            "Don't know how to handle class {}".format(klass_name))
+    assert klass_name in ['TIMESTAMP', 'DATE', 'TIME']
+    return 'FORMAT_{}({}, {})'.format(klass_name, fmt, arg)
 
 
-def _date_diff(translator, expr):
-    (arg0, arg1, date_part) = expr.op().args
+def _temporal_diff(translator, expr):
+    (arg0, arg1, part) = expr.op().args
     (af0, af1) = [translator.translate(arg) for arg in (arg0, arg1)]
-    return 'DATE_DIFF({}, {}, {})'.format(af0, af1, date_part)
+    klass_name = arg0.type().__class__.__name__.upper()
+    return '{}_DIFF({}, {}, {})'.format(klass_name, af0, af1, part)
 
 
-def date_diff(arg0, arg1, date_part='DAY'):
-    return bq_ops.DateDiff(arg0, arg1, date_part).to_expr()
-
-
-def _timestamp_diff(translator, expr):
-    (arg0, arg1, timestamp_part) = expr.op().args
-    (af0, af1) = [translator.translate(arg) for arg in (arg0, arg1)]
-    return 'TIMESTAMP_DIFF({}, {}, {})'.format(af0, af1, timestamp_part)
-
-
-def timestamp_diff(arg0, arg1, timestamp_part='SECOND'):
-    return bq_ops.TimestampDiff(arg0, arg1, timestamp_part).to_expr()
+def temporal_diff(arg0, arg1, *args):
+    name_to_op = {
+        'TIMESTAMP': bq_ops.TimestampDiff,
+        'TIME': bq_ops.TimeDiff,
+        'DATE': bq_ops.DateDiff,
+    }
+    (typ0, typ1) = (arg0.type(), arg1.type())
+    klass_name = typ0.__class__.__name__.upper()
+    assert typ0 == typ1, (
+        "Don't know how to diff different temporal types: {}, {}"
+        .format(typ0, typ1)
+    )
+    assert klass_name in name_to_op, (
+        "Don't know how to handle class {}".format(klass_name)
+    )
+    op = name_to_op[klass_name]
+    return op(arg0, arg1, *args).to_expr()
 
 
 _operation_registry = impala_compiler._operation_registry.copy()
@@ -221,8 +224,9 @@ _operation_registry.update({
     ops.Percentile: _percentile,
     bq_ops.ApproxQuantile: _approx_quantile,
     ops.HLLCardinality: _approx_nunique,
-    bq_ops.DateDiff: _date_diff,
-    bq_ops.TimestampDiff: _timestamp_diff,
+    bq_ops.DateDiff: _temporal_diff,
+    bq_ops.TimestampDiff: _temporal_diff,
+    bq_ops.TimeDiff: _temporal_diff,
     ops.Strftime: _format_date,
 })
 
