@@ -186,13 +186,15 @@ def temporal_diff(arg0, arg1, *args):
     }
     (typ0, typ1) = (arg0.type(), arg1.type())
     klass_name = typ0.__class__.__name__.upper()
-    assert typ0 == typ1, (
-        "Don't know how to diff different temporal types: {}, {}"
-        .format(typ0, typ1)
-    )
-    assert klass_name in name_to_op, (
-        "Don't know how to handle class {}".format(klass_name)
-    )
+    if typ0 != typ1:
+        raise TypeError(
+            "Don't know how to diff different temporal types: {}, {}"
+            .format(typ0, typ1)
+        )
+    if klass_name not in name_to_op:
+        raise TypeError(
+            "Don't know how to handle class {}".format(klass_name)
+        )
     op = name_to_op[klass_name]
     return op(arg0, arg1, *args).to_expr()
 
