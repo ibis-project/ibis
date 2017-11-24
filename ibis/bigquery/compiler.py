@@ -180,9 +180,9 @@ def _temporal_diff(translator, expr):
 
 def temporal_diff(arg0, arg1, *args):
     name_to_op = {
-        'TIMESTAMP': bq_ops.TimestampDiff,
-        'TIME': bq_ops.TimeDiff,
-        'DATE': bq_ops.DateDiff,
+        'TIMESTAMP': ops.TimestampDiff,
+        'TIME': ops.TimeDiff,
+        'DATE': ops.DateDiff,
     }
     (typ0, typ1) = (arg0.type(), arg1.type())
     klass_name = typ0.__class__.__name__.upper()
@@ -224,9 +224,9 @@ _operation_registry.update({
     ops.Percentile: _percentile,
     bq_ops.ApproxQuantile: _approx_quantile,
     ops.HLLCardinality: _approx_nunique,
-    bq_ops.DateDiff: _temporal_diff,
-    bq_ops.TimestampDiff: _temporal_diff,
-    bq_ops.TimeDiff: _temporal_diff,
+    ops.DateDiff: _temporal_diff,
+    ops.TimestampDiff: _temporal_diff,
+    ops.TimeDiff: _temporal_diff,
     ops.Strftime: _format_date,
 })
 

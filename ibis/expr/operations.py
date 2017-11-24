@@ -2577,3 +2577,50 @@ class StructField(ValueOp):
     def output_type(self):
         struct_type = self.args[0].type()
         return rules.shape_like(self.args[0], struct_type[self.field])
+
+
+class DateDiff(ValueOp):
+
+    input_type = [rules.date,
+                  rules.date,
+                  rules.string_options(
+                      ['DAY', 'MONTH', 'QUARTER', 'YEAR'],
+                      case_sensitive=False,
+                      name='date_part',
+                      default='DAY',
+                      optional=True,
+                  ),
+                  ]
+    output_type = rules.shape_like_arg(0, 'int64')
+
+
+class TimestampDiff(ValueOp):
+
+    input_type = [rules.timestamp,
+                  rules.timestamp,
+                  rules.string_options(
+                      ['MICROSECOND', 'MILLISECOND', 'SECOND',
+                       'MINUTE', 'HOUR', 'DAY', 'MONTH', 'QUARTER', 'YEAR'],
+                      case_sensitive=False,
+                      name='date_part',
+                      default='SECOND',
+                      optional=True,
+                  ),
+                  ]
+    output_type = rules.shape_like_arg(0, 'int64')
+
+
+class TimeDiff(ValueOp):
+
+    input_type = [rules.time,
+                  rules.time,
+                  rules.string_options(
+                      ['MICROSECOND', 'MILLISECOND', 'SECOND',
+                       'MINUTE', 'HOUR'],
+                      case_sensitive=False,
+                      name='part',
+                      default='SECOND',
+                      optional=True,
+                  ),
+                  ]
+    output_type = rules.shape_like_arg(0, 'int64')
