@@ -477,14 +477,17 @@ def execute_not_bool(op, data, **kwargs):
 @execute_node.register(
     ops.BinaryOp, (pd.Series, numeric_types), (pd.Series, numeric_types)
 )
+@execute_node.register(ops.StringConcat, pd.Series, pd.Series)
 @execute_node.register(
-    (ops.Add, ops.Comparison), six.string_types, six.string_types
+    (ops.Comparison, ops.StringConcat), six.string_types, six.string_types
 )
 @execute_node.register(
-    (ops.Add, ops.Comparison, ops.Multiply), pd.Series, six.string_types
+    (ops.Comparison, ops.StringConcat, ops.Multiply),
+    pd.Series, six.string_types
 )
 @execute_node.register(
-    (ops.Add, ops.Comparison, ops.Multiply), six.string_types, pd.Series
+    (ops.Comparison, ops.Multiply, ops.StringConcat),
+    six.string_types, pd.Series
 )
 @execute_node.register(ops.Multiply, integer_types, six.string_types)
 @execute_node.register(ops.Multiply, six.string_types, integer_types)
@@ -683,6 +686,13 @@ def execute_string_contains(op, data, needle, start, end, **kwargs):
 )
 def execute_string_like(op, data, pattern, **kwargs):
     return data.str.contains(pattern, regex=True)
+
+
+@execute_node.register(
+    ops.StringSplit, pd.Series, (pd.Series,) + six.string_types
+)
+def execute_string_split(op, data, delimiter, **kwargs):
+    return data.str.split(delimiter)
 
 
 @execute_node.register(
