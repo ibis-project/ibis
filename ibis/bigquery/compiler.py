@@ -1,3 +1,5 @@
+import ibis.expr.types as ir
+
 import ibis.sql.compiler as comp
 import ibis.expr.operations as ops
 from ibis.impala.compiler import ImpalaSelect
@@ -124,6 +126,59 @@ def _array_length(translator, expr):
     )
 
 
+def _string_find(translator, expr):
+    haystack, needle, start, end = expr.op().args
+
+    if start is not None:
+        raise NotImplementedError('start not implemented for string find')
+    if end is not None:
+        raise NotImplementedError('end not implemented for string find')
+
+    return 'STRPOS({}, {}) - 1'.format(
+        translator.translate(haystack),
+        translator.translate(needle)
+    )
+
+
+def _translate_pattern(translator, pattern):
+    return 'r' * isinstance(pattern.op(), ir.Literal) + translator.translate(
+        pattern
+    )
+
+
+def _regex_search(translator, expr):
+    arg, pattern = expr.op().args
+    regex = _translate_pattern(translator, pattern)
+    result = 'REGEXP_CONTAINS({}, {})'.format(translator.translate(arg), regex)
+    return result
+
+
+def _regex_extract(translator, expr):
+    arg, pattern, index = expr.op().args
+    regex = _translate_pattern(translator, pattern)
+    result = 'REGEXP_EXTRACT_ALL({}, {})[SAFE_OFFSET({})]'.format(
+        translator.translate(arg),
+        regex,
+        translator.translate(index)
+    )
+    return result
+
+
+def _regex_replace(translator, expr):
+    arg, pattern, replacement = expr.op().args
+    regex = _translate_pattern(translator, pattern)
+    result = 'REGEXP_REPLACE({}, {}, {})'.format(
+        translator.translate(arg),
+        regex,
+        translator.translate(replacement),
+    )
+    return result
+
+
+def _string_repeat(translator, expr):
+    return 'REPEAT({}, {})'.format(*map(translator.translate, expr.op().args))
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -147,8 +202,18 @@ _operation_registry.update({
     # BigQuery doesn't have these operations built in.
     # ops.ArrayRepeat: _array_repeat,
     # ops.ArraySlice: _array_slice,
+
+    ops.StringFind: _string_find,
+    ops.StringRepeat: _string_repeat,
+    ops.RegexSearch: _regex_search,
+    ops.RegexExtract: _regex_extract,
+    ops.RegexReplace: _regex_replace,
 })
 
 
 class BigQueryExprTranslator(impala_compiler.ImpalaExprTranslator):
     _registry = _operation_registry
+
+
+class BigQueryDialect(impala_compiler.ImpalaDialect):
+    translator = BigQueryExprTranslator

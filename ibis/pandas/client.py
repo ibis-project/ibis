@@ -100,3 +100,10 @@ class PandasClient(client.Client):
 
         assert isinstance(query, ir.Expr)
         return execute(query, params=params)
+
+    def database(self, name=None):
+        return PandasDatabase(name, self)
+
+
+class PandasDatabase(client.Database):
+    pass

@@ -152,6 +152,53 @@ def _log(t, expr):
     return sa.func._ibis_sqlite_log(sa_arg, t.translate(base))
 
 
+def _repeat(t, expr):
+    arg, times = map(t.translate, expr.op().args)
+    f = sa.func
+    return f.replace(
+        f.substr(
+            f.quote(
+                f.zeroblob((times + 1) / 2)
+            ),
+            3,
+            times
+        ),
+        '0',
+        arg
+    )
+
+
+def _generic_pad(arg, length, pad):
+    f = sa.func
+    arg_length = f.length(arg)
+    pad_length = f.length(pad)
+    number_of_zero_bytes = (
+        (length - arg_length - 1 + pad_length) / pad_length + 1) / 2
+    return f.substr(
+        f.replace(
+            f.replace(
+                f.substr(f.quote(f.zeroblob(number_of_zero_bytes)), 3),
+                "'",
+                ''
+            ),
+            '0',
+            pad
+        ),
+        1,
+        length - f.length(arg)
+    )
+
+
+def _lpad(t, expr):
+    arg, length, pad = map(t.translate, expr.op().args)
+    return _generic_pad(arg, length, pad) + arg
+
+
+def _rpad(t, expr):
+    arg, length, pad = map(t.translate, expr.op().args)
+    return arg + _generic_pad(arg, length, pad)
+
+
 _operation_registry.update({
     ops.Cast: _cast,
 
@@ -191,6 +238,10 @@ _operation_registry.update({
     ops.RegexSearch: fixed_arity(sa.func._ibis_sqlite_regex_search, 2),
     ops.RegexReplace: fixed_arity(sa.func._ibis_sqlite_regex_replace, 3),
     ops.RegexExtract: fixed_arity(sa.func._ibis_sqlite_regex_extract, 3),
+
+    ops.Repeat: _repeat,
+    ops.LPad: _lpad,
+    ops.RPad: _rpad,
 
     ops.Sqrt: fixed_arity(sa.func._ibis_sqlite_sqrt, 1),
     ops.Power: fixed_arity(sa.func._ibis_sqlite_power, 2),

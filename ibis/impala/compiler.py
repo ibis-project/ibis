@@ -1059,6 +1059,10 @@ class ImpalaExprTranslator(comp.ExprTranslator):
                           quote_identifier(name, force=force))
 
 
+class ImpalaDialect(ibis.client.Dialect):
+    translator = ImpalaExprTranslator
+
+
 compiles = ImpalaExprTranslator.compiles
 rewrites = ImpalaExprTranslator.rewrites
 
