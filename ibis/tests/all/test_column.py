@@ -1,8 +1,7 @@
-import functools
+import numpy as np
 
 import pytest
-import numpy as np
-import pandas.util.testing as tm
+from pytest import param
 
 
 def test_sum(alltypes, df):
@@ -33,29 +32,8 @@ def result_func(request, con, alltypes, valid_operations):
     return func
 
 
-assert_series_equal = functools.partial(
-    tm.assert_series_equal,
-    check_dtype=False,
-    check_names=False,
-)
-
-
-def assert_value_counts_equal(left, right, *args, **kwargs):
-    return assert_series_equal(
-        left.value_counts().sort_index(),
-        right.value_counts().sort_index(),
-        *args,
-        **kwargs,
-    )
-
-
-def param(*args, assertion_function=assert_series_equal, **kwargs):
-    args += (assertion_function,)
-    return pytest.param(*args, **kwargs)
-
-
 @pytest.mark.parametrize(
-    ('result_func', 'expected_func', 'assertion_function'),
+    ('result_func', 'expected_func'),
     [
         param(
             lambda t: t.string_col.contains('6'),
@@ -73,9 +51,8 @@ def param(*args, assertion_function=assert_series_equal, **kwargs):
             id='re_search',
         ),
         param(
-            lambda t: t.string_col.re_extract(r'[\d]+', 0),
-            lambda t: t.string_col.str.extract(r'([\d]+)', 0),
-            assertion_function=assert_value_counts_equal,
+            lambda t: t.string_col.re_extract(r'([\d]+)', 0),
+            lambda t: t.string_col.str.extract(r'([\d]+)', expand=False),
             id='re_extract',
         ),
         param(
@@ -157,9 +134,9 @@ def param(*args, assertion_function=assert_series_equal, **kwargs):
     indirect=['result_func'],
 )
 def test_strings(
-    alltypes, df, result_func, expected_func, translator, assertion_function
+    alltypes, df, result_func, expected_func, translator, backend
 ):
     expr = result_func(alltypes)
     result = expr.execute()
-    expected = expected_func(df)
-    assertion_function(result, expected)
+    expected = backend.default_series_rename(expected_func(df))
+    backend.assert_series_equal(result, expected)

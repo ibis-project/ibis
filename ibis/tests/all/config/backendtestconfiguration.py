@@ -14,6 +14,8 @@ class BackendTestConfiguration(six.with_metaclass(abc.ABCMeta)):
     check_dtype = True
     check_names = True
 
+    additional_skipped_operations = frozenset()
+
     @abstractclassmethod
     def connect(cls, backend):
         pass
@@ -27,3 +29,7 @@ class BackendTestConfiguration(six.with_metaclass(abc.ABCMeta)):
     @classmethod
     def assert_frame_equal(cls, *args, **kwargs):
         return tm.assert_frame_equal(*args, **kwargs)
+
+    @classmethod
+    def default_series_rename(cls, series, name='tmp'):
+        return series.rename(name)
