@@ -147,8 +147,8 @@ def result_func(request, con, alltypes, valid_operations):
             id='right',
         ),
         param(
-            lambda t: t.date_string_col.split('/'),
-            lambda t: t.date_string_col.str.split('/'),
+            lambda t: t.date_string_col.split('/')[0],
+            lambda t: t.date_string_col.str.split('/').str[0],
             id='split',
         ),
         param(
