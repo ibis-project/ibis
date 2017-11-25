@@ -53,8 +53,10 @@ def rewrites(translator):
 
 
 @pytest.fixture(scope='session')
-def valid_operations(registry, rewrites):
-    return frozenset(registry) | frozenset(rewrites)
+def valid_operations(registry, rewrites, backend):
+    return (
+        frozenset(registry) | frozenset(rewrites)
+    ) - backend.additional_skipped_operations
 
 
 @pytest.fixture(scope='session')
