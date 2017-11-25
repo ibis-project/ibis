@@ -2,8 +2,12 @@ import os
 
 import pytest
 
+from ibis.tests.all.config.backendtestconfiguration import (
+    BackendTestConfiguration
+)
 
-class SQLite(object):
+
+class SQLite(BackendTestConfiguration):
     check_dtype = False
 
     @classmethod
