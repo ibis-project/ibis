@@ -16,12 +16,9 @@ def connect(dictionary):
 
 
 def _flatten_subclass_tree(cls):
-    subclasses = cls.__subclasses__()
-    if not subclasses:
-        return {cls}
-    return frozenset(toolz.concat(
-        map(_flatten_subclass_tree, subclasses)
-    )) | frozenset(subclasses)
+    subclasses = frozenset(cls.__subclasses__())
+    children = frozenset(toolz.concat(map(_flatten_subclass_tree, subclasses)))
+    return frozenset({cls}) | subclasses | children
 
 
 class PandasExprTranslator(object):
