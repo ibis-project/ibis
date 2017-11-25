@@ -28,6 +28,11 @@ class Pandas(BackendTestConfiguration):
         else:
             return backend.connect({
                 'functional_alltypes': pd.read_csv(
-                    filename, index_col=None, dtype={'string_col': str}
+                    filename,
+                    index_col=None,
+                    dtype={
+                        'string_col': str,
+                        'bool_col': bool,
+                    }
                 )
             })
