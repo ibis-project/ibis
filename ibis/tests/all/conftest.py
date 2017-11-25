@@ -27,11 +27,6 @@ def con(backend):
         return backend.connect(module)
 
 
-@pytest.fixture
-def assertion_function(backend):
-    return backend.assert_series_equal
-
-
 @pytest.fixture(scope='session')
 def dialect(con):
     return con.dialect
