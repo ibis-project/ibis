@@ -40,6 +40,15 @@ assert_series_equal = functools.partial(
 )
 
 
+def assert_value_counts_equal(left, right, *args, **kwargs):
+    return assert_series_equal(
+        left.value_counts().sort_index(),
+        right.value_counts().sort_index(),
+        *args,
+        **kwargs,
+    )
+
+
 def param(*args, assertion_function=assert_series_equal, **kwargs):
     args += (assertion_function,)
     return pytest.param(*args, **kwargs)
@@ -66,9 +75,7 @@ def param(*args, assertion_function=assert_series_equal, **kwargs):
         param(
             lambda t: t.string_col.re_extract(r'[\d]+', 0),
             lambda t: t.string_col.str.extract(r'([\d]+)', 0),
-            assertion_function=lambda left, right: assert_series_equal(
-                left.value_counts(), right.value_counts()
-            ),
+            assertion_function=assert_value_counts_equal,
             id='re_extract',
         ),
         param(

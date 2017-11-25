@@ -1,0 +1,23 @@
+from __future__ import absolute_import
+
+import os
+
+import pandas as pd
+
+import pytest
+
+from ibis.tests.all.config.backendtestconfiguration import BackendTestConfiguration
+
+
+class Pandas(BackendTestConfiguration):
+    @classmethod
+    def connect(cls, backend):
+        pytest.importorskip('multipledispatch')
+        test_data_directory = os.environ.get('IBIS_TEST_DATA_DIRECTORY')
+        filename = os.path.join(test_data_directory, 'functional_alltypes.csv')
+        if not os.path.exists(filename):
+            pytest.skip('test data set functional_alltypes not found')
+        else:
+            return backend.connect({
+                'functional_alltypes': pd.read_csv(filename, index_col=None)
+            })
