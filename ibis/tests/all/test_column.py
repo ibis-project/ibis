@@ -1,3 +1,5 @@
+import numpy as np
+
 import pytest
 from pytest import param
 
@@ -14,22 +16,26 @@ def test_distinct_column(alltypes, df, column):
     assert set(result) == set(expected)
 
 
-@pytest.fixture(scope='function')
-def result_func(request, con, alltypes, backend, valid_operations):
-    func = request.param
-    result = func(alltypes)
-    op_type = type(result.op())
+def skip_if_invalid_operation(expr, valid_operations, con):
+    op_type = type(expr.op())
     if op_type not in valid_operations:
         pytest.skip(
             'Operation {!r} is not defined for clients of type {!r}'.format(
                 op_type.__name__, type(con).__name__
             )
         )
+
+
+@pytest.fixture(scope='function')
+def result_func_strings(request, con, alltypes, backend, valid_operations):
+    func = request.param
+    expr = func(alltypes)
+    skip_if_invalid_operation(expr, valid_operations, con)
     return func
 
 
 @pytest.mark.parametrize(
-    ('result_func', 'expected_func'),
+    ('result_func_strings', 'expected_func'),
     [
         param(
             lambda t: t.string_col.contains('6'),
@@ -157,81 +163,174 @@ def result_func(request, con, alltypes, backend, valid_operations):
             id='join'
         )
     ],
-    indirect=['result_func'],
+    indirect=['result_func_strings'],
 )
-def test_strings(
-    alltypes, df, result_func, expected_func, translator, backend
-):
-    expr = result_func(alltypes)
+def test_strings(alltypes, df, backend, result_func_strings, expected_func):
+    expr = result_func_strings(alltypes)
     result = expr.execute()
     expected = backend.default_series_rename(expected_func(df))
     backend.assert_series_equal(result, expected)
 
 
-# def test_aggregations():
+@pytest.fixture(scope='function')
+def result_func_aggs(request, con, alltypes, valid_operations):
+    func = request.param
+    cond = request.getfixturevalue('ibis_cond')
+    expr = func(alltypes, cond(alltypes))
+    skip_if_invalid_operation(expr, valid_operations, con)
+    return func
 
-            # table.bool_col.count(),
-            # d.sum(),
-            # d.mean(),
-            # d.min(),
-            # d.max(),
-            # s.approx_nunique(),
-            # d.approx_median(),
-            # s.group_concat(),
 
-            # d.std(),
-            # d.std(how='pop'),
-            # d.var(),
-            # d.var(how='pop'),
+@pytest.mark.parametrize(
+    ('result_func_aggs', 'expected_func'),
+    [
+        param(
+            lambda t, where: t.bool_col.count(where=where),
+            lambda t, where: len(t.bool_col[where].dropna()),
+            id='bool_col_count'
+        ),
+        param(
+            lambda t, where: t.bool_col.any(),
+            lambda t, where: t.bool_col.any(),
+            id='bool_col_any'
+        ),
+        param(
+            lambda t, where: t.bool_col.notany(),
+            lambda t, where: ~t.bool_col.any(),
+            id='bool_col_notany'
+        ),
+        param(
+            lambda t, where: -t.bool_col.any(),
+            lambda t, where: ~t.bool_col.any(),
+            id='bool_col_any_negate'
+        ),
+        param(
+            lambda t, where: t.bool_col.all(),
+            lambda t, where: t.bool_col.all(),
+            id='bool_col_all'
+        ),
+        param(
+            lambda t, where: t.bool_col.notall(),
+            lambda t, where: ~t.bool_col.all(),
+            id='bool_col_notall'
+        ),
+        param(
+            lambda t, where: -t.bool_col.all(),
+            lambda t, where: ~t.bool_col.all(),
+            id='bool_col_all_negate'
+        ),
+        param(
+            lambda t, where: t.double_col.sum(),
+            lambda t, where: t.double_col.sum(),
+            id='double_col_sum',
+        ),
+        param(
+            lambda t, where: t.double_col.mean(),
+            lambda t, where: t.double_col.mean(),
+            id='double_col_mean',
+        ),
+        param(
+            lambda t, where: t.double_col.min(),
+            lambda t, where: t.double_col.min(),
+            id='double_col_min',
+        ),
+        param(
+            lambda t, where: t.double_col.max(),
+            lambda t, where: t.double_col.max(),
+            id='double_col_max',
+        ),
+        # param(
+            # lambda t, where: t.double_col.approx_median(),
+            # lambda t, where: t.double_col.median(),
+            # id='double_col_approx_median',
+        # ),
+        param(
+            lambda t, where: t.double_col.std(how='sample'),
+            lambda t, where: t.double_col.std(ddof=1),
+            id='double_col_std',
+        ),
+        param(
+            lambda t, where: t.double_col.var(how='sample'),
+            lambda t, where: t.double_col.var(ddof=1),
+            id='double_col_var',
+        ),
+        param(
+            lambda t, where: t.double_col.std(how='pop'),
+            lambda t, where: t.double_col.std(ddof=0),
+            id='double_col_std_pop',
+        ),
+        param(
+            lambda t, where: t.double_col.var(how='pop'),
+            lambda t, where: t.double_col.var(ddof=0),
+            id='double_col_var_pop',
+        ),
+        # param(
+            # lambda t, where: t.string_col.approx_nunique(),
+            # lambda t, where: t.string_col.nunique(),
+            # id='string_col_approx_nunique'
+        # ),
+        # param(
+            # lambda t, where: t.string_col.group_concat(','),
+            # lambda t, where: ','.join(t.string_col),
+            # id='string_col_group_concat'
+        # ),
+    ],
+    indirect=['result_func_aggs'],
+)
+@pytest.mark.parametrize(
+    ('ibis_cond', 'pandas_cond'),
+    [
+        (lambda t: None, lambda t: slice(None)),
+        (
+            lambda t: t.string_col.isin(['1', '7']),
+            lambda t: t.string_col.isin(['1', '7']),
+        )
+    ]
+)
+def test_aggregations(
+    alltypes, df, backend, result_func_aggs, expected_func,
+    ibis_cond, pandas_cond
+):
+    expr = result_func_aggs(alltypes, ibis_cond(alltypes))
+    result = expr.execute()
+    expected = expected_func(df, pandas_cond(df))
+    np.testing.assert_allclose(result, expected)
+    # backend.assert_equal(result, expected)
 
-            # table.bool_col.any(),
-            # table.bool_col.notany(),
-            # -table.bool_col.any(),
 
-            # table.bool_col.all(),
-            # table.bool_col.notall(),
-            # -table.bool_col.all(),
+# def test_analytic_functions(self):
 
-            # table.bool_col.count(where=cond),
-            # d.sum(where=cond),
-            # d.mean(where=cond),
-            # d.min(where=cond),
-            # d.max(where=cond),
-            # d.std(where=cond),
-            # d.var(where=cond),
-    # def test_analytic_functions(self):
+    # t = self.alltypes.limit(1000)
 
-        # t = self.alltypes.limit(1000)
+    # g = t.group_by('string_col').order_by('double_col')
+    # f = t.float_col
 
-        # g = t.group_by('string_col').order_by('double_col')
-        # f = t.float_col
+    # exprs = [
+        # f.lag(),
+        # f.lead(),
+        # f.rank(),
+        # f.dense_rank(),
+        # f.percent_rank(),
+        # f.ntile(buckets=7),
 
-        # exprs = [
-            # f.lag(),
-            # f.lead(),
-            # f.rank(),
-            # f.dense_rank(),
-            # f.percent_rank(),
-            # f.ntile(buckets=7),
+        # f.first(),
+        # f.last(),
 
-            # f.first(),
-            # f.last(),
+        # f.first().over(ibis.window(preceding=10)),
+        # f.first().over(ibis.window(following=10)),
 
-            # f.first().over(ibis.window(preceding=10)),
-            # f.first().over(ibis.window(following=10)),
+        # ibis.row_number(),
+        # f.cumsum(),
+        # f.cummean(),
+        # f.cummin(),
+        # f.cummax(),
 
-            # ibis.row_number(),
-            # f.cumsum(),
-            # f.cummean(),
-            # f.cummin(),
-            # f.cummax(),
+        # # boolean cumulative reductions
+        # (f == 0).cumany(),
+        # (f == 0).cumall(),
 
-            # # boolean cumulative reductions
-            # (f == 0).cumany(),
-            # (f == 0).cumall(),
-
-            # f.sum(),
-            # f.mean(),
-            # f.min(),
-            # f.max()
-        # ]
+        # f.sum(),
+        # f.mean(),
+        # f.min(),
+        # f.max()
+    # ]
