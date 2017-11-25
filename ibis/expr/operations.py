@@ -811,8 +811,11 @@ class HLLCardinality(Reduction):
 
 class GroupConcat(Reduction):
 
-    input_type = [rules.column, string(name='sep', default=',')]
-    # boolean(name='where', optional=True)]
+    input_type = [
+        rules.column,
+        string(name='sep', default=','),
+        boolean(name='where', optional=True),
+    ]
 
     def output_type(self):
         return ir.StringScalar

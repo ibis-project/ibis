@@ -466,7 +466,7 @@ def count(expr, where=None):
     return result.name('count')
 
 
-def group_concat(arg, sep=','):
+def group_concat(arg, sep=',', where=None):
     """
     Concatenate values using the indicated separator (comma by default) to
     produce a string
@@ -475,12 +475,13 @@ def group_concat(arg, sep=','):
     ----------
     arg : array expression
     sep : string, default ','
+    where : bool, default None
 
     Returns
     -------
     concatenated : string scalar
     """
-    return _ops.GroupConcat(arg, sep).to_expr()
+    return _ops.GroupConcat(arg, sep, where).to_expr()
 
 
 def _binop_expr(name, klass):
