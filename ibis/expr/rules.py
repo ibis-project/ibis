@@ -780,7 +780,7 @@ class ListOf(Argument):
 
         args[i] = checked_args
 
-        return checked_args
+        return ir.as_value_expr(checked_args)
 
 
 list_of = ListOf
