@@ -48,18 +48,18 @@ def result_func_strings(request, con, alltypes, backend, valid_operations):
             id='like',
         ),
         param(
-            lambda t: t.string_col.re_search(r'[\d]+'),
-            lambda t: t.string_col.str.contains(r'[\d]+'),
+            lambda t: t.string_col.re_search(r'[[:digit:]]+'),
+            lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
         ),
         param(
-            lambda t: t.string_col.re_extract(r'([\d]+)', 0),
-            lambda t: t.string_col.str.extract(r'([\d]+)', expand=False),
+            lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 0),
+            lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
         ),
         param(
-            lambda t: t.string_col.re_replace(r'[\d]+', 'a'),
-            lambda t: t.string_col.str.replace(r'[\d]+', 'a'),
+            lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
+            lambda t: t.string_col.str.replace(r'\d+', 'a'),
             id='re_replace',
         ),
         param(
@@ -89,7 +89,7 @@ def result_func_strings(request, con, alltypes, backend, valid_operations):
         ),
         param(
             lambda t: t.string_col.find_in_set(['a']),
-            lambda t: t.string_col.str.find('a').replace({-1: None}),
+            lambda t: t.string_col.str.find('a'),
             id='find_in_set',
         ),
         param(
@@ -139,7 +139,7 @@ def result_func_strings(request, con, alltypes, backend, valid_operations):
         ),
         param(
             lambda t: t.date_string_col.substr(2, 3),
-            lambda t: t.date_string_col.str[2:2 + 3],
+            lambda t: t.date_string_col.str[2:5],
             id='substr'
         ),
         param(
