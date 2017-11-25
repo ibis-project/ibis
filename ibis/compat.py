@@ -44,6 +44,7 @@ if not PY2:
     import builtins
     import pickle
     maketrans = str.maketrans
+    from functools import reduce
 else:
     try:
         from cdecimal import Decimal
@@ -68,6 +69,8 @@ else:
     range = xrange  # noqa: F821
     import cPickle as pickle  # noqa: F401
     from string import maketrans  # noqa: F401
+    reduce = reduce
+
 
 integer_types = six.integer_types + (np.integer,)
 
