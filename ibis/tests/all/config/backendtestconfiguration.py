@@ -13,7 +13,6 @@ import pandas.util.testing as tm
 class BackendTestConfiguration(six.with_metaclass(abc.ABCMeta)):
     check_dtype = True
     check_names = True
-    check_index = True
 
     @abstractclassmethod
     def connect(cls, backend):
@@ -23,5 +22,8 @@ class BackendTestConfiguration(six.with_metaclass(abc.ABCMeta)):
     def assert_series_equal(cls, *args, **kwargs):
         kwargs.setdefault('check_dtype', cls.check_dtype)
         kwargs.setdefault('check_names', cls.check_names)
-        kwargs.setdefault('check_index', cls.check_index)
         return tm.assert_series_equal(*args, **kwargs)
+
+    @classmethod
+    def assert_frame_equal(cls, *args, **kwargs):
+        return tm.assert_frame_equal(*args, **kwargs)
