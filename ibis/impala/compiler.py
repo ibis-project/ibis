@@ -981,7 +981,7 @@ _operation_registry = {
     ops.RPad: fixed_arity('rpad', 3),
     ops.StringJoin: _string_join,
     ops.StringSQLLike: _binary_infix_op('LIKE'),
-    ops.RegexSearch: _binary_infix_op('RLIKE'),
+    ops.RegexSearch: fixed_arity('regexp_like', 2),
     ops.RegexExtract: fixed_arity('regexp_extract', 3),
     ops.RegexReplace: fixed_arity('regexp_replace', 3),
     ops.ParseURL: _parse_url,
