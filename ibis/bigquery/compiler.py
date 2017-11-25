@@ -204,7 +204,7 @@ _operation_registry.update({
     # ops.ArraySlice: _array_slice,
 
     ops.StringFind: _string_find,
-    ops.StringRepeat: _string_repeat,
+    ops.Repeat: _string_repeat,
     ops.RegexSearch: _regex_search,
     ops.RegexExtract: _regex_extract,
     ops.RegexReplace: _regex_replace,
