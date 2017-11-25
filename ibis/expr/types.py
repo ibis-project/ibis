@@ -1506,7 +1506,16 @@ class NullLiteral(ValueOp):
 
 
 class ListExpr(ColumnExpr, AnyValue):
-    pass
+
+    @property
+    def values(self):
+        return self.op().values
+
+    def __iter__(self):
+        return iter(self.values)
+
+    def __getitem__(self, key):
+        return self.values[key]
 
 
 class SortExpr(Expr):
