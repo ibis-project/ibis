@@ -15,7 +15,7 @@ def test_distinct_column(alltypes, df, column):
 
 
 @pytest.fixture(scope='function')
-def result_func(request, con, alltypes, valid_operations):
+def result_func(request, con, alltypes, backend, valid_operations):
     func = request.param
     result = func(alltypes)
     op_type = type(result.op())
@@ -147,8 +147,8 @@ def result_func(request, con, alltypes, valid_operations):
             id='right',
         ),
         param(
-            lambda t: t.date_string_col.split('/')[0],
-            lambda t: t.date_string_col.str.split('/').str[0],
+            lambda t: t.date_string_col.split('/'),
+            lambda t: t.date_string_col.str.split('/'),
             id='split',
         ),
         param(

@@ -602,6 +602,11 @@ def _array_slice(t, expr):
     return sa_arg[sa_start + 1:sa_stop]
 
 
+def _string_join(t, expr):
+    sep, elements = expr.op().args
+    return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
+
+
 _operation_registry.update({
     # We override this here to support time zones
     ops.TableColumn: _table_column,
@@ -646,6 +651,8 @@ _operation_registry.update({
     ops.Translate: fixed_arity('translate', 3),
     ops.StringAscii: fixed_arity(sa.func.ascii, 1),
     ops.RegexExtract: _regex_extract,
+    ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
+    ops.StringJoin: _string_join,
 
     ops.FindInSet: _find_in_set,
 
