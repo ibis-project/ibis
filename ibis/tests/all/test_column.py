@@ -1,20 +1,16 @@
-import numpy as np
-
 import pytest
 from pytest import param
 
+import ibis
 
-def test_sum(alltypes, df):
-    expr = alltypes.double_col.sum()
+
+@pytest.mark.parametrize(
+    'column', ['string_col', 'double_col', 'date_string_col']
+)
+def test_distinct_column(alltypes, df, column):
+    expr = alltypes[column].distinct()
     result = expr.execute()
-    expected = df.double_col.sum()
-    np.testing.assert_allclose(result, expected)
-
-
-def test_distinct_column(alltypes, df):
-    expr = alltypes.string_col.distinct()
-    result = expr.execute()
-    expected = df.string_col.unique()
+    expected = df[column].unique()
     assert set(result) == set(expected)
 
 
@@ -130,6 +126,36 @@ def result_func(request, con, alltypes, valid_operations):
             lambda t: t.string_col.str.rstrip(),
             id='rstrip'
         ),
+        param(
+            lambda t: t.string_col.capitalize(),
+            lambda t: t.string_col.str.capitalize(),
+            id='capitalize',
+        ),
+        param(
+            lambda t: t.date_string_col.substr(2, 3),
+            lambda t: t.date_string_col.str[2:2 + 3],
+            id='substr'
+        ),
+        param(
+            lambda t: t.date_string_col.left(2),
+            lambda t: t.date_string_col.str[:2],
+            id='left',
+        ),
+        param(
+            lambda t: t.date_string_col.right(2),
+            lambda t: t.date_string_col.str[-2:],
+            id='right',
+        ),
+        param(
+            lambda t: t.date_string_col.split('/'),
+            lambda t: t.date_string_col.str.split('/'),
+            id='split',
+        ),
+        param(
+            lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),
+            lambda t: 'a-' + t.string_col + '-c',
+            id='join'
+        )
     ],
     indirect=['result_func'],
 )
@@ -140,3 +166,72 @@ def test_strings(
     result = expr.execute()
     expected = backend.default_series_rename(expected_func(df))
     backend.assert_series_equal(result, expected)
+
+
+# def test_aggregations():
+
+            # table.bool_col.count(),
+            # d.sum(),
+            # d.mean(),
+            # d.min(),
+            # d.max(),
+            # s.approx_nunique(),
+            # d.approx_median(),
+            # s.group_concat(),
+
+            # d.std(),
+            # d.std(how='pop'),
+            # d.var(),
+            # d.var(how='pop'),
+
+            # table.bool_col.any(),
+            # table.bool_col.notany(),
+            # -table.bool_col.any(),
+
+            # table.bool_col.all(),
+            # table.bool_col.notall(),
+            # -table.bool_col.all(),
+
+            # table.bool_col.count(where=cond),
+            # d.sum(where=cond),
+            # d.mean(where=cond),
+            # d.min(where=cond),
+            # d.max(where=cond),
+            # d.std(where=cond),
+            # d.var(where=cond),
+    # def test_analytic_functions(self):
+
+        # t = self.alltypes.limit(1000)
+
+        # g = t.group_by('string_col').order_by('double_col')
+        # f = t.float_col
+
+        # exprs = [
+            # f.lag(),
+            # f.lead(),
+            # f.rank(),
+            # f.dense_rank(),
+            # f.percent_rank(),
+            # f.ntile(buckets=7),
+
+            # f.first(),
+            # f.last(),
+
+            # f.first().over(ibis.window(preceding=10)),
+            # f.first().over(ibis.window(following=10)),
+
+            # ibis.row_number(),
+            # f.cumsum(),
+            # f.cummean(),
+            # f.cummin(),
+            # f.cummax(),
+
+            # # boolean cumulative reductions
+            # (f == 0).cumany(),
+            # (f == 0).cumall(),
+
+            # f.sum(),
+            # f.mean(),
+            # f.min(),
+            # f.max()
+        # ]
