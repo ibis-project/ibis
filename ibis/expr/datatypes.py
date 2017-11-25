@@ -653,16 +653,22 @@ _STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n
 
 _TYPE_RULES = OrderedDict(
     [
-        # any, null
+        # any, null, bool|boolean
         ('(?P<ANY>any)', lambda token: Token(Tokens.ANY, any)),
         ('(?P<NULL>null)', lambda token: Token(Tokens.NULL, null)),
+        (
+            '(?P<BOOLEAN>bool(?:ean)?)',
+            lambda token: Token(Tokens.PRIMITIVE, boolean),
+        ),
     ] + [
         # primitive types
         (
             '(?P<{}>{})'.format(token.upper(), token),
             lambda token, value=value: Token(Tokens.PRIMITIVE, value)
-        ) for token, value in _primitive_types
-        if token not in {'any', 'null', 'timestamp', 'time', 'interval'}
+        ) for token, value in _primitive_types.items()
+        if token not in {
+            'any', 'null', 'timestamp', 'time', 'interval', 'boolean'
+        }
     ] + [
         # timestamp
         (
@@ -822,6 +828,7 @@ class TypeParser(object):
 
         primitive : "any"
                   | "null"
+                  | "bool"
                   | "boolean"
                   | "int8"
                   | "int16"
