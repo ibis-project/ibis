@@ -1517,6 +1517,20 @@ class ListExpr(ColumnExpr, AnyValue):
     def __getitem__(self, key):
         return self.values[key]
 
+    def __add__(self, other):
+        other_values = getattr(other, 'values', other)
+        return type(self.op())(self.values + other_values).to_expr()
+
+    def __radd__(self, other):
+        other_values = getattr(other, 'values', other)
+        return type(self.op())(other_values + self.values).to_expr()
+
+    def __bool__(self):
+        return bool(self.values)
+
+    def __len__(self):
+        return len(self.values)
+
 
 class SortExpr(Expr):
 
