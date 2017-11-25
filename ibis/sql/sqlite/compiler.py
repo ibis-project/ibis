@@ -243,6 +243,11 @@ _operation_registry.update({
     ops.LPad: _lpad,
     ops.RPad: _rpad,
 
+    ops.Reverse: fixed_arity(sa.func._ibis_sqlite_reverse, 1),
+    ops.StringAscii: fixed_arity(sa.func._ibis_sqlite_string_ascii, 1),
+    ops.Capitalize: fixed_arity(sa.func._ibis_sqlite_capitalize, 1),
+    ops.Translate: fixed_arity(sa.func._ibis_sqlite_translate, 3),
+
     ops.Sqrt: fixed_arity(sa.func._ibis_sqlite_sqrt, 1),
     ops.Power: fixed_arity(sa.func._ibis_sqlite_power, 2),
     ops.Exp: fixed_arity(sa.func._ibis_sqlite_exp, 1),
