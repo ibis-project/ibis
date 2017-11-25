@@ -33,3 +33,14 @@ class BackendTestConfiguration(six.with_metaclass(abc.ABCMeta)):
     @classmethod
     def default_series_rename(cls, series, name='tmp'):
         return series.rename(name)
+
+
+class UnorderedSeriesComparator(object):
+    @classmethod
+    def assert_series_equal(cls, left, right, *args, **kwargs):
+        return super(UnorderedSeriesComparator, cls).assert_series_equal(
+            left.sort_values().reset_index(drop=True),
+            right.sort_values().reset_index(drop=True),
+            *args,
+            **kwargs
+        )

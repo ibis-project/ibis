@@ -2,10 +2,13 @@ import os
 
 import pytest
 
-from ibis.tests.all.config.backendtestconfiguration import BackendTestConfiguration
+from ibis.tests.all.config.backendtestconfiguration import (
+    BackendTestConfiguration,
+    UnorderedSeriesComparator,
+)
 
 
-class BigQuery(BackendTestConfiguration):
+class BigQuery(UnorderedSeriesComparator, BackendTestConfiguration):
     @classmethod
     def connect(cls, backend):
         ga = pytest.importorskip('google.auth')
@@ -28,12 +31,3 @@ class BigQuery(BackendTestConfiguration):
             return backend.connect(project_id, dataset_id)
         except ga.exceptions.DefaultCredentialsError:
             pytest.skip('no credentials found, skipping')
-
-    @classmethod
-    def assert_series_equal(cls, left, right, *args, **kwargs):
-        return super(BigQuery, cls).assert_series_equal(
-            left.value_counts().sort_index(),
-            right.value_counts().sort_index(),
-            *args,
-            **kwargs
-        )

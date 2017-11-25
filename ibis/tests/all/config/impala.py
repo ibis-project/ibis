@@ -1,5 +1,6 @@
 from ibis.tests.all.config.backendtestconfiguration import (
-    BackendTestConfiguration
+    BackendTestConfiguration,
+    UnorderedSeriesComparator,
 )
 
 import ibis
@@ -9,7 +10,9 @@ from ibis.impala.tests.common import IbisTestEnv
 ENV = IbisTestEnv()
 
 
-class Impala(BackendTestConfiguration):
+class Impala(UnorderedSeriesComparator, BackendTestConfiguration):
+    check_dtype = False
+
     @classmethod
     def connect(cls, backend):
         hc = ibis.hdfs_connect(
