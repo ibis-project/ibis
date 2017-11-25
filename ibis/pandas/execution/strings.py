@@ -4,6 +4,7 @@ import pandas as pd
 
 from pandas.core.groupby import SeriesGroupBy
 
+from ibis.compat import reduce, maketrans
 import ibis.expr.operations as ops
 
 from ibis.pandas.dispatch import execute_node
@@ -187,7 +188,7 @@ def execute_series_regex_extract(op, data, pattern, index, **kwargs):
 def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
     return execute_series_regex_extract(
         op,
-        getattr(data, 'obj', data),
+        data.obj,
         getattr(pattern, 'obj', pattern),
         getattr(index, 'obj', index),
         **kwargs
@@ -212,7 +213,77 @@ def execute_series_regex_replace(op, data, pattern, replacement, **kwargs):
 )
 def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
     return execute_series_regex_replace(
-        getattr(data, 'obj', data),
+        data.obj,
         getattr(pattern, 'obj', pattern),
         getattr(replacement, 'obj', replacement),
     ).groupby(data.grouper.groupings)
+
+
+@execute_node.register(ops.Translate, pd.Series, pd.Series, pd.Series)
+def execute_series_translate_series_series(
+    op, data, from_string, to_string, **kwargs
+):
+    table = from_string.apply(
+        lambda x, y: maketrans(x=x, y=next(y)), args=(iter(to_string),)
+    )
+    import pdb; pdb.set_trace()  # noqa
+    return data.str.translate(table)
+
+
+@execute_node.register(
+    ops.Translate,
+    pd.Series,
+    pd.Series,
+    six.string_types,
+)
+def execute_series_translate_series_scalar(
+    op, data, from_string, to_string, **kwargs
+):
+    table = from_string.map(lambda x, y=to_string: maketrans(x=x, y=y))
+    return data.str.translate(table)
+
+
+@execute_node.register(
+    ops.Translate,
+    pd.Series,
+    six.string_types,
+    pd.Series,
+)
+def execute_series_translate_scalar_series(
+    op, data, from_string, to_string, **kwargs
+):
+    table = to_string.map(lambda y, x=from_string: maketrans(x=x, y=y))
+    return data.str.translate(table)
+
+
+@execute_node.register(
+    ops.Translate,
+    pd.Series,
+    six.string_types,
+    six.string_types,
+)
+def execute_series_translate_scalar_scalar(
+    op, data, from_string, to_string, **kwargs
+):
+    return data.str.translate(maketrans(from_string, to_string))
+
+
+@execute_node.register(
+    ops.StrRight,
+    pd.Series,
+    integer_types,
+)
+def execute_series_right(op, data, nchars, **kwargs):
+    return data.str[-nchars:]
+
+
+@execute_node.register(ops.StrRight, SeriesGroupBy, integer_types)
+def execute_series_right_gb(op, data, nchars, **kwargs):
+    return execute_series_right(
+        op, data.obj, nchars
+    ).groupby(data.grouper.groupings)
+
+
+@execute_node.register(ops.StringJoin, (pd.Series,) + six.string_types, list)
+def execute_series_join_scalar_sep(op, sep, data, **kwargs):
+    return reduce(lambda x, y: x + sep + y, data)
