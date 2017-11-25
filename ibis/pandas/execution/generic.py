@@ -364,14 +364,20 @@ def execute_reduction_series_groupby(op, data, mask, context=None, **kwargs):
     return context.agg(data, type(op).__name__.lower())
 
 
+variance_ddof = {
+    'pop': 0,
+    'sample': 1,
+}
+
+
 @execute_node.register(ops.Variance, SeriesGroupBy, type(None))
 def execute_reduction_series_groupby_var(op, data, _, context=None, **kwargs):
-    return context.agg(data, 'var')
+    return context.agg(data, 'var', ddof=variance_ddof[op.how])
 
 
 @execute_node.register(ops.StandardDev, SeriesGroupBy, type(None))
 def execute_reduction_series_groupby_std(op, data, _, context=None, **kwargs):
-    return context.agg(data, 'std')
+    return context.agg(data, 'std', ddof=variance_ddof[op.how])
 
 
 @execute_node.register(ops.CountDistinct, SeriesGroupBy, type(None))
@@ -404,12 +410,22 @@ def execute_count_distinct_series_groupby_mask(
 
 @execute_node.register(ops.Variance, SeriesGroupBy, SeriesGroupBy)
 def execute_var_series_groupby_mask(op, data, mask, context=None, **kwargs):
-    return context.agg(data, lambda x, mask=mask.obj: x[mask[x.index]].var())
+    return context.agg(
+        data,
+        lambda x, mask=mask.obj, ddof=variance_ddof[op.how]: (
+            x[mask[x.index]].var(ddof=ddof)
+        )
+    )
 
 
 @execute_node.register(ops.StandardDev, SeriesGroupBy, SeriesGroupBy)
 def execute_std_series_groupby_mask(op, data, mask, context=None, **kwargs):
-    return context.agg(data, lambda x, mask=mask.obj: x[mask[x.index]].std())
+    return context.agg(
+        data,
+        lambda x, mask=mask.obj, ddof=variance_ddof[op.how]: (
+            x[mask[x.index]].std(ddof=ddof)
+        )
+    )
 
 
 @execute_node.register(ops.Count, DataFrameGroupBy, type(None))
@@ -433,17 +449,35 @@ def execute_count_distinct_series_mask(op, data, mask, context=None, **kwargs):
 
 @execute_node.register(ops.StandardDev, pd.Series, (pd.Series, type(None)))
 def execute_standard_dev_series(op, data, mask, context=None, **kwargs):
-    return context.agg(data[mask] if mask is not None else data, 'std')
+    return context.agg(
+        data[mask] if mask is not None else data,
+        'std',
+        ddof=variance_ddof[op.how]
+    )
 
 
 @execute_node.register(ops.Variance, pd.Series, (pd.Series, type(None)))
 def execute_variance_series(op, data, mask, context=None, **kwargs):
-    return context.agg(data[mask] if mask is not None else data, 'var')
+    return context.agg(
+        data[mask] if mask is not None else data,
+        'var',
+        ddof=variance_ddof[op.how]
+    )
 
 
 @execute_node.register((ops.Any, ops.All), pd.Series)
 def execute_any_all_series(op, data, context=None, **kwargs):
     return context.agg(data, type(op).__name__.lower())
+
+
+@execute_node.register(ops.NotAny, pd.Series)
+def execute_notany_series(op, data, context=None, **kwargs):
+    return ~context.agg(data, 'any')
+
+
+@execute_node.register(ops.NotAll, pd.Series)
+def execute_notall_series(op, data, context=None, **kwargs):
+    return ~context.agg(data, 'all')
 
 
 @execute_node.register(ops.Count, pd.DataFrame, type(None))
