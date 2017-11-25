@@ -1509,7 +1509,7 @@ def _string_left(self, nchars):
 
 def _string_right(self, nchars):
     """
-    Split up to nchars starting from end of each string.
+    Return up to nchars starting from end of each string.
 
     Returns
     -------
