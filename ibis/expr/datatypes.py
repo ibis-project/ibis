@@ -439,7 +439,7 @@ class Interval(Primitive):
     __slots__ = 'unit',
 
     def __init__(self, unit, nullable=True):
-        super(Timestamp, self).__init__(nullable=nullable)
+        super(Interval, self).__init__(nullable=nullable)
         self.unit = unit
 
     def valid_literal(self, value):
@@ -838,11 +838,11 @@ class Tokens(object):
     RPAREN = 14
     LBRACKET = 15
     RBRACKET = 16
-    TIMEZONE = 17
+    STRARG = 17
     TIMESTAMP = 18
     TIME = 19
     INTERVAL = 20
-    UNIT = 21
+    # UNIT = 21
 
     @staticmethod
     def name(value):
@@ -860,9 +860,6 @@ Token = namedtuple('Token', ('type', 'value'))
 
 # Adapted from tokenize.String
 _STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""  # noqa: E501
-
-_INTERVAL_REGEX = '(Y|M|w|d|h|m|s|ms|us|ns)'
-
 
 
 _TYPE_RULES = OrderedDict(
@@ -931,12 +928,8 @@ _TYPE_RULES = OrderedDict(
         ('(?P<RBRACKET>>)', lambda token: Token(Tokens.RBRACKET, token)),
         (r'(?P<WHITESPACE>\s+)', None),
         (
-            '(?P<TIMEZONE>{})'.format(_STRING_REGEX),
-            lambda token: Token(Tokens.TIMEZONE, token),
-        ),
-        (
-            '(?P<UNIT>{})'.format(_INTERVAL_REGEX),
-            lambda token: Token(Tokens.UNIT, token),
+            '(?P<STRARG>{})'.format(_STRING_REGEX),
+            lambda token: Token(Tokens.STRARG, token),
         ),
     ]
 )
@@ -1073,7 +1066,7 @@ class TypeParser(object):
 
         elif self._accept(Tokens.TIMESTAMP):
             if self._accept(Tokens.LPAREN):
-                self._expect(Tokens.TIMEZONE)
+                self._expect(Tokens.STRARG)
                 timezone = self.tok.value[1:-1]  # remove surrounding quotes
                 self._expect(Tokens.RPAREN)
                 return Timestamp(timezone=timezone)
@@ -1084,10 +1077,10 @@ class TypeParser(object):
 
         elif self._accept(Tokens.INTERVAL):
             if self._accept(Tokens.LPAREN):
-                self._expect(Tokens.UNIT)
+                self._expect(Tokens.STRARG)
                 unit = self.tok.value
                 self._expect(Tokens.RPAREN)
-            return Interval(unit)
+            return Interval(unit=unit)
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):

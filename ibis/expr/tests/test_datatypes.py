@@ -300,6 +300,10 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
     assert str(ts) == "timestamp('US/Ea')"
 
 
+def test_interval():
+    dt.validate_type("interval('Y')")
+
+
 @pytest.mark.parametrize(
     'case',
     [
