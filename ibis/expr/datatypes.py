@@ -893,12 +893,12 @@ _TYPE_RULES = OrderedDict(
             lambda token, toktype=toktype: Token(toktype, token)
         ) for token, toktype in zip(
             (
-                'decimal', 
-                'varchar', 
-                'char', 
-                'array', 
-                'map', 
-                'struct', 
+                'decimal',
+                'varchar',
+                'char',
+                'array',
+                'map',
+                'struct',
                 'interval'
             ), (
                 Tokens.DECIMAL,
