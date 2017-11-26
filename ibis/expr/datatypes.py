@@ -433,6 +433,19 @@ class Timestamp(Primitive):
         return isinstance(value, six.string_types + (datetime.datetime,))
 
 
+@parametric
+class Interval(Primitive):
+
+    __slots__ = 'unit',
+
+    def __init__(self, unit, nullable=True):
+        super(Timestamp, self).__init__(nullable=nullable)
+        self.unit = unit
+
+    def valid_literal(self, value):
+        return isinstance(value, six.string_types + (datetime.timedelta,))
+
+
 class SignedInteger(Integer):
     pass
 
@@ -828,6 +841,8 @@ class Tokens(object):
     TIMEZONE = 17
     TIMESTAMP = 18
     TIME = 19
+    INTERVAL = 20
+    UNIT = 21
 
     @staticmethod
     def name(value):
@@ -845,6 +860,9 @@ Token = namedtuple('Token', ('type', 'value'))
 
 # Adapted from tokenize.String
 _STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""  # noqa: E501
+
+_INTERVAL_REGEX = '(Y|M|w|d|h|m|s|ms|us|ns)'
+
 
 
 _TYPE_RULES = OrderedDict(
@@ -877,14 +895,22 @@ _TYPE_RULES = OrderedDict(
             '(?P<{}>{})'.format(token.upper(), token),
             lambda token, toktype=toktype: Token(toktype, token)
         ) for token, toktype in zip(
-            ('decimal', 'varchar', 'char', 'array', 'map', 'struct'),
             (
+                'decimal', 
+                'varchar', 
+                'char', 
+                'array', 
+                'map', 
+                'struct', 
+                'interval'
+            ), (
                 Tokens.DECIMAL,
                 Tokens.VARCHAR,
                 Tokens.CHAR,
                 Tokens.ARRAY,
                 Tokens.MAP,
-                Tokens.STRUCT
+                Tokens.STRUCT,
+                Tokens.INTERVAL
             ),
         )
     ] + [
@@ -907,6 +933,10 @@ _TYPE_RULES = OrderedDict(
         (
             '(?P<TIMEZONE>{})'.format(_STRING_REGEX),
             lambda token: Token(Tokens.TIMEZONE, token),
+        ),
+        (
+            '(?P<UNIT>{})'.format(_INTERVAL_REGEX),
+            lambda token: Token(Tokens.UNIT, token),
         ),
     ]
 )
@@ -1051,6 +1081,13 @@ class TypeParser(object):
 
         elif self._accept(Tokens.TIME):
             return Time()
+
+        elif self._accept(Tokens.INTERVAL):
+            if self._accept(Tokens.LPAREN):
+                self._expect(Tokens.UNIT)
+                unit = self.tok.value
+                self._expect(Tokens.RPAREN)
+            return Interval(unit)
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):
