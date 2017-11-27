@@ -16,6 +16,7 @@ from __future__ import print_function
 
 import warnings
 import operator
+import datetime
 import functools
 import collections
 
@@ -40,6 +41,7 @@ from ibis.expr.types import (Expr,  # noqa
                              StringValue, StringScalar, StringColumn,
                              DecimalValue, DecimalScalar, DecimalColumn,
                              TimestampValue, TimestampScalar, TimestampColumn,
+                             IntervalValue, IntervalScalar, IntervalColumn,
                              DateValue, TimeValue,
                              ArrayValue, ArrayScalar, ArrayColumn,
                              MapValue, MapScalar, MapColumn,
@@ -198,6 +200,56 @@ def time(value):
     if isinstance(value, six.string_types):
         value = to_time(value)
     return ir.TimeScalar(ir.literal(value).op())
+
+
+def interval(value=None, years=None, months=None, weeks=None, days=None,
+             hours=None, minutes=None, seconds=None):
+    """
+    Returns an interval literal
+
+    Parameters
+    ----------
+    value : int or datetime.timedelta, default None
+    years : int, default None
+    months : int, default None
+    days : int, default None
+    weeks : int, default None
+    hours : int, default None
+    minutes : int, default None
+    seconds : int, default None
+
+    Returns
+    --------
+    result : IntervalScalar
+    """
+    # TODO: consider (value, unit) arguments instead of kwargs
+
+    if value is not None:
+        if isinstance(value, datetime.timedelta):
+            value = int(value.total_seconds())
+        elif not isinstance(value, six.integer_types):
+            raise ValueError('Interval value must be an integer')
+        return ir.IntervalScalar(ir.literal(value, type=dt.Interval('s')))
+
+    kwds = [
+        ('Y', years),
+        ('M', months),
+        ('w', weeks),
+        ('d', days),
+        ('h', hours),
+        ('m', minutes),
+        ('s', seconds)
+    ]
+    defined_units = [(unit, value) for unit, value in kwds
+                     if value is not None]
+
+    if len(defined_units) > 1:
+        raise ValueError('Only one arg can be specified')
+    elif len(defined_units) < 1:
+        raise ValueError('At least one of the arguments must be specified')
+    else:
+        unit, value = defined_units[0]
+        return ir.IntervalScalar(ir.literal(value, type=dt.Interval(unit)))
 
 
 schema.__doc__ = """\
@@ -1888,6 +1940,8 @@ def _timestamp_time(arg):
     return _ops.Time(arg).to_expr()
 
 
+_timestamp_sub = _binop_expr('__sub__', _ops.TimestampSubtract)
+
 _timestamp_value_methods = dict(
     strftime=_timestamp_strftime,
     year=_extract_field('year', _ops.ExtractYear),
@@ -1899,19 +1953,35 @@ _timestamp_value_methods = dict(
     millisecond=_extract_field('millisecond', _ops.ExtractMillisecond),
     truncate=_timestamp_truncate,
     time=_timestamp_time,
+
+    __sub__=_timestamp_sub,
+    sub=_timestamp_sub,
 )
 
+
+_date_sub = _binop_expr('__sub__', _ops.DateSubtract)
 
 _date_value_methods = dict(
     strftime=_timestamp_strftime,
     year=_extract_field('year', _ops.ExtractYear),
     month=_extract_field('month', _ops.ExtractMonth),
     day=_extract_field('day', _ops.ExtractDay),
+
+    __sub__=_date_sub,
+    sub=_date_sub,
 )
 
 
+_interval_rsub = _rbinop_expr('__rsub__', _ops.IntervalSubtract)
+
+_interval_value_methods = dict(
+    __rsub__=_interval_rsub,
+    rsub=_interval_rsub,
+)
+
 _add_methods(TimestampValue, _timestamp_value_methods)
 _add_methods(DateValue, _date_value_methods)
+_add_methods(IntervalValue, _interval_value_methods)
 
 
 # ---------------------------------------------------------------------
@@ -1950,8 +2020,12 @@ def between_time(arg, lower, upper, timezone=None):
     return op.to_expr()
 
 
+_time_sub = _binop_expr('__sub__', _ops.TimeSubtract)
+
 _time_value_methods = dict(
     between=between_time,
+    __sub__=_time_sub,
+    sub=_time_sub
 )
 
 _add_methods(TimeValue, _time_value_methods)

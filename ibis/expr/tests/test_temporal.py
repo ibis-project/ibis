@@ -13,11 +13,13 @@
 # limitations under the License.
 
 import pytest
+import datetime
 
 from ibis.common import IbisError
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.temporal as T
+import ibis.expr.api as api
 
 
 @pytest.mark.parametrize(
@@ -181,3 +183,52 @@ def test_compound_offset():
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_offset_months():
     assert False
+
+
+@pytest.mark.parametrize('literal', [
+    api.interval(3600),
+    api.interval(datetime.timedelta(days=3)),
+    api.interval(years=1),
+    api.interval(months=2),
+    api.interval(weeks=3),
+    api.interval(days=-1),
+    api.interval(hours=-3),
+    api.interval(minutes=5),
+    api.interval(seconds=-8)
+])
+def test_interval(literal):
+    assert isinstance(literal, ir.IntervalScalar)
+
+
+def test_interval_arithmetics():
+    # date - date = interval(d)
+    # date - interval(d) = date
+    # date + interval(d) = date
+
+    # timestamp - timestamp = interval(s)
+    # timestamp + interval(s) = timestamp
+    # timestamp - interval(s) = timestamp
+
+    # interval - interval = interval
+    # interval + interval = interval
+
+    t1 = datetime.datetime.now()
+    t2 = t1 - datetime.timedelta(days=1)
+
+    t1 = api.timestamp(t1)
+    t2 = api.timestamp(t2)
+    d1 = t1.cast('date')
+    d2 = t1.cast('date')
+
+    assert isinstance(t1 - t2, ir.IntervalScalar)
+    assert isinstance(t2 - t1, ir.IntervalScalar)
+
+    assert isinstance(d1 - d2, ir.IntervalScalar)
+    assert isinstance(d2 - d1, ir.IntervalScalar)
+
+    diff = api.interval(seconds=10)
+    assert isintance(t1 - diff, ir.TimestampScalar)
+
+    diff = api.interval(days=10)
+    assert isintance(d1 - diff, ir.DateScalar)
+

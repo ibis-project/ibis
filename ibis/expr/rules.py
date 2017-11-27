@@ -709,6 +709,10 @@ def time(**arg_kwds):
     return ValueTyped(ir.TimeValue, 'not time', **arg_kwds)
 
 
+def interval(**arg_kwds):
+    return ValueTyped(ir.IntervalValue, 'not an interval', **arg_kwds)
+
+
 def timedelta(**arg_kwds):
     from ibis.expr.temporal import Timedelta
     return AnyTyped(Timedelta, 'not a timedelta', **arg_kwds)

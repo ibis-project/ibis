@@ -433,34 +433,6 @@ class Timestamp(Primitive):
         return isinstance(value, six.string_types + (datetime.datetime,))
 
 
-@parametric
-class Interval(Primitive):
-
-    __slots__ = 'unit',
-
-    _valid_units = set([
-        'Y',   # Year
-        'M',   # Month
-        'w',   # Week
-        'd',   # Day
-        'h',   # Hour
-        'm',   # Minute
-        's',   # Second
-        'ms',  # Millisecond
-        'us',  # Microsecond
-        'ns'   # Nanosecond
-    ])
-
-    def __init__(self, unit='s', nullable=True):
-        super(Interval, self).__init__(nullable=nullable)
-        if unit not in self._valid_units:
-            raise ValueError('Unsupported interval unit `{}`'.format(unit))
-        self.unit = unit
-
-    def valid_literal(self, value):
-        return isinstance(value, six.string_types + (datetime.timedelta,))
-
-
 class SignedInteger(Integer):
     pass
 
@@ -484,6 +456,36 @@ class UnsignedInteger(Integer):
         return isinstance(
             value, six.integer_types + (np.integer,)
         ) and lower <= value <= upper
+
+
+@parametric
+class Interval(SignedInteger):
+
+    __slots__ = 'unit',
+
+    _nbytes = 4
+
+    _valid_units = frozenset([
+        'Y',   # Year
+        'M',   # Month
+        'w',   # Week
+        'd',   # Day
+        'h',   # Hour
+        'm',   # Minute
+        's',   # Second
+        'ms',  # Millisecond
+        'us',  # Microsecond
+        'ns'   # Nanosecond
+    ])
+
+    def __init__(self, unit='s', nullable=True):
+        super(Interval, self).__init__(nullable=nullable)
+        if unit not in self._valid_units:
+            raise ValueError('Unsupported interval unit `{}`'.format(unit))
+        self.unit = unit
+
+    def valid_literal(self, value):
+        return isinstance(value, six.integer_types + (datetime.timedelta,))
 
 
 class Floating(Primitive):

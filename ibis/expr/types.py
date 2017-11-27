@@ -522,6 +522,8 @@ def infer_literal_type(value):
         return dt.double
     elif isinstance(value, six.string_types):
         return dt.string
+    elif isinstance(value, datetime.timedelta):
+        return dt.interval
     elif isinstance(value, datetime.datetime):
         return dt.timestamp
     elif isinstance(value, datetime.date):
@@ -1239,6 +1241,37 @@ class TimestampValue(TemporalValue):
         return TimestampScalar(op)
 
 
+class IntervalValue(IntegerValue):
+
+    def __init__(self, meta=None):
+        self.meta = meta
+        self._unit = getattr(meta, 'unit', 's')
+
+    def type(self):
+        return dt.Interval(unit=self._unit)
+
+    @classmethod
+    def _make_constructor(cls, meta):
+        def constructor(arg, name=None):
+            return cls(arg, meta, name=name)
+        return constructor
+
+    def _can_compare(self, other):
+        return isinstance(other, IntegerValue)
+
+    def _can_implicit_cast(self, arg):
+        op = arg.op()
+        if isinstance(op, Literal):
+            if isinstance(op.value, six.integer_types):
+                return True
+        return False
+
+    def _implicit_cast(self, arg):
+        # assume we've checked this is OK at this point...
+        op = arg.op()
+        return IntervalScalar(op)
+
+
 class ArrayValue(ParameterizedValue):
 
     def _can_compare(self, other):
@@ -1439,6 +1472,20 @@ class TimestampColumn(ColumnExpr, TimestampValue):
     def __init__(self, arg, meta=None, name=None):
         ColumnExpr.__init__(self, arg, name=name)
         TimestampValue.__init__(self, meta=meta)
+
+
+class IntervalScalar(ScalarExpr, IntervalValue):
+
+    def __init__(self, arg, meta=None, name=None):
+        ScalarExpr.__init__(self, arg, name=name)
+        IntervalValue.__init__(self, meta=meta)
+
+
+class IntervalColumn(ColumnExpr, IntervalValue):
+
+    def __init__(self, arg, meta=None, name=None):
+        ColumnExpr.__init__(self, arg, name=name)
+        IntervalValue.__init__(self, meta=meta)
 
 
 class DecimalScalar(DecimalValue, ScalarExpr):

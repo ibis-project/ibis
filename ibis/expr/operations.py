@@ -2438,6 +2438,31 @@ class TimestampDelta(ValueOp):
     output_type = rules.shape_like_arg(0, 'timestamp')
 
 
+# TODO: might be a single TemporalSubtract instead with TemporalBinaryPromoter
+class TimeSubtract(ValueOp):
+
+    input_type = [rules.time, rules.time]
+    output_type = rules.shape_like_arg(0, dt.Interval(unit='s'))
+
+
+class DateSubtract(ValueOp):
+
+    input_type = [rules.date, rules.date]
+    output_type = rules.shape_like_arg(0, dt.Interval(unit='d'))
+
+
+class TimestampSubtract(ValueOp):
+
+    input_type = [rules.timestamp, rules.timestamp]
+    output_type = rules.shape_like_arg(0, dt.Interval(unit='s'))
+
+
+class IntervalSubtract(ValueOp):  # __rsub__
+
+    input_type = [rules.temporal, rules.interval]
+    output_type = rules.shape_like_arg(1, dt.Interval(unit='s'))
+
+
 class ArrayLength(UnaryOp):
 
     input_type = [rules.array(dt.any)]
