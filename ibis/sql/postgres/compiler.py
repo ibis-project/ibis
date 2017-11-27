@@ -454,20 +454,16 @@ def compile_regex_extract(element, compiler, **kw):
 
 def _regex_extract(t, expr):
     string, pattern, index = map(t.translate, expr.op().args)
-    return sa.case(
-        [
-            (
-                sa.func.textregexeq(string, pattern),
-                sa.func.regex_extract(string, pattern, index + 1)
-            )
-        ],
-        else_=''
+    result = sa.func.coalesce(
+        sa.func.regex_extract(string, pattern, index + 1),
+        ''
     )
+    return result
 
 
 def _cardinality(array):
     return sa.case(
-        [(array == None, None)],  # noqa: E711
+        [(array.is_(None), None)],  # noqa: E711
         else_=sa.func.coalesce(sa.func.array_length(array, 1), 0),
     )
 
