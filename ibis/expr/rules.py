@@ -348,12 +348,7 @@ def array_output(rule):
 def shape_like_flatargs(out_type):
 
     def output_type(self):
-        flattened = []
-        for arg in self.args:
-            if isinstance(arg, (list, tuple)):
-                flattened.extend(arg)
-            else:
-                flattened.append(arg)
+        flattened = list(self.flat_args())
         return shape_like_args(flattened, out_type)
 
     return output_type

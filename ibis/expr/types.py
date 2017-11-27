@@ -303,7 +303,9 @@ class Node(six.with_metaclass(OperationMeta, object)):
 
     def flat_args(self):
         for arg in self.args:
-            if isinstance(arg, (tuple, list)):
+            if not isinstance(arg, six.string_types) and isinstance(
+                arg, collections.Iterable
+            ):
                 for x in arg:
                     yield x
             else:
@@ -1530,6 +1532,10 @@ class ListExpr(ColumnExpr, AnyValue):
 
     def __len__(self):
         return len(self.values)
+
+    def type(self):
+        from ibis.expr import rules
+        return rules.highest_precedence_type(self.values)
 
 
 class SortExpr(Expr):
