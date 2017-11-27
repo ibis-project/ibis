@@ -241,8 +241,7 @@ def interval(value=None, years=None, months=None, weeks=None, days=None,
         ('m', minutes),
         ('s', seconds)
     ]
-    defined_units = [(unit, value) for unit, value in kwds
-                     if value is not None]
+    defined_units = [(k, v) for k, v in kwds if v is not None]
 
     if len(defined_units) > 1:
         raise ValueError('Only one arg can be specified')
@@ -1973,12 +1972,19 @@ _date_value_methods = dict(
     sub=_date_sub,
 )
 
-
+_interval_add = _rbinop_expr('__add__', _ops.IntervalAdd)
 _interval_rsub = _rbinop_expr('__rsub__', _ops.IntervalSubtract)
+_interval_radd = _rbinop_expr('__radd__', _ops.IntervalAdd)
 
 _interval_value_methods = dict(
+    __add__=_interval_add,
+    add=_interval_add,
+
     __rsub__=_interval_rsub,
     rsub=_interval_rsub,
+
+    __radd__=_interval_radd,
+    radd=_interval_radd
 )
 
 _add_methods(TimestampValue, _timestamp_value_methods)

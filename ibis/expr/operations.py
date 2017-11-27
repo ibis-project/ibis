@@ -2457,6 +2457,12 @@ class TimestampSubtract(ValueOp):
     output_type = rules.shape_like_arg(0, dt.Interval(unit='s'))
 
 
+class IntervalAdd(ValueOp):  # __radd__
+
+    input_type = [rules.temporal, rules.interval]
+    output_type = rules.shape_like_arg(0, 'timestamp')
+
+
 class IntervalSubtract(ValueOp):  # __rsub__
 
     input_type = [rules.temporal, rules.interval]

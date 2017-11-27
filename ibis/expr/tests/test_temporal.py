@@ -233,3 +233,8 @@ def test_interval_arithmetics():
     diff = api.interval(seconds=10)
     assert isinstance(t1 - diff, ir.TimestampScalar)
     assert isinstance(t2 - diff, ir.TimestampScalar)
+
+    assert isinstance(t1 + diff, ir.TimestampScalar)
+    assert isinstance(t2 + diff, ir.TimestampScalar)
+    assert isinstance(diff + t1, ir.TimestampScalar)
+    assert isinstance(diff + t2, ir.TimestampScalar)
