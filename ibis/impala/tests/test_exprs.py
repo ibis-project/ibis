@@ -862,7 +862,7 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_rlike(self):
-        ex = "`string_col` RLIKE '[\d]+'"
+        ex = "regexp_like(`string_col`, '[\d]+')"
         cases = [
             (self.table.string_col.rlike('[\d]+'), ex),
             (self.table.string_col.re_search('[\d]+'), ex),
