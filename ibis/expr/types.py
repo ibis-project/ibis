@@ -1143,11 +1143,12 @@ class DecimalValue(ParameterizedValue, NumericValue):
 
     _implicit_casts = set(['float', 'double'])
 
-    @classmethod
-    def _make_constructor(cls, meta):
-        def constructor(arg, name=None):
-            return cls(arg, meta, name=name)
-        return constructor
+    # TODO: UNUSED
+    # @classmethod
+    # def _make_constructor(cls, meta):
+    #     def constructor(arg, name=None):
+    #         return cls(arg, meta, name=name)
+    #     return constructor
 
 
 class TemporalValue(AnyValue):
@@ -1211,11 +1212,12 @@ class TimestampValue(TemporalValue):
     def type(self):
         return dt.Timestamp(timezone=self._timezone)
 
-    @classmethod
-    def _make_constructor(cls, meta):
-        def constructor(arg, name=None):
-            return cls(arg, meta, name=name)
-        return constructor
+    # TODO: UNUSED
+    # @classmethod
+    # def _make_constructor(cls, meta):
+    #     def constructor(arg, name=None):
+    #         return cls(arg, meta, name=name)
+    #     return constructor
 
     def _can_implicit_cast(self, arg):
         op = arg.op()

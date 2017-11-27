@@ -201,21 +201,10 @@ def test_interval(literal):
 
 
 def test_interval_repr():
-    repr(api.interval(weeks=3)).splitlines()[0] == 'Literal[interval]'
+    assert repr(api.interval(weeks=3)) == 'Literal[interval]\n  3'
 
 
 def test_interval_arithmetics():
-    # date - date = interval(d)
-    # date - interval(d) = date
-    # date + interval(d) = date
-
-    # timestamp - timestamp = interval(s)
-    # timestamp + interval(s) = timestamp
-    # timestamp - interval(s) = timestamp
-
-    # interval - interval = interval
-    # interval + interval = interval
-
     t1 = datetime.datetime.now()
     t2 = t1 - datetime.timedelta(days=1)
 
@@ -233,8 +222,15 @@ def test_interval_arithmetics():
     diff = api.interval(seconds=10)
     assert isinstance(t1 - diff, ir.TimestampScalar)
     assert isinstance(t2 - diff, ir.TimestampScalar)
-
     assert isinstance(t1 + diff, ir.TimestampScalar)
     assert isinstance(t2 + diff, ir.TimestampScalar)
     assert isinstance(diff + t1, ir.TimestampScalar)
     assert isinstance(diff + t2, ir.TimestampScalar)
+
+    diff = api.interval(days=5)
+    assert isinstance(d1 - diff, ir.TimestampScalar)
+    assert isinstance(d2 - diff, ir.TimestampScalar)
+    assert isinstance(d1 + diff, ir.TimestampScalar)
+    assert isinstance(d2 + diff, ir.TimestampScalar)
+    assert isinstance(diff + d1, ir.TimestampScalar)
+    assert isinstance(diff + d2, ir.TimestampScalar)
