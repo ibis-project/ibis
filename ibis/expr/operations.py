@@ -1349,7 +1349,7 @@ class SimpleCase(ValueOp):
 
     def __init__(self, base, cases, results, default):
         assert len(cases) == len(results)
-        ValueOp.__init__(self, base, cases, results, default)
+        super(SimpleCase, self).__init__(base, cases, results, default)
 
     def root_tables(self):
         base, cases, results, default = self.args
@@ -1373,13 +1373,14 @@ class SearchedCase(ValueOp):
 
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
-        ValueOp.__init__(self, cases, results, default)
+        super(SearchedCase, self).__init__(cases, results, default)
 
     def root_tables(self):
         cases, results, default = self.args
-        all_exprs = cases + results
-        if default is not None:
-            all_exprs.append(default)
+        all_exprs = filter(
+            lambda expr: expr is not None,
+            cases + results + [default]
+        )
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
