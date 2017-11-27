@@ -9,7 +9,7 @@ import ibis.expr.types as ir
 from ibis.config import options
 from ibis.compat import zip as czip
 from ibis.client import Query, Database, DatabaseEntity, SQLClient
-from ibis.clickhouse.compiler import build_ast
+from ibis.clickhouse.compiler import build_ast, ClickhouseDialect
 from ibis.util import log
 from ibis.sql.compiler import DDL
 
@@ -56,6 +56,7 @@ class ClickhouseClient(SQLClient):
 
     database_class = ClickhouseDatabase
     sync_query = ClickhouseQuery
+    dialect = ClickhouseDialect
 
     def __init__(self, *args, **kwargs):
         self.con = _DriverClient(*args, **kwargs)

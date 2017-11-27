@@ -1,5 +1,6 @@
 from six import StringIO
 
+import ibis
 import ibis.common as com
 import ibis.util as util
 import ibis.expr.operations as ops
@@ -161,6 +162,11 @@ class ClickhouseExprTranslator(comp.ExprTranslator):
     def name(self, translated, name, force=True):
         return _name_expr(translated,
                           quote_identifier(name, force=force))
+
+
+class ClickhouseDialect(ibis.client.Dialect):
+
+    translator = ClickhouseExprTranslator
 
 
 compiles = ClickhouseExprTranslator.compiles
