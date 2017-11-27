@@ -438,8 +438,23 @@ class Interval(Primitive):
 
     __slots__ = 'unit',
 
-    def __init__(self, unit, nullable=True):
+    _valid_units = set([
+        'Y',   # Year
+        'M',   # Month
+        'w',   # Week
+        'd',   # Day
+        'h',   # Hour
+        'm',   # Minute
+        's',   # Second
+        'ms',  # Millisecond
+        'us',  # Microsecond
+        'ns'   # Nanosecond
+    ])
+
+    def __init__(self, unit='s', nullable=True):
         super(Interval, self).__init__(nullable=nullable)
+        if unit not in self._valid_units:
+            raise ValueError('Unsupported interval unit `{}`'.format(unit))
         self.unit = unit
 
     def valid_literal(self, value):
@@ -791,6 +806,7 @@ binary = Binary()
 date = Date()
 time = Time()
 timestamp = Timestamp()
+interval = Interval()
 
 
 _primitive_types = {
@@ -812,7 +828,8 @@ _primitive_types = {
     'binary': binary,
     'date': date,
     'time': time,
-    'timestamp': timestamp
+    'timestamp': timestamp,
+    'interval': interval
 }
 
 
@@ -842,7 +859,6 @@ class Tokens(object):
     TIMESTAMP = 18
     TIME = 19
     INTERVAL = 20
-    # UNIT = 21
 
     @staticmethod
     def name(value):
@@ -873,12 +889,18 @@ _TYPE_RULES = OrderedDict(
             '(?P<{}>{})'.format(token.upper(), token),
             lambda token, value=value: Token(Tokens.PRIMITIVE, value)
         ) for token, value in _primitive_types.items()
-        if token not in {'any', 'null', 'timestamp', 'time'}
+        if token not in {'any', 'null', 'timestamp', 'time', 'interval'}
     ] + [
         # timestamp
         (
             r'(?P<TIMESTAMP>timestamp)',
             lambda token: Token(Tokens.TIMESTAMP, token),
+        ),
+    ] + [
+        # interval
+        (
+            r'(?P<INTERVAL>interval)',
+            lambda token: Token(Tokens.INTERVAL, token),
         ),
     ] + [
         # time
@@ -1048,6 +1070,9 @@ class TypeParser(object):
         timestamp : "timestamp"
                   | "timestamp" "(" timezone ")"
 
+        interval : "interval"
+                 | "interval" "(" unit ")"
+
         decimal : "decimal"
                 | "decimal" "(" integer "," integer ")"
 
@@ -1078,9 +1103,10 @@ class TypeParser(object):
         elif self._accept(Tokens.INTERVAL):
             if self._accept(Tokens.LPAREN):
                 self._expect(Tokens.STRARG)
-                unit = self.tok.value
+                unit = self.tok.value[1:-1]
                 self._expect(Tokens.RPAREN)
-            return Interval(unit=unit)
+                return Interval(unit=unit)
+            return interval
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):
