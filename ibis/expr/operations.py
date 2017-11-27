@@ -2460,7 +2460,7 @@ class TimestampSubtract(ValueOp):
 class IntervalSubtract(ValueOp):  # __rsub__
 
     input_type = [rules.temporal, rules.interval]
-    output_type = rules.shape_like_arg(1, dt.Interval(unit='s'))
+    output_type = rules.shape_like_arg(0, 'timestamp')
 
 
 class ArrayLength(UnaryOp):

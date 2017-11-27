@@ -452,22 +452,23 @@ def shape_like_arg(i, out_type):
     return output_type
 
 
-def numeric_highest_promote(i):
+# TODO: UNUSED
+# def numeric_highest_promote(i):
 
-    def output_type(self):
-        arg = self.args[i]
+#     def output_type(self):
+#         arg = self.args[i]
 
-        if isinstance(arg, ir.DecimalValue):
-            return arg._factory
-        elif isinstance(arg, ir.FloatingValue):
-            # Impala upcasts float to double in this op
-            return shape_like(arg, 'double')
-        elif isinstance(arg, ir.IntegerValue):
-            return shape_like(arg, 'int64')
-        else:
-            raise NotImplementedError
+#         if isinstance(arg, ir.DecimalValue):
+#             return arg._factory
+#         elif isinstance(arg, ir.FloatingValue):
+#             # Impala upcasts float to double in this op
+#             return shape_like(arg, 'double')
+#         elif isinstance(arg, ir.IntegerValue):
+#             return shape_like(arg, 'int64')
+#         else:
+#             raise NotImplementedError
 
-    return output_type
+#     return output_type
 
 
 def type_of_arg(i):

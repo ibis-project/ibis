@@ -225,11 +225,12 @@ def interval(value=None, years=None, months=None, weeks=None, days=None,
     # TODO: consider (value, unit) arguments instead of kwargs
 
     if value is not None:
+        type = dt.Interval('s')
         if isinstance(value, datetime.timedelta):
             value = int(value.total_seconds())
         elif not isinstance(value, six.integer_types):
             raise ValueError('Interval value must be an integer')
-        return ir.IntervalScalar(ir.literal(value, type=dt.Interval('s')))
+        return ir.IntervalScalar(ir.literal(value, type=type).op())
 
     kwds = [
         ('Y', years),
@@ -249,7 +250,8 @@ def interval(value=None, years=None, months=None, weeks=None, days=None,
         raise ValueError('At least one of the arguments must be specified')
     else:
         unit, value = defined_units[0]
-        return ir.IntervalScalar(ir.literal(value, type=dt.Interval(unit)))
+        type = dt.Interval(unit)
+        return ir.IntervalScalar(ir.literal(value, type=type).op())
 
 
 schema.__doc__ = """\
@@ -412,7 +414,7 @@ def _binop_expr(name, klass):
             other = as_value_expr(other)
             op = klass(self, other)
             return op.to_expr()
-        except NotImplementedError:
+        except (_com.IbisTypeError, NotImplementedError):
             return NotImplemented
 
     f.__name__ = name
