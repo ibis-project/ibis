@@ -67,7 +67,7 @@ import ibis.util as util
 
 __all__ = [
     'schema', 'table', 'literal', 'expr_list',
-    'timestamp', 'time', 'param',
+    'timestamp', 'time', 'date', 'interval', 'param',
     'case', 'where', 'sequence',
     'now', 'desc', 'null', 'NA',
     'cast', 'coalesce', 'greatest', 'least',
@@ -2003,7 +2003,7 @@ _add_methods(TimestampValue, _timestamp_value_methods)
 _add_methods(DateValue, _date_value_methods)
 
 
-def _convert_interval(value, unit, to):
+def _convert_unit(value, unit, to):
     factors = (7, 24, 60, 60, 1000, 1000, 1000)
     units = ('w', 'd', 'H', 'm', 's', 'ms', 'us', 'ns')
 
@@ -2016,8 +2016,19 @@ def _convert_interval(value, unit, to):
         return value
 
 
-_interval_value_methods = dict(
+def _interval_property(target):
+    return property(lambda self: self * _convert_unit(1, self._unit, target))
 
+
+_interval_value_methods = dict(
+    weeks=_interval_property('w'),
+    days=_interval_property('d'),
+    hours=_interval_property('H'),
+    minutes=_interval_property('m'),
+    seconds=_interval_property('s'),
+    milliseconds=_interval_property('ms'),
+    microseconds=_interval_property('us'),
+    nanoseconds=_interval_property('ns')
 )
 
 _add_methods(IntervalValue, _interval_value_methods)
