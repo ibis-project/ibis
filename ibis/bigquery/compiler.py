@@ -236,27 +236,3 @@ _operation_registry.update({
 
 class BigQueryExprTranslator(impala_compiler.ImpalaExprTranslator):
     _registry = _operation_registry
-
-
-def percentile_aggregation(expr, cols, percentile_ranks, names,
-                           value_type='cont', group_by=()):
-
-    assert all(isinstance(el, (list, tuple))
-               for el in (cols, percentile_ranks, names))
-    assert len(cols) == len(percentile_ranks) and len(cols) == len(names)
-    group_by = group_by or []
-
-    # zipped = list(zip(names, cols, percentile_ranks))
-    # expr = (table
-    zipped = zip(names, cols, percentile_ranks)
-    expr = (expr
-            .groupby(group_by)
-            .mutate(**{
-                name: lambda t, c=c, p=p: t[c].percentile(p, value_type)
-                for (name, c, p) in zipped
-                })
-            .groupby(group_by)
-            .aggregate(**{name: lambda t, name=name: t[name].arbitrary()
-                          for name in names})
-            )
-    return expr
