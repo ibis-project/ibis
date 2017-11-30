@@ -1238,20 +1238,13 @@ class IntervalValue(IntegerValue):
     def type(self):
         return dt.Interval(unit=self._unit)
 
-    # @classmethod
-    # def _make_constructor(cls, meta):
-    #     def constructor(arg, name=None):
-    #         return cls(arg, meta, name=name)
-    #     return constructor
-
     def _can_compare(self, other):
         return isinstance(other, IntervalValue)
 
     def _can_implicit_cast(self, arg):
-        print('can_implicit_cast')
         op = arg.op()
         if isinstance(op, Literal):
-            if isinstance(op.value, six.integer_types):
+            if isinstance(op.value, datetime.timedelta):
                 return True
         return False
 
