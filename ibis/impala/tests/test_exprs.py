@@ -1407,11 +1407,11 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
     #     # #310
     #     table = self.alltypes
 
-    #     expr = (table.filter([table.timestamp_col <
-    #                          (ibis.timestamp('2010-01-01') + ibis.month(3)),
-    #                          table.timestamp_col < (ibis.now() + ibis.day(10))
-    #                           ])
-    #             .count())
+    #     expr = (table.filter([
+    #         table.timestamp_col <
+    #         (ibis.timestamp('2010-01-01') + ibis.month(3)),
+    #         table.timestamp_col < (ibis.now() + ibis.day(10))
+    #     ]).count())
     #     expr.execute()
 
     def test_aggregations(self):

@@ -1999,9 +1999,28 @@ _date_value_methods = dict(
     radd=_date_add
 )
 
-
 _add_methods(TimestampValue, _timestamp_value_methods)
 _add_methods(DateValue, _date_value_methods)
+
+
+def _convert_interval(value, unit, to):
+    factors = (7, 24, 60, 60, 1000, 1000, 1000)
+    units = ('w', 'd', 'H', 'm', 's', 'ms', 'us', 'ns')
+
+    i, j = units.index(unit), units.index(to)
+    if i < j:
+        return functools.reduce(operator.mul, factors[i:j], value)
+    elif i > j:
+        return functools.reduce(operator.truediv, factors[j:i], value)
+    else:
+        return value
+
+
+_interval_value_methods = dict(
+
+)
+
+_add_methods(IntervalValue, _interval_value_methods)
 
 
 # ---------------------------------------------------------------------
