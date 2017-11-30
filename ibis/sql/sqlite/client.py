@@ -133,10 +133,8 @@ def _ibis_sqlite_regex_extract(string, pattern, index):
         return None
 
     result = re.search(pattern, string)
-    if result is not None:
-        if result.lastindex is not None and 0 <= index <= result.lastindex:
-            return result.group(index)
-        return result.group()
+    if result is not None and 0 <= index <= (result.lastindex or -1):
+        return result.group(index)
     return None
 
 

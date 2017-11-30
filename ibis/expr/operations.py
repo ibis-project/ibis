@@ -1353,14 +1353,18 @@ class SimpleCase(ValueOp):
 
     def root_tables(self):
         base, cases, results, default = self.args
-        all_exprs = [base] + cases + results
-        if default is not None:
-            all_exprs.append(default)
+        all_exprs = [base] + cases + results + list(filter(
+            lambda expr: expr is not None,
+            [default]
+        ))
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
         base, cases, results, default = self.args
-        out_exprs = results + [default]
+        out_exprs = list(filter(
+            lambda expr: expr is not None,
+            results + [default]
+        ))
         typename = rules.highest_precedence_type(out_exprs)
         return rules.shape_like(base, typename)
 
@@ -1377,10 +1381,10 @@ class SearchedCase(ValueOp):
 
     def root_tables(self):
         cases, results, default = self.args
-        all_exprs = filter(
+        all_exprs = cases + results + list(filter(
             lambda expr: expr is not None,
-            cases + results + [default]
-        )
+            [default]
+        ))
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
