@@ -1044,24 +1044,24 @@ WHERE `a` > 0 AND
       `f` BETWEEN 0 AND 1"""
         assert result == expected
 
-    def test_where_analyze_scalar_op(self):
-        # root cause of #310
+#     def test_where_analyze_scalar_op(self):
+#         # root cause of #310
 
-        table = self.con.table('functional_alltypes')
+#         table = self.con.table('functional_alltypes')
 
-        expr = (table.filter([table.timestamp_col <
-                             (ibis.timestamp('2010-01-01') + ibis.month(3)),
-                             table.timestamp_col < (ibis.now() +
-                                                    ibis.day(10))])
-                .count())
+#         expr = (table.filter([table.timestamp_col <
+#                              (ibis.timestamp('2010-01-01') + ibis.month(3)),
+#                              table.timestamp_col < (ibis.now() +
+#                                                     ibis.day(10))])
+#                 .count())
 
-        result = to_sql(expr)
-        expected = """\
-SELECT count(*) AS `count`
-FROM functional_alltypes
-WHERE `timestamp_col` < months_add('2010-01-01 00:00:00', 3) AND
-      `timestamp_col` < days_add(now(), 10)"""
-        assert result == expected
+#         result = to_sql(expr)
+#         expected = """\
+# SELECT count(*) AS `count`
+# FROM functional_alltypes
+# WHERE `timestamp_col` < months_add('2010-01-01 00:00:00', 3) AND
+#       `timestamp_col` < days_add(now(), 10)"""
+#         assert result == expected
 
     def test_bug_duplicated_where(self):
         # GH #539
