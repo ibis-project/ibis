@@ -452,25 +452,6 @@ def shape_like_arg(i, out_type):
     return output_type
 
 
-# TODO: UNUSED
-# def numeric_highest_promote(i):
-
-#     def output_type(self):
-#         arg = self.args[i]
-
-#         if isinstance(arg, ir.DecimalValue):
-#             return arg._factory
-#         elif isinstance(arg, ir.FloatingValue):
-#             # Impala upcasts float to double in this op
-#             return shape_like(arg, 'double')
-#         elif isinstance(arg, ir.IntegerValue):
-#             return shape_like(arg, 'int64')
-#         else:
-#             raise NotImplementedError
-
-#     return output_type
-
-
 def type_of_arg(i):
 
     def output_type(self):
@@ -710,13 +691,31 @@ def time(**arg_kwds):
     return ValueTyped(ir.TimeValue, 'not time', **arg_kwds)
 
 
-def interval(**arg_kwds):
-    return ValueTyped(ir.IntervalValue, 'not an interval', **arg_kwds)
-
-
 def timedelta(**arg_kwds):
     from ibis.expr.temporal import Timedelta
     return AnyTyped(Timedelta, 'not a timedelta', **arg_kwds)
+
+
+class Interval(ValueTyped):
+
+    def __init__(self, units, **arg_kwds):
+        super(Interval, self).__init__(
+            ir.IntervalValue, 'not an interval', **arg_kwds
+        )
+        self.allowed_units = frozenset(units)
+
+    def _validate(self, args, i):
+        arg = super(Interval, self)._validate(args, i)
+
+        unit = arg.type().unit
+        if unit not in self.allowed_units:
+            msg = 'Interval unit `{}` is not among the allowed ones {}'
+            raise IbisTypeError(msg.format(unit, self.allowed_units))
+
+        return arg
+
+
+interval = Interval
 
 
 def string(**arg_kwds):

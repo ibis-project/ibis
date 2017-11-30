@@ -484,6 +484,11 @@ class Interval(SignedInteger):
             raise ValueError('Unsupported interval unit `{}`'.format(unit))
         self.unit = unit
 
+    def __str__(self):
+        unit = self.unit
+        typename = self.name.lower()
+        return '{}({!r})'.format(typename, unit)
+
     def valid_literal(self, value):
         return isinstance(value, six.integer_types + (datetime.timedelta,))
 

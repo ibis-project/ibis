@@ -53,7 +53,7 @@ from ibis.expr.types import (Expr,  # noqa
 from ibis.expr.temporal import *  # noqa
 
 import ibis.common as _com
-from ibis.compat import PY2, to_time
+from ibis.compat import PY2, to_time, to_date
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import window, trailing_window, cumulative_window
@@ -182,6 +182,23 @@ def timestamp(value):
     return ir.TimestampScalar(ir.literal(value).op())
 
 
+def date(value):
+    """
+    Returns a date literal if value is likely coercible to a date
+
+    Parameters
+    ----------
+    value : date value as string
+
+    Returns
+    --------
+    result : TimeScalar
+    """
+    if isinstance(value, six.string_types):
+        value = to_date(value)
+    return ir.DateScalar(ir.literal(value).op())
+
+
 def time(value):
     """
     Returns a time literal if value is likely coercible to a time
@@ -195,7 +212,7 @@ def time(value):
     result : TimeScalar
     """
     if PY2:
-        raise ValueError("time support is not enabled on python 2")
+        raise ValueError('time support is not enabled on python 2')
 
     if isinstance(value, six.string_types):
         value = to_time(value)
@@ -222,8 +239,6 @@ def interval(value=None, years=None, months=None, weeks=None, days=None,
     --------
     result : IntervalScalar
     """
-    # TODO: consider (value, unit) arguments instead of kwargs
-
     if value is not None:
         type = dt.Interval('s')
         if isinstance(value, datetime.timedelta):
@@ -243,14 +258,11 @@ def interval(value=None, years=None, months=None, weeks=None, days=None,
     ]
     defined_units = [(k, v) for k, v in kwds if v is not None]
 
-    if len(defined_units) > 1:
-        raise ValueError('Only one arg can be specified')
-    elif len(defined_units) < 1:
-        raise ValueError('At least one of the arguments must be specified')
-    else:
-        unit, value = defined_units[0]
-        type = dt.Interval(unit)
-        return ir.IntervalScalar(ir.literal(value, type=type).op())
+    if len(defined_units) != 1:
+        raise ValueError('Exactly one argument is required')
+
+    unit, value = defined_units[0]
+    return ir.literal(value, type=dt.Interval(unit)).op().to_expr()
 
 
 schema.__doc__ = """\
@@ -413,7 +425,7 @@ def _binop_expr(name, klass):
             other = as_value_expr(other)
             op = klass(self, other)
             return op.to_expr()
-        except (_com.IbisTypeError, NotImplementedError):
+        except NotImplementedError:
             return NotImplemented
 
     f.__name__ = name
@@ -1222,6 +1234,7 @@ _numeric_value_methods = dict(
     pow=pow,
 
     __radd__=add,
+    radd=add,  # It was missing I guess?
 
     __rsub__=rsub,
     rsub=rsub,
@@ -1942,6 +1955,7 @@ def _timestamp_time(arg):
 
 
 _timestamp_sub = _binop_expr('__sub__', _ops.TimestampSubtract)
+_timestamp_add = _binop_expr('__add__', _ops.TimestampAdd)
 
 _timestamp_value_methods = dict(
     strftime=_timestamp_strftime,
@@ -1957,10 +1971,17 @@ _timestamp_value_methods = dict(
 
     __sub__=_timestamp_sub,
     sub=_timestamp_sub,
+
+    __add__=_timestamp_add,
+    add=_timestamp_add,
+
+    __radd__=_timestamp_add,
+    radd=_timestamp_add,
 )
 
 
 _date_sub = _binop_expr('__sub__', _ops.DateSubtract)
+_date_add = _binop_expr('__add__', _ops.DateAdd)
 
 _date_value_methods = dict(
     strftime=_timestamp_strftime,
@@ -1970,26 +1991,17 @@ _date_value_methods = dict(
 
     __sub__=_date_sub,
     sub=_date_sub,
+
+    __add__=_date_add,
+    add=_date_add,
+
+    __radd__=_date_add,
+    radd=_date_add
 )
 
-_interval_add = _rbinop_expr('__add__', _ops.IntervalAdd)
-_interval_rsub = _rbinop_expr('__rsub__', _ops.IntervalSubtract)
-_interval_radd = _rbinop_expr('__radd__', _ops.IntervalAdd)
-
-_interval_value_methods = dict(
-    __add__=_interval_add,
-    add=_interval_add,
-
-    __rsub__=_interval_rsub,
-    rsub=_interval_rsub,
-
-    __radd__=_interval_radd,
-    radd=_interval_radd
-)
 
 _add_methods(TimestampValue, _timestamp_value_methods)
 _add_methods(DateValue, _date_value_methods)
-_add_methods(IntervalValue, _interval_value_methods)
 
 
 # ---------------------------------------------------------------------
@@ -2029,11 +2041,19 @@ def between_time(arg, lower, upper, timezone=None):
 
 
 _time_sub = _binop_expr('__sub__', _ops.TimeSubtract)
+_time_add = _binop_expr('__add__', _ops.TimeAdd)
+
 
 _time_value_methods = dict(
     between=between_time,
     __sub__=_time_sub,
-    sub=_time_sub
+    sub=_time_sub,
+
+    __add__=_time_add,
+    add=_time_add,
+
+    __radd__=_time_add,
+    radd=_time_add
 )
 
 _add_methods(TimeValue, _time_value_methods)

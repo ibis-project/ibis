@@ -2438,35 +2438,76 @@ class TimestampDelta(ValueOp):
     output_type = rules.shape_like_arg(0, 'timestamp')
 
 
-# TODO: might be a single TemporalSubtract instead with TemporalBinaryPromoter
-class TimeSubtract(ValueOp):
+class TemporalBinaryOp(BinaryOp):
 
-    input_type = [rules.time, rules.time]
-    output_type = rules.shape_like_arg(0, dt.Interval(unit='s'))
+    def output_type(self):
+        if self.args[0].type() == self.args[1].type():
+            value_type = dt.Interval(self.output_unit)
+        else:
+            value_type = self.args[0].type()
 
-
-class DateSubtract(ValueOp):
-
-    input_type = [rules.date, rules.date]
-    output_type = rules.shape_like_arg(0, dt.Interval(unit='d'))
+        return rules.shape_like(self.args[0], value_type)
 
 
-class TimestampSubtract(ValueOp):
+class DateBinaryOp(TemporalBinaryOp):
 
-    input_type = [rules.timestamp, rules.timestamp]
-    output_type = rules.shape_like_arg(0, dt.Interval(unit='s'))
+    input_type = [
+        rules.date,
+        rules.one_of([
+            rules.date,
+            rules.interval(units='YMwd')
+        ])
+    ]
+    output_unit = 'd'
 
 
-class IntervalAdd(ValueOp):  # __radd__
+class TimeBinaryOp(TemporalBinaryOp):
 
-    input_type = [rules.temporal, rules.interval]
-    output_type = rules.shape_like_arg(0, 'timestamp')
+    input_type = [
+        rules.time,
+        rules.one_of([
+            rules.time,
+            rules.interval(units='Hms')
+        ])
+    ]
+    output_unit = 's'
 
 
-class IntervalSubtract(ValueOp):  # __rsub__
+class TimestampBinaryOp(TemporalBinaryOp):
 
-    input_type = [rules.temporal, rules.interval]
-    output_type = rules.shape_like_arg(0, 'timestamp')
+    input_type = [
+        rules.timestamp,
+        rules.one_of([
+            rules.timestamp,
+            rules.interval(units='YMwdHms')
+        ])
+    ]
+
+    output_unit = 's'
+
+
+class DateAdd(DateBinaryOp):
+    pass
+
+
+class DateSubtract(DateBinaryOp):
+    pass
+
+
+class TimeAdd(TimeBinaryOp):
+    pass
+
+
+class TimeSubtract(TimeBinaryOp):
+    pass
+
+
+class TimestampAdd(TimestampBinaryOp):
+    pass
+
+
+class TimestampSubtract(TimestampBinaryOp):
+    pass
 
 
 class ArrayLength(UnaryOp):

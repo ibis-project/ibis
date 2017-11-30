@@ -15,7 +15,9 @@
 import pytest
 import datetime
 
-from ibis.common import IbisError
+from ibis.common import IbisError, IbisTypeError
+from ibis.compat import PY2
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.temporal as T
@@ -160,18 +162,18 @@ def test_timedelta_generic_api(case, expected):
     assert case.equals(expected)
 
 
-def test_offset_timestamp_expr(table):
-    c = table.i
-    x = T.timedelta(days=1)
+# def test_offset_timestamp_expr(table):
+#     c = table.i
+#     x = T.timedelta(days=1)
 
-    expr = x + c
-    assert isinstance(expr, ir.TimestampColumn)
-    assert isinstance(expr.op(), ops.TimestampDelta)
+#     expr = x + c
+#     assert isinstance(expr, ir.TimestampColumn)
+#     assert isinstance(expr.op(), ops.TimestampDelta)
 
-    # test radd
-    expr = c + x
-    assert isinstance(expr, ir.TimestampColumn)
-    assert isinstance(expr.op(), ops.TimestampDelta)
+#     # test radd
+#     expr = c + x
+#     assert isinstance(expr, ir.TimestampColumn)
+#     assert isinstance(expr.op(), ops.TimestampDelta)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYI')
@@ -200,37 +202,90 @@ def test_interval(literal):
     assert isinstance(literal, ir.IntervalScalar)
 
 
+# TODO: parametrize tests
 def test_interval_repr():
-    assert repr(api.interval(weeks=3)) == 'Literal[interval]\n  3'
+    assert repr(api.interval(weeks=3)) == "Literal[interval('w')]\n  3"
+    assert repr(api.interval(months=3)) == "Literal[interval('M')]\n  3"
+    assert repr(api.interval(seconds=-10)) == "Literal[interval('s')]\n  -10"
 
 
-def test_interval_arithmetics():
-    t1 = datetime.datetime.now()
-    t2 = t1 - datetime.timedelta(days=1)
+def test_timestamp_arithmetics():
+    ts1 = api.timestamp(datetime.datetime.now())
+    ts2 = api.timestamp(datetime.datetime.today())
 
-    t1 = api.timestamp(t1)
-    t2 = api.timestamp(t2)
-    d1 = t1.cast('date')
-    d2 = t1.cast('date')
+    i1 = api.interval(minutes=30)
 
-    assert isinstance(t1 - t2, ir.IntervalScalar)
-    assert isinstance(t2 - t1, ir.IntervalScalar)
+    # TODO: raise for unsupported operations too
+    for expr in [ts2 - ts1, ts1 - ts2]:
+        assert isinstance(expr, ir.IntervalScalar)
+        assert isinstance(expr.op(), ops.TimestampSubtract)
+        assert expr.type() == dt.Interval('s')
 
-    assert isinstance(d1 - d2, ir.IntervalScalar)
-    assert isinstance(d2 - d1, ir.IntervalScalar)
+    for expr in [ts1 - i1, ts2 - i1]:
+        assert isinstance(expr, ir.TimestampScalar)
+        assert isinstance(expr.op(), ops.TimestampSubtract)
 
-    diff = api.interval(seconds=10)
-    assert isinstance(t1 - diff, ir.TimestampScalar)
-    assert isinstance(t2 - diff, ir.TimestampScalar)
-    assert isinstance(t1 + diff, ir.TimestampScalar)
-    assert isinstance(t2 + diff, ir.TimestampScalar)
-    assert isinstance(diff + t1, ir.TimestampScalar)
-    assert isinstance(diff + t2, ir.TimestampScalar)
+    for expr in [ts1 + i1, ts2 + i1]:
+        assert isinstance(expr, ir.TimestampScalar)
+        assert isinstance(expr.op(), ops.TimestampAdd)
 
-    diff = api.interval(days=5)
-    assert isinstance(d1 - diff, ir.TimestampScalar)
-    assert isinstance(d2 - diff, ir.TimestampScalar)
-    assert isinstance(d1 + diff, ir.TimestampScalar)
-    assert isinstance(d2 + diff, ir.TimestampScalar)
-    assert isinstance(diff + d1, ir.TimestampScalar)
-    assert isinstance(diff + d2, ir.TimestampScalar)
+
+def test_date_arithmetics():
+    d1 = api.date('2015-01-02')
+    d2 = api.date('2017-01-01')
+
+    i1 = api.interval(weeks=3)
+
+    # TODO: raise for unsupported operations too
+    for expr in [d1 - d2, d2 - d1]:
+        assert isinstance(expr, ir.IntervalScalar)
+        assert isinstance(expr.op(), ops.DateSubtract)
+        assert expr.type() == dt.Interval('d')
+
+    for expr in [d1 - i1, d2 - i1]:
+        assert isinstance(expr, ir.DateScalar)
+        assert isinstance(expr.op(), ops.DateSubtract)
+
+    for expr in [d1 + i1, d2 + i1]:
+        assert isinstance(expr, ir.DateScalar)
+        assert isinstance(expr.op(), ops.DateAdd)
+
+
+@pytest.mark.skipif(PY2, reason='time support is not enabled on python 2')
+def test_time_arithmetics():
+    t1 = api.time('18:00')
+    t2 = api.time('19:12')
+
+    i1 = api.interval(minutes=3)
+
+    # TODO: raise for unsupported operations too
+    for expr in [t1 - t2, t2 - t1]:
+        assert isinstance(expr, ir.IntervalScalar)
+        assert isinstance(expr.op(), ops.TimeSubtract)
+        assert expr.type() == dt.Interval('s')
+
+    for expr in [t1 - i1, t2 - i1]:
+        assert isinstance(expr, ir.TimeScalar)
+        assert isinstance(expr.op(), ops.TimeSubtract)
+
+    for expr in [t1 + i1, t2 + i1]:
+        assert isinstance(expr, ir.TimeScalar)
+        assert isinstance(expr.op(), ops.TimeAdd)
+
+
+def test_invalid_date_arithmetics():
+    d1 = api.date('2015-01-02')
+    i1 = api.interval(seconds=300)
+    i2 = api.interval(minutes=15)
+    i3 = api.interval(hours=1)
+
+    for i in [i1, i2, i3]:
+        with pytest.raises(IbisTypeError):
+            d1 - i
+        with pytest.raises(IbisTypeError):
+            d1 + i
+
+# TODO:
+# assert for ibis type errors to check rules
+# assert for d1 - d2 == -(d2 - d1)
+# assert for ts1 - ts2 == -(ts2 - ts1)

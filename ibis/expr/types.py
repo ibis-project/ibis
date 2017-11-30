@@ -1143,13 +1143,6 @@ class DecimalValue(ParameterizedValue, NumericValue):
 
     _implicit_casts = set(['float', 'double'])
 
-    # TODO: UNUSED
-    # @classmethod
-    # def _make_constructor(cls, meta):
-    #     def constructor(arg, name=None):
-    #         return cls(arg, meta, name=name)
-    #     return constructor
-
 
 class TemporalValue(AnyValue):
     def _can_compare(self, other):
@@ -1211,13 +1204,6 @@ class TimestampValue(TemporalValue):
 
     def type(self):
         return dt.Timestamp(timezone=self._timezone)
-
-    # TODO: UNUSED
-    # @classmethod
-    # def _make_constructor(cls, meta):
-    #     def constructor(arg, name=None):
-    #         return cls(arg, meta, name=name)
-    #     return constructor
 
     def _can_implicit_cast(self, arg):
         op = arg.op()
