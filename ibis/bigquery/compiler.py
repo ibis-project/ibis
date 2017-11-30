@@ -172,31 +172,31 @@ def _format_date(translator, expr):
 
 
 def _temporal_diff(translator, expr):
-    (arg0, arg1, part) = expr.op().args
-    (af0, af1) = [translator.translate(arg) for arg in (arg0, arg1)]
-    klass_name = arg0.type().__class__.__name__.upper()
-    return '{}_DIFF({}, {}, {})'.format(klass_name, af0, af1, part)
+    (left, right, part) = expr.op().args
+    (left, right) = [translator.translate(arg) for arg in (left, right)]
+    klass_name = left.type().__class__.__name__.upper()
+    return '{}_DIFF({}, {}, {})'.format(klass_name, left, right, part)
 
 
-def temporal_diff(arg0, arg1, *args):
+def temporal_diff(left, right, *args):
     name_to_op = {
         'TIMESTAMP': ops.TimestampDiff,
         'TIME': ops.TimeDiff,
         'DATE': ops.DateDiff,
     }
-    (typ0, typ1) = (arg0.type(), arg1.type())
-    klass_name = typ0.__class__.__name__.upper()
-    if typ0 != typ1:
+    (left_typ, right_typ) = (left.type(), right.type())
+    klass_name = left_typ.__class__.__name__.upper()
+    if left_typ != right_typ:
         raise TypeError(
             "Don't know how to diff different temporal types: {}, {}"
-            .format(typ0, typ1)
+            .format(left_typ, right_typ)
         )
     if klass_name not in name_to_op:
         raise TypeError(
             "Don't know how to handle class {}".format(klass_name)
         )
     op = name_to_op[klass_name]
-    return op(arg0, arg1, *args).to_expr()
+    return op(left, right, *args).to_expr()
 
 
 _operation_registry = impala_compiler._operation_registry.copy()
