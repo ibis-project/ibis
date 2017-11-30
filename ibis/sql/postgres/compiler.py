@@ -25,6 +25,7 @@ import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
+import ibis
 from ibis.sql.alchemy import (
     unary, varargs, fixed_arity, Over, _variance_reduction, _get_sqla_table
 )
@@ -141,8 +142,15 @@ def _millisecond(t, expr):
 def _string_agg(t, expr):
     # we could use sa.func.string_agg since postgres 9.0, but we can cheaply
     # maintain backwards compatibility here, so we don't use it
-    arg, sep = map(t.translate, expr.op().args)
-    return sa.func.array_to_string(sa.func.array_agg(arg), sep)
+    arg, sep, where = expr.op().args
+    sa_arg = t.translate(arg)
+    sa_sep = t.translate(sep)
+
+    if where is not None:
+        operand = t.translate(where.ifelse(arg, ibis.NA))
+    else:
+        operand = sa_arg
+    return sa.func.array_to_string(sa.func.array_agg(operand), sa_sep)
 
 
 _strftime_to_postgresql_rules = {
@@ -454,9 +462,14 @@ def compile_regex_extract(element, compiler, **kw):
 
 def _regex_extract(t, expr):
     string, pattern, index = map(t.translate, expr.op().args)
-    result = sa.func.coalesce(
-        sa.func.regex_extract(string, pattern, index + 1),
-        ''
+    result = sa.case(
+        [
+            (
+                sa.func.textregexeq(string, pattern),
+                sa.func.regex_extract(string, pattern, index + 1),
+            )
+        ],
+        else_=''
     )
     return result
 
