@@ -301,7 +301,7 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
 
 
 @pytest.mark.parametrize('unit', [
-    'Y', 'M', 'w',  'd',  'h',  'm',  's',  'ms', 'us', 'ns'
+    'Y', 'M', 'w',  'd',  'h',  'm',  's'
 ])
 def test_interval(unit):
     definition = "interval('{}')".format(unit)
