@@ -285,6 +285,20 @@ def test_invalid_date_arithmetics():
         with pytest.raises(IbisTypeError):
             d1 + i
 
+
+def test_interval_properties():
+    i = api.interval(seconds=300)
+
+    i.nanoseconds
+    i.microseconds
+    i.milliseconds
+    i.seconds
+    i.minutes
+    i.hours
+    i.days
+    i.weeks
+
+
 # TODO:
 # assert for ibis type errors to check rules
 # assert for d1 - d2 == -(d2 - d1)

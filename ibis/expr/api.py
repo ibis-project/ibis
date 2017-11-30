@@ -50,7 +50,7 @@ from ibis.expr.types import (Expr,  # noqa
                              param, null, sequence)
 
 # __all__ is defined
-from ibis.expr.temporal import *  # noqa
+# from ibis.expr.temporal import *  # noqa
 
 import ibis.common as _com
 from ibis.compat import PY2, to_time, to_date
@@ -61,13 +61,15 @@ import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
 import ibis.expr.types as ir
 import ibis.expr.operations as _ops
-import ibis.expr.temporal as _T
+# import ibis.expr.temporal as _T
 import ibis.util as util
 
 
 __all__ = [
     'schema', 'table', 'literal', 'expr_list',
     'timestamp', 'time', 'date', 'interval', 'param',
+    'nanosecond', 'microsecond', 'millisecond', 'second',
+    'minute', 'hour', 'day', 'week', 'month', 'year',
     'case', 'where', 'sequence',
     'now', 'desc', 'null', 'NA',
     'cast', 'coalesce', 'greatest', 'least',
@@ -78,7 +80,7 @@ __all__ = [
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window',
 ]
-__all__ += _T.__all__
+# __all__ += _T.__all__
 
 
 NA = null()
@@ -220,7 +222,8 @@ def time(value):
 
 
 def interval(value=None, years=None, months=None, weeks=None, days=None,
-             hours=None, minutes=None, seconds=None):
+             hours=None, minutes=None, seconds=None, milliseconds=None,
+             microseconds=None, nanoseconds=None):
     """
     Returns an interval literal
 
@@ -254,7 +257,10 @@ def interval(value=None, years=None, months=None, weeks=None, days=None,
         ('d', days),
         ('h', hours),
         ('m', minutes),
-        ('s', seconds)
+        ('s', seconds),
+        ('ms', milliseconds),
+        ('us', microseconds),
+        ('ns', nanoseconds)
     ]
     defined_units = [(k, v) for k, v in kwds if v is not None]
 
@@ -263,6 +269,46 @@ def interval(value=None, years=None, months=None, weeks=None, days=None,
 
     unit, value = defined_units[0]
     return ir.literal(value, type=dt.Interval(unit)).op().to_expr()
+
+
+def nanosecond(value):
+    return interval(nanoseconds=value)
+
+
+def microsecond(value):
+    return interval(microseconds=value)
+
+
+def millisecond(value):
+    return interval(milliseconds=value)
+
+
+def second(value):
+    return interval(seconds=value)
+
+
+def minute(value):
+    return interval(minutes=value)
+
+
+def hour(value):
+    return interval(hours=value)
+
+
+def day(value):
+    return interval(days=value)
+
+
+def week(value):
+    return interval(weeks=value)
+
+
+def month(value):
+    return interval(months=value)
+
+
+def year(value):
+    return interval(years=value)
 
 
 schema.__doc__ = """\
