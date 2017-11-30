@@ -473,9 +473,9 @@ class Interval(SignedInteger):
         'h',   # Hour
         'm',   # Minute
         's',   # Second
-        # 'ms',  # Millisecond
-        # 'us',  # Microsecond
-        # 'ns'   # Nanosecond
+        'ms',  # Millisecond
+        'us',  # Microsecond
+        'ns'   # Nanosecond
     ])
 
     def __init__(self, unit='s', nullable=True):
