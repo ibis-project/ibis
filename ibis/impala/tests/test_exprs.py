@@ -1369,7 +1369,7 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
 
             dc.fillna(0),
 
-            ts < (ibis.now() + ibis.month(3)),
+            # ts < (ibis.now() + ibis.month(3)),
             # ts < (ibis.timestamp('2005-01-01') + ibis.month(3)),
 
             # hashing
