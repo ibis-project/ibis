@@ -1,6 +1,4 @@
 import ibis.expr.rules as rules
-import ibis.expr.types as ir
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as _ops
 from ibis.expr.rules import value, number
 
