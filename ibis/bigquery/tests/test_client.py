@@ -72,11 +72,8 @@ def test_compile_verify(alltypes):
 def test_compile_toplevel():
     t = ibis.table([('foo', 'double')], name='t0')
 
-    # it works!
     expr = t.foo.sum()
     result = ibis.bigquery.compile(expr)
-    # FIXME: remove quotes because bigquery can't use anythig that needs
-    # quoting?
     expected = """\
 SELECT sum(`foo`) AS `sum`
 FROM t0"""  # noqa
