@@ -458,41 +458,6 @@ class UnsignedInteger(Integer):
         ) and lower <= value <= upper
 
 
-@parametric
-class Interval(SignedInteger):
-
-    __slots__ = 'unit',
-
-    _nbytes = 4
-
-    _valid_units = frozenset([
-        'Y',   # Year
-        'M',   # Month
-        'w',   # Week
-        'd',   # Day
-        'h',   # Hour
-        'm',   # Minute
-        's',   # Second
-        'ms',  # Millisecond
-        'us',  # Microsecond
-        'ns'   # Nanosecond
-    ])
-
-    def __init__(self, unit='s', nullable=True):
-        super(Interval, self).__init__(nullable=nullable)
-        if unit not in self._valid_units:
-            raise ValueError('Unsupported interval unit `{}`'.format(unit))
-        self.unit = unit
-
-    def __str__(self):
-        unit = self.unit
-        typename = self.name.lower()
-        return '{}({!r})'.format(typename, unit)
-
-    def valid_literal(self, value):
-        return isinstance(value, six.integer_types + (datetime.timedelta,))
-
-
 class Floating(Primitive):
 
     __slots__ = ()
@@ -606,6 +571,55 @@ class Decimal(DataType):
 
 
 assert hasattr(Decimal, '__hash__')
+
+
+@parametric
+class Interval(DataType):
+
+    __slots__ = 'value_type', 'unit'
+
+    _valid_units = frozenset([
+        'Y',   # Year
+        'M',   # Month
+        'w',   # Week
+        'd',   # Day
+        'h',   # Hour
+        'm',   # Minute
+        's',   # Second
+        'ms',  # Millisecond
+        'us',  # Microsecond
+        'ns'   # Nanosecond
+    ])
+
+    def __init__(self, value_type=None, unit='s', nullable=True):
+        super(Interval, self).__init__(nullable=nullable)
+        if unit not in self._valid_units:
+            raise ValueError('Unsupported interval unit `{}`'.format(unit))
+
+        if value_type is None:
+            value_type = int32
+        else:
+            value_type = validate_type(value_type)
+
+        if not isinstance(value_type, Integer):
+            raise TypeError("Interval's value_type must be an Integer subtype")
+
+        self.unit = unit
+        self.value_type = value_type
+
+    def __str__(self):
+        unit = self.unit
+        typename = self.name.lower()
+        value_type_name = self.value_type.name.lower()
+        return '{}<{}>(unit={!r})'.format(typename, value_type_name, unit)
+
+    def _equal_part(self, other, cache=None):
+        print('EQUAL PART')
+        return (self.unit == other.unit and
+                self.value_type.equals(other.value_type, cache=cache))
+
+    def valid_literal(self, value):
+        return isinstance(value, six.integer_types + (datetime.timedelta,))
 
 
 @parametric
@@ -813,7 +827,7 @@ binary = Binary()
 date = Date()
 time = Time()
 timestamp = Timestamp()
-interval = Interval()
+# interval = Interval()
 
 
 _primitive_types = {
@@ -835,8 +849,8 @@ _primitive_types = {
     'binary': binary,
     'date': date,
     'time': time,
-    'timestamp': timestamp,
-    'interval': interval
+    'timestamp': timestamp
+    # 'interval': interval
 }
 
 
@@ -904,7 +918,7 @@ _TYPE_RULES = OrderedDict(
             lambda token: Token(Tokens.TIMESTAMP, token),
         ),
     ] + [
-        # interval
+        # interval - should remove?
         (
             r'(?P<INTERVAL>interval)',
             lambda token: Token(Tokens.INTERVAL, token),
@@ -962,6 +976,8 @@ _TYPE_RULES = OrderedDict(
         ),
     ]
 )
+
+
 
 _TYPE_KEYS = tuple(_TYPE_RULES.keys())
 _TYPE_PATTERN = re.compile('|'.join(_TYPE_KEYS), flags=re.IGNORECASE)
@@ -1072,7 +1088,6 @@ class TypeParser(object):
                   | "float64"
                   | "string"
                   | "time"
-                  | timestamp
 
         timestamp : "timestamp"
                   | "timestamp" "(" timezone ")"
@@ -1108,12 +1123,21 @@ class TypeParser(object):
             return Time()
 
         elif self._accept(Tokens.INTERVAL):
+            if self._accept(Tokens.LBRACKET):
+                self._expect(Tokens.PRIMITIVE)
+                value_type = self.tok.value
+                self._expect(Tokens.RBRACKET)
+            else:
+                value_type = int32
+
             if self._accept(Tokens.LPAREN):
                 self._expect(Tokens.STRARG)
-                unit = self.tok.value[1:-1]
+                unit = self.tok.value[1:-1]  # remove surrounding quotes
                 self._expect(Tokens.RPAREN)
-                return Interval(unit=unit)
-            return interval
+            else:
+                unit = 's'
+
+            return Interval(value_type, unit)
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):

@@ -2442,7 +2442,7 @@ class TemporalBinaryOp(BinaryOp):
 
     def output_type(self):
         if self.args[0].type() == self.args[1].type():
-            value_type = dt.Interval(self.output_unit)
+            value_type = dt.Interval(dt.int32, self.output_unit)
         else:
             value_type = self.args[0].type()
 
@@ -2482,7 +2482,6 @@ class TimestampBinaryOp(TemporalBinaryOp):
             rules.interval(units='YMwdHms')
         ])
     ]
-
     output_unit = 's'
 
 
@@ -2508,6 +2507,19 @@ class TimestampAdd(TimestampBinaryOp):
 
 class TimestampSubtract(TimestampBinaryOp):
     pass
+
+
+# class IntervalAdd(Multiply):
+
+
+class IntervalMultiply(Multiply):
+
+    def output_type(self):
+        output_type = super(IntervalMultiply, self).output_type()
+        return output_type
+
+        # helper = rules.BinaryPromoter(self.left, self.right, operator.mul)
+        # return helper.get_result()
 
 
 class ArrayLength(UnaryOp):

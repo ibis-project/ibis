@@ -24,21 +24,18 @@ import ibis.expr.temporal as T
 import ibis.expr.api as api
 
 
-@pytest.mark.parametrize(
-    ('offset', 'unit', 'expected'),
-    [
-        (T.day(14), 'w', T.week(2)),
-        (T.hour(72), 'd', T.day(3)),
-        (T.minute(240), 'h', T.hour(4)),
-        (T.second(360), 'm', T.minute(6)),
-        (T.second(3 * 86400), 'd', T.day(3)),
-        (T.millisecond(5000), 's', T.second(5)),
-        (T.microsecond(5000000), 's', T.second(5)),
-        (T.nanosecond(5000000000), 's', T.second(5)),
-    ]
-)
-def test_upconvert(offset, unit, expected):
-    result = offset.to_unit(unit)
+@pytest.mark.parametrize(('interval', 'unit', 'expected'), [
+    (api.day(14), 'w', api.week(2)),
+    (api.hour(72), 'd', api.day(3)),
+    (api.minute(240), 'h', api.hour(4)),
+    (api.second(360), 'm', api.minute(6)),
+    (api.second(3 * 86400), 'd', api.day(3)),
+    (api.millisecond(5000), 's', api.second(5)),
+    (api.microsecond(5000000), 's', api.second(5)),
+    (api.nanosecond(5000000000), 's', api.second(5)),
+])
+def test_upconvert(interval, unit, expected):
+    result = interval.to_unit(unit)
     assert result.equals(expected)
 
 
@@ -204,9 +201,14 @@ def test_interval(literal):
 
 # TODO: parametrize tests
 def test_interval_repr():
-    assert repr(api.interval(weeks=3)) == "Literal[interval('w')]\n  3"
-    assert repr(api.interval(months=3)) == "Literal[interval('M')]\n  3"
-    assert repr(api.interval(seconds=-10)) == "Literal[interval('s')]\n  -10"
+    expected = "Literal[interval<int8>(unit='w')]\n  3"
+    assert repr(api.interval(weeks=3)) == expected
+
+    expected = "Literal[interval<int8>(unit='M')]\n  3"
+    assert repr(api.interval(months=3)) == expected
+
+    expected = "Literal[interval<int8>(unit='s')]\n  -10"
+    assert repr(api.interval(seconds=-10)) == expected
 
 
 def test_timestamp_arithmetics():
@@ -219,7 +221,7 @@ def test_timestamp_arithmetics():
     for expr in [ts2 - ts1, ts1 - ts2]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.TimestampSubtract)
-        assert expr.type() == dt.Interval('s')
+        assert expr.type() == dt.Interval(dt.int32, 's')
 
     for expr in [ts1 - i1, ts2 - i1]:
         assert isinstance(expr, ir.TimestampScalar)
@@ -240,7 +242,7 @@ def test_date_arithmetics():
     for expr in [d1 - d2, d2 - d1]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.DateSubtract)
-        assert expr.type() == dt.Interval('d')
+        assert expr.type() == dt.Interval(dt.int32, 'd')
 
     for expr in [d1 - i1, d2 - i1]:
         assert isinstance(expr, ir.DateScalar)
@@ -262,7 +264,7 @@ def test_time_arithmetics():
     for expr in [t1 - t2, t2 - t1]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.TimeSubtract)
-        assert expr.type() == dt.Interval('s')
+        assert expr.type() == dt.Interval(dt.int32, 's')
 
     for expr in [t1 - i1, t2 - i1]:
         assert isinstance(expr, ir.TimeScalar)
@@ -288,6 +290,7 @@ def test_invalid_date_arithmetics():
 
 def test_interval_properties():
     i = api.interval(seconds=300)
+    s = api.second(300)
 
     i.nanoseconds
     i.microseconds

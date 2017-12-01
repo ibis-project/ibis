@@ -1229,14 +1229,17 @@ class TimestampValue(TemporalValue):
         return TimestampScalar(op)
 
 
-class IntervalValue(IntegerValue):
+class IntervalValue(ParameterizedValue):
 
-    def __init__(self, meta=None):
+
+    def __init__(self, meta=None, name=None):
+        #super(IntervalValue, self).__init__(meta=meta, name=name)
         self.meta = meta
-        self._unit = getattr(meta, 'unit', 's')
+        print(type(meta))
+        #self._unit = getattr(meta, 'unit', 's')
 
-    def type(self):
-        return dt.Interval(unit=self._unit)
+    # def type(self):
+    #     return dt.Interval(dt.int32unit=self._unit)
 
     def _can_compare(self, other):
         return isinstance(other, IntervalValue)
@@ -1619,10 +1622,9 @@ def literal(value, type=None):
         )
 
     if value is None or value is _NULL or value is null:
-        result = null().cast(type)
+        return null().cast(type)
     else:
-        result = Literal(value, type=type).to_expr()
-    return result
+        return Literal(value, type=type).to_expr()
 
 
 _NULL = None

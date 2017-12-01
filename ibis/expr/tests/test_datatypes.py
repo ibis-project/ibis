@@ -301,11 +301,26 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
 
 
 @pytest.mark.parametrize('unit', [
-    'Y', 'M', 'w',  'd',  'h',  'm',  's',  'ms', 'us', 'ns'
+    'Y', 'M', 'w',  'd',  # date units
+    'h',  'm',  's',  'ms', 'us', 'ns'  # time units
 ])
 def test_interval(unit):
     definition = "interval('{}')".format(unit)
-    dt.Interval(unit) == dt.validate_type(definition)
+    dt.Interval(dt.int32, unit) == dt.validate_type(definition)
+
+    definition = "interval<uint16>('{}')".format(unit)
+    dt.Interval(dt.uint16, unit) == dt.validate_type(definition)
+
+    definition = "interval<int64>('{}')".format(unit)
+    dt.Interval(dt.int64, unit) == dt.validate_type(definition)
+
+
+def test_interval_invalid_type():
+    with pytest.raises(TypeError):
+        dt.Interval(dt.float32, 'm')
+
+    with pytest.raises(TypeError):
+        dt.validate_type("interval<float>('s')")
 
 
 @pytest.mark.parametrize('unit', [
@@ -318,7 +333,7 @@ def test_interval_unvalid_unit(unit):
         dt.validate_type(definition)
 
     with pytest.raises(ValueError):
-        dt.Interval(unit)
+        dt.Interval(dt.int32, unit)
 
 
 @pytest.mark.parametrize('case', [

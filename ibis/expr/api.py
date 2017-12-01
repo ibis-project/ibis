@@ -243,32 +243,35 @@ def interval(value=None, years=None, months=None, weeks=None, days=None,
     result : IntervalScalar
     """
     if value is not None:
-        type = dt.Interval('s')
+        unit = 's'
         if isinstance(value, datetime.timedelta):
             value = int(value.total_seconds())
         elif not isinstance(value, six.integer_types):
             raise ValueError('Interval value must be an integer')
-        return ir.IntervalScalar(ir.literal(value, type=type).op())
+    else:
+        kwds = [
+            ('Y', years),
+            ('M', months),
+            ('w', weeks),
+            ('d', days),
+            ('h', hours),
+            ('m', minutes),
+            ('s', seconds),
+            ('ms', milliseconds),
+            ('us', microseconds),
+            ('ns', nanoseconds)
+        ]
+        defined_units = [(k, v) for k, v in kwds if v is not None]
 
-    kwds = [
-        ('Y', years),
-        ('M', months),
-        ('w', weeks),
-        ('d', days),
-        ('h', hours),
-        ('m', minutes),
-        ('s', seconds),
-        ('ms', milliseconds),
-        ('us', microseconds),
-        ('ns', nanoseconds)
-    ]
-    defined_units = [(k, v) for k, v in kwds if v is not None]
+        if len(defined_units) != 1:
+            raise ValueError('Exactly one argument is required')
 
-    if len(defined_units) != 1:
-        raise ValueError('Exactly one argument is required')
+        unit, value = defined_units[0]
 
-    unit, value = defined_units[0]
-    return ir.literal(value, type=dt.Interval(unit)).op().to_expr()
+    value_type = ir.literal(value).type()
+    type = dt.Interval(value_type, unit)
+
+    return ir.literal(value, type=type).op().to_expr()
 
 
 def nanosecond(value):
@@ -2051,7 +2054,7 @@ _add_methods(DateValue, _date_value_methods)
 
 def _convert_unit(value, unit, to):
     factors = (7, 24, 60, 60, 1000, 1000, 1000)
-    units = ('w', 'd', 'H', 'm', 's', 'ms', 'us', 'ns')
+    units = ('w', 'd', 'h', 'm', 's', 'ms', 'us', 'ns')
 
     i, j = units.index(unit), units.index(to)
     if i < j:
@@ -2062,19 +2065,34 @@ def _convert_unit(value, unit, to):
         return value
 
 
-def _interval_property(target):
-    return property(lambda self: self * _convert_unit(1, self._unit, target))
+def _to_unit(arg, target_unit):
+    # print(arg)
+    return arg * _convert_unit(1, arg.meta.unit, target_unit)
 
+
+def _interval_property(target_unit):
+    return property(functools.partial(_to_unit, target_unit=target_unit))
+
+
+_interval_mul = _binop_expr('__mul__', _ops.IntervalMultiply)
+_interval_rmul = _binop_expr('__rmul__', _ops.IntervalMultiply)
 
 _interval_value_methods = dict(
+    to_unit=_to_unit,
     weeks=_interval_property('w'),
     days=_interval_property('d'),
-    hours=_interval_property('H'),
+    hours=_interval_property('h'),
     minutes=_interval_property('m'),
     seconds=_interval_property('s'),
     milliseconds=_interval_property('ms'),
     microseconds=_interval_property('us'),
-    nanoseconds=_interval_property('ns')
+    nanoseconds=_interval_property('ns'),
+
+    __mul__ = _interval_mul,
+    mul = _interval_mul,
+
+    __rmul__ = _interval_rmul,
+    rmul = _interval_rmul
 )
 
 _add_methods(IntervalValue, _interval_value_methods)

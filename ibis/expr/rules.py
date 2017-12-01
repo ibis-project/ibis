@@ -42,6 +42,7 @@ class BinaryPromoter(object):
 
     def get_result(self):
         promoted_type = self._get_type()
+        print(promoted_type)
         return shape_like_args(self.args, promoted_type)
 
     def _get_type(self):
