@@ -616,6 +616,25 @@ def _string_join(t, expr):
     return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
 
 
+def _lag(t, expr):
+    arg, offset, default = expr.op().args
+    if default is not None:
+        raise NotImplementedError()
+
+    sa_arg = t.translate(arg)
+    sa_offset = t.translate(offset) if offset is not None else 1
+    return sa.func.lag(sa_arg, sa_offset)
+
+
+def _lead(t, expr):
+    arg, offset, default = expr.op().args
+    if default is not None:
+        raise NotImplementedError()
+    sa_arg = t.translate(arg)
+    sa_offset = t.translate(offset) if offset is not None else 1
+    return sa.func.lead(sa_arg, sa_offset)
+
+
 _operation_registry.update({
     # We override this here to support time zones
     ops.TableColumn: _table_column,
@@ -698,6 +717,10 @@ _operation_registry.update({
     # now is in the timezone of the server, but we want UTC
     ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
     ops.WindowOp: _window,
+    ops.Lag: _lag,
+    ops.Lead: _lead,
+    ops.FirstValue: fixed_arity(sa.func.first_value, 1),
+    ops.LastValue: fixed_arity(sa.func.last_value, 1),
     ops.CumulativeOp: _window,
     ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
     ops.DenseRank: fixed_arity(lambda arg: sa.func.dense_rank(), 1),

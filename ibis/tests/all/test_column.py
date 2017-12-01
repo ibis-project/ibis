@@ -1,9 +1,11 @@
 import numpy as np
+import pandas as pd
 
 import pytest
 from pytest import param
 
 import ibis
+import ibis.common as com
 
 
 @pytest.mark.parametrize(
@@ -18,7 +20,9 @@ def test_distinct_column(alltypes, df, column):
 
 def skip_if_invalid_operation(expr, valid_operations, con):
     op_type = type(expr.op())
-    if op_type not in valid_operations:
+    try:
+        con.compile(expr)
+    except com.OperationNotDefinedError:
         pytest.skip(
             'Operation {!r} is not defined for clients of type {!r}'.format(
                 op_type.__name__, type(con).__name__
@@ -27,7 +31,7 @@ def skip_if_invalid_operation(expr, valid_operations, con):
 
 
 @pytest.fixture(scope='function')
-def result_func_strings(request, con, alltypes, backend, valid_operations):
+def result_func_default(request, con, alltypes, backend, valid_operations):
     func = request.param
     expr = func(alltypes)
     skip_if_invalid_operation(expr, valid_operations, con)
@@ -35,7 +39,7 @@ def result_func_strings(request, con, alltypes, backend, valid_operations):
 
 
 @pytest.mark.parametrize(
-    ('result_func_strings', 'expected_func'),
+    ('result_func_default', 'expected_func'),
     [
         param(
             lambda t: t.string_col.contains('6'),
@@ -163,10 +167,10 @@ def result_func_strings(request, con, alltypes, backend, valid_operations):
             id='join'
         )
     ],
-    indirect=['result_func_strings'],
+    indirect=['result_func_default'],
 )
-def test_strings(alltypes, df, backend, result_func_strings, expected_func):
-    expr = result_func_strings(alltypes)
+def test_strings(alltypes, df, backend, result_func_default, expected_func):
+    expr = result_func_default(alltypes)
     result = expr.execute()
     expected = backend.default_series_rename(expected_func(df))
     backend.assert_series_equal(result, expected)
@@ -295,42 +299,68 @@ def test_aggregations(
     result = expr.execute()
     expected = expected_func(df, pandas_cond(df))
     np.testing.assert_allclose(result, expected)
-    # backend.assert_equal(result, expected)
 
 
-# def test_analytic_functions(self):
+@pytest.mark.parametrize(
+    ('result_func_default', 'expected_func'),
+    [
+        param(
+            lambda t: t.float_col.lag(),
+            lambda t: t.float_col.shift(1),
+            id='lag',
+        ),
+        # param(
+            # lambda t: t.float_col.lead(),
+            # lambda t: t.float_col.shift(-1),
+            # id='lead',
+        # ),
+        # param(lambda t: t.float_col.rank(), ignore, id='rank'),
+        # param(lambda t: t.float_col.dense_rank(), ignore, id='dense_rank'),
+        # param(lambda t: t.float_col.percent_rank(), ignore, id='percent_rank'),
+        # param(lambda t: t.float_col.ntile(buckets=7), ignore, id='ntile'),
+        # param(
+            # lambda t: t.float_col.first(),
+            # lambda t: t.float_col.head(1),
+            # id='first'
+        # ),
+        # param(
+            # lambda t: t.float_col.last(),
+            # lambda t: t.float_col.tail(1),
+            # id='last',
+        # ),
+        # param(lambda t: t.float_col.first().over(ibis.window(preceding=10)), ignore, id='first_preceding'),
+        # param(lambda t: t.float_col.first().over(ibis.window(following=10)), ignore, id='first_following'),
+        # param(
+            # lambda t: ibis.row_number(),
+            # lambda t: pd.Series(np.arange(len(t))),
+            # id='row_number',
+        # ),
+        # param(lambda t: t.float_col.cumsum(), lambda t: t.float_col.cumsum(), id='cumsum'),
+        # param(lambda t: t.float_col.cummean(), lambda t: t.float_col.cummean(), id='cummean'),
+        # param(lambda t: t.float_col.cummin(), lambda t: t.float_col.cummin(), id='cummin'),
+        # param(lambda t: t.float_col.cummax(), lambda t: t.float_col.cummax(), id='cummax'),
+        # param(lambda t: (t.float_col == 0).cumany(), lambda t: (t.float_col == 0).cumany(), id='cumany'),
+        # param(lambda t: (t.float_col == 0).cumall(), lambda t: (t.float_col == 0).cumall(), id='cumall'),
+        # param(lambda t: t.float_col.sum(), lambda t: t.float_col.sum(), id='sum'),
+        # param(lambda t: t.float_col.mean(), lambda t: t.float_col.mean(), id='mean'),
+        # param(lambda t: t.float_col.min(), lambda t: t.float_col.min(), id='min'),
+        # param(lambda t: t.float_col.max(), lambda t: t.float_col.max(), id='max'),
+    ],
+    indirect=['result_func_default'],
+)
+def test_analytic_functions(
+    alltypes, df, con, backend, result_func_default, expected_func,
+):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+    t = alltypes.limit(1000).groupby('string_col').order_by('id')
+    expr = t.mutate(value=result_func_default)
+    import pdb; pdb.set_trace()  # noqa
+    result = con.execute(expr).set_index('id').sort_index().value
 
-    # t = self.alltypes.limit(1000)
-
-    # g = t.group_by('string_col').order_by('double_col')
-    # f = t.float_col
-
-    # exprs = [
-        # f.lag(),
-        # f.lead(),
-        # f.rank(),
-        # f.dense_rank(),
-        # f.percent_rank(),
-        # f.ntile(buckets=7),
-
-        # f.first(),
-        # f.last(),
-
-        # f.first().over(ibis.window(preceding=10)),
-        # f.first().over(ibis.window(following=10)),
-
-        # ibis.row_number(),
-        # f.cumsum(),
-        # f.cummean(),
-        # f.cummin(),
-        # f.cummax(),
-
-        # # boolean cumulative reductions
-        # (f == 0).cumany(),
-        # (f == 0).cumall(),
-
-        # f.sum(),
-        # f.mean(),
-        # f.min(),
-        # f.max()
-    # ]
+    df = df.iloc[:1000]
+    gb = df.groupby('string_col')
+    expected = df.assign(value=expected_func(gb)).set_index('id').sort_index().value
+    backend.assert_series_equal(result, expected)
