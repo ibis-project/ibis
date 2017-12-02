@@ -24,28 +24,28 @@ import ibis.expr.temporal as T
 import ibis.expr.api as api
 
 
-@pytest.mark.parametrize(('interval', 'unit', 'expected'), [
-    (api.day(14), 'w', api.week(2)),
-    (api.hour(72), 'd', api.day(3)),
-    (api.minute(240), 'h', api.hour(4)),
-    (api.second(360), 'm', api.minute(6)),
-    (api.second(3 * 86400), 'd', api.day(3)),
-    (api.millisecond(5000), 's', api.second(5)),
-    (api.microsecond(5000000), 's', api.second(5)),
-    (api.nanosecond(5000000000), 's', api.second(5)),
-])
-def test_upconvert(interval, unit, expected):
-    result = interval.to_unit(unit)
-    assert result.equals(expected)
+# @pytest.mark.parametrize(('interval', 'unit', 'expected'), [
+#     (api.day(14), 'w', api.week(2)),
+#     (api.hour(72), 'd', api.day(3)),
+#     (api.minute(240), 'h', api.hour(4)),
+#     (api.second(360), 'm', api.minute(6)),
+#     (api.second(3 * 86400), 'd', api.day(3)),
+#     (api.millisecond(5000), 's', api.second(5)),
+#     (api.microsecond(5000000), 's', api.second(5)),
+#     (api.nanosecond(5000000000), 's', api.second(5)),
+# ])
+# def test_upconvert(interval, unit, expected):
+#     result = interval.to_unit(unit)
+#     assert result.equals(expected)
 
 
 def test_multiply():
-    offset = T.day(2)
+    offset = api.day(2)
 
-    assert (offset * 2).equals(T.day(4))
-    assert (offset * (-2)).equals(T.day(-4))
-    assert (3 * offset).equals(T.day(6))
-    assert ((-3) * offset).equals(T.day(-6))
+    assert (offset * 2).equals(api.day(4))
+    assert (offset * (-2)).equals(api.day(-4))
+    assert (3 * offset).equals(api.day(6))
+    assert ((-3) * offset).equals(api.day(-6))
 
 
 def test_repr():

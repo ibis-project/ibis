@@ -1233,13 +1233,8 @@ class IntervalValue(ParameterizedValue):
 
 
     def __init__(self, meta=None, name=None):
-        #super(IntervalValue, self).__init__(meta=meta, name=name)
         self.meta = meta
-        print(type(meta))
-        #self._unit = getattr(meta, 'unit', 's')
-
-    # def type(self):
-    #     return dt.Interval(dt.int32unit=self._unit)
+        self._name = name
 
     def _can_compare(self, other):
         return isinstance(other, IntervalValue)

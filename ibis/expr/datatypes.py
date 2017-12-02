@@ -614,7 +614,6 @@ class Interval(DataType):
         return '{}<{}>(unit={!r})'.format(typename, value_type_name, unit)
 
     def _equal_part(self, other, cache=None):
-        print('EQUAL PART')
         return (self.unit == other.unit and
                 self.value_type.equals(other.value_type, cache=cache))
 

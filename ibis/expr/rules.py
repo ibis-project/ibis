@@ -42,7 +42,6 @@ class BinaryPromoter(object):
 
     def get_result(self):
         promoted_type = self._get_type()
-        print(promoted_type)
         return shape_like_args(self.args, promoted_type)
 
     def _get_type(self):
@@ -87,6 +86,20 @@ class BinaryPromoter(object):
         if (util.any_of(self.args, ir.StringValue) and
                 not util.all_of(self.args, ir.StringValue)):
             raise TypeError('String and non-string incompatible')
+
+
+class IntervalPromoter(BinaryPromoter):
+
+    def __init__(self, left, right, op):
+        left_type = left.type()
+        value_type = shape_like(left, left_type.value_type)
+        self.unit = left_type.unit
+        super(IntervalPromoter, self).__init__(value_type(left), right, op)
+
+    def get_result(self):
+        promoted_value_type = self._get_type()
+        promoted_type = dt.Interval(promoted_value_type, self.unit)
+        return shape_like_args(self.args, promoted_type)
 
 
 def _decimal_promoted_type(args):

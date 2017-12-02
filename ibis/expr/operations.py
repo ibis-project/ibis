@@ -2467,7 +2467,7 @@ class TimeBinaryOp(TemporalBinaryOp):
         rules.time,
         rules.one_of([
             rules.time,
-            rules.interval(units='Hms')
+            rules.interval(units='hms')
         ])
     ]
     output_unit = 's'
@@ -2479,7 +2479,7 @@ class TimestampBinaryOp(TemporalBinaryOp):
         rules.timestamp,
         rules.one_of([
             rules.timestamp,
-            rules.interval(units='YMwdHms')
+            rules.interval(units='YMwdhms')
         ])
     ]
     output_unit = 's'
@@ -2515,11 +2515,8 @@ class TimestampSubtract(TimestampBinaryOp):
 class IntervalMultiply(Multiply):
 
     def output_type(self):
-        output_type = super(IntervalMultiply, self).output_type()
-        return output_type
-
-        # helper = rules.BinaryPromoter(self.left, self.right, operator.mul)
-        # return helper.get_result()
+        helper = rules.IntervalPromoter(self.left, self.right, operator.mul)
+        return helper.get_result()
 
 
 class ArrayLength(UnaryOp):
