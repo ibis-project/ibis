@@ -2508,10 +2508,7 @@ TimestampDelta = TimestampSubtract
 
 class IntervalAdd(Add):
 
-    input_type = [
-        rules.interval(units='YMwdhms'),
-        rules.interval(units='YMwdhms')
-    ]
+    input_type = [rules.interval, rules.interval]
 
     def output_type(self):
         left, right = self.args
@@ -2529,6 +2526,14 @@ class IntervalMultiply(Multiply):
     def output_type(self):
         helper = rules.IntervalPromoter(self.left, self.right, operator.mul)
         return helper.get_result()
+
+
+class IntervalFloorDivide(FloorDivide):
+
+    input_type = [rules.interval, number]
+
+    def output_type(self):
+        return rules.shape_like(self.args[0],  self.args[0].type())
 
 
 class ArrayLength(UnaryOp):

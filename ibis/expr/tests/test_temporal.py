@@ -23,19 +23,32 @@ import ibis.expr.types as ir
 import ibis.expr.api as api
 
 
-# @pytest.mark.parametrize(('interval', 'unit', 'expected'), [
-#     (api.day(14), 'w', api.week(2)),
-#     (api.hour(72), 'd', api.day(3)),
-#     (api.minute(240), 'h', api.hour(4)),
-#     (api.second(360), 'm', api.minute(6)),
-#     (api.second(3 * 86400), 'd', api.day(3)),
-#     (api.millisecond(5000), 's', api.second(5)),
-#     (api.microsecond(5000000), 's', api.second(5)),
-#     (api.nanosecond(5000000000), 's', api.second(5)),
-# ])
-# def test_upconvert(interval, unit, expected):
-#     result = interval.to_unit(unit)
-#     assert result.equals(expected)
+@pytest.mark.parametrize(('interval', 'unit', 'expected'), [
+    (api.day(14), 'w', api.week(2)),
+    (api.minute(240), 'h', api.hour(4)),
+    (api.second(360), 'm', api.minute(6)),
+    (api.second(3 * 86400), 'd', api.day(3)),
+    (api.millisecond(5000), 's', api.second(5)),
+    (api.microsecond(5000000), 's', api.second(5)),
+    (api.nanosecond(5000000000), 's', api.second(5)),
+])
+def test_upconvert(interval, unit, expected):
+    result = interval.to_unit(unit)
+    assert result.type().unit == expected.type().unit
+
+
+@pytest.mark.parametrize(('delta', 'target'), [
+    (api.day(), 'w'),
+    (api.hour(), 'd'),
+    (api.minute(), 'h'),
+    (api.second(), 'm'),
+    (api.second(), 'd'),
+    (api.millisecond(), 's'),
+    (api.microsecond(), 's'),
+    (api.nanosecond(), 's'),
+])
+def test_cannot_upconvert(delta, target):
+    assert delta.to_unit(target).type().unit == target
 
 
 # def test_multiply():
@@ -53,25 +66,6 @@ import ibis.expr.api as api
 #     assert repr(T.year()) == '<Timedelta: 1 year>'
 #     assert repr(T.month(2)) == '<Timedelta: 2 months>'
 #     assert repr(T.second(40)) == '<Timedelta: 40 seconds>'
-
-
-# @pytest.mark.parametrize(
-#     ('delta', 'target'),
-#     [
-#         (api.day(), 'w'),
-#         (api.hour(), 'd'),
-#         (api.minute(), 'h'),
-#         (api.second(), 'm'),
-#         (api.second(), 'd'),
-#         (api.millisecond(), 's'),
-#         (api.microsecond(), 's'),
-#         (api.nanosecond(), 's'),
-#     ]
-# )
-# def test_cannot_upconvert(delta, target):
-#     with pytest.raises(IbisError):
-#         delta.to_unit(target)
-
 
 # @pytest.mark.parametrize(
 #     ('case', 'expected'),
@@ -192,16 +186,14 @@ def test_interval(literal):
     assert isinstance(literal, ir.IntervalScalar)
 
 
-# TODO: parametrize tests
-def test_interval_repr():
-    expected = "Literal[interval<int8>(unit='w')]\n  3"
-    assert repr(api.interval(weeks=3)) == expected
 
-    expected = "Literal[interval<int8>(unit='M')]\n  3"
-    assert repr(api.interval(months=3)) == expected
-
-    expected = "Literal[interval<int8>(unit='s')]\n  -10"
-    assert repr(api.interval(seconds=-10)) == expected
+@pytest.mark.parametrize(('expr', 'expected'), [
+    (api.interval(weeks=3), "Literal[interval<int8>(unit='w')]\n  3"),
+    (api.interval(months=3), "Literal[interval<int8>(unit='M')]\n  3"),
+    (api.interval(seconds=-10), "Literal[interval<int8>(unit='s')]\n  -10")
+])
+def test_interval_repr(expr, expected):
+    assert repr(expr) == expected
 
 
 def test_timestamp_arithmetics():
@@ -288,16 +280,8 @@ def test_interval_properties():
     i.microseconds
     i.milliseconds
     i.seconds
-
-    with pytest.raises(TypeError):
-        i.minutes
-
-    with pytest.raises(TypeError):
-        i.hours
-
-    with pytest.raises(TypeError):
-        i.days
-
-    with pytest.raises(TypeError):
-        i.weeks
+    i.minutes
+    i.hours
+    i.days
+    i.weeks
 

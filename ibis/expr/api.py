@@ -2027,8 +2027,8 @@ _timestamp_value_methods = dict(
     __add__=_timestamp_add,
     add=_timestamp_add,
 
-    __radd__=_timestamp_add,
-    radd=_timestamp_add,
+    # __radd__=_timestamp_add,
+    # radd=_timestamp_add,
 )
 
 
@@ -2060,27 +2060,31 @@ def _convert_unit(value, unit, to):
     units = ('w', 'd', 'h', 'm', 's', 'ms', 'us', 'ns')
 
     i, j = units.index(unit), units.index(to)
+    factor = functools.reduce(operator.mul, factors[i:j], 1)
+
     if i < j:
-        return functools.reduce(operator.mul, factors[i:j], value)
+        return value * factor
     elif i > j:
-        return functools.reduce(operator.truediv, factors[j:i], value)
+        return value // factor
     else:
         return value
 
 
 def _to_unit(arg, target_unit):
-    # print(arg)
-    return arg * _convert_unit(1, arg.meta.unit, target_unit)
+    expr = _convert_unit(arg, arg.meta.unit, target_unit)
+    expr.set_unit(target_unit)
+    return expr
 
 
 def _interval_property(target_unit):
     return property(functools.partial(_to_unit, target_unit=target_unit))
 
 
-_interval_mul = _binop_expr('__mul__', _ops.IntervalMultiply)
-_interval_rmul = _binop_expr('__rmul__', _ops.IntervalMultiply)
 _interval_add = _binop_expr('__add__', _ops.IntervalAdd)
 _interval_radd = _binop_expr('__radd__', _ops.IntervalAdd)
+_interval_mul = _binop_expr('__mul__', _ops.IntervalMultiply)
+_interval_rmul = _binop_expr('__rmul__', _ops.IntervalMultiply)
+_interval_floordiv = _binop_expr('__floordiv__', _ops.IntervalFloorDivide)
 
 _interval_value_methods = dict(
     to_unit=_to_unit,
@@ -2103,7 +2107,10 @@ _interval_value_methods = dict(
     mul = _interval_mul,
 
     __rmul__ = _interval_rmul,
-    rmul = _interval_rmul
+    rmul = _interval_rmul,
+
+    __floordiv__ = _interval_floordiv,
+    floordiv = _interval_floordiv
 )
 
 _add_methods(IntervalValue, _interval_value_methods)

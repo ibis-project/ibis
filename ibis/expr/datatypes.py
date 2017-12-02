@@ -1093,6 +1093,7 @@ class TypeParser(object):
 
         interval : "interval"
                  | "interval" "(" unit ")"
+                 | "interval" "<" type ">" "(" unit ")"
 
         decimal : "decimal"
                 | "decimal" "(" integer "," integer ")"

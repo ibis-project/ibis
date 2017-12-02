@@ -715,17 +715,20 @@ def time(**arg_kwds):
 
 class Interval(ValueTyped):
 
-    def __init__(self, units, **arg_kwds):
+    def __init__(self, units=None, **arg_kwds):
         super(Interval, self).__init__(
             ir.IntervalValue, 'not an interval', **arg_kwds
         )
-        self.allowed_units = frozenset(units)
+        if units is None:
+            self.allowed_units = None
+        else:
+            self.allowed_units = frozenset(units)
 
     def _validate(self, args, i):
         arg = super(Interval, self)._validate(args, i)
 
         unit = arg.type().unit
-        if unit not in self.allowed_units:
+        if self.allowed_units is not None and unit not in self.allowed_units:
             msg = 'Interval unit `{}` is not among the allowed ones {}'
             raise IbisTypeError(msg.format(unit, self.allowed_units))
 
