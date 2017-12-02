@@ -493,14 +493,34 @@ def _boolean_literal_format(expr):
     return 'TRUE' if value else 'FALSE'
 
 
+def _string_literal_format(expr):
+    value = expr.op().value
+    return "'{}'".format(value.replace("'", "\\'"))
+
+
 def _number_literal_format(expr):
     value = expr.op().value
     return repr(value)
 
 
-def _string_literal_format(expr):
+def _interval_literal_format(expr):
+    units = {
+        'Y': 'years',
+        'M': 'months',
+        'w': 'weeks',
+        'd': 'days',
+        'h': 'hours',
+        'm': 'minutes',
+        's': 'seconds',
+        'ms': 'milliseconds',
+        'us': 'microseconds',
+        'ns': 'nanoseconds'
+    }
+
+    unit = expr.get_unit()
     value = expr.op().value
-    return "'{}'".format(value.replace("'", "\\'"))
+
+    return 'INTERVAL {} {}'.format(value, units[unit])
 
 
 def _timestamp_literal_format(expr):
@@ -594,30 +614,13 @@ def _table_array_view(translator, expr):
 # ---------------------------------------------------------------------
 # Timestamp arithmetic and other functions
 
-def _timestamp_delta(translator, expr):
+def _timestamp_add(translator, expr):
     op = expr.op()
     arg, offset = op.args
     formatted_arg = translator.translate(arg)
-    return _timestamp_format_offset(offset, formatted_arg)
+    formatted_offset = translator.translate(offset)
 
-
-_impala_delta_functions = {
-    # tempo.Year: 'years_add',
-    # tempo.Month: 'months_add',
-    # tempo.Week: 'weeks_add',
-    # tempo.Day: 'days_add',
-    # tempo.Hour: 'hours_add',
-    # tempo.Minute: 'minutes_add',
-    # tempo.Second: 'seconds_add',
-    # tempo.Millisecond: 'milliseconds_add',
-    # tempo.Microsecond: 'microseconds_add',
-    # tempo.Nanosecond: 'nanoseconds_add'
-}
-
-
-def _timestamp_format_offset(offset, arg):
-    f = _impala_delta_functions[type(offset)]
-    return '{}({}, {})'.format(f, arg, offset.n)
+    return 'date_add({}, {})'.format(formatted_arg, formatted_offset)
 
 
 # ---------------------------------------------------------------------
@@ -847,6 +850,8 @@ def _literal(translator, expr):
         typeclass = 'number'
     elif isinstance(expr, ir.TimestampValue):
         typeclass = 'timestamp'
+    elif isinstance(expr, ir.IntervalValue):
+        typeclass = 'interval'
     else:
         raise NotImplementedError
 
@@ -861,6 +866,7 @@ _literal_formatters = {
     'boolean': _boolean_literal_format,
     'number': _number_literal_format,
     'string': _string_literal_format,
+    'interval': _interval_literal_format,
     'timestamp': _timestamp_literal_format
 }
 
@@ -1028,7 +1034,7 @@ _operation_registry = {
 
     ops.TableArrayView: _table_array_view,
 
-    ops.TimestampDelta: _timestamp_delta,
+    ops.TimestampAdd: _timestamp_add,
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,

@@ -1239,6 +1239,9 @@ class IntervalValue(ParameterizedValue):
     def set_unit(self, unit):
         self.meta.unit = unit
 
+    def get_unit(self):
+        return self.meta.unit
+
     def _can_compare(self, other):
         return isinstance(other, IntervalValue)
 
