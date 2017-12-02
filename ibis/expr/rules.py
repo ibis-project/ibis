@@ -89,6 +89,14 @@ class BinaryPromoter(object):
 
 
 class IntervalPromoter(BinaryPromoter):
+    """Infers the output type of the binary interval operation
+
+    This is a slightly modified version of BinaryPromoter, it converts
+    back and forth between the interval and its innner value.
+
+    This trick reuses the numeric type promotion logics.
+    Any non-integer output type raises a TypeError.
+    """
 
     def __init__(self, left, right, op):
         left_type = left.type()
