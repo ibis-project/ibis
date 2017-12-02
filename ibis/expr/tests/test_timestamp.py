@@ -86,10 +86,9 @@ def test_integer_to_timestamp():
     assert False
 
 
-# Timedelta conflict
-# def test_comparison_timestamp(alltypes):
-#     expr = alltypes.i > (alltypes.i.min() + ibis.day(3))
-#     assert isinstance(expr, ir.BooleanColumn)
+def test_comparison_timestamp(alltypes):
+    expr = alltypes.i > (alltypes.i.min() + ibis.day(3))
+    assert isinstance(expr, ir.BooleanColumn)
 
 
 def test_comparisons_string(alltypes):

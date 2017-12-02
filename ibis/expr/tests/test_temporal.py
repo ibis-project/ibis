@@ -34,6 +34,8 @@ import ibis.expr.api as api
 ])
 def test_upconvert(interval, unit, expected):
     result = interval.to_unit(unit)
+
+    assert isinstance(result, ir.IntervalScalar)
     assert result.type().unit == expected.type().unit
 
 
@@ -48,6 +50,7 @@ def test_upconvert(interval, unit, expected):
     (api.nanosecond(), 's'),
 ])
 def test_cannot_upconvert(delta, target):
+    assert isinstance(delta, ir.IntervalScalar)
     assert delta.to_unit(target).type().unit == target
 
 

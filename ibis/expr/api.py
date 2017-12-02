@@ -49,9 +49,6 @@ from ibis.expr.types import (Expr,  # noqa
                              CategoryValue, unnamed, as_value_expr, literal,
                              param, null, sequence)
 
-# __all__ is defined
-# from ibis.expr.temporal import *  # noqa
-
 import ibis.common as _com
 from ibis.compat import PY2, to_time, to_date
 from ibis.expr.analytics import bucket, histogram
@@ -61,7 +58,6 @@ import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
 import ibis.expr.types as ir
 import ibis.expr.operations as _ops
-# import ibis.expr.temporal as _T
 import ibis.util as util
 
 
@@ -80,7 +76,6 @@ __all__ = [
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window',
 ]
-# __all__ += _T.__all__
 
 
 NA = null()
@@ -2026,9 +2021,6 @@ _timestamp_value_methods = dict(
 
     __add__=_timestamp_add,
     add=_timestamp_add,
-
-    # __radd__=_timestamp_add,
-    # radd=_timestamp_add,
 )
 
 
