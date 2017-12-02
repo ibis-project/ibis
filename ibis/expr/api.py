@@ -274,43 +274,46 @@ def interval(value=None, years=None, months=None, weeks=None, days=None,
     return ir.literal(value, type=type).op().to_expr()
 
 
-def nanosecond(value):
+timedelta = interval  # backward compatibility
+
+
+def nanosecond(value=1):
     return interval(nanoseconds=value)
 
 
-def microsecond(value):
+def microsecond(value=1):
     return interval(microseconds=value)
 
 
-def millisecond(value):
+def millisecond(value=1):
     return interval(milliseconds=value)
 
 
-def second(value):
+def second(value=1):
     return interval(seconds=value)
 
 
-def minute(value):
+def minute(value=1):
     return interval(minutes=value)
 
 
-def hour(value):
+def hour(value=1):
     return interval(hours=value)
 
 
-def day(value):
+def day(value=1):
     return interval(days=value)
 
 
-def week(value):
+def week(value=1):
     return interval(weeks=value)
 
 
-def month(value):
+def month(value=1):
     return interval(months=value)
 
 
-def year(value):
+def year(value=1):
     return interval(years=value)
 
 
@@ -2076,6 +2079,8 @@ def _interval_property(target_unit):
 
 _interval_mul = _binop_expr('__mul__', _ops.IntervalMultiply)
 _interval_rmul = _binop_expr('__rmul__', _ops.IntervalMultiply)
+_interval_add = _binop_expr('__add__', _ops.IntervalAdd)
+_interval_radd = _binop_expr('__radd__', _ops.IntervalAdd)
 
 _interval_value_methods = dict(
     to_unit=_to_unit,
@@ -2087,6 +2092,12 @@ _interval_value_methods = dict(
     milliseconds=_interval_property('ms'),
     microseconds=_interval_property('us'),
     nanoseconds=_interval_property('ns'),
+
+    __add__ = _interval_add,
+    add = _interval_add,
+
+    __radd__ = _interval_radd,
+    radd = _interval_radd,
 
     __mul__ = _interval_mul,
     mul = _interval_mul,

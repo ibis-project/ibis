@@ -602,7 +602,7 @@ class Interval(DataType):
             value_type = validate_type(value_type)
 
         if not isinstance(value_type, Integer):
-            raise TypeError("Interval's value_type must be an Integer subtype")
+            raise TypeError("Interval's inner type must be an Integer subtype")
 
         self.unit = unit
         self.value_type = value_type

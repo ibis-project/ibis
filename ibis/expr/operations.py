@@ -2432,12 +2432,6 @@ class Hash(ValueOp):
     output_type = rules.shape_like_arg(0, 'int64')
 
 
-class TimestampDelta(ValueOp):
-
-    input_type = [rules.timestamp, rules.timedelta(name='offset')]
-    output_type = rules.shape_like_arg(0, 'timestamp')
-
-
 class TemporalBinaryOp(BinaryOp):
 
     def output_type(self):
@@ -2509,7 +2503,25 @@ class TimestampSubtract(TimestampBinaryOp):
     pass
 
 
-# class IntervalAdd(Multiply):
+TimestampDelta = TimestampSubtract
+
+
+class IntervalAdd(Add):
+
+    input_type = [
+        rules.interval(units='YMwdhms'),
+        rules.interval(units='YMwdhms')
+    ]
+
+    def output_type(self):
+        left, right = self.args
+
+        if left.type().unit != right.type().unit:
+            # should it support to the opposite direction too?
+            right = right.to_unit(left.type().unit)
+
+        value_type = self.args[0].type()
+        return rules.shape_like(self.args[0], value_type)
 
 
 class IntervalMultiply(Multiply):

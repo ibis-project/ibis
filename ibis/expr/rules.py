@@ -705,11 +705,6 @@ def time(**arg_kwds):
     return ValueTyped(ir.TimeValue, 'not time', **arg_kwds)
 
 
-def timedelta(**arg_kwds):
-    from ibis.expr.temporal import Timedelta
-    return AnyTyped(Timedelta, 'not a timedelta', **arg_kwds)
-
-
 class Interval(ValueTyped):
 
     def __init__(self, units, **arg_kwds):

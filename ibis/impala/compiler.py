@@ -20,7 +20,6 @@ import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-import ibis.expr.temporal as tempo
 
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
@@ -603,16 +602,16 @@ def _timestamp_delta(translator, expr):
 
 
 _impala_delta_functions = {
-    tempo.Year: 'years_add',
-    tempo.Month: 'months_add',
-    tempo.Week: 'weeks_add',
-    tempo.Day: 'days_add',
-    tempo.Hour: 'hours_add',
-    tempo.Minute: 'minutes_add',
-    tempo.Second: 'seconds_add',
-    tempo.Millisecond: 'milliseconds_add',
-    tempo.Microsecond: 'microseconds_add',
-    tempo.Nanosecond: 'nanoseconds_add'
+    # tempo.Year: 'years_add',
+    # tempo.Month: 'months_add',
+    # tempo.Week: 'weeks_add',
+    # tempo.Day: 'days_add',
+    # tempo.Hour: 'hours_add',
+    # tempo.Minute: 'minutes_add',
+    # tempo.Second: 'seconds_add',
+    # tempo.Millisecond: 'milliseconds_add',
+    # tempo.Microsecond: 'microseconds_add',
+    # tempo.Nanosecond: 'nanoseconds_add'
 }
 
 
