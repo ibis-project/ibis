@@ -2089,20 +2089,20 @@ _interval_value_methods = dict(
     microseconds=_interval_property('us'),
     nanoseconds=_interval_property('ns'),
 
-    __add__ = _interval_add,
-    add = _interval_add,
+    __add__=_interval_add,
+    add=_interval_add,
 
-    __radd__ = _interval_radd,
-    radd = _interval_radd,
+    __radd__=_interval_radd,
+    radd=_interval_radd,
 
-    __mul__ = _interval_mul,
-    mul = _interval_mul,
+    __mul__=_interval_mul,
+    mul=_interval_mul,
 
-    __rmul__ = _interval_rmul,
-    rmul = _interval_rmul,
+    __rmul__=_interval_rmul,
+    rmul=_interval_rmul,
 
-    __floordiv__ = _interval_floordiv,
-    floordiv = _interval_floordiv
+    __floordiv__=_interval_floordiv,
+    floordiv=_interval_floordiv
 )
 
 _add_methods(IntervalValue, _interval_value_methods)

@@ -977,7 +977,6 @@ _TYPE_RULES = OrderedDict(
 )
 
 
-
 _TYPE_KEYS = tuple(_TYPE_RULES.keys())
 _TYPE_PATTERN = re.compile('|'.join(_TYPE_KEYS), flags=re.IGNORECASE)
 

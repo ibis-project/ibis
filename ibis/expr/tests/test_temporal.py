@@ -15,7 +15,7 @@
 import pytest
 import datetime
 
-from ibis.common import IbisError, IbisTypeError
+from ibis.common import IbisTypeError
 from ibis.compat import PY2
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -189,7 +189,6 @@ def test_interval(literal):
     assert isinstance(literal, ir.IntervalScalar)
 
 
-
 @pytest.mark.parametrize(('expr', 'expected'), [
     (api.interval(weeks=3), "Literal[interval<int8>(unit='w')]\n  3"),
     (api.interval(months=3), "Literal[interval<int8>(unit='M')]\n  3"),
@@ -287,4 +286,3 @@ def test_interval_properties():
     i.hours
     i.days
     i.weeks
-
