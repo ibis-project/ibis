@@ -472,7 +472,7 @@ def _binop_expr(name, klass):
             other = as_value_expr(other)
             op = klass(self, other)
             return op.to_expr()
-        except NotImplementedError:
+        except (_com.IbisTypeError, NotImplementedError):
             return NotImplemented
 
     f.__name__ = name
@@ -2003,6 +2003,7 @@ def _timestamp_time(arg):
 
 _timestamp_sub = _binop_expr('__sub__', _ops.TimestampSubtract)
 _timestamp_add = _binop_expr('__add__', _ops.TimestampAdd)
+_timestamp_radd = _binop_expr('__radd__', _ops.TimestampAdd)
 
 _timestamp_value_methods = dict(
     strftime=_timestamp_strftime,
@@ -2021,6 +2022,9 @@ _timestamp_value_methods = dict(
 
     __add__=_timestamp_add,
     add=_timestamp_add,
+
+    __radd__=_timestamp_radd,
+    radd=_timestamp_radd
 )
 
 
@@ -2063,9 +2067,10 @@ def _convert_unit(value, unit, to):
 
 
 def _to_unit(arg, target_unit):
-    expr = _convert_unit(arg, arg.meta.unit, target_unit)
-    expr.set_unit(target_unit)
-    return expr
+    if arg.meta.unit != target_unit:
+        arg = _convert_unit(arg, arg.meta.unit, target_unit)
+        arg.set_unit(target_unit)
+    return arg
 
 
 def _interval_property(target_unit):

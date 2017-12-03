@@ -135,43 +135,71 @@ def test_combine_with_different_kinds(a, b, unit):
     assert (a + b).type().unit == unit
 
 
-# @pytest.mark.parametrize(('case', 'expected'), [
-#     (api.interval(weeks=2), api.week(2)),
-#     (api.interval(days=3), api.day(3)),
-#     (api.interval(hours=4), api.hour(4)),
-#     (api.interval(minutes=5), api.minute(5)),
-#     (api.interval(seconds=6), api.second(6)),
-#     (api.interval(milliseconds=7), api.millisecond(7)),
-#     (api.interval(microseconds=8), api.microsecond(8)),
-#     (api.interval(nanoseconds=9), api.nanosecond(9)),
-# ])
-# def test_timedelta_generic_api(case, expected):
-#     assert case.equals(expected)
+@pytest.mark.parametrize(('case', 'expected'), [
+    (api.interval(weeks=2), api.week(2)),
+    (api.interval(days=3), api.day(3)),
+    (api.interval(hours=4), api.hour(4)),
+    (api.interval(minutes=5), api.minute(5)),
+    (api.interval(seconds=6), api.second(6)),
+    (api.interval(milliseconds=7), api.millisecond(7)),
+    (api.interval(microseconds=8), api.microsecond(8)),
+    (api.interval(nanoseconds=9), api.nanosecond(9)),
+])
+def test_timedelta_generic_api(case, expected):
+    assert case.equals(expected)
 
 
-# def test_offset_timestamp_expr(table):
-#     c = table.i
-#     x = api.timedelta(days=1)
+def test_interval_time_expr(table):
+    c = table.k
+    x = api.timedelta(hours=1)
 
-#     expr = x + c
-#     assert isinstance(expr, ir.TimestampColumn)
-#     assert isinstance(expr.op(), ops.TimestampDelta)
+    expr = x + c
+    assert isinstance(expr, ir.TimeColumn)
+    assert isinstance(expr.op(), ops.TimeAdd)
 
-#     # test radd
-#     expr = c + x
-#     assert isinstance(expr, ir.TimestampColumn)
-#     assert isinstance(expr.op(), ops.TimestampDelta)
-
-
-# @pytest.mark.xfail(raises=AssertionError, reason='NYI')
-# def test_compound_offset():
-#     # These are not yet allowed (e.g. 1 month + 1 hour)
-#     assert False
+    # test radd
+    expr = c + x
+    assert isinstance(expr, ir.TimeColumn)
+    assert isinstance(expr.op(), ops.TimeAdd)
 
 
-# @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-# def test_offset_months():
-#     assert False
+def test_interval_date_expr(table):
+    c = table.j
+    x = api.timedelta(days=1)
+
+    expr = x + c
+    assert isinstance(expr, ir.DateColumn)
+    assert isinstance(expr.op(), ops.DateAdd)
+
+    # test radd
+    expr = c + x
+    assert isinstance(expr, ir.DateColumn)
+    assert isinstance(expr.op(), ops.DateAdd)
+
+
+def test_interval_timestamp_expr(table):
+    c = table.i
+    x = api.timedelta(seconds=1)
+
+    expr = x + c
+    assert isinstance(expr, ir.TimestampColumn)
+    assert isinstance(expr.op(), ops.TimestampAdd)
+
+    # test radd
+    expr = c + x
+    assert isinstance(expr, ir.TimestampColumn)
+    assert isinstance(expr.op(), ops.TimestampAdd)
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYI')
+def test_compound_offset():
+    # These are not yet allowed (e.g. 1 month + 1 hour)
+    assert False
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_offset_months():
+    assert False
 
 
 @pytest.mark.parametrize('literal', [
@@ -269,20 +297,22 @@ def test_invalid_date_arithmetics():
     i3 = api.interval(hours=1)
 
     for i in [i1, i2, i3]:
-        with pytest.raises(IbisTypeError):
+        with pytest.raises(TypeError):
             d1 - i
-        with pytest.raises(IbisTypeError):
+        with pytest.raises(TypeError):
             d1 + i
 
 
-def test_interval_properties():
+@pytest.mark.parametrize(('prop', 'expected_unit'), [
+    ('nanoseconds', 'ns'),
+    ('microseconds', 'us'),
+    ('milliseconds', 'ms'),
+    ('seconds', 's'),
+    ('minutes', 'm'),
+    ('hours', 'h'),
+    ('days', 'd'),
+    ('weeks', 'w')
+])
+def test_interval_properties(prop, expected_unit):
     i = api.interval(seconds=3600)
-
-    i.nanoseconds
-    i.microseconds
-    i.milliseconds
-    i.seconds
-    i.minutes
-    i.hours
-    i.days
-    i.weeks
+    assert getattr(i, prop).type().unit == expected_unit

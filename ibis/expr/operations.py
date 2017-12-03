@@ -2507,12 +2507,9 @@ class IntervalAdd(Add):
     def output_type(self):
         left, right = self.args
 
-        if left.type().unit != right.type().unit:
-            # should it support to the opposite direction too?
-            right = right.to_unit(left.type().unit)
-
-        value_type = self.args[0].type()
-        return rules.shape_like(self.args[0], value_type)
+        # should upconvert to the smaller unit?
+        # value_type = left.to_unit(right.type().unit).type()
+        return rules.shape_like(left, left.type())
 
 
 class IntervalMultiply(Multiply):
