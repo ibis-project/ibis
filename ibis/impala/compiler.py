@@ -621,7 +621,7 @@ def _timestamp_op(func):
         formatted_arg = translator.translate(arg)
         formatted_offset = translator.translate(offset)
 
-        if isinstance(arg, TimestampScalar):
+        if isinstance(arg, ir.TimestampScalar):
             formatted_arg = 'cast({} as timestamp)'.format(formatted_arg)
 
         return '{}({}, {})'.format(func, formatted_arg, formatted_offset)
