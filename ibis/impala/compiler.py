@@ -620,18 +620,13 @@ def _timestamp_op(func):
         arg, offset = op.args
         formatted_arg = translator.translate(arg)
         formatted_offset = translator.translate(offset)
+
+        if isinstance(arg, TimestampScalar):
+            formatted_arg = 'cast({} as timestamp)'.format(formatted_arg)
+
         return '{}({}, {})'.format(func, formatted_arg, formatted_offset)
 
     return _formatter
-
-
-def _timestamp_add(translator, expr):
-    op = expr.op()
-    arg, offset = op.args
-    formatted_arg = translator.translate(arg)
-    formatted_offset = translator.translate(offset)
-
-    return 'date_add({}, {})'.format(formatted_arg, formatted_offset)
 
 
 # ---------------------------------------------------------------------
