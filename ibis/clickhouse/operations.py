@@ -392,6 +392,7 @@ def _timestamp_add(translator, expr):
 
     arg_ = translator.translate(arg)
     interval_ = translator.translate(interval)
+
     return '{0} + {1}'.format(arg_, interval_)
 
 

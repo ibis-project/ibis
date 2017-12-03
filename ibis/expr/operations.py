@@ -2432,7 +2432,7 @@ class Hash(ValueOp):
     output_type = rules.shape_like_arg(0, 'int64')
 
 
-class TemporalBinaryOp(BinaryOp):
+class TemporalSubtract(BinaryOp):
 
     def output_type(self):
         if self.args[0].type() == self.args[1].type():
@@ -2443,7 +2443,7 @@ class TemporalBinaryOp(BinaryOp):
         return rules.shape_like(self.args[0], value_type)
 
 
-class DateBinaryOp(TemporalBinaryOp):
+class DateSubtract(TemporalSubtract):
 
     input_type = [
         rules.date,
@@ -2455,7 +2455,7 @@ class DateBinaryOp(TemporalBinaryOp):
     output_unit = 'd'
 
 
-class TimeBinaryOp(TemporalBinaryOp):
+class TimeSubtract(TemporalSubtract):
 
     input_type = [
         rules.time,
@@ -2467,7 +2467,7 @@ class TimeBinaryOp(TemporalBinaryOp):
     output_unit = 's'
 
 
-class TimestampBinaryOp(TemporalBinaryOp):
+class TimestampSubtract(TemporalSubtract):
 
     input_type = [
         rules.timestamp,
@@ -2479,31 +2479,25 @@ class TimestampBinaryOp(TemporalBinaryOp):
     output_unit = 's'
 
 
-class DateAdd(DateBinaryOp):
-    pass
-
-
-class DateSubtract(DateBinaryOp):
-    pass
-
-
-class TimeAdd(TimeBinaryOp):
-    pass
-
-
-class TimeSubtract(TimeBinaryOp):
-    pass
-
-
-class TimestampAdd(TimestampBinaryOp):
-    pass
-
-
-class TimestampSubtract(TimestampBinaryOp):
-    pass
-
-
 TimestampDelta = TimestampSubtract
+
+
+class DateAdd(Add):
+
+    input_type = [rules.date, rules.interval(units='YMwd')]
+    output_type = rules.shape_like_arg(0, 'date')
+
+
+class TimeAdd(Add):
+
+    input_type = [rules.time, rules.interval(units='hms')]
+    output_type = rules.shape_like_arg(0, 'time')
+
+
+class TimestampAdd(Add):
+
+    input_type = [rules.timestamp, rules.interval]
+    output_type = rules.shape_like_arg(0, 'timestamp')
 
 
 class IntervalAdd(Add):
