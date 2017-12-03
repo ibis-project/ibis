@@ -1059,8 +1059,8 @@ WHERE `a` > 0 AND
         expected = """\
 SELECT count(*) AS `count`
 FROM functional_alltypes
-WHERE `timestamp_col` < date_add('2010-01-01 00:00:00', INTERVAL 3 months) AND
-      `timestamp_col` < date_add(now(), INTERVAL 10 days)"""
+WHERE `timestamp_col` < date_add('2010-01-01 00:00:00', INTERVAL 3 MONTHS) AND
+      `timestamp_col` < date_add(now(), INTERVAL 10 DAYS)"""
         assert result == expected
 
     def test_bug_duplicated_where(self):
