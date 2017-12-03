@@ -261,6 +261,23 @@ def _value_list(translator, expr):
     return '({0})'.format(', '.join(values_))
 
 
+def _interval_format(translator, expr):
+    units = {
+        'Y': 'year',
+        'M': 'month',
+        'w': 'week',
+        'd': 'day',
+        'h': 'hour',
+        'm': 'minute',
+        's': 'second'
+    }
+
+    unit = expr.get_unit()
+    value = expr.op().value
+
+    return 'INTERVAL {} {}'.format(value, units[unit])
+
+
 def literal(translator, expr):
     value = expr.op().value
     if isinstance(expr, ir.BooleanValue):
@@ -269,6 +286,8 @@ def literal(translator, expr):
         return "'{0!s}'".format(value.replace("'", "\\'"))
     elif isinstance(expr, ir.NumericValue):
         return repr(value)
+    elif isinstance(expr, ir.IntervalValue):
+        return _interval_format(translator, expr)
     elif isinstance(expr, ir.TimestampValue):
         if isinstance(value, datetime):
             if value.microsecond != 0:
@@ -367,19 +386,13 @@ def _timestamp_from_unix(translator, expr):
     return _call(translator, 'toDateTime', arg)
 
 
-def _timestamp_delta(translator, expr):
+def _timestamp_add(translator, expr):
     op = expr.op()
-    arg, offset = op.args
-
-    if isinstance(arg, ir.TimestampValue):
-        offset_ = offset.to_unit('s').n
-    elif isinstance(arg, ir.DateValue):
-        offset_ = offset.to_unit('d').n
-    else:
-        raise com.TranslationError('Unsupported timedelta operation')
+    arg, interval = op.args
 
     arg_ = translator.translate(arg)
-    return '{0} + {1}'.format(arg_, offset_)
+    interval_ = translator.translate(interval)
+    return '{0} + {1}'.format(arg_, interval_)
 
 
 def _truncate(translator, expr):
@@ -569,7 +582,7 @@ _operation_registry = {
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
 
-    ops.TimestampDelta: _timestamp_delta,
+    ops.TimestampAdd: _timestamp_add,
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,
