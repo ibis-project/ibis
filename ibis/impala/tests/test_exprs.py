@@ -275,8 +275,8 @@ FROM alltypes"""
         for unit in units:
             K = 5
             offset = getattr(ibis, unit)(K)
-            add_template = 'date_add({1}, INTERVAL {2} {0}s)'
-            sub_template = 'date_sub({1}, INTERVAL {2} {0}s)'
+            add_template = 'date_add({1}, INTERVAL {2} {0}S)'
+            sub_template = 'date_sub({1}, INTERVAL {2} {0}S)'
 
             cases.append((t + offset, add_template.format(unit.upper(), f, K)))
             cases.append((t - offset, sub_template.format(unit.upper(), f, K)))
