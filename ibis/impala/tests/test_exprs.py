@@ -264,24 +264,24 @@ FROM alltypes"""
         ]
         self._check_expr_cases(cases)
 
-    # def test_timestamp_deltas(self):
-    #     units = ['year', 'month', 'week', 'day',
-    #              'hour', 'minute', 'second',
-    #              'millisecond', 'microsecond']
+    def test_timestamp_deltas(self):
+        units = ['year', 'month', 'week', 'day',
+                 'hour', 'minute', 'second']
 
-    #     t = self.table.i
-    #     f = '`i`'
+        t = self.table.i
+        f = '`i`'
 
-    #     cases = []
-    #     for unit in units:
-    #         K = 5
-    #         offset = getattr(ibis, unit)(K)
-    #         template = '{0}s_add({1}, {2})'
+        cases = []
+        for unit in units:
+            K = 5
+            offset = getattr(ibis, unit)(K)
+            add_template = 'date_add({1}, INTERVAL {2} {0}s)'
+            sub_template = 'date_sub({1}, INTERVAL {2} {0}s)'
 
-    #         cases.append((t + offset, template.format(unit, f, K)))
-    #         cases.append((t - offset, template.format(unit, f, -K)))
+            cases.append((t + offset, add_template.format(unit, f, K)))
+            cases.append((t - offset, sub_template.format(unit, f, K)))
 
-    #     self._check_expr_cases(cases)
+        self._check_expr_cases(cases)
 
     def test_timestamp_literals(self):
         from pandas import Timestamp
@@ -1369,8 +1369,8 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
 
             dc.fillna(0),
 
-            # ts < (ibis.now() + ibis.month(3)),
-            # ts < (ibis.timestamp('2005-01-01') + ibis.month(3)),
+            ts < (ibis.now() + ibis.month(3)),
+            ts < (ibis.timestamp('2005-01-01') + ibis.month(3)),
 
             # hashing
             dc.hash(),
@@ -1393,9 +1393,9 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             if hasattr(ts, field):
                 exprs.append(getattr(ts, field)())
 
-            # offset = getattr(ibis, field)(2)
-            # exprs.append(ts + offset)
-            # exprs.append(ts - offset)
+            offset = getattr(ibis, field)(2)
+            exprs.append(ts + offset)
+            exprs.append(ts - offset)
 
         proj_exprs = [expr.name('e%d' % i)
                       for i, expr in enumerate(exprs)]
@@ -1403,16 +1403,16 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
         projection = table[proj_exprs].limit(10)
         projection.execute()
 
-    # def test_timestamp_scalar_in_filter(self):
-    #     # #310
-    #     table = self.alltypes
+    def test_timestamp_scalar_in_filter(self):
+        # #310
+        table = self.alltypes
 
-    #     expr = (table.filter([
-    #         table.timestamp_col <
-    #         (ibis.timestamp('2010-01-01') + ibis.month(3)),
-    #         table.timestamp_col < (ibis.now() + ibis.day(10))
-    #     ]).count())
-    #     expr.execute()
+        expr = (table.filter([
+            table.timestamp_col <
+            (ibis.timestamp('2010-01-01') + ibis.month(3)),
+            table.timestamp_col < (ibis.now() + ibis.day(10))
+        ]).count())
+        expr.execute()
 
     def test_aggregations(self):
         table = self.alltypes.limit(100)

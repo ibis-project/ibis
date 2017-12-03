@@ -614,6 +614,17 @@ def _table_array_view(translator, expr):
 # ---------------------------------------------------------------------
 # Timestamp arithmetic and other functions
 
+def _timestamp_op(func):
+    def _formatter(translator, expr):
+        op = expr.op()
+        arg, offset = op.args
+        formatted_arg = translator.translate(arg)
+        formatted_offset = translator.translate(offset)
+        return '{}({}, {})'.format(func, formatted_arg, formatted_offset)
+
+    return _formatter
+
+
 def _timestamp_add(translator, expr):
     op = expr.op()
     arg, offset = op.args
@@ -1034,7 +1045,8 @@ _operation_registry = {
 
     ops.TableArrayView: _table_array_view,
 
-    ops.TimestampAdd: _timestamp_add,
+    ops.TimestampAdd: _timestamp_op('date_add'),
+    ops.TimestampSubtract: _timestamp_op('date_sub'),
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,
