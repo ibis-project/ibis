@@ -1,21 +1,6 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import pytest
 import datetime
 
-from ibis.common import IbisTypeError
 from ibis.compat import PY2
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -54,76 +39,68 @@ def test_cannot_upconvert(delta, target):
     assert delta.to_unit(target).type().unit == target
 
 
-# def test_multiply():
-#     offset = api.day(2)
-
-#     assert (offset * 2).equals(api.day(4))
-#     assert (offset * (-2)).equals(api.day(-4))
-#     assert (3 * offset).equals(api.day(6))
-#     assert ((-3) * offset).equals(api.day(-6))
-
-
-# def test_repr():
-#     assert repr(T.day()) == '<Timedelta: 1 day>'
-#     assert repr(T.day(2)) == '<Timedelta: 2 days>'
-#     assert repr(T.year()) == '<Timedelta: 1 year>'
-#     assert repr(T.month(2)) == '<Timedelta: 2 months>'
-#     assert repr(T.second(40)) == '<Timedelta: 40 seconds>'
-
-# @pytest.mark.parametrize(
-#     ('case', 'expected'),
-#     [
-#         (api.second(2).to_unit('s'), api.second(2)),
-#         (api.second(2).to_unit('ms'), api.millisecond(2 * 1000)),
-#         (api.second(2).to_unit('us'), api.microsecond(2 * 1000000)),
-#         (api.second(2).to_unit('ns'), api.nanosecond(2 * 1000000000)),
-
-#         (api.millisecond(2).to_unit('ms'), api.millisecond(2)),
-#         (api.millisecond(2).to_unit('us'), api.microsecond(2 * 1000)),
-#         (api.millisecond(2).to_unit('ns'), api.nanosecond(2 * 1000000)),
-
-#         (api.microsecond(2).to_unit('us'), api.microsecond(2)),
-#         (api.microsecond(2).to_unit('ns'), api.nanosecond(2 * 1000)),
-
-#         (api.nanosecond(2).to_unit('ns'), api.nanosecond(2)),
-#     ]
-# )
-# def test_downconvert_second_parts(case, expected):
-#     assert case.equals(expected)
+@pytest.mark.parametrize('expr', [
+    api.day(2) * 2,
+    api.day(2) * (-2),
+    3 * api.day(2),
+    (-3) * api.day(2)
+])
+def test_multiply(expr):
+    assert isinstance(expr, ir.IntervalScalar)
+    assert expr.get_unit() == 'd'
 
 
-# @pytest.mark.parametrize(
-#     ('case', 'expected'),
-#     [
-#         (api.hour(2).to_unit('h'), api.hour(2)),
-#         (api.hour(2).to_unit('m'), api.minute(2 * 60)),
-#         (api.hour(2).to_unit('s'), api.second(2 * 3600)),
-#         (api.hour(2).to_unit('ms'), api.millisecond(2 * 3600000)),
-#         (api.hour(2).to_unit('us'), api.microsecond(2 * 3600000000)),
-#         (api.hour(2).to_unit('ns'), api.nanosecond(2 * 3600000000000))
-#     ]
-# )
-# def test_downconvert_hours(case, expected):
-#     assert case.equals(expected)
+@pytest.mark.parametrize(('case', 'expected'), [
+    (api.second(2).to_unit('s'), api.second(2)),
+    (api.second(2).to_unit('ms'), api.millisecond(2 * 1000)),
+    (api.second(2).to_unit('us'), api.microsecond(2 * 1000000)),
+    (api.second(2).to_unit('ns'), api.nanosecond(2 * 1000000000)),
+
+    (api.millisecond(2).to_unit('ms'), api.millisecond(2)),
+    (api.millisecond(2).to_unit('us'), api.microsecond(2 * 1000)),
+    (api.millisecond(2).to_unit('ns'), api.nanosecond(2 * 1000000)),
+
+    (api.microsecond(2).to_unit('us'), api.microsecond(2)),
+    (api.microsecond(2).to_unit('ns'), api.nanosecond(2 * 1000)),
+
+    (api.nanosecond(2).to_unit('ns'), api.nanosecond(2)),
+])
+def test_downconvert_second_parts(case, expected):
+    assert isinstance(case, ir.IntervalScalar)
+    assert isinstance(expected, ir.IntervalScalar)
+    assert case.get_unit() == expected.get_unit()
 
 
-# @pytest.mark.parametrize(
-#     ('case', 'expected'),
-#     [
-#         (api.week(2).to_unit('d'), api.day(2 * 7)),
-#         (api.week(2).to_unit('h'), api.hour(2 * 7 * 24)),
+@pytest.mark.parametrize(('case', 'expected'), [
+    (api.hour(2).to_unit('h'), api.hour(2)),
+    (api.hour(2).to_unit('m'), api.minute(2 * 60)),
+    (api.hour(2).to_unit('s'), api.second(2 * 3600)),
+    (api.hour(2).to_unit('ms'), api.millisecond(2 * 3600000)),
+    (api.hour(2).to_unit('us'), api.microsecond(2 * 3600000000)),
+    (api.hour(2).to_unit('ns'), api.nanosecond(2 * 3600000000000))
+])
+def test_downconvert_hours(case, expected):
+    assert isinstance(case, ir.IntervalScalar)
+    assert isinstance(expected, ir.IntervalScalar)
+    assert case.get_unit() == expected.get_unit()
 
-#         (api.day(2).to_unit('d'), api.day(2)),
-#         (api.day(2).to_unit('h'), api.hour(2 * 24)),
-#         (api.day(2).to_unit('m'), api.minute(2 * 1440)),
-#         (api.day(2).to_unit('s'), api.second(2 * 86400)),
-#         (api.day(2).to_unit('ms'), api.millisecond(2 * 86400000)),
-#         (api.day(2).to_unit('us'), api.microsecond(2 * 86400000000)),
-#         (api.day(2).to_unit('ns'), api.nanosecond(2 * 86400000000000)),
-#     ]
-# )
-# def test_downconvert_day(case, expected):
-#     assert case.equals(expected)
+
+@pytest.mark.parametrize(('case', 'expected'), [
+    (api.week(2).to_unit('d'), api.day(2 * 7)),
+    (api.week(2).to_unit('h'), api.hour(2 * 7 * 24)),
+
+    (api.day(2).to_unit('d'), api.day(2)),
+    (api.day(2).to_unit('h'), api.hour(2 * 24)),
+    (api.day(2).to_unit('m'), api.minute(2 * 1440)),
+    (api.day(2).to_unit('s'), api.second(2 * 86400)),
+    (api.day(2).to_unit('ms'), api.millisecond(2 * 86400000)),
+    (api.day(2).to_unit('us'), api.microsecond(2 * 86400000000)),
+    (api.day(2).to_unit('ns'), api.nanosecond(2 * 86400000000000)),
+])
+def test_downconvert_day(case, expected):
+    assert isinstance(case, ir.IntervalScalar)
+    assert isinstance(expected, ir.IntervalScalar)
+    assert case.get_unit() == expected.get_unit()
 
 
 @pytest.mark.parametrize(('a', 'b', 'unit'), [
