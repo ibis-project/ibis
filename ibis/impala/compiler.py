@@ -520,7 +520,7 @@ def _interval_literal_format(expr):
     unit = expr.get_unit()
     value = expr.op().value
 
-    return 'INTERVAL {} {}'.format(value, units[unit])
+    return 'INTERVAL {} {}'.format(value, units[unit].upper())
 
 
 def _timestamp_literal_format(expr):
