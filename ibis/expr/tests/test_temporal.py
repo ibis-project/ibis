@@ -293,3 +293,19 @@ def test_invalid_date_arithmetics():
 def test_interval_properties(prop, expected_unit):
     i = api.interval(seconds=3600)
     assert getattr(i, prop).type().unit == expected_unit
+
+
+@pytest.mark.parametrize('column', [
+    'a', 'b', 'c', 'd'  # integer columns
+])
+@pytest.mark.parametrize('unit', [
+    'Y', 'M', 'd', 'w',
+    'h', 'm', 's', 'ms', 'us', 'ns'
+])
+def test_integer_to_interval(column, unit, table):
+    c = table[column]
+    i = c.to_interval(unit)
+    assert isinstance(i, ir.IntervalColumn)
+    assert i.type().value_type == c.type()
+    assert i.type().unit == unit
+

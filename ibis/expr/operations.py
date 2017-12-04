@@ -249,21 +249,6 @@ class NullIfZero(ValueOp):
     output_type = rules.type_of_arg(0)
 
 
-def _coalesce_upcast(self):
-    # TODO: how much validation is necessary that the call is valid and can
-    # succeed?
-    first_value = self.args[0]
-
-    if isinstance(first_value, ir.IntegerValue):
-        out_type = 'int64'
-    elif isinstance(first_value, ir.FloatingValue):
-        out_type = 'double'
-    else:
-        out_type = first_value.type()
-
-    return rules.shape_like_args(self.args, out_type)
-
-
 class CoalesceLike(ValueOp):
 
     # According to Impala documentation:
@@ -272,7 +257,20 @@ class CoalesceLike(ValueOp):
     # DOUBLE; use CAST() when inserting into a smaller numeric column
 
     input_type = rules.varargs(rules.value)
-    output_type = _coalesce_upcast
+
+    def output_type(self):
+        # TODO: how much validation is necessary that the call is valid and can
+        # succeed?
+        first_value = self.args[0]
+
+        if isinstance(first_value, ir.IntegerValue):
+            out_type = 'int64'
+        elif isinstance(first_value, ir.FloatingValue):
+            out_type = 'double'
+        else:
+            out_type = first_value.type()
+
+        return rules.shape_like_args(self.args, out_type)
 
 
 class Coalesce(CoalesceLike):
@@ -2449,7 +2447,7 @@ class DateSubtract(TemporalSubtract):
         rules.date,
         rules.one_of([
             rules.date,
-            rules.interval(units='YMwd')
+            rules.interval(units=['Y', 'M', 'w', 'd'])
         ])
     ]
     output_unit = 'd'
@@ -2461,7 +2459,7 @@ class TimeSubtract(TemporalSubtract):
         rules.time,
         rules.one_of([
             rules.time,
-            rules.interval(units='hms')
+            rules.interval(units=['h', 'm', 's'])
         ])
     ]
     output_unit = 's'
@@ -2473,7 +2471,7 @@ class TimestampSubtract(TemporalSubtract):
         rules.timestamp,
         rules.one_of([
             rules.timestamp,
-            rules.interval(units='YMwdhms')
+            rules.interval
         ])
     ]
     output_unit = 's'
@@ -2484,13 +2482,13 @@ TimestampDelta = TimestampSubtract
 
 class DateAdd(Add):
 
-    input_type = [rules.date, rules.interval(units='YMwd')]
+    input_type = [rules.date, rules.interval(units=['Y', 'M', 'w', 'd'])]
     output_type = rules.shape_like_arg(0, 'date')
 
 
 class TimeAdd(Add):
 
-    input_type = [rules.time, rules.interval(units='hms')]
+    input_type = [rules.time, rules.interval(units=['h', 'm', 's'])]
     output_type = rules.shape_like_arg(0, 'time')
 
 
@@ -2525,6 +2523,22 @@ class IntervalFloorDivide(FloorDivide):
 
     def output_type(self):
         return rules.shape_like(self.args[0],  self.args[0].type())
+
+
+class IntervalFromInteger(ValueOp):
+
+    input_type = [
+        rules.integer,
+        rules.string_options([
+            'Y', 'M', 'w', 'd',
+            'h', 'm', 's', 'ms', 'us', 'ns'
+        ], name='unit')
+    ]
+
+    def output_type(self):
+        arg, unit = self.args
+        type = dt.Interval(arg.type(), unit=unit)
+        return rules.shape_like(arg, type)
 
 
 class ArrayLength(UnaryOp):

@@ -1228,6 +1228,22 @@ def _integer_to_timestamp(arg, unit='s'):
     return op.to_expr()
 
 
+def _integer_to_interval(arg, unit='s'):
+    """
+    Convert integer interval with the same inner type
+
+    Parameters
+    ----------
+    unit : {'Y', 'M', 'w', 'd', 'h', 'm', s', 'ms', 'us', 'ns'}
+
+    Returns
+    -------
+    interval : interval value expression
+    """
+    op = _ops.IntervalFromInteger(arg, unit)
+    return op.to_expr()
+
+
 abs = _unary_op('abs', _ops.Abs)
 ceil = _unary_op('ceil', _ops.Ceil)
 exp = _unary_op('exp', _ops.Exp)
@@ -1313,6 +1329,7 @@ def convert_base(arg, from_base, to_base):
 
 _integer_value_methods = dict(
     to_timestamp=_integer_to_timestamp,
+    to_interval=_integer_to_interval,
     convert_base=convert_base
 )
 
