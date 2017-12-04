@@ -617,6 +617,11 @@ class Interval(DataType):
         return (self.unit == other.unit and
                 self.value_type.equals(other.value_type, cache=cache))
 
+    def can_implicit_cast(self, other):
+        if isinstance(other, Interval):
+            return self.value_type.can_implicit_cast(other.value_type)
+        return False
+
     def valid_literal(self, value):
         return isinstance(value, six.integer_types + (datetime.timedelta,))
 

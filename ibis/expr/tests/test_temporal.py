@@ -308,4 +308,3 @@ def test_integer_to_interval(column, unit, table):
     assert isinstance(i, ir.IntervalColumn)
     assert i.type().value_type == c.type()
     assert i.type().unit == unit
-
