@@ -517,7 +517,7 @@ def _interval_literal_format(expr):
         'ns': 'nanoseconds'
     }
 
-    unit = expr.get_unit()
+    unit = expr.unit
     value = expr.op().value
 
     return 'INTERVAL {} {}'.format(value, units[unit].upper())

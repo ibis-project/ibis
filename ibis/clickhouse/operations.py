@@ -272,7 +272,7 @@ def _interval_format(translator, expr):
         's': 'second'
     }
 
-    unit = expr.get_unit()
+    unit = expr.unit
     value = expr.op().value
 
     return 'INTERVAL {} {}'.format(value, units[unit])
