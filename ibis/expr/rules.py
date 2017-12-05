@@ -88,6 +88,28 @@ class BinaryPromoter(object):
             raise TypeError('String and non-string incompatible')
 
 
+class IntervalPromoter(BinaryPromoter):
+    """Infers the output type of the binary interval operation
+
+    This is a slightly modified version of BinaryPromoter, it converts
+    back and forth between the interval and its inner value.
+
+    This trick reuses the numeric type promotion logics.
+    Any non-integer output type raises a TypeError.
+    """
+
+    def __init__(self, left, right, op):
+        left_type = left.type()
+        value_type = shape_like(left, left_type.value_type)
+        self.unit = left_type.unit
+        super(IntervalPromoter, self).__init__(value_type(left), right, op)
+
+    def get_result(self):
+        promoted_value_type = self._get_type()
+        promoted_type = dt.Interval(self.unit, promoted_value_type)
+        return shape_like_args(self.args, promoted_type)
+
+
 def _decimal_promoted_type(args):
     max_precision = max_scale = ~sys.maxsize
     for arg in args:
@@ -452,24 +474,6 @@ def shape_like_arg(i, out_type):
     return output_type
 
 
-def numeric_highest_promote(i):
-
-    def output_type(self):
-        arg = self.args[i]
-
-        if isinstance(arg, ir.DecimalValue):
-            return arg._factory
-        elif isinstance(arg, ir.FloatingValue):
-            # Impala upcasts float to double in this op
-            return shape_like(arg, 'double')
-        elif isinstance(arg, ir.IntegerValue):
-            return shape_like(arg, 'int64')
-        else:
-            raise NotImplementedError
-
-    return output_type
-
-
 def type_of_arg(i):
 
     def output_type(self):
@@ -709,9 +713,29 @@ def time(**arg_kwds):
     return ValueTyped(ir.TimeValue, 'not time', **arg_kwds)
 
 
-def timedelta(**arg_kwds):
-    from ibis.expr.temporal import Timedelta
-    return AnyTyped(Timedelta, 'not a timedelta', **arg_kwds)
+class Interval(ValueTyped):
+
+    def __init__(self, units=None, **arg_kwds):
+        super(Interval, self).__init__(
+            ir.IntervalValue, 'not an interval', **arg_kwds
+        )
+        if units is None:
+            self.allowed_units = None
+        else:
+            self.allowed_units = frozenset(units)
+
+    def _validate(self, args, i):
+        arg = super(Interval, self)._validate(args, i)
+
+        unit = arg.type().unit
+        if self.allowed_units is not None and unit not in self.allowed_units:
+            msg = 'Interval unit `{}` is not among the allowed ones {}'
+            raise IbisTypeError(msg.format(unit, self.allowed_units))
+
+        return arg
+
+
+interval = Interval
 
 
 def string(**arg_kwds):

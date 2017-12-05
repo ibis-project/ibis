@@ -249,21 +249,6 @@ class NullIfZero(ValueOp):
     output_type = rules.type_of_arg(0)
 
 
-def _coalesce_upcast(self):
-    # TODO: how much validation is necessary that the call is valid and can
-    # succeed?
-    first_value = self.args[0]
-
-    if isinstance(first_value, ir.IntegerValue):
-        out_type = 'int64'
-    elif isinstance(first_value, ir.FloatingValue):
-        out_type = 'double'
-    else:
-        out_type = first_value.type()
-
-    return rules.shape_like_args(self.args, out_type)
-
-
 class CoalesceLike(ValueOp):
 
     # According to Impala documentation:
@@ -272,7 +257,20 @@ class CoalesceLike(ValueOp):
     # DOUBLE; use CAST() when inserting into a smaller numeric column
 
     input_type = rules.varargs(rules.value)
-    output_type = _coalesce_upcast
+
+    def output_type(self):
+        # TODO: how much validation is necessary that the call is valid and can
+        # succeed?
+        first_value = self.args[0]
+
+        if isinstance(first_value, ir.IntegerValue):
+            out_type = 'int64'
+        elif isinstance(first_value, ir.FloatingValue):
+            out_type = 'double'
+        else:
+            out_type = first_value.type()
+
+        return rules.shape_like_args(self.args, out_type)
 
 
 class Coalesce(CoalesceLike):
@@ -2405,6 +2403,11 @@ class Time(UnaryOp):
     output_type = rules.shape_like_arg(0, 'time')
 
 
+class Date(UnaryOp):
+
+    output_type = rules.shape_like_arg(0, 'date')
+
+
 class TimestampFromUNIX(ValueOp):
 
     input_type = [value, rules.string_options(['s', 'ms', 'us'], name='unit')]
@@ -2432,10 +2435,115 @@ class Hash(ValueOp):
     output_type = rules.shape_like_arg(0, 'int64')
 
 
-class TimestampDelta(ValueOp):
+class TemporalSubtract(BinaryOp):
 
-    input_type = [rules.timestamp, rules.timedelta(name='offset')]
+    def output_type(self):
+        if self.args[0].type() == self.args[1].type():
+            value_type = dt.Interval(self.output_unit, dt.int32)
+        else:
+            value_type = self.args[0].type()
+
+        return rules.shape_like(self.args[0], value_type)
+
+
+class DateSubtract(TemporalSubtract):
+
+    input_type = [
+        rules.date,
+        rules.one_of([
+            rules.date,
+            rules.interval(units=['Y', 'M', 'w', 'd'])
+        ])
+    ]
+    output_unit = 'd'
+
+
+class TimeSubtract(TemporalSubtract):
+
+    input_type = [
+        rules.time,
+        rules.one_of([
+            rules.time,
+            rules.interval(units=['h', 'm', 's'])
+        ])
+    ]
+    output_unit = 's'
+
+
+class TimestampSubtract(TemporalSubtract):
+
+    input_type = [
+        rules.timestamp,
+        rules.one_of([
+            rules.timestamp,
+            rules.interval
+        ])
+    ]
+    output_unit = 's'
+
+
+TimestampDelta = TimestampSubtract
+
+
+class DateAdd(Add):
+
+    input_type = [rules.date, rules.interval(units=['Y', 'M', 'w', 'd'])]
+    output_type = rules.shape_like_arg(0, 'date')
+
+
+class TimeAdd(Add):
+
+    input_type = [rules.time, rules.interval(units=['h', 'm', 's'])]
+    output_type = rules.shape_like_arg(0, 'time')
+
+
+class TimestampAdd(Add):
+
+    input_type = [rules.timestamp, rules.interval]
     output_type = rules.shape_like_arg(0, 'timestamp')
+
+
+class IntervalAdd(Add):
+
+    input_type = [rules.interval, rules.interval]
+
+    def output_type(self):
+        left, right = self.args
+
+        # should upconvert to the smaller unit?
+        # value_type = left.to_unit(right.type().unit).type()
+        return rules.shape_like(left, left.type())
+
+
+class IntervalMultiply(Multiply):
+
+    def output_type(self):
+        helper = rules.IntervalPromoter(self.left, self.right, operator.mul)
+        return helper.get_result()
+
+
+class IntervalFloorDivide(FloorDivide):
+
+    input_type = [rules.interval, number]
+
+    def output_type(self):
+        return rules.shape_like(self.args[0],  self.args[0].type())
+
+
+class IntervalFromInteger(ValueOp):
+
+    input_type = [
+        rules.integer,
+        rules.string_options([
+            'Y', 'M', 'w', 'd',
+            'h', 'm', 's', 'ms', 'us', 'ns'
+        ], name='unit')
+    ]
+
+    def output_type(self):
+        arg, unit = self.args
+        type = dt.Interval(unit, arg.type())
+        return rules.shape_like(arg, type)
 
 
 class ArrayLength(UnaryOp):

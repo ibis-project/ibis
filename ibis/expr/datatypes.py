@@ -574,6 +574,64 @@ assert hasattr(Decimal, '__hash__')
 
 
 @parametric
+class Interval(DataType):
+
+    __slots__ = 'value_type', 'unit'
+
+    _units = dict(
+        Y='year',
+        M='month',
+        w='week',
+        d='day',
+        h='hour',
+        m='minute',
+        s='second',
+        ms='millisecond',
+        us='microsecond',
+        ns='nanosecond'
+    )
+
+    def __init__(self, unit='s', value_type=None, nullable=True):
+        super(Interval, self).__init__(nullable=nullable)
+        if unit not in self._units:
+            raise ValueError('Unsupported interval unit `{}`'.format(unit))
+
+        if value_type is None:
+            value_type = int32
+        else:
+            value_type = validate_type(value_type)
+
+        if not isinstance(value_type, Integer):
+            raise TypeError("Interval's inner type must be an Integer subtype")
+
+        self.unit = unit
+        self.value_type = value_type
+
+    @property
+    def resolution(self):
+        """Unit's name"""
+        return self._units[self.unit]
+
+    def __str__(self):
+        unit = self.unit
+        typename = self.name.lower()
+        value_type_name = self.value_type.name.lower()
+        return '{}<{}>(unit={!r})'.format(typename, value_type_name, unit)
+
+    def _equal_part(self, other, cache=None):
+        return (self.unit == other.unit and
+                self.value_type.equals(other.value_type, cache=cache))
+
+    def can_implicit_cast(self, other):
+        if isinstance(other, Interval):
+            return self.value_type.can_implicit_cast(other.value_type)
+        return False
+
+    def valid_literal(self, value):
+        return isinstance(value, six.integer_types + (datetime.timedelta,))
+
+
+@parametric
 class Category(DataType):
 
     __slots__ = 'cardinality',
@@ -778,6 +836,7 @@ binary = Binary()
 date = Date()
 time = Time()
 timestamp = Timestamp()
+interval = Interval()
 
 
 _primitive_types = {
@@ -799,7 +858,8 @@ _primitive_types = {
     'binary': binary,
     'date': date,
     'time': time,
-    'timestamp': timestamp
+    'timestamp': timestamp,
+    'interval': interval
 }
 
 
@@ -825,9 +885,10 @@ class Tokens(object):
     RPAREN = 14
     LBRACKET = 15
     RBRACKET = 16
-    TIMEZONE = 17
+    STRARG = 17
     TIMESTAMP = 18
     TIME = 19
+    INTERVAL = 20
 
     @staticmethod
     def name(value):
@@ -858,12 +919,18 @@ _TYPE_RULES = OrderedDict(
             '(?P<{}>{})'.format(token.upper(), token),
             lambda token, value=value: Token(Tokens.PRIMITIVE, value)
         ) for token, value in _primitive_types.items()
-        if token not in {'any', 'null', 'timestamp', 'time'}
+        if token not in {'any', 'null', 'timestamp', 'time', 'interval'}
     ] + [
         # timestamp
         (
             r'(?P<TIMESTAMP>timestamp)',
             lambda token: Token(Tokens.TIMESTAMP, token),
+        ),
+    ] + [
+        # interval - should remove?
+        (
+            r'(?P<INTERVAL>interval)',
+            lambda token: Token(Tokens.INTERVAL, token),
         ),
     ] + [
         # time
@@ -877,14 +944,22 @@ _TYPE_RULES = OrderedDict(
             '(?P<{}>{})'.format(token.upper(), token),
             lambda token, toktype=toktype: Token(toktype, token)
         ) for token, toktype in zip(
-            ('decimal', 'varchar', 'char', 'array', 'map', 'struct'),
             (
+                'decimal',
+                'varchar',
+                'char',
+                'array',
+                'map',
+                'struct',
+                'interval'
+            ), (
                 Tokens.DECIMAL,
                 Tokens.VARCHAR,
                 Tokens.CHAR,
                 Tokens.ARRAY,
                 Tokens.MAP,
-                Tokens.STRUCT
+                Tokens.STRUCT,
+                Tokens.INTERVAL
             ),
         )
     ] + [
@@ -905,11 +980,12 @@ _TYPE_RULES = OrderedDict(
         ('(?P<RBRACKET>>)', lambda token: Token(Tokens.RBRACKET, token)),
         (r'(?P<WHITESPACE>\s+)', None),
         (
-            '(?P<TIMEZONE>{})'.format(_STRING_REGEX),
-            lambda token: Token(Tokens.TIMEZONE, token),
+            '(?P<STRARG>{})'.format(_STRING_REGEX),
+            lambda token: Token(Tokens.STRARG, token),
         ),
     ]
 )
+
 
 _TYPE_KEYS = tuple(_TYPE_RULES.keys())
 _TYPE_PATTERN = re.compile('|'.join(_TYPE_KEYS), flags=re.IGNORECASE)
@@ -1020,10 +1096,13 @@ class TypeParser(object):
                   | "float64"
                   | "string"
                   | "time"
-                  | timestamp
 
         timestamp : "timestamp"
                   | "timestamp" "(" timezone ")"
+
+        interval : "interval"
+                 | "interval" "(" unit ")"
+                 | "interval" "<" type ">" "(" unit ")"
 
         decimal : "decimal"
                 | "decimal" "(" integer "," integer ")"
@@ -1043,7 +1122,7 @@ class TypeParser(object):
 
         elif self._accept(Tokens.TIMESTAMP):
             if self._accept(Tokens.LPAREN):
-                self._expect(Tokens.TIMEZONE)
+                self._expect(Tokens.STRARG)
                 timezone = self.tok.value[1:-1]  # remove surrounding quotes
                 self._expect(Tokens.RPAREN)
                 return Timestamp(timezone=timezone)
@@ -1051,6 +1130,23 @@ class TypeParser(object):
 
         elif self._accept(Tokens.TIME):
             return Time()
+
+        elif self._accept(Tokens.INTERVAL):
+            if self._accept(Tokens.LBRACKET):
+                self._expect(Tokens.PRIMITIVE)
+                value_type = self.tok.value
+                self._expect(Tokens.RBRACKET)
+            else:
+                value_type = int32
+
+            if self._accept(Tokens.LPAREN):
+                self._expect(Tokens.STRARG)
+                unit = self.tok.value[1:-1]  # remove surrounding quotes
+                self._expect(Tokens.RPAREN)
+            else:
+                unit = 's'
+
+            return Interval(unit, value_type)
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):

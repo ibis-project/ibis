@@ -522,6 +522,8 @@ def infer_literal_type(value):
         return dt.double
     elif isinstance(value, six.string_types):
         return dt.string
+    elif isinstance(value, datetime.timedelta):
+        return dt.interval
     elif isinstance(value, datetime.datetime):
         return dt.timestamp
     elif isinstance(value, datetime.date):
@@ -1141,12 +1143,6 @@ class DecimalValue(ParameterizedValue, NumericValue):
 
     _implicit_casts = set(['float', 'double'])
 
-    @classmethod
-    def _make_constructor(cls, meta):
-        def constructor(arg, name=None):
-            return cls(arg, meta, name=name)
-        return constructor
-
 
 class TemporalValue(AnyValue):
     def _can_compare(self, other):
@@ -1209,12 +1205,6 @@ class TimestampValue(TemporalValue):
     def type(self):
         return dt.Timestamp(timezone=self._timezone)
 
-    @classmethod
-    def _make_constructor(cls, meta):
-        def constructor(arg, name=None):
-            return cls(arg, meta, name=name)
-        return constructor
-
     def _can_implicit_cast(self, arg):
         op = arg.op()
         if isinstance(op, Literal):
@@ -1237,6 +1227,41 @@ class TimestampValue(TemporalValue):
         # assume we've checked this is OK at this point...
         op = arg.op()
         return TimestampScalar(op)
+
+
+class IntervalValue(ParameterizedValue):
+
+    def __init__(self, meta=None, name=None):
+        self.meta = meta
+        self._name = name
+
+    @property
+    def unit(self):
+        return self.meta.unit
+
+    @unit.setter
+    def unit(self, unit):
+        self.meta.unit = unit
+
+    @property
+    def resolution(self):
+        """Unit's name"""
+        return self.meta.resolution
+
+    def _can_compare(self, other):
+        return isinstance(other, IntervalValue) and self.unit == other.unit
+
+    def _can_implicit_cast(self, arg):
+        op = arg.op()
+        if isinstance(op, Literal):
+            if isinstance(op.value, datetime.timedelta):
+                return True
+        return False
+
+    def _implicit_cast(self, arg):
+        # assume we've checked this is OK at this point...
+        op = arg.op()
+        return IntervalScalar(op)
 
 
 class ArrayValue(ParameterizedValue):
@@ -1441,6 +1466,20 @@ class TimestampColumn(ColumnExpr, TimestampValue):
         TimestampValue.__init__(self, meta=meta)
 
 
+class IntervalScalar(ScalarExpr, IntervalValue):
+
+    def __init__(self, arg, meta=None, name=None):
+        ScalarExpr.__init__(self, arg, name=name)
+        IntervalValue.__init__(self, meta=meta)
+
+
+class IntervalColumn(ColumnExpr, IntervalValue):
+
+    def __init__(self, arg, meta=None, name=None):
+        ColumnExpr.__init__(self, arg, name=name)
+        IntervalValue.__init__(self, meta=meta)
+
+
 class DecimalScalar(DecimalValue, ScalarExpr):
 
     def __init__(self, arg, meta, name=None):
@@ -1590,10 +1629,9 @@ def literal(value, type=None):
         )
 
     if value is None or value is _NULL or value is null:
-        result = null().cast(type)
+        return null().cast(type)
     else:
-        result = Literal(value, type=type).to_expr()
-    return result
+        return Literal(value, type=type).to_expr()
 
 
 _NULL = None
