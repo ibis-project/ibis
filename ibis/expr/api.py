@@ -232,6 +232,9 @@ def interval(value=None, unit='s', years=None, months=None, weeks=None,
     hours : int, default None
     minutes : int, default None
     seconds : int, default None
+    milliseconds : int, default None
+    microseconds : int, default None
+    nanoseconds : int, default None
 
     Returns
     --------
@@ -264,7 +267,7 @@ def interval(value=None, unit='s', years=None, months=None, weeks=None,
         unit, value = defined_units[0]
 
     value_type = ir.literal(value).type()
-    type = dt.Interval(value_type, unit)
+    type = dt.Interval(unit, value_type)
 
     return ir.literal(value, type=type).op().to_expr()
 

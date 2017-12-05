@@ -214,7 +214,7 @@ def test_timestamp_arithmetics():
     for expr in [ts2 - ts1, ts1 - ts2]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.TimestampSubtract)
-        assert expr.type() == dt.Interval(dt.int32, 's')
+        assert expr.type() == dt.Interval('s', dt.int32)
 
     for expr in [ts1 - i1, ts2 - i1]:
         assert isinstance(expr, ir.TimestampScalar)
@@ -233,7 +233,7 @@ def test_date_arithmetics():
     for expr in [d1 - d2, d2 - d1]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.DateSubtract)
-        assert expr.type() == dt.Interval(dt.int32, 'd')
+        assert expr.type() == dt.Interval('d', dt.int32)
 
     for expr in [d1 - i1, d2 - i1]:
         assert isinstance(expr, ir.DateScalar)
@@ -253,7 +253,7 @@ def test_time_arithmetics():
     for expr in [t1 - t2, t2 - t1]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.TimeSubtract)
-        assert expr.type() == dt.Interval(dt.int32, 's')
+        assert expr.type() == dt.Interval('s', dt.int32)
 
     for expr in [t1 - i1, t2 - i1]:
         assert isinstance(expr, ir.TimeScalar)

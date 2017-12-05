@@ -578,22 +578,22 @@ class Interval(DataType):
 
     __slots__ = 'value_type', 'unit'
 
-    _valid_units = frozenset([
-        'Y',   # Year
-        'M',   # Month
-        'w',   # Week
-        'd',   # Day
-        'h',   # Hour
-        'm',   # Minute
-        's',   # Second
-        'ms',  # Millisecond
-        'us',  # Microsecond
-        'ns'   # Nanosecond
-    ])
+    _units = dict(
+        Y='year',
+        M='month',
+        w='week',
+        d='day',
+        h='hour',
+        m='minute',
+        s='second',
+        ms='millisecond',
+        us='microsecond',
+        ns='nanosecond'
+    )
 
-    def __init__(self, value_type=None, unit='s', nullable=True):
+    def __init__(self, unit='s', value_type=None, nullable=True):
         super(Interval, self).__init__(nullable=nullable)
-        if unit not in self._valid_units:
+        if unit not in self._units:
             raise ValueError('Unsupported interval unit `{}`'.format(unit))
 
         if value_type is None:
@@ -606,6 +606,11 @@ class Interval(DataType):
 
         self.unit = unit
         self.value_type = value_type
+
+    @property
+    def resolution(self):
+        """Unit's name"""
+        return self._units[self.unit]
 
     def __str__(self):
         unit = self.unit
@@ -831,7 +836,7 @@ binary = Binary()
 date = Date()
 time = Time()
 timestamp = Timestamp()
-# interval = Interval()
+interval = Interval()
 
 
 _primitive_types = {
@@ -853,8 +858,8 @@ _primitive_types = {
     'binary': binary,
     'date': date,
     'time': time,
-    'timestamp': timestamp
-    # 'interval': interval
+    'timestamp': timestamp,
+    'interval': interval
 }
 
 
@@ -1141,7 +1146,7 @@ class TypeParser(object):
             else:
                 unit = 's'
 
-            return Interval(value_type, unit)
+            return Interval(unit, value_type)
 
         elif self._accept(Tokens.DECIMAL):
             if self._accept(Tokens.LPAREN):

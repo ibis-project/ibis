@@ -306,18 +306,18 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
 ])
 def test_interval(unit):
     definition = "interval('{}')".format(unit)
-    dt.Interval(dt.int32, unit) == dt.validate_type(definition)
+    dt.Interval(unit, dt.int32) == dt.validate_type(definition)
 
     definition = "interval<uint16>('{}')".format(unit)
-    dt.Interval(dt.uint16, unit) == dt.validate_type(definition)
+    dt.Interval(unit, dt.uint16) == dt.validate_type(definition)
 
     definition = "interval<int64>('{}')".format(unit)
-    dt.Interval(dt.int64, unit) == dt.validate_type(definition)
+    dt.Interval(unit, dt.int64) == dt.validate_type(definition)
 
 
 def test_interval_invalid_type():
     with pytest.raises(TypeError):
-        dt.Interval(dt.float32, 'm')
+        dt.Interval('m', dt.float32)
 
     with pytest.raises(TypeError):
         dt.validate_type("interval<float>('s')")

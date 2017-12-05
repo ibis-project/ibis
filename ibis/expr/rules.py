@@ -92,7 +92,7 @@ class IntervalPromoter(BinaryPromoter):
     """Infers the output type of the binary interval operation
 
     This is a slightly modified version of BinaryPromoter, it converts
-    back and forth between the interval and its innner value.
+    back and forth between the interval and its inner value.
 
     This trick reuses the numeric type promotion logics.
     Any non-integer output type raises a TypeError.
@@ -106,7 +106,7 @@ class IntervalPromoter(BinaryPromoter):
 
     def get_result(self):
         promoted_value_type = self._get_type()
-        promoted_type = dt.Interval(promoted_value_type, self.unit)
+        promoted_type = dt.Interval(self.unit, promoted_value_type)
         return shape_like_args(self.args, promoted_type)
 
 

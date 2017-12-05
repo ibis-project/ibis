@@ -1243,6 +1243,11 @@ class IntervalValue(ParameterizedValue):
     def unit(self, unit):
         self.meta.unit = unit
 
+    @property
+    def resolution(self):
+        """Unit's name"""
+        return self.meta.resolution
+
     def _can_compare(self, other):
         return isinstance(other, IntervalValue) and self.unit == other.unit
 

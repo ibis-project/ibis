@@ -2439,7 +2439,7 @@ class TemporalSubtract(BinaryOp):
 
     def output_type(self):
         if self.args[0].type() == self.args[1].type():
-            value_type = dt.Interval(dt.int32, self.output_unit)
+            value_type = dt.Interval(self.output_unit, dt.int32)
         else:
             value_type = self.args[0].type()
 
@@ -2542,7 +2542,7 @@ class IntervalFromInteger(ValueOp):
 
     def output_type(self):
         arg, unit = self.args
-        type = dt.Interval(arg.type(), unit=unit)
+        type = dt.Interval(unit, arg.type())
         return rules.shape_like(arg, type)
 
 

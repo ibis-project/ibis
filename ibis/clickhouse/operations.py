@@ -262,20 +262,11 @@ def _value_list(translator, expr):
 
 
 def _interval_format(translator, expr):
-    units = {
-        'Y': 'year',
-        'M': 'month',
-        'w': 'week',
-        'd': 'day',
-        'h': 'hour',
-        'm': 'minute',
-        's': 'second'
-    }
+    if expr.unit in {'ms', 'us', 'ns'}:
+        raise ValueError('Clickhouse doesn\'t support subsecond interval '
+                         'resolutions')
 
-    unit = expr.unit
-    value = expr.op().value
-
-    return 'INTERVAL {} {}'.format(value, units[unit])
+    return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution)
 
 
 def literal(translator, expr):
@@ -384,16 +375,6 @@ def _timestamp_from_unix(translator, expr):
         raise ValueError('`us` unit is not supported!')
 
     return _call(translator, 'toDateTime', arg)
-
-
-def _timestamp_add(translator, expr):
-    op = expr.op()
-    arg, interval = op.args
-
-    arg_ = translator.translate(arg)
-    interval_ = translator.translate(interval)
-
-    return '{0} + {1}'.format(arg_, interval_)
 
 
 def _truncate(translator, expr):

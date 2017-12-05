@@ -504,23 +504,7 @@ def _number_literal_format(expr):
 
 
 def _interval_literal_format(expr):
-    units = {
-        'Y': 'years',
-        'M': 'months',
-        'w': 'weeks',
-        'd': 'days',
-        'h': 'hours',
-        'm': 'minutes',
-        's': 'seconds',
-        'ms': 'milliseconds',
-        'us': 'microseconds',
-        'ns': 'nanoseconds'
-    }
-
-    unit = expr.unit
-    value = expr.op().value
-
-    return 'INTERVAL {} {}'.format(value, units[unit].upper())
+    return 'INTERVAL {} {}S'.format(expr.op().value, expr.resolution.upper())
 
 
 def _timestamp_literal_format(expr):
