@@ -1,5 +1,6 @@
 import pytest
 import datetime
+import operator
 
 from ibis.compat import PY2
 import ibis.expr.datatypes as dt
@@ -47,7 +48,7 @@ def test_cannot_upconvert(delta, target):
 ])
 def test_multiply(expr):
     assert isinstance(expr, ir.IntervalScalar)
-    assert expr.get_unit() == 'd'
+    assert expr.unit == 'd'
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
@@ -68,7 +69,7 @@ def test_multiply(expr):
 def test_downconvert_second_parts(case, expected):
     assert isinstance(case, ir.IntervalScalar)
     assert isinstance(expected, ir.IntervalScalar)
-    assert case.get_unit() == expected.get_unit()
+    assert case.unit == expected.unit
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
@@ -82,7 +83,7 @@ def test_downconvert_second_parts(case, expected):
 def test_downconvert_hours(case, expected):
     assert isinstance(case, ir.IntervalScalar)
     assert isinstance(expected, ir.IntervalScalar)
-    assert case.get_unit() == expected.get_unit()
+    assert case.unit == expected.unit
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
@@ -100,7 +101,7 @@ def test_downconvert_hours(case, expected):
 def test_downconvert_day(case, expected):
     assert isinstance(case, ir.IntervalScalar)
     assert isinstance(expected, ir.IntervalScalar)
-    assert case.get_unit() == expected.get_unit()
+    assert case.unit == expected.unit
 
 
 @pytest.mark.parametrize(('a', 'b', 'unit'), [
@@ -227,10 +228,8 @@ def test_timestamp_arithmetics():
 def test_date_arithmetics():
     d1 = api.date('2015-01-02')
     d2 = api.date('2017-01-01')
-
     i1 = api.interval(weeks=3)
 
-    # TODO: raise for unsupported operations too
     for expr in [d1 - d2, d2 - d1]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.DateSubtract)
@@ -249,10 +248,8 @@ def test_date_arithmetics():
 def test_time_arithmetics():
     t1 = api.time('18:00')
     t2 = api.time('19:12')
-
     i1 = api.interval(minutes=3)
 
-    # TODO: raise for unsupported operations too
     for expr in [t1 - t2, t2 - t1]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.TimeSubtract)
@@ -308,3 +305,74 @@ def test_integer_to_interval(column, unit, table):
     assert isinstance(i, ir.IntervalColumn)
     assert i.type().value_type == c.type()
     assert i.type().unit == unit
+
+
+@pytest.mark.parametrize('unit', [
+    'Y', 'M', 'd', 'w',
+    'h', 'm', 's', 'ms', 'us', 'ns'
+])
+@pytest.mark.parametrize('operands', [
+    lambda t, u: (api.interval(3, unit=u), api.interval(2, unit=u)),
+    lambda t, u: (api.interval(3, unit=u), api.interval(3, unit=u)),
+    lambda t, u: (t.c.to_interval(unit=u), api.interval(2, unit=u)),
+    lambda t, u: (t.c.to_interval(unit=u), t.d.to_interval(unit=u))
+])
+@pytest.mark.parametrize('operator', [
+    operator.eq,
+    operator.ne,
+    operator.ge,
+    operator.gt,
+    operator.le,
+    operator.lt
+])
+def test_interval_comparisons(unit, operands, operator, table):
+    a, b = operands(table, unit)
+    expr = operator(a, b)
+
+    assert isinstance(a, ir.IntervalValue)
+    assert isinstance(b, ir.IntervalValue)
+    assert isinstance(expr, ir.BooleanValue)
+
+
+@pytest.mark.parametrize('operands', [
+    lambda t: (api.date('2016-01-01'), api.date('2016-02-02')),
+    lambda t: (t.j, api.date('2016-01-01')),
+    lambda t: (api.date('2016-01-01'), t.j),
+    lambda t: (t.j, t.i.date()),
+    lambda t: (t.i.date(), t.j)
+])
+@pytest.mark.parametrize('interval', [
+    lambda t: api.interval(years=4),
+    lambda t: api.interval(months=3),
+    lambda t: api.interval(weeks=2),
+    lambda t: api.interval(days=1),
+    lambda t: t.c.to_interval(unit='Y'),
+    lambda t: t.c.to_interval(unit='M'),
+    lambda t: t.c.to_interval(unit='w'),
+    lambda t: t.c.to_interval(unit='d'),
+])
+@pytest.mark.parametrize('arithmetic', [
+    lambda a, i: a - i,
+    lambda a, i: a + i,
+    lambda a, i: i + a
+])
+@pytest.mark.parametrize('operator', [
+    operator.eq,
+    operator.ne,
+    operator.ge,
+    operator.gt,
+    operator.le,
+    operator.lt
+])
+def test_complex_date_comparisons(operands, interval, arithmetic, operator,
+                                  table):
+    (a, b), i = operands(table), interval(table)
+
+    a_ = arithmetic(a, i)
+    expr = operator(a_, b)
+
+    assert isinstance(a, ir.DateValue)
+    assert isinstance(b, ir.DateValue)
+    assert isinstance(a_, ir.DateValue)
+    assert isinstance(i, ir.IntervalValue)
+    assert isinstance(expr, ir.BooleanValue)

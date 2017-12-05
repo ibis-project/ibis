@@ -2403,6 +2403,11 @@ class Time(UnaryOp):
     output_type = rules.shape_like_arg(0, 'time')
 
 
+class Date(UnaryOp):
+
+    output_type = rules.shape_like_arg(0, 'date')
+
+
 class TimestampFromUNIX(ValueOp):
 
     input_type = [value, rules.string_options(['s', 'ms', 'us'], name='unit')]

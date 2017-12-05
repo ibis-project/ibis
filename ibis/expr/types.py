@@ -1235,14 +1235,16 @@ class IntervalValue(ParameterizedValue):
         self.meta = meta
         self._name = name
 
-    def set_unit(self, unit):
-        self.meta.unit = unit
-
-    def get_unit(self):
+    @property
+    def unit(self):
         return self.meta.unit
 
+    @unit.setter
+    def unit(self, unit):
+        self.meta.unit = unit
+
     def _can_compare(self, other):
-        return isinstance(other, IntervalValue)
+        return isinstance(other, IntervalValue) and self.unit == other.unit
 
     def _can_implicit_cast(self, arg):
         op = arg.op()

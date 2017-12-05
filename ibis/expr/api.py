@@ -216,9 +216,9 @@ def time(value):
     return ir.TimeScalar(ir.literal(value).op())
 
 
-def interval(value=None, years=None, months=None, weeks=None, days=None,
-             hours=None, minutes=None, seconds=None, milliseconds=None,
-             microseconds=None, nanoseconds=None):
+def interval(value=None, unit='s', years=None, months=None, weeks=None,
+             days=None, hours=None, minutes=None, seconds=None,
+             milliseconds=None, microseconds=None, nanoseconds=None):
     """
     Returns an interval literal
 
@@ -238,8 +238,8 @@ def interval(value=None, years=None, months=None, weeks=None, days=None,
     result : IntervalScalar
     """
     if value is not None:
-        unit = 's'
         if isinstance(value, datetime.timedelta):
+            unit = 's'
             value = int(value.total_seconds())
         elif not isinstance(value, six.integer_types):
             raise ValueError('Interval value must be an integer')
@@ -2018,6 +2018,20 @@ def _timestamp_time(arg):
     return _ops.Time(arg).to_expr()
 
 
+def _timestamp_date(arg):
+    """
+    Return a Date node for a Timestamp
+    We can then perform certain operations on this node
+    w/o actually instantiating the underlying structure
+    (which is inefficient in pandas/numpy)
+
+    Returns
+    -------
+    Date node
+    """
+    return _ops.Date(arg).to_expr()
+
+
 _timestamp_sub = _binop_expr('__sub__', _ops.TimestampSubtract)
 _timestamp_add = _binop_expr('__add__', _ops.TimestampAdd)
 _timestamp_radd = _binop_expr('__radd__', _ops.TimestampAdd)
@@ -2033,6 +2047,7 @@ _timestamp_value_methods = dict(
     millisecond=_extract_field('millisecond', _ops.ExtractMillisecond),
     truncate=_timestamp_truncate,
     time=_timestamp_time,
+    date=_timestamp_date,
 
     __sub__=_timestamp_sub,
     sub=_timestamp_sub,
@@ -2086,7 +2101,7 @@ def _convert_unit(value, unit, to):
 def _to_unit(arg, target_unit):
     if arg.meta.unit != target_unit:
         arg = _convert_unit(arg, arg.meta.unit, target_unit)
-        arg.set_unit(target_unit)
+        arg.unit = target_unit
     return arg
 
 
