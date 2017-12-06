@@ -29,6 +29,11 @@ New Features
 * Support for Interval types and expressions with support for execution on the
   Impala and Clickhouse backends (:issue:`1243`)
 
+Bug Fixes
+~~~~~~~~~
+
+* Allow visualization of custom defined expressions
+
 v0.12.0 (October 28, 2017)
 --------------------------
 
