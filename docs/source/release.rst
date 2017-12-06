@@ -26,8 +26,8 @@ New Features
 ~~~~~~~~~~~~
 
 * Support for Unsigned Integer Types (:issue:`1194`)
-
-
+* Support for Interval types and expressions with support for execution on the
+  Impala and Clickhouse backends (:issue:`1243`)
 
 v0.12.0 (October 28, 2017)
 --------------------------
