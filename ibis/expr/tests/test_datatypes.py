@@ -300,15 +300,51 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
     assert str(ts) == "timestamp('US/Ea')"
 
 
-@pytest.mark.parametrize(
-    'case',
-    [
-        "timestamp(US/Ea)",
-        "timestamp('US/Eastern\")",
-        'timestamp("US/Eastern\')',
-    ]
-)
-def test_timestamp_parsing_failure_mode(case):
+@pytest.mark.parametrize('unit', [
+    'Y', 'M', 'w',  'd',  # date units
+    'h',  'm',  's',  'ms', 'us', 'ns'  # time units
+])
+def test_interval(unit):
+    definition = "interval('{}')".format(unit)
+    dt.Interval(unit, dt.int32) == dt.validate_type(definition)
+
+    definition = "interval<uint16>('{}')".format(unit)
+    dt.Interval(unit, dt.uint16) == dt.validate_type(definition)
+
+    definition = "interval<int64>('{}')".format(unit)
+    dt.Interval(unit, dt.int64) == dt.validate_type(definition)
+
+
+def test_interval_invalid_type():
+    with pytest.raises(TypeError):
+        dt.Interval('m', dt.float32)
+
+    with pytest.raises(TypeError):
+        dt.validate_type("interval<float>('s')")
+
+
+@pytest.mark.parametrize('unit', [
+    'H', 'unsupported'
+])
+def test_interval_unvalid_unit(unit):
+    definition = "interval('{}')".format(unit)
+
+    with pytest.raises(ValueError):
+        dt.validate_type(definition)
+
+    with pytest.raises(ValueError):
+        dt.Interval(dt.int32, unit)
+
+
+@pytest.mark.parametrize('case', [
+    "timestamp(US/Ea)",
+    "timestamp('US/Eastern\")",
+    'timestamp("US/Eastern\')',
+    "interval(Y)",
+    "interval('Y\")",
+    'interval("Y\')',
+])
+def test_string_argument_parsing_failure_mode(case):
     with pytest.raises(SyntaxError):
         dt.validate_type(case)
 

@@ -266,8 +266,7 @@ FROM alltypes"""
 
     def test_timestamp_deltas(self):
         units = ['year', 'month', 'week', 'day',
-                 'hour', 'minute', 'second',
-                 'millisecond', 'microsecond']
+                 'hour', 'minute', 'second']
 
         t = self.table.i
         f = '`i`'
@@ -276,10 +275,11 @@ FROM alltypes"""
         for unit in units:
             K = 5
             offset = getattr(ibis, unit)(K)
-            template = '{0}s_add({1}, {2})'
+            add_template = 'date_add({1}, INTERVAL {2} {0}S)'
+            sub_template = 'date_sub({1}, INTERVAL {2} {0}S)'
 
-            cases.append((t + offset, template.format(unit, f, K)))
-            cases.append((t - offset, template.format(unit, f, -K)))
+            cases.append((t + offset, add_template.format(unit.upper(), f, K)))
+            cases.append((t - offset, sub_template.format(unit.upper(), f, K)))
 
         self._check_expr_cases(cases)
 
@@ -1387,8 +1387,7 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
         ]
 
         timestamp_fields = ['year', 'month', 'day', 'hour', 'minute',
-                            'second', 'millisecond', 'microsecond',
-                            'week']
+                            'second', 'week']
         for field in timestamp_fields:
             if hasattr(ts, field):
                 exprs.append(getattr(ts, field)())
@@ -1407,11 +1406,11 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
         # #310
         table = self.alltypes
 
-        expr = (table.filter([table.timestamp_col <
-                             (ibis.timestamp('2010-01-01') + ibis.month(3)),
-                             table.timestamp_col < (ibis.now() + ibis.day(10))
-                              ])
-                .count())
+        expr = (table.filter([
+            table.timestamp_col <
+            (ibis.timestamp('2010-01-01') + ibis.month(3)),
+            table.timestamp_col < (ibis.now() + ibis.day(10))
+        ]).count())
         expr.execute()
 
     def test_aggregations(self):

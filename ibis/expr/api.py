@@ -16,6 +16,7 @@ from __future__ import print_function
 
 import warnings
 import operator
+import datetime
 import functools
 import collections
 
@@ -40,6 +41,7 @@ from ibis.expr.types import (Expr,  # noqa
                              StringValue, StringScalar, StringColumn,
                              DecimalValue, DecimalScalar, DecimalColumn,
                              TimestampValue, TimestampScalar, TimestampColumn,
+                             IntervalValue, IntervalScalar, IntervalColumn,
                              DateValue, TimeValue,
                              ArrayValue, ArrayScalar, ArrayColumn,
                              MapValue, MapScalar, MapColumn,
@@ -47,11 +49,8 @@ from ibis.expr.types import (Expr,  # noqa
                              CategoryValue, unnamed, as_value_expr, literal,
                              param, null, sequence)
 
-# __all__ is defined
-from ibis.expr.temporal import *  # noqa
-
 import ibis.common as _com
-from ibis.compat import PY2, to_time
+from ibis.compat import PY2, to_time, to_date
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import window, trailing_window, cumulative_window
@@ -59,13 +58,14 @@ import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
 import ibis.expr.types as ir
 import ibis.expr.operations as _ops
-import ibis.expr.temporal as _T
 import ibis.util as util
 
 
 __all__ = [
     'schema', 'table', 'literal', 'expr_list',
-    'timestamp', 'time', 'param',
+    'timestamp', 'time', 'date', 'interval', 'param',
+    'nanosecond', 'microsecond', 'millisecond', 'second',
+    'minute', 'hour', 'day', 'week', 'month', 'year',
     'case', 'where', 'sequence',
     'now', 'desc', 'null', 'NA',
     'cast', 'coalesce', 'greatest', 'least',
@@ -76,7 +76,6 @@ __all__ = [
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window',
 ]
-__all__ += _T.__all__
 
 
 NA = null()
@@ -180,6 +179,23 @@ def timestamp(value):
     return ir.TimestampScalar(ir.literal(value).op())
 
 
+def date(value):
+    """
+    Returns a date literal if value is likely coercible to a date
+
+    Parameters
+    ----------
+    value : date value as string
+
+    Returns
+    --------
+    result : TimeScalar
+    """
+    if isinstance(value, six.string_types):
+        value = to_date(value)
+    return ir.DateScalar(ir.literal(value).op())
+
+
 def time(value):
     """
     Returns a time literal if value is likely coercible to a time
@@ -193,11 +209,110 @@ def time(value):
     result : TimeScalar
     """
     if PY2:
-        raise ValueError("time support is not enabled on python 2")
+        raise ValueError('time support is not enabled on python 2')
 
     if isinstance(value, six.string_types):
         value = to_time(value)
     return ir.TimeScalar(ir.literal(value).op())
+
+
+def interval(value=None, unit='s', years=None, months=None, weeks=None,
+             days=None, hours=None, minutes=None, seconds=None,
+             milliseconds=None, microseconds=None, nanoseconds=None):
+    """
+    Returns an interval literal
+
+    Parameters
+    ----------
+    value : int or datetime.timedelta, default None
+    years : int, default None
+    months : int, default None
+    days : int, default None
+    weeks : int, default None
+    hours : int, default None
+    minutes : int, default None
+    seconds : int, default None
+    milliseconds : int, default None
+    microseconds : int, default None
+    nanoseconds : int, default None
+
+    Returns
+    --------
+    result : IntervalScalar
+    """
+    if value is not None:
+        if isinstance(value, datetime.timedelta):
+            unit = 's'
+            value = int(value.total_seconds())
+        elif not isinstance(value, six.integer_types):
+            raise ValueError('Interval value must be an integer')
+    else:
+        kwds = [
+            ('Y', years),
+            ('M', months),
+            ('w', weeks),
+            ('d', days),
+            ('h', hours),
+            ('m', minutes),
+            ('s', seconds),
+            ('ms', milliseconds),
+            ('us', microseconds),
+            ('ns', nanoseconds)
+        ]
+        defined_units = [(k, v) for k, v in kwds if v is not None]
+
+        if len(defined_units) != 1:
+            raise ValueError('Exactly one argument is required')
+
+        unit, value = defined_units[0]
+
+    value_type = ir.literal(value).type()
+    type = dt.Interval(unit, value_type)
+
+    return ir.literal(value, type=type).op().to_expr()
+
+
+timedelta = interval  # backward compatibility
+
+
+def nanosecond(value=1):
+    return interval(nanoseconds=value)
+
+
+def microsecond(value=1):
+    return interval(microseconds=value)
+
+
+def millisecond(value=1):
+    return interval(milliseconds=value)
+
+
+def second(value=1):
+    return interval(seconds=value)
+
+
+def minute(value=1):
+    return interval(minutes=value)
+
+
+def hour(value=1):
+    return interval(hours=value)
+
+
+def day(value=1):
+    return interval(days=value)
+
+
+def week(value=1):
+    return interval(weeks=value)
+
+
+def month(value=1):
+    return interval(months=value)
+
+
+def year(value=1):
+    return interval(years=value)
 
 
 schema.__doc__ = """\
@@ -360,7 +475,7 @@ def _binop_expr(name, klass):
             other = as_value_expr(other)
             op = klass(self, other)
             return op.to_expr()
-        except NotImplementedError:
+        except (_com.IbisTypeError, NotImplementedError):
             return NotImplemented
 
     f.__name__ = name
@@ -1116,6 +1231,22 @@ def _integer_to_timestamp(arg, unit='s'):
     return op.to_expr()
 
 
+def _integer_to_interval(arg, unit='s'):
+    """
+    Convert integer interval with the same inner type
+
+    Parameters
+    ----------
+    unit : {'Y', 'M', 'w', 'd', 'h', 'm', s', 'ms', 'us', 'ns'}
+
+    Returns
+    -------
+    interval : interval value expression
+    """
+    op = _ops.IntervalFromInteger(arg, unit)
+    return op.to_expr()
+
+
 abs = _unary_op('abs', _ops.Abs)
 ceil = _unary_op('ceil', _ops.Ceil)
 exp = _unary_op('exp', _ops.Exp)
@@ -1169,6 +1300,7 @@ _numeric_value_methods = dict(
     pow=pow,
 
     __radd__=add,
+    radd=add,  # It was missing I guess?
 
     __rsub__=rsub,
     rsub=rsub,
@@ -1200,6 +1332,7 @@ def convert_base(arg, from_base, to_base):
 
 _integer_value_methods = dict(
     to_timestamp=_integer_to_timestamp,
+    to_interval=_integer_to_interval,
     convert_base=convert_base
 )
 
@@ -1888,6 +2021,24 @@ def _timestamp_time(arg):
     return _ops.Time(arg).to_expr()
 
 
+def _timestamp_date(arg):
+    """
+    Return a Date node for a Timestamp
+    We can then perform certain operations on this node
+    w/o actually instantiating the underlying structure
+    (which is inefficient in pandas/numpy)
+
+    Returns
+    -------
+    Date node
+    """
+    return _ops.Date(arg).to_expr()
+
+
+_timestamp_sub = _binop_expr('__sub__', _ops.TimestampSubtract)
+_timestamp_add = _binop_expr('__add__', _ops.TimestampAdd)
+_timestamp_radd = _binop_expr('__radd__', _ops.TimestampAdd)
+
 _timestamp_value_methods = dict(
     strftime=_timestamp_strftime,
     year=_extract_field('year', _ops.ExtractYear),
@@ -1899,19 +2050,102 @@ _timestamp_value_methods = dict(
     millisecond=_extract_field('millisecond', _ops.ExtractMillisecond),
     truncate=_timestamp_truncate,
     time=_timestamp_time,
+    date=_timestamp_date,
+
+    __sub__=_timestamp_sub,
+    sub=_timestamp_sub,
+
+    __add__=_timestamp_add,
+    add=_timestamp_add,
+
+    __radd__=_timestamp_radd,
+    radd=_timestamp_radd
 )
 
+
+_date_sub = _binop_expr('__sub__', _ops.DateSubtract)
+_date_add = _binop_expr('__add__', _ops.DateAdd)
 
 _date_value_methods = dict(
     strftime=_timestamp_strftime,
     year=_extract_field('year', _ops.ExtractYear),
     month=_extract_field('month', _ops.ExtractMonth),
     day=_extract_field('day', _ops.ExtractDay),
-)
 
+    __sub__=_date_sub,
+    sub=_date_sub,
+
+    __add__=_date_add,
+    add=_date_add,
+
+    __radd__=_date_add,
+    radd=_date_add
+)
 
 _add_methods(TimestampValue, _timestamp_value_methods)
 _add_methods(DateValue, _date_value_methods)
+
+
+def _convert_unit(value, unit, to):
+    factors = (7, 24, 60, 60, 1000, 1000, 1000)
+    units = ('w', 'd', 'h', 'm', 's', 'ms', 'us', 'ns')
+
+    i, j = units.index(unit), units.index(to)
+    factor = functools.reduce(operator.mul, factors[i:j], 1)
+
+    if i < j:
+        return value * factor
+    elif i > j:
+        return value // factor
+    else:
+        return value
+
+
+def _to_unit(arg, target_unit):
+    if arg.meta.unit != target_unit:
+        arg = _convert_unit(arg, arg.meta.unit, target_unit)
+        arg.unit = target_unit
+    return arg
+
+
+def _interval_property(target_unit):
+    return property(functools.partial(_to_unit, target_unit=target_unit))
+
+
+_interval_add = _binop_expr('__add__', _ops.IntervalAdd)
+_interval_radd = _binop_expr('__radd__', _ops.IntervalAdd)
+_interval_mul = _binop_expr('__mul__', _ops.IntervalMultiply)
+_interval_rmul = _binop_expr('__rmul__', _ops.IntervalMultiply)
+_interval_floordiv = _binop_expr('__floordiv__', _ops.IntervalFloorDivide)
+
+_interval_value_methods = dict(
+    to_unit=_to_unit,
+    weeks=_interval_property('w'),
+    days=_interval_property('d'),
+    hours=_interval_property('h'),
+    minutes=_interval_property('m'),
+    seconds=_interval_property('s'),
+    milliseconds=_interval_property('ms'),
+    microseconds=_interval_property('us'),
+    nanoseconds=_interval_property('ns'),
+
+    __add__=_interval_add,
+    add=_interval_add,
+
+    __radd__=_interval_radd,
+    radd=_interval_radd,
+
+    __mul__=_interval_mul,
+    mul=_interval_mul,
+
+    __rmul__=_interval_rmul,
+    rmul=_interval_rmul,
+
+    __floordiv__=_interval_floordiv,
+    floordiv=_interval_floordiv
+)
+
+_add_methods(IntervalValue, _interval_value_methods)
 
 
 # ---------------------------------------------------------------------
@@ -1950,8 +2184,20 @@ def between_time(arg, lower, upper, timezone=None):
     return op.to_expr()
 
 
+_time_sub = _binop_expr('__sub__', _ops.TimeSubtract)
+_time_add = _binop_expr('__add__', _ops.TimeAdd)
+
+
 _time_value_methods = dict(
     between=between_time,
+    __sub__=_time_sub,
+    sub=_time_sub,
+
+    __add__=_time_add,
+    add=_time_add,
+
+    __radd__=_time_add,
+    radd=_time_add
 )
 
 _add_methods(TimeValue, _time_value_methods)
