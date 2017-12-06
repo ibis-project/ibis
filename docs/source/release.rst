@@ -27,6 +27,10 @@ New Features
 
 * Support for Unsigned Integer Types (:issue:`1194`)
 
+Bug Fixes
+~~~~~~~~~
+
+* Allow visualization of custom defined expressions
 
 
 v0.12.0 (October 28, 2017)
