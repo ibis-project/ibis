@@ -66,12 +66,12 @@ def get_args_join(node):
 def get_type(expr):
     try:
         return str(expr.type())
-    except AttributeError:
+    except (AttributeError, NotImplementedError):
         pass
 
     try:
         schema = expr.schema()
-    except AttributeError:
+    except (AttributeError, NotImplementedError):
         try:
             # As a last resort try get the name of the output_type class
             return expr.op().output_type().__name__

@@ -51,6 +51,31 @@ def test_custom_expr():
     assert str(hash(repr(op))) in graph.source
 
 
+def test_custom_expr_with_not_implemented_type():
+
+    class MyExpr(ir.Expr):
+        def type(self):
+            raise NotImplementedError
+
+        def schema(self):
+            raise NotImplementedError
+
+    class MyExprNode(ir.Node):
+
+        input_type = [
+            rules.string(name='foo'),
+            rules.number(name='bar'),
+        ]
+
+        def output_type(self):
+            return MyExpr
+
+    op = MyExprNode(['Hello!', 42.3])
+    expr = op.to_expr()
+    graph = viz.to_graph(expr)
+    assert str(hash(repr(op))) in graph.source
+
+
 @pytest.mark.parametrize('how', ['inner', 'left', 'right', 'outer'])
 def test_join(how):
     left = ibis.table([('a', 'int64'), ('b', 'string')])
