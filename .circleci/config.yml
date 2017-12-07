@@ -1,13 +1,16 @@
 version: 2
 
 environment: &environment
-  - IBIS_TEST_POSTGRES_DB: ibis_testing
-  - IBIS_POSTGRES_USER: ubuntu
-  - IBIS_POSTGRES_PASS: ubuntu
-  - IBIS_TEST_CLICKHOUSE_DB: ibis_testing
-  - IBIS_CLICKHOUSE_USER: default
-  - IBIS_CLICKHOUSE_HOST: localhost
-  - IBIS_CLICKHOUSE_PASS: ''
+  - IBIS_TEST_DATA_DIRECTORY: /tmp/workspace/ibis-testing-data
+
+  - IBIS_TEST_POSTGRES_USER: ubuntu
+  - IBIS_TEST_POSTGRES_PASSWORD: ubuntu
+  - IBIS_TEST_POSTGRES_DATABASE: ibis_testing
+
+  - IBIS_TEST_CLICKHOUSE_USER: default
+  - IBIS_TEST_CLICKHOUSE_HOST: localhost
+  - IBIS_TEST_CLICKHOUSE_PASSWORD: ''
+  - IBIS_TEST_CLICKHOUSE_DATABASE: ibis_testing
 
   - DATA_URL: https://storage.googleapis.com/ibis-ci-data
 
@@ -49,24 +52,18 @@ python_test_steps: &python_test_steps
   - run: ci/datamgr.py download --directory /tmp/workspace
   - run: |
       ci/datamgr.py sqlite \
-        --database "$IBIS_TEST_SQLITE_DB_PATH" \
         --data-directory "$DATA_DIR" \
         --script ci/sqlite_load.sql \
-        functional_alltypes diamonds awards_players batting
 
   - run: |
       ci/datamgr.py postgres \
-        --database "$IBIS_TEST_POSTGRES_DB" \
         --data-directory "$DATA_DIR" \
-        --script ci/postgresql_load.sql \
-        functional_alltypes diamonds awards_players batting
+        --script ci/postgresql_load.sql
 
   - run: |
       ci/datamgr.py clickhouse \
-        --database "$IBIS_TEST_POSTGRES_DB" \
         --data-directory "$DATA_DIR" \
-        --script ci/clickhouse_load.sql \
-        functional_alltypes diamonds awards_players batting
+        --script ci/clickhouse_load.sql
 
   - run: test_data_admin.py load --data --data-dir "$DATA_DIR"
   - run: mkdir -p /tmp/reports
@@ -112,8 +109,7 @@ jobs:
           cat <<EOF | tee /tmp/workspace/envars.sh
           export PATH="/tmp/workspace/miniconda/bin:$PATH"
           export DATA_DIR=/tmp/workspace/ibis-testing-data
-          export IBIS_TEST_CRUNCHBASE_DB=/tmp/workspace/crunchbase.db
-          export IBIS_TEST_SQLITE_DB_PATH=/tmp/workspace/ibis_testing.db
+          export IBIS_TEST_SQLITE_DATABASE=/tmp/workspace/ibis_testing.db
           export FUNCTIONAL_ALLTYPES_CSV="\$DATA_DIR/functional_alltypes.csv"
           export DIAMONDS_CSV="\$DATA_DIR/diamonds.csv"
           export BATTING_CSV="\$DATA_DIR/batting.csv"

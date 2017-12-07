@@ -1,193 +1,23 @@
 #!/usr/bin/env python
 
 import os
+import click
 import getpass
-import tempfile
 import tarfile
+import tempfile
 import operator
-
-import sqlalchemy as sa
 
 import numpy as np
 import pandas as pd
+import sqlalchemy as sa
 
-import click
+from contextlib import contextmanager
+from toolz import compose, dissoc
 
 try:
     import sh
 except ImportError:
     import pbs as sh
-
-
-@click.group()
-def cli():
-    pass
-
-
-@cli.command()
-@click.argument('tables', nargs=-1)
-@click.option('-S', '--script', type=click.File('rt'), required=True)
-@click.option(
-    '-d', '--database',
-    default=os.environ.get('IBIS_TEST_CLICKHOUSE_DB', 'ibis_testing')
-)
-@click.option(
-    '-D', '--data-directory',
-    default=tempfile.gettempdir(), type=click.Path(exists=True)
-)
-def clickhouse(script, tables, database, data_directory):
-    username = os.environ.get('IBIS_CLICKHOUSE_USER', 'default')
-    host = os.environ.get('IBIS_CLICKHOUSE_HOST', 'localhost')
-    password = os.environ.get('IBIS_CLICKHOUSE_PASS', '')
-
-    url = sa.engine.url.URL(
-        'clickhouse+native',
-        username=username,
-        host=host,
-        password=password,
-    )
-    engine = sa.create_engine(str(url))
-    engine.execute('DROP DATABASE IF EXISTS "{}"'.format(database))
-    engine.execute('CREATE DATABASE "{}"'.format(database))
-
-    url = sa.engine.url.URL(
-        'clickhouse+native',
-        username=username,
-        host=host,
-        password=password,
-        database=database,
-    )
-    engine = sa.create_engine(str(url))
-    script_text = script.read()
-
-    # missing stmt
-    # INSERT INTO array_types (x, y, z, grouper, scalar_column) VALUES
-    # ([1, 2, 3], ['a', 'b', 'c'], [1.0, 2.0, 3.0], 'a', 1.0),
-    # ([4, 5], ['d', 'e'], [4.0, 5.0], 'a', 2.0),
-    # ([6], ['f'], [6.0], 'a', 3.0),
-    # ([1], ['a'], [], 'b', 4.0),
-    # ([2, 3], ['b', 'c'], [], 'b', 5.0),
-    # ([4, 5], ['d', 'e'], [4.0, 5.0], 'c', 6.0);
-
-    with engine.begin() as con:
-        # doesn't support multiple statements
-        for stmt in script_text.split(';'):
-            if len(stmt.strip()):
-                con.execute(stmt)
-
-    table_paths = [
-        os.path.join(data_directory, '{}.csv'.format(table))
-        for table in tables
-    ]
-    dtype = {'bool_col': np.bool_}
-    for table, path in zip(tables, table_paths):
-        # correct dtypes per table to be able to insert
-        # TODO: cleanup, kinda ugly
-        df = pd.read_csv(path, index_col=None, header=0, dtype=dtype)
-        if table == 'functional_alltypes':
-            df = df.rename(columns={'Unnamed: 0': 'Unnamed_0'})
-            cols = ['date_string_col', 'string_col']
-            df[cols] = df[cols].astype(str)
-            df.timestamp_col = df.timestamp_col.astype('datetime64[s]')
-        elif table == 'batting':
-            cols = ['playerID', 'teamID', 'lgID']
-            df[cols] = df[cols].astype(str)
-            cols = df.select_dtypes([float]).columns
-            df[cols] = df[cols].fillna(0).astype(int)
-        elif table == 'awards_players':
-            cols = ['playerID', 'awardID', 'lgID', 'tie', 'notes']
-            df[cols] = df[cols].astype(str)
-
-        df.to_sql(table, engine, index=False, if_exists='append')
-
-
-@cli.command()
-@click.argument('tables', nargs=-1)
-@click.option('-S', '--script', type=click.File('rt'), required=True)
-@click.option(
-    '-d', '--database',
-    default=os.environ.get(
-        'IBIS_TEST_POSTGRES_DB', os.environ.get('PGDATABASE', 'ibis_testing')
-    ),
-)
-@click.option(
-    '-D', '--data-directory',
-    default=tempfile.gettempdir(), type=click.Path(exists=True)
-)
-def postgres(script, tables, database, data_directory):
-    username = os.environ.get(
-        'IBIS_POSTGRES_USER', os.environ.get('PGUSER', getpass.getuser())
-    )
-    host = os.environ.get('PGHOST', 'localhost')
-    password = os.environ.get('IBIS_POSTGRES_PASS', os.environ.get('PGPASS'))
-    url = sa.engine.url.URL(
-        'postgresql',
-        username=username,
-        host=host,
-        password=password,
-    )
-    engine = sa.create_engine(str(url), isolation_level='AUTOCOMMIT')
-    engine.execute('DROP DATABASE IF EXISTS "{}"'.format(database))
-    engine.execute('CREATE DATABASE "{}"'.format(database))
-
-    url = sa.engine.url.URL(
-        'postgresql',
-        username=username,
-        host=host,
-        password=password,
-        database=database,
-    )
-    engine = sa.create_engine(str(url))
-    script_text = script.read()
-    with engine.begin() as con:
-        con.execute(script_text)
-
-    table_paths = [
-        os.path.join(data_directory, '{}.csv'.format(table))
-        for table in tables
-    ]
-    dtype = {'bool_col': np.bool_}
-    for table, path in zip(tables, table_paths):
-        df = pd.read_csv(path, index_col=None, header=0, dtype=dtype)
-        df.to_sql(table, engine, index=False, if_exists='append')
-    engine = sa.create_engine(str(url), isolation_level='AUTOCOMMIT')
-    engine.execute('VACUUM FULL ANALYZE')
-
-
-@cli.command()
-@click.argument('tables', nargs=-1)
-@click.option('-S', '--script', type=click.File('rt'), required=True)
-@click.option(
-    '-d', '--database',
-    default=os.environ.get('IBIS_TEST_SQLITE_DB_PATH', 'ibis_testing.db')
-)
-@click.option(
-    '-D', '--data-directory',
-    default=tempfile.gettempdir(), type=click.Path(exists=True)
-)
-def sqlite(script, tables, database, data_directory):
-    database = os.path.abspath(database)
-    if os.path.exists(database):
-        try:
-            os.remove(database)
-        except OSError:
-            pass
-    engine = sa.create_engine('sqlite:///{}'.format(database))
-    script_text = script.read()
-    with engine.begin() as con:
-        con.connection.connection.executescript(script_text)
-    table_paths = [
-        os.path.join(data_directory, '{}.csv'.format(table))
-        for table in tables
-    ]
-    click.echo(tables)
-    click.echo(table_paths)
-    for table, path in zip(tables, table_paths):
-        df = pd.read_csv(path, index_col=None, header=0)
-        with engine.begin() as con:
-            df.to_sql(table, con, index=False, if_exists='append')
-    engine.execute('VACUUM')
-    engine.execute('VACUUM ANALYZE')
 
 
 if os.environ.get('APPVEYOR', None) is not None:
@@ -196,91 +26,181 @@ else:
     curl = sh.curl
 
 
-@cli.command()
-@click.argument(
-    'base_url',
-    required=False,
-    default='https://storage.googleapis.com/ibis-ci-data'  # noqa: E501
-)
-@click.option('-d', '--data', multiple=True)
-@click.option('-D', '--directory', default='.', type=click.Path(exists=False))
-def download(base_url, data, directory):
-    if not data:
-        data = 'ibis-testing-data.tar.gz',
-
-    if not os.path.exists(directory):
-        os.mkdir(directory)
-
-    for piece in data:
-        data_url = '{}/{}'.format(base_url, piece)
-        path = os.path.join(directory, piece)
-
-        curl(
-            data_url, o=path, L=True,
-            _out=click.get_binary_stream('stdout'),
-            _err=click.get_binary_stream('stderr'),
-        )
-
-        if piece.endswith(('.tar', '.gz', '.bz2', '.xz')):
-            with tarfile.open(path, mode='r|gz') as f:
-                f.extractall(path=directory)
+TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting',
+               'awards_players']
 
 
-def parse_env(ctx, param, values):
-    pairs = []
-    for envar in values:
-        try:
-            name, value = envar.split('=', 1)
-        except ValueError:
-            raise click.ClickException(
-                'Environment variables must be of the form NAME=VALUE. '
-                '{} is not in this format'.format(envar)
-            )
-        pairs.append((name, value))
-    return dict(pairs)
-
-
-@cli.command()
-@click.argument('data_directory', type=click.Path(exists=True))
-@click.option('-e', '--environment', multiple=True, callback=parse_env)
-def env(data_directory, environment):
-    envars = dict([
-        ('IBIS_TEST_IMPALA_HOST', 'impala'),
-        ('IBIS_TEST_NN_HOST', 'impala'),
-        ('IBIS_TEST_IMPALA_POST', 21050),
-        ('IBIS_TEST_WEBHDFS_PORT', 50070),
-        ('IBIS_TEST_WEBHDFS_USER', 'ubuntu'),
-        (
-            'IBIS_TEST_SQLITE_DB_PATH',
-            os.path.join(data_directory, 'ibis_testing.db'),
-        ),
-        (
-            'DIAMONDS_CSV',
-            os.path.join(data_directory, 'diamonds.csv')
-        ),
-        (
-            'BATTING_CSV',
-            os.path.join(data_directory, 'batting.csv')
-        ),
-        (
-            'AWARDS_PLAYERS_CSV',
-            os.path.join(data_directory, 'awards_players.csv')
-        ),
-        (
-            'FUNCTIONAL_ALLTYPES_CSV',
-            os.path.join(data_directory, 'functional_alltypes.csv')
-        ),
-        ('IBIS_TEST_POSTGRES_DB', 'ibis_testing'),
-        ('IBIS_POSTGRES_USER', getpass.getuser()),
-        ('IBIS_POSTGRES_PASS', ''),
-    ])
-    envars.update(environment)
-    string = '\n'.join(
-        '='.join((name, str(value)))
-        for name, value in sorted(envars.items(), key=operator.itemgetter(0))
+DEFAULT_MAP = dict(
+    fetch=dict(
+        data_url='https://storage.googleapis.com/ibis-ci-data'
+    ),
+    impala=dict(
+        port=21050
+    ),
+    sqlite=dict(
+        database='ibis_testing.db',
+        schema='sqlite_schema.sql'
+    ),
+    postgres=dict(
+        host='localhost',
+        port=5432,
+        user='postgres',
+        password='ibis',
+        database='ibis_testing',
+        schema='postgresql_schema.sql'
+    ),
+    clickhouse=dict(
+        host='localhost',
+        port=9000,
+        user='default',
+        password='',
+        database='ibis_testing',
+        schema='clickhouse_schema.sql'
     )
-    click.echo(string)
+)
+
+DATA_DIRECTORY = os.environ.get('IBIS_TEST_DATA_DIRECTORY',
+                                './ibis-testing-data')
+
+
+options = compose(
+    click.option('-h', '--host', required=False),
+    click.option('-P', '--port', required=False, type=int),
+    click.option('-u', '--user', required=False),
+    click.option('-p', '--password', required=False),
+    click.option('-D', '--database'),
+    click.option('-S', '--schema', type=click.File('rt')),
+    click.option('-t', '--tables', multiple=True, default=TEST_TABLES),
+    click.option('-d', '--data-directory', default=DATA_DIRECTORY)
+)
+
+
+def recreate_database(driver, params, **kwargs):
+    url = sa.engine.url.URL(driver, **dissoc(params, 'database'))
+    engine = sa.create_engine(url, **kwargs)
+
+    with engine.connect() as conn:
+        conn.execute('DROP DATABASE IF EXISTS "{}"'.format(params['database']))
+        conn.execute('CREATE DATABASE "{}"'.format(params['database']))
+
+
+def init_database(driver, params, schema=None, recreate=True, **kwargs):
+    params['username'] = params.pop('user', None)
+    if recreate:
+        recreate_database(driver, params, **kwargs)
+
+    url = sa.engine.url.URL(driver, **params)
+    engine = sa.create_engine(url, **kwargs)
+
+    if schema:
+        with engine.connect() as conn:
+            # clickhouse doesn't support multi-statements
+            for stmt in schema.read().split(';'):
+                if len(stmt.strip()):
+                    conn.execute(stmt)
+
+    return engine
+
+
+def read_tables(names, data_directory):
+    dtype = {'bool_col': np.bool_}
+    for name in names:
+        path = os.path.join(data_directory, '{}.csv'.format(name))
+        click.echo(path)
+        df = pd.read_csv(path, index_col=None, header=0, dtype=dtype)
+        yield (name, df)
+
+
+def insert_tables(engine, names, data_directory):
+    for table, df in read_tables(names, data_directory):
+        df.to_sql(table, engine, index=False, if_exists='append')
+
+
+@click.group(context_settings=dict(default_map=DEFAULT_MAP))
+def cli():
+    pass
+
+
+@cli.command()
+@click.argument('name', default='ibis-testing-data.tar.gz')
+@click.option('--base-url')
+@click.option('-d', '--data-directory', default='.')
+def fetch(base_url, data_directory, name):
+    if not os.path.exists(data_directory):
+        os.mkdir(data_directory)
+
+    data_url = '{}/{}'.format(base_url, name)
+    path = os.path.join(data_directory, name)
+
+    if not os.path.exists(path):
+        curl(data_url, o=path, L=True,
+             _out=click.get_binary_stream('stdout'),
+             _err=click.get_binary_stream('stderr'))
+    else:
+        click.echo('Skipping download due to {} already exists.'.format(name))
+
+    click.echo('Extracting archive...')
+    if path.endswith(('.tar', '.gz', '.bz2', '.xz')):
+        with tarfile.open(path, mode='r|gz') as f:
+            f.extractall(path=data_directory)
+
+
+@cli.command()
+@options
+def postgres(schema, tables, data_directory, **params):
+    engine = init_database('postgresql', params, schema,
+                           isolation_level='AUTOCOMMIT')
+    insert_tables(engine, tables, data_directory)
+    engine.execute('VACUUM FULL ANALYZE')
+
+
+@cli.command()
+@options
+def sqlite(schema, tables, data_directory, **params):
+    database = os.path.abspath(params['database'])
+    if os.path.exists(database):
+        try:
+            os.remove(database)
+        except OSError:
+            pass
+
+    engine = init_database('sqlite', params, schema, recreate=False)
+    insert_tables(engine, tables, data_directory)
+
+    engine.execute('VACUUM')
+    engine.execute('VACUUM ANALYZE')
+
+
+@cli.command()
+@options
+def clickhouse(schema, tables, data_directory, **params):
+    engine = init_database('clickhouse+native', params, schema)
+
+    for table, df in read_tables(tables, data_directory):
+        if table == 'functional_alltypes':
+            # string_col is actually dt.int64
+            df['string_col'] = df['string_col'].astype(str)
+            # timestamp_col has object dtype
+            df['timestamp_col'] = df['timestamp_col'].astype('datetime64[s]')
+        elif table == 'batting':
+            # float nan problem
+            cols = df.select_dtypes([float]).columns
+            df[cols] = df[cols].fillna(0).astype(int)
+            # string None driver problem
+            cols = df.select_dtypes([object]).columns
+            df[cols] = df[cols].fillna('')
+        elif table == 'awards_players':
+            # string None driver problem
+            cols = df.select_dtypes([object]).columns
+            df[cols] = df[cols].fillna('')
+
+        df.to_sql(table, engine, index=False, if_exists='append')
 
 
 if __name__ == '__main__':
-    cli()
+    """
+    Environment Variables are automatically parsed:
+     - IBIS_IMPALA_PORT
+     - IBIS_CLICKHOUSE_HOST
+    """
+    cli(auto_envvar_prefix='IBIS_TEST_')
