@@ -103,6 +103,9 @@ class PandasClient(client.Client):
         assert isinstance(query, ir.Expr)
         return execute(query, params=params)
 
+    def compile(self, expr, *args, **kwargs):
+        return expr
+
     def database(self, name=None):
         return PandasDatabase(name, self)
 
