@@ -8,8 +8,8 @@ import ibis.expr.operations as ops
 
 from ibis.file.client import FileClient
 
+from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import pre_execute, execute
-from ibis.pandas.client import PandasDialect
 
 
 def connect(dictionary):
@@ -87,6 +87,9 @@ class ParquetClient(FileClient):
 
     def list_databases(self, path=None):
         return self._list_databases_dirs(path)
+
+    def compile(self, expr, *args, **kwargs):
+        return expr
 
 
 @pre_execute.register(ParquetTable, ParquetClient)
