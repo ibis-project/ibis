@@ -29,7 +29,7 @@ import ibis
 from ibis.sql.alchemy import (
     unary, varargs, fixed_arity, Over, _variance_reduction, _get_sqla_table
 )
-import ibis.expr.analytics as L
+import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.window as W
@@ -717,16 +717,24 @@ _operation_registry.update({
     # now is in the timezone of the server, but we want UTC
     ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
     ops.WindowOp: _window,
+
     ops.Lag: _lag,
     ops.Lead: _lead,
     ops.FirstValue: fixed_arity(sa.func.first_value, 1),
     ops.LastValue: fixed_arity(sa.func.last_value, 1),
-    ops.CumulativeOp: _window,
     ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
     ops.DenseRank: fixed_arity(lambda arg: sa.func.dense_rank(), 1),
     ops.MinRank: fixed_arity(lambda arg: sa.func.rank(), 1),
     ops.PercentRank: fixed_arity(lambda arg: sa.func.percent_rank(), 1),
     ops.NTile: _ntile,
+
+    ops.CumulativeOp: _window,
+    ops.CumulativeAll: fixed_arity(sa.func.bool_and, 1),
+    ops.CumulativeAny: fixed_arity(sa.func.bool_or, 1),
+    ops.CumulativeMax: fixed_arity(sa.func.max, 1),
+    ops.CumulativeMin: fixed_arity(sa.func.min, 1),
+    ops.CumulativeSum: fixed_arity(sa.func.sum, 1),
+    ops.CumulativeMean: fixed_arity(sa.func.avg, 1),
 
     # array operations
     ops.ArrayLength: fixed_arity(_cardinality, 1),
