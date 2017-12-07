@@ -35,6 +35,10 @@ class BackendTestConfiguration(six.with_metaclass(abc.ABCMeta)):
     def default_series_rename(cls, series, name='tmp'):
         return series.rename(name)
 
+    @classmethod
+    def functional_alltypes(cls, con):
+        return con.database().functional_alltypes
+
 
 class UnorderedSeriesComparator(object):
     @classmethod

@@ -4,7 +4,11 @@ import os
 
 import pytest
 
-from ibis.tests.all.config.backendtestconfiguration import BackendTestConfiguration
+import ibis
+
+from ibis.tests.all.config.backendtestconfiguration import (
+    BackendTestConfiguration
+)
 
 
 class CSV(BackendTestConfiguration):
@@ -21,3 +25,8 @@ class CSV(BackendTestConfiguration):
             )
         else:
             return backend.connect(test_data_directory)
+
+    @classmethod
+    def functional_alltypes(cls, con):
+        schema = ibis.schema([('bool_col', 'boolean')])
+        return con.table('functional_alltypes', schema=schema)

@@ -19,9 +19,11 @@ def con(backend):
     backend_module_name = backend.__name__.lower()
     try:
         module = getattr(ibis, backend_module_name)
-    except AttributeError:
+    except AttributeError as e:
         pytest.skip(
-            'Unable to import the {} backend'.format(backend_module_name)
+            'Unable to import the {} backend: {}'.format(
+                backend_module_name, e
+            )
         )
     else:
         return backend.connect(module)
@@ -55,13 +57,8 @@ def valid_operations(registry, rewrites, backend):
 
 
 @pytest.fixture(scope='session')
-def db(con):
-    return con.database()
-
-
-@pytest.fixture(scope='session')
-def alltypes(db):
-    return db.functional_alltypes
+def alltypes(backend, con):
+    return backend.functional_alltypes(con)
 
 
 @pytest.fixture(scope='session')
