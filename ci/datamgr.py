@@ -27,7 +27,7 @@ TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting',
 
 
 DEFAULT_MAP = dict(
-    fetch=dict(
+    download=dict(
         data_url='https://storage.googleapis.com/ibis-ci-data'
     ),
     impala=dict(
@@ -121,7 +121,7 @@ def cli():
 @click.argument('name', default='ibis-testing-data.tar.gz')
 @click.option('--base-url')
 @click.option('-d', '--data-directory', default='.')
-def fetch(base_url, data_directory, name):
+def download(base_url, data_directory, name):
     if not os.path.exists(data_directory):
         os.mkdir(data_directory)
 

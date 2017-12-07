@@ -49,7 +49,7 @@ python_test_steps: &python_test_steps
                 -wait tcp://localhost:50070 \
                 -wait tcp://localhost:9000 \
                 -timeout 1m
-  - run: ci/datamgr.py download --directory /tmp/workspace
+  - run: ci/datamgr.py download --data-directory /tmp/workspace
   - run: |
       ci/datamgr.py sqlite \
         --data-directory "$DATA_DIR" \
