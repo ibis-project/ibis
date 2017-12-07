@@ -431,7 +431,13 @@ def test_analytic_functions(
         )
     t = analytic_alltypes
     expr = t.mutate(value=result_func_default_analytic)
-    result = con.execute(expr).set_index('id').sort_index().value
+
+    try:
+        raw_result = con.execute(expr)
+    except com.OperationNotDefinedError as e:
+        pytest.skip(str(e))
+
+    result = raw_result.set_index('id').sort_index().value
 
     df = df.iloc[:1000]
     gb = df.groupby('string_col')
