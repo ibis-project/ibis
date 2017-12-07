@@ -28,7 +28,7 @@ TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting',
 
 DEFAULT_MAP = dict(
     download=dict(
-        data_url='https://storage.googleapis.com/ibis-ci-data'
+        base_url='https://storage.googleapis.com/ibis-ci-data'
     ),
     impala=dict(
         port=21050
