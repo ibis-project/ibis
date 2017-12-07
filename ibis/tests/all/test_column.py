@@ -299,3 +299,148 @@ def test_aggregations(
     result = expr.execute()
     expected = expected_func(df, pandas_cond(df))
     np.testing.assert_allclose(result, expected)
+
+
+@pytest.fixture
+def analytic_alltypes(alltypes):
+    return alltypes.limit(1000).groupby('string_col').order_by('id')
+
+
+@pytest.fixture(scope='function')
+def result_func_default_analytic(
+    request, con, analytic_alltypes, backend, valid_operations
+):
+    func = request.param
+    expr = analytic_alltypes.mutate(value=func)
+    skip_if_invalid_operation(expr, valid_operations, con)
+    return func
+
+
+@pytest.mark.parametrize(
+    ('result_func_default_analytic', 'expected_func'),
+    [
+        # param(
+            # lambda t: t.float_col.lag(),
+            # lambda t: t.float_col.shift(1),
+            # id='lag',
+        # ),
+        # param(
+            # lambda t: t.float_col.lead(),
+            # lambda t: t.float_col.shift(-1),
+            # id='lead',
+        # ),
+        # param(
+            # lambda t: t.float_col.rank(),
+            # lambda t: t,
+            # id='rank'
+        # ),
+        # param(
+            # lambda t: t.float_col.dense_rank(),
+            # lambda t: t,
+            # id='dense_rank'
+        # ),
+        # param(
+            # lambda t: t.float_col.percent_rank(),
+            # lambda t: t,
+            # id='percent_rank'
+        # ),
+        # param(
+            # lambda t: t.float_col.ntile(buckets=7),
+            # lambda t: t,
+            # id='ntile'
+        # ),
+        # param(
+            # lambda t: t.float_col.first(),
+            # lambda t: t.float_col.head(1),
+            # id='first'
+        # ),
+        # param(
+            # lambda t: t.float_col.last(),
+            # lambda t: t.float_col.tail(1),
+            # id='last',
+        # ),
+        # param(
+            # lambda t: t.float_col.first().over(ibis.window(preceding=10)),
+            # lambda t: t,
+            # id='first_preceding'
+        # ),
+        # param(
+            # lambda t: t.float_col.first().over(ibis.window(following=10)),
+            # lambda t: t,
+            # id='first_following'
+        # ),
+        # param(
+            # lambda t: ibis.row_number(),
+            # lambda t: pd.Series(np.arange(len(t))),
+            # id='row_number',
+        # ),
+        param(
+            lambda t: t.float_col.cumsum(),
+            lambda t: t.float_col.cumsum(),
+            id='cumsum'
+        ),
+        # param(
+            # lambda t: t.float_col.cummean(),
+            # lambda t: t.float_col.cummean(),
+            # id='cummean'
+        # ),
+        # param(
+            # lambda t: t.float_col.cummin(),
+            # lambda t: t.float_col.cummin(),
+            # id='cummin'
+        # ),
+        # param(
+            # lambda t: t.float_col.cummax(),
+            # lambda t: t.float_col.cummax(),
+            # id='cummax'
+        # ),
+        # param(
+            # lambda t: (t.float_col == 0).cumany(),
+            # lambda t: (t.float_col == 0).cumany(),
+            # id='cumany'
+        # ),
+        # param(
+            # lambda t: (t.float_col == 0).cumall(),
+            # lambda t: (t.float_col == 0).cumall(),
+            # id='cumall'
+        # ),
+        # param(
+            # lambda t: t.float_col.sum(),
+            # lambda t: t.float_col.sum(),
+            # id='sum'
+        # ),
+        # param(
+            # lambda t: t.float_col.mean(),
+            # lambda t: t.float_col.mean(),
+            # id='mean'
+        # ),
+        # param(
+            # lambda t: t.float_col.min(),
+            # lambda t: t.float_col.min(),
+            # id='min'
+        # ),
+        # param(
+            # lambda t: t.float_col.max(),
+            # lambda t: t.float_col.max(),
+            # id='max'
+        # ),
+    ],
+    indirect=['result_func_default_analytic'],
+)
+def test_analytic_functions(
+    analytic_alltypes,
+    df, con, backend, result_func_default_analytic, expected_func,
+):
+    if not backend.supports_window_operations:
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
+    t = analytic_alltypes
+    expr = t.mutate(value=result_func_default_analytic)
+    result = con.execute(expr).set_index('id').sort_index().value
+
+    df = df.iloc[:1000]
+    gb = df.groupby('string_col')
+    value = gb.apply(expected_func)
+    expected = df.assign(value=value).set_index('id').sort_index().value
+    backend.assert_series_equal(result, expected)
