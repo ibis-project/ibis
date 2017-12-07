@@ -226,7 +226,6 @@ def execute_series_translate_series_series(
     table = from_string.apply(
         lambda x, y: maketrans(x=x, y=next(y)), args=(iter(to_string),)
     )
-    import pdb; pdb.set_trace()  # noqa
     return data.str.translate(table)
 
 
