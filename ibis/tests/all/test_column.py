@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 
 import pytest
 from pytest import param
@@ -19,15 +18,10 @@ def test_distinct_column(alltypes, df, column):
 
 
 def skip_if_invalid_operation(expr, valid_operations, con):
-    op_type = type(expr.op())
     try:
         con.compile(expr)
-    except com.OperationNotDefinedError:
-        pytest.skip(
-            'Operation {!r} is not defined for clients of type {!r}'.format(
-                op_type.__name__, type(con).__name__
-            )
-        )
+    except com.OperationNotDefinedError as e:
+        pytest.skip(str(e))
 
 
 @pytest.fixture(scope='function')
