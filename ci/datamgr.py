@@ -2,16 +2,12 @@
 
 import os
 import click
-import getpass
 import tarfile
-import tempfile
-import operator
 
 import numpy as np
 import pandas as pd
 import sqlalchemy as sa
 
-from contextlib import contextmanager
 from toolz import compose, dissoc
 
 try:
