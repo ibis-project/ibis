@@ -184,4 +184,4 @@ if __name__ == '__main__':
      - IBIS_TEST_{BACKEND}_PASSWORD
      - etc.
     """
-    cli(auto_envvar_prefix='IBIS_TEST_')
+    cli(auto_envvar_prefix='IBIS_TEST')

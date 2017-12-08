@@ -12,4 +12,4 @@ python datamgr.py sqlite
 python datamgr.py postgres
 python datamgr.py clickhouse
 
-python impalamgr.py load --data --data-dir ibis-testing-data
+python impalamgr.py load --data --no-udf --data-dir ibis-testing-data
