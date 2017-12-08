@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import sqlalchemy as sa
 
-from toolz import compose, dissoc
+from toolz import dissoc
 
 try:
     import sh
@@ -21,57 +21,12 @@ if os.environ.get('APPVEYOR', None) is not None:
 else:
     curl = sh.curl
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting',
                'awards_players']
-
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-
-DEFAULT_MAP = dict(
-    download=dict(
-        directory=SCRIPT_DIR,
-        base_url='https://storage.googleapis.com/ibis-ci-data'
-    ),
-    impala=dict(
-        port=21050
-    ),
-    sqlite=dict(
-        database=os.path.join(SCRIPT_DIR, 'ibis_testing.db'),
-        schema=os.path.join(SCRIPT_DIR, 'schema/sqlite.sql')
-    ),
-    postgres=dict(
-        host='localhost',
-        port=5432,
-        user='postgres',
-        password='ibis',
-        database='ibis_testing',
-        schema=os.path.join(SCRIPT_DIR, 'schema/postgresql.sql')
-    ),
-    clickhouse=dict(
-        host='localhost',
-        port=9000,
-        user='default',
-        password='',
-        database='ibis_testing',
-        schema=os.path.join(SCRIPT_DIR, 'schema/clickhouse.sql')
-    )
-)
-
-DATA_DIRECTORY = os.environ.get('IBIS_TEST_DATA_DIRECTORY',
-                                os.path.join(SCRIPT_DIR, 'ibis-testing-data'))
-
-
-options = compose(
-    click.option('-h', '--host', required=False),
-    click.option('-P', '--port', required=False, type=int),
-    click.option('-u', '--user', required=False),
-    click.option('-p', '--password', required=False),
-    click.option('-D', '--database'),
-    click.option('-S', '--schema', type=click.File('rt')),
-    click.option('-t', '--tables', multiple=True, default=TEST_TABLES),
-    click.option('-d', '--data-directory', default=DATA_DIRECTORY)
-)
+TEST_DATA = os.environ.get('IBIS_TEST_DATA_DIRECTORY',
+                           os.path.join(SCRIPT_DIR, 'ibis-testing-data'))
 
 
 def recreate_database(driver, params, **kwargs):
@@ -115,15 +70,16 @@ def insert_tables(engine, names, data_directory):
         df.to_sql(table, engine, index=False, if_exists='append')
 
 
-@click.group(context_settings=dict(default_map=DEFAULT_MAP))
+@click.group()
 def cli():
     pass
 
 
 @cli.command()
 @click.argument('name', default='ibis-testing-data.tar.gz')
-@click.option('--base-url')
-@click.option('-d', '--directory')
+@click.option('--base-url',
+              default='https://storage.googleapis.com/ibis-ci-data')
+@click.option('-d', '--directory', default=SCRIPT_DIR)
 def download(base_url, directory, name):
     if not os.path.exists(directory):
         os.mkdir(directory)
@@ -145,7 +101,15 @@ def download(base_url, directory, name):
 
 
 @cli.command()
-@options
+@click.option('-h', '--host', default='localhost')
+@click.option('-P', '--port', default=5432, type=int)
+@click.option('-u', '--user', default='postgres')
+@click.option('-p', '--password', default='ibis')
+@click.option('-D', '--database', default='ibis_testing')
+@click.option('-S', '--schema', type=click.File('rt'),
+              default=os.path.join(SCRIPT_DIR, 'schema/postgresql.sql'))
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-d', '--data-directory', default=TEST_DATA)
 def postgres(schema, tables, data_directory, **params):
     engine = init_database('postgresql', params, schema,
                            isolation_level='AUTOCOMMIT')
@@ -154,9 +118,13 @@ def postgres(schema, tables, data_directory, **params):
 
 
 @cli.command()
-@options
-def sqlite(schema, tables, data_directory, **params):
-    database = os.path.abspath(params['database'])
+@click.option('-D', '--database',
+              default=os.path.join(SCRIPT_DIR, 'ibis_testing.db'))
+@click.option('-S', '--schema', type=click.File('rt'),
+              default=os.path.join(SCRIPT_DIR, 'schema/sqlite.sql'))
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-d', '--data-directory', default=TEST_DATA)
+def sqlite(database, schema, tables, data_directory, **params):
     if os.path.exists(database):
         try:
             os.remove(database)
@@ -171,7 +139,15 @@ def sqlite(schema, tables, data_directory, **params):
 
 
 @cli.command()
-@options
+@click.option('-h', '--host', default='localhost')
+@click.option('-P', '--port', default=9000, type=int)
+@click.option('-u', '--user', default='default')
+@click.option('-p', '--password', default='')
+@click.option('-D', '--database', default='ibis_testing')
+@click.option('-S', '--schema', type=click.File('rt'),
+              default=os.path.join(SCRIPT_DIR, 'schema/clickhouse.sql'))
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-d', '--data-directory', default=TEST_DATA)
 def clickhouse(schema, tables, data_directory, **params):
     engine = init_database('clickhouse+native', params, schema)
 
@@ -199,7 +175,10 @@ def clickhouse(schema, tables, data_directory, **params):
 if __name__ == '__main__':
     """
     Environment Variables are automatically parsed:
-     - IBIS_IMPALA_PORT
-     - IBIS_CLICKHOUSE_HOST
+     - IBIS_TEST_{BACKEND}_PORT
+     - IBIS_TEST_{BACKEND}_HOST
+     - IBIS_TEST_{BACKEND}_USER
+     - IBIS_TEST_{BACKEND}_PASSWORD
+     - etc.
     """
-    cli(auto_envvar_prefix='IBIS_TEST_')
+    cli(auto_envvar_prefix='IBIS_TEST')
