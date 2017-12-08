@@ -111,6 +111,7 @@ def download(base_url, directory, name):
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=TEST_DATA)
 def postgres(schema, tables, data_directory, **params):
+    click.echo('Initializing PostgreSQL...')
     engine = init_database('postgresql', params, schema,
                            isolation_level='AUTOCOMMIT')
     insert_tables(engine, tables, data_directory)
@@ -125,6 +126,7 @@ def postgres(schema, tables, data_directory, **params):
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=TEST_DATA)
 def sqlite(database, schema, tables, data_directory, **params):
+    click.echo('Initializing SQLite...')
     if os.path.exists(database):
         try:
             os.remove(database)
@@ -149,6 +151,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=TEST_DATA)
 def clickhouse(schema, tables, data_directory, **params):
+    click.echo('Initializing ClickHouse...')
     engine = init_database('clickhouse+native', params, schema)
 
     for table, df in read_tables(tables, data_directory):
