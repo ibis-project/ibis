@@ -38,6 +38,7 @@ def compile(expr, params=None):
     --------
     >>> import os
     >>> import getpass
+    >>> from ibis.sql.postgres.api import connect, compile
     >>> user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
     >>> password = os.environ.get('IBIS_POSTGRES_PASS')
     >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
@@ -64,10 +65,10 @@ def connect(
     port=None,
     database=None,
     url=None,
-    driver=None
+    driver='psycopg2'
 ):
 
-    """Create an Ibis client located at `user`:`password`@`host`:`port`
+    """Create an ibis client located at `user`:`password`@`host`:`port`
     connected to a PostgreSQL database named `database`.
 
     Parameters
@@ -90,6 +91,7 @@ def connect(
     --------
     >>> import os
     >>> import getpass
+    >>> from ibis.sql.postgres.api import connect
     >>> user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
     >>> password = os.environ.get('IBIS_POSTGRES_PASS')
     >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
