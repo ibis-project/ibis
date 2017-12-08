@@ -30,6 +30,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 DEFAULT_MAP = dict(
     download=dict(
+        directory=SCRIPT_DIR,
         base_url='https://storage.googleapis.com/ibis-ci-data'
     ),
     impala=dict(
@@ -122,13 +123,13 @@ def cli():
 @cli.command()
 @click.argument('name', default='ibis-testing-data.tar.gz')
 @click.option('--base-url')
-@click.option('-d', '--data-directory', default='.')
-def download(base_url, data_directory, name):
-    if not os.path.exists(data_directory):
-        os.mkdir(data_directory)
+@click.option('-d', '--directory')
+def download(base_url, directory, name):
+    if not os.path.exists(directory):
+        os.mkdir(directory)
 
     data_url = '{}/{}'.format(base_url, name)
-    path = os.path.join(data_directory, name)
+    path = os.path.join(directory, name)
 
     if not os.path.exists(path):
         curl(data_url, o=path, L=True,
@@ -140,7 +141,7 @@ def download(base_url, data_directory, name):
     click.echo('Extracting archive...')
     if path.endswith(('.tar', '.gz', '.bz2', '.xz')):
         with tarfile.open(path, mode='r|gz') as f:
-            f.extractall(path=data_directory)
+            f.extractall(path=directory)
 
 
 @cli.command()

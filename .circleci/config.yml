@@ -1,6 +1,9 @@
 version: 2
 
 environment: &environment
+  - IBIS_TEST_DOWNLOAD_BASE_URL: https://storage.googleapis.com/ibis-ci-data
+  - IBIS_TEST_DOWNLOAD_NAME: ibis-testing-data.tar.gz
+  - IBIS_TEST_DOWNLOAD_DIRECTORY: /tmp/workspace
   - IBIS_TEST_DATA_DIRECTORY: /tmp/workspace/ibis-testing-data
 
   - IBIS_TEST_POSTGRES_USER: ubuntu
@@ -13,8 +16,6 @@ environment: &environment
   - IBIS_TEST_CLICKHOUSE_DATABASE: ibis_testing
 
   - IBIS_TEST_SQLITE_DATABASE: /tmp/workspace/ibis_testing.db
-
-  - DATA_URL: https://storage.googleapis.com/ibis-ci-data
 
   # The following environment variables are necessary to run impala tests
   - IBIS_TEST_IMPALA_HOST: localhost
@@ -53,7 +54,7 @@ python_test_steps: &python_test_steps
                 -wait tcp://localhost:50070 \
                 -wait tcp://localhost:9000 \
                 -timeout 1m
-  - run: testing/datamgr.py download --data-directory /tmp/workspace
+  - run: testing/datamgr.py download
   - run: testing/datamgr.py sqlite
   - run: testing/datamgr.py postgres
   - run: testing/datamgr.py clickhouse
