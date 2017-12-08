@@ -27,9 +27,11 @@ pytest.importorskip('psycopg2')
 
 pytestmark = pytest.mark.postgresql
 
-POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
-IBIS_POSTGRES_USER = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
-IBIS_POSTGRES_PASS = os.environ.get('IBIS_POSTGRES_PASS')
+POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
+                                  'ibis_testing')
+IBIS_POSTGRES_USER = os.environ.get('IBIS_TEST_POSTGRES_USER',
+                                    getpass.getuser())
+IBIS_POSTGRES_PASS = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD')
 
 
 def test_table(alltypes):
@@ -88,7 +90,7 @@ def test_compile_toplevel():
     expr = t.foo.sum()
     result = ibis.postgres.compile(expr)
     expected = """\
-SELECT sum(t0.foo) AS sum 
+SELECT sum(t0.foo) AS sum
 FROM t0 AS t0"""  # noqa
     assert str(result) == expected
 
