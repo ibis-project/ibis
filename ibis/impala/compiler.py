@@ -391,7 +391,7 @@ def _reduction(func_name):
 
 def _variance_like(func_name):
     func_names = {
-        'sample': func_name,
+        'sample': '{}_samp'.format(func_name),
         'pop': '{}_pop'.format(func_name)
     }
 
@@ -954,7 +954,7 @@ _operation_registry = {
     ops.Min: _reduction('min'),
 
     ops.StandardDev: _variance_like('stddev'),
-    ops.Variance: _variance_like('variance'),
+    ops.Variance: _variance_like('var'),
 
     ops.GroupConcat: fixed_arity('group_concat', 2),
 
