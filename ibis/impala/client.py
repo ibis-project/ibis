@@ -159,7 +159,7 @@ class ImpalaConnection(object):
         self._connections.add(con)
 
         # make sure the connection works
-        cursor = con.cursor(convert_types=True)
+        cursor = con.cursor(user=params.get('user'), convert_types=True)
         cursor.ping()
 
         wrapper = ImpalaCursor(cursor, self, con, self.database,
