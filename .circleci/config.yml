@@ -12,6 +12,8 @@ environment: &environment
   - IBIS_TEST_CLICKHOUSE_PASSWORD: ''
   - IBIS_TEST_CLICKHOUSE_DATABASE: ibis_testing
 
+  - IBIS_TEST_SQLITE_DATABASE: /tmp/workspace/ibis_testing.db
+
   - DATA_URL: https://storage.googleapis.com/ibis-ci-data
 
   # The following environment variables are necessary to run impala tests
@@ -20,6 +22,8 @@ environment: &environment
   - IBIS_TEST_NN_HOST: localhost
   - IBIS_TEST_WEBHDFS_PORT: 50070
   - IBIS_TEST_WEBHDFS_USER: ubuntu
+
+  - GOOGLE_BIGQUERY_PROJECT_ID: ibis-gbq
 
 python_test_steps: &python_test_steps
   - checkout
@@ -50,22 +54,10 @@ python_test_steps: &python_test_steps
                 -wait tcp://localhost:9000 \
                 -timeout 1m
   - run: ci/datamgr.py download --data-directory /tmp/workspace
-  - run: |
-      ci/datamgr.py sqlite \
-        --data-directory "$DATA_DIR" \
-        --script ci/sqlite_load.sql \
-
-  - run: |
-      ci/datamgr.py postgres \
-        --data-directory "$DATA_DIR" \
-        --script ci/postgresql_load.sql
-
-  - run: |
-      ci/datamgr.py clickhouse \
-        --data-directory "$DATA_DIR" \
-        --script ci/clickhouse_load.sql
-
-  - run: test_data_admin.py load --data --data-dir "$DATA_DIR"
+  - run: ci/datamgr.py sqlite
+  - run: ci/datamgr.py postgres
+  - run: ci/datamgr.py clickhouse
+  - run: test_data_admin.py load --data --data-dir "$IBIS_TEST_DATA_DIRECTORY"
   - run: mkdir -p /tmp/reports
   - run: |
       pytest -rsxX \
@@ -108,14 +100,7 @@ jobs:
       - run: |
           cat <<EOF | tee /tmp/workspace/envars.sh
           export PATH="/tmp/workspace/miniconda/bin:$PATH"
-          export DATA_DIR=/tmp/workspace/ibis-testing-data
-          export IBIS_TEST_SQLITE_DATABASE=/tmp/workspace/ibis_testing.db
-          export FUNCTIONAL_ALLTYPES_CSV="\$DATA_DIR/functional_alltypes.csv"
-          export DIAMONDS_CSV="\$DATA_DIR/diamonds.csv"
-          export BATTING_CSV="\$DATA_DIR/batting.csv"
-          export AWARDS_PLAYERS_CSV="\$DATA_DIR/awards_players.csv"
           export GOOGLE_APPLICATION_CREDENTIALS="\$HOME/gcloud-service-key.json"
-          export GOOGLE_BIGQUERY_PROJECT_ID="ibis-gbq"
           EOF
       - persist_to_workspace:
           root: /tmp/workspace

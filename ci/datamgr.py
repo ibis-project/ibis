@@ -26,6 +26,8 @@ TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting',
                'awards_players']
 
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 DEFAULT_MAP = dict(
     download=dict(
         base_url='https://storage.googleapis.com/ibis-ci-data'
@@ -35,7 +37,7 @@ DEFAULT_MAP = dict(
     ),
     sqlite=dict(
         database='ibis_testing.db',
-        schema='sqlite_schema.sql'
+        schema=os.path.join(SCRIPT_DIR, 'sqlite_schema.sql')
     ),
     postgres=dict(
         host='localhost',
@@ -43,7 +45,7 @@ DEFAULT_MAP = dict(
         user='postgres',
         password='ibis',
         database='ibis_testing',
-        schema='postgresql_schema.sql'
+        schema=os.path.join(SCRIPT_DIR, 'postgresql_schema.sql')
     ),
     clickhouse=dict(
         host='localhost',
@@ -51,12 +53,12 @@ DEFAULT_MAP = dict(
         user='default',
         password='',
         database='ibis_testing',
-        schema='clickhouse_schema.sql'
+        schema=os.path.join(SCRIPT_DIR, 'clickhouse_schema.sql')
     )
 )
 
 DATA_DIRECTORY = os.environ.get('IBIS_TEST_DATA_DIRECTORY',
-                                './ibis-testing-data')
+                                os.path.join(SCRIPT_DIR, 'ibis-testing-data'))
 
 
 options = compose(
