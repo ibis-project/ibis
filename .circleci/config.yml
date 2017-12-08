@@ -6,6 +6,7 @@ environment: &environment
   - IBIS_TEST_DOWNLOAD_DIRECTORY: /tmp/workspace
   - IBIS_TEST_DATA_DIRECTORY: /tmp/workspace/ibis-testing-data
 
+  - IBIS_TEST_POSTGRES_HOST: localhost
   - IBIS_TEST_POSTGRES_USER: ubuntu
   - IBIS_TEST_POSTGRES_PASSWORD: ubuntu
   - IBIS_TEST_POSTGRES_DATABASE: ibis_testing
