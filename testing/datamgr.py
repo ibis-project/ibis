@@ -94,7 +94,7 @@ def download(base_url, directory, name):
     else:
         click.echo('Skipping download due to {} already exists.'.format(name))
 
-    click.echo('Extracting archive...')
+    click.echo('Extracting archive to {} ...'.format(directory))
     if path.endswith(('.tar', '.gz', '.bz2', '.xz')):
         with tarfile.open(path, mode='r|gz') as f:
             f.extractall(path=directory)
