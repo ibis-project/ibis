@@ -55,7 +55,6 @@ python_test_steps: &python_test_steps
                 -wait tcp://localhost:9000 \
                 -timeout 1m
   - run: testing/datamgr.py download
-  - run: ls -lah /tmp/workspace/ibis-testing-data
   - run: testing/datamgr.py sqlite
   - run: testing/datamgr.py postgres
   - run: testing/datamgr.py clickhouse
