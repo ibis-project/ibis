@@ -13,10 +13,8 @@
 # limitations under the License.
 
 import os
-import getpass
-
-import pandas as pd
 import pytest
+import pandas as pd
 
 from ibis.tests.util import assert_equal
 import ibis.expr.types as ir
