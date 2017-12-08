@@ -137,8 +137,8 @@ def sqlite(database, schema, tables, data_directory, **params):
     engine = init_database('sqlite', params, schema, recreate=False)
     insert_tables(engine, tables, data_directory)
 
-    engine.execute('VACUUM')
-    engine.execute('VACUUM ANALYZE')
+    # engine.execute('VACUUM')
+    # engine.execute('VACUUM ANALYZE')
 
 
 @cli.command()
