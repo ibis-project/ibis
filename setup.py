@@ -96,12 +96,6 @@ setup(
         'parquet': parquet_requires,
         'parquet:python_version < "3"': parquet_requires + ['pathlib2'],
     },
-    scripts=[
-        os.path.relpath(
-            os.path.join('scripts', 'test_data_admin.py'),
-            os.path.dirname(__file__),
-        )
-    ],
     description="Productivity-centric Python Big Data Framework",
     long_description=LONG_DESCRIPTION,
     classifiers=[

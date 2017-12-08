@@ -53,11 +53,11 @@ python_test_steps: &python_test_steps
                 -wait tcp://localhost:50070 \
                 -wait tcp://localhost:9000 \
                 -timeout 1m
-  - run: ci/datamgr.py download --data-directory /tmp/workspace
-  - run: ci/datamgr.py sqlite
-  - run: ci/datamgr.py postgres
-  - run: ci/datamgr.py clickhouse
-  - run: test_data_admin.py load --data --data-dir "$IBIS_TEST_DATA_DIRECTORY"
+  - run: testing/datamgr.py download --data-directory /tmp/workspace
+  - run: testing/datamgr.py sqlite
+  - run: testing/datamgr.py postgres
+  - run: testing/datamgr.py clickhouse
+  - run: testing/impalamgr.py load --data --data-dir "$IBIS_TEST_DATA_DIRECTORY"
   - run: mkdir -p /tmp/reports
   - run: |
       pytest -rsxX \

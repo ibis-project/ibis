@@ -37,7 +37,7 @@ DEFAULT_MAP = dict(
     ),
     sqlite=dict(
         database=os.path.join(SCRIPT_DIR, 'ibis_testing.db'),
-        schema=os.path.join(SCRIPT_DIR, 'schema/sqlite.sql')
+        schema=os.path.join(SCRIPT_DIR, 'sqlite_schema.sql')
     ),
     postgres=dict(
         host='localhost',
@@ -45,7 +45,7 @@ DEFAULT_MAP = dict(
         user='postgres',
         password='ibis',
         database='ibis_testing',
-        schema=os.path.join(SCRIPT_DIR, 'schema/postgresql.sql')
+        schema=os.path.join(SCRIPT_DIR, 'postgresql_schema.sql')
     ),
     clickhouse=dict(
         host='localhost',
@@ -53,7 +53,7 @@ DEFAULT_MAP = dict(
         user='default',
         password='',
         database='ibis_testing',
-        schema=os.path.join(SCRIPT_DIR, 'schema/clickhouse.sql')
+        schema=os.path.join(SCRIPT_DIR, 'clickhouse_schema.sql')
     )
 )
 
