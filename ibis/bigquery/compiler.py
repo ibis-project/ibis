@@ -1,3 +1,4 @@
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
 import ibis.sql.compiler as comp
@@ -210,6 +211,7 @@ _operation_registry.update({
     ops.RegexSearch: _regex_search,
     ops.RegexExtract: _regex_extract,
     ops.RegexReplace: _regex_replace,
+
     ops.GroupConcat: fixed_arity('STRING_AGG', 2),
 
     ops.IfNull: fixed_arity('IFNULL', 2),
@@ -241,6 +243,33 @@ _operation_registry = {
 
 class BigQueryExprTranslator(impala_compiler.ImpalaExprTranslator):
     _registry = _operation_registry
+
+
+rewrites = BigQueryExprTranslator.rewrites
+
+
+@rewrites(ops.Any)
+def bigquery_rewrite_any(expr):
+    arg, = expr.op().args
+    return arg.cast(dt.int64).sum() > 0
+
+
+@rewrites(ops.NotAny)
+def bigquery_rewrite_notany(expr):
+    arg, = expr.op().args
+    return arg.cast(dt.int64).sum() == 0
+
+
+@rewrites(ops.All)
+def bigquery_rewrite_all(expr):
+    arg, = expr.op().args
+    return (1 - arg.cast(dt.int64)).sum() == 0
+
+
+@rewrites(ops.NotAll)
+def bigquery_rewrite_notall(expr):
+    arg, = expr.op().args
+    return (1 - arg.cast(dt.int64)).sum() != 0
 
 
 class BigQueryDialect(impala_compiler.ImpalaDialect):
