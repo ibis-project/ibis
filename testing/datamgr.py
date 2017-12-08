@@ -67,7 +67,8 @@ def read_tables(names, data_directory):
 
 def insert_tables(engine, names, data_directory):
     for table, df in read_tables(names, data_directory):
-        df.to_sql(table, engine, index=False, if_exists='append')
+        with engine.begin() as connection:
+            df.to_sql(table, connection, index=False, if_exists='append')
 
 
 @click.group()
