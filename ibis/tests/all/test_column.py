@@ -7,21 +7,11 @@ import ibis
 import ibis.common as com
 
 
-@pytest.mark.parametrize(
-    'column', ['string_col', 'double_col', 'date_string_col']
-)
-def test_distinct_column(alltypes, df, column):
-    expr = alltypes[column].distinct()
-    result = expr.execute()
-    expected = df[column].unique()
-    assert set(result) == set(expected)
-
-
 def skip_if_invalid_operation(expr, valid_operations, con):
     try:
         con.compile(expr)
     except com.OperationNotDefinedError as e:
-        pytest.skip(str(e))
+        pytest.skip('{} with client {}'.format(e, type(con).__name__))
 
 
 @pytest.fixture(scope='function')
@@ -30,6 +20,35 @@ def result_func_default(request, con, alltypes, backend, valid_operations):
     expr = func(alltypes)
     skip_if_invalid_operation(expr, valid_operations, con)
     return func
+
+
+@pytest.fixture(scope='function')
+def result_func_aggs(request, con, alltypes, valid_operations):
+    func = request.param
+    cond = request.getfixturevalue('ibis_cond')
+    expr = func(alltypes, cond(alltypes))
+    skip_if_invalid_operation(expr, valid_operations, con)
+    return func
+
+
+@pytest.fixture(scope='function')
+def result_func_default_analytic(
+    request, con, analytic_alltypes, backend, valid_operations
+):
+    func = request.param
+    expr = analytic_alltypes.mutate(value=func)
+    skip_if_invalid_operation(expr, valid_operations, con)
+    return func
+
+
+@pytest.mark.parametrize(
+    'column', ['string_col', 'double_col', 'date_string_col']
+)
+def test_distinct_column(alltypes, df, column):
+    expr = alltypes[column].distinct()
+    result = expr.execute()
+    expected = df[column].unique()
+    assert set(result) == set(expected)
 
 
 @pytest.mark.parametrize(
@@ -170,15 +189,6 @@ def test_strings(alltypes, df, backend, result_func_default, expected_func):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.fixture(scope='function')
-def result_func_aggs(request, con, alltypes, valid_operations):
-    func = request.param
-    cond = request.getfixturevalue('ibis_cond')
-    expr = func(alltypes, cond(alltypes))
-    skip_if_invalid_operation(expr, valid_operations, con)
-    return func
-
-
 @pytest.mark.parametrize(
     ('result_func_aggs', 'expected_func'),
     [
@@ -295,21 +305,6 @@ def test_aggregations(
     np.testing.assert_allclose(result, expected)
 
 
-@pytest.fixture
-def analytic_alltypes(alltypes):
-    return alltypes.limit(1000).groupby('string_col').order_by('id')
-
-
-@pytest.fixture(scope='function')
-def result_func_default_analytic(
-    request, con, analytic_alltypes, backend, valid_operations
-):
-    func = request.param
-    expr = analytic_alltypes.mutate(value=func)
-    skip_if_invalid_operation(expr, valid_operations, con)
-    return func
-
-
 @pytest.mark.parametrize(
     ('result_func_default_analytic', 'expected_func'),
     [
@@ -369,55 +364,61 @@ def result_func_default_analytic(
             # id='row_number',
         # ),
         param(
-            lambda t: t.float_col.cumsum(),
-            lambda t: t.float_col.cumsum(),
+            lambda t: t.double_col.cumsum(),
+            lambda t: t.double_col.cumsum(),
             id='cumsum'
         ),
-        # param(
-            # lambda t: t.float_col.cummean(),
-            # lambda t: t.float_col.cummean(),
-            # id='cummean'
-        # ),
-        # param(
-            # lambda t: t.float_col.cummin(),
-            # lambda t: t.float_col.cummin(),
-            # id='cummin'
-        # ),
-        # param(
-            # lambda t: t.float_col.cummax(),
-            # lambda t: t.float_col.cummax(),
-            # id='cummax'
-        # ),
-        # param(
-            # lambda t: (t.float_col == 0).cumany(),
-            # lambda t: (t.float_col == 0).cumany(),
-            # id='cumany'
-        # ),
-        # param(
-            # lambda t: (t.float_col == 0).cumall(),
-            # lambda t: (t.float_col == 0).cumall(),
-            # id='cumall'
-        # ),
-        # param(
-            # lambda t: t.float_col.sum(),
-            # lambda t: t.float_col.sum(),
-            # id='sum'
-        # ),
-        # param(
-            # lambda t: t.float_col.mean(),
-            # lambda t: t.float_col.mean(),
-            # id='mean'
-        # ),
-        # param(
-            # lambda t: t.float_col.min(),
-            # lambda t: t.float_col.min(),
-            # id='min'
-        # ),
-        # param(
-            # lambda t: t.float_col.max(),
-            # lambda t: t.float_col.max(),
-            # id='max'
-        # ),
+        param(
+            lambda t: t.double_col.cummean(),
+            lambda t: t.double_col.expanding().mean().reset_index(
+                drop=True, level=0
+            ),
+            id='cummean'
+        ),
+        param(
+            lambda t: t.float_col.cummin(),
+            lambda t: t.float_col.cummin(),
+            id='cummin'
+        ),
+        param(
+            lambda t: t.float_col.cummax(),
+            lambda t: t.float_col.cummax(),
+            id='cummax'
+        ),
+        param(
+            lambda t: (t.double_col == 0).cumany(),
+            lambda t: t.double_col.expanding().agg(
+                lambda s: (s == 0).any()
+            ).reset_index(drop=True, level=0).astype(bool),
+            id='cumany'
+        ),
+        param(
+            lambda t: (t.double_col == 0).cumall(),
+            lambda t: t.double_col.expanding().agg(
+                lambda s: (s == 0).all()
+            ).reset_index(drop=True, level=0).astype(bool),
+            id='cumall'
+        ),
+        param(
+            lambda t: t.double_col.sum(),
+            lambda gb: gb.double_col.transform('sum'),
+            id='sum'
+        ),
+        param(
+            lambda t: t.double_col.mean(),
+            lambda gb: gb.double_col.transform('mean'),
+            id='mean'
+        ),
+        param(
+            lambda t: t.float_col.min(),
+            lambda gb: gb.float_col.transform('min'),
+            id='min'
+        ),
+        param(
+            lambda t: t.float_col.max(),
+            lambda gb: gb.float_col.transform('max'),
+            id='max'
+        ),
     ],
     indirect=['result_func_default_analytic'],
 )
@@ -429,18 +430,17 @@ def test_analytic_functions(
         pytest.skip(
             'Backend {} does not support window operations'.format(backend)
         )
-    t = analytic_alltypes
-    expr = t.mutate(value=result_func_default_analytic)
+    expr = analytic_alltypes.mutate(value=result_func_default_analytic)
 
     try:
         raw_result = con.execute(expr)
     except com.OperationNotDefinedError as e:
         pytest.skip(str(e))
 
-    result = raw_result.set_index('id').sort_index().value
+    result = raw_result.set_index('id').sort_index()
 
-    df = df.iloc[:1000]
-    gb = df.groupby('string_col')
-    value = gb.apply(expected_func)
-    expected = df.assign(value=value).set_index('id').sort_index().value
-    backend.assert_series_equal(result, expected)
+    gb = df.sort_values('id').groupby('string_col')
+    expected = df.assign(value=expected_func(gb)).set_index('id').sort_index()
+    left, right = result.value, expected.value
+    import pdb; pdb.set_trace()  # noqa
+    backend.assert_series_equal(left, right)
