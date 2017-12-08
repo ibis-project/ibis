@@ -1,7 +1,6 @@
 import os
 import pytest
 
-from toolz import keymap
 from functools import partial
 
 import ibis
@@ -42,10 +41,10 @@ def env(backend):
 
 @pytest.fixture(params=[
     'clickhouse',
-    #'impala',
-    #'bigquery',
+    # 'impala',
+    # 'bigquery',
     'postgres',
-    #'sqlite'
+    # 'sqlite'
 ])
 def client(request):
     name = request.param
@@ -60,4 +59,3 @@ def client(request):
 @pytest.fixture
 def alltypes(client):
     return client.table('functional_alltypes')
-

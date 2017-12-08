@@ -48,7 +48,8 @@ class IbisTestEnv(object):
                                             '/__ibis/ibis-testing-data')
         self.nn_host = os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
         # 5070 is default for impala dev env
-        self.webhdfs_port = int(os.environ.get('IBIS_TEST_WEBHDFS_PORT', 50070))
+        self.webhdfs_port = int(os.environ.get('IBIS_TEST_WEBHDFS_PORT',
+                                               50070))
         self.hdfs_superuser = os.environ.get('IBIS_TEST_HDFS_SUPERUSER',
                                              'hdfs')
         self.use_codegen = os.environ.get('IBIS_TEST_USE_CODEGEN',
