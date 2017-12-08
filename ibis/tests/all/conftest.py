@@ -61,6 +61,11 @@ def alltypes(backend, con):
     return backend.functional_alltypes(con)
 
 
+@pytest.fixture
+def analytic_alltypes(alltypes):
+    return alltypes.groupby('string_col').order_by('id')
+
+
 @pytest.fixture(scope='session')
 def df(alltypes):
     return alltypes.execute()
