@@ -58,7 +58,7 @@ def test_decimal_cast():
 
 @pytest.mark.parametrize('column', [
     'index',
-    'Unnamed_0',  # FIXME rename to `Unnamed: 0`
+    'Unnamed: 0',
     'id',
     'bool_col',
     'tinyint_col',

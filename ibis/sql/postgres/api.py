@@ -38,9 +38,10 @@ def compile(expr, params=None):
     --------
     >>> import os
     >>> import getpass
-    >>> user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
-    >>> password = os.environ.get('IBIS_POSTGRES_PASS')
-    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
+    >>> user = os.environ.get('IBIS_TEST_POSTGRES_USER', getpass.getuser())
+    >>> password = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD')
+    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
+    ...                           'ibis_testing')
     >>> con = connect(
     ...     database=database,
     ...     host='localhost',
@@ -90,9 +91,10 @@ def connect(
     --------
     >>> import os
     >>> import getpass
-    >>> user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
-    >>> password = os.environ.get('IBIS_POSTGRES_PASS')
-    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
+    >>> user = os.environ.get('IBIS_TEST_POSTGRES_USER', getpass.getuser())
+    >>> password = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD')
+    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
+    ...                           'ibis_testing')
     >>> con = connect(
     ...     database=database,
     ...     host='localhost',

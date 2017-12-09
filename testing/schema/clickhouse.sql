@@ -1,5 +1,3 @@
-DROP TABLE IF EXISTS diamonds;
-
 CREATE TABLE diamonds (
     `date` Date DEFAULT today(),
     carat Float64,
@@ -13,8 +11,6 @@ CREATE TABLE diamonds (
     y Float64,
     z Float64
 ) ENGINE = MergeTree(date, (`carat`), 8192);
-
-DROP TABLE IF EXISTS batting;
 
 CREATE TABLE batting (
     `date` Date DEFAULT today(),
@@ -42,8 +38,6 @@ CREATE TABLE batting (
     `GIDP` Int64
 ) ENGINE = MergeTree(date, (`playerID`), 8192);
 
-DROP TABLE IF EXISTS awards_players;
-
 CREATE TABLE awards_players (
     `date` Date DEFAULT today(),
     `playerID` String,
@@ -54,12 +48,10 @@ CREATE TABLE awards_players (
     notes String
 ) ENGINE = MergeTree(date, (`playerID`), 8192);
 
-DROP TABLE IF EXISTS functional_alltypes;
-
 CREATE TABLE functional_alltypes (
     `date` Date DEFAULT toDate(timestamp_col),
     `index` Int64,
-    `Unnamed_0` Int64,
+    `Unnamed: 0` Int64,
     id Int32,
     bool_col UInt8,
     tinyint_col Int8,
@@ -75,16 +67,12 @@ CREATE TABLE functional_alltypes (
     month Int32
 ) ENGINE = MergeTree(date, (`index`), 8192);
 
-DROP TABLE IF EXISTS tzone;
-
 CREATE TABLE tzone (
     `date` Date DEFAULT today(),
     ts DateTime,
     key String,
     value Float64
 ) ENGINE = MergeTree(date, (key), 8192);
-
-DROP TABLE IF EXISTS array_types;
 
 CREATE TABLE IF NOT EXISTS array_types (
     `date` Date DEFAULT today(),
