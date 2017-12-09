@@ -42,16 +42,46 @@ Conda Environment Setup
       # Install ibis
       python setup.py develop
 
-#. `Install docker <https://docs.docker.com/engine/installation/>`_
-#. **Download the test data**:
+
+All-in-One Command
+------------------
+
+The following command does three steps:
+
+#. Downloads the test data
+#. Starts each backend via docker-compose
+#. Initializes the backends with the test tables
 
    .. code:: sh
 
-      DATA_DIR=$PWD
-      ci/datamgr.py download --directory=$DATA_DIR
+      cd testing
+      bash start-all.sh
+
+To use specific backends follow the instructions below.
+
+
+Download Test Dataset
+---------------------
+
+#. `Install docker <https://docs.docker.com/engine/installation/>`_
+#. **Download the test data**:
+
+   By default this will download and extract the dataset under
+   testing/ibis-testing-data.
+
+   .. code:: sh
+
+      testing/datamgr.py download
+
 
 Setting Up Test Databases
 -------------------------
+
+   .. code:: sh
+
+      cd testing
+      docker-compose up
+
 
 Impala (with UDFs)
 ^^^^^^^^^^^^^^^^^^
@@ -67,7 +97,7 @@ Impala (with UDFs)
 
    .. code:: sh
 
-      test_data_admin.py load --data --data-dir=$DATA_DIR
+      testing/impalamgr.py load --data --data-dir ibis-testing-data
 
 Clickhouse
 ^^^^^^^^^^
@@ -83,11 +113,7 @@ Clickhouse
 
    .. code:: sh
 
-      ci/datamgr.py clickhouse \
-          --database $IBIS_TEST_CLICKHOUSE_DB \
-          --data-directory $DATA_DIR/ibis-testing-data \
-          --script ci/clickhouse_load.sql \
-          functional_alltypes batting diamonds awards_players
+      testing/datamgr.py clickhouse
 
 PostgreSQL
 ^^^^^^^^^^
@@ -99,11 +125,7 @@ Here's how to load test data into PostgreSQL:
 
    .. code:: sh
 
-      ci/datamgr.py postgres \
-          --database $IBIS_TEST_POSTGRES_DB \
-          --data-directory $DATA_DIR/ibis-testing-data \
-          --script ci/postgresql_load.sql \
-          functional_alltypes batting diamonds awards_players
+      testing/datamgr.py postgres
 
 SQLite
 ^^^^^^
@@ -113,11 +135,7 @@ instructions above, then SQLite will be available in the conda environment.
 
    .. code:: sh
 
-      ci/datamgr.py sqlite \
-          --database $IBIS_TEST_SQLITE_DB_PATH \
-          --data-directory $DATA_DIR/ibis-testing-data \
-          --script ci/sqlite_load.sql \
-          functional_alltypes batting diamonds awards_players
+      testing/datamgr.py sqlite
 
 
 Running Tests
