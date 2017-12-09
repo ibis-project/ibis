@@ -40,10 +40,10 @@ def env(backend):
 
 
 @pytest.fixture(params=[
-    'clickhouse',
+    # 'clickhouse',
     # 'impala',
     # 'bigquery',
-    'postgres',
+    # 'postgres',
     # 'sqlite'
 ])
 def client(request):
