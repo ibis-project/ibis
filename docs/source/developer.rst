@@ -77,6 +77,8 @@ Download Test Dataset
 Setting Up Test Databases
 -------------------------
 
+To start each backends
+
    .. code:: sh
 
       cd testing
