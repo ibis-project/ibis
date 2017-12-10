@@ -249,6 +249,18 @@ class NullIfZero(ValueOp):
     output_type = rules.type_of_arg(0)
 
 
+class IsNan(ValueOp):
+
+    input_type = [rules.floating]
+    output_type = rules.shape_like_arg(0, 'boolean')
+
+
+class IsInf(ValueOp):
+
+    input_type = [rules.floating]
+    output_type = rules.shape_like_arg(0, 'boolean')
+
+
 class CoalesceLike(ValueOp):
 
     # According to Impala documentation:

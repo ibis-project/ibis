@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+import toolz
 import operator
+import numpy as np
+
 from collections import OrderedDict
 from operator import methodcaller
 from datetime import date, datetime, time
-
-import pytest
 
 from ibis.common import IbisTypeError
 from ibis.expr import (
@@ -28,8 +30,6 @@ from ibis.compat import PY2
 
 from ibis import literal
 from ibis.tests.util import assert_equal
-
-import toolz
 
 
 def test_null():
@@ -350,6 +350,28 @@ def test_notnull(table):
     expr = ibis.literal('foo').notnull()
     assert isinstance(expr, api.BooleanScalar)
     assert isinstance(expr.op(), ops.NotNull)
+
+
+@pytest.mark.parametrize('column', ['e', 'f'], ids=['float', 'double'])
+def test_isnan_isinf_column(table, column):
+    expr = table[column].isnan()
+    assert isinstance(expr, api.BooleanColumn)
+    assert isinstance(expr.op(), ops.IsNan)
+
+    expr = table[column].isinf()
+    assert isinstance(expr, api.BooleanColumn)
+    assert isinstance(expr.op(), ops.IsInf)
+
+
+@pytest.mark.parametrize('value', [1.3, np.nan, np.inf, -np.inf])
+def test_isnan_isinf_scalar(value):
+    expr = ibis.literal(value).isnan()
+    assert isinstance(expr, api.BooleanScalar)
+    assert isinstance(expr.op(), ops.IsNan)
+
+    expr = ibis.literal(value).isinf()
+    assert isinstance(expr, api.BooleanScalar)
+    assert isinstance(expr.op(), ops.IsInf)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')

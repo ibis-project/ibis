@@ -701,6 +701,10 @@ def decimal(**arg_kwds):
     return ValueTyped(ir.DecimalValue, 'not decimal', **arg_kwds)
 
 
+def floating(**arg_kwds):
+    return ValueTyped(ir.FloatingValue, 'not floating', **arg_kwds)
+
+
 def timestamp(**arg_kwds):
     return ValueTyped(ir.TimestampValue, 'not timestamp', **arg_kwds)
 

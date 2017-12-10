@@ -36,6 +36,7 @@ from ibis.expr.types import (Expr,  # noqa
                              Int64Value, Int64Scalar, Int64Column,
                              NullScalar,
                              BooleanValue, BooleanScalar, BooleanColumn,
+                             FloatingValue,
                              FloatValue, FloatScalar, FloatColumn,
                              DoubleValue, DoubleScalar, DoubleColumn,
                              StringValue, StringScalar, StringColumn,
@@ -1300,7 +1301,7 @@ _numeric_value_methods = dict(
     pow=pow,
 
     __radd__=add,
-    radd=add,  # It was missing I guess?
+    radd=add,
 
     __rsub__=rsub,
     rsub=rsub,
@@ -1395,8 +1396,14 @@ _numeric_column_methods = dict(
     summary=_numeric_summary,
 )
 
+_floating_value_methods = dict(
+    isnan=_unary_op('isnull', _ops.IsNan),
+    isinf=_unary_op('isinf', _ops.IsInf),
+)
+
 _add_methods(NumericValue, _numeric_value_methods)
 _add_methods(IntegerValue, _integer_value_methods)
+_add_methods(FloatingValue, _floating_value_methods)
 
 _add_methods(NumericColumn, _numeric_column_methods)
 
