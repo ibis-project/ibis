@@ -28,6 +28,7 @@ New Features
 * Support for Unsigned Integer Types (:issue:`1194`)
 * Support for Interval types and expressions with support for execution on the
   Impala and Clickhouse backends (:issue:`1243`)
+* Isnan, isinf operations for float and double values (:issue:`1261`)
 
 Bug Fixes
 ~~~~~~~~~
