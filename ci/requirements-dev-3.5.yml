@@ -21,6 +21,6 @@ dependencies:
   - toolz
   - clickhouse-driver>=0.0.8
   - clickhouse-sqlalchemy
+  - google-cloud-bigquery<0.28
   - pip:
     - hdfs>=2.0.0
-    - google-cloud-bigquery<0.28
