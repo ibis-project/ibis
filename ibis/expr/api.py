@@ -2112,7 +2112,7 @@ def _convert_unit(value, unit, to):
         try:
             i, j = monthly_units.index(unit), monthly_units.index(to)
             factors = monthly_factors
-        except:
+        except ValueError:
             raise ValueError('Cannot convert to or from '
                              'non-fixed-length interval')
 

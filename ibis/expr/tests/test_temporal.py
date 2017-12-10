@@ -310,7 +310,7 @@ def test_interval_properties(prop, expected_unit):
     ('quarters', 'Q'),
     ('years', 'Y')
 ])
-def test_interval_properties(interval, prop, expected_unit):
+def test_interval_monthly_properties(interval, prop, expected_unit):
     assert getattr(interval, prop).type().unit == expected_unit
 
 
