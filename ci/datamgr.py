@@ -186,8 +186,6 @@ def sqlite(script, tables, database, data_directory):
         df = pd.read_csv(path, index_col=None, header=0)
         with engine.begin() as con:
             df.to_sql(table, con, index=False, if_exists='append')
-    # engine.execute('VACUUM')
-    # engine.execute('VACUUM ANALYZE')
 
 
 if os.environ.get('APPVEYOR', None) is not None:
