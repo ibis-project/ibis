@@ -580,6 +580,7 @@ class Interval(DataType):
 
     _units = dict(
         Y='year',
+        Q='quarter',
         M='month',
         w='week',
         d='day',

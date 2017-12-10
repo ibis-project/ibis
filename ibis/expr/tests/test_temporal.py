@@ -10,6 +10,9 @@ import ibis.expr.api as api
 
 
 @pytest.mark.parametrize(('interval', 'unit', 'expected'), [
+    (api.month(3), 'Q', api.quarter(1)),
+    (api.month(12), 'Y', api.year(1)),
+    (api.quarter(8), 'Y', api.year(2)),
     (api.day(14), 'w', api.week(2)),
     (api.minute(240), 'h', api.hour(4)),
     (api.second(360), 'm', api.minute(6)),
@@ -25,19 +28,22 @@ def test_upconvert(interval, unit, expected):
     assert result.type().unit == expected.type().unit
 
 
-@pytest.mark.parametrize(('delta', 'target'), [
-    (api.day(), 'w'),
-    (api.hour(), 'd'),
-    (api.minute(), 'h'),
-    (api.second(), 'm'),
-    (api.second(), 'd'),
-    (api.millisecond(), 's'),
-    (api.microsecond(), 's'),
-    (api.nanosecond(), 's'),
+@pytest.mark.parametrize('target', [
+    'Y', 'Q', 'M'
+])
+@pytest.mark.parametrize('delta', [
+    api.week(),
+    api.day(),
+    api.hour(),
+    api.minute(),
+    api.second(),
+    api.millisecond(),
+    api.microsecond(),
+    api.nanosecond()
 ])
 def test_cannot_upconvert(delta, target):
-    assert isinstance(delta, ir.IntervalScalar)
-    assert delta.to_unit(target).type().unit == target
+    with pytest.raises(ValueError):
+        delta.to_unit(target)
 
 
 @pytest.mark.parametrize('expr', [
@@ -114,6 +120,7 @@ def test_combine_with_different_kinds(a, b, unit):
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
+    (api.interval(quarters=2), api.quarter(2)),
     (api.interval(weeks=2), api.week(2)),
     (api.interval(days=3), api.day(3)),
     (api.interval(hours=4), api.hour(4)),
@@ -184,6 +191,7 @@ def test_offset_months():
     api.interval(3600),
     api.interval(datetime.timedelta(days=3)),
     api.interval(years=1),
+    api.interval(quarters=3),
     api.interval(months=2),
     api.interval(weeks=3),
     api.interval(days=-1),
@@ -292,11 +300,35 @@ def test_interval_properties(prop, expected_unit):
     assert getattr(i, prop).type().unit == expected_unit
 
 
+@pytest.mark.parametrize('interval', [
+    api.interval(years=1),
+    api.interval(quarters=4),
+    api.interval(months=12)
+])
+@pytest.mark.parametrize(('prop', 'expected_unit'), [
+    ('months', 'M'),
+    ('quarters', 'Q'),
+    ('years', 'Y')
+])
+def test_interval_properties(interval, prop, expected_unit):
+    assert getattr(interval, prop).type().unit == expected_unit
+
+
+@pytest.mark.parametrize(('interval', 'prop'), [
+    (api.interval(hours=48), 'months'),
+    (api.interval(years=2), 'seconds'),
+    (api.interval(quarters=1), 'weeks')
+])
+def test_unsupported_properties(interval, prop):
+    with pytest.raises(ValueError):
+        getattr(interval, prop)
+
+
 @pytest.mark.parametrize('column', [
     'a', 'b', 'c', 'd'  # integer columns
 ])
 @pytest.mark.parametrize('unit', [
-    'Y', 'M', 'd', 'w',
+    'Y', 'Q', 'M', 'd', 'w',
     'h', 'm', 's', 'ms', 'us', 'ns'
 ])
 def test_integer_to_interval(column, unit, table):
@@ -308,7 +340,7 @@ def test_integer_to_interval(column, unit, table):
 
 
 @pytest.mark.parametrize('unit', [
-    'Y', 'M', 'd', 'w',
+    'Y', 'Q', 'M', 'd', 'w',
     'h', 'm', 's', 'ms', 'us', 'ns'
 ])
 @pytest.mark.parametrize('operands', [
@@ -324,7 +356,7 @@ def test_integer_to_interval(column, unit, table):
     operator.gt,
     operator.le,
     operator.lt
-])
+], ids=lambda op: op.__name__)
 def test_interval_comparisons(unit, operands, operator, table):
     a, b = operands(table, unit)
     expr = operator(a, b)
@@ -340,9 +372,16 @@ def test_interval_comparisons(unit, operands, operator, table):
     lambda t: (api.date('2016-01-01'), t.j),
     lambda t: (t.j, t.i.date()),
     lambda t: (t.i.date(), t.j)
+], ids=[
+    'literal-literal',
+    'column-literal',
+    'literal-column',
+    'column-casted',
+    'casted-column'
 ])
 @pytest.mark.parametrize('interval', [
     lambda t: api.interval(years=4),
+    lambda t: api.interval(quarters=4),
     lambda t: api.interval(months=3),
     lambda t: api.interval(weeks=2),
     lambda t: api.interval(days=1),
@@ -350,11 +389,25 @@ def test_interval_comparisons(unit, operands, operator, table):
     lambda t: t.c.to_interval(unit='M'),
     lambda t: t.c.to_interval(unit='w'),
     lambda t: t.c.to_interval(unit='d'),
+], ids=[
+    'years',
+    'quarters',
+    'months',
+    'weeks',
+    'days',
+    'to-years',
+    'to-months',
+    'to-weeks',
+    'to-days'
 ])
 @pytest.mark.parametrize('arithmetic', [
     lambda a, i: a - i,
     lambda a, i: a + i,
     lambda a, i: i + a
+], ids=[
+    'subtract',
+    'radd',
+    'add'
 ])
 @pytest.mark.parametrize('operator', [
     operator.eq,
@@ -363,7 +416,7 @@ def test_interval_comparisons(unit, operands, operator, table):
     operator.gt,
     operator.le,
     operator.lt
-])
+], ids=lambda op: op.__name__)
 def test_complex_date_comparisons(operands, interval, arithmetic, operator,
                                   table):
     (a, b), i = operands(table), interval(table)

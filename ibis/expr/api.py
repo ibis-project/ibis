@@ -217,8 +217,8 @@ def time(value):
     return ir.TimeScalar(ir.literal(value).op())
 
 
-def interval(value=None, unit='s', years=None, months=None, weeks=None,
-             days=None, hours=None, minutes=None, seconds=None,
+def interval(value=None, unit='s', years=None, quarters=None, months=None,
+             weeks=None, days=None, hours=None, minutes=None, seconds=None,
              milliseconds=None, microseconds=None, nanoseconds=None):
     """
     Returns an interval literal
@@ -227,6 +227,7 @@ def interval(value=None, unit='s', years=None, months=None, weeks=None,
     ----------
     value : int or datetime.timedelta, default None
     years : int, default None
+    quarters : int, default None
     months : int, default None
     days : int, default None
     weeks : int, default None
@@ -250,6 +251,7 @@ def interval(value=None, unit='s', years=None, months=None, weeks=None,
     else:
         kwds = [
             ('Y', years),
+            ('Q', quarters),
             ('M', months),
             ('w', weeks),
             ('d', days),
@@ -310,6 +312,10 @@ def week(value=1):
 
 def month(value=1):
     return interval(months=value)
+
+
+def quarter(value=1):
+    return interval(quarters=value)
 
 
 def year(value=1):
@@ -2094,10 +2100,22 @@ _add_methods(DateValue, _date_value_methods)
 
 
 def _convert_unit(value, unit, to):
-    factors = (7, 24, 60, 60, 1000, 1000, 1000)
     units = ('w', 'd', 'h', 'm', 's', 'ms', 'us', 'ns')
+    factors = (7, 24, 60, 60, 1000, 1000, 1000)
 
-    i, j = units.index(unit), units.index(to)
+    monthly_units = ('Y', 'Q', 'M')
+    monthly_factors = (4, 3)
+
+    try:
+        i, j = units.index(unit), units.index(to)
+    except ValueError:
+        try:
+            i, j = monthly_units.index(unit), monthly_units.index(to)
+            factors = monthly_factors
+        except:
+            raise ValueError('Cannot convert to or from '
+                             'non-fixed-length interval')
+
     factor = functools.reduce(operator.mul, factors[i:j], 1)
 
     if i < j:
@@ -2127,6 +2145,9 @@ _interval_floordiv = _binop_expr('__floordiv__', _ops.IntervalFloorDivide)
 
 _interval_value_methods = dict(
     to_unit=_to_unit,
+    years=_interval_property('Y'),
+    quarters=_interval_property('Q'),
+    months=_interval_property('M'),
     weeks=_interval_property('w'),
     days=_interval_property('d'),
     hours=_interval_property('h'),
