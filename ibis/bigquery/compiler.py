@@ -243,6 +243,7 @@ _operation_registry = {
 
 class BigQueryExprTranslator(impala_compiler.ImpalaExprTranslator):
     _registry = _operation_registry
+    _rewrites = impala_compiler.ImpalaExprTranslator._rewrites.copy()
 
 
 rewrites = BigQueryExprTranslator.rewrites
