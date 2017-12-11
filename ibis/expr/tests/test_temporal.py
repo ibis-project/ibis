@@ -429,3 +429,9 @@ def test_complex_date_comparisons(operands, interval, arithmetic, operator,
     assert isinstance(a_, ir.DateValue)
     assert isinstance(i, ir.IntervalValue)
     assert isinstance(expr, ir.BooleanValue)
+
+
+def test_interval_column_name(table):
+    c = table.i
+    expr = (c - c).name('foo')
+    assert expr._name == 'foo'
