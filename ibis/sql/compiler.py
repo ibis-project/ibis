@@ -1412,8 +1412,11 @@ class Select(DDL):
         # GROUP BY and HAVING
         groupby_frag = self.format_group_by()
 
-        # ORDER BY and LIMIT
-        order_frag = self.format_postamble()
+        # ORDER BY
+        order_frag = self.format_order_by()
+
+        # ORDER BY
+        limit_frag = self.format_limit()
 
         # Glue together the query fragments and return
         query = '\n'.join(filter(
@@ -1425,6 +1428,7 @@ class Select(DDL):
                 where_frag,
                 groupby_frag,
                 order_frag,
+                limit_frag
             ]
         ))
         return query
@@ -1554,33 +1558,34 @@ class Select(DDL):
         buf.write(conj.join(fmt_preds))
         return buf.getvalue()
 
-    def format_postamble(self):
-        buf = StringIO()
-        lines = 0
-
-        if len(self.order_by) > 0:
-            buf.write('ORDER BY ')
-            formatted = []
-            for expr in self.order_by:
-                key = expr.op()
-                translated = self._translate(key.expr)
-                if not key.ascending:
-                    translated += ' DESC'
-                formatted.append(translated)
-            buf.write(', '.join(formatted))
-            lines += 1
-
-        if self.limit is not None:
-            if lines:
-                buf.write('\n')
-            n, offset = self.limit['n'], self.limit['offset']
-            buf.write('LIMIT {}'.format(n))
-            if offset is not None and offset != 0:
-                buf.write(' OFFSET {}'.format(offset))
-            lines += 1
-
-        if not lines:
+    def format_order_by(self):
+        if not self.order_by:
             return None
+
+        buf = StringIO()
+        buf.write('ORDER BY ')
+
+        formatted = []
+        for expr in self.order_by:
+            key = expr.op()
+            translated = self._translate(key.expr)
+            if not key.ascending:
+                translated += ' DESC'
+            formatted.append(translated)
+
+        buf.write(', '.join(formatted))
+        return buf.getvalue()
+
+    def format_limit(self):
+        if not self.limit:
+            return None
+
+        buf = StringIO()
+
+        n, offset = self.limit['n'], self.limit['offset']
+        buf.write('LIMIT {}'.format(n))
+        if offset is not None and offset != 0:
+            buf.write(' OFFSET {}'.format(offset))
 
         return buf.getvalue()
 
