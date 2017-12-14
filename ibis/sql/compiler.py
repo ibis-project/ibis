@@ -1415,7 +1415,7 @@ class Select(DDL):
         # ORDER BY
         order_frag = self.format_order_by()
 
-        # ORDER BY
+        # LIMIT
         limit_frag = self.format_limit()
 
         # Glue together the query fragments and return
