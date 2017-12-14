@@ -82,6 +82,19 @@ class ClickhouseSelect(comp.Select):
 
         return '\n'.join(lines)
 
+    def format_limit(self):
+        if not self.limit:
+            return None
+
+        buf = StringIO()
+
+        n, offset = self.limit['n'], self.limit['offset']
+        buf.write('LIMIT {}'.format(n))
+        if offset is not None and offset != 0:
+            buf.write(', {}'.format(offset))
+
+        return buf.getvalue()
+
 
 class ClickhouseTableSetFormatter(comp.TableSetFormatter):
 

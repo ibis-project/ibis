@@ -68,6 +68,15 @@ def test_head(alltypes):
     tm.assert_frame_equal(result, expected)
 
 
+def test_limit_offset(alltypes):
+    expected = alltypes.execute()
+
+    tm.assert_frame_equal(alltypes.limit(4).execute(), expected.head(4))
+    tm.assert_frame_equal(alltypes.limit(8).execute(), expected.head(8))
+    tm.assert_frame_equal(alltypes.limit(4, offset=4).execute(),
+                          expected.ix[4:7].reset_index(drop=True))
+
+
 def test_subquery(alltypes, df):
     t = alltypes
 
