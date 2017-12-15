@@ -772,8 +772,6 @@ class Map(Variadic):
 
 # ---------------------------------------------------------------------
 
-_builtin_float = float  # TODO: resolve name conflict
-
 any = Any()
 null = Null()
 boolean = Boolean()
@@ -1351,7 +1349,7 @@ def infer_string(value):
     return string
 
 
-@infer.register(_builtin_float)
+@infer.register(builtins.float)
 def infer_floating(value):
     return double
 
@@ -1456,6 +1454,6 @@ def can_cast_decimal_to_floating(source, target):
 
 
 # TODO cast category
-
+# TODO cleanup the Literal -> *Scalar implicit casts a bit
 
 infer_schema = Dispatcher('infer_schema')
