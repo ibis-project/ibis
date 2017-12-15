@@ -12,15 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
 import sys
-import functools
 import operator
 
 from collections import Counter
-
-import six
-
-from toolz import first
 
 from ibis.common import IbisTypeError
 import ibis.expr.datatypes as dt
@@ -143,73 +139,6 @@ class PowerPromoter(BinaryPromoter):
             )
 
 
-# Impala type precedence (more complex in other database implementations)
-# timestamp
-# double
-# float
-# decimal
-# bigint
-# int
-# smallint
-# tinyint
-# boolean
-# string
-# binary
-
-
-_SCALAR_TYPE_PRECEDENCE = {
-    'timestamp': 11,
-    'double': 10,
-    'float': 9,
-    'decimal': 8,
-    'int64': 7,
-    'int32': 6,
-    'int16': 5,
-    'int8': 4,
-    'boolean': 3,
-    'string': 2,
-    'binary': 1,
-    'null': 0,
-}
-
-
-def higher_precedence(left, right):
-    left_name = left.name.lower()
-    right_name = right.name.lower()
-
-    if (left_name in _SCALAR_TYPE_PRECEDENCE and
-            right_name in _SCALAR_TYPE_PRECEDENCE):
-        left_prec = _SCALAR_TYPE_PRECEDENCE[left_name]
-        right_prec = _SCALAR_TYPE_PRECEDENCE[right_name]
-        _, highest_type = max(
-            ((left_prec, left), (right_prec, right)),
-            key=first
-        )
-        return highest_type
-
-    # TODO(phillipc): Ensure that left and right are API compatible
-
-    if isinstance(left, dt.Array):
-        return dt.Array(higher_precedence(left.value_type, right.value_type))
-
-    if isinstance(left, dt.Map):
-        return dt.Map(
-            higher_precedence(left.key_type, right.key_type),
-            higher_precedence(left.value_type, right.value_type)
-        )
-
-    if isinstance(left, dt.Struct):
-        if left.names != right.names:
-            raise TypeError('Struct names are not equal')
-        return dt.Struct(
-            left.names,
-            list(map(higher_precedence, left.types, right.types))
-        )
-    raise TypeError(
-        'Cannot compute precedence for {} and {} types'.format(left, right)
-    )
-
-
 def highest_precedence_type(exprs):
     # Return the highest precedence type from the passed expressions. Also
     # verifies that there are valid implicit casts between any of the types and
@@ -217,17 +146,8 @@ def highest_precedence_type(exprs):
     if not exprs:
         raise ValueError('Must pass at least one expression')
 
-    expr_types = {expr.type() for expr in exprs}
-    highest_type = functools.reduce(higher_precedence, expr_types)
-
-    for expr in exprs:
-        if not expr._can_cast_implicit(highest_type):
-            raise TypeError(
-                'Expression with type {0} cannot be implicitly casted to {1}'
-                .format(expr.type(), highest_type)
-            )
-
-    return highest_type
+    expr_dtypes = {expr.type() for expr in exprs}
+    return dt.highest_precedence_dtype(expr_dtypes)
 
 
 def _int_bounds_promotion(ltype, rtype, op):
@@ -252,41 +172,14 @@ def _int_one_literal_promotion(atype, lit_val, op):
 
 
 def _smallest_int_containing(values, allow_overflow=False):
-    containing_types = [int_literal_class(x, allow_overflow=allow_overflow)
+    containing_types = [dt.int_class(x, allow_overflow=allow_overflow)
                         for x in values]
     return _largest_int(containing_types)
-
-
-def int_literal_class(value, allow_overflow=False):
-    if -128 <= value <= 127:
-        t = 'int8'
-    elif -32768 <= value <= 32767:
-        t = 'int16'
-    elif -2147483648 <= value <= 2147483647:
-        t = 'int32'
-    else:
-        if value < -9223372036854775808 or value > 9223372036854775807:
-            if not allow_overflow:
-                raise OverflowError(value)
-        t = 'int64'
-    return dt.validate_type(t)
 
 
 def _largest_int(int_types):
     nbytes = max(t._nbytes for t in int_types)
     return dt.validate_type('int%d' % (8 * nbytes))
-
-
-class ImplicitCast(object):
-
-    def __init__(self, value_type, implicit_targets):
-        self.value_type = value_type
-        self.implicit_targets = implicit_targets
-
-    def can_cast(self, target):
-        base_type = target.name.lower()
-        return (base_type in self.implicit_targets or
-                target == self.value_type)
 
 
 # ----------------------------------------------------------------------

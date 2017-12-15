@@ -51,7 +51,7 @@ class Schema(object):
             names = list(names)
 
         self.names = names
-        self.types = [validate_dtype(typ) for typ in types]
+        self.types = [validate(typ) for typ in types]
 
         self._name_locs = dict((v, i) for i, v in enumerate(self.names))
 
@@ -231,12 +231,9 @@ class DataType(object):
     def name(self):
         return type(self).__name__
 
-    def issubtype(self, other, cache=None):
-        return isinstance(other, Any) or isinstance(self, type(other))
-
     def equals(self, other, cache=None):
         if isinstance(other, six.string_types):
-            other = validate_dtype(other)
+            other = validate(other)
 
         return (
             isinstance(other, type(self)) and
@@ -248,7 +245,7 @@ class DataType(object):
         return True
 
     def can_implicit_cast(self, other):
-        return self.issubtype(other)
+        return castable(other, self)
 
     def scalar_type(self):
         import ibis.expr.types as ir
@@ -321,12 +318,6 @@ class Integer(Primitive):
         exp = self._nbytes * 8 - 1
         lower = -1 << exp
         return Bounds(lower=lower, upper=~lower)
-
-    def can_implicit_cast(self, other):
-        return (
-            isinstance(other, Integer) and
-            (type(self) is Integer or other._nbytes <= self._nbytes)
-        )
 
     def valid_literal(self, value):
         lower, upper = self.bounds
@@ -444,12 +435,6 @@ class UnsignedInteger(Integer):
         upper = 1 << exp
         return Bounds(lower=0, upper=upper)
 
-    def can_implicit_cast(self, other):
-        return (
-            isinstance(other, UnsignedInteger) and
-            other._nbytes <= self._nbytes
-        )
-
     def valid_literal(self, value):
         lower, upper = self.bounds
         return isinstance(
@@ -460,15 +445,6 @@ class UnsignedInteger(Integer):
 class Floating(Primitive):
 
     __slots__ = ()
-
-    def can_implicit_cast(self, other):
-        if isinstance(other, Integer):
-            return True
-        elif isinstance(other, Floating):
-            # return other._nbytes <= self._nbytes
-            return True
-        else:
-            return False
 
     def valid_literal(self, value):
         valid_floating_types = (
@@ -564,10 +540,6 @@ class Decimal(DataType):
     def _equal_part(self, other, cache=None):
         return self.precision == other.precision and self.scale == other.scale
 
-    @classmethod
-    def can_implicit_cast(cls, other):
-        return isinstance(other, (Floating, Decimal))
-
 
 assert hasattr(Decimal, '__hash__')
 
@@ -599,7 +571,7 @@ class Interval(DataType):
         if value_type is None:
             value_type = int32
         else:
-            value_type = validate_dtype(value_type)
+            value_type = validate(value_type)
 
         if not isinstance(value_type, Integer):
             raise TypeError("Interval's inner type must be an Integer subtype")
@@ -621,11 +593,6 @@ class Interval(DataType):
     def _equal_part(self, other, cache=None):
         return (self.unit == other.unit and
                 self.value_type.equals(other.value_type, cache=cache))
-
-    def can_implicit_cast(self, other):
-        if isinstance(other, Interval):
-            return self.value_type.can_implicit_cast(other.value_type)
-        return False
 
     def valid_literal(self, value):
         return isinstance(value, six.integer_types + (datetime.timedelta,))
@@ -654,19 +621,8 @@ class Category(DataType):
         )
 
     def to_integer_type(self):
-        # TODO: use to int class from rules
-        cardinality = self.cardinality
-
-        if cardinality is None:
-            return int64
-        elif cardinality < int8.bounds.upper:
-            return int8
-        elif cardinality < int16.bounds.upper:
-            return int16
-        elif cardinality < int32.bounds.upper:
-            return int32
-        else:
-            return int64
+        # TODO: this should be removed I guess
+        return int_class(self.cardinality)
 
 
 @parametric
@@ -755,7 +711,7 @@ class Array(Variadic):
 
     def __init__(self, value_type, nullable=True):
         super(Array, self).__init__(nullable=nullable)
-        self.value_type = validate_dtype(value_type)
+        self.value_type = validate(value_type)
 
     def __str__(self):
         return '{}<{}>'.format(self.name.lower(), self.value_type)
@@ -774,8 +730,8 @@ class Enum(DataType):
 
     def __init__(self, rep_type, value_type, nullable=True):
         super(Enum, self).__init__(nullable=nullable)
-        self.rep_type = validate_dtype(rep_type)
-        self.value_type = validate_dtype(value_type)
+        self.rep_type = validate(rep_type)
+        self.value_type = validate(value_type)
 
     def _equal_part(self, other, cache=None):
         return (
@@ -791,8 +747,8 @@ class Map(Variadic):
 
     def __init__(self, key_type, value_type, nullable=True):
         super(Map, self).__init__(nullable=nullable)
-        self.key_type = validate_dtype(key_type)
-        self.value_type = validate_dtype(value_type)
+        self.key_type = validate(key_type)
+        self.value_type = validate(value_type)
 
     def __str__(self):
         return '{}<{}, {}>'.format(
@@ -1222,7 +1178,7 @@ class TypeParser(object):
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
 
 
-def validate_dtype(t):
+def validate(t):
     if isinstance(t, DataType):
         return t
     elif isinstance(t, six.string_types):
@@ -1230,17 +1186,17 @@ def validate_dtype(t):
     raise TypeError('Value {!r} is not a valid type or string'.format(t))
 
 
-validate_type = validate_dtype
+validate_type = validate
 
 
 def array_type(t):
     # compatibility
-    return validate_dtype(t).array_type()
+    return validate(t).array_type()
 
 
 def scalar_type(t):
     # compatibility
-    return validate_dtype(t).scalar_type()
+    return validate(t).scalar_type()
 
 
 _SCALAR_TYPE_PRECEDENCE = {
@@ -1306,7 +1262,8 @@ def highest_precedence_dtype(dtypes):
     highest_dtype = functools.reduce(higher_precedence, set(dtypes))
 
     for dtype in dtypes:
-        if not highest_dtype.can_implicit_cast(dtype):
+        if not castable(dtype, highest_dtype):
+
             raise TypeError(
                 'Datatype {0} cannot be implicitly casted to {1}'
                 .format(dtype, highest_dtype)
@@ -1316,101 +1273,97 @@ def highest_precedence_dtype(dtypes):
 
 
 def int_class(value, allow_overflow=False):
-    if -128 <= value <= 127:
-        return int8
-    elif -32768 <= value <= 32767:
-        return int16
-    elif -2147483648 <= value <= 2147483647:
-        return int32
-    else:
-        if value < -9223372036854775808 or value > 9223372036854775807:
-            if not allow_overflow:
-                raise OverflowError(value)
-        return int64
+    for dtype in [int8, int16, int32, int64]:
+        if dtype.bounds.lower <= value <= dtype.bounds.upper:
+            return dtype
+
+    if not allow_overflow:
+        raise OverflowError(value)
+
+    return int64
 
 
-infer_dtype = Dispatcher('infer_dtype')
-infer_schema = Dispatcher('infer_schema')
+infer = Dispatcher('infer')
 
 
-@infer_dtype.register(object)
+@infer.register(object)
 def infer_dtype_default(value):
     raise com.InputTypeError(value)
 
 
-@infer_dtype.register(OrderedDict)
+@infer.register(OrderedDict)
 def infer_struct(value):
     if not value:
         raise TypeError('Empty struct type not supported')
     return Struct(
         list(value.keys()),
-        list(map(infer_dtype, value.values()))
+        list(map(infer, value.values()))
     )
 
 
-@infer_dtype.register(dict)
+@infer.register(dict)
 def infer_map(value):
     if not value:
         return Map(null, null)
     return Map(
-        highest_precedence_dtype(list(map(infer_dtype, value.keys()))),
-        highest_precedence_dtype(list(map(infer_dtype, value.values()))),
+        highest_precedence_dtype(list(map(infer, value.keys()))),
+        highest_precedence_dtype(list(map(infer, value.values()))),
     )
 
 
-@infer_dtype.register(list)
+@infer.register(list)
 def infer_array(value):
     if not value:
         return Array(null)
-    return Array(highest_precedence_dtype(list(map(infer_dtype, value))))
+    return Array(highest_precedence_dtype(list(map(infer, value))))
 
 
 # TODO: infer ndarray, infer series
 
 
-@infer_dtype.register(datetime.time)
+@infer.register(datetime.time)
 def infer_time(value):
     return time
 
 
-@infer_dtype.register(datetime.date)
+@infer.register(datetime.date)
 def infer_date(value):
     return date
 
 
-@infer_dtype.register(datetime.datetime)
+@infer.register(datetime.datetime)
 def infer_timestamp(value):
     return timestamp
 
 
 # TODO: infer pd.Timedelta, Datetime
 
-@infer_dtype.register(datetime.timedelta)
+@infer.register(datetime.timedelta)
 def infer_interval(value):
     return interval
 
 
-@infer_dtype.register(six.string_types)
+@infer.register(six.string_types)
 def infer_string(value):
     return string
 
 
-@infer_dtype.register(_builtin_float)
+@infer.register(_builtin_float)
 def infer_floating(value):
     return double
 
 
-@infer_dtype.register(six.integer_types + (np.integer,))
+@infer.register(six.integer_types + (np.integer,))
 def infer_integer(value):
     return int_class(value)
 
 
-@infer_dtype.register(bool)
+@infer.register(bool)
 def infer_boolean(value):
     return boolean
 
 
-@infer_dtype.register((type(None), Null))
+@infer.register((type(None), Null))
 def infer_null(value):
     return null
 
@@ -1421,3 +1374,80 @@ def infer_null(value):
 # multipledispatch infer_dtype - ala pandas api
 # multipledispatch infer_schema - list, dict, ordereddict, dataframe
 # to_pandas
+
+
+castable = Dispatcher('castable')
+
+
+@castable.register(DataType, DataType)
+def can_cast_subtype(source, target):
+    return isinstance(target, type(source))
+
+
+@castable.register(Any, DataType)
+def can_cast_any(source, target):
+    return True
+
+
+@castable.register(Null, DataType)
+def can_cast_null(source, target):
+    return target.nullable
+
+
+@castable.register(Integer, Integer)
+def can_cast_to_generic_integer(source, target):
+    return True
+
+
+@castable.register(UnsignedInteger, UnsignedInteger)
+def can_cast_unsigned_integer(source, target):
+    return target._nbytes >= source._nbytes
+
+
+@castable.register(SignedInteger, SignedInteger)
+def can_cast_signed_integers(source, target):
+    return target._nbytes >= source._nbytes
+
+
+@castable.register(Floating, Floating)
+def can_cast_floats(source, target):
+    return target._nbytes >= source._nbytes
+
+
+@castable.register(Integer, (Floating, Decimal))
+def can_upcast_integers(source, target):
+    return True
+
+
+@castable.register(Floating, Decimal)
+def can_upcast_floats(source, target):
+    return True
+
+
+@castable.register(Interval, Interval)
+def can_cast_intervals(source, target):
+    return castable(source.value_type, target.value_type)
+
+
+# @castable.register(Array, Array)
+# def can_cast_arrays(source, target):
+#     return (source.equals(target) or
+#             source.equals(Array(null)) or
+#             source.equals(Array(any)))
+
+
+# @castable.register(Map, Map)
+# def can_cast_maps(source, target):
+#     print('EEEEEEEEEEEEEEEEEEEEEE')
+#     print(source, target)
+#     e = (source.equals(target) or
+#             source.equals(Map(null, null)) or
+#             source.equals(Map(any, any)))
+#     print(e)
+#     return e
+
+
+# TODO cast category
+
+
+infer_schema = Dispatcher('infer_schema')

@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
-import itertools
+
 import os
 import sys
-import warnings
-import webbrowser
-
 import six
 import toolz
+import warnings
+import itertools
+import webbrowser
 
 from ibis.common import IbisError, RelationError
 import ibis.common as com
@@ -512,7 +511,7 @@ def infer_literal_type(value):
     if value is null:
         return dt.null
 
-    return dt.infer_dtype(value)
+    return dt.infer(value)
 
 
 class Literal(ValueOp):
@@ -629,8 +628,6 @@ class ValueExpr(Expr):
     either a single value (scalar)
     """
 
-    _implicit_casts = frozenset()
-
     def __init__(self, arg, name=None):
         super(ValueExpr, self).__init__(arg)
         self._name = name
@@ -650,9 +647,7 @@ class ValueExpr(Expr):
         )
 
     def _can_cast_implicit(self, typename):
-        from ibis.expr.rules import ImplicitCast
-        rule = ImplicitCast(self.type(), self._implicit_casts)
-        return rule.can_cast(typename)
+        return dt.castable(self.type(), typename)
 
     def has_name(self):
         if self._name is not None:
@@ -970,17 +965,11 @@ class BooleanValue(NumericValue):
 
 class Int8Value(IntegerValue):
 
-    _implicit_casts = set([
-        'int16', 'int32', 'int64', 'float', 'double', 'decimal'
-    ])
-
     def type(self):
         return dt.int8
 
 
 class Int16Value(IntegerValue):
-
-    _implicit_casts = set(['int32', 'int64', 'float', 'double', 'decimal'])
 
     def type(self):
         return dt.int16
@@ -988,15 +977,11 @@ class Int16Value(IntegerValue):
 
 class Int32Value(IntegerValue):
 
-    _implicit_casts = set(['int64', 'float', 'double', 'decimal'])
-
     def type(self):
         return dt.int32
 
 
 class Int64Value(IntegerValue):
-
-    _implicit_casts = set(['float', 'double', 'decimal'])
 
     def type(self):
         return dt.int64
@@ -1004,19 +989,11 @@ class Int64Value(IntegerValue):
 
 class UInt8Value(IntegerValue):
 
-    _implicit_casts = set([
-        'uint8', 'uint16', 'uint32', 'uint64',
-        'float', 'double', 'decimal'
-    ])
-
     def type(self):
         return dt.uint8
 
 
 class UInt16Value(IntegerValue):
-
-    _implicit_casts = set(['uint32', 'uint64',
-                           'float', 'double', 'decimal'])
 
     def type(self):
         return dt.uint16
@@ -1024,23 +1001,17 @@ class UInt16Value(IntegerValue):
 
 class UInt32Value(IntegerValue):
 
-    _implicit_casts = set(['uint64', 'float', 'double', 'decimal'])
-
     def type(self):
         return dt.uint32
 
 
 class UInt64Value(IntegerValue):
 
-    _implicit_casts = set(['float', 'double', 'decimal'])
-
     def type(self):
         return dt.uint64
 
 
 class HalffloatValue(NumericValue):
-
-    _implicit_casts = set(['double', 'decimal'])
 
     def type(self):
         return dt.halffloat
@@ -1052,15 +1023,11 @@ class FloatingValue(NumericValue):
 
 class FloatValue(FloatingValue):
 
-    _implicit_casts = set(['double', 'decimal'])
-
     def type(self):
         return dt.float
 
 
 class DoubleValue(FloatingValue):
-
-    _implicit_casts = set(['decimal'])
 
     def type(self):
         return dt.double
@@ -1101,8 +1068,7 @@ class ParameterizedValue(AnyValue):
 
 
 class DecimalValue(ParameterizedValue, NumericValue):
-
-    _implicit_casts = set(['float', 'double'])
+    pass
 
 
 class TemporalValue(AnyValue):
@@ -1115,16 +1081,16 @@ class DateValue(TemporalValue):
     def type(self):
         return dt.date
 
-    def _can_implicit_cast(self, arg):
-        op = arg.op()
-        if isinstance(op, Literal):
-            try:
-                import pandas as pd
-                pd.Timestamp(op.value)
-                return True
-            except ValueError:
-                return False
-        return False
+    # def _can_implicit_cast(self, arg):
+    #     op = arg.op()
+    #     if isinstance(op, Literal):
+    #         try:
+    #             import pandas as pd
+    #             pd.Timestamp(op.value)
+    #             return True
+    #         except ValueError:
+    #             return False
+    #     return False
 
     def _implicit_cast(self, arg):
         # assume we've checked this is OK at this point...
@@ -1137,16 +1103,16 @@ class TimeValue(TemporalValue):
     def type(self):
         return dt.time
 
-    def _can_implicit_cast(self, arg):
-        op = arg.op()
-        if isinstance(op, Literal):
-            try:
-                from ibis.compat import to_time
-                to_time(op.value)
-                return True
-            except ValueError:
-                return False
-        return False
+    # def _can_implicit_cast(self, arg):
+    #     op = arg.op()
+    #     if isinstance(op, Literal):
+    #         try:
+    #             from ibis.compat import to_time
+    #             to_time(op.value)
+    #             return True
+    #         except ValueError:
+    #             return False
+    #     return False
 
     def _can_compare(self, other):
         return isinstance(other, (TimeValue, StringValue))
@@ -1211,13 +1177,6 @@ class IntervalValue(ParameterizedValue):
     def _can_compare(self, other):
         return isinstance(other, IntervalValue) and self.unit == other.unit
 
-    def _can_implicit_cast(self, arg):
-        op = arg.op()
-        if isinstance(op, Literal):
-            if isinstance(op.value, datetime.timedelta):
-                return True
-        return False
-
     def _implicit_cast(self, arg):
         # assume we've checked this is OK at this point...
         op = arg.op()
@@ -1229,33 +1188,11 @@ class ArrayValue(ParameterizedValue):
     def _can_compare(self, other):
         return isinstance(other, ArrayValue)
 
-    def _can_cast_implicit(self, typename):
-        if not isinstance(typename, dt.Array):
-            return False
-
-        self_type = self.type()
-        return (
-            super(ArrayValue, self)._can_cast_implicit(typename) or
-            self_type.equals(dt.Array(dt.null)) or
-            self_type.equals(dt.Array(dt.any))
-        )
-
 
 class MapValue(ParameterizedValue):
 
     def _can_compare(self, other):
         return isinstance(other, MapValue)
-
-    def _can_cast_implicit(self, typename):
-        if not isinstance(typename, dt.Map):
-            return False
-
-        self_type = self.type()
-        return (
-            super(MapValue, self)._can_cast_implicit(typename) or
-            self_type.equals(dt.Map(dt.null, dt.null)) or
-            self_type.equals(dt.Map(dt.any, dt.any))
-        )
 
 
 class StructValue(ParameterizedValue):
@@ -1460,8 +1397,6 @@ class CategoryValue(ParameterizedValue):
     Represents some ordered data categorization; tracked as an int32 value
     until explicitly
     """
-
-    _implicit_casts = Int16Value._implicit_casts
 
     def _can_compare(self, other):
         return isinstance(other, IntegerValue)

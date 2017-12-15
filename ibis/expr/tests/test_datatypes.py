@@ -429,4 +429,4 @@ def test_time_valid():
     )
 ])
 def test_infer_dtype(value, expected_dtype):
-    assert dt.infer_dtype(value) == expected_dtype
+    assert dt.infer(value) == expected_dtype

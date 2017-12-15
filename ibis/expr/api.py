@@ -63,6 +63,7 @@ import ibis.util as util
 
 
 __all__ = [
+    'infer_dtype',
     'schema', 'table', 'literal', 'expr_list',
     'timestamp', 'time', 'date', 'interval', 'param',
     'nanosecond', 'microsecond', 'millisecond', 'second',
@@ -99,6 +100,9 @@ string         STRING
 timestamp      TIMESTAMP
 decimal(p, s)  DECIMAL(p,s)
 interval(u)    INTERVAL(u)"""
+
+
+infer_dtype = dt.infer
 
 
 def schema(pairs=None, names=None, types=None):
