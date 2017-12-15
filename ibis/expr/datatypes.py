@@ -622,7 +622,10 @@ class Category(DataType):
 
     def to_integer_type(self):
         # TODO: this should be removed I guess
-        return int_class(self.cardinality)
+        if self.cardinality is None:
+            return int64
+        else:
+            return int_class(self.cardinality)
 
 
 @parametric
@@ -1427,6 +1430,11 @@ def can_upcast_floats(source, target):
 @castable.register(Interval, Interval)
 def can_cast_intervals(source, target):
     return castable(source.value_type, target.value_type)
+
+
+@castable.register(Decimal, Floating)
+def can_cast_decimal_to_floating(source, target):
+    return True
 
 
 # @castable.register(Array, Array)

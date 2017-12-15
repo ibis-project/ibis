@@ -150,9 +150,6 @@ def test_simple_map_operations():
     expr = ibis.literal(value)
     expr2 = ibis.literal(value2)
     assert isinstance(expr, ir.MapValue)
-    print(expr)
-    print(expr['b'])
-
     assert isinstance(expr['b'].op(), ops.MapValueForKey)
     assert isinstance(expr.length().op(), ops.MapLength)
     assert isinstance(expr.keys().op(), ops.MapKeys)

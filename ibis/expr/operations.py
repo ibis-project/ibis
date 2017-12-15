@@ -2103,6 +2103,8 @@ class Comparison(BinaryOp, BooleanValueOp):
         return left, right
 
     def output_type(self):
+        # if not dt.comparable(self.left.type(), self.right):
+        #     raise TypeError('Cannot compare argument types')
         self._assert_can_compare()
         return rules.shape_like_args(self.args, 'boolean')
 
