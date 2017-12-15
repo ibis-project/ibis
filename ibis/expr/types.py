@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
 import datetime
 import itertools
 import os
@@ -25,7 +24,6 @@ import toolz
 
 from ibis.common import IbisError, RelationError
 import ibis.common as com
-import ibis.compat as compat
 import ibis.config as config
 import ibis.util as util
 import ibis.expr.datatypes as dt
@@ -510,48 +508,11 @@ class ExprList(Expr):
 
 
 def infer_literal_type(value):
-    import ibis.expr.rules as rules
-
-    if value is None or value is null:
+    # TODO: depricate?
+    if value is null:
         return dt.null
-    elif isinstance(value, bool):
-        return dt.boolean
-    elif isinstance(value, compat.integer_types):
-        return rules.int_literal_class(value)
-    elif isinstance(value, float):
-        return dt.double
-    elif isinstance(value, six.string_types):
-        return dt.string
-    elif isinstance(value, datetime.timedelta):
-        return dt.interval
-    elif isinstance(value, datetime.datetime):
-        return dt.timestamp
-    elif isinstance(value, datetime.date):
-        return dt.date
-    elif isinstance(value, datetime.time):
-        return dt.time
-    elif isinstance(value, list):
-        if not value:
-            return dt.Array(dt.null)
-        return dt.Array(rules.highest_precedence_type(
-            list(map(literal, value))
-        ))
-    elif isinstance(value, collections.OrderedDict):
-        if not value:
-            raise TypeError('Empty struct type not supported')
-        return dt.Struct(
-            list(value.keys()),
-            [literal(element).type() for element in value.values()],
-        )
-    elif isinstance(value, dict):
-        if not value:
-            return dt.Map(dt.null, dt.null)
-        return dt.Map(
-            rules.highest_precedence_type(list(map(literal, value.keys()))),
-            rules.highest_precedence_type(list(map(literal, value.values()))),
-        )
 
-    raise com.InputTypeError(value)
+    return dt.infer_dtype(value)
 
 
 class Literal(ValueOp):

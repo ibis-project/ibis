@@ -13,16 +13,15 @@
 # limitations under the License.
 
 import re
+import six
+import toolz
 import datetime
 import itertools
-
-from collections import namedtuple, OrderedDict
-
-import six
-
+import functools
 import numpy as np
 
-import toolz
+from collections import namedtuple, OrderedDict
+from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common as com
@@ -52,7 +51,7 @@ class Schema(object):
             names = list(names)
 
         self.names = names
-        self.types = [validate_type(typ) for typ in types]
+        self.types = [validate_dtype(typ) for typ in types]
 
         self._name_locs = dict((v, i) for i, v in enumerate(self.names))
 
@@ -237,7 +236,7 @@ class DataType(object):
 
     def equals(self, other, cache=None):
         if isinstance(other, six.string_types):
-            other = validate_type(other)
+            other = validate_dtype(other)
 
         return (
             isinstance(other, type(self)) and
@@ -600,7 +599,7 @@ class Interval(DataType):
         if value_type is None:
             value_type = int32
         else:
-            value_type = validate_type(value_type)
+            value_type = validate_dtype(value_type)
 
         if not isinstance(value_type, Integer):
             raise TypeError("Interval's inner type must be an Integer subtype")
@@ -655,6 +654,7 @@ class Category(DataType):
         )
 
     def to_integer_type(self):
+        # TODO: use to int class from rules
         cardinality = self.cardinality
 
         if cardinality is None:
@@ -755,7 +755,7 @@ class Array(Variadic):
 
     def __init__(self, value_type, nullable=True):
         super(Array, self).__init__(nullable=nullable)
-        self.value_type = validate_type(value_type)
+        self.value_type = validate_dtype(value_type)
 
     def __str__(self):
         return '{}<{}>'.format(self.name.lower(), self.value_type)
@@ -774,8 +774,8 @@ class Enum(DataType):
 
     def __init__(self, rep_type, value_type, nullable=True):
         super(Enum, self).__init__(nullable=nullable)
-        self.rep_type = validate_type(rep_type)
-        self.value_type = validate_type(value_type)
+        self.rep_type = validate_dtype(rep_type)
+        self.value_type = validate_dtype(value_type)
 
     def _equal_part(self, other, cache=None):
         return (
@@ -791,8 +791,8 @@ class Map(Variadic):
 
     def __init__(self, key_type, value_type, nullable=True):
         super(Map, self).__init__(nullable=nullable)
-        self.key_type = validate_type(key_type)
-        self.value_type = validate_type(value_type)
+        self.key_type = validate_dtype(key_type)
+        self.value_type = validate_dtype(value_type)
 
     def __str__(self):
         return '{}<{}, {}>'.format(
@@ -812,6 +812,8 @@ class Map(Variadic):
 
 
 # ---------------------------------------------------------------------
+
+_builtin_float = float  # TODO: resolve name conflict
 
 any = Any()
 null = Null()
@@ -1220,7 +1222,7 @@ class TypeParser(object):
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
 
 
-def validate_type(t):
+def validate_dtype(t):
     if isinstance(t, DataType):
         return t
     elif isinstance(t, six.string_types):
@@ -1228,11 +1230,196 @@ def validate_type(t):
     raise TypeError('Value {!r} is not a valid type or string'.format(t))
 
 
+validate_type = validate_dtype
+
+
 def array_type(t):
     # compatibility
-    return validate_type(t).array_type()
+    return validate_dtype(t).array_type()
 
 
 def scalar_type(t):
     # compatibility
-    return validate_type(t).scalar_type()
+    return validate_dtype(t).scalar_type()
+
+
+_SCALAR_TYPE_PRECEDENCE = {
+    'timestamp': 11,
+    'double': 10,
+    'float': 9,
+    'decimal': 8,
+    'int64': 7,
+    'int32': 6,
+    'int16': 5,
+    'int8': 4,
+    'boolean': 3,
+    'string': 2,
+    'binary': 1,
+    'null': 0,
+}
+
+
+def higher_precedence(left, right):
+    left_name = left.name.lower()
+    right_name = right.name.lower()
+
+    if (left_name in _SCALAR_TYPE_PRECEDENCE and
+            right_name in _SCALAR_TYPE_PRECEDENCE):
+        left_prec = _SCALAR_TYPE_PRECEDENCE[left_name]
+        right_prec = _SCALAR_TYPE_PRECEDENCE[right_name]
+        _, highest_type = max(
+            ((left_prec, left), (right_prec, right)),
+            key=toolz.first
+        )
+        return highest_type
+
+    # TODO(phillipc): Ensure that left and right are API compatible
+
+    if isinstance(left, Array):
+        return Array(higher_precedence(left.value_type, right.value_type))
+
+    if isinstance(left, Map):
+        return Map(
+            higher_precedence(left.key_type, right.key_type),
+            higher_precedence(left.value_type, right.value_type)
+        )
+
+    if isinstance(left, Struct):
+        if left.names != right.names:
+            raise TypeError('Struct names are not equal')
+        return Struct(
+            left.names,
+            list(map(higher_precedence, left.types, right.types))
+        )
+    raise TypeError(
+        'Cannot compute precedence for {} and {} types'.format(left, right)
+    )
+
+
+def highest_precedence_dtype(dtypes):
+    # Return the highest precedence type from the passed expressions. Also
+    # verifies that there are valid implicit casts between any of the types and
+    # the selected highest precedence type
+    if not dtypes:
+        raise ValueError('Must pass at least one expression')
+
+    highest_dtype = functools.reduce(higher_precedence, set(dtypes))
+
+    for dtype in dtypes:
+        if not highest_dtype.can_implicit_cast(dtype):
+            raise TypeError(
+                'Datatype {0} cannot be implicitly casted to {1}'
+                .format(dtype, highest_dtype)
+            )
+
+    return highest_dtype
+
+
+def int_class(value, allow_overflow=False):
+    if -128 <= value <= 127:
+        return int8
+    elif -32768 <= value <= 32767:
+        return int16
+    elif -2147483648 <= value <= 2147483647:
+        return int32
+    else:
+        if value < -9223372036854775808 or value > 9223372036854775807:
+            if not allow_overflow:
+                raise OverflowError(value)
+        return int64
+
+
+infer_dtype = Dispatcher('infer_dtype')
+infer_schema = Dispatcher('infer_schema')
+
+
+@infer_dtype.register(object)
+def infer_dtype_default(value):
+    print(value)
+    print(type(value))
+    raise com.InputTypeError(value)
+
+
+@infer_dtype.register(OrderedDict)
+def infer_struct(value):
+    if not value:
+        raise TypeError('Empty struct type not supported')
+    return Struct(
+        list(value.keys()),
+        list(map(infer_dtype, value.values()))
+    )
+
+
+@infer_dtype.register(dict)
+def infer_map(value):
+    if not value:
+        return Map(null, null)
+    return Map(
+        highest_precedence_dtype(list(map(infer_dtype, value.keys()))),
+        highest_precedence_dtype(list(map(infer_dtype, value.values()))),
+    )
+
+
+@infer_dtype.register(list)
+def infer_array(value):
+    if not value:
+        return Array(null)
+    return Array(highest_precedence_dtype(list(map(infer_dtype, value))))
+
+
+# TODO: infer ndarray, infer series
+
+
+@infer_dtype.register(datetime.time)
+def infer_time(value):
+    return time
+
+
+@infer_dtype.register(datetime.date)
+def infer_date(value):
+    return date
+
+
+@infer_dtype.register(datetime.datetime)
+def infer_timestamp(value):
+    return timestamp
+
+
+# TODO: infer pd.Timedelta, Datetime
+
+@infer_dtype.register(datetime.timedelta)
+def infer_interval(value):
+    return interval
+
+
+@infer_dtype.register(six.string_types)
+def infer_string(value):
+    return string
+
+
+@infer_dtype.register(_builtin_float)
+def infer_floating(value):
+    return double
+
+
+@infer_dtype.register(six.integer_types + (np.integer,))
+def infer_integer(value):
+    return int_class(value)
+
+
+@infer_dtype.register(bool)
+def infer_boolean(value):
+    return boolean
+
+
+@infer_dtype.register((type(None), Null))
+def infer_null(value):
+    return null
+
+
+#  isinstance(a, np.generic) -> if true then map based on a.dtype
+
+# TODO:
+# multipledispatch infer_dtype - ala pandas api
+# multipledispatch infer_schema - list, dict, ordereddict, dataframe
+# to_pandas

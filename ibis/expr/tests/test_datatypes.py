@@ -1,4 +1,8 @@
 import pytest
+import datetime
+
+from collections import OrderedDict
+
 import ibis
 from ibis import IbisError
 from ibis.expr import datatypes as dt
@@ -371,3 +375,58 @@ def test_time():
 
 def test_time_valid():
     assert dt.validate_type('time').equals(dt.time)
+
+
+@pytest.mark.parametrize(('value', 'expected_dtype'), [
+    (None, dt.null),
+    (False, dt.boolean),
+    (True, dt.boolean),
+    ('foo', dt.string),
+    (datetime.date.today(), dt.date),
+    (datetime.datetime.now(), dt.timestamp),
+    (datetime.timedelta(days=3), dt.interval),
+
+    # numeric types
+    (5, dt.int8),
+    (127, dt.int8),
+    (128, dt.int16),
+    (32767, dt.int16),
+    (32768, dt.int32),
+    (2147483647, dt.int32),
+    (2147483648, dt.int64),
+    (-5, dt.int8),
+    (-128, dt.int8),
+    (-129, dt.int16),
+    (-32769, dt.int32),
+    (-2147483649, dt.int64),
+    (1.5, dt.double),
+
+    # parametric types
+    (list('abc'), dt.Array(dt.string)),
+    ([1, 2, 3], dt.Array(dt.int8)),
+    ([1, 128], dt.Array(dt.int16)),
+    ([1, 128, 32768], dt.Array(dt.int32)),
+    ([1, 128, 32768, 2147483648], dt.Array(dt.int64)),
+    ({'a': 1, 'b': 2, 'c': 3}, dt.Map(dt.string, dt.int8)),
+    ({1: 2, 3: 4, 5: 6}, dt.Map(dt.int8, dt.int8)),
+    (
+        {'a': [1.0, 2.0], 'b': [], 'c': [3.0]},
+        dt.Map(dt.string, dt.Array(dt.double))
+    ),
+    (
+        OrderedDict([
+            ('a', 1),
+            ('b', list('abc')),
+            ('c', OrderedDict([('foo', [1.0, 2.0])]))
+        ]),
+        dt.Struct.from_tuples([
+            ('a', dt.int8),
+            ('b', dt.Array(dt.string)),
+            ('c', dt.Struct.from_tuples([
+                ('foo', dt.Array(dt.double))
+            ]))
+        ])
+    )
+])
+def test_infer_dtype(value, expected_dtype):
+    assert dt.infer_dtype(value) == expected_dtype

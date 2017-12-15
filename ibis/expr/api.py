@@ -23,7 +23,7 @@ import collections
 import six
 import toolz
 
-from ibis.expr.datatypes import Schema  # noqa
+from ibis.expr.datatypes import Schema  # noqa  # TODO: remove, use dt.Schema instead
 from ibis.expr import datatypes as dt
 from ibis.expr.types import (Expr,  # noqa
                              ValueExpr, ScalarExpr, ColumnExpr,
@@ -97,7 +97,8 @@ double         DOUBLE
 boolean        BOOLEAN
 string         STRING
 timestamp      TIMESTAMP
-decimal(p, s)  DECIMAL(p,s)"""
+decimal(p, s)  DECIMAL(p,s)
+interval(u)    INTERVAL(u)"""
 
 
 def schema(pairs=None, names=None, types=None):
