@@ -38,11 +38,11 @@ def compile(expr, params=None):
     --------
     >>> import os
     >>> import getpass
-    >>> from ibis.sql.postgres.api import connect, compile
+    >>> import ibis
     >>> user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
     >>> password = os.environ.get('IBIS_POSTGRES_PASS')
     >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
-    >>> con = connect(
+    >>> con = ibis.sql.postgres.api.connect(
     ...     database=database,
     ...     host='localhost',
     ...     user=user,
@@ -91,11 +91,11 @@ def connect(
     --------
     >>> import os
     >>> import getpass
-    >>> from ibis.sql.postgres.api import connect
+    >>> import ibis
     >>> user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
     >>> password = os.environ.get('IBIS_POSTGRES_PASS')
     >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
-    >>> con = connect(
+    >>> con = ibis.sql.postgres.api.connect(
     ...     database=database,
     ...     host='localhost',
     ...     user=user,
