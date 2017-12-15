@@ -1335,8 +1335,6 @@ infer_schema = Dispatcher('infer_schema')
 
 @infer_dtype.register(object)
 def infer_dtype_default(value):
-    print(value)
-    print(type(value))
     raise com.InputTypeError(value)
 
 

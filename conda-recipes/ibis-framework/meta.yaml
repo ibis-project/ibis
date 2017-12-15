@@ -27,6 +27,7 @@ requirements:
     - pandas >=0.18.1
     - python
     - setuptools
+    - multipledispatch
     - six
     - toolz
 
@@ -61,6 +62,7 @@ test:
     - ibis.sql.vertica.tests
     - ibis.file
     - ibis.file.tests
+    - ibis.pandas
     - ibis.tests
   commands:
     - pytest --version
