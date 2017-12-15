@@ -18,6 +18,7 @@ requirements:
     - pandas >=0.18.1
     - python
     - setuptools
+    - multipledispatch
     - six
     - toolz
   run:
