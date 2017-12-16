@@ -22,7 +22,7 @@ import ibis.expr.types as ir
 
 from ibis.common import IbisTypeError
 from ibis.compat import Decimal
-from ibis.expr.datatypes import validate_type
+from ibis.expr import datatypes as dt
 from ibis.expr.tests.mocks import MockConnection
 
 import ibis.expr.rules as rules
@@ -89,7 +89,7 @@ class TestWrapping(unittest.TestCase):
         for t, sv, av in types:
             func = self._register_udf([t], t, 'test')
 
-            ibis_type = validate_type(t)
+            ibis_type = dt.validate_type(t)
 
             expr = func(sv)
             assert type(expr) == type(ibis_type.scalar_type()(expr.op()))  # noqa: E501, E721
@@ -111,7 +111,7 @@ class TestWrapping(unittest.TestCase):
         for t, sv, av in types:
             func = self._register_uda([t], t, 'test')
 
-            ibis_type = validate_type(t)
+            ibis_type = dt.validate_type(t)
 
             expr1 = func(sv)
             expr2 = func(sv)

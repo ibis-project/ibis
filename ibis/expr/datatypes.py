@@ -1412,7 +1412,10 @@ def can_cast_signed_integers(source, target):
 
 @castable.register(Floating, Floating)
 def can_cast_floats(source, target):
-    return target._nbytes >= source._nbytes
+    # double -> float must be allowed because
+    # float literals are inferred as doubles
+    # return target._nbytes >= source._nbytes
+    return True
 
 
 @castable.register(Integer, (Floating, Decimal))
@@ -1427,7 +1430,10 @@ def can_upcast_floats(source, target):
 
 @castable.register(Interval, Interval)
 def can_cast_intervals(source, target):
-    return castable(source.value_type, target.value_type)
+    return (
+        source.unit == target.unit and
+        castable(source.value_type, target.value_type)
+    )
 
 
 @castable.register(Decimal, Floating)
@@ -1444,13 +1450,9 @@ def can_cast_decimal_to_floating(source, target):
 
 # @castable.register(Map, Map)
 # def can_cast_maps(source, target):
-#     print('EEEEEEEEEEEEEEEEEEEEEE')
-#     print(source, target)
-#     e = (source.equals(target) or
+#     return (source.equals(target) or
 #             source.equals(Map(null, null)) or
 #             source.equals(Map(any, any)))
-#     print(e)
-#     return e
 
 
 # TODO cast category
