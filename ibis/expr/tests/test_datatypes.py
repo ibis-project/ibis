@@ -430,3 +430,10 @@ def test_time_valid():
 ])
 def test_infer_dtype(value, expected_dtype):
     assert dt.infer(value) == expected_dtype
+
+
+@pytest.mark.parametrize(('source', 'target'), [
+    # TODO
+])
+def test_implicit_casts(source, target):
+    assert dt.castable(source, target)

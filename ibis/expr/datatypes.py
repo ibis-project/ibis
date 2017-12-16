@@ -19,6 +19,7 @@ import datetime
 import itertools
 import functools
 import numpy as np
+import pandas as pd
 
 from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
@@ -246,6 +247,9 @@ class DataType(object):
 
     def can_implicit_cast(self, other):
         return castable(other, self)
+
+    def cast(self, target):
+        return cast(self, target)
 
     def scalar_type(self):
         import ibis.expr.types as ir
@@ -1385,6 +1389,11 @@ def can_cast_subtype(source, target):
     return isinstance(target, type(source))
 
 
+@castable.register(DataType, DataType, object)
+def can_cast_value(source, target, valueu):
+    return False
+
+
 @castable.register(Any, DataType)
 def can_cast_any(source, target):
     return True
@@ -1439,6 +1448,24 @@ def can_cast_intervals(source, target):
 @castable.register(Decimal, Floating)
 def can_cast_decimal_to_floating(source, target):
     return True
+
+
+@castable.register(String, (Date, Time, Timestamp), six.string_types)
+def can_cast_string_to_temporal(source, target, value):
+    try:
+        pd.Timestamp(value)
+        return True
+    except ValueError:
+        return False
+
+
+def cast(source, target):
+    """Attempts to implicitly cast from source dtype to target dtype"""
+    source, target = validate(source), validate(target)
+    if not castable(source, target):
+        raise com.IbisTypeError('Datatype {} cannot be implicitly '
+                                'casted to {}'.format(source, target))
+    return target
 
 
 # @castable.register(Array, Array)

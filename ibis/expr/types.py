@@ -17,7 +17,6 @@ import os
 import sys
 import six
 import toolz
-import warnings
 import itertools
 import webbrowser
 
@@ -167,9 +166,6 @@ class Expr(object):
         def factory(arg, name=None):
             return type(self)(arg, name=name)
         return factory
-
-    def _can_implicit_cast(self, arg):
-        return False
 
     def execute(self, limit='default', async=False, params=None):
         """
@@ -1081,46 +1077,14 @@ class DateValue(TemporalValue):
     def type(self):
         return dt.date
 
-    # def _can_implicit_cast(self, arg):
-    #     op = arg.op()
-    #     if isinstance(op, Literal):
-    #         try:
-    #             import pandas as pd
-    #             pd.Timestamp(op.value)
-    #             return True
-    #         except ValueError:
-    #             return False
-    #     return False
-
-    def _implicit_cast(self, arg):
-        # assume we've checked this is OK at this point...
-        op = arg.op()
-        return DateScalar(op)
-
 
 class TimeValue(TemporalValue):
 
     def type(self):
         return dt.time
 
-    # def _can_implicit_cast(self, arg):
-    #     op = arg.op()
-    #     if isinstance(op, Literal):
-    #         try:
-    #             from ibis.compat import to_time
-    #             to_time(op.value)
-    #             return True
-    #         except ValueError:
-    #             return False
-    #     return False
-
     def _can_compare(self, other):
         return isinstance(other, (TimeValue, StringValue))
-
-    def _implicit_cast(self, arg):
-        # assume we've checked this is OK at this point...
-        op = arg.op()
-        return TimeScalar(op)
 
 
 class TimestampValue(TemporalValue):
@@ -1131,29 +1095,6 @@ class TimestampValue(TemporalValue):
 
     def type(self):
         return dt.Timestamp(timezone=self._timezone)
-
-    def _can_implicit_cast(self, arg):
-        op = arg.op()
-        if isinstance(op, Literal):
-            if isinstance(op.value, six.integer_types):
-                warnings.warn(
-                    'Integer values for timestamp literals are deprecated in '
-                    '0.11.0 and will be removed in 0.12.0. To pass integers '
-                    'as timestamp literals, use '
-                    'pd.Timestamp({:d}, unit=...)'.format(op.value)
-                )
-            try:
-                import pandas as pd
-                pd.Timestamp(op.value)
-                return True
-            except ValueError:
-                return False
-        return False
-
-    def _implicit_cast(self, arg):
-        # assume we've checked this is OK at this point...
-        op = arg.op()
-        return TimestampScalar(op)
 
 
 class IntervalValue(ParameterizedValue):
@@ -1176,11 +1117,6 @@ class IntervalValue(ParameterizedValue):
 
     def _can_compare(self, other):
         return isinstance(other, IntervalValue) and self.unit == other.unit
-
-    def _implicit_cast(self, arg):
-        # assume we've checked this is OK at this point...
-        op = arg.op()
-        return IntervalScalar(op)
 
 
 class ArrayValue(ParameterizedValue):

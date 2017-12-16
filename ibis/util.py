@@ -15,10 +15,18 @@
 from __future__ import print_function
 
 import types
+from contextlib import contextmanager
 
 import ibis.compat as compat
-
 from ibis.config import options
+
+
+@contextmanager
+def ignoring(*exceptions):
+    try:
+        yield
+    except exceptions:
+        pass
 
 
 def guid():

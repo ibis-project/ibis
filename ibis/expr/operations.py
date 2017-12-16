@@ -2093,12 +2093,25 @@ class Xor(LogicalBinaryOp):
 
 class Comparison(BinaryOp, BooleanValueOp):
 
-    def _maybe_cast_args(self, left, right):
-        if left._can_implicit_cast(right):
-            return left, left._implicit_cast(right)
+    def _implicit_cast(self, source, target):
+        # TODO: move this logic somewhere more appropiate
+        op = source.op()
+        if not isinstance(op, ir.Literal):
+            raise com.IbisTypeError('Only able to implicitly cast literals!')
 
-        if right._can_implicit_cast(left):
-            return right._implicit_cast(left), right
+        if not dt.castable(source.type(), target.type(), source.op().value):
+            raise com.IbisTypeError('Source {} cannot be implicitly '
+                                    'casted to {}'.format(source, target))
+
+        type = target.type().scalar_type()
+        return type(source.op())
+
+    def _maybe_cast_args(self, left, right):
+        with util.ignoring(com.IbisTypeError):
+            return left, self._implicit_cast(right, left)
+
+        with util.ignoring(com.IbisTypeError):
+            return self._implicit_cast(left, right), right
 
         return left, right
 
