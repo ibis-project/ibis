@@ -29,10 +29,6 @@ import ibis.expr.datatypes as dt
 
 class Expr(object):
 
-    """
-
-    """
-
     def _type_display(self):
         return type(self).__name__
 
@@ -213,9 +209,6 @@ class Expr(object):
         if type(self) != type(other):
             return False
         return self._arg.equals(other._arg, cache=cache)
-
-    def _can_compare(self, other):
-        return False
 
     def _root_tables(self):
         return self.op().root_tables()
@@ -642,9 +635,6 @@ class ValueExpr(Expr):
             )
         )
 
-    def _can_cast_implicit(self, typename):
-        return dt.castable(self.type(), typename)
-
     def has_name(self):
         if self._name is not None:
             return True
@@ -939,14 +929,9 @@ class NullValue(AnyValue):
     def type(self):
         return dt.null
 
-    def _can_cast_implicit(self, typename):
-        return True
-
 
 class NumericValue(AnyValue):
-
-    def _can_compare(self, other):
-        return isinstance(other, NumericValue)
+    pass
 
 
 class IntegerValue(NumericValue):
@@ -1034,17 +1019,11 @@ class StringValue(AnyValue):
     def type(self):
         return dt.string
 
-    def _can_compare(self, other):
-        return isinstance(other, (StringValue, TemporalValue))
-
 
 class BinaryValue(AnyValue):
 
     def type(self):
         return dt.binary
-
-    def _can_compare(self, other):
-        return isinstance(other, BinaryValue)
 
 
 class ParameterizedValue(AnyValue):
@@ -1068,8 +1047,7 @@ class DecimalValue(ParameterizedValue, NumericValue):
 
 
 class TemporalValue(AnyValue):
-    def _can_compare(self, other):
-        return isinstance(other, (TemporalValue, StringValue))
+    pass
 
 
 class DateValue(TemporalValue):
@@ -1082,9 +1060,6 @@ class TimeValue(TemporalValue):
 
     def type(self):
         return dt.time
-
-    def _can_compare(self, other):
-        return isinstance(other, (TimeValue, StringValue))
 
 
 class TimestampValue(TemporalValue):
@@ -1115,26 +1090,16 @@ class IntervalValue(ParameterizedValue):
         """Unit's name"""
         return self.meta.resolution
 
-    def _can_compare(self, other):
-        return isinstance(other, IntervalValue) and self.unit == other.unit
-
 
 class ArrayValue(ParameterizedValue):
-
-    def _can_compare(self, other):
-        return isinstance(other, ArrayValue)
+    pass
 
 
 class MapValue(ParameterizedValue):
-
-    def _can_compare(self, other):
-        return isinstance(other, MapValue)
+    pass
 
 
 class StructValue(ParameterizedValue):
-
-    def _can_compare(self, other):
-        return isinstance(other, StructValue)
 
     def __dir__(self):
         return sorted(frozenset(
@@ -1328,14 +1293,10 @@ class DecimalColumn(DecimalValue, NumericColumn):
 
 
 class CategoryValue(ParameterizedValue):
-
     """
     Represents some ordered data categorization; tracked as an int32 value
     until explicitly
     """
-
-    def _can_compare(self, other):
-        return isinstance(other, IntegerValue)
 
 
 class CategoryScalar(CategoryValue, ScalarExpr):
@@ -1412,6 +1373,18 @@ def as_value_expr(val):
             val = literal(val)
 
     return val
+
+
+def cast(source, target):
+    """Currently Literal to *Scalar implicit casts are allowed"""
+
+    op = source.op()
+    if not isinstance(op, Literal):
+        raise com.IbisTypeError('Only able to implicitly cast literals!')
+
+    dtype = dt.cast(source.type(), target.type(), value=source.op().value)
+    scalar_type = dtype.scalar_type()
+    return scalar_type(source.op())
 
 
 def literal(value, type=None):

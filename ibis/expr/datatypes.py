@@ -1385,42 +1385,37 @@ castable = Dispatcher('castable')
 
 
 @castable.register(DataType, DataType)
-def can_cast_subtype(source, target):
+def can_cast_subtype(source, target, value=None):
     return isinstance(target, type(source))
 
 
-@castable.register(DataType, DataType, object)
-def can_cast_value(source, target, valueu):
-    return False
-
-
 @castable.register(Any, DataType)
-def can_cast_any(source, target):
+def can_cast_any(source, target, value=None):
     return True
 
 
 @castable.register(Null, DataType)
-def can_cast_null(source, target):
+def can_cast_null(source, target, value=None):
     return target.nullable
 
 
 @castable.register(Integer, Integer)
-def can_cast_to_generic_integer(source, target):
+def can_cast_to_generic_integer(source, target, value=None):
     return True
 
 
 @castable.register(UnsignedInteger, UnsignedInteger)
-def can_cast_unsigned_integer(source, target):
+def can_cast_unsigned_integer(source, target, value=None):
     return target._nbytes >= source._nbytes
 
 
 @castable.register(SignedInteger, SignedInteger)
-def can_cast_signed_integers(source, target):
+def can_cast_signed_integers(source, target, value=None):
     return target._nbytes >= source._nbytes
 
 
 @castable.register(Floating, Floating)
-def can_cast_floats(source, target):
+def can_cast_floats(source, target, value=None):
     # double -> float must be allowed because
     # float literals are inferred as doubles
     # return target._nbytes >= source._nbytes
@@ -1428,17 +1423,17 @@ def can_cast_floats(source, target):
 
 
 @castable.register(Integer, (Floating, Decimal))
-def can_upcast_integers(source, target):
+def can_upcast_integers(source, target, value=None):
     return True
 
 
 @castable.register(Floating, Decimal)
-def can_upcast_floats(source, target):
+def can_upcast_floats(source, target, value=None):
     return True
 
 
 @castable.register(Interval, Interval)
-def can_cast_intervals(source, target):
+def can_cast_intervals(source, target, value=None):
     return (
         source.unit == target.unit and
         castable(source.value_type, target.value_type)
@@ -1446,12 +1441,17 @@ def can_cast_intervals(source, target):
 
 
 @castable.register(Decimal, Floating)
-def can_cast_decimal_to_floating(source, target):
+def can_cast_decimal_to_floating(source, target, value=None):
     return True
 
 
-@castable.register(String, (Date, Time, Timestamp), six.string_types)
-def can_cast_string_to_temporal(source, target, value):
+@castable.register((Date, Timestamp), (Date, Timestamp))
+def can_cast_date_temporals(source, target, value=None):
+    return True
+
+
+@castable.register(String, (Date, Time, Timestamp))
+def can_cast_string_to_temporal(source, target, value=None):
     try:
         pd.Timestamp(value)
         return True
@@ -1459,10 +1459,11 @@ def can_cast_string_to_temporal(source, target, value):
         return False
 
 
-def cast(source, target):
+def cast(source, target, value=None):
     """Attempts to implicitly cast from source dtype to target dtype"""
     source, target = validate(source), validate(target)
-    if not castable(source, target):
+
+    if not castable(source, target, value=value):
         raise com.IbisTypeError('Datatype {} cannot be implicitly '
                                 'casted to {}'.format(source, target))
     return target
@@ -1480,9 +1481,6 @@ def cast(source, target):
 #     return (source.equals(target) or
 #             source.equals(Map(null, null)) or
 #             source.equals(Map(any, any)))
-
-
 # TODO cast category
-# TODO cleanup the Literal -> *Scalar implicit casts a bit
 
 infer_schema = Dispatcher('infer_schema')

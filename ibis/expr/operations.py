@@ -1210,7 +1210,7 @@ class SimpleCaseBuilder(object):
         case_expr = as_value_expr(case_expr)
         result_expr = as_value_expr(result_expr)
 
-        if not self.base._can_compare(case_expr):
+        if not rules.comparable(self.base, case_expr):
             raise TypeError('Base expression and passed case are not '
                             'comparable')
 
@@ -2093,37 +2093,22 @@ class Xor(LogicalBinaryOp):
 
 class Comparison(BinaryOp, BooleanValueOp):
 
-    def _implicit_cast(self, source, target):
-        # TODO: move this logic somewhere more appropiate
-        op = source.op()
-        if not isinstance(op, ir.Literal):
-            raise com.IbisTypeError('Only able to implicitly cast literals!')
-
-        if not dt.castable(source.type(), target.type(), source.op().value):
-            raise com.IbisTypeError('Source {} cannot be implicitly '
-                                    'casted to {}'.format(source, target))
-
-        type = target.type().scalar_type()
-        return type(source.op())
-
     def _maybe_cast_args(self, left, right):
         with util.ignoring(com.IbisTypeError):
-            return left, self._implicit_cast(right, left)
+            return left, ir.cast(right, left)
 
         with util.ignoring(com.IbisTypeError):
-            return self._implicit_cast(left, right), right
+            return ir.cast(left, right), right
 
         return left, right
 
     def output_type(self):
-        # if not dt.comparable(self.left.type(), self.right):
-        #     raise TypeError('Cannot compare argument types')
         self._assert_can_compare()
         return rules.shape_like_args(self.args, 'boolean')
 
     def _assert_can_compare(self):
-        if not self.left._can_compare(self.right):
-            raise TypeError('Cannot compare argument types')
+        if not rules.comparable(self.left, self.right):
+            raise TypeError('Arguments are not comparable')
 
 
 class Equals(Comparison):
@@ -2157,7 +2142,7 @@ class IdenticalTo(Comparison):
 class Between(BooleanValueOp):
 
     input_type = [
-        rules.value,
+        rules.value(),
         rules.value(name='lower_bound'),
         rules.value(name='upper_bound')
     ]
@@ -2167,8 +2152,9 @@ class Between(BooleanValueOp):
         return rules.shape_like_args(self.args, 'boolean')
 
     def _assert_can_compare(self):
-        expr, lower, upper = self.args
-        if not expr._can_compare(lower) or not expr._can_compare(upper):
+        arg, lower, upper = self.args
+
+        if not (rules.comparable(arg, lower) and rules.comparable(arg, upper)):
             raise TypeError('Arguments are not comparable')
 
 

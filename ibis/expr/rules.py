@@ -805,3 +805,9 @@ class DataTypeArgument(Argument):
 
 
 data_type = DataTypeArgument
+
+
+def comparable(left, right):
+    left_dtype, right_dtype = left.type(), right.type()
+    return (dt.castable(left_dtype, right_dtype) or
+            dt.castable(right_dtype, left_dtype))
