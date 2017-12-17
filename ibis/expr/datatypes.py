@@ -1440,6 +1440,11 @@ def can_upcast_floats(source, target, value=None):
     return True
 
 
+@castable.register(Integer, Category)
+def can_cast_category(source, target, value=None):
+    return True
+
+
 @castable.register(Interval, Interval)
 def can_cast_intervals(source, target, value=None):
     return (
