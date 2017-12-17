@@ -12,12 +12,16 @@ import ibis.expr.types as types
 import ibis.expr.rules as rules
 
 
+def test_validate_type():
+    assert dt.validate_type is dt.validate
+
+
 def test_array():
-    assert dt.validate_type('ARRAY<DOUBLE>') == dt.Array(dt.double)
+    assert dt.validate('ARRAY<DOUBLE>') == dt.Array(dt.double)
 
 
 def test_nested_array():
-    assert dt.validate_type(
+    assert dt.validate(
         'array<array<string>>'
     ) == dt.Array(dt.Array(dt.string))
 
@@ -30,13 +34,13 @@ def test_array_with_string_value_type():
 
 
 def test_map():
-    assert dt.validate_type(
+    assert dt.validate(
         'map<string, double>'
     ) == dt.Map(dt.string, dt.double)
 
 
 def test_nested_map():
-    assert dt.validate_type(
+    assert dt.validate(
         'map<int64, array<map<string, int8>>>'
     ) == dt.Map(dt.int64, dt.Array(dt.Map(dt.string, dt.int8)))
 
@@ -49,17 +53,17 @@ def test_map_with_string_value_type():
 
 def test_map_does_not_allow_non_primitive_keys():
     with pytest.raises(SyntaxError):
-        dt.validate_type('map<array<string>, double>')
+        dt.validate('map<array<string>, double>')
 
 
 def test_token_error():
     with pytest.raises(SyntaxError):
-        dt.validate_type('array<string>>')
+        dt.validate('array<string>>')
 
 
 def test_empty_complex_type():
     with pytest.raises(SyntaxError):
-        dt.validate_type('map<>')
+        dt.validate('map<>')
 
 
 def test_struct():
@@ -93,7 +97,7 @@ def test_struct():
         )
     ]))
 
-    assert dt.validate_type(orders) == expected
+    assert dt.validate(orders) == expected
 
 
 def test_struct_with_string_types():
@@ -129,7 +133,7 @@ def test_struct_with_string_types():
 )
 def test_decimal_failure(case):
     with pytest.raises(SyntaxError):
-        dt.validate_type(case)
+        dt.validate(case)
 
 
 @pytest.mark.parametrize(
@@ -137,7 +141,7 @@ def test_decimal_failure(case):
     ['varchar', 'varchar(10)', 'char', 'char(10)']
 )
 def test_char_varchar(spec):
-    assert dt.validate_type(spec) == dt.string
+    assert dt.validate(spec) == dt.string
 
 
 @pytest.mark.parametrize(
@@ -146,7 +150,7 @@ def test_char_varchar(spec):
 )
 def test_char_varchar_invalid(spec):
     with pytest.raises(SyntaxError):
-        dt.validate_type(spec)
+        dt.validate(spec)
 
 
 @pytest.mark.parametrize(('spec', 'expected'), [
@@ -312,19 +316,19 @@ def test_array_type_equals():
 
 
 def test_timestamp_with_timezone_parser_single_quote():
-    t = dt.validate_type("timestamp('US/Eastern')")
+    t = dt.validate("timestamp('US/Eastern')")
     assert isinstance(t, dt.Timestamp)
     assert t.timezone == 'US/Eastern'
 
 
 def test_timestamp_with_timezone_parser_double_quote():
-    t = dt.validate_type("timestamp('US/Eastern')")
+    t = dt.validate("timestamp('US/Eastern')")
     assert isinstance(t, dt.Timestamp)
     assert t.timezone == 'US/Eastern'
 
 
 def test_timestamp_with_timezone_parser_invalid_timezone():
-    ts = dt.validate_type("timestamp('US/Ea')")
+    ts = dt.validate("timestamp('US/Ea')")
     assert str(ts) == "timestamp('US/Ea')"
 
 
@@ -334,13 +338,13 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
 ])
 def test_interval(unit):
     definition = "interval('{}')".format(unit)
-    dt.Interval(unit, dt.int32) == dt.validate_type(definition)
+    dt.Interval(unit, dt.int32) == dt.validate(definition)
 
     definition = "interval<uint16>('{}')".format(unit)
-    dt.Interval(unit, dt.uint16) == dt.validate_type(definition)
+    dt.Interval(unit, dt.uint16) == dt.validate(definition)
 
     definition = "interval<int64>('{}')".format(unit)
-    dt.Interval(unit, dt.int64) == dt.validate_type(definition)
+    dt.Interval(unit, dt.int64) == dt.validate(definition)
 
 
 def test_interval_invalid_type():
@@ -348,7 +352,7 @@ def test_interval_invalid_type():
         dt.Interval('m', dt.float32)
 
     with pytest.raises(TypeError):
-        dt.validate_type("interval<float>('s')")
+        dt.validate("interval<float>('s')")
 
 
 @pytest.mark.parametrize('unit', [
@@ -358,7 +362,7 @@ def test_interval_unvalid_unit(unit):
     definition = "interval('{}')".format(unit)
 
     with pytest.raises(ValueError):
-        dt.validate_type(definition)
+        dt.validate(definition)
 
     with pytest.raises(ValueError):
         dt.Interval(dt.int32, unit)
@@ -374,7 +378,7 @@ def test_interval_unvalid_unit(unit):
 ])
 def test_string_argument_parsing_failure_mode(case):
     with pytest.raises(SyntaxError):
-        dt.validate_type(case)
+        dt.validate(case)
 
 
 def test_timestamp_with_invalid_timezone():
@@ -398,7 +402,7 @@ def test_time():
 
 
 def test_time_valid():
-    assert dt.validate_type('time').equals(dt.time)
+    assert dt.validate('time').equals(dt.time)
 
 
 @pytest.mark.parametrize(('value', 'expected_dtype'), [
@@ -435,8 +439,12 @@ def test_time_valid():
     (np.uint16(50), dt.uint16),
     (np.uint32(500), dt.uint32),
     (np.uint64(5000), dt.uint64),
+    (np.float32(5.5), dt.float32),
     (np.float32(5.5), dt.float),
+    (np.float64(5.55), dt.float64),
     (np.float64(5.55), dt.double),
+    (np.bool_(True), dt.boolean),
+    (np.bool_(False), dt.boolean),
 
     # parametric types
     (list('abc'), dt.Array(dt.string)),
@@ -470,7 +478,31 @@ def test_infer_dtype(value, expected_dtype):
 
 
 @pytest.mark.parametrize(('source', 'target'), [
-    # TODO
+    (dt.any, dt.string),
+    (dt.null, dt.date),
+    (dt.null, dt.any),
+    (dt.int8, dt.int64),
+    (dt.int8, dt.Decimal(12, 2)),
+    (dt.int32, dt.int32),
+    (dt.int32, dt.int64),
+    (dt.uint32, dt.uint64),
+    (dt.uint32, dt.Decimal(12, 2)),
+    (dt.uint32, dt.float32),
+    (dt.uint32, dt.float64),
+    (dt.Interval('s', dt.int16), dt.Interval('s', dt.int32)),
 ])
 def test_implicit_casts(source, target):
     assert dt.castable(source, target)
+
+
+@pytest.mark.parametrize(('source', 'target'), [
+    (dt.string, dt.null),
+    (dt.float64, dt.any),
+    (dt.int32, dt.int16),
+    (dt.Decimal(12, 2), dt.int32),
+    (dt.timestamp, dt.boolean),
+    (dt.boolean, dt.interval),
+    (dt.Interval('s', dt.int64), dt.Interval('s', dt.int16)),
+])
+def test_implicitly_uncastable(source, target):
+    assert not dt.castable(source, target)

@@ -807,6 +807,7 @@ _primitive_types = (
     ('any', any),
     ('null', null),
     ('boolean', boolean),
+    ('bool', boolean),
     ('int8', int8),
     ('int16', int16),
     ('int32', int32),
@@ -1381,10 +1382,6 @@ def infer_null(value):
     return null
 
 
-#  isinstance(a, np.generic) -> if true then map based on a.dtype
-
-# TODO:
-# multipledispatch infer_dtype - ala pandas api
 # multipledispatch infer_schema - list, dict, ordereddict, dataframe
 # to_pandas
 
