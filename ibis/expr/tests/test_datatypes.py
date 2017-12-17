@@ -1,6 +1,6 @@
 import pytest
 import datetime
-
+import numpy as np
 from collections import OrderedDict
 
 import ibis
@@ -149,9 +149,33 @@ def test_char_varchar_invalid(spec):
         dt.validate_type(spec)
 
 
-@pytest.mark.parametrize('spec', dt._primitive_types.keys())
-def test_primitive(spec):
-    assert dt.validate_type(spec) == dt._primitive_types[spec]
+@pytest.mark.parametrize(('spec', 'expected'), [
+    ('any', dt.any),
+    ('null', dt.null),
+    ('boolean', dt.boolean),
+    ('int8', dt.int8),
+    ('int16', dt.int16),
+    ('int32', dt.int32),
+    ('int64', dt.int64),
+    ('uint8', dt.uint8),
+    ('uint16', dt.uint16),
+    ('uint32', dt.uint32),
+    ('uint64', dt.uint64),
+    ('float16', dt.float16),
+    ('float32', dt.float32),
+    ('float64', dt.float64),
+    ('float', dt.float),
+    ('halffloat', dt.float16),
+    ('double', dt.double),
+    ('string', dt.string),
+    ('binary', dt.binary),
+    ('date', dt.date),
+    ('time', dt.time),
+    ('timestamp', dt.timestamp),
+    ('interval', dt.interval)
+])
+def test_primitive(spec, expected):
+    assert dt.validate(spec) == expected
 
 
 def test_whole_schema():
@@ -388,6 +412,7 @@ def test_time_valid():
 
     # numeric types
     (5, dt.int8),
+    (5, dt.int8),
     (127, dt.int8),
     (128, dt.int16),
     (32767, dt.int16),
@@ -400,6 +425,18 @@ def test_time_valid():
     (-32769, dt.int32),
     (-2147483649, dt.int64),
     (1.5, dt.double),
+
+    # numpy types
+    (np.int8(5), dt.int8),
+    (np.int16(-1), dt.int16),
+    (np.int32(2), dt.int32),
+    (np.int64(-5), dt.int64),
+    (np.uint8(5), dt.uint8),
+    (np.uint16(50), dt.uint16),
+    (np.uint32(500), dt.uint32),
+    (np.uint64(5000), dt.uint64),
+    (np.float32(5.5), dt.float),
+    (np.float64(5.55), dt.double),
 
     # parametric types
     (list('abc'), dt.Array(dt.string)),

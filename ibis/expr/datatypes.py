@@ -803,28 +803,31 @@ timestamp = Timestamp()
 interval = Interval()
 
 
-_primitive_types = {
-    'any': any,
-    'null': null,
-    'boolean': boolean,
-    'int8': int8,
-    'int16': int16,
-    'int32': int32,
-    'int64': int64,
-    'uint8': uint8,
-    'uint16': uint16,
-    'uint32': uint32,
-    'uint64': uint64,
-    'float': float,
-    'halffloat': float16,
-    'double': double,
-    'string': string,
-    'binary': binary,
-    'date': date,
-    'time': time,
-    'timestamp': timestamp,
-    'interval': interval
-}
+_primitive_types = (
+    ('any', any),
+    ('null', null),
+    ('boolean', boolean),
+    ('int8', int8),
+    ('int16', int16),
+    ('int32', int32),
+    ('int64', int64),
+    ('uint8', uint8),
+    ('uint16', uint16),
+    ('uint32', uint32),
+    ('uint64', uint64),
+    ('float16', float16),
+    ('float32', float32),
+    ('float64', float64),
+    ('float', float),
+    ('halffloat', float16),
+    ('double', double),
+    ('string', string),
+    ('binary', binary),
+    ('date', date),
+    ('time', time),
+    ('timestamp', timestamp),
+    ('interval', interval)
+)
 
 
 class Tokens(object):
@@ -882,7 +885,7 @@ _TYPE_RULES = OrderedDict(
         (
             '(?P<{}>{})'.format(token.upper(), token),
             lambda token, value=value: Token(Tokens.PRIMITIVE, value)
-        ) for token, value in _primitive_types.items()
+        ) for token, value in _primitive_types
         if token not in {'any', 'null', 'timestamp', 'time', 'interval'}
     ] + [
         # timestamp
@@ -1358,9 +1361,14 @@ def infer_floating(value):
     return double
 
 
-@infer.register(six.integer_types + (np.integer,))
+@infer.register(six.integer_types)
 def infer_integer(value):
     return int_class(value)
+
+
+@infer.register(np.generic)
+def infer_numpy_scalar(value):
+    return validate(value.dtype.name)
 
 
 @infer.register(bool)

@@ -2103,12 +2103,10 @@ class Comparison(BinaryOp, BooleanValueOp):
         return left, right
 
     def output_type(self):
-        self._assert_can_compare()
-        return rules.shape_like_args(self.args, 'boolean')
-
-    def _assert_can_compare(self):
         if not rules.comparable(self.left, self.right):
             raise TypeError('Arguments are not comparable')
+
+        return rules.shape_like_args(self.args, 'boolean')
 
 
 class Equals(Comparison):
@@ -2148,14 +2146,12 @@ class Between(BooleanValueOp):
     ]
 
     def output_type(self):
-        self._assert_can_compare()
-        return rules.shape_like_args(self.args, 'boolean')
-
-    def _assert_can_compare(self):
         arg, lower, upper = self.args
 
         if not (rules.comparable(arg, lower) and rules.comparable(arg, upper)):
             raise TypeError('Arguments are not comparable')
+
+        return rules.shape_like_args(self.args, 'boolean')
 
 
 class BetweenTime(Between):
