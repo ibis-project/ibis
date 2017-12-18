@@ -309,116 +309,137 @@ def test_aggregations(
 @pytest.mark.parametrize(
     ('result_func_default_analytic', 'expected_func'),
     [
-        pytest.mark.fail(param(
+        param(
             lambda t: t.float_col.lag(),
             lambda t: t.float_col.shift(1),
             id='lag',
-        )),
-        pytest.mark.fail(param(
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t: t.float_col.lead(),
             lambda t: t.float_col.shift(-1),
             id='lead',
-        )),
-        pytest.mark.fail(param(
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t: t.float_col.rank(),
             lambda t: t,
-            id='rank'
-        )),
-        pytest.mark.fail(param(
+            id='rank',
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t: t.float_col.dense_rank(),
             lambda t: t,
-            id='dense_rank'
-        )),
-        pytest.mark.fail(param(
+            id='dense_rank',
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t: t.float_col.percent_rank(),
             lambda t: t,
-            id='percent_rank'
-        )),
-        pytest.mark.fail(param(
+            id='percent_rank',
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t: t.float_col.ntile(buckets=7),
             lambda t: t,
-            id='ntile'
-        )),
-        pytest.mark.fail(param(
+            id='ntile',
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t: t.float_col.first(),
             lambda t: t.float_col.head(1),
-            id='first'
-        )),
-        pytest.mark.fail(param(
+            id='first',
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t: t.float_col.last(),
             lambda t: t.float_col.tail(1),
             id='last',
-        )),
-        pytest.mark.fail(param(
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t: t.float_col.first().over(ibis.window(preceding=10)),
             lambda t: t,
-            id='first_preceding'
-        )),
-        pytest.mark.fail(param(
+            id='first_preceding',
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t: t.float_col.first().over(ibis.window(following=10)),
             lambda t: t,
-            id='first_following'
-        )),
-        pytest.mark.fail(param(
+            id='first_following',
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t: ibis.row_number(),
             lambda t: pd.Series(np.arange(len(t))),
             id='row_number',
-        )),
+            marks=pytest.mark.xfail,
+        ),
         param(
             lambda t: t.double_col.cumsum(),
             lambda t: t.double_col.cumsum(),
-            id='cumsum'
+            id='cumsum',
+            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: t.double_col.cummean(),
             lambda t: t.double_col.expanding().mean().reset_index(
                 drop=True, level=0
             ),
-            id='cummean'
+            id='cummean',
+            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: t.float_col.cummin(),
             lambda t: t.float_col.cummin(),
-            id='cummin'
+            id='cummin',
+            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: t.float_col.cummax(),
             lambda t: t.float_col.cummax(),
-            id='cummax'
+            id='cummax',
+            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: (t.double_col == 0).cumany(),
             lambda t: t.double_col.expanding().agg(
                 lambda s: (s == 0).any()
             ).reset_index(drop=True, level=0).astype(bool),
-            id='cumany'
+            id='cumany',
+            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: (t.double_col == 0).cumall(),
             lambda t: t.double_col.expanding().agg(
                 lambda s: (s == 0).all()
             ).reset_index(drop=True, level=0).astype(bool),
-            id='cumall'
+            id='cumall',
+            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: t.double_col.sum(),
             lambda gb: gb.double_col.transform('sum'),
-            id='sum'
+            id='sum',
+            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: t.double_col.mean(),
             lambda gb: gb.double_col.transform('mean'),
-            id='mean'
+            id='mean',
+            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: t.float_col.min(),
             lambda gb: gb.float_col.transform('min'),
-            id='min'
+            id='min',
+            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: t.float_col.max(),
             lambda gb: gb.float_col.transform('max'),
-            id='max'
+            id='max',
+            marks=pytest.mark.xfail,
         ),
     ],
     indirect=['result_func_default_analytic'],
