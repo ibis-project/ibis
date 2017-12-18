@@ -249,6 +249,18 @@ class NullIfZero(ValueOp):
     output_type = rules.type_of_arg(0)
 
 
+class IsNan(ValueOp):
+
+    input_type = [rules.floating]
+    output_type = rules.shape_like_arg(0, 'boolean')
+
+
+class IsInf(ValueOp):
+
+    input_type = [rules.floating]
+    output_type = rules.shape_like_arg(0, 'boolean')
+
+
 class CoalesceLike(ValueOp):
 
     # According to Impala documentation:
@@ -2452,7 +2464,7 @@ class DateSubtract(TemporalSubtract):
         rules.date,
         rules.one_of([
             rules.date,
-            rules.interval(units=['Y', 'M', 'w', 'd'])
+            rules.interval(units=['Y', 'Q', 'M', 'w', 'd'])
         ])
     ]
     output_unit = 'd'
@@ -2487,7 +2499,7 @@ TimestampDelta = TimestampSubtract
 
 class DateAdd(Add):
 
-    input_type = [rules.date, rules.interval(units=['Y', 'M', 'w', 'd'])]
+    input_type = [rules.date, rules.interval(units=['Y', 'Q', 'M', 'w', 'd'])]
     output_type = rules.shape_like_arg(0, 'date')
 
 
@@ -2535,7 +2547,7 @@ class IntervalFromInteger(ValueOp):
     input_type = [
         rules.integer,
         rules.string_options([
-            'Y', 'M', 'w', 'd',
+            'Y', 'Q', 'M', 'w', 'd',
             'h', 'm', 's', 'ms', 'us', 'ns'
         ], name='unit')
     ]

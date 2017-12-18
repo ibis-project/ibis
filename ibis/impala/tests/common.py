@@ -48,7 +48,8 @@ class IbisTestEnv(object):
                                             '/__ibis/ibis-testing-data')
         self.nn_host = os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
         # 5070 is default for impala dev env
-        self.webhdfs_port = int(os.environ.get('IBIS_TEST_WEBHDFS_PORT', 5070))
+        self.webhdfs_port = int(os.environ.get('IBIS_TEST_WEBHDFS_PORT',
+                                               50070))
         self.hdfs_superuser = os.environ.get('IBIS_TEST_HDFS_SUPERUSER',
                                              'hdfs')
         self.use_codegen = os.environ.get('IBIS_TEST_USE_CODEGEN',
@@ -57,7 +58,7 @@ class IbisTestEnv(object):
                                                 'True').lower() == 'true'
         self.auth_mechanism = os.environ.get('IBIS_TEST_AUTH_MECH', 'NOSASL')
         self.llvm_config = os.environ.get('IBIS_TEST_LLVM_CONFIG', None)
-        self.webhdfs_user = os.environ.get('IBIS_TEST_WEBHDFS_USER', None)
+        self.webhdfs_user = os.environ.get('IBIS_TEST_WEBHDFS_USER', 'ubuntu')
 
     def __repr__(self):
         kvs = ['{0}={1}'.format(k, v)

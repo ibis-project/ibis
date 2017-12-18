@@ -1231,9 +1231,8 @@ class TimestampValue(TemporalValue):
 
 class IntervalValue(ParameterizedValue):
 
-    def __init__(self, meta=None, name=None):
+    def __init__(self, meta=None):
         self.meta = meta
-        self._name = name
 
     @property
     def unit(self):
