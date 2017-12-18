@@ -972,79 +972,6 @@ def scalar_type(t):
     return dtype(t).scalar_type()
 
 
-_SCALAR_TYPE_PRECEDENCE = {
-    'timestamp': 11,
-    'double': 10,
-    'float': 9,
-    'decimal': 8,
-    'int64': 7,
-    'int32': 6,
-    'int16': 5,
-    'int8': 4,
-    'boolean': 3,
-    'string': 2,
-    'binary': 1,
-    'null': 0,
-}
-
-
-def higher_precedence(left, right):
-    left_name = left.name.lower()
-    right_name = right.name.lower()
-
-    if (left_name in _SCALAR_TYPE_PRECEDENCE and
-            right_name in _SCALAR_TYPE_PRECEDENCE):
-        left_prec = _SCALAR_TYPE_PRECEDENCE[left_name]
-        right_prec = _SCALAR_TYPE_PRECEDENCE[right_name]
-        _, highest_type = max(
-            ((left_prec, left), (right_prec, right)),
-            key=toolz.first
-        )
-        return highest_type
-
-    # TODO(phillipc): Ensure that left and right are API compatible
-
-    if isinstance(left, Array):
-        return Array(higher_precedence(left.value_type, right.value_type))
-
-    if isinstance(left, Map):
-        return Map(
-            higher_precedence(left.key_type, right.key_type),
-            higher_precedence(left.value_type, right.value_type)
-        )
-
-    if isinstance(left, Struct):
-        if left.names != right.names:
-            raise TypeError('Struct names are not equal')
-        return Struct(
-            left.names,
-            list(map(higher_precedence, left.types, right.types))
-        )
-    raise TypeError(
-        'Cannot compute precedence for {} and {} types'.format(left, right)
-    )
-
-
-def highest_precedence_dtype(dtypes):
-    # Return the highest precedence type from the passed expressions. Also
-    # verifies that there are valid implicit casts between any of the types and
-    # the selected highest precedence type
-    if not dtypes:
-        raise ValueError('Must pass at least one expression')
-
-    highest_dtype = functools.reduce(higher_precedence, set(dtypes))
-
-    for dtype in dtypes:
-        if not castable(dtype, highest_dtype):
-
-            raise TypeError(
-                'Datatype {0} cannot be implicitly casted to {1}'
-                .format(dtype, highest_dtype)
-            )
-
-    return highest_dtype
-
-
 def int_class(value, allow_overflow=False):
     for dtype in [int8, int16, int32, int64]:
         if dtype.bounds.lower <= value <= dtype.bounds.upper:
@@ -1110,6 +1037,20 @@ def from_string(value):
 infer = Dispatcher('infer')
 
 
+def higher_precedence(left, right):
+    if castable(left, right):
+        return right
+    elif castable(right, left):
+        return left
+
+    raise com.IbisTypeError('Cannot compute precedence for {} '
+                            'and {} types'.format(left, right))
+
+
+def highest_precedence_dtype(dtypes):
+    return functools.reduce(higher_precedence, dtypes)
+
+
 @infer.register(object)
 def infer_dtype_default(value):
     raise com.InputTypeError(value)
@@ -1130,8 +1071,8 @@ def infer_map(value):
     if not value:
         return Map(null, null)
     return Map(
-        highest_precedence_dtype(list(map(infer, value.keys()))),
-        highest_precedence_dtype(list(map(infer, value.values()))),
+        highest_precedence_dtype(map(infer, value.keys())),
+        highest_precedence_dtype(map(infer, value.values())),
     )
 
 
@@ -1139,7 +1080,7 @@ def infer_map(value):
 def infer_list(value):
     if not value:
         return Array(null)
-    return Array(highest_precedence_dtype(list(map(infer, value))))
+    return Array(highest_precedence_dtype(map(infer, value)))
 
 
 @infer.register(np.ndarray)
@@ -1161,9 +1102,6 @@ def infer_date(value):
 @infer.register(datetime.datetime)
 def infer_timestamp(value):
     return timestamp
-
-
-# TODO: infer pd.Timedelta, Datetime
 
 
 @infer.register(datetime.timedelta)
@@ -1204,10 +1142,6 @@ def infer_boolean(value):
 @infer.register((type(None), Null))
 def infer_null(value):
     return null
-
-
-# multipledispatch infer_schema - list, dict, ordereddict, dataframe
-# to_pandas
 
 
 castable = Dispatcher('castable')
@@ -1303,21 +1237,9 @@ def can_cast_string_to_temporal(source, target, value=None):
         return False
 
 
-def cast(source, target, value=None):
-    """Attempts to implicitly cast from source dtype to target dtype"""
-    source, target = dtype(source), dtype(target)
-
-    if not castable(source, target, value=value):
-        raise com.IbisTypeError('Datatype {} cannot be implicitly '
-                                'casted to {}'.format(source, target))
-    return target
-
-
-# @castable.register(Array, Array)
-# def can_cast_arrays(source, target):
-#     return (source.equals(target) or
-#             source.equals(Array(null)) or
-#             source.equals(Array(any)))
+@castable.register(Array, Array)
+def can_cast_arrays(source, target):
+    return castable(source.value_type, target.value_type)
 
 
 # @castable.register(Map, Map)
@@ -1326,3 +1248,13 @@ def cast(source, target, value=None):
 #             source.equals(Map(null, null)) or
 #             source.equals(Map(any, any)))
 # TODO cast category
+
+
+def cast(source, target, value=None):
+    """Attempts to implicitly cast from source dtype to target dtype"""
+    source, target = dtype(source), dtype(target)
+
+    if not castable(source, target, value=value):
+        raise com.IbisTypeError('Datatype {} cannot be implicitly '
+                                'casted to {}'.format(source, target))
+    return target
