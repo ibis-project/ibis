@@ -172,7 +172,7 @@ def _int_one_literal_promotion(atype, lit_val, op):
 
 
 def _smallest_int_containing(values, allow_overflow=False):
-    containing_types = [dt.int_class(x, allow_overflow=allow_overflow)
+    containing_types = [dt.infer(x, allow_overflow=allow_overflow)
                         for x in values]
     return _largest_int(containing_types)
 

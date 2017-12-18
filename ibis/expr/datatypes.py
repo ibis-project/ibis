@@ -426,7 +426,7 @@ class Category(DataType):
         if self.cardinality is None:
             return int64
         else:
-            return int_class(self.cardinality)
+            return infer(self.cardinality)
 
 
 @parametric
@@ -972,17 +972,6 @@ def scalar_type(t):
     return dtype(t).scalar_type()
 
 
-def int_class(value, allow_overflow=False):
-    for dtype in [int8, int16, int32, int64]:
-        if dtype.bounds.lower <= value <= dtype.bounds.upper:
-            return dtype
-
-    if not allow_overflow:
-        raise OverflowError(value)
-
-    return int64
-
-
 _numpy_to_ibis = toolz.keymap(np.dtype, {
     'bool': boolean,
     'int8': int8,
@@ -1125,13 +1114,20 @@ def infer_floating(value):
 
 
 @infer.register(six.integer_types)
-def infer_integer(value):
-    return int_class(value)
+def infer_integer(value, allow_overflow=False):
+    for dtype in [int8, int16, int32, int64]:
+        if dtype.bounds.lower <= value <= dtype.bounds.upper:
+            return dtype
+
+    if not allow_overflow:
+        raise OverflowError(value)
+
+    return int64
 
 
 @infer.register(np.generic)
 def infer_numpy_scalar(value):
-    return dtype(value.dtype.name)
+    return dtype(value.dtype)
 
 
 @infer.register(bool)
@@ -1181,8 +1177,8 @@ def can_cast_signed_integers(source, target, value=None):
 def can_cast_floats(source, target, value=None):
     # double -> float must be allowed because
     # float literals are inferred as doubles
-    # return target._nbytes >= source._nbytes
-    return True
+    return target._nbytes >= source._nbytes
+    # return True
 
 
 @castable.register(Integer, (Floating, Decimal))
