@@ -781,9 +781,10 @@ class MultiQuantile(Quantile):
 
 class VarianceBase(Reduction):
 
-    input_type = [rules.column, boolean(name='where', optional=True),
+    input_type = [rules.column,
                   rules.string_options(['sample', 'pop'],
-                                       name='how', optional=True)]
+                                       name='how', optional=True),
+                  boolean(name='where', optional=True)]
     output_type = rules.scalar_output(_mean_output_type)
 
 

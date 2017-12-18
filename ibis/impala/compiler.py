@@ -368,14 +368,13 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
-def _reduction_format(translator, func_name, arg, where):
+def _reduction_format(translator, func_name, arg, args, where):
     if where is not None:
-        case = where.ifelse(arg, ibis.NA)
-        arg = translator.translate(case)
-    else:
-        arg = translator.translate(arg)
+        arg = where.ifelse(arg, ibis.NA)
 
-    return '{}({})'.format(func_name, arg)
+    return '{}({})'.format(
+        func_name, ', '.join(map(translator.translate, [arg] + list(args)))
+    )
 
 
 def _reduction(func_name):
@@ -383,9 +382,12 @@ def _reduction(func_name):
         op = expr.op()
 
         # HACK: support trailing arguments
-        arg, where = op.args[:2]
+        where = op.where
+        args = [arg for arg in op.args if arg is not where]
 
-        return _reduction_format(translator, func_name, arg, where)
+        return _reduction_format(
+            translator, func_name, args[0], args[1:], where
+        )
     return formatter
 
 
@@ -396,8 +398,8 @@ def _variance_like(func_name):
     }
 
     def formatter(translator, expr):
-        arg, where, how = expr.op().args
-        return _reduction_format(translator, func_names[how], arg, where)
+        arg, how, where = expr.op().args
+        return _reduction_format(translator, func_names[how], arg, [], where)
     return formatter
 
 
@@ -956,7 +958,7 @@ _operation_registry = {
     ops.StandardDev: _variance_like('stddev'),
     ops.Variance: _variance_like('var'),
 
-    ops.GroupConcat: fixed_arity('group_concat', 2),
+    ops.GroupConcat: _reduction('group_concat'),
 
     ops.Count: _reduction('count'),
     ops.CountDistinct: _count_distinct,

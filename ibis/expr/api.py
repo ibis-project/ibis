@@ -1372,7 +1372,7 @@ def std(arg, where=None, how='sample'):
     -------
     stdev : double scalar
     """
-    expr = _ops.StandardDev(arg, where, how).to_expr()
+    expr = _ops.StandardDev(arg, how, where).to_expr()
     expr = expr.name('std')
     return expr
 
@@ -1389,7 +1389,7 @@ def variance(arg, where=None, how='sample'):
     -------
     stdev : double scalar
     """
-    expr = _ops.Variance(arg, where, how).to_expr()
+    expr = _ops.Variance(arg, how, where).to_expr()
     expr = expr.name('var')
     return expr
 
