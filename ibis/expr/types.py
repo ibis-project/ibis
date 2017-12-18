@@ -1430,7 +1430,7 @@ def literal(value, type=None):
             dtype = dtype.cast(type)
         except com.IbisTypeError:
             raise TypeError('Value {!r} cannot be safely coerced '
-                            'to {}'.format(value, dtype))
+                            'to {}'.format(value, type))
 
     if value is None or value is _NULL or value is null:
         return null().cast(dtype)

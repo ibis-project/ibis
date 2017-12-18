@@ -1115,7 +1115,7 @@ def flatten_predicate(expr):
         a = Column[int64*] 'a' from table
           ref_0
       right:
-        Literal[int8]
+        Literal[int64]
           1
     >>> predicates[1]  # doctest: +NORMALIZE_WHITESPACE
     ref_0
