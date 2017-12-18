@@ -1027,9 +1027,9 @@ infer = Dispatcher('infer')
 
 
 def higher_precedence(left, right):
-    if castable(left, right):
+    if castable(left, right, upcast=True):
         return right
-    elif castable(right, left):
+    elif castable(right, left, upcast=True):
         return left
 
     raise com.IbisTypeError('Cannot compute precedence for {} '
@@ -1144,60 +1144,62 @@ castable = Dispatcher('castable')
 
 
 @castable.register(DataType, DataType)
-def can_cast_subtype(source, target, value=None):
+def can_cast_subtype(source, target, **kwargs):
     return isinstance(target, type(source))
 
 
 @castable.register(Any, DataType)
-def can_cast_any(source, target, value=None):
+def can_cast_any(source, target, **kwargs):
     return True
 
 
 @castable.register(Null, DataType)
-def can_cast_null(source, target, value=None):
+def can_cast_null(source, target, **kwargs):
     return target.nullable
 
 
 @castable.register(Integer, Integer)
-def can_cast_to_generic_integer(source, target, value=None):
+def can_cast_to_generic_integer(source, target, **kwargs):
     return True
 
 
 @castable.register(UnsignedInteger, UnsignedInteger)
-def can_cast_unsigned_integer(source, target, value=None):
+def can_cast_unsigned_integer(source, target, **kwargs):
     return target._nbytes >= source._nbytes
 
 
 @castable.register(SignedInteger, SignedInteger)
-def can_cast_signed_integers(source, target, value=None):
+def can_cast_signed_integers(source, target, **kwargs):
     return target._nbytes >= source._nbytes
 
 
 @castable.register(Floating, Floating)
-def can_cast_floats(source, target, value=None):
+def can_cast_floats(source, target, upcast=False, **kwargs):
+    if upcast:
+        return target._nbytes >= source._nbytes
+
     # double -> float must be allowed because
     # float literals are inferred as doubles
-    return target._nbytes >= source._nbytes
-    # return True
+    return True
 
 
 @castable.register(Integer, (Floating, Decimal))
-def can_upcast_integers(source, target, value=None):
+def can_upcast_integers(source, target, **kwargs):
     return True
 
 
 @castable.register(Floating, Decimal)
-def can_upcast_floats(source, target, value=None):
+def can_upcast_floats(source, target, **kwargs):
     return True
 
 
 @castable.register(Integer, Category)
-def can_cast_category(source, target, value=None):
+def can_cast_category(source, target, **kwargs):
     return True
 
 
 @castable.register(Interval, Interval)
-def can_cast_intervals(source, target, value=None):
+def can_cast_intervals(source, target, **kwargs):
     return (
         source.unit == target.unit and
         castable(source.value_type, target.value_type)
@@ -1205,27 +1207,27 @@ def can_cast_intervals(source, target, value=None):
 
 
 @castable.register(Integer, Boolean)
-def can_cast_integer_to_boolean(source, target, value=None):
+def can_cast_integer_to_boolean(source, target, value=None, **kwargs):
     return value == 0 or value == 1
 
 
 @castable.register(Integer, Interval)
-def can_cast_integer_to_interval(source, target, value=None):
+def can_cast_integer_to_interval(source, target, **kwargs):
     return castable(source, target.value_type)
 
 
 @castable.register(Decimal, Floating)
-def can_cast_decimal_to_floating(source, target, value=None):
+def can_cast_decimal_to_floating(source, target, **kwargs):
     return True
 
 
 @castable.register((Date, Timestamp), (Date, Timestamp))
-def can_cast_date_temporals(source, target, value=None):
+def can_cast_date_temporals(source, target, **kwargs):
     return True
 
 
 @castable.register(String, (Date, Time, Timestamp))
-def can_cast_string_to_temporal(source, target, value=None):
+def can_cast_string_to_temporal(source, target, value=None, **kwargs):
     try:
         pd.Timestamp(value)
         return True
@@ -1234,7 +1236,7 @@ def can_cast_string_to_temporal(source, target, value=None):
 
 
 @castable.register(Array, Array)
-def can_cast_arrays(source, target):
+def can_cast_arrays(source, target, **kwargs):
     return castable(source.value_type, target.value_type)
 
 
@@ -1246,11 +1248,11 @@ def can_cast_arrays(source, target):
 # TODO cast category
 
 
-def cast(source, target, value=None):
+def cast(source, target, **kwargs):
     """Attempts to implicitly cast from source dtype to target dtype"""
     source, target = dtype(source), dtype(target)
 
-    if not castable(source, target, value=value):
+    if not castable(source, target, **kwargs):
         raise com.IbisTypeError('Datatype {} cannot be implicitly '
                                 'casted to {}'.format(source, target))
     return target
