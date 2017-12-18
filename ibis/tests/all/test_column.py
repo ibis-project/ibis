@@ -248,11 +248,12 @@ def test_strings(alltypes, df, backend, result_func_default, expected_func):
             lambda t, where: t.double_col.max(),
             id='double_col_max',
         ),
-        pytest.mark.xfail(param(
+        param(
             lambda t, where: t.double_col.approx_median(),
             lambda t, where: t.double_col.median(),
             id='double_col_approx_median',
-        )),
+            marks=pytest.mark.xfail,
+        ),
         param(
             lambda t, where: t.double_col.std(how='sample'),
             lambda t, where: t.double_col.std(ddof=1),
@@ -273,16 +274,18 @@ def test_strings(alltypes, df, backend, result_func_default, expected_func):
             lambda t, where: t.double_col.var(ddof=0),
             id='double_col_var_pop',
         ),
-        pytest.mark.xfail(param(
+        param(
             lambda t, where: t.string_col.approx_nunique(),
             lambda t, where: t.string_col.nunique(),
-            id='string_col_approx_nunique'
-        )),
-        pytest.mark.xfail(param(
+            id='string_col_approx_nunique',
+            marks=pytest.mark.xfail,
+        ),
+        param(
             lambda t, where: t.string_col.group_concat(','),
             lambda t, where: ','.join(t.string_col),
-            id='string_col_group_concat'
-        )),
+            id='string_col_group_concat',
+            marks=pytest.mark.xfail,
+        ),
     ],
     indirect=['result_func_aggs'],
 )
