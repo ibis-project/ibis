@@ -1,7 +1,9 @@
 import getpass
 import os
 
-from ibis.tests.all.config.backendtestconfiguration import BackendTestConfiguration
+from ibis.tests.all.config.backendtestconfiguration import (
+    BackendTestConfiguration
+)
 
 
 class Postgres(BackendTestConfiguration):

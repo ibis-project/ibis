@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 import pytest
 from pytest import param
@@ -247,11 +248,11 @@ def test_strings(alltypes, df, backend, result_func_default, expected_func):
             lambda t, where: t.double_col.max(),
             id='double_col_max',
         ),
-        # param(
-            # lambda t, where: t.double_col.approx_median(),
-            # lambda t, where: t.double_col.median(),
-            # id='double_col_approx_median',
-        # ),
+        pytest.mark.xfail(param(
+            lambda t, where: t.double_col.approx_median(),
+            lambda t, where: t.double_col.median(),
+            id='double_col_approx_median',
+        )),
         param(
             lambda t, where: t.double_col.std(how='sample'),
             lambda t, where: t.double_col.std(ddof=1),
@@ -272,16 +273,16 @@ def test_strings(alltypes, df, backend, result_func_default, expected_func):
             lambda t, where: t.double_col.var(ddof=0),
             id='double_col_var_pop',
         ),
-        # param(
-            # lambda t, where: t.string_col.approx_nunique(),
-            # lambda t, where: t.string_col.nunique(),
-            # id='string_col_approx_nunique'
-        # ),
-        # param(
-            # lambda t, where: t.string_col.group_concat(','),
-            # lambda t, where: ','.join(t.string_col),
-            # id='string_col_group_concat'
-        # ),
+        pytest.mark.xfail(param(
+            lambda t, where: t.string_col.approx_nunique(),
+            lambda t, where: t.string_col.nunique(),
+            id='string_col_approx_nunique'
+        )),
+        pytest.mark.xfail(param(
+            lambda t, where: t.string_col.group_concat(','),
+            lambda t, where: ','.join(t.string_col),
+            id='string_col_group_concat'
+        )),
     ],
     indirect=['result_func_aggs'],
 )
@@ -308,61 +309,61 @@ def test_aggregations(
 @pytest.mark.parametrize(
     ('result_func_default_analytic', 'expected_func'),
     [
-        # param(
-            # lambda t: t.float_col.lag(),
-            # lambda t: t.float_col.shift(1),
-            # id='lag',
-        # ),
-        # param(
-            # lambda t: t.float_col.lead(),
-            # lambda t: t.float_col.shift(-1),
-            # id='lead',
-        # ),
-        # param(
-            # lambda t: t.float_col.rank(),
-            # lambda t: t,
-            # id='rank'
-        # ),
-        # param(
-            # lambda t: t.float_col.dense_rank(),
-            # lambda t: t,
-            # id='dense_rank'
-        # ),
-        # param(
-            # lambda t: t.float_col.percent_rank(),
-            # lambda t: t,
-            # id='percent_rank'
-        # ),
-        # param(
-            # lambda t: t.float_col.ntile(buckets=7),
-            # lambda t: t,
-            # id='ntile'
-        # ),
-        # param(
-            # lambda t: t.float_col.first(),
-            # lambda t: t.float_col.head(1),
-            # id='first'
-        # ),
-        # param(
-            # lambda t: t.float_col.last(),
-            # lambda t: t.float_col.tail(1),
-            # id='last',
-        # ),
-        # param(
-            # lambda t: t.float_col.first().over(ibis.window(preceding=10)),
-            # lambda t: t,
-            # id='first_preceding'
-        # ),
-        # param(
-            # lambda t: t.float_col.first().over(ibis.window(following=10)),
-            # lambda t: t,
-            # id='first_following'
-        # ),
-        # param(
-            # lambda t: ibis.row_number(),
-            # lambda t: pd.Series(np.arange(len(t))),
-            # id='row_number',
-        # ),
+        pytest.mark.fail(param(
+            lambda t: t.float_col.lag(),
+            lambda t: t.float_col.shift(1),
+            id='lag',
+        )),
+        pytest.mark.fail(param(
+            lambda t: t.float_col.lead(),
+            lambda t: t.float_col.shift(-1),
+            id='lead',
+        )),
+        pytest.mark.fail(param(
+            lambda t: t.float_col.rank(),
+            lambda t: t,
+            id='rank'
+        )),
+        pytest.mark.fail(param(
+            lambda t: t.float_col.dense_rank(),
+            lambda t: t,
+            id='dense_rank'
+        )),
+        pytest.mark.fail(param(
+            lambda t: t.float_col.percent_rank(),
+            lambda t: t,
+            id='percent_rank'
+        )),
+        pytest.mark.fail(param(
+            lambda t: t.float_col.ntile(buckets=7),
+            lambda t: t,
+            id='ntile'
+        )),
+        pytest.mark.fail(param(
+            lambda t: t.float_col.first(),
+            lambda t: t.float_col.head(1),
+            id='first'
+        )),
+        pytest.mark.fail(param(
+            lambda t: t.float_col.last(),
+            lambda t: t.float_col.tail(1),
+            id='last',
+        )),
+        pytest.mark.fail(param(
+            lambda t: t.float_col.first().over(ibis.window(preceding=10)),
+            lambda t: t,
+            id='first_preceding'
+        )),
+        pytest.mark.fail(param(
+            lambda t: t.float_col.first().over(ibis.window(following=10)),
+            lambda t: t,
+            id='first_following'
+        )),
+        pytest.mark.fail(param(
+            lambda t: ibis.row_number(),
+            lambda t: pd.Series(np.arange(len(t))),
+            id='row_number',
+        )),
         param(
             lambda t: t.double_col.cumsum(),
             lambda t: t.double_col.cumsum(),
@@ -442,5 +443,4 @@ def test_analytic_functions(
     gb = df.sort_values('id').groupby('string_col')
     expected = df.assign(value=expected_func(gb)).set_index('id').sort_index()
     left, right = result.value, expected.value
-    import pdb; pdb.set_trace()  # noqa
     backend.assert_series_equal(left, right)

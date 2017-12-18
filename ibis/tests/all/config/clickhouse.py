@@ -1,6 +1,8 @@
 import pytest
 
-from ibis.tests.all.config.backendtestconfiguration import BackendTestConfiguration
+from ibis.tests.all.config.backendtestconfiguration import (
+    BackendTestConfiguration
+)
 
 
 class Clickhouse(BackendTestConfiguration):

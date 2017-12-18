@@ -412,7 +412,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
             (c.mean(where=cond), tmp.format('avg')),
             (c.max(where=cond), tmp.format('max')),
             (c.min(where=cond), tmp.format('min')),
-            (c.std(where=cond), tmp.format('stddev')),
+            (c.std(where=cond), tmp.format('stddev_samp')),
             (c.std(where=cond, how='pop'), tmp.format('stddev_pop')),
             (c.var(where=cond), tmp.format('variance')),
             (c.var(where=cond, how='pop'), tmp.format('variance_pop')),

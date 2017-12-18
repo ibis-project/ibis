@@ -4,7 +4,9 @@ import os
 
 import pytest
 
-from ibis.tests.all.config.backendtestconfiguration import BackendTestConfiguration
+from ibis.tests.all.config.backendtestconfiguration import (
+    BackendTestConfiguration
+)
 
 
 class Parquet(BackendTestConfiguration):
