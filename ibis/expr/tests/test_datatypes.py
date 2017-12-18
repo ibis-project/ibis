@@ -1,3 +1,4 @@
+import six
 import pytest
 import datetime
 import numpy as np
@@ -13,17 +14,15 @@ import ibis.expr.rules as rules
 
 
 def test_validate_type():
-    assert dt.validate_type is dt.validate
+    assert dt.validate_type is dt.dtype
 
 
 def test_array():
-    assert dt.validate('ARRAY<DOUBLE>') == dt.Array(dt.double)
+    assert dt.dtype('ARRAY<DOUBLE>') == dt.Array(dt.double)
 
 
 def test_nested_array():
-    assert dt.validate(
-        'array<array<string>>'
-    ) == dt.Array(dt.Array(dt.string))
+    assert dt.dtype('array<array<string>>') == dt.Array(dt.Array(dt.string))
 
 
 def test_array_with_string_value_type():
@@ -34,15 +33,12 @@ def test_array_with_string_value_type():
 
 
 def test_map():
-    assert dt.validate(
-        'map<string, double>'
-    ) == dt.Map(dt.string, dt.double)
+    assert dt.dtype('map<string, double>') == dt.Map(dt.string, dt.double)
 
 
 def test_nested_map():
-    assert dt.validate(
-        'map<int64, array<map<string, int8>>>'
-    ) == dt.Map(dt.int64, dt.Array(dt.Map(dt.string, dt.int8)))
+    expected = dt.Map(dt.int64, dt.Array(dt.Map(dt.string, dt.int8)))
+    assert dt.dtype('map<int64, array<map<string, int8>>>') == expected
 
 
 def test_map_with_string_value_type():
@@ -53,17 +49,17 @@ def test_map_with_string_value_type():
 
 def test_map_does_not_allow_non_primitive_keys():
     with pytest.raises(SyntaxError):
-        dt.validate('map<array<string>, double>')
+        dt.dtype('map<array<string>, double>')
 
 
 def test_token_error():
     with pytest.raises(SyntaxError):
-        dt.validate('array<string>>')
+        dt.dtype('array<string>>')
 
 
 def test_empty_complex_type():
     with pytest.raises(SyntaxError):
-        dt.validate('map<>')
+        dt.dtype('map<>')
 
 
 def test_struct():
@@ -97,7 +93,7 @@ def test_struct():
         )
     ]))
 
-    assert dt.validate(orders) == expected
+    assert dt.dtype(orders) == expected
 
 
 def test_struct_with_string_types():
@@ -120,37 +116,40 @@ def test_struct_with_string_types():
     )
 
 
-@pytest.mark.parametrize(
-    'case',
-    [
-        'decimal(',
-        'decimal()',
-        'decimal(3)',
-        'decimal(,)',
-        'decimal(3,)',
-        'decimal(3,',
-    ]
-)
+@pytest.mark.parametrize('case', [
+    'decimal(',
+    'decimal()',
+    'decimal(3)',
+    'decimal(,)',
+    'decimal(3,)',
+    'decimal(3,',
+])
 def test_decimal_failure(case):
     with pytest.raises(SyntaxError):
-        dt.validate(case)
+        dt.dtype(case)
 
 
-@pytest.mark.parametrize(
-    'spec',
-    ['varchar', 'varchar(10)', 'char', 'char(10)']
-)
+@pytest.mark.parametrize('spec', [
+    'varchar',
+    'varchar(10)',
+    'char',
+    'char(10)'
+])
 def test_char_varchar(spec):
-    assert dt.validate(spec) == dt.string
+    assert dt.dtype(spec) == dt.string
 
 
-@pytest.mark.parametrize(
-    'spec',
-    ['varchar(', 'varchar)', 'varchar()', 'char(', 'char)', 'char()']
-)
+@pytest.mark.parametrize('spec', [
+    'varchar(',
+    'varchar)',
+    'varchar()',
+    'char(',
+    'char)',
+    'char()'
+])
 def test_char_varchar_invalid(spec):
     with pytest.raises(SyntaxError):
-        dt.validate(spec)
+        dt.dtype(spec)
 
 
 @pytest.mark.parametrize(('spec', 'expected'), [
@@ -179,99 +178,30 @@ def test_char_varchar_invalid(spec):
     ('interval', dt.interval)
 ])
 def test_primitive(spec, expected):
-    assert dt.validate(spec) == expected
+    assert dt.dtype(spec) == expected
 
 
-def test_whole_schema():
-    customers = ibis.table(
-        [
-            ('cid', 'int64'),
-            ('mktsegment', 'string'),
-            ('address', ('struct<city: string, street: string, '
-                         'street_number: int32, zip: int16>')),
-            ('phone_numbers', 'array<string>'),
-            (
-                'orders', """array<struct<
-                                oid: int64,
-                                status: string,
-                                totalprice: decimal(12, 2),
-                                order_date: string,
-                                items: array<struct<
-                                    iid: int64,
-                                    name: string,
-                                    price: decimal(12, 2),
-                                    discount_perc: decimal(12, 2),
-                                    shipdate: string
-                                >>
-                            >>"""
-            ),
-            ('web_visits', ('map<string, struct<user_agent: string, '
-                            'client_ip: string, visit_date: string, '
-                            'duration_ms: int32>>')),
-            ('support_calls', ('array<struct<agent_id: int64, '
-                               'call_date: string, duration_ms: int64, '
-                               'issue_resolved: boolean, '
-                               'agent_comment: string>>'))
-        ],
-        name='customers',
-    )
-    expected = ibis.Schema.from_tuples(
-        [
-            ('cid', dt.int64),
-            ('mktsegment', dt.string),
-            (
-                'address',
-                dt.Struct.from_tuples([
-                    ('city', dt.string),
-                    ('street', dt.string),
-                    ('street_number', dt.int32),
-                    ('zip', dt.int16)
-                ]),
-            ),
-            ('phone_numbers', dt.Array(dt.string)),
-            (
-                'orders', dt.Array(dt.Struct.from_tuples([
-                            ('oid', dt.int64),
-                            ('status', dt.string),
-                            ('totalprice', dt.Decimal(12, 2)),
-                            ('order_date', dt.string),
-                            (
-                                'items',
-                                dt.Array(dt.Struct.from_tuples([
-                                    ('iid', dt.int64),
-                                    ('name', dt.string),
-                                    ('price', dt.Decimal(12, 2)),
-                                    ('discount_perc', dt.Decimal(12, 2)),
-                                    ('shipdate', dt.string),
-                                ]))
-                            )
-                        ]))
-            ),
-            (
-                'web_visits',
-                dt.Map(
-                    dt.string,
-                    dt.Struct.from_tuples([
-                        ('user_agent', dt.string),
-                        ('client_ip', dt.string),
-                        ('visit_date', dt.string),
-                        ('duration_ms', dt.int32),
-                    ])
-                )
-            ),
-            (
-                'support_calls',
-                dt.Array(dt.Struct.from_tuples([
-                    ('agent_id', dt.int64),
-                    ('call_date', dt.string),
-                    ('duration_ms', dt.int64),
-                    ('issue_resolved', dt.boolean),
-                    ('agent_comment', dt.string)
-                ]))
-            ),
-        ],
-    )
-    assert customers.schema() == expected
+@pytest.mark.parametrize(('numpy_dtype', 'ibis_dtype'), [
+    (np.bool_, dt.boolean),
+    (np.int8, dt.int8),
+    (np.int16, dt.int16),
+    (np.int32, dt.int32),
+    (np.int64, dt.int64),
+    (np.uint8, dt.uint8),
+    (np.uint16, dt.uint16),
+    (np.uint32, dt.uint32),
+    (np.uint64, dt.uint64),
+    (np.float16, dt.float16),
+    (np.float32, dt.float32),
+    (np.float64, dt.float64),
+    (np.double, dt.double),
+    (np.str_, dt.string),
+    (np.bytes_, dt.binary),
+    (np.datetime64, dt.timestamp),
+    (np.timedelta64, dt.interval)
+])
+def test_numpy_dtype(numpy_dtype, ibis_dtype):
+    assert dt.dtype(np.dtype(numpy_dtype)) == ibis_dtype
 
 
 def test_precedence_with_no_arguments():
@@ -316,19 +246,19 @@ def test_array_type_equals():
 
 
 def test_timestamp_with_timezone_parser_single_quote():
-    t = dt.validate("timestamp('US/Eastern')")
+    t = dt.dtype("timestamp('US/Eastern')")
     assert isinstance(t, dt.Timestamp)
     assert t.timezone == 'US/Eastern'
 
 
 def test_timestamp_with_timezone_parser_double_quote():
-    t = dt.validate("timestamp('US/Eastern')")
+    t = dt.dtype("timestamp('US/Eastern')")
     assert isinstance(t, dt.Timestamp)
     assert t.timezone == 'US/Eastern'
 
 
 def test_timestamp_with_timezone_parser_invalid_timezone():
-    ts = dt.validate("timestamp('US/Ea')")
+    ts = dt.dtype("timestamp('US/Ea')")
     assert str(ts) == "timestamp('US/Ea')"
 
 
@@ -338,13 +268,13 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
 ])
 def test_interval(unit):
     definition = "interval('{}')".format(unit)
-    dt.Interval(unit, dt.int32) == dt.validate(definition)
+    dt.Interval(unit, dt.int32) == dt.dtype(definition)
 
     definition = "interval<uint16>('{}')".format(unit)
-    dt.Interval(unit, dt.uint16) == dt.validate(definition)
+    dt.Interval(unit, dt.uint16) == dt.dtype(definition)
 
     definition = "interval<int64>('{}')".format(unit)
-    dt.Interval(unit, dt.int64) == dt.validate(definition)
+    dt.Interval(unit, dt.int64) == dt.dtype(definition)
 
 
 def test_interval_invalid_type():
@@ -352,7 +282,7 @@ def test_interval_invalid_type():
         dt.Interval('m', dt.float32)
 
     with pytest.raises(TypeError):
-        dt.validate("interval<float>('s')")
+        dt.dtype("interval<float>('s')")
 
 
 @pytest.mark.parametrize('unit', [
@@ -362,7 +292,7 @@ def test_interval_unvalid_unit(unit):
     definition = "interval('{}')".format(unit)
 
     with pytest.raises(ValueError):
-        dt.validate(definition)
+        dt.dtype(definition)
 
     with pytest.raises(ValueError):
         dt.Interval(dt.int32, unit)
@@ -378,7 +308,7 @@ def test_interval_unvalid_unit(unit):
 ])
 def test_string_argument_parsing_failure_mode(case):
     with pytest.raises(SyntaxError):
-        dt.validate(case)
+        dt.dtype(case)
 
 
 def test_timestamp_with_invalid_timezone():
@@ -402,7 +332,7 @@ def test_time():
 
 
 def test_time_valid():
-    assert dt.validate('time').equals(dt.time)
+    assert dt.dtype('time').equals(dt.time)
 
 
 @pytest.mark.parametrize(('value', 'expected_dtype'), [
@@ -410,6 +340,7 @@ def test_time_valid():
     (False, dt.boolean),
     (True, dt.boolean),
     ('foo', dt.string),
+    (six.b('foo'), dt.binary),
     (datetime.date.today(), dt.date),
     (datetime.datetime.now(), dt.timestamp),
     (datetime.timedelta(days=3), dt.interval),
@@ -445,6 +376,7 @@ def test_time_valid():
     (np.float64(5.55), dt.double),
     (np.bool_(True), dt.boolean),
     (np.bool_(False), dt.boolean),
+    (np.arange(5, dtype='int32'), dt.Array(dt.int32)),
 
     # parametric types
     (list('abc'), dt.Array(dt.string)),
@@ -491,7 +423,7 @@ def test_infer_dtype(value, expected_dtype):
     (dt.uint32, dt.float64),
     (dt.Interval('s', dt.int16), dt.Interval('s', dt.int32)),
 ])
-def test_implicit_casts(source, target):
+def test_implicit_castable(source, target):
     assert dt.castable(source, target)
 
 
@@ -506,3 +438,19 @@ def test_implicit_casts(source, target):
 ])
 def test_implicitly_uncastable(source, target):
     assert not dt.castable(source, target)
+
+
+@pytest.mark.parametrize(('source', 'target', 'value'), [
+    (dt.int8, dt.boolean, 0),
+    (dt.int8, dt.boolean, 1),
+])
+def test_implicit_castable_values(source, target, value):
+    assert dt.castable(source, target, value=value)
+
+
+@pytest.mark.parametrize(('source', 'target', 'value'), [
+    (dt.int8, dt.boolean, 3),
+    (dt.int8, dt.boolean, -1),
+])
+def test_implicitly_uncastable_values(source, target, value):
+    assert not dt.castable(source, target, value=value)

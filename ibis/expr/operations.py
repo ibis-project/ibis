@@ -20,7 +20,7 @@ import toolz
 
 from ibis.expr.types import TableColumn  # noqa
 
-from ibis.expr.datatypes import HasSchema, Schema
+from ibis.expr.schema import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr, Expr,
                              ValueExpr, ColumnExpr, TableExpr,

@@ -23,8 +23,9 @@ import collections
 import six
 import toolz
 
-from ibis.expr.datatypes import Schema  # noqa  # TODO: remove, use dt.Schema instead
+from ibis.expr.schema import Schema
 from ibis.expr import datatypes as dt
+from ibis.expr import schema as sch
 from ibis.expr.types import (Expr,  # noqa
                              ValueExpr, ScalarExpr, ColumnExpr,
                              TableExpr,
@@ -103,6 +104,7 @@ interval(u)    INTERVAL(u)"""
 
 
 infer_dtype = dt.infer
+infer_schema = sch.infer
 
 
 def schema(pairs=None, names=None, types=None):

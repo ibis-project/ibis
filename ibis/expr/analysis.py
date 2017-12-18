@@ -17,7 +17,7 @@ import toolz
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
-from ibis.expr.datatypes import HasSchema
+from ibis.expr.schema import HasSchema
 from ibis.expr.window import window
 
 from ibis.common import RelationError, ExpressionError, IbisTypeError

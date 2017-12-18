@@ -24,159 +24,11 @@ import pandas as pd
 from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
 
-import ibis
+
 import ibis.common as com
-import ibis.util as util
+
 
 from ibis.compat import builtins, PY2
-
-
-class Schema(object):
-
-    """An object for holding table schema information, i.e., column names and
-    types.
-
-    Parameters
-    ----------
-    names : Sequence[str]
-        A sequence of ``str`` indicating the name of each column.
-    types : Sequence[DataType]
-        A sequence of :class:`ibis.expr.datatypes.DataType` objects
-        representing type of each column.
-    """
-
-    __slots__ = 'names', 'types', '_name_locs'
-
-    def __init__(self, names, types):
-        if not isinstance(names, list):
-            names = list(names)
-
-        self.names = names
-        self.types = [validate(typ) for typ in types]
-
-        self._name_locs = dict((v, i) for i, v in enumerate(self.names))
-
-        if len(self._name_locs) < len(self.names):
-            raise com.IntegrityError('Duplicate column names')
-
-    def __repr__(self):
-        space = 2 + max(map(len, self.names))
-        return "ibis.Schema {{{}\n}}".format(
-            util.indent(
-                ''.join(
-                    '\n{}{}'.format(name.ljust(space), str(type))
-                    for name, type in zip(self.names, self.types)
-                ),
-                2
-            )
-        )
-
-    def __hash__(self):
-        return hash((type(self), tuple(self.names), tuple(self.types)))
-
-    def __len__(self):
-        return len(self.names)
-
-    def __iter__(self):
-        return iter(self.names)
-
-    def __contains__(self, name):
-        return name in self._name_locs
-
-    def __getitem__(self, name):
-        return self.types[self._name_locs[name]]
-
-    def __getstate__(self):
-        return {
-            slot: getattr(self, slot) for slot in self.__class__.__slots__
-        }
-
-    def __setstate__(self, instance_dict):
-        for key, value in instance_dict.items():
-            setattr(self, key, value)
-
-    def delete(self, names_to_delete):
-        for name in names_to_delete:
-            if name not in self:
-                raise KeyError(name)
-
-        new_names, new_types = [], []
-        for name, type_ in zip(self.names, self.types):
-            if name in names_to_delete:
-                continue
-            new_names.append(name)
-            new_types.append(type_)
-
-        return Schema(new_names, new_types)
-
-    @classmethod
-    def from_tuples(cls, values):
-        if not isinstance(values, (list, tuple)):
-            values = list(values)
-
-        names, types = zip(*values) if values else ([], [])
-        return Schema(names, types)
-
-    @classmethod
-    def from_dict(cls, dictionary):
-        return Schema(*zip(*dictionary.items()))
-
-    def equals(self, other, cache=None):
-        return self.names == other.names and self.types == other.types
-
-    def __eq__(self, other):
-        return self.equals(other)
-
-    def append(self, schema):
-        return Schema(self.names + schema.names, self.types + schema.types)
-
-    def items(self):
-        return zip(self.names, self.types)
-
-    def name_at_position(self, i):
-        """
-        """
-        upper = len(self.names) - 1
-        if not 0 <= i <= upper:
-            raise ValueError(
-                'Column index must be between 0 and {:d}, inclusive'.format(
-                    upper
-                )
-            )
-        return self.names[i]
-
-
-class HasSchema(object):
-
-    """
-    Base class representing a structured dataset with a well-defined
-    schema.
-
-    Base implementation is for tables that do not reference a particular
-    concrete dataset or database table.
-    """
-
-    def __init__(self, schema, name=None):
-        if not isinstance(schema, Schema):
-            raise TypeError(
-                'schema argument to HasSchema class must be a Schema instance'
-            )
-        self.schema = schema
-        self.name = name
-
-    def __repr__(self):
-        return '{}({})'.format(type(self).__name__, repr(self.schema))
-
-    def has_schema(self):
-        return True
-
-    def equals(self, other, cache=None):
-        return type(self) == type(other) and self.schema.equals(
-            other.schema, cache=cache
-        )
-
-    def root_tables(self):
-        return [self]
 
 
 class DataType(object):
@@ -234,7 +86,7 @@ class DataType(object):
 
     def equals(self, other, cache=None):
         if isinstance(other, six.string_types):
-            other = validate(other)
+            other = dtype(other)
 
         return (
             isinstance(other, type(self)) and
@@ -259,20 +111,10 @@ class DataType(object):
         import ibis.expr.types as ir
         return getattr(ir, '{}Column'.format(self.name))
 
-    def valid_literal(self, value):
-        raise NotImplementedError(
-            'valid_literal not implemented for datatype {}'.format(
-                type(self).__name__
-            )
-        )
-
 
 class Any(DataType):
 
     __slots__ = ()
-
-    def valid_literal(self, value):
-        return True
 
 
 class Primitive(DataType):
@@ -290,9 +132,6 @@ class Null(DataType):
 
     __slots__ = ()
 
-    def valid_literal(self, value):
-        return value is None or value is ibis.null
-
 
 class Variadic(DataType):
 
@@ -302,12 +141,6 @@ class Variadic(DataType):
 class Boolean(Primitive):
 
     __slots__ = ()
-
-    def valid_literal(self, value):
-        return isinstance(value, bool) or (
-            isinstance(value, six.integer_types + (np.integer,)) and
-            (value == 0 or value == 1)
-        )
 
 
 Bounds = namedtuple('Bounds', ('lower', 'upper'))
@@ -323,12 +156,6 @@ class Integer(Primitive):
         lower = -1 << exp
         return Bounds(lower=lower, upper=~lower)
 
-    def valid_literal(self, value):
-        lower, upper = self.bounds
-        return isinstance(
-            value, six.integer_types + (np.integer,)
-        ) and lower <= value <= upper
-
 
 class String(Variadic):
     """A type representing a string.
@@ -340,9 +167,6 @@ class String(Variadic):
     """
 
     __slots__ = ()
-
-    def valid_literal(self, value):
-        return isinstance(value, six.string_types)
 
 
 class Binary(Variadic):
@@ -356,24 +180,15 @@ class Binary(Variadic):
     that behave differently.
     """
 
-    def valid_literal(self, value):
-        return isinstance(value, six.binary_type)
-
 
 class Date(Primitive):
 
     __slots__ = ()
 
-    def valid_literal(self, value):
-        return isinstance(value, six.string_types + (datetime.date,))
-
 
 class Time(Primitive):
 
     __slots__ = ()
-
-    def valid_literal(self, value):
-        return isinstance(value, six.string_types + (datetime.time,))
 
 
 def parametric(cls):
@@ -423,9 +238,6 @@ class Timestamp(Primitive):
     def __repr__(self):
         return DataType.__repr__(self)
 
-    def valid_literal(self, value):
-        return isinstance(value, six.string_types + (datetime.datetime,))
-
 
 class SignedInteger(Integer):
     pass
@@ -439,22 +251,10 @@ class UnsignedInteger(Integer):
         upper = 1 << exp
         return Bounds(lower=0, upper=upper)
 
-    def valid_literal(self, value):
-        lower, upper = self.bounds
-        return isinstance(
-            value, six.integer_types + (np.integer,)
-        ) and lower <= value <= upper
-
 
 class Floating(Primitive):
 
     __slots__ = ()
-
-    def valid_literal(self, value):
-        valid_floating_types = (
-            builtins.float, np.floating, np.integer
-        ) + six.integer_types
-        return isinstance(value, valid_floating_types)
 
 
 class Int8(SignedInteger):
@@ -575,7 +375,7 @@ class Interval(DataType):
         if value_type is None:
             value_type = int32
         else:
-            value_type = validate(value_type)
+            value_type = dtype(value_type)
 
         if not isinstance(value_type, Integer):
             raise TypeError("Interval's inner type must be an Integer subtype")
@@ -597,9 +397,6 @@ class Interval(DataType):
     def _equal_part(self, other, cache=None):
         return (self.unit == other.unit and
                 self.value_type.equals(other.value_type, cache=cache))
-
-    def valid_literal(self, value):
-        return isinstance(value, six.integer_types + (datetime.timedelta,))
 
 
 @parametric
@@ -694,22 +491,6 @@ class Struct(DataType):
             for left, right in zip(self.types, other.types)
         )
 
-    def valid_literal(self, value):
-        """Return whether the type of `value` is a Python literal type
-        that can be represented by an ibis ``Struct`` type.
-
-        Parameters
-        ----------
-        value : object
-            Any Python object
-
-        Returns
-        -------
-        is_valid : bool
-            Whether `value` can be used to represent an ibis ``Struct``.
-        """
-        return isinstance(value, OrderedDict)
-
 
 @parametric
 class Array(Variadic):
@@ -718,16 +499,13 @@ class Array(Variadic):
 
     def __init__(self, value_type, nullable=True):
         super(Array, self).__init__(nullable=nullable)
-        self.value_type = validate(value_type)
+        self.value_type = dtype(value_type)
 
     def __str__(self):
         return '{}<{}>'.format(self.name.lower(), self.value_type)
 
     def _equal_part(self, other, cache=None):
         return self.value_type.equals(other.value_type, cache=cache)
-
-    def valid_literal(self, value):
-        return isinstance(value, list)
 
 
 @parametric
@@ -737,8 +515,8 @@ class Enum(DataType):
 
     def __init__(self, rep_type, value_type, nullable=True):
         super(Enum, self).__init__(nullable=nullable)
-        self.rep_type = validate(rep_type)
-        self.value_type = validate(value_type)
+        self.rep_type = dtype(rep_type)
+        self.value_type = dtype(value_type)
 
     def _equal_part(self, other, cache=None):
         return (
@@ -754,8 +532,8 @@ class Map(Variadic):
 
     def __init__(self, key_type, value_type, nullable=True):
         super(Map, self).__init__(nullable=nullable)
-        self.key_type = validate(key_type)
-        self.value_type = validate(value_type)
+        self.key_type = dtype(key_type)
+        self.value_type = dtype(value_type)
 
     def __str__(self):
         return '{}<{}, {}>'.format(
@@ -769,9 +547,6 @@ class Map(Variadic):
             self.key_type.equals(other.key_type, cache=cache) and
             self.value_type.equals(other.value_type, cache=cache)
         )
-
-    def valid_literal(self, value):
-        return isinstance(value, dict)
 
 
 # ---------------------------------------------------------------------
@@ -1187,25 +962,14 @@ class TypeParser(object):
             raise SyntaxError('Type cannot be parsed: {}'.format(self.text))
 
 
-def validate(t):
-    if isinstance(t, DataType):
-        return t
-    elif isinstance(t, six.string_types):
-        return TypeParser(t).parse()
-    raise TypeError('Value {!r} is not a valid type or string'.format(t))
-
-
-validate_type = validate
-
-
 def array_type(t):
     # compatibility
-    return validate(t).array_type()
+    return dtype(t).array_type()
 
 
 def scalar_type(t):
     # compatibility
-    return validate(t).scalar_type()
+    return dtype(t).scalar_type()
 
 
 _SCALAR_TYPE_PRECEDENCE = {
@@ -1292,6 +1056,57 @@ def int_class(value, allow_overflow=False):
     return int64
 
 
+_numpy_to_ibis = toolz.keymap(np.dtype, {
+    'bool': boolean,
+    'int8': int8,
+    'int16': int16,
+    'int32': int32,
+    'int64': int64,
+    'uint8': uint8,
+    'uint16': uint16,
+    'uint32': uint32,
+    'uint64': uint64,
+    'float16': float16,
+    'float32': float32,
+    'float64': float64,
+    'double': double,
+    'str': string,
+    'bytes': binary,
+    'datetime64': timestamp,
+    'datetime64[ns]': timestamp,  # TODO: support timezone
+    'timedelta64': interval,
+    'timedelta64[ns]': Interval('ns')
+})
+
+
+dtype = Dispatcher('dtype')
+
+validate_type = dtype
+
+
+@dtype.register(object)
+def default(value):
+    raise TypeError('Value {!r} is not a valid type or string'.format(value))
+
+
+@dtype.register(DataType)
+def from_ibis_dtype(value):
+    return value
+
+
+@dtype.register(np.dtype)
+def from_numpy_dtype(value):
+    # TODO timezone support
+    # if hasattr(dtype, 'tz'):
+    #     ibis_dtype = dt.Timestamp(str(dtype.tz))
+    return _numpy_to_ibis[value]
+
+
+@dtype.register(six.string_types)
+def from_string(value):
+    return TypeParser(value).parse()
+
+
 infer = Dispatcher('infer')
 
 
@@ -1321,13 +1136,16 @@ def infer_map(value):
 
 
 @infer.register(list)
-def infer_array(value):
+def infer_list(value):
     if not value:
         return Array(null)
     return Array(highest_precedence_dtype(list(map(infer, value))))
 
 
-# TODO: infer ndarray, infer series
+@infer.register(np.ndarray)
+def infer_array(value):
+    # TODO: infer series
+    return Array(dtype(value.dtype.name))
 
 
 @infer.register(datetime.time)
@@ -1347,9 +1165,15 @@ def infer_timestamp(value):
 
 # TODO: infer pd.Timedelta, Datetime
 
+
 @infer.register(datetime.timedelta)
 def infer_interval(value):
     return interval
+
+
+@infer.register(six.binary_type)
+def infer_binary(value):
+    return binary
 
 
 @infer.register(six.string_types)
@@ -1369,7 +1193,7 @@ def infer_integer(value):
 
 @infer.register(np.generic)
 def infer_numpy_scalar(value):
-    return validate(value.dtype.name)
+    return dtype(value.dtype.name)
 
 
 @infer.register(bool)
@@ -1450,6 +1274,16 @@ def can_cast_intervals(source, target, value=None):
     )
 
 
+@castable.register(Integer, Boolean)
+def can_cast_integer_to_boolean(source, target, value=None):
+    return value == 0 or value == 1
+
+
+@castable.register(Integer, Interval)
+def can_cast_integer_to_interval(source, target, value=None):
+    return castable(source, target.value_type)
+
+
 @castable.register(Decimal, Floating)
 def can_cast_decimal_to_floating(source, target, value=None):
     return True
@@ -1471,7 +1305,7 @@ def can_cast_string_to_temporal(source, target, value=None):
 
 def cast(source, target, value=None):
     """Attempts to implicitly cast from source dtype to target dtype"""
-    source, target = validate(source), validate(target)
+    source, target = dtype(source), dtype(target)
 
     if not castable(source, target, value=value):
         raise com.IbisTypeError('Datatype {} cannot be implicitly '
@@ -1492,5 +1326,3 @@ def cast(source, target, value=None):
 #             source.equals(Map(null, null)) or
 #             source.equals(Map(any, any)))
 # TODO cast category
-
-infer_schema = Dispatcher('infer_schema')

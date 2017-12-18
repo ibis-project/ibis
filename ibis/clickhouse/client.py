@@ -2,8 +2,8 @@ import re
 import pandas as pd
 
 import ibis.common as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 
 from ibis.config import options
@@ -184,7 +184,7 @@ class ClickhouseClient(SQLClient):
         names, types = data[:2]
         ibis_types = map(clickhouse_to_ibis.get, types)
 
-        return dt.Schema(names, ibis_types)
+        return sch.Schema(names, ibis_types)
 
     @property
     def client_options(self):
@@ -224,7 +224,7 @@ class ClickhouseClient(SQLClient):
         _, types = self._execute(query)
         names, clickhouse_types = zip(*types)
         ibis_types = map(clickhouse_to_ibis.get, clickhouse_types)
-        return dt.Schema(names, ibis_types)
+        return sch.Schema(names, ibis_types)
 
     def _exec_statement(self, stmt, adapter=None):
         query = ClickhouseQuery(self, stmt)

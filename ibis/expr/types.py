@@ -1422,20 +1422,20 @@ def literal(value, type=None):
     if hasattr(value, 'op') and isinstance(value.op(), Literal):
         return value
 
-    if type is None:
-        type = infer_literal_type(value)
-    else:
-        type = dt.validate_type(type)
+    dtype = infer_literal_type(value)
 
-    if not type.valid_literal(value):
-        raise TypeError(
-            'Value {!r} cannot be safely coerced to {}'.format(value, type)
-        )
+    if type is not None:
+        try:
+            # check that dtype is implicitly castable to explicitly given dtype
+            dtype = dtype.cast(type)
+        except com.IbisTypeError:
+            raise TypeError('Value {!r} cannot be safely coerced '
+                            'to {}'.format(value, dtype))
 
     if value is None or value is _NULL or value is null:
-        return null().cast(type)
+        return null().cast(dtype)
     else:
-        return Literal(value, type=type).to_expr()
+        return Literal(value, type=dtype).to_expr()
 
 
 _NULL = None
