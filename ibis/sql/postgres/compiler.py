@@ -22,6 +22,7 @@ import operator
 from functools import reduce
 
 import sqlalchemy as sa
+from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
@@ -35,6 +36,8 @@ import ibis.expr.operations as ops
 import ibis.expr.window as W
 
 import ibis.sql.alchemy as alch
+import sqlalchemy.dialects.postgresql as pg
+
 _operation_registry = alch._operation_registry.copy()
 
 
@@ -303,8 +306,27 @@ def _strftime(t, expr):
 
 
 def _distinct_from(a, b):
-    return (((a != None) | (b != None)) &  # noqa
-            sa.func.coalesce(a != b, True))
+    return a.op('IS DISTINCT FROM')(b)
+
+
+class array_search(expression.FunctionElement):
+    type = sa.INTEGER()
+    name = 'array_search'
+
+
+@compiles(array_search)
+def postgresql_array_search(element, compiler, **kw):
+    needle, haystack = element.clauses
+    i = sa.func.generate_subscripts(haystack, 1).alias('i')
+    c0 = sa.column('i', type_=sa.INTEGER(), _selectable=i)
+    result = sa.func.coalesce(
+        sa.select([c0]).where(
+            haystack[c0].op('IS NOT DISTINCT FROM')(needle)
+        ).order_by(c0).limit(1).as_scalar(),
+        0
+    ) - 1
+    string_result = compiler.process(result, **kw)
+    return string_result
 
 
 def _find_in_set(t, expr):
@@ -313,21 +335,12 @@ def _find_in_set(t, expr):
     # TODO: could make it even more generic by using generate_series
     # TODO: this works with *any* type, not just strings. should the operation
     #       itself also have this property?
-    arg, haystack = expr.op().args
-    needle = t.translate(arg)
-    haystack = sa.select([sa.literal(
-        [element._arg.value for element in haystack],
-        type_=sa.dialects.postgresql.ARRAY(needle.type)
-    ).label('haystack')]).cte()
-
-    subscripts = sa.select([
-        sa.func.generate_subscripts(haystack.c.haystack, 1).label('i')
-    ]).cte()
-
-    # return a zero based index
-    return sa.select([subscripts.c.i - 1]).where(
-        ~_distinct_from(haystack.c.haystack[subscripts.c.i], needle)
-    ).order_by(subscripts.c.i).limit(1)
+    needle, haystack = expr.op().args
+    result = array_search(
+        t.translate(needle),
+        pg.array([t.translate(element) for element in haystack])
+    )
+    return result
 
 
 def _regex_replace(t, expr):
