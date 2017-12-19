@@ -206,7 +206,7 @@ def _variance_reduction(func_name):
     }
 
     def variance_compiler(t, expr):
-        arg, where, how = expr.op().args
+        arg, how, where = expr.op().args
 
         if arg.type().equals(dt.boolean):
             arg = arg.cast('int32')
