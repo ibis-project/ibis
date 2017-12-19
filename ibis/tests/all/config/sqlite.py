@@ -14,7 +14,7 @@ class SQLite(BackendTestConfiguration):
 
     @classmethod
     def connect(cls, backend):
-        path = os.environ.get('IBIS_TEST_SQLITE_DB_PATH', 'ibis_testing.db')
+        path = os.environ.get('IBIS_TEST_SQLITE_DATABASE', 'ibis_testing.db')
         if not os.path.exists(path):
             pytest.skip('SQLite testing db {} does not exist'.format(path))
         else:
