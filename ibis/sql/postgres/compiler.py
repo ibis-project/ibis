@@ -305,10 +305,6 @@ def _strftime(t, expr):
     return reduce(sa.sql.ColumnElement.concat, reduced)
 
 
-def _distinct_from(a, b):
-    return a.op('IS DISTINCT FROM')(b)
-
-
 class array_search(expression.FunctionElement):
     type = sa.INTEGER()
     name = 'array_search'
