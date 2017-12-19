@@ -531,7 +531,7 @@ def test_numeric_builtins_work(con, alltypes, df, translate):
 #     with config.option_context('interactive', True):
 #         result = repr(expr)
 
-#     assert 'no translator rule' in result.lower()
+#     assert 'no translation rule' in result.lower()
 
 
 def test_null_column(alltypes, translate):
