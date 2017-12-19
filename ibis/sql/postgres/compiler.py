@@ -332,11 +332,10 @@ def _find_in_set(t, expr):
     # TODO: this works with *any* type, not just strings. should the operation
     #       itself also have this property?
     needle, haystack = expr.op().args
-    result = array_search(
+    return array_search(
         t.translate(needle),
-        pg.array([t.translate(element) for element in haystack])
+        pg.array(list(map(t.translate, haystack)))
     )
-    return result
 
 
 def _regex_replace(t, expr):
