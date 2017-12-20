@@ -97,13 +97,86 @@ def execute_string_contains(op, data, needle, start, end, **kwargs):
     return data.str.find(needle, start, end)
 
 
-@execute_node.register(
-    ops.StringSQLLike,
-    pd.Series,
-    (pd.Series,) + six.string_types,
-)
-def execute_string_like(op, data, pattern, **kwargs):
-    return data.str.contains(pattern, regex=True)
+def _sql_like_to_regex(pattern):
+    result = []
+    cur_i = 0
+    pattern_length = len(pattern)
+
+    while cur_i < pattern_length:
+        nxt_i = cur_i + 1
+
+        cur = pattern[cur_i]
+        nxt = pattern[nxt_i] if nxt_i < pattern_length else None
+
+        skip = 1
+
+        # if the current character matches the next character and it's a
+        # percent/underscore then we're escaping a percent/underscore, so yield
+        # the percent/underscore and skip ahead two characters so we don't
+        # rescan the escaped percent/underscore
+        #
+        # otherwise percent translates to .*, underscore to ., everything else
+        # is unchanged
+        if nxt is not None and cur == nxt and (cur == '%' or cur == '_'):
+            yield cur
+            skip = 2
+        elif cur == '%':
+            yield '.*'
+        elif cur == '_':
+            yield '.'
+        else:
+            yield cur
+
+        cur_i += skip
+
+    return ''.join(result)
+
+
+def sql_like_to_regex(pattern):
+    """Convert a SQL LIKE pattern to an equivalent Python regular expression.
+
+    Parameters
+    ----------
+    pattern : str
+        A LIKE pattern with the following semantics:
+        * ``%`` matches zero or more characters
+        * ``_`` matches exactly one character
+        * ``%%`` matches exactly one percent sign
+        * ``__`` (two underscores) matches exactly one underscore
+
+    Returns
+    -------
+    new_pattern : str
+        A regular expression pattern equivalent to the input SQL LIKE pattern.
+
+    Examples
+    --------
+    >>> sql_like_to_regex('6%')
+    '^6.*$'
+    >>> sql_like_to_regex('6%%')
+    '^6%$'
+    >>> sql_like_to_regex('6_')
+    '^6.$'
+    >>> sql_like_to_regex('6__')
+    '^6_$'
+    >>> sql_like_to_regex('%abc')  # any string ending with "abc"
+    '^.*abc$'
+    >>> sql_like_to_regex('abc%')  # any string starting with "abc"
+    '^abc.*$'
+    """
+    return '^{}$'.format(''.join(_sql_like_to_regex(pattern)))
+
+
+@execute_node.register(ops.StringSQLLike, pd.Series, six.string_types)
+def execute_string_like_series_string(op, data, pattern, **kwargs):
+    new_pattern = sql_like_to_regex(pattern)
+    return data.str.contains(new_pattern, regex=True)
+
+
+@execute_node.register(ops.StringSQLLike, pd.Series, pd.Series)
+def execute_string_like_series_series(op, data, pattern, **kwargs):
+    new_pattern = pattern.map(sql_like_to_regex)
+    return data.str.contains(new_pattern, regex=True)
 
 
 @execute_node.register(
