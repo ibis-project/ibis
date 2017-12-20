@@ -190,6 +190,19 @@ def _string_right(translator, expr):
     )
 
 
+def _array_literal_format(expr):
+    return str(list(expr.op().value))
+
+
+def _literal(translator, expr):
+    try:
+        return impala_compiler._literal(translator, expr)
+    except NotImplementedError:
+        if isinstance(expr, ir.ArrayValue):
+            return _array_literal_format(expr)
+        raise NotImplementedError(type(expr).__name__)
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -227,6 +240,7 @@ _operation_registry.update({
     # BigQuery doesn't have these operations built in.
     # ops.ArrayRepeat: _array_repeat,
     # ops.ArraySlice: _array_slice,
+    ir.Literal: _literal,
 })
 
 _invalid_operations = {
