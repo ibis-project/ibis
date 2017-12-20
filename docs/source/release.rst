@@ -31,6 +31,7 @@ New Features
   Impala and Clickhouse backends (:issue:`1243`)
 * Isnan, isinf operations for float and double values (:issue:`1261`)
 * Support for an interval with a quarter period (:issue:`1259`)
+* ``ibis.pandas.from_dataframe`` convenience function (:issue:`1155`)
 
 Bug Fixes
 ~~~~~~~~~
