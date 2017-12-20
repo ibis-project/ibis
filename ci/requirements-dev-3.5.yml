@@ -13,6 +13,7 @@ dependencies:
   - pytest
   - python=3.5
   - python-graphviz
+  - regex
   - six
   - sh
   - sqlalchemy>=1.0.0,<1.1.15
