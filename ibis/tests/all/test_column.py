@@ -66,6 +66,16 @@ def test_distinct_column(alltypes, df, column):
             id='like',
         ),
         param(
+            lambda t: t.string_col.like('6%%'),
+            lambda t: t.string_col.str.contains('6%'),
+            id='complex_like_escape',
+        ),
+        param(
+            lambda t: t.string_col.like('6%%%'),
+            lambda t: t.string_col.str.contains('6%.*'),
+            id='complex_like_escape_match',
+        ),
+        param(
             lambda t: t.string_col.re_search(r'[[:digit:]]+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
