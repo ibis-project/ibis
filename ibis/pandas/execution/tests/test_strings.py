@@ -1,6 +1,7 @@
 import pytest
 from warnings import catch_warnings
 import pandas.util.testing as tm  # noqa: E402
+from ibis.pandas.execution.strings import sql_like_to_regex
 
 
 pytestmark = pytest.mark.pandas
@@ -68,3 +69,36 @@ def test_string_ops(t, df, case_func, expected_func):
         result = expr.execute()
         series = expected_func(df.strings_with_space)
         tm.assert_series_equal(result, series)
+
+
+@pytest.mark.parametrize(
+    ('pattern', 'expected'),
+    [
+        ('%abc', '.*abc'),
+        ('abc%', 'abc.*'),
+        ('6%', '6.*'),
+        ('%6%', '.*6.*'),
+        ('%%6', '%6'),
+        ('6%%', '6%'),
+        ('6%%%', '6%.*'),
+        ('%%%6', '%.*6'),
+        ('%%%%6', '%%6'),
+        ('6%%%%', '6%%'),
+
+        ('6_', '6.'),
+        ('_6_', '.6.'),
+        ('__6', '_6'),
+        ('6__', '6_'),
+        ('6___', '6_.'),
+        ('___6', '_.6'),
+        ('____6', '__6'),
+        ('6____', '6__'),
+
+        ('6%_%%_', '6.*.%.'),
+        ('6_%%%_', '6.%.*.'),
+        ('_%%%_%_%%_%_%%___%%%__%%%6%_', '.%.*..*.%..*.%_.%.*_%.*6.*.'),
+    ]
+)
+def test_sql_like_to_regex(pattern, expected):
+    result = sql_like_to_regex(pattern)
+    assert result == '^{}$'.format(expected)
