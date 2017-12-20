@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import os
-import re
+import regex as re
 import math
 import inspect
 import functools
