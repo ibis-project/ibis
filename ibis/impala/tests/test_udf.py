@@ -136,12 +136,12 @@ class TestWrapping(unittest.TestCase):
             ('boolean', [], self.all_cols[:8] + self.all_cols[9:]),
 
             # allowing double here for now
-            ('float', self.all_cols[:4], [self.s, self.b, self.t, self.dec]),
+            ('float', self.all_cols[:6], [self.s, self.b, self.t]),
 
-            ('double', self.all_cols[:4], [self.s, self.b, self.t, self.dec]),
+            ('double', self.all_cols[:6], [self.s, self.b, self.t]),
             ('string', [], self.all_cols[:7] + self.all_cols[8:]),
             ('timestamp', [], self.all_cols[:-1]),
-            ('decimal', [], self.all_cols[:4] + self.all_cols[7:])
+            ('decimal', self.all_cols[:7], self.all_cols[7:])
         ]
 
         for t, valid_casts, invalid_casts in cases:

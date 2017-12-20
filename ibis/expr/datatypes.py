@@ -24,10 +24,7 @@ import pandas as pd
 from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
 
-
 import ibis.common as com
-
-
 from ibis.compat import builtins, PY2
 
 
@@ -1228,6 +1225,8 @@ def can_cast_date_temporals(source, target, **kwargs):
 
 @castable.register(String, (Date, Time, Timestamp))
 def can_cast_string_to_temporal(source, target, value=None, **kwargs):
+    if value is None:
+        return False
     try:
         pd.Timestamp(value)
         return True

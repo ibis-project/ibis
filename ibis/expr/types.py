@@ -1375,16 +1375,30 @@ def as_value_expr(val):
     return val
 
 
+def castable(source, target):
+    """Return whether source ir type is castable to target
+
+    Based on the underlying datatypes and the value in case of Literals
+    """
+    op = source.op()
+    value = op.value if isinstance(op, Literal) else None
+    return dt.castable(source.type(), target.type(), value=value)
+
+
 def cast(source, target):
     """Currently Literal to *Scalar implicit casts are allowed"""
 
+    if not castable(source, target):
+        raise com.IbisTypeError('Source is not castable to target type!')
+
+    # currently it prevents column -> scalar implicit castings
+    # however the datatypes are matching
     op = source.op()
     if not isinstance(op, Literal):
         raise com.IbisTypeError('Only able to implicitly cast literals!')
 
-    dtype = dt.cast(source.type(), target.type(), value=source.op().value)
-    scalar_type = dtype.scalar_type()
-    return scalar_type(source.op())
+    out_type = target.type().scalar_type()
+    return out_type(op)
 
 
 def literal(value, type=None):

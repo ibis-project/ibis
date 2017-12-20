@@ -2094,6 +2094,7 @@ class Xor(LogicalBinaryOp):
 class Comparison(BinaryOp, BooleanValueOp):
 
     def _maybe_cast_args(self, left, right):
+        # it might not be necessary?
         with util.ignoring(com.IbisTypeError):
             return left, ir.cast(right, left)
 
