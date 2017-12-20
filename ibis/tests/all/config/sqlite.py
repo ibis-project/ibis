@@ -9,6 +9,7 @@ from ibis.tests.all.config.backendtestconfiguration import (
 
 class SQLite(BackendTestConfiguration):
 
+    supports_arrays = False
     supports_window_operations = False
     check_dtype = False
 
