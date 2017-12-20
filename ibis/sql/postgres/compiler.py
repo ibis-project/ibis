@@ -17,7 +17,6 @@ import locale
 import string
 import platform
 import warnings
-import operator
 
 from functools import reduce
 
@@ -749,7 +748,7 @@ _operation_registry.update({
     ops.ArrayCollect: fixed_arity(sa.func.array_agg, 1),
     ops.ArraySlice: _array_slice,
     ops.ArrayIndex: fixed_arity(lambda array, index: array[index + 1], 2),
-    ops.ArrayConcat: fixed_arity(operator.add, 2),
+    ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
     ops.ArrayRepeat: _array_repeat,
     ops.IdenticalTo: _identical_to,
     ops.HLLCardinality: _hll_cardinality,
