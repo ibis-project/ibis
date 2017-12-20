@@ -984,7 +984,7 @@ _numpy_to_ibis = toolz.keymap(np.dtype, {
     'float64': float64,
     'double': double,
     'str': string,
-    'bytes': binary,
+    'bytes_': binary,
     'datetime64': timestamp,
     'datetime64[ns]': timestamp,  # TODO: support timezone
     'timedelta64': interval,
