@@ -38,14 +38,14 @@ pytestmark = pytest.mark.pandas
         ),
         (
             lambda s: s.like('a'),
-            lambda s: s.str.contains('a', regex=True),
+            lambda s: s.str.contains('^a$', regex=True),
         ),
         (
-            lambda s: s.like('(ab)+'),
+            lambda s: s.re_search('(ab)+'),
             lambda s: s.str.contains('(ab)+', regex=True),
         ),
         (
-            lambda s: s.like(['(ab)+', 'd{1,2}ee']),
+            lambda s: s.re_search('(ab)+') | s.re_search('d{1,2}ee'),
             lambda s: (
                 s.str.contains('(ab)+', regex=True) |
                 s.str.contains('d{1,2}ee')
@@ -101,4 +101,4 @@ def test_string_ops(t, df, case_func, expected_func):
 )
 def test_sql_like_to_regex(pattern, expected):
     result = sql_like_to_regex(pattern)
-    assert result == '^{}$'.format(expected)
+    assert result.pattern == '^{}$'.format(expected)
