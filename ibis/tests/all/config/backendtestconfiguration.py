@@ -12,6 +12,7 @@ import pandas.util.testing as tm
 
 class BackendTestConfiguration(six.with_metaclass(abc.ABCMeta)):
     supports_arrays = True
+    supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = True
     check_dtype = True
     check_names = True

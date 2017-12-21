@@ -10,6 +10,7 @@ from ibis.tests.all.config.backendtestconfiguration import (
 class SQLite(BackendTestConfiguration):
 
     supports_arrays = False
+    supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = False
 
     check_dtype = False
