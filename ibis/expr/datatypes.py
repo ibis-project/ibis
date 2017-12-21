@@ -1033,7 +1033,7 @@ def higher_precedence(left, right):
                             'and {} types'.format(left, right))
 
 
-def highest_precedence_dtype(dtypes):
+def highest_precedence(dtypes):
     return functools.reduce(higher_precedence, dtypes)
 
 
@@ -1057,8 +1057,8 @@ def infer_map(value):
     if not value:
         return Map(null, null)
     return Map(
-        highest_precedence_dtype(map(infer, value.keys())),
-        highest_precedence_dtype(map(infer, value.values())),
+        highest_precedence(map(infer, value.keys())),
+        highest_precedence(map(infer, value.values())),
     )
 
 
@@ -1066,7 +1066,7 @@ def infer_map(value):
 def infer_list(value):
     if not value:
         return Array(null)
-    return Array(highest_precedence_dtype(map(infer, value)))
+    return Array(highest_precedence(map(infer, value)))
 
 
 @infer.register(np.ndarray)

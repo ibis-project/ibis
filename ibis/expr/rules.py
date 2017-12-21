@@ -147,7 +147,7 @@ def highest_precedence_type(exprs):
         raise ValueError('Must pass at least one expression')
 
     expr_dtypes = {expr.type() for expr in exprs}
-    return dt.highest_precedence_dtype(expr_dtypes)
+    return dt.highest_precedence(expr_dtypes)
 
 
 def _int_bounds_promotion(ltype, rtype, op):
