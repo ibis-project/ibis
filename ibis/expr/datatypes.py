@@ -1234,9 +1234,9 @@ def can_cast_string_to_temporal(source, target, value=None, **kwargs):
         return False
 
 
-@castable.register(Array, Array)
-def can_cast_arrays(source, target, **kwargs):
-    return castable(source.value_type, target.value_type)
+# @castable.register(Array, Array)
+# def can_cast_arrays(source, target, **kwargs):
+#     return castable(source.value_type, target.value_type)
 
 
 # @castable.register(Map, Map)
