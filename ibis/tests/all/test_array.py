@@ -16,7 +16,19 @@ def array_test(f):
     return wrapper
 
 
-@array_test
+def direct_array_operation_test(f):
+    @functools.wraps(array_test(f))
+    def wrapper(backend, *args, **kwargs):
+        if not backend.supports_arrays_outside_of_select:
+            pytest.skip(
+                'Backend {} does not support operations directly on '
+                'arrays'.format(backend)
+            )
+        return f(backend, *args, **kwargs)
+    return wrapper
+
+
+@direct_array_operation_test
 def test_array_concat(backend, con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -25,7 +37,7 @@ def test_array_concat(backend, con):
     assert result == [1, 2, 3, 2, 1]
 
 
-@array_test
+@direct_array_operation_test
 def test_array_length(backend, con):
     expr = ibis.literal([1, 2, 3]).length()
     result = con.execute(expr)
