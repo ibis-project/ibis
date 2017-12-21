@@ -350,7 +350,7 @@ def test_translate(con):
     [
         (L('a'), 0),
         (L('b'), 1),
-        (L('d'), None),
+        (L('d'), -1),
         (L(None).cast(dt.string), 3),
     ]
 )
