@@ -284,8 +284,10 @@ def literal(translator, expr):
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
         return "toDate('{0!s}')".format(value)
+    elif isinstance(expr, ir.ArrayValue):
+        return str(list(value))
     else:
-        raise NotImplementedError
+        raise NotImplementedError(type(expr))
 
 
 class CaseFormatter(object):
@@ -579,7 +581,9 @@ _operation_registry = {
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery
+    transforms.NotExistsSubquery: _exists_subquery,
+
+    ops.ArrayLength: unary('length'),
 }
 
 
