@@ -81,7 +81,7 @@ def agg_variance_like(func):
                 'pop': '{0}Pop'.format(func)}
 
     def formatter(translator, expr):
-        arg, where, how = expr.op().args
+        arg, how, where = expr.op().args
         return _aggregate(translator, variants[how], arg, where)
 
     return formatter
