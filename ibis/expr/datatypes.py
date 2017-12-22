@@ -20,7 +20,6 @@ import itertools
 import functools
 import numpy as np
 import pandas as pd
-import pandas.core.dtypes.dtypes as pdt
 
 from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
@@ -1019,7 +1018,7 @@ def from_numpy_dtype(value):
 
 
 # TODO categorical, interval
-@dtype.register(pdt.DatetimeTZDtype)
+@dtype.register(pd.api.types.DatetimeTZDtype)
 def from_pandas_tzdtype(value):
     return Timestamp(timezone=str(value.tz))
 
