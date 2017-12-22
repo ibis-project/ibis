@@ -27,6 +27,11 @@ from multipledispatch import Dispatcher
 import ibis.common as com
 from ibis.compat import builtins, PY2
 
+try:
+    pdt = pd.api.types
+except AttributeError:
+    pdt = pd.lib
+
 
 class DataType(object):
 
@@ -1018,7 +1023,7 @@ def from_numpy_dtype(value):
 
 
 # TODO categorical, interval
-@dtype.register(pd.api.types.DatetimeTZDtype)
+@dtype.register(pdt.DatetimeTZDtype)
 def from_pandas_tzdtype(value):
     return Timestamp(timezone=str(value.tz))
 
