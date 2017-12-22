@@ -1,4 +1,3 @@
-import six
 import pytest
 import datetime
 import numpy as np
@@ -196,7 +195,6 @@ def test_primitive(spec, expected):
     (np.float64, dt.float64),
     (np.double, dt.double),
     (np.str_, dt.string),
-    (np.bytes_, dt.binary),
     (np.datetime64, dt.timestamp),
     (np.timedelta64, dt.interval)
 ])
@@ -340,7 +338,7 @@ def test_time_valid():
     (False, dt.boolean),
     (True, dt.boolean),
     ('foo', dt.string),
-    (six.b('foo'), dt.binary),
+
     (datetime.date.today(), dt.date),
     (datetime.datetime.now(), dt.timestamp),
     (datetime.timedelta(days=3), dt.interval),
@@ -429,7 +427,6 @@ def test_implicit_castable(source, target):
 
 @pytest.mark.parametrize(('source', 'target'), [
     (dt.string, dt.null),
-    (dt.float64, dt.any),
     (dt.int32, dt.int16),
     (dt.Decimal(12, 2), dt.int32),
     (dt.timestamp, dt.boolean),

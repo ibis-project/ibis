@@ -94,8 +94,11 @@ class DataType(object):
     def _equal_part(self, other, cache=None):
         return True
 
-    def can_implicit_cast(self, other):
-        return castable(other, self)
+    def issubtype(self, parent):
+        return issubtype(self, parent)
+
+    def castable(self, target):
+        return castable(self, target)
 
     def cast(self, target):
         return cast(self, target)
@@ -984,7 +987,6 @@ _numpy_to_ibis = toolz.keymap(np.dtype, {
     'float64': float64,
     'double': double,
     'str': string,
-    'bytes_': binary,
     'datetime64': timestamp,
     'datetime64[ns]': timestamp,  # TODO: support timezone
     'timedelta64': interval,
@@ -1093,11 +1095,6 @@ def infer_timestamp(value):
 @infer.register(datetime.timedelta)
 def infer_interval(value):
     return interval
-
-
-@infer.register(six.binary_type)
-def infer_binary(value):
-    return binary
 
 
 @infer.register(six.string_types)
@@ -1234,9 +1231,9 @@ def can_cast_string_to_temporal(source, target, value=None, **kwargs):
         return False
 
 
-# @castable.register(Array, Array)
-# def can_cast_arrays(source, target, **kwargs):
-#     return castable(source.value_type, target.value_type)
+@castable.register(Array, Array)
+def can_cast_arrays(source, target, **kwargs):
+    return castable(source.value_type, target.value_type)
 
 
 # @castable.register(Map, Map)
@@ -1255,3 +1252,15 @@ def cast(source, target, **kwargs):
         raise com.IbisTypeError('Datatype {} cannot be implicitly '
                                 'casted to {}'.format(source, target))
     return target
+
+
+def issubtype(dtype, dtype_or_tuple):
+    if not isinstance(dtype_or_tuple, tuple):
+        parents = (dtype_or_tuple,)
+    for parent in parents:
+        if isinstance(dtype, type(parent)):
+            return True
+        elif isinstance(dtype, Any):
+            return True
+
+    return False

@@ -1179,9 +1179,9 @@ def test_empty_array_as_argument():
     node = FooNode([])
     value = node.value
     expected = literal([]).cast(dt.Array(dt.int64))
-    assert not value.type().equals(dt.Array(dt.null))
-    assert value.type().equals(dt.Array(dt.int64))
-    assert value.equals(expected)
+
+    assert value.type().equals(dt.Array(dt.null))
+    assert value.cast(dt.Array(dt.int64)).equals(expected)
 
 
 def test_struct_field_dir():

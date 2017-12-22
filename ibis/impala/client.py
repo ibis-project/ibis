@@ -1947,7 +1947,7 @@ def _validate_compatible(from_schema, to_schema):
     for name in from_schema:
         lt = from_schema[name]
         rt = to_schema[name]
-        if not rt.can_implicit_cast(lt):
+        if not lt.castable(rt):
             raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
                                      .format(lt, rt))
 

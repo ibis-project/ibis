@@ -412,14 +412,15 @@ class AnyTyped(Argument):
         return arg
 
     def _type_matches(self, arg):
-        for t in self.types:
-            if (isinstance(t, dt.DataType) or
-                    isinstance(t, type) and issubclass(t, dt.DataType)):
-                if t.can_implicit_cast(arg.type()):
+        for expected in self.types:
+            if isinstance(expected, dt.DataType):
+                dtype = arg.type()
+                if dtype.issubtype(expected):
                     return True
-            else:
-                if isinstance(arg, t):
-                    return True
+                return dtype.castable(expected)
+            elif isinstance(arg, expected):
+                return True
+
         return False
 
 
@@ -439,15 +440,6 @@ class ArrayValueTyped(ValueTyped):
         super(ArrayValueTyped, self).__init__(
             dt.Array(value_type), *args, **kwargs
         )
-
-    def _validate(self, args, i):
-        arg = super(ArrayValueTyped, self)._validate(args, i)
-        type, = self.types
-        arg_type = arg.type()
-        if (arg_type.equals(dt.Array(dt.any)) or
-                arg_type.equals(dt.Array(dt.null))):
-            return arg.cast(type)
-        return arg
 
 
 class MapValueTyped(ValueTyped):
@@ -659,8 +651,7 @@ def array(value_type, **arg_kwds):
 
 
 def boolean(**arg_kwds):
-    """Require that an expression has type boolean.
-    """
+    """Require that an expression has type boolean."""
     return ValueTyped(dt.boolean, 'not string', **arg_kwds)
 
 
