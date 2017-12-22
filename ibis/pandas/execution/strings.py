@@ -1,14 +1,24 @@
+import itertools
+import operator
+
 import six
 
+import regex as re
+
+import numpy as np
 import pandas as pd
 
+import toolz
+
 from pandas.core.groupby import SeriesGroupBy
+
+import ibis
 
 from ibis.compat import reduce, maketrans
 import ibis.expr.operations as ops
 
 from ibis.pandas.dispatch import execute_node
-from ibis.pandas.core import integer_types
+from ibis.pandas.core import integer_types, scalar_types
 
 
 @execute_node.register(ops.StringLength, pd.Series)
@@ -164,19 +174,15 @@ def sql_like_to_regex(pattern):
     >>> sql_like_to_regex('abc%')  # any string starting with "abc"
     '^abc.*$'
     """
-    return '^{}$'.format(''.join(_sql_like_to_regex(pattern)))
+    return re.compile('^{}$'.format(''.join(_sql_like_to_regex(pattern))))
 
 
 @execute_node.register(ops.StringSQLLike, pd.Series, six.string_types)
 def execute_string_like_series_string(op, data, pattern, **kwargs):
     new_pattern = sql_like_to_regex(pattern)
-    return data.str.contains(new_pattern, regex=True)
-
-
-@execute_node.register(ops.StringSQLLike, pd.Series, pd.Series)
-def execute_string_like_series_series(op, data, pattern, **kwargs):
-    new_pattern = pattern.map(sql_like_to_regex)
-    return data.str.contains(new_pattern, regex=True)
+    return data.map(
+        lambda x, pattern=new_pattern: pattern.search(x) is not None
+    )
 
 
 @execute_node.register(
@@ -223,16 +229,14 @@ def execute_string_ascii_group_by(op, data, **kwargs):
     ).groupby(data.grouper.groupings)
 
 
-@execute_node.register(
-    ops.RegexSearch, pd.Series, (pd.Series,) + six.string_types
-)
+@execute_node.register(ops.RegexSearch, pd.Series, six.string_types)
 def execute_series_regex_search(op, data, pattern, **kwargs):
-    return data.str.contains(pattern, regex=True)
+    return data.map(
+        lambda x, pattern=re.compile(pattern): pattern.search(x) is not None
+    )
 
 
-@execute_node.register(
-    ops.RegexSearch, SeriesGroupBy, (SeriesGroupBy,) + six.string_types
-)
+@execute_node.register(ops.RegexSearch, SeriesGroupBy, six.string_types)
 def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     return execute_series_regex_search(
         op, data, getattr(pattern, 'obj', pattern), **kwargs
@@ -243,27 +247,31 @@ def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     ops.RegexExtract,
     pd.Series,
     (pd.Series,) + six.string_types,
-    (pd.Series,) + integer_types,
+    integer_types,
 )
 def execute_series_regex_extract(op, data, pattern, index, **kwargs):
-    extracted = data.str.extractall(pattern).iloc[:, index].reset_index(
-        drop=True, level=-1
-    )
-    return extracted.reindex(data.index)
+    def extract(x, pattern=re.compile(pattern), index=index):
+        match = pattern.match(x)
+        if match is not None:
+            return match.group(index) or np.nan
+        return np.nan
+
+    extracted = data.apply(extract)
+    return extracted
 
 
 @execute_node.register(
     ops.RegexExtract,
     SeriesGroupBy,
-    (SeriesGroupBy,) + six.string_types,
-    (SeriesGroupBy,) + integer_types,
+    six.string_types,
+    integer_types,
 )
 def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
     return execute_series_regex_extract(
         op,
         data.obj,
-        getattr(pattern, 'obj', pattern),
-        getattr(index, 'obj', index),
+        pattern,
+        index,
         **kwargs
     ).groupby(data.grouper.groupings)
 
@@ -271,24 +279,27 @@ def execute_series_regex_extract_gb(op, data, pattern, index, **kwargs):
 @execute_node.register(
     ops.RegexReplace,
     pd.Series,
-    (pd.Series,) + six.string_types,
-    (pd.Series,) + six.string_types,
+    six.string_types,
+    six.string_types,
 )
 def execute_series_regex_replace(op, data, pattern, replacement, **kwargs):
-    return data.str.replace(pattern, replacement)
+    def replacer(x, pattern=re.compile(pattern)):
+        return pattern.sub(replacement, x)
+    return data.apply(replacer)
 
 
 @execute_node.register(
     ops.RegexReplace,
     SeriesGroupBy,
-    (SeriesGroupBy,) + six.string_types,
-    (SeriesGroupBy,) + six.string_types,
+    six.string_types,
+    six.string_types,
 )
 def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
     return execute_series_regex_replace(
         data.obj,
-        getattr(pattern, 'obj', pattern),
-        getattr(replacement, 'obj', replacement),
+        pattern,
+        replacement,
+        **kwargs
     ).groupby(data.grouper.groupings)
 
 
@@ -296,8 +307,9 @@ def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
 def execute_series_translate_series_series(
     op, data, from_string, to_string, **kwargs
 ):
+    to_string_iter = iter(to_string)
     table = from_string.apply(
-        lambda x, y: maketrans(x=x, y=next(y)), args=(iter(to_string),)
+        lambda x, y: maketrans(x=x, y=next(y)), args=(to_string_iter,)
     )
     return data.str.translate(table)
 
@@ -359,3 +371,72 @@ def execute_series_right_gb(op, data, nchars, **kwargs):
 @execute_node.register(ops.StringJoin, (pd.Series,) + six.string_types, list)
 def execute_series_join_scalar_sep(op, sep, data, **kwargs):
     return reduce(lambda x, y: x + sep + y, data)
+
+
+def haystack_to_series_of_lists(haystack, index=None):
+    if index is None:
+        index = toolz.first(
+            piece.index for piece in haystack if hasattr(piece, 'index')
+        )
+    pieces = reduce(
+        operator.add,
+        (
+            pd.Series(getattr(piece, 'values', piece), index=index).map(
+                ibis.util.promote_list
+            ) for piece in haystack
+        )
+    )
+    return pieces
+
+
+@execute_node.register(ops.FindInSet, pd.Series, list)
+def execute_series_find_in_set(op, needle, haystack, **kwargs):
+    pieces = haystack_to_series_of_lists(haystack, index=needle.index)
+    return pieces.map(
+        lambda elements, needle=needle, index=itertools.count(): (
+            ibis.util.safe_index(elements, needle.iat[next(index)])
+        )
+    )
+
+
+@execute_node.register(ops.FindInSet, SeriesGroupBy, list)
+def execute_series_group_by_find_in_set(op, needle, haystack, **kwargs):
+    pieces = [getattr(piece, 'obj', piece) for piece in haystack]
+    return execute_series_find_in_set(
+        op, needle.obj, pieces, **kwargs
+    ).groupby(needle.grouper.groupings)
+
+
+@execute_node.register(ops.FindInSet, scalar_types, list)
+def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
+    # `list` could contain series, series groupbys, or scalars
+    # mixing series and series groupbys is not allowed
+    series_in_haystack = [
+        type(piece) for piece in haystack
+        if isinstance(piece, (pd.Series, SeriesGroupBy))
+    ]
+
+    if not series_in_haystack:
+        return ibis.util.safe_index(haystack, needle)
+
+    try:
+        collection_type, = frozenset(map(type, series_in_haystack))
+    except ValueError:
+        raise ValueError('Mixing Series and SeriesGroupBy is not allowed')
+
+    pieces = haystack_to_series_of_lists([
+        getattr(piece, 'obj', piece) for piece in haystack
+    ])
+
+    result = pieces.map(toolz.flip(ibis.util.safe_index)(needle))
+    if issubclass(collection_type, pd.Series):
+        return result
+
+    assert issubclass(collection_type, SeriesGroupBy)
+
+    return result.groupby(
+        toolz.first(
+            piece.grouper.groupings
+            for piece in haystack if hasattr(piece, 'grouper')
+        )
+    )
