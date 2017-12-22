@@ -20,6 +20,7 @@ import itertools
 import functools
 import numpy as np
 import pandas as pd
+import pandas.core.dtypes.dtypes as pdt
 
 from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
@@ -1017,6 +1018,12 @@ def from_numpy_dtype(value):
     return _numpy_to_ibis[value]
 
 
+# TODO categorical, interval
+@dtype.register(pdt.DatetimeTZDtype)
+def from_pandas_tzdtype(value):
+    return Timestamp(timezone=str(value.tz))
+
+
 @dtype.register(six.string_types)
 def from_string(value):
     return TypeParser(value).parse()
@@ -1122,6 +1129,11 @@ def infer_integer(value, allow_overflow=False):
 @infer.register(np.generic)
 def infer_numpy_scalar(value):
     return dtype(value.dtype)
+
+
+@infer.register(pd.Timestamp)
+def infer_pandas_timestamp(value):
+    return Timestamp(timezone=str(value.tz))
 
 
 @infer.register(bool)

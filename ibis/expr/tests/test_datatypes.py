@@ -1,6 +1,7 @@
 import pytest
 import datetime
 import numpy as np
+import pandas as pd
 from collections import OrderedDict
 
 import ibis
@@ -375,6 +376,10 @@ def test_time_valid():
     (np.bool_(True), dt.boolean),
     (np.bool_(False), dt.boolean),
     (np.arange(5, dtype='int32'), dt.Array(dt.int32)),
+
+    # pandas types
+    (pd.Timestamp('2015-01-01 12:00:00', tz='US/Eastern'),
+     dt.Timestamp('US/Eastern')),
 
     # parametric types
     (list('abc'), dt.Array(dt.string)),
