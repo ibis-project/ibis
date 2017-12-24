@@ -72,9 +72,11 @@ integer_types = six.integer_types + (np.integer,)
 
 # pandas compat
 try:
-    from pandas.api.types import DatetimeTZDtype, CategoricalDtype  # noqa: F401
+    from pandas.api.types import (DatetimeTZDtype,
+                                  CategoricalDtype)  # noqa: F401
 except ImportError:
-    from pandas.types.dtypes import DatetimeTZDtype, CategoricalDtype  # noqa: F401
+    from pandas.types.dtypes import (DatetimeTZDtype,
+                                     CategoricalDtype)  # noqa: F401
 
 try:
     from pandas.core.tools.datetimes import to_time, to_datetime  # noqa: F401
