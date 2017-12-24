@@ -206,7 +206,7 @@ def test_numpy_dtype(numpy_dtype, ibis_dtype):
 
 @pytest.mark.parametrize(('pandas_dtype', 'ibis_dtype'), [
     (DatetimeTZDtype(tz='US/Eastern', unit='ns'), dt.Timestamp('US/Eastern')),
-    (CategoricalDtype(categories=['a', 'b']), dt.Category(2))
+    (CategoricalDtype(['a', 'b']), dt.Category(2))
 ])
 def test_pandas_dtype(pandas_dtype, ibis_dtype):
     assert dt.dtype(pandas_dtype) == ibis_dtype
