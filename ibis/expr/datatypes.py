@@ -25,7 +25,7 @@ from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
 
 import ibis.common as com
-from ibis.compat import builtins, PY2, DatetimeTZDtype
+from ibis.compat import builtins, PY2, DatetimeTZDtype, CategoricalDtype
 
 
 class DataType(object):
@@ -988,7 +988,7 @@ _numpy_to_ibis = toolz.keymap(np.dtype, {
     'double': double,
     'str': string,
     'datetime64': timestamp,
-    'datetime64[ns]': timestamp,  # TODO: support timezone
+    'datetime64[ns]': timestamp,
     'timedelta64': interval,
     'timedelta64[ns]': Interval('ns')
 })
@@ -1011,16 +1011,17 @@ def from_ibis_dtype(value):
 
 @dtype.register(np.dtype)
 def from_numpy_dtype(value):
-    # TODO timezone support
-    # if hasattr(dtype, 'tz'):
-    #     ibis_dtype = dt.Timestamp(str(dtype.tz))
     return _numpy_to_ibis[value]
 
 
-# TODO categorical, interval
 @dtype.register(DatetimeTZDtype)
 def from_pandas_tzdtype(value):
     return Timestamp(timezone=str(value.tz))
+
+
+@dtype.register(CategoricalDtype)
+def from_pandas_categorical(value):
+    return Category(cardinality=len(value.categories))
 
 
 @dtype.register(six.string_types)

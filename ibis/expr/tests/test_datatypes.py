@@ -6,6 +6,7 @@ from collections import OrderedDict
 
 import ibis
 from ibis import IbisError
+from ibis.compat import DatetimeTZDtype, CategoricalDtype
 from ibis.expr import datatypes as dt
 from ibis.expr.rules import highest_precedence_type
 import ibis.expr.api as api
@@ -201,6 +202,14 @@ def test_primitive(spec, expected):
 ])
 def test_numpy_dtype(numpy_dtype, ibis_dtype):
     assert dt.dtype(np.dtype(numpy_dtype)) == ibis_dtype
+
+
+@pytest.mark.parametrize(('pandas_dtype', 'ibis_dtype'), [
+    (DatetimeTZDtype(tz='US/Eastern', unit='ns'), dt.Timestamp('US/Eastern')),
+    (CategoricalDtype(categories=['a', 'b']), dt.Category(2))
+])
+def test_pandas_dtype(pandas_dtype, ibis_dtype):
+    assert dt.dtype(pandas_dtype) == ibis_dtype
 
 
 def test_precedence_with_no_arguments():
