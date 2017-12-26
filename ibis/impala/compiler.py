@@ -914,6 +914,14 @@ _binary_infix_ops = {
 }
 
 
+def _string_like(translator, expr):
+    arg, pattern, _ = expr.op().args
+    return '{} LIKE {}'.format(
+        translator.translate(arg),
+        translator.translate(pattern),
+    )
+
+
 _operation_registry = {
     # Unary operations
     ops.NotNull: _not_null,
@@ -982,7 +990,7 @@ _operation_registry = {
     ops.LPad: fixed_arity('lpad', 3),
     ops.RPad: fixed_arity('rpad', 3),
     ops.StringJoin: _string_join,
-    ops.StringSQLLike: _binary_infix_op('LIKE'),
+    ops.StringSQLLike: _string_like,
     ops.RegexSearch: fixed_arity('regexp_like', 2),
     ops.RegexExtract: fixed_arity('regexp_extract', 3),
     ops.RegexReplace: fixed_arity('regexp_replace', 3),
