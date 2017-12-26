@@ -51,3 +51,7 @@ class IbisTypeError(TypeError, IbisError):
 
 class InputTypeError(IbisTypeError):
     pass
+
+
+class UnsupportedBackendType(IbisTypeError):
+    pass
