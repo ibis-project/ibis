@@ -110,7 +110,8 @@ def csv_pre_execute_table(op, client, scope, **kwargs):
         return {}
 
     path = client.dictionary[op.name]
-    df = pd.read_csv(str(path), header=0)
+    schema = ibis_schema_to_pandas_dtypes(op.schema)
+    df = pd.read_csv(str(path), header=0, dtype=schema)
     return {op: df}
 
 
@@ -121,22 +122,24 @@ def csv_pre_execute(op, client, scope, **kwargs):
 
     ops = {}
     for table in tables:
-        if table in scope:
-            continue
+        if table not in scope:
 
-        path = client.dictionary[table.name]
-        usecols = None
+            path = client.dictionary[table.name]
+            usecols = None
 
-        if op.selections:
+            if op.selections:
 
-            header = pd.read_csv(str(path), header=0, nrows=1)
-            usecols = [getattr(s.op(), 'name', None) or s.get_name()
-                       for s in op.selections]
+                schema = ibis_schema_to_pandas_dtypes(table.schema)
+                header = pd.read_csv(
+                    str(path), header=0, nrows=1, schema=schema
+                )
+                usecols = [getattr(s.op(), 'name', None) or s.get_name()
+                           for s in op.selections]
 
-            # we cannot read all the columns taht we would like
-            if len(pd.Index(usecols) & header.columns) != len(usecols):
-                usecols = None
+                # we cannot read all the columns taht we would like
+                if len(pd.Index(usecols) & header.columns) != len(usecols):
+                    usecols = None
 
-        df = pd.read_csv(str(path), usecols=usecols, header=0)
-        ops[table] = df
+            df = pd.read_csv(str(path), usecols=usecols, header=0)
+            ops[table] = df
     return ops

@@ -12,6 +12,8 @@ from ibis.tests.all.config.backendtestconfiguration import (
 
 
 class CSV(BackendTestConfiguration):
+    check_names = False
+
     @classmethod
     def connect(cls, backend):
         test_data_directory = os.environ.get('IBIS_TEST_DATA_DIRECTORY')
@@ -28,5 +30,8 @@ class CSV(BackendTestConfiguration):
 
     @classmethod
     def functional_alltypes(cls, con):
-        schema = ibis.schema([('bool_col', 'boolean')])
+        schema = ibis.schema([
+            ('bool_col', 'boolean'),
+            ('string_col', 'string'),
+        ])
         return con.table('functional_alltypes', schema=schema)
