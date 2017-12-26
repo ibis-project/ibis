@@ -680,7 +680,6 @@ _operation_registry.update({
     ops.Capitalize: unary('initcap'),
     ops.Repeat: fixed_arity('repeat', 2),
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
-    ops.StringSQLLike: _infix_op('LIKE'),
     ops.RegexSearch: _infix_op('~'),
     ops.RegexReplace: _regex_replace,
     ops.Translate: fixed_arity('translate', 3),

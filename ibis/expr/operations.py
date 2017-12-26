@@ -553,7 +553,12 @@ class FuzzySearch(BooleanValueOp):
 
 
 class StringSQLLike(FuzzySearch):
-    pass
+
+    input_type = [
+        string,
+        string(name='pattern'),
+        string(name='escape', default='^', optional=True),
+    ]
 
 
 class RegexSearch(FuzzySearch):

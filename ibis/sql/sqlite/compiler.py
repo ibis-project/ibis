@@ -221,7 +221,6 @@ _operation_registry.update({
     ops.RStrip: unary('rtrim'),
 
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
-    ops.StringSQLLike: _infix_op('LIKE'),
 
     ops.Strftime: _strftime,
     ops.ExtractYear: _strftime_int('%Y'),

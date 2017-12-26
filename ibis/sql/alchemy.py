@@ -426,6 +426,11 @@ def unary(sa_func):
     return fixed_arity(sa_func, 1)
 
 
+def _string_like(t, expr):
+    arg, pattern, escape = map(t.translate, expr.op().args)
+    return arg.op('LIKE')(pattern).op('ESCAPE')(escape)
+
+
 _operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
@@ -474,6 +479,8 @@ _operation_registry = {
 
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
+
+    ops.StringSQLLike: _string_like,
 }
 
 
