@@ -6,45 +6,13 @@ from pytest import param
 
 import ibis
 import ibis.common as com
-
-
-def skip_if_invalid_operation(expr, valid_operations, con):
-    try:
-        con.compile(expr)
-    except com.OperationNotDefinedError as e:
-        pytest.skip('{} with client {}'.format(e, type(con).__name__))
-
-
-@pytest.fixture(scope='function')
-def result_func_default(request, con, alltypes, backend, valid_operations):
-    func = request.param
-    expr = func(alltypes)
-    skip_if_invalid_operation(expr, valid_operations, con)
-    return func
-
-
-@pytest.fixture(scope='function')
-def result_func_aggs(request, con, alltypes, valid_operations):
-    func = request.param
-    cond = request.getfixturevalue('ibis_cond')
-    expr = func(alltypes, cond(alltypes))
-    skip_if_invalid_operation(expr, valid_operations, con)
-    return func
-
-
-@pytest.fixture(scope='function')
-def result_func_default_analytic(
-    request, con, analytic_alltypes, backend, valid_operations
-):
-    func = request.param
-    expr = analytic_alltypes.mutate(value=func)
-    skip_if_invalid_operation(expr, valid_operations, con)
-    return func
+import ibis.tests.util as tu
 
 
 @pytest.mark.parametrize(
     'column', ['string_col', 'double_col', 'date_string_col']
 )
+@tu.skip_if_invalid_operation
 def test_distinct_column(alltypes, df, column):
     expr = alltypes[column].distinct()
     result = expr.execute()
@@ -53,7 +21,7 @@ def test_distinct_column(alltypes, df, column):
 
 
 @pytest.mark.parametrize(
-    ('result_func_default', 'expected_func'),
+    ('result_func', 'expected_func'),
     [
         param(
             lambda t: t.string_col.contains('6'),
@@ -196,17 +164,17 @@ def test_distinct_column(alltypes, df, column):
             id='join'
         )
     ],
-    indirect=['result_func_default'],
 )
-def test_strings(alltypes, df, backend, result_func_default, expected_func):
-    expr = result_func_default(alltypes)
+@tu.skip_if_invalid_operation
+def test_strings(alltypes, df, backend, result_func, expected_func):
+    expr = result_func(alltypes)
     result = expr.execute()
     expected = backend.default_series_rename(expected_func(df))
     backend.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(
-    ('result_func_aggs', 'expected_func'),
+    ('result_func', 'expected_func'),
     [
         param(
             lambda t, where: t.bool_col.count(where=where),
@@ -302,7 +270,6 @@ def test_strings(alltypes, df, backend, result_func_default, expected_func):
             marks=pytest.mark.xfail,
         ),
     ],
-    indirect=['result_func_aggs'],
 )
 @pytest.mark.parametrize(
     ('ibis_cond', 'pandas_cond'),
@@ -314,18 +281,18 @@ def test_strings(alltypes, df, backend, result_func_default, expected_func):
         )
     ]
 )
+@tu.skip_if_invalid_operation
 def test_aggregations(
-    alltypes, df, backend, result_func_aggs, expected_func,
-    ibis_cond, pandas_cond
+    alltypes, df, backend, result_func, expected_func, ibis_cond, pandas_cond
 ):
-    expr = result_func_aggs(alltypes, ibis_cond(alltypes))
+    expr = result_func(alltypes, ibis_cond(alltypes))
     result = expr.execute()
     expected = expected_func(df, pandas_cond(df))
     np.testing.assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
-    ('result_func_default_analytic', 'expected_func'),
+    ('result_func', 'expected_func'),
     [
         param(
             lambda t: t.float_col.lag(),
@@ -460,17 +427,16 @@ def test_aggregations(
             marks=pytest.mark.xfail,
         ),
     ],
-    indirect=['result_func_default_analytic'],
 )
+@tu.skip_if_invalid_operation
 def test_analytic_functions(
-    analytic_alltypes,
-    df, con, backend, result_func_default_analytic, expected_func,
+    analytic_alltypes, df, con, backend, result_func, expected_func,
 ):
     if not backend.supports_window_operations:
         pytest.skip(
             'Backend {} does not support window operations'.format(backend)
         )
-    expr = analytic_alltypes.mutate(value=result_func_default_analytic)
+    expr = analytic_alltypes.mutate(value=result_func)
 
     try:
         raw_result = con.execute(expr)
