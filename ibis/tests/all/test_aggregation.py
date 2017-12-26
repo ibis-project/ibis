@@ -116,7 +116,7 @@ import ibis.tests.util as tu
 )
 @tu.skip_if_invalid_operation
 def test_aggregation(
-    alltypes, df, backend, result_func, expected_func, ibis_cond, pandas_cond
+    backend, alltypes, df, result_func, expected_func, ibis_cond, pandas_cond
 ):
     expr = result_func(alltypes, ibis_cond(alltypes))
     result = expr.execute()

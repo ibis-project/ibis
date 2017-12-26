@@ -19,12 +19,12 @@ import ibis.tests.util as tu
             id='like',
         ),
         param(
-            lambda t: t.string_col.like('6%%'),
+            lambda t: t.string_col.like('6^%'),
             lambda t: t.string_col.str.contains('6%'),
             id='complex_like_escape',
         ),
         param(
-            lambda t: t.string_col.like('6%%%'),
+            lambda t: t.string_col.like('6^%%'),
             lambda t: t.string_col.str.contains('6%.*'),
             id='complex_like_escape_match',
         ),
@@ -151,7 +151,7 @@ import ibis.tests.util as tu
     ],
 )
 @tu.skip_if_invalid_operation
-def test_string(alltypes, df, backend, result_func, expected_func):
+def test_string(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes)
     result = expr.execute()
     expected = backend.default_series_rename(expected_func(df))

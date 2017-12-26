@@ -149,7 +149,7 @@ import ibis.tests.util as tu
 )
 @tu.skip_if_invalid_operation
 def test_window(
-    analytic_alltypes, df, con, backend, result_func, expected_func,
+    backend, analytic_alltypes, df, con, result_func, expected_func,
 ):
     if not backend.supports_window_operations:
         pytest.skip(

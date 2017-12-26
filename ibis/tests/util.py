@@ -33,9 +33,9 @@ def assert_equal(left, right):
 
 def skip_if_invalid_operation(f):
     @functools.wraps(f)
-    def wrapper(*args, **kwargs):
+    def wrapper(backend, *args, **kwargs):
         try:
-            return f(*args, **kwargs)
+            return f(backend, *args, **kwargs)
         except (com.OperationNotDefinedError, com.UnsupportedBackendType) as e:
-            pytest.skip(str(e))
+            pytest.skip('{} using {}'.format(e, backend.__name__))
     return wrapper
