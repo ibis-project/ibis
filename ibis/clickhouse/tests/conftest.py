@@ -14,6 +14,7 @@ IBIS_TEST_CLICKHOUSE_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 def con():
     return ibis.clickhouse.connect(
         host=CLICKHOUSE_HOST,
+        port=CLICKHOUSE_PORT,
         user=CLICKHOUSE_USER,
         password=CLICKHOUSE_PASS,
         database=IBIS_TEST_CLICKHOUSE_DB,

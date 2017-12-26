@@ -752,10 +752,10 @@ class ListOf(Argument):
 
     def _validate(self, args, i):
         arg = args[i]
-        if isinstance(arg, tuple):
+        if not isinstance(arg, list):
             arg = args[i] = list(arg)
 
-        if not isinstance(arg, list):
+        if not isinstance(arg, (list, ir.ValueList)):
             raise IbisTypeError('not a list')
 
         if len(arg) < self.min_length:

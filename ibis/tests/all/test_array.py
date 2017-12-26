@@ -3,9 +3,11 @@ import functools
 import pytest
 
 import ibis
+import ibis.tests.util as tu
 
 
 def array_test(f):
+    @tu.skip_if_invalid_operation
     @functools.wraps(f)
     def wrapper(backend, *args, **kwargs):
         if not backend.supports_arrays:

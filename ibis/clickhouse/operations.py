@@ -169,12 +169,6 @@ def _regex_extract(translator, expr):
     return 'extractAll({0}, {1})'.format(arg_, pattern_)
 
 
-def _string_join(translator, expr):
-    op = expr.op()
-    arg, strings = op.args
-    return _call(translator, 'concat_ws', arg, *strings)
-
-
 def _parse_url(translator, expr):
     op = expr.op()
     arg, extract, key = op.args
@@ -441,6 +435,22 @@ def _table_column(translator, expr):
     return quoted_name
 
 
+def _string_join(translator, expr):
+    sep, pieces = expr.op().args
+    return 'arrayStringConcat([{}], {})'.format(
+        ', '.join(map(translator.translate, pieces)),
+        translator.translate(sep),
+    )
+
+
+def _string_split(translator, expr):
+    value, sep = expr.op().args
+    return 'splitByString({}, {})'.format(
+        translator.translate(sep),
+        translator.translate(value)
+    )
+
+
 # TODO: clickhouse uses differenct string functions
 #       for ascii and utf-8 encodings,
 
@@ -522,9 +532,9 @@ _operation_registry = {
     ops.StringReplace: fixed_arity('replaceAll', 3),
 
     # TODO: there are no concat_ws in clickhouse
-    # ops.StringJoin: varargs('concat'),
+    ops.StringJoin: _string_join,
+    ops.StringSplit: _string_split,
 
-    ops.StringSQLLike: binary_infix_op('LIKE'),
     ops.RegexSearch: fixed_arity('match', 2),
     # TODO: extractAll(haystack, pattern)[index + 1]
     ops.RegexExtract: _regex_extract,
