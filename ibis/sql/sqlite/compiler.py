@@ -222,7 +222,6 @@ _operation_registry.update({
 
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: _infix_op('LIKE'),
-    ops.RegexSearch: _infix_op('REGEXP'),
 
     ops.Strftime: _strftime,
     ops.ExtractYear: _strftime_int('%Y'),
