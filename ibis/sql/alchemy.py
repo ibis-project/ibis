@@ -427,8 +427,9 @@ def unary(sa_func):
 
 
 def _string_like(t, expr):
-    arg, pattern, escape = map(t.translate, expr.op().args)
-    return arg.op('LIKE')(pattern).op('ESCAPE')(escape)
+    arg, pattern, escape = expr.op().args
+    result = t.translate(arg).like(t.translate(pattern), escape=escape)
+    return result
 
 
 _operation_registry = {
