@@ -421,22 +421,6 @@ def test_infer_dtype(value, expected_dtype):
     assert dt.infer(value) == expected_dtype
 
 
-@pytest.mark.parametrize(('ibis_dtype', 'pandas_dtype'), [
-    (dt.int8, np.int8),
-    (dt.int16, np.int16),
-    (dt.int32, np.int32),
-    (dt.int64, np.int64),
-    (dt.uint8, np.uint8),
-    (dt.uint16, np.uint16),
-    (dt.uint32, np.uint32),
-    (dt.uint64, np.uint64),
-    (dt.Timestamp(), 'datetime64[s]'),
-    (dt.Interval(), 'interval[s]')
-])
-def test_to_pandas(ibis_dtype, pandas_dtype):
-    assert ibis_dtype.to_pandas() == pandas_dtype
-
-
 @pytest.mark.parametrize(('source', 'target'), [
     (dt.any, dt.string),
     (dt.null, dt.date),

@@ -95,38 +95,6 @@ def test_infer_exhaustive_dataframe():
     assert sch.infer(df) == ibis.schema(expected)
 
 
-def test_to_pandas():
-    schema = [('bigint_col', dt.int64),
-              ('bool_col', dt.boolean),
-              ('bool_obj_col', dt.boolean),
-              ('date_string_col', dt.string),
-              ('double_col', dt.double),
-              ('float_col', dt.float),
-              ('int_col', dt.int32),
-              ('month', dt.int64),
-              ('smallint_col', dt.int16),
-              ('string_col', dt.string),
-              ('timestamp_col', dt.timestamp),
-              ('tinyint_col', dt.int8),
-              ('year', dt.int64)]
-
-    expected = [('bigint_col', np.int64),
-                ('bool_col', object),
-                ('bool_obj_col', object),
-                ('date_string_col', object),
-                ('double_col', np.float64),
-                ('float_col', np.float32),
-                ('int_col', np.int32),
-                ('month', np.int64),
-                ('smallint_col', np.int16),
-                ('string_col', object),
-                ('timestamp_col', 'datetime64[s]'),
-                ('tinyint_col', np.int8),
-                ('year', np.int64)]
-
-    assert sch.to_pandas(schema) == expected
-
-
 def test_whole_schema():
     customers = ibis.table(
         [
