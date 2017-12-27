@@ -437,14 +437,6 @@ def _table_column(translator, expr):
     return quoted_name
 
 
-def _string_join(translator, expr):
-    sep, pieces = expr.op().args
-    return 'arrayStringConcat([{}], {})'.format(
-        ', '.join(map(translator.translate, pieces)),
-        translator.translate(sep),
-    )
-
-
 def _string_split(translator, expr):
     value, sep = expr.op().args
     return 'splitByString({}, {})'.format(
@@ -453,7 +445,26 @@ def _string_split(translator, expr):
     )
 
 
-# TODO: clickhouse uses differenct string functions
+def _string_join(translator, expr):
+    sep, elements = expr.op().args
+    assert isinstance(elements.op(), ir.ValueList), \
+        'elements must be a ValueList, got {}'.format(type(elements.op()))
+    return 'arrayStringConcat([{}], {})'.format(
+        ', '.join(map(translator.translate, elements)),
+        translator.translate(sep),
+    )
+
+
+def _string_repeat(translator, expr):
+    value, times = expr.op().args
+    result = "replaceAll({}, '.*', arrayStringConcat(arrayMap(x -> '\\\\0', range({}))))".format(
+        translator.translate(value),
+        translator.translate(times),
+    )
+    return result
+
+
+# TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
 _binary_infix_ops = {
@@ -532,10 +543,9 @@ _operation_registry = {
     ops.StringFind: _string_find,
     ops.FindInSet: _index_of,
     ops.StringReplace: fixed_arity('replaceAll', 3),
-
-    # TODO: there are no concat_ws in clickhouse
     ops.StringJoin: _string_join,
     ops.StringSplit: _string_split,
+    ops.Repeat: _string_repeat,
 
     ops.RegexSearch: fixed_arity('match', 2),
     # TODO: extractAll(haystack, pattern)[index + 1]

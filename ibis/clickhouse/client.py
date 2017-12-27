@@ -101,7 +101,7 @@ class ClickhouseClient(SQLClient):
             query = query.compile()
         self.log(query)
 
-        return self.con.execute(query,  columnar=True, with_column_types=True)
+        return self.con.execute(query, columnar=True, with_column_types=True)
 
     def _fully_qualified_name(self, name, database):
         if bool(fully_qualified_re.search(name)):

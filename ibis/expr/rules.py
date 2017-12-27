@@ -755,8 +755,7 @@ class ListOf(Argument):
         if not isinstance(arg, list):
             arg = args[i] = list(arg)
 
-        if not isinstance(arg, (list, ir.ValueList)):
-            raise IbisTypeError('not a list')
+        assert isinstance(arg, list), 'not a list in ListOf validation'
 
         if len(arg) < self.min_length:
             raise IbisTypeError('list must have at least {} elements'

@@ -41,6 +41,10 @@ class OperationNotDefinedError(TranslationError):
     pass
 
 
+class UnsupportedBackendType(TranslationError):
+    pass
+
+
 class IbisInputError(ValueError, IbisError):
     pass
 

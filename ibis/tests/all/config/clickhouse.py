@@ -8,7 +8,6 @@ from ibis.tests.all.config.backendtestconfiguration import (
 
 
 class Clickhouse(BackendTestConfiguration):
-
     check_dtype = False
 
     @classmethod
