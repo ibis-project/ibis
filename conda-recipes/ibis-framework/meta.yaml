@@ -69,7 +69,7 @@ test:
     - ibis.tests
   commands:
     - pytest --version
-    - pytest --tb=short --pyargs ibis -m "not backend and not impala and not hdfs and not bigquery"
+    - pytest --tb=short --pyargs ibis -m "not backend and not impala and not hdfs and not bigquery" --ignore=ibis/tests/all
 
 about:
   license: Apache License, Version 2.0
