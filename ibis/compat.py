@@ -73,6 +73,9 @@ integer_types = six.integer_types + (np.integer,)
 try:
     from contextlib import suppress
 except ImportError:
+    from contextlib import contextmanager
+
+    @contextmanager
     def suppress(*exceptions):
         try:
             yield
