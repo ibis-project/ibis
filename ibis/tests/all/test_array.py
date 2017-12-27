@@ -28,7 +28,7 @@ def direct_array_operation_test(f):
     return wrapper
 
 
-@tu.skip_if_undefined_operation
+@tu.skip_if_invalid_operation
 @direct_array_operation_test
 def test_array_concat(backend, con):
     left = ibis.literal([1, 2, 3])
@@ -38,7 +38,7 @@ def test_array_concat(backend, con):
     assert result == [1, 2, 3, 2, 1]
 
 
-@tu.skip_if_undefined_operation
+@tu.skip_if_invalid_operation
 @direct_array_operation_test
 def test_array_length(backend, con):
     expr = ibis.literal([1, 2, 3]).length()
