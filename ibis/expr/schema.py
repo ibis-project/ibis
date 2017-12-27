@@ -99,7 +99,7 @@ class Schema(object):
 
     def to_pandas(self):
         dtypes = [dtype.to_pandas() for dtype in self.types]
-        return list(zip(self.name, dtypes))
+        return list(zip(self.names, dtypes))
 
     def equals(self, other, cache=None):
         return self.names == other.names and self.types == other.types

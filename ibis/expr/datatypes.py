@@ -411,7 +411,7 @@ class Interval(DataType):
         return self._units[self.unit]
 
     def to_pandas(self):
-        return 'interval[{}]'.format(self._unit)
+        return 'interval[{}]'.format(self.unit)
 
     def __str__(self):
         unit = self.unit
