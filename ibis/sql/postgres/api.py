@@ -110,7 +110,7 @@ def connect(
       schema:
         index : int64
         Unnamed: 0 : int64
-        id : int64
+        id : int32
         bool_col : boolean
         tinyint_col : int16
         smallint_col : int16
