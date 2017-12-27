@@ -558,7 +558,7 @@ class StringSQLLike(FuzzySearch):
         string,
         string(name='pattern'),
         rules.instance_of(
-            six.string_types, name='escape', default='^', optional=True
+            six.string_types, name='escape', default=None, optional=True
         ),
     ]
 
