@@ -457,11 +457,17 @@ def _string_join(translator, expr):
 
 def _string_repeat(translator, expr):
     value, times = expr.op().args
-    result = (
-        "replaceAll({}, '.*', arrayStringConcat("
-        "arrayMap(x -> '\\\\0', range({}))))"
-    ).format(translator.translate(value), translator.translate(times))
+    result = 'arrayStringConcat(arrayMap(x -> {}, range({})))'.format(
+        translator.translate(value), translator.translate(times)
+    )
     return result
+
+
+def _string_like(translator, expr):
+    value, pattern = expr.op().args[:2]
+    return '{} LIKE {}'.format(
+        translator.translate(value), translator.translate(pattern)
+    )
 
 
 # TODO: clickhouse uses different string functions
@@ -545,6 +551,7 @@ _operation_registry = {
     ops.StringReplace: fixed_arity('replaceAll', 3),
     ops.StringJoin: _string_join,
     ops.StringSplit: _string_split,
+    ops.StringSQLLike: _string_like,
     ops.Repeat: _string_repeat,
 
     ops.RegexSearch: fixed_arity('match', 2),

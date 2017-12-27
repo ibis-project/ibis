@@ -10,6 +10,8 @@ from ibis.tests.all.config.backendtestconfiguration import (
 
 
 class Parquet(BackendTestConfiguration):
+    check_names = False
+
     @classmethod
     def connect(cls, backend):
         test_data_directory = os.environ.get('IBIS_TEST_DATA_DIRECTORY')
