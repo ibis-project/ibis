@@ -12,30 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
-import datetime
-import itertools
+
 import os
 import sys
-import warnings
-import webbrowser
-
 import six
 import toolz
+import itertools
+import webbrowser
 
 from ibis.common import IbisError, RelationError
 import ibis.common as com
-import ibis.compat as compat
 import ibis.config as config
 import ibis.util as util
 import ibis.expr.datatypes as dt
 
 
 class Expr(object):
-
-    """
-
-    """
 
     def _type_display(self):
         return type(self).__name__
@@ -171,9 +163,6 @@ class Expr(object):
             return type(self)(arg, name=name)
         return factory
 
-    def _can_implicit_cast(self, arg):
-        return False
-
     def execute(self, limit='default', async=False, params=None):
         """
         If this expression is based on physical tables in a database backend,
@@ -220,9 +209,6 @@ class Expr(object):
         if type(self) != type(other):
             return False
         return self._arg.equals(other._arg, cache=cache)
-
-    def _can_compare(self, other):
-        return False
 
     def _root_tables(self):
         return self.op().root_tables()
@@ -510,48 +496,11 @@ class ExprList(Expr):
 
 
 def infer_literal_type(value):
-    import ibis.expr.rules as rules
-
-    if value is None or value is null:
+    # TODO: depricate?
+    if value is null:
         return dt.null
-    elif isinstance(value, bool):
-        return dt.boolean
-    elif isinstance(value, compat.integer_types):
-        return rules.int_literal_class(value)
-    elif isinstance(value, float):
-        return dt.double
-    elif isinstance(value, six.string_types):
-        return dt.string
-    elif isinstance(value, datetime.timedelta):
-        return dt.interval
-    elif isinstance(value, datetime.datetime):
-        return dt.timestamp
-    elif isinstance(value, datetime.date):
-        return dt.date
-    elif isinstance(value, datetime.time):
-        return dt.time
-    elif isinstance(value, list):
-        if not value:
-            return dt.Array(dt.null)
-        return dt.Array(rules.highest_precedence_type(
-            list(map(literal, value))
-        ))
-    elif isinstance(value, collections.OrderedDict):
-        if not value:
-            raise TypeError('Empty struct type not supported')
-        return dt.Struct(
-            list(value.keys()),
-            [literal(element).type() for element in value.values()],
-        )
-    elif isinstance(value, dict):
-        if not value:
-            return dt.Map(dt.null, dt.null)
-        return dt.Map(
-            rules.highest_precedence_type(list(map(literal, value.keys()))),
-            rules.highest_precedence_type(list(map(literal, value.values()))),
-        )
 
-    raise com.InputTypeError(value)
+    return dt.infer(value)
 
 
 class Literal(ValueOp):
@@ -668,8 +617,6 @@ class ValueExpr(Expr):
     either a single value (scalar)
     """
 
-    _implicit_casts = frozenset()
-
     def __init__(self, arg, name=None):
         super(ValueExpr, self).__init__(arg)
         self._name = name
@@ -687,11 +634,6 @@ class ValueExpr(Expr):
                 type(self).__name__
             )
         )
-
-    def _can_cast_implicit(self, typename):
-        from ibis.expr.rules import ImplicitCast
-        rule = ImplicitCast(self.type(), self._implicit_casts)
-        return rule.can_cast(typename)
 
     def has_name(self):
         if self._name is not None:
@@ -987,14 +929,9 @@ class NullValue(AnyValue):
     def type(self):
         return dt.null
 
-    def _can_cast_implicit(self, typename):
-        return True
-
 
 class NumericValue(AnyValue):
-
-    def _can_compare(self, other):
-        return isinstance(other, NumericValue)
+    pass
 
 
 class IntegerValue(NumericValue):
@@ -1009,17 +946,11 @@ class BooleanValue(NumericValue):
 
 class Int8Value(IntegerValue):
 
-    _implicit_casts = set([
-        'int16', 'int32', 'int64', 'float', 'double', 'decimal'
-    ])
-
     def type(self):
         return dt.int8
 
 
 class Int16Value(IntegerValue):
-
-    _implicit_casts = set(['int32', 'int64', 'float', 'double', 'decimal'])
 
     def type(self):
         return dt.int16
@@ -1027,15 +958,11 @@ class Int16Value(IntegerValue):
 
 class Int32Value(IntegerValue):
 
-    _implicit_casts = set(['int64', 'float', 'double', 'decimal'])
-
     def type(self):
         return dt.int32
 
 
 class Int64Value(IntegerValue):
-
-    _implicit_casts = set(['float', 'double', 'decimal'])
 
     def type(self):
         return dt.int64
@@ -1043,19 +970,11 @@ class Int64Value(IntegerValue):
 
 class UInt8Value(IntegerValue):
 
-    _implicit_casts = set([
-        'uint8', 'uint16', 'uint32', 'uint64',
-        'float', 'double', 'decimal'
-    ])
-
     def type(self):
         return dt.uint8
 
 
 class UInt16Value(IntegerValue):
-
-    _implicit_casts = set(['uint32', 'uint64',
-                           'float', 'double', 'decimal'])
 
     def type(self):
         return dt.uint16
@@ -1063,23 +982,17 @@ class UInt16Value(IntegerValue):
 
 class UInt32Value(IntegerValue):
 
-    _implicit_casts = set(['uint64', 'float', 'double', 'decimal'])
-
     def type(self):
         return dt.uint32
 
 
 class UInt64Value(IntegerValue):
 
-    _implicit_casts = set(['float', 'double', 'decimal'])
-
     def type(self):
         return dt.uint64
 
 
 class HalffloatValue(NumericValue):
-
-    _implicit_casts = set(['double', 'decimal'])
 
     def type(self):
         return dt.halffloat
@@ -1091,15 +1004,11 @@ class FloatingValue(NumericValue):
 
 class FloatValue(FloatingValue):
 
-    _implicit_casts = set(['double', 'decimal'])
-
     def type(self):
         return dt.float
 
 
 class DoubleValue(FloatingValue):
-
-    _implicit_casts = set(['decimal'])
 
     def type(self):
         return dt.double
@@ -1110,17 +1019,11 @@ class StringValue(AnyValue):
     def type(self):
         return dt.string
 
-    def _can_compare(self, other):
-        return isinstance(other, (StringValue, TemporalValue))
-
 
 class BinaryValue(AnyValue):
 
     def type(self):
         return dt.binary
-
-    def _can_compare(self, other):
-        return isinstance(other, BinaryValue)
 
 
 class ParameterizedValue(AnyValue):
@@ -1140,13 +1043,11 @@ class ParameterizedValue(AnyValue):
 
 
 class DecimalValue(ParameterizedValue, NumericValue):
-
-    _implicit_casts = set(['float', 'double'])
+    pass
 
 
 class TemporalValue(AnyValue):
-    def _can_compare(self, other):
-        return isinstance(other, (TemporalValue, StringValue))
+    pass
 
 
 class DateValue(TemporalValue):
@@ -1154,46 +1055,11 @@ class DateValue(TemporalValue):
     def type(self):
         return dt.date
 
-    def _can_implicit_cast(self, arg):
-        op = arg.op()
-        if isinstance(op, Literal):
-            try:
-                import pandas as pd
-                pd.Timestamp(op.value)
-                return True
-            except ValueError:
-                return False
-        return False
-
-    def _implicit_cast(self, arg):
-        # assume we've checked this is OK at this point...
-        op = arg.op()
-        return DateScalar(op)
-
 
 class TimeValue(TemporalValue):
 
     def type(self):
         return dt.time
-
-    def _can_implicit_cast(self, arg):
-        op = arg.op()
-        if isinstance(op, Literal):
-            try:
-                from ibis.compat import to_time
-                to_time(op.value)
-                return True
-            except ValueError:
-                return False
-        return False
-
-    def _can_compare(self, other):
-        return isinstance(other, (TimeValue, StringValue))
-
-    def _implicit_cast(self, arg):
-        # assume we've checked this is OK at this point...
-        op = arg.op()
-        return TimeScalar(op)
 
 
 class TimestampValue(TemporalValue):
@@ -1204,29 +1070,6 @@ class TimestampValue(TemporalValue):
 
     def type(self):
         return dt.Timestamp(timezone=self._timezone)
-
-    def _can_implicit_cast(self, arg):
-        op = arg.op()
-        if isinstance(op, Literal):
-            if isinstance(op.value, six.integer_types):
-                warnings.warn(
-                    'Integer values for timestamp literals are deprecated in '
-                    '0.11.0 and will be removed in 0.12.0. To pass integers '
-                    'as timestamp literals, use '
-                    'pd.Timestamp({:d}, unit=...)'.format(op.value)
-                )
-            try:
-                import pandas as pd
-                pd.Timestamp(op.value)
-                return True
-            except ValueError:
-                return False
-        return False
-
-    def _implicit_cast(self, arg):
-        # assume we've checked this is OK at this point...
-        op = arg.op()
-        return TimestampScalar(op)
 
 
 class IntervalValue(ParameterizedValue):
@@ -1247,60 +1090,16 @@ class IntervalValue(ParameterizedValue):
         """Unit's name"""
         return self.meta.resolution
 
-    def _can_compare(self, other):
-        return isinstance(other, IntervalValue) and self.unit == other.unit
-
-    def _can_implicit_cast(self, arg):
-        op = arg.op()
-        if isinstance(op, Literal):
-            if isinstance(op.value, datetime.timedelta):
-                return True
-        return False
-
-    def _implicit_cast(self, arg):
-        # assume we've checked this is OK at this point...
-        op = arg.op()
-        return IntervalScalar(op)
-
 
 class ArrayValue(ParameterizedValue):
-
-    def _can_compare(self, other):
-        return isinstance(other, ArrayValue)
-
-    def _can_cast_implicit(self, typename):
-        if not isinstance(typename, dt.Array):
-            return False
-
-        self_type = self.type()
-        return (
-            super(ArrayValue, self)._can_cast_implicit(typename) or
-            self_type.equals(dt.Array(dt.null)) or
-            self_type.equals(dt.Array(dt.any))
-        )
+    pass
 
 
 class MapValue(ParameterizedValue):
-
-    def _can_compare(self, other):
-        return isinstance(other, MapValue)
-
-    def _can_cast_implicit(self, typename):
-        if not isinstance(typename, dt.Map):
-            return False
-
-        self_type = self.type()
-        return (
-            super(MapValue, self)._can_cast_implicit(typename) or
-            self_type.equals(dt.Map(dt.null, dt.null)) or
-            self_type.equals(dt.Map(dt.any, dt.any))
-        )
+    pass
 
 
 class StructValue(ParameterizedValue):
-
-    def _can_compare(self, other):
-        return isinstance(other, StructValue)
 
     def __dir__(self):
         return sorted(frozenset(
@@ -1494,16 +1293,10 @@ class DecimalColumn(DecimalValue, NumericColumn):
 
 
 class CategoryValue(ParameterizedValue):
-
     """
     Represents some ordered data categorization; tracked as an int32 value
     until explicitly
     """
-
-    _implicit_casts = Int16Value._implicit_casts
-
-    def _can_compare(self, other):
-        return isinstance(other, IntegerValue)
 
 
 class CategoryScalar(CategoryValue, ScalarExpr):
@@ -1582,6 +1375,32 @@ def as_value_expr(val):
     return val
 
 
+def castable(source, target):
+    """Return whether source ir type is castable to target
+
+    Based on the underlying datatypes and the value in case of Literals
+    """
+    op = source.op()
+    value = op.value if isinstance(op, Literal) else None
+    return dt.castable(source.type(), target.type(), value=value)
+
+
+def cast(source, target):
+    """Currently Literal to *Scalar implicit casts are allowed"""
+
+    if not castable(source, target):
+        raise com.IbisTypeError('Source is not castable to target type!')
+
+    # currently it prevents column -> scalar implicit castings
+    # however the datatypes are matching
+    op = source.op()
+    if not isinstance(op, Literal):
+        raise com.IbisTypeError('Only able to implicitly cast literals!')
+
+    out_type = target.type().scalar_type()
+    return out_type(op)
+
+
 def literal(value, type=None):
     """Create a scalar expression from a Python value.
 
@@ -1617,20 +1436,20 @@ def literal(value, type=None):
     if hasattr(value, 'op') and isinstance(value.op(), Literal):
         return value
 
-    if type is None:
-        type = infer_literal_type(value)
-    else:
-        type = dt.validate_type(type)
+    dtype = infer_literal_type(value)
 
-    if not type.valid_literal(value):
-        raise TypeError(
-            'Value {!r} cannot be safely coerced to {}'.format(value, type)
-        )
+    if type is not None:
+        try:
+            # check that dtype is implicitly castable to explicitly given dtype
+            dtype = dtype.cast(type)
+        except com.IbisTypeError:
+            raise TypeError('Value {!r} cannot be safely coerced '
+                            'to {}'.format(value, type))
 
     if value is None or value is _NULL or value is null:
-        return null().cast(type)
+        return null().cast(dtype)
     else:
-        return Literal(value, type=type).to_expr()
+        return Literal(value, type=dtype).to_expr()
 
 
 _NULL = None

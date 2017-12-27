@@ -34,6 +34,7 @@ from ibis.sql.compiler import Select, Union, TableSetFormatter
 from ibis import compat
 
 import ibis.common as com
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -160,7 +161,7 @@ def schema_from_table(table):
         )
         for column in table.columns.values()
     ]
-    return dt.Schema(table.columns.keys(), types)
+    return sch.Schema(table.columns.keys(), types)
 
 
 def table_from_schema(name, meta, schema):

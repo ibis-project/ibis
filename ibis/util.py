@@ -17,7 +17,6 @@ from __future__ import print_function
 import types
 
 import ibis.compat as compat
-
 from ibis.config import options
 
 
