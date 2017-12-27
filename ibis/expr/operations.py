@@ -2106,8 +2106,9 @@ class Comparison(BinaryOp, BooleanValueOp):
 
     def output_type(self):
         if not rules.comparable(self.left, self.right):
-            raise TypeError('Arguments are not comparable')
-
+            raise TypeError('Arguments with datatype {} and {} are '
+                            'not comparable'.format(self.left.type(),
+                                                    self.right.type()))
         return rules.shape_like_args(self.args, 'boolean')
 
 

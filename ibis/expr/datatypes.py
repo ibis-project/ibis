@@ -123,12 +123,16 @@ class Any(DataType):
 class Primitive(DataType):
 
     __slots__ = ()
+    _pandas = object
 
     def __repr__(self):
         name = self.name.lower()
         if not self.nullable:
             return '{}[non-nullable]'.format(name)
         return name
+
+    def to_pandas(self):
+        return self._pandas
 
 
 class Null(DataType):
@@ -187,11 +191,13 @@ class Binary(Variadic):
 class Date(Primitive):
 
     __slots__ = ()
+    _pandas = 'datetime[D]'
 
 
 class Time(Primitive):
 
     __slots__ = ()
+    _pandas = 'datetime[s]'
 
 
 def parametric(cls):
@@ -220,6 +226,7 @@ def parametric(cls):
 class Timestamp(Primitive):
 
     __slots__ = 'timezone',
+    _pandas = 'datetime64[s]'
 
     def __init__(self, timezone=None, nullable=True):
         super(Timestamp, self).__init__(nullable=nullable)
@@ -265,6 +272,7 @@ class Int8(SignedInteger):
     __slots__ = ()
 
     _nbytes = 1
+    _pandas = np.int8
 
 
 class Int16(SignedInteger):
@@ -272,6 +280,7 @@ class Int16(SignedInteger):
     __slots__ = ()
 
     _nbytes = 2
+    _pandas = np.int16
 
 
 class Int32(SignedInteger):
@@ -279,6 +288,7 @@ class Int32(SignedInteger):
     __slots__ = ()
 
     _nbytes = 4
+    _pandas = np.int32
 
 
 class Int64(SignedInteger):
@@ -286,31 +296,37 @@ class Int64(SignedInteger):
     __slots__ = ()
 
     _nbytes = 8
+    _pandas = np.int64
 
 
 class UInt8(UnsignedInteger):
 
     _nbytes = 1
+    _pandas = np.uint8
 
 
 class UInt16(UnsignedInteger):
 
     _nbytes = 2
+    _pandas = np.uint16
 
 
 class UInt32(UnsignedInteger):
 
     _nbytes = 4
+    _pandas = np.uint32
 
 
 class UInt64(UnsignedInteger):
 
     _nbytes = 8
+    _pandas = np.uint64
 
 
 class Halffloat(Floating):
 
     _nbytes = 2
+    _pandas = np.float16
 
 
 class Float(Floating):
@@ -318,6 +334,7 @@ class Float(Floating):
     __slots__ = ()
 
     _nbytes = 4
+    _pandas = np.float32
 
 
 class Double(Floating):
@@ -325,6 +342,7 @@ class Double(Floating):
     __slots__ = ()
 
     _nbytes = 8
+    _pandas = np.float64
 
 
 @parametric
@@ -390,6 +408,9 @@ class Interval(DataType):
     def resolution(self):
         """Unit's name"""
         return self._units[self.unit]
+
+    def to_pandas(self):
+        return 'interval[{}]'.format(self._unit)
 
     def __str__(self):
         unit = self.unit
