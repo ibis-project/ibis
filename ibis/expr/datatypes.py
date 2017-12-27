@@ -103,6 +103,9 @@ class DataType(object):
     def cast(self, target):
         return cast(self, target)
 
+    def to_pandas(self):
+        return object
+
     def scalar_type(self):
         import ibis.expr.types as ir
         return getattr(ir, '{}Scalar'.format(self.name))
@@ -1155,6 +1158,11 @@ def can_cast_subtype(source, target, **kwargs):
 
 
 @castable.register(Any, DataType)
+@castable.register(Integer, Category)
+@castable.register(Integer, (Floating, Decimal))
+@castable.register(Floating, Decimal)
+@castable.register(Decimal, Floating)
+@castable.register((Date, Timestamp), (Date, Timestamp))
 def can_cast_any(source, target, **kwargs):
     return True
 
@@ -1165,17 +1173,7 @@ def can_cast_null(source, target, **kwargs):
 
 
 @castable.register(Integer, Integer)
-def can_cast_to_generic_integer(source, target, **kwargs):
-    return True
-
-
-@castable.register(UnsignedInteger, UnsignedInteger)
-def can_cast_unsigned_integer(source, target, **kwargs):
-    return target._nbytes >= source._nbytes
-
-
-@castable.register(SignedInteger, SignedInteger)
-def can_cast_signed_integers(source, target, **kwargs):
+def can_cast_integers(source, target, **kwargs):
     return target._nbytes >= source._nbytes
 
 
@@ -1186,21 +1184,6 @@ def can_cast_floats(source, target, upcast=False, **kwargs):
 
     # double -> float must be allowed because
     # float literals are inferred as doubles
-    return True
-
-
-@castable.register(Integer, (Floating, Decimal))
-def can_upcast_integers(source, target, **kwargs):
-    return True
-
-
-@castable.register(Floating, Decimal)
-def can_upcast_floats(source, target, **kwargs):
-    return True
-
-
-@castable.register(Integer, Category)
-def can_cast_category(source, target, **kwargs):
     return True
 
 
@@ -1220,16 +1203,6 @@ def can_cast_integer_to_boolean(source, target, value=None, **kwargs):
 @castable.register(Integer, Interval)
 def can_cast_integer_to_interval(source, target, **kwargs):
     return castable(source, target.value_type)
-
-
-@castable.register(Decimal, Floating)
-def can_cast_decimal_to_floating(source, target, **kwargs):
-    return True
-
-
-@castable.register((Date, Timestamp), (Date, Timestamp))
-def can_cast_date_temporals(source, target, **kwargs):
-    return True
 
 
 @castable.register(String, (Date, Time, Timestamp))

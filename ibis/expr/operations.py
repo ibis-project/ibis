@@ -30,6 +30,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
+import ibis.compat as compat
 
 
 _table_names = ('t{:d}'.format(i) for i in itertools.count())
@@ -2095,10 +2096,10 @@ class Comparison(BinaryOp, BooleanValueOp):
 
     def _maybe_cast_args(self, left, right):
         # it might not be necessary?
-        with util.ignoring(com.IbisTypeError):
+        with compat.suppress(com.IbisTypeError):
             return left, ir.cast(right, left)
 
-        with util.ignoring(com.IbisTypeError):
+        with compat.suppress(com.IbisTypeError):
             return ir.cast(left, right), right
 
         return left, right

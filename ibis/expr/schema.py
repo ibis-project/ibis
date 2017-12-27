@@ -97,6 +97,10 @@ class Schema(object):
     def from_dict(cls, dictionary):
         return Schema(*zip(*dictionary.items()))
 
+    def to_pandas(self):
+        dtypes = [dtype.to_pandas() for dtype in self.types]
+        return list(zip(self.name, dtypes))
+
     def equals(self, other, cache=None):
         return self.names == other.names and self.types == other.types
 
@@ -158,6 +162,11 @@ class HasSchema(object):
 schema = Dispatcher('schema')
 
 
+@schema.register(Schema)
+def identity(s):
+    return s
+
+
 @schema.register(pd.Series)
 def schema_from_series(s):
     return Schema.from_tuples(s.iteritems())
@@ -201,3 +210,7 @@ def infer_pandas_schema(df):
         pairs.append((column_name, ibis_dtype))
 
     return Schema.from_tuples(pairs)
+
+
+def to_pandas(s):
+    return schema(s).to_pandas()
