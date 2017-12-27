@@ -17,6 +17,7 @@ requirements:
     - numpy >=1.10.0
     - pandas >=0.18.1
     - python
+    - regex
     - setuptools
     - multipledispatch
     - six
@@ -27,6 +28,7 @@ requirements:
     - numpy >=1.10.0
     - pandas >=0.18.1
     - python
+    - regex
     - setuptools
     - multipledispatch
     - six
