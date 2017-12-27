@@ -5,8 +5,6 @@ import pytest
 import ibis
 import ibis.tests.util as tu
 
-import ibis.tests.util as tu
-
 
 def array_test(f):
     @tu.skip_if_invalid_operation

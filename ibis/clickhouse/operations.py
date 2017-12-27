@@ -457,10 +457,10 @@ def _string_join(translator, expr):
 
 def _string_repeat(translator, expr):
     value, times = expr.op().args
-    result = "replaceAll({}, '.*', arrayStringConcat(arrayMap(x -> '\\\\0', range({}))))".format(
-        translator.translate(value),
-        translator.translate(times),
-    )
+    result = (
+        "replaceAll({}, '.*', arrayStringConcat("
+        "arrayMap(x -> '\\\\0', range({}))))"
+    ).format(translator.translate(value), translator.translate(times))
     return result
 
 
