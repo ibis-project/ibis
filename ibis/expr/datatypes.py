@@ -104,6 +104,7 @@ class DataType(object):
         return cast(self, target)
 
     def to_pandas(self):
+        # TODO: move numpy and pandas related conversions under ibis.pandas
         return object
 
     def scalar_type(self):
@@ -1045,7 +1046,7 @@ def from_pandas_tzdtype(value):
 
 @dtype.register(CategoricalDtype)
 def from_pandas_categorical(value):
-    return Category(cardinality=len(value.categories))
+    return Category()
 
 
 @dtype.register(six.string_types)

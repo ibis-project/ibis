@@ -29,7 +29,7 @@ from ibis.expr import schema as sch
     ([pd.Timedelta('1 days'),
       pd.Timedelta('-1 days 2 min 3us'),
       pd.Timedelta('-2 days +23:57:59.999997')], dt.Interval('ns')),
-    # (pd.Categorical(['a', 'b', 'c', 'a']), dt.Category(cardinality=3))
+    (pd.Series(['a', 'b', 'c', 'a']).astype('category'), dt.Category())
 ])
 def test_infer_simple_dataframe(column, expected_dtype):
     df = pd.DataFrame({'col': column})
