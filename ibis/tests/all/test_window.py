@@ -148,6 +148,7 @@ import ibis.tests.util as tu
     ],
 )
 @tu.skip_if_invalid_operation
+@pytest.mark.backend
 def test_window(
     backend, analytic_alltypes, df, con, result_func, expected_func,
 ):

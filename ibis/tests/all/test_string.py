@@ -151,6 +151,7 @@ import ibis.tests.util as tu
     ],
 )
 @tu.skip_if_invalid_operation
+@pytest.mark.backend
 def test_string(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes)
     result = expr.execute()

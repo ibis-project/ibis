@@ -13,6 +13,7 @@ import ibis.tests.util as tu
     ]
 )
 @tu.skip_if_invalid_operation
+@pytest.mark.backend
 def test_distinct_column(backend, alltypes, df, column):
     expr = alltypes[column].distinct()
     result = expr.execute()
