@@ -6,6 +6,7 @@ dependencies:
   - cmake
   - flake8
   - graphviz
+  - requests
   - impyla>=0.13.7
   - multipledispatch
   - numpy=1.12.0

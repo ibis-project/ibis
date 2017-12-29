@@ -20,6 +20,7 @@ import six
 import sys
 import toolz
 import webbrowser
+import collections
 
 from ibis.common import IbisError, RelationError
 import ibis.common as com
