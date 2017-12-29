@@ -30,6 +30,10 @@ import ibis.util as util
 
 class Expr(object):
 
+    """
+    Base expression class
+    """
+
     def _type_display(self):
         return type(self).__name__
 
