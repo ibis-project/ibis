@@ -24,9 +24,10 @@ from six import BytesIO, StringIO, string_types  # noqa: F401
 
 
 PY2 = sys.version_info[0] == 2
+PY3 = not PY2
 
 
-if not PY2:
+if PY3:
     unicode_type = str
 
     def lzip(*x):
