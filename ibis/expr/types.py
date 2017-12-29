@@ -66,8 +66,8 @@ class Expr(object):
         return self.__bool__()
 
     def _repr(self, memo=None):
-        from ibis.expr.format import ExprFormatter
-        return ExprFormatter(self, memo=memo).get_result()
+        from ibis.expr.format import ExprReprFormatter
+        return ExprReprFormatter(self, memo=memo).get_result()
 
     def _repr_png_(self):
         try:
@@ -81,6 +81,19 @@ class Expr(object):
                 # Something may go wrong, and we can't error in the notebook
                 # so fallback to the default text representation.
                 return None
+
+    def _serialize(self, formatter):
+        from ibis.expr.format import ExprJsonFormatter
+        return ExprJsonFormatter(self, memo=formatter.memo).get_raw_result()
+
+    def serialize(self):
+        from ibis.expr.format import ExprJsonFormatter
+        return ExprJsonFormatter(self).get_result()
+
+    @classmethod
+    def deserialize(cls, s):
+        from ibis.expr.format import ExprJsonConstructor
+        return ExprJsonConstructor(s).get_result()
 
     def visualize(self, format='png'):
         """Visualize an expression in the browser as a PNG image.
@@ -292,8 +305,8 @@ class Node(six.with_metaclass(OperationMeta, object)):
 
     def _repr(self, memo=None):
         if memo is None:
-            from ibis.expr.format import FormatMemo
-            memo = FormatMemo()
+            from ibis.expr.format import FormatReprMemo
+            memo = FormatReprMemo()
 
         opname = type(self).__name__
         pprint_args = []
@@ -309,6 +322,14 @@ class Node(six.with_metaclass(OperationMeta, object)):
             pprint_args.append(pp)
 
         return '%s(%s)' % (opname, ', '.join(pprint_args))
+
+    def _serialize(self, formatter, name=None):
+        opname = type(self).__name__.split('.')[-1]
+        return {
+            'module': 'operations',
+            'type': opname,
+            'name': name,
+            'args': formatter.visit_args(self.args)}
 
     def blocks(self):
         # The contents of this node at referentially distinct and may not be
@@ -566,6 +587,12 @@ class Literal(ValueOp):
             type(self).__name__,
             ', '.join(map(repr, self.args))
         )
+
+    def _serialize(self, formatter, name=None):
+        return {'module': 'api',
+                'type': 'literal',
+                'name': name,
+                'args': [self.value]}
 
     def equals(self, other, cache=None):
         return (

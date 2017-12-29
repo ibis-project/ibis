@@ -53,6 +53,21 @@ class TableNode(Node):
     def sort_by(self, expr, sort_exprs):
         return Selection(expr, [], sort_keys=sort_exprs)
 
+    @property
+    def _init_names(self):
+        """ we are normally named the same as our args_names """
+        return self._arg_names
+
+    def _serialize(self, formatter, name=None):
+
+        opname = type(self).__name__
+        return {
+            'module': 'operations',
+            'type': opname,
+            'name': name,
+            'kwargs': formatter.visit_kwargs(self._init_names, self.args)
+            }
+
 
 def find_all_base_tables(expr, memo=None):
     if memo is None:
@@ -85,6 +100,14 @@ class UnboundTable(PhysicalTable):
             name = genname()
         TableNode.__init__(self, [schema, name])
         HasSchema.__init__(self, schema, name=name)
+
+    def _serialize(self, formatter,  name=None):
+        return {'module': 'api',
+                'type': 'table',
+                'name': name,
+                'kwargs': {'name': self.name,
+                           'schema': formatter.visit(self.schema)}
+                }
 
 
 class DatabaseTable(PhysicalTable):
@@ -1715,6 +1738,9 @@ class SelfReference(TableNode, HasSchema):
 class Selection(TableNode, HasSchema):
 
     _arg_names = ['table', 'selections', 'predicates', 'sort_keys']
+
+    # TODO (jeback), why are these different???
+    _init_names = ['table_expr', 'proj_exprs', 'predicates', 'sort_keys']
 
     def __init__(self, table_expr, proj_exprs=None, predicates=None,
                  sort_keys=None):

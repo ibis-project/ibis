@@ -17,7 +17,7 @@ import re
 import ibis
 
 from ibis.expr.types import Expr
-from ibis.expr.format import ExprFormatter
+from ibis.expr.format import ExprReprFormatter
 
 
 def test_format_custom_expr():
@@ -71,7 +71,7 @@ def test_memoize_aggregate_correctly(table):
 
     result = table.aggregate(metrics, by=['g'])
 
-    formatter = ExprFormatter(result)
+    formatter = ExprReprFormatter(result)
     formatted = formatter.get_result()
 
     alias = formatter.memo.get_alias(table)

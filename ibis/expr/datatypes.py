@@ -71,6 +71,15 @@ class Schema(object):
             )
         )
 
+    def _serialize(self, formatter, name=None):
+        return {
+            'module': 'datatypes',
+            'type': 'Schema',
+            'name': name,
+            'kwargs': {'names': self.names,
+                       'types': formatter.visit_args(self.types)}
+            }
+
     def __hash__(self):
         return hash((type(self), tuple(self.names), tuple(self.types)))
 
@@ -227,6 +236,15 @@ class DataType(object):
 
     def __str__(self):
         return self.name.lower()
+
+    def _serialize(self, formatter, name=None):
+        # we are serializing the class of the type
+        return {
+            'module': 'datatypes',
+            'type': str(self),
+            'name': name,
+            'is_class': True,
+            }
 
     @property
     def name(self):
