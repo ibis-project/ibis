@@ -966,7 +966,7 @@ class QueryContext(object):
         self.query = None
 
         self._table_key_memo = {}
-        self.memo = memo or format.FormatMemo()
+        self.memo = memo or format.FormatReprMemo()
 
     def _compile_subquery(self, expr):
         sub_ctx = self.subcontext()
