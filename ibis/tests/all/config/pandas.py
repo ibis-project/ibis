@@ -17,14 +17,14 @@ class Pandas(BackendTestConfiguration):
 
     @classmethod
     def connect(cls, backend):
-        filename = os.path.join(cls.data_directory, 'functional_alltypes.csv')
+        filename = cls.data_directory / 'functional_alltypes.csv'
 
         if not os.path.exists(filename):
             pytest.skip('test data set functional_alltypes not found')
 
         return backend.connect({
             'functional_alltypes': pd.read_csv(
-                filename,
+                str(filename),
                 index_col=None,
                 dtype={
                     'string_col': str,
