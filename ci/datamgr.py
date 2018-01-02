@@ -101,7 +101,7 @@ def download(base_url, directory, name):
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def parquet(tables, data_directory, **params):
     try:
-        import pyarrow
+        import pyarrow  # noqa: F401
     except ImportError:
         return  # no conda package for python 3.4
 
