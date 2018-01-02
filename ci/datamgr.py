@@ -93,7 +93,7 @@ def download(base_url, directory, name):
     click.echo('Extracting archive to {} ...'.format(directory))
     if path.suffix in ('.tar', '.gz', '.bz2', '.xz'):
         with tarfile.open(str(path), mode='r|gz') as f:
-            f.extractall(path=directory)
+            f.extractall(path=str(directory))
 
 
 @cli.command()
