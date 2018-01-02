@@ -93,6 +93,13 @@ integer_types = six.integer_types + (np.integer,)
 
 
 try:
+    import pathlib
+except ImportError:
+    # py2 compat
+    import pathlib2 as pathlib
+
+
+try:
     from contextlib import suppress
 except ImportError:
     from contextlib import contextmanager

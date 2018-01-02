@@ -48,8 +48,9 @@ test_script:
 
   - "flake8"
 
-  - "python ci\\datamgr.py download"
-  - "python ci\\datamgr.py sqlite"
-  - "python ci\\datamgr.py postgres"
+  - "python testing\\datamgr.py download"
+  - "python testing\\datamgr.py parquet"
+  - "python testing\\datamgr.py sqlite"
+  - "python testing\\datamgr.py postgres"
 
   - "pytest --tb=short -m \"not backend and not clickhouse and not impala and not hdfs and not bigquery\" -rs ibis"

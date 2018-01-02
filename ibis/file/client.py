@@ -1,13 +1,7 @@
 import ibis
 import ibis.expr.types as ir
 from ibis.pandas.core import execute
-
-try:
-    import pathlib
-except ImportError:
-
-    # py2 compat
-    import pathlib2 as pathlib
+from ibis.compat import pathlib
 
 
 class FileClient(ibis.client.Client):

@@ -13,6 +13,17 @@ import six
 import pytest
 
 import pandas.util.testing as tm
+from ibis.compat import pathlib
+
+
+def test_data_directory():
+    current = pathlib.Path(__file__).absolute()
+    root = current.parents[4]
+
+    default = root / 'testing' / 'ibis-testing-data'
+    datadir = os.environ.get('IBIS_TEST_DATA_DIRECTORY', default)
+
+    return pathlib.Path(datadir)
 
 
 def skip_if_dependencies_not_installed(method):
@@ -25,6 +36,8 @@ def skip_if_dependencies_not_installed(method):
 
 
 class BackendTestConfiguration(six.with_metaclass(abc.ABCMeta)):
+    data_directory = test_data_directory()
+
     supports_arrays = True
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = True
