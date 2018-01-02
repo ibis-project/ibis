@@ -100,6 +100,11 @@ def download(base_url, directory, name):
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def parquet(tables, data_directory, **params):
+    try:
+        import pyarrow
+    except ImportError:
+        return  # no conda package for python 3.4
+
     data_directory = Path(data_directory)
     for table, df in read_tables(tables, data_directory):
         target = data_directory / '{}.parquet'.format(table)

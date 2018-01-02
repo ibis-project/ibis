@@ -15,7 +15,6 @@ dependencies:
   - pytest
   - python=3.4
   - python-graphviz
-  - pyarrow>=0.6.0
   - regex
   - six
   - sqlalchemy>=1.0.0,<1.1.15
