@@ -2,7 +2,6 @@
 
 import os
 import tarfile
-
 import click
 
 import numpy as np

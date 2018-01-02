@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import os
 import pytest
 
 from ibis.tests.all.config.backendtestconfiguration import (
@@ -24,4 +23,3 @@ class Parquet(BackendTestConfiguration):
                         'in test data directory')
 
         return backend.connect(cls.data_directory)
-
