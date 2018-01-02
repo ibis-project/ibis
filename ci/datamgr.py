@@ -55,7 +55,7 @@ def read_tables(names, data_directory):
     for name in names:
         path = data_directory / '{}.csv'.format(name)
         click.echo(path)
-        df = pd.read_csv(path, index_col=None, header=0, dtype=dtype)
+        df = pd.read_csv(str(path), index_col=None, header=0, dtype=dtype)
         yield (name, df)
 
 

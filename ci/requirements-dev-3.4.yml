@@ -10,7 +10,7 @@ dependencies:
   - impyla>=0.13.7
   - multipledispatch
   - numpy=1.11.0
-  - pandas=0.19.0
+  - pandas
   - psycopg2
   - pytest
   - python=3.4

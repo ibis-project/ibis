@@ -12,7 +12,7 @@ dependencies:
   - mock
   - multipledispatch
   - numpy=1.11.*
-  - pandas=0.18.1
+  - pandas
   - psycopg2
   - pytest
   - python=2.7
