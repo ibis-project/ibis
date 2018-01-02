@@ -113,7 +113,7 @@ def parquet(tables, data_directory, **params):
 @click.option('-p', '--password', default='postgres')
 @click.option('-D', '--database', default='ibis_testing')
 @click.option('-S', '--schema', type=click.File('rt'),
-              default=SCRIPT_DIR / 'schema' / 'postgresql.sql')
+              default=str(SCRIPT_DIR / 'schema' / 'postgresql.sql'))
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def postgres(schema, tables, data_directory, **params):
@@ -140,18 +140,18 @@ def postgres(schema, tables, data_directory, **params):
 @cli.command()
 @click.option('-D', '--database', default=SCRIPT_DIR / 'ibis_testing.db')
 @click.option('-S', '--schema', type=click.File('rt'),
-              default=SCRIPT_DIR / 'schema' / 'sqlite.sql')
+              default=str(SCRIPT_DIR / 'schema' / 'sqlite.sql'))
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def sqlite(database, schema, tables, data_directory, **params):
     database = Path(database)
     data_directory = Path(data_directory)
     click.echo('Initializing SQLite...')
-    if os.path.exists(database):
-        try:
-            os.remove(database)
-        except OSError:
-            pass
+
+    try:
+        database.unlink()
+    except OSError:
+        pass
 
     params['database'] = database
     engine = init_database('sqlite', params, schema, recreate=False)
@@ -165,7 +165,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-p', '--password', default='')
 @click.option('-D', '--database', default='ibis_testing')
 @click.option('-S', '--schema', type=click.File('rt'),
-              default=SCRIPT_DIR / 'schema' / 'clickhouse.sql')
+              default=str(SCRIPT_DIR / 'schema' / 'clickhouse.sql'))
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def clickhouse(schema, tables, data_directory, **params):
