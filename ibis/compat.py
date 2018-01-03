@@ -93,10 +93,10 @@ integer_types = six.integer_types + (np.integer,)
 
 
 try:
-    import pathlib  # noqa: F401
+    from pathlib import Path  # noqa: F401
 except ImportError:
     # py2 compat
-    import pathlib2 as pathlib  # noqa: F401
+    from pathlib2 import Path  # noqa: F401
 
 
 try:

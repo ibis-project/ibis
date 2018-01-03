@@ -1,5 +1,4 @@
 import operator
-
 import pytest
 
 from pytest import param
