@@ -51,7 +51,9 @@ def init_database(driver, params, schema=None, recreate=True, **kwargs):
 
 
 def read_tables(names, data_directory):
-    dtype = {'bool_col': np.bool_}
+    dtype = {'bool_col': bool,
+             'string_col': str}
+
     for name in names:
         path = data_directory / '{}.csv'.format(name)
         click.echo(path)
