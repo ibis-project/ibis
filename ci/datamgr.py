@@ -5,8 +5,6 @@ import tarfile
 import click
 
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 import sqlalchemy as sa
 
 from toolz import dissoc
@@ -104,7 +102,8 @@ def download(base_url, directory, name):
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def parquet(tables, data_directory, **params):
     try:
-        import pyarrow  # noqa: F401
+        import pyarrow as pa  # noqa: F401
+        import pyarrow.parquet as pq  # noqa: F401
     except ImportError:
         return  # no conda package for python 3.4
 
