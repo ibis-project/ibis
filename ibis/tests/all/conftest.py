@@ -24,12 +24,12 @@ def data_directory():
 
 
 @pytest.fixture(params=[
-    Csv,
-    Parquet,
-    SQLite,
-    Postgres,
-    Clickhouse,
-    Impala
+    pytest.param(Csv, marks=pytest.mark.csv),
+    pytest.param(Parquet, marks=pytest.mark.parquet),
+    pytest.param(SQLite, marks=pytest.mark.sqlite),
+    pytest.param(Postgres, marks=pytest.mark.postgres),
+    pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
+    pytest.param(Impala, marks=pytest.mark.impala)
 ], scope='session')
 def backend(request, data_directory):
     return request.param(data_directory)

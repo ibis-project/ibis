@@ -52,5 +52,4 @@ test_script:
   - "python testing\\datamgr.py parquet"
   - "python testing\\datamgr.py sqlite"
   - "python testing\\datamgr.py postgres"
-
   - "pytest --tb=short -m \"not backend and not clickhouse and not impala and not hdfs and not bigquery\" -rs ibis"
