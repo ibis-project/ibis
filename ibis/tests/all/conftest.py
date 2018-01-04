@@ -51,8 +51,8 @@ def analytic_alltypes(alltypes):
 
 
 @pytest.fixture(scope='session')
-def df(alltypes):
-    return alltypes.execute()
+def df(backend):
+    return backend.functional_alltypes_df()
 
 
 # @pytest.fixture(scope='session')

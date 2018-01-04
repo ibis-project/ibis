@@ -48,6 +48,9 @@ class Backend(object):
     def functional_alltypes(self):
         return self.connection.database().functional_alltypes
 
+    def functional_alltypes_df(self):
+        return self.functional_alltypes().execute()
+
 
 class UnorderedSeriesComparator(object):
 
@@ -113,6 +116,10 @@ class Postgres(Backend):
                                   os.environ.get('PGDATABASE', 'ibis_testing'))
         return ibis.postgres.connect(host=host, user=user, password=password,
                                      database=database)
+
+    def functional_alltypes_df(self):
+        df = super(Postgres, self).functional_alltypes_df()
+        return df.assign(string_col=df.string_col.str.encode('utf-8'))
 
 
 class Clickhouse(Backend):
