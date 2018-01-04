@@ -117,9 +117,9 @@ class Postgres(Backend):
         return ibis.postgres.connect(host=host, user=user, password=password,
                                      database=database)
 
-    def functional_alltypes_df(self):
-        df = super(Postgres, self).functional_alltypes_df()
-        return df.assign(string_col=df.string_col.str.encode('utf-8'))
+    # def functional_alltypes_df(self):
+    #     df = super(Postgres, self).functional_alltypes_df()
+    #     return df.assign(string_col=df.string_col.str.encode('utf-8'))
 
 
 class Clickhouse(Backend):
