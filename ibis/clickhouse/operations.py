@@ -389,7 +389,7 @@ def _truncate(translator, expr):
     try:
         converter = converters[unit]
     except KeyError:
-        raise com.TranslationError('Unsupported truncate unit {0}'.format(unit))
+        raise com.TranslationError('Unsupported truncate unit {}'.format(unit))
 
     return _call(translator, converter, arg)
 
