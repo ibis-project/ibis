@@ -216,9 +216,6 @@ def time(value):
     --------
     result : TimeScalar
     """
-    if PY2:
-        raise ValueError('time support is not enabled on python 2')
-
     if isinstance(value, six.string_types):
         value = to_time(value)
     return ir.TimeScalar(ir.literal(value).op())
