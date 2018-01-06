@@ -383,7 +383,8 @@ def _truncate(translator, expr):
         'd': 'toDate',
         'h': 'toStartOfHour',
         'w': 'toMonday',
-        'm': 'toStartOfMinute'
+        'm': 'toStartOfMinute',
+        's': 'toDateTime'
     }
 
     try:
@@ -561,6 +562,8 @@ _operation_registry = {
     ops.ParseURL: _parse_url,
 
     # Timestamp operations
+    ops.Date: unary('toDate'),
+
     ops.TimestampNow: lambda *args: 'now()',
     ops.TimestampTruncate: _truncate,
 

@@ -34,12 +34,19 @@ _IBIS_TO_PANDAS_DTYPE = {
     dt.Binary: bytes,
 
     dt.Date: 'datetime64[D]',
+    dt.Timestamp: 'datetime64[ns]',
 }
 
 
 def ibis_schema_to_pandas_dtypes(schema):
-    items = zip(schema.names, schema.types)
-    return {name: _IBIS_TO_PANDAS_DTYPE[type(t)] for name, t in items}
+    dtypes, dates = {}, []
+    for name, ibis_dtype in zip(schema.names, schema.types):
+        if isinstance(ibis_dtype, (dt.Date, dt.Timestamp)):
+            dates.append(name)
+        else:
+            dtypes[name] = _IBIS_TO_PANDAS_DTYPE[type(ibis_dtype)]
+
+    return dtypes, dates
 
 
 def connect(path):
@@ -83,9 +90,10 @@ class CSVClient(FileClient):
 
         dtype = None
         if schema is not None:
-            dtype = ibis_schema_to_pandas_dtypes(schema)
+            dtype, dates = ibis_schema_to_pandas_dtypes(schema)
 
-        df = pd.read_csv(str(f), header=0, nrows=10, dtype=dtype)
+        df = pd.read_csv(str(f), header=0, nrows=10, dtype=dtype,
+                         parse_dates=dates)
         schema = pandas_dtypes_to_ibis_schema(df, {})
 
         t = CSVTable(name, schema, self).to_expr()
@@ -110,8 +118,8 @@ def csv_pre_execute_table(op, client, scope, **kwargs):
         return {}
 
     path = client.dictionary[op.name]
-    schema = ibis_schema_to_pandas_dtypes(op.schema)
-    df = pd.read_csv(str(path), header=0, dtype=schema)
+    schema, dates = ibis_schema_to_pandas_dtypes(op.schema)
+    df = pd.read_csv(str(path), header=0, dtype=schema, parse_dates=dates)
     return {op: df}
 
 
@@ -129,7 +137,7 @@ def csv_pre_execute(op, client, scope, **kwargs):
 
             if op.selections:
 
-                schema = ibis_schema_to_pandas_dtypes(table.schema)
+                schema, dates = ibis_schema_to_pandas_dtypes(table.schema)
                 header = pd.read_csv(
                     str(path), header=0, nrows=1, schema=schema
                 )
@@ -140,6 +148,7 @@ def csv_pre_execute(op, client, scope, **kwargs):
                 if len(pd.Index(usecols) & header.columns) != len(usecols):
                     usecols = None
 
-            df = pd.read_csv(str(path), usecols=usecols, header=0)
+            df = pd.read_csv(str(path), usecols=usecols, header=0,
+                             parse_dates=dates)
             ops[table] = df
     return ops

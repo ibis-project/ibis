@@ -1,11 +1,13 @@
 import os
 import pytest
+import pandas as pd
 import pandas.util.testing as tm
 
 from contextlib import contextmanager
 
 import ibis
 import ibis.common as com
+import ibis.expr.operations as ops
 from ibis.compat import Path
 from ibis.impala.tests.common import IbisTestEnv as ImpalaEnv
 
@@ -20,6 +22,10 @@ class Backend(object):
 
     def __init__(self, data_directory):
         self.connection = self.connect(data_directory)
+
+    @property
+    def name(self):
+        return str(self).lower()
 
     def __str__(self):
         return self.__class__.__name__
@@ -74,8 +80,10 @@ class Csv(Backend):
         schema = ibis.schema([
             ('bool_col', 'boolean'),
             ('string_col', 'string'),
+            ('timestamp_col', 'timestamp')
         ])
         return self.connection.table('functional_alltypes', schema=schema)
+        # return table.mutate(date_col=table.timestamp_col.date())
 
 
 class Parquet(Backend):
@@ -86,6 +94,30 @@ class Parquet(Backend):
         if not filename.exists():
             pytest.skip('test data set {} not found'.format(filename))
         return ibis.parquet.connect(data_directory)
+
+
+class Pandas(Backend):
+    check_names = False
+    additional_skipped_operations = frozenset({ops.StringSQLLike})
+
+    def connect(self, data_directory):
+        filename = data_directory / 'functional_alltypes.csv'
+        if not filename.exists():
+            pytest.skip('test data set {} not found'.format(filename))
+
+        return ibis.pandas.connect({
+            'functional_alltypes': pd.read_csv(
+                filename,
+                index_col=None,
+                dtype={
+                    'string_col': str,
+                    'bool_col': bool,
+                },
+                parse_dates=[
+                    'timestamp_col'
+                ]
+            )
+        })
 
 
 class SQLite(Backend):
@@ -138,6 +170,7 @@ class Clickhouse(Backend):
     def functional_alltypes(self):
         table = self.connection.database().functional_alltypes
         return table.mutate(bool_col=table.bool_col == 1)
+        # date_col=table.timestamp_col.date())
 
 
 class Impala(UnorderedSeriesComparator, Backend):

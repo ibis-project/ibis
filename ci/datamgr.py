@@ -50,14 +50,19 @@ def init_database(driver, params, schema=None, recreate=True, **kwargs):
 
 
 def read_tables(names, data_directory):
-    dtype = {'bool_col': bool,
-             'string_col': str,
-             'date_string_col': str}
-
     for name in names:
         path = data_directory / '{}.csv'.format(name)
         click.echo(path)
-        df = pd.read_csv(str(path), index_col=None, header=0, dtype=dtype)
+        df = pd.read_csv(str(path), index_col=None, header=0)
+
+        if name == 'functional_alltypes':
+            df['bool_col'] = df['bool_col'].astype(bool)
+            # string_col is actually dt.int64
+            df['string_col'] = df['string_col'].astype(str)
+            df['date_string_col'] = df['date_string_col'].astype(str)
+            # timestamp_col has object dtype
+            df['timestamp_col'] = pd.to_datetime(df['timestamp_col'])
+
         yield (name, df)
 
 
@@ -112,6 +117,7 @@ def parquet(tables, data_directory, **params):
     for table, df in read_tables(tables, data_directory):
         schema = pa.schema([
             pa.field('string_col', pa.string()),
+            # pa.field('timestamp_col', pa.timestamp('s')),
             pa.field('date_string_col', pa.string())
         ])
         arrow_table = pa.Table.from_pandas(df, schema=schema)
@@ -187,12 +193,7 @@ def clickhouse(schema, tables, data_directory, **params):
     engine = init_database('clickhouse+native', params, schema)
 
     for table, df in read_tables(tables, data_directory):
-        if table == 'functional_alltypes':
-            # string_col is actually dt.int64
-            df['string_col'] = df['string_col'].astype(str)
-            # timestamp_col has object dtype
-            df['timestamp_col'] = df['timestamp_col'].astype('datetime64[s]')
-        elif table == 'batting':
+        if table == 'batting':
             # float nan problem
             cols = df.select_dtypes([float]).columns
             df[cols] = df[cols].fillna(0).astype(int)

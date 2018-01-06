@@ -2,11 +2,12 @@ import os
 import pytest
 
 from ibis.compat import Path
-from ibis.tests.backends import (Csv, Parquet, SQLite, Postgres, Clickhouse,
+from ibis.tests.backends import (Csv, Parquet, Pandas,
+                                 SQLite, Postgres, Clickhouse,
                                  Impala)
 
 
-pytest.mark.backend()
+pytestmark = pytest.mark.backend
 
 
 @pytest.fixture(scope='session')
@@ -26,6 +27,7 @@ def data_directory():
 @pytest.fixture(params=[
     pytest.param(Csv, marks=pytest.mark.csv),
     pytest.param(Parquet, marks=pytest.mark.parquet),
+    pytest.param(Pandas, marks=pytest.mark.pandas),
     pytest.param(SQLite, marks=pytest.mark.sqlite),
     pytest.param(Postgres, marks=pytest.mark.postgres),
     pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
