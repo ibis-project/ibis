@@ -37,7 +37,7 @@ def test_empty_schema():
 def test_columns(con):
     t = con.table('alltypes')
     result = t.columns
-    expected = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i']
+    expected = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k']
     assert result == expected
 
 

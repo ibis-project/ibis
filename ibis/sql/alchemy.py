@@ -59,6 +59,7 @@ _ibis_type_to_sqla = {
     dt.String: sa.Text,
 
     dt.Date: sa.Date,
+    dt.Time: sa.Time,
 
     dt.Decimal: sa.NUMERIC,
     dt.Null: sa.types.NullType,
@@ -86,6 +87,7 @@ _sqla_type_mapping = {
     sa.Binary: dt.Binary,
     sa.DATE: dt.Date,
     sa.Date: dt.Date,
+    sa.Time: dt.Time,
     sa.types.NullType: dt.Null,
 }
 

@@ -673,17 +673,19 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+_impala_unit_names = {
+    'M': 'MONTH',
+    'w': 'W',
+    'd': 'J',
+    'h': 'HH',
+    'm': 'MI'
+}
+
+
 def _truncate(translator, expr):
     op = expr.op()
 
     arg = translator.translate(op.args[0])
-
-    _impala_unit_names = {
-        'M': 'MONTH',
-        'D': 'J',
-        'J': 'D',
-        'H': 'HH'
-    }
 
     unit = op.args[1]
     unit = _impala_unit_names.get(unit, unit)
@@ -1005,7 +1007,7 @@ _operation_registry = {
     ops.ExtractMinute: _extract_field('minute'),
     ops.ExtractSecond: _extract_field('second'),
     ops.ExtractMillisecond: _extract_field('millisecond'),
-    ops.Truncate: _truncate,
+    ops.TimestampTruncate: _truncate,
 
     # Other operations
     ops.E: lambda *args: 'e()',

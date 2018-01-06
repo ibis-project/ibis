@@ -435,3 +435,55 @@ def test_interval_column_name(table):
     c = table.i
     expr = (c - c).name('foo')
     assert expr._name == 'foo'
+
+
+@pytest.mark.parametrize('operand', [
+    lambda t: api.timestamp(datetime.datetime.now()),
+    lambda t: t.i
+], ids=[
+    'column',
+    'literal'
+])
+@pytest.mark.parametrize('unit', [
+    'Y', 'y', 'year', 'YEAR', 'YYYY', 'SYYYY', 'YYY', 'YY',
+    'Q', 'q', 'quarter', 'QUARTER',
+    'M', 'month', 'MONTH',
+    'w', 'W', 'week', 'WEEK',
+    'd', 'J', 'day', 'DAY',
+    'h', 'H', 'HH24', 'hour', 'HOUR',
+    'm', 'MI', 'minute', 'MINUTE',
+    's', 'second', 'SECOND',
+    'ms', 'millisecond', 'MILLISECOND',
+    'us', 'microsecond', 'MICROSECOND',
+    'ns', 'nanosecond', 'NANOSECOND'
+])
+def test_timestamp_truncate(table, operand, unit):
+    expr = operand(table).truncate(unit)
+    assert isinstance(expr, ir.TimestampValue)
+    assert isinstance(expr.op(), ops.TimestampTruncate)
+
+
+@pytest.mark.parametrize('operand', [
+    lambda t: api.date('2018-01-01'),
+    lambda t: t.j,
+])
+@pytest.mark.parametrize('unit', [
+    'Y', 'Q', 'M', 'd', 'w',
+])
+def test_date_truncate(table, operand, unit):
+    expr = operand(table).truncate(unit)
+    assert isinstance(expr, ir.DateValue)
+    assert isinstance(expr.op(), ops.DateTruncate)
+
+
+@pytest.mark.parametrize('operand', [
+    lambda t: api.time('18:00'),
+    lambda t: t.k
+])
+@pytest.mark.parametrize('unit', [
+    'h', 'm', 's', 'ms', 'us', 'ns'
+])
+def test_time_truncate(table, operand, unit):
+    expr = operand(table).truncate(unit)
+    assert isinstance(expr, ir.TimeValue)
+    assert isinstance(expr.op(), ops.TimeTruncate)

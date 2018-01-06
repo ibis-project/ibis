@@ -2328,74 +2328,110 @@ class TimestampUnaryOp(UnaryOp):
     input_type = [rules.timestamp]
 
 
-_truncate_units = [
-    'Y', 'Q', 'M', 'D', 'J', 'W', 'H', 'MI'
-]
+_truncate_units = dict(
+    Y='Y',
+    y='Y',
+    year='Y',
+    YEAR='Y',
+    YYYY='Y',
+    SYYYY='Y',
+    YYY='Y',
+    YY='Y',
 
-_truncate_unit_aliases = {
-    # year
-    'YYYY': 'Y',
-    'SYYYY': 'Y',
-    'YEAR': 'Y',
-    'YYY': 'Y',
-    'YY': 'Y',
+    Q='Q',
+    q='Q',
+    quarter='Q',
+    QUARTER='Q',
 
-    # month
-    'MONTH': 'M',
-    'MON': 'M',
+    M='M',
+    month='M',
+    MONTH='M',
 
-    # week
-    'WW': 'W',
+    w='w',
+    W='w',
+    week='w',
+    WEEK='w',
 
-    # day of month
+    d='d',
+    J='d',
+    day='d',
+    DAY='d',
 
-    # starting day of week
+    h='h',
+    H='h',
+    HH24='h',
+    hour='h',
+    HOUR='h',
 
-    # hour
-    'HOUR': 'H',
-    'HH24': 'H',
+    m='m',
+    MI='m',
+    minute='m',
+    MINUTE='m',
 
-    # minute
-    'MINUTE': 'MI',
+    s='s',
+    second='s',
+    SECOND='s',
 
-    # second
+    ms='ms',
+    millisecond='ms',
+    MILLISECOND='ms',
 
-    # millisecond
+    us='us',
+    microsecond='ms',
+    MICROSECOND='ms',
 
-    # microsecond
-}
+    ns='ns',
+    nanosecond='ns',
+    NANOSECOND='ns',
+)
 
 
-def _truncate_unit_validate(unit):
-    orig_unit = unit
-    unit = unit.upper()
-
+def _truncate_unit_validate(orig_unit):
     # TODO: truncate autocompleter
 
-    unit = _truncate_unit_aliases.get(unit, unit)
-    valid_units = set(_truncate_units)
-
-    if unit not in valid_units:
+    if orig_unit not in _truncate_units:
+        valid_units = set(_truncate_units.keys())
         raise com.IbisInputError('Passed unit {0} was not one of'
-                                 ' {1}'.format(orig_unit,
-                                               repr(valid_units)))
+                                 ' {1}'.format(orig_unit, repr(valid_units)))
 
-    return unit
+    return _truncate_units[orig_unit]
 
 
-class Truncate(ValueOp):
+class TimestampTruncate(ValueOp):
 
     input_type = [
         rules.timestamp,
-        rules.string_options(_truncate_units, name='unit',
-                             validator=_truncate_unit_validate)]
-    output_type = rules.shape_like_arg(0, 'timestamp')
+        rules.string_options(['Y', 'Q', 'M', 'w', 'd',
+                              'h', 'm', 's', 'ms', 'us', 'ns'], name='unit',
+                             validator=_truncate_unit_validate)
+    ]
+    output_type = rules.shape_like_arg(0, dt.timestamp)
+
+
+class DateTruncate(ValueOp):
+
+    input_type = [
+        rules.date,
+        rules.string_options(['Y', 'Q', 'M', 'w', 'd'], name='unit',
+                             validator=_truncate_unit_validate)
+    ]
+    output_type = rules.shape_like_arg(0, dt.date)
+
+
+class TimeTruncate(ValueOp):
+
+    input_type = [
+        rules.time,
+        rules.string_options(['h', 'm', 's', 'ms', 'us', 'ns'], name='unit',
+                             validator=_truncate_unit_validate)
+    ]
+    output_type = rules.shape_like_arg(0, dt.time)
 
 
 class Strftime(ValueOp):
 
     input_type = [rules.temporal, rules.string(name='format_str')]
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rules.shape_like_arg(0, dt.string)
 
 
 class ExtractTemporalField(TemporalUnaryOp):

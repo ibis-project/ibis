@@ -1207,9 +1207,11 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             (i64.to_timestamp(), pd.to_datetime(5 * 10 ** 8, unit='s')),
 
             (stamp.truncate('y'), pd.Timestamp('2009-01-01')),
-            (stamp.truncate('m'), pd.Timestamp('2009-05-01')),
+            (stamp.truncate('M'), pd.Timestamp('2009-05-01')),
+            (stamp.truncate('month'), pd.Timestamp('2009-05-01')),
             (stamp.truncate('d'), pd.Timestamp('2009-05-17')),
             (stamp.truncate('h'), pd.Timestamp('2009-05-17 12:00')),
+            (stamp.truncate('m'), pd.Timestamp('2009-05-17 12:34')),
             (stamp.truncate('minute'), pd.Timestamp('2009-05-17 12:34'))
         ]
 

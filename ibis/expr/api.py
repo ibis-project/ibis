@@ -2022,17 +2022,21 @@ def _timestamp_truncate(arg, unit):
     unit : string, one of below table
       'Y': year
       'Q': quarter
-      'M': month
-      'D': day
-      'W': week
-      'H': hour
-      'MI': minute
+      'm': month
+      'd': day
+      'w': week
+      'h': hour
+      'm': minute
+      's': second
+      'ms': millisecond
+      'us': microsecond
+      'ns': nanosecond
 
     Returns
     -------
     truncated : timestamp
     """
-    return _ops.Truncate(arg, unit).to_expr()
+    return _ops.TimestampTruncate(arg, unit).to_expr()
 
 
 def _timestamp_strftime(arg, format_str):
@@ -2110,6 +2114,58 @@ _timestamp_value_methods = dict(
 )
 
 
+def _timestamp_truncate(arg, unit):
+    """
+    Zero out smaller-size units beyond indicated unit. Commonly used for time
+    series resampling.
+
+    Parameters
+    ----------
+    unit : string, one of below table
+      'Y': year
+      'Q': quarter
+      'm': month
+      'd': day
+      'w': week
+      'h': hour
+      'm': minute
+      's': second
+      'ms': millisecond
+      'us': microsecond
+      'ns': nanosecond
+
+    Returns
+    -------
+    truncated : timestamp
+    """
+    return _ops.TimestampTruncate(arg, unit).to_expr()
+
+
+# ---------------------------------------------------------------------
+# Date API
+
+
+def _date_truncate(arg, unit):
+    """
+    Zero out smaller-size units beyond indicated unit. Commonly used for time
+    series resampling.
+
+    Parameters
+    ----------
+    unit : string, one of below table
+      'Y': year
+      'Q': quarter
+      'm': month
+      'd': day
+      'w': week
+
+    Returns
+    -------
+    truncated : date
+    """
+    return _ops.DateTruncate(arg, unit).to_expr()
+
+
 _date_sub = _binop_expr('__sub__', _ops.DateSubtract)
 _date_add = _binop_expr('__add__', _ops.DateAdd)
 
@@ -2118,6 +2174,8 @@ _date_value_methods = dict(
     year=_extract_field('year', _ops.ExtractYear),
     month=_extract_field('month', _ops.ExtractMonth),
     day=_extract_field('day', _ops.ExtractDay),
+
+    truncate=_date_truncate,
 
     __sub__=_date_sub,
     sub=_date_sub,
@@ -2246,12 +2304,36 @@ def between_time(arg, lower, upper, timezone=None):
     return op.to_expr()
 
 
+def _time_truncate(arg, unit):
+    """
+    Zero out smaller-size units beyond indicated unit. Commonly used for time
+    series resampling.
+
+    Parameters
+    ----------
+    unit : string, one of below table
+      'h': hour
+      'm': minute
+      's': second
+      'ms': millisecond
+      'us': microsecond
+      'ns': nanosecond
+
+    Returns
+    -------
+    truncated : time
+    """
+    return _ops.TimeTruncate(arg, unit).to_expr()
+
+
 _time_sub = _binop_expr('__sub__', _ops.TimeSubtract)
 _time_add = _binop_expr('__add__', _ops.TimeAdd)
 
 
 _time_value_methods = dict(
     between=between_time,
+    truncate=_time_truncate,
+
     __sub__=_time_sub,
     sub=_time_sub,
 

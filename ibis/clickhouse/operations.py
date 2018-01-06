@@ -380,16 +380,16 @@ def _truncate(translator, expr):
     converters = {
         'Y': 'toStartOfYear',
         'M': 'toStartOfMonth',
-        'D': 'toDate',
-        'H': 'toStartOfHour',
-        'W': 'toMonday',
-        'MI': 'toStartOfMinute'
+        'd': 'toDate',
+        'h': 'toStartOfHour',
+        'w': 'toMonday',
+        'm': 'toStartOfMinute'
     }
 
     try:
         converter = converters[unit]
     except KeyError:
-        raise com.TranslationError('Unsupported concat unit {0}'.format(unit))
+        raise com.TranslationError('Unsupported truncate unit {0}'.format(unit))
 
     return _call(translator, converter, arg)
 
@@ -562,13 +562,14 @@ _operation_registry = {
 
     # Timestamp operations
     ops.TimestampNow: lambda *args: 'now()',
+    ops.TimestampTruncate: _truncate,
+
     ops.ExtractYear: unary('toYear'),
     ops.ExtractMonth: unary('toMonth'),
     ops.ExtractDay: unary('toDayOfMonth'),
     ops.ExtractHour: unary('toHour'),
     ops.ExtractMinute: unary('toMinute'),
     ops.ExtractSecond: unary('toSecond'),
-    ops.Truncate: _truncate,
 
     # Other operations
     ops.E: lambda *args: 'e()',
