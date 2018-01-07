@@ -1012,6 +1012,7 @@ _operation_registry = {
     ops.ParseURL: _parse_url,
 
     # Timestamp operations
+    ops.Date: unary('to_date'),
     ops.TimestampNow: lambda *args: 'now()',
     ops.ExtractYear: _extract_field('year'),
     ops.ExtractMonth: _extract_field('month'),
@@ -1021,6 +1022,7 @@ _operation_registry = {
     ops.ExtractSecond: _extract_field('second'),
     ops.ExtractMillisecond: _extract_field('millisecond'),
     ops.TimestampTruncate: _truncate,
+    ops.DateTruncate: _truncate,
 
     # Other operations
     ops.E: lambda *args: 'e()',
