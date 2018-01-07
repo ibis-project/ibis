@@ -55,98 +55,15 @@ def test_reduction_invalid_where(con, alltypes, reduction):
         fn(alltypes.double_col)
 
 
-# @pytest.mark.parametrize(
-#     ('func', 'pandas_func'),
-#     [
-#         # tier and histogram
-#         (
-#             lambda d: d.bucket([0, 10, 25, 50, 100]),
-#             lambda s: pd.cut(
-#                 s, [0, 10, 25, 50, 100], right=False, labels=False,
-#             )
-#         ),
-#         (
-#             lambda d: d.bucket([0, 10, 25, 50], include_over=True),
-#             lambda s: pd.cut(
-#                 s, [0, 10, 25, 50, np.inf], right=False, labels=False
-#             )
-#         ),
-#         (
-#             lambda d: d.bucket([0, 10, 25, 50], close_extreme=False),
-#             lambda s: pd.cut(s, [0, 10, 25, 50], right=False, labels=False),
-#         ),
-#         (
-#             lambda d: d.bucket(
-#                 [0, 10, 25, 50], closed='right', close_extreme=False
-#             ),
-#             lambda s: pd.cut(
-#                 s, [0, 10, 25, 50],
-#                 include_lowest=False,
-#                 right=True,
-#                 labels=False,
-#             )
-#         ),
-#         (
-#             lambda d: d.bucket([10, 25, 50, 100], include_under=True),
-#             lambda s: pd.cut(
-#                 s, [0, 10, 25, 50, 100], right=False, labels=False
-#             ),
-#         ),
-#     ]
-# )
-# def test_bucket(alltypes, df, func, pandas_func):
-#     expr = func(alltypes.double_col)
-#     result = expr.execute()
-#     expected = pandas_func(df.double_col)
-#     tm.assert_series_equal(result, expected, check_names=False)
-
-
-# def test_category_label(alltypes, df):
-#     t = alltypes
-#     d = t.double_col
-
-#     bins = [0, 10, 25, 50, 100]
-#     labels = ['a', 'b', 'c', 'd']
-#     bucket = d.bucket(bins)
-#     expr = bucket.label(labels)
-#     result = expr.execute().astype('category', ordered=True)
-#     result.name = 'double_col'
-
-#     expected = pd.cut(df.double_col, bins, labels=labels, right=False)
-
-#     tm.assert_series_equal(result, expected)
-
-
 @pytest.mark.parametrize(('func', 'pandas_func'), [
     (
         lambda t, cond: t.bool_col.count(),
         lambda df, cond: df.bool_col.count(),
     ),
-    # (
-    #     lambda t, cond: t.bool_col.nunique(),
-    #     lambda df, cond: df.bool_col.nunique(),
-    # ),
     (
         lambda t, cond: t.bool_col.approx_nunique(),
         lambda df, cond: df.bool_col.nunique(),
     ),
-    # group_concat
-    # (
-    #     lambda t, cond: t.bool_col.any(),
-    #     lambda df, cond: df.bool_col.any(),
-    # ),
-    # (
-    #     lambda t, cond: t.bool_col.all(),
-    #     lambda df, cond: df.bool_col.all(),
-    # ),
-    # (
-    #     lambda t, cond: t.bool_col.notany(),
-    #     lambda df, cond: ~df.bool_col.any(),
-    # ),
-    # (
-    #     lambda t, cond: t.bool_col.notall(),
-    #     lambda df, cond: ~df.bool_col.all(),
-    # ),
     (
         lambda t, cond: t.double_col.sum(),
         lambda df, cond: df.double_col.sum(),
@@ -247,22 +164,6 @@ def test_aggregations(alltypes, df, func, pandas_func, translate):
     np.testing.assert_allclose(result, expected)
 
 
-# def test_group_concat(alltypes, df):
-#     expr = alltypes.string_col.group_concat()
-#     result = expr.execute()
-#     expected = ','.join(df.string_col.dropna())
-#     assert result == expected
-
-
-# TODO: requires CountDistinct to support condition
-# def test_distinct_aggregates(alltypes, df, translate):
-#     expr = alltypes.limit(100).double_col.nunique()
-#     result = expr.execute()
-
-#     assert translate(expr) == 'uniq(`double_col`)'
-#     assert result == df.head(100).double_col.nunique()
-
-
 @pytest.mark.parametrize('op', [
     methodcaller('sum'),
     methodcaller('mean'),
@@ -282,33 +183,6 @@ def test_anonymus_aggregate(alltypes, df, translate):
     result = expr.execute().set_index('id')
     expected = df[df.double_col > df.double_col.mean()].set_index('id')
     tm.assert_frame_equal(result, expected, check_like=True)
-
-
-# def test_rank(con):
-#     t = con.table('functional_alltypes')
-#     expr = t.double_col.rank()
-#     sqla_expr = expr.compile()
-#     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
-#     expected = """\
-#     assert result == expected
-
-
-# def test_percent_rank(con):
-#     t = con.table('functional_alltypes')
-#     expr = t.double_col.percent_rank()
-#     sqla_expr = expr.compile()
-#     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
-#     expected = """\
-#     assert result == expected
-
-
-# def test_ntile(con):
-#     t = con.table('functional_alltypes')
-#     expr = t.double_col.ntile(7)
-#     sqla_expr = expr.compile()
-#     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
-#     expected = """\
-#     assert result == expected
 
 
 def test_boolean_summary(alltypes):
