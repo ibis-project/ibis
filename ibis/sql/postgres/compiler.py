@@ -90,6 +90,17 @@ def _extract(fmt):
     return translator
 
 
+def _is_nan(t, expr):
+    arg = t.translate(expr.op().args[0])
+    return arg == sa.literal('nan', sa.Float)
+
+
+def _is_inf(t, expr):
+    arg = t.translate(expr.op().args[0])
+    return sa.or_(arg == sa.literal('inf', sa.Float),
+                  arg == sa.literal('-inf', sa.Float))
+
+
 def _cast(t, expr):
     arg, typ = expr.op().args
 
@@ -649,6 +660,10 @@ _operation_registry.update({
     # types
     ops.Cast: _cast,
     ops.TypeOf: _typeof,
+
+    # Floating
+    ops.IsNan: _is_nan,
+    ops.IsInf: _is_inf,
 
     # miscellaneous varargs
     ops.Least: varargs(sa.func.least),

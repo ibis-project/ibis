@@ -464,8 +464,8 @@ _operation_registry = {
 
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,
-    ops.Negate: _negate,
 
+    ops.Negate: _negate,
     ops.Round: _round,
 
     ops.TypeOf: unary(sa.func.typeof),
