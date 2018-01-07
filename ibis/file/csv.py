@@ -88,7 +88,7 @@ class CSVClient(FileClient):
         # get the schema
         f = path / "{}.{}".format(name, self.extension)
 
-        dtype = None
+        dtype, dates = None, []
         if schema is not None:
             dtype, dates = ibis_schema_to_pandas_dtypes(schema)
 
@@ -136,7 +136,6 @@ def csv_pre_execute(op, client, scope, **kwargs):
             usecols = None
 
             if op.selections:
-
                 schema, dates = ibis_schema_to_pandas_dtypes(table.schema)
                 header = pd.read_csv(
                     str(path), header=0, nrows=1, schema=schema

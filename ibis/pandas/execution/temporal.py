@@ -28,4 +28,6 @@ def execute_timestamp_date(op, data, **kwargs):
 
 @execute_node.register(ops.TimestampTruncate, pd.Series)
 def execute_timestamp_truncate(op, data, **kwargs):
-    return data.dt.floor(op.unit)
+    dtype = 'datetime64[{}]'.format(op.unit)
+    array = data.values.astype(dtype)
+    return pd.Series(array).rename(data.name)

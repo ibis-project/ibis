@@ -674,9 +674,11 @@ def _extract_field(sql_attr):
 
 
 _impala_unit_names = {
+    'Y': 'Y',
+    'Q': 'Q',
     'M': 'MONTH',
-    'w': 'W',
-    'd': 'J',
+    'W': 'W',
+    'D': 'J',
     'h': 'HH',
     'm': 'MI'
 }
@@ -684,11 +686,14 @@ _impala_unit_names = {
 
 def _truncate(translator, expr):
     op = expr.op()
+    arg, unit = op.args
 
     arg = translator.translate(op.args[0])
-
-    unit = op.args[1]
-    unit = _impala_unit_names.get(unit, unit)
+    try:
+        unit = _impala_unit_names[unit]
+    except KeyError:
+        raise com.TranslationError('{} unit is not supported in '
+                                   'timestamp truncate'.format(unit))
 
     return "trunc({}, '{}')".format(arg, unit)
 

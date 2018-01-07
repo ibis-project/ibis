@@ -365,10 +365,8 @@ def _timestamp_from_unix(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
-    if unit == 'ms':
-        raise ValueError('`ms` unit is not supported!')
-    elif unit == 'us':
-        raise ValueError('`us` unit is not supported!')
+    if unit in {'ms', 'us', 'ns'}:
+        raise ValueError('`{}` unit is not supported!'.format(unit))
 
     return _call(translator, 'toDateTime', arg)
 
@@ -380,9 +378,9 @@ def _truncate(translator, expr):
     converters = {
         'Y': 'toStartOfYear',
         'M': 'toStartOfMonth',
-        'd': 'toDate',
+        'W': 'toMonday',
+        'D': 'toDate',
         'h': 'toStartOfHour',
-        'w': 'toMonday',
         'm': 'toStartOfMinute',
         's': 'toDateTime'
     }

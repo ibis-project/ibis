@@ -257,8 +257,8 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
             ('Y', years),
             ('Q', quarters),
             ('M', months),
-            ('w', weeks),
-            ('d', days),
+            ('W', weeks),
+            ('D', days),
             ('h', hours),
             ('m', minutes),
             ('s', seconds),
@@ -1250,7 +1250,7 @@ def _integer_to_interval(arg, unit='s'):
 
     Parameters
     ----------
-    unit : {'Y', 'M', 'w', 'd', 'h', 'm', s', 'ms', 'us', 'ns'}
+    unit : {'Y', 'M', 'W', 'D', 'h', 'm', s', 'ms', 'us', 'ns'}
 
     Returns
     -------
@@ -2019,9 +2019,9 @@ def _timestamp_truncate(arg, unit):
     unit : string, one of below table
       'Y': year
       'Q': quarter
-      'm': month
-      'd': day
-      'w': week
+      'M': month
+      'W': week
+      'D': day
       'h': hour
       'm': minute
       's': second
@@ -2121,9 +2121,9 @@ def _timestamp_truncate(arg, unit):
     unit : string, one of below table
       'Y': year
       'Q': quarter
-      'm': month
-      'd': day
-      'w': week
+      'M': month
+      'W': week
+      'D': day
       'h': hour
       'm': minute
       's': second
@@ -2152,9 +2152,9 @@ def _date_truncate(arg, unit):
     unit : string, one of below table
       'Y': year
       'Q': quarter
-      'm': month
-      'd': day
-      'w': week
+      'M': month
+      'W': week
+      'D': day
 
     Returns
     -------
@@ -2189,7 +2189,7 @@ _add_methods(DateValue, _date_value_methods)
 
 
 def _convert_unit(value, unit, to):
-    units = ('w', 'd', 'h', 'm', 's', 'ms', 'us', 'ns')
+    units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
     factors = (7, 24, 60, 60, 1000, 1000, 1000)
 
     monthly_units = ('Y', 'Q', 'M')
@@ -2237,8 +2237,8 @@ _interval_value_methods = dict(
     years=_interval_property('Y'),
     quarters=_interval_property('Q'),
     months=_interval_property('M'),
-    weeks=_interval_property('w'),
-    days=_interval_property('d'),
+    weeks=_interval_property('W'),
+    days=_interval_property('D'),
     hours=_interval_property('h'),
     minutes=_interval_property('m'),
     seconds=_interval_property('s'),

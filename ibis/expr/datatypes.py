@@ -353,12 +353,13 @@ class Interval(DataType):
 
     __slots__ = 'value_type', 'unit'
 
+    # based on numpy's units
     _units = dict(
         Y='year',
         Q='quarter',
         M='month',
-        w='week',
-        d='day',
+        W='week',
+        D='day',
         h='hour',
         m='minute',
         s='second',

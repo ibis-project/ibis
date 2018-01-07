@@ -37,7 +37,9 @@ class Backend(object):
     def skip_unsupported(self):
         try:
             yield
-        except (com.OperationNotDefinedError, com.UnsupportedBackendType) as e:
+        except (com.OperationNotDefinedError,
+                com.UnsupportedBackendType,
+                com.TranslationError) as e:
             pytest.skip('{} using {}'.format(e, str(self)))
 
     def assert_series_equal(self, *args, **kwargs):

@@ -2347,15 +2347,16 @@ _truncate_units = dict(
     month='M',
     MONTH='M',
 
-    w='w',
-    W='w',
-    week='w',
-    WEEK='w',
+    w='W',
+    W='W',
+    week='W',
+    WEEK='W',
 
-    d='d',
-    J='d',
-    day='d',
-    DAY='d',
+    d='D',
+    D='D',
+    J='D',
+    day='D',
+    DAY='D',
 
     h='h',
     H='h',
@@ -2401,7 +2402,7 @@ class TimestampTruncate(ValueOp):
 
     input_type = [
         rules.timestamp,
-        rules.string_options(['Y', 'Q', 'M', 'w', 'd',
+        rules.string_options(['Y', 'Q', 'M', 'W', 'D',
                               'h', 'm', 's', 'ms', 'us', 'ns'], name='unit',
                              validator=_truncate_unit_validate)
     ]
@@ -2412,7 +2413,7 @@ class DateTruncate(ValueOp):
 
     input_type = [
         rules.date,
-        rules.string_options(['Y', 'Q', 'M', 'w', 'd'], name='unit',
+        rules.string_options(['Y', 'Q', 'M', 'W', 'D'], name='unit',
                              validator=_truncate_unit_validate)
     ]
     output_type = rules.shape_like_arg(0, dt.date)
@@ -2526,10 +2527,10 @@ class DateSubtract(TemporalSubtract):
         rules.date,
         rules.one_of([
             rules.date,
-            rules.interval(units=['Y', 'Q', 'M', 'w', 'd'])
+            rules.interval(units=['Y', 'Q', 'M', 'W', 'D'])
         ])
     ]
-    output_unit = 'd'
+    output_unit = 'D'
 
 
 class TimeSubtract(TemporalSubtract):
@@ -2561,7 +2562,7 @@ TimestampDelta = TimestampSubtract
 
 class DateAdd(Add):
 
-    input_type = [rules.date, rules.interval(units=['Y', 'Q', 'M', 'w', 'd'])]
+    input_type = [rules.date, rules.interval(units=['Y', 'Q', 'M', 'W', 'D'])]
     output_type = rules.shape_like_arg(0, 'date')
 
 
@@ -2609,7 +2610,7 @@ class IntervalFromInteger(ValueOp):
     input_type = [
         rules.integer,
         rules.string_options([
-            'Y', 'Q', 'M', 'w', 'd',
+            'Y', 'Q', 'M', 'W', 'D',
             'h', 'm', 's', 'ms', 'us', 'ns'
         ], name='unit')
     ]
