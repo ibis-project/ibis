@@ -136,6 +136,10 @@ class SQLite(Backend):
             pytest.skip('SQLite testing db {} does not exist'.format(path))
         return ibis.sqlite.connect(str(path))
 
+    def functional_alltypes(self):
+        t = self.connection.database().functional_alltypes
+        return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
+
 
 class Postgres(Backend):
 
@@ -170,8 +174,8 @@ class Clickhouse(Backend):
                                        database=database, user=user)
 
     def functional_alltypes(self):
-        table = self.connection.database().functional_alltypes
-        return table.mutate(bool_col=table.bool_col == 1)
+        t = self.connection.database().functional_alltypes
+        return t.mutate(bool_col=t.bool_col == 1)
         # date_col=table.timestamp_col.date())
 
 

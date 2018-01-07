@@ -86,7 +86,6 @@ _sqla_type_mapping = {
     sa.BINARY: dt.Binary,
     sa.Binary: dt.Binary,
     sa.DATE: dt.Date,
-    sa.Date: dt.Date,
     sa.Time: dt.Time,
     sa.types.NullType: dt.Null,
 }
@@ -184,6 +183,8 @@ def _to_sqla_type(itype, type_map=None):
         type_map = _ibis_type_to_sqla
     if isinstance(itype, dt.Decimal):
         return sa.types.NUMERIC(itype.precision, itype.scale)
+    elif isinstance(itype, dt.Date):
+        return sa.Date()
     elif isinstance(itype, dt.Timestamp):
         # SQLAlchemy DateTimes do not store the timezone, just whether the db
         # supports timezones.
@@ -718,22 +719,23 @@ class AlchemyQuery(Query):
                     new_dtype = self._db_type_to_dtype(db_type, column)
                 except TypeError:
                     new_dtype = existing_dtype
+                else:
+                    df[column] = df[column].astype(new_dtype)
 
-            if getattr(
-                existing_dtype, 'tz', None
-            ) != getattr(new_dtype, 'tz', None):
-                df[column] = df[column].astype(new_dtype)
         return df
 
     def _db_type_to_dtype(self, db_type, column):
-        if isinstance(db_type, sa.DateTime):
+        if isinstance(db_type, sa.Date):
+            return np.dtype('datetime64[D]')
+        elif isinstance(db_type, sa.DateTime):
             if not db_type.timezone:
                 return np.dtype('datetime64[ns]')
             else:
                 return compat.DatetimeTZDtype(
                     'ns', self.schema[column].timezone
                 )
-        raise TypeError(repr(db_type))
+        else:
+            raise TypeError(repr(db_type))
 
     @property
     def schema(self):

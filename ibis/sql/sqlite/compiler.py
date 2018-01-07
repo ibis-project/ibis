@@ -121,6 +121,28 @@ def _strftime_int(fmt):
     return translator
 
 
+_truncate_modifiers = {
+    'Y': 'start of year',
+    'M': 'start of month',
+    'D': 'start of day',
+    'W': 'weekday 1',
+}
+
+
+def _truncate(func):
+    def translator(t, expr):
+        arg, unit = expr.op().args
+        sa_arg = t.translate(arg)
+        try:
+            modifier = _truncate_modifiers[unit]
+        except KeyError:
+            raise com.TranslationError('Unsupported truncate unit '
+                                       '{}'.format(unit))
+        return func(sa_arg, modifier)
+
+    return translator
+
+
 def _now(t, expr):
     return sa.func.datetime('now')
 
@@ -222,6 +244,9 @@ _operation_registry.update({
 
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
 
+    ops.Date: unary(sa.func.date),
+    ops.DateTruncate: _truncate(sa.func.date),
+    ops.TimestampTruncate: _truncate(sa.func.datetime),
     ops.Strftime: _strftime,
     ops.ExtractYear: _strftime_int('%Y'),
     ops.ExtractMonth: _strftime_int('%m'),

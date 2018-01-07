@@ -16,9 +16,6 @@ def test_date():
     'h', 'm', 's', 'ms', 'us', 'ns'
 ])
 def test_timestamp_truncate(backend, alltypes, df, unit):
-    if backend.name == 'sqlite':
-        pytest.skip('')
-
     expr = alltypes.timestamp_col.truncate(unit)
 
     dtype = 'datetime64[{}]'.format(unit)
@@ -35,9 +32,6 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
     'Y', 'M', 'D',  # 'W' TODO(kszucs): seems like numpy choses wednesday for W
 ])
 def test_date_truncate(backend, alltypes, df, unit):
-    if backend.name == 'sqlite':
-        pytest.skip('')
-
     expr = alltypes.timestamp_col.date().truncate(unit)
 
     dtype = 'datetime64[{}]'.format(unit)
@@ -48,7 +42,3 @@ def test_date_truncate(backend, alltypes, df, unit):
 
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected)
-
-
-def test_interval():
-    pass
