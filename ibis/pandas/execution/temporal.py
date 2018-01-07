@@ -64,3 +64,8 @@ def execute_timestamp_truncate(op, data, **kwargs):
     dtype = 'datetime64[{}]'.format(op.unit)
     array = data.values.astype(dtype)
     return pd.Series(array, name=data.name)
+
+
+@execute_node.register(ops.IntervalFromInteger, pd.Series)
+def execute_interval_from_interger(op, data, **kwargs):
+    return pd.to_timedelta(data, unit=op.unit)

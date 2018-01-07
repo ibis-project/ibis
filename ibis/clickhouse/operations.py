@@ -263,6 +263,19 @@ def _interval_format(translator, expr):
     return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution)
 
 
+# def _interval_from_integer(translator, expr):
+#     # requires clickhosue-driver to support interval types
+#     op = expr.op()
+#     arg, unit = op.args
+
+#     if expr.unit in {'ms', 'us', 'ns'}:
+#         raise ValueError('Clickhouse doesn\'t support subsecond interval '
+#                          'resolutions')
+
+#     arg_ = translator.translate(arg)
+#     return 'INTERVAL {} {}'.format(arg_, expr.resolution.upper())
+
+
 def literal(translator, expr):
     value = expr.op().value
     if isinstance(expr, ir.BooleanValue):
@@ -562,13 +575,16 @@ _operation_registry = {
     ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
     ops.ParseURL: _parse_url,
 
-    # Timestamp operations
+    # Temporal operations
     ops.Date: unary('toDate'),
+    ops.DateTruncate: _truncate,
 
     ops.TimestampNow: lambda *args: 'now()',
     ops.TimestampTruncate: _truncate,
-    ops.DateTruncate: _truncate,
+
     ops.TimeTruncate: _truncate,
+
+    # ops.IntervalFromInteger: _interval_from_integer,
 
     ops.ExtractYear: unary('toYear'),
     ops.ExtractMonth: unary('toMonth'),

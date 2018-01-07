@@ -1,4 +1,5 @@
 import pytest
+from pytest import param
 
 import pandas as pd
 
@@ -39,6 +40,32 @@ def test_date_truncate(backend, alltypes, df, unit):
 
     with backend.skip_unsupported():
         result = expr.execute()
+
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(('expr_fn', 'expected_fn'), [
+    param(lambda t: t.int_col.to_interval(unit='Y'),
+          lambda t: pd.to_timedelta(t.int_col, unit='Y'),
+          id='integer-to-year-interval'),
+    param(lambda t: t.int_col.to_interval(unit='W'),
+          lambda t: pd.to_timedelta(t.int_col, unit='W'),
+          id='integer-to-week-interval'),
+    param(lambda t: t.int_col.to_interval(unit='M'),
+          lambda t: pd.to_timedelta(t.int_col, unit='M'),
+          id='integer-to-month-interval'),
+    param(lambda t: t.int_col.to_interval(unit='D'),
+          lambda t: pd.to_timedelta(t.int_col, unit='D'),
+          id='integer-to-day-interval'),
+])
+def test_integer_to_interval(backend, con, alltypes, df,
+                             expr_fn, expected_fn):
+    expr = expr_fn(alltypes)
+    expected = expected_fn(df)
+
+    with backend.skip_unsupported():
+        result = con.execute(expr)
 
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected)
