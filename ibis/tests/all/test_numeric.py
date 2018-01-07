@@ -40,8 +40,8 @@ def test_isnan_isinf(backend, con, alltypes, df,
     with backend.skip_unsupported():
         result = con.execute(expr)
 
-    # expected = backend.default_series_rename(expected)
     if isinstance(expected, pd.Series):
+        expected = backend.default_series_rename(expected)
         backend.assert_series_equal(result, expected)
     else:
         assert result == expected

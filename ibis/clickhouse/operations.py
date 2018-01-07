@@ -505,6 +505,9 @@ _operation_registry = {
     # Unary operations
     ops.TypeOf: unary('toTypeName'),
 
+    ops.IsNan: unary('isNaN'),
+    ops.IsInf: unary('isInfinite'),
+
     ops.Abs: unary('abs'),
     ops.Ceil: unary('ceil'),
     ops.Floor: unary('floor'),
