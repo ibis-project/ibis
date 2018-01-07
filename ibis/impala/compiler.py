@@ -502,7 +502,12 @@ def _string_literal_format(expr):
 
 def _number_literal_format(expr):
     value = expr.op().value
-    return repr(value)
+    formatted = repr(value)
+
+    if formatted in {'nan', 'inf', '-inf'}:
+        return "CAST('{}' AS DOUBLE)".format(formatted)
+
+    return formatted
 
 
 def _interval_literal_format(expr):
@@ -935,6 +940,9 @@ _operation_registry = {
     ops.IsNull: _is_null,
     ops.Negate: _negate,
     ops.Not: _not,
+
+    ops.IsNan: unary('is_nan'),
+    ops.IsInf: unary('is_inf'),
 
     ops.IfNull: _ifnull_workaround,
     ops.NullIf: fixed_arity('nullif', 2),
