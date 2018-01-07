@@ -370,8 +370,10 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
         self._operation_active = False
 
     def __del__(self):
-        if self._cursor is not None:
+        try:
             self._cursor.release()
+        except Exception:
+            pass
 
     def execute(self):
         if self._operation_active:

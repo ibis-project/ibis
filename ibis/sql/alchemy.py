@@ -720,10 +720,14 @@ class AlchemyQuery(Query):
                 except TypeError:
                     new_dtype = existing_dtype
                 else:
-                    df[column] = pd.Series(
-                        df[column].values.astype(new_dtype),
-                        name=df[column].name
-                    )
+                    # to support datetime64[D]
+                    if isinstance(new_dtype, np.dtype):
+                        df[column] = pd.Series(
+                            df[column].values.astype(new_dtype),
+                            name=df[column].name
+                        )
+                    else:
+                        df[column] = df[column].astype(new_dtype)
 
         return df
 
