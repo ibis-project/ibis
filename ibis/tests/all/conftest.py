@@ -4,7 +4,7 @@ import pytest
 from ibis.compat import Path
 from ibis.tests.backends import (Csv, Parquet, Pandas,
                                  SQLite, Postgres, Clickhouse,
-                                 Impala)
+                                 Impala, BigQuery)
 
 
 pytestmark = pytest.mark.backend
@@ -31,6 +31,7 @@ def data_directory():
     pytest.param(SQLite, marks=pytest.mark.sqlite),
     pytest.param(Postgres, marks=pytest.mark.postgres),
     pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
+    pytest.param(BigQuery, marks=pytest.mark.bigquery),
     pytest.param(Impala, marks=pytest.mark.impala)
 ], scope='session')
 def backend(request, data_directory):

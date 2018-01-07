@@ -173,6 +173,26 @@ class Clickhouse(Backend):
         return t.mutate(bool_col=t.bool_col == 1)
 
 
+class BigQuery(UnorderedSeriesComparator, Backend):
+
+    def connect(self, data_directory):
+        ga = pytest.importorskip('google.auth')
+
+        project_id = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
+        if project_id is None:
+            pytest.skip('Environment variable GOOGLE_BIGQUERY_PROJECT_ID '
+                        'not defined')
+        elif not project_id:
+            pytest.skip('Environment variable GOOGLE_BIGQUERY_PROJECT_ID '
+                        'is empty')
+
+        dataset_id = 'testing'
+        try:
+            return ibis.bigquery.connect(project_id, dataset_id)
+        except ga.exceptions.DefaultCredentialsError:
+            pytest.skip('no bigquery credentials found')
+
+
 class Impala(UnorderedSeriesComparator, Backend):
     supports_arrays = True
     supports_arrays_outside_of_select = False

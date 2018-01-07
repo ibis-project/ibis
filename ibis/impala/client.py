@@ -372,7 +372,7 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
     def __del__(self):
         try:
             self._cursor.release()
-        except Exception:
+        except AttributeError:
             pass
 
     def execute(self):
