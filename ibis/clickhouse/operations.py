@@ -564,6 +564,8 @@ _operation_registry = {
 
     ops.TimestampNow: lambda *args: 'now()',
     ops.TimestampTruncate: _truncate,
+    ops.DateTruncate: _truncate,
+    ops.TimeTruncate: _truncate,
 
     ops.ExtractYear: unary('toYear'),
     ops.ExtractMonth: unary('toMonth'),

@@ -12,9 +12,7 @@ def test_date():
 
 
 @pytest.mark.parametrize('unit', [
-    'Y', 'M',
-    # 'W',   # TODO
-    'D',
+    'Y', 'M', 'D',  # 'W' TODO(kszucs): seems like numpy choses wednesday for W
     'h', 'm', 's', 'ms', 'us', 'ns'
 ])
 def test_timestamp_truncate(backend, alltypes, df, unit):
@@ -22,6 +20,25 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         pytest.skip('')
 
     expr = alltypes.timestamp_col.truncate(unit)
+
+    dtype = 'datetime64[{}]'.format(unit)
+    expected = pd.Series(df.timestamp_col.values.astype(dtype))
+
+    with backend.skip_unsupported():
+        result = expr.execute()
+
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('unit', [
+    'Y', 'M', 'D',  # 'W' TODO(kszucs): seems like numpy choses wednesday for W
+])
+def test_date_truncate(backend, alltypes, df, unit):
+    if backend.name == 'sqlite':
+        pytest.skip('')
+
+    expr = alltypes.timestamp_col.date().truncate(unit)
 
     dtype = 'datetime64[{}]'.format(unit)
     expected = pd.Series(df.timestamp_col.values.astype(dtype))
