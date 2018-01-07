@@ -85,7 +85,6 @@ class Csv(Backend):
             ('timestamp_col', 'timestamp')
         ])
         return self.connection.table('functional_alltypes', schema=schema)
-        # return table.mutate(date_col=table.timestamp_col.date())
 
 
 class Parquet(Backend):
@@ -155,10 +154,6 @@ class Postgres(Backend):
         return ibis.postgres.connect(host=host, user=user, password=password,
                                      database=database)
 
-    # def functional_alltypes_df(self):
-    #     df = super(Postgres, self).functional_alltypes_df()
-    #     return df.assign(string_col=df.string_col.str.encode('utf-8'))
-
 
 class Clickhouse(Backend):
     check_dtype = False
@@ -176,7 +171,6 @@ class Clickhouse(Backend):
     def functional_alltypes(self):
         t = self.connection.database().functional_alltypes
         return t.mutate(bool_col=t.bool_col == 1)
-        # date_col=table.timestamp_col.date())
 
 
 class Impala(UnorderedSeriesComparator, Backend):

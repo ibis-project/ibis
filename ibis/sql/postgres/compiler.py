@@ -29,6 +29,7 @@ import ibis
 from ibis.sql.alchemy import (
     unary, varargs, fixed_arity, Over, _variance_reduction, _get_sqla_table
 )
+import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -88,6 +89,31 @@ def _extract(fmt):
         sa_arg = t.translate(arg)
         return sa.extract(fmt, sa_arg)
     return translator
+
+
+_truncate_precisions = {
+    'us': 'microseconds',
+    'ms': 'milliseconds',
+    's': 'second',
+    'm': 'minute',
+    'h': 'hour',
+    'D': 'day',
+    'W': 'week',
+    'M': 'month',
+    'Q': 'quarter',
+    'Y': 'year'
+}
+
+
+def _timestamp_truncate(t, expr):
+    arg, unit = expr.op().args
+    sa_arg = t.translate(arg)
+    try:
+        precision = _truncate_precisions[unit]
+    except KeyError:
+        raise com.TranslationError('Unsupported truncate unit '
+                                   '{}'.format(unit))
+    return sa.func.date_trunc(precision, sa_arg)
 
 
 def _is_nan(t, expr):
@@ -720,6 +746,10 @@ _operation_registry.update({
     ops.Modulus: _mod,
 
     # dates and times
+    ops.Date: unary(sa.func.date),
+    ops.DateTruncate: _timestamp_truncate,
+    ops.TimestampTruncate: _timestamp_truncate,
+
     ops.Strftime: _strftime,
     ops.ExtractYear: _extract('year'),
     ops.ExtractMonth: _extract('month'),
