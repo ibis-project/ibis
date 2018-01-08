@@ -151,7 +151,7 @@ def sql_like_to_regex(pattern, escape=None):
 
     Examples
     --------
-    >>> sql_like_to_regex('6%')
+    >>> sql_like_to_regex('6%')  # default is to not escape anything
     '^6.*$'
     >>> sql_like_to_regex('6^%', escape='^')
     '^6%$'
@@ -176,6 +176,17 @@ def execute_string_like_series_string(op, data, pattern, escape, **kwargs):
     return data.map(
         lambda x, pattern=new_pattern: pattern.search(x) is not None
     )
+
+
+@execute_node.register(
+    ops.StringSQLLike, SeriesGroupBy, six.string_types, six.string_types
+)
+def execute_string_like_series_groupby_string(
+    op, data, pattern, escape, **kwargs
+):
+    return execute_string_like_series_string(
+        op, data.obj, pattern, escape, **kwargs
+    ).groupby(data.grouper.groupings)
 
 
 @execute_node.register(
