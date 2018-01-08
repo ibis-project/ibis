@@ -13,18 +13,19 @@
 # limitations under the License.
 
 
-import os
-import sys
-import six
-import toolz
+import collections
 import itertools
+import os
+import six
+import sys
+import toolz
 import webbrowser
 
 from ibis.common import IbisError, RelationError
 import ibis.common as com
 import ibis.config as config
-import ibis.util as util
 import ibis.expr.datatypes as dt
+import ibis.util as util
 
 
 class Expr(object):

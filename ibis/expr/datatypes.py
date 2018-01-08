@@ -665,7 +665,7 @@ _TYPE_RULES = OrderedDict(
         (
             '(?P<{}>{})'.format(token.upper(), token),
             lambda token, value=value: Token(Tokens.PRIMITIVE, value)
-        ) for token, value in _primitive_types.items()
+        ) for token, value in _primitive_types
         if token not in {
             'any', 'null', 'timestamp', 'time', 'interval', 'boolean'
         }
