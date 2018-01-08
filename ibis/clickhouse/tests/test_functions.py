@@ -99,17 +99,17 @@ def test_timestamp_now(con, translate):
 
 
 @pytest.mark.parametrize(('unit', 'expected'), [
-    pytest.mark.xfail(('y', pd.Timestamp('2009-01-01'))),
-    pytest.mark.xfail(('m', pd.Timestamp('2009-05-01'))),
-    pytest.mark.xfail(('d', pd.Timestamp('2009-05-17'))),
-    pytest.mark.xfail(('w', pd.Timestamp('2009-05-11'))),
-    ('h', pd.Timestamp('2009-05-17 12:00:00')),
-    ('minute', pd.Timestamp('2009-05-17 12:34:00')),
+    pytest.mark.xfail(('y', '2009-01-01')),
+    pytest.mark.xfail(('m', '2009-05-01')),
+    pytest.mark.xfail(('d', '2009-05-17')),
+    pytest.mark.xfail(('w', '2009-05-11')),
+    ('h', '2009-05-17 12:00:00'),
+    ('minute', '2009-05-17 12:34:00'),
 ])
 def test_timestamp_truncate(con, translate, unit, expected):
     stamp = ibis.timestamp('2009-05-17 12:34:56')
     expr = stamp.truncate(unit)
-    assert con.execute(expr) == expected
+    assert con.execute(expr) == pd.Timestamp(expected)
 
 
 @pytest.mark.parametrize(('func', 'expected'), [
