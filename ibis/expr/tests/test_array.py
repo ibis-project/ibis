@@ -1,6 +1,7 @@
 import pytest
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 
 @pytest.mark.parametrize(
@@ -15,3 +16,10 @@ def test_array_literal(arg, type):
     x = ibis.literal(arg)
     assert x._arg.value == arg
     assert x.type() == type
+
+
+def test_array_length_scalar():
+    raw_value = [1, 2, 4]
+    value = ibis.literal(raw_value)
+    expr = value.length()
+    assert isinstance(expr.op(), ops.ArrayLength)

@@ -70,11 +70,26 @@ else:
 integer_types = six.integer_types + (np.integer,)
 
 
+try:
+    from contextlib import suppress
+except ImportError:
+    from contextlib import contextmanager
+
+    @contextmanager
+    def suppress(*exceptions):
+        try:
+            yield
+        except exceptions:
+            pass
+
+
 # pandas compat
 try:
-    from pandas.api.types import DatetimeTZDtype  # noqa: F401
+    from pandas.api.types import (DatetimeTZDtype,  # noqa: F401
+                                  CategoricalDtype)  # noqa: F401
 except ImportError:
-    from pandas.types.dtypes import DatetimeTZDtype  # noqa: F401
+    from pandas.types.dtypes import (DatetimeTZDtype,  # noqa: F401
+                                     CategoricalDtype)  # noqa: F401
 
 try:
     from pandas.core.tools.datetimes import to_time, to_datetime  # noqa: F401

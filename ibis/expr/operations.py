@@ -20,7 +20,7 @@ import toolz
 
 from ibis.expr.types import TableColumn  # noqa
 
-from ibis.expr.datatypes import HasSchema, Schema
+from ibis.expr.schema import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr, Expr,
                              ValueExpr, ColumnExpr, TableExpr,
@@ -30,6 +30,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
+import ibis.compat as compat
 
 
 _table_names = ('t{:d}'.format(i) for i in itertools.count())
@@ -1210,7 +1211,7 @@ class SimpleCaseBuilder(object):
         case_expr = as_value_expr(case_expr)
         result_expr = as_value_expr(result_expr)
 
-        if not self.base._can_compare(case_expr):
+        if not rules.comparable(self.base, case_expr):
             raise TypeError('Base expression and passed case are not '
                             'comparable')
 
@@ -2094,21 +2095,21 @@ class Xor(LogicalBinaryOp):
 class Comparison(BinaryOp, BooleanValueOp):
 
     def _maybe_cast_args(self, left, right):
-        if left._can_implicit_cast(right):
-            return left, left._implicit_cast(right)
+        # it might not be necessary?
+        with compat.suppress(com.IbisTypeError):
+            return left, ir.cast(right, left)
 
-        if right._can_implicit_cast(left):
-            return right._implicit_cast(left), right
+        with compat.suppress(com.IbisTypeError):
+            return ir.cast(left, right), right
 
         return left, right
 
     def output_type(self):
-        self._assert_can_compare()
+        if not rules.comparable(self.left, self.right):
+            raise TypeError('Arguments with datatype {} and {} are '
+                            'not comparable'.format(self.left.type(),
+                                                    self.right.type()))
         return rules.shape_like_args(self.args, 'boolean')
-
-    def _assert_can_compare(self):
-        if not self.left._can_compare(self.right):
-            raise TypeError('Cannot compare argument types')
 
 
 class Equals(Comparison):
@@ -2142,19 +2143,18 @@ class IdenticalTo(Comparison):
 class Between(BooleanValueOp):
 
     input_type = [
-        rules.value,
+        rules.value(),
         rules.value(name='lower_bound'),
         rules.value(name='upper_bound')
     ]
 
     def output_type(self):
-        self._assert_can_compare()
-        return rules.shape_like_args(self.args, 'boolean')
+        arg, lower, upper = self.args
 
-    def _assert_can_compare(self):
-        expr, lower, upper = self.args
-        if not expr._can_compare(lower) or not expr._can_compare(upper):
+        if not (rules.comparable(arg, lower) and rules.comparable(arg, upper)):
             raise TypeError('Arguments are not comparable')
+
+        return rules.shape_like_args(self.args, 'boolean')
 
 
 class BetweenTime(Between):

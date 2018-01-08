@@ -157,13 +157,3 @@ def test_timestamp_field_access_on_date_failure(
     date_col = alltypes.i.cast('date')
     with pytest.raises(AttributeError):
         getattr(date_col, field)
-
-
-def test_timestamp_integer_warns():
-    with pytest.warns(UserWarning):
-        ibis.timestamp(1234)
-
-    t = ibis.table([('ts', 'timestamp')])
-    column = t.ts
-    with pytest.warns(UserWarning):
-        column < 1234

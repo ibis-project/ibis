@@ -37,9 +37,10 @@ from ibis.impala.compat import impyla, ImpylaError, HS2Error
 from ibis.impala.compiler import build_ast
 from ibis.util import log
 from ibis.sql.compiler import DDL
-import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.expr.schema as sch
+import ibis.expr.operations as ops
+import ibis.expr.datatypes as dt
 import ibis.util as util
 
 
@@ -713,7 +714,7 @@ class ImpalaClient(SQLClient):
 
         names = [x.lower() for x in names]
 
-        return dt.Schema(names, ibis_types)
+        return sch.Schema(names, ibis_types)
 
     @property
     def client_options(self):
@@ -1180,7 +1181,7 @@ class ImpalaClient(SQLClient):
         # all lowercase fields from Impala.
         names = [x.lower() for x in names]
 
-        return dt.Schema(names, ibis_types)
+        return sch.Schema(names, ibis_types)
 
     def create_function(self, func, name=None, database=None):
         """
@@ -1791,7 +1792,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
             partition_fields.append((x, name_to_type[x]))
 
         pnames, ptypes = zip(*partition_fields)
-        return dt.Schema(pnames, ptypes)
+        return sch.Schema(pnames, ptypes)
 
     def add_partition(self, spec, location=None):
         """
@@ -1946,7 +1947,7 @@ def _validate_compatible(from_schema, to_schema):
     for name in from_schema:
         lt = from_schema[name]
         rt = to_schema[name]
-        if not rt.can_implicit_cast(lt):
+        if not lt.castable(rt):
             raise com.IbisInputError('Cannot safely cast {0!r} to {1!r}'
                                      .format(lt, rt))
 
