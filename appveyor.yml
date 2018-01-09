@@ -6,14 +6,23 @@ platform:
 environment:
   PGUSER: "postgres"
   PGPASSWORD: "Password12!"
+  PGPORT: 5432
+  PGHOST: "localhost"
+
   IBIS_TEST_DOWNLOAD_DIRECTORY: "%USERPROFILE%"
   IBIS_TEST_DOWNLOAD_BASE_URL: "https://storage.googleapis.com/ibis-ci-data"
   IBIS_TEST_DOWNLOAD_NAME: "ibis-testing-data.tar.gz"
+
   IBIS_TEST_DATA_DIRECTORY: "%USERPROFILE%\\ibis-testing-data"
+
   IBIS_TEST_POSTGRES_USER: "%PGUSER%"
   IBIS_TEST_POSTGRES_PASSWORD: "%PGPASSWORD%"
+  IBIS_TEST_POSTGRES_PORT: "%PGPORT%"
+  IBIS_TEST_POSTGRES_HOST: "%PGHOST%"
   IBIS_TEST_POSTGRES_DATABASE: "ibis_testing"
+
   IBIS_TEST_SQLITE_DATABASE: "%USERPROFILE%\\ibis_testing.db"
+
   CONDA: "C:\\Miniconda36-x64\\Scripts\\conda"
   ACTIVATE: "C:\\Miniconda36-x64\\Scripts\\activate"
 
@@ -27,6 +36,7 @@ services:
   - postgresql10
 
 test_script:
+  - "C:\\Program Files\\PostgreSQL\\10\\bin\\psql --version"
   - "%CONDA% --version"
   - "%CONDA% config --set always_yes true"
   - "%CONDA% install conda=4.3.22 --channel conda-forge"

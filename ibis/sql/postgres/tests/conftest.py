@@ -30,6 +30,10 @@ PG_HOST = os.environ.get(
     'IBIS_TEST_POSTGRES_HOST',
     os.environ.get('PGHOST', 'localhost')
 )
+PG_PORT = os.environ.get(
+    'IBIS_TEST_POSTGRES_PORT',
+    os.environ.get('PGPORT', 5432)
+)
 IBIS_TEST_POSTGRES_DB = os.environ.get(
     'IBIS_TEST_POSTGRES_DATABASE',
     os.environ.get('PGDATABASE', 'ibis_testing')
@@ -43,6 +47,7 @@ def con():
         user=PG_USER,
         password=PG_PASS,
         database=IBIS_TEST_POSTGRES_DB,
+        port=PG_PORT,
     )
 
 
