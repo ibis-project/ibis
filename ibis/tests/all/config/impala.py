@@ -1,10 +1,12 @@
+from __future__ import absolute_import
+
+import ibis
+from ibis.impala.tests.common import IbisTestEnv
+
 from ibis.tests.all.config.backendtestconfiguration import (
     BackendTestConfiguration,
     UnorderedSeriesComparator,
 )
-
-import ibis
-from ibis.impala.tests.common import IbisTestEnv
 
 
 ENV = IbisTestEnv()
