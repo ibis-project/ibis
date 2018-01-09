@@ -36,8 +36,8 @@ services:
   - postgresql10
 
 test_script:
+  - "net start postgresql-x64-10"
   - "\"C:\\Program Files\\PostgreSQL\\10\\bin\\psql\" --version"
-  - "sc query state= all"
   - "\"C:\\Program Files\\PostgreSQL\\10\\bin\\psql\" -c \"SELECT 1\""
   - "%CONDA% --version"
   - "%CONDA% config --set always_yes true"
