@@ -24,7 +24,7 @@ environment:
     - PYTHON_VERSION: "3.6"
 
 services:
-  - postgresql93
+  - postgresql10
 
 test_script:
   - "%CONDA% --version"
