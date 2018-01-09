@@ -72,9 +72,9 @@ def _ibis_sqlite_capitalize(string):
 
 @udf
 def _ibis_sqlite_translate(string, from_string, to_string):
-    if string is not None:
-        table = maketrans(from_string, to_string)
-        return string.translate(table)
+    if (string is not None and
+            from_string is not None and to_string is not None):
+        return string.translate(maketrans(from_string, to_string))
     return None
 
 

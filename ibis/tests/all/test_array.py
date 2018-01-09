@@ -7,7 +7,6 @@ import ibis.tests.util as tu
 
 
 def array_test(f):
-    @tu.skip_if_invalid_operation
     @functools.wraps(f)
     def wrapper(backend, *args, **kwargs):
         if not backend.supports_arrays:
@@ -22,7 +21,7 @@ def direct_array_operation_test(f):
         if not backend.supports_arrays_outside_of_select:
             pytest.skip(
                 'Backend {} does not support operations directly on '
-                'arrays'.format(backend)
+                'arrays as column cells'.format(backend)
             )
         return f(backend, *args, **kwargs)
     return wrapper

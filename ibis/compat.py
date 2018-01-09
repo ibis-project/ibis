@@ -68,7 +68,12 @@ else:
 
     range = xrange  # noqa: F821
     import cPickle as pickle  # noqa: F401
-    from string import maketrans  # noqa: F401
+
+    def maketrans(x, y=None, z=None):
+        result = dict(zip(map(ord, x), y))
+        result.update((ord(c), None) for c in z)
+        return result
+
     reduce = reduce
 
 

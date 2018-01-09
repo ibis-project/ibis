@@ -4,6 +4,8 @@ from pytest import param
 import ibis
 import ibis.tests.util as tu
 
+from ibis.compat import maketrans
+
 
 @pytest.mark.parametrize(
     ('result_func', 'expected_func'),
@@ -49,8 +51,8 @@ import ibis.tests.util as tu
             id='repeat'
         ),
         param(
-            lambda t: t.string_col.translate('a', 'b'),
-            lambda t: t.string_col.str.translate(dict(a='b')),
+            lambda t: t.string_col.translate('0', 'a'),
+            lambda t: t.string_col.str.translate(maketrans('0', 'a')),
             id='translate',
         ),
         param(
