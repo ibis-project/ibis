@@ -28,16 +28,16 @@ environment:
 
   matrix:
     - PYTHON_VERSION: "2.7"
-    - PYTHON_VERSION: "3.4"
-    - PYTHON_VERSION: "3.5"
-    - PYTHON_VERSION: "3.6"
+    #- PYTHON_VERSION: "3.4"
+    #- PYTHON_VERSION: "3.5"
+    #- PYTHON_VERSION: "3.6"
 
 services:
   - postgresql10
 
 test_script:
   - "\"C:\\Program Files\\PostgreSQL\\10\\bin\\psql\" --version"
-  - "net start postgresql-10"
+  - "sc query state= all"
   - "\"C:\\Program Files\\PostgreSQL\\10\\bin\\psql\" -c \"SELECT 1\""
   - "%CONDA% --version"
   - "%CONDA% config --set always_yes true"
