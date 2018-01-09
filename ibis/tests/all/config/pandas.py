@@ -14,19 +14,18 @@ from ibis.tests.all.config.backendtestconfiguration import (
 
 
 class Pandas(BackendTestConfiguration):
-    check_names = False
 
+    check_names = False
     additional_skipped_operations = frozenset({ops.StringSQLLike})
 
     @classmethod
-    def connect(cls, backend):
-        pytest.importorskip('multipledispatch')
+    def connect(cls, module):
         test_data_directory = os.environ.get('IBIS_TEST_DATA_DIRECTORY')
         filename = os.path.join(test_data_directory, 'functional_alltypes.csv')
         if not os.path.exists(filename):
             pytest.skip('test data set functional_alltypes not found')
         else:
-            return backend.connect({
+            return module.connect({
                 'functional_alltypes': pd.read_csv(
                     filename,
                     index_col=None,

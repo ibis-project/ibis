@@ -10,10 +10,12 @@ from ibis.tests.all.config.backendtestconfiguration import (
 
 
 class Parquet(BackendTestConfiguration):
+
+    required_modules = 'pyarrow',
     check_names = False
 
     @classmethod
-    def connect(cls, backend):
+    def connect(cls, module):
         test_data_directory = os.environ.get('IBIS_TEST_DATA_DIRECTORY')
         filename = os.path.join(
             test_data_directory, 'functional_alltypes.parquet'
@@ -26,4 +28,4 @@ class Parquet(BackendTestConfiguration):
                 'test data directory'
             )
         else:
-            return backend.connect(test_data_directory)
+            return module.connect(test_data_directory)

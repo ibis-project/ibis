@@ -8,6 +8,9 @@ from ibis.tests.all.config.backendtestconfiguration import (
 
 
 class HDF5(BackendTestConfiguration):
+
+    required_modules = 'tables',
+
     @classmethod
-    def connect(cls, backend):
-        pytest.skip('Skipping {}'.format(backend.__name__))
+    def connect(cls, module):
+        pytest.skip('Skipping backend {}'.format(module.__name__))

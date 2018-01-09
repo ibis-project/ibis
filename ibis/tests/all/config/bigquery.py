@@ -11,9 +11,12 @@ from ibis.tests.all.config.backendtestconfiguration import (
 
 
 class BigQuery(UnorderedSeriesComparator, BackendTestConfiguration):
+
+    required_modules = 'google.cloud.bigquery', 'google.auth'
+
     @classmethod
     def connect(cls, backend):
-        ga = pytest.importorskip('google.auth')
+        import google.auth
 
         project_id = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID')
 
@@ -31,5 +34,5 @@ class BigQuery(UnorderedSeriesComparator, BackendTestConfiguration):
 
         try:
             return backend.connect(project_id, dataset_id)
-        except ga.exceptions.DefaultCredentialsError:
-            pytest.skip('no credentials found, skipping')
+        except google.auth.exceptions.DefaultCredentialsError:
+            pytest.skip('No Google/BigQuery credentials found')

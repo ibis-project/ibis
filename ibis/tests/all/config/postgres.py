@@ -9,8 +9,11 @@ from ibis.tests.all.config.backendtestconfiguration import (
 
 
 class Postgres(BackendTestConfiguration):
+
+    required_modules = 'sqlalchemy', 'psycopg2',
+
     @classmethod
-    def connect(cls, backend):
+    def connect(cls, module):
         PG_USER = os.environ.get(
             'IBIS_TEST_POSTGRES_USER',
             os.environ.get('PGUSER', getpass.getuser())
@@ -23,7 +26,7 @@ class Postgres(BackendTestConfiguration):
             'IBIS_TEST_POSTGRES_DATABASE',
             os.environ.get('PGDATABASE', 'ibis_testing')
         )
-        return backend.connect(
+        return module.connect(
             host=PG_HOST,
             user=PG_USER,
             password=PG_PASS,

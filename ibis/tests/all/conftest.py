@@ -25,8 +25,7 @@ def con(backend):
                 backend_module_name, e
             )
         )
-    else:
-        return backend.connect(module)
+    return backend.connect(module)
 
 
 @pytest.fixture(scope='session')

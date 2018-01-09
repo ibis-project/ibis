@@ -2,19 +2,20 @@ from __future__ import absolute_import
 
 import os
 
-import ibis
-
 from ibis.tests.all.config.backendtestconfiguration import (
     BackendTestConfiguration
 )
 
 
 class Clickhouse(BackendTestConfiguration):
+
+    required_modules = 'clickhouse_driver',
+
     check_dtype = False
 
     @classmethod
-    def connect(cls, backend):
-        return ibis.clickhouse.connect(
+    def connect(cls, module):
+        return module.connect(
             host=os.environ.get('IBIS_CLICKHOUSE_HOST', 'localhost'),
             port=int(os.environ.get('IBIS_CLICKHOUSE_PORT', 9000)),
             database=os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing'),

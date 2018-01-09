@@ -11,6 +11,8 @@ from ibis.tests.all.config.backendtestconfiguration import (
 
 class SQLite(BackendTestConfiguration):
 
+    required_modules = 'sqlalchemy',
+
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = False
@@ -18,10 +20,8 @@ class SQLite(BackendTestConfiguration):
     check_dtype = False
 
     @classmethod
-    def connect(cls, backend):
+    def connect(cls, module):
         path = os.environ.get('IBIS_TEST_SQLITE_DATABASE', 'ibis_testing.db')
         if not os.path.exists(path):
-            pytest.skip('SQLite testing db {} does not exist'.format(path))
-        else:
-            con = backend.connect(path)
-            return con
+            pytest.skip('SQLite testing db at {} does not exist'.format(path))
+        return module.connect(path)
