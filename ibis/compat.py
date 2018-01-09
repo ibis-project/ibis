@@ -70,8 +70,18 @@ else:
     import cPickle as pickle  # noqa: F401
 
     def maketrans(x, y=None, z=None):
-        result = dict(zip(map(ord, x), y))
-        result.update((ord(c), None) for c in z)
+        if y is None:
+            if not isinstance(x, dict):
+                raise TypeError(
+                    'if you give only one argument to maketrans it must be a '
+                    'dict'
+                )
+            else:
+                result = dict(zip(map(ord, x.keys()), x.values()))
+        else:
+            result = dict(zip(map(ord, x), y))
+        if z is not None:
+            result.update((ord(c), None) for c in z)
         return result
 
     reduce = reduce
