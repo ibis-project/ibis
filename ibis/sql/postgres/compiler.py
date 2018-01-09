@@ -444,11 +444,12 @@ class regex_extract(GenericFunction):
 
 @compiles(regex_extract, 'postgresql')
 def compile_regex_extract(element, compiler, **kw):
-    return '(REGEXP_MATCHES(%s, %s))[%s]' % (
+    result = '(SELECT * FROM REGEXP_MATCHES({}, {}))[{}]'.format(
         compiler.process(element.string, **kw),
         compiler.process(element.pattern, **kw),
         compiler.process(element.index, **kw),
     )
+    return result
 
 
 def _regex_extract(t, expr):
