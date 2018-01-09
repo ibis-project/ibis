@@ -37,6 +37,7 @@ services:
 
 test_script:
   - "\"C:\\Program Files\\PostgreSQL\\10\\bin\\psql\" --version"
+  - "\"C:\\Program Files\\PostgreSQL\\10\\bin\\psql\" -c \"SELECT 1\""
   - "%CONDA% --version"
   - "%CONDA% config --set always_yes true"
   - "%CONDA% install conda=4.3.22 --channel conda-forge"
