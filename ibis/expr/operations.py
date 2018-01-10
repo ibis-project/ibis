@@ -1361,10 +1361,9 @@ class SimpleCase(ValueOp):
 
     def root_tables(self):
         base, cases, results, default = self.args
-        all_exprs = [base] + cases + results + list(filter(
-            lambda expr: expr is not None,
-            [default]
-        ))
+        all_exprs = [base] + cases + results + (
+            [] if default is None else [default]
+        )
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
@@ -1389,10 +1388,7 @@ class SearchedCase(ValueOp):
 
     def root_tables(self):
         cases, results, default = self.args
-        all_exprs = cases + results + list(filter(
-            lambda expr: expr is not None,
-            [default]
-        ))
+        all_exprs = cases + results + ([] if default is None else [default])
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
