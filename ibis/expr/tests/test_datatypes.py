@@ -1,17 +1,23 @@
-import pytest
 import datetime
-import numpy as np
-import pandas as pd
 from collections import OrderedDict
 
+import pytest
+
+import numpy as np
+import pandas as pd
+
+from multipledispatch.conflict import ambiguities
+
 import ibis
+
+import ibis.expr.api as api
+import ibis.expr.types as types
+import ibis.expr.rules as rules
+
 from ibis import IbisError
 from ibis.compat import DatetimeTZDtype, CategoricalDtype
 from ibis.expr import datatypes as dt
 from ibis.expr.rules import highest_precedence_type
-import ibis.expr.api as api
-import ibis.expr.types as types
-import ibis.expr.rules as rules
 
 
 def test_validate_type():
@@ -465,3 +471,7 @@ def test_implicit_castable_values(source, target, value):
 ])
 def test_implicitly_uncastable_values(source, target, value):
     assert not dt.castable(source, target, value=value)
+
+
+def test_no_infer_ambiguities():
+    assert not ambiguities(dt.infer.funcs)
