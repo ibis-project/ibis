@@ -39,7 +39,8 @@ class Backend(object):
             yield
         except (com.OperationNotDefinedError,
                 com.UnsupportedBackendType,
-                com.TranslationError) as e:
+                com.TranslationError,
+                NotImplementedError) as e:
             pytest.skip('{} using {}'.format(e, str(self)))
 
     def assert_series_equal(self, *args, **kwargs):

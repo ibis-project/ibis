@@ -260,20 +260,22 @@ def _interval_format(translator, expr):
         raise ValueError('Clickhouse doesn\'t support subsecond interval '
                          'resolutions')
 
-    return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution)
+    return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution.upper())
 
 
-# def _interval_from_integer(translator, expr):
-#     # requires clickhosue-driver to support interval types
-#     op = expr.op()
-#     arg, unit = op.args
+def _interval_from_integer(translator, expr):
+    # selecting interval columns requires clickhosue-driver to support
+    # interval types, upstream PR in clickhouse-driver:
+    # https://github.com/mymarilyn/clickhouse-driver/pull/16
+    op = expr.op()
+    arg, unit = op.args
 
-#     if expr.unit in {'ms', 'us', 'ns'}:
-#         raise ValueError('Clickhouse doesn\'t support subsecond interval '
-#                          'resolutions')
+    if expr.unit in {'ms', 'us', 'ns'}:
+        raise ValueError('Clickhouse doesn\'t support subsecond interval '
+                         'resolutions')
 
-#     arg_ = translator.translate(arg)
-#     return 'INTERVAL {} {}'.format(arg_, expr.resolution.upper())
+    arg_ = translator.translate(arg)
+    return 'INTERVAL {} {}'.format(arg_, expr.resolution.upper())
 
 
 def literal(translator, expr):
@@ -584,7 +586,7 @@ _operation_registry = {
 
     ops.TimeTruncate: _truncate,
 
-    # ops.IntervalFromInteger: _interval_from_integer,
+    ops.IntervalFromInteger: _interval_from_integer,
 
     ops.ExtractYear: unary('toYear'),
     ops.ExtractMonth: unary('toMonth'),

@@ -514,6 +514,15 @@ def _interval_literal_format(expr):
     return 'INTERVAL {} {}S'.format(expr.op().value, expr.resolution.upper())
 
 
+def _interval_from_integer(translator, expr):
+    # interval cannot be selected from impala
+    op = expr.op()
+    arg, unit = op.args
+    arg_formatted = translator.translate(arg)
+
+    return 'INTERVAL {} {}S'.format(arg_formatted, expr.resolution.upper())
+
+
 def _timestamp_literal_format(expr):
     value = expr.op().value
     if isinstance(value, datetime.datetime):
@@ -1023,6 +1032,7 @@ _operation_registry = {
     ops.ExtractMillisecond: _extract_field('millisecond'),
     ops.TimestampTruncate: _truncate,
     ops.DateTruncate: _truncate,
+    ops.IntervalFromInteger: _interval_from_integer,
 
     # Other operations
     ops.E: lambda *args: 'e()',
