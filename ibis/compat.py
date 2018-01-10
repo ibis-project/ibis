@@ -69,20 +69,19 @@ else:
     range = xrange  # noqa: F821
     import cPickle as pickle  # noqa: F401
 
-    def maketrans(x, y=None, z=None):
-        if y is None:
-            if not isinstance(x, dict):
-                raise TypeError(
-                    'if you give only one argument to maketrans it must be a '
-                    'dict'
-                )
-            else:
-                result = dict(zip(map(ord, x.keys()), x.values()))
-        else:
-            result = dict(zip(map(ord, x), y))
-        if z is not None:
-            result.update((ord(c), None) for c in z)
-        return result
+    def maketrans(x, y):
+        import string
+
+        assert type(x) == type(y), 'type(x) != type(y) -> {} != {}'.format(
+            type(x), type(y)
+        )
+        assert len(x) == len(y), 'len(x) != len(y) -> {:d} != {:d}'.format(
+            len(x), len(y)
+        )
+
+        if isinstance(x, six.text_type):
+            return dict(zip(map(ord, x), y))
+        return string.maketrans(x, y)
 
     reduce = reduce
 
