@@ -52,7 +52,7 @@ from ibis.compat import maketrans
         ),
         param(
             lambda t: t.string_col.translate('0', 'a'),
-            lambda t: t.string_col.str.translate(maketrans('0', 'a')),
+            lambda t: t.string_col.str.translate(maketrans(u'0', u'a')),
             id='translate',
         ),
         param(
