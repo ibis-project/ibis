@@ -29,9 +29,6 @@ class Pandas(BackendTestConfiguration):
                 'functional_alltypes': pd.read_csv(
                     filename,
                     index_col=None,
-                    dtype={
-                        'string_col': str,
-                        'bool_col': bool,
-                    }
+                    dtype={'string_col': str, 'bool_col': bool}
                 )
             })
