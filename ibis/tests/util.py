@@ -21,7 +21,7 @@ import ibis
 import ibis.common as com
 import ibis.util as util
 
-from ibis.compat import PY2
+from ibis.compat import wrapped
 
 
 def assert_equal(left, right):
@@ -34,13 +34,11 @@ def assert_equal(left, right):
 
 
 def skip_if_invalid_operation(f):
+    @wrapped(f)
     @functools.wraps(f)
     def wrapper(backend, *args, **kwargs):
         try:
             return f(backend, *args, **kwargs)
         except (com.OperationNotDefinedError, com.UnsupportedBackendType) as e:
             pytest.skip('{} using {}'.format(e, backend.__name__))
-
-    if PY2:
-        wrapper.__wrapped__ = f
     return wrapper

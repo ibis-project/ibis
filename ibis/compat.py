@@ -119,3 +119,15 @@ except ImportError:
 
 def to_date(*args, **kwargs):
     return to_datetime(*args, **kwargs).date()
+
+
+if PY2:
+    def wrapped(f):
+        def wrapper(functools_wrapped):
+            functools_wrapped.__wrapped__ = f
+            return functools_wrapped
+        return wrapper
+else:
+    def wrapped(f):
+        import toolz
+        return toolz.identity
