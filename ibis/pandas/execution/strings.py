@@ -313,7 +313,7 @@ def execute_series_translate_series_series(
 ):
     to_string_iter = iter(to_string)
     table = from_string.apply(
-        lambda x, y: maketrans(x=x, y=next(y)), args=(to_string_iter,)
+        lambda x, y: maketrans(x, y=next(y)), args=(to_string_iter,)
     )
     return data.str.translate(table)
 
