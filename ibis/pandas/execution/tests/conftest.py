@@ -54,22 +54,32 @@ def df():
 
 @pytest.fixture(scope='module')
 def batting_df():
-    path = os.environ.get('BATTING_CSV', 'batting.csv')
+    path = os.path.join(
+        os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''),
+        'batting.csv'
+    )
     if not os.path.exists(path):
         pytest.skip('{} not found'.format(path))
-    else:
-        df = pd.read_csv(path, index_col=None, sep=',')
-        num_rows = int(0.01 * len(df))
-        return df.iloc[30:30 + num_rows].reset_index(drop=True)
+    elif not os.path.isfile(path):
+        pytest.skip('{} is not a file'.format(path))
+
+    df = pd.read_csv(path, index_col=None, sep=',')
+    num_rows = int(0.01 * len(df))
+    return df.iloc[30:30 + num_rows].reset_index(drop=True)
 
 
 @pytest.fixture(scope='module')
 def awards_players_df():
-    path = os.environ.get('AWARDS_PLAYERS_CSV', 'awards_players.csv')
+    path = os.path.join(
+        os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''),
+        'awards_players.csv'
+    )
     if not os.path.exists(path):
         pytest.skip('{} not found'.format(path))
-    else:
-        return pd.read_csv(path, index_col=None, sep=',')
+    elif not os.path.isfile(path):
+        pytest.skip('{} is not a file'.format(path))
+
+    return pd.read_csv(path, index_col=None, sep=',')
 
 
 @pytest.fixture(scope='module')
