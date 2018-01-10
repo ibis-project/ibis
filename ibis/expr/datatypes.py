@@ -1116,7 +1116,7 @@ def infer_floating(value):
 
 @infer.register(six.integer_types)
 def infer_integer(value, allow_overflow=False):
-    for dtype in [int8, int16, int32, int64]:
+    for dtype in (int8, int16, int32, int64):
         if dtype.bounds.lower <= value <= dtype.bounds.upper:
             return dtype
 
