@@ -553,6 +553,7 @@ _operation_registry = {
     ops.Variance: agg_variance_like('var'),
 
     # ops.GroupConcat: fixed_arity('group_concat', 2),
+    # TODO: runningDifference, runningIncome
 
     ops.Count: agg('count'),
     ops.CountDistinct: agg('uniq'),
