@@ -12,7 +12,7 @@ import ibis.expr.datatypes as dt
 import os
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def df():
     return pd.DataFrame({
         'plain_int64': list(range(1, 4)),
@@ -52,7 +52,7 @@ def df():
     })
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def batting_df():
     path = os.path.join(
         os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''),
@@ -68,7 +68,7 @@ def batting_df():
     return df.iloc[30:30 + num_rows].reset_index(drop=True)
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def awards_players_df():
     path = os.path.join(
         os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''),
@@ -82,14 +82,14 @@ def awards_players_df():
     return pd.read_csv(path, index_col=None, sep=',')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def df1():
     return pd.DataFrame(
         {'key': list('abcd'), 'value': [3, 4, 5, 6], 'key2': list('eeff')}
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def df2():
     return pd.DataFrame({
         'key': list('ac'),
@@ -98,21 +98,21 @@ def df2():
     })
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def time_df1():
     return pd.DataFrame(
         {'time': pd.to_datetime([1, 2, 3, 4]), 'value': [1.1, 2.2, 3.3, 4.4]}
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def time_df2():
     return pd.DataFrame(
         {'time': pd.to_datetime([2, 4]), 'other_value': [1.2, 2.0]}
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def time_keyed_df1():
     return pd.DataFrame(
         {
@@ -123,7 +123,7 @@ def time_keyed_df1():
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def time_keyed_df2():
     return pd.DataFrame(
         {
@@ -134,7 +134,7 @@ def time_keyed_df2():
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def client(
     df, df1, df2, df3, time_df1, time_df2, time_keyed_df1, time_keyed_df2
 ):
@@ -154,7 +154,7 @@ def client(
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def df3():
     return pd.DataFrame({
         'key': list('ac'),
@@ -164,7 +164,7 @@ def df3():
     })
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def t(client):
     return client.table(
         'df',
@@ -177,7 +177,7 @@ def t(client):
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def lahman(batting_df, awards_players_df):
     return ibis.pandas.connect({
         'batting': batting_df,
@@ -185,63 +185,63 @@ def lahman(batting_df, awards_players_df):
     })
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def left(client):
     return client.table('left')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def right(client):
     return client.table('right')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def time_left(client):
     return client.table('time_df1')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def time_right(client):
     return client.table('time_df2')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def time_keyed_left(client):
     return client.table('time_keyed_df1')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def time_keyed_right(client):
     return client.table('time_keyed_df2')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def batting(lahman):
     return lahman.table('batting')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def awards_players(lahman):
     return lahman.table('awards_players')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def sel_cols(batting):
     cols = batting.columns
     start, end = cols.index('AB'), cols.index('H') + 1
     return ['playerID', 'yearID', 'teamID', 'G'] + cols[start:end]
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def players_base(batting, sel_cols):
     return batting[sel_cols].sort_by(sel_cols[:3])
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def players(players_base):
     return players_base.groupby('playerID')
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def players_df(players_base):
     return players_base.execute().reset_index(drop=True)

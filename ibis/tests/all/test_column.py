@@ -1,6 +1,3 @@
-"""Tests for operations that work across columns of all (or most) types.
-"""
-
 import pytest
 
 import ibis.tests.util as tu
@@ -17,8 +14,8 @@ import ibis.tests.util as tu
 )
 @tu.skip_if_invalid_operation
 @pytest.mark.backend
-def test_distinct_column(backend, backend_alltypes, backend_df, column):
-    expr = backend_alltypes[column].distinct()
+def test_distinct_column(backend, alltypes, df, column):
+    expr = alltypes[column].distinct()
     result = expr.execute()
-    expected = backend_df[column].unique()
-    assert frozenset(result) == frozenset(expected)
+    expected = df[column].unique()
+    assert set(result) == set(expected)

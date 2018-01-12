@@ -117,12 +117,9 @@ import ibis.tests.util as tu
 @tu.skip_if_invalid_operation
 @pytest.mark.backend
 def test_aggregation(
-    backend,
-    backend_alltypes, backend_df,
-    result_func, expected_func,
-    ibis_cond, pandas_cond
+    backend, alltypes, df, result_func, expected_func, ibis_cond, pandas_cond
 ):
-    expr = result_func(backend_alltypes, ibis_cond(backend_alltypes))
+    expr = result_func(alltypes, ibis_cond(alltypes))
     result = expr.execute()
-    expected = expected_func(backend_df, pandas_cond(backend_df))
+    expected = expected_func(df, pandas_cond(df))
     np.testing.assert_allclose(result, expected)

@@ -15,7 +15,7 @@ def backend(request):
 
 
 @pytest.fixture(scope='session')
-def backend_con(backend):
+def con(backend):
     backend_module_name = backend.__name__.lower()
     try:
         module = getattr(ibis, backend_module_name)
@@ -29,15 +29,42 @@ def backend_con(backend):
 
 
 @pytest.fixture(scope='session')
-def backend_alltypes(backend, backend_con):
-    return backend.functional_alltypes(backend_con)
+def dialect(con):
+    return con.dialect
 
 
 @pytest.fixture(scope='session')
-def analytic_alltypes(backend_alltypes):
-    return backend_alltypes.groupby('string_col').order_by('id')
+def translator(dialect):
+    return dialect.translator
 
 
 @pytest.fixture(scope='session')
-def backend_df(backend_alltypes):
-    return backend_alltypes.execute()
+def registry(translator):
+    return translator._registry
+
+
+@pytest.fixture(scope='session')
+def rewrites(translator):
+    return translator._rewrites
+
+
+@pytest.fixture(scope='session')
+def valid_operations(registry, rewrites, backend):
+    return (
+        frozenset(registry) | frozenset(rewrites)
+    ) - backend.additional_skipped_operations
+
+
+@pytest.fixture(scope='session')
+def alltypes(backend, con):
+    return backend.functional_alltypes(con)
+
+
+@pytest.fixture
+def analytic_alltypes(alltypes):
+    return alltypes.groupby('string_col').order_by('id')
+
+
+@pytest.fixture(scope='session')
+def df(alltypes):
+    return alltypes.execute()
