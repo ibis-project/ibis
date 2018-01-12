@@ -43,10 +43,14 @@ test_script:
   - "%CONDA% create --name \"ibis_%PYTHON_VERSION%\" python=%PYTHON_VERSION% --channel conda-forge"
   - "%ACTIVATE% \"ibis_%PYTHON_VERSION%\""
   - "%CONDA% install pytables"
+
   - "pip install -e .\"[sqlite, postgres, visualization, pandas, csv, hdf5]\""
   - "pip install flake8 mock pytest click \"pbs==0.110\""
+
   - "flake8"
+
   - "python testing\\datamgr.py download"
   - "python testing\\datamgr.py sqlite"
   - "python testing\\datamgr.py postgres"
-  - "pytest --tb=short -m \"not impala and not hdfs\" ibis"
+
+  - "pytest --tb=short -m \"not backend and not clickhouse and not impala and not hdfs and not bigquery\" -rs ibis"
