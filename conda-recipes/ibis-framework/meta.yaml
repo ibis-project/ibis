@@ -41,7 +41,7 @@ test:
     - multipledispatch
     - pytest >=3
     - python-graphviz  # [not (py34 and win)]
-    - pyarrow >=0.6.0 [not py34]
+    - pyarrow >=0.6.0 # [not py34]
   imports:
     - ibis
     - ibis.expr
@@ -67,9 +67,10 @@ test:
     - ibis.file.tests
     - ibis.pandas
     - ibis.tests
+    - ibis.tests.all
   commands:
-    - pytest --version
-    - pytest --tb=short --pyargs ibis -m "not backend and not impala and not hdfs and not bigquery" --ignore=ibis/tests/all
+    #- pytest -v -x --tb=short --pyargs ibis -m "not backend and not clickhouse and not impala and not hdfs and not bigquery" -rs
+    - pytest -v -x --tb=short --pyargs ibis -m "pandas" -rs
 
 about:
   license: Apache License, Version 2.0
