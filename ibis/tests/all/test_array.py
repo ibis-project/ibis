@@ -34,18 +34,18 @@ def direct_array_operation_test(f):
 @tu.skip_if_invalid_operation
 @direct_array_operation_test
 @pytest.mark.backend
-def test_array_concat(backend, con):
+def test_array_concat(_, backend_con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
     expr = left + right
-    result = con.execute(expr)
+    result = backend_con.execute(expr)
     assert result == [1, 2, 3, 2, 1]
 
 
 @tu.skip_if_invalid_operation
 @direct_array_operation_test
 @pytest.mark.backend
-def test_array_length(backend, con):
+def test_array_length(_, backend_con):
     expr = ibis.literal([1, 2, 3]).length()
-    result = con.execute(expr)
+    result = backend_con.execute(expr)
     assert result == 3

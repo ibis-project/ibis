@@ -150,7 +150,7 @@ import ibis.tests.util as tu
 @tu.skip_if_invalid_operation
 @pytest.mark.backend
 def test_window(
-    backend, analytic_alltypes, df, con, result_func, expected_func,
+    backend, analytic_alltypes, backend_df, con, result_func, expected_func,
 ):
     if not backend.supports_window_operations:
         pytest.skip(
@@ -165,7 +165,9 @@ def test_window(
 
     result = raw_result.set_index('id').sort_index()
 
-    gb = df.sort_values('id').groupby('string_col')
-    expected = df.assign(value=expected_func(gb)).set_index('id').sort_index()
+    gb = backend_df.sort_values('id').groupby('string_col')
+    expected = backend_df.assign(
+        value=expected_func(gb)
+    ).set_index('id').sort_index()
     left, right = result.value, expected.value
     backend.assert_series_equal(left, right)
