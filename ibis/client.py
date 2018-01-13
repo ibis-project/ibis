@@ -46,6 +46,7 @@ class Query(object):
             ddl, 'parent_expr', getattr(ddl, 'table_set', None)
         )
 
+        self.ddl = ddl
         if isinstance(ddl, comp.DDL):
             self.compiled_ddl = ddl.compile()
         else:

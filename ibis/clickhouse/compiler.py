@@ -51,6 +51,14 @@ class ClickhouseQueryContext(comp.QueryContext):
     def _to_sql(self, expr, ctx):
         return to_sql(expr, context=ctx)
 
+    def need_aliases(self, expr=None):
+        from ibis.clickhouse.client import ClickhouseExternalTable
+
+        if isinstance(expr.op(), ClickhouseExternalTable):
+            return False
+
+        return super(ClickhouseQueryContext, self).need_aliases()
+
 
 class ClickhouseSelect(comp.Select):
 

@@ -1023,7 +1023,7 @@ class QueryContext(object):
         alias = 't%d' % i
         self.set_ref(expr, alias)
 
-    def need_aliases(self):
+    def need_aliases(self, expr=None):
         return self.always_alias or len(self._table_refs) > 1
 
     def has_ref(self, expr, parent_contexts=False):
@@ -1458,7 +1458,7 @@ class Select(DDL):
                 expr_str = self._translate(expr, named=True)
             elif isinstance(expr, ir.TableExpr):
                 # A * selection, possibly prefixed
-                if context.need_aliases():
+                if context.need_aliases(expr):
                     alias = context.get_ref(expr)
 
                     # materialized join will not have an alias. see #491
@@ -1701,7 +1701,7 @@ class TableSetFormatter(object):
             result = '(\n{}\n)'.format(util.indent(subquery, self.indent))
             is_subquery = True
 
-        if is_subquery or ctx.need_aliases():
+        if is_subquery or ctx.need_aliases(expr):
             result += ' {}'.format(ctx.get_ref(expr))
 
         return result

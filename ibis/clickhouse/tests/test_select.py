@@ -1,5 +1,6 @@
 import sys
 import pytest
+import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
@@ -478,3 +479,37 @@ GROUP BY `key`"""
 # ) t0"""
 
 #     assert result == expected
+
+
+@pytest.mark.parametrize('data_fn', [
+    lambda df: df,
+    lambda df: df.to_dict(orient='records'),
+    lambda df: lambda: df,
+    lambda df: lambda: df.to_dict(orient='records'),
+])
+def test_join_with_external_table(con, alltypes, df, data_fn):
+    external_df = pd.DataFrame([
+        ('alpha', 1, 'first'),
+        ('beta', 2, 'second'),
+        ('gamma', 3, 'third')
+    ], columns=['a', 'b', 'c'])
+
+    schema = [('a', 'string'),
+              ('b', 'Int8'),
+              ('c', 'string')]
+
+    external = con.external_table('external', data_fn(external_df),
+                                  schema=schema)
+
+    alltypes = alltypes.mutate(b=alltypes.tinyint_col)
+    expr = alltypes.inner_join(external, ['b'])[
+        external.a, external.c, alltypes.id]
+
+    result = con.execute(expr)
+    expected = (df.assign(b=df.tinyint_col)
+                  .merge(external_df, on='b')[['a', 'c', 'id']])
+
+    result = result.sort_values('id').reset_index(drop=True)
+    expected = expected.sort_values('id').reset_index(drop=True)
+
+    tm.assert_frame_equal(result, expected)

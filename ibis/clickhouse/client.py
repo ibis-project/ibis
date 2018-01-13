@@ -2,9 +2,10 @@ import re
 import pandas as pd
 
 import ibis.common as com
-import ibis.expr.operations as ops
-import ibis.expr.schema as sch
 import ibis.expr.types as ir
+import ibis.expr.schema as sch
+import ibis.expr.lineage as lin
+import ibis.expr.operations as ops
 
 from ibis.config import options
 from ibis.compat import zip as czip
@@ -15,7 +16,7 @@ from ibis.sql.compiler import DDL
 
 from clickhouse_driver.client import Client as _DriverClient
 
-from .types import clickhouse_to_pandas, clickhouse_to_ibis
+from .types import clickhouse_to_pandas, clickhouse_to_ibis, ibis_to_clickhouse
 
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
@@ -27,9 +28,28 @@ class ClickhouseDatabase(Database):
 
 class ClickhouseQuery(Query):
 
+    def _external_tables(self):
+        table_set = getattr(self.ddl, 'table_set', None)
+        if table_set is None:
+            return []
+
+        for table in lin.roots(table_set, (ClickhouseExternalTable,)):
+            data = table.data()
+            if isinstance(data, pd.DataFrame):
+                data = data.to_dict('records')
+            if not isinstance(data, list) and isinstance(data[0], dict):
+                raise ValueError('External table\'s data must be a pandas '
+                                 'dataframe or a list of dicts')
+
+            types = ibis_types_to_clickhouse_types(table.schema.types)
+            struct = list(zip(table.schema.names, types))
+            yield dict(name=table.name, data=data, structure=struct)
+
     def execute(self):
-        # synchronous by default
-        cursor = self.client._execute(self.compiled_ddl)
+        cursor = self.client._execute(
+            self.compiled_ddl,
+            external_tables=list(self._external_tables())
+        )
         result = self._fetch(cursor)
         return self._wrap_result(result)
 
@@ -67,6 +87,19 @@ def clickhouse_types_to_ibis_types(types):
     return result
 
 
+def ibis_types_to_clickhouse_types(types):
+    result = []
+
+    for t in types:
+        try:
+            value = ibis_to_clickhouse[str(t)]
+        except KeyError:
+            raise com.UnsupportedBackendType(t)
+        else:
+            result.append(value)
+    return result
+
+
 class ClickhouseClient(SQLClient):
     """An Ibis client interface that uses Clickhouse"""
 
@@ -96,12 +129,13 @@ class ClickhouseClient(SQLClient):
         """Close Clickhouse connection and drop any temporary objects"""
         self.con.disconnect()
 
-    def _execute(self, query):
+    def _execute(self, query, external_tables=[]):
         if isinstance(query, DDL):
             query = query.compile()
         self.log(query)
 
-        return self.con.execute(query, columnar=True, with_column_types=True)
+        return self.con.execute(query, columnar=True, with_column_types=True,
+                                external_tables=external_tables)
 
     def _fully_qualified_name(self, name, database):
         if bool(fully_qualified_re.search(name)):
@@ -207,6 +241,33 @@ class ClickhouseClient(SQLClient):
 
         return sch.Schema(names, ibis_types)
 
+    def external_table(self, name, data, schema=None):
+        """
+        Create a table expression that references a particular table in the
+        database
+
+        Parameters
+        ----------
+        name : string
+        database : string, optional
+
+        Returns
+        -------
+        table : TableExpr
+        """
+        import ibis.expr.schema as sch
+
+        if schema is None:
+            if callable(data):
+                raise ValueError('Must explicitly define a schema for an '
+                                 'external table created from a callable')
+            schema = sch.infer(data)
+        else:
+            schema = sch.schema(schema)
+
+        node = ClickhouseExternalTable(name, schema, data)
+        return self._table_expr_klass(node)
+
     @property
     def client_options(self):
         return self.con.options
@@ -309,17 +370,10 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
         return self._client._execute(stmt)
 
 
-class ClickhouseTemporaryTable(ops.DatabaseTable):
+class ClickhouseExternalTable(ops.DatabaseTable):
 
-    def __del__(self):
-        try:
-            self.drop()
-        except com.IbisError:
-            pass
-
-    def drop(self):
-        try:
-            self.source.drop_table(self.name)
-        except Exception:  # ClickhouseError
-            # database might have been dropped
-            pass
+    def data(self):
+        if callable(self.source):
+            return self.source()
+        else:
+            return self.source

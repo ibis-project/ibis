@@ -169,7 +169,7 @@ class Expr(object):
             return type(self)(arg, name=name)
         return factory
 
-    def execute(self, limit='default', async=False, params=None):
+    def execute(self, limit='default', async=False, params=None, **kwargs):
         """
         If this expression is based on physical tables in a database backend,
         execute it against that backend.
@@ -186,7 +186,7 @@ class Expr(object):
           Result of compiling expression and executing in backend
         """
         from ibis.client import execute
-        return execute(self, limit=limit, async=async, params=params)
+        return execute(self, limit=limit, async=async, params=params, **kwargs)
 
     def compile(self, limit=None, params=None):
         """
