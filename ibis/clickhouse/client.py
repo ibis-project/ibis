@@ -33,6 +33,7 @@ class ClickhouseQuery(Query):
         if table_set is None:
             return []
 
+        tables = []
         for table in lin.roots(table_set, (ClickhouseExternalTable,)):
             data = table.data()
             if isinstance(data, pd.DataFrame):
@@ -43,12 +44,14 @@ class ClickhouseQuery(Query):
 
             types = ibis_types_to_clickhouse_types(table.schema.types)
             struct = list(zip(table.schema.names, types))
-            yield dict(name=table.name, data=data, structure=struct)
+            tables.append(dict(name=table.name, data=data, structure=struct))
+
+        return tables
 
     def execute(self):
         cursor = self.client._execute(
             self.compiled_ddl,
-            external_tables=list(self._external_tables())
+            external_tables=self._external_tables()
         )
         result = self._fetch(cursor)
         return self._wrap_result(result)
