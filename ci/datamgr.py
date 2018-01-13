@@ -25,8 +25,8 @@ def recreate_database(driver, params, **kwargs):
     engine = sa.create_engine(url, **kwargs)
 
     with engine.connect() as conn:
-        conn.execute('DROP DATABASE IF EXISTS "{}"'.format(params['database']))
-        conn.execute('CREATE DATABASE "{}"'.format(params['database']))
+        conn.execute('DROP DATABASE IF EXISTS {}'.format(params['database']))
+        conn.execute('CREATE DATABASE {}'.format(params['database']))
 
 
 def init_database(driver, params, schema=None, recreate=True, **kwargs):
@@ -174,6 +174,24 @@ def sqlite(database, schema, tables, data_directory, **params):
 
     params['database'] = database
     engine = init_database('sqlite', params, schema, recreate=False)
+    insert_tables(engine, tables, data_directory)
+
+
+@cli.command()
+@click.option('-h', '--host', default='localhost')
+@click.option('-P', '--port', default=3306, type=int)
+@click.option('-u', '--user', default='ibis')
+@click.option('-p', '--password', default='ibis')
+@click.option('-D', '--database', default='ibis_testing')
+@click.option('-S', '--schema', type=click.File('rt'),
+              default=str(SCRIPT_DIR / 'schema' / 'mysql.sql'))
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-d', '--data-directory', default=DATA_DIR)
+def mysql(schema, tables, data_directory, **params):
+    data_directory = Path(data_directory)
+    click.echo('Initializing MySQL...')
+    engine = init_database('mysql+pymysql', params, schema)
+    #                           isolation_level='AUTOCOMMIT')
     insert_tables(engine, tables, data_directory)
 
 

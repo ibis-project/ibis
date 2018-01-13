@@ -21,6 +21,7 @@ dependencies:
   - psycopg2
   - pyarrow>=0.6.0
   - pytables
+  - pymysql
   - pytest
   - python=3.6
   - python-graphviz

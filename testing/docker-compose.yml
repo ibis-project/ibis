@@ -1,0 +1,32 @@
+version: '2'
+services:
+
+  clickhouse:
+    image: yandex/clickhouse-server:latest
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+
+  mysql:
+    image: mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=1
+      - MYSQL_DATABASE=ibis_testing
+      - MYSQL_USER=ibis
+      - MYSQL_PASSWORD=ibis
+
+  impala:
+    # this container includes postgres too
+    image: cpcloud86/impala:java8-1
+    hostname: localhost
+    ports:
+      - "9020:9020"
+      - "5432:5432"
+      - "21050:21050"
+      - "25000:25000"
+      - "25020:25020"
+      - "50020:50020"
+      - "50070:50070"
+      - "50075:50075"

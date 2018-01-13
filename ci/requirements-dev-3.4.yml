@@ -12,6 +12,7 @@ dependencies:
   - numpy=1.11.0
   - pandas
   - psycopg2
+  - pymysql
   - pytest
   - python=3.4
   - python-graphviz
