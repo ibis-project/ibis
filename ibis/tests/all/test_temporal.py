@@ -5,14 +5,6 @@ import ibis
 import pandas as pd
 
 
-def test_time():
-    pass
-
-
-def test_date():
-    pass
-
-
 @pytest.mark.parametrize('unit', [
     'Y', 'M', 'D',
     param('W', marks=pytest.mark.xfail),

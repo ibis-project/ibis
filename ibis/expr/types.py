@@ -603,7 +603,7 @@ def param(type, name=None):
     """
     if name is None:
         name = _parameter_name()
-    expr = ScalarParameter(dt.validate_type(type), name=name).to_expr()
+    expr = ScalarParameter(dt.dtype(type), name=name).to_expr()
     return expr.name(name)
 
 
@@ -1430,7 +1430,7 @@ def literal(value, type=None):
     if type is not None:
         try:
             # check that dtype is implicitly castable to explicitly given dtype
-            dtype = dtype.cast(type)
+            dtype = dtype.cast(type, value=value)
         except com.IbisTypeError:
             raise TypeError('Value {!r} cannot be safely coerced '
                             'to {}'.format(value, type))

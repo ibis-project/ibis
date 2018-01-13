@@ -97,11 +97,11 @@ class DataType(object):
     def issubtype(self, parent):
         return issubtype(self, parent)
 
-    def castable(self, target):
-        return castable(self, target)
+    def castable(self, target, **kwargs):
+        return castable(self, target, **kwargs)
 
-    def cast(self, target):
-        return cast(self, target)
+    def cast(self, target, **kwargs):
+        return cast(self, target, **kwargs)
 
     def scalar_type(self):
         import ibis.expr.types as ir
@@ -1222,6 +1222,7 @@ def can_cast_string_to_temporal(source, target, value=None, **kwargs):
     if value is None:
         return False
     try:
+
         pd.Timestamp(value)
         return True
     except ValueError:

@@ -2,11 +2,20 @@ import pytest
 import datetime
 import operator
 
-from ibis.compat import PY2
+import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.api as api
+from ibis.compat import PY2
+
+
+def test_temporal_literals():
+    date = ibis.literal('2015-01-01', 'date')
+    assert isinstance(date, ir.DateScalar)
+
+    timestamp = ibis.literal('2017-01-01 12:00:33', 'timestamp')
+    assert isinstance(timestamp, ir.TimestampScalar)
 
 
 @pytest.mark.parametrize(('interval', 'unit', 'expected'), [

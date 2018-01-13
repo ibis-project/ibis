@@ -523,6 +523,16 @@ def _interval_from_integer(translator, expr):
     return 'INTERVAL {} {}S'.format(arg_formatted, expr.resolution.upper())
 
 
+def _date_literal_format(expr):
+    value = expr.op().value
+    if isinstance(value, datetime.datetime):
+        if value.microsecond != 0:
+            raise ValueError(value)
+        value = value.strftime('%Y-%m-%d')
+
+    return "'{}'".format(value)
+
+
 def _timestamp_literal_format(expr):
     value = expr.op().value
     if isinstance(value, datetime.datetime):
@@ -861,6 +871,8 @@ def _literal(translator, expr):
         typeclass = 'string'
     elif isinstance(expr, ir.NumericValue):
         typeclass = 'number'
+    elif isinstance(expr, ir.DateValue):
+        typeclass = 'date'
     elif isinstance(expr, ir.TimestampValue):
         typeclass = 'timestamp'
     elif isinstance(expr, ir.IntervalValue):
@@ -880,7 +892,8 @@ _literal_formatters = {
     'number': _number_literal_format,
     'string': _string_literal_format,
     'interval': _interval_literal_format,
-    'timestamp': _timestamp_literal_format
+    'timestamp': _timestamp_literal_format,
+    'date': _date_literal_format
 }
 
 

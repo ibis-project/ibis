@@ -1175,7 +1175,8 @@ class ExprTranslator(object):
             )
 
     def _trans_param(self, expr):
-        return self.params[expr]
+        value = ibis.literal(self.params[expr], expr.type())
+        return self.translate(value)
 
     @classmethod
     def rewrites(cls, klass, f=None):
