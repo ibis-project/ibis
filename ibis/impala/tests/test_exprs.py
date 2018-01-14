@@ -376,7 +376,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_log_other_bases(self):
         cases = [
-            (self.table.double_col.log(5), 'log(`double_col`, 5)')
+            (self.table.double_col.log(5), 'log(5, `double_col`)')
         ]
         self._check_expr_cases(cases)
 
