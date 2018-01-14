@@ -5,6 +5,35 @@ import ibis
 import pandas as pd
 
 
+@pytest.mark.parametrize('attr', [
+    'year', 'month', 'day',
+])
+def test_date_extract(backend, alltypes, df, attr):
+    expr = getattr(alltypes.timestamp_col.date(), attr)()
+    expected = getattr(df.timestamp_col.dt, attr)
+
+    with backend.skip_unsupported():
+        result = expr.execute()
+
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('attr', [
+    'year', 'month', 'day',
+    'hour', 'minute', 'second'
+])
+def test_timestamp_extract(backend, alltypes, df, attr):
+    expr = getattr(alltypes.timestamp_col, attr)()
+    expected = getattr(df.timestamp_col.dt, attr)
+
+    with backend.skip_unsupported():
+        result = expr.execute()
+
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected)
+
+
 @pytest.mark.parametrize('unit', [
     'Y', 'M', 'D',
     param('W', marks=pytest.mark.xfail),

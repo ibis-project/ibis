@@ -156,6 +156,23 @@ class Postgres(Backend):
                                      database=database)
 
 
+class MySQL(Backend):
+    check_dtype = False
+
+    def connect(self, data_directory):
+        user = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
+        password = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
+        host = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
+        database = os.environ.get('IBIS_TEST_MYSQL_DATABASE', 'ibis_testing')
+        return ibis.mysql.connect(host=host, user=user, password=password,
+                                  database=database)
+
+    def functional_alltypes(self):
+        # BOOLEAN <-> TINYINT(1)
+        t = self.connection.database().functional_alltypes
+        return t.mutate(bool_col=t.bool_col == 1)
+
+
 class Clickhouse(Backend):
     check_dtype = False
 

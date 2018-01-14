@@ -190,8 +190,8 @@ def sqlite(database, schema, tables, data_directory, **params):
 def mysql(schema, tables, data_directory, **params):
     data_directory = Path(data_directory)
     click.echo('Initializing MySQL...')
-    engine = init_database('mysql+pymysql', params, schema)
-    #                           isolation_level='AUTOCOMMIT')
+    engine = init_database('mysql+pymysql', params, schema,
+                           isolation_level='AUTOCOMMIT')
     insert_tables(engine, tables, data_directory)
 
 

@@ -40,6 +40,11 @@ except ImportError:  # pip install ibis-framework[postgres]
     pass
 
 try:
+    import ibis.sql.mysql.api as mysql
+except ImportError:  # pip install ibis-framework[mysql]
+    pass
+
+try:
     import ibis.clickhouse.api as clickhouse
 except ImportError:  # pip install ibis-framework[clickhouse]
     pass

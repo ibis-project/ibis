@@ -851,7 +851,9 @@ def _log(translator, expr):
 
     if base is None:
         return 'ln({})'.format(arg_formatted)
-    return 'log({}, {})'.format(arg_formatted, translator.translate(base))
+
+    base_formatted = translator.translate(base)
+    return 'log({}, {})'.format(base_formatted, arg_formatted)
 
 
 def _count_distinct(translator, expr):

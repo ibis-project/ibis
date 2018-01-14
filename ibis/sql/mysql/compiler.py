@@ -1,23 +1,8 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import re
 import locale
 import string
 import platform
 import warnings
-import operator
 
 from functools import reduce
 
@@ -31,14 +16,13 @@ from ibis.sql.alchemy import (
     unary, varargs, fixed_arity, Over, _variance_reduction, _get_sqla_table
 )
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.window as W
 
 import ibis.sql.alchemy as alch
-import sqlalchemy.dialects.postgresql as pg
+import sqlalchemy.dialects.mysql as pg
 
 _operation_registry = alch._operation_registry.copy()
 
@@ -70,7 +54,28 @@ def _string_find(t, expr):
     sa_arg = t.translate(arg)
     sa_substr = t.translate(substr)
 
-    return sa.func.strpos(sa_arg, sa_substr) - 1
+    return sa.func.locate(sa_arg, sa_substr) - 1
+
+#----------------
+
+def _capitalize(t, expr):
+    arg, = expr.op().args
+    sa_arg = t.translate(arg)
+    return sa.func.CONCAT(
+        sa.func.UCASE(
+            sa.func.LEFT(sa_arg, 1)
+        ),
+        sa.func.SUBSTRING(sa_arg, 2)
+    )
+
+
+
+#------------------
+
+# def _contains(t, expr):
+#     arg, = expr.op().args
+#     sa_arg = t.translate(arg)
+#     return
 
 
 def _infix_op(infix_sym):
@@ -89,70 +94,30 @@ def _extract(fmt):
     def translator(t, expr):
         arg, = expr.op().args
         sa_arg = t.translate(arg)
-        return sa.cast(sa.extract(fmt, sa_arg), sa.SMALLINT)
+        return sa.extract(fmt, sa_arg)
     return translator
 
 
-def _second(t, expr):
-    # extracting the second gives us the fractional part as well, so smash that
-    # with a cast to SMALLINT
-    sa_arg, = map(t.translate, expr.op().args)
-    return sa.cast(sa.func.FLOOR(sa.extract('second', sa_arg)), sa.SMALLINT)
-
-
-def _millisecond(t, expr):
-    # we get total number of milliseconds including seconds with extract so we
-    # mod 1000
-    sa_arg, = map(t.translate, expr.op().args)
-    return sa.cast(sa.extract('millisecond', sa_arg), sa.SMALLINT) % 1000
-
-
-_truncate_precisions = {
-    'us': 'microseconds',
-    'ms': 'milliseconds',
-    's': 'second',
-    'm': 'minute',
-    'h': 'hour',
-    'D': 'day',
-    'W': 'week',
-    'M': 'month',
-    'Q': 'quarter',
-    'Y': 'year'
+_truncate_formats = {
+    's': '%Y-%m-%d %H:%i:%s',
+    'm': '%Y-%m-%d %H:%i:00',
+    'h': '%Y-%m-%d %H:00:00',
+    'D': '%Y-%m-%d',
+    # 'W': 'week',
+    'M': '%Y-%m-01',
+    'Y': '%Y-01-01'
 }
 
 
-def _timestamp_truncate(t, expr):
+def _truncate(t, expr):
     arg, unit = expr.op().args
     sa_arg = t.translate(arg)
     try:
-        precision = _truncate_precisions[unit]
+        fmt = _truncate_formats[unit]
     except KeyError:
         raise com.TranslationError('Unsupported truncate unit '
                                    '{}'.format(unit))
-    return sa.func.date_trunc(precision, sa_arg)
-
-
-def _interval_from_integer(t, expr):
-    arg, unit = expr.op().args
-    sa_arg = t.translate(arg)
-    interval = sa.text("INTERVAL '1 {}'".format(expr.resolution))
-    return sa_arg * interval
-
-
-def _timestamp_add(t, expr):
-    sa_args = list(map(t.translate, expr.op().args))
-    return sa_args[0] + sa_args[1]
-
-
-def _is_nan(t, expr):
-    arg = t.translate(expr.op().args[0])
-    return arg == sa.literal('nan', sa.Float)
-
-
-def _is_inf(t, expr):
-    arg = t.translate(expr.op().args[0])
-    return sa.or_(arg == sa.literal('inf', sa.Float),
-                  arg == sa.literal('-inf', sa.Float))
+    return sa.func.date_format(sa_arg, fmt)
 
 
 def _cast(t, expr):
@@ -193,7 +158,7 @@ def _typeof(t, expr):
 
 
 def _string_agg(t, expr):
-    # we could use sa.func.string_agg since postgres 9.0, but we can cheaply
+    # we could use sa.func.string_agg since mysql 9.0, but we can cheaply
     # maintain backwards compatibility here, so we don't use it
     arg, sep, where = expr.op().args
     sa_arg = t.translate(arg)
@@ -206,12 +171,12 @@ def _string_agg(t, expr):
     return sa.func.array_to_string(sa.func.array_agg(operand), sa_sep)
 
 
-_strftime_to_postgresql_rules = {
+_strftime_to_mysql_rules = {
     '%a': 'TMDy',  # TM does it in a locale dependent way
     '%A': 'TMDay',
     '%w': 'D',  # 1-based day of week, see below for how we make this 0-based
     '%d': 'DD',  # day of month
-    '%-d': 'FMDD',  # - is no leading zero for Python same for FM in postgres
+    '%-d': 'FMDD',  # - is no leading zero for Python same for FM in mysql
     '%b': 'TMMon',  # Sep
     '%B': 'TMMonth',  # September
     '%m': 'MM',  # 01
@@ -237,7 +202,7 @@ _strftime_to_postgresql_rules = {
 }
 
 try:
-    _strftime_to_postgresql_rules.update({
+    _strftime_to_mysql_rules.update({
         '%c': locale.nl_langinfo(locale.D_T_FMT),  # locale date and time
         '%x': locale.nl_langinfo(locale.D_FMT),  # locale date
         '%X': locale.nl_langinfo(locale.T_FMT)  # locale time
@@ -253,10 +218,10 @@ def tokenize_noop(scanner, token):
     return token
 
 
-# translate strftime spec into mostly equivalent PostgreSQL spec
+# translate strftime spec into mostly equivalent MySQL spec
 _scanner = re.Scanner([
     (py, tokenize_noop)
-    for py in _strftime_to_postgresql_rules.keys()
+    for py in _strftime_to_mysql_rules.keys()
 ] + [
     # "%e" is in the C standard and Python actually generates this if your spec
     # contains "%c" but we don't officially support it as a specifier so we
@@ -276,7 +241,7 @@ _scanner = re.Scanner([
 ])
 
 
-_lexicon_values = frozenset(_strftime_to_postgresql_rules.values())
+_lexicon_values = frozenset(_strftime_to_mysql_rules.values())
 
 _strftime_blacklist = frozenset(['%w', '%U', '%c', '%x', '%X', '%e'])
 
@@ -289,7 +254,7 @@ def _reduce_tokens(tokens, arg):
     reduced = []
 
     non_special_tokens = (
-        frozenset(_strftime_to_postgresql_rules) - _strftime_blacklist
+        frozenset(_strftime_to_mysql_rules) - _strftime_blacklist
     )
 
     # TODO: how much of a hack is this?
@@ -297,7 +262,7 @@ def _reduce_tokens(tokens, arg):
 
         # we are a non-special token %A, %d, etc.
         if token in non_special_tokens:
-            curtokens.append(_strftime_to_postgresql_rules[token])
+            curtokens.append(_strftime_to_mysql_rules[token])
 
         # we have a string like DD, to escape this we
         # surround it with double quotes
@@ -313,7 +278,7 @@ def _reduce_tokens(tokens, arg):
             elif token == '%c' or token == '%x' or token == '%X':
                 # re scan and tokenize this pattern
                 try:
-                    new_pattern = _strftime_to_postgresql_rules[token]
+                    new_pattern = _strftime_to_mysql_rules[token]
                 except KeyError:
                     raise ValueError(
                         'locale specific date formats (%%c, %%x, %%X) are '
@@ -361,7 +326,7 @@ class array_search(expression.FunctionElement):
 
 
 @compiles(array_search)
-def postgresql_array_search(element, compiler, **kw):
+def mysql_array_search(element, compiler, **kw):
     needle, haystack = element.clauses
     i = sa.func.generate_subscripts(haystack, 1).alias('i')
     c0 = sa.column('i', type_=sa.INTEGER(), _selectable=i)
@@ -375,23 +340,23 @@ def postgresql_array_search(element, compiler, **kw):
     return string_result
 
 
-def _find_in_set(t, expr):
-    # postgresql 9.5 has array_position, but the code below works on any
-    # version of postgres with generate_subscripts
-    # TODO: could make it even more generic by using generate_series
-    # TODO: this works with *any* type, not just strings. should the operation
-    #       itself also have this property?
-    needle, haystack = expr.op().args
-    return array_search(
-        t.translate(needle),
-        pg.array(list(map(t.translate, haystack)))
-    )
+# def _find_in_set(t, expr):
+#     # mysql 9.5 has array_position, but the code below works on any
+#     # version of mysql with generate_subscripts
+#     # TODO: could make it even more generic by using generate_series
+#     # TODO: this works with *any* type, not just strings. should the operation
+#     #       itself also have this property?
+#     needle, haystack = expr.op().args
+#     return array_search(
+#         t.translate(needle),
+#         pg.array(list(map(t.translate, haystack)))
+#     )
 
 
 def _regex_replace(t, expr):
     string, pattern, replacement = map(t.translate, expr.op().args)
 
-    # postgres defaults to replacing only the first occurrence
+    # mysql defaults to replacing only the first occurrence
     return sa.func.regexp_replace(string, pattern, replacement, 'g')
 
 
@@ -412,11 +377,16 @@ def _reduction(func_name):
 
 def _log(t, expr):
     arg, base = expr.op().args
-    arg = t.translate(arg)
-    if base is not None:
-        return sa.func.log(t.translate(base), arg)
-    else:
-        return sa.func.ln(arg)
+    sa_arg = t.translate(arg)
+    sa_base = t.translate(base)
+    return sa.func.log(sa_base, sa_arg)
+
+
+def _power(t, expr):
+    arg, exponent = expr.op().args
+    sa_arg = t.translate(arg)
+    sa_exponent = t.translate(exponent)
+    return sa.func.pow(sa_exponent, sa_arg)
 
 
 _cumulative_to_reduction = {
@@ -508,9 +478,9 @@ class regex_extract(GenericFunction):
         self.index = index
 
 
-@compiles(regex_extract, 'postgresql')
+@compiles(regex_extract, 'mysql')
 def compile_regex_extract(element, compiler, **kw):
-    result = '(SELECT * FROM REGEXP_MATCHES({}, {}))[{}]'.format(
+    result = '(REGEXP_MATCHES({}, {}))[{}]'.format(
         compiler.process(element.string, **kw),
         compiler.process(element.pattern, **kw),
         compiler.process(element.index, **kw),
@@ -543,10 +513,10 @@ def _array_repeat(t, expr):
     """Is this really that useful?
 
     Repeat an array like a Python list using modular arithmetic,
-    scalar subqueries, and PostgreSQL's ARRAY function.
+    scalar subqueries, and MySQL's ARRAY function.
 
-    This is inefficient if PostgreSQL allocates memory for the entire sequence
-    and the output column. A quick glance at PostgreSQL's C code shows the
+    This is inefficient if MySQL allocates memory for the entire sequence
+    and the output column. A quick glance at MySQL's C code shows the
     sequence is evaluated stepwise, which suggests that it's roughly constant
     memory for the sequence generation.
     """
@@ -564,7 +534,7 @@ def _array_repeat(t, expr):
 
     # sequence from 1 to the total number of elements desired in steps of 1.
     # the call to greatest isn't necessary, but it provides clearer intent
-    # rather than depending on the implicit postgres generate_series behavior
+    # rather than depending on the implicit mysql generate_series behavior
     start = step = 1
     stop = sa.func.greatest(times, 0) * array_length
     series = sa.func.generate_series(start, stop, step).alias()
@@ -590,7 +560,7 @@ def _identical_to(t, expr):
 
 
 def _hll_cardinality(t, expr):
-    # postgres doesn't have a builtin HLL algorithm, so we default to standard
+    # mysql doesn't have a builtin HLL algorithm, so we default to standard
     # count distinct for now
     arg, _ = expr.op().args
     sa_arg = t.translate(arg)
@@ -625,21 +595,17 @@ def _round(t, expr):
     sa_arg = t.translate(arg)
 
     if digits is None:
-        return sa.func.round(sa_arg)
+        sa_digits = 0
+    else:
+        sa_digits = t.translate(digits)
 
-    # postgres doesn't allow rounding of double precision values to a specific
-    # number of digits (though simple truncation on doubles is allowed) so
-    # we cast to numeric and then cast back if necessary
-    result = sa.func.round(sa.cast(sa_arg, sa.NUMERIC), t.translate(digits))
-    if digits is not None and isinstance(arg.type(), dt.Decimal):
-        return result
-    return sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
+    return sa.func.round(sa_arg, sa_digits)
 
 
 def _mod(t, expr):
     left, right = map(t.translate, expr.op().args)
 
-    # postgres doesn't allow modulus of double precision values, so upcast and
+    # mysql doesn't allow modulus of double precision values, so upcast and
     # then downcast later if necessary
     if not isinstance(expr.type(), dt.Integer):
         left = sa.cast(left, sa.NUMERIC)
@@ -647,7 +613,7 @@ def _mod(t, expr):
 
     result = left % right
     if expr.type().equals(dt.double):
-        return sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
+        return sa.cast(result, sa.dialects.mysql.DOUBLE_PRECISION())
     else:
         return result
 
@@ -693,98 +659,82 @@ def _lead(t, expr):
     return sa.func.lead(sa_arg, sa_offset)
 
 
-def _literal(t, expr):
-    if isinstance(expr, ir.IntervalValue):
-        return sa.text("INTERVAL '{} {}'".format(expr.op().value,
-                                                 expr.resolution))
-    else:
-        return sa.literal(expr.op().value)
-
-
 _operation_registry.update({
-    ir.Literal: _literal,
-
     # We override this here to support time zones
-    ops.TableColumn: _table_column,
+    # ops.TableColumn: _table_column,
 
-    # types
-    ops.Cast: _cast,
-    ops.TypeOf: _typeof,
+    # # types
+    # ops.Cast: _cast,
+    # ops.TypeOf: _typeof,
 
-    # Floating
-    ops.IsNan: _is_nan,
-    ops.IsInf: _is_inf,
-
-    # miscellaneous varargs
+    # # miscellaneous varargs
     ops.Least: varargs(sa.func.least),
     ops.Greatest: varargs(sa.func.greatest),
 
-    # null handling
-    ops.IfNull: fixed_arity(sa.func.coalesce, 2),
+    # # null handling
+    # ops.IfNull: fixed_arity(sa.func.coalesce, 2),
 
-    # boolean reductions
-    ops.Any: fixed_arity(sa.func.bool_or, 1),
-    ops.All: fixed_arity(sa.func.bool_and, 1),
-    ops.NotAny: fixed_arity(lambda x: sa.not_(sa.func.bool_or(x)), 1),
-    ops.NotAll: fixed_arity(lambda x: sa.not_(sa.func.bool_and(x)), 1),
+    # # boolean reductions
+    # ops.Any: unary(sa.any_),
+    # ops.All: unary(sa.all_),
+    # ops.NotAny: unary(lambda x: sa.not_(sa.any_(x))),
+    # ops.NotAll: unary(lambda x: sa.not_(sa.all_(x))),
 
     # strings
+    # ops.Contains: fixed_arity(sa_contains, 2),
     ops.Substring: _substr,
     ops.StrRight: fixed_arity(sa.func.right, 2),
     ops.StringFind: _string_find,
-    ops.StringLength: unary('length'),
-    ops.GroupConcat: _string_agg,
-    ops.Lowercase: unary('lower'),
-    ops.Uppercase: unary('upper'),
-    ops.Strip: unary('trim'),
-    ops.LStrip: unary('ltrim'),
-    ops.RStrip: unary('rtrim'),
-    ops.LPad: fixed_arity('lpad', 3),
-    ops.RPad: fixed_arity('rpad', 3),
-    ops.Reverse: unary('reverse'),
-    ops.Capitalize: unary('initcap'),
-    ops.Repeat: fixed_arity('repeat', 2),
+    ops.StringLength: unary(sa.func.length),
+    # ops.GroupConcat: fixed_arity('concat_ws', 2),
+    ops.Lowercase: unary(sa.func.lower),
+    ops.Uppercase: unary(sa.func.upper),
+    ops.Strip: unary(sa.func.trim),
+    ops.LStrip: unary(sa.func.ltrim),
+    ops.RStrip: unary(sa.func.rtrim),
+    ops.LPad: fixed_arity(sa.func.lpad, 3),
+    ops.RPad: fixed_arity(sa.func.rpad, 3),
+    ops.Reverse: unary(sa.func.reverse),
+    ops.Capitalize: _capitalize,
+    ops.Repeat: fixed_arity(sa.func.repeat, 2),
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
-    ops.RegexSearch: _infix_op('~'),
-    ops.RegexReplace: _regex_replace,
-    ops.Translate: fixed_arity('translate', 3),
+    ops.RegexSearch: _infix_op('REGEXP'),
+
+    # ops.Translate: fixed_arity('translate', 3),
     ops.StringAscii: fixed_arity(sa.func.ascii, 1),
-    ops.RegexExtract: _regex_extract,
-    ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
-    ops.StringJoin: _string_join,
 
-    ops.FindInSet: _find_in_set,
+    # # ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
+    # ops.StringJoin: _string_join,
 
-    ops.Ceil: fixed_arity(sa.func.ceil, 1),
-    ops.Floor: fixed_arity(sa.func.floor, 1),
-    ops.FloorDivide: _floor_divide,
+    # ops.FindInSet: fixed_arity('find_in_set', 2),
+
+    ops.Ceil: unary(sa.func.ceil),
+    ops.Floor: unary(sa.func.floor),
+    # ops.FloorDivide: _floor_divide,
     ops.Exp: fixed_arity(sa.func.exp, 1),
     ops.Sign: fixed_arity(sa.func.sign, 1),
     ops.Sqrt: fixed_arity(sa.func.sqrt, 1),
     ops.Log: _log,
-    ops.Ln: fixed_arity(sa.func.ln, 1),
-    ops.Log2: fixed_arity(lambda x: sa.func.log(2, x), 1),
-    ops.Log10: fixed_arity(sa.func.log, 1),
-    ops.Power: fixed_arity(sa.func.power, 2),
+    ops.Ln: unary(sa.func.ln),
+    ops.Log2: unary(sa.func.log2),
+    ops.Log10: unary(sa.func.log10),
+    ops.Power: _power,
     ops.Round: _round,
-    ops.Modulus: _mod,
+    #ops.Modulus: _mod,
 
-    # dates and times
+    # # dates and times
     ops.Date: unary(sa.func.date),
-    ops.DateTruncate: _timestamp_truncate,
-    ops.TimestampTruncate: _timestamp_truncate,
-    ops.IntervalFromInteger: _interval_from_integer,
-    ops.TimestampAdd: _infix_op('+'),
-    ops.TimestampSubtract: _infix_op('-'),
+    ops.DateTruncate: _truncate,
+    ops.TimestampTruncate: _truncate,
 
-    ops.Strftime: _strftime,
+    # ops.Strftime: _strftime,
     ops.ExtractYear: _extract('year'),
     ops.ExtractMonth: _extract('month'),
     ops.ExtractDay: _extract('day'),
     ops.ExtractHour: _extract('hour'),
     ops.ExtractMinute: _extract('minute'),
-    ops.ExtractSecond: _second,
-    ops.ExtractMillisecond: _millisecond,
+    ops.ExtractSecond: _extract('second'),
+    ops.ExtractMillisecond: _extract('millisecond'),
     ops.Sum: _reduction('sum'),
     ops.Mean: _reduction('avg'),
     ops.Min: _reduction('min'),
@@ -792,37 +742,30 @@ _operation_registry.update({
     ops.Variance: _variance_reduction('var'),
     ops.StandardDev: _variance_reduction('stddev'),
 
-    # now is in the timezone of the server, but we want UTC
-    ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
-    ops.WindowOp: _window,
+    # # now is in the timezone of the server, but we want UTC
+    # ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
+    # ops.WindowOp: _window,
 
-    ops.Lag: _lag,
-    ops.Lead: _lead,
-    ops.FirstValue: fixed_arity(sa.func.first_value, 1),
-    ops.LastValue: fixed_arity(sa.func.last_value, 1),
-    ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
-    ops.DenseRank: fixed_arity(lambda arg: sa.func.dense_rank(), 1),
-    ops.MinRank: fixed_arity(lambda arg: sa.func.rank(), 1),
-    ops.PercentRank: fixed_arity(lambda arg: sa.func.percent_rank(), 1),
-    ops.NTile: _ntile,
+    # ops.Lag: _lag,
+    # ops.Lead: _lead,
+    # ops.FirstValue: fixed_arity(sa.func.first_value, 1),
+    # ops.LastValue: fixed_arity(sa.func.last_value, 1),
+    # ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
+    # ops.DenseRank: fixed_arity(lambda arg: sa.func.dense_rank(), 1),
+    # ops.MinRank: fixed_arity(lambda arg: sa.func.rank(), 1),
+    # ops.PercentRank: fixed_arity(lambda arg: sa.func.percent_rank(), 1),
+    # ops.NTile: _ntile,
 
-    ops.CumulativeOp: _window,
-    ops.CumulativeAll: fixed_arity(sa.func.bool_and, 1),
-    ops.CumulativeAny: fixed_arity(sa.func.bool_or, 1),
-    ops.CumulativeMax: fixed_arity(sa.func.max, 1),
-    ops.CumulativeMin: fixed_arity(sa.func.min, 1),
-    ops.CumulativeSum: fixed_arity(sa.func.sum, 1),
-    ops.CumulativeMean: fixed_arity(sa.func.avg, 1),
+    # ops.CumulativeOp: _window,
+    # ops.CumulativeAll: fixed_arity(sa.func.bool_and, 1),
+    # ops.CumulativeAny: fixed_arity(sa.func.bool_or, 1),
+    ops.CumulativeMax: unary(sa.func.max),
+    ops.CumulativeMin: unary(sa.func.min),
+    ops.CumulativeSum: unary(sa.func.sum),
+    ops.CumulativeMean: unary(sa.func.avg),
 
-    # array operations
-    ops.ArrayLength: fixed_arity(_cardinality, 1),
-    ops.ArrayCollect: fixed_arity(sa.func.array_agg, 1),
-    ops.ArraySlice: _array_slice,
-    ops.ArrayIndex: fixed_arity(lambda array, index: array[index + 1], 2),
-    ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
-    ops.ArrayRepeat: _array_repeat,
-    ops.IdenticalTo: _identical_to,
-    ops.HLLCardinality: _hll_cardinality,
+    # ops.IdenticalTo: _identical_to,
+    # ops.HLLCardinality: _hll_cardinality,
 })
 
 
@@ -830,7 +773,7 @@ def add_operation(op, translation_func):
     _operation_registry[op] = translation_func
 
 
-class PostgreSQLExprTranslator(alch.AlchemyExprTranslator):
+class MySQLExprTranslator(alch.AlchemyExprTranslator):
 
     _registry = _operation_registry
     _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
@@ -841,10 +784,10 @@ class PostgreSQLExprTranslator(alch.AlchemyExprTranslator):
     })
 
 
-rewrites = PostgreSQLExprTranslator.rewrites
-compiles = PostgreSQLExprTranslator.compiles
+rewrites = MySQLExprTranslator.rewrites
+compiles = MySQLExprTranslator.compiles
 
 
-class PostgreSQLDialect(alch.AlchemyDialect):
+class MySQLDialect(alch.AlchemyDialect):
 
-    translator = PostgreSQLExprTranslator
+    translator = MySQLExprTranslator

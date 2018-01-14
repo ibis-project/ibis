@@ -603,6 +603,7 @@ _operation_registry = {
 
     ops.Cast: _cast,
 
+    # for more than 2 args this should be arrayGreatest|Least(array([]))
     ops.Greatest: varargs('greatest'),
     ops.Least: varargs('least'),
 
