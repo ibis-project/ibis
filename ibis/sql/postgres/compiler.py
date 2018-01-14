@@ -17,7 +17,6 @@ import locale
 import string
 import platform
 import warnings
-import operator
 
 from functools import reduce
 
@@ -27,9 +26,8 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
-from ibis.sql.alchemy import (
-    unary, varargs, fixed_arity, Over, _variance_reduction, _get_sqla_table
-)
+from ibis.sql.alchemy import (unary, varargs, fixed_arity, infix_op, Over,
+                              _variance_reduction, _get_sqla_table)
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.analysis as L
@@ -71,18 +69,6 @@ def _string_find(t, expr):
     sa_substr = t.translate(substr)
 
     return sa.func.strpos(sa_arg, sa_substr) - 1
-
-
-def _infix_op(infix_sym):
-    def formatter(t, expr):
-        op = expr.op()
-        left, right = op.args
-
-        left_arg = t.translate(left)
-        right_arg = t.translate(right)
-        return left_arg.op(infix_sym)(right_arg)
-
-    return formatter
 
 
 def _extract(fmt):
@@ -745,7 +731,7 @@ _operation_registry.update({
     ops.Capitalize: unary('initcap'),
     ops.Repeat: fixed_arity('repeat', 2),
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
-    ops.RegexSearch: _infix_op('~'),
+    ops.RegexSearch: infix_op('~'),
     ops.RegexReplace: _regex_replace,
     ops.Translate: fixed_arity('translate', 3),
     ops.StringAscii: fixed_arity(sa.func.ascii, 1),
@@ -774,8 +760,8 @@ _operation_registry.update({
     ops.DateTruncate: _timestamp_truncate,
     ops.TimestampTruncate: _timestamp_truncate,
     ops.IntervalFromInteger: _interval_from_integer,
-    ops.TimestampAdd: _infix_op('+'),
-    ops.TimestampSubtract: _infix_op('-'),
+    ops.TimestampAdd: infix_op('+'),
+    ops.TimestampSubtract: infix_op('-'),
 
     ops.Strftime: _strftime,
     ops.ExtractYear: _extract('year'),

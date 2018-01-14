@@ -1,35 +1,18 @@
-import re
-import locale
-import string
-import platform
-import warnings
-
-from functools import reduce
-
 import sqlalchemy as sa
-from sqlalchemy.sql import expression
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.functions import GenericFunction
 
-import ibis
-from ibis.sql.alchemy import (
-    unary, varargs, fixed_arity, Over, _variance_reduction, _get_sqla_table
-)
+from ibis.sql.alchemy import (unary, varargs, fixed_arity, infix_op, Over,
+                              _variance_reduction)
 import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.window as W
-
 import ibis.sql.alchemy as alch
-import sqlalchemy.dialects.mysql as pg
+
 
 _operation_registry = alch._operation_registry.copy()
 
 
-# TODO: substr and find are copied from SQLite, we should really have a
-# "base" set of SQL functions that are the most common APIs across the major
-# RDBMS
 def _substr(t, expr):
     f = sa.func.substr
 
@@ -56,7 +39,6 @@ def _string_find(t, expr):
 
     return sa.func.locate(sa_arg, sa_substr) - 1
 
-#----------------
 
 def _capitalize(t, expr):
     arg, = expr.op().args
@@ -67,27 +49,6 @@ def _capitalize(t, expr):
         ),
         sa.func.SUBSTRING(sa_arg, 2)
     )
-
-
-
-#------------------
-
-# def _contains(t, expr):
-#     arg, = expr.op().args
-#     sa_arg = t.translate(arg)
-#     return
-
-
-def _infix_op(infix_sym):
-    def formatter(t, expr):
-        op = expr.op()
-        left, right = op.args
-
-        left_arg = t.translate(left)
-        right_arg = t.translate(right)
-        return left_arg.op(infix_sym)(right_arg)
-
-    return formatter
 
 
 def _extract(fmt):
@@ -139,225 +100,6 @@ def _cast(t, expr):
         return sa.cast(sa_arg, sa.Binary())
 
     return sa.cast(sa_arg, sa_type)
-
-
-def _typeof(t, expr):
-    arg, = expr.op().args
-    sa_arg = t.translate(arg)
-    typ = sa.cast(sa.func.pg_typeof(sa_arg), sa.TEXT)
-
-    # select pg_typeof('asdf') returns unknown so we have to check the child's
-    # type for nullness
-    return sa.case(
-        [
-            ((typ == 'unknown') & (arg.type() != dt.null), 'text'),
-            ((typ == 'unknown') & (arg.type() == dt.null), 'null'),
-        ],
-        else_=typ
-    )
-
-
-def _string_agg(t, expr):
-    # we could use sa.func.string_agg since mysql 9.0, but we can cheaply
-    # maintain backwards compatibility here, so we don't use it
-    arg, sep, where = expr.op().args
-    sa_arg = t.translate(arg)
-    sa_sep = t.translate(sep)
-
-    if where is not None:
-        operand = t.translate(where.ifelse(arg, ibis.NA))
-    else:
-        operand = sa_arg
-    return sa.func.array_to_string(sa.func.array_agg(operand), sa_sep)
-
-
-_strftime_to_mysql_rules = {
-    '%a': 'TMDy',  # TM does it in a locale dependent way
-    '%A': 'TMDay',
-    '%w': 'D',  # 1-based day of week, see below for how we make this 0-based
-    '%d': 'DD',  # day of month
-    '%-d': 'FMDD',  # - is no leading zero for Python same for FM in mysql
-    '%b': 'TMMon',  # Sep
-    '%B': 'TMMonth',  # September
-    '%m': 'MM',  # 01
-    '%-m': 'FMMM',  # 1
-    '%y': 'YY',  # 15
-    '%Y': 'YYYY',  # 2015
-    '%H': 'HH24',  # 09
-    '%-H': 'FMHH24',  # 9
-    '%I': 'HH12',  # 09
-    '%-I': 'FMHH12',  # 9
-    '%p': 'AM',  # AM or PM
-    '%M': 'MI',  # zero padded minute
-    '%-M': 'FMMI',  # Minute
-    '%S': 'SS',  # zero padded second
-    '%-S': 'FMSS',  # Second
-    '%f': 'US',  # zero padded microsecond
-    '%z': 'OF',  # utf offset
-    '%Z': 'TZ',  # uppercase timezone name
-    '%j': 'DDD',  # zero padded day of year
-    '%-j': 'FMDDD',  # day of year
-    '%U': 'WW',  # 1-based week of year
-    # 'W': ?,  # meh
-}
-
-try:
-    _strftime_to_mysql_rules.update({
-        '%c': locale.nl_langinfo(locale.D_T_FMT),  # locale date and time
-        '%x': locale.nl_langinfo(locale.D_FMT),  # locale date
-        '%X': locale.nl_langinfo(locale.T_FMT)  # locale time
-    })
-except AttributeError:
-    warnings.warn(
-        'locale specific date formats (%%c, %%x, %%X) are not yet implemented '
-        'for %s' % platform.system()
-    )
-
-
-def tokenize_noop(scanner, token):
-    return token
-
-
-# translate strftime spec into mostly equivalent MySQL spec
-_scanner = re.Scanner([
-    (py, tokenize_noop)
-    for py in _strftime_to_mysql_rules.keys()
-] + [
-    # "%e" is in the C standard and Python actually generates this if your spec
-    # contains "%c" but we don't officially support it as a specifier so we
-    # need to special case it in the scanner
-    (r'%e', tokenize_noop),
-
-    # double quotes need to be escaped
-    (r'"', lambda scanner, token: re.escape(token)),
-
-    # spaces should be greedily consumed and kept
-    (r'\s+', tokenize_noop),
-
-    (r'[%s]' % re.escape(string.punctuation), tokenize_noop),
-
-    # everything else except double quotes and spaces
-    (r'[^%s\s]+' % re.escape(string.punctuation), tokenize_noop),
-])
-
-
-_lexicon_values = frozenset(_strftime_to_mysql_rules.values())
-
-_strftime_blacklist = frozenset(['%w', '%U', '%c', '%x', '%X', '%e'])
-
-
-def _reduce_tokens(tokens, arg):
-    # current list of tokens
-    curtokens = []
-
-    # reduced list of tokens that accounts for blacklisted values
-    reduced = []
-
-    non_special_tokens = (
-        frozenset(_strftime_to_mysql_rules) - _strftime_blacklist
-    )
-
-    # TODO: how much of a hack is this?
-    for token in tokens:
-
-        # we are a non-special token %A, %d, etc.
-        if token in non_special_tokens:
-            curtokens.append(_strftime_to_mysql_rules[token])
-
-        # we have a string like DD, to escape this we
-        # surround it with double quotes
-        elif token in _lexicon_values:
-            curtokens.append('"%s"' % token)
-
-        # we have a token that needs special treatment
-        elif token in _strftime_blacklist:
-            if token == '%w':
-                value = sa.extract('dow', arg)  # 0 based day of week
-            elif token == '%U':
-                value = sa.cast(sa.func.to_char(arg, 'WW'), sa.SMALLINT) - 1
-            elif token == '%c' or token == '%x' or token == '%X':
-                # re scan and tokenize this pattern
-                try:
-                    new_pattern = _strftime_to_mysql_rules[token]
-                except KeyError:
-                    raise ValueError(
-                        'locale specific date formats (%%c, %%x, %%X) are '
-                        'not yet implemented for %s' % platform.system()
-                    )
-
-                new_tokens, _ = _scanner.scan(new_pattern)
-                value = reduce(
-                    sa.sql.ColumnElement.concat,
-                    _reduce_tokens(new_tokens, arg)
-                )
-            elif token == '%e':
-                # pad with spaces instead of zeros
-                value = sa.func.replace(sa.func.to_char(arg, 'DD'), '0', ' ')
-
-            reduced += [
-                sa.func.to_char(arg, ''.join(curtokens)),
-                sa.cast(value, sa.TEXT)
-            ]
-
-            # empty current token list in case there are more tokens
-            del curtokens[:]
-
-        # uninteresting text
-        else:
-            curtokens.append(token)
-    else:
-        # append result to r if we had more tokens or if we have no
-        # blacklisted tokens
-        if curtokens:
-            reduced.append(sa.func.to_char(arg, ''.join(curtokens)))
-    return reduced
-
-
-def _strftime(t, expr):
-    arg, pattern = map(t.translate, expr.op().args)
-    tokens, _ = _scanner.scan(pattern.value)
-    reduced = _reduce_tokens(tokens, arg)
-    return reduce(sa.sql.ColumnElement.concat, reduced)
-
-
-class array_search(expression.FunctionElement):
-    type = sa.INTEGER()
-    name = 'array_search'
-
-
-@compiles(array_search)
-def mysql_array_search(element, compiler, **kw):
-    needle, haystack = element.clauses
-    i = sa.func.generate_subscripts(haystack, 1).alias('i')
-    c0 = sa.column('i', type_=sa.INTEGER(), _selectable=i)
-    result = sa.func.coalesce(
-        sa.select([c0]).where(
-            haystack[c0].op('IS NOT DISTINCT FROM')(needle)
-        ).order_by(c0).limit(1).as_scalar(),
-        0
-    ) - 1
-    string_result = compiler.process(result, **kw)
-    return string_result
-
-
-# def _find_in_set(t, expr):
-#     # mysql 9.5 has array_position, but the code below works on any
-#     # version of mysql with generate_subscripts
-#     # TODO: could make it even more generic by using generate_series
-#     # TODO: this works with *any* type, not just strings. should the operation
-#     #       itself also have this property?
-#     needle, haystack = expr.op().args
-#     return array_search(
-#         t.translate(needle),
-#         pg.array(list(map(t.translate, haystack)))
-#     )
-
-
-def _regex_replace(t, expr):
-    string, pattern, replacement = map(t.translate, expr.op().args)
-
-    # mysql defaults to replacing only the first occurrence
-    return sa.func.regexp_replace(string, pattern, replacement, 'g')
 
 
 def _reduction(func_name):
@@ -470,124 +212,13 @@ def _ntile(t, expr):
     return sa.func.ntile(buckets)
 
 
-class regex_extract(GenericFunction):
-    def __init__(self, string, pattern, index):
-        super(regex_extract, self).__init__(string, pattern, index)
-        self.string = string
-        self.pattern = pattern
-        self.index = index
-
-
-@compiles(regex_extract, 'mysql')
-def compile_regex_extract(element, compiler, **kw):
-    result = '(REGEXP_MATCHES({}, {}))[{}]'.format(
-        compiler.process(element.string, **kw),
-        compiler.process(element.pattern, **kw),
-        compiler.process(element.index, **kw),
-    )
-    return result
-
-
-def _regex_extract(t, expr):
-    string, pattern, index = map(t.translate, expr.op().args)
-    result = sa.case(
-        [
-            (
-                sa.func.textregexeq(string, pattern),
-                sa.func.regex_extract(string, pattern, index + 1),
-            )
-        ],
-        else_=''
-    )
-    return result
-
-
-def _cardinality(array):
-    return sa.case(
-        [(array.is_(None), None)],  # noqa: E711
-        else_=sa.func.coalesce(sa.func.array_length(array, 1), 0),
-    )
-
-
-def _array_repeat(t, expr):
-    """Is this really that useful?
-
-    Repeat an array like a Python list using modular arithmetic,
-    scalar subqueries, and MySQL's ARRAY function.
-
-    This is inefficient if MySQL allocates memory for the entire sequence
-    and the output column. A quick glance at MySQL's C code shows the
-    sequence is evaluated stepwise, which suggests that it's roughly constant
-    memory for the sequence generation.
-    """
-    raw, times = map(t.translate, expr.op().args)
-
-    # SQLAlchemy uses our column's table in the FROM clause. We need a simpler
-    # expression to workaround this.
-    array = sa.column(raw.name, type_=raw.type)
-
-    # We still need to prefix the table name to the column name in the final
-    # query, so make sure the column knows its origin
-    array.table = raw.table
-
-    array_length = _cardinality(array)
-
-    # sequence from 1 to the total number of elements desired in steps of 1.
-    # the call to greatest isn't necessary, but it provides clearer intent
-    # rather than depending on the implicit mysql generate_series behavior
-    start = step = 1
-    stop = sa.func.greatest(times, 0) * array_length
-    series = sa.func.generate_series(start, stop, step).alias()
-    series_column = sa.column(series.name, type_=sa.INTEGER)
-
-    # if our current index modulo the array's length
-    # is a multiple of the array's length, then the index is the array's length
-    index_expression = series_column % array_length
-    index = sa.func.coalesce(sa.func.nullif(index_expression, 0), array_length)
-
-    # tie it all together in a scalar subquery and collapse that into an ARRAY
-    selected = sa.select([array[index]]).select_from(series)
-    return sa.func.array(selected.as_scalar())
-
-
 def _identical_to(t, expr):
     left, right = args = expr.op().args
     if left.equals(right):
         return True
     else:
         left, right = map(t.translate, args)
-        return left.op('IS NOT DISTINCT FROM')(right)
-
-
-def _hll_cardinality(t, expr):
-    # mysql doesn't have a builtin HLL algorithm, so we default to standard
-    # count distinct for now
-    arg, _ = expr.op().args
-    sa_arg = t.translate(arg)
-    return sa.func.count(sa.distinct(sa_arg))
-
-
-def _table_column(t, expr):
-    op = expr.op()
-    ctx = t.context
-    table = op.table
-
-    sa_table = _get_sqla_table(ctx, table)
-    out_expr = getattr(sa_table.c, op.name)
-
-    expr_type = expr.type()
-
-    if isinstance(expr_type, dt.Timestamp):
-        timezone = expr_type.timezone
-        if timezone is not None:
-            out_expr = out_expr.op('AT TIME ZONE')(timezone).label(op.name)
-
-    # If the column does not originate from the table set in the current SELECT
-    # context, we should format as a subquery
-    if t.permit_subquery and ctx.is_foreign_expr(table):
-        return sa.select([out_expr])
-
-    return out_expr
+        return left.op('<=>')(right)
 
 
 def _round(t, expr):
@@ -602,37 +233,9 @@ def _round(t, expr):
     return sa.func.round(sa_arg, sa_digits)
 
 
-def _mod(t, expr):
-    left, right = map(t.translate, expr.op().args)
-
-    # mysql doesn't allow modulus of double precision values, so upcast and
-    # then downcast later if necessary
-    if not isinstance(expr.type(), dt.Integer):
-        left = sa.cast(left, sa.NUMERIC)
-        right = sa.cast(right, sa.NUMERIC)
-
-    result = left % right
-    if expr.type().equals(dt.double):
-        return sa.cast(result, sa.dialects.mysql.DOUBLE_PRECISION())
-    else:
-        return result
-
-
 def _floor_divide(t, expr):
     left, right = map(t.translate, expr.op().args)
     return sa.func.floor(left / right)
-
-
-def _array_slice(t, expr):
-    arg, start, stop = expr.op().args
-    sa_arg = t.translate(arg)
-    sa_start = t.translate(start)
-
-    if stop is None:
-        sa_stop = _cardinality(sa_arg)
-    else:
-        sa_stop = t.translate(stop)
-    return sa_arg[sa_start + 1:sa_stop]
 
 
 def _string_join(t, expr):
@@ -660,21 +263,17 @@ def _lead(t, expr):
 
 
 _operation_registry.update({
-    # We override this here to support time zones
-    # ops.TableColumn: _table_column,
-
-    # # types
+    # types
     # ops.Cast: _cast,
-    # ops.TypeOf: _typeof,
 
     # # miscellaneous varargs
     ops.Least: varargs(sa.func.least),
     ops.Greatest: varargs(sa.func.greatest),
 
-    # # null handling
-    # ops.IfNull: fixed_arity(sa.func.coalesce, 2),
+    # null handling
+    # ops.IfNull: _if_null,
 
-    # # boolean reductions
+    # boolean reductions
     # ops.Any: unary(sa.any_),
     # ops.All: unary(sa.all_),
     # ops.NotAny: unary(lambda x: sa.not_(sa.any_(x))),
@@ -698,14 +297,11 @@ _operation_registry.update({
     ops.Capitalize: _capitalize,
     ops.Repeat: fixed_arity(sa.func.repeat, 2),
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
-    ops.RegexSearch: _infix_op('REGEXP'),
+    ops.RegexSearch: infix_op('REGEXP'),
 
     # ops.Translate: fixed_arity('translate', 3),
     ops.StringAscii: fixed_arity(sa.func.ascii, 1),
-
-    # # ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
     # ops.StringJoin: _string_join,
-
     # ops.FindInSet: fixed_arity('find_in_set', 2),
 
     ops.Ceil: unary(sa.func.ceil),
@@ -720,14 +316,12 @@ _operation_registry.update({
     ops.Log10: unary(sa.func.log10),
     ops.Power: _power,
     ops.Round: _round,
-    #ops.Modulus: _mod,
 
-    # # dates and times
+    # dates and times
     ops.Date: unary(sa.func.date),
     ops.DateTruncate: _truncate,
     ops.TimestampTruncate: _truncate,
-
-    # ops.Strftime: _strftime,
+    ops.Strftime: fixed_arity(sa.func.date_format, 2),
     ops.ExtractYear: _extract('year'),
     ops.ExtractMonth: _extract('month'),
     ops.ExtractDay: _extract('day'),
@@ -735,6 +329,8 @@ _operation_registry.update({
     ops.ExtractMinute: _extract('minute'),
     ops.ExtractSecond: _extract('second'),
     ops.ExtractMillisecond: _extract('millisecond'),
+
+    # reductions
     ops.Sum: _reduction('sum'),
     ops.Mean: _reduction('avg'),
     ops.Min: _reduction('min'),
@@ -764,8 +360,7 @@ _operation_registry.update({
     ops.CumulativeSum: unary(sa.func.sum),
     ops.CumulativeMean: unary(sa.func.avg),
 
-    # ops.IdenticalTo: _identical_to,
-    # ops.HLLCardinality: _hll_cardinality,
+    ops.IdenticalTo: _identical_to
 })
 
 

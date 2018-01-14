@@ -108,3 +108,17 @@ def test_timestamp_binop(backend, con, alltypes, df,
 
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(('ibis_pattern', 'pandas_pattern'), [
+    ('%Y%m%d', '%Y%m%d')
+])
+def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
+    expr = alltypes.timestamp_col.strftime('%Y%m%d')
+    expected = df.timestamp_col.dt.strftime('%Y%m%d')
+
+    with backend.skip_unsupported():
+        result = expr.execute()
+
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected)

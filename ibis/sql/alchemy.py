@@ -226,6 +226,18 @@ def _variance_reduction(func_name):
     return variance_compiler
 
 
+def infix_op(infix_sym):
+    def formatter(t, expr):
+        op = expr.op()
+        left, right = op.args
+
+        left_arg = t.translate(left)
+        right_arg = t.translate(right)
+        return left_arg.op(infix_sym)(right_arg)
+
+    return formatter
+
+
 def fixed_arity(sa_func, arity):
     if isinstance(sa_func, six.string_types):
         sa_func = getattr(sa.func, sa_func)

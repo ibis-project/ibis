@@ -71,7 +71,8 @@ class MySQLClient(alch.AlchemyClient):
             try:
                 yield bind
             finally:
-                bind.execute("SET @@session.time_zone = '{}'".format(previous_timezone))
+                bind.execute("SET @@session.time_zone = "
+                             "'{}'".format(previous_timezone))
 
     def database(self, name=None):
         """Connect to a database called `name`.

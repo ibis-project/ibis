@@ -70,6 +70,7 @@ def test_isnan_isinf(backend, con, alltypes, df,
     (L(5.556).ln(), math.log(5.556)),
     (L(5.556).log2(), math.log(5.556, 2)),
     (L(5.556).log10(), math.log10(5.556)),
+    (L(11) % 3, 11 % 3),
 ])
 def test_math_functions_for_literals(backend, con, alltypes, df,
                                      expr, expected):
@@ -77,9 +78,9 @@ def test_math_functions_for_literals(backend, con, alltypes, df,
         result = con.execute(expr)
 
     if isinstance(result, decimal.Decimal):
+        # in case of Impala the result is decimal
         # >>> decimal.Decimal('5.56') == 5.56
         # False
         assert result == decimal.Decimal(str(expected))
     else:
         assert result == expected
-
