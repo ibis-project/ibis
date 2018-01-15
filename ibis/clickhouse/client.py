@@ -244,33 +244,6 @@ class ClickhouseClient(SQLClient):
 
         return sch.Schema(names, ibis_types)
 
-    def external_table(self, name, data, schema=None):
-        """
-        Create a table expression that references a particular table in the
-        database
-
-        Parameters
-        ----------
-        name : string
-        database : string, optional
-
-        Returns
-        -------
-        table : TableExpr
-        """
-        import ibis.expr.schema as sch
-
-        if schema is None:
-            if callable(data):
-                raise ValueError('Must explicitly define a schema for an '
-                                 'external table created from a callable')
-            schema = sch.infer(data)
-        else:
-            schema = sch.schema(schema)
-
-        node = ClickhouseExternalTable(name, schema, data)
-        return self._table_expr_klass(node)
-
     @property
     def client_options(self):
         return self.con.options
@@ -380,3 +353,32 @@ class ClickhouseExternalTable(ops.DatabaseTable):
             return self.source()
         else:
             return self.source
+
+
+def external_table(name, data, schema=None):
+    """
+    Create a table expression that references an external table outside
+    of the database
+
+    Parameters
+    ----------
+    name : string
+    data : List[dict] or pd.DataFrame or callable
+    schema: List[(string, string)] or Schema, optional
+
+    Returns
+    -------
+    table : ClickhouseTable
+    """
+    import ibis.expr.schema as sch
+
+    if schema is None:
+        if callable(data):
+            raise ValueError('Must explicitly define a schema for an '
+                             'external table created from a callable')
+        schema = sch.infer(data)
+    else:
+        schema = sch.schema(schema)
+
+    node = ClickhouseExternalTable(name, schema, data)
+    return ClickhouseTable(node)

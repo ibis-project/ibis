@@ -7,7 +7,7 @@ import ibis.expr.types as ir
 
 from ibis import literal as L
 from ibis.compat import StringIO
-from ibis.clickhouse.client import ClickhouseExternalTable
+from ibis.clickhouse.client import ClickhouseExternalTable, external_table
 
 
 pytest.importorskip('clickhouse_driver')
@@ -180,7 +180,7 @@ def test_define_external_table(con, alltypes):
         ('gamma', 3, 'third')
     ], columns=['a', 'b', 'c'])
 
-    table = con.external_table('external', df)
+    table = external_table('external', df)
     assert isinstance(table.op(), ClickhouseExternalTable)
 
     expected_schema = ibis.schema([('a', 'string'),
@@ -193,7 +193,7 @@ def test_define_external_table(con, alltypes):
         ('b', 'int8'),
         ('c', 'string')
     ]
-    table = con.external_table('external', df, schema=expected_schema)
+    table = external_table('external', df, schema=expected_schema)
     assert isinstance(table.op(), ClickhouseExternalTable)
     assert table.schema() == ibis.schema(expected_schema)
 
@@ -206,13 +206,13 @@ def test_define_external_table_from_callable(con, alltypes):
     ], columns=['a', 'b', 'c'])
 
     with pytest.raises(ValueError):
-        table = con.external_table('external', lambda: df)
+        table = external_table('external', lambda: df)
 
     schema = ibis.schema([
         ('a', 'string'),
         ('b', 'int8'),
         ('c', 'string')
     ])
-    table = con.external_table('external', lambda: df, schema=schema)
+    table = external_table('external', lambda: df, schema=schema)
     assert isinstance(table.op(), ClickhouseExternalTable)
     assert table.schema() == schema
