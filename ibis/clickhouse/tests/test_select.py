@@ -498,8 +498,8 @@ def test_join_with_external_table(con, alltypes, df, data_fn):
               ('b', 'Int8'),
               ('c', 'string')]
 
-    external = con.external_table('external', data_fn(external_df),
-                                  schema=schema)
+    external = ibis.clickhouse.external_table('external', data_fn(external_df),
+                                              schema=schema)
 
     alltypes = alltypes.mutate(b=alltypes.tinyint_col)
     expr = alltypes.inner_join(external, ['b'])[
