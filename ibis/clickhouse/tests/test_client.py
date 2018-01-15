@@ -7,11 +7,13 @@ import ibis.expr.types as ir
 
 from ibis import literal as L
 from ibis.compat import StringIO
-from ibis.clickhouse.client import ClickhouseExternalTable, external_table
 
 
-pytest.importorskip('clickhouse_driver')
+pytest.importorskip('ibis.clickhouse')
 pytestmark = pytest.mark.clickhouse
+
+
+from ibis.clickhouse.client import ClickhouseExternalTable, external_table
 
 
 def test_get_table_ref(db):
