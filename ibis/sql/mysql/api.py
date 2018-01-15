@@ -66,7 +66,7 @@ def connect(
     url : string, default None
         Complete SQLAlchemy connection string. If passed, the other connection
         arguments are ignored.
-    driver : string, default 'psycopg2'
+    driver : string, default 'pymysql'
 
     Returns
     -------
@@ -97,7 +97,7 @@ def connect(
         Unnamed: 0 : int64
         id : int32
         bool_col : boolean
-        tinyint_col : int16
+        tinyint_col : int8
         smallint_col : int16
         int_col : int32
         bigint_col : int64

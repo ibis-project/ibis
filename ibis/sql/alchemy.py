@@ -23,6 +23,7 @@ import six
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
+from sqlalchemy.dialects import mysql
 from sqlalchemy.sql.elements import Over as _Over
 from sqlalchemy.ext.compiler import compiles as sa_compiles
 
@@ -67,7 +68,11 @@ _ibis_type_to_sqla = OrderedDict([
     (dt.Binary, sa.Binary)
 ])
 
-_sqla_type_mapping = OrderedDict([
+_sqla_type_to_ibis = OrderedDict([
+    (sa.NUMERIC, dt.Decimal),
+    (sa.Float, dt.Double),
+    (sa.FLOAT, dt.Double),
+    (sa.REAL, dt.Float),
     (sa.SmallInteger, dt.Int16),
     (sa.SMALLINT, dt.Int16),
     (sa.Integer, dt.Int32),
@@ -76,9 +81,6 @@ _sqla_type_mapping = OrderedDict([
     (sa.BIGINT, dt.Int64),
     (sa.Boolean, dt.Boolean),
     (sa.BOOLEAN, dt.Boolean),
-    (sa.Float, dt.Double),
-    (sa.FLOAT, dt.Double),
-    (sa.REAL, dt.Float),
     (sa.String, dt.String),
     (sa.VARCHAR, dt.String),
     (sa.CHAR, dt.String),
@@ -86,15 +88,18 @@ _sqla_type_mapping = OrderedDict([
     (sa.TEXT, dt.String),
     (sa.BINARY, dt.Binary),
     (sa.Binary, dt.Binary),
+    (sa.Date, dt.Date),
     (sa.DATE, dt.Date),
     (sa.Time, dt.Time),
-    (sa.types.NullType, dt.Null)
+    (sa.types.NullType, dt.Null),
+    # this should ba placed under mysql
+    (mysql.TINYINT, dt.Int8),
+    (mysql.SMALLINT, dt.Int16),
+    (mysql.INTEGER, dt.Int32),
+    (mysql.BIGINT, dt.Int64),
+    (mysql.FLOAT, dt.Float),
+    (mysql.DOUBLE, dt.Double)
 ])
-
-_sqla_type_to_ibis = OrderedDict(
-    [(v, k) for k, v in _ibis_type_to_sqla.items()] +
-    list(_sqla_type_mapping.items())
-)
 
 
 def sqlalchemy_type_to_ibis_type(
@@ -131,7 +136,7 @@ def sqlalchemy_type_to_ibis_type(
     else:
         try:
             ibis_class = next(
-                v for k, v in reversed(_sqla_type_mapping.items())
+                v for k, v in _sqla_type_to_ibis.items()
                 if isinstance(column_type, k)
             )
         except StopIteration:

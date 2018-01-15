@@ -1,9 +1,7 @@
-import pytest
 import ibis
 
 
-@pytest.mark.skip
-def test_functional_alltypes(backend, alltypes):
+def test_types(backend, alltypes, df):
     expected = ibis.schema([
         ('index', 'int64'),
         ('Unnamed: 0', 'int64'),
@@ -18,11 +16,11 @@ def test_functional_alltypes(backend, alltypes):
         ('date_string_col', 'string'),
         ('string_col', 'string'),
         ('timestamp_col', 'timestamp'),
-        ('date_col', 'date'),
         ('year', 'int32'),
         ('month', 'int32')
     ])
-    print(expected)
+
     print(alltypes.schema())
 
     assert alltypes.schema() == expected
+
