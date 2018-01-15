@@ -96,7 +96,7 @@ def connect(
         index : int64
         Unnamed: 0 : int64
         id : int32
-        bool_col : boolean
+        bool_col : int8
         tinyint_col : int8
         smallint_col : int16
         int_col : int32
