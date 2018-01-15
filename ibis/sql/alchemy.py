@@ -16,6 +16,7 @@ import numbers
 import operator
 import functools
 import contextlib
+from collections import OrderedDict
 
 import six
 
@@ -44,101 +45,103 @@ import ibis.util as util
 import ibis
 
 
-_ibis_type_to_sqla = {
-    dt.Int8: sa.SmallInteger,
-    dt.Int16: sa.SmallInteger,
-    dt.Int32: sa.Integer,
-    dt.Int64: sa.BigInteger,
+_ibis_type_to_sqla = OrderedDict([
+    (dt.Int8, sa.SmallInteger),
+    (dt.Int16, sa.SmallInteger),
+    (dt.Int32, sa.Integer),
+    (dt.Int64, sa.BigInteger),
 
     # Mantissa-based
-    dt.Float: sa.Float(precision=24),
-    dt.Double: sa.Float(precision=53),
+    (dt.Float, sa.Float(precision=24)),
+    (dt.Double, sa.Float(precision=53)),
 
-    dt.Boolean: sa.Boolean,
+    (dt.Boolean, sa.Boolean),
 
-    dt.String: sa.Text,
+    (dt.String, sa.Text),
 
-    dt.Date: sa.Date,
-    dt.Time: sa.Time,
+    (dt.Date, sa.Date),
+    (dt.Time, sa.Time),
 
-    dt.Decimal: sa.NUMERIC,
-    dt.Null: sa.types.NullType,
-    dt.Binary: sa.Binary
-}
+    (dt.Decimal, sa.NUMERIC),
+    (dt.Null, sa.types.NullType),
+    (dt.Binary, sa.Binary)
+])
 
-_sqla_type_mapping = {
-    sa.SmallInteger: dt.Int16,
-    sa.SMALLINT: dt.Int16,
-    sa.Integer: dt.Int32,
-    sa.INTEGER: dt.Int32,
-    sa.BigInteger: dt.Int64,
-    sa.BIGINT: dt.Int64,
-    sa.Boolean: dt.Boolean,
-    sa.BOOLEAN: dt.Boolean,
-    sa.Float: dt.Double,
-    sa.FLOAT: dt.Double,
-    sa.REAL: dt.Float,
-    sa.String: dt.String,
-    sa.VARCHAR: dt.String,
-    sa.CHAR: dt.String,
-    sa.Text: dt.String,
-    sa.TEXT: dt.String,
-    sa.BINARY: dt.Binary,
-    sa.Binary: dt.Binary,
-    sa.DATE: dt.Date,
-    sa.Time: dt.Time,
-    sa.types.NullType: dt.Null,
-}
+_sqla_type_mapping = OrderedDict([
+    (sa.SmallInteger, dt.Int16),
+    (sa.SMALLINT, dt.Int16),
+    (sa.Integer, dt.Int32),
+    (sa.INTEGER, dt.Int32),
+    (sa.BigInteger, dt.Int64),
+    (sa.BIGINT, dt.Int64),
+    (sa.Boolean, dt.Boolean),
+    (sa.BOOLEAN, dt.Boolean),
+    (sa.Float, dt.Double),
+    (sa.FLOAT, dt.Double),
+    (sa.REAL, dt.Float),
+    (sa.String, dt.String),
+    (sa.VARCHAR, dt.String),
+    (sa.CHAR, dt.String),
+    (sa.Text, dt.String),
+    (sa.TEXT, dt.String),
+    (sa.BINARY, dt.Binary),
+    (sa.Binary, dt.Binary),
+    (sa.DATE, dt.Date),
+    (sa.Time, dt.Time),
+    (sa.types.NullType, dt.Null)
+])
 
-_sqla_type_to_ibis = dict((v, k) for k, v in _ibis_type_to_sqla.items())
-_sqla_type_to_ibis.update(_sqla_type_mapping)
+_sqla_type_to_ibis = OrderedDict(
+    [(v, k) for k, v in _ibis_type_to_sqla.items()] +
+    list(_sqla_type_mapping.items())
+)
 
 
 def sqlalchemy_type_to_ibis_type(
     column_type, nullable=True, default_timezone=None
 ):
     type_class = type(column_type)
-
     if isinstance(column_type, sa.types.NUMERIC):
         return dt.Decimal(
             column_type.precision, column_type.scale, nullable=nullable
         )
+
+    if type_class in _sqla_type_to_ibis:
+        ibis_class = _sqla_type_to_ibis[type_class]
+    elif isinstance(column_type, sa.DateTime):
+        return dt.Timestamp(
+            timezone=default_timezone if column_type.timezone else None,
+            nullable=nullable
+        )
+    elif isinstance(column_type, sa.ARRAY):
+        dimensions = column_type.dimensions
+        if dimensions is not None and dimensions != 1:
+            raise NotImplementedError(
+                'Nested array types not yet supported'
+            )
+        value_type = sqlalchemy_type_to_ibis_type(
+            column_type.item_type,
+            default_timezone=default_timezone,
+        )
+
+        def make_array_type(nullable, value_type=value_type):
+            return dt.Array(value_type, nullable=nullable)
+
+        ibis_class = make_array_type
     else:
-        if type_class in _sqla_type_to_ibis:
-            ibis_class = _sqla_type_to_ibis[type_class]
-        elif isinstance(column_type, sa.DateTime):
-            return dt.Timestamp(
-                timezone=default_timezone if column_type.timezone else None,
-                nullable=nullable
+        try:
+            ibis_class = next(
+                v for k, v in reversed(_sqla_type_mapping.items())
+                if isinstance(column_type, k)
             )
-        elif isinstance(column_type, sa.ARRAY):
-            dimensions = column_type.dimensions
-            if dimensions is not None and dimensions != 1:
-                raise NotImplementedError(
-                    'Nested array types not yet supported'
+        except StopIteration:
+            raise NotImplementedError(
+                'Unable to convert SQLAlchemy type {} to ibis type'.format(
+                    column_type
                 )
-            value_type = sqlalchemy_type_to_ibis_type(
-                column_type.item_type,
-                default_timezone=default_timezone,
             )
 
-            def make_array_type(nullable, value_type=value_type):
-                return dt.Array(value_type, nullable=nullable)
-
-            ibis_class = make_array_type
-        else:
-            try:
-                ibis_class = next(
-                    v for k, v in _sqla_type_mapping.items()
-                    if isinstance(column_type, k)
-                )
-            except StopIteration:
-                raise NotImplementedError(
-                    'Unable to convert SQLAlchemy type {} to ibis type'.format(
-                        column_type
-                    )
-                )
-        return ibis_class(nullable)
+    return ibis_class(nullable)
 
 
 def schema_from_table(table):
