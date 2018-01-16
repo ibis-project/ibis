@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from ibis.client import SQLClient
-from ibis.expr.datatypes import Schema
+from ibis.expr.schema import Schema
 
 
 class MockConnection(SQLClient):

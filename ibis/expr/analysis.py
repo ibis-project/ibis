@@ -17,7 +17,7 @@ import toolz
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
-from ibis.expr.datatypes import HasSchema
+from ibis.expr.schema import HasSchema
 from ibis.expr.window import window
 
 from ibis.common import RelationError, ExpressionError, IbisTypeError
@@ -1115,7 +1115,7 @@ def flatten_predicate(expr):
         a = Column[int64*] 'a' from table
           ref_0
       right:
-        Literal[int8]
+        Literal[int64]
           1
     >>> predicates[1]  # doctest: +NORMALIZE_WHITESPACE
     ref_0

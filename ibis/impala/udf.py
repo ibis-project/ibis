@@ -13,7 +13,7 @@
 
 import re
 
-from ibis.expr.datatypes import validate_type
+from ibis.expr import datatypes as dt
 import ibis.expr.operations as _ops
 import ibis.expr.rules as rules
 import ibis.impala.compiler as comp
@@ -71,7 +71,7 @@ class ScalarFunction(Function):
 
     def _type_signature(self, inputs, output):
         input_type = _to_input_sig(inputs)
-        output = validate_type(output)
+        output = dt.validate_type(output)
         output_type = rules.shape_like_flatargs(output)
         return input_type, output_type
 
@@ -90,7 +90,7 @@ class AggregateFunction(Function):
 
     def _type_signature(self, inputs, output):
         input_type = _to_input_sig(inputs)
-        output = validate_type(output)
+        output = dt.validate_type(output)
         output_type = rules.scalar_output(output)
         return input_type, output_type
 
@@ -260,7 +260,7 @@ def _to_input_sig(inputs):
     if isinstance(inputs, rules.TypeSignature):
         return inputs
     else:
-        in_type = [validate_type(x) for x in inputs]
+        in_type = [dt.validate_type(x) for x in inputs]
         return rules.TypeSignature([rules.value_typed_as(x)
                                     for x in in_type])
 
@@ -302,7 +302,7 @@ def parse_type(t):
         if 'varchar' in t or 'char' in t:
             return 'string'
         elif 'decimal' in t:
-            result = validate_type(t)
+            result = dt.validate_type(t)
             if result:
                 return t
             else:
@@ -331,7 +331,7 @@ def _ibis_string_to_impala(tval):
 
     if tval in _sql_type_names:
         return _sql_type_names[tval]
-    result = validate_type(tval)
+    result = dt.validate_type(tval)
     if result:
         return repr(result)
 
