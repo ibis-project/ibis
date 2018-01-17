@@ -57,8 +57,11 @@ class Backend(object):
     def functional_alltypes(self):
         return self.connection.database().functional_alltypes
 
-    def functional_alltypes_df(self):
-        return self.functional_alltypes().execute()
+    def batting(self):
+        return self.connection.database().batting
+
+    def awards_players(self):
+        return self.connection.database().awards_players
 
 
 class UnorderedSeriesComparator(object):
@@ -103,13 +106,9 @@ class Pandas(Backend):
     additional_skipped_operations = frozenset({ops.StringSQLLike})
 
     def connect(self, data_directory):
-        filename = data_directory / 'functional_alltypes.csv'
-        if not filename.exists():
-            pytest.skip('test data set {} not found'.format(filename))
-
         return ibis.pandas.connect({
             'functional_alltypes': pd.read_csv(
-                filename,
+                data_directory / 'functional_alltypes.csv',
                 index_col=None,
                 dtype={
                     'string_col': str,
@@ -118,6 +117,12 @@ class Pandas(Backend):
                 parse_dates=[
                     'timestamp_col'
                 ]
+            ),
+            'batting': pd.read_csv(
+                data_directory / 'batting.csv'
+            ),
+            'awards_players': pd.read_csv(
+                data_directory / 'awards_players.csv'
             )
         })
 

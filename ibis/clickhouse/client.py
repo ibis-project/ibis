@@ -30,18 +30,14 @@ class ClickhouseQuery(Query):
 
     def _external_tables(self):
         table_set = getattr(self.ddl, 'table_set', None)
+        query_params = getattr(self.ddl, 'params', {})
+
         if table_set is None:
             return []
 
         tables = []
-        for table in lin.roots(table_set, (ClickhouseExternalTable,)):
-            data = table.data()
-            if isinstance(data, pd.DataFrame):
-                data = data.to_dict('records')
-            if not isinstance(data, list) and isinstance(data[0], dict):
-                raise ValueError('External table\'s data must be a pandas '
-                                 'dataframe or a list of dicts')
-
+        for table in lin.roots(table_set, ClickhouseExternalTable):
+            data = table.execute(params=query_params).to_dict('records')
             types = ibis_types_to_clickhouse_types(table.schema.types)
             struct = list(zip(table.schema.names, types))
             tables.append(dict(name=table.name, data=data, structure=struct))
@@ -348,37 +344,24 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
 
 class ClickhouseExternalTable(ops.DatabaseTable):
 
-    def data(self):
-        if callable(self.source):
-            return self.source()
-        else:
-            return self.source
+    def execute(self, *args, **kwargs):
+        return self.source.execute(*args, **kwargs)
+
+    def root_tables(self):
+        return [self]
 
 
-def external_table(name, data, schema=None):
+def external_table(name, table):
     """
-    Create a table expression that references an external table outside
-    of the database
+    Flag a Selection or a DatabaseTable as external to Clickhouse
 
     Parameters
     ----------
-    name : string
-    data : List[dict] or pd.DataFrame or callable
-    schema: List[(string, string)] or Schema, optional
+    table : TableExpr
 
     Returns
     -------
-    table : ClickhouseTable
+    table : ClickhouseExternalTable
     """
-    import ibis.expr.schema as sch
-
-    if schema is None:
-        if callable(data):
-            raise ValueError('Must explicitly define a schema for an '
-                             'external table created from a callable')
-        schema = sch.infer(data)
-    else:
-        schema = sch.schema(schema)
-
-    node = ClickhouseExternalTable(name, schema, data)
-    return ClickhouseTable(node)
+    op = ClickhouseExternalTable(name, table.schema(), table)
+    return ClickhouseTable(op)

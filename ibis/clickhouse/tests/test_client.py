@@ -174,45 +174,19 @@ def test_execute_exprs_no_table_ref(con):
 
 
 def test_define_external_table(con, alltypes):
-    df = pd.DataFrame([
+    external_df = pd.DataFrame([
         ('alpha', 1, 'first'),
         ('beta', 2, 'second'),
         ('gamma', 3, 'third')
     ], columns=['a', 'b', 'c'])
 
-    table = external_table('external', df)
+    pandas_connection = ibis.pandas.connect({'external': external_df})
+    pandas_table = pandas_connection.table('external')
+
+    table = external_table('external', pandas_table)
     assert isinstance(table.op(), ClickhouseExternalTable)
 
     expected_schema = ibis.schema([('a', 'string'),
                                    ('b', 'int64'),
                                    ('c', 'string')])
     assert table.schema() == expected_schema
-
-    expected_schema = [
-        ('a', 'string'),
-        ('b', 'int8'),
-        ('c', 'string')
-    ]
-    table = external_table('external', df, schema=expected_schema)
-    assert isinstance(table.op(), ClickhouseExternalTable)
-    assert table.schema() == ibis.schema(expected_schema)
-
-
-def test_define_external_table_from_callable(con, alltypes):
-    df = pd.DataFrame([
-        ('alpha', 1, 'first'),
-        ('beta', 2, 'second'),
-        ('gamma', 3, 'third')
-    ], columns=['a', 'b', 'c'])
-
-    with pytest.raises(ValueError):
-        table = external_table('external', lambda: df)
-
-    schema = ibis.schema([
-        ('a', 'string'),
-        ('b', 'int8'),
-        ('c', 'string')
-    ])
-    table = external_table('external', lambda: df, schema=schema)
-    assert isinstance(table.op(), ClickhouseExternalTable)
-    assert table.schema() == schema

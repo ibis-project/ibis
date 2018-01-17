@@ -49,14 +49,34 @@ def alltypes(backend):
     return backend.functional_alltypes()
 
 
+@pytest.fixture(scope='session')
+def batting(backend):
+    return backend.batting()
+
+
+@pytest.fixture(scope='session')
+def awards_players(backend):
+    return backend.awards_players()
+
+
 @pytest.fixture
 def analytic_alltypes(alltypes):
     return alltypes.groupby('string_col').order_by('id')
 
 
 @pytest.fixture(scope='session')
-def df(backend):
-    return backend.functional_alltypes_df()
+def df(alltypes):
+    return alltypes.execute()
+
+
+@pytest.fixture(scope='session')
+def batting_df(batting):
+    return batting.execute(limit=None)
+
+
+@pytest.fixture(scope='session')
+def awards_players_df(awards_players):
+    return awards_players.execute(limit=None)
 
 
 # @pytest.fixture(scope='session')

@@ -65,7 +65,10 @@ def connect(path):
 
 
 class CSVTable(ops.DatabaseTable):
-    pass
+
+    def __init__(self, name, schema, source, **kwargs):
+        super(CSVTable, self).__init__(name, schema, source)
+        self.read_csv_kwargs = kwargs
 
 
 class CSVClient(FileClient):
@@ -78,7 +81,7 @@ class CSVClient(FileClient):
         data = execute(expr)
         data.to_csv(str(path), index=index, **kwargs)
 
-    def table(self, name, path=None, schema=None):
+    def table(self, name, path=None, schema=None, **kwargs):
         if name not in self.list_tables(path):
             raise AttributeError(name)
 
@@ -93,10 +96,10 @@ class CSVClient(FileClient):
             dtype, dates = ibis_schema_to_pandas_dtypes(schema)
 
         df = pd.read_csv(str(f), header=0, nrows=10, dtype=dtype,
-                         parse_dates=dates)
+                         parse_dates=dates, **kwargs)
         schema = pandas_dtypes_to_ibis_schema(df, {})
 
-        t = CSVTable(name, schema, self).to_expr()
+        t = CSVTable(name, schema, self, **kwargs).to_expr()
         self.dictionary[name] = f
         return t
 
@@ -112,14 +115,15 @@ class CSVClient(FileClient):
 
 @pre_execute.register(CSVTable, CSVClient)
 def csv_pre_execute_table(op, client, scope, **kwargs):
-
     # cache
     if isinstance(scope.get(op), pd.DataFrame):
         return {}
 
     path = client.dictionary[op.name]
     schema, dates = ibis_schema_to_pandas_dtypes(op.schema)
-    df = pd.read_csv(str(path), header=0, dtype=schema, parse_dates=dates)
+
+    df = pd.read_csv(str(path), header=0, dtype=schema, parse_dates=dates,
+                     **op.read_csv_kwargs)
     return {op: df}
 
 

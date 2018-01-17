@@ -16,11 +16,11 @@ CREATE TABLE diamonds (
 DROP TABLE IF EXISTS batting;
 
 CREATE TABLE batting (
-    `playerID` TEXT,
+    `playerID` VARCHAR(255),
     `yearID` BIGINT,
     stint BIGINT,
-    `teamID` TEXT,
-    `lgID` TEXT,
+    `teamID` VARCHAR(7),
+    `lgID` VARCHAR(7),
     `G` BIGINT,
     `AB` BIGINT,
     `R` BIGINT,
@@ -43,12 +43,12 @@ CREATE TABLE batting (
 DROP TABLE IF EXISTS awards_players;
 
 CREATE TABLE awards_players (
-    `playerID` TEXT,
-    `awardID` TEXT,
+    `playerID` VARCHAR(255),
+    `awardID` VARCHAR(255),
     `yearID` BIGINT,
-    `lgID` TEXT,
-    tie TEXT,
-    notes TEXT
+    `lgID` VARCHAR(7),
+    tie VARCHAR(7),
+    notes VARCHAR(255)
 );
 
 DROP TABLE IF EXISTS functional_alltypes;
