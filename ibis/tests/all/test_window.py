@@ -10,14 +10,12 @@ from pytest import param
     param(
         lambda t: t.float_col.lag(),
         lambda t: t.float_col.shift(1),
-        id='lag',
-        marks=pytest.mark.xfail,
+        id='lag'
     ),
     param(
         lambda t: t.float_col.lead(),
         lambda t: t.float_col.shift(-1),
-        id='lead',
-        marks=pytest.mark.xfail,
+        id='lead'
     ),
     param(
         lambda t: t.float_col.rank(),
@@ -76,44 +74,38 @@ from pytest import param
     param(
         lambda t: t.double_col.cumsum(),
         lambda t: t.double_col.cumsum(),
-        id='cumsum',
-        marks=pytest.mark.xfail,
+        id='cumsum'
     ),
     param(
         lambda t: t.double_col.cummean(),
         lambda t: t.double_col.expanding().mean().reset_index(
             drop=True, level=0
         ),
-        id='cummean',
-        marks=pytest.mark.xfail,
+        id='cummean'
     ),
     param(
         lambda t: t.float_col.cummin(),
         lambda t: t.float_col.cummin(),
-        id='cummin',
-        marks=pytest.mark.xfail,
+        id='cummin'
     ),
     param(
         lambda t: t.float_col.cummax(),
         lambda t: t.float_col.cummax(),
-        id='cummax',
-        marks=pytest.mark.xfail,
+        id='cummax'
     ),
     param(
         lambda t: (t.double_col == 0).cumany(),
         lambda t: t.double_col.expanding().agg(
             lambda s: (s == 0).any()
         ).reset_index(drop=True, level=0).astype(bool),
-        id='cumany',
-        marks=pytest.mark.xfail,
+        id='cumany'
     ),
     param(
         lambda t: (t.double_col == 0).cumall(),
         lambda t: t.double_col.expanding().agg(
             lambda s: (s == 0).all()
         ).reset_index(drop=True, level=0).astype(bool),
-        id='cumall',
-        marks=pytest.mark.xfail,
+        id='cumall'
     ),
     param(
         lambda t: t.double_col.sum(),
@@ -124,20 +116,17 @@ from pytest import param
     param(
         lambda t: t.double_col.mean(),
         lambda gb: gb.double_col.transform('mean'),
-        id='mean',
-        marks=pytest.mark.xfail,
+        id='mean'
     ),
     param(
         lambda t: t.float_col.min(),
         lambda gb: gb.float_col.transform('min'),
-        id='min',
-        marks=pytest.mark.xfail,
+        id='min'
     ),
     param(
         lambda t: t.float_col.max(),
         lambda gb: gb.float_col.transform('max'),
-        id='max',
-        marks=pytest.mark.xfail,
+        id='max'
     ),
 ])
 def test_window(backend, analytic_alltypes, df, con, result_fn, expected_fn):

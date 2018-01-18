@@ -32,18 +32,19 @@ import pandas as pd
 
 from ibis.client import SQLClient, AsyncQuery, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter
-
 from ibis import compat
 
+import ibis
+import ibis.util as util
 import ibis.common as com
+import ibis.expr.types as ir
 import ibis.expr.schema as sch
+import ibis.expr.window as W
+import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
-import ibis.util as util
-import ibis
 
 
 _ibis_type_to_sqla = OrderedDict([
@@ -93,6 +94,7 @@ _sqla_type_to_ibis = OrderedDict([
     (sa.Time, dt.Time),
     (sa.types.NullType, dt.Null),
     # this should ba placed under mysql
+    # but currently only the reverse mapping can be injected
     (mysql.TINYINT, dt.Int8),
     (mysql.SMALLINT, dt.Int16),
     (mysql.INTEGER, dt.Int32),
@@ -455,6 +457,106 @@ def _string_like(t, expr):
     return result
 
 
+_cumulative_to_reduction = {
+    ops.CumulativeSum: ops.Sum,
+    ops.CumulativeMin: ops.Min,
+    ops.CumulativeMax: ops.Max,
+    ops.CumulativeMean: ops.Mean,
+    ops.CumulativeAny: ops.Any,
+    ops.CumulativeAll: ops.All,
+}
+
+
+def _cumulative_to_window(translator, expr, window):
+    win = W.cumulative_window()
+    win = win.group_by(window._group_by).order_by(window._order_by)
+
+    op = expr.op()
+
+    klass = _cumulative_to_reduction[type(op)]
+    new_op = klass(*op.args)
+    new_expr = expr._factory(new_op, name=expr._name)
+
+    if type(new_op) in translator._rewrites:
+        new_expr = translator._rewrites[type(new_op)](new_expr)
+
+    return L.windowize_function(new_expr, win)
+
+
+def _window(t, expr):
+    op = expr.op()
+
+    arg, window = op.args
+    reduction = t.translate(arg)
+
+    window_op = arg.op()
+
+    _require_order_by = (
+        ops.Lag,
+        ops.Lead,
+        ops.DenseRank,
+        ops.MinRank,
+        ops.NTile,
+        ops.PercentRank,
+        ops.FirstValue,
+        ops.LastValue,
+    )
+
+    if isinstance(window_op, ops.CumulativeOp):
+        arg = _cumulative_to_window(t, arg, window)
+        return t.translate(arg)
+
+    # Some analytic functions need to have the expression of interest in
+    # the ORDER BY part of the window clause
+    if isinstance(window_op, _require_order_by) and not window._order_by:
+        order_by = t.translate(window_op.args[0])
+    else:
+        order_by = list(map(t.translate, window._order_by))
+
+    partition_by = list(map(t.translate, window._group_by))
+
+    result = Over(
+        reduction,
+        partition_by=partition_by,
+        order_by=order_by,
+        preceding=window.preceding,
+        following=window.following,
+    )
+
+    if isinstance(
+        window_op, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)
+    ):
+        return result - 1
+    else:
+        return result
+
+
+def _lag(t, expr):
+    arg, offset, default = expr.op().args
+    if default is not None:
+        raise NotImplementedError()
+
+    sa_arg = t.translate(arg)
+    sa_offset = t.translate(offset) if offset is not None else 1
+    return sa.func.lag(sa_arg, sa_offset)
+
+
+def _lead(t, expr):
+    arg, offset, default = expr.op().args
+    if default is not None:
+        raise NotImplementedError()
+    sa_arg = t.translate(arg)
+    sa_offset = t.translate(offset) if offset is not None else 1
+    return sa.func.lead(sa_arg, sa_offset)
+
+
+def _ntile(t, expr):
+    op = expr.op()
+    args = op.args
+    arg, buckets = map(t.translate, args)
+    return sa.func.ntile(buckets)
+
+
 _operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
@@ -531,6 +633,26 @@ _binary_ops = {
 
     # TODO
 }
+
+
+_window_functions = {
+    ops.Lag: _lag,
+    ops.Lead: _lead,
+    ops.NTile: _ntile,
+    ops.FirstValue: unary(sa.func.first_value),
+    ops.LastValue: unary(sa.func.last_value),
+    ops.RowNumber: unary(lambda: sa.func.row_number()),
+    ops.DenseRank: unary(lambda arg: sa.func.dense_rank()),
+    ops.MinRank: unary(lambda arg: sa.func.rank()),
+    ops.PercentRank: unary(lambda arg: sa.func.percent_rank()),
+    ops.WindowOp: _window,
+    ops.CumulativeOp: _window,
+    ops.CumulativeMax: unary(sa.func.max),
+    ops.CumulativeMin: unary(sa.func.min),
+    ops.CumulativeSum: unary(sa.func.sum),
+    ops.CumulativeMean: unary(sa.func.avg),
+}
+
 
 for _k, _v in _binary_ops.items():
     _operation_registry[_k] = fixed_arity(_v, 2)

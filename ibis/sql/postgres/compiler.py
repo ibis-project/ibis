@@ -26,19 +26,19 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
-from ibis.sql.alchemy import (unary, varargs, fixed_arity, infix_op, Over,
+from ibis.sql.alchemy import (unary, varargs, fixed_arity, infix_op,
                               _variance_reduction, _get_sqla_table)
 import ibis.common as com
 import ibis.expr.types as ir
-import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.window as W
 
 import ibis.sql.alchemy as alch
 import sqlalchemy.dialects.postgresql as pg
 
+
 _operation_registry = alch._operation_registry.copy()
+_operation_registry.update(alch._window_functions)
 
 
 # TODO: substr and find are copied from SQLite, we should really have a
@@ -405,87 +405,6 @@ def _log(t, expr):
         return sa.func.ln(arg)
 
 
-_cumulative_to_reduction = {
-    ops.CumulativeSum: ops.Sum,
-    ops.CumulativeMin: ops.Min,
-    ops.CumulativeMax: ops.Max,
-    ops.CumulativeMean: ops.Mean,
-    ops.CumulativeAny: ops.Any,
-    ops.CumulativeAll: ops.All,
-}
-
-
-def _cumulative_to_window(translator, expr, window):
-    win = W.cumulative_window()
-    win = win.group_by(window._group_by).order_by(window._order_by)
-
-    op = expr.op()
-
-    klass = _cumulative_to_reduction[type(op)]
-    new_op = klass(*op.args)
-    new_expr = expr._factory(new_op, name=expr._name)
-
-    if type(new_op) in translator._rewrites:
-        new_expr = translator._rewrites[type(new_op)](new_expr)
-
-    return L.windowize_function(new_expr, win)
-
-
-def _window(t, expr):
-    op = expr.op()
-
-    arg, window = op.args
-    reduction = t.translate(arg)
-
-    window_op = arg.op()
-
-    _require_order_by = (
-        ops.Lag,
-        ops.Lead,
-        ops.DenseRank,
-        ops.MinRank,
-        ops.NTile,
-        ops.PercentRank,
-        ops.FirstValue,
-        ops.LastValue,
-    )
-
-    if isinstance(window_op, ops.CumulativeOp):
-        arg = _cumulative_to_window(t, arg, window)
-        return t.translate(arg)
-
-    # Some analytic functions need to have the expression of interest in
-    # the ORDER BY part of the window clause
-    if isinstance(window_op, _require_order_by) and not window._order_by:
-        order_by = t.translate(window_op.args[0])
-    else:
-        order_by = list(map(t.translate, window._order_by))
-
-    partition_by = list(map(t.translate, window._group_by))
-
-    result = Over(
-        reduction,
-        partition_by=partition_by,
-        order_by=order_by,
-        preceding=window.preceding,
-        following=window.following,
-    )
-
-    if isinstance(
-        window_op, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)
-    ):
-        return result - 1
-    else:
-        return result
-
-
-def _ntile(t, expr):
-    op = expr.op()
-    args = op.args
-    arg, buckets = map(t.translate, args)
-    return sa.func.ntile(buckets)
-
-
 class regex_extract(GenericFunction):
     def __init__(self, string, pattern, index):
         super(regex_extract, self).__init__(string, pattern, index)
@@ -660,25 +579,6 @@ def _string_join(t, expr):
     return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
 
 
-def _lag(t, expr):
-    arg, offset, default = expr.op().args
-    if default is not None:
-        raise NotImplementedError()
-
-    sa_arg = t.translate(arg)
-    sa_offset = t.translate(offset) if offset is not None else 1
-    return sa.func.lag(sa_arg, sa_offset)
-
-
-def _lead(t, expr):
-    arg, offset, default = expr.op().args
-    if default is not None:
-        raise NotImplementedError()
-    sa_arg = t.translate(arg)
-    sa_offset = t.translate(offset) if offset is not None else 1
-    return sa.func.lead(sa_arg, sa_offset)
-
-
 def _literal(t, expr):
     if isinstance(expr, ir.IntervalValue):
         return sa.text("INTERVAL '{} {}'".format(expr.op().value,
@@ -709,10 +609,10 @@ _operation_registry.update({
     ops.IfNull: fixed_arity(sa.func.coalesce, 2),
 
     # boolean reductions
-    ops.Any: fixed_arity(sa.func.bool_or, 1),
-    ops.All: fixed_arity(sa.func.bool_and, 1),
-    ops.NotAny: fixed_arity(lambda x: sa.not_(sa.func.bool_or(x)), 1),
-    ops.NotAll: fixed_arity(lambda x: sa.not_(sa.func.bool_and(x)), 1),
+    ops.Any: unary(sa.func.bool_or),
+    ops.All: unary(sa.func.bool_and),
+    ops.NotAny: unary(lambda x: sa.not_(sa.func.bool_or(x))),
+    ops.NotAll: unary(lambda x: sa.not_(sa.func.bool_and(x))),
 
     # strings
     ops.Substring: _substr,
@@ -734,23 +634,23 @@ _operation_registry.update({
     ops.RegexSearch: infix_op('~'),
     ops.RegexReplace: _regex_replace,
     ops.Translate: fixed_arity('translate', 3),
-    ops.StringAscii: fixed_arity(sa.func.ascii, 1),
+    ops.StringAscii: unary(sa.func.ascii),
     ops.RegexExtract: _regex_extract,
     ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
     ops.StringJoin: _string_join,
 
     ops.FindInSet: _find_in_set,
 
-    ops.Ceil: fixed_arity(sa.func.ceil, 1),
-    ops.Floor: fixed_arity(sa.func.floor, 1),
+    ops.Ceil: unary(sa.func.ceil),
+    ops.Floor: unary(sa.func.floor),
     ops.FloorDivide: _floor_divide,
-    ops.Exp: fixed_arity(sa.func.exp, 1),
-    ops.Sign: fixed_arity(sa.func.sign, 1),
-    ops.Sqrt: fixed_arity(sa.func.sqrt, 1),
+    ops.Exp: unary(sa.func.exp),
+    ops.Sign: unary(sa.func.sign),
+    ops.Sqrt: unary(sa.func.sqrt),
     ops.Log: _log,
-    ops.Ln: fixed_arity(sa.func.ln, 1),
-    ops.Log2: fixed_arity(lambda x: sa.func.log(2, x), 1),
-    ops.Log10: fixed_arity(sa.func.log, 1),
+    ops.Ln: unary(sa.func.ln),
+    ops.Log2: unary(lambda x: sa.func.log(2, x)),
+    ops.Log10: unary(sa.func.log),
     ops.Power: fixed_arity(sa.func.power, 2),
     ops.Round: _round,
     ops.Modulus: _mod,
@@ -780,29 +680,13 @@ _operation_registry.update({
 
     # now is in the timezone of the server, but we want UTC
     ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
-    ops.WindowOp: _window,
 
-    ops.Lag: _lag,
-    ops.Lead: _lead,
-    ops.FirstValue: fixed_arity(sa.func.first_value, 1),
-    ops.LastValue: fixed_arity(sa.func.last_value, 1),
-    ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
-    ops.DenseRank: fixed_arity(lambda arg: sa.func.dense_rank(), 1),
-    ops.MinRank: fixed_arity(lambda arg: sa.func.rank(), 1),
-    ops.PercentRank: fixed_arity(lambda arg: sa.func.percent_rank(), 1),
-    ops.NTile: _ntile,
-
-    ops.CumulativeOp: _window,
-    ops.CumulativeAll: fixed_arity(sa.func.bool_and, 1),
-    ops.CumulativeAny: fixed_arity(sa.func.bool_or, 1),
-    ops.CumulativeMax: fixed_arity(sa.func.max, 1),
-    ops.CumulativeMin: fixed_arity(sa.func.min, 1),
-    ops.CumulativeSum: fixed_arity(sa.func.sum, 1),
-    ops.CumulativeMean: fixed_arity(sa.func.avg, 1),
+    ops.CumulativeAll: unary(sa.func.bool_and),
+    ops.CumulativeAny: unary(sa.func.bool_or),
 
     # array operations
-    ops.ArrayLength: fixed_arity(_cardinality, 1),
-    ops.ArrayCollect: fixed_arity(sa.func.array_agg, 1),
+    ops.ArrayLength: unary(_cardinality),
+    ops.ArrayCollect: unary(sa.func.array_agg),
     ops.ArraySlice: _array_slice,
     ops.ArrayIndex: fixed_arity(lambda array, index: array[index + 1], 2),
     ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),

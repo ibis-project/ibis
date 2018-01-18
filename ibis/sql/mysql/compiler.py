@@ -1,16 +1,17 @@
 import sqlalchemy as sa
 
-from ibis.sql.alchemy import (unary, varargs, fixed_arity, infix_op, Over,
+from ibis.sql.alchemy import (unary, varargs, fixed_arity, infix_op,
                               _variance_reduction)
 import ibis.common as com
-import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.window as W
 import ibis.sql.alchemy as alch
 
 
 _operation_registry = alch._operation_registry.copy()
+
+# NOTE: window functions are available from MySQL 8 and MariaDB 10.2
+_operation_registry.update(alch._window_functions)
 
 
 def _substr(t, expr):
@@ -43,11 +44,11 @@ def _string_find(t, expr):
 def _capitalize(t, expr):
     arg, = expr.op().args
     sa_arg = t.translate(arg)
-    return sa.func.CONCAT(
-        sa.func.UCASE(
-            sa.func.LEFT(sa_arg, 1)
+    return sa.func.concat(
+        sa.func.ucase(
+            sa.func.left(sa_arg, 1)
         ),
-        sa.func.SUBSTRING(sa_arg, 2)
+        sa.func.substring(sa_arg, 2)
     )
 
 
@@ -102,21 +103,6 @@ def _cast(t, expr):
     return sa.cast(sa_arg, sa_type)
 
 
-def _reduction(func_name):
-    def reduction_compiler(t, expr):
-        arg, where = expr.op().args
-
-        if arg.type().equals(dt.boolean):
-            arg = arg.cast('int32')
-
-        func = getattr(sa.func, func_name)
-
-        if where is not None:
-            arg = where.ifelse(arg, None)
-        return func(t.translate(arg))
-    return reduction_compiler
-
-
 def _log(t, expr):
     arg, base = expr.op().args
     sa_arg = t.translate(arg)
@@ -129,87 +115,6 @@ def _power(t, expr):
     sa_arg = t.translate(arg)
     sa_exponent = t.translate(exponent)
     return sa.func.pow(sa_exponent, sa_arg)
-
-
-_cumulative_to_reduction = {
-    ops.CumulativeSum: ops.Sum,
-    ops.CumulativeMin: ops.Min,
-    ops.CumulativeMax: ops.Max,
-    ops.CumulativeMean: ops.Mean,
-    ops.CumulativeAny: ops.Any,
-    ops.CumulativeAll: ops.All,
-}
-
-
-def _cumulative_to_window(translator, expr, window):
-    win = W.cumulative_window()
-    win = win.group_by(window._group_by).order_by(window._order_by)
-
-    op = expr.op()
-
-    klass = _cumulative_to_reduction[type(op)]
-    new_op = klass(*op.args)
-    new_expr = expr._factory(new_op, name=expr._name)
-
-    if type(new_op) in translator._rewrites:
-        new_expr = translator._rewrites[type(new_op)](new_expr)
-
-    return L.windowize_function(new_expr, win)
-
-
-def _window(t, expr):
-    op = expr.op()
-
-    arg, window = op.args
-    reduction = t.translate(arg)
-
-    window_op = arg.op()
-
-    _require_order_by = (
-        ops.Lag,
-        ops.Lead,
-        ops.DenseRank,
-        ops.MinRank,
-        ops.NTile,
-        ops.PercentRank,
-        ops.FirstValue,
-        ops.LastValue,
-    )
-
-    if isinstance(window_op, ops.CumulativeOp):
-        arg = _cumulative_to_window(t, arg, window)
-        return t.translate(arg)
-
-    # Some analytic functions need to have the expression of interest in
-    # the ORDER BY part of the window clause
-    if isinstance(window_op, _require_order_by) and not window._order_by:
-        order_by = t.translate(window_op.args[0])
-    else:
-        order_by = list(map(t.translate, window._order_by))
-
-    partition_by = list(map(t.translate, window._group_by))
-
-    result = Over(
-        reduction,
-        partition_by=partition_by,
-        order_by=order_by,
-        preceding=window.preceding,
-        following=window.following,
-    )
-
-    if isinstance(
-        window_op, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)
-    ):
-        return result - 1
-    else:
-        return result
-
-
-def _ntile(t, expr):
-    op = expr.op()
-    args = op.args
-    arg, buckets = map(t.translate, args)
-    return sa.func.ntile(buckets)
 
 
 def _identical_to(t, expr):
@@ -241,25 +146,6 @@ def _floor_divide(t, expr):
 def _string_join(t, expr):
     sep, elements = expr.op().args
     return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
-
-
-def _lag(t, expr):
-    arg, offset, default = expr.op().args
-    if default is not None:
-        raise NotImplementedError()
-
-    sa_arg = t.translate(arg)
-    sa_offset = t.translate(offset) if offset is not None else 1
-    return sa.func.lag(sa_arg, sa_offset)
-
-
-def _lead(t, expr):
-    arg, offset, default = expr.op().args
-    if default is not None:
-        raise NotImplementedError()
-    sa_arg = t.translate(arg)
-    sa_offset = t.translate(offset) if offset is not None else 1
-    return sa.func.lead(sa_arg, sa_offset)
 
 
 _operation_registry.update({
@@ -307,9 +193,9 @@ _operation_registry.update({
     ops.Ceil: unary(sa.func.ceil),
     ops.Floor: unary(sa.func.floor),
     # ops.FloorDivide: _floor_divide,
-    ops.Exp: fixed_arity(sa.func.exp, 1),
-    ops.Sign: fixed_arity(sa.func.sign, 1),
-    ops.Sqrt: fixed_arity(sa.func.sqrt, 1),
+    ops.Exp: unary(sa.func.exp),
+    ops.Sign: unary(sa.func.sign),
+    ops.Sqrt: unary(sa.func.sqrt),
     ops.Log: _log,
     ops.Ln: unary(sa.func.ln),
     ops.Log2: unary(sa.func.log2),
@@ -331,34 +217,11 @@ _operation_registry.update({
     ops.ExtractMillisecond: _extract('millisecond'),
 
     # reductions
-    ops.Sum: _reduction('sum'),
-    ops.Mean: _reduction('avg'),
-    ops.Min: _reduction('min'),
-    ops.Max: _reduction('max'),
     ops.Variance: _variance_reduction('var'),
     ops.StandardDev: _variance_reduction('stddev'),
 
     # # now is in the timezone of the server, but we want UTC
     # ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
-    # ops.WindowOp: _window,
-
-    # ops.Lag: _lag,
-    # ops.Lead: _lead,
-    # ops.FirstValue: fixed_arity(sa.func.first_value, 1),
-    # ops.LastValue: fixed_arity(sa.func.last_value, 1),
-    # ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
-    # ops.DenseRank: fixed_arity(lambda arg: sa.func.dense_rank(), 1),
-    # ops.MinRank: fixed_arity(lambda arg: sa.func.rank(), 1),
-    # ops.PercentRank: fixed_arity(lambda arg: sa.func.percent_rank(), 1),
-    # ops.NTile: _ntile,
-
-    # ops.CumulativeOp: _window,
-    # ops.CumulativeAll: fixed_arity(sa.func.bool_and, 1),
-    # ops.CumulativeAny: fixed_arity(sa.func.bool_or, 1),
-    ops.CumulativeMax: unary(sa.func.max),
-    ops.CumulativeMin: unary(sa.func.min),
-    ops.CumulativeSum: unary(sa.func.sum),
-    ops.CumulativeMean: unary(sa.func.avg),
 
     ops.IdenticalTo: _identical_to
 })
