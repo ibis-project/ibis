@@ -438,7 +438,10 @@ def test_numeric_builtins_work(con, alltypes, df, translate):
 @pytest.mark.xfail(
     raises=clickhouse_driver.errors.UnknownTypeError,
     reason=(
-        'Client/server version mismatch not handled in the clickhouse driver')
+        'Newer clickhouse server uses Nullable(Nothing) type '
+        'for Null values which is currently unhandled by '
+        'clickhouse-driver'
+    )
 )
 def test_null_column(alltypes, translate):
     t = alltypes
