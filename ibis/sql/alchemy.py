@@ -641,7 +641,7 @@ _window_functions = {
     ops.NTile: _ntile,
     ops.FirstValue: unary(sa.func.first_value),
     ops.LastValue: unary(sa.func.last_value),
-    ops.RowNumber: unary(lambda: sa.func.row_number()),
+    ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
     ops.DenseRank: unary(lambda arg: sa.func.dense_rank()),
     ops.MinRank: unary(lambda arg: sa.func.rank()),
     ops.PercentRank: unary(lambda arg: sa.func.percent_rank()),
