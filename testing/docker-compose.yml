@@ -2,13 +2,13 @@ version: '2'
 services:
 
   clickhouse:
-    image: yandex/clickhouse-server:latest
+    image: yandex/clickhouse-server:1.1.54327
     ports:
       - "8123:8123"
       - "9000:9000"
 
   mysql:
-    image: mariadb
+    image: mariadb:10.2
     ports:
       - "3306:3306"
     environment:
