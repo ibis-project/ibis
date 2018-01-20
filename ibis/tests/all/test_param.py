@@ -18,7 +18,7 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     with backend.skip_unsupported():
         result = expr.execute(params={value: raw_value})
 
-    expected = backend.default_series_rename(expected)
+    expected = backend.default_series_rename(expected).astype('float64')
     backend.assert_series_equal(result, expected)
 
 

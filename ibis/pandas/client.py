@@ -22,26 +22,26 @@ except AttributeError:
 
 
 _ibis_dtypes = {
-    dt.Boolean: np.bool_,
-    dt.Null: object,
-    dt.Array: object,
-    dt.String: object,
-    dt.Binary: object,
+    dt.Boolean: 'bool',
+    dt.Null: 'object',
+    dt.Array: 'object',
+    dt.String: 'object',
+    dt.Binary: 'object',
     dt.Category: 'category',
     dt.Date: 'datetime64[ns]',
     dt.Time: 'datetime64[ns]',
     dt.Timestamp: 'datetime64[ns]',
-    dt.Int8: np.int8,
-    dt.Int16: np.int16,
-    dt.Int32: np.int32,
-    dt.Int64: np.int64,
-    dt.UInt8: np.uint8,
-    dt.UInt16: np.uint16,
-    dt.UInt32: np.uint32,
-    dt.UInt64: np.uint64,
-    dt.Float32: np.float32,
-    dt.Float64: np.float64,
-    # dt.Decimal: np.float64
+    dt.Int8: 'int8',
+    dt.Int16: 'int16',
+    dt.Int32: 'int32',
+    dt.Int64: 'int64',
+    dt.UInt8: 'uint8',
+    dt.UInt16: 'uint16',
+    dt.UInt32: 'uint32',
+    dt.UInt64: 'uint64',
+    dt.Float32: 'float32',
+    dt.Float64: 'float64',
+    # dt.Decimal: 'float64'
 }
 
 

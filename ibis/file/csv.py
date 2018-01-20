@@ -1,8 +1,7 @@
-import numpy as np
+import toolz
 import pandas as pd
 
 import ibis.expr.schema as sch
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 from ibis.file.client import FileClient
@@ -12,41 +11,13 @@ from ibis.pandas.core import pre_execute, execute  # noqa
 from ibis.pandas.execution.selection import physical_tables
 
 
-_IBIS_TO_PANDAS_DTYPE = {
-    # dt.Any: None,
-    # dt.Null: None,
-    dt.Boolean: bool,
+def _read_csv(path, schema, **kwargs):
+    dtypes = dict(schema.to_pandas())
 
-    dt.Int8: np.int8,
-    dt.UInt8: np.uint8,
-    dt.Int16: np.int16,
-    dt.UInt16: np.uint16,
-    dt.Int32: np.int32,
-    dt.UInt32: np.uint32,
-    dt.Int64: np.int64,
-    dt.UInt64: np.uint64,
+    dates = list(toolz.valfilter(lambda s: s.startswith('datetime'), dtypes))
+    dtypes = toolz.dissoc(dtypes, *dates)
 
-    dt.Float: np.float32,
-    dt.Double: np.float64,
-    dt.Halffloat: np.float16,
-
-    dt.String: str,
-    dt.Binary: bytes,
-
-    dt.Date: 'datetime64[D]',
-    dt.Timestamp: 'datetime64[ns]',
-}
-
-
-def ibis_schema_to_pandas_dtypes(schema):
-    dtypes, dates = {}, []
-    for name, ibis_dtype in zip(schema.names, schema.types):
-        if isinstance(ibis_dtype, (dt.Date, dt.Timestamp)):
-            dates.append(name)
-        else:
-            dtypes[name] = _IBIS_TO_PANDAS_DTYPE[type(ibis_dtype)]
-
-    return dtypes, dates
+    return pd.read_csv(str(path), dtype=dtypes, parse_dates=dates, **kwargs)
 
 
 def connect(path):
@@ -60,7 +31,6 @@ def connect(path):
     -------
     CSVClient
     """
-
     return CSVClient(path)
 
 
@@ -91,17 +61,17 @@ class CSVClient(FileClient):
         # get the schema
         f = path / "{}.{}".format(name, self.extension)
 
-        dtype, dates = None, []
-        if schema is not None:
-            dtype, dates = ibis_schema_to_pandas_dtypes(schema)
+        # read sample
+        schema = schema or sch.schema([])
+        sample = _read_csv(f, schema=schema, header=0, nrows=50, **kwargs)
 
-        df = pd.read_csv(str(f), header=0, nrows=10, dtype=dtype,
-                         parse_dates=dates, **kwargs)
-        schema = sch.infer(df)
+        # infer sample's schema and define table
+        schema = sch.infer(sample)
+        table = CSVTable(name, schema, self, **kwargs).to_expr()
 
-        t = CSVTable(name, schema, self, **kwargs).to_expr()
         self.dictionary[name] = f
-        return t
+
+        return table
 
     def list_tables(self, path=None):
         return self._list_tables_files(path)
@@ -120,38 +90,32 @@ def csv_pre_execute_table(op, client, scope, **kwargs):
         return {}
 
     path = client.dictionary[op.name]
-    schema, dates = ibis_schema_to_pandas_dtypes(op.schema)
+    df = _read_csv(path, schema=op.schema, header=0, **op.read_csv_kwargs)
 
-    df = pd.read_csv(str(path), header=0, dtype=schema, parse_dates=dates,
-                     **op.read_csv_kwargs)
     return {op: df}
 
 
 @pre_execute.register(ops.Selection, CSVClient)
 def csv_pre_execute(op, client, scope, **kwargs):
-
     tables = physical_tables(op.table.op())
 
     ops = {}
     for table in tables:
-        if table not in scope:
+        if table in scope:
+            continue
 
-            path = client.dictionary[table.name]
-            usecols = None
+        path = client.dictionary[table.name]
+        usecols = None
 
-            if op.selections:
-                schema, dates = ibis_schema_to_pandas_dtypes(table.schema)
-                header = pd.read_csv(
-                    str(path), header=0, nrows=1, schema=schema
-                )
-                usecols = [getattr(s.op(), 'name', None) or s.get_name()
-                           for s in op.selections]
+        if op.selections:
+            header = _read_csv(path, schema=table.schema, header=0, nrows=1)
+            usecols = [getattr(s.op(), 'name', None) or s.get_name()
+                       for s in op.selections]
 
-                # we cannot read all the columns taht we would like
-                if len(pd.Index(usecols) & header.columns) != len(usecols):
-                    usecols = None
+            # we cannot read all the columns taht we would like
+            if len(pd.Index(usecols) & header.columns) != len(usecols):
+                usecols = None
 
-            df = pd.read_csv(str(path), usecols=usecols, header=0,
-                             parse_dates=dates)
-            ops[table] = df
+        ops[table] = _read_csv(path, table.schema, usecols=usecols, header=0)
+
     return ops

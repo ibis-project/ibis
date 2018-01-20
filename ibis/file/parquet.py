@@ -13,7 +13,7 @@ from ibis.pandas.core import pre_execute, execute
 
 
 def connect(dictionary):
-        return ParquetClient(dictionary)
+    return ParquetClient(dictionary)
 
 
 # TODO(jreback) complex types are not implemented
@@ -94,7 +94,6 @@ class ParquetClient(FileClient):
 
 @pre_execute.register(ParquetTable, ParquetClient)
 def parquet_pre_execute_client(op, client, scope, **kwargs):
-
     # cache
     if isinstance(scope.get(op), pd.DataFrame):
         return {}
