@@ -591,21 +591,12 @@ class StringSplit(ValueOp):
     output_type = rules.shape_like_arg(0, 'array<string>')
 
 
-def _concat_upcast(self):
-    # TODO: how much validation is necessary that the call is valid and can
-    # succeed?
-    args = self.args
-    if any(isinstance(arg, ir.StringColumn) for arg in args):
-        return ir.StringColumn
-
-    assert all(isinstance(arg, ir.StringScalar) for arg in args)
-    return ir.StringScalar
-
-
 class StringConcat(ValueOp):
 
     input_type = rules.varargs(rules.string)
-    output_type = _concat_upcast
+
+    def output_type(self):
+        return rules.shape_like_args(self.args, 'string')
 
 
 class ParseURL(ValueOp):
