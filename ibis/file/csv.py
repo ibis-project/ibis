@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
@@ -8,7 +9,6 @@ from ibis.file.client import FileClient
 
 from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import pre_execute, execute  # noqa
-from ibis.pandas.client import pandas_dtypes_to_ibis_schema
 from ibis.pandas.execution.selection import physical_tables
 
 
@@ -97,7 +97,7 @@ class CSVClient(FileClient):
 
         df = pd.read_csv(str(f), header=0, nrows=10, dtype=dtype,
                          parse_dates=dates, **kwargs)
-        schema = pandas_dtypes_to_ibis_schema(df, {})
+        schema = sch.infer(df)
 
         t = CSVTable(name, schema, self, **kwargs).to_expr()
         self.dictionary[name] = f
