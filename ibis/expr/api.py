@@ -64,7 +64,7 @@ import ibis.util as util
 
 
 __all__ = [
-    'infer_dtype',
+    'infer_dtype', 'infer_schema',
     'schema', 'table', 'literal', 'expr_list',
     'timestamp', 'time', 'date', 'interval', 'param',
     'nanosecond', 'microsecond', 'millisecond', 'second',
