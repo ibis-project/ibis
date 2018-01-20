@@ -2,7 +2,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-import ibis
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
@@ -12,43 +12,44 @@ from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import pre_execute, execute
 
 
-def connect(dictionary):
-    return ParquetClient(dictionary)
-
-
 # TODO(jreback) complex types are not implemented
-_ARROW_DTYPE_TO_IBIS_TYPE = {
-    'int8': dt.int8,
-    'int16': dt.int16,
-    'int32': dt.int32,
-    'int64': dt.int64,
-    'uint8': dt.uint8,
-    'uint16': dt.uint16,
-    'uint32': dt.uint32,
-    'uint64': dt.uint64,
-    'halffloat': dt.float16,
-    'float': dt.float32,
-    'double': dt.float64,
-    'string': dt.string,
-    'binary': dt.binary,
-    'bool': dt.boolean,
-    'timestamp[ns]': dt.timestamp,
-    'timestamp[us]': dt.timestamp,
+_arrow_dtypes = {
+    'int8': dt.Int8,
+    'int16': dt.Int16,
+    'int32': dt.Int32,
+    'int64': dt.Int64,
+    'uint8': dt.UInt8,
+    'uint16': dt.UInt16,
+    'uint32': dt.UInt32,
+    'uint64': dt.UInt64,
+    'halffloat': dt.Float16,
+    'float': dt.Float32,
+    'double': dt.Float64,
+    'string': dt.String,
+    'binary': dt.Binary,
+    'bool': dt.Boolean,
+    'timestamp[ns]': dt.Timestamp,
+    'timestamp[us]': dt.Timestamp
 }
 
 
-def arrow_types_to_ibis_schema(schema):
+@dt.dtype.register(pa.DataType)
+def pa_dtype(arrow_type, nullable=True):
+    return _arrow_dtypes[str(arrow_type)](nullable=nullable)
+
+
+@sch.infer.register(pq.ParquetSchema)
+def infer_parquet_schema(schema):
     pairs = []
-    for cs in schema:
-        column_name = cs.name
-        ibis_type = _ARROW_DTYPE_TO_IBIS_TYPE[str(cs.type)]
-        pairs.append((column_name, ibis_type))
-    return ibis.schema(pairs)
+    for field in schema.to_arrow_schema():
+        ibis_dtype = dt.dtype(field.type, nullable=field.nullable)
+        pairs.append((field.name, ibis_dtype))
+
+    return sch.schema(pairs)
 
 
-def parquet_types_to_ibis_schema(schema):
-    schema = schema.to_arrow_schema()
-    return arrow_types_to_ibis_schema(schema)
+def connect(dictionary):
+    return ParquetClient(dictionary)
 
 
 class ParquetTable(ops.DatabaseTable):
@@ -75,12 +76,14 @@ class ParquetClient(FileClient):
 
         # get the schema
         f = path / "{}.parquet".format(name)
-        parquet_file = pq.ParquetFile(str(f))
-        schema = parquet_types_to_ibis_schema(parquet_file.schema)
 
-        t = ParquetTable(name, schema, self).to_expr()
+        parquet_file = pq.ParquetFile(str(f))
+        schema = sch.infer(parquet_file.schema)
+
+        table = ParquetTable(name, schema, self).to_expr()
         self.dictionary[name] = f
-        return t
+
+        return table
 
     def list_tables(self, path=None):
         return self._list_tables_files(path)

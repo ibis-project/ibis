@@ -323,6 +323,7 @@ class Double(Floating):
     _nbytes = 8
 
 
+Float16 = Halffloat
 Float32 = Float
 Float64 = Double
 

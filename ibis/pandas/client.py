@@ -5,7 +5,6 @@ import toolz
 import numpy as np
 import pandas as pd
 
-import ibis
 import ibis.client as client
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
@@ -141,7 +140,7 @@ def infer_pandas_schema(df, schema=None):
 
         pairs.append((column_name, ibis_dtype))
 
-    return ibis.schema(pairs)
+    return sch.schema(pairs)
 
 
 def ibis_dtype_to_pandas(ibis_dtype):
