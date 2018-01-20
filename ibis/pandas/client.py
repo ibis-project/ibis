@@ -22,7 +22,12 @@ except AttributeError:
 
 
 _ibis_dtypes = {
-    # TODO: support non-nullable mapping
+    dt.Boolean: np.bool_,
+    dt.Null: object,
+    dt.Array: object,
+    dt.String: object,
+    dt.Binary: object,
+    dt.Category: 'category',
     dt.Date: 'datetime64[ns]',
     dt.Time: 'datetime64[ns]',
     dt.Timestamp: 'datetime64[ns]',
@@ -38,10 +43,6 @@ _ibis_dtypes = {
     dt.Float64: np.float64,
     # dt.Decimal: np.float64
 }
-_ibis_dtypes = toolz.merge(
-    toolz.keymap(lambda dtype: dtype(nullable=False), _ibis_dtypes),
-    toolz.keymap(lambda dtype: dtype(nullable=True), _ibis_dtypes),
-)
 
 
 _numpy_dtypes = toolz.keymap(np.dtype, {
@@ -143,11 +144,19 @@ def infer_pandas_schema(df, schema=None):
     return ibis.schema(pairs)
 
 
-def to_pandas_dtypes(schema):
-    return list(zip(schema.names, map(_ibis_dtypes.get, schema.types)))
+def ibis_dtype_to_pandas(ibis_dtype):
+    if isinstance(ibis_dtype, dt.Timestamp) and ibis_dtype.timezone:
+        return DatetimeTZDtype('ns', ibis_dtype.timezone)
+    else:
+        return _ibis_dtypes[type(ibis_dtype)]
 
 
-sch.Schema.to_pandas = to_pandas_dtypes
+def ibis_schema_to_pandas(schema):
+    return list(zip(schema.names, map(ibis_dtype_to_pandas, schema.types)))
+
+
+dt.DataType.to_pandas = ibis_dtype_to_pandas
+sch.Schema.to_pandas = ibis_schema_to_pandas
 
 
 class PandasTable(ops.DatabaseTable):

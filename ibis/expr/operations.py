@@ -828,7 +828,8 @@ class HLLCardinality(Reduction):
 
     def output_type(self):
         # Impala 2.0 and higher returns a DOUBLE
-        return ir.DoubleScalar
+        # return ir.DoubleScalar
+        return ir.Int64Scalar
 
 
 class GroupConcat(Reduction):

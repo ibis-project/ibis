@@ -25,6 +25,8 @@ import collections
 from ibis.common import IbisError, RelationError
 import ibis.common as com
 import ibis.config as config
+import ibis.util as util
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.util as util
 
@@ -476,6 +478,12 @@ class ExprList(Expr):
 
     def names(self):
         return [x.get_name() for x in self.exprs()]
+
+    def types(self):
+        return [x.type() for x in self.exprs()]
+
+    def schema(self):
+        return sch.schema(self.names(), self.types())
 
     def rename(self, f):
         new_exprs = [x.name(f(x.get_name())) for x in self.exprs()]

@@ -10,7 +10,7 @@ import pandas as pd
 ])
 def test_date_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col.date(), attr)()
-    expected = getattr(df.timestamp_col.dt, attr)
+    expected = getattr(df.timestamp_col.dt, attr).astype('int32')
 
     with backend.skip_unsupported():
         result = expr.execute()
@@ -25,7 +25,7 @@ def test_date_extract(backend, alltypes, df, attr):
 ])
 def test_timestamp_extract(backend, alltypes, df, attr):
     expr = getattr(alltypes.timestamp_col, attr)()
-    expected = getattr(df.timestamp_col.dt, attr)
+    expected = getattr(df.timestamp_col.dt, attr).astype('int32')
 
     with backend.skip_unsupported():
         result = expr.execute()

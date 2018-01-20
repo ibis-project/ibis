@@ -123,6 +123,7 @@ class ClickhouseQuery(Query):
     def _fetch(self, cursor):
         data, colnames, coltypes = cursor
         schema = sch.schema(colnames, coltypes)
+        # TODO(kszucs): schema = self.schema
 
         columns = {}
         for (column, (name, dtype)) in czip(data, schema.to_pandas()):

@@ -12,27 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
 import numbers
 import operator
 import functools
 import contextlib
-from collections import OrderedDict
-
-import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
 
-from sqlalchemy.dialects import mysql
 from sqlalchemy.sql.elements import Over as _Over
 from sqlalchemy.ext.compiler import compiles as sa_compiles
 
-import numpy as np
 import pandas as pd
 
 from ibis.client import SQLClient, AsyncQuery, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter
-from ibis import compat
 
 import ibis
 import ibis.util as util
@@ -47,145 +42,25 @@ import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
 
 
-_ibis_type_to_sqla = OrderedDict([
-    (dt.Int8, sa.SmallInteger),
-    (dt.Int16, sa.SmallInteger),
-    (dt.Int32, sa.Integer),
-    (dt.Int64, sa.BigInteger),
+# TODO(cleanup)
+_ibis_type_to_sqla = {
+    dt.Null: sa.types.NullType,
+    dt.Date: sa.Date,
+    dt.Time: sa.Time,
+    dt.Boolean: sa.Boolean,
+    dt.Binary: sa.Binary,
+    dt.String: sa.Text,
+    dt.Decimal: sa.NUMERIC,
 
     # Mantissa-based
-    (dt.Float, sa.Float(precision=24)),
-    (dt.Double, sa.Float(precision=53)),
+    dt.Float: sa.Float(precision=24),
+    dt.Double: sa.Float(precision=53),
 
-    (dt.Boolean, sa.Boolean),
-
-    (dt.String, sa.Text),
-
-    (dt.Date, sa.Date),
-    (dt.Time, sa.Time),
-
-    (dt.Decimal, sa.NUMERIC),
-    (dt.Null, sa.types.NullType),
-    (dt.Binary, sa.Binary)
-])
-
-_sqla_type_to_ibis = OrderedDict([
-    (sa.NUMERIC, dt.Decimal),
-    (sa.Float, dt.Double),
-    (sa.FLOAT, dt.Double),
-    (sa.REAL, dt.Float),
-    (sa.SmallInteger, dt.Int16),
-    (sa.SMALLINT, dt.Int16),
-    (sa.Integer, dt.Int32),
-    (sa.INTEGER, dt.Int32),
-    (sa.BigInteger, dt.Int64),
-    (sa.BIGINT, dt.Int64),
-    (sa.Boolean, dt.Boolean),
-    (sa.BOOLEAN, dt.Boolean),
-    (sa.String, dt.String),
-    (sa.VARCHAR, dt.String),
-    (sa.CHAR, dt.String),
-    (sa.Text, dt.String),
-    (sa.TEXT, dt.String),
-    (sa.BINARY, dt.Binary),
-    (sa.Binary, dt.Binary),
-    (sa.Date, dt.Date),
-    (sa.DATE, dt.Date),
-    (sa.Time, dt.Time),
-    (sa.types.NullType, dt.Null),
-    # this should ba placed under mysql
-    # but currently only the reverse mapping can be injected
-    (mysql.TINYINT, dt.Int8),
-    (mysql.SMALLINT, dt.Int16),
-    (mysql.INTEGER, dt.Int32),
-    (mysql.BIGINT, dt.Int64),
-    (mysql.FLOAT, dt.Float),
-    (mysql.DOUBLE, dt.Double)
-])
-
-
-def sqlalchemy_type_to_ibis_type(
-    column_type, nullable=True, default_timezone=None
-):
-    type_class = type(column_type)
-    if isinstance(column_type, sa.types.NUMERIC):
-        return dt.Decimal(
-            column_type.precision, column_type.scale, nullable=nullable
-        )
-
-    if type_class in _sqla_type_to_ibis:
-        ibis_class = _sqla_type_to_ibis[type_class]
-    elif isinstance(column_type, sa.DateTime):
-        return dt.Timestamp(
-            timezone=default_timezone if column_type.timezone else None,
-            nullable=nullable
-        )
-    elif isinstance(column_type, sa.ARRAY):
-        dimensions = column_type.dimensions
-        if dimensions is not None and dimensions != 1:
-            raise NotImplementedError(
-                'Nested array types not yet supported'
-            )
-        value_type = sqlalchemy_type_to_ibis_type(
-            column_type.item_type,
-            default_timezone=default_timezone,
-        )
-
-        def make_array_type(nullable, value_type=value_type):
-            return dt.Array(value_type, nullable=nullable)
-
-        ibis_class = make_array_type
-    else:
-        try:
-            ibis_class = next(
-                v for k, v in _sqla_type_to_ibis.items()
-                if isinstance(column_type, k)
-            )
-        except StopIteration:
-            raise NotImplementedError(
-                'Unable to convert SQLAlchemy type {} to ibis type'.format(
-                    column_type
-                )
-            )
-
-    return ibis_class(nullable)
-
-
-def schema_from_table(table):
-    """Retrieve an ibis schema from a SQLAlchemy ``Table``.
-
-    Parameters
-    ----------
-    table : sa.Table
-
-    Returns
-    -------
-    schema : ibis.expr.datatypes.Schema
-        An ibis schema corresponding to the types of the columns in `table`.
-    """
-    # Convert SQLA table to Ibis schema
-    types = [
-        sqlalchemy_type_to_ibis_type(
-            column.type,
-            nullable=column.nullable,
-            default_timezone='UTC',
-        )
-        for column in table.columns.values()
-    ]
-    return sch.Schema(table.columns.keys(), types)
-
-
-def table_from_schema(name, meta, schema):
-    # Convert Ibis schema to SQLA table
-    sqla_cols = []
-
-    for cname, itype in zip(schema.names, schema.types):
-        ctype = _to_sqla_type(itype)
-
-        col = sa.Column(cname, ctype, nullable=itype.nullable)
-        sqla_cols.append(col)
-
-    return sa.Table(name, meta, *sqla_cols)
+    dt.Int8: sa.SmallInteger,
+    dt.Int16: sa.SmallInteger,
+    dt.Int32: sa.Integer,
+    dt.Int64: sa.BigInteger
+}
 
 
 def _to_sqla_type(itype, type_map=None):
@@ -210,6 +85,113 @@ def _to_sqla_type(itype, type_map=None):
         return sa.ARRAY(_to_sqla_type(ibis_type, type_map=type_map))
     else:
         return type_map[type(itype)]
+
+
+@dt.dtype.register(sa.types.NullType)
+def sa_null(satype, nullable=True):
+    return dt.null
+
+
+@dt.dtype.register(sa.types.Boolean)
+def sa_boolean(satype, nullable=True):
+    return dt.Boolean(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.Numeric)
+def sa_numeric(satype, nullable=True):
+    return dt.Decimal(satype.precision, satype.scale, nullable=nullable)
+
+
+@dt.dtype.register(sa.types.SmallInteger)
+def sa_smallint(satype, nullable=True):
+    return dt.Int16(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.Integer)
+def sa_integer(satype, nullable=True):
+    return dt.Int32(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.BigInteger)
+def sa_bigint(satype, nullable=True):
+    return dt.Int64(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.Float)
+def sa_float(satype, nullable=True):
+    return dt.Float(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.String)
+def sa_string(satype, nullable=True):
+    return dt.String(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.Binary)
+def sa_binary(satype, nullable=True):
+    return dt.Binary(nullable=nullable)
+
+
+@dt.dtype.register(sa.Time)
+def sa_time(satype, nullable=True):
+    return dt.Time(nullable=nullable)
+
+
+@dt.dtype.register(sa.Date)
+def sa_date(satype, nullable=True):
+    return dt.Date(nullable=nullable)
+
+
+@dt.dtype.register(sa.DateTime)
+def sa_datetime(satype, nullable=True, default_timezone='UTC'):
+    timezone = default_timezone if satype.timezone else None
+    return dt.Timestamp(timezone=timezone, nullable=nullable)
+
+
+@dt.dtype.register(sa.ARRAY)
+def sa_array(satype, nullable=True):
+    dimensions = satype.dimensions
+    if dimensions is not None and dimensions != 1:
+        raise NotImplementedError('Nested array types not yet supported')
+
+    value_dtype = dt.dtype(satype.item_type)
+    return dt.Array(value_dtype, nullable=nullable)
+
+
+@sch.infer.register(sa.Table)
+def schema_from_table(table, schema=None):
+    """Retrieve an ibis schema from a SQLAlchemy ``Table``.
+
+    Parameters
+    ----------
+    table : sa.Table
+
+    Returns
+    -------
+    schema : ibis.expr.datatypes.Schema
+        An ibis schema corresponding to the types of the columns in `table`.
+    """
+    schema = schema if schema is not None else {}
+    pairs = []
+    for name, column in table.columns.items():
+        if name in schema:
+            dtype = dt.dtype(schema[name])
+        else:
+            dtype = dt.dtype(column.type, nullable=column.nullable)
+        pairs.append((name, dtype))
+    return sch.schema(pairs)
+
+
+def table_from_schema(name, meta, schema):
+    # Convert Ibis schema to SQLA table
+    columns = []
+
+    for colname, dtype in zip(schema.names, schema.types):
+        satype = _to_sqla_type(dtype)
+        column = sa.Column(colname, satype, nullable=dtype.nullable)
+        columns.append(column)
+
+    return sa.Table(name, meta, *columns)
 
 
 def _variance_reduction(func_name):
@@ -812,11 +794,8 @@ class AlchemyDatabase(Database):
 class AlchemyTable(ops.DatabaseTable):
 
     def __init__(self, table, source, schema=None):
-        super(AlchemyTable, self).__init__(
-            table.name,
-            schema or schema_from_table(table),
-            source,
-        )
+        schema = sch.infer(table, schema=schema)
+        super(AlchemyTable, self).__init__(table.name, schema, source)
         self.sqla_table = table
 
 
@@ -849,50 +828,11 @@ class AlchemyQuery(Query):
             columns=cursor.proxy.keys(),
             coerce_float=True
         )
-        dtypes = df.dtypes
-        for column in df.columns:
-            existing_dtype = dtypes[column]
-            try:
-                db_type = _to_sqla_type(self.schema[column])
-            except KeyError:
-                new_dtype = existing_dtype
-            else:
-                try:
-                    new_dtype = self._db_type_to_dtype(db_type, column)
-                except TypeError:
-                    new_dtype = existing_dtype
-                else:
-                    # to support datetime64[D]
-                    if isinstance(new_dtype, np.dtype):
-                        df[column] = pd.Series(
-                            df[column].values.astype(new_dtype),
-                            name=df[column].name
-                        )
-                    else:
-                        df[column] = df[column].astype(new_dtype)
+
+        for name, dtype in self.schema().to_pandas():
+            df[name] = df[name].astype(dtype, errors='ignore')
 
         return df
-
-    def _db_type_to_dtype(self, db_type, column):
-        if isinstance(db_type, sa.Date):
-            return np.dtype('datetime64[D]')
-        elif isinstance(db_type, sa.DateTime):
-            if not db_type.timezone:
-                return np.dtype('datetime64[ns]')
-            else:
-                return compat.DatetimeTZDtype(
-                    'ns', self.schema[column].timezone
-                )
-        else:
-            raise TypeError(repr(db_type))
-
-    @property
-    def schema(self):
-        expr = self.expr
-        try:
-            return expr.schema()
-        except AttributeError:
-            return ibis.schema([(expr.get_name(), expr.type())])
 
 
 class AlchemyAsyncQuery(AsyncQuery):

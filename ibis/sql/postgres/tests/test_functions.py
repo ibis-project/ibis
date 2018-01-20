@@ -510,14 +510,14 @@ def test_numeric_builtins_work(alltypes, df):
             lambda t: (t.double_col > 20).ifelse(10, -20),
             lambda df: pd.Series(
                 np.where(df.double_col > 20, 10, -20),
-                dtype='int64'
+                dtype='int8'
             ),
         ),
         (
             lambda t: (t.double_col > 20).ifelse(10, -20).abs(),
             lambda df: pd.Series(
                 np.where(df.double_col > 20, 10, -20),
-                dtype='int64'
+                dtype='int8'
             ).abs(),
         ),
     ]
@@ -572,7 +572,7 @@ def test_ifelse(alltypes, df, op, pandas_op):
 def test_bucket(alltypes, df, func, pandas_func):
     expr = func(alltypes.double_col)
     result = expr.execute()
-    expected = pandas_func(df.double_col)
+    expected = pandas_func(df.double_col).astype('category')
     tm.assert_series_equal(result, expected, check_names=False)
 
 
@@ -1296,6 +1296,10 @@ def test_boolean_summary(alltypes):
             'approx_nunique',
         ]
     )
+    expected['min'] = expected['min'].astype(bool)
+    expected['max'] = expected['max'].astype(bool)
+    expected['approx_nunique'] = expected['approx_nunique'].astype(int)
+
     tm.assert_frame_equal(result, expected)
 
 

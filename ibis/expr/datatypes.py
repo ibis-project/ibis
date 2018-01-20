@@ -989,7 +989,7 @@ validate_type = dtype
 
 
 @dtype.register(object)
-def default(value):
+def default(value, **kwargs):
     raise TypeError('Value {!r} is not a valid type or string'.format(value))
 
 

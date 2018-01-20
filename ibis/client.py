@@ -23,6 +23,7 @@ from ibis.config import options
 
 import ibis.common as com
 import ibis.expr.types as ir
+import ibis.expr.schema as sch
 import ibis.expr.operations as ops
 import ibis.sql.compiler as comp
 import ibis.util as util
@@ -82,6 +83,12 @@ class Query(object):
 
     def _db_type_to_dtype(self, db_type, column):
         raise NotImplementedError
+
+    def schema(self):
+        try:
+            return self.expr.schema()
+        except AttributeError:
+            return sch.schema([(self.expr.get_name(), self.expr.type())])
 
 
 class AsyncQuery(Query):
