@@ -37,7 +37,7 @@ def execute_extract_millisecond_timestamp(op, data, **kwargs):
 )
 def execute_extract_timestamp_field_series(op, data, **kwargs):
     field_name = type(op).__name__.lower().replace('extract', '')
-    return getattr(data.dt, field_name)
+    return getattr(data.dt, field_name).astype(np.int32)
 
 
 @execute_node.register(
