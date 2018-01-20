@@ -8,19 +8,17 @@ import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 
 from ibis.clickhouse.identifiers import quote_identifier
-from ibis.clickhouse.types import ibis_to_clickhouse
 
 
 def _cast(translator, expr):
+    from ibis.clickhouse.client import ClickhouseDataType
+
     op = expr.op()
     arg, target = op.args
     arg_ = translator.translate(arg)
+    type_ = str(ClickhouseDataType.from_ibis(target, nullable=False))
 
-    if isinstance(arg, ir.CategoryValue) and target == 'int32':
-        return arg_
-    else:
-        type_ = ibis_to_clickhouse[target.name.lower()]
-        return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
+    return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
 
 
 def _between(translator, expr):

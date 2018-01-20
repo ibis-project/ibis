@@ -73,9 +73,11 @@ class ClickhouseDataType(object):
         return _clickhouse_dtypes[self.typename](nullable=self.nullable)
 
     @classmethod
-    def from_ibis(cls, dtype):
+    def from_ibis(cls, dtype, nullable=None):
         typename = _ibis_dtypes[type(dtype)]
-        return cls(typename, nullable=dtype.nullable)
+        if nullable is None:
+            nullable = dtype.nullable
+        return cls(typename, nullable=nullable)
 
 
 @dt.dtype.register(ClickhouseDataType)
