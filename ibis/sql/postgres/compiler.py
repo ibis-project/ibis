@@ -706,8 +706,8 @@ class PostgreSQLExprTranslator(alch.AlchemyExprTranslator):
     _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
     _type_map = alch.AlchemyExprTranslator._type_map.copy()
     _type_map.update({
-        dt.Double: sa.dialects.postgresql.DOUBLE_PRECISION,
-        dt.Float: sa.dialects.postgresql.REAL
+        dt.Double: pg.FLOAT,
+        dt.Float: pg.REAL
     })
 
 

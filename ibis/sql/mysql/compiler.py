@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+import sqlalchemy.dialects.mysql as mysql
 
 from ibis.sql.alchemy import (unary, varargs, fixed_arity, infix_op,
                               _variance_reduction)
@@ -237,8 +238,9 @@ class MySQLExprTranslator(alch.AlchemyExprTranslator):
     _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
     _type_map = alch.AlchemyExprTranslator._type_map.copy()
     _type_map.update({
-        dt.Double: sa.types.FLOAT,
-        dt.Float: sa.types.REAL
+        dt.Int8: mysql.TINYINT,
+        dt.Double: mysql.DOUBLE,
+        dt.Float: mysql.FLOAT,
     })
 
 

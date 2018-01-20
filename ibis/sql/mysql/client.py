@@ -2,9 +2,28 @@ import getpass
 import contextlib
 
 import sqlalchemy as sa
+import sqlalchemy.dialects.mysql as mysql
 
 from ibis.sql.mysql.compiler import MySQLDialect
 import ibis.sql.alchemy as alch
+import ibis.expr.datatypes as dt
+
+
+# TODO(kszucs): unsigned integers
+
+@dt.dtype.register((mysql.DOUBLE, mysql.REAL))
+def mysql_double(satype, nullable=True):
+    return dt.Double(nullable=nullable)
+
+
+@dt.dtype.register(mysql.FLOAT)
+def mysql_float(satype, nullable=True):
+    return dt.Float(nullable=nullable)
+
+
+@dt.dtype.register(mysql.TINYINT)
+def mysql_tinyint(satype, nullable=True):
+    return dt.Int8(nullable=nullable)
 
 
 class MySQLTable(alch.AlchemyTable):
