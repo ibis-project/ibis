@@ -29,25 +29,28 @@ def right_df(right):
     'left',
     'right',
     'outer',
-    # pytest.mark.xfail(
-    #     'semi',
-    #     raises=NotImplementedError,
-    #     reason='Semi join not implemented'
-    # ),
-    # pytest.mark.xfail(
-    #     'anti',
-    #     raises=NotImplementedError,
-    #     reason='Anti join not implemented'
-    # ),
+    pytest.mark.xfail(
+        'semi',
+        raises=NotImplementedError,
+        reason='Semi join not implemented'
+    ),
+    pytest.mark.xfail(
+        'anti',
+        raises=NotImplementedError,
+        reason='Anti join not implemented'
+    ),
 ])
-def test_join_project_left_table(backend, con, left, right, left_df, right_df, how):
+def test_join_project_left_table(backend, con, left, right,
+                                 left_df, right_df, how):
     predicate = ['playerID']
     expr = left.join(right, predicate, how=how)[left]
 
     with backend.skip_unsupported():
         result = expr.execute()
 
-    joined = pd.merge(left_df, right_df, how=how, on=predicate, suffixes=('', '_y'))
+    joined = pd.merge(left_df, right_df, how=how, on=predicate,
+                      suffixes=('', '_y'))
     expected = joined[list(left.columns)]
 
-    backend.assert_frame_equal(result[expected.columns], expected, check_like=True)
+    backend.assert_frame_equal(result[expected.columns], expected,
+                               check_like=True)
