@@ -18,14 +18,13 @@ import toolz
 import datetime
 import itertools
 import functools
-import numpy as np
 import pandas as pd
 
 from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
 
 import ibis.common as com
-from ibis.compat import builtins, PY2, DatetimeTZDtype, CategoricalDtype
+from ibis.compat import builtins, PY2
 
 
 class DataType(object):
@@ -324,6 +323,10 @@ class Double(Floating):
     _nbytes = 8
 
 
+Float32 = Float
+Float64 = Double
+
+
 @parametric
 class Decimal(DataType):
 
@@ -568,8 +571,8 @@ uint64 = UInt64()
 float = Float()
 halffloat = Halffloat()
 float16 = Halffloat()
-float32 = Float()
-float64 = Double()
+float32 = Float32()
+float64 = Float64()
 double = Double()
 string = String()
 binary = Binary()
@@ -980,28 +983,6 @@ def scalar_type(t):
     return dtype(t).scalar_type()
 
 
-_numpy_to_ibis = toolz.keymap(np.dtype, {
-    'bool': boolean,
-    'int8': int8,
-    'int16': int16,
-    'int32': int32,
-    'int64': int64,
-    'uint8': uint8,
-    'uint16': uint16,
-    'uint32': uint32,
-    'uint64': uint64,
-    'float16': float16,
-    'float32': float32,
-    'float64': float64,
-    'double': double,
-    'str': string,
-    'datetime64': timestamp,
-    'datetime64[ns]': timestamp,
-    'timedelta64': interval,
-    'timedelta64[ns]': Interval('ns')
-})
-
-
 dtype = Dispatcher('dtype')
 
 validate_type = dtype
@@ -1015,21 +996,6 @@ def default(value):
 @dtype.register(DataType)
 def from_ibis_dtype(value):
     return value
-
-
-@dtype.register(np.dtype)
-def from_numpy_dtype(value):
-    return _numpy_to_ibis[value]
-
-
-@dtype.register(DatetimeTZDtype)
-def from_pandas_tzdtype(value):
-    return Timestamp(timezone=str(value.tz))
-
-
-@dtype.register(CategoricalDtype)
-def from_pandas_categorical(value):
-    return Category()
 
 
 @dtype.register(six.string_types)
@@ -1084,12 +1050,6 @@ def infer_list(value):
     if not value:
         return Array(null)
     return Array(highest_precedence(map(infer, value)))
-
-
-@infer.register(np.ndarray)
-def infer_array(value):
-    # TODO: infer series
-    return Array(dtype(value.dtype.name))
 
 
 @infer.register(datetime.time)
@@ -1222,7 +1182,7 @@ def can_cast_string_to_temporal(source, target, value=None, **kwargs):
     if value is None:
         return False
     try:
-
+        # this is the only pandas import left
         pd.Timestamp(value)
         return True
     except ValueError:

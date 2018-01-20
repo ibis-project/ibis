@@ -1,54 +1,131 @@
 from __future__ import absolute_import
 
 import six
-
+import toolz
 import numpy as np
 import pandas as pd
 
 import ibis
 import ibis.client as client
 import ibis.expr.types as ir
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
+from ibis.compat import DatetimeTZDtype, CategoricalDtype
+
 
 try:
-    infer_dtype = pd.api.types.infer_dtype
+    infer_pandas_dtype = pd.api.types.infer_dtype
 except AttributeError:
-    infer_dtype = pd.lib.infer_dtype
+    infer_pandas_dtype = pd.lib.infer_dtype
 
 
-_DTYPE_TO_IBIS_TYPE = {
-    'float64': dt.double,
-    'float32': dt.float,
+_ibis_dtypes = {
+    # TODO: support non-nullable mapping
+    dt.Date: 'datetime64[ns]',
+    dt.Time: 'datetime64[ns]',
+    dt.Timestamp: 'datetime64[ns]',
+    dt.Int8: np.int8,
+    dt.Int16: np.int16,
+    dt.Int32: np.int32,
+    dt.Int64: np.int64,
+    dt.UInt8: np.uint8,
+    dt.UInt16: np.uint16,
+    dt.UInt32: np.uint32,
+    dt.UInt64: np.uint64,
+    dt.Float32: np.float32,
+    dt.Float64: np.float64,
+    # dt.Decimal: np.float64
+}
+_ibis_dtypes = toolz.merge(
+    toolz.keymap(lambda dtype: dtype(nullable=False), _ibis_dtypes),
+    toolz.keymap(lambda dtype: dtype(nullable=True), _ibis_dtypes),
+)
+
+
+_numpy_dtypes = toolz.keymap(np.dtype, {
+    'bool': dt.boolean,
+    'int8': dt.int8,
+    'int16': dt.int16,
+    'int32': dt.int32,
+    'int64': dt.int64,
+    'uint8': dt.uint8,
+    'uint16': dt.uint16,
+    'uint32': dt.uint32,
+    'uint64': dt.uint64,
+    'float16': dt.float16,
+    'float32': dt.float32,
+    'float64': dt.float64,
+    'double': dt.double,
+    'str': dt.string,
+    'datetime64': dt.timestamp,
     'datetime64[ns]': dt.timestamp,
+    'timedelta64': dt.interval,
+    'timedelta64[ns]': dt.Interval('ns')
+})
+
+
+_inferable_pandas_dtypes = {
+    'boolean': dt.boolean,
+    'string': dt.string,
+    'unicode': dt.string,
+    'bytes': dt.string,
+    'empty': dt.string,
 }
 
 
-_INFERRED_DTYPE_TO_IBIS_TYPE = {
-    'string': 'string',
-    'unicode': 'string',
-    'bytes': 'string',
-    'empty': 'string',
-}
+@dt.dtype.register(np.dtype)
+def from_numpy_dtype(value):
+    return _numpy_dtypes[value]
 
 
-def pandas_dtypes_to_ibis_schema(df, schema):
-    dtypes = df.dtypes
+@dt.dtype.register(DatetimeTZDtype)
+def from_pandas_tzdtype(value):
+    return dt.Timestamp(timezone=str(value.tz))
+
+
+@dt.dtype.register(CategoricalDtype)
+def from_pandas_categorical(value):
+    return dt.Category()
+
+
+@dt.infer.register(np.generic)
+def infer_numpy_scalar(value):
+    return dt.dtype(value.dtype)
+
+
+@dt.infer.register(pd.Timestamp)
+def infer_pandas_timestamp(value):
+    return dt.Timestamp(timezone=str(value.tz))
+
+
+@dt.infer.register(np.ndarray)
+def infer_array(value):
+    # TODO(kszucs): infer series
+    return dt.Array(dt.dtype(value.dtype.name))
+
+
+@sch.schema.register(pd.Series)
+def schema_from_series(s):
+    return sch.schema(tuple(s.iteritems()))
+
+
+@sch.infer.register(pd.DataFrame)
+def infer_pandas_schema(df, schema=None):
+    schema = schema if schema is not None else {}
 
     pairs = []
-
-    for column_name, dtype in dtypes.iteritems():
+    for column_name, pandas_dtype in df.dtypes.iteritems():
         if not isinstance(column_name, six.string_types):
             raise TypeError(
                 'Column names must be strings to use the pandas backend'
             )
 
         if column_name in schema:
-            ibis_type = dt.validate_type(schema[column_name])
-        elif dtype == np.object_:
-            inferred_dtype = infer_dtype(df[column_name].dropna())
-
+            ibis_dtype = dt.dtype(schema[column_name])
+        elif pandas_dtype == np.object_:
+            inferred_dtype = infer_pandas_dtype(df[column_name].dropna())
             if inferred_dtype == 'mixed':
                 raise TypeError(
                     'Unable to infer type of column {0!r}. Try instantiating '
@@ -57,15 +134,20 @@ def pandas_dtypes_to_ibis_schema(df, schema):
                         column_name
                     )
                 )
-            ibis_type = _INFERRED_DTYPE_TO_IBIS_TYPE[inferred_dtype]
-        elif hasattr(dtype, 'tz'):
-            ibis_type = dt.Timestamp(str(dtype.tz))
+            ibis_dtype = _inferable_pandas_dtypes[inferred_dtype]
         else:
-            dtype_string = str(dtype)
-            ibis_type = _DTYPE_TO_IBIS_TYPE.get(dtype_string, dtype_string)
+            ibis_dtype = dt.dtype(pandas_dtype)
 
-        pairs.append((column_name, ibis_type))
+        pairs.append((column_name, ibis_dtype))
+
     return ibis.schema(pairs)
+
+
+def to_pandas_dtypes(schema):
+    return list(zip(schema.names, map(_ibis_dtypes.get, schema.types)))
+
+
+sch.Schema.to_pandas = to_pandas_dtypes
 
 
 class PandasTable(ops.DatabaseTable):
@@ -81,9 +163,7 @@ class PandasClient(client.Client):
 
     def table(self, name, schema=None):
         df = self.dictionary[name]
-        schema = pandas_dtypes_to_ibis_schema(
-            df, schema if schema is not None else {}
-        )
+        schema = sch.infer(df, schema=schema)
         return PandasTable(name, schema, self).to_expr()
 
     def execute(self, query, params=None, limit='default', async=False):

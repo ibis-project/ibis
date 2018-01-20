@@ -1,6 +1,3 @@
-import numpy as np
-import pandas as pd
-
 from multipledispatch import Dispatcher
 
 import ibis.common as com
@@ -157,6 +154,7 @@ class HasSchema(object):
 
 
 schema = Dispatcher('schema')
+infer = Dispatcher('infer')
 
 
 @schema.register(Schema)
@@ -164,46 +162,16 @@ def identity(s):
     return s
 
 
-@schema.register(pd.Series)
-def schema_from_series(s):
-    return Schema.from_tuples(s.iteritems())
-
-
-@schema.register((tuple, list))
-def schema_from_list(lst):
-    return Schema.from_tuples(lst)
-
-
 @schema.register(dict)
 def schema_from_dict(d):
     return Schema.from_dict(d)
 
 
-infer = Dispatcher('infer')
+@schema.register((tuple, list))
+def schema_from_pairs(lst):
+    return Schema.from_tuples(lst)
 
 
-try:
-    infer_pandas_dtype = pd.api.types.infer_dtype
-except AttributeError:
-    infer_pandas_dtype = pd.lib.infer_dtype
-
-
-@infer.register(pd.DataFrame)
-def infer_pandas_schema(df):
-    pairs = []
-    for column_name, pandas_dtype in df.dtypes.iteritems():
-        if pandas_dtype == np.object_:
-            pandas_dtype = infer_pandas_dtype(df[column_name].dropna())
-            if pandas_dtype == 'mixed':
-                raise TypeError(
-                    'Unable to infer type of column {0!r}. Try instantiating '
-                    'your table from the client with client.table('
-                    "'my_table', schema={{{0!r}: <explicit type>}})".format(
-                        column_name
-                    )
-                )
-
-        ibis_dtype = dt.dtype(pandas_dtype)
-        pairs.append((column_name, ibis_dtype))
-
-    return Schema.from_tuples(pairs)
+@schema.register((tuple, list), (tuple, list))
+def schema_from_names_types(names, types):
+    return Schema(names, types)
