@@ -1296,6 +1296,7 @@ def test_boolean_summary(alltypes):
             'approx_nunique',
         ]
     )
+    expected['count'] = expected['count'].astype('int64')
     expected['min'] = expected['min'].astype(bool)
     expected['max'] = expected['max'].astype(bool)
     expected['approx_nunique'] = expected['approx_nunique'].astype(int)
