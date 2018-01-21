@@ -727,6 +727,15 @@ class ImpalaClient(SQLClient):
     def client_options(self):
         return self.con.options
 
+    @property
+    def version(self):
+        with self._execute('select version()', results=True) as cur:
+            raw = self._get_list(cur)[0]
+
+        v = raw.split()[2]
+        m = re.match('.*?(\d{1,3})\.(\d{1,3})\.(\d{1,3}).*', v)
+        return tuple([int(x) for x in m.group(1, 2, 3) if x is not None])
+
     def get_options(self):
         """
         Return current query options for the Impala session

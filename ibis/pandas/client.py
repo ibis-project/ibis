@@ -197,6 +197,10 @@ class PandasClient(client.Client):
     def database(self, name=None):
         return PandasDatabase(name, self)
 
+    @property
+    def version(self):
+        return tuple(pd.__version__.split('.'))
+
 
 class PandasDatabase(client.Database):
     pass

@@ -82,6 +82,10 @@ class CSVClient(FileClient):
     def compile(self, expr, *args, **kwargs):
         return expr
 
+    @property
+    def version(self):
+        return tuple(pd.__version__.split('.'))
+
 
 @pre_execute.register(CSVTable, CSVClient)
 def csv_pre_execute_table(op, client, scope, **kwargs):

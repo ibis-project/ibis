@@ -163,14 +163,25 @@ class Postgres(Backend):
 
 class MySQL(Backend):
     check_dtype = False
+    supports_window_operations = False
 
     def connect(self, data_directory):
         user = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
         password = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
         host = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
         database = os.environ.get('IBIS_TEST_MYSQL_DATABASE', 'ibis_testing')
-        return ibis.mysql.connect(host=host, user=user, password=password,
-                                  database=database)
+        con = ibis.mysql.connect(host=host, user=user, password=password,
+                                 database=database)
+
+        if con.version >= (8, 0):
+            # mysql supports window operations after version 8
+            self.supports_window_operations = True
+        elif 'MariaDB' in con.version and con.version[3:6] >= (10, 2):
+            # mariadb supports window operations after version 10.2
+            # (5, 5, 5, 10, 2, 12, 'MariaDB', 10, 2, '12+maria~jessie')
+            self.supports_window_operations = True
+
+        return con
 
     def functional_alltypes(self):
         # BOOLEAN <-> TINYINT(1)
@@ -180,6 +191,7 @@ class MySQL(Backend):
 
 class Clickhouse(Backend):
     check_dtype = False
+    supports_window_operations = False
 
     def connect(self, data_directory):
         host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')

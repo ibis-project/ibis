@@ -130,6 +130,9 @@ from pytest import param
     ),
 ])
 def test_window(backend, analytic_alltypes, df, con, result_fn, expected_fn):
+    if not backend.supports_window_operations:
+        pytest.skip()
+
     expr = analytic_alltypes.mutate(value=result_fn)
 
     column = expected_fn(df.sort_values('id').groupby('string_col'))

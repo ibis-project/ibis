@@ -94,6 +94,10 @@ class ParquetClient(FileClient):
     def compile(self, expr, *args, **kwargs):
         return expr
 
+    @property
+    def version(self):
+        return tuple(pa.__version__.split('.'))
+
 
 @pre_execute.register(ParquetTable, ParquetClient)
 def parquet_pre_execute_client(op, client, scope, **kwargs):

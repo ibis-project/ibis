@@ -991,6 +991,10 @@ class AlchemyClient(SQLClient):
         node = AlchemyTable(table, self)
         return self._table_expr_klass(node)
 
+    @property
+    def version(self):
+        return self.con.dialect.server_version_info
+
 
 class AlchemySelect(Select):
 

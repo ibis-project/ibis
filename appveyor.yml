@@ -22,7 +22,7 @@ environment:
   IBIS_TEST_POSTGRES_DATABASE: "ibis_testing"
 
   IBIS_TEST_MYSQL_USER: "ibis"
-  IBIS_TEST_MYSQL_PASSWORD: "ibis"
+  IBIS_TEST_MYSQL_PASSWORD: "Password12!"
   IBIS_TEST_MYSQL_DATABASE: "ibis_testing"
 
   IBIS_TEST_SQLITE_DATABASE: "%USERPROFILE%\\ibis_testing.db"
@@ -37,6 +37,7 @@ environment:
     - PYTHON_VERSION: "3.6"
 
 services:
+  - mysql
   - postgresql101
 
 test_script:

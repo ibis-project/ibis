@@ -326,6 +326,19 @@ class ClickhouseClient(SQLClient):
         qualified_name = self._fully_qualified_name(name, database)
         return '{0} {1}'.format(cmd, qualified_name)
 
+    @property
+    def version(self):
+        self.con.connection.force_connect()
+
+        try:
+            info = self.con.connection.server_info
+            version = (info.version_major, info.version_minor, info.revision)
+        except Exception as e:
+            self.con.connection.disconnect()
+            raise e
+        else:
+            return version
+
 
 class ClickhouseTable(ir.TableExpr, DatabaseEntity):
     """References a physical table in Clickhouse"""
