@@ -1296,10 +1296,17 @@ def test_boolean_summary(alltypes):
             'approx_nunique',
         ]
     )
-    expected['count'] = expected['count'].astype('int64')
-    expected['min'] = expected['min'].astype(bool)
-    expected['max'] = expected['max'].astype(bool)
-    expected['approx_nunique'] = expected['approx_nunique'].astype(int)
+
+    type_conversions = {
+        'count': 'int64',
+        'nulls': 'int64',
+        'min': 'bool',
+        'max': 'bool',
+        'sum': 'int64',
+        'approx_nunique': 'int64'
+    }
+    for k, v in type_conversions.items():
+        expected[k] = expected[k].astype(v)
 
     tm.assert_frame_equal(result, expected)
 
