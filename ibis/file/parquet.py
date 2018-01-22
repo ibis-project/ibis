@@ -41,6 +41,7 @@ def pa_dtype(arrow_type, nullable=True):
 @sch.infer.register(pq.ParquetSchema)
 def infer_parquet_schema(schema):
     pairs = []
+
     for field in schema.to_arrow_schema():
         ibis_dtype = dt.dtype(field.type, nullable=field.nullable)
         pairs.append((field.name, ibis_dtype))

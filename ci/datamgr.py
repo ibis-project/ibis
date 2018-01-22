@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import os
-import tarfile
+import six
 import click
+import tarfile
 
 import pandas as pd
 import sqlalchemy as sa
@@ -58,8 +59,8 @@ def read_tables(names, data_directory):
         if name == 'functional_alltypes':
             df['bool_col'] = df['bool_col'].astype(bool)
             # string_col is actually dt.int64
-            df['string_col'] = df['string_col'].astype(str)
-            df['date_string_col'] = df['date_string_col'].astype(str)
+            df['string_col'] = df['string_col'].astype(six.text_type)
+            df['date_string_col'] = df['date_string_col'].astype(six.text_type)
             # timestamp_col has object dtype
             df['timestamp_col'] = pd.to_datetime(df['timestamp_col'])
 
@@ -111,17 +112,17 @@ def parquet(tables, data_directory, **params):
         import pyarrow as pa  # noqa: F401
         import pyarrow.parquet as pq  # noqa: F401
     except ImportError:
-        return  # no conda package for python 3.4
+        click.fail('PyArrow dependency is missing')
 
     data_directory = Path(data_directory)
     for table, df in read_tables(tables, data_directory):
         schema = pa.schema([
             pa.field('string_col', pa.string()),
-            # pa.field('timestamp_col', pa.timestamp('s')),
             pa.field('date_string_col', pa.string())
         ])
         arrow_table = pa.Table.from_pandas(df, schema=schema)
         target_path = data_directory / '{}.parquet'.format(table)
+
         pq.write_table(arrow_table, str(target_path))
 
 
