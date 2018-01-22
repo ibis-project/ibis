@@ -200,7 +200,12 @@ def test_fillna_nullif(con, expr, expected):
     (L(1.2345), 'Float64'),
     (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), 'DateTime'),
     (L(date(2015, 9, 1)), 'Date'),
-    (ibis.NA, 'Null')
+    pytest.mark.xfail(
+        (ibis.NA, 'Null'),
+        raises=AssertionError,
+        reason=('Client/server version mismatch not handled in the clickhouse '
+                'driver')
+    )
 ])
 def test_typeof(con, value, expected):
     assert con.execute(value.typeof()) == expected
@@ -534,6 +539,11 @@ def test_numeric_builtins_work(con, alltypes, df, translate):
 #     assert 'no translation rule' in result.lower()
 
 
+@pytest.mark.xfail(
+    raises=AssertionError,
+    reason=(
+        'Client/server version mismatch not handled in the clickhouse driver')
+)
 def test_null_column(alltypes, translate):
     t = alltypes
     nrows = t.count().execute()
