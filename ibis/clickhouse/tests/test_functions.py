@@ -540,7 +540,7 @@ def test_numeric_builtins_work(con, alltypes, df, translate):
 
 
 @pytest.mark.xfail(
-    raises=AssertionError,
+    raises=KeyError,
     reason=(
         'Client/server version mismatch not handled in the clickhouse driver')
 )
