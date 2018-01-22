@@ -49,6 +49,7 @@ try:
 except ImportError:  # pip install ibis-framework[clickhouse]
     pass
 
+import ibis.bigquery.api as bigquery
 try:
     import ibis.bigquery.api as bigquery
 except ImportError:  # pip install ibis-framework[bigquery]
