@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import getpass
+import psycopg2  # fail early if the driver is missing
 import contextlib
-
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
 import ibis.expr.datatypes as dt
+
 from ibis.sql.postgres.compiler import PostgreSQLDialect
 
 

@@ -1,6 +1,6 @@
 import getpass
+import pymysql  # fail early if the driver is missing
 import contextlib
-
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 

@@ -21,7 +21,13 @@ class Backend(object):
     additional_skipped_operations = frozenset()
 
     def __init__(self, data_directory):
-        self.connection = self.connect(data_directory)
+        try:
+            # check that the backend is available
+            getattr(ibis, self.name)
+        except AttributeError:
+            pytest.skip()
+        else:
+            self.connection = self.connect(data_directory)
 
     @property
     def name(self):
