@@ -451,36 +451,6 @@ GROUP BY `key`"""
     assert ibis.clickhouse.compile(expr) == expected
 
 
-# def test_filter_with_analytic():
-#     x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
-#     with_filter_col = x[x.columns + [ibis.null().name('filter')]]
-#     filtered = with_filter_col[with_filter_col['filter'].isnull()]
-#     subquery = filtered[filtered.columns]
-
-#     with_analytic = subquery[['col', subquery.count().name('analytic')]]
-#     expr = with_analytic[with_analytic.columns]
-
-#     result = ibis.clickhouse.compile(expr)
-#     expected = """\
-# SELECT `col`, `analytic`
-# FROM (
-#   SELECT `col`, count(*) OVER () AS `analytic`
-#   FROM (
-#     SELECT `col`, `filter`
-#     FROM (
-#       SELECT *
-#       FROM (
-#         SELECT `col`, NULL AS `filter`
-#         FROM x
-#       ) t3
-#       WHERE `filter` IS NULL
-#     ) t2
-#   ) t1
-# ) t0"""
-
-#     assert result == expected
-
-
 def test_join_with_external_table(con, alltypes, df):
     external_df = pd.DataFrame([
         ('alpha', 1, 'first'),
@@ -504,5 +474,11 @@ def test_join_with_external_table(con, alltypes, df):
 
     result = result.sort_values('id').reset_index(drop=True)
     expected = expected.sort_values('id').reset_index(drop=True)
+
+    print(result.dtypes)
+    print(expected.dtypes)
+
+    print(result.head())
+    print(expected.head())
 
     tm.assert_frame_equal(result, expected)
