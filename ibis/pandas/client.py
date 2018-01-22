@@ -90,8 +90,11 @@ def from_pandas_categorical(value):
     return dt.Category()
 
 
-@dt.infer.register(np.generic)
+@dt.infer.register((np.generic, np.int32, np.int64, np.float32, np.float64))
 def infer_numpy_scalar(value):
+    # depending on the platform numpy integer and float
+    # scalars are instances of python int and float too
+    # which are already registered to dt.infer
     return dt.dtype(value.dtype)
 
 
