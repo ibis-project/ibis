@@ -137,7 +137,7 @@ class TestPandasSchemaInference(unittest.TestCase):
     def test_dtype_categorical(self):
         df = pd.DataFrame({'col': ['a', 'b', 'c', 'a']}, dtype='category')
         inferred = sch.infer(df)
-        expected = ibis.schema([('col', dt.Category(3))])
+        expected = ibis.schema([('col', dt.Category())])
         assert inferred == expected
 
 
