@@ -2,6 +2,7 @@ import re
 import time
 
 import pandas as pd
+import google.cloud.bigquery
 
 import ibis
 import ibis.expr.types as ir
