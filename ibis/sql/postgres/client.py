@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import getpass
-import psycopg2  # fail early if the driver is missing
+import psycopg2  # NOQA fail early if the driver is missing
 import contextlib
 import sqlalchemy as sa
 
