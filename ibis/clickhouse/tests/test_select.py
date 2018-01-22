@@ -475,10 +475,4 @@ def test_join_with_external_table(con, alltypes, df):
     result = result.sort_values('id').reset_index(drop=True)
     expected = expected.sort_values('id').reset_index(drop=True)
 
-    print(result.dtypes)
-    print(expected.dtypes)
-
-    print(result.head())
-    print(expected.head())
-
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result, expected, check_column_type=False)
