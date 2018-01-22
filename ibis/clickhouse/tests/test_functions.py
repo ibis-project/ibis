@@ -12,7 +12,7 @@ import ibis.expr.types as ir
 from ibis import literal as L
 
 
-pytest.importorskip('clickhouse_driver')
+clickhouse_driver = pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse
 
 
@@ -540,7 +540,7 @@ def test_numeric_builtins_work(con, alltypes, df, translate):
 
 
 @pytest.mark.xfail(
-    raises=KeyError,
+    raises=clickhouse_driver.errors.UnknownTypeError,
     reason=(
         'Client/server version mismatch not handled in the clickhouse driver')
 )
