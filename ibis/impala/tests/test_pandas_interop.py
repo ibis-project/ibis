@@ -23,10 +23,10 @@ import pandas as pd
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 
-from ibis.common import IbisTypeError
-from ibis.impala.pandas_interop import pandas_to_ibis_schema, DataFrameWriter
+from ibis.impala.pandas_interop import DataFrameWriter
 from ibis.impala.tests.common import ImpalaE2E
 import ibis.util as util
 
@@ -46,75 +46,76 @@ class TestPandasSchemaInference(unittest.TestCase):
 
     def test_dtype_bool(self):
         df = pd.DataFrame({'col': [True, False, False]})
-        inferred = pandas_to_ibis_schema(df)
+        inferred = sch.infer(df)
         expected = ibis.schema([('col', 'boolean')])
         assert inferred == expected
 
     def test_dtype_int8(self):
         df = pd.DataFrame({'col': np.int8([-3, 9, 17])})
-        inferred = pandas_to_ibis_schema(df)
+        inferred = sch.infer(df)
         expected = ibis.schema([('col', 'int8')])
         assert inferred == expected
 
     def test_dtype_int16(self):
         df = pd.DataFrame({'col': np.int16([-5, 0, 12])})
-        inferred = pandas_to_ibis_schema(df)
+        inferred = sch.infer(df)
         expected = ibis.schema([('col', 'int16')])
         assert inferred == expected
 
     def test_dtype_int32(self):
         df = pd.DataFrame({'col': np.int32([-12, 3, 25000])})
-        inferred = pandas_to_ibis_schema(df)
+        inferred = sch.infer(df)
         expected = ibis.schema([('col', 'int32')])
         assert inferred == expected
 
     def test_dtype_int64(self):
         df = pd.DataFrame({'col': np.int64([102, 67228734, -0])})
-        inferred = pandas_to_ibis_schema(df)
+        inferred = sch.infer(df)
         expected = ibis.schema([('col', 'int64')])
         assert inferred == expected
 
     def test_dtype_float32(self):
         df = pd.DataFrame({'col': np.float32([45e-3, -0.4, 99.])})
-        inferred = pandas_to_ibis_schema(df)
+        inferred = sch.infer(df)
         expected = ibis.schema([('col', 'float')])
         assert inferred == expected
 
     def test_dtype_float64(self):
         df = pd.DataFrame({'col': np.float64([-3e43, 43., 10000000.])})
-        inferred = pandas_to_ibis_schema(df)
+        inferred = sch.infer(df)
         expected = ibis.schema([('col', 'double')])
         assert inferred == expected
 
     def test_dtype_uint8(self):
         df = pd.DataFrame({'col': np.uint8([3, 0, 16])})
-        inferred = pandas_to_ibis_schema(df)
-        expected = ibis.schema([('col', 'int16')])
+        inferred = sch.infer(df)
+        expected = ibis.schema([('col', 'uint8')])
         assert inferred == expected
 
     def test_dtype_uint16(self):
         df = pd.DataFrame({'col': np.uint16([5569, 1, 33])})
-        inferred = pandas_to_ibis_schema(df)
-        expected = ibis.schema([('col', 'int32')])
+        inferred = sch.infer(df)
+        expected = ibis.schema([('col', 'uint16')])
         assert inferred == expected
 
     def test_dtype_uint32(self):
         df = pd.DataFrame({'col': np.uint32([100, 0, 6])})
-        inferred = pandas_to_ibis_schema(df)
-        expected = ibis.schema([('col', 'int64')])
+        inferred = sch.infer(df)
+        expected = ibis.schema([('col', 'uint32')])
         assert inferred == expected
 
     def test_dtype_uint64(self):
         df = pd.DataFrame({'col': np.uint64([666, 2, 3])})
-        with self.assertRaises(IbisTypeError):
-            inferred = pandas_to_ibis_schema(df)  # noqa
+        inferred = sch.infer(df)
+        expected = ibis.schema([('col', 'uint64')])
+        assert inferred == expected
 
     def test_dtype_datetime64(self):
         df = pd.DataFrame({
             'col': [pd.Timestamp('2010-11-01 00:01:00'),
                     pd.Timestamp('2010-11-01 00:02:00.1000'),
                     pd.Timestamp('2010-11-01 00:03:00.300000')]})
-        inferred = pandas_to_ibis_schema(df)
+        inferred = sch.infer(df)
         expected = ibis.schema([('col', 'timestamp')])
         assert inferred == expected
 
@@ -123,19 +124,19 @@ class TestPandasSchemaInference(unittest.TestCase):
             'col': [pd.Timedelta('1 days'),
                     pd.Timedelta('-1 days 2 min 3us'),
                     pd.Timedelta('-2 days +23:57:59.999997')]})
-        inferred = pandas_to_ibis_schema(df)
-        expected = ibis.schema([('col', 'int64')])
+        inferred = sch.infer(df)
+        expected = ibis.schema([('col', "interval('ns')")])
         assert inferred == expected
 
     def test_dtype_string(self):
         df = pd.DataFrame({'col': ['foo', 'bar', 'hello']})
-        inferred = pandas_to_ibis_schema(df)
+        inferred = sch.infer(df)
         expected = ibis.schema([('col', 'string')])
         assert inferred == expected
 
     def test_dtype_categorical(self):
         df = pd.DataFrame({'col': ['a', 'b', 'c', 'a']}, dtype='category')
-        inferred = pandas_to_ibis_schema(df)
+        inferred = sch.infer(df)
         expected = ibis.schema([('col', dt.Category(3))])
         assert inferred == expected
 
@@ -211,7 +212,7 @@ class TestPandasInterop(ImpalaE2E, unittest.TestCase):
         assert_frame_equal(df, self.alltypes)
 
     def test_insert(self):
-        schema = pandas_to_ibis_schema(exhaustive_df)
+        schema = sch.infer(exhaustive_df)
 
         table_name = 'tmp_pandas_{0}'.format(util.guid())
         self.con.create_table(table_name, database=self.tmp_db,
@@ -253,7 +254,7 @@ def test_timestamp_with_timezone():
     df = pd.DataFrame({
         'A': pd.date_range('20130101', periods=3, tz='US/Eastern')
     })
-    schema = pandas_to_ibis_schema(df)
+    schema = sch.infer(df)
     expected = ibis.schema([('A', "timestamp('US/Eastern')")])
     assert schema.equals(expected)
     assert schema.types[0].equals(dt.Timestamp('US/Eastern'))

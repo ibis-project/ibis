@@ -87,7 +87,8 @@ def from_pandas_tzdtype(value):
 
 @dt.dtype.register(CategoricalDtype)
 def from_pandas_categorical(value):
-    return dt.Category()
+    return dt.Category(len(value.categories))
+    # return dt.Category()
 
 
 @dt.infer.register((np.generic, np.int32, np.int64, np.float32, np.float64))
