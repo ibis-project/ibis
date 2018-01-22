@@ -112,7 +112,8 @@ def parquet(tables, data_directory, **params):
         import pyarrow as pa  # noqa: F401
         import pyarrow.parquet as pq  # noqa: F401
     except ImportError:
-        click.fail('PyArrow dependency is missing')
+        click.echo('PyArrow dependency is missing')
+        return
 
     data_directory = Path(data_directory)
     for table, df in read_tables(tables, data_directory):
