@@ -127,6 +127,7 @@ def _string_find(translator, expr):
 
 
 def _translate_pattern(translator, pattern):
+    # add 'r' to string literals to indicate to BigQuery this is a raw string
     return 'r' * isinstance(pattern.op(), ir.Literal) + translator.translate(
         pattern
     )
