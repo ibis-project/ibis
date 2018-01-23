@@ -1133,7 +1133,14 @@ def infer_integer(value, allow_overflow=False):
     return int64
 
 
-@infer.register(np.generic)
+@infer.register(
+    (np.generic,) + tuple(
+        frozenset(
+            np.signedinteger.__subclasses__() +
+            np.unsignedinteger.__subclasses__()  # np.int64, np.uint64, etc.
+        )
+    )  # we need this because in Python 2 int is a parent of np.integer
+)
 def infer_numpy_scalar(value):
     return dtype(value.dtype)
 
