@@ -22,7 +22,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 from ibis.pandas.core import (
-    integer_types, simple_types, numeric_types, fixed_width_types
+    integer_types, simple_types, numeric_types, fixed_width_types, scalar_types
 )
 from ibis.pandas.dispatch import execute, execute_node
 from ibis.pandas.execution import constants
@@ -678,3 +678,25 @@ def execute_node_contains_series_list(op, data, elements, **kwargs):
 @execute_node.register(ops.NotContains, pd.Series, list)
 def execute_node_not_contains_series_list(op, data, elements, **kwargs):
     return ~data.isin(elements)
+
+
+@execute_node.register(ops.Where,
+                       pd.Series,
+                       (pd.Series,) + scalar_types,
+                       (pd.Series,) + scalar_types)
+def execute_node_where_series(op, cond, true, false, **kwargs):
+    if isinstance(true, scalar_types):
+        true = pd.Series(np.repeat(true, len(cond)))
+    # No need to turn false into a series, pandas will broadcast it
+    return true.where(cond, other=false)
+
+
+@execute_node.register(ops.Where,
+                       scalar_types,
+                       (pd.Series,) + scalar_types,
+                       (pd.Series,) + scalar_types)
+def execute_node_where_scalar(op, cond, true, false, **kwargs):
+    # Note that it is not necessary to check that true and false are also
+    # scalars. This allows users to do things like:
+    # ibis.where(even_or_odd_bool, [2, 4, 6], [1, 3, 5])
+    return true if cond else false
