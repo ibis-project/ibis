@@ -12,7 +12,7 @@ import ibis.expr.types as ir
 from ibis import literal as L
 
 
-pytest.importorskip('clickhouse_driver')
+clickhouse_driver = pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse
 
 
@@ -99,17 +99,17 @@ def test_timestamp_now(con, translate):
 
 
 @pytest.mark.parametrize(('unit', 'expected'), [
-    ('y', pd.Timestamp('2009-01-01')),
-    ('m', pd.Timestamp('2009-05-01')),
-    ('d', pd.Timestamp('2009-05-17')),
-    ('w', pd.Timestamp('2009-05-11')),
-    ('h', pd.Timestamp('2009-05-17 12:00:00')),
-    ('minute', pd.Timestamp('2009-05-17 12:34:00')),
+    pytest.mark.xfail(('y', '2009-01-01')),
+    pytest.mark.xfail(('m', '2009-05-01')),
+    pytest.mark.xfail(('d', '2009-05-17')),
+    pytest.mark.xfail(('w', '2009-05-11')),
+    ('h', '2009-05-17 12:00:00'),
+    ('minute', '2009-05-17 12:34:00'),
 ])
 def test_timestamp_truncate(con, translate, unit, expected):
     stamp = ibis.timestamp('2009-05-17 12:34:56')
     expr = stamp.truncate(unit)
-    assert con.execute(expr) == expected
+    assert con.execute(expr) == pd.Timestamp(expected)
 
 
 @pytest.mark.parametrize(('func', 'expected'), [
@@ -200,7 +200,12 @@ def test_fillna_nullif(con, expr, expected):
     (L(1.2345), 'Float64'),
     (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), 'DateTime'),
     (L(date(2015, 9, 1)), 'Date'),
-    (ibis.NA, 'Null')
+    pytest.mark.xfail(
+        (ibis.NA, 'Null'),
+        raises=AssertionError,
+        reason=('Client/server version mismatch not handled in the clickhouse '
+                'driver')
+    )
 ])
 def test_typeof(con, value, expected):
     assert con.execute(value.typeof()) == expected
@@ -531,9 +536,14 @@ def test_numeric_builtins_work(con, alltypes, df, translate):
 #     with config.option_context('interactive', True):
 #         result = repr(expr)
 
-#     assert 'no translator rule' in result.lower()
+#     assert 'no translation rule' in result.lower()
 
 
+@pytest.mark.xfail(
+    raises=clickhouse_driver.errors.UnknownTypeError,
+    reason=(
+        'Client/server version mismatch not handled in the clickhouse driver')
+)
 def test_null_column(alltypes, translate):
     t = alltypes
     nrows = t.count().execute()

@@ -11,6 +11,7 @@ import toolz
 import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
+import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
@@ -48,7 +49,7 @@ def execute_frame_window_op(op, data, scope=None, context=None, **kwargs):
     order_by = window._order_by
 
     if order_by and following != 0:
-        raise ValueError(
+        raise com.OperationNotDefinedError(
             'Following with a value other than 0 (current row) with order_by '
             'is not yet implemented in the pandas backend. Use '
             'ibis.trailing_window or ibis.cumulative_window to '

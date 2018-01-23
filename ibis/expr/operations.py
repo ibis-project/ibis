@@ -553,7 +553,14 @@ class FuzzySearch(BooleanValueOp):
 
 
 class StringSQLLike(FuzzySearch):
-    pass
+
+    input_type = [
+        string,
+        string(name='pattern'),
+        rules.instance_of(
+            six.string_types, name='escape', default=None, optional=True
+        ),
+    ]
 
 
 class RegexSearch(FuzzySearch):
@@ -576,6 +583,20 @@ class StringReplace(ValueOp):
 
     input_type = [string, string(name='pattern'), string(name='replacement')]
     output_type = rules.shape_like_arg(0, 'string')
+
+
+class StringSplit(ValueOp):
+
+    input_type = [string, string(name='delimiter')]
+    output_type = rules.shape_like_arg(0, 'array<string>')
+
+
+class StringConcat(ValueOp):
+
+    input_type = rules.varargs(rules.string)
+
+    def output_type(self):
+        return rules.shape_like_args(self.args, 'string')
 
 
 class ParseURL(ValueOp):
@@ -758,9 +779,10 @@ class MultiQuantile(Quantile):
 
 class VarianceBase(Reduction):
 
-    input_type = [rules.column, boolean(name='where', optional=True),
+    input_type = [rules.column,
                   rules.string_options(['sample', 'pop'],
-                                       name='how', optional=True)]
+                                       name='how', optional=True),
+                  boolean(name='where', optional=True)]
     output_type = rules.scalar_output(_mean_output_type)
 
 
@@ -811,8 +833,11 @@ class HLLCardinality(Reduction):
 
 class GroupConcat(Reduction):
 
-    input_type = [rules.column, string(name='sep', default=',')]
-    # boolean(name='where', optional=True)]
+    input_type = [
+        rules.column,
+        string(name='sep', default=','),
+        boolean(name='where', optional=True),
+    ]
 
     def output_type(self):
         return ir.StringScalar
@@ -1323,18 +1348,21 @@ class SimpleCase(ValueOp):
 
     def __init__(self, base, cases, results, default):
         assert len(cases) == len(results)
-        ValueOp.__init__(self, base, cases, results, default)
+        super(SimpleCase, self).__init__(base, cases, results, default)
 
     def root_tables(self):
         base, cases, results, default = self.args
-        all_exprs = [base] + cases + results
-        if default is not None:
-            all_exprs.append(default)
+        all_exprs = [base] + cases + results + (
+            [] if default is None else [default]
+        )
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):
         base, cases, results, default = self.args
-        out_exprs = results + [default]
+        out_exprs = list(filter(
+            lambda expr: expr is not None,
+            results + [default]
+        ))
         typename = rules.highest_precedence_type(out_exprs)
         return rules.shape_like(base, typename)
 
@@ -1347,13 +1375,11 @@ class SearchedCase(ValueOp):
 
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
-        ValueOp.__init__(self, cases, results, default)
+        super(SearchedCase, self).__init__(cases, results, default)
 
     def root_tables(self):
         cases, results, default = self.args
-        all_exprs = cases + results
-        if default is not None:
-            all_exprs.append(default)
+        all_exprs = cases + results + ([] if default is None else [default])
         return ir.distinct_roots(*all_exprs)
 
     def output_type(self):

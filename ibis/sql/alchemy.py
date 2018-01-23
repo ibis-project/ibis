@@ -206,7 +206,7 @@ def _variance_reduction(func_name):
     }
 
     def variance_compiler(t, expr):
-        arg, where, how = expr.op().args
+        arg, how, where = expr.op().args
 
         if arg.type().equals(dt.boolean):
             arg = arg.cast('int32')
@@ -426,6 +426,12 @@ def unary(sa_func):
     return fixed_arity(sa_func, 1)
 
 
+def _string_like(t, expr):
+    arg, pattern, escape = expr.op().args
+    result = t.translate(arg).like(t.translate(pattern), escape=escape)
+    return result
+
+
 _operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
@@ -474,6 +480,8 @@ _operation_registry = {
 
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
+
+    ops.StringSQLLike: _string_like,
 }
 
 

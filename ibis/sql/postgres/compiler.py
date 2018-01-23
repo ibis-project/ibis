@@ -17,23 +17,26 @@ import locale
 import string
 import platform
 import warnings
-import operator
 
 from functools import reduce
 
 import sqlalchemy as sa
+from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
+import ibis
 from ibis.sql.alchemy import (
     unary, varargs, fixed_arity, Over, _variance_reduction, _get_sqla_table
 )
-import ibis.expr.analytics as L
+import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.window as W
 
 import ibis.sql.alchemy as alch
+import sqlalchemy.dialects.postgresql as pg
+
 _operation_registry = alch._operation_registry.copy()
 
 
@@ -141,8 +144,15 @@ def _millisecond(t, expr):
 def _string_agg(t, expr):
     # we could use sa.func.string_agg since postgres 9.0, but we can cheaply
     # maintain backwards compatibility here, so we don't use it
-    arg, sep = map(t.translate, expr.op().args)
-    return sa.func.array_to_string(sa.func.array_agg(arg), sep)
+    arg, sep, where = expr.op().args
+    sa_arg = t.translate(arg)
+    sa_sep = t.translate(sep)
+
+    if where is not None:
+        operand = t.translate(where.ifelse(arg, ibis.NA))
+    else:
+        operand = sa_arg
+    return sa.func.array_to_string(sa.func.array_agg(operand), sa_sep)
 
 
 _strftime_to_postgresql_rules = {
@@ -294,9 +304,24 @@ def _strftime(t, expr):
     return reduce(sa.sql.ColumnElement.concat, reduced)
 
 
-def _distinct_from(a, b):
-    return (((a != None) | (b != None)) &  # noqa
-            sa.func.coalesce(a != b, True))
+class array_search(expression.FunctionElement):
+    type = sa.INTEGER()
+    name = 'array_search'
+
+
+@compiles(array_search)
+def postgresql_array_search(element, compiler, **kw):
+    needle, haystack = element.clauses
+    i = sa.func.generate_subscripts(haystack, 1).alias('i')
+    c0 = sa.column('i', type_=sa.INTEGER(), _selectable=i)
+    result = sa.func.coalesce(
+        sa.select([c0]).where(
+            haystack[c0].op('IS NOT DISTINCT FROM')(needle)
+        ).order_by(c0).limit(1).as_scalar(),
+        0
+    ) - 1
+    string_result = compiler.process(result, **kw)
+    return string_result
 
 
 def _find_in_set(t, expr):
@@ -305,21 +330,11 @@ def _find_in_set(t, expr):
     # TODO: could make it even more generic by using generate_series
     # TODO: this works with *any* type, not just strings. should the operation
     #       itself also have this property?
-    arg, haystack = expr.op().args
-    needle = t.translate(arg)
-    haystack = sa.select([sa.literal(
-        [element._arg.value for element in haystack],
-        type_=sa.dialects.postgresql.ARRAY(needle.type)
-    ).label('haystack')]).cte()
-
-    subscripts = sa.select([
-        sa.func.generate_subscripts(haystack.c.haystack, 1).label('i')
-    ]).cte()
-
-    # return a zero based index
-    return sa.select([subscripts.c.i - 1]).where(
-        ~_distinct_from(haystack.c.haystack[subscripts.c.i], needle)
-    ).order_by(subscripts.c.i).limit(1)
+    needle, haystack = expr.op().args
+    return array_search(
+        t.translate(needle),
+        pg.array(list(map(t.translate, haystack)))
+    )
 
 
 def _regex_replace(t, expr):
@@ -454,20 +469,21 @@ def compile_regex_extract(element, compiler, **kw):
 
 def _regex_extract(t, expr):
     string, pattern, index = map(t.translate, expr.op().args)
-    return sa.case(
+    result = sa.case(
         [
             (
                 sa.func.textregexeq(string, pattern),
-                sa.func.regex_extract(string, pattern, index + 1)
+                sa.func.regex_extract(string, pattern, index + 1),
             )
         ],
         else_=''
     )
+    return result
 
 
 def _cardinality(array):
     return sa.case(
-        [(array == None, None)],  # noqa: E711
+        [(array.is_(None), None)],  # noqa: E711
         else_=sa.func.coalesce(sa.func.array_length(array, 1), 0),
     )
 
@@ -602,6 +618,30 @@ def _array_slice(t, expr):
     return sa_arg[sa_start + 1:sa_stop]
 
 
+def _string_join(t, expr):
+    sep, elements = expr.op().args
+    return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
+
+
+def _lag(t, expr):
+    arg, offset, default = expr.op().args
+    if default is not None:
+        raise NotImplementedError()
+
+    sa_arg = t.translate(arg)
+    sa_offset = t.translate(offset) if offset is not None else 1
+    return sa.func.lag(sa_arg, sa_offset)
+
+
+def _lead(t, expr):
+    arg, offset, default = expr.op().args
+    if default is not None:
+        raise NotImplementedError()
+    sa_arg = t.translate(arg)
+    sa_offset = t.translate(offset) if offset is not None else 1
+    return sa.func.lead(sa_arg, sa_offset)
+
+
 _operation_registry.update({
     # We override this here to support time zones
     ops.TableColumn: _table_column,
@@ -640,12 +680,13 @@ _operation_registry.update({
     ops.Capitalize: unary('initcap'),
     ops.Repeat: fixed_arity('repeat', 2),
     ops.StringReplace: fixed_arity(sa.func.replace, 3),
-    ops.StringSQLLike: _infix_op('LIKE'),
     ops.RegexSearch: _infix_op('~'),
     ops.RegexReplace: _regex_replace,
     ops.Translate: fixed_arity('translate', 3),
     ops.StringAscii: fixed_arity(sa.func.ascii, 1),
     ops.RegexExtract: _regex_extract,
+    ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
+    ops.StringJoin: _string_join,
 
     ops.FindInSet: _find_in_set,
 
@@ -682,19 +723,31 @@ _operation_registry.update({
     # now is in the timezone of the server, but we want UTC
     ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
     ops.WindowOp: _window,
-    ops.CumulativeOp: _window,
+
+    ops.Lag: _lag,
+    ops.Lead: _lead,
+    ops.FirstValue: fixed_arity(sa.func.first_value, 1),
+    ops.LastValue: fixed_arity(sa.func.last_value, 1),
     ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
     ops.DenseRank: fixed_arity(lambda arg: sa.func.dense_rank(), 1),
     ops.MinRank: fixed_arity(lambda arg: sa.func.rank(), 1),
     ops.PercentRank: fixed_arity(lambda arg: sa.func.percent_rank(), 1),
     ops.NTile: _ntile,
 
+    ops.CumulativeOp: _window,
+    ops.CumulativeAll: fixed_arity(sa.func.bool_and, 1),
+    ops.CumulativeAny: fixed_arity(sa.func.bool_or, 1),
+    ops.CumulativeMax: fixed_arity(sa.func.max, 1),
+    ops.CumulativeMin: fixed_arity(sa.func.min, 1),
+    ops.CumulativeSum: fixed_arity(sa.func.sum, 1),
+    ops.CumulativeMean: fixed_arity(sa.func.avg, 1),
+
     # array operations
     ops.ArrayLength: fixed_arity(_cardinality, 1),
     ops.ArrayCollect: fixed_arity(sa.func.array_agg, 1),
     ops.ArraySlice: _array_slice,
     ops.ArrayIndex: fixed_arity(lambda array, index: array[index + 1], 2),
-    ops.ArrayConcat: fixed_arity(operator.add, 2),
+    ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
     ops.ArrayRepeat: _array_repeat,
     ops.IdenticalTo: _identical_to,
     ops.HLLCardinality: _hll_cardinality,

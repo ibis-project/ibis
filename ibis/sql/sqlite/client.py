@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import os
-import re
+import regex as re
 import math
 import inspect
 import functools
@@ -21,7 +21,8 @@ import functools
 import sqlalchemy as sa
 
 from ibis.client import Database
-from .compiler import SQLiteDialect
+from ibis.compat import maketrans
+from ibis.sql.sqlite.compiler import SQLiteDialect
 import ibis.sql.alchemy as alch
 import ibis.common as com
 
@@ -46,6 +47,36 @@ def udf(f):
 def udaf(f):
     _SQLITE_UDAF_REGISTRY.add(f)
     return f
+
+
+@udf
+def _ibis_sqlite_reverse(string):
+    if string is not None:
+        return string[::-1]
+    return None
+
+
+@udf
+def _ibis_sqlite_string_ascii(string):
+    if string is not None:
+        return ord(string[0])
+    return None
+
+
+@udf
+def _ibis_sqlite_capitalize(string):
+    if string is not None:
+        return string.capitalize()
+    return None
+
+
+@udf
+def _ibis_sqlite_translate(string, from_string, to_string):
+    if (string is not None and
+            from_string is not None and to_string is not None):
+        table = maketrans(from_string, to_string)
+        return string.translate(table)
+    return None
 
 
 @udf
@@ -103,10 +134,9 @@ def _ibis_sqlite_regex_extract(string, pattern, index):
         return None
 
     result = re.search(pattern, string)
-    if result is not None and 0 <= index <= result.lastindex:
+    if result is not None and 0 <= index <= (result.lastindex or -1):
         return result.group(index)
-    else:
-        return None
+    return None
 
 
 @udf

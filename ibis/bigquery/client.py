@@ -89,6 +89,7 @@ class BigQueryClient(SQLClient):
     sync_query = BigQuery
     database_class = BigQueryDatabase
     proxy_class = BigQueryAPIProxy
+    dialect = comp.BigQueryDialect
 
     def __init__(self, project_id, dataset_id):
         self._proxy = self.__class__.proxy_class(project_id)

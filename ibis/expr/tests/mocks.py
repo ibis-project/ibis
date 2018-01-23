@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.client import SQLClient
+from ibis.client import SQLClient, Dialect
 from ibis.expr.schema import Schema
 
 
 class MockConnection(SQLClient):
+
+    dialect = Dialect
 
     _tables = {
         'alltypes': [

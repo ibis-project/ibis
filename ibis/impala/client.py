@@ -34,7 +34,7 @@ from ibis.compat import lzip
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
-from ibis.impala.compiler import build_ast
+from ibis.impala.compiler import build_ast, ImpalaDialect
 from ibis.util import log
 from ibis.sql.compiler import DDL
 import ibis.expr.types as ir
@@ -189,7 +189,11 @@ class ImpalaCursor(object):
         self.con.connection_pool_size += 1
 
     def __del__(self):
-        self._close_cursor()
+        try:
+            self._close_cursor()
+        except Exception:
+            pass
+
         with self.con.lock:
             self.con.connection_pool_size -= 1
 
@@ -463,6 +467,7 @@ class ImpalaClient(SQLClient):
     database_class = ImpalaDatabase
     sync_query = ImpalaQuery
     async_query = ImpalaAsyncQuery
+    dialect = ImpalaDialect
 
     def __init__(self, con, hdfs_client=None, **params):
         import hdfs

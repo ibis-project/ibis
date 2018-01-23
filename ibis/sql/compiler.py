@@ -1170,8 +1170,9 @@ class ExprTranslator(object):
             formatter = self._registry[type(op)]
             return formatter(self, expr)
         else:
-            raise com.TranslationError('No translator rule for {}'
-                                       .format(type(op)))
+            raise com.OperationNotDefinedError(
+                'No translation rule for {}'.format(type(op))
+            )
 
     def _trans_param(self, expr):
         return self.params[expr]

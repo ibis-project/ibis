@@ -9,7 +9,7 @@ import ibis.expr.types as ir
 from ibis.config import options
 from ibis.compat import zip as czip
 from ibis.client import Query, Database, DatabaseEntity, SQLClient
-from ibis.clickhouse.compiler import build_ast
+from ibis.clickhouse.compiler import build_ast, ClickhouseDialect
 from ibis.util import log
 from ibis.sql.compiler import DDL
 
@@ -48,7 +48,23 @@ class ClickhouseQuery(Query):
         return pd.DataFrame(cols, columns=names)
 
     def _db_type_to_dtype(self, db_type, column):
-        return clickhouse_to_pandas[db_type]
+        try:
+            return clickhouse_to_pandas[db_type]
+        except KeyError:
+            return com.UnsupportedBackendType(db_type)
+
+
+def clickhouse_types_to_ibis_types(types):
+    result = []
+
+    for t in types:
+        try:
+            value = clickhouse_to_ibis[t]
+        except KeyError:
+            raise com.UnsupportedBackendType(t)
+        else:
+            result.append(value)
+    return result
 
 
 class ClickhouseClient(SQLClient):
@@ -56,6 +72,7 @@ class ClickhouseClient(SQLClient):
 
     database_class = ClickhouseDatabase
     sync_query = ClickhouseQuery
+    dialect = ClickhouseDialect
 
     def __init__(self, *args, **kwargs):
         self.con = _DriverClient(*args, **kwargs)
@@ -84,7 +101,7 @@ class ClickhouseClient(SQLClient):
             query = query.compile()
         self.log(query)
 
-        return self.con.execute(query,  columnar=True, with_column_types=True)
+        return self.con.execute(query, columnar=True, with_column_types=True)
 
     def _fully_qualified_name(self, name, database):
         if bool(fully_qualified_re.search(name)):
@@ -182,7 +199,11 @@ class ClickhouseClient(SQLClient):
         data, _ = self._execute(query)
 
         names, types = data[:2]
-        ibis_types = map(clickhouse_to_ibis.get, types)
+        ibis_types = clickhouse_types_to_ibis_types(types)
+        try:
+            ibis_types = map(clickhouse_to_ibis.__getitem__, types)
+        except KeyError:
+            raise com.UnsupportedBackendType()
 
         return sch.Schema(names, ibis_types)
 
@@ -223,7 +244,7 @@ class ClickhouseClient(SQLClient):
     def _get_schema_using_query(self, query):
         _, types = self._execute(query)
         names, clickhouse_types = zip(*types)
-        ibis_types = map(clickhouse_to_ibis.get, clickhouse_types)
+        ibis_types = clickhouse_types_to_ibis_types(clickhouse_types)
         return sch.Schema(names, ibis_types)
 
     def _exec_statement(self, stmt, adapter=None):

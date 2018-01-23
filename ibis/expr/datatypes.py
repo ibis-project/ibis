@@ -653,16 +653,22 @@ _STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n
 
 _TYPE_RULES = OrderedDict(
     [
-        # any, null
+        # any, null, bool|boolean
         ('(?P<ANY>any)', lambda token: Token(Tokens.ANY, any)),
         ('(?P<NULL>null)', lambda token: Token(Tokens.NULL, null)),
+        (
+            '(?P<BOOLEAN>bool(?:ean)?)',
+            lambda token: Token(Tokens.PRIMITIVE, boolean),
+        ),
     ] + [
         # primitive types
         (
             '(?P<{}>{})'.format(token.upper(), token),
             lambda token, value=value: Token(Tokens.PRIMITIVE, value)
         ) for token, value in _primitive_types
-        if token not in {'any', 'null', 'timestamp', 'time', 'interval'}
+        if token not in {
+            'any', 'null', 'timestamp', 'time', 'interval', 'boolean'
+        }
     ] + [
         # timestamp
         (
@@ -822,6 +828,7 @@ class TypeParser(object):
 
         primitive : "any"
                   | "null"
+                  | "bool"
                   | "boolean"
                   | "int8"
                   | "int16"
@@ -1126,7 +1133,14 @@ def infer_integer(value, allow_overflow=False):
     return int64
 
 
-@infer.register(np.generic)
+@infer.register(
+    (np.generic,) + tuple(
+        frozenset(
+            np.signedinteger.__subclasses__() +
+            np.unsignedinteger.__subclasses__()  # np.int64, np.uint64, etc.
+        )
+    )  # we need this because in Python 2 int is a parent of np.integer
+)
 def infer_numpy_scalar(value):
     return dtype(value.dtype)
 

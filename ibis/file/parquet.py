@@ -1,11 +1,15 @@
-import ibis
-import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
-from ibis.file.client import FileClient
-from ibis.pandas.core import pre_execute, execute
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+
+import ibis
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+
+from ibis.file.client import FileClient
+
+from ibis.pandas.api import PandasDialect
+from ibis.pandas.core import pre_execute, execute
 
 
 def connect(dictionary):
@@ -52,6 +56,7 @@ class ParquetTable(ops.DatabaseTable):
 
 
 class ParquetClient(FileClient):
+    dialect = PandasDialect
     extension = 'parquet'
 
     def insert(self, path, expr, **kwargs):
@@ -82,6 +87,9 @@ class ParquetClient(FileClient):
 
     def list_databases(self, path=None):
         return self._list_databases_dirs(path)
+
+    def compile(self, expr, *args, **kwargs):
+        return expr
 
 
 @pre_execute.register(ParquetTable, ParquetClient)

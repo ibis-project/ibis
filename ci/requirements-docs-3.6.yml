@@ -18,6 +18,7 @@ dependencies:
   - python-graphviz
   - pyarrow>=0.6.0
   - pytables
+  - regex
   - sh
   - six
   - sphinx_rtd_theme

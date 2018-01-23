@@ -368,14 +368,13 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
-def _reduction_format(translator, func_name, arg, where):
+def _reduction_format(translator, func_name, arg, args, where):
     if where is not None:
-        case = where.ifelse(arg, ibis.NA)
-        arg = translator.translate(case)
-    else:
-        arg = translator.translate(arg)
+        arg = where.ifelse(arg, ibis.NA)
 
-    return '{}({})'.format(func_name, arg)
+    return '{}({})'.format(
+        func_name, ', '.join(map(translator.translate, [arg] + list(args)))
+    )
 
 
 def _reduction(func_name):
@@ -383,21 +382,24 @@ def _reduction(func_name):
         op = expr.op()
 
         # HACK: support trailing arguments
-        arg, where = op.args[:2]
+        where = op.where
+        args = [arg for arg in op.args if arg is not where]
 
-        return _reduction_format(translator, func_name, arg, where)
+        return _reduction_format(
+            translator, func_name, args[0], args[1:], where
+        )
     return formatter
 
 
 def _variance_like(func_name):
     func_names = {
-        'sample': func_name,
+        'sample': '{}_samp'.format(func_name),
         'pop': '{}_pop'.format(func_name)
     }
 
     def formatter(translator, expr):
-        arg, where, how = expr.op().args
-        return _reduction_format(translator, func_names[how], arg, where)
+        arg, how, where = expr.op().args
+        return _reduction_format(translator, func_names[how], arg, [], where)
     return formatter
 
 
@@ -912,6 +914,14 @@ _binary_infix_ops = {
 }
 
 
+def _string_like(translator, expr):
+    arg, pattern, _ = expr.op().args
+    return '{} LIKE {}'.format(
+        translator.translate(arg),
+        translator.translate(pattern),
+    )
+
+
 _operation_registry = {
     # Unary operations
     ops.NotNull: _not_null,
@@ -954,9 +964,9 @@ _operation_registry = {
     ops.Min: _reduction('min'),
 
     ops.StandardDev: _variance_like('stddev'),
-    ops.Variance: _variance_like('variance'),
+    ops.Variance: _variance_like('var'),
 
-    ops.GroupConcat: fixed_arity('group_concat', 2),
+    ops.GroupConcat: _reduction('group_concat'),
 
     ops.Count: _reduction('count'),
     ops.CountDistinct: _count_distinct,
@@ -980,8 +990,8 @@ _operation_registry = {
     ops.LPad: fixed_arity('lpad', 3),
     ops.RPad: fixed_arity('rpad', 3),
     ops.StringJoin: _string_join,
-    ops.StringSQLLike: _binary_infix_op('LIKE'),
-    ops.RegexSearch: _binary_infix_op('RLIKE'),
+    ops.StringSQLLike: _string_like,
+    ops.RegexSearch: fixed_arity('regexp_like', 2),
     ops.RegexExtract: fixed_arity('regexp_extract', 3),
     ops.RegexReplace: fixed_arity('regexp_replace', 3),
     ops.ParseURL: _parse_url,
@@ -1057,6 +1067,10 @@ class ImpalaExprTranslator(comp.ExprTranslator):
     def name(self, translated, name, force=True):
         return _name_expr(translated,
                           quote_identifier(name, force=force))
+
+
+class ImpalaDialect(ibis.client.Dialect):
+    translator = ImpalaExprTranslator
 
 
 compiles = ImpalaExprTranslator.compiles
