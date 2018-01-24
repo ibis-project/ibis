@@ -1,20 +1,9 @@
-import operator
 import pytest
-
 from pytest import param
-
-import toolz
 
 import ibis
 import ibis.tests.util as tu
-
-from ibis.compat import maketrans, PY2
-
-
-if PY2:
-    decode = operator.methodcaller('decode', 'utf8')
-else:
-    decode = toolz.identity
+from ibis.compat import maketrans
 
 
 @pytest.mark.parametrize(
@@ -61,10 +50,8 @@ else:
             id='repeat'
         ),
         param(
-            lambda t: t.string_col.translate('0', 'a'),
-            lambda t: t.string_col.map(decode).str.translate(
-                maketrans(u'0', u'a')
-            ),
+            lambda t: t.string_col.translate(u'0', u'a'),
+            lambda t: t.string_col.str.translate(maketrans(u'0', u'a')),
             id='translate',
         ),
         param(
