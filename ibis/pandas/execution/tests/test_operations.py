@@ -5,6 +5,7 @@ from operator import methodcaller
 import pytest
 
 import numpy as np
+import numpy.testing as npt
 
 import pandas as pd
 import pandas.util.testing as tm
@@ -727,3 +728,11 @@ def test_left_binary_op_gb(t, df, op, args):
         lambda s: op(*args(s)).sum()
     ).reset_index().rename(columns={'float64_with_zeros': 'foo'})
     tm.assert_frame_equal(result, expected)
+
+
+def test_round(t, df):
+    precision = 2
+    mult = 3.33333
+    result = (t.count() * mult).round(precision).execute()
+    expected = np.around(len(df) * mult, precision)
+    npt.assert_almost_equal(result, expected, decimal=precision)
