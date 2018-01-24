@@ -83,6 +83,69 @@ benchmark: &benchmark
           docker-compose run ibis ci/benchmark.sh circle "${CIRCLE_SHA1}"
 
 
+docs: &docs
+  <<: *base
+  steps:
+    - checkout:
+        path: ~/ibis
+    - run:
+        name: Start Databases
+        command: docker-compose up -d --no-build postgres impala clickhouse
+    - run:
+        name: Show Running Containers
+        command: docker ps
+    - run:
+        name: Build Ibis Documentation Image
+        command: docker-compose build --pull ibis
+    - run:
+        name: List Docker Images
+        command: docker images
+    - run:
+        name: Wait for Databases
+        command: docker-compose run waiter
+    - run:
+        name: Load Test Datasets
+        command: docker-compose run ibis ci/load-data.sh
+    - run:
+        name: Ping the Notebook Impala Hostname
+        command: docker-compose run ibis ping -c 1 quickstart.cloudera
+    - run:
+        name: Clone Documentation Repository
+        command: docker-compose run ibis git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
+    - run:
+        name: Clear out old documentation files
+        command: |
+          sudo chown -R "${USER}":"${USER}" /tmp/ibis
+          pushd /tmp/ibis/docs.ibis-project.org
+          find . -maxdepth 1 ! -name '*.git' ! -name '.' ! -name 'CNAME' ! -name '*.nojekyll' -exec rm -rf {} \;
+          popd
+    - run:
+        name: Build Documentation
+        command: docker-compose run ibis sphinx-build -b html docs/source /tmp/docs.ibis-project.org
+    - run:
+        name: Who is running
+        command: |
+          echo "${CIRCLE_USERNAME}/${CIRCLE_BRANCH}"
+    - run:
+        name: Push Documentation to Remote Repo
+        command: |
+          #if [ "${CIRCLE_USERNAME}/${CIRCLE_BRANCH}" = "cpcloud/doc-stuff" ]; then
+          sudo chown -R "${USER}":"${USER}" /tmp/ibis
+          pushd /tmp/ibis/docs.ibis-project.org
+
+          git config user.email 'ibisdocbot@ibis-project.org'
+          git config user.name 'ibisdocbot'
+
+          # Add everything
+          git add --all .
+          git commit -m "Docs from ibis at ${CIRCLE_SHA1}"
+          git log --stat HEAD~1.. | cat
+          popd
+          # git push --force
+          #fi
+    - store_artifacts:
+        path: /tmp/ibis/docs.ibis-project.org
+
 jobs:
   python27_test:
     <<: *test
@@ -129,21 +192,25 @@ jobs:
     environment:
       - PYTHON_VERSION: 3.6
 
+  python36_docs:
+    <<: *docs
+    environment:
+      - PYTHON_VERSION: 3.6
+      - ENVKIND: docs
 
 workflows:
   version: 2
   test:
     jobs:
-      - python27_test
-      - python34_test
-      - python35_test
-      - python36_test
+      #- python27_test
+      #- python34_test
+      #- python35_test
+      #- python36_test
 
-      - python27_conda_build
-      - python34_conda_build
-      - python35_conda_build
-      - python36_conda_build
+      #- python27_conda_build
+      #- python34_conda_build
+      #- python35_conda_build
+      #- python36_conda_build
 
-      - python36_benchmark
-
-
+      #- python36_benchmark
+      - python36_docs
