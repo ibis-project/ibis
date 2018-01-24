@@ -239,3 +239,107 @@ def test_custom_list_of_as_value_expr():
     assert not isinstance(result.two, MyList)
     assert result.one == [MyEnum.A, MyEnum.B]
     assert result.two == [MyEnum2.B]
+
+
+def check_op_input(Op, schema, raises):
+    schema = ibis.Schema.from_tuples(schema)
+    table = ibis.table(schema)
+    if not raises:
+        assert Op(table).table.equals(table)
+    else:
+        with pytest.raises(IbisTypeError):
+            Op(table)
+
+
+@pytest.mark.parametrize(
+    ('schema', 'raises'),
+
+    [([('group', dt.int64),
+       ('value', dt.double)], False),
+
+     ([('group', dt.int64),
+       ('value', dt.double),
+       ('value2', dt.double)], True)])
+def test_table_satisfying_lambda(schema, raises):
+    class MyOp(ops.ValueOp):
+        input_type = [rules.table(name='table',
+            satisfying=lambda t: len(t.columns) == 2)]
+        output_type = rules.type_of_arg(0)
+
+    check_op_input(MyOp, schema, raises)
+
+
+@pytest.mark.parametrize(
+    ('schema', 'raises'),
+
+    [([('group', dt.int64),
+       ('value', dt.double)], False),
+
+     ([('group', dt.int64),
+       ('value', dt.timestamp)], True)])
+def test_table_satisfying_rule(schema, raises):
+    class MyOp(ops.ValueOp):
+        input_type = [rules.table(name='table',
+            satisfying=rules.column(name='group', value_type=rules.number))]
+        output_type = rules.type_of_arg(0)
+
+    check_op_input(MyOp, schema, raises)
+
+
+@pytest.mark.parametrize(
+    ('schema', 'raises'),
+
+    [([('group', dt.int64),
+       ('value', dt.double)], False),
+
+     ([('group', dt.int64),
+       ('value', dt.double),
+       ('value2', dt.double)], False)])
+def test_table_satisfying_optional(schema, raises):
+    class MyOp(ops.ValueOp):
+        input_type = [
+            rules.table(
+                name='table',
+                satisfying=[
+                    rules.column(name='group', value_type=rules.number),
+                    rules.column(name='value', value_type=rules.number),
+                    rules.column(name='value2', value_type=rules.number,
+                                 optional=True)])]
+        output_type = rules.type_of_arg(0)
+
+    check_op_input(MyOp, schema, raises)
+
+
+@pytest.mark.parametrize(
+    ('schema', 'raises'),
+
+    [([('group', dt.int64),
+       ('value1', dt.double),
+       ('value2', dt.double),
+       ('value3', dt.double)], False)])
+def test_table_satisfying_many(schema, raises):
+    class MyOp(ops.ValueOp):
+        input_type = [
+            rules.table(
+                name='table',
+                satisfying=[
+                    lambda t: len(t.columns) >= 4,
+                    lambda t: t.schema().types.count(dt.Double()) >= 3,
+                    rules.column(name='group', value_type=rules.number),
+                    rules.column(name='value1', value_type=rules.number),
+                    rules.column(name='value2', value_type=rules.number),
+                    rules.column(name='value3', value_type=rules.number),
+                    rules.column(name='value4', value_type=rules.number,
+                                 optional=True)])]
+        output_type = rules.type_of_arg(0)
+
+    check_op_input(MyOp, schema, raises)
+
+
+def test_table_not_a_table():
+    class MyOp(ops.ValueOp):
+        input_type = [rules.table(name='table')]
+        output_type = rules.type_of_arg(0)
+
+    with pytest.raises(IbisTypeError):
+        MyOp(123)

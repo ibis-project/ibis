@@ -801,3 +801,43 @@ data_type = DataTypeArgument
 
 def comparable(left, right):
     return ir.castable(left, right) or ir.castable(right, left)
+
+
+class Table(ValueTyped):
+    """
+    Parameters
+    ----------
+    satisfying : iterable
+        An iterable of column rules.
+    """
+    def __init__(self, name=None, doc=None, optional=False, satisfying=None,
+            validator=None, **arg_kwds):
+        self.satisfying = satisfying
+        self.name = name
+
+        # self.default = default
+        self.optional = optional
+        self.validator = validator
+        self.doc = doc
+        # self.as_value_expr = as_value_expr or ir.literal
+
+    def _validate(self, args, i):
+        self.arg = args[0]
+        if isinstance(self.arg, ir.TableExpr):
+            for sat in util.promote_list(self.satisfying):
+                if isinstance(sat, Argument):
+                    for col in self.arg.columns:
+                        # This will raise an appropriate IbisTypeError
+                        sat.validate([self.arg[col]], 0)
+                elif callable(sat):
+                    if not sat(self.arg):
+                        raise IbisTypeError(('Did not satisfy callable (not '
+                                             'truthy): {}').format(sat))
+                else:
+                    NotImplementedError('NOT IMPLEMENTED!')
+            return self.arg
+
+        raise IbisTypeError('Not a table.')
+
+
+table = Table
