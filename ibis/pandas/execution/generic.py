@@ -22,7 +22,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 from ibis.pandas.core import (
-    integer_types, simple_types, numeric_types, fixed_width_types
+    integer_types, simple_types, numeric_types, fixed_width_types, scalar_types
 )
 from ibis.pandas.dispatch import execute, execute_node
 from ibis.pandas.execution import constants
@@ -276,6 +276,18 @@ def execute_cast_string_literal(op, data, type, **kwargs):
         )
     else:
         return cast_function(data)
+
+
+@execute_node.register(
+    ops.Round,
+    scalar_types,
+    (six.integer_types, type(None))
+)
+def execute_round_scalars(op, data, places, **kwargs):
+    if places is None:
+        return np.around(data)
+    else:
+        return np.around(data, places)
 
 
 @execute_node.register(
