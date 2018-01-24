@@ -12,23 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import collections
-import itertools
 import os
 import six
 import sys
 import toolz
+import itertools
 import webbrowser
 import collections
 
 from ibis.common import IbisError, RelationError
+import ibis.util as util
 import ibis.common as com
 import ibis.config as config
-import ibis.util as util
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
-import ibis.util as util
 
 
 class Expr(object):

@@ -2,6 +2,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.tests.util as tu
 
 
 @pytest.mark.parametrize(('column', 'raw_value'), [
@@ -10,15 +11,15 @@ import ibis.expr.datatypes as dt
     ('float_col', 1.1),
     ('float_col', 2.2)
 ])
+@tu.skipif_unsupported
 def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     value = ibis.param(dt.double)
     expr = alltypes[column] + value
-
     expected = df[column] + raw_value
-    with backend.skip_unsupported():
-        result = expr.execute(params={value: raw_value})
 
+    result = expr.execute(params={value: raw_value})
     expected = backend.default_series_rename(expected).astype('float64')
+
     backend.assert_series_equal(result, expected)
 
 
@@ -26,6 +27,7 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     ('2009-03-01', '2010-07-03'),
     ('2014-12-01', '2017-01-05')
 ])
+@tu.skipif_unsupported
 def test_date_scalar_parameter(backend, alltypes, df, start_string,
                                end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
@@ -34,9 +36,8 @@ def test_date_scalar_parameter(backend, alltypes, df, start_string,
     expr = col.between(start, end)
     expected_expr = col.between(start_string, end_string)
 
-    with backend.skip_unsupported():
-        result = expr.execute(params={start: start_string,
-                                      end: end_string})
-        expected = expected_expr.execute()
+    result = expr.execute(params={start: start_string,
+                                  end: end_string})
+    expected = expected_expr.execute()
 
     backend.assert_series_equal(result, expected)

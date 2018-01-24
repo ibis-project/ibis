@@ -3,6 +3,7 @@ import decimal
 
 import ibis
 from ibis import literal as L
+import ibis.tests.util as tu
 
 
 @pytest.mark.parametrize(('expr', 'expected'), [
@@ -11,11 +12,9 @@ from ibis import literal as L
     pytest.param(L(5).nullif(5), None, marks=pytest.mark.xfail),
     (L(10).nullif(5), 10),
 ])
+@tu.skipif_unsupported
 def test_fillna_nullif(backend, con, expr, expected):
-    with backend.skip_unsupported():
-        result = con.execute(expr)
-
-    assert result == expected
+    assert con.execute(expr) == expected
 
 
 @pytest.mark.parametrize(('expr', 'expected'), [
@@ -23,9 +22,9 @@ def test_fillna_nullif(backend, con, expr, expected):
     (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
     (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
 ])
+@tu.skipif_unsupported
 def test_coalesce(backend, con, expr, expected):
-    with backend.skip_unsupported():
-        result = con.execute(expr)
+    result = con.execute(expr)
 
     if isinstance(result, decimal.Decimal):
         # in case of Impala the result is decimal
@@ -36,12 +35,12 @@ def test_coalesce(backend, con, expr, expected):
         assert result == expected
 
 
+@tu.skipif_unsupported
 def test_identical_to(backend, alltypes, con, df):
     dt = df[['tinyint_col', 'double_col']]
 
     expr = alltypes.tinyint_col.identical_to(alltypes.double_col)
-    with backend.skip_unsupported():
-        result = expr.execute()
+    result = expr.execute()
 
     expected = ((dt.tinyint_col.isnull() & dt.double_col.isnull()) |
                 (dt.tinyint_col == dt.double_col))

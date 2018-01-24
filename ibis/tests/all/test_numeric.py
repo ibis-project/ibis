@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 import ibis
+import ibis.tests.util as tu
 from ibis import literal as L
 
 
@@ -35,14 +36,14 @@ from ibis import literal as L
     param(lambda o: o.isnan(), lambda o: np.isnan(o), id='isnan'),
     param(lambda o: o.isinf(), lambda o: np.isinf(o), id='isinf')
 ])
+@tu.skipif_unsupported
 def test_isnan_isinf(backend, con, alltypes, df,
                      operand_fn, expected_operand_fn,
                      expr_fn, expected_expr_fn):
     expr = expr_fn(operand_fn(alltypes))
     expected = expected_expr_fn(expected_operand_fn(df))
 
-    with backend.skip_unsupported():
-        result = con.execute(expr)
+    result = con.execute(expr)
 
     if isinstance(expected, pd.Series):
         expected = backend.default_series_rename(expected)
@@ -72,10 +73,10 @@ def test_isnan_isinf(backend, con, alltypes, df,
     (L(5.556).log10(), math.log10(5.556)),
     (L(11) % 3, 11 % 3),
 ])
+@tu.skipif_unsupported
 def test_math_functions_for_literals(backend, con, alltypes, df,
                                      expr, expected):
-    with backend.skip_unsupported():
-        result = con.execute(expr)
+    result = con.execute(expr)
 
     if isinstance(result, decimal.Decimal):
         # in case of Impala the result is decimal

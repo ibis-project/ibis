@@ -67,10 +67,8 @@ else:
     import __builtin__ as builtins  # noqa: F401
 
     range = xrange  # noqa: F821
+    reduce = reduce  # noqa: F821
     import cPickle as pickle  # noqa: F401
-    from string import maketrans  # noqa: F401
-    reduce = reduce
-
 
     def maketrans(x, y):
         import string

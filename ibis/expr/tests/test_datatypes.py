@@ -1,5 +1,7 @@
+import pytest
 import datetime
 from collections import OrderedDict
+from multipledispatch.conflict import ambiguities
 
 import ibis
 

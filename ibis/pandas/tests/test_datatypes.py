@@ -2,8 +2,13 @@ import pytest
 import numpy as np
 import pandas as pd
 
+from multipledispatch.conflict import ambiguities
 from ibis.compat import DatetimeTZDtype, CategoricalDtype
 from ibis.expr import datatypes as dt
+
+
+def test_no_infer_ambiguities():
+    assert not ambiguities(dt.infer.funcs)
 
 
 @pytest.mark.parametrize(('value', 'expected_dtype'), [

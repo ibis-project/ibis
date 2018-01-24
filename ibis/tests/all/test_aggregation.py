@@ -1,7 +1,8 @@
 import pytest
-import numpy as np
-
 from pytest import param
+
+import numpy as np
+import ibis.tests.util as tu
 
 
 @pytest.mark.parametrize(('result_fn', 'expected_fn'), [
@@ -106,12 +107,10 @@ from pytest import param
         lambda t: t.string_col.isin(['1', '7']),
     )
 ])
+@tu.skipif_unsupported
 def test_aggregation(backend, alltypes, df, result_fn, expected_fn,
                      ibis_cond, pandas_cond):
     expr = result_fn(alltypes, ibis_cond(alltypes))
-
-    with backend.skip_unsupported():
-        result = expr.execute()
-
+    result = expr.execute()
     expected = expected_fn(df, pandas_cond(df))
     np.testing.assert_allclose(result, expected)

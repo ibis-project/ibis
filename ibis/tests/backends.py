@@ -3,10 +3,7 @@ import pytest
 import pandas as pd
 import pandas.util.testing as tm
 
-from contextlib import contextmanager
-
 import ibis
-import ibis.common as com
 import ibis.expr.operations as ops
 from ibis.compat import Path
 from ibis.impala.tests.common import IbisTestEnv as ImpalaEnv
@@ -40,16 +37,6 @@ class Backend(object):
 
     def connect(self, data_directory):
         raise NotImplementedError
-
-    @contextmanager
-    def skip_unsupported(self):
-        try:
-            yield
-        except (com.OperationNotDefinedError,
-                com.UnsupportedBackendType,
-                com.TranslationError,
-                NotImplementedError) as e:
-            pytest.skip('{} using {}'.format(e, str(self)))
 
     def assert_series_equal(self, *args, **kwargs):
         kwargs.setdefault('check_dtype', self.check_dtype)

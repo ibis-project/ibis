@@ -109,12 +109,12 @@ else:
         ),
         param(
             lambda t: t.string_col.ascii_str(),
-            lambda t: t.string_col.map(ord),
+            lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str'
         ),
         param(
             lambda t: t.string_col.length(),
-            lambda t: t.string_col.str.len(),
+            lambda t: t.string_col.str.len().astype('int32'),
             id='length'
         ),
         param(
@@ -164,8 +164,7 @@ else:
         )
     ],
 )
-@tu.skip_if_invalid_operation
-@pytest.mark.backend
+@tu.skipif_unsupported
 def test_string(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes)
     result = expr.execute()

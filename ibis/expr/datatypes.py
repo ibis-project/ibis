@@ -1095,23 +1095,6 @@ def infer_integer(value, allow_overflow=False):
     return int64
 
 
-@infer.register(
-    (np.generic,) + tuple(
-        frozenset(
-            np.signedinteger.__subclasses__() +
-            np.unsignedinteger.__subclasses__()  # np.int64, np.uint64, etc.
-        )
-    )  # we need this because in Python 2 int is a parent of np.integer
-)
-def infer_numpy_scalar(value):
-    return dtype(value.dtype)
-
-
-@infer.register(pd.Timestamp)
-def infer_pandas_timestamp(value):
-    return Timestamp(timezone=str(value.tz))
-
-
 @infer.register(bool)
 def infer_boolean(value):
     return boolean

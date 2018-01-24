@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import functools
 
-import pytest
-
 import ibis
-
 import ibis.common as com
 import ibis.util as util
 
@@ -33,12 +31,15 @@ def assert_equal(left, right):
                                     .format(repr(left), repr(right)))
 
 
-def skip_if_invalid_operation(f):
+def skipif_unsupported(f):
     @wrapped(f)
     @functools.wraps(f)
     def wrapper(backend, *args, **kwargs):
         try:
             return f(backend, *args, **kwargs)
-        except (com.OperationNotDefinedError, com.UnsupportedBackendType) as e:
-            pytest.skip('{} using {}'.format(e, backend.__name__))
+        except (com.OperationNotDefinedError,
+                com.UnsupportedBackendType,
+                com.TranslationError,
+                NotImplementedError) as e:
+            pytest.skip('{} using {}'.format(e, str(backend)))
     return wrapper

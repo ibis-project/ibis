@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from pytest import param
+import ibis.tests.util as tu
 
 
 @pytest.mark.parametrize(('result_fn', 'expected_fn'), [
@@ -129,9 +130,12 @@ from pytest import param
         id='max'
     ),
 ])
+@tu.skipif_unsupported
 def test_window(backend, analytic_alltypes, df, con, result_fn, expected_fn):
     if not backend.supports_window_operations:
-        pytest.skip()
+        pytest.skip(
+            'Backend {} does not support window operations'.format(backend)
+        )
 
     expr = analytic_alltypes.mutate(value=result_fn)
 
@@ -140,8 +144,7 @@ def test_window(backend, analytic_alltypes, df, con, result_fn, expected_fn):
                   .set_index('id')
                   .sort_index())
 
-    with backend.skip_unsupported():
-        result = expr.execute().set_index('id').sort_index()
+    result = expr.execute().set_index('id').sort_index()
 
     left, right = result.value, expected.value
     backend.assert_series_equal(left, right)
