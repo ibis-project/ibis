@@ -235,7 +235,7 @@ def test_batting_rolling_partitioned(batting, batting_df):
 def test_window_failure_mode(batting, batting_df, window):
     # can't have order by without a following value of 0
     expr = batting.mutate(more_values=batting.G.sum().over(window))
-    with pytest.raises(ValueError):
+    with pytest.raises(ibis.common.OperationNotDefinedError):
         expr.execute()
 
 

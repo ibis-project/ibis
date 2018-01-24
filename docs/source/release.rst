@@ -9,8 +9,9 @@ Release Notes
    releases (e.g., ``0.5.1``) will generally not be found here and contain
    only bug fixes.
 
-  v0.13.0 (????)
-----------------
+
+v0.13.0 (????)
+--------------
 
 This release brings a new backend, File Support support along with a number of
 bug fixes and reliability enhancements. We recommend that all users upgrade

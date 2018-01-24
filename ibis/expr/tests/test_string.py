@@ -81,8 +81,7 @@ def test_length(table):
 def test_join(table):
     dash = literal('-')
 
-    expr = dash.join([table.f.cast('string'),
-                      table.g])
+    expr = dash.join([table.f.cast('string'), table.g])
     assert isinstance(expr, ir.StringColumn)
 
     expr = dash.join([literal('ab'), literal('cd')])
@@ -94,15 +93,18 @@ def test_contains(table):
     expected = table.g.find('foo') >= 0
     assert_equal(expr, expected)
 
-    with pytest.raises(Exception):
+    with pytest.raises(TypeError):
         'foo' in table.g
 
 
-def test_getitem_slice(table):
-    cases = [
-        (table.g[:3], table.g.substr(0, 3)),
-        (table.g[2:6], table.g.substr(2, 4)),
+@pytest.mark.parametrize(
+    ('left_slice', 'right_start', 'right_stop'),
+    [
+        (slice(None, 3), 0, 3),
+        (slice(2, 6), 2, 4),
     ]
-
-    for case, expected in cases:
-        assert_equal(case, expected)
+)
+def test_getitem_slice(table, left_slice, right_start, right_stop):
+    case = table.g[left_slice]
+    expected = table.g.substr(right_start, right_stop)
+    assert_equal(case, expected)

@@ -43,6 +43,8 @@ if not PY2:
     range = range
     import builtins
     import pickle
+    maketrans = str.maketrans
+    from functools import reduce
 else:
     try:
         from cdecimal import Decimal
@@ -66,6 +68,23 @@ else:
 
     range = xrange  # noqa: F821
     import cPickle as pickle  # noqa: F401
+
+    def maketrans(x, y):
+        import string
+
+        assert type(x) == type(y), 'type(x) != type(y) -> {} != {}'.format(
+            type(x), type(y)
+        )
+        assert len(x) == len(y), 'len(x) != len(y) -> {:d} != {:d}'.format(
+            len(x), len(y)
+        )
+
+        if isinstance(x, six.text_type):
+            return dict(zip(map(ord, x), y))
+        return string.maketrans(x, y)
+
+    reduce = reduce
+
 
 integer_types = six.integer_types + (np.integer,)
 
@@ -99,3 +118,15 @@ except ImportError:
 
 def to_date(*args, **kwargs):
     return to_datetime(*args, **kwargs).date()
+
+
+if PY2:
+    def wrapped(f):
+        def wrapper(functools_wrapped):
+            functools_wrapped.__wrapped__ = f
+            return functools_wrapped
+        return wrapper
+else:
+    def wrapped(f):
+        import toolz
+        return toolz.identity

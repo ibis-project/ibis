@@ -13,18 +13,19 @@
 # limitations under the License.
 
 
-import os
-import sys
-import six
-import toolz
+import collections
 import itertools
+import os
+import six
+import sys
+import toolz
 import webbrowser
 
 from ibis.common import IbisError, RelationError
 import ibis.common as com
 import ibis.config as config
-import ibis.util as util
 import ibis.expr.datatypes as dt
+import ibis.util as util
 
 
 class Expr(object):
@@ -303,7 +304,9 @@ class Node(six.with_metaclass(OperationMeta, object)):
 
     def flat_args(self):
         for arg in self.args:
-            if isinstance(arg, (tuple, list)):
+            if not isinstance(arg, six.string_types) and isinstance(
+                arg, collections.Iterable
+            ):
                 for x in arg:
                     yield x
             else:
@@ -1506,7 +1509,34 @@ class NullLiteral(ValueOp):
 
 
 class ListExpr(ColumnExpr, AnyValue):
-    pass
+
+    @property
+    def values(self):
+        return self.op().values
+
+    def __iter__(self):
+        return iter(self.values)
+
+    def __getitem__(self, key):
+        return self.values[key]
+
+    def __add__(self, other):
+        other_values = getattr(other, 'values', other)
+        return type(self.op())(self.values + other_values).to_expr()
+
+    def __radd__(self, other):
+        other_values = getattr(other, 'values', other)
+        return type(self.op())(other_values + self.values).to_expr()
+
+    def __bool__(self):
+        return bool(self.values)
+
+    def __len__(self):
+        return len(self.values)
+
+    def type(self):
+        from ibis.expr import rules
+        return rules.highest_precedence_type(self.values)
 
 
 class SortExpr(Expr):

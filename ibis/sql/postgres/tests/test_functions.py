@@ -350,7 +350,7 @@ def test_translate(con):
     [
         (L('a'), 0),
         (L('b'), 1),
-        (L('d'), None),
+        (L('d'), -1),
         (L(None).cast(dt.string), 3),
     ]
 )
@@ -762,7 +762,7 @@ def test_interactive_repr_shows_error(alltypes):
     with config.option_context('interactive', True):
         result = repr(expr)
 
-    assert 'no translator rule' in result.lower()
+    assert 'no translation rule' in result.lower()
 
 
 def test_subquery(alltypes, df):

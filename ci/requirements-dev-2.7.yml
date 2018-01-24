@@ -18,6 +18,7 @@ dependencies:
   - pytables
   - pathlib2
   - pyarrow>=0.6.0
+  - regex
   - sh
   - six
   - sqlalchemy>=1.0.0,<1.1.15

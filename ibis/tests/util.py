@@ -12,14 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis import Schema
+import functools
+
+import pytest
+
+import ibis
+
+import ibis.common as com
 import ibis.util as util
+
+from ibis.compat import wrapped
 
 
 def assert_equal(left, right):
-    if util.all_of([left, right], Schema):
+    if util.all_of([left, right], ibis.Schema):
         assert left.equals(right),\
             'Comparing schemas: \n%s !=\n%s' % (repr(left), repr(right))
     else:
         assert left.equals(right), ('Objects unequal: {0}\nvs\n{1}'
                                     .format(repr(left), repr(right)))
+
+
+def skip_if_invalid_operation(f):
+    @wrapped(f)
+    @functools.wraps(f)
+    def wrapper(backend, *args, **kwargs):
+        try:
+            return f(backend, *args, **kwargs)
+        except (com.OperationNotDefinedError, com.UnsupportedBackendType) as e:
+            pytest.skip('{} using {}'.format(e, backend.__name__))
+    return wrapper

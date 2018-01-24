@@ -81,7 +81,7 @@ def agg_variance_like(func):
                 'pop': '{0}Pop'.format(func)}
 
     def formatter(translator, expr):
-        arg, where, how = expr.op().args
+        arg, how, where = expr.op().args
         return _aggregate(translator, variants[how], arg, where)
 
     return formatter
@@ -167,12 +167,6 @@ def _regex_extract(translator, expr):
         return 'extractAll({0}, {1})[{2} + 1]'.format(arg_, pattern_, index_)
 
     return 'extractAll({0}, {1})'.format(arg_, pattern_)
-
-
-def _string_join(translator, expr):
-    op = expr.op()
-    arg, strings = op.args
-    return _call(translator, 'concat_ws', arg, *strings)
 
 
 def _parse_url(translator, expr):
@@ -290,8 +284,10 @@ def literal(translator, expr):
         if isinstance(value, date):
             value = value.strftime('%Y-%m-%d')
         return "toDate('{0!s}')".format(value)
+    elif isinstance(expr, ir.ArrayValue):
+        return str(list(value))
     else:
-        raise NotImplementedError
+        raise NotImplementedError(type(expr))
 
 
 class CaseFormatter(object):
@@ -441,7 +437,40 @@ def _table_column(translator, expr):
     return quoted_name
 
 
-# TODO: clickhouse uses differenct string functions
+def _string_split(translator, expr):
+    value, sep = expr.op().args
+    return 'splitByString({}, {})'.format(
+        translator.translate(sep),
+        translator.translate(value)
+    )
+
+
+def _string_join(translator, expr):
+    sep, elements = expr.op().args
+    assert isinstance(elements.op(), ir.ValueList), \
+        'elements must be a ValueList, got {}'.format(type(elements.op()))
+    return 'arrayStringConcat([{}], {})'.format(
+        ', '.join(map(translator.translate, elements)),
+        translator.translate(sep),
+    )
+
+
+def _string_repeat(translator, expr):
+    value, times = expr.op().args
+    result = 'arrayStringConcat(arrayMap(x -> {}, range({})))'.format(
+        translator.translate(value), translator.translate(times)
+    )
+    return result
+
+
+def _string_like(translator, expr):
+    value, pattern = expr.op().args[:2]
+    return '{} LIKE {}'.format(
+        translator.translate(value), translator.translate(pattern)
+    )
+
+
+# TODO: clickhouse uses different string functions
 #       for ascii and utf-8 encodings,
 
 _binary_infix_ops = {
@@ -520,11 +549,11 @@ _operation_registry = {
     ops.StringFind: _string_find,
     ops.FindInSet: _index_of,
     ops.StringReplace: fixed_arity('replaceAll', 3),
+    ops.StringJoin: _string_join,
+    ops.StringSplit: _string_split,
+    ops.StringSQLLike: _string_like,
+    ops.Repeat: _string_repeat,
 
-    # TODO: there are no concat_ws in clickhouse
-    # ops.StringJoin: varargs('concat'),
-
-    ops.StringSQLLike: binary_infix_op('LIKE'),
     ops.RegexSearch: fixed_arity('match', 2),
     # TODO: extractAll(haystack, pattern)[index + 1]
     ops.RegexExtract: _regex_extract,
@@ -569,7 +598,9 @@ _operation_registry = {
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery
+    transforms.NotExistsSubquery: _exists_subquery,
+
+    ops.ArrayLength: unary('length'),
 }
 
 

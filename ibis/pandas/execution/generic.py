@@ -364,14 +364,20 @@ def execute_reduction_series_groupby(op, data, mask, context=None, **kwargs):
     return context.agg(data, type(op).__name__.lower())
 
 
+variance_ddof = {
+    'pop': 0,
+    'sample': 1,
+}
+
+
 @execute_node.register(ops.Variance, SeriesGroupBy, type(None))
 def execute_reduction_series_groupby_var(op, data, _, context=None, **kwargs):
-    return context.agg(data, 'var')
+    return context.agg(data, 'var', ddof=variance_ddof[op.how])
 
 
 @execute_node.register(ops.StandardDev, SeriesGroupBy, type(None))
 def execute_reduction_series_groupby_std(op, data, _, context=None, **kwargs):
-    return context.agg(data, 'std')
+    return context.agg(data, 'std', ddof=variance_ddof[op.how])
 
 
 @execute_node.register(ops.CountDistinct, SeriesGroupBy, type(None))
@@ -404,17 +410,22 @@ def execute_count_distinct_series_groupby_mask(
 
 @execute_node.register(ops.Variance, SeriesGroupBy, SeriesGroupBy)
 def execute_var_series_groupby_mask(op, data, mask, context=None, **kwargs):
-    return context.agg(data, lambda x, mask=mask.obj: x[mask[x.index]].var())
+    return context.agg(
+        data,
+        lambda x, mask=mask.obj, ddof=variance_ddof[op.how]: (
+            x[mask[x.index]].var(ddof=ddof)
+        )
+    )
 
 
 @execute_node.register(ops.StandardDev, SeriesGroupBy, SeriesGroupBy)
 def execute_std_series_groupby_mask(op, data, mask, context=None, **kwargs):
-    return context.agg(data, lambda x, mask=mask.obj: x[mask[x.index]].std())
-
-
-@execute_node.register(ops.GroupConcat, SeriesGroupBy, six.string_types)
-def execute_group_concat_series_gb(op, data, sep, context=None, **kwargs):
-    return context.agg(data, lambda x, sep=sep: sep.join(x.astype(str)))
+    return context.agg(
+        data,
+        lambda x, mask=mask.obj, ddof=variance_ddof[op.how]: (
+            x[mask[x.index]].std(ddof=ddof)
+        )
+    )
 
 
 @execute_node.register(ops.Count, DataFrameGroupBy, type(None))
@@ -438,30 +449,35 @@ def execute_count_distinct_series_mask(op, data, mask, context=None, **kwargs):
 
 @execute_node.register(ops.StandardDev, pd.Series, (pd.Series, type(None)))
 def execute_standard_dev_series(op, data, mask, context=None, **kwargs):
-    return context.agg(data[mask] if mask is not None else data, 'std')
+    return context.agg(
+        data[mask] if mask is not None else data,
+        'std',
+        ddof=variance_ddof[op.how]
+    )
 
 
 @execute_node.register(ops.Variance, pd.Series, (pd.Series, type(None)))
 def execute_variance_series(op, data, mask, context=None, **kwargs):
-    return context.agg(data[mask] if mask is not None else data, 'var')
-
-
-@execute_node.register(
-    ops.GroupConcat,
-    pd.Series, six.string_types, (pd.Series, type(None))
-)
-def execute_group_concat_series_mask(op, data, sep, mask, **kwargs):
-    return sep.join(data[mask] if mask is not None else data)
-
-
-@execute_node.register(ops.GroupConcat, pd.Series, six.string_types)
-def execute_group_concat_series(op, data, sep, **kwargs):
-    return sep.join(data.astype(str))
+    return context.agg(
+        data[mask] if mask is not None else data,
+        'var',
+        ddof=variance_ddof[op.how]
+    )
 
 
 @execute_node.register((ops.Any, ops.All), pd.Series)
 def execute_any_all_series(op, data, context=None, **kwargs):
     return context.agg(data, type(op).__name__.lower())
+
+
+@execute_node.register(ops.NotAny, pd.Series)
+def execute_notany_series(op, data, context=None, **kwargs):
+    return ~context.agg(data, 'any')
+
+
+@execute_node.register(ops.NotAll, pd.Series)
+def execute_notall_series(op, data, context=None, **kwargs):
+    return ~context.agg(data, 'all')
 
 
 @execute_node.register(ops.Count, pd.DataFrame, type(None))
@@ -477,14 +493,17 @@ def execute_not_bool(op, data, **kwargs):
 @execute_node.register(
     ops.BinaryOp, (pd.Series, numeric_types), (pd.Series, numeric_types)
 )
+@execute_node.register(ops.StringConcat, pd.Series, pd.Series)
 @execute_node.register(
-    (ops.Add, ops.Comparison), six.string_types, six.string_types
+    (ops.Comparison, ops.StringConcat), six.string_types, six.string_types
 )
 @execute_node.register(
-    (ops.Add, ops.Comparison, ops.Multiply), pd.Series, six.string_types
+    (ops.Comparison, ops.StringConcat, ops.Multiply),
+    pd.Series, six.string_types
 )
 @execute_node.register(
-    (ops.Add, ops.Comparison, ops.Multiply), six.string_types, pd.Series
+    (ops.Comparison, ops.Multiply, ops.StringConcat),
+    six.string_types, pd.Series
 )
 @execute_node.register(ops.Multiply, integer_types, six.string_types)
 @execute_node.register(ops.Multiply, six.string_types, integer_types)
@@ -590,99 +609,11 @@ def execute_null_if_zero_series(op, data, **kwargs):
     return data.where(data != 0, np.nan)
 
 
-@execute_node.register(ops.StringLength, pd.Series)
-def execute_string_length_series(op, data, **kwargs):
-    return data.str.len()
-
-
 @execute_node.register(
-    ops.Substring,
-    pd.Series,
-    (pd.Series,) + integer_types,
-    (pd.Series,) + integer_types
+    ops.StringSplit, pd.Series, (pd.Series,) + six.string_types
 )
-def execute_string_substring(op, data, start, length, **kwargs):
-    return data.str[start:start + length]
-
-
-@execute_node.register(ops.Strip, pd.Series)
-def execute_string_strip(op, data, **kwargs):
-    return data.str.strip()
-
-
-@execute_node.register(ops.LStrip, pd.Series)
-def execute_string_lstrip(op, data, **kwargs):
-    return data.str.lstrip()
-
-
-@execute_node.register(ops.RStrip, pd.Series)
-def execute_string_rstrip(op, data, **kwargs):
-    return data.str.rstrip()
-
-
-@execute_node.register(
-    ops.LPad,
-    pd.Series,
-    (pd.Series,) + integer_types,
-    (pd.Series,) + six.string_types
-)
-def execute_string_lpad(op, data, length, pad, **kwargs):
-    return data.str.pad(length, side='left', fillchar=pad)
-
-
-@execute_node.register(
-    ops.RPad,
-    pd.Series,
-    (pd.Series,) + integer_types,
-    (pd.Series,) + six.string_types
-)
-def execute_string_rpad(op, data, length, pad, **kwargs):
-    return data.str.pad(length, side='right', fillchar=pad)
-
-
-@execute_node.register(ops.Reverse, pd.Series)
-def execute_string_reverse(op, data, **kwargs):
-    return data.str[::-1]
-
-
-@execute_node.register(ops.Lowercase, pd.Series)
-def execute_string_lower(op, data, **kwargs):
-    return data.str.lower()
-
-
-@execute_node.register(ops.Uppercase, pd.Series)
-def execute_string_upper(op, data, **kwargs):
-    return data.str.upper()
-
-
-@execute_node.register(ops.Capitalize, pd.Series)
-def execute_string_capitalize(op, data, **kwargs):
-    return data.str.capitalize()
-
-
-@execute_node.register(ops.Repeat, pd.Series, (pd.Series,) + integer_types)
-def execute_string_repeat(op, data, times, **kwargs):
-    return data.str.repeat(times)
-
-
-@execute_node.register(
-    ops.StringFind,
-    pd.Series,
-    (pd.Series,) + six.string_types,
-    (pd.Series, type(None)) + integer_types,
-    (pd.Series, type(None)) + integer_types,
-)
-def execute_string_contains(op, data, needle, start, end, **kwargs):
-    return data.str.find(needle, start, end)
-
-
-@execute_node.register(
-    ops.StringSQLLike,
-    pd.Series,
-    (pd.Series,) + six.string_types,
-)
-def execute_string_like(op, data, pattern, **kwargs):
-    return data.str.contains(pattern, regex=True)
+def execute_string_split(op, data, delimiter, **kwargs):
+    return data.str.split(delimiter)
 
 
 @execute_node.register(
@@ -727,73 +658,6 @@ def execute_series_isnull(op, data, **kwargs):
 @execute_node.register(ops.NotNull, pd.Series)
 def execute_series_notnnull(op, data, **kwargs):
     return data.notnull()
-
-
-@execute_node.register(ops.ArrayLength, pd.Series)
-def execute_array_length(op, data, **kwargs):
-    return data.apply(len)
-
-
-@execute_node.register(ops.ArrayLength, list)
-def execute_array_length_scalar(op, data, **kwargs):
-    return len(data)
-
-
-@execute_node.register(
-    ops.ArraySlice,
-    pd.Series, six.integer_types, (six.integer_types, type(None))
-)
-def execute_array_slice(op, data, start, stop, **kwargs):
-    return data.apply(operator.itemgetter(slice(start, stop)))
-
-
-@execute_node.register(
-    ops.ArraySlice,
-    list, six.integer_types, (six.integer_types, type(None))
-)
-def execute_array_slice_scalar(op, data, start, stop, **kwargs):
-    return data[start:stop]
-
-
-@execute_node.register(ops.ArrayIndex, pd.Series, six.integer_types)
-def execute_array_index(op, data, index, **kwargs):
-    return data.apply(
-        lambda array, index=index: (
-            array[index] if -len(array) <= index < len(array) else None
-        )
-    )
-
-
-@execute_node.register(ops.ArrayIndex, list, six.integer_types)
-def execute_array_index_scalar(op, data, index, **kwargs):
-    try:
-        return data[index]
-    except IndexError:
-        return None
-
-
-@execute_node.register(ops.ArrayConcat, pd.Series, (pd.Series, list))
-@execute_node.register(ops.ArrayConcat, list, pd.Series)
-@execute_node.register(ops.ArrayConcat, list, list)
-def execute_array_concat(op, left, right, **kwargs):
-    return left + right
-
-
-@execute_node.register(ops.ArrayRepeat, pd.Series, pd.Series)
-@execute_node.register(ops.ArrayRepeat, six.integer_types, (pd.Series, list))
-@execute_node.register(ops.ArrayRepeat, (pd.Series, list), six.integer_types)
-def execute_array_repeat(op, left, right, **kwargs):
-    return left * right
-
-
-@execute_node.register(ops.ArrayCollect, pd.Series)
-def execute_array_collect(op, data, **kwargs):
-    return list(data)
-
-
-@execute_node.register(ops.ArrayCollect, SeriesGroupBy)
-def execute_array_collect_group_by(op, data, **kwargs):
-    return data.apply(list)
 
 
 @execute_node.register(ops.SelfReference, pd.DataFrame)

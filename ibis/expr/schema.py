@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
+
 from multipledispatch import Dispatcher
 
 import ibis.common as com
 import ibis.util as util
-from ibis.expr import datatypes as dt
+import ibis.expr.datatypes as dt
 
 
 class Schema(object):

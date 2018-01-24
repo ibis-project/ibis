@@ -202,3 +202,30 @@ def implements(f):
         g.__doc__ = f.__doc__
         return g
     return decorator
+
+
+def safe_index(elements, value):
+    """Find the location of `value` in `elements`, return -1 if `value` is
+    not found instead of raising ``ValueError``.
+
+    Parameters
+    ----------
+    elements : Sequence
+    value : object
+
+    Returns
+    -------
+    location : object
+
+    Examples
+    --------
+    >>> sequence = [1, 2, 3]
+    >>> safe_index(sequence, 2)
+    1
+    >>> safe_index(sequence, 4)
+    -1
+    """
+    try:
+        return elements.index(value)
+    except ValueError:
+        return -1

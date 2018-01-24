@@ -71,4 +71,6 @@ BINARY_OPERATIONS = {
     ops.FloorDivide: operator.floordiv,
     ops.Modulus: operator.mod,
     ops.Power: operator.pow,
+
+    ops.StringConcat: operator.add,
 }

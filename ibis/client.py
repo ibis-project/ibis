@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import abc
+
+import six
+
 import pandas as pd
 
 from ibis.compat import zip as czip
@@ -96,10 +100,21 @@ class AsyncQuery(Query):
         raise NotImplementedError
 
 
-class SQLClient(Client):
+class Dialect(six.with_metaclass(abc.ABCMeta)):
+
+    @abc.abstractproperty
+    def translator(self):
+        pass
+
+
+class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
 
     sync_query = Query
     async_query = Query
+
+    @abc.abstractproperty
+    def dialect(self):
+        pass
 
     def table(self, name, database=None):
         """

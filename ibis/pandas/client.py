@@ -74,6 +74,8 @@ class PandasTable(ops.DatabaseTable):
 
 class PandasClient(client.Client):
 
+    dialect = None  # defined in ibis.pandas.api
+
     def __init__(self, dictionary):
         self.dictionary = dictionary
 
@@ -100,3 +102,13 @@ class PandasClient(client.Client):
 
         assert isinstance(query, ir.Expr)
         return execute(query, params=params)
+
+    def compile(self, expr, *args, **kwargs):
+        return expr
+
+    def database(self, name=None):
+        return PandasDatabase(name, self)
+
+
+class PandasDatabase(client.Database):
+    pass

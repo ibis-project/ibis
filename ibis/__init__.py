@@ -132,17 +132,6 @@ def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
         hdfs_client = InsecureClient(url, **kwds)
     return WebHDFS(hdfs_client)
 
-def test(impala=False):
-    import pytest
-    import ibis
-    import os
-
-    ibis_dir, _ = os.path.split(ibis.__file__)
-
-    args = ['--pyargs', ibis_dir]
-    if impala:
-        args.append('--impala')
-    pytest.main(args)
 
 from ._version import get_versions
 __version__ = get_versions()['version']

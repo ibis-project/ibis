@@ -412,10 +412,10 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
             (c.mean(where=cond), tmp.format('avg')),
             (c.max(where=cond), tmp.format('max')),
             (c.min(where=cond), tmp.format('min')),
-            (c.std(where=cond), tmp.format('stddev')),
+            (c.std(where=cond), tmp.format('stddev_samp')),
             (c.std(where=cond, how='pop'), tmp.format('stddev_pop')),
-            (c.var(where=cond), tmp.format('variance')),
-            (c.var(where=cond, how='pop'), tmp.format('variance_pop')),
+            (c.var(where=cond), tmp.format('var_samp')),
+            (c.var(where=cond, how='pop'), tmp.format('var_pop')),
         ]
         self._check_expr_cases(cases)
 
@@ -862,7 +862,7 @@ class TestStringBuiltins(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_rlike(self):
-        ex = "`string_col` RLIKE '[\d]+'"
+        ex = "regexp_like(`string_col`, '[\d]+')"
         cases = [
             (self.table.string_col.rlike('[\d]+'), ex),
             (self.table.string_col.re_search('[\d]+'), ex),

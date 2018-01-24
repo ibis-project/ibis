@@ -348,12 +348,7 @@ def array_output(rule):
 def shape_like_flatargs(out_type):
 
     def output_type(self):
-        flattened = []
-        for arg in self.args:
-            if isinstance(arg, (list, tuple)):
-                flattened.extend(arg)
-            else:
-                flattened.append(arg)
+        flattened = list(self.flat_args())
         return shape_like_args(flattened, out_type)
 
     return output_type
@@ -757,11 +752,10 @@ class ListOf(Argument):
 
     def _validate(self, args, i):
         arg = args[i]
-        if isinstance(arg, tuple):
+        if not isinstance(arg, list):
             arg = args[i] = list(arg)
 
-        if not isinstance(arg, list):
-            raise IbisTypeError('not a list')
+        assert isinstance(arg, list), 'not a list in ListOf validation'
 
         if len(arg) < self.min_length:
             raise IbisTypeError('list must have at least {} elements'
@@ -780,7 +774,7 @@ class ListOf(Argument):
 
         args[i] = checked_args
 
-        return checked_args
+        return ir.as_value_expr(checked_args)
 
 
 list_of = ListOf
