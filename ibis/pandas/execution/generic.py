@@ -280,6 +280,18 @@ def execute_cast_string_literal(op, data, type, **kwargs):
 
 @execute_node.register(
     ops.Round,
+    scalar_types,
+    (six.integer_types, type(None))
+)
+def execute_round_scalars(op, data, places, **kwargs):
+    if places is None:
+        return np.around(data)
+    else:
+        return np.around(data, places)
+
+
+@execute_node.register(
+    ops.Round,
     pd.Series,
     (pd.Series, np.integer, type(None)) + six.integer_types
 )

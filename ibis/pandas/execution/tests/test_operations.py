@@ -5,6 +5,7 @@ from operator import methodcaller
 import pytest
 
 import numpy as np
+import numpy.testing as npt
 
 import pandas as pd
 import pandas.util.testing as tm
@@ -755,3 +756,11 @@ def test_where_long(batting, batting_df):
     expected = ser.where(ser > ser.mean(), other=0.0)
 
     tm.assert_series_equal(result, expected)
+
+
+def test_round(t, df):
+    precision = 2
+    mult = 3.33333
+    result = (t.count() * mult).round(precision).execute()
+    expected = np.around(len(df) * mult, precision)
+    npt.assert_almost_equal(result, expected, decimal=precision)
