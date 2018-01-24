@@ -174,7 +174,7 @@ def sqlite(database, schema, tables, data_directory, **params):
     except OSError:
         pass
 
-    params['database'] = database
+    params['database'] = str(database)
     engine = init_database('sqlite', params, schema, recreate=False)
     insert_tables(engine, tables, data_directory)
 
