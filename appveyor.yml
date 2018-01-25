@@ -45,6 +45,7 @@ services:
 test_script:
   - "set PATH=C:\\Program Files\\PostgreSQL\\10\\bin\\;%PATH%"
   - "psql -c \"SELECT VERSION()\""
+
   - "%CONDA% --version"
   - "%CONDA% config --set always_yes true"
   - "%CONDA% install conda=4.3.22 --channel conda-forge"
