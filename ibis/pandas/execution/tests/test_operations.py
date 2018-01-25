@@ -727,3 +727,31 @@ def test_left_binary_op_gb(t, df, op, args):
         lambda s: op(*args(s)).sum()
     ).reset_index().rename(columns={'float64_with_zeros': 'foo'})
     tm.assert_frame_equal(result, expected)
+
+
+def test_where_series(t, df):
+    col_expr = t['plain_int64']
+    result = ibis.where(col_expr > col_expr.mean(), col_expr, 0.0).execute()
+
+    ser = df['plain_int64']
+    expected = ser.where(ser > ser.mean(), other=0.0)
+
+    tm.assert_series_equal(result, expected)
+
+
+def test_where_scalar(t, df):
+    result1 = ibis.where(ibis.literal(True), t['plain_int64'], 3.0).execute()
+    tm.assert_series_equal(result1, df['plain_int64'])
+
+    result2 = ibis.where(ibis.literal(False), t['plain_int64'], 3.0).execute()
+    assert(result2 == 3.0)
+
+
+def test_where_long(batting, batting_df):
+    col_expr = batting['AB']
+    result = ibis.where(col_expr > col_expr.mean(), col_expr, 0.0).execute()
+
+    ser = batting_df['AB']
+    expected = ser.where(ser > ser.mean(), other=0.0)
+
+    tm.assert_series_equal(result, expected)
