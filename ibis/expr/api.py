@@ -2683,6 +2683,21 @@ def _table_materialize(table):
         return TableExpr(op)
 
 
+def add_column(table, expr, name=None):
+    """
+    Add indicated column expression to table, producing a new table. Note:
+    this is a shortcut for performing a projection having the same effect.
+
+    Returns
+    -------
+    modified_table : TableExpr
+    """
+    if name is not None:
+        return table.mutate(**{name: expr})
+    else:
+        return table.mutate(expr)
+
+
 def mutate(table, exprs=None, **kwds):
     """
     Convenience function for table projections involving adding columns
@@ -2842,6 +2857,7 @@ _table_methods = dict(
     set_column=_table_set_column,
     filter=filter,
     materialize=_table_materialize,
+    add_column=add_column,
     mutate=mutate,
     projection=projection,
     select=projection,
