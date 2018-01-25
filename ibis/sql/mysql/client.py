@@ -1,5 +1,6 @@
 import getpass
 import pymysql  # NOQA fail early if the driver is missing
+import warnings
 import contextlib
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
@@ -72,12 +73,16 @@ class MySQLClient(alch.AlchemyClient):
         with super(MySQLClient, self).begin() as bind:
             previous_timezone = (bind.execute('SELECT @@session.time_zone')
                                      .scalar())
-            bind.execute("SET @@session.time_zone = 'UTC'")
+            try:
+                bind.execute("SET @@session.time_zone = 'UTC'")
+            except Exception as e:
+                warnings.warn("Couldn't set mysql timezone: {}".format(str(e)))
+
             try:
                 yield bind
             finally:
-                bind.execute("SET @@session.time_zone = "
-                             "'{}'".format(previous_timezone))
+                query = "SET @@session.time_zone = '{}'"
+                bind.execute(query.format(previous_timezone))
 
     def database(self, name=None):
         """Connect to a database called `name`.
