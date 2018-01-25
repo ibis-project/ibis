@@ -9,6 +9,7 @@
 *.kdev4
 *.log
 *.swp
+*.swo
 *.pdb
 .idea
 
