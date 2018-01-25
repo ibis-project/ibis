@@ -1,4 +1,5 @@
 import os
+import six
 import pytest
 import pandas as pd
 import pandas.util.testing as tm
@@ -105,13 +106,9 @@ class Pandas(Backend):
             'functional_alltypes': pd.read_csv(
                 data_directory / 'functional_alltypes.csv',
                 index_col=None,
-                dtype={
-                    'string_col': str,
-                    'bool_col': bool,
-                },
-                parse_dates=[
-                    'timestamp_col'
-                ]
+                dtype={'bool_col': bool, 'string_col': six.text_type},
+                parse_dates=['timestamp_col'],
+                encoding='utf-8'
             ),
             'batting': pd.read_csv(
                 data_directory / 'batting.csv'

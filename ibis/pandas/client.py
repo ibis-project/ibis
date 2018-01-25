@@ -11,7 +11,7 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-from ibis.compat import DatetimeTZDtype, CategoricalDtype
+from ibis.compat import PY2, DatetimeTZDtype, CategoricalDtype
 
 
 try:
@@ -40,7 +40,7 @@ _ibis_dtypes = {
     dt.UInt64: 'uint64',
     dt.Float32: 'float32',
     dt.Float64: 'float64',
-    # dt.Decimal: 'float64'
+    dt.Decimal: 'float64'
 }
 
 
@@ -58,6 +58,7 @@ _numpy_dtypes = toolz.keymap(np.dtype, {
     'float32': dt.float32,
     'float64': dt.float64,
     'double': dt.double,
+    'unicode': dt.string,
     'str': dt.string,
     'datetime64': dt.timestamp,
     'datetime64[ns]': dt.timestamp,
@@ -151,6 +152,7 @@ def infer_pandas_schema(df, schema=None):
 
 
 def ibis_dtype_to_pandas(ibis_dtype):
+    """Convert ibis dtype to the pandas / numpy alternative"""
     if isinstance(ibis_dtype, dt.Timestamp) and ibis_dtype.timezone:
         return DatetimeTZDtype('ns', ibis_dtype.timezone)
     else:
@@ -161,8 +163,20 @@ def ibis_schema_to_pandas(schema):
     return list(zip(schema.names, map(ibis_dtype_to_pandas, schema.types)))
 
 
+def ibis_schema_ensure_on(schema, df):
+    """Applies the Ibis schema on a pandas dataframe"""
+
+    for column, dtype in schema.items():
+        df[column] = df[column].astype(dtype.to_pandas(), errors='ignore')
+        if PY2 and dtype == dt.string:
+            df[column] = df[column].str.decode('utf-8', errors='ignore')
+
+    return df
+
+
 dt.DataType.to_pandas = ibis_dtype_to_pandas
 sch.Schema.to_pandas = ibis_schema_to_pandas
+sch.Schema.ensure_on = ibis_schema_ensure_on
 
 
 class PandasTable(ops.DatabaseTable):

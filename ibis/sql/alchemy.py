@@ -823,16 +823,10 @@ compiles = AlchemyExprTranslator.compiles
 class AlchemyQuery(Query):
 
     def _fetch(self, cursor):
-        df = pd.DataFrame.from_records(
-            cursor.proxy.fetchall(),
-            columns=cursor.proxy.keys(),
-            coerce_float=True
-        )
-
-        for name, dtype in self.schema().to_pandas():
-            df[name] = df[name].astype(dtype, errors='ignore')
-
-        return df
+        df = pd.DataFrame.from_records(cursor.proxy.fetchall(),
+                                       columns=cursor.proxy.keys(),
+                                       coerce_float=True)
+        return self.schema().ensure_on(df)
 
 
 class AlchemyAsyncQuery(AsyncQuery):

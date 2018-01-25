@@ -49,37 +49,23 @@ class MySQLClient(alch.AlchemyClient):
 
     dialect = MySQLDialect
     database_class = MySQLDatabase
-    default_database_name = 'mysql'
 
-    def __init__(
-        self,
-        host=None,
-        user=None,
-        password=None,
-        port=None,
-        database=None,
-        url=None,
-        driver=None
-    ):
+    def __init__(self, host='localhost', user=None, password=None, port=3306,
+                 database='mysql', url=None, driver='pymysql'):
         if url is None:
-            if driver is not None and driver != 'pymysql':
+            if driver != 'pymysql':
                 raise NotImplementedError(
                     'pymysql is currently the only supported driver'
                 )
-            url = sa.engine.url.URL(
-                'mysql+pymysql',
-                username=user or getpass.getuser(),
-                password=password,
-                host=host or 'localhost',
-                port=port,
-                database=database or self.__class__.default_database_name,
-            )
+            user = user or getpass.getuser()
+            url = sa.engine.url.URL('mysql+pymysql', host=host, port=port,
+                                    username=user, password=password,
+                                    database=database)
         else:
             url = sa.engine.url.make_url(url)
 
         super(MySQLClient, self).__init__(sa.create_engine(url))
-        self.name = url.database
-        self.database_name = self.__class__.default_database_name
+        self.database_name = url.database
 
     @contextlib.contextmanager
     def begin(self):

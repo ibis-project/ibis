@@ -14,10 +14,11 @@ from ibis.pandas.execution.selection import physical_tables
 def _read_csv(path, schema, **kwargs):
     dtypes = dict(schema.to_pandas())
 
-    dates = list(toolz.valfilter(lambda s: s.startswith('datetime'), dtypes))
+    dates = list(toolz.valfilter(lambda s: s == 'datetime64[ns]', dtypes))
     dtypes = toolz.dissoc(dtypes, *dates)
 
-    return pd.read_csv(str(path), dtype=dtypes, parse_dates=dates, **kwargs)
+    return pd.read_csv(str(path), dtype=dtypes, parse_dates=dates,
+                       encoding='utf-8', **kwargs)
 
 
 def connect(path):

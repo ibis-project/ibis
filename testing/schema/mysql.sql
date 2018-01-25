@@ -11,7 +11,7 @@ CREATE TABLE diamonds (
     x FLOAT,
     y FLOAT,
     z FLOAT
-);
+) DEFAULT CHARACTER SET = utf8;
 
 DROP TABLE IF EXISTS batting;
 
@@ -38,7 +38,7 @@ CREATE TABLE batting (
     `SH` BIGINT,
     `SF` BIGINT,
     `GIDP` BIGINT
-);
+) DEFAULT CHARACTER SET = utf8;
 
 DROP TABLE IF EXISTS awards_players;
 
@@ -49,7 +49,7 @@ CREATE TABLE awards_players (
     `lgID` VARCHAR(7),
     tie VARCHAR(7),
     notes VARCHAR(255)
-);
+) DEFAULT CHARACTER SET = utf8;
 
 DROP TABLE IF EXISTS functional_alltypes;
 
@@ -69,6 +69,6 @@ CREATE TABLE functional_alltypes (
     timestamp_col TIMESTAMP,
     year INTEGER,
     month INTEGER
-);
+) DEFAULT CHARACTER SET = utf8;
 
 CREATE INDEX `ix_functional_alltypes_index` ON functional_alltypes (`index`);

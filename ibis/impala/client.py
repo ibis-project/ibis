@@ -294,10 +294,15 @@ class ImpalaQuery(Query):
     def _fetch(self, cursor):
         batches = cursor.fetchall(columnar=True)
         names = [x[0] for x in cursor.description]
-        return _column_batches_to_dataframe(names, batches)
+        df = _column_batches_to_dataframe(names, batches)
 
-    def _db_type_to_dtype(self, db_type, column):
-        return _HS2_TTypeId_to_dtype[db_type]
+        # UGLY HACK for PY2 to ensure unicode values for string columns
+        if self.expr is not None:
+            # in case of metadata queries there is no expr and
+            # self.schema() would raise an exception
+            return self.schema().ensure_on(df)
+
+        return df
 
 
 def _column_batches_to_dataframe(names, batches):

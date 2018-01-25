@@ -1,9 +1,18 @@
 import pytest
 from pytest import param
 
+import six
 import ibis
 import ibis.tests.util as tu
+import ibis.expr.datatypes as dt
 from ibis.compat import maketrans
+
+
+def test_string_col_is_unicode(backend, alltypes, df):
+    assert alltypes.string_col.type() == dt.string
+
+    for s in [alltypes.string_col.execute(), df.string_col]:
+        assert s.apply(lambda x: isinstance(x, six.text_type)).all()
 
 
 @pytest.mark.parametrize(
@@ -155,5 +164,6 @@ from ibis.compat import maketrans
 def test_string(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes)
     result = expr.execute()
+
     expected = backend.default_series_rename(expected_func(df))
     backend.assert_series_equal(result, expected)
