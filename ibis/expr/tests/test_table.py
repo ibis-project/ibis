@@ -1241,7 +1241,7 @@ def test_add_column2(table):
 
 
 def test_add_column_proxies_to_mutate(table):
-    result = table.add_column(ibis.now().cast('date'), name='date')  # fails
+    result = table.add_column(ibis.now().cast('date'), name='date')
     expected = table.mutate(date=ibis.now().cast('date'))
     assert_equal(result, expected)
 
