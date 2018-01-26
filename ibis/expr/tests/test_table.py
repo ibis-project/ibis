@@ -1247,7 +1247,7 @@ def test_add_column_proxies_to_mutate(table):
 
 
 def test_add_column_depricated(table):
-    with pytest.warns(DeprecationWarning):
+    with pytest.deprecated_call():
         table.add_column(ibis.now().cast('date'), name='date')
 
 
