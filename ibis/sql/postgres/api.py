@@ -38,11 +38,11 @@ def compile(expr, params=None):
     --------
     >>> import os
     >>> import getpass
-    >>> user = os.environ.get('IBIS_TEST_POSTGRES_USER', getpass.getuser())
-    >>> password = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD')
-    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
-    ...                           'ibis_testing')
-    >>> con = connect(
+    >>> import ibis
+    >>> user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
+    >>> password = os.environ.get('IBIS_POSTGRES_PASS')
+    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
+    >>> con = ibis.sql.postgres.api.connect(
     ...     database=database,
     ...     host='localhost',
     ...     user=user,
@@ -65,10 +65,10 @@ def connect(
     port=None,
     database=None,
     url=None,
-    driver=None
+    driver='psycopg2'
 ):
 
-    """Create an Ibis client located at `user`:`password`@`host`:`port`
+    """Create an ibis client located at `user`:`password`@`host`:`port`
     connected to a PostgreSQL database named `database`.
 
     Parameters
@@ -91,11 +91,11 @@ def connect(
     --------
     >>> import os
     >>> import getpass
-    >>> user = os.environ.get('IBIS_TEST_POSTGRES_USER', getpass.getuser())
-    >>> password = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD')
-    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
-    ...                           'ibis_testing')
-    >>> con = connect(
+    >>> import ibis
+    >>> user = os.environ.get('IBIS_POSTGRES_USER', getpass.getuser())
+    >>> password = os.environ.get('IBIS_POSTGRES_PASS')
+    >>> database = os.environ.get('IBIS_TEST_POSTGRES_DB', 'ibis_testing')
+    >>> con = ibis.sql.postgres.api.connect(
     ...     database=database,
     ...     host='localhost',
     ...     user=user,
