@@ -73,5 +73,7 @@ def at(alltypes):
 
 @pytest.fixture
 def translate():
-    from ibis.sql.postgres.compiler import PostgreSQLExprTranslator
-    return lambda expr: PostgreSQLExprTranslator(expr).get_result()
+    from ibis.sql.postgres.compiler import PostgreSQLDialect
+    dialect = PostgreSQLDialect()
+    context = dialect.make_context()
+    return lambda expr: dialect.translator(expr, context).get_result()

@@ -28,7 +28,7 @@ import pandas as pd
 
 from ibis.compat import parse_version
 from ibis.client import SQLClient, AsyncQuery, Query, Database
-from ibis.sql.compiler import Select, Union, TableSetFormatter
+from ibis.sql.compiler import Select, Union, TableSetFormatter, Dialect
 
 import ibis
 import ibis.util as util
@@ -305,9 +305,7 @@ def _exists_subquery(t, expr):
                 .projection([ir.literal(1).name(ir.unnamed)]))
 
     sub_ctx = ctx.subcontext()
-    clause = to_sqlalchemy(
-        filtered, context=sub_ctx, exists=True, params=t.params
-    )
+    clause = to_sqlalchemy(filtered, sub_ctx, exists=True)
 
     if isinstance(op, transforms.NotExistsSubquery):
         clause = sa.not_(clause)
@@ -676,19 +674,20 @@ class AlchemySelectBuilder(comp.SelectBuilder):
 class AlchemyContext(comp.QueryContext):
 
     def __init__(self, *args, **kwargs):
-        self._table_objects = {}
-        self.dialect = kwargs.pop('dialect', AlchemyDialect)
         super(AlchemyContext, self).__init__(*args, **kwargs)
+        self._table_objects = {}
 
     def subcontext(self):
-        return type(self)(dialect=self.dialect, parent=self)
+        return type(self)(
+            dialect=self.dialect, parent=self, params=self.params
+        )
 
-    def _to_sql(self, expr, ctx, params=None):
-        return to_sqlalchemy(expr, context=ctx, params=params)
+    def _to_sql(self, expr, ctx):
+        return to_sqlalchemy(expr, ctx)
 
-    def _compile_subquery(self, expr, params=None):
+    def _compile_subquery(self, expr):
         sub_ctx = self.subcontext()
-        return self._to_sql(expr, sub_ctx, params=params)
+        return self._to_sql(expr, sub_ctx)
 
     def has_table(self, expr, parent_contexts=False):
         key = self._get_table_key(expr)
@@ -710,25 +709,13 @@ class AlchemyQueryBuilder(comp.QueryBuilder):
 
     select_builder = AlchemySelectBuilder
 
-    def __init__(self, expr, context=None, dialect=None, params=None):
-        self.dialect = dialect if dialect is not None else AlchemyDialect
-        super(AlchemyQueryBuilder, self).__init__(
-            expr, context=context, params=params
-        )
-
-    def _make_context(self):
-        return AlchemyContext(dialect=self.dialect)
-
     @property
     def _union_class(self):
         return AlchemyUnion
 
 
-def to_sqlalchemy(expr, context=None, exists=False, dialect=None, params=None):
-    if context is not None:
-        dialect = dialect or context.dialect
-
-    ast = build_ast(expr, context=context, dialect=dialect, params=params)
+def to_sqlalchemy(expr, context, exists=False):
+    ast = build_ast(expr, context)
     query = ast.queries[0]
 
     if exists:
@@ -737,10 +724,8 @@ def to_sqlalchemy(expr, context=None, exists=False, dialect=None, params=None):
     return query.compile()
 
 
-def build_ast(expr, context=None, dialect=None, params=None):
-    builder = AlchemyQueryBuilder(
-        expr, context=context, dialect=dialect, params=params
-    )
+def build_ast(expr, context):
+    builder = AlchemyQueryBuilder(expr, context)
     return builder.get_result()
 
 
@@ -828,12 +813,10 @@ class AlchemyExprTranslator(comp.ExprTranslator):
     _rewrites = comp.ExprTranslator._rewrites.copy()
     _type_map = _ibis_type_to_sqla
 
+    context_class = AlchemyContext
+
     def name(self, translated, name, force=True):
         return translated.label(name)
-
-    @property
-    def _context_class(self):
-        return AlchemyContext
 
     def get_sqla_type(self, data_type):
         return _to_sqla_type(data_type, type_map=self._type_map)
@@ -856,7 +839,7 @@ class AlchemyAsyncQuery(AsyncQuery):
     pass
 
 
-class AlchemyDialect(object):
+class AlchemyDialect(Dialect):
 
     translator = AlchemyExprTranslator
 
@@ -998,8 +981,8 @@ class AlchemyClient(SQLClient):
     def raw_sql(self, query, results=False):
         return super(AlchemyClient, self).raw_sql(query, results=results)
 
-    def _build_ast(self, expr, params=None):
-        return build_ast(expr, dialect=self.dialect, params=params)
+    def _build_ast(self, expr, context):
+        return build_ast(expr, context)
 
     def _get_sqla_table(self, name, schema=None):
         return sa.Table(name, self.meta, schema=schema, autoload=True)
@@ -1165,10 +1148,6 @@ class AlchemySelect(Select):
             fragment = fragment.offset(offset)
 
         return fragment
-
-    @property
-    def translator(self):
-        return self.dialect.translator
 
     @property
     def dialect(self):

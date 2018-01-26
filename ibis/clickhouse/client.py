@@ -145,8 +145,8 @@ class ClickhouseClient(SQLClient):
     def __init__(self, *args, **kwargs):
         self.con = _DriverClient(*args, **kwargs)
 
-    def _build_ast(self, expr, params=None):
-        return build_ast(expr, params=params)
+    def _build_ast(self, expr, context):
+        return build_ast(expr, context)
 
     @property
     def current_database(self):

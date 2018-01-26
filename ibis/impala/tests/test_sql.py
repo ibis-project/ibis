@@ -24,7 +24,7 @@ class TestImpalaSQL(unittest.TestCase):
     def test_relabel_projection(self):
         # GH #551
         types = ['int32', 'string', 'double']
-        table = ibis.table(zip(['foo', 'bar', 'baz'], types), 'table')
+        table = ibis.table(zip(['foo', 'bar', 'baz'], types), name='table')
         relabeled = table.relabel({'foo': 'one', 'baz': 'three'})
 
         result = to_sql(relabeled)

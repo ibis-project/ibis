@@ -25,7 +25,7 @@ from ibis.expr.tests.mocks import MockConnection
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-from ibis.impala.compiler import build_ast, to_sql  # noqa: E402
+from ibis.impala.compiler import build_ast, to_sql, ImpalaDialect  # noqa: E402
 from ibis import impala  # noqa: E402
 
 
@@ -47,8 +47,7 @@ class TestASTBuilder(unittest.TestCase):
         joined = table2.inner_join(table3, [join_pred])
         result = joined[[table3, table2['value']]]
 
-        ast = build_ast(result)
-        stmt = ast.queries[0]
+        stmt = _get_query(result)
 
         def foo():
             table3 = table[filter_pred]
@@ -82,8 +81,7 @@ class TestASTBuilder(unittest.TestCase):
         result = joined.aggregate([met1, table3['f'].sum().name('bar')],
                                   by=[table3['g'], table2['key']])
 
-        ast = build_ast(result)
-        stmt = ast.queries[0]
+        stmt = _get_query(result)
 
         # #790, this behavior was different before
         ex_pred = [table3['g'] == table2['key']]
@@ -123,8 +121,7 @@ class TestNonTabularResults(unittest.TestCase):
 
         expr = table[table.c > 0].f.sum()
 
-        ast = build_ast(expr)
-        query = ast.queries[0]
+        query = _get_query(expr)
 
         sql_query = query.compile()
         expected = """SELECT sum(`f`) AS `sum`
@@ -191,8 +188,7 @@ FROM (
         agged = table[table.c > 0].group_by('g').aggregate([m])
         expr = agged.g
 
-        ast = build_ast(expr)
-        query = ast.queries[0]
+        query = _get_query(expr)
 
         sql_query = query.compile()
         expected = """\
@@ -266,7 +262,7 @@ FROM alltypes"""
 
 
 def _get_query(expr):
-    ast = build_ast(expr)
+    ast = build_ast(expr, ImpalaDialect.make_context())
     return ast.queries[0]
 
 
@@ -1867,7 +1863,7 @@ WHERE EXISTS (
 
         cond = t1.key1 == t2.key1
         expr = t1[cond.any()]
-        stmt = build_ast(expr).queries[0]
+        stmt = _get_query(expr)
 
         repr(stmt.where[0])
 
@@ -2058,7 +2054,7 @@ ORDER BY `string_col`"""
         t = self.con.table('functional_alltypes')
 
         expr = t.limit(20).limit(10)
-        stmt = build_ast(expr).queries[0]
+        stmt = _get_query(expr)
 
         assert stmt.limit['n'] == 10
 

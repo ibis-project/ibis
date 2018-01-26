@@ -18,34 +18,26 @@ class BigQueryQueryBuilder(comp.QueryBuilder):
 
     select_builder = BigQuerySelectBuilder
 
-    def __init__(self, expr, context=None, params=None):
-        super(BigQueryQueryBuilder, self).__init__(
-            expr, context=context, params=params
-        )
-
-    def _make_context(self):
-        return BigQueryContext()
-
     @property
     def _union_class(self):
         # return BigQueryUnion
         raise NotImplementedError()
 
 
-def build_ast(expr, context=None, params=None):
-    builder = BigQueryQueryBuilder(expr, context=context, params=params)
+def build_ast(expr, context):
+    builder = BigQueryQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
-def _get_query(expr, context, params=None):
-    ast = build_ast(expr, context, params=params)
+def _get_query(expr, context):
+    ast = build_ast(expr, context)
     (query, rest) = (ast.queries[0], ast.queries[1:])
     assert not rest
     return query
 
 
-def to_sql(expr, context=None, params=None):
-    query = _get_query(expr, context, params=params)
+def to_sql(expr, context):
+    query = _get_query(expr, context)
     compiled = query.compile()
     return compiled
 
@@ -54,13 +46,6 @@ class BigQueryContext(comp.QueryContext):
 
     def _to_sql(self, expr, ctx):
         return to_sql(expr, context=ctx)
-
-
-class BigQuerySelect(ImpalaSelect):
-
-    @property
-    def translator(self):
-        return BigQueryExprTranslator
 
 
 def _extract_field(sql_attr):
@@ -281,6 +266,13 @@ class BigQueryExprTranslator(impala_compiler.ImpalaExprTranslator):
     _registry = _operation_registry
     _rewrites = impala_compiler.ImpalaExprTranslator._rewrites.copy()
 
+    context_class = BigQueryContext
+
+    def _trans_param(self, expr):
+        if expr not in self.context.params:
+            raise KeyError(expr)
+        return '@{}'.format(expr._name)
+
 
 rewrites = BigQueryExprTranslator.rewrites
 
@@ -309,5 +301,14 @@ def bigquery_rewrite_notall(expr):
     return (1 - arg.cast(dt.int64)).sum() != 0
 
 
-class BigQueryDialect(impala_compiler.ImpalaDialect):
+class BigQuerySelect(ImpalaSelect):
+
     translator = BigQueryExprTranslator
+
+
+class BigQueryDialect(impala_compiler.ImpalaDialect):
+
+    translator = BigQueryExprTranslator
+
+
+dialect = BigQueryDialect

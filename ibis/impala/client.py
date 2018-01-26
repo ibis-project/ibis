@@ -492,8 +492,8 @@ class ImpalaClient(SQLClient):
 
         self._ensure_temp_db_exists()
 
-    def _build_ast(self, expr, params=None):
-        return build_ast(expr, params=params)
+    def _build_ast(self, expr, context):
+        return build_ast(expr, context)
 
     def _get_hdfs(self):
         if self._hdfs is None:
@@ -794,7 +794,7 @@ class ImpalaClient(SQLClient):
         expr : ibis TableExpr
         database : string, default None
         """
-        ast = self._build_ast(expr)
+        ast = self._build_ast(expr, ImpalaDialect.make_context())
         select = ast.queries[0]
         statement = ddl.CreateView(name, select, database=database)
         return self._execute(statement)
@@ -861,7 +861,7 @@ class ImpalaClient(SQLClient):
                 writer, to_insert = write_temp_dataframe(self, obj)
             else:
                 to_insert = obj
-            ast = self._build_ast(to_insert)
+            ast = self._build_ast(to_insert, ImpalaDialect.make_context())
             select = ast.queries[0]
 
             statement = ddl.CTAS(table_name, select,
@@ -1715,7 +1715,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         else:
             partition_schema = None
 
-        ast = build_ast(expr)
+        ast = build_ast(expr, ImpalaDialect.make_context())
         select = ast.queries[0]
         statement = ddl.InsertSelect(self._qualified_name,
                                      select,

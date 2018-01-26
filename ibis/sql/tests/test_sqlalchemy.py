@@ -94,7 +94,8 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
             if named:
                 assert result.name == expected.name
 
-    def _translate(self, expr, named=False, context=None):
+    def _translate(self, expr, named=False):
+        context = alch.AlchemyDialect.make_context()
         translator = alch.AlchemyExprTranslator(expr, context=context,
                                                 named=named)
         return translator.get_result()
@@ -584,7 +585,8 @@ class TestSQLAlchemySelect(unittest.TestCase, ExprTestCases):
         self._compare_sqla(expr, ex)
 
     def _compare_sqla(self, expr, sqla):
-        result = alch.to_sqlalchemy(expr)
+        context = alch.AlchemyContext(dialect=alch.AlchemyDialect())
+        result = alch.to_sqlalchemy(expr, context)
         assert str(result.compile()) == str(sqla.compile())
 
     def _to_sqla(self, table):

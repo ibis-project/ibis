@@ -206,3 +206,6 @@ compiles = MySQLExprTranslator.compiles
 class MySQLDialect(alch.AlchemyDialect):
 
     translator = MySQLExprTranslator
+
+
+dialect = MySQLDialect

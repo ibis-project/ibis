@@ -15,9 +15,10 @@
 
 import pytest
 
-from ibis import window
 import ibis
 import ibis.common as com
+
+from ibis import window
 from ibis.tests.util import assert_equal
 
 pytest.importorskip('hdfs')
@@ -30,8 +31,9 @@ from ibis.impala.tests.common import ImpalaE2E  # noqa: E402
 
 @pytest.yield_fixture(scope='module')
 def con(request):
+    ImpalaE2E.setUpClass()
+
     try:
-        ImpalaE2E.setUpClass()
         yield ImpalaE2E.con
     finally:
         ImpalaE2E.tearDownClass()

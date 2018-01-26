@@ -57,6 +57,14 @@ class Backend(object):
     def awards_players(self):
         return self.connection.database().awards_players
 
+    @classmethod
+    def make_context(cls, params=None):
+        module_name = cls.__name__.lower()
+        module = getattr(ibis, module_name, None)
+        if module is None:
+            pytest.skip('Unable to import backend {!r}'.format(module_name))
+        return module.dialect.make_context(params=params)
+
 
 class UnorderedSeriesComparator(object):
 

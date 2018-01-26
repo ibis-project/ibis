@@ -11,6 +11,9 @@ from ibis.pandas.core import pre_execute, execute  # noqa
 from ibis.pandas.execution.selection import physical_tables
 
 
+dialect = PandasDialect
+
+
 def _read_csv(path, schema, **kwargs):
     dtypes = dict(schema.to_pandas())
 
@@ -44,7 +47,7 @@ class CSVTable(ops.DatabaseTable):
 
 class CSVClient(FileClient):
 
-    dialect = PandasDialect
+    dialect = dialect
     extension = 'csv'
 
     def insert(self, path, expr, index=False, **kwargs):

@@ -38,9 +38,11 @@ def dialect():
 
 @pytest.fixture
 def translate(dialect):
-    from ibis.sql.sqlite.compiler import SQLiteExprTranslator
+    from ibis.sql.sqlite.compiler import SQLiteDialect
+    ibis_dialect = SQLiteDialect()
+    context = ibis_dialect.make_context()
     return lambda expr: str(
-        SQLiteExprTranslator(expr).get_result().compile(
+        ibis_dialect.translator(expr, context).get_result().compile(
             dialect=dialect,
             compile_kwargs=dict(literal_binds=True)
         )
