@@ -79,6 +79,17 @@ class BigQueryAPIProxy(object):
     def get_schema(self, table_id, dataset_id):
         return self.get_table(table_id, dataset_id).schema
 
+    @property
+    def has_partitions(self):
+        query_string = (
+            'SELECT 1 from [{}.{}$__PARTITIONS_SUMMARY__] LIMIT 1'
+        )
+        query = self.client.run_sync_query(
+            query_string.format(self.dataset_name, self.name))
+        query.use_legacy_sql = True
+        query.run()
+        return any(query.rows)
+
 
 class BigQueryDatabase(Database):
     pass
