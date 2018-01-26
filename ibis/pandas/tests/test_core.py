@@ -43,6 +43,22 @@ def test_no_execute_ambiguities(func):
     assert not ambiguities(func.funcs)
 
 
+def test_from_dataframe(dataframe, ibis_table, core_client):
+    t = ibis.pandas.from_dataframe(dataframe)
+    result = t.execute()
+    expected = ibis_table.execute()
+    tm.assert_frame_equal(result, expected)
+
+    t = ibis.pandas.from_dataframe(dataframe, name='foo')
+    expected = ibis_table.execute()
+    tm.assert_frame_equal(result, expected)
+
+    client = core_client
+    t = ibis.pandas.from_dataframe(dataframe, name='foo', client=client)
+    expected = ibis_table.execute()
+    tm.assert_frame_equal(result, expected)
+
+
 def test_execute_first_accepts_scope_keyword_argument(ibis_table, dataframe):
 
     param = ibis.param(dt.int64)
