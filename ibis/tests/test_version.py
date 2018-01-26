@@ -1,10 +1,18 @@
+import os
+
 from pkg_resources import parse_version, SetuptoolsLegacyVersion
+
+import pytest
 
 import sh
 
 import ibis
 
 
+@pytest.mark.skipif(
+    os.environ.get('CIRCLECI'),
+    reason='Testing import time on CI is flaky due to VM variance',
+)
 def test_import_time():
     lines = [
         'from timeit import timeit',
