@@ -1246,6 +1246,11 @@ def test_add_column_proxies_to_mutate(table):
     assert_equal(result, expected)
 
 
+def test_add_column_depricated(table):
+    with pytest.warns(FutureWarning):
+        table.add_column(ibis.now().cast('date'), name='date')
+
+
 def test_groupby_mutate(table):
     t = table
 
