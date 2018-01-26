@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+import warnings
 
 from ibis.compat import pickle
 from ibis.expr.types import ColumnExpr, TableExpr, RelationError
@@ -1247,7 +1248,7 @@ def test_add_column_proxies_to_mutate(table):
 
 
 def test_add_column_depricated(table):
-    with pytest.warns(FutureWarning):
+    with pytest.warns(DeprecationWarning):
         table.add_column(ibis.now().cast('date'), name='date')
 
 

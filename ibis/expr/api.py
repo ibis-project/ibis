@@ -2692,8 +2692,8 @@ def add_column(table, expr, name=None):
     -------
     modified_table : TableExpr
     """
-    warnings.warn("add_column is deprecated, use mutate(name=expr, ...)",
-                  FutureWarning)
+    warnings.warn('add_column is deprecated, use mutate(name=expr, ...)',
+                  DeprecationWarning)
     if name is not None:
         return table.mutate(**{name: expr})
     else:
