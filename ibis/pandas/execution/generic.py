@@ -3,7 +3,6 @@ from __future__ import absolute_import
 import datetime
 import decimal
 import functools
-import itertools
 import numbers
 import operator
 
@@ -707,23 +706,21 @@ def execute_node_where_series_series_series(op, cond, true, false, **kwargs):
     return true.where(cond, other=false)
 
 
-# Series, scalar, scalar
 # Series, scalar, Series
 def execute_node_where_series_scalar_scalar(op, cond, true, false, **kwargs):
     return pd.Series(np.repeat(true, len(cond))).where(cond, other=false)
 
 
-for cond_type, true_type, false_type in itertools.chain(
-    map(itertools.repeat, scalar_types, itertools.repeat(3))
-):
+# Series, scalar, scalar
+for scalar_type in scalar_types:
     execute_node_where_series_scalar_scalar = execute_node.register(
-        ops.Where, pd.Series, true_type, false_type
+        ops.Where, pd.Series, scalar_type, scalar_type
     )(execute_node_where_series_scalar_scalar)
 
 
 # scalar, Series, Series
 @execute_node.register(ops.Where, boolean_types, pd.Series, pd.Series)
-def execute_node_where_mixed(op, cond, true, false, **kwargs):
+def execute_node_where_scalar_scalar_scalar(op, cond, true, false, **kwargs):
     # Note that it is not necessary to check that true and false are also
     # scalars. This allows users to do things like:
     # ibis.where(even_or_odd_bool, [2, 4, 6], [1, 3, 5])
@@ -731,12 +728,10 @@ def execute_node_where_mixed(op, cond, true, false, **kwargs):
 
 
 # scalar, scalar, scalar
-for cond_type, true_type, false_type in itertools.chain(
-    map(itertools.repeat, scalar_types, itertools.repeat(3))
-):
-    execute_node_where_mixed = execute_node.register(
-        ops.Where, cond_type, true_type, false_type
-    )(execute_node_where_mixed)
+for scalar_type in scalar_types:
+    execute_node_where_scalar_scalar_scalar = execute_node.register(
+        ops.Where, boolean_types, scalar_type, scalar_type
+    )(execute_node_where_scalar_scalar_scalar)
 
 
 # scalar, Series, scalar
@@ -748,6 +743,6 @@ def execute_node_where_scalar_series_scalar(op, cond, true, false, **kwargs):
 
 
 # scalar, scalar, Series
-@execute_node.register(ops.Where, scalar_types, scalar_types, pd.Series)
-def execute_node_where_series_scalar_seires(op, cond, true, false, **kwargs):
+@execute_node.register(ops.Where, boolean_types, scalar_types, pd.Series)
+def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
     return pd.Series(np.repeat(true, len(false))) if cond else false
