@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-import warnings
 
 from ibis.compat import pickle
 from ibis.expr.types import ColumnExpr, TableExpr, RelationError
