@@ -4,8 +4,6 @@ from pkg_resources import parse_version, SetuptoolsLegacyVersion
 
 import pytest
 
-import sh
-
 import ibis
 
 
@@ -14,6 +12,8 @@ import ibis
     reason='Testing import time on CI is flaky due to VM variance',
 )
 def test_import_time():
+    sh = pytest.importorskip('sh')
+
     lines = [
         'from timeit import timeit',
         "print(timeit('import ibis'))",
