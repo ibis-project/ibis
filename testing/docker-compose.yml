@@ -9,8 +9,7 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
   impala:
-    build: .
-    image: impala
+    image: kszucs/impala
     hostname: localhost
     networks:
     - impala-nw
