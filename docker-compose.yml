@@ -1,11 +1,13 @@
 version: '3'
 services:
+
   postgres:
     image: postgres
     ports:
     - 5432:5432
     environment:
       POSTGRES_PASSWORD: postgres
+
   impala:
     image: kszucs/impala
     hostname: localhost
@@ -28,8 +30,16 @@ services:
     - 25000:25000
     - 25010:25010
     - 25020:25020
+
   clickhouse:
     image: yandex/clickhouse-server:latest
     ports:
     - 8123:8123
     - 9000:9000
+
+  test:
+    build:
+      context: .
+      dockerfile: ci/Dockerfile.test
+      args:
+        python: 3.6

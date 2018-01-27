@@ -3,7 +3,9 @@ FROM ibisproject/miniconda3
 ARG python
 
 ADD ci/requirements-dev-$python.yml /tmp/requirements-dev-$python.yml
-RUN conda install -y --file "/tmp/requirements-dev-$python.yml"
+RUN conda env create --name "ibis_$python" --file "/tmp/requirements-dev-$python.yml"
+
+RUN /bin/bash -c "source activate ibis_$python"
 
 ADD . /ibis
 WORKDIR /ibis

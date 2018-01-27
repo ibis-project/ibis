@@ -1,2 +1,5 @@
-click
-flake8
+channels:
+  - conda-forge
+dependencies:
+  - click
+  - flake8

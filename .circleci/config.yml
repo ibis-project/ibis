@@ -10,8 +10,8 @@ jobs:
       - PYTHON_VERSION: 3.6
     steps:
       - checkout
-      - run: docker-compose -f ci/docker-compose.yml up -d
-      - run: docker-compose -f ci/docker-compose.test.yml build test
+      - run: docker-compose up -d
+      - run: docker-compose build test
       - run: docker-compose run test flake
 
 
