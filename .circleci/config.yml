@@ -18,6 +18,9 @@ jobs:
       - run: curl -o $HOME/miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
       - run: bash $HOME/miniconda.sh -b -p /tmp/workspace/miniconda
       - run: export PATH="/tmp/workspace/miniconda/bin:$PATH"
+      - run: echo $PATH
+      - run: ls -lah /tmp/workspace/miniconda/bin
+      - run: which conda
       # - persist_to_workspace:
       #     root: /tmp/workspace
       #     paths:
