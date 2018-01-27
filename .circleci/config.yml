@@ -1,5 +1,9 @@
 version: 2
 
+install_miniconda: &install_miniconda
+  - run: mkdir -p /opt/conda
+  - run: curl -o /tmp/miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+  - run: bash /tmp/miniconda.sh -b -p /opt/conda
 
 jobs:
   test:
@@ -11,6 +15,7 @@ jobs:
       - checkout
       - run: ls -lah
       - run: cd testing; bash start-all.sh
+      *install_miniconda
 
 
 workflows:
