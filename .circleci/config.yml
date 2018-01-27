@@ -10,7 +10,7 @@ jobs:
     steps:
       - checkout
       - run: ls -lah
-      - run: bash testing/start-all.sh
+      - run: cd testing; bash start-all.sh
 
 
 workflows:
