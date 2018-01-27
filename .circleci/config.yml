@@ -10,6 +10,7 @@ jobs:
       - PYTHON_VERSION: 3.6
     steps:
       - checkout
+      - run: docker-compose build test
       - run: docker-compose up -d
       - run: docker-compose run test conda list
       - run: docker-compose run test flake8
