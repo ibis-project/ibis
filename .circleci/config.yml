@@ -10,9 +10,7 @@ jobs:
       - checkout
       - setup_remote_docker
       - run: |
-          cd testing
           docker-compose up -d
-          docker ps
 
 workflows:
   version: 2
