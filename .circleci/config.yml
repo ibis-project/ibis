@@ -9,6 +9,7 @@ jobs:
     steps:
       - checkout
       - run: ls -lah
+      - run: bash testing/start-all.sh
 
 
 workflows:
