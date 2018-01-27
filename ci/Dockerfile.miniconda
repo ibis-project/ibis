@@ -1,0 +1,16 @@
+FROM debian:stable-slim
+
+ENV PATH="/opt/conda/bin:$PATH" LC_ALL=C.UTF-8 LANG=C.UTF-8
+
+RUN export CONDA_INSTALLER='https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh' \
+ && export BUILD_PACKAGES='wget bzip2 ca-certificates' \
+ && apt-get -qq update -y \
+ && apt-get -qq install -y --no-install-recommends $BUILD_PACKAGES \
+ && wget -q -O /tmp/miniconda.sh $CONDA_INSTALLER \
+ && bash /tmp/miniconda.sh -f -b -p /opt/conda \
+ && rm /tmp/miniconda.sh \
+ && conda config --add channels conda-forge \
+ && conda update -q --all --yes \
+ && conda clean --all --yes \
+ && apt-get -qq autoremove --purge -y $BUILD_PACKAGES \
+ && rm -rf /var/lib/apt/lists/*

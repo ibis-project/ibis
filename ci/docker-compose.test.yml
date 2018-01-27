@@ -1,0 +1,9 @@
+version: '3'
+services:
+
+  test:
+    build:
+      context: ..
+      dockerfile: ci/Dockerfile.test
+      args:
+        python: 3.6
