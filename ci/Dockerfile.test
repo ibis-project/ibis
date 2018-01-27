@@ -6,6 +6,7 @@ ADD ci/requirements-dev-$python.yml /tmp/requirements-dev-$python.yml
 RUN conda env create --name "ibis_$python" --file "/tmp/requirements-dev-$python.yml"
 
 RUN /bin/bash -c "source activate ibis_$python"
+RUN conda install -y sqlalchemy
 
 ADD . /ibis
 WORKDIR /ibis
