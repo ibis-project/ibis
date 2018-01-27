@@ -8,7 +8,7 @@ import ibis
 
 
 @pytest.mark.skipif(
-    os.environ.get('CIRCLECI'),
+    bool(os.environ.get('CIRCLECI', None)),
     reason='Testing import time on CI is flaky due to VM variance',
 )
 def test_import_time():
