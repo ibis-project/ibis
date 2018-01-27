@@ -38,8 +38,8 @@ services:
     - 9000:9000
 
   test:
+    image: ibis-test
     build:
-      image: ibis-test
       context: .
       dockerfile: ci/Dockerfile.test
       args:
