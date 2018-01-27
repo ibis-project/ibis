@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
 import os
-import click
+import shutil
 import tarfile
+import tempfile
+
+import click
 
 import numpy as np
 import pandas as pd
@@ -115,7 +118,18 @@ def postgres(schema, tables, data_directory, **params):
     click.echo('Initializing PostgreSQL...')
     engine = init_database('postgresql', params, schema,
                            isolation_level='AUTOCOMMIT')
-    insert_tables(engine, tables, data_directory)
+
+    query = "COPY {} FROM {!r} WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
+    with engine.begin() as connection:
+        for table in tables:
+            table_basename = table + '.csv'
+            src = os.path.abspath(
+                os.path.join(data_directory, table_basename)
+            )
+            click.echo(src)
+            dst = os.path.join(tempfile.gettempdir(), table_basename)
+            shutil.copyfile(src, dst)
+            connection.execute(query.format(table, dst))
     engine.execute('VACUUM FULL ANALYZE')
 
 
