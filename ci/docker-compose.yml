@@ -7,9 +7,10 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
   impala:
-    build: .
-    image: impala
+    image: kszucs/impala
     hostname: localhost
+    external_links:
+    - postgres
     environment:
       PGPASSWORD: postgres
     ports:
@@ -27,3 +28,8 @@ services:
     - 25000:25000
     - 25010:25010
     - 25020:25020
+  clickhouse:
+    image: yandex/clickhouse-server:latest
+    ports:
+    - 8123:8123
+    - 9000:9000
