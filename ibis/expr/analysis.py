@@ -758,9 +758,10 @@ class Projector(object):
 
     def get_result(self):
         roots = self.parent_roots
+        first_root = roots[0]
 
-        if len(roots) == 1 and isinstance(roots[0], ops.Selection):
-            fused_op = self._check_fusion(roots[0])
+        if len(roots) == 1 and isinstance(first_root, ops.Selection):
+            fused_op = self._check_fusion(first_root)
             if fused_op is not None:
                 return fused_op
 
@@ -820,7 +821,7 @@ class Projector(object):
 def _maybe_resolve_exprs(table, exprs):
     try:
         return table._resolve(exprs)
-    except AttributeError:
+    except (AttributeError, IbisTypeError):
         return None
 
 
