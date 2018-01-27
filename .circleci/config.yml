@@ -9,7 +9,10 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - run: bash testing/start-all.sh
+      - run: |
+          cd testing
+          docker-compose up -d
+          docker ps
 
 workflows:
   version: 2
