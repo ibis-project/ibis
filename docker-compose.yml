@@ -2,8 +2,8 @@ version: '2'
 services:
   postgres:
     image: postgres
-    networks:
-    - impala-nw
+    # networks:
+    # - impala-nw
     ports:
     - 5432:5432
     environment:
@@ -11,8 +11,8 @@ services:
   impala:
     image: kszucs/impala
     hostname: localhost
-    networks:
-    - impala-nw
+    # networks:
+    # - impala-nw
     external_links:
     - postgres
     environment:
@@ -38,9 +38,9 @@ services:
     - 8123:8123
     - 9000:9000
 
-networks:
-  default:
-    external:
-      name: impala-nw
-  impala-nw:
-    driver: bridge
+# networks:
+#   default:
+#     external:
+#       name: impala-nw
+#   impala-nw:
+#     driver: bridge
