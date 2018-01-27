@@ -3,3 +3,4 @@ channels:
 dependencies:
   - click
   - flake8
+  - numpy
