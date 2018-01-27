@@ -10,10 +10,18 @@ jobs:
       - PYTHON_VERSION: 3.6
     steps:
       - checkout
+      # - attach_workspace:
+      #     at: /tmp/workspace
       - run: ls -lah
       - run: sudo apt-get update -y && sudo apt-get install -qq clang libboost-dev
-      - run: curl -o /tmp/miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-      - run: bash /tmp/miniconda.sh -b -p /tmp/conda
+      - run: mkdir -p /tmp/workspace
+      - run: curl -o $HOME/miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+      - run: bash $HOME/miniconda.sh -b -p /tmp/workspace/miniconda
+      - run: export PATH="/tmp/workspace/miniconda/bin:$PATH"
+      # - persist_to_workspace:
+      #     root: /tmp/workspace
+      #     paths:
+      #       - miniconda
       - run: |
           conda env create --quiet \
             --name "${ENV_NAME}" \
