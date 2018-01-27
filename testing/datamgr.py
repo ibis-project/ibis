@@ -40,11 +40,13 @@ def recreate_database(driver, params, **kwargs):
 
 
 def init_database(driver, params, schema=None, recreate=True, **kwargs):
-    params['username'] = params.pop('user', None)
-    if recreate:
-        recreate_database(driver, params, **kwargs)
+    new_params = params.copy()
+    new_params['username'] = new_params.pop('user', None)
 
-    url = sa.engine.url.URL(driver, **params)
+    if recreate:
+        recreate_database(driver, new_params, **kwargs)
+
+    url = sa.engine.url.URL(driver, **new_params)
     engine = sa.create_engine(url, **kwargs)
 
     if schema:
@@ -123,7 +125,14 @@ def postgres(schema, tables, data_directory, **params):
         src = os.path.abspath(os.path.join(data_directory, table + '.csv'))
         click.echo(src)
         with open(src, 'rb') as f:
-            sh.psql(dbname=database, command=query.format(table), _in=f)
+            sh.psql(
+                host=params['host'],
+                port=params['port'],
+                user=params['user'],
+                dbname=database,
+                command=query.format(table),
+                _in=f
+            )
     engine.execute('VACUUM FULL ANALYZE')
 
 
