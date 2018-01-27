@@ -6,11 +6,20 @@ jobs:
       image: circleci/classic:latest
       docker_layer_caching: true
 
+    environment:
+      - PYTHON_VERSION: 3.6
     steps:
       - checkout
       - run: ls -lah
+      - run: sudo apt-get install -qq clang libboost-dev
       - run: curl -o /tmp/miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
       - run: bash /tmp/miniconda.sh -b -p /tmp/conda
+      - run: |
+          conda env create --quiet \
+            --name "${ENV_NAME}" \
+            --file "ci/requirements-dev-${PYTHON_VERSION}.yml"
+      - run: echo 'source activate ${ENV_NAME}' | tee -a $BASH_ENV
+      - run: flake8
       - run: cd testing; bash start-all.sh
 
 
