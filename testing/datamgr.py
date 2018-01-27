@@ -123,9 +123,7 @@ def postgres(schema, tables, data_directory, **params):
     with engine.begin() as connection:
         for table in tables:
             table_basename = table + '.csv'
-            src = os.path.abspath(
-                os.path.join(data_directory, table_basename)
-            )
+            src = os.path.abspath(os.path.join(data_directory, table_basename))
             click.echo(src)
             dst = os.path.join(tempfile.gettempdir(), table_basename)
             shutil.copyfile(src, dst)
