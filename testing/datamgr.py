@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import os
-import shutil
 import tarfile
-import tempfile
 
 import click
 
@@ -119,15 +117,13 @@ def postgres(schema, tables, data_directory, **params):
     engine = init_database('postgresql', params, schema,
                            isolation_level='AUTOCOMMIT')
 
-    query = "COPY {} FROM {!r} WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
-    with engine.begin() as connection:
-        for table in tables:
-            table_basename = table + '.csv'
-            src = os.path.abspath(os.path.join(data_directory, table_basename))
-            click.echo(src)
-            dst = os.path.join(tempfile.gettempdir(), table_basename)
-            shutil.copyfile(src, dst)
-            connection.execute(query.format(table, dst))
+    query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
+    database = params['database']
+    for table in tables:
+        src = os.path.abspath(os.path.join(data_directory, table + '.csv'))
+        click.echo(src)
+        with open(src, 'rb') as f:
+            sh.psql(dbname=database, command=query.format(table), _in=f)
     engine.execute('VACUUM FULL ANALYZE')
 
 
