@@ -39,6 +39,7 @@ services:
 
   test:
     build:
+      image: ibis-test
       context: .
       dockerfile: ci/Dockerfile.test
       args:
