@@ -2,19 +2,13 @@ version: 2
 
 
 jobs:
-
   test:
-    docker:
-      - image: ypereirareis/docker-compose
+    machine:
+      image: circleci/classic:latest
+
     steps:
       - checkout
-      - setup_remote_docker
-      - run: mkdir -p /tmp/workspace
-      - run: curl -o $HOME/miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-      - run: bash $HOME/miniconda.sh -b -p /tmp/workspace/miniconda
-      - run: python -V
-      - run: cd testing; bash start-all.sh
-
+      - run: ls -lah
 
 
 workflows:
