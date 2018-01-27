@@ -740,12 +740,18 @@ def test_where_series(t, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_where_scalar(t, df):
-    result1 = ibis.where(ibis.literal(True), t['plain_int64'], 3.0).execute()
-    tm.assert_series_equal(result1, df['plain_int64'])
-
-    result2 = ibis.where(ibis.literal(False), t['plain_int64'], 3.0).execute()
-    assert(result2 == 3.0)
+@pytest.mark.parametrize(
+    ('cond', 'expected_func'),
+    [
+        (True, lambda df: df['plain_int64']),
+        (False, lambda df: pd.Series(np.repeat(3.0, len(df))))
+    ]
+)
+def test_where_scalar(t, df, cond, expected_func):
+    expr = ibis.where(cond, t['plain_int64'], 3.0)
+    result = expr.execute()
+    expected = expected_func(df)
+    tm.assert_series_equal(result, expected)
 
 
 def test_where_long(batting, batting_df):
