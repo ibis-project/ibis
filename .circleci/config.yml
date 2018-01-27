@@ -11,6 +11,8 @@ jobs:
       - setup_remote_docker
       - run: |
           docker-compose up -d
+      - run: docker ps
+    
 
 workflows:
   version: 2
