@@ -9,9 +9,9 @@ jobs:
     steps:
       - checkout
       - run: ls -lah
-      - run: mkdir -p /opt/conda
+      - run: mkdir -p /tmp/conda
       - run: curl -o /tmp/miniconda.sh https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
-      - run: bash /tmp/miniconda.sh -b -p /opt/conda
+      - run: bash /tmp/miniconda.sh -b -p /tmp/conda
       - run: cd testing; bash start-all.sh
 
 
