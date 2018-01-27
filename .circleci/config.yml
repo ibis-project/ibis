@@ -55,6 +55,7 @@ python_test_steps: &python_test_steps
                 -wait tcp://localhost:50070 \
                 -wait tcp://localhost:9000 \
                 -timeout 1m
+  - run: sudo apt-get install -qq -y postgresql-client
   - run: testing/datamgr.py download
   - run: testing/datamgr.py sqlite
   - run: testing/datamgr.py postgres
