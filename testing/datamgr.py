@@ -131,7 +131,7 @@ def postgres(schema, tables, data_directory, **params):
         psql(
             host=params['host'],
             port=params['port'],
-            user=params['user'],
+            username=params['user'],
             dbname=database,
             command=query.format(table),
             _in=text
