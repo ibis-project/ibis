@@ -4,8 +4,8 @@ services:
   postgres:
     image: postgres
     # hostname: postgres
-    # networks:
-    #   - ibis-nw
+    networks:
+      - ibis-nw
     ports:
       - 5432:5432
     environment:
@@ -15,8 +15,8 @@ services:
     image: kszucs/impala
     hostname: impala
     # hostname: impala
-    # networks:
-    # - ibis-nw
+    networks:
+    - ibis-nw
     # external_links:
     # - postgres
     environment:
@@ -39,18 +39,18 @@ services:
 
   clickhouse:
     image: yandex/clickhouse-server:latest
-    hostname: clickhouse
-    # networks:
-    #   - ibis-nw
+    # hostname: clickhouse
+    networks:
+      - ibis-nw
     ports:
       - 8123:8123
       - 9000:9000
 
   ibis:
     image: ibis
-    hostname: ibis
-    # networks:
-    #   - ibis-nw
+    # hostname: ibis
+    networks:
+      - ibis-nw
     # external_links:
     #   - impala
     #   - postgres
@@ -69,9 +69,9 @@ services:
       args:
         python: 3.6
 
-# networks:
-#   default:
-#     external:
-#       name: ibis-nw
-#   ibis-nw:
-#     driver: bridge
+networks:
+  # default:
+  #   external:
+  #     name: ibis-nw
+  ibis-nw:
+    driver: bridge
