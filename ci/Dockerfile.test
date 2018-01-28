@@ -9,3 +9,5 @@ ENV PATH /opt/conda/envs/ibis_$python/bin:$PATH
 
 ADD . /ibis
 WORKDIR /ibis
+
+RUN pip install .
