@@ -39,6 +39,8 @@ services:
 
   test:
     image: ibis-test
+    volumes:
+       - /tmp/ibis-testing-data:/tmp/ibis-testing-data
     build:
       context: .
       dockerfile: ci/Dockerfile.test
