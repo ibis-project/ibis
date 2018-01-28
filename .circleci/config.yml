@@ -10,6 +10,7 @@ test: &test
     - checkout:
         path: ~/ibis
 
+    - run: docker pull ibisproject/miniconda3
     - run: docker-compose up -d --no-build
     - run: docker-compose build ibis
     - run: docker-compose run waiter
