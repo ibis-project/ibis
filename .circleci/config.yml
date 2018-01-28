@@ -1,30 +1,49 @@
 version: 2
 
+
+test: &test
+  machine:
+    image: circleci/classic:latest
+    docker_layer_caching: true
+  working_directory: ~/ibis/ci
+  steps:
+    - checkout:
+        path: ~/ibis
+    - run: docker-compose up -d
+    - run: docker-compose build ibis
+    - run: docker-compose run waiter
+    - run: docker-compose run ibis flake8
+    - run: docker-compose run ibis bash ci/load-data.sh
+
+
 jobs:
-  test:
-    machine:
-      image: circleci/classic:latest
-      docker_layer_caching: true
+  python27_test:
+    <<: *test
+    environment:
+      - PYTHON_VERSION: 2.7
+
+  python34_test:
+    <<: *test
+    environment:
+      - PYTHON_VERSION: 3.4
+
+  python35_test:
+    <<: *test
+    environment:
+      - PYTHON_VERSION: 3.5
+
+  python36_test:
+    <<: *test
     environment:
       - PYTHON_VERSION: 3.6
-    working_directory: ~/ibis/ci
-    steps:
-      - checkout:
-          path: ~/ibis
-
-      - run: docker pull ibisproject/miniconda3
-      - run: docker-compose up -d --build
-      - run: docker-compose run waiter
-
-      - run: docker ps
-
-      - run: docker-compose run ibis flake8
-      - run: docker-compose run ibis bash ci/load-data.sh
 
 
 workflows:
   version: 2
   test:
     jobs:
-      - test
+      - python27_test
+      - python34_test
+      - python35_test
+      - python36_test
 
