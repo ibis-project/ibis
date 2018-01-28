@@ -5,25 +5,17 @@ jobs:
     machine:
       image: circleci/classic:latest
       docker_layer_caching: true
-
     environment:
       - PYTHON_VERSION: 3.6
+    working_directory: ~/ibis/ci
     steps:
-      - checkout
+      - checkout:
+          path: ~/ibis
 
-      - run: cd ci
-      - run: pwd
-      - run: docker-compose up -d
-      - run: docker-compose build ibis
+      - run: docker-compose up -d --build
+      - run: docker-compose run waiter
 
       - run: docker ps
-      - run: |
-          docker-compose run dockerize \
-          -wait tcp://postgres:5432 \
-          -wait tcp://impala:21050 \
-          -wait tcp://impala:50070 \
-          -wait tcp://clickhouse:9000 \
-          -timeout 5m
 
       - run: docker-compose run ibis flake8
       - run: docker-compose run ibis bash testing/load-data.sh

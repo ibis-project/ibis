@@ -56,10 +56,15 @@ services:
       args:
         python: ${PYTHON_VERSION}
 
-  dockerize:
+  waiter:
     image: jwilder/dockerize
     links:
       - impala
       - postgres
       - clickhouse
-    entrypoint: dockerize
+    command: |
+      dockerize -wait tcp://postgres:5432
+                -wait tcp://impala:21050
+                -wait tcp://impala:50070
+                -wait tcp://clickhouse:9000
+                -timeout 5m
