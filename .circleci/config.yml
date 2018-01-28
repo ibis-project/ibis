@@ -27,7 +27,7 @@ jobs:
           -wait tcp://impala:21050 \
           -wait tcp://impala:50070 \
           -wait tcp://clickhouse:9000 \
-          -timeout 1m
+          -timeout 5m
       # - run: docker-compose run ibis flake8
 
       - run: docker-compose run ibis nslookup impala
