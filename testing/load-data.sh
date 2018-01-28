@@ -9,8 +9,8 @@ export IBIS_TEST_WEBHDFS_USER=hdfs
 CWD=$(dirname $0)
 
 python $CWD/datamgr.py download
-# python $CWD/datamgr.py sqlite
-# python $CWD/datamgr.py postgres
+python $CWD/datamgr.py sqlite
+python $CWD/datamgr.py postgres
 python $CWD/datamgr.py clickhouse
-python $CWD/impalamgr.py load --data --no-udf --data-dir $IBIS_TEST_DATA_DIRECTORY
+python $CWD/impalamgr.py load --data --data-dir $IBIS_TEST_DATA_DIRECTORY
 

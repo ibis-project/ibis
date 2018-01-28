@@ -54,7 +54,7 @@ services:
       context: .
       dockerfile: ci/Dockerfile.test
       args:
-        python: 3.6
+        python: ${PYTHON_VERSION}
 
   dockerize:
     image: jwilder/dockerize
