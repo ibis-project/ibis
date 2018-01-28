@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 
-export IBIS_TEST_IMPALA_HOST=localhost
-export IBIS_TEST_IMPALA_PORT=21050
-export IBIS_TEST_NN_HOST=localhost
-export IBIS_TEST_WEBHDFS_PORT=50070
-export IBIS_TEST_WEBHDFS_USER=ubuntu
 export IBIS_TEST_DATA_DIRECTORY=/tmp/ibis-testing-data
+export IBIS_TEST_IMPALA_PORT=21050
+export IBIS_TEST_WEBHDFS_PORT=50070
+export IBIS_TEST_WEBHDFS_USER=hdfs
 
 CWD=$(dirname $0)
 
