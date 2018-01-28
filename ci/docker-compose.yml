@@ -56,7 +56,7 @@ services:
       context: ..
       dockerfile: ci/Dockerfile
       args:
-        python: ${PYTHON_VERSION}
+        PYTHON: ${PYTHON_VERSION}
 
   waiter:
     image: jwilder/dockerize

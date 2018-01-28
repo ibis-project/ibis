@@ -4,12 +4,12 @@ RUN apt-get -qq update -y \
  && apt-get -qq install --no-install-recommends -y git clang libboost-dev postgresql-client \
  && rm -rf /var/lib/apt/lists/*
 
-ARG python
+ARG PYTHON
 
-ADD ci/requirements-dev-$python.yml /tmp/requirements-dev-$python.yml
-RUN conda env create -q -n "ibis_$python" -f "/tmp/requirements-dev-$python.yml"
+ADD ci/requirements-dev-$PYTHON.yml /tmp/requirements-dev-$PYTHON.yml
+RUN conda env create -q -n "ibis_$PYTHON" -f "/tmp/requirements-dev-$PYTHON.yml"
 
-ENV PATH /opt/conda/envs/ibis_$python/bin:$PATH
+ENV PATH /opt/conda/envs/ibis_$PYTHON/bin:$PATH
 
 ADD . /ibis
 WORKDIR /ibis
