@@ -11,12 +11,11 @@ jobs:
     steps:
       - checkout
 
-      - run: docker-compose build test
-      - run: docker-compose images
+      - run: docker-compose build ibis
       - run: docker-compose up -d
       - run: docker ps
-      # - run: docker-compose run test flake8
-      - run: docker-compose run test bash testing/load-data.sh
+      - run: docker-compose run ibis flake8
+      - run: docker-compose run ibis bash testing/load-data.sh
       - run: ls -lah /tmp/ibis-testing-data
 
 
