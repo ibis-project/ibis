@@ -13,6 +13,8 @@ jobs:
 
       - run: docker-compose build ibis
       - run: docker-compose up -d
+      - run: docker network ls
+      - run: docker network inspect ibis_default
       - run: docker ps
       - run: docker-compose run ibis flake8
       - run: docker-compose run ibis bash testing/load-data.sh
