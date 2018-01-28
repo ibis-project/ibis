@@ -12,6 +12,8 @@ services:
     image: ibisproject/impala
     links:
       - postgres
+    depends_on:
+      - postgres
     environment:
       PGPASSWORD: postgres
     ports:
