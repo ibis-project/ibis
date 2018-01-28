@@ -21,6 +21,8 @@ services:
       - postgres
     environment:
       PGPASSWORD: postgres
+    expose:
+      - 21050
     ports:
       # HDFS
       - 9020:9020
