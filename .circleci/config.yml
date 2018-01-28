@@ -13,6 +13,7 @@ jobs:
       - run: docker-compose build test
       - run: docker-compose up -d
       - run: docker-compose run test flake8
+      - run: docker-compose run test flake8
 
 
 workflows:
