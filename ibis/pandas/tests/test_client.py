@@ -1,6 +1,7 @@
 import pytest
 
 import pandas as pd
+import pandas.util.testing as tm
 
 import ibis
 
@@ -14,7 +15,7 @@ pytestmark = pytest.mark.pandas
 @pytest.fixture
 def client():
     return ibis.pandas.connect({
-        'df': pd.DataFrame({'a': [1, 2, 3]}),
+        'df': pd.DataFrame({'a': [1, 2, 3], 'b': list('abc')}),
         'df_unknown': pd.DataFrame({
             'array_of_strings': [['a', 'b'], [], ['c']],
         }),
@@ -42,3 +43,11 @@ def test_literal(client):
 def test_read_with_undiscoverable_type(client):
     with pytest.raises(TypeError):
         client.table('df_unknown')
+
+
+def test_drop(table):
+    table = table.mutate(c=table.a)
+    expr = table.drop(['a'])
+    result = expr.execute()
+    expected = table[['b', 'c']].execute()
+    tm.assert_frame_equal(result, expected)
