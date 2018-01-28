@@ -16,9 +16,9 @@ services:
     hostname: impala
     # hostname: impala
     networks:
-    - ibis-nw
-    # external_links:
-    # - postgres
+      - ibis-nw
+    external_links:
+      - postgres
     environment:
       PGPASSWORD: postgres
     ports:
@@ -51,10 +51,10 @@ services:
     # hostname: ibis
     networks:
       - ibis-nw
-    # external_links:
-    #   - impala
-    #   - postgres
-    #   - clickhouse
+    external_links:
+      - impala
+      - postgres
+      - clickhouse
     environment:
       - IBIS_TEST_NN_HOST=impala
       - IBIS_TEST_IMPALA_HOST=impala
@@ -70,8 +70,8 @@ services:
         python: 3.6
 
 networks:
-  # default:
-  #   external:
-  #     name: ibis-nw
+  default:
+    external:
+      name: ibis-nw
   ibis-nw:
     driver: bridge
