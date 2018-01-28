@@ -9,7 +9,7 @@ test: &test
   steps:
     - checkout:
         path: ~/ibis
-    - run: docker-compose pull --ignore-pull-failures --parallel --quiet
+
     - run: docker-compose up -d --no-build
     - run: docker-compose build ibis
     - run: docker-compose run waiter
