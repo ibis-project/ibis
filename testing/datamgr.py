@@ -18,9 +18,11 @@ except ImportError:
 
 
 if os.environ.get('APPVEYOR', None) is not None:
-    curl = sh.Command('C:\\Tools\\curl\\bin\\curl.exe')
+    curl = sh.Command(r'C:\Tools\curl\bin\curl.exe')
+    psql = sh.Command(r'C:\Program Files\PostgreSQL\10\bin\psql.exe')
 else:
     curl = sh.curl
+    psql = sh.psql
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -125,7 +127,7 @@ def postgres(schema, tables, data_directory, **params):
         src = os.path.abspath(os.path.join(data_directory, table + '.csv'))
         click.echo(src)
         with open(src, 'rb') as f:
-            sh.psql(
+            psql(
                 host=params['host'],
                 port=params['port'],
                 user=params['user'],
