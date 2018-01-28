@@ -126,15 +126,16 @@ def postgres(schema, tables, data_directory, **params):
     for table in tables:
         src = os.path.abspath(os.path.join(data_directory, table + '.csv'))
         click.echo(src)
-        with open(src, 'rb') as f:
-            psql(
-                host=params['host'],
-                port=params['port'],
-                user=params['user'],
-                dbname=database,
-                command=query.format(table),
-                _in=f
-            )
+        with open(src, 'r') as f:
+            text = f.read()
+        psql(
+            host=params['host'],
+            port=params['port'],
+            user=params['user'],
+            dbname=database,
+            command=query.format(table),
+            _in=text
+        )
     engine.execute('VACUUM FULL ANALYZE')
 
 
