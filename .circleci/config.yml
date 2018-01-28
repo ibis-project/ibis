@@ -18,7 +18,6 @@ jobs:
       # - run: docker-compose run test flake8
       - run: docker-compose run test bash testing/load-all.sh
       - run: ls -lah /tmp/ibis-testing-data
-      - run: ls -lah
 
 
 workflows:
