@@ -8,6 +8,7 @@ environment: &environment
 
   - IBIS_TEST_POSTGRES_HOST: localhost
   - IBIS_TEST_POSTGRES_USER: ubuntu
+  - IBIS_TEST_POSTGRES_PORT: 5432
   - IBIS_TEST_POSTGRES_PASSWORD: ubuntu
   - IBIS_TEST_POSTGRES_DATABASE: ibis_testing
 
@@ -55,9 +56,15 @@ python_test_steps: &python_test_steps
                 -wait tcp://localhost:50070 \
                 -wait tcp://localhost:9000 \
                 -timeout 1m
+  - run: sudo apt-get install -qq -y postgresql-client
   - run: testing/datamgr.py download
   - run: testing/datamgr.py sqlite
-  - run: testing/datamgr.py postgres
+  - run: |
+      testing/datamgr.py postgres \
+        --host="${IBIS_TEST_POSTGRES_HOST}" \
+        --port="${IBIS_TEST_POSTGRES_PORT}" \
+        --user="${IBIS_TEST_POSTGRES_USER}" \
+        --database="${IBIS_TEST_POSTGRES_DATABASE}"
   - run: testing/datamgr.py clickhouse
   - run: testing/impalamgr.py load --data --data-dir "$IBIS_TEST_DATA_DIRECTORY"
   - run: mkdir -p /tmp/reports
