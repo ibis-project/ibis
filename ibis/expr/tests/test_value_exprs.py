@@ -515,6 +515,16 @@ def test_isnull_notnull():
     assert False
 
 
+@pytest.mark.parametrize('column', [
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'
+])
+def test_arbitrary(table, column):
+    col = table[column]
+    expr = col.arbitrary()
+    assert isinstance(expr, col.type().scalar_type())
+    assert ops.is_reduction(expr)
+
+
 @pytest.mark.parametrize(
     ['column', 'operation'],
     [

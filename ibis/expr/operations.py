@@ -702,6 +702,13 @@ class Count(Reduction):
         return ir.Int64Scalar
 
 
+class Arbitrary(Reduction):
+
+    def output_type(self):
+        # Scalar but type of caller
+        return self.args[0].type().scalar_type()
+
+
 def _sum_output_type(self):
     arg = self.args[0]
     if isinstance(arg, (ir.IntegerValue, ir.BooleanValue)):
