@@ -1243,18 +1243,29 @@ def _integer_to_interval(arg, unit='s'):
     return op.to_expr()
 
 
+abs = _unary_op('abs', _ops.Abs)
+ceil = _unary_op('ceil', _ops.Ceil)
+exp = _unary_op('exp', _ops.Exp)
+floor = _unary_op('floor', _ops.Floor)
+log2 = _unary_op('log2', _ops.Log2)
+log10 = _unary_op('log10', _ops.Log10)
+ln = _unary_op('ln', _ops.Ln)
+sign = _unary_op('sign', _ops.Sign)
+sqrt = _unary_op('sqrt', _ops.Sqrt)
+
+
 _numeric_value_methods = dict(
     __neg__=negate,
-    abs=_unary_op('abs', _ops.Abs),
-    ceil=_unary_op('ceil', _ops.Ceil),
-    floor=_unary_op('floor', _ops.Floor),
-    sign=_unary_op('sign', _ops.Sign),
-    exp=_unary_op('exp', _ops.Exp),
-    sqrt=_unary_op('sqrt', _ops.Sqrt),
+    abs=abs,
+    ceil=ceil,
+    floor=floor,
+    sign=sign,
+    exp=exp,
+    sqrt=sqrt,
     log=log,
-    ln=_unary_op('ln', _ops.Ln),
-    log2=_unary_op('log2', _ops.Log2),
-    log10=_unary_op('log10', _ops.Log10),
+    ln=ln,
+    log2=log2,
+    log10=log10,
     round=round,
     nullifzero=_unary_op('nullifzero', _ops.NullIfZero),
     zeroifnull=_unary_op('zeroifnull', _ops.ZeroIfNull),
