@@ -3,9 +3,6 @@ services:
 
   postgres:
     image: postgres
-    # hostname: postgres
-    # networks:
-    #   - ibis-nw
     ports:
       - 5432:5432
     environment:
@@ -13,16 +10,10 @@ services:
 
   impala:
     image: ibisproject/impala
-    # hostname: impala
-    # hostname: impala
-    # networks:
-    #   - ibis-nw
     links:
       - postgres
     environment:
       PGPASSWORD: postgres
-    # expose:
-    #   - 21050
     ports:
       # HDFS
       - 9020:9020
@@ -41,18 +32,12 @@ services:
 
   clickhouse:
     image: yandex/clickhouse-server:latest
-    # hostname: clickhouse
-    # networks:
-    #   - ibis-nw
     ports:
       - 8123:8123
       - 9000:9000
 
   ibis:
     image: ibis
-    # hostname: ibis
-    # networks:
-    #   - ibis-nw
     links:
       - impala
       - postgres
@@ -77,11 +62,3 @@ services:
       - impala
       - postgres
       - clickhouse
-
-
-# networks:
-#   default:
-#     external:
-#       name: ibis-nw
-#   ibis-nw:
-#     driver: bridge

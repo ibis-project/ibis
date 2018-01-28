@@ -11,15 +11,9 @@ jobs:
     steps:
       - checkout
 
-      - run: docker -v
-      - run: docker-compose -v
-
-      - run: docker pull ibisproject/impala
       - run: docker-compose up -d
-
       - run: docker-compose build ibis
-      - run: docker network ls
-      - run: docker network inspect project_default
+
       - run: docker ps
       - run: |
           docker-compose run waiter dockerize \
@@ -28,14 +22,9 @@ jobs:
           -wait tcp://impala:50070 \
           -wait tcp://clickhouse:9000 \
           -timeout 5m
-      # - run: docker-compose run ibis flake8
 
-      - run: docker-compose run ibis nslookup impala
-      - run: docker-compose run ibis nslookup postgres
-      - run: docker-compose run ibis nslookup clickhouse
-
+      - run: docker-compose run ibis flake8
       - run: docker-compose run ibis bash testing/load-data.sh
-      - run: ls -lah /tmp/ibis-testing-data
 
 
 workflows:
