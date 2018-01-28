@@ -11,10 +11,12 @@ jobs:
     steps:
       - checkout
 
+      - run: docker -v
+      - run: docker-compose -v
       - run: docker-compose build ibis
       - run: docker-compose up -d
       - run: docker network ls
-      - run: docker network inspect project_ibis-nw
+      - run: docker network inspect project_default
       - run: docker ps
       # - run: docker-compose run ibis flake8
 
