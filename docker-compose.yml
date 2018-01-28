@@ -3,8 +3,9 @@ services:
 
   postgres:
     image: postgres
-    networks:
-      - impala-nw
+    # hostname: postgres
+    # networks:
+    #   - ibis-nw
     ports:
       - 5432:5432
     environment:
@@ -12,11 +13,12 @@ services:
 
   impala:
     image: kszucs/impala
-    #hostname: localhost
-    networks:
-    - impala-nw
-    external_links:
-    - postgres
+    hostname: impala
+    # hostname: impala
+    # networks:
+    # - ibis-nw
+    # external_links:
+    # - postgres
     environment:
       PGPASSWORD: postgres
     ports:
@@ -37,36 +39,39 @@ services:
 
   clickhouse:
     image: yandex/clickhouse-server:latest
-    networks:
-      - impala-nw
+    hostname: clickhouse
+    # networks:
+    #   - ibis-nw
     ports:
       - 8123:8123
       - 9000:9000
 
-  test:
-    image: ibis-test
-    networks:
-      - impala-nw
-    external_links:
-      - impala
-      - postgres
-      - clickhouse
+  ibis:
+    image: ibis
+    hostname: ibis
+    # networks:
+    #   - ibis-nw
+    # external_links:
+    #   - impala
+    #   - postgres
+    #   - clickhouse
     environment:
+      - IBIS_TEST_NN_HOST=impala
       - IBIS_TEST_IMPALA_HOST=impala
       - IBIS_TEST_POSTGRES_HOST=postgres
       - IBIS_TEST_POSTGRES_PASSWORD=postgres
       - IBIS_TEST_CLICKHOUSE_HOST=clickhouse
     volumes:
-      - /tmp:/tmp
+      - /tmp/ibis:/tmp
     build:
       context: .
       dockerfile: ci/Dockerfile.test
       args:
         python: 3.6
 
-networks:
-  default:
-    external:
-      name: impala-nw
-  impala-nw:
-    driver: bridge
+# networks:
+#   default:
+#     external:
+#       name: ibis-nw
+#   ibis-nw:
+#     driver: bridge
