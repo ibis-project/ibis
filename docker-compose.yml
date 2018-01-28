@@ -10,7 +10,7 @@ services:
 
   impala:
     image: kszucs/impala
-    hostname: localhost
+    #hostname: localhost
     external_links:
     - postgres
     environment:
