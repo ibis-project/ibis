@@ -42,9 +42,10 @@ services:
     environment:
       - IBIS_TEST_IMPALA_HOST=impala
       - IBIS_TEST_POSTGRES_HOST=postgres
+      - IBIS_TEST_POSTGRES_PASSWORD=postgres
       - IBIS_TEST_CLICKHOUSE_HOST=clickhouse
     volumes:
-      - /tmp/ibis-testing-data:/tmp/ibis-testing-data
+      - ibis-testing-data:/tmp/ibis-testing-data
     build:
       context: .
       dockerfile: ci/Dockerfile.test
