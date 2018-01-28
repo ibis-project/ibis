@@ -18,6 +18,12 @@ jobs:
       - run: docker network ls
       - run: docker network inspect project_default
       - run: docker ps
+      - run: |
+          dockerize -wait tcp://localhost:5432 \
+                    -wait tcp://localhost:21050 \
+                    -wait tcp://localhost:50070 \
+                    -wait tcp://localhost:9000 \
+                    -timeout 1m
       # - run: docker-compose run ibis flake8
 
       - run: docker-compose run ibis nslookup impala
