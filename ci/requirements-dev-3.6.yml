@@ -2,4 +2,28 @@ channels:
   - conda-forge
 dependencies:
   - click
+  - cmake
   - flake8
+  - graphviz
+  - impyla>=0.13.7
+  - multipledispatch
+  - numpy
+  - pandas
+  - psycopg2
+  - pytest
+  - python=3.6
+  - python-graphviz
+  - pytables
+  - pyarrow>=0.6.0
+  - regex
+  - sh
+  - six
+  - sqlalchemy>=1.0.0,<1.1.15
+  - thrift
+  - thriftpy<=0.3.9
+  - toolz
+  - clickhouse-driver>=0.0.8
+  - clickhouse-sqlalchemy
+  - google-cloud-bigquery<0.28
+  - pip:
+      - hdfs>=2.0.0
