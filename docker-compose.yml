@@ -45,7 +45,7 @@ services:
       - IBIS_TEST_POSTGRES_PASSWORD=postgres
       - IBIS_TEST_CLICKHOUSE_HOST=clickhouse
     volumes:
-      - ibis-testing-data:/tmp/ibis-testing-data
+      - /tmp/ibis-testing-data:/tmp/ibis-testing-data
     build:
       context: .
       dockerfile: ci/Dockerfile.test
