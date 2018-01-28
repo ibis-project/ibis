@@ -5,11 +5,9 @@ ARG python
 ADD ci/requirements-dev-$python.yml /tmp/requirements-dev-$python.yml
 RUN conda env create -q -n "ibis_$python" -f "/tmp/requirements-dev-$python.yml"
 
-RUN apt-get update && apt-get install -y dnsutils
-
 ENV PATH /opt/conda/envs/ibis_$python/bin:$PATH
 
 ADD . /ibis
 WORKDIR /ibis
 
-RUN pip install .
+RUN pip install -e .

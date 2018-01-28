@@ -16,7 +16,7 @@ jobs:
 
       - run: docker ps
       - run: |
-          docker-compose run waiter dockerize \
+          docker-compose run dockerize \
           -wait tcp://postgres:5432 \
           -wait tcp://impala:21050 \
           -wait tcp://impala:50070 \

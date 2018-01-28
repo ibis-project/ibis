@@ -56,9 +56,10 @@ services:
       args:
         python: 3.6
 
-  waiter:
+  dockerize:
     image: jwilder/dockerize
     links:
       - impala
       - postgres
       - clickhouse
+    entrypoint: dockerize
