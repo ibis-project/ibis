@@ -52,7 +52,7 @@ services:
       - /tmp/ibis:/tmp
     build:
       context: .
-      dockerfile: ci/Dockerfile
+      dockerfile: Dockerfile
       args:
         python: ${PYTHON_VERSION}
 
