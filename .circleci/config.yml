@@ -13,8 +13,11 @@ jobs:
 
       - run: docker -v
       - run: docker-compose -v
-      - run: docker-compose build ibis
+
+      - run: docker-compose pull
       - run: docker-compose up -d
+
+      - run: docker-compose build ibis
       - run: docker network ls
       - run: docker network inspect project_default
       - run: docker ps

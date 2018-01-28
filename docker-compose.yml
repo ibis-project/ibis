@@ -12,8 +12,8 @@ services:
       POSTGRES_PASSWORD: postgres
 
   impala:
-    image: kszucs/impala
-    hostname: impala
+    image: ibisproject/impala
+    # hostname: impala
     # hostname: impala
     # networks:
     #   - ibis-nw
