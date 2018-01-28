@@ -14,7 +14,7 @@ jobs:
       - run: docker -v
       - run: docker-compose -v
 
-      - run: docker-compose pull
+      - run: docker-compose pull ibisproject/impala
       - run: docker-compose up -d
 
       - run: docker-compose build ibis
