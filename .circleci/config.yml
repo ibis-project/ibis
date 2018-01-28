@@ -8,6 +8,7 @@ environment: &environment
 
   - IBIS_TEST_POSTGRES_HOST: localhost
   - IBIS_TEST_POSTGRES_USER: ubuntu
+  - IBIS_TEST_POSTGRES_PORT: 5432
   - IBIS_TEST_POSTGRES_PASSWORD: ubuntu
   - IBIS_TEST_POSTGRES_DATABASE: ibis_testing
 
