@@ -4,9 +4,9 @@ services:
   postgres:
     image: postgres
     networks:
-    - impala-nw
+      - impala-nw
     ports:
-    - 5432:5432
+      - 5432:5432
     environment:
       POSTGRES_PASSWORD: postgres
 
@@ -20,31 +20,33 @@ services:
     environment:
       PGPASSWORD: postgres
     ports:
-    # HDFS
-    - 9020:9020
-    - 50070:50070
-    - 50075:50075
-    - 8020:8020
-    - 8042:8042
-    # Hive
-    - 9083:9083
-    # Impala
-    - 21000:21000
-    - 21050:21050
-    - 25000:25000
-    - 25010:25010
-    - 25020:25020
+      # HDFS
+      - 9020:9020
+      - 50070:50070
+      - 50075:50075
+      - 8020:8020
+      - 8042:8042
+      # Hive
+      - 9083:9083
+      # Impala
+      - 21000:21000
+      - 21050:21050
+      - 25000:25000
+      - 25010:25010
+      - 25020:25020
 
   clickhouse:
     image: yandex/clickhouse-server:latest
     networks:
-    - impala-nw
+      - impala-nw
     ports:
-    - 8123:8123
-    - 9000:9000
+      - 8123:8123
+      - 9000:9000
 
   test:
     image: ibis-test
+    networks:
+      - impala-nw
     external_links:
       - impala
       - postgres
