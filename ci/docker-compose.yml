@@ -53,7 +53,7 @@ services:
     volumes:
       - /tmp/ibis:/tmp
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       args:
         python: ${PYTHON_VERSION}

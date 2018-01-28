@@ -19,7 +19,7 @@ jobs:
       - run: docker ps
 
       - run: docker-compose run ibis flake8
-      - run: docker-compose run ibis bash testing/load-data.sh
+      - run: docker-compose run ibis bash ci/load-data.sh
 
 
 workflows:
