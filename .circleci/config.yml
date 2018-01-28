@@ -18,9 +18,9 @@ jobs:
       - run: docker ps
       # - run: docker-compose run ibis flake8
 
-      - run: docker-compuse run ibis nslookup impala
-      - run: docker-compuse run ibis nslookup postgres
-      - run: docker-compuse run ibis nslookup clickhouse
+      - run: docker-compose run ibis nslookup impala
+      - run: docker-compose run ibis nslookup postgres
+      - run: docker-compose run ibis nslookup clickhouse
 
       - run: docker-compose run ibis bash testing/load-data.sh
       - run: ls -lah /tmp/ibis-testing-data
