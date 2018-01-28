@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import os
-import click
 import tarfile
+
+import click
 
 import numpy as np
 import pandas as pd
@@ -17,9 +18,11 @@ except ImportError:
 
 
 if os.environ.get('APPVEYOR', None) is not None:
-    curl = sh.Command('C:\\Tools\\curl\\bin\\curl.exe')
+    curl = sh.Command(r'C:\Tools\curl\bin\curl.exe')
+    psql = sh.Command(r'C:\Program Files\PostgreSQL\10\bin\psql.exe')
 else:
     curl = sh.curl
+    psql = sh.psql
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -39,11 +42,13 @@ def recreate_database(driver, params, **kwargs):
 
 
 def init_database(driver, params, schema=None, recreate=True, **kwargs):
-    params['username'] = params.pop('user', None)
-    if recreate:
-        recreate_database(driver, params, **kwargs)
+    new_params = params.copy()
+    new_params['username'] = new_params.pop('user', None)
 
-    url = sa.engine.url.URL(driver, **params)
+    if recreate:
+        recreate_database(driver, new_params, **kwargs)
+
+    url = sa.engine.url.URL(driver, **new_params)
     engine = sa.create_engine(url, **kwargs)
 
     if schema:
@@ -115,7 +120,22 @@ def postgres(schema, tables, data_directory, **params):
     click.echo('Initializing PostgreSQL...')
     engine = init_database('postgresql', params, schema,
                            isolation_level='AUTOCOMMIT')
-    insert_tables(engine, tables, data_directory)
+
+    query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
+    database = params['database']
+    for table in tables:
+        src = os.path.abspath(os.path.join(data_directory, table + '.csv'))
+        click.echo(src)
+        with open(src, 'r') as f:
+            text = f.read()
+        psql(
+            host=params['host'],
+            port=params['port'],
+            username=params['user'],
+            dbname=database,
+            command=query.format(table),
+            _in=text
+        )
     engine.execute('VACUUM FULL ANALYZE')
 
 
