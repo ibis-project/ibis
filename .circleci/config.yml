@@ -13,23 +13,18 @@ test: &test
     - run:
         name: Start Databases
         command: docker-compose up -d --no-build postgres impala clickhouse
-
     - run:
         name: Show Running Containers
         command: docker ps
-
     - run:
         name: Build Ibis
         command: docker-compose build --pull ibis
-
     - run:
         name: Flake8
         command: docker-compose run ibis flake8
-
     - run:
         name: Wait for Databases to be Ready
         command: docker-compose run waiter
-
     - run:
         name: Load Test Datasets
         command: docker-compose run ibis bash ci/load-data.sh
