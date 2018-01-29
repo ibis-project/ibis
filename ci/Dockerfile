@@ -9,7 +9,8 @@ ARG PYTHON
 
 ADD ci/requirements-dev-$PYTHON.yml /tmp/requirements-$PYTHON.yml
 
-RUN conda install -q -y -c conda-forge conda-build python=$PYTHON \
+RUN conda install -q -y conda-build \
+ && conda install -q -y -c conda-forge python=$PYTHON \
  && conda env update -q -n root -f "/tmp/requirements-$PYTHON.yml" \
  && conda clean -a -y
 
