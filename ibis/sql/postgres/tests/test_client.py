@@ -28,9 +28,9 @@ pytestmark = pytest.mark.postgresql
 POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
                                   'ibis_testing')
 IBIS_POSTGRES_USER = os.environ.get('IBIS_TEST_POSTGRES_USER',
-                                    'ubuntu')
+                                    'postgres')
 IBIS_POSTGRES_PASS = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD',
-                                    'ubuntu')
+                                    'postgres')
 
 
 def test_table(alltypes):
