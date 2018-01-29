@@ -11,10 +11,10 @@ services:
   impala:
     image: ibisproject/impala
     hostname: impala
-    links:
-      - postgres
-    depends_on:
-      - postgres
+    # links:
+    #   - postgres
+    # depends_on:
+    #   - postgres
     environment:
       PGPASSWORD: postgres
     ports:
@@ -41,10 +41,10 @@ services:
 
   waiter:
     image: jwilder/dockerize
-    links:
-      - impala
-      - postgres
-      - clickhouse
+    # links:
+    #   - impala
+    #   - postgres
+    #   - clickhouse
     command: |
       dockerize -wait tcp://postgres:5432
                 -wait tcp://impala:21050
@@ -55,10 +55,10 @@ services:
 
   ibis:
     image: ibis:${PYTHON_VERSION-3.6}
-    links:
-      - impala
-      - postgres
-      - clickhouse
+    # links:
+    #   - impala
+    #   - postgres
+    #   - clickhouse
     environment:
       - IBIS_TEST_NN_HOST=impala
       - IBIS_TEST_IMPALA_HOST=impala
