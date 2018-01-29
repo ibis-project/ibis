@@ -804,27 +804,63 @@ def comparable(left, right):
 
 
 class Table(ValueTyped):
-    """
+    """A table argument.
+
     Parameters
     ----------
+    name : str
+        The name of the table argument.
+    optional : bool
+        Whether this table argument is optional or not.
     satisfying : iterable
-        An iterable of column rules.
-    """
-    def __init__(self, name=None, doc=None, optional=False, satisfying=None,
-            validator=None, **arg_kwds):
-        self.satisfying = satisfying
-        self.name = name
+        An iterable of lambda expressions and/or column rules. These will be
+        used to validate arguments. Lambda expressions must take a table
+        as their single argument, validate, and return ``True`` (validated
+        successfully) or ``False`` (not validated). For column rules, if at
+        least one column in the table matches the rule, then the table
+        is valid.
 
-        # self.default = default
+    validator : ???
+        ???
+    doc : ???
+        ???
+
+    Examples
+    --------
+    The following op will accept an argument named ``'table'``, with at least
+    four columns, of which at least three must be of type ``double``. The names
+    and types of each column must also match those in the rule (e.g. column
+    with name ``'value4'`` is an optional column but must be of type
+    ``double``).
+
+    >>> class MyOp(ops.ValueOp):
+    ...    input_type = [
+    ...        rules.table(
+    ...            name='table',
+    ...            satisfying=[
+    ...                lambda t: len(t.columns) >= 4,
+    ...                lambda t: t.schema().types.count(dt.Double()) >= 3,
+    ...                rules.column(name='group', value_type=rules.number),
+    ...                rules.column(name='value1', value_type=rules.number),
+    ...                rules.column(name='value2', value_type=rules.number),
+    ...                rules.column(name='value3', value_type=rules.number),
+    ...                rules.column(name='value4', value_type=rules.number,
+    ...                             optional=True)])]
+    ...    output_type = rules.type_of_arg(0)
+    """
+    def __init__(self, name=None, optional=False, satisfying=None,
+            doc=None, validator=None, **arg_kwds):
+        self.name = name
         self.optional = optional
-        self.validator = validator
+        self.satisfying = util.promote_list(satisfying)
+
         self.doc = doc
-        # self.as_value_expr = as_value_expr or ir.literal
+        self.validator = validator
 
     def _validate(self, args, i):
         self.arg = args[0]
         if isinstance(self.arg, ir.TableExpr):
-            for sat in util.promote_list(self.satisfying):
+            for sat in self.satisfying:
                 if isinstance(sat, Argument):
                     for col in self.arg.columns:
                         # This will raise an appropriate IbisTypeError
@@ -834,7 +870,9 @@ class Table(ValueTyped):
                         raise IbisTypeError(('Did not satisfy callable (not '
                                              'truthy): {}').format(sat))
                 else:
-                    NotImplementedError('NOT IMPLEMENTED!')
+                    raise ValueError(('Elements passed to "satisfying" '
+                                      'argument must be instances of '
+                                      '"Argument" or callables.'))
             return self.arg
 
         raise IbisTypeError('Not a table.')

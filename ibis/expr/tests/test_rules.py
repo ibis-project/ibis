@@ -343,3 +343,14 @@ def test_table_not_a_table():
 
     with pytest.raises(IbisTypeError):
         MyOp(123)
+
+
+def test_table_invalid_satisfying():
+    class MyOp(ops.ValueOp):
+        input_type = [rules.table(name='table', satisfying=123)]
+        output_type = rules.type_of_arg(0)
+
+    schema = ibis.Schema.from_tuples([('group', dt.int64)])
+    table = ibis.table(schema)
+    with pytest.raises(ValueError):
+        MyOp(table)
