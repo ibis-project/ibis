@@ -134,7 +134,8 @@ def postgres(schema, tables, data_directory, **params):
             username=params['user'],
             dbname=database,
             command=query.format(table),
-            _in=text
+            _in=text,
+            _env={'PGPASSWORD': params['password']}
         )
     engine.execute('VACUUM FULL ANALYZE')
 

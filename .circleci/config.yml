@@ -12,6 +12,8 @@ test: &test
 
     # spin up database services from ci/docker-compose.yml
     - run: docker-compose up -d --no-build postgres impala clickhouse
+    # little diagnostics information
+    - run: docker ps
     # build a miniconda based docker image with ibis installed
     - run: docker-compose build --pull ibis
     # static source code analysis / validation
