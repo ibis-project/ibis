@@ -23,7 +23,7 @@ test: &test
         name: Flake8
         command: docker-compose run ibis flake8
     - run:
-        name: Wait for Databases to be Ready
+        name: Wait for Databases
         command: docker-compose run waiter
     - run:
         name: Load Test Datasets
@@ -31,10 +31,9 @@ test: &test
     - run:
         name: Execute Pytest
         command: |
-          pytest -rsxX \
+          docker-compose run ibis pytest -rsxX \
             --doctest-modules \
             --doctest-ignore-import-errors \
-            --junitxml=/tmp/reports/junit.xml \
             --tb=short ibis
 
 
