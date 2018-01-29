@@ -184,13 +184,13 @@ def create_avro_tables(con):
 def build_udfs():
     print('Building UDFs')
     ibis_home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    udf_dir = os.path.join(ibis_home_dir, 'testing', 'udf')
+    udf_dir = os.path.join(ibis_home_dir, 'ci', 'udf')
     check_call('cmake . && make VERBOSE=1', shell=True, cwd=udf_dir)
 
 
 def upload_udfs(con):
     ibis_home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    build_dir = os.path.join(ibis_home_dir, 'testing', 'udf', 'build')
+    build_dir = os.path.join(ibis_home_dir, 'ci', 'udf', 'build')
     bitcode_dir = os.path.join(ENV.test_data_dir, 'udf')
     print('Uploading UDFs to {}'.format(bitcode_dir))
     if con.hdfs.exists(bitcode_dir):

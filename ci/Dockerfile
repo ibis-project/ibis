@@ -7,10 +7,10 @@ RUN apt-get -qq update -y \
 ARG PYTHON
 
 ADD ci/requirements-dev-$PYTHON.yml /tmp/requirements-$PYTHON.yml
-RUN conda install --quiet --yes conda-build
-RUN conda env update --quiet --name root --file "/tmp/requirements-$PYTHON.yml"
 
-# && conda clean --all --yes
+RUN conda install --quiet --yes conda-build python=$PYTHON \
+ && conda env update --quiet --name root --file "/tmp/requirements-$PYTHON.yml" \
+ && conda clean --all --yes
 
 ADD . /ibis
 WORKDIR /ibis
