@@ -50,6 +50,7 @@ services:
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070
                 -wait tcp://clickhouse:9000
+                -wait-retry-interval 5s
                 -timeout 5m
 
   ibis:
