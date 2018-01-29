@@ -18,7 +18,8 @@ class Clickhouse(BackendTestConfiguration):
         return module.connect(
             host=os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost'),
             port=int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000)),
-            database=os.environ.get('IBIS_TEST_CLICKHOUSE_DATABASE', 'ibis_testing'),
+            database=os.environ.get('IBIS_TEST_CLICKHOUSE_DATABASE',
+                                    'ibis_testing'),
             user=os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default'),
             password=os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', ''),
         )
