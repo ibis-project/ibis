@@ -13,7 +13,6 @@ test: &test
   steps:
     - checkout:
         path: ~/ibis
-
     - run:
         name: Setup Google Credentials for BigQuery
         command: |
@@ -50,11 +49,14 @@ test: &test
 build: &build
   <<: *base
   steps:
+    - checkout:
+        path: ~/ibis
     - run:
-      command: |
-        docker-compose run ibis conda build conda-recipes/ibis-framework \
-          --python "${PYTHON_VERSION}" \
-          --channel conda-forge
+        name: Build Conda Recipe
+        command: |
+          docker-compose run ibis conda build conda-recipes/ibis-framework \
+            --python "${PYTHON_VERSION}" \
+            --channel conda-forge
 
 
 jobs:
