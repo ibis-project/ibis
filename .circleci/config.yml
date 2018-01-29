@@ -10,18 +10,29 @@ test: &test
     - checkout:
         path: ~/ibis
 
-    # spin up database services from ci/docker-compose.yml
-    - run: docker-compose up -d --no-build postgres impala clickhouse
-    # little diagnostics information
-    - run: docker ps
-    # build a miniconda based docker image with ibis installed
-    - run: docker-compose build --pull ibis
-    # static source code analysis / validation
-    - run: docker-compose run ibis flake8
-    # wait for the database services to listen on their ports
-    - run: docker-compose run waiter
-    # loads test data to the databases
-    - run: docker-compose run ibis bash ci/load-data.sh
+    - run:
+        name: Start Databases
+        command: docker-compose up -d --no-build postgres impala clickhouse
+
+    - run:
+        name: Running Containers
+        command: docker ps
+
+    - run:
+        name: Building Ibis
+        command: docker-compose build --pull ibis
+
+    - run:
+        name: Flake8
+        command: docker-compose run ibis flake8
+
+    - run:
+        name: Waiting for Databases
+        command: docker-compose run waiter
+
+    - run:
+        name: Load Test Datasets
+        command: docker-compose run ibis bash ci/load-data.sh
 
 
 jobs:

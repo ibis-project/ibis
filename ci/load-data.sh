@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 
-export IBIS_TEST_DOWNLOAD_DIRECTORY=/tmp
 export IBIS_TEST_DATA_DIRECTORY=/tmp/ibis-testing-data
-export IBIS_TEST_IMPALA_PORT=21050
-export IBIS_TEST_WEBHDFS_PORT=50070
-export IBIS_TEST_WEBHDFS_USER=hdfs
+export IBIS_TEST_DOWNLOAD_DIRECTORY=/tmp
 
 CWD=$(dirname $0)
 

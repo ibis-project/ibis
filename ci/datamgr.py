@@ -110,7 +110,7 @@ def download(base_url, directory, name):
 @click.option('-h', '--host', default='localhost')
 @click.option('-P', '--port', default=5432, type=int)
 @click.option('-u', '--user', default='postgres')
-@click.option('-p', '--password', default='ibis')
+@click.option('-p', '--password', default='postgres')
 @click.option('-D', '--database', default='ibis_testing')
 @click.option('-S', '--schema', type=click.File('rt'),
               default=os.path.join(SCRIPT_DIR, 'schema/postgresql.sql'))

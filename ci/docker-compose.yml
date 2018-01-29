@@ -10,6 +10,7 @@ services:
 
   impala:
     image: ibisproject/impala
+    hostname: impala
     links:
       - postgres
     depends_on:
@@ -38,26 +39,6 @@ services:
       - 8123:8123
       - 9000:9000
 
-  ibis:
-    image: ibis
-    links:
-      - impala
-      - postgres
-      - clickhouse
-    environment:
-      - IBIS_TEST_NN_HOST=impala
-      - IBIS_TEST_IMPALA_HOST=impala
-      - IBIS_TEST_POSTGRES_HOST=postgres
-      - IBIS_TEST_POSTGRES_PASSWORD=postgres
-      - IBIS_TEST_CLICKHOUSE_HOST=clickhouse
-    volumes:
-      - /tmp/ibis:/tmp
-    build:
-      context: ..
-      dockerfile: ci/Dockerfile
-      args:
-        PYTHON: ${PYTHON_VERSION}
-
   waiter:
     image: jwilder/dockerize
     links:
@@ -70,3 +51,26 @@ services:
                 -wait tcp://impala:50070
                 -wait tcp://clickhouse:9000
                 -timeout 5m
+
+  ibis:
+    image: ibis:${PYTHON_VERSION-3.6}
+    links:
+      - impala
+      - postgres
+      - clickhouse
+    environment:
+      - IBIS_TEST_NN_HOST=impala
+      - IBIS_TEST_IMPALA_HOST=impala
+      - IBIS_TEST_IMPALA_PORT=21050
+      - IBIS_TEST_WEBHDFS_PORT=50070
+      - IBIS_TEST_WEBHDFS_USER=hdfs
+      - IBIS_TEST_POSTGRES_HOST=postgres
+      - IBIS_TEST_POSTGRES_PASSWORD=postgres
+      - IBIS_TEST_CLICKHOUSE_HOST=clickhouse
+    volumes:
+      - /tmp/ibis:/tmp
+    build:
+      context: ..
+      dockerfile: ci/Dockerfile
+      args:
+        PYTHON: ${PYTHON_VERSION-3.6}
