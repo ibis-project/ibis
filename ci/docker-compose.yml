@@ -54,8 +54,11 @@ services:
       - IBIS_TEST_WEBHDFS_PORT=50070
       - IBIS_TEST_WEBHDFS_USER=hdfs
       - IBIS_TEST_POSTGRES_HOST=postgres
+      - IBIS_TEST_POSTGRES_PORT=5432
+      - IBIS_TEST_POSTGRES_USER=postgres
       - IBIS_TEST_POSTGRES_PASSWORD=postgres
       - IBIS_TEST_CLICKHOUSE_HOST=clickhouse
+      - IBIS_TEST_CLICKHOUSE_PORT=9000
     volumes:
       - /tmp/ibis:/tmp
     build:
