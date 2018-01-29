@@ -48,6 +48,8 @@ services:
   ibis:
     image: ibis:${PYTHON_VERSION-3.6}
     environment:
+      - IBIS_TEST_DOWNLOAD_DIRECTORY=/tmp
+      - IBIS_TEST_DATA_DIRECTORY=/tmp/ibis-testing-data
       - IBIS_TEST_NN_HOST=impala
       - IBIS_TEST_IMPALA_HOST=impala
       - IBIS_TEST_IMPALA_PORT=21050

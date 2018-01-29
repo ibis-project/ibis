@@ -27,6 +27,8 @@ pytestmark = pytest.mark.postgresql
 
 POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
                                   'ibis_testing')
+IBIS_POSTGRES_HOST = os.environ.get('IBIS_TEST_POSTGRES_HOST',
+                                    'localhost')
 IBIS_POSTGRES_USER = os.environ.get('IBIS_TEST_POSTGRES_USER',
                                     'postgres')
 IBIS_POSTGRES_PASS = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD',
@@ -105,7 +107,7 @@ def test_list_schemas(con):
 
 def test_metadata_is_per_table():
     con = ibis.postgres.connect(
-        host='localhost',
+        host=IBIS_POSTGRES_HOST,
         database=POSTGRES_TEST_DB,
         user=IBIS_POSTGRES_USER,
         password=IBIS_POSTGRES_PASS,
@@ -120,7 +122,7 @@ def test_metadata_is_per_table():
 
 def test_schema_table():
     con = ibis.postgres.connect(
-        host='localhost',
+        host=IBIS_POSTGRES_HOST,
         database=POSTGRES_TEST_DB,
         user=IBIS_POSTGRES_USER,
         password=IBIS_POSTGRES_PASS,

@@ -29,6 +29,9 @@ test: &test
         name: Build Ibis Image
         command: docker-compose build --pull ibis
     - run:
+        name: List Docker Images
+        command: docker images
+    - run:
         name: Flake8
         command: docker-compose run ibis flake8
     - run:
@@ -54,6 +57,9 @@ build: &build
     - run:
         name: Build Ibis Image
         command: docker-compose build --pull ibis
+    - run:
+        name: List Docker Images
+        command: docker images
     - run:
         name: Build Conda Recipe
         command: |

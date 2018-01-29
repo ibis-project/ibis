@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-export IBIS_TEST_DATA_DIRECTORY=/tmp/ibis-testing-data
-export IBIS_TEST_DOWNLOAD_DIRECTORY=/tmp
-
 CWD=$(dirname $0)
 
 python $CWD/datamgr.py download
