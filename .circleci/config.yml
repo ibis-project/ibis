@@ -50,7 +50,7 @@ test: &test
 build: &build
   <<: *base
   steps:
-    run:
+    - run:
       command: |
         docker-compose run ibis conda build conda-recipes/ibis-framework \
           --python "${PYTHON_VERSION}" \
