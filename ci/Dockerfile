@@ -7,8 +7,8 @@ RUN apt-get -qq update -y \
 ARG PYTHON
 
 ADD ci/requirements-dev-$PYTHON.yml /tmp/requirements-$PYTHON.yml
-RUN conda install --yes conda-build
-RUN conda env update --name root --file "/tmp/requirements-$PYTHON.yml"
+RUN conda install --quiet --yes conda-build
+RUN conda env update --quiet --name root --file "/tmp/requirements-$PYTHON.yml"
 
 # && conda clean --all --yes
 
