@@ -46,7 +46,7 @@ test: &test
     - run:
         name: Execute Pytest
         command: |
-          docker-compose run ibis pytest -rsxX \
+          docker-compose run ibis pytest -v -rsxX \
             --doctest-modules \
             --doctest-ignore-import-errors \
             --tb=short ibis/tests/all
