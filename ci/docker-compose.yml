@@ -62,6 +62,7 @@ services:
       - IBIS_TEST_CLICKHOUSE_PORT=9000
       - IBIS_TEST_CLICKHOUSE_DATABASE=ibis_testing
       - GOOGLE_BIGQUERY_PROJECT_ID=ibis-gbq
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcloud-service-key.json
     volumes:
       - /tmp/ibis:/tmp
     build:
