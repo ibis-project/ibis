@@ -15,4 +15,4 @@ RUN conda install --quiet --yes conda-build python=$PYTHON \
 ADD . /ibis
 WORKDIR /ibis
 
-RUN pip install -e .
+RUN python setup.py develop
