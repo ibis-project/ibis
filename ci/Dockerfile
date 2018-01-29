@@ -10,7 +10,8 @@ ARG PYTHON
 ADD ci/requirements-dev-$PYTHON.yml /tmp/requirements-$PYTHON.yml
 
 RUN conda install -q -y -c conda-forge conda-build python=$PYTHON \
- && conda env update -q -n root -f "/tmp/requirements-$PYTHON.yml"
+ && conda env update -q -n root -f "/tmp/requirements-$PYTHON.yml" \
+ && conda clean -a -y
 
 ADD . /ibis
 WORKDIR /ibis
