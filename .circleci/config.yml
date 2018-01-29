@@ -11,31 +11,29 @@ test: &test
         path: ~/ibis
 
     - run:
-        name:
+        name: Setup Google Credentials for BigQuery
         command: |
           if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
             echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > /tmp/ibis/gcloud-service-key.json
           fi
-    - run: ls /tmp/ibis
-    # - run:
-    #     name: Start Databases
-    #     command: docker-compose up -d --no-build postgres impala clickhouse
-    # - run:
-    #     name: Show Running Containers
-    #     command: docker ps
+    - run:
+        name: Start Databases
+        command: docker-compose up -d --no-build postgres impala clickhouse
+    - run:
+        name: Show Running Containers
+        command: docker ps
     - run:
         name: Build Ibis
         command: docker-compose build --pull ibis
-    # - run:
-    #     name: Flake8
-    #     command: docker-compose run ibis flake8
-    # - run:
-    #     name: Wait for Databases
-    #     command: docker-compose run waiter
-    # - run:
-    #     name: Load Test Datasets
-    #     command: docker-compose run ibis bash ci/load-data.sh
-    - run: docker-compose run ibis ls /tmp
+    - run:
+        name: Flake8
+        command: docker-compose run ibis flake8
+    - run:
+        name: Wait for Databases
+        command: docker-compose run waiter
+    - run:
+        name: Load Test Datasets
+        command: docker-compose run ibis bash ci/load-data.sh
     - run:
         name: Execute Pytest
         command: |
