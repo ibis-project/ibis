@@ -1,11 +1,15 @@
 version: 2
 
 
-test: &test
+base: &base
   machine:
     image: circleci/classic:latest
     docker_layer_caching: true
   working_directory: ~/ibis/ci
+
+
+test: &test
+  <<: *base
   steps:
     - checkout:
         path: ~/ibis
@@ -40,7 +44,17 @@ test: &test
           docker-compose run ibis pytest -rsxX \
             --doctest-modules \
             --doctest-ignore-import-errors \
-            --tb=short ibis/bigquery
+            --tb=short ibis
+
+
+build: &build
+  <<: *base
+  steps:
+    run:
+      command: |
+        docker-compose run ibis conda build conda-recipes/ibis-framework \
+          --python "${PYTHON_VERSION}" \
+          --channel conda-forge
 
 
 jobs:
@@ -64,13 +78,34 @@ jobs:
     environment:
       - PYTHON_VERSION: 3.6
 
+  python27_conda_build:
+    <<: *build
+    environment:
+      - PYTHON_VERSION: 2.7
+
+  python34_conda_build:
+    <<: *build
+    environment:
+      - PYTHON_VERSION: 3.4
+
+  python35_conda_build:
+    <<: *build
+    environment:
+      - PYTHON_VERSION: 3.5
+
+  python36_conda_build:
+    <<: *build
+    environment:
+      - PYTHON_VERSION: 3.6
+
 
 workflows:
   version: 2
   test:
     jobs:
-      - python27_test
-      - python34_test
-      - python35_test
+      # - python27_test
+      # - python34_test
+      # - python35_test
       - python36_test
+      - python36_conda_build
 
