@@ -16,6 +16,7 @@ test: &test
           if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
             echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > /tmp/ibis/gcloud-service-key.json
           fi
+    - run: ls /tmp/ibis
     # - run:
     #     name: Start Databases
     #     command: docker-compose up -d --no-build postgres impala clickhouse
