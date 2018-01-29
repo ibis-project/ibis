@@ -57,8 +57,10 @@ services:
       - IBIS_TEST_POSTGRES_PORT=5432
       - IBIS_TEST_POSTGRES_USER=postgres
       - IBIS_TEST_POSTGRES_PASSWORD=postgres
+      - IBIS_TEST_POSTGRES_DATABASE=ibis_testing
       - IBIS_TEST_CLICKHOUSE_HOST=clickhouse
       - IBIS_TEST_CLICKHOUSE_PORT=9000
+      - IBIS_TEST_CLICKHOUSE_DATABASE=ibis_testing
       - GOOGLE_BIGQUERY_PROJECT_ID=ibis-gbq
     volumes:
       - /tmp/ibis:/tmp
