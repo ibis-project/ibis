@@ -11,11 +11,11 @@ test: &test
         path: ~/ibis
 
     - run:
-        name: Start Databases
+        name: Starting Databases
         command: docker-compose up -d --no-build postgres impala clickhouse
 
     - run:
-        name: Running Containers
+        name: Show Running Containers
         command: docker ps
 
     - run:
@@ -31,7 +31,7 @@ test: &test
         command: docker-compose run waiter
 
     - run:
-        name: Load Test Datasets
+        name: Loading Test Datasets
         command: docker-compose run ibis bash ci/load-data.sh
 
 
