@@ -28,6 +28,14 @@ test: &test
     - run:
         name: Load Test Datasets
         command: docker-compose run ibis bash ci/load-data.sh
+    - run:
+        name: Execute Pytest
+        command: |
+          pytest -rsxX \
+            --doctest-modules \
+            --doctest-ignore-import-errors \
+            --junitxml=/tmp/reports/junit.xml \
+            --tb=short ibis
 
 
 jobs:
