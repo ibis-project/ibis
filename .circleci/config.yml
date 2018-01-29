@@ -14,7 +14,7 @@ test: &test
         name:
         command: |
           if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
-            echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > /tmp/gcloud-service-key.json
+            echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > /tmp/ibis/gcloud-service-key.json
           fi
     # - run:
     #     name: Start Databases
@@ -34,6 +34,7 @@ test: &test
     # - run:
     #     name: Load Test Datasets
     #     command: docker-compose run ibis bash ci/load-data.sh
+    - run: docker-compose run ibis ls /tmp
     - run:
         name: Execute Pytest
         command: |
