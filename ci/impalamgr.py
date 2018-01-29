@@ -53,12 +53,12 @@ def make_ibis_client():
 def can_write_to_hdfs(con):
     test_path = os.path.join(ENV.test_data_dir, ibis.util.guid())
     test_file = BytesIO(ibis.util.guid().encode('utf-8'))
-    #try:
-    con.hdfs.put(test_path, test_file)
-    con.hdfs.rm(test_path)
-    return True
-    # except Exception:
-    #     return False
+    try:
+        con.hdfs.put(test_path, test_file)
+        con.hdfs.rm(test_path)
+        return True
+    except Exception:
+        return False
 
 
 def can_build_udfs():
