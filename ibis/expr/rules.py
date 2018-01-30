@@ -747,8 +747,11 @@ enum = Enum
 
 class ListOf(Argument):
 
-    def __init__(self, value_type, min_length=0, **arg_kwds):
-        super(ListOf, self).__init__(**arg_kwds)
+    def __init__(
+        self, value_type,
+        min_length=0, as_value_expr=ir.as_value_expr, **arg_kwds
+    ):
+        super(ListOf, self).__init__(as_value_expr=as_value_expr, **arg_kwds)
         self.value_type = _to_argument(value_type)
         self.min_length = min_length
 
