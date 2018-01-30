@@ -11,7 +11,7 @@ import google.cloud.bigquery
 from google.api.core.exceptions import BadRequest
 
 
-PARTITIONTIME = 'PARTITIONTIME'
+NATIVE_PARTITION_COL = '_PARTITIONTIME'
 
 
 def _ensure_split(table_id, dataset_id):
@@ -113,11 +113,12 @@ class BigQueryClient(SQLClient):
 
     def table(self, *args, **kwargs):
         t = super(BigQueryClient, self).table(*args, **kwargs)
-        if '_' + PARTITIONTIME in t.columns:
-            assert PARTITIONTIME not in t
+        if NATIVE_PARTITION_COL in t.columns:
+            col = ibis.options.bigquery.partition_col
+            assert col not in t
             return (t
-                    .mutate(**{PARTITIONTIME: t['_' + PARTITIONTIME]})
-                    .drop(['_' + PARTITIONTIME]))
+                    .mutate(**{col: t[NATIVE_PARTITION_COL]})
+                    .drop([NATIVE_PARTITION_COL]))
         return t
 
     def _build_ast(self, expr, params=None):
@@ -223,7 +224,7 @@ def bigquery_table_to_ibis_schema(table):
     pairs = ((el.name, _discover_type(el)) for el in table.schema)
     try:
         if table.list_partitions():
-            pairs.append(('_' + PARTITIONTIME, dt.timestmap))
+            pairs.append((NATIVE_PARTITION_COL, dt.timestmap))
     except BadRequest:
         pass
     return ibis.schema(pairs)
