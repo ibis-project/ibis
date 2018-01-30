@@ -188,22 +188,67 @@ except AttributeError:
     infer_pandas_dtype = pd.lib.infer_dtype
 
 
+def infer_ibis_dtypes_from_series(series, strict):
+
+    def _infer_ibis_dtypes_from_series_strict(series_nona):
+        ibis_dtypes = []
+        try:
+            ibis_dtypes = series_nona.map(dt.infer).unique()
+            ibis_dtypes = [dt.highest_precedence(ibis_dtypes)]
+        except com.IbisTypeError:
+            pass
+        return ibis_dtypes
+
+    if series.dtype != np.object_:
+        ibis_dtype = dt.dtype(series.dtype)
+    else:
+        series_nona = series.dropna()
+        pandas_dtype = infer_pandas_dtype(series_nona)
+        if pandas_dtype == 'string' or pandas_dtype == 'unicode':
+            ibis_dtype = dt.string
+        elif pandas_dtype == 'empty':
+            ibis_dtype == dt.null
+        elif pandas_dtype == 'mixed':
+            if strict:
+                return _infer_ibis_dtypes_from_series_strict(series_nona)
+            else:
+                return [dt.infer(series_nona.iat[0])]
+        else:
+            return []
+    return [ibis_dtype]
+
+
 @infer.register(pd.DataFrame)
-def infer_pandas_schema(df):
-    pairs = []
-    for column_name, pandas_dtype in df.dtypes.iteritems():
-        if pandas_dtype == np.object_:
-            pandas_dtype = infer_pandas_dtype(df[column_name].dropna())
-            if pandas_dtype == 'mixed':
-                raise TypeError(
-                    'Unable to infer type of column {0!r}. Try instantiating '
-                    'your table from the client with client.table('
-                    "'my_table', schema={{{0!r}: <explicit type>}})".format(
-                        column_name
-                    )
-                )
-
-        ibis_dtype = dt.dtype(pandas_dtype)
-        pairs.append((column_name, ibis_dtype))
-
-    return Schema.from_tuples(pairs)
+def infer_pandas_schema(df, strict=True):
+    pairs = [
+        (col, infer_ibis_dtypes_from_series(series, strict))
+        for (col, series) in df.items()
+    ]
+    none_cols = [col for (col, dtypes) in pairs if len(dtypes) == 0]
+    multi_cols = [(col, dtypes) for (col, dtypes) in pairs if len(dtypes) > 1]
+    pairs = [(col, dtypes[0]) for (col, dtypes) in pairs if len(dtypes) == 1]
+    if none_cols or multi_cols:
+        msg = ''
+        if none_cols:
+            infix = '\n\t' + ',\n\t'.join(
+                '{}: <explicit type>'.format(col) for col in none_cols)
+            msg += (
+                'Unable to infer type of column(s) {0!r}. Try instantiating '
+                'your table from the client with\n'
+                'client.table('
+                "'my_table', schema={{{1}}})"
+                .format(none_cols, infix)
+            )
+        if none_cols and multi_cols:
+            msg += '\n'
+        if multi_cols:
+            postfix = '\n'.join(
+                '{}:\n\t{}'.format(col, '\n\t'.join(map(str, typs)))
+                for (col, typs) in multi_cols
+            )
+            msg += (
+                'Multiple types found for columns(s):\n' + postfix
+            )
+        raise TypeError(msg)
+    else:
+        return Schema.from_tuples(pairs)
