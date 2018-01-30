@@ -763,8 +763,9 @@ class ListOf(Argument):
         assert isinstance(arg, list), 'not a list in ListOf validation'
 
         if len(arg) < self.min_length:
-            raise IbisTypeError('list must have at least {} elements'
-                                .format(self.min_length))
+            raise IbisTypeError(
+                'list must have at least {:d} elements'.format(self.min_length)
+            )
 
         checked_args = []
         for j in range(len(arg)):
@@ -772,8 +773,7 @@ class ListOf(Argument):
                 checked_arg = self.value_type.validate(arg, j)
             except IbisTypeError as e:
                 exc = e.args[0]
-                msg = ('List element {0} had a type error: {1}'
-                       .format(j, exc))
+                msg = 'List element {} had a type error: {}'.format(j, exc)
                 raise IbisTypeError(msg)
             checked_args.append(checked_arg)
 
