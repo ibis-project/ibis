@@ -231,7 +231,9 @@ class Argument(object):
         self.optional = optional
         self.validator = validator
         self.doc = doc
-        self.as_value_expr = as_value_expr or ir.literal
+        self.as_value_expr = (
+            ir.literal if as_value_expr is None else as_value_expr
+        )
 
     def validate(self, args, i):
         arg = args[i]
