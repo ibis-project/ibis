@@ -7,11 +7,10 @@ RUN apt-get -qq update -y \
 
 ARG PYTHON
 
-ADD ci/requirements-dev-$PYTHON.yml /tmp/requirements-$PYTHON.yml
+ADD ci/requirements-dev-$PYTHON.yml /requirements-$PYTHON.yml
 
-RUN conda install -q -y conda-build \
- && conda install -q -y -c conda-forge python=$PYTHON \
- && conda env update -q -n root -f "/tmp/requirements-$PYTHON.yml" \
+RUN conda install -y conda-build conda>=4.3 python=$PYTHON \
+ && conda env update -n root -f /requirements-$PYTHON.yml \
  && conda clean -a -y
 
 ADD . /ibis
