@@ -1070,12 +1070,15 @@ def infer_struct(value):
 
 @infer.register(dict)
 def infer_map(value):
-    if not value:
-        return Map(null, null)
-    return Map(
-        highest_precedence(map(infer, value.keys())),
-        highest_precedence(map(infer, value.values())),
-    )
+    try:
+        if not value:
+            return Map(null, null)
+        return Map(
+            highest_precedence(map(infer, value.keys())),
+            highest_precedence(map(infer, value.values())),
+        )
+    except com.IbisTypeError:
+        return infer_struct(OrderedDict(sorted(value.items())))
 
 
 @infer.register(list)
