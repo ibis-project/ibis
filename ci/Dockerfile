@@ -18,5 +18,5 @@ RUN /bin/bash -c "source activate ibis-$PYTHON"
 ADD . /ibis
 WORKDIR /ibis
 
-RUN pip install -e .
+RUN python setup.py develop
 
