@@ -8,6 +8,7 @@ import ibis.expr.datatypes as dt
 from ibis.client import Database, Query, SQLClient
 from ibis.bigquery import compiler as comp
 import google.cloud.bigquery
+from google.api.core.exceptions import BadRequest
 
 
 def _ensure_split(table_id, dataset_id):
@@ -78,17 +79,6 @@ class BigQueryAPIProxy(object):
 
     def get_schema(self, table_id, dataset_id):
         return self.get_table(table_id, dataset_id).schema
-
-    @property
-    def has_partitions(self):
-        query_string = (
-            'SELECT 1 from [{}.{}$__PARTITIONS_SUMMARY__] LIMIT 1'
-        )
-        query = self.client.run_sync_query(
-            query_string.format(self.dataset_name, self.name))
-        query.use_legacy_sql = True
-        query.run()
-        return any(query.rows)
 
 
 class BigQueryDatabase(Database):
@@ -219,4 +209,9 @@ def _discover_type(field):
 
 def bigquery_table_to_ibis_schema(table):
     pairs = ((el.name, _discover_type(el)) for el in table.schema)
+    try:
+        if table.list_partitions():
+            pairs.append(('_PARTITIONTIME', dt.timestmap))
+    except BadRequest:
+        pass
     return ibis.schema(pairs)
