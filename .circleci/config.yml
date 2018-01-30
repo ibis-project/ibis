@@ -117,10 +117,10 @@ workflows:
   version: 2
   test:
     jobs:
-      # - python27_test
-      # - python34_test
-      # - python35_test
-      # - python36_test
+      - python27_test
+      - python34_test
+      - python35_test
+      - python36_test
 
       - python27_conda_build
       - python34_conda_build
