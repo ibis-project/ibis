@@ -5,15 +5,22 @@ RUN apt-get -qq update -y \
     git gcc make clang libboost-dev postgresql-client \
  && rm -rf /var/lib/apt/lists/*
 
-ARG PYTHON
+ADD ci/requirements-dev-2.7.yml \
+    ci/requirements-dev-3.4.yml \
+    ci/requirements-dev-3.5.yml \
+    ci/requirements-dev-3.6.yml /
 
-ADD ci/requirements-dev-$PYTHON.yml /requirements-$PYTHON.yml
-
-RUN conda install -y -q conda-build python=$PYTHON \
- && conda env update -q -n root -f /requirements-$PYTHON.yml \
+RUN conda env create -q -n ibis-2.7 -f /requirements-dev-2.7.yml \
+ && conda env create -q -n ibis-3.4 -f /requirements-dev-3.4.yml \
+ && conda env create -q -n ibis-3.5 -f /requirements-dev-3.5.yml \
+ && conda env create -q -n ibis-3.6 -f /requirements-dev-3.6.yml \
+ && conda install conda-build -y -q \
  && conda clean -a -y
 
 ADD . /ibis
 WORKDIR /ibis
 
+RUN /bin/bash -c "source activate ibis-$PYTHON"
+
 RUN pip install -e .
+
