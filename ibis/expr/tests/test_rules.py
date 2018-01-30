@@ -1,3 +1,4 @@
+import enum
 import pytest
 
 import ibis
@@ -13,8 +14,6 @@ class MyExpr(ir.Expr):
 
 
 def test_enum_validator():
-    enum = pytest.importorskip('enum')
-
     class Foo(enum.Enum):
         a = 1
         b = 2
@@ -170,3 +169,26 @@ def test_scalar_default_arg():
 
     op = MyOp(True)
     assert op.value.equals(ibis.literal(True))
+
+
+def test_custom_as_value_expr():
+
+    def custom_as_value_expr(o):
+        if isinstance(o, int):
+            return ibis.literal(o + 2)
+        return ibis.literal(o)
+
+    class MyOp(ops.ValueOp):
+        input_type = [
+            rules.list_of(
+                rules.integer(as_value_expr=custom_as_value_expr),
+                name='bar',
+            )
+        ]
+
+    result = MyOp([2])
+    bar = result.bar
+    assert len(bar) == 1
+
+    bar_value, = bar
+    assert bar_value.equals(ibis.literal(4))
