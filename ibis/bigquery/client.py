@@ -1,4 +1,5 @@
 import re
+import time
 
 import pandas as pd
 
@@ -83,6 +84,16 @@ class BigQueryAPIProxy(object):
     def get_schema(self, table_id, dataset_id):
         return self.get_table(table_id, dataset_id).schema
 
+    def run_sync_query(self, stmt):
+        query = self.client.run_sync_query(stmt)
+        query.use_legacy_sql = False
+        query.run()
+        # run_sync_query is not really synchronous: there's a timeout
+        while not query.job.done():
+            query.job.reload()
+            time.sleep(1)
+        return query
+
 
 class BigQueryDatabase(Database):
     pass
@@ -133,9 +144,7 @@ class BigQueryClient(SQLClient):
 
     def _execute(self, stmt, results=True):
         # TODO(phillipc): Allow **kwargs in calls to execute
-        query = self._proxy.client.run_sync_query(stmt)
-        query.use_legacy_sql = False
-        query.run()
+        query = self._proxy.run_sync_query(stmt)
         return BigQueryCursor(query)
 
     def database(self, name=None):
