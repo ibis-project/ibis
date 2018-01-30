@@ -108,6 +108,15 @@ class BigQueryClient(SQLClient):
     def _table_expr_klass(self):
         return ir.TableExpr
 
+    def table(self, *args, **kwargs):
+        t = super(BigQueryClient, self).table(*args, **kwargs)
+        if '_PARTITIONTIME' in t.columns:
+            assert 'PARTITIONTIME' not in t
+            return (t
+                    .mutate(**{'PARTITIONTIME': t._PARTITIONTIME})
+                    .drop(['_PARTITIONTIME']))
+        return t
+
     def _build_ast(self, expr, params=None):
         return comp.build_ast(expr, params=params)
 
