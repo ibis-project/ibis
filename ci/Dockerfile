@@ -13,10 +13,10 @@ RUN conda env create -q -n ibis-$PYTHON -f /requirements-dev-$PYTHON.yml \
  && conda install conda-build -y -q \
  && conda clean -a -y
 
-RUN /bin/bash -c "source activate ibis-$PYTHON"
+RUN echo 'source activate ibis-'$PYTHON' && exec "$@"' > activate.sh
 
 ADD . /ibis
 WORKDIR /ibis
+RUN bash /activate.sh python setup.py develop
 
-RUN python setup.py develop
-
+ENTRYPOINT ["bash", "/activate.sh"]
