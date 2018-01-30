@@ -49,7 +49,7 @@ test: &test
           docker-compose run ibis pytest -v -rsxX \
             --doctest-modules \
             --doctest-ignore-import-errors \
-            --tb=short ibis
+            --tb=short -m "not udf" ibis
 
 
 build: &build
