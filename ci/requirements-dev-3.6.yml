@@ -26,4 +26,4 @@ dependencies:
   - clickhouse-sqlalchemy
   - google-cloud-bigquery<0.28
   - pip:
-      - hdfs>=2.0.0
+    - hdfs>=2.0.0
