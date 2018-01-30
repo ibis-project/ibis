@@ -169,9 +169,10 @@ class ClickhouseClient(SQLClient):
             query = query.compile()
         self.log(query)
 
-        data, columns = self.con.execute(query, columnar=True,
-                                         with_column_types=True,
-                                         external_tables=external_tables)
+        data, columns = self.con.process_ordinary_query(
+            query, columnar=True, with_column_types=True,
+            external_tables=external_tables
+        )
         colnames, typenames = czip(*columns)
         coltypes = list(map(ClickhouseDataType.parse, typenames))
 
@@ -388,6 +389,20 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
 
     def _execute(self, stmt):
         return self._client._execute(stmt)
+
+    def insert(self, obj, **kwargs):
+        from .identifiers import quote_identifier
+        schema = self.schema()
+
+        assert isinstance(obj, pd.DataFrame)
+        assert set(schema.names) >= set(obj.columns)
+
+        columns = ', '.join(map(quote_identifier, obj.columns))
+        query = 'INSERT INTO {table} ({columns}) VALUES'.format(
+            table=self._qualified_name, columns=columns)
+
+        data = obj.to_dict('records')
+        return self._client.con.process_insert_query(query, data, **kwargs)
 
 
 class ClickhouseExternalTable(ops.DatabaseTable):

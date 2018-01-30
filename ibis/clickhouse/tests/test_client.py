@@ -190,3 +190,11 @@ def test_define_external_table(con, alltypes):
                                    ('b', 'int64'),
                                    ('c', 'string')])
     assert table.schema() == expected_schema
+
+
+def test_insert(con, alltypes, df):
+    cnt_before = alltypes.count().execute()
+    alltypes.insert(df[:10])
+    cnt_after = alltypes.count().execute()
+
+    assert cnt_after == cnt_before + 10
