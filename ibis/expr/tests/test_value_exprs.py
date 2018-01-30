@@ -1076,6 +1076,13 @@ def test_time_invalid_compare_on_py2():
     assert not result
 
 
+def test_scalar_parameter_list():
+    value = ibis.param([dt.int64, dt.int32])
+
+    assert isinstance(value.op(), ir.ParamList)
+    assert value.type().equals(dt.int64)
+
+
 def test_scalar_parameter_repr():
     value = ibis.param(dt.timestamp, name='value')
     assert repr(value) == 'value = ScalarParameter[timestamp]'
