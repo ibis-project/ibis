@@ -13,7 +13,7 @@ RUN conda env create -q -n ibis-$PYTHON -f /requirements-dev-$PYTHON.yml \
  && conda install conda-build -y -q
 
 # we intentionally keep conda artifacts in the image to speedup recipe building
-# to reduce image size run the following in the previous layer
+# on the other hand to reduce image size run the following in the previous layer
 # && conda clean -a -y
 
 RUN echo 'source activate ibis-'$PYTHON' && exec "$@"' > activate.sh
