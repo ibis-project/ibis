@@ -185,7 +185,7 @@ def build_udfs():
     udf_dir = os.path.join(ibis_home_dir, 'ci', 'udf')
 
     with local.cwd(udf_dir):
-        cmake('.') and make('VERBOSE=1')
+        assert (cmake('.') and make('VERBOSE=1'))
 
 
 def upload_udfs(con):
