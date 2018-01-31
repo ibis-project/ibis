@@ -43,7 +43,7 @@ test: &test
         command: docker-compose run waiter
     - run:
         name: Load Test Datasets
-        command: docker-compose run ibis bash ci/load-data.sh
+        command: docker-compose run ibis ci/load-data.sh
     - run:
         name: Execute Pytest
         command: |
@@ -82,7 +82,8 @@ benchmark: &benchmark
         command: docker-compose build --pull ibis
     - run:
         name: Run Benchmark (ASV)
-        command: bash ci/benchmark.sh circle "${CIRCLE_SHA1}"
+        command: |
+          docker-compose run ibis ci/benchmark.sh circle "${CIRCLE_SHA1}"
 
 
 jobs:
