@@ -46,7 +46,7 @@ services:
                 -timeout 5m
 
   ibis:
-    image: ibis:${PYTHON_VERSION-3.6}
+    image: ibis:${PYTHON_VERSION:-3.6}
     environment:
       - IBIS_TEST_DOWNLOAD_DIRECTORY=/tmp
       - IBIS_TEST_DATA_DIRECTORY=/tmp/ibis-testing-data
@@ -72,4 +72,4 @@ services:
       context: ..
       dockerfile: ci/Dockerfile
       args:
-        PYTHON: ${PYTHON_VERSION-3.6}
+        PYTHON: ${PYTHON_VERSION:-3.6}
