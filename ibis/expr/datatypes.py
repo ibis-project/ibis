@@ -1235,6 +1235,17 @@ def can_cast_arrays(source, target, **kwargs):
     return castable(source.value_type, target.value_type)
 
 
+@castable.register(Struct, Struct)
+def can_cast_struct(source, target, **kwargs):
+    return (
+        (source.names <= target.names) and
+        all(
+            castable(source[name], target[name])
+            for name in source.names
+        )
+    )
+
+
 # @castable.register(Map, Map)
 # def can_cast_maps(source, target):
 #     return (source.equals(target) or
