@@ -50,3 +50,7 @@ Database to use for temporary tables, views. functions, etc.
 
 with cf.config_prefix('clickhouse'):
     cf.register_option('temp_db', '__ibis_tmp', clickhouse_temp_db_doc)
+
+
+with cf.config_prefix('bigquery'):
+    cf.register_option('partition_col', 'PARTITIONTIME')

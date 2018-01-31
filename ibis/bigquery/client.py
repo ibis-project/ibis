@@ -8,6 +8,10 @@ import ibis.expr.datatypes as dt
 from ibis.client import Database, Query, SQLClient
 from ibis.bigquery import compiler as comp
 import google.cloud.bigquery
+from google.api.core.exceptions import BadRequest
+
+
+NATIVE_PARTITION_COL = '_PARTITIONTIME'
 
 
 def _ensure_split(table_id, dataset_id):
@@ -106,6 +110,16 @@ class BigQueryClient(SQLClient):
     @property
     def _table_expr_klass(self):
         return ir.TableExpr
+
+    def table(self, *args, **kwargs):
+        t = super(BigQueryClient, self).table(*args, **kwargs)
+        if NATIVE_PARTITION_COL in t.columns:
+            col = ibis.options.bigquery.partition_col
+            assert col not in t
+            return (t
+                    .mutate(**{col: t[NATIVE_PARTITION_COL]})
+                    .drop([NATIVE_PARTITION_COL]))
+        return t
 
     def _build_ast(self, expr, params=None):
         return comp.build_ast(expr, params=params)
@@ -207,5 +221,10 @@ def _discover_type(field):
 
 
 def bigquery_table_to_ibis_schema(table):
-    pairs = ((el.name, _discover_type(el)) for el in table.schema)
+    pairs = [(el.name, _discover_type(el)) for el in table.schema]
+    try:
+        if table.list_partitions():
+            pairs.append((NATIVE_PARTITION_COL, dt.timestamp))
+    except BadRequest:
+        pass
     return ibis.schema(pairs)
