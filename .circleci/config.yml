@@ -71,6 +71,19 @@ build: &build
             --channel conda-forge
 
 
+benchmark:
+  <<: *base
+  steps:
+    - checkout:
+        path: ~/ibis
+    - run:
+        name: Build Ibis Image
+        command: docker-compose build --pull ibis
+    - run:
+        name: Run Benchmark (ASV)
+        command: bash ci/benchmark.sh circle "${CIRCLE_SHA1}"
+
+
 jobs:
   python27_test:
     <<: *test
@@ -112,6 +125,11 @@ jobs:
     environment:
       - PYTHON_VERSION: 3.6
 
+  python36_benchmark:
+    <<: *build
+    environment:
+      - PYTHON_VERSION: 3.6
+
 
 workflows:
   version: 2
@@ -126,4 +144,7 @@ workflows:
       - python34_conda_build
       - python35_conda_build
       - python36_conda_build
+
+      - python36_benchmark
+
 
