@@ -170,3 +170,17 @@ def test_cast_string_to_date(alltypes, df, type):
         df.date_string_col
     ).dt.normalize().sort_values().reset_index(drop=True)
     tm.assert_series_equal(result, expected)
+
+
+def test_has_partitions(alltypes, parted_alltypes, client):
+    col = ibis.options.bigquery.partition_col
+    assert col not in alltypes.columns
+    assert col in parted_alltypes.columns
+
+
+def test_different_partition_col_name(client):
+    col = ibis.options.bigquery.partition_col = 'FOO_BAR'
+    alltypes = client.table('functional_alltypes')
+    parted_alltypes = client.table('functional_alltypes_parted')
+    assert col not in alltypes.columns
+    assert col in parted_alltypes.columns
