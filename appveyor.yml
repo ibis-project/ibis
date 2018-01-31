@@ -43,10 +43,8 @@ test_script:
   - "%CONDA% install conda=4.3.22 --channel conda-forge"
   - "%CONDA% create --name \"ibis_%PYTHON_VERSION%\" python=%PYTHON_VERSION% --channel conda-forge"
   - "%ACTIVATE% \"ibis_%PYTHON_VERSION%\""
-  - "%CONDA% install pytables pandas sqlalchemy psycopg2 graphviz python-graphviz flake8 pytest click mock"
-
+  - "%CONDA% install pytables pandas sqlalchemy psycopg2 graphviz python-graphviz flake8 pytest click mock plumbum"
   - "pip install -e .\"[sqlite, postgres, visualization, pandas, csv, hdf5]\""
-  - "pip install \"pbs==0.110\""
 
   - "flake8"
 
