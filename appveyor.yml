@@ -6,7 +6,7 @@ platform:
 environment:
   PGUSER: "postgres"
   PGPASSWORD: "Password12!"
-  PGPORT: 5432
+  PGPORT: "5432"
   PGHOST: "localhost"
 
   IBIS_TEST_DOWNLOAD_DIRECTORY: "%USERPROFILE%"
