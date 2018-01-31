@@ -4,10 +4,7 @@ platform:
   - x64
 
 environment:
-  PGUSER: "postgres"
   PGPASSWORD: "Password12!"
-  PGPORT: "5432"
-  PGHOST: "localhost"
 
   IBIS_TEST_DOWNLOAD_DIRECTORY: "%USERPROFILE%"
   IBIS_TEST_DOWNLOAD_BASE_URL: "https://storage.googleapis.com/ibis-ci-data"
@@ -15,10 +12,10 @@ environment:
 
   IBIS_TEST_DATA_DIRECTORY: "%USERPROFILE%\\ibis-testing-data"
 
-  IBIS_TEST_POSTGRES_USER: "%PGUSER%"
-  IBIS_TEST_POSTGRES_PASSWORD: "%PGPASSWORD%"
-  IBIS_TEST_POSTGRES_PORT: "%PGPORT%"
-  IBIS_TEST_POSTGRES_HOST: "%PGHOST%"
+  IBIS_TEST_POSTGRES_PORT: "5432"
+  IBIS_TEST_POSTGRES_HOST: "localhost"
+  IBIS_TEST_POSTGRES_USER: "postgres"
+  IBIS_TEST_POSTGRES_PASSWORD: "Password12!"
   IBIS_TEST_POSTGRES_DATABASE: "ibis_testing"
 
   IBIS_TEST_SQLITE_DATABASE: "%USERPROFILE%\\ibis_testing.db"
@@ -46,7 +43,7 @@ test_script:
   - "%CONDA% install pytables"
 
   - "pip install -e .\"[sqlite, postgres, visualization, pandas, csv, hdf5]\""
-  - "pip install flake8 mock pytest click \"pbs==0.110\""
+  - "pip install flake8 mock pytest click sh"
 
   - "flake8"
 
