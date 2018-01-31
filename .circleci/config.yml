@@ -127,7 +127,7 @@ jobs:
       - PYTHON_VERSION: 3.6
 
   python36_benchmark:
-    <<: *build
+    <<: *benchmark
     environment:
       - PYTHON_VERSION: 3.6
 
