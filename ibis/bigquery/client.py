@@ -224,7 +224,7 @@ def bigquery_table_to_ibis_schema(table):
     pairs = [(el.name, _discover_type(el)) for el in table.schema]
     try:
         if table.list_partitions():
-            pairs.append((NATIVE_PARTITION_COL, dt.timestmap))
+            pairs.append((NATIVE_PARTITION_COL, dt.timestamp))
     except BadRequest:
         pass
     return ibis.schema(pairs)
