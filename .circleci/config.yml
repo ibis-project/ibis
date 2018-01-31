@@ -33,9 +33,6 @@ test: &test
         name: List Docker Images
         command: docker images
     - run:
-        name: List Docker Networks
-        command: docker network ls
-    - run:
         name: Flake8
         command: docker-compose run ibis flake8
     - run:
