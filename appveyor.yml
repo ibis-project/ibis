@@ -46,7 +46,7 @@ test_script:
   - "%CONDA% install pytables"
 
   - "pip install -e .\"[sqlite, postgres, visualization, pandas, csv, hdf5]\""
-  - "pip install flake8 mock pytest click sh"
+  - "pip install flake8 mock pytest click \"pbs==0.110\""
 
   - "flake8"
 
