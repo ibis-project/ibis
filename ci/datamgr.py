@@ -10,19 +10,15 @@ import pandas as pd
 import sqlalchemy as sa
 
 from toolz import dissoc
+from plumbum import local
+from plumbum.cmd import curl, psql
 
-try:
-    import sh
-except ImportError:
-    import pbs as sh
-
-
-if os.environ.get('APPVEYOR', None) is not None:
-    curl = sh.Command(r'C:\Tools\curl\bin\curl.exe')
-    psql = sh.Command(r'C:\Program Files\PostgreSQL\10\bin\psql.exe')
-else:
-    curl = sh.curl
-    psql = sh.psql
+# if os.environ.get('APPVEYOR', None) is not None:
+#     curl = sh.Command(r'C:\Tools\curl\bin\curl.exe')
+#     psql = sh.Command(r'C:\Program Files\PostgreSQL\10\bin\psql.exe')
+# else:
+#     curl = sh.curl
+#     psql = sh.psql
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -94,9 +90,9 @@ def download(base_url, directory, name):
     path = os.path.join(directory, name)
 
     if not os.path.exists(path):
-        curl(data_url, o=path, L=True,
-             _out=click.get_binary_stream('stdout'),
-             _err=click.get_binary_stream('stderr'))
+        download = curl[data_url, '-o', path, '-L']
+        download(stdout=click.get_binary_stream('stdout'),
+                 stderr=click.get_binary_stream('stderr'))
     else:
         click.echo('Skipping download due to {} already exists.'.format(name))
 
@@ -126,17 +122,13 @@ def postgres(schema, tables, data_directory, **params):
     for table in tables:
         src = os.path.abspath(os.path.join(data_directory, table + '.csv'))
         click.echo(src)
-        with open(src, 'r') as f:
-            text = f.read()
-        psql(
-            host=params['host'],
-            port=params['port'],
-            username=params['user'],
-            dbname=database,
-            command=query.format(table),
-            _in=text,
-            _env={'PGPASSWORD': params['password']}
-        )
+        load = psql['--host', params['host'], '--port', params['port'],
+                    '--username', params['user'], '--dbname', database,
+                    '--command', query.format(table)]
+        with local.env(PGPASSWORD=params['password']):
+            with open(src, 'r') as f:
+                load(stdin=f)
+
     engine.execute('VACUUM FULL ANALYZE')
 
 
