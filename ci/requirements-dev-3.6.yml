@@ -1,6 +1,7 @@
 channels:
   - conda-forge
 dependencies:
+  - plumbum
   - click
   - cmake
   - flake8
@@ -16,7 +17,6 @@ dependencies:
   - pytables
   - pyarrow>=0.6.0
   - regex
-  - sh
   - six
   - sqlalchemy>=1.0.0,<1.1.15
   - thrift
