@@ -188,7 +188,7 @@ except AttributeError:
     infer_pandas_dtype = pd.lib.infer_dtype
 
 
-def infer_ibis_dtypes_from_series(series, strict):
+def infer_ibis_dtypes_from_series(series, strict, aggressive_null):
 
     def _infer_ibis_dtypes_from_series_strict(series_nona):
         ibis_dtypes = []
@@ -198,6 +198,11 @@ def infer_ibis_dtypes_from_series(series, strict):
         except com.IbisTypeError:
             pass
         return ibis_dtypes
+
+    if aggressive_null:
+        series = series.dropna()
+        if not len(series):
+            return [dt.null]
 
     if series.dtype != np.object_:
         ibis_dtype = dt.dtype(series.dtype)
@@ -219,9 +224,9 @@ def infer_ibis_dtypes_from_series(series, strict):
 
 
 @infer.register(pd.DataFrame)
-def infer_pandas_schema(df, strict=True):
+def infer_pandas_schema(df, strict=True, aggressive_null=True):
     pairs = [
-        (col, infer_ibis_dtypes_from_series(series, strict))
+        (col, infer_ibis_dtypes_from_series(series, strict, aggressive_null))
         for (col, series) in df.items()
     ]
     none_cols = [col for (col, dtypes) in pairs if len(dtypes) == 0]
