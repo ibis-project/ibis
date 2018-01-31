@@ -17,6 +17,7 @@ test: &test
         name: Setup Google Credentials for BigQuery
         command: |
           if [ -n "${GCLOUD_SERVICE_KEY}" ]; then
+            mkdir -p /tmp/ibis
             echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > /tmp/ibis/gcloud-service-key.json
           fi
     - run:
