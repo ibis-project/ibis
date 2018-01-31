@@ -13,12 +13,6 @@ from toolz import dissoc
 from plumbum import local
 from plumbum.cmd import curl, psql
 
-# if os.environ.get('APPVEYOR', None) is not None:
-#     curl = sh.Command(r'C:\Tools\curl\bin\curl.exe')
-#     psql = sh.Command(r'C:\Program Files\PostgreSQL\10\bin\psql.exe')
-# else:
-#     curl = sh.curl
-#     psql = sh.psql
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -150,9 +144,6 @@ def sqlite(database, schema, tables, data_directory, **params):
     params['database'] = database
     engine = init_database('sqlite', params, schema, recreate=False)
     insert_tables(engine, tables, data_directory)
-
-    # engine.execute('VACUUM')
-    # engine.execute('VACUUM ANALYZE')
 
 
 @cli.command()
