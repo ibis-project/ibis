@@ -93,3 +93,21 @@ def test_sort_by():
     ).sort_by('c')
     graph = viz.to_graph(expr)
     assert str(hash(repr(expr.op()))) in graph.source
+
+
+def test_optional_graphviz_repr():
+    t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
+    expr = t.groupby(t.b).aggregate(
+        sum_a=t.a.sum().cast('double')
+    ).sort_by('c')
+
+    # default behavior
+    assert expr._repr_png_() is not None
+
+    # turn it off
+    ibis.options.graphviz_repr = False
+    assert expr._repr_png_() is None
+
+    # turn it back on
+    ibis.options.graphviz_repr = True
+    assert expr._repr_png_() is not None
