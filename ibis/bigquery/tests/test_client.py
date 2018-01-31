@@ -41,7 +41,10 @@ def test_simple_aggregate_execute(alltypes, df):
 
 
 def test_list_tables(client):
-    assert len(client.list_tables(like='functional_alltypes')) == 1
+    assert set(client.list_tables(like='functional_alltypes')) == {
+        'functional_alltypes',
+        'functional_alltypes_parted',
+    }
 
 
 def test_current_database(client):
