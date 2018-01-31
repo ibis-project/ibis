@@ -9,7 +9,8 @@ import ibis.tests.util as tu
         'string_col',
         'double_col',
         'date_string_col',
-        pytest.mark.xfail('timestamp_col', raises=AssertionError, reason='NYT')
+        # pytest.mark.xfail('timestamp_col', raises=AssertionError,
+        #                   reason='NYT')
     ]
 )
 @tu.skip_if_invalid_operation

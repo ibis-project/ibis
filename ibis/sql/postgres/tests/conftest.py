@@ -20,11 +20,11 @@ import ibis
 
 PG_USER = os.environ.get(
     'IBIS_TEST_POSTGRES_USER',
-    os.environ.get('PGUSER', 'ubuntu')
+    os.environ.get('PGUSER', 'postgres')
 )
 PG_PASS = os.environ.get(
     'IBIS_TEST_POSTGRES_PASSWORD',
-    os.environ.get('PGPASSWORD', 'ubuntu')
+    os.environ.get('PGPASSWORD', 'postgres')
 )
 PG_HOST = os.environ.get(
     'IBIS_TEST_POSTGRES_HOST',

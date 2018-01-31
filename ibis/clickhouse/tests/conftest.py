@@ -3,10 +3,10 @@ import ibis
 import pytest
 
 
-CLICKHOUSE_HOST = os.environ.get('IBIS_CLICKHOUSE_HOST', 'localhost')
-CLICKHOUSE_PORT = int(os.environ.get('IBIS_CLICKHOUSE_PORT', 9000))
-CLICKHOUSE_USER = os.environ.get('IBIS_CLICKHOUSE_USER', 'default')
-CLICKHOUSE_PASS = os.environ.get('IBIS_CLICKHOUSE_PASS', '')
+CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
+CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
+CLICKHOUSE_USER = os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default')
+CLICKHOUSE_PASS = os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')
 IBIS_TEST_CLICKHOUSE_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 

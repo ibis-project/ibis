@@ -1,6 +1,7 @@
 channels:
   - conda-forge
 dependencies:
+  - plumbum
   - click
   - cmake
   - flake8
@@ -14,7 +15,6 @@ dependencies:
   - python=3.4
   - python-graphviz
   - regex
-  - sh
   - six
   - sqlalchemy>=1.0.0,<1.1.15
   - thrift<=0.9.3

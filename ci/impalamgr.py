@@ -14,15 +14,13 @@
 # limitations under the License.
 
 import os
-import shutil
+import ibis
+import click
 import tempfile
 
-from subprocess import check_call
+from plumbum import local, CommandNotFound
+from plumbum.cmd import rm, make, cmake
 
-import sh
-import click
-
-import ibis
 from ibis.compat import BytesIO
 from ibis.common import IbisError
 from ibis.impala.tests.common import IbisTestEnv
@@ -63,18 +61,18 @@ def can_write_to_hdfs(con):
 
 def can_build_udfs():
     try:
-        sh.which('cmake')
-    except sh.ErrorReturnCode:
+        local.which('cmake')
+    except CommandNotFound:
         print('Could not find cmake on PATH')
         return False
     try:
-        sh.which('make')
-    except sh.ErrorReturnCode:
+        local.which('make')
+    except CommandNotFound:
         print('Could not find make on PATH')
         return False
     try:
-        sh.which('clang++')
-    except sh.ErrorReturnCode:
+        local.which('clang++')
+    except CommandNotFound:
         print('Could not find LLVM on PATH; if IBIS_TEST_LLVM_CONFIG is set, '
               'try setting PATH="$($IBIS_TEST_LLVM_CONFIG --bindir):$PATH"')
         return False
@@ -184,13 +182,15 @@ def create_avro_tables(con):
 def build_udfs():
     print('Building UDFs')
     ibis_home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    udf_dir = os.path.join(ibis_home_dir, 'testing', 'udf')
-    check_call('cmake . && make VERBOSE=1', shell=True, cwd=udf_dir)
+    udf_dir = os.path.join(ibis_home_dir, 'ci', 'udf')
+
+    with local.cwd(udf_dir):
+        assert (cmake('.') and make('VERBOSE=1'))
 
 
 def upload_udfs(con):
     ibis_home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    build_dir = os.path.join(ibis_home_dir, 'testing', 'udf', 'build')
+    build_dir = os.path.join(ibis_home_dir, 'ci', 'udf', 'build')
     bitcode_dir = os.path.join(ENV.test_data_dir, 'udf')
     print('Uploading UDFs to {}'.format(bitcode_dir))
     if con.hdfs.exists(bitcode_dir):
@@ -243,7 +243,7 @@ def load(data, udf, data_dir, overwrite):
         try:
             load_impala_data(con, data_dir, overwrite)
         finally:
-            shutil.rmtree(tmp_dir)
+            rm('-rf', tmp_dir)
     else:
         print('Skipping Ibis test data load (--no-data)')
 
