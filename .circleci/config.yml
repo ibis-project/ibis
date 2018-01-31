@@ -20,27 +20,27 @@ test: &test
             mkdir -p /tmp/ibis
             echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > /tmp/ibis/gcloud-service-key.json
           fi
-    - run:
-        name: Start Databases
-        command: docker-compose up -d --no-build postgres impala clickhouse
-    - run:
-        name: Show Running Containers
-        command: docker ps
+    # - run:
+    #     name: Start Databases
+    #     command: docker-compose up -d --no-build postgres impala clickhouse
+    # - run:
+    #     name: Show Running Containers
+    #     command: docker ps
     - run:
         name: Build Ibis Image
         command: docker-compose build --pull ibis
-    - run:
-        name: List Docker Images
-        command: docker images
-    - run:
-        name: Flake8
-        command: docker-compose run ibis flake8
-    - run:
-        name: Wait for Databases
-        command: docker-compose run waiter
-    - run:
-        name: Load Test Datasets
-        command: docker-compose run ibis ci/load-data.sh
+    # - run:
+    #     name: List Docker Images
+    #     command: docker images
+    # - run:
+    #     name: Flake8
+    #     command: docker-compose run ibis flake8
+    # - run:
+    #     name: Wait for Databases
+    #     command: docker-compose run waiter
+    # - run:
+    #     name: Load Test Datasets
+    #     command: docker-compose run ibis ci/load-data.sh
     - run: docker-compose run ibis ls -lah /tmp
 
     - run:
@@ -49,7 +49,7 @@ test: &test
           docker-compose run ibis pytest -rsxX \
             --doctest-modules \
             --doctest-ignore-import-errors \
-            --tb=short -m "not udf" ibis
+            --tb=short -m "not udf" ibis/bigquery
 
 
 build: &build
