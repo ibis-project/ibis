@@ -14,73 +14,61 @@
 
 
 # flake8: noqa
+from multipledispatch import halt_ordering, restart_ordering
 
-from ibis.filesystems import HDFS, WebHDFS
-from ibis.common import IbisError
-
+import ibis.config_init
+import ibis.util as util
 import ibis.expr.api as api
 import ibis.expr.types as ir
+
+from ibis.config import options
+from ibis.common import IbisError
+from ibis.compat import suppress
+from ibis.filesystems import HDFS, WebHDFS
 
 # __all__ is defined
 from ibis.expr.api import *
 
-try:
-    import ibis.impala.api as impala
-except ImportError:  # pip install ibis-framework[impala]
-    pass
 
-try:
-    import ibis.sql.sqlite.api as sqlite
-except ImportError:  # pip install ibis-framework[sqlite]
-    pass
+halt_ordering()
+import ibis.pandas.api as pandas
+restart_ordering()
 
-try:
-    import ibis.sql.postgres.api as postgres
-except ImportError:  # pip install ibis-framework[postgres]
-    pass
-
-try:
-    import ibis.sql.mysql.api as mysql
-except ImportError:  # pip install ibis-framework[mysql]
-    pass
-
-try:
-    import ibis.clickhouse.api as clickhouse
-except ImportError:  # pip install ibis-framework[clickhouse]
-    pass
-
-import ibis.bigquery.api as bigquery
-# try:
-#     import ibis.bigquery.api as bigquery
-# except ImportError:  # pip install ibis-framework[bigquery]
-#     pass
-
-try:
-    from multipledispatch import halt_ordering, restart_ordering
-    halt_ordering()
-    import ibis.pandas.api as pandas
-    restart_ordering()
-except ImportError:  # pip install  ibis-framework[pandas]
-    pass
-
-try:
+with suppress(ImportError):
+    # pip install ibis-framework[csv]
     import ibis.file.csv as csv
-except ImportError:  # pip install  ibis-framework[csv]
-    pass
 
-try:
-    import ibis.file.hdf5 as hdf5
-except ImportError:  # pip install  ibis-framework[hdf5]
-    pass
-
-try:
+with suppress(ImportError):
+    # pip install ibis-framework[parquet]
     import ibis.file.parquet as parquet
-except ImportError:  # pip install  ibis-framework[parquet]
-    pass
 
-import ibis.config_init
-from ibis.config import options
-import ibis.util as util
+with suppress(ImportError):
+    # pip install  ibis-framework[hdf5]
+    import ibis.file.hdf5 as hdf5
+
+with suppress(ImportError):
+    # pip install ibis-framework[impala]
+    import ibis.impala.api as impala
+
+with suppress(ImportError):
+    # pip install ibis-framework[sqlite]
+    import ibis.sql.sqlite.api as sqlite
+
+with suppress(ImportError):
+    # pip install ibis-framework[postgres]
+    import ibis.sql.postgres.api as postgres
+
+with suppress(ImportError):
+    # pip install ibis-framework[mysql]
+    import ibis.sql.mysql.api as mysql
+
+with suppress(ImportError):
+    # pip install ibis-framework[clickhouse]
+    import ibis.clickhouse.api as clickhouse
+
+with suppress(ImportError):
+    # pip install ibis-framework[bigquery]
+    import ibis.bigquery.api as bigquery
 
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',

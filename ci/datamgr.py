@@ -12,6 +12,12 @@ from toolz import dissoc
 from plumbum import local
 from plumbum.cmd import curl, psql
 
+try:
+    from pathlib import Path
+except ImportError:
+    # py2 compat
+    from pathlib2 import Path
+
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
 DATA_DIR = Path(os.environ.get('IBIS_TEST_DATA_DIRECTORY',
