@@ -52,7 +52,8 @@ services:
   waiter:
     image: jwilder/dockerize
     command: |
-      dockerize -wait tcp://postgres:5432
+      dockerize -wait tcp://postgres:3306
+                -wait tcp://postgres:5432
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070
                 -wait tcp://clickhouse:9000
@@ -70,6 +71,11 @@ services:
       - IBIS_TEST_IMPALA_PORT=21050
       - IBIS_TEST_WEBHDFS_PORT=50070
       - IBIS_TEST_WEBHDFS_USER=hdfs
+      - IBIS_TEST_MYSQL_HOST=mysql
+      - IBIS_TEST_MYSQL_PORT=3306
+      - IBIS_TEST_MYSQL_USER=ibis
+      - IBIS_TEST_MYSQL_PASSWORD=ibis
+      - IBIS_TEST_MYSQL_DATABASE=ibis_testing
       - IBIS_TEST_POSTGRES_HOST=postgres
       - IBIS_TEST_POSTGRES_PORT=5432
       - IBIS_TEST_POSTGRES_USER=postgres
