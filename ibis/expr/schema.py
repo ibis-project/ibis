@@ -234,6 +234,31 @@ def infer_ibis_dtypes_from_series(series, strict, aggressive_null):
     return [ibis_dtype]
 
 
+def _make_infer_panda_schema_error_msg(none_cols, multi_cols):
+    msg = ''
+    if none_cols:
+        infix = '\n\t' + ',\n\t'.join(
+            '{}: <explicit type>'.format(col) for col in none_cols)
+        msg += (
+            'Unable to infer type of column(s) {0!r}. Try instantiating '
+            'your table from the client with\n'
+            'client.table('
+            "'my_table', schema={{{1}}})"
+            .format(none_cols, infix)
+        )
+    if none_cols and multi_cols:
+        msg += '\n'
+    if multi_cols:
+        postfix = '\n'.join(
+            '{}:\n\t{}'.format(col, '\n\t'.join(map(str, typs)))
+            for (col, typs) in multi_cols
+        )
+        msg += (
+            'Multiple types found for columns(s):\n' + postfix
+        )
+    return msg
+
+
 @infer.register(pd.DataFrame)
 def infer_pandas_schema(df, strict=True, aggressive_null=True):
     pairs = [
@@ -244,27 +269,7 @@ def infer_pandas_schema(df, strict=True, aggressive_null=True):
     multi_cols = [(col, dtypes) for (col, dtypes) in pairs if len(dtypes) > 1]
     pairs = [(col, dtypes[0]) for (col, dtypes) in pairs if len(dtypes) == 1]
     if none_cols or multi_cols:
-        msg = ''
-        if none_cols:
-            infix = '\n\t' + ',\n\t'.join(
-                '{}: <explicit type>'.format(col) for col in none_cols)
-            msg += (
-                'Unable to infer type of column(s) {0!r}. Try instantiating '
-                'your table from the client with\n'
-                'client.table('
-                "'my_table', schema={{{1}}})"
-                .format(none_cols, infix)
-            )
-        if none_cols and multi_cols:
-            msg += '\n'
-        if multi_cols:
-            postfix = '\n'.join(
-                '{}:\n\t{}'.format(col, '\n\t'.join(map(str, typs)))
-                for (col, typs) in multi_cols
-            )
-            msg += (
-                'Multiple types found for columns(s):\n' + postfix
-            )
+        msg = _make_infer_panda_schema_error_msg(none_cols, multi_cols)
         raise TypeError(msg)
     else:
         return Schema.from_tuples(pairs)
