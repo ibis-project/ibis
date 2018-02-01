@@ -164,15 +164,19 @@ class ClickhouseClient(SQLClient):
         """Close Clickhouse connection and drop any temporary objects"""
         self.con.disconnect()
 
-    def _execute(self, query, external_tables=[]):
+    def _execute(self, query, external_tables=[], results=True):
         if isinstance(query, DDL):
             query = query.compile()
         self.log(query)
 
-        data, columns = self.con.process_ordinary_query(
+        response = self.con.process_ordinary_query(
             query, columnar=True, with_column_types=True,
             external_tables=external_tables
         )
+        if not results:
+            return response
+
+        data, columns = response
         colnames, typenames = czip(*columns)
         coltypes = list(map(ClickhouseDataType.parse, typenames))
 

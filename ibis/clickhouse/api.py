@@ -33,7 +33,7 @@ def verify(expr):
 
 
 def connect(host='localhost', port=9000, database='default', user='default',
-            password='', client_name='ibis', compression=False):
+            password='', client_name='ibis', compression=True):
     """Create an ClickhouseClient for use with Ibis.
 
     Parameters
