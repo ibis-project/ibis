@@ -213,6 +213,8 @@ def infer_ibis_dtypes_from_series(series, strict, aggressive_null):
             ibis_dtype = dt.string
         elif pandas_dtype == 'empty':
             ibis_dtype == dt.null
+        elif pandas_dtype == 'boolean':
+            ibis_dtype = dt.boolean
         elif pandas_dtype == 'mixed':
             if strict:
                 return _infer_ibis_dtypes_from_series_strict(series_nona)
