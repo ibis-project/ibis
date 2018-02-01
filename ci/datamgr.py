@@ -97,7 +97,7 @@ def download(base_url, directory, name):
     data_url = '{}/{}'.format(base_url, name)
     path = directory / name
 
-    if not os.path.exists(path):
+    if not path.exists():
         download = curl[data_url, '-o', path, '-L']
         download(stdout=click.get_binary_stream('stdout'),
                  stderr=click.get_binary_stream('stderr'))
