@@ -152,13 +152,13 @@ def postgres(schema, tables, data_directory, **params):
     query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
     database = params['database']
     for table in tables:
-        src = os.path.abspath(os.path.join(data_directory, table + '.csv'))
+        src = data_directory / '{}.csv'.format(table)
         click.echo(src)
         load = psql['--host', params['host'], '--port', params['port'],
                     '--username', params['user'], '--dbname', database,
                     '--command', query.format(table)]
         with local.env(PGPASSWORD=params['password']):
-            with open(src, 'r') as f:
+            with src.open('r') as f:
                 load(stdin=f)
 
     engine.execute('VACUUM FULL ANALYZE')
