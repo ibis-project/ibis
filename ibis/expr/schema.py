@@ -235,7 +235,7 @@ def infer_ibis_dtypes_from_series(series, strict, aggressive_null):
 def infer_pandas_schema(df, strict=True, aggressive_null=True):
     pairs = [
         (col, infer_ibis_dtypes_from_series(series, strict, aggressive_null))
-        for (col, series) in df.items()
+        for (col, series) in df.iteritems()
     ]
     none_cols = [col for (col, dtypes) in pairs if len(dtypes) == 0]
     multi_cols = [(col, dtypes) for (col, dtypes) in pairs if len(dtypes) > 1]
