@@ -1,6 +1,8 @@
 import enum
 import pytest
 
+import six
+
 import ibis
 from ibis.common import IbisTypeError
 import ibis.expr.operations as ops
@@ -192,3 +194,31 @@ def test_custom_as_value_expr():
 
     bar_value, = bar
     assert bar_value.equals(ibis.literal(4))
+
+
+def test_custom_list_of_as_value_expr():
+
+    class MyList(list):
+        pass
+
+    class MyEnum(enum.Enum):
+        A = 1
+        B = 2
+
+    class MyEnum2(enum.Enum):
+        A = 1
+        B = '2'
+
+    def custom_as_value_expr(o):
+        if all(isinstance(el, six.integer_types) for el in o):
+            return MyList(o)
+        return o
+
+    class MyOp(ops.ValueOp):
+
+        input_type = [
+            rules.list_of(rules.enum(MyEnum), name='one'),
+        ]
+
+    result = MyOp([MyEnum.A, MyEnum.B])
+    assert result.one == [MyEnum.A, MyEnum.B]

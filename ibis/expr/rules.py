@@ -748,12 +748,14 @@ enum = Enum
 class ListOf(Argument):
 
     def __init__(
-        self, value_type,
-        min_length=0, as_value_expr=ir.as_value_expr, **arg_kwds
+        self, value_type, min_length=0, as_value_expr=None, **arg_kwds
     ):
         super(ListOf, self).__init__(as_value_expr=as_value_expr, **arg_kwds)
         self.value_type = _to_argument(value_type)
         self.min_length = min_length
+        self.as_value_expr = (
+            ir.as_value_expr if as_value_expr is None else as_value_expr
+        )
 
     def _validate(self, args, i):
         arg = args[i]
