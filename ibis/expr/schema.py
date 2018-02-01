@@ -215,6 +215,12 @@ def infer_ibis_dtypes_from_series(series, strict, aggressive_null):
             ibis_dtype == dt.null
         elif pandas_dtype == 'boolean':
             ibis_dtype = dt.boolean
+        elif pandas_dtype == 'datetime' or pandas_dtype == 'datetime64':
+            ibis_dtype = dt.timestamp
+        elif pandas_dtype == 'timedelta':
+            ibis_dtype = dt.interval
+        elif pandas_dtype == 'bytes':
+            ibis_dtype = dt.binary
         elif pandas_dtype == 'mixed':
             if strict:
                 return _infer_ibis_dtypes_from_series_strict(series_nona)
