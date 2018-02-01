@@ -868,25 +868,6 @@ class TableExpr(Expr):
         # The operation produces a known schema
         return self.op().has_schema()
 
-    def add_column(self, expr, name=None):
-        """
-        Add indicated column expression to table, producing a new table. Note:
-        this is a shortcut for performing a projection having the same effect.
-
-        Returns
-        -------
-        modified_table : TableExpr
-        """
-        expr = self._ensure_expr(expr)
-
-        if not isinstance(expr, ColumnExpr):
-            raise com.InputTypeError('Must pass array expression')
-
-        if name is not None:
-            expr = expr.name(name)
-
-        return self.projection([self, expr])
-
     def group_by(self, by=None, **additional_grouping_expressions):
         """
         Create an intermediate grouped table expression, pending some group

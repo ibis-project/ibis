@@ -1240,6 +1240,17 @@ def test_add_column2(table):
     assert_equal(result, expected)
 
 
+def test_add_column_proxies_to_mutate(table):
+    result = table.add_column(ibis.now().cast('date'), name='date')
+    expected = table.mutate(date=ibis.now().cast('date'))
+    assert_equal(result, expected)
+
+
+def test_add_column_depricated(table):
+    with pytest.deprecated_call():
+        table.add_column(ibis.now().cast('date'), name='date')
+
+
 def test_groupby_mutate(table):
     t = table
 
