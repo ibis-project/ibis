@@ -252,6 +252,11 @@ class Argument(object):
     def _validate(self, args, i):
         raise NotImplementedError
 
+    def __str__(self):
+        fields = {'name', 'doc', 'optional', 'validator', 'types'}
+        return str({k: v for k, v in self.__dict__.items()
+                    if k in fields and v is not None})
+
 
 def _to_argument(val):
     if isinstance(val, dt.DataType):
@@ -803,7 +808,7 @@ def comparable(left, right):
     return ir.castable(left, right) or ir.castable(right, left)
 
 
-class Table(ValueTyped):
+class Table(Argument):
     """A table argument.
 
     Parameters
@@ -813,13 +818,23 @@ class Table(ValueTyped):
     optional : bool
         Whether this table argument is optional or not.
     satisfying : iterable
-        An iterable of lambda expressions and/or column rules. These will be
-        used to validate arguments. Lambda expressions must take a table
-        as their single argument, validate, and return ``True`` (validated
-        successfully) or ``False`` (not validated). For column rules, if at
-        least one column in the table matches the rule, then the table
-        is valid.
-
+        An iterable of lambda expressions, which will be used to validate
+        arguments. Each lambda expression must take a table as its single
+        argument, validate, and then return ``True`` for tables that
+        pass validation and ``False`` otherwise.
+    schema : iterable
+        An iterable of column rules used to validate a table. Each member
+        must be an instance of ``Argument`` capable of validating a column
+        (most likely an object created with :func:`ibis.rules.column`). A
+        ``name`` attribute is required for each member, which will be used
+        to find a candidate column to satisfy the rule. A table must have
+        a columns to match each non-optional rule to pass validation.
+    allow_extra : bool
+        Only useful in conjunction with ``schema``. If set to ``False`` then
+        only tables with exactly the columns specified in the schema will be
+        allowed. If set to ``True`` then the table may have columns not
+        specified in the schema, as long as each non-optional member of the
+        schema was satisfied.
     validator : ???
         ???
     doc : ???
@@ -829,7 +844,7 @@ class Table(ValueTyped):
     --------
     The following op will accept an argument named ``'table'``, with at least
     four columns, of which at least three must be of type ``double``. The names
-    and types of each column must also match those in the rule (e.g. column
+    and types of each column must also match those in the schema (e.g. column
     with name ``'value4'`` is an optional column but must be of type
     ``double``).
 
@@ -839,7 +854,8 @@ class Table(ValueTyped):
     ...            name='table',
     ...            satisfying=[
     ...                lambda t: len(t.columns) >= 4,
-    ...                lambda t: t.schema().types.count(dt.Double()) >= 3,
+    ...                lambda t: t.schema().types.count(dt.Double()) >= 3],
+    ...            schema=[
     ...                rules.column(name='group', value_type=rules.number),
     ...                rules.column(name='value1', value_type=rules.number),
     ...                rules.column(name='value2', value_type=rules.number),
@@ -848,11 +864,14 @@ class Table(ValueTyped):
     ...                             optional=True)])]
     ...    output_type = rules.type_of_arg(0)
     """
-    def __init__(self, name=None, optional=False, satisfying=None,
-            doc=None, validator=None, **arg_kwds):
+    def __init__(self, name=None, optional=False, satisfying=[],
+                 schema=[], doc=None, validator=None, allow_extra=False,
+                 **arg_kwds):
         self.name = name
         self.optional = optional
         self.satisfying = util.promote_list(satisfying)
+        self.schema = util.promote_list(schema)
+        self.allow_extra = allow_extra
 
         self.doc = doc
         self.validator = validator
@@ -860,19 +879,46 @@ class Table(ValueTyped):
     def _validate(self, args, i):
         self.arg = args[0]
         if isinstance(self.arg, ir.TableExpr):
+            # Check column schema
+            rules_matched = 0
+            for column_rule in self.schema:
+                if not isinstance(column_rule, Argument):
+                    raise ValueError('Members of schema must be instances of '
+                                     'the Argument class (rules).')
+                if column_rule.name is None:
+                    raise ValueError(
+                        'Column rules must be named inside a table.')
+                try:
+                    column = self.arg[column_rule.name]
+                except IbisTypeError:
+                    if column_rule.optional:
+                        break
+                    else:
+                        raise IbisTypeError(
+                            'No column with name {}'.format(column_rule.name))
+                try:
+                    column_rule.validate([column], 0)
+                    rules_matched += 1
+                except IbisTypeError as e:
+                    raise IbisTypeError(
+                        ('Could not satisfy rule: '
+                         '{}').format(column_rule)) from e
+
+            if not self.allow_extra:
+                # Count rules
+                rules = [x for x in self.schema if isinstance(x, Argument)]
+                if ((len(rules) != 0) and
+                        (len(self.arg.columns) > rules_matched)):
+                    raise IbisTypeError('Extra columns not allowed!')
+
+            # Check extra custom rules
             for sat in self.satisfying:
-                if isinstance(sat, Argument):
-                    for col in self.arg.columns:
-                        # This will raise an appropriate IbisTypeError
-                        sat.validate([self.arg[col]], 0)
-                elif callable(sat):
-                    if not sat(self.arg):
-                        raise IbisTypeError(('Did not satisfy callable (not '
-                                             'truthy): {}').format(sat))
-                else:
-                    raise ValueError(('Elements passed to "satisfying" '
-                                      'argument must be instances of '
-                                      '"Argument" or callables.'))
+                if not callable(sat):
+                    raise ValueError(
+                        'Members of satisfying argument must be callables.')
+                if not sat(self.arg):
+                    raise IbisTypeError(('Did not satisfy callable (not '
+                                         'truthy): {}').format(sat))
             return self.arg
 
         raise IbisTypeError('Not a table.')

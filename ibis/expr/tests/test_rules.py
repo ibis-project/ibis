@@ -263,48 +263,77 @@ def check_op_input(Op, schema, raises):
 def test_table_satisfying_lambda(schema, raises):
     class MyOp(ops.ValueOp):
         input_type = [rules.table(name='table',
-            satisfying=lambda t: len(t.columns) == 2)]
+                                  satisfying=lambda t: len(t.columns) == 2)]
         output_type = rules.type_of_arg(0)
 
     check_op_input(MyOp, schema, raises)
 
 
 @pytest.mark.parametrize(
-    ('schema', 'raises'),
+    ('schema', 'allow_extra', 'raises'),
 
     [([('group', dt.int64),
-       ('value', dt.double)], False),
+       ('value', dt.double)], False, False),
 
      ([('group', dt.int64),
-       ('value', dt.timestamp)], True)])
-def test_table_satisfying_rule(schema, raises):
-    class MyOp(ops.ValueOp):
-        input_type = [rules.table(name='table',
-            satisfying=rules.column(name='group', value_type=rules.number))]
-        output_type = rules.type_of_arg(0)
-
-    check_op_input(MyOp, schema, raises)
-
-
-@pytest.mark.parametrize(
-    ('schema', 'raises'),
-
-    [([('group', dt.int64),
-       ('value', dt.double)], False),
+       ('value', dt.timestamp)], False, True),
 
      ([('group', dt.int64),
        ('value', dt.double),
-       ('value2', dt.double)], False)])
-def test_table_satisfying_optional(schema, raises):
+       ('value2', dt.double)], True, False)])
+def test_table_with_schema(schema, allow_extra, raises):
     class MyOp(ops.ValueOp):
         input_type = [
             rules.table(
                 name='table',
-                satisfying=[
+                schema=[
+                    rules.column(name='group', value_type=rules.number),
+                    rules.column(name='value', value_type=rules.number),
+                ],
+                allow_extra=allow_extra)]
+        output_type = rules.type_of_arg(0)
+
+    check_op_input(MyOp, schema, raises)
+
+
+@pytest.mark.parametrize(
+    ('schema', 'allow_extra', 'raises'),
+
+    [([('group', dt.int64),
+       ('value', dt.double)], False, False),
+
+     ([('group', dt.int64),
+       ('value', dt.double),
+       ('value2', dt.double)], False, False),
+
+     ([('group', dt.int64),
+       ('value', dt.double),
+       ('value2', dt.timestamp)], False, True),
+
+     ([('group', dt.int64),
+       ('value', dt.double),
+       ('value3', dt.timestamp)], False, True),
+
+     ([('group', dt.int64),
+       ('value', dt.double),
+       ('value2', dt.double),
+       ('value3', dt.double)], False, True),
+
+     ([('group', dt.int64),
+       ('value', dt.double),
+       ('value2', dt.double),
+       ('value3', dt.timestamp)], True, False)])
+def test_table_with_schema_optional(schema, allow_extra, raises):
+    class MyOp(ops.ValueOp):
+        input_type = [
+            rules.table(
+                name='table',
+                schema=[
                     rules.column(name='group', value_type=rules.number),
                     rules.column(name='value', value_type=rules.number),
                     rules.column(name='value2', value_type=rules.number,
-                                 optional=True)])]
+                                 optional=True)],
+                allow_extra=allow_extra)]
         output_type = rules.type_of_arg(0)
 
     check_op_input(MyOp, schema, raises)
@@ -317,14 +346,15 @@ def test_table_satisfying_optional(schema, raises):
        ('value1', dt.double),
        ('value2', dt.double),
        ('value3', dt.double)], False)])
-def test_table_satisfying_many(schema, raises):
+def test_table_schema_and_satisfying(schema, raises):
     class MyOp(ops.ValueOp):
         input_type = [
             rules.table(
                 name='table',
                 satisfying=[
                     lambda t: len(t.columns) >= 4,
-                    lambda t: t.schema().types.count(dt.Double()) >= 3,
+                    lambda t: t.schema().types.count(dt.Double()) >= 3],
+                schema=[
                     rules.column(name='group', value_type=rules.number),
                     rules.column(name='value1', value_type=rules.number),
                     rules.column(name='value2', value_type=rules.number),
@@ -348,6 +378,19 @@ def test_table_not_a_table():
 def test_table_invalid_satisfying():
     class MyOp(ops.ValueOp):
         input_type = [rules.table(name='table', satisfying=123)]
+        output_type = rules.type_of_arg(0)
+
+    schema = ibis.Schema.from_tuples([('group', dt.int64)])
+    table = ibis.table(schema)
+    with pytest.raises(ValueError):
+        MyOp(table)
+
+
+def test_table_invalid_schema_no_name():
+    class MyOp(ops.ValueOp):
+        input_type = [rules.table(
+            name='table',
+            satisfying=[rules.column(value_type=rules.number)])]
         output_type = rules.type_of_arg(0)
 
     schema = ibis.Schema.from_tuples([('group', dt.int64)])
