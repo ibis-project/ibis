@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 pytest.importorskip('graphviz')
@@ -95,6 +97,10 @@ def test_sort_by():
     assert str(hash(repr(expr.op()))) in graph.source
 
 
+@pytest.mark.skipif(
+    bool(os.environ.get('APPVEYOR', None)),
+    reason='Not sure what the prerequisites for running this on Windows are'
+)
 def test_optional_graphviz_repr():
     t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
     expr = t.groupby(t.b).aggregate(
