@@ -30,5 +30,15 @@ def df(alltypes):
 
 
 @pytest.fixture(scope='session')
+def parted_alltypes(client):
+    return client.table('functional_alltypes_parted')
+
+
+@pytest.fixture(scope='session')
+def parted_df(parted_alltypes):
+    return parted_alltypes.execute()
+
+
+@pytest.fixture(scope='session')
 def struct_table(client):
     return client.table('struct_table')
