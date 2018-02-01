@@ -52,7 +52,7 @@ services:
   waiter:
     image: jwilder/dockerize
     command: |
-      dockerize -wait tcp://postgres:3306
+      dockerize -wait tcp://mysql:3306
                 -wait tcp://postgres:5432
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070
