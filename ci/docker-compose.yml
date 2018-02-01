@@ -8,6 +8,16 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
 
+  mysql:
+    image: mariadb:10.2
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=1
+      - MYSQL_DATABASE=ibis_testing
+      - MYSQL_USER=ibis
+      - MYSQL_PASSWORD=ibis
+
   impala:
     image: ibisproject/impala
     hostname: impala
