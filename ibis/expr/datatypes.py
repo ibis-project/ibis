@@ -1070,9 +1070,9 @@ def infer_struct(value):
 
 @infer.register(dict)
 def infer_map(value):
+    if not value:
+        return Map(null, null)
     try:
-        if not value:
-            return Map(null, null)
         return Map(
             highest_precedence(map(infer, value.keys())),
             highest_precedence(map(infer, value.values())),
