@@ -188,6 +188,18 @@ except AttributeError:
     infer_pandas_dtype = pd.lib.infer_dtype
 
 
+PANDAS_DTYPE_TO_IBIS_DTYPE = {
+    'string': dt.string,
+    'unicode': dt.string,
+    'empty': dt.null,
+    'boolean': dt.boolean,
+    'datetime': dt.timestamp,
+    'datetime64': dt.timestamp,
+    'timedelta': dt.interval,
+    'bytes': dt.binary,
+}
+
+
 def infer_ibis_dtypes_from_series(series, strict, aggressive_null):
 
     def _infer_ibis_dtypes_from_series_strict(series_nona):
@@ -209,25 +221,16 @@ def infer_ibis_dtypes_from_series(series, strict, aggressive_null):
     else:
         series_nona = series.dropna()
         pandas_dtype = infer_pandas_dtype(series_nona)
-        if pandas_dtype == 'string' or pandas_dtype == 'unicode':
-            ibis_dtype = dt.string
-        elif pandas_dtype == 'empty':
-            ibis_dtype == dt.null
-        elif pandas_dtype == 'boolean':
-            ibis_dtype = dt.boolean
-        elif pandas_dtype == 'datetime' or pandas_dtype == 'datetime64':
-            ibis_dtype = dt.timestamp
-        elif pandas_dtype == 'timedelta':
-            ibis_dtype = dt.interval
-        elif pandas_dtype == 'bytes':
-            ibis_dtype = dt.binary
-        elif pandas_dtype == 'mixed':
+        if pandas_dtype.startswith('mixed'):
             if strict:
                 return _infer_ibis_dtypes_from_series_strict(series_nona)
             else:
-                return [dt.infer(series_nona.iat[0])]
+                ibis_dtype = dt.infer(series_nona.iat[0])
         else:
-            return []
+            ibis_dtype = PANDAS_DTYPE_TO_IBIS_DTYPE.get(pandas_dtype)
+            if ibis_dtype is None:
+                # FIXME: add this case to PANDAS_DTYPE_TO_IBIS_DTYPE
+                return []
     return [ibis_dtype]
 
 
