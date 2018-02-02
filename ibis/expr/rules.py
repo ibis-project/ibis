@@ -848,6 +848,8 @@ class Table(Argument):
     with name ``'value4'`` is an optional column but must be of type
     ``double``).
 
+    >>> import ibis.expr.datatypes as dt
+    >>> import ibis.expr.rules as rules
     >>> import ibis.expr.operations as ops
     >>> class MyOp(ops.ValueOp):
     ...    input_type = [
