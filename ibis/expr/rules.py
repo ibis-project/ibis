@@ -253,9 +253,9 @@ class Argument(object):
         raise NotImplementedError
 
     def __str__(self):
-        fields = {'name', 'doc', 'optional', 'validator', 'types'}
+        fields = {'name', 'doc', 'optional'}
         return str({k: v for k, v in self.__dict__.items()
-                    if k in fields and v is not None})
+                    if (k in fields) and (v is not None)})
 
 
 def _to_argument(val):
@@ -848,6 +848,7 @@ class Table(Argument):
     with name ``'value4'`` is an optional column but must be of type
     ``double``).
 
+    >>> import ibis.expr.operations as ops
     >>> class MyOp(ops.ValueOp):
     ...    input_type = [
     ...        rules.table(
@@ -895,14 +896,14 @@ class Table(Argument):
                         break
                     else:
                         raise IbisTypeError(
-                            'No column with name {}'.format(column_rule.name))
+                            'No column with name {}.'.format(column_rule.name))
                 try:
                     column_rule.validate([column], 0)
                     rules_matched += 1
                 except IbisTypeError as e:
-                    raise IbisTypeError(
-                        ('Could not satisfy rule: '
-                         '{}').format(column_rule)) from e
+                    six.raise_from(
+                        IbisTypeError('Could not satisfy rule: {}.'.format(
+                            str(column_rule))),e)
 
             if not self.allow_extra:
                 # Count rules
