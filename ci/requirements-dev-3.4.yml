@@ -23,6 +23,7 @@ dependencies:
   - thriftpy<=0.3.9
   - toolz
   - pip:
+    - urllib3
     - hdfs>=2.0.0
     - clickhouse-driver>=0.0.8
     - clickhouse-sqlalchemy

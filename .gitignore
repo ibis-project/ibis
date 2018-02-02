@@ -49,9 +49,9 @@ docs/source/generated
 docs/source/generated-notebooks
 
 # UDF testing generated files
-testing/udf/CMakeCache.txt
-testing/udf/CMakeFiles/
-testing/udf/Makefile
+ci/udf/CMakeCache.txt
+ci/udf/CMakeFiles/
+ci/udf/Makefile
 .cache/
 
 # test data
