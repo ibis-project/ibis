@@ -877,8 +877,8 @@ class Table(Argument):
         self.validator = validator
 
     def _validate(self, args, i):
-        self.arg = args[0]
-        if isinstance(self.arg, ir.TableExpr):
+        arg = args[i]
+        if isinstance(arg, ir.TableExpr):
             # Check column schema
             rules_matched = 0
             for column_rule in self.schema:
@@ -889,7 +889,7 @@ class Table(Argument):
                     raise ValueError(
                         'Column rules must be named inside a table.')
                 try:
-                    column = self.arg[column_rule.name]
+                    column = arg[column_rule.name]
                 except IbisTypeError:
                     if column_rule.optional:
                         break
@@ -908,18 +908,18 @@ class Table(Argument):
                 # Count rules
                 rules = [x for x in self.schema if isinstance(x, Argument)]
                 if ((len(rules) != 0) and
-                        (len(self.arg.columns) > rules_matched)):
-                    raise IbisTypeError('Extra columns not allowed!')
+                        (len(arg.columns) > rules_matched)):
+                    raise IbisTypeError('Extra columns not allowed.')
 
             # Check extra custom rules
             for sat in self.satisfying:
                 if not callable(sat):
                     raise ValueError(
                         'Members of satisfying argument must be callables.')
-                if not sat(self.arg):
+                if not sat(arg):
                     raise IbisTypeError(('Did not satisfy callable (not '
                                          'truthy): {}').format(sat))
-            return self.arg
+            return arg
 
         raise IbisTypeError('Not a table.')
 
