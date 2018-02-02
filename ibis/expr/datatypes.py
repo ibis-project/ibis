@@ -1238,7 +1238,7 @@ def can_cast_arrays(source, target, **kwargs):
 @castable.register(Struct, Struct)
 def can_cast_struct(source, target, **kwargs):
     return (
-        (source.names <= target.names) and
+        list(source.names) == list(target.names) and
         all(
             castable(source[name], target[name])
             for name in source.names
