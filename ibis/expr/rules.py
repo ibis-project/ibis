@@ -903,7 +903,7 @@ class Table(Argument):
                 except IbisTypeError as e:
                     six.raise_from(
                         IbisTypeError('Could not satisfy rule: {}.'.format(
-                            str(column_rule))),e)
+                            str(column_rule))), e)
 
             if not self.allow_extra:
                 # Count rules
