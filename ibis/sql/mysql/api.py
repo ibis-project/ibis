@@ -23,13 +23,14 @@ def compile(expr, params=None):
     --------
     >>> import os
     >>> import getpass
+    >>> host = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
     >>> user = os.environ.get('IBIS_TEST_MYSQL_USER', getpass.getuser())
     >>> password = os.environ.get('IBIS_TEST_MYSQL_PASSWORD')
     >>> database = os.environ.get('IBIS_TEST_MYSQL_DATABASE',
     ...                           'ibis_testing')
     >>> con = connect(
     ...     database=database,
-    ...     host='localhost',
+    ...     host=host,
     ...     user=user,
     ...     password=password
     ... )
@@ -76,13 +77,14 @@ def connect(
     --------
     >>> import os
     >>> import getpass
+    >>> host = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
     >>> user = os.environ.get('IBIS_TEST_MYSQL_USER', getpass.getuser())
     >>> password = os.environ.get('IBIS_TEST_MYSQL_PASSWORD')
     >>> database = os.environ.get('IBIS_TEST_MYSQL_DATABASE',
     ...                           'ibis_testing')
     >>> con = connect(
     ...     database=database,
-    ...     host='localhost',
+    ...     host=host,
     ...     user=user,
     ...     password=password
     ... )
