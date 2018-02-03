@@ -118,7 +118,6 @@ docs: &docs
           sudo chown -R "${USER}":"${USER}" /tmp/ibis
           pushd /tmp/ibis/docs.ibis-project.org
           find . -maxdepth 1 ! -name '*.git' ! -name '.' ! -name 'CNAME' ! -name '*.nojekyll' -exec rm -rf {} \;
-          popd
     - run:
         name: Build Documentation
         command: docker-compose run ibis sphinx-build -b html docs/source /tmp/docs.ibis-project.org
@@ -129,20 +128,18 @@ docs: &docs
     - run:
         name: Push Documentation to Remote Repo
         command: |
-          #if [ "${CIRCLE_USERNAME}/${CIRCLE_BRANCH}" = "cpcloud/doc-stuff" ]; then
-          sudo chown -R "${USER}":"${USER}" /tmp/ibis
-          pushd /tmp/ibis/docs.ibis-project.org
+          if [ "${CIRCLE_USERNAME}/${CIRCLE_BRANCH}" = "ibis-project/master" ]; then
+            sudo chown -R "${USER}":"${USER}" /tmp/ibis
+            pushd /tmp/ibis/docs.ibis-project.org
 
-          git config user.email 'ibisdocbot@ibis-project.org'
-          git config user.name 'ibisdocbot'
+            git config user.email 'ibisdocbot@ibis-project.org'
+            git config user.name 'ibisdocbot'
 
-          # Add everything
-          git add --all .
-          git commit -m "Docs from ibis at ${CIRCLE_SHA1}"
-          git log --stat HEAD~1.. | cat
-          popd
-          # git push --force
-          #fi
+            # Add everything
+            git add --all .
+            git commit -m "Docs from ibis at ${CIRCLE_SHA1}"
+            git push --force
+          fi
     - store_artifacts:
         path: /tmp/ibis/docs.ibis-project.org
 
@@ -202,15 +199,15 @@ workflows:
   version: 2
   test:
     jobs:
-      #- python27_test
-      #- python34_test
-      #- python35_test
-      #- python36_test
+      - python27_test
+      - python34_test
+      - python35_test
+      - python36_test
 
-      #- python27_conda_build
-      #- python34_conda_build
-      #- python35_conda_build
-      #- python36_conda_build
+      - python27_conda_build
+      - python34_conda_build
+      - python35_conda_build
+      - python36_conda_build
 
-      #- python36_benchmark
+      - python36_benchmark
       - python36_docs
