@@ -138,7 +138,7 @@ docs: &docs
             # Add everything
             git add --all .
             git commit -m "Docs from ibis at ${CIRCLE_SHA1}"
-            git push --force
+            git push origin gh-pages --force
           fi
     - store_artifacts:
         path: /tmp/ibis/docs.ibis-project.org
