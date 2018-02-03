@@ -368,13 +368,12 @@ functions:
 
 .. ipython:: python
 
-   stats = dict(
+   expr = pop.group_by('country').aggregate(
       num_persons=pop.count(),
       avg_age=pop.age.mean(),
       avg_male=pop.age.mean(where=pop.gender == 'M'),
       avg_female=pop.age.mean(where=pop.gender == 'F')
    )
-   expr = pop.group_by('country').aggregate(**stats)
 
 This indeed generates the correct SQL. Note that SQL engines handle ``NULL``
 values differently in aggregation functions, but Ibis will write the SQL

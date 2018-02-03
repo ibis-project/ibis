@@ -977,6 +977,10 @@ class FilterValidator(ExprValidator):
     def validate(self, expr):
         op = expr.op()
 
+        if (isinstance(expr, ir.BooleanColumn) and
+                isinstance(op, ops.TableColumn)):
+            return True
+
         is_valid = True
 
         if isinstance(op, ops.Contains):
@@ -994,7 +998,7 @@ class FilterValidator(ExprValidator):
                 elif isinstance(arg, (ir.ColumnExpr, ir.AnalyticExpr)):
                     roots_valid.append(self.shares_some_roots(arg))
                 elif isinstance(arg, ir.Expr):
-                    raise NotImplementedError
+                    raise NotImplementedError(repr((type(expr), type(arg))))
                 else:
                     # arg_valid = True
                     pass

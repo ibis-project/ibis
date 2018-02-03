@@ -32,6 +32,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx.ext.mathjax',
     'numpydoc',
+    'nbsphinx',
 
     'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting',
@@ -83,7 +84,7 @@ release = version
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = []
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
