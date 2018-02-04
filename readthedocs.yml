@@ -1,8 +1,0 @@
-conda:
-  file: ci/requirements-docs-3.6.yml
-
-formats:
-  - none
-
-python:
-  setup_py_install: true
