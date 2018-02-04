@@ -8,7 +8,6 @@ dependencies:
   - graphviz
   - requests
   - impyla>=0.13.7
-  - lz4
   - multipledispatch
   - numpy=1.11.0
   - pandas
@@ -26,7 +25,6 @@ dependencies:
   - pip:
     - urllib3
     - hdfs>=2.0.0
-    - clickhouse-cityhash
     - clickhouse-driver>=0.0.8
     - clickhouse-sqlalchemy
     - google-cloud-bigquery<0.28
