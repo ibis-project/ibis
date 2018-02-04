@@ -142,7 +142,7 @@ class Postgres(Backend):
         user = os.environ.get('IBIS_TEST_POSTGRES_USER',
                               os.environ.get('PGUSER', 'postgres'))
         password = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD',
-                                  os.environ.get('PGPASS'))
+                                  os.environ.get('PGPASS', 'postgres'))
         host = os.environ.get('IBIS_TEST_POSTGRES_HOST',
                               os.environ.get('PGHOST', 'localhost'))
         database = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',

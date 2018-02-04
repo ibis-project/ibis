@@ -14,7 +14,7 @@ pytestmark = pytest.mark.backend
 def data_directory():
     root = Path(__file__).absolute().parents[3]
 
-    default = root / 'testing' / 'ibis-testing-data'
+    default = root / 'ci' / 'ibis-testing-data'
     datadir = os.environ.get('IBIS_TEST_DATA_DIRECTORY', default)
     datadir = Path(datadir)
 
