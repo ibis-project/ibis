@@ -125,6 +125,9 @@ docs: &docs
         name: Who is running
         command: |
           echo "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_BRANCH}"
+    - add_ssh_keys:
+        fingerprints:
+          - "8d:b0:36:4d:f6:75:f2:5f:00:01:a1:53:63:52:f0:e2"
     - run:
         name: Push Documentation to Remote Repo
         command: |
