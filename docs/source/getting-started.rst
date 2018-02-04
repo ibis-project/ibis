@@ -152,56 +152,43 @@ with:
 Learning resources
 ------------------
 
-We are collecting IPython notebooks for learning here:
-http://github.com/cloudera/ibis-notebooks. Some of these notebooks will be
-reproduced as part of the documentation.
+We are collecting Jupyter notebooks for learning here:
+https://github.com/ibis-project/ibis/tree/master/docs/source/notebooks. Some of
+these notebooks will be reproduced as part of the documentation.
 
 .. _install.quickstart:
 
-Using Ibis with the Cloudera Quickstart VM
-------------------------------------------
 
-Using Ibis with Impala requires a running Impala cluster, so we have provided a
-lean VirtualBox image to simplify the process for those looking to try out Ibis
-(without setting up a cluster) or start contributing code to the project.
+Running Ibis Queries using Docker
+---------------------------------
 
-What follows are streamlined setup instructions for the VM. If you wish to
-download it directly and setup from the ``ova`` file, use this `download link
-<http://archive.cloudera.com/cloudera-ibis/ibis-demo.ova>`_.
+Contributor `Krisztián Szűcs <https://github.com/kszucs>`_ has spent many hours
+crafting a very easy-to-use ``docker-compose`` setup that enables users and
+developers of ibis to get up and running quickly.
 
-The VM was built with Oracle VirtualBox 4.3.28.
+Here are the steps:
 
-TL;DR
-~~~~~
 
-::
+.. code-block:: sh
 
-    curl -s https://raw.githubusercontent.com/cloudera/ibis-notebooks/master/setup/bootstrap.sh | bash
+   # clone ibis
+   git clone https://github.com/ibis-project/ibis
 
-Single Steps
-~~~~~~~~~~~~
+   # go to where the docker-compose file is
+   pushd ibis/ci
 
-To use Ibis with the special Cloudera Quickstart VM follow the below
-instructions:
+   # build the latest version of ibis
+   docker-compose build --pull ibis
 
-  * Make sure Anaconda is installed. You can get it from
-    http://continuum.io/downloads. Now prepend the Anaconda Python
-    to your path like this ``export PATH=$ANACONDA_HOME/bin:$PATH``
-  * ``pip install ibis-framework``
-  * ``git clone https://github.com/cloudera/ibis-notebooks.git``
-  * ``cd ibis-notebooks``
-  * ``./setup/setup-ibis-demo-vm.sh``
-  * ``source setup/ibis-env.sh``
-  * ``ipython notebook``
+   # spin up containers
+   docker-compose up -d --no-build postgres impala clickhouse
 
-VM setup
-~~~~~~~~
+   # wait for things to finish starting
+   docker-compose run waiter
 
-The setup script will download a VirtualBox appliance image and import it in
-VirtualBox. In addition, it will create a new host only network adapter with
-DHCP. After the VM is started, it will extract the current IP address and add a
-new /etc/hosts entry pointing from the IP of the VM to the hostname
-``quickstart.cloudera``. The reason for this entry is that Hadoop and HDFS
-require a working reverse name mapping. If you don't want to run the automated
-steps make sure to check the individual steps in the file
-``setup/setup-ibis-demo-vm.sh``.
+   # load data into databases
+   docker-compose run ibis ci/load-data.sh
+
+   # confirm that you can reach impala
+   impala_ip_address="$(docker inspect -f '{{.NetworkSettings.Networks.ci_default.IPAddress}}' ci_impala_1)"
+   ping -c 1 "${impala_ip_address}"

@@ -313,8 +313,9 @@ def test_add_predicate(table):
 def test_invalid_predicate(table, schema):
     # a lookalike
     table2 = api.table(schema, name='bar')
+    predicate = table2.a > 5
     with pytest.raises(RelationError):
-        table[table2.a > 5]
+        table.filter(predicate)
 
 
 def test_add_predicate_coalesce(table):

@@ -1,24 +1,29 @@
 channels:
   - conda-forge
 dependencies:
-  - plumbum
   - click
+  - clickhouse-driver>=0.0.8
+  - clickhouse-sqlalchemy
   - cmake
   - flake8
+  - google-cloud-bigquery<0.28
   - graphviz
   - impyla>=0.13.7
   - ipython
+  - jupyter
   - matplotlib
   - multipledispatch
+  - nbsphinx
   - numpy
   - numpydoc
   - pandas
+  - plumbum
   - psycopg2
+  - pyarrow>=0.6.0
+  - pytables
   - pytest
   - python=3.6
   - python-graphviz
-  - pyarrow>=0.6.0
-  - pytables
   - regex
   - six
   - sphinx_rtd_theme
@@ -26,8 +31,7 @@ dependencies:
   - thrift
   - thriftpy<=0.3.9
   - toolz
-  - clickhouse-driver>=0.0.8
-  - clickhouse-sqlalchemy
-  - google-cloud-bigquery<0.28
+  - xorg-libxpm
+  - xorg-libxrender
   - pip:
     - hdfs>=2.0.0

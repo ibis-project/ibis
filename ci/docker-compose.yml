@@ -11,6 +11,10 @@ services:
   impala:
     image: ibisproject/impala
     hostname: impala
+    networks:
+      default:
+        aliases:
+          - quickstart.cloudera
     environment:
       PGPASSWORD: postgres
     ports:
@@ -73,3 +77,4 @@ services:
       dockerfile: ci/Dockerfile
       args:
         PYTHON: ${PYTHON_VERSION:-3.6}
+        ENVKIND: ${ENVKIND:-dev}
