@@ -114,10 +114,11 @@ docs: &docs
         command: docker-compose run ibis ping -c 1 quickstart.cloudera
     - run:
         name: Clone Documentation Repository
-        command: git clone --branch gh-pages git@github.com:ibis-project/docs.ibis-project.org /tmp/ibis/docs.ibis-project.org
+        command: docker-compose run ibis git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
     - run:
         name: Clear out old documentation files
         command: |
+          sudo chown -R "${USER}":"${USER}" /tmp/ibis
           pushd /tmp/ibis/docs.ibis-project.org
           find . -maxdepth 1 ! -name '*.git' ! -name '.' ! -name 'CNAME' ! -name '*.nojekyll' -exec rm -rf {} \;
     - run:
