@@ -88,6 +88,9 @@ docs: &docs
   steps:
     - checkout:
         path: ~/ibis
+    - add_ssh_keys:
+        fingerprints:
+          - "8d:b0:36:4d:f6:75:f2:5f:00:01:a1:53:63:52:f0:e2"
     - run:
         name: Start Databases
         command: docker-compose up -d --no-build postgres impala clickhouse
@@ -111,11 +114,10 @@ docs: &docs
         command: docker-compose run ibis ping -c 1 quickstart.cloudera
     - run:
         name: Clone Documentation Repository
-        command: docker-compose run ibis git clone --branch gh-pages git@github.com:ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
+        command: git clone --branch gh-pages git@github.com:ibis-project/docs.ibis-project.org /tmp/ibis/docs.ibis-project.org
     - run:
         name: Clear out old documentation files
         command: |
-          sudo chown -R "${USER}":"${USER}" /tmp/ibis
           pushd /tmp/ibis/docs.ibis-project.org
           find . -maxdepth 1 ! -name '*.git' ! -name '.' ! -name 'CNAME' ! -name '*.nojekyll' -exec rm -rf {} \;
     - run:
@@ -125,9 +127,6 @@ docs: &docs
         name: Who is running
         command: |
           echo "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_BRANCH}"
-    - add_ssh_keys:
-        fingerprints:
-          - "8d:b0:36:4d:f6:75:f2:5f:00:01:a1:53:63:52:f0:e2"
     - run:
         name: Push Documentation to Remote Repo
         command: |
@@ -135,8 +134,8 @@ docs: &docs
             sudo chown -R "${USER}":"${USER}" /tmp/ibis
             pushd /tmp/ibis/docs.ibis-project.org
 
-            git config user.email 'ibisdocbot@ibis-project.org'
-            git config user.name 'ibisdocbot'
+            git config user.name 'Ibis Documentation Bot'
+            git config user.email ''
 
             # Add everything
             git add --all .
