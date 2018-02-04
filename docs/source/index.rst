@@ -86,6 +86,7 @@ places, but this will improve as things progress.
    sql
    developer
    design
+   extending
    release
    legal
 
