@@ -1,4 +1,4 @@
-# Ibis: Python deferred expression framework for analytics
+# Ibis: Python data analysis framework for Hadoop and SQL engines
 
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)
 [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://docs.ibis-project.org)
@@ -29,7 +29,7 @@ Ibis currently provides tools for interacting with the following systems:
 - [Hadoop Distributed File System (HDFS)](https://hadoop.apache.org/)
 - PostgreSQL (Experimental)
 - SQLite
-- Direct execution of ibis expressions against pandas object (Experimental)
+- Pandas DataFrames (Experimental)
 - [Clickhouse](https://clickhouse.yandex)
 - [BigQuery](https://cloud.google.com/bigquery)
 
