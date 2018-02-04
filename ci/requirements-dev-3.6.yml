@@ -8,6 +8,7 @@ dependencies:
   - graphviz
   - requests
   - impyla>=0.13.7
+  - lz4
   - multipledispatch
   - numpy
   - pandas
@@ -24,6 +25,7 @@ dependencies:
   - thrift
   - thriftpy<=0.3.9
   - toolz
+  - clickhouse-cityhash
   - clickhouse-driver>=0.0.8
   - clickhouse-sqlalchemy
   - google-cloud-bigquery<0.28
