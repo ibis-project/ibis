@@ -124,11 +124,11 @@ docs: &docs
     - run:
         name: Who is running
         command: |
-          echo "${CIRCLE_USERNAME}/${CIRCLE_BRANCH}"
+          echo "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_BRANCH}"
     - run:
         name: Push Documentation to Remote Repo
         command: |
-          if [ "${CIRCLE_USERNAME}/${CIRCLE_BRANCH}" = "ibis-project/master" ]; then
+          if [ "${CIRCLE_PROJECT_USERNAME}/${CIRCLE_BRANCH}" = "ibis-project/master" ]; then
             sudo chown -R "${USER}":"${USER}" /tmp/ibis
             pushd /tmp/ibis/docs.ibis-project.org
 
