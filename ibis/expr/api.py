@@ -279,51 +279,33 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
     return ir.literal(value, type=type).op().to_expr()
 
 
-timedelta = interval  # backward compatibility
+@functools.wraps(interval)
+def timedelta(*args, **kwargs):
+    warnings.warn('ibis.timedelta is deprecated, use ibis.interval instead',
+                  DeprecationWarning)
+    return interval(*args, **kwargs)
 
 
-def nanosecond(value=1):
-    return interval(nanoseconds=value)
+def _timedelta(name, unit):
+    def f(value=1):
+        msg = 'ibis.{0} is deprecated, use ibis.interval({0}s=n) instead'
+        warnings.warn(msg.format(name), DeprecationWarning)
+        return interval(value, unit=unit)
+    f.__name__ = name
+    return f
 
 
-def microsecond(value=1):
-    return interval(microseconds=value)
-
-
-def millisecond(value=1):
-    return interval(milliseconds=value)
-
-
-def second(value=1):
-    return interval(seconds=value)
-
-
-def minute(value=1):
-    return interval(minutes=value)
-
-
-def hour(value=1):
-    return interval(hours=value)
-
-
-def day(value=1):
-    return interval(days=value)
-
-
-def week(value=1):
-    return interval(weeks=value)
-
-
-def month(value=1):
-    return interval(months=value)
-
-
-def quarter(value=1):
-    return interval(quarters=value)
-
-
-def year(value=1):
-    return interval(years=value)
+year = _timedelta('year', 'Y')
+quarter = _timedelta('quarter', 'Q')
+month = _timedelta('month', 'M')
+week = _timedelta('week', 'W')
+day = _timedelta('day', 'D')
+hour = _timedelta('hour', 'h')
+minute = _timedelta('minute', 'm')
+second = _timedelta('second', 's')
+millisecond = _timedelta('millisecond', 'ms')
+microsecond = _timedelta('microsecond', 'us')
+nanosecond = _timedelta('nanosecond', 'ns')
 
 
 schema.__doc__ = """\

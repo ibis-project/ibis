@@ -2,12 +2,31 @@ import pytest
 import datetime
 import operator
 
+from ibis.compat import PY2
 import ibis
+import ibis.expr.api as api
+import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
-import ibis.expr.api as api
-from ibis.compat import PY2
+
+
+@pytest.mark.parametrize('timedelta', [
+    api.timedelta,
+    api.year,
+    api.quarter,
+    api.month,
+    api.week,
+    api.day,
+    api.hour,
+    api.minute,
+    api.second,
+    api.millisecond,
+    api.microsecond,
+    api.nanosecond
+])
+def test_timedelta_deprecated(timedelta):
+    with pytest.deprecated_call():
+        timedelta(1)
 
 
 def test_temporal_literals():
