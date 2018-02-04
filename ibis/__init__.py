@@ -63,9 +63,8 @@ with suppress(ImportError):
     import ibis.sql.mysql.api as mysql
 
 with suppress(ImportError):
-    import ibis.clickhouse.api as clickhouse
     # pip install ibis-framework[clickhouse]
-
+    import ibis.clickhouse.api as clickhouse
 
 with suppress(ImportError):
     # pip install ibis-framework[bigquery]

@@ -48,6 +48,10 @@ Icon?
 docs/source/generated
 docs/source/generated-notebooks
 
+# Ibis testing data
+ci/ibis-testing-data*
+ci/ibis_testing.db
+
 # UDF testing generated files
 ci/udf/CMakeCache.txt
 ci/udf/CMakeFiles/
