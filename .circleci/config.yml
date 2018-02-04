@@ -111,7 +111,7 @@ docs: &docs
         command: docker-compose run ibis ping -c 1 quickstart.cloudera
     - run:
         name: Clone Documentation Repository
-        command: docker-compose run ibis git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
+        command: docker-compose run ibis git clone --branch gh-pages git@github.com:ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
     - run:
         name: Clear out old documentation files
         command: |
