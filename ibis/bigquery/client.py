@@ -191,6 +191,10 @@ class BigQueryClient(SQLClient):
         bq_table = self._proxy.get_table(table_id, dataset_id)
         return bigquery_table_to_ibis_schema(bq_table)
 
+    @property
+    def version(self):
+        raise NotImplementedError
+
 
 _DTYPE_TO_IBIS_TYPE = {
     'INT64': dt.int64,
