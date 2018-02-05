@@ -502,21 +502,41 @@ def _string_literal_format(expr):
 
 def _number_literal_format(expr):
     value = expr.op().value
-    return repr(value)
+    formatted = repr(value)
+
+    if formatted in {'nan', 'inf', '-inf'}:
+        return "CAST({!r} AS DOUBLE)".format(formatted)
+
+    return formatted
 
 
 def _interval_literal_format(expr):
     return 'INTERVAL {} {}S'.format(expr.op().value, expr.resolution.upper())
 
 
+def _interval_from_integer(translator, expr):
+    # interval cannot be selected from impala
+    op = expr.op()
+    arg, unit = op.args
+    arg_formatted = translator.translate(arg)
+
+    return 'INTERVAL {} {}S'.format(arg_formatted, expr.resolution.upper())
+
+
+def _date_literal_format(expr):
+    value = expr.op().value
+    if isinstance(value, datetime.date):
+        value = value.strftime('%Y-%m-%d')
+
+    return repr(value)
+
+
 def _timestamp_literal_format(expr):
     value = expr.op().value
     if isinstance(value, datetime.datetime):
-        if value.microsecond != 0:
-            raise ValueError(value)
         value = value.strftime('%Y-%m-%d %H:%M:%S')
 
-    return "'{}'".format(value)
+    return repr(value)
 
 
 def quote_identifier(name, quotechar='`', force=False):
@@ -673,20 +693,27 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+_impala_unit_names = {
+    'Y': 'Y',
+    'Q': 'Q',
+    'M': 'MONTH',
+    'W': 'W',
+    'D': 'J',
+    'h': 'HH',
+    'm': 'MI'
+}
+
+
 def _truncate(translator, expr):
     op = expr.op()
+    arg, unit = op.args
 
     arg = translator.translate(op.args[0])
-
-    _impala_unit_names = {
-        'M': 'MONTH',
-        'D': 'J',
-        'J': 'D',
-        'H': 'HH'
-    }
-
-    unit = op.args[1]
-    unit = _impala_unit_names.get(unit, unit)
+    try:
+        unit = _impala_unit_names[unit]
+    except KeyError:
+        raise com.TranslationError('{} unit is not supported in '
+                                   'timestamp truncate'.format(unit))
 
     return "trunc({}, '{}')".format(arg, unit)
 
@@ -820,7 +847,9 @@ def _log(translator, expr):
 
     if base is None:
         return 'ln({})'.format(arg_formatted)
-    return 'log({}, {})'.format(arg_formatted, translator.translate(base))
+
+    base_formatted = translator.translate(base)
+    return 'log({}, {})'.format(base_formatted, arg_formatted)
 
 
 def _count_distinct(translator, expr):
@@ -840,6 +869,8 @@ def _literal(translator, expr):
         typeclass = 'string'
     elif isinstance(expr, ir.NumericValue):
         typeclass = 'number'
+    elif isinstance(expr, ir.DateValue):
+        typeclass = 'date'
     elif isinstance(expr, ir.TimestampValue):
         typeclass = 'timestamp'
     elif isinstance(expr, ir.IntervalValue):
@@ -859,7 +890,8 @@ _literal_formatters = {
     'number': _number_literal_format,
     'string': _string_literal_format,
     'interval': _interval_literal_format,
-    'timestamp': _timestamp_literal_format
+    'timestamp': _timestamp_literal_format,
+    'date': _date_literal_format
 }
 
 
@@ -929,6 +961,9 @@ _operation_registry = {
     ops.Negate: _negate,
     ops.Not: _not,
 
+    ops.IsNan: unary('is_nan'),
+    ops.IsInf: unary('is_inf'),
+
     ops.IfNull: _ifnull_workaround,
     ops.NullIf: fixed_arity('nullif', 2),
 
@@ -997,6 +1032,7 @@ _operation_registry = {
     ops.ParseURL: _parse_url,
 
     # Timestamp operations
+    ops.Date: unary('to_date'),
     ops.TimestampNow: lambda *args: 'now()',
     ops.ExtractYear: _extract_field('year'),
     ops.ExtractMonth: _extract_field('month'),
@@ -1005,7 +1041,9 @@ _operation_registry = {
     ops.ExtractMinute: _extract_field('minute'),
     ops.ExtractSecond: _extract_field('second'),
     ops.ExtractMillisecond: _extract_field('millisecond'),
-    ops.Truncate: _truncate,
+    ops.TimestampTruncate: _truncate,
+    ops.DateTruncate: _truncate,
+    ops.IntervalFromInteger: _interval_from_integer,
 
     # Other operations
     ops.E: lambda *args: 'e()',

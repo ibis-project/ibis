@@ -13,19 +13,16 @@
 # limitations under the License.
 
 import abc
-
 import six
 
-import pandas as pd
-
-from ibis.compat import zip as czip
 from ibis.config import options
 
+import ibis.util as util
 import ibis.common as com
 import ibis.expr.types as ir
+import ibis.expr.schema as sch
 import ibis.expr.operations as ops
 import ibis.sql.compiler as comp
-import ibis.util as util
 
 
 class Client(object):
@@ -46,6 +43,7 @@ class Query(object):
             ddl, 'parent_expr', getattr(ddl, 'table_set', None)
         )
 
+        self.ddl = ddl
         if isinstance(ddl, comp.DDL):
             self.compiled_ddl = ddl.compile()
         else:
@@ -66,21 +64,13 @@ class Query(object):
         return result
 
     def _fetch(self, cursor):
-        rows = cursor.fetchall()
-        # TODO(wesm): please evaluate/reimpl to optimize for perf/memory
-        dtypes = [self._db_type_to_dtype(x[1]) for x in cursor.description]
-        names = [x[0] for x in cursor.description]
-        cols = {}
-        for (col, name, dtype) in czip(czip(*rows), names, dtypes):
-            try:
-                cols[name] = pd.Series(col, dtype=dtype)
-            except TypeError:
-                # coercing to specified dtype failed, e.g. NULL vals in int col
-                cols[name] = pd.Series(col)
-        return pd.DataFrame(cols, columns=names)
-
-    def _db_type_to_dtype(self, db_type, column):
         raise NotImplementedError
+
+    def schema(self):
+        try:
+            return self.expr.schema()
+        except AttributeError:
+            return sch.schema([(self.expr.get_name(), self.expr.type())])
 
 
 class AsyncQuery(Query):

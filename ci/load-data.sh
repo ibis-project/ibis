@@ -2,11 +2,14 @@
 
 CWD=$(dirname $0)
 
+
 python $CWD/datamgr.py download
+python $CWD/datamgr.py mysql &
 python $CWD/datamgr.py sqlite &
+python $CWD/datamgr.py parquet -i &
 python $CWD/datamgr.py postgres &
 python $CWD/datamgr.py clickhouse &
-python $CWD/impalamgr.py load --data --data-dir $IBIS_TEST_DATA_DIRECTORY &
+python $CWD/impalamgr.py load --data &
 
 
 FAIL=0

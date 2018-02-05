@@ -1,6 +1,5 @@
-import functools
-
 import pytest
+import functools
 
 import ibis
 import ibis.tests.util as tu
@@ -31,9 +30,8 @@ def direct_array_operation_test(f):
     return wrapper
 
 
-@tu.skip_if_invalid_operation
+@tu.skipif_unsupported
 @direct_array_operation_test
-@pytest.mark.backend
 def test_array_concat(backend, con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -42,10 +40,8 @@ def test_array_concat(backend, con):
     assert result == [1, 2, 3, 2, 1]
 
 
-@tu.skip_if_invalid_operation
+@tu.skipif_unsupported
 @direct_array_operation_test
-@pytest.mark.backend
 def test_array_length(backend, con):
     expr = ibis.literal([1, 2, 3]).length()
-    result = con.execute(expr)
-    assert result == 3
+    assert con.execute(expr) == 3

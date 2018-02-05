@@ -35,6 +35,7 @@ impala_requires = [
 
 sqlite_requires = ['sqlalchemy>=1.0.0,<1.1.15']
 postgres_requires = sqlite_requires + ['psycopg2']
+mysql_requires = sqlite_requires + ['pymysql']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = ['clickhouse-driver>=0.0.8']
@@ -45,6 +46,7 @@ parquet_requires = ['pyarrow>=0.6.0']
 all_requires = (
     impala_requires +
     postgres_requires +
+    mysql_requires +
     kerberos_requires +
     visualization_requires +
     clickhouse_requires +
@@ -79,6 +81,7 @@ setup(
         'impala:python_version < "3"': impala_requires + ['thriftpy<=0.3.9'],
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
+        'mysql': mysql_requires,
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
         'clickhouse': clickhouse_requires,

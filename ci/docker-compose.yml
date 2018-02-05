@@ -8,6 +8,16 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
 
+  mysql:
+    image: mariadb:10.2
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=1
+      - MYSQL_DATABASE=ibis_testing
+      - MYSQL_USER=ibis
+      - MYSQL_PASSWORD=ibis
+
   impala:
     image: ibisproject/impala
     hostname: impala
@@ -34,7 +44,7 @@ services:
       - 25020:25020
 
   clickhouse:
-    image: yandex/clickhouse-server:latest
+    image: yandex/clickhouse-server:1.1.54327
     ports:
       - 8123:8123
       - 9000:9000
@@ -42,7 +52,8 @@ services:
   waiter:
     image: jwilder/dockerize
     command: |
-      dockerize -wait tcp://postgres:5432
+      dockerize -wait tcp://mysql:3306
+                -wait tcp://postgres:5432
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070
                 -wait tcp://clickhouse:9000
@@ -60,6 +71,11 @@ services:
       - IBIS_TEST_IMPALA_PORT=21050
       - IBIS_TEST_WEBHDFS_PORT=50070
       - IBIS_TEST_WEBHDFS_USER=hdfs
+      - IBIS_TEST_MYSQL_HOST=mysql
+      - IBIS_TEST_MYSQL_PORT=3306
+      - IBIS_TEST_MYSQL_USER=ibis
+      - IBIS_TEST_MYSQL_PASSWORD=ibis
+      - IBIS_TEST_MYSQL_DATABASE=ibis_testing
       - IBIS_TEST_POSTGRES_HOST=postgres
       - IBIS_TEST_POSTGRES_PORT=5432
       - IBIS_TEST_POSTGRES_USER=postgres

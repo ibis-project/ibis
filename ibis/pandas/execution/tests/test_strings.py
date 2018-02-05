@@ -10,7 +10,7 @@ pytestmark = pytest.mark.pandas
 @pytest.mark.parametrize(
     ('case_func', 'expected_func'),
     [
-        (lambda s: s.length(), lambda s: s.str.len()),
+        (lambda s: s.length(), lambda s: s.str.len().astype('int32')),
         (lambda s: s.substr(1, 2), lambda s: s.str[1:3]),
         (lambda s: s.strip(), lambda s: s.str.strip()),
         (lambda s: s.lstrip(), lambda s: s.str.lstrip()),

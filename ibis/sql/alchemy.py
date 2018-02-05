@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
 import numbers
 import operator
 import functools
 import contextlib
-
-import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
@@ -25,156 +24,44 @@ import sqlalchemy.sql as sql
 from sqlalchemy.sql.elements import Over as _Over
 from sqlalchemy.ext.compiler import compiles as sa_compiles
 
-import numpy as np
 import pandas as pd
 
+from ibis.compat import parse_version
 from ibis.client import SQLClient, AsyncQuery, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter
 
-from ibis import compat
-
+import ibis
+import ibis.util as util
 import ibis.common as com
+import ibis.expr.types as ir
 import ibis.expr.schema as sch
+import ibis.expr.window as W
+import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 import ibis.sql.compiler as comp
 import ibis.sql.transforms as transforms
-import ibis.util as util
-import ibis
 
 
+# TODO(cleanup)
 _ibis_type_to_sqla = {
-    dt.Int8: sa.SmallInteger,
-    dt.Int16: sa.SmallInteger,
-    dt.Int32: sa.Integer,
-    dt.Int64: sa.BigInteger,
+    dt.Null: sa.types.NullType,
+    dt.Date: sa.Date,
+    dt.Time: sa.Time,
+    dt.Boolean: sa.Boolean,
+    dt.Binary: sa.Binary,
+    dt.String: sa.Text,
+    dt.Decimal: sa.NUMERIC,
 
     # Mantissa-based
     dt.Float: sa.Float(precision=24),
     dt.Double: sa.Float(precision=53),
 
-    dt.Boolean: sa.Boolean,
-
-    dt.String: sa.Text,
-
-    dt.Date: sa.Date,
-
-    dt.Decimal: sa.NUMERIC,
-    dt.Null: sa.types.NullType,
-    dt.Binary: sa.Binary,
+    dt.Int8: sa.SmallInteger,
+    dt.Int16: sa.SmallInteger,
+    dt.Int32: sa.Integer,
+    dt.Int64: sa.BigInteger
 }
-
-_sqla_type_mapping = {
-    sa.SmallInteger: dt.Int16,
-    sa.SMALLINT: dt.Int16,
-    sa.Integer: dt.Int32,
-    sa.INTEGER: dt.Int32,
-    sa.BigInteger: dt.Int64,
-    sa.BIGINT: dt.Int64,
-    sa.Boolean: dt.Boolean,
-    sa.BOOLEAN: dt.Boolean,
-    sa.Float: dt.Double,
-    sa.FLOAT: dt.Double,
-    sa.REAL: dt.Float,
-    sa.String: dt.String,
-    sa.VARCHAR: dt.String,
-    sa.CHAR: dt.String,
-    sa.Text: dt.String,
-    sa.TEXT: dt.String,
-    sa.BINARY: dt.Binary,
-    sa.Binary: dt.Binary,
-    sa.DATE: dt.Date,
-    sa.Date: dt.Date,
-    sa.types.NullType: dt.Null,
-}
-
-_sqla_type_to_ibis = dict((v, k) for k, v in _ibis_type_to_sqla.items())
-_sqla_type_to_ibis.update(_sqla_type_mapping)
-
-
-def sqlalchemy_type_to_ibis_type(
-    column_type, nullable=True, default_timezone=None
-):
-    type_class = type(column_type)
-
-    if isinstance(column_type, sa.types.NUMERIC):
-        return dt.Decimal(
-            column_type.precision, column_type.scale, nullable=nullable
-        )
-    else:
-        if type_class in _sqla_type_to_ibis:
-            ibis_class = _sqla_type_to_ibis[type_class]
-        elif isinstance(column_type, sa.DateTime):
-            return dt.Timestamp(
-                timezone=default_timezone if column_type.timezone else None,
-                nullable=nullable
-            )
-        elif isinstance(column_type, sa.ARRAY):
-            dimensions = column_type.dimensions
-            if dimensions is not None and dimensions != 1:
-                raise NotImplementedError(
-                    'Nested array types not yet supported'
-                )
-            value_type = sqlalchemy_type_to_ibis_type(
-                column_type.item_type,
-                default_timezone=default_timezone,
-            )
-
-            def make_array_type(nullable, value_type=value_type):
-                return dt.Array(value_type, nullable=nullable)
-
-            ibis_class = make_array_type
-        else:
-            try:
-                ibis_class = next(
-                    v for k, v in _sqla_type_mapping.items()
-                    if isinstance(column_type, k)
-                )
-            except StopIteration:
-                raise NotImplementedError(
-                    'Unable to convert SQLAlchemy type {} to ibis type'.format(
-                        column_type
-                    )
-                )
-        return ibis_class(nullable)
-
-
-def schema_from_table(table):
-    """Retrieve an ibis schema from a SQLAlchemy ``Table``.
-
-    Parameters
-    ----------
-    table : sa.Table
-
-    Returns
-    -------
-    schema : ibis.expr.datatypes.Schema
-        An ibis schema corresponding to the types of the columns in `table`.
-    """
-    # Convert SQLA table to Ibis schema
-    types = [
-        sqlalchemy_type_to_ibis_type(
-            column.type,
-            nullable=column.nullable,
-            default_timezone='UTC',
-        )
-        for column in table.columns.values()
-    ]
-    return sch.Schema(table.columns.keys(), types)
-
-
-def table_from_schema(name, meta, schema):
-    # Convert Ibis schema to SQLA table
-    sqla_cols = []
-
-    for cname, itype in zip(schema.names, schema.types):
-        ctype = _to_sqla_type(itype)
-
-        col = sa.Column(cname, ctype, nullable=itype.nullable)
-        sqla_cols.append(col)
-
-    return sa.Table(name, meta, *sqla_cols)
 
 
 def _to_sqla_type(itype, type_map=None):
@@ -182,6 +69,8 @@ def _to_sqla_type(itype, type_map=None):
         type_map = _ibis_type_to_sqla
     if isinstance(itype, dt.Decimal):
         return sa.types.NUMERIC(itype.precision, itype.scale)
+    elif isinstance(itype, dt.Date):
+        return sa.Date()
     elif isinstance(itype, dt.Timestamp):
         # SQLAlchemy DateTimes do not store the timezone, just whether the db
         # supports timezones.
@@ -197,6 +86,113 @@ def _to_sqla_type(itype, type_map=None):
         return sa.ARRAY(_to_sqla_type(ibis_type, type_map=type_map))
     else:
         return type_map[type(itype)]
+
+
+@dt.dtype.register(sa.types.NullType)
+def sa_null(satype, nullable=True):
+    return dt.null
+
+
+@dt.dtype.register(sa.types.Boolean)
+def sa_boolean(satype, nullable=True):
+    return dt.Boolean(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.Numeric)
+def sa_numeric(satype, nullable=True):
+    return dt.Decimal(satype.precision, satype.scale, nullable=nullable)
+
+
+@dt.dtype.register(sa.types.SmallInteger)
+def sa_smallint(satype, nullable=True):
+    return dt.Int16(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.Integer)
+def sa_integer(satype, nullable=True):
+    return dt.Int32(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.BigInteger)
+def sa_bigint(satype, nullable=True):
+    return dt.Int64(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.Float)
+def sa_float(satype, nullable=True):
+    return dt.Float(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.String)
+def sa_string(satype, nullable=True):
+    return dt.String(nullable=nullable)
+
+
+@dt.dtype.register(sa.types.Binary)
+def sa_binary(satype, nullable=True):
+    return dt.Binary(nullable=nullable)
+
+
+@dt.dtype.register(sa.Time)
+def sa_time(satype, nullable=True):
+    return dt.Time(nullable=nullable)
+
+
+@dt.dtype.register(sa.Date)
+def sa_date(satype, nullable=True):
+    return dt.Date(nullable=nullable)
+
+
+@dt.dtype.register(sa.DateTime)
+def sa_datetime(satype, nullable=True, default_timezone='UTC'):
+    timezone = default_timezone if satype.timezone else None
+    return dt.Timestamp(timezone=timezone, nullable=nullable)
+
+
+@dt.dtype.register(sa.ARRAY)
+def sa_array(satype, nullable=True):
+    dimensions = satype.dimensions
+    if dimensions is not None and dimensions != 1:
+        raise NotImplementedError('Nested array types not yet supported')
+
+    value_dtype = dt.dtype(satype.item_type)
+    return dt.Array(value_dtype, nullable=nullable)
+
+
+@sch.infer.register(sa.Table)
+def schema_from_table(table, schema=None):
+    """Retrieve an ibis schema from a SQLAlchemy ``Table``.
+
+    Parameters
+    ----------
+    table : sa.Table
+
+    Returns
+    -------
+    schema : ibis.expr.datatypes.Schema
+        An ibis schema corresponding to the types of the columns in `table`.
+    """
+    schema = schema if schema is not None else {}
+    pairs = []
+    for name, column in table.columns.items():
+        if name in schema:
+            dtype = dt.dtype(schema[name])
+        else:
+            dtype = dt.dtype(column.type, nullable=column.nullable)
+        pairs.append((name, dtype))
+    return sch.schema(pairs)
+
+
+def table_from_schema(name, meta, schema):
+    # Convert Ibis schema to SQLA table
+    columns = []
+
+    for colname, dtype in zip(schema.names, schema.types):
+        satype = _to_sqla_type(dtype)
+        column = sa.Column(colname, satype, nullable=dtype.nullable)
+        columns.append(column)
+
+    return sa.Table(name, meta, *columns)
 
 
 def _variance_reduction(func_name):
@@ -221,6 +217,18 @@ def _variance_reduction(func_name):
         return func(t.translate(arg))
 
     return variance_compiler
+
+
+def infix_op(infix_sym):
+    def formatter(t, expr):
+        op = expr.op()
+        left, right = op.args
+
+        left_arg = t.translate(left)
+        right_arg = t.translate(right)
+        return left_arg.op(infix_sym)(right_arg)
+
+    return formatter
 
 
 def fixed_arity(sa_func, arity):
@@ -432,19 +440,115 @@ def _string_like(t, expr):
     return result
 
 
+_cumulative_to_reduction = {
+    ops.CumulativeSum: ops.Sum,
+    ops.CumulativeMin: ops.Min,
+    ops.CumulativeMax: ops.Max,
+    ops.CumulativeMean: ops.Mean,
+    ops.CumulativeAny: ops.Any,
+    ops.CumulativeAll: ops.All,
+}
+
+
+def _cumulative_to_window(translator, expr, window):
+    win = W.cumulative_window()
+    win = win.group_by(window._group_by).order_by(window._order_by)
+
+    op = expr.op()
+
+    klass = _cumulative_to_reduction[type(op)]
+    new_op = klass(*op.args)
+    new_expr = expr._factory(new_op, name=expr._name)
+
+    if type(new_op) in translator._rewrites:
+        new_expr = translator._rewrites[type(new_op)](new_expr)
+
+    return L.windowize_function(new_expr, win)
+
+
+def _window(t, expr):
+    op = expr.op()
+
+    arg, window = op.args
+    reduction = t.translate(arg)
+
+    window_op = arg.op()
+
+    _require_order_by = (
+        ops.Lag,
+        ops.Lead,
+        ops.DenseRank,
+        ops.MinRank,
+        ops.NTile,
+        ops.PercentRank,
+        ops.FirstValue,
+        ops.LastValue,
+    )
+
+    if isinstance(window_op, ops.CumulativeOp):
+        arg = _cumulative_to_window(t, arg, window)
+        return t.translate(arg)
+
+    # Some analytic functions need to have the expression of interest in
+    # the ORDER BY part of the window clause
+    if isinstance(window_op, _require_order_by) and not window._order_by:
+        order_by = t.translate(window_op.args[0])
+    else:
+        order_by = list(map(t.translate, window._order_by))
+
+    partition_by = list(map(t.translate, window._group_by))
+
+    result = Over(
+        reduction,
+        partition_by=partition_by,
+        order_by=order_by,
+        preceding=window.preceding,
+        following=window.following,
+    )
+
+    if isinstance(
+        window_op, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)
+    ):
+        return result - 1
+    else:
+        return result
+
+
+def _lag(t, expr):
+    arg, offset, default = expr.op().args
+    if default is not None:
+        raise NotImplementedError()
+
+    sa_arg = t.translate(arg)
+    sa_offset = t.translate(offset) if offset is not None else 1
+    return sa.func.lag(sa_arg, sa_offset)
+
+
+def _lead(t, expr):
+    arg, offset, default = expr.op().args
+    if default is not None:
+        raise NotImplementedError()
+    sa_arg = t.translate(arg)
+    sa_offset = t.translate(offset) if offset is not None else 1
+    return sa.func.lead(sa_arg, sa_offset)
+
+
+def _ntile(t, expr):
+    op = expr.op()
+    args = op.args
+    arg, buckets = map(t.translate, args)
+    return sa.func.ntile(buckets)
+
+
 _operation_registry = {
     ops.And: fixed_arity(sql.and_, 2),
     ops.Or: fixed_arity(sql.or_, 2),
     ops.Not: unary(sa.not_),
 
     ops.Abs: unary(sa.func.abs),
-
     ops.Cast: _cast,
-
     ops.Coalesce: varargs(sa.func.coalesce),
-
     ops.NullIf: fixed_arity(sa.func.nullif, 2),
-
     ops.Contains: _contains,
     ops.NotContains: _not_contains,
 
@@ -462,8 +566,8 @@ _operation_registry = {
 
     ops.IsNull: _is_null,
     ops.NotNull: _not_null,
-    ops.Negate: _negate,
 
+    ops.Negate: _negate,
     ops.Round: _round,
 
     ops.TypeOf: unary(sa.func.typeof),
@@ -481,7 +585,33 @@ _operation_registry = {
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
 
+    # miscellaneous varargs
+    ops.Least: varargs(sa.func.least),
+    ops.Greatest: varargs(sa.func.greatest),
+
+    # string
+    ops.LPad: fixed_arity(sa.func.lpad, 3),
+    ops.RPad: fixed_arity(sa.func.rpad, 3),
+    ops.Strip: unary(sa.func.trim),
+    ops.LStrip: unary(sa.func.ltrim),
+    ops.RStrip: unary(sa.func.rtrim),
+    ops.Repeat: fixed_arity(sa.func.repeat, 2),
+    ops.Reverse: unary(sa.func.reverse),
+    ops.StrRight: fixed_arity(sa.func.right, 2),
+    ops.Lowercase: unary(sa.func.lower),
+    ops.Uppercase: unary(sa.func.upper),
+    ops.StringAscii: unary(sa.func.ascii),
+    ops.StringLength: unary(sa.func.length),
+    ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: _string_like,
+
+    # math
+    ops.Ln: unary(sa.func.ln),
+    ops.Exp: unary(sa.func.exp),
+    ops.Sign: unary(sa.func.sign),
+    ops.Sqrt: unary(sa.func.sqrt),
+    ops.Ceil: unary(sa.func.ceil),
+    ops.Floor: unary(sa.func.floor),
 }
 
 
@@ -508,6 +638,26 @@ _binary_ops = {
 
     # TODO
 }
+
+
+_window_functions = {
+    ops.Lag: _lag,
+    ops.Lead: _lead,
+    ops.NTile: _ntile,
+    ops.FirstValue: unary(sa.func.first_value),
+    ops.LastValue: unary(sa.func.last_value),
+    ops.RowNumber: fixed_arity(lambda: sa.func.row_number(), 0),
+    ops.DenseRank: unary(lambda arg: sa.func.dense_rank()),
+    ops.MinRank: unary(lambda arg: sa.func.rank()),
+    ops.PercentRank: unary(lambda arg: sa.func.percent_rank()),
+    ops.WindowOp: _window,
+    ops.CumulativeOp: _window,
+    ops.CumulativeMax: unary(sa.func.max),
+    ops.CumulativeMin: unary(sa.func.min),
+    ops.CumulativeSum: unary(sa.func.sum),
+    ops.CumulativeMean: unary(sa.func.avg),
+}
+
 
 for _k, _v in _binary_ops.items():
     _operation_registry[_k] = fixed_arity(_v, 2)
@@ -667,11 +817,8 @@ class AlchemyDatabase(Database):
 class AlchemyTable(ops.DatabaseTable):
 
     def __init__(self, table, source, schema=None):
-        super(AlchemyTable, self).__init__(
-            table.name,
-            schema or schema_from_table(table),
-            source,
-        )
+        schema = sch.infer(table, schema=schema)
+        super(AlchemyTable, self).__init__(table.name, schema, source)
         self.sqla_table = table
 
 
@@ -699,47 +846,10 @@ compiles = AlchemyExprTranslator.compiles
 class AlchemyQuery(Query):
 
     def _fetch(self, cursor):
-        df = pd.DataFrame.from_records(
-            cursor.proxy.fetchall(),
-            columns=cursor.proxy.keys(),
-            coerce_float=True
-        )
-        dtypes = df.dtypes
-        for column in df.columns:
-            existing_dtype = dtypes[column]
-            try:
-                db_type = _to_sqla_type(self.schema[column])
-            except KeyError:
-                new_dtype = existing_dtype
-            else:
-                try:
-                    new_dtype = self._db_type_to_dtype(db_type, column)
-                except TypeError:
-                    new_dtype = existing_dtype
-
-            if getattr(
-                existing_dtype, 'tz', None
-            ) != getattr(new_dtype, 'tz', None):
-                df[column] = df[column].astype(new_dtype)
-        return df
-
-    def _db_type_to_dtype(self, db_type, column):
-        if isinstance(db_type, sa.DateTime):
-            if not db_type.timezone:
-                return np.dtype('datetime64[ns]')
-            else:
-                return compat.DatetimeTZDtype(
-                    'ns', self.schema[column].timezone
-                )
-        raise TypeError(repr(db_type))
-
-    @property
-    def schema(self):
-        expr = self.expr
-        try:
-            return expr.schema()
-        except AttributeError:
-            return ibis.schema([(expr.get_name(), expr.type())])
+        df = pd.DataFrame.from_records(cursor.proxy.fetchall(),
+                                       columns=cursor.proxy.keys(),
+                                       coerce_float=True)
+        return self.schema().apply_to(df)
 
 
 class AlchemyAsyncQuery(AsyncQuery):
@@ -897,6 +1007,11 @@ class AlchemyClient(SQLClient):
     def _sqla_table_to_expr(self, table):
         node = AlchemyTable(table, self)
         return self._table_expr_klass(node)
+
+    @property
+    def version(self):
+        vstring = '.'.join(map(str, self.con.dialect.server_version_info))
+        return parse_version(vstring)
 
 
 class AlchemySelect(Select):

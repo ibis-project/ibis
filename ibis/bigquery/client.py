@@ -2,13 +2,13 @@ import re
 import time
 
 import pandas as pd
+import google.cloud.bigquery
 
 import ibis
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 from ibis.client import Database, Query, SQLClient
 from ibis.bigquery import compiler as comp
-import google.cloud.bigquery
 from google.api.core.exceptions import BadRequest
 
 

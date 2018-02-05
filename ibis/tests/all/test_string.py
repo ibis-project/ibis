@@ -1,21 +1,18 @@
-import operator
-
 import pytest
-
 from pytest import param
 
-import toolz
-
+import six
 import ibis
 import ibis.tests.util as tu
+import ibis.expr.datatypes as dt
+from ibis.compat import maketrans
 
-from ibis.compat import maketrans, PY2
 
+def test_string_col_is_unicode(backend, alltypes, df):
+    assert alltypes.string_col.type() == dt.string
 
-if PY2:
-    decode = operator.methodcaller('decode', 'utf8')
-else:
-    decode = toolz.identity
+    for s in [alltypes.string_col.execute(), df.string_col]:
+        assert s.apply(lambda x: isinstance(x, six.text_type)).all()
 
 
 @pytest.mark.parametrize(
@@ -62,10 +59,8 @@ else:
             id='repeat'
         ),
         param(
-            lambda t: t.string_col.translate('0', 'a'),
-            lambda t: t.string_col.map(decode).str.translate(
-                maketrans(u'0', u'a')
-            ),
+            lambda t: t.string_col.translate(u'0', u'a'),
+            lambda t: t.string_col.str.translate(maketrans(u'0', u'a')),
             id='translate',
         ),
         param(
@@ -110,12 +105,12 @@ else:
         ),
         param(
             lambda t: t.string_col.ascii_str(),
-            lambda t: t.string_col.map(ord),
+            lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str'
         ),
         param(
             lambda t: t.string_col.length(),
-            lambda t: t.string_col.str.len(),
+            lambda t: t.string_col.str.len().astype('int32'),
             id='length'
         ),
         param(
@@ -165,10 +160,10 @@ else:
         )
     ],
 )
-@tu.skip_if_invalid_operation
-@pytest.mark.backend
+@tu.skipif_unsupported
 def test_string(backend, alltypes, df, result_func, expected_func):
     expr = result_func(alltypes)
     result = expr.execute()
+
     expected = backend.default_series_rename(expected_func(df))
     backend.assert_series_equal(result, expected)

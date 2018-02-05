@@ -8,32 +8,25 @@ from ibis.compat import PY2
 
 pa = pytest.importorskip('pyarrow')  # noqa: E402
 import pyarrow.parquet as pq
-from ibis.file.parquet import (
-    arrow_types_to_ibis_schema, parquet_types_to_ibis_schema)  # noqa: E402
 
 
-@pytest.mark.parametrize(
-    "datatype, i",
-    [
-        (pa.int8(), dt.int8),
-        (pa.int16(), dt.int16),
-        (pa.int32(), dt.int32),
-        (pa.int64(), dt.int64),
-        (pa.uint8(), dt.uint8),
-        (pa.uint16(), dt.uint16),
-        (pa.uint32(), dt.uint32),
-        (pa.uint64(), dt.uint64),
-        (pa.float16(), dt.float16),
-        (pa.float32(), dt.float32),
-        (pa.float64(), dt.float64),
-        (pa.string(), dt.string),
-        (pa.timestamp('ns'), dt.timestamp),
-        ], ids=lambda x: str(x))
-def test_convert_arrow(datatype, i):
-
-    result = arrow_types_to_ibis_schema([pa.field('foo', datatype)])
-    expected = ibis.schema([('foo', i)])
-    assert result == expected
+@pytest.mark.parametrize(('datatype', 'expected'), [
+    (pa.int8(), dt.int8),
+    (pa.int16(), dt.int16),
+    (pa.int32(), dt.int32),
+    (pa.int64(), dt.int64),
+    (pa.uint8(), dt.uint8),
+    (pa.uint16(), dt.uint16),
+    (pa.uint32(), dt.uint32),
+    (pa.uint64(), dt.uint64),
+    (pa.float16(), dt.float16),
+    (pa.float32(), dt.float32),
+    (pa.float64(), dt.float64),
+    (pa.string(), dt.string),
+    (pa.timestamp('ns'), dt.timestamp),
+], ids=lambda x: str(x))
+def test_convert_arrow(datatype, expected):
+    assert dt.dtype(datatype) == expected
 
 
 @pytest.fixture
@@ -94,5 +87,5 @@ def test_convert_parquet(parquet_schema):
              'bytes', '__index_level_0__']
     expected = ibis.schema(zip(names, types))
 
-    result = parquet_types_to_ibis_schema(parquet_schema)
+    result = ibis.infer_schema(parquet_schema)
     assert result == expected

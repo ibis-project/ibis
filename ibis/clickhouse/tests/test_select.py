@@ -1,5 +1,6 @@
 import sys
 import pytest
+import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
@@ -450,31 +451,28 @@ GROUP BY `key`"""
     assert ibis.clickhouse.compile(expr) == expected
 
 
-# def test_filter_with_analytic():
-#     x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
-#     with_filter_col = x[x.columns + [ibis.null().name('filter')]]
-#     filtered = with_filter_col[with_filter_col['filter'].isnull()]
-#     subquery = filtered[filtered.columns]
+def test_join_with_external_table(con, alltypes, df):
+    external_df = pd.DataFrame([
+        ('alpha', 1, 'first'),
+        ('beta', 2, 'second'),
+        ('gamma', 3, 'third')
+    ], columns=['a', 'b', 'c'])
 
-#     with_analytic = subquery[['col', subquery.count().name('analytic')]]
-#     expr = with_analytic[with_analytic.columns]
+    pandas_connection = ibis.pandas.connect({'external': external_df})
+    pandas_table = pandas_connection.table('external')
+    pandas_table = pandas_table.mutate(b=pandas_table.b.cast('int8'))
 
-#     result = ibis.clickhouse.compile(expr)
-#     expected = """\
-# SELECT `col`, `analytic`
-# FROM (
-#   SELECT `col`, count(*) OVER () AS `analytic`
-#   FROM (
-#     SELECT `col`, `filter`
-#     FROM (
-#       SELECT *
-#       FROM (
-#         SELECT `col`, NULL AS `filter`
-#         FROM x
-#       ) t3
-#       WHERE `filter` IS NULL
-#     ) t2
-#   ) t1
-# ) t0"""
+    external_table = ibis.clickhouse.external_table('ext', pandas_table)
 
-#     assert result == expected
+    alltypes = alltypes.mutate(b=alltypes.tinyint_col)
+    expr = alltypes.inner_join(external_table, ['b'])[
+        external_table.a, external_table.c, alltypes.id]
+
+    result = con.execute(expr)
+    expected = (df.assign(b=df.tinyint_col)
+                  .merge(external_df, on='b')[['a', 'c', 'id']])
+
+    result = result.sort_values('id').reset_index(drop=True)
+    expected = expected.sort_values('id').reset_index(drop=True)
+
+    tm.assert_frame_equal(result, expected, check_column_type=False)

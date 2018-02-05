@@ -30,7 +30,9 @@ class MockConnection(SQLClient):
             ('f', 'double'),
             ('g', 'string'),
             ('h', 'boolean'),
-            ('i', 'timestamp')
+            ('i', 'timestamp'),
+            ('j', 'date'),
+            ('k', 'time')
         ],
         'star1': [
             ('c', 'int32'),

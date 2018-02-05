@@ -13,12 +13,19 @@
 # limitations under the License.
 
 import getpass
+import psycopg2  # NOQA fail early if the driver is missing
 import contextlib
-
 import sqlalchemy as sa
 
-from ibis.sql.postgres.compiler import PostgreSQLDialect
 import ibis.sql.alchemy as alch
+import ibis.expr.datatypes as dt
+
+from ibis.sql.postgres.compiler import PostgreSQLDialect
+
+
+@dt.dtype.register(sa.dialects.postgresql.DOUBLE_PRECISION)
+def sa_postgres_double(satype, nullable=True):
+    return dt.Double(nullable=nullable)
 
 
 class PostgreSQLTable(alch.AlchemyTable):
@@ -44,37 +51,23 @@ class PostgreSQLClient(alch.AlchemyClient):
 
     dialect = PostgreSQLDialect
     database_class = PostgreSQLDatabase
-    default_database_name = 'public'
 
-    def __init__(
-        self,
-        host=None,
-        user=None,
-        password=None,
-        port=None,
-        database=None,
-        url=None,
-        driver=None
-    ):
+    def __init__(self, host='localhost', user=None, password=None, port=5432,
+                 database='public', url=None, driver='psycopg2'):
         if url is None:
-            if driver is not None and driver != 'psycopg2':
+            if driver != 'psycopg2':
                 raise NotImplementedError(
                     'psycopg2 is currently the only supported driver'
                 )
-            url = sa.engine.url.URL(
-                'postgresql+psycopg2',
-                username=user or getpass.getuser(),
-                password=password,
-                host=host or 'localhost',
-                port=port,
-                database=database or self.__class__.default_database_name,
-            )
+            user = user or getpass.getuser()
+            url = sa.engine.url.URL('postgresql+psycopg2', host=host,
+                                    port=port, username=user,
+                                    password=password, database=database)
         else:
             url = sa.engine.url.make_url(url)
 
         super(PostgreSQLClient, self).__init__(sa.create_engine(url))
-        self.name = url.database
-        self.database_name = self.__class__.default_database_name
+        self.database_name = url.database
 
     @contextlib.contextmanager
     def begin(self):

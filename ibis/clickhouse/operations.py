@@ -8,19 +8,17 @@ import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 
 from ibis.clickhouse.identifiers import quote_identifier
-from ibis.clickhouse.types import ibis_to_clickhouse
 
 
 def _cast(translator, expr):
+    from ibis.clickhouse.client import ClickhouseDataType
+
     op = expr.op()
     arg, target = op.args
     arg_ = translator.translate(arg)
+    type_ = str(ClickhouseDataType.from_ibis(target, nullable=False))
 
-    if isinstance(arg, ir.CategoryValue) and target == 'int32':
-        return arg_
-    else:
-        type_ = ibis_to_clickhouse[target.name.lower()]
-        return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
+    return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
 
 
 def _between(translator, expr):
@@ -260,7 +258,19 @@ def _interval_format(translator, expr):
         raise ValueError('Clickhouse doesn\'t support subsecond interval '
                          'resolutions')
 
-    return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution)
+    return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution.upper())
+
+
+def _interval_from_integer(translator, expr):
+    op = expr.op()
+    arg, unit = op.args
+
+    if expr.unit in {'ms', 'us', 'ns'}:
+        raise ValueError("Clickhouse doesn't support subsecond interval "
+                         "resolutions")
+
+    arg_ = translator.translate(arg)
+    return 'INTERVAL {} {}'.format(arg_, expr.resolution.upper())
 
 
 def literal(translator, expr):
@@ -365,10 +375,8 @@ def _timestamp_from_unix(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
-    if unit == 'ms':
-        raise ValueError('`ms` unit is not supported!')
-    elif unit == 'us':
-        raise ValueError('`us` unit is not supported!')
+    if unit in {'ms', 'us', 'ns'}:
+        raise ValueError('`{}` unit is not supported!'.format(unit))
 
     return _call(translator, 'toDateTime', arg)
 
@@ -380,16 +388,17 @@ def _truncate(translator, expr):
     converters = {
         'Y': 'toStartOfYear',
         'M': 'toStartOfMonth',
-        'D': 'toDate',
-        'H': 'toStartOfHour',
         'W': 'toMonday',
-        'MI': 'toStartOfMinute'
+        'D': 'toDate',
+        'h': 'toStartOfHour',
+        'm': 'toStartOfMinute',
+        's': 'toDateTime'
     }
 
     try:
         converter = converters[unit]
     except KeyError:
-        raise com.TranslationError('Unsupported concat unit {0}'.format(unit))
+        raise com.TranslationError('Unsupported truncate unit {}'.format(unit))
 
     return _call(translator, converter, arg)
 
@@ -506,6 +515,9 @@ _operation_registry = {
     # Unary operations
     ops.TypeOf: unary('toTypeName'),
 
+    ops.IsNan: unary('isNaN'),
+    ops.IsInf: unary('isInfinite'),
+
     ops.Abs: unary('abs'),
     ops.Ceil: unary('ceil'),
     ops.Floor: unary('floor'),
@@ -560,15 +572,23 @@ _operation_registry = {
     ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
     ops.ParseURL: _parse_url,
 
-    # Timestamp operations
+    # Temporal operations
+    ops.Date: unary('toDate'),
+    ops.DateTruncate: _truncate,
+
     ops.TimestampNow: lambda *args: 'now()',
+    ops.TimestampTruncate: _truncate,
+
+    ops.TimeTruncate: _truncate,
+
+    ops.IntervalFromInteger: _interval_from_integer,
+
     ops.ExtractYear: unary('toYear'),
     ops.ExtractMonth: unary('toMonth'),
     ops.ExtractDay: unary('toDayOfMonth'),
     ops.ExtractHour: unary('toHour'),
     ops.ExtractMinute: unary('toMinute'),
     ops.ExtractSecond: unary('toSecond'),
-    ops.Truncate: _truncate,
 
     # Other operations
     ops.E: lambda *args: 'e()',
@@ -578,6 +598,8 @@ _operation_registry = {
 
     ops.Cast: _cast,
 
+    # for more than 2 args this should be arrayGreatest|Least(array([]))
+    # because clickhouse's greatest and least doesn't support varargs
     ops.Greatest: varargs('greatest'),
     ops.Least: varargs('least'),
 

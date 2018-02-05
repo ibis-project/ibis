@@ -12,23 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import collections
-import itertools
 import os
 import six
 import sys
 import toolz
+import itertools
 import webbrowser
+import collections
 
 from ibis.common import IbisError, RelationError
+import ibis.util as util
 import ibis.common as com
 import ibis.config as config
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
-import ibis.util as util
 
 
 class Expr(object):
+
+    """
+    Base expression class
+    """
 
     def _type_display(self):
         return type(self).__name__
@@ -164,7 +168,7 @@ class Expr(object):
             return type(self)(arg, name=name)
         return factory
 
-    def execute(self, limit='default', async=False, params=None):
+    def execute(self, limit='default', async=False, params=None, **kwargs):
         """
         If this expression is based on physical tables in a database backend,
         execute it against that backend.
@@ -181,7 +185,7 @@ class Expr(object):
           Result of compiling expression and executing in backend
         """
         from ibis.client import execute
-        return execute(self, limit=limit, async=async, params=params)
+        return execute(self, limit=limit, async=async, params=params, **kwargs)
 
     def compile(self, limit=None, params=None):
         """
@@ -472,6 +476,12 @@ class ExprList(Expr):
     def names(self):
         return [x.get_name() for x in self.exprs()]
 
+    def types(self):
+        return [x.type() for x in self.exprs()]
+
+    def schema(self):
+        return sch.schema(self.names(), self.types())
+
     def rename(self, f):
         new_exprs = [x.name(f(x.get_name())) for x in self.exprs()]
         return ExpressionList(new_exprs).to_expr()
@@ -598,7 +608,7 @@ def param(type, name=None):
     """
     if name is None:
         name = _parameter_name()
-    expr = ScalarParameter(dt.validate_type(type), name=name).to_expr()
+    expr = ScalarParameter(dt.dtype(type), name=name).to_expr()
     return expr.name(name)
 
 
@@ -1425,7 +1435,7 @@ def literal(value, type=None):
     if type is not None:
         try:
             # check that dtype is implicitly castable to explicitly given dtype
-            dtype = dtype.cast(type)
+            dtype = dtype.cast(type, value=value)
         except com.IbisTypeError:
             raise TypeError('Value {!r} cannot be safely coerced '
                             'to {}'.format(value, type))

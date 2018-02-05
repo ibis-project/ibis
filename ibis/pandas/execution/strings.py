@@ -23,7 +23,7 @@ from ibis.pandas.core import integer_types, scalar_types
 
 @execute_node.register(ops.StringLength, pd.Series)
 def execute_string_length_series(op, data, **kwargs):
-    return data.str.len()
+    return data.str.len().astype('int32')
 
 
 @execute_node.register(
@@ -223,7 +223,7 @@ def execute_group_concat_series_gb_mask(
 
 @execute_node.register(ops.StringAscii, pd.Series)
 def execute_string_ascii(op, data, **kwargs):
-    return data.map(ord)
+    return data.map(ord).astype('int32')
 
 
 @execute_node.register(ops.StringAscii, SeriesGroupBy)

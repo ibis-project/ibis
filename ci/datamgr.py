@@ -1,25 +1,25 @@
 #!/usr/bin/env python
 
 import os
+import six
+import click
 import tarfile
 
-import click
-
-import numpy as np
 import pandas as pd
 import sqlalchemy as sa
 
 from toolz import dissoc
 from plumbum import local
 from plumbum.cmd import curl, psql
+from ibis.compat import Path
 
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = Path(__file__).parent.absolute()
+DATA_DIR = Path(os.environ.get('IBIS_TEST_DATA_DIRECTORY',
+                               SCRIPT_DIR / 'ibis-testing-data'))
 
 TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting',
                'awards_players']
-TEST_DATA = os.environ.get('IBIS_TEST_DATA_DIRECTORY',
-                           os.path.join(SCRIPT_DIR, 'ibis-testing-data'))
 
 
 def recreate_database(driver, params, **kwargs):
@@ -27,8 +27,8 @@ def recreate_database(driver, params, **kwargs):
     engine = sa.create_engine(url, **kwargs)
 
     with engine.connect() as conn:
-        conn.execute('DROP DATABASE IF EXISTS "{}"'.format(params['database']))
-        conn.execute('CREATE DATABASE "{}"'.format(params['database']))
+        conn.execute('DROP DATABASE IF EXISTS {}'.format(params['database']))
+        conn.execute('CREATE DATABASE {}'.format(params['database']))
 
 
 def init_database(driver, params, schema=None, recreate=True, **kwargs):
@@ -52,11 +52,19 @@ def init_database(driver, params, schema=None, recreate=True, **kwargs):
 
 
 def read_tables(names, data_directory):
-    dtype = {'bool_col': np.bool_}
     for name in names:
-        path = os.path.join(data_directory, '{}.csv'.format(name))
+        path = data_directory / '{}.csv'.format(name)
         click.echo(path)
-        df = pd.read_csv(path, index_col=None, header=0, dtype=dtype)
+        df = pd.read_csv(str(path), index_col=None, header=0)
+
+        if name == 'functional_alltypes':
+            df['bool_col'] = df['bool_col'].astype(bool)
+            # string_col is actually dt.int64
+            df['string_col'] = df['string_col'].astype(six.text_type)
+            df['date_string_col'] = df['date_string_col'].astype(six.text_type)
+            # timestamp_col has object dtype
+            df['timestamp_col'] = pd.to_datetime(df['timestamp_col'])
+
         yield (name, df)
 
 
@@ -77,13 +85,15 @@ def cli():
               default='https://storage.googleapis.com/ibis-ci-data')
 @click.option('-d', '--directory', default=SCRIPT_DIR)
 def download(base_url, directory, name):
-    if not os.path.exists(directory):
-        os.mkdir(directory)
+    directory = Path(directory)
+    # There is no exist_ok python 3.4
+    if not directory.exists():
+        directory.mkdir()
 
     data_url = '{}/{}'.format(base_url, name)
-    path = os.path.join(directory, name)
+    path = directory / name
 
-    if not os.path.exists(path):
+    if not path.exists():
         download = curl[data_url, '-o', path, '-L']
         download(stdout=click.get_binary_stream('stdout'),
                  stderr=click.get_binary_stream('stderr'))
@@ -91,9 +101,40 @@ def download(base_url, directory, name):
         click.echo('Skipping download due to {} already exists.'.format(name))
 
     click.echo('Extracting archive to {} ...'.format(directory))
-    if path.endswith(('.tar', '.gz', '.bz2', '.xz')):
-        with tarfile.open(path, mode='r|gz') as f:
-            f.extractall(path=directory)
+    if path.suffix in ('.tar', '.gz', '.bz2', '.xz'):
+        with tarfile.open(str(path), mode='r|gz') as f:
+            f.extractall(path=str(directory))
+
+
+@cli.command()
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-d', '--data-directory', default=DATA_DIR)
+@click.option('-i', '--ignore-missing-dependency', is_flag=True, default=False)
+def parquet(tables, data_directory, ignore_missing_dependency, **params):
+    try:
+        import pyarrow as pa  # noqa: F401
+        import pyarrow.parquet as pq  # noqa: F401
+    except ImportError:
+        msg = 'PyArrow dependency is missing'
+        if ignore_missing_dependency:
+            click.echo('Ignored: {}'.format(msg))
+            return 0
+        else:
+            raise click.ClickException(msg)
+
+    data_directory = Path(data_directory)
+    for table, df in read_tables(tables, data_directory):
+        if table == 'functional_alltypes':
+            schema = pa.schema([
+                pa.field('string_col', pa.string()),
+                pa.field('date_string_col', pa.string())
+            ])
+        else:
+            schema = None
+        arrow_table = pa.Table.from_pandas(df, schema=schema)
+        target_path = data_directory / '{}.parquet'.format(table)
+
+        pq.write_table(arrow_table, str(target_path))
 
 
 @cli.command()
@@ -103,10 +144,11 @@ def download(base_url, directory, name):
 @click.option('-p', '--password', default='postgres')
 @click.option('-D', '--database', default='ibis_testing')
 @click.option('-S', '--schema', type=click.File('rt'),
-              default=os.path.join(SCRIPT_DIR, 'schema/postgresql.sql'))
+              default=str(SCRIPT_DIR / 'schema' / 'postgresql.sql'))
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
-@click.option('-d', '--data-directory', default=TEST_DATA)
+@click.option('-d', '--data-directory', default=DATA_DIR)
 def postgres(schema, tables, data_directory, **params):
+    data_directory = Path(data_directory)
     click.echo('Initializing PostgreSQL...')
     engine = init_database('postgresql', params, schema,
                            isolation_level='AUTOCOMMIT')
@@ -114,35 +156,54 @@ def postgres(schema, tables, data_directory, **params):
     query = "COPY {} FROM STDIN WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',')"
     database = params['database']
     for table in tables:
-        src = os.path.abspath(os.path.join(data_directory, table + '.csv'))
+        src = data_directory / '{}.csv'.format(table)
         click.echo(src)
         load = psql['--host', params['host'], '--port', params['port'],
                     '--username', params['user'], '--dbname', database,
                     '--command', query.format(table)]
         with local.env(PGPASSWORD=params['password']):
-            with open(src, 'r') as f:
+            with src.open('r') as f:
                 load(stdin=f)
 
     engine.execute('VACUUM FULL ANALYZE')
 
 
 @cli.command()
-@click.option('-D', '--database',
-              default=os.path.join(SCRIPT_DIR, 'ibis_testing.db'))
+@click.option('-D', '--database', default=SCRIPT_DIR / 'ibis_testing.db')
 @click.option('-S', '--schema', type=click.File('rt'),
-              default=os.path.join(SCRIPT_DIR, 'schema/sqlite.sql'))
+              default=str(SCRIPT_DIR / 'schema' / 'sqlite.sql'))
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
-@click.option('-d', '--data-directory', default=TEST_DATA)
+@click.option('-d', '--data-directory', default=DATA_DIR)
 def sqlite(database, schema, tables, data_directory, **params):
+    database = Path(database)
+    data_directory = Path(data_directory)
     click.echo('Initializing SQLite...')
-    if os.path.exists(database):
-        try:
-            os.remove(database)
-        except OSError:
-            pass
 
-    params['database'] = database
+    try:
+        database.unlink()
+    except OSError:
+        pass
+
+    params['database'] = str(database)
     engine = init_database('sqlite', params, schema, recreate=False)
+    insert_tables(engine, tables, data_directory)
+
+
+@cli.command()
+@click.option('-h', '--host', default='localhost')
+@click.option('-P', '--port', default=3306, type=int)
+@click.option('-u', '--user', default='ibis')
+@click.option('-p', '--password', default='ibis')
+@click.option('-D', '--database', default='ibis_testing')
+@click.option('-S', '--schema', type=click.File('rt'),
+              default=str(SCRIPT_DIR / 'schema' / 'mysql.sql'))
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-d', '--data-directory', default=DATA_DIR)
+def mysql(schema, tables, data_directory, **params):
+    data_directory = Path(data_directory)
+    click.echo('Initializing MySQL...')
+    engine = init_database('mysql+pymysql', params, schema,
+                           isolation_level='AUTOCOMMIT')
     insert_tables(engine, tables, data_directory)
 
 
@@ -153,20 +214,16 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-p', '--password', default='')
 @click.option('-D', '--database', default='ibis_testing')
 @click.option('-S', '--schema', type=click.File('rt'),
-              default=os.path.join(SCRIPT_DIR, 'schema/clickhouse.sql'))
+              default=str(SCRIPT_DIR / 'schema' / 'clickhouse.sql'))
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
-@click.option('-d', '--data-directory', default=TEST_DATA)
+@click.option('-d', '--data-directory', default=DATA_DIR)
 def clickhouse(schema, tables, data_directory, **params):
+    data_directory = Path(data_directory)
     click.echo('Initializing ClickHouse...')
     engine = init_database('clickhouse+native', params, schema)
 
     for table, df in read_tables(tables, data_directory):
-        if table == 'functional_alltypes':
-            # string_col is actually dt.int64
-            df['string_col'] = df['string_col'].astype(str)
-            # timestamp_col has object dtype
-            df['timestamp_col'] = df['timestamp_col'].astype('datetime64[s]')
-        elif table == 'batting':
+        if table == 'batting':
             # float nan problem
             cols = df.select_dtypes([float]).columns
             df[cols] = df[cols].fillna(0).astype(int)

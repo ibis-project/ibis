@@ -60,24 +60,23 @@ def compile(expr, params=None):
 
 
 def connect(
-    host=None,
+    host='localhost',
     user=None,
     password=None,
-    port=None,
+    port=5432,
     database=None,
     url=None,
-    driver=None
+    driver='psycopg2'
 ):
-
     """Create an Ibis client located at `user`:`password`@`host`:`port`
     connected to a PostgreSQL database named `database`.
 
     Parameters
     ----------
-    host : string, default None
+    host : string, default 'localhost'
     user : string, default None
     password : string, default None
-    port : string or integer, default None
+    port : string or integer, default 5432
     database : string, default None
     url : string, default None
         Complete SQLAlchemy connection string. If passed, the other connection

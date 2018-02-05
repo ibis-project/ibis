@@ -1,19 +1,13 @@
 import ibis
 import ibis.expr.types as ir
 from ibis.pandas.core import execute
-
-try:
-    import pathlib
-except ImportError:
-
-    # py2 compat
-    import pathlib2 as pathlib
+from ibis.compat import Path
 
 
 class FileClient(ibis.client.Client):
 
     def __init__(self, root):
-        self.root = pathlib.Path(str(root))
+        self.root = Path(str(root))
         self.dictionary = {}
 
     def insert(self, path, expr, **kwargs):
