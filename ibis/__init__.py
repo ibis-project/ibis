@@ -26,11 +26,11 @@ from ibis.common import IbisError
 from ibis.compat import suppress
 from ibis.filesystems import HDFS, WebHDFS
 
-# __all__ is defined
-from ibis.expr.api import *
-
 # speeds up signature registration
 halt_ordering()
+
+# __all__ is defined
+from ibis.expr.api import *
 
 # pandas backend is mandatory
 import ibis.pandas.api as pandas
