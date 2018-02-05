@@ -6,7 +6,7 @@ CWD=$(dirname $0)
 python $CWD/datamgr.py download
 python $CWD/datamgr.py mysql &
 python $CWD/datamgr.py sqlite &
-python $CWD/datamgr.py parquet --ignore-missing-dependency &
+python $CWD/datamgr.py parquet -i &
 python $CWD/datamgr.py postgres &
 python $CWD/datamgr.py clickhouse &
 python $CWD/impalamgr.py load --data &
