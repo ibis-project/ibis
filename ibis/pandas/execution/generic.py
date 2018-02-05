@@ -24,6 +24,7 @@ import ibis.expr.operations as ops
 from ibis.pandas.core import (
     boolean_types,
     integer_types,
+    floating_types,
     simple_types,
     numeric_types,
     fixed_width_types,
@@ -180,17 +181,14 @@ def execute_series_natural_log(op, data, **kwargs):
 
 @execute_node.register(
     ops.Clip, pd.Series,
-    (pd.Series, float, integer_types, type(None)),
-    (pd.Series, float, integer_types, type(None))
+    (pd.Series, type(None)) + numeric_types,
+    (pd.Series, type(None)) + numeric_types
 )
 def execute_series_clip(op, data, lower, upper, **kwargs):
     return data.clip(lower=lower, upper=upper)
 
 
-@execute_node.register(
-    ops.Quantile,
-    (pd.Series, SeriesGroupBy), (float,) + six.integer_types
-)
+@execute_node.register(ops.Quantile, (pd.Series, SeriesGroupBy), numeric_types)
 def execute_series_quantile(op, data, quantile, context=None, **kwargs):
     return context.agg(
         data, 'quantile', q=quantile, interpolation=op.interpolation
@@ -630,23 +628,13 @@ def execute_series_notnnull(op, data, **kwargs):
     return data.notnull()
 
 
-@execute_node.register(ops.IsNan, pd.Series)
-def execute_series_isnan(op, data, **kwargs):
-    return pd.Series(np.isnan(data), name=data.name)
-
-
-@execute_node.register(ops.IsNan, float)
-def execute_series_isnan_float(op, data, **kwargs):
+@execute_node.register(ops.IsNan, (pd.Series, floating_types))
+def execute_isnan(op, data, **kwargs):
     return np.isnan(data)
 
 
-@execute_node.register(ops.IsInf, pd.Series)
-def execute_series_isinf(op, data, **kwargs):
-    return pd.Series(np.isinf(data), name=data.name)
-
-
-@execute_node.register(ops.IsInf, float)
-def execute_series_isinf_float(op, data, **kwargs):
+@execute_node.register(ops.IsInf, (pd.Series, floating_types))
+def execute_isinf(op, data, **kwargs):
     return np.isinf(data)
 
 
