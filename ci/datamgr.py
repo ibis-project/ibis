@@ -90,8 +90,6 @@ def download(base_url, directory, name):
     if not directory.exists():
         directory.mkdir()
 
-    directory.mkdir(parents=True, exist_ok=True)
-
     data_url = '{}/{}'.format(base_url, name)
     path = directory / name
 
