@@ -4,13 +4,15 @@ import pandas as pd
 import ibis
 import ibis.config as config
 import ibis.expr.types as ir
+import pandas.util.testing as tm
 
 from ibis import literal as L
 from ibis.compat import StringIO
 
-
 pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse
+
+from ibis.clickhouse.client import ClickhouseExternalTable, external_table  # NOQA
 
 
 def test_get_table_ref(db):
@@ -170,3 +172,70 @@ def test_execute_exprs_no_table_ref(con):
                                  ibis.now().name('b'),
                                  L(2).log().name('c')])
     con.execute(exlist)
+
+
+def test_define_external_table(con, alltypes):
+    external_df = pd.DataFrame([
+        ('alpha', 1, 'first'),
+        ('beta', 2, 'second'),
+        ('gamma', 3, 'third')
+    ], columns=['a', 'b', 'c'])
+
+    pandas_connection = ibis.pandas.connect({'external': external_df})
+    pandas_table = pandas_connection.table('external')
+
+    table = external_table('external', pandas_table)
+    assert isinstance(table.op(), ClickhouseExternalTable)
+
+    expected_schema = ibis.schema([('a', 'string'),
+                                   ('b', 'int64'),
+                                   ('c', 'string')])
+    assert table.schema() == expected_schema
+
+
+def test_insert(con, alltypes, df):
+    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
+    create = ('CREATE TABLE IF NOT EXISTS '
+              'temporary_alltypes AS functional_alltypes')
+
+    con.raw_sql(drop)
+    con.raw_sql(create)
+
+    temporary = con.table('temporary_alltypes')
+    records = df[:10]
+
+    assert len(temporary.execute()) == 0
+    temporary.insert(records)
+
+    tm.assert_frame_equal(temporary.execute(), records)
+
+
+def test_insert_with_less_columns(con, alltypes, df):
+    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
+    create = ('CREATE TABLE IF NOT EXISTS '
+              'temporary_alltypes AS functional_alltypes')
+
+    con.raw_sql(drop)
+    con.raw_sql(create)
+
+    temporary = con.table('temporary_alltypes')
+    records = df.loc[:10, ['string_col', 'date_col']]
+
+    with pytest.raises(AssertionError):
+        temporary.insert(records)
+
+
+def test_insert_with_more_columns(con, alltypes, df):
+    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
+    create = ('CREATE TABLE IF NOT EXISTS '
+              'temporary_alltypes AS functional_alltypes')
+
+    con.raw_sql(drop)
+    con.raw_sql(create)
+
+    temporary = con.table('temporary_alltypes')
+    records = df[:10]
+    records['non_existing_column'] = 'raise on me'
+
+    with pytest.raises(AssertionError):
+        temporary.insert(records)

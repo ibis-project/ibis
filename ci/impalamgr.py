@@ -21,9 +21,14 @@ import tempfile
 from plumbum import local, CommandNotFound
 from plumbum.cmd import rm, make, cmake
 
-from ibis.compat import BytesIO
+from ibis.compat import BytesIO, Path
 from ibis.common import IbisError
 from ibis.impala.tests.common import IbisTestEnv
+
+
+SCRIPT_DIR = Path(__file__).parent.absolute()
+DATA_DIR = Path(os.environ.get('IBIS_TEST_DATA_DIRECTORY',
+                               SCRIPT_DIR / 'ibis-testing-data'))
 
 
 ENV = IbisTestEnv()
@@ -220,7 +225,7 @@ def main():
         'Path to testing data. This downloads data from Google Cloud Storage '
         'if unset'
     ),
-    type=click.Path(exists=True)
+    default=DATA_DIR
 )
 @click.option(
     '--overwrite', is_flag=True, help='Forces overwriting of data/UDFs'
@@ -241,7 +246,7 @@ def load(data, udf, data_dir, overwrite):
     if data:
         tmp_dir = tempfile.mkdtemp(prefix='__ibis_tmp_')
         try:
-            load_impala_data(con, data_dir, overwrite)
+            load_impala_data(con, str(data_dir), overwrite)
         finally:
             rm('-rf', tmp_dir)
     else:

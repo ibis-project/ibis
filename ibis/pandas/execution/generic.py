@@ -24,6 +24,7 @@ import ibis.expr.operations as ops
 from ibis.pandas.core import (
     boolean_types,
     integer_types,
+    floating_types,
     simple_types,
     numeric_types,
     fixed_width_types,
@@ -180,17 +181,14 @@ def execute_series_natural_log(op, data, **kwargs):
 
 @execute_node.register(
     ops.Clip, pd.Series,
-    (pd.Series, float, integer_types, type(None)),
-    (pd.Series, float, integer_types, type(None))
+    (pd.Series, type(None)) + numeric_types,
+    (pd.Series, type(None)) + numeric_types
 )
 def execute_series_clip(op, data, lower, upper, **kwargs):
     return data.clip(lower=lower, upper=upper)
 
 
-@execute_node.register(
-    ops.Quantile,
-    (pd.Series, SeriesGroupBy), (float,) + six.integer_types
-)
+@execute_node.register(ops.Quantile, (pd.Series, SeriesGroupBy), numeric_types)
 def execute_series_quantile(op, data, quantile, context=None, **kwargs):
     return context.agg(
         data, 'quantile', q=quantile, interpolation=op.interpolation
@@ -588,39 +586,6 @@ def execute_not_series(op, data, **kwargs):
     return ~data
 
 
-@execute_node.register(ops.Strftime, pd.Timestamp, six.string_types)
-def execute_strftime_timestamp_str(op, data, format_string, **kwargs):
-    return data.strftime(format_string)
-
-
-@execute_node.register(ops.Strftime, pd.Series, six.string_types)
-def execute_strftime_series_str(op, data, format_string, **kwargs):
-    return data.dt.strftime(format_string)
-
-
-@execute_node.register(
-    (ops.ExtractTimestampField, ops.ExtractTemporalField),
-    pd.Timestamp
-)
-def execute_extract_timestamp_field_timestamp(op, data, **kwargs):
-    field_name = type(op).__name__.lower().replace('extract', '')
-    return getattr(data, field_name)
-
-
-@execute_node.register(ops.ExtractMillisecond, pd.Timestamp)
-def execute_extract_millisecond_timestamp(op, data, **kwargs):
-    return int(data.microsecond // 1000.0)
-
-
-@execute_node.register(
-    (ops.ExtractTimestampField, ops.ExtractTemporalField),
-    pd.Series
-)
-def execute_extract_timestamp_field_series(op, data, **kwargs):
-    field_name = type(op).__name__.lower().replace('extract', '')
-    return getattr(data.dt, field_name)
-
-
 @execute_node.register(ops.NullIfZero, pd.Series)
 def execute_null_if_zero_series(op, data, **kwargs):
     return data.where(data != 0, np.nan)
@@ -643,20 +608,6 @@ def execute_between(op, data, lower, upper, **kwargs):
     return data.between(lower, upper)
 
 
-@execute_node.register(
-    ops.BetweenTime,
-    pd.Series,
-    (pd.Series, str, datetime.time),
-    (pd.Series, str, datetime.time),
-)
-def execute_between_time(op, data, lower, upper, **kwargs):
-    indexer = pd.DatetimeIndex(data).indexer_between_time(
-        lower, upper)
-    result = np.zeros(len(data), dtype=np.bool_)
-    result[indexer] = True
-    return result
-
-
 @execute_node.register(ops.DistinctColumn, pd.Series)
 def execute_series_distinct(op, data, **kwargs):
     return pd.Series(data.unique(), name=data.name)
@@ -675,6 +626,16 @@ def execute_series_isnull(op, data, **kwargs):
 @execute_node.register(ops.NotNull, pd.Series)
 def execute_series_notnnull(op, data, **kwargs):
     return data.notnull()
+
+
+@execute_node.register(ops.IsNan, (pd.Series, floating_types))
+def execute_isnan(op, data, **kwargs):
+    return np.isnan(data)
+
+
+@execute_node.register(ops.IsInf, (pd.Series, floating_types))
+def execute_isinf(op, data, **kwargs):
+    return np.isinf(data)
 
 
 @execute_node.register(ops.SelfReference, pd.DataFrame)

@@ -22,7 +22,7 @@ test: &test
           fi
     - run:
         name: Start Databases
-        command: docker-compose up -d --no-build postgres impala clickhouse
+        command: docker-compose up -d --no-build mysql postgres impala clickhouse
     - run:
         name: Show Running Containers
         command: docker ps
@@ -93,7 +93,7 @@ docs: &docs
           - "8d:b0:36:4d:f6:75:f2:5f:00:01:a1:53:63:52:f0:e2"
     - run:
         name: Start Databases
-        command: docker-compose up -d --no-build postgres impala clickhouse
+        command: docker-compose up -d --no-build mysql postgres impala clickhouse
     - run:
         name: Show Running Containers
         command: docker ps

@@ -510,14 +510,14 @@ def test_numeric_builtins_work(alltypes, df):
             lambda t: (t.double_col > 20).ifelse(10, -20),
             lambda df: pd.Series(
                 np.where(df.double_col > 20, 10, -20),
-                dtype='int64'
+                dtype='int8'
             ),
         ),
         (
             lambda t: (t.double_col > 20).ifelse(10, -20).abs(),
             lambda df: pd.Series(
                 np.where(df.double_col > 20, 10, -20),
-                dtype='int64'
+                dtype='int8'
             ).abs(),
         ),
     ]
@@ -572,7 +572,7 @@ def test_ifelse(alltypes, df, op, pandas_op):
 def test_bucket(alltypes, df, func, pandas_func):
     expr = func(alltypes.double_col)
     result = expr.execute()
-    expected = pandas_func(df.double_col)
+    expected = pandas_func(df.double_col).astype('category')
     tm.assert_series_equal(result, expected, check_names=False)
 
 
@@ -1189,9 +1189,9 @@ def test_rank(con):
     expr = t.double_col.rank()
     sqla_expr = expr.compile()
     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
-    expected = """\
-SELECT rank() OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp 
-FROM functional_alltypes AS t0"""  # noqa: E501,W291
+    expected = ("SELECT rank() OVER (ORDER BY t0.double_col ROWS BETWEEN "
+                "UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp \n"
+                "FROM functional_alltypes AS t0")
     assert result == expected
 
 
@@ -1200,9 +1200,9 @@ def test_percent_rank(con):
     expr = t.double_col.percent_rank()
     sqla_expr = expr.compile()
     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
-    expected = """\
-SELECT percent_rank() OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS tmp 
-FROM functional_alltypes AS t0"""  # noqa: E501,W291
+    expected = ("SELECT percent_rank() OVER (ORDER BY t0.double_col ROWS "
+                "BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS "
+                "tmp \nFROM functional_alltypes AS t0")
     assert result == expected
 
 
@@ -1211,9 +1211,9 @@ def test_ntile(con):
     expr = t.double_col.ntile(7)
     sqla_expr = expr.compile()
     result = str(sqla_expr.compile(compile_kwargs=dict(literal_binds=True)))
-    expected = """\
-SELECT ntile(7) OVER (ORDER BY t0.double_col ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp 
-FROM functional_alltypes AS t0"""  # noqa: E501,W291
+    expected = ("SELECT ntile(7) OVER (ORDER BY t0.double_col ROWS BETWEEN "
+                "UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS tmp \n"
+                "FROM functional_alltypes AS t0")
     assert result == expected
 
 
@@ -1296,6 +1296,18 @@ def test_boolean_summary(alltypes):
             'approx_nunique',
         ]
     )
+
+    type_conversions = {
+        'count': 'int64',
+        'nulls': 'int64',
+        'min': 'bool',
+        'max': 'bool',
+        'sum': 'int64',
+        'approx_nunique': 'int64'
+    }
+    for k, v in type_conversions.items():
+        expected[k] = expected[k].astype(v)
+
     tm.assert_frame_equal(result, expected)
 
 

@@ -1,7 +1,17 @@
 import ibis.common as com
 
 from ibis.config import options
-from ibis.clickhouse.client import ClickhouseClient
+from ibis.clickhouse.client import ClickhouseClient, external_table
+
+
+__all__ = ('compile', 'verify', 'connect', 'external_table')
+
+
+try:
+    import lz4  # noqa: F401
+    _default_compression = 'lz4'
+except ImportError:
+    _default_compression = False
 
 
 def compile(expr):
@@ -30,7 +40,7 @@ def verify(expr):
 
 
 def connect(host='localhost', port=9000, database='default', user='default',
-            password='', client_name='ibis', compression=False):
+            password='', client_name='ibis', compression=_default_compression):
     """Create an ClickhouseClient for use with Ibis.
 
     Parameters
@@ -48,8 +58,9 @@ def connect(host='localhost', port=9000, database='default', user='default',
     client_name: str, optional
         This will appear in clickhouse server logs
     compression: str, optional
-        Weather or not to use compression. Default is False.
-        Possible choices: lz4, lz4hc, quicklz, zstd
+        Weather or not to use compression.
+        Default is lz4 if installed else False.
+        Possible choices: lz4, lz4hc, quicklz, zstd, True, False
         True is equivalent to 'lz4'.
 
     Examples
@@ -71,7 +82,6 @@ def connect(host='localhost', port=9000, database='default', user='default',
     -------
     ClickhouseClient
     """
-
     client = ClickhouseClient(host, port=port, database=database, user=user,
                               password=password, client_name=client_name,
                               compression=compression)

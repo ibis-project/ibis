@@ -35,7 +35,8 @@ def roots(expr, types=(ops.PhysicalTable,)):
     """
     seen = set()
 
-    stack = list(reversed(expr.op().root_tables()))
+    stack = [arg for arg in reversed(expr.op().root_tables())
+             if isinstance(arg, types)]
 
     while stack:
         table = stack.pop()

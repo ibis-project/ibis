@@ -64,7 +64,7 @@ import ibis.util as util
 
 
 __all__ = [
-    'infer_dtype',
+    'infer_dtype', 'infer_schema',
     'schema', 'table', 'literal', 'expr_list',
     'timestamp', 'time', 'date', 'interval', 'param',
     'nanosecond', 'microsecond', 'millisecond', 'second',
@@ -216,9 +216,6 @@ def time(value):
     --------
     result : TimeScalar
     """
-    if PY2:
-        raise ValueError('time support is not enabled on python 2')
-
     if isinstance(value, six.string_types):
         value = to_time(value)
     return ir.TimeScalar(ir.literal(value).op())
@@ -260,8 +257,8 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
             ('Y', years),
             ('Q', quarters),
             ('M', months),
-            ('w', weeks),
-            ('d', days),
+            ('W', weeks),
+            ('D', days),
             ('h', hours),
             ('m', minutes),
             ('s', seconds),
@@ -282,51 +279,33 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
     return ir.literal(value, type=type).op().to_expr()
 
 
-timedelta = interval  # backward compatibility
+@functools.wraps(interval)
+def timedelta(*args, **kwargs):
+    warnings.warn('ibis.timedelta is deprecated, use ibis.interval instead',
+                  DeprecationWarning)
+    return interval(*args, **kwargs)
 
 
-def nanosecond(value=1):
-    return interval(nanoseconds=value)
+def _timedelta(name, unit):
+    def f(value=1):
+        msg = 'ibis.{0} is deprecated, use ibis.interval({0}s=n) instead'
+        warnings.warn(msg.format(name), DeprecationWarning)
+        return interval(value, unit=unit)
+    f.__name__ = name
+    return f
 
 
-def microsecond(value=1):
-    return interval(microseconds=value)
-
-
-def millisecond(value=1):
-    return interval(milliseconds=value)
-
-
-def second(value=1):
-    return interval(seconds=value)
-
-
-def minute(value=1):
-    return interval(minutes=value)
-
-
-def hour(value=1):
-    return interval(hours=value)
-
-
-def day(value=1):
-    return interval(days=value)
-
-
-def week(value=1):
-    return interval(weeks=value)
-
-
-def month(value=1):
-    return interval(months=value)
-
-
-def quarter(value=1):
-    return interval(quarters=value)
-
-
-def year(value=1):
-    return interval(years=value)
+year = _timedelta('year', 'Y')
+quarter = _timedelta('quarter', 'Q')
+month = _timedelta('month', 'M')
+week = _timedelta('week', 'W')
+day = _timedelta('day', 'D')
+hour = _timedelta('hour', 'h')
+minute = _timedelta('minute', 'm')
+second = _timedelta('second', 's')
+millisecond = _timedelta('millisecond', 'ms')
+microsecond = _timedelta('microsecond', 'us')
+nanosecond = _timedelta('nanosecond', 'ns')
 
 
 schema.__doc__ = """\
@@ -1253,7 +1232,7 @@ def _integer_to_interval(arg, unit='s'):
 
     Parameters
     ----------
-    unit : {'Y', 'M', 'w', 'd', 'h', 'm', s', 'ms', 'us', 'ns'}
+    unit : {'Y', 'M', 'W', 'D', 'h', 'm', s', 'ms', 'us', 'ns'}
 
     Returns
     -------
@@ -2023,16 +2002,20 @@ def _timestamp_truncate(arg, unit):
       'Y': year
       'Q': quarter
       'M': month
-      'D': day
       'W': week
-      'H': hour
-      'MI': minute
+      'D': day
+      'h': hour
+      'm': minute
+      's': second
+      'ms': millisecond
+      'us': microsecond
+      'ns': nanosecond
 
     Returns
     -------
     truncated : timestamp
     """
-    return _ops.Truncate(arg, unit).to_expr()
+    return _ops.TimestampTruncate(arg, unit).to_expr()
 
 
 def _timestamp_strftime(arg, format_str):
@@ -2110,6 +2093,31 @@ _timestamp_value_methods = dict(
 )
 
 
+# ---------------------------------------------------------------------
+# Date API
+
+
+def _date_truncate(arg, unit):
+    """
+    Zero out smaller-size units beyond indicated unit. Commonly used for time
+    series resampling.
+
+    Parameters
+    ----------
+    unit : string, one of below table
+      'Y': year
+      'Q': quarter
+      'M': month
+      'W': week
+      'D': day
+
+    Returns
+    -------
+    truncated : date
+    """
+    return _ops.DateTruncate(arg, unit).to_expr()
+
+
 _date_sub = _binop_expr('__sub__', _ops.DateSubtract)
 _date_add = _binop_expr('__add__', _ops.DateAdd)
 
@@ -2118,6 +2126,8 @@ _date_value_methods = dict(
     year=_extract_field('year', _ops.ExtractYear),
     month=_extract_field('month', _ops.ExtractMonth),
     day=_extract_field('day', _ops.ExtractDay),
+
+    truncate=_date_truncate,
 
     __sub__=_date_sub,
     sub=_date_sub,
@@ -2134,7 +2144,7 @@ _add_methods(DateValue, _date_value_methods)
 
 
 def _convert_unit(value, unit, to):
-    units = ('w', 'd', 'h', 'm', 's', 'ms', 'us', 'ns')
+    units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
     factors = (7, 24, 60, 60, 1000, 1000, 1000)
 
     monthly_units = ('Y', 'Q', 'M')
@@ -2182,8 +2192,8 @@ _interval_value_methods = dict(
     years=_interval_property('Y'),
     quarters=_interval_property('Q'),
     months=_interval_property('M'),
-    weeks=_interval_property('w'),
-    days=_interval_property('d'),
+    weeks=_interval_property('W'),
+    days=_interval_property('D'),
     hours=_interval_property('h'),
     minutes=_interval_property('m'),
     seconds=_interval_property('s'),
@@ -2246,12 +2256,36 @@ def between_time(arg, lower, upper, timezone=None):
     return op.to_expr()
 
 
+def _time_truncate(arg, unit):
+    """
+    Zero out smaller-size units beyond indicated unit. Commonly used for time
+    series resampling.
+
+    Parameters
+    ----------
+    unit : string, one of below table
+      'h': hour
+      'm': minute
+      's': second
+      'ms': millisecond
+      'us': microsecond
+      'ns': nanosecond
+
+    Returns
+    -------
+    truncated : time
+    """
+    return _ops.TimeTruncate(arg, unit).to_expr()
+
+
 _time_sub = _binop_expr('__sub__', _ops.TimeSubtract)
 _time_add = _binop_expr('__add__', _ops.TimeAdd)
 
 
 _time_value_methods = dict(
     between=between_time,
+    truncate=_time_truncate,
+
     __sub__=_time_sub,
     sub=_time_sub,
 

@@ -1,8 +1,8 @@
 import pandas as pd
+import ibis.expr.schema as sch
 import ibis.expr.operations as ops
 from ibis.file.client import FileClient
 from ibis.pandas.core import pre_execute, execute  # noqa
-from ibis.pandas.client import pandas_dtypes_to_ibis_schema
 
 
 def connect(path):
@@ -41,7 +41,7 @@ class HDFClient(FileClient):
         # get the schema
         with pd.HDFStore(str(path), mode='r') as store:
             df = store.select(name, start=0, stop=0)
-            schema = pandas_dtypes_to_ibis_schema(df, {})
+            schema = sch.infer(df)
 
         t = HDFTable(name, schema, self).to_expr()
         self.dictionary[name] = path

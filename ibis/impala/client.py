@@ -30,7 +30,7 @@ import ibis.common as com
 from ibis.config import options
 from ibis.client import (Query, AsyncQuery, Database,
                          DatabaseEntity, SQLClient)
-from ibis.compat import lzip
+from ibis.compat import lzip, parse_version
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
@@ -294,10 +294,15 @@ class ImpalaQuery(Query):
     def _fetch(self, cursor):
         batches = cursor.fetchall(columnar=True)
         names = [x[0] for x in cursor.description]
-        return _column_batches_to_dataframe(names, batches)
+        df = _column_batches_to_dataframe(names, batches)
 
-    def _db_type_to_dtype(self, db_type, column):
-        return _HS2_TTypeId_to_dtype[db_type]
+        # Ugly Hack for PY2 to ensure unicode values for string columns
+        if self.expr is not None:
+            # in case of metadata queries there is no expr and
+            # self.schema() would raise an exception
+            return self.schema().apply_to(df)
+
+        return df
 
 
 def _column_batches_to_dataframe(names, batches):
@@ -370,8 +375,10 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
         self._operation_active = False
 
     def __del__(self):
-        if self._cursor is not None:
+        try:
             self._cursor.release()
+        except AttributeError:
+            pass
 
     def execute(self):
         if self._operation_active:
@@ -724,6 +731,14 @@ class ImpalaClient(SQLClient):
     @property
     def client_options(self):
         return self.con.options
+
+    @property
+    def version(self):
+        with self._execute('select version()', results=True) as cur:
+            raw = self._get_list(cur)[0]
+
+        vstring = raw.split()[2]
+        return parse_version(vstring)
 
     def get_options(self):
         """

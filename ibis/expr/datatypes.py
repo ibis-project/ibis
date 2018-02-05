@@ -18,14 +18,13 @@ import toolz
 import datetime
 import itertools
 import functools
-import numpy as np
 import pandas as pd
 
 from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
 
 import ibis.common as com
-from ibis.compat import builtins, PY2, DatetimeTZDtype, CategoricalDtype
+from ibis.compat import builtins, PY2
 
 
 class DataType(object):
@@ -97,11 +96,11 @@ class DataType(object):
     def issubtype(self, parent):
         return issubtype(self, parent)
 
-    def castable(self, target):
-        return castable(self, target)
+    def castable(self, target, **kwargs):
+        return castable(self, target, **kwargs)
 
-    def cast(self, target):
-        return cast(self, target)
+    def cast(self, target, **kwargs):
+        return cast(self, target, **kwargs)
 
     def scalar_type(self):
         import ibis.expr.types as ir
@@ -324,6 +323,11 @@ class Double(Floating):
     _nbytes = 8
 
 
+Float16 = Halffloat
+Float32 = Float
+Float64 = Double
+
+
 @parametric
 class Decimal(DataType):
 
@@ -353,12 +357,13 @@ class Interval(DataType):
 
     __slots__ = 'value_type', 'unit'
 
+    # based on numpy's units
     _units = dict(
         Y='year',
         Q='quarter',
         M='month',
-        w='week',
-        d='day',
+        W='week',
+        D='day',
         h='hour',
         m='minute',
         s='second',
@@ -567,8 +572,8 @@ uint64 = UInt64()
 float = Float()
 halffloat = Halffloat()
 float16 = Halffloat()
-float32 = Float()
-float64 = Double()
+float32 = Float32()
+float64 = Float64()
 double = Double()
 string = String()
 binary = Binary()
@@ -979,56 +984,19 @@ def scalar_type(t):
     return dtype(t).scalar_type()
 
 
-_numpy_to_ibis = toolz.keymap(np.dtype, {
-    'bool': boolean,
-    'int8': int8,
-    'int16': int16,
-    'int32': int32,
-    'int64': int64,
-    'uint8': uint8,
-    'uint16': uint16,
-    'uint32': uint32,
-    'uint64': uint64,
-    'float16': float16,
-    'float32': float32,
-    'float64': float64,
-    'double': double,
-    'str': string,
-    'datetime64': timestamp,
-    'datetime64[ns]': timestamp,
-    'timedelta64': interval,
-    'timedelta64[ns]': Interval('ns')
-})
-
-
 dtype = Dispatcher('dtype')
 
 validate_type = dtype
 
 
 @dtype.register(object)
-def default(value):
+def default(value, **kwargs):
     raise TypeError('Value {!r} is not a valid type or string'.format(value))
 
 
 @dtype.register(DataType)
 def from_ibis_dtype(value):
     return value
-
-
-@dtype.register(np.dtype)
-def from_numpy_dtype(value):
-    return _numpy_to_ibis[value]
-
-
-@dtype.register(DatetimeTZDtype)
-def from_pandas_tzdtype(value):
-    return Timestamp(timezone=str(value.tz))
-
-
-@dtype.register(CategoricalDtype)
-def from_pandas_categorical(value):
-    return Category()
 
 
 @dtype.register(six.string_types)
@@ -1085,12 +1053,6 @@ def infer_list(value):
     return Array(highest_precedence(map(infer, value)))
 
 
-@infer.register(np.ndarray)
-def infer_array(value):
-    # TODO: infer series
-    return Array(dtype(value.dtype.name))
-
-
 @infer.register(datetime.time)
 def infer_time(value):
     return time
@@ -1131,23 +1093,6 @@ def infer_integer(value, allow_overflow=False):
         raise OverflowError(value)
 
     return int64
-
-
-@infer.register(
-    (np.generic,) + tuple(
-        frozenset(
-            np.signedinteger.__subclasses__() +
-            np.unsignedinteger.__subclasses__()  # np.int64, np.uint64, etc.
-        )
-    )  # we need this because in Python 2 int is a parent of np.integer
-)
-def infer_numpy_scalar(value):
-    return dtype(value.dtype)
-
-
-@infer.register(pd.Timestamp)
-def infer_pandas_timestamp(value):
-    return Timestamp(timezone=str(value.tz))
 
 
 @infer.register(bool)
@@ -1221,6 +1166,7 @@ def can_cast_string_to_temporal(source, target, value=None, **kwargs):
     if value is None:
         return False
     try:
+        # this is the only pandas import left
         pd.Timestamp(value)
         return True
     except ValueError:

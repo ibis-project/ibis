@@ -39,17 +39,6 @@ def test_cast_string_col(alltypes, translate, to_type, expected):
     assert translate(expr) == expected
 
 
-# def test_char_varchar_types(con):
-#     sql = """\
-# SELECT CAST(string_col AS varchar(20)) AS varchar_col,
-#        CAST(string_col AS CHAR(5)) AS char_col
-# FROM ibis_testing.`functional_alltypes`"""
-
-#     t = con.sql(sql)
-#     assert isinstance(t.varchar_col, api.StringColumn)
-#     assert isinstance(t.char_col, api.StringColumn)
-
-
 @pytest.mark.xfail(raises=AssertionError,
                    reason='Clickhouse doesn\'t have decimal type')
 def test_decimal_cast():
@@ -158,26 +147,6 @@ def test_isnull_notnull(con, expr, expected):
 ])
 def test_coalesce(con, expr, expected):
     assert con.execute(expr) == expected
-
-
-# TODO: clickhouse cannot cast NULL to other types
-# @pytest.mark.parametrize(
-#     ('expr', 'expected'),
-#     [
-#         (ibis.coalesce(ibis.NA, ibis.NA), None),
-#         (ibis.coalesce(ibis.NA, ibis.NA, ibis.NA.cast('double')), None),
-#         (
-#             ibis.coalesce(
-#                 ibis.NA.cast('int8'),
-#                 ibis.NA.cast('int8'),
-#                 ibis.NA.cast('int8'),
-#             ),
-#             None,
-#         ),
-#     ]
-# )
-# def test_coalesce_all_na(con, expr, expected):
-#     assert con.execute(expr) == expected
 
 
 @pytest.mark.parametrize(('expr', 'expected'), [
@@ -312,30 +281,6 @@ def test_parse_url_query_parameter(con, translate):
 
     expr = url.parse_url('QUERY', 'v')
     assert con.execute(expr) == 'kEuEcWfewf8'
-
-
-# def test_string_join(self):
-#     cases = [
-#         (L(',').join(['a', 'b']), "concat_ws(',', 'a', 'b')")
-#     ]
-#     self._check_expr_cases(cases)
-
-
-# TODO
-# def test_identical_to(self):
-#     cases = [
-#          (ibis.NA.cast('int64'), ibis.NA.cast('int64'), True),
-#          (L(1), L(1), True),
-#          (ibis.NA.cast('int64'), L(1), False),
-#          (L(1), ibis.NA.cast('int64'), False),
-#          (L(0), L(1), False),
-#          (L(1), L(0), False),
-#     ]
-#     con = self.con
-#     for left, right, expected in cases:
-#          expr = left.identical_to(right)
-#          result = con.execute(expr)
-#          assert result == expected
 
 
 @pytest.mark.parametrize(('expr', 'expected'), [
@@ -483,19 +428,6 @@ def test_column_regexp_replace(con, alltypes, translate):
     assert len(con.execute(expr))
 
 
-# @pytest.mark.parametrize('how', [
-#     'MD5', 'halfMD5',
-#     'SHA1', 'SHA224', 'SHA256',
-#     'intHash32', 'intHash64',
-#     'cityHash64',
-#     'sipHash64', 'sipHash128'
-# ])
-# def test_hash(con, translate, how):
-#     expr = L('test').hash(how=how)
-#     assert translate(expr) == "{0}('test')".format(how)
-#     assert len(con.execute(expr))
-
-
 def test_numeric_builtins_work(con, alltypes, df, translate):
     expr = alltypes.double_col
     result = expr.execute()
@@ -503,46 +435,13 @@ def test_numeric_builtins_work(con, alltypes, df, translate):
     tm.assert_series_equal(result, expected)
 
 
-# TODO
-# def test_distinct_array(con, alltypes, translate):
-#     expr = alltypes.string_col.distinct()
-#     result = con.execute(expr)
-#     assert isinstance(result, pd.Series)
-
-
-# def test_not_exists(alltypes, df):
-#     t = alltypes
-#     t2 = t.view()
-
-#     expr = t[~(t.string_col == t2.string_col).any()]
-#     result = expr.execute()
-
-#     left, right = df, t2.execute()
-#     expected = left[left.string_col != right.string_col]
-
-#     tm.assert_frame_equal(
-#         result, expected,
-#         check_index_type=False,
-#         check_dtype=False,
-#     )
-
-
-# def test_interactive_repr_shows_error(alltypes):
-#     # #591. Doing this in PostgreSQL because so many built-in functions are
-#     # not available
-
-#     expr = alltypes.double_col.approx_median()
-
-#     with config.option_context('interactive', True):
-#         result = repr(expr)
-
-#     assert 'no translation rule' in result.lower()
-
-
 @pytest.mark.xfail(
     raises=clickhouse_driver.errors.UnknownTypeError,
     reason=(
-        'Client/server version mismatch not handled in the clickhouse driver')
+        'Newer clickhouse server uses Nullable(Nothing) type '
+        'for Null values which is currently unhandled by '
+        'clickhouse-driver'
+    )
 )
 def test_null_column(alltypes, translate):
     t = alltypes
@@ -551,31 +450,6 @@ def test_null_column(alltypes, translate):
     result = expr.execute()
     expected = pd.Series([None] * nrows, name='na_column')
     tm.assert_series_equal(result, expected)
-
-
-# def test_null_column_union(alltypes, df):
-#     t = alltypes
-#     s = alltypes[['double_col']].mutate(
-#         string_col=ibis.NA.cast('string'),
-#     )
-#     expr = t[['double_col', 'string_col']].union(s)
-#     result = expr.execute()
-#     nrows = t.count().execute()
-#     expected = pd.concat(
-#         [
-#             df[['double_col', 'string_col']],
-#             pd.concat(
-#                 [
-#                     df[['double_col']],
-#                     pd.DataFrame({'string_col': [None] * nrows})
-#                 ],
-#                 axis=1,
-#             )
-#         ],
-#         axis=0,
-#         ignore_index=True
-#     )
-#     tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(('attr', 'expected'), [
@@ -595,84 +469,6 @@ def test_timestamp_from_integer(con, alltypes, translate):
     expr = alltypes.int_col.to_timestamp()
     assert translate(expr) == 'toDateTime(`int_col`)'
     assert len(con.execute(expr))
-
-
-# def test_timestamp_with_timezone(con):
-#     t = con.table('tzone')
-#     result = t.ts.execute()
-#     assert str(result.dtype.tz)
-
-
-# @pytest.fixture(
-#     params=[
-#         None,
-#         'UTC',
-#         'America/New_York',
-#         'America/Los_Angeles',
-#         'Europe/Paris',
-#         'Chile/Continental',
-#         'Asia/Tel_Aviv',
-#         'Asia/Tokyo',
-#         'Africa/Nairobi',
-#         'Australia/Sydney',
-#     ]
-# )
-# def tz(request):
-#     return request.param
-
-
-# @pytest.yield_fixture
-# def tzone_compute(con, guid, tz):
-#     schema = ibis.schema([
-#         ('ts', dt.timestamp(tz)),
-#         ('b', 'double'),
-#         ('c', 'string'),
-#     ])
-#     con.create_table(guid, schema=schema)
-#     t = con.table(guid)
-
-#     n = 10
-#     df = pd.DataFrame({
-#         'ts': pd.date_range('2017-04-01', periods=n, tz=tz).values,
-#         'b': np.arange(n).astype('float64'),
-#         'c': list(string.ascii_lowercase[:n]),
-#     })
-
-#     df.to_sql(
-#         guid,
-#         con.con,
-#         index=False,
-#         if_exists='append',
-#         dtype={
-#             'ts': sa.TIMESTAMP(timezone=True),
-#             'b': sa.FLOAT,
-#             'c': sa.TEXT,
-#         }
-#     )
-
-#     try:
-#         yield t
-#     finally:
-#         con.drop_table(guid)
-#         assert guid not in con.list_tables()
-
-
-# def test_ts_timezone_is_preserved(tzone_compute, tz):
-#     assert dt.Timestamp(tz).equals(tzone_compute.ts.type())
-
-
-# def test_timestamp_with_timezone_select(tzone_compute, tz):
-#     ts = tzone_compute.ts.execute()
-#     assert str(getattr(ts.dtype, 'tz', None)) == str(tz)
-
-
-# def test_timestamp_type_accepts_all_timezones(con):
-#     assert all(
-#         dt.Timestamp(row.name).timezone == row.name
-#         for row in con.con.execute(
-#             'SELECT name FROM pg_timezone_names'
-#         )
-#     )
 
 
 def test_count_distinct_with_filter(alltypes):

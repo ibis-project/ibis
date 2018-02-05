@@ -67,6 +67,7 @@ else:
     import __builtin__ as builtins  # noqa: F401
 
     range = xrange  # noqa: F821
+    reduce = reduce  # noqa: F821
     import cPickle as pickle  # noqa: F401
 
     def maketrans(x, y):
@@ -90,6 +91,13 @@ integer_types = six.integer_types + (np.integer,)
 
 
 try:
+    from pathlib import Path  # noqa: F401
+except ImportError:
+    # py2 compat
+    from pathlib2 import Path  # noqa: F401
+
+
+try:
     from contextlib import suppress
 except ImportError:
     from contextlib import contextmanager
@@ -100,6 +108,12 @@ except ImportError:
             yield
         except exceptions:
             pass
+
+
+try:
+    from pkg_resources import parse_version  # noqa: F401
+except ImportError:
+    from distutils.version import LooseVersion as parse_version  # noqa: F401
 
 
 # pandas compat

@@ -2,6 +2,7 @@ channels:
   - conda-forge
 dependencies:
   - click
+  - clickhouse-cityhash
   - clickhouse-driver>=0.0.8
   - clickhouse-sqlalchemy
   - cmake
@@ -9,6 +10,7 @@ dependencies:
   - google-cloud-bigquery<0.28
   - graphviz
   - impyla>=0.13.7
+  - lz4
   - ipython
   - jupyter
   - matplotlib
@@ -21,6 +23,7 @@ dependencies:
   - psycopg2
   - pyarrow>=0.6.0
   - pytables
+  - pymysql
   - pytest
   - python=3.6
   - python-graphviz

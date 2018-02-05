@@ -1,63 +1,62 @@
+import os
 import pytest
 
-import ibis
+from ibis.compat import Path
+from ibis.tests.backends import (Csv, Parquet, Pandas,
+                                 SQLite, Postgres, MySQL,
+                                 Clickhouse, Impala, BigQuery)
 
-from ibis.tests.all import backends
+
+pytestmark = pytest.mark.backend
 
 
-@pytest.fixture(
-    params=backends,
-    scope='session',
-    ids=lambda cls: cls.__name__.lower(),
-)
-def backend(request):
-    return request.param
+@pytest.fixture(scope='session')
+def data_directory():
+    root = Path(__file__).absolute().parents[3]
+
+    default = root / 'ci' / 'ibis-testing-data'
+    datadir = os.environ.get('IBIS_TEST_DATA_DIRECTORY', default)
+    datadir = Path(datadir)
+
+    if not datadir.exists():
+        pytest.skip('test data directory not found')
+
+    return datadir
+
+
+@pytest.fixture(params=[
+    pytest.param(Csv, marks=pytest.mark.csv),
+    pytest.param(Parquet, marks=pytest.mark.parquet),
+    pytest.param(Pandas, marks=pytest.mark.pandas),
+    pytest.param(SQLite, marks=pytest.mark.sqlite),
+    pytest.param(Postgres, marks=pytest.mark.postgres),
+    pytest.param(MySQL, marks=pytest.mark.mysql),
+    pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
+    pytest.param(BigQuery, marks=pytest.mark.bigquery),
+    pytest.param(Impala, marks=pytest.mark.impala)
+], scope='session')
+def backend(request, data_directory):
+    return request.param(data_directory)
 
 
 @pytest.fixture(scope='session')
 def con(backend):
-    backend_module_name = backend.__name__.lower()
-    try:
-        module = getattr(ibis, backend_module_name)
-    except AttributeError as e:
-        pytest.skip(
-            'Unable to import the {} backend: {}'.format(
-                backend_module_name, e
-            )
-        )
-    return backend.connect(module)
+    return backend.connection
 
 
 @pytest.fixture(scope='session')
-def dialect(con):
-    return con.dialect
+def alltypes(backend):
+    return backend.functional_alltypes()
 
 
 @pytest.fixture(scope='session')
-def translator(dialect):
-    return dialect.translator
+def batting(backend):
+    return backend.batting()
 
 
 @pytest.fixture(scope='session')
-def registry(translator):
-    return translator._registry
-
-
-@pytest.fixture(scope='session')
-def rewrites(translator):
-    return translator._rewrites
-
-
-@pytest.fixture(scope='session')
-def valid_operations(registry, rewrites, backend):
-    return (
-        frozenset(registry) | frozenset(rewrites)
-    ) - backend.additional_skipped_operations
-
-
-@pytest.fixture(scope='session')
-def alltypes(backend, con):
-    return backend.functional_alltypes(con)
+def awards_players(backend):
+    return backend.awards_players()
 
 
 @pytest.fixture
@@ -68,3 +67,13 @@ def analytic_alltypes(alltypes):
 @pytest.fixture(scope='session')
 def df(alltypes):
     return alltypes.execute()
+
+
+@pytest.fixture(scope='session')
+def batting_df(batting):
+    return batting.execute(limit=None)
+
+
+@pytest.fixture(scope='session')
+def awards_players_df(awards_players):
+    return awards_players.execute(limit=None)

@@ -376,7 +376,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_log_other_bases(self):
         cases = [
-            (self.table.double_col.log(5), 'log(`double_col`, 5)')
+            (self.table.double_col.log(5), 'log(5, `double_col`)')
         ]
         self._check_expr_cases(cases)
 
@@ -1207,9 +1207,11 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             (i64.to_timestamp(), pd.to_datetime(5 * 10 ** 8, unit='s')),
 
             (stamp.truncate('y'), pd.Timestamp('2009-01-01')),
-            (stamp.truncate('m'), pd.Timestamp('2009-05-01')),
+            (stamp.truncate('M'), pd.Timestamp('2009-05-01')),
+            (stamp.truncate('month'), pd.Timestamp('2009-05-01')),
             (stamp.truncate('d'), pd.Timestamp('2009-05-17')),
             (stamp.truncate('h'), pd.Timestamp('2009-05-17 12:00')),
+            (stamp.truncate('m'), pd.Timestamp('2009-05-17 12:34')),
             (stamp.truncate('minute'), pd.Timestamp('2009-05-17 12:34'))
         ]
 
@@ -1234,25 +1236,23 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
         d = L('5.245')
         dc = d.cast('decimal(12, 5)')
         cases = [
-            (dc % 5, Decimal('0.245')),
+            (dc % 5, 0.245),
 
-            (dc.fillna(0), Decimal('5.245')),
+            (dc.fillna(0), 5.245),
 
             (dc.exp(), 189.6158),
             (dc.log(), 1.65728),
             (dc.log2(), 2.39094),
             (dc.log10(), 0.71975),
             (dc.sqrt(), 2.29019),
-            (dc.zeroifnull(), Decimal('5.245')),
-            (-dc, Decimal('-5.245'))
+            (dc.zeroifnull(), 5.245),
+            (-dc, -5.245)
         ]
 
         for expr, expected in cases:
             result = self.con.execute(expr)
-            if isinstance(expected, Decimal):
-                tol = Decimal('0.0001')
-            else:
-                tol = 0.0001
+            tol = 0.0001
+
             approx_equal(result, expected, tol)
 
     def test_string_functions(self):

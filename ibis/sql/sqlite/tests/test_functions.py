@@ -307,9 +307,21 @@ NULL_INT64 = L(None).cast(dt.int64)
         (L('abcd').re_search('[a-z]'), True),
         (L('abcd').re_search('[\d]+'), False),
         (L('1222').re_search('[\d]+'), True),
-        (L('abcd').re_search(None), None),
-        (NULL_STRING.re_search('[a-z]'), None),
-        (NULL_STRING.re_search(NULL_STRING), None),
+        pytest.param(
+            L('abcd').re_search(None),
+            None,
+            marks=pytest.mark.xfail
+        ),
+        pytest.param(
+            NULL_STRING.re_search('[a-z]'),
+            None,
+            marks=pytest.mark.xfail
+        ),
+        pytest.param(
+            NULL_STRING.re_search(NULL_STRING),
+            None,
+            marks=pytest.mark.xfail
+        )
     ]
 )
 def test_regexp_search(con, expr, expected):
@@ -387,7 +399,7 @@ def test_numeric_builtins_work(alltypes, df):
             lambda df: pd.Series(
                 np.where(df.double_col > 20, 10, -20),
                 name='tmp',
-                dtype='int64'
+                dtype='int8'
             ),
         ),
         (
@@ -395,7 +407,7 @@ def test_numeric_builtins_work(alltypes, df):
             lambda df: pd.Series(
                 np.where(df.double_col > 20, 10, -20),
                 name='tmp',
-                dtype='int64'
+                dtype='int8'
             ).abs(),
         )
     ]
@@ -449,6 +461,7 @@ def test_bucket(alltypes, df, func, expected_func):
     expr = func(alltypes.double_col)
     result = expr.execute()
     expected = expected_func(df.double_col)
+    expected = expected.astype('category')
     tm.assert_series_equal(result, expected, check_names=False)
 
 
@@ -819,7 +832,6 @@ def test_count_on_order_by(db):
     result = str(
         expr.compile().compile(compile_kwargs={'literal_binds': True})
     )
-    expected = """\
-SELECT count('*') AS count 
-FROM "default".batting AS t0"""  # noqa: W291
+    expected = ('SELECT count(\'*\') AS count \n'
+                'FROM "default".batting AS t0')  # noqa: W291
     assert result == expected
