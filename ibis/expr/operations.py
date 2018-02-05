@@ -2619,6 +2619,10 @@ class IntervalFromInteger(ValueOp):
         ], name='unit')
     ]
 
+    @property
+    def resolution(self):
+        return dt.Interval(self.unit).resolution
+
     def output_type(self):
         arg, unit = self.args
         type = dt.Interval(unit, arg.type())

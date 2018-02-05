@@ -68,16 +68,14 @@ def execute_timestamp_truncate(op, data, **kwargs):
 
 @execute_node.register(ops.IntervalFromInteger, pd.Series)
 def execute_interval_from_integer(op, data, **kwargs):
-    return data
-    # return pd.to_timedelta(data, unit=op.unit)
+    resolution = '{}s'.format(op.resolution)
+
+    def convert_to_offset(n):
+        return pd.offsets.DateOffset(**{resolution: n})
+
+    return data.apply(convert_to_offset)
 
 
 @execute_node.register(ops.TimestampAdd, pd.Series, pd.Series)
 def execute_timestamp_add_interval(op, data, interval, **kwargs):
-    _, right = op.args
-
-    def convert_to_offset(x):
-        resolution = '{}s'.format(right.resolution)
-        return pd.offsets.DateOffset(**{resolution: x})
-
-    return data + interval.apply(convert_to_offset)
+    return data + interval
