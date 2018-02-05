@@ -106,7 +106,7 @@ class ImpalaTableSetFormatter(comp.TableSetFormatter):
         jname = self._join_names[type(op)]
 
         # Impala requires this
-        if len(op.predicates) == 0:
+        if not op.predicates:
             jname = self._join_names[ops.CrossJoin]
 
         return jname
@@ -444,7 +444,6 @@ def _binary_infix_op(infix_sym):
 
         left_arg = translator.translate(left)
         right_arg = translator.translate(right)
-
         if _needs_parens(left):
             left_arg = _parenthesize(left_arg)
 
@@ -480,15 +479,7 @@ def _needs_parens(op):
     op_klass = type(op)
     # function calls don't need parens
     return (op_klass in _binary_infix_ops or
-            op_klass in [ops.Negate])
-
-
-def _need_parenthesize_args(op):
-    if isinstance(op, ir.Expr):
-        op = op.op()
-    op_klass = type(op)
-    return (op_klass in _binary_infix_ops or
-            op_klass in [ops.Negate])
+            op_klass in {ops.Negate, ops.IsNull, ops.NotNull})
 
 
 def _boolean_literal_format(expr):
@@ -907,7 +898,15 @@ def _identical_to(translator, expr):
     if op.args[0].equals(op.args[1]):
         return 'TRUE'
 
-    left, right = map(translator.translate, op.args)
+    left_expr = op.left
+    right_expr = op.right
+    left = translator.translate(left_expr)
+    right = translator.translate(right_expr)
+
+    if _needs_parens(left_expr):
+        left = _parenthesize(left)
+    if _needs_parens(right_expr):
+        right = _parenthesize(right)
     return '{} IS NOT DISTINCT FROM {}'.format(left, right)
 
 

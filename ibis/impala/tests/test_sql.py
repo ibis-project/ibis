@@ -1,22 +1,11 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
+import operator
 import unittest
+
+import pytest
 
 import ibis
 
-from ibis.impala.compiler import to_sql
+from ibis.impala.api import compile as to_sql
 
 
 class TestImpalaSQL(unittest.TestCase):
@@ -193,7 +182,7 @@ def test_logically_negate_complex_boolean_expr():
     expr = f(t)
     result = to_sql(~expr)
     expected = """\
-SELECT NOT (`a` IN ('foo') AND `c` IS NOT NULL) AS `tmp`
+SELECT NOT (`a` IN ('foo') AND (`c` IS NOT NULL)) AS `tmp`
 FROM t"""
     assert result == expected
 
@@ -230,3 +219,35 @@ FROM t t0
     ON t0.`a` = t1.`a` AND
        (((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`)) AND NOT ((t0.`a` != t1.`b`) AND (t0.`b` != t1.`a`)))"""  # noqa: E501
     assert to_sql(expr) == expected
+
+
+@pytest.mark.parametrize(
+    ('method', 'sql'),
+    [
+        ('isnull', 'IS'),
+        ('notnull', 'IS NOT'),
+    ]
+)
+def test_is_parens(method, sql):
+    t = ibis.table([('a', 'string'), ('b', 'string')], 'table')
+    func = operator.methodcaller(method)
+    expr = t[func(t.a) == func(t.b)]
+
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM `table`
+WHERE (`a` {sql} NULL) = (`b` {sql} NULL)""".format(sql=sql)
+    assert result == expected
+
+
+def test_is_parens_identical_to():
+    t = ibis.table([('a', 'string'), ('b', 'string')], 'table')
+    expr = t[t.a.identical_to(None) == t.b.identical_to(None)]
+
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM `table`
+WHERE (`a` IS NOT DISTINCT FROM NULL) = (`b` IS NOT DISTINCT FROM NULL)"""
+    assert result == expected
