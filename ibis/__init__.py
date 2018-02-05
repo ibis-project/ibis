@@ -29,10 +29,11 @@ from ibis.filesystems import HDFS, WebHDFS
 # __all__ is defined
 from ibis.expr.api import *
 
-
+# speeds up signature registration
 halt_ordering()
+
+# pandas backend is mandatory
 import ibis.pandas.api as pandas
-restart_ordering()
 
 with suppress(ImportError):
     # pip install ibis-framework[csv]
@@ -69,6 +70,8 @@ with suppress(ImportError):
 with suppress(ImportError):
     # pip install ibis-framework[bigquery]
     import ibis.bigquery.api as bigquery
+
+restart_ordering()
 
 
 def hdfs_connect(host='localhost', port=50070, protocol='webhdfs',
