@@ -30,7 +30,7 @@ import ibis.common as com
 from ibis.config import options
 from ibis.client import (Query, AsyncQuery, Database,
                          DatabaseEntity, SQLClient)
-from ibis.compat import lzip
+from ibis.compat import lzip, parse_version
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
@@ -296,11 +296,11 @@ class ImpalaQuery(Query):
         names = [x[0] for x in cursor.description]
         df = _column_batches_to_dataframe(names, batches)
 
-        # UGLY HACK for PY2 to ensure unicode values for string columns
+        # Ugly Hack for PY2 to ensure unicode values for string columns
         if self.expr is not None:
             # in case of metadata queries there is no expr and
             # self.schema() would raise an exception
-            return self.schema().ensure_on(df)
+            return self.schema().apply_to(df)
 
         return df
 
@@ -737,9 +737,8 @@ class ImpalaClient(SQLClient):
         with self._execute('select version()', results=True) as cur:
             raw = self._get_list(cur)[0]
 
-        v = raw.split()[2]
-        m = re.match('.*?(\d{1,3})\.(\d{1,3})\.(\d{1,3}).*', v)
-        return tuple([int(x) for x in m.group(1, 2, 3) if x is not None])
+        vstring = raw.split()[2]
+        return parse_version(vstring)
 
     def get_options(self):
         """

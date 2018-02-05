@@ -4,11 +4,11 @@ from ibis.config import options
 from ibis.clickhouse.client import ClickhouseClient, external_table
 
 
-__all__ = ['compile', 'verify', 'connect', 'external_table']
+__all__ = ('compile', 'verify', 'connect', 'external_table')
 
 
 try:
-    import lz4  # noqa
+    import lz4  # noqa: F401
     _default_compression = 'lz4'
 except ImportError:
     _default_compression = False

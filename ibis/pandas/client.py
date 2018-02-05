@@ -11,7 +11,7 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-from ibis.compat import PY2, DatetimeTZDtype, CategoricalDtype
+from ibis.compat import PY2, DatetimeTZDtype, CategoricalDtype, parse_version
 
 
 try:
@@ -163,7 +163,7 @@ def ibis_schema_to_pandas(schema):
     return list(zip(schema.names, map(ibis_dtype_to_pandas, schema.types)))
 
 
-def ibis_schema_ensure_on(schema, df):
+def ibis_schema_apply_to(schema, df):
     """Applies the Ibis schema on a pandas dataframe"""
 
     for column, dtype in schema.items():
@@ -176,7 +176,7 @@ def ibis_schema_ensure_on(schema, df):
 
 dt.DataType.to_pandas = ibis_dtype_to_pandas
 sch.Schema.to_pandas = ibis_schema_to_pandas
-sch.Schema.ensure_on = ibis_schema_ensure_on
+sch.Schema.apply_to = ibis_schema_apply_to
 
 
 class PandasTable(ops.DatabaseTable):
@@ -220,7 +220,7 @@ class PandasClient(client.Client):
 
     @property
     def version(self):
-        return tuple(pd.__version__.split('.'))
+        return parse_version(pd.__version__)
 
 
 class PandasDatabase(client.Database):

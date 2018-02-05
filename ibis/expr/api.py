@@ -2093,33 +2093,6 @@ _timestamp_value_methods = dict(
 )
 
 
-def _timestamp_truncate(arg, unit):
-    """
-    Zero out smaller-size units beyond indicated unit. Commonly used for time
-    series resampling.
-
-    Parameters
-    ----------
-    unit : string, one of below table
-      'Y': year
-      'Q': quarter
-      'M': month
-      'W': week
-      'D': day
-      'h': hour
-      'm': minute
-      's': second
-      'ms': millisecond
-      'us': microsecond
-      'ns': nanosecond
-
-    Returns
-    -------
-    truncated : timestamp
-    """
-    return _ops.TimestampTruncate(arg, unit).to_expr()
-
-
 # ---------------------------------------------------------------------
 # Date API
 

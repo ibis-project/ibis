@@ -26,6 +26,7 @@ from sqlalchemy.ext.compiler import compiles as sa_compiles
 
 import pandas as pd
 
+from ibis.compat import parse_version
 from ibis.client import SQLClient, AsyncQuery, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter
 
@@ -826,7 +827,7 @@ class AlchemyQuery(Query):
         df = pd.DataFrame.from_records(cursor.proxy.fetchall(),
                                        columns=cursor.proxy.keys(),
                                        coerce_float=True)
-        return self.schema().ensure_on(df)
+        return self.schema().apply_to(df)
 
 
 class AlchemyAsyncQuery(AsyncQuery):
@@ -987,7 +988,8 @@ class AlchemyClient(SQLClient):
 
     @property
     def version(self):
-        return self.con.dialect.server_version_info
+        vstring = '.'.join(map(str, self.con.dialect.server_version_info))
+        return parse_version(vstring)
 
 
 class AlchemySelect(Select):

@@ -6,8 +6,8 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
+from ibis.compat import parse_version
 from ibis.file.client import FileClient
-
 from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import pre_execute, execute
 
@@ -97,7 +97,7 @@ class ParquetClient(FileClient):
 
     @property
     def version(self):
-        return tuple(pa.__version__.split('.'))
+        return parse_version(pa.__version__)
 
 
 @pre_execute.register(ParquetTable, ParquetClient)

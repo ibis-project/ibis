@@ -262,15 +262,12 @@ def _interval_format(translator, expr):
 
 
 def _interval_from_integer(translator, expr):
-    # selecting interval columns requires clickhosue-driver to support
-    # interval types, upstream PR in clickhouse-driver:
-    # https://github.com/mymarilyn/clickhouse-driver/pull/16
     op = expr.op()
     arg, unit = op.args
 
     if expr.unit in {'ms', 'us', 'ns'}:
-        raise ValueError('Clickhouse doesn\'t support subsecond interval '
-                         'resolutions')
+        raise ValueError("Clickhouse doesn't support subsecond interval "
+                         "resolutions")
 
     arg_ = translator.translate(arg)
     return 'INTERVAL {} {}'.format(arg_, expr.resolution.upper())
@@ -602,6 +599,7 @@ _operation_registry = {
     ops.Cast: _cast,
 
     # for more than 2 args this should be arrayGreatest|Least(array([]))
+    # because clickhouse's greatest and least doesn't support varargs
     ops.Greatest: varargs('greatest'),
     ops.Least: varargs('least'),
 

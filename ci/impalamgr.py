@@ -21,15 +21,9 @@ import tempfile
 from plumbum import local, CommandNotFound
 from plumbum.cmd import rm, make, cmake
 
-from ibis.compat import BytesIO
+from ibis.compat import BytesIO, Path
 from ibis.common import IbisError
 from ibis.impala.tests.common import IbisTestEnv
-
-try:
-    from pathlib import Path
-except ImportError:
-    # py2 compat
-    from pathlib2 import Path
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()

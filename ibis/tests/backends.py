@@ -163,12 +163,16 @@ class MySQL(Backend):
         con = ibis.mysql.connect(host=host, user=user, password=password,
                                  database=database)
 
-        if con.version >= (8, 0):
+        # mariadb supports window operations after version 10.2
+        # but the sqlalchemy version string looks like:
+        # 5.5.5.10.2.12.MariaDB.10.2.12+maria~jessie
+        if 'MariaDB' in str(con.version):
+            # we might move this parsing step to the mysql client
+            version = tuple(map(int, str(con.version).split('.')[7:9]))
+            if version >= (10, 2):
+                self.supports_window_operations = True
+        elif con.version >= (8, 0):
             # mysql supports window operations after version 8
-            self.supports_window_operations = True
-        elif 'MariaDB' in con.version and con.version[3:6] >= (10, 2):
-            # mariadb supports window operations after version 10.2
-            # (5, 5, 5, 10, 2, 12, 'MariaDB', 10, 2, '12+maria~jessie')
             self.supports_window_operations = True
 
         return con

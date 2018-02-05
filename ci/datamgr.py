@@ -11,12 +11,7 @@ import sqlalchemy as sa
 from toolz import dissoc
 from plumbum import local
 from plumbum.cmd import curl, psql
-
-try:
-    from pathlib import Path
-except ImportError:
-    # py2 compat
-    from pathlib2 import Path
+from ibis.compat import Path
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -91,8 +86,7 @@ def cli():
 @click.option('-d', '--directory', default=SCRIPT_DIR)
 def download(base_url, directory, name):
     directory = Path(directory)
-    if not directory.exists():
-        directory.mkdir()
+    directory.mkdir(parents=True, exist_ok=True)
 
     data_url = '{}/{}'.format(base_url, name)
     path = directory / name
@@ -118,15 +112,17 @@ def parquet(tables, data_directory, **params):
         import pyarrow as pa  # noqa: F401
         import pyarrow.parquet as pq  # noqa: F401
     except ImportError:
-        click.echo('PyArrow dependency is missing')
-        return
+        raise click.ClickException('PyArrow dependency is missing')
 
     data_directory = Path(data_directory)
     for table, df in read_tables(tables, data_directory):
-        schema = pa.schema([
-            pa.field('string_col', pa.string()),
-            pa.field('date_string_col', pa.string())
-        ])
+        if table == 'functional_alltypes':
+            schema = pa.schema([
+                pa.field('string_col', pa.string()),
+                pa.field('date_string_col', pa.string())
+            ])
+        else:
+            schema = None
         arrow_table = pa.Table.from_pandas(df, schema=schema)
         target_path = data_directory / '{}.parquet'.format(table)
 

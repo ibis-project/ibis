@@ -505,7 +505,7 @@ def _number_literal_format(expr):
     formatted = repr(value)
 
     if formatted in {'nan', 'inf', '-inf'}:
-        return "CAST('{}' AS DOUBLE)".format(formatted)
+        return "CAST({!r} AS DOUBLE)".format(formatted)
 
     return formatted
 
@@ -525,22 +525,18 @@ def _interval_from_integer(translator, expr):
 
 def _date_literal_format(expr):
     value = expr.op().value
-    if isinstance(value, datetime.datetime):
-        if value.microsecond != 0:
-            raise ValueError(value)
+    if isinstance(value, datetime.date):
         value = value.strftime('%Y-%m-%d')
 
-    return "'{}'".format(value)
+    return repr(value)
 
 
 def _timestamp_literal_format(expr):
     value = expr.op().value
     if isinstance(value, datetime.datetime):
-        if value.microsecond != 0:
-            raise ValueError(value)
         value = value.strftime('%Y-%m-%d %H:%M:%S')
 
-    return "'{}'".format(value)
+    return repr(value)
 
 
 def quote_identifier(name, quotechar='`', force=False):

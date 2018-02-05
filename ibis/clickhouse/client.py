@@ -9,7 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 from ibis.config import options
-from ibis.compat import zip as czip
+from ibis.compat import zip as czip, parse_version
 from ibis.client import Query, Database, DatabaseEntity, SQLClient
 from ibis.clickhouse.compiler import ClickhouseDialect, build_ast
 from ibis.util import log
@@ -164,7 +164,7 @@ class ClickhouseClient(SQLClient):
         """Close Clickhouse connection and drop any temporary objects"""
         self.con.disconnect()
 
-    def _execute(self, query, external_tables=[], results=True):
+    def _execute(self, query, external_tables=(), results=True):
         if isinstance(query, DDL):
             query = query.compile()
         self.log(query)
@@ -336,13 +336,15 @@ class ClickhouseClient(SQLClient):
         self.con.connection.force_connect()
 
         try:
-            info = self.con.connection.server_info
-            version = (info.version_major, info.version_minor, info.revision)
-        except Exception as e:
+            server = self.con.connection.server_info
+            vstring = '{}.{}.{}'.format(server.version_major,
+                                        server.version_minor,
+                                        server.revision)
+        except Exception:
             self.con.connection.disconnect()
-            raise e
+            raise
         else:
-            return version
+            return parse_version(vstring)
 
 
 class ClickhouseTable(ir.TableExpr, DatabaseEntity):

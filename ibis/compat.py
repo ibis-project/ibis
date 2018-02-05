@@ -110,6 +110,12 @@ except ImportError:
             pass
 
 
+try:
+    from pkg_resources import parse_version  # noqa: F401
+except ImportError:
+    from distutils.version import LooseVersion as parse_version  # noqa: F401
+
+
 # pandas compat
 try:
     from pandas.api.types import (DatetimeTZDtype,  # noqa: F401

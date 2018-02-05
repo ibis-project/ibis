@@ -4,8 +4,8 @@ import pandas as pd
 import ibis.expr.schema as sch
 import ibis.expr.operations as ops
 
+from ibis.compat import parse_version
 from ibis.file.client import FileClient
-
 from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import pre_execute, execute  # noqa
 from ibis.pandas.execution.selection import physical_tables
@@ -85,7 +85,7 @@ class CSVClient(FileClient):
 
     @property
     def version(self):
-        return tuple(pd.__version__.split('.'))
+        return parse_version(pd.__version__)
 
 
 @pre_execute.register(CSVTable, CSVClient)
@@ -102,13 +102,10 @@ def csv_pre_execute_table(op, client, scope, **kwargs):
 
 @pre_execute.register(ops.Selection, CSVClient)
 def csv_pre_execute(op, client, scope, **kwargs):
-    tables = physical_tables(op.table.op())
+    tables = filter(lambda t: t not in scope, physical_tables(op.table.op()))
 
     ops = {}
     for table in tables:
-        if table in scope:
-            continue
-
         path = client.dictionary[table.name]
         usecols = None
 
@@ -117,7 +114,7 @@ def csv_pre_execute(op, client, scope, **kwargs):
             usecols = [getattr(s.op(), 'name', None) or s.get_name()
                        for s in op.selections]
 
-            # we cannot read all the columns taht we would like
+            # we cannot read all the columns that we would like
             if len(pd.Index(usecols) & header.columns) != len(usecols):
                 usecols = None
 

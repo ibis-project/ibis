@@ -2393,8 +2393,11 @@ def _truncate_unit_validate(orig_unit):
 
     if orig_unit not in _truncate_units:
         valid_units = set(_truncate_units.keys())
-        raise com.IbisInputError('Passed unit {0} was not one of'
-                                 ' {1}'.format(orig_unit, repr(valid_units)))
+        raise com.IbisInputError(
+            'Passed unit {} was not one of {}'.format(
+                orig_unit, repr(valid_units)
+            )
+        )
 
     return _truncate_units[orig_unit]
 

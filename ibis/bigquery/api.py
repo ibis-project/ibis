@@ -1,4 +1,4 @@
-import google.cloud.bigquery  # noqa: fail early if bigquery is missing
+import google.cloud.bigquery  # noqa: F401 fail early if bigquery is missing
 import ibis.common as com
 from ibis.config import options  # noqa: F401
 from ibis.bigquery.client import BigQueryClient
