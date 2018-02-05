@@ -107,12 +107,18 @@ def download(base_url, directory, name):
 @cli.command()
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
-def parquet(tables, data_directory, **params):
+@click.option('-i', '--ignore-missing-dependency', is_flag=True, default=False)
+def parquet(tables, data_directory, ignore_missing_arrow, **params):
     try:
         import pyarrow as pa  # noqa: F401
         import pyarrow.parquet as pq  # noqa: F401
     except ImportError:
-        raise click.ClickException('PyArrow dependency is missing')
+        msg = 'PyArrow dependency is missing'
+        if ignore_missing_arrow:
+            click.echo('Ignored: {}'.format(msg))
+            return 0
+        else:
+            raise click.ClickException(msg)
 
     data_directory = Path(data_directory)
     for table, df in read_tables(tables, data_directory):
