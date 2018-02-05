@@ -1,36 +1,37 @@
 channels:
   - conda-forge
 dependencies:
-  - plumbum
   - click
+  - clickhouse-cityhash
+  - clickhouse-driver>=0.0.8
+  - clickhouse-sqlalchemy
   - cmake
   - enum34
   - flake8
+  - google-cloud-bigquery<0.28
   - graphviz
-  - requests
   - impyla>=0.13.7
   - lz4
   - mock
   - multipledispatch
   - numpy=1.11.*
-  - pandas
+  - pathlib2
+  - plumbum
   - psycopg2
+  - pyarrow>=0.6.0
   - pymysql
+  - pytables
   - pytest
   - python=2.7
   - python-graphviz
-  - pytables
-  - pathlib2
-  - pyarrow>=0.6.0
   - regex
+  - requests
   - six
   - sqlalchemy>=1.0.0,<1.1.15
   - thrift<=0.9.3
   - thriftpy<=0.3.9
   - toolz
-  - clickhouse-cityhash
-  - clickhouse-driver>=0.0.8
-  - clickhouse-sqlalchemy
-  - google-cloud-bigquery<0.28
+  - xorg-libxpm
+  - xorg-libxrender
   - pip:
     - hdfs>=2.0.0
