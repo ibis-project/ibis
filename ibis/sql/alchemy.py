@@ -546,13 +546,9 @@ _operation_registry = {
     ops.Not: unary(sa.not_),
 
     ops.Abs: unary(sa.func.abs),
-
     ops.Cast: _cast,
-
     ops.Coalesce: varargs(sa.func.coalesce),
-
     ops.NullIf: fixed_arity(sa.func.nullif, 2),
-
     ops.Contains: _contains,
     ops.NotContains: _not_contains,
 
@@ -589,7 +585,33 @@ _operation_registry = {
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
 
+    # miscellaneous varargs
+    ops.Least: varargs(sa.func.least),
+    ops.Greatest: varargs(sa.func.greatest),
+
+    # string
+    ops.LPad: fixed_arity(sa.func.lpad, 3),
+    ops.RPad: fixed_arity(sa.func.rpad, 3),
+    ops.Strip: unary(sa.func.trim),
+    ops.LStrip: unary(sa.func.ltrim),
+    ops.RStrip: unary(sa.func.rtrim),
+    ops.Repeat: fixed_arity(sa.func.repeat, 2),
+    ops.Reverse: unary(sa.func.reverse),
+    ops.StrRight: fixed_arity(sa.func.right, 2),
+    ops.Lowercase: unary(sa.func.lower),
+    ops.Uppercase: unary(sa.func.upper),
+    ops.StringAscii: unary(sa.func.ascii),
+    ops.StringLength: unary(sa.func.length),
+    ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.StringSQLLike: _string_like,
+
+    # math
+    ops.Ln: unary(sa.func.ln),
+    ops.Exp: unary(sa.func.exp),
+    ops.Sign: unary(sa.func.sign),
+    ops.Sqrt: unary(sa.func.sqrt),
+    ops.Ceil: unary(sa.func.ceil),
+    ops.Floor: unary(sa.func.floor),
 }
 
 

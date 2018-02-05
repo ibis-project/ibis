@@ -26,7 +26,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
-from ibis.sql.alchemy import (unary, varargs, fixed_arity, infix_op,
+from ibis.sql.alchemy import (unary, fixed_arity, infix_op,
                               _variance_reduction, _get_sqla_table)
 import ibis.common as com
 import ibis.expr.types as ir
@@ -601,10 +601,6 @@ _operation_registry.update({
     ops.IsNan: _is_nan,
     ops.IsInf: _is_inf,
 
-    # miscellaneous varargs
-    ops.Least: varargs(sa.func.least),
-    ops.Greatest: varargs(sa.func.greatest),
-
     # null handling
     ops.IfNull: fixed_arity(sa.func.coalesce, 2),
 
@@ -616,39 +612,20 @@ _operation_registry.update({
 
     # strings
     ops.Substring: _substr,
-    ops.StrRight: fixed_arity(sa.func.right, 2),
     ops.StringFind: _string_find,
-    ops.StringLength: unary('length'),
     ops.GroupConcat: _string_agg,
-    ops.Lowercase: unary('lower'),
-    ops.Uppercase: unary('upper'),
-    ops.Strip: unary('trim'),
-    ops.LStrip: unary('ltrim'),
-    ops.RStrip: unary('rtrim'),
-    ops.LPad: fixed_arity('lpad', 3),
-    ops.RPad: fixed_arity('rpad', 3),
-    ops.Reverse: unary('reverse'),
-    ops.Capitalize: unary('initcap'),
-    ops.Repeat: fixed_arity('repeat', 2),
-    ops.StringReplace: fixed_arity(sa.func.replace, 3),
+    ops.Capitalize: unary(sa.func.initcap),
     ops.RegexSearch: infix_op('~'),
     ops.RegexReplace: _regex_replace,
     ops.Translate: fixed_arity('translate', 3),
-    ops.StringAscii: unary(sa.func.ascii),
     ops.RegexExtract: _regex_extract,
     ops.StringSplit: fixed_arity(sa.func.string_to_array, 2),
     ops.StringJoin: _string_join,
-
     ops.FindInSet: _find_in_set,
 
-    ops.Ceil: unary(sa.func.ceil),
-    ops.Floor: unary(sa.func.floor),
+    # math
     ops.FloorDivide: _floor_divide,
-    ops.Exp: unary(sa.func.exp),
-    ops.Sign: unary(sa.func.sign),
-    ops.Sqrt: unary(sa.func.sqrt),
     ops.Log: _log,
-    ops.Ln: unary(sa.func.ln),
     ops.Log2: unary(lambda x: sa.func.log(2, x)),
     ops.Log10: unary(sa.func.log),
     ops.Power: fixed_arity(sa.func.power, 2),
@@ -656,7 +633,6 @@ _operation_registry.update({
     ops.Modulus: _mod,
 
     # dates and times
-    ops.Date: unary(sa.func.date),
     ops.DateTruncate: _timestamp_truncate,
     ops.TimestampTruncate: _timestamp_truncate,
     ops.IntervalFromInteger: _interval_from_integer,

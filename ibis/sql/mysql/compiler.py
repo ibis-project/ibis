@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
-from ibis.sql.alchemy import (unary, varargs, fixed_arity, infix_op,
+from ibis.sql.alchemy import (unary, fixed_arity, infix_op,
                               _variance_reduction)
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -150,62 +150,20 @@ def _string_join(t, expr):
 
 
 _operation_registry.update({
-    # types
-    # ops.Cast: _cast,
-
-    # # miscellaneous varargs
-    ops.Least: varargs(sa.func.least),
-    ops.Greatest: varargs(sa.func.greatest),
-
-    # null handling
-    # ops.IfNull: _if_null,
-
-    # boolean reductions
-    # ops.Any: unary(sa.any_),
-    # ops.All: unary(sa.all_),
-    # ops.NotAny: unary(lambda x: sa.not_(sa.any_(x))),
-    # ops.NotAll: unary(lambda x: sa.not_(sa.all_(x))),
-
     # strings
-    # ops.Contains: fixed_arity(sa_contains, 2),
     ops.Substring: _substr,
-    ops.StrRight: fixed_arity(sa.func.right, 2),
     ops.StringFind: _string_find,
-    ops.StringLength: unary(sa.func.length),
-    # ops.GroupConcat: fixed_arity('concat_ws', 2),
-    ops.Lowercase: unary(sa.func.lower),
-    ops.Uppercase: unary(sa.func.upper),
-    ops.Strip: unary(sa.func.trim),
-    ops.LStrip: unary(sa.func.ltrim),
-    ops.RStrip: unary(sa.func.rtrim),
-    ops.LPad: fixed_arity(sa.func.lpad, 3),
-    ops.RPad: fixed_arity(sa.func.rpad, 3),
-    ops.Reverse: unary(sa.func.reverse),
     ops.Capitalize: _capitalize,
-    ops.Repeat: fixed_arity(sa.func.repeat, 2),
-    ops.StringReplace: fixed_arity(sa.func.replace, 3),
     ops.RegexSearch: infix_op('REGEXP'),
 
-    # ops.Translate: fixed_arity('translate', 3),
-    ops.StringAscii: fixed_arity(sa.func.ascii, 1),
-    # ops.StringJoin: _string_join,
-    # ops.FindInSet: fixed_arity('find_in_set', 2),
-
-    ops.Ceil: unary(sa.func.ceil),
-    ops.Floor: unary(sa.func.floor),
-    # ops.FloorDivide: _floor_divide,
-    ops.Exp: unary(sa.func.exp),
-    ops.Sign: unary(sa.func.sign),
-    ops.Sqrt: unary(sa.func.sqrt),
+    # math
     ops.Log: _log,
-    ops.Ln: unary(sa.func.ln),
     ops.Log2: unary(sa.func.log2),
     ops.Log10: unary(sa.func.log10),
     ops.Power: _power,
     ops.Round: _round,
 
     # dates and times
-    ops.Date: unary(sa.func.date),
     ops.DateTruncate: _truncate,
     ops.TimestampTruncate: _truncate,
     ops.Strftime: fixed_arity(sa.func.date_format, 2),
@@ -220,9 +178,6 @@ _operation_registry.update({
     # reductions
     ops.Variance: _variance_reduction('var'),
     ops.StandardDev: _variance_reduction('stddev'),
-
-    # # now is in the timezone of the server, but we want UTC
-    # ops.TimestampNow: lambda *args: sa.func.timezone('UTC', sa.func.now()),
 
     ops.IdenticalTo: _identical_to
 })

@@ -229,22 +229,10 @@ _operation_registry.update({
 
     ops.StringFind: _string_find,
 
-    ops.StringLength: unary('length'),
-
     ops.Least: varargs(sa.func.min),
     ops.Greatest: varargs(sa.func.max),
     ops.IfNull: fixed_arity(sa.func.ifnull, 2),
 
-    ops.Lowercase: unary('lower'),
-    ops.Uppercase: unary('upper'),
-
-    ops.Strip: unary('trim'),
-    ops.LStrip: unary('ltrim'),
-    ops.RStrip: unary('rtrim'),
-
-    ops.StringReplace: fixed_arity(sa.func.replace, 3),
-
-    ops.Date: unary(sa.func.date),
     ops.DateTruncate: _truncate(sa.func.date),
     ops.TimestampTruncate: _truncate(sa.func.datetime),
     ops.Strftime: _strftime,
@@ -262,11 +250,11 @@ _operation_registry.update({
     ops.RegexReplace: fixed_arity(sa.func._ibis_sqlite_regex_replace, 3),
     ops.RegexExtract: fixed_arity(sa.func._ibis_sqlite_regex_extract, 3),
 
-    ops.Repeat: _repeat,
     ops.LPad: _lpad,
     ops.RPad: _rpad,
-
+    ops.Repeat: _repeat,
     ops.Reverse: unary(sa.func._ibis_sqlite_reverse),
+
     ops.StringAscii: unary(sa.func._ibis_sqlite_string_ascii),
     ops.Capitalize: unary(sa.func._ibis_sqlite_capitalize),
     ops.Translate: fixed_arity(sa.func._ibis_sqlite_translate, 3),
