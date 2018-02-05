@@ -4,6 +4,7 @@ import pandas as pd
 import ibis
 import ibis.config as config
 import ibis.expr.types as ir
+import pandas.util.testing as tm
 
 from ibis import literal as L
 from ibis.compat import StringIO
@@ -193,8 +194,48 @@ def test_define_external_table(con, alltypes):
 
 
 def test_insert(con, alltypes, df):
-    cnt_before = alltypes.count().execute()
-    alltypes.insert(df[:10])
-    cnt_after = alltypes.count().execute()
+    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
+    create = ('CREATE TABLE IF NOT EXISTS '
+              'temporary_alltypes AS functional_alltypes')
 
-    assert cnt_after == cnt_before + 10
+    con.raw_sql(drop)
+    con.raw_sql(create)
+
+    temporary = con.table('temporary_alltypes')
+    records = df[:10]
+
+    assert len(temporary.execute()) == 0
+    temporary.insert(records)
+
+    tm.assert_frame_equal(temporary.execute(), records)
+
+
+def test_insert_with_less_columns(con, alltypes, df):
+    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
+    create = ('CREATE TABLE IF NOT EXISTS '
+              'temporary_alltypes AS functional_alltypes')
+
+    con.raw_sql(drop)
+    con.raw_sql(create)
+
+    temporary = con.table('temporary_alltypes')
+    records = df.loc[:10, ['string_col', 'date_col']]
+
+    with pytest.raises(AssertionError):
+        temporary.insert(records)
+
+
+def test_insert_with_more_columns(con, alltypes, df):
+    drop = 'DROP TABLE IF EXISTS temporary_alltypes'
+    create = ('CREATE TABLE IF NOT EXISTS '
+              'temporary_alltypes AS functional_alltypes')
+
+    con.raw_sql(drop)
+    con.raw_sql(create)
+
+    temporary = con.table('temporary_alltypes')
+    records = df[:10]
+    records['non_existing_column'] = 'raise on me'
+
+    with pytest.raises(AssertionError):
+        temporary.insert(records)

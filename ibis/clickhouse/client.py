@@ -216,7 +216,8 @@ class ClickhouseClient(SQLClient):
                 return self.list_tables(like=like, database=database)
             statement += " LIKE '{0}'".format(like)
 
-        return self._execute(statement)
+        data, _, _ = self.raw_sql(statement, results=True)
+        return data[0]
 
     def set_database(self, name):
         """
@@ -257,7 +258,8 @@ class ClickhouseClient(SQLClient):
         if like:
             statement += " WHERE name LIKE '{0}'".format(like)
 
-        return self._execute(statement)
+        data, _, _ = self.raw_sql(statement, results=True)
+        return data[0]
 
     def get_schema(self, table_name, database=None):
         """
@@ -275,7 +277,7 @@ class ClickhouseClient(SQLClient):
         """
         qualified_name = self._fully_qualified_name(table_name, database)
         query = 'DESC {0}'.format(qualified_name)
-        data = self._execute(query)[0]
+        data, _, _ = self.raw_sql(query, results=True)
 
         colnames, coltypes = data[:2]
         coltypes = list(map(ClickhouseDataType.parse, coltypes))
