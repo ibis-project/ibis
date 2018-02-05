@@ -78,6 +78,7 @@ def test_date_truncate(backend, alltypes, df, unit):
 def test_integer_to_interval(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     expr = alltypes.timestamp_col + interval
+    result = con.execute(expr)
 
     def convert_to_offset(x):
         resolution = '{}s'.format(interval.resolution)
@@ -85,8 +86,6 @@ def test_integer_to_interval(backend, con, alltypes, df, unit):
 
     offset = df.int_col.apply(convert_to_offset)
     expected = df.timestamp_col + offset
-
-    result = con.execute(expr)
     expected = backend.default_series_rename(expected)
 
     backend.assert_series_equal(result, expected)
