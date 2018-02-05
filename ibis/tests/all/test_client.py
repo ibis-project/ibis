@@ -1,9 +1,11 @@
 import pytest
 
 import ibis
+import ibis.tests.util as tu
 from ibis.compat import parse_version
 
 
+@tu.skipif_unsupported
 def test_version(backend, con):
     expected_type = (type(parse_version('1.0')),
                      type(parse_version('1.0-legacy')))
@@ -17,6 +19,8 @@ def test_version(backend, con):
 ])
 def test_query_schema(backend, con, alltypes, expr_fn, expected):
     if not hasattr(con, '_build_ast'):
+        pytest.skip()
+    if backend.name == 'bigquery':
         pytest.skip()
 
     expr = expr_fn(alltypes)

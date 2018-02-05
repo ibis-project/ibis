@@ -248,6 +248,27 @@ _invalid_operations = {
     ops.Translate,
     ops.FindInSet,
     ops.Capitalize,
+    ops.IsNan,
+    ops.IsInf,
+    ops.Log,
+    ops.Log2,
+    ops.Modulus,
+    ops.Date,
+    ops.IntervalFromInteger,
+    ops.ExtractYear,
+    ops.ExtractMonth,
+    ops.ExtractDay,
+    ops.ExtractHour,
+    ops.ExtractMinute,
+    ops.ExtractSecond,
+    ops.ExtractMillisecond,
+    ops.TimestampAdd,
+    ops.TimestampSubtract,
+    ops.DateTruncate,
+    ops.TimestampTruncate,
+    ops.IdenticalTo,
+    ops.StringAscii,
+    ops.StringLength
 }
 
 _operation_registry = {
