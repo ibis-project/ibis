@@ -57,7 +57,7 @@ test_script:
   - "flake8"
 
   - "python ci\\datamgr.py download"
-  - "python ci\\datamgr.py parquet"
+  - "python ci\\datamgr.py parquet -i"
   - "python ci\\datamgr.py mysql"
   - "python ci\\datamgr.py sqlite"
   - "python ci\\datamgr.py postgres"
