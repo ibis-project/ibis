@@ -171,7 +171,7 @@ class MySQL(Backend):
             version = tuple(map(int, str(con.version).split('.')[7:9]))
             if version >= (10, 2):
                 self.supports_window_operations = True
-        elif con.version >= (8, 0):
+        elif con.version >= parse_version('8.0'):
             # mysql supports window operations after version 8
             self.supports_window_operations = True
 
