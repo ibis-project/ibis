@@ -6,7 +6,7 @@ import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.compat import Path
+from ibis.compat import Path, parse_version
 from ibis.impala.tests.common import IbisTestEnv as ImpalaEnv
 
 
