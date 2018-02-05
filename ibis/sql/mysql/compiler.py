@@ -78,8 +78,9 @@ def _truncate(t, expr):
     try:
         fmt = _truncate_formats[unit]
     except KeyError:
-        raise com.TranslationError('Unsupported truncate unit '
-                                   '{}'.format(unit))
+        raise com.UnsupportedOperationError(
+            'Unsupported truncate unit {}'.format(unit)
+        )
     return sa.func.date_format(sa_arg, fmt)
 
 

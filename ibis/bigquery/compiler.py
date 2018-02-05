@@ -1,5 +1,8 @@
 import ibis
 import ibis.common as com
+
+import numpy as np
+
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
@@ -182,7 +185,25 @@ def _array_literal_format(expr):
     return str(list(expr.op().value))
 
 
+def _log(translator, expr):
+    op = expr.op()
+    arg, base = op.args
+    arg_formatted = translator.translate(arg)
+
+    if base is None:
+        return 'ln({})'.format(arg_formatted)
+
+    base_formatted = translator.translate(base)
+    return 'log({}, {})'.format(arg_formatted, base_formatted)
+
+
 def _literal(translator, expr):
+
+    if isinstance(expr, ir.NumericValue):
+        value = expr.op().value
+        if not np.isfinite(value):
+            return 'CAST({!r} AS FLOAT64)'.format(str(value))
+
     try:
         return impala_compiler._literal(translator, expr)
     except NotImplementedError:
@@ -198,11 +219,63 @@ def _arbitrary(translator, expr):
         arg = where.ifelse(arg, ibis.NA)
 
     if how != 'first':
-        raise com.OperationNotDefinedError(
+        raise com.UnsupportedOperationError(
             '{!r} value not supported for arbitrary in BigQuery'.format(how)
         )
 
     return 'ANY_VALUE({})'.format(translator.translate(arg))
+
+
+_date_units = {
+    'Y': 'YEAR',
+    'Q': 'QUARTER',
+    'W': 'WEEK',
+    'M': 'MONTH',
+}
+
+
+_timestamp_units = {
+    'us': 'MICROSECOND',
+    'ms': 'MILLISECOND',
+    's': 'SECOND',
+    'm': 'MINUTE',
+    'h': 'HOUR',
+}
+_timestamp_units.update(_date_units)
+
+
+def _truncate(kind, units):
+    def truncator(translator, expr):
+        op = expr.op()
+        arg, unit = op.args
+
+        arg = translator.translate(op.args[0])
+        try:
+            unit = units[unit]
+        except KeyError:
+            raise com.UnsupportedOperationError(
+                '{!r} unit is not supported in timestamp truncate'.format(unit)
+            )
+
+        return "{}_TRUNC({}, {})".format(kind, arg, unit)
+    return truncator
+
+
+def _timestamp_op(func, units):
+    def _formatter(translator, expr):
+        op = expr.op()
+        arg, offset = op.args
+        if offset.unit not in units:
+            raise com.UnsupportedOperationError(
+                'BigQuery does not allow binary operation '
+                '{} with INTERVAL offset {}'.format(func, offset.unit)
+            )
+        formatted_arg = translator.translate(arg)
+        formatted_offset = translator.translate(offset)
+        result = '{}({}, {})'.format(func, formatted_arg, formatted_offset)
+        return result
+
+    return _formatter
 
 
 _operation_registry = impala_compiler._operation_registry.copy()
@@ -239,38 +312,33 @@ _operation_registry.update({
     ops.ArrayIndex: _array_index,
     ops.ArrayLength: unary('ARRAY_LENGTH'),
 
+    ops.Log: _log,
+    ops.Modulus: fixed_arity('MOD', 2),
+
+    ops.Date: unary('DATE'),
+
     # BigQuery doesn't have these operations built in.
     # ops.ArrayRepeat: _array_repeat,
     # ops.ArraySlice: _array_slice,
     ir.Literal: _literal,
     ops.Arbitrary: _arbitrary,
+
+    ops.TimestampTruncate: _truncate('TIMESTAMP', _timestamp_units),
+    ops.DateTruncate: _truncate('DATE', _date_units),
+
+    ops.TimestampAdd: _timestamp_op(
+        'TIMESTAMP_ADD', {'h', 'm', 's', 'ms', 'us'}),
+    ops.TimestampSubtract: _timestamp_op(
+        'TIMESTAMP_DIFF', {'h', 'm', 's', 'ms', 'us'}),
+
+    ops.DateAdd: _timestamp_op('DATE_ADD', {'D', 'W', 'M', 'Q', 'Y'}),
+    ops.DateSubtract: _timestamp_op('DATE_SUB', {'D', 'W', 'M', 'Q', 'Y'}),
 })
 
 _invalid_operations = {
     ops.Translate,
     ops.FindInSet,
     ops.Capitalize,
-    ops.IsNan,
-    ops.IsInf,
-    ops.Log,
-    ops.Log2,
-    ops.Modulus,
-    ops.Date,
-    ops.IntervalFromInteger,
-    ops.ExtractYear,
-    ops.ExtractMonth,
-    ops.ExtractDay,
-    ops.ExtractHour,
-    ops.ExtractMinute,
-    ops.ExtractSecond,
-    ops.ExtractMillisecond,
-    ops.TimestampAdd,
-    ops.TimestampSubtract,
-    ops.DateTruncate,
-    ops.TimestampTruncate,
-    ops.IdenticalTo,
-    ops.StringAscii,
-    ops.StringLength
 }
 
 _operation_registry = {
@@ -321,6 +389,18 @@ def bigquery_rewrite_notall(expr):
 class BigQuerySelect(ImpalaSelect):
 
     translator = BigQueryExprTranslator
+
+
+@rewrites(ops.IdenticalTo)
+def identical_to(expr):
+    left, right = expr.op().args
+    return (left.isnull() & right.isnull()) | (left == right)
+
+
+@rewrites(ops.Log2)
+def log2(expr):
+    arg, = expr.op().args
+    return arg.log(2)
 
 
 class BigQueryDialect(impala_compiler.ImpalaDialect):

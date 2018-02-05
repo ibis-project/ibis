@@ -63,7 +63,7 @@ def fixed_arity(func_name, arity):
         arg_count = len(op.args)
         if arity != arg_count:
             msg = 'Incorrect number of args {0} instead of {1}'
-            raise com.TranslationError(msg.format(arg_count, arity))
+            raise com.UnsupportedOperationError(msg.format(arg_count, arity))
         return _call(translator, func_name, *op.args)
     return formatter
 
@@ -157,8 +157,9 @@ def _string_find(translator, expr):
     op = expr.op()
     arg, substr, start, _ = op.args
     if start is not None:
-        raise com.TranslationError('String find doesn\'t '
-                                   'support start argument')
+        raise com.UnsupportedOperationError(
+            "String find doesn't support start argument"
+        )
 
     return _call(translator, 'position', arg, substr) + ' - 1'
 
@@ -191,8 +192,9 @@ def _parse_url(translator, expr):
         else:
             return _call(translator, 'queryString', arg)
     else:
-        raise com.TranslationError('Parse url with extrac {0} is not '
-                                   'supported'.format(extract))
+        raise com.UnsupportedOperationError(
+            'Parse url with extract {0} is not supported'.format(extract)
+        )
 
 
 def _index_of(translator, expr):
@@ -233,8 +235,9 @@ def _hash(translator, expr):
                   'sipHash64', 'sipHash128'}
 
     if how not in algorithms:
-        raise com.TranslationError('Unsupported hash algorithm {0}'
-                                   .format(how))
+        raise com.UnsupportedOperationError(
+            'Unsupported hash algorithm {0}'.format(how)
+        )
 
     return _call(translator, how, arg)
 
@@ -263,8 +266,8 @@ def _value_list(translator, expr):
 
 def _interval_format(translator, expr):
     if expr.unit in {'ms', 'us', 'ns'}:
-        raise ValueError('Clickhouse doesn\'t support subsecond interval '
-                         'resolutions')
+        raise com.UnsupportedOperationError(
+            "Clickhouse doesn't support subsecond interval resolutions")
 
     return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution.upper())
 
@@ -274,8 +277,8 @@ def _interval_from_integer(translator, expr):
     arg, unit = op.args
 
     if expr.unit in {'ms', 'us', 'ns'}:
-        raise ValueError("Clickhouse doesn't support subsecond interval "
-                         "resolutions")
+        raise com.UnsupportedOperationError(
+            "Clickhouse doesn't support subsecond interval resolutions")
 
     arg_ = translator.translate(arg)
     return 'INTERVAL {} {}'.format(arg_, expr.resolution.upper())
@@ -406,7 +409,9 @@ def _truncate(translator, expr):
     try:
         converter = converters[unit]
     except KeyError:
-        raise com.TranslationError('Unsupported truncate unit {}'.format(unit))
+        raise com.UnsupportedOperationError(
+            'Unsupported truncate unit {}'.format(unit)
+        )
 
     return _call(translator, converter, arg)
 
@@ -636,9 +641,9 @@ _operation_registry = {
 
 
 def raise_error(translator, expr, *args):
-    msg = 'Clickhouse backend doesn\'t support {0} operation!'
+    msg = "Clickhouse backend doesn't support {0} operation!"
     op = expr.op()
-    raise com.TranslationError(msg.format(type(op)))
+    raise com.UnsupportedOperationError(msg.format(type(op)))
 
 
 def _null_literal(translator, expr):
