@@ -86,6 +86,10 @@ def cli():
 @click.option('-d', '--directory', default=SCRIPT_DIR)
 def download(base_url, directory, name):
     directory = Path(directory)
+    # There is no exist_ok python 3.4
+    if not directory.exists():
+        directory.mkdir()
+
     directory.mkdir(parents=True, exist_ok=True)
 
     data_url = '{}/{}'.format(base_url, name)
