@@ -404,28 +404,3 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
 
         data = obj.to_dict('records')
         return self._client.con.process_insert_query(query, data, **kwargs)
-
-
-# class ClickhouseExternalTable(ops.DatabaseTable):
-
-#     def execute(self, *args, **kwargs):
-#         return self.source.execute(*args, **kwargs)
-
-#     def root_tables(self):
-#         return [self]
-
-
-# def external_table(name, table):
-#     """
-#     Flag a Selection or a DatabaseTable as external to Clickhouse
-
-#     Parameters
-#     ----------
-#     table : TableExpr
-
-#     Returns
-#     -------
-#     table : ClickhouseExternalTable
-#     """
-#     op = ClickhouseExternalTable(name, table.schema(), table)
-#     return ClickhouseTable(op)
