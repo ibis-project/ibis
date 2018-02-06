@@ -37,19 +37,19 @@ class Query(object):
     supporting such functionality).
     """
 
-    def __init__(self, client, ddl):
+    def __init__(self, client, ddl, **kwargs):
         self.client = client
         self.expr = getattr(
             ddl, 'parent_expr', getattr(ddl, 'table_set', None)
         )
 
-        self.ddl = ddl
         if isinstance(ddl, comp.DDL):
             self.compiled_ddl = ddl.compile()
         else:
             self.compiled_ddl = ddl
 
         self.result_wrapper = getattr(ddl, 'result_handler', None)
+        self.extra_options = kwargs
 
     def execute(self):
         # synchronous by default
@@ -194,7 +194,8 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         """
         return self._execute(query, results=results)
 
-    def execute(self, expr, params=None, limit='default', async=False):
+    def execute(self, expr, params=None, limit='default', async=False,
+                **kwargs):
         """
         Compile and execute Ibis expression using this backend client
         interface, returning results in-memory in the appropriate object type
@@ -220,11 +221,11 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         if len(ast.queries) > 1:
             raise NotImplementedError
         else:
-            return self._execute_query(ast.queries[0], async=async)
+            return self._execute_query(ast.queries[0], async=async, **kwargs)
 
-    def _execute_query(self, ddl, async=False):
+    def _execute_query(self, ddl, async=False, **kwargs):
         klass = self.async_query if async else self.sync_query
-        inst = klass(self, ddl)
+        inst = klass(self, ddl, **kwargs)
         return inst.execute()
 
     def compile(self, expr, params=None, limit=None):
@@ -320,14 +321,15 @@ def validate_backends(backends):
     return backends
 
 
-def execute(expr, limit='default', async=False, params=None):
+def execute(expr, limit='default', async=False, params=None, **kwargs):
     backend, = validate_backends(list(find_backends(expr)))
-    return backend.execute(expr, limit=limit, async=async, params=params)
+    return backend.execute(expr, limit=limit, async=async, params=params,
+                           **kwargs)
 
 
-def compile(expr, limit=None, params=None):
+def compile(expr, limit=None, params=None, **kwargs):
     backend, = validate_backends(list(find_backends(expr)))
-    return backend.compile(expr, limit=limit, params=params)
+    return backend.compile(expr, limit=limit, params=params, **kwargs)
 
 
 def find_backends(expr):

@@ -1,11 +1,11 @@
 import ibis.common as com
 
 from ibis.config import options
-from ibis.clickhouse.client import ClickhouseClient, external_table
+from ibis.clickhouse.client import ClickhouseClient
 from ibis.clickhouse.compiler import dialect
 
 
-__all__ = 'compile', 'verify', 'connect', 'external_table', 'dialect'
+__all__ = 'compile', 'verify', 'connect', 'dialect'
 
 
 try:

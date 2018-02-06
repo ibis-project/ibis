@@ -4,9 +4,7 @@ import pandas as pd
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
-import ibis.expr.lineage as lin
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 
 from ibis.config import options
 from ibis.compat import zip as czip, parse_version
@@ -92,24 +90,19 @@ class ClickhouseDatabase(Database):
 class ClickhouseQuery(Query):
 
     def _external_tables(self):
-        table_set = getattr(self.ddl, 'table_set', None)
-        query_params = getattr(self.ddl, 'params', {})
-
-        if table_set is None:
-            return []
-
         tables = []
-        for table in lin.roots(table_set, ClickhouseExternalTable):
-            data = table.execute(params=query_params).to_dict('records')
+        for name, df in self.extra_options.get('external_tables', {}).items():
+            if not isinstance(df, pd.DataFrame):
+                raise TypeError('External table is not an instance of pandas '
+                                'dataframe')
 
-            typenames = [str(ClickhouseDataType.from_ibis(dtype))
-                         for dtype in table.schema.types]
-            structure = list(zip(table.schema.names, typenames))
+            schema = sch.infer(df)
+            chtypes = map(ClickhouseDataType.from_ibis, schema.types)
+            structure = list(zip(schema.names, map(str, chtypes)))
 
-            tables.append(dict(data=data,
-                               name=table.name,
+            tables.append(dict(name=name,
+                               data=df.to_dict('records'),
                                structure=structure))
-
         return tables
 
     def execute(self):
@@ -413,26 +406,26 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
         return self._client.con.process_insert_query(query, data, **kwargs)
 
 
-class ClickhouseExternalTable(ops.DatabaseTable):
+# class ClickhouseExternalTable(ops.DatabaseTable):
 
-    def execute(self, *args, **kwargs):
-        return self.source.execute(*args, **kwargs)
+#     def execute(self, *args, **kwargs):
+#         return self.source.execute(*args, **kwargs)
 
-    def root_tables(self):
-        return [self]
+#     def root_tables(self):
+#         return [self]
 
 
-def external_table(name, table):
-    """
-    Flag a Selection or a DatabaseTable as external to Clickhouse
+# def external_table(name, table):
+#     """
+#     Flag a Selection or a DatabaseTable as external to Clickhouse
 
-    Parameters
-    ----------
-    table : TableExpr
+#     Parameters
+#     ----------
+#     table : TableExpr
 
-    Returns
-    -------
-    table : ClickhouseExternalTable
-    """
-    op = ClickhouseExternalTable(name, table.schema(), table)
-    return ClickhouseTable(op)
+#     Returns
+#     -------
+#     table : ClickhouseExternalTable
+#     """
+#     op = ClickhouseExternalTable(name, table.schema(), table)
+#     return ClickhouseTable(op)

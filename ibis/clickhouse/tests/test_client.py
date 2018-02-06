@@ -12,8 +12,6 @@ from ibis.compat import StringIO
 pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse
 
-from ibis.clickhouse.client import ClickhouseExternalTable, external_table  # NOQA
-
 
 def test_get_table_ref(db):
     table = db.functional_alltypes
@@ -172,25 +170,6 @@ def test_execute_exprs_no_table_ref(con):
                                  ibis.now().name('b'),
                                  L(2).log().name('c')])
     con.execute(exlist)
-
-
-def test_define_external_table(con, alltypes):
-    external_df = pd.DataFrame([
-        ('alpha', 1, 'first'),
-        ('beta', 2, 'second'),
-        ('gamma', 3, 'third')
-    ], columns=['a', 'b', 'c'])
-
-    pandas_connection = ibis.pandas.connect({'external': external_df})
-    pandas_table = pandas_connection.table('external')
-
-    table = external_table('external', pandas_table)
-    assert isinstance(table.op(), ClickhouseExternalTable)
-
-    expected_schema = ibis.schema([('a', 'string'),
-                                   ('b', 'int64'),
-                                   ('c', 'string')])
-    assert table.schema() == expected_schema
 
 
 def test_insert(con, alltypes, df):
