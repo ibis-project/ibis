@@ -704,6 +704,11 @@ class Count(Reduction):
 
 class Arbitrary(Reduction):
 
+    input_type = [rules.column,
+                  rules.string_options(['first', 'last', 'heavy'],
+                                       name='how', default='first'),
+                  boolean(name='where', optional=True)]
+
     def output_type(self):
         # Scalar but type of caller
         return self.args[0].type().scalar_type()

@@ -127,6 +127,14 @@ def varargs(func_name):
     return varargs_formatter
 
 
+def _arbitrary(translator, expr):
+    arg, how, where = expr.op().args
+    functions = {'first': 'any',
+                 'last': 'anyLast',
+                 'heavy': 'anyHeavy'}
+    return _aggregate(translator, functions[how], arg, where=where)
+
+
 def _substring(translator, expr):
     # arg_ is the formatted notation
     op = expr.op()
@@ -437,7 +445,7 @@ def _table_column(translator, expr):
         proj_expr = table.projection([field_name]).to_array()
         return _table_array_view(translator, proj_expr)
 
-    # TODO: table aliasing is partially supported
+    # TODO(kszucs): table aliasing is partially supported
     # if ctx.need_aliases():
     #     alias = ctx.get_ref(table)
     #     if alias is not None:
@@ -551,6 +559,7 @@ _operation_registry = {
 
     ops.Count: agg('count'),
     ops.CountDistinct: agg('uniq'),
+    ops.Arbitrary: _arbitrary,
 
     # string operations
     ops.StringLength: unary('length'),

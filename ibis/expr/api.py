@@ -463,6 +463,23 @@ def group_concat(arg, sep=',', where=None):
     return _ops.GroupConcat(arg, sep, where).to_expr()
 
 
+def arbitrary(arg, where=None, how='first'):
+    """
+    Selects the first encountered value.
+
+    Parameters
+    ----------
+    arg : array expression
+    where: bool, default None
+    how : {'first', 'last', 'heavy'}, default 'first'
+
+    Returns
+    -------
+    arbitrary element : scalar type of caller
+    """
+    return _ops.Arbitrary(arg, how, where).to_expr()
+
+
 def _binop_expr(name, klass):
     def f(self, other):
         try:
@@ -1092,7 +1109,7 @@ _generic_column_methods = dict(
     topk=topk,
     summary=_generic_summary,
     count=count,
-    arbitrary=_unary_op('arbitrary', _ops.Arbitrary),
+    arbitrary=arbitrary,
     min=min,
     max=max,
     approx_median=approx_median,
