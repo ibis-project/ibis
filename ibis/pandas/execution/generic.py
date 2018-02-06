@@ -405,7 +405,7 @@ def execute_count_distinct_series_groupby(op, data, _, context=None, **kwargs):
 def execute_arbitrary_series_groupby(op, data, _, context=None, **kwargs):
     if op.how not in {'first', 'last'}:
         raise com.OperationNotDefinedError(
-            'Arbitrary {} is not supported'.format(op.how))
+            'Arbitrary {!r} is not supported'.format(op.how))
     return context.agg(data, op.how)
 
 
@@ -472,14 +472,14 @@ def execute_count_distinct_series_mask(op, data, mask, context=None, **kwargs):
 
 
 @execute_node.register(ops.Arbitrary, pd.Series, (pd.Series, type(None)))
-def execute_arbitraryt_series_mask(op, data, mask, context=None, **kwargs):
+def execute_arbitrary_series_mask(op, data, mask, context=None, **kwargs):
     if op.how == 'first':
         index = 0
     elif op.how == 'last':
         index = -1
     else:
         raise com.OperationNotDefinedError(
-            'Arbitrary {} is not supported'.format(op.how))
+            'Arbitrary {!r} is not supported'.format(op.how))
 
     data = data[mask] if mask is not None else data
     return data.iloc[index]

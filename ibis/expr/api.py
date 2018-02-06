@@ -465,7 +465,7 @@ def group_concat(arg, sep=',', where=None):
 
 def arbitrary(arg, where=None, how='first'):
     """
-    Selects the first encountered value.
+    Selects the first non-null value in a column
 
     Parameters
     ----------
