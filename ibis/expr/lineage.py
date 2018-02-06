@@ -5,7 +5,7 @@ except ImportError:
 
 from itertools import chain
 from toolz import identity
-from collections import deque
+from collections import deque, Iterable
 
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -169,3 +169,49 @@ def lineage(expr, container=Stack):
             for arg in c.visitor(_get_args(node.op(), name))
             if isinstance(arg, ir.Expr)
         )
+
+
+# these could be callables instead
+proceed = True
+stop = False
+
+
+def traverse(fn, expr, type=ir.Expr, container=Stack):
+    """Utility for generic expression tree traversal
+
+    Parameters
+    ----------
+    fn : Callable[[ir.Expr], Tuple[Union[Boolean, Iterable], Any]]
+        This function will be applied on each expressions, it must
+        return a tuple. The first element of the tuple controls the
+        traversal, and the second is the result if its not None.
+    type: Type
+        Only the instances if this type are traversed.
+    container: Union[Stack, Queue], default Stack
+        Defines the traversing order.
+    """
+    todo = container([expr] if isinstance(expr, type) else [])
+    seen = set()
+
+    while todo:
+        expr = todo.get()
+        op = expr.op()
+        if op in seen:
+            continue
+
+        seen.add(op)
+        control, result = fn(expr)
+        if result is not None:
+            yield result
+
+        if control is not stop:
+            if control is proceed:
+                args = op.flat_args()
+            elif isinstance(control, Iterable):
+                args = control
+            else:
+                raise TypeError('First item of the returned tuple must be '
+                                'an instance of boolean or iterable')
+
+            args = todo.visitor(list(args))
+            todo.extend(arg for arg in args if isinstance(arg, type))

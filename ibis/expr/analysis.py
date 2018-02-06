@@ -15,6 +15,7 @@
 import toolz
 
 import ibis.expr.types as ir
+import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 
 from ibis.expr.schema import HasSchema
@@ -220,22 +221,13 @@ def find_immediate_parent_tables(expr):
             Literal[int8]
               1
     """
-    stack = [expr]
-    seen = set()
+    def finder(expr):
+        if isinstance(expr, ir.TableExpr):
+            return lin.stop, expr
+        else:
+            return lin.proceed, None
 
-    while stack:
-        e = stack.pop()
-        node = e.op()
-
-        if node not in seen:
-            seen.add(node)
-
-            if isinstance(e, ir.TableExpr):
-                yield e
-            else:  # Only traverse into non TableExpr objects
-                stack.extend(
-                    arg for arg in node.flat_args() if isinstance(arg, ir.Expr)
-                )
+    return lin.traverse(finder, expr)
 
 
 def is_scalar_reduce(x):
@@ -595,33 +587,19 @@ class _PushdownValidate(object):
     def __init__(self, parent, predicate):
         self.parent = parent
         self.pred = predicate
-
         self.validator = ExprValidator([self.parent.table])
 
-        self.valid = True
-
     def get_result(self):
-        self._walk(self.pred)
-        return self.valid
+        return all(self._walk(self.pred))
 
     def _walk(self, expr):
-        stack = [expr]
-        seen = set()
+        def validate(expr):
+            op = expr.op()
+            if isinstance(op, ops.TableColumn):
+                return lin.proceed, self._validate_column(expr)
+            return lin.proceed, None
 
-        while stack:
-            e = stack.pop()
-            node = e.op()
-
-            if node not in seen:
-                seen.add(node)
-
-                if isinstance(node, ops.TableColumn):
-                    self.valid = self.valid and self._validate_column(e)
-
-                stack.extend(
-                    arg for arg in node.flat_args()
-                    if isinstance(arg, ir.ValueExpr)
-                )
+        return lin.traverse(validate, expr, type=ir.ValueExpr)
 
     def _validate_column(self, expr):
         if isinstance(self.parent, ops.Selection):
@@ -1058,29 +1036,13 @@ def find_source_table(expr):
     ...
     NotImplementedError: More than one base table not implemented
     """
-    first_tables = []
+    def finder(expr):
+        if isinstance(expr, ir.TableExpr):
+            return lin.stop, expr
+        else:
+            return lin.proceed, None
 
-    stack = [expr]
-    seen = set()
-
-    while stack:
-        e = stack.pop()
-        op = e.op()
-
-        if op not in seen:
-            seen.add(op)
-
-            arguments = [
-                arg for arg in reversed(list(op.flat_args()))
-                if isinstance(arg, ir.Expr)
-            ]
-            first_tables.extend(
-                arg for arg in arguments if isinstance(arg, ir.TableExpr)
-            )
-            stack.extend(
-                arg for arg in arguments if not isinstance(arg, ir.TableExpr)
-            )
-
+    first_tables = lin.traverse(finder, expr)
     options = list(toolz.unique(first_tables, key=id))
 
     if len(options) > 1:
@@ -1137,26 +1099,10 @@ def flatten_predicate(expr):
         Literal[string]
           foo
     """
-    predicates = []
-    stack = [expr]
-    seen = set()
+    def predicate(expr):
+        if isinstance(expr.op(), ops.And):
+            return lin.proceed, None
+        else:
+            return lin.stop, expr
 
-    while stack:
-        e = stack.pop()
-
-        if not isinstance(e, ir.BooleanColumn):
-            raise TypeError(
-                'Predicate component is not an instance of ir.BooleanColumn'
-            )
-
-        op = e.op()
-
-        if op not in seen:
-            seen.add(op)
-
-            if isinstance(op, ops.And):
-                stack.append(op.right)
-                stack.append(op.left)
-            else:
-                predicates.append(e)
-    return predicates
+    return list(lin.traverse(predicate, expr, type=ir.BooleanColumn))
