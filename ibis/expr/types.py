@@ -22,6 +22,8 @@ import collections
 
 from ibis.common import IbisError, RelationError
 import ibis.util as util
+
+import ibis
 import ibis.common as com
 import ibis.config as config
 import ibis.expr.schema as sch
@@ -67,6 +69,8 @@ class Expr(object):
         return ExprFormatter(self, memo=memo).get_result()
 
     def _repr_png_(self):
+        if not ibis.options.graphviz_repr:
+            return None
         try:
             import ibis.expr.visualize as viz
         except ImportError:
