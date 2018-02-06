@@ -186,7 +186,7 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
         return a tuple. The first element of the tuple controls the
         traversal, and the second is the result if its not None.
     expr: ir.Expr
-        Expression or list of expressions.
+        The traversable expression or a list of expressions.
     type: Type
         Only the instances if this type are traversed.
     container: Union[Stack, Queue], default Stack
