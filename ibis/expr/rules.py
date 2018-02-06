@@ -842,11 +842,13 @@ class Table(Argument):
 
     Examples
     --------
-    The following op will accept an argument named ``'table'``, with at least
-    four columns, of which at least three must be of type ``double``. The names
-    and types of each column must also match those in the schema (e.g. column
-    with name ``'value4'`` is an optional column but must be of type
-    ``double``).
+    The following op will accept an argument named ``'table'``. The names
+    and types of the columns ``time``, ``group`` and ``value1`` must match
+    those in the schema. Column value2 is optional, but if it is present it
+    must also match the schema. Since ``allow_extra`` is set to ``True``, the
+    table may have more columns not mentioned in the schema. Extra validation
+    is provided through the ``satisfying`` argument, requiring at least two of
+    the columns not mentioned in the schema to be of type ``Int64``.
 
     >>> import ibis.expr.datatypes as dt
     >>> import ibis.expr.rules as rules
@@ -855,16 +857,16 @@ class Table(Argument):
     ...    input_type = [
     ...        rules.table(
     ...            name='table',
-    ...            satisfying=[
-    ...                lambda t: len(t.columns) >= 4,
-    ...                lambda t: t.schema().types.count(dt.Double()) >= 3],
     ...            schema=[
+    ...                rules.column(name='time', value_type=rules.number),
     ...                rules.column(name='group', value_type=rules.number),
     ...                rules.column(name='value1', value_type=rules.number),
-    ...                rules.column(name='value2', value_type=rules.number),
-    ...                rules.column(name='value3', value_type=rules.number),
-    ...                rules.column(name='value4', value_type=rules.number,
-    ...                             optional=True)])]
+    ...                rules.column(name='value2', value_type=rules.number,
+    ...                             optional=True)],
+    ...            allow_extra=True,
+    ...            satisfying=[
+    ...                lambda t: t.schema().types.count(dt.Int64()) >= 2],
+    ...        )]
     ...    output_type = rules.type_of_arg(0)
     """
     def __init__(self, name=None, optional=False, satisfying=[],
