@@ -1042,7 +1042,7 @@ def find_source_table(expr):
         else:
             return lin.proceed, None
 
-    first_tables = lin.traverse(finder, expr)
+    first_tables = lin.traverse(finder, expr.op().flat_args())
     options = list(toolz.unique(first_tables, key=id))
 
     if len(options) > 1:

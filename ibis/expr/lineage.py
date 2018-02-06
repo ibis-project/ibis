@@ -4,7 +4,7 @@ except ImportError:
     import Queue as q  # noqa
 
 from itertools import chain
-from toolz import identity
+from toolz import identity, compose
 from collections import deque, Iterable
 
 import ibis.expr.types as ir
@@ -57,7 +57,7 @@ class Container(object):
     __slots__ = 'data',
 
     def __init__(self, data):
-        self.data = deque(data or [])
+        self.data = deque(self.visitor(data))
 
     def append(self, item):
         self.data.append(item)
@@ -88,7 +88,7 @@ class Stack(Container):
 
     @property
     def visitor(self):
-        return reversed
+        return compose(reversed, list)
 
 
 class Queue(Container):
@@ -185,12 +185,15 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
         This function will be applied on each expressions, it must
         return a tuple. The first element of the tuple controls the
         traversal, and the second is the result if its not None.
+    expr: ir.Expr
+        Expression or list of expressions.
     type: Type
         Only the instances if this type are traversed.
     container: Union[Stack, Queue], default Stack
         Defines the traversing order.
     """
-    todo = container([expr] if isinstance(expr, type) else [])
+    args = expr if isinstance(expr, Iterable) else [expr]
+    todo = container(arg for arg in args if isinstance(arg, type))
     seen = set()
 
     while todo:
@@ -213,5 +216,5 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
                 raise TypeError('First item of the returned tuple must be '
                                 'an instance of boolean or iterable')
 
-            args = todo.visitor(list(args))
-            todo.extend(arg for arg in args if isinstance(arg, type))
+            todo.extend(arg for arg in todo.visitor(args)
+                        if isinstance(arg, type))
