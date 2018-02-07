@@ -1551,7 +1551,7 @@ class Select(DDL):
         fmt_preds = []
         for pred in self.where:
             new_pred = self._translate(pred, permit_subquery=True)
-            if isinstance(pred.op(), ops.Or):
+            if isinstance(pred.op(), (ops.Or, ops.Xor)):
                 # parens for OR exprs because it binds looser than AND
                 new_pred = '({})'.format(new_pred)
             fmt_preds.append(new_pred)
@@ -1729,7 +1729,7 @@ class TableSetFormatter(object):
             fmt_preds = []
             for pred in preds:
                 new_pred = self._translate(pred)
-                if isinstance(pred.op(), ops.Or):
+                if isinstance(pred.op(), (ops.Or, ops.Xor)):
                     # parens for OR exprs because it binds looser than AND
                     new_pred = '({})'.format(new_pred)
                 fmt_preds.append(new_pred)
