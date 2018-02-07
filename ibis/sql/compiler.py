@@ -1726,9 +1726,17 @@ class TableSetFormatter(object):
             buf.write('\n')
             buf.write(util.indent('{} {}'.format(jtype, table), self.indent))
 
-            if len(preds):
+            fmt_preds = []
+            for pred in preds:
+                new_pred = self._translate(pred)
+                if isinstance(pred.op(), ops.Or):
+                    # parens for OR exprs because it binds looser than AND
+                    new_pred = '({})'.format(new_pred)
+                fmt_preds.append(new_pred)
+
+            if len(fmt_preds):
                 buf.write('\n')
-                fmt_preds = [self._translate(pred) for pred in preds]
+
                 conj = ' AND\n{}'.format(' ' * 3)
                 fmt_preds = util.indent('ON ' + conj.join(fmt_preds),
                                         self.indent * 2)
