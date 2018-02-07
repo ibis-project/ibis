@@ -11,7 +11,6 @@ import ibis.tests.util as tu
     ('float_col', 1.1),
     ('float_col', 2.2)
 ])
-@tu.skipif_unsupported
 def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     value = ibis.param(dt.double)
     expr = alltypes[column] + value
@@ -54,3 +53,17 @@ def test_timestamp_accepts_date_literals(backend, alltypes):
 
     assert param_in_expr in params
     assert param_in_expr.equals(param)
+
+
+def test_paramlist(backend, alltypes, df):
+    columns = ['id', 'bigint_col', 'timestamp_col']
+
+    param = ibis.param([dt.int32])
+    values = list(range(10, 200, 11))
+
+    expr = alltypes[columns].filter(lambda t: t.id.isin(param))
+
+    result = expr.execute(params={param: values})
+    expected = df.loc[df.id.isin(values), columns]
+
+    backend.assert_frame_equal(result, expected)
