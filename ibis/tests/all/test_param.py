@@ -57,7 +57,7 @@ def test_timestamp_accepts_date_literals(backend, alltypes):
 
 @tu.skipif_unsupported
 def test_paramlist(backend, alltypes, df):
-    columns = ['id', 'bigint_col', 'timestamp_col']
+    columns = ['id', 'bigint_col', 'double_col']
 
     param = ibis.param([dt.int32])
     values = list(range(10, 200, 11))
