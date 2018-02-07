@@ -27,9 +27,10 @@ Ibis currently provides tools for interacting with the following systems:
 - [Apache Impala (incubating)](http://impala.io/)
 - [Apache Kudu](http://getkudu.io)
 - [Hadoop Distributed File System (HDFS)](https://hadoop.apache.org/)
-- PostgreSQL (Experimental)
-- SQLite
-- Pandas DataFrames (Experimental)
+- [PostgreSQL](https://www.postgresql.org/) (Experimental)
+- [MySQL](https://www.mysql.com/) (Experimental)
+- [SQLite](http://sqlite.org/)
+- [Pandas DataFrames](https://pandas.pydata.org/) (Experimental)
 - [Clickhouse](https://clickhouse.yandex)
 - [BigQuery](https://cloud.google.com/bigquery)
 
