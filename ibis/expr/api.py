@@ -465,13 +465,15 @@ def group_concat(arg, sep=',', where=None):
 
 def arbitrary(arg, where=None, how='first'):
     """
-    Selects the first non-null value in a column
+    Selects the first / last non-null value in a column
 
     Parameters
     ----------
     arg : array expression
     where: bool, default None
     how : {'first', 'last', 'heavy'}, default 'first'
+      Heavy selects a frequently occurring value using the heavy hitters
+      algorithm. Heavy is only supported by Clickhouse backend.
 
     Returns
     -------
