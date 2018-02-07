@@ -551,7 +551,7 @@ _parameter_counter = itertools.count()
 
 
 def _parameter_name():
-    return 'param[{:d}]'.format(next(_parameter_counter))
+    return 'param_{:d}'.format(next(_parameter_counter))
 
 
 class ScalarParameter(ValueOp):

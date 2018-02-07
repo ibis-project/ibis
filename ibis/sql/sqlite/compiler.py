@@ -301,3 +301,6 @@ compiles = SQLiteExprTranslator.compiles
 class SQLiteDialect(alch.AlchemyDialect):
 
     translator = SQLiteExprTranslator
+
+
+dialect = SQLiteDialect

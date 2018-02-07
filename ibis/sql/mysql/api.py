@@ -1,7 +1,7 @@
 from ibis.sql.alchemy import to_sqlalchemy
 
-from .client import MySQLClient, MySQLDialect
-from .compiler import rewrites  # noqa
+from ibis.sql.mysql.client import MySQLClient
+from ibis.sql.mysql.compiler import rewrites, dialect  # noqa: F401
 
 
 def compile(expr, params=None):
@@ -41,7 +41,7 @@ def compile(expr, params=None):
     SELECT t0.double_col + %(param_1)s AS tmp
     FROM functional_alltypes AS t0
     """
-    return to_sqlalchemy(expr, dialect=MySQLDialect, params=params)
+    return to_sqlalchemy(expr, dialect.make_context(params=params))
 
 
 def connect(

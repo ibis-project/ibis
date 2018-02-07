@@ -1977,7 +1977,7 @@ def _struct_get_field(expr, field_name):
     value_expr : ibis.expr.types.ValueExpr
         An expression with the type of the field being accessed.
     """
-    return _ops.StructField(expr, field_name).to_expr()
+    return _ops.StructField(expr, field_name).to_expr().name(field_name)
 
 
 _struct_column_methods = dict(
@@ -2734,6 +2734,13 @@ def add_column(table, expr, name=None):
         return table.mutate(expr)
 
 
+def _safe_get_name(expr):
+    try:
+        return expr.get_name()
+    except _com.ExpressionError:
+        return None
+
+
 def mutate(table, exprs=None, **kwds):
     """
     Convenience function for table projections involving adding columns
@@ -2762,7 +2769,10 @@ def mutate(table, exprs=None, **kwds):
             v = v(table)
         else:
             v = as_value_expr(v)
-        exprs.append(v.name(k))
+
+        # TODO(phillipc): Fix this by making expressions hashable
+        named_v = v.name(k) if _safe_get_name(v) != k else v
+        exprs.append(named_v)
 
     has_replacement = False
     for expr in exprs:

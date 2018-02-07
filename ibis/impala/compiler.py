@@ -30,20 +30,25 @@ import ibis.common as com
 import ibis.util as util
 
 
-def build_ast(expr, context=None, params=None):
-    builder = ImpalaQueryBuilder(expr, context=context, params=params)
+def build_ast(expr, context):
+    assert context is not None, 'context is None'
+    builder = ImpalaQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
-def _get_query(expr, context, params=None):
-    ast = build_ast(expr, context, params=params)
+def _get_query(expr, context):
+    assert context is not None, 'context is None'
+    ast = build_ast(expr, context)
     query = ast.queries[0]
 
     return query
 
 
-def to_sql(expr, context=None, params=None):
-    query = _get_query(expr, context, params=params)
+def to_sql(expr, context=None):
+    if context is None:
+        context = ImpalaDialect.make_context()
+    assert context is not None, 'context is None'
+    query = _get_query(expr, context)
     return query.compile()
 
 
@@ -61,15 +66,11 @@ class ImpalaQueryBuilder(comp.QueryBuilder):
 
     select_builder = ImpalaSelectBuilder
 
-    @property
-    def _make_context(self):
-        return ImpalaContext
-
 
 class ImpalaContext(comp.QueryContext):
 
     def _to_sql(self, expr, ctx):
-        return to_sql(expr, context=ctx)
+        return to_sql(expr, ctx)
 
 
 class ImpalaSelect(comp.Select):
@@ -1100,15 +1101,18 @@ _operation_registry.update(_binary_infix_ops)
 class ImpalaExprTranslator(comp.ExprTranslator):
 
     _registry = _operation_registry
-    _context_class = ImpalaContext
+    context_class = ImpalaContext
 
     def name(self, translated, name, force=True):
         return _name_expr(translated,
                           quote_identifier(name, force=force))
 
 
-class ImpalaDialect(ibis.client.Dialect):
+class ImpalaDialect(comp.Dialect):
     translator = ImpalaExprTranslator
+
+
+dialect = ImpalaDialect
 
 
 compiles = ImpalaExprTranslator.compiles

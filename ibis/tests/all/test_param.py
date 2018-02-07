@@ -41,3 +41,16 @@ def test_date_scalar_parameter(backend, alltypes, df, start_string,
     expected = expected_expr.execute()
 
     backend.assert_series_equal(result, expected)
+
+
+@tu.skipif_unsupported
+def test_timestamp_accepts_date_literals(backend, alltypes):
+    date_string = '2009-03-01'
+    param = ibis.param(dt.timestamp, name='param')
+    expr = alltypes.mutate(param=param)
+    params = {param: date_string}
+
+    param_in_expr = expr.op().args[1][-1]
+
+    assert param_in_expr in params
+    assert param_in_expr.equals(param)

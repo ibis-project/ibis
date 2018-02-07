@@ -1,3 +1,7 @@
+import collections
+
+from datetime import date, datetime
+
 import pytest
 
 import numpy as np
@@ -5,6 +9,7 @@ import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
+import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
@@ -187,3 +192,168 @@ def test_different_partition_col_name(client):
     parted_alltypes = client.table('functional_alltypes_parted')
     assert col not in alltypes.columns
     assert col in parted_alltypes.columns
+
+
+def test_subquery_scalar_params(alltypes):
+    t = alltypes
+    param = ibis.param('timestamp', name='my_param')
+    expr = t[['float_col', 'timestamp_col', 'int_col', 'string_col']][
+        lambda t: t.timestamp_col < param
+    ].groupby('string_col').aggregate(
+        foo=lambda t: t.float_col.sum()
+    ).foo.count()
+    result = expr.compile(params={param: '20140101'})
+    expected = """\
+SELECT count(`foo`) AS `count`
+FROM (
+  SELECT `string_col`, sum(`float_col`) AS `foo`
+  FROM (
+    SELECT `float_col`, `timestamp_col`, `int_col`, `string_col`
+    FROM testing.functional_alltypes
+    WHERE `timestamp_col` < @my_param
+  ) t1
+  GROUP BY 1
+) t0"""
+    assert result == expected
+
+
+_IBIS_TYPE_TO_DTYPE = {
+    'string': 'STRING',
+    'int64': 'INT64',
+    'double': 'FLOAT64',
+    'boolean': 'BOOL',
+    'timestamp': 'TIMESTAMP',
+    'date': 'DATE',
+}
+
+
+def test_scalar_param_string(alltypes, df):
+    param = ibis.param('string')
+    expr = alltypes[alltypes.string_col == param]
+
+    string_value = '0'
+    result = expr.execute(
+        params={param: string_value}
+    ).sort_values('id').reset_index(drop=True)
+    expected = df.loc[
+        df.string_col == string_value
+    ].sort_values('id').reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
+
+
+def test_scalar_param_int64(alltypes, df):
+    param = ibis.param('int64')
+    expr = alltypes[alltypes.string_col.cast('int64') == param]
+
+    int64_value = 0
+    result = expr.execute(
+        params={param: int64_value}
+    ).sort_values('id').reset_index(drop=True)
+    expected = df.loc[
+        df.string_col.astype('int64') == int64_value
+    ].sort_values('id').reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
+
+
+def test_scalar_param_double(alltypes, df):
+    param = ibis.param('double')
+    expr = alltypes[alltypes.string_col.cast('int64').cast('double') == param]
+
+    double_value = 0.0
+    result = expr.execute(
+        params={param: double_value}
+    ).sort_values('id').reset_index(drop=True)
+    expected = df.loc[
+        df.string_col.astype('int64').astype('float64') == double_value
+    ].sort_values('id').reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
+
+
+def test_scalar_param_boolean(alltypes, df):
+    param = ibis.param('boolean')
+    expr = alltypes[(alltypes.string_col.cast('int64') == 0) == param]
+
+    bool_value = True
+    result = expr.execute(
+        params={param: bool_value}
+    ).sort_values('id').reset_index(drop=True)
+    expected = df.loc[
+        df.string_col.astype('int64') == 0
+    ].sort_values('id').reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    'timestamp_value',
+    ['2009-01-20 01:02:03', date(2009, 1, 20), datetime(2009, 1, 20, 1, 2, 3)]
+)
+def test_scalar_param_timestamp(alltypes, df, timestamp_value):
+    param = ibis.param('timestamp')
+    expr = alltypes[alltypes.timestamp_col <= param][['timestamp_col']]
+
+    result = expr.execute(
+        params={param: timestamp_value}
+    ).sort_values('timestamp_col').reset_index(drop=True)
+    value = pd.Timestamp(timestamp_value, tz='UTC')
+    expected = df.loc[
+        df.timestamp_col <= value, ['timestamp_col']
+    ].sort_values('timestamp_col').reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    'date_value',
+    ['2009-01-20', date(2009, 1, 20), datetime(2009, 1, 20)]
+)
+def test_scalar_param_date(alltypes, df, date_value):
+    param = ibis.param('date')
+    expr = alltypes[alltypes.timestamp_col.cast('date') <= param]
+
+    result = expr.execute(
+        params={param: date_value}
+    ).sort_values('timestamp_col').reset_index(drop=True)
+    value = pd.Timestamp(date_value)
+    expected = df.loc[
+        df.timestamp_col.dt.normalize() <= value
+    ].sort_values('timestamp_col').reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
+
+
+def test_scalar_param_array(alltypes, df):
+    param = ibis.param('array<double>')
+    expr = alltypes.sort_by('id').limit(1).double_col.collect() + param
+    result = expr.execute(params={param: [1]})
+    expected = [df.sort_values('id').double_col.iat[0]] + [1.0]
+    assert result == expected
+
+
+def test_scalar_param_struct(client):
+    struct_type = dt.Struct.from_tuples([('x', dt.int64), ('y', dt.string)])
+    param = ibis.param(struct_type)
+    value = collections.OrderedDict([('x', 1), ('y', 'foobar')])
+    result = client.execute(param, {param: value})
+    assert value == result
+
+
+@pytest.mark.xfail(
+    raises=com.UnsupportedBackendType,
+    reason='Cannot handle nested structs/arrays in 0.27 API',
+)
+def test_scalar_param_nested(client):
+    param = ibis.param('struct<x: array<struct<y: array<double>>>>')
+    value = collections.OrderedDict([
+        (
+            'x',
+            [
+                collections.OrderedDict([
+                    ('y', [1.0, 2.0, 3.0])
+                ])
+            ]
+        )
+    ])
+    result = client.execute(param, {param: value})
+    assert value == result
+
+
+def test_raw_sql(client):
+    assert client.raw_sql('SELECT 1').fetchall() == [(1,)]

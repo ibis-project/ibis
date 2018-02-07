@@ -37,6 +37,7 @@ pytest.importorskip('impala.dbapi')
 from ibis.impala import ddl  # noqa: E402
 from ibis.impala.compat import HS2Error, ImpylaError  # noqa: E402
 from ibis.impala.client import build_ast  # noqa: E402
+from ibis.impala.compiler import ImpalaDialect  # noqa: E402
 from ibis.impala.tests.common import ENV, ImpalaE2E, connect_test  # noqa: E402
 
 
@@ -64,7 +65,7 @@ class TestInsertLoadData(unittest.TestCase):
         name = 'testing123456'
 
         expr = self.t.limit(10)
-        select, _ = _get_select(expr)
+        select, _ = _get_select(expr, ImpalaDialect.make_context())
 
         stmt = ddl.InsertSelect(name, select, database='foo')
         result = stmt.compile()
@@ -281,7 +282,9 @@ class TestCreateTable(unittest.TestCase):
 
     def test_create_external_table_as(self):
         path = '/path/to/table'
-        select = build_ast(self.con.table('test1')).queries[0]
+        select, _ = _get_select(
+            self.con.table('test1'),
+            ImpalaDialect.make_context())
         statement = ddl.CTAS('another_table',
                              select,
                              external=True,
@@ -1116,7 +1119,7 @@ LOCATION '/tmp/{1}'"""
 
 def _create_table(table_name, expr, database=None, can_exist=False,
                   format='parquet'):
-    ast = build_ast(expr)
+    ast = build_ast(expr, ImpalaDialect.make_context())
     select = ast.queries[0]
     statement = ddl.CTAS(table_name, select,
                          database=database,
@@ -1125,8 +1128,8 @@ def _create_table(table_name, expr, database=None, can_exist=False,
     return statement
 
 
-def _get_select(expr):
-    ast = build_ast(expr)
+def _get_select(expr, context):
+    ast = build_ast(expr, context)
     select = ast.queries[0]
     context = ast.context
 

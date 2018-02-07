@@ -33,8 +33,8 @@ pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-from ibis.impala.compiler import ImpalaExprTranslator, to_sql  # noqa: E402
-from ibis.impala.compiler import ImpalaContext  # noqa: E402
+from ibis.impala.compiler import (
+    ImpalaExprTranslator, to_sql, ImpalaDialect)  # noqa: E402
 from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
 from ibis.impala.tests.common import ImpalaE2E  # noqa: E402
 
@@ -45,13 +45,15 @@ def approx_equal(a, b, eps):
 
 class ExprSQLTest(object):
 
-    def _check_expr_cases(self, cases, context=None, named=False):
+    def _check_expr_cases(self, cases, named=False):
         for expr, expected in cases:
             repr(expr)
-            result = self._translate(expr, named=named, context=context)
+            result = self._translate(expr, named=named)
             assert result == expected
 
-    def _translate(self, expr, named=False, context=None):
+    def _translate(self, expr, context=None, named=False):
+        if context is None:
+            context = ImpalaDialect.make_context()
         translator = ImpalaExprTranslator(expr, context=context, named=named)
         return translator.get_result()
 
@@ -103,7 +105,7 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
         self._check_literals(cases)
 
     def test_column_ref_table_aliases(self):
-        context = ImpalaContext()
+        context = ImpalaDialect.make_context()
 
         table1 = ibis.table([
             ('key1', 'string'),
@@ -127,13 +129,13 @@ class TestValueExprs(unittest.TestCase, ExprSQLTest):
     def test_column_ref_quoting(self):
         schema = [('has a space', 'double')]
         table = ibis.table(schema)
-        self._translate(table['has a space'], '`has a space`')
+        self._translate(table['has a space'], named='`has a space`')
 
     def test_identifier_quoting(self):
         schema = [('date', 'double'), ('table', 'string')]
         table = ibis.table(schema)
-        self._translate(table['date'], '`date`')
-        self._translate(table['table'], '`table`')
+        self._translate(table['date'], named='`date`')
+        self._translate(table['table'], named='`table`')
 
     def test_named_expressions(self):
         a, b, g = self.table.get_columns(['a', 'b', 'g'])
@@ -320,7 +322,7 @@ FROM alltypes"""
 
         expr = t0.g == t1.g
 
-        ctx = ImpalaContext()
+        ctx = ImpalaDialect.make_context()
         ctx.make_alias(t0)
 
         # Grab alias from parent context

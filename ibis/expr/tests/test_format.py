@@ -233,6 +233,4 @@ NullIf[int64*]
 
 def test_scalar_parameter_formatting():
     value = ibis.param('array<date>')
-    assert re.match(
-        r'param\[\d+\] = ScalarParameter\[array<date>\]', str(value)
-    )
+    assert re.match(r'param_\d+ = ScalarParameter\[array<date>\]', str(value))
