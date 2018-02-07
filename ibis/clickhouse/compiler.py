@@ -1,6 +1,5 @@
 from six import StringIO
 
-import ibis
 import ibis.common as com
 import ibis.util as util
 import ibis.expr.operations as ops
@@ -10,8 +9,8 @@ from .identifiers import quote_identifier
 from .operations import _operation_registry, _name_expr
 
 
-def build_ast(expr, context=None, params=None):
-    builder = ClickhouseQueryBuilder(expr, context=context, params=params)
+def build_ast(expr, context):
+    builder = ClickhouseQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
@@ -40,10 +39,6 @@ class ClickhouseSelectBuilder(comp.SelectBuilder):
 class ClickhouseQueryBuilder(comp.QueryBuilder):
 
     select_builder = ClickhouseSelectBuilder
-
-    @property
-    def _make_context(self):
-        return ClickhouseQueryContext
 
 
 class ClickhouseQueryContext(comp.QueryContext):
@@ -165,17 +160,19 @@ class ClickhouseTableSetFormatter(comp.TableSetFormatter):
 class ClickhouseExprTranslator(comp.ExprTranslator):
 
     _registry = _operation_registry
-    _context_class = ClickhouseQueryContext
+    context_class = ClickhouseQueryContext
 
     def name(self, translated, name, force=True):
         return _name_expr(translated,
                           quote_identifier(name, force=force))
 
 
-class ClickhouseDialect(ibis.client.Dialect):
+class ClickhouseDialect(comp.Dialect):
 
     translator = ClickhouseExprTranslator
 
+
+dialect = ClickhouseDialect
 
 compiles = ClickhouseExprTranslator.compiles
 rewrites = ClickhouseExprTranslator.rewrites

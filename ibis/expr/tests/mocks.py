@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ibis.client import SQLClient, Dialect
+from ibis.client import SQLClient
 from ibis.expr.schema import Schema
 
 
 class MockConnection(SQLClient):
 
-    dialect = Dialect
+    @property
+    def dialect(self):
+        from ibis.impala.compiler import ImpalaDialect
+        return ImpalaDialect
 
     _tables = {
         'alltypes': [
@@ -349,9 +352,9 @@ class MockConnection(SQLClient):
         name = name.replace('`', '')
         return Schema.from_tuples(self._tables[name])
 
-    def _build_ast(self, expr, params=None):
+    def _build_ast(self, expr, context):
         from ibis.impala.compiler import build_ast
-        return build_ast(expr, params=params)
+        return build_ast(expr, context)
 
     def execute(self, expr, limit=None, async=False, params=None):
         if async:

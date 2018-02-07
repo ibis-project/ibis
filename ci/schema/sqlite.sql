@@ -8,7 +8,7 @@ CREATE TABLE functional_alltypes (
     int_col BIGINT,
     bigint_col BIGINT,
     float_col FLOAT,
-    double_col FLOAT,
+    double_col REAL,
     date_string_col TEXT,
     string_col TEXT,
     timestamp_col TEXT,

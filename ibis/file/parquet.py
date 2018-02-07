@@ -12,6 +12,9 @@ from ibis.pandas.api import PandasDialect
 from ibis.pandas.core import pre_execute, execute
 
 
+dialect = PandasDialect
+
+
 # TODO(jreback) complex types are not implemented
 _arrow_dtypes = {
     'int8': dt.Int8,
@@ -58,7 +61,8 @@ class ParquetTable(ops.DatabaseTable):
 
 
 class ParquetClient(FileClient):
-    dialect = PandasDialect
+
+    dialect = dialect
     extension = 'parquet'
 
     def insert(self, path, expr, **kwargs):

@@ -90,21 +90,12 @@ class AsyncQuery(Query):
         raise NotImplementedError
 
 
-class Dialect(six.with_metaclass(abc.ABCMeta)):
-
-    @abc.abstractproperty
-    def translator(self):
-        pass
-
-
 class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
 
     sync_query = Query
     async_query = Query
 
-    @abc.abstractproperty
-    def dialect(self):
-        pass
+    dialect = comp.Dialect
 
     def table(self, name, database=None):
         """
@@ -233,7 +224,8 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
 
     def _execute_query(self, ddl, async=False):
         klass = self.async_query if async else self.sync_query
-        return klass(self, ddl).execute()
+        inst = klass(self, ddl)
+        return inst.execute()
 
     def compile(self, expr, params=None, limit=None):
         """
@@ -248,7 +240,9 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         return queries[0] if len(queries) == 1 else queries
 
     def _build_ast_ensure_limit(self, expr, limit, params=None):
-        ast = self._build_ast(expr, params=params)
+        context = self.dialect.make_context(params=params)
+
+        ast = self._build_ast(expr, context)
         # note: limit can still be None at this point, if the global
         # default_limit is None
         for query in reversed(ast.queries):
@@ -270,7 +264,7 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
                                    'offset': query.limit['offset']}
         return ast
 
-    def explain(self, expr):
+    def explain(self, expr, params=None):
         """
         Query for and return the query plan associated with the indicated
         expression or SQL query.
@@ -280,7 +274,8 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         plan : string
         """
         if isinstance(expr, ir.Expr):
-            ast = self._build_ast(expr)
+            context = self.dialect.make_context(params=params)
+            ast = self._build_ast(expr, context)
             if len(ast.queries) > 1:
                 raise Exception('Multi-query expression')
 
@@ -296,9 +291,9 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         return 'Query:\n{0}\n\n{1}'.format(util.indent(query, 2),
                                            '\n'.join(result))
 
-    def _build_ast(self, expr, params=None):
+    def _build_ast(self, expr, context):
         # Implement in clients
-        raise NotImplementedError
+        raise NotImplementedError(type(self).__name__)
 
 
 class QueryPipeline(object):
