@@ -55,6 +55,7 @@ def test_timestamp_accepts_date_literals(backend, alltypes):
     assert param_in_expr.equals(param)
 
 
+@tu.skipif_unsupported
 def test_paramlist(backend, alltypes, df):
     columns = ['id', 'bigint_col', 'timestamp_col']
 
