@@ -196,3 +196,37 @@ def test_logically_negate_complex_boolean_expr():
 SELECT NOT (`a` IN ('foo') AND `c` IS NOT NULL) AS `tmp`
 FROM t"""
     assert result == expected
+
+
+def test_join_with_nested_or_condition():
+    t1 = ibis.table([('a', 'string'),
+                     ('b', 'string')], 't')
+    t2 = t1.view()
+
+    joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) | (t1.b != t2.a)])
+    expr = joined[t1]
+
+    expected = """\
+SELECT t0.*
+FROM t t0
+  INNER JOIN t t1
+    ON t0.`a` = t1.`a` AND
+       ((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`))"""
+    assert to_sql(expr) == expected
+
+
+def test_join_with_nested_xor_condition():
+    t1 = ibis.table([('a', 'string'),
+                     ('b', 'string')], 't')
+    t2 = t1.view()
+
+    joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) ^ (t1.b != t2.a)])
+    expr = joined[t1]
+
+    expected = """\
+SELECT t0.*
+FROM t t0
+  INNER JOIN t t1
+    ON t0.`a` = t1.`a` AND
+       (((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`)) AND NOT ((t0.`a` != t1.`b`) AND (t0.`b` != t1.`a`)))"""  # noqa: E501
+    assert to_sql(expr) == expected
