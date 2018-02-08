@@ -251,3 +251,67 @@ SELECT *
 FROM `table`
 WHERE (`a` IS NOT DISTINCT FROM NULL) = (`b` IS NOT DISTINCT FROM NULL)"""
     assert result == expected
+
+
+def test_join_aliasing():
+    test = ibis.table(
+        [
+            ('a', 'int64'),
+            ('b', 'int64'),
+            ('c', 'int64'),
+        ],
+        name='test_table'
+    )
+    test = test.mutate(d=test.a + 20)
+    test2 = test[test.d, test.c]
+    idx = (test2.d / 15).cast('int64').name('idx')
+    test3 = (
+        test2.groupby([test2.d, idx, test2.c])
+             .aggregate(row_count=test2.count())
+    )
+    test3_totals = test3.groupby(test3.d).aggregate(
+        total=test3.row_count.sum())
+    test4 = test3.join(
+        test3_totals, test3.d == test3_totals.d)[test3, test3_totals.total]
+    test5 = test4[test4.row_count < test4.total / 2]
+    agg = test.groupby([test.d, test.b]).aggregate(
+        count=test.count(), unique=test.c.nunique()).view()
+    joined = agg.join(test5, agg.d == test5.d)[agg, test5.total]
+    result = joined
+    result = to_sql(result)
+    expected = """\
+WITH t0 AS (
+  SELECT *, `a` + 20 AS `d`
+  FROM test_table
+),
+t1 AS (
+  SELECT `d`, `c`
+  FROM t0
+),
+t2 AS (
+  SELECT `d`, CAST(`d` / 15 AS bigint) AS `idx`, `c`, count(*) AS `row_count`
+  FROM t1
+  GROUP BY 1, 2, 3
+)
+SELECT t3.*, t4.`total`
+FROM (
+  SELECT `d`, `b`, count(*) AS `count`, count(DISTINCT `c`) AS `unique`
+  FROM t0
+  GROUP BY 1, 2
+) t3
+  INNER JOIN (
+    SELECT t5.*
+    FROM (
+      SELECT t2.*, t8.`total`
+      FROM t2
+        INNER JOIN (
+          SELECT `d`, sum(`row_count`) AS `total`
+          FROM t2
+          GROUP BY 1
+        ) t8
+          ON t2.`d` = t8.`d`
+    ) t5
+    WHERE t5.`row_count` < (t5.`total` / 2)
+  ) t4
+    ON t3.`d` = t4.`d`"""
+    assert result == expected
