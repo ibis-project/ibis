@@ -770,3 +770,23 @@ def test_round(t, df):
     result = (t.count() * mult).round(precision).execute()
     expected = np.around(len(df) * mult, precision)
     npt.assert_almost_equal(result, expected, decimal=precision)
+
+
+def test_quantile_groupby(batting, batting_df):
+    def q_fun(x, quantile, interpolation):
+        return [x.quantile(quantile, interpolation=interpolation).tolist()]
+
+    frac = 0.2
+    intp = 'linear'
+    result = (batting
+              .groupby('teamID')
+              .mutate(res=lambda x: x.RBI.quantile([frac, 1 - frac], intp))
+              .res
+              .execute())
+    expected = (batting_df
+                .groupby('teamID')
+                .RBI
+                .transform(q_fun, quantile=[frac, 1 - frac],
+                           interpolation=intp)
+                .rename('res'))
+    tm.assert_series_equal(result, expected)
