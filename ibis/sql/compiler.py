@@ -4,7 +4,6 @@
 from six import StringIO
 from collections import defaultdict
 
-from ibis.compat import lzip
 import ibis.common as com
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
@@ -593,7 +592,7 @@ class _ExtractSubqueries(object):
         # Ordered set that uses object .equals to find keys
         self.observed_exprs = util.IbisMap()
 
-        self.expr_counts = defaultdict(lambda: 0)
+        self.expr_counts = defaultdict(int)
 
     def get_result(self):
         if self.query.table_set is not None:
@@ -605,8 +604,8 @@ class _ExtractSubqueries(object):
         to_extract = []
 
         # Read them inside-out, to avoid nested dependency issues
-        for expr, key in reversed(lzip(self.observed_exprs.keys,
-                                       self.observed_exprs.values)):
+        for expr, key in zip(self.observed_exprs.keys,
+                             self.observed_exprs.values):
             v = self.expr_counts[key]
 
             if self.greedy or v > 1:
@@ -663,15 +662,15 @@ class _ExtractSubqueries(object):
     _visit_NotExistsSubquery = _visit_Exists
 
     def _visit_Aggregation(self, expr):
-        self.observe(expr)
         self.visit(expr.op().table)
+        self.observe(expr)
 
     def _visit_Distinct(self, expr):
         self.observe(expr)
 
     def _visit_Limit(self, expr):
-        self.observe(expr)
         self.visit(expr.op().table)
+        self.observe(expr)
 
     def _visit_Union(self, expr):
         op = expr.op()
@@ -679,12 +678,12 @@ class _ExtractSubqueries(object):
         self.visit(op.right)
 
     def _visit_MaterializedJoin(self, expr):
-        self.observe(expr)
         self.visit(expr.op().join)
+        self.observe(expr)
 
     def _visit_Selection(self, expr):
-        self.observe(expr)
         self.visit(expr.op().table)
+        self.observe(expr)
 
     def _visit_SQLQueryResult(self, expr):
         self.observe(expr)
