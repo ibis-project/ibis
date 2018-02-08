@@ -5,7 +5,7 @@ import pytest
 
 import ibis
 
-from ibis.impala.api import compile as to_sql
+from ibis.impala.compiler import to_sql
 
 
 class TestImpalaSQL(unittest.TestCase):
