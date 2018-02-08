@@ -345,7 +345,30 @@ def test_table_with_schema_optional(schema, allow_extra, raises):
     [([('group', dt.int64),
        ('value1', dt.double),
        ('value2', dt.double),
-       ('value3', dt.double)], False)])
+       ('value3', dt.double),
+       ('value4', dt.int64)], False),
+
+     ([('group', dt.int64),
+       ('value1', dt.double),
+       ('value2', dt.double),
+       ('value4', dt.int64)], False),
+
+     ([('group', dt.int64),
+       ('value1', dt.double),
+       ('value2', dt.double),
+       ('value3', dt.double),
+       ('value4', dt.int64),
+       ('value5', dt.int64)], False),
+
+     ([('group', dt.int64),
+       ('value1', dt.double),
+       ('value2', dt.double),
+       ('value3', dt.timestamp)], True),
+
+     ([('group', dt.int64),
+       ('value1', dt.double),
+       ('value2', dt.timestamp),
+       ('value3', dt.double)], True)])
 def test_table_schema_and_satisfying(schema, raises):
     class MyOp(ops.ValueOp):
         input_type = [
@@ -353,14 +376,14 @@ def test_table_schema_and_satisfying(schema, raises):
                 name='table',
                 satisfying=[
                     lambda t: len(t.columns) >= 4,
-                    lambda t: t.schema().types.count(dt.Double()) >= 3],
+                    lambda t: t.schema().types.count(dt.Int64()) >= 1],
                 schema=[
                     rules.column(name='group', value_type=rules.number),
                     rules.column(name='value1', value_type=rules.number),
                     rules.column(name='value2', value_type=rules.number),
-                    rules.column(name='value3', value_type=rules.number),
-                    rules.column(name='value4', value_type=rules.number,
-                                 optional=True)])]
+                    rules.column(name='value3', value_type=rules.number,
+                                 optional=True)],
+                allow_extra=True)]
         output_type = rules.type_of_arg(0)
 
     check_op_input(MyOp, schema, raises)

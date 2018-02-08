@@ -817,12 +817,12 @@ class Table(Argument):
         The name of the table argument.
     optional : bool
         Whether this table argument is optional or not.
-    satisfying : iterable
+    satisfying : iterable, optional
         An iterable of lambda expressions, which will be used to validate
         arguments. Each lambda expression must take a table as its single
         argument, validate, and then return ``True`` for tables that
         pass validation and ``False`` otherwise.
-    schema : iterable
+    schema : iterable, optional
         An iterable of column rules used to validate a table. Each member
         must be an instance of ``Argument`` capable of validating a column
         (most likely an object created with :func:`ibis.rules.column`). A
