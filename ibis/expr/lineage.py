@@ -173,7 +173,7 @@ def lineage(expr, container=Stack):
 
 # these could be callables instead
 proceed = True
-stop = False
+halt = False
 
 
 def traverse(fn, expr, type=ir.Expr, container=Stack):
@@ -207,7 +207,7 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
         if result is not None:
             yield result
 
-        if control is not stop:
+        if control is not halt:
             if control is proceed:
                 args = op.flat_args()
             elif isinstance(control, Iterable):

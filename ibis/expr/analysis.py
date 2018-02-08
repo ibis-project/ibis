@@ -223,7 +223,7 @@ def find_immediate_parent_tables(expr):
     """
     def finder(expr):
         if isinstance(expr, ir.TableExpr):
-            return lin.stop, expr
+            return lin.halt, expr
         else:
             return lin.proceed, None
 
@@ -1038,7 +1038,7 @@ def find_source_table(expr):
     """
     def finder(expr):
         if isinstance(expr, ir.TableExpr):
-            return lin.stop, expr
+            return lin.halt, expr
         else:
             return lin.proceed, None
 
@@ -1103,6 +1103,6 @@ def flatten_predicate(expr):
         if isinstance(expr.op(), ops.And):
             return lin.proceed, None
         else:
-            return lin.stop, expr
+            return lin.halt, expr
 
     return list(lin.traverse(predicate, expr, type=ir.BooleanColumn))
