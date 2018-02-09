@@ -99,6 +99,16 @@ import ibis.tests.util as tu
         id='string_col_group_concat',
         marks=pytest.mark.xfail,
     ),
+    param(
+        lambda t, where: t.double_col.arbitrary(how='first'),
+        lambda t, where: t.double_col.iloc[0],
+        id='string_col_arbitrary_first'
+    ),
+    param(
+        lambda t, where: t.double_col.arbitrary(how='last'),
+        lambda t, where: t.double_col.iloc[-1],
+        id='string_col_arbitrary_last'
+    )
 ])
 @pytest.mark.parametrize(('ibis_cond', 'pandas_cond'), [
     (lambda t: None, lambda t: slice(None)),

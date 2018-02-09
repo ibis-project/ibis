@@ -17,6 +17,7 @@ import toolz
 
 from ibis import compat
 
+import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -411,6 +412,14 @@ def execute_count_distinct_series_groupby(op, data, _, context=None, **kwargs):
     return context.agg(data, 'nunique')
 
 
+@execute_node.register(ops.Arbitrary, SeriesGroupBy, type(None))
+def execute_arbitrary_series_groupby(op, data, _, context=None, **kwargs):
+    if op.how not in {'first', 'last'}:
+        raise com.OperationNotDefinedError(
+            'Arbitrary {!r} is not supported'.format(op.how))
+    return context.agg(data, op.how)
+
+
 def _filtered_reduction(mask, method, data):
     return method(data[mask[data.index]])
 
@@ -471,6 +480,20 @@ def execute_reduction_series_mask(op, data, mask, context=None, **kwargs):
 @execute_node.register(ops.CountDistinct, pd.Series, (pd.Series, type(None)))
 def execute_count_distinct_series_mask(op, data, mask, context=None, **kwargs):
     return context.agg(data[mask] if mask is not None else data, 'nunique')
+
+
+@execute_node.register(ops.Arbitrary, pd.Series, (pd.Series, type(None)))
+def execute_arbitrary_series_mask(op, data, mask, context=None, **kwargs):
+    if op.how == 'first':
+        index = 0
+    elif op.how == 'last':
+        index = -1
+    else:
+        raise com.OperationNotDefinedError(
+            'Arbitrary {!r} is not supported'.format(op.how))
+
+    data = data[mask] if mask is not None else data
+    return data.iloc[index]
 
 
 @execute_node.register(ops.StandardDev, pd.Series, (pd.Series, type(None)))
