@@ -27,7 +27,6 @@ def test_reduction_where(con, alltypes, translate, reduction, func_translated):
     expr = method(where=cond)
 
     assert translate(expr) == expected
-    assert isinstance(con.execute(expr), (np.float, np.uint))
 
 
 def test_std_var_pop(con, alltypes, translate):
@@ -74,7 +73,7 @@ def test_reduction_invalid_where(con, alltypes, reduction):
     ),
     (
         lambda t, cond: t.int_col.approx_median(),
-        lambda df, cond: df.int_col.median(),
+        lambda df, cond: np.int32(df.int_col.median()),
     ),
     (
         lambda t, cond: t.double_col.min(),
@@ -104,14 +103,6 @@ def test_reduction_invalid_where(con, alltypes, reduction):
         lambda t, cond: t.bool_col.count(where=cond),
         lambda df, cond: df.bool_col[cond].count(),
     ),
-    # (
-    #     lambda t, cond: t.bool_col.nunique(where=cond),
-    #     lambda df, cond: df.bool_col[cond].nunique(),
-    # ),
-    # (
-    #     lambda t, cond: t.bool_col.approx_nunique(where=cond),
-    #     lambda df, cond: df.bool_col[cond].nunique(),
-    # ),
     (
         lambda t, cond: t.double_col.sum(where=cond),
         lambda df, cond: df.double_col[cond].sum(),
@@ -121,8 +112,8 @@ def test_reduction_invalid_where(con, alltypes, reduction):
         lambda df, cond: df.double_col[cond].mean(),
     ),
     (
-        lambda t, cond: t.int_col.approx_median(where=cond),
-        lambda df, cond: df.int_col[cond].median(),
+        lambda t, cond: t.float_col.approx_median(where=cond),
+        lambda df, cond: df.float_col[cond].median(),
     ),
     (
         lambda t, cond: t.double_col.min(where=cond),

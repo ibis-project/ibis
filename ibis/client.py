@@ -67,10 +67,14 @@ class Query(object):
         raise NotImplementedError
 
     def schema(self):
-        try:
+
+        if isinstance(self.expr, (ir.TableExpr, ir.ExprList, sch.HasSchema)):
             return self.expr.schema()
-        except AttributeError:
+        elif isinstance(self.expr, ir.ValueExpr):
             return sch.schema([(self.expr.get_name(), self.expr.type())])
+        else:
+            raise ValueError('Expression with type {} does not have a '
+                             'schema'.format(type(self.expr)))
 
 
 class AsyncQuery(Query):

@@ -13,6 +13,7 @@ from multipledispatch import Dispatcher
 import ibis
 import ibis.common as com
 import ibis.expr.types as ir
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
 from ibis.client import Database, Query, SQLClient
@@ -34,6 +35,64 @@ def _ensure_split(table_id, dataset_id):
             )
         (dataset_id, table_id) = split
     return (table_id, dataset_id)
+
+
+_IBIS_TYPE_TO_DTYPE = {
+    'string': 'STRING',
+    'int64': 'INT64',
+    'double': 'FLOAT64',
+    'boolean': 'BOOL',
+    'timestamp': 'TIMESTAMP',
+    'date': 'DATE',
+}
+
+_DTYPE_TO_IBIS_TYPE = {
+    'INT64': dt.int64,
+    'FLOAT64': dt.double,
+    'BOOL': dt.boolean,
+    'STRING': dt.string,
+    'DATE': dt.date,
+    # FIXME: enforce no tz info
+    'DATETIME': dt.timestamp,
+    'TIME': dt.time,
+    'TIMESTAMP': dt.timestamp,
+    'BYTES': dt.binary,
+}
+
+
+_LEGACY_TO_STANDARD = {
+    'INTEGER': 'INT64',
+    'FLOAT': 'FLOAT64',
+    'BOOLEAN': 'BOOL',
+}
+
+
+@dt.dtype.register(bq.schema.SchemaField)
+def bigquery_field_to_ibis_dtype(field):
+    typ = field.field_type
+    if typ == 'RECORD':
+        fields = field.fields
+        assert fields
+        names = [el.name for el in fields]
+        ibis_types = list(map(dt.dtype, fields))
+        ibis_type = dt.Struct(names, ibis_types)
+    else:
+        ibis_type = _LEGACY_TO_STANDARD.get(typ, typ)
+        ibis_type = _DTYPE_TO_IBIS_TYPE.get(ibis_type, ibis_type)
+    if field.mode == 'REPEATED':
+        ibis_type = dt.Array(ibis_type)
+    return ibis_type
+
+
+@sch.infer.register(bq.table.Table)
+def bigquery_schema(table):
+    pairs = [(el.name, dt.dtype(el)) for el in table.schema]
+    try:
+        if table.list_partitions():
+            pairs.append((NATIVE_PARTITION_COL, dt.timestamp))
+    except BadRequest:
+        pass
+    return sch.schema(pairs)
 
 
 class BigQueryCursor(object):
@@ -65,7 +124,8 @@ class BigQuery(Query):
         self.query_parameters = query_parameters or {}
 
     def _fetch(self, cursor):
-        return pd.DataFrame(cursor.fetchall(), columns=cursor.columns)
+        df = pd.DataFrame(cursor.fetchall(), columns=cursor.columns)
+        return self.schema().apply_to(df)
 
     def execute(self):
         # synchronous by default
@@ -145,16 +205,6 @@ def bq_param_timestamp(param, value):
     # TODO(phillipc): Not sure if this is the correct way to do this.
     timestamp_value = pd.Timestamp(value, tz='UTC').to_pydatetime()
     return bq.ScalarQueryParameter(param._name, 'TIMESTAMP', timestamp_value)
-
-
-_IBIS_TYPE_TO_DTYPE = {
-    'string': 'STRING',
-    'int64': 'INT64',
-    'double': 'FLOAT64',
-    'boolean': 'BOOL',
-    'timestamp': 'TIMESTAMP',
-    'date': 'DATE',
-}
 
 
 @bigquery_param.register(ir.StringScalar, six.string_types)
@@ -300,55 +350,8 @@ class BigQueryClient(SQLClient):
     def get_schema(self, name, database=None):
         (table_id, dataset_id) = _ensure_split(name, database)
         bq_table = self._proxy.get_table(table_id, dataset_id)
-        return bigquery_table_to_ibis_schema(bq_table)
+        return sch.infer(bq_table)
 
     @property
     def version(self):
         raise NotImplementedError
-
-
-_DTYPE_TO_IBIS_TYPE = {
-    'INT64': dt.int64,
-    'FLOAT64': dt.double,
-    'BOOL': dt.boolean,
-    'STRING': dt.string,
-    'DATE': dt.date,
-    # FIXME: enforce no tz info
-    'DATETIME': dt.timestamp,
-    'TIME': dt.time,
-    'TIMESTAMP': dt.timestamp,
-    'BYTES': dt.binary,
-}
-
-
-_LEGACY_TO_STANDARD = {
-    'INTEGER': 'INT64',
-    'FLOAT': 'FLOAT64',
-    'BOOLEAN': 'BOOL',
-}
-
-
-def _discover_type(field):
-    typ = field.field_type
-    if typ == 'RECORD':
-        fields = field.fields
-        assert fields
-        names = [el.name for el in fields]
-        ibis_types = [_discover_type(el) for el in fields]
-        ibis_type = dt.Struct(names, ibis_types)
-    else:
-        ibis_type = _LEGACY_TO_STANDARD.get(typ, typ)
-        ibis_type = _DTYPE_TO_IBIS_TYPE.get(ibis_type, ibis_type)
-    if field.mode == 'REPEATED':
-        ibis_type = dt.Array(ibis_type)
-    return ibis_type
-
-
-def bigquery_table_to_ibis_schema(table):
-    pairs = [(el.name, _discover_type(el)) for el in table.schema]
-    try:
-        if table.list_partitions():
-            pairs.append((NATIVE_PARTITION_COL, dt.timestamp))
-    except BadRequest:
-        pass
-    return ibis.schema(pairs)
