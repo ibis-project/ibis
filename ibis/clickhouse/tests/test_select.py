@@ -7,7 +7,7 @@ import ibis
 import ibis.common as com
 
 
-pytest.importorskip('clickhouse_driver')
+driver = pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse
 
 
@@ -451,24 +451,43 @@ GROUP BY `key`"""
     assert ibis.clickhouse.compile(expr) == expected
 
 
+def test_join_with_external_table_errors(con, alltypes, df):
+    external_table = ibis.table([
+        ('a', 'string'),
+        ('b', 'int64'),
+        ('c', 'string')
+    ], name='external')
+
+    alltypes = alltypes.mutate(b=alltypes.tinyint_col)
+    expr = alltypes.inner_join(external_table, ['b'])[
+        external_table.a, external_table.c, alltypes.id]
+
+    with pytest.raises(driver.errors.ServerException):
+        expr.execute()
+
+    with pytest.raises(TypeError):
+        expr.execute(external_tables={'external': []})
+
+
 def test_join_with_external_table(con, alltypes, df):
     external_df = pd.DataFrame([
         ('alpha', 1, 'first'),
         ('beta', 2, 'second'),
         ('gamma', 3, 'third')
     ], columns=['a', 'b', 'c'])
+    external_df['b'] = external_df['b'].astype('int8')
 
-    pandas_connection = ibis.pandas.connect({'external': external_df})
-    pandas_table = pandas_connection.table('external')
-    pandas_table = pandas_table.mutate(b=pandas_table.b.cast('int8'))
-
-    external_table = ibis.clickhouse.external_table('ext', pandas_table)
+    external_table = ibis.table([
+        ('a', 'string'),
+        ('b', 'int64'),
+        ('c', 'string')
+    ], name='external')
 
     alltypes = alltypes.mutate(b=alltypes.tinyint_col)
     expr = alltypes.inner_join(external_table, ['b'])[
         external_table.a, external_table.c, alltypes.id]
 
-    result = con.execute(expr)
+    result = expr.execute(external_tables={'external': external_df})
     expected = (df.assign(b=df.tinyint_col)
                   .merge(external_df, on='b')[['a', 'c', 'id']])
 
