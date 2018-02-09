@@ -2089,6 +2089,7 @@ _timestamp_sub = _binop_expr('__sub__', _ops.TimestampSubtract)
 _timestamp_add = _binop_expr('__add__', _ops.TimestampAdd)
 _timestamp_radd = _binop_expr('__radd__', _ops.TimestampAdd)
 
+
 _timestamp_value_methods = dict(
     strftime=_timestamp_strftime,
     year=_extract_field('year', _ops.ExtractYear),
@@ -2109,7 +2110,8 @@ _timestamp_value_methods = dict(
     add=_timestamp_add,
 
     __radd__=_timestamp_radd,
-    radd=_timestamp_radd
+    radd=_timestamp_radd,
+    day_of_week=property(lambda self: _ops.DayOfWeekNode([self]).to_expr()),
 )
 
 
@@ -2146,6 +2148,7 @@ _date_value_methods = dict(
     year=_extract_field('year', _ops.ExtractYear),
     month=_extract_field('month', _ops.ExtractMonth),
     day=_extract_field('day', _ops.ExtractDay),
+    day_of_week=property(lambda self: _ops.DayOfWeekNode([self]).to_expr()),
 
     truncate=_date_truncate,
 
