@@ -203,6 +203,17 @@ def execute_series_quantile_list(op, data, quantile, context=None, **kwargs):
     return list(result)
 
 
+@execute_node.register(ops.MultiQuantile, SeriesGroupBy, list)
+def execute_series_quantile_groupby(
+        op, data, quantile, context=None, **kwargs):
+
+    def q(x, quantile, interpolation):
+        return [x.quantile(quantile, interpolation=interpolation).tolist()]
+
+    result = context.agg(data, q, quantile, op.interpolation)
+    return result
+
+
 @execute_node.register(ops.Cast, datetime.datetime, dt.String)
 def execute_cast_datetime_or_timestamp_to_string(op, data, type, **kwargs):
     """Cast timestamps to strings"""
