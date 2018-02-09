@@ -2090,26 +2090,6 @@ _timestamp_add = _binop_expr('__add__', _ops.TimestampAdd)
 _timestamp_radd = _binop_expr('__radd__', _ops.TimestampAdd)
 
 
-def _day_of_week_index(arg):
-    """Return the day of the week of a timestamp or date.
-
-    Returns
-    -------
-    day_of_week : int
-    """
-    return _ops.DayOfWeekIndex(arg).to_expr()
-
-
-def _day_of_week_name(arg):
-    """Return the day of the week of a timestamp or date.
-
-    Returns
-    -------
-    day_of_week : str
-    """
-    return _ops.DayOfWeekName(arg).to_expr()
-
-
 _timestamp_value_methods = dict(
     strftime=_timestamp_strftime,
     year=_extract_field('year', _ops.ExtractYear),
@@ -2131,8 +2111,6 @@ _timestamp_value_methods = dict(
 
     __radd__=_timestamp_radd,
     radd=_timestamp_radd,
-    day_of_week_index=_day_of_week_index,
-    day_of_week_name=_day_of_week_name,
     day_of_week=property(lambda self: _ops.DayOfWeekNode([self]).to_expr()),
 )
 
@@ -2170,8 +2148,6 @@ _date_value_methods = dict(
     year=_extract_field('year', _ops.ExtractYear),
     month=_extract_field('month', _ops.ExtractMonth),
     day=_extract_field('day', _ops.ExtractDay),
-    day_of_week_index=_day_of_week_index,
-    day_of_week_name=_day_of_week_name,
     day_of_week=property(lambda self: _ops.DayOfWeekNode([self]).to_expr()),
 
     truncate=_date_truncate,
