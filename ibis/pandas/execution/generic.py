@@ -531,7 +531,10 @@ def execute_binary_op(op, left, right, **kwargs):
             'Binary operation {} not implemented'.format(op_type.__name__)
         )
     else:
-        return operation(left, right)
+        result = operation(left, right)
+        if operation is operator.floordiv:
+            result = result.astype('int64')  # this is ugly
+        return result
 
 
 @execute_node.register(ops.BinaryOp, SeriesGroupBy, SeriesGroupBy)

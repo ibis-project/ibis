@@ -40,7 +40,8 @@ _ibis_dtypes = {
     dt.UInt64: 'uint64',
     dt.Float32: 'float32',
     dt.Float64: 'float64',
-    dt.Decimal: 'float64'
+    dt.Decimal: 'float64',
+    dt.Struct: 'object',
 }
 
 

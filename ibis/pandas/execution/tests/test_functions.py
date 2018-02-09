@@ -27,15 +27,6 @@ pytestmark = pytest.mark.pandas
         operator.le,
         operator.gt,
         operator.ge,
-
-        # arithmetic
-        operator.add,
-        operator.sub,
-        operator.mul,
-        operator.truediv,
-        operator.floordiv,
-        operator.mod,
-        operator.pow,
     ]
 )
 def test_binary_operations(t, df, op):

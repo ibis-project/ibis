@@ -557,11 +557,6 @@ def _mod(t, expr):
         return result
 
 
-def _floor_divide(t, expr):
-    left, right = map(t.translate, expr.op().args)
-    return sa.func.floor(left / right)
-
-
 def _array_slice(t, expr):
     arg, start, stop = expr.op().args
     sa_arg = t.translate(arg)
@@ -624,11 +619,9 @@ _operation_registry.update({
     ops.FindInSet: _find_in_set,
 
     # math
-    ops.FloorDivide: _floor_divide,
     ops.Log: _log,
     ops.Log2: unary(lambda x: sa.func.log(2, x)),
     ops.Log10: unary(sa.func.log),
-    ops.Power: fixed_arity(sa.func.power, 2),
     ops.Round: _round,
     ops.Modulus: _mod,
 

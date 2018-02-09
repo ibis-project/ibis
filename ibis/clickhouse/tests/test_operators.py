@@ -14,23 +14,6 @@ pytest.importorskip('clickhouse_driver')
 pytestmark = pytest.mark.clickhouse
 
 
-# def test_not(alltypes):
-#     t = alltypes.limit(10)
-#     expr = t.projection([(~t.double_col.isnull()).name('double_col')])
-#     result = expr.execute().double_col
-#     expected = ~t.execute().double_col.isnull()
-#     tm.assert_series_equal(result, expected)
-
-
-# @pytest.mark.parametrize('op', [operator.invert, operator.neg])
-# def test_not_and_negate_bool(con, op, df):
-#     t = con.table('functional_alltypes').limit(10)
-#     expr = t.projection([op(t.bool_col).name('bool_col')])
-#     result = expr.execute().bool_col
-#     expected = op(df.head(10).bool_col)
-#     tm.assert_series_equal(result, expected)
-
-
 @pytest.mark.parametrize(('left', 'right', 'type'), [
     (L('2017-04-01'), date(2017, 4, 2), dt.date),
     (date(2017, 4, 2), L('2017-04-01'), dt.date),
@@ -188,15 +171,6 @@ def test_negate_non_boolean(con, alltypes, field, df):
     tm.assert_series_equal(result, expected)
 
 
-# def test_negate_boolean(con, alltypes, df):
-#     t = alltypes.limit(10)
-#     expr = t.projection([(~t.bool_col).name('bool_col')])
-#     result = expr.execute().bool_col
-#     print(result)
-#     expected = ~df.head(10).bool_col
-#     tm.assert_series_equal(result, expected)
-
-
 def test_negate_literal(con):
     expr = -L(5.245)
     assert round(con.execute(expr), 3) == -5.245
@@ -206,13 +180,13 @@ def test_negate_literal(con):
     (
         lambda t: (t.double_col > 20).ifelse(10, -20),
         lambda df: pd.Series(np.where(df.double_col > 20, 10, -20),
-                             dtype='int16')
+                             dtype='int8')
     ),
     (
         lambda t: (t.double_col > 20).ifelse(10, -20).abs(),
         lambda df: (pd.Series(np.where(df.double_col > 20, 10, -20))
                     .abs()
-                    .astype('uint16'))
+                    .astype('int8'))
     ),
 ])
 def test_ifelse(alltypes, df, op, pandas_op, translate):

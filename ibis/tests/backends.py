@@ -23,7 +23,7 @@ class Backend(object):
             # check that the backend is available
             getattr(ibis, self.name)
         except AttributeError:
-            pytest.skip()
+            pytest.skip('Backend {} cannot be imported'.format(self.name))
         else:
             self.connection = self.connect(data_directory)
 
