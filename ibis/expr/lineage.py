@@ -4,8 +4,8 @@ except ImportError:
     import Queue as q  # noqa
 
 from itertools import chain
-from toolz import identity
-from collections import deque
+from toolz import identity, compose
+from collections import deque, Iterable
 
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -57,7 +57,7 @@ class Container(object):
     __slots__ = 'data',
 
     def __init__(self, data):
-        self.data = deque(data or [])
+        self.data = deque(self.visitor(data))
 
     def append(self, item):
         self.data.append(item)
@@ -88,7 +88,7 @@ class Stack(Container):
 
     @property
     def visitor(self):
-        return reversed
+        return compose(reversed, list)
 
 
 class Queue(Container):
@@ -169,3 +169,52 @@ def lineage(expr, container=Stack):
             for arg in c.visitor(_get_args(node.op(), name))
             if isinstance(arg, ir.Expr)
         )
+
+
+# these could be callables instead
+proceed = True
+halt = False
+
+
+def traverse(fn, expr, type=ir.Expr, container=Stack):
+    """Utility for generic expression tree traversal
+
+    Parameters
+    ----------
+    fn : Callable[[ir.Expr], Tuple[Union[Boolean, Iterable], Any]]
+        This function will be applied on each expressions, it must
+        return a tuple. The first element of the tuple controls the
+        traversal, and the second is the result if its not None.
+    expr: ir.Expr
+        The traversable expression or a list of expressions.
+    type: Type
+        Only the instances if this type are traversed.
+    container: Union[Stack, Queue], default Stack
+        Defines the traversing order.
+    """
+    args = expr if isinstance(expr, Iterable) else [expr]
+    todo = container(arg for arg in args if isinstance(arg, type))
+    seen = set()
+
+    while todo:
+        expr = todo.get()
+        op = expr.op()
+        if op in seen:
+            continue
+
+        seen.add(op)
+        control, result = fn(expr)
+        if result is not None:
+            yield result
+
+        if control is not halt:
+            if control is proceed:
+                args = op.flat_args()
+            elif isinstance(control, Iterable):
+                args = control
+            else:
+                raise TypeError('First item of the returned tuple must be '
+                                'an instance of boolean or iterable')
+
+            todo.extend(arg for arg in todo.visitor(args)
+                        if isinstance(arg, type))

@@ -15,7 +15,6 @@ import toolz
 
 from multipledispatch import Dispatcher
 
-import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
@@ -226,46 +225,6 @@ def _compute_predicates(table_op, predicates, data, scope, **kwargs):
 
         new_scope = toolz.merge(scope, additional_scope)
         yield execute(predicate, new_scope, **kwargs)
-
-
-def get_table_columns(expression):
-    """Yield named column expressions.
-
-    Parameters
-    ----------
-    expression : ir.Expr
-
-    Yields
-    ------
-    node : Node
-        Underlying :class:`~ibis.expr.types.Node` of a
-        :class:`~ibis.expr.types.ColumnExpr`, if the node has a name.
-    """
-    stack = [expression]
-    seen = set()
-
-    while stack:
-        expr = stack.pop()
-        node = expr.op()
-        node_key = str(node)
-
-        if node_key not in seen:
-            seen.add(node_key)
-
-            if isinstance(expr, ir.ColumnExpr):
-                try:
-                    yield expr.get_name(), node
-                except com.ExpressionError:
-                    pass
-
-            if isinstance(node, ops.PhysicalTable):
-                # Special case PhysicalTable to look at the individual columns
-                stack.extend(expr[name] for name in node.schema.names)
-            else:
-                # Otherwise flatten the args of the current node
-                stack.extend(
-                    arg for arg in node.flat_args() if isinstance(arg, ir.Expr)
-                )
 
 
 physical_tables = Dispatcher(
