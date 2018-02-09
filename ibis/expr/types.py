@@ -618,10 +618,11 @@ def param(type, name=None):
 
     if isinstance(type, (tuple, list)):
         dtype = dt.highest_precedence(map(dt.dtype, type))
-        return ParamList([param(dtype)]).to_expr()
+        op = ParamList([param(dtype)])
+    else:
+        op = ScalarParameter(dt.dtype(type), name=name)
 
-    expr = ScalarParameter(dt.dtype(type), name=name).to_expr()
-    return expr.name(name)
+    return op.to_expr().name(name)
 
 
 def distinct_roots(*expressions):
