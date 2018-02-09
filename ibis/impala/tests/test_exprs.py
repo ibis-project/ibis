@@ -298,6 +298,20 @@ FROM alltypes"""
         ]
         self._check_expr_cases(cases)
 
+    def test_timestamp_day_of_week(self):
+        timestamp_value = L('2015-09-01 01:00:23', type='timestamp')
+        cases = [
+            (
+                timestamp_value.day_of_week.index(),
+                "dayofweek('2015-09-01 01:00:23')"
+            ),
+            (
+                timestamp_value.day_of_week.full_name(),
+                "dayname('2015-09-01 01:00:23')"
+            ),
+        ]
+        self._check_expr_cases(cases)
+
     def test_timestamp_from_integer(self):
         col = self.table.c
 

@@ -685,6 +685,16 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
+def _day_of_week_index(t, expr):
+    arg, = expr.op().args
+    return 'dayofweek({})'.format(t.translate(arg))
+
+
+def _day_of_week_name(t, expr):
+    arg, = expr.op().args
+    return 'dayname({})'.format(t.translate(arg))
+
+
 _impala_unit_names = {
     'Y': 'Y',
     'Q': 'Q',
@@ -1092,6 +1102,9 @@ _operation_registry = {
     ops.Lead: _shift_like('lead'),
     ops.WindowOp: _window,
     ops.NTile: _ntile,
+
+    ops.DayOfWeekIndex: _day_of_week_index,
+    ops.DayOfWeekName: _day_of_week_name,
 }
 
 _operation_registry.update(_binary_infix_ops)
