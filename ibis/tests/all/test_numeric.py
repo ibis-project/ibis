@@ -109,7 +109,8 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
     expected = op(df.double_col, smallint_series)
     if op is operator.floordiv:
         # defined in ops.FloorDivide.output_type
-        expected = expected.astype('int64')
+        # -> returns int64 whereas pandas float64
+        result = result.astype('float64')
 
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected, check_exact=False,
