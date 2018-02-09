@@ -1,6 +1,7 @@
 import math
 import pytest
 import decimal
+import operator
 from pytest import param
 
 import numpy as np
@@ -74,8 +75,8 @@ def test_isnan_isinf(backend, con, alltypes, df,
     (L(11) % 3, 11 % 3),
 ])
 @tu.skipif_unsupported
-def test_math_functions_for_literals(backend, con, alltypes, df,
-                                     expr, expected):
+def test_math_functions_on_literals(backend, con, alltypes, df,
+                                    expr, expected):
     result = con.execute(expr)
 
     if isinstance(result, decimal.Decimal):
@@ -85,3 +86,32 @@ def test_math_functions_for_literals(backend, con, alltypes, df,
         assert result == decimal.Decimal(str(expected))
     else:
         assert result == expected
+
+
+@pytest.mark.parametrize('op', [
+    operator.add,
+    operator.sub,
+    operator.mul,
+    operator.truediv,
+    operator.floordiv,
+    operator.pow,
+    pytest.param(operator.mod, marks=pytest.mark.xfail(
+        reason='clickhouse and sqlite truncate float to integer ')
+    ),
+], ids=lambda op: op.__name__)
+def test_binary_arithmetic_operations(backend, alltypes, df, op):
+    smallint_col = alltypes.smallint_col + 1  # make it nonzero
+    smallint_series = df.smallint_col + 1
+
+    expr = op(alltypes.double_col, smallint_col)
+
+    result = expr.execute()
+    expected = op(df.double_col, smallint_series)
+    if op is operator.floordiv:
+        # defined in ops.FloorDivide.output_type
+        # -> returns int64 whereas pandas float64
+        result = result.astype('float64')
+
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected, check_exact=False,
+                                check_less_precise=True)

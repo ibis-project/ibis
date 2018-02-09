@@ -389,6 +389,11 @@ def _round(t, expr):
         return f(sa_arg)
 
 
+def _floor_divide(t, expr):
+    left, right = map(t.translate, expr.op().args)
+    return sa.func.floor(left / right)
+
+
 def _count_distinct(t, expr):
     arg, where = expr.op().args
 
@@ -610,6 +615,8 @@ _operation_registry = {
     ops.Sqrt: unary(sa.func.sqrt),
     ops.Ceil: unary(sa.func.ceil),
     ops.Floor: unary(sa.func.floor),
+    ops.Power: fixed_arity(sa.func.pow, 2),
+    ops.FloorDivide: _floor_divide,
 }
 
 
@@ -620,7 +627,6 @@ _binary_ops = {
     ops.Subtract: operator.sub,
     ops.Multiply: operator.mul,
     ops.Divide: operator.truediv,
-    ops.Power: operator.pow,
     ops.Modulus: operator.mod,
 
     # Comparisons
@@ -1334,18 +1340,6 @@ def _true_divide(t, expr):
 
     if util.all_of(op.args, ir.IntegerValue):
         new_expr = left.div(right.cast('double'))
-        return t.translate(new_expr)
-
-    return fixed_arity(lambda x, y: x / y, 2)(t, expr)
-
-
-@compiles(ops.FloorDivide)
-def _floor_divide(t, expr):
-    op = expr.op()
-    left, right = op.args
-
-    if util.any_of(op.args, ir.FloatingValue):
-        new_expr = expr.floor()
         return t.translate(new_expr)
 
     return fixed_arity(lambda x, y: x / y, 2)(t, expr)

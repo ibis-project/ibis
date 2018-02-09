@@ -121,18 +121,13 @@ class ClickhouseQuery(Query):
         return self._wrap_result(result)
 
     def _fetch(self, cursor):
-        data, colnames, coltypes = cursor
-        schema = sch.schema(colnames, coltypes)
-        # TODO(kszucs): schema = self.schema() instead
+        data, colnames, _ = cursor
+        if not len(data):
+            # handle empty resultset
+            return pd.DataFrame([], columns=colnames)
 
-        columns = {}
-        for (column, (name, dtype)) in czip(data, schema.to_pandas()):
-            try:
-                columns[name] = pd.Series(column, dtype=dtype)
-            except TypeError:
-                columns[name] = pd.Series(column)
-
-        return pd.DataFrame(columns, columns=schema.names)
+        df = pd.DataFrame.from_items(zip(colnames, data))
+        return self.schema().apply_to(df)
 
 
 class ClickhouseClient(SQLClient):

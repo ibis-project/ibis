@@ -111,13 +111,6 @@ def _log(t, expr):
     return sa.func.log(sa_base, sa_arg)
 
 
-def _power(t, expr):
-    arg, exponent = expr.op().args
-    sa_arg = t.translate(arg)
-    sa_exponent = t.translate(exponent)
-    return sa.func.pow(sa_exponent, sa_arg)
-
-
 def _identical_to(t, expr):
     left, right = args = expr.op().args
     if left.equals(right):
@@ -160,7 +153,6 @@ _operation_registry.update({
     ops.Log: _log,
     ops.Log2: unary(sa.func.log2),
     ops.Log10: unary(sa.func.log10),
-    ops.Power: _power,
     ops.Round: _round,
 
     # dates and times
