@@ -1,3 +1,5 @@
+import ibis
+import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
@@ -189,6 +191,20 @@ def _literal(translator, expr):
         raise NotImplementedError(type(expr).__name__)
 
 
+def _arbitrary(translator, expr):
+    arg, how, where = expr.op().args
+
+    if where is not None:
+        arg = where.ifelse(arg, ibis.NA)
+
+    if how != 'first':
+        raise com.OperationNotDefinedError(
+            '{!r} value not supported for arbitrary in BigQuery'.format(how)
+        )
+
+    return 'ANY_VALUE({})'.format(translator.translate(arg))
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -227,6 +243,7 @@ _operation_registry.update({
     # ops.ArrayRepeat: _array_repeat,
     # ops.ArraySlice: _array_slice,
     ir.Literal: _literal,
+    ops.Arbitrary: _arbitrary,
 })
 
 _invalid_operations = {
