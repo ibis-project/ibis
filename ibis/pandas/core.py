@@ -12,6 +12,7 @@ import numpy as np
 import toolz
 
 import ibis.expr.types as ir
+import ibis.expr.lineage as lin
 import ibis.expr.datatypes as dt
 from ibis.client import find_backends
 
@@ -46,26 +47,17 @@ def find_data(expr):
     -------
     data : collections.OrderedDict
     """
-    stack = [expr]
-    seen = set()
-    data = collections.OrderedDict()
+    def finder(expr):
+        op = expr.op()
+        if hasattr(op, 'source'):
+            data = (op, op.source.dictionary.get(op.name, None))
+        elif isinstance(op, ir.Literal):
+            data = (op, op.value)
+        else:
+            data = None
+        return lin.proceed, data
 
-    while stack:
-        e = stack.pop()
-        node = e.op()
-
-        if node not in seen:
-            seen.add(node)
-
-            if hasattr(node, 'source'):
-                data[node] = node.source.dictionary.get(node.name, None)
-            elif isinstance(node, ir.Literal):
-                data[node] = node.value
-
-            stack.extend(
-                arg for arg in reversed(node.args) if isinstance(arg, ir.Expr)
-            )
-    return data
+    return collections.OrderedDict(lin.traverse(finder, expr))
 
 
 _VALID_INPUT_TYPES = (ir.Expr, dt.DataType, type(None)) + scalar_types
