@@ -892,23 +892,50 @@ def substitute(arg, value, replacement=None, else_=None):
 
 
 def _case(arg):
-    """
-    Create a new SimpleCaseBuilder to chain multiple if-else
-    statements. Add new search expressions with the .when method. These
-    must be comparable with this array expression. Conclude by calling
-    .end()
-
-    Examples
-    --------
-    >>> case_expr = (expr.case()
-    ...              .when(case1, output1)
-    ...              .when(case2, output2)
-    ...              .default(default_output)
-    ...              .end())  # doctest: +SKIP
+    """Create a new SimpleCaseBuilder to chain multiple if-else statements. Add
+    new search expressions with the .when method. These must be comparable with
+    this array expression. Conclude by calling .end()
 
     Returns
     -------
     builder : CaseBuilder
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table([('string_col', 'string')], name='t')
+    >>> expr = t.string_col
+    >>> case_expr = (expr.case()
+    ...              .when('a', 'an a')
+    ...              .when('b', 'a b')
+    ...              .else_('null or (not a and not b)')
+    ...              .end())
+    >>> case_expr  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: t
+      schema:
+        string_col : string
+    <BLANKLINE>
+    SimpleCase[string*]
+      base:
+        string_col = Column[string*] 'string_col' from table
+          ref_0
+      cases:
+        ValueList[string*]
+          Literal[string]
+            a
+          Literal[string]
+            b
+      results:
+        ValueList[string*]
+          Literal[string]
+            an a
+          Literal[string]
+            a b
+      default:
+        Literal[string]
+          null or (not a and not b)
     """
     return _ops.SimpleCaseBuilder(arg)
 
@@ -2761,7 +2788,7 @@ def _safe_get_name(expr):
         return None
 
 
-def mutate(table, exprs=None, **kwds):
+def mutate(table, exprs=None, **mutations):
     """
     Convenience function for table projections involving adding columns
 
@@ -2769,22 +2796,54 @@ def mutate(table, exprs=None, **kwds):
     ----------
     exprs : list, default None
       List of named expressions to add as columns
-    kwds : keywords for new columns
-
-    Examples
-    --------
-    >>> expr = table.mutate(qux=table.foo + table.bar, baz=5)  # doctest: +SKIP
+    mutations : keywords for new columns
 
     Returns
     -------
     mutated : TableExpr
+
+    Examples
+    --------
+    Using keywords arguments to name the new columns
+    >>> import ibis
+    >>> table = ibis.table([('foo', 'double'), ('bar', 'double')], name='t')
+    >>> expr = table.mutate(qux=table.foo + table.bar, baz=5)
+    >>> expr  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: t
+      schema:
+        foo : double
+        bar : double
+    <BLANKLINE>
+    Selection[table]
+      table:
+        Table: ref_0
+      selections:
+        Table: ref_0
+        baz = Literal[int8]
+          5
+        qux = Add[double*]
+          left:
+            foo = Column[double*] 'foo' from table
+              ref_0
+          right:
+            bar = Column[double*] 'bar' from table
+              ref_0
+
+    Using the :meth:`ibis.expr.types.Expr.name` method to name the new columns
+    >>> new_columns = [ibis.literal(5).name('baz',),
+    ...                (table.foo + table.bar).name('qux')]
+    >>> expr2 = table.mutate(new_columns)
+    >>> expr.equals(expr2)
+    True
     """
     if exprs is None:
         exprs = []
     else:
         exprs = util.promote_list(exprs)
 
-    for k, v in sorted(kwds.items()):
+    for k, v in sorted(mutations.items()):
         if util.is_function(v):
             v = v(table)
         else:
@@ -2832,6 +2891,82 @@ def projection(table, exprs):
     Returns
     -------
     projection : TableExpr
+
+    Notes
+    -----
+    Passing an aggregate function to this method will broadcast the aggregate's
+    value over the number of rows in the table. See the examples section for
+    more details.
+
+    Examples
+    --------
+    Simple projection
+    >>> import ibis
+    >>> fields = [('a', 'int64'), ('b', 'double')]
+    >>> t = ibis.table(fields, name='t')
+    >>> proj = t.projection([t.a, (t.b + 1).name('b_plus_1')])
+    >>> proj  # doctest: +NORMALIZE_WHITESPACE
+    ref_0
+    UnboundTable[table]
+      name: t
+      schema:
+        a : int64
+        b : double
+    <BLANKLINE>
+    Selection[table]
+      table:
+        Table: ref_0
+      selections:
+        a = Column[int64*] 'a' from table
+          ref_0
+        b_plus_1 = Add[double*]
+          left:
+            b = Column[double*] 'b' from table
+              ref_0
+          right:
+            Literal[int8]
+              1
+    >>> proj2 = t[t.a, (t.b + 1).name('b_plus_1')]
+    >>> proj.equals(proj2)
+    True
+
+    Aggregate projection
+    >>> agg_proj = t[t.a.sum().name('sum_a'), t.b.mean().name('mean_b')]
+    >>> agg_proj  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
+    ref_0
+    UnboundTable[table]
+      name: t
+      schema:
+        a : int64
+        b : double
+    <BLANKLINE>
+    Selection[table]
+      table:
+        Table: ref_0
+      selections:
+        sum_a = WindowOp[int64*]
+          sum_a = Sum[int64]
+            a = Column[int64*] 'a' from table
+              ref_0
+            where:
+              None
+          <ibis.expr.window.Window object at 0x...>
+        mean_b = WindowOp[double*]
+          mean_b = Mean[double]
+            b = Column[double*] 'b' from table
+              ref_0
+            where:
+              None
+          <ibis.expr.window.Window object at 0x...>
+
+    Note the ``<ibis.expr.window.Window>`` objects here, their existence means
+    that the result of the aggregation will be broadcast across the number of
+    rows in the input column. The purpose of this expression rewrite is to make
+    it easy to write column/scalar-aggregate operations like
+
+    .. code-block:: python
+
+       t[(t.a - t.a.mean()).name('demeaned_a')]
     """
     import ibis.expr.analysis as L
 
