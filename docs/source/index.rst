@@ -29,7 +29,7 @@ natively within other systems like Apache Spark and Apache Impala (incubating).
 To learn more about Ibis's vision, roadmap, and updates, please follow
 http://ibis-project.org.
 
-Source code is on GitHub: http://github.com/pandas-dev/ibis
+Source code is on GitHub: https://github.com/ibis-project/ibis
 
 Install Ibis from PyPI with:
 
