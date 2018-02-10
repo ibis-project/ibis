@@ -71,7 +71,6 @@ SQL engine support needing code contributors:
 - Spark SQL
 - Presto
 - Hive
-- MySQL / MariaDB
 
 Since this is a young project, the documentation is definitely patchy in
 places, but this will improve as things progress.
