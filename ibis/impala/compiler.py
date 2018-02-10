@@ -615,16 +615,47 @@ def _table_array_view(translator, expr):
 def _timestamp_op(func):
     def _formatter(translator, expr):
         op = expr.op()
-        arg, offset = op.args
-        formatted_arg = translator.translate(arg)
-        formatted_offset = translator.translate(offset)
+        left, right = op.args
+        formatted_left = translator.translate(left)
+        formatted_right = translator.translate(right)
 
-        if isinstance(arg, ir.TimestampScalar):
-            formatted_arg = 'cast({} as timestamp)'.format(formatted_arg)
+        if isinstance(left, (ir.TimestampScalar, ir.DateValue)):
+            formatted_left = 'cast({} as timestamp)'.format(formatted_left)
 
-        return '{}({}, {})'.format(func, formatted_arg, formatted_offset)
+        if isinstance(right, (ir.TimestampScalar, ir.DateValue)):
+            formatted_right = 'cast({} as timestamp)'.format(formatted_right)
+
+        return '{}({}, {})'.format(func, formatted_left, formatted_right)
 
     return _formatter
+
+
+_date_add = _timestamp_op('date_add')
+_timestamp_add = _timestamp_op('date_add')
+
+
+def _date_subtract(translator, expr):
+    op = expr.op()
+    left, right = op.args
+
+    if isinstance(right, ir.DateValue):
+        func = _timestamp_op('datediff')
+    else:
+        func = _timestamp_op('date_sub')
+
+    return func(translator, expr)
+
+
+def _timestamp_subtract(translator, expr):
+    op = expr.op()
+    left, right = op.args
+
+    if isinstance(right, ir.TimestampValue):
+        return 'unix_timestamp({}) - unix_timestamp({})'.format(
+            translator.translate(left), translator.translate(right))
+    else:
+        func = _timestamp_op('date_sub')
+        return func(translator, expr)
 
 
 # ---------------------------------------------------------------------
@@ -710,7 +741,7 @@ def _truncate(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
-    arg = translator.translate(op.args[0])
+    arg_formatted = translator.translate(arg)
     try:
         unit = _impala_unit_names[unit]
     except KeyError:
@@ -718,7 +749,7 @@ def _truncate(translator, expr):
             '{!r} unit is not supported in timestamp truncate'.format(unit)
         )
 
-    return "trunc({}, '{}')".format(arg, unit)
+    return "trunc({}, '{}')".format(arg_formatted, unit)
 
 
 def _timestamp_from_unix(translator, expr):
@@ -1083,8 +1114,10 @@ _operation_registry = {
 
     ops.TableArrayView: _table_array_view,
 
-    ops.TimestampAdd: _timestamp_op('date_add'),
-    ops.TimestampSubtract: _timestamp_op('date_sub'),
+    ops.DateAdd: _date_add,
+    ops.DateSubtract: _date_subtract,
+    ops.TimestampAdd: _timestamp_add,
+    ops.TimestampSubtract: _timestamp_subtract,
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,

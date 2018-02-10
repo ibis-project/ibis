@@ -30,6 +30,7 @@ _ibis_dtypes = {
     dt.Date: 'datetime64[ns]',
     dt.Time: 'datetime64[ns]',
     dt.Timestamp: 'datetime64[ns]',
+    dt.Interval: 'timedelta64[ns]',
     dt.Int8: 'int8',
     dt.Int16: 'int16',
     dt.Int32: 'int32',
@@ -154,12 +155,16 @@ def infer_pandas_schema(df, schema=None):
 
 def ibis_dtype_to_pandas(ibis_dtype):
     """Convert ibis dtype to the pandas / numpy alternative"""
+    assert isinstance(ibis_dtype, dt.DataType)
+
     if isinstance(ibis_dtype, dt.Timestamp) and ibis_dtype.timezone:
         return DatetimeTZDtype('ns', ibis_dtype.timezone)
-    elif (isinstance(ibis_dtype, dt.DataType) and
-            type(ibis_dtype) not in _ibis_dtypes):
+    elif isinstance(ibis_dtype, dt.Interval):
+        return 'timedelta64[{}]'.format(ibis_dtype.unit)
+    elif type(ibis_dtype) in _ibis_dtypes:
+        return _ibis_dtypes[type(ibis_dtype)]
+    else:
         return 'object'
-    return _ibis_dtypes[type(ibis_dtype)]
 
 
 def ibis_schema_to_pandas(schema):
@@ -170,7 +175,11 @@ def ibis_schema_apply_to(schema, df):
     """Applies the Ibis schema on a pandas dataframe"""
 
     for column, dtype in schema.items():
-        df[column] = df[column].astype(dtype.to_pandas(), errors='ignore')
+        if isinstance(dtype, dt.Interval):
+            df[column] = df[column].values.astype(dtype.to_pandas())
+        else:
+            df[column] = df[column].astype(dtype.to_pandas(), errors='ignore')
+
         if PY2 and dtype == dt.string:
             df[column] = df[column].str.decode('utf-8', errors='ignore')
 
