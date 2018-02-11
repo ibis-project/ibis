@@ -175,10 +175,11 @@ def ibis_schema_apply_to(schema, df):
     """Applies the Ibis schema on a pandas dataframe"""
 
     for column, dtype in schema.items():
+        pandas_dtype = dtype.to_pandas()
         if isinstance(dtype, dt.Interval):
-            df[column] = df[column].values.astype(dtype.to_pandas())
+            df[column] = df[column].values.astype(pandas_dtype)
         else:
-            df[column] = df[column].astype(dtype.to_pandas(), errors='ignore')
+            df[column] = df[column].astype(pandas_dtype, errors='ignore')
 
         if PY2 and dtype == dt.string:
             df[column] = df[column].str.decode('utf-8', errors='ignore')

@@ -125,8 +125,8 @@ def test_integer_to_interval_date_failure(backend, con, alltypes, df, unit):
         date_col + interval
 
 
-iwontdrink_day = pd.Timestamp('2017-12-31')
-hangover_time = pd.Timestamp('2018-01-01 18:18:18')
+date_value = pd.Timestamp('2017-12-31')
+timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
 
 
 @pytest.mark.parametrize(('expr_fn', 'expected_fn'), [
@@ -142,12 +142,12 @@ hangover_time = pd.Timestamp('2018-01-01 18:18:18')
     param(lambda t: t.timestamp_col.date() - ibis.interval(days=14),
           lambda t: t.timestamp_col.dt.floor('d') - pd.Timedelta(days=14),
           id='date-subtract-interval'),
-    param(lambda t: t.timestamp_col - ibis.timestamp(hangover_time),
-          lambda t: pd.Series((t.timestamp_col - hangover_time)
+    param(lambda t: t.timestamp_col - ibis.timestamp(timestamp_value),
+          lambda t: pd.Series((t.timestamp_col - timestamp_value)
                               .values.astype('timedelta64[s]')),
           id='timestamp-subtract-timestamp'),
-    param(lambda t: t.timestamp_col.date() - ibis.date(iwontdrink_day),
-          lambda t: t.timestamp_col.dt.floor('d') - iwontdrink_day,
+    param(lambda t: t.timestamp_col.date() - ibis.date(date_value),
+          lambda t: t.timestamp_col.dt.floor('d') - date_value,
           id='date-subtract-date'),
 ])
 @tu.skipif_unsupported
