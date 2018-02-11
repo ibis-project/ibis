@@ -217,9 +217,9 @@ def _window(translator, expr):
     )
 
     if isinstance(window_op, _unsupported_reductions):
-        raise com.TranslationError('{} is not supported in '
-                                   'window functions'
-                                   .format(type(window_op)))
+        raise com.UnsupportedOperationError(
+            '{} is not supported in window functions'.format(type(window_op))
+        )
 
     if isinstance(window_op, ops.CumulativeOp):
         arg = _cumulative_to_window(translator, arg, window)
@@ -503,7 +503,7 @@ def _number_literal_format(expr):
 
 
 def _interval_literal_format(expr):
-    return 'INTERVAL {} {}S'.format(expr.op().value, expr.resolution.upper())
+    return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution.upper())
 
 
 def _interval_from_integer(translator, expr):
@@ -512,7 +512,7 @@ def _interval_from_integer(translator, expr):
     arg, unit = op.args
     arg_formatted = translator.translate(arg)
 
-    return 'INTERVAL {} {}S'.format(arg_formatted, expr.resolution.upper())
+    return 'INTERVAL {} {}'.format(arg_formatted, expr.resolution.upper())
 
 
 def _date_literal_format(expr):
@@ -714,8 +714,9 @@ def _truncate(translator, expr):
     try:
         unit = _impala_unit_names[unit]
     except KeyError:
-        raise com.TranslationError('{} unit is not supported in '
-                                   'timestamp truncate'.format(unit))
+        raise com.UnsupportedOperationError(
+            '{!r} unit is not supported in timestamp truncate'.format(unit)
+        )
 
     return "trunc({}, '{}')".format(arg, unit)
 

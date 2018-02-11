@@ -40,14 +40,14 @@ def _cast(t, expr):
             return sa.func.datetime(sa_arg, 'unixepoch')
         elif isinstance(arg, ir.StringValue):
             return sa.func.strftime('%Y-%m-%d %H:%M:%f', sa_arg)
-        raise com.TranslationError(type(arg))
+        raise com.UnsupportedOperationError(type(arg))
 
     if isinstance(target_type, dt.Date):
         if isinstance(arg, ir.IntegerValue):
             return sa.func.date(sa.func.datetime(sa_arg, 'unixepoch'))
         elif isinstance(arg, ir.StringValue):
             return sa.func.date(sa_arg)
-        raise com.TranslationError(type(arg))
+        raise com.UnsupportedOperationError(type(arg))
 
     if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
         return sa_arg
@@ -136,8 +136,9 @@ def _truncate(func):
         try:
             modifier = _truncate_modifiers[unit]
         except KeyError:
-            raise com.TranslationError('Unsupported truncate unit '
-                                       '{}'.format(unit))
+            raise com.UnsupportedOperationError(
+                'Unsupported truncate unit {!r}'.format(unit)
+            )
         return func(sa_arg, modifier)
 
     return translator

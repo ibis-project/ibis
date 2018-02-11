@@ -1055,8 +1055,8 @@ WHERE `a` > 0 AND
         expected = """\
 SELECT count(*) AS `count`
 FROM functional_alltypes
-WHERE `timestamp_col` < date_add(cast({} as timestamp), INTERVAL 3 MONTHS) AND
-      `timestamp_col` < date_add(cast(now() as timestamp), INTERVAL 10 DAYS)"""
+WHERE `timestamp_col` < date_add(cast({} as timestamp), INTERVAL 3 MONTH) AND
+      `timestamp_col` < date_add(cast(now() as timestamp), INTERVAL 10 DAY)"""
         assert result == expected.format("'2010-01-01 00:00:00'")
 
     def test_bug_duplicated_where(self):

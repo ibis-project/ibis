@@ -156,8 +156,10 @@ def ibis_dtype_to_pandas(ibis_dtype):
     """Convert ibis dtype to the pandas / numpy alternative"""
     if isinstance(ibis_dtype, dt.Timestamp) and ibis_dtype.timezone:
         return DatetimeTZDtype('ns', ibis_dtype.timezone)
-    else:
-        return _ibis_dtypes[type(ibis_dtype)]
+    elif (isinstance(ibis_dtype, dt.DataType) and
+            type(ibis_dtype) not in _ibis_dtypes):
+        return 'object'
+    return _ibis_dtypes[type(ibis_dtype)]
 
 
 def ibis_schema_to_pandas(schema):

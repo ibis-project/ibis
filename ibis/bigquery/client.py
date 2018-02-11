@@ -16,6 +16,7 @@ import ibis.expr.types as ir
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
+from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient
 from ibis.bigquery import compiler as comp
 
@@ -167,6 +168,16 @@ class BigQueryAPIProxy(object):
 
     def get_schema(self, table_id, dataset_id):
         return self.get_table(table_id, dataset_id).schema
+
+    def run_sync_query(self, stmt):
+        query = self.client.run_sync_query(stmt)
+        query.use_legacy_sql = False
+        query.run()
+        # run_sync_query is not really synchronous: there's a timeout
+        while not query.job.done():
+            query.job.reload()
+            time.sleep(0.1)
+        return query
 
 
 class BigQueryDatabase(Database):
@@ -354,4 +365,51 @@ class BigQueryClient(SQLClient):
 
     @property
     def version(self):
-        raise NotImplementedError
+        return parse_version(bq.__version__)
+
+
+_DTYPE_TO_IBIS_TYPE = {
+    'INT64': dt.int64,
+    'FLOAT64': dt.double,
+    'BOOL': dt.boolean,
+    'STRING': dt.string,
+    'DATE': dt.date,
+    # FIXME: enforce no tz info
+    'DATETIME': dt.timestamp,
+    'TIME': dt.time,
+    'TIMESTAMP': dt.timestamp,
+    'BYTES': dt.binary,
+}
+
+
+_LEGACY_TO_STANDARD = {
+    'INTEGER': 'INT64',
+    'FLOAT': 'FLOAT64',
+    'BOOLEAN': 'BOOL',
+}
+
+
+def _discover_type(field):
+    typ = field.field_type
+    if typ == 'RECORD':
+        fields = field.fields
+        assert fields
+        names = [el.name for el in fields]
+        ibis_types = [_discover_type(el) for el in fields]
+        ibis_type = dt.Struct(names, ibis_types)
+    else:
+        ibis_type = _LEGACY_TO_STANDARD.get(typ, typ)
+        ibis_type = _DTYPE_TO_IBIS_TYPE.get(ibis_type, ibis_type)
+    if field.mode == 'REPEATED':
+        ibis_type = dt.Array(ibis_type)
+    return ibis_type
+
+
+def bigquery_table_to_ibis_schema(table):
+    pairs = [(el.name, _discover_type(el)) for el in table.schema]
+    try:
+        if table.list_partitions():
+            pairs.append((NATIVE_PARTITION_COL, dt.timestamp))
+    except BadRequest:
+        pass
+    return ibis.schema(pairs)

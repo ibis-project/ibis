@@ -38,8 +38,8 @@ def skipif_unsupported(f):
         try:
             return f(backend, *args, **kwargs)
         except (com.OperationNotDefinedError,
+                com.UnsupportedOperationError,
                 com.UnsupportedBackendType,
-                com.TranslationError,
                 NotImplementedError) as e:
             pytest.skip('{} using {}'.format(e, str(backend)))
     return wrapper

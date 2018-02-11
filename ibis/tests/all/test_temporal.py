@@ -71,11 +71,11 @@ def test_date_truncate(backend, alltypes, df, unit):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize('unit', [
-    'Y', 'M', 'W', 'D', 'h', 'm', 's'
-])
+@pytest.mark.parametrize(
+    'unit',
+    ['Y', pytest.mark.xfail('Q'), 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us'])
 @tu.skipif_unsupported
-def test_integer_to_interval(backend, con, alltypes, df, unit):
+def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     expr = alltypes.timestamp_col + interval
     result = con.execute(expr)
@@ -89,6 +89,40 @@ def test_integer_to_interval(backend, con, alltypes, df, unit):
     expected = backend.default_series_rename(expected)
 
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('unit', ['Y', pytest.mark.xfail('Q'), 'M', 'W', 'D'])
+@tu.skipif_unsupported
+def test_integer_to_interval_date(backend, con, alltypes, df, unit):
+    interval = alltypes.int_col.to_interval(unit=unit)
+    array = alltypes.date_string_col.split('/')
+    month, day, year = array[0], array[1], array[2]
+    date_col = expr = ibis.literal('-').join([
+        '20' + year, month, day
+    ]).cast('date')
+    expr = date_col + interval
+    result = con.execute(expr)
+
+    def convert_to_offset(x):
+        resolution = '{}s'.format(interval.resolution)
+        return pd.offsets.DateOffset(**{resolution: x})
+
+    offset = df.int_col.apply(convert_to_offset)
+    expected = pd.to_datetime(df.date_string_col) + offset
+    expected = backend.default_series_rename(expected)
+
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize('unit', ['h', 'm', 's', 'ms', 'us'])
+@tu.skipif_unsupported
+def test_integer_to_interval_date_failure(backend, con, alltypes, df, unit):
+    interval = alltypes.int_col.to_interval(unit=unit)
+    array = alltypes.date_string_col.split('/')
+    month, day, year = array[0], array[1], array[2]
+    date_col = ibis.literal('-').join(['20' + year, month, day]).cast('date')
+    with pytest.raises(TypeError):
+        date_col + interval
 
 
 @pytest.mark.parametrize(('expr_fn', 'expected_fn'), [
