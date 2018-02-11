@@ -1102,6 +1102,10 @@ class ArrayValue(ParameterizedValue):
     pass
 
 
+class SetValue(ParameterizedValue):
+    pass
+
+
 class MapValue(ParameterizedValue):
     pass
 
@@ -1331,6 +1335,20 @@ class ArrayColumn(ArrayValue, ColumnExpr):
 
     def __init__(self, arg, meta, name=None):
         ArrayValue.__init__(self, meta)
+        ColumnExpr.__init__(self, arg, name=name)
+
+
+class SetScalar(SetValue, ScalarExpr):
+
+    def __init__(self, arg, meta, name=None):
+        SetValue.__init__(self, meta)
+        ScalarExpr.__init__(self, arg, name=name)
+
+
+class SetColumn(SetValue, ColumnExpr):
+
+    def __init__(self, arg, meta, name=None):
+        SetValue.__init__(self, meta)
         ColumnExpr.__init__(self, arg, name=name)
 
 
