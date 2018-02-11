@@ -216,9 +216,25 @@ workflows:
       - python36_test
 
       - python27_conda_build
+          requires:
+            - python27_test
+
       - python34_conda_build
+          requires:
+            - python34_test
+
       - python35_conda_build
+          requires:
+            - python35_test
+
       - python36_conda_build
+          requires:
+            - python36_test
 
       - python36_benchmark
+          requires:
+            - python36_test
+
       - python36_docs
+          requires:
+            - python36_test
