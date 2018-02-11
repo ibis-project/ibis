@@ -113,8 +113,9 @@ def _timestamp_truncate(t, expr):
     try:
         precision = _truncate_precisions[unit]
     except KeyError:
-        raise com.TranslationError('Unsupported truncate unit '
-                                   '{}'.format(unit))
+        raise com.UnsupportedOperationError(
+            'Unsupported truncate unit {!r}'.format(unit)
+        )
     return sa.func.date_trunc(precision, sa_arg)
 
 

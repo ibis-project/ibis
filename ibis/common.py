@@ -41,6 +41,10 @@ class OperationNotDefinedError(TranslationError):
     pass
 
 
+class UnsupportedOperationError(TranslationError):
+    pass
+
+
 class UnsupportedBackendType(TranslationError):
     pass
 

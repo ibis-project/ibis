@@ -1146,7 +1146,7 @@ class ExprTranslator(object):
         # The operation node type the typed expression wraps
         op = expr.op()
 
-        if type(op) in self._rewrites and type(op) not in self._registry:
+        if type(op) in self._rewrites:  # even if type(op) is in self._registry
             expr = self._rewrites[type(op)](expr)
             op = expr.op()
 
