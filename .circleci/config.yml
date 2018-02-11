@@ -43,14 +43,14 @@ test: &test
         command: docker-compose run ibis ci/load-data.sh
     - run:
         name: Make test reports directory
-        command: sudo mkdir -p /tmp/ibis/test-reports/junit
+        command: sudo mkdir -p /tmp/ibis/test-reports/pytest
     - run:
         name: Execute Pytest
         command: |
           docker-compose run ibis pytest -rsxX \
             --doctest-modules \
             --doctest-ignore-import-errors \
-            --junitxml=/tmp/test-reports/junit/junit.xml \
+            --junitxml=/tmp/test-reports/pytest/junit.xml \
             --tb=short -m "not udf" ibis
     - store_test_results:
         path: /tmp/ibis/test-reports
