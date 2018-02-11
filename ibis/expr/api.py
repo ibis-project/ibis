@@ -2808,6 +2808,7 @@ def mutate(table, exprs=None, **mutations):
     Examples
     --------
     Using keywords arguments to name the new columns
+
     >>> import ibis
     >>> table = ibis.table([('foo', 'double'), ('bar', 'double')], name='t')
     >>> expr = table.mutate(qux=table.foo + table.bar, baz=5)
@@ -2835,6 +2836,7 @@ def mutate(table, exprs=None, **mutations):
               ref_0
 
     Using the :meth:`ibis.expr.types.Expr.name` method to name the new columns
+
     >>> new_columns = [ibis.literal(5).name('baz',),
     ...                (table.foo + table.bar).name('qux')]
     >>> expr2 = table.mutate(new_columns)
@@ -2904,6 +2906,7 @@ def projection(table, exprs):
     Examples
     --------
     Simple projection
+
     >>> import ibis
     >>> fields = [('a', 'int64'), ('b', 'double')]
     >>> t = ibis.table(fields, name='t')
@@ -2934,6 +2937,7 @@ def projection(table, exprs):
     True
 
     Aggregate projection
+
     >>> agg_proj = t[t.a.sum().name('sum_a'), t.b.mean().name('mean_b')]
     >>> agg_proj  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
     ref_0
