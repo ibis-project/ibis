@@ -142,7 +142,7 @@ def test_filter_on_projected_field(con):
     assert result.op().table is tpch
 
 
-def test_bad_join_predicate_raises():
+def test_join_predicate_from_derived():
     # Join predicate references a derived table, but we can salvage and
     # rewrite it to get the join semantics out
     # see ibis #74
@@ -160,11 +160,31 @@ def test_bad_join_predicate_raises():
     filter_pred = table['f'] > 0
     table3 = table[filter_pred]
 
-    with pytest.raises(com.ExpressionError):
-        table.inner_join(table2, [table3['g'] == table2['key']])
-
+    result = table.inner_join(table2, [table3['g'] == table2['key']])
+    repr(result)
     # expected = table.inner_join(table2, [table['g'] == table2['key']])
     # assert_equal(result, expected)
+
+
+def test_bad_join_predicate_raises():
+    table = ibis.table([
+        ('c', 'int32'),
+        ('f', 'double'),
+        ('g', 'string')
+    ], 'foo_table')
+
+    table2 = ibis.table([
+        ('key', 'string'),
+        ('value', 'double')
+    ], 'bar_table')
+
+    table3 = ibis.table([
+        ('key', 'string'),
+        ('value', 'double')
+    ], 'baz_table')
+
+    with pytest.raises(com.ExpressionError):
+        table.inner_join(table2, [table['g'] == table3['key']])
 
 
 def test_filter_self_join():
