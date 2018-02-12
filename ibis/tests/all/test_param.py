@@ -56,11 +56,11 @@ def test_timestamp_accepts_date_literals(backend, alltypes):
 
 
 @tu.skipif_unsupported
-def test_paramlist(backend, alltypes, df):
+def test_isin_param(backend, alltypes, df):
     columns = ['id', 'bigint_col', 'double_col']
 
-    param = ibis.param([dt.int32])
-    values = list(range(10, 200, 11))
+    param = ibis.param({dt.int32})
+    values = set(range(10, 200, 11))
 
     expr = alltypes[columns].filter(lambda t: t.id.isin(param))
 
