@@ -682,12 +682,12 @@ def execute_node_value_list(op, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
 
 
-@execute_node.register(ops.Contains, pd.Series, list)
+@execute_node.register(ops.Contains, pd.Series, (list, set, frozenset))
 def execute_node_contains_series_list(op, data, elements, **kwargs):
     return data.isin(elements)
 
 
-@execute_node.register(ops.NotContains, pd.Series, list)
+@execute_node.register(ops.NotContains, pd.Series, (list, set, frozenset))
 def execute_node_not_contains_series_list(op, data, elements, **kwargs):
     return ~data.isin(elements)
 

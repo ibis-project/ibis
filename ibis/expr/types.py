@@ -512,14 +512,6 @@ class ExprList(Expr):
         return ExpressionList(exprs).to_expr()
 
 
-def infer_literal_type(value):
-    # TODO: depricate?
-    if value is null:
-        return dt.null
-
-    return dt.infer(value)
-
-
 class Literal(ValueOp):
 
     def __init__(self, value, type=None):
@@ -616,13 +608,8 @@ def param(type, name=None):
     if name is None:
         name = _parameter_name()
 
-    if isinstance(type, (tuple, list)):
-        dtype = dt.highest_precedence(map(dt.dtype, type))
-        op = ParamList([param(dtype)])
-    else:
-        op = ScalarParameter(dt.dtype(type), name=name)
-
-    return op.to_expr().name(name)
+    expr = ScalarParameter(dt.dtype(type), name=name).to_expr()
+    return expr.name(name)
 
 
 def distinct_roots(*expressions):
@@ -1388,16 +1375,12 @@ unnamed = UnnamedMarker()
 
 
 def as_value_expr(val):
-    import pandas as pd
-    if not isinstance(val, Expr):
-        if isinstance(val, (tuple, list)):
-            val = sequence(val)
-        elif isinstance(val, pd.Series):
-            val = sequence(list(val))
-        else:
-            val = literal(val)
-
-    return val
+    if isinstance(val, Expr):
+        return val
+    elif isinstance(val, (tuple, list)):
+        return sequence(val)
+    else:
+        return literal(val)
 
 
 def castable(source, target):
@@ -1424,6 +1407,11 @@ def cast(source, target):
 
     out_type = target.type().scalar_type()
     return out_type(op)
+
+
+@dt.infer.register(ScalarExpr)
+def infer_scalar_expr(value):
+    return value.type()
 
 
 def literal(value, type=None):
@@ -1461,7 +1449,10 @@ def literal(value, type=None):
     if hasattr(value, 'op') and isinstance(value.op(), Literal):
         return value
 
-    dtype = infer_literal_type(value)
+    if value is null:
+        dtype = dt.null
+    else:
+        dtype = dt.infer(value)
 
     if type is not None:
         try:
@@ -1582,10 +1573,6 @@ class ValueList(ValueOp):
 
     def _make_expr(self):
         return ListExpr(self)
-
-
-class ParamList(ValueList, Param):
-    pass
 
 
 def bind_expr(table, expr):

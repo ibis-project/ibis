@@ -1034,6 +1034,20 @@ def from_string(value):
     return TypeParser(value).parse()
 
 
+@dtype.register(list)
+def from_list(values):
+    if not values:
+        return Array(null)
+    return Array(highest_precedence(map(dtype, values)))
+
+
+@dtype.register((set, frozenset))
+def from_set(values):
+    if not values:
+        return Set(null)
+    return Set(highest_precedence(map(dtype, values)))
+
+
 infer = Dispatcher('infer')
 
 
@@ -1077,17 +1091,17 @@ def infer_map(value):
 
 
 @infer.register(list)
-def infer_list(value):
-    if not value:
+def infer_list(values):
+    if not values:
         return Array(null)
-    return Array(highest_precedence(map(infer, value)))
+    return Array(highest_precedence(map(infer, values)))
 
 
 @infer.register((set, frozenset))
-def infer_set(value):
-    if not value:
+def infer_set(values):
+    if not values:
         return Set(null)
-    return Set(highest_precedence(map(infer, value)))
+    return Set(highest_precedence(map(infer, values)))
 
 
 @infer.register(datetime.time)

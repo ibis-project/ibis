@@ -637,7 +637,7 @@ def array(value_type, **arg_kwds):
     )
 
 
-def set(value_type, **arg_kwds):
+def set_(value_type, **arg_kwds):
     """Require that an expression is a Set type whose value_type is
     `value_type`.
 

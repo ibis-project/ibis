@@ -48,19 +48,21 @@ FROM {0}.`functional_alltypes`"""
 
 
 def test_isin_notin_in_select(con, db, alltypes, translate):
-    filtered = alltypes[alltypes.string_col.isin(['foo', 'bar'])]
-    result = ibis.clickhouse.compile(filtered)
-    expected = """SELECT *
-FROM {0}.`functional_alltypes`
-WHERE `string_col` IN ('foo', 'bar')"""
-    assert result == expected.format(db.name)
+    foobar = set(['foo', 'bar'])
 
-    filtered = alltypes[alltypes.string_col.notin(['foo', 'bar'])]
+    filtered = alltypes[alltypes.string_col.isin(foobar)]
     result = ibis.clickhouse.compile(filtered)
     expected = """SELECT *
-FROM {0}.`functional_alltypes`
-WHERE `string_col` NOT IN ('foo', 'bar')"""
-    assert result == expected.format(db.name)
+FROM {}.`functional_alltypes`
+WHERE `string_col` IN {}"""
+    assert result == expected.format(db.name, str(tuple(foobar)))
+
+    filtered = alltypes[alltypes.string_col.notin(foobar)]
+    result = ibis.clickhouse.compile(filtered)
+    expected = """SELECT *
+FROM {}.`functional_alltypes`
+WHERE `string_col` NOT IN {}"""
+    assert result == expected.format(db.name, str(tuple(foobar)))
 
 
 def test_head(alltypes):

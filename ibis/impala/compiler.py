@@ -482,6 +482,15 @@ def _needs_parens(op):
             op_klass in {ops.Negate, ops.IsNull, ops.NotNull})
 
 
+def _set_literal_format(expr):
+    typeclass = expr.type().value_type.name
+
+    formatter = _literal_formatters[typeclass]
+    formatted = [formatter(x) for x in expr.op().value]
+
+    return _parenthesize(', '.join(formatted))
+
+
 def _boolean_literal_format(expr):
     value = expr.op().value
     return 'TRUE' if value else 'FALSE'
@@ -878,6 +887,8 @@ def _literal(translator, expr):
         typeclass = 'timestamp'
     elif isinstance(expr, ir.IntervalValue):
         typeclass = 'interval'
+    elif isinstance(expr, ir.SetValue):
+        typeclass = 'set'
     else:
         raise NotImplementedError
 
@@ -894,7 +905,8 @@ _literal_formatters = {
     'string': _string_literal_format,
     'interval': _interval_literal_format,
     'timestamp': _timestamp_literal_format,
-    'date': _date_literal_format
+    'date': _date_literal_format,
+    'set': _set_literal_format
 }
 
 

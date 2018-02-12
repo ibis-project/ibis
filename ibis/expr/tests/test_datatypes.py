@@ -25,8 +25,11 @@ def test_validate_type():
     ('map<int64, array<map<string, int8>>>',
      dt.Map(dt.int64, dt.Array(dt.Map(dt.string, dt.int8)))),
     ('set<uint8>', dt.Set(dt.uint8)),
+    ([dt.uint8], dt.Array(dt.uint8)),
+    ([dt.float32, dt.float64], dt.Array(dt.float64)),
+    ({dt.string}, dt.Set(dt.string))
 ])
-def test_dtype_parsing(spec, expected):
+def test_dtype(spec, expected):
     assert dt.dtype(spec) == expected
 
 
