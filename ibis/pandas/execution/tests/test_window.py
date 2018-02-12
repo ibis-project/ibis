@@ -315,3 +315,12 @@ def test_project_scalar_after_join():
         'const': [1] * 9,
     })
     tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_project_list_scalar():
+    df = pd.DataFrame({'ints': range(3)})
+    con = ibis.pandas.connect(dict(df=df))
+    expr = con.table('df')
+    result = expr.mutate(res=expr.ints.quantile([0.5, 0.95])).execute()
+    tm.assert_series_equal(
+        result.res, pd.Series([[1.0, 1.9] for _ in range(0, 3)], name='res'))
