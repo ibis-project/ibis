@@ -752,21 +752,21 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
 #         ]
 #         self._check_expr_cases(cases)
 
-#     def test_isin_notin_in_select(self):
-#         foobar = set(["foo", "bar"])
-#         filtered = self.table[self.table.g.isin(foobar)]
-#         result = to_sql(filtered)
-#         expected = """SELECT *
-# FROM alltypes
-# WHERE `g` IN {}""".format(str(tuple(foobar)))
-#         assert result == expected
+    def test_isin_notin_in_select(self):
+        foobar = set(["foo", "bar"])
+        filtered = self.table[self.table.g.isin(foobar)]
+        result = to_sql(filtered)
+        expected = """SELECT *
+FROM alltypes
+WHERE `g` IN {}""".format(str(tuple(foobar)))
+        assert result == expected
 
-#         filtered = self.table[self.table.g.notin(foobar)]
-#         result = to_sql(filtered)
-#         expected = """SELECT *
-# FROM alltypes
-# WHERE `g` NOT IN {}""".format(str(tuple(foobar)))
-#         assert result == expected
+        filtered = self.table[self.table.g.notin(foobar)]
+        result = to_sql(filtered)
+        expected = """SELECT *
+FROM alltypes
+WHERE `g` NOT IN {}""".format(str(tuple(foobar)))
+        assert result == expected
 
 
 class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):
