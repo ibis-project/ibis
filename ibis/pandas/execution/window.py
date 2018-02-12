@@ -23,7 +23,7 @@ from ibis.pandas.execution import util
 
 
 def _post_process_empty(scalar, index):
-    return pd.Series(scalar, index=index)
+    return pd.Series([scalar], index=index)
 
 
 def _post_process_group_by(series, index):
