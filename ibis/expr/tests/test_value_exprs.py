@@ -190,15 +190,15 @@ def test_literal_array():
     assert expr.type().equals(dt.Array(dt.null))
 
 
-# def test_mixed_arity(table):
-#     what = ["bar", table.g, "foo"]
-#     expr = api.as_value_expr(what)
+def test_mixed_arity(table):
+    what = ["bar", table.g, "foo"]
+    expr = api.as_value_expr(what)
 
-#     values = expr.op().values
-#     assert isinstance(values[1], ir.StringColumn)
+    values = expr.op().values
+    assert isinstance(values[1], ir.StringColumn)
 
-#     # it works!
-#     repr(expr)
+    # it works!
+    repr(expr)
 
 
 @pytest.mark.parametrize('container', [list, tuple, set, frozenset])
