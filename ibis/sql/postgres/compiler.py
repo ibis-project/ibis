@@ -576,11 +576,14 @@ def _string_join(t, expr):
 
 
 def _literal(t, expr):
-    if isinstance(expr, ir.IntervalValue):
-        return sa.text("INTERVAL '{} {}'".format(expr.op().value,
-                                                 expr.resolution))
+    value = expr.op().value
+
+    if isinstance(expr, ir.IntervalScalar):
+        return sa.text("INTERVAL '{} {}'".format(value, expr.resolution))
+    elif isinstance(expr, ir.SetScalar):
+        return list(map(sa.literal, value))
     else:
-        return sa.literal(expr.op().value)
+        return sa.literal(value)
 
 
 def _day_of_week_index(t, expr):

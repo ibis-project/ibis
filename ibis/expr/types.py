@@ -546,16 +546,7 @@ def _parameter_name():
     return 'param_{:d}'.format(next(_parameter_counter))
 
 
-class Param(ValueOp):
-
-    def root_tables(self):
-        return []
-
-    def resolve_name(self):
-        return self.name
-
-
-class ScalarParameter(Param):
+class ScalarParameter(ValueOp):
 
     def __init__(self, type, name=None):
         super(ScalarParameter, self).__init__(type)
@@ -577,6 +568,12 @@ class ScalarParameter(Param):
             self.name == other.name and
             self.type.equals(other.type, cache=cache)
         )
+
+    def root_tables(self):
+        return []
+
+    def resolve_name(self):
+        return self.name
 
 
 def param(type, name=None):

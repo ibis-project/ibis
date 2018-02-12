@@ -1151,7 +1151,7 @@ class ExprTranslator(object):
             op = expr.op()
 
         # TODO: use op MRO for subclasses instead of this isinstance spaghetti
-        if isinstance(op, ir.Param):
+        if isinstance(op, ir.ScalarParameter):
             return self._trans_param(expr)
         elif isinstance(op, ops.TableNode):
             # HACK/TODO: revisit for more complex cases
@@ -1165,15 +1165,9 @@ class ExprTranslator(object):
             )
 
     def _trans_param(self, expr):
-        op = expr.op()
         value = self.context.params[expr]
-
-        if isinstance(op, ir.ScalarParameter):
-            value = ibis.literal(value, expr.type())
-        elif isinstance(op, ir.ParamList):
-            value = ibis.sequence(value)
-
-        return self.translate(value)
+        literal = ibis.literal(value, expr.type())
+        return self.translate(literal)
 
     @classmethod
     def rewrites(cls, klass, f=None):
