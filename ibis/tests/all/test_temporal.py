@@ -125,22 +125,40 @@ def test_integer_to_interval_date_failure(backend, con, alltypes, df, unit):
         date_col + interval
 
 
+date_value = pd.Timestamp('2017-12-31')
+timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
+
+
 @pytest.mark.parametrize(('expr_fn', 'expected_fn'), [
     param(lambda t: t.timestamp_col + ibis.interval(days=4),
           lambda t: t.timestamp_col + pd.Timedelta(days=4),
-          id='timestamp-add-days'),
-    param(lambda t: t.timestamp_col - ibis.interval(days=4),
-          lambda t: t.timestamp_col - pd.Timedelta(days=4),
-          id='timestamp-sub-days'),
+          id='timestamp-add-interval'),
+    param(lambda t: t.timestamp_col - ibis.interval(days=17),
+          lambda t: t.timestamp_col - pd.Timedelta(days=17),
+          id='timestamp-subtract-interval'),
+    param(lambda t: t.timestamp_col.date() + ibis.interval(days=4),
+          lambda t: t.timestamp_col.dt.floor('d') + pd.Timedelta(days=4),
+          id='date-add-interval'),
+    param(lambda t: t.timestamp_col.date() - ibis.interval(days=14),
+          lambda t: t.timestamp_col.dt.floor('d') - pd.Timedelta(days=14),
+          id='date-subtract-interval'),
+    param(lambda t: t.timestamp_col - ibis.timestamp(timestamp_value),
+          lambda t: pd.Series((t.timestamp_col - timestamp_value)
+                              .values.astype('timedelta64[s]')),
+          id='timestamp-subtract-timestamp'),
+    param(lambda t: t.timestamp_col.date() - ibis.date(date_value),
+          lambda t: t.timestamp_col.dt.floor('d') - date_value,
+          id='date-subtract-date'),
 ])
 @tu.skipif_unsupported
-def test_timestamp_binop(backend, con, alltypes, df,
-                         expr_fn, expected_fn):
+def test_temporal_binop(backend, con, alltypes, df,
+                        expr_fn, expected_fn):
     expr = expr_fn(alltypes)
     expected = expected_fn(df)
 
     result = con.execute(expr)
     expected = backend.default_series_rename(expected)
+
     backend.assert_series_equal(result, expected)
 
 

@@ -27,6 +27,11 @@ def mysql_tinyint(satype, nullable=True):
     return dt.Int8(nullable=nullable)
 
 
+@dt.dtype.register(mysql.BLOB)
+def mysql_blob(satype, nullable=True):
+    return dt.Binary(nullable=nullable)
+
+
 class MySQLTable(alch.AlchemyTable):
     pass
 
