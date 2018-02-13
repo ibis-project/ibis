@@ -1,3 +1,80 @@
+"""The pandas backend is a departure from the typical ibis backend in that it
+doesn't compile to anything, and the execution of the ibis expression coming
+dervied from a PandasTable is under the purview of ibis itself rather than
+sending something to a server and having it return the results.
+
+Design
+------
+
+Ibis uses a technique called `multiple dispatch
+<https://en.wikipedia.org/wiki/Multiple_dispatch>`_, implemented in a
+third-party open source library called `multipledispatch
+<https://github.com/mrocklin/multipledispatch>`_.
+
+Multiple dispatch is a generalization of standard single-dispatch runtime
+polymorphism to multiple arguments.
+
+Compilation
+-----------
+This is a no-op because we directly execute ibis expressions.
+
+Execution
+---------
+
+Execution is divided into different dispatched functions, each arising from
+different a use case.
+
+A top level dispatched function named ``execute`` with two signatures exists
+to provide a single API for executing an ibis expression.
+
+The general flow of execution is:
+
+::
+       If the current operation is in scope:
+           return it
+       Else:
+           execute the arguments of the current node
+
+       execute the current node with its executed arguments
+
+Specifically, execute is comprised of 4 steps that happen at different times
+during the loop.
+
+1. ``data_preload``
+-------------------
+First, data_preload is called. data_preload provides a way for an expression to
+intercept the data and inject scope. By default it does nothing.
+
+2. ``pre_execute``
+------------------
+
+Second, at the beginning of the main execution loop, ``pre_execute`` is called.
+This function serves a similar purpose to ``data_preload``, the key difference
+being that ``pre_execute`` is called *every time* there's a call to execute.
+
+By default this function does nothing.
+
+3. ``execute_first``
+--------------------
+
+Third is ``execute_first``. This function gives an expression the opportunity
+to define the entire flow of execution of an expression starting from the top
+of the expression.
+
+This functionality was essential for implementing window functions in the
+pandas backend
+
+By default this function does nothing.
+
+4. ``execute_node``
+-------------------
+
+Finally, when an expression is ready to be evaluated we call
+:func:`~ibis.pandas.core.execute` on the expressions arguments and then
+:func:`~ibis.pandas.dispatch.execute_node` on the expression with its
+now-materialized arguments.
+"""
+
 from __future__ import absolute_import
 
 import collections
