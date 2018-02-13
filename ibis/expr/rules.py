@@ -835,10 +835,33 @@ class Table(Argument):
         allowed. If set to ``True`` then the table may have columns not
         specified in the schema, as long as each non-optional member of the
         schema was satisfied.
+    doc : str
+        A docstring to document this argument.
     validator : ???
         ???
-    doc : ???
-        ???
+
+    Notes
+    -----
+    The ``schema``, ``satisfying`` and ``allow_extra`` arguments can be
+    combined to implement complex validation logic for a table. In general,
+    ``schema`` can be used to type-check columns whose name is known
+    beforehand, and ``satisfying`` allows for type-checking properties
+    of columns with variable names (see the example for a table rule
+    that requires a minimum amount of integer columns with any name).
+
+    When the name of all columns to be validated is known beforehand, it is
+    recommended to pass only a ``schema`` and setting ``allow_extra`` to
+    ``False``. This ensures that tables with unexpected columns do not
+    pass validation.
+
+    When the names of columns are not known, then ``satisfying`` should be used
+    standalone to validate the table. In this case, ``allow_extra`` does
+    nothing.
+
+    When properties about both columns with and without known names must be
+    checked, then ``schema`` and ``satisfying`` can be combined. In this case,
+    ``allow_extra`` should be set to ``True`` in order to relax the schema's
+    constrains.
 
     Examples
     --------
@@ -884,9 +907,10 @@ class Table(Argument):
     def _validate(self, args, i):
         arg = args[i]
         if isinstance(arg, ir.TableExpr):
-            # Check column schema
+            # Check that columns match the schema first
             rules_matched = 0
             for column_rule in self.schema:
+                # Members of a schema are arguments with a name
                 if not isinstance(column_rule, Argument):
                     raise ValueError('Members of schema must be instances of '
                                      'the Argument class (rules).')
@@ -894,6 +918,7 @@ class Table(Argument):
                     raise ValueError(
                         'Column rules must be named inside a table.')
                 try:
+                    # Use the argument's name to get
                     column = arg[column_rule.name]
                 except IbisTypeError:
                     if column_rule.optional:
@@ -902,6 +927,7 @@ class Table(Argument):
                         raise IbisTypeError(
                             'No column with name {}.'.format(column_rule.name))
                 try:
+                    # Arguments must validate the column
                     column_rule.validate([column], 0)
                     rules_matched += 1
                 except IbisTypeError as e:
