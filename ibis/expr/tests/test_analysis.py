@@ -160,10 +160,8 @@ def test_join_predicate_from_derived():
     filter_pred = table['f'] > 0
     table3 = table[filter_pred]
 
-    result = table.inner_join(table2, [table3['g'] == table2['key']])
-    repr(result)
-    # expected = table.inner_join(table2, [table['g'] == table2['key']])
-    # assert_equal(result, expected)
+    with pytest.raises(com.ExpressionError):
+        table.inner_join(table2, [table3['g'] == table2['key']])
 
 
 def test_bad_join_predicate_raises():

@@ -870,18 +870,22 @@ class ExprValidator(object):
                 'dependencies of the table expression.' % repr(expr))
 
 
-def source_tables(expr):
+def fully_originate_from(exprs, parents):
     def finder(expr):
-        if isinstance(expr.op(), ops.PhysicalTable):
-            return lin.halt, expr
+        op = expr.op()
+
+        if isinstance(expr, ir.TableExpr):
+            return lin.proceed, expr
+        elif op.blocks():
+            return lin.halt, None
         else:
             return lin.proceed, None
 
-    return lin.traverse(finder, expr)
+    # unique table dependencies of exprs and parents
+    exprs_deps = set(lin.traverse(finder, exprs))
+    parents_deps = set(lin.traverse(finder, parents))
 
-
-def fully_originate_from(expr, parents):
-    return set(source_tables(expr)) <= set(source_tables(parents))
+    return exprs_deps <= parents_deps
 
 
 class FilterValidator(ExprValidator):
