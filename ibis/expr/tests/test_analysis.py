@@ -142,7 +142,7 @@ def test_filter_on_projected_field(con):
     assert result.op().table is tpch
 
 
-def test_join_predicate_from_derived():
+def test_join_predicate_from_derived_raises():
     # Join predicate references a derived table, but we can salvage and
     # rewrite it to get the join semantics out
     # see ibis #74
