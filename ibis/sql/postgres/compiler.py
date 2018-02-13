@@ -637,6 +637,7 @@ _operation_registry.update({
     ops.Modulus: _mod,
 
     # dates and times
+    ops.Date: unary(lambda x: sa.cast(x, sa.Date)),
     ops.DateTruncate: _timestamp_truncate,
     ops.TimestampTruncate: _timestamp_truncate,
     ops.IntervalFromInteger: _interval_from_integer,
