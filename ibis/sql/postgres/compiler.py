@@ -640,8 +640,12 @@ _operation_registry.update({
     ops.DateTruncate: _timestamp_truncate,
     ops.TimestampTruncate: _timestamp_truncate,
     ops.IntervalFromInteger: _interval_from_integer,
+    ops.DateAdd: infix_op('+'),
+    ops.DateSub: infix_op('-'),
+    ops.DateDiff: infix_op('-'),
     ops.TimestampAdd: infix_op('+'),
-    ops.TimestampSubtract: infix_op('-'),
+    ops.TimestampSub: infix_op('-'),
+    ops.TimestampDiff: infix_op('-'),
 
     ops.Strftime: _strftime,
     ops.ExtractYear: _extract('year'),

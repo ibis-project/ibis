@@ -630,32 +630,12 @@ def _timestamp_op(func):
     return _formatter
 
 
-_date_add = _timestamp_op('date_add')
-_timestamp_add = _timestamp_op('date_add')
-
-
-def _date_subtract(translator, expr):
+def _timestamp_diff(translator, expr):
     op = expr.op()
     left, right = op.args
 
-    if isinstance(right, ir.DateValue):
-        func = _timestamp_op('datediff')
-    else:
-        func = _timestamp_op('date_sub')
-
-    return func(translator, expr)
-
-
-def _timestamp_subtract(translator, expr):
-    op = expr.op()
-    left, right = op.args
-
-    if isinstance(right, ir.TimestampValue):
-        return 'unix_timestamp({}) - unix_timestamp({})'.format(
-            translator.translate(left), translator.translate(right))
-    else:
-        func = _timestamp_op('date_sub')
-        return func(translator, expr)
+    return 'unix_timestamp({}) - unix_timestamp({})'.format(
+        translator.translate(left), translator.translate(right))
 
 
 # ---------------------------------------------------------------------
@@ -1114,10 +1094,12 @@ _operation_registry = {
 
     ops.TableArrayView: _table_array_view,
 
-    ops.DateAdd: _date_add,
-    ops.DateSubtract: _date_subtract,
-    ops.TimestampAdd: _timestamp_add,
-    ops.TimestampSubtract: _timestamp_subtract,
+    ops.DateAdd: _timestamp_op('date_add'),
+    ops.DateSub: _timestamp_op('date_sub'),
+    ops.DateDiff: _timestamp_op('datediff'),
+    ops.TimestampAdd: _timestamp_op('date_add'),
+    ops.TimestampSub: _timestamp_op('date_sub'),
+    ops.TimestampDiff: _timestamp_diff,
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,
