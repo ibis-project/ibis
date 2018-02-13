@@ -400,7 +400,7 @@ Consider the SQL idiom:
 
 .. code-block:: sql
 
-   SELECT {{ COLUMN_EXPR }}, count(*)
+   SELECT some_column_expression, count(*)
    FROM table
    GROUP BY 1
 
