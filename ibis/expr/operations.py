@@ -487,7 +487,6 @@ class StringFind(ValueOp):
     substr = rlz.string
     start = rlz.optional(rlz.integer)
     end = rlz.optional(rlz.integer)
-
     output_type = rules.shape_like_arg(0, 'int64')
 
 

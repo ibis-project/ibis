@@ -59,9 +59,11 @@ def allof(inners, arg):
 @validator
 def listof(inner, arg, min_length=0):
     if not isinstance(arg, (tuple, list)):
-        raise com.IbisTypeError('The received arg ... is not a list')
+        raise com.IbisTypeError('Arg is not an instance of list or tuple')
     if len(arg) < min_length:
-        raise com.IbisTypeError('The args length is smaller than ...')
+        raise com.IbisTypeError(
+            'Arg must have at least {} number of elements'.format(min_length)
+        )
     return ir.sequence(list(map(inner, arg)))
 
 
@@ -89,9 +91,6 @@ def value(dtype, arg):
 
     if not isinstance(arg, ir.Expr):
         arg = ir.literal(arg)
-    # arg = ir.as_value_expr(arg)  # to literal instead
-    # TODO: dockstring
-    # TODO: create default message
 
     if dt.issubtype(arg.type(), dtype):  # TODO: remove this, should not be required
         return arg  # subtype of expected

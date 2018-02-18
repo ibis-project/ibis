@@ -26,11 +26,6 @@ def mayraise(error):
         return not_raises()
 
 
-# def test_validator():
-#     # TODO
-#     pass
-
-
 @pytest.mark.parametrize(('value', 'expected'), [
     (dt.int32, dt.int32),
     ('int64', dt.int64),
@@ -63,7 +58,7 @@ def test_instanceof(klass, value, expected):
     (dt.string, 'bar', ir.literal('bar')),
     (dt.string, 1, IbisTypeError),
     (dt.Array(dt.float), [3.4, 5.6], ir.literal([3.4, 5.6])),
-    (dt.Array(dt.float), ['s'], IbisTypeError),
+    (dt.Array(dt.float), ['s'], IbisTypeError),  # TODO fails because of incorrect subtype cecking
     (dt.Map(dt.string, dt.Array(dt.boolean)),
      {'a': [True, False], 'b': [True]},
      ir.literal({'a': [True, False], 'b': [True]})),
@@ -109,6 +104,22 @@ def test_optional(validator, value, expected):
 def test_isin(values, value, expected):
     with mayraise(expected):
         assert rlz.isin(values, value) == expected
+
+
+@pytest.mark.parametrize(('validator', 'values', 'expected'), [
+    (rlz.listof(identity), 3, IbisTypeError),
+    (rlz.listof(identity), (3, 2), ir.sequence([3, 2])),
+    (rlz.listof(rlz.integer), (3, 2), ir.sequence([3, 2])),
+    (rlz.listof(rlz.integer), (3, None), IbisTypeError),
+    (rlz.listof(rlz.string), 'asd', IbisTypeError),
+    (rlz.listof(rlz.double, min_length=2), [1], IbisTypeError),
+    (rlz.listof(rlz.boolean, min_length=2), [True, False],
+     ir.sequence([True, False]))
+])
+def test_listof(validator, values, expected):
+    with mayraise(expected):
+        result = validator(values)
+        assert result.equals(expected)
 
 
 # def test_interval():
