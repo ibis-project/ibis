@@ -49,8 +49,6 @@ class Bucket(BucketLike):
 
     def __init__(self, arg, buckets, closed='left', close_extreme=True,
                  include_under=False, include_over=False):
-        # self.arg = arg
-        # self.buckets = buckets
         closed = _validate_closed(closed)
 
         close_extreme = bool(close_extreme)
@@ -85,11 +83,6 @@ class Histogram(BucketLike):
 
     def __init__(self, arg, nbins, binwidth, base, closed='left',
                  aux_hash=None):
-        # self.arg = arg
-        # self.nbins = nbins
-        # self.binwidth = binwidth
-        # self.base = base
-
         if nbins is None:
             if binwidth is None:
                 raise ValueError('Must indicate nbins or binwidth')
@@ -97,7 +90,6 @@ class Histogram(BucketLike):
             raise ValueError('nbins and binwidth are mutually exclusive')
 
         closed = _validate_closed(closed)
-        aux_hash = aux_hash
 
         super(Histogram, self).__init__(arg, nbins, binwidth, base, closed,
                                         aux_hash)
@@ -116,14 +108,12 @@ class CategoryLabel(ir.ValueOp):
 
     def __init__(self, arg, labels, nulls):
         arg = ops.as_value_expr(arg)
-        # labels = labels
 
         card = arg.type().cardinality
         if len(labels) != card:
             raise ValueError('Number of labels must match number of '
                              'categories: %d' % card)
 
-        # self.nulls = nulls
         super(CategoryLabel, self).__init__(arg, labels, nulls)
 
     def output_type(self):

@@ -1573,7 +1573,7 @@ class Select(DDL):
         formatted = []
         for expr in self.order_by:
             key = expr.op()
-            translated = self._translate(key.expr)
+            translated = self._translate(key.by)
             if not key.ascending:
                 translated += ' DESC'
             formatted.append(translated)

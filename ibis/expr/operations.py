@@ -18,8 +18,6 @@ import itertools
 
 import toolz
 
-# from ibis.expr.types import TableColumn  # noqa
-
 from ibis.expr.schema import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
 from ibis.expr.types import (Node, as_value_expr, Expr,
@@ -120,27 +118,11 @@ class UnboundTable(PhysicalTable):
     schema = rlz.schema
     name = rlz.optional(rlz.instanceof(six.string_types), default=genname)
 
-    # def __init__(self, schema, name=None):
-    #     if name is None:
-    #         name = genname()
-    #     TableNode.__init__(self, [schema, name])
-    #     HasSchema.__init__(self, schema, name=name)
-
 
 class DatabaseTable(PhysicalTable):
-    name = rlz.instanceof(six.string_types)#string
+    name = rlz.instanceof(six.string_types)
     schema = rlz.schema
     source = rlz.noop
-
-    # """
-
-    # """
-
-    # def __init__(self, name, schema, source):
-    #     self.source = source
-
-    #     TableNode.__init__(self, [name, schema, source])
-    #     HasSchema.__init__(self, schema, name=name)
 
     def change_name(self, new_name):
         return type(self)(new_name, self.args[1], self.source)
@@ -152,11 +134,6 @@ class SQLQueryResult(TableNode, HasSchema):
     query = rlz.noop
     schema = rlz.schema
     source = rlz.noop
-
-    # def __init__(self, query, schema, source):
-    #     self.query = query
-    #     TableNode.__init__(self, [query, schema, source])
-    #     HasSchema.__init__(self, schema)
 
     def blocks(self):
         return True
@@ -562,7 +539,7 @@ class FuzzySearch(ValueOp, BooleanValueOp):
 class StringSQLLike(FuzzySearch):
     arg = rlz.string
     pattern = rlz.string
-    escape = rlz.optional(rlz.string)
+    escape = rlz.optional(rlz.string)  # TODO six.string_types
 
 
 class RegexSearch(FuzzySearch):
@@ -1102,12 +1079,9 @@ class Distinct(TableNode, HasSchema):
 
     table = rlz.instanceof(ir.TableExpr)
 
-    # def __init__(self, table):
-    #     self.table = table
-
-    #     TableNode.__init__(self, [table])
-    #     schema = self.table.schema()
-    #     HasSchema.__init__(self, schema)
+    def __init__(self, table):
+        super(Distinct, self).__init__(table)
+        self.schema  # TODO
 
     @property
     def schema(self):
@@ -1129,10 +1103,6 @@ class DistinctColumn(ValueOp):
     """
 
     arg = rlz.noop
-
-    # def __init__(self, arg):
-    #     self.arg = arg
-    #     ValueOp.__init__(self, arg)
 
     def output_type(self):
         return type(self.arg)
@@ -1198,19 +1168,13 @@ class NotAll(All):
 
 
 class CumulativeAny(CumulativeOp):
-
-    """
-    Cumulative any
-    """
+    """Cumulative any"""
 
     output_type = rules.array_output(lambda self: 'boolean')
 
 
 class CumulativeAll(CumulativeOp):
-
-    """
-    Cumulative all
-    """
+    """Cumulative all"""
 
     output_type = rules.array_output(lambda self: 'boolean')
 
@@ -1569,10 +1533,7 @@ class MaterializedJoin(TableNode, HasSchema):
     def __init__(self, join_expr):
         assert isinstance(join_expr.op(), Join)
         super(MaterializedJoin, self).__init__(join_expr)
-        self.schema  # cleanup, this validates there is no schema overlapping
-        # TableNode.__init__(self, [join_expr])
-        # schema = self.join.op()._get_schema()
-        # HasSchema.__init__(self, schema)
+        self.schema  # TODO cleanup, this validates there is no schema overlapping
 
     @property
     def schema(self):
@@ -1614,10 +1575,8 @@ class AsOfJoin(Join):
     by = rlz.noop
 
     def __init__(self, left, right, predicates, by):
+        # TODO cleanup
         super(AsOfJoin, self).__init__(left, right, predicates)
-        # _validate_join_tables(left, right)
-        # left, right, predicates = _make_distinct_join_predicates(left, right,
-        #                                                          predicates)
         self.by = _clean_join_predicates(self.left, self.right, by)
 
 
@@ -1630,9 +1589,6 @@ class Union(TableNode, HasSchema):
     def __init__(self, left, right, distinct=False):
         super(Union, self).__init__(left, right, distinct=distinct)
         self._validate()
-        # TableNode.__init__(self, [left, right, distinct])
-        # self._validate()
-        # HasSchema.__init__(self, self.left.schema())
 
     def _validate(self):
         if not self.left.schema().equals(self.right.schema()):
@@ -1653,6 +1609,7 @@ class Limit(TableNode):
     n = rlz.validator(int)
     offset = rlz.validator(int)
 
+    # TODO:
     # _arg_names = [None, 'n', 'offset']
 
     # def __init__(self, table, n, offset=0):
@@ -1706,32 +1663,32 @@ def to_sort_key(table, key):
 
 class SortKey(ir.Node):
 
-    expr = rlz.column(rlz.any)
+    by = rlz.column(rlz.any)
     ascending = rlz.optional(rlz.validator(bool), default=True)
 
-    # _arg_names = ['by', 'ascending']
-
-    def __init__(self, expr, ascending=True):
-        if not rules.is_array(expr):
+    def __init__(self, by, ascending=True):
+        if not rules.is_array(by):
             raise com.ExpressionError('Must be an array/column expression')
-        super(SortKey, self).__init__(expr, ascending)
+        super(SortKey, self).__init__(by, ascending)
 
     def __repr__(self):
-        # Temporary
+        # Temporary  # TODO
         rows = ['Sort key:',
                 '  ascending: {0!s}'.format(self.ascending),
-                util.indent(_safe_repr(self.expr), 2)]
+                util.indent(_safe_repr(self.by), 2)]
         return '\n'.join(rows)
 
     def root_tables(self):
-        return self.expr._root_tables()
+        return self.by._root_tables()
 
     def _make_expr(self):
         return ir.SortExpr(self)
 
     def equals(self, other, cache=None):
+        # TODO: might generalize this equals based on fields
+        # requires a proxy class with equals for non expr values
         return (isinstance(other, SortKey) and
-                self.expr.equals(other.expr, cache=cache) and
+                self.by.equals(other.by, cache=cache) and
                 self.ascending == other.ascending)
 
 
@@ -1750,10 +1707,10 @@ class SelfReference(TableNode, HasSchema):
 
     table = rlz.instanceof(ir.TableExpr)
 
-    # def __init__(self, table_expr):
-    #     self.table = table_expr
-    #     TableNode.__init__(self, [table_expr])
-    #     HasSchema.__init__(self, table_expr.schema())
+    def __init__(self, table_expr):
+        super(SelfReference, self).__init__(table_expr)
+        # TODO
+        self.schema
 
     @property
     def schema(self):
@@ -1777,6 +1734,7 @@ class Selection(TableNode, HasSchema):
     predicates = rlz.noop
     sort_keys = rlz.noop
 
+    # TODO: rename arguments like the following
     #_arg_names = ['table', 'selections', 'predicates', 'sort_keys']
 
     def __init__(self, table_expr, proj_exprs=None, predicates=None,
@@ -1808,10 +1766,7 @@ class Selection(TableNode, HasSchema):
 
         super(Selection, self).__init__(
             table=table_expr, selections=clean_exprs,
-            predicates=predicates, sort_keys=sort_keys)# schema=schema)
-        # HasSchema.__init__(self, schema)
-        # Node.__init__(self, [table_expr] + [self.selections] +
-        #               [self.predicates] + [self.sort_keys])
+            predicates=predicates, sort_keys=sort_keys)
 
     def blocks(self):
         return bool(self.selections)
@@ -2008,9 +1963,6 @@ class Aggregation(TableNode, HasSchema):
     predicates = rlz.noop
     sort_keys = rlz.noop
 
-    # _arg_names = ['table', 'metrics', 'by', 'having',
-    #               'predicates', 'sort_keys']
-
     def __init__(self, table, metrics, by=None, having=None,
                  predicates=None, sort_keys=None):
         # For tables, like joins, that are not materialized
@@ -2032,18 +1984,12 @@ class Aggregation(TableNode, HasSchema):
         predicates = self._rewrite_exprs(table, predicates)
         sort_keys = self._rewrite_exprs(table, sort_keys)
 
-        # schema = self._result_schema(by, metrics)
-
         super(Aggregation, self).__init__(table=table, metrics=metrics, by=by,
                                           having=having, predicates=predicates,
                                           sort_keys=sort_keys)
         self._validate()
         self._validate_predicates()
-        #
-        # TableNode.__init__(self, [table, self.metrics, self.by,
-        #                           self.having, self.predicates,
-        #                           self.sort_keys])
-        # HasSchema.__init__(self, schema)
+        self.schema  # TODO
 
     def _rewrite_exprs(self, table, what):
         from ibis.expr.analysis import substitute_parents
@@ -2298,6 +2244,7 @@ class ReplaceValues(ValueOp):
     pass
 
 
+# TODO put to types
 class TopKExpr(ir.AnalyticExpr):
 
     def type(self):
@@ -2359,6 +2306,7 @@ class TopK(ValueOp):
     def blocks(self):
         return True
 
+    # TODO: simplify
     def __init__(self, arg, k, by=None):
         if by is None:
             by = arg.count()
@@ -2467,7 +2415,6 @@ _timestamp_units = toolz.merge(_date_units, _time_units)
 
 
 class TimestampTruncate(ValueOp):
-    # TODO: use _truncate_unit_validate
     arg = rlz.timestamp
     unit = rlz.isin(_timestamp_units)
     output_type = rules.shape_like_arg(0, dt.timestamp)
@@ -2759,10 +2706,6 @@ class MapLength(ValueOp):
 class MapValueForKey(ValueOp):
     arg = rlz.value(dt.Map(dt.any, dt.any))
     key = rlz.oneof([rlz.string, rlz.integer])
-    # input_type = [
-    #     rules.map(dt.any, dt.any),
-    #     rules.one_of((dt.string, dt.int_), name='key')
-    # ]
 
     def output_type(self):
         map_type = self.arg.type()
@@ -2791,30 +2734,23 @@ class MapValueOrDefaultForKey(ValueOp):
 
 class MapKeys(ValueOp):
     arg = rlz.value(dt.Map(dt.any, dt.any))
-    # input_type = [rules.map(dt.any, dt.any)]
     output_type = rules.type_of_arg(0)
 
 
 class MapValues(ValueOp):
     arg = rlz.value(dt.Map(dt.any, dt.any))
-    # input_type = [rules.map(dt.any, dt.any)]
     output_type = rules.type_of_arg(0)
 
 
 class MapConcat(ValueOp):
     left = rlz.value(dt.Map(dt.any, dt.any))
     right = rlz.value(dt.Map(dt.any, dt.any))
-    # input_type = [rules.map(dt.any, dt.any), rules.map(dt.any, dt.any)]
     output_type = rules.type_of_arg(0)
 
 
 class StructField(ValueOp):
     arg = rlz.instanceof(ir.StructValue)  # TODO: use datatypes instead
     field = rlz.instanceof(six.string_types)
-    # input_type = [
-    #     rules.struct,
-    #     rules.instance_of(six.string_types, name='field')
-    # ]
 
     def output_type(self):
         struct_type = self.arg.type()
