@@ -181,7 +181,7 @@ def _literal(t, expr):
 
 
 _operation_registry.update({
-    ir.Literal: _literal,
+    ops.Literal: _literal,
 
     # strings
     ops.Substring: _substr,

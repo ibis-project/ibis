@@ -142,7 +142,7 @@ def _substring(translator, expr):
     arg_, start_ = translator.translate(arg), translator.translate(start)
 
     # Clickhouse is 1-indexed
-    if length is None or isinstance(length.op(), ir.Literal):
+    if length is None or isinstance(length.op(), ops.Literal):
         if length is not None:
             length_ = length.op().value
             return 'substring({0}, {1} + 1, {2})'.format(arg_, start_, length_)
@@ -607,7 +607,7 @@ _operation_registry = {
     # Other operations
     ops.E: lambda *args: 'e()',
 
-    ir.Literal: literal,
+    ops.Literal: literal,
     ir.ValueList: _value_list,
 
     ops.Cast: _cast,
@@ -669,7 +669,7 @@ def _zero_if_null(translator, expr):
 
 
 _undocumented_operations = {
-    ir.NullLiteral: _null_literal,  # undocumented
+    ops.NullLiteral: _null_literal,  # undocumented
     ops.IsNull: unary('isNull'),
     ops.NotNull: unary('isNotNull'),
     ops.IfNull: fixed_arity('ifNull', 2),

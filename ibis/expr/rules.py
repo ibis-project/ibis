@@ -62,13 +62,15 @@ class BinaryPromoter(object):
             )
 
     def _get_int_type(self):
+        import ibis.expr.operations as ops
+
         deps = [x.op() for x in self.args]
 
-        if util.all_of(deps, ir.Literal):
+        if util.all_of(deps, ops.Literal):
             return _smallest_int_containing(
                 [self.op(deps[0].value, deps[1].value)])
-        elif util.any_of(deps, ir.Literal):
-            if isinstance(deps[0], ir.Literal):
+        elif util.any_of(deps, ops.Literal):
+            if isinstance(deps[0], ops.Literal):
                 val = deps[0].value
                 atype = self.args[1].type()
             else:

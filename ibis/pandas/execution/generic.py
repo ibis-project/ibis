@@ -36,9 +36,9 @@ from ibis.pandas.dispatch import execute, execute_node
 from ibis.pandas.execution import constants
 
 
-@execute_node.register(ir.Literal)
-@execute_node.register(ir.Literal, object)
-@execute_node.register(ir.Literal, object, dt.DataType)
+@execute_node.register(ops.Literal)
+@execute_node.register(ops.Literal, object)
+@execute_node.register(ops.Literal, object, dt.DataType)
 def execute_node_literal(op, *args, **kwargs):
     return op.value
 

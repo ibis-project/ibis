@@ -93,7 +93,7 @@ def test_simple_case_null_else(table):
 
     assert isinstance(expr, ir.StringColumn)
     assert isinstance(op.default, ir.ValueExpr)
-    assert isinstance(op.default.op(), ir.NullLiteral)
+    assert isinstance(op.default.op(), ops.NullLiteral)
 
 
 def test_multiple_case_null_else(table):
@@ -102,7 +102,7 @@ def test_multiple_case_null_else(table):
 
     assert isinstance(expr, ir.StringColumn)
     assert isinstance(op.default, ir.ValueExpr)
-    assert isinstance(op.default.op(), ir.NullLiteral)
+    assert isinstance(op.default.op(), ops.NullLiteral)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')

@@ -23,6 +23,11 @@ from ibis.expr.window import window
 
 from ibis.common import RelationError, ExpressionError, IbisTypeError
 
+
+def is_scalar_reduction(expr):
+    return isinstance(expr, ir.ScalarExpr) and ops.is_reduction(expr)
+
+
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
 # compilation later
@@ -120,7 +125,7 @@ class ScalarAggregate(object):
         return table.projection([named_expr]), name
 
     def _visit(self, expr):
-        if is_scalar_reduce(expr) and not has_multiple_bases(expr):
+        if is_scalar_reduction(expr) and not has_multiple_bases(expr):
             # An aggregation unit
             key = self._key(expr)
             if key not in self.memo:
@@ -229,10 +234,6 @@ def find_immediate_parent_tables(expr):
     return lin.traverse(finder, expr)
 
 
-def is_scalar_reduce(x):
-    return isinstance(x, ir.ScalarExpr) and ops.is_reduction(x)
-
-
 def substitute_parents(expr, lift_memo=None, past_projection=True):
     rewriter = ExprSimplifier(expr, lift_memo=lift_memo,
                               block_projection=not past_projection)
@@ -257,7 +258,7 @@ class ExprSimplifier(object):
     def get_result(self):
         expr = self.expr
         node = expr.op()
-        if isinstance(node, ir.Literal):
+        if isinstance(node, ops.Literal):
             return expr
 
         # For table column references, in the event that we're on top of a

@@ -765,7 +765,7 @@ def _substring(translator, expr):
     start_formatted = translator.translate(start)
 
     # Impala is 1-indexed
-    if length is None or isinstance(length.op(), ir.Literal):
+    if length is None or isinstance(length.op(), ops.Literal):
         lvalue = length.op().value if length is not None else None
         if lvalue:
             return 'substr({}, {} + 1, {})'.format(
@@ -786,7 +786,7 @@ def _string_find(translator, expr):
     arg_formatted = translator.translate(arg)
     substr_formatted = translator.translate(substr)
 
-    if start is not None and not isinstance(start.op(), ir.Literal):
+    if start is not None and not isinstance(start.op(), ops.Literal):
         start_fmt = translator.translate(start)
         return 'locate({}, {}, {} + 1) - 1'.format(
             substr_formatted, arg_formatted, start_fmt
@@ -1070,8 +1070,8 @@ _operation_registry = {
     # Other operations
     ops.E: lambda *args: 'e()',
 
-    ir.Literal: _literal,
-    ir.NullLiteral: _null_literal,
+    ops.Literal: _literal,
+    ops.NullLiteral: _null_literal,
 
     ir.ValueList: _value_list,
 

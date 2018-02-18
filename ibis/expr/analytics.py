@@ -17,6 +17,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.rules as rules
 import ibis.expr.operations as ops
+import ibis.expr.rlz as rlz
 
 
 def _validate_closed(closed):
@@ -39,29 +40,34 @@ class BucketLike(ir.ValueOp):
 
 class Bucket(BucketLike):
 
+    arg = rlz.noop
+    buckets = rlz.noop
+    closed = rlz.noop
+    close_extreme = rlz.noop
+    include_under = rlz.noop
+    include_over = rlz.noop
+
     def __init__(self, arg, buckets, closed='left', close_extreme=True,
                  include_under=False, include_over=False):
-        self.arg = arg
-        self.buckets = buckets
-        self.closed = _validate_closed(closed)
+        # self.arg = arg
+        # self.buckets = buckets
+        closed = _validate_closed(closed)
 
-        self.close_extreme = bool(close_extreme)
-        self.include_over = bool(include_over)
-        self.include_under = bool(include_under)
+        close_extreme = bool(close_extreme)
+        include_over = bool(include_over)
+        include_under = bool(include_under)
 
         if not len(buckets):
             raise ValueError('Must be at least one bucket edge')
         elif len(buckets) == 1:
-            if not self.include_under or not self.include_over:
+            if not include_under or not include_over:
                 raise ValueError(
                     'If one bucket edge provided, must have '
                     'include_under=True and include_over=True'
                 )
 
-        super(Bucket, self).__init__(
-            arg, buckets, self.closed,
-            self.close_extreme, self.include_under, self.include_over
-        )
+        super(Bucket, self).__init__(arg, buckets, closed, close_extreme,
+                                     include_under, include_over)
 
     @property
     def nbuckets(self):
@@ -70,26 +76,31 @@ class Bucket(BucketLike):
 
 class Histogram(BucketLike):
 
-    def __init__(
-        self, arg, nbins, binwidth, base, closed='left', aux_hash=None
-    ):
-        self.arg = arg
-        self.nbins = nbins
-        self.binwidth = binwidth
-        self.base = base
+    arg = rlz.noop
+    nbins = rlz.noop
+    binwidth = rlz.noop
+    base = rlz.noop
+    closed = rlz.noop
+    aux_hash = rlz.noop
 
-        if self.nbins is None:
-            if self.binwidth is None:
+    def __init__(self, arg, nbins, binwidth, base, closed='left',
+                 aux_hash=None):
+        # self.arg = arg
+        # self.nbins = nbins
+        # self.binwidth = binwidth
+        # self.base = base
+
+        if nbins is None:
+            if binwidth is None:
                 raise ValueError('Must indicate nbins or binwidth')
-        elif self.binwidth is not None:
+        elif binwidth is not None:
             raise ValueError('nbins and binwidth are mutually exclusive')
 
-        self.closed = _validate_closed(closed)
-        self.aux_hash = aux_hash
+        closed = _validate_closed(closed)
+        aux_hash = aux_hash
 
-        super(Histogram, self).__init__(
-            arg, nbins, binwidth, base, self.closed, aux_hash
-        )
+        super(Histogram, self).__init__(arg, nbins, binwidth, base, closed,
+                                        aux_hash)
 
     def output_type(self):
         # always undefined cardinality (for now)
@@ -99,17 +110,21 @@ class Histogram(BucketLike):
 
 class CategoryLabel(ir.ValueOp):
 
-    def __init__(self, arg, labels, nulls):
-        self.arg = ops.as_value_expr(arg)
-        self.labels = labels
+    arg = rlz.noop
+    labels = rlz.noop
+    nulls = rlz.noop
 
-        card = self.arg.type().cardinality
+    def __init__(self, arg, labels, nulls):
+        arg = ops.as_value_expr(arg)
+        # labels = labels
+
+        card = arg.type().cardinality
         if len(labels) != card:
             raise ValueError('Number of labels must match number of '
                              'categories: %d' % card)
 
-        self.nulls = nulls
-        super(CategoryLabel, self).__init__(self.arg, labels, nulls)
+        # self.nulls = nulls
+        super(CategoryLabel, self).__init__(arg, labels, nulls)
 
     def output_type(self):
         return rules.shape_like(self.arg, 'string')

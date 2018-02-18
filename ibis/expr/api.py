@@ -64,6 +64,7 @@ import ibis.expr.operations as _ops
 import ibis.util as util
 
 
+
 __all__ = [
     'infer_dtype', 'infer_schema',
     'schema', 'table', 'literal', 'expr_list',
@@ -672,7 +673,7 @@ def coalesce(*args):
     -------
     coalesced : type of first provided argument
     """
-    return _ops.Coalesce(*args).to_expr()
+    return _ops.Coalesce(args).to_expr()
 
 
 def greatest(*args):
@@ -684,7 +685,7 @@ def greatest(*args):
     -------
     greatest : type depending on arguments
     """
-    return _ops.Greatest(*args).to_expr()
+    return _ops.Greatest(args).to_expr()
 
 
 def least(*args):
@@ -696,7 +697,7 @@ def least(*args):
     -------
     least : type depending on arguments
     """
-    return _ops.Least(*args).to_expr()
+    return _ops.Least(args).to_expr()
 
 
 def where(boolean_expr, true_expr, false_null_expr):
@@ -1131,7 +1132,7 @@ def _wrap_summary_metrics(metrics, prefix):
 def expr_list(exprs):
     for e in exprs:
         e.get_name()
-    return ir.ExpressionList(exprs).to_expr()
+    return _ops.ExpressionList(exprs).to_expr()
 
 
 _generic_column_methods = dict(
@@ -1869,7 +1870,7 @@ def _string_split(arg, delimiter):
 
 
 def _string_concat(*args):
-    return _ops.StringConcat(*args).to_expr()
+    return _ops.StringConcat(args).to_expr()
 
 
 def _string_dunder_contains(arg, substr):
@@ -2809,9 +2810,9 @@ def _table_materialize(table):
     """
     if table._is_materialized():
         return table
-    else:
-        op = _ops.MaterializedJoin(table)
-        return TableExpr(op)
+
+    op = _ops.MaterializedJoin(table)
+    return TableExpr(op)
 
 
 def add_column(table, expr, name=None):

@@ -30,12 +30,13 @@ from ibis.compat import PY2
 
 from ibis import literal
 from ibis.tests.util import assert_equal
+import ibis.expr.rlz as rlz
 
 
 def test_null():
     expr = ibis.literal(None)
     assert isinstance(expr, ir.NullScalar)
-    assert isinstance(expr.op(), ir.NullLiteral)
+    assert isinstance(expr.op(), ops.NullLiteral)
     assert expr._arg.value is None
 
     expr2 = ibis.null()
@@ -73,7 +74,7 @@ def test_literal_cases(value, expected_type):
     expr = ibis.literal(value)
     klass = dt.scalar_type(expected_type)
     assert isinstance(expr, klass)
-    assert isinstance(expr.op(), ir.Literal)
+    assert isinstance(expr.op(), ops.Literal)
     assert expr.op().value is value
 
 
@@ -128,7 +129,7 @@ def test_literal_complex_types(value, expected_type, expected_class):
     expr_type = expr.type()
     assert expr_type.equals(dt.validate_type(expected_type))
     assert isinstance(expr, expected_class)
-    assert isinstance(expr.op(), ir.Literal)
+    assert isinstance(expr.op(), ops.Literal)
     assert expr.op().value is value
 
 
@@ -1174,8 +1175,7 @@ def test_custom_type_binary_operations():
         __radd__ = __add__
 
     class FooNode(ops.ValueOp):
-
-        input_type = [ibis.expr.rules.integer(name='value')]
+        value = rlz.integer
 
         def output_type(self):
             return Foo
@@ -1193,13 +1193,13 @@ def test_custom_type_binary_operations():
     assert isinstance(result.op(), FooNode)
 
 
+# FIXME
 def test_empty_array_as_argument():
     class Foo(ir.Expr):
         pass
 
     class FooNode(ops.ValueOp):
-
-        input_type = [rules.array(dt.int64, name='value')]
+        value = rlz.value(dt.Array(dt.int64))
 
         def output_type(self):
             return Foo

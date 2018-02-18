@@ -118,7 +118,7 @@ def _string_find(translator, expr):
 
 def _translate_pattern(translator, pattern):
     # add 'r' to string literals to indicate to BigQuery this is a raw string
-    return 'r' * isinstance(pattern.op(), ir.Literal) + translator.translate(
+    return 'r' * isinstance(pattern.op(), ops.Literal) + translator.translate(
         pattern
     )
 
@@ -321,7 +321,7 @@ _operation_registry.update({
     # BigQuery doesn't have these operations built in.
     # ops.ArrayRepeat: _array_repeat,
     # ops.ArraySlice: _array_slice,
-    ir.Literal: _literal,
+    ops.Literal: _literal,
     ops.Arbitrary: _arbitrary,
 
     ops.TimestampTruncate: _truncate('TIMESTAMP', _timestamp_units),

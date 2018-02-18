@@ -595,7 +595,7 @@ def _day_of_week_name(t, expr):
 
 
 _operation_registry.update({
-    ir.Literal: _literal,
+    ops.Literal: _literal,
 
     # We override this here to support time zones
     ops.TableColumn: _table_column,

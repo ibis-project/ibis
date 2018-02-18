@@ -188,16 +188,6 @@ def test_precedence_with_no_arguments():
     assert str(e.value) == 'Must pass at least one expression'
 
 
-def test_rule_instance_of():
-    class MyOperation(types.Node):
-        input_type = [rules.instance_of(types.IntegerValue)]
-
-    MyOperation([api.literal(5)])
-
-    with pytest.raises(IbisError):
-        MyOperation([api.literal('string')])
-
-
 def test_literal_mixed_type_fails():
     data = [1, 'a']
     with pytest.raises(TypeError):

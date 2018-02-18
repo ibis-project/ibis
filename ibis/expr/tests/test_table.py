@@ -701,6 +701,7 @@ def test_value_counts_unnamed_expr(con):
 def test_aggregate_unnamed_expr(con):
     nation = con.table('tpch_nation')
     expr = nation.n_name.lower().left(1)
+    print(expr)
     with pytest.raises(com.ExpressionError):
         nation.group_by(expr).aggregate(nation.count().name('metric'))
 
@@ -745,7 +746,7 @@ def test_asof_join_with_by():
     right = ibis.table(
         [('time', 'int32'), ('key', 'int32'), ('value2', 'double')])
     joined = api.asof_join(left, right, 'time', by='key')
-    by = joined.op().by_predicates[0].op()
+    by = joined.op().by[0].op()
     assert by.left.op().name == by.right.op().name == 'key'
 
 

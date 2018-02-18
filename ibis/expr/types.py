@@ -29,6 +29,9 @@ import ibis.config as config
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
+from collections import OrderedDict
+import collections
+
 
 class Expr(object):
 
@@ -238,49 +241,96 @@ def _safe_repr(x, memo=None):
     return x._repr(memo=memo) if isinstance(x, (Expr, Node)) else repr(x)
 
 
+def pina(names, args, kwargs):
+    # TODO: docstrings
+    # TODO: error messages
+    assert len(args) <= len(names)
+
+    result = dict(zip(names, args))
+    assert not (set(result.keys()) & set(kwargs.keys()))
+
+    for name in names[len(result):]:
+        result[name] = kwargs.get(name, None)
+
+    return result
+
+
+from toolz import unique, curry
+
+
+class validator(curry):
+    pass
+
+
+class Argument(object):
+
+    __slots__ = 'name', 'validate'
+
+    def __init__(self, name, rule):
+        self.name = '_' + name
+        self.validate = rule
+
+    def __get__(self, obj, objtype):
+        return getattr(obj, self.name)
+
+    def __set__(self, obj, value):
+        setattr(obj, self.name, self.validate(value))
+
+
 class OperationMeta(type):
 
+    @classmethod
+    def __prepare__(metacls, name, bases, **kwds):
+        return OrderedDict()
+
     def __new__(cls, name, parents, dct):
-        if 'input_type' in dct:
-            from ibis.expr.rules import TypeSignature, signature
-            sig = dct['input_type']
-            if not isinstance(sig, TypeSignature):
-                dct['input_type'] = sig = signature(sig)
+        print('CREATING {}'.format(name))
 
-                for i, t in enumerate(sig.types):
-                    if t.name is None:
-                        continue
+        # TODO: cleanup
+        # TODO: consider removing expr cache
+        slots, args = ['_expr_cached'], []
+        for parent in parents:
+            # TODO: use ordereddicts to allow overriding
+            if hasattr(parent, '__slots__'):
+                slots += parent.__slots__
+            if hasattr(parent, '_arg_names'):
+                args += parent._arg_names
 
-                    if t.name not in dct:
-                        dct[t.name] = _arg_getter(i, doc=t.doc)
+        # TODO should use signature
+        # and merge parents signature with child signature
 
-        return super(OperationMeta, cls).__new__(cls, name, parents, dct)
+        odict = OrderedDict()
+        for key, value in dct.items():
+            if isinstance(value, validator):
+                # TODO: make it cleaner
+                arg = Argument(key, value)
+                args.append(key)
+                slots.append(arg.name)
+                odict[key] = arg
+            else:
+                odict[key] = value
+
+        odict['__slots__'] = tuple(unique(slots))
+        odict['_arg_names'] = tuple(unique(args))
+        return super(OperationMeta, cls).__new__(cls, name, parents, odict)
 
 
 class Node(six.with_metaclass(OperationMeta, object)):
 
-    """
-    Node is the base class for all relational algebra and analytical
-    functionality. It transforms the input expressions into an output
-    expression.
+    # __init__ should read the signature property of class instead of using descriptors
+    # then run validators on arguments
+    # then set to the according underscored slot
+    # after that call self._validate to support validating more arguments together
 
-    Each node implementation is responsible for validating the inputs,
-    including any type promotion and / or casting issues, and producing a
-    well-typed expression
-
-    Note that Node is deliberately not made an expression subclass: think
-    of Node as merely a typed expression builder.
-    """
-
-    def __init__(self, args=None):
-        args = args or []
-        self.args = self._validate_args(args)
-
-    def _validate_args(self, args):
-        if not hasattr(self, 'input_type'):
-            return args
-
-        return self.input_type.validate(args)
+    def __init__(self, *args, **kwargs):
+        self._expr_cached = None
+        # TODO: pot as_value_expr here
+        # TODO: in case of missing value pass None else literal(None) -> null
+        for k, v in pina(self._arg_names, args, kwargs).items():
+            setattr(self, k, v)
+        # TODO: check for validate functions to support validating more arguments at once, like table operatrions need
+        # it might be a simple post validation in for def validate(self):
+        # TODO: be able do define additional slots in childs
 
     def __repr__(self):
         return self._repr()
@@ -352,9 +402,10 @@ class Node(six.with_metaclass(OperationMeta, object)):
 
         return self.equals(other)
 
-    _expr_cached = None
+    # _expr_cached = None
 
     def to_expr(self):
+        # _expr_cache is set in the metaclass
         if self._expr_cached is None:
             self._expr_cached = self._make_expr()
         return self._expr_cached
@@ -371,13 +422,21 @@ class Node(six.with_metaclass(OperationMeta, object)):
         raise NotImplementedError
 
     @property
-    def _arg_names(self):
-        try:
-            input_type = self.__class__.input_type
-        except AttributeError:
-            return []
-        else:
-            return [t.name for t in getattr(input_type, 'types', [])]
+    def args(self):
+        return tuple(getattr(self, name) for name in self._arg_names)
+
+
+class ValueOp(Node):
+
+    def root_tables(self):
+        exprs = [arg for arg in self.args if isinstance(arg, Expr)]
+        return distinct_roots(*exprs)
+
+    def resolve_name(self):
+        raise com.ExpressionError('Expression is not named: %s' % repr(self))
+
+    def has_resolved_name(self):
+        return False
 
 
 def all_equal(left, right, cache=None):
@@ -394,79 +453,7 @@ def all_equal(left, right, cache=None):
     return left == right
 
 
-def _arg_getter(i, doc=None):
-    def arg_accessor(self):
-        return self.args[i]
-    return property(arg_accessor, doc=doc)
-
-
-class ValueOp(Node):
-
-    def __init__(self, *args):
-        super(ValueOp, self).__init__(args)
-
-    def root_tables(self):
-        exprs = [arg for arg in self.args if isinstance(arg, Expr)]
-        return distinct_roots(*exprs)
-
-    def resolve_name(self):
-        raise com.ExpressionError('Expression is not named: %s' % repr(self))
-
-    def has_resolved_name(self):
-        return False
-
-
-class TableColumn(ValueOp):
-
-    """
-    Selects a column from a TableExpr
-    """
-
-    def __init__(self, name, table_expr):
-        schema = table_expr.schema()
-        if isinstance(name, six.integer_types):
-            name = schema.name_at_position(name)
-
-        super(TableColumn, self).__init__(name, table_expr)
-        if name not in schema:
-            raise com.IbisTypeError(
-                "'{0}' is not a field in {1}".format(name, table_expr.columns)
-            )
-
-        self.name = name
-        self.table = table_expr
-
-    def parent(self):
-        return self.table
-
-    def resolve_name(self):
-        return self.name
-
-    def has_resolved_name(self):
-        return True
-
-    def root_tables(self):
-        return self.table._root_tables()
-
-    def _make_expr(self):
-        ctype = self.table._get_type(self.name)
-        klass = ctype.array_type()
-        return klass(self, name=self.name)
-
-
-class ExpressionList(Node):
-
-    def __init__(self, exprs):
-        exprs = [as_value_expr(x) for x in exprs]
-        Node.__init__(self, exprs)
-
-    def root_tables(self):
-        return distinct_roots(*self.args)
-
-    def output_type(self):
-        return ExprList
-
-
+# TODO simplify me
 class ExprList(Expr):
 
     def _type_display(self):
@@ -475,7 +462,7 @@ class ExprList(Expr):
         return ', '.join(list_args)
 
     def exprs(self):
-        return self.op().args
+        return self.op().exprs
 
     def names(self):
         return [x.get_name() for x in self.exprs()]
@@ -487,8 +474,9 @@ class ExprList(Expr):
         return sch.schema(self.names(), self.types())
 
     def rename(self, f):
+        import ibis.expr.operations as ops
         new_exprs = [x.name(f(x.get_name())) for x in self.exprs()]
-        return ExpressionList(new_exprs).to_expr()
+        return ops.ExpressionList(new_exprs).to_expr()
 
     def prefix(self, value):
         return self.rename(lambda x: value + x)
@@ -504,12 +492,13 @@ class ExprList(Expr):
         -------
         combined : ExprList
         """
+        import ibis.expr.operations as ops
         exprs = list(self.exprs())
         for o in others:
             if not isinstance(o, ExprList):
                 raise TypeError(o)
             exprs.extend(o.exprs())
-        return ExpressionList(exprs).to_expr()
+        return ops.ExpressionList(exprs).to_expr()
 
 
 def infer_literal_type(value):
@@ -518,66 +507,6 @@ def infer_literal_type(value):
         return dt.null
 
     return dt.infer(value)
-
-
-class Literal(ValueOp):
-
-    def __init__(self, value, type=None):
-        super(Literal, self).__init__(value, type)
-        self.value = value
-        self._output_type = type.scalar_type()
-
-    def __repr__(self):
-        return '{}({})'.format(
-            type(self).__name__,
-            ', '.join(map(repr, self.args))
-        )
-
-    def equals(self, other, cache=None):
-        return (
-            isinstance(other, Literal) and
-            isinstance(other.value, type(self.value)) and
-            self.value == other.value
-        )
-
-    def output_type(self):
-        return self._output_type
-
-    def root_tables(self):
-        return []
-
-
-class ScalarParameter(ValueOp):
-
-    parameter_counter = itertools.count()
-
-    def __init__(self, type):
-        super(ScalarParameter, self).__init__(type)
-        self.output_type = type.scalar_type
-        self.counter = next(self.__class__.parameter_counter)
-
-    def resolve_name(self):
-        return 'param_{:d}'.format(self.counter)
-
-    def __repr__(self):
-        return '{}(type={})'.format(type(self).__name__, self.type)
-
-    def __hash__(self):
-        return hash((self.type, self.counter))
-
-    @property
-    def type(self):
-        return self.args[0]
-
-    def equals(self, other, cache=None):
-        return (
-            isinstance(other, ScalarParameter) and
-            self.counter == other.counter and
-            self.type.equals(other.type, cache=cache)
-        )
-
-    def root_tables(self):
-        return []
 
 
 def param(type):
@@ -604,6 +533,7 @@ def param(type):
     >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
     >>> expr = t.filter(predicates).value.sum()
     """
+    import ibis.expr.operations as ops
     expr = ScalarParameter(dt.dtype(type)).to_expr()
     return expr
 
@@ -851,7 +781,9 @@ class TableExpr(Expr):
         -------
         column : array expression
         """
-        ref = TableColumn(name, self)
+        import ibis.expr.operations as ops
+
+        ref = ops.TableColumn(name, self)
         return ref.to_expr()
 
     @property
@@ -1101,11 +1033,8 @@ class NumericColumn(ColumnExpr, NumericValue):
     pass
 
 
-class NullScalar(NullValue, ScalarExpr):
-    """
-    A scalar value expression representing NULL
-    """
-    pass
+class NullScalar(ScalarExpr, NullValue):
+    """A scalar value expression representing NULL"""
 
 
 class NullColumn(ColumnExpr, NullValue):
@@ -1370,13 +1299,15 @@ def castable(source, target):
 
     Based on the underlying datatypes and the value in case of Literals
     """
+    import ibis.expr.operations as ops
     op = source.op()
-    value = op.value if isinstance(op, Literal) else None
+    value = op.value if isinstance(op, ops.Literal) else None
     return dt.castable(source.type(), target.type(), value=value)
 
 
 def cast(source, target):
     """Currently Literal to *Scalar implicit casts are allowed"""
+    import ibis.expr.operations as ops
 
     if not castable(source, target):
         raise com.IbisTypeError('Source is not castable to target type!')
@@ -1384,7 +1315,7 @@ def cast(source, target):
     # currently it prevents column -> scalar implicit castings
     # however the datatypes are matching
     op = source.op()
-    if not isinstance(op, Literal):
+    if not isinstance(op, ops.Literal):
         raise com.IbisTypeError('Only able to implicitly cast literals!')
 
     out_type = target.type().scalar_type()
@@ -1423,7 +1354,9 @@ def literal(value, type=None):
       ...
     TypeError: Value 'foobar' cannot be safely coerced to int64
     """
-    if hasattr(value, 'op') and isinstance(value.op(), Literal):
+    import ibis.expr.operations as ops
+
+    if hasattr(value, 'op') and isinstance(value.op(), ops.Literal):
         return value
 
     dtype = infer_literal_type(value)
@@ -1439,21 +1372,7 @@ def literal(value, type=None):
     if value is None or value is _NULL or value is null:
         return null().cast(dtype)
     else:
-        return Literal(value, type=dtype).to_expr()
-
-
-_NULL = None
-
-
-def null():
-    """
-    Create a NULL/NA scalar
-    """
-    global _NULL
-    if _NULL is None:
-        _NULL = NullScalar(NullLiteral())
-
-    return _NULL
+        return ops.Literal(value, dtype=dtype).to_expr()
 
 
 def sequence(values):
@@ -1470,29 +1389,6 @@ def sequence(values):
     seq : Sequence
     """
     return ValueList(values).to_expr()
-
-
-class NullLiteral(ValueOp):
-
-    """
-    Typeless NULL literal
-    """
-
-    def __init__(self):
-        self.value = None
-
-    @property
-    def args(self):
-        return [self.value]
-
-    def equals(self, other, cache=None):
-        return isinstance(other, NullLiteral)
-
-    def output_type(self):
-        return NullScalar
-
-    def root_tables(self):
-        return []
 
 
 class ListExpr(ColumnExpr, AnyValue):
@@ -1533,14 +1429,13 @@ class SortExpr(Expr):
 
 
 class ValueList(ValueOp):
+    """Data structure for a list of value expressions"""
 
-    """
-    Data structure for a list of value expressions
-    """
+    values = validator(lambda x: x)
 
     def __init__(self, args):
-        self.values = list(map(as_value_expr, args))
-        super(ValueList, self).__init__(self.values)
+        values = list(map(as_value_expr, args))
+        super(ValueList, self).__init__(values)
 
     def root_tables(self):
         return distinct_roots(*self.values)
@@ -1565,3 +1460,19 @@ def find_base_table(expr):
             r = find_base_table(arg)
             if isinstance(r, TableExpr):
                 return r
+
+
+_NULL = None
+
+
+def null():
+    """
+    Create a NULL/NA scalar
+    """
+    from ibis.expr.operations import NullLiteral
+
+    global _NULL
+    if _NULL is None:
+        _NULL = NullScalar(NullLiteral(None))
+
+    return _NULL

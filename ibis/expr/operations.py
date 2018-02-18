@@ -18,7 +18,7 @@ import itertools
 
 import toolz
 
-from ibis.expr.types import TableColumn  # noqa
+# from ibis.expr.types import TableColumn  # noqa
 
 from ibis.expr.schema import HasSchema, Schema
 from ibis.expr.rules import value, string, number, integer, boolean, list_of
@@ -31,6 +31,7 @@ import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.util as util
 import ibis.compat as compat
+import ibis.expr.rlz as rlz
 
 
 _table_names = ('t{:d}'.format(i) for i in itertools.count())
@@ -53,6 +54,42 @@ class TableNode(Node):
 
     def sort_by(self, expr, sort_exprs):
         return Selection(expr, [], sort_keys=sort_exprs)
+
+
+class TableColumn(ValueOp):
+    """Selects a column from a TableExpr"""
+
+    name = rlz.instanceof(six.string_types + six.integer_types)
+    table = rlz.instanceof(ir.TableExpr)
+
+    def __init__(self, name, table_expr):
+        schema = table_expr.schema()
+        if isinstance(name, six.integer_types):
+            name = schema.name_at_position(name)
+
+        super(TableColumn, self).__init__(name, table_expr)
+        if name not in schema:
+            raise com.IbisTypeError(
+                "'{0}' is not a field in {1}".format(name, table_expr.columns)
+            )
+
+    def parent(self):
+        return self.table
+
+    def resolve_name(self):
+        return self.name
+
+    def has_resolved_name(self):
+        return True
+
+    def root_tables(self):
+        return self.table._root_tables()
+
+    def _make_expr(self):
+        # TODO: convert it to output_type
+        ctype = self.table._get_type(self.name)
+        klass = ctype.array_type()
+        return klass(self, name=self.name)
 
 
 def find_all_base_tables(expr, memo=None):
@@ -80,40 +117,46 @@ class PhysicalTable(TableNode, HasSchema):
 
 
 class UnboundTable(PhysicalTable):
+    schema = rlz.schema
+    name = rlz.optional(rlz.instanceof(six.string_types), default=genname)
 
-    def __init__(self, schema, name=None):
-        if name is None:
-            name = genname()
-        TableNode.__init__(self, [schema, name])
-        HasSchema.__init__(self, schema, name=name)
+    # def __init__(self, schema, name=None):
+    #     if name is None:
+    #         name = genname()
+    #     TableNode.__init__(self, [schema, name])
+    #     HasSchema.__init__(self, schema, name=name)
 
 
 class DatabaseTable(PhysicalTable):
+    name = rlz.instanceof(six.string_types)#string
+    schema = rlz.schema
+    source = rlz.noop
 
-    """
+    # """
 
-    """
+    # """
 
-    def __init__(self, name, schema, source):
-        self.source = source
+    # def __init__(self, name, schema, source):
+    #     self.source = source
 
-        TableNode.__init__(self, [name, schema, source])
-        HasSchema.__init__(self, schema, name=name)
+    #     TableNode.__init__(self, [name, schema, source])
+    #     HasSchema.__init__(self, schema, name=name)
 
     def change_name(self, new_name):
         return type(self)(new_name, self.args[1], self.source)
 
 
 class SQLQueryResult(TableNode, HasSchema):
+    """A table sourced from the result set of a select query"""
 
-    """
-    A table sourced from the result set of a select query
-    """
+    query = rlz.noop
+    schema = rlz.schema
+    source = rlz.noop
 
-    def __init__(self, query, schema, source):
-        self.query = query
-        TableNode.__init__(self, [query, schema, source])
-        HasSchema.__init__(self, schema)
+    # def __init__(self, query, schema, source):
+    #     self.query = query
+    #     TableNode.__init__(self, [query, schema, source])
+    #     HasSchema.__init__(self, schema)
 
     def blocks(self):
         return True
@@ -146,13 +189,12 @@ class TableArrayView(ValueOp):
 
 
 class UnaryOp(ValueOp):
-
-    input_type = [value]
+    arg = rlz.any
 
 
 class Cast(ValueOp):
-
-    input_type = [value, rules.data_type]
+    arg = rlz.any
+    to = rlz.datatype
 
     # see #396 for the issue preventing this
     # def resolve_name(self):
@@ -164,14 +206,12 @@ class Cast(ValueOp):
 
 
 class TypeOf(ValueOp):
-
-    input_type = [value]
+    arg = rlz.value
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class Negate(UnaryOp):
-
-    input_type = [number]
+    arg = rlz.oneof([rlz.numeric, rlz.boolean])
     output_type = rules.type_of_arg(0)
 
 
@@ -215,7 +255,8 @@ class IfNull(ValueOp):
           .else_(null_substitute_expr)
     """
 
-    input_type = [value, value(name='ifnull_expr')]
+    arg = rlz.any
+    ifnull_expr = rlz.any
 
     def output_type(self):
         args = self.args
@@ -228,8 +269,8 @@ class NullIf(ValueOp):
     """
     Set values to NULL if they equal the null_if_expr
     """
-
-    input_type = [value, value(name='null_if_expr')]
+    arg = rlz.any
+    null_if_expr = rlz.any
     output_type = rules.type_of_arg(0)
 
 
@@ -246,19 +287,17 @@ class NullIfZero(ValueOp):
     maybe_nulled : type of caller
     """
 
-    input_type = [number]
+    arg = rlz.numeric
     output_type = rules.type_of_arg(0)
 
 
 class IsNan(ValueOp):
-
-    input_type = [rules.floating]
+    arg = rlz.floating
     output_type = rules.shape_like_arg(0, 'boolean')
 
 
 class IsInf(ValueOp):
-
-    input_type = [rules.floating]
+    arg = rlz.floating
     output_type = rules.shape_like_arg(0, 'boolean')
 
 
@@ -269,12 +308,12 @@ class CoalesceLike(ValueOp):
     # values are promoted to BIGINT and floating-point values are promoted to
     # DOUBLE; use CAST() when inserting into a smaller numeric column
 
-    input_type = rules.varargs(rules.value)
+    arg = rlz.listof(rlz.any)
 
     def output_type(self):
         # TODO: how much validation is necessary that the call is valid and can
         # succeed?
-        first_value = self.args[0]
+        first_value = self.arg[0]
 
         if isinstance(first_value, ir.IntegerValue):
             out_type = 'int64'
@@ -283,7 +322,7 @@ class CoalesceLike(ValueOp):
         else:
             out_type = first_value.type()
 
-        return rules.shape_like_args(self.args, out_type)
+        return rules.shape_like_args(self.arg, out_type)
 
 
 class Coalesce(CoalesceLike):
@@ -308,6 +347,7 @@ class Abs(UnaryOp):
 
 
 def _ceil_floor_output(self):
+    # TODO: cleanup
     arg = self.args[0]
     if isinstance(arg, ir.DecimalValue):
         return arg._factory
@@ -326,7 +366,7 @@ class Ceil(UnaryOp):
       Decimal values: yield decimal
       Other numeric values: yield integer (int32)
     """
-    input_type = [number]
+    arg = rlz.numeric
     output_type = _ceil_floor_output
 
 
@@ -341,44 +381,41 @@ class Floor(UnaryOp):
       Decimal values: yield decimal
       Other numeric values: yield integer (int32)
     """
-
-    input_type = [number]
+    arg = rlz.numeric
     output_type = _ceil_floor_output
 
 
 class Round(ValueOp):
 
-    input_type = [value, integer(name='digits', optional=True)]
+    arg = rlz.numeric
+    digits = rlz.optional(rlz.numeric)
 
     def output_type(self):
-        arg, digits = self.args
-        if isinstance(arg, ir.DecimalValue):
-            return arg._factory
-        elif digits is None:
-            return rules.shape_like(arg, 'int64')
+        if isinstance(self.arg, ir.DecimalValue):
+            return self.arg._factory
+        elif self.digits is None:
+            return rules.shape_like(self.arg, 'int64')
         else:
-            return rules.shape_like(arg, 'double')
+            return rules.shape_like(self.arg, 'double')
 
 
 class Clip(ValueOp):
-    input_type = [value,
-                  number(name='lower', allow_boolean=False, optional=True),
-                  number(name='upper', allow_boolean=False, optional=True)]
-
+    arg = rlz.any
+    lower = rlz.optional(rlz.numeric)  # don't allow boolean
+    upper = rlz.optional(rlz.numeric)  # don't allow boolean
     output_type = rules.type_of_arg(0)
 
 
 class BaseConvert(ValueOp):
+    arg = rlz.oneof([rlz.integer, rlz.string])
+    from_base = rlz.integer
+    to_base = rlz.integer
 
-    input_type = [rules.one_of([integer, string]),
-                  integer(name='from_base'),
-                  integer(name='to_base')]
     output_type = rules.shape_like_flatargs('string')
 
 
 class RealUnaryOp(UnaryOp):
-
-    input_type = [number]
+    arg = rlz.numeric
     output_type = rules.shape_like_arg(0, 'double')
 
 
@@ -397,170 +434,135 @@ class Sqrt(RealUnaryOp):
 
 
 class Logarithm(RealUnaryOp):
-
-    # superclass
-
-    input_type = [number(allow_boolean=False)]
+    arg = rlz.numeric  # don't allow booleans
 
 
 class Log(Logarithm):
-
-    input_type = [number(allow_boolean=False),
-                  number(name='base', optional=True)]
+    arg = rlz.numeric  # don't allow booleans
+    base = rlz.optional(rlz.numeric)
 
 
 class Ln(Logarithm):
-
-    """
-    Natural logarithm
-    """
+    """Natural logarithm"""
 
 
 class Log2(Logarithm):
-
-    """
-    Logarithm base 2
-    """
+    """Logarithm base 2"""
 
 
 class Log10(Logarithm):
-
-    """
-    Logarithm base 10
-    """
+    """Logarithm base 10"""
 
 
 class StringUnaryOp(UnaryOp):
-
-    input_type = [string]
+    arg = rlz.string
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class Uppercase(StringUnaryOp):
-
-    """
-    Convert string to all uppercase
-    """
-    pass
+    """Convert string to all uppercase"""
 
 
 class Lowercase(StringUnaryOp):
-
-    """
-    Convert string to all lowercase
-    """
-    pass
+    """Convert string to all lowercase"""
 
 
 class Reverse(StringUnaryOp):
-    pass
+    """Reverse string"""
 
 
 class Strip(StringUnaryOp):
-
-    """
-    Remove whitespace from left and right sides of string
-    """
-    pass
+    """Remove whitespace from left and right sides of string"""
 
 
 class LStrip(StringUnaryOp):
-
-    """
-    Remove whitespace from left side of string
-    """
-    pass
+    """Remove whitespace from left side of string"""
 
 
 class RStrip(StringUnaryOp):
-    """
-    Remove whitespace from right side of string
-    """
-    pass
+    """Remove whitespace from right side of string"""
 
 
 class Capitalize(StringUnaryOp):
-    pass
+    """Return a capitalized version of input string"""
 
 
 class Substring(ValueOp):
+    arg = rlz.string
+    start = rlz.integer
+    length = rlz.optional(rlz.integer)
 
-    input_type = [string, integer(name='start'),
-                  integer(name='length', optional=True)]
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class StrRight(ValueOp):
-
-    input_type = [string, integer(name='nchars')]
+    arg = rlz.string
+    nchars = rlz.integer
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class Repeat(ValueOp):
-
-    input_type = [string, integer(name='times')]
+    arg = rlz.string
+    times = rlz.integer
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class StringFind(ValueOp):
+    arg = rlz.string
+    substr = rlz.string
+    start = rlz.optional(rlz.integer)
+    end = rlz.optional(rlz.integer)
 
-    input_type = [string, string(name='substr'),
-                  integer(name='start', optional=True, default=None),
-                  integer(name='end', optional=True, default=None)]
     output_type = rules.shape_like_arg(0, 'int64')
 
 
 class Translate(ValueOp):
-
-    input_type = [string, string(name='from_str'), string(name='to_str')]
+    arg = rlz.string
+    from_str = rlz.string
+    to_str = rlz.string
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class LPad(ValueOp):
-
-    input_type = [string, integer(name='length'),
-                  string(name='pad', optional=True)]
+    arg = rlz.string
+    length = rlz.integer
+    pad = rlz.optional(rlz.string)
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class RPad(ValueOp):
-
-    input_type = [string, integer(name='length'),
-                  string(name='pad', optional=True)]
+    arg = rlz.string
+    length = rlz.integer
+    pad = rlz.optional(rlz.string)
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class FindInSet(ValueOp):
-
-    input_type = [string(name='needle'), list_of(string, min_length=1)]
+    needle = rlz.string
+    values = rlz.listof(rlz.string, min_length=1)
     output_type = rules.shape_like_arg(0, 'int64')
 
 
 class StringJoin(ValueOp):
-
-    input_type = [string(name='sep'), list_of(string, min_length=1)]
+    sep = rlz.string
+    arg = rlz.listof(rlz.string, min_length=1)
     output_type = rules.shape_like_flatargs('string')
 
 
-class BooleanValueOp(ValueOp):
+class BooleanValueOp(object):
     pass
 
 
-class FuzzySearch(BooleanValueOp):
-
-    input_type = [string, string(name='pattern')]
+class FuzzySearch(ValueOp, BooleanValueOp):
+    arg = rlz.string
+    pattern = rlz.string
     output_type = rules.shape_like_arg(0, 'boolean')
 
 
 class StringSQLLike(FuzzySearch):
-
-    input_type = [
-        string,
-        string(name='pattern'),
-        rules.instance_of(
-            six.string_types, name='escape', default=None, optional=True
-        ),
-    ]
+    arg = rlz.string
+    pattern = rlz.string
+    escape = rlz.optional(rlz.string)
 
 
 class RegexSearch(FuzzySearch):
@@ -568,44 +570,45 @@ class RegexSearch(FuzzySearch):
 
 
 class RegexExtract(ValueOp):
-
-    input_type = [string, string(name='pattern'), integer(name='index')]
+    arg = rlz.string
+    pattern = rlz.string
+    index = rlz.integer
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class RegexReplace(ValueOp):
-
-    input_type = [string, string(name='pattern'), string(name='replacement')]
+    arg = rlz.string
+    pattern = rlz.string
+    replacement = rlz.string
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class StringReplace(ValueOp):
-
-    input_type = [string, string(name='pattern'), string(name='replacement')]
+    arg = rlz.string
+    pattern = rlz.string
+    replacement = rlz.string
     output_type = rules.shape_like_arg(0, 'string')
 
 
 class StringSplit(ValueOp):
-
-    input_type = [string, string(name='delimiter')]
+    arg = rlz.string
+    delimiter = rlz.string
     output_type = rules.shape_like_arg(0, 'array<string>')
 
 
 class StringConcat(ValueOp):
-
-    input_type = rules.varargs(rules.string)
+    arg = rlz.listof(rlz.string)
 
     def output_type(self):
         return rules.shape_like_args(self.args, 'string')
 
 
 class ParseURL(ValueOp):
-
-    input_type = [string, rules.string_options(['PROTOCOL', 'HOST', 'PATH',
-                                                'REF', 'AUTHORITY', 'FILE',
-                                                'USERINFO', 'QUERY'],
-                                               name='extract'),
-                  string(name='key', optional=True)]
+    arg = rlz.string
+    extract = rlz.isin(['PROTOCOL', 'HOST', 'PATH',
+                        'REF', 'AUTHORITY', 'FILE',
+                        'USERINFO', 'QUERY'])
+    key = rlz.optional(rlz.string)
     output_type = rules.shape_like_arg(0, 'string')
 
 
@@ -639,7 +642,8 @@ class BinaryOp(ValueOp):
     # TODO: how will overflows be handled? Can we provide anything useful in
     # Ibis to help the user avoid them?
 
-    input_type = [rules.value(name='left'), rules.value(name='right')]
+    left = rlz.any
+    right = rlz.any
 
     def __init__(self, left, right):
         super(BinaryOp, self).__init__(*self._maybe_cast_args(left, right))
@@ -655,8 +659,6 @@ class BinaryOp(ValueOp):
 
 
 class Reduction(ValueOp):
-
-    input_type = [rules.column, boolean(name='where', optional=True)]
     _reduction = True
 
 
@@ -692,8 +694,8 @@ def is_reduction(expr):
 class Count(Reduction):
     # TODO: count(col) takes down Impala, must always do count(*) in generated
     # SQL
-
-    input_type = [rules.collection, boolean(name='where', optional=True)]
+    arg = rlz.collection
+    where = rlz.optional(rlz.boolean)
 
     # TODO: counts are actually table-level operations. Let's address
     # during the SQL generation exercise
@@ -704,10 +706,9 @@ class Count(Reduction):
 
 class Arbitrary(Reduction):
 
-    input_type = [rules.column,
-                  rules.string_options(['first', 'last', 'heavy'],
-                                       name='how', default='first'),
-                  boolean(name='where', optional=True)]
+    arg = rlz.column(rlz.any)
+    how = rlz.optional(rlz.isin({'first', 'last', 'heavy'}), default='first')
+    where = rlz.optional(rlz.boolean)
 
     def output_type(self):
         # Scalar but type of caller
@@ -743,12 +744,14 @@ def _array_reduced_type(self):
 
 
 class Sum(Reduction):
-
+    arg = rlz.column(rlz.any)
+    where = rlz.optional(rlz.boolean)
     output_type = rules.scalar_output(_sum_output_type)
 
 
 class Mean(Reduction):
-
+    arg = rlz.column(rlz.any)
+    where = rlz.optional(rlz.boolean)
     output_type = rules.scalar_output(_mean_output_type)
 
 
@@ -764,37 +767,33 @@ def _coerce_integer_to_double_type(self):
 
 class Quantile(Reduction):
 
-    input_type = [value,
-                  number(name='quantile', allow_boolean=False),
-                  rules.string_options(
-                      ['linear', 'lower', 'higher',
-                       'midpoint', 'nearest'],
-                      name='interpolation',
-                      default='linear')]
+    arg = rlz.any
+    quantile = rlz.numeric  # doesn't allow boolean
+    interpolation = rlz.optional(
+        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'}),
+        default='linear'
+    )
 
     output_type = rules.scalar_output(_coerce_integer_to_double_type)
 
 
 class MultiQuantile(Quantile):
 
-    input_type = [value,
-                  rules.array(dt.double),
-                  rules.string_options(
-                      ['linear', 'lower', 'higher',
-                       'midpoint', 'nearest'],
-                      name='interpolation',
-                      default='linear')]
+    arg = rlz.any
+    quantile = rlz.value(dt.Array(dt.double))
+    interpolation = rlz.optional(
+        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'}),
+        default='linear'
+    )
 
     def output_type(self):
         return dt.Array(_coerce_integer_to_double_type(self)).scalar_type()
 
 
 class VarianceBase(Reduction):
-
-    input_type = [rules.column,
-                  rules.string_options(['sample', 'pop'],
-                                       name='how', optional=True),
-                  boolean(name='where', optional=True)]
+    arg = rlz.column(rlz.any)
+    how = rlz.optional(rlz.isin({'sample', 'pop'}))
+    where = rlz.optional(rlz.boolean)
     output_type = rules.scalar_output(_mean_output_type)
 
 
@@ -822,12 +821,14 @@ def _min_max_output_rule(self):
 
 
 class Max(Reduction):
-
+    arg = rlz.column(rlz.any)
+    where = rlz.optional(rlz.boolean)
     output_type = rules.scalar_output(_min_max_output_rule)
 
 
 class Min(Reduction):
-
+    arg = rlz.column(rlz.any)
+    where = rlz.optional(rlz.boolean)
     output_type = rules.scalar_output(_min_max_output_rule)
 
 
@@ -837,6 +838,8 @@ class HLLCardinality(Reduction):
     Approximate number of unique values using HyperLogLog algorithm. Impala
     offers the NDV built-in function for this.
     """
+    arg = rlz.column(rlz.any)
+    where = rlz.optional(rlz.boolean)
 
     def output_type(self):
         # Impala 2.0 and higher returns a DOUBLE
@@ -846,11 +849,9 @@ class HLLCardinality(Reduction):
 
 class GroupConcat(Reduction):
 
-    input_type = [
-        rules.column,
-        string(name='sep', default=','),
-        boolean(name='where', optional=True),
-    ]
+    arg = rlz.column(rlz.any)
+    sep = rlz.optional(rlz.string, default=',')
+    where = rlz.optional(rlz.boolean)
 
     def output_type(self):
         return ir.StringScalar
@@ -862,6 +863,8 @@ class CMSMedian(Reduction):
     Compute the approximate median of a set of comparable values using the
     Count-Min-Sketch algorithm. Exposed in Impala using APPX_MEDIAN.
     """
+    arg = rlz.column(rlz.any)
+    where = rlz.optional(rlz.boolean)
 
     def output_type(self):
         # Scalar but type of caller
@@ -877,6 +880,9 @@ class AnalyticOp(ValueOp):
 
 
 class WindowOp(ValueOp):
+
+    expr = rlz.noop
+    window = rlz.noop
 
     def output_type(self):
         return self.args[0].type().array_type()
@@ -932,8 +938,9 @@ def is_analytic(expr, exclude_windows=False):
 
 class ShiftBase(AnalyticOp):
 
-    input_type = [rules.column, rules.integer(name='offset', optional=True),
-                  rules.value(name='default', optional=True)]
+    arg = rlz.column(rlz.any)
+    offset = rlz.optional(rlz.integer)
+    default = rlz.optional(rlz.any)
     output_type = rules.type_of_arg(0)
 
 
@@ -973,7 +980,7 @@ class MinRank(RankBase):
     """
 
     # Equivalent to SQL RANK()
-    input_type = [rules.column]
+    arg = rlz.column(rlz.any)
 
 
 class DenseRank(RankBase):
@@ -998,7 +1005,7 @@ class DenseRank(RankBase):
     """
 
     # Equivalent to SQL DENSE_RANK()
-    input_type = [rules.column]
+    arg = rlz.column(rlz.any)
 
 
 class RowNumber(RankBase):
@@ -1018,79 +1025,61 @@ class RowNumber(RankBase):
     -------
     row_number : Int64Column, starting from 0
     """
-
     # Equivalent to SQL ROW_NUMBER()
-    pass
 
 
 class CumulativeOp(AnalyticOp):
-
-    input_type = [rules.column]
+    arg = rlz.column(rlz.any)
 
 
 class CumulativeSum(CumulativeOp):
-
-    """
-    Cumulative sum. Requires an order window.
-    """
+    """Cumulative sum. Requires an order window."""
 
     output_type = rules.array_output(_sum_output_type)
 
 
 class CumulativeMean(CumulativeOp):
-
-    """
-    Cumulative mean. Requires an order window.
-    """
+    """Cumulative mean. Requires an order window."""
 
     output_type = rules.array_output(_mean_output_type)
 
 
 class CumulativeMax(CumulativeOp):
-
-    """
-    Cumulative max. Requires an order window.
-    """
+    """Cumulative max. Requires an order window."""
 
     output_type = rules.array_output(_min_max_output_rule)
 
 
 class CumulativeMin(CumulativeOp):
-
-    """
-    Cumulative min. Requires an order window.
-    """
+    """Cumulative min. Requires an order window."""
 
     output_type = rules.array_output(_min_max_output_rule)
 
 
 class PercentRank(AnalyticOp):
-
-    input_type = [rules.column]
+    arg = rlz.column(rlz.any)
     output_type = rules.shape_like_arg(0, 'double')
 
 
 class NTile(AnalyticOp):
-
-    input_type = [rules.column, rules.integer(name='buckets')]
+    arg = rlz.column(rlz.any)
+    buckets = rlz.integer
     output_type = rules.shape_like_arg(0, 'int64')
 
 
 class FirstValue(AnalyticOp):
-
-    input_type = [rules.column]
+    arg = rlz.column(rlz.any)
     output_type = rules.type_of_arg(0)
 
 
 class LastValue(AnalyticOp):
-
-    input_type = [rules.column]
+    arg = rlz.column(rlz.any)
     output_type = rules.type_of_arg(0)
 
 
 class NthValue(AnalyticOp):
-
-    input_type = [rules.column, rules.integer]
+    arg = rlz.column(rlz.any)
+    nth = rlz.integer
     output_type = rules.type_of_arg(0)
 
 # ----------------------------------------------------------------------
@@ -1111,12 +1100,18 @@ class Distinct(TableNode, HasSchema):
     FROM table
     """
 
-    def __init__(self, table):
-        self.table = table
+    table = rlz.instanceof(ir.TableExpr)
 
-        TableNode.__init__(self, [table])
-        schema = self.table.schema()
-        HasSchema.__init__(self, schema)
+    # def __init__(self, table):
+    #     self.table = table
+
+    #     TableNode.__init__(self, [table])
+    #     schema = self.table.schema()
+    #     HasSchema.__init__(self, schema)
+
+    @property
+    def schema(self):
+        return self.table.schema()
 
     def blocks(self):
         return True
@@ -1133,9 +1128,11 @@ class DistinctColumn(ValueOp):
     for calling count()
     """
 
-    def __init__(self, arg):
-        self.arg = arg
-        ValueOp.__init__(self, arg)
+    arg = rlz.noop
+
+    # def __init__(self, arg):
+    #     self.arg = arg
+    #     ValueOp.__init__(self, arg)
 
     def output_type(self):
         return type(self.arg)
@@ -1148,8 +1145,8 @@ class DistinctColumn(ValueOp):
 
 
 class CountDistinct(Reduction):
-
-    input_type = [rules.column, boolean(name='where', optional=True)]
+    arg = rlz.column(rlz.any)
+    where = rlz.optional(rlz.boolean)
 
     def output_type(self):
         return ir.Int64Scalar
@@ -1162,8 +1159,7 @@ class Any(ValueOp):
 
     # Depending on the kind of input boolean array, the result might either be
     # array-like (an existence-type predicate) or scalar (a reduction)
-
-    input_type = [rules.column(boolean)]
+    arg = rlz.column(rlz.boolean)
 
     @property
     def _reduction(self):
@@ -1179,7 +1175,7 @@ class Any(ValueOp):
 
 class All(ValueOp):
 
-    input_type = [rules.column(boolean)]
+    arg = rlz.column(rlz.boolean)
     _reduction = True
 
     def output_type(self):
@@ -1353,11 +1349,10 @@ class SearchedCaseBuilder(object):
 
 
 class SimpleCase(ValueOp):
-
-    input_type = [value(name='base'),
-                  list_of(value, name='cases'),
-                  list_of(value, name='results'),
-                  value(name='default')]
+    base = rlz.any
+    cases = rlz.listof(rlz.any)
+    results = rlz.listof(rlz.any)
+    default = rlz.any
 
     def __init__(self, base, cases, results, default):
         assert len(cases) == len(results)
@@ -1381,10 +1376,9 @@ class SimpleCase(ValueOp):
 
 
 class SearchedCase(ValueOp):
-
-    input_type = [list_of(boolean, name='cases'),
-                  list_of(value, name='results'),
-                  value(name='default')]
+    cases = rlz.listof(rlz.boolean)
+    results = rlz.listof(rlz.any)
+    default = rlz.any
 
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
@@ -1411,9 +1405,9 @@ class Where(ValueOp):
              .when(True, true_expr)
              .else_(false_or_null_expr)
     """
-
-    input_type = [boolean(name='bool_expr'),
-                  value(name='true_expr'), value(name='false_null_expr')]
+    bool_expr = rlz.boolean
+    true_expr = rlz.any
+    false_null_expr = rlz.any
 
     def output_type(self):
         return rules.shape_like(self.args[0], self.args[1].type())
@@ -1489,16 +1483,15 @@ def _validate_join_predicates(left, right, predicates):
 
 class Join(TableNode):
 
-    _arg_names = ['left', 'right', 'predicates']
+    left = rlz.noop
+    right = rlz.noop
+    predicates = rlz.noop
 
     def __init__(self, left, right, predicates):
         _validate_join_tables(left, right)
-        (self.left,
-         self.right,
-         self.predicates) = _make_distinct_join_predicates(
-            left, right, predicates)
-
-        Node.__init__(self, [self.left, self.right, self.predicates])
+        left, right, predicates = _make_distinct_join_predicates(left, right,
+                                                                 predicates)
+        super(Join, self).__init__(left, right, predicates)
 
     def _get_schema(self):
         # For joins retaining both table schemas, merge them together here
@@ -1571,13 +1564,19 @@ class LeftAntiJoin(Join):
 
 class MaterializedJoin(TableNode, HasSchema):
 
+    join = rlz.noop
+
     def __init__(self, join_expr):
         assert isinstance(join_expr.op(), Join)
-        self.join = join_expr
+        super(MaterializedJoin, self).__init__(join_expr)
+        self.schema  # cleanup, this validates there is no schema overlapping
+        # TableNode.__init__(self, [join_expr])
+        # schema = self.join.op()._get_schema()
+        # HasSchema.__init__(self, schema)
 
-        TableNode.__init__(self, [join_expr])
-        schema = self.join.op()._get_schema()
-        HasSchema.__init__(self, schema)
+    @property
+    def schema(self):
+        return self.join.op()._get_schema()
 
     def root_tables(self):
         return self.join._root_tables()
@@ -1608,36 +1607,41 @@ class CrossJoin(InnerJoin):
 
 
 class AsOfJoin(Join):
-    _arg_names = ['left', 'right', 'predicates', 'by']
 
-    def __init__(self, left, right, predicates, by_predicates):
-        _validate_join_tables(left, right)
-        (self.left,
-         self.right,
-         self.predicates) = _make_distinct_join_predicates(
-            left, right, predicates)
-        self.by_predicates = _clean_join_predicates(
-            self.left, self.right, by_predicates)
+    left = rlz.noop
+    right = rlz.noop
+    predicates = rlz.noop
+    by = rlz.noop
 
-        Node.__init__(
-            self, [self.left, self.right, self.predicates, self.by_predicates])
+    def __init__(self, left, right, predicates, by):
+        super(AsOfJoin, self).__init__(left, right, predicates)
+        # _validate_join_tables(left, right)
+        # left, right, predicates = _make_distinct_join_predicates(left, right,
+        #                                                          predicates)
+        self.by = _clean_join_predicates(self.left, self.right, by)
 
 
 class Union(TableNode, HasSchema):
 
-    def __init__(self, left, right, distinct=False):
-        self.left = left
-        self.right = right
-        self.distinct = distinct
+    left = rlz.noop
+    right = rlz.noop
+    distinct = rlz.optional(rlz.validator(bool), default=False)
 
-        TableNode.__init__(self, [left, right, distinct])
+    def __init__(self, left, right, distinct=False):
+        super(Union, self).__init__(left, right, distinct=distinct)
         self._validate()
-        HasSchema.__init__(self, self.left.schema())
+        # TableNode.__init__(self, [left, right, distinct])
+        # self._validate()
+        # HasSchema.__init__(self, self.left.schema())
 
     def _validate(self):
         if not self.left.schema().equals(self.right.schema()):
             raise com.RelationError('Table schemas must be equal '
                                     'to form union')
+
+    @property
+    def schema(self):
+        return self.left.schema()
 
     def blocks(self):
         return True
@@ -1645,13 +1649,17 @@ class Union(TableNode, HasSchema):
 
 class Limit(TableNode):
 
-    _arg_names = [None, 'n', 'offset']
+    table = rlz.instanceof(ir.TableExpr)
+    n = rlz.validator(int)
+    offset = rlz.validator(int)
 
-    def __init__(self, table, n, offset=0):
-        super(Limit, self).__init__([table, n, offset])
-        self.table = table
-        self.n = n
-        self.offset = offset
+    # _arg_names = [None, 'n', 'offset']
+
+    # def __init__(self, table, n, offset=0):
+    #     super(Limit, self).__init__([table, n, offset])
+    #     self.table = table
+    #     self.n = n
+    #     self.offset = offset
 
     def blocks(self):
         return True
@@ -1698,16 +1706,15 @@ def to_sort_key(table, key):
 
 class SortKey(ir.Node):
 
-    _arg_names = ['by', 'ascending']
+    expr = rlz.column(rlz.any)
+    ascending = rlz.optional(rlz.validator(bool), default=True)
+
+    # _arg_names = ['by', 'ascending']
 
     def __init__(self, expr, ascending=True):
         if not rules.is_array(expr):
             raise com.ExpressionError('Must be an array/column expression')
-
-        self.expr = expr
-        self.ascending = ascending
-
-        ir.Node.__init__(self, [self.expr, self.ascending])
+        super(SortKey, self).__init__(expr, ascending)
 
     def __repr__(self):
         # Temporary
@@ -1741,10 +1748,16 @@ class DeferredSortKey(object):
 
 class SelfReference(TableNode, HasSchema):
 
-    def __init__(self, table_expr):
-        self.table = table_expr
-        TableNode.__init__(self, [table_expr])
-        HasSchema.__init__(self, table_expr.schema())
+    table = rlz.instanceof(ir.TableExpr)
+
+    # def __init__(self, table_expr):
+    #     self.table = table_expr
+    #     TableNode.__init__(self, [table_expr])
+    #     HasSchema.__init__(self, table_expr.schema())
+
+    @property
+    def schema(self):
+        return self.table.schema()
 
     def root_tables(self):
         # The dependencies of this operation are not walked, which makes the
@@ -1758,7 +1771,13 @@ class SelfReference(TableNode, HasSchema):
 
 class Selection(TableNode, HasSchema):
 
-    _arg_names = ['table', 'selections', 'predicates', 'sort_keys']
+    table = rlz.noop
+    # schema = rlz.schema
+    selections = rlz.noop
+    predicates = rlz.noop
+    sort_keys = rlz.noop
+
+    #_arg_names = ['table', 'selections', 'predicates', 'sort_keys']
 
     def __init__(self, table_expr, proj_exprs=None, predicates=None,
                  sort_keys=None):
@@ -1770,37 +1789,37 @@ class Selection(TableNode, HasSchema):
         )
         clean_exprs, schema = self._get_schema(table_expr, proj_exprs)
 
-        self.sort_keys = [
+        sort_keys = [
             to_sort_key(table_expr, k)
             for k in util.promote_list(
                 sort_keys if sort_keys is not None else []
             )
         ]
 
-        self.predicates = list(toolz.concat(map(
+        predicates = list(toolz.concat(map(
             L.flatten_predicate,
             predicates if predicates is not None else []
         )))
 
-        dependent_exprs = clean_exprs + self.sort_keys
+        dependent_exprs = clean_exprs + sort_keys
 
         table_expr._assert_valid(dependent_exprs)
-        self._validate_predicates(table_expr)
+        self._validate_predicates(table_expr, predicates)
 
-        self.selections = clean_exprs
-        self.table = table_expr
-
-        HasSchema.__init__(self, schema)
-        Node.__init__(self, [table_expr] + [self.selections] +
-                      [self.predicates] + [self.sort_keys])
+        super(Selection, self).__init__(
+            table=table_expr, selections=clean_exprs,
+            predicates=predicates, sort_keys=sort_keys)# schema=schema)
+        # HasSchema.__init__(self, schema)
+        # Node.__init__(self, [table_expr] + [self.selections] +
+        #               [self.predicates] + [self.sort_keys])
 
     def blocks(self):
         return bool(self.selections)
 
-    def _validate_predicates(self, table):
+    def _validate_predicates(self, table, predicates):
         from ibis.expr.analysis import FilterValidator
         validator = FilterValidator([table])
-        validator.validate_all(self.predicates)
+        validator.validate_all(predicates)
 
     def _validate(self, table, exprs):
         # Need to validate that the column expressions are compatible with the
@@ -1808,6 +1827,7 @@ class Selection(TableNode, HasSchema):
         # array expressions originating from the same root table expression
         table._assert_valid(exprs)
 
+    # TODO: cleanup / remove
     def _get_schema(self, table, projections):
         if not projections:
             return projections, table.schema()
@@ -1838,6 +1858,27 @@ class Selection(TableNode, HasSchema):
 
         # validate uniqueness
         return clean_exprs, Schema(names, types)
+
+    # TODO: cleanup
+    @property
+    def schema(self):
+        # Resolve schema and initialize
+        if not self.selections:
+            return self.table.schema()
+
+        types = []
+        names = []
+
+        for projection in self.selections:
+            if isinstance(projection, ValueExpr):
+                names.append(projection.get_name())
+                types.append(projection.type())
+            elif rules.is_table(projection):
+                schema = projection.schema()
+                names.extend(schema.names)
+                types.extend(schema.types)
+
+        return Schema(names, types)
 
     def substitute_table(self, table_expr):
         return Selection(table_expr, self.selections)
@@ -1960,44 +2001,51 @@ class Aggregation(TableNode, HasSchema):
     where : pre-aggregation predicate
     """
 
-    _arg_names = ['table', 'metrics', 'by', 'having',
-                  'predicates', 'sort_keys']
+    table = rlz.noop
+    metrics = rlz.noop
+    by = rlz.noop
+    having = rlz.noop
+    predicates = rlz.noop
+    sort_keys = rlz.noop
+
+    # _arg_names = ['table', 'metrics', 'by', 'having',
+    #               'predicates', 'sort_keys']
 
     def __init__(self, table, metrics, by=None, having=None,
                  predicates=None, sort_keys=None):
         # For tables, like joins, that are not materialized
-        self.table = table
-
-        self.metrics = self._rewrite_exprs(metrics)
+        metrics = self._rewrite_exprs(table, metrics)
 
         by = [] if by is None else by
-        self.by = self.table._resolve(by)
+        by = table._resolve(by)
 
-        self.having = [] if having is None else having
-
-        self.predicates = [] if predicates is None else predicates
+        having = [] if having is None else having
+        predicates = [] if predicates is None else predicates
 
         # order by only makes sense with group by in an aggregation
-        sort_keys = [] if not self.by or sort_keys is None else sort_keys
-        self.sort_keys = [to_sort_key(self.table, k)
-                          for k in util.promote_list(sort_keys)]
+        sort_keys = [] if not by or sort_keys is None else sort_keys
+        sort_keys = [to_sort_key(table, k)
+                     for k in util.promote_list(sort_keys)]
 
-        self.by = self._rewrite_exprs(self.by)
-        self.having = self._rewrite_exprs(self.having)
-        self.predicates = self._rewrite_exprs(self.predicates)
-        self.sort_keys = self._rewrite_exprs(self.sort_keys)
+        by = self._rewrite_exprs(table, by)
+        having = self._rewrite_exprs(table, having)
+        predicates = self._rewrite_exprs(table, predicates)
+        sort_keys = self._rewrite_exprs(table, sort_keys)
 
+        # schema = self._result_schema(by, metrics)
+
+        super(Aggregation, self).__init__(table=table, metrics=metrics, by=by,
+                                          having=having, predicates=predicates,
+                                          sort_keys=sort_keys)
         self._validate()
         self._validate_predicates()
+        #
+        # TableNode.__init__(self, [table, self.metrics, self.by,
+        #                           self.having, self.predicates,
+        #                           self.sort_keys])
+        # HasSchema.__init__(self, schema)
 
-        TableNode.__init__(self, [table, self.metrics, self.by,
-                                  self.having, self.predicates,
-                                  self.sort_keys])
-
-        schema = self._result_schema()
-        HasSchema.__init__(self, schema)
-
-    def _rewrite_exprs(self, what):
+    def _rewrite_exprs(self, table, what):
         from ibis.expr.analysis import substitute_parents
         what = util.promote_list(what)
 
@@ -2006,7 +2054,7 @@ class Aggregation(TableNode, HasSchema):
             if isinstance(expr, ir.ExprList):
                 all_exprs.extend(expr.exprs())
             else:
-                bound_expr = ir.bind_expr(self.table, expr)
+                bound_expr = ir.bind_expr(table, expr)
                 all_exprs.append(bound_expr)
 
         return [substitute_parents(x, past_projection=False)
@@ -2033,8 +2081,7 @@ class Aggregation(TableNode, HasSchema):
                                           .format(_safe_repr(expr)))
 
         # All non-scalar refs originate from the input table
-        all_exprs = (self.metrics + self.by + self.having +
-                     self.sort_keys)
+        all_exprs = self.metrics + self.by + self.having + self.sort_keys
         self.table._assert_valid(all_exprs)
 
     def _validate_predicates(self):
@@ -2042,12 +2089,12 @@ class Aggregation(TableNode, HasSchema):
         validator = FilterValidator([self.table])
         validator.validate_all(self.predicates)
 
-    def _result_schema(self):
+    @property
+    def schema(self):
         names = []
         types = []
 
         # All exprs must be named
-
         for e in self.by + self.metrics:
             names.append(e.get_name())
             types.append(e.type())
@@ -2096,7 +2143,8 @@ class Subtract(BinaryOp):
 
 class Divide(BinaryOp):
 
-    input_type = [number(name='left'), number(name='right')]
+    left = rlz.numeric
+    right = rlz.numeric
 
     def output_type(self):
         return rules.shape_like_args(self.args, 'double')
@@ -2118,7 +2166,7 @@ class LogicalBinaryOp(BinaryOp):
 
 class Not(UnaryOp):
 
-    input_type = [rules.boolean]
+    arg = rlz.boolean
     output_type = rules.shape_like_arg(0, 'boolean')
 
 
@@ -2190,13 +2238,11 @@ class IdenticalTo(Comparison):
     pass
 
 
-class Between(BooleanValueOp):
+class Between(ValueOp, BooleanValueOp):
 
-    input_type = [
-        rules.value(),
-        rules.value(name='lower_bound'),
-        rules.value(name='upper_bound')
-    ]
+    arg = rlz.any
+    lower_bound = rlz.any
+    upper_bound = rlz.any
 
     def output_type(self):
         arg, lower, upper = self.args
@@ -2209,19 +2255,20 @@ class Between(BooleanValueOp):
 
 class BetweenTime(Between):
 
-    input_type = [
-        rules.one_of((rules.timestamp, rules.time)),
-        rules.one_of((rules.time, rules.string), name='lower_bound'),
-        rules.one_of((rules.time, rules.string), name='upper_bound')
-    ]
+    arg = rlz.oneof([rlz.timestamp, rlz.time])
+    lower_bound = rlz.oneof([rlz.time, rlz.string])
+    upper_bound = rlz.oneof([rlz.time, rlz.string])
 
 
-class Contains(BooleanValueOp):
+class Contains(ValueOp, BooleanValueOp):
+
+    value = rlz.noop
+    options = rlz.noop
 
     def __init__(self, value, options):
-        self.value = as_value_expr(value)
-        self.options = as_value_expr(options)
-        super(Contains, self).__init__(self.value, self.options)
+        value = as_value_expr(value)
+        options = as_value_expr(options)
+        super(Contains, self).__init__(value, options)
 
     def output_type(self):
         all_args = [self.value]
@@ -2297,11 +2344,17 @@ class TopKExpr(ir.AnalyticExpr):
 
 class SummaryFilter(ValueOp):
 
+    expr = rlz.noop
+
     def output_type(self):
         return ir.BooleanColumn
 
 
 class TopK(ValueOp):
+
+    arg = rlz.noop
+    k = rlz.noop
+    by = rlz.noop
 
     def blocks(self):
         return True
@@ -2320,7 +2373,7 @@ class TopK(ValueOp):
         self.k = k
         self.by = by
 
-        Node.__init__(self, [arg, k, by])
+        super(ValueOp, self).__init__(arg, k, by)
 
     def output_type(self):
         return TopKExpr
@@ -2343,16 +2396,14 @@ class E(Constant):
 
 
 class TemporalUnaryOp(UnaryOp):
-
-    input_type = [rules.temporal]
+    arg = rlz.temporal
 
 
 class TimestampUnaryOp(UnaryOp):
+    arg = rlz.timestamp
 
-    input_type = [rules.timestamp]
 
-
-_truncate_units = dict(
+_date_units = dict(
     Y='Y',
     y='Y',
     year='Y',
@@ -2380,8 +2431,10 @@ _truncate_units = dict(
     D='D',
     J='D',
     day='D',
-    DAY='D',
+    DAY='D'
+)
 
+_time_units = dict(
     h='h',
     H='h',
     HH24='h',
@@ -2410,55 +2463,31 @@ _truncate_units = dict(
     NANOSECOND='ns',
 )
 
-
-def _truncate_unit_validate(orig_unit):
-    # TODO: truncate autocompleter
-
-    if orig_unit not in _truncate_units:
-        valid_units = set(_truncate_units.keys())
-        raise com.IbisInputError(
-            'Passed unit {} was not one of {}'.format(
-                orig_unit, repr(valid_units)
-            )
-        )
-
-    return _truncate_units[orig_unit]
+_timestamp_units = toolz.merge(_date_units, _time_units)
 
 
 class TimestampTruncate(ValueOp):
-
-    input_type = [
-        rules.timestamp,
-        rules.string_options(['Y', 'Q', 'M', 'W', 'D',
-                              'h', 'm', 's', 'ms', 'us', 'ns'], name='unit',
-                             validator=_truncate_unit_validate)
-    ]
+    # TODO: use _truncate_unit_validate
+    arg = rlz.timestamp
+    unit = rlz.isin(_timestamp_units)
     output_type = rules.shape_like_arg(0, dt.timestamp)
 
 
 class DateTruncate(ValueOp):
-
-    input_type = [
-        rules.date,
-        rules.string_options(['Y', 'Q', 'M', 'W', 'D'], name='unit',
-                             validator=_truncate_unit_validate)
-    ]
+    arg = rlz.date
+    unit = rlz.isin(_date_units)
     output_type = rules.shape_like_arg(0, dt.date)
 
 
 class TimeTruncate(ValueOp):
-
-    input_type = [
-        rules.time,
-        rules.string_options(['h', 'm', 's', 'ms', 'us', 'ns'], name='unit',
-                             validator=_truncate_unit_validate)
-    ]
+    arg = rlz.time
+    unit = rlz.isin(_time_units)
     output_type = rules.shape_like_arg(0, dt.time)
 
 
 class Strftime(ValueOp):
-
-    input_type = [rules.temporal, rules.string(name='format_str')]
+    arg = rlz.temporal
+    format_str = rlz.string
     output_type = rules.shape_like_arg(0, dt.string)
 
 
@@ -2481,14 +2510,12 @@ class ExtractMonth(ExtractTemporalField):
 
 
 class DayOfWeekIndex(UnaryOp):
-
-    input_type = [rules.one_of((dt.date, dt.timestamp))]
+    arg = rlz.oneof([rlz.date, rlz.timestamp])
     output_type = rules.shape_like_arg(0, 'int32')
 
 
 class DayOfWeekName(UnaryOp):
-
-    input_type = [rules.one_of((dt.date, dt.timestamp))]
+    arg = rlz.oneof([rlz.date, rlz.timestamp])
     output_type = rules.shape_like_arg(0, 'string')
 
 
@@ -2504,8 +2531,7 @@ class DayOfWeek(ir.Expr):
 
 
 class DayOfWeekNode(ir.Node):
-
-    input_type = [rules.one_of((dt.date, dt.timestamp))]
+    arg = rlz.oneof([rlz.date, rlz.timestamp])
 
     def output_type(self):
         return DayOfWeek
@@ -2542,14 +2568,13 @@ class Date(UnaryOp):
 
 
 class TimestampFromUNIX(ValueOp):
-
-    input_type = [value, rules.string_options(['s', 'ms', 'us'], name='unit')]
+    arg = rlz.any
+    unit = rlz.isin(['s', 'ms', 'us'])
     output_type = rules.shape_like_arg(0, 'timestamp')
 
 
 class DecimalUnaryOp(UnaryOp):
-
-    input_type = [rules.decimal]
+    arg = rlz.decimal
 
 
 class DecimalPrecision(DecimalUnaryOp):
@@ -2563,68 +2588,68 @@ class DecimalScale(UnaryOp):
 
 
 class Hash(ValueOp):
-
-    input_type = [value, rules.string_options(['fnv'], name='how')]
+    arg = rlz.any
+    how = rlz.isin({'fnv'})
     output_type = rules.shape_like_arg(0, 'int64')
 
 
 class DateAdd(Add):
-
-    input_type = [rules.date, rules.interval(units=['Y', 'Q', 'M', 'W', 'D'])]
+    left = rlz.date
+    right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D'])
     output_type = rules.shape_like_arg(0, 'date')
 
 
 class DateSub(Subtract):
-
-    input_type = [rules.date, rules.interval(units=['Y', 'Q', 'M', 'W', 'D'])]
+    left = rlz.date
+    right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D'])
     output_type = rules.shape_like_arg(0, 'date')
 
 
 class DateDiff(BinaryOp):
-
-    input_type = [rules.date, rules.date]
+    left = rlz.date
+    right = rlz.date
     output_type = rules.shape_like_arg(0, dt.Interval('D'))
 
 
 class TimeAdd(Add):
-
-    input_type = [rules.time, rules.interval(units=['h', 'm', 's'])]
+    left = rlz.time
+    right = rlz.interval(units=['h', 'm', 's'])
     output_type = rules.shape_like_arg(0, 'time')
 
 
 class TimeSub(Subtract):
-
-    input_type = [rules.time, rules.interval(units=['h', 'm', 's'])]
+    left = rlz.time
+    right = rlz.interval(units=['h', 'm', 's'])
     output_type = rules.shape_like_arg(0, 'time')
 
 
 class TimeDiff(BinaryOp):
-
-    input_type = [rules.time, rules.time]
+    left = rlz.time
+    right = rlz.time
     output_type = rules.shape_like_arg(0, dt.Interval('s'))
 
 
 class TimestampAdd(Add):
-
-    input_type = [rules.timestamp, rules.interval]
+    left = rlz.timestamp
+    right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's'])
     output_type = rules.shape_like_arg(0, 'timestamp')
 
 
 class TimestampSub(Subtract):
-
-    input_type = [rules.timestamp, rules.interval]
+    left = rlz.timestamp
+    right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's'])
     output_type = rules.shape_like_arg(0, 'timestamp')
 
 
 class TimestampDiff(BinaryOp):
-
-    input_type = [rules.timestamp, rules.timestamp]
+    left = rlz.timestamp
+    right = rlz.timestamp
     output_type = rules.shape_like_arg(0, dt.Interval('s'))
 
 
 class IntervalAdd(Add):
-
-    input_type = [rules.interval, rules.interval]
+    left = rlz.interval
+    right = rlz.interval
 
     def output_type(self):
         left, right = self.args
@@ -2642,22 +2667,17 @@ class IntervalMultiply(Multiply):
 
 
 class IntervalFloorDivide(FloorDivide):
-
-    input_type = [rules.interval, number]
+    left = rlz.interval
+    right = rlz.numeric
 
     def output_type(self):
         return rules.shape_like(self.args[0],  self.args[0].type())
 
 
 class IntervalFromInteger(ValueOp):
-
-    input_type = [
-        rules.integer,
-        rules.string_options([
-            'Y', 'Q', 'M', 'W', 'D',
-            'h', 'm', 's', 'ms', 'us', 'ns'
-        ], name='unit')
-    ]
+    arg = rlz.integer
+    unit = rlz.isin(['Y', 'Q', 'M', 'W', 'D',
+                     'h', 'm', 's', 'ms', 'us', 'ns'])
 
     @property
     def resolution(self):
@@ -2670,24 +2690,20 @@ class IntervalFromInteger(ValueOp):
 
 
 class ArrayLength(UnaryOp):
-
-    input_type = [rules.array(dt.any)]
+    arg = rlz.value(dt.Array(dt.any))
     output_type = rules.shape_like_arg(0, 'int64')
 
 
 class ArraySlice(ValueOp):
-
-    input_type = [
-        rules.array(dt.any),
-        rules.integer(name='start'),
-        rules.integer(name='stop', optional=True)
-    ]
+    arg = rlz.value(dt.Array(dt.any))
+    start = rlz.integer
+    stop = rlz.optional(rlz.integer)
     output_type = rules.type_of_arg(0)
 
 
 class ArrayIndex(ValueOp):
-
-    input_type = [rules.array(dt.any), rules.integer(name='index')]
+    arg = rlz.value(dt.Array(dt.any))
+    index = rlz.integer
 
     def output_type(self):
         value_type = self.args[0].type().value_type
@@ -2712,8 +2728,8 @@ def _array_binop_invariant_output_type(self):
 
 
 class ArrayConcat(ValueOp):
-
-    input_type = [rules.array(dt.any), rules.array(dt.any)]
+    left = rlz.value(dt.Array(dt.any))
+    right = rlz.value(dt.Array(dt.any))
 
     def output_type(self):
         result_type = _array_binop_invariant_output_type(self)
@@ -2721,8 +2737,8 @@ class ArrayConcat(ValueOp):
 
 
 class ArrayRepeat(ValueOp):
-
-    input_type = [rules.array(dt.any), integer(name='times')]
+    arg = rlz.value(dt.Array(dt.any))
+    times = rlz.integer
 
     def output_type(self):
         array_type = self.args[0].type()
@@ -2730,27 +2746,27 @@ class ArrayRepeat(ValueOp):
 
 
 class ArrayCollect(Reduction):
-
-    input_type = [rules.column]
+    arg = rlz.column(rlz.any)
     output_type = rules.scalar_output(_array_reduced_type)
 
 
 class MapLength(ValueOp):
-
-    input_type = [rules.map(dt.any, dt.any)]
+    arg = rlz.value(dt.Map(dt.any, dt.any))
+    # input_type = [rules.map(dt.any, dt.any)]
     output_type = rules.shape_like_arg(0, 'int64')
 
 
 class MapValueForKey(ValueOp):
-
-    input_type = [
-        rules.map(dt.any, dt.any),
-        rules.one_of((dt.string, dt.int_), name='key')
-    ]
+    arg = rlz.value(dt.Map(dt.any, dt.any))
+    key = rlz.oneof([rlz.string, rlz.integer])
+    # input_type = [
+    #     rules.map(dt.any, dt.any),
+    #     rules.one_of((dt.string, dt.int_), name='key')
+    # ]
 
     def output_type(self):
-        map_type = self.args[0].type()
-        return rules.shape_like(self.args[0], map_type.value_type)
+        map_type = self.arg.type()
+        return rules.shape_like(self.arg, map_type.value_type)
 
 
 class MapValueOrDefaultForKey(ValueOp):
@@ -2774,30 +2790,125 @@ class MapValueOrDefaultForKey(ValueOp):
 
 
 class MapKeys(ValueOp):
-
-    input_type = [rules.map(dt.any, dt.any)]
+    arg = rlz.value(dt.Map(dt.any, dt.any))
+    # input_type = [rules.map(dt.any, dt.any)]
     output_type = rules.type_of_arg(0)
 
 
 class MapValues(ValueOp):
-
-    input_type = [rules.map(dt.any, dt.any)]
+    arg = rlz.value(dt.Map(dt.any, dt.any))
+    # input_type = [rules.map(dt.any, dt.any)]
     output_type = rules.type_of_arg(0)
 
 
 class MapConcat(ValueOp):
-
-    input_type = [rules.map(dt.any, dt.any), rules.map(dt.any, dt.any)]
+    left = rlz.value(dt.Map(dt.any, dt.any))
+    right = rlz.value(dt.Map(dt.any, dt.any))
+    # input_type = [rules.map(dt.any, dt.any), rules.map(dt.any, dt.any)]
     output_type = rules.type_of_arg(0)
 
 
 class StructField(ValueOp):
-
-    input_type = [
-        rules.struct,
-        rules.instance_of(six.string_types, name='field')
-    ]
+    arg = rlz.instanceof(ir.StructValue)  # TODO: use datatypes instead
+    field = rlz.instanceof(six.string_types)
+    # input_type = [
+    #     rules.struct,
+    #     rules.instance_of(six.string_types, name='field')
+    # ]
 
     def output_type(self):
-        struct_type = self.args[0].type()
-        return rules.shape_like(self.args[0], struct_type[self.field])
+        struct_type = self.arg.type()
+        return rules.shape_like(self.arg, struct_type[self.field])
+
+
+class Literal(ValueOp):
+    value = rlz.noop
+    dtype = rlz.datatype
+
+    def __repr__(self):
+        return '{}({})'.format(
+            type(self).__name__,
+            ', '.join(map(repr, self.args))
+        )
+
+    def equals(self, other, cache=None):
+        return (
+            isinstance(other, Literal) and
+            isinstance(other.value, type(self.value)) and
+            self.value == other.value
+        )
+
+    def output_type(self):
+        return self.dtype.scalar_type()
+
+    def root_tables(self):
+        return []
+
+
+class NullLiteral(ValueOp):
+    """Typeless NULL literal"""
+
+    value = rlz.instanceof(type(None))
+
+    def equals(self, other, cache=None):
+        return isinstance(other, NullLiteral)
+
+    def output_type(self):
+        return ir.NullScalar
+
+    def root_tables(self):
+        return []
+
+
+class ScalarParameter(ValueOp):
+    parameter_counter = itertools.count()
+
+    dtype = rlz.datatype
+    counter = Arg(int, default=partial(next, parameter_counter))
+
+    def __repr__(self):
+        return '{}(name={!r}, dtype={})'.format(
+            type(self).__name__, self.name, self.dtype
+        )
+
+    def resolve_name(self):
+        return 'param_{:d}'.format(self.counter)
+
+    def __repr__(self):
+        return '{}(type={})'.format(type(self).__name__, self.type)
+
+    def __hash__(self):
+        return hash((self.type, self.counter))
+
+    def output_type(self):
+        return self.dtype.scalar_type()
+
+    def equals(self, other, cache=None):
+        return (
+            isinstance(other, ScalarParameter) and
+            self.counter == other.counter and
+            self.type.equals(other.type, cache=cache)
+        )
+
+    def root_tables(self):
+        return []
+
+    def resolve_name(self):
+        return self.name
+
+
+class ExpressionList(Node):
+
+    # FIXME
+    # TODO rename
+    exprs = rlz.validator(lambda x: x)
+
+    def __init__(self, exprs):
+        exprs = [as_value_expr(x) for x in exprs]
+        super(ExpressionList, self).__init__(exprs)
+
+    def root_tables(self):
+        return distinct_roots(self.exprs)
+
+    def output_type(self):
+        return ir.ExprList
