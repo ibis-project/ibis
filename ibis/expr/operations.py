@@ -19,10 +19,8 @@ import itertools
 import toolz
 
 from ibis.expr.schema import HasSchema, Schema
-from ibis.expr.rules import value, string, number, integer, boolean, list_of
-from ibis.expr.types import (Node, as_value_expr, Expr,
-                             ValueExpr, ColumnExpr, TableExpr,
-                             ValueOp, _safe_repr, distinct_roots)
+from ibis.expr.types import Node, ValueOp, as_value_expr, _safe_repr  # TODO move these to here
+
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
@@ -45,7 +43,7 @@ class TableNode(Node):
         return self.schema[name]
 
     def _make_expr(self):
-        return TableExpr(self)
+        return ir.TableExpr(self)
 
     def aggregate(self, this, metrics, by=None, having=None):
         return Aggregation(this, metrics, by=by, having=having)
@@ -96,7 +94,7 @@ def find_all_base_tables(expr, memo=None):
 
     node = expr.op()
 
-    if isinstance(expr, TableExpr) and node.blocks():
+    if isinstance(expr, ir.TableExpr) and node.blocks():
         if id(expr) not in memo:
             memo[id(node)] = expr
         return memo
@@ -147,7 +145,7 @@ class TableArrayView(ValueOp):
     """
 
     def __init__(self, table):
-        if not isinstance(table, TableExpr):
+        if not isinstance(table, ir.TableExpr):
             raise com.ExpressionError('Requires table')
 
         schema = table.schema()
@@ -888,7 +886,7 @@ class WindowOp(ValueOp):
         result = list(toolz.unique(
             itertools.chain(
                 self.args[0]._root_tables(),
-                distinct_roots(
+                ir.distinct_roots(
                     *itertools.chain(window._order_by, window._group_by)
                 )
             ),
@@ -1795,7 +1793,7 @@ class Selection(TableNode, HasSchema):
             if isinstance(projection, six.string_types):
                 projection = self.table[projection]
 
-            if isinstance(projection, ValueExpr):
+            if isinstance(projection, ir.ValueExpr):
                 names.append(projection.get_name())
                 types.append(projection.type())
             elif isinstance(projection, ir.TableExpr):
@@ -1825,7 +1823,7 @@ class Selection(TableNode, HasSchema):
         names = []
 
         for projection in self.selections:
-            if isinstance(projection, ValueExpr):
+            if isinstance(projection, ir.ValueExpr):
                 names.append(projection.get_name())
                 types.append(projection.type())
             elif isinstance(projection, ir.TableExpr):
@@ -2222,7 +2220,7 @@ class Contains(ValueOp, BooleanValueOp):
         options = self.options.op()
         if isinstance(options, ir.ValueList):
             all_args += options.values
-        elif isinstance(self.options, ColumnExpr):
+        elif isinstance(self.options, ir.ColumnExpr):
             all_args += [self.options]
         else:
             raise TypeError(type(options))
@@ -2311,7 +2309,7 @@ class TopK(ValueOp):
         if by is None:
             by = arg.count()
 
-        if not isinstance(arg, ColumnExpr):
+        if not isinstance(arg, ir.ColumnExpr):
             raise TypeError(arg)
 
         if not isinstance(k, int) or k < 0:
@@ -2844,7 +2842,7 @@ class ExpressionList(Node):
         super(ExpressionList, self).__init__(exprs)
 
     def root_tables(self):
-        return distinct_roots(self.exprs)
+        return ir.distinct_roots(self.exprs)
 
     def output_type(self):
         return ir.ExprList

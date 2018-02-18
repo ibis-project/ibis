@@ -17,12 +17,13 @@ from toolz import curry, compose, identity  # try to use cytoolz
 @validator
 def optional(inner, arg, default=None):
     if arg is None:
-        if callable(default):
-            return default()  # required by gennaame
+        if default is None:
+            return None
+        elif callable(default):
+            arg = default()  # required by gennaame
         else:
-            return default
-    else:
-        return inner(arg)
+            arg = default
+    return inner(arg)
 
 
 @validator
@@ -70,16 +71,21 @@ def datatype(arg):
 
 
 @validator
-def instanceof(typ, arg):
-    if not isinstance(arg, typ):
-        raise com.IbisTypeError('Not an instance {}'.format(str(typ)))
+def instanceof(klass, arg):
+    """Require that a value has a particular Python type."""
+    if not isinstance(arg, klass):
+        raise com.IbisTypeError(
+            '{!r} is not an instance of {!r}'.format(arg, klass)
+        )
     return arg
 
 
 @validator
 def value(dtype, arg):
     if arg is None:
-        raise com.IbisTypeError('Argument {} is mandatory'.format(dtype))
+        raise com.IbisTypeError(
+            'Value argument with datatype {} is mandatory'.format(dtype)
+        )
 
     if not isinstance(arg, ir.Expr):
         arg = ir.literal(arg)
@@ -87,13 +93,13 @@ def value(dtype, arg):
     # TODO: dockstring
     # TODO: create default message
 
-    if dt.issubtype(arg.type(), dtype):
+    if dt.issubtype(arg.type(), dtype):  # TODO: remove this, should not be required
         return arg  # subtype of expected
-    elif dt.castable(arg.type(), dtype):
+    if dt.castable(arg.type(), dtype):
         return arg  # implicitly castable
     else:
-        raise com.IbisTypeError('Given argument is not subtype of {}'
-                                ' nor implicitly castable to it'.format(dtype))
+        raise com.IbisTypeError('Given argument with datatype {} is not subtype'
+                                'of {} nor implicitly castable to it'.format(arg.type(), dtype))
 
 noop = validator(identity)
 
@@ -137,6 +143,13 @@ def column(inner, arg):
     return instanceof(ir.ColumnExpr, inner(arg))
 
 
+
 collection = instanceof((ir.ColumnExpr, ir.TableExpr))
 
 schema = instanceof(sch.Schema)
+
+
+# # TODO: insteaof allof
+# chain = validator(compose)
+
+# chain(column, integer)

@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import ibis
 from toolz import curry
 import ibis.common as com
 import ibis.expr.rules as rules
@@ -7,6 +8,8 @@ import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.expr.rlz import *
+import ibis.expr.rlz as rlz
+from ibis.common import IbisTypeError
 
 
 def test_argument_packing():
@@ -83,3 +86,62 @@ def test_unaryop():
     ops.StringReplace('asd', 'as', 'a')
     ops.StringSplit('asd', 's')
     ops.StringConcat(['s', 'e'])
+
+
+def test_instanceof_operation():
+    class MyOperation(ops.Node):
+        arg = rlz.instanceof(ir.IntegerValue)
+
+    MyOperation(ir.literal(5))
+
+    with pytest.raises(IbisTypeError):
+        MyOperation(ir.literal('string'))
+
+
+def test_array_input():
+    class MyOp(ops.ValueOp):
+        value = rlz.value(dt.Array(dt.double))
+        output_type = rules.type_of_arg(0)
+
+    raw_value = [1.0, 2.0, 3.0]
+    op = MyOp(raw_value)
+    result = op.value
+    expected = ibis.literal(raw_value)
+    assert result.equals(expected)
+
+
+# def test_scalar_value_type():
+
+#     class MyOp(ops.ValueOp):
+#         arg = rlz.scalar(rlz.numeric)
+#         output_type = rules.type_of_arg(0)
+
+#     with pytest.raises(IbisTypeError):
+#         MyOp('a')
+
+#     assert MyOp(1).args[0].equals(ibis.literal(1))
+#     assert MyOp(1.42).args[0].equals(ibis.literal(1.42))
+
+
+# def test_scalar_default_arg():
+#     class MyOp(ops.ValueOp):
+
+#         input_type = [
+#             rules.scalar(
+#                 value_type=dt.boolean,
+#                 optional=True,
+#                 default=False,
+#                 name='value'
+#             )
+#         ]
+#         output_type = rules.type_of_arg(0)
+
+#     op = MyOp()
+#     assert op.value.equals(ibis.literal(False))
+
+#     op = MyOp(True)
+#     assert op.value.equals(ibis.literal(True))
+
+
+# class MyExpr(ir.Expr):
+#     pass

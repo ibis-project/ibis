@@ -90,10 +90,10 @@ import toolz
 import ibis.expr.types as ir
 import ibis.expr.lineage as lin
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 from ibis.compat import functools
 from ibis.client import find_backends
-
 
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.pandas.dispatch import (
@@ -129,7 +129,7 @@ def find_data(expr):
         op = expr.op()
         if hasattr(op, 'source'):
             data = (op, op.source.dictionary.get(op.name, None))
-        elif isinstance(op, ir.Literal):
+        elif isinstance(op, ops.Literal):
             data = (op, op.value)
         else:
             data = None

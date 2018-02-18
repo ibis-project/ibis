@@ -205,134 +205,109 @@ def shape_like_args(args, out_type):
         return out_type.scalar_type()
 
 
-# def is_table(e):
-#     return isinstance(e, ir.TableExpr)
+# class Argument(object):
+
+#     """
+
+#     """
+
+#     def __init__(self, name=None, default=None, optional=False,
+#                  validator=None, doc=None, as_value_expr=None):
+#         self.name = name
+#         self.default = default
+#         self.optional = optional
+#         self.validator = validator
+#         self.doc = doc
+#         self.as_value_expr = as_value_expr or ir.literal
+
+#     def validate(self, args, i):
+#         arg = args[i]
+
+#         if self.validator is not None:
+#             arg = args[i] = self.validator(arg)
+
+#         if arg is None:
+#             if not self.optional:
+#                 return self.as_value_expr(self.default)
+#             elif self.optional:
+#                 return arg
+
+#         return self._validate(args, i)
+
+#     def _validate(self, args, i):
+#         raise NotImplementedError
+
+# def _to_argument(val):
+#     if isinstance(val, dt.DataType):
+#         val = value_typed_as(val)
+#     elif not isinstance(val, Argument):
+#         val = val()
+#     return val
+
+# class TypeSignature(object):
+
+#     def __init__(self, type_specs):
+#         types = []
+
+#         for val in type_specs:
+#             val = _to_argument(val)
+#             types.append(val)
+
+#         self.types = types
+
+#     def __repr__(self):
+#         types = '\n    '.join('arg {0}: {1}'.format(i, repr(x))
+#                               for i, x in enumerate(self.types))
+#         return '{0}\n    {1}'.format(type(self), types)
+
+#     def validate(self, args):
+#         n, k = len(args), len(self.types)
+#         k_required = len([x for x in self.types if not x.optional])
+#         if k != k_required:
+#             if n < k_required:
+#                 raise com.IbisError('Expected at least {0} args, got {1}'
+#                                     .format(k, k_required))
+#         elif n != k:
+#             raise com.IbisError('Expected {0} args, got {1}'.format(k, n))
+
+#         if n < k:
+#             args = list(args) + [t.default for t in self.types[n:]]
+
+#         return self._validate(args, self.types)
+
+#     def _validate(self, args, types):
+#         clean_args = list(args)
+#         for i, validator in enumerate(types):
+#             try:
+#                 clean_args[i] = validator.validate(clean_args, i)
+#             except IbisTypeError as e:
+#                 exc = e.args[0]
+#                 msg = ('Argument {0}: {1}'.format(i, exc) +
+#                        '\nArgument was: {0}'.format(ir._safe_repr(args[i])))
+#                 raise IbisTypeError(msg)
+
+#         return clean_args
 
 
-# def is_array(e):
-#     return isinstance(e, ir.ColumnExpr)
+# class VarArgs(TypeSignature):
+
+#     def __init__(self, arg_type, min_length=1):
+#         self.arg_type = _to_argument(arg_type)
+#         self.min_length = min_length
+
+#     def __repr__(self):
+#         return '{0}\n    {1}'.format(type(self), repr(self.arg_type))
+
+#     def validate(self, args):
+#         n, k = len(args), self.min_length
+#         if n < k:
+#             raise com.IbisError('Expected at least {0} args, got {1}'
+#                                 .format(k, n))
+
+#         return self._validate(args, [self.arg_type] * n)
 
 
-# def is_scalar(e):
-#     return isinstance(e, ir.ScalarExpr)
-
-
-# def is_collection(expr):
-#     return isinstance(expr, (ir.ColumnExpr, ir.TableExpr))
-
-
-class Argument(object):
-
-    """
-
-    """
-
-    def __init__(self, name=None, default=None, optional=False,
-                 validator=None, doc=None, as_value_expr=None):
-        self.name = name
-        self.default = default
-        self.optional = optional
-        self.validator = validator
-        self.doc = doc
-        self.as_value_expr = (
-            ir.literal if as_value_expr is None else as_value_expr
-        )
-
-    def validate(self, args, i):
-        arg = args[i]
-
-        if self.validator is not None:
-            arg = args[i] = self.validator(arg)
-
-        if arg is None:
-            if not self.optional:
-                return self.as_value_expr(self.default)
-            elif self.optional:
-                return arg
-
-        return self._validate(args, i)
-
-    def _validate(self, args, i):
-        raise NotImplementedError
-
-    def __str__(self):
-        fields = {'name', 'doc', 'optional'}
-        return str({k: v for k, v in self.__dict__.items()
-                    if k in fields and v is not None})
-
-
-def _to_argument(val):
-    if isinstance(val, dt.DataType):
-        val = value_typed_as(val)
-    elif not isinstance(val, Argument):
-        val = val()
-    return val
-
-
-class TypeSignature(object):
-
-    def __init__(self, type_specs):
-        types = []
-
-        for val in type_specs:
-            val = _to_argument(val)
-            types.append(val)
-
-        self.types = types
-
-    def __repr__(self):
-        types = '\n    '.join('arg {0}: {1}'.format(i, repr(x))
-                              for i, x in enumerate(self.types))
-        return '{0}\n    {1}'.format(type(self), types)
-
-    def validate(self, args):
-        n, k = len(args), len(self.types)
-        k_required = len([x for x in self.types if not x.optional])
-        if k != k_required:
-            if n < k_required:
-                raise com.IbisError('Expected at least {0} args, got {1}'
-                                    .format(k, k_required))
-        elif n != k:
-            raise com.IbisError('Expected {0} args, got {1}'.format(k, n))
-
-        if n < k:
-            args = list(args) + [t.default for t in self.types[n:]]
-
-        return self._validate(args, self.types)
-
-    def _validate(self, args, types):
-        clean_args = list(args)
-        for i, validator in enumerate(types):
-            try:
-                clean_args[i] = validator.validate(clean_args, i)
-            except IbisTypeError as e:
-                exc = e.args[0]
-                msg = ('Argument {0}: {1}'.format(i, exc) +
-                       '\nArgument was: {0}'.format(ir._safe_repr(args[i])))
-                raise IbisTypeError(msg)
-
-        return clean_args
-
-
-class VarArgs(TypeSignature):
-
-    def __init__(self, arg_type, min_length=1):
-        self.arg_type = _to_argument(arg_type)
-        self.min_length = min_length
-
-    def __repr__(self):
-        return '{0}\n    {1}'.format(type(self), repr(self.arg_type))
-
-    def validate(self, args):
-        n, k = len(args), self.min_length
-        if n < k:
-            raise com.IbisError('Expected at least {0} args, got {1}'
-                                .format(k, n))
-
-        return self._validate(args, [self.arg_type] * n)
-
-
-varargs = VarArgs
+# varargs = VarArgs
 
 
 def scalar_output(rule):
@@ -380,431 +355,414 @@ def type_of_arg(i):
     return output_type
 
 
-def signature(types):
-    if isinstance(types, TypeSignature):
-        return types
+# def signature(types):
+#     if isinstance(types, TypeSignature):
+#         return types
 
-    return TypeSignature(types)
+#     return TypeSignature(types)
 
 
-class ValueArgument(Argument):
+# class ValueArgument(Argument):
 
-    def _validate(self, args, i):
-        arg = args[i]
-        if not isinstance(arg, ir.Expr):
-            arg = args[i] = self.as_value_expr(arg)
+#     def _validate(self, args, i):
+#         arg = args[i]
+#         if not isinstance(arg, ir.Expr):
+#             arg = args[i] = self.as_value_expr(arg)
 
-        return arg
+#         return arg
 
 
-class AnyTyped(Argument):
+# class AnyTyped(Argument):
 
-    def __init__(self, types, fail_message, **arg_kwds):
-        super(AnyTyped, self).__init__(**arg_kwds)
-        self.types = util.promote_list(types)
-        self.fail_message = fail_message
+#     def __init__(self, types, fail_message, **arg_kwds):
+#         super(AnyTyped, self).__init__(**arg_kwds)
+#         self.types = util.promote_list(types)
+#         self.fail_message = fail_message
 
-    def _validate(self, args, i):
-        arg = args[i]
+#     def _validate(self, args, i):
+#         arg = args[i]
 
-        if not self._type_matches(arg):
-            if isinstance(self.fail_message, six.string_types):
-                exc = self.fail_message
-            else:
-                exc = self.fail_message(self.types, arg)
-            raise IbisTypeError(exc)
+#         if not self._type_matches(arg):
+#             if isinstance(self.fail_message, six.string_types):
+#                 exc = self.fail_message
+#             else:
+#                 exc = self.fail_message(self.types, arg)
+#             raise IbisTypeError(exc)
 
-        return arg
+#         return arg
 
-    def _type_matches(self, arg):
-        for expected in self.types:
-            if isinstance(expected, dt.DataType):
-                dtype = arg.type()
-                if dtype.issubtype(expected):
-                    return True
-                return dtype.castable(expected)
-            elif isinstance(arg, expected):
-                return True
+#     def _type_matches(self, arg):
+#         for expected in self.types:
+#             if isinstance(expected, dt.DataType):
+#                 dtype = arg.type()
+#                 if dtype.issubtype(expected):
+#                     return True
+#                 return dtype.castable(expected)
+#             elif isinstance(arg, expected):
+#                 return True
 
-        return False
+#         return False
 
 
-class ValueTyped(AnyTyped, ValueArgument):
+# class ValueTyped(AnyTyped, ValueArgument):
 
-    def __repr__(self):
-        return '{}({})'.format(type(self).__name__, repr(self.types))
+#     def __repr__(self):
+#         return '{}({})'.format(type(self).__name__, repr(self.types))
 
-    def _validate(self, args, i):
-        ValueArgument._validate(self, args, i)
-        return AnyTyped._validate(self, args, i)
+#     def _validate(self, args, i):
+#         ValueArgument._validate(self, args, i)
+#         return AnyTyped._validate(self, args, i)
 
 
-class ArrayValueTyped(ValueTyped):
+# class ArrayValueTyped(ValueTyped):
 
-    def __init__(self, value_type, *args, **kwargs):
-        super(ArrayValueTyped, self).__init__(
-            dt.Array(value_type), *args, **kwargs
-        )
+#     def __init__(self, value_type, *args, **kwargs):
+#         super(ArrayValueTyped, self).__init__(
+#             dt.Array(value_type), *args, **kwargs
+#         )
 
 
-class MapValueTyped(ValueTyped):
+# class MapValueTyped(ValueTyped):
 
-    def __init__(self, key_type, value_type, *args, **kwargs):
-        super(MapValueTyped, self).__init__(
-            dt.Map(key_type, value_type), *args, **kwargs
-        )
+#     def __init__(self, key_type, value_type, *args, **kwargs):
+#         super(MapValueTyped, self).__init__(
+#             dt.Map(key_type, value_type), *args, **kwargs
+#         )
 
-    def _validate(self, args, i):
-        arg = super(MapValueTyped, self)._validate(args, i)
-        type, = self.types
-        if arg.type().equals(dt.Map(dt.any, dt.any)):
-            return arg.cast(type)
-        return arg
+#     def _validate(self, args, i):
+#         arg = super(MapValueTyped, self)._validate(args, i)
+#         type, = self.types
+#         if arg.type().equals(dt.Map(dt.any, dt.any)):
+#             return arg.cast(type)
+#         return arg
 
 
-class MultipleTypes(Argument):
+# class MultipleTypes(Argument):
 
-    def __init__(self, types, **arg_kwds):
-        super(MultipleTypes, self).__init__(**arg_kwds)
-        self.types = [_to_argument(t) for t in types]
+#     def __init__(self, types, **arg_kwds):
+#         super(MultipleTypes, self).__init__(**arg_kwds)
+#         self.types = [_to_argument(t) for t in types]
 
-    def _validate(self, args, i):
-        for t in self.types:
-            arg = t.validate(args, i)
-        return arg
+#     def _validate(self, args, i):
+#         for t in self.types:
+#             arg = t.validate(args, i)
+#         return arg
 
 
-class OneOf(Argument):
+# class OneOf(Argument):
 
-    def __init__(self, types, **arg_kwds):
-        super(OneOf, self).__init__(**arg_kwds)
-        self.types = [_to_argument(t) for t in types]
+#     def __init__(self, types, **arg_kwds):
+#         super(OneOf, self).__init__(**arg_kwds)
+#         self.types = [_to_argument(t) for t in types]
 
-    def _validate(self, args, i):
-        validated = False
-        for t in self.types:
-            try:
-                arg = t.validate(args, i)
-            except com.IbisTypeError:
-                pass
-            else:
-                validated = True
-                break
+#     def _validate(self, args, i):
+#         validated = False
+#         for t in self.types:
+#             try:
+#                 arg = t.validate(args, i)
+#             except com.IbisTypeError:
+#                 pass
+#             else:
+#                 validated = True
+#                 break
 
-        if not validated:
-            raise IbisTypeError('No type options validated')
+#         if not validated:
+#             raise IbisTypeError('No type options validated')
 
-        return arg
+#         return arg
 
 
-class CastIfDecimal(ValueArgument):
+# class CastIfDecimal(ValueArgument):
 
-    def __init__(self, ref_j, **arg_kwds):
-        super(CastIfDecimal, self).__init__(**arg_kwds)
-        self.ref_j = ref_j
+#     def __init__(self, ref_j, **arg_kwds):
+#         super(CastIfDecimal, self).__init__(**arg_kwds)
+#         self.ref_j = ref_j
 
-    def _validate(self, args, i):
-        super(CastIfDecimal, self)._validate(args, i)
+#     def _validate(self, args, i):
+#         super(CastIfDecimal, self)._validate(args, i)
 
-        ref_arg = args[self.ref_j]
-        if isinstance(ref_arg, ir.DecimalValue):
-            return args[i].cast(ref_arg.type())
+#         ref_arg = args[self.ref_j]
+#         if isinstance(ref_arg, ir.DecimalValue):
+#             return args[i].cast(ref_arg.type())
 
-        return args[i]
+#         return args[i]
 
 
-cast_if_decimal = CastIfDecimal
+# cast_if_decimal = CastIfDecimal
 
 
-def value_typed_as(types, **arg_kwds):
-    fail_message = 'Arg was not in types {0}'.format(repr(types))
-    return ValueTyped(types, fail_message, **arg_kwds)
+# def value_typed_as(types, **arg_kwds):
+#     fail_message = 'Arg was not in types {0}'.format(repr(types))
+#     return ValueTyped(types, fail_message, **arg_kwds)
 
 
-def column(value_type=None, **arg_kwds):
-    array_checker = ValueTyped(ir.ColumnExpr, 'not a column expr', **arg_kwds)
-    if value_type is None:
-        return array_checker
-    else:
-        return MultipleTypes([array_checker, value_type], **arg_kwds)
+# def column(value_type=None, **arg_kwds):
+#     array_checker = ValueTyped(ir.ColumnExpr, 'not a column expr', **arg_kwds)
+#     if value_type is None:
+#         return array_checker
+#     else:
+#         return MultipleTypes([array_checker, value_type], **arg_kwds)
 
 
-def scalar(value_type=None, **arg_kwds):
-    scalar_checker = ValueTyped(ir.ScalarExpr, 'not a scalar expr', **arg_kwds)
-    if value_type is None:
-        return scalar_checker
-    else:
-        return MultipleTypes([scalar_checker, value_type], **arg_kwds)
+# def scalar(value_type=None, **arg_kwds):
+#     scalar_checker = ValueTyped(ir.ScalarExpr, 'not a scalar expr', **arg_kwds)
+#     if value_type is None:
+#         return scalar_checker
+#     else:
+#         return MultipleTypes([scalar_checker, value_type], **arg_kwds)
 
 
-def collection(**arg_kwds):
-    return ValueTyped((ir.ColumnExpr, ir.TableExpr), 'not a collection',
-                      **arg_kwds)
+# def collection(**arg_kwds):
+#     return ValueTyped((ir.ColumnExpr, ir.TableExpr), 'not a collection',
+#                       **arg_kwds)
 
 
-def value(**arg_kwds):
-    return ValueTyped(ir.ValueExpr, 'not a value expr', **arg_kwds)
+# def value(**arg_kwds):
+#     return ValueTyped(ir.ValueExpr, 'not a value expr', **arg_kwds)
 
 
-class Number(ValueTyped):
+# class Number(ValueTyped):
 
-    def __init__(self, allow_boolean=True, **arg_kwds):
-        super(Number, self).__init__(
-            ir.NumericValue, 'not numeric', **arg_kwds
-        )
-        self.allow_boolean = allow_boolean
+#     def __init__(self, allow_boolean=True, **arg_kwds):
+#         super(Number, self).__init__(
+#             ir.NumericValue, 'not numeric', **arg_kwds
+#         )
+#         self.allow_boolean = allow_boolean
 
-    def _validate(self, args, i):
-        arg = super(Number, self)._validate(args, i)
+#     def _validate(self, args, i):
+#         arg = super(Number, self)._validate(args, i)
 
-        if isinstance(arg, ir.BooleanValue) and not self.allow_boolean:
-            raise IbisTypeError('not implemented for boolean values')
+#         if isinstance(arg, ir.BooleanValue) and not self.allow_boolean:
+#             raise IbisTypeError('not implemented for boolean values')
 
-        return arg
+#         return arg
 
 
-number = Number
+# number = Number
 
 
-def struct(**arg_kwds):
-    return ValueTyped(ir.StructValue, 'not struct', **arg_kwds)
+# def struct(**arg_kwds):
+#     return ValueTyped(ir.StructValue, 'not struct', **arg_kwds)
 
 
-def map(key_type, value_type, **arg_kwds):
-    return MapValueTyped(
-        key_type,
-        value_type,
-        'not map<{}, {}>'.format(key_type, value_type),
-        **arg_kwds
-    )
+# def map(key_type, value_type, **arg_kwds):
+#     return MapValueTyped(
+#         key_type,
+#         value_type,
+#         'not map<{}, {}>'.format(key_type, value_type),
+#         **arg_kwds
+#     )
 
 
-def integer(**arg_kwds):
-    return ValueTyped(dt.int_, 'not integer', **arg_kwds)
+# def integer(**arg_kwds):
+#     return ValueTyped(dt.int_, 'not integer', **arg_kwds)
 
 
-def double(**arg_kwds):
-    return ValueTyped(dt.double, 'not double', **arg_kwds)
+# def double(**arg_kwds):
+#     return ValueTyped(dt.double, 'not double', **arg_kwds)
 
 
-def decimal(**arg_kwds):
-    return ValueTyped(ir.DecimalValue, 'not decimal', **arg_kwds)
+# def decimal(**arg_kwds):
+#     return ValueTyped(ir.DecimalValue, 'not decimal', **arg_kwds)
 
 
-def floating(**arg_kwds):
-    return ValueTyped(ir.FloatingValue, 'not floating', **arg_kwds)
+# def floating(**arg_kwds):
+#     return ValueTyped(ir.FloatingValue, 'not floating', **arg_kwds)
 
 
-def timestamp(**arg_kwds):
-    return ValueTyped(ir.TimestampValue, 'not timestamp', **arg_kwds)
+# def timestamp(**arg_kwds):
+#     return ValueTyped(ir.TimestampValue, 'not timestamp', **arg_kwds)
 
 
-def date(**arg_kwds):
-    return ValueTyped(ir.DateValue, 'not date', **arg_kwds)
+# def date(**arg_kwds):
+#     return ValueTyped(ir.DateValue, 'not date', **arg_kwds)
 
 
-def time(**arg_kwds):
-    return ValueTyped(ir.TimeValue, 'not time', **arg_kwds)
+# def time(**arg_kwds):
+#     return ValueTyped(ir.TimeValue, 'not time', **arg_kwds)
 
 
-class Interval(ValueTyped):
+# class Interval(ValueTyped):
 
-    def __init__(self, units=None, **arg_kwds):
-        super(Interval, self).__init__(
-            ir.IntervalValue, 'not an interval', **arg_kwds
-        )
-        if units is None:
-            self.allowed_units = None
-        else:
-            self.allowed_units = frozenset(units)
+#     def __init__(self, units=None, **arg_kwds):
+#         super(Interval, self).__init__(
+#             ir.IntervalValue, 'not an interval', **arg_kwds
+#         )
+#         if units is None:
+#             self.allowed_units = None
+#         else:
+#             self.allowed_units = frozenset(units)
 
-    def _validate(self, args, i):
-        arg = super(Interval, self)._validate(args, i)
+#     def _validate(self, args, i):
+#         arg = super(Interval, self)._validate(args, i)
 
-        unit = arg.type().unit
-        if self.allowed_units is not None and unit not in self.allowed_units:
-            msg = 'Interval unit `{}` is not among the allowed ones {}'
-            raise IbisTypeError(msg.format(unit, self.allowed_units))
+#         unit = arg.type().unit
+#         if self.allowed_units is not None and unit not in self.allowed_units:
+#             msg = 'Interval unit `{}` is not among the allowed ones {}'
+#             raise IbisTypeError(msg.format(unit, self.allowed_units))
 
-        return arg
+#         return arg
 
 
-interval = Interval
+# interval = Interval
 
 
-def string(**arg_kwds):
-    return ValueTyped(dt.string, 'not string', **arg_kwds)
+# def string(**arg_kwds):
+#     return ValueTyped(dt.string, 'not string', **arg_kwds)
 
 
-def binary(**arg_kwds):
-    return ValueTyped(dt.binary, 'not binary', **arg_kwds)
+# def binary(**arg_kwds):
+#     return ValueTyped(dt.binary, 'not binary', **arg_kwds)
 
 
-def array(value_type, **arg_kwds):
-    """Require that an expression is an Array type whose value_type is
-    `value_type`.
+# def array(value_type, **arg_kwds):
+#     """Require that an expression is an Array type whose value_type is
+#     `value_type`.
 
-    Parameters
-    ----------
-    value_type : ibis.expr.datatypes.DataType
-    """
-    return ArrayValueTyped(
-        value_type,
-        'not array with value_type {0}'.format(value_type),
-        **arg_kwds
-    )
+#     Parameters
+#     ----------
+#     value_type : ibis.expr.datatypes.DataType
+#     """
+#     return ArrayValueTyped(
+#         value_type,
+#         'not array with value_type {0}'.format(value_type),
+#         **arg_kwds
+#     )
 
 
-def boolean(**arg_kwds):
-    """Require that an expression has type boolean."""
-    return ValueTyped(dt.boolean, 'not string', **arg_kwds)
+# def boolean(**arg_kwds):
+#     """Require that an expression has type boolean."""
+#     return ValueTyped(dt.boolean, 'not string', **arg_kwds)
 
 
-def one_of(args, **arg_kwds):
-    return OneOf(args, **arg_kwds)
+# def one_of(args, **arg_kwds):
+#     return OneOf(args, **arg_kwds)
 
 
-temporal = one_of((dt.timestamp, dt.date, dt.time))
+# temporal = one_of((dt.timestamp, dt.date, dt.time))
+# TODO CREATE ERROR MESSAGES
 
+# def instance_of(type_, **arg_kwds):
+#     """Require that a value has a particular Python type.
 
-def instance_of(type_, **arg_kwds):
-    """Require that a value has a particular Python type.
+#     Parameters
+#     ----------
+#     type_ : Type
 
-    Parameters
-    ----------
-    type_ : Type
+#     Returns
+#     -------
+#     rule : AnyTyped
+#     """
+#     return AnyTyped(type_, 'not a {}'.format(type_), **arg_kwds)
 
-    Returns
-    -------
-    rule : AnyTyped
-    """
-    return AnyTyped(type_, 'not a {}'.format(type_), **arg_kwds)
 
+# class StringOptions(Argument):
 
-class StringOptions(Argument):
+#     def __init__(self, options, case_sensitive=True, **arg_kwds):
+#         super(StringOptions, self).__init__(**arg_kwds)
+#         if not case_sensitive:
+#             (is_lower, _), = Counter(
+#                 opt.islower() for opt in options
+#             ).most_common(1)
+#             self._preferred_case = str.lower if is_lower else str.upper
+#             self.options = [
+#                 self._preferred_case(opt) for opt in options
+#             ]
+#         else:
+#             self.options = options
+#         self.case_sensitive = case_sensitive
 
-    def __init__(self, options, case_sensitive=True, **arg_kwds):
-        super(StringOptions, self).__init__(**arg_kwds)
-        if not case_sensitive:
-            (is_lower, _), = Counter(
-                opt.islower() for opt in options
-            ).most_common(1)
-            self._preferred_case = str.lower if is_lower else str.upper
-            self.options = [
-                self._preferred_case(opt) for opt in options
-            ]
-        else:
-            self.options = options
-        self.case_sensitive = case_sensitive
+#     def _validate(self, args, i):
+#         arg = args[i]
 
-    def _validate(self, args, i):
-        arg = args[i]
+#         if not self.case_sensitive:
+#             arg = self._preferred_case(arg)
 
-        if not self.case_sensitive:
-            arg = self._preferred_case(arg)
+#         if arg not in self.options:
+#             raise IbisTypeError(
+#                 '{} not among options {}'.format(arg, self.options)
+#             )
+#         return arg
 
-        if arg not in self.options:
-            raise IbisTypeError(
-                '{} not among options {}'.format(arg, self.options)
-            )
-        return arg
 
+# string_options = StringOptions
 
-string_options = StringOptions
 
+# class Enum(Argument):
+#     def __init__(self, enum, **arg_kwds):
+#         super(Enum, self).__init__(**arg_kwds)
+#         self.enum = enum
 
-class Enum(Argument):
-    def __init__(self, enum, **arg_kwds):
-        super(Enum, self).__init__(**arg_kwds)
-        self.enum = enum
+#     def _validate(self, args, i):
+#         arg = args[i]
 
-    def _validate(self, args, i):
-        arg = args[i]
+#         # if our passed value wasn't specified directly from the enum
+#         if not isinstance(arg, self.enum):
+#             value_set = {}
+#             for key, value in self.enum.__members__.items():
+#                 value_set.setdefault(value.value, []).append(key)
 
-        # if our passed value wasn't specified directly from the enum
-        if not isinstance(arg, self.enum):
-            value_set = {}
-            for key, value in self.enum.__members__.items():
-                value_set.setdefault(value.value, []).append(key)
+#             # not in the value_set, so can't be valid
+#             if arg not in value_set:
+#                 raise IbisTypeError(
+#                     ('Value {} is not a member of the {} enum, '
+#                      'whose values are {}').format(
+#                          arg, self.enum.__name__, list(self.enum)
+#                     )
+#                 )
 
-            # not in the value_set, so can't be valid
-            if arg not in value_set:
-                raise IbisTypeError(
-                    ('Value {} is not a member of the {} enum, '
-                     'whose values are {}').format(
-                         arg, self.enum.__name__, list(self.enum)
-                    )
-                )
+#             # if it's in the value set and the value set has duplicates, then
+#             # we can't validate it because we don't know which one the user
+#             # meant
+#             if len(value_set[arg]) > 1:
+#                 raise IbisTypeError(
+#                     (
+#                         'Value {0} is a member of {1}, but {1} is not unique. '
+#                         'Please explicitly pass the desired enum attribute.'
+#                     ).format(arg, self.enum.__name__)
+#                 )
+#             return self.enum[value_set[arg].pop()]
+#         return arg
 
-            # if it's in the value set and the value set has duplicates, then
-            # we can't validate it because we don't know which one the user
-            # meant
-            if len(value_set[arg]) > 1:
-                raise IbisTypeError(
-                    (
-                        'Value {0} is a member of {1}, but {1} is not unique. '
-                        'Please explicitly pass the desired enum attribute.'
-                    ).format(arg, self.enum.__name__)
-                )
-            return self.enum[value_set[arg].pop()]
-        return arg
 
+# enum = Enum
 
-enum = Enum
 
+# class ListOf(Argument):
 
-class ListOf(Argument):
+#     def __init__(self, value_type, min_length=0, **arg_kwds):
+#         super(ListOf, self).__init__(**arg_kwds)
+#         self.value_type = _to_argument(value_type)
+#         self.min_length = min_length
 
-    def __init__(
-        self, value_type, min_length=0, as_value_expr=None, **arg_kwds
-    ):
-        super(ListOf, self).__init__(as_value_expr=as_value_expr, **arg_kwds)
-        self.value_type = _to_argument(value_type)
-        self.min_length = min_length
-        self.as_value_expr = (
-            ir.as_value_expr if as_value_expr is None else as_value_expr
-        )
+#     def _validate(self, args, i):
+#         arg = args[i]
+#         if not isinstance(arg, list):
+#             arg = args[i] = list(arg)
 
-    def _validate(self, args, i):
-        arg = args[i]
-        if not isinstance(arg, list):
-            arg = args[i] = list(arg)
+#         assert isinstance(arg, list), 'not a list in ListOf validation'
 
-        assert isinstance(arg, list), 'not a list in ListOf validation'
+#         if len(arg) < self.min_length:
+#             raise IbisTypeError('list must have at least {} elements'
+#                                 .format(self.min_length))
 
-        if len(arg) < self.min_length:
-            raise IbisTypeError(
-                'list must have at least {:d} elements'.format(self.min_length)
-            )
+#         checked_args = []
+#         for j in range(len(arg)):
+#             try:
+#                 checked_arg = self.value_type.validate(arg, j)
+#             except IbisTypeError as e:
+#                 exc = e.args[0]
+#                 msg = ('List element {0} had a type error: {1}'
+#                        .format(j, exc))
+#                 raise IbisTypeError(msg)
+#             checked_args.append(checked_arg)
 
-        checked_args = []
-        for j in range(len(arg)):
-            try:
-                checked_arg = self.value_type.validate(arg, j)
-            except IbisTypeError as e:
-                exc = e.args[0]
-                msg = 'List element {} had a type error: {}'.format(j, exc)
-                raise IbisTypeError(msg)
-            checked_args.append(checked_arg)
+#         args[i] = checked_args
 
-        args[i] = checked_args
+#         return ir.as_value_expr(checked_args)
 
-        return self.as_value_expr(checked_args)
 
-
-list_of = ListOf
-
-
-class DataTypeArgument(Argument):
-
-    def _validate(self, args, i):
-        arg = args[i]
-
-        arg = args[i] = dt.validate_type(arg)
-        return arg
-
-
-data_type = DataTypeArgument
+# list_of = ListOf
 
 
 def comparable(left, right):

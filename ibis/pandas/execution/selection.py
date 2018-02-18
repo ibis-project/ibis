@@ -81,7 +81,7 @@ def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
     op = expr.op()
     parent_table_op = parent.table.op()
 
-    if isinstance(op, ir.TableColumn):
+    if isinstance(op, ops.TableColumn):
         # slightly faster path for simple column selection
         name = op.name
 

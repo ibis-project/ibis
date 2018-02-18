@@ -8,9 +8,10 @@ import ibis
 import ibis.expr.api as api
 import ibis.expr.types as types
 import ibis.expr.rules as rules
+import ibis.expr.datatypes as dt
 
 from ibis import IbisError
-from ibis.expr import datatypes as dt
+from ibis.common import IbisTypeError
 from ibis.expr.rules import highest_precedence_type
 
 
@@ -49,17 +50,17 @@ def test_map_with_string_value_type():
 
 
 def test_map_does_not_allow_non_primitive_keys():
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype('map<array<string>, double>')
 
 
 def test_token_error():
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype('array<string>>')
 
 
 def test_empty_complex_type():
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype('map<>')
 
 
@@ -126,7 +127,7 @@ def test_struct_with_string_types():
     'decimal(3,',
 ])
 def test_decimal_failure(case):
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype(case)
 
 
@@ -149,7 +150,7 @@ def test_char_varchar(spec):
     'char()'
 ])
 def test_char_varchar_invalid(spec):
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype(spec)
 
 
@@ -274,7 +275,7 @@ def test_interval_unvalid_unit(unit):
     'interval("Y\')',
 ])
 def test_string_argument_parsing_failure_mode(case):
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype(case)
 
 
