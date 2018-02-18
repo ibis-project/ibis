@@ -1378,11 +1378,11 @@ class Where(ValueOp):
 
 
 def _validate_join_tables(left, right):
-    if not rules.is_table(left):
+    if not isinstance(left, ir.TableExpr):
         raise TypeError('Can only join table expressions, got {} for '
                         'left table'.format(type(left).__name__))
 
-    if not rules.is_table(right):
+    if not isinstance(right, ir.TableExpr):
         raise TypeError('Can only join table expressions, got {} for '
                         'right table'.format(type(right).__name__))
 
@@ -1667,7 +1667,7 @@ class SortKey(ir.Node):
     ascending = rlz.optional(rlz.validator(bool), default=True)
 
     def __init__(self, by, ascending=True):
-        if not rules.is_array(by):
+        if not isinstance(by, ir.ColumnExpr):
             raise com.ExpressionError('Must be an array/column expression')
         super(SortKey, self).__init__(by, ascending)
 
@@ -1798,7 +1798,7 @@ class Selection(TableNode, HasSchema):
             if isinstance(projection, ValueExpr):
                 names.append(projection.get_name())
                 types.append(projection.type())
-            elif rules.is_table(projection):
+            elif isinstance(projection, ir.TableExpr):
                 schema = projection.schema()
                 names.extend(schema.names)
                 types.extend(schema.types)
@@ -1828,7 +1828,7 @@ class Selection(TableNode, HasSchema):
             if isinstance(projection, ValueExpr):
                 names.append(projection.get_name())
                 types.append(projection.type())
-            elif rules.is_table(projection):
+            elif isinstance(projection, ir.TableExpr):
                 schema = projection.schema()
                 names.extend(schema.names)
                 types.extend(schema.types)
@@ -2016,7 +2016,7 @@ class Aggregation(TableNode, HasSchema):
     def _validate(self):
         # All aggregates are valid
         for expr in self.metrics:
-            if not rules.is_scalar(expr) or not is_reduction(expr):
+            if not isinstance(expr, ir.ScalarExpr) or not is_reduction(expr):
                 raise TypeError('Passed a non-aggregate expression: %s' %
                                 _safe_repr(expr))
 

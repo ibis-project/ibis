@@ -205,20 +205,20 @@ def shape_like_args(args, out_type):
         return out_type.scalar_type()
 
 
-def is_table(e):
-    return isinstance(e, ir.TableExpr)
+# def is_table(e):
+#     return isinstance(e, ir.TableExpr)
 
 
-def is_array(e):
-    return isinstance(e, ir.ColumnExpr)
+# def is_array(e):
+#     return isinstance(e, ir.ColumnExpr)
 
 
-def is_scalar(e):
-    return isinstance(e, ir.ScalarExpr)
+# def is_scalar(e):
+#     return isinstance(e, ir.ScalarExpr)
 
 
-def is_collection(expr):
-    return isinstance(expr, (ir.ColumnExpr, ir.TableExpr))
+# def is_collection(expr):
+#     return isinstance(expr, (ir.ColumnExpr, ir.TableExpr))
 
 
 class Argument(object):

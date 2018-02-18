@@ -538,6 +538,7 @@ def param(type):
     return expr
 
 
+# TODO: move to analysis
 def distinct_roots(*expressions):
     roots = toolz.concat(
         expression._root_tables() for expression in expressions
@@ -1428,6 +1429,7 @@ class SortExpr(Expr):
         return 'array-sort'
 
 
+# TODO: move to operations
 class ValueList(ValueOp):
     """Data structure for a list of value expressions"""
 
