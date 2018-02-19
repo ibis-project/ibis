@@ -1476,11 +1476,15 @@ def _clean_join_predicates(left, right, predicates):
 
 
 def _validate_join_predicates(left, right, predicates):
+    from ibis.expr.analysis import fully_originate_from
+
     # Validate join predicates. Each predicate must be valid jointly when
     # considering the roots of each input table
-    from ibis.expr.analysis import CommonSubexpr
-    validator = CommonSubexpr([left, right])
-    validator.validate_all(predicates)
+    for predicate in predicates:
+        if not fully_originate_from(predicate, [left, right]):
+            raise com.RelationError('The expression {!r} does not fully '
+                                    'originate from dependencies of the table '
+                                    'expression.'.format(predicate))
 
 
 class Join(TableNode):

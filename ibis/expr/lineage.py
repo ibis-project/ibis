@@ -201,8 +201,9 @@ def traverse(fn, expr, type=ir.Expr, container=Stack):
         op = expr.op()
         if op in seen:
             continue
+        else:
+            seen.add(op)
 
-        seen.add(op)
         control, result = fn(expr)
         if result is not None:
             yield result
