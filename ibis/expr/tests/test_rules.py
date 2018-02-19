@@ -53,15 +53,15 @@ def test_instanceof(klass, value, expected):
 
 
 @pytest.mark.parametrize(('dtype', 'value', 'expected'), [
-    (dt.int32, 26, ir.literal(26)),
+    (dt.int32, 26, ibis.literal(26)),
     (dt.int32, dict(), IbisTypeError),
-    (dt.string, 'bar', ir.literal('bar')),
+    (dt.string, 'bar', ibis.literal('bar')),
     (dt.string, 1, IbisTypeError),
-    (dt.Array(dt.float), [3.4, 5.6], ir.literal([3.4, 5.6])),
+    (dt.Array(dt.float), [3.4, 5.6], ibis.literal([3.4, 5.6])),
     (dt.Array(dt.float), ['s'], IbisTypeError),  # TODO fails because of incorrect subtype cecking
     (dt.Map(dt.string, dt.Array(dt.boolean)),
      {'a': [True, False], 'b': [True]},
-     ir.literal({'a': [True, False], 'b': [True]})),
+     ibis.literal({'a': [True, False], 'b': [True]})),
     (dt.Map(dt.string, dt.Array(dt.boolean)),
      {'a': [True, False], 'b': ['B']},
      IbisTypeError)
@@ -122,8 +122,15 @@ def test_listof(validator, values, expected):
         assert result.equals(expected)
 
 
-# def test_interval():
-#     pass
+@pytest.mark.parametrize(('units', 'value', 'expected'), [
+    ({'H', 'D'}, ibis.interval(days=3), ibis.interval(days=3)),
+    (['Y'], ibis.interval(years=3), ibis.interval(years=3)),
+    ({'Y'}, ibis.interval(hours=1), IbisTypeError)
+])
+def test_interval(units, value, expected):
+    with mayraise(expected):
+        result = rlz.interval(value, units=units)
+        assert result.equals(expected)
 
 
 # def test_column():

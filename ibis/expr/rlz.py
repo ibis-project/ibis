@@ -100,6 +100,7 @@ def value(dtype, arg):
         raise com.IbisTypeError('Given argument with datatype {} is not subtype'
                                 'of {} nor implicitly castable to it'.format(arg.type(), dtype))
 
+
 noop = validator(identity)
 
 any = value(dt.any)
@@ -134,13 +135,12 @@ temporal = oneof([timestamp, date, time])
 
 @validator
 def scalar(inner, arg):
-    return instanceof(ir.ScalarExpr, inner(arg))
+    return inner(instanceof(ir.ScalarExpr, arg))
 
 
 @validator
 def column(inner, arg):
-    return instanceof(ir.ColumnExpr, inner(arg))
-
+    return inner(instanceof(ir.ColumnExpr, arg))
 
 
 collection = instanceof((ir.ColumnExpr, ir.TableExpr))
