@@ -89,6 +89,7 @@ class TableColumn(ValueOp):
 
 
 def find_all_base_tables(expr, memo=None):
+    # TODO: refactor this
     if memo is None:
         memo = {}
 
@@ -666,13 +667,8 @@ def is_reduction(expr):
 
 
 class Count(Reduction):
-    # TODO: count(col) takes down Impala, must always do count(*) in generated
-    # SQL
-    arg = rlz.collection
+    arg = rlz.instanceof((ir.ColumnExpr, ir.TableExpr))
     where = rlz.optional(rlz.boolean)
-
-    # TODO: counts are actually table-level operations. Let's address
-    # during the SQL generation exercise
 
     def output_type(self):
         return ir.Int64Scalar

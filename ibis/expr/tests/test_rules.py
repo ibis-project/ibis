@@ -2,6 +2,7 @@ import enum
 import pytest
 import six
 import ibis
+import enum
 from contextlib import contextmanager
 from ibis.common import IbisTypeError
 import ibis.expr.operations as ops
@@ -24,6 +25,13 @@ def mayraise(error):
             except Exception as e:
                 raise e
         return not_raises()
+
+
+table = ibis.table([
+    ('int_col', 'int64'),
+    ('string_col', 'string'),
+    ('double_col', 'double'),
+])
 
 
 @pytest.mark.parametrize(('value', 'expected'), [
@@ -99,11 +107,42 @@ def test_optional(validator, value, expected):
     ([1, 2, 'f'], 'f', 'f'),
     ({'a': 1, 'b': 2}, 'a', 1),
     ({'a': 1, 'b': 2}, 'b', 2),
-    ({'a': 1, 'b': 2}, 'c', IbisTypeError)
+    ({'a': 1, 'b': 2}, 'c', IbisTypeError),
 ])
 def test_isin(values, value, expected):
     with mayraise(expected):
         assert rlz.isin(values, value) == expected
+
+
+class Foo(enum.Enum):
+    a = 1
+    b = 2
+
+
+class Bar(object):
+    a = 'A'
+    b = 'B'
+
+
+class Baz(object):
+
+    def __init__(self, a):
+        self.a = a
+
+
+@pytest.mark.parametrize(('obj', 'value', 'expected'), [
+    (Foo, Foo.a, Foo.a),
+    (Foo, 'b', Foo.b),
+    (Foo, 'c', IbisTypeError),
+    (Bar, 'c', IbisTypeError),
+    (Bar, 'a', 'A'),
+    (Bar, 'b', 'B'),
+    (Baz(2), 'a', 2),
+    (Baz(3), 'b', IbisTypeError)
+])
+def test_memberof(obj, value, expected):
+    with mayraise(expected):
+        assert rlz.memberof(obj, value) == expected
 
 
 @pytest.mark.parametrize(('validator', 'values', 'expected'), [
@@ -133,96 +172,19 @@ def test_interval(units, value, expected):
         assert result.equals(expected)
 
 
-# def test_column():
-#     pass
-
-
-# def test_scalar():
-#     pass
-
-
-# def test_enum_validator():
-#     enum = pytest.importorskip('enum')
-
-#     class Foo(enum.Enum):
-#         a = 1
-#         b = 2
-
-#     class Bar(enum.Enum):
-#         a = 1
-#         b = 2
-
-#     class MyOp(ops.Node):
-
-#         input_type = [rules.enum(Foo, name='value')]
-
-#         def __init__(self, value):
-#             super(MyOp, self).__init__([value])
-
-#         def output_type(self):
-#             return MyExpr
-
-#     assert MyOp(2) is not None
-#     assert MyOp(Foo.b) is not None
-
-#     with pytest.raises(IbisTypeError):
-#         MyOp(3)
-
-#     with pytest.raises(IbisTypeError):
-#         MyOp(Bar.a)
-
-#     op = MyOp(Foo.a)
-#     assert op._validate_args(op.args) == [Foo.a]
-
-#     op = MyOp(2)
-#     assert op._validate_args(op.args) == [Foo.b]
-
-
-# def test_duplicate_enum():
-#     enum = pytest.importorskip('enum')
-
-#     class Dup(enum.Enum):
-#         a = 1
-#         b = 1
-#         c = 2
-
-#     class MyOp(ops.Node):
-
-#         input_type = [rules.enum(Dup, name='value')]
-
-#         def __init__(self, value):
-#             super(MyOp, self).__init__([value])
-
-#         def output_type(self):
-#             return MyExpr
-
-#     with pytest.raises(IbisTypeError):
-#         MyOp(1)
-
-#     assert MyOp(2) is not None
-
-
-# doc were nowhere used
-# def test_argument_docstring():
-#     doc = 'A wonderful integer'
-
-#     class MyExpr(ir.Expr):
-#         pass
-
-#     class MyOp(ops.ValueOp):
-
-#         foo = rlz.integer
-#         input_type = [rules.integer(name='foo', doc=doc)]
-
-#         def output_type(self):
-#             return MyExpr
-
-
-def test_rule_instance_of():
-    class MyOperation(ops.Node):
-        arg = rlz.instanceof(ir.IntegerValue)
-
-    MyOperation(ir.literal(5))
+@pytest.mark.parametrize(('validator', 'value', 'expected'), [
+    (rlz.column(rlz.any), table.int_col, table.int_col),
+    (rlz.column(rlz.string), table.string_col, table.string_col),
+    (rlz.column(rlz.integer), table.double_col, IbisTypeError),
+    (rlz.column(rlz.any), ibis.literal(3), IbisTypeError),
+    (rlz.column(rlz.integer), ibis.literal(3), IbisTypeError),
+    (rlz.scalar(rlz.integer), ibis.literal(3), ibis.literal(3)),
+    (rlz.scalar(rlz.any), 'caracal', ibis.literal('caracal'))
+])
+def test_column_or_scalar(validator, value, expected):
+    with mayraise(expected):
+        result = validator(value)
+        assert result.equals(expected)
 
 
 def test_custom_list_of_as_value_expr():
@@ -437,9 +399,5 @@ def test_table_custom_validator():
     with pytest.raises(ZeroDivisionError):
         MyOp(table)
 
-    # with pytest.raises(IbisTypeError):
-    #     MyOperation(ir.literal('string'))
 
-#     op = MyOp(1)
-#     assert type(op).foo.__doc__ == doc
 

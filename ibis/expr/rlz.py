@@ -1,5 +1,5 @@
 import pytest
-
+import enum
 from toolz import curry
 from ibis.compat import suppress
 import ibis.common as com
@@ -11,7 +11,35 @@ from ibis.expr.types import validator
 from toolz import curry, compose, identity  # try to use cytoolz
 
 
-# pass fail_message as default argument
+@validator
+def oneof(inners, arg):
+    """At least one of the inner valudators must pass"""
+    for inner in inners:
+        with suppress(com.IbisTypeError):
+            return inner(arg)
+    raise com.IbisTypeError('None of the {} are applicable on arg'.format(inners))
+
+
+@validator
+def allof(inners, arg):
+    """All of the inner valudators must pass.
+
+    The order of inner validators matters.
+
+    Parameters
+    ----------
+    inners : List[validator]
+      Functions are applied from right to left so allof([rule1, rule2], arg) is
+      the same as rule1(rule2(arg)).
+    arg : Any
+      Value to be validated.
+
+    Returns
+    -------
+    arg : Any
+      Value maybe transformed by inner validators.
+    """
+    return compose(*inners)(arg)
 
 
 @validator
@@ -36,24 +64,16 @@ def isin(values, arg):
         return arg
 
 
-# @validator
-# def string_options(options, arg, case_sensitive=True):
-#     if not case_sensitive:
-#         options = set(option.lower() for option in options)
-#     return isin(options, arg)
-
-
 @validator
-def oneof(inners, arg):
-    for inner in inners:
-        with suppress(com.IbisTypeError):
-            return inner(arg)
-    raise com.IbisTypeError('None of the {} are applicable on arg'.format(inners))
+def memberof(obj, arg):
+    if isinstance(arg, enum.Enum):
+        enum.unique(obj)  # check that enum has unique values
+        arg = arg.name
 
-
-@validator
-def allof(inners, arg):
-    return compose(*inners)(arg)
+    if not hasattr(obj, arg):
+        raise com.IbisTypeError('Value {!r} is not a member of '
+                                '{!r}'.format(arg, obj))
+    return getattr(obj, arg)
 
 
 @validator
@@ -126,29 +146,23 @@ def interval(arg, units=None):  # TODO: pass all units by default
     return arg
 
 
-numeric = oneof([integer, floating, decimal]) #  it should be numeric with allow_boolean
+# TODO: previouse number rules allowed booleans by default
+numeric = oneof([integer, floating, decimal])
 temporal = oneof([timestamp, date, time])
 
-# column = instanceof(ir.ColumnExpr)
-# scalar = instanceof(ir.ScalarExpr)  # consider using as optional
 
+# TODO: instead of inner might just
+# allof(column, boolean)
 
 @validator
 def scalar(inner, arg):
-    return inner(instanceof(ir.ScalarExpr, arg))
+    return instanceof(ir.ScalarExpr, inner(arg))
 
 
 @validator
 def column(inner, arg):
-    return inner(instanceof(ir.ColumnExpr, arg))
+    return instanceof(ir.ColumnExpr, inner(arg))
 
 
-collection = instanceof((ir.ColumnExpr, ir.TableExpr))
-
+table = instanceof(ir.TableExpr)
 schema = instanceof(sch.Schema)
-
-
-# # TODO: insteaof allof
-# chain = validator(compose)
-
-# chain(column, integer)
