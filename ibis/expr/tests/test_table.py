@@ -19,6 +19,7 @@ from ibis.expr.types import ColumnExpr, TableExpr, RelationError
 from ibis.common import ExpressionError
 import ibis.expr.api as api
 import ibis.expr.types as ir
+import ibis.expr.analysis as ans
 import ibis.expr.operations as ops
 import ibis
 
@@ -624,7 +625,7 @@ def test_compound_aggregate_expr(table):
     # See ibis #24
     compound_expr = (table['a'].sum() /
                      table['a'].mean()).name('foo')
-    assert ops.is_reduction(compound_expr)
+    assert ans.is_reduction(compound_expr)
 
     # Validates internally
     table.aggregate([compound_expr])

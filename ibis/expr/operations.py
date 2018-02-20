@@ -856,35 +856,6 @@ class Reduction(ValueOp):
     _reduction = True
 
 
-def is_reduction(expr):
-    # Aggregations yield typed scalar expressions, since the result of an
-    # aggregation is a single value. When creating an table expression
-    # containing a GROUP BY equivalent, we need to be able to easily check
-    # that we are looking at the result of an aggregation.
-    #
-    # As an example, the expression we are looking at might be something
-    # like: foo.sum().log10() + bar.sum().log10()
-    #
-    # We examine the operator DAG in the expression to determine if there
-    # are aggregations present.
-    #
-    # A bound aggregation referencing a separate table is a "false
-    # aggregation" in a GROUP BY-type expression and should be treated a
-    # literal, and must be computed as a separate query and stored in a
-    # temporary variable (or joined, for bound aggregations with keys)
-    def has_reduction(op):
-        if getattr(op, '_reduction', False):
-            return True
-
-        for arg in op.args:
-            if isinstance(arg, ir.ScalarExpr) and has_reduction(arg.op()):
-                return True
-
-        return False
-
-    return has_reduction(expr.op() if isinstance(expr, ir.Expr) else expr)
-
-
 class Count(Reduction):
     arg = rlz.instanceof((ir.ColumnExpr, ir.TableExpr))
     where = rlz.optional(rlz.boolean)
@@ -904,54 +875,16 @@ class Arbitrary(Reduction):
         return self.args[0].type().scalar_type()
 
 
-def _sum_output_type(self):
-    arg = self.args[0]
-    if isinstance(arg, (ir.IntegerValue, ir.BooleanValue)):
-        t = 'int64'
-    elif isinstance(arg, ir.FloatingValue):
-        t = 'double'
-    elif isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg.meta.precision, 38)
-    else:
-        raise TypeError(arg)
-    return t
-
-
-def _mean_output_type(self):
-    arg = self.args[0]
-    if isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg.meta.precision, 38)
-    elif isinstance(arg, ir.NumericValue):
-        t = 'double'
-    else:
-        raise NotImplementedError
-    return t
-
-
-def _array_reduced_type(self):
-    return dt.Array(self.args[0].type())
-
-
 class Sum(Reduction):
     arg = rlz.column(rlz.any)
     where = rlz.optional(rlz.boolean)
-    output_type = rules.scalar_output(_sum_output_type)
+    output_type = rules.scalar_output(rules._sum_output_type)
 
 
 class Mean(Reduction):
     arg = rlz.column(rlz.any)
     where = rlz.optional(rlz.boolean)
-    output_type = rules.scalar_output(_mean_output_type)
-
-
-def _coerce_integer_to_double_type(self):
-    first_arg = self.args[0]
-    first_arg_type = first_arg.type()
-    if isinstance(first_arg_type, dt.Integer):
-        result_type = dt.double
-    else:
-        result_type = first_arg_type
-    return result_type
+    output_type = rules.scalar_output(rules._mean_output_type)
 
 
 class Quantile(Reduction):
@@ -963,7 +896,7 @@ class Quantile(Reduction):
         default='linear'
     )
 
-    output_type = rules.scalar_output(_coerce_integer_to_double_type)
+    output_type = rules.scalar_output(rules._coerce_integer_to_double_type)
 
 
 class MultiQuantile(Quantile):
@@ -976,14 +909,14 @@ class MultiQuantile(Quantile):
     )
 
     def output_type(self):
-        return dt.Array(_coerce_integer_to_double_type(self)).scalar_type()
+        return dt.Array(rules._coerce_integer_to_double_type(self)).scalar_type()
 
 
 class VarianceBase(Reduction):
     arg = rlz.column(rlz.any)
     how = rlz.optional(rlz.isin({'sample', 'pop'}))
     where = rlz.optional(rlz.boolean)
-    output_type = rules.scalar_output(_mean_output_type)
+    output_type = rules.scalar_output(rules._mean_output_type)
 
 
 class StandardDev(VarianceBase):
@@ -994,31 +927,16 @@ class Variance(VarianceBase):
     pass
 
 
-def _decimal_scalar_ctor(precision, scale):
-    out_type = dt.Decimal(precision, scale)
-    return out_type.scalar_type()
-
-
-def _min_max_output_rule(self):
-    arg = self.args[0]
-    if isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg.meta.precision, 38)
-    else:
-        t = arg.type()
-
-    return t
-
-
 class Max(Reduction):
     arg = rlz.column(rlz.any)
     where = rlz.optional(rlz.boolean)
-    output_type = rules.scalar_output(_min_max_output_rule)
+    output_type = rules.scalar_output(rules._min_max_output_rule)
 
 
 class Min(Reduction):
     arg = rlz.column(rlz.any)
     where = rlz.optional(rlz.boolean)
-    output_type = rules.scalar_output(_min_max_output_rule)
+    output_type = rules.scalar_output(rules._min_max_output_rule)
 
 
 class HLLCardinality(Reduction):
@@ -1078,6 +996,7 @@ class WindowOp(ValueOp):
 
     def __init__(self, expr, window):
         from ibis.expr.window import propagate_down_window
+        from ibis.expr.analysis import is_analytic
         if not is_analytic(expr):
             raise com.IbisInputError(
                 'Expression does not contain a valid window operation'
@@ -1107,22 +1026,6 @@ class WindowOp(ValueOp):
             key=id
         ))
         return result
-
-
-def is_analytic(expr, exclude_windows=False):
-    def _is_analytic(op):
-        if isinstance(op, (Reduction, AnalyticOp)):
-            return True
-        elif isinstance(op, WindowOp) and exclude_windows:
-            return False
-
-        for arg in op.args:
-            if isinstance(arg, ir.Expr) and _is_analytic(arg.op()):
-                return True
-
-        return False
-
-    return _is_analytic(expr.op())
 
 
 class ShiftBase(AnalyticOp):
@@ -1224,25 +1127,25 @@ class CumulativeOp(AnalyticOp):
 class CumulativeSum(CumulativeOp):
     """Cumulative sum. Requires an order window."""
 
-    output_type = rules.array_output(_sum_output_type)
+    output_type = rules.array_output(rules._sum_output_type)
 
 
 class CumulativeMean(CumulativeOp):
     """Cumulative mean. Requires an order window."""
 
-    output_type = rules.array_output(_mean_output_type)
+    output_type = rules.array_output(rules._mean_output_type)
 
 
 class CumulativeMax(CumulativeOp):
     """Cumulative max. Requires an order window."""
 
-    output_type = rules.array_output(_min_max_output_rule)
+    output_type = rules.array_output(rules._min_max_output_rule)
 
 
 class CumulativeMin(CumulativeOp):
     """Cumulative min. Requires an order window."""
 
-    output_type = rules.array_output(_min_max_output_rule)
+    output_type = rules.array_output(rules._min_max_output_rule)
 
 
 class PercentRank(AnalyticOp):
@@ -1599,6 +1502,7 @@ def _validate_join_tables(left, right):
                         'right table'.format(type(right).__name__))
 
 
+# TODO: move to analysis
 def _make_distinct_join_predicates(left, right, predicates):
     # see GH #667
 
@@ -2226,6 +2130,7 @@ class Aggregation(TableNode, HasSchema):
                            having=self.having)
 
     def _validate(self):
+        from ibis.expr.analysis import is_reduction
         # All aggregates are valid
         for expr in self.metrics:
             if not isinstance(expr, ir.ScalarExpr) or not is_reduction(expr):
@@ -2906,7 +2811,7 @@ class ArrayRepeat(ValueOp):
 
 class ArrayCollect(Reduction):
     arg = rlz.column(rlz.any)
-    output_type = rules.scalar_output(_array_reduced_type)
+    output_type = rules.scalar_output(rules._array_reduced_type)
 
 
 class MapLength(ValueOp):
@@ -2921,7 +2826,7 @@ class MapValueForKey(ValueOp):
 
     def output_type(self):
         map_type = self.arg.type()
-        return rules.shape_like(self.arg, map_type.value_type)
+        return rules.shape_like(self.arg, rules.map_type.value_type)
 
 
 class MapValueOrDefaultForKey(ValueOp):

@@ -24,10 +24,6 @@ from ibis.expr.window import window
 from ibis.common import RelationError, ExpressionError, IbisTypeError
 
 
-def is_scalar_reduction(expr):
-    return isinstance(expr, ir.ScalarExpr) and ops.is_reduction(expr)
-
-
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
 # compilation later
@@ -1077,3 +1073,52 @@ def flatten_predicate(expr):
             return lin.halt, expr
 
     return list(lin.traverse(predicate, expr, type=ir.BooleanColumn))
+
+
+def is_analytic(expr, exclude_windows=False):
+    def _is_analytic(op):
+        if isinstance(op, (ops.Reduction, ops.AnalyticOp)):
+            return True
+        elif isinstance(op, ops.WindowOp) and exclude_windows:
+            return False
+
+        for arg in op.args:
+            if isinstance(arg, ir.Expr) and _is_analytic(arg.op()):
+                return True
+
+        return False
+
+    return _is_analytic(expr.op())
+
+
+def is_reduction(expr):
+    # Aggregations yield typed scalar expressions, since the result of an
+    # aggregation is a single value. When creating an table expression
+    # containing a GROUP BY equivalent, we need to be able to easily check
+    # that we are looking at the result of an aggregation.
+    #
+    # As an example, the expression we are looking at might be something
+    # like: foo.sum().log10() + bar.sum().log10()
+    #
+    # We examine the operator DAG in the expression to determine if there
+    # are aggregations present.
+    #
+    # A bound aggregation referencing a separate table is a "false
+    # aggregation" in a GROUP BY-type expression and should be treated a
+    # literal, and must be computed as a separate query and stored in a
+    # temporary variable (or joined, for bound aggregations with keys)
+    def has_reduction(op):
+        if getattr(op, '_reduction', False):
+            return True
+
+        for arg in op.args:
+            if isinstance(arg, ir.ScalarExpr) and has_reduction(arg.op()):
+                return True
+
+        return False
+
+    return has_reduction(expr.op() if isinstance(expr, ir.Expr) else expr)
+
+
+def is_scalar_reduction(expr):
+    return isinstance(expr, ir.ScalarExpr) and is_reduction(expr)

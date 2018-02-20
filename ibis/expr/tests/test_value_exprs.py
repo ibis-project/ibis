@@ -30,6 +30,7 @@ from ibis.compat import PY2
 
 from ibis import literal
 from ibis.tests.util import assert_equal
+import ibis.expr.analysis as ans
 import ibis.expr.rlz as rlz
 
 
@@ -541,7 +542,7 @@ def test_arbitrary(table, column, how, condition_fn):
     where = condition_fn(table)
     expr = col.arbitrary(how=how, where=where)
     assert isinstance(expr, col.type().scalar_type())
-    assert ops.is_reduction(expr)
+    assert ans.is_reduction(expr)
 
 
 @pytest.mark.parametrize(
@@ -557,7 +558,7 @@ def test_arbitrary(table, column, how, condition_fn):
 def test_any_all_notany(table, column, operation):
     expr = operation(table[column])
     assert isinstance(expr, api.BooleanScalar)
-    assert ops.is_reduction(expr)
+    assert ans.is_reduction(expr)
 
 
 @pytest.mark.parametrize(
