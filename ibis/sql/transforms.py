@@ -18,6 +18,7 @@ import ibis.expr.analysis as L
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util as util
+import ibis.expr.rlz as rlz
 
 
 class ExistsExpr(ir.AnalyticExpr):
@@ -26,27 +27,21 @@ class ExistsExpr(ir.AnalyticExpr):
         return 'exists'
 
 
-class ExistsSubquery(ir.Node):
+class ExistsSubquery(ops.Node):
+    """Helper class"""
 
-    """
-    Helper class
-    """
-
-    def __init__(self, foreign_table, predicates):
-        self.foreign_table = foreign_table
-        self.predicates = predicates
-        ir.Node.__init__(self, [foreign_table, predicates])
+    foreign_table = rlz.noop
+    predicates = rlz.noop
 
     def output_type(self):
         return ExistsExpr
 
 
-class NotExistsSubquery(ir.Node):
+class NotExistsSubquery(ops.Node):
+    # TODO these might be unused
 
-    def __init__(self, foreign_table, predicates):
-        self.foreign_table = foreign_table
-        self.predicates = predicates
-        ir.Node.__init__(self, [foreign_table, predicates])
+    foreign_table = rlz.noop
+    predicates = rlz.noop
 
     def output_type(self):
         return ExistsExpr

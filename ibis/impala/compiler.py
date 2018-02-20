@@ -1073,7 +1073,7 @@ _operation_registry = {
     ops.Literal: _literal,
     ops.NullLiteral: _null_literal,
 
-    ir.ValueList: _value_list,
+    ops.ValueList: _value_list,
 
     ops.Cast: _cast,
 

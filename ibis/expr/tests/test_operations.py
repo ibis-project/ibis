@@ -22,7 +22,7 @@ def test_argument_descriptor():
 
 
 def test_operation():
-    class Log(ir.Node):
+    class Log(ops.Node):
         arg = double()
         base = optional(double())
 

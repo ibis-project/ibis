@@ -575,7 +575,7 @@ _operation_registry = {
     ops.TypeOf: unary(sa.func.typeof),
 
     ops.Literal: _literal,
-    ir.ValueList: _value_list,
+    ops.ValueList: _value_list,
     ops.NullLiteral: lambda *args: sa.null(),
 
     ops.SimpleCase: _simple_case,

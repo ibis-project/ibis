@@ -140,13 +140,13 @@ class Window(object):
             return False
 
         if (len(self._group_by) != len(other._group_by) or
-                not ir.all_equal(self._group_by, other._group_by,
+                not ops.all_equal(self._group_by, other._group_by,
                                  cache=cache)):
             cache[(self, other)] = False
             return False
 
         if (len(self._order_by) != len(other._order_by) or
-                not ir.all_equal(self._order_by, other._order_by,
+                not ops.all_equal(self._order_by, other._order_by,
                                  cache=cache)):
             cache[(self, other)] = False
             return False

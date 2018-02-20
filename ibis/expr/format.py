@@ -115,7 +115,7 @@ class ExprFormatter(object):
             )
         elif isinstance(what, ops.ScalarParameter):
             text = 'ScalarParameter[{}]'.format(self._get_type_display())
-        elif isinstance(what, ir.Node):
+        elif isinstance(what, ops.Node):
             text = self._format_node(self.expr)
 
         if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
@@ -157,7 +157,7 @@ class ExprFormatter(object):
 
                 if isinstance(op, ops.PhysicalTable):
                     memo.observe(e, self._format_table)
-                elif isinstance(op, ir.Node):
+                elif isinstance(op, ops.Node):
                     stack.extend(
                         arg for arg in reversed(op.args)
                         if isinstance(arg, ir.Expr)

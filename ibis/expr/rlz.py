@@ -7,8 +7,14 @@ import ibis.expr.rules as rules
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
-from ibis.expr.types import validator
+
+# TODO try to import cytoolz
 from toolz import curry, compose, identity  # try to use cytoolz
+from toolz import unique, curry
+
+
+class validator(curry):
+    pass
 
 
 @validator
@@ -121,6 +127,7 @@ def value(dtype, arg):
                                 'of {} nor implicitly castable to it'.format(arg.type(), dtype))
 
 
+# TODO: change it to raise instead to locate all temporary noop validator
 noop = validator(identity)
 
 any = value(dt.any)

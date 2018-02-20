@@ -12,7 +12,6 @@ import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
 import ibis.pandas.aggcontext as agg_ctx

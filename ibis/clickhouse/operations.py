@@ -608,7 +608,7 @@ _operation_registry = {
     ops.E: lambda *args: 'e()',
 
     ops.Literal: literal,
-    ir.ValueList: _value_list,
+    ops.ValueList: _value_list,
 
     ops.Cast: _cast,
 

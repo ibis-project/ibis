@@ -27,7 +27,7 @@ def _validate_closed(closed):
     return closed
 
 
-class BucketLike(ir.ValueOp):
+class BucketLike(ops.ValueOp):
 
     @property
     def nbuckets(self):
@@ -100,7 +100,7 @@ class Histogram(BucketLike):
         return ctype.array_type()
 
 
-class CategoryLabel(ir.ValueOp):
+class CategoryLabel(ops.ValueOp):
 
     arg = rlz.noop
     labels = rlz.noop

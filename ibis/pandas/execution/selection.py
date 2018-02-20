@@ -236,11 +236,11 @@ Return the underlying physical tables nodes of a
 
 Parameters
 ----------
-op : ir.Node
+op : ops.Node
 
 Returns
 -------
-tables : List[ir.Node]
+tables : List[ops.Node]
 """
 )
 
@@ -269,7 +269,7 @@ def physical_tables_join(join):
     ))
 
 
-@physical_tables.register(ir.Node)
+@physical_tables.register(ops.Node)
 def physical_tables_node(node):
     # Iterative case. Any other Node's physical roots are the unique physical
     # roots of that Node's root tables.

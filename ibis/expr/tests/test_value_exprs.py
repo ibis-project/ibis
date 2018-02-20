@@ -189,7 +189,7 @@ def test_literal_list():
     expr = api.as_value_expr(what)
 
     assert isinstance(expr, ir.ColumnExpr)
-    assert isinstance(expr.op(), ir.ValueList)
+    assert isinstance(expr.op(), ops.ValueList)
     assert isinstance(expr.op().values[2], ir.Int16Scalar)
 
     # it works!

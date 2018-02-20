@@ -15,11 +15,11 @@
 import operator
 import six
 import itertools
-
+import collections
 import toolz
 
 from ibis.expr.schema import HasSchema, Schema
-from ibis.expr.types import Node, ValueOp, as_value_expr, _safe_repr  # TODO move these to here
+from ibis.expr.types import as_value_expr  # TODO move these to here
 
 import ibis.common as com
 import ibis.expr.datatypes as dt
@@ -28,6 +28,222 @@ import ibis.expr.types as ir
 import ibis.util as util
 import ibis.compat as compat
 import ibis.expr.rlz as rlz
+from collections import OrderedDict
+
+
+def _safe_repr(x, memo=None):
+    return x._repr(memo=memo) if isinstance(x, (ir.Expr, Node)) else repr(x)
+
+
+# TODO: move to analysis
+def distinct_roots(*expressions):
+    roots = toolz.concat(
+        expression._root_tables() for expression in expressions
+    )
+    return list(toolz.unique(roots, key=id))
+
+
+def pina(names, args, kwargs):
+    # TODO: docstrings
+    # TODO: error messages
+    assert len(args) <= len(names)
+
+    result = dict(zip(names, args))
+    assert not (set(result.keys()) & set(kwargs.keys()))
+
+    for name in names[len(result):]:
+        result[name] = kwargs.get(name, None)
+
+    return result
+
+
+class Argument(object):
+
+    __slots__ = 'name', 'validate'
+
+    def __init__(self, name, rule):
+        self.name = '_' + name
+        self.validate = rule
+
+    def __get__(self, obj, objtype):
+        return getattr(obj, self.name)
+
+    def __set__(self, obj, value):
+        setattr(obj, self.name, self.validate(value))
+
+
+class OperationMeta(type):
+
+    @classmethod
+    def __prepare__(metacls, name, bases, **kwds):
+        return OrderedDict()
+
+    def __new__(cls, name, parents, dct):
+        print('CREATING {}'.format(name))
+
+        # TODO: cleanup
+        # TODO: consider removing expr cache
+        slots, args = ['_expr_cached'], []
+        for parent in parents:
+            # TODO: use ordereddicts to allow overriding
+            if hasattr(parent, '__slots__'):
+                slots += parent.__slots__
+            if hasattr(parent, '_arg_names'):
+                args += parent._arg_names
+
+        # TODO should use signature
+        # and merge parents signature with child signature
+
+        odict = OrderedDict()
+        for key, value in dct.items():
+            if isinstance(value, rlz.validator):
+                # TODO: make it cleaner
+                arg = Argument(key, value)
+                args.append(key)
+                slots.append(arg.name)
+                odict[key] = arg
+            else:
+                odict[key] = value
+
+        odict['__slots__'] = tuple(toolz.unique(slots))
+        odict['_arg_names'] = tuple(toolz.unique(args))
+        return super(OperationMeta, cls).__new__(cls, name, parents, odict)
+
+
+class Node(six.with_metaclass(OperationMeta, object)):
+
+    # __init__ should read the signature property of class instead of using descriptors
+    # then run validators on arguments
+    # then set to the according underscored slot
+    # after that call self._validate to support validating more arguments together
+
+    def __init__(self, *args, **kwargs):
+        self._expr_cached = None
+        # TODO: in case of missing value pass None else literal(None) -> null
+        for k, v in pina(self._arg_names, args, kwargs).items():
+            setattr(self, k, v)
+        # TODO: check for validate functions to support validating more arguments at once, like table operatrions need
+        # TODO: be able do define additional slots in childs
+
+    def __repr__(self):
+        return self._repr()
+
+    def _repr(self, memo=None):
+        if memo is None:
+            from ibis.expr.format import FormatMemo
+            memo = FormatMemo()
+
+        opname = type(self).__name__
+        pprint_args = []
+
+        def _pp(x):
+            return _safe_repr(x, memo=memo)
+
+        for x in self.args:
+            if isinstance(x, (tuple, list)):
+                pp = repr([_pp(y) for y in x])
+            else:
+                pp = _pp(x)
+            pprint_args.append(pp)
+
+        return '%s(%s)' % (opname, ', '.join(pprint_args))
+
+    def blocks(self):
+        # The contents of this node at referentially distinct and may not be
+        # analyzed deeper
+        return False
+
+    def flat_args(self):
+        for arg in self.args:
+            if not isinstance(arg, six.string_types) and isinstance(
+                arg, collections.Iterable
+            ):
+                for x in arg:
+                    yield x
+            else:
+                yield arg
+
+    def equals(self, other, cache=None):
+        if cache is None:
+            cache = {}
+
+        if (self, other) in cache:
+            return cache[(self, other)]
+
+        if id(self) == id(other):
+            cache[(self, other)] = True
+            return True
+
+        if type(self) != type(other):
+            cache[(self, other)] = False
+            return False
+
+        if len(self.args) != len(other.args):
+            cache[(self, other)] = False
+            return False
+
+        for left, right in zip(self.args, other.args):
+            if not all_equal(left, right, cache=cache):
+                cache[(self, other)] = False
+                return False
+        cache[(self, other)] = True
+        return True
+
+    def is_ancestor(self, other):
+        if isinstance(other, ir.Expr):
+            other = other.op()
+
+        return self.equals(other)
+
+    # _expr_cached = None
+
+    def to_expr(self):
+        # _expr_cache is set in the metaclass
+        if self._expr_cached is None:
+            self._expr_cached = self._make_expr()
+        return self._expr_cached
+
+    def _make_expr(self):
+        klass = self.output_type()
+        return klass(self)
+
+    def output_type(self):
+        """
+        This function must resolve the output type of the expression and return
+        the node wrapped in the appropriate ValueExpr type.
+        """
+        raise NotImplementedError
+
+    @property
+    def args(self):
+        return tuple(getattr(self, name) for name in self._arg_names)
+
+
+class ValueOp(Node):
+
+    def root_tables(self):
+        exprs = [arg for arg in self.args if isinstance(arg, ir.Expr)]
+        return distinct_roots(*exprs)
+
+    def resolve_name(self):
+        raise com.ExpressionError('Expression is not named: %s' % repr(self))
+
+    def has_resolved_name(self):
+        return False
+
+
+def all_equal(left, right, cache=None):
+    if isinstance(left, list):
+        if not isinstance(right, list):
+            return False
+        for a, b in zip(left, right):
+            if not all_equal(a, b, cache=cache):
+                return False
+        return True
+
+    if hasattr(left, 'equals'):
+        return left.equals(right, cache=cache)
+    return left == right
 
 
 _table_names = ('t{:d}'.format(i) for i in itertools.count())
@@ -881,7 +1097,7 @@ class WindowOp(ValueOp):
         result = list(toolz.unique(
             itertools.chain(
                 self.args[0]._root_tables(),
-                ir.distinct_roots(
+                distinct_roots(
                     *itertools.chain(window._order_by, window._group_by)
                 )
             ),
@@ -1320,7 +1536,7 @@ class SimpleCase(ValueOp):
         all_exprs = [base] + cases + results + (
             [] if default is None else [default]
         )
-        return ir.distinct_roots(*all_exprs)
+        return distinct_roots(*all_exprs)
 
     def output_type(self):
         base, cases, results, default = self.args
@@ -1344,7 +1560,7 @@ class SearchedCase(ValueOp):
     def root_tables(self):
         cases, results, default = self.args
         all_exprs = cases + results + ([] if default is None else [default])
-        return ir.distinct_roots(*all_exprs)
+        return distinct_roots(*all_exprs)
 
     def output_type(self):
         cases, results, default = self.args
@@ -1480,7 +1696,7 @@ class Join(TableNode):
             # Unraveling is not possible
             return [self.left.op(), self.right.op()]
         else:
-            return ir.distinct_roots(self.left, self.right)
+            return distinct_roots(self.left, self.right)
 
 
 class InnerJoin(Join):
@@ -1654,7 +1870,7 @@ def to_sort_key(table, key):
     return SortKey(key, ascending=sort_order).to_expr()
 
 
-class SortKey(ir.Node):
+class SortKey(Node):
 
     by = rlz.column(rlz.any)
     ascending = rlz.optional(rlz.validator(bool), default=True)
@@ -2213,7 +2429,7 @@ class Contains(ValueOp, BooleanValueOp):
         all_args = [self.value]
 
         options = self.options.op()
-        if isinstance(options, ir.ValueList):
+        if isinstance(options, ValueList):
             all_args += options.values
         elif isinstance(self.options, ir.ColumnExpr):
             all_args += [self.options]
@@ -2470,7 +2686,7 @@ class DayOfWeek(ir.Expr):
         return DayOfWeekName(arg).to_expr()
 
 
-class DayOfWeekNode(ir.Node):
+class DayOfWeekNode(Node):
     arg = rlz.oneof([rlz.date, rlz.timestamp])
 
     def output_type(self):
@@ -2841,3 +3057,20 @@ class ExpressionList(Node):
 
     def output_type(self):
         return ir.ExprList
+
+
+# TODO: move to operations
+class ValueList(ValueOp):
+    """Data structure for a list of value expressions"""
+
+    values = rlz.validator(lambda x: x)
+
+    def __init__(self, args):
+        values = list(map(as_value_expr, args))
+        super(ValueList, self).__init__(values)
+
+    def root_tables(self):
+        return distinct_roots(*self.values)
+
+    def _make_expr(self):
+        return ir.ListExpr(self)

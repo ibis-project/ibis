@@ -4,11 +4,12 @@ import pytest
 
 pytest.importorskip('graphviz')
 
-import ibis  # noqa: E402
-import ibis.expr.types as ir  # noqa: E402
-import ibis.expr.visualize as viz  # noqa: E402
+import ibis
+import ibis.expr.types as ir
+import ibis.expr.visualize as viz
+import ibis.expr.operations as ops
 
-from ibis.expr import rules  # noqa: E402
+from ibis.expr import rules
 import ibis.expr.rlz as rlz
 
 pytestmark = pytest.mark.skipif(
@@ -42,7 +43,7 @@ def test_custom_expr():
     class MyExpr(ir.Expr):
         pass
 
-    class MyExprNode(ir.Node):
+    class MyExprNode(ops.Node):
         foo = rlz.string
         bar = rlz.numeric
 
@@ -64,7 +65,7 @@ def test_custom_expr_with_not_implemented_type():
         def schema(self):
             raise NotImplementedError
 
-    class MyExprNode(ir.Node):
+    class MyExprNode(ops.Node):
         foo = rlz.string
         bar = rlz.numeric
 

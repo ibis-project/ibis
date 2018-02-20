@@ -17,7 +17,6 @@ import toolz
 from ibis import compat
 
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
@@ -678,7 +677,7 @@ def execute_node_self_reference_dataframe(op, data, **kwargs):
     return data
 
 
-@execute_node.register(ir.ValueList)
+@execute_node.register(ops.ValueList)
 def execute_node_value_list(op, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
 
