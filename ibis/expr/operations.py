@@ -30,6 +30,8 @@ import ibis.compat as compat
 import ibis.expr.rlz as rlz
 from collections import OrderedDict
 
+# TODO: eliminate as_value_expr
+
 
 def _safe_repr(x, memo=None):
     return x._repr(memo=memo) if isinstance(x, (ir.Expr, Node)) else repr(x)
@@ -3043,6 +3045,7 @@ class ScalarParameter(ValueOp):
         return self.name
 
 
+# TODO: this class might be not used at all
 class ExpressionList(Node):
 
     # FIXME
@@ -3054,13 +3057,12 @@ class ExpressionList(Node):
         super(ExpressionList, self).__init__(exprs)
 
     def root_tables(self):
-        return ir.distinct_roots(self.exprs)
+        return distinct_roots(self.exprs)
 
     def output_type(self):
         return ir.ExprList
 
 
-# TODO: move to operations
 class ValueList(ValueOp):
     """Data structure for a list of value expressions"""
 

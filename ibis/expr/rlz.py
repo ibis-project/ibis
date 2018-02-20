@@ -144,7 +144,7 @@ timestamp = value(dt.timestamp)
 
 
 @validator
-def interval(arg, units=None):  # TODO: pass all units by default
+def interval(arg, units=None):
     arg = value(dt.interval, arg)
     unit = arg.type().unit
     if units is not None and unit not in units:

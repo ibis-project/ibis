@@ -26,6 +26,9 @@ import ibis.common as com
 import ibis.util as util
 
 
+# TODO create a promoter decorator?
+
+
 class BinaryPromoter(object):
     # placeholder for type promotions for basic binary arithmetic
 
@@ -109,6 +112,7 @@ class IntervalPromoter(BinaryPromoter):
         return shape_like_args(self.args, promoted_type)
 
 
+# TODO: move to datatypes castable rule
 def _decimal_promoted_type(args):
     max_precision = max_scale = ~sys.maxsize
     for arg in args:

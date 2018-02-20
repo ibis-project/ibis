@@ -20,6 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rlz as rlz
 
 
+# TODO: rlz.isin
 def _validate_closed(closed):
     closed = closed.lower()
     if closed not in {'left', 'right'}:
@@ -34,8 +35,8 @@ class BucketLike(ops.ValueOp):
         return None
 
     def output_type(self):
-        ctype = dt.Category(self.nbuckets)
-        return ctype.array_type()
+        dtype = dt.Category(self.nbuckets)
+        return dtype.array_type()
 
 
 class Bucket(BucketLike):
