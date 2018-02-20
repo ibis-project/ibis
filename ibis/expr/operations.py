@@ -304,6 +304,7 @@ class TableColumn(ValueOp):
         return klass(self, name=self.name)
 
 
+# TODO: move this to analysis
 def find_all_base_tables(expr, memo=None):
     # TODO: refactor this
     if memo is None:

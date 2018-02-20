@@ -54,7 +54,7 @@ def optional(inner, arg, default=None):
         if default is None:
             return None
         elif callable(default):
-            arg = default()  # required by gennaame
+            arg = default()  # required by genname
         else:
             arg = default
     return inner(arg)
@@ -64,7 +64,7 @@ def optional(inner, arg, default=None):
 def isin(values, arg):
     if arg not in values:
         raise com.IbisTypeError('Value {!r} not in {!r}'.format(arg, values))
-    if isinstance(values, dict):
+    if isinstance(values, dict):  # TODO check for mapping instead
         return values[arg]
     else:
         return arg

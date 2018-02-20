@@ -34,7 +34,7 @@ import collections
 
 
 # TODO remove import like import ibis.expr.operations as ops
-
+# TODO create a new table module containing joins aggregations selections etc.
 
 class Expr(object):
     """Base expression class"""
@@ -222,13 +222,9 @@ class Expr(object):
             return False
         return self._arg.equals(other._arg, cache=cache)
 
+    # TODO: remove this method
     def _root_tables(self):
         return self.op().root_tables()
-
-    def _get_unbound_tables(self):
-        # The expression graph may contain one or more tables of a particular
-        # known schema
-        pass
 
 
 if sys.version_info.major == 2:

@@ -92,7 +92,7 @@ def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
             raise KeyError(name)
 
         root_table, = op.root_tables()
-        left_root, right_root = ir.distinct_roots(
+        left_root, right_root = ops.distinct_roots(
             parent_table_op.left, parent_table_op.right
         )
         suffixes = {left_root: constants.LEFT_JOIN_SUFFIX,
@@ -162,7 +162,7 @@ def remap_overlapping_column_names(table_op, root_table, data_columns):
     if not isinstance(table_op, ops.Join):
         return None
 
-    left_root, right_root = ir.distinct_roots(table_op.left, table_op.right)
+    left_root, right_root = ops.distinct_roots(table_op.left, table_op.right)
     suffixes = {left_root: constants.LEFT_JOIN_SUFFIX,
                 right_root: constants.RIGHT_JOIN_SUFFIX}
     column_names = [
