@@ -20,6 +20,7 @@ dependencies:
   - psycopg2
   - pyarrow>=0.6.0
   - pymysql
+  - pyspark>=2.2.1
   - pytables
   - pytest
   - python=2.7

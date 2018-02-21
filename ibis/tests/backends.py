@@ -125,6 +125,34 @@ class Pandas(Backend):
         })
 
 
+class Spark(Backend):
+    check_names = False
+
+    @staticmethod
+    def _read_csv_func(csv_file):
+        """Returns a function thats reads the given ``csv_file`` with
+        :class:`pyspark.sql.SparkSession` as a parameter."""
+        return lambda spark: spark.read.csv(str(csv_file))
+
+    def connect(self, data_directory):
+        return ibis.spark.connect({
+            'functional_alltypes': Spark._read_csv_func(
+                data_directory / 'functional_alltypes.csv'),
+            'batting': Spark._read_csv_func(
+                data_directory / 'batting.csv'),
+            'awards_players': Spark._read_csv_func(
+                data_directory / 'awards_players.csv')
+        })
+
+    def assert_series_equal(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def assert_frame_equal(self, *args, **kwargs):
+        pandas_args = [arg.toPandas() for arg in args]
+        return super(Spark, self).assert_frame_equal(*pandas_args,
+                                                     **kwargs)
+
+
 class SQLite(Backend):
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays

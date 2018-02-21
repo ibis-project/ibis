@@ -18,6 +18,7 @@ dependencies:
   - psycopg2
   - pyarrow>=0.6.0
   - pymysql
+  - pyspark>=2.2.1
   - pytest
   - python=3.5
   - python-graphviz

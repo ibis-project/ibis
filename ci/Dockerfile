@@ -4,6 +4,7 @@ FROM ibisproject/miniconda3
 RUN apt-get -qq update -y \
  && apt-get -qq install -y --no-install-recommends ttf-dejavu \
     git gcc make clang libboost-dev postgresql-client ca-certificates \
+    openjdk-8-jre-headless ca-certificates-java \
  && rm -rf /var/lib/apt/lists/*
 
 ARG PYTHON
