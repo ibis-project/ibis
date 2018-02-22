@@ -447,10 +447,6 @@ def _mean_output_type(self):
     return t
 
 
-def _array_reduced_type(self):
-    return dt.Array(self.args[0].type())
-
-
 def _coerce_integer_to_double_type(self):
     first_arg = self.args[0]
     first_arg_type = first_arg.type()
@@ -475,19 +471,3 @@ def _min_max_output_rule(self):
 
     return t
 
-
-def _array_binop_invariant_output_type(self):
-    """Check whether two arrays in an array OP array binary operation have
-    the same type.
-    """
-    args = self.args
-    left_type = args[0].type()
-    right_type = args[1].type()
-    if left_type != right_type:
-        raise TypeError(
-            'Array types must match exactly in a {} operation. '
-            'Left type {} != Right type {}'.format(
-                type(self).__name__, left_type, right_type
-            )
-        )
-    return left_type

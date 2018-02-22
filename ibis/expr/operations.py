@@ -396,55 +396,45 @@ class Cast(ValueOp):
     #     return self.args[0].get_name()
 
     def output_type(self):
-        # TODO: error handling for invalid casts
-        return rules.shape_like(self.args[0], self.args[1])
+        return rlz.shapeof('arg', dtype=self.to)(self)
 
 
 class TypeOf(ValueOp):
     arg = rlz.value
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class Negate(UnaryOp):
     arg = rlz.oneof([rlz.numeric, rlz.boolean])
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class IsNull(UnaryOp):
-
-    """
-    Returns true if values are null
+    """Returns true if values are null
 
     Returns
     -------
     isnull : boolean with dimension of caller
     """
-
-    output_type = rules.shape_like_arg(0, 'boolean')
+    output_type = rlz.shapeof('arg', dt.boolean)
 
 
 class NotNull(UnaryOp):
-
-    """
-    Returns true if values are not null
+    """Returns true if values are not null
 
     Returns
     -------
     notnull : boolean with dimension of caller
     """
-
-    output_type = rules.shape_like_arg(0, 'boolean')
+    output_type = rlz.shapeof('arg', 'boolean')
 
 
 class ZeroIfNull(UnaryOp):
-
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class IfNull(ValueOp):
-
-    """
-    Equivalent to (but perhaps implemented differently):
+    """Equivalent to (but perhaps implemented differently):
 
     case().when(expr.notnull(), expr)
           .else_(null_substitute_expr)
@@ -460,13 +450,10 @@ class IfNull(ValueOp):
 
 
 class NullIf(ValueOp):
-
-    """
-    Set values to NULL if they equal the null_if_expr
-    """
+    """Set values to NULL if they equal the null_if_expr"""
     arg = rlz.any
     null_if_expr = rlz.any
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class NullIfZero(ValueOp):
@@ -483,17 +470,17 @@ class NullIfZero(ValueOp):
     """
 
     arg = rlz.numeric
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class IsNan(ValueOp):
     arg = rlz.floating
-    output_type = rules.shape_like_arg(0, 'boolean')
+    output_type = rlz.shapeof('arg', dt.boolean)
 
 
 class IsInf(ValueOp):
     arg = rlz.floating
-    output_type = rules.shape_like_arg(0, 'boolean')
+    output_type = rlz.shapeof('arg', dt.boolean)
 
 
 class CoalesceLike(ValueOp):
@@ -511,9 +498,9 @@ class CoalesceLike(ValueOp):
         first_value = self.arg[0]
 
         if isinstance(first_value, ir.IntegerValue):
-            out_type = 'int64'
+            out_type = dt.int64
         elif isinstance(first_value, ir.FloatingValue):
-            out_type = 'double'
+            out_type = dt.double
         else:
             out_type = first_value.type()
 
@@ -533,21 +520,8 @@ class Least(CoalesceLike):
 
 
 class Abs(UnaryOp):
-
-    """
-    Absolute value
-    """
-
-    output_type = rules.type_of_arg(0)
-
-
-def _ceil_floor_output(self):
-    # TODO: cleanup
-    arg = self.args[0]
-    if isinstance(arg, ir.DecimalValue):
-        return arg._factory
-    else:
-        return rules.shape_like(arg, 'int64')
+    """Absolute value"""
+    output_type = rlz.typeof('arg')
 
 
 class Ceil(UnaryOp):
@@ -562,7 +536,11 @@ class Ceil(UnaryOp):
       Other numeric values: yield integer (int32)
     """
     arg = rlz.numeric
-    output_type = _ceil_floor_output
+
+    def output_type(self):
+        if isinstance(self.arg.type(), dt.Decimal):
+            return self.arg._factory
+        return rlz.shapeof('arg', dt.int64)(self)
 
 
 class Floor(UnaryOp):
@@ -577,7 +555,11 @@ class Floor(UnaryOp):
       Other numeric values: yield integer (int32)
     """
     arg = rlz.numeric
-    output_type = _ceil_floor_output
+
+    def output_type(self):
+        if isinstance(self.arg.type(), dt.Decimal):
+            return self.arg._factory
+        return rlz.shapeof('arg', dt.int64)(self)
 
 
 class Round(ValueOp):
@@ -589,7 +571,7 @@ class Round(ValueOp):
         if isinstance(self.arg, ir.DecimalValue):
             return self.arg._factory
         elif self.digits is None:
-            return rules.shape_like(self.arg, 'int64')
+            return rules.shape_like(self.arg, dt.int64)
         else:
             return rules.shape_like(self.arg, 'double')
 
@@ -598,7 +580,7 @@ class Clip(ValueOp):
     arg = rlz.any
     lower = rlz.optional(rlz.numeric)  # don't allow boolean
     upper = rlz.optional(rlz.numeric)  # don't allow boolean
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class BaseConvert(ValueOp):
@@ -606,12 +588,12 @@ class BaseConvert(ValueOp):
     from_base = rlz.integer
     to_base = rlz.integer
 
-    output_type = rules.shape_like_flatargs('string')
+    output_type = rules.shape_like_flatargs(dt.string)
 
 
 class RealUnaryOp(UnaryOp):
     arg = rlz.numeric
-    output_type = rules.shape_like_arg(0, 'double')
+    output_type = rlz.shapeof('arg', 'double')
 
 
 class Exp(RealUnaryOp):
@@ -621,7 +603,7 @@ class Exp(RealUnaryOp):
 class Sign(UnaryOp):
 
     # This is the Impala output for both integers and double/float
-    output_type = rules.shape_like_arg(0, 'float')
+    output_type = rlz.shapeof('arg', 'float')
 
 
 class Sqrt(RealUnaryOp):
@@ -651,7 +633,7 @@ class Log10(Logarithm):
 
 class StringUnaryOp(UnaryOp):
     arg = rlz.string
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class Uppercase(StringUnaryOp):
@@ -686,20 +668,19 @@ class Substring(ValueOp):
     arg = rlz.string
     start = rlz.integer
     length = rlz.optional(rlz.integer)
-
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class StrRight(ValueOp):
     arg = rlz.string
     nchars = rlz.integer
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class Repeat(ValueOp):
     arg = rlz.string
     times = rlz.integer
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class StringFind(ValueOp):
@@ -707,40 +688,40 @@ class StringFind(ValueOp):
     substr = rlz.string
     start = rlz.optional(rlz.integer)
     end = rlz.optional(rlz.integer)
-    output_type = rules.shape_like_arg(0, 'int64')
+    output_type = rlz.shapeof('arg', dt.int64)
 
 
 class Translate(ValueOp):
     arg = rlz.string
     from_str = rlz.string
     to_str = rlz.string
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class LPad(ValueOp):
     arg = rlz.string
     length = rlz.integer
     pad = rlz.optional(rlz.string)
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class RPad(ValueOp):
     arg = rlz.string
     length = rlz.integer
     pad = rlz.optional(rlz.string)
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class FindInSet(ValueOp):
     needle = rlz.string
     values = rlz.listof(rlz.string, min_length=1)
-    output_type = rules.shape_like_arg(0, 'int64')
+    output_type = rlz.shapeof('needle', dt.int64)
 
 
 class StringJoin(ValueOp):
     sep = rlz.string
     arg = rlz.listof(rlz.string, min_length=1)
-    output_type = rules.shape_like_flatargs('string')
+    output_type = rules.shape_like_flatargs(dt.string)
 
 
 class BooleanValueOp(object):
@@ -750,13 +731,13 @@ class BooleanValueOp(object):
 class FuzzySearch(ValueOp, BooleanValueOp):
     arg = rlz.string
     pattern = rlz.string
-    output_type = rules.shape_like_arg(0, 'boolean')
+    output_type = rlz.shapeof('arg', dt.boolean)
 
 
 class StringSQLLike(FuzzySearch):
     arg = rlz.string
     pattern = rlz.string
-    escape = rlz.optional(rlz.string)  # TODO six.string_types
+    escape = rlz.instanceof(six.string_types)
 
 
 class RegexSearch(FuzzySearch):
@@ -767,34 +748,34 @@ class RegexExtract(ValueOp):
     arg = rlz.string
     pattern = rlz.string
     index = rlz.integer
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class RegexReplace(ValueOp):
     arg = rlz.string
     pattern = rlz.string
     replacement = rlz.string
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class StringReplace(ValueOp):
     arg = rlz.string
     pattern = rlz.string
     replacement = rlz.string
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class StringSplit(ValueOp):
     arg = rlz.string
     delimiter = rlz.string
-    output_type = rules.shape_like_arg(0, 'array<string>')
+    output_type = rlz.shapeof('arg', 'array<string>')
 
 
 class StringConcat(ValueOp):
     arg = rlz.listof(rlz.string)
 
     def output_type(self):
-        return rules.shape_like_args(self.args, 'string')
+        return rules.shape_like_args(self.args, dt.string)
 
 
 class ParseURL(ValueOp):
@@ -803,7 +784,7 @@ class ParseURL(ValueOp):
                         'REF', 'AUTHORITY', 'FILE',
                         'USERINFO', 'QUERY'])
     key = rlz.optional(rlz.string)
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class StringLength(UnaryOp):
@@ -816,12 +797,12 @@ class StringLength(UnaryOp):
     length : int32
     """
 
-    output_type = rules.shape_like_arg(0, 'int32')
+    output_type = rlz.shapeof('arg', dt.int32)
 
 
 class StringAscii(UnaryOp):
 
-    output_type = rules.shape_like_arg(0, 'int32')
+    output_type = rlz.shapeof('arg', dt.int32)
 
 
 class BinaryOp(ValueOp):
@@ -865,14 +846,10 @@ class Count(Reduction):
 
 
 class Arbitrary(Reduction):
-
     arg = rlz.column(rlz.any)
     how = rlz.optional(rlz.isin({'first', 'last', 'heavy'}), default='first')
     where = rlz.optional(rlz.boolean)
-
-    def output_type(self):
-        # Scalar but type of caller
-        return self.args[0].type().scalar_type()
+    output_type = rlz.scalarof('arg')
 
 
 class Sum(Reduction):
@@ -972,10 +949,7 @@ class CMSMedian(Reduction):
     """
     arg = rlz.column(rlz.any)
     where = rlz.optional(rlz.boolean)
-
-    def output_type(self):
-        # Scalar but type of caller
-        return self.args[0].type().scalar_type()
+    output_type = rlz.scalarof('arg')
 
 
 # ----------------------------------------------------------------------
@@ -990,9 +964,7 @@ class WindowOp(ValueOp):
 
     expr = rlz.noop
     window = rlz.noop
-
-    def output_type(self):
-        return self.args[0].type().array_type()
+    output_type = rlz.arrayof('expr')
 
     def __init__(self, expr, window):
         from ibis.expr.window import propagate_down_window
@@ -1010,17 +982,18 @@ class WindowOp(ValueOp):
         super(WindowOp, self).__init__(expr, window)
 
     def over(self, window):
-        existing_window = self.args[1]
-        new_window = existing_window.combine(window)
-        return WindowOp(self.args[0], new_window)
+        new_window = self.window.combine(window)
+        return WindowOp(self.expr, new_window)
 
     def root_tables(self):
-        window = self.args[1]
         result = list(toolz.unique(
-            itertools.chain(
-                self.args[0]._root_tables(),
+            toolz.concatv(
+                self.expr._root_tables(),
                 distinct_roots(
-                    *itertools.chain(window._order_by, window._group_by)
+                    *toolz.concatv(
+                        self.window._order_by,
+                        self.window._group_by
+                    )
                 )
             ),
             key=id
@@ -1033,7 +1006,7 @@ class ShiftBase(AnalyticOp):
     arg = rlz.column(rlz.any)
     offset = rlz.optional(rlz.integer)
     default = rlz.optional(rlz.any)
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class Lag(ShiftBase):
@@ -1101,14 +1074,13 @@ class DenseRank(RankBase):
 
 
 class RowNumber(RankBase):
-
     """
     Compute row number starting from 0 after sorting by column expression
 
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.table([('values', 'int64')])
+    >>> t = ibis.table([('values', dt.int64)])
     >>> w = ibis.window(order_by=t.values)
     >>> row_num = ibis.row_number().over(w)
     >>> result = t[t.values, row_num.name('row_num')]
@@ -1150,36 +1122,36 @@ class CumulativeMin(CumulativeOp):
 
 class PercentRank(AnalyticOp):
     arg = rlz.column(rlz.any)
-    output_type = rules.shape_like_arg(0, 'double')
+    output_type = rlz.shapeof('arg', dt.double)
 
 
 class NTile(AnalyticOp):
     arg = rlz.column(rlz.any)
     buckets = rlz.integer
-    output_type = rules.shape_like_arg(0, 'int64')
+    output_type = rlz.shapeof('arg', dt.int64)
 
 
 class FirstValue(AnalyticOp):
     arg = rlz.column(rlz.any)
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class LastValue(AnalyticOp):
     arg = rlz.column(rlz.any)
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class NthValue(AnalyticOp):
     arg = rlz.column(rlz.any)
     nth = rlz.integer
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
+
 
 # ----------------------------------------------------------------------
 # Distinct stuff
 
 
 class Distinct(TableNode, HasSchema):
-
     """
     Distinct is a table-level unique-ing operation.
 
@@ -1223,9 +1195,7 @@ class DistinctColumn(ValueOp):
         return type(self.arg)
 
     def count(self):
-        """
-        Only valid if the distinct contains a single column
-        """
+        """Only valid if the distinct contains a single column"""
         return CountDistinct(self.arg)
 
 
@@ -1248,14 +1218,14 @@ class Any(ValueOp):
 
     @property
     def _reduction(self):
-        roots = self.args[0]._root_tables()
+        roots = self.arg._root_tables()
         return len(roots) < 2
 
     def output_type(self):
         return ir.BooleanScalar if self._reduction else ir.BooleanColumn
 
     def negate(self):
-        return NotAny(self.args[0])
+        return NotAny(self.arg)
 
 
 class All(ValueOp):
@@ -1267,19 +1237,19 @@ class All(ValueOp):
         return ir.BooleanScalar
 
     def negate(self):
-        return NotAll(self.args[0])
+        return NotAll(self.arg)
 
 
 class NotAny(Any):
 
     def negate(self):
-        return Any(self.args[0])
+        return Any(self.arg)
 
 
 class NotAll(All):
 
     def negate(self):
-        return All(self.args[0])
+        return All(self.arg)
 
 
 class CumulativeAny(CumulativeOp):
@@ -1438,20 +1408,18 @@ class SimpleCase(ValueOp):
         super(SimpleCase, self).__init__(base, cases, results, default)
 
     def root_tables(self):
-        base, cases, results, default = self.args
-        all_exprs = [base] + cases + results + (
-            [] if default is None else [default]
+        all_exprs = [self.base] + self.cases + self.results + (
+            [] if self.default is None else [self.default]
         )
         return distinct_roots(*all_exprs)
 
     def output_type(self):
-        base, cases, results, default = self.args
         out_exprs = list(filter(
             lambda expr: expr is not None,
-            results + [default]
+            self.results + [self.default]
         ))
         typename = rules.highest_precedence_type(out_exprs)
-        return rules.shape_like(base, typename)
+        return rules.shape_like(self.base, typename)
 
 
 class SearchedCase(ValueOp):
@@ -1489,7 +1457,7 @@ class Where(ValueOp):
     false_null_expr = rlz.any
 
     def output_type(self):
-        return rules.shape_like(self.args[0], self.args[1].type())
+        return rules.shape_like(self.bool_expr, self.true_expr.type())
 
 
 def _validate_join_tables(left, right):
@@ -1727,12 +1695,6 @@ class Limit(TableNode):
 
     # TODO:
     # _arg_names = [None, 'n', 'offset']
-
-    # def __init__(self, table, n, offset=0):
-    #     super(Limit, self).__init__([table, n, offset])
-    #     self.table = table
-    #     self.n = n
-    #     self.offset = offset
 
     def blocks(self):
         return True
@@ -2216,7 +2178,7 @@ class Divide(BinaryOp):
 class FloorDivide(Divide):
 
     def output_type(self):
-        return rules.shape_like_args(self.args, 'int64')
+        return rules.shape_like_args(self.args, dt.int64)
 
 
 class LogicalBinaryOp(BinaryOp):
@@ -2230,7 +2192,7 @@ class LogicalBinaryOp(BinaryOp):
 class Not(UnaryOp):
 
     arg = rlz.boolean
-    output_type = rules.shape_like_arg(0, 'boolean')
+    output_type = rlz.shapeof('arg', 'boolean')
 
 
 class Modulus(BinaryOp):
@@ -2534,35 +2496,35 @@ _timestamp_units = toolz.merge(_date_units, _time_units)
 class TimestampTruncate(ValueOp):
     arg = rlz.timestamp
     unit = rlz.isin(_timestamp_units)
-    output_type = rules.shape_like_arg(0, dt.timestamp)
+    output_type = rlz.shapeof('arg', dt.timestamp)
 
 
 class DateTruncate(ValueOp):
     arg = rlz.date
     unit = rlz.isin(_date_units)
-    output_type = rules.shape_like_arg(0, dt.date)
+    output_type = rlz.shapeof('arg', dt.date)
 
 
 class TimeTruncate(ValueOp):
     arg = rlz.time
     unit = rlz.isin(_time_units)
-    output_type = rules.shape_like_arg(0, dt.time)
+    output_type = rlz.shapeof('arg', dt.time)
 
 
 class Strftime(ValueOp):
     arg = rlz.temporal
     format_str = rlz.string
-    output_type = rules.shape_like_arg(0, dt.string)
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class ExtractTemporalField(TemporalUnaryOp):
 
-    output_type = rules.shape_like_arg(0, 'int32')
+    output_type = rlz.shapeof('arg', dt.int32)
 
 
 class ExtractTimestampField(TimestampUnaryOp):
 
-    output_type = rules.shape_like_arg(0, 'int32')
+    output_type = rlz.shapeof('arg', dt.int32)
 
 
 class ExtractYear(ExtractTemporalField):
@@ -2575,12 +2537,12 @@ class ExtractMonth(ExtractTemporalField):
 
 class DayOfWeekIndex(UnaryOp):
     arg = rlz.oneof([rlz.date, rlz.timestamp])
-    output_type = rules.shape_like_arg(0, 'int32')
+    output_type = rlz.shapeof('arg', dt.int32)
 
 
 class DayOfWeekName(UnaryOp):
     arg = rlz.oneof([rlz.date, rlz.timestamp])
-    output_type = rules.shape_like_arg(0, 'string')
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class DayOfWeek(ir.Expr):
@@ -2623,18 +2585,18 @@ class ExtractMillisecond(ExtractTimestampField):
 
 class Time(UnaryOp):
 
-    output_type = rules.shape_like_arg(0, 'time')
+    output_type = rlz.shapeof('arg', 'time')
 
 
 class Date(UnaryOp):
 
-    output_type = rules.shape_like_arg(0, 'date')
+    output_type = rlz.shapeof('arg', 'date')
 
 
 class TimestampFromUNIX(ValueOp):
     arg = rlz.any
     unit = rlz.isin(['s', 'ms', 'us'])
-    output_type = rules.shape_like_arg(0, 'timestamp')
+    output_type = rlz.shapeof('arg', 'timestamp')
 
 
 class DecimalUnaryOp(UnaryOp):
@@ -2643,84 +2605,85 @@ class DecimalUnaryOp(UnaryOp):
 
 class DecimalPrecision(DecimalUnaryOp):
 
-    output_type = rules.shape_like_arg(0, 'int32')
+    output_type = rlz.shapeof('arg', dt.int32)
 
 
 class DecimalScale(UnaryOp):
 
-    output_type = rules.shape_like_arg(0, 'int32')
+    output_type = rlz.shapeof('arg', dt.int32)
 
 
 class Hash(ValueOp):
     arg = rlz.any
     how = rlz.isin({'fnv'})
-    output_type = rules.shape_like_arg(0, 'int64')
+    output_type = rlz.shapeof('arg', dt.int64)
 
 
 class DateAdd(Add):
     left = rlz.date
     right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D'])
-    output_type = rules.shape_like_arg(0, 'date')
+    output_type = rlz.shapeof('left', 'date')
 
 
 class DateSub(Subtract):
     left = rlz.date
     right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D'])
-    output_type = rules.shape_like_arg(0, 'date')
+    output_type = rlz.shapeof('left', 'date')
 
 
 class DateDiff(BinaryOp):
     left = rlz.date
     right = rlz.date
-    output_type = rules.shape_like_arg(0, dt.Interval('D'))
+    output_type = rlz.shapeof('left', dt.Interval('D'))
 
 
 class TimeAdd(Add):
     left = rlz.time
     right = rlz.interval(units=['h', 'm', 's'])
-    output_type = rules.shape_like_arg(0, 'time')
+    output_type = rlz.shapeof('left', 'time')
 
 
 class TimeSub(Subtract):
     left = rlz.time
     right = rlz.interval(units=['h', 'm', 's'])
-    output_type = rules.shape_like_arg(0, 'time')
+    output_type = rlz.shapeof('left', 'time')
 
 
 class TimeDiff(BinaryOp):
     left = rlz.time
     right = rlz.time
-    output_type = rules.shape_like_arg(0, dt.Interval('s'))
+    output_type = rlz.shapeof('left', dt.Interval('s'))
 
 
 class TimestampAdd(Add):
     left = rlz.timestamp
     right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's'])
-    output_type = rules.shape_like_arg(0, 'timestamp')
+    output_type = rlz.shapeof('left', 'timestamp')
 
 
 class TimestampSub(Subtract):
     left = rlz.timestamp
     right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's'])
-    output_type = rules.shape_like_arg(0, 'timestamp')
+    output_type = rlz.shapeof('left', 'timestamp')
 
 
 class TimestampDiff(BinaryOp):
     left = rlz.timestamp
     right = rlz.timestamp
-    output_type = rules.shape_like_arg(0, dt.Interval('s'))
+    output_type = rlz.shapeof('left', dt.Interval('s'))
 
 
 class IntervalAdd(Add):
     left = rlz.interval
     right = rlz.interval
 
-    def output_type(self):
-        left, right = self.args
+    output_type = rlz.shapeof('left')
+    # def output_type(self):
+    #     left, right = self.args
 
-        # should upconvert to the smaller unit?
-        # value_type = left.to_unit(right.type().unit).type()
-        return rules.shape_like(left, left.type())
+    #     # should upconvert to the smaller unit?
+    #     # value_type = left.to_unit(right.type().unit).type()
+    #     return rules.shape_like(left, left.type())
 
 
 class IntervalMultiply(Multiply):
@@ -2733,9 +2696,7 @@ class IntervalMultiply(Multiply):
 class IntervalFloorDivide(FloorDivide):
     left = rlz.interval
     right = rlz.numeric
-
-    def output_type(self):
-        return rules.shape_like(self.args[0],  self.args[0].type())
+    output_type = rlz.shapeof('left')
 
 
 class IntervalFromInteger(ValueOp):
@@ -2748,21 +2709,20 @@ class IntervalFromInteger(ValueOp):
         return dt.Interval(self.unit).resolution
 
     def output_type(self):
-        arg, unit = self.args
-        type = dt.Interval(unit, arg.type())
-        return rules.shape_like(arg, type)
+        dtype = dt.Interval(self.unit, self.arg.type())
+        return rlz.shapeof('arg', dtype=dtype)(self)
 
 
 class ArrayLength(UnaryOp):
     arg = rlz.value(dt.Array(dt.any))
-    output_type = rules.shape_like_arg(0, 'int64')
+    output_type = rlz.shapeof('arg', dt.int64)
 
 
 class ArraySlice(ValueOp):
     arg = rlz.value(dt.Array(dt.any))
     start = rlz.integer
     stop = rlz.optional(rlz.integer)
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class ArrayIndex(ValueOp):
@@ -2774,50 +2734,35 @@ class ArrayIndex(ValueOp):
         return rules.shape_like(self.args[0], value_type)
 
 
-def _array_binop_invariant_output_type(self):
-    """Check whether two arrays in an array OP array binary operation have
-    the same type.
-    """
-    args = self.args
-    left_type = args[0].type()
-    right_type = args[1].type()
-    if left_type != right_type:
-        raise TypeError(
-            'Array types must match exactly in a {} operation. '
-            'Left type {} != Right type {}'.format(
-                type(self).__name__, left_type, right_type
-            )
-        )
-    return left_type
-
-
 class ArrayConcat(ValueOp):
     left = rlz.value(dt.Array(dt.any))
     right = rlz.value(dt.Array(dt.any))
 
     def output_type(self):
-        result_type = _array_binop_invariant_output_type(self)
-        return rules.shape_like(self.args[0], result_type)
+        if self.left.type() != self.right.type():
+            raise com.IbisTypeError(
+                'Array types must match exactly in a {} operation. '
+                'Left type {} != Right type {}'.format(
+                    type(self).__name__, left_type, right_type
+                )
+            )
+        return rlz.shapeof('left')(self)
 
 
 class ArrayRepeat(ValueOp):
     arg = rlz.value(dt.Array(dt.any))
     times = rlz.integer
-
-    def output_type(self):
-        array_type = self.args[0].type()
-        return rules.shape_like(self.args[0], array_type)
+    output_type = rlz.typeof('arg')
 
 
 class ArrayCollect(Reduction):
     arg = rlz.column(rlz.any)
-    output_type = rules.scalar_output(rules._array_reduced_type)
+    output_type = rlz.scalarof('arg')
 
 
 class MapLength(ValueOp):
     arg = rlz.value(dt.Map(dt.any, dt.any))
-    # input_type = [rules.map(dt.any, dt.any)]
-    output_type = rules.shape_like_arg(0, 'int64')
+    output_type = rlz.shapeof('arg', dt.int64)
 
 
 class MapValueForKey(ValueOp):
@@ -2851,18 +2796,18 @@ class MapValueOrDefaultForKey(ValueOp):
 
 class MapKeys(ValueOp):
     arg = rlz.value(dt.Map(dt.any, dt.any))
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class MapValues(ValueOp):
     arg = rlz.value(dt.Map(dt.any, dt.any))
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class MapConcat(ValueOp):
     left = rlz.value(dt.Map(dt.any, dt.any))
     right = rlz.value(dt.Map(dt.any, dt.any))
-    output_type = rules.type_of_arg(0)
+    output_type = rlz.typeof('arg')
 
 
 class StructField(ValueOp):
@@ -2955,7 +2900,7 @@ class ExpressionList(Node):
 
     # FIXME
     # TODO rename
-    exprs = rlz.validator(lambda x: x)
+    exprs = rlz.noop
 
     def __init__(self, exprs):
         exprs = [as_value_expr(x) for x in exprs]
@@ -2971,7 +2916,7 @@ class ExpressionList(Node):
 class ValueList(ValueOp):
     """Data structure for a list of value expressions"""
 
-    values = rlz.validator(lambda x: x)
+    values = rlz.noop
 
     def __init__(self, args):
         values = list(map(as_value_expr, args))

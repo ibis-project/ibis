@@ -1213,9 +1213,9 @@ def issubtype(dtype, dtype_or_tuple):
         # modify castable rule instead
         if isinstance(dtype, type(parent)):
             return True
-        elif isinstance(dtype, Any):
-            return True
-        elif isinstance(parent, Any):
-            return True
+        # elif isinstance(dtype, Any):
+        #     return True
+        # elif isinstance(parent, Any):
+        #     return True
 
     return False

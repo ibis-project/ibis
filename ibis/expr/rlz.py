@@ -17,6 +17,9 @@ class validator(curry):
     pass
 
 
+noop = validator(identity)
+
+
 @validator
 def oneof(inners, arg):
     """At least one of the inner valudators must pass"""
@@ -111,25 +114,38 @@ def instanceof(klass, arg):
 @validator
 def value(dtype, arg):
     if arg is None:
-        raise com.IbisTypeError(
-            'Value argument with datatype {} is mandatory'.format(dtype)
-        )
+        raise com.IbisTypeError('Passing value argument with datatype {} is '
+                                'mandatory'.format(dtype))
 
     if not isinstance(arg, ir.Expr):
+        # coerce python literal to ibis literal
         arg = ir.literal(arg)
+
+    if not isinstance(arg, ir.ValueExpr):
+        raise com.IbisTypeError('Given argument with type {} is not a value '
+                                'expression'.format(type(arg)))
 
     if dt.issubtype(arg.type(), dtype):  # TODO: remove this, should not be required
         return arg  # subtype of expected
     if dt.castable(arg.type(), dtype):
         return arg  # implicitly castable
     else:
-        raise com.IbisTypeError('Given argument with datatype {} is not subtype'
-                                'of {} nor implicitly castable to it'.format(arg.type(), dtype))
+        raise com.IbisTypeError('Given argument with datatype {} is not '
+                                'subtype of {} nor implicitly castable to '
+                                'it'.format(arg.type(), dtype))
+
+
+@validator
+def scalar(inner, arg):
+    return instanceof(ir.ScalarExpr, inner(arg))
+
+
+@validator
+def column(inner, arg):
+    return instanceof(ir.ColumnExpr, inner(arg))
 
 
 # TODO: change it to raise instead to locate all temporary noop validator
-noop = validator(identity)
-
 any = value(dt.any)
 #null = instanceof(dt.Null)#value(dt.null)
 double = value(dt.double)
@@ -141,6 +157,9 @@ floating = value(dt.floating)
 date = value(dt.date)
 time = value(dt.time)
 timestamp = value(dt.timestamp)
+# TODO: previouse number rules allowed booleans by default
+numeric = oneof([integer, floating, decimal])
+temporal = oneof([timestamp, date, time])
 
 
 @validator
@@ -153,23 +172,45 @@ def interval(arg, units=None):
     return arg
 
 
-# TODO: previouse number rules allowed booleans by default
-numeric = oneof([integer, floating, decimal])
-temporal = oneof([timestamp, date, time])
-
-
-# TODO: instead of inner might just
-# allof(column, boolean)
-
-@validator
-def scalar(inner, arg):
-    return instanceof(ir.ScalarExpr, inner(arg))
-
-
-@validator
-def column(inner, arg):
-    return instanceof(ir.ColumnExpr, inner(arg))
-
-
 table = instanceof(ir.TableExpr)
 schema = instanceof(sch.Schema)
+
+
+@validator
+def szuper(klass, arg):
+    # TODO
+    return instanceof(klass, arg)
+
+
+# maybe rename to shape_like, scalar_like etc
+def shapeof(name, dtype=None):
+    def output_type(self):
+        arg = getattr(self, name)
+        output_dtype = dt.dtype(dtype or arg.type())
+        if isinstance(arg, ir.ScalarExpr):
+            return output_dtype.scalar_type()
+        else:
+            return output_dtype.array_type()
+    return output_type
+
+
+def scalarof(name):
+    def output_type(self):
+        arg = getattr(self, name)
+        output_dtype = arg.type()
+        return output_dtype.scalar_type()
+    return output_type
+
+
+def arrayof(name):
+    def output_type(self):
+        arg = getattr(self, name)
+        output_dtype = arg.type()
+        return output_dtype.array_type()
+    return output_type
+
+
+def typeof(name):
+    def output_type(self):
+        return getattr(self, name)._factory
+    return output_type
