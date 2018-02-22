@@ -45,7 +45,7 @@ def distinct_roots(*expressions):
     return list(toolz.unique(roots, key=id))
 
 
-def pina(names, args, kwargs):
+def _pack_arguments(names, args, kwargs):
     # TODO: docstrings
     # TODO: error messages
     assert len(args) <= len(names)
@@ -81,10 +81,8 @@ class OperationMeta(type):
         return OrderedDict()
 
     def __new__(cls, name, parents, dct):
-        print('CREATING {}'.format(name))
-
         # TODO: cleanup
-        # TODO: consider removing expr cache
+
         slots, args = ['_expr_cached'], []
         for parent in parents:
             # TODO: use ordereddicts to allow overriding
@@ -92,9 +90,6 @@ class OperationMeta(type):
                 slots += parent.__slots__
             if hasattr(parent, '_arg_names'):
                 args += parent._arg_names
-
-        # TODO should use signature
-        # and merge parents signature with child signature
 
         odict = OrderedDict()
         for key, value in dct.items():
@@ -114,18 +109,17 @@ class OperationMeta(type):
 
 class Node(six.with_metaclass(OperationMeta, object)):
 
-    # __init__ should read the signature property of class instead of using descriptors
+    # should read the signature property of class instead of using descriptors?
     # then run validators on arguments
     # then set to the according underscored slot
     # after that call self._validate to support validating more arguments together
 
     def __init__(self, *args, **kwargs):
         self._expr_cached = None
-        # TODO: in case of missing value pass None else literal(None) -> null
-        for k, v in pina(self._arg_names, args, kwargs).items():
+        for k, v in _pack_arguments(self._arg_names, args, kwargs).items():
             setattr(self, k, v)
-        # TODO: check for validate functions to support validating more arguments at once, like table operatrions need
-        # TODO: be able do define additional slots in childs
+        # TODO: check for validate functions to support validating more
+        # arguments at once, like table operations require
 
     def __repr__(self):
         return self._repr()
