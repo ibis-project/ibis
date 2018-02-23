@@ -630,9 +630,11 @@ _operation_registry = {
     ops.TableArrayView: _table_array_view,
 
     ops.DateAdd: binary_infix_op('+'),
-    ops.DateSubtract: binary_infix_op('-'),
+    ops.DateSub: binary_infix_op('-'),
+    ops.DateDiff: binary_infix_op('-'),
     ops.TimestampAdd: binary_infix_op('+'),
-    ops.TimestampSubtract: binary_infix_op('-'),
+    ops.TimestampSub: binary_infix_op('-'),
+    ops.TimestampDiff: binary_infix_op('-'),
     ops.TimestampFromUNIX: _timestamp_from_unix,
 
     transforms.ExistsSubquery: _exists_subquery,
