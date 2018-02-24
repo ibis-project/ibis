@@ -2,6 +2,7 @@ import pytest
 import enum
 from toolz import curry
 from ibis.compat import suppress
+import ibis.util as util
 import ibis.common as com
 import ibis.expr.rules as rules
 import ibis.expr.types as ir
@@ -186,16 +187,23 @@ def szuper(klass, arg):
     return instanceof(klass, arg)
 
 
-# TODO: maybe rename back to shape_like, scalar_like etc
-def shapeof(name, dtype=None):
-    def output_type(self):
-        arg = getattr(self, name)
-        output_dtype = dt.dtype(dtype or arg.type())
-        if isinstance(arg, ir.AnyScalar):
-            return output_dtype.scalar_type()
-        else:
-            return output_dtype.array_type()
-    return output_type
+def shapeof(arg, dtype=None):
+    if isinstance(arg, str):
+        return lambda self: shapeof(getattr(self, arg), dtype=dtype)
+
+    if isinstance(arg, (tuple, list)):
+        # FIXME
+        # datatype = highest_precedence_type({a.type() for a in arg})
+        columnar = util.any_of(arg, ir.AnyColumn)
+    else:
+        datatype = dtype or arg.type()
+        columnar = isinstance(arg, ir.AnyColumn)
+
+    dtype = dt.dtype(dtype or datatype)
+    if columnar:
+        return dtype.array_type()
+    else:
+        return dtype.scalar_type()
 
 
 def scalarof(name):
@@ -218,3 +226,18 @@ def typeof(name):
     def output_type(self):
         return getattr(self, name)._factory
     return output_type
+
+
+def highest_precedence_type(exprs):
+    # Return the highest precedence type from the passed expressions. Also
+    # verifies that there are valid implicit casts between any of the types and
+    # the selected highest precedence type
+    if not exprs:
+        raise ValueError('Must pass at least one expression')
+
+    expr_dtypes = {expr.type() for expr in exprs}
+    return dt.highest_precedence(expr_dtypes)
+
+
+def comparable(left, right):
+    return ir.castable(left, right) or ir.castable(right, left)

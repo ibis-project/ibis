@@ -400,4 +400,7 @@ def test_table_custom_validator():
         MyOp(table)
 
 
-
+def test_precedence_with_no_arguments():
+    with pytest.raises(ValueError) as e:
+        rlz.highest_precedence_type([])
+    assert str(e.value) == 'Must pass at least one expression'

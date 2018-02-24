@@ -150,17 +150,6 @@ class PowerPromoter(BinaryPromoter):
             )
 
 
-def highest_precedence_type(exprs):
-    # Return the highest precedence type from the passed expressions. Also
-    # verifies that there are valid implicit casts between any of the types and
-    # the selected highest precedence type
-    if not exprs:
-        raise ValueError('Must pass at least one expression')
-
-    expr_dtypes = {expr.type() for expr in exprs}
-    return dt.highest_precedence(expr_dtypes)
-
-
 def _int_bounds_promotion(ltype, rtype, op):
     lmin, lmax = ltype.bounds
     rmin, rmax = rtype.bounds

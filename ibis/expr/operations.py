@@ -394,7 +394,7 @@ class Cast(ValueOp):
     #     return self.args[0].get_name()
 
     def output_type(self):
-        return rlz.shapeof('arg', dtype=self.to)(self)
+        return rlz.shapeof(self.arg, dtype=self.to)
 
 
 class TypeOf(ValueOp):
@@ -424,7 +424,7 @@ class NotNull(UnaryOp):
     -------
     notnull : boolean with dimension of caller
     """
-    output_type = rlz.shapeof('arg', 'boolean')
+    output_type = rlz.shapeof('arg', dt.boolean)
 
 
 class ZeroIfNull(UnaryOp):
@@ -442,9 +442,7 @@ class IfNull(ValueOp):
     ifnull_expr = rlz.any
 
     def output_type(self):
-        args = self.args
-        highest_type = rules.highest_precedence_type(args)
-        return rules.shape_like(args[0], highest_type)
+        return rlz.shapeof(self.arg, rlz.highest_precedence_type(self.args))
 
 
 class NullIf(ValueOp):
@@ -538,7 +536,7 @@ class Ceil(UnaryOp):
     def output_type(self):
         if isinstance(self.arg.type(), dt.Decimal):
             return self.arg._factory
-        return rlz.shapeof('arg', dt.int64)(self)
+        return rlz.shapeof(self.arg, dt.int64)
 
 
 class Floor(UnaryOp):
@@ -557,7 +555,7 @@ class Floor(UnaryOp):
     def output_type(self):
         if isinstance(self.arg.type(), dt.Decimal):
             return self.arg._factory
-        return rlz.shapeof('arg', dt.int64)(self)
+        return rlz.shapeof(self.arg, dt.int64)
 
 
 class Round(ValueOp):
@@ -590,7 +588,7 @@ class BaseConvert(ValueOp):
 
 class RealUnaryOp(UnaryOp):
     arg = rlz.numeric
-    output_type = rlz.shapeof('arg', 'double')
+    output_type = rlz.shapeof('arg', dt.double)
 
 
 class Exp(RealUnaryOp):
@@ -600,7 +598,7 @@ class Exp(RealUnaryOp):
 class Sign(UnaryOp):
 
     # This is the Impala output for both integers and double/float
-    output_type = rlz.shapeof('arg', 'float')
+    output_type = rlz.shapeof('arg', dt.float)
 
 
 class Sqrt(RealUnaryOp):
@@ -765,14 +763,15 @@ class StringReplace(ValueOp):
 class StringSplit(ValueOp):
     arg = rlz.string
     delimiter = rlz.string
-    output_type = rlz.shapeof('arg', 'array<string>')
+    output_type = rlz.shapeof('arg', dt.Array(dt.string))
 
 
 class StringConcat(ValueOp):
     arg = rlz.listof(rlz.string)
+    output_type = rlz.shapeof('args', dt.string)
 
-    def output_type(self):
-        return rules.shape_like_args(self.args, dt.string)
+    # def output_type(self):
+    #     return rules.shape_like_args(self.args, dt.string)
 
 
 class ParseURL(ValueOp):
@@ -803,28 +802,19 @@ class StringAscii(UnaryOp):
 
 
 class BinaryOp(ValueOp):
+    """A binary operation"""
 
-    """
-    A binary operation
-
-    """
     # Casting rules for type promotions (for resolving the output type) may
     # depend in some cases on the target backend.
     #
     # TODO: how will overflows be handled? Can we provide anything useful in
     # Ibis to help the user avoid them?
 
-    left = rlz.any
-    right = rlz.any
-
     def __init__(self, left, right):
         super(BinaryOp, self).__init__(*self._maybe_cast_args(left, right))
 
     def _maybe_cast_args(self, left, right):
         return left, right
-
-    def output_type(self):
-        raise NotImplementedError
 
 
 # ----------------------------------------------------------------------
@@ -1323,7 +1313,7 @@ class SimpleCaseBuilder(object):
         case_expr = as_value_expr(case_expr)
         result_expr = as_value_expr(result_expr)
 
-        if not rules.comparable(self.base, case_expr):
+        if not rlz.comparable(self.base, case_expr):
             raise TypeError('Base expression and passed case are not '
                             'comparable')
 
@@ -1447,7 +1437,7 @@ class SimpleCase(ValueOp):
             lambda expr: expr is not None,
             self.results + [self.default]
         ))
-        typename = rules.highest_precedence_type(out_exprs)
+        typename = rlz.highest_precedence_type(out_exprs)
         return rules.shape_like(self.base, typename)
 
 
@@ -1468,7 +1458,7 @@ class SearchedCase(ValueOp):
     def output_type(self):
         cases, results, default = self.args
         out_exprs = results + [default]
-        typename = rules.highest_precedence_type(out_exprs)
+        typename = rlz.highest_precedence_type(out_exprs)
         return rules.shape_like_args(cases, typename)
 
 
@@ -2168,34 +2158,39 @@ class Aggregation(TableNode, HasSchema):
         return Selection(expr, [], sort_keys=sort_exprs)
 
 
-class Add(BinaryOp):
+class NumericBinaryOp(BinaryOp):
+    left = rlz.numeric
+    right = rlz.numeric
+
+
+class Add(NumericBinaryOp):
 
     def output_type(self):
         helper = rules.BinaryPromoter(self.left, self.right, operator.add)
         return helper.get_result()
 
 
-class Multiply(BinaryOp):
+class Multiply(NumericBinaryOp):
 
     def output_type(self):
         helper = rules.BinaryPromoter(self.left, self.right, operator.mul)
         return helper.get_result()
 
 
-class Power(BinaryOp):
+class Power(NumericBinaryOp):
 
     def output_type(self):
         return rules.PowerPromoter(self.left, self.right).get_result()
 
 
-class Subtract(BinaryOp):
+class Subtract(NumericBinaryOp):
 
     def output_type(self):
         helper = rules.BinaryPromoter(self.left, self.right, operator.sub)
         return helper.get_result()
 
 
-class Divide(BinaryOp):
+class Divide(NumericBinaryOp):
     left = rlz.numeric
     right = rlz.numeric
 
@@ -2210,19 +2205,19 @@ class FloorDivide(Divide):
 
 
 class LogicalBinaryOp(BinaryOp):
+    left = rlz.boolean
+    right = rlz.boolean
 
     def output_type(self):
-        if not util.all_of(self.args, ir.BooleanValue):
-            raise TypeError('Only valid with boolean data')
         return rules.shape_like_args(self.args, 'boolean')
 
 
 class Not(UnaryOp):
     arg = rlz.boolean
-    output_type = rlz.shapeof('arg', 'boolean')
+    output_type = rlz.shapeof('arg', dt.boolean)
 
 
-class Modulus(BinaryOp):
+class Modulus(NumericBinaryOp):
 
     def output_type(self):
         helper = rules.BinaryPromoter(self.left, self.right,
@@ -2243,6 +2238,8 @@ class Xor(LogicalBinaryOp):
 
 
 class Comparison(BinaryOp, BooleanValueOp):
+    left = rlz.any
+    right = rlz.any
 
     def _maybe_cast_args(self, left, right):
         # it might not be necessary?
@@ -2255,11 +2252,11 @@ class Comparison(BinaryOp, BooleanValueOp):
         return left, right
 
     def output_type(self):
-        if not rules.comparable(self.left, self.right):
+        if not rlz.comparable(self.left, self.right):
             raise TypeError('Arguments with datatype {} and {} are '
                             'not comparable'.format(self.left.type(),
                                                     self.right.type()))
-        return rules.shape_like_args(self.args, 'boolean')
+        return rlz.shapeof(self.args, dt.boolean)
 
 
 class Equals(Comparison):
@@ -2298,10 +2295,10 @@ class Between(ValueOp, BooleanValueOp):
     def output_type(self):
         arg, lower, upper = self.args
 
-        if not (rules.comparable(arg, lower) and rules.comparable(arg, upper)):
+        if not (rlz.comparable(arg, lower) and rlz.comparable(arg, upper)):
             raise TypeError('Arguments are not comparable')
 
-        return rules.shape_like_args(self.args, 'boolean')
+        return rlz.shapeof(self.args, dt.boolean)
 
 
 class BetweenTime(Between):
@@ -2607,18 +2604,18 @@ class ExtractMillisecond(ExtractTimestampField):
 
 class Time(UnaryOp):
 
-    output_type = rlz.shapeof('arg', 'time')
+    output_type = rlz.shapeof('arg', dt.time)
 
 
 class Date(UnaryOp):
 
-    output_type = rlz.shapeof('arg', 'date')
+    output_type = rlz.shapeof('arg', dt.date)
 
 
 class TimestampFromUNIX(ValueOp):
     arg = rlz.any
     unit = rlz.isin(['s', 'ms', 'us'])
-    output_type = rlz.shapeof('arg', 'timestamp')
+    output_type = rlz.shapeof('arg', dt.timestamp)
 
 
 class DecimalUnaryOp(UnaryOp):
@@ -2641,16 +2638,16 @@ class Hash(ValueOp):
     output_type = rlz.shapeof('arg', dt.int64)
 
 
-class DateAdd(Add):
+class DateAdd(BinaryOp):
     left = rlz.date
     right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D'])
-    output_type = rlz.shapeof('left', 'date')
+    output_type = rlz.shapeof('left', dt.date)
 
 
-class DateSub(Subtract):
+class DateSub(BinaryOp):
     left = rlz.date
     right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D'])
-    output_type = rlz.shapeof('left', 'date')
+    output_type = rlz.shapeof('left', dt.date)
 
 
 class DateDiff(BinaryOp):
@@ -2659,16 +2656,16 @@ class DateDiff(BinaryOp):
     output_type = rlz.shapeof('left', dt.Interval('D'))
 
 
-class TimeAdd(Add):
+class TimeAdd(BinaryOp):
     left = rlz.time
     right = rlz.interval(units=['h', 'm', 's'])
-    output_type = rlz.shapeof('left', 'time')
+    output_type = rlz.shapeof('left', dt.time)
 
 
-class TimeSub(Subtract):
+class TimeSub(BinaryOp):
     left = rlz.time
     right = rlz.interval(units=['h', 'm', 's'])
-    output_type = rlz.shapeof('left', 'time')
+    output_type = rlz.shapeof('left', dt.time)
 
 
 class TimeDiff(BinaryOp):
@@ -2677,16 +2674,16 @@ class TimeDiff(BinaryOp):
     output_type = rlz.shapeof('left', dt.Interval('s'))
 
 
-class TimestampAdd(Add):
+class TimestampAdd(BinaryOp):
     left = rlz.timestamp
     right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's'])
-    output_type = rlz.shapeof('left', 'timestamp')
+    output_type = rlz.shapeof('left', dt.timestamp)
 
 
-class TimestampSub(Subtract):
+class TimestampSub(BinaryOp):
     left = rlz.timestamp
     right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's'])
-    output_type = rlz.shapeof('left', 'timestamp')
+    output_type = rlz.shapeof('left', dt.timestamp)
 
 
 class TimestampDiff(BinaryOp):
@@ -2695,20 +2692,22 @@ class TimestampDiff(BinaryOp):
     output_type = rlz.shapeof('left', dt.Interval('s'))
 
 
-class IntervalAdd(Add):
+class IntervalAdd(BinaryOp):
     left = rlz.interval
     right = rlz.interval
     output_type = rlz.shapeof('left')
 
 
-class IntervalMultiply(Multiply):
+class IntervalMultiply(BinaryOp):
+    left = rlz.interval
+    right = rlz.numeric
 
     def output_type(self):
         helper = rules.IntervalPromoter(self.left, self.right, operator.mul)
         return helper.get_result()
 
 
-class IntervalFloorDivide(FloorDivide):
+class IntervalFloorDivide(BinaryOp):
     left = rlz.interval
     right = rlz.numeric
     output_type = rlz.shapeof('left')
@@ -2725,7 +2724,7 @@ class IntervalFromInteger(ValueOp):
 
     def output_type(self):
         dtype = dt.Interval(self.unit, self.arg.type())
-        return rlz.shapeof('arg', dtype=dtype)(self)
+        return rlz.shapeof(self.arg, dtype=dtype)
 
 
 class ArrayLength(UnaryOp):
@@ -2746,7 +2745,7 @@ class ArrayIndex(ValueOp):
 
     def output_type(self):
         value_dtype = self.arg.type().value_type
-        return rlz.shapeof('arg', value_dtype)(self)
+        return rlz.shapeof(self.arg, value_dtype)
 
 
 class ArrayConcat(ValueOp):
@@ -2761,7 +2760,7 @@ class ArrayConcat(ValueOp):
                     type(self).__name__, left_type, right_type
                 )
             )
-        return rlz.shapeof('left')(self)
+        return rlz.shapeof(self.left)
 
 
 class ArrayRepeat(ValueOp):
@@ -2786,7 +2785,7 @@ class MapValueForKey(ValueOp):
 
     def output_type(self):
         value_dtype = self.arg.type().value_type
-        return rlz.shapeof('arg', value_dtype)(self)
+        return rlz.shapeof(self.arg, value_dtype)
 
 
 class MapValueOrDefaultForKey(ValueOp):
@@ -2941,5 +2940,5 @@ class ValueList(ValueOp):
         return distinct_roots(*self.values)
 
     def _make_expr(self):
-        dtype = rules.highest_precedence_type(self.values)
+        dtype = rlz.highest_precedence_type(self.values)
         return ir.ListExpr(self, dtype=dtype)

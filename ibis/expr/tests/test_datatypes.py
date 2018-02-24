@@ -12,7 +12,6 @@ import ibis.expr.datatypes as dt
 
 from ibis import IbisError
 from ibis.common import IbisTypeError
-from ibis.expr.rules import highest_precedence_type
 
 
 def test_validate_type():
@@ -181,12 +180,6 @@ def test_char_varchar_invalid(spec):
 ])
 def test_primitive(spec, expected):
     assert dt.dtype(spec) == expected
-
-
-def test_precedence_with_no_arguments():
-    with pytest.raises(ValueError) as e:
-        highest_precedence_type([])
-    assert str(e.value) == 'Must pass at least one expression'
 
 
 def test_literal_mixed_type_fails():

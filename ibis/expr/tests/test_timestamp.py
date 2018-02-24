@@ -21,7 +21,7 @@ import ibis
 import ibis.expr.api as api
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.expr.rules import highest_precedence_type
+import ibis.expr.rlz as rlz
 
 
 def test_field_select(alltypes):
@@ -121,7 +121,7 @@ def test_greater_comparison_pandas_timestamp(alltypes):
 
 def test_timestamp_precedence():
     ts = ibis.literal(datetime.now())
-    highest_type = highest_precedence_type([ibis.NA, ts])
+    highest_type = rlz.highest_precedence_type([ibis.NA, ts])
     assert highest_type == 'timestamp'
 
 
