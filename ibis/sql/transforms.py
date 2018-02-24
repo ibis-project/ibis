@@ -13,12 +13,11 @@
 # limitations under the License.
 
 
-import ibis.expr.analysis as L
-
-import ibis.expr.operations as ops
-import ibis.expr.types as ir
 import ibis.util as util
-import ibis.expr.rlz as rlz
+import ibis.expr.types as ir
+import ibis.expr.rules as rlz
+import ibis.expr.operations as ops
+import ibis.expr.analysis as L
 
 
 class ExistsExpr(ir.AnalyticExpr):

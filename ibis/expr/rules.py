@@ -1,260 +1,251 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+import pytest
+import enum
 
-import abc
-import six
-import sys
-import operator
-
-from collections import Counter
-
-from ibis.common import IbisTypeError
-import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
-import ibis.common as com
+from toolz import curry
+from ibis.compat import suppress
 import ibis.util as util
+import ibis.common as com
+import ibis.expr.types as ir
+import ibis.expr.schema as sch
+import ibis.expr.datatypes as dt
+
+from itertools import starmap, product
+# TODO try to import cytoolz
+from toolz import curry, compose, identity  # try to use cytoolz
+from toolz import unique, curry
 
 
-# TODO create a promoter decorator?
+class validator(curry):
+    pass
 
 
-class BinaryPromoter(object):
-    # placeholder for type promotions for basic binary arithmetic
-
-    def __init__(self, left, right, op):
-        self.args = [left, right]
-        self.left = left
-        self.right = right
-        self.op = op
-
-        self._check_compatibility()
-
-    def get_result(self):
-        promoted_type = self._get_type()
-        return shape_like_args(self.args, promoted_type)
-
-    def _get_type(self):
-        if util.any_of(self.args, ir.DecimalValue):
-            return _decimal_promoted_type(self.args)
-        elif util.any_of(self.args, ir.FloatingValue):
-            return 'double'
-            # TODO: fixme
-            # if util.any_of(self.args, ir.DoubleValue):
-            #     return 'double'
-            # else:
-            #     return 'float'
-        elif util.all_of(self.args, ir.IntegerValue):
-            return self._get_int_type()
-        elif self.left.type().equals(self.right.type()):
-            return self.left.type()
-        else:
-            raise NotImplementedError(
-                'Operands {}, {} not supported for binary operation {}'.format(
-                    type(self.left).__name__, type(self.right).__name__,
-                    self.op.__name__
-                )
-            )
-
-    def _get_int_type(self):
-        import ibis.expr.operations as ops
-
-        deps = [x.op() for x in self.args]
-
-        if util.all_of(deps, ops.Literal):
-            return _smallest_int_containing(
-                [self.op(deps[0].value, deps[1].value)])
-        elif util.any_of(deps, ops.Literal):
-            if isinstance(deps[0], ops.Literal):
-                val = deps[0].value
-                atype = self.args[1].type()
-            else:
-                val = deps[1].value
-                atype = self.args[0].type()
-            return _int_one_literal_promotion(atype, val, self.op)
-        else:
-            return _int_bounds_promotion(self.left.type(),
-                                         self.right.type(), self.op)
-
-    def _check_compatibility(self):
-        if (util.any_of(self.args, ir.StringValue) and
-                not util.all_of(self.args, ir.StringValue)):
-            raise TypeError('String and non-string incompatible')
+noop = validator(identity)
 
 
-class IntervalPromoter(BinaryPromoter):
-    """Infers the output type of the binary interval operation
+@validator
+def oneof(inners, arg):
+    """At least one of the inner valudators must pass"""
+    for inner in inners:
+        with suppress(com.IbisTypeError):
+            return inner(arg)
+    raise com.IbisTypeError('None of the {} are applicable on arg'.format(inners))
 
-    This is a slightly modified version of BinaryPromoter, it converts
-    back and forth between the interval and its inner value.
 
-    This trick reuses the numeric type promotion logics.
-    Any non-integer output type raises a TypeError.
+@validator
+def allof(inners, arg):
+    """All of the inner valudators must pass.
+
+    The order of inner validators matters.
+
+    Parameters
+    ----------
+    inners : List[validator]
+      Functions are applied from right to left so allof([rule1, rule2], arg) is
+      the same as rule1(rule2(arg)).
+    arg : Any
+      Value to be validated.
+
+    Returns
+    -------
+    arg : Any
+      Value maybe transformed by inner validators.
     """
-
-    def __init__(self, left, right, op):
-        left_type = left.type()
-        value_type = shape_like(left, left_type.value_type)
-        self.unit = left_type.unit
-        super(IntervalPromoter, self).__init__(value_type(left), right, op)
-
-    def get_result(self):
-        promoted_value_type = self._get_type()
-        promoted_type = dt.Interval(self.unit, promoted_value_type)
-        return shape_like_args(self.args, promoted_type)
+    return compose(*inners)(arg)
 
 
-# TODO: move to datatypes castable rule
-def _decimal_promoted_type(args):
-    max_precision = max_scale = ~sys.maxsize
-    for arg in args:
-        if isinstance(arg, ir.DecimalValue):
-            max_precision = max(max_precision, arg._dtype.precision)
-            max_scale = max(max_scale, arg._dtype.scale)
-    return dt.Decimal(max_precision, max_precision)
-
-
-class PowerPromoter(BinaryPromoter):
-
-    def __init__(self, left, right):
-        super(PowerPromoter, self).__init__(left, right, operator.pow)
-
-    def _get_type(self):
-        if util.any_of(self.args, ir.FloatingValue):
-            # TODO
-            return 'double'
-            # if util.any_of(self.args, ir.DoubleValue):
-            #     return 'double'
-            # else:
-            #     return 'float'
-        elif util.any_of(self.args, ir.DecimalValue):
-            return _decimal_promoted_type(self.args)
-        elif util.all_of(self.args, ir.IntegerValue):
-            return 'double'
+@validator
+def optional(inner, arg, default=None):
+    if arg is None:
+        if default is None:
+            return None
+        elif callable(default):
+            arg = default()  # required by genname
         else:
-            raise NotImplementedError(
-                'Operands {}, {} not supported for binary operation {}'.format(
-                    type(self.left).__name__, type(self.right).__name__,
-                    self.op.__name__
-                )
-            )
+            arg = default
+    return inner(arg)
 
 
-def _int_bounds_promotion(ltype, rtype, op):
-    lmin, lmax = ltype.bounds
-    rmin, rmax = rtype.bounds
-
-    values = [op(lmin, rmin), op(lmin, rmax),
-              op(lmax, rmin), op(lmax, rmax)]
-
-    return _smallest_int_containing(values, allow_overflow=True)
-
-
-def _int_one_literal_promotion(atype, lit_val, op):
-    amin, amax = atype.bounds
-    bound_type = _smallest_int_containing([op(amin, lit_val),
-                                           op(amax, lit_val)],
-                                          allow_overflow=True)
-    # In some cases, the bounding type might be int8, even though neither of
-    # the types are that small. We want to ensure the containing type is _at
-    # least_ as large as the smallest type in the expression
-    return _largest_int([bound_type, atype])
-
-
-def _smallest_int_containing(values, allow_overflow=False):
-    containing_types = [dt.infer(x, allow_overflow=allow_overflow)
-                        for x in values]
-    return _largest_int(containing_types)
-
-
-def _largest_int(int_types):
-    nbytes = max(t._nbytes for t in int_types)
-    return dt.validate_type('int%d' % (8 * nbytes))
-
-
-# ----------------------------------------------------------------------
-# Input / output type rules and validation
-
-
-def shape_like(arg, out_type):
-    out_type = dt.validate_type(out_type)
-    if isinstance(arg, ir.ScalarExpr):
-        return out_type.scalar_type()
+@validator
+def isin(values, arg):
+    if arg not in values:
+        raise ValueError('Value {!r} not in {!r}'.format(arg, values))
+    if isinstance(values, dict):  # TODO check for mapping instead
+        return values[arg]
     else:
-        return out_type.array_type()
+        return arg
 
 
-def shape_like_args(args, out_type):
-    out_type = dt.validate_type(out_type)
-    if util.any_of(args, ir.ColumnExpr):
-        return out_type.array_type()
+@validator
+def memberof(obj, arg):
+    if isinstance(arg, enum.Enum):
+        enum.unique(obj)  # check that enum has unique values
+        arg = arg.name
+
+    if not hasattr(obj, arg):
+        raise com.IbisTypeError('Value {!r} is not a member of '
+                                '{!r}'.format(arg, obj))
+    return getattr(obj, arg)
+
+
+@validator
+def listof(inner, arg, min_length=0):
+    if not isinstance(arg, (tuple, list)):
+        raise com.IbisTypeError('Arg is not an instance of list or tuple')
+    if len(arg) < min_length:
+        raise com.IbisTypeError(
+            'Arg must have at least {} number of elements'.format(min_length)
+        )
+    return ir.sequence(list(map(inner, arg)))
+
+
+@validator
+def datatype(arg):
+    return dt.dtype(arg)
+
+
+@validator
+def instanceof(klass, arg):
+    """Require that a value has a particular Python type."""
+    if not isinstance(arg, klass):
+        raise com.IbisTypeError(
+            '{!r} is not an instance of {!r}'.format(arg, klass)
+        )
+    return arg
+
+
+@validator
+def value(dtype, arg):
+    # TODO support DataType classes, not just instances
+    if arg is None:
+        raise com.IbisTypeError('Passing value argument with datatype {} is '
+                                'mandatory'.format(dtype))
+
+    if not isinstance(arg, ir.Expr):
+        # coerce python literal to ibis literal
+        arg = ir.literal(arg)
+
+    if not isinstance(arg, ir.ValueExpr):
+        raise com.IbisTypeError('Given argument with type {} is not a value '
+                                'expression'.format(type(arg)))
+
+    if dt.issubtype(arg.type(), dtype):  # TODO: remove this, should not be required
+        return arg  # subtype of expected
+    if dt.castable(arg.type(), dtype):
+        return arg  # implicitly castable
     else:
-        return out_type.scalar_type()
+        raise com.IbisTypeError('Given argument with datatype {} is not '
+                                'subtype of {} nor implicitly castable to '
+                                'it'.format(arg.type(), dtype))
+
+
+@validator
+def scalar(inner, arg):
+    return instanceof(ir.ScalarExpr, inner(arg))
+
+
+@validator
+def column(inner, arg):
+    return instanceof(ir.ColumnExpr, inner(arg))
+
+
+# TODO: change it to raise instead to locate all temporary noop validator
+any = value(dt.any)
+#null = instanceof(dt.Null)#value(dt.null)
+double = value(dt.double)
+string = value(dt.string)
+boolean = value(dt.boolean)
+integer = value(dt.int64)
+decimal = value(dt.decimal)
+floating = value(dt.float64)
+date = value(dt.date)
+time = value(dt.time)
+timestamp = value(dt.timestamp)
+category = value(dt.category)
+# TODO: previouse number rules allowed booleans by default
+temporal = oneof([timestamp, date, time])
+numeric = oneof([integer, floating, decimal, boolean])
+strict_numeric = oneof([integer, floating, decimal])  # without boolean
 
 
 
-# class TypeSignature(object):
-
-#     def __init__(self, type_specs):
-#         types = []
-
-#         for val in type_specs:
-#             val = _to_argument(val)
-#             types.append(val)
-
-#         self.types = types
-
-#     def __repr__(self):
-#         types = '\n    '.join('arg {0}: {1}'.format(i, repr(x))
-#                               for i, x in enumerate(self.types))
-#         return '{0}\n    {1}'.format(type(self), types)
-
-#     def validate(self, args):
-#         n, k = len(args), len(self.types)
-#         k_required = len([x for x in self.types if not x.optional])
-#         if k != k_required:
-#             if n < k_required:
-#                 raise com.IbisError('Expected at least {0} args, got {1}'
-#                                     .format(k, k_required))
-#         elif n != k:
-#             raise com.IbisError('Expected {0} args, got {1}'.format(k, n))
-
-#         if n < k:
-#             args = list(args) + [t.default for t in self.types[n:]]
-
-#         return self._validate(args, self.types)
-
-#     def _validate(self, args, types):
-#         clean_args = list(args)
-#         for i, validator in enumerate(types):
-#             try:
-#                 clean_args[i] = validator.validate(clean_args, i)
-#             except IbisTypeError as e:
-#                 exc = e.args[0]
-#                 msg = ('Argument {0}: {1}'.format(i, exc) +
-#                        '\nArgument was: {0}'.format(ir._safe_repr(args[i])))
-#                 raise IbisTypeError(msg)
-
-#         return clean_args
+@validator
+def interval(arg, units=None):
+    arg = value(dt.interval, arg)
+    unit = arg.type().unit
+    if units is not None and unit not in units:
+        msg = 'Interval unit `{}` is not among the allowed ones {}'
+        raise com.IbisTypeError(msg.format(unit, units))
+    return arg
 
 
-def shape_like_flatargs(out_type):
+table = instanceof(ir.TableExpr)
+schema = instanceof(sch.Schema)
 
-    def output_type(self):
-        flattened = list(self.flat_args())
-        return shape_like_args(flattened, out_type)
 
-    return output_type
+@validator
+def szuper(klass, arg):
+    # TODO
+    return instanceof(klass, arg)
+
+
+def promoter(fn):
+    def wrapper(name_or_value, *args, **kwargs):
+        if isinstance(name_or_value, str):
+            return lambda self: fn(getattr(self, name_or_value),
+                                   *args, **kwargs)
+        else:
+            return fn(name_or_value, *args, **kwargs)
+    return wrapper
+
+
+def highest_precedence_dtype(exprs):
+    # Return the highest precedence type from the passed expressions. Also
+    # verifies that there are valid implicit casts between any of the types and
+    # the selected highest precedence type.
+    # This is a thin wrapper around datatypes highest precedence check.
+    if not exprs:
+        raise ValueError('Must pass at least one expression')
+
+    expr_dtypes = {expr.type() for expr in exprs}
+    return dt.highest_precedence(expr_dtypes)
+
+
+def comparable(left, right):
+    return ir.castable(left, right) or ir.castable(right, left)
+
+
+@promoter
+def shapeof(arg, dtype=None):
+    if isinstance(arg, (tuple, list, ir.ListExpr)):
+        datatype = dtype or highest_precedence_dtype(arg)
+        columnar = util.any_of(arg, ir.AnyColumn)
+    else:
+        datatype = dtype or arg.type()
+        columnar = isinstance(arg, ir.AnyColumn)
+
+    dtype = dt.dtype(datatype)
+
+    if columnar:
+        return dtype.array_type()
+    else:
+        return dtype.scalar_type()
+
+
+@promoter
+def scalarof(arg):
+    output_dtype = arg.type()
+    return output_dtype.scalar_type()
+
+
+@promoter
+def arrayof(arg):
+    output_dtype = arg.type()
+    return output_dtype.array_type()
+
+
+@promoter
+def typeof(arg):
+    return arg._factory
 
 
 def comparable(left, right):
@@ -388,3 +379,33 @@ def _coerce_integer_to_double_type(self):
     else:
         result_type = first_arg_type
     return result_type
+
+
+# TODO: might just use bounds instead of actual literal values
+# that could simplify interval binop output_type methods
+def bounded_binop_dtype(exprs, op):
+    bounds, dtypes = [], []
+    for arg in exprs:
+        dtypes.append(arg.type())
+        if hasattr(arg.op(), 'value'):
+            # arg.op() is a literal
+            bounds.append([arg.op().value])
+        else:
+            bounds.append(arg.type().bounds)
+
+    # In some cases, the bounding type might be int8, even though neither
+    # of the types are that small. We want to ensure the containing type is
+    # _at least_ as large as the smallest type in the expression.
+    values = starmap(op, product(*bounds))
+    dtypes += [dt.infer(value, allow_overflow=True) for value in values]
+
+    return dt.highest_precedence(dtypes)
+
+
+@promoter
+def binopof(args, op):
+    if util.all_of(args, ir.IntegerValue):
+        dtype = bounded_binop_dtype(args, op)
+        return shapeof(args, dtype=dtype)
+    else:
+        return shapeof(args)

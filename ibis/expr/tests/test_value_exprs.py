@@ -22,17 +22,18 @@ from collections import OrderedDict
 from operator import methodcaller
 from datetime import date, datetime, time
 
-from ibis.common import IbisTypeError
-from ibis.expr import (
-    rules, api, datatypes as dt, types as ir, operations as ops
-)
-import ibis
-from ibis.compat import PY2
-
 from ibis import literal
+from ibis.compat import PY2
+from ibis.common import IbisTypeError
 from ibis.tests.util import assert_equal
-import ibis.expr.analysis as ans
-import ibis.expr.rlz as rlz
+
+import ibis
+import ibis.expr.api as api
+import ibis.expr.types as ir
+import ibis.expr.rules as rlz
+import ibis.expr.analysis as L
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 
 def test_null():
@@ -546,7 +547,7 @@ def test_arbitrary(table, column, how, condition_fn):
     expr = col.arbitrary(how=how, where=where)
     assert expr.type() == col.type()
     assert isinstance(expr, ir.ScalarExpr)
-    assert ans.is_reduction(expr)
+    assert L.is_reduction(expr)
 
 
 @pytest.mark.parametrize(
@@ -562,7 +563,7 @@ def test_arbitrary(table, column, how, condition_fn):
 def test_any_all_notany(table, column, operation):
     expr = operation(table[column])
     assert isinstance(expr, ir.BooleanScalar)
-    assert ans.is_reduction(expr)
+    assert L.is_reduction(expr)
 
 
 @pytest.mark.parametrize(
@@ -761,18 +762,14 @@ def test_binop_string_type_error(table, operation):
 
         # technically this can overflow, but we allow it
         (operator.mul, 'd', 5, 'int64'),
-
-        (operator.sub, 'a', 0, 'int8'),
         (operator.sub, 'a', 5, 'int16'),
         (operator.sub, 'a', 100000, 'int32'),
         (operator.sub, 'a', -100000, 'int32'),
 
-
         (operator.sub, 'a', 1.5, 'double'),
-        (operator.sub, 'b', 0, 'int16'),
+
         (operator.sub, 'b', 5, 'int32'),
         (operator.sub, 'b', -5, 'int32'),
-        (operator.sub, 'c', 0, 'int32'),
         (operator.sub, 'c', 5, 'int64'),
         (operator.sub, 'c', -5, 'int64'),
 
@@ -819,6 +816,27 @@ def test_literal_promotions(table, op, name, case, ex_type):
     assert result.type() == dt.dtype(ex_type)
 
     result = op(case, col)
+    assert result.type() == dt.dtype(ex_type)
+
+
+@pytest.mark.parametrize(
+    ('op', 'left_fn', 'right_fn', 'ex_type'),
+    [
+        (operator.sub, lambda t: t['a'], lambda t: 0, 'int8'),
+        (operator.sub, lambda t: 0, lambda t: t['a'], 'int16'),
+        (operator.sub, lambda t: t['b'], lambda t: 0, 'int16'),
+        (operator.sub, lambda t: 0, lambda t: t['b'], 'int32'),
+        (operator.sub, lambda t: t['c'], lambda t: 0, 'int32'),
+        (operator.sub, lambda t: 0, lambda t: t['c'], 'int64'),
+    ],
+    ids=lambda arg: str(getattr(arg, '__name__', arg))
+)
+def test_zero_subtract_literal_promotions(table, op, left_fn, right_fn,
+                                          ex_type):
+    # in case of zero subtract the order of operands matters
+    left, right = left_fn(table), right_fn(table)
+    result = op(left, right)
+
     assert result.type() == dt.dtype(ex_type)
 
 

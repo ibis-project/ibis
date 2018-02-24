@@ -23,11 +23,11 @@ from ibis.expr.types import as_value_expr  # TODO move these to here
 
 import ibis.common as com
 import ibis.expr.datatypes as dt
-import ibis.expr.rules as rules
+import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.util as util
 import ibis.compat as compat
-import ibis.expr.rlz as rlz
+
 from collections import OrderedDict
 
 # TODO: eliminate as_value_expr
@@ -440,9 +440,7 @@ class IfNull(ValueOp):
 
     arg = rlz.any
     ifnull_expr = rlz.any
-
-    def output_type(self):
-        return rlz.shapeof(self.arg, rlz.highest_precedence_type(self.args))
+    output_type = rlz.shapeof('args')
 
 
 class NullIf(ValueOp):
@@ -489,18 +487,12 @@ class CoalesceLike(ValueOp):
     arg = rlz.listof(rlz.any)
 
     def output_type(self):
-        # TODO: how much validation is necessary that the call is valid and can
-        # succeed?
-        first_value = self.arg[0]
-
-        if isinstance(first_value, ir.IntegerValue):
-            out_type = dt.int64
-        elif isinstance(first_value, ir.FloatingValue):
-            out_type = dt.double
+        first = self.arg[0]
+        if isinstance(first, (ir.IntervalValue, ir.FloatingValue)):
+            dtype = first.type().largest()
         else:
-            out_type = first_value.type()
-
-        return rules.shape_like_args(self.arg, out_type)
+            dtype = first.type()
+        return rlz.shapeof(self.arg, dtype)
 
 
 class Coalesce(CoalesceLike):
@@ -567,9 +559,9 @@ class Round(ValueOp):
         if isinstance(self.arg, ir.DecimalValue):
             return self.arg._factory
         elif self.digits is None:
-            return rules.shape_like(self.arg, dt.int64)
+            return rlz.shapeof(self.arg, dt.int64)
         else:
-            return rules.shape_like(self.arg, 'double')
+            return rlz.shapeof(self.arg, dt.double)
 
 
 class Clip(ValueOp):
@@ -583,7 +575,9 @@ class BaseConvert(ValueOp):
     arg = rlz.oneof([rlz.integer, rlz.string])
     from_base = rlz.integer
     to_base = rlz.integer
-    output_type = rules.shape_like_flatargs(dt.string)
+
+    def output_type(self):
+        return rlz.shapeof(tuple(self.flat_args()), dt.string)
 
 
 class RealUnaryOp(UnaryOp):
@@ -716,7 +710,9 @@ class FindInSet(ValueOp):
 class StringJoin(ValueOp):
     sep = rlz.string
     arg = rlz.listof(rlz.string, min_length=1)
-    output_type = rules.shape_like_flatargs(dt.string)
+
+    def output_type(self):
+        return rlz.shapeof(tuple(self.flat_args()), dt.string)
 
 
 class BooleanValueOp(object):
@@ -769,9 +765,6 @@ class StringSplit(ValueOp):
 class StringConcat(ValueOp):
     arg = rlz.listof(rlz.string)
     output_type = rlz.shapeof('args', dt.string)
-
-    # def output_type(self):
-    #     return rules.shape_like_args(self.args, dt.string)
 
 
 class ParseURL(ValueOp):
@@ -1433,12 +1426,10 @@ class SimpleCase(ValueOp):
         return distinct_roots(*all_exprs)
 
     def output_type(self):
-        out_exprs = list(filter(
-            lambda expr: expr is not None,
-            self.results + [self.default]
-        ))
-        typename = rlz.highest_precedence_type(out_exprs)
-        return rules.shape_like(self.base, typename)
+        exprs = self.results + [self.default]
+        exprs = filter(lambda e: e is not None, exprs)
+        dtype = rlz.highest_precedence_dtype(exprs)
+        return rlz.shapeof(self.base, dtype=dtype)
 
 
 class SearchedCase(ValueOp):
@@ -1456,10 +1447,9 @@ class SearchedCase(ValueOp):
         return distinct_roots(*all_exprs)
 
     def output_type(self):
-        cases, results, default = self.args
-        out_exprs = results + [default]
-        typename = rlz.highest_precedence_type(out_exprs)
-        return rules.shape_like_args(cases, typename)
+        exprs = self.results + [self.default]
+        dtype = rlz.highest_precedence_dtype(exprs)
+        return rlz.shapeof(self.cases, dtype)
 
 
 class Where(ValueOp):
@@ -1476,7 +1466,7 @@ class Where(ValueOp):
     false_null_expr = rlz.any
 
     def output_type(self):
-        return rules.shape_like(self.bool_expr, self.true_expr.type())
+        return rlz.shapeof(self.bool_expr, self.true_expr.type())
 
 
 def _validate_join_tables(left, right):
@@ -2164,52 +2154,40 @@ class NumericBinaryOp(BinaryOp):
 
 
 class Add(NumericBinaryOp):
-
-    def output_type(self):
-        helper = rules.BinaryPromoter(self.left, self.right, operator.add)
-        return helper.get_result()
+    output_type = rlz.binopof('args', operator.add)
 
 
 class Multiply(NumericBinaryOp):
-
-    def output_type(self):
-        helper = rules.BinaryPromoter(self.left, self.right, operator.mul)
-        return helper.get_result()
+    output_type = rlz.binopof('args', operator.mul)
 
 
 class Power(NumericBinaryOp):
 
     def output_type(self):
-        return rules.PowerPromoter(self.left, self.right).get_result()
+        if util.all_of(self.args, ir.IntegerValue):
+            return rlz.shapeof(self.args, dt.float64)
+        else:
+            return rlz.shapeof(self.args)
 
 
 class Subtract(NumericBinaryOp):
-
-    def output_type(self):
-        helper = rules.BinaryPromoter(self.left, self.right, operator.sub)
-        return helper.get_result()
+    output_type = rlz.binopof('args', operator.sub)
 
 
 class Divide(NumericBinaryOp):
     left = rlz.numeric
     right = rlz.numeric
-
-    def output_type(self):
-        return rules.shape_like_args(self.args, 'double')
+    output_type = rlz.shapeof('args', dt.float64)
 
 
 class FloorDivide(Divide):
-
-    def output_type(self):
-        return rules.shape_like_args(self.args, dt.int64)
+    output_type = rlz.shapeof('args', dt.int64)
 
 
 class LogicalBinaryOp(BinaryOp):
     left = rlz.boolean
     right = rlz.boolean
-
-    def output_type(self):
-        return rules.shape_like_args(self.args, 'boolean')
+    output_type = rlz.shapeof('args', dt.boolean)
 
 
 class Not(UnaryOp):
@@ -2218,11 +2196,7 @@ class Not(UnaryOp):
 
 
 class Modulus(NumericBinaryOp):
-
-    def output_type(self):
-        helper = rules.BinaryPromoter(self.left, self.right,
-                                      operator.mod)
-        return helper.get_result()
+    output_type = rlz.binopof('args', operator.mod)
 
 
 class And(LogicalBinaryOp):
@@ -2329,7 +2303,7 @@ class Contains(ValueOp, BooleanValueOp):
         else:
             raise TypeError(type(options))
 
-        return rules.shape_like_args(all_args, 'boolean')
+        return rlz.shapeof(all_args, dt.boolean)
 
 
 class NotContains(Contains):
@@ -2695,7 +2669,12 @@ class TimestampDiff(BinaryOp):
 class IntervalAdd(BinaryOp):
     left = rlz.interval
     right = rlz.interval
-    output_type = rlz.shapeof('left')
+
+    def output_type(self):
+        args = [arg.cast(arg.type().value_type) for arg in self.args]
+        expr = rlz.binopof(args, operator.add)(self)
+        dtype = dt.Interval(self.left.type().unit, expr.type())
+        return rlz.shapeof(self.args, dtype=dtype)
 
 
 class IntervalMultiply(BinaryOp):
@@ -2703,8 +2682,10 @@ class IntervalMultiply(BinaryOp):
     right = rlz.numeric
 
     def output_type(self):
-        helper = rules.IntervalPromoter(self.left, self.right, operator.mul)
-        return helper.get_result()
+        args = [self.left.cast(self.left.type().value_type), self.right]
+        expr = rlz.binopof(args, operator.mul)(self)
+        dtype = dt.Interval(self.left.type().unit, expr.type())
+        return rlz.shapeof(self.args, dtype=dtype)
 
 
 class IntervalFloorDivide(BinaryOp):
@@ -2829,8 +2810,9 @@ class StructField(ValueOp):
     field = rlz.instanceof(six.string_types)
 
     def output_type(self):
-        struct_type = self.arg.type()
-        return rules.shape_like(self.arg, struct_type[self.field])
+        struct_dtype = self.arg.type()
+        value_dtype = struct_dtype[self.field]
+        return rlz.shapeof(self.arg, value_dtype)
 
 
 class Literal(ValueOp):
@@ -2940,5 +2922,5 @@ class ValueList(ValueOp):
         return distinct_roots(*self.values)
 
     def _make_expr(self):
-        dtype = rlz.highest_precedence_type(self.values)
+        dtype = rlz.highest_precedence_dtype(self.values)
         return ir.ListExpr(self, dtype=dtype)

@@ -3,14 +3,15 @@ import pytest
 import six
 import ibis
 import enum
+
+from toolz import identity
 from contextlib import contextmanager
 from ibis.common import IbisTypeError
-import ibis.expr.operations as ops
+
 import ibis.expr.types as ir
+import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
-from ibis.expr import rules
-import ibis.expr.rlz as rlz
-from toolz import identity
+import ibis.expr.operations as ops
 
 
 def mayraise(error):
@@ -400,7 +401,7 @@ def test_table_custom_validator():
         MyOp(table)
 
 
-def test_precedence_with_no_arguments():
+def test_shapeof_with_no_arguments():
     with pytest.raises(ValueError) as e:
-        rlz.highest_precedence_type([])
+        rlz.shapeof([])
     assert str(e.value) == 'Must pass at least one expression'

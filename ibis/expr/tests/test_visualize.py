@@ -6,11 +6,9 @@ pytest.importorskip('graphviz')
 
 import ibis
 import ibis.expr.types as ir
+import ibis.expr.rules as rlz
 import ibis.expr.visualize as viz
 import ibis.expr.operations as ops
-
-from ibis.expr import rules
-import ibis.expr.rlz as rlz
 
 pytestmark = pytest.mark.skipif(
     int(os.environ.get('CONDA_BUILD', 0)) == 1, reason='CONDA_BUILD defined'

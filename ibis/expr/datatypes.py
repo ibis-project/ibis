@@ -412,6 +412,10 @@ class Interval(DataType):
         self.value_type = value_type
 
     @property
+    def bounds(self):
+        return self.value_type.bounds
+
+    @property
     def resolution(self):
         """Unit's name"""
         return self._units[self.unit]
@@ -1181,6 +1185,12 @@ def can_cast_floats(source, target, upcast=False, **kwargs):
     # double -> float must be allowed because
     # float literals are inferred as doubles
     return True
+
+
+@castable.register(Decimal, Decimal)
+def cas_cast_decimals(source, target, **kwargs):
+    return ((target.precision >= source.precision) and
+            (target.scale >= source.scale))
 
 
 @castable.register(Interval, Interval)
