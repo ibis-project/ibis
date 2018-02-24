@@ -710,22 +710,7 @@ class StructScalar(AnyScalar, StructValue): pass
 class StructColumn(AnyColumn, StructValue): pass
 
 
-class IntervalValue(AnyValue):
-    pass
-    # @property
-    # def unit(self):
-    #     return self._dtype.unit
-
-    # @unit.setter
-    # def unit(self, unit):
-    #     self._dtype.unit = unit
-
-    # @property
-    # def resolution(self):
-    #     """Unit's name"""
-    #     return self._dtype.resolution
-
-
+class IntervalValue(AnyValue): pass
 class IntervalScalar(AnyScalar, IntervalValue): pass
 class IntervalColumn(AnyColumn, IntervalValue): pass
 
