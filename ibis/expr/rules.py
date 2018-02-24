@@ -48,10 +48,12 @@ class BinaryPromoter(object):
         if util.any_of(self.args, ir.DecimalValue):
             return _decimal_promoted_type(self.args)
         elif util.any_of(self.args, ir.FloatingValue):
-            if util.any_of(self.args, ir.DoubleValue):
-                return 'double'
-            else:
-                return 'float'
+            return 'double'
+            # TODO: fixme
+            # if util.any_of(self.args, ir.DoubleValue):
+            #     return 'double'
+            # else:
+            #     return 'float'
         elif util.all_of(self.args, ir.IntegerValue):
             return self._get_int_type()
         elif self.left.type().equals(self.right.type()):
@@ -117,8 +119,8 @@ def _decimal_promoted_type(args):
     max_precision = max_scale = ~sys.maxsize
     for arg in args:
         if isinstance(arg, ir.DecimalValue):
-            max_precision = max(max_precision, arg.meta.precision)
-            max_scale = max(max_scale, arg.meta.scale)
+            max_precision = max(max_precision, arg._dtype.precision)
+            max_scale = max(max_scale, arg._dtype.scale)
     return dt.Decimal(max_precision, max_precision)
 
 
@@ -129,10 +131,12 @@ class PowerPromoter(BinaryPromoter):
 
     def _get_type(self):
         if util.any_of(self.args, ir.FloatingValue):
-            if util.any_of(self.args, ir.DoubleValue):
-                return 'double'
-            else:
-                return 'float'
+            # TODO
+            return 'double'
+            # if util.any_of(self.args, ir.DoubleValue):
+            #     return 'double'
+            # else:
+            #     return 'float'
         elif util.any_of(self.args, ir.DecimalValue):
             return _decimal_promoted_type(self.args)
         elif util.all_of(self.args, ir.IntegerValue):
@@ -430,7 +434,7 @@ def _sum_output_type(self):
     elif isinstance(arg, ir.FloatingValue):
         t = 'double'
     elif isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg.meta.precision, 38)
+        t = dt.Decimal(arg._dtype.precision, 38)
     else:
         raise TypeError(arg)
     return t
@@ -439,7 +443,7 @@ def _sum_output_type(self):
 def _mean_output_type(self):
     arg = self.args[0]
     if isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg.meta.precision, 38)
+        t = dt.Decimal(arg._dtype.precision, 38)
     elif isinstance(arg, ir.NumericValue):
         t = 'double'
     else:
@@ -465,7 +469,7 @@ def _decimal_scalar_ctor(precision, scale):
 def _min_max_output_rule(self):
     arg = self.args[0]
     if isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg.meta.precision, 38)
+        t = dt.Decimal(arg._dtype.precision, 38)
     else:
         t = arg.type()
 

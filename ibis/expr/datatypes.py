@@ -18,12 +18,14 @@ import toolz
 import datetime
 import itertools
 import pandas as pd
-
+from functools import partial
 from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
 
 import ibis.common as com
 from ibis.compat import PY2, builtins, functools
+from ibis.compat import builtins, PY2
+import ibis.expr.types as ir
 
 
 class DataType(object):
@@ -102,12 +104,14 @@ class DataType(object):
         return cast(self, target, **kwargs)
 
     def scalar_type(self):
-        import ibis.expr.types as ir
-        return getattr(ir, '{}Scalar'.format(self.name))
+        return partial(self.scalar, dtype=self)
+        # import ibis.expr.types as ir
+        # return getattr(ir, '{}Scalar'.format(self.name))
 
     def array_type(self):
-        import ibis.expr.types as ir
-        return getattr(ir, '{}Column'.format(self.name))
+        return partial(self.column, dtype=self)
+        # import ibis.expr.types as ir
+        # return getattr(ir, '{}Column'.format(self.name))
 
 
 class Any(DataType):
@@ -127,6 +131,8 @@ class Primitive(DataType):
 
 
 class Null(DataType):
+    scalar = ir.NullScalar
+    column = ir.NullColumn
 
     __slots__ = ()
 
@@ -137,6 +143,8 @@ class Variadic(DataType):
 
 
 class Boolean(Primitive):
+    scalar = ir.BooleanScalar
+    column = ir.BooleanColumn
 
     __slots__ = ()
 
@@ -145,6 +153,8 @@ Bounds = namedtuple('Bounds', ('lower', 'upper'))
 
 
 class Integer(Primitive):
+    scalar = ir.IntegerScalar
+    column = ir.IntegerColumn
 
     __slots__ = ()
 
@@ -163,6 +173,8 @@ class String(Variadic):
     Because of differences in the way different backends handle strings, we
     cannot assume that strings are UTF-8 encoded.
     """
+    scalar = ir.StringScalar
+    column = ir.StringColumn
 
     __slots__ = ()
 
@@ -177,42 +189,29 @@ class Binary(Variadic):
     but PostgreSQL has a TEXT type and a BYTEA type which are distinct types
     that behave differently.
     """
+    scalar = ir.BinaryScalar
+    column = ir.BinaryColumn
+
+    __slots__ = ()
 
 
 class Date(Primitive):
+    scalar = ir.DateScalar
+    column = ir.DateColumn
 
     __slots__ = ()
 
 
 class Time(Primitive):
+    scalar = ir.TimeScalar
+    column = ir.TimeColumn
 
     __slots__ = ()
 
 
-def parametric(cls):
-    type_name = cls.__name__
-    array_type_name = '{}Column'.format(type_name)
-    scalar_type_name = '{}Scalar'.format(type_name)
-
-    def array_type(self):
-        def constructor(op, name=None):
-            import ibis.expr.types as ir
-            return getattr(ir, array_type_name)(op, self, name=name)
-        return constructor
-
-    def scalar_type(self):
-        def constructor(op, name=None):
-            import ibis.expr.types as ir
-            return getattr(ir, scalar_type_name)(op, self, name=name)
-        return constructor
-
-    cls.array_type = array_type
-    cls.scalar_type = scalar_type
-    return cls
-
-
-@parametric
 class Timestamp(Primitive):
+    scalar = ir.TimestampScalar
+    column = ir.TimestampColumn
 
     __slots__ = 'timezone',
 
@@ -251,6 +250,8 @@ class UnsignedInteger(Integer):
 
 
 class Floating(Primitive):
+    scalar = ir.FloatingScalar
+    column = ir.FloatingColumn
 
     __slots__ = ()
 
@@ -327,8 +328,9 @@ Float32 = Float
 Float64 = Double
 
 
-@parametric
 class Decimal(DataType):
+    scalar = ir.DecimalScalar
+    column = ir.DecimalColumn
 
     __slots__ = 'precision', 'scale'
 
@@ -351,8 +353,9 @@ class Decimal(DataType):
 assert hasattr(Decimal, '__hash__')
 
 
-@parametric
 class Interval(DataType):
+    scalar = ir.IntervalScalar
+    column = ir.IntervalColumn
 
     __slots__ = 'value_type', 'unit'
 
@@ -403,8 +406,9 @@ class Interval(DataType):
                 self.value_type.equals(other.value_type, cache=cache))
 
 
-@parametric
 class Category(DataType):
+    scalar = ir.CategoryScalar
+    column = ir.CategoryColumn
 
     __slots__ = 'cardinality',
 
@@ -433,8 +437,9 @@ class Category(DataType):
             return infer(self.cardinality)
 
 
-@parametric
 class Struct(DataType):
+    scalar = ir.StructScalar
+    column = ir.StructColumn
 
     __slots__ = 'pairs',
 
@@ -496,8 +501,9 @@ class Struct(DataType):
         )
 
 
-@parametric
 class Array(Variadic):
+    scalar = ir.ArrayScalar
+    column = ir.ArrayColumn
 
     __slots__ = 'value_type',
 
@@ -512,8 +518,9 @@ class Array(Variadic):
         return self.value_type.equals(other.value_type, cache=cache)
 
 
-@parametric
 class Enum(DataType):
+    scalar = ir.EnumScalar
+    column = ir.EnumColumn
 
     __slots__ = 'rep_type', 'value_type'
 
@@ -529,8 +536,9 @@ class Enum(DataType):
         )
 
 
-@parametric
 class Map(Variadic):
+    scalar = ir.MapScalar
+    column = ir.MapColumn
 
     __slots__ = 'key_type', 'value_type'
 

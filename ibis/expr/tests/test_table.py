@@ -449,7 +449,7 @@ def test_slice_convenience(table):
 
 def test_table_count(table):
     result = table.count()
-    assert isinstance(result, api.Int64Scalar)
+    assert isinstance(result, ir.IntegerScalar)
     assert isinstance(result.op(), ops.Count)
     assert result.get_name() == 'count'
 
@@ -461,7 +461,7 @@ def test_len_raises_expression_error(table):
 
 def test_sum_expr_basics(table, int_col):
     # Impala gives bigint for all integer types
-    ex_class = api.Int64Scalar
+    ex_class = ir.IntegerScalar
     result = table[int_col].sum()
     assert isinstance(result, ex_class)
     assert isinstance(result.op(), ops.Sum)
@@ -469,7 +469,7 @@ def test_sum_expr_basics(table, int_col):
 
 def test_sum_expr_basics_floats(table, float_col):
     # Impala gives double for all floating point types
-    ex_class = api.DoubleScalar
+    ex_class = ir.FloatingScalar
     result = table[float_col].sum()
     assert isinstance(result, ex_class)
     assert isinstance(result.op(), ops.Sum)
@@ -477,7 +477,7 @@ def test_sum_expr_basics_floats(table, float_col):
 
 def test_mean_expr_basics(table, numeric_col):
     result = table[numeric_col].mean()
-    assert isinstance(result, api.DoubleScalar)
+    assert isinstance(result, ir.FloatingScalar)
     assert isinstance(result.op(), ops.Mean)
 
 

@@ -151,9 +151,9 @@ any = value(dt.any)
 double = value(dt.double)
 string = value(dt.string)
 boolean = value(dt.boolean)
-integer = value(dt.integer)
+integer = value(dt.int64)
 decimal = value(dt.decimal)
-floating = value(dt.floating)
+floating = value(dt.float64)
 date = value(dt.date)
 time = value(dt.time)
 timestamp = value(dt.timestamp)
@@ -187,7 +187,7 @@ def shapeof(name, dtype=None):
     def output_type(self):
         arg = getattr(self, name)
         output_dtype = dt.dtype(dtype or arg.type())
-        if isinstance(arg, ir.ScalarExpr):
+        if isinstance(arg, ir.AnyScalar):
             return output_dtype.scalar_type()
         else:
             return output_dtype.array_type()

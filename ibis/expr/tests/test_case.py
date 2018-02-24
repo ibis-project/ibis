@@ -50,7 +50,7 @@ def test_simple_case_expr(table):
              .end())
 
     assert_equal(expr1, expr2)
-    assert isinstance(expr1, ir.Int32Column)
+    assert isinstance(expr1, ir.IntegerColumn)
 
 
 def test_multiple_case_expr(table):
@@ -72,7 +72,7 @@ def test_multiple_case_expr(table):
             .end())
 
     op = expr.op()
-    assert isinstance(expr, ir.DoubleColumn)
+    assert isinstance(expr, ir.FloatingColumn)
     assert isinstance(op, ops.SearchedCase)
     assert op.default is default
 

@@ -17,7 +17,7 @@ import six
 import itertools
 import collections
 import toolz
-
+from functools import partial
 from ibis.expr.schema import HasSchema, Schema
 from ibis.expr.types import as_value_expr  # TODO move these to here
 
@@ -366,6 +366,7 @@ class TableArrayView(ValueOp):
         if len(schema) > 1:
             raise com.ExpressionError('Table can only have a single column')
 
+        # TODO
         self.table = table
         self.name = schema.names[0]
 
@@ -836,7 +837,7 @@ class Count(Reduction):
     where = rlz.optional(rlz.boolean)
 
     def output_type(self):
-        return ir.Int64Scalar
+        return partial(ir.IntegerScalar, dtype=dt.int64)
 
 
 class Arbitrary(Reduction):
@@ -922,7 +923,7 @@ class HLLCardinality(Reduction):
     def output_type(self):
         # Impala 2.0 and higher returns a DOUBLE
         # return ir.DoubleScalar
-        return ir.Int64Scalar
+        return partial(ir.IntegerScalar, dtype=dt.int64)
 
 
 class GroupConcat(Reduction):
@@ -932,7 +933,7 @@ class GroupConcat(Reduction):
     where = rlz.optional(rlz.boolean)
 
     def output_type(self):
-        return ir.StringScalar
+        return dt.string.scalar_type()
 
 
 class CMSMedian(Reduction):
@@ -1014,7 +1015,7 @@ class Lead(ShiftBase):
 class RankBase(AnalyticOp):
 
     def output_type(self):
-        return ir.Int64Column
+        return dt.int64.array_type()
 
 
 class MinRank(RankBase):
@@ -1184,9 +1185,7 @@ class DistinctColumn(ValueOp):
     """
 
     arg = rlz.noop
-
-    def output_type(self):
-        return type(self.arg)
+    output_type = rlz.typeof('arg')
 
     def count(self):
         """Only valid if the distinct contains a single column"""
@@ -1198,7 +1197,7 @@ class CountDistinct(Reduction):
     where = rlz.optional(rlz.boolean)
 
     def output_type(self):
-        return ir.Int64Scalar
+        return dt.int64.scalar_type()
 
 
 # ---------------------------------------------------------------------
@@ -1216,7 +1215,10 @@ class Any(ValueOp):
         return len(roots) < 2
 
     def output_type(self):
-        return ir.BooleanScalar if self._reduction else ir.BooleanColumn
+        if self._reduction:
+            return dt.boolean.scalar_type()
+        else:
+            return dt.boolean.array_type()
 
     def negate(self):
         return NotAny(self.arg)
@@ -1225,10 +1227,8 @@ class Any(ValueOp):
 class All(ValueOp):
 
     arg = rlz.column(rlz.boolean)
+    output_type = rlz.scalarof('arg')
     _reduction = True
-
-    def output_type(self):
-        return ir.BooleanScalar
 
     def negate(self):
         return NotAll(self.arg)
@@ -2161,7 +2161,6 @@ class Subtract(BinaryOp):
 
 
 class Divide(BinaryOp):
-
     left = rlz.numeric
     right = rlz.numeric
 
@@ -2184,7 +2183,6 @@ class LogicalBinaryOp(BinaryOp):
 
 
 class Not(UnaryOp):
-
     arg = rlz.boolean
     output_type = rlz.shapeof('arg', 'boolean')
 
@@ -2258,7 +2256,6 @@ class IdenticalTo(Comparison):
 
 
 class Between(ValueOp, BooleanValueOp):
-
     arg = rlz.any
     lower_bound = rlz.any
     upper_bound = rlz.any
@@ -2363,7 +2360,6 @@ class TopKExpr(ir.AnalyticExpr):
 
 
 class SummaryFilter(ValueOp):
-
     expr = rlz.noop
 
     def output_type(self):
@@ -2371,7 +2367,6 @@ class SummaryFilter(ValueOp):
 
 
 class TopK(ValueOp):
-
     arg = rlz.noop
     k = rlz.noop
     by = rlz.noop
@@ -2407,13 +2402,13 @@ class Constant(ValueOp):
 class TimestampNow(Constant):
 
     def output_type(self):
-        return ir.TimestampScalar
+        return dt.timestamp.scalar_type()
 
 
 class E(Constant):
 
     def output_type(self):
-        return ir.DoubleScalar
+        return partial(ir.FloatingScalar, dtype=dt.float64)
 
 
 class TemporalUnaryOp(UnaryOp):
@@ -2512,12 +2507,10 @@ class Strftime(ValueOp):
 
 
 class ExtractTemporalField(TemporalUnaryOp):
-
     output_type = rlz.shapeof('arg', dt.int32)
 
 
 class ExtractTimestampField(TimestampUnaryOp):
-
     output_type = rlz.shapeof('arg', dt.int32)
 
 
@@ -2670,14 +2663,7 @@ class TimestampDiff(BinaryOp):
 class IntervalAdd(Add):
     left = rlz.interval
     right = rlz.interval
-
     output_type = rlz.shapeof('left')
-    # def output_type(self):
-    #     left, right = self.args
-
-    #     # should upconvert to the smaller unit?
-    #     # value_type = left.to_unit(right.type().unit).type()
-    #     return rules.shape_like(left, left.type())
 
 
 class IntervalMultiply(Multiply):
@@ -2724,8 +2710,8 @@ class ArrayIndex(ValueOp):
     index = rlz.integer
 
     def output_type(self):
-        value_type = self.args[0].type().value_type
-        return rules.shape_like(self.args[0], value_type)
+        value_dtype = self.arg.type().value_type
+        return rlz.shapeof('arg', value_dtype)(self)
 
 
 class ArrayConcat(ValueOp):
@@ -2764,8 +2750,8 @@ class MapValueForKey(ValueOp):
     key = rlz.oneof([rlz.string, rlz.integer])
 
     def output_type(self):
-        map_type = self.arg.type()
-        return rules.shape_like(self.arg, rules.map_type.value_type)
+        value_dtype = self.arg.type().value_type
+        return rlz.shapeof('arg', value_dtype)(self)
 
 
 class MapValueOrDefaultForKey(ValueOp):
@@ -2801,7 +2787,7 @@ class MapValues(ValueOp):
 class MapConcat(ValueOp):
     left = rlz.value(dt.Map(dt.any, dt.any))
     right = rlz.value(dt.Map(dt.any, dt.any))
-    output_type = rlz.typeof('arg')
+    output_type = rlz.typeof('left')
 
 
 class StructField(ValueOp):
@@ -2846,7 +2832,7 @@ class NullLiteral(ValueOp):
         return isinstance(other, NullLiteral)
 
     def output_type(self):
-        return ir.NullScalar
+        return dt.null.scalar_type()
 
     def root_tables(self):
         return []
@@ -2920,4 +2906,5 @@ class ValueList(ValueOp):
         return distinct_roots(*self.values)
 
     def _make_expr(self):
-        return ir.ListExpr(self)
+        dtype = rules.highest_precedence_type(self.values)
+        return ir.ListExpr(self, dtype=dtype)

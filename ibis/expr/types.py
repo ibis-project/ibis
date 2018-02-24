@@ -26,8 +26,8 @@ import ibis.util as util
 import ibis
 import ibis.common as com
 import ibis.config as config
-import ibis.expr.schema as sch
-import ibis.expr.datatypes as dt
+# import ibis.expr.schema as sch
+# import ibis.expr.datatypes as dt
 
 from collections import OrderedDict
 import collections
@@ -251,6 +251,7 @@ class ExprList(Expr):
         return [x.type() for x in self.exprs()]
 
     def schema(self):
+        import ibis.expr.schema as sch
         return sch.schema(self.names(), self.types())
 
     def rename(self, f):
@@ -282,6 +283,7 @@ class ExprList(Expr):
 
 
 def infer_literal_type(value):
+    import ibis.expr.datatypes as dt
     # TODO: depricate?
     if value is null:
         return dt.null
@@ -313,6 +315,7 @@ def param(type):
     >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
     >>> expr = t.filter(predicates).value.sum()
     """
+    import ibis.expr.datatypes as dt
     import ibis.expr.operations as ops
     expr = ScalarParameter(dt.dtype(type)).to_expr()
     return expr
@@ -329,22 +332,16 @@ class ValueExpr(Expr):
     either a single value (scalar)
     """
 
-    def __init__(self, arg, name=None):
+    def __init__(self, arg, dtype, name=None):
         super(ValueExpr, self).__init__(arg)
         self._name = name
+        self._dtype = dtype
 
     def equals(self, other, cache=None):
         return (
             isinstance(other, ValueExpr) and
             self._name == other._name and
             super(ValueExpr, self).equals(other, cache=cache)
-        )
-
-    def type(self):
-        raise NotImplementedError(
-            'Expressions of type {0} must implement a type method'.format(
-                type(self).__name__
-            )
         )
 
     def has_name(self):
@@ -363,6 +360,15 @@ class ValueExpr(Expr):
 
     def name(self, name):
         return self._factory(self._arg, name=name)
+
+    def type(self):
+        return self._dtype
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return type(self)(arg, dtype=self.type(), name=name)
+        return factory
 
 
 class ScalarExpr(ValueExpr):
@@ -612,438 +618,116 @@ class TableExpr(Expr):
 # defined for each type.
 
 
-class AnyValue(ValueExpr):
+# TODO: __slots__
+AnyValue = ValueExpr
+AnyScalar = ScalarExpr
+AnyColumn = ColumnExpr
 
-    def type(self):
-        return dt.any
 
+class NullValue(AnyValue): pass
+class NullScalar(AnyScalar, NullValue): pass
+class NullColumn(AnyColumn, NullValue): pass
 
-class NullValue(AnyValue):
 
-    def type(self):
-        return dt.null
+class NumericValue(AnyValue): pass
+class NumericScalar(AnyScalar, NumericValue): pass
+class NumericColumn(AnyColumn, NumericValue): pass
 
 
-class NumericValue(AnyValue):
-    pass
+class BooleanValue(NumericValue): pass
+class BooleanScalar(NumericScalar, BooleanValue): pass
+class BooleanColumn(NumericColumn, BooleanValue): pass
 
 
-class IntegerValue(NumericValue):
-    pass
+class IntegerValue(NumericValue): pass
+class IntegerScalar(NumericScalar, IntegerValue): pass
+class IntegerColumn(NumericColumn, IntegerValue): pass
 
 
-class BooleanValue(NumericValue):
+class FloatingValue(NumericValue): pass
+class FloatingScalar(NumericScalar, FloatingValue): pass
+class FloatingColumn(NumericColumn, FloatingValue): pass
 
-    def type(self):
-        return dt.boolean
 
+class DecimalValue(NumericValue): pass
+class DecimalScalar(NumericScalar, DecimalValue): pass
+class DecimalColumn(NumericColumn, DecimalValue): pass
 
-class Int8Value(IntegerValue):
 
-    def type(self):
-        return dt.int8
+class StringValue(AnyValue): pass
+class StringScalar(AnyScalar, StringValue): pass
+class StringColumn(AnyColumn, StringValue): pass
 
 
-class Int16Value(IntegerValue):
+class BinaryValue(AnyValue): pass
+class BinaryScalar(AnyScalar, BinaryValue): pass
+class BinaryColumn(AnyColumn, BinaryValue): pass
 
-    def type(self):
-        return dt.int16
 
+class TimeValue(AnyValue): pass
+class TimeScalar(AnyScalar, TimeValue): pass
+class TimeColumn(AnyColumn, TimeValue): pass
 
-class Int32Value(IntegerValue):
 
-    def type(self):
-        return dt.int32
+class DateValue(AnyValue): pass
+class DateScalar(AnyScalar, DateValue): pass
+class DateColumn(AnyColumn, DateValue): pass
 
 
-class Int64Value(IntegerValue):
+class TimestampValue(AnyValue): pass
+class TimestampScalar(AnyScalar, TimestampValue): pass
+class TimestampColumn(AnyColumn, TimestampValue): pass
 
-    def type(self):
-        return dt.int64
 
+class CategoryValue(AnyValue): pass
+class CategoryScalar(AnyScalar, CategoryValue): pass
+class CategoryColumn(AnyColumn, CategoryValue): pass
 
-class UInt8Value(IntegerValue):
 
-    def type(self):
-        return dt.uint8
+class EnumValue(AnyValue): pass
+class EnumScalar(AnyScalar, EnumValue): pass
+class EnumColumn(AnyColumn, EnumValue): pass
 
 
-class UInt16Value(IntegerValue):
+class ArrayValue(AnyValue): pass
+class ArrayScalar(AnyScalar, ArrayValue): pass
+class ArrayColumn(AnyColumn, ArrayValue): pass
 
-    def type(self):
-        return dt.uint16
 
+class MapValue(AnyValue): pass
+class MapScalar(AnyScalar, MapValue): pass
+class MapColumn(AnyColumn, MapValue): pass
 
-class UInt32Value(IntegerValue):
 
-    def type(self):
-        return dt.uint32
-
-
-class UInt64Value(IntegerValue):
-
-    def type(self):
-        return dt.uint64
-
-
-class HalffloatValue(NumericValue):
-
-    def type(self):
-        return dt.halffloat
-
-
-class FloatingValue(NumericValue):
-    pass
-
-
-class FloatValue(FloatingValue):
-
-    def type(self):
-        return dt.float
-
-
-class DoubleValue(FloatingValue):
-
-    def type(self):
-        return dt.double
-
-
-class StringValue(AnyValue):
-
-    def type(self):
-        return dt.string
-
-
-class BinaryValue(AnyValue):
-
-    def type(self):
-        return dt.binary
-
-
-class ParameterizedValue(AnyValue):
-
-    def __init__(self, meta, name=None):
-        super(ParameterizedValue, self).__init__(meta, name=name)
-        self.meta = meta
-
-    def type(self):
-        return self.meta
-
-    @property
-    def _factory(self):
-        def factory(arg, name=None):
-            return type(self)(arg, self.meta, name=name)
-        return factory
-
-
-class DecimalValue(ParameterizedValue, NumericValue):
-    pass
-
-
-class TemporalValue(AnyValue):
-    pass
-
-
-class DateValue(TemporalValue):
-
-    def type(self):
-        return dt.date
-
-
-class TimeValue(TemporalValue):
-
-    def type(self):
-        return dt.time
-
-
-class TimestampValue(TemporalValue):
-
-    def __init__(self, meta=None):
-        self.meta = meta
-        self._timezone = getattr(meta, 'timezone', None)
-
-    def type(self):
-        return dt.Timestamp(timezone=self._timezone)
-
-
-class IntervalValue(ParameterizedValue):
-
-    def __init__(self, meta=None):
-        self.meta = meta
-
-    @property
-    def unit(self):
-        return self.meta.unit
-
-    @unit.setter
-    def unit(self, unit):
-        self.meta.unit = unit
-
-    @property
-    def resolution(self):
-        """Unit's name"""
-        return self.meta.resolution
-
-
-class ArrayValue(ParameterizedValue):
-    pass
-
-
-class MapValue(ParameterizedValue):
-    pass
-
-
-class StructValue(ParameterizedValue):
+class StructValue(AnyValue):
 
     def __dir__(self):
         return sorted(frozenset(
             itertools.chain(dir(type(self)), self.type().names)
         ))
 
+class StructScalar(AnyScalar, StructValue): pass
+class StructColumn(AnyColumn, StructValue): pass
 
-class NumericColumn(ColumnExpr, NumericValue):
+
+class IntervalValue(AnyValue):
     pass
+    # @property
+    # def unit(self):
+    #     return self._dtype.unit
 
+    # @unit.setter
+    # def unit(self, unit):
+    #     self._dtype.unit = unit
 
-class NullScalar(ScalarExpr, NullValue):
-    """A scalar value expression representing NULL"""
+    # @property
+    # def resolution(self):
+    #     """Unit's name"""
+    #     return self._dtype.resolution
 
 
-class NullColumn(ColumnExpr, NullValue):
-    pass
-
-
-class BooleanScalar(ScalarExpr, BooleanValue):
-    pass
-
-
-class BooleanColumn(NumericColumn, BooleanValue):
-    pass
-
-
-class Int8Scalar(ScalarExpr, Int8Value):
-    pass
-
-
-class Int8Column(NumericColumn, Int8Value):
-    pass
-
-
-class Int16Scalar(ScalarExpr, Int16Value):
-    pass
-
-
-class Int16Column(NumericColumn, Int16Value):
-    pass
-
-
-class Int32Scalar(ScalarExpr, Int32Value):
-    pass
-
-
-class Int32Column(NumericColumn, Int32Value):
-    pass
-
-
-class Int64Scalar(ScalarExpr, Int64Value):
-    pass
-
-
-class Int64Column(NumericColumn, Int64Value):
-    pass
-
-
-class UInt8Scalar(ScalarExpr, UInt8Value):
-    pass
-
-
-class UInt8Column(NumericColumn, UInt8Value):
-    pass
-
-
-class UInt16Scalar(ScalarExpr, UInt16Value):
-    pass
-
-
-class UInt16Column(NumericColumn, UInt16Value):
-    pass
-
-
-class UInt32Scalar(ScalarExpr, UInt32Value):
-    pass
-
-
-class UInt32Column(NumericColumn, UInt32Value):
-    pass
-
-
-class UInt64Scalar(ScalarExpr, UInt64Value):
-    pass
-
-
-class UInt64Column(NumericColumn, UInt64Value):
-    pass
-
-
-class HalffloatScalar(ScalarExpr, HalffloatValue):
-    pass
-
-
-class HalffloatColumn(NumericColumn, HalffloatValue):
-    pass
-
-
-class FloatScalar(ScalarExpr, FloatValue):
-    pass
-
-
-class FloatColumn(NumericColumn, FloatValue):
-    pass
-
-
-class DoubleScalar(ScalarExpr, DoubleValue):
-    pass
-
-
-class DoubleColumn(NumericColumn, DoubleValue):
-    pass
-
-
-class StringScalar(ScalarExpr, StringValue):
-    pass
-
-
-class StringColumn(ColumnExpr, StringValue):
-    pass
-
-
-class BinaryScalar(ScalarExpr, BinaryValue):
-    pass
-
-
-class BinaryColumn(ColumnExpr, BinaryValue):
-    pass
-
-
-class DateScalar(ScalarExpr, DateValue):
-    pass
-
-
-class DateColumn(ColumnExpr, DateValue):
-    pass
-
-
-class TimeScalar(ScalarExpr, TimeValue):
-    pass
-
-
-class TimeColumn(ColumnExpr, TimeValue):
-    pass
-
-
-class TimestampScalar(ScalarExpr, TimestampValue):
-
-    def __init__(self, arg, meta=None, name=None):
-        ScalarExpr.__init__(self, arg, name=name)
-        TimestampValue.__init__(self, meta=meta)
-
-
-class TimestampColumn(ColumnExpr, TimestampValue):
-
-    def __init__(self, arg, meta=None, name=None):
-        ColumnExpr.__init__(self, arg, name=name)
-        TimestampValue.__init__(self, meta=meta)
-
-
-class IntervalScalar(ScalarExpr, IntervalValue):
-
-    def __init__(self, arg, meta=None, name=None):
-        ScalarExpr.__init__(self, arg, name=name)
-        IntervalValue.__init__(self, meta=meta)
-
-
-class IntervalColumn(ColumnExpr, IntervalValue):
-
-    def __init__(self, arg, meta=None, name=None):
-        ColumnExpr.__init__(self, arg, name=name)
-        IntervalValue.__init__(self, meta=meta)
-
-
-class DecimalScalar(DecimalValue, ScalarExpr):
-
-    def __init__(self, arg, meta, name=None):
-        DecimalValue.__init__(self, meta)
-        ScalarExpr.__init__(self, arg, name=name)
-
-
-class DecimalColumn(DecimalValue, NumericColumn):
-
-    def __init__(self, arg, meta, name=None):
-        DecimalValue.__init__(self, meta)
-        NumericColumn.__init__(self, arg, name=name)
-
-
-class CategoryValue(ParameterizedValue):
-    """
-    Represents some ordered data categorization; tracked as an int32 value
-    until explicitly
-    """
-
-
-class CategoryScalar(CategoryValue, ScalarExpr):
-
-    def __init__(self, arg, meta, name=None):
-        CategoryValue.__init__(self, meta)
-        ScalarExpr.__init__(self, arg, name=name)
-
-
-class CategoryColumn(CategoryValue, ColumnExpr):
-
-    def __init__(self, arg, meta, name=None):
-        CategoryValue.__init__(self, meta)
-        ColumnExpr.__init__(self, arg, name=name)
-
-
-class ArrayScalar(ArrayValue, ScalarExpr):
-
-    def __init__(self, arg, meta, name=None):
-        ArrayValue.__init__(self, meta)
-        ScalarExpr.__init__(self, arg, name=name)
-
-
-class ArrayColumn(ArrayValue, ColumnExpr):
-
-    def __init__(self, arg, meta, name=None):
-        ArrayValue.__init__(self, meta)
-        ColumnExpr.__init__(self, arg, name=name)
-
-
-class MapScalar(MapValue, ScalarExpr):
-
-    def __init__(self, arg, meta, name=None):
-        MapValue.__init__(self, meta)
-        ScalarExpr.__init__(self, arg, name=name)
-
-
-class MapColumn(MapValue, ColumnExpr):
-
-    def __init__(self, arg, meta, name=None):
-        MapValue.__init__(self, meta)
-        ColumnExpr.__init__(self, arg, name=name)
-
-
-class StructScalar(StructValue, ScalarExpr):
-
-    def __init__(self, arg, meta, name=None):
-        StructValue.__init__(self, meta)
-        ScalarExpr.__init__(self, arg, name=name)
-
-
-class StructColumn(StructValue, ColumnExpr):
-
-    def __init__(self, arg, meta, name=None):
-        StructValue.__init__(self, meta)
-        ColumnExpr.__init__(self, arg, name=name)
+class IntervalScalar(AnyScalar, IntervalValue): pass
+class IntervalColumn(AnyColumn, IntervalValue): pass
 
 
 class UnnamedMarker(object):
@@ -1071,6 +755,7 @@ def castable(source, target):
 
     Based on the underlying datatypes and the value in case of Literals
     """
+    import ibis.expr.datatypes as dt
     import ibis.expr.operations as ops
     op = source.op()
     value = op.value if isinstance(op, ops.Literal) else None
@@ -1190,10 +875,6 @@ class ListExpr(ColumnExpr, AnyValue):
     def __len__(self):
         return len(self.values)
 
-    def type(self):
-        from ibis.expr import rules
-        return rules.highest_precedence_type(self.values)
-
 
 class TopKExpr(AnalyticExpr):
 
@@ -1271,10 +952,11 @@ def null():
     """
     Create a NULL/NA scalar
     """
+    import ibis.expr.datatypes as dt
     from ibis.expr.operations import NullLiteral
 
     global _NULL
     if _NULL is None:
-        _NULL = NullScalar(NullLiteral(None))
+        _NULL = NullScalar(NullLiteral(None), dtype=dt.null)
 
     return _NULL

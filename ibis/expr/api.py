@@ -24,45 +24,23 @@ import toolz
 
 from ibis.compat import functools
 
-from ibis.expr.schema import Schema
-from ibis.expr import datatypes as dt
-from ibis.expr import schema as sch
-from ibis.expr.types import (Expr,  # noqa
-                             ValueExpr, ScalarExpr, ColumnExpr,
-                             TableExpr,
-                             NumericValue, NumericColumn,
-                             IntegerValue,
-                             Int8Value, Int8Scalar, Int8Column,
-                             Int16Value, Int16Scalar, Int16Column,
-                             Int32Value, Int32Scalar, Int32Column,
-                             Int64Value, Int64Scalar, Int64Column,
-                             NullScalar,
-                             BooleanValue, BooleanScalar, BooleanColumn,
-                             FloatingValue,
-                             FloatValue, FloatScalar, FloatColumn,
-                             DoubleValue, DoubleScalar, DoubleColumn,
-                             StringValue, StringScalar, StringColumn,
-                             DecimalValue, DecimalScalar, DecimalColumn,
-                             TimestampValue, TimestampScalar, TimestampColumn,
-                             IntervalValue, IntervalScalar, IntervalColumn,
-                             DateValue, TimeValue,
-                             ArrayValue, ArrayScalar, ArrayColumn,
-                             MapValue, MapScalar, MapColumn,
-                             StructValue, StructScalar, StructColumn,
-                             CategoryValue, unnamed, as_value_expr, literal,
-                             param, null, sequence)
+import ibis.common as com
+import ibis.expr.types as ir
+import ibis.expr.schema as sch
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
-import ibis.common as _com
+from ibis.expr.types import Expr, null, sequence, param, literal, as_value_expr
+from ibis.expr.schema import Schema
+
+
 from ibis.compat import PY2, to_time, to_date
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import window, trailing_window, cumulative_window
 import ibis.expr.analytics as _analytics
 import ibis.expr.analysis as _L
-import ibis.expr.types as ir
-import ibis.expr.operations as _ops
 import ibis.util as util
-
 
 
 __all__ = [
@@ -139,8 +117,8 @@ def table(schema, name=None):
         else:
             schema = Schema.from_tuples(schema)
 
-    node = _ops.UnboundTable(schema, name=name)
-    return TableExpr(node)
+    node = ops.UnboundTable(schema, name=name)
+    return ir.TableExpr(node)
 
 
 def desc(expr):
@@ -160,9 +138,9 @@ def desc(expr):
     >>> result = t.group_by('g').size('count').sort_by(ibis.desc('count'))
     """
     if not isinstance(expr, Expr):
-        return _ops.DeferredSortKey(expr, ascending=False)
+        return ops.DeferredSortKey(expr, ascending=False)
     else:
-        return _ops.SortKey(expr, ascending=False).to_expr()
+        return ops.SortKey(expr, ascending=False).to_expr()
 
 
 def timestamp(value):
@@ -186,7 +164,7 @@ def timestamp(value):
             'and will be removed in 0.12.0. To pass integers as timestamp '
             'literals, use pd.Timestamp({:d}, unit=...)'.format(value)
         )
-    return ir.TimestampScalar(ir.literal(value).op())
+    return ir.literal(value)
 
 
 def date(value):
@@ -203,7 +181,7 @@ def date(value):
     """
     if isinstance(value, six.string_types):
         value = to_date(value)
-    return ir.DateScalar(ir.literal(value).op())
+    return ir.literal(value)
 
 
 def time(value):
@@ -220,7 +198,7 @@ def time(value):
     """
     if isinstance(value, six.string_types):
         value = to_time(value)
-    return ir.TimeScalar(ir.literal(value).op())
+    return ir.literal(value)
 
 
 def interval(value=None, unit='s', years=None, quarters=None, months=None,
@@ -363,7 +341,7 @@ def case():
     -------
     case : CaseBuilder
     """
-    return _ops.SearchedCaseBuilder()
+    return ops.SearchedCaseBuilder()
 
 
 def now():
@@ -374,7 +352,7 @@ def now():
     -------
     now : Timestamp scalar
     """
-    return _ops.TimestampNow().to_expr()
+    return ops.TimestampNow().to_expr()
 
 
 def row_number():
@@ -387,10 +365,10 @@ def row_number():
     -------
     row_number : IntArray
     """
-    return _ops.RowNumber().to_expr()
+    return ops.RowNumber().to_expr()
 
 
-e = _ops.E().to_expr()
+e = ops.E().to_expr()
 
 
 def _add_methods(klass, method_table):
@@ -425,7 +403,7 @@ def negate(arg):
     if hasattr(op, 'negate'):
         result = op.negate()
     else:
-        result = _ops.Negate(arg)
+        result = ops.Negate(arg)
 
     return result.to_expr()
 
@@ -441,10 +419,10 @@ def count(expr, where=None):
     counts : int64 type
     """
     op = expr.op()
-    if isinstance(op, _ops.DistinctColumn):
-        result = _ops.CountDistinct(op.args[0], where).to_expr()
+    if isinstance(op, ops.DistinctColumn):
+        result = ops.CountDistinct(op.args[0], where).to_expr()
     else:
-        result = _ops.Count(expr, where).to_expr()
+        result = ops.Count(expr, where).to_expr()
 
     return result.name('count')
 
@@ -464,7 +442,7 @@ def group_concat(arg, sep=',', where=None):
     -------
     concatenated : string scalar
     """
-    return _ops.GroupConcat(arg, sep, where).to_expr()
+    return ops.GroupConcat(arg, sep, where).to_expr()
 
 
 def arbitrary(arg, where=None, how='first'):
@@ -483,7 +461,7 @@ def arbitrary(arg, where=None, how='first'):
     -------
     arbitrary element : scalar type of caller
     """
-    return _ops.Arbitrary(arg, how, where).to_expr()
+    return ops.Arbitrary(arg, how, where).to_expr()
 
 
 def _binop_expr(name, klass):
@@ -492,7 +470,7 @@ def _binop_expr(name, klass):
             other = as_value_expr(other)
             op = klass(self, other)
             return op.to_expr()
-        except (_com.IbisTypeError, NotImplementedError):
+        except (com.IbisTypeError, NotImplementedError):
             return NotImplemented
 
     f.__name__ = name
@@ -501,7 +479,7 @@ def _binop_expr(name, klass):
 
 
 def _rbinop_expr(name, klass):
-    # For reflexive binary _ops, like radd, etc.
+    # For reflexive binary ops, like radd, etc.
     def f(self, other):
         other = as_value_expr(other)
         op = klass(other, self)
@@ -515,7 +493,7 @@ def _boolean_binary_op(name, klass):
     def f(self, other):
         other = as_value_expr(other)
 
-        if not isinstance(other, BooleanValue):
+        if not isinstance(other, ir.BooleanValue):
             raise TypeError(other)
 
         op = klass(self, other)
@@ -537,7 +515,7 @@ def _boolean_binary_rop(name, klass):
     def f(self, other):
         other = as_value_expr(other)
 
-        if not isinstance(other, BooleanValue):
+        if not isinstance(other, ir.BooleanValue):
             raise TypeError(other)
 
         op = klass(other, self)
@@ -571,7 +549,7 @@ def _extract_field(name, klass):
 
 def cast(arg, target_type):
     # validate
-    op = _ops.Cast(arg, target_type)
+    op = ops.Cast(arg, target_type)
     to = op.args[1]
 
     if to.equals(arg.type()):
@@ -611,7 +589,7 @@ def typeof(arg):
     -------
     typeof_arg : string
     """
-    return _ops.TypeOf(arg).to_expr()
+    return ops.TypeOf(arg).to_expr()
 
 
 def hash(arg, how='fnv'):
@@ -628,7 +606,7 @@ def hash(arg, how='fnv'):
     -------
     hash_value : int64 expression
     """
-    return _ops.Hash(arg, how).to_expr()
+    return ops.Hash(arg, how).to_expr()
 
 
 def fillna(arg, fill_value):
@@ -650,7 +628,7 @@ def fillna(arg, fill_value):
     -------
     filled : type of caller
     """
-    return _ops.IfNull(arg, fill_value).to_expr()
+    return ops.IfNull(arg, fill_value).to_expr()
 
 
 def coalesce(*args):
@@ -673,7 +651,7 @@ def coalesce(*args):
     -------
     coalesced : type of first provided argument
     """
-    return _ops.Coalesce(args).to_expr()
+    return ops.Coalesce(args).to_expr()
 
 
 def greatest(*args):
@@ -685,7 +663,7 @@ def greatest(*args):
     -------
     greatest : type depending on arguments
     """
-    return _ops.Greatest(args).to_expr()
+    return ops.Greatest(args).to_expr()
 
 
 def least(*args):
@@ -697,7 +675,7 @@ def least(*args):
     -------
     least : type depending on arguments
     """
-    return _ops.Least(args).to_expr()
+    return ops.Least(args).to_expr()
 
 
 def where(boolean_expr, true_expr, false_null_expr):
@@ -717,7 +695,7 @@ def where(boolean_expr, true_expr, false_null_expr):
     result : arity depending on inputs
       Type of true_expr used to determine output type
     """
-    op = _ops.Where(boolean_expr, true_expr, false_null_expr)
+    op = ops.Where(boolean_expr, true_expr, false_null_expr)
     return op.to_expr()
 
 
@@ -737,16 +715,16 @@ def over(expr, window):
     """
     prior_op = expr.op()
 
-    if isinstance(prior_op, _ops.WindowOp):
+    if isinstance(prior_op, ops.WindowOp):
         op = prior_op.over(window)
     else:
-        op = _ops.WindowOp(expr, window)
+        op = ops.WindowOp(expr, window)
 
     result = op.to_expr()
 
     try:
         name = expr.get_name()
-    except _com.ExpressionError:
+    except com.ExpressionError:
         pass
     else:
         result = result.name(name)
@@ -771,7 +749,7 @@ def value_counts(arg, metric_name='count'):
 
     try:
         arg.get_name()
-    except _com.ExpressionError:
+    except com.ExpressionError:
         arg = arg.name('unnamed')
 
     return base.group_by(arg).aggregate(metric)
@@ -795,7 +773,7 @@ def nullif(value, null_if_expr):
     -------
     null_if : type of caller
     """
-    return _ops.NullIf(value, null_if_expr).to_expr()
+    return ops.NullIf(value, null_if_expr).to_expr()
 
 
 def between(arg, lower, upper):
@@ -807,10 +785,10 @@ def between(arg, lower, upper):
     -------
     is_between : BooleanValue
     """
-    lower = _ops.as_value_expr(lower)
-    upper = _ops.as_value_expr(upper)
+    lower = ops.as_value_expr(lower)
+    upper = ops.as_value_expr(upper)
 
-    op = _ops.Between(arg, lower, upper)
+    op = ops.Between(arg, lower, upper)
     return op.to_expr()
 
 
@@ -837,7 +815,7 @@ def isin(arg, values):
     -------
     contains : BooleanValue
     """
-    op = _ops.Contains(arg, values)
+    op = ops.Contains(arg, values)
     return op.to_expr()
 
 
@@ -846,22 +824,22 @@ def notin(arg, values):
     Like isin, but checks whether this expression's value(s) are not
     contained in the passed values. See isin docs for full usage.
     """
-    op = _ops.NotContains(arg, values)
+    op = ops.NotContains(arg, values)
     return op.to_expr()
 
 
-add = _binop_expr('__add__', _ops.Add)
-sub = _binop_expr('__sub__', _ops.Subtract)
-mul = _binop_expr('__mul__', _ops.Multiply)
-div = _binop_expr('__div__', _ops.Divide)
-floordiv = _binop_expr('__floordiv__', _ops.FloorDivide)
-pow = _binop_expr('__pow__', _ops.Power)
-mod = _binop_expr('__mod__', _ops.Modulus)
+add = _binop_expr('__add__', ops.Add)
+sub = _binop_expr('__sub__', ops.Subtract)
+mul = _binop_expr('__mul__', ops.Multiply)
+div = _binop_expr('__div__', ops.Divide)
+floordiv = _binop_expr('__floordiv__', ops.FloorDivide)
+pow = _binop_expr('__pow__', ops.Power)
+mod = _binop_expr('__mod__', ops.Modulus)
 
-radd = _rbinop_expr('__radd__', _ops.Add)
-rsub = _rbinop_expr('__rsub__', _ops.Subtract)
-rdiv = _rbinop_expr('__rdiv__', _ops.Divide)
-rfloordiv = _rbinop_expr('__rfloordiv__', _ops.FloorDivide)
+radd = _rbinop_expr('__radd__', ops.Add)
+rsub = _rbinop_expr('__rsub__', ops.Subtract)
+rdiv = _rbinop_expr('__rdiv__', ops.Divide)
+rfloordiv = _rbinop_expr('__rfloordiv__', ops.FloorDivide)
 
 
 def substitute(arg, value, replacement=None, else_=None):
@@ -941,7 +919,7 @@ def _case(arg):
         Literal[string]
           null or (not a and not b)
     """
-    return _ops.SimpleCaseBuilder(arg)
+    return ops.SimpleCaseBuilder(arg)
 
 
 def cases(arg, case_result_pairs, default=None):
@@ -970,8 +948,8 @@ _generic_value_methods = dict(
     between=between,
     isin=isin,
     notin=notin,
-    isnull=_unary_op('isnull', _ops.IsNull),
-    notnull=_unary_op('notnull', _ops.NotNull),
+    isnull=_unary_op('isnull', ops.IsNull),
+    notnull=_unary_op('notnull', ops.NotNull),
 
     over=over,
 
@@ -979,43 +957,43 @@ _generic_value_methods = dict(
     cases=cases,
     substitute=substitute,
 
-    __eq__=_binop_expr('__eq__', _ops.Equals),
-    __ne__=_binop_expr('__ne__', _ops.NotEquals),
-    __ge__=_binop_expr('__ge__', _ops.GreaterEqual),
-    __gt__=_binop_expr('__gt__', _ops.Greater),
-    __le__=_binop_expr('__le__', _ops.LessEqual),
-    __lt__=_binop_expr('__lt__', _ops.Less),
-    collect=_unary_op('collect', _ops.ArrayCollect),
-    identical_to=_binop_expr('identical_to', _ops.IdenticalTo),
+    __eq__=_binop_expr('__eq__', ops.Equals),
+    __ne__=_binop_expr('__ne__', ops.NotEquals),
+    __ge__=_binop_expr('__ge__', ops.GreaterEqual),
+    __gt__=_binop_expr('__gt__', ops.Greater),
+    __le__=_binop_expr('__le__', ops.LessEqual),
+    __lt__=_binop_expr('__lt__', ops.Less),
+    collect=_unary_op('collect', ops.ArrayCollect),
+    identical_to=_binop_expr('identical_to', ops.IdenticalTo),
 )
 
 
-approx_nunique = _agg_function('approx_nunique', _ops.HLLCardinality, True)
-approx_median = _agg_function('approx_median', _ops.CMSMedian, True)
-max = _agg_function('max', _ops.Max, True)
-min = _agg_function('min', _ops.Min, True)
-nunique = _agg_function('nunique', _ops.CountDistinct, True)
+approx_nunique = _agg_function('approx_nunique', ops.HLLCardinality, True)
+approx_median = _agg_function('approx_median', ops.CMSMedian, True)
+max = _agg_function('max', ops.Max, True)
+min = _agg_function('min', ops.Min, True)
+nunique = _agg_function('nunique', ops.CountDistinct, True)
 
 
 def lag(arg, offset=None, default=None):
-    return _ops.Lag(arg, offset, default).to_expr()
+    return ops.Lag(arg, offset, default).to_expr()
 
 
 def lead(arg, offset=None, default=None):
-    return _ops.Lead(arg, offset, default).to_expr()
+    return ops.Lead(arg, offset, default).to_expr()
 
 
-first = _unary_op('first', _ops.FirstValue)
-last = _unary_op('last', _ops.LastValue)
-rank = _unary_op('rank', _ops.MinRank)
-dense_rank = _unary_op('dense_rank', _ops.DenseRank)
-percent_rank = _unary_op('percent_rank', _ops.PercentRank)
-cummin = _unary_op('cummin', _ops.CumulativeMin)
-cummax = _unary_op('cummax', _ops.CumulativeMax)
+first = _unary_op('first', ops.FirstValue)
+last = _unary_op('last', ops.LastValue)
+rank = _unary_op('rank', ops.MinRank)
+dense_rank = _unary_op('dense_rank', ops.DenseRank)
+percent_rank = _unary_op('percent_rank', ops.PercentRank)
+cummin = _unary_op('cummin', ops.CumulativeMin)
+cummax = _unary_op('cummax', ops.CumulativeMax)
 
 
 def ntile(arg, buckets):
-    return _ops.NTile(arg, buckets).to_expr()
+    return ops.NTile(arg, buckets).to_expr()
 
 
 def nth(arg, k):
@@ -1032,7 +1010,7 @@ def nth(arg, k):
     -------
     nth : type of argument
     """
-    return _ops.NthValue(arg, k).to_expr()
+    return ops.NthValue(arg, k).to_expr()
 
 
 def distinct(arg):
@@ -1041,7 +1019,7 @@ def distinct(arg):
     in conjunction with other array expressions from the same context
     (because it's a cardinality-modifying pseudo-reduction).
     """
-    op = _ops.DistinctColumn(arg)
+    op = ops.DistinctColumn(arg)
     return op.to_expr()
 
 
@@ -1051,7 +1029,7 @@ def topk(arg, k, by=None):
     -------
     topk : TopK filter expression
     """
-    op = _ops.TopK(arg, k, by=by)
+    op = ops.TopK(arg, k, by=by)
     return op.to_expr()
 
 
@@ -1132,7 +1110,7 @@ def _wrap_summary_metrics(metrics, prefix):
 def expr_list(exprs):
     for e in exprs:
         e.get_name()
-    return _ops.ExpressionList(exprs).to_expr()
+    return ops.ExpressionList(exprs).to_expr()
 
 
 _generic_column_methods = dict(
@@ -1164,8 +1142,8 @@ _generic_column_methods = dict(
 )
 
 
-_add_methods(ValueExpr, _generic_value_methods)
-_add_methods(ColumnExpr, _generic_column_methods)
+_add_methods(ir.ValueExpr, _generic_value_methods)
+_add_methods(ir.ColumnExpr, _generic_column_methods)
 
 
 # ---------------------------------------------------------------------
@@ -1185,7 +1163,7 @@ def round(arg, digits=None):
         decimal types: decimal
         other numeric types: double
     """
-    op = _ops.Round(arg, digits)
+    op = ops.Round(arg, digits)
     return op.to_expr()
 
 
@@ -1202,7 +1180,7 @@ def log(arg, base=None):
     -------
     logarithm : double type
     """
-    op = _ops.Log(arg, base)
+    op = ops.Log(arg, base)
     return op.to_expr()
 
 
@@ -1223,7 +1201,7 @@ def clip(arg, lower=None, upper=None):
         raise ValueError("at least one of lower and "
                          "upper must be provided")
 
-    op = _ops.Clip(arg, lower, upper)
+    op = ops.Clip(arg, lower, upper)
     return op.to_expr()
 
 
@@ -1254,9 +1232,9 @@ def quantile(arg, quantile, interpolation='linear'):
         if array input, list of scalar type
     """
     if isinstance(quantile, collections.Sequence):
-        op = _ops.MultiQuantile(arg, quantile, interpolation)
+        op = ops.MultiQuantile(arg, quantile, interpolation)
     else:
-        op = _ops.Quantile(arg, quantile, interpolation)
+        op = ops.Quantile(arg, quantile, interpolation)
     return op.to_expr()
 
 
@@ -1273,7 +1251,7 @@ def _integer_to_timestamp(arg, unit='s'):
     -------
     timestamp : timestamp value expression
     """
-    op = _ops.TimestampFromUNIX(arg, unit)
+    op = ops.TimestampFromUNIX(arg, unit)
     return op.to_expr()
 
 
@@ -1289,19 +1267,19 @@ def _integer_to_interval(arg, unit='s'):
     -------
     interval : interval value expression
     """
-    op = _ops.IntervalFromInteger(arg, unit)
+    op = ops.IntervalFromInteger(arg, unit)
     return op.to_expr()
 
 
-abs = _unary_op('abs', _ops.Abs)
-ceil = _unary_op('ceil', _ops.Ceil)
-exp = _unary_op('exp', _ops.Exp)
-floor = _unary_op('floor', _ops.Floor)
-log2 = _unary_op('log2', _ops.Log2)
-log10 = _unary_op('log10', _ops.Log10)
-ln = _unary_op('ln', _ops.Ln)
-sign = _unary_op('sign', _ops.Sign)
-sqrt = _unary_op('sqrt', _ops.Sqrt)
+abs = _unary_op('abs', ops.Abs)
+ceil = _unary_op('ceil', ops.Ceil)
+exp = _unary_op('exp', ops.Exp)
+floor = _unary_op('floor', ops.Floor)
+log2 = _unary_op('log2', ops.Log2)
+log10 = _unary_op('log10', ops.Log10)
+ln = _unary_op('ln', ops.Ln)
+sign = _unary_op('sign', ops.Sign)
+sqrt = _unary_op('sqrt', ops.Sqrt)
 
 
 _numeric_value_methods = dict(
@@ -1317,8 +1295,8 @@ _numeric_value_methods = dict(
     log2=log2,
     log10=log10,
     round=round,
-    nullifzero=_unary_op('nullifzero', _ops.NullIfZero),
-    zeroifnull=_unary_op('zeroifnull', _ops.ZeroIfNull),
+    nullifzero=_unary_op('nullifzero', ops.NullIfZero),
+    zeroifnull=_unary_op('zeroifnull', ops.ZeroIfNull),
     clip=clip,
 
     __add__=add,
@@ -1351,11 +1329,11 @@ _numeric_value_methods = dict(
     __rsub__=rsub,
     rsub=rsub,
 
-    __rmul__=_rbinop_expr('__rmul__', _ops.Multiply),
-    __rpow__=_rbinop_expr('__rpow__', _ops.Power),
+    __rmul__=_rbinop_expr('__rmul__', ops.Multiply),
+    __rpow__=_rbinop_expr('__rpow__', ops.Power),
 
     __mod__=mod,
-    __rmod__=_rbinop_expr('__rmod__', _ops.Modulus),
+    __rmod__=_rbinop_expr('__rmod__', ops.Modulus),
 )
 
 
@@ -1373,7 +1351,7 @@ def convert_base(arg, from_base, to_base):
     -------
     converted : string
     """
-    return _ops.BaseConvert(arg, from_base, to_base).to_expr()
+    return ops.BaseConvert(arg, from_base, to_base).to_expr()
 
 
 _integer_value_methods = dict(
@@ -1383,11 +1361,11 @@ _integer_value_methods = dict(
 )
 
 
-mean = _agg_function('mean', _ops.Mean, True)
-cummean = _unary_op('cummean', _ops.CumulativeMean)
+mean = _agg_function('mean', ops.Mean, True)
+cummean = _unary_op('cummean', ops.CumulativeMean)
 
-sum = _agg_function('sum', _ops.Sum, True)
-cumsum = _unary_op('cumsum', _ops.CumulativeSum)
+sum = _agg_function('sum', ops.Sum, True)
+cumsum = _unary_op('cumsum', ops.CumulativeSum)
 
 
 def std(arg, where=None, how='sample'):
@@ -1402,7 +1380,7 @@ def std(arg, where=None, how='sample'):
     -------
     stdev : double scalar
     """
-    expr = _ops.StandardDev(arg, how, where).to_expr()
+    expr = ops.StandardDev(arg, how, where).to_expr()
     expr = expr.name('std')
     return expr
 
@@ -1419,7 +1397,7 @@ def variance(arg, where=None, how='sample'):
     -------
     stdev : double scalar
     """
-    expr = _ops.Variance(arg, how, where).to_expr()
+    expr = ops.Variance(arg, how, where).to_expr()
     expr = expr.name('var')
     return expr
 
@@ -1442,15 +1420,15 @@ _numeric_column_methods = dict(
 )
 
 _floating_value_methods = dict(
-    isnan=_unary_op('isnull', _ops.IsNan),
-    isinf=_unary_op('isinf', _ops.IsInf),
+    isnan=_unary_op('isnull', ops.IsNan),
+    isinf=_unary_op('isinf', ops.IsInf),
 )
 
-_add_methods(NumericValue, _numeric_value_methods)
-_add_methods(IntegerValue, _integer_value_methods)
-_add_methods(FloatingValue, _floating_value_methods)
+_add_methods(ir.NumericValue, _numeric_value_methods)
+_add_methods(ir.IntegerValue, _integer_value_methods)
+_add_methods(ir.FloatingValue, _floating_value_methods)
 
-_add_methods(NumericColumn, _numeric_column_methods)
+_add_methods(ir.NumericColumn, _numeric_column_methods)
 
 
 # ----------------------------------------------------------------------
@@ -1470,34 +1448,34 @@ def ifelse(arg, true_expr, false_expr):
     # Result will be the result of promotion of true/false exprs. These
     # might be conflicting types; same type resolution as case expressions
     # must be used.
-    case = _ops.SearchedCaseBuilder()
+    case = ops.SearchedCaseBuilder()
     return case.when(arg, true_expr).else_(false_expr).end()
 
 
 _boolean_value_methods = dict(
     ifelse=ifelse,
-    __and__=_boolean_binary_op('__and__', _ops.And),
-    __or__=_boolean_binary_op('__or__', _ops.Or),
-    __xor__=_boolean_binary_op('__xor__', _ops.Xor),
-    __rand__=_boolean_binary_rop('__rand__', _ops.And),
-    __ror__=_boolean_binary_rop('__ror__', _ops.Or),
-    __rxor__=_boolean_binary_rop('__rxor__', _ops.Xor),
-    __invert__=_boolean_unary_op('__invert__', _ops.Not),
+    __and__=_boolean_binary_op('__and__', ops.And),
+    __or__=_boolean_binary_op('__or__', ops.Or),
+    __xor__=_boolean_binary_op('__xor__', ops.Xor),
+    __rand__=_boolean_binary_rop('__rand__', ops.And),
+    __ror__=_boolean_binary_rop('__ror__', ops.Or),
+    __rxor__=_boolean_binary_rop('__rxor__', ops.Xor),
+    __invert__=_boolean_unary_op('__invert__', ops.Not),
 )
 
 
 _boolean_column_methods = dict(
-    any=_unary_op('any', _ops.Any),
-    notany=_unary_op('notany', _ops.NotAny),
-    all=_unary_op('all', _ops.All),
-    notall=_unary_op('notany', _ops.NotAll),
-    cumany=_unary_op('cumany', _ops.CumulativeAny),
-    cumall=_unary_op('cumall', _ops.CumulativeAll)
+    any=_unary_op('any', ops.Any),
+    notany=_unary_op('notany', ops.NotAny),
+    all=_unary_op('all', ops.All),
+    notall=_unary_op('notany', ops.NotAll),
+    cumany=_unary_op('cumany', ops.CumulativeAny),
+    cumall=_unary_op('cumall', ops.CumulativeAll)
 )
 
 
-_add_methods(BooleanValue, _boolean_value_methods)
-_add_methods(BooleanColumn, _boolean_column_methods)
+_add_methods(ir.BooleanValue, _boolean_value_methods)
+_add_methods(ir.BooleanColumn, _boolean_column_methods)
 
 
 # ---------------------------------------------------------------------
@@ -1521,7 +1499,7 @@ def _string_substr(self, start, length=None):
     -------
     substrings : type of caller
     """
-    op = _ops.Substring(self, start, length)
+    op = ops.Substring(self, start, length)
     return op.to_expr()
 
 
@@ -1545,7 +1523,7 @@ def _string_right(self, nchars):
     -------
     substrings : type of caller
     """
-    return _ops.StrRight(self, nchars).to_expr()
+    return ops.StrRight(self, nchars).to_expr()
 
 
 def repeat(self, n):
@@ -1560,7 +1538,7 @@ def repeat(self, n):
     -------
     result : string
     """
-    return _ops.Repeat(self, n).to_expr()
+    return ops.Repeat(self, n).to_expr()
 
 
 def _translate(self, from_str, to_str):
@@ -1587,7 +1565,7 @@ def _translate(self, from_str, to_str):
     -------
     translated : string
     """
-    return _ops.Translate(self, from_str, to_str).to_expr()
+    return ops.Translate(self, from_str, to_str).to_expr()
 
 
 def _string_find(self, substr, start=None, end=None):
@@ -1608,7 +1586,7 @@ def _string_find(self, substr, start=None, end=None):
     """
     if end is not None:
         raise NotImplementedError
-    return _ops.StringFind(self, substr, start, end).to_expr()
+    return ops.StringFind(self, substr, start, end).to_expr()
 
 
 def _lpad(self, length, pad=' '):
@@ -1633,7 +1611,7 @@ def _lpad(self, length, pad=' '):
     -------
     padded : string
     """
-    return _ops.LPad(self, length, pad).to_expr()
+    return ops.LPad(self, length, pad).to_expr()
 
 
 def _rpad(self, length, pad=' '):
@@ -1658,7 +1636,7 @@ def _rpad(self, length, pad=' '):
     -------
     padded : string
     """
-    return _ops.RPad(self, length, pad).to_expr()
+    return ops.RPad(self, length, pad).to_expr()
 
 
 def _find_in_set(self, str_list):
@@ -1682,7 +1660,7 @@ def _find_in_set(self, str_list):
     -------
     position : int
     """
-    return _ops.FindInSet(self, str_list).to_expr()
+    return ops.FindInSet(self, str_list).to_expr()
 
 
 def _string_join(self, strings):
@@ -1703,7 +1681,7 @@ def _string_join(self, strings):
     -------
     joined : string
     """
-    return _ops.StringJoin(self, strings).to_expr()
+    return ops.StringJoin(self, strings).to_expr()
 
 
 def _string_like(self, patterns):
@@ -1728,7 +1706,7 @@ def _string_like(self, patterns):
     return functools.reduce(
         operator.or_,
         (
-            _ops.StringSQLLike(self, pattern).to_expr()
+            ops.StringSQLLike(self, pattern).to_expr()
             for pattern in util.promote_list(patterns)
         )
     )
@@ -1747,7 +1725,7 @@ def re_search(arg, pattern):
     -------
     searched : boolean value
     """
-    return _ops.RegexSearch(arg, pattern).to_expr()
+    return ops.RegexSearch(arg, pattern).to_expr()
 
 
 def regex_extract(arg, pattern, index):
@@ -1764,7 +1742,7 @@ def regex_extract(arg, pattern, index):
     -------
     extracted : string
     """
-    return _ops.RegexExtract(arg, pattern, index).to_expr()
+    return ops.RegexExtract(arg, pattern, index).to_expr()
 
 
 def regex_replace(arg, pattern, replacement):
@@ -1787,7 +1765,7 @@ def regex_replace(arg, pattern, replacement):
     -------
     modified : string
     """
-    return _ops.RegexReplace(arg, pattern, replacement).to_expr()
+    return ops.RegexReplace(arg, pattern, replacement).to_expr()
 
 
 def _string_replace(arg, pattern, replacement):
@@ -1810,7 +1788,7 @@ def _string_replace(arg, pattern, replacement):
     -------
     replaced : string
     """
-    return _ops.StringReplace(arg, pattern, replacement).to_expr()
+    return ops.StringReplace(arg, pattern, replacement).to_expr()
 
 
 def parse_url(arg, extract, key=None):
@@ -1836,7 +1814,7 @@ def parse_url(arg, extract, key=None):
     -------
     extracted : string
     """
-    return _ops.ParseURL(arg, extract, key).to_expr()
+    return ops.ParseURL(arg, extract, key).to_expr()
 
 
 def _string_contains(arg, substr):
@@ -1866,11 +1844,11 @@ def _string_split(arg, delimiter):
     -------
     splitsville : Array[String]
     """
-    return _ops.StringSplit(arg, delimiter).to_expr()
+    return ops.StringSplit(arg, delimiter).to_expr()
 
 
 def _string_concat(*args):
-    return _ops.StringConcat(args).to_expr()
+    return ops.StringConcat(args).to_expr()
 
 
 def _string_dunder_contains(arg, substr):
@@ -1900,15 +1878,15 @@ def _string_getitem(self, key):
 _string_value_methods = dict(
     __getitem__=_string_getitem,
 
-    length=_unary_op('length', _ops.StringLength),
-    lower=_unary_op('lower', _ops.Lowercase),
-    upper=_unary_op('upper', _ops.Uppercase),
-    reverse=_unary_op('reverse', _ops.Reverse),
-    ascii_str=_unary_op('ascii', _ops.StringAscii),
-    strip=_unary_op('strip', _ops.Strip),
-    lstrip=_unary_op('lstrip', _ops.LStrip),
-    rstrip=_unary_op('rstrip', _ops.RStrip),
-    capitalize=_unary_op('initcap', _ops.Capitalize),
+    length=_unary_op('length', ops.StringLength),
+    lower=_unary_op('lower', ops.Lowercase),
+    upper=_unary_op('upper', ops.Uppercase),
+    reverse=_unary_op('reverse', ops.Reverse),
+    ascii_str=_unary_op('ascii', ops.StringAscii),
+    strip=_unary_op('strip', ops.Strip),
+    lstrip=_unary_op('lstrip', ops.LStrip),
+    rstrip=_unary_op('rstrip', ops.RStrip),
+    capitalize=_unary_op('initcap', ops.Capitalize),
 
     convert_base=convert_base,
 
@@ -1940,7 +1918,7 @@ _string_value_methods = dict(
 )
 
 
-_add_methods(StringValue, _string_value_methods)
+_add_methods(ir.StringValue, _string_value_methods)
 
 
 # ---------------------------------------------------------------------
@@ -1973,26 +1951,26 @@ def _array_slice(array, index):
         if step is not None and step != 1:
             raise NotImplementedError('step can only be 1')
 
-        op = _ops.ArraySlice(
+        op = ops.ArraySlice(
             array,
             start if start is not None else 0,
             stop,
         )
     else:
-        op = _ops.ArrayIndex(array, index)
+        op = ops.ArrayIndex(array, index)
     return op.to_expr()
 
 
 _array_column_methods = dict(
-    length=_unary_op('length', _ops.ArrayLength),
+    length=_unary_op('length', ops.ArrayLength),
     __getitem__=_array_slice,
-    __add__=_binop_expr('__add__', _ops.ArrayConcat),
-    __radd__=toolz.flip(_binop_expr('__radd__', _ops.ArrayConcat)),
-    __mul__=_binop_expr('__mul__', _ops.ArrayRepeat),
-    __rmul__=_binop_expr('__rmul__', _ops.ArrayRepeat),
+    __add__=_binop_expr('__add__', ops.ArrayConcat),
+    __radd__=toolz.flip(_binop_expr('__radd__', ops.ArrayConcat)),
+    __mul__=_binop_expr('__mul__', ops.ArrayRepeat),
+    __rmul__=_binop_expr('__rmul__', ops.ArrayRepeat),
 )
 
-_add_methods(ArrayValue, _array_column_methods)
+_add_methods(ir.ArrayValue, _array_column_methods)
 
 
 # ---------------------------------------------------------------------
@@ -2008,20 +1986,20 @@ def get(expr, key, default):
     key : any
     default : any
     """
-    return _ops.MapValueOrDefaultForKey(expr, key, default).to_expr()
+    return ops.MapValueOrDefaultForKey(expr, key, default).to_expr()
 
 
 _map_column_methods = dict(
-    length=_unary_op('length', _ops.MapLength),
-    __getitem__=_binop_expr('__getitem__', _ops.MapValueForKey),
     get=get,
-    keys=_unary_op('keys', _ops.MapKeys),
-    values=_unary_op('values', _ops.MapValues),
-    __add__=_binop_expr('__add__', _ops.MapConcat),
-    __radd__=toolz.flip(_binop_expr('__radd__', _ops.MapConcat)),
+    length=_unary_op('length', ops.MapLength),
+    __getitem__=_binop_expr('__getitem__', ops.MapValueForKey),
+    keys=_unary_op('keys', ops.MapKeys),
+    values=_unary_op('values', ops.MapValues),
+    __add__=_binop_expr('__add__', ops.MapConcat),
+    __radd__=toolz.flip(_binop_expr('__radd__', ops.MapConcat)),
 )
 
-_add_methods(MapValue, _map_column_methods)
+_add_methods(ir.MapValue, _map_column_methods)
 
 # ---------------------------------------------------------------------
 # Struct API
@@ -2042,7 +2020,7 @@ def _struct_get_field(expr, field_name):
     value_expr : ibis.expr.types.ValueExpr
         An expression with the type of the field being accessed.
     """
-    return _ops.StructField(expr, field_name).to_expr().name(field_name)
+    return ops.StructField(expr, field_name).to_expr().name(field_name)
 
 
 _struct_column_methods = dict(
@@ -2050,7 +2028,7 @@ _struct_column_methods = dict(
     __getitem__=_struct_get_field,
 )
 
-_add_methods(StructValue, _struct_column_methods)
+_add_methods(ir.StructValue, _struct_column_methods)
 
 
 # ---------------------------------------------------------------------
@@ -2080,7 +2058,7 @@ def _timestamp_truncate(arg, unit):
     -------
     truncated : timestamp
     """
-    return _ops.TimestampTruncate(arg, unit).to_expr()
+    return ops.TimestampTruncate(arg, unit).to_expr()
 
 
 def _timestamp_strftime(arg, format_str):
@@ -2097,7 +2075,7 @@ def _timestamp_strftime(arg, format_str):
     -------
     formatted : string
     """
-    return _ops.Strftime(arg, format_str).to_expr()
+    return ops.Strftime(arg, format_str).to_expr()
 
 
 def _timestamp_time(arg):
@@ -2113,7 +2091,7 @@ def _timestamp_time(arg):
     """
     if PY2:
         raise ValueError("time support is not enabled on python 2")
-    return _ops.Time(arg).to_expr()
+    return ops.Time(arg).to_expr()
 
 
 def _timestamp_date(arg):
@@ -2127,33 +2105,33 @@ def _timestamp_date(arg):
     -------
     Date node
     """
-    return _ops.Date(arg).to_expr()
+    return ops.Date(arg).to_expr()
 
 
 def _timestamp_sub(left, right):
     right = as_value_expr(right)
 
     if isinstance(right, ir.TimestampValue):
-        op = _ops.TimestampDiff(left, right)
+        op = ops.TimestampDiff(left, right)
     else:
-        op = _ops.TimestampSub(left, right)  # let the operation validate
+        op = ops.TimestampSub(left, right)  # let the operation validate
 
     return op.to_expr()
 
 
-_timestamp_add = _binop_expr('__add__', _ops.TimestampAdd)
-_timestamp_radd = _binop_expr('__radd__', _ops.TimestampAdd)
+_timestamp_add = _binop_expr('__add__', ops.TimestampAdd)
+_timestamp_radd = _binop_expr('__radd__', ops.TimestampAdd)
 
 
 _timestamp_value_methods = dict(
     strftime=_timestamp_strftime,
-    year=_extract_field('year', _ops.ExtractYear),
-    month=_extract_field('month', _ops.ExtractMonth),
-    day=_extract_field('day', _ops.ExtractDay),
-    hour=_extract_field('hour', _ops.ExtractHour),
-    minute=_extract_field('minute', _ops.ExtractMinute),
-    second=_extract_field('second', _ops.ExtractSecond),
-    millisecond=_extract_field('millisecond', _ops.ExtractMillisecond),
+    year=_extract_field('year', ops.ExtractYear),
+    month=_extract_field('month', ops.ExtractMonth),
+    day=_extract_field('day', ops.ExtractDay),
+    hour=_extract_field('hour', ops.ExtractHour),
+    minute=_extract_field('minute', ops.ExtractMinute),
+    second=_extract_field('second', ops.ExtractSecond),
+    millisecond=_extract_field('millisecond', ops.ExtractMillisecond),
     truncate=_timestamp_truncate,
     time=_timestamp_time,
     date=_timestamp_date,
@@ -2166,7 +2144,7 @@ _timestamp_value_methods = dict(
 
     __radd__=_timestamp_radd,
     radd=_timestamp_radd,
-    day_of_week=property(lambda self: _ops.DayOfWeekNode([self]).to_expr()),
+    day_of_week=property(lambda self: ops.DayOfWeekNode([self]).to_expr()),
 )
 
 
@@ -2192,28 +2170,28 @@ def _date_truncate(arg, unit):
     -------
     truncated : date
     """
-    return _ops.DateTruncate(arg, unit).to_expr()
+    return ops.DateTruncate(arg, unit).to_expr()
 
 
 def _date_sub(left, right):
     right = as_value_expr(right)
 
     if isinstance(right, ir.DateValue):
-        op = _ops.DateDiff(left, right)
+        op = ops.DateDiff(left, right)
     else:
-        op = _ops.DateSub(left, right)  # let the operation validate
+        op = ops.DateSub(left, right)  # let the operation validate
 
     return op.to_expr()
 
 
-_date_add = _binop_expr('__add__', _ops.DateAdd)
+_date_add = _binop_expr('__add__', ops.DateAdd)
 
 _date_value_methods = dict(
     strftime=_timestamp_strftime,
-    year=_extract_field('year', _ops.ExtractYear),
-    month=_extract_field('month', _ops.ExtractMonth),
-    day=_extract_field('day', _ops.ExtractDay),
-    day_of_week=property(lambda self: _ops.DayOfWeekNode([self]).to_expr()),
+    year=_extract_field('year', ops.ExtractYear),
+    month=_extract_field('month', ops.ExtractMonth),
+    day=_extract_field('day', ops.ExtractDay),
+    day_of_week=property(lambda self: ops.DayOfWeekNode([self]).to_expr()),
 
     truncate=_date_truncate,
 
@@ -2227,8 +2205,8 @@ _date_value_methods = dict(
     radd=_date_add
 )
 
-_add_methods(TimestampValue, _timestamp_value_methods)
-_add_methods(DateValue, _date_value_methods)
+_add_methods(ir.TimestampValue, _timestamp_value_methods)
+_add_methods(ir.DateValue, _date_value_methods)
 
 
 def _convert_unit(value, unit, to):
@@ -2259,9 +2237,9 @@ def _convert_unit(value, unit, to):
 
 
 def _to_unit(arg, target_unit):
-    if arg.meta.unit != target_unit:
-        arg = _convert_unit(arg, arg.meta.unit, target_unit)
-        arg.unit = target_unit
+    if arg._dtype.unit != target_unit:
+        arg = _convert_unit(arg, arg._dtype.unit, target_unit)
+        arg.type().unit = target_unit
     return arg
 
 
@@ -2269,11 +2247,11 @@ def _interval_property(target_unit):
     return property(functools.partial(_to_unit, target_unit=target_unit))
 
 
-_interval_add = _binop_expr('__add__', _ops.IntervalAdd)
-_interval_radd = _binop_expr('__radd__', _ops.IntervalAdd)
-_interval_mul = _binop_expr('__mul__', _ops.IntervalMultiply)
-_interval_rmul = _binop_expr('__rmul__', _ops.IntervalMultiply)
-_interval_floordiv = _binop_expr('__floordiv__', _ops.IntervalFloorDivide)
+_interval_add = _binop_expr('__add__', ops.IntervalAdd)
+_interval_radd = _binop_expr('__radd__', ops.IntervalAdd)
+_interval_mul = _binop_expr('__mul__', ops.IntervalMultiply)
+_interval_rmul = _binop_expr('__rmul__', ops.IntervalMultiply)
+_interval_floordiv = _binop_expr('__floordiv__', ops.IntervalFloorDivide)
 
 _interval_value_methods = dict(
     to_unit=_to_unit,
@@ -2305,7 +2283,7 @@ _interval_value_methods = dict(
     floordiv=_interval_floordiv
 )
 
-_add_methods(IntervalValue, _interval_value_methods)
+_add_methods(ir.IntervalValue, _interval_value_methods)
 
 
 # ---------------------------------------------------------------------
@@ -2327,7 +2305,7 @@ def between_time(arg, lower, upper, timezone=None):
     is_between : BooleanValue
     """
 
-    if isinstance(arg.op(), _ops.Time):
+    if isinstance(arg.op(), ops.Time):
         # Here we pull out the first argument to the underlying Time operation
         # which is by definition (in _timestamp_value_methods) a
         # TimestampValue. We do this so that we can potentially specialize the
@@ -2337,9 +2315,9 @@ def between_time(arg, lower, upper, timezone=None):
         arg = arg.op().args[0]
         if timezone is not None:
             arg = arg.cast(dt.Timestamp(timezone=timezone))
-        op = _ops.BetweenTime(arg, lower, upper)
+        op = ops.BetweenTime(arg, lower, upper)
     else:
-        op = _ops.Between(arg, lower, upper)
+        op = ops.Between(arg, lower, upper)
 
     return op.to_expr()
 
@@ -2363,21 +2341,21 @@ def _time_truncate(arg, unit):
     -------
     truncated : time
     """
-    return _ops.TimeTruncate(arg, unit).to_expr()
+    return ops.TimeTruncate(arg, unit).to_expr()
 
 
 def _time_sub(left, right):
     right = as_value_expr(right)
 
     if isinstance(right, ir.TimeValue):
-        op = _ops.TimeDiff(left, right)
+        op = ops.TimeDiff(left, right)
     else:
-        op = _ops.TimeSub(left, right)  # let the operation validate
+        op = ops.TimeSub(left, right)  # let the operation validate
 
     return op.to_expr()
 
 
-_time_add = _binop_expr('__add__', _ops.TimeAdd)
+_time_add = _binop_expr('__add__', ops.TimeAdd)
 
 
 _time_value_methods = dict(
@@ -2394,19 +2372,19 @@ _time_value_methods = dict(
     radd=_time_add
 )
 
-_add_methods(TimeValue, _time_value_methods)
+_add_methods(ir.TimeValue, _time_value_methods)
 
 
 # ---------------------------------------------------------------------
 # Decimal API
 
 _decimal_value_methods = dict(
-    precision=_unary_op('precision', _ops.DecimalPrecision),
-    scale=_unary_op('scale', _ops.DecimalScale),
+    precision=_unary_op('precision', ops.DecimalPrecision),
+    scale=_unary_op('scale', ops.DecimalScale),
 )
 
 
-_add_methods(DecimalValue, _decimal_value_methods)
+_add_methods(ir.DecimalValue, _decimal_value_methods)
 
 
 # ----------------------------------------------------------------------
@@ -2417,23 +2395,23 @@ _category_value_methods = dict(
     label=_analytics.category_label
 )
 
-_add_methods(CategoryValue, _category_value_methods)
+_add_methods(ir.CategoryValue, _category_value_methods)
 
 
 # ---------------------------------------------------------------------
 # Table API
 
 _join_classes = {
-    'inner': _ops.InnerJoin,
-    'left': _ops.LeftJoin,
-    'any_inner': _ops.AnyInnerJoin,
-    'any_left': _ops.AnyLeftJoin,
-    'outer': _ops.OuterJoin,
-    'right': _ops.RightJoin,
-    'left_semi': _ops.LeftSemiJoin,
-    'semi': _ops.LeftSemiJoin,
-    'anti': _ops.LeftAntiJoin,
-    'cross': _ops.CrossJoin
+    'inner': ops.InnerJoin,
+    'left': ops.LeftJoin,
+    'any_inner': ops.AnyInnerJoin,
+    'any_left': ops.AnyLeftJoin,
+    'outer': ops.OuterJoin,
+    'right': ops.RightJoin,
+    'left_semi': ops.LeftSemiJoin,
+    'semi': ops.LeftSemiJoin,
+    'anti': ops.LeftAntiJoin,
+    'cross': ops.CrossJoin
 }
 
 
@@ -2465,7 +2443,7 @@ def join(left, right, predicates=(), how='inner'):
         predicates = _L.flatten_predicate(predicates)
 
     op = klass(left, right, predicates)
-    return TableExpr(op)
+    return ir.TableExpr(op)
 
 
 def asof_join(left, right, predicates=(), by=()):
@@ -2488,7 +2466,7 @@ def asof_join(left, right, predicates=(), by=()):
     joined : TableExpr
       Note, schema is not materialized yet
     """
-    return _ops.AsOfJoin(left, right, predicates, by).to_expr()
+    return ops.AsOfJoin(left, right, predicates, by).to_expr()
 
 
 def cross_join(*tables, **kwargs):
@@ -2557,7 +2535,7 @@ def cross_join(*tables, **kwargs):
             Table: ref_4
     """
     # TODO(phillipc): Implement prefix keyword argument
-    return TableExpr(_ops.CrossJoin(*tables, **kwargs))
+    return ir.TableExpr(ops.CrossJoin(*tables, **kwargs))
 
 
 def _table_count(self):
@@ -2568,7 +2546,7 @@ def _table_count(self):
     -------
     count : Int64Scalar
     """
-    return _ops.Count(self, None).to_expr().name('count')
+    return ops.Count(self, None).to_expr().name('count')
 
 
 def _table_info(self, buf=None):
@@ -2694,14 +2672,14 @@ def aggregate(table, metrics=None, by=None, having=None, **kwds):
         metrics.append(v.name(k))
 
     op = table.op().aggregate(table, metrics, by=by, having=having)
-    return TableExpr(op)
+    return ir.TableExpr(op)
 
 
 def _table_distinct(self):
     """
     Compute set of unique rows/tuples occurring in this table
     """
-    op = _ops.Distinct(self)
+    op = ops.Distinct(self)
     return op.to_expr()
 
 
@@ -2721,8 +2699,8 @@ def _table_limit(table, n, offset=0):
     -------
     limited : TableExpr
     """
-    op = _ops.Limit(table, n, offset=offset)
-    return TableExpr(op)
+    op = ops.Limit(table, n, offset=offset)
+    return ir.TableExpr(op)
 
 
 def _head(table, n=5):
@@ -2772,7 +2750,7 @@ def _table_sort_by(table, sort_exprs):
     op = table.op()
     result = op.sort_by(table, sort_exprs)
 
-    return TableExpr(result)
+    return ir.TableExpr(result)
 
 
 def _table_union(left, right, distinct=False):
@@ -2791,15 +2769,15 @@ def _table_union(left, right, distinct=False):
     -------
     union : TableExpr
     """
-    op = _ops.Union(left, right, distinct=distinct)
-    return TableExpr(op)
+    op = ops.Union(left, right, distinct=distinct)
+    return ir.TableExpr(op)
 
 
 def _table_to_array(self):
     """
     Single column tables can be viewed as arrays.
     """
-    op = _ops.TableArrayView(self)
+    op = ops.TableArrayView(self)
     return op.to_expr()
 
 
@@ -2811,8 +2789,8 @@ def _table_materialize(table):
     if table._is_materialized():
         return table
 
-    op = _ops.MaterializedJoin(table)
-    return TableExpr(op)
+    op = ops.MaterializedJoin(table)
+    return ir.TableExpr(op)
 
 
 def add_column(table, expr, name=None):
@@ -2835,7 +2813,7 @@ def add_column(table, expr, name=None):
 def _safe_get_name(expr):
     try:
         return expr.get_name()
-    except _com.ExpressionError:
+    except com.ExpressionError:
         return None
 
 
@@ -3031,7 +3009,7 @@ def projection(table, exprs):
     projector = L.Projector(table, exprs)
 
     op = projector.get_result()
-    return TableExpr(op)
+    return ir.TableExpr(op)
 
 
 def _table_relabel(table, substitutions, replacements=None):
@@ -3080,7 +3058,7 @@ def _table_view(self):
     -------
     expr : TableExpr
     """
-    return TableExpr(_ops.SelfReference(self))
+    return ir.TableExpr(ops.SelfReference(self))
 
 
 def _table_drop(self, fields):
@@ -3135,4 +3113,4 @@ _table_methods = dict(
 )
 
 
-_add_methods(TableExpr, _table_methods)
+_add_methods(ir.TableExpr, _table_methods)
