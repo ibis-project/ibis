@@ -20,14 +20,6 @@ import ibis.expr.operations as ops
 import ibis.expr.rlz as rlz
 
 
-# TODO: rlz.isin
-def _validate_closed(closed):
-    closed = closed.lower()
-    if closed not in {'left', 'right'}:
-        raise ValueError("closed must be 'left' or 'right'")
-    return closed
-
-
 class BucketLike(ops.ValueOp):
 
     @property
@@ -43,30 +35,20 @@ class Bucket(BucketLike):
 
     arg = rlz.noop
     buckets = rlz.noop
-    closed = rlz.noop
-    close_extreme = rlz.noop
-    include_under = rlz.noop
-    include_over = rlz.noop
+    closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
+    close_extreme = rlz.optional(rlz.instanceof(bool), default=True)
+    include_under = rlz.optional(rlz.instanceof(bool), default=False)
+    include_over = rlz.optional(rlz.instanceof(bool), default=False)
 
-    def __init__(self, arg, buckets, closed='left', close_extreme=True,
-                 include_under=False, include_over=False):
-        closed = _validate_closed(closed)
-
-        close_extreme = bool(close_extreme)
-        include_over = bool(include_over)
-        include_under = bool(include_under)
-
-        if not len(buckets):
+    def _validate(self):
+        if not len(self.buckets):
             raise ValueError('Must be at least one bucket edge')
-        elif len(buckets) == 1:
-            if not include_under or not include_over:
+        elif len(self.buckets) == 1:
+            if not self.include_under or not self.include_over:
                 raise ValueError(
                     'If one bucket edge provided, must have '
                     'include_under=True and include_over=True'
                 )
-
-        super(Bucket, self).__init__(arg, buckets, closed, close_extreme,
-                                     include_under, include_over)
 
     @property
     def nbuckets(self):
@@ -79,43 +61,33 @@ class Histogram(BucketLike):
     nbins = rlz.noop
     binwidth = rlz.noop
     base = rlz.noop
-    closed = rlz.noop
-    aux_hash = rlz.noop
+    closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
+    aux_hash = rlz.optional(rlz.noop)
 
-    def __init__(self, arg, nbins, binwidth, base, closed='left',
-                 aux_hash=None):
-        if nbins is None:
-            if binwidth is None:
+    def _validate(self):
+        if self.nbins is None:
+            if self.binwidth is None:
                 raise ValueError('Must indicate nbins or binwidth')
-        elif binwidth is not None:
+        elif self.binwidth is not None:
             raise ValueError('nbins and binwidth are mutually exclusive')
-
-        closed = _validate_closed(closed)
-
-        super(Histogram, self).__init__(arg, nbins, binwidth, base, closed,
-                                        aux_hash)
 
     def output_type(self):
         # always undefined cardinality (for now)
-        ctype = dt.Category()
-        return ctype.array_type()
+        return dt.category.array_type()
 
 
 class CategoryLabel(ops.ValueOp):
 
-    arg = rlz.noop
+    arg = rlz.category
     labels = rlz.noop
     nulls = rlz.noop
 
-    def __init__(self, arg, labels, nulls):
-        arg = ops.as_value_expr(arg)
-
-        card = arg.type().cardinality
-        if len(labels) != card:
+    def _validate(self):
+        cardinality = self.arg.type().cardinality
+        if len(self.labels) != cardinality:
             raise ValueError('Number of labels must match number of '
-                             'categories: %d' % card)
+                             'categories: {}'.format(cardinality))
 
-        super(CategoryLabel, self).__init__(arg, labels, nulls)
 
     def output_type(self):
         return rules.shape_like(self.arg, 'string')

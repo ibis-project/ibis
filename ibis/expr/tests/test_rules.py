@@ -102,12 +102,12 @@ def test_optional(validator, value, expected):
     (['a', 'b'], 'a', 'a'),
     (('a', 'b'), 'b', 'b'),
     ({'a', 'b', 'c'}, 'c', 'c'),
-    (['a', 'b'], 'c', IbisTypeError),
-    ({'a', 'b', 'c'}, 'd', IbisTypeError),
+    (['a', 'b'], 'c', ValueError),
+    ({'a', 'b', 'c'}, 'd', ValueError),
     ([1, 2, 'f'], 'f', 'f'),
     ({'a': 1, 'b': 2}, 'a', 1),
     ({'a': 1, 'b': 2}, 'b', 2),
-    ({'a': 1, 'b': 2}, 'c', IbisTypeError),
+    ({'a': 1, 'b': 2}, 'c', ValueError),
 ])
 def test_isin(values, value, expected):
     with mayraise(expected):

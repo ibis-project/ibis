@@ -66,7 +66,7 @@ def optional(inner, arg, default=None):
 @validator
 def isin(values, arg):
     if arg not in values:
-        raise com.IbisTypeError('Value {!r} not in {!r}'.format(arg, values))
+        raise ValueError('Value {!r} not in {!r}'.format(arg, values))
     if isinstance(values, dict):  # TODO check for mapping instead
         return values[arg]
     else:
@@ -113,6 +113,7 @@ def instanceof(klass, arg):
 
 @validator
 def value(dtype, arg):
+    # TODO support DataType classes, not just instances
     if arg is None:
         raise com.IbisTypeError('Passing value argument with datatype {} is '
                                 'mandatory'.format(dtype))
@@ -157,6 +158,7 @@ floating = value(dt.float64)
 date = value(dt.date)
 time = value(dt.time)
 timestamp = value(dt.timestamp)
+category = value(dt.category)
 # TODO: previouse number rules allowed booleans by default
 numeric = oneof([integer, floating, decimal])
 temporal = oneof([timestamp, date, time])

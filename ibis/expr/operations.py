@@ -118,8 +118,10 @@ class Node(six.with_metaclass(OperationMeta, object)):
         self._expr_cached = None
         for k, v in _pack_arguments(self._arg_names, args, kwargs).items():
             setattr(self, k, v)
-        # TODO: check for validate functions to support validating more
-        # arguments at once, like table operations require
+        self._validate()
+
+    def _validate(self):
+        pass
 
     def __repr__(self):
         return self._repr()
@@ -1848,11 +1850,11 @@ class Selection(TableNode, HasSchema):
         validator = FilterValidator([table])
         validator.validate_all(predicates)
 
-    def _validate(self, table, exprs):
-        # Need to validate that the column expressions are compatible with the
-        # input table; this means they must either be scalar expressions or
-        # array expressions originating from the same root table expression
-        table._assert_valid(exprs)
+    # def _validate(self, table, exprs):
+    #     # Need to validate that the column expressions are compatible with the
+    #     # input table; this means they must either be scalar expressions or
+    #     # array expressions originating from the same root table expression
+    #     table._assert_valid(exprs)
 
     # TODO: cleanup / remove
     def _get_schema(self, table, projections):

@@ -591,6 +591,7 @@ date = Date()
 time = Time()
 timestamp = Timestamp()
 interval = Interval()
+category = Category()
 
 
 _primitive_types = (
