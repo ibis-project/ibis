@@ -876,13 +876,14 @@ class Mean(Reduction):
 class Quantile(Reduction):
 
     arg = rlz.any
-    quantile = rlz.numeric  # doesn't allow boolean
+    quantile = rlz.strict_numeric
     interpolation = rlz.optional(
         rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'}),
         default='linear'
     )
 
-    output_type = rules.scalar_output(rules._coerce_integer_to_double_type)
+    def output_type(self):
+        return dt.float64.scalar_type()
 
 
 class MultiQuantile(Quantile):
@@ -895,7 +896,7 @@ class MultiQuantile(Quantile):
     )
 
     def output_type(self):
-        return dt.Array(rules._coerce_integer_to_double_type(self)).scalar_type()
+        return dt.float64.scalar_type()
 
 
 class VarianceBase(Reduction):

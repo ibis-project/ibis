@@ -101,7 +101,7 @@ def test_instanceof_operation():
 def test_array_input():
     class MyOp(ops.ValueOp):
         value = rlz.value(dt.Array(dt.double))
-        output_type = rules.type_of_arg(0)
+        output_type = rlz.typeof('value')
 
     raw_value = [1.0, 2.0, 3.0]
     op = MyOp(raw_value)

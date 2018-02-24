@@ -186,7 +186,7 @@ def szuper(klass, arg):
     return instanceof(klass, arg)
 
 
-# maybe rename to shape_like, scalar_like etc
+# TODO: maybe rename back to shape_like, scalar_like etc
 def shapeof(name, dtype=None):
     def output_type(self):
         arg = getattr(self, name)
