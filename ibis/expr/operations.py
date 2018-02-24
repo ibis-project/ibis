@@ -86,6 +86,7 @@ class OperationMeta(type):
         slots, args = ['_expr_cached'], []
         for parent in parents:
             # TODO: use ordereddicts to allow overriding
+            # or just disallow multiple inheritance for __slots__
             if hasattr(parent, '__slots__'):
                 slots += parent.__slots__
             if hasattr(parent, '_arg_names'):
@@ -110,13 +111,13 @@ class OperationMeta(type):
 class Node(six.with_metaclass(OperationMeta, object)):
 
     # should read the signature property of class instead of using descriptors?
-    # then run validators on arguments
-    # then set to the according underscored slot
     # after that call self._validate to support validating more arguments together
 
     def __init__(self, *args, **kwargs):
         self._expr_cached = None
         for k, v in _pack_arguments(self._arg_names, args, kwargs).items():
+            # TODO: consider validating arguments direclty here instead of a
+            # descriptor + properties for getters
             setattr(self, k, v)
         self._validate()
 
@@ -402,7 +403,7 @@ class TypeOf(ValueOp):
 
 
 class Negate(UnaryOp):
-    arg = rlz.oneof([rlz.numeric, rlz.boolean])
+    arg = rlz.numeric
     output_type = rlz.typeof('arg')
 
 
@@ -574,9 +575,9 @@ class Round(ValueOp):
 
 
 class Clip(ValueOp):
-    arg = rlz.any
-    lower = rlz.optional(rlz.numeric)  # don't allow boolean
-    upper = rlz.optional(rlz.numeric)  # don't allow boolean
+    arg = rlz.strict_numeric
+    lower = rlz.optional(rlz.strict_numeric)
+    upper = rlz.optional(rlz.strict_numeric)
     output_type = rlz.typeof('arg')
 
 
@@ -584,7 +585,6 @@ class BaseConvert(ValueOp):
     arg = rlz.oneof([rlz.integer, rlz.string])
     from_base = rlz.integer
     to_base = rlz.integer
-
     output_type = rules.shape_like_flatargs(dt.string)
 
 
@@ -608,12 +608,12 @@ class Sqrt(RealUnaryOp):
 
 
 class Logarithm(RealUnaryOp):
-    arg = rlz.numeric  # don't allow booleans
+    arg = rlz.strict_numeric
 
 
 class Log(Logarithm):
-    arg = rlz.numeric  # don't allow booleans
-    base = rlz.optional(rlz.numeric)
+    arg = rlz.strict_numeric
+    base = rlz.optional(rlz.strict_numeric)
 
 
 class Ln(Logarithm):
@@ -850,15 +850,27 @@ class Arbitrary(Reduction):
 
 
 class Sum(Reduction):
-    arg = rlz.column(rlz.any)
+    arg = rlz.column(rlz.numeric)
     where = rlz.optional(rlz.boolean)
-    output_type = rules.scalar_output(rules._sum_output_type)
+
+    def output_type(self):
+        if isinstance(self.arg, ir.BooleanValue):
+            dtype = dt.int64
+        else:
+            dtype = self.arg.type().largest()
+        return dtype.scalar_type()
 
 
 class Mean(Reduction):
-    arg = rlz.column(rlz.any)
+    arg = rlz.column(rlz.numeric)
     where = rlz.optional(rlz.boolean)
-    output_type = rules.scalar_output(rules._mean_output_type)
+
+    def output_type(self):
+        if isinstance(self.arg, ir.DecimalValue):
+            dtype = self.arg.type().largest()
+        else:
+            dtype = dt.float64
+        return dtype.scalar_type()
 
 
 class Quantile(Reduction):
@@ -887,10 +899,16 @@ class MultiQuantile(Quantile):
 
 
 class VarianceBase(Reduction):
-    arg = rlz.column(rlz.any)
+    arg = rlz.column(rlz.numeric)
     how = rlz.optional(rlz.isin({'sample', 'pop'}))
     where = rlz.optional(rlz.boolean)
-    output_type = rules.scalar_output(rules._mean_output_type)
+
+    def output_type(self):
+        if isinstance(self.arg, ir.DecimalValue):
+            dtype = self.arg.type().largest()
+        else:
+            dtype = dt.float64
+        return dtype.scalar_type()
 
 
 class StandardDev(VarianceBase):
@@ -904,13 +922,13 @@ class Variance(VarianceBase):
 class Max(Reduction):
     arg = rlz.column(rlz.any)
     where = rlz.optional(rlz.boolean)
-    output_type = rules.scalar_output(rules._min_max_output_rule)
+    output_type = rlz.scalarof('arg')
 
 
 class Min(Reduction):
     arg = rlz.column(rlz.any)
     where = rlz.optional(rlz.boolean)
-    output_type = rules.scalar_output(rules._min_max_output_rule)
+    output_type = rlz.scalarof('arg')
 
 
 class HLLCardinality(Reduction):
@@ -1090,31 +1108,47 @@ class RowNumber(RankBase):
 
 
 class CumulativeOp(AnalyticOp):
-    arg = rlz.column(rlz.any)
+    pass
 
 
 class CumulativeSum(CumulativeOp):
     """Cumulative sum. Requires an order window."""
 
-    output_type = rules.array_output(rules._sum_output_type)
+    arg = rlz.column(rlz.numeric)
+
+    def output_type(self):
+        if isinstance(self.arg, ir.BooleanValue):
+            dtype = dt.int64
+        else:
+            dtype = self.arg.type().largest()
+        return dtype.array_type()
 
 
 class CumulativeMean(CumulativeOp):
     """Cumulative mean. Requires an order window."""
 
-    output_type = rules.array_output(rules._mean_output_type)
+    arg = rlz.column(rlz.numeric)
+
+    def output_type(self):
+        if isinstance(self.arg, ir.DecimalValue):
+            dtype = self.arg.type().largest()
+        else:
+            dtype = dt.float64
+        return dtype.array_type()
 
 
 class CumulativeMax(CumulativeOp):
     """Cumulative max. Requires an order window."""
 
-    output_type = rules.array_output(rules._min_max_output_rule)
+    arg = rlz.column(rlz.any)
+    output_type = rlz.arrayof('arg')
 
 
 class CumulativeMin(CumulativeOp):
     """Cumulative min. Requires an order window."""
 
-    output_type = rules.array_output(rules._min_max_output_rule)
+    arg = rlz.column(rlz.any)
+    output_type = rlz.arrayof('arg')
 
 
 class PercentRank(AnalyticOp):
@@ -1249,15 +1283,13 @@ class NotAll(All):
 
 
 class CumulativeAny(CumulativeOp):
-    """Cumulative any"""
-
-    output_type = rules.array_output(lambda self: 'boolean')
+    arg = rlz.column(rlz.boolean)
+    output_type = rlz.typeof('arg')
 
 
 class CumulativeAll(CumulativeOp):
-    """Cumulative all"""
-
-    output_type = rules.array_output(lambda self: 'boolean')
+    arg = rlz.column(rlz.boolean)
+    output_type = rlz.typeof('arg')
 
 
 # ---------------------------------------------------------------------
@@ -1802,7 +1834,7 @@ class SelfReference(TableNode, HasSchema):
 
 class Selection(TableNode, HasSchema):
 
-    table = rlz.noop
+    table = rlz.table
     # schema = rlz.schema
     selections = rlz.noop
     predicates = rlz.noop
@@ -1811,18 +1843,18 @@ class Selection(TableNode, HasSchema):
     # TODO: rename arguments like the following
     #_arg_names = ['table', 'selections', 'predicates', 'sort_keys']
 
-    def __init__(self, table_expr, proj_exprs=None, predicates=None,
+    def __init__(self, table, selections=None, predicates=None,
                  sort_keys=None):
         import ibis.expr.analysis as L
 
         # Argument cleaning
-        proj_exprs = util.promote_list(
-            proj_exprs if proj_exprs is not None else []
+        selections = util.promote_list(
+            selections if selections is not None else []
         )
-        clean_exprs, schema = self._get_schema(table_expr, proj_exprs)
+        clean_exprs, schema = self._get_schema(table, selections)
 
         sort_keys = [
-            to_sort_key(table_expr, k)
+            to_sort_key(table, k)
             for k in util.promote_list(
                 sort_keys if sort_keys is not None else []
             )
@@ -1835,11 +1867,11 @@ class Selection(TableNode, HasSchema):
 
         dependent_exprs = clean_exprs + sort_keys
 
-        table_expr._assert_valid(dependent_exprs)
-        self._validate_predicates(table_expr, predicates)
+        table._assert_valid(dependent_exprs)
+        self._validate_predicates(table, predicates)
 
         super(Selection, self).__init__(
-            table=table_expr, selections=clean_exprs,
+            table=table, selections=clean_exprs,
             predicates=predicates, sort_keys=sort_keys)
 
     def blocks(self):
@@ -2030,7 +2062,7 @@ class Aggregation(TableNode, HasSchema):
     where : pre-aggregation predicate
     """
 
-    table = rlz.noop
+    table = rlz.table
     metrics = rlz.noop
     by = rlz.noop
     having = rlz.noop

@@ -427,30 +427,6 @@ class Table(Argument):
 table = Table
 
 
-def _sum_output_type(self):
-    arg = self.args[0]
-    if isinstance(arg, (ir.IntegerValue, ir.BooleanValue)):
-        t = 'int64'
-    elif isinstance(arg, ir.FloatingValue):
-        t = 'double'
-    elif isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg._dtype.precision, 38)
-    else:
-        raise TypeError(arg)
-    return t
-
-
-def _mean_output_type(self):
-    arg = self.args[0]
-    if isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg._dtype.precision, 38)
-    elif isinstance(arg, ir.NumericValue):
-        t = 'double'
-    else:
-        raise NotImplementedError
-    return t
-
-
 def _coerce_integer_to_double_type(self):
     first_arg = self.args[0]
     first_arg_type = first_arg.type()
@@ -459,19 +435,3 @@ def _coerce_integer_to_double_type(self):
     else:
         result_type = first_arg_type
     return result_type
-
-
-def _decimal_scalar_ctor(precision, scale):
-    out_type = dt.Decimal(precision, scale)
-    return out_type.scalar_type()
-
-
-def _min_max_output_rule(self):
-    arg = self.args[0]
-    if isinstance(arg, ir.DecimalValue):
-        t = dt.Decimal(arg._dtype.precision, 38)
-    else:
-        t = arg.type()
-
-    return t
-

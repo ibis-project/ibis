@@ -237,10 +237,15 @@ class Timestamp(Primitive):
 
 
 class SignedInteger(Integer):
-    pass
+
+    def largest(self):
+        return int64
 
 
 class UnsignedInteger(Integer):
+
+    def largest(self):
+        return uint64
 
     @property
     def bounds(self):
@@ -254,6 +259,9 @@ class Floating(Primitive):
     column = ir.FloatingColumn
 
     __slots__ = ()
+
+    def largest(self):
+        return float64
 
 
 class Int8(SignedInteger):
@@ -286,46 +294,56 @@ class Int64(SignedInteger):
 
 class UInt8(UnsignedInteger):
 
+    __slots__ = ()
+
     _nbytes = 1
 
 
 class UInt16(UnsignedInteger):
+
+    __slots__ = ()
 
     _nbytes = 2
 
 
 class UInt32(UnsignedInteger):
 
+    __slots__ = ()
+
     _nbytes = 4
 
 
 class UInt64(UnsignedInteger):
 
+    __slots__ = ()
+
     _nbytes = 8
 
 
-class Halffloat(Floating):
+class Float16(Floating):
+
+    __slots__ = ()
 
     _nbytes = 2
 
 
-class Float(Floating):
+class Float32(Floating):
 
     __slots__ = ()
 
     _nbytes = 4
 
 
-class Double(Floating):
+class Float64(Floating):
 
     __slots__ = ()
 
     _nbytes = 8
 
 
-Float16 = Halffloat
-Float32 = Float
-Float64 = Double
+Halffloat = Float16
+Float = Float32
+Double = Float64
 
 
 class Decimal(DataType):
@@ -348,6 +366,9 @@ class Decimal(DataType):
 
     def _equal_part(self, other, cache=None):
         return self.precision == other.precision and self.scale == other.scale
+
+    def largest(self):
+        return Decimal(self.precision, 38)
 
 
 assert hasattr(Decimal, '__hash__')

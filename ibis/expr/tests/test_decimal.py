@@ -43,13 +43,20 @@ def test_decimal_aggregate_function_behavior(lineitem):
     # the result can represent the largest possible value at that
     # particular precision."
     col = lineitem.l_extendedprice
-    functions = ['sum', 'mean', 'max', 'min']
+    functions = ['sum', 'mean']
 
     for func_name in functions:
         result = getattr(col, func_name)()
         assert isinstance(result, ir.DecimalScalar)
         assert result.type().precision == col.type().precision
         assert result.type().scale == 38
+
+    functions = ['max', 'min']
+    for func_name in functions:
+        result = getattr(col, func_name)()
+        assert isinstance(result, ir.DecimalScalar)
+        assert result.type().precision == col.type().precision
+        assert result.type().scale == col.type().scale
 
 
 def test_where(lineitem):

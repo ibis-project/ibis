@@ -160,8 +160,10 @@ time = value(dt.time)
 timestamp = value(dt.timestamp)
 category = value(dt.category)
 # TODO: previouse number rules allowed booleans by default
-numeric = oneof([integer, floating, decimal])
 temporal = oneof([timestamp, date, time])
+numeric = oneof([integer, floating, decimal, boolean])
+strict_numeric = oneof([integer, floating, decimal])  # without boolean
+
 
 
 @validator

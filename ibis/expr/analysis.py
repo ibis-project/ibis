@@ -582,12 +582,11 @@ def _filter_selection(expr, predicates):
         simplified_predicates = [substitute_parents(x) for x in predicates]
         fused_predicates = op.predicates + simplified_predicates
         result = ops.Selection(op.table,
-                               proj_exprs=op.selections,
+                               selections=op.selections,
                                predicates=fused_predicates,
                                sort_keys=op.sort_keys)
     else:
-        result = ops.Selection(expr, proj_exprs=[],
-                               predicates=predicates)
+        result = ops.Selection(expr, selections=[], predicates=predicates)
 
     return result.to_expr()
 
