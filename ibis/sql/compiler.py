@@ -4,17 +4,16 @@
 from six import StringIO
 from collections import defaultdict
 
+import ibis
 import ibis.common as com
+import ibis.util as util
+import ibis.expr.types as ir
+import ibis.expr.format as fmt
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
-
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
-import ibis.expr.format as format
 
 import ibis.sql.transforms as transforms
-import ibis.util as util
-import ibis
 
 
 class QueryAST(object):
@@ -250,7 +249,7 @@ class SelectBuilder(object):
 
         unchanged = True
         if isinstance(expr, ir.ScalarExpr):
-            if ops.is_reduction(expr):
+            if L.is_reduction(expr):
                 return self._rewrite_reduction_filter(expr)
 
         if isinstance(op, ops.BinaryOp):
@@ -258,11 +257,11 @@ class SelectBuilder(object):
             right = self._visit_filter(op.right)
             unchanged = left is op.left and right is op.right
             if not unchanged:
-                return type(expr)(type(op)(left, right))
+                return expr._factory(type(op)(left, right))
             else:
                 return expr
         elif isinstance(op, (ops.Any, ops.BooleanValueOp,
-                             ops.TableColumn, ir.Literal)):
+                             ops.TableColumn, ops.Literal)):
             return expr
         elif isinstance(op, ops.ValueOp):
             visited = [self._visit_filter(arg)
@@ -273,7 +272,7 @@ class SelectBuilder(object):
                 if new is not old:
                     unchanged = False
             if not unchanged:
-                return type(expr)(type(op)(*visited))
+                return expr._factory(type(op)(*visited))
             else:
                 return expr
         else:
@@ -343,7 +342,7 @@ class SelectBuilder(object):
                 raise com.InternalError('no table set')
         else:
             # Expressions not depending on any table
-            if isinstance(root_op, ir.ExpressionList):
+            if isinstance(root_op, ops.ExpressionList):
                 self.select_set = source_expr.exprs()
             else:
                 self.select_set = [source_expr]
@@ -951,7 +950,7 @@ class QueryContext(object):
         self.query = None
 
         self._table_key_memo = {}
-        self.memo = memo or format.FormatMemo()
+        self.memo = memo or fmt.FormatMemo()
         self.dialect = dialect
         self.params = params if params is not None else {}
 

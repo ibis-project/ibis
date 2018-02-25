@@ -503,7 +503,8 @@ def _number_literal_format(expr):
 
 
 def _interval_literal_format(expr):
-    return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution.upper())
+    return 'INTERVAL {} {}'.format(expr.op().value,
+                                   expr.type().resolution.upper())
 
 
 def _interval_from_integer(translator, expr):
@@ -512,7 +513,8 @@ def _interval_from_integer(translator, expr):
     arg, unit = op.args
     arg_formatted = translator.translate(arg)
 
-    return 'INTERVAL {} {}'.format(arg_formatted, expr.resolution.upper())
+    return 'INTERVAL {} {}'.format(arg_formatted,
+                                   expr.type().resolution.upper())
 
 
 def _date_literal_format(expr):

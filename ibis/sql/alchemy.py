@@ -1121,7 +1121,7 @@ class AlchemySelect(Select):
         clauses = []
         for expr in self.order_by:
             key = expr.op()
-            sort_expr = key.expr
+            sort_expr = key.by
 
             # here we have to determine if key.expr is in the select set (as it
             # will be in the case of order_by fused with an aggregation

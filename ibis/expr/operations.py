@@ -47,33 +47,33 @@ def distinct_roots(*expressions):
     return list(toolz.unique(roots, key=id))
 
 
-def _pack_arguments(names, args, kwargs):
-    # TODO: docstrings
-    # TODO: error messages
-    assert len(args) <= len(names)
+class TypeSignature(OrderedDict):
 
-    result = dict(zip(names, args))
-    assert not (set(result.keys()) & set(kwargs.keys()))
+    __slots__ = tuple()
 
-    for name in names[len(result):]:
-        result[name] = kwargs.get(name, None)
+    def __call__(self, *args, **kwargs):
+        if len(args) > len(self.keys()):
+            raise TypeError('takes {} positional arguments but {} were '
+                            'given'.format(len(args), len(self.keys())))
 
-    return result
+        result = []
+        for i, (name, rule) in enumerate(self.items()):
+            if i < len(args):
+                if name in kwargs:
+                    raise TypeError('got multiple values for argument'
+                                    '{}'.format(name))
+                value = rule.call(args[i])
+            elif name in kwargs:
+                value = rule.call(kwargs[name])
+            else:
+                value = rule.call()
 
+            result.append((name, value))
 
-class Argument(object):
+        return result
 
-    __slots__ = 'name', 'validate'
-
-    def __init__(self, name, rule):
-        self.name = '_' + name
-        self.validate = rule
-
-    def __get__(self, obj, objtype):
-        return getattr(obj, self.name)
-
-    def __set__(self, obj, value):
-        setattr(obj, self.name, self.validate(value))
+    def names(self):
+        return self.keys()
 
 
 class OperationMeta(type):
@@ -83,41 +83,32 @@ class OperationMeta(type):
         return OrderedDict()
 
     def __new__(cls, name, parents, dct):
-        # TODO: cleanup
+        signature = TypeSignature()
 
-        slots, args = ['_expr_cached'], []
+        # inherit from parent signatures
         for parent in parents:
-            # TODO: use ordereddicts to allow overriding
-            # or just disallow multiple inheritance for __slots__
-            if hasattr(parent, '__slots__'):
-                slots += parent.__slots__
-            if hasattr(parent, '_arg_names'):
-                args += parent._arg_names
+            if hasattr(parent, '_signature'):
+                signature.update(parent._signature)
 
-        odict = OrderedDict()
-        for key, value in dct.items():
-            if isinstance(value, rlz.validator):
-                # TODO: make it cleaner
-                arg = Argument(key, value)
-                args.append(key)
-                slots.append(arg.name)
-                odict[key] = arg
+        attrs = OrderedDict()
+        for k, v in dct.items():
+            if isinstance(v, rlz.validator):
+                signature[k] = v
             else:
-                odict[key] = value
+                attrs[k] = v
 
-        odict['__slots__'] = tuple(toolz.unique(slots))
-        odict['_arg_names'] = tuple(toolz.unique(args))
-        return super(OperationMeta, cls).__new__(cls, name, parents, odict)
+        attrs['_signature'] = signature
+        attrs['__slots__'] = tuple(signature.keys()) + ('_expr_cached',)
+
+        return super(OperationMeta, cls).__new__(cls, name, parents, attrs)
 
 
 class Node(six.with_metaclass(OperationMeta, object)):
 
     def __init__(self, *args, **kwargs):
         self._expr_cached = None
-        for k, v in _pack_arguments(self._arg_names, args, kwargs).items():
-            # TODO: consider validating arguments direclty here instead of a
-            # descriptor + properties for getters
-            setattr(self, k, v)
+        for name, value in self._signature(*args, **kwargs):
+            setattr(self, name, value)
         self._validate()
 
     def _validate(self):
@@ -211,8 +202,12 @@ class Node(six.with_metaclass(OperationMeta, object)):
         raise NotImplementedError
 
     @property
+    def _arg_names(self):
+        return self._signature.names()
+
+    @property
     def args(self):
-        return tuple(getattr(self, name) for name in self._arg_names)
+        return tuple(getattr(self, name) for name in self._signature.names())
 
 
 class ValueOp(Node):
@@ -360,20 +355,16 @@ class TableArrayView(ValueOp):
     (Temporary?) Helper operation class for SQL translation (fully formed table
     subqueries to be viewed as arrays)
     """
+    table = rlz.table
+    name = rlz.instanceof(six.string_types)
 
     def __init__(self, table):
-        if not isinstance(table, ir.TableExpr):
-            raise com.ExpressionError('Requires table')
-
         schema = table.schema()
         if len(schema) > 1:
             raise com.ExpressionError('Table can only have a single column')
 
-        # TODO
-        self.table = table
-        self.name = schema.names[0]
-
-        Node.__init__(self, [table])
+        name = schema.names[0]
+        return super(TableArrayView, self).__init__(table, name)
 
     def _make_expr(self):
         ctype = self.table._get_type(self.name)
@@ -397,8 +388,7 @@ class Cast(ValueOp):
         return rlz.shapeof(self.arg, dtype=self.to)
 
 
-class TypeOf(ValueOp):
-    arg = rlz.value
+class TypeOf(UnaryOp):
     output_type = rlz.shapeof('arg', dt.string)
 
 
@@ -728,7 +718,7 @@ class FuzzySearch(ValueOp, BooleanValueOp):
 class StringSQLLike(FuzzySearch):
     arg = rlz.string
     pattern = rlz.string
-    escape = rlz.instanceof(six.string_types)
+    escape = rlz.optional(rlz.instanceof(six.string_types))
 
 
 class RegexSearch(FuzzySearch):
@@ -1665,7 +1655,7 @@ class AsOfJoin(Join):
     left = rlz.noop
     right = rlz.noop
     predicates = rlz.noop
-    by = rlz.noop
+    by = rlz.optional(rlz.noop)
 
     def __init__(self, left, right, predicates, by):
         # TODO cleanup
@@ -2687,7 +2677,7 @@ class ArrayConcat(ValueOp):
 
     def _validate(self):
         left_dtype, right_dtype = self.left.type(), self.right.type()
-        if left_dtype != right_dtype():
+        if left_dtype != right_dtype:
             raise com.IbisTypeError(
                 'Array types must match exactly in a {} operation. '
                 'Left type {} != Right type {}'.format(
@@ -2804,6 +2794,9 @@ class NullLiteral(ValueOp):
 
     def root_tables(self):
         return []
+
+
+NullLiteral(None)
 
 
 class ScalarParameter(ValueOp):

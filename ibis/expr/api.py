@@ -1703,6 +1703,7 @@ def _string_like(self, patterns):
     -------
     matched : ir.BooleanColumn
     """
+    print(patterns)
     return functools.reduce(
         operator.or_,
         (

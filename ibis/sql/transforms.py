@@ -16,8 +16,9 @@
 import ibis.util as util
 import ibis.expr.types as ir
 import ibis.expr.rules as rlz
-import ibis.expr.operations as ops
 import ibis.expr.analysis as L
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 
 class ExistsExpr(ir.AnalyticExpr):
@@ -72,7 +73,8 @@ class AnyToExistsTransform(object):
         else:
             op = NotExistsSubquery(self.foreign_table, self.predicates)
 
-        return ir.BooleanColumn(op)
+        expr_type = dt.boolean.array_type()
+        return expr_type(op)
 
     def _visit(self, expr):
         node = expr.op()

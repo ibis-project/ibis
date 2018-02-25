@@ -101,16 +101,19 @@ def allof(inners, arg):
     return compose(*inners)(arg)
 
 
-@validator
-def optional(inner, arg, default=None):
-    if arg is None:
-        if default is None:
-            return None
-        elif callable(default):
-            arg = default()  # required by genname
-        else:
-            arg = default
-    return inner(arg)
+def optional(inner, default=None):
+    @validator
+    def wrapper(arg=None):
+        if arg is None:
+            if default is None:
+                return None
+            elif callable(default):
+                arg = default()  # required by genname
+            else:
+                arg = default
+        return inner(arg)
+
+    return wrapper
 
 
 @validator
@@ -177,10 +180,6 @@ def value(dtype, arg):
     arg : AnyValue
       An ibis value expression with the specified datatype
     """
-    if arg is None:
-        raise com.IbisTypeError('Passing value argument with datatype {} is '
-                                'mandatory'.format(dtype))
-
     if not isinstance(arg, ir.Expr):
         # coerce python literal to ibis literal
         arg = ir.literal(arg)

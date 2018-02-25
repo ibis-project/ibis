@@ -64,6 +64,7 @@ def fixed_arity(func_name, arity):
         if arity != arg_count:
             msg = 'Incorrect number of args {0} instead of {1}'
             raise com.UnsupportedOperationError(msg.format(arg_count, arity))
+        print(op.args)
         return _call(translator, func_name, *op.args)
     return formatter
 
@@ -123,7 +124,7 @@ def _name_expr(formatted_expr, quoted_name):
 def varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
-        return _call(translator, func_name, *op.args)
+        return _call(translator, func_name, *op.arg)
     return varargs_formatter
 
 
@@ -265,23 +266,25 @@ def _value_list(translator, expr):
 
 
 def _interval_format(translator, expr):
-    if expr.unit in {'ms', 'us', 'ns'}:
+    dtype = expr.type()
+    if dtype.unit in {'ms', 'us', 'ns'}:
         raise com.UnsupportedOperationError(
             "Clickhouse doesn't support subsecond interval resolutions")
 
-    return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution.upper())
+    return 'INTERVAL {} {}'.format(expr.op().value, dtype.resolution.upper())
 
 
 def _interval_from_integer(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
-    if expr.unit in {'ms', 'us', 'ns'}:
+    dtype = expr.type()
+    if dtype.unit in {'ms', 'us', 'ns'}:
         raise com.UnsupportedOperationError(
             "Clickhouse doesn't support subsecond interval resolutions")
 
     arg_ = translator.translate(arg)
-    return 'INTERVAL {} {}'.format(arg_, expr.resolution.upper())
+    return 'INTERVAL {} {}'.format(arg_, dtype.resolution.upper())
 
 
 def literal(translator, expr):

@@ -476,6 +476,9 @@ def test_cast_same_type_noop(table):
     c = table.g
     assert c.cast('string') is c
 
+    i = ibis.literal(5)
+    assert i.cast('int8') is i
+
 
 @pytest.mark.parametrize('type', ['int8', 'int32', 'double', 'float'])
 def test_string_to_number(table, type):
