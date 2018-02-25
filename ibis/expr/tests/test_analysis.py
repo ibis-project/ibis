@@ -26,8 +26,6 @@ from ibis.tests.util import assert_equal
 # TODO: test is_reduction
 # TODO: test is_scalar_reduction
 
-
-
 # Place to collect esoteric expression analysis bugs and tests
 
 

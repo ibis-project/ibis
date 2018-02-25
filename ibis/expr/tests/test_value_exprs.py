@@ -482,6 +482,9 @@ def test_string_to_number(table, type):
     casted = table.g.cast(type)
     casted_literal = ibis.literal('5').cast(type).name('bar')
 
+    assert isinstance(casted, ir.ColumnExpr)
+    assert casted.type() == dt.dtype(type)
+
     assert isinstance(casted_literal, ir.ScalarExpr)
     assert casted_literal.type() == dt.dtype(type)
     assert casted_literal.get_name() == 'bar'

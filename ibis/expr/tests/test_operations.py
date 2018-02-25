@@ -1,16 +1,12 @@
 import pytest
 import numpy as np
 
-from toolz import curry
-
 import ibis
-import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-from ibis.expr.rules import *
 from ibis.common import IbisTypeError
 
 
@@ -24,12 +20,12 @@ def test_argument_descriptor():
 
 def test_operation():
     class Log(ops.Node):
-        arg = double()
-        base = optional(double())
+        arg = rlz.double()
+        base = rlz.optional(rlz.double())
 
-    l = Log(1, base=2)
-    l = Log(1, base=2)
-    l = Log(arg=10)
+    Log(1, base=2)
+    Log(1, base=2)
+    Log(arg=10)
 
 
 def test_unaryop():

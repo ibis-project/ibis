@@ -5,7 +5,6 @@ import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
 pytest.importorskip('multipledispatch')

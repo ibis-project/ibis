@@ -112,9 +112,6 @@ class OperationMeta(type):
 
 class Node(six.with_metaclass(OperationMeta, object)):
 
-    # should read the signature property of class instead of using descriptors?
-    # after that call self._validate to support validating more arguments together
-
     def __init__(self, *args, **kwargs):
         self._expr_cached = None
         for k, v in _pack_arguments(self._arg_names, args, kwargs).items():
@@ -320,7 +317,7 @@ def find_all_base_tables(expr, memo=None):
         return memo
 
     for arg in expr.op().flat_args():
-        if isinstance(arg, Expr):
+        if isinstance(arg, ir.Expr):
             find_all_base_tables(arg, memo)
 
     return memo
@@ -1624,12 +1621,12 @@ class LeftAntiJoin(Join):
 
 class MaterializedJoin(TableNode, HasSchema):
 
-    join = rlz.noop
+    join = rlz.table
 
-    def __init__(self, join_expr):
-        assert isinstance(join_expr.op(), Join)
-        super(MaterializedJoin, self).__init__(join_expr)
-        self.schema  # TODO cleanup, this validates there is no schema overlapping
+    def _validate(self):
+        assert isinstance(self.join.op(), Join)
+        # TODO cleanup, this validates there is no schema overlapping
+        self.schema
 
     @property
     def schema(self):
@@ -1819,13 +1816,10 @@ class SelfReference(TableNode, HasSchema):
 class Selection(TableNode, HasSchema):
 
     table = rlz.table
-    # schema = rlz.schema
+    # TODO previously it had schema = rlz.schema
     selections = rlz.noop
     predicates = rlz.noop
     sort_keys = rlz.noop
-
-    # TODO: rename arguments like the following
-    #_arg_names = ['table', 'selections', 'predicates', 'sort_keys']
 
     def __init__(self, table, selections=None, predicates=None,
                  sort_keys=None):
@@ -1851,7 +1845,12 @@ class Selection(TableNode, HasSchema):
 
         dependent_exprs = clean_exprs + sort_keys
 
+        # TODO: move these to _validate
+        # Need to validate that the column expressions are compatible with the
+        # input table; this means they must either be scalar expressions or
+        # array expressions originating from the same root table expression
         table._assert_valid(dependent_exprs)
+
         self._validate_predicates(table, predicates)
 
         super(Selection, self).__init__(
@@ -1865,12 +1864,6 @@ class Selection(TableNode, HasSchema):
         from ibis.expr.analysis import FilterValidator
         validator = FilterValidator([table])
         validator.validate_all(predicates)
-
-    # def _validate(self, table, exprs):
-    #     # Need to validate that the column expressions are compatible with the
-    #     # input table; this means they must either be scalar expressions or
-    #     # array expressions originating from the same root table expression
-    #     table._assert_valid(exprs)
 
     # TODO: cleanup / remove
     def _get_schema(self, table, projections):
@@ -2323,51 +2316,6 @@ class ReplaceValues(ValueOp):
     pass
 
 
-# TODO put to types
-class TopKExpr(ir.AnalyticExpr):
-
-    def type(self):
-        return 'topk'
-
-    def _table_getitem(self):
-        return self.to_filter()
-
-    def to_filter(self):
-        return SummaryFilter(self).to_expr()
-
-    def to_aggregation(self, metric_name=None, parent_table=None,
-                       backup_metric_name=None):
-        """
-        Convert the TopK operation to a table aggregation
-        """
-        op = self.op()
-
-        arg_table = ir.find_base_table(op.arg)
-
-        by = op.by
-        if not isinstance(by, ir.Expr):
-            by = by(arg_table)
-            by_table = arg_table
-        else:
-            by_table = ir.find_base_table(op.by)
-
-        if metric_name is None:
-            if by.get_name() == op.arg.get_name():
-                by = by.name(backup_metric_name)
-        else:
-            by = by.name(metric_name)
-
-        if arg_table.equals(by_table):
-            agg = arg_table.aggregate(by, by=[op.arg])
-        elif parent_table is not None:
-            agg = parent_table.aggregate(by, by=[op.arg])
-        else:
-            raise com.IbisError('Cross-table TopK; must provide a parent '
-                                'joined table')
-
-        return agg.sort_by([(by.get_name(), False)]).limit(op.k)
-
-
 class SummaryFilter(ValueOp):
     expr = rlz.noop
 
@@ -2401,7 +2349,7 @@ class TopK(ValueOp):
         super(ValueOp, self).__init__(arg, k, by)
 
     def output_type(self):
-        return TopKExpr
+        return ir.TopKExpr
 
 
 class Constant(ValueOp):
@@ -2735,16 +2683,17 @@ class ArrayIndex(ValueOp):
 class ArrayConcat(ValueOp):
     left = rlz.value(dt.Array(dt.any))
     right = rlz.value(dt.Array(dt.any))
+    output_type = rlz.shapeof('left')
 
-    def output_type(self):
-        if self.left.type() != self.right.type():
+    def _validate(self):
+        left_dtype, right_dtype = self.left.type(), self.right.type()
+        if left_dtype != right_dtype():
             raise com.IbisTypeError(
                 'Array types must match exactly in a {} operation. '
                 'Left type {} != Right type {}'.format(
-                    type(self).__name__, left_type, right_type
+                    type(self).__name__, left_dtype, right_dtype
                 )
             )
-        return rlz.shapeof(self.left)
 
 
 class ArrayRepeat(ValueOp):

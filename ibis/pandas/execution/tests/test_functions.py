@@ -11,9 +11,6 @@ import pandas as pd
 import pandas.util.testing as tm  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 
-from ibis.compat import functools
-from ibis.common import IbisTypeError  # noqa: E402
-
 
 pytestmark = pytest.mark.pandas
 

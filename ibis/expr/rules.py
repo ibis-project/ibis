@@ -9,9 +9,9 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
 try:
-    from cytoolz import curry, compose, identity, unique
+    from cytoolz import curry, compose, identity
 except ImportError:
-    from toolz import curry, compose, identity, unique
+    from toolz import curry, compose, identity
 
 
 def highest_precedence_dtype(exprs):
@@ -73,7 +73,10 @@ def oneof(inners, arg):
     for inner in inners:
         with suppress(com.IbisTypeError):
             return inner(arg)
-    raise com.IbisTypeError('None of the {} are applicable on arg'.format(inners))
+    # TODO: more verbose error
+    raise com.IbisTypeError(
+        'None of the {} are applicable on arg'.format(inners)
+    )
 
 
 @validator

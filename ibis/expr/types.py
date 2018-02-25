@@ -15,22 +15,13 @@
 import os
 import six
 import sys
-import toolz
 import itertools
 import webbrowser
-import collections
-
-from ibis.common import IbisError, RelationError
-import ibis.util as util
 
 import ibis
+import ibis.util as util
 import ibis.common as com
 import ibis.config as config
-# import ibis.expr.schema as sch
-# import ibis.expr.datatypes as dt
-
-from collections import OrderedDict
-import collections
 
 
 # TODO remove import like import ibis.expr.operations as ops
@@ -390,9 +381,9 @@ class ColumnExpr(ValueExpr):
         """
         roots = self._root_tables()
         if len(roots) > 1:
-            raise RelationError('Cannot convert array expression involving '
-                                'multiple base table references to a '
-                                'projection')
+            raise com.RelationError('Cannot convert array expression '
+                                    'involving multiple base table references '
+                                    'to a projection')
 
         table = TableExpr(roots[0])
         return table.projection([self])
@@ -576,7 +567,7 @@ class TableExpr(Expr):
         schema : Schema
         """
         if not self._is_materialized():
-            raise IbisError('Table operation is not yet materialized')
+            raise com.IbisError('Table operation is not yet materialized')
         return self.op().schema
 
     def _is_materialized(self):
@@ -618,84 +609,84 @@ class TableExpr(Expr):
 
 # TODO: __slots__?
 
-class AnyValue(ValueExpr): pass
-class AnyScalar(ScalarExpr, AnyValue): pass
-class AnyColumn(ColumnExpr, AnyValue): pass
+class AnyValue(ValueExpr): pass  # noqa: E701,E302
+class AnyScalar(ScalarExpr, AnyValue): pass  # noqa: E701,E302
+class AnyColumn(ColumnExpr, AnyValue): pass  # noqa: E701,E302
 
 
-class NullValue(AnyValue): pass
-class NullScalar(AnyScalar, NullValue): pass
-class NullColumn(AnyColumn, NullValue): pass
+class NullValue(AnyValue): pass  # noqa: E701,E302
+class NullScalar(AnyScalar, NullValue): pass  # noqa: E701,E302
+class NullColumn(AnyColumn, NullValue): pass  # noqa: E701,E302
 
 
-class NumericValue(AnyValue): pass
-class NumericScalar(AnyScalar, NumericValue): pass
-class NumericColumn(AnyColumn, NumericValue): pass
+class NumericValue(AnyValue): pass  # noqa: E701,E302
+class NumericScalar(AnyScalar, NumericValue): pass  # noqa: E701,E302
+class NumericColumn(AnyColumn, NumericValue): pass  # noqa: E701,E302
 
 
-class BooleanValue(NumericValue): pass
-class BooleanScalar(NumericScalar, BooleanValue): pass
-class BooleanColumn(NumericColumn, BooleanValue): pass
+class BooleanValue(NumericValue): pass  # noqa: E701,E302
+class BooleanScalar(NumericScalar, BooleanValue): pass  # noqa: E701,E302
+class BooleanColumn(NumericColumn, BooleanValue): pass  # noqa: E701,E302
 
 
-class IntegerValue(NumericValue): pass
-class IntegerScalar(NumericScalar, IntegerValue): pass
-class IntegerColumn(NumericColumn, IntegerValue): pass
+class IntegerValue(NumericValue): pass  # noqa: E701,E302
+class IntegerScalar(NumericScalar, IntegerValue): pass  # noqa: E701,E302
+class IntegerColumn(NumericColumn, IntegerValue): pass  # noqa: E701,E302
 
 
-class FloatingValue(NumericValue): pass
-class FloatingScalar(NumericScalar, FloatingValue): pass
-class FloatingColumn(NumericColumn, FloatingValue): pass
+class FloatingValue(NumericValue): pass  # noqa: E701,E302
+class FloatingScalar(NumericScalar, FloatingValue): pass  # noqa: E701,E302
+class FloatingColumn(NumericColumn, FloatingValue): pass  # noqa: E701,E302
 
 
-class DecimalValue(NumericValue): pass
-class DecimalScalar(NumericScalar, DecimalValue): pass
-class DecimalColumn(NumericColumn, DecimalValue): pass
+class DecimalValue(NumericValue): pass  # noqa: E701,E302
+class DecimalScalar(NumericScalar, DecimalValue): pass  # noqa: E701,E302
+class DecimalColumn(NumericColumn, DecimalValue): pass  # noqa: E701,E302
 
 
-class StringValue(AnyValue): pass
-class StringScalar(AnyScalar, StringValue): pass
-class StringColumn(AnyColumn, StringValue): pass
+class StringValue(AnyValue): pass  # noqa: E701,E302
+class StringScalar(AnyScalar, StringValue): pass  # noqa: E701,E302
+class StringColumn(AnyColumn, StringValue): pass  # noqa: E701,E302
 
 
-class BinaryValue(AnyValue): pass
-class BinaryScalar(AnyScalar, BinaryValue): pass
-class BinaryColumn(AnyColumn, BinaryValue): pass
+class BinaryValue(AnyValue): pass  # noqa: E701,E302
+class BinaryScalar(AnyScalar, BinaryValue): pass  # noqa: E701,E302
+class BinaryColumn(AnyColumn, BinaryValue): pass  # noqa: E701,E302
 
 
-class TimeValue(AnyValue): pass
-class TimeScalar(AnyScalar, TimeValue): pass
-class TimeColumn(AnyColumn, TimeValue): pass
+class TimeValue(AnyValue): pass  # noqa: E701,E302
+class TimeScalar(AnyScalar, TimeValue): pass  # noqa: E701,E302
+class TimeColumn(AnyColumn, TimeValue): pass  # noqa: E701,E302
 
 
-class DateValue(AnyValue): pass
-class DateScalar(AnyScalar, DateValue): pass
-class DateColumn(AnyColumn, DateValue): pass
+class DateValue(AnyValue): pass  # noqa: E701,E302
+class DateScalar(AnyScalar, DateValue): pass  # noqa: E701,E302
+class DateColumn(AnyColumn, DateValue): pass  # noqa: E701,E302
 
 
-class TimestampValue(AnyValue): pass
-class TimestampScalar(AnyScalar, TimestampValue): pass
-class TimestampColumn(AnyColumn, TimestampValue): pass
+class TimestampValue(AnyValue): pass  # noqa: E701,E302
+class TimestampScalar(AnyScalar, TimestampValue): pass  # noqa: E701,E302
+class TimestampColumn(AnyColumn, TimestampValue): pass  # noqa: E701,E302
 
 
-class CategoryValue(AnyValue): pass
-class CategoryScalar(AnyScalar, CategoryValue): pass
-class CategoryColumn(AnyColumn, CategoryValue): pass
+class CategoryValue(AnyValue): pass  # noqa: E701,E302
+class CategoryScalar(AnyScalar, CategoryValue): pass  # noqa: E701,E302
+class CategoryColumn(AnyColumn, CategoryValue): pass  # noqa: E701,E302
 
 
-class EnumValue(AnyValue): pass
-class EnumScalar(AnyScalar, EnumValue): pass
-class EnumColumn(AnyColumn, EnumValue): pass
+class EnumValue(AnyValue): pass  # noqa: E701,E302
+class EnumScalar(AnyScalar, EnumValue): pass  # noqa: E701,E302
+class EnumColumn(AnyColumn, EnumValue): pass  # noqa: E701,E302
 
 
-class ArrayValue(AnyValue): pass
-class ArrayScalar(AnyScalar, ArrayValue): pass
-class ArrayColumn(AnyColumn, ArrayValue): pass
+class ArrayValue(AnyValue): pass  # noqa: E701,E302
+class ArrayScalar(AnyScalar, ArrayValue): pass  # noqa: E701,E302
+class ArrayColumn(AnyColumn, ArrayValue): pass  # noqa: E701,E302
 
 
-class MapValue(AnyValue): pass
-class MapScalar(AnyScalar, MapValue): pass
-class MapColumn(AnyColumn, MapValue): pass
+class MapValue(AnyValue): pass  # noqa: E701,E302
+class MapScalar(AnyScalar, MapValue): pass  # noqa: E701,E302
+class MapColumn(AnyColumn, MapValue): pass  # noqa: E701,E302
 
 
 class StructValue(AnyValue):
@@ -705,13 +696,13 @@ class StructValue(AnyValue):
             itertools.chain(dir(type(self)), self.type().names)
         ))
 
-class StructScalar(AnyScalar, StructValue): pass
-class StructColumn(AnyColumn, StructValue): pass
+class StructScalar(AnyScalar, StructValue): pass  # noqa: E701,E302
+class StructColumn(AnyColumn, StructValue): pass  # noqa: E701,E302
 
 
-class IntervalValue(AnyValue): pass
-class IntervalScalar(AnyScalar, IntervalValue): pass
-class IntervalColumn(AnyColumn, IntervalValue): pass
+class IntervalValue(AnyValue): pass  # noqa: E701,E302
+class IntervalScalar(AnyScalar, IntervalValue): pass  # noqa: E701,E302
+class IntervalColumn(AnyColumn, IntervalValue): pass  # noqa: E701,E302
 
 
 class UnnamedMarker(object):
@@ -840,7 +831,9 @@ class TopKExpr(AnalyticExpr):
         return self.to_filter()
 
     def to_filter(self):
-        return SummaryFilter(self).to_expr()
+        # TODO: move to api.py
+        import ibis.expr.operations as ops
+        return ops.SummaryFilter(self).to_expr()
 
     def to_aggregation(self, metric_name=None, parent_table=None,
                        backup_metric_name=None):

@@ -936,7 +936,7 @@ class FilterValidator(ExprValidator):
                 if isinstance(arg, ir.ScalarExpr):
                     # arg_valid = True
                     pass
-                elif isinstance(arg, ops.TopKExpr):
+                elif isinstance(arg, ir.TopKExpr):
                     # TopK not subjected to further analysis for now
                     roots_valid.append(True)
                 elif isinstance(arg, (ir.ColumnExpr, ir.AnalyticExpr)):

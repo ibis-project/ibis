@@ -11,7 +11,6 @@ from ibis.common import IbisTypeError
 import ibis.expr.types as ir
 import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 
 
 def mayraise(error):
@@ -67,7 +66,7 @@ def test_instanceof(klass, value, expected):
     (dt.string, 'bar', ibis.literal('bar')),
     (dt.string, 1, IbisTypeError),
     (dt.Array(dt.float), [3.4, 5.6], ibis.literal([3.4, 5.6])),
-    (dt.Array(dt.float), ['s'], IbisTypeError),  # TODO fails because of incorrect subtype cecking
+    (dt.Array(dt.float), ['s'], IbisTypeError),
     (dt.Map(dt.string, dt.Array(dt.boolean)),
      {'a': [True, False], 'b': [True]},
      ibis.literal({'a': [True, False], 'b': [True]})),

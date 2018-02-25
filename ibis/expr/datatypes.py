@@ -94,9 +94,6 @@ class DataType(object):
     def _equal_part(self, other, cache=None):
         return True
 
-    def issubtype(self, parent):
-        return issubtype(self, parent)
-
     def castable(self, target, **kwargs):
         return castable(self, target, **kwargs)
 

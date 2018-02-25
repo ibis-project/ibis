@@ -4,13 +4,7 @@ from collections import OrderedDict
 from multipledispatch.conflict import ambiguities
 
 import ibis
-
-import ibis.expr.api as api
-import ibis.expr.types as types
-import ibis.expr.rules as rules
 import ibis.expr.datatypes as dt
-
-from ibis import IbisError
 from ibis.common import IbisTypeError
 
 

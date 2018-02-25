@@ -14,18 +14,17 @@
 
 import pytest
 
-from ibis.compat import pickle
-from ibis.expr.types import ColumnExpr, TableExpr, RelationError
-from ibis.common import ExpressionError
-import ibis.expr.api as api
-import ibis.expr.types as ir
-import ibis.expr.analysis as ans
-import ibis.expr.operations as ops
 import ibis
-
 import ibis.common as com
 import ibis.config as config
+import ibis.expr.api as api
+import ibis.expr.types as ir
+import ibis.expr.analysis as L
+import ibis.expr.operations as ops
 
+from ibis.compat import pickle
+from ibis.common import ExpressionError, RelationError
+from ibis.expr.types import ColumnExpr, TableExpr
 
 from ibis.tests.util import assert_equal
 
@@ -625,7 +624,7 @@ def test_compound_aggregate_expr(table):
     # See ibis #24
     compound_expr = (table['a'].sum() /
                      table['a'].mean()).name('foo')
-    assert ans.is_reduction(compound_expr)
+    assert L.is_reduction(compound_expr)
 
     # Validates internally
     table.aggregate([compound_expr])
@@ -1064,7 +1063,7 @@ def test_union(table):
     assert isinstance(result.op(), ops.Union)
     assert result.op().distinct
 
-    with pytest.raises(ir.RelationError):
+    with pytest.raises(RelationError):
         t1.union(t3)
 
 
