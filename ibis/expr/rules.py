@@ -1,4 +1,5 @@
 import enum
+from functools import wraps
 from itertools import starmap, product
 
 from ibis.compat import suppress
@@ -61,7 +62,13 @@ def cast(source, target):
 
 
 class validator(curry):
-    pass
+
+    def __repr__(self):
+        return '{}({}{})'.format(
+            self.func.__name__,
+            repr(self.args)[1:-1],
+            ', '.join('{}={!r}'.format(k, v) for k, v in self.keywords.items())
+        )
 
 
 noop = validator(identity)
@@ -103,6 +110,7 @@ def allof(inners, arg):
 
 def optional(inner, default=None):
     @validator
+    @wraps(inner)
     def wrapper(arg=None):
         if arg is None:
             if default is None:
@@ -290,6 +298,9 @@ def scalarof(arg):
 def arrayof(arg):
     output_dtype = arg.type()
     return output_dtype.array_type()
+
+
+columnof = arrayof
 
 
 @promoter

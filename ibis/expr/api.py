@@ -2143,7 +2143,7 @@ _timestamp_value_methods = dict(
 
     __radd__=_timestamp_radd,
     radd=_timestamp_radd,
-    day_of_week=property(lambda self: ops.DayOfWeekNode([self]).to_expr()),
+    day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr()),
 )
 
 

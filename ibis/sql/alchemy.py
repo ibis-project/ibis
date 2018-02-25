@@ -246,7 +246,7 @@ def fixed_arity(sa_func, arity):
 def varargs(sa_func):
     def formatter(t, expr):
         op = expr.op()
-        trans_args = [t.translate(arg) for arg in op.args]
+        trans_args = [t.translate(arg) for arg in op.arg]
         return sa_func(*trans_args)
     return formatter
 
@@ -1121,7 +1121,7 @@ class AlchemySelect(Select):
         clauses = []
         for expr in self.order_by:
             key = expr.op()
-            sort_expr = key.by
+            sort_expr = key.expr
 
             # here we have to determine if key.expr is in the select set (as it
             # will be in the case of order_by fused with an aggregation

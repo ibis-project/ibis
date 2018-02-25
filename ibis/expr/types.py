@@ -874,6 +874,17 @@ class SortExpr(Expr):
         return 'array-sort'
 
 
+class DayOfWeek(Expr):
+
+    def index(self):
+        import ibis.expr.operations as ops
+        return ops.DayOfWeekIndex(self.op().arg).to_expr()
+
+    def full_name(self):
+        import ibis.expr.operations as ops
+        return ops.DayOfWeekName(self.op().arg).to_expr()
+
+
 def bind_expr(table, expr):
     if isinstance(expr, (list, tuple)):
         return [bind_expr(table, x) for x in expr]

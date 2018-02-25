@@ -1742,32 +1742,27 @@ def to_sort_key(table, key):
 
 class SortKey(Node):
 
-    by = rlz.column(rlz.any)
+    expr = rlz.column(rlz.any)
     ascending = rlz.optional(rlz.validator(bool), default=True)
-
-    def __init__(self, by, ascending=True):
-        if not isinstance(by, ir.ColumnExpr):
-            raise com.ExpressionError('Must be an array/column expression')
-        super(SortKey, self).__init__(by, ascending)
 
     def __repr__(self):
         # Temporary  # TODO
         rows = ['Sort key:',
                 '  ascending: {0!s}'.format(self.ascending),
-                util.indent(_safe_repr(self.by), 2)]
+                util.indent(_safe_repr(self.expr), 2)]
         return '\n'.join(rows)
 
-    def root_tables(self):
-        return self.by._root_tables()
+    def output_type(self):
+        return ir.SortExpr
 
-    def _make_expr(self):
-        return ir.SortExpr(self)
+    def root_tables(self):
+        return self.expr._root_tables()
 
     def equals(self, other, cache=None):
         # TODO: might generalize this equals based on fields
         # requires a proxy class with equals for non expr values
         return (isinstance(other, SortKey) and
-                self.by.equals(other.by, cache=cache) and
+                self.expr.equals(other.expr, cache=cache) and
                 self.ascending == other.ascending)
 
 
@@ -2481,22 +2476,11 @@ class DayOfWeekName(UnaryOp):
     output_type = rlz.shapeof('arg', dt.string)
 
 
-class DayOfWeek(ir.Expr):
-
-    def index(self):
-        arg, = self.op().args
-        return DayOfWeekIndex(arg).to_expr()
-
-    def full_name(self):
-        arg, = self.op().args
-        return DayOfWeekName(arg).to_expr()
-
-
 class DayOfWeekNode(Node):
     arg = rlz.oneof([rlz.date, rlz.timestamp])
 
     def output_type(self):
-        return DayOfWeek
+        return ir.DayOfWeek
 
 
 class ExtractDay(ExtractTemporalField):
