@@ -317,8 +317,7 @@ def param(type):
     """
     import ibis.expr.datatypes as dt
     import ibis.expr.operations as ops
-    expr = ScalarParameter(dt.dtype(type)).to_expr()
-    return expr
+    return ops.ScalarParameter(dt.dtype(type)).to_expr()
 
 
 # ---------------------------------------------------------------------
@@ -617,8 +616,7 @@ class TableExpr(Expr):
 # with: an instance of each is well-typed and includes all valid methods
 # defined for each type.
 
-
-# TODO: __slots__
+# TODO: __slots__?
 
 class AnyValue(ValueExpr): pass
 class AnyScalar(ScalarExpr, AnyValue): pass
@@ -734,35 +732,6 @@ def as_value_expr(val):
             val = literal(val)
 
     return val
-
-
-def castable(source, target):
-    """Return whether source ir type is castable to target
-
-    Based on the underlying datatypes and the value in case of Literals
-    """
-    import ibis.expr.datatypes as dt
-    import ibis.expr.operations as ops
-    op = source.op()
-    value = op.value if isinstance(op, ops.Literal) else None
-    return dt.castable(source.type(), target.type(), value=value)
-
-
-def cast(source, target):
-    """Currently Literal to *Scalar implicit casts are allowed"""
-    import ibis.expr.operations as ops
-
-    if not castable(source, target):
-        raise com.IbisTypeError('Source is not castable to target type!')
-
-    # currently it prevents column -> scalar implicit castings
-    # however the datatypes are matching
-    op = source.op()
-    if not isinstance(op, ops.Literal):
-        raise com.IbisTypeError('Only able to implicitly cast literals!')
-
-    out_type = target.type().scalar_type()
-    return out_type(op)
 
 
 def literal(value, type=None):

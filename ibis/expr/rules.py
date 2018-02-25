@@ -14,6 +14,52 @@ except ImportError:
     from toolz import curry, compose, identity, unique
 
 
+def highest_precedence_dtype(exprs):
+    # Return the highest precedence type from the passed expressions. Also
+    # verifies that there are valid implicit casts between any of the types and
+    # the selected highest precedence type.
+    # This is a thin wrapper around datatypes highest precedence check.
+    if not exprs:
+        raise ValueError('Must pass at least one expression')
+
+    return dt.highest_precedence(expr.type() for expr in exprs)
+
+
+def castable(source, target):
+    """Return whether source ir type is implicitly castable to target
+
+    Based on the underlying datatypes and the value in case of Literals
+    """
+    op = source.op()
+    value = op.value if hasattr(op, 'value') else None
+    return dt.castable(source.type(), target.type(), value=value)
+
+
+def comparable(left, right):
+    return castable(left, right) or castable(right, left)
+
+
+def cast(source, target):
+    """Currently Literal to *Scalar implicit casts are allowed"""
+    import ibis.expr.operations as ops  # TODO: don't use ops here
+
+    if not castable(source, target):
+        raise com.IbisTypeError('Source is not castable to target type!')
+
+    # currently it prevents column -> scalar implicit castings
+    # however the datatypes are matching
+    op = source.op()
+    if not isinstance(op, ops.Literal):
+        raise com.IbisTypeError('Only able to implicitly cast literals!')
+
+    out_type = target.type().scalar_type()
+    return out_type(op)
+
+
+# ---------------------------------------------------------------------
+# Input type validators / coercion functions
+
+
 class validator(curry):
     pass
 
@@ -197,8 +243,12 @@ schema = instanceof(sch.Schema)
 
 @validator
 def szuper(klass, arg):
-    # TODO
+    # TODO !!!!!!!
     return instanceof(klass, arg)
+
+
+# ---------------------------------------------------------------------
+# Ouput type promoter functions
 
 
 def promoter(fn):
@@ -209,21 +259,6 @@ def promoter(fn):
         else:
             return fn(name_or_value, *args, **kwargs)
     return wrapper
-
-
-def highest_precedence_dtype(exprs):
-    # Return the highest precedence type from the passed expressions. Also
-    # verifies that there are valid implicit casts between any of the types and
-    # the selected highest precedence type.
-    # This is a thin wrapper around datatypes highest precedence check.
-    if not exprs:
-        raise ValueError('Must pass at least one expression')
-
-    return dt.highest_precedence(expr.type() for expr in exprs)
-
-
-def comparable(left, right):
-    return ir.castable(left, right) or ir.castable(right, left)
 
 
 @promoter

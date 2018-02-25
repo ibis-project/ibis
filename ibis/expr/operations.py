@@ -12,21 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import operator
+
 import six
+import toolz
+import operator
 import itertools
 import collections
-import toolz
+
 from functools import partial
 from ibis.expr.schema import HasSchema, Schema
 from ibis.expr.types import as_value_expr  # TODO move these to here
 
-import ibis.common as com
-import ibis.expr.datatypes as dt
-import ibis.expr.rules as rlz
-import ibis.expr.types as ir
 import ibis.util as util
+import ibis.common as com
 import ibis.compat as compat
+import ibis.expr.types as ir
+import ibis.expr.rules as rlz
+import ibis.expr.datatypes as dt
 
 from collections import OrderedDict
 
@@ -2219,10 +2221,10 @@ class Comparison(BinaryOp, BooleanValueOp):
     def _maybe_cast_args(self, left, right):
         # it might not be necessary?
         with compat.suppress(com.IbisTypeError):
-            return left, ir.cast(right, left)
+            return left, rlz.cast(right, left)
 
         with compat.suppress(com.IbisTypeError):
-            return ir.cast(left, right), right
+            return rlz.cast(left, right), right
 
         return left, right
 
@@ -2370,7 +2372,7 @@ class SummaryFilter(ValueOp):
     expr = rlz.noop
 
     def output_type(self):
-        return ir.BooleanColumn
+        return dt.boolean.array_type()
 
 
 class TopK(ValueOp):

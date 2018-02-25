@@ -21,7 +21,7 @@ def test_format_custom_expr():
 def test_format_table_column(table):
     # GH #507
     result = repr(table.f)
-    assert 'Column[double*]' in result
+    assert 'Column[float64*]' in result
 
 
 def test_format_projection(table):
@@ -207,8 +207,9 @@ UnboundTable[table]
     a : int64
 
 NullIf[int64*]
-  a = Column[int64*] 'a' from table
-    ref_0
+  arg:
+    a = Column[int64*] 'a' from table
+      ref_0
   null_if_expr:
     Literal[int8]
       2"""

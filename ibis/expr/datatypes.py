@@ -1160,7 +1160,7 @@ def can_cast_subtype(source, target, **kwargs):
 @castable.register(Integer, Category)
 @castable.register(Integer, (Integer, Floating, Decimal))
 @castable.register(Floating, Decimal)
-@castable.register(Decimal, Floating)
+# @castable.register(Decimal, Floating) TODO: remove
 @castable.register((Date, Timestamp), (Date, Timestamp))
 def can_cast_any(source, target, **kwargs):
     return True
