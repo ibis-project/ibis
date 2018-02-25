@@ -549,17 +549,16 @@ def _extract_field(name, klass):
 
 def cast(arg, target_type):
     # validate
-    op = ops.Cast(arg, target_type)
-    to = op.args[1]
+    op = ops.Cast(arg, to=target_type)
 
-    if to.equals(arg.type()):
+    if op.to.equals(arg.type()):
         # noop case if passed type is the same
         return arg
     else:
         result = op.to_expr()
         if not arg.has_name():
             return result
-        expr_name = 'cast({}, {})'.format(arg.get_name(), op.args[1])
+        expr_name = 'cast({}, {})'.format(arg.get_name(), op.to)
         return result.name(expr_name)
 
 
@@ -1703,7 +1702,6 @@ def _string_like(self, patterns):
     -------
     matched : ir.BooleanColumn
     """
-    print(patterns)
     return functools.reduce(
         operator.or_,
         (

@@ -102,13 +102,9 @@ class DataType(object):
 
     def scalar_type(self):
         return partial(self.scalar, dtype=self)
-        # import ibis.expr.types as ir
-        # return getattr(ir, '{}Scalar'.format(self.name))
 
     def array_type(self):
         return partial(self.column, dtype=self)
-        # import ibis.expr.types as ir
-        # return getattr(ir, '{}Column'.format(self.name))
 
 
 class Any(DataType):
@@ -1154,11 +1150,9 @@ def can_cast_subtype(source, target, **kwargs):
 @castable.register(DataType, Any)
 @castable.register(Any, Any)
 @castable.register(Null, Any)
-@castable.register(Boolean, Integer)
 @castable.register(Integer, Category)
 @castable.register(Integer, (Integer, Floating, Decimal))
 @castable.register(Floating, Decimal)
-# @castable.register(Decimal, Floating) TODO: remove
 @castable.register((Date, Timestamp), (Date, Timestamp))
 def can_cast_any(source, target, **kwargs):
     return True

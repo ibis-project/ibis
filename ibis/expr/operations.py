@@ -94,6 +94,8 @@ class OperationMeta(type):
         for k, v in dct.items():
             if isinstance(v, rlz.validator):
                 signature[k] = v
+            elif isinstance(v, type):
+                signature[k] = rlz.instanceof(v)
             else:
                 attrs[k] = v
 
@@ -1417,9 +1419,7 @@ class SimpleCase(ValueOp):
 
     def output_type(self):
         exprs = self.results + [self.default]
-        exprs = filter(lambda e: e is not None, exprs)
-        dtype = rlz.highest_precedence_dtype(exprs)
-        return rlz.shapeof(self.base, dtype=dtype)
+        return rlz.shapeof(self.base, dtype=exprs.type())
 
 
 class SearchedCase(ValueOp):
@@ -1433,7 +1433,9 @@ class SearchedCase(ValueOp):
 
     def root_tables(self):
         cases, results, default = self.args
-        all_exprs = cases + results + ([] if default is None else [default])
+        all_exprs = cases.values + results.values + (
+            [] if default is None else [default]
+        )
         return distinct_roots(*all_exprs)
 
     def output_type(self):

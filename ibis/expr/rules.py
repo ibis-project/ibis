@@ -140,7 +140,7 @@ def memberof(obj, arg):
 
 @validator
 def listof(inner, arg, min_length=0):
-    if not isinstance(arg, (tuple, list)):
+    if not isinstance(arg, (tuple, list, ir.ListExpr)):
         raise com.IbisTypeError('Arg is not an instance of list or tuple')
     if len(arg) < min_length:
         raise com.IbisTypeError(
@@ -189,7 +189,7 @@ def value(dtype, arg):
                                 'expression'.format(type(arg)))
 
     if isinstance(dtype, type) and isinstance(arg.type(), dtype):
-        # dtype class has been specified like dt.Interval or dt.Array
+        # dtype class has been specified like dt.Interval or dt.Decimal
         return arg
     elif isinstance(dtype, dt.DataType) and dt.castable(arg.type(), dtype):
         # dtype instance has been specified and arg's dtype is implicitly

@@ -64,7 +64,6 @@ def fixed_arity(func_name, arity):
         if arity != arg_count:
             msg = 'Incorrect number of args {0} instead of {1}'
             raise com.UnsupportedOperationError(msg.format(arg_count, arity))
-        print(op.args)
         return _call(translator, func_name, *op.args)
     return formatter
 
@@ -472,7 +471,7 @@ def _string_split(translator, expr):
 
 def _string_join(translator, expr):
     sep, elements = expr.op().args
-    assert isinstance(elements.op(), ir.ValueList), \
+    assert isinstance(elements.op(), ops.ValueList), \
         'elements must be a ValueList, got {}'.format(type(elements.op()))
     return 'arrayStringConcat([{}], {})'.format(
         ', '.join(map(translator.translate, elements)),
