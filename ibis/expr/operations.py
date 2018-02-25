@@ -875,14 +875,14 @@ class Quantile(Reduction):
 class MultiQuantile(Quantile):
 
     arg = rlz.any
-    quantile = rlz.value(dt.Array(dt.double))
+    quantile = rlz.value(dt.Array(dt.float64))
     interpolation = rlz.optional(
         rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'}),
         default='linear'
     )
 
     def output_type(self):
-        return dt.float64.scalar_type()
+        return dt.Array(dt.float64).scalar_type()
 
 
 class VarianceBase(Reduction):
