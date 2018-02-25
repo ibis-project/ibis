@@ -317,30 +317,30 @@ class UInt64(UnsignedInteger):
     _nbytes = 8
 
 
-class Float16(Floating):
+class Halffloat(Floating):
 
     __slots__ = ()
 
     _nbytes = 2
 
 
-class Float32(Floating):
+class Float(Floating):
 
     __slots__ = ()
 
     _nbytes = 4
 
 
-class Float64(Floating):
+class Double(Floating):
 
     __slots__ = ()
 
     _nbytes = 8
 
 
-Halffloat = Float16
-Float = Float32
-Double = Float64
+Float16 = Halffloat
+Float32 = Float
+Float64 = Double
 
 
 class Decimal(DataType):

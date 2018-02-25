@@ -21,7 +21,7 @@ def test_format_custom_expr():
 def test_format_table_column(table):
     # GH #507
     result = repr(table.f)
-    assert 'Column[float64*]' in result
+    assert 'Column[double*]' in result
 
 
 def test_format_projection(table):
