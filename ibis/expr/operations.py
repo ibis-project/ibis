@@ -194,8 +194,6 @@ class Node(six.with_metaclass(OperationMeta, object)):
 
         return self.equals(other)
 
-    # _expr_cached = None
-
     def to_expr(self):
         # _expr_cache is set in the metaclass
         if self._expr_cached is None:
@@ -273,15 +271,19 @@ class TableColumn(ValueOp):
     name = rlz.instanceof(six.string_types + six.integer_types)
     table = rlz.instanceof(ir.TableExpr)
 
-    def __init__(self, name, table_expr):
-        schema = table_expr.schema()
+    def __init__(self, name, table):
+        schema = table.schema()
         if isinstance(name, six.integer_types):
             name = schema.name_at_position(name)
+        super(TableColumn, self).__init__(name, table)
 
-        super(TableColumn, self).__init__(name, table_expr)
-        if name not in schema:
+    def _validate(self):
+        if self.name not in self.table.schema():
             raise com.IbisTypeError(
-                "'{0}' is not a field in {1}".format(name, table_expr.columns)
+                "'{}' is not a field in {}".format(
+                    self.name,
+                    self.table.columns
+                )
             )
 
     def parent(self):
@@ -297,9 +299,8 @@ class TableColumn(ValueOp):
         return self.table._root_tables()
 
     def _make_expr(self):
-        # TODO: convert it to output_type
-        ctype = self.table._get_type(self.name)
-        klass = ctype.array_type()
+        dtype = self.table._get_type(self.name)
+        klass = dtype.array_type()
         return klass(self, name=self.name)
 
 

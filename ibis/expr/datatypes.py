@@ -1244,20 +1244,3 @@ def cast(source, target, **kwargs):
         raise com.IbisTypeError('Datatype {} cannot be implicitly '
                                 'casted to {}'.format(source, target))
     return target
-
-
-# TODO: remove
-def issubtype(dtype, dtype_or_tuple):
-    if not isinstance(dtype_or_tuple, tuple):
-        parents = (dtype_or_tuple,)
-    for parent in parents:
-        # TODO cleanup
-        # modify castable rule instead
-        if isinstance(dtype, type(parent)):
-            return True
-        # elif isinstance(dtype, Any):
-        #     return True
-        # elif isinstance(parent, Any):
-        #     return True
-
-    return False

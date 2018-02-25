@@ -1214,7 +1214,6 @@ def test_custom_type_binary_operations():
     assert isinstance(result.op(), FooNode)
 
 
-# FIXME
 def test_empty_array_as_argument():
     class Foo(ir.Expr):
         pass

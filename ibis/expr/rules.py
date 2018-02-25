@@ -1,7 +1,6 @@
-import pytest
 import enum
+from itertools import starmap, product
 
-from toolz import curry
 from ibis.compat import suppress
 import ibis.util as util
 import ibis.common as com
@@ -9,10 +8,10 @@ import ibis.expr.types as ir
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
-from itertools import starmap, product
-# TODO try to import cytoolz
-from toolz import curry, compose, identity  # try to use cytoolz
-from toolz import unique, curry
+try:
+    from cytoolz import curry, compose, identity, unique
+except ImportError:
+    from toolz import curry, compose, identity, unique
 
 
 class validator(curry):
@@ -115,7 +114,20 @@ def instanceof(klass, arg):
 
 @validator
 def value(dtype, arg):
-    # TODO support DataType classes, not just instances
+    """Validates that the given argument is a Value with a particular datatype
+
+    Parameters
+    ----------
+    dtype : DataType subclass or DataType instance
+    arg : python literal or an ibis expression
+      If a python literal is given the validator tries to coerce it to an ibis
+      literal.
+
+    Returns
+    -------
+    arg : AnyValue
+      An ibis value expression with the specified datatype
+    """
     if arg is None:
         raise com.IbisTypeError('Passing value argument with datatype {} is '
                                 'mandatory'.format(dtype))
@@ -124,14 +136,17 @@ def value(dtype, arg):
         # coerce python literal to ibis literal
         arg = ir.literal(arg)
 
-    if not isinstance(arg, ir.ValueExpr):
+    if not isinstance(arg, ir.AnyValue):
         raise com.IbisTypeError('Given argument with type {} is not a value '
                                 'expression'.format(type(arg)))
 
-    if dt.issubtype(arg.type(), dtype):  # TODO: remove this, should not be required
-        return arg  # subtype of expected
-    if dt.castable(arg.type(), dtype):
-        return arg  # implicitly castable
+    if isinstance(dtype, type) and isinstance(arg.type(), dtype):
+        # dtype class has been specified like dt.Interval or dt.Array
+        return arg
+    elif isinstance(dtype, dt.DataType) and dt.castable(arg.type(), dtype):
+        # dtype instance has been specified and arg's dtype is implicitly
+        # castable to it, like dt.int8 is castable to dt.int64
+        return arg
     else:
         raise com.IbisTypeError('Given argument with datatype {} is not '
                                 'subtype of {} nor implicitly castable to '
@@ -148,9 +163,7 @@ def column(inner, arg):
     return instanceof(ir.ColumnExpr, inner(arg))
 
 
-# TODO: change it to raise instead to locate all temporary noop validator
 any = value(dt.any)
-#null = instanceof(dt.Null)#value(dt.null)
 double = value(dt.double)
 string = value(dt.string)
 boolean = value(dt.boolean)
@@ -161,16 +174,16 @@ date = value(dt.date)
 time = value(dt.time)
 timestamp = value(dt.timestamp)
 category = value(dt.category)
-# TODO: previouse number rules allowed booleans by default
 temporal = oneof([timestamp, date, time])
-numeric = oneof([integer, floating, decimal, boolean])
-strict_numeric = oneof([integer, floating, decimal])  # without boolean
 
+strict_numeric = oneof([integer, floating, decimal])
+soft_numeric = oneof([integer, floating, decimal, boolean])
+numeric = soft_numeric
 
 
 @validator
 def interval(arg, units=None):
-    arg = value(dt.interval, arg)
+    arg = value(dt.Interval, arg)
     unit = arg.type().unit
     if units is not None and unit not in units:
         msg = 'Interval unit `{}` is not among the allowed ones {}'
@@ -206,8 +219,7 @@ def highest_precedence_dtype(exprs):
     if not exprs:
         raise ValueError('Must pass at least one expression')
 
-    expr_dtypes = {expr.type() for expr in exprs}
-    return dt.highest_precedence(expr_dtypes)
+    return dt.highest_precedence(expr.type() for expr in exprs)
 
 
 def comparable(left, right):

@@ -619,9 +619,10 @@ class TableExpr(Expr):
 
 
 # TODO: __slots__
-AnyValue = ValueExpr
-AnyScalar = ScalarExpr
-AnyColumn = ColumnExpr
+
+class AnyValue(ValueExpr): pass
+class AnyScalar(ScalarExpr, AnyValue): pass
+class AnyColumn(ColumnExpr, AnyValue): pass
 
 
 class NullValue(AnyValue): pass

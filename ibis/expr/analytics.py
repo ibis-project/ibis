@@ -80,16 +80,13 @@ class CategoryLabel(ops.ValueOp):
     arg = rlz.category
     labels = rlz.noop
     nulls = rlz.noop
+    output_type = rlz.shapeof('arg', dt.string)
 
     def _validate(self):
         cardinality = self.arg.type().cardinality
         if len(self.labels) != cardinality:
             raise ValueError('Number of labels must match number of '
                              'categories: {}'.format(cardinality))
-
-
-    def output_type(self):
-        return rules.shape_like(self.arg, 'string')
 
 
 def bucket(arg, buckets, closed='left', close_extreme=True,
