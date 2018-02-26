@@ -72,7 +72,7 @@ test:
     - ibis.tests
     - ibis.tests.all
   commands:
-    - pytest -x --tb=short -m "not backend and not clickhouse and not impala and not hdfs and not bigquery" -rs $SP_DIR/ibis
+    - pytest -x --tb=short -m "not backend and not clickhouse and not impala and not hdfs and not bigquery" -rs "$(python -c 'import site; sp_dir, = site.getsitepackages(); print(sp_dir)')"/ibis
 
 about:
   license: Apache License, Version 2.0
