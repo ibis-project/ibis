@@ -542,16 +542,13 @@ def execute_not_bool(op, data, **kwargs):
 @execute_node.register(
     ops.BinaryOp, (pd.Series, numeric_types), (pd.Series, numeric_types)
 )
-@execute_node.register(ops.StringConcat, pd.Series, pd.Series)
+@execute_node.register(ops.Comparison, six.string_types, six.string_types)
 @execute_node.register(
-    (ops.Comparison, ops.StringConcat), six.string_types, six.string_types
-)
-@execute_node.register(
-    (ops.Comparison, ops.StringConcat, ops.Multiply),
+    (ops.Comparison, ops.Multiply),
     pd.Series, six.string_types
 )
 @execute_node.register(
-    (ops.Comparison, ops.Multiply, ops.StringConcat),
+    (ops.Comparison, ops.Multiply),
     six.string_types, pd.Series
 )
 @execute_node.register(ops.Multiply, integer_types, six.string_types)
@@ -680,6 +677,16 @@ def execute_node_self_reference_dataframe(op, data, **kwargs):
 @execute_node.register(ops.ValueList)
 def execute_node_value_list(op, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
+
+
+@execute_node.register(ops.StringConcat, list)
+def execute_node_contains_series_list(op, args, **kwargs):
+    return functools.reduce(operator.add, args)
+
+
+@execute_node.register(ops.StringJoin, list)
+def execute_node_contains_series_list(op, args, **kwargs):
+    return functools.reduce(lambda a, b: a + op.sep + b, args)
 
 
 @execute_node.register(ops.Contains, pd.Series, list)

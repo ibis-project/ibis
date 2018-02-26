@@ -24,8 +24,7 @@ import ibis.common as com
 import ibis.config as config
 
 
-# TODO remove import like import ibis.expr.operations as ops
-# TODO create a new table module containing joins aggregations selections etc.
+# TODO move methods containing ops import to api.py
 
 class Expr(object):
     """Base expression class"""
