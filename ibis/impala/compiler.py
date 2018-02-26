@@ -756,7 +756,7 @@ def _from_unixtime(translator, expr):
 def varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
-        return _format_call(translator, func_name, *op.args)
+        return _format_call(translator, func_name, *op.arg)
     return varargs_formatter
 
 
