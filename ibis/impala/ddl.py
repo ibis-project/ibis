@@ -13,18 +13,16 @@
 # limitations under the License.
 
 import re
+import six
 import json
 
-import six
-
 from ibis.sql.compiler import DDL
-from .compiler import quote_identifier, _type_to_sql_string
-
-from ibis.expr.datatypes import validate_type
-
-from ibis.expr.api import Schema
+import ibis.expr.rules as rlz
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
-import ibis.expr.rules as rules
+import ibis.expr.operations as ops
+
+from .compiler import quote_identifier, _type_to_sql_string
 
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
@@ -240,8 +238,8 @@ class CreateTableWithSchema(CreateTable):
         if self.partition is not None:
             main_schema = self.schema
             part_schema = self.partition
-            if not isinstance(part_schema, Schema):
-                part_schema = Schema(
+            if not isinstance(part_schema, sch.Schema):
+                part_schema = sch.Schema(
                     part_schema,
                     [self.schema[name] for name in part_schema])
 
@@ -785,23 +783,23 @@ class ListFunction(ImpalaDDL):
 
 
 def _impala_signature(sig):
-    if isinstance(sig, rules.TypeSignature):
-        if isinstance(sig, rules.VarArgs):
+    if isinstance(sig, ops.TypeSignature):
+        if sig.arg is rlz.listof:
             val = _arg_to_string(sig.arg_type)
             return '{}...'.format(val)
         else:
             return ', '.join(_arg_to_string(arg) for arg in sig.types)
     else:
-        return ', '.join(_type_to_sql_string(validate_type(x)) for x in sig)
+        return ', '.join(_type_to_sql_string(dt.dtype(x)) for x in sig)
 
 
 def _arg_to_string(arg):
-    if isinstance(arg, rules.ValueTyped):
+    if arg is rlz.value:
         types = arg.types
         if len(types) > 1:
             raise NotImplementedError
         return _type_to_sql_string(types[0])
     elif isinstance(arg, six.string_types):
-        return _type_to_sql_string(validate_type(arg))
+        return _type_to_sql_string(dt.dtype(arg))
     else:
         raise NotImplementedError

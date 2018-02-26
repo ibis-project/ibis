@@ -14,33 +14,33 @@
 
 from __future__ import print_function
 
+import six
+import toolz
 import warnings
 import operator
 import datetime
+
+import functools
+import itertools
 import collections
 
-import six
-import toolz
-
-from ibis.compat import functools
-
+import ibis.util as util
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
+import ibis.expr.analysis as _L
 import ibis.expr.datatypes as dt
+import ibis.expr.analytics as _analytics
 import ibis.expr.operations as ops
 
-from ibis.expr.types import Expr, null, sequence, param, literal, as_value_expr
+from ibis.compat import PY2, to_time, to_date
+from ibis.expr.types import (Expr, null, param, literal, sequence, as_value_expr,
+                             unnamed)
 from ibis.expr.schema import Schema
 
-
-from ibis.compat import PY2, to_time, to_date
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import window, trailing_window, cumulative_window
-import ibis.expr.analytics as _analytics
-import ibis.expr.analysis as _L
-import ibis.util as util
 
 
 __all__ = [
@@ -59,9 +59,6 @@ __all__ = [
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window',
 ]
-
-
-NA = null()
 
 
 _data_type_docs = """\
@@ -85,6 +82,9 @@ interval(u)    INTERVAL(u)"""
 
 infer_dtype = dt.infer
 infer_schema = sch.infer
+
+
+NA = null()
 
 
 def schema(pairs=None, names=None, types=None):
@@ -164,7 +164,7 @@ def timestamp(value):
             'and will be removed in 0.12.0. To pass integers as timestamp '
             'literals, use pd.Timestamp({:d}, unit=...)'.format(value)
         )
-    return ir.literal(value)
+    return literal(value)
 
 
 def date(value):
@@ -181,7 +181,7 @@ def date(value):
     """
     if isinstance(value, six.string_types):
         value = to_date(value)
-    return ir.literal(value)
+    return literal(value)
 
 
 def time(value):
@@ -198,7 +198,7 @@ def time(value):
     """
     if isinstance(value, six.string_types):
         value = to_time(value)
-    return ir.literal(value)
+    return literal(value)
 
 
 def interval(value=None, unit='s', years=None, quarters=None, months=None,
@@ -253,10 +253,10 @@ def interval(value=None, unit='s', years=None, quarters=None, months=None,
 
         unit, value = defined_units[0]
 
-    value_type = ir.literal(value).type()
+    value_type = literal(value).type()
     type = dt.Interval(unit, value_type)
 
-    return ir.literal(value, type=type).op().to_expr()
+    return literal(value, type=type).op().to_expr()
 
 
 @functools.wraps(interval)
@@ -784,8 +784,8 @@ def between(arg, lower, upper):
     -------
     is_between : BooleanValue
     """
-    lower = ops.as_value_expr(lower)
-    upper = ops.as_value_expr(upper)
+    lower = as_value_expr(lower)
+    upper = as_value_expr(upper)
 
     op = ops.Between(arg, lower, upper)
     return op.to_expr()

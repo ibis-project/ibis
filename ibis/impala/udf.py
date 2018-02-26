@@ -13,12 +13,12 @@
 
 import re
 
-from ibis.expr import datatypes as dt
-import ibis.expr.operations as _ops
-import ibis.expr.rules as rules
-import ibis.impala.compiler as comp
-import ibis.common as com
 import ibis.util as util
+import ibis.common as com
+import ibis.expr.rules as rlz
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+import ibis.impala.compiler as comp
 
 
 __all__ = ['add_operation', 'scalar_function', 'aggregate_function',
@@ -71,8 +71,8 @@ class ScalarFunction(Function):
 
     def _type_signature(self, inputs, output):
         input_type = _to_input_sig(inputs)
-        output = dt.validate_type(output)
-        output_type = rules.shape_like_flatargs(output)
+        output = dt.dtype(output)
+        output_type = rlz.shapeof('args')
         return input_type, output_type
 
 
@@ -90,8 +90,8 @@ class AggregateFunction(Function):
 
     def _type_signature(self, inputs, output):
         input_type = _to_input_sig(inputs)
-        output = dt.validate_type(output)
-        output_type = rules.scalar_output(output)
+        output = dt.dtype(output)
+        output_type = rlz.scalarof(output)
         return input_type, output_type
 
 
@@ -257,12 +257,11 @@ def aggregate_function(inputs, output, name=None):
 
 
 def _to_input_sig(inputs):
-    if isinstance(inputs, rules.TypeSignature):
+    if isinstance(inputs, ops.TypeSignature):
         return inputs
-    else:
-        in_type = [dt.validate_type(x) for x in inputs]
-        return rules.TypeSignature([rules.value_typed_as(x)
-                                    for x in in_type])
+
+    arguments = [(i, rlz.value(dtype)) for i, dtype in enumerate(inputs)]
+    return ops.TypeSignature(arguments)
 
 
 def _create_operation_class(name, input_type, output_type):
@@ -270,7 +269,7 @@ def _create_operation_class(name, input_type, output_type):
         'input_type': input_type,
         'output_type': output_type,
     }
-    klass = type(name, (_ops.ValueOp,), func_dict)
+    klass = type(name, (ops.ValueOp,), func_dict)
     return klass
 
 
@@ -285,10 +284,10 @@ def add_operation(op, func_name, db):
     database: database the relevant operator is registered to
     """
     full_name = '{0}.{1}'.format(db, func_name)
-    if isinstance(op.input_type, rules.VarArgs):
+    if op.input_type is rlz.listof:
         translator = comp.varargs(full_name)
     else:
-        arity = len(op.input_type.types)
+        arity = len(op.signature)
         translator = comp.fixed_arity(full_name, arity)
 
     comp._operation_registry[op] = translator
@@ -302,7 +301,7 @@ def parse_type(t):
         if 'varchar' in t or 'char' in t:
             return 'string'
         elif 'decimal' in t:
-            result = dt.validate_type(t)
+            result = dt.dtype(t)
             if result:
                 return t
             else:

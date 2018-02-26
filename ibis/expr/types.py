@@ -227,9 +227,7 @@ if sys.version_info.major == 2:
 class ExprList(Expr):
 
     def _type_display(self):
-        list_args = [arg._type_display()
-                     for arg in self.op().args]
-        return ', '.join(list_args)
+        return ', '.join(expr._type_display() for expr in self.exprs())
 
     def exprs(self):
         return self.op().exprs
@@ -272,44 +270,6 @@ class ExprList(Expr):
         return ops.ExpressionList(exprs).to_expr()
 
 
-def infer_literal_type(value):
-    import ibis.expr.datatypes as dt
-    # TODO: depricate?
-    if value is null:
-        return dt.null
-
-    return dt.infer(value)
-
-
-def param(type):
-    """Create a parameter of a particular type to be defined just before
-    execution.
-
-    Parameters
-    ----------
-    type : dt.DataType
-        The type of the unbound parameter, e.g., double, int64, date, etc.
-
-    Returns
-    -------
-    ScalarExpr
-
-    Examples
-    --------
-    >>> import ibis
-    >>> import ibis.expr.datatypes as dt
-    >>> start = ibis.param(dt.date)
-    >>> end = ibis.param(dt.date)
-    >>> schema = [('timestamp_col', 'timestamp'), ('value', 'double')]
-    >>> t = ibis.table(schema)
-    >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
-    >>> expr = t.filter(predicates).value.sum()
-    """
-    import ibis.expr.datatypes as dt
-    import ibis.expr.operations as ops
-    return ops.ScalarParameter(dt.dtype(type)).to_expr()
-
-
 # ---------------------------------------------------------------------
 # Helper / factory functions
 
@@ -330,6 +290,7 @@ class ValueExpr(Expr):
         return (
             isinstance(other, ValueExpr) and
             self._name == other._name and
+            self._dtype == other._dtype and
             super(ValueExpr, self).equals(other, cache=cache)
         )
 
@@ -704,96 +665,6 @@ class IntervalScalar(AnyScalar, IntervalValue): pass  # noqa: E701,E302
 class IntervalColumn(AnyColumn, IntervalValue): pass  # noqa: E701,E302
 
 
-class UnnamedMarker(object):
-    pass
-
-
-unnamed = UnnamedMarker()
-
-
-def as_value_expr(val):
-    import pandas as pd
-    if not isinstance(val, Expr):
-        if isinstance(val, (tuple, list)):
-            val = sequence(val)
-        elif isinstance(val, pd.Series):
-            val = sequence(list(val))
-        else:
-            val = literal(val)
-
-    return val
-
-
-def literal(value, type=None):
-    """Create a scalar expression from a Python value.
-
-    Parameters
-    ----------
-    value : some Python basic type
-        A Python value
-    type : ibis type or string, optional
-        An instance of :class:`ibis.expr.datatypes.DataType` or a string
-        indicating the ibis type of `value`. This parameter should only be used
-        in cases where ibis's type inference isn't sufficient for discovering
-        the type of `value`.
-
-    Returns
-    -------
-    literal_value : Literal
-        An expression representing a literal value
-
-    Examples
-    --------
-    >>> import ibis
-    >>> x = ibis.literal(42)
-    >>> x.type()
-    int8
-    >>> y = ibis.literal(42, type='double')
-    >>> y.type()
-    double
-    >>> ibis.literal('foobar', type='int64')  # doctest: +ELLIPSIS
-    Traceback (most recent call last):
-      ...
-    TypeError: Value 'foobar' cannot be safely coerced to int64
-    """
-    import ibis.expr.operations as ops
-
-    if hasattr(value, 'op') and isinstance(value.op(), ops.Literal):
-        return value
-
-    dtype = infer_literal_type(value)
-
-    if type is not None:
-        try:
-            # check that dtype is implicitly castable to explicitly given dtype
-            dtype = dtype.cast(type, value=value)
-        except com.IbisTypeError:
-            raise TypeError('Value {!r} cannot be safely coerced '
-                            'to {}'.format(value, type))
-
-    if value is None or value is _NULL or value is null:
-        return null().cast(dtype)
-    else:
-        return ops.Literal(value, dtype=dtype).to_expr()
-
-
-def sequence(values):
-    """
-    Wrap a list of Python values as an Ibis sequence type
-
-    Parameters
-    ----------
-    values : list
-      Should all be None or the same type
-
-    Returns
-    -------
-    seq : Sequence
-    """
-    import ibis.expr.operations as ops
-    return ops.ValueList(values).to_expr()
-
-
 class ListExpr(ColumnExpr, AnyValue):
 
     @property
@@ -907,14 +778,135 @@ _NULL = None
 
 
 def null():
-    """
-    Create a NULL/NA scalar
-    """
-    import ibis.expr.datatypes as dt
-    from ibis.expr.operations import NullLiteral
+    """Create a NULL/NA scalar"""
+    import ibis.expr.operations as ops
 
     global _NULL
     if _NULL is None:
-        _NULL = NullScalar(NullLiteral(None), dtype=dt.null)
+        _NULL = ops.NullLiteral().to_expr()
 
     return _NULL
+
+
+def literal(value, type=None):
+    """Create a scalar expression from a Python value.
+
+    Parameters
+    ----------
+    value : some Python basic type
+        A Python value
+    type : ibis type or string, optional
+        An instance of :class:`ibis.expr.datatypes.DataType` or a string
+        indicating the ibis type of `value`. This parameter should only be used
+        in cases where ibis's type inference isn't sufficient for discovering
+        the type of `value`.
+
+    Returns
+    -------
+    literal_value : Literal
+        An expression representing a literal value
+
+    Examples
+    --------
+    >>> import ibis
+    >>> x = ibis.literal(42)
+    >>> x.type()
+    int8
+    >>> y = ibis.literal(42, type='double')
+    >>> y.type()
+    double
+    >>> ibis.literal('foobar', type='int64')  # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    TypeError: Value 'foobar' cannot be safely coerced to int64
+    """
+    import ibis.expr.datatypes as dt
+    import ibis.expr.operations as ops
+
+    if hasattr(value, 'op') and isinstance(value.op(), ops.Literal):
+        return value
+
+    if value is null:
+        dtype = dt.null
+    else:
+        dtype = dt.infer(value)
+
+    if type is not None:
+        try:
+            # check that dtype is implicitly castable to explicitly given dtype
+            dtype = dtype.cast(type, value=value)
+        except com.IbisTypeError:
+            raise TypeError('Value {!r} cannot be safely coerced '
+                            'to {}'.format(value, type))
+
+    if dtype is dt.null:
+        return null().cast(dtype)
+    else:
+        return ops.Literal(value, dtype=dtype).to_expr()
+
+
+def sequence(values):
+    """
+    Wrap a list of Python values as an Ibis sequence type
+
+    Parameters
+    ----------
+    values : list
+      Should all be None or the same type
+
+    Returns
+    -------
+    seq : Sequence
+    """
+    import ibis.expr.operations as ops
+
+    return ops.ValueList(values).to_expr()
+
+
+def as_value_expr(val):
+    import pandas as pd
+    if not isinstance(val, Expr):
+        if isinstance(val, (tuple, list)):
+            val = sequence(val)
+        elif isinstance(val, pd.Series):
+            val = sequence(list(val))
+        else:
+            val = literal(val)
+
+    return val
+
+
+def param(type):
+    """Create a parameter of a particular type to be defined just before
+    execution.
+
+    Parameters
+    ----------
+    type : dt.DataType
+        The type of the unbound parameter, e.g., double, int64, date, etc.
+
+    Returns
+    -------
+    ScalarExpr
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.expr.datatypes as dt
+    >>> start = ibis.param(dt.date)
+    >>> end = ibis.param(dt.date)
+    >>> schema = [('timestamp_col', 'timestamp'), ('value', 'double')]
+    >>> t = ibis.table(schema)
+    >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
+    >>> expr = t.filter(predicates).value.sum()
+    """
+    import ibis.expr.datatypes as dt
+    import ibis.expr.operations as ops
+    return ops.ScalarParameter(dt.dtype(type)).to_expr()
+
+
+class UnnamedMarker(object):
+    pass
+
+
+unnamed = UnnamedMarker()

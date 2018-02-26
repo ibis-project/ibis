@@ -147,13 +147,13 @@ def test_memberof(obj, value, expected):
 
 @pytest.mark.parametrize(('validator', 'values', 'expected'), [
     (rlz.listof(identity), 3, IbisTypeError),
-    (rlz.listof(identity), (3, 2), ir.sequence([3, 2])),
-    (rlz.listof(rlz.integer), (3, 2), ir.sequence([3, 2])),
-    (rlz.listof(rlz.integer), (3, None), ir.sequence([3, ibis.NA])),
+    (rlz.listof(identity), (3, 2), ibis.sequence([3, 2])),
+    (rlz.listof(rlz.integer), (3, 2), ibis.sequence([3, 2])),
+    (rlz.listof(rlz.integer), (3, None), ibis.sequence([3, ibis.NA])),
     (rlz.listof(rlz.string), 'asd', IbisTypeError),
     (rlz.listof(rlz.double, min_length=2), [1], IbisTypeError),
     (rlz.listof(rlz.boolean, min_length=2), [True, False],
-     ir.sequence([True, False]))
+     ibis.sequence([True, False]))
 ])
 def test_listof(validator, values, expected):
     with mayraise(expected):

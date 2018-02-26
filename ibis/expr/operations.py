@@ -21,7 +21,6 @@ import collections
 
 from functools import partial
 from ibis.expr.schema import HasSchema, Schema
-from ibis.expr.types import as_value_expr  # TODO move these to here
 
 import ibis.util as util
 import ibis.common as com
@@ -31,8 +30,6 @@ import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
 
 from collections import OrderedDict
-
-# TODO: eliminate as_value_expr
 
 
 def _safe_repr(x, memo=None):
@@ -87,8 +84,8 @@ class OperationMeta(type):
 
         # inherit from parent signatures
         for parent in parents:
-            if hasattr(parent, '_signature'):
-                signature.update(parent._signature)
+            if hasattr(parent, 'signature'):
+                signature.update(parent.signature)
 
         attrs = OrderedDict()
         for k, v in dct.items():
@@ -99,7 +96,7 @@ class OperationMeta(type):
             else:
                 attrs[k] = v
 
-        attrs['_signature'] = signature
+        attrs['signature'] = signature
         attrs['__slots__'] = tuple(signature.keys()) + ('_expr_cached',)
 
         return super(OperationMeta, cls).__new__(cls, name, parents, attrs)
@@ -109,7 +106,7 @@ class Node(six.with_metaclass(OperationMeta, object)):
 
     def __init__(self, *args, **kwargs):
         self._expr_cached = None
-        for name, value in self._signature(*args, **kwargs):
+        for name, value in self.signature(*args, **kwargs):
             setattr(self, name, value)
         self._validate()
 
@@ -205,11 +202,11 @@ class Node(six.with_metaclass(OperationMeta, object)):
 
     @property
     def _arg_names(self):
-        return self._signature.names()
+        return self.signature.names()
 
     @property
     def args(self):
-        return tuple(getattr(self, name) for name in self._signature.names())
+        return tuple(getattr(self, name) for name in self.signature.names())
 
 
 class ValueOp(Node):
@@ -480,10 +477,12 @@ class CoalesceLike(ValueOp):
 
     def output_type(self):
         first = self.arg[0]
-        if isinstance(first, (ir.IntervalValue, ir.FloatingValue)):
+        if isinstance(first, (ir.IntegerValue, ir.FloatingValue)):
             dtype = first.type().largest()
         else:
             dtype = first.type()
+
+        # self.arg is a list of value expressions
         return rlz.shapeof(self.arg, dtype)
 
 
@@ -1295,8 +1294,8 @@ class SimpleCaseBuilder(object):
         -------
         builder : CaseBuilder
         """
-        case_expr = as_value_expr(case_expr)
-        result_expr = as_value_expr(result_expr)
+        case_expr = ir.as_value_expr(case_expr)
+        result_expr = ir.as_value_expr(result_expr)
 
         if not rlz.comparable(self.base, case_expr):
             raise TypeError('Base expression and passed case are not '
@@ -1320,7 +1319,7 @@ class SimpleCaseBuilder(object):
         -------
         builder : CaseBuilder
         """
-        result_expr = as_value_expr(result_expr)
+        result_expr = ir.as_value_expr(result_expr)
 
         # Maintain immutability
         return SimpleCaseBuilder(self.base, cases=list(self.cases),
@@ -1360,8 +1359,8 @@ class SearchedCaseBuilder(object):
         -------
         builder : CaseBuilder
         """
-        case_expr = as_value_expr(case_expr)
-        result_expr = as_value_expr(result_expr)
+        case_expr = ir.as_value_expr(case_expr)
+        result_expr = ir.as_value_expr(result_expr)
 
         if not isinstance(case_expr, ir.BooleanValue):
             raise TypeError(case_expr)
@@ -1384,7 +1383,7 @@ class SearchedCaseBuilder(object):
         -------
         builder : CaseBuilder
         """
-        result_expr = as_value_expr(result_expr)
+        result_expr = ir.as_value_expr(result_expr)
 
         # Maintain immutability
         return SearchedCaseBuilder(cases=list(self.cases),
@@ -2267,25 +2266,11 @@ class BetweenTime(Between):
 
 class Contains(ValueOp, BooleanValueOp):
 
-    value = rlz.noop
-    options = rlz.noop
-
-    def __init__(self, value, options):
-        value = as_value_expr(value)
-        options = as_value_expr(options)
-        super(Contains, self).__init__(value, options)
+    value = rlz.any
+    options = rlz.listof(rlz.any)
 
     def output_type(self):
-        all_args = [self.value]
-
-        options = self.options.op()
-        if isinstance(options, ValueList):
-            all_args += options.values
-        elif isinstance(self.options, ir.ColumnExpr):
-            all_args += [self.options]
-        else:
-            raise TypeError(type(options))
-
+        all_args = [self.value] + self.options
         return rlz.shapeof(all_args, dt.boolean)
 
 
@@ -2736,7 +2721,7 @@ class MapConcat(ValueOp):
 
 
 class StructField(ValueOp):
-    arg = rlz.instanceof(ir.StructValue)  # TODO: use datatypes instead
+    arg = rlz.value(dt.Struct)
     field = rlz.instanceof(six.string_types)
 
     def output_type(self):
@@ -2769,22 +2754,11 @@ class Literal(ValueOp):
         return []
 
 
-class NullLiteral(ValueOp):
+class NullLiteral(Literal):
     """Typeless NULL literal"""
 
-    value = rlz.instanceof(type(None))
-
-    def equals(self, other, cache=None):
-        return isinstance(other, NullLiteral)
-
-    def output_type(self):
-        return dt.null.scalar_type()
-
-    def root_tables(self):
-        return []
-
-
-NullLiteral(None)
+    value = rlz.optional(rlz.instanceof(type(None)))
+    dtype = rlz.optional(rlz.instanceof(dt.Null), default=dt.null)
 
 
 class ScalarParameter(ValueOp):
@@ -2824,16 +2798,14 @@ class ScalarParameter(ValueOp):
         return self.name
 
 
-# TODO: this class might be not used at all
 class ExpressionList(Node):
+    """Data structure for a list of arbitrary expressions"""
 
-    # FIXME
-    # TODO rename
     exprs = rlz.noop
 
-    def __init__(self, exprs):
-        exprs = [as_value_expr(x) for x in exprs]
-        super(ExpressionList, self).__init__(exprs)
+    def __init__(self, values):
+        values = list(map(rlz.any, values))
+        super(ExpressionList, self).__init__(values)
 
     def root_tables(self):
         return distinct_roots(self.exprs)
@@ -2847,8 +2819,8 @@ class ValueList(ValueOp):
 
     values = rlz.noop
 
-    def __init__(self, args):
-        values = list(map(as_value_expr, args))
+    def __init__(self, values):
+        values = list(map(rlz.any, values))
         super(ValueList, self).__init__(values)
 
     def root_tables(self):

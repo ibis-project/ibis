@@ -233,6 +233,7 @@ def execute_without_scope(
     """
 
     data_scope = find_data(expr)
+
     if not data_scope:
         raise ValueError(
             'No data sources found while trying to execute against the pandas '
