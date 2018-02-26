@@ -231,7 +231,9 @@ class Argument(object):
         self.optional = optional
         self.validator = validator
         self.doc = doc
-        self.as_value_expr = as_value_expr or ir.literal
+        self.as_value_expr = (
+            ir.literal if as_value_expr is None else as_value_expr
+        )
 
     def validate(self, args, i):
         arg = args[i]
@@ -745,10 +747,15 @@ enum = Enum
 
 class ListOf(Argument):
 
-    def __init__(self, value_type, min_length=0, **arg_kwds):
-        super(ListOf, self).__init__(**arg_kwds)
+    def __init__(
+        self, value_type, min_length=0, as_value_expr=None, **arg_kwds
+    ):
+        super(ListOf, self).__init__(as_value_expr=as_value_expr, **arg_kwds)
         self.value_type = _to_argument(value_type)
         self.min_length = min_length
+        self.as_value_expr = (
+            ir.as_value_expr if as_value_expr is None else as_value_expr
+        )
 
     def _validate(self, args, i):
         arg = args[i]
@@ -758,8 +765,9 @@ class ListOf(Argument):
         assert isinstance(arg, list), 'not a list in ListOf validation'
 
         if len(arg) < self.min_length:
-            raise IbisTypeError('list must have at least {} elements'
-                                .format(self.min_length))
+            raise IbisTypeError(
+                'list must have at least {:d} elements'.format(self.min_length)
+            )
 
         checked_args = []
         for j in range(len(arg)):
@@ -767,14 +775,13 @@ class ListOf(Argument):
                 checked_arg = self.value_type.validate(arg, j)
             except IbisTypeError as e:
                 exc = e.args[0]
-                msg = ('List element {0} had a type error: {1}'
-                       .format(j, exc))
+                msg = 'List element {} had a type error: {}'.format(j, exc)
                 raise IbisTypeError(msg)
             checked_args.append(checked_arg)
 
         args[i] = checked_args
 
-        return ir.as_value_expr(checked_args)
+        return self.as_value_expr(checked_args)
 
 
 list_of = ListOf

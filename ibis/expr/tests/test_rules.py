@@ -1,4 +1,7 @@
+import enum
 import pytest
+
+import six
 
 import ibis
 from ibis.common import IbisTypeError
@@ -13,8 +16,6 @@ class MyExpr(ir.Expr):
 
 
 def test_enum_validator():
-    enum = pytest.importorskip('enum')
-
     class Foo(enum.Enum):
         a = 1
         b = 2
@@ -170,3 +171,71 @@ def test_scalar_default_arg():
 
     op = MyOp(True)
     assert op.value.equals(ibis.literal(True))
+
+
+def test_custom_as_value_expr():
+
+    def custom_as_value_expr(o):
+        if isinstance(o, int):
+            return ibis.literal(o + 2)
+        return ibis.literal(o)
+
+    class MyOp(ops.ValueOp):
+        input_type = [
+            rules.list_of(
+                rules.integer(as_value_expr=custom_as_value_expr),
+                name='bar',
+            )
+        ]
+
+    result = MyOp([2])
+    bar = result.bar
+    assert len(bar) == 1
+
+    bar_value, = bar
+    assert bar_value.equals(ibis.literal(4))
+
+
+def test_custom_list_of_as_value_expr():
+
+    class MyList(list):
+        pass
+
+    class MyEnum(enum.Enum):
+        A = 1
+        B = 2
+
+    class MyEnum2(enum.Enum):
+        A = 1
+        B = '2'
+
+    def custom_as_value_expr(o):
+        if o and all(isinstance(el.value, six.integer_types) for el in o):
+            return MyList(o)
+        return o
+
+    class MyOp(ops.ValueOp):
+
+        input_type = [
+            rules.list_of(
+                rules.enum(MyEnum),
+                name='one',
+                as_value_expr=custom_as_value_expr
+            ),
+            rules.list_of(
+                rules.enum(MyEnum2),
+                name='two',
+                as_value_expr=custom_as_value_expr
+            ),
+        ]
+
+    result = MyOp([MyEnum.A, MyEnum.B], [])
+    assert isinstance(result.one, MyList)
+    assert result.one == [MyEnum.A, MyEnum.B]
+    assert result.two == []
+
+    result = MyOp([MyEnum.A, MyEnum.B], [MyEnum2.B])
+    assert isinstance(result.one, MyList)
+    assert not isinstance(result.two, MyList)
+    assert result.one == [MyEnum.A, MyEnum.B]
+    assert result.two == [MyEnum2.B]
