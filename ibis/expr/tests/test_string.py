@@ -108,3 +108,11 @@ def test_getitem_slice(table, left_slice, right_start, right_stop):
     case = table.g[left_slice]
     expected = table.g.substr(right_start, right_stop)
     assert_equal(case, expected)
+
+
+def test_add_radd(table, string_col):
+    string_col = table[string_col]
+    assert isinstance(literal('foo') + 'bar', ir.StringScalar)
+    assert isinstance('bar' + literal('foo'), ir.StringScalar)
+    assert isinstance(string_col + 'bar', ir.StringColumn)
+    assert isinstance('bar' + string_col, ir.StringColumn)
