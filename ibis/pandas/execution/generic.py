@@ -680,12 +680,12 @@ def execute_node_value_list(op, **kwargs):
 
 
 @execute_node.register(ops.StringConcat, list)
-def execute_node_contains_series_list(op, args, **kwargs):
+def execute_node_string_concat(op, args, **kwargs):
     return functools.reduce(operator.add, args)
 
 
 @execute_node.register(ops.StringJoin, list)
-def execute_node_contains_series_list(op, args, **kwargs):
+def execute_node_string_join(op, args, **kwargs):
     return functools.reduce(lambda a, b: a + op.sep + b, args)
 
 
