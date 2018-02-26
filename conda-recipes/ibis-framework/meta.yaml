@@ -40,8 +40,6 @@ test:
     # distros) that don't have X stuff installed
     #
     # see: https://github.com/conda-forge/graphviz-feedstock/issues/18
-    - xorg-libxrender  # [linux and not py34]
-    - xorg-libxpm  # [linux and not py34]
     - graphviz  # [not (py34 and win)]
     - mock  # [py27]
     - multipledispatch
@@ -52,7 +50,6 @@ test:
     - ibis
     - ibis.expr
     - ibis.expr.tests
-    - ibis.expr.visualize  # [not (py34 and win)]
     - ibis.hive
     - ibis.hive.tests
     - ibis.impala  # [linux]
