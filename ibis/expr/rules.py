@@ -228,7 +228,7 @@ decimal = value(dt.Decimal)
 floating = value(dt.float64)
 date = value(dt.date)
 time = value(dt.time)
-timestamp = value(dt.timestamp)
+timestamp = value(dt.Timestamp)
 category = value(dt.category)
 temporal = oneof([timestamp, date, time])
 
