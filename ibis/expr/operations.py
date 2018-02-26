@@ -755,7 +755,7 @@ class StringSplit(ValueOp):
 
 class StringConcat(ValueOp):
     arg = rlz.listof(rlz.string)
-    output_type = rlz.shapeof('args', dt.string)
+    output_type = rlz.shapeof('arg', dt.string)
 
 
 class ParseURL(ValueOp):
