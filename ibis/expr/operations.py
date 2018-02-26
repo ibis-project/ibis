@@ -2489,12 +2489,10 @@ class ExtractMillisecond(ExtractTimestampField):
 
 
 class Time(UnaryOp):
-
     output_type = rlz.shapeof('arg', dt.time)
 
 
 class Date(UnaryOp):
-
     output_type = rlz.shapeof('arg', dt.date)
 
 

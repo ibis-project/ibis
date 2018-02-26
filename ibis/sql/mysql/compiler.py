@@ -154,7 +154,8 @@ def _interval_from_integer(t, expr):
         )
 
     sa_arg = t.translate(arg)
-    return sa.text('INTERVAL {} {}'.format(sa_arg, expr.resolution.upper()))
+    text_unit = expr.type().resolution.upper()
+    return sa.text('INTERVAL {} {}'.format(sa_arg, text_unit))
 
 
 def _timestamp_diff(t, expr):
@@ -171,8 +172,8 @@ def _literal(t, expr):
                 'MySQL does not allow operation '
                 'with INTERVAL offset {}'.format(expr.type().unit)
             )
-        return sa.text('INTERVAL {} {}'.format(expr.op().value,
-                                               expr.resolution.upper()))
+        text_unit = expr.type().resolution.upper()
+        return sa.text('INTERVAL {} {}'.format(expr.op().value, text_unit))
     else:
         value = expr.op().value
         if isinstance(value, pd.Timestamp):

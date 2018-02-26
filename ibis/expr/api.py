@@ -26,6 +26,7 @@ import collections
 import ibis.util as util
 import ibis.common as com
 import ibis.expr.types as ir
+import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.analysis as _L
 import ibis.expr.datatypes as dt
@@ -162,7 +163,7 @@ def timestamp(value):
             'and will be removed in 0.12.0. To pass integers as timestamp '
             'literals, use pd.Timestamp({:d}, unit=...)'.format(value)
         )
-    return literal(value)
+    return literal(value, type=dt.timestamp)
 
 
 def date(value):
@@ -179,7 +180,7 @@ def date(value):
     """
     if isinstance(value, six.string_types):
         value = to_date(value)
-    return literal(value)
+    return literal(value, type=dt.date)
 
 
 def time(value):
@@ -196,7 +197,7 @@ def time(value):
     """
     if isinstance(value, six.string_types):
         value = to_time(value)
-    return literal(value)
+    return literal(value, type=dt.time)
 
 
 def interval(value=None, unit='s', years=None, quarters=None, months=None,
@@ -2144,6 +2145,8 @@ _timestamp_value_methods = dict(
     day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr()),
 )
 
+_add_methods(ir.TimestampValue, _timestamp_value_methods)
+
 
 # ---------------------------------------------------------------------
 # Date API
@@ -2171,7 +2174,7 @@ def _date_truncate(arg, unit):
 
 
 def _date_sub(left, right):
-    right = as_value_expr(right)
+    right = rlz.oneof([rlz.date, rlz.interval], right)
 
     if isinstance(right, ir.DateValue):
         op = ops.DateDiff(left, right)
@@ -2202,7 +2205,6 @@ _date_value_methods = dict(
     radd=_date_add
 )
 
-_add_methods(ir.TimestampValue, _timestamp_value_methods)
 _add_methods(ir.DateValue, _date_value_methods)
 
 

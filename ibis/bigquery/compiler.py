@@ -266,10 +266,11 @@ def _timestamp_op(func, units):
         op = expr.op()
         arg, offset = op.args
 
-        if offset.unit not in units:
+        unit = offset.type().unit
+        if unit not in units:
             raise com.UnsupportedOperationError(
                 'BigQuery does not allow binary operation '
-                '{} with INTERVAL offset {}'.format(func, offset.unit)
+                '{} with INTERVAL offset {}'.format(func, unit)
             )
         formatted_arg = translator.translate(arg)
         formatted_offset = translator.translate(offset)
