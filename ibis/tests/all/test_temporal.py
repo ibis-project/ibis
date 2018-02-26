@@ -81,7 +81,7 @@ def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
     result = con.execute(expr)
 
     def convert_to_offset(x):
-        resolution = '{}s'.format(interval.resolution)
+        resolution = '{}s'.format(interval.type().resolution)
         return pd.offsets.DateOffset(**{resolution: x})
 
     offset = df.int_col.apply(convert_to_offset)
@@ -104,7 +104,7 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     result = con.execute(expr)
 
     def convert_to_offset(x):
-        resolution = '{}s'.format(interval.resolution)
+        resolution = '{}s'.format(interval.type().resolution)
         return pd.offsets.DateOffset(**{resolution: x})
 
     offset = df.int_col.apply(convert_to_offset)

@@ -2541,14 +2541,14 @@ class Hash(ValueOp):
 
 class DateAdd(BinaryOp):
     left = rlz.date
-    right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D'])
-    output_type = rlz.shapeof('left', dt.date)
+    right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'})
+    output_type = rlz.shapeof('left')
 
 
 class DateSub(BinaryOp):
     left = rlz.date
-    right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D'])
-    output_type = rlz.shapeof('left', dt.date)
+    right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'})
+    output_type = rlz.shapeof('left')
 
 
 class DateDiff(BinaryOp):
@@ -2559,14 +2559,14 @@ class DateDiff(BinaryOp):
 
 class TimeAdd(BinaryOp):
     left = rlz.time
-    right = rlz.interval(units=['h', 'm', 's'])
-    output_type = rlz.shapeof('left', dt.time)
+    right = rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'})
+    output_type = rlz.shapeof('left')
 
 
 class TimeSub(BinaryOp):
     left = rlz.time
-    right = rlz.interval(units=['h', 'm', 's'])
-    output_type = rlz.shapeof('left', dt.time)
+    right = rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'})
+    output_type = rlz.shapeof('left')
 
 
 class TimeDiff(BinaryOp):
@@ -2577,14 +2577,16 @@ class TimeDiff(BinaryOp):
 
 class TimestampAdd(BinaryOp):
     left = rlz.timestamp
-    right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's'])
-    output_type = rlz.shapeof('left', dt.timestamp)
+    right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D',
+                                'h', 'm', 's', 'ms', 'us', 'ns'})
+    output_type = rlz.shapeof('left')
 
 
 class TimestampSub(BinaryOp):
     left = rlz.timestamp
-    right = rlz.interval(units=['Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's'])
-    output_type = rlz.shapeof('left', dt.timestamp)
+    right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D',
+                                'h', 'm', 's', 'ms', 'us', 'ns'})
+    output_type = rlz.shapeof('left')
 
 
 class TimestampDiff(BinaryOp):
