@@ -262,7 +262,7 @@ class TableColumn(ValueOp):
     """Selects a column from a TableExpr"""
 
     name = rlz.instanceof(six.string_types + six.integer_types)
-    table = rlz.instanceof(ir.TableExpr)
+    table = rlz.table
 
     def __init__(self, name, table):
         schema = table.schema()
@@ -297,9 +297,7 @@ class TableColumn(ValueOp):
         return klass(self, name=self.name)
 
 
-# TODO: move this to analysis
 def find_all_base_tables(expr, memo=None):
-    # TODO: refactor this
     if memo is None:
         memo = {}
 
@@ -1170,11 +1168,11 @@ class Distinct(TableNode, HasSchema):
     FROM table
     """
 
-    table = rlz.instanceof(ir.TableExpr)
+    table = rlz.table
 
-    def __init__(self, table):
-        super(Distinct, self).__init__(table)
-        self.schema  # TODO
+    def _validate(self):
+        # check whether schema has overlapping columns or not
+        assert self.schema
 
     @property
     def schema(self):
@@ -1470,7 +1468,6 @@ def _validate_join_tables(left, right):
                         'right table'.format(type(right).__name__))
 
 
-# TODO: move to analysis
 def _make_distinct_join_predicates(left, right, predicates):
     # see GH #667
 
@@ -1616,8 +1613,8 @@ class MaterializedJoin(TableNode, HasSchema):
 
     def _validate(self):
         assert isinstance(self.join.op(), Join)
-        # TODO cleanup, this validates there is no schema overlapping
-        self.schema
+        # check whether the underlying schema has overlapping columns or not
+        assert self.schema
 
     @property
     def schema(self):
@@ -1659,7 +1656,6 @@ class AsOfJoin(Join):
     by = rlz.optional(rlz.noop)
 
     def __init__(self, left, right, predicates, by):
-        # TODO cleanup
         super(AsOfJoin, self).__init__(left, right, predicates)
         self.by = _clean_join_predicates(self.left, self.right, by)
 
@@ -1689,12 +1685,9 @@ class Union(TableNode, HasSchema):
 
 class Limit(TableNode):
 
-    table = rlz.instanceof(ir.TableExpr)
+    table = rlz.table
     n = rlz.validator(int)
     offset = rlz.validator(int)
-
-    # TODO:
-    # _arg_names = [None, 'n', 'offset']
 
     def blocks(self):
         return True
@@ -1745,7 +1738,7 @@ class SortKey(Node):
     ascending = rlz.optional(rlz.validator(bool), default=True)
 
     def __repr__(self):
-        # Temporary  # TODO
+        # Temporary
         rows = ['Sort key:',
                 '  ascending: {0!s}'.format(self.ascending),
                 util.indent(_safe_repr(self.expr), 2)]
@@ -1778,12 +1771,7 @@ class DeferredSortKey(object):
 
 class SelfReference(TableNode, HasSchema):
 
-    table = rlz.instanceof(ir.TableExpr)
-
-    def __init__(self, table_expr):
-        super(SelfReference, self).__init__(table_expr)
-        # TODO
-        self.schema
+    table = rlz.table
 
     @property
     def schema(self):
@@ -1802,7 +1790,6 @@ class SelfReference(TableNode, HasSchema):
 class Selection(TableNode, HasSchema):
 
     table = rlz.table
-    # TODO previously it had schema = rlz.schema
     selections = rlz.noop
     predicates = rlz.noop
     sort_keys = rlz.noop
@@ -1815,7 +1802,14 @@ class Selection(TableNode, HasSchema):
         selections = util.promote_list(
             selections if selections is not None else []
         )
-        clean_exprs, schema = self._get_schema(table, selections)
+
+        projections = []
+        for selection in selections:
+            if isinstance(selection, six.string_types):
+                projection = table[selection]
+            else:
+                projection = selection
+            projections.append(projection)
 
         sort_keys = [
             to_sort_key(table, k)
@@ -1829,61 +1823,26 @@ class Selection(TableNode, HasSchema):
             predicates if predicates is not None else []
         )))
 
-        dependent_exprs = clean_exprs + sort_keys
+        super(Selection, self).__init__(table=table, selections=projections,
+                                        predicates=predicates,
+                                        sort_keys=sort_keys)
 
-        # TODO: move these to _validate
+    def _validate(self):
+        from ibis.expr.analysis import FilterValidator
+
         # Need to validate that the column expressions are compatible with the
         # input table; this means they must either be scalar expressions or
         # array expressions originating from the same root table expression
-        table._assert_valid(dependent_exprs)
+        dependent_exprs = self.selections + self.sort_keys
+        self.table._assert_valid(dependent_exprs)
 
-        self._validate_predicates(table, predicates)
+        # Validate predicates
+        validator = FilterValidator([self.table])
+        validator.validate_all(self.predicates)
 
-        super(Selection, self).__init__(
-            table=table, selections=clean_exprs,
-            predicates=predicates, sort_keys=sort_keys)
+        # Validate no overlapping columns in schema
+        assert self.schema
 
-    def blocks(self):
-        return bool(self.selections)
-
-    def _validate_predicates(self, table, predicates):
-        from ibis.expr.analysis import FilterValidator
-        validator = FilterValidator([table])
-        validator.validate_all(predicates)
-
-    # TODO: cleanup / remove
-    def _get_schema(self, table, projections):
-        if not projections:
-            return projections, table.schema()
-
-        # Resolve schema and initialize
-        types = []
-        names = []
-        clean_exprs = []
-        for projection in projections:
-            if isinstance(projection, six.string_types):
-                projection = self.table[projection]
-
-            if isinstance(projection, ir.ValueExpr):
-                names.append(projection.get_name())
-                types.append(projection.type())
-            elif isinstance(projection, ir.TableExpr):
-                schema = projection.schema()
-                names.extend(schema.names)
-                types.extend(schema.types)
-            else:
-                raise TypeError(
-                    "Don't know how to clean expression of type {}".format(
-                        type(projection).__name__
-                    )
-                )
-
-            clean_exprs.append(projection)
-
-        # validate uniqueness
-        return clean_exprs, Schema(names, types)
-
-    # TODO: cleanup
     @property
     def schema(self):
         # Resolve schema and initialize
@@ -1903,6 +1862,9 @@ class Selection(TableNode, HasSchema):
                 types.extend(schema.types)
 
         return Schema(names, types)
+
+    def blocks(self):
+        return bool(self.selections)
 
     def substitute_table(self, table_expr):
         return Selection(table_expr, self.selections)
@@ -2056,9 +2018,33 @@ class Aggregation(TableNode, HasSchema):
         super(Aggregation, self).__init__(table=table, metrics=metrics, by=by,
                                           having=having, predicates=predicates,
                                           sort_keys=sort_keys)
-        self._validate()
-        self._validate_predicates()
-        self.schema  # TODO
+
+    def _validate(self):
+        from ibis.expr.analysis import is_reduction
+        from ibis.expr.analysis import FilterValidator
+
+        # All aggregates are valid
+        for expr in self.metrics:
+            if not isinstance(expr, ir.ScalarExpr) or not is_reduction(expr):
+                raise TypeError('Passed a non-aggregate expression: %s' %
+                                _safe_repr(expr))
+
+        for expr in self.having:
+            if not isinstance(expr, ir.BooleanScalar):
+                raise com.ExpressionError('Having clause must be boolean '
+                                          'expression, was: {0!s}'
+                                          .format(_safe_repr(expr)))
+
+        # All non-scalar refs originate from the input table
+        all_exprs = self.metrics + self.by + self.having + self.sort_keys
+        self.table._assert_valid(all_exprs)
+
+        # Validate predicates
+        validator = FilterValidator([self.table])
+        validator.validate_all(self.predicates)
+
+        # Validate schema has no overlapping columns
+        assert self.schema
 
     def _rewrite_exprs(self, table, what):
         from ibis.expr.analysis import substitute_parents
@@ -2081,29 +2067,6 @@ class Aggregation(TableNode, HasSchema):
     def substitute_table(self, table_expr):
         return Aggregation(table_expr, self.metrics, by=self.by,
                            having=self.having)
-
-    def _validate(self):
-        from ibis.expr.analysis import is_reduction
-        # All aggregates are valid
-        for expr in self.metrics:
-            if not isinstance(expr, ir.ScalarExpr) or not is_reduction(expr):
-                raise TypeError('Passed a non-aggregate expression: %s' %
-                                _safe_repr(expr))
-
-        for expr in self.having:
-            if not isinstance(expr, ir.BooleanScalar):
-                raise com.ExpressionError('Having clause must be boolean '
-                                          'expression, was: {0!s}'
-                                          .format(_safe_repr(expr)))
-
-        # All non-scalar refs originate from the input table
-        all_exprs = self.metrics + self.by + self.having + self.sort_keys
-        self.table._assert_valid(all_exprs)
-
-    def _validate_predicates(self):
-        from ibis.expr.analysis import FilterValidator
-        validator = FilterValidator([self.table])
-        validator.validate_all(self.predicates)
 
     @property
     def schema(self):
@@ -2300,10 +2263,6 @@ class TopK(ValueOp):
     k = rlz.noop
     by = rlz.noop
 
-    def blocks(self):
-        return True
-
-    # TODO: simplify
     def __init__(self, arg, k, by=None):
         if by is None:
             by = arg.count()
@@ -2314,14 +2273,13 @@ class TopK(ValueOp):
         if not isinstance(k, int) or k < 0:
             raise ValueError('k must be positive integer, was: {0}'.format(k))
 
-        self.arg = arg
-        self.k = k
-        self.by = by
-
         super(ValueOp, self).__init__(arg, k, by)
 
     def output_type(self):
         return ir.TopKExpr
+
+    def blocks(self):
+        return True
 
 
 class Constant(ValueOp):
