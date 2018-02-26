@@ -130,16 +130,6 @@ class HasSchema(object):
     concrete dataset or database table.
     """
 
-    # TODO cleanup
-    # __slots__ = 'schema', 'name'
-
-    # def __init__(self, schema, name=None):
-    #     if not isinstance(schema, Schema):
-    #         raise TypeError('schema argument to HasSchema class must '
-    #                         'be a Schema instance')
-    #     self.schema = schema
-    #     self.name = name
-
     def __repr__(self):
         return '{}({})'.format(type(self).__name__, repr(self.schema))
 

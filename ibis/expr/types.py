@@ -240,7 +240,7 @@ class ExprList(Expr):
 
     def schema(self):
         import ibis.expr.schema as sch
-        return sch.schema(self.names(), self.types())
+        return sch.Schema(self.names(), self.types())
 
     def rename(self, f):
         import ibis.expr.operations as ops

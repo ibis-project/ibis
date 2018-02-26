@@ -149,7 +149,7 @@ def memberof(obj, arg):
 @validator
 def listof(inner, arg, min_length=0):
     if not isinstance(arg, (tuple, list, ir.ListExpr)):
-        raise com.IbisTypeError('Arg is not an instance of list or tuple')
+        arg = [arg]
 
     if len(arg) < min_length:
         raise com.IbisTypeError(

@@ -19,12 +19,7 @@ def get_args(node):
         return get_args_join(node)
     else:
         args = (arg for arg in node.args if isinstance(arg, ir.Expr))
-        try:
-            input_type = node.input_type
-        except AttributeError:
-            names = node._arg_names
-        else:
-            names = (arg.name for arg in input_type.types)
+        names = getattr(node, 'argnames', [])
         return zip_longest(args, names)
 
 
@@ -34,7 +29,7 @@ def get_args_selection_aggregation(node):
             [node.table],
             itertools.chain.from_iterable(
                 getattr(node, argname) or [None]
-                for argname in node._arg_names if argname != 'table'
+                for argname in (node.argnames or []) if argname != 'table'
             )
         ),
         itertools.chain(
@@ -44,7 +39,7 @@ def get_args_selection_aggregation(node):
                     '{}[{:d}]'.format(argname, i)
                     for i in range(len(getattr(node, argname)))
                 ] or [None]
-                for argname in node._arg_names if argname != 'table'
+                for argname in (node.argnames or []) if argname != 'table'
             )
         ),
     )
@@ -58,7 +53,8 @@ def get_args_join(node):
                 '{}[{:d}]'.format(argname, i)
                 for i in range(len(getattr(node, argname)))
             ] or [None]
-            for argname in node._arg_names if argname not in {'left', 'right'}
+            for argname in (node.argnames or [])
+            if argname not in {'left', 'right'}
         ))
     )
 
@@ -119,13 +115,6 @@ def get_label(expr, argname=None):
             label_fmt = '<{} \u27f6 {}>'
         label = label_fmt.format(name, typename)
     return label
-
-
-def get_arg_names(node):
-    try:
-        return [arg.name for arg in node.input_type.types]
-    except AttributeError:
-        return node._arg_names
 
 
 def to_graph(expr, node_attr=None, edge_attr=None):

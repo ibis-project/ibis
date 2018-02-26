@@ -207,9 +207,8 @@ UnboundTable[table]
     a : int64
 
 NullIf[int64*]
-  arg:
-    a = Column[int64*] 'a' from table
-      ref_0
+  a = Column[int64*] 'a' from table
+    ref_0
   null_if_expr:
     Literal[int8]
       2"""

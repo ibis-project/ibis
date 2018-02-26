@@ -201,12 +201,12 @@ class Node(six.with_metaclass(OperationMeta, object)):
         raise NotImplementedError
 
     @property
-    def _arg_names(self):
-        return self.signature.names()
-
-    @property
     def args(self):
         return tuple(getattr(self, name) for name in self.signature.names())
+
+    @property
+    def argnames(self):
+        return tuple(self.signature.names())
 
 
 class ValueOp(Node):
@@ -953,6 +953,8 @@ class WindowOp(ValueOp):
     expr = rlz.noop
     window = rlz.noop
     output_type = rlz.arrayof('expr')
+
+    argnames = False
 
     def __init__(self, expr, window):
         from ibis.expr.window import propagate_down_window
@@ -2774,6 +2776,7 @@ class ValueList(ValueOp):
     """Data structure for a list of value expressions"""
 
     values = rlz.noop
+    argnames = False  # disable showing argnames in repr
 
     def __init__(self, values):
         values = list(map(rlz.any, values))
