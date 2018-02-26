@@ -1,8 +1,7 @@
-import enum
-import pytest
 import six
-import ibis
 import enum
+import ibis
+import pytest
 
 from toolz import identity
 from contextlib import contextmanager
