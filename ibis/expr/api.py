@@ -21,7 +21,6 @@ import operator
 import datetime
 
 import functools
-import itertools
 import collections
 
 import ibis.util as util
@@ -34,8 +33,7 @@ import ibis.expr.analytics as _analytics
 import ibis.expr.operations as ops
 
 from ibis.compat import PY2, to_time, to_date
-from ibis.expr.types import (Expr, null, param, literal, sequence, as_value_expr,
-                             unnamed)
+from ibis.expr.types import Expr, null, param, literal, sequence, as_value_expr
 from ibis.expr.schema import Schema
 
 from ibis.expr.analytics import bucket, histogram
