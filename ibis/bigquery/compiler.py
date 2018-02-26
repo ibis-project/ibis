@@ -265,11 +265,6 @@ def _timestamp_op(func, units):
     def _formatter(translator, expr):
         op = expr.op()
         arg, offset = op.args
-        if not isinstance(offset, ir.IntervalValue):
-            raise com.UnsupportedOperationError(
-                'Binary operations between two timestamps or dates '
-                'are not yet supported in bigquery backend'
-            )
 
         if offset.unit not in units:
             raise com.UnsupportedOperationError(
@@ -334,17 +329,19 @@ _operation_registry.update({
 
     ops.TimestampAdd: _timestamp_op(
         'TIMESTAMP_ADD', {'h', 'm', 's', 'ms', 'us'}),
-    ops.TimestampSubtract: _timestamp_op(
+    ops.TimestampSub: _timestamp_op(
         'TIMESTAMP_DIFF', {'h', 'm', 's', 'ms', 'us'}),
 
     ops.DateAdd: _timestamp_op('DATE_ADD', {'D', 'W', 'M', 'Q', 'Y'}),
-    ops.DateSubtract: _timestamp_op('DATE_SUB', {'D', 'W', 'M', 'Q', 'Y'}),
+    ops.DateSub: _timestamp_op('DATE_SUB', {'D', 'W', 'M', 'Q', 'Y'}),
 })
 
 _invalid_operations = {
     ops.Translate,
     ops.FindInSet,
     ops.Capitalize,
+    ops.DateDiff,
+    ops.TimestampDiff
 }
 
 _operation_registry = {

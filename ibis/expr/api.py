@@ -2112,7 +2112,17 @@ def _timestamp_date(arg):
     return _ops.Date(arg).to_expr()
 
 
-_timestamp_sub = _binop_expr('__sub__', _ops.TimestampSubtract)
+def _timestamp_sub(left, right):
+    right = as_value_expr(right)
+
+    if isinstance(right, ir.TimestampValue):
+        op = _ops.TimestampDiff(left, right)
+    else:
+        op = _ops.TimestampSub(left, right)  # let the operation validate
+
+    return op.to_expr()
+
+
 _timestamp_add = _binop_expr('__add__', _ops.TimestampAdd)
 _timestamp_radd = _binop_expr('__radd__', _ops.TimestampAdd)
 
@@ -2167,7 +2177,17 @@ def _date_truncate(arg, unit):
     return _ops.DateTruncate(arg, unit).to_expr()
 
 
-_date_sub = _binop_expr('__sub__', _ops.DateSubtract)
+def _date_sub(left, right):
+    right = as_value_expr(right)
+
+    if isinstance(right, ir.DateValue):
+        op = _ops.DateDiff(left, right)
+    else:
+        op = _ops.DateSub(left, right)  # let the operation validate
+
+    return op.to_expr()
+
+
 _date_add = _binop_expr('__add__', _ops.DateAdd)
 
 _date_value_methods = dict(
@@ -2328,7 +2348,17 @@ def _time_truncate(arg, unit):
     return _ops.TimeTruncate(arg, unit).to_expr()
 
 
-_time_sub = _binop_expr('__sub__', _ops.TimeSubtract)
+def _time_sub(left, right):
+    right = as_value_expr(right)
+
+    if isinstance(right, ir.TimeValue):
+        op = _ops.TimeDiff(left, right)
+    else:
+        op = _ops.TimeSub(left, right)  # let the operation validate
+
+    return op.to_expr()
+
+
 _time_add = _binop_expr('__add__', _ops.TimeAdd)
 
 

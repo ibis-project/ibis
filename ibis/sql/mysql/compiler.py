@@ -1,9 +1,11 @@
+import pandas as pd
 import sqlalchemy as sa
 import sqlalchemy.dialects.mysql as mysql
 
 from ibis.sql.alchemy import (unary, fixed_arity, infix_op,
                               _variance_reduction)
 import ibis.common as com
+import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.sql.alchemy as alch
@@ -143,7 +145,44 @@ def _string_join(t, expr):
     return sa.func.concat_ws(t.translate(sep), *map(t.translate, elements))
 
 
+def _interval_from_integer(t, expr):
+    arg, unit = expr.op().args
+    if unit in {'ms', 'ns'}:
+        raise com.UnsupportedOperationError(
+            'MySQL does not allow operation '
+            'with INTERVAL offset {}'.format(unit)
+        )
+
+    sa_arg = t.translate(arg)
+    return sa.text('INTERVAL {} {}'.format(sa_arg, expr.resolution.upper()))
+
+
+def _timestamp_diff(t, expr):
+    left, right = expr.op().args
+    sa_left = t.translate(left)
+    sa_right = t.translate(right)
+    return sa.func.timestampdiff(sa.text('SECOND'), sa_right, sa_left)
+
+
+def _literal(t, expr):
+    if isinstance(expr, ir.IntervalValue):
+        if expr.type().unit in {'ms', 'ns'}:
+            raise com.UnsupportedOperationError(
+                'MySQL does not allow operation '
+                'with INTERVAL offset {}'.format(expr.type().unit)
+            )
+        return sa.text('INTERVAL {} {}'.format(expr.op().value,
+                                               expr.resolution.upper()))
+    else:
+        value = expr.op().value
+        if isinstance(value, pd.Timestamp):
+            value = value.to_pydatetime()
+        return sa.literal(value)
+
+
 _operation_registry.update({
+    ir.Literal: _literal,
+
     # strings
     ops.Substring: _substr,
     ops.StringFind: _string_find,
@@ -157,8 +196,16 @@ _operation_registry.update({
     ops.Round: _round,
 
     # dates and times
+    ops.Date: unary(sa.func.date),
+    ops.DateAdd: infix_op('+'),
+    ops.DateSub: infix_op('-'),
+    ops.DateDiff: fixed_arity(sa.func.datediff, 2),
+    ops.TimestampAdd: infix_op('+'),
+    ops.TimestampSub: infix_op('-'),
+    ops.TimestampDiff: _timestamp_diff,
     ops.DateTruncate: _truncate,
     ops.TimestampTruncate: _truncate,
+    ops.IntervalFromInteger: _interval_from_integer,
     ops.Strftime: fixed_arity(sa.func.date_format, 2),
     ops.ExtractYear: _extract('year'),
     ops.ExtractMonth: _extract('month'),

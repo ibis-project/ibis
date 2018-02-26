@@ -2561,60 +2561,22 @@ class Hash(ValueOp):
     output_type = rules.shape_like_arg(0, 'int64')
 
 
-class TemporalSubtract(BinaryOp):
-
-    def output_type(self):
-        if self.args[0].type() == self.args[1].type():
-            value_type = dt.Interval(self.output_unit, dt.int32)
-        else:
-            value_type = self.args[0].type()
-
-        return rules.shape_like(self.args[0], value_type)
-
-
-class DateSubtract(TemporalSubtract):
-
-    input_type = [
-        rules.date,
-        rules.one_of([
-            rules.date,
-            rules.interval(units=['Y', 'Q', 'M', 'W', 'D'])
-        ])
-    ]
-    output_unit = 'D'
-
-
-class TimeSubtract(TemporalSubtract):
-
-    input_type = [
-        rules.time,
-        rules.one_of([
-            rules.time,
-            rules.interval(units=['h', 'm', 's'])
-        ])
-    ]
-    output_unit = 's'
-
-
-class TimestampSubtract(TemporalSubtract):
-
-    input_type = [
-        rules.timestamp,
-        rules.one_of([
-            rules.timestamp,
-            rules.interval
-        ])
-    ]
-    output_unit = 's'
-
-
-TimestampDelta = TimestampSubtract
-
-
 class DateAdd(Add):
 
     input_type = [rules.date, rules.interval(units=['Y', 'Q', 'M', 'W', 'D'])]
     output_type = rules.shape_like_arg(0, 'date')
+
+
+class DateSub(Subtract):
+
+    input_type = [rules.date, rules.interval(units=['Y', 'Q', 'M', 'W', 'D'])]
+    output_type = rules.shape_like_arg(0, 'date')
+
+
+class DateDiff(BinaryOp):
+
+    input_type = [rules.date, rules.date]
+    output_type = rules.shape_like_arg(0, dt.Interval('D'))
 
 
 class TimeAdd(Add):
@@ -2623,10 +2585,34 @@ class TimeAdd(Add):
     output_type = rules.shape_like_arg(0, 'time')
 
 
+class TimeSub(Subtract):
+
+    input_type = [rules.time, rules.interval(units=['h', 'm', 's'])]
+    output_type = rules.shape_like_arg(0, 'time')
+
+
+class TimeDiff(BinaryOp):
+
+    input_type = [rules.time, rules.time]
+    output_type = rules.shape_like_arg(0, dt.Interval('s'))
+
+
 class TimestampAdd(Add):
 
     input_type = [rules.timestamp, rules.interval]
     output_type = rules.shape_like_arg(0, 'timestamp')
+
+
+class TimestampSub(Subtract):
+
+    input_type = [rules.timestamp, rules.interval]
+    output_type = rules.shape_like_arg(0, 'timestamp')
+
+
+class TimestampDiff(BinaryOp):
+
+    input_type = [rules.timestamp, rules.timestamp]
+    output_type = rules.shape_like_arg(0, dt.Interval('s'))
 
 
 class IntervalAdd(Add):
