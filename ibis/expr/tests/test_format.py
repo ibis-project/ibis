@@ -38,9 +38,12 @@ def test_table_type_output():
             ('year', 'int32'),
             ('y', 'double')
         ], 'foo')
-
+    print(type(foo))
     expr = foo.dept_id == foo.view().dept_id
+    print(type(expr))
+    print(expr)
     result = repr(expr)
+    print(type(result))
     assert 'SelfReference[table]' in result
     assert 'UnboundTable[table]' in result
 

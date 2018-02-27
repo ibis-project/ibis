@@ -1202,6 +1202,8 @@ def test_custom_type_binary_operations():
         __radd__ = __add__
 
     class FooNode(ops.ValueOp):
+        __slots__ = 'value',
+
         value = rlz.integer
 
         def output_type(self):
@@ -1225,6 +1227,8 @@ def test_empty_array_as_argument():
         pass
 
     class FooNode(ops.ValueOp):
+        __slots__ = 'value',
+
         value = rlz.value(dt.Array(dt.int64))
 
         def output_type(self):

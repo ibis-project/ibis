@@ -41,6 +41,8 @@ def test_custom_expr():
         pass
 
     class MyExprNode(ops.Node):
+        __slots__ = 'foo', 'bar'
+
         foo = rlz.string
         bar = rlz.numeric
 
@@ -63,6 +65,8 @@ def test_custom_expr_with_not_implemented_type():
             raise NotImplementedError
 
     class MyExprNode(ops.Node):
+        __slots__ = 'foo', 'bar'
+
         foo = rlz.string
         bar = rlz.numeric
 

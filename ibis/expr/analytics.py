@@ -31,6 +31,9 @@ class BucketLike(ops.ValueOp):
 
 class Bucket(BucketLike):
 
+    __slots__ = ('arg', 'buckets', 'closed', 'close_extreme', 'include_under',
+                 'include_over')
+
     arg = rlz.noop
     buckets = rlz.noop
     closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
@@ -55,6 +58,8 @@ class Bucket(BucketLike):
 
 class Histogram(BucketLike):
 
+    __slots__ = 'arg', 'nbins', 'binwidth', 'base', 'closed', 'aux_hash'
+
     arg = rlz.noop
     nbins = rlz.noop
     binwidth = rlz.noop
@@ -75,6 +80,8 @@ class Histogram(BucketLike):
 
 
 class CategoryLabel(ops.ValueOp):
+
+    __slots__ = 'arg', 'labels', 'nulls'
 
     arg = rlz.category
     labels = rlz.noop

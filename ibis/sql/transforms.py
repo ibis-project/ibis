@@ -30,6 +30,8 @@ class ExistsExpr(ir.AnalyticExpr):
 class ExistsSubquery(ops.Node):
     """Helper class"""
 
+    __slots__ = 'foreign_table', 'predicates'
+
     foreign_table = rlz.noop
     predicates = rlz.noop
 
@@ -38,7 +40,7 @@ class ExistsSubquery(ops.Node):
 
 
 class NotExistsSubquery(ops.Node):
-    # TODO these might be unused
+    __slots__ = 'foreign_table', 'predicates'
 
     foreign_table = rlz.noop
     predicates = rlz.noop

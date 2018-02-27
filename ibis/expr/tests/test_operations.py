@@ -20,6 +20,7 @@ def test_argument_descriptor():
 
 def test_operation():
     class Log(ops.Node):
+        __slots__ = 'arg', 'base'
         arg = rlz.double()
         base = rlz.optional(rlz.double())
 
@@ -87,6 +88,7 @@ def test_unaryop():
 
 def test_instanceof_operation():
     class MyOperation(ops.Node):
+        __slots__ = 'arg',
         arg = rlz.instanceof(ir.IntegerValue)
 
     MyOperation(ir.literal(5))
@@ -97,6 +99,7 @@ def test_instanceof_operation():
 
 def test_array_input():
     class MyOp(ops.ValueOp):
+        __slots__ = 'value',
         value = rlz.value(dt.Array(dt.double))
         output_type = rlz.typeof('value')
 
