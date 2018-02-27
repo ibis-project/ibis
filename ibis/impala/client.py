@@ -1219,20 +1219,9 @@ class ImpalaClient(SQLClient):
         database = database or self.current_database
 
         if isinstance(func, udf.ImpalaUDF):
-            stmt = ddl.CreateFunction(func.lib_path, func.so_symbol,
-                                      func.input_type,
-                                      func.output,
-                                      name, database)
+            stmt = ddl.CreateUDF(func, name=name, database=database)
         elif isinstance(func, udf.ImpalaUDA):
-            stmt = ddl.CreateAggregateFunction(func.lib_path,
-                                               func.input_type,
-                                               func.output,
-                                               func.update_fn,
-                                               func.init_fn,
-                                               func.merge_fn,
-                                               func.serialize_fn,
-                                               func.finalize_fn,
-                                               name, database)
+            stmt = ddl.CreateUDA(func, name=name, database=database)
         else:
             raise TypeError(func)
         self._execute(stmt)

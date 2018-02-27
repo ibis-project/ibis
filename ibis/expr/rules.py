@@ -200,9 +200,9 @@ def value(dtype, arg):
     if isinstance(dtype, type) and isinstance(arg.type(), dtype):
         # dtype class has been specified like dt.Interval or dt.Decimal
         return arg
-    elif isinstance(dtype, dt.DataType) and dt.castable(arg.type(), dtype):
-        # dtype instance has been specified and arg's dtype is implicitly
-        # castable to it, like dt.int8 is castable to dt.int64
+    elif dt.castable(arg.type(), dt.dtype(dtype)):
+        # dtype instance or string has been specified and arg's dtype is
+        # implicitly castable to it, like dt.int8 is castable to dt.int64
         return arg
     else:
         raise com.IbisTypeError('Given argument with datatype {} is not '
@@ -470,3 +470,6 @@ def binopof(args, op):
         return shapeof(args, dtype=dtype)
     else:
         return shapeof(args)
+
+
+# TODO: create varargs marker for impala udfs

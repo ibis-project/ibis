@@ -425,8 +425,9 @@ class TestUDFDDL(unittest.TestCase):
         self.output = 'int64'
 
     def test_create_udf(self):
-        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc', self.inputs,
-                                  self.output, self.name)
+        func = api.wrap_udf('/foo/bar.so', self.inputs, self.output,
+                            so_symbol='testFunc', name=self.name)
+        stmt = ddl.CreateUDF(func)
         result = stmt.compile()
         expected = ("CREATE FUNCTION `test_name`(string, string) "
                     "returns bigint "
@@ -434,9 +435,14 @@ class TestUDFDDL(unittest.TestCase):
         assert result == expected
 
     def test_create_udf_type_conversions(self):
-        stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc',
-                                  ['string', 'int8', 'int16', 'int32'],
-                                  self.output, self.name)
+        inputs = ['string', 'int8', 'int16', 'int32']
+        func = api.wrap_udf('/foo/bar.so', inputs, self.output,
+                            so_symbol='testFunc', name=self.name)
+        stmt = ddl.CreateUDF(func)
+
+        # stmt = ddl.CreateFunction('/foo/bar.so', 'testFunc',
+        #                           ,
+        #                           self.output, self.name)
         result = stmt.compile()
         expected = ("CREATE FUNCTION `test_name`(string, tinyint, "
                     "smallint, int) returns bigint "
@@ -483,11 +489,11 @@ class TestUDFDDL(unittest.TestCase):
                     ("\nfinalize_fn='Finalize'"))
 
         for ser in [True, False]:
-            stmt = ddl.CreateAggregateFunction('/foo/bar.so', self.inputs,
-                                               self.output, 'Update', 'Init',
-                                               'Merge',
-                                               'Serialize' if ser else None,
-                                               'Finalize', self.name, 'bar')
+            func = api.wrap_uda('/foo/bar.so', self.inputs, self.output,
+                                update_fn='Update', init_fn='Init',
+                                merge_fn='Merge', finalize_fn='Finalize',
+                                serialize_fn='Serialize' if ser else None)
+            stmt = ddl.CreateUDA(func, name=self.name, database='bar')
             result = stmt.compile()
             expected = make_ex(ser)
             assert result == expected

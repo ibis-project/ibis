@@ -50,7 +50,7 @@ class TypeSignature(OrderedDict):
 
     def __call__(self, *args, **kwargs):
         if len(args) > len(self.keys()):
-            raise TypeError('takes {} positional arguments but {} were '
+            raise TypeError('takes {} positional arguments ut {} were '
                             'given'.format(len(self.keys()), len(args)))
 
         result = []
@@ -76,18 +76,23 @@ class TypeSignature(OrderedDict):
 class OperationMeta(type):
 
     def __new__(cls, name, parents, attrs):
-        signature = TypeSignature()
+        input_type = attrs.pop('input_type', None)
 
-        # inherit from parent signatures
-        for parent in parents:
-            if hasattr(parent, 'signature'):
-                signature.update(parent.signature)
+        if input_type is not None:
+            signature = TypeSignature(input_type)
+        else:
+            signature = TypeSignature()
 
-        argnames = attrs.get('__slots__', tuple())
-        for key in argnames:
-            validator = attrs.pop(key)
-            assert isinstance(validator, rlz.validator)
-            signature[key] = validator
+            # inherit from parent signatures
+            for parent in parents:
+                if hasattr(parent, 'signature'):
+                    signature.update(parent.signature)
+
+            argnames = attrs.get('__slots__', tuple())
+            for key in argnames:
+                rule = attrs.pop(key)
+                assert isinstance(rule, rlz.validator)
+                signature[key] = rule
 
         attrs['signature'] = signature
         attrs['__slots__'] = tuple(signature.names()) + ('_expr_cached',)
@@ -2362,10 +2367,16 @@ class Contains(ValueOp, BooleanValueOp):
     __slots__ = 'value', 'options'
 
     value = rlz.any
-    options = rlz.listof(rlz.any)
+    options = rlz.oneof([rlz.column(rlz.any), rlz.listof(rlz.any)])
 
     def output_type(self):
-        all_args = [self.value] + self.options
+        all_args = [self.value]
+
+        if isinstance(self.options, ir.ListExpr):
+            all_args += self.options
+        else:
+            all_args += [self.options]
+
         return rlz.shapeof(all_args, dt.boolean)
 
 
