@@ -156,7 +156,7 @@ class Node(six.with_metaclass(OperationMeta, object)):
         if (self, other) in cache:
             return cache[(self, other)]
 
-        if id(self) == id(other):
+        if self is other:
             cache[(self, other)] = True
             return True
 
@@ -346,7 +346,7 @@ class SQLQueryResult(TableNode, HasSchema):
 
     query = rlz.noop
     schema = rlz.schema
-    source = rlz.noop
+    source = rlz.client
 
     def blocks(self):
         return True

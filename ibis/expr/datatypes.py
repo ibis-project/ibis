@@ -1162,12 +1162,12 @@ def can_cast_null(source, target, **kwargs):
     return target.nullable
 
 
-# TODO: allow cast signed to insigned and unsigned to signed
-# in case of proper literal values
-
 @castable.register(SignedInteger, UnsignedInteger)
 @castable.register(UnsignedInteger, SignedInteger)
-def can_cast_to_unsigned(source, target, value, **kwargs):
+def can_cast_to_unsigned(source, target, value=None, **kwargs):
+    if value is None:
+        return False
+
     bounds = target.bounds
     return bounds.lower <= value <= bounds.upper
 

@@ -256,6 +256,12 @@ schema = instanceof(sch.Schema)
 
 
 @validator
+def client(arg):
+    from ibis.client import Client
+    return instanceof(Client, arg)
+
+
+@validator
 def szuper(klass, arg):
     # TODO !!!!!!!
     return instanceof(klass, arg)
