@@ -38,12 +38,10 @@ def test_table_type_output():
             ('year', 'int32'),
             ('y', 'double')
         ], 'foo')
-    print(type(foo))
+
     expr = foo.dept_id == foo.view().dept_id
-    print(type(expr))
-    print(expr)
     result = repr(expr)
-    print(type(result))
+
     assert 'SelfReference[table]' in result
     assert 'UnboundTable[table]' in result
 
@@ -210,8 +208,9 @@ UnboundTable[table]
     a : int64
 
 NullIf[int64*]
-  a = Column[int64*] 'a' from table
-    ref_0
+  arg:
+    a = Column[int64*] 'a' from table
+      ref_0
   null_if_expr:
     Literal[int8]
       2"""

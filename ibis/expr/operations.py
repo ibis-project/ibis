@@ -1050,7 +1050,7 @@ class WindowOp(ValueOp):
     window = rlz.noop
     output_type = rlz.arrayof('expr')
 
-    argnames = False
+    display_argnames = False
 
     def __init__(self, expr, window):
         from ibis.expr.window import propagate_down_window
@@ -2972,7 +2972,7 @@ class ValueList(ValueOp):
     __slots__ = 'values',
 
     values = rlz.noop
-    argnames = False  # disable showing argnames in repr
+    display_argnames = False  # disable showing argnames in repr
 
     def __init__(self, values):
         values = list(map(rlz.any, values))
