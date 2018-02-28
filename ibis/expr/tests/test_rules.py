@@ -4,26 +4,11 @@ import ibis
 import pytest
 
 from toolz import identity
-from contextlib import contextmanager
 from ibis.common import IbisTypeError
 
 import ibis.expr.types as ir
 import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
-
-
-def mayraise(error):
-    """Wrapper around pytest.raises to support None."""
-    if type(error) is type and issubclass(error, Exception):
-        return pytest.raises(error)
-    else:
-        @contextmanager
-        def not_raises():
-            try:
-                yield
-            except Exception as e:
-                raise e
-        return not_raises()
 
 
 table = ibis.table([
@@ -37,46 +22,75 @@ table = ibis.table([
     (dt.int32, dt.int32),
     ('int64', dt.int64),
     ('array<string>', dt.Array(dt.string)),
+])
+def test_valid_datatype(value, expected):
+    assert rlz.datatype(value) == expected
+
+
+@pytest.mark.parametrize(('value', 'expected'), [
     ('exception', IbisTypeError),
     ('array<cat>', IbisTypeError),
     (int, IbisTypeError),
     ([float], IbisTypeError)
 ])
-def test_datatype(value, expected):
-    with mayraise(expected):
-        assert rlz.datatype(value) == expected
+def test_invalid_datatype(value, expected):
+    with pytest.raises(expected):
+        assert rlz.datatype(value)
 
 
 @pytest.mark.parametrize(('klass', 'value', 'expected'), [
     (int, 32, 32),
-    (ir.TableExpr, object, IbisTypeError),
     (six.string_types, 'foo', 'foo'),
     (dt.Integer, dt.int8, dt.int8),
+])
+def test_valid_instanceof(klass, value, expected):
+    assert rlz.instanceof(klass, value) == expected
+
+
+@pytest.mark.parametrize(('klass', 'value', 'expected'), [
+    (ir.TableExpr, object, IbisTypeError),
     (ir.IntegerValue, 4, IbisTypeError)
 ])
-def test_instanceof(klass, value, expected):
-    with mayraise(expected):
-        assert rlz.instanceof(klass, value) == expected
+def test_invalid_instanceof(klass, value, expected):
+    with pytest.raises(expected):
+        assert rlz.instanceof(klass, value)
 
 
 @pytest.mark.parametrize(('dtype', 'value', 'expected'), [
+    (dt.int8, 26, ibis.literal(26)),
+    (dt.int16, 26, ibis.literal(26)),
     (dt.int32, 26, ibis.literal(26)),
-    (dt.int32, dict(), IbisTypeError),
+    (dt.int64, 26, ibis.literal(26)),
+    (dt.uint8, 26, ibis.literal(26)),
+    (dt.uint16, 26, ibis.literal(26)),
+    (dt.uint32, 26, ibis.literal(26)),
+    (dt.uint64, 26, ibis.literal(26)),
+    (dt.float32, 26, ibis.literal(26)),
+    (dt.float64, 26.4, ibis.literal(26.4)),
+    (dt.double, 26.3, ibis.literal(26.3)),
     (dt.string, 'bar', ibis.literal('bar')),
-    (dt.string, 1, IbisTypeError),
     (dt.Array(dt.float), [3.4, 5.6], ibis.literal([3.4, 5.6])),
-    (dt.Array(dt.float), ['s'], IbisTypeError),
     (dt.Map(dt.string, dt.Array(dt.boolean)),
      {'a': [True, False], 'b': [True]},
      ibis.literal({'a': [True, False], 'b': [True]})),
+], ids=lambda x: str(x.value if isinstance(x, ir.ValueExpr) else x))
+def test_valid_value(dtype, value, expected):
+    result = rlz.value(dtype, value)
+    assert result.equals(expected)
+
+
+@pytest.mark.parametrize(('dtype', 'value', 'expected'), [
+    (dt.uint8, -3, IbisTypeError),
+    (dt.int32, dict(), IbisTypeError),
+    (dt.string, 1, IbisTypeError),
+    (dt.Array(dt.float), ['s'], IbisTypeError),
     (dt.Map(dt.string, dt.Array(dt.boolean)),
      {'a': [True, False], 'b': ['B']},
      IbisTypeError)
 ])
-def test_value(dtype, value, expected):
-    with mayraise(expected):
-        result = rlz.value(dtype, value)
-        assert result.equals(expected)
+def test_invalid_value(dtype, value, expected):
+    with pytest.raises(expected):
+        rlz.value(dtype, value)
 
 
 @pytest.mark.parametrize(('validator', 'value', 'expected'), [
@@ -85,32 +99,44 @@ def test_value(dtype, value, expected):
     (rlz.optional(identity, default=1), None, 1),
     (rlz.optional(identity, default=lambda: 8), 'cat', 'cat'),
     (rlz.optional(identity, default=lambda: 8), None, 8),
-    (rlz.optional(rlz.instanceof(int), default=''), None, IbisTypeError),
     (rlz.optional(rlz.instanceof(int), default=11), None, 11),
     (rlz.optional(rlz.instanceof(int)), None, None),
     (rlz.optional(rlz.instanceof(int)), 18, 18),
-    (rlz.optional(rlz.instanceof(int)), 'lynx', IbisTypeError),
     (rlz.optional(rlz.instanceof(str)), 'caracal', 'caracal'),
 ])
-def test_optional(validator, value, expected):
-    with mayraise(expected):
-        assert validator(value) == expected
+def test_valid_optional(validator, value, expected):
+    assert validator(value) == expected
+
+
+@pytest.mark.parametrize(('validator', 'value', 'expected'), [
+    (rlz.optional(rlz.instanceof(int), default=''), None, IbisTypeError),
+    (rlz.optional(rlz.instanceof(int)), 'lynx', IbisTypeError),
+])
+def test_invalid_optional(validator, value, expected):
+    with pytest.raises(expected):
+        validator(value)
 
 
 @pytest.mark.parametrize(('values', 'value', 'expected'), [
     (['a', 'b'], 'a', 'a'),
     (('a', 'b'), 'b', 'b'),
     ({'a', 'b', 'c'}, 'c', 'c'),
-    (['a', 'b'], 'c', ValueError),
-    ({'a', 'b', 'c'}, 'd', ValueError),
     ([1, 2, 'f'], 'f', 'f'),
     ({'a': 1, 'b': 2}, 'a', 1),
     ({'a': 1, 'b': 2}, 'b', 2),
+])
+def test_valid_isin(values, value, expected):
+    assert rlz.isin(values, value) == expected
+
+
+@pytest.mark.parametrize(('values', 'value', 'expected'), [
+    (['a', 'b'], 'c', ValueError),
+    ({'a', 'b', 'c'}, 'd', ValueError),
     ({'a': 1, 'b': 2}, 'c', ValueError),
 ])
-def test_isin(values, value, expected):
-    with mayraise(expected):
-        assert rlz.isin(values, value) == expected
+def test_invalid_isin(values, value, expected):
+    with pytest.raises(expected):
+        rlz.isin(values, value)
 
 
 class Foo(enum.Enum):
@@ -132,16 +158,22 @@ class Baz(object):
 @pytest.mark.parametrize(('obj', 'value', 'expected'), [
     (Foo, Foo.a, Foo.a),
     (Foo, 'b', Foo.b),
-    (Foo, 'c', IbisTypeError),
-    (Bar, 'c', IbisTypeError),
     (Bar, 'a', 'A'),
     (Bar, 'b', 'B'),
     (Baz(2), 'a', 2),
+])
+def test_valid_memberof(obj, value, expected):
+    assert rlz.memberof(obj, value) == expected
+
+
+@pytest.mark.parametrize(('obj', 'value', 'expected'), [
+    (Foo, 'c', IbisTypeError),
+    (Bar, 'c', IbisTypeError),
     (Baz(3), 'b', IbisTypeError)
 ])
-def test_memberof(obj, value, expected):
-    with mayraise(expected):
-        assert rlz.memberof(obj, value) == expected
+def test_invalid_memberof(obj, value, expected):
+    with pytest.raises(expected):
+        rlz.memberof(obj, value)
 
 
 @pytest.mark.parametrize(('validator', 'values', 'expected'), [
@@ -150,41 +182,61 @@ def test_memberof(obj, value, expected):
     (rlz.listof(rlz.integer), (3, 2), ibis.sequence([3, 2])),
     (rlz.listof(rlz.integer), (3, None), ibis.sequence([3, ibis.NA])),
     (rlz.listof(rlz.string), 'asd', ibis.sequence(['asd'])),
-    (rlz.listof(rlz.double, min_length=2), [1], IbisTypeError),
-    (rlz.listof(rlz.integer), 1.1, IbisTypeError),
     (rlz.listof(rlz.boolean, min_length=2), [True, False],
      ibis.sequence([True, False]))
 ])
-def test_listof(validator, values, expected):
-    with mayraise(expected):
-        result = validator(values)
-        assert result.equals(expected)
+def test_valid_listof(validator, values, expected):
+    result = validator(values)
+    assert result.equals(expected)
+
+
+@pytest.mark.parametrize(('validator', 'values', 'expected'), [
+    (rlz.listof(rlz.double, min_length=2), [1], IbisTypeError),
+    (rlz.listof(rlz.integer), 1.1, IbisTypeError),
+])
+def test_invalid_listof(validator, values, expected):
+    with pytest.raises(expected):
+        validator(values)
 
 
 @pytest.mark.parametrize(('units', 'value', 'expected'), [
     ({'H', 'D'}, ibis.interval(days=3), ibis.interval(days=3)),
     (['Y'], ibis.interval(years=3), ibis.interval(years=3)),
-    ({'Y'}, ibis.interval(hours=1), IbisTypeError)
 ])
-def test_interval(units, value, expected):
-    with mayraise(expected):
-        result = rlz.interval(value, units=units)
-        assert result.equals(expected)
+def test_valid_interval(units, value, expected):
+    result = rlz.interval(value, units=units)
+    assert result.equals(expected)
+
+
+@pytest.mark.parametrize(('units', 'value', 'expected'), [
+    ({'Y'}, ibis.interval(hours=1), IbisTypeError),
+    ({'Y', 'M', 'D'}, ibis.interval(hours=1), IbisTypeError),
+    ({'Q', 'W', 'D'}, ibis.interval(seconds=1), IbisTypeError)
+])
+def test_invalid_interval(units, value, expected):
+    with pytest.raises(expected):
+        rlz.interval(value, units=units)
 
 
 @pytest.mark.parametrize(('validator', 'value', 'expected'), [
     (rlz.column(rlz.any), table.int_col, table.int_col),
     (rlz.column(rlz.string), table.string_col, table.string_col),
-    (rlz.column(rlz.integer), table.double_col, IbisTypeError),
-    (rlz.column(rlz.any), ibis.literal(3), IbisTypeError),
-    (rlz.column(rlz.integer), ibis.literal(3), IbisTypeError),
     (rlz.scalar(rlz.integer), ibis.literal(3), ibis.literal(3)),
     (rlz.scalar(rlz.any), 'caracal', ibis.literal('caracal'))
 ])
-def test_column_or_scalar(validator, value, expected):
-    with mayraise(expected):
-        result = validator(value)
-        assert result.equals(expected)
+def test_valid_column_or_scalar(validator, value, expected):
+    result = validator(value)
+    assert result.equals(expected)
+
+
+@pytest.mark.parametrize(('validator', 'value', 'expected'), [
+    (rlz.column(rlz.integer), table.double_col, IbisTypeError),
+    (rlz.column(rlz.any), ibis.literal(3), IbisTypeError),
+    (rlz.column(rlz.integer), ibis.literal(3), IbisTypeError),
+])
+def test_invalid_column_or_scalar(validator, value, expected):
+    with pytest.raises(expected):
+        validator(value)
 
 
 def test_custom_list_of_as_value_expr():

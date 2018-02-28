@@ -701,7 +701,7 @@ def test_value_counts_unnamed_expr(con):
 def test_aggregate_unnamed_expr(con):
     nation = con.table('tpch_nation')
     expr = nation.n_name.lower().left(1)
-    print(expr)
+
     with pytest.raises(com.ExpressionError):
         nation.group_by(expr).aggregate(nation.count().name('metric'))
 

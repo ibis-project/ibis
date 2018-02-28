@@ -584,9 +584,6 @@ class Map(Variadic):
 any = Any()
 null = Null()
 boolean = Boolean()
-integer = Integer()
-floating = Floating()
-decimal = Decimal(12, 2)
 int_ = Integer()
 int8 = Int8()
 int16 = Int16()
@@ -1033,8 +1030,9 @@ def from_string(value):
     try:
         return TypeParser(value).parse()
     except SyntaxError:
-        raise com.IbisTypeError('{!r} cannot be parsed as a '
-                                'datatype'.format(value))
+        raise com.IbisTypeError(
+            '{!r} cannot be parsed as a datatype'.format(value)
+        )
 
 
 infer = Dispatcher('infer')
@@ -1046,8 +1044,9 @@ def higher_precedence(left, right):
     elif castable(right, left, upcast=True):
         return left
 
-    raise com.IbisTypeError('Cannot compute precedence for {} '
-                            'and {} types'.format(left, right))
+    raise com.IbisTypeError(
+        'Cannot compute precedence for {} and {} types'.format(left, right)
+    )
 
 
 def highest_precedence(dtypes):
@@ -1151,7 +1150,7 @@ def can_cast_subtype(source, target, **kwargs):
 @castable.register(Any, Any)
 @castable.register(Null, Any)
 @castable.register(Integer, Category)
-@castable.register(Integer, (Integer, Floating, Decimal))
+@castable.register(Integer, (Floating, Decimal))
 @castable.register(Floating, Decimal)
 @castable.register((Date, Timestamp), (Date, Timestamp))
 def can_cast_any(source, target, **kwargs):
@@ -1161,6 +1160,16 @@ def can_cast_any(source, target, **kwargs):
 @castable.register(Null, DataType)
 def can_cast_null(source, target, **kwargs):
     return target.nullable
+
+
+# TODO: allow cast signed to insigned and unsigned to signed
+# in case of proper literal values
+
+@castable.register(SignedInteger, UnsignedInteger)
+@castable.register(UnsignedInteger, SignedInteger)
+def can_cast_to_unsigned(source, target, value, **kwargs):
+    bounds = target.bounds
+    return bounds.lower <= value <= bounds.upper
 
 
 @castable.register(SignedInteger, SignedInteger)
@@ -1181,8 +1190,8 @@ def can_cast_floats(source, target, upcast=False, **kwargs):
 
 @castable.register(Decimal, Decimal)
 def cas_cast_decimals(source, target, **kwargs):
-    return ((target.precision >= source.precision) and
-            (target.scale >= source.scale))
+    return (target.precision >= source.precision and
+            target.scale >= source.scale)
 
 
 @castable.register(Interval, Interval)

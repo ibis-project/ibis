@@ -368,6 +368,7 @@ def test_implicit_castable(source, target):
 @pytest.mark.parametrize(('source', 'target'), [
     (dt.string, dt.null),
     (dt.int32, dt.int16),
+    (dt.int16, dt.uint64),
     (dt.Decimal(12, 2), dt.int32),
     (dt.timestamp, dt.boolean),
     (dt.boolean, dt.interval),

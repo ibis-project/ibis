@@ -1091,21 +1091,32 @@ def is_analytic(expr, exclude_windows=False):
 
 
 def is_reduction(expr):
-    # Aggregations yield typed scalar expressions, since the result of an
-    # aggregation is a single value. When creating an table expression
-    # containing a GROUP BY equivalent, we need to be able to easily check
-    # that we are looking at the result of an aggregation.
-    #
-    # As an example, the expression we are looking at might be something
-    # like: foo.sum().log10() + bar.sum().log10()
-    #
-    # We examine the operator DAG in the expression to determine if there
-    # are aggregations present.
-    #
-    # A bound aggregation referencing a separate table is a "false
-    # aggregation" in a GROUP BY-type expression and should be treated a
-    # literal, and must be computed as a separate query and stored in a
-    # temporary variable (or joined, for bound aggregations with keys)
+    """Check whether an expression is a reduction or not
+
+    Aggregations yield typed scalar expressions, since the result of an
+    aggregation is a single value. When creating an table expression
+    containing a GROUP BY equivalent, we need to be able to easily check
+    that we are looking at the result of an aggregation.
+
+    As an example, the expression we are looking at might be something
+    like: foo.sum().log10() + bar.sum().log10()
+
+    We examine the operator DAG in the expression to determine if there
+    are aggregations present.
+
+    A bound aggregation referencing a separate table is a "false
+    aggregation" in a GROUP BY-type expression and should be treated a
+    literal, and must be computed as a separate query and stored in a
+    temporary variable (or joined, for bound aggregations with keys)
+
+    Parameters
+    ----------
+    expr : ir.Expr
+
+    Returns
+    -------
+    check output : bool
+    """
     def has_reduction(op):
         if getattr(op, '_reduction', False):
             return True

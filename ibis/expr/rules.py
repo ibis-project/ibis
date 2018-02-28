@@ -197,10 +197,13 @@ def value(dtype, arg):
         raise com.IbisTypeError('Given argument with type {} is not a value '
                                 'expression'.format(type(arg)))
 
+    # retrieve literal values for implicit cast check
+    value = getattr(arg.op(), 'value', None)
+
     if isinstance(dtype, type) and isinstance(arg.type(), dtype):
         # dtype class has been specified like dt.Interval or dt.Decimal
         return arg
-    elif dt.castable(arg.type(), dt.dtype(dtype)):
+    elif dt.castable(arg.type(), dt.dtype(dtype), value=value):
         # dtype instance or string has been specified and arg's dtype is
         # implicitly castable to it, like dt.int8 is castable to dt.int64
         return arg
