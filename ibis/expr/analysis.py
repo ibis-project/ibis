@@ -640,16 +640,6 @@ def _is_aliased(col_expr):
 
 
 def windowize_function(expr, w=None):
-    def _check_window(x):
-        # Hmm
-        arg, window = x.op().args
-        if isinstance(arg.op(), ops.RowNumber):
-            if len(window._order_by) == 0:
-                raise ExpressionError('RowNumber requires explicit '
-                                      'window sort')
-
-        return x
-
     def _windowize(x, w):
         if not isinstance(x.op(), ops.WindowOp):
             walked = _walk(x, w)
@@ -664,16 +654,15 @@ def windowize_function(expr, w=None):
                 walked = x
 
         op = walked.op()
-        if (isinstance(op, ops.AnalyticOp) or
-                getattr(op, '_reduction', False)):
+        if isinstance(op, ops.AnalyticOp) or getattr(op, '_reduction', False):
             if w is None:
                 w = window()
-            return _check_window(walked.over(w))
+            return walked.over(w)
         elif isinstance(op, ops.WindowOp):
             if w is not None:
-                return _check_window(walked.over(w))
+                return walked.over(w)
             else:
-                return _check_window(walked)
+                return walked
         else:
             return walked
 
