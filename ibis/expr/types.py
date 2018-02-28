@@ -212,7 +212,6 @@ class Expr(object):
             return False
         return self._arg.equals(other._arg, cache=cache)
 
-    # TODO: remove this method
     def _root_tables(self):
         return self.op().root_tables()
 
@@ -223,7 +222,6 @@ if sys.version_info.major == 2:
     Expr.timetuple = None
 
 
-# TODO simplify me
 class ExprList(Expr):
 
     def _type_display(self):

@@ -686,7 +686,7 @@ def execute_node_string_concat(op, args, **kwargs):
 
 @execute_node.register(ops.StringJoin, list)
 def execute_node_string_join(op, args, **kwargs):
-    return functools.reduce(lambda a, b: a + op.sep + b, args)
+    return op.sep.join(args)
 
 
 @execute_node.register(ops.Contains, pd.Series, list)
