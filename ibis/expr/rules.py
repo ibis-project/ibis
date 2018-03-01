@@ -809,7 +809,8 @@ def comparable(left, right):
     return ir.castable(left, right) or ir.castable(right, left)
 
 
-class TableColumnValidator(abc.ABC):
+@six.add_metaclass(abc.ABCMeta)
+class TableColumnValidator():
     @abc.abstractmethod
     def validate(self):
         pass

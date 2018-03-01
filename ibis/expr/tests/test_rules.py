@@ -342,6 +342,15 @@ def test_table_invalid_schema_no_name():
         MyOp(table)
 
 
+def test_table_invalid_schema_wrong_class():
+    with pytest.raises(ValueError):
+        class MyOp(ops.ValueOp):
+            input_type = [rules.table(
+                name='table',
+                schema='wrong class')]
+            output_type = rules.type_of_arg(0)
+
+
 def test_table_custom_validator():
     class MyOp(ops.ValueOp):
         input_type = [rules.table(
