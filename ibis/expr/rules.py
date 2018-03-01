@@ -76,7 +76,7 @@ noop = validator(identity)
 
 @validator
 def oneof(inners, arg):
-    """At least one of the inner valudators must pass"""
+    """At least one of the inner validators must pass"""
     for inner in inners:
         with suppress(com.IbisTypeError):
             return inner(arg)
@@ -118,8 +118,8 @@ def optional(inner, default=None):
     default : Union[Any, Callable[[], Any], None], default is None
       In case of missing (None) value for validation this will be used. Note,
       that default value (except for None) must also pass the inner validator.
-      If callable is passed, it will be executed just before inner validator,
-      and its return value will be treaded as default.
+      If callable is passed, it will be executed just before the inner, and its
+      return value will be treaded as default.
 
     Returns
     -------
