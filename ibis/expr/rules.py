@@ -103,12 +103,29 @@ def allof(inners, arg):
     Returns
     -------
     arg : Any
-      Value maybe transformed by inner validators.
+      Value maybe coerced by inner validators to the appropiate types
     """
     return compose(*inners)(arg)
 
 
 def optional(inner, default=None):
+    """Inner validation is optional
+
+    Parameters
+    ----------
+    inner : validator
+      Validator function only applied on missing (None) value
+    default : Union[Any, Callable[[], Any], None], default is None
+      In case of missing (None) value for validation this will be used. Note,
+      that default value (except for None) must also pass the inner validator.
+      If callable is passed, it will be executed just before inner validator,
+      and its return value will be treaded as default.
+
+    Returns
+    -------
+    arg : AnyColumn
+      Value maybe coerced by inner validators to the appropiate types
+    """
     @validator
     @wraps(inner)
     def wrapper(arg=None):

@@ -214,7 +214,6 @@ class ExprFormatter(object):
 
             formatted_args.append(result)
 
-
         arg_names = getattr(op, 'display_argnames', op.argnames)
 
         if not arg_names:
