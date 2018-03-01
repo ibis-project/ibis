@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import abc
 import six
 import sys
 import operator
@@ -808,112 +809,25 @@ def comparable(left, right):
     return ir.castable(left, right) or ir.castable(right, left)
 
 
-class Table(Argument):
-    """A table argument.
+class TableColumnValidator(abc.ABC):
+    @abc.abstractmethod
+    def validate(self):
+        pass
 
-    Parameters
-    ----------
-    name : str
-        The name of the table argument.
-    optional : bool
-        Whether this table argument is optional or not.
-    satisfying : iterable, optional
-        An iterable of lambda expressions, which will be used to validate
-        arguments. Each lambda expression must take a table as its single
-        argument, validate, and then return ``True`` for tables that
-        pass validation and ``False`` otherwise.
-    schema : iterable, optional
-        An iterable of column rules used to validate a table. Each member
-        must be an instance of ``Argument`` capable of validating a column
-        (most likely an object created with :func:`ibis.rules.column`). A
-        ``name`` attribute is required for each member, which will be used
-        to find a candidate column to satisfy the rule. A table must have
-        a columns to match each non-optional rule to pass validation.
-    allow_extra : bool
-        Only useful in conjunction with ``schema``. If set to ``False`` then
-        only tables with exactly the columns specified in the schema will be
-        allowed. If set to ``True`` then the table may have columns not
-        specified in the schema, as long as each non-optional member of the
-        schema was satisfied.
-    doc : str
-        A docstring to document this argument.
-    validator : ???
-        ???
 
-    Notes
-    -----
-    The ``schema``, ``satisfying`` and ``allow_extra`` arguments can be
-    combined to implement complex validation logic for a table. In general,
-    ``schema`` can be used to type-check columns whose name is known
-    beforehand, and ``satisfying`` allows for type-checking properties
-    of columns with variable names (see the example for a table rule
-    that requires a minimum amount of integer columns with any name).
+class SubsetValidator(TableColumnValidator):
+    def __init__(self, *rules):
+        self.rules = rules
 
-    When the name of all columns to be validated is known beforehand, it is
-    recommended to pass only a ``schema`` and setting ``allow_extra`` to
-    ``False``. This ensures that tables with unexpected columns do not
-    pass validation.
-
-    When the names of columns are not known, then ``satisfying`` should be used
-    standalone to validate the table. In this case, ``allow_extra`` does
-    nothing.
-
-    When properties about both columns with and without known names must be
-    checked, then ``schema`` and ``satisfying`` can be combined. In this case,
-    ``allow_extra`` should be set to ``True`` in order to relax the schema's
-    constrains.
-
-    Examples
-    --------
-    The following op will accept an argument named ``'table'``. The names
-    and types of the columns ``time``, ``group`` and ``value1`` must match
-    those in the schema. Column value2 is optional, but if it is present it
-    must also match the schema. Since ``allow_extra`` is set to ``True``, the
-    table may have more columns not mentioned in the schema. Extra validation
-    is provided through the ``satisfying`` argument, requiring at least two of
-    the columns not mentioned in the schema to be of type ``Int64``.
-
-    >>> import ibis.expr.datatypes as dt
-    >>> import ibis.expr.rules as rules
-    >>> import ibis.expr.operations as ops
-    >>> class MyOp(ops.ValueOp):
-    ...    input_type = [
-    ...        rules.table(
-    ...            name='table',
-    ...            schema=[
-    ...                rules.column(name='time', value_type=rules.number),
-    ...                rules.column(name='group', value_type=rules.number),
-    ...                rules.column(name='value1', value_type=rules.number),
-    ...                rules.column(name='value2', value_type=rules.number,
-    ...                             optional=True)],
-    ...            allow_extra=True,
-    ...            satisfying=[
-    ...                lambda t: t.schema().types.count(dt.Int64()) >= 2],
-    ...        )]
-    ...    output_type = rules.type_of_arg(0)
-    """
-    def __init__(self, name=None, optional=False, satisfying=[],
-                 schema=[], doc=None, validator=None, allow_extra=False,
-                 **arg_kwds):
-        self.name = name
-        self.optional = optional
-        self.satisfying = util.promote_list(satisfying)
-        self.schema = util.promote_list(schema)
-        self.allow_extra = allow_extra
-
-        self.doc = doc
-        self.validator = validator
-
-    def _validate(self, args, i):
-        arg = args[i]
+    def validate(self, arg):
         if isinstance(arg, ir.TableExpr):
             # Check that columns match the schema first
-            rules_matched = 0
-            for column_rule in self.schema:
+            for column_rule in self.rules:
                 # Members of a schema are arguments with a name
                 if not isinstance(column_rule, Argument):
-                    raise ValueError('Members of schema must be instances of '
-                                     'the Argument class (rules).')
+                    raise ValueError(
+                        'Arguments of subset schema must be instances of the '
+                        'Argument class (rules).')
                 if column_rule.name is None:
                     raise ValueError(
                         'Column rules must be named inside a table.')
@@ -929,30 +843,83 @@ class Table(Argument):
                 try:
                     # Arguments must validate the column
                     column_rule.validate([column], 0)
-                    rules_matched += 1
                 except IbisTypeError as e:
                     six.raise_from(
                         IbisTypeError('Could not satisfy rule: {}.'.format(
                             str(column_rule))), e)
 
-            if not self.allow_extra:
-                # Count rules
-                rules = [x for x in self.schema if isinstance(x, Argument)]
-                if ((len(rules) != 0) and
-                        (len(arg.columns) > rules_matched)):
-                    raise IbisTypeError('Extra columns not allowed.')
 
-            # Check extra custom rules
-            for sat in self.satisfying:
-                if not callable(sat):
-                    raise ValueError(
-                        'Members of satisfying argument must be callables.')
-                if not sat(arg):
-                    raise IbisTypeError(('Did not satisfy callable (not '
-                                         'truthy): {}').format(sat))
-            return arg
+class Table(Argument):
+    """A table argument.
 
-        raise IbisTypeError('Not a table.')
+    Parameters
+    ----------
+    name : str
+        The name of the table argument.
+    optional : bool
+        Whether this table argument is optional or not.
+    schema : TableColumnValidator
+        A validator for the table's columns. Only column subset validators are
+        currently supported. One can be created through the class method
+        ``Table.with_column_subset``. See the example for usage.
+    doc : str
+        A docstring to document this argument.
+    validator : Argument
+        Allows adding custom validation logic to this argument.
+
+    Examples
+    --------
+    The following op will accept an argument named ``'table'``. Note that the
+    ``schema`` argument specifies rules for columns that are required to be in
+    the table: ``time``, ``group`` and ``value1``. These must match the types
+    specified in the column rules. Column ``value2`` is optional, but if
+    present it must be of the specified type. The table may have extra columns
+    not specified in the schema.
+
+    >>> import ibis.expr.datatypes as dt
+    >>> import ibis.expr.rules as rules
+    >>> import ibis.expr.operations as ops
+    >>> class MyOp(ops.ValueOp):
+    ...    input_type = [
+    ...        rules.table(
+    ...            name='table',
+    ...            schema=rules.table.with_column_subset(
+    ...                rules.column(name='time', value_type=rules.number),
+    ...                rules.column(name='group', value_type=rules.number),
+    ...                rules.column(name='value1', value_type=rules.number),
+    ...                rules.column(name='value2', value_type=rules.number,
+    ...                             optional=True)))]
+    ...    output_type = rules.type_of_arg(0)
+    """
+    def __init__(self, name=None, optional=False, schema=None, doc=None,
+                 validator=None, allow_extra=False, **arg_kwds):
+        self.name = name
+        self.optional = optional
+
+        if not ((schema is None) or isinstance(schema, TableColumnValidator)):
+            raise ValueError(
+                'schema argument must be an instance of TableColumnValidator')
+
+        self.schema = schema
+        self.allow_extra = allow_extra
+
+        self.doc = doc
+        self.validator = validator
+
+    @classmethod
+    def with_column_subset(cls, *col_rules):
+        return SubsetValidator(*col_rules)
+
+    def _validate(self, args, i):
+        arg = args[i]
+
+        if not isinstance(arg, ir.TableExpr):
+            raise IbisTypeError('Argument must be a table.')
+
+        if self.schema is not None:
+            self.schema.validate(arg)
+
+        return arg
 
 
 table = Table
