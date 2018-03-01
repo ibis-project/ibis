@@ -47,3 +47,41 @@ def test_identical_to(backend, alltypes, con, df):
 
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(('column', 'elements'), [
+    ('int_col', [1, 2, 3]),
+    ('int_col', (1, 2, 3)),
+    ('string_col', ['1', '2', '3']),
+    ('string_col', ('1', '2', '3')),
+    pytest.mark.xfail(('int_col', {1}), raises=TypeError,
+                      reason='Not yet implemented'),
+    pytest.mark.xfail(('int_col', frozenset({1})), raises=TypeError,
+                      reason='Not yet implemented'),
+])
+def test_isin(backend, alltypes, df, column, elements):
+    expr = alltypes[column].isin(elements)
+    result = expr.execute()
+
+    expected = df[column].isin(elements)
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(('column', 'elements'), [
+    ('int_col', [1, 2, 3]),
+    ('int_col', (1, 2, 3)),
+    ('string_col', ['1', '2', '3']),
+    ('string_col', ('1', '2', '3')),
+    pytest.mark.xfail(('int_col', {1}), raises=TypeError,
+                      reason='Not yet implemented'),
+    pytest.mark.xfail(('int_col', frozenset({1})), raises=TypeError,
+                      reason='Not yet implemented'),
+])
+def test_notin(backend, alltypes, df, column, elements):
+    expr = alltypes[column].notin(elements)
+    result = expr.execute()
+
+    expected = ~df[column].isin(elements)
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected)
