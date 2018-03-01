@@ -32,6 +32,8 @@ New Features
 * Isnan, isinf operations for float and double values (:issue:`1261`)
 * Support for an interval with a quarter period (:issue:`1259`)
 * ``ibis.pandas.from_dataframe`` convenience function (:issue:`1155`)
+* Remove the restriction on ``ROW_NUMBER()`` requiring it to have an
+  ``ORDER BY`` clause (:issue:`1371`)
 
 Bug Fixes
 ~~~~~~~~~
