@@ -376,8 +376,10 @@ def now():
 
 
 def row_number():
-    """
-    Analytic function for the current row number, starting at 0
+    """Analytic function for the current row number, starting at 0.
+
+    This function does not require an ORDER BY clause, however, without an
+    ORDER BY clause the order of the result is nondeterministic.
 
     Returns
     -------

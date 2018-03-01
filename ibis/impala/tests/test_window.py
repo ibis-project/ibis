@@ -212,12 +212,14 @@ FROM ibis_testing.`alltypes`"""
 
 
 @pytest.mark.impala
-def test_row_number_requires_order_by(con):
+def test_row_number_does_not_require_order_by(con):
     t = con.table('alltypes')
 
-    with pytest.raises(com.ExpressionError):
-        (t.group_by(t.g)
-         .mutate(ibis.row_number().name('foo')))
+    expr = t.group_by(t.g).mutate(ibis.row_number().name('foo'))
+    expected = """\
+SELECT *, (row_number() OVER (PARTITION BY `g`) - 1) AS `foo`
+FROM ibis_testing.`alltypes`"""
+    assert_sql_equal(expr, expected)
 
     expr = (t.group_by(t.g)
             .order_by(t.f)
