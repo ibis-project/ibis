@@ -214,6 +214,7 @@ class ExprFormatter(object):
 
             formatted_args.append(result)
 
+
         arg_names = getattr(op, 'display_argnames', op.argnames)
 
         if not arg_names:
@@ -225,6 +226,9 @@ class ExprFormatter(object):
                     visit(arg)
         else:
             for arg, name in zip(op.args, arg_names):
+                if name == 'arg' and isinstance(op, ops.ValueOp):
+                    # don't display first argument's name in repr
+                    name = None
                 if name is not None:
                     name = self._indent('{0}:'.format(name))
                 if isinstance(arg, list):
