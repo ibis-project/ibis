@@ -32,7 +32,7 @@ def castable(source, target):
     Based on the underlying datatypes and the value in case of Literals
     """
     op = source.op()
-    value = op.value if hasattr(op, 'value') else None
+    value = getattr(op, 'value', None)
     return dt.castable(source.type(), target.type(), value=value)
 
 
