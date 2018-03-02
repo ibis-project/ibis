@@ -35,6 +35,8 @@ API Changes
 * The previous, publicly not exposed rule system has been rewritten
 * Defining input arguments for operations happens in a more readable fashion
   instead of the previous `input_type` list.
+* Support for writing UDFs in BigQuery (:issue:`1377`). See :ref:`the BigQuery
+  UDF docs <udf.bigquery>` for more details.
 
 v0.13.0 (March 30, 2018)
 ------------------------

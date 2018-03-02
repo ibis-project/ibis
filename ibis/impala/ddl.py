@@ -15,11 +15,11 @@
 import re
 import json
 
-from ibis.sql.compiler import DDL
+from ibis.sql.compiler import DDL, DML
+from .compiler import quote_identifier, _type_to_sql_string
+
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
-
-from .compiler import quote_identifier, _type_to_sql_string
 
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
@@ -35,7 +35,7 @@ def _is_quoted(x):
     return quoted is not None
 
 
-class ImpalaDDL(DDL):
+class ImpalaQualifiedSQLStatement(object):
 
     def _get_scoped_name(self, obj_name, database):
         if database:
@@ -49,6 +49,14 @@ class ImpalaDDL(DDL):
             else:
                 return obj_name
         return scoped_name
+
+
+class ImpalaDDL(DDL, ImpalaQualifiedSQLStatement):
+    pass
+
+
+class ImpalaDML(DML, ImpalaQualifiedSQLStatement):
+    pass
 
 
 class CreateDDL(ImpalaDDL):
@@ -346,7 +354,7 @@ class CreateTableAvro(CreateTable):
         yield '\n'.join(self.table_format.to_ddl())
 
 
-class InsertSelect(ImpalaDDL):
+class InsertSelect(ImpalaDML):
 
     def __init__(self, table_name, select_expr, database=None,
                  partition=None,

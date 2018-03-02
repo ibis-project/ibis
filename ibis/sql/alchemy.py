@@ -1,21 +1,8 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-import six
+import contextlib
 import numbers
 import operator
-import contextlib
+
+import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
@@ -681,6 +668,16 @@ class AlchemyContext(comp.QueryContext):
     def __init__(self, *args, **kwargs):
         super(AlchemyContext, self).__init__(*args, **kwargs)
         self._table_objects = {}
+
+    def collapse(self, queries):
+        if isinstance(queries, six.string_types):
+            return queries
+
+        if len(queries) > 1:
+            raise NotImplementedError(
+                'Only a single query is supported for SQLAlchemy backends'
+            )
+        return queries[0]
 
     def subcontext(self):
         return type(self)(

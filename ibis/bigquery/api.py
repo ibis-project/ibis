@@ -1,8 +1,14 @@
 import google.cloud.bigquery  # noqa: F401 fail early if bigquery is missing
 import ibis.common as com
+
 from ibis.config import options  # noqa: F401
 from ibis.bigquery.client import BigQueryClient
 from ibis.bigquery.compiler import dialect
+
+try:
+    from ibis.bigquery.udf import udf  # noqa: F401
+except ImportError:
+    pass
 
 
 def compile(expr, params=None):
