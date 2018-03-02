@@ -26,7 +26,7 @@ dependencies:
   - requests
   - six
   - sqlalchemy>=1.0.0,<1.1.15
-  - thrift
+  - thrift>=0.10.0,<0.11.0
   - thriftpy<=0.3.9
   - toolz
   - xorg-libxpm
