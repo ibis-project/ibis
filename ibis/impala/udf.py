@@ -68,7 +68,7 @@ class ScalarFunction(Function):
 
     def _type_signature(self):
         input_type = _ibis_signature(self.inputs)
-        output_type = rlz.shapeof('args', dt.dtype(self.output))
+        output_type = rlz.shape_like('args', dt.dtype(self.output))
         return input_type, output_type
 
 
