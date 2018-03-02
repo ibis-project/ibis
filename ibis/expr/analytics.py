@@ -86,7 +86,7 @@ class CategoryLabel(ops.ValueOp):
     arg = rlz.category
     labels = rlz.noop
     nulls = rlz.noop
-    output_type = rlz.shapeof('arg', dt.string)
+    output_type = rlz.shape_like('arg', dt.string)
 
     def _validate(self):
         cardinality = self.arg.type().cardinality

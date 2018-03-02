@@ -310,7 +310,7 @@ def promoter(fn):
 
 
 @promoter
-def shapeof(arg, dtype=None):
+def shape_like(arg, dtype=None):
     if isinstance(arg, (tuple, list, ir.ListExpr)):
         datatype = dtype or highest_precedence_dtype(arg)
         columnar = util.any_of(arg, ir.AnyColumn)
@@ -327,18 +327,18 @@ def shapeof(arg, dtype=None):
 
 
 @promoter
-def scalarof(arg):
+def scalar_like(arg):
     output_dtype = arg.type()
     return output_dtype.scalar_type()
 
 
 @promoter
-def arrayof(arg):
+def array_like(arg):
     output_dtype = arg.type()
     return output_dtype.array_type()
 
 
-columnof = arrayof
+column_like = array_like
 
 
 @promoter
@@ -481,7 +481,7 @@ def _coerce_integer_to_double_type(self):
 
 # TODO: might just use bounds instead of actual literal values
 # that could simplify interval binop output_type methods
-def bounded_binop_dtype(exprs, op):
+def _promote_numeric_binop(exprs, op):
     bounds, dtypes = [], []
     for arg in exprs:
         dtypes.append(arg.type())
@@ -501,12 +501,12 @@ def bounded_binop_dtype(exprs, op):
 
 
 @promoter
-def binopof(args, op):
+def numeric_like(args, op):
     if util.all_of(args, ir.IntegerValue):
-        dtype = bounded_binop_dtype(args, op)
-        return shapeof(args, dtype=dtype)
+        dtype = _promote_numeric_binop(args, op)
+        return shape_like(args, dtype=dtype)
     else:
-        return shapeof(args)
+        return shape_like(args)
 
 
 # TODO: create varargs marker for impala udfs

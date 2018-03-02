@@ -452,7 +452,7 @@ def test_table_custom_validator():
         MyOp(table)
 
 
-def test_shapeof_with_no_arguments():
+def test_shape_like_with_no_arguments():
     with pytest.raises(ValueError) as e:
-        rlz.shapeof([])
+        rlz.shape_like([])
     assert str(e.value) == 'Must pass at least one expression'
