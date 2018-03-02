@@ -78,7 +78,7 @@ noop = validator(identity)
 def oneof(inners, arg):
     """At least one of the inner validators must pass"""
     for inner in inners:
-        with suppress(com.IbisTypeError):
+        with suppress(com.IbisTypeError, ValueError):
             return inner(arg)
     # TODO: more verbose error
     raise com.IbisTypeError(
@@ -144,7 +144,9 @@ def optional(inner, default=None):
 @validator
 def isin(values, arg):
     if arg not in values:
-        raise ValueError('Value {!r} not in {!r}'.format(arg, values))
+        raise ValueError(
+            'Value with type {} is not in {!r}'.format(type(arg), values)
+        )
     if isinstance(values, dict):  # TODO check for mapping instead
         return values[arg]
     else:
@@ -158,8 +160,9 @@ def memberof(obj, arg):
         arg = arg.name
 
     if not hasattr(obj, arg):
-        raise com.IbisTypeError('Value {!r} is not a member of '
-                                '{!r}'.format(arg, obj))
+        raise com.IbisTypeError(
+            'Value with type {} is not a member of {}'.format(type(arg), obj)
+        )
     return getattr(obj, arg)
 
 
@@ -185,7 +188,9 @@ def instanceof(klass, arg):
     """Require that a value has a particular Python type."""
     if not isinstance(arg, klass):
         raise com.IbisTypeError(
-            '{!r} is not an instance of {!r}'.format(arg, klass)
+            'Given argument with type {} is not an instance of {}'.format(
+                type(arg), klass
+            )
         )
     return arg
 
