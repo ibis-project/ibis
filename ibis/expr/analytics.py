@@ -37,9 +37,9 @@ class Bucket(BucketLike):
     arg = rlz.noop
     buckets = rlz.noop
     closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
-    close_extreme = rlz.optional(rlz.instanceof(bool), default=True)
-    include_under = rlz.optional(rlz.instanceof(bool), default=False)
-    include_over = rlz.optional(rlz.instanceof(bool), default=False)
+    close_extreme = rlz.optional(rlz.instance_of(bool), default=True)
+    include_under = rlz.optional(rlz.instance_of(bool), default=False)
+    include_over = rlz.optional(rlz.instance_of(bool), default=False)
 
     def _validate(self):
         if not len(self.buckets):

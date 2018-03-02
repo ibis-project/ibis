@@ -261,7 +261,7 @@ class TableColumn(ValueOp):
 
     __slots__ = 'name', 'table'
 
-    name = rlz.instanceof(six.string_types + six.integer_types)
+    name = rlz.instance_of(six.string_types + six.integer_types)
     table = rlz.table
 
     def __init__(self, name, table):
@@ -325,13 +325,13 @@ class UnboundTable(PhysicalTable):
     __slots__ = 'schema', 'name'
 
     schema = rlz.schema
-    name = rlz.optional(rlz.instanceof(six.string_types), default=genname)
+    name = rlz.optional(rlz.instance_of(six.string_types), default=genname)
 
 
 class DatabaseTable(PhysicalTable):
     __slots__ = 'name', 'schema', 'source'
 
-    name = rlz.instanceof(six.string_types)
+    name = rlz.instance_of(six.string_types)
     schema = rlz.schema
     source = rlz.noop
 
@@ -361,7 +361,7 @@ class TableArrayView(ValueOp):
     __slots__ = 'table', 'name'
 
     table = rlz.table
-    name = rlz.instanceof(six.string_types)
+    name = rlz.instance_of(six.string_types)
 
     def __init__(self, table):
         schema = table.schema()
@@ -494,7 +494,7 @@ class CoalesceLike(ValueOp):
     # DOUBLE; use CAST() when inserting into a smaller numeric column
     __slots__ = 'arg',
 
-    arg = rlz.listof(rlz.any)
+    arg = rlz.list_of(rlz.any)
 
     def output_type(self):
         first = self.arg[0]
@@ -593,7 +593,7 @@ class Clip(ValueOp):
 class BaseConvert(ValueOp):
     __slots__ = 'arg', 'from_base', 'to_base'
 
-    arg = rlz.oneof([rlz.integer, rlz.string])
+    arg = rlz.one_of([rlz.integer, rlz.string])
     from_base = rlz.integer
     to_base = rlz.integer
 
@@ -748,7 +748,7 @@ class FindInSet(ValueOp):
     __slots__ = 'needle', 'values'
 
     needle = rlz.string
-    values = rlz.listof(rlz.string, min_length=1)
+    values = rlz.list_of(rlz.string, min_length=1)
     output_type = rlz.shapeof('needle', dt.int64)
 
 
@@ -756,7 +756,7 @@ class StringJoin(ValueOp):
     __slots__ = 'sep', 'arg'
 
     sep = rlz.string
-    arg = rlz.listof(rlz.string, min_length=1)
+    arg = rlz.list_of(rlz.string, min_length=1)
 
     def output_type(self):
         return rlz.shapeof(tuple(self.flat_args()), dt.string)
@@ -779,7 +779,7 @@ class StringSQLLike(FuzzySearch):
 
     arg = rlz.string
     pattern = rlz.string
-    escape = rlz.optional(rlz.instanceof(six.string_types))
+    escape = rlz.optional(rlz.instance_of(six.string_types))
 
 
 class RegexSearch(FuzzySearch):
@@ -824,7 +824,7 @@ class StringSplit(ValueOp):
 class StringConcat(ValueOp):
     __slots__ = 'arg',
 
-    arg = rlz.listof(rlz.string)
+    arg = rlz.list_of(rlz.string)
     output_type = rlz.shapeof('arg', dt.string)
 
 
@@ -883,7 +883,7 @@ class Reduction(ValueOp):
 class Count(Reduction):
     __slots__ = 'arg', 'where'
 
-    arg = rlz.instanceof((ir.ColumnExpr, ir.TableExpr))
+    arg = rlz.instance_of((ir.ColumnExpr, ir.TableExpr))
     where = rlz.optional(rlz.boolean)
 
     def output_type(self):
@@ -1515,8 +1515,8 @@ class SimpleCase(ValueOp):
     __slots__ = 'base', 'cases', 'results', 'default'
 
     base = rlz.any
-    cases = rlz.listof(rlz.any)
-    results = rlz.listof(rlz.any)
+    cases = rlz.list_of(rlz.any)
+    results = rlz.list_of(rlz.any)
     default = rlz.any
 
     def _validate(self):
@@ -1536,8 +1536,8 @@ class SimpleCase(ValueOp):
 class SearchedCase(ValueOp):
     __slots__ = 'cases', 'results', 'default'
 
-    cases = rlz.listof(rlz.boolean)
-    results = rlz.listof(rlz.any)
+    cases = rlz.list_of(rlz.boolean)
+    results = rlz.list_of(rlz.any)
     default = rlz.any
 
     def __init__(self, cases, results, default):
@@ -2358,16 +2358,16 @@ class Between(ValueOp, BooleanValueOp):
 class BetweenTime(Between):
     __slots__ = 'arg', 'lower_bound', 'upper_bound'
 
-    arg = rlz.oneof([rlz.timestamp, rlz.time])
-    lower_bound = rlz.oneof([rlz.time, rlz.string])
-    upper_bound = rlz.oneof([rlz.time, rlz.string])
+    arg = rlz.one_of([rlz.timestamp, rlz.time])
+    lower_bound = rlz.one_of([rlz.time, rlz.string])
+    upper_bound = rlz.one_of([rlz.time, rlz.string])
 
 
 class Contains(ValueOp, BooleanValueOp):
     __slots__ = 'value', 'options'
 
     value = rlz.any
-    options = rlz.oneof([rlz.column(rlz.any), rlz.listof(rlz.any)])
+    options = rlz.one_of([rlz.column(rlz.any), rlz.list_of(rlz.any)])
 
     def output_type(self):
         all_args = [self.value]
@@ -2570,19 +2570,19 @@ class ExtractMonth(ExtractTemporalField):
 
 class DayOfWeekIndex(UnaryOp):
     __slots__ = 'arg',
-    arg = rlz.oneof([rlz.date, rlz.timestamp])
+    arg = rlz.one_of([rlz.date, rlz.timestamp])
     output_type = rlz.shapeof('arg', dt.int32)
 
 
 class DayOfWeekName(UnaryOp):
     __slots__ = 'arg',
-    arg = rlz.oneof([rlz.date, rlz.timestamp])
+    arg = rlz.one_of([rlz.date, rlz.timestamp])
     output_type = rlz.shapeof('arg', dt.string)
 
 
 class DayOfWeekNode(Node):
     __slots__ = 'arg',
-    arg = rlz.oneof([rlz.date, rlz.timestamp])
+    arg = rlz.one_of([rlz.date, rlz.timestamp])
 
     def output_type(self):
         return ir.DayOfWeek
@@ -2820,7 +2820,7 @@ class MapLength(ValueOp):
 class MapValueForKey(ValueOp):
     __slots__ = 'arg', 'key'
     arg = rlz.value(dt.Map(dt.any, dt.any))
-    key = rlz.oneof([rlz.string, rlz.integer])
+    key = rlz.one_of([rlz.string, rlz.integer])
 
     def output_type(self):
         value_dtype = self.arg.type().value_type
@@ -2869,7 +2869,7 @@ class MapConcat(ValueOp):
 class StructField(ValueOp):
     __slots__ = 'arg', 'field'
     arg = rlz.value(dt.Struct)
-    field = rlz.instanceof(six.string_types)
+    field = rlz.instance_of(six.string_types)
 
     def output_type(self):
         struct_dtype = self.arg.type()
@@ -2907,8 +2907,8 @@ class NullLiteral(Literal):
 
     __slots__ = 'value', 'dtype'
 
-    value = rlz.optional(rlz.instanceof(type(None)), default=None)
-    dtype = rlz.optional(rlz.instanceof(dt.Null), default=dt.null)
+    value = rlz.optional(rlz.instance_of(type(None)), default=None)
+    dtype = rlz.optional(rlz.instance_of(dt.Null), default=dt.null)
 
 
 class ScalarParameter(ValueOp):

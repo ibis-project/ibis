@@ -2174,7 +2174,7 @@ def _date_truncate(arg, unit):
 
 
 def _date_sub(left, right):
-    right = rlz.oneof([rlz.date, rlz.interval], right)
+    right = rlz.one_of([rlz.date, rlz.interval], right)
 
     if isinstance(right, ir.DateValue):
         op = ops.DateDiff(left, right)

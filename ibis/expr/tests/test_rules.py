@@ -43,17 +43,17 @@ def test_invalid_datatype(value, expected):
     (six.string_types, 'foo', 'foo'),
     (dt.Integer, dt.int8, dt.int8),
 ])
-def test_valid_instanceof(klass, value, expected):
-    assert rlz.instanceof(klass, value) == expected
+def test_valid_instance_of(klass, value, expected):
+    assert rlz.instance_of(klass, value) == expected
 
 
 @pytest.mark.parametrize(('klass', 'value', 'expected'), [
     (ir.TableExpr, object, IbisTypeError),
     (ir.IntegerValue, 4, IbisTypeError)
 ])
-def test_invalid_instanceof(klass, value, expected):
+def test_invalid_instance_of(klass, value, expected):
     with pytest.raises(expected):
-        assert rlz.instanceof(klass, value)
+        assert rlz.instance_of(klass, value)
 
 
 @pytest.mark.parametrize(('dtype', 'value', 'expected'), [
@@ -99,18 +99,18 @@ def test_invalid_value(dtype, value, expected):
     (rlz.optional(identity, default=1), None, 1),
     (rlz.optional(identity, default=lambda: 8), 'cat', 'cat'),
     (rlz.optional(identity, default=lambda: 8), None, 8),
-    (rlz.optional(rlz.instanceof(int), default=11), None, 11),
-    (rlz.optional(rlz.instanceof(int)), None, None),
-    (rlz.optional(rlz.instanceof(int)), 18, 18),
-    (rlz.optional(rlz.instanceof(str)), 'caracal', 'caracal'),
+    (rlz.optional(rlz.instance_of(int), default=11), None, 11),
+    (rlz.optional(rlz.instance_of(int)), None, None),
+    (rlz.optional(rlz.instance_of(int)), 18, 18),
+    (rlz.optional(rlz.instance_of(str)), 'caracal', 'caracal'),
 ])
 def test_valid_optional(validator, value, expected):
     assert validator(value) == expected
 
 
 @pytest.mark.parametrize(('validator', 'value', 'expected'), [
-    (rlz.optional(rlz.instanceof(int), default=''), None, IbisTypeError),
-    (rlz.optional(rlz.instanceof(int)), 'lynx', IbisTypeError),
+    (rlz.optional(rlz.instance_of(int), default=''), None, IbisTypeError),
+    (rlz.optional(rlz.instance_of(int)), 'lynx', IbisTypeError),
 ])
 def test_invalid_optional(validator, value, expected):
     with pytest.raises(expected):
@@ -162,8 +162,8 @@ class Baz(object):
     (Bar, 'b', 'B'),
     (Baz(2), 'a', 2),
 ])
-def test_valid_memberof(obj, value, expected):
-    assert rlz.memberof(obj, value) == expected
+def test_valid_member_of(obj, value, expected):
+    assert rlz.member_of(obj, value) == expected
 
 
 @pytest.mark.parametrize(('obj', 'value', 'expected'), [
@@ -171,30 +171,30 @@ def test_valid_memberof(obj, value, expected):
     (Bar, 'c', IbisTypeError),
     (Baz(3), 'b', IbisTypeError)
 ])
-def test_invalid_memberof(obj, value, expected):
+def test_invalid_member_of(obj, value, expected):
     with pytest.raises(expected):
-        rlz.memberof(obj, value)
+        rlz.member_of(obj, value)
 
 
 @pytest.mark.parametrize(('validator', 'values', 'expected'), [
-    (rlz.listof(identity), 3, ibis.sequence([3])),
-    (rlz.listof(identity), (3, 2), ibis.sequence([3, 2])),
-    (rlz.listof(rlz.integer), (3, 2), ibis.sequence([3, 2])),
-    (rlz.listof(rlz.integer), (3, None), ibis.sequence([3, ibis.NA])),
-    (rlz.listof(rlz.string), 'asd', ibis.sequence(['asd'])),
-    (rlz.listof(rlz.boolean, min_length=2), [True, False],
+    (rlz.list_of(identity), 3, ibis.sequence([3])),
+    (rlz.list_of(identity), (3, 2), ibis.sequence([3, 2])),
+    (rlz.list_of(rlz.integer), (3, 2), ibis.sequence([3, 2])),
+    (rlz.list_of(rlz.integer), (3, None), ibis.sequence([3, ibis.NA])),
+    (rlz.list_of(rlz.string), 'asd', ibis.sequence(['asd'])),
+    (rlz.list_of(rlz.boolean, min_length=2), [True, False],
      ibis.sequence([True, False]))
 ])
-def test_valid_listof(validator, values, expected):
+def test_valid_list_of(validator, values, expected):
     result = validator(values)
     assert result.equals(expected)
 
 
 @pytest.mark.parametrize(('validator', 'values', 'expected'), [
-    (rlz.listof(rlz.double, min_length=2), [1], IbisTypeError),
-    (rlz.listof(rlz.integer), 1.1, IbisTypeError),
+    (rlz.list_of(rlz.double, min_length=2), [1], IbisTypeError),
+    (rlz.list_of(rlz.integer), 1.1, IbisTypeError),
 ])
-def test_invalid_listof(validator, values, expected):
+def test_invalid_list_of(validator, values, expected):
     with pytest.raises(expected):
         validator(values)
 

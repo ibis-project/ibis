@@ -16,10 +16,22 @@ except ImportError:
 
 
 def highest_precedence_dtype(exprs):
-    # Return the highest precedence type from the passed expressions. Also
-    # verifies that there are valid implicit casts between any of the types and
-    # the selected highest precedence type.
-    # This is a thin wrapper around datatypes highest precedence check.
+    """Return the highest precedence type from the passed expressions
+
+    Also verifies that there are valid implicit casts between any of the types
+    and the selected highest precedence type.
+    This is a thin wrapper around datatypes highest precedence check.
+
+    Parameters
+    ----------
+    exprs : Iterable[ir.ValueExpr]
+      A sequence of Expressions
+
+    Returns
+    -------
+    dtype: DataType
+      The highest precedence datatype
+    """
     if not exprs:
         raise ValueError('Must pass at least one expression')
 
@@ -75,7 +87,7 @@ noop = validator(identity)
 
 
 @validator
-def oneof(inners, arg):
+def one_of(inners, arg):
     """At least one of the inner validators must pass"""
     for inner in inners:
         with suppress(com.IbisTypeError, ValueError):
@@ -87,7 +99,7 @@ def oneof(inners, arg):
 
 
 @validator
-def allof(inners, arg):
+def all_of(inners, arg):
     """All of the inner valudators must pass.
 
     The order of inner validators matters.
@@ -154,7 +166,7 @@ def isin(values, arg):
 
 
 @validator
-def memberof(obj, arg):
+def member_of(obj, arg):
     if isinstance(arg, enum.Enum):
         enum.unique(obj)  # check that enum has unique values
         arg = arg.name
@@ -167,7 +179,7 @@ def memberof(obj, arg):
 
 
 @validator
-def listof(inner, arg, min_length=0):
+def list_of(inner, arg, min_length=0):
     if not isinstance(arg, (tuple, list, ir.ListExpr)):
         arg = [arg]
 
@@ -184,7 +196,7 @@ def datatype(arg):
 
 
 @validator
-def instanceof(klass, arg):
+def instance_of(klass, arg):
     """Require that a value has a particular Python type."""
     if not isinstance(arg, klass):
         raise com.IbisTypeError(
@@ -237,12 +249,12 @@ def value(dtype, arg):
 
 @validator
 def scalar(inner, arg):
-    return instanceof(ir.ScalarExpr, inner(arg))
+    return instance_of(ir.ScalarExpr, inner(arg))
 
 
 @validator
 def column(inner, arg):
-    return instanceof(ir.ColumnExpr, inner(arg))
+    return instance_of(ir.ColumnExpr, inner(arg))
 
 
 any = value(dt.any)
@@ -256,10 +268,10 @@ date = value(dt.date)
 time = value(dt.time)
 timestamp = value(dt.Timestamp)
 category = value(dt.category)
-temporal = oneof([timestamp, date, time])
+temporal = one_of([timestamp, date, time])
 
-strict_numeric = oneof([integer, floating, decimal])
-soft_numeric = oneof([integer, floating, decimal, boolean])
+strict_numeric = one_of([integer, floating, decimal])
+soft_numeric = one_of([integer, floating, decimal, boolean])
 numeric = soft_numeric
 
 
@@ -273,20 +285,14 @@ def interval(arg, units=None):
     return arg
 
 
-table = instanceof(ir.TableExpr)
-schema = instanceof(sch.Schema)
+table = instance_of(ir.TableExpr)
+schema = instance_of(sch.Schema)
 
 
 @validator
 def client(arg):
     from ibis.client import Client
-    return instanceof(Client, arg)
-
-
-@validator
-def szuper(klass, arg):
-    # TODO !!!!!!!
-    return instanceof(klass, arg)
+    return instance_of(Client, arg)
 
 
 # ---------------------------------------------------------------------

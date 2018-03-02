@@ -86,10 +86,10 @@ def test_unaryop():
     ops.StringConcat(['s', 'e'])
 
 
-def test_instanceof_operation():
+def test_instance_of_operation():
     class MyOperation(ops.Node):
         __slots__ = 'arg',
-        arg = rlz.instanceof(ir.IntegerValue)
+        arg = rlz.instance_of(ir.IntegerValue)
 
     MyOperation(ir.literal(5))
 
