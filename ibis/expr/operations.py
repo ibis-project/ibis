@@ -1375,7 +1375,7 @@ def _validate_join_tables(left, right):
                         'right table'.format(type(right).__name__))
 
 
-def _materialize_if_neccessary(left, right, predicates):
+def _materialize_if_necessary(left, right, predicates):
     if any(isinstance(pred, six.string_types) for pred in predicates):
         # materialize
         if not left._is_materialized():
