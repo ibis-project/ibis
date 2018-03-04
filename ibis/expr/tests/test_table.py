@@ -954,7 +954,7 @@ def test_join_overlapping_column_names(table):
     assert_equal(joined, expected)
 
 
-def test_join_overlapping_column_names(table):
+def test_join_overlapping_column_names_multiple_join(table):
     t1 = ibis.table([('foo', 'string'),
                      ('bar', 'string'),
                      ('value1', 'double')])

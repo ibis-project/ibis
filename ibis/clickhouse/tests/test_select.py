@@ -296,7 +296,6 @@ FROM {0}.`batting` t0
 def test_multiple_joins(con, db, batting, awards_players, alltypes):
     b, ap, a = batting, awards_players, alltypes
 
-
     joined1 = (b.join(ap, ['date', 'lgID', 'yearID', 'playerID'])
                 .join(a, b.date == a.date))
     joined2 = (b.join(ap, ['date', 'lgID', 'yearID', 'playerID'])

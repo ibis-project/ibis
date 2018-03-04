@@ -37,9 +37,12 @@ all_of = toolz.compose(all, is_one_of)
 
 
 def promote_list(val):
-    if not isinstance(val, list):
-        val = [val]
-    return val
+    if isinstance(val, compat.string_types):
+        return [val]
+    elif isinstance(collections.Iterable):
+        return list(val)
+    else:
+        return [val]
 
 
 class IbisSet(object):

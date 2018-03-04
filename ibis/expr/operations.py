@@ -1375,6 +1375,18 @@ def _validate_join_tables(left, right):
                         'right table'.format(type(right).__name__))
 
 
+def _materialize_if_neccessary(left, right, predicates):
+    if any(isinstance(pred, six.string_types) for pred in predicates):
+        # materialize
+        if not left._is_materialized():
+            left = left.materialize()
+
+        if not right._is_materialized():
+            right = right.materialize()
+
+    return left, right
+
+
 def _make_distinct_join_predicates(left, right, predicates):
     # see GH #667
 
@@ -1384,15 +1396,6 @@ def _make_distinct_join_predicates(left, right, predicates):
 
     if left.equals(right):
         right = right.view()
-
-    predicates = util.promote_list(predicates)
-    if any(isinstance(pred, six.string_types) for pred in predicates):
-        # materialize
-        if not left._is_materialized():
-            left = left.materialize()
-
-        if not right._is_materialized():
-            right = right.materialize()
 
     predicates = _clean_join_predicates(left, right, predicates)
     return left, right, predicates
@@ -1445,8 +1448,12 @@ class Join(TableNode):
 
     def __init__(self, left, right, predicates):
         _validate_join_tables(left, right)
-        left, right, predicates = _make_distinct_join_predicates(left, right,
-                                                                 predicates)
+
+        predicates = util.promote_list(predicates)
+        left, right = _materialize_if_neccessary(left, right, predicates)
+        left, right, predicates = _make_distinct_join_predicates(
+            left, right, predicates)
+
         super(Join, self).__init__(left, right, predicates)
 
     def _get_schema(self):
@@ -1579,6 +1586,9 @@ class AsOfJoin(Join):
     by = Arg(rlz.noop, default=None)
 
     def __init__(self, left, right, predicates, by):
+        predicates, by = util.promote_list(predicates), util.promote_list(by)
+        left, right = _materialize_if_neccessary(left, right, predicates + by)
+
         super(AsOfJoin, self).__init__(left, right, predicates)
         self.by = _clean_join_predicates(self.left, self.right, by)
 
