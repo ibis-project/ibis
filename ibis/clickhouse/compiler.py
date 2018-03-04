@@ -101,6 +101,32 @@ class ClickhouseTableSetFormatter(comp.TableSetFormatter):
         ops.AnyLeftJoin: 'ANY LEFT JOIN'
     }
 
+    def _walk_join_tree(self, op):
+        left = op.left.op()
+        right = op.right.op()
+
+        if util.all_of([left, right], ops.Join):
+            raise NotImplementedError('Do not support joins between '
+                                      'joins yet')
+
+        self._validate_join_predicates(op.predicates)
+
+        join_name = self._get_join_type(op)
+
+        # Both tables
+        left, right = op.left, op.right
+
+        if not left._is_materialized():
+            left = left.materialize()
+
+        if not right._is_materialized():
+            right = right.materialize()
+
+        self.join_tables.append(self._format_table(left))
+        self.join_tables.append(self._format_table(right))
+        self.join_types.append(join_name)
+        self.join_predicates.append(op.predicates)
+
     def get_result(self):
         # Got to unravel the join stack; the nesting order could be
         # arbitrary, so we do a depth first search and push the join tokens

@@ -954,6 +954,23 @@ def test_join_overlapping_column_names(table):
     assert_equal(joined, expected)
 
 
+def test_join_overlapping_column_names(table):
+    t1 = ibis.table([('foo', 'string'),
+                     ('bar', 'string'),
+                     ('value1', 'double')])
+    t2 = ibis.table([('foo', 'string'),
+                     ('value2', 'double')])
+    t3 = ibis.table([('bar', 'string'),
+                     ('value3', 'double')])
+
+    joined = t1.join(t2, ['foo']).join(t3, ['bar'])
+
+    expected = t1.join(t2, t1.foo == t2.foo).materialize()
+    expected = expected.join(t3, expected.bar == t3.bar)
+
+    assert_equal(joined, expected)
+
+
 def test_join_key_alternatives(con):
     t1 = con.table('star1')
     t2 = con.table('star2')

@@ -293,6 +293,43 @@ FROM {0}.`batting` t0
     assert len(con.execute(expr))
 
 
+def test_multiple_joins(con, db, batting, awards_players, alltypes):
+    b, ap, a = batting, awards_players, alltypes
+
+
+    joined1 = (b.join(ap, ['date', 'lgID', 'yearID', 'playerID'])
+                .join(a, b.date == a.date))
+    joined2 = (b.join(ap, ['date', 'lgID', 'yearID', 'playerID'])
+                .join(a, ['date']))
+
+    # TODO fix aliasing
+    expected1 = """SELECT *
+FROM (
+  SELECT *
+  FROM ibis_testing.`batting` t0
+    ALL INNER JOIN ibis_testing.`awards_players` t1
+      USING `date`, `lgID`, `yearID`, `playerID`
+)
+  ALL INNER JOIN ibis_testing.`functional_alltypes` t2
+    USING `date`"""
+
+    expected2 = """SELECT *
+FROM (
+  SELECT *
+  FROM ibis_testing.`batting` t2
+    ALL INNER JOIN ibis_testing.`awards_players` t3
+      USING `date`, `lgID`, `yearID`, `playerID`
+) t0
+  ALL INNER JOIN ibis_testing.`functional_alltypes` t1
+    USING `date`"""
+
+    assert joined1.compile() == expected1
+    assert joined2.compile() == expected2
+
+    joined1.execute()
+    joined2.execute()
+
+
 def test_self_reference_simple(con, db, alltypes):
     expr = alltypes.view()
     result_sql = ibis.clickhouse.compile(expr)

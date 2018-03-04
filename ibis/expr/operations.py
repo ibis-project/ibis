@@ -1385,6 +1385,15 @@ def _make_distinct_join_predicates(left, right, predicates):
     if left.equals(right):
         right = right.view()
 
+    predicates = util.promote_list(predicates)
+    if any(isinstance(pred, six.string_types) for pred in predicates):
+        # materialize
+        if not left._is_materialized():
+            left = left.materialize()
+
+        if not right._is_materialized():
+            right = right.materialize()
+
     predicates = _clean_join_predicates(left, right, predicates)
     return left, right, predicates
 
@@ -1393,10 +1402,6 @@ def _clean_join_predicates(left, right, predicates):
     import ibis.expr.analysis as L
 
     result = []
-
-    if not isinstance(predicates, (list, tuple)):
-        predicates = [predicates]
-
     for pred in predicates:
         if isinstance(pred, tuple):
             if len(pred) != 2:
@@ -1446,8 +1451,8 @@ class Join(TableNode):
 
     def _get_schema(self):
         # For joins retaining both table schemas, merge them together here
-        left = self.left
-        right = self.right
+
+        left, right = self.left, self.right
 
         if not left._is_materialized():
             left = left.materialize()
@@ -1459,11 +1464,25 @@ class Join(TableNode):
         sright = right.schema()
 
         overlap = set(sleft.names) & set(sright.names)
+
+        deletes = []
+        for predicate in self.predicates:
+            op = predicate.op()
+            if (
+                isinstance(op, Equals) and
+                op.left.get_name() == op.right.get_name() and
+                op.left.get_name() in overlap
+            ):
+                overlap.remove(op.left.get_name())
+                deletes.append(op.left.get_name())
+
         if overlap:
             raise com.RelationError('Joined tables have overlapping names: %s'
                                     % str(list(overlap)))
 
-        return sleft.append(sright)
+        return sleft.append(
+            sright.delete(deletes)
+        )
 
     def has_schema(self):
         return False
