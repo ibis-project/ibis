@@ -1992,13 +1992,27 @@ _array_column_methods = dict(
 
 _add_methods(ArrayValue, _array_column_methods)
 
+
 # ---------------------------------------------------------------------
 # Map API
+
+def get(expr, key, default):
+    """
+    Return the mapped value for this key, or the default
+    if the key does not exist
+
+    Parameters
+    ----------
+    key : any
+    default : any
+    """
+    return _ops.MapValueOrDefaultForKey(expr, key, default).to_expr()
 
 
 _map_column_methods = dict(
     length=_unary_op('length', _ops.MapLength),
     __getitem__=_binop_expr('__getitem__', _ops.MapValueForKey),
+    get=get,
     keys=_unary_op('keys', _ops.MapKeys),
     values=_unary_op('values', _ops.MapValues),
     __add__=_binop_expr('__add__', _ops.MapConcat),

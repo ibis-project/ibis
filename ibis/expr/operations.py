@@ -2746,6 +2746,19 @@ class MapValueForKey(ValueOp):
         return rules.shape_like(self.args[0], map_type.value_type)
 
 
+class MapValueOrDefaultForKey(ValueOp):
+
+    input_type = [
+        rules.map(dt.any, dt.any),
+        rules.one_of((dt.string, dt.int_), name='key'),
+        rules.value(name='default')
+    ]
+
+    def output_type(self):
+        map_type = self.args[0].type()
+        return rules.shape_like(self.args[0], map_type.value_type)
+
+
 class MapKeys(ValueOp):
 
     input_type = [rules.map(dt.any, dt.any)]
