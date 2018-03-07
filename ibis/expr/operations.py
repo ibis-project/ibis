@@ -2757,7 +2757,7 @@ class MapValueOrDefaultForKey(ValueOp):
     def output_type(self):
         map_type = self.args[0].type()
         value_type = map_type.value_type
-        default_type = self.args[2].type()
+        default_type = self.default.type()
 
         if not (default_type is dt.null or
                 value_type.equals(default_type)):
