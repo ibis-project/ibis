@@ -34,7 +34,7 @@ New Features
 * ``ibis.pandas.from_dataframe`` convenience function (:issue:`1155`)
 * Remove the restriction on ``ROW_NUMBER()`` requiring it to have an
   ``ORDER BY`` clause (:issue:`1371`)
-* Add ``.get()`` operation on a Map type
+* Add ``.get()`` operation on a Map type (:issue:`1376`)
 
 Bug Fixes
 ~~~~~~~~~
