@@ -2759,8 +2759,7 @@ class MapValueOrDefaultForKey(ValueOp):
         value_type = map_type.value_type
         default_type = self.default.type()
 
-        if not (default_type is dt.null or
-                value_type.equals(default_type)):
+        if default_type is not dt.null and value_type != default_type:
             raise ValueError("default type: {}  must be the same "
                              "as the map value_type {}".format(
                                  default_type, value_type))
