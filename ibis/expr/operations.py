@@ -2756,6 +2756,14 @@ class MapValueOrDefaultForKey(ValueOp):
 
     def output_type(self):
         map_type = self.args[0].type()
+        value_type = map_type.value_type
+        default_type = self.args[2].type()
+
+        if not (default_type is dt.null or
+                value_type.equals(default_type)):
+            raise ValueError("default type: {}  must be the same "
+                             "as the map value_type {}".format(
+                                 default_type, value_type))
         return rules.shape_like(self.args[0], map_type.value_type)
 
 

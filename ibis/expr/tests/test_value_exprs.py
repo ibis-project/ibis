@@ -150,13 +150,22 @@ def test_simple_map_operations():
     expr = ibis.literal(value)
     expr2 = ibis.literal(value2)
     assert isinstance(expr, ir.MapValue)
-    assert isinstance(expr['b'].op(), ops.MapValueForKey)
-    assert isinstance(expr.get('b', 0.0).op(), ops.MapValueOrDefaultForKey)
     assert isinstance(expr.length().op(), ops.MapLength)
-    assert isinstance(expr.keys().op(), ops.MapKeys)
-    assert isinstance(expr.values().op(), ops.MapValues)
     assert isinstance((expr + expr2).op(), ops.MapConcat)
     assert isinstance((expr2 + expr).op(), ops.MapConcat)
+
+    default = ibis.literal([0.0])
+    assert isinstance(expr.get('d', default).op(), ops.MapValueOrDefaultForKey)
+
+    # test for an invalid default type, nulls are ok
+    with pytest.raises(ValueError):
+        expr.get('d', ibis.literal('foo'))
+    assert isinstance(expr.get('d', ibis.literal(None)).op(),
+                      ops.MapValueOrDefaultForKey)
+
+    assert isinstance(expr['b'].op(), ops.MapValueForKey)
+    assert isinstance(expr.keys().op(), ops.MapKeys)
+    assert isinstance(expr.values().op(), ops.MapValues)
 
 
 @pytest.mark.parametrize(
