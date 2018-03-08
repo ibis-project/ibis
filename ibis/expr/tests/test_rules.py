@@ -351,6 +351,19 @@ def test_table_invalid_schema_wrong_class():
             output_type = rules.type_of_arg(0)
 
 
+def test_table_invalid_column_subset():
+    class MyOp(ops.ValueOp):
+        input_type = [rules.table(
+            name='table',
+            schema=rules.table.with_column_subset('not a rule'))]
+        output_type = rules.type_of_arg(0)
+
+    schema = ibis.Schema.from_tuples([('group', dt.int64)])
+    table = ibis.table(schema)
+    with pytest.raises(ValueError):
+        MyOp(table)
+
+
 def test_table_custom_validator():
     class MyOp(ops.ValueOp):
         input_type = [rules.table(
