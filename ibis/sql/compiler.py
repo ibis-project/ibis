@@ -831,9 +831,10 @@ def _adapt_expr(expr):
                 # exprs with no table refs
                 # TODO(phillipc): remove ScalarParameter hack
                 if isinstance(expr.op(), ir.ScalarParameter):
-                    assert expr._name is not None, \
+                    name = expr.get_name()
+                    assert name is not None, \
                         'scalar parameter {} has no name'.format(expr)
-                    return expr, _get_scalar(expr._name)
+                    return expr, _get_scalar(name)
                 return expr.name('tmp'), _get_scalar('tmp')
 
             raise NotImplementedError(repr(expr))
@@ -1165,7 +1166,7 @@ class ExprTranslator(object):
             )
 
     def _trans_param(self, expr):
-        raw_value = self.context.params[expr]
+        raw_value = self.context.params[expr.op()]
         literal = ibis.literal(raw_value, type=expr.type())
         return self.translate(literal)
 
@@ -1294,8 +1295,11 @@ class Dialect(object):
     translator = ExprTranslator
 
     @classmethod
-    def make_context(cls, **kwargs):
-        return cls.translator.context_class(dialect=cls(), **kwargs)
+    def make_context(cls, params=None):
+        if params is None:
+            params = {}
+        params = {expr.op(): value for expr, value in params.items()}
+        return cls.translator.context_class(dialect=cls(), params=params)
 
 
 class DDL(object):

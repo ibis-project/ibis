@@ -35,11 +35,21 @@ New Features
 * Remove the restriction on ``ROW_NUMBER()`` requiring it to have an
   ``ORDER BY`` clause (:issue:`1371`)
 * Add ``.get()`` operation on a Map type (:issue:`1376`)
+* Allow visualization of custom defined expressions
 
 Bug Fixes
 ~~~~~~~~~
 
-* Allow visualization of custom defined expressions
+* Unbound parameters were failing in the simple case of a
+  :meth:`~ibis.expr.types.TableExpr.mutate` call with no operation
+  (:issue:`1378`)
+
+API Changes
+-----------
+
+* Fixing :issue:`1378` required the removal of the ``name`` parameter to the
+  :func:`~ibis.param` function. Use the :meth:`~ibis.expr.types.Expr.name`
+  method instead.
 
 v0.12.0 (October 28, 2017)
 --------------------------

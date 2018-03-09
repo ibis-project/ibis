@@ -64,3 +64,4 @@ ibis_testing*
 .tox/
 .asv/
 .ipynb_checkpoints/
+.pytest_cache
