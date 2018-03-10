@@ -62,7 +62,10 @@ class Argument(object):
             self.default == other.default
         )
 
-    def validate(self, value=None, name=None):
+    def optional(self):
+        return self.default is not _undefined
+
+    def validate(self, value=_undefined, name=None):
         """
         Parameters
         ----------
@@ -72,15 +75,17 @@ class Argument(object):
         name : Optional[str]
           Argument name for error message
         """
-        if value is None:
-            if self.default is _undefined:
-                if name is not None:
-                    name = ' `{}`'.format(name)
-                raise TypeError('Missing required value for argument' + name)
-            elif callable(self.default):
-                return self.default()
-            else:
-                return self.default
+        if self.optional():
+            if value is _undefined or value is None:
+                if callable(self.default):
+                    return self.default()
+                else:
+                    return self.default
+
+        if value is _undefined:
+            if name is not None:
+                name = ' `{}`'.format(name)
+            raise TypeError('Missing required value for argument' + name)
 
         return self.validator(value)
 
