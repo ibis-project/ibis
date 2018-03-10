@@ -2518,7 +2518,10 @@ class ArrayRepeat(ValueOp):
 
 class ArrayCollect(Reduction):
     arg = Arg(rlz.column(rlz.any))
-    output_type = rlz.scalar_like('arg')
+
+    def output_type(self):
+        dtype = dt.Array(self.arg.type())
+        return dtype.scalar_type()
 
 
 class MapLength(ValueOp):

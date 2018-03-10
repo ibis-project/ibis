@@ -154,7 +154,7 @@ def _regex_replace(translator, expr):
 
 def _string_concat(translator, expr):
     return 'CONCAT({})'.format(
-        ', '.join(map(translator.translate, expr.op().args))
+        ', '.join(map(translator.translate, expr.op().arg))
     )
 
 

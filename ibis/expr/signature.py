@@ -39,7 +39,11 @@ class Argument(object):
           Function which handles validation and/or coercion of the given
           argument.
         default : Union[Any, Callable[[], str]]
-          If given the argument will be optional with the default value given.
+          In case of missing (None) value for validation this will be used.
+          Note, that default value (except for None) must also pass the inner
+          validator.
+          If callable is passed, it will be executed just before the inner, and
+          itsreturn value will be treaded as default.
         """
         if PY2:
             self._serial = next(self._counter)
@@ -77,12 +81,13 @@ class Argument(object):
         """
         if self.optional():
             if value is _undefined or value is None:
+                if self.default is None:
+                    return None
                 if callable(self.default):
-                    return self.default()
+                    value = self.default()
                 else:
-                    return self.default
-
-        if value is _undefined:
+                    value = self.default
+        elif value is _undefined:
             if name is not None:
                 name = ' `{}`'.format(name)
             raise TypeError('Missing required value for argument' + name)

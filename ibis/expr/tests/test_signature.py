@@ -1,5 +1,7 @@
 import pytest
+from toolz import identity
 from ibis.compat import PY2
+from ibis.common import IbisTypeError
 from functools import partial
 from ibis.expr.signature import Argument, TypeSignature, Annotable
 
@@ -57,6 +59,30 @@ def test_optional_argument(default, expected):
     arg = Argument(lambda x: x, default=default)
     assert arg.validate() == expected
     assert arg() == expected
+
+
+@pytest.mark.parametrize(('arg', 'value', 'expected'), [
+    (Argument(identity, default=None), None, None),
+    (Argument(identity, default=None), 'three', 'three'),
+    (Argument(identity, default=1), None, 1),
+    (Argument(identity, default=lambda: 8), 'cat', 'cat'),
+    (Argument(identity, default=lambda: 8), None, 8),
+    (Argument(int, default=11), None, 11),
+    (Argument(int, default=None), None, None),
+    (Argument(int, default=None), 18, 18),
+    (Argument(str, default=None), 'caracal', 'caracal'),
+])
+def test_valid_optional(arg, value, expected):
+    assert arg(value) == expected
+
+
+@pytest.mark.parametrize(('arg', 'value', 'expected'), [
+    (Argument(int, default=''), None, IbisTypeError),
+    (Argument(int), 'lynx', IbisTypeError),
+])
+def test_invalid_optional(arg, value, expected):
+    with pytest.raises(expected):
+        arg(value)
 
 
 between = TypeSignature([

@@ -93,30 +93,6 @@ def test_invalid_value(dtype, value, expected):
         rlz.value(dtype, value)
 
 
-@pytest.mark.parametrize(('validator', 'value', 'expected'), [
-    (rlz.optional(identity), None, None),
-    (rlz.optional(identity), 'three', 'three'),
-    (rlz.optional(identity, default=1), None, 1),
-    (rlz.optional(identity, default=lambda: 8), 'cat', 'cat'),
-    (rlz.optional(identity, default=lambda: 8), None, 8),
-    (rlz.optional(rlz.instance_of(int), default=11), None, 11),
-    (rlz.optional(rlz.instance_of(int)), None, None),
-    (rlz.optional(rlz.instance_of(int)), 18, 18),
-    (rlz.optional(rlz.instance_of(str)), 'caracal', 'caracal'),
-])
-def test_valid_optional(validator, value, expected):
-    assert validator(value) == expected
-
-
-@pytest.mark.parametrize(('validator', 'value', 'expected'), [
-    (rlz.optional(rlz.instance_of(int), default=''), None, IbisTypeError),
-    (rlz.optional(rlz.instance_of(int)), 'lynx', IbisTypeError),
-])
-def test_invalid_optional(validator, value, expected):
-    with pytest.raises(expected):
-        validator(value)
-
-
 @pytest.mark.parametrize(('values', 'value', 'expected'), [
     (['a', 'b'], 'a', 'a'),
     (('a', 'b'), 'b', 'b'),
