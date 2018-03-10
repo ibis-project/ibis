@@ -6,7 +6,6 @@ from ibis.compat import suppress
 import ibis.util as util
 import ibis.common as com
 import ibis.expr.types as ir
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
 try:
@@ -274,6 +273,10 @@ strict_numeric = one_of([integer, floating, decimal])
 soft_numeric = one_of([integer, floating, decimal, boolean])
 numeric = soft_numeric
 
+array = value(dt.Array(dt.any))
+struct = value(dt.Struct)
+mapping = value(dt.Map(dt.any, dt.any))
+
 
 @validator
 def interval(arg, units=None):
@@ -283,10 +286,6 @@ def interval(arg, units=None):
         msg = 'Interval unit `{}` is not among the allowed ones {}'
         raise com.IbisTypeError(msg.format(unit, units))
     return arg
-
-
-table = instance_of(ir.TableExpr)
-schema = instance_of(sch.Schema)
 
 
 @validator

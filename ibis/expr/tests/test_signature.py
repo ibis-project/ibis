@@ -1,7 +1,7 @@
 import pytest
 from ibis.compat import PY2
 from functools import partial
-from ibis.expr.signature import Argument, CallSignature, Annotable
+from ibis.expr.signature import Argument, TypeSignature, Annotable
 
 
 @pytest.mark.parametrize(('validator', 'expected'), [
@@ -59,7 +59,7 @@ def test_optional_argument(default, expected):
     assert arg() == expected
 
 
-between = CallSignature([
+between = TypeSignature([
     ('value', Argument(int)),
     ('lower', Argument(int, default=0)),
     ('upper', Argument(int, default=None))
@@ -68,8 +68,8 @@ between = CallSignature([
 
 @pytest.mark.parametrize(('call', 'expected'), [
     (partial(between, 3), (3, 0, None)),
-    (partial(between, 3.0), (3, 0, None)),
-    (partial(between, '3'), (3, 0, None)),
+    (partial(between, 3), (3, 0, None)),
+    (partial(between, 3), (3, 0, None)),
     (partial(between, 3, 1), (3, 1, None)),
     (partial(between, 4, 2, 5), (4, 2, 5)),
     (partial(between, 3, lower=1), (3, 1, None)),
@@ -88,7 +88,7 @@ def test_annotable():
         upper = Argument(int, default=None)
 
     argnames = ('value', 'lower', 'upper')
-    assert isinstance(Between.signature, CallSignature)
+    assert isinstance(Between.signature, TypeSignature)
     assert Between.signature.names() == argnames
     assert Between.__slots__ == argnames
 
@@ -116,27 +116,27 @@ def test_maintain_definition_order():
 
 
 def test_signature_equals():
-    s1 = CallSignature([
+    s1 = TypeSignature([
         ('left', Argument(int)),
         ('right', Argument(int))
     ])
-    s2 = CallSignature([
+    s2 = TypeSignature([
         ('left', Argument(int)),
         ('right', Argument(int))
     ])
-    s3 = CallSignature([
+    s3 = TypeSignature([
         ('left', Argument(int)),
         ('right', Argument(float))
     ])
-    s4 = CallSignature([
+    s4 = TypeSignature([
         ('left', Argument(int)),
         ('right', Argument(float))
     ])
-    s5 = CallSignature([
+    s5 = TypeSignature([
         ('left_one', Argument(int)),
         ('right', Argument(float))
     ])
-    s6 = CallSignature([
+    s6 = TypeSignature([
         ('left_one', Argument(int)),
         ('right', Argument(int))
     ])
@@ -165,21 +165,21 @@ def test_signature_inheritance():
     class IntAddClip(FloatAddClip, IntBinop):
         pass
 
-    assert IntBinop.signature == CallSignature([
+    assert IntBinop.signature == TypeSignature([
         ('left', Argument(int)),
         ('right', Argument(int))
     ])
-    assert FloatAddRhs.signature == CallSignature([
+    assert FloatAddRhs.signature == TypeSignature([
         ('left', Argument(int)),
         ('right', Argument(float))
     ])
-    assert FloatAddClip.signature == CallSignature([
+    assert FloatAddClip.signature == TypeSignature([
         ('left', Argument(float)),
         ('right', Argument(float)),
         ('clip_lower', Argument(int, default=0)),
         ('clip_upper', Argument(int, default=10))
     ])
-    assert IntAddClip.signature == CallSignature([
+    assert IntAddClip.signature == TypeSignature([
         ('left', Argument(int)),
         ('right', Argument(int)),
         ('clip_lower', Argument(int, default=0)),

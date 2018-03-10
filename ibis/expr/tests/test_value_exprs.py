@@ -35,6 +35,8 @@ import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
+from ibis.expr.signature import Argument as Arg
+
 
 def test_null():
     expr = ibis.literal(None)
@@ -1208,9 +1210,7 @@ def test_custom_type_binary_operations():
         __radd__ = __add__
 
     class FooNode(ops.ValueOp):
-        __slots__ = 'value',
-
-        value = rlz.integer
+        value = Arg(rlz.integer)
 
         def output_type(self):
             return partial(Foo, dtype=dt.int64)
@@ -1233,9 +1233,7 @@ def test_empty_array_as_argument():
         pass
 
     class FooNode(ops.ValueOp):
-        __slots__ = 'value',
-
-        value = rlz.value(dt.Array(dt.int64))
+        value = Arg(rlz.value(dt.Array(dt.int64)))
 
         def output_type(self):
             return Foo

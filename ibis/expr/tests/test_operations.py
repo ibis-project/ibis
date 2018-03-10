@@ -8,6 +8,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 from ibis.common import IbisTypeError
+from ibis.expr.signature import Argument as Arg
 
 
 def test_argument_packing():
@@ -20,9 +21,8 @@ def test_argument_descriptor():
 
 def test_operation():
     class Log(ops.Node):
-        __slots__ = 'arg', 'base'
-        arg = rlz.double()
-        base = rlz.optional(rlz.double())
+        arg = Arg(rlz.double())
+        base = Arg(rlz.double(), default=None)
 
     Log(1, base=2)
     Log(1, base=2)
@@ -88,8 +88,7 @@ def test_unaryop():
 
 def test_instance_of_operation():
     class MyOperation(ops.Node):
-        __slots__ = 'arg',
-        arg = rlz.instance_of(ir.IntegerValue)
+        arg = Arg(ir.IntegerValue)
 
     MyOperation(ir.literal(5))
 
@@ -99,8 +98,7 @@ def test_instance_of_operation():
 
 def test_array_input():
     class MyOp(ops.ValueOp):
-        __slots__ = 'value',
-        value = rlz.value(dt.Array(dt.double))
+        value = Arg(rlz.value(dt.Array(dt.double)))
         output_type = rlz.typeof('value')
 
     raw_value = [1.0, 2.0, 3.0]

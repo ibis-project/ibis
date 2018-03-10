@@ -2,20 +2,21 @@ import six
 import itertools
 
 import ibis.util as util
+import ibis.expr.rules as rlz
+
 from ibis.compat import PY2
 from collections import OrderedDict
 
 try:
-    from cytoolz import flip, unique
+    from cytoolz import unique
 except ImportError:
-    from toolz import flip, unique
+    from toolz import unique
 
 
 # TODO: could use the primitives defined here to types too
 
 
-_undefined = object()  # marker for missing arguments
-instance_of = flip(isinstance)
+_undefined = object()  # marker for missing argument
 
 
 class Argument(object):
@@ -37,20 +38,20 @@ class Argument(object):
         validator : Union[Callable[[arg], coerced], Type, Tuple[Type]]
           Function which handles validation and/or coercion of the given
           argument.
-        default : Any
+        default : Union[Any, Callable[[], str]]
           If given the argument will be optional with the default value given.
         """
         if PY2:
             self._serial = next(self._counter)
 
         self.default = default
-        if callable(validator):
-            self.validator = validator
-        elif isinstance(validator, type):
-            self.validator = instance_of(validator)
+        if isinstance(validator, type):
+            self.validator = rlz.instance_of(validator)
         elif isinstance(validator, tuple):
             assert util.all_of(validator, type)
-            self.validator = instance_of(validator)
+            self.validator = rlz.instance_of(validator)
+        elif callable(validator):
+            self.validator = validator
         else:
             raise TypeError('Argument validator must be a callable, type or '
                             'tuple of types, given: {}'.format(validator))
@@ -61,7 +62,7 @@ class Argument(object):
             self.default == other.default
         )
 
-    def validate(self, value=_undefined, name=None):
+    def validate(self, value=None, name=None):
         """
         Parameters
         ----------
@@ -71,7 +72,7 @@ class Argument(object):
         name : Optional[str]
           Argument name for error message
         """
-        if value is _undefined:
+        if value is None:
             if self.default is _undefined:
                 if name is not None:
                     name = ' `{}`'.format(name)
@@ -87,13 +88,14 @@ class Argument(object):
 
 
 class Return(object):
+    # TODO
     """Acts like a method (output type)"""
 
     def __call__(self, obj):
         pass
 
 
-class CallSignature(OrderedDict):
+class TypeSignature(OrderedDict):
 
     __slots__ = tuple()
 
@@ -109,11 +111,11 @@ class CallSignature(OrderedDict):
                     raise TypeError(
                         'Got multiple values for argument {}'.format(name)
                     )
-                value = argument.validate(args[i])
+                value = argument.validate(args[i], name=name)
             elif name in kwargs:
-                value = argument.validate(kwargs[name])
+                value = argument.validate(kwargs[name], name=name)
             else:
-                value = argument.validate()
+                value = argument.validate(name=name)
 
             result.append((name, value))
 
@@ -126,7 +128,6 @@ class CallSignature(OrderedDict):
 
 
 class AnnotableMeta(type):
-    """TODO"""
 
     if PY2:
         @staticmethod
@@ -138,10 +139,10 @@ class AnnotableMeta(type):
         def __prepare__(metacls, name, bases, **kwds):
             return OrderedDict()
 
-    def __new__(cls, name, parents, attrs):
-        slots, signature = [], CallSignature()
+    def __new__(meta, name, bases, dct):
+        slots, signature = [], TypeSignature()
 
-        for parent in parents:
+        for parent in bases:
             # inherit parent slots
             if hasattr(parent, '__slots__'):
                 slots += parent.__slots__
@@ -152,35 +153,39 @@ class AnnotableMeta(type):
         # finally apply definitions from the currently created class
         if PY2:
             # on python 2 we cannot maintain definition order
-            newattrs, arguments = {}, []
-            for name, attr in attrs.items():
-                if isinstance(attr, Argument):
-                    arguments.append((name, attr))
+            attribs, arguments = {}, []
+            for k, v in dct.items():
+                if isinstance(v, Argument):
+                    arguments.append((k, v))
                 else:
-                    newattrs[name] = attr
+                    attribs[k] = v
 
             # so we need to sort arguments based on their unique counter
-            signature.update(sorted(arguments, cmp=cls._precedes))
+            signature.update(sorted(arguments, cmp=meta._precedes))
         else:
             # thanks to __prepare__ attrs are already ordered
-            newattrs = {}
-            for name, attr in attrs.items():
-                if isinstance(attr, Argument):
+            attribs = {}
+            for k, v in dct.items():
+                if isinstance(v, Argument):
                     # so we can set directly
-                    signature[name] = attr
+                    signature[k] = v
                 else:
-                    newattrs[name] = attr
+                    attribs[k] = v
 
-        # if slots are defined no slot inheritance happens
-        slots = newattrs.get('__slots__', tuple(slots)) + signature.names()
+        # if slots or signature are defined no inheritance happens
+        signature = attribs.get('signature', signature)
+        slots = attribs.get('__slots__', tuple(slots)) + signature.names()
 
-        newattrs['signature'] = signature
-        newattrs['__slots__'] = tuple(unique(slots))
+        attribs['signature'] = signature
+        attribs['__slots__'] = tuple(unique(slots))
 
-        return super(AnnotableMeta, cls).__new__(cls, name, parents, newattrs)
+        return super(AnnotableMeta, meta).__new__(meta, name, bases, attribs)
 
 
-class Annotable(six.with_metaclass(AnnotableMeta, object)):
+@six.add_metaclass(AnnotableMeta)
+class Annotable(object):
+
+    __slots__ = tuple()
 
     def __init__(self, *args, **kwargs):
         for name, value in self.signature.validate(*args, **kwargs):

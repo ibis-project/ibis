@@ -27,9 +27,9 @@ import ibis.common as com
 import ibis.compat as compat
 import ibis.expr.types as ir
 import ibis.expr.rules as rlz
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
-
-from collections import OrderedDict
+from ibis.expr.signature import Annotable, Argument as Arg
 
 
 def _safe_repr(x, memo=None):
@@ -44,72 +44,9 @@ def distinct_roots(*expressions):
     return list(toolz.unique(roots, key=id))
 
 
-class TypeSignature(OrderedDict):
+class Node(Annotable):
 
-    __slots__ = tuple()
-
-    def __call__(self, *args, **kwargs):
-        if len(args) > len(self.keys()):
-            raise TypeError('takes {} positional arguments ut {} were '
-                            'given'.format(len(self.keys()), len(args)))
-
-        result = []
-        for i, (name, rule) in enumerate(self.items()):
-            if i < len(args):
-                if name in kwargs:
-                    raise TypeError('got multiple values for argument'
-                                    '{}'.format(name))
-                value = rule.call(args[i])
-            elif name in kwargs:
-                value = rule.call(kwargs[name])
-            else:
-                value = rule.call()
-
-            result.append((name, value))
-
-        return result
-
-    def names(self):
-        return self.keys()
-
-
-class OperationMeta(type):
-
-    def __new__(cls, name, parents, attrs):
-        input_type = attrs.pop('input_type', None)
-
-        if input_type is not None:
-            signature = TypeSignature(input_type)
-        else:
-            signature = TypeSignature()
-
-            # inherit from parent signatures
-            for parent in parents:
-                if hasattr(parent, 'signature'):
-                    signature.update(parent.signature)
-
-            argnames = attrs.get('__slots__', tuple())
-            for key in argnames:
-                rule = attrs.pop(key)
-                assert isinstance(rule, rlz.validator)
-                signature[key] = rule
-
-        attrs['signature'] = signature
-        attrs['__slots__'] = tuple(signature.names()) + ('_expr_cached',)
-
-        return super(OperationMeta, cls).__new__(cls, name, parents, attrs)
-
-
-class Node(six.with_metaclass(OperationMeta, object)):
-
-    def __init__(self, *args, **kwargs):
-        self._expr_cached = None
-        for name, value in self.signature(*args, **kwargs):
-            setattr(self, name, value)
-        self._validate()
-
-    def _validate(self):
-        pass
+    __slots__ = ('_expr_cached',)
 
     def __repr__(self):
         return self._repr()
@@ -182,8 +119,7 @@ class Node(six.with_metaclass(OperationMeta, object)):
         return self.equals(other)
 
     def to_expr(self):
-        # _expr_cache is set in the metaclass
-        if self._expr_cached is None:
+        if not hasattr(self, '_expr_cached'):
             self._expr_cached = self._make_expr()
         return self._expr_cached
 
@@ -197,14 +133,6 @@ class Node(six.with_metaclass(OperationMeta, object)):
         the node wrapped in the appropriate ValueExpr type.
         """
         raise NotImplementedError
-
-    @property
-    def args(self):
-        return tuple(getattr(self, name) for name in self.signature.names())
-
-    @property
-    def argnames(self):
-        return tuple(self.signature.names())
 
 
 class ValueOp(Node):
@@ -259,10 +187,8 @@ class TableNode(Node):
 class TableColumn(ValueOp):
     """Selects a column from a TableExpr"""
 
-    __slots__ = 'name', 'table'
-
-    name = rlz.instance_of(six.string_types + six.integer_types)
-    table = rlz.table
+    name = Arg(six.string_types + six.integer_types)
+    table = Arg(ir.TableExpr)
 
     def __init__(self, name, table):
         schema = table.schema()
@@ -322,18 +248,14 @@ class PhysicalTable(TableNode, HasSchema):
 
 
 class UnboundTable(PhysicalTable):
-    __slots__ = 'schema', 'name'
-
-    schema = rlz.schema
-    name = rlz.optional(rlz.instance_of(six.string_types), default=genname)
+    schema = Arg(sch.Schema)
+    name = Arg(six.string_types, default=genname)
 
 
 class DatabaseTable(PhysicalTable):
-    __slots__ = 'name', 'schema', 'source'
-
-    name = rlz.instance_of(six.string_types)
-    schema = rlz.schema
-    source = rlz.noop
+    name = Arg(six.string_types)
+    schema = Arg(sch.Schema)
+    source = Arg(rlz.client)
 
     def change_name(self, new_name):
         return type(self)(new_name, self.args[1], self.source)
@@ -342,11 +264,9 @@ class DatabaseTable(PhysicalTable):
 class SQLQueryResult(TableNode, HasSchema):
     """A table sourced from the result set of a select query"""
 
-    __slots__ = 'query', 'schema', 'source'
-
-    query = rlz.noop
-    schema = rlz.schema
-    source = rlz.client
+    query = Arg(rlz.noop)
+    schema = Arg(sch.Schema)
+    source = Arg(rlz.client)
 
     def blocks(self):
         return True
@@ -358,10 +278,8 @@ class TableArrayView(ValueOp):
     (Temporary?) Helper operation class for SQL translation (fully formed table
     subqueries to be viewed as arrays)
     """
-    __slots__ = 'table', 'name'
-
-    table = rlz.table
-    name = rlz.instance_of(six.string_types)
+    table = Arg(ir.TableExpr)
+    name = Arg(six.string_types)
 
     def __init__(self, table):
         schema = table.schema()
@@ -378,16 +296,12 @@ class TableArrayView(ValueOp):
 
 
 class UnaryOp(ValueOp):
-    __slots__ = 'arg',
-
-    arg = rlz.any
+    arg = Arg(rlz.any)
 
 
 class Cast(ValueOp):
-    __slots__ = 'arg', 'to'
-
-    arg = rlz.any
-    to = rlz.datatype
+    arg = Arg(rlz.any)
+    to = Arg(dt.dtype)
 
     # see #396 for the issue preventing this
     # def resolve_name(self):
@@ -402,9 +316,7 @@ class TypeOf(UnaryOp):
 
 
 class Negate(UnaryOp):
-    __slots__ = 'arg',
-
-    arg = rlz.numeric
+    arg = Arg(rlz.numeric)
     output_type = rlz.typeof('arg')
 
 
@@ -438,19 +350,15 @@ class IfNull(ValueOp):
     case().when(expr.notnull(), expr)
           .else_(null_substitute_expr)
     """
-    __slots__ = 'arg', 'ifnull_expr'
-
-    arg = rlz.any
-    ifnull_expr = rlz.any
+    arg = Arg(rlz.any)
+    ifnull_expr = Arg(rlz.any)
     output_type = rlz.shape_like('args')
 
 
 class NullIf(ValueOp):
     """Set values to NULL if they equal the null_if_expr"""
-    __slots__ = 'arg', 'null_if_expr'
-
-    arg = rlz.any
-    null_if_expr = rlz.any
+    arg = Arg(rlz.any)
+    null_if_expr = Arg(rlz.any)
     output_type = rlz.typeof('arg')
 
 
@@ -466,23 +374,17 @@ class NullIfZero(ValueOp):
     -------
     maybe_nulled : type of caller
     """
-    __slots__ = 'arg',
-
-    arg = rlz.numeric
+    arg = Arg(rlz.numeric)
     output_type = rlz.typeof('arg')
 
 
 class IsNan(ValueOp):
-    __slots__ = 'arg',
-
-    arg = rlz.floating
+    arg = Arg(rlz.floating)
     output_type = rlz.shape_like('arg', dt.boolean)
 
 
 class IsInf(ValueOp):
-    __slots__ = 'arg',
-
-    arg = rlz.floating
+    arg = Arg(rlz.floating)
     output_type = rlz.shape_like('arg', dt.boolean)
 
 
@@ -492,9 +394,7 @@ class CoalesceLike(ValueOp):
     # Return type: same as the initial argument value, except that integer
     # values are promoted to BIGINT and floating-point values are promoted to
     # DOUBLE; use CAST() when inserting into a smaller numeric column
-    __slots__ = 'arg',
-
-    arg = rlz.list_of(rlz.any)
+    arg = Arg(rlz.list_of(rlz.any))
 
     def output_type(self):
         first = self.arg[0]
@@ -535,9 +435,7 @@ class Ceil(UnaryOp):
       Decimal values: yield decimal
       Other numeric values: yield integer (int32)
     """
-    __slots__ = 'arg',
-
-    arg = rlz.numeric
+    arg = Arg(rlz.numeric)
 
     def output_type(self):
         if isinstance(self.arg.type(), dt.Decimal):
@@ -556,9 +454,7 @@ class Floor(UnaryOp):
       Decimal values: yield decimal
       Other numeric values: yield integer (int32)
     """
-    __slots__ = 'arg',
-
-    arg = rlz.numeric
+    arg = Arg(rlz.numeric)
 
     def output_type(self):
         if isinstance(self.arg.type(), dt.Decimal):
@@ -567,10 +463,8 @@ class Floor(UnaryOp):
 
 
 class Round(ValueOp):
-    __slots__ = 'arg', 'digits'
-
-    arg = rlz.numeric
-    digits = rlz.optional(rlz.numeric)
+    arg = Arg(rlz.numeric)
+    digits = Arg(rlz.numeric, default=None)
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
@@ -582,29 +476,23 @@ class Round(ValueOp):
 
 
 class Clip(ValueOp):
-    __slots__ = 'arg', 'lower', 'upper'
-
-    arg = rlz.strict_numeric
-    lower = rlz.optional(rlz.strict_numeric)
-    upper = rlz.optional(rlz.strict_numeric)
+    arg = Arg(rlz.strict_numeric)
+    lower = Arg(rlz.strict_numeric, default=None)
+    upper = Arg(rlz.strict_numeric, default=None)
     output_type = rlz.typeof('arg')
 
 
 class BaseConvert(ValueOp):
-    __slots__ = 'arg', 'from_base', 'to_base'
-
-    arg = rlz.one_of([rlz.integer, rlz.string])
-    from_base = rlz.integer
-    to_base = rlz.integer
+    arg = Arg(rlz.one_of([rlz.integer, rlz.string]))
+    from_base = Arg(rlz.integer)
+    to_base = Arg(rlz.integer)
 
     def output_type(self):
         return rlz.shape_like(tuple(self.flat_args()), dt.string)
 
 
 class RealUnaryOp(UnaryOp):
-    __slots__ = 'arg',
-
-    arg = rlz.numeric
+    arg = Arg(rlz.numeric)
     output_type = rlz.shape_like('arg', dt.double)
 
 
@@ -623,16 +511,12 @@ class Sqrt(RealUnaryOp):
 
 
 class Logarithm(RealUnaryOp):
-    __slots__ = 'arg',
-
-    arg = rlz.strict_numeric
+    arg = Arg(rlz.strict_numeric)
 
 
 class Log(Logarithm):
-    __slots__ = 'arg', 'base'
-
-    arg = rlz.strict_numeric
-    base = rlz.optional(rlz.strict_numeric)
+    arg = Arg(rlz.strict_numeric)
+    base = Arg(rlz.strict_numeric, default=None)
 
 
 class Ln(Logarithm):
@@ -648,9 +532,7 @@ class Log10(Logarithm):
 
 
 class StringUnaryOp(UnaryOp):
-    __slots__ = 'arg',
-
-    arg = rlz.string
+    arg = Arg(rlz.string)
     output_type = rlz.shape_like('arg', dt.string)
 
 
@@ -683,80 +565,62 @@ class Capitalize(StringUnaryOp):
 
 
 class Substring(ValueOp):
-    __slots__ = 'arg', 'start', 'length'
-
-    arg = rlz.string
-    start = rlz.integer
-    length = rlz.optional(rlz.integer)
+    arg = Arg(rlz.string)
+    start = Arg(rlz.integer)
+    length = Arg(rlz.integer, default=None)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class StrRight(ValueOp):
-    __slots__ = 'arg', 'nchars'
-
-    arg = rlz.string
-    nchars = rlz.integer
+    arg = Arg(rlz.string)
+    nchars = Arg(rlz.integer)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class Repeat(ValueOp):
-    __slots__ = 'arg', 'times'
-
-    arg = rlz.string
-    times = rlz.integer
+    arg = Arg(rlz.string)
+    times = Arg(rlz.integer)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class StringFind(ValueOp):
-    __slots__ = 'arg', 'substr', 'start', 'end'
-
-    arg = rlz.string
-    substr = rlz.string
-    start = rlz.optional(rlz.integer)
-    end = rlz.optional(rlz.integer)
+    arg = Arg(rlz.string)
+    substr = Arg(rlz.string)
+    start = Arg(rlz.integer, default=None)
+    end = Arg(rlz.integer, default=None)
     output_type = rlz.shape_like('arg', dt.int64)
 
 
 class Translate(ValueOp):
-    __slots__ = 'arg', 'from_str', 'to_str'
-
-    arg = rlz.string
-    from_str = rlz.string
-    to_str = rlz.string
+    arg = Arg(rlz.string)
+    from_str = Arg(rlz.string)
+    to_str = Arg(rlz.string)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class LPad(ValueOp):
-    __slots__ = 'arg', 'length', 'pad'
-
-    arg = rlz.string
-    length = rlz.integer
-    pad = rlz.optional(rlz.string)
+    arg = Arg(rlz.string)
+    length = Arg(rlz.integer)
+    pad = Arg(rlz.string, default=None)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class RPad(ValueOp):
-    __slots__ = 'arg', 'length', 'pad'
-
-    arg = rlz.string
-    length = rlz.integer
-    pad = rlz.optional(rlz.string)
+    arg = Arg(rlz.string)
+    length = Arg(rlz.integer)
+    pad = Arg(rlz.string, default=None)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class FindInSet(ValueOp):
-    __slots__ = 'needle', 'values'
-
-    needle = rlz.string
-    values = rlz.list_of(rlz.string, min_length=1)
+    needle = Arg(rlz.string)
+    values = Arg(rlz.list_of(rlz.string, min_length=1))
     output_type = rlz.shape_like('needle', dt.int64)
 
 
 class StringJoin(ValueOp):
-    __slots__ = 'sep', 'arg'
-
-    sep = rlz.string
-    arg = rlz.list_of(rlz.string, min_length=1)
+    sep = Arg(rlz.string)
+    arg = Arg(rlz.list_of(rlz.string, min_length=1))
 
     def output_type(self):
         return rlz.shape_like(tuple(self.flat_args()), dt.string)
@@ -767,19 +631,15 @@ class BooleanValueOp(object):
 
 
 class FuzzySearch(ValueOp, BooleanValueOp):
-    __slots__ = 'arg', 'pattern'
-
-    arg = rlz.string
-    pattern = rlz.string
+    arg = Arg(rlz.string)
+    pattern = Arg(rlz.string)
     output_type = rlz.shape_like('arg', dt.boolean)
 
 
 class StringSQLLike(FuzzySearch):
-    __slots__ = 'arg', 'pattern', 'escape'
-
-    arg = rlz.string
-    pattern = rlz.string
-    escape = rlz.optional(rlz.instance_of(six.string_types))
+    arg = Arg(rlz.string)
+    pattern = Arg(rlz.string)
+    escape = Arg(six.string_types, default=None)
 
 
 class RegexSearch(FuzzySearch):
@@ -787,55 +647,43 @@ class RegexSearch(FuzzySearch):
 
 
 class RegexExtract(ValueOp):
-    __slots__ = 'arg', 'pattern', 'index'
-
-    arg = rlz.string
-    pattern = rlz.string
-    index = rlz.integer
+    arg = Arg(rlz.string)
+    pattern = Arg(rlz.string)
+    index = Arg(rlz.integer)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class RegexReplace(ValueOp):
-    __slots__ = 'arg', 'pattern', 'replacement'
-
-    arg = rlz.string
-    pattern = rlz.string
-    replacement = rlz.string
+    arg = Arg(rlz.string)
+    pattern = Arg(rlz.string)
+    replacement = Arg(rlz.string)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class StringReplace(ValueOp):
-    __slots__ = 'arg', 'pattern', 'replacement'
-
-    arg = rlz.string
-    pattern = rlz.string
-    replacement = rlz.string
+    arg = Arg(rlz.string)
+    pattern = Arg(rlz.string)
+    replacement = Arg(rlz.string)
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class StringSplit(ValueOp):
-    __slots__ = 'arg', 'delimiter'
-
-    arg = rlz.string
-    delimiter = rlz.string
+    arg = Arg(rlz.string)
+    delimiter = Arg(rlz.string)
     output_type = rlz.shape_like('arg', dt.Array(dt.string))
 
 
 class StringConcat(ValueOp):
-    __slots__ = 'arg',
-
-    arg = rlz.list_of(rlz.string)
+    arg = Arg(rlz.list_of(rlz.string))
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class ParseURL(ValueOp):
-    __slots__ = 'arg', 'extract', 'key'
-
-    arg = rlz.string
-    extract = rlz.isin(['PROTOCOL', 'HOST', 'PATH',
-                        'REF', 'AUTHORITY', 'FILE',
-                        'USERINFO', 'QUERY'])
-    key = rlz.optional(rlz.string)
+    arg = Arg(rlz.string)
+    extract = Arg(rlz.isin(['PROTOCOL', 'HOST', 'PATH',
+                            'REF', 'AUTHORITY', 'FILE',
+                            'USERINFO', 'QUERY']))
+    key = Arg(rlz.string, default=None)
     output_type = rlz.shape_like('arg', dt.string)
 
 
@@ -881,29 +729,23 @@ class Reduction(ValueOp):
 
 
 class Count(Reduction):
-    __slots__ = 'arg', 'where'
-
-    arg = rlz.instance_of((ir.ColumnExpr, ir.TableExpr))
-    where = rlz.optional(rlz.boolean)
+    arg = Arg((ir.ColumnExpr, ir.TableExpr))
+    where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
         return partial(ir.IntegerScalar, dtype=dt.int64)
 
 
 class Arbitrary(Reduction):
-    __slots__ = 'arg', 'how', 'where'
-
-    arg = rlz.column(rlz.any)
-    how = rlz.optional(rlz.isin({'first', 'last', 'heavy'}), default='first')
-    where = rlz.optional(rlz.boolean)
+    arg = Arg(rlz.column(rlz.any))
+    how = Arg(rlz.isin({'first', 'last', 'heavy'}), default='first')
+    where = Arg(rlz.boolean, default=None)
     output_type = rlz.scalar_like('arg')
 
 
 class Sum(Reduction):
-    __slots__ = 'arg', 'where'
-
-    arg = rlz.column(rlz.numeric)
-    where = rlz.optional(rlz.boolean)
+    arg = Arg(rlz.column(rlz.numeric))
+    where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
         if isinstance(self.arg, ir.BooleanValue):
@@ -914,10 +756,8 @@ class Sum(Reduction):
 
 
 class Mean(Reduction):
-    __slots__ = 'arg', 'where'
-
-    arg = rlz.column(rlz.numeric)
-    where = rlz.optional(rlz.boolean)
+    arg = Arg(rlz.column(rlz.numeric))
+    where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
@@ -928,39 +768,31 @@ class Mean(Reduction):
 
 
 class Quantile(Reduction):
-    __slots__ = 'arg', 'quantile', 'interpolation'
-
-    arg = rlz.any
-    quantile = rlz.strict_numeric
-    interpolation = rlz.optional(
-        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'}),
-        default='linear'
-    )
+    arg = Arg(rlz.any)
+    quantile = Arg(rlz.strict_numeric)
+    interpolation = Arg(rlz.isin({'linear', 'lower', 'higher',
+                                  'midpoint', 'nearest'}),
+                        default='linear')
 
     def output_type(self):
         return dt.float64.scalar_type()
 
 
 class MultiQuantile(Quantile):
-    __slots__ = 'arg', 'quantile', 'interpolation'
-
-    arg = rlz.any
-    quantile = rlz.value(dt.Array(dt.float64))
-    interpolation = rlz.optional(
-        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'}),
-        default='linear'
-    )
+    arg = Arg(rlz.any)
+    quantile = Arg(rlz.value(dt.Array(dt.float64)))
+    interpolation = Arg(rlz.isin({'linear', 'lower', 'higher',
+                                  'midpoint', 'nearest'}),
+                        default='linear')
 
     def output_type(self):
         return dt.Array(dt.float64).scalar_type()
 
 
 class VarianceBase(Reduction):
-    __slots__ = 'arg', 'how', 'where'
-
-    arg = rlz.column(rlz.numeric)
-    how = rlz.optional(rlz.isin({'sample', 'pop'}))
-    where = rlz.optional(rlz.boolean)
+    arg = Arg(rlz.column(rlz.numeric))
+    how = Arg(rlz.isin({'sample', 'pop'}), default=None)
+    where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
@@ -979,31 +811,24 @@ class Variance(VarianceBase):
 
 
 class Max(Reduction):
-    __slots__ = 'arg', 'where'
-
-    arg = rlz.column(rlz.any)
-    where = rlz.optional(rlz.boolean)
+    arg = Arg(rlz.column(rlz.any))
+    where = Arg(rlz.boolean, default=None)
     output_type = rlz.scalar_like('arg')
 
 
 class Min(Reduction):
-    __slots__ = 'arg', 'where'
-
-    arg = rlz.column(rlz.any)
-    where = rlz.optional(rlz.boolean)
+    arg = Arg(rlz.column(rlz.any))
+    where = Arg(rlz.boolean, default=None)
     output_type = rlz.scalar_like('arg')
 
 
 class HLLCardinality(Reduction):
+    """Approximate number of unique values using HyperLogLog algorithm.
 
+    Impala offers the NDV built-in function for this.
     """
-    Approximate number of unique values using HyperLogLog algorithm. Impala
-    offers the NDV built-in function for this.
-    """
-    __slots__ = 'arg', 'where'
-
-    arg = rlz.column(rlz.any)
-    where = rlz.optional(rlz.boolean)
+    arg = Arg(rlz.column(rlz.any))
+    where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
         # Impala 2.0 and higher returns a DOUBLE
@@ -1012,26 +837,21 @@ class HLLCardinality(Reduction):
 
 
 class GroupConcat(Reduction):
-    __slots__ = 'arg', 'sep', 'where'
-
-    arg = rlz.column(rlz.any)
-    sep = rlz.optional(rlz.string, default=',')
-    where = rlz.optional(rlz.boolean)
+    arg = Arg(rlz.column(rlz.any))
+    sep = Arg(rlz.string, default=',')
+    where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
         return dt.string.scalar_type()
 
 
 class CMSMedian(Reduction):
-
     """
     Compute the approximate median of a set of comparable values using the
     Count-Min-Sketch algorithm. Exposed in Impala using APPX_MEDIAN.
     """
-    __slots__ = 'arg', 'where'
-
-    arg = rlz.column(rlz.any)
-    where = rlz.optional(rlz.boolean)
+    arg = Arg(rlz.column(rlz.any))
+    where = Arg(rlz.boolean, default=None)
     output_type = rlz.scalar_like('arg')
 
 
@@ -1044,10 +864,8 @@ class AnalyticOp(ValueOp):
 
 
 class WindowOp(ValueOp):
-    __slots__ = 'expr', 'window'
-
-    expr = rlz.noop
-    window = rlz.noop
+    expr = Arg(rlz.noop)
+    window = Arg(rlz.noop)
     output_type = rlz.array_like('expr')
 
     display_argnames = False
@@ -1088,11 +906,9 @@ class WindowOp(ValueOp):
 
 
 class ShiftBase(AnalyticOp):
-    __slots__ = 'arg', 'offset', 'default'
-
-    arg = rlz.column(rlz.any)
-    offset = rlz.optional(rlz.integer)
-    default = rlz.optional(rlz.any)
+    arg = Arg(rlz.column(rlz.any))
+    offset = Arg(rlz.integer, default=None)
+    default = Arg(rlz.any, default=None)
     output_type = rlz.typeof('arg')
 
 
@@ -1111,7 +927,6 @@ class RankBase(AnalyticOp):
 
 
 class MinRank(RankBase):
-
     """
     Compute position of first element within each equal-value group in sorted
     order.
@@ -1130,13 +945,11 @@ class MinRank(RankBase):
     -------
     ranks : Int64Column, starting from 0
     """
-    __slots__ = 'arg',
     # Equivalent to SQL RANK()
-    arg = rlz.column(rlz.any)
+    arg = Arg(rlz.column(rlz.any))
 
 
 class DenseRank(RankBase):
-
     """
     Compute position of first element within each equal-value group in sorted
     order, ignoring duplicate values.
@@ -1155,9 +968,8 @@ class DenseRank(RankBase):
     -------
     ranks : Int64Column, starting from 0
     """
-    __slots__ = 'arg',
     # Equivalent to SQL DENSE_RANK()
-    arg = rlz.column(rlz.any)
+    arg = Arg(rlz.column(rlz.any))
 
 
 class RowNumber(RankBase):
@@ -1185,8 +997,7 @@ class CumulativeOp(AnalyticOp):
 
 class CumulativeSum(CumulativeOp):
     """Cumulative sum. Requires an order window."""
-    __slots__ = 'arg',
-    arg = rlz.column(rlz.numeric)
+    arg = Arg(rlz.column(rlz.numeric))
 
     def output_type(self):
         if isinstance(self.arg, ir.BooleanValue):
@@ -1198,8 +1009,7 @@ class CumulativeSum(CumulativeOp):
 
 class CumulativeMean(CumulativeOp):
     """Cumulative mean. Requires an order window."""
-    __slots__ = 'arg',
-    arg = rlz.column(rlz.numeric)
+    arg = Arg(rlz.column(rlz.numeric))
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
@@ -1211,47 +1021,40 @@ class CumulativeMean(CumulativeOp):
 
 class CumulativeMax(CumulativeOp):
     """Cumulative max. Requires an order window."""
-    __slots__ = 'arg',
-    arg = rlz.column(rlz.any)
+    arg = Arg(rlz.column(rlz.any))
     output_type = rlz.array_like('arg')
 
 
 class CumulativeMin(CumulativeOp):
     """Cumulative min. Requires an order window."""
-    __slots__ = 'arg',
-    arg = rlz.column(rlz.any)
+    arg = Arg(rlz.column(rlz.any))
     output_type = rlz.array_like('arg')
 
 
 class PercentRank(AnalyticOp):
-    __slots__ = 'arg',
-    arg = rlz.column(rlz.any)
+    arg = Arg(rlz.column(rlz.any))
     output_type = rlz.shape_like('arg', dt.double)
 
 
 class NTile(AnalyticOp):
-    __slots__ = 'arg', 'buckets'
-    arg = rlz.column(rlz.any)
-    buckets = rlz.integer
+    arg = Arg(rlz.column(rlz.any))
+    buckets = Arg(rlz.integer)
     output_type = rlz.shape_like('arg', dt.int64)
 
 
 class FirstValue(AnalyticOp):
-    __slots__ = 'arg',
-    arg = rlz.column(rlz.any)
+    arg = Arg(rlz.column(rlz.any))
     output_type = rlz.typeof('arg')
 
 
 class LastValue(AnalyticOp):
-    __slots__ = 'arg',
-    arg = rlz.column(rlz.any)
+    arg = Arg(rlz.column(rlz.any))
     output_type = rlz.typeof('arg')
 
 
 class NthValue(AnalyticOp):
-    __slots__ = 'arg', 'nth'
-    arg = rlz.column(rlz.any)
-    nth = rlz.integer
+    arg = Arg(rlz.column(rlz.any))
+    nth = Arg(rlz.integer)
     output_type = rlz.typeof('arg')
 
 
@@ -1271,9 +1074,7 @@ class Distinct(TableNode, HasSchema):
     SELECT DISTINCT foo, bar
     FROM table
     """
-    __slots__ = 'table',
-
-    table = rlz.table
+    table = Arg(ir.TableExpr)
 
     def _validate(self):
         # check whether schema has overlapping columns or not
@@ -1297,9 +1098,7 @@ class DistinctColumn(ValueOp):
     for evaluation if the result should be array-like versus table-like. Also
     for calling count()
     """
-    __slots__ = 'arg',
-
-    arg = rlz.noop
+    arg = Arg(rlz.noop)
     output_type = rlz.typeof('arg')
 
     def count(self):
@@ -1308,10 +1107,8 @@ class DistinctColumn(ValueOp):
 
 
 class CountDistinct(Reduction):
-    __slots__ = 'arg', 'where'
-
-    arg = rlz.column(rlz.any)
-    where = rlz.optional(rlz.boolean)
+    arg = Arg(rlz.column(rlz.any))
+    where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
         return dt.int64.scalar_type()
@@ -1324,9 +1121,7 @@ class Any(ValueOp):
 
     # Depending on the kind of input boolean array, the result might either be
     # array-like (an existence-type predicate) or scalar (a reduction)
-    __slots__ = 'arg',
-
-    arg = rlz.column(rlz.boolean)
+    arg = Arg(rlz.column(rlz.boolean))
 
     @property
     def _reduction(self):
@@ -1344,9 +1139,7 @@ class Any(ValueOp):
 
 
 class All(ValueOp):
-    __slots__ = 'arg',
-
-    arg = rlz.column(rlz.boolean)
+    arg = Arg(rlz.column(rlz.boolean))
     output_type = rlz.scalar_like('arg')
     _reduction = True
 
@@ -1367,14 +1160,12 @@ class NotAll(All):
 
 
 class CumulativeAny(CumulativeOp):
-    __slots__ = 'arg',
-    arg = rlz.column(rlz.boolean)
+    arg = Arg(rlz.column(rlz.boolean))
     output_type = rlz.typeof('arg')
 
 
 class CumulativeAll(CumulativeOp):
-    __slots__ = 'arg',
-    arg = rlz.column(rlz.boolean)
+    arg = Arg(rlz.column(rlz.boolean))
     output_type = rlz.typeof('arg')
 
 
@@ -1512,12 +1303,10 @@ class SearchedCaseBuilder(object):
 
 
 class SimpleCase(ValueOp):
-    __slots__ = 'base', 'cases', 'results', 'default'
-
-    base = rlz.any
-    cases = rlz.list_of(rlz.any)
-    results = rlz.list_of(rlz.any)
-    default = rlz.any
+    base = Arg(rlz.any)
+    cases = Arg(rlz.list_of(rlz.any))
+    results = Arg(rlz.list_of(rlz.any))
+    default = Arg(rlz.any)
 
     def _validate(self):
         assert len(self.cases) == len(self.results)
@@ -1534,11 +1323,9 @@ class SimpleCase(ValueOp):
 
 
 class SearchedCase(ValueOp):
-    __slots__ = 'cases', 'results', 'default'
-
-    cases = rlz.list_of(rlz.boolean)
-    results = rlz.list_of(rlz.any)
-    default = rlz.any
+    cases = Arg(rlz.list_of(rlz.boolean))
+    results = Arg(rlz.list_of(rlz.any))
+    default = Arg(rlz.any)
 
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
@@ -1566,11 +1353,9 @@ class Where(ValueOp):
              .when(True, true_expr)
              .else_(false_or_null_expr)
     """
-    __slots__ = 'bool_expr', 'true_expr', 'false_null_expr'
-
-    bool_expr = rlz.boolean
-    true_expr = rlz.any
-    false_null_expr = rlz.any
+    bool_expr = Arg(rlz.boolean)
+    true_expr = Arg(rlz.any)
+    false_null_expr = Arg(rlz.any)
 
     def output_type(self):
         return rlz.shape_like(self.bool_expr, self.true_expr.type())
@@ -1645,11 +1430,9 @@ def _validate_join_predicates(left, right, predicates):
 
 
 class Join(TableNode):
-    __slots__ = 'left', 'right', 'predicates'
-
-    left = rlz.noop
-    right = rlz.noop
-    predicates = rlz.noop
+    left = Arg(rlz.noop)
+    right = Arg(rlz.noop)
+    predicates = Arg(rlz.noop)
 
     def __init__(self, left, right, predicates):
         _validate_join_tables(left, right)
@@ -1727,9 +1510,7 @@ class LeftAntiJoin(Join):
 
 
 class MaterializedJoin(TableNode, HasSchema):
-    __slots__ = 'join',
-
-    join = rlz.table
+    join = Arg(ir.TableExpr)
 
     def _validate(self):
         assert isinstance(self.join.op(), Join)
@@ -1769,12 +1550,10 @@ class CrossJoin(InnerJoin):
 
 
 class AsOfJoin(Join):
-    __slots__ = 'left', 'right', 'predicates', 'by',
-
-    left = rlz.noop
-    right = rlz.noop
-    predicates = rlz.noop
-    by = rlz.optional(rlz.noop)
+    left = Arg(rlz.noop)
+    right = Arg(rlz.noop)
+    predicates = Arg(rlz.noop)
+    by = Arg(rlz.noop, default=None)
 
     def __init__(self, left, right, predicates, by):
         super(AsOfJoin, self).__init__(left, right, predicates)
@@ -1782,11 +1561,9 @@ class AsOfJoin(Join):
 
 
 class Union(TableNode, HasSchema):
-    __slots__ = 'left', 'right', 'distinct'
-
-    left = rlz.noop
-    right = rlz.noop
-    distinct = rlz.optional(rlz.validator(bool), default=False)
+    left = Arg(rlz.noop)
+    right = Arg(rlz.noop)
+    distinct = Arg(rlz.validator(bool), default=False)
 
     def __init__(self, left, right, distinct=False):
         super(Union, self).__init__(left, right, distinct=distinct)
@@ -1806,11 +1583,9 @@ class Union(TableNode, HasSchema):
 
 
 class Limit(TableNode):
-    __slots__ = 'table', 'n', 'offset'
-
-    table = rlz.table
-    n = rlz.validator(int)
-    offset = rlz.validator(int)
+    table = Arg(ir.TableExpr)
+    n = Arg(rlz.validator(int))
+    offset = Arg(rlz.validator(int))
 
     def blocks(self):
         return True
@@ -1856,10 +1631,8 @@ def to_sort_key(table, key):
 
 
 class SortKey(Node):
-    __slots__ = 'expr', 'ascending'
-
-    expr = rlz.column(rlz.any)
-    ascending = rlz.optional(rlz.validator(bool), default=True)
+    expr = Arg(rlz.column(rlz.any))
+    ascending = Arg(rlz.validator(bool), default=True)
 
     def __repr__(self):
         # Temporary
@@ -1894,9 +1667,7 @@ class DeferredSortKey(object):
 
 
 class SelfReference(TableNode, HasSchema):
-    __slots__ = 'table',
-
-    table = rlz.table
+    table = Arg(ir.TableExpr)
 
     @property
     def schema(self):
@@ -1913,12 +1684,10 @@ class SelfReference(TableNode, HasSchema):
 
 
 class Selection(TableNode, HasSchema):
-    __slots__ = 'table', 'selections', 'predicates', 'sort_keys'
-
-    table = rlz.table
-    selections = rlz.noop
-    predicates = rlz.noop
-    sort_keys = rlz.noop
+    table = Arg(ir.TableExpr)
+    selections = Arg(rlz.noop, default=None)
+    predicates = Arg(rlz.noop, default=None)
+    sort_keys = Arg(rlz.noop, default=None)
 
     def __init__(self, table, selections=None, predicates=None,
                  sort_keys=None):
@@ -2112,14 +1881,12 @@ class Aggregation(TableNode, HasSchema):
     TODO: not putting this in the aggregate operation yet
     where : pre-aggregation predicate
     """
-    __slots__ = 'table', 'metrics', 'by', 'having', 'predicates', 'sort_keys'
-
-    table = rlz.table
-    metrics = rlz.noop
-    by = rlz.noop
-    having = rlz.noop
-    predicates = rlz.noop
-    sort_keys = rlz.noop
+    table = Arg(ir.TableExpr)
+    metrics = Arg(rlz.noop)
+    by = Arg(rlz.noop)
+    having = Arg(rlz.noop, default=None)
+    predicates = Arg(rlz.noop, default=None)
+    sort_keys = Arg(rlz.noop, default=None)
 
     def __init__(self, table, metrics, by=None, having=None,
                  predicates=None, sort_keys=None):
@@ -2221,10 +1988,8 @@ class Aggregation(TableNode, HasSchema):
 
 
 class NumericBinaryOp(BinaryOp):
-    __slots__ = 'left', 'right'
-
-    left = rlz.numeric
-    right = rlz.numeric
+    left = Arg(rlz.numeric)
+    right = Arg(rlz.numeric)
 
 
 class Add(NumericBinaryOp):
@@ -2257,17 +2022,13 @@ class FloorDivide(Divide):
 
 
 class LogicalBinaryOp(BinaryOp):
-    __slots__ = 'left', 'right'
-
-    left = rlz.boolean
-    right = rlz.boolean
+    left = Arg(rlz.boolean)
+    right = Arg(rlz.boolean)
     output_type = rlz.shape_like('args', dt.boolean)
 
 
 class Not(UnaryOp):
-    __slots__ = 'arg',
-
-    arg = rlz.boolean
+    arg = Arg(rlz.boolean)
     output_type = rlz.shape_like('arg', dt.boolean)
 
 
@@ -2288,10 +2049,8 @@ class Xor(LogicalBinaryOp):
 
 
 class Comparison(BinaryOp, BooleanValueOp):
-    __slots__ = 'left', 'right'
-
-    left = rlz.any
-    right = rlz.any
+    left = Arg(rlz.any)
+    right = Arg(rlz.any)
 
     def _maybe_cast_args(self, left, right):
         # it might not be necessary?
@@ -2340,11 +2099,9 @@ class IdenticalTo(Comparison):
 
 
 class Between(ValueOp, BooleanValueOp):
-    __slots__ = 'arg', 'lower_bound', 'upper_bound'
-
-    arg = rlz.any
-    lower_bound = rlz.any
-    upper_bound = rlz.any
+    arg = Arg(rlz.any)
+    lower_bound = Arg(rlz.any)
+    upper_bound = Arg(rlz.any)
 
     def output_type(self):
         arg, lower, upper = self.args
@@ -2356,18 +2113,15 @@ class Between(ValueOp, BooleanValueOp):
 
 
 class BetweenTime(Between):
-    __slots__ = 'arg', 'lower_bound', 'upper_bound'
-
-    arg = rlz.one_of([rlz.timestamp, rlz.time])
-    lower_bound = rlz.one_of([rlz.time, rlz.string])
-    upper_bound = rlz.one_of([rlz.time, rlz.string])
+    arg = Arg(rlz.one_of([rlz.timestamp, rlz.time]))
+    lower_bound = Arg(rlz.one_of([rlz.time, rlz.string]))
+    upper_bound = Arg(rlz.one_of([rlz.time, rlz.string]))
 
 
 class Contains(ValueOp, BooleanValueOp):
-    __slots__ = 'value', 'options'
-
-    value = rlz.any
-    options = rlz.one_of([rlz.column(rlz.any), rlz.list_of(rlz.any)])
+    value = Arg(rlz.any)
+    options = Arg(rlz.one_of([rlz.column(rlz.any),
+                              rlz.list_of(rlz.any)]))
 
     def output_type(self):
         all_args = [self.value]
@@ -2395,20 +2149,16 @@ class ReplaceValues(ValueOp):
 
 
 class SummaryFilter(ValueOp):
-    __slots__ = 'expr',
-
-    expr = rlz.noop
+    expr = Arg(rlz.noop)
 
     def output_type(self):
         return dt.boolean.array_type()
 
 
 class TopK(ValueOp):
-    __slots__ = 'arg', 'k', 'by'
-
-    arg = rlz.noop
-    k = rlz.noop
-    by = rlz.noop
+    arg = Arg(rlz.noop)
+    k = Arg(int)
+    by = Arg(rlz.noop)
 
     def __init__(self, arg, k, by=None):
         if by is None:
@@ -2446,15 +2196,11 @@ class E(Constant):
 
 
 class TemporalUnaryOp(UnaryOp):
-    __slots__ = 'arg',
-
-    arg = rlz.temporal
+    arg = Arg(rlz.temporal)
 
 
 class TimestampUnaryOp(UnaryOp):
-    __slots__ = 'arg',
-
-    arg = rlz.timestamp
+    arg = Arg(rlz.timestamp)
 
 
 _date_units = dict(
@@ -2521,34 +2267,26 @@ _timestamp_units = toolz.merge(_date_units, _time_units)
 
 
 class TimestampTruncate(ValueOp):
-    __slots__ = 'arg', 'unit'
-
-    arg = rlz.timestamp
-    unit = rlz.isin(_timestamp_units)
+    arg = Arg(rlz.timestamp)
+    unit = Arg(rlz.isin(_timestamp_units))
     output_type = rlz.shape_like('arg', dt.timestamp)
 
 
 class DateTruncate(ValueOp):
-    __slots__ = 'arg', 'unit'
-
-    arg = rlz.date
-    unit = rlz.isin(_date_units)
+    arg = Arg(rlz.date)
+    unit = Arg(rlz.isin(_date_units))
     output_type = rlz.shape_like('arg', dt.date)
 
 
 class TimeTruncate(ValueOp):
-    __slots__ = 'arg', 'unit'
-
-    arg = rlz.time
-    unit = rlz.isin(_time_units)
+    arg = Arg(rlz.time)
+    unit = Arg(rlz.isin(_time_units))
     output_type = rlz.shape_like('arg', dt.time)
 
 
 class Strftime(ValueOp):
-    __slots__ = 'arg', 'format_str'
-
-    arg = rlz.temporal
-    format_str = rlz.string
+    arg = Arg(rlz.temporal)
+    format_str = Arg(rlz.string)
     output_type = rlz.shape_like('arg', dt.string)
 
 
@@ -2569,20 +2307,17 @@ class ExtractMonth(ExtractTemporalField):
 
 
 class DayOfWeekIndex(UnaryOp):
-    __slots__ = 'arg',
-    arg = rlz.one_of([rlz.date, rlz.timestamp])
+    arg = Arg(rlz.one_of([rlz.date, rlz.timestamp]))
     output_type = rlz.shape_like('arg', dt.int32)
 
 
 class DayOfWeekName(UnaryOp):
-    __slots__ = 'arg',
-    arg = rlz.one_of([rlz.date, rlz.timestamp])
+    arg = Arg(rlz.one_of([rlz.date, rlz.timestamp]))
     output_type = rlz.shape_like('arg', dt.string)
 
 
 class DayOfWeekNode(Node):
-    __slots__ = 'arg',
-    arg = rlz.one_of([rlz.date, rlz.timestamp])
+    arg = Arg(rlz.one_of([rlz.date, rlz.timestamp]))
 
     def output_type(self):
         return ir.DayOfWeek
@@ -2617,103 +2352,88 @@ class Date(UnaryOp):
 
 
 class TimestampFromUNIX(ValueOp):
-    __slots__ = 'arg', 'unit'
-    arg = rlz.any
-    unit = rlz.isin(['s', 'ms', 'us'])
+    arg = Arg(rlz.any)
+    unit = Arg(rlz.isin(['s', 'ms', 'us']))
     output_type = rlz.shape_like('arg', dt.timestamp)
 
 
 class DecimalUnaryOp(UnaryOp):
-    __slots__ = 'arg',
-    arg = rlz.decimal
+    arg = Arg(rlz.decimal)
 
 
 class DecimalPrecision(DecimalUnaryOp):
-
     output_type = rlz.shape_like('arg', dt.int32)
 
 
 class DecimalScale(UnaryOp):
-
     output_type = rlz.shape_like('arg', dt.int32)
 
 
 class Hash(ValueOp):
-    __slots__ = 'arg', 'how'
-    arg = rlz.any
-    how = rlz.isin({'fnv'})
+    arg = Arg(rlz.any)
+    how = Arg(rlz.isin({'fnv'}))
     output_type = rlz.shape_like('arg', dt.int64)
 
 
 class DateAdd(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.date
-    right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'})
+    left = Arg(rlz.date)
+    right = Arg(rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'}))
     output_type = rlz.shape_like('left')
 
 
 class DateSub(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.date
-    right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'})
+    left = Arg(rlz.date)
+    right = Arg(rlz.interval(units={'Y', 'Q', 'M', 'W', 'D'}))
     output_type = rlz.shape_like('left')
 
 
 class DateDiff(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.date
-    right = rlz.date
+    left = Arg(rlz.date)
+    right = Arg(rlz.date)
     output_type = rlz.shape_like('left', dt.Interval('D'))
 
 
 class TimeAdd(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.time
-    right = rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'})
+    left = Arg(rlz.time)
+    right = Arg(rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'}))
     output_type = rlz.shape_like('left')
 
 
 class TimeSub(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.time
-    right = rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'})
+    left = Arg(rlz.time)
+    right = Arg(rlz.interval(units={'h', 'm', 's', 'ms', 'us', 'ns'}))
     output_type = rlz.shape_like('left')
 
 
 class TimeDiff(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.time
-    right = rlz.time
+    left = Arg(rlz.time)
+    right = Arg(rlz.time)
     output_type = rlz.shape_like('left', dt.Interval('s'))
 
 
 class TimestampAdd(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.timestamp
-    right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D',
-                                'h', 'm', 's', 'ms', 'us', 'ns'})
+    left = Arg(rlz.timestamp)
+    right = Arg(rlz.interval(units={'Y', 'Q', 'M', 'W', 'D',
+                                    'h', 'm', 's', 'ms', 'us', 'ns'}))
     output_type = rlz.shape_like('left')
 
 
 class TimestampSub(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.timestamp
-    right = rlz.interval(units={'Y', 'Q', 'M', 'W', 'D',
-                                'h', 'm', 's', 'ms', 'us', 'ns'})
+    left = Arg(rlz.timestamp)
+    right = Arg(rlz.interval(units={'Y', 'Q', 'M', 'W', 'D',
+                                    'h', 'm', 's', 'ms', 'us', 'ns'}))
     output_type = rlz.shape_like('left')
 
 
 class TimestampDiff(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.timestamp
-    right = rlz.timestamp
+    left = Arg(rlz.timestamp)
+    right = Arg(rlz.timestamp)
     output_type = rlz.shape_like('left', dt.Interval('s'))
 
 
 class IntervalAdd(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.interval
-    right = rlz.interval
+    left = Arg(rlz.interval)
+    right = Arg(rlz.interval)
 
     def output_type(self):
         args = [arg.cast(arg.type().value_type) for arg in self.args]
@@ -2723,9 +2443,8 @@ class IntervalAdd(BinaryOp):
 
 
 class IntervalMultiply(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.interval
-    right = rlz.numeric
+    left = Arg(rlz.interval)
+    right = Arg(rlz.numeric)
 
     def output_type(self):
         args = [self.left.cast(self.left.type().value_type), self.right]
@@ -2735,18 +2454,15 @@ class IntervalMultiply(BinaryOp):
 
 
 class IntervalFloorDivide(BinaryOp):
-    __slots__ = 'left', 'right'
-    left = rlz.interval
-    right = rlz.numeric
+    left = Arg(rlz.interval)
+    right = Arg(rlz.numeric)
     output_type = rlz.shape_like('left')
 
 
 class IntervalFromInteger(ValueOp):
-    __slots__ = 'arg', 'unit'
-
-    arg = rlz.integer
-    unit = rlz.isin(['Y', 'Q', 'M', 'W', 'D',
-                     'h', 'm', 's', 'ms', 'us', 'ns'])
+    arg = Arg(rlz.integer)
+    unit = Arg(rlz.isin(['Y', 'Q', 'M', 'W', 'D',
+                         'h', 'm', 's', 'ms', 'us', 'ns']))
 
     @property
     def resolution(self):
@@ -2758,23 +2474,20 @@ class IntervalFromInteger(ValueOp):
 
 
 class ArrayLength(UnaryOp):
-    __slots__ = 'arg',
-    arg = rlz.value(dt.Array(dt.any))
+    arg = Arg(rlz.array)
     output_type = rlz.shape_like('arg', dt.int64)
 
 
 class ArraySlice(ValueOp):
-    __slots__ = 'arg', 'start', 'stop'
-    arg = rlz.value(dt.Array(dt.any))
-    start = rlz.integer
-    stop = rlz.optional(rlz.integer)
+    arg = Arg(rlz.array)
+    start = Arg(rlz.integer)
+    stop = Arg(rlz.integer, default=None)
     output_type = rlz.typeof('arg')
 
 
 class ArrayIndex(ValueOp):
-    __slots__ = 'arg', 'index'
-    arg = rlz.value(dt.Array(dt.any))
-    index = rlz.integer
+    arg = Arg(rlz.array)
+    index = Arg(rlz.integer)
 
     def output_type(self):
         value_dtype = self.arg.type().value_type
@@ -2782,9 +2495,8 @@ class ArrayIndex(ValueOp):
 
 
 class ArrayConcat(ValueOp):
-    __slots__ = 'left', 'right'
-    left = rlz.value(dt.Array(dt.any))
-    right = rlz.value(dt.Array(dt.any))
+    left = Arg(rlz.array)
+    right = Arg(rlz.array)
     output_type = rlz.shape_like('left')
 
     def _validate(self):
@@ -2799,28 +2511,24 @@ class ArrayConcat(ValueOp):
 
 
 class ArrayRepeat(ValueOp):
-    __slots__ = 'arg', 'times'
-    arg = rlz.value(dt.Array(dt.any))
-    times = rlz.integer
+    arg = Arg(rlz.array)
+    times = Arg(rlz.integer)
     output_type = rlz.typeof('arg')
 
 
 class ArrayCollect(Reduction):
-    __slots__ = 'arg',
-    arg = rlz.column(rlz.any)
+    arg = Arg(rlz.column(rlz.any))
     output_type = rlz.scalar_like('arg')
 
 
 class MapLength(ValueOp):
-    __slots__ = 'arg',
-    arg = rlz.value(dt.Map(dt.any, dt.any))
+    arg = Arg(rlz.mapping)
     output_type = rlz.shape_like('arg', dt.int64)
 
 
 class MapValueForKey(ValueOp):
-    __slots__ = 'arg', 'key'
-    arg = rlz.value(dt.Map(dt.any, dt.any))
-    key = rlz.one_of([rlz.string, rlz.integer])
+    arg = Arg(rlz.mapping)
+    key = Arg(rlz.one_of([rlz.string, rlz.integer]))
 
     def output_type(self):
         value_dtype = self.arg.type().value_type
@@ -2848,28 +2556,24 @@ class MapValueOrDefaultForKey(ValueOp):
 
 
 class MapKeys(ValueOp):
-    __slots__ = 'arg',
-    arg = rlz.value(dt.Map(dt.any, dt.any))
+    arg = Arg(rlz.mapping)
     output_type = rlz.typeof('arg')
 
 
 class MapValues(ValueOp):
-    __slots__ = 'arg',
-    arg = rlz.value(dt.Map(dt.any, dt.any))
+    arg = Arg(rlz.mapping)
     output_type = rlz.typeof('arg')
 
 
 class MapConcat(ValueOp):
-    __slots__ = 'left', 'right'
-    left = rlz.value(dt.Map(dt.any, dt.any))
-    right = rlz.value(dt.Map(dt.any, dt.any))
+    left = Arg(rlz.mapping)
+    right = Arg(rlz.mapping)
     output_type = rlz.typeof('left')
 
 
 class StructField(ValueOp):
-    __slots__ = 'arg', 'field'
-    arg = rlz.value(dt.Struct)
-    field = rlz.instance_of(six.string_types)
+    arg = Arg(rlz.struct)
+    field = Arg(six.string_types)
 
     def output_type(self):
         struct_dtype = self.arg.type()
@@ -2878,9 +2582,8 @@ class StructField(ValueOp):
 
 
 class Literal(ValueOp):
-    __slots__ = 'value', 'dtype'
-    value = rlz.noop
-    dtype = rlz.datatype
+    value = Arg(rlz.noop)
+    dtype = Arg(dt.dtype)
 
     def __repr__(self):
         return '{}({})'.format(
@@ -2905,16 +2608,14 @@ class Literal(ValueOp):
 class NullLiteral(Literal):
     """Typeless NULL literal"""
 
-    __slots__ = 'value', 'dtype'
-
-    value = rlz.optional(rlz.instance_of(type(None)), default=None)
-    dtype = rlz.optional(rlz.instance_of(dt.Null), default=dt.null)
+    value = Arg(type(None), default=None)
+    dtype = Arg(dt.Null, default=dt.null)
 
 
 class ScalarParameter(ValueOp):
     parameter_counter = itertools.count()
 
-    dtype = rlz.datatype
+    dtype = Arg(dt.dtype)
     counter = Arg(int, default=partial(next, parameter_counter))
 
     def __repr__(self):
@@ -2951,9 +2652,7 @@ class ScalarParameter(ValueOp):
 class ExpressionList(Node):
     """Data structure for a list of arbitrary expressions"""
 
-    __slots__ = 'exprs',
-
-    exprs = rlz.noop
+    exprs = Arg(rlz.noop)
 
     def __init__(self, values):
         values = list(map(rlz.any, values))
@@ -2969,9 +2668,7 @@ class ExpressionList(Node):
 class ValueList(ValueOp):
     """Data structure for a list of value expressions"""
 
-    __slots__ = 'values',
-
-    values = rlz.noop
+    values = Arg(rlz.noop)
     display_argnames = False  # disable showing argnames in repr
 
     def __init__(self, values):

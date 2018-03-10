@@ -9,6 +9,8 @@ import ibis.expr.rules as rlz  # noqa: E402
 import ibis.expr.visualize as viz  # noqa: E402
 import ibis.expr.operations as ops  # noqa: E402
 
+from ibis.expr.signature import Argument as Arg  # noqa: E402
+
 pytestmark = pytest.mark.skipif(
     int(os.environ.get('CONDA_BUILD', 0)) == 1, reason='CONDA_BUILD defined'
 )
@@ -41,10 +43,8 @@ def test_custom_expr():
         pass
 
     class MyExprNode(ops.Node):
-        __slots__ = 'foo', 'bar'
-
-        foo = rlz.string
-        bar = rlz.numeric
+        foo = Arg(rlz.string)
+        bar = Arg(rlz.numeric)
 
         def output_type(self):
             return MyExpr
@@ -65,10 +65,8 @@ def test_custom_expr_with_not_implemented_type():
             raise NotImplementedError
 
     class MyExprNode(ops.Node):
-        __slots__ = 'foo', 'bar'
-
-        foo = rlz.string
-        bar = rlz.numeric
+        foo = Arg(rlz.string)
+        bar = Arg(rlz.numeric)
 
         def output_type(self):
             return MyExpr

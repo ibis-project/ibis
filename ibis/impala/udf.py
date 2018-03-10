@@ -17,6 +17,7 @@ import ibis.util as util
 import ibis.common as com
 import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
+import ibis.expr.signature as sig
 import ibis.expr.operations as ops
 import ibis.impala.compiler as comp
 
@@ -200,7 +201,7 @@ def wrap_udf(hdfs_file, inputs, output, so_symbol, name=None):
     Parameters
     ----------
     hdfs_file: .so file that contains relevant UDF
-    inputs: list of strings or ops.TypeSignature
+    inputs: list of strings or sig.TypeSignature
       Input types to UDF
     output: string
       Ibis data type
@@ -255,17 +256,17 @@ def aggregate_function(inputs, output, name=None):
 
 
 def _ibis_signature(inputs):
-    if isinstance(inputs, ops.TypeSignature):
+    if isinstance(inputs, sig.TypeSignature):
         return inputs
 
-    arguments = [('_{}'.format(i), rlz.value(dtype))
+    arguments = [('_{}'.format(i), sig.Argument(rlz.value(dtype)))
                  for i, dtype in enumerate(inputs)]
-    return ops.TypeSignature(arguments)
+    return sig.TypeSignature(arguments)
 
 
 def _create_operation_class(name, input_type, output_type):
     func_dict = {
-        'input_type': input_type,
+        'signature': input_type,
         'output_type': output_type,
     }
     klass = type(name, (ops.ValueOp,), func_dict)

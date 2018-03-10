@@ -19,6 +19,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.analysis as L
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.expr.signature import Argument as Arg
 
 
 class ExistsExpr(ir.AnalyticExpr):
@@ -29,21 +30,16 @@ class ExistsExpr(ir.AnalyticExpr):
 
 class ExistsSubquery(ops.Node):
     """Helper class"""
-
-    __slots__ = 'foreign_table', 'predicates'
-
-    foreign_table = rlz.noop
-    predicates = rlz.noop
+    foreign_table = Arg(rlz.noop)
+    predicates = Arg(rlz.noop)
 
     def output_type(self):
         return ExistsExpr
 
 
 class NotExistsSubquery(ops.Node):
-    __slots__ = 'foreign_table', 'predicates'
-
-    foreign_table = rlz.noop
-    predicates = rlz.noop
+    foreign_table = Arg(rlz.noop)
+    predicates = Arg(rlz.noop)
 
     def output_type(self):
         return ExistsExpr

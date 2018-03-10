@@ -17,6 +17,8 @@ import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
+from ibis.expr.signature import Argument as Arg
+
 
 class BucketLike(ops.ValueOp):
 
@@ -30,16 +32,12 @@ class BucketLike(ops.ValueOp):
 
 
 class Bucket(BucketLike):
-
-    __slots__ = ('arg', 'buckets', 'closed', 'close_extreme', 'include_under',
-                 'include_over')
-
-    arg = rlz.noop
-    buckets = rlz.noop
-    closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
-    close_extreme = rlz.optional(rlz.instance_of(bool), default=True)
-    include_under = rlz.optional(rlz.instance_of(bool), default=False)
-    include_over = rlz.optional(rlz.instance_of(bool), default=False)
+    arg = Arg(rlz.noop)
+    buckets = Arg(rlz.noop)
+    closed = Arg(rlz.isin({'left', 'right'}), default='left')
+    close_extreme = Arg(bool, default=True)
+    include_under = Arg(bool, default=False)
+    include_over = Arg(bool, default=False)
 
     def _validate(self):
         if not len(self.buckets):
@@ -57,15 +55,12 @@ class Bucket(BucketLike):
 
 
 class Histogram(BucketLike):
-
-    __slots__ = 'arg', 'nbins', 'binwidth', 'base', 'closed', 'aux_hash'
-
-    arg = rlz.noop
-    nbins = rlz.noop
-    binwidth = rlz.noop
-    base = rlz.noop
-    closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
-    aux_hash = rlz.optional(rlz.noop)
+    arg = Arg(rlz.noop)
+    nbins = Arg(rlz.noop, default=None)
+    binwidth = Arg(rlz.noop, default=None)
+    base = Arg(rlz.noop, default=None)
+    closed = Arg(rlz.isin({'left', 'right'}), default='left')
+    aux_hash = Arg(rlz.noop, default=None)
 
     def _validate(self):
         if self.nbins is None:
@@ -80,12 +75,9 @@ class Histogram(BucketLike):
 
 
 class CategoryLabel(ops.ValueOp):
-
-    __slots__ = 'arg', 'labels', 'nulls'
-
-    arg = rlz.category
-    labels = rlz.noop
-    nulls = rlz.noop
+    arg = Arg(rlz.category)
+    labels = Arg(rlz.noop)
+    nulls = Arg(rlz.noop, default=None)
     output_type = rlz.shape_like('arg', dt.string)
 
     def _validate(self):
