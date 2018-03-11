@@ -399,7 +399,7 @@ class CoalesceLike(ValueOp):
     def output_type(self):
         first = self.arg[0]
         if isinstance(first, (ir.IntegerValue, ir.FloatingValue)):
-            dtype = first.type().largest()
+            dtype = first.type().largest
         else:
             dtype = first.type()
 
@@ -751,7 +751,7 @@ class Sum(Reduction):
         if isinstance(self.arg, ir.BooleanValue):
             dtype = dt.int64
         else:
-            dtype = self.arg.type().largest()
+            dtype = self.arg.type().largest
         return dtype.scalar_type()
 
 
@@ -761,7 +761,7 @@ class Mean(Reduction):
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
-            dtype = self.arg.type().largest()
+            dtype = self.arg.type().largest
         else:
             dtype = dt.float64
         return dtype.scalar_type()
@@ -796,7 +796,7 @@ class VarianceBase(Reduction):
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
-            dtype = self.arg.type().largest()
+            dtype = self.arg.type().largest
         else:
             dtype = dt.float64
         return dtype.scalar_type()
@@ -1003,7 +1003,7 @@ class CumulativeSum(CumulativeOp):
         if isinstance(self.arg, ir.BooleanValue):
             dtype = dt.int64
         else:
-            dtype = self.arg.type().largest()
+            dtype = self.arg.type().largest
         return dtype.array_type()
 
 
@@ -1013,7 +1013,7 @@ class CumulativeMean(CumulativeOp):
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
-            dtype = self.arg.type().largest()
+            dtype = self.arg.type().largest
         else:
             dtype = dt.float64
         return dtype.array_type()

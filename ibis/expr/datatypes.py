@@ -231,12 +231,14 @@ class Timestamp(Primitive):
 
 class SignedInteger(Integer):
 
+    @property
     def largest(self):
         return int64
 
 
 class UnsignedInteger(Integer):
 
+    @property
     def largest(self):
         return uint64
 
@@ -253,6 +255,7 @@ class Floating(Primitive):
 
     __slots__ = ()
 
+    @property
     def largest(self):
         return float64
 
@@ -360,6 +363,7 @@ class Decimal(DataType):
     def _equal_part(self, other, cache=None):
         return self.precision == other.precision and self.scale == other.scale
 
+    @property
     def largest(self):
         return Decimal(self.precision, 38)
 

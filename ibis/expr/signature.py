@@ -107,7 +107,7 @@ class Return(object):
 
 class TypeSignature(OrderedDict):
 
-    __slots__ = tuple()
+    __slots__ = ()
 
     def validate(self, *args, **kwargs):
         if len(args) > len(self.keys()):
@@ -195,7 +195,7 @@ class AnnotableMeta(type):
 @six.add_metaclass(AnnotableMeta)
 class Annotable(object):
 
-    __slots__ = tuple()
+    __slots__ = ()
 
     def __init__(self, *args, **kwargs):
         for name, value in self.signature.validate(*args, **kwargs):
