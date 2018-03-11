@@ -1327,9 +1327,8 @@ class SearchedCase(ValueOp):
     results = Arg(rlz.list_of(rlz.any))
     default = Arg(rlz.any)
 
-    def __init__(self, cases, results, default):
-        assert len(cases) == len(results)
-        super(SearchedCase, self).__init__(cases, results, default)
+    def _validate(self):
+        assert len(self.cases) == len(self.results)
 
     def root_tables(self):
         cases, results, default = self.args
@@ -1564,10 +1563,6 @@ class Union(TableNode, HasSchema):
     left = Arg(rlz.noop)
     right = Arg(rlz.noop)
     distinct = Arg(rlz.validator(bool), default=False)
-
-    def __init__(self, left, right, distinct=False):
-        super(Union, self).__init__(left, right, distinct=distinct)
-        self._validate()
 
     def _validate(self):
         if not self.left.schema().equals(self.right.schema()):
