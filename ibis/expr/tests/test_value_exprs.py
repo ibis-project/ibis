@@ -47,6 +47,10 @@ def test_null():
     expr2 = ibis.null()
     assert_equal(expr, expr2)
 
+    assert expr is expr2
+    assert expr.type() is dt.null
+    assert expr2.type() is dt.null
+
 
 @pytest.mark.xfail(
     raises=AssertionError,
@@ -168,6 +172,7 @@ def test_simple_map_operations():
     # test for an invalid default type, nulls are ok
     with pytest.raises(ValueError):
         expr.get('d', ibis.literal('foo'))
+
     assert isinstance(expr.get('d', ibis.literal(None)).op(),
                       ops.MapValueOrDefaultForKey)
 

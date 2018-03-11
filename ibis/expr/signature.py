@@ -83,7 +83,7 @@ class Argument(object):
             if value is _undefined or value is None:
                 if self.default is None:
                     return None
-                if callable(self.default):
+                elif util.is_function(self.default):
                     value = self.default()
                 else:
                     value = self.default
