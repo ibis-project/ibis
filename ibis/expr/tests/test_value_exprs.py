@@ -185,11 +185,9 @@ def test_literal_with_different_type_failure(value, expected_type):
 
 def test_literal_list():
     what = [1, 2, 1000]
-    expr = api.as_value_expr(what)
+    expr = api.literal(what)
 
-    assert isinstance(expr, ir.ColumnExpr)
-    assert isinstance(expr.op(), ir.ValueList)
-    assert isinstance(expr.op().values[2], ir.Int16Scalar)
+    assert isinstance(expr, ir.ArrayScalar)
 
     # it works!
     repr(expr)
@@ -213,11 +211,12 @@ def test_mixed_arity(table):
     repr(expr)
 
 
-def test_isin_notin_list(table):
-    vals = [1, 2, 3]
+@pytest.mark.parametrize('container', [list, tuple, set, frozenset])
+def test_isin_notin(table, container):
+    values = container([1, 2, 3, 4])
 
-    expr = table.a.isin(vals)
-    not_expr = table.a.notin(vals)
+    expr = table.a.isin(values)
+    not_expr = table.a.notin(values)
 
     assert isinstance(expr, ir.BooleanColumn)
     assert isinstance(expr.op(), ops.Contains)
@@ -249,7 +248,7 @@ def test_isin_notin_scalars():
     result = a.isin([1, 2])
     assert isinstance(result, ir.BooleanScalar)
 
-    result = a.notin([b, c])
+    result = a.notin([b, c, 3])
     assert isinstance(result, ir.BooleanScalar)
 
 
@@ -264,16 +263,16 @@ def test_negate_isin():
     assert False
 
 
-def test_scalar_isin_list_with_array(table):
-    val = ibis.literal(2)
+# def test_scalar_isin_list_with_array(table):
+#     val = ibis.literal(2)
 
-    options = [table.a, table.b, table.c]
+#     options = [table.a, table.b, table.c]
 
-    expr = val.isin(options)
-    assert isinstance(expr, ir.BooleanColumn)
+#     expr = val.isin(options)
+#     assert isinstance(expr, ir.BooleanColumn)
 
-    not_expr = val.notin(options)
-    assert isinstance(not_expr, ir.BooleanColumn)
+#     not_expr = val.notin(options)
+#     assert isinstance(not_expr, ir.BooleanColumn)
 
 
 def test_distinct_basic(functional_alltypes):
@@ -1070,7 +1069,7 @@ def test_time_compare(op, left, right):
         operator.le,
         operator.gt,
         operator.ge,
-        ]
+    ]
 )
 def test_time_timestamp_invalid_compare(op, left, right):
     result = op(left, right)
@@ -1084,6 +1083,13 @@ def test_time_invalid_compare_on_py2():
     # in a deferred way in python 2, they short circuit in the CPython
     result = operator.eq(time(10, 0), literal('10:00'))
     assert not result
+
+
+def test_scalar_parameter_set():
+    value = ibis.param({dt.int64})
+
+    assert isinstance(value.op(), ir.ScalarParameter)
+    assert value.type().equals(dt.Set(dt.int64))
 
 
 def test_scalar_parameter_repr():

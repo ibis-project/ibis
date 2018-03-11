@@ -514,6 +514,22 @@ class Array(Variadic):
 
 
 @parametric
+class Set(Variadic):
+
+    __slots__ = 'value_type',
+
+    def __init__(self, value_type, nullable=True):
+        super(Set, self).__init__(nullable=nullable)
+        self.value_type = dtype(value_type)
+
+    def __str__(self):
+        return '{}<{}>'.format(self.name.lower(), self.value_type)
+
+    def _equal_part(self, other, cache=None):
+        return self.value_type.equals(other.value_type, cache=cache)
+
+
+@parametric
 class Enum(DataType):
 
     __slots__ = 'rep_type', 'value_type'
@@ -637,6 +653,7 @@ class Tokens(object):
     TIMESTAMP = 18
     TIME = 19
     INTERVAL = 20
+    SET = 21
 
     @staticmethod
     def name(value):
@@ -703,6 +720,7 @@ _TYPE_RULES = OrderedDict(
                 'varchar',
                 'char',
                 'array',
+                'set',
                 'map',
                 'struct',
                 'interval'
@@ -711,6 +729,7 @@ _TYPE_RULES = OrderedDict(
                 Tokens.VARCHAR,
                 Tokens.CHAR,
                 Tokens.ARRAY,
+                Tokens.SET,
                 Tokens.MAP,
                 Tokens.STRUCT,
                 Tokens.INTERVAL
@@ -828,6 +847,7 @@ class TypeParser(object):
         type : primitive
              | decimal
              | array
+             | set
              | map
              | struct
 
@@ -865,6 +885,8 @@ class TypeParser(object):
         integer : [0-9]+
 
         array : "array" "<" type ">"
+
+        set : "set" "<" type ">"
 
         map : "map" "<" type "," type ">"
 
@@ -936,6 +958,14 @@ class TypeParser(object):
             self._expect(Tokens.RBRACKET)
             return Array(value_type)
 
+        elif self._accept(Tokens.SET):
+            self._expect(Tokens.LBRACKET)
+
+            value_type = self.type()
+
+            self._expect(Tokens.RBRACKET)
+            return Set(value_type)
+
         elif self._accept(Tokens.MAP):
             self._expect(Tokens.LBRACKET)
 
@@ -1004,6 +1034,20 @@ def from_string(value):
     return TypeParser(value).parse()
 
 
+@dtype.register(list)
+def from_list(values):
+    if not values:
+        return Array(null)
+    return Array(highest_precedence(map(dtype, values)))
+
+
+@dtype.register((set, frozenset))
+def from_set(values):
+    if not values:
+        return Set(null)
+    return Set(highest_precedence(map(dtype, values)))
+
+
 infer = Dispatcher('infer')
 
 
@@ -1047,10 +1091,17 @@ def infer_map(value):
 
 
 @infer.register(list)
-def infer_list(value):
-    if not value:
+def infer_list(values):
+    if not values:
         return Array(null)
-    return Array(highest_precedence(map(infer, value)))
+    return Array(highest_precedence(map(infer, values)))
+
+
+@infer.register((set, frozenset))
+def infer_set(values):
+    if not values:
+        return Set(null)
+    return Set(highest_precedence(map(infer, values)))
 
 
 @infer.register(datetime.time)
@@ -1174,7 +1225,8 @@ def can_cast_string_to_temporal(source, target, value=None, **kwargs):
 
 
 @castable.register(Array, Array)
-def can_cast_arrays(source, target, **kwargs):
+@castable.register(Set, Set)
+def can_cast_simple_variadic(source, target, **kwargs):
     return castable(source.value_type, target.value_type)
 
 

@@ -431,14 +431,6 @@ class ValueTyped(AnyTyped, ValueArgument):
         return AnyTyped._validate(self, args, i)
 
 
-class ArrayValueTyped(ValueTyped):
-
-    def __init__(self, value_type, *args, **kwargs):
-        super(ArrayValueTyped, self).__init__(
-            dt.Array(value_type), *args, **kwargs
-        )
-
-
 class MapValueTyped(ValueTyped):
 
     def __init__(self, key_type, value_type, *args, **kwargs):
@@ -640,9 +632,24 @@ def array(value_type, **arg_kwds):
     ----------
     value_type : ibis.expr.datatypes.DataType
     """
-    return ArrayValueTyped(
-        value_type,
+    return ValueTyped(
+        dt.Array(value_type),
         'not array with value_type {0}'.format(value_type),
+        **arg_kwds
+    )
+
+
+def set_(value_type, **arg_kwds):
+    """Require that an expression is a Set type whose value_type is
+    `value_type`.
+
+    Parameters
+    ----------
+    value_type : ibis.expr.datatypes.DataType
+    """
+    return ValueTyped(
+        dt.Set(value_type),
+        'not set with value_type {0}'.format(value_type),
         **arg_kwds
     )
 

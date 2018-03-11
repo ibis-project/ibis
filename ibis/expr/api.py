@@ -835,6 +835,8 @@ def isin(arg, values):
     -------
     contains : BooleanValue
     """
+    if isinstance(values, (list, tuple)):
+        values = set(values)
     op = _ops.Contains(arg, values)
     return op.to_expr()
 
@@ -844,6 +846,8 @@ def notin(arg, values):
     Like isin, but checks whether this expression's value(s) are not
     contained in the passed values. See isin docs for full usage.
     """
+    if isinstance(values, (list, tuple)):
+        values = set(values)
     op = _ops.NotContains(arg, values)
     return op.to_expr()
 

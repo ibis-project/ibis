@@ -2211,23 +2211,9 @@ class BetweenTime(Between):
 
 class Contains(BooleanValueOp):
 
-    def __init__(self, value, options):
-        self.value = as_value_expr(value)
-        self.options = as_value_expr(options)
-        super(Contains, self).__init__(self.value, self.options)
-
-    def output_type(self):
-        all_args = [self.value]
-
-        options = self.options.op()
-        if isinstance(options, ir.ValueList):
-            all_args += options.values
-        elif isinstance(self.options, ColumnExpr):
-            all_args += [self.options]
-        else:
-            raise TypeError(type(options))
-
-        return rules.shape_like_args(all_args, 'boolean')
+    input_type = [rules.value(name='value'),
+                  rules.set_(dt.any, name='options')]
+    output_type = rules.shape_like_arg(0, 'boolean')
 
 
 class NotContains(Contains):

@@ -512,14 +512,6 @@ class ExprList(Expr):
         return ExpressionList(exprs).to_expr()
 
 
-def infer_literal_type(value):
-    # TODO: depricate?
-    if value is null:
-        return dt.null
-
-    return dt.infer(value)
-
-
 class Literal(ValueOp):
 
     def __init__(self, value, type=None):
@@ -612,6 +604,7 @@ def param(type, name=None):
     """
     if name is None:
         name = _parameter_name()
+
     expr = ScalarParameter(dt.dtype(type), name=name).to_expr()
     return expr.name(name)
 
@@ -1093,6 +1086,10 @@ class ArrayValue(ParameterizedValue):
     pass
 
 
+class SetValue(ParameterizedValue):
+    pass
+
+
 class MapValue(ParameterizedValue):
     pass
 
@@ -1325,6 +1322,20 @@ class ArrayColumn(ArrayValue, ColumnExpr):
         ColumnExpr.__init__(self, arg, name=name)
 
 
+class SetScalar(SetValue, ScalarExpr):
+
+    def __init__(self, arg, meta, name=None):
+        SetValue.__init__(self, meta)
+        ScalarExpr.__init__(self, arg, name=name)
+
+
+class SetColumn(SetValue, ColumnExpr):
+
+    def __init__(self, arg, meta, name=None):
+        SetValue.__init__(self, meta)
+        ColumnExpr.__init__(self, arg, name=name)
+
+
 class MapScalar(MapValue, ScalarExpr):
 
     def __init__(self, arg, meta, name=None):
@@ -1361,16 +1372,12 @@ unnamed = UnnamedMarker()
 
 
 def as_value_expr(val):
-    import pandas as pd
-    if not isinstance(val, Expr):
-        if isinstance(val, (tuple, list)):
-            val = sequence(val)
-        elif isinstance(val, pd.Series):
-            val = sequence(list(val))
-        else:
-            val = literal(val)
-
-    return val
+    if isinstance(val, Expr):
+        return val
+    elif isinstance(val, (tuple, list)):
+        return sequence(val)
+    else:
+        return literal(val)
 
 
 def castable(source, target):
@@ -1397,6 +1404,11 @@ def cast(source, target):
 
     out_type = target.type().scalar_type()
     return out_type(op)
+
+
+@dt.infer.register(ScalarExpr)
+def infer_scalar_expr(value):
+    return value.type()
 
 
 def literal(value, type=None):
@@ -1434,7 +1446,10 @@ def literal(value, type=None):
     if hasattr(value, 'op') and isinstance(value.op(), Literal):
         return value
 
-    dtype = infer_literal_type(value)
+    if value is null:
+        dtype = dt.null
+    else:
+        dtype = dt.infer(value)
 
     if type is not None:
         try:

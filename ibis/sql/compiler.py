@@ -1165,8 +1165,8 @@ class ExprTranslator(object):
             )
 
     def _trans_param(self, expr):
-        raw_value = self.context.params[expr]
-        literal = ibis.literal(raw_value, type=expr.type())
+        value = self.context.params[expr]
+        literal = ibis.literal(value, expr.type())
         return self.translate(literal)
 
     @classmethod
