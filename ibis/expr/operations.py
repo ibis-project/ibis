@@ -2608,24 +2608,19 @@ class NullLiteral(Literal):
 
 
 class ScalarParameter(ValueOp):
-    parameter_counter = itertools.count()
+    _counter = itertools.count()
 
     dtype = Arg(dt.dtype)
-    counter = Arg(int, default=partial(next, parameter_counter))
-
-    def __repr__(self):
-        return '{}(name={!r}, dtype={})'.format(
-            type(self).__name__, self.name, self.dtype
-        )
+    counter = Arg(int, default=lambda: next(ScalarParameter._counter))
 
     def resolve_name(self):
         return 'param_{:d}'.format(self.counter)
 
     def __repr__(self):
-        return '{}(type={})'.format(type(self).__name__, self.type)
+        return '{}(type={})'.format(type(self).__name__, self.dtype)
 
     def __hash__(self):
-        return hash((self.type, self.counter))
+        return hash((self.dtype, self.counter))
 
     def output_type(self):
         return self.dtype.scalar_type()
@@ -2634,14 +2629,11 @@ class ScalarParameter(ValueOp):
         return (
             isinstance(other, ScalarParameter) and
             self.counter == other.counter and
-            self.type.equals(other.type, cache=cache)
+            self.dtype.equals(other.dtype, cache=cache)
         )
 
     def root_tables(self):
         return []
-
-    def resolve_name(self):
-        return self.name
 
 
 class ExpressionList(Node):
