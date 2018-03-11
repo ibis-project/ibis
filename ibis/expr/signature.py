@@ -66,6 +66,7 @@ class Argument(object):
             self.default == other.default
         )
 
+    @property
     def optional(self):
         return self.default is not _undefined
 
@@ -79,7 +80,7 @@ class Argument(object):
         name : Optional[str]
           Argument name for error message
         """
-        if self.optional():
+        if self.optional:
             if value is _undefined or value is None:
                 if self.default is None:
                     return None
