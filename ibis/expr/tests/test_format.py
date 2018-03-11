@@ -1,19 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-import re
-
 import ibis
 
 from ibis.expr.types import Expr
@@ -233,4 +217,7 @@ NullIf[int64*]
 
 def test_scalar_parameter_formatting():
     value = ibis.param('array<date>')
-    assert re.match(r'param_\d+ = ScalarParameter\[array<date>\]', str(value))
+    assert str(value) == 'ScalarParameter[array<date>]'
+
+    value = ibis.param('int64').name('my_param')
+    assert str(value) == 'my_param = ScalarParameter[int64]'

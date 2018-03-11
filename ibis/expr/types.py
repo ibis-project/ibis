@@ -547,24 +547,23 @@ class Literal(ValueOp):
         return []
 
 
-_parameter_counter = itertools.count()
-
-
-def _parameter_name():
-    return 'param_{:d}'.format(next(_parameter_counter))
-
-
 class ScalarParameter(ValueOp):
 
-    def __init__(self, type, name=None):
+    parameter_counter = itertools.count()
+
+    def __init__(self, type):
         super(ScalarParameter, self).__init__(type)
-        self.name = name
         self.output_type = type.scalar_type
+        self.counter = next(self.__class__.parameter_counter)
+
+    def resolve_name(self):
+        return 'param_{:d}'.format(self.counter)
 
     def __repr__(self):
-        return '{}(name={!r}, type={})'.format(
-            type(self).__name__, self.name, self.type
-        )
+        return '{}(type={})'.format(type(self).__name__, self.type)
+
+    def __hash__(self):
+        return hash((self.type, self.counter))
 
     @property
     def type(self):
@@ -573,18 +572,15 @@ class ScalarParameter(ValueOp):
     def equals(self, other, cache=None):
         return (
             isinstance(other, ScalarParameter) and
-            self.name == other.name and
+            self.counter == other.counter and
             self.type.equals(other.type, cache=cache)
         )
 
     def root_tables(self):
         return []
 
-    def resolve_name(self):
-        return self.name
 
-
-def param(type, name=None):
+def param(type):
     """Create a parameter of a particular type to be defined just before
     execution.
 
@@ -592,8 +588,6 @@ def param(type, name=None):
     ----------
     type : dt.DataType
         The type of the unbound parameter, e.g., double, int64, date, etc.
-    name : str, optional
-        The name of the parameter
 
     Returns
     -------
@@ -610,10 +604,8 @@ def param(type, name=None):
     >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
     >>> expr = t.filter(predicates).value.sum()
     """
-    if name is None:
-        name = _parameter_name()
-    expr = ScalarParameter(dt.dtype(type), name=name).to_expr()
-    return expr.name(name)
+    expr = ScalarParameter(dt.dtype(type)).to_expr()
+    return expr
 
 
 def distinct_roots(*expressions):

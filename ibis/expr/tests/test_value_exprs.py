@@ -1087,11 +1087,11 @@ def test_time_invalid_compare_on_py2():
 
 
 def test_scalar_parameter_repr():
-    value = ibis.param(dt.timestamp, name='value')
+    value = ibis.param(dt.timestamp).name('value')
     assert repr(value) == 'value = ScalarParameter[timestamp]'
 
     value_op = value.op()
-    assert repr(value_op) == "ScalarParameter(name='value', type=timestamp)"
+    assert repr(value_op) == "ScalarParameter(type=timestamp)"
 
 
 @pytest.mark.parametrize(
@@ -1099,38 +1099,38 @@ def test_scalar_parameter_repr():
     [
         (
             # same value type, same name
-            ibis.param(dt.timestamp, name='value1'),
-            ibis.param(dt.timestamp, name='value1'),
-            True,
+            ibis.param(dt.timestamp),
+            ibis.param(dt.timestamp),
+            False,
         ),
         (
             # different value type, same name
-            ibis.param(dt.date, name='value1'),
-            ibis.param(dt.timestamp, name='value1'),
+            ibis.param(dt.date),
+            ibis.param(dt.timestamp),
             False,
         ),
         (
             # same value type, different name
-            ibis.param(dt.timestamp, name='value1'),
-            ibis.param(dt.timestamp, name='value2'),
+            ibis.param(dt.timestamp),
+            ibis.param(dt.timestamp),
             False,
         ),
         (
             # different value type, different name
-            ibis.param(dt.date, name='value1'),
-            ibis.param(dt.timestamp, name='value2'),
+            ibis.param(dt.date),
+            ibis.param(dt.timestamp),
             False,
         ),
         (
             # different Python class, left side is param
-            ibis.param(dt.timestamp, 'value'),
+            ibis.param(dt.timestamp),
             dt.date,
             False
         ),
         (
             # different Python class, right side is param
             dt.date,
-            ibis.param(dt.timestamp, 'value'),
+            ibis.param(dt.timestamp),
             False
         ),
     ]
