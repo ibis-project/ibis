@@ -196,7 +196,7 @@ def test_different_partition_col_name(client):
 
 def test_subquery_scalar_params(alltypes):
     t = alltypes
-    param = ibis.param('timestamp', name='my_param')
+    param = ibis.param('timestamp').name('my_param')
     expr = t[['float_col', 'timestamp_col', 'int_col', 'string_col']][
         lambda t: t.timestamp_col < param
     ].groupby('string_col').aggregate(
@@ -357,3 +357,12 @@ def test_scalar_param_nested(client):
 
 def test_raw_sql(client):
     assert client.raw_sql('SELECT 1').fetchall() == [(1,)]
+
+
+def test_scalar_param_scope(alltypes):
+    t = alltypes
+    param = ibis.param('timestamp')
+    mut = t.mutate(param=param).compile(params={param: '2017-01-01'})
+    assert mut == """\
+SELECT *, @param AS `param`
+FROM testing.functional_alltypes"""

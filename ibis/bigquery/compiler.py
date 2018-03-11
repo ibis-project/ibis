@@ -357,9 +357,10 @@ class BigQueryExprTranslator(impala_compiler.ImpalaExprTranslator):
     context_class = BigQueryContext
 
     def _trans_param(self, expr):
-        if expr not in self.context.params:
-            raise KeyError(expr)
-        return '@{}'.format(expr._name)
+        op = expr.op()
+        if op not in self.context.params:
+            raise KeyError(op)
+        return '@{}'.format(expr.get_name())
 
 
 rewrites = BigQueryExprTranslator.rewrites

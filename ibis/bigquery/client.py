@@ -190,7 +190,7 @@ bigquery_param = Dispatcher('bigquery_param')
 @bigquery_param.register(ir.StructScalar, collections.OrderedDict)
 def bq_param_struct(param, value):
     field_params = [bigquery_param(param[k], v) for k, v in value.items()]
-    return bq.StructQueryParameter(param._name, *field_params)
+    return bq.StructQueryParameter(param.get_name(), *field_params)
 
 
 @bigquery_param.register(ir.ArrayValue, list)
@@ -203,7 +203,7 @@ def bq_param_array(param, value):
     except KeyError:
         raise com.UnsupportedBackendType(param_type)
     else:
-        return bq.ArrayQueryParameter(param._name, bigquery_type, value)
+        return bq.ArrayQueryParameter(param.get_name(), bigquery_type, value)
 
 
 @bigquery_param.register(
@@ -215,27 +215,28 @@ def bq_param_timestamp(param, value):
 
     # TODO(phillipc): Not sure if this is the correct way to do this.
     timestamp_value = pd.Timestamp(value, tz='UTC').to_pydatetime()
-    return bq.ScalarQueryParameter(param._name, 'TIMESTAMP', timestamp_value)
+    return bq.ScalarQueryParameter(
+        param.get_name(), 'TIMESTAMP', timestamp_value)
 
 
 @bigquery_param.register(ir.StringScalar, six.string_types)
 def bq_param_string(param, value):
-    return bq.ScalarQueryParameter(param._name, 'STRING', value)
+    return bq.ScalarQueryParameter(param.get_name(), 'STRING', value)
 
 
 @bigquery_param.register(ir.Int64Scalar, six.integer_types)
 def bq_param_integer(param, value):
-    return bq.ScalarQueryParameter(param._name, 'INT64', value)
+    return bq.ScalarQueryParameter(param.get_name(), 'INT64', value)
 
 
 @bigquery_param.register(ir.DoubleScalar, float)
 def bq_param_double(param, value):
-    return bq.ScalarQueryParameter(param._name, 'FLOAT64', value)
+    return bq.ScalarQueryParameter(param.get_name(), 'FLOAT64', value)
 
 
 @bigquery_param.register(ir.BooleanScalar, bool)
 def bq_param_boolean(param, value):
-    return bq.ScalarQueryParameter(param._name, 'BOOL', value)
+    return bq.ScalarQueryParameter(param.get_name(), 'BOOL', value)
 
 
 @bigquery_param.register(ir.DateScalar, six.string_types)
@@ -250,7 +251,7 @@ def bq_param_date_datetime(param, value):
 
 @bigquery_param.register(ir.DateScalar, datetime.date)
 def bq_param_date(param, value):
-    return bq.ScalarQueryParameter(param._name, 'DATE', value)
+    return bq.ScalarQueryParameter(param.get_name(), 'DATE', value)
 
 
 class BigQueryClient(SQLClient):
@@ -307,7 +308,7 @@ class BigQueryClient(SQLClient):
         query = self._proxy.client.run_sync_query(stmt)
         query.use_legacy_sql = False
         query.query_parameters = [
-            bigquery_param(param, value)
+            bigquery_param(param.to_expr(), value)
             for param, value in (query_parameters or {}).items()
         ]
         query.run()
