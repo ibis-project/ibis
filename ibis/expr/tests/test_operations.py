@@ -11,14 +11,6 @@ from ibis.common import IbisTypeError
 from ibis.expr.signature import Argument as Arg
 
 
-def test_argument_packing():
-    pass
-
-
-def test_argument_descriptor():
-    pass
-
-
 def test_operation():
     class Log(ops.Node):
         arg = Arg(rlz.double())
@@ -29,9 +21,8 @@ def test_operation():
     Log(arg=10)
 
 
-def test_unaryop():
+def test_ops_smoke():
     expr = ir.literal(3)
-
     ops.UnaryOp(expr)
     ops.Cast(expr, to='int64')
     ops.TypeOf(arg=2)

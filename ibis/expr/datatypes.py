@@ -1193,7 +1193,7 @@ def can_cast_floats(source, target, upcast=False, **kwargs):
 
 
 @castable.register(Decimal, Decimal)
-def cas_cast_decimals(source, target, **kwargs):
+def can_cast_decimals(source, target, **kwargs):
     return (target.precision >= source.precision and
             target.scale >= source.scale)
 
