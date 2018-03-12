@@ -21,8 +21,9 @@ can use pandas with Ibis and Impala.
    :suppress:
 
    import ibis
-   hdfs = ibis.hdfs_connect(port=5070)
-   client = ibis.impala.connect(hdfs_client=hdfs)
+   host = 'quickstart.cloudera'
+   hdfs = ibis.hdfs_connect(host=host)
+   client = ibis.impala.connect(host=host, hdfs_client=hdfs)
 
 The Impala client object
 ------------------------
@@ -257,15 +258,6 @@ getting information about the partition schema and any existing partition data:
    ImpalaTable.is_partitioned
    ImpalaTable.partition_schema
    ImpalaTable.partitions
-
-For example:
-
-.. ipython:: python
-
-   ss = client.table('tpcds_parquet.store_sales')
-   ss.is_partitioned
-   ss.partitions()[:5]
-   ss.partition_schema()
 
 To address a specific partition in any method that is partition specific, you
 can either use a dict with the partition key names and values, or pass a list
