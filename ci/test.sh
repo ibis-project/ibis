@@ -1,8 +1,5 @@
 #!/bin/bash -e
 
-docker-compose build --pull ibis && \
-    docker-compose run ibis \
-	bash -c \
-	    "find /ibis -name '*.py[co]' -delete && \
-		rm -rf $(find /ibis -type d -name '__pycache__') && \
-		pytest $@"
+cmd='$(find /ibis -name "*.py[co]" -delete > /dev/null 2>&1 || true) && pytest "$@"'
+docker-compose build --pull ibis
+docker-compose run --rm ibis bash -c "$cmd" -- "$@"
