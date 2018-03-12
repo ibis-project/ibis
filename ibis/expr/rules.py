@@ -832,7 +832,6 @@ class SubsetValidator(TableColumnValidator):
                     'Column rules must be named inside a table.')
         return rules
 
-
     def validate(self, arg):
         if isinstance(arg, ir.TableExpr):
             # Check that columns match the schema first

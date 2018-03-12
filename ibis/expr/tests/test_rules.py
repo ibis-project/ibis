@@ -338,8 +338,8 @@ def test_table_with_schema_optional(schema):
 @pytest.mark.parametrize(
     'schema',
     [[('group', dt.int64),
-       ('value', dt.double),
-       ('value2', dt.timestamp)]])
+      ('value', dt.double),
+      ('value2', dt.timestamp)]])
 def test_table_with_schema_optional_invalid(schema):
     class MyOp(ops.ValueOp):
         input_type = [
