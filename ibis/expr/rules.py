@@ -256,7 +256,7 @@ class Argument(object):
     def __str__(self):
         fields = {'name', 'doc', 'optional'}
         return str({k: v for k, v in self.__dict__.items()
-                    if (k in fields) and (v is not None)})
+                    if k in fields and v is not None})
 
 
 def _to_argument(val):
@@ -810,7 +810,7 @@ def comparable(left, right):
 
 
 @six.add_metaclass(abc.ABCMeta)
-class TableColumnValidator():
+class TableColumnValidator(object):
     @abc.abstractmethod
     def validate(self):
         pass
@@ -818,29 +818,33 @@ class TableColumnValidator():
 
 class SubsetValidator(TableColumnValidator):
     def __init__(self, *rules):
-        self.rules = rules
+        self.rules = self._validate_rules(rules)
+
+    def _validate_rules(self, rules):
+        for column_rule in rules:
+            # Members of a schema are arguments with a name
+            if not isinstance(column_rule, Argument):
+                raise ValueError(
+                    'Arguments of subset schema must be instances of the '
+                    'Argument class (rules).')
+            if column_rule.name is None:
+                raise ValueError(
+                    'Column rules must be named inside a table.')
+        return rules
+
 
     def validate(self, arg):
         if isinstance(arg, ir.TableExpr):
             # Check that columns match the schema first
             for column_rule in self.rules:
-                # Members of a schema are arguments with a name
-                if not isinstance(column_rule, Argument):
-                    raise ValueError(
-                        'Arguments of subset schema must be instances of the '
-                        'Argument class (rules).')
-                if column_rule.name is None:
-                    raise ValueError(
-                        'Column rules must be named inside a table.')
-                try:
-                    # Use the argument's name to get
-                    column = arg[column_rule.name]
-                except IbisTypeError:
+                if column_rule.name not in arg:
                     if column_rule.optional:
-                        break
+                        continue
                     else:
                         raise IbisTypeError(
                             'No column with name {}.'.format(column_rule.name))
+
+                column = arg[column_rule.name]
                 try:
                     # Arguments must validate the column
                     column_rule.validate([column], 0)
@@ -893,7 +897,7 @@ class Table(Argument):
     ...    output_type = rules.type_of_arg(0)
     """
     def __init__(self, name=None, optional=False, schema=None, doc=None,
-                 validator=None, allow_extra=False, **arg_kwds):
+                 validator=None, **arg_kwds):
         self.name = name
         self.optional = optional
 
@@ -902,7 +906,6 @@ class Table(Argument):
                 'schema argument must be an instance of TableColumnValidator')
 
         self.schema = schema
-        self.allow_extra = allow_extra
 
         self.doc = doc
         self.validator = validator
