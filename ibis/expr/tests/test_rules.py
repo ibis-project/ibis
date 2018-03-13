@@ -239,3 +239,171 @@ def test_custom_list_of_as_value_expr():
     assert not isinstance(result.two, MyList)
     assert result.one == [MyEnum.A, MyEnum.B]
     assert result.two == [MyEnum2.B]
+
+
+def check_op_input(Op, schema, raises):
+    schema = ibis.Schema.from_tuples(schema)
+    table = ibis.table(schema)
+    if not raises:
+        assert Op(table).table.equals(table)
+    else:
+        with pytest.raises(IbisTypeError):
+            Op(table)
+
+
+@pytest.mark.parametrize(
+    'schema',
+    [[('group', dt.int64),
+      ('value', dt.double)],
+
+     [('group', dt.int64),
+      ('value', dt.double),
+      ('value2', dt.double)]])
+def test_table_with_schema(schema):
+    class MyOp(ops.ValueOp):
+        input_type = [
+            rules.table(
+                name='table',
+                schema=rules.table.with_column_subset(
+                    rules.column(name='group', value_type=rules.number),
+                    rules.column(name='value', value_type=rules.number)
+                ))]
+        output_type = rules.type_of_arg(0)
+
+    schema = ibis.Schema.from_tuples(schema)
+    table = ibis.table(schema)
+    MyOp(table)
+
+
+@pytest.mark.parametrize(
+    'schema',
+    [[('group', dt.int64),
+      ('value', dt.timestamp)]])
+def test_table_with_schema_invalid(schema):
+    class MyOp(ops.ValueOp):
+        input_type = [
+            rules.table(
+                name='table',
+                schema=rules.table.with_column_subset(
+                    rules.column(name='group', value_type=rules.number),
+                    rules.column(name='value', value_type=rules.number)
+                ))]
+        output_type = rules.type_of_arg(0)
+
+    schema = ibis.Schema.from_tuples(schema)
+    table = ibis.table(schema)
+    with pytest.raises(IbisTypeError):
+        MyOp(table)
+
+
+@pytest.mark.parametrize(
+    'schema',
+    [[('group', dt.int64),
+      ('value', dt.double)],
+
+     [('group', dt.int64),
+      ('value', dt.double),
+      ('value2', dt.double)],
+
+     [('group', dt.int64),
+      ('value', dt.double),
+      ('value3', dt.timestamp)],
+
+     [('group', dt.int64),
+      ('value', dt.double),
+      ('value2', dt.double),
+      ('value3', dt.double)],
+
+     [('group', dt.int64),
+      ('value', dt.double),
+      ('value2', dt.double),
+      ('value3', dt.timestamp)]])
+def test_table_with_schema_optional(schema):
+    class MyOp(ops.ValueOp):
+        input_type = [
+            rules.table(
+                name='table',
+                schema=rules.table.with_column_subset(
+                    rules.column(name='group', value_type=rules.number),
+                    rules.column(name='value', value_type=rules.number),
+                    rules.column(name='value2', value_type=rules.number,
+                                 optional=True)))]
+        output_type = rules.type_of_arg(0)
+
+    schema = ibis.Schema.from_tuples(schema)
+    table = ibis.table(schema)
+    MyOp(table)
+
+
+@pytest.mark.parametrize(
+    'schema',
+    [[('group', dt.int64),
+      ('value', dt.double),
+      ('value2', dt.timestamp)]])
+def test_table_with_schema_optional_invalid(schema):
+    class MyOp(ops.ValueOp):
+        input_type = [
+            rules.table(
+                name='table',
+                schema=rules.table.with_column_subset(
+                    rules.column(name='group', value_type=rules.number),
+                    rules.column(name='value', value_type=rules.number),
+                    rules.column(name='value2', value_type=rules.number,
+                                 optional=True)))]
+        output_type = rules.type_of_arg(0)
+
+    schema = ibis.Schema.from_tuples(schema)
+    table = ibis.table(schema)
+    with pytest.raises(IbisTypeError):
+        MyOp(table)
+
+
+def test_table_not_a_table():
+    class MyOp(ops.ValueOp):
+        input_type = [rules.table(name='table')]
+        output_type = rules.type_of_arg(0)
+
+    with pytest.raises(IbisTypeError):
+        MyOp(123)
+
+
+def test_table_invalid_schema_no_name():
+    with pytest.raises(ValueError):
+        class MyOp(ops.ValueOp):
+            input_type = [rules.table(
+                name='table',
+                schema=rules.table.with_column_subset(
+                    rules.column(value_type=rules.number)))]
+            output_type = rules.type_of_arg(0)
+
+
+def test_table_invalid_schema_wrong_class():
+    with pytest.raises(ValueError):
+        class MyOp(ops.ValueOp):
+            input_type = [rules.table(
+                name='table',
+                schema='wrong class')]
+            output_type = rules.type_of_arg(0)
+
+
+def test_table_invalid_column_subset():
+    with pytest.raises(ValueError):
+        class MyOp(ops.ValueOp):
+            input_type = [rules.table(
+                name='table',
+                schema=rules.table.with_column_subset('not a rule'))]
+            output_type = rules.type_of_arg(0)
+
+
+def test_table_custom_validator():
+    class MyOp(ops.ValueOp):
+        input_type = [rules.table(
+            name='table',
+            validator=lambda x: 1 / 0)]
+        output_type = rules.type_of_arg(0)
+
+    schema = ibis.Schema.from_tuples([('group', dt.int64)])
+    table = ibis.table(schema)
+
+    with pytest.raises(ZeroDivisionError):
+        MyOp(table)
