@@ -1,8 +1,9 @@
 import os
 import pytest
+import sys
 
 from ibis.compat import Path
-from ibis.tests.backends import (Csv, Parquet, Pandas,
+from ibis.tests.backends import (Csv, Parquet, Pandas, Spark,
                                  SQLite, Postgres, MySQL,
                                  Clickhouse, Impala, BigQuery)
 
@@ -28,12 +29,17 @@ def data_directory():
     pytest.param(Csv, marks=pytest.mark.csv),
     pytest.param(Parquet, marks=pytest.mark.parquet),
     pytest.param(Pandas, marks=pytest.mark.pandas),
+    pytest.param(Spark, marks=[
+        pytest.mark.spark,
+        pytest.mark.skipif((3, 4) <= sys.version_info < (3, 5),
+                           reason='requires python 2.7 or 3.5+'),
+        pytest.mark.xfail(reason='not implemented')]),
     pytest.param(SQLite, marks=pytest.mark.sqlite),
     pytest.param(Postgres, marks=pytest.mark.postgres),
     pytest.param(MySQL, marks=pytest.mark.mysql),
     pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
     pytest.param(BigQuery, marks=pytest.mark.bigquery),
-    pytest.param(Impala, marks=pytest.mark.impala)
+    pytest.param(Impala, marks=pytest.mark.impala),
 ], scope='session')
 def backend(request, data_directory):
     return request.param(data_directory)

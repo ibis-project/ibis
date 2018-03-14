@@ -71,6 +71,9 @@ with suppress(ImportError):
     # pip install ibis-framework[bigquery]
     import ibis.bigquery.api as bigquery
 
+with suppress(ImportError):
+    import ibis.spark.api as spark
+
 restart_ordering()
 
 
