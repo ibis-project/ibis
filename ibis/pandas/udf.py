@@ -11,12 +11,14 @@ import pandas as pd
 
 from pandas.core.groupby import SeriesGroupBy
 
+import toolz
+
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 from ibis.pandas.core import scalar_types
 from ibis.pandas.dispatch import execute_node, Dispatcher, pause_ordering
-from ibis.compat import functools, signature
+from ibis.compat import functools, signature, Parameter, _empty as empty
 
 
 rule_to_python_type = Dispatcher(
@@ -37,6 +39,54 @@ types : Union[type, Tuple[type...]]
     A pandas backend friendly signature
 """
 )
+
+
+def arguments_from_signature(signature, *args, **kwargs):
+    """Validate signature against `args` and `kwargs` and return the kwargs
+    asked for in the signature
+
+    Parameters
+    ----------
+    args : Tuple[object...]
+    kwargs : Dict[str, object]
+
+    Returns
+    -------
+    args, kwargs : Tuple[Tuple[object...], Dict[str, object]]
+
+    Examples
+    --------
+    >>> from ibis.compat import signature
+    >>> def foo(a, b=1):
+    ...     return a + b
+    >>> foo_sig = signature(foo)
+    >>> args, kwargs = arguments_from_signature(foo_sig, 1, b=2)
+    >>> args
+    (1,)
+    >>> kwargs
+    {'b': 2}
+    >>> def bar(a):
+    ...     return a + 1
+    >>> bar_sig = signature(bar)
+    >>> args, kwargs = arguments_from_signature(bar_sig, 1, b=2)
+    >>> args
+    (1,)
+    >>> kwargs
+    {}
+    """
+    bound = signature.bind_partial(*args)
+    meta_kwargs = toolz.merge({'kwargs': kwargs}, kwargs)
+    remaining_parameters = signature.parameters.keys() - bound.arguments.keys()
+    new_kwargs = {
+        k: meta_kwargs[k] for k in remaining_parameters
+        if k in signature.parameters
+        if signature.parameters[k].kind in {
+            Parameter.KEYWORD_ONLY,
+            Parameter.POSITIONAL_OR_KEYWORD,
+            Parameter.VAR_KEYWORD,
+        }
+    }
+    return args, new_kwargs
 
 
 @rule_to_python_type.register(dt.DataType)
@@ -153,6 +203,7 @@ def check_matching_signature(input_type):
         num_params = sum(
             param.kind in {param.POSITIONAL_OR_KEYWORD, param.POSITIONAL_ONLY}
             for param in signature(func).parameters.values()
+            if param.default is empty
         )
         num_declared = len(input_type)
         if num_params != num_declared:
@@ -187,7 +238,7 @@ def udf(input_type, output_type):
     --------
     >>> import ibis
     >>> @udf(input_type=[dt.string], output_type=dt.int64)
-    ... def my_string_length(series, **kwargs):
+    ... def my_string_length(series):
     ...     return series.str.len() * 2
     """
     def wrapper(func):
@@ -208,6 +259,9 @@ def udf(input_type, output_type):
                 UDFNode, *udf_signature(input_type, klass=pd.Series)
             )
             def execute_udf_node(op, *args, **kwargs):
+                args, kwargs = arguments_from_signature(
+                    signature(func), *args, **kwargs
+                )
                 return func(*args, **kwargs)
 
             # Define an execution rule for elementwise operations on a grouped
@@ -230,7 +284,10 @@ def udf(input_type, output_type):
                 # regroup after it's finished
                 arguments = [getattr(arg, 'obj', arg) for arg in args]
                 groupings = groupers[0].groupings
-                return func(*arguments, **kwargs).groupby(groupings)
+                args, kwargs = arguments_from_signature(
+                    signature(func), *arguments, **kwargs
+                )
+                return func(*args, **kwargs).groupby(groupings)
 
         @check_matching_signature(input_type)
         @functools.wraps(func)
@@ -281,6 +338,9 @@ def udaf(input_type, output_type):
                 UDAFNode, *udf_signature(input_type, klass=pd.Series)
             )
             def execute_udaf_node(op, *args, **kwargs):
+                args, kwargs = arguments_from_signature(
+                    signature(func), *args, **kwargs
+                )
                 return func(*args, **kwargs)
 
             # An execution rule for a grouped aggregation node. This includes
@@ -303,10 +363,15 @@ def udaf(input_type, output_type):
                     if isinstance(arg, SeriesGroupBy)
                     else itertools.repeat(arg) for arg in args[1:]
                 )
+                funcsig = signature(func)
 
                 def aggregator(first, *rest, **kwargs):
                     # map(next, *rest) gets the inputs for the next group
-                    return func(first, *map(next, rest), **kwargs)
+                    # TODO: might be inefficient to do this on every call
+                    args, kwargs = arguments_from_signature(
+                        funcsig, first, *map(next, rest), **kwargs
+                    )
+                    return func(*args, **kwargs)
 
                 result = context.agg(args[0], aggregator, *iters, **kwargs)
                 return result

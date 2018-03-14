@@ -27,6 +27,14 @@ with pause_ordering():
     def my_corr(lhs, rhs, **kwargs):
         return lhs.corr(rhs)
 
+    @udf([dt.double], dt.double)
+    def add_one(x):
+        return x + 1.0
+
+    @udf([dt.double], dt.double)
+    def times_two(x, scope=None):
+        return x * 2.0
+
 
 def test_udf():
     df = pd.DataFrame({'a': list('abc')})
@@ -34,7 +42,7 @@ def test_udf():
     t = con.table('df')
     expr = my_string_length(t.a)
 
-    assert isinstance(expr, ir.Expr)
+    assert isinstance(expr, ir.ColumnExpr)
 
     result = expr.execute()
     expected = t.a.execute().str.len().mul(2)
@@ -47,7 +55,7 @@ def test_udaf():
     t = con.table('df')
     expr = my_string_length_sum(t.a)
 
-    assert isinstance(expr, ir.Expr)
+    assert isinstance(expr, ir.ScalarExpr)
 
     result = expr.execute()
     expected = t.a.execute().str.len().mul(2).sum()
@@ -63,7 +71,7 @@ def test_udaf_in_groupby():
     t = con.table('df')
     expr = t.groupby(t.key).aggregate(my_corr=my_corr(t.a, t.b))
 
-    assert isinstance(expr, ir.Expr)
+    assert isinstance(expr, ir.TableExpr)
 
     result = expr.execute().sort_values('key')
 
@@ -92,14 +100,27 @@ def test_nullable_non_nullable_field():
 
 
 def test_udaf_parameter_mismatch():
-    with pytest.raises(TypeError):
+    with pytest.raises(Exception):
         @udaf(input_type=[dt.double], output_type=dt.double)
         def my_corr(lhs, rhs, **kwargs):
             pass
 
 
 def test_udf_parameter_mismatch():
-    with pytest.raises(TypeError):
+    with pytest.raises(Exception):
         @udf(input_type=[], output_type=dt.double)
         def my_corr2(lhs, **kwargs):
             return 1.0
+
+
+def test_call_multiple_udfs():
+    df = pd.DataFrame({
+        'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+        'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+        'key': list('ddeefff')})
+    con = ibis.pandas.connect({'df': df})
+    t = con.table('df')
+    expr = times_two(add_one(t.a))
+    result = expr.execute()
+    expected = df.a.add(1.0).mul(2.0)
+    tm.assert_series_equal(expected, result)

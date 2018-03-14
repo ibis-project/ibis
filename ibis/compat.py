@@ -25,7 +25,7 @@ if not PY2:
         return list(x.values())
 
     from decimal import Decimal
-    from inspect import signature
+    from inspect import signature, Parameter, _empty
     import unittest.mock as mock
     range = range
     import builtins
@@ -39,7 +39,7 @@ else:
     except ImportError:
         from decimal import Decimal  # noqa: F401
 
-    from funcsigs import signature  # noqa: F401
+    from funcsigs import signature, Parameter, _empty  # noqa: F401
 
     unicode_type = unicode  # noqa: F821
     lzip = zip
