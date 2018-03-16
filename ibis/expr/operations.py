@@ -1471,17 +1471,21 @@ class Join(TableNode):
         sright = right.schema()
 
         overlap = set(sleft.names) & set(sright.names)
-
         deletes = []
-        for predicate in self.predicates:
-            op = predicate.op()
-            if (
-                isinstance(op, Equals) and
-                op.left.get_name() == op.right.get_name() and
-                op.left.get_name() in overlap
-            ):
-                overlap.remove(op.left.get_name())
-                deletes.append(op.left.get_name())
+
+        if isinstance(self, InnerJoin):
+            for predicate in self.predicates:
+                op = predicate.op()
+                left_name = op.left.get_name()
+                right_name = op.right.get_name()
+
+                if (
+                    isinstance(op, Equals) and
+                    left_name == right_name and
+                    left_name in overlap
+                ):
+                    overlap.remove(left_name)
+                    deletes.append(left_name)
 
         if overlap:
             raise com.RelationError('Joined tables have overlapping names: %s'
