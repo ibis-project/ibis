@@ -1375,14 +1375,19 @@ def _validate_join_tables(left, right):
                         'right table'.format(type(right).__name__))
 
 
+def _ensure_materialized(left, right):
+    if not left._is_materialized():
+        left = left.materialize()
+
+    if not right._is_materialized():
+        right = right.materialize()
+
+    return left, right
+
+
 def _materialize_if_necessary(left, right, predicates):
     if any(isinstance(pred, six.string_types) for pred in predicates):
-        # materialize
-        if not left._is_materialized():
-            left = left.materialize()
-
-        if not right._is_materialized():
-            right = right.materialize()
+        return _ensure_materialized(left, right)
 
     return left, right
 
@@ -1458,14 +1463,7 @@ class Join(TableNode):
 
     def _get_schema(self):
         # For joins retaining both table schemas, merge them together here
-
-        left, right = self.left, self.right
-
-        if not left._is_materialized():
-            left = left.materialize()
-
-        if not right._is_materialized():
-            right = right.materialize()
+        left, right = _ensure_materialized(self.left, self.right)
 
         sleft = left.schema()
         sright = right.schema()
