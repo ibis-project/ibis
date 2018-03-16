@@ -21,8 +21,8 @@ if not PY2:
     zip = zip
     zip_longest = itertools.zip_longest
 
-    def dict_values(x):
-        return list(x.values())
+    def viewkeys(x):
+        return x.keys()
 
     from decimal import Decimal
     from inspect import signature, Parameter, _empty
@@ -46,8 +46,8 @@ else:
     zip = itertools.izip
     zip_longest = itertools.izip_longest
 
-    def dict_values(x):
-        return x.values()
+    def viewkeys(x):
+        return x.viewkeys()
 
     try:
         import mock  # noqa: F401

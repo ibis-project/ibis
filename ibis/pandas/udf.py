@@ -18,7 +18,8 @@ import ibis.expr.operations as ops
 
 from ibis.pandas.core import scalar_types
 from ibis.pandas.dispatch import execute_node, Dispatcher, pause_ordering
-from ibis.compat import functools, signature, Parameter, _empty as empty
+from ibis.compat import (
+    functools, signature, Parameter, _empty as empty, viewkeys)
 
 
 rule_to_python_type = Dispatcher(
@@ -76,7 +77,9 @@ def arguments_from_signature(signature, *args, **kwargs):
     """
     bound = signature.bind_partial(*args)
     meta_kwargs = toolz.merge({'kwargs': kwargs}, kwargs)
-    remaining_parameters = signature.parameters.keys() - bound.arguments.keys()
+    remaining_parameters = viewkeys(signature.parameters) - viewkeys(
+        bound.arguments
+    )
     new_kwargs = {
         k: meta_kwargs[k] for k in remaining_parameters
         if k in signature.parameters
