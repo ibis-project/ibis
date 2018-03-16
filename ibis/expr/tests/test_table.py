@@ -954,7 +954,8 @@ def test_join_overlapping_column_names(table):
     assert_equal(joined, expected)
 
 
-def test_join_overlapping_column_names_multiple_join(table):
+@pytest.mark.parametrize('how', ['inner', 'left', 'right', 'outer'])
+def test_join_overlapping_column_names_multiple_join(table, how):
     t1 = ibis.table([('foo', 'string'),
                      ('bar', 'string'),
                      ('value1', 'double')])
@@ -963,12 +964,26 @@ def test_join_overlapping_column_names_multiple_join(table):
     t3 = ibis.table([('bar', 'string'),
                      ('value3', 'double')])
 
-    joined = t1.join(t2, ['foo']).join(t3, ['bar'])
+    joined = t1.join(t2, ['foo']).join(t3, ['bar'], how=how)
 
     expected = t1.join(t2, t1.foo == t2.foo).materialize()
-    expected = expected.join(t3, expected.bar == t3.bar)
+    expected = expected.join(t3, expected.bar == t3.bar, how=how)
 
     assert_equal(joined, expected)
+
+
+@pytest.mark.parametrize('how', ['left', 'right', 'outer'])
+def test_non_inner_join_raises_overlapping_column_names(table, how):
+    t1 = ibis.table([('foo', 'string'),
+                     ('bar', 'string'),
+                     ('value1', 'double')])
+    t2 = ibis.table([('foo', 'string'),
+                     ('value2', 'double')])
+    t3 = ibis.table([('bar', 'string'),
+                     ('value3', 'double')])
+
+    with pytest.raises(com.RelationError):
+        t1.join(t2, ['foo'], how=how).join(t3, ['bar'])
 
 
 def test_join_key_alternatives(con):
