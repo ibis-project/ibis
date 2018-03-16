@@ -332,4 +332,4 @@ def test_is_ancestor_analytic():
     with_analytic = subquery[subquery.columns +
                              [subquery.count().name('analytic')]]
 
-    assert not subquery.op().is_ancestor(with_analytic)
+    assert not subquery.op().equals(with_analytic.op())

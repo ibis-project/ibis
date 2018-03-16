@@ -660,8 +660,8 @@ class _PushdownValidate(object):
 
                 lifted_node = substitute_parents(expr).op()
 
-                is_valid = (col_table.is_ancestor(node.table) or
-                            col_table.is_ancestor(lifted_node.table))
+                is_valid = (col_table.equals(node.table.op()) or
+                            col_table.equals(lifted_node.table.op()))
 
         return is_valid
 
@@ -780,7 +780,7 @@ class Projector(object):
 
             # a * projection
             if (isinstance(val, ir.TableExpr) and
-                (self.parent.op().is_ancestor(val) or
+                (self.parent.op().equals(val.op()) or
                  # gross we share the same table root. Better way to
                  # detect?
                  len(roots) == 1 and val._root_tables()[0] is roots[0])):
