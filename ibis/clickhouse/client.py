@@ -188,6 +188,7 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
         # convert data columns with datetime64 pandas dtype to native date
         # because clickhouse-driver 0.0.10 does arithmetic operations on it
         obj = obj.copy()
+
         for col in obj.select_dtypes(include=[np.datetime64]):
             if isinstance(schema[col], dt.Date):
                 obj[col] = obj[col].dt.date

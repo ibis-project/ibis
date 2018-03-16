@@ -1805,7 +1805,7 @@ class TableSetFormatter(object):
         if is_subquery or ctx.need_aliases(expr):
             ref = ctx.get_ref(expr)
             if ref is not None:
-                result += ' {}'.format(ctx.get_ref(expr))
+                result += ' {}'.format(ref)
 
         return result
 
