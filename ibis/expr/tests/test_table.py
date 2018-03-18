@@ -1289,7 +1289,7 @@ def test_set_column(table):
 def test_pickle_table_expr():
     schema = [('time', 'timestamp'), ('key', 'string'), ('value', 'double')]
     t0 = ibis.table(schema, name='t0')
-    raw = pickle.dumps(t0)
+    raw = pickle.dumps(t0, protocol=2)
     t1 = pickle.loads(raw)
     assert t1.equals(t0)
 
