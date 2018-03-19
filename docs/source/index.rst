@@ -84,9 +84,11 @@ places, but this will improve as things progress.
    tutorial
    api
    sql
+   udf
    developer
    design
    extending
+   backends
    release
    legal
 

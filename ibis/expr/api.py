@@ -17,11 +17,12 @@ from __future__ import print_function
 import warnings
 import operator
 import datetime
-import functools
 import collections
 
 import six
 import toolz
+
+from ibis.compat import functools
 
 from ibis.expr.schema import Schema
 from ibis.expr import datatypes as dt

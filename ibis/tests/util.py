@@ -13,13 +13,12 @@
 # limitations under the License.
 
 import pytest
-import functools
 
 import ibis
 import ibis.common as com
 import ibis.util as util
 
-from ibis.compat import wrapped
+from ibis.compat import functools
 
 
 def assert_equal(left, right):
@@ -32,7 +31,6 @@ def assert_equal(left, right):
 
 
 def skipif_unsupported(f):
-    @wrapped(f)
     @functools.wraps(f)
     def wrapper(backend, *args, **kwargs):
         try:

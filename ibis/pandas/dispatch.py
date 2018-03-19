@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 
-from multipledispatch import Dispatcher
+import contextlib
+
+from multipledispatch import Dispatcher, halt_ordering, restart_ordering
 
 
 # Main interface to execution; ties the following functions together
@@ -32,3 +34,14 @@ def data_preload_default(node, data, **kwargs):
 @pre_execute.register(object, object)
 def pre_execute_default(node, client, **kwargs):
     return {}
+
+
+@contextlib.contextmanager
+def pause_ordering():
+    """Pause multipledispatch ordering
+    """
+    halt_ordering()
+    try:
+        yield
+    finally:
+        restart_ordering()

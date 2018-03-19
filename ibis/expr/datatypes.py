@@ -17,14 +17,13 @@ import six
 import toolz
 import datetime
 import itertools
-import functools
 import pandas as pd
 
 from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
 
 import ibis.common as com
-from ibis.compat import builtins, PY2
+from ibis.compat import PY2, builtins, functools
 
 
 class DataType(object):

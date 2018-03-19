@@ -15,7 +15,6 @@
 import six
 import numbers
 import operator
-import functools
 import contextlib
 
 import sqlalchemy as sa
@@ -26,7 +25,7 @@ from sqlalchemy.ext.compiler import compiles as sa_compiles
 
 import pandas as pd
 
-from ibis.compat import parse_version
+from ibis.compat import parse_version, functools
 from ibis.client import SQLClient, AsyncQuery, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter, Dialect
 
