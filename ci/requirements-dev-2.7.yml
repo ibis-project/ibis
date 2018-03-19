@@ -8,6 +8,8 @@ dependencies:
   - cmake
   - enum34
   - flake8
+  - funcsigs
+  - functools32
   - google-cloud-bigquery<0.28
   - graphviz
   - impyla>=0.13.7

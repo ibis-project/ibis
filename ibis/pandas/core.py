@@ -80,7 +80,6 @@ from __future__ import absolute_import
 import collections
 import numbers
 import datetime
-import functools
 
 import six
 
@@ -91,6 +90,8 @@ import toolz
 import ibis.expr.types as ir
 import ibis.expr.lineage as lin
 import ibis.expr.datatypes as dt
+
+from ibis.compat import functools
 from ibis.client import find_backends
 
 

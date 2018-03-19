@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 import datetime
 import decimal
-import functools
 import numbers
 import operator
 
@@ -21,6 +20,8 @@ import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+
+from ibis.compat import functools
 
 from ibis.pandas.core import (
     boolean_types,

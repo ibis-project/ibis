@@ -16,13 +16,13 @@ import os
 import regex as re
 import math
 import inspect
-import functools
 
 import sqlalchemy as sa
 
 from ibis.client import Database
-from ibis.compat import maketrans
+from ibis.compat import maketrans, functools
 from ibis.sql.sqlite.compiler import SQLiteDialect
+
 import ibis.sql.alchemy as alch
 import ibis.common as com
 

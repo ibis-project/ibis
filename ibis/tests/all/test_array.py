@@ -1,14 +1,12 @@
 import pytest
-import functools
 
 import ibis
 import ibis.tests.util as tu
 
-from ibis.compat import wrapped
+from ibis.compat import functools
 
 
 def array_test(f):
-    @wrapped(f)
     @functools.wraps(f)
     def wrapper(backend, *args, **kwargs):
         if not backend.supports_arrays:
@@ -18,7 +16,6 @@ def array_test(f):
 
 
 def direct_array_operation_test(f):
-    @wrapped(f)
     @functools.wraps(array_test(f))
     def wrapper(backend, *args, **kwargs):
         if not backend.supports_arrays_outside_of_select:

@@ -1,17 +1,3 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from __future__ import absolute_import
 
 import itertools
@@ -35,15 +21,17 @@ if not PY2:
     zip = zip
     zip_longest = itertools.zip_longest
 
-    def dict_values(x):
-        return list(x.values())
+    def viewkeys(x):
+        return x.keys()
 
     from decimal import Decimal
+    from inspect import signature, Parameter, _empty
     import unittest.mock as mock
     range = range
     import builtins
     import pickle
     maketrans = str.maketrans
+    import functools
     from functools import reduce
 else:
     try:
@@ -51,13 +39,15 @@ else:
     except ImportError:
         from decimal import Decimal  # noqa: F401
 
+    from funcsigs import signature, Parameter, _empty  # noqa: F401
+
     unicode_type = unicode  # noqa: F821
     lzip = zip
     zip = itertools.izip
     zip_longest = itertools.izip_longest
 
-    def dict_values(x):
-        return x.values()
+    def viewkeys(x):
+        return x.viewkeys()
 
     try:
         import mock  # noqa: F401
@@ -65,6 +55,7 @@ else:
         pass
 
     import __builtin__ as builtins  # noqa: F401
+    import functools32 as functools  # noqa: F401
 
     range = xrange  # noqa: F821
     reduce = reduce  # noqa: F821
@@ -83,8 +74,6 @@ else:
         if isinstance(x, six.text_type):
             return dict(zip(map(ord, x), y))
         return string.maketrans(x, y)
-
-    reduce = reduce
 
 
 integer_types = six.integer_types + (np.integer,)
@@ -132,15 +121,3 @@ except ImportError:
 
 def to_date(*args, **kwargs):
     return to_datetime(*args, **kwargs).date()
-
-
-if PY2:
-    def wrapped(f):
-        def wrapper(functools_wrapped):
-            functools_wrapped.__wrapped__ = f
-            return functools_wrapped
-        return wrapper
-else:
-    def wrapped(f):
-        import toolz
-        return toolz.identity
