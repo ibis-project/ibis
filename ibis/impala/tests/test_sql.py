@@ -318,7 +318,7 @@ FROM (
 
 
 def test_multiple_filters():
-    t = ibis.table([('a', 'int64'), ('b', 'string')])
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='t0')
     filt = t[t.a < 100]
     expr = filt[filt.a == filt.a.max()]
     result = to_sql(expr)
