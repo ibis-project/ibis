@@ -485,6 +485,36 @@ def _base_table(table_node):
         return _base_table(table_node.table.op())
 
 
+def has_reduction(expr):
+    """Does `expr` contain a reduction?
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+        An ibis expression
+
+    Returns
+    -------
+    truth_value : bool
+        Whether or not there's at least one reduction in `expr`
+
+    Notes
+    -----
+    The ``isinstance(op, ops.TableNode)`` check in this function implies
+    that we only examine every non-table expression that precedes the first
+    table expression.
+    """
+    def fn(expr):
+        op = expr.op()
+        if isinstance(op, ops.TableNode):  # don't go below any table nodes
+            return lin.halt, None
+        if isinstance(op, ops.Reduction):
+            return lin.halt, True
+        return lin.proceed, None
+    reduction_status = lin.traverse(fn, expr)
+    return any(reduction_status)
+
+
 def apply_filter(expr, predicates):
     # This will attempt predicate pushdown in the cases where we can do it
     # easily and safely, to make both cleaner SQL and fewer referential errors
@@ -496,8 +526,11 @@ def apply_filter(expr, predicates):
         return _filter_selection(expr, predicates)
     elif isinstance(op, ops.Aggregation):
         # Potential fusion opportunity
+        # GH1344: We can't sub in things with correlated subqueries
         simplified_predicates = [
-            sub_for(predicate, [(expr, op.table)]) for predicate in predicates
+            sub_for(predicate, [(expr, op.table)])
+            if not has_reduction(predicate) else predicate
+            for predicate in predicates
         ]
 
         if op.table._is_valid(simplified_predicates):
@@ -533,15 +566,18 @@ def _filter_selection(expr, predicates):
         # Potential fusion opportunity. The predicates may need to be
         # rewritten in terms of the child table. This prevents the broken
         # ref issue (described in more detail in #59)
-        simplified_predicates = [sub_for(x, [(expr, op.table)])
-                                 for x in predicates]
+        simplified_predicates = [
+            sub_for(predicate, [(expr, op.table)])
+            if not has_reduction(predicate) else predicate
+            for predicate in predicates
+        ]
 
         if op.table._is_valid(simplified_predicates):
             result = ops.Selection(
                 op.table, [],
                 predicates=op.predicates + simplified_predicates,
                 sort_keys=op.sort_keys)
-            return ir.TableExpr(result)
+            return result.to_expr()
 
     can_pushdown = _can_pushdown(op, predicates)
 
@@ -556,7 +592,7 @@ def _filter_selection(expr, predicates):
         result = ops.Selection(expr, proj_exprs=[],
                                predicates=predicates)
 
-    return ir.TableExpr(result)
+    return result.to_expr()
 
 
 def _can_pushdown(op, predicates):

@@ -315,3 +315,45 @@ FROM (
   ) t4
     ON t3.`d` = t4.`d`"""
     assert result == expected
+
+
+def test_multiple_filters():
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='t0')
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max()]
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM (
+  SELECT *
+  FROM t0
+  WHERE `a` < 100
+) t0
+WHERE `a` = (
+  SELECT max(`a`) AS `max`
+  FROM t0
+  WHERE `a` < 100
+)"""
+    assert result == expected
+
+
+def test_multiple_filters2():
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='t0')
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max()]
+    expr = expr[expr.b == 'a']
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM (
+  SELECT *
+  FROM t0
+  WHERE `a` < 100
+) t0
+WHERE `a` = (
+  SELECT max(`a`) AS `max`
+  FROM t0
+  WHERE `a` < 100
+) AND
+      `b` = 'a'"""
+    assert result == expected
