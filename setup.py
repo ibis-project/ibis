@@ -1,20 +1,5 @@
 #!/usr/bin/env python
 
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 from setuptools import setup, find_packages
 
 import versioneer
@@ -27,10 +12,9 @@ See http://ibis-project.org
 """
 
 impala_requires = [
-    'hdfs>=2.0.0',
-    'impyla>=0.13.7',
+    'hdfs>=2.0.16',
+    'impyla>=0.14.0',
     'sqlalchemy>=1.0.0,<1.1.15',
-    'thrift<=0.9.3',
 ]
 
 sqlite_requires = ['sqlalchemy>=1.0.0,<1.1.15']
@@ -66,25 +50,33 @@ with open('requirements.txt', 'rt') as f:
 
 setup(
     name='ibis-framework',
+    url='https://github.com/ibis-project/ibis',
     packages=find_packages(),
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     install_requires=install_requires,
     extras_require={
         'all': all_requires,
-        'develop': develop_requires,
         'develop:python_version < "3"': develop_requires + [
-            'thriftpy<=0.3.9', 'mock',
+            'thriftpy<=0.3.9',
+            'thrift<=0.9.3',
+            'mock',
         ],
         'develop:python_version >= "3"': develop_requires,
-        'impala': impala_requires,
-        'impala:python_version < "3"': impala_requires + ['thriftpy<=0.3.9'],
+        'impala:python_version < "3"': impala_requires + [
+            'thriftpy<=0.3.9',
+            'thrift<=0.9.3',
+        ],
+        'impala:python_version >= "3"': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
         'mysql': mysql_requires,
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
-        'clickhouse': clickhouse_requires,
+        'clickhouse:python_version != "3.4"': clickhouse_requires + [
+            'clickhouse-cityhash'
+        ],
+        'clickhouse:python_version == "3.4"': clickhouse_requires,
         'bigquery': bigquery_requires,
         'csv:python_version < "3"': ['pathlib2'],
         'hdf5': hdf5_requires,
@@ -105,6 +97,6 @@ setup(
         'Topic :: Scientific/Engineering',
     ],
     license='Apache License, Version 2.0',
-    maintainer="Wes McKinney",
-    maintainer_email="wes@cloudera.com"
+    maintainer="Phillip Cloud",
+    maintainer_email="phillip.cloud@twosigma.com"
 )

@@ -45,6 +45,9 @@ test: &test
         name: Make test reports directory
         command: sudo mkdir -p /tmp/ibis/test-reports/pytest
     - run:
+        name: Show packages in conda environment
+        command: docker-compose run ibis conda list
+    - run:
         name: Execute Pytest
         command: |
           docker-compose run ibis pytest -rsxX \
