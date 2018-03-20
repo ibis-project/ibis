@@ -497,11 +497,20 @@ def has_reduction(expr):
     -------
     truth_value : bool
         Whether or not there's at least one reduction in `expr`
+
+    Notes
+    -----
+    The ``isinstance(op, ops.TableNode)`` check in this function implies
+    that we only examine every non-table expression that precedes the first
+    table expression.
     """
     def fn(expr):
-        if isinstance(expr.op(), ops.Reduction):
+        op = expr.op()
+        if isinstance(op, ops.TableNode):  # don't go below any table nodes
+            return lin.halt, None
+        if isinstance(op, ops.Reduction):
             return lin.halt, True
-        return lin.proceed, None  # These get filtered out
+        return lin.proceed, None
     reduction_status = lin.traverse(fn, expr)
     return any(reduction_status)
 
@@ -568,7 +577,7 @@ def _filter_selection(expr, predicates):
                 op.table, [],
                 predicates=op.predicates + simplified_predicates,
                 sort_keys=op.sort_keys)
-            return ir.TableExpr(result)
+            return result.to_expr()
 
     can_pushdown = _can_pushdown(op, predicates)
 
@@ -583,7 +592,7 @@ def _filter_selection(expr, predicates):
         result = ops.Selection(expr, proj_exprs=[],
                                predicates=predicates)
 
-    return ir.TableExpr(result)
+    return result.to_expr()
 
 
 def _can_pushdown(op, predicates):
