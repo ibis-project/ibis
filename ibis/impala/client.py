@@ -166,7 +166,6 @@ class ImpalaConnection(object):
         wrapper = ImpalaCursor(cursor, self, con, self.database,
                                self.options.copy())
         wrapper.set_options()
-
         return wrapper
 
     def ping(self):
@@ -220,7 +219,7 @@ class ImpalaCursor(object):
 
     def set_options(self):
         for k, v in self.options.items():
-            query = 'SET {0}={1}'.format(k, v)
+            query = 'SET {} = {!r}'.format(k, v)
             self._cursor.execute(query)
 
     @property

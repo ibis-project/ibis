@@ -1,4 +1,5 @@
 import re
+import numpy as np
 import pandas as pd
 
 import ibis.common as com
@@ -396,6 +397,13 @@ class ClickhouseTable(ir.TableExpr, DatabaseEntity):
         columns = ', '.join(map(quote_identifier, obj.columns))
         query = 'INSERT INTO {table} ({columns}) VALUES'.format(
             table=self._qualified_name, columns=columns)
+
+        # convert data columns with datetime64 pandas dtype to native date
+        # because clickhouse-driver 0.0.10 does arithmetic operations on it
+        obj = obj.copy()
+        for col in obj.select_dtypes(include=[np.datetime64]):
+            if isinstance(schema[col], dt.Date):
+                obj[col] = obj[col].dt.date
 
         data = obj.to_dict('records')
         return self._client.con.process_insert_query(query, data, **kwargs)
