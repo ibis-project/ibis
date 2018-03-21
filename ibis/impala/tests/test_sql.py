@@ -357,3 +357,29 @@ WHERE `a` = (
 ) AND
       `b` = 'a'"""
     assert result == expected
+
+
+def test_agg_filter():
+    t = ibis.table([('a', 'int64'), ('b', 'int64')], name='my_table')
+    t = t.mutate(b2=t.b * 2)
+    t = t[['a', 'b2']]
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max().name('blah')]
+    result = to_sql(expr)
+    expected = """\
+WITH t0 AS (
+  SELECT *, `b` * 2 AS `b2`
+  FROM my_table
+),
+t1 AS (
+  SELECT t0.`a`, t0.`b2`
+  FROM t0
+  WHERE t0.`a` < 100
+)
+SELECT t1.*
+FROM t1
+WHERE t1.`a` = (
+  SELECT max(`a`) AS `blah`
+  FROM t1
+)"""
+    assert result == expected

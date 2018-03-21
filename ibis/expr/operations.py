@@ -2309,11 +2309,11 @@ class TopK(ValueOp):
         if not isinstance(k, int) or k < 0:
             raise ValueError('k must be positive integer, was: {0}'.format(k))
 
+        super(TopK, self).__init__(arg, k, by)
+
         self.arg = arg
         self.k = k
         self.by = by
-
-        Node.__init__(self, [arg, k, by])
 
     def output_type(self):
         return TopKExpr

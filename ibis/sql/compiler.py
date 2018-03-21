@@ -745,8 +745,6 @@ class _CorrelatedRefCheck(object):
                 self._visit(arg, in_subquery=in_subquery,
                             visit_cache=visit_cache,
                             visit_table_cache=visit_table_cache)
-            else:
-                continue
 
     def _is_subquery(self, node):
         # XXX
@@ -957,6 +955,10 @@ class QueryContext(object):
         self.memo = memo or format.FormatMemo()
         self.dialect = dialect
         self.params = params if params is not None else {}
+
+    @property
+    def aliases(self):
+        return set(self._table_refs.values())
 
     def _compile_subquery(self, expr):
         sub_ctx = self.subcontext()

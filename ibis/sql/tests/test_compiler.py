@@ -1273,9 +1273,10 @@ WHERE `value` > 0"""
 
     def test_bug_project_multiple_times(self):
         # 108
-        customer = self.con.table('tpch_customer')
-        nation = self.con.table('tpch_nation')
-        region = self.con.table('tpch_region')
+        con = self.con
+        customer = con.table('tpch_customer')
+        nation = con.table('tpch_nation')
+        region = con.table('tpch_region')
 
         joined = (
             customer.inner_join(nation,
@@ -1673,28 +1674,27 @@ FROM tbl t0
 
         result = to_sql(expr)
         expected = """\
-SELECT t0.*, t1.`n_name`, t2.`r_name`
-FROM customer t0
-  INNER JOIN nation t1
-    ON t0.`c_nationkey` = t1.`n_nationkey`
-  INNER JOIN region t2
-    ON t1.`n_regionkey` = t2.`r_regionkey`
+WITH t0 AS (
+  SELECT t2.*, t3.`n_name`, t4.`r_name`
+  FROM customer t2
+    INNER JOIN nation t3
+      ON t2.`c_nationkey` = t3.`n_nationkey`
+    INNER JOIN region t4
+      ON t3.`n_regionkey` = t4.`r_regionkey`
+)
+SELECT t0.*
+FROM t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT t1.`n_name`, sum(t0.`c_acctbal`) AS `sum`
-      FROM customer t0
-        INNER JOIN nation t1
-          ON t0.`c_nationkey` = t1.`n_nationkey`
-        INNER JOIN region t2
-          ON t1.`n_regionkey` = t2.`r_regionkey`
+      SELECT `n_name`, sum(`c_acctbal`) AS `sum`
+      FROM t0
       GROUP BY 1
-    ) t4
+    ) t2
     ORDER BY `sum` DESC
     LIMIT 10
-  ) t3
-    ON t1.`n_name` = t3.`n_name`"""
-
+  ) t1
+    ON t0.`n_name` = t1.`n_name`"""
         assert result == expected
 
     def test_topk_analysis_bug(self):
