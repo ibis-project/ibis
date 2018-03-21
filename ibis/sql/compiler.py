@@ -311,12 +311,10 @@ class SelectBuilder(object):
             parent_table=self.table_set)
 
         # GH #667; this may reference a filtered version of self.table_set
-        arg = L.substitute_parents(op.arg)
+        arg = op.arg
 
-        pred = (arg == getattr(rank_set, op.arg.get_name()))
+        pred = arg == getattr(rank_set, arg.get_name())
         self.table_set = self.table_set.semi_join(rank_set, [pred])
-
-        return None
 
     # ---------------------------------------------------------------------
     # Analysis of table set
@@ -745,8 +743,6 @@ class _CorrelatedRefCheck(object):
                 self._visit(arg, in_subquery=in_subquery,
                             visit_cache=visit_cache,
                             visit_table_cache=visit_table_cache)
-            else:
-                continue
 
     def _is_subquery(self, node):
         # XXX
@@ -957,6 +953,10 @@ class QueryContext(object):
         self.memo = memo or format.FormatMemo()
         self.dialect = dialect
         self.params = params if params is not None else {}
+
+    @property
+    def aliases(self):
+        return set(self._table_refs.values())
 
     def _compile_subquery(self, expr):
         sub_ctx = self.subcontext()
