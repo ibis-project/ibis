@@ -1273,9 +1273,10 @@ WHERE `value` > 0"""
 
     def test_bug_project_multiple_times(self):
         # 108
-        customer = self.con.table('tpch_customer')
-        nation = self.con.table('tpch_nation')
-        region = self.con.table('tpch_region')
+        con = self.con
+        customer = con.table('tpch_customer')
+        nation = con.table('tpch_nation')
+        region = con.table('tpch_region')
 
         joined = (
             customer.inner_join(nation,
