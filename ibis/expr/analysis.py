@@ -626,7 +626,7 @@ class _PushdownValidate(object):
 
     def get_result(self):
         predicate = self.pred
-        return not has_reduction(predicate) and all(self._walk(predicate))
+        return all(self._walk(predicate))
 
     def _walk(self, expr):
         def validate(expr):

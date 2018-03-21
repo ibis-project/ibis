@@ -311,10 +311,12 @@ class SelectBuilder(object):
             parent_table=self.table_set)
 
         # GH #667; this may reference a filtered version of self.table_set
-        arg = op.arg
+        arg = L.substitute_parents(op.arg)
 
-        pred = arg == getattr(rank_set, arg.get_name())
+        pred = (arg == getattr(rank_set, op.arg.get_name()))
         self.table_set = self.table_set.semi_join(rank_set, [pred])
+
+        return None
 
     # ---------------------------------------------------------------------
     # Analysis of table set
