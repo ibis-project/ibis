@@ -81,7 +81,7 @@ class TestAnalytics(unittest.TestCase):
 
         filtered = t.filter([delay_filter])
 
-        post_pred = filtered.op().predicates[1]
+        post_pred = filtered.op().predicates[0]
         assert delay_filter.to_filter().equals(post_pred)
 
     def test_topk_function_late_bind(self):

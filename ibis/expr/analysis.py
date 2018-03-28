@@ -609,12 +609,12 @@ def _can_pushdown(op, predicates):
     # 3) Appears in the selections in the projection (either is part of one of
     #    the entire tables or a single column selection)
 
-    can_pushdown = True
     for pred in predicates:
         validator = _PushdownValidate(op, pred)
         predicate_is_valid = validator.get_result()
-        can_pushdown = can_pushdown and predicate_is_valid
-    return can_pushdown
+        if not predicate_is_valid:
+            return False
+    return True
 
 
 class _PushdownValidate(object):
@@ -625,7 +625,8 @@ class _PushdownValidate(object):
         self.validator = ExprValidator([self.parent.table])
 
     def get_result(self):
-        return all(self._walk(self.pred))
+        predicate = self.pred
+        return not has_reduction(predicate) and all(self._walk(predicate))
 
     def _walk(self, expr):
         def validate(expr):
@@ -665,8 +666,6 @@ class _PushdownValidate(object):
 
                 is_valid = (col_table.is_ancestor(node.table) or
                             col_table.is_ancestor(lifted_node.table))
-
-                # is_valid = True
 
         return is_valid
 
@@ -858,11 +857,7 @@ class ExprValidator(object):
         return self.roots_shared(node) > 0
 
     def roots_shared(self, node):
-        count = 0
-        for root in self.roots:
-            if root.is_ancestor(node):
-                count += 1
-        return count
+        return sum(root.is_ancestor(node) for root in self.roots)
 
     def shares_some_roots(self, expr):
         expr_roots = expr._root_tables()
