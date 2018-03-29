@@ -1273,9 +1273,10 @@ WHERE `value` > 0"""
 
     def test_bug_project_multiple_times(self):
         # 108
-        customer = self.con.table('tpch_customer')
-        nation = self.con.table('tpch_nation')
-        region = self.con.table('tpch_region')
+        con = self.con
+        customer = con.table('tpch_customer')
+        nation = con.table('tpch_nation')
+        region = con.table('tpch_region')
 
         joined = (
             customer.inner_join(nation,
@@ -1296,27 +1297,27 @@ WHERE `value` > 0"""
         # it works!
         result = to_sql(expr)
         expected = """\
-SELECT t0.`c_name`, t2.`r_name`, t1.`n_name`
-FROM tpch_customer t0
-  INNER JOIN tpch_nation t1
-    ON t0.`c_nationkey` = t1.`n_nationkey`
-  INNER JOIN tpch_region t2
-    ON t1.`n_regionkey` = t2.`r_regionkey`
+WITH t0 AS (
+  SELECT t2.*, t3.`n_name`, t4.`r_name`
+  FROM tpch_customer t2
+    INNER JOIN tpch_nation t3
+      ON t2.`c_nationkey` = t3.`n_nationkey`
+    INNER JOIN tpch_region t4
+      ON t3.`n_regionkey` = t4.`r_regionkey`
+)
+SELECT `c_name`, `r_name`, `n_name`
+FROM t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT t1.`n_name`, sum(CAST(t0.`c_acctbal` AS double)) AS `sum`
-      FROM tpch_customer t0
-        INNER JOIN tpch_nation t1
-          ON t0.`c_nationkey` = t1.`n_nationkey`
-        INNER JOIN tpch_region t2
-          ON t1.`n_regionkey` = t2.`r_regionkey`
+      SELECT `n_name`, sum(CAST(`c_acctbal` AS double)) AS `sum`
+      FROM t0
       GROUP BY 1
-    ) t4
+    ) t2
     ORDER BY `sum` DESC
     LIMIT 10
-  ) t3
-    ON t1.`n_name` = t3.`n_name`"""
+  ) t1
+    ON t0.`n_name` = t1.`n_name`"""
         assert result == expected
 
     def test_aggregate_projection_subquery(self):
@@ -1673,28 +1674,27 @@ FROM tbl t0
 
         result = to_sql(expr)
         expected = """\
-SELECT t0.*, t1.`n_name`, t2.`r_name`
-FROM customer t0
-  INNER JOIN nation t1
-    ON t0.`c_nationkey` = t1.`n_nationkey`
-  INNER JOIN region t2
-    ON t1.`n_regionkey` = t2.`r_regionkey`
+WITH t0 AS (
+  SELECT t2.*, t3.`n_name`, t4.`r_name`
+  FROM customer t2
+    INNER JOIN nation t3
+      ON t2.`c_nationkey` = t3.`n_nationkey`
+    INNER JOIN region t4
+      ON t3.`n_regionkey` = t4.`r_regionkey`
+)
+SELECT t0.*
+FROM t0
   LEFT SEMI JOIN (
     SELECT *
     FROM (
-      SELECT t1.`n_name`, sum(t0.`c_acctbal`) AS `sum`
-      FROM customer t0
-        INNER JOIN nation t1
-          ON t0.`c_nationkey` = t1.`n_nationkey`
-        INNER JOIN region t2
-          ON t1.`n_regionkey` = t2.`r_regionkey`
+      SELECT `n_name`, sum(`c_acctbal`) AS `sum`
+      FROM t0
       GROUP BY 1
-    ) t4
+    ) t2
     ORDER BY `sum` DESC
     LIMIT 10
-  ) t3
-    ON t1.`n_name` = t3.`n_name`"""
-
+  ) t1
+    ON t0.`n_name` = t1.`n_name`"""
         assert result == expected
 
     def test_topk_analysis_bug(self):
@@ -2334,4 +2334,98 @@ FROM t
 WHERE `b` = 'm'
 GROUP BY 1
 HAVING max(`a`) = 2"""
+    assert result == expected
+
+
+def test_simple_agg_filter():
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='my_table')
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max()]
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM (
+  SELECT *
+  FROM my_table
+  WHERE `a` < 100
+) t0
+WHERE `a` = (
+  SELECT max(`a`) AS `max`
+  FROM my_table
+  WHERE `a` < 100
+)"""
+    assert result == expected
+
+
+def test_agg_and_non_agg_filter():
+    t = ibis.table([('a', 'int64'), ('b', 'string')], name='my_table')
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max()]
+    expr = expr[expr.b == 'a']
+    result = to_sql(expr)
+    expected = """\
+SELECT *
+FROM (
+  SELECT *
+  FROM my_table
+  WHERE `a` < 100
+) t0
+WHERE `a` = (
+  SELECT max(`a`) AS `max`
+  FROM my_table
+  WHERE `a` < 100
+) AND
+      `b` = 'a'"""
+    assert result == expected
+
+
+def test_agg_filter():
+    t = ibis.table([('a', 'int64'), ('b', 'int64')], name='my_table')
+    t = t.mutate(b2=t.b * 2)
+    t = t[['a', 'b2']]
+    filt = t[t.a < 100]
+    expr = filt[filt.a == filt.a.max().name('blah')]
+    result = to_sql(expr)
+    expected = """\
+WITH t0 AS (
+  SELECT *, `b` * 2 AS `b2`
+  FROM my_table
+),
+t1 AS (
+  SELECT t0.`a`, t0.`b2`
+  FROM t0
+  WHERE t0.`a` < 100
+)
+SELECT t1.*
+FROM t1
+WHERE t1.`a` = (
+  SELECT max(`a`) AS `blah`
+  FROM t1
+)"""
+    assert result == expected
+
+
+def test_agg_filter_with_alias():
+    t = ibis.table([('a', 'int64'), ('b', 'int64')], name='my_table')
+    t = t.mutate(b2=t.b * 2)
+    t = t[['a', 'b2']]
+    filt = t[t.a < 100]
+    expr = filt[filt.a.name('A') == filt.a.max().name('blah')]
+    result = to_sql(expr)
+    expected = """\
+WITH t0 AS (
+  SELECT *, `b` * 2 AS `b2`
+  FROM my_table
+),
+t1 AS (
+  SELECT t0.`a`, t0.`b2`
+  FROM t0
+  WHERE t0.`a` < 100
+)
+SELECT t1.*
+FROM t1
+WHERE t1.`a` = (
+  SELECT max(`a`) AS `blah`
+  FROM t1
+)"""
     assert result == expected
