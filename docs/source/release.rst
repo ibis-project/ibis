@@ -9,19 +9,22 @@ Release Notes
    releases (e.g., ``0.5.1``) will generally not be found here and contain
    only bug fixes.
 
+Current ``ibis.__version__``: |version|
 
-v0.13.0 (????)
---------------
+v0.13.0 (March 20, 2018)
+------------------------
 
-This release brings a new backend, File Support support along with a number of
-bug fixes and reliability enhancements. We recommend that all users upgrade
+This release brings new backends, including support for executing against
+files, MySQL, Pandas user defined scalar and aggregations along with a number
+of bug fixes and reliability enhancements. We recommend that all users upgrade
 from earlier versions of Ibis.
 
 New Backends
 ~~~~~~~~~~~~
 
-* File Support for CSV & HDF5 (:issue:`1165`)
-* File Support for Parquet Format (:issue:`1175`)
+* File Support for CSV & HDF5 (:issue:`1165`, :issue:`1194`)
+* File Support for Parquet Format (:issue:`1175`, :issue:`1194`)
+* Experimental support for ``MySQL`` thanks to @kszucs (:issue:`1224`)
 
 New Features
 ~~~~~~~~~~~~
@@ -37,6 +40,31 @@ New Features
 * Add ``.get()`` operation on a Map type (:issue:`1376`)
 * Allow visualization of custom defined expressions
 * Add experimental support for pandas UDFs/UDAFs (:issue:`1277`)
+* Functions can be used as groupby keys (:issue:`1214`, :issue:`1215`)
+* Generalize the use of the ``where`` parameter to reduction operations
+  (:issue:`1220`)
+* Support for interval operations thanks to @kszucs (:issue:`1243`,
+  :issue:`1260`, :issue:`1249`)
+* Support for the ``PARTITIONTIME`` column in the BigQuery backend
+  (:issue:`1322`)
+* Add ``arbitrary()`` method for selecting the first non null value in a column
+  (:issue:`1230`, :issue:`1309`)
+* Windowed ``MultiQuantile`` operation in the pandas backend thanks to
+  @DiegoAlbertoTorres (:issue:`1343`)
+* Rules for validating table expressions thanks to @DiegoAlbertoTorres
+  (:issue:`1298`)
+* Complete end-to-end testing framework for all supported backends
+  (:issue:`1256`)
+* ``contains``/``not contains`` now supported in the pandas backend
+  (:issue:`1210`, :issue:`1211`)
+* CI builds are now reproducible *locally* thanks to @kszucs (:issue:`1121`,
+  :issue:`1237`, :issue:`1255`, :issue:`1311`)
+* ``isnan``/``isinf`` operations thanks to @kszucs (:issue:`1261`)
+* Framework for generalized dtype and schema inference, and implicit casting
+  thanks to @kszucs (:issue:`1221`, :issue:`1269`)
+* Generic utilities for expression traversal thanks to @kszucs (:issue:`1336`)
+* ``day_of_week`` API (:issue:`306`, :issue:`1047`)
+* Design documentation for ibis (:issue:`1351`)
 
 Bug Fixes
 ~~~~~~~~~
@@ -44,6 +72,15 @@ Bug Fixes
 * Unbound parameters were failing in the simple case of a
   :meth:`~ibis.expr.types.TableExpr.mutate` call with no operation
   (:issue:`1378`)
+* Fix parameterized subqueries (:issue:`1300`, :issue:`1331`, :issue:`1303`,
+  :issue:`1378`)
+* Fix subquery extraction, which wasn't happening in topological order
+  (:issue:`1342`)
+* Fix parenthesization if ``isnull`` (:issue:`1307`)
+* Calling drop after mutate did not work (:issue:`1296`, :issue:`1299`)
+* SQLAlchemy backends were missing an implementation of
+  :class:`~ibis.expr.operations.NotContains`.
+* Support ``REGEX_EXTRACT`` in PostgreSQL 10 (:issue:`1276`, :issue:`1278`)
 
 API Changes
 -----------
