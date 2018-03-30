@@ -11,7 +11,7 @@ Release Notes
 
 Current ``ibis.__version__``: |version|
 
-v0.13.0 (March 20, 2018)
+v0.13.0 (March 30, 2018)
 ------------------------
 
 This release brings new backends, including support for executing against
