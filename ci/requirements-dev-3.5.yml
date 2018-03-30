@@ -9,7 +9,7 @@ dependencies:
   - flake8
   - google-cloud-bigquery<0.28
   - graphviz
-  - impyla>=0.13.7
+  - impyla>=0.14.0
   - lz4
   - multipledispatch
   - numpy=1.12.0
@@ -21,14 +21,11 @@ dependencies:
   - pytest
   - python=3.5
   - python-graphviz
+  - python-hdfs>=2.0.16
   - regex
   - requests
   - six
   - sqlalchemy>=1.0.0,<1.1.15
-  - thrift<=0.9.3
-  - thriftpy<=0.3.9
   - toolz
   - xorg-libxpm
   - xorg-libxrender
-  - pip:
-    - hdfs>=2.0.0

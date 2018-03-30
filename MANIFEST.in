@@ -4,13 +4,9 @@ include README.md
 include LICENSE.txt
 graft ibis
 graft LICENSES
-graft scripts
 graft conda-recipes
 
 graft docs
-prune docs/source/generated
-prune docs/source/generated-notebooks
-prune docs/build
 
 global-exclude *CMakeCache*
 global-exclude *.o
