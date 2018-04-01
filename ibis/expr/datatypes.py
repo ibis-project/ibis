@@ -24,7 +24,6 @@ from multipledispatch import Dispatcher
 
 import ibis.common as com
 from ibis.compat import PY2, builtins, functools
-from ibis.compat import builtins, PY2
 import ibis.expr.types as ir
 
 

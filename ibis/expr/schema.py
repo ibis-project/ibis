@@ -101,6 +101,12 @@ class Schema(object):
     def __eq__(self, other):
         return self.equals(other)
 
+    def __gt__(self, other):
+        return set(self.items()) > set(other.items())
+
+    def __ge__(self, other):
+        return set(self.items()) >= set(other.items())
+
     def append(self, schema):
         return Schema(self.names + schema.names, self.types + schema.types)
 

@@ -92,3 +92,22 @@ def test_whole_schema():
         ],
     )
     assert customers.schema() == expected
+
+
+def test_schema_subset():
+    s1 = ibis.schema([
+        ('a', dt.int64),
+        ('b', dt.int32),
+        ('c', dt.string)
+    ])
+
+    s2 = ibis.schema([
+        ('a', dt.int64),
+        ('c', dt.string)
+    ])
+
+    assert s1 > s2
+    assert s2 < s1
+
+    assert s1 >= s2
+    assert s2 <= s1

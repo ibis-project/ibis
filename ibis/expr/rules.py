@@ -5,6 +5,7 @@ from ibis.compat import suppress
 import ibis.util as util
 import ibis.common as com
 import ibis.expr.types as ir
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
 try:
@@ -311,71 +312,17 @@ def typeof(arg):
     return arg._factory
 
 
-def comparable(left, right):
-    return ir.castable(left, right) or ir.castable(right, left)
-
-
-@six.add_metaclass(abc.ABCMeta)
-class TableColumnValidator(object):
-    @abc.abstractmethod
-    def validate(self):
-        pass
-
-
-class SubsetValidator(TableColumnValidator):
-    def __init__(self, *rules):
-        self.rules = self._validate_rules(rules)
-
-    def _validate_rules(self, rules):
-        for column_rule in rules:
-            # Members of a schema are arguments with a name
-            if not isinstance(column_rule, Argument):
-                raise ValueError(
-                    'Arguments of subset schema must be instances of the '
-                    'Argument class (rules).')
-            if column_rule.name is None:
-                raise ValueError(
-                    'Column rules must be named inside a table.')
-        return rules
-
-    def validate(self, arg):
-        if isinstance(arg, ir.TableExpr):
-            # Check that columns match the schema first
-            for column_rule in self.rules:
-                if column_rule.name not in arg:
-                    if column_rule.optional:
-                        continue
-                    else:
-                        raise IbisTypeError(
-                            'No column with name {}.'.format(column_rule.name))
-
-                column = arg[column_rule.name]
-                try:
-                    # Arguments must validate the column
-                    column_rule.validate([column], 0)
-                except IbisTypeError as e:
-                    six.raise_from(
-                        IbisTypeError('Could not satisfy rule: {}.'.format(
-                            str(column_rule))), e)
-
-
-class Table(Argument):
+@validator
+def table(schema, arg):
     """A table argument.
 
     Parameters
     ----------
-    name : str
-        The name of the table argument.
-    optional : bool
-        Whether this table argument is optional or not.
-    schema : TableColumnValidator
+    schema : Union[sch.Schema, List[Tuple[str, dt.DataType]]
         A validator for the table's columns. Only column subset validators are
-        currently supported. One can be created through the class method
-        ``Table.with_column_subset``. See the example for usage.
-    doc : str
-        A docstring to document this argument.
-    validator : Argument
-        Allows adding custom validation logic to this argument.
+        currently supported. Accepts any arguments that `sch.schema` accepts.
+        See the example for usage.
+    arg : The validatable argument.
 
     Examples
     --------
@@ -385,63 +332,15 @@ class Table(Argument):
     specified in the column rules. Column ``value2`` is optional, but if
     present it must be of the specified type. The table may have extra columns
     not specified in the schema.
-
-    >>> import ibis.expr.datatypes as dt
-    >>> import ibis.expr.rules as rules
-    >>> import ibis.expr.operations as ops
-    >>> class MyOp(ops.ValueOp):
-    ...    input_type = [
-    ...        rules.table(
-    ...            name='table',
-    ...            schema=rules.table.with_column_subset(
-    ...                rules.column(name='time', value_type=rules.number),
-    ...                rules.column(name='group', value_type=rules.number),
-    ...                rules.column(name='value1', value_type=rules.number),
-    ...                rules.column(name='value2', value_type=rules.number,
-    ...                             optional=True)))]
-    ...    output_type = rules.type_of_arg(0)
     """
-    def __init__(self, name=None, optional=False, schema=None, doc=None,
-                 validator=None, **arg_kwds):
-        self.name = name
-        self.optional = optional
+    assert isinstance(arg, ir.TableExpr)
 
-        if not ((schema is None) or isinstance(schema, TableColumnValidator)):
-            raise ValueError(
-                'schema argument must be an instance of TableColumnValidator')
-
-        self.schema = schema
-
-        self.doc = doc
-        self.validator = validator
-
-    @classmethod
-    def with_column_subset(cls, *col_rules):
-        return SubsetValidator(*col_rules)
-
-    def _validate(self, args, i):
-        arg = args[i]
-
-        if not isinstance(arg, ir.TableExpr):
-            raise IbisTypeError('Argument must be a table.')
-
-        if self.schema is not None:
-            self.schema.validate(arg)
-
+    if arg.schema() >= sch.schema(schema):
         return arg
 
-
-table = Table
-
-
-def _coerce_integer_to_double_type(self):
-    first_arg = self.args[0]
-    first_arg_type = first_arg.type()
-    if isinstance(first_arg_type, dt.Integer):
-        result_type = dt.double
-    else:
-        result_type = first_arg_type
-    return result_type
+    raise com.IbisTypeError(
+        'Argument is not a table with column subset of {}'.format(schema)
+    )
 
 
 # TODO: might just use bounds instead of actual literal values

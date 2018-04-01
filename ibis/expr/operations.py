@@ -112,6 +112,12 @@ class Node(Annotable):
         cache[(self, other)] = True
         return True
 
+    def is_ancestor(self, other):
+        if isinstance(other, ir.Expr):
+            other = other.op()
+
+        return self.equals(other)
+
     def to_expr(self):
         if not hasattr(self, '_expr_cached'):
             self._expr_cached = self._make_expr()
@@ -1758,6 +1764,23 @@ class Selection(TableNode, HasSchema):
 
     def can_add_filters(self, wrapped_expr, predicates):
         pass
+
+    def is_ancestor(self, other):
+        import ibis.expr.lineage as lin
+
+        if isinstance(other, ir.Expr):
+            other = other.op()
+
+        if self.equals(other):
+            return True
+
+        expr = self.to_expr()
+        fn = lambda e: (lin.proceed, e.op())  # noqa: E731
+        for child in lin.traverse(fn, expr):
+            if child.equals(other):
+                return True
+
+        return False
 
     # Operator combination / fusion logic
 

@@ -4,6 +4,7 @@ import pytest
 import math
 import decimal
 import operator
+import functools
 from operator import methodcaller
 
 import numpy as np
