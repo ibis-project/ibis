@@ -565,7 +565,6 @@ class TableExpr(Expr):
 # with: an instance of each is well-typed and includes all valid methods
 # defined for each type.
 
-# TODO: __slots__?
 
 class AnyValue(ValueExpr): pass  # noqa: E701,E302
 class AnyScalar(ScalarExpr, AnyValue): pass  # noqa: E701,E302
