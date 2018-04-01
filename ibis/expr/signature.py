@@ -110,6 +110,11 @@ class TypeSignature(OrderedDict):
 
     __slots__ = ()
 
+    @classmethod
+    def from_dtypes(cls, dtypes):
+        return cls(('_{}'.format(i), Argument(rlz.value(dtype)))
+                    for i, dtype in enumerate(dtypes))
+
     def validate(self, *args, **kwargs):
         if len(args) > len(self.keys()):
             raise TypeError('takes {} positional arguments ut {} were '
