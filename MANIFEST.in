@@ -4,7 +4,6 @@ include README.md
 include LICENSE.txt
 graft ibis
 graft LICENSES
-graft conda-recipes
 
 graft docs
 
