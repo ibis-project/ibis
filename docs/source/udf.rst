@@ -119,7 +119,7 @@ The interface is very similar to the pandas UDF API:
 
    @udf([double], double)
    def my_bigquery_add_one(x):
-       return x + 1
+       return x + 1.0
 
 Ibis will parse the source of the function and turn the resulting Python AST
 into JavaScript source code (technically, ECMAScript 2015). Most of the Python
@@ -131,14 +131,37 @@ of the function.
 .. code-block:: python
 
    >>> print(my_bigquery_add_one.js)
+   CREATE TEMPORARY FUNCTION my_bigquery_add_one(x FLOAT64)
+   RETURNS FLOAT64
+   LANGUAGE js AS """
+   'use strict';
+   function my_bigquery_add_one(x) {
+       return (x + 1.0);
+   }
+   return my_bigquery_add_one(x);
+   """;
 
 When you want to use this function you call it like any other Python
 function--only on an ibis expression:
 
 .. code-block:: python
 
-   t = ibis.table([('a', 'double')])
-   my_bigquery_add_one(t.a)
+   >>> import ibis
+   >>> t = ibis.table([('a', 'double')])
+   >>> expr = my_bigquery_add_one(t.a)
+   >>> print(ibis.bigquery.compile(expr))
+   CREATE TEMPORARY FUNCTION my_bigquery_add_one(x FLOAT64)
+   RETURNS FLOAT64
+   LANGUAGE js AS """
+   'use strict';
+   function my_bigquery_add_one(x) {
+       return (x + 1.0);
+   }
+   return my_bigquery_add_one(x);
+   """;
+
+   SELECT my_bigquery_add_one(`a`) AS `tmp`
+   FROM t0
 
 SQLite
 ------
