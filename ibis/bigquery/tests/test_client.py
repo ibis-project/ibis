@@ -366,3 +366,11 @@ def test_scalar_param_scope(alltypes):
     assert mut == """\
 SELECT *, @param AS `param`
 FROM testing.functional_alltypes"""
+
+
+def test_scalar_param_partition_time(parted_alltypes):
+    t = parted_alltypes
+    param = ibis.param('timestamp').name('time_param')
+    expr = t[t.PARTITIONTIME < param]
+    df = expr.execute(params={param: '2017-01-01'})
+    assert df.empty

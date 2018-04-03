@@ -15,6 +15,7 @@ import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
+import ibis.expr.lineage as lin
 
 from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient
@@ -118,11 +119,39 @@ class BigQueryCursor(object):
         pass
 
 
-class BigQuery(Query):
+def _find_scalar_parameter(expr):
+    """:func:`~ibis.expr.lineage.traverse` function to find all
+    :class:`~ibis.expr.types.ScalarParameter` instances and yield the operation
+    and the parent expresssion's resolved name.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+
+    Returns
+    -------
+    Tuple[bool, object]
+    """
+    op = expr.op()
+
+    if isinstance(op, ir.ScalarParameter):
+        result = op, expr.get_name()
+    else:
+        result = None
+    return lin.proceed, result
+
+
+class BigQueryQuery(Query):
 
     def __init__(self, client, ddl, query_parameters=None):
-        super(BigQuery, self).__init__(client, ddl)
-        self.query_parameters = query_parameters or {}
+        super(BigQueryQuery, self).__init__(client, ddl)
+        query_parameter_names = dict(
+            lin.traverse(_find_scalar_parameter, ddl.parent_expr))
+        self.query_parameters = [
+            bigquery_param(
+                param.to_expr().name(query_parameter_names[param]), value
+            ) for param, value in (query_parameters or {}).items()
+        ]
 
     def _fetch(self, cursor):
         df = pd.DataFrame(cursor.fetchall(), columns=cursor.columns)
@@ -256,7 +285,7 @@ def bq_param_date(param, value):
 
 class BigQueryClient(SQLClient):
 
-    sync_query = BigQuery
+    sync_query = BigQueryQuery
     database_class = BigQueryDatabase
     proxy_class = BigQueryAPIProxy
     dialect = comp.BigQueryDialect
@@ -307,10 +336,7 @@ class BigQueryClient(SQLClient):
         # TODO(phillipc): Allow **kwargs in calls to execute
         query = self._proxy.client.run_sync_query(stmt)
         query.use_legacy_sql = False
-        query.query_parameters = [
-            bigquery_param(param.to_expr(), value)
-            for param, value in (query_parameters or {}).items()
-        ]
+        query.query_parameters = query_parameters or []
         query.run()
 
         # run_sync_query is not really synchronous: there's a timeout
