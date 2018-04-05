@@ -16,7 +16,7 @@ from ibis.impala.compiler import ImpalaSelect, unary, fixed_arity
 from ibis.impala import compiler as impala_compiler
 
 
-class BigQueryUDFNode(ir.ValueOp):
+class BigQueryUDFNode(ops.ValueOp):
     pass
 
 
