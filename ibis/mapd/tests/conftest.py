@@ -5,40 +5,42 @@ import pytest
 import ibis
 
 
-PROJECT_ID = os.environ.get('MAPD_PROJECT_ID')
-DATASET_ID = 'testing'
+CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
+CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
+CLICKHOUSE_USER = os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default')
+CLICKHOUSE_PASS = os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')
+IBIS_TEST_CLICKHOUSE_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 
-@pytest.fixture(scope='session')
-def client():
-    ga = pytest.importorskip('google.auth')
-
-    try:
-        return ibis.mapd.connect(PROJECT_ID, DATASET_ID)
-    except ga.exceptions.DefaultCredentialsError:
-        pytest.skip("no credentials found, skipping")
-
-
-@pytest.fixture(scope='session')
-def alltypes(client):
-    return client.table('functional_alltypes')
+@pytest.fixture(scope='module')
+def con():
+    return ibis.clickhouse.connect(
+        host=CLICKHOUSE_HOST,
+        port=CLICKHOUSE_PORT,
+        user=CLICKHOUSE_USER,
+        password=CLICKHOUSE_PASS,
+        database=IBIS_TEST_CLICKHOUSE_DB,
+    )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='module')
+def db(con):
+    return con.database()
+
+
+@pytest.fixture(scope='module')
+def alltypes(db):
+    return db.functional_alltypes
+
+
+@pytest.fixture(scope='module')
 def df(alltypes):
     return alltypes.execute()
 
 
-@pytest.fixture(scope='session')
-def parted_alltypes(client):
-    return client.table('functional_alltypes_parted')
-
-
-@pytest.fixture(scope='session')
-def parted_df(parted_alltypes):
-    return parted_alltypes.execute()
-
-
-@pytest.fixture(scope='session')
-def struct_table(client):
-    return client.table('struct_table')
+@pytest.fixture
+def translate():
+    from ibis.clickhouse.compiler import ClickhouseDialect
+    dialect = ClickhouseDialect()
+    context = dialect.make_context()
+    return lambda expr: dialect.translator(expr, context).get_result()

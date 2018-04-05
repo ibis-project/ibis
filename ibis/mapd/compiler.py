@@ -1,4 +1,3 @@
-# compiler.py
 import ibis
 import ibis.common as com
 
@@ -322,7 +321,7 @@ _operation_registry.update({
     # MapD doesn't have these operations built in.
     # ops.ArrayRepeat: _array_repeat,
     # ops.ArraySlice: _array_slice,
-    ir.Literal: _literal,
+    ops.Literal: _literal,
     ops.Arbitrary: _arbitrary,
 
     ops.TimestampTruncate: _truncate('TIMESTAMP', _timestamp_units),

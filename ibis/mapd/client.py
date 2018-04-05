@@ -69,7 +69,7 @@ _LEGACY_TO_STANDARD = {
 }
 
 
-@dt.dtype.register(pymapd.schema.SchemaField)
+# @dt.dtype.register(pymapd.schema.SchemaField)
 def pymapd_field_to_ibis_dtype(field):
     typ = field.field_type
     if typ == 'RECORD':
@@ -86,7 +86,7 @@ def pymapd_field_to_ibis_dtype(field):
     return ibis_type
 
 
-@sch.infer.register(pymapd.table.Table)
+# @sch.infer.register(pymapd.table.Table)
 def pymapd_schema(table):
     pairs = [(el.name, dt.dtype(el)) for el in table.schema]
     try:
@@ -225,12 +225,12 @@ def pymapd_param_string(param, value):
     return pymapd.ScalarQueryParameter(param.get_name(), 'STRING', value)
 
 
-@pymapd_param.register(ir.Int64Scalar, six.integer_types)
+@pymapd_param.register(ir.IntegerScalar, six.integer_types)
 def pymapd_param_integer(param, value):
     return pymapd.ScalarQueryParameter(param.get_name(), 'INT64', value)
 
 
-@pymapd_param.register(ir.DoubleScalar, float)
+@pymapd_param.register(ir.FloatingScalar, float)
 def pymapd_param_double(param, value):
     return pymapd.ScalarQueryParameter(param.get_name(), 'FLOAT64', value)
 
@@ -262,17 +262,8 @@ class MapDClient(SQLClient):
     proxy_class = MapDAPIProxy
     dialect = comp.MapDDialect
 
-    def __init__(self, project_id, dataset_id):
-        self._proxy = type(self).proxy_class(project_id)
-        self._dataset_id = dataset_id
-
-    @property
-    def project_id(self):
-        return self._proxy.project_id
-
-    @property
-    def dataset_id(self):
-        return self._dataset_id
+    def __init__(self, *args, **kwargs):
+        self.con = pymapd.connect(*args, **kwargs)
 
     @property
     def _table_expr_klass(self):
@@ -283,9 +274,10 @@ class MapDClient(SQLClient):
         if NATIVE_PARTITION_COL in t.columns:
             col = ibis.options.pymapd.partition_col
             assert col not in t
-            return (t
-                    .mutate(**{col: t[NATIVE_PARTITION_COL]})
-                    .drop([NATIVE_PARTITION_COL]))
+            return (
+                t.mutate(**{col: t[NATIVE_PARTITION_COL]})
+                    .drop([NATIVE_PARTITION_COL])
+            )
         return t
 
     def _build_ast(self, expr, context):

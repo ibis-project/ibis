@@ -1,9 +1,8 @@
-# api.py
-import pymapd
-import ibis.common as com
 from ibis.config import options
 from ibis.mapd.client import MapDClient
 from ibis.mapd.compiler import dialect
+
+import ibis.common as com
 
 
 def compile(expr, params=None):
@@ -31,17 +30,26 @@ def verify(expr, params=None):
         return False
 
 
-def connect(project_id, dataset_id):
+def connect(*args, **kwargs):
     """Create a MapDClient for use with Ibis
 
-    Parameters
-    ----------
-    project_id: str
-    dataset_id: str
+    Parameters could be
+
+    host: str
+    port: int|str
+    database: str
+    user: str
+    password: str
+
 
     Returns
     -------
     MapDClient
-    """
 
-    return MapDClient(project_id, dataset_id)
+    """
+    client = MapDClient(*args, **kwargs)
+
+    if options.default_backend is None:
+        options.default_backend = client
+
+    return client
