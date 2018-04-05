@@ -1,3 +1,5 @@
+from functools import partial
+
 import ibis
 import ibis.common as com
 
@@ -8,8 +10,14 @@ import ibis.expr.types as ir
 
 import ibis.sql.compiler as comp
 import ibis.expr.operations as ops
+import ibis.expr.lineage as lin
+
 from ibis.impala.compiler import ImpalaSelect, unary, fixed_arity
 from ibis.impala import compiler as impala_compiler
+
+
+class BigQueryUDFNode(ops.ValueOp):
+    pass
 
 
 class BigQuerySelectBuilder(comp.SelectBuilder):
@@ -19,14 +27,33 @@ class BigQuerySelectBuilder(comp.SelectBuilder):
         return BigQuerySelect
 
 
+class BigQueryUDFDefinition(comp.DDL):
+
+    def __init__(self, expr, context):
+        self.expr = expr
+        self.context = context
+
+    def compile(self):
+        return self.expr.op().js
+
+
+def find_bigquery_udf(expr):
+    if isinstance(expr.op(), BigQueryUDFNode):
+        result = expr
+    else:
+        result = None
+    return lin.proceed, result
+
+
 class BigQueryQueryBuilder(comp.QueryBuilder):
 
     select_builder = BigQuerySelectBuilder
 
-    @property
-    def _union_class(self):
-        # return BigQueryUnion
-        raise NotImplementedError()
+    def generate_setup_queries(self):
+        result = list(
+            map(partial(BigQueryUDFDefinition, context=self.context),
+                lin.traverse(find_bigquery_udf, self.expr)))
+        return result
 
 
 def build_ast(expr, context):
@@ -34,16 +61,9 @@ def build_ast(expr, context):
     return builder.get_result()
 
 
-def _get_query(expr, context):
-    ast = build_ast(expr, context)
-    (query, rest) = (ast.queries[0], ast.queries[1:])
-    assert not rest
-    return query
-
-
 def to_sql(expr, context):
-    query = _get_query(expr, context)
-    compiled = query.compile()
+    query_ast = build_ast(expr, context)
+    compiled = query_ast.compile()
     return compiled
 
 
@@ -61,7 +81,7 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
-_sql_type_names = {
+SQL_TYPE_NAMES = {
     'int8': 'int64',
     'int16': 'int64',
     'int32': 'int64',
@@ -79,7 +99,7 @@ def _cast(translator, expr):
     op = expr.op()
     arg, target_type = op.args
     arg_formatted = translator.translate(arg)
-    sql_type = _sql_type_names[target_type.name.lower()]
+    sql_type = SQL_TYPE_NAMES[target_type.name.lower()]
     return 'CAST({} AS {})'.format(arg_formatted, sql_type.upper())
 
 
@@ -364,6 +384,7 @@ class BigQueryExprTranslator(impala_compiler.ImpalaExprTranslator):
         return '@{}'.format(expr.get_name())
 
 
+compiles = BigQueryExprTranslator.compiles
 rewrites = BigQueryExprTranslator.rewrites
 
 

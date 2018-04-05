@@ -78,6 +78,7 @@ setup(
         ],
         'clickhouse:python_version == "3.4"': clickhouse_requires,
         'bigquery': bigquery_requires,
+        'bigquery:python_version < "3"': bigquery_requires + ['chainmap'],
         'csv:python_version < "3"': ['pathlib2'],
         'hdf5': hdf5_requires,
         'hdf5:python_version < "3"': hdf5_requires + ['pathlib2'],
