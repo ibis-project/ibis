@@ -27,7 +27,7 @@ Bug Fixes
 ~~~~~~~~~
 
 * Nullable property is now propagated through value types (:issue:`1289`)
-* Implicit casting between signed and unsigned integers bounds check
+* Implicit casting between signed and unsigned integers checks boundaries
 
 API Changes
 -----------
