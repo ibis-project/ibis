@@ -1,5 +1,7 @@
 import pytest
 
+from ibis.compat import PY2
+
 import ibis.expr.datatypes as dt
 
 ibis_type_to_bigquery_type = pytest.importorskip(
@@ -95,9 +97,13 @@ function* f(a) {
     assert expected == js
 
 
+@pytest.mark.skipif(PY2, reason='Python 2 does not have yield from syntax')
 def test_yield_from():
-    def f(a):
-        yield from [1, 2, 3]
+    d = {}
+    exec("""\
+def f(a):
+    yield from [1, 2, 3]""", d)
+    f = d['f']
 
     js = compile(f)
     expected = """\
