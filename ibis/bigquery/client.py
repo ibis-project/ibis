@@ -15,8 +15,9 @@ import ibis.common as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
-import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient
