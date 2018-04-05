@@ -234,12 +234,6 @@ def execute_without_scope(
 
     data_scope = find_data(expr)
 
-    if not data_scope:
-        raise ValueError(
-            'No data sources found while trying to execute against the pandas '
-            'backend'
-        )
-
     factory = type(data_scope)
 
     if scope is None:
@@ -257,6 +251,14 @@ def execute_without_scope(
         (node, data_preload(node, data, scope=new_scope))
         for node, data in new_scope.items()
     )
+
+    # if, after looking at scope, parameters, *and* calling data_preload we
+    # still do not have anything to execute against, then call it quits
+    if not new_scope:
+        raise ValueError(
+            'No data sources found while trying to execute against the pandas '
+            'backend'
+        )
 
     # By default, our aggregate functions are N -> 1
     return execute(
