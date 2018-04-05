@@ -14,8 +14,9 @@ import ibis
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
-import ibis.expr.datatypes as dt
 import ibis.expr.lineage as lin
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient
@@ -134,7 +135,7 @@ def _find_scalar_parameter(expr):
     """
     op = expr.op()
 
-    if isinstance(op, ir.ScalarParameter):
+    if isinstance(op, ops.ScalarParameter):
         result = op, expr.get_name()
     else:
         result = None
