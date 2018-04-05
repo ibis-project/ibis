@@ -41,6 +41,25 @@ from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
 from ibis.expr.window import window, trailing_window, cumulative_window
 
+from ibis.expr.types import (  # noqa
+    ValueExpr, ScalarExpr, ColumnExpr, TableExpr,
+    NumericValue, NumericScalar, NumericColumn,
+    IntegerValue, IntegerScalar, IntegerColumn,
+    NullValue, NullScalar, NullColumn,
+    BooleanValue, BooleanScalar, BooleanColumn,
+    FloatingValue, FloatingScalar, FloatingColumn,
+    StringValue, StringScalar, StringColumn,
+    DecimalValue, DecimalScalar, DecimalColumn,
+    TimestampValue, TimestampScalar, TimestampColumn,
+    IntervalValue, IntervalScalar, IntervalColumn,
+    DateValue, DateScalar, DateColumn,
+    TimeValue, TimeScalar, TimeColumn,
+    ArrayValue, ArrayScalar, ArrayColumn,
+    MapValue, MapScalar, MapColumn,
+    StructValue, StructScalar, StructColumn,
+    CategoryValue, CategoryScalar, CategoryValue
+)
+
 
 __all__ = [
     'infer_dtype', 'infer_schema',
