@@ -11,6 +11,31 @@ Release Notes
 
 Current ``ibis.__version__``: |version|
 
+v0.14.0 (???)
+-------------
+
+This release brings refactored, more composable core components and rule system
+to ibis.
+
+New Features
+~~~~~~~~~~~~
+
+* Allow keyword arguments in Node subclasses (:issue:`968`)
+* Splat args into Node subclasses instead of requiring a list (:issue:`969`)
+
+Bug Fixes
+~~~~~~~~~
+
+* Nullable property is now propagated through value types (:issue:`1289`)
+* Implicit casting between signed and unsigned integers checks boundaries
+
+API Changes
+-----------
+
+* The previous, publicly not exposed rule system has been rewritten
+* Defining input arguments for operations happens in a more readable fashion
+  instead of the previous `input_type` list.
+
 v0.13.0 (March 30, 2018)
 ------------------------
 

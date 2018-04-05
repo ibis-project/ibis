@@ -109,13 +109,13 @@ class ExprFormatter(object):
                 text = self._format_node(self.expr)
         elif isinstance(what, ops.TableColumn):
             text = self._format_column(self.expr)
-        elif isinstance(what, ir.Literal):
+        elif isinstance(what, ops.Literal):
             text = 'Literal[{}]\n  {}'.format(
                 self._get_type_display(), str(what.value)
             )
-        elif isinstance(what, ir.ScalarParameter):
+        elif isinstance(what, ops.ScalarParameter):
             text = 'ScalarParameter[{}]'.format(self._get_type_display())
-        elif isinstance(what, ir.Node):
+        elif isinstance(what, ops.Node):
             text = self._format_node(self.expr)
 
         if isinstance(self.expr, ir.ValueExpr) and self.expr._name is not None:
@@ -157,7 +157,7 @@ class ExprFormatter(object):
 
                 if isinstance(op, ops.PhysicalTable):
                     memo.observe(e, self._format_table)
-                elif isinstance(op, ir.Node):
+                elif isinstance(op, ops.Node):
                     stack.extend(
                         arg for arg in reversed(op.args)
                         if isinstance(arg, ir.Expr)
@@ -214,7 +214,7 @@ class ExprFormatter(object):
 
             formatted_args.append(result)
 
-        arg_names = op._arg_names
+        arg_names = getattr(op, 'display_argnames', op.argnames)
 
         if not arg_names:
             for arg in op.args:
@@ -225,6 +225,9 @@ class ExprFormatter(object):
                     visit(arg)
         else:
             for arg, name in zip(op.args, arg_names):
+                if name == 'arg' and isinstance(op, ops.ValueOp):
+                    # don't display first argument's name in repr
+                    name = None
                 if name is not None:
                     name = self._indent('{0}:'.format(name))
                 if isinstance(arg, list):

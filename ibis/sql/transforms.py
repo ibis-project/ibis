@@ -13,11 +13,13 @@
 # limitations under the License.
 
 
-import ibis.expr.analysis as L
-
-import ibis.expr.operations as ops
-import ibis.expr.types as ir
 import ibis.util as util
+import ibis.expr.types as ir
+import ibis.expr.rules as rlz
+import ibis.expr.analysis as L
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+from ibis.expr.signature import Argument as Arg
 
 
 class ExistsExpr(ir.AnalyticExpr):
@@ -26,27 +28,18 @@ class ExistsExpr(ir.AnalyticExpr):
         return 'exists'
 
 
-class ExistsSubquery(ir.Node):
-
-    """
-    Helper class
-    """
-
-    def __init__(self, foreign_table, predicates):
-        self.foreign_table = foreign_table
-        self.predicates = predicates
-        ir.Node.__init__(self, [foreign_table, predicates])
+class ExistsSubquery(ops.Node):
+    """Helper class"""
+    foreign_table = Arg(rlz.noop)
+    predicates = Arg(rlz.noop)
 
     def output_type(self):
         return ExistsExpr
 
 
-class NotExistsSubquery(ir.Node):
-
-    def __init__(self, foreign_table, predicates):
-        self.foreign_table = foreign_table
-        self.predicates = predicates
-        ir.Node.__init__(self, [foreign_table, predicates])
+class NotExistsSubquery(ops.Node):
+    foreign_table = Arg(rlz.noop)
+    predicates = Arg(rlz.noop)
 
     def output_type(self):
         return ExistsExpr
@@ -78,7 +71,8 @@ class AnyToExistsTransform(object):
         else:
             op = NotExistsSubquery(self.foreign_table, self.predicates)
 
-        return ir.BooleanColumn(op)
+        expr_type = dt.boolean.array_type()
+        return expr_type(op)
 
     def _visit(self, expr):
         node = expr.op()

@@ -12,7 +12,6 @@ import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
 import ibis.pandas.aggcontext as agg_ctx
@@ -58,7 +57,7 @@ def execute_frame_window_op(op, data, scope=None, context=None, **kwargs):
 
     group_by = window._group_by
     grouping_keys = [
-        key_op.name if isinstance(key_op, ir.TableColumn) else execute(
+        key_op.name if isinstance(key_op, ops.TableColumn) else execute(
             key,
             context=context,
             **kwargs

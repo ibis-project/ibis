@@ -4,15 +4,13 @@ import pytest
 import math
 import decimal
 import operator
+import functools
 from operator import methodcaller
 
 import numpy as np
 import pandas as pd
 import pandas.util.testing as tm  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
-
-from ibis.compat import functools
-from ibis.common import IbisTypeError  # noqa: E402
 
 
 pytestmark = pytest.mark.pandas
@@ -127,15 +125,15 @@ def operate(func):
     ]
 )
 def test_math_functions_decimal(t, df, ibis_func, pandas_func):
-    type = dt.Decimal(12, 3)
-    result = ibis_func(t.float64_as_strings.cast(type)).execute()
-    context = decimal.Context(prec=type.precision)
+    dtype = dt.Decimal(12, 3)
+    result = ibis_func(t.float64_as_strings.cast(dtype)).execute()
+    context = decimal.Context(prec=dtype.precision)
     expected = df.float64_as_strings.apply(
         lambda x: context.create_decimal(x).quantize(
             decimal.Decimal(
                 '{}.{}'.format(
-                    '0' * (type.precision - type.scale),
-                    '0' * type.scale
+                    '0' * (dtype.precision - dtype.scale),
+                    '0' * dtype.scale
                 )
             )
         )
@@ -222,7 +220,7 @@ def test_quantile_scalar(t, df, ibis_func, pandas_func):
         (lambda x: x.quantile(5.0), ValueError),
 
         # invalid interpolation arg
-        (lambda x: x.quantile(0.5, interpolation='foo'), IbisTypeError),
+        (lambda x: x.quantile(0.5, interpolation='foo'), ValueError),
     ]
 )
 def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):

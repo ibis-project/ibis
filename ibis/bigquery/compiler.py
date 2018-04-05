@@ -118,7 +118,7 @@ def _string_find(translator, expr):
 
 def _translate_pattern(translator, pattern):
     # add 'r' to string literals to indicate to BigQuery this is a raw string
-    return 'r' * isinstance(pattern.op(), ir.Literal) + translator.translate(
+    return 'r' * isinstance(pattern.op(), ops.Literal) + translator.translate(
         pattern
     )
 
@@ -154,7 +154,7 @@ def _regex_replace(translator, expr):
 
 def _string_concat(translator, expr):
     return 'CONCAT({})'.format(
-        ', '.join(map(translator.translate, expr.op().args))
+        ', '.join(map(translator.translate, expr.op().arg))
     )
 
 
@@ -266,10 +266,11 @@ def _timestamp_op(func, units):
         op = expr.op()
         arg, offset = op.args
 
-        if offset.unit not in units:
+        unit = offset.type().unit
+        if unit not in units:
             raise com.UnsupportedOperationError(
                 'BigQuery does not allow binary operation '
-                '{} with INTERVAL offset {}'.format(func, offset.unit)
+                '{} with INTERVAL offset {}'.format(func, unit)
             )
         formatted_arg = translator.translate(arg)
         formatted_offset = translator.translate(offset)
@@ -321,7 +322,7 @@ _operation_registry.update({
     # BigQuery doesn't have these operations built in.
     # ops.ArrayRepeat: _array_repeat,
     # ops.ArraySlice: _array_slice,
-    ir.Literal: _literal,
+    ops.Literal: _literal,
     ops.Arbitrary: _arbitrary,
 
     ops.TimestampTruncate: _truncate('TIMESTAMP', _timestamp_units),

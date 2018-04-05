@@ -13,55 +13,41 @@
 # limitations under the License.
 
 
+import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
-import ibis.expr.rules as rules
 import ibis.expr.operations as ops
 
-
-def _validate_closed(closed):
-    closed = closed.lower()
-    if closed not in {'left', 'right'}:
-        raise ValueError("closed must be 'left' or 'right'")
-    return closed
+from ibis.expr.signature import Argument as Arg
 
 
-class BucketLike(ir.ValueOp):
+class BucketLike(ops.ValueOp):
 
     @property
     def nbuckets(self):
         return None
 
     def output_type(self):
-        ctype = dt.Category(self.nbuckets)
-        return ctype.array_type()
+        dtype = dt.Category(self.nbuckets)
+        return dtype.array_type()
 
 
 class Bucket(BucketLike):
+    arg = Arg(rlz.noop)
+    buckets = Arg(rlz.noop)
+    closed = Arg(rlz.isin({'left', 'right'}), default='left')
+    close_extreme = Arg(bool, default=True)
+    include_under = Arg(bool, default=False)
+    include_over = Arg(bool, default=False)
 
-    def __init__(self, arg, buckets, closed='left', close_extreme=True,
-                 include_under=False, include_over=False):
-        self.arg = arg
-        self.buckets = buckets
-        self.closed = _validate_closed(closed)
-
-        self.close_extreme = bool(close_extreme)
-        self.include_over = bool(include_over)
-        self.include_under = bool(include_under)
-
-        if not len(buckets):
+    def _validate(self):
+        if not len(self.buckets):
             raise ValueError('Must be at least one bucket edge')
-        elif len(buckets) == 1:
+        elif len(self.buckets) == 1:
             if not self.include_under or not self.include_over:
                 raise ValueError(
                     'If one bucket edge provided, must have '
                     'include_under=True and include_over=True'
                 )
-
-        super(Bucket, self).__init__(
-            arg, buckets, self.closed,
-            self.close_extreme, self.include_under, self.include_over
-        )
 
     @property
     def nbuckets(self):
@@ -69,50 +55,36 @@ class Bucket(BucketLike):
 
 
 class Histogram(BucketLike):
+    arg = Arg(rlz.noop)
+    nbins = Arg(rlz.noop, default=None)
+    binwidth = Arg(rlz.noop, default=None)
+    base = Arg(rlz.noop, default=None)
+    closed = Arg(rlz.isin({'left', 'right'}), default='left')
+    aux_hash = Arg(rlz.noop, default=None)
 
-    def __init__(
-        self, arg, nbins, binwidth, base, closed='left', aux_hash=None
-    ):
-        self.arg = arg
-        self.nbins = nbins
-        self.binwidth = binwidth
-        self.base = base
-
+    def _validate(self):
         if self.nbins is None:
             if self.binwidth is None:
                 raise ValueError('Must indicate nbins or binwidth')
         elif self.binwidth is not None:
             raise ValueError('nbins and binwidth are mutually exclusive')
 
-        self.closed = _validate_closed(closed)
-        self.aux_hash = aux_hash
-
-        super(Histogram, self).__init__(
-            arg, nbins, binwidth, base, self.closed, aux_hash
-        )
-
     def output_type(self):
         # always undefined cardinality (for now)
-        ctype = dt.Category()
-        return ctype.array_type()
+        return dt.category.array_type()
 
 
-class CategoryLabel(ir.ValueOp):
+class CategoryLabel(ops.ValueOp):
+    arg = Arg(rlz.category)
+    labels = Arg(rlz.noop)
+    nulls = Arg(rlz.noop, default=None)
+    output_type = rlz.shape_like('arg', dt.string)
 
-    def __init__(self, arg, labels, nulls):
-        self.arg = ops.as_value_expr(arg)
-        self.labels = labels
-
-        card = self.arg.type().cardinality
-        if len(labels) != card:
+    def _validate(self):
+        cardinality = self.arg.type().cardinality
+        if len(self.labels) != cardinality:
             raise ValueError('Number of labels must match number of '
-                             'categories: %d' % card)
-
-        self.nulls = nulls
-        super(CategoryLabel, self).__init__(self.arg, labels, nulls)
-
-    def output_type(self):
-        return rules.shape_like(self.arg, 'string')
+                             'categories: {}'.format(cardinality))
 
 
 def bucket(arg, buckets, closed='left', close_extreme=True,

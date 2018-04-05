@@ -14,6 +14,7 @@ from pandas.core.groupby import SeriesGroupBy
 import toolz
 
 import ibis.expr.datatypes as dt
+import ibis.expr.signature as sig
 import ibis.expr.operations as ops
 
 from ibis.pandas.core import scalar_types
@@ -250,7 +251,10 @@ def udf(input_type, output_type):
         UDFNode = type(
             func.__name__,
             (ops.ValueOp,),
-            dict(input_type=input_type, output_type=output_type.array_type)
+            {
+                'signature': sig.TypeSignature.from_dtypes(input_type),
+                'output_type': output_type.array_type
+            }
         )
 
         # Don't reorder the multiple dispatch graph for each of these
@@ -327,11 +331,13 @@ def udaf(input_type, output_type):
     ...     return (series.str.len() * 2).sum()
     """
     def wrapper(func):
-
         UDAFNode = type(
             func.__name__,
             (ops.Reduction,),
-            dict(input_type=input_type, output_type=output_type.scalar_type)
+            {
+                'signature': sig.TypeSignature.from_dtypes(input_type),
+                'output_type': output_type.scalar_type
+            }
         )
 
         with pause_ordering():

@@ -14,17 +14,17 @@
 
 import pytest
 
-from ibis.compat import pickle
-from ibis.expr.types import ColumnExpr, TableExpr, RelationError
-from ibis.common import ExpressionError
-import ibis.expr.api as api
-import ibis.expr.types as ir
-import ibis.expr.operations as ops
 import ibis
-
 import ibis.common as com
 import ibis.config as config
+import ibis.expr.api as api
+import ibis.expr.types as ir
+import ibis.expr.analysis as L
+import ibis.expr.operations as ops
 
+from ibis.compat import pickle
+from ibis.common import ExpressionError, RelationError
+from ibis.expr.types import ColumnExpr, TableExpr
 
 from ibis.tests.util import assert_equal
 
@@ -448,7 +448,7 @@ def test_slice_convenience(table):
 
 def test_table_count(table):
     result = table.count()
-    assert isinstance(result, api.Int64Scalar)
+    assert isinstance(result, ir.IntegerScalar)
     assert isinstance(result.op(), ops.Count)
     assert result.get_name() == 'count'
 
@@ -460,7 +460,7 @@ def test_len_raises_expression_error(table):
 
 def test_sum_expr_basics(table, int_col):
     # Impala gives bigint for all integer types
-    ex_class = api.Int64Scalar
+    ex_class = ir.IntegerScalar
     result = table[int_col].sum()
     assert isinstance(result, ex_class)
     assert isinstance(result.op(), ops.Sum)
@@ -468,7 +468,7 @@ def test_sum_expr_basics(table, int_col):
 
 def test_sum_expr_basics_floats(table, float_col):
     # Impala gives double for all floating point types
-    ex_class = api.DoubleScalar
+    ex_class = ir.FloatingScalar
     result = table[float_col].sum()
     assert isinstance(result, ex_class)
     assert isinstance(result.op(), ops.Sum)
@@ -476,7 +476,7 @@ def test_sum_expr_basics_floats(table, float_col):
 
 def test_mean_expr_basics(table, numeric_col):
     result = table[numeric_col].mean()
-    assert isinstance(result, api.DoubleScalar)
+    assert isinstance(result, ir.FloatingScalar)
     assert isinstance(result.op(), ops.Mean)
 
 
@@ -624,7 +624,7 @@ def test_compound_aggregate_expr(table):
     # See ibis #24
     compound_expr = (table['a'].sum() /
                      table['a'].mean()).name('foo')
-    assert ops.is_reduction(compound_expr)
+    assert L.is_reduction(compound_expr)
 
     # Validates internally
     table.aggregate([compound_expr])
@@ -701,6 +701,7 @@ def test_value_counts_unnamed_expr(con):
 def test_aggregate_unnamed_expr(con):
     nation = con.table('tpch_nation')
     expr = nation.n_name.lower().left(1)
+
     with pytest.raises(com.ExpressionError):
         nation.group_by(expr).aggregate(nation.count().name('metric'))
 
@@ -745,7 +746,7 @@ def test_asof_join_with_by():
     right = ibis.table(
         [('time', 'int32'), ('key', 'int32'), ('value2', 'double')])
     joined = api.asof_join(left, right, 'time', by='key')
-    by = joined.op().by_predicates[0].op()
+    by = joined.op().by[0].op()
     assert by.left.op().name == by.right.op().name == 'key'
 
 
@@ -1062,7 +1063,7 @@ def test_union(table):
     assert isinstance(result.op(), ops.Union)
     assert result.op().distinct
 
-    with pytest.raises(ir.RelationError):
+    with pytest.raises(RelationError):
         t1.union(t3)
 
 
@@ -1288,7 +1289,7 @@ def test_set_column(table):
 def test_pickle_table_expr():
     schema = [('time', 'timestamp'), ('key', 'string'), ('value', 'double')]
     t0 = ibis.table(schema, name='t0')
-    raw = pickle.dumps(t0)
+    raw = pickle.dumps(t0, protocol=2)
     t1 = pickle.loads(raw)
     assert t1.equals(t0)
 

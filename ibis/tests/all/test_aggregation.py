@@ -2,6 +2,7 @@ import pytest
 from pytest import param
 
 import numpy as np
+
 import ibis.tests.util as tu
 
 

@@ -171,6 +171,7 @@ def test_cast_string_to_date(alltypes, df, type):
 
     expr = '20' + ibis.literal('-').join([year, month, day])
     expr = expr.cast(type)
+
     result = expr.execute().astype(
         'datetime64[ns]'
     ).sort_values().reset_index(drop=True).rename('date_string_col')

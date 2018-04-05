@@ -82,7 +82,7 @@ def test_cannot_upconvert(delta, target):
 ])
 def test_multiply(expr):
     assert isinstance(expr, ir.IntervalScalar)
-    assert expr.unit == 'D'
+    assert expr.type().unit == 'D'
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
@@ -103,7 +103,7 @@ def test_multiply(expr):
 def test_downconvert_second_parts(case, expected):
     assert isinstance(case, ir.IntervalScalar)
     assert isinstance(expected, ir.IntervalScalar)
-    assert case.unit == expected.unit
+    assert case.type().unit == expected.type().unit
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
@@ -117,7 +117,7 @@ def test_downconvert_second_parts(case, expected):
 def test_downconvert_hours(case, expected):
     assert isinstance(case, ir.IntervalScalar)
     assert isinstance(expected, ir.IntervalScalar)
-    assert case.unit == expected.unit
+    assert case.type().unit == expected.type().unit
 
 
 @pytest.mark.parametrize(('case', 'expected'), [
@@ -135,7 +135,7 @@ def test_downconvert_hours(case, expected):
 def test_downconvert_day(case, expected):
     assert isinstance(case, ir.IntervalScalar)
     assert isinstance(expected, ir.IntervalScalar)
-    assert case.unit == expected.unit
+    assert case.type().unit == expected.type().unit
 
 
 @pytest.mark.parametrize(('a', 'b', 'unit'), [

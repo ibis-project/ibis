@@ -14,10 +14,10 @@
 
 import re
 import six
-import threading
 import time
 import weakref
 import traceback
+import threading
 
 from posixpath import join as pjoin
 from collections import deque
@@ -25,7 +25,13 @@ from collections import deque
 import numpy as np
 import pandas as pd
 
+import ibis.util as util
 import ibis.common as com
+import ibis.expr.types as ir
+import ibis.expr.rules as rlz
+import ibis.expr.schema as sch
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 from ibis.config import options
 from ibis.client import (Query, AsyncQuery, Database,
@@ -37,11 +43,6 @@ from ibis.impala.compat import impyla, ImpylaError, HS2Error
 from ibis.impala.compiler import build_ast, ImpalaDialect
 from ibis.util import log
 from ibis.sql.compiler import DDL
-import ibis.expr.types as ir
-import ibis.expr.schema as sch
-import ibis.expr.operations as ops
-import ibis.expr.datatypes as dt
-import ibis.util as util
 
 
 class ImpalaDatabase(Database):
@@ -1218,20 +1219,9 @@ class ImpalaClient(SQLClient):
         database = database or self.current_database
 
         if isinstance(func, udf.ImpalaUDF):
-            stmt = ddl.CreateFunction(func.lib_path, func.so_symbol,
-                                      func.input_type,
-                                      func.output,
-                                      name, database)
+            stmt = ddl.CreateUDF(func, name=name, database=database)
         elif isinstance(func, udf.ImpalaUDA):
-            stmt = ddl.CreateAggregateFunction(func.lib_path,
-                                               func.input_type,
-                                               func.output,
-                                               func.update_fn,
-                                               func.init_fn,
-                                               func.merge_fn,
-                                               func.serialize_fn,
-                                               func.finalize_fn,
-                                               name, database)
+            stmt = ddl.CreateUDA(func, name=name, database=database)
         else:
             raise TypeError(func)
         self._execute(stmt)
@@ -1340,12 +1330,9 @@ class ImpalaClient(SQLClient):
         return result
 
     def _get_udfs(self, cur, klass):
-        from ibis.expr.rules import varargs
-        from ibis.expr.datatypes import validate_type
-
         def _to_type(x):
             ibis_type = udf._impala_type_to_ibis(x.lower())
-            return validate_type(ibis_type)
+            return dt.dtype(ibis_type)
 
         tuples = cur.fetchall()
         if len(tuples) > 0:
@@ -1364,7 +1351,7 @@ class ImpalaClient(SQLClient):
                         inputs.append(t)
                     else:
                         t = _to_type(var)
-                        inputs = varargs(t)
+                        inputs = rlz.listof(t)
                         # TODO
                         # inputs.append(varargs(t))
                         break

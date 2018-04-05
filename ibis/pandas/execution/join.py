@@ -65,7 +65,7 @@ def execute_materialized_join(op, left, right, **kwargs):
 def execute_asof_join(op, left, right, **kwargs):
     overlapping_columns = set(left.columns) & set(right.columns)
     left_on, right_on = _extract_predicate_names(op.predicates)
-    left_by, right_by = _extract_predicate_names(op.by_predicates)
+    left_by, right_by = _extract_predicate_names(op.by)
     _validate_columns(
         overlapping_columns, left_on, right_on, left_by, right_by)
 
