@@ -1159,8 +1159,10 @@ _generic_column_methods = dict(
 )
 
 
-_add_methods(ir.AnyValue, _generic_value_methods)
-_add_methods(ir.AnyColumn, _generic_column_methods)
+# TODO: should bound to AnyValue and AnyColumn instead, but that breaks
+#       doc builds, because it checks methods on ColumnExpr
+_add_methods(ir.ValueExpr, _generic_value_methods)
+_add_methods(ir.ColumnExpr, _generic_column_methods)
 
 
 # ---------------------------------------------------------------------
