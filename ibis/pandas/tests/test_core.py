@@ -105,3 +105,9 @@ def test_pre_execute_basic(ibis_table, dataframe):
     del pre_execute.funcs[(ops.Node, PandasClient)]
     pre_execute.reorder()
     pre_execute._cache.clear()
+
+
+def test_execute_parameter_only():
+    param = ibis.param('int64')
+    result = ibis.pandas.execute(param, params={param: 42})
+    assert result == 42

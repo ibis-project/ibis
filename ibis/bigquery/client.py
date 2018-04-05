@@ -12,6 +12,7 @@ from multipledispatch import Dispatcher
 
 import ibis
 import ibis.common as com
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
@@ -134,7 +135,7 @@ def _find_scalar_parameter(expr):
     """
     op = expr.op()
 
-    if isinstance(op, ir.ScalarParameter):
+    if isinstance(op, ops.ScalarParameter):
         result = op, expr.get_name()
     else:
         result = None
