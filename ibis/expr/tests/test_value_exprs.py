@@ -1255,3 +1255,28 @@ def test_struct_field_dir():
     t = ibis.table([('struct_col', 'struct<my_field: string>')])
     assert 'struct_col' in dir(t)
     assert 'my_field' in dir(t.struct_col)
+
+
+def test_nullable_column_propagated():
+    t = ibis.table([
+        ('a', dt.Int32(nullable=True)),
+        ('b', dt.Int32(nullable=False)),
+        ('c', dt.String(nullable=False)),
+        ('d', dt.double),  # nullable by default
+        ('f', dt.Double(nullable=False))
+    ])
+
+    assert t.a.type().nullable is True
+    assert t.b.type().nullable is False
+    assert t.c.type().nullable is False
+    assert t.d.type().nullable is True
+    assert t.f.type().nullable is False
+
+    s = t.a + t.d
+    assert s.type().nullable is True
+
+    s = t.b + t.d
+    assert s.type().nullable is True
+
+    s = t.b + t.f
+    assert s.type().nullable is False
