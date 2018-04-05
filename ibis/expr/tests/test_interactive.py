@@ -92,3 +92,10 @@ FROM functional_alltypes"""
         t = self.con.table('functional_alltypes')
         t.double_col.sum().compile()
         assert self.con.executed_queries == []
+
+    def test_isin_rule_supressed_exception_repr_not_fail(self):
+        with config.option_context('interactive', True):
+            t = self.con.table('functional_alltypes')
+            bool_clause = t['string_col'].notin(['1', '4', '7'])
+            expr = t[bool_clause]['string_col'].value_counts()
+            repr(expr)

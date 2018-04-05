@@ -41,6 +41,7 @@ def test_table_type_output():
 
     expr = foo.dept_id == foo.view().dept_id
     result = repr(expr)
+
     assert 'SelfReference[table]' in result
     assert 'UnboundTable[table]' in result
 

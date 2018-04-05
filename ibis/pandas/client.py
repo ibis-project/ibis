@@ -107,7 +107,10 @@ def infer_numpy_scalar(value):
 
 @dt.infer.register(pd.Timestamp)
 def infer_pandas_timestamp(value):
-    return dt.Timestamp(timezone=str(value.tz))
+    if value.tz is not None:
+        return dt.Timestamp(timezone=str(value.tz))
+    else:
+        return dt.timestamp
 
 
 @dt.infer.register(np.ndarray)

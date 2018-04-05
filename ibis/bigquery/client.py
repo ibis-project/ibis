@@ -253,12 +253,12 @@ def bq_param_string(param, value):
     return bq.ScalarQueryParameter(param.get_name(), 'STRING', value)
 
 
-@bigquery_param.register(ir.Int64Scalar, six.integer_types)
+@bigquery_param.register(ir.IntegerScalar, six.integer_types)
 def bq_param_integer(param, value):
     return bq.ScalarQueryParameter(param.get_name(), 'INT64', value)
 
 
-@bigquery_param.register(ir.DoubleScalar, float)
+@bigquery_param.register(ir.FloatingScalar, float)
 def bq_param_double(param, value):
     return bq.ScalarQueryParameter(param.get_name(), 'FLOAT64', value)
 

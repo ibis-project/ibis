@@ -123,7 +123,7 @@ def _name_expr(formatted_expr, quoted_name):
 def varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
-        return _call(translator, func_name, *op.args)
+        return _call(translator, func_name, *op.arg)
     return varargs_formatter
 
 
@@ -142,7 +142,7 @@ def _substring(translator, expr):
     arg_, start_ = translator.translate(arg), translator.translate(start)
 
     # Clickhouse is 1-indexed
-    if length is None or isinstance(length.op(), ir.Literal):
+    if length is None or isinstance(length.op(), ops.Literal):
         if length is not None:
             length_ = length.op().value
             return 'substring({0}, {1} + 1, {2})'.format(arg_, start_, length_)
@@ -265,23 +265,25 @@ def _value_list(translator, expr):
 
 
 def _interval_format(translator, expr):
-    if expr.unit in {'ms', 'us', 'ns'}:
+    dtype = expr.type()
+    if dtype.unit in {'ms', 'us', 'ns'}:
         raise com.UnsupportedOperationError(
             "Clickhouse doesn't support subsecond interval resolutions")
 
-    return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution.upper())
+    return 'INTERVAL {} {}'.format(expr.op().value, dtype.resolution.upper())
 
 
 def _interval_from_integer(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
-    if expr.unit in {'ms', 'us', 'ns'}:
+    dtype = expr.type()
+    if dtype.unit in {'ms', 'us', 'ns'}:
         raise com.UnsupportedOperationError(
             "Clickhouse doesn't support subsecond interval resolutions")
 
     arg_ = translator.translate(arg)
-    return 'INTERVAL {} {}'.format(arg_, expr.resolution.upper())
+    return 'INTERVAL {} {}'.format(arg_, dtype.resolution.upper())
 
 
 def literal(translator, expr):
@@ -469,7 +471,7 @@ def _string_split(translator, expr):
 
 def _string_join(translator, expr):
     sep, elements = expr.op().args
-    assert isinstance(elements.op(), ir.ValueList), \
+    assert isinstance(elements.op(), ops.ValueList), \
         'elements must be a ValueList, got {}'.format(type(elements.op()))
     return 'arrayStringConcat([{}], {})'.format(
         ', '.join(map(translator.translate, elements)),
@@ -607,8 +609,8 @@ _operation_registry = {
     # Other operations
     ops.E: lambda *args: 'e()',
 
-    ir.Literal: literal,
-    ir.ValueList: _value_list,
+    ops.Literal: literal,
+    ops.ValueList: _value_list,
 
     ops.Cast: _cast,
 
@@ -669,7 +671,7 @@ def _zero_if_null(translator, expr):
 
 
 _undocumented_operations = {
-    ir.NullLiteral: _null_literal,  # undocumented
+    ops.NullLiteral: _null_literal,  # undocumented
     ops.IsNull: unary('isNull'),
     ops.NotNull: unary('isNotNull'),
     ops.IfNull: fixed_arity('ifNull', 2),

@@ -9,6 +9,7 @@ from datetime import date, datetime
 
 import ibis
 import ibis.expr.types as ir
+import ibis.expr.datatypes as dt
 from ibis import literal as L
 
 
@@ -20,7 +21,8 @@ pytestmark = pytest.mark.clickhouse
     ('int8', 'CAST(`double_col` AS Int8)'),
     ('int16', 'CAST(`double_col` AS Int16)'),
     ('float', 'CAST(`double_col` AS Float32)'),
-    ('double', '`double_col`')
+    # alltypes.double_col is non-nullable
+    (dt.Double(nullable=False), '`double_col`')
 ])
 def test_cast_double_col(alltypes, translate, to_type, expected):
     expr = alltypes.double_col.cast(to_type)
@@ -30,7 +32,7 @@ def test_cast_double_col(alltypes, translate, to_type, expected):
 @pytest.mark.parametrize(('to_type', 'expected'), [
     ('int8', 'CAST(`string_col` AS Int8)'),
     ('int16', 'CAST(`string_col` AS Int16)'),
-    ('string', '`string_col`'),
+    (dt.String(nullable=False), '`string_col`'),
     ('timestamp', 'CAST(`string_col` AS DateTime)'),
     ('date', 'CAST(`string_col` AS Date)')
 ])
@@ -70,8 +72,9 @@ def test_noop_cast(alltypes, translate, column):
 
 
 def test_timestamp_cast_noop(alltypes, translate):
-    result1 = alltypes.timestamp_col.cast('timestamp')
-    result2 = alltypes.int_col.cast('timestamp')
+    target = dt.Timestamp(nullable=False)
+    result1 = alltypes.timestamp_col.cast(target)
+    result2 = alltypes.int_col.cast(target)
 
     assert isinstance(result1, ir.TimestampColumn)
     assert isinstance(result2, ir.TimestampColumn)

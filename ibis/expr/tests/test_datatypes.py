@@ -4,14 +4,8 @@ from collections import OrderedDict
 from multipledispatch.conflict import ambiguities
 
 import ibis
-
-import ibis.expr.api as api
-import ibis.expr.types as types
-import ibis.expr.rules as rules
-
-from ibis import IbisError
-from ibis.expr import datatypes as dt
-from ibis.expr.rules import highest_precedence_type
+import ibis.expr.datatypes as dt
+from ibis.common import IbisTypeError
 
 
 def test_validate_type():
@@ -49,17 +43,17 @@ def test_map_with_string_value_type():
 
 
 def test_map_does_not_allow_non_primitive_keys():
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype('map<array<string>, double>')
 
 
 def test_token_error():
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype('array<string>>')
 
 
 def test_empty_complex_type():
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype('map<>')
 
 
@@ -126,7 +120,7 @@ def test_struct_with_string_types():
     'decimal(3,',
 ])
 def test_decimal_failure(case):
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype(case)
 
 
@@ -149,7 +143,7 @@ def test_char_varchar(spec):
     'char()'
 ])
 def test_char_varchar_invalid(spec):
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype(spec)
 
 
@@ -180,22 +174,6 @@ def test_char_varchar_invalid(spec):
 ])
 def test_primitive(spec, expected):
     assert dt.dtype(spec) == expected
-
-
-def test_precedence_with_no_arguments():
-    with pytest.raises(ValueError) as e:
-        highest_precedence_type([])
-    assert str(e.value) == 'Must pass at least one expression'
-
-
-def test_rule_instance_of():
-    class MyOperation(types.Node):
-        input_type = [rules.instance_of(types.IntegerValue)]
-
-    MyOperation([api.literal(5)])
-
-    with pytest.raises(IbisError):
-        MyOperation([api.literal('string')])
 
 
 def test_literal_mixed_type_fails():
@@ -284,7 +262,7 @@ def test_interval_unvalid_unit(unit):
     'interval("Y\')',
 ])
 def test_string_argument_parsing_failure_mode(case):
-    with pytest.raises(SyntaxError):
+    with pytest.raises(IbisTypeError):
         dt.dtype(case)
 
 
@@ -390,6 +368,7 @@ def test_implicit_castable(source, target):
 @pytest.mark.parametrize(('source', 'target'), [
     (dt.string, dt.null),
     (dt.int32, dt.int16),
+    (dt.int16, dt.uint64),
     (dt.Decimal(12, 2), dt.int32),
     (dt.timestamp, dt.boolean),
     (dt.boolean, dt.interval),

@@ -23,6 +23,7 @@ from ibis.expr.window import window
 
 from ibis.common import RelationError, ExpressionError, IbisTypeError
 
+
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
 # compilation later
@@ -120,7 +121,7 @@ class ScalarAggregate(object):
         return table.projection([named_expr]), name
 
     def _visit(self, expr):
-        if is_scalar_reduce(expr) and not has_multiple_bases(expr):
+        if is_scalar_reduction(expr) and not has_multiple_bases(expr):
             # An aggregation unit
             key = self._key(expr)
             if key not in self.memo:
@@ -229,10 +230,6 @@ def find_immediate_parent_tables(expr):
     return lin.traverse(finder, expr)
 
 
-def is_scalar_reduce(x):
-    return isinstance(x, ir.ScalarExpr) and ops.is_reduction(x)
-
-
 def substitute_parents(expr, lift_memo=None, past_projection=True):
     rewriter = ExprSimplifier(expr, lift_memo=lift_memo,
                               block_projection=not past_projection)
@@ -257,7 +254,7 @@ class ExprSimplifier(object):
     def get_result(self):
         expr = self.expr
         node = expr.op()
-        if isinstance(node, ir.Literal):
+        if isinstance(node, ops.Literal):
             return expr
 
         # For table column references, in the event that we're on top of a
@@ -585,12 +582,11 @@ def _filter_selection(expr, predicates):
         simplified_predicates = [substitute_parents(x) for x in predicates]
         fused_predicates = op.predicates + simplified_predicates
         result = ops.Selection(op.table,
-                               proj_exprs=op.selections,
+                               selections=op.selections,
                                predicates=fused_predicates,
                                sort_keys=op.sort_keys)
     else:
-        result = ops.Selection(expr, proj_exprs=[],
-                               predicates=predicates)
+        result = ops.Selection(expr, selections=[], predicates=predicates)
 
     return result.to_expr()
 
@@ -664,8 +660,8 @@ class _PushdownValidate(object):
 
                 lifted_node = substitute_parents(expr).op()
 
-                is_valid = (col_table.is_ancestor(node.table) or
-                            col_table.is_ancestor(lifted_node.table))
+                is_valid = (col_table.equals(node.table.op()) or
+                            col_table.equals(lifted_node.table.op()))
 
         return is_valid
 
@@ -784,7 +780,7 @@ class Projector(object):
 
             # a * projection
             if (isinstance(val, ir.TableExpr) and
-                (self.parent.op().is_ancestor(val) or
+                (self.parent.op().equals(val.op()) or
                  # gross we share the same table root. Better way to
                  # detect?
                  len(roots) == 1 and val._root_tables()[0] is roots[0])):
@@ -940,7 +936,7 @@ class FilterValidator(ExprValidator):
                 if isinstance(arg, ir.ScalarExpr):
                     # arg_valid = True
                     pass
-                elif isinstance(arg, ops.TopKExpr):
+                elif isinstance(arg, ir.TopKExpr):
                     # TopK not subjected to further analysis for now
                     roots_valid.append(True)
                 elif isinstance(arg, (ir.ColumnExpr, ir.AnalyticExpr)):
@@ -1076,3 +1072,63 @@ def flatten_predicate(expr):
             return lin.halt, expr
 
     return list(lin.traverse(predicate, expr, type=ir.BooleanColumn))
+
+
+def is_analytic(expr, exclude_windows=False):
+    def _is_analytic(op):
+        if isinstance(op, (ops.Reduction, ops.AnalyticOp)):
+            return True
+        elif isinstance(op, ops.WindowOp) and exclude_windows:
+            return False
+
+        for arg in op.args:
+            if isinstance(arg, ir.Expr) and _is_analytic(arg.op()):
+                return True
+
+        return False
+
+    return _is_analytic(expr.op())
+
+
+def is_reduction(expr):
+    """Check whether an expression is a reduction or not
+
+    Aggregations yield typed scalar expressions, since the result of an
+    aggregation is a single value. When creating an table expression
+    containing a GROUP BY equivalent, we need to be able to easily check
+    that we are looking at the result of an aggregation.
+
+    As an example, the expression we are looking at might be something
+    like: foo.sum().log10() + bar.sum().log10()
+
+    We examine the operator DAG in the expression to determine if there
+    are aggregations present.
+
+    A bound aggregation referencing a separate table is a "false
+    aggregation" in a GROUP BY-type expression and should be treated a
+    literal, and must be computed as a separate query and stored in a
+    temporary variable (or joined, for bound aggregations with keys)
+
+    Parameters
+    ----------
+    expr : ir.Expr
+
+    Returns
+    -------
+    check output : bool
+    """
+    def has_reduction(op):
+        if getattr(op, '_reduction', False):
+            return True
+
+        for arg in op.args:
+            if isinstance(arg, ir.ScalarExpr) and has_reduction(arg.op()):
+                return True
+
+        return False
+
+    return has_reduction(expr.op() if isinstance(expr, ir.Expr) else expr)
+
+
+def is_scalar_reduction(expr):
+    return isinstance(expr, ir.ScalarExpr) and is_reduction(expr)

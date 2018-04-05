@@ -5,7 +5,7 @@ import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
+import ibis.expr.operations as ops
 
 pytest.importorskip('multipledispatch')
 
@@ -63,14 +63,14 @@ def test_execute_first_accepts_scope_keyword_argument(ibis_table, dataframe):
 
     param = ibis.param(dt.int64)
 
-    @execute_first.register(ir.Node, pd.DataFrame)
+    @execute_first.register(ops.Node, pd.DataFrame)
     def foo(op, data, scope=None, **kwargs):
         assert scope is not None
         return data.dup_strings.str.len() + scope[param.op()]
 
     expr = ibis_table.dup_strings.length() + param
     assert expr.execute(params={param: 2}) is not None
-    del execute_first.funcs[ir.Node, pd.DataFrame]
+    del execute_first.funcs[ops.Node, pd.DataFrame]
     execute_first.reorder()
     execute_first._cache.clear()
 
@@ -93,7 +93,7 @@ def test_pre_execute_basic(ibis_table, dataframe):
     Test that pre_execute has intercepted execution and provided its own
     scope dict
     """
-    @pre_execute.register(ir.Node, PandasClient)
+    @pre_execute.register(ops.Node, PandasClient)
     def pre_execute_test(op, client, **kwargs):
         df = dataframe.assign(plain_int64=dataframe['plain_int64'] + 1)
         return {op: df}
@@ -102,6 +102,6 @@ def test_pre_execute_basic(ibis_table, dataframe):
     tm.assert_frame_equal(
         result, dataframe.assign(plain_int64=dataframe['plain_int64'] + 1))
 
-    del pre_execute.funcs[(ir.Node, PandasClient)]
+    del pre_execute.funcs[(ops.Node, PandasClient)]
     pre_execute.reorder()
     pre_execute._cache.clear()

@@ -246,7 +246,7 @@ def fixed_arity(sa_func, arity):
 def varargs(sa_func):
     def formatter(t, expr):
         op = expr.op()
-        trans_args = [t.translate(arg) for arg in op.args]
+        trans_args = [t.translate(arg) for arg in op.arg]
         return sa_func(*trans_args)
     return formatter
 
@@ -574,9 +574,9 @@ _operation_registry = {
 
     ops.TypeOf: unary(sa.func.typeof),
 
-    ir.Literal: _literal,
-    ir.ValueList: _value_list,
-    ir.NullLiteral: lambda *args: sa.null(),
+    ops.Literal: _literal,
+    ops.ValueList: _value_list,
+    ops.NullLiteral: lambda *args: sa.null(),
 
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,

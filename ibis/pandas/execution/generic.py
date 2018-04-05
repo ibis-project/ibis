@@ -17,7 +17,6 @@ import toolz
 from ibis import compat
 
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
@@ -36,9 +35,9 @@ from ibis.pandas.dispatch import execute, execute_node
 from ibis.pandas.execution import constants
 
 
-@execute_node.register(ir.Literal)
-@execute_node.register(ir.Literal, object)
-@execute_node.register(ir.Literal, object, dt.DataType)
+@execute_node.register(ops.Literal)
+@execute_node.register(ops.Literal, object)
+@execute_node.register(ops.Literal, object, dt.DataType)
 def execute_node_literal(op, *args, **kwargs):
     return op.value
 
@@ -346,7 +345,7 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
             zip(op.by, map(operator.methodcaller('op'), op.by))
         )
         grouping_keys = [
-            by_op.name if isinstance(by_op, ir.TableColumn)
+            by_op.name if isinstance(by_op, ops.TableColumn)
             else execute(by, scope, **kwargs).rename(by.get_name())
             for by, by_op in grouping_key_pairs
         ]
@@ -543,16 +542,13 @@ def execute_not_bool(op, data, **kwargs):
 @execute_node.register(
     ops.BinaryOp, (pd.Series, numeric_types), (pd.Series, numeric_types)
 )
-@execute_node.register(ops.StringConcat, pd.Series, pd.Series)
+@execute_node.register(ops.Comparison, six.string_types, six.string_types)
 @execute_node.register(
-    (ops.Comparison, ops.StringConcat), six.string_types, six.string_types
-)
-@execute_node.register(
-    (ops.Comparison, ops.StringConcat, ops.Multiply),
+    (ops.Comparison, ops.Multiply),
     pd.Series, six.string_types
 )
 @execute_node.register(
-    (ops.Comparison, ops.Multiply, ops.StringConcat),
+    (ops.Comparison, ops.Multiply),
     six.string_types, pd.Series
 )
 @execute_node.register(ops.Multiply, integer_types, six.string_types)
@@ -678,9 +674,19 @@ def execute_node_self_reference_dataframe(op, data, **kwargs):
     return data
 
 
-@execute_node.register(ir.ValueList)
+@execute_node.register(ops.ValueList)
 def execute_node_value_list(op, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
+
+
+@execute_node.register(ops.StringConcat, list)
+def execute_node_string_concat(op, args, **kwargs):
+    return functools.reduce(operator.add, args)
+
+
+@execute_node.register(ops.StringJoin, list)
+def execute_node_string_join(op, args, **kwargs):
+    return op.sep.join(args)
 
 
 @execute_node.register(ops.Contains, pd.Series, list)

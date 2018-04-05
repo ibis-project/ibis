@@ -408,9 +408,9 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_hash(self):
         expr = self.table.int_col.hash()
-        assert isinstance(expr, ir.Int64Column)
+        assert isinstance(expr, ir.IntegerColumn)
         assert isinstance(self.table.int_col.sum().hash(),
-                          ir.Int64Scalar)
+                          ir.IntegerScalar)
 
         cases = [
             (self.table.int_col.hash(), 'fnv_hash(`int_col`)')
@@ -483,7 +483,7 @@ END"""
 
     def test_where_use_if(self):
         expr = ibis.where(self.table.f > 0, self.table.e, self.table.a)
-        assert isinstance(expr, ir.FloatValue)
+        assert isinstance(expr, ir.FloatingValue)
 
         result = self._translate(expr)
         expected = "if(`f` > 0, `e`, `a`)"
@@ -1022,8 +1022,8 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
         table = self.con.table('tpch_lineitem')
 
         expr = table.l_quantity
-        assert expr.meta.precision == 12
-        assert expr.meta.scale == 2
+        assert expr.type().precision == 12
+        assert expr.type().scale == 2
 
         # TODO: what if user impyla version does not have decimal Metadata?
 
@@ -1597,8 +1597,8 @@ FROM functional_alltypes"""
 
         t = self.con.sql(sql)
 
-        assert isinstance(t.varchar_col, api.StringColumn)
-        assert isinstance(t.char_col, api.StringColumn)
+        assert isinstance(t.varchar_col, ir.StringColumn)
+        assert isinstance(t.char_col, ir.StringColumn)
 
     def test_unions_with_ctes(self):
         t = self.con.table('functional_alltypes')

@@ -18,12 +18,13 @@ import toolz
 import datetime
 import itertools
 import pandas as pd
-
+from functools import partial
 from collections import namedtuple, OrderedDict
 from multipledispatch import Dispatcher
 
 import ibis.common as com
 from ibis.compat import PY2, builtins, functools
+import ibis.expr.types as ir
 
 
 class DataType(object):
@@ -92,9 +93,6 @@ class DataType(object):
     def _equal_part(self, other, cache=None):
         return True
 
-    def issubtype(self, parent):
-        return issubtype(self, parent)
-
     def castable(self, target, **kwargs):
         return castable(self, target, **kwargs)
 
@@ -102,12 +100,10 @@ class DataType(object):
         return cast(self, target, **kwargs)
 
     def scalar_type(self):
-        import ibis.expr.types as ir
-        return getattr(ir, '{}Scalar'.format(self.name))
+        return partial(self.scalar, dtype=self)
 
     def array_type(self):
-        import ibis.expr.types as ir
-        return getattr(ir, '{}Column'.format(self.name))
+        return partial(self.column, dtype=self)
 
 
 class Any(DataType):
@@ -127,6 +123,8 @@ class Primitive(DataType):
 
 
 class Null(DataType):
+    scalar = ir.NullScalar
+    column = ir.NullColumn
 
     __slots__ = ()
 
@@ -137,6 +135,8 @@ class Variadic(DataType):
 
 
 class Boolean(Primitive):
+    scalar = ir.BooleanScalar
+    column = ir.BooleanColumn
 
     __slots__ = ()
 
@@ -145,6 +145,8 @@ Bounds = namedtuple('Bounds', ('lower', 'upper'))
 
 
 class Integer(Primitive):
+    scalar = ir.IntegerScalar
+    column = ir.IntegerColumn
 
     __slots__ = ()
 
@@ -163,6 +165,8 @@ class String(Variadic):
     Because of differences in the way different backends handle strings, we
     cannot assume that strings are UTF-8 encoded.
     """
+    scalar = ir.StringScalar
+    column = ir.StringColumn
 
     __slots__ = ()
 
@@ -177,42 +181,29 @@ class Binary(Variadic):
     but PostgreSQL has a TEXT type and a BYTEA type which are distinct types
     that behave differently.
     """
+    scalar = ir.BinaryScalar
+    column = ir.BinaryColumn
+
+    __slots__ = ()
 
 
 class Date(Primitive):
+    scalar = ir.DateScalar
+    column = ir.DateColumn
 
     __slots__ = ()
 
 
 class Time(Primitive):
+    scalar = ir.TimeScalar
+    column = ir.TimeColumn
 
     __slots__ = ()
 
 
-def parametric(cls):
-    type_name = cls.__name__
-    array_type_name = '{}Column'.format(type_name)
-    scalar_type_name = '{}Scalar'.format(type_name)
-
-    def array_type(self):
-        def constructor(op, name=None):
-            import ibis.expr.types as ir
-            return getattr(ir, array_type_name)(op, self, name=name)
-        return constructor
-
-    def scalar_type(self):
-        def constructor(op, name=None):
-            import ibis.expr.types as ir
-            return getattr(ir, scalar_type_name)(op, self, name=name)
-        return constructor
-
-    cls.array_type = array_type
-    cls.scalar_type = scalar_type
-    return cls
-
-
-@parametric
 class Timestamp(Primitive):
+    scalar = ir.TimestampScalar
+    column = ir.TimestampColumn
 
     __slots__ = 'timezone',
 
@@ -238,10 +229,17 @@ class Timestamp(Primitive):
 
 
 class SignedInteger(Integer):
-    pass
+
+    @property
+    def largest(self):
+        return int64
 
 
 class UnsignedInteger(Integer):
+
+    @property
+    def largest(self):
+        return uint64
 
     @property
     def bounds(self):
@@ -251,8 +249,14 @@ class UnsignedInteger(Integer):
 
 
 class Floating(Primitive):
+    scalar = ir.FloatingScalar
+    column = ir.FloatingColumn
 
     __slots__ = ()
+
+    @property
+    def largest(self):
+        return float64
 
 
 class Int8(SignedInteger):
@@ -285,25 +289,35 @@ class Int64(SignedInteger):
 
 class UInt8(UnsignedInteger):
 
+    __slots__ = ()
+
     _nbytes = 1
 
 
 class UInt16(UnsignedInteger):
+
+    __slots__ = ()
 
     _nbytes = 2
 
 
 class UInt32(UnsignedInteger):
 
+    __slots__ = ()
+
     _nbytes = 4
 
 
 class UInt64(UnsignedInteger):
 
+    __slots__ = ()
+
     _nbytes = 8
 
 
 class Halffloat(Floating):
+
+    __slots__ = ()
 
     _nbytes = 2
 
@@ -327,8 +341,9 @@ Float32 = Float
 Float64 = Double
 
 
-@parametric
 class Decimal(DataType):
+    scalar = ir.DecimalScalar
+    column = ir.DecimalColumn
 
     __slots__ = 'precision', 'scale'
 
@@ -347,12 +362,17 @@ class Decimal(DataType):
     def _equal_part(self, other, cache=None):
         return self.precision == other.precision and self.scale == other.scale
 
+    @property
+    def largest(self):
+        return Decimal(self.precision, 38)
+
 
 assert hasattr(Decimal, '__hash__')
 
 
-@parametric
 class Interval(DataType):
+    scalar = ir.IntervalScalar
+    column = ir.IntervalColumn
 
     __slots__ = 'value_type', 'unit'
 
@@ -388,6 +408,10 @@ class Interval(DataType):
         self.value_type = value_type
 
     @property
+    def bounds(self):
+        return self.value_type.bounds
+
+    @property
     def resolution(self):
         """Unit's name"""
         return self._units[self.unit]
@@ -403,8 +427,9 @@ class Interval(DataType):
                 self.value_type.equals(other.value_type, cache=cache))
 
 
-@parametric
 class Category(DataType):
+    scalar = ir.CategoryScalar
+    column = ir.CategoryColumn
 
     __slots__ = 'cardinality',
 
@@ -433,8 +458,9 @@ class Category(DataType):
             return infer(self.cardinality)
 
 
-@parametric
 class Struct(DataType):
+    scalar = ir.StructScalar
+    column = ir.StructColumn
 
     __slots__ = 'pairs',
 
@@ -496,8 +522,9 @@ class Struct(DataType):
         )
 
 
-@parametric
 class Array(Variadic):
+    scalar = ir.ArrayScalar
+    column = ir.ArrayColumn
 
     __slots__ = 'value_type',
 
@@ -512,8 +539,9 @@ class Array(Variadic):
         return self.value_type.equals(other.value_type, cache=cache)
 
 
-@parametric
 class Enum(DataType):
+    scalar = ir.EnumScalar
+    column = ir.EnumColumn
 
     __slots__ = 'rep_type', 'value_type'
 
@@ -529,8 +557,9 @@ class Enum(DataType):
         )
 
 
-@parametric
 class Map(Variadic):
+    scalar = ir.MapScalar
+    column = ir.MapColumn
 
     __slots__ = 'key_type', 'value_type'
 
@@ -580,6 +609,7 @@ date = Date()
 time = Time()
 timestamp = Timestamp()
 interval = Interval()
+category = Category()
 
 
 _primitive_types = (
@@ -990,7 +1020,7 @@ validate_type = dtype
 
 @dtype.register(object)
 def default(value, **kwargs):
-    raise TypeError('Value {!r} is not a valid type or string'.format(value))
+    raise com.IbisTypeError('Value {!r} is not a valid datatype'.format(value))
 
 
 @dtype.register(DataType)
@@ -1000,7 +1030,12 @@ def from_ibis_dtype(value):
 
 @dtype.register(six.string_types)
 def from_string(value):
-    return TypeParser(value).parse()
+    try:
+        return TypeParser(value).parse()
+    except SyntaxError:
+        raise com.IbisTypeError(
+            '{!r} cannot be parsed as a datatype'.format(value)
+        )
 
 
 infer = Dispatcher('infer')
@@ -1012,8 +1047,9 @@ def higher_precedence(left, right):
     elif castable(right, left, upcast=True):
         return left
 
-    raise com.IbisTypeError('Cannot compute precedence for {} '
-                            'and {} types'.format(left, right))
+    raise com.IbisTypeError(
+        'Cannot compute precedence for {} and {} types'.format(left, right)
+    )
 
 
 def highest_precedence(dtypes):
@@ -1113,10 +1149,12 @@ def can_cast_subtype(source, target, **kwargs):
 
 
 @castable.register(Any, DataType)
+@castable.register(DataType, Any)
+@castable.register(Any, Any)
+@castable.register(Null, Any)
 @castable.register(Integer, Category)
 @castable.register(Integer, (Floating, Decimal))
 @castable.register(Floating, Decimal)
-@castable.register(Decimal, Floating)
 @castable.register((Date, Timestamp), (Date, Timestamp))
 def can_cast_any(source, target, **kwargs):
     return True
@@ -1127,7 +1165,18 @@ def can_cast_null(source, target, **kwargs):
     return target.nullable
 
 
-@castable.register(Integer, Integer)
+@castable.register(SignedInteger, UnsignedInteger)
+@castable.register(UnsignedInteger, SignedInteger)
+def can_cast_to_unsigned(source, target, value=None, **kwargs):
+    if value is None:
+        return False
+
+    bounds = target.bounds
+    return bounds.lower <= value <= bounds.upper
+
+
+@castable.register(SignedInteger, SignedInteger)
+@castable.register(UnsignedInteger, UnsignedInteger)
 def can_cast_integers(source, target, **kwargs):
     return target._nbytes >= source._nbytes
 
@@ -1140,6 +1189,12 @@ def can_cast_floats(source, target, upcast=False, **kwargs):
     # double -> float must be allowed because
     # float literals are inferred as doubles
     return True
+
+
+@castable.register(Decimal, Decimal)
+def can_cast_decimals(source, target, **kwargs):
+    return (target.precision >= source.precision and
+            target.scale >= source.scale)
 
 
 @castable.register(Interval, Interval)
@@ -1193,15 +1248,3 @@ def cast(source, target, **kwargs):
         raise com.IbisTypeError('Datatype {} cannot be implicitly '
                                 'casted to {}'.format(source, target))
     return target
-
-
-def issubtype(dtype, dtype_or_tuple):
-    if not isinstance(dtype_or_tuple, tuple):
-        parents = (dtype_or_tuple,)
-    for parent in parents:
-        if isinstance(dtype, type(parent)):
-            return True
-        elif isinstance(dtype, Any):
-            return True
-
-    return False

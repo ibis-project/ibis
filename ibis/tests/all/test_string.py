@@ -9,7 +9,8 @@ from ibis.compat import maketrans
 
 
 def test_string_col_is_unicode(backend, alltypes, df):
-    assert alltypes.string_col.type() == dt.string
+    dtype = alltypes.string_col.type()
+    assert dtype == dt.String(nullable=dtype.nullable)
 
     for s in [alltypes.string_col.execute(), df.string_col]:
         assert s.apply(lambda x: isinstance(x, six.text_type)).all()

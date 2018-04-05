@@ -15,26 +15,19 @@
 import os
 import six
 import sys
-import toolz
 import itertools
 import webbrowser
-import collections
-
-from ibis.common import IbisError, RelationError
-import ibis.util as util
 
 import ibis
+import ibis.util as util
 import ibis.common as com
 import ibis.config as config
-import ibis.expr.schema as sch
-import ibis.expr.datatypes as dt
 
+
+# TODO move methods containing ops import to api.py
 
 class Expr(object):
-
-    """
-    Base expression class
-    """
+    """Base expression class"""
 
     def _type_display(self):
         return type(self).__name__
@@ -222,11 +215,6 @@ class Expr(object):
     def _root_tables(self):
         return self.op().root_tables()
 
-    def _get_unbound_tables(self):
-        # The expression graph may contain one or more tables of a particular
-        # known schema
-        pass
-
 
 if sys.version_info.major == 2:
     # Python 2.7 doesn't return NotImplemented unless the other operand has
@@ -234,248 +222,13 @@ if sys.version_info.major == 2:
     Expr.timetuple = None
 
 
-def _safe_repr(x, memo=None):
-    return x._repr(memo=memo) if isinstance(x, (Expr, Node)) else repr(x)
-
-
-class OperationMeta(type):
-
-    def __new__(cls, name, parents, dct):
-        if 'input_type' in dct:
-            from ibis.expr.rules import TypeSignature, signature
-            sig = dct['input_type']
-            if not isinstance(sig, TypeSignature):
-                dct['input_type'] = sig = signature(sig)
-
-                for i, t in enumerate(sig.types):
-                    if t.name is None:
-                        continue
-
-                    if t.name not in dct:
-                        dct[t.name] = _arg_getter(i, doc=t.doc)
-
-        return super(OperationMeta, cls).__new__(cls, name, parents, dct)
-
-
-class Node(six.with_metaclass(OperationMeta, object)):
-
-    """
-    Node is the base class for all relational algebra and analytical
-    functionality. It transforms the input expressions into an output
-    expression.
-
-    Each node implementation is responsible for validating the inputs,
-    including any type promotion and / or casting issues, and producing a
-    well-typed expression
-
-    Note that Node is deliberately not made an expression subclass: think
-    of Node as merely a typed expression builder.
-    """
-
-    def __init__(self, args=None):
-        args = args or []
-        self.args = self._validate_args(args)
-
-    def _validate_args(self, args):
-        if not hasattr(self, 'input_type'):
-            return args
-
-        return self.input_type.validate(args)
-
-    def __repr__(self):
-        return self._repr()
-
-    def _repr(self, memo=None):
-        if memo is None:
-            from ibis.expr.format import FormatMemo
-            memo = FormatMemo()
-
-        opname = type(self).__name__
-        pprint_args = []
-
-        def _pp(x):
-            return _safe_repr(x, memo=memo)
-
-        for x in self.args:
-            if isinstance(x, (tuple, list)):
-                pp = repr([_pp(y) for y in x])
-            else:
-                pp = _pp(x)
-            pprint_args.append(pp)
-
-        return '%s(%s)' % (opname, ', '.join(pprint_args))
-
-    def blocks(self):
-        # The contents of this node at referentially distinct and may not be
-        # analyzed deeper
-        return False
-
-    def flat_args(self):
-        for arg in self.args:
-            if not isinstance(arg, six.string_types) and isinstance(
-                arg, collections.Iterable
-            ):
-                for x in arg:
-                    yield x
-            else:
-                yield arg
-
-    def equals(self, other, cache=None):
-        if cache is None:
-            cache = {}
-
-        if (self, other) in cache:
-            return cache[(self, other)]
-
-        if id(self) == id(other):
-            cache[(self, other)] = True
-            return True
-
-        if type(self) != type(other):
-            cache[(self, other)] = False
-            return False
-
-        if len(self.args) != len(other.args):
-            cache[(self, other)] = False
-            return False
-
-        for left, right in zip(self.args, other.args):
-            if not all_equal(left, right, cache=cache):
-                cache[(self, other)] = False
-                return False
-        cache[(self, other)] = True
-        return True
-
-    def is_ancestor(self, other):
-        if isinstance(other, Expr):
-            other = other.op()
-
-        return self.equals(other)
-
-    _expr_cached = None
-
-    def to_expr(self):
-        if self._expr_cached is None:
-            self._expr_cached = self._make_expr()
-        return self._expr_cached
-
-    def _make_expr(self):
-        klass = self.output_type()
-        return klass(self)
-
-    def output_type(self):
-        """
-        This function must resolve the output type of the expression and return
-        the node wrapped in the appropriate ValueExpr type.
-        """
-        raise NotImplementedError
-
-    @property
-    def _arg_names(self):
-        try:
-            input_type = self.__class__.input_type
-        except AttributeError:
-            return []
-        else:
-            return [t.name for t in getattr(input_type, 'types', [])]
-
-
-def all_equal(left, right, cache=None):
-    if isinstance(left, list):
-        if not isinstance(right, list):
-            return False
-        for a, b in zip(left, right):
-            if not all_equal(a, b, cache=cache):
-                return False
-        return True
-
-    if hasattr(left, 'equals'):
-        return left.equals(right, cache=cache)
-    return left == right
-
-
-def _arg_getter(i, doc=None):
-    def arg_accessor(self):
-        return self.args[i]
-    return property(arg_accessor, doc=doc)
-
-
-class ValueOp(Node):
-
-    def __init__(self, *args):
-        super(ValueOp, self).__init__(args)
-
-    def root_tables(self):
-        exprs = [arg for arg in self.args if isinstance(arg, Expr)]
-        return distinct_roots(*exprs)
-
-    def resolve_name(self):
-        raise com.ExpressionError('Expression is not named: %s' % repr(self))
-
-    def has_resolved_name(self):
-        return False
-
-
-class TableColumn(ValueOp):
-
-    """
-    Selects a column from a TableExpr
-    """
-
-    def __init__(self, name, table_expr):
-        schema = table_expr.schema()
-        if isinstance(name, six.integer_types):
-            name = schema.name_at_position(name)
-
-        super(TableColumn, self).__init__(name, table_expr)
-        if name not in schema:
-            raise com.IbisTypeError(
-                "'{0}' is not a field in {1}".format(name, table_expr.columns)
-            )
-
-        self.name = name
-        self.table = table_expr
-
-    def parent(self):
-        return self.table
-
-    def resolve_name(self):
-        return self.name
-
-    def has_resolved_name(self):
-        return True
-
-    def root_tables(self):
-        return self.table._root_tables()
-
-    def _make_expr(self):
-        ctype = self.table._get_type(self.name)
-        klass = ctype.array_type()
-        return klass(self, name=self.name)
-
-
-class ExpressionList(Node):
-
-    def __init__(self, exprs):
-        exprs = [as_value_expr(x) for x in exprs]
-        Node.__init__(self, exprs)
-
-    def root_tables(self):
-        return distinct_roots(*self.args)
-
-    def output_type(self):
-        return ExprList
-
-
 class ExprList(Expr):
 
     def _type_display(self):
-        list_args = [arg._type_display()
-                     for arg in self.op().args]
-        return ', '.join(list_args)
+        return ', '.join(expr._type_display() for expr in self.exprs())
 
     def exprs(self):
-        return self.op().args
+        return self.op().exprs
 
     def names(self):
         return [x.get_name() for x in self.exprs()]
@@ -484,11 +237,13 @@ class ExprList(Expr):
         return [x.type() for x in self.exprs()]
 
     def schema(self):
-        return sch.schema(self.names(), self.types())
+        import ibis.expr.schema as sch
+        return sch.Schema(self.names(), self.types())
 
     def rename(self, f):
+        import ibis.expr.operations as ops
         new_exprs = [x.name(f(x.get_name())) for x in self.exprs()]
-        return ExpressionList(new_exprs).to_expr()
+        return ops.ExpressionList(new_exprs).to_expr()
 
     def prefix(self, value):
         return self.rename(lambda x: value + x)
@@ -504,115 +259,13 @@ class ExprList(Expr):
         -------
         combined : ExprList
         """
+        import ibis.expr.operations as ops
         exprs = list(self.exprs())
         for o in others:
             if not isinstance(o, ExprList):
                 raise TypeError(o)
             exprs.extend(o.exprs())
-        return ExpressionList(exprs).to_expr()
-
-
-def infer_literal_type(value):
-    # TODO: depricate?
-    if value is null:
-        return dt.null
-
-    return dt.infer(value)
-
-
-class Literal(ValueOp):
-
-    def __init__(self, value, type=None):
-        super(Literal, self).__init__(value, type)
-        self.value = value
-        self._output_type = type.scalar_type()
-
-    def __repr__(self):
-        return '{}({})'.format(
-            type(self).__name__,
-            ', '.join(map(repr, self.args))
-        )
-
-    def equals(self, other, cache=None):
-        return (
-            isinstance(other, Literal) and
-            isinstance(other.value, type(self.value)) and
-            self.value == other.value
-        )
-
-    def output_type(self):
-        return self._output_type
-
-    def root_tables(self):
-        return []
-
-
-class ScalarParameter(ValueOp):
-
-    parameter_counter = itertools.count()
-
-    def __init__(self, type):
-        super(ScalarParameter, self).__init__(type)
-        self.output_type = type.scalar_type
-        self.counter = next(self.__class__.parameter_counter)
-
-    def resolve_name(self):
-        return 'param_{:d}'.format(self.counter)
-
-    def __repr__(self):
-        return '{}(type={})'.format(type(self).__name__, self.type)
-
-    def __hash__(self):
-        return hash((self.type, self.counter))
-
-    @property
-    def type(self):
-        return self.args[0]
-
-    def equals(self, other, cache=None):
-        return (
-            isinstance(other, ScalarParameter) and
-            self.counter == other.counter and
-            self.type.equals(other.type, cache=cache)
-        )
-
-    def root_tables(self):
-        return []
-
-
-def param(type):
-    """Create a parameter of a particular type to be defined just before
-    execution.
-
-    Parameters
-    ----------
-    type : dt.DataType
-        The type of the unbound parameter, e.g., double, int64, date, etc.
-
-    Returns
-    -------
-    ScalarExpr
-
-    Examples
-    --------
-    >>> import ibis
-    >>> import ibis.expr.datatypes as dt
-    >>> start = ibis.param(dt.date)
-    >>> end = ibis.param(dt.date)
-    >>> schema = [('timestamp_col', 'timestamp'), ('value', 'double')]
-    >>> t = ibis.table(schema)
-    >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
-    >>> expr = t.filter(predicates).value.sum()
-    """
-    expr = ScalarParameter(dt.dtype(type)).to_expr()
-    return expr
-
-
-def distinct_roots(*expressions):
-    roots = toolz.concat(
-        expression._root_tables() for expression in expressions
-    )
-    return list(toolz.unique(roots, key=id))
+        return ops.ExpressionList(exprs).to_expr()
 
 
 # ---------------------------------------------------------------------
@@ -626,22 +279,17 @@ class ValueExpr(Expr):
     either a single value (scalar)
     """
 
-    def __init__(self, arg, name=None):
+    def __init__(self, arg, dtype, name=None):
         super(ValueExpr, self).__init__(arg)
         self._name = name
+        self._dtype = dtype
 
     def equals(self, other, cache=None):
         return (
             isinstance(other, ValueExpr) and
             self._name == other._name and
+            self._dtype == other._dtype and
             super(ValueExpr, self).equals(other, cache=cache)
-        )
-
-    def type(self):
-        raise NotImplementedError(
-            'Expressions of type {0} must implement a type method'.format(
-                type(self).__name__
-            )
         )
 
     def has_name(self):
@@ -660,6 +308,15 @@ class ValueExpr(Expr):
 
     def name(self, name):
         return self._factory(self._arg, name=name)
+
+    def type(self):
+        return self._dtype
+
+    @property
+    def _factory(self):
+        def factory(arg, name=None):
+            return type(self)(arg, dtype=self.type(), name=name)
+        return factory
 
 
 class ScalarExpr(ValueExpr):
@@ -682,9 +339,9 @@ class ColumnExpr(ValueExpr):
         """
         roots = self._root_tables()
         if len(roots) > 1:
-            raise RelationError('Cannot convert array expression involving '
-                                'multiple base table references to a '
-                                'projection')
+            raise com.RelationError('Cannot convert array expression '
+                                    'involving multiple base table references '
+                                    'to a projection')
 
         table = TableExpr(roots[0])
         return table.projection([self])
@@ -851,7 +508,8 @@ class TableExpr(Expr):
         -------
         column : array expression
         """
-        ref = TableColumn(name, self)
+        import ibis.expr.operations as ops
+        ref = ops.TableColumn(name, self)
         return ref.to_expr()
 
     @property
@@ -867,7 +525,7 @@ class TableExpr(Expr):
         schema : Schema
         """
         if not self._is_materialized():
-            raise IbisError('Table operation is not yet materialized')
+            raise com.IbisError('Table operation is not yet materialized')
         return self.op().schema
 
     def _is_materialized(self):
@@ -908,487 +566,223 @@ class TableExpr(Expr):
 # defined for each type.
 
 
-class AnyValue(ValueExpr):
+class AnyValue(ValueExpr): pass  # noqa: E701,E302
+class AnyScalar(ScalarExpr, AnyValue): pass  # noqa: E701,E302
+class AnyColumn(ColumnExpr, AnyValue): pass  # noqa: E701,E302
 
-    def type(self):
-        return dt.any
 
+class NullValue(AnyValue): pass  # noqa: E701,E302
+class NullScalar(AnyScalar, NullValue): pass  # noqa: E701,E302
+class NullColumn(AnyColumn, NullValue): pass  # noqa: E701,E302
 
-class NullValue(AnyValue):
 
-    def type(self):
-        return dt.null
+class NumericValue(AnyValue): pass  # noqa: E701,E302
+class NumericScalar(AnyScalar, NumericValue): pass  # noqa: E701,E302
+class NumericColumn(AnyColumn, NumericValue): pass  # noqa: E701,E302
 
 
-class NumericValue(AnyValue):
-    pass
+class BooleanValue(NumericValue): pass  # noqa: E701,E302
+class BooleanScalar(NumericScalar, BooleanValue): pass  # noqa: E701,E302
+class BooleanColumn(NumericColumn, BooleanValue): pass  # noqa: E701,E302
 
 
-class IntegerValue(NumericValue):
-    pass
+class IntegerValue(NumericValue): pass  # noqa: E701,E302
+class IntegerScalar(NumericScalar, IntegerValue): pass  # noqa: E701,E302
+class IntegerColumn(NumericColumn, IntegerValue): pass  # noqa: E701,E302
 
 
-class BooleanValue(NumericValue):
+class FloatingValue(NumericValue): pass  # noqa: E701,E302
+class FloatingScalar(NumericScalar, FloatingValue): pass  # noqa: E701,E302
+class FloatingColumn(NumericColumn, FloatingValue): pass  # noqa: E701,E302
 
-    def type(self):
-        return dt.boolean
 
+class DecimalValue(NumericValue): pass  # noqa: E701,E302
+class DecimalScalar(NumericScalar, DecimalValue): pass  # noqa: E701,E302
+class DecimalColumn(NumericColumn, DecimalValue): pass  # noqa: E701,E302
 
-class Int8Value(IntegerValue):
 
-    def type(self):
-        return dt.int8
+class StringValue(AnyValue): pass  # noqa: E701,E302
+class StringScalar(AnyScalar, StringValue): pass  # noqa: E701,E302
+class StringColumn(AnyColumn, StringValue): pass  # noqa: E701,E302
 
 
-class Int16Value(IntegerValue):
+class BinaryValue(AnyValue): pass  # noqa: E701,E302
+class BinaryScalar(AnyScalar, BinaryValue): pass  # noqa: E701,E302
+class BinaryColumn(AnyColumn, BinaryValue): pass  # noqa: E701,E302
 
-    def type(self):
-        return dt.int16
 
+class TimeValue(AnyValue): pass  # noqa: E701,E302
+class TimeScalar(AnyScalar, TimeValue): pass  # noqa: E701,E302
+class TimeColumn(AnyColumn, TimeValue): pass  # noqa: E701,E302
 
-class Int32Value(IntegerValue):
 
-    def type(self):
-        return dt.int32
+class DateValue(AnyValue): pass  # noqa: E701,E302
+class DateScalar(AnyScalar, DateValue): pass  # noqa: E701,E302
+class DateColumn(AnyColumn, DateValue): pass  # noqa: E701,E302
 
 
-class Int64Value(IntegerValue):
+class TimestampValue(AnyValue): pass  # noqa: E701,E302
+class TimestampScalar(AnyScalar, TimestampValue): pass  # noqa: E701,E302
+class TimestampColumn(AnyColumn, TimestampValue): pass  # noqa: E701,E302
 
-    def type(self):
-        return dt.int64
 
+class CategoryValue(AnyValue): pass  # noqa: E701,E302
+class CategoryScalar(AnyScalar, CategoryValue): pass  # noqa: E701,E302
+class CategoryColumn(AnyColumn, CategoryValue): pass  # noqa: E701,E302
 
-class UInt8Value(IntegerValue):
 
-    def type(self):
-        return dt.uint8
+class EnumValue(AnyValue): pass  # noqa: E701,E302
+class EnumScalar(AnyScalar, EnumValue): pass  # noqa: E701,E302
+class EnumColumn(AnyColumn, EnumValue): pass  # noqa: E701,E302
 
 
-class UInt16Value(IntegerValue):
+class ArrayValue(AnyValue): pass  # noqa: E701,E302
+class ArrayScalar(AnyScalar, ArrayValue): pass  # noqa: E701,E302
+class ArrayColumn(AnyColumn, ArrayValue): pass  # noqa: E701,E302
 
-    def type(self):
-        return dt.uint16
 
+class MapValue(AnyValue): pass  # noqa: E701,E302
+class MapScalar(AnyScalar, MapValue): pass  # noqa: E701,E302
+class MapColumn(AnyColumn, MapValue): pass  # noqa: E701,E302
 
-class UInt32Value(IntegerValue):
 
-    def type(self):
-        return dt.uint32
-
-
-class UInt64Value(IntegerValue):
-
-    def type(self):
-        return dt.uint64
-
-
-class HalffloatValue(NumericValue):
-
-    def type(self):
-        return dt.halffloat
-
-
-class FloatingValue(NumericValue):
-    pass
-
-
-class FloatValue(FloatingValue):
-
-    def type(self):
-        return dt.float
-
-
-class DoubleValue(FloatingValue):
-
-    def type(self):
-        return dt.double
-
-
-class StringValue(AnyValue):
-
-    def type(self):
-        return dt.string
-
-
-class BinaryValue(AnyValue):
-
-    def type(self):
-        return dt.binary
-
-
-class ParameterizedValue(AnyValue):
-
-    def __init__(self, meta, name=None):
-        super(ParameterizedValue, self).__init__(meta, name=name)
-        self.meta = meta
-
-    def type(self):
-        return self.meta
-
-    @property
-    def _factory(self):
-        def factory(arg, name=None):
-            return type(self)(arg, self.meta, name=name)
-        return factory
-
-
-class DecimalValue(ParameterizedValue, NumericValue):
-    pass
-
-
-class TemporalValue(AnyValue):
-    pass
-
-
-class DateValue(TemporalValue):
-
-    def type(self):
-        return dt.date
-
-
-class TimeValue(TemporalValue):
-
-    def type(self):
-        return dt.time
-
-
-class TimestampValue(TemporalValue):
-
-    def __init__(self, meta=None):
-        self.meta = meta
-        self._timezone = getattr(meta, 'timezone', None)
-
-    def type(self):
-        return dt.Timestamp(timezone=self._timezone)
-
-
-class IntervalValue(ParameterizedValue):
-
-    def __init__(self, meta=None):
-        self.meta = meta
-
-    @property
-    def unit(self):
-        return self.meta.unit
-
-    @unit.setter
-    def unit(self, unit):
-        self.meta.unit = unit
-
-    @property
-    def resolution(self):
-        """Unit's name"""
-        return self.meta.resolution
-
-
-class ArrayValue(ParameterizedValue):
-    pass
-
-
-class MapValue(ParameterizedValue):
-    pass
-
-
-class StructValue(ParameterizedValue):
+class StructValue(AnyValue):
 
     def __dir__(self):
         return sorted(frozenset(
             itertools.chain(dir(type(self)), self.type().names)
         ))
 
+class StructScalar(AnyScalar, StructValue): pass  # noqa: E701,E302
+class StructColumn(AnyColumn, StructValue): pass  # noqa: E701,E302
 
-class NumericColumn(ColumnExpr, NumericValue):
-    pass
 
+class IntervalValue(AnyValue): pass  # noqa: E701,E302
+class IntervalScalar(AnyScalar, IntervalValue): pass  # noqa: E701,E302
+class IntervalColumn(AnyColumn, IntervalValue): pass  # noqa: E701,E302
 
-class NullScalar(NullValue, ScalarExpr):
-    """
-    A scalar value expression representing NULL
-    """
-    pass
 
+class ListExpr(ColumnExpr, AnyValue):
 
-class NullColumn(ColumnExpr, NullValue):
-    pass
+    @property
+    def values(self):
+        return self.op().values
 
+    def __iter__(self):
+        return iter(self.values)
 
-class BooleanScalar(ScalarExpr, BooleanValue):
-    pass
+    def __getitem__(self, key):
+        return self.values[key]
 
+    def __add__(self, other):
+        other_values = getattr(other, 'values', other)
+        return type(self.op())(self.values + other_values).to_expr()
 
-class BooleanColumn(NumericColumn, BooleanValue):
-    pass
+    def __radd__(self, other):
+        other_values = getattr(other, 'values', other)
+        return type(self.op())(other_values + self.values).to_expr()
 
+    def __bool__(self):
+        return bool(self.values)
 
-class Int8Scalar(ScalarExpr, Int8Value):
-    pass
+    def __len__(self):
+        return len(self.values)
 
 
-class Int8Column(NumericColumn, Int8Value):
-    pass
+class TopKExpr(AnalyticExpr):
 
+    def type(self):
+        return 'topk'
 
-class Int16Scalar(ScalarExpr, Int16Value):
-    pass
+    def _table_getitem(self):
+        return self.to_filter()
 
+    def to_filter(self):
+        # TODO: move to api.py
+        import ibis.expr.operations as ops
+        return ops.SummaryFilter(self).to_expr()
 
-class Int16Column(NumericColumn, Int16Value):
-    pass
+    def to_aggregation(self, metric_name=None, parent_table=None,
+                       backup_metric_name=None):
+        """
+        Convert the TopK operation to a table aggregation
+        """
+        op = self.op()
 
+        arg_table = find_base_table(op.arg)
 
-class Int32Scalar(ScalarExpr, Int32Value):
-    pass
-
-
-class Int32Column(NumericColumn, Int32Value):
-    pass
-
-
-class Int64Scalar(ScalarExpr, Int64Value):
-    pass
-
-
-class Int64Column(NumericColumn, Int64Value):
-    pass
-
-
-class UInt8Scalar(ScalarExpr, UInt8Value):
-    pass
-
-
-class UInt8Column(NumericColumn, UInt8Value):
-    pass
-
-
-class UInt16Scalar(ScalarExpr, UInt16Value):
-    pass
-
-
-class UInt16Column(NumericColumn, UInt16Value):
-    pass
-
-
-class UInt32Scalar(ScalarExpr, UInt32Value):
-    pass
-
-
-class UInt32Column(NumericColumn, UInt32Value):
-    pass
-
-
-class UInt64Scalar(ScalarExpr, UInt64Value):
-    pass
-
-
-class UInt64Column(NumericColumn, UInt64Value):
-    pass
-
-
-class HalffloatScalar(ScalarExpr, HalffloatValue):
-    pass
-
-
-class HalffloatColumn(NumericColumn, HalffloatValue):
-    pass
-
-
-class FloatScalar(ScalarExpr, FloatValue):
-    pass
-
-
-class FloatColumn(NumericColumn, FloatValue):
-    pass
-
-
-class DoubleScalar(ScalarExpr, DoubleValue):
-    pass
-
-
-class DoubleColumn(NumericColumn, DoubleValue):
-    pass
-
-
-class StringScalar(ScalarExpr, StringValue):
-    pass
-
-
-class StringColumn(ColumnExpr, StringValue):
-    pass
-
-
-class BinaryScalar(ScalarExpr, BinaryValue):
-    pass
-
-
-class BinaryColumn(ColumnExpr, BinaryValue):
-    pass
-
-
-class DateScalar(ScalarExpr, DateValue):
-    pass
-
-
-class DateColumn(ColumnExpr, DateValue):
-    pass
-
-
-class TimeScalar(ScalarExpr, TimeValue):
-    pass
-
-
-class TimeColumn(ColumnExpr, TimeValue):
-    pass
-
-
-class TimestampScalar(ScalarExpr, TimestampValue):
-
-    def __init__(self, arg, meta=None, name=None):
-        ScalarExpr.__init__(self, arg, name=name)
-        TimestampValue.__init__(self, meta=meta)
-
-
-class TimestampColumn(ColumnExpr, TimestampValue):
-
-    def __init__(self, arg, meta=None, name=None):
-        ColumnExpr.__init__(self, arg, name=name)
-        TimestampValue.__init__(self, meta=meta)
-
-
-class IntervalScalar(ScalarExpr, IntervalValue):
-
-    def __init__(self, arg, meta=None, name=None):
-        ScalarExpr.__init__(self, arg, name=name)
-        IntervalValue.__init__(self, meta=meta)
-
-
-class IntervalColumn(ColumnExpr, IntervalValue):
-
-    def __init__(self, arg, meta=None, name=None):
-        ColumnExpr.__init__(self, arg, name=name)
-        IntervalValue.__init__(self, meta=meta)
-
-
-class DecimalScalar(DecimalValue, ScalarExpr):
-
-    def __init__(self, arg, meta, name=None):
-        DecimalValue.__init__(self, meta)
-        ScalarExpr.__init__(self, arg, name=name)
-
-
-class DecimalColumn(DecimalValue, NumericColumn):
-
-    def __init__(self, arg, meta, name=None):
-        DecimalValue.__init__(self, meta)
-        NumericColumn.__init__(self, arg, name=name)
-
-
-class CategoryValue(ParameterizedValue):
-    """
-    Represents some ordered data categorization; tracked as an int32 value
-    until explicitly
-    """
-
-
-class CategoryScalar(CategoryValue, ScalarExpr):
-
-    def __init__(self, arg, meta, name=None):
-        CategoryValue.__init__(self, meta)
-        ScalarExpr.__init__(self, arg, name=name)
-
-
-class CategoryColumn(CategoryValue, ColumnExpr):
-
-    def __init__(self, arg, meta, name=None):
-        CategoryValue.__init__(self, meta)
-        ColumnExpr.__init__(self, arg, name=name)
-
-
-class ArrayScalar(ArrayValue, ScalarExpr):
-
-    def __init__(self, arg, meta, name=None):
-        ArrayValue.__init__(self, meta)
-        ScalarExpr.__init__(self, arg, name=name)
-
-
-class ArrayColumn(ArrayValue, ColumnExpr):
-
-    def __init__(self, arg, meta, name=None):
-        ArrayValue.__init__(self, meta)
-        ColumnExpr.__init__(self, arg, name=name)
-
-
-class MapScalar(MapValue, ScalarExpr):
-
-    def __init__(self, arg, meta, name=None):
-        MapValue.__init__(self, meta)
-        ScalarExpr.__init__(self, arg, name=name)
-
-
-class MapColumn(MapValue, ColumnExpr):
-
-    def __init__(self, arg, meta, name=None):
-        MapValue.__init__(self, meta)
-        ColumnExpr.__init__(self, arg, name=name)
-
-
-class StructScalar(StructValue, ScalarExpr):
-
-    def __init__(self, arg, meta, name=None):
-        StructValue.__init__(self, meta)
-        ScalarExpr.__init__(self, arg, name=name)
-
-
-class StructColumn(StructValue, ColumnExpr):
-
-    def __init__(self, arg, meta, name=None):
-        StructValue.__init__(self, meta)
-        ColumnExpr.__init__(self, arg, name=name)
-
-
-class UnnamedMarker(object):
-    pass
-
-
-unnamed = UnnamedMarker()
-
-
-def as_value_expr(val):
-    import pandas as pd
-    if not isinstance(val, Expr):
-        if isinstance(val, (tuple, list)):
-            val = sequence(val)
-        elif isinstance(val, pd.Series):
-            val = sequence(list(val))
+        by = op.by
+        if not isinstance(by, Expr):
+            by = by(arg_table)
+            by_table = arg_table
         else:
-            val = literal(val)
+            by_table = find_base_table(op.by)
 
-    return val
+        if metric_name is None:
+            if by.get_name() == op.arg.get_name():
+                by = by.name(backup_metric_name)
+        else:
+            by = by.name(metric_name)
+
+        if arg_table.equals(by_table):
+            agg = arg_table.aggregate(by, by=[op.arg])
+        elif parent_table is not None:
+            agg = parent_table.aggregate(by, by=[op.arg])
+        else:
+            raise com.IbisError('Cross-table TopK; must provide a parent '
+                                'joined table')
+
+        return agg.sort_by([(by.get_name(), False)]).limit(op.k)
 
 
-def castable(source, target):
-    """Return whether source ir type is castable to target
+class SortExpr(Expr):
 
-    Based on the underlying datatypes and the value in case of Literals
-    """
-    op = source.op()
-    value = op.value if isinstance(op, Literal) else None
-    return dt.castable(source.type(), target.type(), value=value)
+    def _type_display(self):
+        return 'array-sort'
 
 
-def cast(source, target):
-    """Currently Literal to *Scalar implicit casts are allowed"""
+class DayOfWeek(Expr):
 
-    if not castable(source, target):
-        raise com.IbisTypeError('Source is not castable to target type!')
+    def index(self):
+        import ibis.expr.operations as ops
+        return ops.DayOfWeekIndex(self.op().arg).to_expr()
 
-    # currently it prevents column -> scalar implicit castings
-    # however the datatypes are matching
-    op = source.op()
-    if not isinstance(op, Literal):
-        raise com.IbisTypeError('Only able to implicitly cast literals!')
+    def full_name(self):
+        import ibis.expr.operations as ops
+        return ops.DayOfWeekName(self.op().arg).to_expr()
 
-    out_type = target.type().scalar_type()
-    return out_type(op)
+
+def bind_expr(table, expr):
+    if isinstance(expr, (list, tuple)):
+        return [bind_expr(table, x) for x in expr]
+
+    return table._ensure_expr(expr)
+
+
+# TODO: move to analysis
+def find_base_table(expr):
+    if isinstance(expr, TableExpr):
+        return expr
+
+    for arg in expr.op().flat_args():
+        if isinstance(arg, Expr):
+            r = find_base_table(arg)
+            if isinstance(r, TableExpr):
+                return r
+
+
+_NULL = None
+
+
+def null():
+    """Create a NULL/NA scalar"""
+    import ibis.expr.operations as ops
+
+    global _NULL
+    if _NULL is None:
+        _NULL = ops.NullLiteral().to_expr()
+
+    return _NULL
 
 
 def literal(value, type=None):
@@ -1423,10 +817,16 @@ def literal(value, type=None):
       ...
     TypeError: Value 'foobar' cannot be safely coerced to int64
     """
-    if hasattr(value, 'op') and isinstance(value.op(), Literal):
+    import ibis.expr.datatypes as dt
+    import ibis.expr.operations as ops
+
+    if hasattr(value, 'op') and isinstance(value.op(), ops.Literal):
         return value
 
-    dtype = infer_literal_type(value)
+    if value is null:
+        dtype = dt.null
+    else:
+        dtype = dt.infer(value)
 
     if type is not None:
         try:
@@ -1436,24 +836,10 @@ def literal(value, type=None):
             raise TypeError('Value {!r} cannot be safely coerced '
                             'to {}'.format(value, type))
 
-    if value is None or value is _NULL or value is null:
+    if dtype is dt.null:
         return null().cast(dtype)
     else:
-        return Literal(value, type=dtype).to_expr()
-
-
-_NULL = None
-
-
-def null():
-    """
-    Create a NULL/NA scalar
-    """
-    global _NULL
-    if _NULL is None:
-        _NULL = NullScalar(NullLiteral())
-
-    return _NULL
+        return ops.Literal(value, dtype=dtype).to_expr()
 
 
 def sequence(values):
@@ -1469,99 +855,55 @@ def sequence(values):
     -------
     seq : Sequence
     """
-    return ValueList(values).to_expr()
+    import ibis.expr.operations as ops
+
+    return ops.ValueList(values).to_expr()
 
 
-class NullLiteral(ValueOp):
+def as_value_expr(val):
+    import pandas as pd
+    if not isinstance(val, Expr):
+        if isinstance(val, (tuple, list)):
+            val = sequence(val)
+        elif isinstance(val, pd.Series):
+            val = sequence(list(val))
+        else:
+            val = literal(val)
 
+    return val
+
+
+def param(type):
+    """Create a parameter of a particular type to be defined just before
+    execution.
+
+    Parameters
+    ----------
+    type : dt.DataType
+        The type of the unbound parameter, e.g., double, int64, date, etc.
+
+    Returns
+    -------
+    ScalarExpr
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.expr.datatypes as dt
+    >>> start = ibis.param(dt.date)
+    >>> end = ibis.param(dt.date)
+    >>> schema = [('timestamp_col', 'timestamp'), ('value', 'double')]
+    >>> t = ibis.table(schema)
+    >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
+    >>> expr = t.filter(predicates).value.sum()
     """
-    Typeless NULL literal
-    """
-
-    def __init__(self):
-        self.value = None
-
-    @property
-    def args(self):
-        return [self.value]
-
-    def equals(self, other, cache=None):
-        return isinstance(other, NullLiteral)
-
-    def output_type(self):
-        return NullScalar
-
-    def root_tables(self):
-        return []
+    import ibis.expr.datatypes as dt
+    import ibis.expr.operations as ops
+    return ops.ScalarParameter(dt.dtype(type)).to_expr()
 
 
-class ListExpr(ColumnExpr, AnyValue):
-
-    @property
-    def values(self):
-        return self.op().values
-
-    def __iter__(self):
-        return iter(self.values)
-
-    def __getitem__(self, key):
-        return self.values[key]
-
-    def __add__(self, other):
-        other_values = getattr(other, 'values', other)
-        return type(self.op())(self.values + other_values).to_expr()
-
-    def __radd__(self, other):
-        other_values = getattr(other, 'values', other)
-        return type(self.op())(other_values + self.values).to_expr()
-
-    def __bool__(self):
-        return bool(self.values)
-
-    def __len__(self):
-        return len(self.values)
-
-    def type(self):
-        from ibis.expr import rules
-        return rules.highest_precedence_type(self.values)
+class UnnamedMarker(object):
+    pass
 
 
-class SortExpr(Expr):
-
-    def _type_display(self):
-        return 'array-sort'
-
-
-class ValueList(ValueOp):
-
-    """
-    Data structure for a list of value expressions
-    """
-
-    def __init__(self, args):
-        self.values = list(map(as_value_expr, args))
-        super(ValueList, self).__init__(self.values)
-
-    def root_tables(self):
-        return distinct_roots(*self.values)
-
-    def _make_expr(self):
-        return ListExpr(self)
-
-
-def bind_expr(table, expr):
-    if isinstance(expr, (list, tuple)):
-        return [bind_expr(table, x) for x in expr]
-
-    return table._ensure_expr(expr)
-
-
-def find_base_table(expr):
-    if isinstance(expr, TableExpr):
-        return expr
-
-    for arg in expr.op().flat_args():
-        if isinstance(arg, Expr):
-            r = find_base_table(arg)
-            if isinstance(r, TableExpr):
-                return r
+unnamed = UnnamedMarker()

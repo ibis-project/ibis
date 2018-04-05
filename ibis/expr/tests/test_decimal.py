@@ -23,8 +23,8 @@ def test_type_metadata(lineitem):
     col = lineitem.l_extendedprice
     assert isinstance(col, ir.DecimalColumn)
 
-    assert col.meta.precision == 12
-    assert col.meta.scale == 2
+    assert col.type().precision == 12
+    assert col.type().scale == 2
 
 
 def test_cast_scalar_to_decimal():
@@ -32,8 +32,8 @@ def test_cast_scalar_to_decimal():
 
     casted = val.cast('decimal(15,5)')
     assert isinstance(casted, ir.DecimalScalar)
-    assert casted.meta.precision == 15
-    assert casted.meta.scale == 5
+    assert casted.type().precision == 15
+    assert casted.type().scale == 5
 
 
 def test_decimal_aggregate_function_behavior(lineitem):
@@ -43,13 +43,20 @@ def test_decimal_aggregate_function_behavior(lineitem):
     # the result can represent the largest possible value at that
     # particular precision."
     col = lineitem.l_extendedprice
-    functions = ['sum', 'mean', 'max', 'min']
+    functions = ['sum', 'mean']
 
     for func_name in functions:
         result = getattr(col, func_name)()
         assert isinstance(result, ir.DecimalScalar)
-        assert result.meta.precision == col.meta.precision
-        assert result.meta.scale == 38
+        assert result.type().precision == col.type().precision
+        assert result.type().scale == 38
+
+    functions = ['max', 'min']
+    for func_name in functions:
+        result = getattr(col, func_name)()
+        assert isinstance(result, ir.DecimalScalar)
+        assert result.type().precision == col.type().precision
+        assert result.type().scale == col.type().scale
 
 
 def test_where(lineitem):

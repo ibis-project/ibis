@@ -73,8 +73,8 @@ def test_length(table):
     result = table.g.length()
     lit_result = lit.length()
 
-    assert isinstance(result, ir.Int32Column)
-    assert isinstance(lit_result, ir.Int32Scalar)
+    assert isinstance(result, ir.IntegerColumn)
+    assert isinstance(lit_result, ir.IntegerScalar)
     assert isinstance(result.op(), ops.StringLength)
 
 

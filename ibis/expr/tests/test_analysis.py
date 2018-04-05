@@ -23,6 +23,9 @@ import ibis.common as com
 from ibis.tests.util import assert_equal
 
 
+# TODO: test is_reduction
+# TODO: test is_scalar_reduction
+
 # Place to collect esoteric expression analysis bugs and tests
 
 
@@ -329,4 +332,4 @@ def test_is_ancestor_analytic():
     with_analytic = subquery[subquery.columns +
                              [subquery.count().name('analytic')]]
 
-    assert not subquery.op().is_ancestor(with_analytic)
+    assert not subquery.op().equals(with_analytic.op())

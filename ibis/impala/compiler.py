@@ -503,7 +503,8 @@ def _number_literal_format(expr):
 
 
 def _interval_literal_format(expr):
-    return 'INTERVAL {} {}'.format(expr.op().value, expr.resolution.upper())
+    return 'INTERVAL {} {}'.format(expr.op().value,
+                                   expr.type().resolution.upper())
 
 
 def _interval_from_integer(translator, expr):
@@ -512,7 +513,8 @@ def _interval_from_integer(translator, expr):
     arg, unit = op.args
     arg_formatted = translator.translate(arg)
 
-    return 'INTERVAL {} {}'.format(arg_formatted, expr.resolution.upper())
+    return 'INTERVAL {} {}'.format(arg_formatted,
+                                   expr.type().resolution.upper())
 
 
 def _date_literal_format(expr):
@@ -754,7 +756,7 @@ def _from_unixtime(translator, expr):
 def varargs(func_name):
     def varargs_formatter(translator, expr):
         op = expr.op()
-        return _format_call(translator, func_name, *op.args)
+        return _format_call(translator, func_name, *op.arg)
     return varargs_formatter
 
 
@@ -765,7 +767,7 @@ def _substring(translator, expr):
     start_formatted = translator.translate(start)
 
     # Impala is 1-indexed
-    if length is None or isinstance(length.op(), ir.Literal):
+    if length is None or isinstance(length.op(), ops.Literal):
         lvalue = length.op().value if length is not None else None
         if lvalue:
             return 'substr({}, {} + 1, {})'.format(
@@ -786,7 +788,7 @@ def _string_find(translator, expr):
     arg_formatted = translator.translate(arg)
     substr_formatted = translator.translate(substr)
 
-    if start is not None and not isinstance(start.op(), ir.Literal):
+    if start is not None and not isinstance(start.op(), ops.Literal):
         start_fmt = translator.translate(start)
         return 'locate({}, {}, {} + 1) - 1'.format(
             substr_formatted, arg_formatted, start_fmt
@@ -1070,10 +1072,10 @@ _operation_registry = {
     # Other operations
     ops.E: lambda *args: 'e()',
 
-    ir.Literal: _literal,
-    ir.NullLiteral: _null_literal,
+    ops.Literal: _literal,
+    ops.NullLiteral: _null_literal,
 
-    ir.ValueList: _value_list,
+    ops.ValueList: _value_list,
 
     ops.Cast: _cast,
 

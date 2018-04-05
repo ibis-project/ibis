@@ -15,16 +15,11 @@
 import re
 import json
 
-import six
-
 from ibis.sql.compiler import DDL
-from .compiler import quote_identifier, _type_to_sql_string
-
-from ibis.expr.datatypes import validate_type
-
-from ibis.expr.api import Schema
+import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
-import ibis.expr.rules as rules
+
+from .compiler import quote_identifier, _type_to_sql_string
 
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
@@ -240,8 +235,8 @@ class CreateTableWithSchema(CreateTable):
         if self.partition is not None:
             main_schema = self.schema
             part_schema = self.partition
-            if not isinstance(part_schema, Schema):
-                part_schema = Schema(
+            if not isinstance(part_schema, sch.Schema):
+                part_schema = sch.Schema(
                     part_schema,
                     [self.schema[name] for name in part_schema])
 
@@ -659,79 +654,49 @@ def _format_schema_element(name, t):
     )
 
 
-class CreateFunctionBase(ImpalaDDL):
+class CreateFunction(ImpalaDDL):
 
     _object_type = 'FUNCTION'
 
-    def __init__(self, lib_path, inputs, output, name, database=None):
-        self.lib_path = lib_path
-
-        self.inputs, self.output = inputs, output
-        self.input_sig = _impala_signature(inputs)
-        self.output_sig = _arg_to_string(output)
-
-        self.name = name
+    def __init__(self, func, name=None, database=None):
+        self.func = func
+        self.name = name or func.name
         self.database = database
 
-    def _create_line(self):
+    def _impala_signature(self):
         scoped_name = self._get_scoped_name(self.name, self.database)
-        return '{}({}) returns {}'.format(
-            scoped_name, self.input_sig, self.output_sig
-        )
+        input_sig = _impala_input_signature(self.func.inputs)
+        output_sig = _type_to_sql_string(self.func.output)
+
+        return '{}({}) returns {}'.format(scoped_name, input_sig, output_sig)
 
 
-class CreateFunction(CreateFunctionBase):
-
-    def __init__(self, lib_path, so_symbol, inputs, output,
-                 name, database=None):
-        super(CreateFunction, self).__init__(
-            lib_path, inputs, output, name, database=database
-        )
-        self.so_symbol = so_symbol
+class CreateUDF(CreateFunction):
 
     def compile(self):
         create_decl = 'CREATE FUNCTION'
-        create_line = self._create_line()
+        impala_sig = self._impala_signature()
         param_line = ("location '{}' symbol='{}'"
-                      .format(self.lib_path, self.so_symbol))
-        return ' '.join([create_decl, create_line, param_line])
+                      .format(self.func.lib_path, self.func.so_symbol))
+        return ' '.join([create_decl, impala_sig, param_line])
 
 
-class CreateAggregateFunction(CreateFunctionBase):
-
-    def __init__(self, lib_path, inputs, output, update_fn, init_fn,
-                 merge_fn, serialize_fn, finalize_fn, name, database):
-        super(CreateAggregateFunction, self).__init__(
-            lib_path, inputs, output, name, database=database
-        )
-        self.init = init_fn
-        self.update = update_fn
-        self.merge = merge_fn
-        self.serialize = serialize_fn
-        self.finalize = finalize_fn
+class CreateUDA(CreateFunction):
 
     def compile(self):
         create_decl = 'CREATE AGGREGATE FUNCTION'
-        create_line = self._create_line()
-        tokens = ["location '{}'".format(self.lib_path)]
+        impala_sig = self._impala_signature()
+        tokens = ["location '{}'".format(self.func.lib_path)]
 
-        if self.init is not None:
-            tokens.append("init_fn='{}'".format(self.init))
+        fn_names = ('init_fn', 'update_fn', 'merge_fn', 'serialize_fn',
+                    'finalize_fn')
 
-        tokens.append("update_fn='{}'".format(self.update))
+        for fn in fn_names:
+            value = getattr(self.func, fn)
+            if value is not None:
+                tokens.append("{}='{}'".format(fn, value))
 
-        if self.merge is not None:
-            tokens.append("merge_fn='{}'".format(self.merge))
-
-        if self.serialize is not None:
-            tokens.append("serialize_fn='{}'".format(self.serialize))
-
-        if self.finalize is not None:
-            tokens.append("finalize_fn='{}'".format(self.finalize))
-
-        full_line = (' '.join([create_decl, create_line]) + ' ' +
-                     '\n'.join(tokens))
-        return full_line
+        return ' '.join([create_decl, impala_sig]) + ' ' + '\n'.join(tokens)
 
 
 class DropFunction(DropObject):
@@ -740,20 +705,18 @@ class DropFunction(DropObject):
                  aggregate=False, database=None):
         super(DropFunction, self).__init__(must_exist=must_exist)
         self.name = name
-
-        self.inputs = inputs
-        self.input_sig = _impala_signature(inputs)
-
+        self.inputs = tuple(map(dt.dtype, inputs))
         self.must_exist = must_exist
         self.aggregate = aggregate
         self.database = database
 
+    def _impala_signature(self):
+        full_name = self._get_scoped_name(self.name, self.database)
+        input_sig = _impala_input_signature(self.inputs)
+        return '{}({})'.format(full_name, input_sig)
+
     def _object_name(self):
         return self.name
-
-    def _function_sig(self):
-        full_name = self._get_scoped_name(self.name, self.database)
-        return '{}({})'.format(full_name, self.input_sig)
 
     def compile(self):
         tokens = ['DROP']
@@ -763,7 +726,7 @@ class DropFunction(DropObject):
         if not self.must_exist:
             tokens.append('IF EXISTS')
 
-        tokens.append(self._function_sig())
+        tokens.append(self._impala_signature())
         return ' '.join(tokens)
 
 
@@ -784,24 +747,6 @@ class ListFunction(ImpalaDDL):
         return statement
 
 
-def _impala_signature(sig):
-    if isinstance(sig, rules.TypeSignature):
-        if isinstance(sig, rules.VarArgs):
-            val = _arg_to_string(sig.arg_type)
-            return '{}...'.format(val)
-        else:
-            return ', '.join(_arg_to_string(arg) for arg in sig.types)
-    else:
-        return ', '.join(_type_to_sql_string(validate_type(x)) for x in sig)
-
-
-def _arg_to_string(arg):
-    if isinstance(arg, rules.ValueTyped):
-        types = arg.types
-        if len(types) > 1:
-            raise NotImplementedError
-        return _type_to_sql_string(types[0])
-    elif isinstance(arg, six.string_types):
-        return _type_to_sql_string(validate_type(arg))
-    else:
-        raise NotImplementedError
+def _impala_input_signature(inputs):
+    # TODO: varargs '{}...'.format(val)
+    return ', '.join(map(_type_to_sql_string, inputs))

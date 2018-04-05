@@ -123,7 +123,7 @@ def _timestamp_truncate(t, expr):
 def _interval_from_integer(t, expr):
     arg, unit = expr.op().args
     sa_arg = t.translate(arg)
-    interval = sa.text("INTERVAL '1 {}'".format(expr.resolution))
+    interval = sa.text("INTERVAL '1 {}'".format(expr.type().resolution))
     return sa_arg * interval
 
 
@@ -579,7 +579,7 @@ def _string_join(t, expr):
 def _literal(t, expr):
     if isinstance(expr, ir.IntervalValue):
         return sa.text("INTERVAL '{} {}'".format(expr.op().value,
-                                                 expr.resolution))
+                                                 expr.type().resolution))
     else:
         return sa.literal(expr.op().value)
 
@@ -595,7 +595,7 @@ def _day_of_week_name(t, expr):
 
 
 _operation_registry.update({
-    ir.Literal: _literal,
+    ops.Literal: _literal,
 
     # We override this here to support time zones
     ops.TableColumn: _table_column,

@@ -66,7 +66,6 @@ class ParquetClient(FileClient):
     extension = 'parquet'
 
     def insert(self, path, expr, **kwargs):
-
         path = self.root / path
         df = execute(expr)
         table = pa.Table.from_pandas(df)

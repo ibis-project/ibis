@@ -101,6 +101,12 @@ class Schema(object):
     def __eq__(self, other):
         return self.equals(other)
 
+    def __gt__(self, other):
+        return set(self.items()) > set(other.items())
+
+    def __ge__(self, other):
+        return set(self.items()) >= set(other.items())
+
     def append(self, schema):
         return Schema(self.names + schema.names, self.types + schema.types)
 
@@ -130,14 +136,6 @@ class HasSchema(object):
     concrete dataset or database table.
     """
 
-    def __init__(self, schema, name=None):
-        if not isinstance(schema, Schema):
-            raise TypeError(
-                'schema argument to HasSchema class must be a Schema instance'
-            )
-        self.schema = schema
-        self.name = name
-
     def __repr__(self):
         return '{}({})'.format(type(self).__name__, repr(self.schema))
 
@@ -151,6 +149,10 @@ class HasSchema(object):
 
     def root_tables(self):
         return [self]
+
+    @property
+    def schema(self):
+        raise NotImplementedError
 
 
 schema = Dispatcher('schema')
