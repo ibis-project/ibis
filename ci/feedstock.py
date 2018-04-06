@@ -5,13 +5,9 @@ import ibis
 import click
 import ruamel.yaml
 
-from plumbum.cmd import git, conda
 from jinja2 import Environment, FileSystemLoader
-
-try:
-    from pathlib import Path
-except ImportError:
-    from pathlib2 import Path
+from plumbum.cmd import git, conda
+from ibis.compat import Path, PY2
 
 
 IBIS_DIR = Path(__file__).parent.parent.absolute()
@@ -62,6 +58,9 @@ def update(meta, source_path):
 
     updated_content = ruamel.yaml.round_trip_dump(
         recipe, default_flow_style=False)
+
+    if PY2:
+        updated_content = updated_content.decode('utf-8')
 
     path.write_text(updated_content)
 
