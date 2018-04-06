@@ -30,24 +30,33 @@ def verify(expr, params=None):
         return False
 
 
-def connect(*args, **kwargs):
+def connect(
+    uri: str=None, user: str=None, password: str=None, host: str=None,
+    port: int=9091, dbname: str=None, protocol: str='binary',
+    execution_type: int=3
+):
     """Create a MapDClient for use with Ibis
 
     Parameters could be
 
-    host: str
-    port: int|str
-    database: str
-    user: str
-    password: str
-
-
+    :param uri: str
+    :param user: str
+    :param password: str
+    :param host: str
+    :param port: int
+    :param dbname: str
+    :param protocol: str
+    :param execution_type: int
     Returns
     -------
     MapDClient
 
     """
-    client = MapDClient(*args, **kwargs)
+    client = MapDClient(
+        uri=uri, user=user, password=password, host=host,
+        port=port, dbname=dbname, protocol=protocol,
+        execution_type=execution_type
+    )
 
     if options.default_backend is None:
         options.default_backend = client

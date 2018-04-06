@@ -1,32 +1,12 @@
-import ibis
+from six import StringIO
+
 import ibis.common as com
-
-import numpy as np
-
-import ibis.expr.datatypes as dt
-import ibis.expr.types as ir
-
-import ibis.sql.compiler as comp
+import ibis.util as util
 import ibis.expr.operations as ops
-from ibis.impala.compiler import ImpalaSelect, unary, fixed_arity
-from ibis.impala import compiler as impala_compiler
+import ibis.sql.compiler as comp
 
-
-class MapDSelectBuilder(comp.SelectBuilder):
-
-    @property
-    def _select_class(self):
-        return MapDSelect
-
-
-class MapDQueryBuilder(comp.QueryBuilder):
-
-    select_builder = MapDSelectBuilder
-
-    @property
-    def _union_class(self):
-        # return MapDUnion
-        raise NotImplementedError()
+from .identifiers import quote_identifier
+from .operations import _operation_registry, _name_expr
 
 
 def build_ast(expr, context):
@@ -36,380 +16,161 @@ def build_ast(expr, context):
 
 def _get_query(expr, context):
     ast = build_ast(expr, context)
-    (query, rest) = (ast.queries[0], ast.queries[1:])
-    assert not rest
+    query = ast.queries[0]
+
     return query
 
 
-def to_sql(expr, context):
+def to_sql(expr, context=None):
     query = _get_query(expr, context)
-    compiled = query.compile()
-    return compiled
+    return query.compile()
 
 
-class MapDContext(comp.QueryContext):
+class MapDSelectBuilder(comp.SelectBuilder):
+
+    @property
+    def _select_class(self):
+        return MapDSelect
+
+    def _convert_group_by(self, exprs):
+        return exprs
+
+
+class MapDQueryBuilder(comp.QueryBuilder):
+
+    select_builder = MapDSelectBuilder
+
+
+class MapDQueryContext(comp.QueryContext):
 
     def _to_sql(self, expr, ctx):
         return to_sql(expr, context=ctx)
 
 
-def _extract_field(sql_attr):
-    def extract_field_formatter(translator, expr):
-        op = expr.op()
-        arg = translator.translate(op.args[0])
-        return 'EXTRACT({} from {})'.format(sql_attr, arg)
-    return extract_field_formatter
-
-
-_sql_type_names = {
-    'int8': 'int64',
-    'int16': 'int64',
-    'int32': 'int64',
-    'int64': 'int64',
-    'float': 'float64',
-    'double': 'float64',
-    'string': 'string',
-    'boolean': 'boolean',
-    'timestamp': 'timestamp',
-    'date': 'date',
-}
+class MapDSelect(comp.Select):
+
+    @property
+    def translator(self):
+        return MapDExprTranslator
+
+    @property
+    def table_set_formatter(self):
+        return MapDTableSetFormatter
+
+    def format_group_by(self):
+        if not len(self.group_by):
+            # There is no aggregation, nothing to see here
+            return None
+
+        lines = []
+        if len(self.group_by) > 0:
+            columns = ['{0}'.format(expr.get_name())
+                       for expr in self.group_by]
+            clause = 'GROUP BY {0}'.format(', '.join(columns))
+            lines.append(clause)
+
+        if len(self.having) > 0:
+            trans_exprs = []
+            for expr in self.having:
+                translated = self._translate(expr)
+                trans_exprs.append(translated)
+            lines.append('HAVING {0}'.format(' AND '.join(trans_exprs)))
+
+        return '\n'.join(lines)
+
+    def format_limit(self):
+        if not self.limit:
+            return None
+
+        buf = StringIO()
+
+        n, offset = self.limit['n'], self.limit['offset']
+        buf.write('LIMIT {}'.format(n))
+        if offset is not None and offset != 0:
+            buf.write(', {}'.format(offset))
+
+        return buf.getvalue()
+
+
+class MapDTableSetFormatter(comp.TableSetFormatter):
+
+    _join_names = {
+        ops.InnerJoin: 'ALL INNER JOIN',
+        ops.LeftJoin: 'ALL LEFT JOIN',
+        ops.AnyInnerJoin: 'ANY INNER JOIN',
+        ops.AnyLeftJoin: 'ANY LEFT JOIN'
+    }
+
+    def get_result(self):
+        # Got to unravel the join stack; the nesting order could be
+        # arbitrary, so we do a depth first search and push the join tokens
+        # and predicates onto a flat list, then format them
+        op = self.expr.op()
+
+        if isinstance(op, ops.Join):
+            self._walk_join_tree(op)
+        else:
+            self.join_tables.append(self._format_table(self.expr))
+
+        # TODO: Now actually format the things
+        buf = StringIO()
+        buf.write(self.join_tables[0])
+        for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
+                                       self.join_predicates):
+            buf.write('\n')
+            buf.write(util.indent('{0} {1}'.format(jtype, table), self.indent))
+
+            if len(preds):
+                buf.write('\n')
+                fmt_preds = map(self._format_predicate, preds)
+                fmt_preds = util.indent('USING ' + ', '.join(fmt_preds),
+                                        self.indent * 2)
+                buf.write(fmt_preds)
+
+        return buf.getvalue()
+
+    def _validate_join_predicates(self, predicates):
+        for pred in predicates:
+            op = pred.op()
+            if not isinstance(op, ops.Equals):
+                raise com.TranslationError('Non-equality join predicates are '
+                                           'not supported')
+
+            left_on, right_on = op.args
+            if left_on.get_name() != right_on.get_name():
+                raise com.TranslationError('Joining on different column names '
+                                           'is not supported')
+
+    def _format_predicate(self, predicate):
+        column = predicate.op().args[0]
+        return quote_identifier(column.get_name(), force=True)
+
+    def _quote_identifier(self, name):
+        return quote_identifier(name)
+
 
-
-def _cast(translator, expr):
-    op = expr.op()
-    arg, target_type = op.args
-    arg_formatted = translator.translate(arg)
-    sql_type = _sql_type_names[target_type.name.lower()]
-    return 'CAST({} AS {})'.format(arg_formatted, sql_type.upper())
+class MapDExprTranslator(comp.ExprTranslator):
 
-
-def _struct_field(translator, expr):
-    arg, field = expr.op().args
-    arg_formatted = translator.translate(arg)
-    return '{}.`{}`'.format(arg_formatted, field)
-
-
-def _array_concat(translator, expr):
-    return 'ARRAY_CONCAT({})'.format(
-        ', '.join(map(translator.translate, expr.op().args))
-    )
-
-
-def _array_index(translator, expr):
-    # SAFE_OFFSET returns NULL if out of bounds
-    return '{}[SAFE_OFFSET({})]'.format(
-        *map(translator.translate, expr.op().args)
-    )
-
-
-def _string_find(translator, expr):
-    haystack, needle, start, end = expr.op().args
-
-    if start is not None:
-        raise NotImplementedError('start not implemented for string find')
-    if end is not None:
-        raise NotImplementedError('end not implemented for string find')
-
-    return 'STRPOS({}, {}) - 1'.format(
-        translator.translate(haystack),
-        translator.translate(needle)
-    )
-
-
-def _translate_pattern(translator, pattern):
-    # add 'r' to string literals to indicate to MapD this is a raw string
-    return 'r' * isinstance(pattern.op(), ir.Literal) + translator.translate(
-        pattern
-    )
-
-
-def _regex_search(translator, expr):
-    arg, pattern = expr.op().args
-    regex = _translate_pattern(translator, pattern)
-    result = 'REGEXP_CONTAINS({}, {})'.format(translator.translate(arg), regex)
-    return result
-
-
-def _regex_extract(translator, expr):
-    arg, pattern, index = expr.op().args
-    regex = _translate_pattern(translator, pattern)
-    result = 'REGEXP_EXTRACT_ALL({}, {})[SAFE_OFFSET({})]'.format(
-        translator.translate(arg),
-        regex,
-        translator.translate(index)
-    )
-    return result
-
-
-def _regex_replace(translator, expr):
-    arg, pattern, replacement = expr.op().args
-    regex = _translate_pattern(translator, pattern)
-    result = 'REGEXP_REPLACE({}, {}, {})'.format(
-        translator.translate(arg),
-        regex,
-        translator.translate(replacement),
-    )
-    return result
-
-
-def _string_concat(translator, expr):
-    return 'CONCAT({})'.format(
-        ', '.join(map(translator.translate, expr.op().args))
-    )
-
-
-def _string_join(translator, expr):
-    sep, args = expr.op().args
-    return 'ARRAY_TO_STRING([{}], {})'.format(
-        ', '.join(map(translator.translate, args)),
-        translator.translate(sep)
-    )
-
-
-def _string_ascii(translator, expr):
-    arg, = expr.op().args
-    return 'TO_CODE_POINTS({})[SAFE_OFFSET(0)]'.format(
-        translator.translate(arg)
-    )
-
-
-def _string_right(translator, expr):
-    arg, nchars = map(translator.translate, expr.op().args)
-    return 'SUBSTR({arg}, -LEAST(LENGTH({arg}), {nchars}))'.format(
-        arg=arg,
-        nchars=nchars,
-    )
-
-
-def _array_literal_format(expr):
-    return str(list(expr.op().value))
-
-
-def _log(translator, expr):
-    op = expr.op()
-    arg, base = op.args
-    arg_formatted = translator.translate(arg)
-
-    if base is None:
-        return 'ln({})'.format(arg_formatted)
-
-    base_formatted = translator.translate(base)
-    return 'log({}, {})'.format(arg_formatted, base_formatted)
-
-
-def _literal(translator, expr):
-
-    if isinstance(expr, ir.NumericValue):
-        value = expr.op().value
-        if not np.isfinite(value):
-            return 'CAST({!r} AS FLOAT64)'.format(str(value))
-
-    try:
-        return impala_compiler._literal(translator, expr)
-    except NotImplementedError:
-        if isinstance(expr, ir.ArrayValue):
-            return _array_literal_format(expr)
-        raise NotImplementedError(type(expr).__name__)
-
-
-def _arbitrary(translator, expr):
-    arg, how, where = expr.op().args
-
-    if where is not None:
-        arg = where.ifelse(arg, ibis.NA)
-
-    if how != 'first':
-        raise com.UnsupportedOperationError(
-            '{!r} value not supported for arbitrary in MapD'.format(how)
-        )
-
-    return 'ANY_VALUE({})'.format(translator.translate(arg))
-
-
-_date_units = {
-    'Y': 'YEAR',
-    'Q': 'QUARTER',
-    'W': 'WEEK',
-    'M': 'MONTH',
-}
-
-
-_timestamp_units = {
-    'us': 'MICROSECOND',
-    'ms': 'MILLISECOND',
-    's': 'SECOND',
-    'm': 'MINUTE',
-    'h': 'HOUR',
-}
-_timestamp_units.update(_date_units)
-
-
-def _truncate(kind, units):
-    def truncator(translator, expr):
-        op = expr.op()
-        arg, unit = op.args
-
-        arg = translator.translate(op.args[0])
-        try:
-            unit = units[unit]
-        except KeyError:
-            raise com.UnsupportedOperationError(
-                '{!r} unit is not supported in timestamp truncate'.format(unit)
-            )
-
-        return "{}_TRUNC({}, {})".format(kind, arg, unit)
-    return truncator
-
-
-def _timestamp_op(func, units):
-    def _formatter(translator, expr):
-        op = expr.op()
-        arg, offset = op.args
-
-        if offset.unit not in units:
-            raise com.UnsupportedOperationError(
-                'MapD does not allow binary operation '
-                '{} with INTERVAL offset {}'.format(func, offset.unit)
-            )
-        formatted_arg = translator.translate(arg)
-        formatted_offset = translator.translate(offset)
-        result = '{}({}, {})'.format(func, formatted_arg, formatted_offset)
-        return result
-
-    return _formatter
-
-
-_operation_registry = impala_compiler._operation_registry.copy()
-_operation_registry.update({
-    ops.ExtractYear: _extract_field('year'),
-    ops.ExtractMonth: _extract_field('month'),
-    ops.ExtractDay: _extract_field('day'),
-    ops.ExtractHour: _extract_field('hour'),
-    ops.ExtractMinute: _extract_field('minute'),
-    ops.ExtractSecond: _extract_field('second'),
-    ops.ExtractMillisecond: _extract_field('millisecond'),
-
-    ops.StringReplace: fixed_arity('REPLACE', 3),
-    ops.StringSplit: fixed_arity('SPLIT', 2),
-    ops.StringConcat: _string_concat,
-    ops.StringJoin: _string_join,
-    ops.StringAscii: _string_ascii,
-    ops.StringFind: _string_find,
-    ops.StrRight: _string_right,
-    ops.Repeat: fixed_arity('REPEAT', 2),
-    ops.RegexSearch: _regex_search,
-    ops.RegexExtract: _regex_extract,
-    ops.RegexReplace: _regex_replace,
-
-    ops.GroupConcat: fixed_arity('STRING_AGG', 2),
-
-    ops.IfNull: fixed_arity('IFNULL', 2),
-    ops.Cast: _cast,
-
-    ops.StructField: _struct_field,
-
-    ops.ArrayCollect: unary('ARRAY_AGG'),
-    ops.ArrayConcat: _array_concat,
-    ops.ArrayIndex: _array_index,
-    ops.ArrayLength: unary('ARRAY_LENGTH'),
-
-    ops.Log: _log,
-    ops.Modulus: fixed_arity('MOD', 2),
-
-    ops.Date: unary('DATE'),
-
-    # MapD doesn't have these operations built in.
-    # ops.ArrayRepeat: _array_repeat,
-    # ops.ArraySlice: _array_slice,
-    ops.Literal: _literal,
-    ops.Arbitrary: _arbitrary,
-
-    ops.TimestampTruncate: _truncate('TIMESTAMP', _timestamp_units),
-    ops.DateTruncate: _truncate('DATE', _date_units),
-
-    ops.TimestampAdd: _timestamp_op(
-        'TIMESTAMP_ADD', {'h', 'm', 's', 'ms', 'us'}),
-    ops.TimestampSub: _timestamp_op(
-        'TIMESTAMP_DIFF', {'h', 'm', 's', 'ms', 'us'}),
-
-    ops.DateAdd: _timestamp_op('DATE_ADD', {'D', 'W', 'M', 'Q', 'Y'}),
-    ops.DateSub: _timestamp_op('DATE_SUB', {'D', 'W', 'M', 'Q', 'Y'}),
-})
-
-_invalid_operations = {
-    ops.Translate,
-    ops.FindInSet,
-    ops.Capitalize,
-    ops.DateDiff,
-    ops.TimestampDiff
-}
-
-_operation_registry = {
-    k: v for k, v in _operation_registry.items()
-    if k not in _invalid_operations
-}
-
-
-class MapDExprTranslator(impala_compiler.ImpalaExprTranslator):
     _registry = _operation_registry
-    _rewrites = impala_compiler.ImpalaExprTranslator._rewrites.copy()
+    context_class = MapDQueryContext
 
-    context_class = MapDContext
-
-    def _trans_param(self, expr):
-        op = expr.op()
-        if op not in self.context.params:
-            raise KeyError(op)
-        return '@{}'.format(expr.get_name())
+    def name(self, translated, name, force=True):
+        return _name_expr(translated,
+                          quote_identifier(name, force=force))
 
 
-rewrites = MapDExprTranslator.rewrites
-
-
-@rewrites(ops.Any)
-def mapd_rewrite_any(expr):
-    arg, = expr.op().args
-    return arg.cast(dt.int64).sum() > 0
-
-
-@rewrites(ops.NotAny)
-def mapd_rewrite_notany(expr):
-    arg, = expr.op().args
-    return arg.cast(dt.int64).sum() == 0
-
-
-@rewrites(ops.All)
-def mapd_rewrite_all(expr):
-    arg, = expr.op().args
-    return (1 - arg.cast(dt.int64)).sum() == 0
-
-
-@rewrites(ops.NotAll)
-def mapd_rewrite_notall(expr):
-    arg, = expr.op().args
-    return (1 - arg.cast(dt.int64)).sum() != 0
-
-
-class MapDSelect(ImpalaSelect):
-
-    translator = MapDExprTranslator
-
-
-@rewrites(ops.IdenticalTo)
-def identical_to(expr):
-    left, right = expr.op().args
-    return (left.isnull() & right.isnull()) | (left == right)
-
-
-@rewrites(ops.Log2)
-def log2(expr):
-    arg, = expr.op().args
-    return arg.log(2)
-
-
-class MapDDialect(impala_compiler.ImpalaDialect):
+class MapDDialect(comp.Dialect):
 
     translator = MapDExprTranslator
 
 
 dialect = MapDDialect
+
+compiles = MapDExprTranslator.compiles
+rewrites = MapDExprTranslator.rewrites
+
+
+@rewrites(ops.FloorDivide)
+def _floor_divide(expr):
+    left, right = expr.op().args
+    return left.div(right).floor()

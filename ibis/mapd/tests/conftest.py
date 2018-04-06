@@ -1,46 +1,37 @@
+import ibis
 import os
-
 import pytest
 
-import ibis
 
-
-CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
-CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
-CLICKHOUSE_USER = os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default')
-CLICKHOUSE_PASS = os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')
-IBIS_TEST_CLICKHOUSE_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
+MAPD_HOST = os.environ.get('IBIS_TEST_MAPD_HOST', 'localhost')
+MAPD_PORT = int(os.environ.get('IBIS_TEST_MAPD_PORT', 9091))
+MAPD_USER = os.environ.get('IBIS_TEST_MAPD_USER', 'mapd')
+MAPD_PASS = os.environ.get('IBIS_TEST_MAPD_PASSWORD', 'HyperInteractive')
+MAPD_DB = os.environ.get('IBIS_TEST_DATA_DB', 'mapd')
 
 
 @pytest.fixture(scope='module')
 def con():
-    return ibis.clickhouse.connect(
-        host=CLICKHOUSE_HOST,
-        port=CLICKHOUSE_PORT,
-        user=CLICKHOUSE_USER,
-        password=CLICKHOUSE_PASS,
-        database=IBIS_TEST_CLICKHOUSE_DB,
+    """
+
+    :return:
+    """
+    return ibis.mapd.connect(
+        host=MAPD_HOST,
+        port=MAPD_PORT,
+        user=MAPD_USER,
+        password=MAPD_PASS,
+        dbname=MAPD_DB,
     )
-
-
-@pytest.fixture(scope='module')
-def db(con):
-    return con.database()
-
-
-@pytest.fixture(scope='module')
-def alltypes(db):
-    return db.functional_alltypes
-
-
-@pytest.fixture(scope='module')
-def df(alltypes):
-    return alltypes.execute()
 
 
 @pytest.fixture
 def translate():
-    from ibis.clickhouse.compiler import ClickhouseDialect
-    dialect = ClickhouseDialect()
+    """
+
+    :return:
+    """
+    from ibis.mapd.compiler import MapDDialect
+    dialect = MapDDialect()
     context = dialect.make_context()
     return lambda expr: dialect.translator(expr, context).get_result()

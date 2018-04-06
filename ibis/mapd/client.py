@@ -1,6 +1,9 @@
-import ibis
+from ibis.compat import parse_version
+from ibis.client import Database, Query, SQLClient
+from ibis.mapd import compiler as comp
+from ibis.util import log
+
 import regex as re
-import time
 import collections
 import datetime
 
@@ -11,399 +14,228 @@ import pymapd
 
 from multipledispatch import Dispatcher
 
-# import ibis
 import ibis.common as com
 import ibis.expr.types as ir
-import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
 
-from ibis.compat import parse_version
-from ibis.client import Database, Query, SQLClient
-from ibis.mapd import compiler as comp
+fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
-# from google.api.core.exceptions import BadRequest
-
-
-NATIVE_PARTITION_COL = '_PARTITIONTIME'
-
-
-def _ensure_split(table_id, dataset_id):
-    split = table_id.split('.')
-    if len(split) > 1:
-        assert len(split) == 2
-        if dataset_id:
-            raise ValueError(
-                "Can't pass a fully qualified table name *AND* a dataset_id"
-            )
-        (dataset_id, table_id) = split
-    return (table_id, dataset_id)
-
-
-_IBIS_TYPE_TO_DTYPE = {
-    'string': 'STRING',
-    'int64': 'INT64',
-    'double': 'FLOAT64',
-    'boolean': 'BOOL',
-    'timestamp': 'TIMESTAMP',
-    'date': 'DATE',
+_mapd_dtypes = {
+    'NULL': dt.Null,
+    'SMALLINT': dt.UInt8,
+    'UInt16': dt.UInt16,
+    'UInt32': dt.UInt32,
+    'UInt64': dt.UInt64,
+    'Int8': dt.Int8,
+    'Int16': dt.Int16,
+    'Int32': dt.Int32,
+    'Int64': dt.Int64,
+    'Float32': dt.Float32,
+    'FLOAT': dt.Float64,
+    'STR': dt.String,
+    'FixedString': dt.String,
+    'DATE': dt.Date,
+    'TIMESTAMP': dt.Timestamp
 }
-
-_DTYPE_TO_IBIS_TYPE = {
-    'INT64': dt.int64,
-    'FLOAT64': dt.double,
-    'BOOL': dt.boolean,
-    'STRING': dt.string,
-    'DATE': dt.date,
-    # FIXME: enforce no tz info
-    'DATETIME': dt.timestamp,
-    'TIME': dt.time,
-    'TIMESTAMP': dt.timestamp,
-    'BYTES': dt.binary,
-}
+_ibis_dtypes = {v: k for k, v in _mapd_dtypes.items()}
+_ibis_dtypes[dt.String] = 'String'
 
 
-_LEGACY_TO_STANDARD = {
-    'INTEGER': 'INT64',
-    'FLOAT': 'FLOAT64',
-    'BOOLEAN': 'BOOL',
-}
+class MapDDataType(object):
+
+    __slots__ = 'typename', 'nullable'
+
+    def __init__(self, typename, nullable=False):
+        if typename not in _mapd_dtypes:
+            raise com.UnsupportedBackendType(typename)
+        self.typename = typename
+        self.nullable = nullable
+
+    def __str__(self):
+        if self.nullable:
+            return 'Nullable({})'.format(self.typename)
+        else:
+            return self.typename
+
+    def __repr__(self):
+        return '<MapD {}>'.format(str(self))
+
+    @classmethod
+    def parse(cls, spec):
+        # TODO(kszucs): spare parsing, depends on mapd-driver#22
+        if spec.startswith('Nullable'):
+            return cls(spec[9:-1], nullable=True)
+        else:
+            return cls(spec)
+
+    def to_ibis(self):
+        return _mapd_dtypes[self.typename](nullable=self.nullable)
+
+    @classmethod
+    def from_ibis(cls, dtype, nullable=None):
+        typename = _ibis_dtypes[type(dtype)]
+        if nullable is None:
+            nullable = dtype.nullable
+        return cls(typename, nullable=nullable)
 
 
-# @dt.dtype.register(pymapd.schema.SchemaField)
-def pymapd_field_to_ibis_dtype(field):
-    typ = field.field_type
-    if typ == 'RECORD':
-        fields = field.fields
-        assert fields
-        names = [el.name for el in fields]
-        ibis_types = list(map(dt.dtype, fields))
-        ibis_type = dt.Struct(names, ibis_types)
-    else:
-        ibis_type = _LEGACY_TO_STANDARD.get(typ, typ)
-        ibis_type = _DTYPE_TO_IBIS_TYPE.get(ibis_type, ibis_type)
-    if field.mode == 'REPEATED':
-        ibis_type = dt.Array(ibis_type)
-    return ibis_type
+@dt.dtype.register(MapDDataType)
+def mapd_to_ibis_dtype(mapd_dtype):
+    return mapd_dtype.to_ibis()
 
 
-# @sch.infer.register(pymapd.table.Table)
-def pymapd_schema(table):
-    pairs = [(el.name, dt.dtype(el)) for el in table.schema]
-    try:
-        if table.list_partitions():
-            pairs.append((NATIVE_PARTITION_COL, dt.timestamp))
-    except Exception:
-        pass
-    return sch.schema(pairs)
-
-
-class MapDCursor(object):
-    """Cursor to allow the MapD client to reuse machinery in ibis/client.py
+class MapDQuery(Query):
     """
 
-    def __init__(self, query):
-        self.query = query
-
-    def fetchall(self):
-        return list(self.query.fetch_data())
-
-    @property
-    def columns(self):
-        return [field.name for field in self.query.schema]
-
-    def __enter__(self):
-        # For compatibility when constructed from Query.execute()
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
-
-
-class MapD(Query):
-
-    def __init__(self, client, ddl, query_parameters=None):
-        super(MapD, self).__init__(client, ddl)
-        self.query_parameters = query_parameters or {}
-
-    def _fetch(self, cursor):
-        df = pd.DataFrame(cursor.fetchall(), columns=cursor.columns)
-        return self.schema().apply_to(df)
-
-    def execute(self):
-        # synchronous by default
-        with self.client._execute(
-            self.compiled_ddl,
-            results=True,
-            query_parameters=self.query_parameters
-        ) as cur:
-            result = self._fetch(cur)
-
-        return self._wrap_result(result)
-
-
-class MapDAPIProxy(object):
-
-    def __init__(self, project_id):
-        self._client = pymapd.Client(project_id)
-
-    @property
-    def client(self):
-        return self._client
-
-    @property
-    def project_id(self):
-        return self.client.project
-
-    def get_datasets(self):
-        return list(self.client.list_datasets())
-
-    def get_dataset(self, dataset_id):
-        return self.client.dataset(dataset_id)
-
-    def get_table(self, table_id, dataset_id, reload=True):
-        (table_id, dataset_id) = _ensure_split(table_id, dataset_id)
-        table = self.client.dataset(dataset_id).table(table_id)
-        if reload:
-            table.reload()
-        return table
-
-    def get_schema(self, table_id, dataset_id):
-        return self.get_table(table_id, dataset_id).schema
-
-    def run_sync_query(self, stmt):
-        query = self.client.run_sync_query(stmt)
-        query.use_legacy_sql = False
-        query.run()
-        # run_sync_query is not really synchronous: there's a timeout
-        while not query.job.done():
-            query.job.reload()
-            time.sleep(0.1)
-        return query
+    """
+    pass
 
 
 class MapDDatabase(Database):
     pass
 
 
-pymapd_param = Dispatcher('pymapd_param')
-
-
-@pymapd_param.register(ir.StructScalar, collections.OrderedDict)
-def pymapd_param_struct(param, value):
-    field_params = [pymapd_param(param[k], v) for k, v in value.items()]
-    return pymapd.StructQueryParameter(param.get_name(), *field_params)
-
-
-@pymapd_param.register(ir.ArrayValue, list)
-def pymapd_param_array(param, value):
-    param_type = param.type()
-    assert isinstance(param_type, dt.Array), str(param_type)
-
-    try:
-        pymapd_type = _IBIS_TYPE_TO_DTYPE[str(param_type.value_type)]
-    except KeyError:
-        raise com.UnsupportedBackendType(param_type)
-    else:
-        return pymapd.ArrayQueryParameter(param.get_name(), pymapd_type, value)
-
-
-@pymapd_param.register(
-    ir.TimestampScalar,
-    six.string_types + (datetime.datetime, datetime.date)
-)
-def pymapd_param_timestamp(param, value):
-    assert isinstance(param.type(), dt.Timestamp)
-
-    # TODO(phillipc): Not sure if this is the correct way to do this.
-    timestamp_value = pd.Timestamp(value, tz='UTC').to_pydatetime()
-    return pymapd.ScalarQueryParameter(
-        param.get_name(), 'TIMESTAMP', timestamp_value)
-
-
-@pymapd_param.register(ir.StringScalar, six.string_types)
-def pymapd_param_string(param, value):
-    return pymapd.ScalarQueryParameter(param.get_name(), 'STRING', value)
-
-
-@pymapd_param.register(ir.IntegerScalar, six.integer_types)
-def pymapd_param_integer(param, value):
-    return pymapd.ScalarQueryParameter(param.get_name(), 'INT64', value)
-
-
-@pymapd_param.register(ir.FloatingScalar, float)
-def pymapd_param_double(param, value):
-    return pymapd.ScalarQueryParameter(param.get_name(), 'FLOAT64', value)
-
-
-@pymapd_param.register(ir.BooleanScalar, bool)
-def pymapd_param_boolean(param, value):
-    return pymapd.ScalarQueryParameter(param.get_name(), 'BOOL', value)
-
-
-@pymapd_param.register(ir.DateScalar, six.string_types)
-def pymapd_param_date_string(param, value):
-    return pymapd_param(param, pd.Timestamp(value).to_pydatetime().date())
-
-
-@pymapd_param.register(ir.DateScalar, datetime.datetime)
-def pymapd_param_date_datetime(param, value):
-    return pymapd_param(param, value.date())
-
-
-@pymapd_param.register(ir.DateScalar, datetime.date)
-def pymapd_param_date(param, value):
-    return pymapd.ScalarQueryParameter(param.get_name(), 'DATE', value)
-
-
 class MapDClient(SQLClient):
+    """
 
-    sync_query = MapD
+    """
+    sync_query = MapDQuery
     database_class = MapDDatabase
-    proxy_class = MapDAPIProxy
     dialect = comp.MapDDialect
 
-    def __init__(self, *args, **kwargs):
-        self.con = pymapd.connect(*args, **kwargs)
+    def __init__(
+        self, uri: str=None, user: str=None, password: str=None,
+        host: str=None, port: int=9091, dbname: str=None,
+        protocol: str='binary', execution_type: int=3
+    ):
+        """
+
+        :param uri:
+        :param user:
+        :param password:
+        :param host:
+        :param port:
+        :param dbname:
+        :param protocol:
+        :param execution_type:
+        """
+        self.uri = uri
+        self.user = user
+        self.password = password
+        self.host = host
+        self.port = port
+        self.dbname = dbname
+        self.protocol = protocol
+        self.execution_type = execution_type
+
+        self.con = pymapd.connect(
+            uri=uri, user=user, password=password, host=host,
+            port=port, dbname=dbname, protocol=protocol
+        )
 
     @property
     def _table_expr_klass(self):
         return ir.TableExpr
 
-    def table(self, *args, **kwargs):
-        t = super(MapDClient, self).table(*args, **kwargs)
-        if NATIVE_PARTITION_COL in t.columns:
-            col = ibis.options.pymapd.partition_col
-            assert col not in t
-            return (
-                t.mutate(**{col: t[NATIVE_PARTITION_COL]})
-                    .drop([NATIVE_PARTITION_COL])
-            )
-        return t
+    def log(self, msg):
+        log(msg)
+
+    def close(self):
+        """Close MapD connection and drop any temporary objects"""
+        self.con.close()
 
     def _build_ast(self, expr, context):
         result = comp.build_ast(expr, context)
         return result
 
-    def _execute_query(self, ddl, async=False):
-        klass = self.async_query if async else self.sync_query
-        inst = klass(self, ddl, query_parameters=ddl.context.params)
-        return inst.execute()
-
     def _fully_qualified_name(self, name, database):
-        dataset_id = database or self.dataset_id
-        return dataset_id + '.' + name
+        if bool(fully_qualified_re.search(name)):
+            return name
 
-    def _get_table_schema(self, qualified_name):
-        return self.get_schema(qualified_name)
+        database = database or self.current_database
+        return '{0}.{1}'.format(database, name)
 
-    def _execute(self, stmt, results=True, query_parameters=None):
-        # TODO(phillipc): Allow **kwargs in calls to execute
-        query = self._proxy.client.run_sync_query(stmt)
-        query.use_legacy_sql = False
-        query.query_parameters = [
-            pymapd_param(param.to_expr(), value)
-            for param, value in (query_parameters or {}).items()
-        ]
-        query.run()
+    def _get_table_schema(self, table_name):
+        """
 
-        # run_sync_query is not really synchronous: there's a timeout
-        while not query.job.done():
-            query.job.reload()
-            time.sleep(0.1)
+        :param table_name:
+        :return:
+        """
+        database = None
+        table_name_ = table_name.split('.')
+        if len(table_name_) == 2:
+            database, table_name = table_name_
+        return self.get_schema(table_name, database)
 
-        return MapDCursor(query)
+    def _execute(self, query):
+        with self.con as conn:
+            if self.execution_type == 1:
+                stmt_exec = conn.select_ipc_gpu
+            elif self.execution_type == 2:
+                self.stmt_exec = conn.select_ipc
+            else:
+                self.stmt_exec = conn.execute
+
+            return stmt_exec(query)
 
     def database(self, name=None):
-        if name is None:
-            name = self.dataset_id
-        return self.database_class(name, self)
+        raise NotImplementedError()
 
     @property
     def current_database(self):
-        return self.database(self.dataset_id)
+        return self.dbname
 
     def set_database(self, name):
-        self._dataset_id = name
+        raise NotImplementedError()
 
     def exists_database(self, name):
-        return self._proxy.get_dataset(name).exists()
+        raise NotImplementedError()
 
     def list_databases(self, like=None):
-        results = [dataset.name
-                   for dataset in self._proxy.get_datasets()]
-        if like:
-            results = [
-                dataset_name for dataset_name in results
-                if re.match(like, dataset_name)
-            ]
-        return results
+        raise NotImplementedError()
 
-    def exists_table(self, name, database=None):
-        (table_id, dataset_id) = _ensure_split(name, database)
-        return self._proxy.get_table(table_id, dataset_id).exists()
+    def exists_table(self, name: str, database: str=None):
+        """
+        Determine if the indicated table or view exists
+
+        Parameters
+        ----------
+        name : string
+        database : string, default None
+
+        Returns
+        -------
+        if_exists : boolean
+        """
+        return len(self.list_tables(like=name, database=database)) > 0
 
     def list_tables(self, like=None, database=None):
-        dataset = self._proxy.get_dataset(database or self.dataset_id)
-        result = [table.name for table in dataset.list_tables()]
-        if like:
-            result = [
-                table_name for table_name in result
-                if re.match(like, table_name)
-            ]
-        return result
+        return self.con.get_tables()
 
-    def get_schema(self, name, database=None):
-        (table_id, dataset_id) = _ensure_split(name, database)
-        pymapd_table = self._proxy.get_table(table_id, dataset_id)
-        return sch.infer(pymapd_table)
+    def get_schema(self, table_name, database=None):
+        """
+        Return a Schema object for the indicated table and database
+
+        Parameters
+        ----------
+        table_name : string
+          May be fully qualified
+        database : string, default None
+
+        Returns
+        -------
+        schema : ibis Schema
+        """
+        col_names = []
+        col_types = []
+
+        for col in self.con.get_table_details(table_name):
+            col_names.append(col.name)
+            col_types.append(MapDDataType.parse(col.type))
+
+        return sch.schema(col_names, col_types)
 
     @property
     def version(self):
         return parse_version(pymapd.__version__)
-
-
-_DTYPE_TO_IBIS_TYPE = {
-    'INT64': dt.int64,
-    'FLOAT64': dt.double,
-    'BOOL': dt.boolean,
-    'STRING': dt.string,
-    'DATE': dt.date,
-    # FIXME: enforce no tz info
-    'DATETIME': dt.timestamp,
-    'TIME': dt.time,
-    'TIMESTAMP': dt.timestamp,
-    'BYTES': dt.binary,
-}
-
-
-_LEGACY_TO_STANDARD = {
-    'INTEGER': 'INT64',
-    'FLOAT': 'FLOAT64',
-    'BOOLEAN': 'BOOL',
-}
-
-
-def _discover_type(field):
-    typ = field.field_type
-    if typ == 'RECORD':
-        fields = field.fields
-        assert fields
-        names = [el.name for el in fields]
-        ibis_types = [_discover_type(el) for el in fields]
-        ibis_type = dt.Struct(names, ibis_types)
-    else:
-        ibis_type = _LEGACY_TO_STANDARD.get(typ, typ)
-        ibis_type = _DTYPE_TO_IBIS_TYPE.get(ibis_type, ibis_type)
-    if field.mode == 'REPEATED':
-        ibis_type = dt.Array(ibis_type)
-    return ibis_type
-
-
-def pymapd_table_to_ibis_schema(table):
-    pairs = [(el.name, _discover_type(el)) for el in table.schema]
-    try:
-        if table.list_partitions():
-            pairs.append((NATIVE_PARTITION_COL, dt.timestamp))
-    except Exception:
-        pass
-    return ibis.schema(pairs)
