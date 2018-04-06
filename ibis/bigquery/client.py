@@ -146,8 +146,10 @@ class BigQueryQuery(Query):
 
     def __init__(self, client, ddl, query_parameters=None):
         super(BigQueryQuery, self).__init__(client, ddl)
+
+        # self.expr comes from the parent class
         query_parameter_names = dict(
-            lin.traverse(_find_scalar_parameter, ddl.parent_expr))
+            lin.traverse(_find_scalar_parameter, self.expr))
         self.query_parameters = [
             bigquery_param(
                 param.to_expr().name(query_parameter_names[param]), value
@@ -161,7 +163,7 @@ class BigQueryQuery(Query):
     def execute(self):
         # synchronous by default
         with self.client._execute(
-            self.compiled_ddl,
+            self.compiled_sql,
             results=True,
             query_parameters=self.query_parameters
         ) as cur:
@@ -321,10 +323,11 @@ class BigQueryClient(SQLClient):
         result = comp.build_ast(expr, context)
         return result
 
-    def _execute_query(self, ddl, async=False):
+    def _execute_query(self, dml, async=False):
         klass = self.async_query if async else self.sync_query
-        inst = klass(self, ddl, query_parameters=ddl.context.params)
-        return inst.execute()
+        inst = klass(self, dml, query_parameters=dml.context.params)
+        df = inst.execute()
+        return df
 
     def _fully_qualified_name(self, name, database):
         dataset_id = database or self.dataset_id

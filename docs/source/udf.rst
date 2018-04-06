@@ -13,12 +13,13 @@ details of user defined functions.
 API
 ---
 
+.. _udf.api:
+
 .. warning::
 
-   The UDF/UDAF API is quite experimental at this point and is therefore
-   provisional and subject to change.
+   The UDF/UDAF API is experimental. It is provisional and subject to change.
 
-Going forward, the API for user defined *scalar* functions will look like this:
+The API for user defined *scalar* functions will look like this:
 
 .. code-block:: python
 
@@ -33,15 +34,19 @@ of using the ``@udaf`` decorator instead of the ``@udf`` decorator.
 Impala
 ------
 
+.. _udf.impala:
+
 TODO
 
 Pandas
 ------
 
+.. _udf.pandas:
+
 Pandas supports defining both UDFs and UDAFs.
 
 When you define a UDF you automatically get support for applying that UDF in a
-scalar context, *as well as* in any group by operation.
+scalar context, as well as in any group by operation.
 
 When you define a UDAF you automatically get support for standard scalar
 aggregations, group bys, *as well as* any supported windowing operation.
@@ -99,9 +104,68 @@ For example:
 BigQuery
 --------
 
-TODO
+.. _udf.bigquery:
+
+.. note::
+
+   BigQuery only supports scalar UDFs at this time.
+
+BigQuery supports UDFs through JavaScript. Ibis provides support for this by
+turning Python code into JavaScript.
+
+The interface is very similar to the pandas UDF API:
+
+.. code-block:: python
+
+   @udf([double], double)
+   def my_bigquery_add_one(x):
+       return x + 1.0
+
+Ibis will parse the source of the function and turn the resulting Python AST
+into JavaScript source code (technically, ECMAScript 2015). Most of the Python
+language is supported including classes, functions and generators.
+
+If you want to inspect the generated code you can look at the ``js`` property
+of the function.
+
+.. code-block:: python
+
+   >>> print(my_bigquery_add_one.js)
+   CREATE TEMPORARY FUNCTION my_bigquery_add_one(x FLOAT64)
+   RETURNS FLOAT64
+   LANGUAGE js AS """
+   'use strict';
+   function my_bigquery_add_one(x) {
+       return (x + 1.0);
+   }
+   return my_bigquery_add_one(x);
+   """;
+
+When you want to use this function you call it like any other Python
+function--only on an ibis expression:
+
+.. code-block:: python
+
+   >>> import ibis
+   >>> t = ibis.table([('a', 'double')])
+   >>> expr = my_bigquery_add_one(t.a)
+   >>> print(ibis.bigquery.compile(expr))
+   CREATE TEMPORARY FUNCTION my_bigquery_add_one(x FLOAT64)
+   RETURNS FLOAT64
+   LANGUAGE js AS """
+   'use strict';
+   function my_bigquery_add_one(x) {
+       return (x + 1.0);
+   }
+   return my_bigquery_add_one(x);
+   """;
+
+   SELECT my_bigquery_add_one(`a`) AS `tmp`
+   FROM t0
 
 SQLite
 ------
+
+.. _udf.sqlite:
 
 TODO
