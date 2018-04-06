@@ -71,6 +71,10 @@ with suppress(ImportError):
     # pip install ibis-framework[bigquery]
     import ibis.bigquery.api as bigquery
 
+with suppress(ImportError):
+    # pip install ibis-framework[bigquery]
+    import ibis.mapd.api as mapd
+
 restart_ordering()
 
 
