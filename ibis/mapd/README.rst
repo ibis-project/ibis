@@ -1,0 +1,111 @@
+MapD IBIS backend
+=================
+
+In this document it would be explained the main aspects of `ibis` backend and
+`MapD ibis` backend implementation.
+
+Modules
+-------
+
+MapD backend has 5 modules, which 3 of them are the main modules:
+
+- `api`
+- `client`
+- `compiler`
+
+The `identifiers` and `operations` modules were created to organize `compiler`
+method.
+
+api
+---
+
+`api` module is the central key to access the backend. Ensure to include
+the follow code into `ibi.__init__`:
+
+.. code-block:: python
+
+    with suppress(ImportError):
+        # pip install ibis-framework[mapd]
+        import ibis.mapd.api as mapd
+
+Basically, there is 3 function on `api` module>
+
+- `compile`
+- `connect`
+- `verify`
+
+`compile` method compiles a `ibis` expression to `SQL`:
+
+.. code-block:: python
+
+    t = mapd_cli.table('flights_2008_10k')
+    proj = t['arrtime', 'arrdelay']
+    print(ibis.mapd.compile(proj))
+
+`connect` method instantiates a `MapDClient` object that connect to the `MapD`
+database specified:
+
+.. code-block:: python
+
+    mapd_cli = ibis.mapd.connect(
+        host='localhost', user='mapd', password='HyperInteractive',
+        port=9091, dbname='mapd'
+    )
+
+`verify` method checks if the `ibis` expression can be compiled.
+
+.. code-block:: python
+
+    t = mapd_cli.table('flights_2008_10k')
+    proj = t['arrtime', 'arrdelay']
+    assert ibis.mapd.verify(proj) == True
+
+client
+------
+
+`client` module has the main classes to handle connection to the `MapD`
+database.
+
+The main classes are:
+
+- `MapDClient`
+- `MapDDataType`
+
+`MapDDataType` class is used to translate data type from `ibis` and to `ibis`.
+Its main methods are:
+
+- `parse`
+- `to_ibis`
+- `from_ibis`
+
+`parse` method ... # @TODO
+
+`to_ibis` method ... # @TODO
+
+`from_ibis` method ... # @TODO
+
+`MapDClient` class is used to connect to `MapD` database and manipulation data
+expression. Its main methods are:
+
+- __init__
+- _build_ast
+- _execute
+- _fully_qualified_name
+- _get_table_schema
+- _table_expr_klass
+- log
+- close
+- database
+- current_database
+- set_database
+- exists_database
+- list_databases
+- exists_table
+- list_tables
+- get_schema
+- version
+
+References
+----------
+
+- ibis API: http://docs.ibis-project.org/api.html

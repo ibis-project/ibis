@@ -27,7 +27,9 @@ def to_sql(expr, context=None):
 
 
 class MapDSelectBuilder(comp.SelectBuilder):
+    """
 
+    """
     @property
     def _select_class(self):
         return MapDSelect
@@ -37,18 +39,24 @@ class MapDSelectBuilder(comp.SelectBuilder):
 
 
 class MapDQueryBuilder(comp.QueryBuilder):
+    """
 
+    """
     select_builder = MapDSelectBuilder
 
 
 class MapDQueryContext(comp.QueryContext):
+    """
 
+    """
     def _to_sql(self, expr, ctx):
         return to_sql(expr, context=ctx)
 
 
 class MapDSelect(comp.Select):
+    """
 
+    """
     @property
     def translator(self):
         return MapDExprTranslator
@@ -56,6 +64,9 @@ class MapDSelect(comp.Select):
     @property
     def table_set_formatter(self):
         return MapDTableSetFormatter
+
+    def format_select_set(self):
+        return super().format_select_set()
 
     def format_group_by(self):
         if not len(self.group_by):
@@ -93,12 +104,12 @@ class MapDSelect(comp.Select):
 
 
 class MapDTableSetFormatter(comp.TableSetFormatter):
+    """
 
+    """
     _join_names = {
-        ops.InnerJoin: 'ALL INNER JOIN',
-        ops.LeftJoin: 'ALL LEFT JOIN',
-        ops.AnyInnerJoin: 'ANY INNER JOIN',
-        ops.AnyLeftJoin: 'ANY LEFT JOIN'
+        ops.InnerJoin: 'JOIN',
+        ops.LeftJoin: 'LEFT JOIN'
     }
 
     def get_result(self):
@@ -112,7 +123,6 @@ class MapDTableSetFormatter(comp.TableSetFormatter):
         else:
             self.join_tables.append(self._format_table(self.expr))
 
-        # TODO: Now actually format the things
         buf = StringIO()
         buf.write(self.join_tables[0])
         for jtype, table, preds in zip(self.join_types, self.join_tables[1:],
@@ -133,39 +143,43 @@ class MapDTableSetFormatter(comp.TableSetFormatter):
         for pred in predicates:
             op = pred.op()
             if not isinstance(op, ops.Equals):
-                raise com.TranslationError('Non-equality join predicates are '
-                                           'not supported')
+                raise com.TranslationError(
+                    'Non-equality join predicates are not supported'
+                )
 
             left_on, right_on = op.args
             if left_on.get_name() != right_on.get_name():
-                raise com.TranslationError('Joining on different column names '
-                                           'is not supported')
+                raise com.TranslationError(
+                    'Joining on different column names is not supported'
+                )
 
     def _format_predicate(self, predicate):
         column = predicate.op().args[0]
-        return quote_identifier(column.get_name(), force=True)
+        return column.get_name()
 
     def _quote_identifier(self, name):
-        return quote_identifier(name)
+        return name
 
 
 class MapDExprTranslator(comp.ExprTranslator):
+    """
 
+    """
     _registry = _operation_registry
     context_class = MapDQueryContext
 
     def name(self, translated, name, force=True):
-        return _name_expr(translated,
-                          quote_identifier(name, force=force))
+        return _name_expr(translated, name)
 
 
 class MapDDialect(comp.Dialect):
+    """
 
+    """
     translator = MapDExprTranslator
 
 
 dialect = MapDDialect
-
 compiles = MapDExprTranslator.compiles
 rewrites = MapDExprTranslator.rewrites
 
