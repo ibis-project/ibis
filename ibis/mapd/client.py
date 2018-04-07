@@ -1,18 +1,10 @@
 from ibis.compat import parse_version
-from ibis.client import Database, Query, SQLClient
+from ibis.client import Database, SQLClient
 from ibis.mapd import compiler as comp
 from ibis.util import log
 
 import regex as re
-import collections
-import datetime
-
-import six
-
-import pandas as pd
 import pymapd
-
-from multipledispatch import Dispatcher
 
 import ibis.common as com
 import ibis.expr.types as ir
@@ -22,22 +14,25 @@ import ibis.expr.schema as sch
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
 _mapd_dtypes = {
+    'BIGINT': dt.int64,
+    'BOOLEAN': dt.Boolean,
+    'CHAR': dt.string,
+    'DATE': dt.date,
+    'DECIMAL': dt.float,
+    'DOUBLE': dt.float,
+    'INT': dt.int32,
+    'FLOAT': dt.float,
     'NULL': dt.Null,
-    'SMALLINT': dt.UInt8,
-    'UInt16': dt.UInt16,
-    'UInt32': dt.UInt32,
-    'UInt64': dt.UInt64,
-    'Int8': dt.Int8,
-    'Int16': dt.Int16,
-    'Int32': dt.Int32,
-    'Int64': dt.Int64,
-    'Float32': dt.Float32,
-    'FLOAT': dt.Float64,
-    'STR': dt.String,
-    'FixedString': dt.String,
-    'DATE': dt.Date,
-    'TIMESTAMP': dt.Timestamp
+    'NUMERIC': dt.float,
+    'REAL': dt.float,
+    'SMALLINT': dt.int8,
+    'STR': dt.string,
+    'TEXT': dt.string,
+    'TIME': dt.time,
+    'TIMESTAMP': dt.timestamp,
+    'VAR': dt.string,
 }
+
 _ibis_dtypes = {v: k for k, v in _mapd_dtypes.items()}
 _ibis_dtypes[dt.String] = 'String'
 
@@ -63,7 +58,6 @@ class MapDDataType(object):
 
     @classmethod
     def parse(cls, spec):
-        # TODO(kszucs): spare parsing, depends on mapd-driver#22
         if spec.startswith('Nullable'):
             return cls(spec[9:-1], nullable=True)
         else:
@@ -80,28 +74,11 @@ class MapDDataType(object):
         return cls(typename, nullable=nullable)
 
 
-@dt.dtype.register(MapDDataType)
-def mapd_to_ibis_dtype(mapd_dtype):
-    return mapd_dtype.to_ibis()
-
-
-class MapDQuery(Query):
-    """
-
-    """
-    pass
-
-
-class MapDDatabase(Database):
-    pass
-
-
 class MapDClient(SQLClient):
     """
 
     """
-    sync_query = MapDQuery
-    database_class = MapDDatabase
+    database_class = Database
     dialect = comp.MapDDialect
 
     def __init__(
@@ -180,14 +157,46 @@ class MapDClient(SQLClient):
             return stmt_exec(query)
 
     def database(self, name=None):
-        raise NotImplementedError()
+        """Connect to a database called `name`.
+
+        Parameters
+        ----------
+        name : str, optional
+            The name of the database to connect to. If ``None``, return
+            the database named ``self.current_database``.
+
+        Returns
+        -------
+        db : Database
+            An :class:`ibis.client.Database` instance.
+
+        Notes
+        -----
+        This creates a new connection if `name` is both not ``None`` and not
+        equal to the current database.
+        """
+        if name == self.current_database or (
+            name is None and name != self.current_database
+        ):
+            return self.database_class(self.current_database, self)
+        else:
+            client_class = type(self)
+            new_client = client_class(
+                uri=self.uri, user=self.user, password=self.password,
+                host=self.host, port=self.port, dbname=name,
+                protocol=self.protocol, execution_type=self.execution_type
+            )
+            return self.database_class(name, new_client)
 
     @property
     def current_database(self):
         return self.dbname
 
     def set_database(self, name):
-        raise NotImplementedError()
+        raise NotImplementedError(
+            'Cannot set database with MapD client. To use a different'
+            ' database, use client.database({!r})'.format(name)
+        )
 
     def exists_database(self, name):
         raise NotImplementedError()
@@ -239,3 +248,14 @@ class MapDClient(SQLClient):
     @property
     def version(self):
         return parse_version(pymapd.__version__)
+
+
+@dt.dtype.register(MapDDataType)
+def mapd_to_ibis_dtype(mapd_dtype):
+    """
+    Register MapD Data Types
+
+    :param mapd_dtype:
+    :return:
+    """
+    return mapd_dtype.to_ibis()
