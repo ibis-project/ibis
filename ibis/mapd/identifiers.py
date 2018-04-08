@@ -108,7 +108,7 @@ _identifiers = frozenset({
 })
 
 
-def quote_identifier(name, quotechar='`', force=False):
+def quote_identifier(name, quotechar='"', force=False):
     if force or name.count(' ') or name in _identifiers:
         return '{0}{1}{0}'.format(quotechar, name)
     else:
