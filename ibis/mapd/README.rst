@@ -69,6 +69,7 @@ database.
 The main classes are:
 
 - `MapDClient`
+- `MapDQuery`
 - `MapDDataType`
 
 `MapDDataType` class is used to translate data type from `ibis` and to `ibis`.
@@ -104,6 +105,34 @@ expression. Its main methods are:
 - list_tables
 - get_schema
 - version
+
+`MapDQuery` class should be used redefine at least `_fetch` method. If `Query`
+class is used instead, when `MapDClient.execute` method is called, a exception
+is raised.
+
+compiler
+--------
+
+@TODO
+
+operations
+----------
+
+    `Node` subclasses make up the core set of operations of ibis.
+    Each node corresponds to a particular operation.
+    Most nodes are defined in the `operations` module.
+    (http://docs.ibis-project.org/design.html#the-node-class).
+
+
+identifiers
+-----------
+
+`identifiers` module keep a set of identifiers (`_identifiers`) to be used
+inside `quote_identifier` function (inside the same module). `_identifiers` is
+a set of reserved words from `MapD` language.
+
+`quote_identifiers` is used to put quotes around the string sent if the string
+match to specific criteria.
 
 References
 ----------

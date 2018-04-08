@@ -494,9 +494,6 @@ def _string_like(translator, expr):
     )
 
 
-# TODO: mapd uses different string functions
-#       for ascii and utf-8 encodings,
-
 _binary_infix_ops = {
     # Binary operations
     ops.Add: binary_infix_op('+'),

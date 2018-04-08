@@ -1,9 +1,11 @@
 from ibis.compat import parse_version
-from ibis.client import Database, SQLClient
+from ibis.client import Database, Query, SQLClient
 from ibis.mapd import compiler as comp
 from ibis.util import log
+from pymapd.cursor import Cursor
 
 import regex as re
+import pandas as pd
 import pymapd
 
 import ibis.common as com
@@ -74,11 +76,33 @@ class MapDDataType(object):
         return cls(typename, nullable=nullable)
 
 
+class MapDQuery(Query):
+    """
+
+    """
+    def execute(self):
+        cursor = self.client._execute(
+            self.compiled_ddl
+        )
+        result = self._fetch(cursor)
+        return self._wrap_result(result)
+
+    def _fetch(self, cursor):
+        # check if cursor is a pymapd cursor.Cursor
+        if isinstance(cursor, Cursor):
+            col_names = [c.name for c in cursor.description]
+            result = pd.DataFrame(cursor.fetchall(), columns=col_names)
+        else:
+            result = cursor
+        return self.schema().apply_to(result)
+
+
 class MapDClient(SQLClient):
     """
 
     """
     database_class = Database
+    sync_query = MapDQuery
     dialect = comp.MapDDialect
 
     def __init__(
@@ -145,16 +169,25 @@ class MapDClient(SQLClient):
             database, table_name = table_name_
         return self.get_schema(table_name, database)
 
-    def _execute(self, query):
-        with self.con as conn:
-            if self.execution_type == 1:
-                stmt_exec = conn.select_ipc_gpu
-            elif self.execution_type == 2:
-                self.stmt_exec = conn.select_ipc
-            else:
-                self.stmt_exec = conn.execute
+    def _execute(self, query, results=True):
+        """
 
-            return stmt_exec(query)
+        :param query:
+        :return:
+        """
+        if self.execution_type == 1:
+            stmt_exec = self.con.select_ipc_gpu
+        elif self.execution_type == 2:
+            stmt_exec = self.con.select_ipc
+        else:
+            stmt_exec = self.con.cursor().execute
+
+        result = stmt_exec(query)
+
+        if results:
+            return result
+        else:
+            return
 
     def database(self, name=None):
         """Connect to a database called `name`.
