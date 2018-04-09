@@ -27,7 +27,9 @@ _mapd_dtypes = {
     'DATE': dt.date,
     'DECIMAL': dt.float,
     'DOUBLE': dt.float,
+    'DOUBLE PRECISION': dt.float,
     'INT': dt.int32,
+    'INTEGER': dt.int32,
     'FLOAT': dt.float,
     'NULL': dt.Null,
     'NUMERIC': dt.float,
@@ -37,7 +39,7 @@ _mapd_dtypes = {
     'TEXT': dt.string,
     'TIME': dt.time,
     'TIMESTAMP': dt.timestamp,
-    'VAR': dt.string,
+    'VARCHAR': dt.string,
 }
 
 _ibis_dtypes = {v: k for k, v in _mapd_dtypes.items()}
