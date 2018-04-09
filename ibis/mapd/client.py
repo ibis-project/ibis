@@ -20,21 +20,23 @@ import ibis.expr.schema as sch
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
+# using impala.client._HS2_TTypeId_to_dtype as reference
+# https://www.mapd.com/docs/latest/mapd-core-guide/fixed-encoding/
 _mapd_dtypes = {
     'BIGINT': dt.int64,
     'BOOLEAN': dt.Boolean,
     'CHAR': dt.string,
     'DATE': dt.date,
-    'DECIMAL': dt.float,
-    'DOUBLE': dt.float,
+    'DECIMAL': dt.float64,
+    'DOUBLE': dt.float64,
     'DOUBLE PRECISION': dt.float,
     'INT': dt.int32,
     'INTEGER': dt.int32,
-    'FLOAT': dt.float,
+    'FLOAT': dt.float32,
     'NULL': dt.Null,
-    'NUMERIC': dt.float,
-    'REAL': dt.float,
-    'SMALLINT': dt.int8,
+    'NUMERIC': dt.float64,
+    'REAL': dt.float32,
+    'SMALLINT': dt.int16,
     'STR': dt.string,
     'TEXT': dt.string,
     'TIME': dt.time,
