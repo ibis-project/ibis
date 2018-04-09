@@ -4,6 +4,11 @@ from ibis.mapd import compiler as comp
 from ibis.util import log
 from pymapd.cursor import Cursor
 
+try:
+    from pygdf.dataframe import DataFrame as GPUDataFrame
+except ImportError:
+    GPUDataFrame = None
+
 import regex as re
 import pandas as pd
 import pymapd
@@ -76,25 +81,41 @@ class MapDDataType(object):
         return cls(typename, nullable=nullable)
 
 
+class MapDCursor(object):
+    """Cursor to allow the MapD client to reuse machinery in ibis/client.py
+    """
+
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def to_df(self):
+        if isinstance(self.cursor, Cursor):
+            col_names = [c.name for c in self.cursor.description]
+            result = pd.DataFrame(self.cursor.fetchall(), columns=col_names)
+        elif self.cursor is None:
+            result = pd.DataFrame([])
+        elif isinstance(self.cursor, pd.DataFrame):
+            result = self.cursor
+        elif GPUDataFrame is not None and isinstance(self.cursor, GPUDataFrame):
+            result = self.cursor
+
+        return result
+
+    def __enter__(self):
+        # For compatibility when constructed from Query.execute()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+
 class MapDQuery(Query):
     """
 
     """
-    def execute(self):
-        cursor = self.client._execute(
-            self.compiled_ddl
-        )
-        result = self._fetch(cursor)
-        return self._wrap_result(result)
-
     def _fetch(self, cursor):
         # check if cursor is a pymapd cursor.Cursor
-        if isinstance(cursor, Cursor):
-            col_names = [c.name for c in cursor.description]
-            result = pd.DataFrame(cursor.fetchall(), columns=col_names)
-        else:
-            result = cursor
-        return self.schema().apply_to(result)
+        return self.schema().apply_to(cursor.to_df())
 
 
 class MapDClient(SQLClient):
@@ -147,6 +168,13 @@ class MapDClient(SQLClient):
         self.con.close()
 
     def _build_ast(self, expr, context):
+        """
+        Required.
+
+        :param expr:
+        :param context:
+        :return:
+        """
         result = comp.build_ast(expr, context)
         return result
 
@@ -169,25 +197,16 @@ class MapDClient(SQLClient):
             database, table_name = table_name_
         return self.get_schema(table_name, database)
 
-    def _execute(self, query, results=True):
+    def _execute(self, query, results=False):
         """
 
         :param query:
         :return:
         """
-        if self.execution_type == 1:
-            stmt_exec = self.con.select_ipc_gpu
-        elif self.execution_type == 2:
-            stmt_exec = self.con.select_ipc
-        else:
-            stmt_exec = self.con.cursor().execute
+        if not self.execution_type == 3:
+            raise NotImplemented()
 
-        result = stmt_exec(query)
-
-        if results:
-            return result
-        else:
-            return
+        return MapDCursor(self.con.cursor().execute(query))
 
     def database(self, name=None):
         """Connect to a database called `name`.

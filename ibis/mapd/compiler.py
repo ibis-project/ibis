@@ -5,7 +5,6 @@ import ibis.util as util
 import ibis.expr.operations as ops
 import ibis.sql.compiler as comp
 
-from .identifiers import quote_identifier
 from .operations import _operation_registry, _name_expr
 
 
