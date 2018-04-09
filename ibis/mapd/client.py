@@ -29,7 +29,6 @@ _mapd_dtypes = {
     'DATE': dt.date,
     'DECIMAL': dt.float64,
     'DOUBLE': dt.float64,
-    'DOUBLE PRECISION': dt.float,
     'INT': dt.int32,
     'INTEGER': dt.int32,
     'FLOAT': dt.float32,
