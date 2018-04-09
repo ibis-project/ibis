@@ -494,27 +494,48 @@ def _string_like(translator, expr):
     )
 
 
+def raise_error(translator, expr, *args):
+    msg = "MapD backend doesn't support {0} operation!"
+    op = expr.op()
+    raise com.UnsupportedOperationError(msg.format(type(op)))
+
+
+def _null_literal(translator, expr):
+    return 'Null'
+
+
+def _null_if_zero(translator, expr):
+    op = expr.op()
+    arg = op.args[0]
+    arg_ = translator.translate(arg)
+    return 'nullIf({0}, 0)'.format(arg_)
+
+
+def _zero_if_null(translator, expr):
+    op = expr.op()
+    arg = op.args[0]
+    arg_ = translator.translate(arg)
+    return 'ifNull({0}, 0)'.format(arg_)
+
+
+# https://www.mapd.com/docs/latest/mapd-core-guide/dml/
 _binary_infix_ops = {
     # Binary operations
     ops.Add: binary_infix_op('+'),
     ops.Subtract: binary_infix_op('-'),
     ops.Multiply: binary_infix_op('*'),
     ops.Divide: binary_infix_op('/'),
-    ops.Power: fixed_arity('pow', 2),
-    ops.Modulus: binary_infix_op('%'),
-
+    ops.Power: fixed_arity('power', 2),
     # Comparisons
     ops.Equals: binary_infix_op('='),
-    ops.NotEquals: binary_infix_op('!='),
+    ops.NotEquals: binary_infix_op('<>'),
     ops.GreaterEqual: binary_infix_op('>='),
     ops.Greater: binary_infix_op('>'),
     ops.LessEqual: binary_infix_op('<='),
     ops.Less: binary_infix_op('<'),
-
     # Boolean comparisons
     ops.And: binary_infix_op('AND'),
     ops.Or: binary_infix_op('OR'),
-    ops.Xor: _xor,
 }
 
 _unary_ops = {
@@ -522,14 +543,7 @@ _unary_ops = {
     ops.Not: _not
 }
 
-
-_operation_registry = {
-    # Unary operations
-    ops.TypeOf: unary('toTypeName'),
-
-    ops.IsNan: unary('isNaN'),
-    ops.IsInf: unary('isInfinite'),
-
+_math_ops = {
     ops.Abs: unary('abs'),
     ops.Ceil: unary('ceil'),
     ops.Floor: unary('floor'),
@@ -545,27 +559,29 @@ _operation_registry = {
     ops.Ln: unary('log'),
     ops.Log2: unary('log2'),
     ops.Log10: unary('log10'),
+}
 
-    # Unary aggregates
-    ops.CMSMedian: agg('median'),
-    # TODO: there is also a `uniq` function which is the
-    #       recommended way to approximate cardinality
-    ops.HLLCardinality: agg('uniqHLL12'),
+_stats_ops = {
+    ops.StandardDev: agg_variance_like('stddev'),
+    ops.Variance: agg_variance_like('var'),
+}
+
+_agg_ops = {
     ops.Mean: agg('avg'),
     ops.Sum: agg('sum'),
     ops.Max: agg('max'),
     ops.Min: agg('min'),
+}
 
-    ops.StandardDev: agg_variance_like('stddev'),
-    ops.Variance: agg_variance_like('var'),
+_trigonometric_ops = {
 
-    # ops.GroupConcat: fixed_arity('group_concat', 2),
+}
 
-    ops.Count: agg('count'),
-    ops.CountDistinct: agg('uniq'),
-    ops.Arbitrary: _arbitrary,
+_geometric_ops = {
 
-    # string operations
+}
+
+_string_ops = {
     ops.StringLength: unary('length'),
     ops.Lowercase: unary('lower'),
     ops.Uppercase: unary('upper'),
@@ -584,8 +600,9 @@ _operation_registry = {
     ops.RegexExtract: _regex_extract,
     ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
     ops.ParseURL: _parse_url,
+}
 
-    # Temporal operations
+_date_ops = {
     ops.Date: unary('toDate'),
     ops.DateTruncate: _truncate,
 
@@ -602,6 +619,35 @@ _operation_registry = {
     ops.ExtractHour: unary('toHour'),
     ops.ExtractMinute: unary('toMinute'),
     ops.ExtractSecond: unary('toSecond'),
+
+    ops.DateAdd: binary_infix_op('+'),
+    ops.DateSub: binary_infix_op('-'),
+    ops.DateDiff: binary_infix_op('-'),
+    ops.TimestampAdd: binary_infix_op('+'),
+    ops.TimestampSub: binary_infix_op('-'),
+    ops.TimestampDiff: binary_infix_op('-'),
+    ops.TimestampFromUNIX: _timestamp_from_unix,
+}
+
+_general_ops = {
+    # Unary operations
+    ops.TypeOf: unary('toTypeName'),
+
+    ops.IsNan: unary('isNaN'),
+    ops.IsInf: unary('isInfinite'),
+
+    # Unary aggregates
+    ops.CMSMedian: agg('median'),
+    # TODO: there is also a `uniq` function which is the
+    #       recommended way to approximate cardinality
+    ops.HLLCardinality: agg('uniqHLL12'),
+
+    # ops.GroupConcat: fixed_arity('group_concat', 2),
+
+    ops.Count: agg('count'),
+    ops.CountDistinct: agg('uniq'),
+    ops.Arbitrary: _arbitrary,
+
 
     # Other operations
     ops.E: lambda *args: 'e()',
@@ -628,44 +674,11 @@ _operation_registry = {
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
 
-    ops.DateAdd: binary_infix_op('+'),
-    ops.DateSub: binary_infix_op('-'),
-    ops.DateDiff: binary_infix_op('-'),
-    ops.TimestampAdd: binary_infix_op('+'),
-    ops.TimestampSub: binary_infix_op('-'),
-    ops.TimestampDiff: binary_infix_op('-'),
-    ops.TimestampFromUNIX: _timestamp_from_unix,
-
     transforms.ExistsSubquery: _exists_subquery,
     transforms.NotExistsSubquery: _exists_subquery,
 
     ops.ArrayLength: unary('length'),
 }
-
-
-def raise_error(translator, expr, *args):
-    msg = "MapD backend doesn't support {0} operation!"
-    op = expr.op()
-    raise com.UnsupportedOperationError(msg.format(type(op)))
-
-
-def _null_literal(translator, expr):
-    return 'Null'
-
-
-def _null_if_zero(translator, expr):
-    op = expr.op()
-    arg = op.args[0]
-    arg_ = translator.translate(arg)
-    return 'nullIf({0}, 0)'.format(arg_)
-
-
-def _zero_if_null(translator, expr):
-    op = expr.op()
-    arg = op.args[0]
-    arg_ = translator.translate(arg)
-    return 'ifNull({0}, 0)'.format(arg_)
-
 
 _undocumented_operations = {
     ops.NullLiteral: _null_literal,  # undocumented
@@ -704,9 +717,19 @@ _unsupported_ops = [
     ops.Lead,
     ops.NTile
 ]
+
 _unsupported_ops = {k: raise_error for k in _unsupported_ops}
 
+_operation_registry = {}
 
+_operation_registry.update(_general_ops)
+_operation_registry.update(_math_ops)
+_operation_registry.update(_string_ops)
+_operation_registry.update(_stats_ops)
+_operation_registry.update(_agg_ops)
+_operation_registry.update(_date_ops)
+_operation_registry.update(_trigonometric_ops)
+_operation_registry.update(_geometric_ops)
 _operation_registry.update(_undocumented_operations)
 _operation_registry.update(_unsupported_ops)
 _operation_registry.update(_unary_ops)

@@ -44,7 +44,6 @@ _mapd_dtypes = {
 }
 
 _ibis_dtypes = {v: k for k, v in _mapd_dtypes.items()}
-_ibis_dtypes[dt.String] = 'String'
 
 
 class MapDDataType(object):
