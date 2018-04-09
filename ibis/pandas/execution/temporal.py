@@ -5,6 +5,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis.pandas.dispatch import execute_node
+from ibis.pandas.core import numeric_types
 
 
 @execute_node.register(ops.Strftime, pd.Timestamp, six.string_types)
@@ -67,7 +68,7 @@ def execute_timestamp_truncate(op, data, **kwargs):
 
 
 @execute_node.register(ops.IntervalFromInteger, pd.Series)
-def execute_interval_from_integer(op, data, **kwargs):
+def execute_interval_from_integer_series(op, data, **kwargs):
     resolution = '{}s'.format(op.resolution)
 
     def convert_to_offset(n):
@@ -76,6 +77,46 @@ def execute_interval_from_integer(op, data, **kwargs):
     return data.apply(convert_to_offset)
 
 
-@execute_node.register(ops.TimestampAdd, pd.Series, pd.Series)
-def execute_timestamp_add_interval(op, data, interval, **kwargs):
-    return data + interval
+@execute_node.register(
+    ops.TimestampAdd,
+    (datetime.datetime, pd.Series),
+    (datetime.timedelta, np.timedelta64, pd.Timedelta, pd.Series)
+)
+@execute_node.register(
+    ops.IntervalAdd, (pd.Timedelta, pd.Series), (pd.Timedelta, pd.Series)
+)
+def execute_timestamp_add_delta(op, left, right, **kwargs):
+    return left + right
+
+
+@execute_node.register(
+    (ops.TimestampSub, ops.TimestampDiff),
+    (datetime.datetime, pd.Series),
+    (
+        datetime.datetime,
+        np.datetime64,
+        datetime.timedelta,
+        np.timedelta64,
+        pd.Timedelta,
+        pd.Series
+    ),
+)
+def execute_timestamp_sub_diff(op, left, right, **kwargs):
+    return left - right
+
+
+@execute_node.register(
+    ops.IntervalMultiply,
+    (pd.Timedelta, pd.Series), numeric_types + (pd.Series,)
+)
+def execute_interval_multiply(op, left, right, **kwargs):
+    return left * right
+
+
+@execute_node.register(
+    ops.IntervalFloorDivide,
+    (pd.Timedelta, pd.Series),
+    numeric_types + (pd.Series,)
+)
+def execute_interval_floor_divide(op, left, right, **kwargs):
+    return left // right

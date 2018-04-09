@@ -2,6 +2,8 @@ from __future__ import absolute_import
 
 import contextlib
 
+import ibis.common as com
+import ibis.expr.operations as ops
 from multipledispatch import Dispatcher, halt_ordering, restart_ordering
 
 
@@ -10,6 +12,15 @@ execute = Dispatcher('execute')
 
 # Individual operation execution
 execute_node = Dispatcher('execute_node')
+
+
+@execute_node.register(ops.Node)
+def execute_node_without_scope(node, **kwargs):
+    raise com.UnboundExpressionError(
+        'Node of type {!r} has no data bound to it. '
+        'You probably tried to execute an expression without a data source.'
+    )
+
 
 # Compute from the top of the expression downward
 execute_first = Dispatcher('execute_first')

@@ -4,6 +4,7 @@ import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
+import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
@@ -111,3 +112,10 @@ def test_execute_parameter_only():
     param = ibis.param('int64')
     result = ibis.pandas.execute(param, params={param: 42})
     assert result == 42
+
+
+def test_missing_data_sources():
+    t = ibis.table([('a', 'string')])
+    expr = t.a.length()
+    with pytest.raises(com.UnboundExpressionError):
+        ibis.pandas.execute(expr)

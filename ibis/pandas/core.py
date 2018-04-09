@@ -90,7 +90,6 @@ import toolz
 import ibis.expr.types as ir
 import ibis.expr.lineage as lin
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 
 from ibis.compat import functools
 from ibis.client import find_backends
@@ -129,8 +128,6 @@ def find_data(expr):
         op = expr.op()
         if hasattr(op, 'source'):
             data = (op, op.source.dictionary.get(op.name, None))
-        elif isinstance(op, ops.Literal):
-            data = (op, op.value)
         else:
             data = None
         return lin.proceed, data
@@ -251,14 +248,6 @@ def execute_without_scope(
         (node, data_preload(node, data, scope=new_scope))
         for node, data in new_scope.items()
     )
-
-    # if, after looking at scope, parameters, *and* calling data_preload we
-    # still do not have anything to execute against, then call it quits
-    if not new_scope:
-        raise ValueError(
-            'No data sources found while trying to execute against the pandas '
-            'backend'
-        )
 
     # By default, our aggregate functions are N -> 1
     return execute(
