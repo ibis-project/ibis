@@ -1,3 +1,5 @@
+import pytest
+
 import ibis
 import ibis.expr.datatypes as dt
 
@@ -11,4 +13,23 @@ def test_timestamp_accepts_date_literals(alltypes):
     expected = """\
 SELECT *, @param AS `param`
 FROM testing.functional_alltypes"""
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('distinct', 'expected_keyword'),
+    [
+        (True, 'DISTINCT'),
+        (False, 'ALL'),
+    ]
+)
+def test_union(alltypes, distinct, expected_keyword):
+    expr = alltypes.union(alltypes, distinct=distinct)
+    result = expr.compile()
+    expected = """\
+SELECT *
+FROM testing.functional_alltypes
+UNION {}
+SELECT *
+FROM testing.functional_alltypes""".format(expected_keyword)
     assert result == expected
