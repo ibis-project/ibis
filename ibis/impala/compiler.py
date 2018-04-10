@@ -743,15 +743,19 @@ def _truncate(translator, expr):
     return "trunc({}, '{}')".format(arg_formatted, unit)
 
 
+TIMESTAMP_UNIT_CONVERSIONS = {
+    's': lambda val: val,
+    'ms': lambda val: val.div(1000),
+    'us': lambda val: val.div(1000000),
+}
+
+
 def _timestamp_from_unix(translator, expr):
     op = expr.op()
 
     val, unit = op.args
-
-    if unit == 'ms':
-        val = (val / 1000).cast('int32')
-    elif unit == 'us':
-        val = (val / 1000000).cast('int32')
+    func = TIMESTAMP_UNIT_CONVERSIONS[unit]
+    val = func(val).cast('int32')
 
     arg = _from_unixtime(translator, val)
     return 'CAST({} AS timestamp)'.format(arg)

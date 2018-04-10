@@ -19,6 +19,7 @@ class Backend(object):
     additional_skipped_operations = frozenset()
     supports_divide_by_zero = False
     returned_timestamp_unit = 'us'
+    supported_to_timestamp_units = {'s', 'ms', 'us'}
 
     def __init__(self, data_directory):
         try:
@@ -110,7 +111,7 @@ class Csv(Backend):
 class Parquet(Backend):
     check_names = False
     supports_divide_by_zero = True
-    returned_timestamp_unit = 'us'
+    returned_timestamp_unit = 'ns'
 
     def connect(self, data_directory):
         filename = data_directory / 'functional_alltypes.parquet'
@@ -217,6 +218,7 @@ class Clickhouse(Backend):
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = 's'
+    supported_to_timestamp_units = {'s'}
 
     def connect(self, data_directory):
         host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
@@ -235,6 +237,7 @@ class Clickhouse(Backend):
 
 class BigQuery(UnorderedComparator, Backend):
     supports_divide_by_zero = True
+    returned_timestamp_unit = 'us'
 
     def connect(self, data_directory):
         ga = pytest.importorskip('google.auth')

@@ -10,8 +10,9 @@ from ibis.bigquery.compiler import BigQueryUDFNode, compiles
 
 from ibis.bigquery.udf.core import (
     PythonToJavaScriptTranslator,
-    ibis_type_to_bigquery_type,
+    UDFContext
 )
+from ibis.bigquery.types import ibis_type_to_bigquery_type
 
 
 __all__ = 'udf',
@@ -148,6 +149,7 @@ def udf(input_type, output_type, strict=True):
             )
 
         source = PythonToJavaScriptTranslator(f).compile()
+        type_translation_context = UDFContext()
         js = '''\
 CREATE TEMPORARY FUNCTION {name}({signature})
 RETURNS {return_type}
@@ -156,12 +158,14 @@ LANGUAGE js AS """
 return {name}({args});
 """;'''.format(
             name=f.__name__,
-            return_type=ibis_type_to_bigquery_type(output_type),
+            return_type=ibis_type_to_bigquery_type(
+                output_type, type_translation_context),
             source=source,
             signature=', '.join(
                 '{name} {type}'.format(
                     name=name,
-                    type=ibis_type_to_bigquery_type(type)
+                    type=ibis_type_to_bigquery_type(
+                        type, type_translation_context)
                 ) for name, type in zip(
                    inspect.signature(f).parameters.keys(), input_type
                 )
