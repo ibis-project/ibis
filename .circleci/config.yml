@@ -73,14 +73,8 @@ build: &build
         name: List Docker Images
         command: docker images
     - run:
-        name: Clone the conda-forge Recipe
-        command: docker-compose run ibis git clone https://github.com/conda-forge/ibis-framework-feedstock /tmp/ibis-framework-feedstock
-    - run:
-        name: Build Conda Recipe
-        command: |
-          docker-compose run ibis conda build /tmp/ibis-framework-feedstock/recipe \
-            --python "${PYTHON_VERSION}" \
-            --channel conda-forge
+        name: Clone, update and build conda-forge recipe
+        command: docker-compose run ibis ci/feedstock.py test
 
 
 benchmark: &benchmark
