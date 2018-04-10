@@ -37,6 +37,12 @@ class BigQueryUDFDefinition(comp.DDL):
         return self.expr.op().js
 
 
+class BigQueryUnion(comp.Union):
+    @property
+    def keyword(self):
+        return 'UNION DISTINCT' if self.distinct else 'UNION ALL'
+
+
 def find_bigquery_udf(expr):
     if isinstance(expr.op(), BigQueryUDFNode):
         result = expr
@@ -48,6 +54,7 @@ def find_bigquery_udf(expr):
 class BigQueryQueryBuilder(comp.QueryBuilder):
 
     select_builder = BigQuerySelectBuilder
+    union_class = BigQueryUnion
 
     def generate_setup_queries(self):
         result = list(

@@ -22,6 +22,20 @@ import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 
 
+@six.add_metaclass(abc.ABCMeta)
+class DML(object):
+    @abc.abstractmethod
+    def compile(self):
+        pass
+
+
+@six.add_metaclass(abc.ABCMeta)
+class DDL(object):
+    @abc.abstractmethod
+    def compile(self):
+        pass
+
+
 class QueryAST(object):
 
     __slots__ = 'context', 'dml', 'setup_queries', 'teardown_queries'
@@ -903,17 +917,67 @@ def _adapt_expr(expr):
                                    .format(type(expr)))
 
 
+class Union(DML):
+
+    def __init__(self, left_table, right_table, expr, context, distinct=False):
+        self.context = context
+        self.left = left_table
+        self.right = right_table
+        self.distinct = distinct
+        self.table_set = expr
+        self.filters = []
+
+    def _extract_subqueries(self):
+        self.subqueries = _extract_subqueries(self)
+        for subquery in self.subqueries:
+            self.context.set_extracted(subquery)
+
+    def format_subqueries(self):
+        context = self.context
+        subqueries = self.subqueries
+
+        return ',\n'.join([
+            '{} AS (\n{}\n)'.format(
+                context.get_ref(expr),
+                util.indent(context.get_compiled_expr(expr), 2)
+            ) for expr in subqueries
+        ])
+
+    def format_relation(self, expr):
+        ref = self.context.get_ref(expr)
+        if ref is not None:
+            return 'SELECT *\nFROM {}'.format(ref)
+        return self.context.get_compiled_expr(expr)
+
+    @property
+    def keyword(self):
+        return 'UNION' if self.distinct else 'UNION ALL'
+
+    def compile(self):
+        self._extract_subqueries()
+
+        left_set = self.format_relation(self.left)
+        right_set = self.format_relation(self.right)
+        extracted = self.format_subqueries()
+
+        buf = []
+
+        if extracted:
+            buf.append('WITH {}'.format(extracted))
+
+        buf += [left_set, self.keyword, right_set]
+
+        return '\n'.join(buf)
+
+
 class QueryBuilder(object):
 
     select_builder = SelectBuilder
+    union_class = Union
 
     def __init__(self, expr, context):
         self.expr = expr
         self.context = context
-
-    @property
-    def _union_class(self):
-        return Union
 
     def generate_setup_queries(self):
         return []
@@ -944,9 +1008,9 @@ class QueryBuilder(object):
 
     def _make_union(self):
         op = self.expr.op()
-        return self._union_class(op.left, op.right, self.expr,
-                                 distinct=op.distinct,
-                                 context=self.context)
+        return self.union_class(op.left, op.right, self.expr,
+                                distinct=op.distinct,
+                                context=self.context)
 
     def _make_select(self):
         builder = self.select_builder(self.expr, self.context)
@@ -1334,20 +1398,6 @@ class Dialect(object):
             params = {}
         params = {expr.op(): value for expr, value in params.items()}
         return cls.translator.context_class(dialect=cls(), params=params)
-
-
-@six.add_metaclass(abc.ABCMeta)
-class DML(object):
-    @abc.abstractmethod
-    def compile(self):
-        pass
-
-
-@six.add_metaclass(abc.ABCMeta)
-class DDL(object):
-    @abc.abstractmethod
-    def compile(self):
-        pass
 
 
 class Select(DML):
@@ -1793,54 +1843,3 @@ class TableSetFormatter(object):
                 buf.write(fmt_preds)
 
         return buf.getvalue()
-
-
-class Union(DML):
-
-    def __init__(self, left_table, right_table, expr, context, distinct=False):
-        self.context = context
-        self.left = left_table
-        self.right = right_table
-        self.distinct = distinct
-        self.table_set = expr
-        self.filters = []
-
-    def _extract_subqueries(self):
-        self.subqueries = _extract_subqueries(self)
-        for subquery in self.subqueries:
-            self.context.set_extracted(subquery)
-
-    def format_subqueries(self):
-        context = self.context
-        subqueries = self.subqueries
-
-        return ',\n'.join([
-            '{} AS (\n{}\n)'.format(
-                context.get_ref(expr),
-                util.indent(context.get_compiled_expr(expr), 2)
-            ) for expr in subqueries
-        ])
-
-    def format_relation(self, expr):
-        ref = self.context.get_ref(expr)
-        if ref is not None:
-            return 'SELECT *\nFROM {}'.format(ref)
-        return self.context.get_compiled_expr(expr)
-
-    def compile(self):
-        union_keyword = 'UNION' if self.distinct else 'UNION ALL'
-
-        self._extract_subqueries()
-
-        left_set = self.format_relation(self.left)
-        right_set = self.format_relation(self.right)
-        extracted = self.format_subqueries()
-
-        buf = []
-
-        if extracted:
-            buf.append('WITH {}'.format(extracted))
-
-        buf.extend([left_set, union_keyword, right_set])
-
-        return '\n'.join(buf)

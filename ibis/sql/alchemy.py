@@ -707,13 +707,27 @@ class AlchemyContext(comp.QueryContext):
         return self._get_table_item('_table_objects', expr)
 
 
+class AlchemyUnion(Union):
+
+    def compile(self):
+        context = self.context
+        sa_func = sa.union if self.distinct else sa.union_all
+
+        left_set = context.get_compiled_expr(self.left)
+        left_cte = left_set.cte()
+        left_select = left_cte.select()
+
+        right_set = context.get_compiled_expr(self.right)
+        right_cte = right_set.cte()
+        right_select = right_cte.select()
+
+        return sa_func(left_select, right_select)
+
+
 class AlchemyQueryBuilder(comp.QueryBuilder):
 
     select_builder = AlchemySelectBuilder
-
-    @property
-    def _union_class(self):
-        return AlchemyUnion
+    union_class = AlchemyUnion
 
 
 def to_sqlalchemy(expr, context, exists=False):
@@ -1280,23 +1294,6 @@ def _and_all(clauses):
     for clause in clauses[1:]:
         result = sql.and_(result, clause)
     return result
-
-
-class AlchemyUnion(Union):
-
-    def compile(self):
-        context = self.context
-        sa_func = sa.union if self.distinct else sa.union_all
-
-        left_set = context.get_compiled_expr(self.left)
-        left_cte = left_set.cte()
-        left_select = left_cte.select()
-
-        right_set = context.get_compiled_expr(self.right)
-        right_cte = right_set.cte()
-        right_select = right_cte.select()
-
-        return sa_func(left_select, right_select)
 
 
 class AlchemyProxy(object):
