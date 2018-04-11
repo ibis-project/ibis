@@ -82,11 +82,10 @@ def cli():
 @cli.command()
 @click.argument('name', default='ibis-testing-data.tar.gz')
 @click.option('--base-url',
-              default='https://storage.googleapis.com/ibis-ci-data')
+              default='https://storage.googleapis.com/ibis-testing-data')
 @click.option('-d', '--directory', default=SCRIPT_DIR)
 def download(base_url, directory, name):
     directory = Path(directory)
-    # There is no exist_ok python 3.4
     if not directory.exists():
         directory.mkdir()
 
