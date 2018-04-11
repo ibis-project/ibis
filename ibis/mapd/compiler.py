@@ -3,10 +3,11 @@ from six import StringIO
 import ibis.common as com
 import ibis.util as util
 import ibis.expr.operations as ops
-import ibis.sql.compiler as comp
+import ibis.sql.compiler as compiles
 
-from .identifiers import quote_identifier
-from .operations import _operation_registry, _name_expr
+from .operations import (
+    _operation_registry, _name_expr, Sin
+)
 
 
 def build_ast(expr, context):
@@ -26,7 +27,7 @@ def to_sql(expr, context=None):
     return query.compile()
 
 
-class MapDSelectBuilder(comp.SelectBuilder):
+class MapDSelectBuilder(compiles.SelectBuilder):
     """
 
     """
@@ -38,14 +39,14 @@ class MapDSelectBuilder(comp.SelectBuilder):
         return exprs
 
 
-class MapDQueryBuilder(comp.QueryBuilder):
+class MapDQueryBuilder(compiles.QueryBuilder):
     """
 
     """
     select_builder = MapDSelectBuilder
 
 
-class MapDQueryContext(comp.QueryContext):
+class MapDQueryContext(compiles.QueryContext):
     """
 
     """
@@ -53,7 +54,7 @@ class MapDQueryContext(comp.QueryContext):
         return to_sql(expr, context=ctx)
 
 
-class MapDSelect(comp.Select):
+class MapDSelect(compiles.Select):
     """
 
     """
@@ -103,7 +104,7 @@ class MapDSelect(comp.Select):
         return buf.getvalue()
 
 
-class MapDTableSetFormatter(comp.TableSetFormatter):
+class MapDTableSetFormatter(compiles.TableSetFormatter):
     """
 
     """
@@ -161,7 +162,7 @@ class MapDTableSetFormatter(comp.TableSetFormatter):
         return name
 
 
-class MapDExprTranslator(comp.ExprTranslator):
+class MapDExprTranslator(compiles.ExprTranslator):
     """
 
     """
@@ -171,8 +172,19 @@ class MapDExprTranslator(comp.ExprTranslator):
     def name(self, translated, name, force=True):
         return _name_expr(translated, name)
 
+    @classmethod
+    def compiles(cls, klass, f=None):
+        def decorator(f):
+            cls._registry[klass] = f
 
-class MapDDialect(comp.Dialect):
+        if f is None:
+            return decorator
+        else:
+            decorator(f)
+            return f
+
+
+class MapDDialect(compiles.Dialect):
     """
 
     """
@@ -184,7 +196,11 @@ compiles = MapDExprTranslator.compiles
 rewrites = MapDExprTranslator.rewrites
 
 
-@rewrites(ops.FloorDivide)
-def _floor_divide(expr):
-    left, right = expr.op().args
-    return left.div(right).floor()
+@compiles(Sin)
+def compile_sin(translator, expr):
+    # pull out the arguments to the expression
+    arg, = expr.op().args
+
+    # compile the argument
+    compiled_arg = translator.translate(arg)
+    return 'sin(%s)' % compiled_arg

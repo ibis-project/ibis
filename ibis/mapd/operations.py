@@ -1,13 +1,15 @@
 from six import StringIO
 from datetime import date, datetime
+from ibis.mapd.identifiers import quote_identifier
 
 import ibis.common as com
 import ibis.util as util
+import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 
-from ibis.mapd.identifiers import quote_identifier
+from ibis.expr.types import NumericValue
 
 
 def _cast(translator, expr):
@@ -53,10 +55,6 @@ def _parenthesize(translator, expr):
         return what_
 
 
-def unary(func_name):
-    return fixed_arity(func_name, 1)
-
-
 def fixed_arity(func_name, arity):
     def formatter(translator, expr):
         op = expr.op()
@@ -66,6 +64,10 @@ def fixed_arity(func_name, arity):
             raise com.UnsupportedOperationError(msg.format(arg_count, arity))
         return _call(translator, func_name, *op.args)
     return formatter
+
+
+def unary(func_name):
+    return fixed_arity(func_name, 1)
 
 
 def agg(func):
@@ -125,14 +127,6 @@ def varargs(func_name):
         op = expr.op()
         return _call(translator, func_name, *op.arg)
     return varargs_formatter
-
-
-def _arbitrary(translator, expr):
-    arg, how, where = expr.op().args
-    functions = {'first': 'any',
-                 'last': 'anyLast',
-                 'heavy': 'anyHeavy'}
-    return _aggregate(translator, functions[how], arg, where=where)
 
 
 def _substring(translator, expr):
@@ -222,40 +216,6 @@ def _round(translator, expr):
         return _call(translator, 'round', arg, digits)
     else:
         return _call(translator, 'round', arg)
-
-
-def _hash(translator, expr):
-    op = expr.op()
-    arg, how = op.args
-
-    algorithms = {'MD5', 'halfMD5',
-                  'SHA1', 'SHA224', 'SHA256',
-                  'intHash32', 'intHash64',
-                  'cityHash64',
-                  'sipHash64', 'sipHash128'}
-
-    if how not in algorithms:
-        raise com.UnsupportedOperationError(
-            'Unsupported hash algorithm {0}'.format(how)
-        )
-
-    return _call(translator, how, arg)
-
-
-def _log(translator, expr):
-    op = expr.op()
-    arg, base = op.args
-
-    if base is None:
-        func = 'log'
-    elif base._arg.value == 2:
-        func = 'log2'
-    elif base._arg.value == 10:
-        func = 'log10'
-    else:
-        raise ValueError('Base {} for logarithm not supported!'.format(base))
-
-    return _call(translator, func, arg)
 
 
 def _value_list(translator, expr):
@@ -494,155 +454,6 @@ def _string_like(translator, expr):
     )
 
 
-_binary_infix_ops = {
-    # Binary operations
-    ops.Add: binary_infix_op('+'),
-    ops.Subtract: binary_infix_op('-'),
-    ops.Multiply: binary_infix_op('*'),
-    ops.Divide: binary_infix_op('/'),
-    ops.Power: fixed_arity('pow', 2),
-    ops.Modulus: binary_infix_op('%'),
-
-    # Comparisons
-    ops.Equals: binary_infix_op('='),
-    ops.NotEquals: binary_infix_op('!='),
-    ops.GreaterEqual: binary_infix_op('>='),
-    ops.Greater: binary_infix_op('>'),
-    ops.LessEqual: binary_infix_op('<='),
-    ops.Less: binary_infix_op('<'),
-
-    # Boolean comparisons
-    ops.And: binary_infix_op('AND'),
-    ops.Or: binary_infix_op('OR'),
-    ops.Xor: _xor,
-}
-
-_unary_ops = {
-    ops.Negate: _negate,
-    ops.Not: _not
-}
-
-
-_operation_registry = {
-    # Unary operations
-    ops.TypeOf: unary('toTypeName'),
-
-    ops.IsNan: unary('isNaN'),
-    ops.IsInf: unary('isInfinite'),
-
-    ops.Abs: unary('abs'),
-    ops.Ceil: unary('ceil'),
-    ops.Floor: unary('floor'),
-    ops.Exp: unary('exp'),
-    ops.Round: _round,
-
-    ops.Sign: _sign,
-    ops.Sqrt: unary('sqrt'),
-
-    ops.Hash: _hash,
-
-    ops.Log: _log,
-    ops.Ln: unary('log'),
-    ops.Log2: unary('log2'),
-    ops.Log10: unary('log10'),
-
-    # Unary aggregates
-    ops.CMSMedian: agg('median'),
-    # TODO: there is also a `uniq` function which is the
-    #       recommended way to approximate cardinality
-    ops.HLLCardinality: agg('uniqHLL12'),
-    ops.Mean: agg('avg'),
-    ops.Sum: agg('sum'),
-    ops.Max: agg('max'),
-    ops.Min: agg('min'),
-
-    ops.StandardDev: agg_variance_like('stddev'),
-    ops.Variance: agg_variance_like('var'),
-
-    # ops.GroupConcat: fixed_arity('group_concat', 2),
-
-    ops.Count: agg('count'),
-    ops.CountDistinct: agg('uniq'),
-    ops.Arbitrary: _arbitrary,
-
-    # string operations
-    ops.StringLength: unary('length'),
-    ops.Lowercase: unary('lower'),
-    ops.Uppercase: unary('upper'),
-    ops.Reverse: unary('reverse'),
-    ops.Substring: _substring,
-    ops.StringFind: _string_find,
-    ops.FindInSet: _index_of,
-    ops.StringReplace: fixed_arity('replaceAll', 3),
-    ops.StringJoin: _string_join,
-    ops.StringSplit: _string_split,
-    ops.StringSQLLike: _string_like,
-    ops.Repeat: _string_repeat,
-
-    ops.RegexSearch: fixed_arity('match', 2),
-    # TODO: extractAll(haystack, pattern)[index + 1]
-    ops.RegexExtract: _regex_extract,
-    ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
-    ops.ParseURL: _parse_url,
-
-    # Temporal operations
-    ops.Date: unary('toDate'),
-    ops.DateTruncate: _truncate,
-
-    ops.TimestampNow: lambda *args: 'now()',
-    ops.TimestampTruncate: _truncate,
-
-    ops.TimeTruncate: _truncate,
-
-    ops.IntervalFromInteger: _interval_from_integer,
-
-    ops.ExtractYear: unary('toYear'),
-    ops.ExtractMonth: unary('toMonth'),
-    ops.ExtractDay: unary('toDayOfMonth'),
-    ops.ExtractHour: unary('toHour'),
-    ops.ExtractMinute: unary('toMinute'),
-    ops.ExtractSecond: unary('toSecond'),
-
-    # Other operations
-    ops.E: lambda *args: 'e()',
-
-    ops.Literal: literal,
-    ops.ValueList: _value_list,
-
-    ops.Cast: _cast,
-
-    # for more than 2 args this should be arrayGreatest|Least(array([]))
-    # because mapd's greatest and least doesn't support varargs
-    ops.Greatest: varargs('greatest'),
-    ops.Least: varargs('least'),
-
-    ops.Where: fixed_arity('if', 3),
-
-    ops.Between: _between,
-    ops.Contains: binary_infix_op('IN'),
-    ops.NotContains: binary_infix_op('NOT IN'),
-
-    ops.SimpleCase: _simple_case,
-    ops.SearchedCase: _searched_case,
-
-    ops.TableColumn: _table_column,
-    ops.TableArrayView: _table_array_view,
-
-    ops.DateAdd: binary_infix_op('+'),
-    ops.DateSub: binary_infix_op('-'),
-    ops.DateDiff: binary_infix_op('-'),
-    ops.TimestampAdd: binary_infix_op('+'),
-    ops.TimestampSub: binary_infix_op('-'),
-    ops.TimestampDiff: binary_infix_op('-'),
-    ops.TimestampFromUNIX: _timestamp_from_unix,
-
-    transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery,
-
-    ops.ArrayLength: unary('length'),
-}
-
-
 def raise_error(translator, expr, *args):
     msg = "MapD backend doesn't support {0} operation!"
     op = expr.op()
@@ -667,47 +478,306 @@ def _zero_if_null(translator, expr):
     return 'ifNull({0}, 0)'.format(arg_)
 
 
-_undocumented_operations = {
-    ops.NullLiteral: _null_literal,  # undocumented
-    ops.IsNull: unary('isNull'),
-    ops.NotNull: unary('isNotNull'),
-    ops.IfNull: fixed_arity('ifNull', 2),
-    ops.NullIf: fixed_arity('nullIf', 2),
-    ops.Coalesce: varargs('coalesce'),
-    ops.NullIfZero: _null_if_zero,
-    ops.ZeroIfNull: _zero_if_null
+# AGGREGATION
+
+class ApproxCountDistinct(ops.Reduction):
+    """
+    Returns the approximate count of distinct values of x with defined
+    expected error rate e
+    """
+    arg_x = ops.Arg(rlz.column(rlz.numeric))
+    arg_e = ops.Arg(rlz.column(rlz.numeric))
+    where = ops.Arg(rlz.boolean, default=None)
+
+    def output_type(self):
+        return ops.dt.float64.scalar_type()
+
+
+# MATH
+
+class Degrees(ops.UnaryOp):
+    """Converts radians to degrees"""
+    arg = ops.Arg(rlz.floating)
+    output_type = rlz.shape_like('arg', ops.dt.float)
+
+
+class PI(ops.Constant):
+    """Converts radians to degrees"""
+    def output_type(self):
+        return ops.dt.float64.scalar_type()
+
+
+class Radians(ops.UnaryOp):
+    """Converts radians to degrees"""
+    arg = ops.Arg(rlz.floating)
+    output_type = rlz.shape_like('arg', ops.dt.float)
+
+
+class Truncate(ops.NumericBinaryOp):
+    """Truncates x to y decimal places"""
+
+
+# TRIGONOMETRY
+
+class TrigonometryUnary(ops.UnaryOp):
+    """Trigonometry base unary"""
+    def output_type(self):
+        return ops.dt.float64.scalar_type()
+
+
+class TrigonometryBinary(ops.BinaryOp):
+    """Trigonometry base binary"""
+
+
+class Acos(TrigonometryUnary):
+    """Returns the arc cosine of x"""
+
+
+class Asin(TrigonometryUnary):
+    """Returns the arc sine of x"""
+
+
+class Atan(TrigonometryUnary):
+    """Returns the arc tangent of x"""
+
+
+class Atan2(TrigonometryBinary):
+    """Returns the arc tangent of x and y"""
+
+
+class Cos(TrigonometryUnary):
+    """Returns the cosine of x"""
+
+
+class Cot(TrigonometryUnary):
+    """Returns the cotangent of x"""
+
+
+class Sin(TrigonometryUnary):
+    """Returns the sine of x"""
+
+
+class Tan(TrigonometryUnary):
+    """Returns the tangent of x"""
+
+
+# GEOMETRIC
+
+class DistanceInMeters(ops.ValueOp):
+    """
+    Calculates distance in meters between two WGS-84 positions.
+
+    """
+    fromLon = ops.Arg(rlz.column(rlz.numeric))
+    fromLat = ops.Arg(rlz.column(rlz.numeric))
+    toLon = ops.Arg(rlz.column(rlz.numeric))
+    toLat = ops.Arg(rlz.column(rlz.numeric))
+    output_type = rlz.shape_like('arg', ops.dt.float)
+
+
+class Conv_4326_900913_X(ops.UnaryOp):
+    """
+    Converts WGS-84 latitude to WGS-84 Web Mercator x coordinate.
+    """
+
+
+class Conv_4326_900913_Y(ops.UnaryOp):
+    """
+    Converts WGS-84 longitude to WGS-84 Web Mercator y coordinate.
+
+    """
+
+
+# String
+
+class StringLengthBytes(ops.UnaryOp):
+
+    """
+    Compute length in bytes of strings
+
+    Returns
+    -------
+    length : int32
+    """
+
+    output_type = rlz.shape_like('arg', ops.dt.binary)
+
+
+# https://www.mapd.com/docs/latest/mapd-core-guide/dml/
+_binary_infix_ops = {
+    # math
+    ops.Add: binary_infix_op('+'),
+    ops.Subtract: binary_infix_op('-'),
+    ops.Multiply: binary_infix_op('*'),
+    ops.Divide: binary_infix_op('/'),
+    ops.Power: fixed_arity('power', 2),
+    # comparison
+    ops.Equals: binary_infix_op('='),
+    ops.NotEquals: binary_infix_op('<>'),
+    ops.GreaterEqual: binary_infix_op('>='),
+    ops.Greater: binary_infix_op('>'),
+    ops.LessEqual: binary_infix_op('<='),
+    ops.Less: binary_infix_op('<'),
+    # logical
+    ops.And: binary_infix_op('AND'),
+    ops.Or: binary_infix_op('OR'),
+}
+
+_unary_ops = {
+    # logical
+    ops.Negate: _negate,
+    ops.Not: _not,
+}
+
+_comparison_ops = {
+    ops.IsNull: unary('is null'),
+    ops.Between: _between,
+    ops.NullIf: fixed_arity('nullif', 2),
+    ops.NotNull: unary('is not null'),
+    ops.Contains: binary_infix_op('in'),
+    ops.NotContains: binary_infix_op('not in'),
 }
 
 
-_unsupported_ops = [
-    ops.WindowOp,
-    ops.DecimalPrecision,
-    ops.DecimalScale,
-    ops.BaseConvert,
-    ops.CumulativeSum,
-    ops.CumulativeMin,
-    ops.CumulativeMax,
-    ops.CumulativeMean,
-    ops.CumulativeAny,
-    ops.CumulativeAll,
-    ops.IdenticalTo,
+_math_ops = {
+    ops.Abs: unary('abs'),
+    ops.Ceil: unary('ceil'),
+    Degrees: unary('degrees'),  # MapD function
+    ops.Exp: unary('exp'),
+    ops.Floor: unary('floor'),
+    ops.Log: unary('log'),
+    ops.Ln: unary('ln'),
+    ops.Log10: unary('log10'),
+    ops.Modulus: unary('mod'),
+    PI: lambda *args: 'pi()',
+    # ops.Power: binary('power'),  # TODO: check if it is necessary
+    Radians: unary('radians'),
+    ops.Round: _round,
+    ops.Sign: _sign,
+    ops.Sqrt: unary('sqrt'),
+    Truncate: fixed_arity('truncate', 2)
+}
 
-    ops.RowNumber,
-    ops.DenseRank,
-    ops.MinRank,
-    ops.PercentRank,
+_stats_ops = {
+    # CORRELATION(x, y)	CORRELATION_FLOAT(x, y)	Alias of CORR. Returns the coefficient of correlation of a set of number pairs.
+    # CORR(x, y)	CORR_FLOAT(x, y)	Returns the coefficient of correlation of a set of number pairs.
+    # COVAR_POP(x, y)	COVAR_POP_FLOAT(x, y)	Returns the population covariance of a set of number pairs.
+    # COVAR_SAMP(x, y)	COVAR_SAMP_FLOAT(x, y)	Returns the sample covariance of a set of number pairs.
+    ops.StandardDev: agg_variance_like('stddev'),
+    # STDDEV(x)	STDDEV_FLOAT(x)	Alias of STDDEV_SAMP. Returns sample standard deviation of the value.
+    # STDDEV_POP(x)	STDDEV_POP_FLOAT(x)	Returns the population standard the standard deviation of the value.
+    # STDDEV_SAMP(x)	STDDEV_SAMP_FLOAT(x)	Returns the sample standard deviation of the value.
+    ops.Variance: agg_variance_like('var'),
+    # VARIANCE(x)	VARIANCE_FLOAT(x)	Alias of VAR_SAMP. Returns the sample variance of the value.
+    # VAR_POP(x)	VAR_POP_FLOAT(x)	Returns the population variance sample variance of the value.
+    # VAR_SAMP(x)	VAR_SAMP_FLOAT(x)	Returns the sample variance of the value.
+}
 
-    ops.FirstValue,
-    ops.LastValue,
-    ops.NthValue,
-    ops.Lag,
-    ops.Lead,
-    ops.NTile
-]
-_unsupported_ops = {k: raise_error for k in _unsupported_ops}
+
+_trigonometric_ops = {
+    Acos: unary('acos'),
+    Asin: unary('asin'),
+    Atan: unary('atan'),
+    Atan2: fixed_arity('atan2', 2),
+    Cos: unary('cos'),
+    Cot: unary('cot'),
+    Sin: unary('sin'),
+    Tan: unary('tan')
+}
+
+_geometric_ops = {
+    DistanceInMeters: fixed_arity('distance_in_meters', 4),
+    Conv_4326_900913_X: unary('conv_4326_900913_x'),
+    Conv_4326_900913_Y: unary('conv_4326_900913_y')
+}
+
+_string_ops = {
+    ops.StringLength: unary('char_length'),
+    StringLengthBytes: unary('length'),
+    # ops.RegexSearch: fixed_arity('match', 2),
+    # ops.RegexExtract: _regex_extract,
+    # ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
+    # str LIKE pattern	'ab' LIKE 'ab'	Returns true if the string matches the pattern
+    # str NOT LIKE pattern	'ab' NOT LIKE 'cd'	Returns true if the string does not match the pattern
+    # str ILIKE pattern	'AB' ILIKE 'ab'	Case-insensitive LIKE
+    # str REGEXP POSIX pattern	'^[a-z]+r$'	Lowercase string ending with r
+    # REGEXP_LIKE ( str , POSIX pattern )	'^[hc]at'	cat or hat
+}
+
+_date_ops = {
+    ops.Date: unary('toDate'),
+    ops.DateTruncate: _truncate,
+
+    ops.TimestampNow: lambda *args: 'now()',
+    ops.TimestampTruncate: _truncate,
+    ops.TimeTruncate: _truncate,
+    ops.IntervalFromInteger: _interval_from_integer,
+
+    ops.ExtractYear: unary('toYear'),
+    ops.ExtractMonth: unary('toMonth'),
+    ops.ExtractDay: unary('toDayOfMonth'),
+    ops.ExtractHour: unary('toHour'),
+    ops.ExtractMinute: unary('toMinute'),
+    ops.ExtractSecond: unary('toSecond'),
+
+    ops.DateAdd: binary_infix_op('+'),
+    ops.DateSub: binary_infix_op('-'),
+    ops.DateDiff: binary_infix_op('-'),
+    ops.TimestampAdd: binary_infix_op('+'),
+    ops.TimestampSub: binary_infix_op('-'),
+    ops.TimestampDiff: binary_infix_op('-'),
+    ops.TimestampFromUNIX: _timestamp_from_unix,
+}
+
+_agg_ops = {
+    # TODO: this function receive a x and e parameter
+    ApproxCountDistinct: agg('approx_count_cistinct'),
+    ops.Count: agg('count'),
+    ops.CountDistinct: agg('count'),  # this function receive a x parameter
+    ops.Mean: agg('avg'),
+    ops.Max: agg('max'),
+    ops.Min: agg('min'),
+    ops.Sum: agg('sum'),
+}
+
+_general_ops = {
+    # Unary operations
+    ops.Literal: literal,
+    ops.ValueList: _value_list,
+    ops.Cast: _cast,
+    ops.Where: fixed_arity('if', 3),
+    ops.SimpleCase: _simple_case,
+    ops.SearchedCase: _searched_case,
+    ops.TableColumn: _table_column,
+    ops.TableArrayView: _table_array_view,
+    transforms.ExistsSubquery: _exists_subquery,
+    transforms.NotExistsSubquery: _exists_subquery,
+    ops.ArrayLength: unary('length'),
+    ops.Coalesce: varargs('coalesce'),
+}
 
 
-_operation_registry.update(_undocumented_operations)
-_operation_registry.update(_unsupported_ops)
-_operation_registry.update(_unary_ops)
+# _unsupported_ops = []
+# _unsupported_ops = {k: raise_error for k in _unsupported_ops}
+
+_operation_registry = {}
+
+_operation_registry.update(_general_ops)
 _operation_registry.update(_binary_infix_ops)
+_operation_registry.update(_unary_ops)
+_operation_registry.update(_comparison_ops)
+_operation_registry.update(_math_ops)
+_operation_registry.update(_stats_ops)
+_operation_registry.update(_trigonometric_ops)
+_operation_registry.update(_geometric_ops)
+_operation_registry.update(_string_ops)
+_operation_registry.update(_date_ops)
+_operation_registry.update(_agg_ops)
+# _operation_registry.update(_unsupported_ops)
+
+
+def sin(numeric_value):
+    return Sin(numeric_value).to_expr()
+
+
+NumericValue.sin = sin

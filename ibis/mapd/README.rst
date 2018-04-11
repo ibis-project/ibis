@@ -71,6 +71,7 @@ The main classes are:
 - `MapDClient`
 - `MapDQuery`
 - `MapDDataType`
+- `MapDCursor`
 
 `MapDDataType` class is used to translate data type from `ibis` and to `ibis`.
 Its main methods are:
@@ -106,14 +107,41 @@ expression. Its main methods are:
 - get_schema
 - version
 
+`_build_ast` method is required.
+
 `MapDQuery` class should be used redefine at least `_fetch` method. If `Query`
 class is used instead, when `MapDClient.execute` method is called, a exception
 is raised.
 
+    (...) once the data arrives from the database we need to convert that data
+    to a pandas DataFrame.
+
+    The Query class, with its _fetch() method, provides a way for ibis
+    SQLClient objects to do any additional processing necessary after
+    the database returns results to the client.
+    (http://docs.ibis-project.org/design.html#execution)
+
+`MapDCursor` class was created just to allow `ibis.client.Query.execute`
+useful automatically, because it uses `with` statement:
+
+.. code-block:: Python
+    with self.client._execute(self.compiled_ddl, results=True) as cur:
+       ...
+
+Otherwise, `MapDQuery` should rewrites `execute` method with no `with`
+statement.
+
 compiler
 --------
 
-@TODO
+The main classes inside `compiler` module are:
+
+- MapDDialect
+- MapDExprTranslator
+- MapDQueryBuilder
+- MapDSelect
+- MapDSelectBuilder
+- MapDTableSetFormatter
 
 operations
 ----------

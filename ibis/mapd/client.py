@@ -1,8 +1,13 @@
 from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient
-from ibis.mapd import compiler as comp
+from ibis.mapd.compiler import MapDDialect, build_ast
 from ibis.util import log
 from pymapd.cursor import Cursor
+
+try:
+    from pygdf.dataframe import DataFrame as GPUDataFrame
+except ImportError:
+    GPUDataFrame = None
 
 import regex as re
 import pandas as pd
@@ -15,28 +20,30 @@ import ibis.expr.schema as sch
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
+# using impala.client._HS2_TTypeId_to_dtype as reference
+# https://www.mapd.com/docs/latest/mapd-core-guide/fixed-encoding/
 _mapd_dtypes = {
     'BIGINT': dt.int64,
     'BOOLEAN': dt.Boolean,
     'CHAR': dt.string,
     'DATE': dt.date,
-    'DECIMAL': dt.float,
-    'DOUBLE': dt.float,
+    'DECIMAL': dt.float64,
+    'DOUBLE': dt.float64,
     'INT': dt.int32,
-    'FLOAT': dt.float,
+    'INTEGER': dt.int32,
+    'FLOAT': dt.float32,
     'NULL': dt.Null,
-    'NUMERIC': dt.float,
-    'REAL': dt.float,
-    'SMALLINT': dt.int8,
+    'NUMERIC': dt.float64,
+    'REAL': dt.float32,
+    'SMALLINT': dt.int16,
     'STR': dt.string,
     'TEXT': dt.string,
     'TIME': dt.time,
     'TIMESTAMP': dt.timestamp,
-    'VAR': dt.string,
+    'VARCHAR': dt.string,
 }
 
 _ibis_dtypes = {v: k for k, v in _mapd_dtypes.items()}
-_ibis_dtypes[dt.String] = 'String'
 
 
 class MapDDataType(object):
@@ -76,25 +83,41 @@ class MapDDataType(object):
         return cls(typename, nullable=nullable)
 
 
+class MapDCursor(object):
+    """Cursor to allow the MapD client to reuse machinery in ibis/client.py
+    """
+
+    def __init__(self, cursor):
+        self.cursor = cursor
+
+    def to_df(self):
+        if isinstance(self.cursor, Cursor):
+            col_names = [c.name for c in self.cursor.description]
+            result = pd.DataFrame(self.cursor.fetchall(), columns=col_names)
+        elif self.cursor is None:
+            result = pd.DataFrame([])
+        elif isinstance(self.cursor, pd.DataFrame):
+            result = self.cursor
+        elif GPUDataFrame is not None and isinstance(self.cursor, GPUDataFrame):
+            result = self.cursor
+
+        return result
+
+    def __enter__(self):
+        # For compatibility when constructed from Query.execute()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+
 class MapDQuery(Query):
     """
 
     """
-    def execute(self):
-        cursor = self.client._execute(
-            self.compiled_ddl
-        )
-        result = self._fetch(cursor)
-        return self._wrap_result(result)
-
     def _fetch(self, cursor):
         # check if cursor is a pymapd cursor.Cursor
-        if isinstance(cursor, Cursor):
-            col_names = [c.name for c in cursor.description]
-            result = pd.DataFrame(cursor.fetchall(), columns=col_names)
-        else:
-            result = cursor
-        return self.schema().apply_to(result)
+        return self.schema().apply_to(cursor.to_df())
 
 
 class MapDClient(SQLClient):
@@ -103,7 +126,7 @@ class MapDClient(SQLClient):
     """
     database_class = Database
     sync_query = MapDQuery
-    dialect = comp.MapDDialect
+    dialect = MapDDialect
 
     def __init__(
         self, uri: str=None, user: str=None, password: str=None,
@@ -147,7 +170,14 @@ class MapDClient(SQLClient):
         self.con.close()
 
     def _build_ast(self, expr, context):
-        result = comp.build_ast(expr, context)
+        """
+        Required.
+
+        :param expr:
+        :param context:
+        :return:
+        """
+        result = build_ast(expr, context)
         return result
 
     def _fully_qualified_name(self, name, database):
@@ -169,25 +199,16 @@ class MapDClient(SQLClient):
             database, table_name = table_name_
         return self.get_schema(table_name, database)
 
-    def _execute(self, query, results=True):
+    def _execute(self, query, results=False):
         """
 
         :param query:
         :return:
         """
-        if self.execution_type == 1:
-            stmt_exec = self.con.select_ipc_gpu
-        elif self.execution_type == 2:
-            stmt_exec = self.con.select_ipc
-        else:
-            stmt_exec = self.con.cursor().execute
+        if not self.execution_type == 3:
+            raise NotImplemented()
 
-        result = stmt_exec(query)
-
-        if results:
-            return result
-        else:
-            return
+        return MapDCursor(self.con.cursor().execute(query))
 
     def database(self, name=None):
         """Connect to a database called `name`.
