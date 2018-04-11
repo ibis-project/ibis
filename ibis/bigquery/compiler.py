@@ -395,6 +395,11 @@ compiles = BigQueryExprTranslator.compiles
 rewrites = BigQueryExprTranslator.rewrites
 
 
+@compiles(ops.Divide)
+def bigquery_compiles_divide(t, e):
+    return 'IEEE_DIVIDE({}, {})'.format(*map(t.translate, e.op().args))
+
+
 @rewrites(ops.Any)
 def bigquery_rewrite_any(expr):
     arg, = expr.op().args
