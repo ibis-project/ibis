@@ -95,8 +95,11 @@ def test_math_functions_on_literals(backend, con, alltypes, df,
     operator.truediv,
     operator.floordiv,
     operator.pow,
-    pytest.param(operator.mod, marks=pytest.mark.xfail(
-        reason='clickhouse and sqlite truncate float to integer ')
+    pytest.param(
+        operator.mod,
+        marks=pytest.mark.xfail(
+            reason='clickhouse and sqlite truncate float to integer'
+        )
     ),
 ], ids=lambda op: op.__name__)
 def test_binary_arithmetic_operations(backend, alltypes, df, op):
@@ -115,3 +118,26 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected, check_exact=False,
                                 check_less_precise=True)
+
+
+@pytest.mark.parametrize(
+    'column',
+    [
+        'tinyint_col',
+        'smallint_col',
+        'int_col',
+        'bigint_col',
+        'float_col',
+        'double_col',
+    ]
+)
+@pytest.mark.parametrize('denominator', [0, 0.0])
+def test_divide_by_zero(backend, alltypes, df, column, denominator):
+    if not backend.supports_divide_by_zero:
+        pytest.skip(
+            '{} does not support safe division by zero'.format(backend)
+        )
+    expr = alltypes[column] / denominator
+    expected = df[column].div(denominator).rename('tmp')
+    result = expr.execute()
+    backend.assert_series_equal(result, expected)
