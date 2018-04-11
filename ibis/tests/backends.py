@@ -17,6 +17,7 @@ class Backend(object):
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = True
     additional_skipped_operations = frozenset()
+    supports_divide_by_zero = False
 
     def __init__(self, data_directory):
         try:
@@ -77,6 +78,7 @@ class UnorderedSeriesComparator(object):
 
 class Csv(Backend):
     check_names = False
+    supports_divide_by_zero = True
 
     def connect(self, data_directory):
         filename = data_directory / 'functional_alltypes.csv'
@@ -95,6 +97,7 @@ class Csv(Backend):
 
 class Parquet(Backend):
     check_names = False
+    supports_divide_by_zero = True
 
     def connect(self, data_directory):
         filename = data_directory / 'functional_alltypes.parquet'
@@ -106,6 +109,7 @@ class Parquet(Backend):
 class Pandas(Backend):
     check_names = False
     additional_skipped_operations = frozenset({ops.StringSQLLike})
+    supports_divide_by_zero = True
 
     def connect(self, data_directory):
         return ibis.pandas.connect({
@@ -211,6 +215,7 @@ class Clickhouse(Backend):
 
 
 class BigQuery(UnorderedSeriesComparator, Backend):
+    supports_divide_by_zero = True
 
     def connect(self, data_directory):
         ga = pytest.importorskip('google.auth')
@@ -234,6 +239,7 @@ class Impala(UnorderedSeriesComparator, Backend):
     supports_arrays = True
     supports_arrays_outside_of_select = False
     check_dtype = False
+    supports_divide_by_zero = True
 
     @classmethod
     def connect(cls, data_directory):

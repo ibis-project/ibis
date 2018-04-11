@@ -33,3 +33,12 @@ UNION {}
 SELECT *
 FROM testing.functional_alltypes""".format(expected_keyword)
     assert result == expected
+
+
+def test_ieee_divide(alltypes):
+    expr = alltypes.double_col / 0
+    result = expr.compile()
+    expected = """\
+SELECT IEEE_DIVIDE(`double_col`, 0) AS `tmp`
+FROM testing.functional_alltypes"""
+    assert result == expected
