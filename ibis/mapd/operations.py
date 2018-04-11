@@ -1,5 +1,6 @@
 from six import StringIO
 from datetime import date, datetime
+from ibis.mapd.identifiers import quote_identifier
 
 import ibis.common as com
 import ibis.util as util
@@ -8,7 +9,7 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 
-from ibis.mapd.identifiers import quote_identifier
+from ibis.expr.types import NumericValue
 
 
 def _cast(translator, expr):
@@ -551,6 +552,8 @@ class Cot(TrigonometryUnary):
 
 class Sin(TrigonometryUnary):
     """Returns the sine of x"""
+    def output_type(self):
+        return ops.dt.float64.scalar_type()
 
 
 class Tan(TrigonometryUnary):
@@ -726,7 +729,7 @@ _date_ops = {
 }
 
 _agg_ops = {
-    # this function receive a x and e parameter
+    # TODO: this function receive a x and e parameter
     ApproxCountDistinct: agg('approx_count_cistinct'),
     ops.Count: agg('count'),
     ops.CountDistinct: agg('count'),  # this function receive a x parameter
@@ -770,3 +773,10 @@ _operation_registry.update(_string_ops)
 _operation_registry.update(_date_ops)
 _operation_registry.update(_agg_ops)
 # _operation_registry.update(_unsupported_ops)
+
+
+def sin(numeric_value):
+    return Sin(numeric_value).to_expr()
+
+
+NumericValue.sin = sin

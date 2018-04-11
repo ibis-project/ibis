@@ -250,7 +250,11 @@ _data_type = frozenset({
     'varchar',
 })
 
-_identifiers = _ddl | _dml | _data_type
+_ibis = frozenset({
+    'literal'
+})
+
+_identifiers = _ddl | _dml | _data_type | _ibis
 
 
 def quote_identifier(name, quotechar='"', force=False):

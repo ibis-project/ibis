@@ -1,6 +1,6 @@
 from ibis.config import options
+from ibis.mapd.compiler import dialect, compiles, rewrites
 from ibis.mapd.client import MapDClient
-from ibis.mapd.compiler import dialect
 
 import ibis.common as com
 

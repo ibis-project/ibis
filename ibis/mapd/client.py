@@ -1,6 +1,6 @@
 from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient
-from ibis.mapd import compiler as comp
+from ibis.mapd.compiler import MapDDialect, build_ast
 from ibis.util import log
 from pymapd.cursor import Cursor
 
@@ -126,7 +126,7 @@ class MapDClient(SQLClient):
     """
     database_class = Database
     sync_query = MapDQuery
-    dialect = comp.MapDDialect
+    dialect = MapDDialect
 
     def __init__(
         self, uri: str=None, user: str=None, password: str=None,
@@ -177,7 +177,7 @@ class MapDClient(SQLClient):
         :param context:
         :return:
         """
-        result = comp.build_ast(expr, context)
+        result = build_ast(expr, context)
         return result
 
     def _fully_qualified_name(self, name, database):
