@@ -516,10 +516,13 @@ class Radians(ops.UnaryOp):
 class Truncate(ops.NumericBinaryOp):
     """Truncates x to y decimal places"""
 
+
 # TRIGONOMETRY
 
 class TrigonometryUnary(ops.UnaryOp):
     """Trigonometry base unary"""
+    def output_type(self):
+        return ops.dt.float64.scalar_type()
 
 
 class TrigonometryBinary(ops.BinaryOp):
@@ -552,8 +555,6 @@ class Cot(TrigonometryUnary):
 
 class Sin(TrigonometryUnary):
     """Returns the sine of x"""
-    def output_type(self):
-        return ops.dt.float64.scalar_type()
 
 
 class Tan(TrigonometryUnary):
