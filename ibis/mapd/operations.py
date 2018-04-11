@@ -291,6 +291,10 @@ class CaseFormatter(object):
         return self.translator.translate(expr)
 
     def get_result(self):
+        """
+
+        :return:
+        """
         self.buf.seek(0)
 
         self.buf.write('CASE')
@@ -325,15 +329,17 @@ class CaseFormatter(object):
 
 def _simple_case(translator, expr):
     op = expr.op()
-    formatter = CaseFormatter(translator, op.base, op.cases, op.results,
-                              op.default)
+    formatter = CaseFormatter(
+        translator, op.base, op.cases, op.results, op.default
+    )
     return formatter.get_result()
 
 
 def _searched_case(translator, expr):
     op = expr.op()
-    formatter = CaseFormatter(translator, None, op.cases, op.results,
-                              op.default)
+    formatter = CaseFormatter(
+        translator, None, op.cases, op.results, op.default
+    )
     return formatter.get_result()
 
 

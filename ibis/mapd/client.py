@@ -20,38 +20,40 @@ import ibis.expr.schema as sch
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
-# using impala.client._HS2_TTypeId_to_dtype as reference
-# https://www.mapd.com/docs/latest/mapd-core-guide/fixed-encoding/
-_mapd_dtypes = {
-    'BIGINT': dt.int64,
-    'BOOLEAN': dt.Boolean,
-    'CHAR': dt.string,
-    'DATE': dt.date,
-    'DECIMAL': dt.float64,
-    'DOUBLE': dt.float64,
-    'INT': dt.int32,
-    'INTEGER': dt.int32,
-    'FLOAT': dt.float32,
-    'NULL': dt.Null,
-    'NUMERIC': dt.float64,
-    'REAL': dt.float32,
-    'SMALLINT': dt.int16,
-    'STR': dt.string,
-    'TEXT': dt.string,
-    'TIME': dt.time,
-    'TIMESTAMP': dt.timestamp,
-    'VARCHAR': dt.string,
-}
-
-_ibis_dtypes = {v: k for k, v in _mapd_dtypes.items()}
-
 
 class MapDDataType(object):
 
     __slots__ = 'typename', 'nullable'
 
+    # using impala.client._HS2_TTypeId_to_dtype as reference
+    # https://www.mapd.com/docs/latest/mapd-core-guide/fixed-encoding/
+    dtypes = {
+        'BIGINT': dt.int64,
+        'BOOLEAN': dt.Boolean,
+        'CHAR': dt.string,
+        'DATE': dt.date,
+        'DECIMAL': dt.float64,
+        'DOUBLE': dt.float64,
+        'INT': dt.int32,
+        'INTEGER': dt.int32,
+        'FLOAT': dt.float32,
+        'NULL': dt.Null,
+        'NUMERIC': dt.float64,
+        'REAL': dt.float32,
+        'SMALLINT': dt.int16,
+        'STR': dt.string,
+        'TEXT': dt.string,
+        'TIME': dt.time,
+        'TIMESTAMP': dt.timestamp,
+        'VARCHAR': dt.string,
+    }
+
+    ibis_dtypes = {
+        v: k for k, v in dtypes.items()
+    }
+
     def __init__(self, typename, nullable=False):
-        if typename not in _mapd_dtypes:
+        if typename not in self.dtypes:
             raise com.UnsupportedBackendType(typename)
         self.typename = typename
         self.nullable = nullable
@@ -73,11 +75,18 @@ class MapDDataType(object):
             return cls(spec)
 
     def to_ibis(self):
-        return _mapd_dtypes[self.typename](nullable=self.nullable)
+        return self.dtypes[self.typename](nullable=self.nullable)
 
     @classmethod
     def from_ibis(cls, dtype, nullable=None):
-        typename = _ibis_dtypes[type(dtype)]
+        dtype_ = type(dtype)
+        if dtype_ in cls.ibis_dtypes:
+            typename = cls.ibis_dtypes[dtype_]
+        elif dtype in cls.ibis_dtypes:
+            typename = cls.ibis_dtypes[dtype]
+        else:
+            raise NotImplemented('{0} not Implemented'.format(dtype))
+
         if nullable is None:
             nullable = dtype.nullable
         return cls(typename, nullable=nullable)
@@ -98,7 +107,9 @@ class MapDCursor(object):
             result = pd.DataFrame([])
         elif isinstance(self.cursor, pd.DataFrame):
             result = self.cursor
-        elif GPUDataFrame is not None and isinstance(self.cursor, GPUDataFrame):
+        elif GPUDataFrame is not None and isinstance(
+                self.cursor, GPUDataFrame
+        ):
             result = self.cursor
 
         return result
