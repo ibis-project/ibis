@@ -91,7 +91,7 @@ def binary_infix_op(infix_sym):
     def formatter(translator, expr):
         op = expr.op()
 
-        left, right = op.args
+        left, right = op.args[0], op.args[1]
         left_ = _parenthesize(translator, left)
         right_ = _parenthesize(translator, right)
 
@@ -744,6 +744,7 @@ _string_ops = {
     # ops.RegexExtract: _regex_extract,
     # ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
     # str LIKE pattern	'ab' LIKE 'ab'	Returns true if the string matches the pattern
+    ops.StringSQLLike: binary_infix_op('like'),
     # str NOT LIKE pattern	'ab' NOT LIKE 'cd'	Returns true if the string does not match the pattern
     # str ILIKE pattern	'AB' ILIKE 'ab'	Case-insensitive LIKE
     # str REGEXP POSIX pattern	'^[a-z]+r$'	Lowercase string ending with r
