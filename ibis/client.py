@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import abc
+
 import six
 
 from ibis.config import options
@@ -31,29 +32,30 @@ class Client(object):
 
 class Query(object):
 
-    """
-    Abstraction for DDL query execution to enable both synchronous and
+    """Abstraction for DML query execution to enable both synchronous and
     asynchronous queries, progress, cancellation and more (for backends
     supporting such functionality).
     """
 
-    def __init__(self, client, ddl, **kwargs):
+    def __init__(self, client, sql, **kwargs):
         self.client = client
+
+        dml = getattr(sql, 'dml', sql)
         self.expr = getattr(
-            ddl, 'parent_expr', getattr(ddl, 'table_set', None)
+            dml, 'parent_expr', getattr(dml, 'table_set', None)
         )
 
-        if isinstance(ddl, comp.DDL):
-            self.compiled_ddl = ddl.compile()
+        if not isinstance(sql, six.string_types):
+            self.compiled_sql = sql.compile()
         else:
-            self.compiled_ddl = ddl
+            self.compiled_sql = sql
 
-        self.result_wrapper = getattr(ddl, 'result_handler', None)
+        self.result_wrapper = getattr(dml, 'result_handler', None)
         self.extra_options = kwargs
 
     def execute(self):
         # synchronous by default
-        with self.client._execute(self.compiled_ddl, results=True) as cur:
+        with self.client._execute(self.compiled_sql, results=True) as cur:
             result = self._fetch(cur)
 
         return self._wrap_result(result)
@@ -187,7 +189,7 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         Parameters
         ----------
         query : string
-          SQL or DDL statement
+          DML or DDL statement
         results : boolean, default False
           Pass True if the query as a result set
 
@@ -220,16 +222,13 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
           Array expressions: pandas.Series
           Scalar expressions: Python scalar value
         """
-        ast = self._build_ast_ensure_limit(expr, limit, params=params)
+        query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
+        result = self._execute_query(query_ast, async=async, **kwargs)
+        return result
 
-        if len(ast.queries) > 1:
-            raise NotImplementedError
-        else:
-            return self._execute_query(ast.queries[0], async=async, **kwargs)
-
-    def _execute_query(self, ddl, async=False, **kwargs):
+    def _execute_query(self, dml, async=False, **kwargs):
         klass = self.async_query if async else self.sync_query
-        inst = klass(self, ddl, **kwargs)
+        inst = klass(self, dml, **kwargs)
         return inst.execute()
 
     def compile(self, expr, params=None, limit=None):
@@ -240,17 +239,16 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         -------
         output : single query or list of queries
         """
-        ast = self._build_ast_ensure_limit(expr, limit, params=params)
-        queries = [query.compile() for query in ast.queries]
-        return queries[0] if len(queries) == 1 else queries
+        query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
+        return query_ast.compile()
 
     def _build_ast_ensure_limit(self, expr, limit, params=None):
         context = self.dialect.make_context(params=params)
 
-        ast = self._build_ast(expr, context)
+        query_ast = self._build_ast(expr, context)
         # note: limit can still be None at this point, if the global
         # default_limit is None
-        for query in reversed(ast.queries):
+        for query in reversed(query_ast.queries):
             if (isinstance(query, comp.Select) and
                     not isinstance(expr, ir.ScalarExpr) and
                     query.table_set is not None):
@@ -267,7 +265,7 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
                 elif limit is not None and limit != 'default':
                     query.limit = {'n': limit,
                                    'offset': query.limit['offset']}
-        return ast
+        return query_ast
 
     def explain(self, expr, params=None):
         """
@@ -280,11 +278,11 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         """
         if isinstance(expr, ir.Expr):
             context = self.dialect.make_context(params=params)
-            ast = self._build_ast(expr, context)
-            if len(ast.queries) > 1:
+            query_ast = self._build_ast(expr, context)
+            if len(query_ast.queries) > 1:
                 raise Exception('Multi-query expression')
 
-            query = ast.queries[0].compile()
+            query = query_ast.queries[0].compile()
         else:
             query = expr
 

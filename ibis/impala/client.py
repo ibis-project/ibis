@@ -42,7 +42,7 @@ from ibis.impala import udf, ddl
 from ibis.impala.compat import impyla, ImpylaError, HS2Error
 from ibis.impala.compiler import build_ast, ImpalaDialect
 from ibis.util import log
-from ibis.sql.compiler import DDL
+from ibis.sql.compiler import DDL, DML
 
 
 class ImpalaDatabase(Database):
@@ -110,7 +110,7 @@ class ImpalaConnection(object):
             del self.options[key]
 
     def execute(self, query, async=False):
-        if isinstance(query, DDL):
+        if isinstance(query, (DDL, DML)):
             query = query.compile()
 
         cursor = self._get_cursor()
@@ -389,7 +389,7 @@ class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
         # to block, unfortunately. This threading hack works around it
         def _async_execute():
             try:
-                self._cursor = con.execute(self.compiled_ddl, async=True)
+                self._cursor = con.execute(self.compiled_sql, async=True)
             except Exception as e:
                 self._exception = e
             self._execute_complete = True

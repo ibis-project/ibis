@@ -90,7 +90,6 @@ import toolz
 import ibis.expr.types as ir
 import ibis.expr.lineage as lin
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 
 from ibis.compat import functools
 from ibis.client import find_backends
@@ -129,8 +128,6 @@ def find_data(expr):
         op = expr.op()
         if hasattr(op, 'source'):
             data = (op, op.source.dictionary.get(op.name, None))
-        elif isinstance(op, ops.Literal):
-            data = (op, op.value)
         else:
             data = None
         return lin.proceed, data
@@ -233,12 +230,6 @@ def execute_without_scope(
     """
 
     data_scope = find_data(expr)
-
-    if not data_scope:
-        raise ValueError(
-            'No data sources found while trying to execute against the pandas '
-            'backend'
-        )
 
     factory = type(data_scope)
 

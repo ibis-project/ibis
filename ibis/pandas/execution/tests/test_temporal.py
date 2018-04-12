@@ -158,3 +158,27 @@ def test_times_ops_with_tz(t, df, tz, rconstruct, column):
 def test_times_ops_py2(t, df):
     with pytest.raises(ValueError):
         t.plain_datetimes_naive.time()
+
+
+@pytest.mark.parametrize(
+    ('op', 'expected'),
+    [
+        (lambda x, y: x + y, lambda x, y: x.values * 2),
+        (lambda x, y: x * 2, lambda x, y: x.values * 2),
+        pytest.mark.xfail(
+            (lambda x, y: x // 2, lambda x, y: x.values // 2),
+            raises=TypeError, reason='Not yet tested'
+        )
+    ]
+)
+def test_interval_arithmetic(op, expected):
+    data = pd.timedelta_range('0 days', '10 days', freq='D')
+    con = ibis.pandas.connect({
+        'df1': pd.DataFrame({'td': data}),
+        'df2': pd.DataFrame({'td': data}),
+    })
+    t1 = con.table('df1')
+    expr = op(t1.td, t1.td)
+    result = expr.execute()
+    expected = pd.Series(expected(data, data), name='td')
+    tm.assert_series_equal(result, expected)

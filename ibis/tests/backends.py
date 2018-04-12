@@ -17,6 +17,8 @@ class Backend(object):
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = True
     additional_skipped_operations = frozenset()
+    supports_divide_by_zero = False
+    returned_timestamp_unit = 'us'
 
     def __init__(self, data_directory):
         try:
@@ -77,6 +79,8 @@ class UnorderedSeriesComparator(object):
 
 class Csv(Backend):
     check_names = False
+    supports_divide_by_zero = True
+    returned_timestamp_unit = 'ns'
 
     def connect(self, data_directory):
         filename = data_directory / 'functional_alltypes.csv'
@@ -95,6 +99,8 @@ class Csv(Backend):
 
 class Parquet(Backend):
     check_names = False
+    supports_divide_by_zero = True
+    returned_timestamp_unit = 'us'
 
     def connect(self, data_directory):
         filename = data_directory / 'functional_alltypes.parquet'
@@ -106,6 +112,8 @@ class Parquet(Backend):
 class Pandas(Backend):
     check_names = False
     additional_skipped_operations = frozenset({ops.StringSQLLike})
+    supports_divide_by_zero = True
+    returned_timestamp_unit = 'ns'
 
     def connect(self, data_directory):
         return ibis.pandas.connect({
@@ -130,6 +138,7 @@ class SQLite(Backend):
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = False
     check_dtype = False
+    returned_timestamp_unit = 's'
 
     def connect(self, data_directory):
         path = os.environ.get('IBIS_TEST_SQLITE_DATABASE',
@@ -145,6 +154,8 @@ class SQLite(Backend):
 
 
 class Postgres(Backend):
+
+    returned_timestamp_unit = 's'
 
     def connect(self, data_directory):
         user = os.environ.get('IBIS_TEST_POSTGRES_USER',
@@ -162,6 +173,7 @@ class Postgres(Backend):
 class MySQL(Backend):
     check_dtype = False
     supports_window_operations = False
+    returned_timestamp_unit = 's'
 
     def connect(self, data_directory):
         user = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
@@ -194,6 +206,7 @@ class MySQL(Backend):
 class Clickhouse(Backend):
     check_dtype = False
     supports_window_operations = False
+    returned_timestamp_unit = 's'
 
     def connect(self, data_directory):
         host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
@@ -211,6 +224,7 @@ class Clickhouse(Backend):
 
 
 class BigQuery(UnorderedSeriesComparator, Backend):
+    supports_divide_by_zero = True
 
     def connect(self, data_directory):
         ga = pytest.importorskip('google.auth')
@@ -234,6 +248,8 @@ class Impala(UnorderedSeriesComparator, Backend):
     supports_arrays = True
     supports_arrays_outside_of_select = False
     check_dtype = False
+    supports_divide_by_zero = True
+    returned_timestamp_unit = 's'
 
     @classmethod
     def connect(cls, data_directory):

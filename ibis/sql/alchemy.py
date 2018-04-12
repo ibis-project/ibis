@@ -1,21 +1,8 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-import six
+import contextlib
 import numbers
 import operator
-import contextlib
+
+import six
 
 import sqlalchemy as sa
 import sqlalchemy.sql as sql
@@ -682,6 +669,16 @@ class AlchemyContext(comp.QueryContext):
         super(AlchemyContext, self).__init__(*args, **kwargs)
         self._table_objects = {}
 
+    def collapse(self, queries):
+        if isinstance(queries, six.string_types):
+            return queries
+
+        if len(queries) > 1:
+            raise NotImplementedError(
+                'Only a single query is supported for SQLAlchemy backends'
+            )
+        return queries[0]
+
     def subcontext(self):
         return type(self)(
             dialect=self.dialect, parent=self, params=self.params
@@ -710,13 +707,27 @@ class AlchemyContext(comp.QueryContext):
         return self._get_table_item('_table_objects', expr)
 
 
+class AlchemyUnion(Union):
+
+    def compile(self):
+        context = self.context
+        sa_func = sa.union if self.distinct else sa.union_all
+
+        left_set = context.get_compiled_expr(self.left)
+        left_cte = left_set.cte()
+        left_select = left_cte.select()
+
+        right_set = context.get_compiled_expr(self.right)
+        right_cte = right_set.cte()
+        right_select = right_cte.select()
+
+        return sa_func(left_select, right_select)
+
+
 class AlchemyQueryBuilder(comp.QueryBuilder):
 
     select_builder = AlchemySelectBuilder
-
-    @property
-    def _union_class(self):
-        return AlchemyUnion
+    union_class = AlchemyUnion
 
 
 def to_sqlalchemy(expr, context, exists=False):
@@ -1283,23 +1294,6 @@ def _and_all(clauses):
     for clause in clauses[1:]:
         result = sql.and_(result, clause)
     return result
-
-
-class AlchemyUnion(Union):
-
-    def compile(self):
-        context = self.context
-        sa_func = sa.union if self.distinct else sa.union_all
-
-        left_set = context.get_compiled_expr(self.left)
-        left_cte = left_set.cte()
-        left_select = left_cte.select()
-
-        right_set = context.get_compiled_expr(self.right)
-        right_cte = right_set.cte()
-        right_select = right_cte.select()
-
-        return sa_func(left_select, right_select)
 
 
 class AlchemyProxy(object):
