@@ -7,11 +7,16 @@ import ibis.expr.operations as ops
 from multipledispatch import Dispatcher, halt_ordering, restart_ordering
 
 
-# Main interface to execution; ties the following functions together
-execute = Dispatcher('execute')
+execute = Dispatcher('execute', doc='Execute an expression')
 
 # Individual operation execution
-execute_node = Dispatcher('execute_node')
+execute_node = Dispatcher(
+    'execute_node',
+    doc=(
+        'Execute an individual operation given the operation and its computed '
+        'arguments'
+    )
+)
 
 
 @execute_node.register(ops.Node)
@@ -22,17 +27,23 @@ def execute_node_without_scope(node, **kwargs):
     )
 
 
-# Compute from the top of the expression downward
-execute_first = Dispatcher('execute_first')
+execute_first = Dispatcher(
+    'execute_first', doc='Compute from the top of the expression downward')
 
-# Possibly preload data from the client, given a node
-data_preload = Dispatcher('data_preload')
+data_preload = Dispatcher(
+    'data_preload', doc='Possibly preload data from the client, given a node')
 
-# Given a node, compute a (possibly partial) scope prior to regular execution
-# This is useful if parts of the tree structure need to be executed at the
-# same time or if there are other reasons to need to interrupt the
-# regular depth-first traversal of the tree
-pre_execute = Dispatcher('pre_execute')
+pre_execute = Dispatcher(
+    'pre_execute',
+    doc="""\
+Given a node, compute a (possibly partial) scope prior to standard execution.
+
+Notes
+-----
+This function is useful if parts of the tree structure need to be executed at
+the same time or if there are other reasons to need to interrupt the regular
+depth-first traversal of the tree.
+""")
 
 
 # Default does nothing
@@ -49,8 +60,7 @@ def pre_execute_default(node, client, **kwargs):
 
 @contextlib.contextmanager
 def pause_ordering():
-    """Pause multipledispatch ordering
-    """
+    """Pause multipledispatch ordering."""
     halt_ordering()
     try:
         yield
