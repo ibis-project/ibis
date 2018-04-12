@@ -75,6 +75,13 @@ build: &build
     - run:
         name: Clone, update and build conda-forge recipe
         command: docker-compose run ibis ci/feedstock.py test
+    - run:
+        name: Permission the host for package deployment
+        command: sudo chown -R "${USER}":"${USER}" /tmp/ibis/packages
+    - store_artifacts:
+        path: /tmp/ibis/packages/linux-64
+    - store_artifacts:
+        path: /tmp/ibis/packages/noarch
 
 
 benchmark: &benchmark

@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
+import shutil
 import sys
-import ibis
+
 import click
 import ruamel.yaml
 
 from jinja2 import Environment, FileSystemLoader
 from plumbum.cmd import git, conda
+
+import ibis
 from ibis.compat import Path, PY2
 
 
@@ -52,8 +55,8 @@ def update(meta, source_path):
     content = render(path)
     recipe = ruamel.yaml.round_trip_load(content)
 
-    # update the necessary fields
-    recipe['package']['version'] = ibis.__version__
+    # update the necessary fields, skip leading 'v' in the version
+    recipe['package']['version'] = ibis.__version__[1:]
     recipe['source'] = {'path': source_path}
 
     updated_content = ruamel.yaml.round_trip_dump(
@@ -81,11 +84,31 @@ def build(recipe):
 
 
 @cli.command()
+@click.argument('package_location', default='/opt/conda/conda-bld')
+@click.argument('artifact_directory', default='/tmp/packages')
+@click.argument('architectures', default=('linux-64', 'noarch'))
+def deploy(package_location, artifact_directory, architectures):
+    artifact_dir = Path(artifact_directory)
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    package_loc = Path(package_location)
+    assert package_loc.exists(), 'Path {} does not exist'.format(package_loc)
+
+    for architecture in architectures:
+        arch_artifact_directory = str(artifact_dir / architecture)
+        arch_package_directory = str(package_loc / architecture)
+        shutil.copytree(arch_package_directory, arch_artifact_directory)
+    cmd = conda['index', artifact_directory]
+    cmd(stdout=click.get_binary_stream('stdout'),
+        stderr=click.get_binary_stream('stderr'))
+
+
+@cli.command()
 @click.pass_context
 def test(ctx):
     ctx.invoke(clone)
     ctx.invoke(update)
     ctx.invoke(build)
+    ctx.invoke(deploy)
 
 
 if __name__ == '__main__':
