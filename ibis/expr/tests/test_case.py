@@ -1,19 +1,6 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import pytest
 
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis
@@ -113,3 +100,21 @@ def test_case_type_precedence():
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
 def test_no_implicit_cast_possible():
     assert False
+
+
+def test_case_mixed_type():
+    t0 = ibis.table(
+        [('one', 'string'),
+         ('two', 'double'),
+         ('three', 'int32')], name='my_data')
+
+    expr = (
+        t0.three
+          .case()
+          .when(0, 'low')
+          .when(1, 'high')
+          .else_('null')
+          .end()
+          .name('label'))
+    result = t0[expr]
+    assert result['label'].type().equals(dt.string)
