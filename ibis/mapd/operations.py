@@ -9,7 +9,7 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 
-from ibis.expr.types import NumericValue
+from ibis.expr.types import NumericValue, StringValue
 
 
 def _cast(translator, expr):
@@ -291,6 +291,10 @@ class CaseFormatter(object):
         return self.translator.translate(expr)
 
     def get_result(self):
+        """
+
+        :return:
+        """
         self.buf.seek(0)
 
         self.buf.write('CASE')
@@ -325,15 +329,17 @@ class CaseFormatter(object):
 
 def _simple_case(translator, expr):
     op = expr.op()
-    formatter = CaseFormatter(translator, op.base, op.cases, op.results,
-                              op.default)
+    formatter = CaseFormatter(
+        translator, op.base, op.cases, op.results, op.default
+    )
     return formatter.get_result()
 
 
 def _searched_case(translator, expr):
     op = expr.op()
-    formatter = CaseFormatter(translator, None, op.cases, op.results,
-                              op.default)
+    formatter = CaseFormatter(
+        translator, None, op.cases, op.results, op.default
+    )
     return formatter.get_result()
 
 
@@ -507,22 +513,60 @@ class PI(ops.Constant):
         return ops.dt.float64.scalar_type()
 
 
+class Log(ops.Ln):
+    """
+
+    """
+
+
+class Mod(ops.Modulus):
+    """
+
+    """
+
+
 class Radians(ops.UnaryOp):
     """Converts radians to degrees"""
     arg = ops.Arg(rlz.floating)
     output_type = rlz.shape_like('arg', ops.dt.float)
 
 
+class Sign(ops.UnaryOp):
+    """
+    Returns the sign of x as -1, 0, 1 if x is negative, zero, or positive
+
+    """
+    arg = ops.Arg(rlz.numeric)
+    output_type = rlz.shape_like('arg', ops.dt.int8)
+
+
 class Truncate(ops.NumericBinaryOp):
     """Truncates x to y decimal places"""
+    output_type = rlz.shape_like('left', ops.dt.float)
+
+
+# STATS
+"""
+class Correlation(x, y)	CORRELATION_FLOAT(x, y)	Alias of CORR. Returns the coefficient of correlation of a set of number pairs.
+class  CORR(x, y)	CORR_FLOAT(x, y)	Returns the coefficient of correlation of a set of number pairs.
+class  COVAR_POP(x, y)	COVAR_POP_FLOAT(x, y)	Returns the population covariance of a set of number pairs.
+class  COVAR_SAMP(x, y)	COVAR_SAMP_FLOAT(x, y)	Returns the sample covariance of a set of number pairs.
+ops.StandardDev: agg_variance_like('stddev'),
+# STDDEV(x)	STDDEV_FLOAT(x)	Alias of STDDEV_SAMP. Returns sample standard deviation of the value.
+# STDDEV_POP(x)	STDDEV_POP_FLOAT(x)	Returns the population standard the standard deviation of the value.
+# STDDEV_SAMP(x)	STDDEV_SAMP_FLOAT(x)	Returns the sample standard deviation of the value.
+ops.Variance: agg_variance_like('var'),
+# VARIANCE(x)	VARIANCE_FLOAT(x)	Alias of VAR_SAMP. Returns the sample variance of the value.
+# VAR_POP(x)	VAR_POP_FLOAT(x)	Returns the population variance sample variance of the value.
+# VAR_SAMP(x)	VAR_SAMP_FLOAT(x)	Returns the sample variance of the value.
+"""
 
 
 # TRIGONOMETRY
 
 class TrigonometryUnary(ops.UnaryOp):
     """Trigonometry base unary"""
-    def output_type(self):
-        return ops.dt.float64.scalar_type()
+    output_type = rlz.shape_like('arg', 'float')
 
 
 class TrigonometryBinary(ops.BinaryOp):
@@ -563,7 +607,7 @@ class Tan(TrigonometryUnary):
 
 # GEOMETRIC
 
-class DistanceInMeters(ops.ValueOp):
+class Distance_In_Meters(ops.ValueOp):
     """
     Calculates distance in meters between two WGS-84 positions.
 
@@ -572,13 +616,14 @@ class DistanceInMeters(ops.ValueOp):
     fromLat = ops.Arg(rlz.column(rlz.numeric))
     toLon = ops.Arg(rlz.column(rlz.numeric))
     toLat = ops.Arg(rlz.column(rlz.numeric))
-    output_type = rlz.shape_like('arg', ops.dt.float)
+    output_type = rlz.shape_like('fromLon', ops.dt.float)
 
 
 class Conv_4326_900913_X(ops.UnaryOp):
     """
     Converts WGS-84 latitude to WGS-84 Web Mercator x coordinate.
     """
+    output_type = rlz.shape_like('arg', ops.dt.float)
 
 
 class Conv_4326_900913_Y(ops.UnaryOp):
@@ -586,6 +631,7 @@ class Conv_4326_900913_Y(ops.UnaryOp):
     Converts WGS-84 longitude to WGS-84 Web Mercator y coordinate.
 
     """
+    output_type = rlz.shape_like('arg', ops.dt.float)
 
 
 # String
@@ -645,15 +691,15 @@ _math_ops = {
     Degrees: unary('degrees'),  # MapD function
     ops.Exp: unary('exp'),
     ops.Floor: unary('floor'),
-    ops.Log: unary('log'),
+    Log: unary('log'),  # MapD Log wrap to IBIS Ln
     ops.Ln: unary('ln'),
     ops.Log10: unary('log10'),
-    ops.Modulus: unary('mod'),
-    PI: lambda *args: 'pi()',
+    Mod: fixed_arity('mod', 2),  # MapD Mod wrap to IBIS Modulus
+    # PI: fixed_arity('pi', 0),  # check another option to use it
     # ops.Power: binary('power'),  # TODO: check if it is necessary
     Radians: unary('radians'),
-    ops.Round: _round,
-    ops.Sign: _sign,
+    # ops.Round: _round,
+    Sign: _sign,
     ops.Sqrt: unary('sqrt'),
     Truncate: fixed_arity('truncate', 2)
 }
@@ -686,7 +732,7 @@ _trigonometric_ops = {
 }
 
 _geometric_ops = {
-    DistanceInMeters: fixed_arity('distance_in_meters', 4),
+    Distance_In_Meters: fixed_arity('distance_in_meters', 4),
     Conv_4326_900913_X: unary('conv_4326_900913_x'),
     Conv_4326_900913_Y: unary('conv_4326_900913_y')
 }
@@ -776,8 +822,21 @@ _operation_registry.update(_agg_ops)
 # _operation_registry.update(_unsupported_ops)
 
 
-def sin(numeric_value):
-    return Sin(numeric_value).to_expr()
+def assign_function_to_dtype(dtype, function_ops: dict):
+    # generate trigonometric function for NumericValue class
+    for klass in function_ops.keys():
+        # skip if the class is already in the ibis operations
+        if klass in ops.__dict__.values():
+            continue
+
+        def f(_klass):
+            return lambda *args: _klass(*args).to_expr()
+        setattr(
+            dtype, klass.__name__.lower(), f(klass)
+        )
 
 
-NumericValue.sin = sin
+assign_function_to_dtype(NumericValue, _trigonometric_ops)
+assign_function_to_dtype(NumericValue, _math_ops)
+assign_function_to_dtype(StringValue, _string_ops)
+assign_function_to_dtype(NumericValue, _geometric_ops)

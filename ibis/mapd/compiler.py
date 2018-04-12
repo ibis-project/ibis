@@ -6,7 +6,7 @@ import ibis.expr.operations as ops
 import ibis.sql.compiler as compiles
 
 from .operations import (
-    _operation_registry, _name_expr, Sin
+    _operation_registry, _name_expr, _trigonometric_ops
 )
 
 
@@ -194,13 +194,3 @@ class MapDDialect(compiles.Dialect):
 dialect = MapDDialect
 compiles = MapDExprTranslator.compiles
 rewrites = MapDExprTranslator.rewrites
-
-
-@compiles(Sin)
-def compile_sin(translator, expr):
-    # pull out the arguments to the expression
-    arg, = expr.op().args
-
-    # compile the argument
-    compiled_arg = translator.translate(arg)
-    return 'sin(%s)' % compiled_arg
