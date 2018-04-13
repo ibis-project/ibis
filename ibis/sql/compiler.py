@@ -1,8 +1,14 @@
 """Core expression to SQL infrastructure.
 """
 
-from six import StringIO
+import abc
+
 from collections import defaultdict
+from itertools import chain
+
+import six
+
+from six import StringIO
 
 import ibis
 import ibis.common as com
@@ -16,13 +22,47 @@ import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 
 
+@six.add_metaclass(abc.ABCMeta)
+class DML(object):
+    @abc.abstractmethod
+    def compile(self):
+        pass
+
+
+@six.add_metaclass(abc.ABCMeta)
+class DDL(object):
+    @abc.abstractmethod
+    def compile(self):
+        pass
+
+
 class QueryAST(object):
 
-    __slots__ = 'context', 'queries'
+    __slots__ = 'context', 'dml', 'setup_queries', 'teardown_queries'
 
-    def __init__(self, context, queries):
+    def __init__(
+        self, context, dml, setup_queries=None, teardown_queries=None
+    ):
         self.context = context
-        self.queries = queries
+        self.dml = dml
+        self.setup_queries = setup_queries
+        self.teardown_queries = teardown_queries
+
+    @property
+    def queries(self):
+        return [self.dml]
+
+    def compile(self):
+        compiled_setup_queries = [q.compile() for q in self.setup_queries]
+        compiled_queries = [q.compile() for q in self.queries]
+        compiled_teardown_queries = [
+            q.compile() for q in self.teardown_queries
+        ]
+        return self.context.collapse(list(chain(
+            compiled_setup_queries,
+            compiled_queries,
+            compiled_teardown_queries,
+        )))
 
 
 class SelectBuilder(object):
@@ -61,30 +101,14 @@ class SelectBuilder(object):
 
     def get_result(self):
         # make idempotent
-        if len(self.queries) > 0:
+        if self.queries:
             return self._wrap_result()
-
-        # Generate other kinds of DDL statements that may be required to
-        # execute the passed query. For example, loding
-        setup_queries = self._generate_setup_queries()
-
-        # Make DDL statements to be executed after the main primary select
-        # statement(s)
-        teardown_queries = self._generate_teardown_queries()
 
         select_query = self._build_result_query()
 
-        self.queries.extend(setup_queries)
         self.queries.append(select_query)
-        self.queries.extend(teardown_queries)
 
         return select_query
-
-    def _generate_setup_queries(self):
-        return []
-
-    def _generate_teardown_queries(self):
-        return []
 
     def _build_result_query(self):
         self._collect_elements()
@@ -893,20 +917,80 @@ def _adapt_expr(expr):
                                    .format(type(expr)))
 
 
+class Union(DML):
+
+    def __init__(self, left_table, right_table, expr, context, distinct=False):
+        self.context = context
+        self.left = left_table
+        self.right = right_table
+        self.distinct = distinct
+        self.table_set = expr
+        self.filters = []
+
+    def _extract_subqueries(self):
+        self.subqueries = _extract_subqueries(self)
+        for subquery in self.subqueries:
+            self.context.set_extracted(subquery)
+
+    def format_subqueries(self):
+        context = self.context
+        subqueries = self.subqueries
+
+        return ',\n'.join([
+            '{} AS (\n{}\n)'.format(
+                context.get_ref(expr),
+                util.indent(context.get_compiled_expr(expr), 2)
+            ) for expr in subqueries
+        ])
+
+    def format_relation(self, expr):
+        ref = self.context.get_ref(expr)
+        if ref is not None:
+            return 'SELECT *\nFROM {}'.format(ref)
+        return self.context.get_compiled_expr(expr)
+
+    @property
+    def keyword(self):
+        return 'UNION' if self.distinct else 'UNION ALL'
+
+    def compile(self):
+        self._extract_subqueries()
+
+        left_set = self.format_relation(self.left)
+        right_set = self.format_relation(self.right)
+        extracted = self.format_subqueries()
+
+        buf = []
+
+        if extracted:
+            buf.append('WITH {}'.format(extracted))
+
+        buf += [left_set, self.keyword, right_set]
+
+        return '\n'.join(buf)
+
+
 class QueryBuilder(object):
 
     select_builder = SelectBuilder
+    union_class = Union
 
     def __init__(self, expr, context):
         self.expr = expr
         self.context = context
 
-    @property
-    def _union_class(self):
-        return Union
+    def generate_setup_queries(self):
+        return []
+
+    def generate_teardown_queries(self):
+        return []
 
     def get_result(self):
         op = self.expr.op()
+
+        # collect setup and teardown queries
+        setup_queries = self.generate_setup_queries()
+        teardown_queries = self.generate_teardown_queries()
 
         # TODO: any setup / teardown DDL statements will need to be done prior
         # to building the result set-generating statements.
@@ -915,13 +999,18 @@ class QueryBuilder(object):
         else:
             query = self._make_select()
 
-        return QueryAST(self.context, [query])
+        return QueryAST(
+            self.context,
+            query,
+            setup_queries=setup_queries,
+            teardown_queries=teardown_queries,
+        )
 
     def _make_union(self):
         op = self.expr.op()
-        return self._union_class(op.left, op.right, self.expr,
-                                 distinct=op.distinct,
-                                 context=self.context)
+        return self.union_class(op.left, op.right, self.expr,
+                                distinct=op.distinct,
+                                context=self.context)
 
     def _make_select(self):
         builder = self.select_builder(self.expr, self.context)
@@ -960,6 +1049,19 @@ class QueryContext(object):
 
     def _to_sql(self, expr, ctx):
         raise NotImplementedError
+
+    def collapse(self, queries):
+        """Turn a sequence of queries into something executable.
+
+        Parameters
+        ----------
+        queries : List[str]
+
+        Returns
+        -------
+        query : str
+        """
+        return '\n\n'.join(queries)
 
     @property
     def top_context(self):
@@ -1298,11 +1400,7 @@ class Dialect(object):
         return cls.translator.context_class(dialect=cls(), params=params)
 
 
-class DDL(object):
-    pass
-
-
-class Select(DDL):
+class Select(DML):
 
     """
     A SELECT statement which, after execution, might yield back to the user a
@@ -1745,54 +1843,3 @@ class TableSetFormatter(object):
                 buf.write(fmt_preds)
 
         return buf.getvalue()
-
-
-class Union(DDL):
-
-    def __init__(self, left_table, right_table, expr, context, distinct=False):
-        self.context = context
-        self.left = left_table
-        self.right = right_table
-        self.distinct = distinct
-        self.table_set = expr
-        self.filters = []
-
-    def _extract_subqueries(self):
-        self.subqueries = _extract_subqueries(self)
-        for subquery in self.subqueries:
-            self.context.set_extracted(subquery)
-
-    def format_subqueries(self):
-        context = self.context
-        subqueries = self.subqueries
-
-        return ',\n'.join([
-            '{} AS (\n{}\n)'.format(
-                context.get_ref(expr),
-                util.indent(context.get_compiled_expr(expr), 2)
-            ) for expr in subqueries
-        ])
-
-    def format_relation(self, expr):
-        ref = self.context.get_ref(expr)
-        if ref is not None:
-            return 'SELECT *\nFROM {}'.format(ref)
-        return self.context.get_compiled_expr(expr)
-
-    def compile(self):
-        union_keyword = 'UNION' if self.distinct else 'UNION ALL'
-
-        self._extract_subqueries()
-
-        left_set = self.format_relation(self.left)
-        right_set = self.format_relation(self.right)
-        extracted = self.format_subqueries()
-
-        buf = []
-
-        if extracted:
-            buf.append('WITH {}'.format(extracted))
-
-        buf.extend([left_set, union_keyword, right_set])
-
-        return '\n'.join(buf)

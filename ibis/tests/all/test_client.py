@@ -30,12 +30,11 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
 
     # we might need a public API for it
     ast = con._build_ast(expr, backend.make_context())
-    query = con.sync_query(con, ast.queries[0])
+    query = con.sync_query(con, ast)
     schema = query.schema()
 
     # clickhouse columns has been defined as non-nullable
     # whereas other backends don't support non-nullable columns yet
     expected = ibis.schema([(name, dtype(nullable=schema[name].nullable))
                             for name, dtype in expected])
-
     assert query.schema().equals(expected)

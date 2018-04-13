@@ -10,7 +10,7 @@ environment:
   PGPASSWORD: "Password12!"
 
   IBIS_TEST_DOWNLOAD_DIRECTORY: "%USERPROFILE%"
-  IBIS_TEST_DOWNLOAD_BASE_URL: "https://storage.googleapis.com/ibis-ci-data"
+  IBIS_TEST_DOWNLOAD_BASE_URL: "https://storage.googleapis.com/ibis-testing-data"
   IBIS_TEST_DOWNLOAD_NAME: "ibis-testing-data.tar.gz"
 
   IBIS_TEST_DATA_DIRECTORY: "%USERPROFILE%\\ibis-testing-data"

@@ -108,7 +108,7 @@ class ClickhouseQuery(Query):
 
     def execute(self):
         cursor = self.client._execute(
-            self.compiled_ddl,
+            self.compiled_sql,
             external_tables=self._external_tables()
         )
         result = self._fetch(cursor)

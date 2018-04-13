@@ -42,6 +42,11 @@ def execute_node_literal(op, *args, **kwargs):
     return op.value
 
 
+@execute_node.register(ops.Literal, object, dt.Interval)
+def execute_interval_literal(op, value, dtype, **kwargs):
+    return pd.Timedelta(value, dtype.unit)
+
+
 @execute_node.register(ops.Limit, pd.DataFrame, integer_types, integer_types)
 def execute_limit_frame(op, data, limit, offset, **kwargs):
     return data.iloc[offset:offset + limit]

@@ -49,6 +49,10 @@ class UnsupportedBackendType(TranslationError):
     pass
 
 
+class UnboundExpressionError(ValueError, IbisError):
+    pass
+
+
 class IbisInputError(ValueError, IbisError):
     pass
 

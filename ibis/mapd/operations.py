@@ -91,7 +91,7 @@ def binary_infix_op(infix_sym):
     def formatter(translator, expr):
         op = expr.op()
 
-        left, right = op.args
+        left, right = op.args[0], op.args[1]
         left_ = _parenthesize(translator, left)
         right_ = _parenthesize(translator, right)
 
@@ -507,12 +507,6 @@ class Degrees(ops.UnaryOp):
     output_type = rlz.shape_like('arg', ops.dt.float)
 
 
-class PI(ops.Constant):
-    """Converts radians to degrees"""
-    def output_type(self):
-        return ops.dt.float64.scalar_type()
-
-
 class Log(ops.Ln):
     """
 
@@ -547,62 +541,19 @@ class Truncate(ops.NumericBinaryOp):
 
 # STATS
 """
-class Correlation(x, y)	CORRELATION_FLOAT(x, y)	Alias of CORR. Returns the coefficient of correlation of a set of number pairs.
-class  CORR(x, y)	CORR_FLOAT(x, y)	Returns the coefficient of correlation of a set of number pairs.
 class  COVAR_POP(x, y)	COVAR_POP_FLOAT(x, y)	Returns the population covariance of a set of number pairs.
 class  COVAR_SAMP(x, y)	COVAR_SAMP_FLOAT(x, y)	Returns the sample covariance of a set of number pairs.
-ops.StandardDev: agg_variance_like('stddev'),
-# STDDEV(x)	STDDEV_FLOAT(x)	Alias of STDDEV_SAMP. Returns sample standard deviation of the value.
-# STDDEV_POP(x)	STDDEV_POP_FLOAT(x)	Returns the population standard the standard deviation of the value.
-# STDDEV_SAMP(x)	STDDEV_SAMP_FLOAT(x)	Returns the sample standard deviation of the value.
-ops.Variance: agg_variance_like('var'),
-# VARIANCE(x)	VARIANCE_FLOAT(x)	Alias of VAR_SAMP. Returns the sample variance of the value.
-# VAR_POP(x)	VAR_POP_FLOAT(x)	Returns the population variance sample variance of the value.
-# VAR_SAMP(x)	VAR_SAMP_FLOAT(x)	Returns the sample variance of the value.
 """
 
 
-# TRIGONOMETRY
+class Corr(ops.BinaryOp):
+    """
+    Returns the coefficient of correlation of a set of number pairs.
 
-class TrigonometryUnary(ops.UnaryOp):
-    """Trigonometry base unary"""
-    output_type = rlz.shape_like('arg', 'float')
-
-
-class TrigonometryBinary(ops.BinaryOp):
-    """Trigonometry base binary"""
-
-
-class Acos(TrigonometryUnary):
-    """Returns the arc cosine of x"""
-
-
-class Asin(TrigonometryUnary):
-    """Returns the arc sine of x"""
-
-
-class Atan(TrigonometryUnary):
-    """Returns the arc tangent of x"""
-
-
-class Atan2(TrigonometryBinary):
-    """Returns the arc tangent of x and y"""
-
-
-class Cos(TrigonometryUnary):
-    """Returns the cosine of x"""
-
-
-class Cot(TrigonometryUnary):
-    """Returns the cotangent of x"""
-
-
-class Sin(TrigonometryUnary):
-    """Returns the sine of x"""
-
-
-class Tan(TrigonometryUnary):
-    """Returns the tangent of x"""
+    """
+    x = ops.Arg(rlz.numeric)
+    y = ops.Arg(rlz.numeric)
+    output_type = rlz.shape_like('x', ops.dt.float)
 
 
 # GEOMETRIC
@@ -705,30 +656,23 @@ _math_ops = {
 }
 
 _stats_ops = {
-    # CORRELATION(x, y)	CORRELATION_FLOAT(x, y)	Alias of CORR. Returns the coefficient of correlation of a set of number pairs.
-    # CORR(x, y)	CORR_FLOAT(x, y)	Returns the coefficient of correlation of a set of number pairs.
+    Corr: fixed_arity('corr', 2),
     # COVAR_POP(x, y)	COVAR_POP_FLOAT(x, y)	Returns the population covariance of a set of number pairs.
     # COVAR_SAMP(x, y)	COVAR_SAMP_FLOAT(x, y)	Returns the sample covariance of a set of number pairs.
     ops.StandardDev: agg_variance_like('stddev'),
-    # STDDEV(x)	STDDEV_FLOAT(x)	Alias of STDDEV_SAMP. Returns sample standard deviation of the value.
-    # STDDEV_POP(x)	STDDEV_POP_FLOAT(x)	Returns the population standard the standard deviation of the value.
-    # STDDEV_SAMP(x)	STDDEV_SAMP_FLOAT(x)	Returns the sample standard deviation of the value.
     ops.Variance: agg_variance_like('var'),
-    # VARIANCE(x)	VARIANCE_FLOAT(x)	Alias of VAR_SAMP. Returns the sample variance of the value.
-    # VAR_POP(x)	VAR_POP_FLOAT(x)	Returns the population variance sample variance of the value.
-    # VAR_SAMP(x)	VAR_SAMP_FLOAT(x)	Returns the sample variance of the value.
 }
 
 
 _trigonometric_ops = {
-    Acos: unary('acos'),
-    Asin: unary('asin'),
-    Atan: unary('atan'),
-    Atan2: fixed_arity('atan2', 2),
-    Cos: unary('cos'),
-    Cot: unary('cot'),
-    Sin: unary('sin'),
-    Tan: unary('tan')
+    ops.Acos: unary('acos'),
+    ops.Asin: unary('asin'),
+    ops.Atan: unary('atan'),
+    ops.Atan2: fixed_arity('atan2', 2),
+    ops.Cos: unary('cos'),
+    ops.Cot: unary('cot'),
+    ops.Sin: unary('sin'),
+    ops.Tan: unary('tan')
 }
 
 _geometric_ops = {
@@ -744,6 +688,7 @@ _string_ops = {
     # ops.RegexExtract: _regex_extract,
     # ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
     # str LIKE pattern	'ab' LIKE 'ab'	Returns true if the string matches the pattern
+    ops.StringSQLLike: binary_infix_op('like'),
     # str NOT LIKE pattern	'ab' NOT LIKE 'cd'	Returns true if the string does not match the pattern
     # str ILIKE pattern	'AB' ILIKE 'ab'	Case-insensitive LIKE
     # str REGEXP POSIX pattern	'^[a-z]+r$'	Lowercase string ending with r
@@ -823,14 +768,24 @@ _operation_registry.update(_agg_ops)
 
 
 def assign_function_to_dtype(dtype, function_ops: dict):
-    # generate trigonometric function for NumericValue class
+    """
+
+    :param dtype:
+    :param function_ops:
+    :return:
+    """
     for klass in function_ops.keys():
         # skip if the class is already in the ibis operations
         if klass in ops.__dict__.values():
             continue
 
         def f(_klass):
+            """
+            Return a lambda function that return to_expr() result from the
+            custom classes.
+            """
             return lambda *args: _klass(*args).to_expr()
+        # assign new function to the defined DataType
         setattr(
             dtype, klass.__name__.lower(), f(klass)
         )
@@ -840,3 +795,4 @@ assign_function_to_dtype(NumericValue, _trigonometric_ops)
 assign_function_to_dtype(NumericValue, _math_ops)
 assign_function_to_dtype(StringValue, _string_ops)
 assign_function_to_dtype(NumericValue, _geometric_ops)
+assign_function_to_dtype(NumericValue, _stats_ops)

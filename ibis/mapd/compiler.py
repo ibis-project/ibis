@@ -3,10 +3,11 @@ from six import StringIO
 import ibis.common as com
 import ibis.util as util
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 import ibis.sql.compiler as compiles
 
 from .operations import (
-    _operation_registry, _name_expr, _trigonometric_ops
+    _operation_registry, _name_expr, Corr
 )
 
 
@@ -194,3 +195,77 @@ class MapDDialect(compiles.Dialect):
 dialect = MapDDialect
 compiles = MapDExprTranslator.compiles
 rewrites = MapDExprTranslator.rewrites
+
+
+@compiles(ops.StandardDev)
+def compile_std(translator, expr):
+    # pull out the arguments to the expression
+    args = expr.op().args
+    args_size = len(args)
+
+    x = args[0]
+    how = '' if args_size < 2 else '_%s' % args[1].upper()[:4]
+
+    f_type = '' if isinstance(x, ir.IntegerColumn) else '_FLOAT'
+
+    # compile the argument
+    compiled_arg = translator.translate(x)
+
+    return 'STDDEV%s%s(%s)' % (how, f_type, compiled_arg)
+
+
+@compiles(ops.Variance)
+def compile_var(translator, expr):
+    # pull out the arguments to the expression
+    args = expr.op().args
+    args_size = len(args)
+
+    x = args[0]
+    how = '' if args_size < 2 else '_%s' % args[1].upper()[:4]
+
+    if how == '':
+        f_name = 'VARIANCE'
+    else:
+        f_name = 'VAR'
+
+    f_type = '' if isinstance(x, ir.IntegerColumn) else '_FLOAT'
+
+    # compile the argument
+    compiled_arg = translator.translate(x)
+
+    return '%s%s%s(%s)' % (f_name, how, f_type, compiled_arg)
+
+
+@compiles(Corr)
+def compile_corr(translator, expr):
+    # pull out the arguments to the expression
+    args = expr.op().args
+
+    x, y = args
+
+    f_type = ''
+    if isinstance(x, ir.FloatingColumn) or isinstance(y, ir.FloatingColumn):
+        f_type = '_FLOAT'
+
+    # compile the argument
+    compiled_x = translator.translate(x)
+    compiled_y = translator.translate(y)
+
+    return 'CORR%s(%s, %s)' % (f_type, compiled_x, compiled_y)
+
+
+@compiles(ops.StringLength)
+def compile_char_length(translator, expr):
+    # pull out the arguments to the expression
+    arg = expr.op().args[0]
+
+    # compile the argument
+    compiled_arg = translator.translate(arg)
+
+    return 'CHAR_LENGTH(%s)' % compiled_arg
+
+
+@compiles(ops.Pi)
+def compile_pi(*args, **kwargs):
+    # pull out the arguments to the expression
+    return 'PI()'

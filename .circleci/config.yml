@@ -73,14 +73,15 @@ build: &build
         name: List Docker Images
         command: docker images
     - run:
-        name: Clone the conda-forge Recipe
-        command: docker-compose run ibis git clone https://github.com/conda-forge/ibis-framework-feedstock /tmp/ibis-framework-feedstock
+        name: Clone, update and build conda-forge recipe
+        command: docker-compose run ibis ci/feedstock.py test
     - run:
-        name: Build Conda Recipe
-        command: |
-          docker-compose run ibis conda build /tmp/ibis-framework-feedstock/recipe \
-            --python "${PYTHON_VERSION}" \
-            --channel conda-forge
+        name: Permission the host for package deployment
+        command: sudo chown -R "${USER}":"${USER}" /tmp/ibis/packages
+    - store_artifacts:
+        path: /tmp/ibis/packages/linux-64
+    - store_artifacts:
+        path: /tmp/ibis/packages/noarch
 
 
 benchmark: &benchmark
@@ -204,25 +205,12 @@ workflows:
   test:
     jobs:
       - python27_test
+      - python27_conda_build
+
       - python35_test
+      - python35_conda_build
+
       - python36_test
-
-      - python27_conda_build:
-          requires:
-            - python27_test
-
-      - python35_conda_build:
-          requires:
-            - python35_test
-
-      - python36_conda_build:
-          requires:
-            - python36_test
-
-      - python36_benchmark:
-          requires:
-            - python36_test
-
-      - python36_docs:
-          requires:
-            - python36_test
+      - python36_conda_build
+      - python36_benchmark
+      - python36_docs

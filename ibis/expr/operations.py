@@ -1,18 +1,3 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 import six
 import toolz
 import operator
@@ -299,6 +284,11 @@ class UnaryOp(ValueOp):
     arg = Arg(rlz.any)
 
 
+class BinaryOp(ValueOp):
+    left = Arg(rlz.any)
+    right = Arg(rlz.any)
+
+
 class Cast(ValueOp):
     arg = Arg(rlz.any)
     to = Arg(dt.dtype)
@@ -529,6 +519,53 @@ class Log2(Logarithm):
 
 class Log10(Logarithm):
     """Logarithm base 10"""
+
+
+# TRIGONOMETRIC OPERATIONS
+
+class TrigonometryUnary(UnaryOp):
+    """Trigonometry base unary"""
+    arg = Arg(rlz.numeric)
+    output_type = rlz.shape_like('arg', 'float')
+
+
+class TrigonometryBinary(BinaryOp):
+    """Trigonometry base binary"""
+    left = Arg(rlz.numeric)
+    right = Arg(rlz.numeric)
+    output_type = rlz.shape_like('left', 'float')
+
+
+class Acos(TrigonometryUnary):
+    """Returns the arc cosine of x"""
+
+
+class Asin(TrigonometryUnary):
+    """Returns the arc sine of x"""
+
+
+class Atan(TrigonometryUnary):
+    """Returns the arc tangent of x"""
+
+
+class Atan2(TrigonometryBinary):
+    """Returns the arc tangent of x and y"""
+
+
+class Cos(TrigonometryUnary):
+    """Returns the cosine of x"""
+
+
+class Cot(TrigonometryUnary):
+    """Returns the cotangent of x"""
+
+
+class Sin(TrigonometryUnary):
+    """Returns the sine of x"""
+
+
+class Tan(TrigonometryUnary):
+    """Returns the tangent of x"""
 
 
 class StringUnaryOp(UnaryOp):
@@ -1312,10 +1349,14 @@ class SimpleCase(ValueOp):
         assert len(self.cases) == len(self.results)
 
     def root_tables(self):
-        all_exprs = [self.base] + self.cases + self.results + (
-            [] if self.default is None else [self.default]
+        return distinct_roots(
+            *itertools.chain(
+                [self.base],
+                self.cases,
+                self.results,
+                [] if self.default is None else [self.default]
+            )
         )
-        return distinct_roots(*all_exprs)
 
     def output_type(self):
         exprs = self.results + [self.default]
@@ -1332,10 +1373,13 @@ class SearchedCase(ValueOp):
 
     def root_tables(self):
         cases, results, default = self.args
-        all_exprs = cases.values + results.values + (
-            [] if default is None else [default]
+        return distinct_roots(
+            *itertools.chain(
+                cases.values,
+                results.values,
+                [] if default is None else [default]
+            )
         )
-        return distinct_roots(*all_exprs)
 
     def output_type(self):
         exprs = self.results + [self.default]
@@ -2187,6 +2231,14 @@ class TimestampNow(Constant):
 
 class E(Constant):
 
+    def output_type(self):
+        return partial(ir.FloatingScalar, dtype=dt.float64)
+
+
+class Pi(Constant):
+    """
+
+    """
     def output_type(self):
         return partial(ir.FloatingScalar, dtype=dt.float64)
 

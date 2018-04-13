@@ -76,6 +76,7 @@ __all__ = [
     'negate', 'ifelse',
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window',
+    'pi'
 ]
 
 
@@ -388,6 +389,8 @@ def row_number():
 
 e = ops.E().to_expr()
 
+pi = ops.Pi().to_expr().name('pi')
+
 
 def _add_methods(klass, method_table):
     for k, v in method_table.items():
@@ -397,6 +400,17 @@ def _add_methods(klass, method_table):
 def _unary_op(name, klass, doc=None):
     def f(arg):
         return klass(arg).to_expr()
+    f.__name__ = name
+    if doc is not None:
+        f.__doc__ = doc
+    else:
+        f.__doc__ = klass.__doc__
+    return f
+
+
+def _generic_op(name, klass, doc=None):
+    def f(*args):
+        return klass(*args).to_expr()
     f.__name__ = name
     if doc is not None:
         f.__doc__ = doc
@@ -1300,6 +1314,16 @@ ln = _unary_op('ln', ops.Ln)
 sign = _unary_op('sign', ops.Sign)
 sqrt = _unary_op('sqrt', ops.Sqrt)
 
+# TRIGONOMETRIC OPERATIONS
+acos = _unary_op('acos', ops.Acos)
+asin = _unary_op('asin', ops.Asin)
+atan = _unary_op('atan', ops.Atan)
+atan2 = _generic_op('atan2', ops.Atan2)
+cos = _unary_op('cos', ops.Cos)
+cot = _unary_op('cot', ops.Cot)
+sin = _unary_op('sin', ops.Sin)
+tan = _unary_op('tan', ops.Tan)
+
 
 _numeric_value_methods = dict(
     __neg__=negate,
@@ -1353,6 +1377,15 @@ _numeric_value_methods = dict(
 
     __mod__=mod,
     __rmod__=_rbinop_expr('__rmod__', ops.Modulus),
+    # trigonometric operations
+    acos=acos,
+    asin=asin,
+    atan=atan,
+    atan2=atan2,
+    cos=cos,
+    cot=cot,
+    sin=sin,
+    tan=tan,
 )
 
 
