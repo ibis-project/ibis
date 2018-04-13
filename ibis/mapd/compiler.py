@@ -252,3 +252,20 @@ def compile_corr(translator, expr):
     compiled_y = translator.translate(y)
 
     return 'CORR%s(%s, %s)' % (f_type, compiled_x, compiled_y)
+
+
+@compiles(ops.StringLength)
+def compile_char_length(translator, expr):
+    # pull out the arguments to the expression
+    arg = expr.op().args[0]
+
+    # compile the argument
+    compiled_arg = translator.translate(arg)
+
+    return 'CHAR_LENGTH(%s)' % compiled_arg
+
+
+@compiles(ops.Pi)
+def compile_pi(*args, **kwargs):
+    # pull out the arguments to the expression
+    return 'PI()'

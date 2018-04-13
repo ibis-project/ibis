@@ -12,10 +12,6 @@ import ibis.sql.transforms as transforms
 from ibis.expr.types import NumericValue, StringValue
 
 
-def pi_compile():
-    return 'pi()'
-
-
 def _cast(translator, expr):
     from ibis.mapd.client import MapDDataType
 
@@ -511,15 +507,6 @@ class Degrees(ops.UnaryOp):
     output_type = rlz.shape_like('arg', ops.dt.float)
 
 
-class PI(ops.ValueOp):
-    """Converts radians to degrees"""
-    def output_type(self):
-        return ops.dt.float64.scalar_type()
-
-
-pi = PI()
-
-
 class Log(ops.Ln):
     """
 
@@ -567,49 +554,6 @@ class Corr(ops.BinaryOp):
     x = ops.Arg(rlz.numeric)
     y = ops.Arg(rlz.numeric)
     output_type = rlz.shape_like('x', ops.dt.float)
-
-
-# TRIGONOMETRY
-
-class TrigonometryUnary(ops.UnaryOp):
-    """Trigonometry base unary"""
-    output_type = rlz.shape_like('arg', 'float')
-
-
-class TrigonometryBinary(ops.BinaryOp):
-    """Trigonometry base binary"""
-
-
-class Acos(TrigonometryUnary):
-    """Returns the arc cosine of x"""
-
-
-class Asin(TrigonometryUnary):
-    """Returns the arc sine of x"""
-
-
-class Atan(TrigonometryUnary):
-    """Returns the arc tangent of x"""
-
-
-class Atan2(TrigonometryBinary):
-    """Returns the arc tangent of x and y"""
-
-
-class Cos(TrigonometryUnary):
-    """Returns the cosine of x"""
-
-
-class Cot(TrigonometryUnary):
-    """Returns the cotangent of x"""
-
-
-class Sin(TrigonometryUnary):
-    """Returns the sine of x"""
-
-
-class Tan(TrigonometryUnary):
-    """Returns the tangent of x"""
 
 
 # GEOMETRIC
@@ -721,14 +665,14 @@ _stats_ops = {
 
 
 _trigonometric_ops = {
-    Acos: unary('acos'),
-    Asin: unary('asin'),
-    Atan: unary('atan'),
-    Atan2: fixed_arity('atan2', 2),
-    Cos: unary('cos'),
-    Cot: unary('cot'),
-    Sin: unary('sin'),
-    Tan: unary('tan')
+    ops.Acos: unary('acos'),
+    ops.Asin: unary('asin'),
+    ops.Atan: unary('atan'),
+    ops.Atan2: fixed_arity('atan2', 2),
+    ops.Cos: unary('cos'),
+    ops.Cot: unary('cot'),
+    ops.Sin: unary('sin'),
+    ops.Tan: unary('tan')
 }
 
 _geometric_ops = {

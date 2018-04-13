@@ -284,6 +284,11 @@ class UnaryOp(ValueOp):
     arg = Arg(rlz.any)
 
 
+class BinaryOp(ValueOp):
+    left = Arg(rlz.any)
+    right = Arg(rlz.any)
+
+
 class Cast(ValueOp):
     arg = Arg(rlz.any)
     to = Arg(dt.dtype)
@@ -514,6 +519,53 @@ class Log2(Logarithm):
 
 class Log10(Logarithm):
     """Logarithm base 10"""
+
+
+# TRIGONOMETRIC OPERATIONS
+
+class TrigonometryUnary(UnaryOp):
+    """Trigonometry base unary"""
+    arg = Arg(rlz.numeric)
+    output_type = rlz.shape_like('arg', 'float')
+
+
+class TrigonometryBinary(BinaryOp):
+    """Trigonometry base binary"""
+    left = Arg(rlz.numeric)
+    right = Arg(rlz.numeric)
+    output_type = rlz.shape_like('left', 'float')
+
+
+class Acos(TrigonometryUnary):
+    """Returns the arc cosine of x"""
+
+
+class Asin(TrigonometryUnary):
+    """Returns the arc sine of x"""
+
+
+class Atan(TrigonometryUnary):
+    """Returns the arc tangent of x"""
+
+
+class Atan2(TrigonometryBinary):
+    """Returns the arc tangent of x and y"""
+
+
+class Cos(TrigonometryUnary):
+    """Returns the cosine of x"""
+
+
+class Cot(TrigonometryUnary):
+    """Returns the cotangent of x"""
+
+
+class Sin(TrigonometryUnary):
+    """Returns the sine of x"""
+
+
+class Tan(TrigonometryUnary):
+    """Returns the tangent of x"""
 
 
 class StringUnaryOp(UnaryOp):
@@ -2179,6 +2231,14 @@ class TimestampNow(Constant):
 
 class E(Constant):
 
+    def output_type(self):
+        return partial(ir.FloatingScalar, dtype=dt.float64)
+
+
+class Pi(Constant):
+    """
+
+    """
     def output_type(self):
         return partial(ir.FloatingScalar, dtype=dt.float64)
 
