@@ -310,7 +310,7 @@ def literal(translator, expr):
     elif isinstance(expr, ir.ArrayValue):
         return str(list(value))
     elif isinstance(expr, ir.SetScalar):
-        return str(tuple(value))
+        return '({})'.format(', '.join(map(repr, value)))
     else:
         raise NotImplementedError(type(expr))
 
