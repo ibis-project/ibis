@@ -44,8 +44,11 @@ class Backend(object):
         kwargs.setdefault('check_names', self.check_names)
         tm.assert_series_equal(*args, **kwargs)
 
-    def assert_frame_equal(self, *args, **kwargs):
+    def assert_frame_equal(self, left, right, *args, **kwargs):
         tm.assert_frame_equal(*args, **kwargs)
+        left = left.reset_index(drop=True)
+        right = right.reset_index(drop=True)
+        tm.assert_frame_equal(left, right, *args, **kwargs)
 
     def default_series_rename(self, series, name='tmp'):
         return series.rename(name)
@@ -68,13 +71,20 @@ class Backend(object):
         return module.dialect.make_context(params=params)
 
 
-class UnorderedSeriesComparator(object):
+class UnorderedComparator(object):
 
     def assert_series_equal(self, left, right, *args, **kwargs):
         left = left.sort_values().reset_index(drop=True)
         right = right.sort_values().reset_index(drop=True)
-        return super(UnorderedSeriesComparator, self).assert_series_equal(
+        return super(UnorderedComparator, self).assert_series_equal(
             left, right, *args, **kwargs)
+
+    def assert_frame_equal(self, left, right, *args, **kwargs):
+        columns = list(set(left.columns) & set(right.columns))
+        left = left.sort_values(by=columns)
+        right = right.sort_values(by=columns)
+        return super(UnorderedComparator, self).assert_frame_equal(
+             left, right, *args, **kwargs)
 
 
 class Csv(Backend):
@@ -223,7 +233,7 @@ class Clickhouse(Backend):
         return t.mutate(bool_col=t.bool_col == 1)
 
 
-class BigQuery(UnorderedSeriesComparator, Backend):
+class BigQuery(UnorderedComparator, Backend):
     supports_divide_by_zero = True
 
     def connect(self, data_directory):
@@ -244,7 +254,7 @@ class BigQuery(UnorderedSeriesComparator, Backend):
             pytest.skip('no bigquery credentials found')
 
 
-class Impala(UnorderedSeriesComparator, Backend):
+class Impala(UnorderedComparator, Backend):
     supports_arrays = True
     supports_arrays_outside_of_select = False
     check_dtype = False

@@ -580,7 +580,7 @@ def _literal(t, expr):
     if isinstance(expr, ir.IntervalScalar):
         return sa.text("INTERVAL '{} {}'".format(expr.op().value,
                                                  expr.type().resolution))
-    elif isinstance(expr, (ir.ArrayScalar, ir.SetScalar)):
+    elif isinstance(expr, ir.SetScalar):
         return list(map(sa.literal, expr.op().value))
     else:
         return sa.literal(expr.op().value)
