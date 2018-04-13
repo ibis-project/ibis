@@ -12,6 +12,10 @@ import ibis.sql.transforms as transforms
 from ibis.expr.types import NumericValue, StringValue
 
 
+def pi_compile():
+    return 'pi()'
+
+
 def _cast(translator, expr):
     from ibis.mapd.client import MapDDataType
 
@@ -507,10 +511,13 @@ class Degrees(ops.UnaryOp):
     output_type = rlz.shape_like('arg', ops.dt.float)
 
 
-class PI(ops.Constant):
+class PI(ops.ValueOp):
     """Converts radians to degrees"""
     def output_type(self):
         return ops.dt.float64.scalar_type()
+
+
+pi = PI()
 
 
 class Log(ops.Ln):
@@ -547,19 +554,19 @@ class Truncate(ops.NumericBinaryOp):
 
 # STATS
 """
-class Correlation(x, y)	CORRELATION_FLOAT(x, y)	Alias of CORR. Returns the coefficient of correlation of a set of number pairs.
-class  CORR(x, y)	CORR_FLOAT(x, y)	Returns the coefficient of correlation of a set of number pairs.
 class  COVAR_POP(x, y)	COVAR_POP_FLOAT(x, y)	Returns the population covariance of a set of number pairs.
 class  COVAR_SAMP(x, y)	COVAR_SAMP_FLOAT(x, y)	Returns the sample covariance of a set of number pairs.
-ops.StandardDev: agg_variance_like('stddev'),
-# STDDEV(x)	STDDEV_FLOAT(x)	Alias of STDDEV_SAMP. Returns sample standard deviation of the value.
-# STDDEV_POP(x)	STDDEV_POP_FLOAT(x)	Returns the population standard the standard deviation of the value.
-# STDDEV_SAMP(x)	STDDEV_SAMP_FLOAT(x)	Returns the sample standard deviation of the value.
-ops.Variance: agg_variance_like('var'),
-# VARIANCE(x)	VARIANCE_FLOAT(x)	Alias of VAR_SAMP. Returns the sample variance of the value.
-# VAR_POP(x)	VAR_POP_FLOAT(x)	Returns the population variance sample variance of the value.
-# VAR_SAMP(x)	VAR_SAMP_FLOAT(x)	Returns the sample variance of the value.
 """
+
+
+class Corr(ops.BinaryOp):
+    """
+    Returns the coefficient of correlation of a set of number pairs.
+
+    """
+    x = ops.Arg(rlz.numeric)
+    y = ops.Arg(rlz.numeric)
+    output_type = rlz.shape_like('x', ops.dt.float)
 
 
 # TRIGONOMETRY
@@ -705,18 +712,11 @@ _math_ops = {
 }
 
 _stats_ops = {
-    # CORRELATION(x, y)	CORRELATION_FLOAT(x, y)	Alias of CORR. Returns the coefficient of correlation of a set of number pairs.
-    # CORR(x, y)	CORR_FLOAT(x, y)	Returns the coefficient of correlation of a set of number pairs.
+    Corr: fixed_arity('corr', 2),
     # COVAR_POP(x, y)	COVAR_POP_FLOAT(x, y)	Returns the population covariance of a set of number pairs.
     # COVAR_SAMP(x, y)	COVAR_SAMP_FLOAT(x, y)	Returns the sample covariance of a set of number pairs.
     ops.StandardDev: agg_variance_like('stddev'),
-    # STDDEV(x)	STDDEV_FLOAT(x)	Alias of STDDEV_SAMP. Returns sample standard deviation of the value.
-    # STDDEV_POP(x)	STDDEV_POP_FLOAT(x)	Returns the population standard the standard deviation of the value.
-    # STDDEV_SAMP(x)	STDDEV_SAMP_FLOAT(x)	Returns the sample standard deviation of the value.
     ops.Variance: agg_variance_like('var'),
-    # VARIANCE(x)	VARIANCE_FLOAT(x)	Alias of VAR_SAMP. Returns the sample variance of the value.
-    # VAR_POP(x)	VAR_POP_FLOAT(x)	Returns the population variance sample variance of the value.
-    # VAR_SAMP(x)	VAR_SAMP_FLOAT(x)	Returns the sample variance of the value.
 }
 
 
@@ -824,14 +824,24 @@ _operation_registry.update(_agg_ops)
 
 
 def assign_function_to_dtype(dtype, function_ops: dict):
-    # generate trigonometric function for NumericValue class
+    """
+
+    :param dtype:
+    :param function_ops:
+    :return:
+    """
     for klass in function_ops.keys():
         # skip if the class is already in the ibis operations
         if klass in ops.__dict__.values():
             continue
 
         def f(_klass):
+            """
+            Return a lambda function that return to_expr() result from the
+            custom classes.
+            """
             return lambda *args: _klass(*args).to_expr()
+        # assign new function to the defined DataType
         setattr(
             dtype, klass.__name__.lower(), f(klass)
         )
@@ -841,3 +851,4 @@ assign_function_to_dtype(NumericValue, _trigonometric_ops)
 assign_function_to_dtype(NumericValue, _math_ops)
 assign_function_to_dtype(StringValue, _string_ops)
 assign_function_to_dtype(NumericValue, _geometric_ops)
+assign_function_to_dtype(NumericValue, _stats_ops)

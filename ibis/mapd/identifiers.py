@@ -250,6 +250,7 @@ _data_type = frozenset({
     'varchar',
 })
 
+# @TODO: check if it is necessary
 _ibis = frozenset({
     'literal'
 })
