@@ -315,6 +315,7 @@ def _contains(t, expr):
     op = expr.op()
 
     left, right = [t.translate(arg) for arg in op.args]
+
     return left.in_(right)
 
 
@@ -344,7 +345,12 @@ def _reduction_format(t, sa_func, arg, where):
 
 
 def _literal(t, expr):
-    return sa.literal(expr.op().value)
+    value = expr.op().value
+
+    if isinstance(expr, (ir.ArrayScalar, ir.SetScalar)):
+        return list(map(sa.literal, value))
+
+    return sa.literal(value)
 
 
 def _value_list(t, expr):

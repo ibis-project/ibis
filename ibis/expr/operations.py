@@ -2108,7 +2108,8 @@ class BetweenTime(Between):
 
 class Contains(ValueOp, BooleanValueOp):
     value = Arg(rlz.any)
-    options = Arg(rlz.one_of([rlz.column(rlz.any),
+    options = Arg(rlz.one_of([rlz.set_,
+                              rlz.column(rlz.any),
                               rlz.list_of(rlz.any)]))
 
     def output_type(self):

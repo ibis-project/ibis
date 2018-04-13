@@ -131,13 +131,16 @@ def test_string_temporal_compare_between_datetimes(con, left, right):
     assert result
 
 
-def test_field_in_literals(con, alltypes, translate):
-    expr = alltypes.string_col.isin(['foo', 'bar', 'baz'])
-    assert translate(expr) == "`string_col` IN ('foo', 'bar', 'baz')"
+@pytest.mark.parametrize('container', [list, tuple, set])
+def test_field_in_literals(con, alltypes, translate, container):
+    foobar = container(['foo', 'bar', 'baz'])
+
+    expr = alltypes.string_col.isin(foobar)
+    assert translate(expr) == "`string_col` IN {}".format(tuple(foobar))
     assert len(con.execute(expr))
 
-    expr = alltypes.string_col.notin(['foo', 'bar', 'baz'])
-    assert translate(expr) == "`string_col` NOT IN ('foo', 'bar', 'baz')"
+    expr = alltypes.string_col.notin(foobar)
+    assert translate(expr) == "`string_col` NOT IN {}".format(tuple(foobar))
     assert len(con.execute(expr))
 
 
@@ -230,20 +233,3 @@ def test_search_case(con, alltypes, translate):
 END"""
     assert translate(expr) == expected
     assert len(con.execute(expr))
-
-
-# TODO: Clickhouse raises incompatible type error
-# def test_bucket_to_case(con, alltypes, translate):
-#     buckets = [0, 10, 25, 50]
-
-#     expr1 = alltypes.float_col.bucket(buckets)
-#     expected1 = """\
-# CASE
-#   WHEN (`float_col` >= 0) AND (`float_col` < 10) THEN 0
-#   WHEN (`float_col` >= 10) AND (`float_col` < 25) THEN 1
-#   WHEN (`float_col` >= 25) AND (`float_col` <= 50) THEN 2
-#   ELSE Null
-# END"""
-
-#     assert translate(expr1) == expected1
-#     assert len(con.execute(expr1))

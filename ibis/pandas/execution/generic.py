@@ -694,12 +694,12 @@ def execute_node_string_join(op, args, **kwargs):
     return op.sep.join(args)
 
 
-@execute_node.register(ops.Contains, pd.Series, list)
+@execute_node.register(ops.Contains, pd.Series, (list, set, frozenset))
 def execute_node_contains_series_list(op, data, elements, **kwargs):
     return data.isin(elements)
 
 
-@execute_node.register(ops.NotContains, pd.Series, list)
+@execute_node.register(ops.NotContains, pd.Series, (list, set, frozenset))
 def execute_node_not_contains_series_list(op, data, elements, **kwargs):
     return ~data.isin(elements)
 
