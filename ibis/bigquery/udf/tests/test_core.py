@@ -1,16 +1,14 @@
-import pytest
+import builtins
+import sys
+import tempfile
 
-from ibis.compat import PY2
+import pytest
 
 import ibis.expr.datatypes as dt
 
-ibis_type_to_bigquery_type = pytest.importorskip(
-    'ibis.bigquery.udf.core.ibis_type_to_bigquery_type'
-)
-SymbolTable = pytest.importorskip('ibis.bigquery.udf.core.SymbolTable')
-PythonToJavaScriptTranslator = pytest.importorskip(
-    'ibis.bigquery.udf.core.PythonToJavaScriptTranslator'
-)
+from ibis.bigquery.udf.core import ibis_type_to_bigquery_type  # noqa: E402
+from ibis.bigquery.udf.core import SymbolTable  # noqa: E402
+from ibis.bigquery.udf.core import PythonToJavaScriptTranslator  # noqa: E402
 
 
 @pytest.mark.parametrize(
@@ -27,7 +25,7 @@ PythonToJavaScriptTranslator = pytest.importorskip(
                 ('b', dt.string),
                 ('c', dt.Array(dt.string)),
             ]),
-            'STRUCT<a: INT64, b: STRING, c: ARRAY<STRING>>'
+            'STRUCT<a FLOAT64, b STRING, c ARRAY<STRING>>'
         ),
         (dt.date, 'DATE'),
         (dt.timestamp, 'TIMESTAMP'),
@@ -36,7 +34,7 @@ PythonToJavaScriptTranslator = pytest.importorskip(
             raises=TypeError,
             reason='Not supported in BigQuery'
         ),
-        ('array<struct<a: string>>', 'ARRAY<STRUCT<a: STRING>>'),
+        ('array<struct<a: string>>', 'ARRAY<STRUCT<a STRING>>'),
     ]
 )
 def test_ibis_type_to_bigquery_type(type, expected):
@@ -97,15 +95,19 @@ function* f(a) {
     assert expected == js
 
 
-@pytest.mark.skipif(PY2, reason='Python 2 does not have yield from syntax')
+@pytest.mark.skipif(sys.platform == 'win32', reason='Skip on Windows')
 def test_yield_from():
     d = {}
-    exec("""\
-def f(a):
-    yield from [1, 2, 3]""", d)
-    f = d['f']
 
-    js = compile(f)
+    with tempfile.NamedTemporaryFile('r+') as f:
+        f.write("""\
+def f(a):
+    yield from [1, 2, 3]""")
+        f.seek(0)
+        code = builtins.compile(f.read(), f.name, 'exec')
+        exec(code, d)
+        f = d['f']
+        js = compile(f)
     expected = """\
 function* f(a) {
     yield* [1, 2, 3];
@@ -131,21 +133,32 @@ function f() {
     assert expected == js
 
 
+def add(x, y):
+    return x + y
+
+
+def sub(x, y):
+    return x - y
+
+
+def mul(x, y):
+    return x * y
+
+
+def div(x, y):
+    return x / y
+
+
 @pytest.mark.parametrize(
     ('op', 'expected'),
-    [
-        (lambda a, b: a + b, '+'),
-        (lambda a, b: a - b, '-'),
-        (lambda a, b: a * b, '*'),
-        (lambda a, b: a / b, '/'),
-    ]
+    [(add, '+'), (sub, '-'), (mul, '*'), (div, '/')]
 )
 def test_binary_operators(op, expected):
     js = compile(op)
     expected = """\
-function op(a, b) {
-    return (a {} b);
-}""".format(expected)
+function {}(x, y) {{
+    return (x {} y);
+}}""".format(op.__name__, expected)
     assert expected == js
 
 
@@ -220,7 +233,7 @@ function f() {
     let a = true;
     let b = false;
     let c = null;
-    return c !== null ? a : b;
+    return ((c !== null) ? a : b);
 }"""
     js = compile(f)
     assert expected == js
@@ -280,7 +293,7 @@ def test_continue():
 function f() {
     let i = 0;
     for (let i of [1, 2, 3]) {
-        if (i === 1) {
+        if ((i === 1)) {
             continue;
         }
     }
@@ -290,15 +303,28 @@ function f() {
     assert expected == js
 
 
-def test_lambda():
+def test_lambda_with_splat():
     def f():
-        a = lambda *args: sum(args)  # noqa: E731
-        return a(1, 2, 3)
+        def sum(sequence):
+            total = 0
+            for value in sequence:
+                total += value
+            return total
+
+        splat_sum = lambda *args: sum(args)  # noqa: E731
+        return splat_sum(1, 2, 3)
 
     expected = """\
 function f() {
-    let a = (...args) => sum(args);
-    return a(1, 2, 3);
+    function sum(sequence) {
+        let total = 0;
+        for (let value of sequence) {
+            total += value;
+        }
+        return total;
+    }
+    let splat_sum = ((...args) => sum(args));
+    return splat_sum(1, 2, 3);
 }"""
     js = compile(f)
     assert expected == js
@@ -314,7 +340,7 @@ def test_logical_not():
 function f() {
     let a = true;
     let b = false;
-    return !a && !b;
+    return ((!a) && (!b));
 }"""
     js = compile(f)
     assert expected == js

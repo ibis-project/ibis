@@ -6,8 +6,11 @@ import pandas.util.testing as tm
 import ibis
 import ibis.expr.datatypes as dt
 
-udf = pytest.importorskip('ibis.bigquery.udf.udf')
 pytest.importorskip('google.cloud.bigquery')
+
+pytestmark = pytest.mark.bigquery
+
+from ibis.bigquery.api import udf  # noqa: E402
 
 
 @pytest.fixture(scope='module')
