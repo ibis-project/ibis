@@ -2,6 +2,9 @@ import math
 import pytest
 import decimal
 import operator
+
+from itertools import repeat
+
 from pytest import param
 
 import numpy as np
@@ -13,29 +16,18 @@ from ibis import literal as L
 
 
 @pytest.mark.parametrize(('operand_fn', 'expected_operand_fn'), [
-    param(lambda t: t.float_col,
-          lambda t: t.float_col,
-          id='float-column-isinf'),
-    param(lambda t: t.double_col,
-          lambda t: t.double_col,
-          id='double-column'),
-    param(lambda t: ibis.literal(1.3),
-          lambda t: 1.3,
-          id='float-literal',
-          marks=pytest.mark.xfail),  # strange fail on Postgres
-    param(lambda t: ibis.literal(np.nan),
-          lambda t: np.nan,
-          id='nan-literal'),
-    param(lambda t: ibis.literal(np.inf),
-          lambda t: np.inf,
-          id='inf-literal'),
+    param(lambda t: t.float_col, lambda t: t.float_col, id='float-column'),
+    param(lambda t: t.double_col, lambda t: t.double_col, id='double-column'),
+    param(lambda t: ibis.literal(1.3), lambda t: 1.3, id='float-literal'),
+    param(lambda t: ibis.literal(np.nan), lambda t: np.nan, id='nan-literal'),
+    param(lambda t: ibis.literal(np.inf), lambda t: np.inf, id='inf-literal'),
     param(lambda t: ibis.literal(-np.inf),
           lambda t: -np.inf,
           id='-inf-literal')
 ])
 @pytest.mark.parametrize(('expr_fn', 'expected_expr_fn'), [
-    param(lambda o: o.isnan(), lambda o: np.isnan(o), id='isnan'),
-    param(lambda o: o.isinf(), lambda o: np.isinf(o), id='isinf')
+    param(operator.methodcaller('isnan'), np.isnan, id='isnan'),
+    param(operator.methodcaller('isinf'), np.isinf, id='isinf')
 ])
 @tu.skipif_unsupported
 def test_isnan_isinf(backend, con, alltypes, df,
@@ -75,8 +67,7 @@ def test_isnan_isinf(backend, con, alltypes, df,
     (L(11) % 3, 11 % 3),
 ])
 @tu.skipif_unsupported
-def test_math_functions_on_literals(backend, con, alltypes, df,
-                                    expr, expected):
+def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
     result = con.execute(expr)
 
     if isinstance(result, decimal.Decimal):
@@ -86,6 +77,111 @@ def test_math_functions_on_literals(backend, con, alltypes, df,
         assert result == decimal.Decimal(str(expected))
     else:
         assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('expr_fn', 'expected_fn'),
+    [
+        param(
+            lambda t: (-t.double_col).abs(),
+            lambda t: (-t.double_col).abs(),
+            id='abs-neg'
+        ),
+        param(
+            lambda t: t.double_col.abs(),
+            lambda t: t.double_col.abs(),
+            id='abs'
+        ),
+        param(
+            lambda t: ibis.least(t.bigint_col, t.int_col),
+            lambda t: pd.Series(map(min, t.bigint_col, t.int_col)),
+            id='least-all-columns'
+        ),
+        param(
+            lambda t: ibis.least(t.bigint_col, t.int_col, -2),
+            lambda t: pd.Series(map(min, t.bigint_col, t.int_col, repeat(-2))),
+            id='least-scalar'
+        ),
+        param(
+            lambda t: ibis.greatest(t.bigint_col, t.int_col),
+            lambda t: pd.Series(map(max, t.bigint_col, t.int_col)),
+            id='greatest-all-columns'
+        ),
+        param(
+            lambda t: ibis.greatest(t.bigint_col, t.int_col, -2),
+            lambda t: pd.Series(map(max, t.bigint_col, t.int_col, repeat(-2))),
+            id='greatest-scalar'
+        ),
+        param(
+            lambda t: t.double_col.round(),
+            lambda t: t.double_col.round().astype('int64'),
+            id='round'
+        ),
+        param(
+            lambda t: t.double_col.round(2),
+            lambda t: t.double_col.round(2),
+            id='round-with-param'
+        ),
+        param(
+            lambda t: t.double_col.ceil(),
+            lambda t: np.ceil(t.double_col).astype('int64'),
+            id='ceil'
+        ),
+        param(
+            lambda t: t.double_col.floor(),
+            lambda t: np.floor(t.double_col).astype('int64'),
+            id='floor'
+        ),
+        param(
+            lambda t: t.double_col.exp(),
+            lambda t: np.exp(t.double_col),
+            id='exp'
+        ),
+        param(
+            lambda t: t.double_col.sign(),
+            lambda t: np.sign(t.double_col),
+            id='sign'
+        ),
+        param(
+            lambda t: (-t.double_col).sign(),
+            lambda t: np.sign(-t.double_col),
+            id='sign-negative'
+        ),
+        param(
+            lambda t: t.double_col.sqrt(),
+            lambda t: np.sqrt(t.double_col),
+            id='sqrt'
+        ),
+        param(
+            lambda t: t.double_col.log(2),
+            lambda t: np.log2(t.double_col),
+            id='log2'
+        ),
+        param(
+            lambda t: t.double_col.ln(),
+            lambda t: np.log(t.double_col),
+            id='ln'
+        ),
+        param(
+            lambda t: t.double_col.log10(),
+            lambda t: np.log10(t.double_col),
+            id='log10'
+        ),
+        param(
+            lambda t: t.double_col % 3,
+            lambda t: t.double_col % 3,
+            id='mod'
+        ),
+    ]
+)
+@tu.skipif_unsupported
+def test_math_functions_columns(
+    backend, con, alltypes, df, expr_fn, expected_fn
+):
+    expr = expr_fn(alltypes)
+    expected = expected_fn(df).rename('tmp')
+    result = con.execute(expr)
+    backend.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize('op', [

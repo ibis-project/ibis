@@ -132,14 +132,16 @@ def _timestamp_add(t, expr):
 
 
 def _is_nan(t, expr):
-    arg = t.translate(expr.op().args[0])
-    return arg == sa.literal('nan', sa.Float)
+    arg, = expr.op().args
+    sa_arg = t.translate(arg)
+    return sa_arg == float('nan')
 
 
 def _is_inf(t, expr):
-    arg = t.translate(expr.op().args[0])
-    return sa.or_(arg == sa.literal('inf', sa.Float),
-                  arg == sa.literal('-inf', sa.Float))
+    arg, = expr.op().args
+    sa_arg = t.translate(arg)
+    inf = float('inf')
+    return sa.or_(sa_arg == inf, sa_arg == -inf)
 
 
 def _cast(t, expr):

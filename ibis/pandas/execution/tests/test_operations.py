@@ -108,10 +108,10 @@ def test_mutate(t, df):
         (methodcaller('log10'), np.log10),
         (methodcaller('log', 2), lambda x: np.log(x) / np.log(2)),
         (methodcaller('log2'), np.log2),
-        (methodcaller('round', 0), methodcaller('round', 0)),
+        (methodcaller('round', 0), lambda x: x.round(0).astype('int64')),
         (methodcaller('round', -2), methodcaller('round', -2)),
         (methodcaller('round', 2), methodcaller('round', 2)),
-        (methodcaller('round'), methodcaller('round')),
+        (methodcaller('round'), lambda x: x.round().astype('int64')),
         (methodcaller('sign'), np.sign),
         (methodcaller('sqrt'), np.sqrt),
     ]
@@ -157,7 +157,13 @@ def test_aggregation_group_by(t, df, where, ibis_func, pandas_func):
     result['neg_mean_int64_with_zeros'] = (
         result.neg_mean_int64_with_zeros.astype('float64')
     )
-    tm.assert_frame_equal(result[expected.columns], expected)
+    expected['mean_float64_positive'] = (
+        expected.mean_float64_positive.astype('float64'))
+    result['mean_float64_positive'] = result.mean_float64_positive.astype(
+        'float64')
+    lhs = result[expected.columns]
+    rhs = expected
+    tm.assert_frame_equal(lhs, rhs)
 
 
 def test_aggregation_without_group_by(t, df):
