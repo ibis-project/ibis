@@ -46,7 +46,8 @@ def test_simple_aggregate_execute(alltypes, df):
 
 
 def test_list_tables(client):
-    assert set(client.list_tables(like='functional_alltypes')) == {
+    tables = client.list_tables(like='functional_alltypes')
+    assert set(tables) == {
         'functional_alltypes',
         'functional_alltypes_parted',
     }
@@ -61,13 +62,6 @@ def test_current_database(client):
 def test_database(client):
     database = client.database(client.dataset_id)
     assert database.list_tables() == client.list_tables()
-
-
-def test_database_layer(client):
-    bq_dataset = client._proxy.get_dataset(client.dataset_id)
-    actual = client.list_tables()
-    expected = [el.name for el in bq_dataset.list_tables()]
-    assert sorted(actual) == sorted(expected)
 
 
 def test_compile_toplevel():
@@ -375,3 +369,31 @@ def test_scalar_param_partition_time(parted_alltypes):
     expr = t[t.PARTITIONTIME < param]
     df = expr.execute(params={param: '2017-01-01'})
     assert df.empty
+
+
+def test_exists_table(client):
+    assert client.exists_table('functional_alltypes')
+    assert not client.exists_table('footable')
+
+
+def test_exists_database(client):
+    assert client.exists_database('testing')
+    assert not client.exists_database('foodataset')
+
+
+@pytest.mark.parametrize('kind', ['date', 'timestamp'])
+@pytest.mark.parametrize(
+    ('option', 'expected_fn'),
+    [
+        (None, 'my_{}_parted_col'.format),
+        ('PARTITIONTIME', lambda kind: 'PARTITIONTIME'),
+        ('foo_bar', lambda kind: 'foo_bar'),
+    ]
+)
+def test_parted_column(client, kind, option, expected_fn):
+    table_name = '{}_column_parted'.format(kind)
+    option_key = 'bigquery.partition_col'
+    with ibis.config.option_context(option_key, option):
+        t = client.table(table_name)
+    expected_column = expected_fn(kind)
+    assert t.columns == [expected_column, 'string_col', 'int_col']

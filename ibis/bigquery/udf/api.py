@@ -137,7 +137,12 @@ def udf(input_type, output_type, strict=True):
             (name, Arg(rlz.value(type)))
             for name, type in zip(sig.parameters.keys(), input_type)
         ] + [
-            ('output_type', output_type.array_type),
+            (
+                'output_type',
+                lambda self, output_type=output_type: rlz.shape_like(
+                    self.args, dtype=output_type
+                )
+            ),
             ('__slots__', ('js',)),
         ])
         udf_node = type(f.__name__, (BigQueryUDFNode,), udf_node_fields)
