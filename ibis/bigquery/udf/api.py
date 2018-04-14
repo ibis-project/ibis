@@ -1,7 +1,13 @@
-import functools
+import collections
 import inspect
 
+import ibis.expr.rules as rlz
+
+from ibis.compat import functools, signature
+from ibis.expr.signature import Argument as Arg
+
 from ibis.bigquery.compiler import BigQueryUDFNode, compiles
+
 from ibis.bigquery.udf.core import (
     PythonToJavaScriptTranslator,
     ibis_type_to_bigquery_type,
@@ -124,11 +130,15 @@ def udf(input_type, output_type, strict=True):
         if not callable(f):
             raise TypeError('f must be callable, got {}'.format(f))
 
-        udf_node = type(
-            f.__name__,
-            (BigQueryUDFNode,),
-            dict(input_type=input_type, output_type=output_type.array_type),
-        )
+        sig = signature(f)
+        udf_node_fields = collections.OrderedDict([
+            (name, Arg(rlz.value(type)))
+            for name, type in zip(sig.parameters.keys(), input_type)
+        ] + [
+            ('output_type', output_type.array_type),
+            ('__slots__', ('js',)),
+        ])
+        udf_node = type(f.__name__, (BigQueryUDFNode,), udf_node_fields)
 
         @compiles(udf_node)
         def compiles_udf_node(t, expr):
