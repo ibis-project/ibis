@@ -117,7 +117,7 @@ class TypeSignature(OrderedDict):
 
     def validate(self, *args, **kwargs):
         if len(args) > len(self.keys()):
-            raise TypeError('takes {} positional arguments ut {} were '
+            raise TypeError('takes {!d} positional arguments but {!d} were '
                             'given'.format(len(self.keys()), len(args)))
 
         result = []
