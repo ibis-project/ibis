@@ -163,13 +163,16 @@ def test_temporal_binop(backend, con, alltypes, df,
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(('ibis_pattern', 'pandas_pattern'), [
-    ('%Y%m%d', '%Y%m%d')
-])
+@pytest.mark.parametrize(
+    ('ibis_pattern', 'pandas_pattern'),
+    [
+        ('%Y%m%d', '%Y%m%d')
+    ]
+)
 @tu.skipif_unsupported
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
-    expr = alltypes.timestamp_col.strftime('%Y%m%d')
-    expected = df.timestamp_col.dt.strftime('%Y%m%d')
+    expr = alltypes.timestamp_col.strftime(ibis_pattern)
+    expected = df.timestamp_col.dt.strftime(pandas_pattern)
 
     result = expr.execute()
     expected = backend.default_series_rename(expected)

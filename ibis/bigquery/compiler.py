@@ -307,6 +307,13 @@ def _timestamp_op(func, units):
     return _formatter
 
 
+STRFTIME_FORMAT_FUNCTIONS = {
+    dt.Date: 'DATE',
+    dt.Time: 'TIME',
+    dt.Timestamp: 'TIMESTAMP',
+}
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -398,6 +405,27 @@ rewrites = BigQueryExprTranslator.rewrites
 @compiles(ops.Divide)
 def bigquery_compiles_divide(t, e):
     return 'IEEE_DIVIDE({}, {})'.format(*map(t.translate, e.op().args))
+
+
+@compiles(ops.Strftime)
+def compiles_strftime(translator, expr):
+    arg, format_string = expr.op().args
+    arg_type = arg.type()
+    strftime_format_func_name = STRFTIME_FORMAT_FUNCTIONS[type(arg_type)]
+    fmt_string = translator.translate(format_string)
+    arg_formatted = translator.translate(arg)
+    if isinstance(arg_type, dt.Timestamp):
+        return 'FORMAT_{}({}, {}, {!r})'.format(
+            strftime_format_func_name,
+            fmt_string,
+            arg_formatted,
+            arg_type.timezone if arg_type.timezone is not None else 'UTC'
+        )
+    return 'FORMAT_{}({}, {})'.format(
+        strftime_format_func_name,
+        fmt_string,
+        arg_formatted
+    )
 
 
 @rewrites(ops.Any)
