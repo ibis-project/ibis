@@ -679,6 +679,10 @@ class StringSQLLike(FuzzySearch):
     escape = Arg(six.string_types, default=None)
 
 
+class StringSQLILike(StringSQLLike):
+    """SQL ilike operation"""
+
+
 class RegexSearch(FuzzySearch):
     pass
 
@@ -845,6 +849,38 @@ class StandardDev(VarianceBase):
 
 class Variance(VarianceBase):
     pass
+
+
+class Correlation(Reduction):
+    """
+    coefficient of correlation of a set of number pairs.
+
+    """
+    left = Arg(rlz.numeric)
+    right = Arg(rlz.numeric)
+    how = Arg(rlz.isin({'sample', 'pop'}), default=None)
+    where = Arg(rlz.boolean, default=None)
+
+    def output_type(self):
+        if isinstance(self.left, ir.DecimalValue):
+            dtype = self.left.type().largest
+        else:
+            dtype = dt.float64
+        return dtype.scalar_type()
+
+
+class Covariance(Reduction):
+    left = Arg(rlz.column(rlz.numeric))
+    right = Arg(rlz.column(rlz.numeric))
+    how = Arg(rlz.isin({'sample', 'pop'}), default=None)
+    where = Arg(rlz.boolean, default=None)
+
+    def output_type(self):
+        if isinstance(self.left, ir.DecimalValue):
+            dtype = self.left.type().largest
+        else:
+            dtype = dt.float64
+        return dtype.scalar_type()
 
 
 class Max(Reduction):
@@ -2237,7 +2273,7 @@ class E(Constant):
 
 class Pi(Constant):
     """
-
+    PI Constant
     """
     def output_type(self):
         return partial(ir.FloatingScalar, dtype=dt.float64)

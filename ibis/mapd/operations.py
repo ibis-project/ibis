@@ -82,7 +82,10 @@ def agg_variance_like(func):
 
     def formatter(translator, expr):
         arg, how, where = expr.op().args
-        return _aggregate(translator, variants[how], arg, where)
+
+        return _aggregate(
+            translator, variants[how], arg, where
+        )
 
     return formatter
 
@@ -102,6 +105,11 @@ def binary_infix_op(infix_sym):
 def _call(translator, func, *args):
     args_ = ', '.join(map(translator.translate, args))
     return '{0!s}({1!s})'.format(func, args_)
+
+
+def _call_date_trunc(translator, func, *args):
+    args_ = ', '.join(map(translator.translate, args))
+    return 'DATE_TRUNC({0!s}, {1!s})'.format(func, args_)
 
 
 def _aggregate(translator, func, arg, where=None):
@@ -360,28 +368,37 @@ def _timestamp_from_unix(translator, expr):
     return _call(translator, 'toDateTime', arg)
 
 
-def _truncate(translator, expr):
+def _date_truncate(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
     converters = {
-        'Y': 'toStartOfYear',
-        'M': 'toStartOfMonth',
-        'W': 'toMonday',
-        'D': 'toDate',
-        'h': 'toStartOfHour',
-        'm': 'toStartOfMinute',
-        's': 'toDateTime'
+        'Y': 'YEAR',
+        'M': 'MONTH',
+        'W': 'WEEK',
+        'd': 'DAY',
+        'h': 'HOUR',
+        'm': 'MINUTE',
+        's': 'SECOND',
+        'U': 'MILLENIUM',
+        'C': 'CENTURY',
+        'D': 'DECADE',
+        'Q': 'QUARTER',
+        'q': 'QUARTERDAY'
     }
 
     try:
-        converter = converters[unit]
+        if len(unit) > 1:
+            converter = unit
+        else:
+            converter = converters[unit]
+
     except KeyError:
         raise com.UnsupportedOperationError(
             'Unsupported truncate unit {}'.format(unit)
         )
 
-    return _call(translator, converter, arg)
+    return _call_date_trunc(translator, converter, arg)
 
 
 def _exists_subquery(translator, expr):
@@ -539,23 +556,6 @@ class Truncate(ops.NumericBinaryOp):
     output_type = rlz.shape_like('left', ops.dt.float)
 
 
-# STATS
-"""
-class  COVAR_POP(x, y)	COVAR_POP_FLOAT(x, y)	Returns the population covariance of a set of number pairs.
-class  COVAR_SAMP(x, y)	COVAR_SAMP_FLOAT(x, y)	Returns the sample covariance of a set of number pairs.
-"""
-
-
-class Corr(ops.BinaryOp):
-    """
-    Returns the coefficient of correlation of a set of number pairs.
-
-    """
-    x = ops.Arg(rlz.numeric)
-    y = ops.Arg(rlz.numeric)
-    output_type = rlz.shape_like('x', ops.dt.float)
-
-
 # GEOMETRIC
 
 class Distance_In_Meters(ops.ValueOp):
@@ -585,21 +585,6 @@ class Conv_4326_900913_Y(ops.UnaryOp):
     output_type = rlz.shape_like('arg', ops.dt.float)
 
 
-# String
-
-class StringLengthBytes(ops.UnaryOp):
-
-    """
-    Compute length in bytes of strings
-
-    Returns
-    -------
-    length : int32
-    """
-
-    output_type = rlz.shape_like('arg', ops.dt.binary)
-
-
 # https://www.mapd.com/docs/latest/mapd-core-guide/dml/
 _binary_infix_ops = {
     # math
@@ -626,6 +611,7 @@ _unary_ops = {
     ops.Not: _not,
 }
 
+# COMPARISON
 _comparison_ops = {
     ops.IsNull: unary('is null'),
     ops.Between: _between,
@@ -635,7 +621,7 @@ _comparison_ops = {
     ops.NotContains: binary_infix_op('not in'),
 }
 
-
+# MATH
 _math_ops = {
     ops.Abs: unary('abs'),
     ops.Ceil: unary('ceil'),
@@ -646,24 +632,22 @@ _math_ops = {
     ops.Ln: unary('ln'),
     ops.Log10: unary('log10'),
     Mod: fixed_arity('mod', 2),  # MapD Mod wrap to IBIS Modulus
-    # PI: fixed_arity('pi', 0),  # check another option to use it
-    # ops.Power: binary('power'),  # TODO: check if it is necessary
     Radians: unary('radians'),
-    # ops.Round: _round,
+    ops.Round: _round,
     Sign: _sign,
     ops.Sqrt: unary('sqrt'),
     Truncate: fixed_arity('truncate', 2)
 }
 
+# STATS
 _stats_ops = {
-    Corr: fixed_arity('corr', 2),
-    # COVAR_POP(x, y)	COVAR_POP_FLOAT(x, y)	Returns the population covariance of a set of number pairs.
-    # COVAR_SAMP(x, y)	COVAR_SAMP_FLOAT(x, y)	Returns the sample covariance of a set of number pairs.
+    ops.Correlation: fixed_arity('corr', 2),
     ops.StandardDev: agg_variance_like('stddev'),
     ops.Variance: agg_variance_like('var'),
+    ops.Covariance: fixed_arity('cov', 2),
 }
 
-
+# TRIGONOMETRIC
 _trigonometric_ops = {
     ops.Acos: unary('acos'),
     ops.Asin: unary('asin'),
@@ -683,28 +667,21 @@ _geometric_ops = {
 
 _string_ops = {
     ops.StringLength: unary('char_length'),
-    StringLengthBytes: unary('length'),
-    # ops.RegexSearch: fixed_arity('match', 2),
-    # ops.RegexExtract: _regex_extract,
-    # ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
-    # str LIKE pattern	'ab' LIKE 'ab'	Returns true if the string matches the pattern
+    ops.RegexSearch: binary_infix_op('REGEXP'),
     ops.StringSQLLike: binary_infix_op('like'),
-    # str NOT LIKE pattern	'ab' NOT LIKE 'cd'	Returns true if the string does not match the pattern
-    # str ILIKE pattern	'AB' ILIKE 'ab'	Case-insensitive LIKE
-    # str REGEXP POSIX pattern	'^[a-z]+r$'	Lowercase string ending with r
-    # REGEXP_LIKE ( str , POSIX pattern )	'^[hc]at'	cat or hat
+    ops.StringSQLILike: binary_infix_op('ilike'),
 }
 
 _date_ops = {
     ops.Date: unary('toDate'),
-    ops.DateTruncate: _truncate,
+    ops.DateTruncate: _date_truncate,
 
-    ops.TimestampNow: lambda *args: 'now()',
-    ops.TimestampTruncate: _truncate,
-    ops.TimeTruncate: _truncate,
+    ops.TimestampNow: fixed_arity('NOW', 0),
+    ops.TimestampTruncate: _date_truncate,
+    ops.TimeTruncate: _date_truncate,
     ops.IntervalFromInteger: _interval_from_integer,
 
-    ops.ExtractYear: unary('toYear'),
+    ops.ExtractYear: unary('YEAR'),
     ops.ExtractMonth: unary('toMonth'),
     ops.ExtractDay: unary('toDayOfMonth'),
     ops.ExtractHour: unary('toHour'),
@@ -721,10 +698,9 @@ _date_ops = {
 }
 
 _agg_ops = {
-    # TODO: this function receive a x and e parameter
     ApproxCountDistinct: agg('approx_count_cistinct'),
     ops.Count: agg('count'),
-    ops.CountDistinct: agg('count'),  # this function receive a x parameter
+    ops.CountDistinct: agg('count'),  # TODO: this function receive a x param
     ops.Mean: agg('avg'),
     ops.Max: agg('max'),
     ops.Min: agg('min'),

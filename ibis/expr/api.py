@@ -1454,6 +1454,38 @@ def variance(arg, where=None, how='sample'):
     return expr
 
 
+def correlation(left, right, where=None, how='sample'):
+    """
+    Compute corralation of numeric array
+
+    Parameters
+    ----------
+    how : {'sample', 'pop'}, default 'sample'
+
+    Returns
+    -------
+    corr : double scalar
+    """
+    expr = ops.Correlation(left, right, how, where).to_expr()
+    return expr
+
+
+def covariance(left, right, where=None, how='sample'):
+    """
+    Compute covariance of numeric array
+
+    Parameters
+    ----------
+    how : {'sample', 'pop'}, default 'sample'
+
+    Returns
+    -------
+    cov : double scalar
+    """
+    expr = ops.Covariance(left, right, how, where).to_expr()
+    return expr
+
+
 _numeric_column_methods = dict(
     mean=mean,
     cummean=cummean,
@@ -1465,6 +1497,8 @@ _numeric_column_methods = dict(
 
     std=std,
     var=variance,
+    corr=correlation,
+    cov=covariance,
 
     bucket=bucket,
     histogram=histogram,
@@ -1764,6 +1798,34 @@ def _string_like(self, patterns):
     )
 
 
+def _string_ilike(self, patterns):
+    """
+    Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
+    % as a multiple-character wildcard or _ (underscore) as a single-character
+    wildcard.
+
+    Use re_search or rlike for regex-based matching.
+
+    Parameters
+    ----------
+    pattern : str or List[str]
+        A pattern or list of patterns to match. If `pattern` is a list, then if
+        **any** pattern matches the input then the corresponding row in the
+        output is ``True``.
+
+    Returns
+    -------
+    matched : ir.BooleanColumn
+    """
+    return functools.reduce(
+        operator.or_,
+        (
+            ops.StringSQLILike(self, pattern).to_expr()
+            for pattern in util.promote_list(patterns)
+        )
+    )
+
+
 def re_search(arg, pattern):
     """
     Search string values using a regular expression. Returns True if the regex
@@ -1945,6 +2007,7 @@ _string_value_methods = dict(
     __contains__=_string_dunder_contains,
     contains=_string_contains,
     like=_string_like,
+    ilike=_string_ilike,
     rlike=re_search,
     replace=_string_replace,
     re_search=re_search,

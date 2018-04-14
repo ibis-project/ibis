@@ -7,7 +7,7 @@ import ibis.expr.types as ir
 import ibis.sql.compiler as compiles
 
 from .operations import (
-    _operation_registry, _name_expr, Corr
+    _operation_registry, _name_expr
 )
 
 
@@ -197,6 +197,13 @@ compiles = MapDExprTranslator.compiles
 rewrites = MapDExprTranslator.rewrites
 
 
+def _is_floating(*args):
+    for arg in args:
+        if isinstance(arg, ir.FloatingColumn):
+            return True
+    return False
+
+
 @compiles(ops.StandardDev)
 def compile_std(translator, expr):
     # pull out the arguments to the expression
@@ -206,7 +213,7 @@ def compile_std(translator, expr):
     x = args[0]
     how = '' if args_size < 2 else '_%s' % args[1].upper()[:4]
 
-    f_type = '' if isinstance(x, ir.IntegerColumn) else '_FLOAT'
+    f_type = '' if not _is_floating(x) else '_FLOAT'
 
     # compile the argument
     compiled_arg = translator.translate(x)
@@ -228,7 +235,7 @@ def compile_var(translator, expr):
     else:
         f_name = 'VAR'
 
-    f_type = '' if isinstance(x, ir.IntegerColumn) else '_FLOAT'
+    f_type = '' if not _is_floating(x) else '_FLOAT'
 
     # compile the argument
     compiled_arg = translator.translate(x)
@@ -236,22 +243,38 @@ def compile_var(translator, expr):
     return '%s%s%s(%s)' % (f_name, how, f_type, compiled_arg)
 
 
-@compiles(Corr)
+@compiles(ops.Correlation)
 def compile_corr(translator, expr):
     # pull out the arguments to the expression
     args = expr.op().args
 
-    x, y = args
+    x, y, how, where = args
 
-    f_type = ''
-    if isinstance(x, ir.FloatingColumn) or isinstance(y, ir.FloatingColumn):
-        f_type = '_FLOAT'
+    f_type = '' if not _is_floating(x, y) else '_FLOAT'
 
     # compile the argument
     compiled_x = translator.translate(x)
     compiled_y = translator.translate(y)
 
     return 'CORR%s(%s, %s)' % (f_type, compiled_x, compiled_y)
+
+
+@compiles(ops.Covariance)
+def compile_cov(translator, expr):
+    # pull out the arguments to the expression
+    args = expr.op().args
+
+    x, y, how, where = args
+
+    f_type = '' if not _is_floating(x, y) else '_FLOAT'
+
+    # compile the argument
+    compiled_x = translator.translate(x)
+    compiled_y = translator.translate(y)
+
+    return 'COVAR_%s%s(%s, %s)' % (
+        how[:4].upper(), f_type, compiled_x, compiled_y
+    )
 
 
 @compiles(ops.StringLength)
