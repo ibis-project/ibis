@@ -1,14 +1,14 @@
 from six import StringIO
+from .operations import (
+    _operation_registry, _name_expr
+)
+from . import operations as mapd_ops
 
 import ibis.common as com
 import ibis.util as util
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.sql.compiler as compiles
-
-from .operations import (
-    _operation_registry, _name_expr
-)
 
 
 def build_ast(expr, context):
@@ -281,10 +281,8 @@ def compile_cov(translator, expr):
 def compile_char_length(translator, expr):
     # pull out the arguments to the expression
     arg = expr.op().args[0]
-
     # compile the argument
     compiled_arg = translator.translate(arg)
-
     return 'CHAR_LENGTH(%s)' % compiled_arg
 
 

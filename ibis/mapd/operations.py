@@ -9,8 +9,6 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 
-from ibis.expr.types import NumericValue, StringValue
-
 
 def _cast(translator, expr):
     from ibis.mapd.client import MapDDataType
@@ -99,6 +97,37 @@ def binary_infix_op(infix_sym):
         right_ = _parenthesize(translator, right)
 
         return '{0!s} {1!s} {2!s}'.format(left_, infix_sym, right_)
+    return formatter
+
+
+def timestamp_binary_infix_op(func_name, infix_sym):
+    def formatter(translator, expr):
+        op = expr.op()
+
+        arg, unit = op.args[0], op.args[1]
+        arg_ = _parenthesize(translator, arg)
+
+        timestamp_code = {
+            'Y': 'YEAR',
+            'M': 'MONTH',
+            'D': 'DAY',
+            'W': 'WEEK',
+            'Q': 'QUARTER',
+            'h': 'HOUR',
+            'm': 'MINUTE',
+            's': 'SECOND',
+        }
+
+        if unit.upper() in [u.upper() for u in timestamp_code.keys()]:
+            converter = timestamp_code[unit].upper()
+        elif unit.upper() in [u.upper() for u in _timestamp_units.values()]:
+            converter = unit.upper()
+        else:
+            raise ValueError('`{}` unit is not supported!'.format(unit))
+
+        return '{0!s}({1!s} {2!s} {3!s})'.format(
+            func_name, converter, infix_sym, arg_
+        )
     return formatter
 
 
@@ -368,35 +397,27 @@ def _timestamp_from_unix(translator, expr):
     return _call(translator, 'toDateTime', arg)
 
 
-def _date_truncate(translator, expr):
+def date_truncate(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
-    converters = {
+    timestamp_code = {
         'Y': 'YEAR',
         'M': 'MONTH',
+        'D': 'DAY',
         'W': 'WEEK',
-        'd': 'DAY',
+        'Q': 'QUARTER',
         'h': 'HOUR',
         'm': 'MINUTE',
         's': 'SECOND',
-        'U': 'MILLENIUM',
-        'C': 'CENTURY',
-        'D': 'DECADE',
-        'Q': 'QUARTER',
-        'q': 'QUARTERDAY'
     }
 
-    try:
-        if len(unit) > 1:
-            converter = unit
-        else:
-            converter = converters[unit]
-
-    except KeyError:
-        raise com.UnsupportedOperationError(
-            'Unsupported truncate unit {}'.format(unit)
-        )
+    if unit.upper() in [u.upper() for u in timestamp_code.keys()]:
+        converter = timestamp_code[unit].upper()
+    elif unit.upper() in [u.upper() for u in _timestamp_units.values()]:
+        converter = unit.upper()
+    else:
+        raise ValueError('`{}` unit is not supported!'.format(unit))
 
     return _call_date_trunc(translator, converter, arg)
 
@@ -672,21 +693,49 @@ _string_ops = {
     ops.StringSQLILike: binary_infix_op('ilike'),
 }
 
+_timestamp_units = dict(ops._date_units)
+_timestamp_units.update(ops._time_units)
+_timestamp_units.update(dict(
+    millennium='MILLENNIUM',
+    MILLENNIUM='MILLENNIUM',
+
+    century='CENTURY',
+    CENTURY='CENTURY',
+
+    DECADE='DECADE',
+    decade='decade',
+
+    quarterday='quarterday',
+    QUARTERDAY='QUARTERDAY',
+
+    DOW='DOW',
+    ISODOW='DOW',
+    DOY='DOY',
+    EPOCH='EPOCH'
+))
+
+
+class TimestampExtract(ops.TimestampUnaryOp):
+    unit = ops.Arg(rlz.isin(_timestamp_units))
+    output_type = rlz.shape_like('arg', ops.dt.int32)
+
+
+class TimestampTruncate(ops.TimestampTruncate):
+    unit = ops.Arg(rlz.isin(_timestamp_units))
+
+
+class DateTruncate(ops.DateTruncate):
+    unit = ops.Arg(rlz.isin(_timestamp_units))
+
+
 _date_ops = {
     ops.Date: unary('toDate'),
-    ops.DateTruncate: _date_truncate,
+    DateTruncate: date_truncate,
 
     ops.TimestampNow: fixed_arity('NOW', 0),
-    ops.TimestampTruncate: _date_truncate,
-    ops.TimeTruncate: _date_truncate,
-    ops.IntervalFromInteger: _interval_from_integer,
+    TimestampTruncate: date_truncate,
 
-    ops.ExtractYear: unary('YEAR'),
-    ops.ExtractMonth: unary('toMonth'),
-    ops.ExtractDay: unary('toDayOfMonth'),
-    ops.ExtractHour: unary('toHour'),
-    ops.ExtractMinute: unary('toMinute'),
-    ops.ExtractSecond: unary('toSecond'),
+    TimestampExtract: timestamp_binary_infix_op('EXTRACT', 'FROM'),
 
     ops.DateAdd: binary_infix_op('+'),
     ops.DateSub: binary_infix_op('-'),
@@ -740,35 +789,55 @@ _operation_registry.update(_geometric_ops)
 _operation_registry.update(_string_ops)
 _operation_registry.update(_date_ops)
 _operation_registry.update(_agg_ops)
-# _operation_registry.update(_unsupported_ops)
 
 
-def assign_function_to_dtype(dtype, function_ops: dict):
+def assign_functions_to_dtype(dtype, function_ops, forced=False):
     """
 
     :param dtype:
-    :param function_ops:
+    :param function_ops: dict
+    :param forced:
     :return:
     """
     for klass in function_ops.keys():
         # skip if the class is already in the ibis operations
-        if klass in ops.__dict__.values():
+        if klass in ops.__dict__.values() and not forced:
             continue
-
-        def f(_klass):
-            """
-            Return a lambda function that return to_expr() result from the
-            custom classes.
-            """
-            return lambda *args: _klass(*args).to_expr()
         # assign new function to the defined DataType
-        setattr(
-            dtype, klass.__name__.lower(), f(klass)
+        _add_method(
+            dtype, klass, klass.__name__.lower()
         )
 
 
-assign_function_to_dtype(NumericValue, _trigonometric_ops)
-assign_function_to_dtype(NumericValue, _math_ops)
-assign_function_to_dtype(StringValue, _string_ops)
-assign_function_to_dtype(NumericValue, _geometric_ops)
-assign_function_to_dtype(NumericValue, _stats_ops)
+def _add_method(dtype, klass, func_name):
+    """
+
+    :param dtype:
+    :param klass:
+    :param func_name:
+    :return:
+    """
+    def f(_klass):
+        """
+        Return a lambda function that return to_expr() result from the
+        custom classes.
+        """
+        return lambda *args: _klass(*args).to_expr()
+    # assign new function to the defined DataType
+    setattr(
+        dtype, func_name, f(klass)
+    )
+
+
+assign_functions_to_dtype(ir.NumericValue, _trigonometric_ops)
+assign_functions_to_dtype(ir.NumericValue, _math_ops)
+assign_functions_to_dtype(ir.StringValue, _string_ops)
+assign_functions_to_dtype(ir.NumericValue, _geometric_ops)
+assign_functions_to_dtype(ir.NumericValue, _stats_ops)
+assign_functions_to_dtype(ir.TimestampColumn, _date_ops, forced=True)
+# assign_functions_to_dtype(ir.DateColumn, _date_ops, forced=True)
+
+_add_method(ir.TimestampColumn, TimestampTruncate, 'truncate')
+_add_method(ir.DateColumn, DateTruncate, 'truncate')
+_add_method(ir.TimestampColumn, TimestampExtract, 'extract')
+# _add_method(ir.DateColumn, TimestampExtract, 'extract')
