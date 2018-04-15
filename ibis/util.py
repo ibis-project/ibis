@@ -263,6 +263,10 @@ def convert_unit(value, unit, to):
     >>> x
     1
     """
+    # Don't do anything from and to units are equivalent
+
+    if unit == to:
+        return value
 
     units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
     factors = (7, 24, 60, 60, 1000, 1000, 1000)
