@@ -6,6 +6,14 @@ import ibis.expr.datatypes as dt
 
 
 class TypeTranslationContext(object):
+    """A tag class to allow alteration of the way a particular type is
+    translated.
+
+    Notes
+    -----
+    This is used to translate INT64 types to FLOAT64 when INT64 is used in the
+    definition of a UDF.
+    """
     __slots__ = ()
 
 
