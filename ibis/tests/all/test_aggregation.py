@@ -2,7 +2,6 @@ import pytest
 from pytest import param
 
 import numpy as np
-
 import ibis.tests.util as tu
 
 
@@ -125,3 +124,22 @@ def test_aggregation(backend, alltypes, df, result_fn, expected_fn,
     result = expr.execute()
     expected = expected_fn(df, pandas_cond(df))
     np.testing.assert_allclose(result, expected)
+
+
+def test_value_counts(backend, alltypes, df):
+    bool_clause = alltypes.string_col.isin(['1', '4', '7'])
+    expr = alltypes[bool_clause].string_col.value_counts()
+    result = expr.execute()
+
+    where = df.string_col.isin(['1', '4', '7'])
+    expected = (df.loc[where, 'string_col']
+                .value_counts()
+                .to_frame()
+                .reset_index()
+                .rename(columns={'index': 'string_col',
+                                 'string_col': 'count'}))
+
+    backend.assert_frame_equal(
+        result.sort_values('string_col').reset_index(drop=True),
+        expected.sort_values('string_col').reset_index(drop=True)
+    )
