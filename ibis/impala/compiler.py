@@ -1,17 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from six import StringIO
 import datetime
 
@@ -747,11 +733,7 @@ def _timestamp_from_unix(translator, expr):
     op = expr.op()
 
     val, unit = op.args
-
-    if unit == 'ms':
-        val = (val / 1000).cast('int32')
-    elif unit == 'us':
-        val = (val / 1000000).cast('int32')
+    val = util.convert_unit(val, unit, 's').cast('int32')
 
     arg = _from_unixtime(translator, val)
     return 'CAST({} AS timestamp)'.format(arg)

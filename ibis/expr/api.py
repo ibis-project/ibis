@@ -2229,36 +2229,9 @@ _date_value_methods = dict(
 _add_methods(ir.DateValue, _date_value_methods)
 
 
-def _convert_unit(value, unit, to):
-    units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
-    factors = (7, 24, 60, 60, 1000, 1000, 1000)
-
-    monthly_units = ('Y', 'Q', 'M')
-    monthly_factors = (4, 3)
-
-    try:
-        i, j = units.index(unit), units.index(to)
-    except ValueError:
-        try:
-            i, j = monthly_units.index(unit), monthly_units.index(to)
-            factors = monthly_factors
-        except ValueError:
-            raise ValueError('Cannot convert to or from '
-                             'non-fixed-length interval')
-
-    factor = functools.reduce(operator.mul, factors[i:j], 1)
-
-    if i < j:
-        return value * factor
-    elif i > j:
-        return value // factor
-    else:
-        return value
-
-
 def _to_unit(arg, target_unit):
     if arg._dtype.unit != target_unit:
-        arg = _convert_unit(arg, arg._dtype.unit, target_unit)
+        arg = util.convert_unit(arg, arg._dtype.unit, target_unit)
         arg.type().unit = target_unit
     return arg
 
