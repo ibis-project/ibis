@@ -482,17 +482,26 @@ def _needs_parens(op):
             op_klass in {ops.Negate, ops.IsNull, ops.NotNull})
 
 
-def _boolean_literal_format(expr):
+def _set_literal_format(translator, expr):
+    value_type = expr.type().value_type
+
+    formatted = [translator.translate(ir.literal(x, type=value_type))
+                 for x in expr.op().value]
+
+    return _parenthesize(', '.join(formatted))
+
+
+def _boolean_literal_format(translator, expr):
     value = expr.op().value
     return 'TRUE' if value else 'FALSE'
 
 
-def _string_literal_format(expr):
+def _string_literal_format(translator, expr):
     value = expr.op().value
     return "'{}'".format(value.replace("'", "\\'"))
 
 
-def _number_literal_format(expr):
+def _number_literal_format(translator, expr):
     value = expr.op().value
     formatted = repr(value)
 
@@ -502,7 +511,7 @@ def _number_literal_format(expr):
     return formatted
 
 
-def _interval_literal_format(expr):
+def _interval_literal_format(translator, expr):
     return 'INTERVAL {} {}'.format(expr.op().value,
                                    expr.type().resolution.upper())
 
@@ -517,7 +526,7 @@ def _interval_from_integer(translator, expr):
                                    expr.type().resolution.upper())
 
 
-def _date_literal_format(expr):
+def _date_literal_format(translator, expr):
     value = expr.op().value
     if isinstance(value, datetime.date):
         value = value.strftime('%Y-%m-%d')
@@ -525,7 +534,7 @@ def _date_literal_format(expr):
     return repr(value)
 
 
-def _timestamp_literal_format(expr):
+def _timestamp_literal_format(translator, expr):
     value = expr.op().value
     if isinstance(value, datetime.datetime):
         value = value.strftime('%Y-%m-%d %H:%M:%S')
@@ -891,10 +900,12 @@ def _literal(translator, expr):
         typeclass = 'timestamp'
     elif isinstance(expr, ir.IntervalValue):
         typeclass = 'interval'
+    elif isinstance(expr, ir.SetValue):
+        typeclass = 'set'
     else:
         raise NotImplementedError
 
-    return _literal_formatters[typeclass](expr)
+    return _literal_formatters[typeclass](translator, expr)
 
 
 def _null_literal(translator, expr):
@@ -907,7 +918,8 @@ _literal_formatters = {
     'string': _string_literal_format,
     'interval': _interval_literal_format,
     'timestamp': _timestamp_literal_format,
-    'date': _date_literal_format
+    'date': _date_literal_format,
+    'set': _set_literal_format
 }
 
 

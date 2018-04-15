@@ -13,9 +13,6 @@ except ImportError:
     from toolz import unique
 
 
-# TODO: could use the primitives defined here to types too
-
-
 _undefined = object()  # marker for missing argument
 
 
@@ -96,14 +93,6 @@ class Argument(object):
         return self.validator(value)
 
     __call__ = validate  # syntactic sugar
-
-
-class Return(object):
-    # TODO
-    """Acts like a method (output type)"""
-
-    def __call__(self, obj):
-        pass
 
 
 class TypeSignature(OrderedDict):
