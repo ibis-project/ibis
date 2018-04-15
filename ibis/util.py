@@ -284,11 +284,12 @@ def convert_unit(value, unit, to):
             raise ValueError('Cannot convert to or from '
                              'non-fixed-length interval')
 
-    factor = functools.reduce(operator.mul, factors[i:j], 1)
+    factor = functools.reduce(operator.mul, factors[min(i, j):max(i, j)], 1)
+
+    assert factor > 1
 
     if i < j:
         return value * factor
-    elif i > j:
-        return value // factor
-    else:
-        return value
+
+    assert i > j
+    return value // factor
