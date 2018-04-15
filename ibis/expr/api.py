@@ -832,13 +832,6 @@ def isin(arg, values):
     -------
     contains : BooleanValue
     """
-    if isinstance(values, ir.Expr):
-        pass
-    elif util.any_of(values, ir.Expr):
-        values = sequence(values)
-    else:
-        values = set(values)
-
     op = ops.Contains(arg, values)
     return op.to_expr()
 
@@ -848,13 +841,6 @@ def notin(arg, values):
     Like isin, but checks whether this expression's value(s) are not
     contained in the passed values. See isin docs for full usage.
     """
-    if isinstance(values, ir.Expr):
-        pass
-    elif util.any_of(values, ir.Expr):
-        values = sequence(values)
-    else:
-        values = set(values)
-
     op = ops.NotContains(arg, values)
     return op.to_expr()
 

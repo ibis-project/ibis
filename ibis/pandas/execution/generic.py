@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import collections
 import datetime
 import decimal
 import numbers
@@ -694,12 +695,20 @@ def execute_node_string_join(op, args, **kwargs):
     return op.sep.join(args)
 
 
-@execute_node.register(ops.Contains, pd.Series, (list, set, frozenset))
+@execute_node.register(
+    ops.Contains,
+    pd.Series,
+    (collections.Sequence, collections.Set)
+)
 def execute_node_contains_series_list(op, data, elements, **kwargs):
     return data.isin(elements)
 
 
-@execute_node.register(ops.NotContains, pd.Series, (list, set, frozenset))
+@execute_node.register(
+    ops.NotContains,
+    pd.Series,
+    (collections.Sequence, collections.Set)
+)
 def execute_node_not_contains_series_list(op, data, elements, **kwargs):
     return ~data.isin(elements)
 

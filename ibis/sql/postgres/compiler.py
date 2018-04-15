@@ -577,13 +577,15 @@ def _string_join(t, expr):
 
 
 def _literal(t, expr):
-    if isinstance(expr, ir.IntervalScalar):
-        return sa.text("INTERVAL '{} {}'".format(expr.op().value,
-                                                 expr.type().resolution))
-    elif isinstance(expr, ir.SetScalar):
-        return list(map(sa.literal, expr.op().value))
+    dtype = expr.type()
+    value = expr.op().value
+
+    if isinstance(dtype, dt.Interval):
+        return sa.text("INTERVAL '{} {}'".format(value, dtype.resolution))
+    elif isinstance(dtype, dt.Set):
+        return list(map(sa.literal, value))
     else:
-        return sa.literal(expr.op().value)
+        return sa.literal(value)
 
 
 def _day_of_week_index(t, expr):

@@ -17,6 +17,7 @@ import six
 import toolz
 import datetime
 import itertools
+import collections
 import pandas as pd
 from functools import partial
 from collections import namedtuple, OrderedDict
@@ -1076,7 +1077,7 @@ def from_list(values):
     return Array(highest_precedence(map(dtype, values)))
 
 
-@dtype.register((set, frozenset))
+@dtype.register(collections.Set)
 def from_set(values):
     if not values:
         return Set(null)

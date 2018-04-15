@@ -345,9 +345,10 @@ def _reduction_format(t, sa_func, arg, where):
 
 
 def _literal(t, expr):
+    dtype = expr.type()
     value = expr.op().value
 
-    if isinstance(expr, ir.SetScalar):
+    if isinstance(dtype, dt.Set):
         return list(map(sa.literal, value))
 
     return sa.literal(value)
