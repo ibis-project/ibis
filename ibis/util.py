@@ -238,6 +238,18 @@ def is_sequence(o):
 
 
 def convert_unit(value, unit, to):
+    """Convert `value`--which is assumed to be in units of `unit`--to units of
+    `to`.
+
+    Parameters
+    ----------
+    value : Union[numbers.Real, ibis.expr.types.NumericValue]
+
+    Returns
+    -------
+    result : Union[numbers.Integral, ibis.expr.types.NumericValue]
+    """
+
     units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
     factors = (7, 24, 60, 60, 1000, 1000, 1000)
 
