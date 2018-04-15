@@ -262,6 +262,10 @@ def convert_unit(value, unit, to):
     >>> x = convert_unit(one_second, 's', 's')
     >>> x
     1
+    >>> x = convert_unit(one_second, 's', 'M')
+    Traceback (most recent call last):
+        ...
+    ValueError: Cannot convert to or from variable length interval
     """
     # Don't do anything from and to units are equivalent
 
