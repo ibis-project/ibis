@@ -506,7 +506,7 @@ def compiles_timestamp_from_unix(t, e):
 @compiles(ops.Floor)
 def compiles_floor(t, e):
     bigquery_type = ibis_type_to_bigquery_type(e.type())
-    arg, = e.op().args
+    arg = e.op().arg
     return 'CAST(FLOOR({}) AS {})'.format(t.translate(arg), bigquery_type)
 
 
