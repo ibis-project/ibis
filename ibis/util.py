@@ -39,7 +39,7 @@ all_of = toolz.compose(all, is_one_of)
 def promote_list(val):
     if isinstance(val, compat.string_types):
         return [val]
-    elif isinstance(collections.Iterable):
+    elif isinstance(val, collections.Iterable):
         return list(val)
     else:
         return [val]

@@ -1455,7 +1455,7 @@ class Join(TableNode):
         _validate_join_tables(left, right)
 
         predicates = util.promote_list(predicates)
-        left, right = _materialize_if_neccessary(left, right, predicates)
+        left, right = _materialize_if_necessary(left, right, predicates)
         left, right, predicates = _make_distinct_join_predicates(
             left, right, predicates)
 
@@ -1589,7 +1589,7 @@ class AsOfJoin(Join):
 
     def __init__(self, left, right, predicates, by):
         predicates, by = util.promote_list(predicates), util.promote_list(by)
-        left, right = _materialize_if_neccessary(left, right, predicates + by)
+        left, right = _materialize_if_necessary(left, right, predicates + by)
 
         super(AsOfJoin, self).__init__(left, right, predicates)
         self.by = _clean_join_predicates(self.left, self.right, by)
