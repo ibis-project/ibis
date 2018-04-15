@@ -285,7 +285,6 @@ def convert_unit(value, unit, to):
                              'non-fixed-length interval')
 
     factor = functools.reduce(operator.mul, factors[min(i, j):max(i, j)], 1)
-
     assert factor > 1
 
     if i < j:
