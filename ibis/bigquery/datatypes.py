@@ -1,5 +1,3 @@
-import six
-
 from multipledispatch import Dispatcher
 
 import ibis.expr.datatypes as dt
@@ -23,11 +21,6 @@ ibis_type_to_bigquery_type = Dispatcher('ibis_type_to_bigquery_type')
 @ibis_type_to_bigquery_type.register(dt.DataType)
 def trans_default(t):
     return ibis_type_to_bigquery_type(t, TypeTranslationContext())
-
-
-@ibis_type_to_bigquery_type.register(six.string_types)
-def trans_default_from_string(string):
-    return ibis_type_to_bigquery_type(dt.dtype(string))
 
 
 @ibis_type_to_bigquery_type.register(dt.Floating, TypeTranslationContext)
@@ -71,8 +64,3 @@ def trans_timestamp(t, context):
 @ibis_type_to_bigquery_type.register(dt.DataType, TypeTranslationContext)
 def trans_type(t, context):
     return str(t).upper()
-
-
-@ibis_type_to_bigquery_type.register(six.string_types, TypeTranslationContext)
-def trans_str(t, context):
-    return ibis_type_to_bigquery_type(dt.dtype(t), context)

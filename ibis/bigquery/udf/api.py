@@ -2,6 +2,7 @@ import collections
 import inspect
 
 import ibis.expr.rules as rlz
+import ibis.expr.datatypes as dt
 
 from ibis.compat import functools, signature
 from ibis.expr.signature import Argument as Arg
@@ -159,13 +160,13 @@ return {name}({args});
 """;'''.format(
             name=f.__name__,
             return_type=ibis_type_to_bigquery_type(
-                output_type, type_translation_context),
+                dt.dtype(output_type), type_translation_context),
             source=source,
             signature=', '.join(
                 '{name} {type}'.format(
                     name=name,
                     type=ibis_type_to_bigquery_type(
-                        type, type_translation_context)
+                        dt.dtype(type), type_translation_context)
                 ) for name, type in zip(
                    inspect.signature(f).parameters.keys(), input_type
                 )
