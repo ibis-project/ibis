@@ -12,7 +12,7 @@ from ibis.bigquery.udf.core import (
     PythonToJavaScriptTranslator,
     UDFContext
 )
-from ibis.bigquery.types import ibis_type_to_bigquery_type
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 
 
 __all__ = 'udf',

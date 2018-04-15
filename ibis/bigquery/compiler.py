@@ -19,7 +19,7 @@ import ibis.expr.lineage as lin
 from ibis.impala.compiler import ImpalaSelect, unary, fixed_arity
 from ibis.impala import compiler as impala_compiler
 
-from ibis.bigquery.types import ibis_type_to_bigquery_type
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 
 
 class BigQueryUDFNode(ops.ValueOp):

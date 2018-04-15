@@ -13,7 +13,7 @@ import six
 
 import ibis.expr.datatypes as dt
 
-from ibis.bigquery.types import (
+from ibis.bigquery.datatypes import (
     ibis_type_to_bigquery_type, TypeTranslationContext
 )
 from ibis.bigquery.udf.find import find_names
