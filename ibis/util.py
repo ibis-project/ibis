@@ -248,6 +248,20 @@ def convert_unit(value, unit, to):
     Returns
     -------
     result : Union[numbers.Integral, ibis.expr.types.NumericValue]
+
+    Examples
+    --------
+    >>> one_second = 1000
+    >>> x = convert_unit(one_second, 'ms', 's')
+    >>> x
+    1
+    >>> one_second = 1
+    >>> x = convert_unit(one_second, 's', 'ms')
+    >>> x
+    1000
+    >>> x = convert_unit(one_second, 's', 's')
+    >>> x
+    1
     """
 
     units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
