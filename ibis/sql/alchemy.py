@@ -1011,8 +1011,8 @@ class AlchemyClient(SQLClient):
         return sa.Table(name, self.meta, schema=schema, autoload=True)
 
     def _sqla_table_to_expr(self, table):
-        node = AlchemyTable(table, self)
-        return self._table_expr_klass(node)
+        node = self.table_class(table, self)
+        return self.table_expr_class(node)
 
     @property
     def version(self):
