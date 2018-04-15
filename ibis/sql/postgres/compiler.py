@@ -30,7 +30,6 @@ from ibis.compat import functools
 from ibis.sql.alchemy import (unary, fixed_arity, infix_op,
                               _variance_reduction, _get_sqla_table)
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
