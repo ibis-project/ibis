@@ -267,8 +267,7 @@ def convert_unit(value, unit, to):
         ...
     ValueError: Cannot convert to or from variable length interval
     """
-    # Don't do anything from and to units are equivalent
-
+    # Don't do anything if from and to units are equivalent
     if unit == to:
         return value
 
