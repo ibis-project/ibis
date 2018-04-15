@@ -126,69 +126,29 @@ def _join_unicode(lines, sep=''):
                          for x in lines])
 
 
-def deprecate(f, message):
-    def g(*args, **kwargs):
-        print(message)
-        return f(*args, **kwargs)
-    return g
-
-
 def log(msg):
     if options.verbose:
         (options.verbose_log or print)(msg)
 
 
-class cache_readonly(object):
-
-    def __init__(self, func=None, allow_setting=False):
-        if func is not None:
-            self.func = func
-            self.name = func.__name__
-            self.__doc__ = func.__doc__
-        self.allow_setting = allow_setting
-
-    def __call__(self, func):
-        self.func = func
-        self.name = func.__name__
-        return self
-
-    def __get__(self, obj, typ):
-        # Get the cache or set a default one if needed
-
-        cache = getattr(obj, '_cache', None)
-        if cache is None:
-            try:
-                cache = obj._cache = {}
-            except (AttributeError):
-                return
-
-        if self.name in cache:
-            val = cache[self.name]
-        else:
-            val = self.func(obj)
-            cache[self.name] = val
-        return val
-
-    def __set__(self, obj, value):
-        if not self.allow_setting:
-            raise Exception("cannot set values for [%s]" % self.name)
-
-        # Get the cache or set a default one if needed
-        cache = getattr(obj, '_cache', None)
-        if cache is None:
-            try:
-                cache = obj._cache = {}
-            except (AttributeError):
-                return
-
-        cache[self.name] = value
-
-
 def approx_equal(a, b, eps):
+    """Return whether the difference between `a` and `b` is less than `eps`.
+
+    Parameters
+    ----------
+    a : numbers.Real
+    b : numbers.Real
+    eps : numbers.Real
+
+    Returns
+    -------
+    are_diff : bool
+    """
     assert abs(a - b) < eps
 
 
 def implements(f):
+    # TODO: is this any different from functools.wraps?
     def decorator(g):
         g.__doc__ = f.__doc__
         return g
@@ -223,11 +183,12 @@ def safe_index(elements, value):
 
 
 def is_sequence(o):
-    """Is `o` a non-string sequence?
+    """Return whether `o` is a non-string sequence.
 
     Parameters
     ----------
     o : object
+        Any python object
 
     Returns
     -------
