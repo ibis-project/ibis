@@ -1,6 +1,8 @@
 from __future__ import print_function
 
 import collections
+import functools
+import operator
 import types
 
 import six
@@ -233,3 +235,30 @@ def is_sequence(o):
     """
     return (not isinstance(o, six.string_types) and
             isinstance(o, collections.Iterable))
+
+
+def convert_unit(value, unit, to):
+    units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
+    factors = (7, 24, 60, 60, 1000, 1000, 1000)
+
+    monthly_units = ('Y', 'Q', 'M')
+    monthly_factors = (4, 3)
+
+    try:
+        i, j = units.index(unit), units.index(to)
+    except ValueError:
+        try:
+            i, j = monthly_units.index(unit), monthly_units.index(to)
+            factors = monthly_factors
+        except ValueError:
+            raise ValueError('Cannot convert to or from '
+                             'non-fixed-length interval')
+
+    factor = functools.reduce(operator.mul, factors[i:j], 1)
+
+    if i < j:
+        return value * factor
+    elif i > j:
+        return value // factor
+    else:
+        return value
