@@ -1704,6 +1704,7 @@ FROM t0
                                ('arrdelay', 'int32')], 'airlines')
 
         dests = ['ORD', 'JFK', 'SFO']
+        dests_formatted = repr(tuple(set(dests)))
         delay_filter = airlines.dest.topk(10, by=airlines.arrdelay.mean())
         t = airlines[airlines.dest.isin(dests)]
         expr = t[delay_filter].group_by('origin').size()
@@ -1723,8 +1724,8 @@ FROM airlines t0
     LIMIT 10
   ) t1
     ON t0.`dest` = t1.`dest`
-WHERE t0.`dest` IN ('ORD', 'JFK', 'SFO')
-GROUP BY 1"""
+WHERE t0.`dest` IN {}
+GROUP BY 1""".format(dests_formatted)
 
         assert result == expected
 

@@ -30,7 +30,6 @@ from ibis.compat import functools
 from ibis.sql.alchemy import (unary, fixed_arity, infix_op,
                               _variance_reduction, _get_sqla_table)
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
@@ -577,11 +576,15 @@ def _string_join(t, expr):
 
 
 def _literal(t, expr):
-    if isinstance(expr, ir.IntervalValue):
-        return sa.text("INTERVAL '{} {}'".format(expr.op().value,
-                                                 expr.type().resolution))
+    dtype = expr.type()
+    value = expr.op().value
+
+    if isinstance(dtype, dt.Interval):
+        return sa.text("INTERVAL '{} {}'".format(value, dtype.resolution))
+    elif isinstance(dtype, dt.Set):
+        return list(map(sa.literal, value))
     else:
-        return sa.literal(expr.op().value)
+        return sa.literal(value)
 
 
 def _day_of_week_index(t, expr):

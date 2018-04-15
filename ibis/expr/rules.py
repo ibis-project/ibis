@@ -91,9 +91,10 @@ def one_of(inners, arg):
     for inner in inners:
         with suppress(com.IbisTypeError, ValueError):
             return inner(arg)
-    # TODO: more verbose error
+
+    rules_formatted = ', '.join(map(repr, inners))
     raise com.IbisTypeError(
-        'None of the {} are applicable on arg'.format(inners)
+        'Arg passes neither of the following rules: {}'.format(rules_formatted)
     )
 
 
@@ -240,6 +241,7 @@ strict_numeric = one_of([integer, floating, decimal])
 soft_numeric = one_of([integer, floating, decimal, boolean])
 numeric = soft_numeric
 
+set_ = value(dt.Set(dt.any))
 array = value(dt.Array(dt.any))
 struct = value(dt.Struct)
 mapping = value(dt.Map(dt.any, dt.any))
