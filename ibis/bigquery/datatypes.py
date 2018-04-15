@@ -43,8 +43,10 @@ def trans_array(t, context):
 def trans_struct(t, context):
     return 'STRUCT<{}>'.format(
         ', '.join(
-            '{} {}'.format(name, ibis_type_to_bigquery_type(type, context))
-            for name, type in zip(t.names, t.types)
+            '{} {}'.format(
+                name,
+                ibis_type_to_bigquery_type(dt.dtype(type), context)
+            ) for name, type in zip(t.names, t.types)
         )
     )
 
