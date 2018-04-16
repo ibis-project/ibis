@@ -320,11 +320,11 @@ FROM alltypes"""
              'CAST(from_unixtime(`c`, "yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
             (col.to_timestamp('ms'),
-             'CAST(from_unixtime(CAST(`c` / 1000 AS int), '
+             'CAST(from_unixtime(CAST(floor(`c` / 1000) AS int), '
              '"yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
             (col.to_timestamp('us'),
-             'CAST(from_unixtime(CAST(`c` / 1000000 AS int), '
+             'CAST(from_unixtime(CAST(floor(`c` / 1000000) AS int), '
              '"yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
         ]

@@ -6,18 +6,21 @@ import pytest
 
 import ibis.expr.datatypes as dt
 
-from ibis.bigquery.udf.core import ibis_type_to_bigquery_type  # noqa: E402
-from ibis.bigquery.udf.core import SymbolTable  # noqa: E402
-from ibis.bigquery.udf.core import PythonToJavaScriptTranslator  # noqa: E402
+from ibis.bigquery.udf.core import (
+    ibis_type_to_bigquery_type,
+    SymbolTable,
+    PythonToJavaScriptTranslator,
+    UDFContext,
+)
 
 
 @pytest.mark.parametrize(
     ('type', 'expected'),
     [
         (dt.float64, 'FLOAT64'),
-        (dt.int64, 'FLOAT64'),  # JavaScript only has a Number type
+        (dt.int64, 'INT64'),
         (dt.string, 'STRING'),
-        (dt.Array(dt.int64), 'ARRAY<FLOAT64>'),
+        (dt.Array(dt.int64), 'ARRAY<INT64>'),
         (dt.Array(dt.string), 'ARRAY<STRING>'),
         (
             dt.Struct.from_tuples([
@@ -25,7 +28,7 @@ from ibis.bigquery.udf.core import PythonToJavaScriptTranslator  # noqa: E402
                 ('b', dt.string),
                 ('c', dt.Array(dt.string)),
             ]),
-            'STRUCT<a FLOAT64, b STRING, c ARRAY<STRING>>'
+            'STRUCT<a INT64, b STRING, c ARRAY<STRING>>'
         ),
         (dt.date, 'DATE'),
         (dt.timestamp, 'TIMESTAMP'),
@@ -38,8 +41,24 @@ from ibis.bigquery.udf.core import PythonToJavaScriptTranslator  # noqa: E402
     ]
 )
 def test_ibis_type_to_bigquery_type(type, expected):
-    result = ibis_type_to_bigquery_type(type)
+    result = ibis_type_to_bigquery_type(dt.dtype(type))
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('type', 'expected'),
+    [
+        (dt.int64, 'FLOAT64'),
+        (dt.Array(dt.int64), 'ARRAY<FLOAT64>'),
+        (
+            dt.Struct.from_tuples([('a', dt.Array(dt.int64))]),
+            'STRUCT<a ARRAY<FLOAT64>>'
+        )
+    ]
+)
+def test_ibis_type_to_bigquery_type_udf(type, expected):
+    context = UDFContext()
+    assert ibis_type_to_bigquery_type(type, context) == expected
 
 
 def test_symbol_table():
