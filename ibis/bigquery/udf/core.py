@@ -11,63 +11,24 @@ import textwrap
 
 import six
 
-from multipledispatch import Dispatcher
-
 import ibis.expr.datatypes as dt
 
+from ibis.bigquery.datatypes import (
+    ibis_type_to_bigquery_type, TypeTranslationContext
+)
 from ibis.bigquery.udf.find import find_names
 from ibis.bigquery.udf.rewrite import rewrite
 
 
-ibis_type_to_bigquery_type = Dispatcher('ibis_type_to_bigquery_type')
+class UDFContext(TypeTranslationContext):
+    __slots__ = ()
 
 
-@ibis_type_to_bigquery_type.register(dt.Floating)
-def trans_float64(t):
+@ibis_type_to_bigquery_type.register(dt.Integer, UDFContext)
+def trans_integer(t, context):
+    # JavaScript does not have integers, only a Number class, so BigQuery
+    # doesn't allow INT64 inputs or outputs
     return 'FLOAT64'
-
-
-@ibis_type_to_bigquery_type.register(dt.Integer)
-def trans_integer(t):
-    # BigQuery doesn't accept integer types because javascript doesn't
-    return 'FLOAT64'
-
-
-@ibis_type_to_bigquery_type.register(dt.Array)
-def trans_array(t):
-    return 'ARRAY<{}>'.format(ibis_type_to_bigquery_type(t.value_type))
-
-
-@ibis_type_to_bigquery_type.register(dt.Struct)
-def trans_struct(t):
-    return 'STRUCT<{}>'.format(
-        ', '.join(
-            '{} {}'.format(name, ibis_type_to_bigquery_type(type))
-            for name, type in zip(t.names, t.types)
-        )
-    )
-
-
-@ibis_type_to_bigquery_type.register(dt.Date)
-def trans_date(t):
-    return 'DATE'
-
-
-@ibis_type_to_bigquery_type.register(dt.Timestamp)
-def trans_timestamp(t):
-    if t.timezone is not None:
-        raise TypeError('BigQuery does not support timestamps with timezones')
-    return 'TIMESTAMP'
-
-
-@ibis_type_to_bigquery_type.register(dt.DataType)
-def trans_type(t):
-    return str(t).upper()
-
-
-@ibis_type_to_bigquery_type.register(six.string_types)
-def trans_str(t):
-    return ibis_type_to_bigquery_type(dt.dtype(t))
 
 
 class SymbolTable(ChainMap):

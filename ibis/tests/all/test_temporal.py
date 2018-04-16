@@ -163,14 +163,46 @@ def test_temporal_binop(backend, con, alltypes, df,
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(('ibis_pattern', 'pandas_pattern'), [
-    ('%Y%m%d', '%Y%m%d')
-])
+@pytest.mark.parametrize(
+    ('ibis_pattern', 'pandas_pattern'),
+    [
+        ('%Y%m%d', '%Y%m%d')
+    ]
+)
 @tu.skipif_unsupported
 def test_strftime(backend, con, alltypes, df, ibis_pattern, pandas_pattern):
-    expr = alltypes.timestamp_col.strftime('%Y%m%d')
-    expected = df.timestamp_col.dt.strftime('%Y%m%d')
+    expr = alltypes.timestamp_col.strftime(ibis_pattern)
+    expected = df.timestamp_col.dt.strftime(pandas_pattern)
 
     result = expr.execute()
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected)
+
+
+unit_factors = {
+    's': int(1e9),
+    'ms': int(1e6),
+    'us': int(1e3),
+}
+
+
+@pytest.mark.parametrize('unit', ['D', 's', 'ms', 'us', 'ns'])
+@tu.skipif_unsupported
+def test_to_timestamp(backend, con, alltypes, df, unit):
+    if unit not in backend.supported_to_timestamp_units:
+        pytest.skip(
+            'Unit {!r} not supported by {} to_timestamp'.format(unit, backend))
+
+    backend_unit = backend.returned_timestamp_unit
+    factor = unit_factors[unit]
+
+    ts = ibis.timestamp('2018-04-13 09:54:11.872832')
+    pandas_ts = ibis.pandas.execute(ts).floor(unit).value
+
+    # convert the now timestamp to the input unit being tested
+    int_expr = ibis.literal(pandas_ts // factor)
+    expr = int_expr.to_timestamp(unit)
+    result = con.execute(expr)
+    expected = pd.Timestamp(pandas_ts, unit='ns').floor(backend_unit)
+
+    assert result == expected

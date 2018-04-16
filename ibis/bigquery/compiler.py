@@ -1,5 +1,9 @@
 from functools import partial
 
+import six
+
+from multipledispatch import Dispatcher
+
 import ibis
 import ibis.common as com
 
@@ -14,6 +18,8 @@ import ibis.expr.lineage as lin
 
 from ibis.impala.compiler import ImpalaSelect, unary, fixed_arity
 from ibis.impala import compiler as impala_compiler
+
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 
 
 class BigQueryUDFNode(ops.ValueOp):
@@ -102,12 +108,27 @@ SQL_TYPE_NAMES = {
 }
 
 
+bigquery_cast = Dispatcher('bigquery_cast')
+
+
+@bigquery_cast.register(six.string_types, dt.Timestamp, dt.Integer)
+def bigquery_cast_timestamp_to_integer(compiled_arg, from_, to):
+    return 'UNIX_MICROS({})'.format(compiled_arg)
+
+
+@bigquery_cast.register(six.string_types, dt.DataType, dt.DataType)
+def bigquery_cast_generate(compiled_arg, from_, to):
+    target_name = to.name.lower()
+    sql_type = SQL_TYPE_NAMES[target_name]
+    uppercase_sql_type = sql_type.upper()
+    return 'CAST({} AS {})'.format(compiled_arg, uppercase_sql_type)
+
+
 def _cast(translator, expr):
     op = expr.op()
     arg, target_type = op.args
     arg_formatted = translator.translate(arg)
-    sql_type = SQL_TYPE_NAMES[target_type.name.lower()]
-    return 'CAST({} AS {})'.format(arg_formatted, sql_type.upper())
+    return bigquery_cast(arg_formatted, arg.type(), target_type)
 
 
 def _struct_field(translator, expr):
@@ -307,6 +328,13 @@ def _timestamp_op(func, units):
     return _formatter
 
 
+STRFTIME_FORMAT_FUNCTIONS = {
+    dt.Date: 'DATE',
+    dt.Time: 'TIME',
+    dt.Timestamp: 'TIMESTAMP',
+}
+
+
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
     ops.ExtractYear: _extract_field('year'),
@@ -400,6 +428,27 @@ def bigquery_compiles_divide(t, e):
     return 'IEEE_DIVIDE({}, {})'.format(*map(t.translate, e.op().args))
 
 
+@compiles(ops.Strftime)
+def compiles_strftime(translator, expr):
+    arg, format_string = expr.op().args
+    arg_type = arg.type()
+    strftime_format_func_name = STRFTIME_FORMAT_FUNCTIONS[type(arg_type)]
+    fmt_string = translator.translate(format_string)
+    arg_formatted = translator.translate(arg)
+    if isinstance(arg_type, dt.Timestamp):
+        return 'FORMAT_{}({}, {}, {!r})'.format(
+            strftime_format_func_name,
+            fmt_string,
+            arg_formatted,
+            arg_type.timezone if arg_type.timezone is not None else 'UTC'
+        )
+    return 'FORMAT_{}({}, {})'.format(
+        strftime_format_func_name,
+        fmt_string,
+        arg_formatted
+    )
+
+
 @rewrites(ops.Any)
 def bigquery_rewrite_any(expr):
     arg, = expr.op().args
@@ -439,6 +488,26 @@ def identical_to(expr):
 def log2(expr):
     arg, = expr.op().args
     return arg.log(2)
+
+
+UNIT_FUNCS = {
+    's': 'SECONDS',
+    'ms': 'MILLIS',
+    'us': 'MICROS',
+}
+
+
+@compiles(ops.TimestampFromUNIX)
+def compiles_timestamp_from_unix(t, e):
+    value, unit = e.op().args
+    return 'TIMESTAMP_{}({})'.format(UNIT_FUNCS[unit], t.translate(value))
+
+
+@compiles(ops.Floor)
+def compiles_floor(t, e):
+    bigquery_type = ibis_type_to_bigquery_type(e.type())
+    arg = e.op().arg
+    return 'CAST(FLOOR({}) AS {})'.format(t.translate(arg), bigquery_type)
 
 
 class BigQueryDialect(impala_compiler.ImpalaDialect):

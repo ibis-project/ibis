@@ -641,6 +641,11 @@ class ArrayScalar(AnyScalar, ArrayValue): pass  # noqa: E701,E302
 class ArrayColumn(AnyColumn, ArrayValue): pass  # noqa: E701,E302
 
 
+class SetValue(AnyValue): pass  # noqa: E701,E302
+class SetScalar(AnyScalar, SetValue): pass  # noqa: E701,E302
+class SetColumn(AnyColumn, SetValue): pass  # noqa: E701,E302
+
+
 class MapValue(AnyValue): pass  # noqa: E701,E302
 class MapScalar(AnyScalar, MapValue): pass  # noqa: E701,E302
 class MapColumn(AnyColumn, MapValue): pass  # noqa: E701,E302

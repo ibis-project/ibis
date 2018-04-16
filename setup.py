@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import os
+
 from setuptools import setup, find_packages
 
 import versioneer
@@ -45,7 +47,9 @@ develop_requires = all_requires + [
     'pytest>=3',
 ]
 
-with open('requirements.txt', 'rt') as f:
+with open(
+    os.path.join(os.path.dirname(__file__), 'requirements.txt'), 'rt'
+) as f:
     install_requires = list(map(str.strip, f))
 
 setup(

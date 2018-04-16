@@ -2196,8 +2196,21 @@ class BetweenTime(Between):
 
 class Contains(ValueOp, BooleanValueOp):
     value = Arg(rlz.any)
-    options = Arg(rlz.one_of([rlz.column(rlz.any),
+    options = Arg(rlz.one_of([rlz.set_,
+                              rlz.column(rlz.any),
                               rlz.list_of(rlz.any)]))
+
+    def __init__(self, value, options):
+        if isinstance(options, ir.Expr):
+            # it can be a single expression, like a column
+            pass
+        elif util.any_of(options, ir.Expr):
+            # or a list of expressions
+            options = ir.sequence(options)
+        else:
+            # or a set of scalar values
+            options = frozenset(options)
+        super(Contains, self).__init__(value, options)
 
     def output_type(self):
         all_args = [self.value]

@@ -166,7 +166,7 @@ def _timestamp_diff(t, expr):
 
 
 def _literal(t, expr):
-    if isinstance(expr, ir.IntervalValue):
+    if isinstance(expr, ir.IntervalScalar):
         if expr.type().unit in {'ms', 'ns'}:
             raise com.UnsupportedOperationError(
                 'MySQL does not allow operation '
@@ -174,6 +174,8 @@ def _literal(t, expr):
             )
         text_unit = expr.type().resolution.upper()
         return sa.text('INTERVAL {} {}'.format(expr.op().value, text_unit))
+    elif isinstance(expr, ir.SetScalar):
+        return list(map(sa.literal, expr.op().value))
     else:
         value = expr.op().value
         if isinstance(value, pd.Timestamp):

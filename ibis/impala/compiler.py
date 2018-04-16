@@ -1,17 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from six import StringIO
 import datetime
 
@@ -482,17 +468,26 @@ def _needs_parens(op):
             op_klass in {ops.Negate, ops.IsNull, ops.NotNull})
 
 
-def _boolean_literal_format(expr):
+def _set_literal_format(translator, expr):
+    value_type = expr.type().value_type
+
+    formatted = [translator.translate(ir.literal(x, type=value_type))
+                 for x in expr.op().value]
+
+    return _parenthesize(', '.join(formatted))
+
+
+def _boolean_literal_format(translator, expr):
     value = expr.op().value
     return 'TRUE' if value else 'FALSE'
 
 
-def _string_literal_format(expr):
+def _string_literal_format(translator, expr):
     value = expr.op().value
     return "'{}'".format(value.replace("'", "\\'"))
 
 
-def _number_literal_format(expr):
+def _number_literal_format(translator, expr):
     value = expr.op().value
     formatted = repr(value)
 
@@ -502,7 +497,7 @@ def _number_literal_format(expr):
     return formatted
 
 
-def _interval_literal_format(expr):
+def _interval_literal_format(translator, expr):
     return 'INTERVAL {} {}'.format(expr.op().value,
                                    expr.type().resolution.upper())
 
@@ -517,7 +512,7 @@ def _interval_from_integer(translator, expr):
                                    expr.type().resolution.upper())
 
 
-def _date_literal_format(expr):
+def _date_literal_format(translator, expr):
     value = expr.op().value
     if isinstance(value, datetime.date):
         value = value.strftime('%Y-%m-%d')
@@ -525,7 +520,7 @@ def _date_literal_format(expr):
     return repr(value)
 
 
-def _timestamp_literal_format(expr):
+def _timestamp_literal_format(translator, expr):
     value = expr.op().value
     if isinstance(value, datetime.datetime):
         value = value.strftime('%Y-%m-%d %H:%M:%S')
@@ -738,11 +733,7 @@ def _timestamp_from_unix(translator, expr):
     op = expr.op()
 
     val, unit = op.args
-
-    if unit == 'ms':
-        val = (val / 1000).cast('int32')
-    elif unit == 'us':
-        val = (val / 1000000).cast('int32')
+    val = util.convert_unit(val, unit, 's').cast('int32')
 
     arg = _from_unixtime(translator, val)
     return 'CAST({} AS timestamp)'.format(arg)
@@ -891,10 +882,12 @@ def _literal(translator, expr):
         typeclass = 'timestamp'
     elif isinstance(expr, ir.IntervalValue):
         typeclass = 'interval'
+    elif isinstance(expr, ir.SetValue):
+        typeclass = 'set'
     else:
         raise NotImplementedError
 
-    return _literal_formatters[typeclass](expr)
+    return _literal_formatters[typeclass](translator, expr)
 
 
 def _null_literal(translator, expr):
@@ -907,7 +900,8 @@ _literal_formatters = {
     'string': _string_literal_format,
     'interval': _interval_literal_format,
     'timestamp': _timestamp_literal_format,
-    'date': _date_literal_format
+    'date': _date_literal_format,
+    'set': _set_literal_format
 }
 
 

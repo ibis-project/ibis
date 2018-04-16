@@ -12,12 +12,19 @@ def test_validate_type():
     assert dt.validate_type is dt.dtype
 
 
-def test_array():
-    assert dt.dtype('ARRAY<DOUBLE>') == dt.Array(dt.double)
-
-
-def test_nested_array():
-    assert dt.dtype('array<array<string>>') == dt.Array(dt.Array(dt.string))
+@pytest.mark.parametrize(('spec', 'expected'), [
+    ('ARRAY<DOUBLE>', dt.Array(dt.double)),
+    ('array<array<string>>', dt.Array(dt.Array(dt.string))),
+    ('map<string, double>', dt.Map(dt.string, dt.double)),
+    ('map<int64, array<map<string, int8>>>',
+     dt.Map(dt.int64, dt.Array(dt.Map(dt.string, dt.int8)))),
+    ('set<uint8>', dt.Set(dt.uint8)),
+    ([dt.uint8], dt.Array(dt.uint8)),
+    ([dt.float32, dt.float64], dt.Array(dt.float64)),
+    ({dt.string}, dt.Set(dt.string))
+])
+def test_dtype(spec, expected):
+    assert dt.dtype(spec) == expected
 
 
 def test_array_with_string_value_type():
@@ -25,15 +32,6 @@ def test_array_with_string_value_type():
     assert dt.Array(dt.Array('array<map<string, double>>')) == (
         dt.Array(dt.Array(dt.Array(dt.Map(dt.string, dt.double))))
     )
-
-
-def test_map():
-    assert dt.dtype('map<string, double>') == dt.Map(dt.string, dt.double)
-
-
-def test_nested_map():
-    expected = dt.Map(dt.int64, dt.Array(dt.Map(dt.string, dt.int8)))
-    assert dt.dtype('map<int64, array<map<string, int8>>>') == expected
 
 
 def test_map_with_string_value_type():
@@ -318,6 +316,9 @@ def test_time_valid():
 
     # parametric types
     (list('abc'), dt.Array(dt.string)),
+    (set('abc'), dt.Set(dt.string)),
+    ({1, 5, 5, 6}, dt.Set(dt.int8)),
+    (frozenset(list('abc')), dt.Set(dt.string)),
     ([1, 2, 3], dt.Array(dt.int8)),
     ([1, 128], dt.Array(dt.int16)),
     ([1, 128, 32768], dt.Array(dt.int32)),

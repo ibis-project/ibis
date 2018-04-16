@@ -1,6 +1,8 @@
 from __future__ import print_function
 
 import collections
+import functools
+import operator
 import types
 
 import six
@@ -124,69 +126,29 @@ def _join_unicode(lines, sep=''):
                          for x in lines])
 
 
-def deprecate(f, message):
-    def g(*args, **kwargs):
-        print(message)
-        return f(*args, **kwargs)
-    return g
-
-
 def log(msg):
     if options.verbose:
         (options.verbose_log or print)(msg)
 
 
-class cache_readonly(object):
-
-    def __init__(self, func=None, allow_setting=False):
-        if func is not None:
-            self.func = func
-            self.name = func.__name__
-            self.__doc__ = func.__doc__
-        self.allow_setting = allow_setting
-
-    def __call__(self, func):
-        self.func = func
-        self.name = func.__name__
-        return self
-
-    def __get__(self, obj, typ):
-        # Get the cache or set a default one if needed
-
-        cache = getattr(obj, '_cache', None)
-        if cache is None:
-            try:
-                cache = obj._cache = {}
-            except (AttributeError):
-                return
-
-        if self.name in cache:
-            val = cache[self.name]
-        else:
-            val = self.func(obj)
-            cache[self.name] = val
-        return val
-
-    def __set__(self, obj, value):
-        if not self.allow_setting:
-            raise Exception("cannot set values for [%s]" % self.name)
-
-        # Get the cache or set a default one if needed
-        cache = getattr(obj, '_cache', None)
-        if cache is None:
-            try:
-                cache = obj._cache = {}
-            except (AttributeError):
-                return
-
-        cache[self.name] = value
-
-
 def approx_equal(a, b, eps):
+    """Return whether the difference between `a` and `b` is less than `eps`.
+
+    Parameters
+    ----------
+    a : numbers.Real
+    b : numbers.Real
+    eps : numbers.Real
+
+    Returns
+    -------
+    are_diff : bool
+    """
     assert abs(a - b) < eps
 
 
 def implements(f):
+    # TODO: is this any different from functools.wraps?
     def decorator(g):
         g.__doc__ = f.__doc__
         return g
@@ -221,11 +183,12 @@ def safe_index(elements, value):
 
 
 def is_sequence(o):
-    """Is `o` a non-string sequence?
+    """Return whether `o` is a non-string sequence.
 
     Parameters
     ----------
     o : object
+        Any python object
 
     Returns
     -------
@@ -233,3 +196,64 @@ def is_sequence(o):
     """
     return (not isinstance(o, six.string_types) and
             isinstance(o, collections.Iterable))
+
+
+def convert_unit(value, unit, to):
+    """Convert `value`--which is assumed to be in units of `unit`--to units of
+    `to`.
+
+    Parameters
+    ----------
+    value : Union[numbers.Real, ibis.expr.types.NumericValue]
+
+    Returns
+    -------
+    result : Union[numbers.Integral, ibis.expr.types.NumericValue]
+
+    Examples
+    --------
+    >>> one_second = 1000
+    >>> x = convert_unit(one_second, 'ms', 's')
+    >>> x
+    1
+    >>> one_second = 1
+    >>> x = convert_unit(one_second, 's', 'ms')
+    >>> x
+    1000
+    >>> x = convert_unit(one_second, 's', 's')
+    >>> x
+    1
+    >>> x = convert_unit(one_second, 's', 'M')
+    Traceback (most recent call last):
+        ...
+    ValueError: Cannot convert to or from variable length interval
+    """
+    # Don't do anything if from and to units are equivalent
+    if unit == to:
+        return value
+
+    units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
+    factors = (7, 24, 60, 60, 1000, 1000, 1000)
+
+    monthly_units = ('Y', 'Q', 'M')
+    monthly_factors = (4, 3)
+
+    try:
+        i, j = units.index(unit), units.index(to)
+    except ValueError:
+        try:
+            i, j = monthly_units.index(unit), monthly_units.index(to)
+            factors = monthly_factors
+        except ValueError:
+            raise ValueError(
+                'Cannot convert to or from variable length interval'
+            )
+
+    factor = functools.reduce(operator.mul, factors[min(i, j):max(i, j)], 1)
+    assert factor > 1
+
+    if i < j:
+        return value * factor
+
+    assert i > j
+    return value // factor
