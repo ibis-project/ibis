@@ -25,6 +25,7 @@ class HDFTable(ops.DatabaseTable):
 
 class HDFClient(FileClient):
     extension = 'h5'
+    table_class = HDFTable
 
     def insert(self, path, key, expr, format='table',
                data_columns=True, **kwargs):
@@ -43,7 +44,7 @@ class HDFClient(FileClient):
             df = store.select(name, start=0, stop=0)
             schema = sch.infer(df)
 
-        t = HDFTable(name, schema, self).to_expr()
+        t = self.table_class(name, schema, self).to_expr()
         self.dictionary[name] = path
         return t
 
@@ -65,7 +66,7 @@ class HDFClient(FileClient):
         return self._list_databases_dirs_or_files(path)
 
 
-@pre_execute.register(HDFTable, HDFClient)
+@pre_execute.register(HDFClient.table_class, HDFClient)
 def hdf_pre_execute_table(op, client, scope, **kwargs):
 
     # cache

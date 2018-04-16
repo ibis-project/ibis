@@ -1,17 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import abc
 
 import six
@@ -102,6 +88,8 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
     async_query = Query
 
     dialect = comp.Dialect
+    table_class = ops.DatabaseTable
+    table_expr_class = ir.TableExpr
 
     def table(self, name, database=None):
         """
@@ -119,12 +107,8 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         """
         qualified_name = self._fully_qualified_name(name, database)
         schema = self._get_table_schema(qualified_name)
-        node = ops.DatabaseTable(qualified_name, schema, self)
-        return self._table_expr_klass(node)
-
-    @property
-    def _table_expr_klass(self):
-        return ir.TableExpr
+        node = self.table_class(qualified_name, schema, self)
+        return self.table_expr_class(node)
 
     @property
     def current_database(self):

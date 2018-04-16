@@ -49,6 +49,7 @@ class CSVClient(FileClient):
 
     dialect = dialect
     extension = 'csv'
+    table_class = CSVTable
 
     def insert(self, path, expr, index=False, **kwargs):
         path = self.root / path
@@ -71,7 +72,7 @@ class CSVClient(FileClient):
 
         # infer sample's schema and define table
         schema = sch.infer(sample)
-        table = CSVTable(name, schema, self, **kwargs).to_expr()
+        table = self.table_class(name, schema, self, **kwargs).to_expr()
 
         self.dictionary[name] = f
 
@@ -91,7 +92,7 @@ class CSVClient(FileClient):
         return parse_version(pd.__version__)
 
 
-@pre_execute.register(CSVTable, CSVClient)
+@pre_execute.register(CSVClient.table_class, CSVClient)
 def csv_pre_execute_table(op, client, scope, **kwargs):
     # cache
     if isinstance(scope.get(op), pd.DataFrame):

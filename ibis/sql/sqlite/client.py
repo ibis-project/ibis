@@ -336,6 +336,7 @@ class SQLiteClient(alch.AlchemyClient):
 
     dialect = SQLiteDialect
     database_class = SQLiteDatabase
+    table_class = SQLiteTable
 
     def __init__(self, path=None, create=False):
         super(SQLiteClient, self).__init__(sa.create_engine('sqlite://'))
@@ -406,8 +407,8 @@ class SQLiteClient(alch.AlchemyClient):
         table : TableExpr
         """
         alch_table = self._get_sqla_table(name, schema=database)
-        node = SQLiteTable(alch_table, self)
-        return self._table_expr_klass(node)
+        node = self.table_class(alch_table, self)
+        return self.table_expr_class(node)
 
     def list_tables(self, like=None, database=None, schema=None):
         if database is None:

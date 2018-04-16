@@ -51,6 +51,7 @@ class PostgreSQLClient(alch.AlchemyClient):
 
     dialect = PostgreSQLDialect
     database_class = PostgreSQLDatabase
+    table_class = PostgreSQLTable
 
     def __init__(self, host='localhost', user=None, password=None, port=5432,
                  database='public', url=None, driver='psycopg2'):
@@ -183,8 +184,8 @@ class PostgreSQLClient(alch.AlchemyClient):
             )
         else:
             alch_table = self._get_sqla_table(name, schema=schema)
-            node = PostgreSQLTable(alch_table, self, self._schemas.get(name))
-            return self._table_expr_klass(node)
+            node = self.table_class(alch_table, self, self._schemas.get(name))
+            return self.table_expr_class(node)
 
     def list_tables(self, like=None, database=None, schema=None):
         if database is not None and database != self.current_database:
