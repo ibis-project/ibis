@@ -64,6 +64,7 @@ class ParquetClient(FileClient):
 
     dialect = dialect
     extension = 'parquet'
+    table_class = ParquetTable
 
     def insert(self, path, expr, **kwargs):
         path = self.root / path
@@ -84,7 +85,7 @@ class ParquetClient(FileClient):
         parquet_file = pq.ParquetFile(str(f))
         schema = sch.infer(parquet_file.schema)
 
-        table = ParquetTable(name, schema, self).to_expr()
+        table = self.table_class(name, schema, self).to_expr()
         self.dictionary[name] = f
 
         return table
@@ -103,7 +104,7 @@ class ParquetClient(FileClient):
         return parse_version(pa.__version__)
 
 
-@pre_execute.register(ParquetTable, ParquetClient)
+@pre_execute.register(ParquetClient.table_class, ParquetClient)
 def parquet_pre_execute_client(op, client, scope, **kwargs):
     # cache
     if isinstance(scope.get(op), pd.DataFrame):

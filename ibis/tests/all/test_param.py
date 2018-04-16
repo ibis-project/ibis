@@ -5,22 +5,23 @@ import ibis.expr.datatypes as dt
 import ibis.tests.util as tu
 
 
-@pytest.mark.parametrize(('column', 'raw_value'), [
-    ('double_col', 0.0),
-    ('double_col', 10.1),
-    ('float_col', 1.1),
-    ('float_col', 2.2)
-])
+@pytest.mark.parametrize(
+    ('column', 'raw_value'),
+    [
+        ('double_col', 0.0),
+        ('double_col', 10.1),
+        ('float_col', 1.1),
+        ('float_col', 2.2)
+    ]
+)
 @tu.skipif_unsupported
 def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     value = ibis.param(dt.double)
     expr = alltypes[column] + value
     expected = df[column] + raw_value
-
     result = expr.execute(params={value: raw_value})
-    expected = backend.default_series_rename(expected).astype('float64')
-
-    backend.assert_series_equal(result, expected)
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.parametrize(('start_string', 'end_string'), [
