@@ -18,6 +18,10 @@ import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 
+EXECUTION_TYPE_ICP = 1
+EXECUTION_TYPE_ICP_GPU = 2
+EXECUTION_TYPE_CURSOR = 3
+
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
 
 
@@ -105,11 +109,7 @@ class MapDCursor(object):
             result = pd.DataFrame(self.cursor.fetchall(), columns=col_names)
         elif self.cursor is None:
             result = pd.DataFrame([])
-        elif isinstance(self.cursor, pd.DataFrame):
-            result = self.cursor
-        elif GPUDataFrame is not None and isinstance(
-                self.cursor, GPUDataFrame
-        ):
+        else:
             result = self.cursor
 
         return result
@@ -146,14 +146,17 @@ class MapDClient(SQLClient):
     ):
         """
 
-        :param uri:
-        :param user:
-        :param password:
-        :param host:
-        :param port:
-        :param dbname:
-        :param protocol:
-        :param execution_type:
+        Parameters
+        ----------
+        uri : str
+        user : str
+        password : str
+        host : str
+        port : int
+        dbname : str
+        protocol : {‘binary’, ‘http’, ‘https’}
+        execution_type : {1, 2, 3}
+
         """
         self.uri = uri
         self.user = user
@@ -162,16 +165,20 @@ class MapDClient(SQLClient):
         self.port = port
         self.dbname = dbname
         self.protocol = protocol
+
+        if execution_type not in (
+            EXECUTION_TYPE_ICP,
+            EXECUTION_TYPE_ICP_GPU,
+            EXECUTION_TYPE_CURSOR,
+        ):
+            raise Exception('Execution type defined not available.')
+
         self.execution_type = execution_type
 
         self.con = pymapd.connect(
             uri=uri, user=user, password=password, host=host,
             port=port, dbname=dbname, protocol=protocol
         )
-
-    @property
-    def _table_expr_klass(self):
-        return ir.TableExpr
 
     def log(self, msg):
         log(msg)
@@ -184,27 +191,33 @@ class MapDClient(SQLClient):
         """
         Required.
 
-        :param expr:
-        :param context:
+        expr:
+        context:
         :return:
         """
         result = build_ast(expr, context)
         return result
 
     def _fully_qualified_name(self, name, database):
-        if bool(fully_qualified_re.search(name)):
+        if fully_qualified_re.search(name):
             return name
 
         database = database or self.current_database
-        return '{0}.{1}'.format(database, name)
+        return '{}.{}'.format(database, name)
 
-    def _get_table_schema(self, table_name):
+    def _get_table_schema(self, table_name, database=None):
         """
 
-        :param table_name:
-        :return:
+        Parameters
+        ----------
+        table_name : str
+        database : str
+
+        Returns
+        -------
+        schema : ibis Schema
+
         """
-        database = None
         table_name_ = table_name.split('.')
         if len(table_name_) == 2:
             database, table_name = table_name_
@@ -213,10 +226,10 @@ class MapDClient(SQLClient):
     def _execute(self, query, results=False):
         """
 
-        :param query:
+        query:
         :return:
         """
-        if not self.execution_type == 3:
+        if self.execution_type != EXECUTION_TYPE_CURSOR:
             raise NotImplemented()
 
         return MapDCursor(self.con.cursor().execute(query))
@@ -240,9 +253,7 @@ class MapDClient(SQLClient):
         This creates a new connection if `name` is both not ``None`` and not
         equal to the current database.
         """
-        if name == self.current_database or (
-            name is None and name != self.current_database
-        ):
+        if name == self.current_database or name is None:
             return self.database_class(self.current_database, self)
         else:
             client_class = type(self)
@@ -282,7 +293,7 @@ class MapDClient(SQLClient):
         -------
         if_exists : boolean
         """
-        return len(self.list_tables(like=name, database=database)) > 0
+        return bool(self.list_tables(like=name, database=database))
 
     def list_tables(self, like=None, database=None):
         return self.con.get_tables()
@@ -308,7 +319,10 @@ class MapDClient(SQLClient):
             col_names.append(col.name)
             col_types.append(MapDDataType.parse(col.type))
 
-        return sch.schema(col_names, col_types)
+        return sch.schema([
+            (col.name, MapDDataType.parse(col.type))
+            for col in self.con.get_table_details(table_name)
+        ])
 
     @property
     def version(self):
@@ -320,7 +334,7 @@ def mapd_to_ibis_dtype(mapd_dtype):
     """
     Register MapD Data Types
 
-    :param mapd_dtype:
+    mapd_dtype:
     :return:
     """
     return mapd_dtype.to_ibis()

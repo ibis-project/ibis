@@ -71,23 +71,25 @@ class MapDSelect(compiles.Select):
         return super().format_select_set()
 
     def format_group_by(self):
-        if not len(self.group_by):
+        if not self.group_by:
             # There is no aggregation, nothing to see here
             return None
 
         lines = []
-        if len(self.group_by) > 0:
-            columns = ['{0}'.format(expr.get_name())
-                       for expr in self.group_by]
-            clause = 'GROUP BY {0}'.format(', '.join(columns))
+        if self.group_by:
+            columns = [
+                '{}'.format(expr.get_name())
+                for expr in self.group_by
+            ]
+            clause = 'GROUP BY {}'.format(', '.join(columns))
             lines.append(clause)
 
-        if len(self.having) > 0:
+        if self.having:
             trans_exprs = []
             for expr in self.having:
                 translated = self._translate(expr)
                 trans_exprs.append(translated)
-            lines.append('HAVING {0}'.format(' AND '.join(trans_exprs)))
+            lines.append('HAVING {}'.format(' AND '.join(trans_exprs)))
 
         return '\n'.join(lines)
 
@@ -173,17 +175,6 @@ class MapDExprTranslator(compiles.ExprTranslator):
     def name(self, translated, name, force=True):
         return _name_expr(translated, name)
 
-    @classmethod
-    def compiles(cls, klass, f=None):
-        def decorator(f):
-            cls._registry[klass] = f
-
-        if f is None:
-            return decorator
-        else:
-            decorator(f)
-            return f
-
 
 class MapDDialect(compiles.Dialect):
     """
@@ -196,97 +187,3 @@ dialect = MapDDialect
 compiles = MapDExprTranslator.compiles
 rewrites = MapDExprTranslator.rewrites
 
-
-def _is_floating(*args):
-    for arg in args:
-        if isinstance(arg, ir.FloatingColumn):
-            return True
-    return False
-
-
-@compiles(ops.StandardDev)
-def compile_std(translator, expr):
-    # pull out the arguments to the expression
-    args = expr.op().args
-    args_size = len(args)
-
-    x = args[0]
-    how = '' if args_size < 2 else '_%s' % args[1].upper()[:4]
-
-    f_type = '' if not _is_floating(x) else '_FLOAT'
-
-    # compile the argument
-    compiled_arg = translator.translate(x)
-
-    return 'STDDEV%s%s(%s)' % (how, f_type, compiled_arg)
-
-
-@compiles(ops.Variance)
-def compile_var(translator, expr):
-    # pull out the arguments to the expression
-    args = expr.op().args
-    args_size = len(args)
-
-    x = args[0]
-    how = '' if args_size < 2 else '_%s' % args[1].upper()[:4]
-
-    if how == '':
-        f_name = 'VARIANCE'
-    else:
-        f_name = 'VAR'
-
-    f_type = '' if not _is_floating(x) else '_FLOAT'
-
-    # compile the argument
-    compiled_arg = translator.translate(x)
-
-    return '%s%s%s(%s)' % (f_name, how, f_type, compiled_arg)
-
-
-@compiles(ops.Correlation)
-def compile_corr(translator, expr):
-    # pull out the arguments to the expression
-    args = expr.op().args
-
-    x, y, how, where = args
-
-    f_type = '' if not _is_floating(x, y) else '_FLOAT'
-
-    # compile the argument
-    compiled_x = translator.translate(x)
-    compiled_y = translator.translate(y)
-
-    return 'CORR%s(%s, %s)' % (f_type, compiled_x, compiled_y)
-
-
-@compiles(ops.Covariance)
-def compile_cov(translator, expr):
-    # pull out the arguments to the expression
-    args = expr.op().args
-
-    x, y, how, where = args
-
-    f_type = '' if not _is_floating(x, y) else '_FLOAT'
-
-    # compile the argument
-    compiled_x = translator.translate(x)
-    compiled_y = translator.translate(y)
-
-    return 'COVAR_%s%s(%s, %s)' % (
-        how[:4].upper(), f_type, compiled_x, compiled_y
-    )
-
-
-@compiles(ops.StringLength)
-def compile_char_length(translator, expr):
-    # pull out the arguments to the expression
-    arg = expr.op().args[0]
-    # compile the argument
-    compiled_arg = translator.translate(arg)
-    return 'CHAR_LENGTH(%s)' % compiled_arg
-
-
-@compiles(ops.Pi)
-def compile_pi(*args, **kwargs):
-    # pull out the arguments to the expression
-    return 'PI()'

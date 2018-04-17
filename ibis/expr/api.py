@@ -389,7 +389,7 @@ def row_number():
 
 e = ops.E().to_expr()
 
-pi = ops.Pi().to_expr().name('pi')
+pi = ops.Pi().to_expr()
 
 
 def _add_methods(klass, method_table):
@@ -400,17 +400,6 @@ def _add_methods(klass, method_table):
 def _unary_op(name, klass, doc=None):
     def f(arg):
         return klass(arg).to_expr()
-    f.__name__ = name
-    if doc is not None:
-        f.__doc__ = doc
-    else:
-        f.__doc__ = klass.__doc__
-    return f
-
-
-def _generic_op(name, klass, doc=None):
-    def f(*args):
-        return klass(*args).to_expr()
     f.__name__ = name
     if doc is not None:
         f.__doc__ = doc
@@ -1318,7 +1307,7 @@ sqrt = _unary_op('sqrt', ops.Sqrt)
 acos = _unary_op('acos', ops.Acos)
 asin = _unary_op('asin', ops.Asin)
 atan = _unary_op('atan', ops.Atan)
-atan2 = _generic_op('atan2', ops.Atan2)
+atan2 = _binop_expr('atan2', ops.Atan2)
 cos = _unary_op('cos', ops.Cos)
 cot = _unary_op('cot', ops.Cot)
 sin = _unary_op('sin', ops.Sin)
