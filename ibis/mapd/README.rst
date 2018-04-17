@@ -229,8 +229,7 @@ match to specific criteria.
 Best practices
 --------------
 
-- Use `Numpy` starndard for docstring:
-https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
+- Use `Numpy` starndard for docstring: https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 - Use `format` string function to format a string instead of `%` statement.
 
 
