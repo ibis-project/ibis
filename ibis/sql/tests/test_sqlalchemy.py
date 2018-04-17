@@ -39,8 +39,8 @@ L = sa.literal
 class MockAlchemyConnection(MockConnection):
 
     def __init__(self):
+        super(MockAlchemyConnection, self).__init__()
         self.meta = sa.MetaData()
-        MockConnection.__init__(self)
 
     def table(self, name):
         schema = self._get_table_schema(name)

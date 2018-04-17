@@ -523,48 +523,48 @@ class Log10(Logarithm):
 
 # TRIGONOMETRIC OPERATIONS
 
-class TrigonometryUnary(UnaryOp):
-    """Trigonometry base unary"""
+class TrigonometricUnary(UnaryOp):
+    """Trigonometric base unary"""
     arg = Arg(rlz.numeric)
     output_type = rlz.shape_like('arg', 'float')
 
 
-class TrigonometryBinary(BinaryOp):
-    """Trigonometry base binary"""
+class TrigonometricBinary(BinaryOp):
+    """Trigonometric base binary"""
     left = Arg(rlz.numeric)
     right = Arg(rlz.numeric)
     output_type = rlz.shape_like('left', 'float')
 
 
-class Acos(TrigonometryUnary):
+class Acos(TrigonometricUnary):
     """Returns the arc cosine of x"""
 
 
-class Asin(TrigonometryUnary):
+class Asin(TrigonometricUnary):
     """Returns the arc sine of x"""
 
 
-class Atan(TrigonometryUnary):
+class Atan(TrigonometricUnary):
     """Returns the arc tangent of x"""
 
 
-class Atan2(TrigonometryBinary):
+class Atan2(TrigonometricBinary):
     """Returns the arc tangent of x and y"""
 
 
-class Cos(TrigonometryUnary):
+class Cos(TrigonometricUnary):
     """Returns the cosine of x"""
 
 
-class Cot(TrigonometryUnary):
+class Cot(TrigonometricUnary):
     """Returns the cotangent of x"""
 
 
-class Sin(TrigonometryUnary):
+class Sin(TrigonometricUnary):
     """Returns the sine of x"""
 
 
-class Tan(TrigonometryUnary):
+class Tan(TrigonometricUnary):
     """Returns the tangent of x"""
 
 
@@ -677,6 +677,10 @@ class StringSQLLike(FuzzySearch):
     arg = Arg(rlz.string)
     pattern = Arg(rlz.string)
     escape = Arg(six.string_types, default=None)
+
+
+class StringSQLILike(StringSQLLike):
+    """SQL ilike operation"""
 
 
 class RegexSearch(FuzzySearch):
@@ -845,6 +849,38 @@ class StandardDev(VarianceBase):
 
 class Variance(VarianceBase):
     pass
+
+
+class Correlation(Reduction):
+    """
+    coefficient of correlation of a set of number pairs.
+
+    """
+    left = Arg(rlz.numeric)
+    right = Arg(rlz.numeric)
+    how = Arg(rlz.isin({'sample', 'pop'}), default=None)
+    where = Arg(rlz.boolean, default=None)
+
+    def output_type(self):
+        if isinstance(self.left, ir.DecimalValue):
+            dtype = self.left.type().largest
+        else:
+            dtype = dt.float64
+        return dtype.scalar_type()
+
+
+class Covariance(Reduction):
+    left = Arg(rlz.column(rlz.numeric))
+    right = Arg(rlz.column(rlz.numeric))
+    how = Arg(rlz.isin({'sample', 'pop'}), default=None)
+    where = Arg(rlz.boolean, default=None)
+
+    def output_type(self):
+        if isinstance(self.left, ir.DecimalValue):
+            dtype = self.left.type().largest
+        else:
+            dtype = dt.float64
+        return dtype.scalar_type()
 
 
 class Max(Reduction):
@@ -2160,8 +2196,21 @@ class BetweenTime(Between):
 
 class Contains(ValueOp, BooleanValueOp):
     value = Arg(rlz.any)
-    options = Arg(rlz.one_of([rlz.column(rlz.any),
+    options = Arg(rlz.one_of([rlz.set_,
+                              rlz.column(rlz.any),
                               rlz.list_of(rlz.any)]))
+
+    def __init__(self, value, options):
+        if isinstance(options, ir.Expr):
+            # it can be a single expression, like a column
+            pass
+        elif util.any_of(options, ir.Expr):
+            # or a list of expressions
+            options = ir.sequence(options)
+        else:
+            # or a set of scalar values
+            options = frozenset(options)
+        super(Contains, self).__init__(value, options)
 
     def output_type(self):
         all_args = [self.value]
@@ -2237,7 +2286,7 @@ class E(Constant):
 
 class Pi(Constant):
     """
-
+    The constant pi
     """
     def output_type(self):
         return partial(ir.FloatingScalar, dtype=dt.float64)

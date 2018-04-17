@@ -226,6 +226,14 @@ a set of reserved words from `MapD` language.
 `quote_identifiers` is used to put quotes around the string sent if the string
 match to specific criteria.
 
+Best practices
+--------------
+
+- Use `Numpy` starndard for docstring:
+https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
+- Use `format` string function to format a string instead of `%` statement.
+
+
 References
 ----------
 

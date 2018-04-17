@@ -286,12 +286,17 @@ def bq_param_date(param, value):
     return bq.ScalarQueryParameter(param.get_name(), 'DATE', value)
 
 
+class BigQueryTable(ops.DatabaseTable):
+    pass
+
+
 class BigQueryClient(SQLClient):
 
     sync_query = BigQueryQuery
     database_class = BigQueryDatabase
     proxy_class = BigQueryAPIProxy
     dialect = comp.BigQueryDialect
+    table_class = BigQueryTable
 
     def __init__(self, project_id, dataset_id):
         self._proxy = type(self).proxy_class(project_id)
@@ -304,10 +309,6 @@ class BigQueryClient(SQLClient):
     @property
     def dataset_id(self):
         return self._dataset_id
-
-    @property
-    def _table_expr_klass(self):
-        return ir.TableExpr
 
     def table(self, *args, **kwargs):
         t = super(BigQueryClient, self).table(*args, **kwargs)

@@ -309,6 +309,8 @@ def literal(translator, expr):
         return "toDate('{0!s}')".format(value)
     elif isinstance(expr, ir.ArrayValue):
         return str(list(value))
+    elif isinstance(expr, ir.SetScalar):
+        return '({})'.format(', '.join(map(repr, value)))
     else:
         raise NotImplementedError(type(expr))
 

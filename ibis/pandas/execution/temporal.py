@@ -5,7 +5,7 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 from ibis.pandas.dispatch import execute_node
-from ibis.pandas.core import numeric_types
+from ibis.pandas.core import numeric_types, integer_types
 
 
 @execute_node.register(ops.Strftime, pd.Timestamp, six.string_types)
@@ -77,40 +77,82 @@ def execute_interval_from_integer_series(op, data, **kwargs):
     return data.apply(convert_to_offset)
 
 
+@execute_node.register(ops.TimestampAdd, datetime.datetime, datetime.timedelta)
+def execute_timestamp_add_datetime_timedelta(op, left, right, **kwargs):
+    return pd.Timestamp(left) + pd.Timedelta(right)
+
+
+@execute_node.register(ops.TimestampAdd, datetime.datetime, pd.Series)
+def execute_timestamp_add_datetime_series(op, left, right, **kwargs):
+    return pd.Timestamp(left) + right
+
+
+@execute_node.register(ops.IntervalAdd, datetime.timedelta, datetime.timedelta)
+def execute_interval_add_delta_delta(op, left, right, **kwargs):
+    return pd.Timedelta(left) + pd.Timedelta(right)
+
+
+@execute_node.register(ops.IntervalAdd, datetime.timedelta, pd.Series)
+def execute_interval_add_delta_series(op, left, right, **kwargs):
+    return pd.Timedelta(left) + right
+
+
 @execute_node.register(
-    ops.TimestampAdd,
-    (datetime.datetime, pd.Series),
-    (datetime.timedelta, np.timedelta64, pd.Timedelta, pd.Series)
-)
+    (ops.TimestampAdd, ops.IntervalAdd), pd.Series, datetime.timedelta)
+def execute_timestamp_interval_add_series_delta(op, left, right, **kwargs):
+    return left + pd.Timedelta(right)
+
+
 @execute_node.register(
-    ops.IntervalAdd, (pd.Timedelta, pd.Series), (pd.Timedelta, pd.Series)
-)
-def execute_timestamp_add_delta(op, left, right, **kwargs):
+    (ops.TimestampAdd, ops.IntervalAdd), pd.Series, pd.Series)
+def execute_timestamp_interval_add_series_series(op, left, right, **kwargs):
     return left + right
 
 
+@execute_node.register(ops.TimestampSub, datetime.datetime, datetime.timedelta)
+def execute_timestamp_sub_datetime_timedelta(op, left, right, **kwargs):
+    return pd.Timestamp(left) - pd.Timedelta(right)
+
+
 @execute_node.register(
-    (ops.TimestampSub, ops.TimestampDiff),
-    (datetime.datetime, pd.Series),
-    (
-        datetime.datetime,
-        np.datetime64,
-        datetime.timedelta,
-        np.timedelta64,
-        pd.Timedelta,
-        pd.Series
-    ),
-)
-def execute_timestamp_sub_diff(op, left, right, **kwargs):
+    (ops.TimestampDiff, ops.TimestampSub), datetime.datetime, pd.Series)
+def execute_timestamp_diff_sub_datetime_series(op, left, right, **kwargs):
+    return pd.Timestamp(left) - right
+
+
+@execute_node.register(ops.TimestampSub, pd.Series, datetime.timedelta)
+def execute_timestamp_sub_series_timedelta(op, left, right, **kwargs):
+    return left - pd.Timedelta(right)
+
+
+@execute_node.register(
+    (ops.TimestampDiff, ops.TimestampSub), pd.Series, pd.Series)
+def execute_timestamp_diff_sub_series_series(op, left, right, **kwargs):
     return left - right
 
 
+@execute_node.register(ops.TimestampDiff, datetime.datetime, datetime.datetime)
+def execute_timestamp_diff_datetime_datetime(op, left, right, **kwargs):
+    return pd.Timestamp(left) - pd.Timestamp(right)
+
+
+@execute_node.register(ops.TimestampDiff, pd.Series, datetime.datetime)
+def execute_timestamp_diff_series_datetime(op, left, right, **kwargs):
+    return left - pd.Timestamp(right)
+
+
 @execute_node.register(
-    ops.IntervalMultiply,
-    (pd.Timedelta, pd.Series), numeric_types + (pd.Series,)
+    ops.IntervalMultiply, pd.Series, numeric_types + (pd.Series,)
 )
-def execute_interval_multiply(op, left, right, **kwargs):
+def execute_interval_multiply_series_numeric(op, left, right, **kwargs):
     return left * right
+
+
+@execute_node.register(
+    ops.IntervalMultiply, datetime.timedelta, numeric_types + (pd.Series,)
+)
+def execute_interval_multiply_delta_numeric(op, left, right, **kwargs):
+    return pd.Timedelta(left) * right
 
 
 @execute_node.register(
@@ -120,3 +162,13 @@ def execute_interval_multiply(op, left, right, **kwargs):
 )
 def execute_interval_floor_divide(op, left, right, **kwargs):
     return left // right
+
+
+@execute_node.register(ops.TimestampFromUNIX, (pd.Series,) + integer_types)
+def execute_timestamp_from_unix(op, data, **kwargs):
+    return pd.to_datetime(data, unit=op.unit)
+
+
+@execute_node.register(ops.TimestampNow)
+def execute_timestamp_now(op, **kwargs):
+    return pd.Timestamp('now')

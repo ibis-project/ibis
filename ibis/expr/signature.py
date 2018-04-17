@@ -13,9 +13,6 @@ except ImportError:
     from toolz import unique
 
 
-# TODO: could use the primitives defined here to types too
-
-
 _undefined = object()  # marker for missing argument
 
 
@@ -98,14 +95,6 @@ class Argument(object):
     __call__ = validate  # syntactic sugar
 
 
-class Return(object):
-    # TODO
-    """Acts like a method (output type)"""
-
-    def __call__(self, obj):
-        pass
-
-
 class TypeSignature(OrderedDict):
 
     __slots__ = ()
@@ -117,7 +106,7 @@ class TypeSignature(OrderedDict):
 
     def validate(self, *args, **kwargs):
         if len(args) > len(self.keys()):
-            raise TypeError('takes {} positional arguments ut {} were '
+            raise TypeError('takes {!d} positional arguments but {!d} were '
                             'given'.format(len(self.keys()), len(args)))
 
         result = []

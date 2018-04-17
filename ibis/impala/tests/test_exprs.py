@@ -320,11 +320,11 @@ FROM alltypes"""
              'CAST(from_unixtime(`c`, "yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
             (col.to_timestamp('ms'),
-             'CAST(from_unixtime(CAST(`c` / 1000 AS int), '
+             'CAST(from_unixtime(CAST(floor(`c` / 1000) AS int), '
              '"yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
             (col.to_timestamp('us'),
-             'CAST(from_unixtime(CAST(`c` / 1000000 AS int), '
+             'CAST(from_unixtime(CAST(floor(`c` / 1000000) AS int), '
              '"yyyy-MM-dd HH:mm:ss") '
              'AS timestamp)'),
         ]
@@ -732,11 +732,13 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
         self.table = self.con.table('alltypes')
 
     def test_field_in_literals(self):
+        values = ['foo', 'bar', 'baz']
+        values_formatted = tuple(set(values))
         cases = [
-            (self.table.g.isin(["foo", "bar", "baz"]),
-             "`g` IN ('foo', 'bar', 'baz')"),
-            (self.table.g.notin(["foo", "bar", "baz"]),
-             "`g` NOT IN ('foo', 'bar', 'baz')")
+            (self.table.g.isin(values),
+             "`g` IN {}".format(values_formatted)),
+            (self.table.g.notin(values),
+             "`g` NOT IN {}".format(values_formatted))
         ]
         self._check_expr_cases(cases)
 
@@ -750,19 +752,22 @@ class TestInNotIn(unittest.TestCase, ExprSQLTest):
         self._check_expr_cases(cases)
 
     def test_isin_notin_in_select(self):
-        filtered = self.table[self.table.g.isin(["foo", "bar"])]
-        result = to_sql(filtered)
-        expected = """SELECT *
-FROM alltypes
-WHERE `g` IN ('foo', 'bar')"""
-        assert result == expected
+        values = ['foo', 'bar']
+        values_formatted = tuple(set(values))
 
-        filtered = self.table[self.table.g.notin(["foo", "bar"])]
+        filtered = self.table[self.table.g.isin(values)]
         result = to_sql(filtered)
         expected = """SELECT *
 FROM alltypes
-WHERE `g` NOT IN ('foo', 'bar')"""
-        assert result == expected
+WHERE `g` IN {}"""
+        assert result == expected.format(values_formatted)
+
+        filtered = self.table[self.table.g.notin(values)]
+        result = to_sql(filtered)
+        expected = """SELECT *
+FROM alltypes
+WHERE `g` NOT IN {}"""
+        assert result == expected.format(values_formatted)
 
 
 class TestCoalesceGreaterLeast(unittest.TestCase, ExprSQLTest):

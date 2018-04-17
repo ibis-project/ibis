@@ -1,7 +1,8 @@
-from six import StringIO
 from datetime import date, datetime
 from ibis.mapd.identifiers import quote_identifier
+from six import StringIO
 
+import ibis
 import ibis.common as com
 import ibis.util as util
 import ibis.expr.rules as rlz
@@ -9,7 +10,12 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.transforms as transforms
 
-from ibis.expr.types import NumericValue, StringValue
+
+def _is_floating(*args):
+    for arg in args:
+        if isinstance(arg, ir.FloatingColumn):
+            return True
+    return False
 
 
 def _cast(translator, expr):
@@ -63,6 +69,7 @@ def fixed_arity(func_name, arity):
             msg = 'Incorrect number of args {0} instead of {1}'
             raise com.UnsupportedOperationError(msg.format(arg_count, arity))
         return _call(translator, func_name, *op.args)
+    formatter.__name__ = func_name
     return formatter
 
 
@@ -70,19 +77,43 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
-def agg(func):
+def _reduction_format(translator, func_name, arg, args, where):
+    if where is not None:
+        arg = where.ifelse(arg, ibis.NA)
+
+    return '{}({})'.format(
+        func_name, ', '.join(map(translator.translate, [arg] + list(args)))
+    )
+
+
+def _reduction(func_name):
     def formatter(translator, expr):
-        return _aggregate(translator, func, *expr.op().args)
+        op = expr.op()
+
+        # HACK: support trailing arguments
+        where = op.where
+        args = [arg for arg in op.args if arg is not where]
+
+        return _reduction_format(
+            translator, func_name, args[0], args[1:], where
+        )
     return formatter
 
 
-def agg_variance_like(func):
-    variants = {'sample': '{0}Samp'.format(func),
-                'pop': '{0}Pop'.format(func)}
+def _variance_like(func):
+    variants = {
+        'sample': '{}_SAMP'.format(func),
+        'pop': '{}_POP'.format(func)
+    }
 
     def formatter(translator, expr):
         arg, how, where = expr.op().args
-        return _aggregate(translator, variants[how], arg, where)
+
+        func_type = '' if not _is_floating(arg) else '_FLOAT'
+
+        return _reduction_format(
+            translator, variants[how].upper() + func_type, arg, [], where
+        )
 
     return formatter
 
@@ -99,9 +130,45 @@ def binary_infix_op(infix_sym):
     return formatter
 
 
+def timestamp_binary_infix_op(func_name, infix_sym):
+    def formatter(translator, expr):
+        op = expr.op()
+
+        arg, unit = op.args[0], op.args[1]
+        arg_ = _parenthesize(translator, arg)
+
+        timestamp_code = {
+            'Y': 'YEAR',
+            'M': 'MONTH',
+            'D': 'DAY',
+            'W': 'WEEK',
+            'Q': 'QUARTER',
+            'h': 'HOUR',
+            'm': 'MINUTE',
+            's': 'SECOND',
+        }
+
+        if unit.upper() in [u.upper() for u in timestamp_code.keys()]:
+            converter = timestamp_code[unit].upper()
+        elif unit.upper() in [u.upper() for u in _timestamp_units.values()]:
+            converter = unit.upper()
+        else:
+            raise ValueError('`{}` unit is not supported!'.format(unit))
+
+        return '{0!s}({1!s} {2!s} {3!s})'.format(
+            func_name, converter, infix_sym, arg_
+        )
+    return formatter
+
+
 def _call(translator, func, *args):
     args_ = ', '.join(map(translator.translate, args))
     return '{0!s}({1!s})'.format(func, args_)
+
+
+def _call_date_trunc(translator, func, *args):
+    args_ = ', '.join(map(translator.translate, args))
+    return 'DATE_TRUNC({0!s}, {1!s})'.format(func, args_)
 
 
 def _aggregate(translator, func, arg, where=None):
@@ -109,6 +176,46 @@ def _aggregate(translator, func, arg, where=None):
         return _call(translator, func + 'If', arg, where)
     else:
         return _call(translator, func, arg)
+
+
+def compile_corr(translator, expr):
+    # pull out the arguments to the expression
+    args = expr.op().args
+
+    x, y, how, where = args
+
+    f_type = '' if not _is_floating(x, y) else '_FLOAT'
+
+    # compile the argument
+    compiled_x = translator.translate(x)
+    compiled_y = translator.translate(y)
+
+    return 'CORR{}({}, {})'.format(f_type, compiled_x, compiled_y)
+
+
+def compile_cov(translator, expr):
+    # pull out the arguments to the expression
+    args = expr.op().args
+
+    x, y, how, where = args
+
+    f_type = '' if not _is_floating(x, y) else '_FLOAT'
+
+    # compile the argument
+    compiled_x = translator.translate(x)
+    compiled_y = translator.translate(y)
+
+    return 'COVAR_{}{}({}, {})'.format(
+        how[:4].upper(), f_type, compiled_x, compiled_y
+    )
+
+
+def compile_char_length(translator, expr):
+    # pull out the arguments to the expression
+    arg = expr.op().args[0]
+    # compile the argument
+    compiled_arg = translator.translate(arg)
+    return 'CHAR_LENGTH({})'.format(compiled_arg)
 
 
 def _xor(translator, expr):
@@ -204,8 +311,7 @@ def _sign(translator, expr):
     """Workaround for missing sign function"""
     op = expr.op()
     arg, = op.args
-    arg_ = translator.translate(arg)
-    return 'intDivOrZero({0}, abs({0}))'.format(arg_)
+    return 'SIGN({})'.format(translator.translate(arg))
 
 
 def _round(translator, expr):
@@ -246,6 +352,15 @@ def _interval_from_integer(translator, expr):
     return 'INTERVAL {} {}'.format(arg_, dtype.resolution.upper())
 
 
+def _set_literal_format(translator, expr):
+    value_type = expr.type().value_type
+
+    formatted = [translator.translate(ir.literal(x, type=value_type))
+                 for x in expr.op().value]
+
+    return '({})'.format(', '.join(formatted))
+
+
 def literal(translator, expr):
     value = expr.op().value
     if isinstance(expr, ir.BooleanValue):
@@ -254,6 +369,8 @@ def literal(translator, expr):
         return "'{0!s}'".format(value.replace("'", "\\'"))
     elif isinstance(expr, ir.NumericValue):
         return repr(value)
+    elif isinstance(expr, ir.SetScalar):
+        return _set_literal_format(translator, expr)
     elif isinstance(expr, ir.IntervalValue):
         return _interval_format(translator, expr)
     elif isinstance(expr, ir.TimestampValue):
@@ -360,28 +477,29 @@ def _timestamp_from_unix(translator, expr):
     return _call(translator, 'toDateTime', arg)
 
 
-def _truncate(translator, expr):
+def date_truncate(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
-    converters = {
-        'Y': 'toStartOfYear',
-        'M': 'toStartOfMonth',
-        'W': 'toMonday',
-        'D': 'toDate',
-        'h': 'toStartOfHour',
-        'm': 'toStartOfMinute',
-        's': 'toDateTime'
+    timestamp_code = {
+        'Y': 'YEAR',
+        'M': 'MONTH',
+        'D': 'DAY',
+        'W': 'WEEK',
+        'Q': 'QUARTER',
+        'h': 'HOUR',
+        'm': 'MINUTE',
+        's': 'SECOND',
     }
 
-    try:
-        converter = converters[unit]
-    except KeyError:
-        raise com.UnsupportedOperationError(
-            'Unsupported truncate unit {}'.format(unit)
-        )
+    if unit.upper() in [u.upper() for u in timestamp_code.keys()]:
+        converter = timestamp_code[unit].upper()
+    elif unit.upper() in [u.upper() for u in _timestamp_units.values()]:
+        converter = unit.upper()
+    else:
+        raise ValueError('`{}` unit is not supported!'.format(unit))
 
-    return _call(translator, converter, arg)
+    return _call_date_trunc(translator, converter, arg)
 
 
 def _exists_subquery(translator, expr):
@@ -513,47 +631,15 @@ class Log(ops.Ln):
     """
 
 
-class Mod(ops.Modulus):
-    """
-
-    """
-
-
 class Radians(ops.UnaryOp):
     """Converts radians to degrees"""
     arg = ops.Arg(rlz.floating)
     output_type = rlz.shape_like('arg', ops.dt.float)
 
 
-class Sign(ops.UnaryOp):
-    """
-    Returns the sign of x as -1, 0, 1 if x is negative, zero, or positive
-
-    """
-    arg = ops.Arg(rlz.numeric)
-    output_type = rlz.shape_like('arg', ops.dt.int8)
-
-
 class Truncate(ops.NumericBinaryOp):
     """Truncates x to y decimal places"""
     output_type = rlz.shape_like('left', ops.dt.float)
-
-
-# STATS
-"""
-class  COVAR_POP(x, y)	COVAR_POP_FLOAT(x, y)	Returns the population covariance of a set of number pairs.
-class  COVAR_SAMP(x, y)	COVAR_SAMP_FLOAT(x, y)	Returns the sample covariance of a set of number pairs.
-"""
-
-
-class Corr(ops.BinaryOp):
-    """
-    Returns the coefficient of correlation of a set of number pairs.
-
-    """
-    x = ops.Arg(rlz.numeric)
-    y = ops.Arg(rlz.numeric)
-    output_type = rlz.shape_like('x', ops.dt.float)
 
 
 # GEOMETRIC
@@ -585,19 +671,42 @@ class Conv_4326_900913_Y(ops.UnaryOp):
     output_type = rlz.shape_like('arg', ops.dt.float)
 
 
-# String
+# DATE/TIME OPERATIONS
 
-class StringLengthBytes(ops.UnaryOp):
 
-    """
-    Compute length in bytes of strings
+_timestamp_units = dict(ops._date_units)
+_timestamp_units.update(ops._time_units)
+_timestamp_units.update(dict(
+    millennium='MILLENNIUM',
+    MILLENNIUM='MILLENNIUM',
 
-    Returns
-    -------
-    length : int32
-    """
+    century='CENTURY',
+    CENTURY='CENTURY',
 
-    output_type = rlz.shape_like('arg', ops.dt.binary)
+    DECADE='DECADE',
+    decade='decade',
+
+    quarterday='quarterday',
+    QUARTERDAY='QUARTERDAY',
+
+    DOW='DOW',
+    ISODOW='DOW',
+    DOY='DOY',
+    EPOCH='EPOCH'
+))
+
+
+class TimestampExtract(ops.TimestampUnaryOp):
+    unit = ops.Arg(rlz.isin(_timestamp_units))
+    output_type = rlz.shape_like('arg', ops.dt.int32)
+
+
+class TimestampTruncate(ops.TimestampTruncate):
+    unit = ops.Arg(rlz.isin(_timestamp_units))
+
+
+class DateTruncate(ops.DateTruncate):
+    unit = ops.Arg(rlz.isin(_timestamp_units))
 
 
 # https://www.mapd.com/docs/latest/mapd-core-guide/dml/
@@ -626,6 +735,7 @@ _unary_ops = {
     ops.Not: _not,
 }
 
+# COMPARISON
 _comparison_ops = {
     ops.IsNull: unary('is null'),
     ops.Between: _between,
@@ -636,6 +746,7 @@ _comparison_ops = {
 }
 
 
+# MATH
 _math_ops = {
     ops.Abs: unary('abs'),
     ops.Ceil: unary('ceil'),
@@ -645,25 +756,24 @@ _math_ops = {
     Log: unary('log'),  # MapD Log wrap to IBIS Ln
     ops.Ln: unary('ln'),
     ops.Log10: unary('log10'),
-    Mod: fixed_arity('mod', 2),  # MapD Mod wrap to IBIS Modulus
-    # PI: fixed_arity('pi', 0),  # check another option to use it
-    # ops.Power: binary('power'),  # TODO: check if it is necessary
+    ops.Modulus: fixed_arity('mod', 2),
+    ops.Pi: fixed_arity('pi', 0),
     Radians: unary('radians'),
-    # ops.Round: _round,
-    Sign: _sign,
+    ops.Round: _round,
+    ops.Sign: _sign,
     ops.Sqrt: unary('sqrt'),
     Truncate: fixed_arity('truncate', 2)
 }
 
+# STATS
 _stats_ops = {
-    Corr: fixed_arity('corr', 2),
-    # COVAR_POP(x, y)	COVAR_POP_FLOAT(x, y)	Returns the population covariance of a set of number pairs.
-    # COVAR_SAMP(x, y)	COVAR_SAMP_FLOAT(x, y)	Returns the sample covariance of a set of number pairs.
-    ops.StandardDev: agg_variance_like('stddev'),
-    ops.Variance: agg_variance_like('var'),
+    ops.Correlation: compile_corr,
+    ops.StandardDev: _variance_like('stddev'),
+    ops.Variance: _variance_like('var'),
+    ops.Covariance: compile_cov,
 }
 
-
+# TRIGONOMETRIC
 _trigonometric_ops = {
     ops.Acos: unary('acos'),
     ops.Asin: unary('asin'),
@@ -683,33 +793,20 @@ _geometric_ops = {
 
 _string_ops = {
     ops.StringLength: unary('char_length'),
-    StringLengthBytes: unary('length'),
-    # ops.RegexSearch: fixed_arity('match', 2),
-    # ops.RegexExtract: _regex_extract,
-    # ops.RegexReplace: fixed_arity('replaceRegexpAll', 3),
-    # str LIKE pattern	'ab' LIKE 'ab'	Returns true if the string matches the pattern
+    ops.RegexSearch: binary_infix_op('REGEXP'),
     ops.StringSQLLike: binary_infix_op('like'),
-    # str NOT LIKE pattern	'ab' NOT LIKE 'cd'	Returns true if the string does not match the pattern
-    # str ILIKE pattern	'AB' ILIKE 'ab'	Case-insensitive LIKE
-    # str REGEXP POSIX pattern	'^[a-z]+r$'	Lowercase string ending with r
-    # REGEXP_LIKE ( str , POSIX pattern )	'^[hc]at'	cat or hat
+    ops.StringSQLILike: binary_infix_op('ilike'),
 }
+
 
 _date_ops = {
     ops.Date: unary('toDate'),
-    ops.DateTruncate: _truncate,
+    DateTruncate: date_truncate,
 
-    ops.TimestampNow: lambda *args: 'now()',
-    ops.TimestampTruncate: _truncate,
-    ops.TimeTruncate: _truncate,
-    ops.IntervalFromInteger: _interval_from_integer,
+    ops.TimestampNow: fixed_arity('NOW', 0),
+    TimestampTruncate: date_truncate,
 
-    ops.ExtractYear: unary('toYear'),
-    ops.ExtractMonth: unary('toMonth'),
-    ops.ExtractDay: unary('toDayOfMonth'),
-    ops.ExtractHour: unary('toHour'),
-    ops.ExtractMinute: unary('toMinute'),
-    ops.ExtractSecond: unary('toSecond'),
+    TimestampExtract: timestamp_binary_infix_op('EXTRACT', 'FROM'),
 
     ops.DateAdd: binary_infix_op('+'),
     ops.DateSub: binary_infix_op('-'),
@@ -721,14 +818,13 @@ _date_ops = {
 }
 
 _agg_ops = {
-    # TODO: this function receive a x and e parameter
-    ApproxCountDistinct: agg('approx_count_cistinct'),
-    ops.Count: agg('count'),
-    ops.CountDistinct: agg('count'),  # this function receive a x parameter
-    ops.Mean: agg('avg'),
-    ops.Max: agg('max'),
-    ops.Min: agg('min'),
-    ops.Sum: agg('sum'),
+    ApproxCountDistinct: _reduction('approx_count_cistinct'),
+    ops.Count: _reduction('count'),
+    ops.CountDistinct: _reduction('count'),  # TODO: this function receive a x param
+    ops.Mean: _reduction('avg'),
+    ops.Max: _reduction('max'),
+    ops.Min: _reduction('min'),
+    ops.Sum: _reduction('sum'),
 }
 
 _general_ops = {
@@ -747,10 +843,6 @@ _general_ops = {
     ops.Coalesce: varargs('coalesce'),
 }
 
-
-# _unsupported_ops = []
-# _unsupported_ops = {k: raise_error for k in _unsupported_ops}
-
 _operation_registry = {}
 
 _operation_registry.update(_general_ops)
@@ -764,35 +856,54 @@ _operation_registry.update(_geometric_ops)
 _operation_registry.update(_string_ops)
 _operation_registry.update(_date_ops)
 _operation_registry.update(_agg_ops)
-# _operation_registry.update(_unsupported_ops)
 
 
-def assign_function_to_dtype(dtype, function_ops: dict):
+def assign_functions_to_dtype(dtype, function_ops, forced=False):
     """
 
     :param dtype:
-    :param function_ops:
+    :param function_ops: dict
+    :param forced:
     :return:
     """
     for klass in function_ops.keys():
         # skip if the class is already in the ibis operations
-        if klass in ops.__dict__.values():
+        if klass in ops.__dict__.values() and not forced:
             continue
-
-        def f(_klass):
-            """
-            Return a lambda function that return to_expr() result from the
-            custom classes.
-            """
-            return lambda *args: _klass(*args).to_expr()
         # assign new function to the defined DataType
-        setattr(
-            dtype, klass.__name__.lower(), f(klass)
-        )
+        func_name = _operation_registry[klass].__name__
+        _add_method(dtype, klass, func_name)
 
 
-assign_function_to_dtype(NumericValue, _trigonometric_ops)
-assign_function_to_dtype(NumericValue, _math_ops)
-assign_function_to_dtype(StringValue, _string_ops)
-assign_function_to_dtype(NumericValue, _geometric_ops)
-assign_function_to_dtype(NumericValue, _stats_ops)
+def _add_method(dtype, klass, func_name):
+    """
+
+    :param dtype:
+    :param klass:
+    :param func_name:
+    :return:
+    """
+    def f(_klass):
+        """
+        Return a lambda function that return to_expr() result from the
+        custom classes.
+        """
+        return lambda *args: _klass(*args).to_expr()
+    # assign new function to the defined DataType
+    setattr(
+        dtype, func_name, f(klass)
+    )
+
+
+assign_functions_to_dtype(ir.NumericValue, _trigonometric_ops, forced=True)
+assign_functions_to_dtype(ir.NumericValue, _math_ops, forced=True)
+assign_functions_to_dtype(ir.StringValue, _string_ops, forced=True)
+assign_functions_to_dtype(ir.NumericValue, _geometric_ops, forced=True)
+assign_functions_to_dtype(ir.NumericValue, _stats_ops, forced=True)
+assign_functions_to_dtype(ir.TimestampColumn, _date_ops, forced=True)
+# assign_functions_to_dtype(ir.DateColumn, _date_ops, forced=True)
+
+_add_method(ir.TimestampColumn, TimestampTruncate, 'truncate')
+_add_method(ir.DateColumn, DateTruncate, 'truncate')
+_add_method(ir.TimestampColumn, TimestampExtract, 'extract')
+# _add_method(ir.DateColumn, TimestampExtract, 'extract')

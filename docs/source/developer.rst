@@ -34,7 +34,7 @@ Conda Environment Setup
    .. code:: sh
 
       # Create a conda environment ready for ibis development
-      conda env create --name ibis36 --file=ci/requirements_dev-3.6.yml
+      conda env create --name ibis36 --file=ci/requirements-dev-3.6.yml
 
       # Activate the conda environment
       source activate ibis36
@@ -54,8 +54,8 @@ The following command does three steps:
 
    .. code:: sh
 
-      cd testing
-      bash start-all.sh
+      cd ci
+      bash build.sh
 
 To use specific backends follow the instructions below.
 
@@ -71,7 +71,7 @@ Download Test Dataset
 
    .. code:: sh
 
-      testing/datamgr.py download
+      ci/datamgr.py download
 
 
 Setting Up Test Databases
@@ -81,7 +81,7 @@ To start each backends
 
    .. code:: sh
 
-      cd testing
+      cd ci
       docker-compose up
 
 
@@ -99,7 +99,7 @@ Impala (with UDFs)
 
    .. code:: sh
 
-      testing/impalamgr.py load --data --data-dir ibis-testing-data
+      ci/impalamgr.py load --data --data-dir ibis-testing-data
 
 Clickhouse
 ^^^^^^^^^^
@@ -115,7 +115,7 @@ Clickhouse
 
    .. code:: sh
 
-      testing/datamgr.py clickhouse
+      ci/datamgr.py clickhouse
 
 PostgreSQL
 ^^^^^^^^^^
@@ -127,7 +127,7 @@ Here's how to load test data into PostgreSQL:
 
    .. code:: sh
 
-      testing/datamgr.py postgres
+      ci/datamgr.py postgres
 
 SQLite
 ^^^^^^
@@ -137,7 +137,7 @@ instructions above, then SQLite will be available in the conda environment.
 
    .. code:: sh
 
-      testing/datamgr.py sqlite
+      ci/datamgr.py sqlite
 
 
 Running Tests

@@ -389,7 +389,7 @@ def row_number():
 
 e = ops.E().to_expr()
 
-pi = ops.Pi().to_expr().name('pi')
+pi = ops.Pi().to_expr()
 
 
 def _add_methods(klass, method_table):
@@ -400,17 +400,6 @@ def _add_methods(klass, method_table):
 def _unary_op(name, klass, doc=None):
     def f(arg):
         return klass(arg).to_expr()
-    f.__name__ = name
-    if doc is not None:
-        f.__doc__ = doc
-    else:
-        f.__doc__ = klass.__doc__
-    return f
-
-
-def _generic_op(name, klass, doc=None):
-    def f(*args):
-        return klass(*args).to_expr()
     f.__name__ = name
     if doc is not None:
         f.__doc__ = doc
@@ -1318,7 +1307,7 @@ sqrt = _unary_op('sqrt', ops.Sqrt)
 acos = _unary_op('acos', ops.Acos)
 asin = _unary_op('asin', ops.Asin)
 atan = _unary_op('atan', ops.Atan)
-atan2 = _generic_op('atan2', ops.Atan2)
+atan2 = _binop_expr('atan2', ops.Atan2)
 cos = _unary_op('cos', ops.Cos)
 cot = _unary_op('cot', ops.Cot)
 sin = _unary_op('sin', ops.Sin)
@@ -1454,6 +1443,38 @@ def variance(arg, where=None, how='sample'):
     return expr
 
 
+def correlation(left, right, where=None, how='sample'):
+    """
+    Compute corralation of numeric array
+
+    Parameters
+    ----------
+    how : {'sample', 'pop'}, default 'sample'
+
+    Returns
+    -------
+    corr : double scalar
+    """
+    expr = ops.Correlation(left, right, how, where).to_expr()
+    return expr
+
+
+def covariance(left, right, where=None, how='sample'):
+    """
+    Compute covariance of numeric array
+
+    Parameters
+    ----------
+    how : {'sample', 'pop'}, default 'sample'
+
+    Returns
+    -------
+    cov : double scalar
+    """
+    expr = ops.Covariance(left, right, how, where).to_expr()
+    return expr
+
+
 _numeric_column_methods = dict(
     mean=mean,
     cummean=cummean,
@@ -1465,6 +1486,8 @@ _numeric_column_methods = dict(
 
     std=std,
     var=variance,
+    corr=correlation,
+    cov=covariance,
 
     bucket=bucket,
     histogram=histogram,
@@ -1764,6 +1787,34 @@ def _string_like(self, patterns):
     )
 
 
+def _string_ilike(self, patterns):
+    """
+    Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
+    % as a multiple-character wildcard or _ (underscore) as a single-character
+    wildcard.
+
+    Use re_search or rlike for regex-based matching.
+
+    Parameters
+    ----------
+    pattern : str or List[str]
+        A pattern or list of patterns to match. If `pattern` is a list, then if
+        **any** pattern matches the input then the corresponding row in the
+        output is ``True``.
+
+    Returns
+    -------
+    matched : ir.BooleanColumn
+    """
+    return functools.reduce(
+        operator.or_,
+        (
+            ops.StringSQLILike(self, pattern).to_expr()
+            for pattern in util.promote_list(patterns)
+        )
+    )
+
+
 def re_search(arg, pattern):
     """
     Search string values using a regular expression. Returns True if the regex
@@ -1945,6 +1996,7 @@ _string_value_methods = dict(
     __contains__=_string_dunder_contains,
     contains=_string_contains,
     like=_string_like,
+    ilike=_string_ilike,
     rlike=re_search,
     replace=_string_replace,
     re_search=re_search,
@@ -2262,36 +2314,9 @@ _date_value_methods = dict(
 _add_methods(ir.DateValue, _date_value_methods)
 
 
-def _convert_unit(value, unit, to):
-    units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
-    factors = (7, 24, 60, 60, 1000, 1000, 1000)
-
-    monthly_units = ('Y', 'Q', 'M')
-    monthly_factors = (4, 3)
-
-    try:
-        i, j = units.index(unit), units.index(to)
-    except ValueError:
-        try:
-            i, j = monthly_units.index(unit), monthly_units.index(to)
-            factors = monthly_factors
-        except ValueError:
-            raise ValueError('Cannot convert to or from '
-                             'non-fixed-length interval')
-
-    factor = functools.reduce(operator.mul, factors[i:j], 1)
-
-    if i < j:
-        return value * factor
-    elif i > j:
-        return value // factor
-    else:
-        return value
-
-
 def _to_unit(arg, target_unit):
     if arg._dtype.unit != target_unit:
-        arg = _convert_unit(arg, arg._dtype.unit, target_unit)
+        arg = util.convert_unit(arg, arg._dtype.unit, target_unit)
         arg.type().unit = target_unit
     return arg
 

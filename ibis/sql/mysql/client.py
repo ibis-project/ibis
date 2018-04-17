@@ -55,6 +55,7 @@ class MySQLClient(alch.AlchemyClient):
 
     dialect = MySQLDialect
     database_class = MySQLDatabase
+    table_class = MySQLTable
 
     def __init__(self, host='localhost', user=None, password=None, port=3306,
                  database='mysql', url=None, driver='pymysql'):
@@ -188,8 +189,8 @@ class MySQLClient(alch.AlchemyClient):
             )
         else:
             alch_table = self._get_sqla_table(name, schema=schema)
-            node = MySQLTable(alch_table, self, self._schemas.get(name))
-            return self._table_expr_klass(node)
+            node = self.table_class(alch_table, self, self._schemas.get(name))
+            return self.table_expr_class(node)
 
     def list_tables(self, like=None, database=None, schema=None):
         if database is not None and database != self.current_database:

@@ -6,6 +6,7 @@ import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 from ibis.config import options
 from ibis.compat import zip as czip, parse_version
@@ -124,12 +125,89 @@ class ClickhouseQuery(Query):
         return self.schema().apply_to(df)
 
 
+class ClickhouseTable(ir.TableExpr, DatabaseEntity):
+    """References a physical table in Clickhouse"""
+
+    @property
+    def _qualified_name(self):
+        return self.op().args[0]
+
+    @property
+    def _unqualified_name(self):
+        return self._match_name()[1]
+
+    @property
+    def _client(self):
+        return self.op().args[2]
+
+    def _match_name(self):
+        m = fully_qualified_re.match(self._qualified_name)
+        if not m:
+            raise com.IbisError('Cannot determine database name from {0}'
+                                .format(self._qualified_name))
+        db, quoted, unquoted = m.groups()
+        return db, quoted or unquoted
+
+    @property
+    def _database(self):
+        return self._match_name()[0]
+
+    def invalidate_metadata(self):
+        self._client.invalidate_metadata(self._qualified_name)
+
+    def metadata(self):
+        """
+        Return parsed results of DESCRIBE FORMATTED statement
+
+        Returns
+        -------
+        meta : TableMetadata
+        """
+        return self._client.describe_formatted(self._qualified_name)
+
+    describe_formatted = metadata
+
+    @property
+    def name(self):
+        return self.op().name
+
+    def _execute(self, stmt):
+        return self._client._execute(stmt)
+
+    def insert(self, obj, **kwargs):
+        from .identifiers import quote_identifier
+        schema = self.schema()
+
+        assert isinstance(obj, pd.DataFrame)
+        assert set(schema.names) >= set(obj.columns)
+
+        columns = ', '.join(map(quote_identifier, obj.columns))
+        query = 'INSERT INTO {table} ({columns}) VALUES'.format(
+            table=self._qualified_name, columns=columns)
+
+        # convert data columns with datetime64 pandas dtype to native date
+        # because clickhouse-driver 0.0.10 does arithmetic operations on it
+        obj = obj.copy()
+        for col in obj.select_dtypes(include=[np.datetime64]):
+            if isinstance(schema[col], dt.Date):
+                obj[col] = obj[col].dt.date
+
+        data = obj.to_dict('records')
+        return self._client.con.process_insert_query(query, data, **kwargs)
+
+
+class ClickhouseDatabaseTable(ops.DatabaseTable):
+    pass
+
+
 class ClickhouseClient(SQLClient):
     """An Ibis client interface that uses Clickhouse"""
 
     database_class = ClickhouseDatabase
     sync_query = ClickhouseQuery
     dialect = ClickhouseDialect
+    table_class = ClickhouseDatabaseTable
+    table_expr_class = ClickhouseTable
 
     def __init__(self, *args, **kwargs):
         self.con = _DriverClient(*args, **kwargs)
@@ -141,10 +219,6 @@ class ClickhouseClient(SQLClient):
     def current_database(self):
         # might be better to use driver.Connection instead of Client
         return self.con.connection.database
-
-    @property
-    def _table_expr_klass(self):
-        return ClickhouseTable
 
     def log(self, msg):
         log(msg)
@@ -336,74 +410,3 @@ class ClickhouseClient(SQLClient):
             raise
         else:
             return parse_version(vstring)
-
-
-class ClickhouseTable(ir.TableExpr, DatabaseEntity):
-    """References a physical table in Clickhouse"""
-
-    @property
-    def _qualified_name(self):
-        return self.op().args[0]
-
-    @property
-    def _unqualified_name(self):
-        return self._match_name()[1]
-
-    @property
-    def _client(self):
-        return self.op().args[2]
-
-    def _match_name(self):
-        m = fully_qualified_re.match(self._qualified_name)
-        if not m:
-            raise com.IbisError('Cannot determine database name from {0}'
-                                .format(self._qualified_name))
-        db, quoted, unquoted = m.groups()
-        return db, quoted or unquoted
-
-    @property
-    def _database(self):
-        return self._match_name()[0]
-
-    def invalidate_metadata(self):
-        self._client.invalidate_metadata(self._qualified_name)
-
-    def metadata(self):
-        """
-        Return parsed results of DESCRIBE FORMATTED statement
-
-        Returns
-        -------
-        meta : TableMetadata
-        """
-        return self._client.describe_formatted(self._qualified_name)
-
-    describe_formatted = metadata
-
-    @property
-    def name(self):
-        return self.op().name
-
-    def _execute(self, stmt):
-        return self._client._execute(stmt)
-
-    def insert(self, obj, **kwargs):
-        from .identifiers import quote_identifier
-        schema = self.schema()
-
-        assert isinstance(obj, pd.DataFrame)
-        assert set(schema.names) >= set(obj.columns)
-
-        columns = ', '.join(map(quote_identifier, obj.columns))
-        query = 'INSERT INTO {table} ({columns}) VALUES'.format(
-            table=self._qualified_name, columns=columns)
-
-        # convert data columns with datetime64 pandas dtype to native date
-        # because clickhouse-driver 0.0.10 does arithmetic operations on it
-        obj = obj.copy()
-        for col in obj.select_dtypes(include=[np.datetime64]):
-            if isinstance(schema[col], dt.Date):
-                obj[col] = obj[col].dt.date
-
-        data = obj.to_dict('records')
-        return self._client.con.process_insert_query(query, data, **kwargs)
