@@ -77,26 +77,36 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
-def _reduction_format(translator, func_name, arg, args, where):
+def _reduction_format(translator, func_name, arg, args, where, distinct=False):
     if where is not None:
         arg = where.ifelse(arg, ibis.NA)
 
-    return '{}({})'.format(
-        func_name, ', '.join(map(translator.translate, [arg] + list(args)))
+    distinct_ = '' if not distinct else 'DISTINCT '
+    return '{}({}{})'.format(
+        func_name,
+        distinct_,
+        ', '.join(map(translator.translate, [arg] + list(args)))
     )
 
 
-def _reduction(func_name):
+def _reduction(func_name, distinct=False):
     def formatter(translator, expr):
         op = expr.op()
 
         # HACK: support trailing arguments
         where = op.where
         args = [arg for arg in op.args if arg is not where]
+        distinct_ = distinct
+
+        if hasattr(op, 'approx') and func_name == 'count' and distinct:
+            func_name == 'APPROX_COUNT_DISTINCT'
+            distinct_ = False
 
         return _reduction_format(
-            translator, func_name, args[0], args[1:], where
+            translator, func_name, args[0], args[1:], where, distinct_
         )
+
+    formatter.__name__ = func_name
     return formatter
 
 
@@ -115,6 +125,7 @@ def _variance_like(func):
             translator, variants[how].upper() + func_type, arg, [], where
         )
 
+    formatter.__name__ = func
     return formatter
 
 
@@ -127,6 +138,7 @@ def binary_infix_op(infix_sym):
         right_ = _parenthesize(translator, right)
 
         return '{0!s} {1!s} {2!s}'.format(left_, infix_sym, right_)
+
     return formatter
 
 
@@ -176,6 +188,27 @@ def _aggregate(translator, func, arg, where=None):
         return _call(translator, func + 'If', arg, where)
     else:
         return _call(translator, func, arg)
+
+
+def _extract_field(sql_attr):
+    def extract_field_formatter(translator, expr):
+        op = expr.op()
+        arg = translator.translate(op.args[0])
+        return 'EXTRACT({} FROM {})'.format(sql_attr, arg)
+    return extract_field_formatter
+
+
+def _general_date_field_add(data_type_name):
+    if data_type_name not in ('date', 'timestamp'):
+        raise NotImplemented('{} not implemented.'.format(data_type_name))
+
+    def __general_date_field_add(translator, expr):
+        op = expr.op()
+        self = translator.translate(op.args[0])
+        value = translator.translate(op.args[1])
+        return '{}({},{},{})'.format(data_type_name, self, value)
+
+    return __general_date_field_add
 
 
 def compile_corr(translator, expr):
@@ -604,17 +637,12 @@ def _zero_if_null(translator, expr):
 
 # AGGREGATION
 
-class ApproxCountDistinct(ops.Reduction):
+class ApproxCountDistinct(ops.CountDistinct):
     """
     Returns the approximate count of distinct values of x with defined
     expected error rate e
     """
-    arg_x = ops.Arg(rlz.column(rlz.numeric))
-    arg_e = ops.Arg(rlz.column(rlz.numeric))
-    where = ops.Arg(rlz.boolean, default=None)
-
-    def output_type(self):
-        return ops.dt.float64.scalar_type()
+    approx = ops.Arg(rlz.integer)
 
 
 # MATH
@@ -798,13 +826,51 @@ _string_ops = {
     ops.StringSQLILike: binary_infix_op('ilike'),
 }
 
+_date_part_truncate = [
+    'YEAR', 'QUARTER', 'MONTH', 'DAY', 'HOUR', 'MINUTE', 'SECOND',
+    'MILLENNIUM', 'CENTURY', 'DECADE', 'WEEK', 'QUARTERDAY'
+]
+
+_date_part_extract = [
+    'YEAR', 'QUARTER', 'MONTH', 'DAY', 'HOUR', 'MINUTE', 'SECOND',
+    'DOW', 'ISODOW', 'DOY', 'EPOCH', 'QUARTERDAY', 'WEEK'
+
+]
+
+_date_part_datediff = [
+    'YEAR', 'QUARTER', 'MONTH', 'DAY', 'HOUR', 'MINUTE', 'SECOND',
+    'MILLENNIUM', 'CENTURY', 'DECADE', 'WEEK', 'QUARTERDAY'
+]
+
+_interval_dateadd = [
+    'YEAR', 'QUARTER', 'MONTH', 'DAYOFYEAR', 'DAY', 'WEEK', 'WEEKDAY', 'HOUR',
+     'MINUTE', 'SECOND', 'MILLISECOND'
+]
+_interval_datepart = [
+    'YEAR', 'QUARTER', 'MONTH', 'DAYOFYEAR', 'DAY', 'WEEK', 'WEEKDAY', 'HOUR',
+     'MINUTE', 'SECOND', 'MILLISECOND'
+]
+
+
+class TimestampAdd(ops.TimestampUnaryOp):
+    """Truncates x to y decimal places"""
+    unit = ops.Arg(rlz.isin(_interval_datepart))
+    output_type = rlz.shape_like('left', ops.dt.float)
+
 
 _date_ops = {
     ops.Date: unary('toDate'),
     DateTruncate: date_truncate,
-
     ops.TimestampNow: fixed_arity('NOW', 0),
     TimestampTruncate: date_truncate,
+
+    # DIRECT EXTRACT OPERATIONS
+    ops.ExtractYear: _extract_field('YEAR'),
+    ops.ExtractMonth: _extract_field('MONTH'),
+    ops.ExtractDay: _extract_field('DAY'),
+    ops.ExtractHour: _extract_field('HOUR'),
+    ops.ExtractMinute: _extract_field('MINUTE'),
+    ops.ExtractSecond: _extract_field('SECOND'),
 
     TimestampExtract: timestamp_binary_infix_op('EXTRACT', 'FROM'),
 
@@ -815,12 +881,13 @@ _date_ops = {
     ops.TimestampSub: binary_infix_op('-'),
     ops.TimestampDiff: binary_infix_op('-'),
     ops.TimestampFromUNIX: _timestamp_from_unix,
+    TimestampAdd: lambda field, value, unit: 'TIMESTAMPADD({}, {}, {}) '.format(v, u)
 }
 
 _agg_ops = {
-    ApproxCountDistinct: _reduction('approx_count_cistinct'),
     ops.Count: _reduction('count'),
-    ops.CountDistinct: _reduction('count'),  # TODO: this function receive a x param
+    ops.CountDistinct: _reduction('count', distinct=True),
+    ApproxCountDistinct: _reduction('count', distinct=True),
     ops.Mean: _reduction('avg'),
     ops.Max: _reduction('max'),
     ops.Min: _reduction('min'),
@@ -888,18 +955,24 @@ def _add_method(dtype, klass, func_name):
         Return a lambda function that return to_expr() result from the
         custom classes.
         """
-        return lambda *args: _klass(*args).to_expr()
+        return lambda *args, **kwargs: _klass(*args, **kwargs).to_expr()
     # assign new function to the defined DataType
     setattr(
         dtype, func_name, f(klass)
     )
 
 
+# numeric operations
 assign_functions_to_dtype(ir.NumericValue, _trigonometric_ops, forced=True)
 assign_functions_to_dtype(ir.NumericValue, _math_ops, forced=True)
-assign_functions_to_dtype(ir.StringValue, _string_ops, forced=True)
 assign_functions_to_dtype(ir.NumericValue, _geometric_ops, forced=True)
 assign_functions_to_dtype(ir.NumericValue, _stats_ops, forced=True)
+assign_functions_to_dtype(ir.NumericValue, _agg_ops, forced=True)
+
+# string operations
+assign_functions_to_dtype(ir.StringValue, _string_ops, forced=True)
+
+# date/time/timestamp operations
 assign_functions_to_dtype(ir.TimestampColumn, _date_ops, forced=True)
 # assign_functions_to_dtype(ir.DateColumn, _date_ops, forced=True)
 
@@ -907,3 +980,6 @@ _add_method(ir.TimestampColumn, TimestampTruncate, 'truncate')
 _add_method(ir.DateColumn, DateTruncate, 'truncate')
 _add_method(ir.TimestampColumn, TimestampExtract, 'extract')
 # _add_method(ir.DateColumn, TimestampExtract, 'extract')
+
+
+year = ibis.api._timedelta('MY_YEAR', 'Y')
