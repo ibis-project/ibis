@@ -25,7 +25,7 @@ mysql_requires = sqlite_requires + ['pymysql']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = ['clickhouse-driver>=0.0.8']
-bigquery_requires = ['google-cloud-bigquery<0.28']
+bigquery_requires = ['google-cloud-bigquery>=1.0.0']
 hdf5_requires = ['tables>=3.0.0']
 parquet_requires = ['pyarrow>=0.6.0']
 
@@ -82,7 +82,6 @@ setup(
         ],
         'clickhouse:python_version == "3.4"': clickhouse_requires,
         'bigquery': bigquery_requires,
-        'bigquery:python_version < "3"': bigquery_requires + ['chainmap'],
         'csv:python_version < "3"': ['pathlib2'],
         'hdf5': hdf5_requires,
         'hdf5:python_version < "3"': hdf5_requires + ['pathlib2'],
