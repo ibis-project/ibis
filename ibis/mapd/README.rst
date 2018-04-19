@@ -226,6 +226,88 @@ a set of reserved words from `MapD` language.
 `quote_identifiers` is used to put quotes around the string sent if the string
 match to specific criteria.
 
+Timestamp/Date operations
+-------------------------
+
+**Interval:**
+
+MapD Interval statement allow just the follow date/time attribute: YEAR, DAY,
+MONTH, HOUR, MINUTE, SECOND
+
+To use the interval statement, it is necessary use a `integer literal/constant`
+and use the `to_interval` method:
+
+.. code-block:: Python
+
+    >>> t['arr_timestamp'] + ibis.literal(1).to_interval('Y')
+
+.. code-block:: Sql
+
+    SELECT "arr_timestamp" + INTERVAL '1' YEAR AS tmp
+    FROM mapd.flights_2008_10k
+
+
+**Extract date/time**
+
+To extract a date part information from a timestamp, `extract` would be used:
+
+.. code-block:: Python
+
+    >>> t['arr_timestamp'].extract('YEAR')
+
+The `extract` method is just available on `ibis.mapd` backend.
+
+The operators allowed are: YEAR, QUARTER, MONTH, DAY, HOUR, MINUTE, SECOND,
+DOW, ISODOW, DOY, EPOCH, QUARTERDAY, WEEK
+
+**Direct functions to extract date/time**
+
+There is some direct functions to extract date/time, the following shows how
+to use that:
+
+.. code-block:: Python
+
+    >>> t['arr_timestamp'].year()
+    >>> t['arr_timestamp'].month()
+    >>> t['arr_timestamp'].day()
+    >>> t['arr_timestamp'].hour()
+    >>> t['arr_timestamp'].minute()
+    >>> t['arr_timestamp'].second()
+
+The result should be:
+
+.. code-block:: Sql
+
+    SELECT EXTRACT(YEAR FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+    SELECT EXTRACT(MONTH FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+    SELECT EXTRACT(DAY FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+    SELECT EXTRACT(HOUR FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+    SELECT EXTRACT(MINUTE FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+    SELECT EXTRACT(SECOND FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+**Timestap/Date Truncate**
+
+A truncate timestamp/data value function is available as `truncate`:
+
+.. code-block:: Python
+
+    >>> t['arr_timestamp'].truncate(date_part)
+
+The date part operators allowed are: YEAR or Y, QUARTER or Q, MONTH or M,
+DAY or D, HOUR or h, MINUTE or m, SECOND or s, WEEK, MILLENNIUM, CENTURY,
+DECADE, QUARTERDAY
+
 Best practices
 --------------
 

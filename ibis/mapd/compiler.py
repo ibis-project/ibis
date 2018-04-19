@@ -1,14 +1,11 @@
 from six import StringIO
-from .operations import (
-    _operation_registry, _name_expr
-)
 from . import operations as mapd_ops
 
 import ibis.common as com
 import ibis.util as util
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 import ibis.sql.compiler as compiles
+import ibis.expr.types as ir
 
 
 def build_ast(expr, context):
@@ -169,11 +166,11 @@ class MapDExprTranslator(compiles.ExprTranslator):
     """
 
     """
-    _registry = _operation_registry
+    _registry = mapd_ops._operation_registry
     context_class = MapDQueryContext
 
     def name(self, translated, name, force=True):
-        return _name_expr(translated, name)
+        return mapd_ops._name_expr(translated, name)
 
 
 class MapDDialect(compiles.Dialect):
@@ -186,4 +183,3 @@ class MapDDialect(compiles.Dialect):
 dialect = MapDDialect
 compiles = MapDExprTranslator.compiles
 rewrites = MapDExprTranslator.rewrites
-

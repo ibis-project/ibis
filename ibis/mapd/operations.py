@@ -77,33 +77,36 @@ def unary(func_name):
     return fixed_arity(func_name, 1)
 
 
-def _reduction_format(translator, func_name, arg, args, where, distinct=False):
+def _reduction_format(
+    translator,
+    func_name,
+    sql_func_name=None,
+    sql_signature='{}({})',
+    arg=None, args=None, where=None
+):
+    if not sql_func_name:
+        sql_func_name = func_name
+
     if where is not None:
         arg = where.ifelse(arg, ibis.NA)
 
-    distinct_ = '' if not distinct else 'DISTINCT '
-    return '{}({}{})'.format(
-        func_name,
-        distinct_,
+    return sql_signature.format(
+        sql_func_name,
         ', '.join(map(translator.translate, [arg] + list(args)))
     )
 
 
-def _reduction(func_name, distinct=False):
+def _reduction(func_name, sql_func_name=None, sql_signature='{}({})'):
     def formatter(translator, expr):
         op = expr.op()
 
         # HACK: support trailing arguments
         where = op.where
         args = [arg for arg in op.args if arg is not where]
-        distinct_ = distinct
-
-        if hasattr(op, 'approx') and func_name == 'count' and distinct:
-            func_name == 'APPROX_COUNT_DISTINCT'
-            distinct_ = False
 
         return _reduction_format(
-            translator, func_name, args[0], args[1:], where, distinct_
+            translator, func_name, sql_func_name, sql_signature,
+            args[0], args[1:], where
         )
 
     formatter.__name__ = func_name
@@ -122,7 +125,9 @@ def _variance_like(func):
         func_type = '' if not _is_floating(arg) else '_FLOAT'
 
         return _reduction_format(
-            translator, variants[how].upper() + func_type, arg, [], where
+            translator, variants[how].upper() + func_type,
+            None, '{}({})',
+            arg, [], where
         )
 
     formatter.__name__ = func
@@ -382,7 +387,22 @@ def _interval_from_integer(translator, expr):
             "MapD doesn't support subsecond interval resolutions")
 
     arg_ = translator.translate(arg)
-    return 'INTERVAL {} {}'.format(arg_, dtype.resolution.upper())
+    return '{}, (sign){}'.format(dtype.resolution.upper(), arg_)
+
+
+def _timestamp_op(func, op_sign='+'):
+    def _formatter(translator, expr):
+        op = expr.op()
+        left, right = op.args
+        formatted_left = translator.translate(left)
+        formatted_right = translator.translate(right)
+
+        return '{}({}, {})'.format(
+            func, formatted_right.replace('(sign)', op_sign),
+            formatted_left
+        )
+
+    return _formatter
 
 
 def _set_literal_format(translator, expr):
@@ -637,7 +657,7 @@ def _zero_if_null(translator, expr):
 
 # AGGREGATION
 
-class ApproxCountDistinct(ops.CountDistinct):
+class CountDistinct(ops.CountDistinct):
     """
     Returns the approximate count of distinct values of x with defined
     expected error rate e
@@ -874,20 +894,50 @@ _date_ops = {
 
     TimestampExtract: timestamp_binary_infix_op('EXTRACT', 'FROM'),
 
-    ops.DateAdd: binary_infix_op('+'),
-    ops.DateSub: binary_infix_op('-'),
-    ops.DateDiff: binary_infix_op('-'),
-    ops.TimestampAdd: binary_infix_op('+'),
-    ops.TimestampSub: binary_infix_op('-'),
-    ops.TimestampDiff: binary_infix_op('-'),
+    ops.IntervalAdd: _interval_from_integer,
+    ops.IntervalFromInteger: _interval_from_integer,
+
+    ops.DateAdd: _timestamp_op('DATEADD'),
+    ops.DateSub: _timestamp_op('DATEADD', '-'),
+    ops.DateDiff: _timestamp_op('DATEDIFF'),
+    ops.TimestampAdd: _timestamp_op('TIMESTAMPADD'),
+    ops.TimestampSub: _timestamp_op('TIMESTAMPADD', '-'),
+    ops.TimestampDiff: _timestamp_op('TIMESTAMPDIFF'),
     ops.TimestampFromUNIX: _timestamp_from_unix,
-    TimestampAdd: lambda field, value, unit: 'TIMESTAMPADD({}, {}, {}) '.format(v, u)
+    TimestampAdd: (
+        lambda field, value, unit:
+            'TIMESTAMPADD({}, {}, {}) '.format(value, unit)
+    )
 }
 
+
+class ApproxCountDistinct(ops.Reduction):
+    """Approximate number of unique values
+
+    """
+    arg = ops.Arg(rlz.column(rlz.any))
+    approx = ops.Arg(rlz.integer, default=1)
+    where = ops.Arg(rlz.boolean, default=None)
+
+    def output_type(self):
+        # Impala 2.0 and higher returns a DOUBLE
+        # return ir.DoubleScalar
+        return ops.partial(ir.IntegerScalar, dtype=ops.dt.int64)
+
+
+approx_count_distinct = _reduction(
+    'approx_nunique',
+    sql_func_name='approx_count_distinct',
+    sql_signature='{}({})'
+)
+
+count_distinct = _reduction('count', sql_signature='{}(DISTINCT {})')
+count = _reduction('count')
+
 _agg_ops = {
-    ops.Count: _reduction('count'),
-    ops.CountDistinct: _reduction('count', distinct=True),
-    ApproxCountDistinct: _reduction('count', distinct=True),
+    ops.Count: count,
+    ops.CountDistinct: count_distinct,
+    ApproxCountDistinct: approx_count_distinct,
     ops.Mean: _reduction('avg'),
     ops.Max: _reduction('max'),
     ops.Min: _reduction('min'),
@@ -966,14 +1016,14 @@ def _add_method(dtype, klass, func_name):
 assign_functions_to_dtype(ir.NumericValue, _trigonometric_ops, forced=True)
 assign_functions_to_dtype(ir.NumericValue, _math_ops, forced=True)
 assign_functions_to_dtype(ir.NumericValue, _geometric_ops, forced=True)
-assign_functions_to_dtype(ir.NumericValue, _stats_ops, forced=True)
-assign_functions_to_dtype(ir.NumericValue, _agg_ops, forced=True)
-
+assign_functions_to_dtype(ir.NumericValue, _stats_ops, forced=False)
+assign_functions_to_dtype(ir.ColumnExpr, _agg_ops, forced=True)
 # string operations
 assign_functions_to_dtype(ir.StringValue, _string_ops, forced=True)
 
 # date/time/timestamp operations
 assign_functions_to_dtype(ir.TimestampColumn, _date_ops, forced=True)
+assign_functions_to_dtype(ir.DateColumn, _date_ops, forced=True)
 # assign_functions_to_dtype(ir.DateColumn, _date_ops, forced=True)
 
 _add_method(ir.TimestampColumn, TimestampTruncate, 'truncate')
@@ -981,5 +1031,3 @@ _add_method(ir.DateColumn, DateTruncate, 'truncate')
 _add_method(ir.TimestampColumn, TimestampExtract, 'extract')
 # _add_method(ir.DateColumn, TimestampExtract, 'extract')
 
-
-year = ibis.api._timedelta('MY_YEAR', 'Y')
