@@ -134,6 +134,17 @@ def _variance_like(func):
     return formatter
 
 
+def unary_prefix_op(prefix_op):
+    def formatter(translator, expr):
+        op = expr.op()
+        arg = _parenthesize(translator, op.args[0])
+
+        return '{0!s} {1!s}'.format(prefix_op.upper(), arg)
+
+    formatter.__name__ = prefix_op
+    return formatter
+
+
 def binary_infix_op(infix_sym):
     def formatter(translator, expr):
         op = expr.op()
@@ -248,12 +259,15 @@ def compile_cov(translator, expr):
     )
 
 
-def compile_char_length(translator, expr):
-    # pull out the arguments to the expression
-    arg = expr.op().args[0]
-    # compile the argument
-    compiled_arg = translator.translate(arg)
-    return 'CHAR_LENGTH({})'.format(compiled_arg)
+def compile_length(func_name='length', sql_func_name='CHAR_LENGTH'):
+    def _compile_lenght(translator, expr):
+        # pull out the arguments to the expression
+        arg = expr.op().args[0]
+        # compile the argument
+        compiled_arg = translator.translate(arg)
+        return '{}({})'.format(sql_func_name, compiled_arg)
+    _compile_lenght.__name__ = func_name
+    return _compile_lenght
 
 
 def _xor(translator, expr):
@@ -839,8 +853,14 @@ _geometric_ops = {
     Conv_4326_900913_Y: unary('conv_4326_900913_y')
 }
 
+
+class ByteLength(ops.StringLength):
+    """Returns the length of a string in bytes length"""
+
+
 _string_ops = {
-    ops.StringLength: unary('char_length'),
+    ops.StringLength: compile_length(),
+    ByteLength: compile_length('byte_length', 'LENGTH'),
     ops.RegexSearch: binary_infix_op('REGEXP'),
     ops.StringSQLLike: binary_infix_op('like'),
     ops.StringSQLILike: binary_infix_op('ilike'),
@@ -931,13 +951,14 @@ approx_count_distinct = _reduction(
     sql_signature='{}({})'
 )
 
-count_distinct = _reduction('count', sql_signature='{}(DISTINCT {})')
+count_distinct = _reduction('count')
 count = _reduction('count')
 
 _agg_ops = {
     ops.Count: count,
     ops.CountDistinct: count_distinct,
     ApproxCountDistinct: approx_count_distinct,
+    ops.DistinctColumn: unary_prefix_op('distinct'),
     ops.Mean: _reduction('avg'),
     ops.Max: _reduction('max'),
     ops.Min: _reduction('min'),

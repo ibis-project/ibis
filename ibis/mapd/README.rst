@@ -308,6 +308,43 @@ The date part operators allowed are: YEAR or Y, QUARTER or Q, MONTH or M,
 DAY or D, HOUR or h, MINUTE or m, SECOND or s, WEEK, MILLENNIUM, CENTURY,
 DECADE, QUARTERDAY
 
+String operations
+-----------------
+
+- `byte_length` is not part of `ibis` `string` operations, it will work just
+for `mapd` backend.
+
+`Not` operation can be done using `~` operator:
+
+.. code-block:: Python
+
+    >>> ~t['dest_name'].like('L%')
+
+`regexp` and `regexp_like` operations can be done using `re_search` operation:
+
+.. code-block:: Python
+
+    >>> t['dest_name'].re_search('L%')
+
+
+Aggregate operations
+====================
+
+count column
+t['taxiin'].count()
+
+distinct count column
+t['taxiin'].distinct().count()
+
+
+distinct count/nunique
+t['taxiin'].nunique().name('v')
+
+
+approx distinct count
+t['taxiin'].approx_nunique(10)
+
+
 Best practices
 --------------
 
