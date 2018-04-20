@@ -25,6 +25,8 @@ New Features
 * Add support for ``UNION`` in the BigQuery backend (:issue:`1408`, :issue:`1409`)
 * Support for writing UDFs in BigQuery (:issue:`1377`). See :ref:`the BigQuery
   UDF docs <udf.bigquery>` for more details.
+* Support for cross-project expressions in the BigQuery backend.
+  (:issue:`1428`)
 
 Bug Fixes
 ~~~~~~~~~
