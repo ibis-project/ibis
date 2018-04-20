@@ -5,7 +5,6 @@ import ibis.common as com
 import ibis.util as util
 import ibis.expr.operations as ops
 import ibis.sql.compiler as compiles
-import ibis.expr.types as ir
 
 
 def build_ast(expr, context):

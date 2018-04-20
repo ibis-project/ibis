@@ -157,8 +157,7 @@ steps:
 
 1. create a new class
 2. create a new function and assign it to a DataType
-3. create a compiler function to this new function and assign it to the compiler
-  translator
+3. create a compiler function to this new function and assign it to the compiler translator
 
 A new Class database function seems like this (`my_backend_operations.py`):
 
@@ -332,19 +331,13 @@ for `mapd` backend.
 Aggregate operations
 ====================
 
-count column
-t['taxiin'].count()
+The aggregation operations available are: max, min, mean, count, distinct and count, nunique, approx_nunique.
 
-distinct count column
-t['taxiin'].distinct().count()
+The follow examples show how to use count operations:
 
-
-distinct count/nunique
-t['taxiin'].nunique().name('v')
-
-
-approx distinct count
-t['taxiin'].approx_nunique(10)
+- get the row count of the table: `t['taxiin'].count()`
+- get the distinct count of a field: `t['taxiin'].distinct().count()` or `t['taxiin'].nunique().name('v')`
+- get the approximate distinct count of a field: `t['taxiin'].approx_nunique(10)`
 
 
 Best practices
@@ -353,6 +346,28 @@ Best practices
 - Use `Numpy` starndard for docstring: https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 - Use `format` string function to format a string instead of `%` statement.
 
+
+History
+-------
+
+New implementations on `ibis` core:
+
+- Trigonometric operations (https://github.com/ibis-project/ibis/issues/893 );
+- Radians and Degrees operations (https://github.com/ibis-project/ibis/issues/1431 );
+- PI constant (https://github.com/ibis-project/ibis/issues/1418 );
+- Correlation and Covariation operations added (https://github.com/ibis-project/ibis/issues/1432 );
+- ILIKE operation (https://github.com/ibis-project/ibis/issues/1433 );
+- Distance operation (https://github.com/ibis-project/ibis/issues/1434 );
+
+Issues appointed:
+
+- `Ibis` `CASE` statement wasn't allowing input and output with different types (https://github.com/ibis-project/ibis/issues/93 )
+- At this time, no all MapD `date parts` are available on `ibis` (https://github.com/ibis-project/ibis/issues/1430 )
+
+
+Pull Requests:
+
+- https://github.com/ibis-project/ibis/pull/1419
 
 References
 ----------

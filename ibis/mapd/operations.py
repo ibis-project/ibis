@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from ibis.mapd.identifiers import quote_identifier
 from six import StringIO
+from ibis.impala import compiler as impala_compiler
 
 import ibis
 import ibis.common as com
@@ -8,7 +9,17 @@ import ibis.util as util
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-import ibis.sql.transforms as transforms
+
+_mapd_unit_names = {
+    'Y': 'YEAR',
+    'M': 'MONTH',
+    'D': 'DAY',
+    'W': 'WEEK',
+    'Q': 'QUARTER',
+    'h': 'HOUR',
+    'm': 'MINUTE',
+    's': 'SECOND',
+}
 
 
 def _is_floating(*args):
@@ -27,26 +38,6 @@ def _cast(translator, expr):
     type_ = str(MapDDataType.from_ibis(target, nullable=False))
 
     return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
-
-
-def _between(translator, expr):
-    op = expr.op()
-    arg_, lower_, upper_ = map(translator.translate, op.args)
-    return '{0!s} BETWEEN {1!s} AND {2!s}'.format(arg_, lower_, upper_)
-
-
-def _negate(translator, expr):
-    arg = expr.op().args[0]
-    if isinstance(expr, ir.BooleanValue):
-        arg_ = translator.translate(arg)
-        return 'NOT {0!s}'.format(arg_)
-    else:
-        arg_ = _parenthesize(translator, arg)
-        return '-{0!s}'.format(arg_)
-
-
-def _not(translator, expr):
-    return 'NOT {}'.format(*map(translator.translate, expr.op().args))
 
 
 def _parenthesize(translator, expr):
@@ -158,41 +149,29 @@ def binary_infix_op(infix_sym):
     return formatter
 
 
-def timestamp_binary_infix_op(func_name, infix_sym, timestamp_code):
-    def formatter(translator, expr):
-        op = expr.op()
-
-        arg, unit = op.args[0], op.args[1]
-        arg_ = _parenthesize(translator, arg)
-
-        if unit.upper() in [u.upper() for u in timestamp_code.keys()]:
-            converter = timestamp_code[unit].upper()
-        elif unit.upper() in [u.upper() for u in _timestamp_units.values()]:
-            converter = unit.upper()
-        else:
-            raise ValueError('`{}` unit is not supported!'.format(unit))
-
-        return '{0!s}({1!s} {2!s} {3!s})'.format(
-            func_name, converter, infix_sym, arg_
-        )
-    return formatter
+# def timestamp_binary_infix_op(func_name, infix_sym, timestamp_code):
+#     def formatter(translator, expr):
+#         op = expr.op()
+#
+#         arg, unit = op.args[0], op.args[1]
+#         arg_ = _parenthesize(translator, arg)
+#
+#         if unit.upper() in [u.upper() for u in ops._timestamp_units.keys()]:
+#             converter = ops._timestamp_units[unit].upper()
+#         elif unit.upper() in [u.upper() for u in ops._date_units.values()]:
+#             converter = ops._timestamp_units[unit].upper()
+#         else:
+#             raise ValueError('`{}` unit is not supported!'.format(unit))
+#
+#         return '{0!s}({1!s} {2!s} {3!s})'.format(
+#             func_name, converter, infix_sym, arg_
+#         )
+#     return formatter
 
 
 def _call(translator, func, *args):
     args_ = ', '.join(map(translator.translate, args))
     return '{0!s}({1!s})'.format(func, args_)
-
-
-def _call_date_trunc(translator, func, *args):
-    args_ = ', '.join(map(translator.translate, args))
-    return 'DATE_TRUNC({0!s}, {1!s})'.format(func, args_)
-
-
-def _aggregate(translator, func, arg, where=None):
-    if where is not None:
-        return _call(translator, func + 'If', arg, where)
-    else:
-        return _call(translator, func, arg)
 
 
 def _extract_field(sql_attr):
@@ -203,20 +182,9 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
-def _general_date_field_add(data_type_name):
-    if data_type_name not in ('date', 'timestamp'):
-        raise NotImplemented('{} not implemented.'.format(data_type_name))
+# STATS
 
-    def __general_date_field_add(translator, expr):
-        op = expr.op()
-        self = translator.translate(op.args[0])
-        value = translator.translate(op.args[1])
-        return '{}({},{},{})'.format(data_type_name, self, value)
-
-    return __general_date_field_add
-
-
-def compile_corr(translator, expr):
+def _corr(translator, expr):
     # pull out the arguments to the expression
     args = expr.op().args
 
@@ -231,7 +199,7 @@ def compile_corr(translator, expr):
     return 'CORR{}({}, {})'.format(f_type, compiled_x, compiled_y)
 
 
-def compile_cov(translator, expr):
+def _cov(translator, expr):
     # pull out the arguments to the expression
     args = expr.op().args
 
@@ -248,111 +216,21 @@ def compile_cov(translator, expr):
     )
 
 
-def compile_length(func_name='length', sql_func_name='CHAR_LENGTH'):
-    def _compile_lenght(translator, expr):
+# String
+
+def _length(func_name='length', sql_func_name='CHAR_LENGTH'):
+    def __lenght(translator, expr):
         # pull out the arguments to the expression
         arg = expr.op().args[0]
         # compile the argument
         compiled_arg = translator.translate(arg)
         return '{}({})'.format(sql_func_name, compiled_arg)
-    _compile_lenght.__name__ = func_name
-    return _compile_lenght
-
-
-def _xor(translator, expr):
-    op = expr.op()
-    left_ = _parenthesize(translator, op.left)
-    right_ = _parenthesize(translator, op.right)
-    return 'xor({0}, {1})'.format(left_, right_)
+    __lenght.__name__ = func_name
+    return __lenght
 
 
 def _name_expr(formatted_expr, quoted_name):
     return '{0!s} AS {1!s}'.format(formatted_expr, quoted_name)
-
-
-def varargs(func_name):
-    def varargs_formatter(translator, expr):
-        op = expr.op()
-        return _call(translator, func_name, *op.arg)
-    return varargs_formatter
-
-
-def _substring(translator, expr):
-    # arg_ is the formatted notation
-    op = expr.op()
-    arg, start, length = op.args
-    arg_, start_ = translator.translate(arg), translator.translate(start)
-
-    # MapD is 1-indexed
-    if length is None or isinstance(length.op(), ops.Literal):
-        if length is not None:
-            length_ = length.op().value
-            return 'substring({0}, {1} + 1, {2})'.format(arg_, start_, length_)
-        else:
-            return 'substring({0}, {1} + 1)'.format(arg_, start_)
-    else:
-        length_ = translator.translate(length)
-        return 'substring({0}, {1} + 1, {2})'.format(arg_, start_, length_)
-
-
-def _string_find(translator, expr):
-    op = expr.op()
-    arg, substr, start, _ = op.args
-    if start is not None:
-        raise com.UnsupportedOperationError(
-            "String find doesn't support start argument"
-        )
-
-    return _call(translator, 'position', arg, substr) + ' - 1'
-
-
-def _regex_extract(translator, expr):
-    op = expr.op()
-    arg, pattern, index = op.args
-    arg_, pattern_ = translator.translate(arg), translator.translate(pattern)
-
-    if index is not None:
-        index_ = translator.translate(index)
-        return 'extractAll({0}, {1})[{2} + 1]'.format(arg_, pattern_, index_)
-
-    return 'extractAll({0}, {1})'.format(arg_, pattern_)
-
-
-def _parse_url(translator, expr):
-    op = expr.op()
-    arg, extract, key = op.args
-
-    if extract == 'HOST':
-        return _call(translator, 'domain', arg)
-    elif extract == 'PROTOCOL':
-        return _call(translator, 'protocol', arg)
-    elif extract == 'PATH':
-        return _call(translator, 'path', arg)
-    elif extract == 'QUERY':
-        if key is not None:
-            return _call(translator, 'extractURLParameter', arg, key)
-        else:
-            return _call(translator, 'queryString', arg)
-    else:
-        raise com.UnsupportedOperationError(
-            'Parse url with extract {0} is not supported'.format(extract)
-        )
-
-
-def _index_of(translator, expr):
-    op = expr.op()
-
-    arg, arr = op.args
-    arg_formatted = translator.translate(arg)
-    arr_formatted = ','.join(map(translator.translate, arr))
-    return "indexOf([{0}], {1}) - 1".format(arr_formatted, arg_formatted)
-
-
-def _sign(translator, expr):
-    """Workaround for missing sign function"""
-    op = expr.op()
-    arg, = op.args
-    return 'SIGN({})'.format(translator.translate(arg))
 
 
 def _round(translator, expr):
@@ -410,33 +288,6 @@ def _timestamp_op(func, op_sign='+'):
             formatted_left
         )
 
-    return _formatter
-
-
-def _timestamp_diff(sql_func, timestamp_code):
-    def _formatter(translator, expr):
-        op = expr.op()
-        left, right, unit = op.args
-
-        formatted_left = translator.translate(left)
-        formatted_right = translator.translate(right)
-
-        formatted_unit = timestamp_code[unit]
-
-        if isinstance(left, ir.DateValue):
-            formatted_left = 'CAST({} as timestamp)'.format(formatted_left)
-
-        if isinstance(right, ir.DateValue):
-            formatted_right = 'CAST({} as timestamp)'.format(formatted_right)
-
-        return '{}({}, {}, {})'.format(
-            sql_func,
-            formatted_unit,
-            formatted_left,
-            formatted_right
-        )
-
-    _formatter.__name__ = 'diff'
     return _formatter
 
 
@@ -532,22 +383,6 @@ class CaseFormatter(object):
             self.buf.write(' ')
 
 
-def _simple_case(translator, expr):
-    op = expr.op()
-    formatter = CaseFormatter(
-        translator, op.base, op.cases, op.results, op.default
-    )
-    return formatter.get_result()
-
-
-def _searched_case(translator, expr):
-    op = expr.op()
-    formatter = CaseFormatter(
-        translator, None, op.cases, op.results, op.default
-    )
-    return formatter.get_result()
-
-
 def _table_array_view(translator, expr):
     ctx = translator.context
     table = expr.op().table
@@ -555,60 +390,18 @@ def _table_array_view(translator, expr):
     return '(\n{0}\n)'.format(util.indent(query, ctx.indent))
 
 
-def _timestamp_from_unix(translator, expr):
+def _timestamp_truncate(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
-    if unit in {'ms', 'us', 'ns'}:
-        raise ValueError('`{}` unit is not supported!'.format(unit))
-
-    return _call(translator, 'toDateTime', arg)
-
-
-def date_truncate(translator, expr):
-    op = expr.op()
-    arg, unit = op.args
-
-    timestamp_code = {
-        'Y': 'YEAR',
-        'M': 'MONTH',
-        'D': 'DAY',
-        'W': 'WEEK',
-        'Q': 'QUARTER',
-        'h': 'HOUR',
-        'm': 'MINUTE',
-        's': 'SECOND',
-    }
-
-    if unit.upper() in [u.upper() for u in timestamp_code.keys()]:
-        converter = timestamp_code[unit].upper()
-    elif unit.upper() in [u.upper() for u in _timestamp_units.values()]:
-        converter = unit.upper()
+    if unit.upper() in [u.upper() for u in _mapd_unit_names.keys()]:
+        unit_ = _mapd_unit_names[unit].upper()
     else:
         raise ValueError('`{}` unit is not supported!'.format(unit))
 
-    return _call_date_trunc(translator, converter, arg)
-
-
-def _exists_subquery(translator, expr):
-    op = expr.op()
-    ctx = translator.context
-
-    dummy = ir.literal(1).name(ir.unnamed)
-
-    filtered = op.foreign_table.filter(op.predicates)
-    expr = filtered.projection([dummy])
-
-    subquery = ctx.get_compiled_expr(expr)
-
-    if isinstance(op, transforms.ExistsSubquery):
-        key = 'EXISTS'
-    elif isinstance(op, transforms.NotExistsSubquery):
-        key = 'NOT EXISTS'
-    else:
-        raise NotImplementedError
-
-    return '{0} (\n{1}\n)'.format(key, util.indent(subquery, ctx.indent))
+    # return _call_date_trunc(translator, converter, arg)
+    arg_ = translator.translate(arg)
+    return 'DATE_TRUNC({0!s}, {1!s})'.format(unit_, arg_)
 
 
 def _table_column(translator, expr):
@@ -633,71 +426,30 @@ def _table_column(translator, expr):
     return quoted_name
 
 
-def _string_split(translator, expr):
-    value, sep = expr.op().args
-    return 'splitByString({}, {})'.format(
-        translator.translate(sep),
-        translator.translate(value)
-    )
-
-
-def _string_join(translator, expr):
-    sep, elements = expr.op().args
-    assert isinstance(elements.op(), ops.ValueList), \
-        'elements must be a ValueList, got {}'.format(type(elements.op()))
-    return 'arrayStringConcat([{}], {})'.format(
-        ', '.join(map(translator.translate, elements)),
-        translator.translate(sep),
-    )
-
-
-def _string_repeat(translator, expr):
-    value, times = expr.op().args
-    result = 'arrayStringConcat(arrayMap(x -> {}, range({})))'.format(
-        translator.translate(value), translator.translate(times)
-    )
-    return result
-
-
-def _string_like(translator, expr):
-    value, pattern = expr.op().args[:2]
-    return '{} LIKE {}'.format(
-        translator.translate(value), translator.translate(pattern)
-    )
-
-
-def raise_error(translator, expr, *args):
-    msg = "MapD backend doesn't support {0} operation!"
-    op = expr.op()
-    raise com.UnsupportedOperationError(msg.format(type(op)))
-
-
-def _null_literal(translator, expr):
-    return 'Null'
-
-
-def _null_if_zero(translator, expr):
-    op = expr.op()
-    arg = op.args[0]
-    arg_ = translator.translate(arg)
-    return 'nullIf({0}, 0)'.format(arg_)
-
-
-def _zero_if_null(translator, expr):
-    op = expr.op()
-    arg = op.args[0]
-    arg_ = translator.translate(arg)
-    return 'ifNull({0}, 0)'.format(arg_)
-
-
 # AGGREGATION
 
-class CountDistinct(ops.CountDistinct):
+class ApproxCountDistinct(ops.Reduction):
+    """Approximate number of unique values
+
     """
-    Returns the approximate count of distinct values of x with defined
-    expected error rate e
-    """
-    approx = ops.Arg(rlz.integer)
+    arg = ops.Arg(rlz.column(rlz.any))
+    approx = ops.Arg(rlz.integer, default=1)
+    where = ops.Arg(rlz.boolean, default=None)
+
+    def output_type(self):
+        # Impala 2.0 and higher returns a DOUBLE
+        # return ir.DoubleScalar
+        return ops.partial(ir.IntegerScalar, dtype=ops.dt.int64)
+
+
+approx_count_distinct = _reduction(
+    'approx_nunique',
+    sql_func_name='approx_count_distinct',
+    sql_signature='{}({})'
+)
+
+count_distinct = _reduction('count')
+count = _reduction('count')
 
 
 # MATH
@@ -707,7 +459,7 @@ class Log(ops.Ln):
     """
 
 
-class Truncate(ops.NumericBinaryOp):
+class NumericTruncate(ops.NumericBinaryOp):
     """Truncates x to y decimal places"""
     output_type = rlz.shape_like('left', ops.dt.float)
 
@@ -741,106 +493,40 @@ class Conv_4326_900913_Y(ops.UnaryOp):
     output_type = rlz.shape_like('arg', ops.dt.float)
 
 
-# DATE/TIME OPERATIONS
+# String
 
-
-_timestamp_units = dict(ops._date_units)
-_timestamp_units.update(ops._time_units)
-_timestamp_units.update(dict(
-    millennium='MILLENNIUM',
-    MILLENNIUM='MILLENNIUM',
-
-    century='CENTURY',
-    CENTURY='CENTURY',
-
-    DECADE='DECADE',
-    decade='decade',
-
-    quarterday='quarterday',
-    QUARTERDAY='QUARTERDAY',
-
-    DOW='DOW',
-    ISODOW='DOW',
-    DOY='DOY',
-    EPOCH='EPOCH'
-))
-
-
-class TimestampExtract(ops.TimestampUnaryOp):
-    unit = ops.Arg(rlz.isin(_timestamp_units))
-    output_type = rlz.shape_like('arg', ops.dt.int32)
-
-
-class TimestampTruncate(ops.TimestampTruncate):
-    unit = ops.Arg(rlz.isin(_timestamp_units))
-
-
-class DateTruncate(ops.DateTruncate):
-    unit = ops.Arg(rlz.isin(_timestamp_units))
+class ByteLength(ops.StringLength):
+    """Returns the length of a string in bytes length"""
 
 
 # https://www.mapd.com/docs/latest/mapd-core-guide/dml/
 _binary_infix_ops = {
     # math
-    ops.Add: binary_infix_op('+'),
-    ops.Subtract: binary_infix_op('-'),
-    ops.Multiply: binary_infix_op('*'),
-    ops.Divide: binary_infix_op('/'),
     ops.Power: fixed_arity('power', 2),
-    # comparison
-    ops.Equals: binary_infix_op('='),
-    ops.NotEquals: binary_infix_op('<>'),
-    ops.GreaterEqual: binary_infix_op('>='),
-    ops.Greater: binary_infix_op('>'),
-    ops.LessEqual: binary_infix_op('<='),
-    ops.Less: binary_infix_op('<'),
-    # logical
-    ops.And: binary_infix_op('AND'),
-    ops.Or: binary_infix_op('OR'),
 }
 
-_unary_ops = {
-    # logical
-    ops.Negate: _negate,
-    ops.Not: _not,
-}
+_unary_ops = {}
 
 # COMPARISON
-_comparison_ops = {
-    ops.IsNull: unary('is null'),
-    ops.Between: _between,
-    ops.NullIf: fixed_arity('nullif', 2),
-    ops.NotNull: unary('is not null'),
-    ops.Contains: binary_infix_op('in'),
-    ops.NotContains: binary_infix_op('not in'),
-}
+_comparison_ops = {}
 
 
 # MATH
 _math_ops = {
-    ops.Abs: unary('abs'),
-    ops.Ceil: unary('ceil'),
     ops.Degrees: unary('degrees'),  # MapD function
-    ops.Exp: unary('exp'),
-    ops.Floor: unary('floor'),
-    Log: unary('log'),  # MapD Log wrap to IBIS Ln
-    ops.Ln: unary('ln'),
-    ops.Log10: unary('log10'),
     ops.Modulus: fixed_arity('mod', 2),
     ops.Pi: fixed_arity('pi', 0),
     ops.Radians: unary('radians'),
     ops.Round: _round,
-    ops.Sign: _sign,
-    ops.Sqrt: unary('sqrt'),
-    Truncate: fixed_arity('truncate', 2)
+    NumericTruncate: fixed_arity('truncate', 2)
 }
 
 # STATS
 _stats_ops = {
-    ops.Correlation: compile_corr,
+    ops.Correlation: _corr,
     ops.StandardDev: _variance_like('stddev'),
     ops.Variance: _variance_like('var'),
-    ops.Covariance: compile_cov,
+    ops.Covariance: _cov,
 }
 
 # TRIGONOMETRIC
@@ -861,60 +547,16 @@ _geometric_ops = {
     Conv_4326_900913_Y: unary('conv_4326_900913_y')
 }
 
-
-class ByteLength(ops.StringLength):
-    """Returns the length of a string in bytes length"""
-
-
 _string_ops = {
-    ops.StringLength: compile_length(),
-    ByteLength: compile_length('byte_length', 'LENGTH'),
-    ops.RegexSearch: binary_infix_op('REGEXP'),
-    ops.StringSQLLike: binary_infix_op('like'),
+    ops.StringLength: _length(),
+    ByteLength: _length('byte_length', 'LENGTH'),
     ops.StringSQLILike: binary_infix_op('ilike'),
-}
-
-_date_part_truncate = [
-    'YEAR', 'QUARTER', 'MONTH', 'DAY', 'HOUR', 'MINUTE', 'SECOND',
-    'MILLENNIUM', 'CENTURY', 'DECADE', 'WEEK', 'QUARTERDAY'
-]
-
-_date_part_extract = [
-    'YEAR', 'QUARTER', 'MONTH', 'DAY', 'HOUR', 'MINUTE', 'SECOND',
-    'DOW', 'ISODOW', 'DOY', 'EPOCH', 'QUARTERDAY', 'WEEK'
-
-]
-
-_date_part_datediff = [
-    'YEAR', 'QUARTER', 'MONTH', 'DAY', 'HOUR', 'MINUTE', 'SECOND',
-    'MILLENNIUM', 'CENTURY', 'DECADE', 'WEEK', 'QUARTERDAY'
-]
-
-_interval_dateadd = [
-    'YEAR', 'QUARTER', 'MONTH', 'DAYOFYEAR', 'DAY', 'WEEK', 'WEEKDAY', 'HOUR',
-    'MINUTE', 'SECOND', 'MILLISECOND'
-]
-_interval_datepart = [
-    'YEAR', 'QUARTER', 'MONTH', 'DAYOFYEAR', 'DAY', 'WEEK', 'WEEKDAY', 'HOUR',
-    'MINUTE', 'SECOND', 'MILLISECOND'
-]
-
-timestamp_code = {
-    'Y': 'YEAR',
-    'M': 'MONTH',
-    'D': 'DAY',
-    'W': 'WEEK',
-    'Q': 'QUARTER',
-    'h': 'HOUR',
-    'm': 'MINUTE',
-    's': 'SECOND',
 }
 
 _date_ops = {
     ops.Date: unary('toDate'),
-    DateTruncate: date_truncate,
-    ops.TimestampNow: fixed_arity('NOW', 0),
-    TimestampTruncate: date_truncate,
+    ops.DateTruncate: _timestamp_truncate,
+    ops.TimestampTruncate: _timestamp_truncate,
 
     # DIRECT EXTRACT OPERATIONS
     ops.ExtractYear: _extract_field('YEAR'),
@@ -924,9 +566,9 @@ _date_ops = {
     ops.ExtractMinute: _extract_field('MINUTE'),
     ops.ExtractSecond: _extract_field('SECOND'),
 
-    TimestampExtract: timestamp_binary_infix_op(
-        'EXTRACT', 'FROM', timestamp_code=timestamp_code
-    ),
+    # TimestampExtract: timestamp_binary_infix_op(
+    #     'EXTRACT', 'FROM', timestamp_code=timestamp_code
+    # ),
 
     ops.IntervalAdd: _interval_from_integer,
     ops.IntervalFromInteger: _interval_from_integer,
@@ -938,38 +580,11 @@ _date_ops = {
 }
 
 
-class ApproxCountDistinct(ops.Reduction):
-    """Approximate number of unique values
-
-    """
-    arg = ops.Arg(rlz.column(rlz.any))
-    approx = ops.Arg(rlz.integer, default=1)
-    where = ops.Arg(rlz.boolean, default=None)
-
-    def output_type(self):
-        # Impala 2.0 and higher returns a DOUBLE
-        # return ir.DoubleScalar
-        return ops.partial(ir.IntegerScalar, dtype=ops.dt.int64)
-
-
-approx_count_distinct = _reduction(
-    'approx_nunique',
-    sql_func_name='approx_count_distinct',
-    sql_signature='{}({})'
-)
-
-count_distinct = _reduction('count')
-count = _reduction('count')
-
 _agg_ops = {
-    ops.Count: count,
-    ops.CountDistinct: count_distinct,
+    # ops.Count: count,
+    # ops.CountDistinct: count_distinct,
     ApproxCountDistinct: approx_count_distinct,
     ops.DistinctColumn: unary_prefix_op('distinct'),
-    ops.Mean: _reduction('avg'),
-    ops.Max: _reduction('max'),
-    ops.Min: _reduction('min'),
-    ops.Sum: _reduction('sum'),
 }
 
 _general_ops = {
@@ -978,17 +593,13 @@ _general_ops = {
     ops.ValueList: _value_list,
     ops.Cast: _cast,
     ops.Where: fixed_arity('if', 3),
-    ops.SimpleCase: _simple_case,
-    ops.SearchedCase: _searched_case,
     ops.TableColumn: _table_column,
-    ops.TableArrayView: _table_array_view,
-    transforms.ExistsSubquery: _exists_subquery,
-    transforms.NotExistsSubquery: _exists_subquery,
-    ops.ArrayLength: unary('length'),
-    ops.Coalesce: varargs('coalesce'),
+    # ops.TableArrayView: _table_array_view,
+    # ops.ArrayLength: unary('length'),
+    # ops.Coalesce: varargs('coalesce'),
 }
 
-_operation_registry = {}
+_operation_registry = impala_compiler._operation_registry.copy()
 
 _operation_registry.update(_general_ops)
 _operation_registry.update(_binary_infix_ops)
@@ -1055,8 +666,8 @@ assign_functions_to_dtype(ir.StringValue, _string_ops, forced=True)
 assign_functions_to_dtype(ir.TimestampColumn, _date_ops, forced=True)
 assign_functions_to_dtype(ir.DateColumn, _date_ops, forced=True)
 
-_add_method(ir.TimestampColumn, TimestampTruncate, 'truncate')
-_add_method(ir.DateColumn, DateTruncate, 'truncate')
-_add_method(ir.TimestampColumn, TimestampExtract, 'extract')
+# _add_method(ir.TimestampColumn, ops.TimestampTruncate, 'truncate')
+# _add_method(ir.DateColumn, ops.DateTruncate, 'truncate')
+# _add_method(ir.TimestampColumn, TimestampExtract, 'extract')
 # _add_method(ir.DateColumn, TimestampExtract, 'extract')
 
