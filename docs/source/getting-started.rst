@@ -149,6 +149,27 @@ with:
 
    >>> con = ibis.bigquery.connect(project_id='ibis-gbq', dataset_id='testing')
 
+By default ibis assumes that the BigQuery project that's billed for queries is
+also the project where the data lives.
+
+However, it's very easy to query data that does **not** live in the billing
+project.
+
+.. note::
+
+   When you run queries against data from other projects **the billing project
+   will still be billed for any and all queries**.
+
+If you want to query data that lives in a different project than the billing
+project you can use the :meth:`~ibis.bigquery.client.BigQueryClient.database`
+method of :class:`~ibis.bigquery.client.BigQueryClient` objects:
+
+.. code-block:: python
+
+   >>> db = con.database('other-data-project.other-dataset')
+   >>> t = db.my_awesome_table
+   >>> t.sweet_column.sum().execute()  # runs against the billing project
+
 Learning resources
 ------------------
 
