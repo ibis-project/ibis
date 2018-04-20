@@ -243,9 +243,10 @@ and use the `to_interval` method:
 
 .. code-block:: Sql
 
-    SELECT "arr_timestamp" + INTERVAL '1' YEAR AS tmp
+    SELECT TIMESTAMPADD(YEAR, 1, "arr_timestamp") AS tmp
     FROM mapd.flights_2008_10k
 
+Another way to use intervals is using `ibis.interval(years=1)`
 
 **Extract date/time**
 
@@ -307,6 +308,7 @@ A truncate timestamp/data value function is available as `truncate`:
 The date part operators allowed are: YEAR or Y, QUARTER or Q, MONTH or M,
 DAY or D, HOUR or h, MINUTE or m, SECOND or s, WEEK, MILLENNIUM, CENTURY,
 DECADE, QUARTERDAY
+
 
 String operations
 -----------------

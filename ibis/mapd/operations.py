@@ -158,23 +158,12 @@ def binary_infix_op(infix_sym):
     return formatter
 
 
-def timestamp_binary_infix_op(func_name, infix_sym):
+def timestamp_binary_infix_op(func_name, infix_sym, timestamp_code):
     def formatter(translator, expr):
         op = expr.op()
 
         arg, unit = op.args[0], op.args[1]
         arg_ = _parenthesize(translator, arg)
-
-        timestamp_code = {
-            'Y': 'YEAR',
-            'M': 'MONTH',
-            'D': 'DAY',
-            'W': 'WEEK',
-            'Q': 'QUARTER',
-            'h': 'HOUR',
-            'm': 'MINUTE',
-            's': 'SECOND',
-        }
 
         if unit.upper() in [u.upper() for u in timestamp_code.keys()]:
             converter = timestamp_code[unit].upper()
@@ -388,7 +377,7 @@ def _interval_format(translator, expr):
         raise com.UnsupportedOperationError(
             "MapD doesn't support subsecond interval resolutions")
 
-    return 'INTERVAL {} {}'.format(expr.op().value, dtype.resolution.upper())
+    return '{1}, (sign){0}'.format(expr.op().value, dtype.resolution.upper())
 
 
 def _interval_from_integer(translator, expr):
@@ -408,14 +397,46 @@ def _timestamp_op(func, op_sign='+'):
     def _formatter(translator, expr):
         op = expr.op()
         left, right = op.args
+
         formatted_left = translator.translate(left)
         formatted_right = translator.translate(right)
 
+        if isinstance(left, ir.DateValue):
+            formatted_left = 'CAST({} as timestamp)'.format(formatted_left)
+
         return '{}({}, {})'.format(
-            func, formatted_right.replace('(sign)', op_sign),
+            func,
+            formatted_right.replace('(sign)', op_sign),
             formatted_left
         )
 
+    return _formatter
+
+
+def _timestamp_diff(sql_func, timestamp_code):
+    def _formatter(translator, expr):
+        op = expr.op()
+        left, right, unit = op.args
+
+        formatted_left = translator.translate(left)
+        formatted_right = translator.translate(right)
+
+        formatted_unit = timestamp_code[unit]
+
+        if isinstance(left, ir.DateValue):
+            formatted_left = 'CAST({} as timestamp)'.format(formatted_left)
+
+        if isinstance(right, ir.DateValue):
+            formatted_right = 'CAST({} as timestamp)'.format(formatted_right)
+
+        return '{}({}, {}, {})'.format(
+            sql_func,
+            formatted_unit,
+            formatted_left,
+            formatted_right
+        )
+
+    _formatter.__name__ = 'diff'
     return _formatter
 
 
@@ -758,6 +779,26 @@ _timestamp_units.update(dict(
 ))
 
 
+class TimestampDiff(ops.ValueOp):
+    left = ops.Arg(rlz.timestamp)
+    right = ops.Arg(rlz.timestamp)
+    unit = ops.Arg(rlz.isin(_timestamp_units))
+    output_type = rlz.shape_like('left', ops.dt.int32)
+
+    def __init__(self, left, right, unit):
+        super(TimestampDiff, self).__init__(left, right, unit)
+
+
+class DateDiff(ops.ValueOp):
+    left = ops.Arg(rlz.date)
+    right = ops.Arg(rlz.date)
+    unit = ops.Arg(rlz.isin(_timestamp_units))
+    output_type = rlz.shape_like('left', ops.dt.int32)
+
+    def __init__(self, left, right, unit):
+        super(DateDiff, self).__init__(left, right, unit)
+
+
 class TimestampExtract(ops.TimestampUnaryOp):
     unit = ops.Arg(rlz.isin(_timestamp_units))
     output_type = rlz.shape_like('arg', ops.dt.int32)
@@ -884,19 +925,23 @@ _date_part_datediff = [
 
 _interval_dateadd = [
     'YEAR', 'QUARTER', 'MONTH', 'DAYOFYEAR', 'DAY', 'WEEK', 'WEEKDAY', 'HOUR',
-     'MINUTE', 'SECOND', 'MILLISECOND'
+    'MINUTE', 'SECOND', 'MILLISECOND'
 ]
 _interval_datepart = [
     'YEAR', 'QUARTER', 'MONTH', 'DAYOFYEAR', 'DAY', 'WEEK', 'WEEKDAY', 'HOUR',
-     'MINUTE', 'SECOND', 'MILLISECOND'
+    'MINUTE', 'SECOND', 'MILLISECOND'
 ]
 
-
-class TimestampAdd(ops.TimestampUnaryOp):
-    """Truncates x to y decimal places"""
-    unit = ops.Arg(rlz.isin(_interval_datepart))
-    output_type = rlz.shape_like('left', ops.dt.float)
-
+timestamp_code = {
+    'Y': 'YEAR',
+    'M': 'MONTH',
+    'D': 'DAY',
+    'W': 'WEEK',
+    'Q': 'QUARTER',
+    'h': 'HOUR',
+    'm': 'MINUTE',
+    's': 'SECOND',
+}
 
 _date_ops = {
     ops.Date: unary('toDate'),
@@ -912,22 +957,21 @@ _date_ops = {
     ops.ExtractMinute: _extract_field('MINUTE'),
     ops.ExtractSecond: _extract_field('SECOND'),
 
-    TimestampExtract: timestamp_binary_infix_op('EXTRACT', 'FROM'),
+    TimestampExtract: timestamp_binary_infix_op(
+        'EXTRACT', 'FROM', timestamp_code=timestamp_code
+    ),
 
     ops.IntervalAdd: _interval_from_integer,
     ops.IntervalFromInteger: _interval_from_integer,
 
-    ops.DateAdd: _timestamp_op('DATEADD'),
-    ops.DateSub: _timestamp_op('DATEADD', '-'),
-    ops.DateDiff: _timestamp_op('DATEDIFF'),
+    ops.DateAdd: _timestamp_op('TIMESTAMPADD'),
+    ops.DateSub: _timestamp_op('TIMESTAMPADD', '-'),
+    # ops.DateDiff: _timestamp_op('DATEDIFF'),
+    TimestampDiff: _timestamp_diff('TIMESTAMPDIFF', timestamp_code),
     ops.TimestampAdd: _timestamp_op('TIMESTAMPADD'),
     ops.TimestampSub: _timestamp_op('TIMESTAMPADD', '-'),
-    ops.TimestampDiff: _timestamp_op('TIMESTAMPDIFF'),
-    ops.TimestampFromUNIX: _timestamp_from_unix,
-    TimestampAdd: (
-        lambda field, value, unit:
-            'TIMESTAMPADD({}, {}, {}) '.format(value, unit)
-    )
+    DateDiff: _timestamp_diff('TIMESTAMPDIFF', timestamp_code),
+    # ops.TimestampDiff: _timestamp_op('TIMESTAMPDIFF', diff=True),
 }
 
 
@@ -1026,7 +1070,9 @@ def _add_method(dtype, klass, func_name):
         Return a lambda function that return to_expr() result from the
         custom classes.
         """
-        return lambda *args, **kwargs: _klass(*args, **kwargs).to_expr()
+        def _f(*args, **kwargs):
+            return _klass(*args, **kwargs).to_expr()
+        return _f
     # assign new function to the defined DataType
     setattr(
         dtype, func_name, f(klass)
@@ -1045,7 +1091,6 @@ assign_functions_to_dtype(ir.StringValue, _string_ops, forced=True)
 # date/time/timestamp operations
 assign_functions_to_dtype(ir.TimestampColumn, _date_ops, forced=True)
 assign_functions_to_dtype(ir.DateColumn, _date_ops, forced=True)
-# assign_functions_to_dtype(ir.DateColumn, _date_ops, forced=True)
 
 _add_method(ir.TimestampColumn, TimestampTruncate, 'truncate')
 _add_method(ir.DateColumn, DateTruncate, 'truncate')
