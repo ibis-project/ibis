@@ -779,26 +779,6 @@ _timestamp_units.update(dict(
 ))
 
 
-class TimestampDiff(ops.ValueOp):
-    left = ops.Arg(rlz.timestamp)
-    right = ops.Arg(rlz.timestamp)
-    unit = ops.Arg(rlz.isin(_timestamp_units))
-    output_type = rlz.shape_like('left', ops.dt.int32)
-
-    def __init__(self, left, right, unit):
-        super(TimestampDiff, self).__init__(left, right, unit)
-
-
-class DateDiff(ops.ValueOp):
-    left = ops.Arg(rlz.date)
-    right = ops.Arg(rlz.date)
-    unit = ops.Arg(rlz.isin(_timestamp_units))
-    output_type = rlz.shape_like('left', ops.dt.int32)
-
-    def __init__(self, left, right, unit):
-        super(DateDiff, self).__init__(left, right, unit)
-
-
 class TimestampExtract(ops.TimestampUnaryOp):
     unit = ops.Arg(rlz.isin(_timestamp_units))
     output_type = rlz.shape_like('arg', ops.dt.int32)
@@ -966,12 +946,8 @@ _date_ops = {
 
     ops.DateAdd: _timestamp_op('TIMESTAMPADD'),
     ops.DateSub: _timestamp_op('TIMESTAMPADD', '-'),
-    # ops.DateDiff: _timestamp_op('DATEDIFF'),
-    TimestampDiff: _timestamp_diff('TIMESTAMPDIFF', timestamp_code),
     ops.TimestampAdd: _timestamp_op('TIMESTAMPADD'),
     ops.TimestampSub: _timestamp_op('TIMESTAMPADD', '-'),
-    DateDiff: _timestamp_diff('TIMESTAMPDIFF', timestamp_code),
-    # ops.TimestampDiff: _timestamp_op('TIMESTAMPDIFF', diff=True),
 }
 
 
