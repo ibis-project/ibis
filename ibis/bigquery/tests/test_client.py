@@ -16,6 +16,7 @@ import ibis.expr.types as ir
 
 pytestmark = pytest.mark.bigquery
 pytest.importorskip('google.cloud.bigquery')
+exceptions = pytest.importorskip('google.api_core.exceptions')
 
 
 def test_table(alltypes):
@@ -439,7 +440,8 @@ def test_exists_table_different_project(client):
 def test_exists_table_different_project_fully_qualified(client):
     # TODO(phillipc): Should we raise instead?
     name = 'bigquery-public-data.epa_historical_air_quality.co_daily_summary'
-    assert not client.exists_table(name)
+    with pytest.raises(exceptions.BadRequest):
+        client.exists_table(name)
 
 
 @pytest.mark.parametrize(
