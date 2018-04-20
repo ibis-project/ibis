@@ -701,23 +701,10 @@ class CountDistinct(ops.CountDistinct):
 
 
 # MATH
-
-class Degrees(ops.UnaryOp):
-    """Converts radians to degrees"""
-    arg = ops.Arg(rlz.floating)
-    output_type = rlz.shape_like('arg', ops.dt.float)
-
-
 class Log(ops.Ln):
     """
 
     """
-
-
-class Radians(ops.UnaryOp):
-    """Converts radians to degrees"""
-    arg = ops.Arg(rlz.floating)
-    output_type = rlz.shape_like('arg', ops.dt.float)
 
 
 class Truncate(ops.NumericBinaryOp):
@@ -833,7 +820,7 @@ _comparison_ops = {
 _math_ops = {
     ops.Abs: unary('abs'),
     ops.Ceil: unary('ceil'),
-    Degrees: unary('degrees'),  # MapD function
+    ops.Degrees: unary('degrees'),  # MapD function
     ops.Exp: unary('exp'),
     ops.Floor: unary('floor'),
     Log: unary('log'),  # MapD Log wrap to IBIS Ln
@@ -841,7 +828,7 @@ _math_ops = {
     ops.Log10: unary('log10'),
     ops.Modulus: fixed_arity('mod', 2),
     ops.Pi: fixed_arity('pi', 0),
-    Radians: unary('radians'),
+    ops.Radians: unary('radians'),
     ops.Round: _round,
     ops.Sign: _sign,
     ops.Sqrt: unary('sqrt'),

@@ -521,6 +521,18 @@ class Log10(Logarithm):
     """Logarithm base 10"""
 
 
+class Degrees(UnaryOp):
+    """Converts radians to degrees"""
+    arg = Arg(rlz.floating)
+    output_type = rlz.shape_like('arg', dt.float)
+
+
+class Radians(UnaryOp):
+    """Converts radians to degrees"""
+    arg = Arg(rlz.floating)
+    output_type = rlz.shape_like('arg', dt.float)
+
+
 # TRIGONOMETRIC OPERATIONS
 
 class TrigonometricUnary(UnaryOp):
