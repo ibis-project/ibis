@@ -22,16 +22,18 @@ impala_requires = [
 sqlite_requires = ['sqlalchemy>=1.0.0,<1.1.15']
 postgres_requires = sqlite_requires + ['psycopg2']
 mysql_requires = sqlite_requires + ['pymysql']
+mapd_requires = ['pymapd']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
 clickhouse_requires = ['clickhouse-driver>=0.0.8']
-bigquery_requires = ['google-cloud-bigquery<0.28']
+bigquery_requires = ['google-cloud-bigquery>=1.0.0']
 hdf5_requires = ['tables>=3.0.0']
 parquet_requires = ['pyarrow>=0.6.0']
 
 all_requires = (
     impala_requires +
     postgres_requires +
+    mapd_requires +
     mysql_requires +
     kerberos_requires +
     visualization_requires +
@@ -74,6 +76,7 @@ setup(
         'impala:python_version >= "3"': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
+        'mapd': mapd_requires,
         'mysql': mysql_requires,
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
@@ -82,7 +85,6 @@ setup(
         ],
         'clickhouse:python_version == "3.4"': clickhouse_requires,
         'bigquery': bigquery_requires,
-        'bigquery:python_version < "3"': bigquery_requires + ['chainmap'],
         'csv:python_version < "3"': ['pathlib2'],
         'hdf5': hdf5_requires,
         'hdf5:python_version < "3"': hdf5_requires + ['pathlib2'],

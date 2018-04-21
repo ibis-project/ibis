@@ -1,6 +1,6 @@
 from ibis.config import options
 from ibis.mapd.compiler import dialect, compiles, rewrites
-from ibis.mapd.client import MapDClient
+from ibis.mapd.client import MapDClient, EXECUTION_TYPE_CURSOR
 
 import ibis.common as com
 
@@ -31,9 +31,9 @@ def verify(expr, params=None):
 
 
 def connect(
-    uri: str=None, user: str=None, password: str=None, host: str=None,
-    port: int=9091, dbname: str=None, protocol: str='binary',
-    execution_type: int=3
+    uri=None, user=None, password=None, host=None,
+    port=9091, database=None, protocol='binary',
+    execution_type=EXECUTION_TYPE_CURSOR
 ):
     """Create a MapDClient for use with Ibis
 
@@ -44,7 +44,7 @@ def connect(
     :param password: str
     :param host: str
     :param port: int
-    :param dbname: str
+    :param database: str
     :param protocol: str
     :param execution_type: int
     Returns
@@ -54,7 +54,7 @@ def connect(
     """
     client = MapDClient(
         uri=uri, user=user, password=password, host=host,
-        port=port, dbname=dbname, protocol=protocol,
+        port=port, database=database, protocol=protocol,
         execution_type=execution_type
     )
 

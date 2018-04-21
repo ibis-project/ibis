@@ -12,7 +12,7 @@ def test_timestamp_accepts_date_literals(alltypes):
     result = expr.compile(params=params)
     expected = """\
 SELECT *, @param AS `param`
-FROM testing.functional_alltypes"""
+FROM `ibis-gbq.testing.functional_alltypes`"""
     assert result == expected
 
 
@@ -28,10 +28,10 @@ def test_union(alltypes, distinct, expected_keyword):
     result = expr.compile()
     expected = """\
 SELECT *
-FROM testing.functional_alltypes
+FROM `ibis-gbq.testing.functional_alltypes`
 UNION {}
 SELECT *
-FROM testing.functional_alltypes""".format(expected_keyword)
+FROM `ibis-gbq.testing.functional_alltypes`""".format(expected_keyword)
     assert result == expected
 
 
@@ -40,5 +40,5 @@ def test_ieee_divide(alltypes):
     result = expr.compile()
     expected = """\
 SELECT IEEE_DIVIDE(`double_col`, 0) AS `tmp`
-FROM testing.functional_alltypes"""
+FROM `ibis-gbq.testing.functional_alltypes`"""
     assert result == expected

@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 import pandas as pd
@@ -12,10 +14,18 @@ pytestmark = pytest.mark.bigquery
 
 from ibis.bigquery.api import udf  # noqa: E402
 
+PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID', 'ibis-gbq')
+DATASET_ID = 'testing'
+
 
 @pytest.fixture(scope='module')
 def client():
-    return ibis.bigquery.connect('ibis-gbq', 'testing')
+    ga = pytest.importorskip('google.auth')
+
+    try:
+        return ibis.bigquery.connect(PROJECT_ID, DATASET_ID)
+    except ga.exceptions.DefaultCredentialsError:
+        pytest.skip("no credentials found, skipping")
 
 
 @pytest.fixture(scope='module')
@@ -103,3 +113,26 @@ def test_udf_compose(client, alltypes, df):
     result = expr.execute()
     expected = ((df.double_col + 1.0) * 2.0).rename('tmp')
     tm.assert_series_equal(result, expected)
+
+
+def test_udf_scalar(client):
+    @udf([dt.double, dt.double], dt.double)
+    def my_add(x, y):
+        return x + y
+
+    expr = my_add(1, 2)
+    sql = client.compile(expr)
+    assert sql == '''\
+CREATE TEMPORARY FUNCTION my_add(x FLOAT64, y FLOAT64)
+RETURNS FLOAT64
+LANGUAGE js AS """
+'use strict';
+function my_add(x, y) {
+    return (x + y);
+}
+return my_add(x, y);
+""";
+
+SELECT my_add(1, 2) AS `tmp`'''
+    result = client.execute(expr)
+    assert result == 3

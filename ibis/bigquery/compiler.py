@@ -1,5 +1,7 @@
 from functools import partial
 
+import regex as re
+
 import six
 
 from multipledispatch import Dispatcher
@@ -16,7 +18,9 @@ import ibis.sql.compiler as comp
 import ibis.expr.operations as ops
 import ibis.expr.lineage as lin
 
-from ibis.impala.compiler import ImpalaSelect, unary, fixed_arity
+from ibis.impala.compiler import (
+    ImpalaSelect, unary, fixed_arity, ImpalaTableSetFormatter
+)
 from ibis.impala import compiler as impala_compiler
 
 from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
@@ -473,9 +477,20 @@ def bigquery_rewrite_notall(expr):
     return (1 - arg.cast(dt.int64)).sum() != 0
 
 
+class BigQueryTableSetFormatter(ImpalaTableSetFormatter):
+    def _quote_identifier(self, name):
+        if re.match(r'^[A-Za-z][A-Za-z_0-9]*$', name):
+            return name
+        return '`{}`'.format(name)
+
+
 class BigQuerySelect(ImpalaSelect):
 
     translator = BigQueryExprTranslator
+
+    @property
+    def table_set_formatter(self):
+        return BigQueryTableSetFormatter
 
 
 @rewrites(ops.IdenticalTo)

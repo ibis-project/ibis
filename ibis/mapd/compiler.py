@@ -1,22 +1,20 @@
 from six import StringIO
-from .operations import (
-    _operation_registry, _name_expr
-)
 from . import operations as mapd_ops
 
 import ibis.common as com
 import ibis.util as util
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 import ibis.sql.compiler as compiles
 
 
 def build_ast(expr, context):
+    assert context is not None, 'context is None'
     builder = MapDQueryBuilder(expr, context=context)
     return builder.get_result()
 
 
 def _get_query(expr, context):
+    assert context is not None, 'context is None'
     ast = build_ast(expr, context)
     query = ast.queries[0]
 
@@ -24,6 +22,9 @@ def _get_query(expr, context):
 
 
 def to_sql(expr, context=None):
+    if context is None:
+        context = MapDDialect.make_context()
+    assert context is not None, 'context is None'
     query = _get_query(expr, context)
     return query.compile()
 
@@ -51,7 +52,10 @@ class MapDQueryContext(compiles.QueryContext):
     """
 
     """
+    always_alias = False
+
     def _to_sql(self, expr, ctx):
+        ctx.always_alias = False
         return to_sql(expr, context=ctx)
 
 
@@ -169,11 +173,11 @@ class MapDExprTranslator(compiles.ExprTranslator):
     """
 
     """
-    _registry = _operation_registry
+    _registry = mapd_ops._operation_registry
     context_class = MapDQueryContext
 
     def name(self, translated, name, force=True):
-        return _name_expr(translated, name)
+        return mapd_ops._name_expr(translated, name)
 
 
 class MapDDialect(compiles.Dialect):
@@ -187,3 +191,4 @@ dialect = MapDDialect
 compiles = MapDExprTranslator.compiles
 rewrites = MapDExprTranslator.rewrites
 
+compiles(ops.Distance, mapd_ops.distance)

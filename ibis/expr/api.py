@@ -76,7 +76,7 @@ __all__ = [
     'negate', 'ifelse',
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window',
-    'pi'
+    'pi', 'distance'
 ]
 
 
@@ -1295,11 +1295,15 @@ def _integer_to_interval(arg, unit='s'):
 
 abs = _unary_op('abs', ops.Abs)
 ceil = _unary_op('ceil', ops.Ceil)
+degrees = _unary_op('degrees', ops.Degrees)
+deg2rad = _unary_op('radians', ops.Radians)
 exp = _unary_op('exp', ops.Exp)
 floor = _unary_op('floor', ops.Floor)
 log2 = _unary_op('log2', ops.Log2)
 log10 = _unary_op('log10', ops.Log10)
 ln = _unary_op('ln', ops.Ln)
+radians = _unary_op('radians', ops.Radians)
+rad2deg = _unary_op('degrees', ops.Degrees)
 sign = _unary_op('sign', ops.Sign)
 sqrt = _unary_op('sqrt', ops.Sqrt)
 
@@ -1318,7 +1322,11 @@ _numeric_value_methods = dict(
     __neg__=negate,
     abs=abs,
     ceil=ceil,
+    degrees=degrees,
+    deg2rad=deg2rad,
     floor=floor,
+    radians=radians,
+    rad2deg=rad2deg,
     sign=sign,
     exp=exp,
     sqrt=sqrt,
@@ -3192,3 +3200,11 @@ _table_methods = dict(
 
 
 _add_methods(ir.TableExpr, _table_methods)
+
+
+# geometric operation
+
+def distance(from_lon, from_lat, to_lon, to_lat):
+    """
+    """
+    return ops.Distance(from_lon, from_lat, to_lon, to_lat).to_expr()

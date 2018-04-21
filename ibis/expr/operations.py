@@ -521,6 +521,18 @@ class Log10(Logarithm):
     """Logarithm base 10"""
 
 
+class Degrees(UnaryOp):
+    """Converts radians to degrees"""
+    arg = Arg(rlz.floating)
+    output_type = rlz.shape_like('arg', dt.float)
+
+
+class Radians(UnaryOp):
+    """Converts radians to degrees"""
+    arg = Arg(rlz.floating)
+    output_type = rlz.shape_like('arg', dt.float)
+
+
 # TRIGONOMETRIC OPERATIONS
 
 class TrigonometricUnary(UnaryOp):
@@ -2770,3 +2782,17 @@ class ValueList(ValueOp):
     def _make_expr(self):
         dtype = rlz.highest_precedence_dtype(self.values)
         return ir.ListExpr(self, dtype=dtype)
+
+
+# GEOMETRIC OPERATIONS
+
+class Distance(ValueOp):
+    """
+    Calculates distance in meters between two WGS-84 positions.
+
+    """
+    from_lon = Arg(rlz.column(rlz.numeric))
+    from_lat = Arg(rlz.column(rlz.numeric))
+    to_lon = Arg(rlz.column(rlz.numeric))
+    to_lat = Arg(rlz.column(rlz.numeric))
+    output_type = rlz.shape_like('from_lon', dt.float)

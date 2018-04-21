@@ -1,11 +1,14 @@
-import regex as re
-import time
-import collections
 import datetime
+
+from collections import OrderedDict
+
+import regex as re
 
 import six
 
 import pandas as pd
+
+from google.api_core.exceptions import NotFound
 import google.cloud.bigquery as bq
 
 from multipledispatch import Dispatcher
@@ -22,22 +25,7 @@ from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient
 from ibis.bigquery import compiler as comp
 
-from google.api.core.exceptions import BadRequest
-
-
 NATIVE_PARTITION_COL = '_PARTITIONTIME'
-
-
-def _ensure_split(table_id, dataset_id):
-    split = table_id.split('.')
-    if len(split) > 1:
-        assert len(split) == 2
-        if dataset_id:
-            raise ValueError(
-                "Can't pass a fully qualified table name *AND* a dataset_id"
-            )
-        (dataset_id, table_id) = split
-    return (table_id, dataset_id)
 
 
 _IBIS_TYPE_TO_DTYPE = {
@@ -75,7 +63,7 @@ def bigquery_field_to_ibis_dtype(field):
     typ = field.field_type
     if typ == 'RECORD':
         fields = field.fields
-        assert fields
+        assert fields, 'RECORD fields are empty'
         names = [el.name for el in fields]
         ibis_types = list(map(dt.dtype, fields))
         ibis_type = dt.Struct(names, ibis_types)
@@ -89,13 +77,16 @@ def bigquery_field_to_ibis_dtype(field):
 
 @sch.infer.register(bq.table.Table)
 def bigquery_schema(table):
-    pairs = [(el.name, dt.dtype(el)) for el in table.schema]
-    try:
-        if table.list_partitions():
-            pairs.append((NATIVE_PARTITION_COL, dt.timestamp))
-    except BadRequest:
-        pass
-    return sch.schema(pairs)
+    fields = OrderedDict((el.name, dt.dtype(el)) for el in table.schema)
+    partition_info = table._properties.get('timePartitioning', None)
+
+    # We have a partitioned table
+    if partition_info is not None:
+        partition_field = partition_info.get('field', NATIVE_PARTITION_COL)
+
+        # Only add a new column if it's not already a column in the schema
+        fields.setdefault(partition_field, dt.timestamp)
+    return sch.schema(fields)
 
 
 class BigQueryCursor(object):
@@ -106,11 +97,13 @@ class BigQueryCursor(object):
         self.query = query
 
     def fetchall(self):
-        return list(self.query.fetch_data())
+        result = self.query.result()
+        return [row.values() for row in result]
 
     @property
     def columns(self):
-        return [field.name for field in self.query.schema]
+        result = self.query.result()
+        return [field.name for field in result.schema]
 
     def __enter__(self):
         # For compatibility when constructed from Query.execute()
@@ -157,7 +150,7 @@ class BigQueryQuery(Query):
         ]
 
     def _fetch(self, cursor):
-        df = pd.DataFrame(cursor.fetchall(), columns=cursor.columns)
+        df = cursor.query.to_dataframe()
         return self.schema().apply_to(df)
 
     def execute(self):
@@ -172,46 +165,6 @@ class BigQueryQuery(Query):
         return self._wrap_result(result)
 
 
-class BigQueryAPIProxy(object):
-
-    def __init__(self, project_id):
-        self._client = bq.Client(project_id)
-
-    @property
-    def client(self):
-        return self._client
-
-    @property
-    def project_id(self):
-        return self.client.project
-
-    def get_datasets(self):
-        return list(self.client.list_datasets())
-
-    def get_dataset(self, dataset_id):
-        return self.client.dataset(dataset_id)
-
-    def get_table(self, table_id, dataset_id, reload=True):
-        (table_id, dataset_id) = _ensure_split(table_id, dataset_id)
-        table = self.client.dataset(dataset_id).table(table_id)
-        if reload:
-            table.reload()
-        return table
-
-    def get_schema(self, table_id, dataset_id):
-        return self.get_table(table_id, dataset_id).schema
-
-    def run_sync_query(self, stmt):
-        query = self.client.run_sync_query(stmt)
-        query.use_legacy_sql = False
-        query.run()
-        # run_sync_query is not really synchronous: there's a timeout
-        while not query.job.done():
-            query.job.reload()
-            time.sleep(0.1)
-        return query
-
-
 class BigQueryDatabase(Database):
     pass
 
@@ -219,7 +172,7 @@ class BigQueryDatabase(Database):
 bigquery_param = Dispatcher('bigquery_param')
 
 
-@bigquery_param.register(ir.StructScalar, collections.OrderedDict)
+@bigquery_param.register(ir.StructScalar, OrderedDict)
 def bq_param_struct(param, value):
     field_params = [bigquery_param(param[k], v) for k, v in value.items()]
     return bq.StructQueryParameter(param.get_name(), *field_params)
@@ -243,7 +196,7 @@ def bq_param_array(param, value):
     six.string_types + (datetime.datetime, datetime.date)
 )
 def bq_param_timestamp(param, value):
-    assert isinstance(param.type(), dt.Timestamp)
+    assert isinstance(param.type(), dt.Timestamp), str(param.type())
 
     # TODO(phillipc): Not sure if this is the correct way to do this.
     timestamp_value = pd.Timestamp(value, tz='UTC').to_pydatetime()
@@ -290,158 +243,215 @@ class BigQueryTable(ops.DatabaseTable):
     pass
 
 
+def rename_partitioned_column(table_expr, bq_table):
+    partition_info = bq_table._properties.get('timePartitioning', None)
+
+    # If we don't have any partiton information, the table isn't partitioned
+    if partition_info is None:
+        return table_expr
+
+    # If we have a partition, but no "field" field in the table properties,
+    # then use NATIVE_PARTITION_COL as the default
+    partition_field = partition_info.get('field', NATIVE_PARTITION_COL)
+
+    # The partition field must be in table_expr columns
+    assert partition_field in table_expr.columns
+
+    # User configured partition column name default
+    col = ibis.options.bigquery.partition_col
+
+    # No renaming if the config option is set to None
+    if col is None:
+        return table_expr
+    return table_expr.relabel({partition_field: col})
+
+
+def parse_project_and_dataset(project, dataset):
+    """Figure out the project id under which queries will run versus the
+    project of where the data live as well as what dataset to use.
+
+    Parameters
+    ----------
+    project : str
+        A project name
+    dataset : str
+        A ``<project>.<dataset>`` string or just a dataset name
+
+    Returns
+    -------
+    data_project, billing_project, dataset : str, str, str
+
+    Examples
+    --------
+    >>> data_project, billing_project, dataset = parse_project_and_dataset(
+    ...     'ibis-gbq',
+    ...     'foo-bar.my_dataset'
+    ... )
+    >>> data_project
+    'foo-bar'
+    >>> billing_project
+    'ibis-gbq'
+    >>> dataset
+    'my_dataset'
+    >>> data_project, billing_project, dataset = parse_project_and_dataset(
+    ...     'ibis-gbq',
+    ...     'my_dataset'
+    ... )
+    >>> data_project
+    'ibis-gbq'
+    >>> billing_project
+    'ibis-gbq'
+    >>> dataset
+    'my_dataset'
+    """
+    try:
+        data_project, dataset = dataset.split('.')
+    except ValueError:
+        billing_project = data_project = project
+    else:
+        billing_project = project
+    return data_project, billing_project, dataset
+
+
 class BigQueryClient(SQLClient):
 
     sync_query = BigQueryQuery
     database_class = BigQueryDatabase
-    proxy_class = BigQueryAPIProxy
-    dialect = comp.BigQueryDialect
     table_class = BigQueryTable
+    dialect = comp.BigQueryDialect
 
     def __init__(self, project_id, dataset_id):
-        self._proxy = type(self).proxy_class(project_id)
-        self._dataset_id = dataset_id
+        """
+        Parameters
+        ----------
+        project_id : str
+            A project name
+        dataset_id : str
+            A ``<project_id>.<dataset_id>`` string or just a dataset name
+        """
+        (self.data_project,
+         self.billing_project,
+         self.dataset) = parse_project_and_dataset(project_id, dataset_id)
+        self.client = bq.Client(project=self.data_project)
+
+    def _parse_project_and_dataset(self, dataset):
+        project, _, dataset = parse_project_and_dataset(
+            self.billing_project,
+            dataset or '{}.{}'.format(self.data_project, self.dataset),
+        )
+        return project, dataset
 
     @property
     def project_id(self):
-        return self._proxy.project_id
+        return self.data_project
 
     @property
     def dataset_id(self):
-        return self._dataset_id
+        return self.dataset
 
-    def table(self, *args, **kwargs):
-        t = super(BigQueryClient, self).table(*args, **kwargs)
-        if NATIVE_PARTITION_COL in t.columns:
-            col = ibis.options.bigquery.partition_col
-            assert col not in t
-            return (t
-                    .mutate(**{col: t[NATIVE_PARTITION_COL]})
-                    .drop([NATIVE_PARTITION_COL]))
-        return t
+    def table(self, name, database=None):
+        t = super(BigQueryClient, self).table(name, database=database)
+        project, dataset, name = t.op().name.split('.')
+        dataset_ref = self.client.dataset(dataset, project=project)
+        table_ref = dataset_ref.table(name)
+        bq_table = self.client.get_table(table_ref)
+        return rename_partitioned_column(t, bq_table)
 
     def _build_ast(self, expr, context):
         result = comp.build_ast(expr, context)
         return result
 
     def _execute_query(self, dml, async=False):
+        if async:
+            raise NotImplementedError(
+                'Asynchronous queries not implemented in the BigQuery backend'
+            )
         klass = self.async_query if async else self.sync_query
         inst = klass(self, dml, query_parameters=dml.context.params)
         df = inst.execute()
         return df
 
     def _fully_qualified_name(self, name, database):
-        dataset_id = database or self.dataset_id
-        return dataset_id + '.' + name
+        project, dataset = self._parse_project_and_dataset(database)
+        return '{}.{}.{}'.format(project, dataset, name)
 
     def _get_table_schema(self, qualified_name):
-        return self.get_schema(qualified_name)
+        dataset, table = qualified_name.rsplit('.', 1)
+        return self.get_schema(table, database=dataset)
 
     def _execute(self, stmt, results=True, query_parameters=None):
-        # TODO(phillipc): Allow **kwargs in calls to execute
-        query = self._proxy.client.run_sync_query(stmt)
-        query.use_legacy_sql = False
-        query.query_parameters = query_parameters or []
-        query.run()
-
-        # run_sync_query is not really synchronous: there's a timeout
-        while not query.job.done():
-            query.job.reload()
-            time.sleep(0.1)
-
+        job_config = bq.job.QueryJobConfig()
+        job_config.query_parameters = query_parameters or []
+        job_config.use_legacy_sql = False  # False by default in >=0.28
+        query = self.client.query(
+            stmt, job_config=job_config, project=self.billing_project
+        )
+        query.result()  # blocks until finished
         return BigQueryCursor(query)
 
     def database(self, name=None):
-        if name is None:
-            name = self.dataset_id
-        return self.database_class(name, self)
+        return self.database_class(name or self.dataset, self)
 
     @property
     def current_database(self):
-        return self.database(self.dataset_id)
+        return self.database(self.dataset)
 
     def set_database(self, name):
-        self._dataset_id = name
+        self.data_project, self.dataset = self._parse_project_and_dataset(name)
 
     def exists_database(self, name):
-        return self._proxy.get_dataset(name).exists()
+        project, dataset = self._parse_project_and_dataset(name)
+        client = self.client
+        dataset_ref = client.dataset(dataset, project=project)
+        try:
+            client.get_dataset(dataset_ref)
+        except NotFound:
+            return False
+        else:
+            return True
 
     def list_databases(self, like=None):
-        results = [dataset.name
-                   for dataset in self._proxy.get_datasets()]
+        results = [
+            dataset.dataset_id for dataset in self.client.list_datasets()
+        ]
         if like:
             results = [
                 dataset_name for dataset_name in results
-                if re.match(like, dataset_name)
+                if re.match(like, dataset_name) is not None
             ]
         return results
 
     def exists_table(self, name, database=None):
-        (table_id, dataset_id) = _ensure_split(name, database)
-        return self._proxy.get_table(table_id, dataset_id).exists()
+        project, dataset = self._parse_project_and_dataset(database)
+        client = self.client
+        dataset_ref = self.client.dataset(dataset, project=project)
+        table_ref = dataset_ref.table(name)
+        try:
+            client.get_table(table_ref)
+        except NotFound:
+            return False
+        else:
+            return True
 
     def list_tables(self, like=None, database=None):
-        dataset = self._proxy.get_dataset(database or self.dataset_id)
-        result = [table.name for table in dataset.list_tables()]
+        project, dataset = self._parse_project_and_dataset(database)
+        dataset_ref = self.client.dataset(dataset, project=project)
+        result = [
+            table.table_id for table in self.client.list_tables(dataset_ref)
+        ]
         if like:
             result = [
                 table_name for table_name in result
-                if re.match(like, table_name)
+                if re.match(like, table_name) is not None
             ]
         return result
 
     def get_schema(self, name, database=None):
-        (table_id, dataset_id) = _ensure_split(name, database)
-        bq_table = self._proxy.get_table(table_id, dataset_id)
+        project, dataset = self._parse_project_and_dataset(database)
+        table_ref = self.client.dataset(dataset, project=project).table(name)
+        bq_table = self.client.get_table(table_ref)
         return sch.infer(bq_table)
 
     @property
     def version(self):
         return parse_version(bq.__version__)
-
-
-_DTYPE_TO_IBIS_TYPE = {
-    'INT64': dt.int64,
-    'FLOAT64': dt.double,
-    'BOOL': dt.boolean,
-    'STRING': dt.string,
-    'DATE': dt.date,
-    # FIXME: enforce no tz info
-    'DATETIME': dt.timestamp,
-    'TIME': dt.time,
-    'TIMESTAMP': dt.timestamp,
-    'BYTES': dt.binary,
-}
-
-
-_LEGACY_TO_STANDARD = {
-    'INTEGER': 'INT64',
-    'FLOAT': 'FLOAT64',
-    'BOOLEAN': 'BOOL',
-}
-
-
-def _discover_type(field):
-    typ = field.field_type
-    if typ == 'RECORD':
-        fields = field.fields
-        assert fields
-        names = [el.name for el in fields]
-        ibis_types = [_discover_type(el) for el in fields]
-        ibis_type = dt.Struct(names, ibis_types)
-    else:
-        ibis_type = _LEGACY_TO_STANDARD.get(typ, typ)
-        ibis_type = _DTYPE_TO_IBIS_TYPE.get(ibis_type, ibis_type)
-    if field.mode == 'REPEATED':
-        ibis_type = dt.Array(ibis_type)
-    return ibis_type
-
-
-def bigquery_table_to_ibis_schema(table):
-    pairs = [(el.name, _discover_type(el)) for el in table.schema]
-    try:
-        if table.list_partitions():
-            pairs.append((NATIVE_PARTITION_COL, dt.timestamp))
-    except BadRequest:
-        pass
-    return ibis.schema(pairs)

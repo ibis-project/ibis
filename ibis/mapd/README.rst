@@ -157,8 +157,7 @@ steps:
 
 1. create a new class
 2. create a new function and assign it to a DataType
-3. create a compiler function to this new function and assign it to the compiler
-  translator
+3. create a compiler function to this new function and assign it to the compiler translator
 
 A new Class database function seems like this (`my_backend_operations.py`):
 
@@ -226,12 +225,149 @@ a set of reserved words from `MapD` language.
 `quote_identifiers` is used to put quotes around the string sent if the string
 match to specific criteria.
 
+Timestamp/Date operations
+-------------------------
+
+**Interval:**
+
+MapD Interval statement allow just the follow date/time attribute: YEAR, DAY,
+MONTH, HOUR, MINUTE, SECOND
+
+To use the interval statement, it is necessary use a `integer literal/constant`
+and use the `to_interval` method:
+
+.. code-block:: Python
+
+    >>> t['arr_timestamp'] + ibis.literal(1).to_interval('Y')
+
+.. code-block:: Sql
+
+    SELECT TIMESTAMPADD(YEAR, 1, "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+Another way to use intervals is using `ibis.interval(years=1)`
+
+**Extract date/time**
+
+To extract a date part information from a timestamp, `extract` would be used:
+
+.. code-block:: Python
+
+    >>> t['arr_timestamp'].extract('YEAR')
+
+The `extract` method is just available on `ibis.mapd` backend.
+
+The operators allowed are: YEAR, QUARTER, MONTH, DAY, HOUR, MINUTE, SECOND,
+DOW, ISODOW, DOY, EPOCH, QUARTERDAY, WEEK
+
+**Direct functions to extract date/time**
+
+There is some direct functions to extract date/time, the following shows how
+to use that:
+
+.. code-block:: Python
+
+    >>> t['arr_timestamp'].year()
+    >>> t['arr_timestamp'].month()
+    >>> t['arr_timestamp'].day()
+    >>> t['arr_timestamp'].hour()
+    >>> t['arr_timestamp'].minute()
+    >>> t['arr_timestamp'].second()
+
+The result should be:
+
+.. code-block:: Sql
+
+    SELECT EXTRACT(YEAR FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+    SELECT EXTRACT(MONTH FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+    SELECT EXTRACT(DAY FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+    SELECT EXTRACT(HOUR FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+    SELECT EXTRACT(MINUTE FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+    SELECT EXTRACT(SECOND FROM "arr_timestamp") AS tmp
+    FROM mapd.flights_2008_10k
+
+**Timestap/Date Truncate**
+
+A truncate timestamp/data value function is available as `truncate`:
+
+.. code-block:: Python
+
+    >>> t['arr_timestamp'].truncate(date_part)
+
+The date part operators allowed are: YEAR or Y, QUARTER or Q, MONTH or M,
+DAY or D, HOUR or h, MINUTE or m, SECOND or s, WEEK, MILLENNIUM, CENTURY,
+DECADE, QUARTERDAY
+
+
+String operations
+-----------------
+
+- `byte_length` is not part of `ibis` `string` operations, it will work just
+for `mapd` backend.
+
+`Not` operation can be done using `~` operator:
+
+.. code-block:: Python
+
+    >>> ~t['dest_name'].like('L%')
+
+`regexp` and `regexp_like` operations can be done using `re_search` operation:
+
+.. code-block:: Python
+
+    >>> t['dest_name'].re_search('L%')
+
+
+Aggregate operations
+====================
+
+The aggregation operations available are: max, min, mean, count, distinct and count, nunique, approx_nunique.
+
+The follow examples show how to use count operations:
+
+- get the row count of the table: `t['taxiin'].count()`
+- get the distinct count of a field: `t['taxiin'].distinct().count()` or `t['taxiin'].nunique().name('v')`
+- get the approximate distinct count of a field: `t['taxiin'].approx_nunique(10)`
+
+
 Best practices
 --------------
 
 - Use `Numpy` starndard for docstring: https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard
 - Use `format` string function to format a string instead of `%` statement.
 
+
+History
+-------
+
+New implementations on `ibis` core:
+
+- Trigonometric operations (https://github.com/ibis-project/ibis/issues/893 );
+- Radians and Degrees operations (https://github.com/ibis-project/ibis/issues/1431 );
+- PI constant (https://github.com/ibis-project/ibis/issues/1418 );
+- Correlation and Covariation operations added (https://github.com/ibis-project/ibis/issues/1432 );
+- ILIKE operation (https://github.com/ibis-project/ibis/issues/1433 );
+- Distance operation (https://github.com/ibis-project/ibis/issues/1434 );
+
+Issues appointed:
+
+- `Ibis` `CASE` statement wasn't allowing input and output with different types (https://github.com/ibis-project/ibis/issues/93 )
+- At this time, no all MapD `date parts` are available on `ibis` (https://github.com/ibis-project/ibis/issues/1430 )
+
+
+Pull Requests:
+
+- https://github.com/ibis-project/ibis/pull/1419
 
 References
 ----------

@@ -21,8 +21,13 @@ def con():
         port=MAPD_PORT,
         user=MAPD_USER,
         password=MAPD_PASS,
-        dbname=MAPD_DB,
+        database=MAPD_DB,
     )
+
+
+@pytest.fixture(scope='module')
+def alltypes(con):
+    return con.table('functional_alltypes')
 
 
 @pytest.fixture
