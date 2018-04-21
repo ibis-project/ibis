@@ -30,7 +30,7 @@ dependencies:
   - python-hdfs>=2.0.16
   - regex
   - six
-  - sphinx_rtd_theme
+  - sphinx_rtd_theme<0.3
   - sqlalchemy>=1.0.0,<1.1.15
   - toolz
   - xorg-libxpm
