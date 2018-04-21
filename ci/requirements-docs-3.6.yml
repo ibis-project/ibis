@@ -22,6 +22,7 @@ dependencies:
   - plumbum
   - psycopg2
   - pyarrow>=0.6.0
+  - pymapd
   - pymysql
   - pytables
   - pytest

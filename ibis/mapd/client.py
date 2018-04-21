@@ -34,6 +34,7 @@ class MapDDataType(object):
     dtypes = {
         'BIGINT': dt.int64,
         'BOOLEAN': dt.Boolean,
+        'BOOL': dt.Boolean,
         'CHAR': dt.string,
         'DATE': dt.date,
         'DECIMAL': dt.float64,
@@ -140,9 +141,9 @@ class MapDClient(SQLClient):
     dialect = MapDDialect
 
     def __init__(
-        self, uri: str=None, user: str=None, password: str=None,
-        host: str=None, port: int=9091, dbname: str=None,
-        protocol: str='binary', execution_type: int=3
+        self, uri=None, user=None, password=None,
+        host=None, port=9091, database=None,
+        protocol='binary', execution_type=EXECUTION_TYPE_CURSOR
     ):
         """
 
@@ -153,9 +154,11 @@ class MapDClient(SQLClient):
         password : str
         host : str
         port : int
-        dbname : str
+        database : str
         protocol : {‘binary’, ‘http’, ‘https’}
-        execution_type : {1, 2, 3}
+        execution_type : {
+          EXECUTION_TYPE_ICP, EXECUTION_TYPE_ICP_GPU, EXECUTION_TYPE_CURSOR
+        }
 
         """
         self.uri = uri
@@ -163,7 +166,7 @@ class MapDClient(SQLClient):
         self.password = password
         self.host = host
         self.port = port
-        self.dbname = dbname
+        self.db_name = database
         self.protocol = protocol
 
         if execution_type not in (
@@ -177,7 +180,7 @@ class MapDClient(SQLClient):
 
         self.con = pymapd.connect(
             uri=uri, user=user, password=password, host=host,
-            port=port, dbname=dbname, protocol=protocol
+            port=port, dbname=database, protocol=protocol
         )
 
     def log(self, msg):
@@ -259,14 +262,14 @@ class MapDClient(SQLClient):
             client_class = type(self)
             new_client = client_class(
                 uri=self.uri, user=self.user, password=self.password,
-                host=self.host, port=self.port, dbname=name,
+                host=self.host, port=self.port, database=name,
                 protocol=self.protocol, execution_type=self.execution_type
             )
             return self.database_class(name, new_client)
 
     @property
     def current_database(self):
-        return self.dbname
+        return self.db_name
 
     def set_database(self, name):
         raise NotImplementedError(
@@ -280,7 +283,7 @@ class MapDClient(SQLClient):
     def list_databases(self, like=None):
         raise NotImplementedError()
 
-    def exists_table(self, name: str, database: str=None):
+    def exists_table(self, name, database=None):
         """
         Determine if the indicated table or view exists
 
@@ -296,7 +299,11 @@ class MapDClient(SQLClient):
         return bool(self.list_tables(like=name, database=database))
 
     def list_tables(self, like=None, database=None):
-        return self.con.get_tables()
+        tables = self.con.get_tables()
+
+        if like is None:
+            return tables
+        return list(filter(lambda t: t == like, tables))
 
     def get_schema(self, table_name, database=None):
         """

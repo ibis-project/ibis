@@ -76,7 +76,7 @@ __all__ = [
     'negate', 'ifelse',
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window',
-    'pi'
+    'pi', 'distance'
 ]
 
 
@@ -3200,3 +3200,11 @@ _table_methods = dict(
 
 
 _add_methods(ir.TableExpr, _table_methods)
+
+
+# geometric operation
+
+def distance(from_lon, from_lat, to_lon, to_lat):
+    """
+    """
+    return ops.Distance(from_lon, from_lat, to_lon, to_lat).to_expr()

@@ -7,6 +7,7 @@ import tarfile
 
 import pandas as pd
 import sqlalchemy as sa
+import pymapd
 
 from toolz import dissoc
 from plumbum import local
@@ -186,6 +187,44 @@ def sqlite(database, schema, tables, data_directory, **params):
     params['database'] = str(database)
     engine = init_database('sqlite', params, schema, recreate=False)
     insert_tables(engine, tables, data_directory)
+
+
+@cli.command()
+@click.option('-h', '--host', default='localhost')
+@click.option('-P', '--port', default=9091, type=int)
+@click.option('-u', '--user', default='mapd')
+@click.option('-p', '--password', default='HyperInteractive')
+@click.option('-D', '--database', default='mapd')
+@click.option('-S', '--schema', type=click.File('rt'),
+              default=str(SCRIPT_DIR / 'schema' / 'mapd.sql'))
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-d', '--data-directory', default=DATA_DIR)
+def mapd(schema, tables, data_directory, **params):
+    data_directory = Path(data_directory)
+    click.echo('Initializing MapD...')
+
+    # connection
+    conn = pymapd.connect(
+        host=params['host'], user=params['user'],
+        password=params['password'],
+        port=params['port'], dbname=params['database']
+    )
+
+    # create database
+    for stmt in schema.read().split(';'):
+        stmt = stmt.strip()
+        if len(stmt):
+            conn.execute(stmt)
+
+    # import data
+    query = 'COPY {} FROM \'{}\' WITH(delimiter=\',\', header=\'true\')'
+
+    click.echo('Loading data ...')
+    for table in tables:
+        src = data_directory / '{}.csv'.format(table)
+        click.echo(src)
+        conn.execute(query.format(table, src))
+    conn.close()
 
 
 @cli.command()

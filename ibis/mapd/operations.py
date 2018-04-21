@@ -22,6 +22,45 @@ _mapd_unit_names = {
 }
 
 
+def _add_method(dtype, klass, func_name):
+    """
+
+    :param dtype:
+    :param klass:
+    :param func_name:
+    :return:
+    """
+    def f(_klass):
+        """
+        Return a lambda function that return to_expr() result from the
+        custom classes.
+        """
+        def _f(*args, **kwargs):
+            return _klass(*args, **kwargs).to_expr()
+        return _f
+    # assign new function to the defined DataType
+    setattr(
+        dtype, func_name, f(klass)
+    )
+
+
+def _add_methods(dtype, function_ops, forced=False):
+    """
+
+    :param dtype:
+    :param function_ops: dict
+    :param forced:
+    :return:
+    """
+    for klass in function_ops.keys():
+        # skip if the class is already in the ibis operations
+        if klass in ops.__dict__.values() and not forced:
+            continue
+        # assign new function to the defined DataType
+        func_name = _operation_registry[klass].__name__
+        _add_method(dtype, klass, func_name)
+
+
 def _is_floating(*args):
     for arg in args:
         if isinstance(arg, ir.FloatingColumn):
@@ -147,26 +186,6 @@ def binary_infix_op(infix_sym):
         return '{0!s} {1!s} {2!s}'.format(left_, infix_sym, right_)
 
     return formatter
-
-
-# def timestamp_binary_infix_op(func_name, infix_sym, timestamp_code):
-#     def formatter(translator, expr):
-#         op = expr.op()
-#
-#         arg, unit = op.args[0], op.args[1]
-#         arg_ = _parenthesize(translator, arg)
-#
-#         if unit.upper() in [u.upper() for u in ops._timestamp_units.keys()]:
-#             converter = ops._timestamp_units[unit].upper()
-#         elif unit.upper() in [u.upper() for u in ops._date_units.values()]:
-#             converter = ops._timestamp_units[unit].upper()
-#         else:
-#             raise ValueError('`{}` unit is not supported!'.format(unit))
-#
-#         return '{0!s}({1!s} {2!s} {3!s})'.format(
-#             func_name, converter, infix_sym, arg_
-#         )
-#     return formatter
 
 
 def _call(translator, func, *args):
@@ -408,6 +427,7 @@ def _table_column(translator, expr):
     op = expr.op()
     field_name = op.name
     quoted_name = quote_identifier(field_name, force=True)
+
     table = op.table
     ctx = translator.context
 
@@ -417,11 +437,10 @@ def _table_column(translator, expr):
         proj_expr = table.projection([field_name]).to_array()
         return _table_array_view(translator, proj_expr)
 
-    # TODO(kszucs): table aliasing is partially supported
-    # if ctx.need_aliases():
-    #     alias = ctx.get_ref(table)
-    #     if alias is not None:
-    #         quoted_name = '{0}.{1}'.format(alias, quoted_name)
+    if ctx.need_aliases():
+        alias = ctx.get_ref(table)
+        if alias is not None:
+            quoted_name = '{}.{}'.format(alias, quoted_name)
 
     return quoted_name
 
@@ -452,6 +471,14 @@ count_distinct = _reduction('count')
 count = _reduction('count')
 
 
+def distance(translator, expr):
+    op = expr.op()
+    values = map(translator.translate, op.args)
+    return 'DISTANCE_IN_METERS({0})'.format(', '.join(values))
+
+
+# classes
+
 # MATH
 class Log(ops.Ln):
     """
@@ -465,18 +492,6 @@ class NumericTruncate(ops.NumericBinaryOp):
 
 
 # GEOMETRIC
-
-class Distance_In_Meters(ops.ValueOp):
-    """
-    Calculates distance in meters between two WGS-84 positions.
-
-    """
-    fromLon = ops.Arg(rlz.column(rlz.numeric))
-    fromLat = ops.Arg(rlz.column(rlz.numeric))
-    toLon = ops.Arg(rlz.column(rlz.numeric))
-    toLat = ops.Arg(rlz.column(rlz.numeric))
-    output_type = rlz.shape_like('fromLon', ops.dt.float)
-
 
 class Conv_4326_900913_X(ops.UnaryOp):
     """
@@ -542,7 +557,6 @@ _trigonometric_ops = {
 }
 
 _geometric_ops = {
-    Distance_In_Meters: fixed_arity('distance_in_meters', 4),
     Conv_4326_900913_X: unary('conv_4326_900913_x'),
     Conv_4326_900913_Y: unary('conv_4326_900913_y')
 }
@@ -566,10 +580,6 @@ _date_ops = {
     ops.ExtractMinute: _extract_field('MINUTE'),
     ops.ExtractSecond: _extract_field('SECOND'),
 
-    # TimestampExtract: timestamp_binary_infix_op(
-    #     'EXTRACT', 'FROM', timestamp_code=timestamp_code
-    # ),
-
     ops.IntervalAdd: _interval_from_integer,
     ops.IntervalFromInteger: _interval_from_integer,
 
@@ -581,22 +591,16 @@ _date_ops = {
 
 
 _agg_ops = {
-    # ops.Count: count,
-    # ops.CountDistinct: count_distinct,
     ApproxCountDistinct: approx_count_distinct,
     ops.DistinctColumn: unary_prefix_op('distinct'),
 }
 
 _general_ops = {
-    # Unary operations
     ops.Literal: literal,
     ops.ValueList: _value_list,
     ops.Cast: _cast,
     ops.Where: fixed_arity('if', 3),
     ops.TableColumn: _table_column,
-    # ops.TableArrayView: _table_array_view,
-    # ops.ArrayLength: unary('length'),
-    # ops.Coalesce: varargs('coalesce'),
 }
 
 _operation_registry = impala_compiler._operation_registry.copy()
@@ -614,60 +618,16 @@ _operation_registry.update(_date_ops)
 _operation_registry.update(_agg_ops)
 
 
-def assign_functions_to_dtype(dtype, function_ops, forced=False):
-    """
-
-    :param dtype:
-    :param function_ops: dict
-    :param forced:
-    :return:
-    """
-    for klass in function_ops.keys():
-        # skip if the class is already in the ibis operations
-        if klass in ops.__dict__.values() and not forced:
-            continue
-        # assign new function to the defined DataType
-        func_name = _operation_registry[klass].__name__
-        _add_method(dtype, klass, func_name)
-
-
-def _add_method(dtype, klass, func_name):
-    """
-
-    :param dtype:
-    :param klass:
-    :param func_name:
-    :return:
-    """
-    def f(_klass):
-        """
-        Return a lambda function that return to_expr() result from the
-        custom classes.
-        """
-        def _f(*args, **kwargs):
-            return _klass(*args, **kwargs).to_expr()
-        return _f
-    # assign new function to the defined DataType
-    setattr(
-        dtype, func_name, f(klass)
-    )
-
-
 # numeric operations
-assign_functions_to_dtype(ir.NumericValue, _trigonometric_ops, forced=True)
-assign_functions_to_dtype(ir.NumericValue, _math_ops, forced=True)
-assign_functions_to_dtype(ir.NumericValue, _geometric_ops, forced=True)
-assign_functions_to_dtype(ir.NumericValue, _stats_ops, forced=False)
-assign_functions_to_dtype(ir.ColumnExpr, _agg_ops, forced=True)
+_add_methods(ir.NumericValue, _trigonometric_ops, forced=True)
+_add_methods(ir.NumericValue, _math_ops, forced=True)
+_add_methods(ir.NumericValue, _geometric_ops, forced=True)
+_add_methods(ir.NumericValue, _stats_ops, forced=False)
+_add_methods(ir.ColumnExpr, _agg_ops, forced=True)
+
 # string operations
-assign_functions_to_dtype(ir.StringValue, _string_ops, forced=True)
+_add_methods(ir.StringValue, _string_ops, forced=True)
 
 # date/time/timestamp operations
-assign_functions_to_dtype(ir.TimestampColumn, _date_ops, forced=True)
-assign_functions_to_dtype(ir.DateColumn, _date_ops, forced=True)
-
-# _add_method(ir.TimestampColumn, ops.TimestampTruncate, 'truncate')
-# _add_method(ir.DateColumn, ops.DateTruncate, 'truncate')
-# _add_method(ir.TimestampColumn, TimestampExtract, 'extract')
-# _add_method(ir.DateColumn, TimestampExtract, 'extract')
-
+_add_methods(ir.TimestampColumn, _date_ops, forced=True)
+_add_methods(ir.DateColumn, _date_ops, forced=True)
