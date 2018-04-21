@@ -16,6 +16,7 @@ import ibis.expr.types as ir
 
 pytestmark = pytest.mark.bigquery
 pytest.importorskip('google.cloud.bigquery')
+exceptions = pytest.importorskip('google.api_core.exceptions')
 
 
 def test_table(alltypes):
@@ -46,7 +47,8 @@ def test_simple_aggregate_execute(alltypes, df):
 
 
 def test_list_tables(client):
-    assert set(client.list_tables(like='functional_alltypes')) == {
+    tables = client.list_tables(like='functional_alltypes')
+    assert set(tables) == {
         'functional_alltypes',
         'functional_alltypes_parted',
     }
@@ -61,13 +63,6 @@ def test_current_database(client):
 def test_database(client):
     database = client.database(client.dataset_id)
     assert database.list_tables() == client.list_tables()
-
-
-def test_database_layer(client):
-    bq_dataset = client._proxy.get_dataset(client.dataset_id)
-    actual = client.list_tables()
-    expected = [el.name for el in bq_dataset.list_tables()]
-    assert sorted(actual) == sorted(expected)
 
 
 def test_compile_toplevel():
@@ -210,7 +205,7 @@ FROM (
   SELECT `string_col`, sum(`float_col`) AS `foo`
   FROM (
     SELECT `float_col`, `timestamp_col`, `int_col`, `string_col`
-    FROM testing.functional_alltypes
+    FROM `ibis-gbq.testing.functional_alltypes`
     WHERE `timestamp_col` < @my_param
   ) t1
   GROUP BY 1
@@ -366,7 +361,7 @@ def test_scalar_param_scope(alltypes):
     mut = t.mutate(param=param).compile(params={param: '2017-01-01'})
     assert mut == """\
 SELECT *, @param AS `param`
-FROM testing.functional_alltypes"""
+FROM `ibis-gbq.testing.functional_alltypes`"""
 
 
 def test_scalar_param_partition_time(parted_alltypes):
@@ -375,3 +370,142 @@ def test_scalar_param_partition_time(parted_alltypes):
     expr = t[t.PARTITIONTIME < param]
     df = expr.execute(params={param: '2017-01-01'})
     assert df.empty
+
+
+def test_exists_table(client):
+    assert client.exists_table('functional_alltypes')
+    assert not client.exists_table('footable')
+
+
+def test_exists_database(client):
+    assert client.exists_database('testing')
+    assert not client.exists_database('foodataset')
+
+
+@pytest.mark.parametrize('kind', ['date', 'timestamp'])
+@pytest.mark.parametrize(
+    ('option', 'expected_fn'),
+    [
+        (None, 'my_{}_parted_col'.format),
+        ('PARTITIONTIME', lambda kind: 'PARTITIONTIME'),
+        ('foo_bar', lambda kind: 'foo_bar'),
+    ]
+)
+def test_parted_column(client, kind, option, expected_fn):
+    table_name = '{}_column_parted'.format(kind)
+    option_key = 'bigquery.partition_col'
+    with ibis.config.option_context(option_key, option):
+        t = client.table(table_name)
+    expected_column = expected_fn(kind)
+    assert t.columns == [expected_column, 'string_col', 'int_col']
+
+
+def test_cross_project_query():
+    con = ibis.bigquery.connect(
+        project_id='ibis-gbq',
+        dataset_id='bigquery-public-data.stackoverflow')
+    table = con.table('posts_questions')
+    expr = table[table.tags.contains('ibis')][['title', 'tags']]
+    result = expr.compile()
+    expected = """\
+SELECT `title`, `tags`
+FROM (
+  SELECT *
+  FROM `bigquery-public-data.stackoverflow.posts_questions`
+  WHERE STRPOS(`tags`, 'ibis') - 1 >= 0
+) t0"""
+    assert result == expected
+    n = 5
+    df = expr.limit(n).execute()
+    assert len(df) == n
+    assert list(df.columns) == ['title', 'tags']
+    assert df.title.dtype == np.object
+    assert df.tags.dtype == np.object
+
+
+def test_set_database():
+    con = ibis.bigquery.connect(project_id='ibis-gbq', dataset_id='testing')
+    con.set_database('bigquery-public-data.epa_historical_air_quality')
+    tables = con.list_tables()
+    assert 'co_daily_summary' in tables
+
+
+def test_exists_table_different_project(client):
+    name = 'co_daily_summary'
+    database = 'bigquery-public-data.epa_historical_air_quality'
+    assert client.exists_table(name, database=database)
+    assert not client.exists_table('foobar', database=database)
+
+
+def test_exists_table_different_project_fully_qualified(client):
+    # TODO(phillipc): Should we raise instead?
+    name = 'bigquery-public-data.epa_historical_air_quality.co_daily_summary'
+    with pytest.raises(exceptions.BadRequest):
+        client.exists_table(name)
+
+
+@pytest.mark.parametrize(
+    ('name', 'expected'),
+    [
+        ('bigquery-public-data.epa_historical_air_quality', True),
+        ('bigquery-foo-bar-project.baz_dataset', False),
+    ]
+)
+def test_exists_database_different_project(client, name, expected):
+    assert client.exists_database(name) is expected
+
+
+def test_repeated_project_name():
+    con = ibis.bigquery.connect(
+        project_id='ibis-gbq', dataset_id='ibis-gbq.testing')
+    assert 'functional_alltypes' in con.list_tables()
+
+
+@pytest.mark.xfail(raises=NotImplementedError, reason='async not implemented')
+def test_async(client):
+    expr = ibis.literal(1)
+    result = client.execute(expr, async=True)
+    assert result.get_result() == 1
+
+
+def test_multiple_project_queries(client):
+    so = client.table(
+        'posts_questions', database='bigquery-public-data.stackoverflow')
+    trips = client.table('trips', database='nyc-tlc.yellow')
+    join = so.join(trips, so.tags == trips.rate_code)[[so.title]]
+    result = join.compile()
+    expected = """\
+SELECT t0.`title`
+FROM `bigquery-public-data.stackoverflow.posts_questions` t0
+  INNER JOIN `nyc-tlc.yellow.trips` t1
+    ON t0.`tags` = t1.`rate_code`"""
+    assert result == expected
+
+
+def test_multiple_project_queries_database_api(client):
+    stackoverflow = client.database('bigquery-public-data.stackoverflow')
+    posts_questions = stackoverflow.posts_questions
+    yellow = client.database('nyc-tlc.yellow')
+    trips = yellow.trips
+    predicate = posts_questions.tags == trips.rate_code
+    join = posts_questions.join(trips, predicate)[[posts_questions.title]]
+    result = join.compile()
+    expected = """\
+SELECT t0.`title`
+FROM `bigquery-public-data.stackoverflow.posts_questions` t0
+  INNER JOIN `nyc-tlc.yellow.trips` t1
+    ON t0.`tags` = t1.`rate_code`"""
+    assert result == expected
+
+
+def test_multiple_project_queries_execute(client):
+    stackoverflow = client.database('bigquery-public-data.stackoverflow')
+    posts_questions = stackoverflow.posts_questions.limit(5)
+    yellow = client.database('nyc-tlc.yellow')
+    trips = yellow.trips.limit(5)
+    predicate = posts_questions.tags == trips.rate_code
+    cols = [posts_questions.title]
+    join = posts_questions.left_join(trips, predicate)[cols]
+    result = join.execute()
+    assert list(result.columns) == ['title']
+    assert len(result) == 5
