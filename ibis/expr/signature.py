@@ -105,10 +105,6 @@ class TypeSignature(OrderedDict):
                    for i, dtype in enumerate(dtypes))
 
     def validate(self, *args, **kwargs):
-        if len(args) > len(self.keys()):
-            raise TypeError('takes {!d} positional arguments but {!d} were '
-                            'given'.format(len(self.keys()), len(args)))
-
         result = []
         for i, (name, argument) in enumerate(self.items()):
             if i < len(args):
