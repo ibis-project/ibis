@@ -1,6 +1,8 @@
 from ibis.compat import parse_version
-from ibis.client import Database, Query, SQLClient
+from ibis.client import Database, Query, SQLClient, DatabaseEntity
 from ibis.mapd.compiler import MapDDialect, build_ast
+from ibis.mapd import ddl
+from ibis.sql.compiler import DDL, DML
 from ibis.util import log
 from pymapd.cursor import Cursor
 
@@ -16,12 +18,27 @@ import pymapd
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 
 EXECUTION_TYPE_ICP = 1
 EXECUTION_TYPE_ICP_GPU = 2
 EXECUTION_TYPE_CURSOR = 3
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
+
+
+def _validate_compatible(from_schema, to_schema):
+    if set(from_schema.names) != set(to_schema.names):
+        raise com.IbisInputError('Schemas have different names')
+
+    for name in from_schema:
+        lt = from_schema[name]
+        rt = to_schema[name]
+        if not lt.castable(rt):
+            raise com.IbisInputError(
+                'Cannot safely cast {0!r} to {1!r}'.format(lt, rt)
+            )
+    return
 
 
 class MapDDataType(object):
@@ -131,6 +148,184 @@ class MapDQuery(Query):
         return self.schema().apply_to(cursor.to_df())
 
 
+class MapDTable(ir.TableExpr, DatabaseEntity):
+
+    """
+    References a physical table in the MapD metastore
+    """
+
+    @property
+    def _qualified_name(self):
+        return self.op().args[0]
+
+    @property
+    def _unqualified_name(self):
+        return self._match_name()[1]
+
+    @property
+    def _client(self):
+        return self.op().args[2]
+
+    def _match_name(self):
+        m = ddl.fully_qualified_re.match(self._qualified_name)
+        if not m:
+            raise com.IbisError(
+                'Cannot determine database name from {0}'.format(
+                    self._qualified_name
+                )
+            )
+        db, quoted, unquoted = m.groups()
+        return db, quoted or unquoted
+
+    @property
+    def _database(self):
+        return self._match_name()[0]
+
+    def invalidate_metadata(self):
+        self._client.invalidate_metadata(self._qualified_name)
+
+    def refresh(self):
+        self._client.refresh(self._qualified_name)
+
+    def metadata(self):
+        """
+        Return parsed results of DESCRIBE FORMATTED statement
+
+        Returns
+        -------
+        meta : TableMetadata
+        """
+        return self._client.describe_formatted(self._qualified_name)
+
+    describe_formatted = metadata
+
+    def drop(self):
+        """
+        Drop the table from the database
+        """
+        self._client.drop_table_or_view(self._qualified_name)
+
+    def truncate(self):
+        self._client.truncate_table(self._qualified_name)
+
+    def insert(self, obj=None, values=None, validate=True):
+        """
+        Insert into Impala table. Wraps ImpalaClient.insert
+
+        Parameters
+        ----------
+        obj : TableExpr or pandas DataFrame
+        values: , Default None
+        validate : boolean, default True
+          If True, do more rigorous validation that schema of table being
+          inserted is compatible with the existing table
+
+        Examples
+        --------
+        >>> t.insert(table_expr)  # doctest: +SKIP
+        """
+        if isinstance(obj, pd.DataFrame):
+            raise NotImplemented('Pandas Dataframe input not implemented.')
+        else:
+            expr = obj
+
+        if values is not None:
+            raise NotImplementedError
+
+        if validate:
+            existing_schema = self.schema()
+            insert_schema = expr.schema()
+            if not insert_schema.equals(existing_schema):
+                _validate_compatible(insert_schema, existing_schema)
+
+        ast = build_ast(expr, MapDDialect.make_context())
+        select = ast.queries[0]
+        statement = ddl.InsertSelect(self._unqualified_name, select)
+        return self._execute(statement)
+
+    def load_data(self, path, overwrite=False):
+        """
+        Wraps the LOAD DATA DDL statement. Loads data into an MapD table by
+        physically moving data files.
+
+        Parameters
+        ----------
+        path : string
+        overwrite : boolean, default False
+          Overwrite the existing data in the entire table or indicated
+          partition
+
+        Returns
+        -------
+        query : MapDQuery
+        """
+        stmt = ddl.LoadData(self._qualified_name, path)
+        return self._execute(stmt)
+
+    @property
+    def name(self):
+        return self.op().name
+
+    def rename(self, new_name, database=None):
+        """
+        Rename table inside MapD. References to the old table are no longer
+        valid.
+
+        Parameters
+        ----------
+        new_name : string
+        database : string
+
+        Returns
+        -------
+        renamed : MapDTable
+        """
+        m = ddl.fully_qualified_re.match(new_name)
+        if not m and database is None:
+            database = self._database
+
+        statement = ddl.RenameTable(
+            self._qualified_name, new_name, new_database=database
+        )
+
+        self._client._execute(statement)
+
+        op = self.op().change_name(statement.new_qualified_name)
+        return type(self)(op)
+
+    def _execute(self, stmt):
+        return self._client._execute(stmt)
+
+    def alter(self, tbl_properties=None):
+        """
+        Change setting and parameters of the table.
+
+        Parameters
+        ----------
+        tbl_properties : dict, optional
+
+        Returns
+        -------
+        None (for now)
+        """
+        def _run_ddl(**kwds):
+            stmt = ddl.AlterTable(self._qualified_name, **kwds)
+            return self._execute(stmt)
+
+        return self._alter_table_helper(
+            _run_ddl, tbl_properties=tbl_properties
+        )
+
+    def _alter_table_helper(self, f, **alterations):
+        results = []
+        for k, v in alterations.items():
+            if v is None:
+                continue
+            result = f(**{k: v})
+            results.append(result)
+        return results
+
+
 class MapDClient(SQLClient):
     """
 
@@ -138,6 +333,7 @@ class MapDClient(SQLClient):
     database_class = Database
     sync_query = MapDQuery
     dialect = MapDDialect
+    table_expr_class = MapDTable
 
     def __init__(
         self, uri=None, user=None, password=None,
@@ -225,16 +421,138 @@ class MapDClient(SQLClient):
             database, table_name = table_name_
         return self.get_schema(table_name, database)
 
-    def _execute(self, query, results=False):
+    def _execute(self, query, results=True):
         """
 
         query:
         :return:
         """
-        if self.execution_type != EXECUTION_TYPE_CURSOR:
-            raise NotImplemented()
+        if isinstance(query, (DDL, DML)):
+            query = query.compile()
 
-        return MapDCursor(self.con.cursor().execute(query))
+        if self.execution_type == EXECUTION_TYPE_ICP:
+            execute = self.con.select_ipc
+        elif self.execution_type == EXECUTION_TYPE_ICP_GPU:
+            execute = self.con.select_ipc_gpu
+        else:
+            execute = self.con.cursor().execute
+
+        try:
+            result = MapDCursor(execute(query))
+        except Exception as e:
+            raise Exception('{}: {}'.format(e, query))
+
+        if results:
+            return result
+
+    def create_table(
+        self, table_name, obj=None, schema=None, database=None, force=False
+    ):
+        """
+        Create a new table in MapD using an Ibis table expression.
+
+        Parameters
+        ----------
+        table_name : string
+        obj : TableExpr or pandas.DataFrame, optional
+          If passed, creates table from select statement results
+        schema : ibis.Schema, optional
+          Mutually exclusive with expr, creates an empty table with a
+          particular schema
+        database : string, default None (optional)
+        force : boolean, default False
+          Do not create table if table with indicated name already exists
+
+        Examples
+        --------
+        >>> con.create_table('new_table_name', table_expr)  # doctest: +SKIP
+        """
+
+        if obj is not None:
+            if isinstance(obj, pd.DataFrame):
+                raise NotImplemented('Pandas Dataframe input not implemented.')
+            else:
+                to_insert = obj
+            ast = self._build_ast(to_insert, MapDDialect.make_context())
+            select = ast.queries[0]
+
+            statement = ddl.CTAS(
+                table_name, select,
+                database=database,
+                can_exist=force,
+            )
+        elif schema is not None:
+            statement = ddl.CreateTableWithSchema(
+                table_name, schema,
+                database=database,
+                can_exist=force,
+            )
+        else:
+            raise com.IbisError('Must pass expr or schema')
+
+        return self._execute(statement, False)
+
+    def drop_table(self, table_name, database=None, force=False):
+        """
+        Drop an MapD table
+
+        Parameters
+        ----------
+        table_name : string
+        database : string, default None (optional)
+        force : boolean, default False
+          Database may throw exception if table does not exist
+
+        Examples
+        --------
+        >>> table = 'my_table'
+        >>> db = 'operations'
+        >>> con.drop_table(table, database=db, force=True)  # doctest: +SKIP
+        """
+        statement = ddl.DropTable(
+            table_name, database=database, must_exist=not force
+        )
+        self._execute(statement, False)
+
+    def drop_view(self, name, database=None, force=False):
+        """
+        Drop an MapD view
+
+        Parameters
+        ----------
+        name : string
+        database : string, default None
+        force : boolean, default False
+          Database may throw exception if table does not exist
+        """
+        statement = ddl.DropView(
+            name, database=database, must_exist=not force
+        )
+        return self._execute(statement, False)
+
+    def truncate_table(self, table_name, database=None):
+        """
+        Delete all rows from, but do not drop, an existing table
+
+        Parameters
+        ----------
+        table_name : string
+        database : string, default None (optional)
+        """
+        statement = ddl.TruncateTable(table_name, database=database)
+        self._execute(statement, False)
+
+    def drop_table_or_view(self, name, database=None, force=False):
+        """
+        Attempt to drop a relation that may be a view or table
+        """
+        try:
+            self.drop_table(name, database=database)
+        except Exception as e:
+            try:
+                self.drop_view(name, database=database)
+            except Exception:
+                raise e
 
     def database(self, name=None):
         """Connect to a database called `name`.
@@ -265,6 +583,45 @@ class MapDClient(SQLClient):
                 protocol=self.protocol, execution_type=self.execution_type
             )
             return self.database_class(name, new_client)
+
+    def insert(
+        self, table_name, obj=None, database=None, values=None, validate=True
+    ):
+        """
+        Insert into existing table.
+
+        See MapDTable.insert for other parameters.
+
+        Parameters
+        ----------
+        table_name : string
+        database : string, default None
+
+        Examples
+        --------
+        >>> table = 'my_table'
+        >>> con.insert(table, table_expr)  # doctest: +SKIP
+
+        # Completely overwrite contents
+        >>> con.insert(table, table_expr, overwrite=True)  # doctest: +SKIP
+        """
+        table = self.table(table_name, database=database)
+        return table.insert(
+            obj=obj, values=values, validate=validate
+        )
+
+    def load_data(self, table_name, path, database=None, overwrite=False):
+        """
+        Wraps the LOAD DATA DDL statement. Loads data into an MapD table by
+        physically moving data files.
+
+        Parameters
+        ----------
+        table_name : string
+        database : string, default None (optional)
+        """
+        table = self.table(table_name, database=database)
+        return table.load_data(path, overwrite=overwrite)
 
     @property
     def current_database(self):

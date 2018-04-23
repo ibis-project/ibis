@@ -6,6 +6,7 @@ from ibis.impala import compiler as impala_compiler
 import ibis
 import ibis.common as com
 import ibis.util as util
+import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
@@ -19,6 +20,19 @@ _mapd_unit_names = {
     'h': 'HOUR',
     'm': 'MINUTE',
     's': 'SECOND',
+}
+
+_sql_type_names = {
+    'int8': 'tinyint',
+    'int16': 'smallint',
+    'int32': 'int',
+    'int64': 'bigint',
+    'float': 'float',
+    'double': 'double',
+    'string': 'string',
+    'boolean': 'boolean',
+    'timestamp': 'timestamp',
+    'decimal': 'decimal',
 }
 
 
@@ -66,6 +80,13 @@ def _is_floating(*args):
         if isinstance(arg, ir.FloatingColumn):
             return True
     return False
+
+
+def _type_to_sql_string(tval):
+    if isinstance(tval, dt.Decimal):
+        return 'decimal({}, {})'.format(tval.precision, tval.scale)
+    else:
+        return _sql_type_names[tval.name.lower()]
 
 
 def _cast(translator, expr):
