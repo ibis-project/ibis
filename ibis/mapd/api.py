@@ -1,5 +1,5 @@
 from ibis.config import options
-from ibis.mapd.compiler import dialect, compiles, rewrites
+from ibis.mapd.compiler import dialect, compiles, rewrites  # noqa: F401
 from ibis.mapd.client import MapDClient, EXECUTION_TYPE_CURSOR
 
 import ibis.common as com

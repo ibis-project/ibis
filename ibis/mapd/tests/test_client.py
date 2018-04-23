@@ -67,4 +67,3 @@ def test_compile_toplevel():
     result = ibis.mapd.compile(expr)
     expected = 'SELECT sum("foo") AS sum\nFROM t0'  # noqa
     assert str(result) == expected
-
