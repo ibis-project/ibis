@@ -14,7 +14,6 @@ import pandas as pd
 import pymapd
 
 import ibis.common as com
-import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 
@@ -155,7 +154,7 @@ class MapDClient(SQLClient):
         host : str
         port : int
         database : str
-        protocol : {‘binary’, ‘http’, ‘https’}
+        protocol : {'binary', 'http', 'https'}
         execution_type : {
           EXECUTION_TYPE_ICP, EXECUTION_TYPE_ICP_GPU, EXECUTION_TYPE_CURSOR
         }
