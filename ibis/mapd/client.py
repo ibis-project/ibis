@@ -228,11 +228,9 @@ class MapDTable(ir.TableExpr, DatabaseEntity):
             raise NotImplementedError
 
         if isinstance(obj, pd.DataFrame):
-            from ibis.mapd.pandas_interop import write_temp_dataframe
-            writer, expr = write_temp_dataframe(self._client, obj)
+            raise NotImplemented('Pandas DataFrame not implemented')
         else:
             expr = obj
-
 
         if validate:
             existing_schema = self.schema()
@@ -446,6 +444,44 @@ class MapDClient(SQLClient):
 
         if results:
             return result
+
+    def create_database(self, name, force=False, owner=None):
+        """
+        Create a new Impala database
+
+        Parameters
+        ----------
+        name : string
+          Database name
+        force : bool, Default False
+        """
+        statement = ddl.CreateDatabase(name, owner=owner)
+        return self._execute(statement)
+
+    def drop_database(self, name, force=False):
+        """
+        Drop an Impala database
+
+        Parameters
+        ----------
+        name : string
+          Database name
+        force : boolean, default False
+          If False and there are any tables in this database, raises an
+          IntegrityError
+        """
+        tables = []
+
+        if not force or self.database(name):
+            tables = self.list_tables(database=name)
+
+        if not force and len(tables):
+            raise com.IntegrityError(
+                'Database {0} must be empty before being dropped, or set '
+                'force=True'.format(name)
+            )
+        statement = ddl.DropDatabase(name)
+        return self._execute(statement)
 
     def create_table(
         self, table_name, obj=None, schema=None, database=None, force=False
@@ -674,10 +710,12 @@ class MapDClient(SQLClient):
         return self.db_name
 
     def set_database(self, name):
-        raise NotImplementedError(
-            'Cannot set database with MapD client. To use a different'
-            ' database, use client.database({!r})'.format(name)
-        )
+        if self.db_name != name:
+            self.con = self.con = pymapd.connect(
+                uri=self.uri, user=self.user, password=self.password,
+                host=self.host, port=self.port, dbname=self.database,
+                protocol=self.protocol
+            )
 
     def exists_database(self, name):
         raise NotImplementedError()
@@ -705,7 +743,8 @@ class MapDClient(SQLClient):
 
         if like is None:
             return tables
-        return list(filter(lambda t: t == like, tables))
+        pattern = re.compile(like)
+        return list(filter(lambda t: pattern.findall(t), tables))
 
     def get_schema(self, table_name, database=None):
         """

@@ -259,28 +259,28 @@ class CacheTable(MapDDDL):
 
 class CreateDatabase(CreateDDL):
 
-    def __init__(self, name, path=None, can_exist=False):
+    def __init__(self, name, owner=None):
         self.name = name
-        self.path = path
-        self.can_exist = can_exist
+        self.owner = owner
 
     def compile(self):
         name = quote_identifier(self.name)
 
-        create_decl = 'CREATE DATABASE'
-        create_line = '{} {}{}'.format(create_decl, self._if_exists(), name)
-        if self.path is not None:
-            create_line += "\nLOCATION '{}'".format(self.path)
+        cmd = 'CREATE DATABASE'
+        properties = ''
 
-        return create_line
+        if self.owner:
+            properties = '(owner=\'{}\')'.format(self.owner)
+
+        return '{} {} {}'.format(cmd, name, properties)
 
 
 class DropDatabase(DropObject):
 
     _object_type = 'DATABASE'
 
-    def __init__(self, name, must_exist=True):
-        super(DropDatabase, self).__init__(must_exist=must_exist)
+    def __init__(self, name):
+        super(DropDatabase, self).__init__(must_exist=True)
         self.name = name
 
     def _object_name(self):
