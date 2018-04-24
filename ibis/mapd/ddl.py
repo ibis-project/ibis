@@ -125,61 +125,6 @@ class CreateView(CTAS):
         return 'CREATE VIEW'
 
 
-class CreateTableWithSchema(CreateTable):
-
-    def __init__(self, table_name, schema, table_format=None, **kwargs):
-        super(CreateTableWithSchema, self).__init__(table_name, **kwargs)
-        self.schema = schema
-        self.table_format = table_format
-
-    @property
-    def _pieces(self):
-        if self.partition is not None:
-            main_schema = self.schema
-            part_schema = self.partition
-            if not isinstance(part_schema, sch.Schema):
-                part_schema = sch.Schema(
-                    part_schema,
-                    [self.schema[name] for name in part_schema])
-
-            to_delete = []
-            for name in self.partition:
-                if name in self.schema:
-                    to_delete.append(name)
-
-            if len(to_delete):
-                main_schema = main_schema.delete(to_delete)
-
-            yield format_schema(main_schema)
-        else:
-            yield format_schema(self.schema)
-
-        if self.table_format is not None:
-            yield '\n'.join(self.table_format.to_ddl())
-        else:
-            yield self._storage()
-
-        yield self._location()
-
-
-class InsertSelect(MapDDML):
-
-    def __init__(
-        self, table_name, select_expr, database=None
-    ):
-        self.table_name = table_name
-        self.database = database
-        self.select = select_expr
-
-    def compile(self):
-        cmd = 'INSERT INTO'
-
-        select_query = self.select.compile()
-        return'{0} {1}\n{2}'.format(
-            cmd, self.table_name, select_query
-        )
-
-
 class LoadData(MapDDDL):
 
     """
@@ -354,21 +299,28 @@ def _format_schema_element(name, t):
     )
 
 
-class CreateFunction(MapDDDL):
+class InsertPandas(MapDDML):
 
-    _object_type = 'FUNCTION'
-
-    def __init__(self, func, name=None, database=None):
-        self.func = func
-        self.name = name or func.name
+    def __init__(self, table_name, df, insert_index=False, database=None):
+        self.table_name = table_name
         self.database = database
+        self.df = df.copy()
 
-    def _mapd_signature(self):
-        scoped_name = self._get_scoped_name(self.name, self.database)
-        input_sig = _mapd_input_signature(self.func.inputs)
-        output_sig = _type_to_sql_string(self.func.output)
+        if insert_index:
+            self.df.reset_index(inplace=True)
 
-        return '{}({}) returns {}'.format(scoped_name, input_sig, output_sig)
+    def _get_field_names(self):
+        return self.df.keys()
+
+    def compile(self):
+        cmd = 'INSERT INTO'
+
+        fields = self._get_field_names()
+        scoped_name = self._get_scoped_name(self.table_name, self.database)
+
+        return'{0} {1} ({2})\n{3}'.format(
+            cmd, self.table_name
+        )
 
 
 def _mapd_input_signature(inputs):

@@ -224,13 +224,15 @@ class MapDTable(ir.TableExpr, DatabaseEntity):
         --------
         >>> t.insert(table_expr)  # doctest: +SKIP
         """
+        if values is not None:
+            raise NotImplementedError
+
         if isinstance(obj, pd.DataFrame):
-            raise NotImplemented('Pandas Dataframe input not implemented.')
+            from ibis.mapd.pandas_interop import write_temp_dataframe
+            writer, expr = write_temp_dataframe(self._client, obj)
         else:
             expr = obj
 
-        if values is not None:
-            raise NotImplementedError
 
         if validate:
             existing_schema = self.schema()
@@ -470,7 +472,8 @@ class MapDClient(SQLClient):
 
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
-                raise NotImplemented('Pandas Dataframe input not implemented.')
+                from ibis.mapd.pandas_interop import write_temp_dataframe
+                writer, to_insert = write_temp_dataframe(self._client, obj)
             else:
                 to_insert = obj
             ast = self._build_ast(to_insert, MapDDialect.make_context())
@@ -491,6 +494,51 @@ class MapDClient(SQLClient):
             raise com.IbisError('Must pass expr or schema')
 
         return self._execute(statement, False)
+
+    def delimited_file(
+        self, buf, schema, name=None, database=None, delimiter=',',
+        na_rep=None, escapechar=None, lineterminator=None, persist=False
+    ):
+        """
+        Interpret delimited text files (CSV / TSV / etc.) as an Ibis table. See
+        `parquet_file` for more exposition on what happens under the hood.
+
+        Parameters
+        ----------
+        schema : ibis Schema
+        name : string, default None
+          Name for temporary or persistent table; otherwise random one
+          generated
+        buf: buffer
+        database : string
+          Database to create the (possibly temporary) table in
+        delimiter : length-1 string, default ','
+          Pass None if there is no delimiter
+        escapechar : length-1 string
+          Character used to escape special characters
+        lineterminator : length-1 string
+          Character used to delimit lines
+        persist : boolean, default False
+          If True, do not delete the table upon garbage collection of ibis
+          table object
+
+        Returns
+        -------
+        delimited_table : MapDTable
+        """
+        name = name
+        database = database or self.db_name
+
+        stmt = ddl.CreateTableDelimited(
+            name, buf, schema,
+            database=database,
+            delimiter=delimiter,
+            na_rep=na_rep,
+            lineterminator=lineterminator,
+            escapechar=escapechar
+        )
+        self._execute(stmt)
+        return self._wrap_new_table(name, database, persist)
 
     def drop_table(self, table_name, database=None, force=False):
         """
@@ -602,8 +650,6 @@ class MapDClient(SQLClient):
         >>> table = 'my_table'
         >>> con.insert(table, table_expr)  # doctest: +SKIP
 
-        # Completely overwrite contents
-        >>> con.insert(table, table_expr, overwrite=True)  # doctest: +SKIP
         """
         table = self.table(table_name, database=database)
         return table.insert(
