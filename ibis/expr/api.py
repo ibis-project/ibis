@@ -2273,7 +2273,10 @@ _interval_value_methods = dict(
     rmul=_interval_rmul,
 
     __floordiv__=_interval_floordiv,
-    floordiv=_interval_floordiv
+    floordiv=_interval_floordiv,
+
+    __neg__=negate,
+    negate=negate,
 )
 
 _add_methods(ir.IntervalValue, _interval_value_methods)

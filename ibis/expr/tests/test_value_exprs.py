@@ -1286,3 +1286,19 @@ def test_nullable_column_propagated():
 
     s = t.b + t.f
     assert s.type().nullable is False
+
+
+@pytest.mark.parametrize(
+    'base_expr',
+    [
+        ibis.table([('interval_col', dt.Interval(unit='D'))]).interval_col,
+        ibis.second(42),
+    ]
+)
+def test_interval_negate(base_expr):
+    expr = -base_expr
+    expr2 = base_expr.negate()
+    expr3 = ibis.negate(base_expr)
+    assert isinstance(expr.op(), ops.Negate)
+    assert expr.equals(expr2)
+    assert expr.equals(expr3)
