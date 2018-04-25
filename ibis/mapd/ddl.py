@@ -1,7 +1,6 @@
 from ibis.sql.compiler import DDL, DML
 from .compiler import quote_identifier, _type_to_sql_string
 
-import ibis.expr.schema as sch
 import re
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
@@ -32,6 +31,29 @@ class MapDDML(DML, MapDQualifiedSQLStatement):
 
 class CreateDDL(MapDDDL):
     """Create DDL"""
+
+
+class DropObject(MapDDDL):
+    def __init__(self, must_exist=True):
+        self.must_exist = must_exist
+
+    def compile(self):
+        if_exists = '' if self.must_exist else 'IF EXISTS '
+        object_name = self._object_name()
+        return 'DROP {} {}{}'.format(self._object_type, if_exists, object_name)
+
+
+class DropTable(DropObject):
+
+    _object_type = 'TABLE'
+
+    def __init__(self, table_name, database=None, must_exist=True):
+        super(DropTable, self).__init__(must_exist=must_exist)
+        self.table_name = table_name
+        self.database = database
+
+    def _object_name(self):
+        return self._get_scoped_name(self.table_name, self.database)
 
 
 def _format_properties(props):
@@ -77,24 +99,50 @@ class CreateTable(CreateDDL):
 
 
 class CreateTableWithSchema(CreateTable):
-
-    def __init__(self, table_name, schema, **kwargs):
-        super(CreateTableWithSchema, self).__init__(table_name, **kwargs)
+    def __init__(
+        self, table_name, schema, database=None, fragment_size=None,
+        max_rows=None, page_size=None, partitions=None, shard_count=None
+    ):
+        self.table_name = table_name
+        self.database = database
         self.schema = schema
+        self.fragment_size = fragment_size
+        self.max_rows = max_rows
+        self.page_size = page_size
+        self.partitions = partitions
+        self.shard_count = shard_count
+
+    @property
+    def with_params(self):
+        return dict(
+            fragment_size=self.fragment_size,
+            max_rows=self.max_rows,
+            page_size=self.page_size,
+            partitions=self.partitions,
+            shard_count=self.shard_count
+        )
 
     @property
     def _pieces(self):
         yield format_schema(self.schema)
 
+        with_stmt = ','.join([
+            '{}={}'.format(i, "'{}'".format(v) if isinstance(v, str) else v)
+            for i, v in self.with_params.items() if v is not None
+        ])
+
+        if with_stmt:
+            yield ' WITH ({})'.format(with_stmt)
+
 
 class CTAS(CreateTable):
-
     """
     Create Table As Select
     """
 
     def __init__(self, table_name, select, database=None):
-        super(CTAS, self).__init__(table_name, database=database)
+        self.table_name = table_name
+        self.database = database
         self.select = select
 
     @property
@@ -108,8 +156,9 @@ class CTAS(CreateTable):
         yield ')'
 
 
-class CreateView(CTAS):
+# VIEW
 
+class CreateView(CTAS):
     """Create a view"""
 
     def __init__(self, table_name, select, database=None):
@@ -123,6 +172,10 @@ class CreateView(CTAS):
     @property
     def _prefix(self):
         return 'CREATE VIEW'
+
+
+class DropView(DropTable):
+    _object_type = 'VIEW'
 
 
 # USER
@@ -197,26 +250,6 @@ class DropUser(MapDDDL):
         return '\n'.join(self.pieces)
 
 
-class LoadData(MapDDDL):
-
-    """
-    Generate DDL for LOAD DATA command. Cannot be cancelled
-    """
-
-    def __init__(self, table_name, df, database=None):
-        self.table_name = table_name
-        self.database = database
-        self.df = df
-
-    def compile(self):
-        overwrite = 'OVERWRITE ' if self.overwrite else ''
-
-        return (
-            "LOAD DATA INPATH '{}' {}INTO TABLE {}"
-            .format(self.path, overwrite, self.table_name)
-        )
-
-
 class AlterTable(MapDDDL):
 
     def __init__(self, table, tbl_properties=None):
@@ -271,30 +304,6 @@ class RenameTable(AlterTable):
         return self._wrap_command(cmd)
 
 
-class DropObject(MapDDDL):
-
-    def __init__(self, must_exist=True):
-        self.must_exist = must_exist
-
-    def compile(self):
-        if_exists = '' if self.must_exist else 'IF EXISTS '
-        object_name = self._object_name()
-        return 'DROP {} {}{}'.format(self._object_type, if_exists, object_name)
-
-
-class DropTable(DropObject):
-
-    _object_type = 'TABLE'
-
-    def __init__(self, table_name, database=None, must_exist=True):
-        super(DropTable, self).__init__(must_exist=must_exist)
-        self.table_name = table_name
-        self.database = database
-
-    def _object_name(self):
-        return self._get_scoped_name(self.table_name, self.database)
-
-
 class TruncateTable(MapDDDL):
 
     _object_type = 'TABLE'
@@ -306,11 +315,6 @@ class TruncateTable(MapDDDL):
     def compile(self):
         name = self._get_scoped_name(self.table_name, self.database)
         return 'TRUNCATE TABLE {}'.format(name)
-
-
-class DropView(DropTable):
-
-    _object_type = 'VIEW'
 
 
 class CacheTable(MapDDDL):
