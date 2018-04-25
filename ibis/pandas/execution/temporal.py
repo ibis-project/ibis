@@ -89,12 +89,15 @@ def execute_timestamp_add_datetime_series(op, left, right, **kwargs):
 
 @execute_node.register(ops.IntervalAdd, datetime.timedelta, datetime.timedelta)
 def execute_interval_add_delta_delta(op, left, right, **kwargs):
-    return pd.Timedelta(left) + pd.Timedelta(right)
+    return op.op(pd.Timedelta(left), pd.Timedelta(right))
 
 
 @execute_node.register(ops.IntervalAdd, datetime.timedelta, pd.Series)
-def execute_interval_add_delta_series(op, left, right, **kwargs):
-    return pd.Timedelta(left) + right
+@execute_node.register(
+    ops.IntervalMultiply, datetime.timedelta, numeric_types + (pd.Series,)
+)
+def execute_interval_add_multiply_delta_series(op, left, right, **kwargs):
+    return op.op(pd.Timedelta(left), right)
 
 
 @execute_node.register(
@@ -144,24 +147,13 @@ def execute_timestamp_diff_series_datetime(op, left, right, **kwargs):
 @execute_node.register(
     ops.IntervalMultiply, pd.Series, numeric_types + (pd.Series,)
 )
-def execute_interval_multiply_series_numeric(op, left, right, **kwargs):
-    return left * right
-
-
-@execute_node.register(
-    ops.IntervalMultiply, datetime.timedelta, numeric_types + (pd.Series,)
-)
-def execute_interval_multiply_delta_numeric(op, left, right, **kwargs):
-    return pd.Timedelta(left) * right
-
-
 @execute_node.register(
     ops.IntervalFloorDivide,
     (pd.Timedelta, pd.Series),
     numeric_types + (pd.Series,)
 )
-def execute_interval_floor_divide(op, left, right, **kwargs):
-    return left // right
+def execute_interval_multiply_fdiv_series_numeric(op, left, right, **kwargs):
+    return op.op(left, right)
 
 
 @execute_node.register(ops.TimestampFromUNIX, (pd.Series,) + integer_types)

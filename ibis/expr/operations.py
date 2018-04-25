@@ -301,7 +301,7 @@ class TypeOf(UnaryOp):
 
 
 class Negate(UnaryOp):
-    arg = Arg(rlz.numeric)
+    arg = Arg(rlz.one_of((rlz.numeric(), rlz.interval())))
     output_type = rlz.typeof('arg')
 
 
@@ -665,9 +665,18 @@ class StringConcat(ValueOp):
 
 class ParseURL(ValueOp):
     arg = Arg(rlz.string)
-    extract = Arg(rlz.isin(['PROTOCOL', 'HOST', 'PATH',
-                            'REF', 'AUTHORITY', 'FILE',
-                            'USERINFO', 'QUERY']))
+    extract = Arg(
+        rlz.isin({
+            'PROTOCOL',
+            'HOST',
+            'PATH',
+            'REF',
+            'AUTHORITY',
+            'FILE',
+            'USERINFO',
+            'QUERY'
+        })
+    )
     key = Arg(rlz.string, default=None)
     output_type = rlz.shape_like('arg', dt.string)
 
@@ -2354,7 +2363,7 @@ class Date(UnaryOp):
 
 class TimestampFromUNIX(ValueOp):
     arg = Arg(rlz.any)
-    unit = Arg(rlz.isin(['s', 'ms', 'us']))
+    unit = Arg(rlz.isin({'s', 'ms', 'us'}))
     output_type = rlz.shape_like('arg', dt.timestamp)
 
 
@@ -2432,38 +2441,47 @@ class TimestampDiff(BinaryOp):
     output_type = rlz.shape_like('left', dt.Interval('s'))
 
 
-class IntervalAdd(BinaryOp):
+class IntervalBinaryOp(BinaryOp):
+    def output_type(self):
+        args = [
+            arg.cast(arg.type().value_type)
+            if isinstance(arg.type(), dt.Interval)
+            else arg for arg in self.args
+        ]
+        expr = rlz.numeric_like(args, self.__class__.op)(self)
+        left_dtype = self.left.type()
+        dtype_type = type(left_dtype)
+        additional_args = {
+            attr: getattr(left_dtype, attr) for attr in dtype_type.__slots__
+            if attr not in {'unit', 'value_type'}
+        }
+        dtype = dtype_type(left_dtype.unit, expr.type(), **additional_args)
+        return rlz.shape_like(self.args, dtype=dtype)
+
+
+class IntervalAdd(IntervalBinaryOp):
     left = Arg(rlz.interval)
     right = Arg(rlz.interval)
-
-    def output_type(self):
-        args = [arg.cast(arg.type().value_type) for arg in self.args]
-        expr = rlz.numeric_like(args, operator.add)(self)
-        dtype = dt.Interval(self.left.type().unit, expr.type())
-        return rlz.shape_like(self.args, dtype=dtype)
+    op = operator.add
 
 
-class IntervalMultiply(BinaryOp):
+class IntervalMultiply(IntervalBinaryOp):
     left = Arg(rlz.interval)
     right = Arg(rlz.numeric)
-
-    def output_type(self):
-        args = [self.left.cast(self.left.type().value_type), self.right]
-        expr = rlz.numeric_like(args, operator.mul)(self)
-        dtype = dt.Interval(self.left.type().unit, expr.type())
-        return rlz.shape_like(self.args, dtype=dtype)
+    op = operator.mul
 
 
-class IntervalFloorDivide(BinaryOp):
+class IntervalFloorDivide(IntervalBinaryOp):
     left = Arg(rlz.interval)
     right = Arg(rlz.numeric)
-    output_type = rlz.shape_like('left')
+    op = operator.floordiv
 
 
 class IntervalFromInteger(ValueOp):
     arg = Arg(rlz.integer)
-    unit = Arg(rlz.isin(['Y', 'Q', 'M', 'W', 'D',
-                         'h', 'm', 's', 'ms', 'us', 'ns']))
+    unit = Arg(rlz.isin({
+        'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'
+    }))
 
     @property
     def resolution(self):
