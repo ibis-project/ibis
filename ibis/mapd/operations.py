@@ -23,16 +23,19 @@ _mapd_unit_names = {
 }
 
 _sql_type_names = {
-    'int8': 'tinyint',
+    'int8': 'smallint',
     'int16': 'smallint',
     'int32': 'int',
     'int64': 'bigint',
     'float': 'float',
+    'float64': 'double',
     'double': 'double',
-    'string': 'string',
+    'string': 'text',
     'boolean': 'boolean',
     'timestamp': 'timestamp',
     'decimal': 'decimal',
+    'date': 'date',
+    'time': 'time',
 }
 
 

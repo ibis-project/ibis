@@ -208,14 +208,13 @@ class MapDTable(ir.TableExpr, DatabaseEntity):
     def truncate(self):
         self._client.truncate_table(self._qualified_name)
 
-    def insert(self, obj=None, values=None, validate=True):
+    def insert(self, obj=None, validate=True):
         """
         Insert into Impala table. Wraps ImpalaClient.insert
 
         Parameters
         ----------
         obj : TableExpr or pandas DataFrame
-        values: , Default None
         validate : boolean, default True
           If True, do more rigorous validation that schema of table being
           inserted is compatible with the existing table
@@ -224,42 +223,28 @@ class MapDTable(ir.TableExpr, DatabaseEntity):
         --------
         >>> t.insert(table_expr)  # doctest: +SKIP
         """
-        if values is not None:
-            raise NotImplementedError
+        if not isinstance(obj, pd.DataFrame):
+            raise NotImplementedError('{} input not implemented'.format(obj))
 
-        if isinstance(obj, pd.DataFrame):
-            raise NotImplemented('Pandas DataFrame not implemented')
-        else:
-            expr = obj
+        statement = ddl.InsertPandas(self._unqualified_name, obj)
 
-        if validate:
-            existing_schema = self.schema()
-            insert_schema = expr.schema()
-            if not insert_schema.equals(existing_schema):
-                _validate_compatible(insert_schema, existing_schema)
-
-        ast = build_ast(expr, MapDDialect.make_context())
-        select = ast.queries[0]
-        statement = ddl.InsertSelect(self._unqualified_name, select)
+        raise Exception(statement)
         return self._execute(statement)
 
-    def load_data(self, path, overwrite=False):
+    def load_data(self, df):
         """
-        Wraps the LOAD DATA DDL statement. Loads data into an MapD table by
-        physically moving data files.
+        Wraps the LOAD DATA DDL statement. Loads data into an MapD table from
+        pandas.DataFrame or pyarrow.Table
 
         Parameters
         ----------
-        path : string
-        overwrite : boolean, default False
-          Overwrite the existing data in the entire table or indicated
-          partition
+        df: pandas.DataFrame or pyarrow.Table
 
         Returns
         -------
         query : MapDQuery
         """
-        stmt = ddl.LoadData(self._qualified_name, path)
+        stmt = ddl.LoadData(self._qualified_name, df)
         return self._execute(stmt)
 
     @property
@@ -378,6 +363,9 @@ class MapDClient(SQLClient):
             port=port, dbname=database, protocol=protocol
         )
 
+    def __del__(self):
+        self.con.close()
+
     def log(self, msg):
         log(msg)
 
@@ -445,22 +433,21 @@ class MapDClient(SQLClient):
         if results:
             return result
 
-    def create_database(self, name, force=False, owner=None):
+    def create_database(self, name, owner=None):
         """
-        Create a new Impala database
+        Create a new MapD database
 
         Parameters
         ----------
         name : string
           Database name
-        force : bool, Default False
         """
         statement = ddl.CreateDatabase(name, owner=owner)
-        return self._execute(statement)
+        self._execute(statement)
 
     def drop_database(self, name, force=False):
         """
-        Drop an Impala database
+        Drop an MapD database
 
         Parameters
         ----------
@@ -481,10 +468,68 @@ class MapDClient(SQLClient):
                 'force=True'.format(name)
             )
         statement = ddl.DropDatabase(name)
-        return self._execute(statement)
+        self._execute(statement)
+
+    def create_user(self, name, password, is_super=False):
+        """
+        Create a new MapD user
+
+        Parameters
+        ----------
+        name : string
+          User name
+        password : string
+          Password
+        is_super : bool
+          if user is a superuser
+        """
+        statement = ddl.CreateUser(
+            name=name,
+            password=password,
+            is_super=is_super
+        )
+        self._execute(statement)
+
+    def alter_user(
+        self, name, password=None, is_super=None, insert_access=None
+    ):
+        """
+        Create a new MapD database
+
+        Parameters
+        ----------
+        name : string
+          User name
+        password : string
+          Password
+        is_super : bool
+          If user is a superuser
+        insert_access : string
+          If users need to insert records to a database they do not own,
+          use insert_access property to give them the required privileges.
+        """
+        statement = ddl.AlterUser(
+            name=name,
+            password=password,
+            is_super=is_super,
+            insert_access=insert_access
+        )
+        self._execute(statement)
+
+    def drop_user(self, name):
+        """
+        Drop an MapD user
+
+        Parameters
+        ----------
+        name : string
+          Database name
+        """
+        statement = ddl.DropUser(name)
+        self._execute(statement)
 
     def create_table(
-        self, table_name, obj=None, schema=None, database=None, force=False
+        self, table_name, obj=None, schema=None, database=None
     ):
         """
         Create a new table in MapD using an Ibis table expression.
@@ -498,13 +543,13 @@ class MapDClient(SQLClient):
           Mutually exclusive with expr, creates an empty table with a
           particular schema
         database : string, default None (optional)
-        force : boolean, default False
-          Do not create table if table with indicated name already exists
 
         Examples
         --------
         >>> con.create_table('new_table_name', table_expr)  # doctest: +SKIP
         """
+        _database = self.db_name
+        self.set_database(database)
 
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
@@ -517,64 +562,20 @@ class MapDClient(SQLClient):
 
             statement = ddl.CTAS(
                 table_name, select,
-                database=database,
-                can_exist=force,
+                database=database
             )
         elif schema is not None:
             statement = ddl.CreateTableWithSchema(
                 table_name, schema,
-                database=database,
-                can_exist=force,
+                database=database
             )
         else:
             raise com.IbisError('Must pass expr or schema')
 
-        return self._execute(statement, False)
+        result = self._execute(statement, False)
 
-    def delimited_file(
-        self, buf, schema, name=None, database=None, delimiter=',',
-        na_rep=None, escapechar=None, lineterminator=None, persist=False
-    ):
-        """
-        Interpret delimited text files (CSV / TSV / etc.) as an Ibis table. See
-        `parquet_file` for more exposition on what happens under the hood.
-
-        Parameters
-        ----------
-        schema : ibis Schema
-        name : string, default None
-          Name for temporary or persistent table; otherwise random one
-          generated
-        buf: buffer
-        database : string
-          Database to create the (possibly temporary) table in
-        delimiter : length-1 string, default ','
-          Pass None if there is no delimiter
-        escapechar : length-1 string
-          Character used to escape special characters
-        lineterminator : length-1 string
-          Character used to delimit lines
-        persist : boolean, default False
-          If True, do not delete the table upon garbage collection of ibis
-          table object
-
-        Returns
-        -------
-        delimited_table : MapDTable
-        """
-        name = name
-        database = database or self.db_name
-
-        stmt = ddl.CreateTableDelimited(
-            name, buf, schema,
-            database=database,
-            delimiter=delimiter,
-            na_rep=na_rep,
-            lineterminator=lineterminator,
-            escapechar=escapechar
-        )
-        self._execute(stmt)
-        return self._wrap_new_table(name, database, persist)
+        self.set_database(_database)
+        return result
 
     def drop_table(self, table_name, database=None, force=False):
         """
@@ -593,10 +594,14 @@ class MapDClient(SQLClient):
         >>> db = 'operations'
         >>> con.drop_table(table, database=db, force=True)  # doctest: +SKIP
         """
+        _database = self.db_name
+        self.set_database(database)
+
         statement = ddl.DropTable(
             table_name, database=database, must_exist=not force
         )
         self._execute(statement, False)
+        self.set_database(_database)
 
     def drop_view(self, name, database=None, force=False):
         """
@@ -669,7 +674,7 @@ class MapDClient(SQLClient):
             return self.database_class(name, new_client)
 
     def insert(
-        self, table_name, obj=None, database=None, values=None, validate=True
+        self, table_name, obj=None, database=None, validate=True
     ):
         """
         Insert into existing table.
@@ -689,10 +694,10 @@ class MapDClient(SQLClient):
         """
         table = self.table(table_name, database=database)
         return table.insert(
-            obj=obj, values=values, validate=validate
+            obj=obj, validate=validate
         )
 
-    def load_data(self, table_name, path, database=None, overwrite=False):
+    def load_data(self, table_name, df, database=None):
         """
         Wraps the LOAD DATA DDL statement. Loads data into an MapD table by
         physically moving data files.
@@ -700,22 +705,24 @@ class MapDClient(SQLClient):
         Parameters
         ----------
         table_name : string
+        df: pandas.DataFrame
         database : string, default None (optional)
         """
         table = self.table(table_name, database=database)
-        return table.load_data(path, overwrite=overwrite)
+        return table.load_data(df)
 
     @property
     def current_database(self):
         return self.db_name
 
     def set_database(self, name):
-        if self.db_name != name:
-            self.con = self.con = pymapd.connect(
+        if self.db_name != name and name is not None:
+            self.con = pymapd.connect(
                 uri=self.uri, user=self.user, password=self.password,
-                host=self.host, port=self.port, dbname=self.database,
+                host=self.host, port=self.port, dbname=name,
                 protocol=self.protocol
             )
+            self.db_name = name
 
     def exists_database(self, name):
         raise NotImplementedError()
@@ -739,7 +746,16 @@ class MapDClient(SQLClient):
         return bool(self.list_tables(like=name, database=database))
 
     def list_tables(self, like=None, database=None):
+        _database = None
+
+        if not self.db_name == database:
+            _database = self.db_name
+            self.set_database(database)
+
         tables = self.con.get_tables()
+
+        if _database:
+            self.set_database(_database)
 
         if like is None:
             return tables

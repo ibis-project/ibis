@@ -31,9 +31,7 @@ class MapDDML(DML, MapDQualifiedSQLStatement):
 
 
 class CreateDDL(MapDDDL):
-
-    def _if_exists(self):
-        return 'IF NOT EXISTS ' if self.can_exist else ''
+    """Create DDL"""
 
 
 def _format_properties(props):
@@ -45,30 +43,27 @@ def _format_properties(props):
 
 
 class CreateTable(CreateDDL):
-
     """
 
     Parameters
     ----------
-    partition :
-
+    table_name : str
+    database : str
     """
 
     def __init__(
-        self, table_name, database=None, can_exist=False, tbl_properties=None
+        self, table_name, database=None
     ):
         self.table_name = table_name
         self.database = database
-        self.can_exist = can_exist
-        self.tbl_properties = tbl_properties
 
     @property
     def _prefix(self):
         return 'CREATE TABLE'
 
     def _create_line(self):
-        return '{} {}{}'.format(
-            self._prefix, self._if_exists(), self.table_name
+        return '{} {}'.format(
+            self._prefix, self.table_name
         )
 
     @property
@@ -81,18 +76,25 @@ class CreateTable(CreateDDL):
         return '\n'.join(self.pieces)
 
 
+class CreateTableWithSchema(CreateTable):
+
+    def __init__(self, table_name, schema, **kwargs):
+        super(CreateTableWithSchema, self).__init__(table_name, **kwargs)
+        self.schema = schema
+
+    @property
+    def _pieces(self):
+        yield format_schema(self.schema)
+
+
 class CTAS(CreateTable):
 
     """
     Create Table As Select
     """
 
-    def __init__(
-        self, table_name, select, database=None, can_exist=False,
-    ):
-        super(CTAS, self).__init__(
-            table_name, database=database, can_exist=can_exist
-        )
+    def __init__(self, table_name, select, database=None):
+        super(CTAS, self).__init__(table_name, database=database)
         self.select = select
 
     @property
@@ -110,10 +112,8 @@ class CreateView(CTAS):
 
     """Create a view"""
 
-    def __init__(self, table_name, select, database=None, can_exist=False):
-        super(CreateView, self).__init__(
-            table_name, select, database=database, can_exist=can_exist
-        )
+    def __init__(self, table_name, select, database=None):
+        super(CreateView, self).__init__(table_name, select, database=database)
 
     @property
     def _pieces(self):
@@ -125,18 +125,88 @@ class CreateView(CTAS):
         return 'CREATE VIEW'
 
 
+# USER
+
+class AlterUser(MapDDDL):
+    """Create user"""
+
+    def __init__(
+        self, name, password=None, database=None, is_super=False,
+        insert_access=None
+    ):
+        self.name = name
+        self.password = password
+        self.database = database
+        self.is_super = is_super
+        self.insert_access = insert_access
+
+    @property
+    def _params(self):
+        if self.password is not None:
+            yield "  password='{}'".format(self.password)
+
+        if self.is_super is not None:
+            yield "  is_super='{}'".format(
+                'true' if self.is_super else 'false'
+            )
+        if self.insert_access:
+            yield "  INSERTACCESS='{}'".format(self.insert_access)
+
+    @property
+    def pieces(self):
+        yield 'ALTER USER {} ('.format(self.name)
+        yield ','.join(self._params)
+        yield ')'
+
+    def compile(self):
+        return '\n'.join(self.pieces)
+
+
+class CreateUser(MapDDDL):
+    """Create user"""
+
+    def __init__(self, name, password, database=None, is_super=False):
+        self.name = name
+        self.password = password
+        self.database = database
+        self.is_super = is_super
+
+    @property
+    def pieces(self):
+        yield 'CREATE USER {} ('.format(self.name)
+        yield "  password='{}',".format(self.password)
+        yield "  is_super='{}'".format('true' if self.is_super else 'false')
+        yield ')'
+
+    def compile(self):
+        return '\n'.join(self.pieces)
+
+
+class DropUser(MapDDDL):
+    """Create user"""
+
+    def __init__(self, name, database=None):
+        self.name = name
+        self.database = database
+
+    @property
+    def pieces(self):
+        yield 'DROP USER {}'.format(self.name)
+
+    def compile(self):
+        return '\n'.join(self.pieces)
+
+
 class LoadData(MapDDDL):
 
     """
     Generate DDL for LOAD DATA command. Cannot be cancelled
     """
 
-    def __init__(
-            self, table_name, path, database=None, overwrite=False):
+    def __init__(self, table_name, df, database=None):
         self.table_name = table_name
         self.database = database
-        self.path = path
-        self.overwrite = overwrite
+        self.df = df
 
     def compile(self):
         overwrite = 'OVERWRITE ' if self.overwrite else ''
@@ -288,14 +358,16 @@ class DropDatabase(DropObject):
 
 
 def format_schema(schema):
-    elements = [_format_schema_element(name, t)
-                for name, t in zip(schema.names, schema.types)]
+    elements = [
+        _format_schema_element(name, t)
+        for name, t in zip(schema.names, schema.types)
+    ]
     return '({})'.format(',\n '.join(elements))
 
 
 def _format_schema_element(name, t):
     return '{} {}'.format(
-        quote_identifier(name, force=True), _type_to_sql_string(t)
+        quote_identifier(name, force=False), _type_to_sql_string(t)
     )
 
 
@@ -310,17 +382,35 @@ class InsertPandas(MapDDML):
             self.df.reset_index(inplace=True)
 
     def _get_field_names(self):
-        return self.df.keys()
+        return ','.join(self.df.columns)
 
-    def compile(self):
+    def _get_value(self, v):
+        if isinstance(v, str):
+            return "'{}'".format(v)
+        elif v is None:
+            return 'NULL'
+        else:
+            return '{}'.format(v)
+
+    def _get_field_values(self):
+        for i, row in self.df[self.df.columns].iterrows():
+            yield [self._get_value(v) for v in row]
+
+    @property
+    def pieces(self):
         cmd = 'INSERT INTO'
 
         fields = self._get_field_names()
-        scoped_name = self._get_scoped_name(self.table_name, self.database)
 
-        return'{0} {1} ({2})\n{3}'.format(
-            cmd, self.table_name
+        stmt = '{0} {1} ({2}) VALUES '.format(
+            cmd, self.table_name, fields
         )
+
+        for values in self._get_field_values():
+            yield '{} ({});'.format(stmt, ','.join(values))
+
+    def compile(self):
+        return '\n'.join(self.pieces)
 
 
 def _mapd_input_signature(inputs):
