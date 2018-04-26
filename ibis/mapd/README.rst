@@ -362,7 +362,7 @@ New implementations on `ibis` core:
 Issues appointed:
 
 - `Ibis` `CASE` statement wasn't allowing input and output with different types (https://github.com/ibis-project/ibis/issues/93 )
-- At this time, no all MapD `date parts` are available on `ibis` (https://github.com/ibis-project/ibis/issues/1430 )
+- At this time, not all MapD `date parts` are available on `ibis` (https://github.com/ibis-project/ibis/issues/1430 )
 
 
 Pull Requests:
