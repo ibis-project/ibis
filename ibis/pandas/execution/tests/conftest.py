@@ -53,6 +53,11 @@ def df():
 
 
 @pytest.fixture(scope='module')
+def time_df(df):
+    return df.set_index('plain_datetimes_naive')
+
+
+@pytest.fixture(scope='module')
 def batting_df():
     path = os.path.join(
         os.environ.get('IBIS_TEST_DATA_DIRECTORY', ''),
@@ -136,7 +141,8 @@ def time_keyed_df2():
 
 @pytest.fixture(scope='module')
 def client(
-    df, df1, df2, df3, time_df1, time_df2, time_keyed_df1, time_keyed_df2
+    df, df1, df2, df3, time_df1, time_df2, time_keyed_df1, time_keyed_df2,
+    time_df
 ):
     return ibis.pandas.connect(
         dict(
@@ -149,7 +155,8 @@ def client(
             time_df1=time_df1,
             time_df2=time_df2,
             time_keyed_df1=time_keyed_df1,
-            time_keyed_df2=time_keyed_df2
+            time_keyed_df2=time_keyed_df2,
+            time_df=time_df
         )
     )
 
@@ -168,6 +175,19 @@ def df3():
 def t(client):
     return client.table(
         'df',
+        schema={
+            'decimal': dt.Decimal(4, 3),
+            'array_of_float64': dt.Array(dt.double),
+            'array_of_int64': dt.Array(dt.int64),
+            'array_of_strings': dt.Array(dt.string),
+        }
+    )
+
+
+@pytest.fixture(scope='module')
+def time_t(client):
+    return client.table(
+        'time_df',
         schema={
             'decimal': dt.Decimal(4, 3),
             'array_of_float64': dt.Array(dt.double),

@@ -92,8 +92,6 @@ def test_nullable():
     assert nullable(t.a.type()) == (type(None),)
 
 
-@pytest.mark.xfail(
-    raises=AssertionError, reason='Nullability is not propagated')
 def test_nullable_non_nullable_field():
     t = ibis.table([('a', dt.String(nullable=False))])
     assert nullable(t.a.type()) == ()

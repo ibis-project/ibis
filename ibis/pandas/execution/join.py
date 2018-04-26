@@ -4,7 +4,8 @@ import pandas as pd
 
 import ibis.expr.operations as ops
 
-from ibis.pandas.dispatch import execute, execute_node
+from ibis.pandas.dispatch import execute_node
+from ibis.pandas.core import execute
 from ibis.pandas.execution import constants
 
 

@@ -128,10 +128,10 @@ Ibis
     >>> window = ibis.cumulative_window(order_by=t.time)
     >>> t.value.sum().over(window)  # doctest: +SKIP
 
-Trailing
-~~~~~~~~
+Moving
+~~~~~~
 
-Also called rolling.
+Also called referred to as "rolling" in other libraries such as pandas.
 
 SQL
 
@@ -217,6 +217,14 @@ import operator
 
 import six
 
+from multipledispatch import Dispatcher
+
+import pandas as pd
+
+import ibis
+import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AggregationContext(object):
@@ -259,6 +267,25 @@ class Transform(AggregationContext):
         return grouped_data.transform(function, *args, **kwargs)
 
 
+compute_window_spec = Dispatcher('compute_window_spec')
+
+
+@compute_window_spec.register(ir.Expr, dt.Interval)
+def compute_window_spec_interval(expr, dtype):
+    value = ibis.pandas.execute(expr)
+    return pd.tseries.frequencies.to_offset(value)
+
+
+@compute_window_spec.register(ir.Expr, dt.DataType)
+def compute_window_spec_expr(expr, _):
+    return ibis.pandas.execute(expr)
+
+
+@compute_window_spec.register(object, type(None))
+def compute_window_spec_default(obj, _):
+    return obj
+
+
 class Window(AggregationContext):
 
     __slots__ = 'construct_window',
@@ -282,9 +309,11 @@ class Window(AggregationContext):
         try:
             method = self.short_circuit_method(grouped_data, function)
         except AttributeError:
-            method = getattr(self.construct_window(grouped_data), function)
+            window = self.construct_window(grouped_data)
+            method = getattr(window, function)
 
-        return method(*args, **kwargs)
+        result = method(*args, **kwargs)
+        return result
 
 
 class Cumulative(Window):
@@ -298,14 +327,14 @@ class Cumulative(Window):
         return getattr(grouped_data, 'cum{}'.format(function))
 
 
-class Trailing(Window):
+class Moving(Window):
 
     __slots__ = ()
 
-    def __init__(self, *args, **kwargs):
-        super(Trailing, self).__init__('rolling', *args, **kwargs)
+    def __init__(self, preceding, *args, **kwargs):
+        dtype = getattr(preceding, 'type', lambda: None)()
+        preceding = compute_window_spec(preceding, dtype)
+        super(Moving, self).__init__('rolling', preceding, *args, **kwargs)
 
     def short_circuit_method(self, grouped_data, function):
-        raise AttributeError(
-            'No short circuit method for rolling operations'
-        )
+        raise AttributeError('No short circuit method for rolling operations')
