@@ -343,6 +343,13 @@ class MapDClient(SQLClient):
     def __del__(self):
         self.close()
 
+    def __enter__(self, **kwargs):
+        self.__dict__.update(**kwargs)
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
     def log(self, msg):
         log(msg)
 
