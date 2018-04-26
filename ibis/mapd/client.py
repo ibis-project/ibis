@@ -530,7 +530,7 @@ class MapDClient(SQLClient):
         database : string, default None
         """
         statement = ddl.DropView(name, database=database)
-        self._execute(statement)
+        self._execute(statement, False)
 
     def create_table(
         self, table_name, obj=None, schema=None, database=None,
@@ -644,22 +644,6 @@ class MapDClient(SQLClient):
         """
         statement = ddl.TruncateTable(table_name, database=database)
         self._execute(statement, False)
-
-    def drop_view(self, name, database=None, force=False):
-        """
-        Drop an MapD view
-
-        Parameters
-        ----------
-        name : string
-        database : string, default None
-        force : boolean, default False
-          Database may throw exception if table does not exist
-        """
-        statement = ddl.DropView(
-            name, database=database, must_exist=not force
-        )
-        return self._execute(statement, False)
 
     def drop_table_or_view(self, name, database=None, force=False):
         """
