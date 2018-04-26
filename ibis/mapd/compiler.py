@@ -1,5 +1,7 @@
 from six import StringIO
 from . import operations as mapd_ops
+from .identifiers import quote_identifier  # noqa: F401
+from .operations import _type_to_sql_string  # noqa: F401
 
 import ibis.common as com
 import ibis.util as util
