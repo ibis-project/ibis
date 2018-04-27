@@ -159,8 +159,8 @@ class TableNode(Node):
     def get_type(self, name):
         return self.schema[name]
 
-    def _make_expr(self):
-        return ir.TableExpr(self)
+    def output_type(self):
+        return ir.TableExpr
 
     def aggregate(self, this, metrics, by=None, having=None):
         return Aggregation(this, metrics, by=by, having=having)

@@ -97,3 +97,17 @@ def test_array_input():
     result = op.value
     expected = ibis.literal(raw_value)
     assert result.equals(expected)
+
+
+def test_custom_table_expr():
+    class MyTableExpr(ir.TableExpr):
+        pass
+
+    class SpecialTable(ops.DatabaseTable):
+        def output_type(self):
+            return MyTableExpr
+
+    con = ibis.pandas.connect({})
+    node = SpecialTable('foo', ibis.schema([('a', 'int64')]), con)
+    expr = node.to_expr()
+    assert isinstance(expr, MyTableExpr)
