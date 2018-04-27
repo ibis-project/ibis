@@ -3,7 +3,7 @@ import os
 import pytest
 
 
-MAPD_HOST = os.environ.get('IBIS_TEST_MAPD_HOST', 'localhost')
+MAPD_HOST = os.environ.get('IBIS_TEST_MAPD_HOST', '34.207.244.142')
 MAPD_PORT = int(os.environ.get('IBIS_TEST_MAPD_PORT', 9091))
 MAPD_USER = os.environ.get('IBIS_TEST_MAPD_USER', 'mapd')
 MAPD_PASS = os.environ.get('IBIS_TEST_MAPD_PASSWORD', 'HyperInteractive')

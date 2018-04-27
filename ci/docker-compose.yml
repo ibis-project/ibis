@@ -8,16 +8,6 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
 
-  mapd:
-    image: mapd/mapd-ce-cpu
-    ports:
-      - 9090-9093:9090-9093
-    environment:
-      - MAPD_HOST=mapd
-      - MAPD_PORT=9091
-      - MAPD_DATABASE=mapd
-      - MAPD_USER=mapd
-
   mysql:
     image: mariadb:10.2
     ports:
@@ -62,8 +52,7 @@ services:
   waiter:
     image: jwilder/dockerize
     command: |
-      dockerize -wait tcp://mapd:9091
-                -wait tcp://mysql:3306
+      dockerize -wait tcp://mysql:3306
                 -wait tcp://postgres:5432
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070
@@ -95,7 +84,7 @@ services:
       - IBIS_TEST_CLICKHOUSE_HOST=clickhouse
       - IBIS_TEST_CLICKHOUSE_PORT=9000
       - IBIS_TEST_CLICKHOUSE_DATABASE=ibis_testing
-      - IBIS_TEST_MAPD_HOST=mapd
+      - IBIS_TEST_MAPD_HOST=34.207.244.142
       - IBIS_TEST_MAPD_PORT=9091
       - IBIS_TEST_MAPD_DATABASE=mapd
       - IBIS_TEST_MAPD_USER=mapd
