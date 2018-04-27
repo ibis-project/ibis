@@ -7,7 +7,6 @@ import tarfile
 
 import pandas as pd
 import sqlalchemy as sa
-import pymapd
 
 from toolz import dissoc
 from plumbum import local
@@ -190,7 +189,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 
 
 @cli.command()
-@click.option('-h', '--host', default='localhost')
+@click.option('-h', '--host', default='34.207.244.142')
 @click.option('-P', '--port', default=9091, type=int)
 @click.option('-u', '--user', default='mapd')
 @click.option('-p', '--password', default='HyperInteractive')
@@ -200,31 +199,141 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def mapd(schema, tables, data_directory, **params):
+    import pymapd
+    import numpy as np
+
     data_directory = Path(data_directory)
-    click.echo('Initializing MapD...')
+
+    int_na = -9999
+
+    table_dtype = dict(
+        functional_alltypes=dict(
+            index=np.int64,
+            Unnamed_=np.int64,
+            id=np.int32,
+            bool_col=np.bool,
+            tinyint_col=np.int16,
+            smallint_col=np.int16,
+            int_col=np.int32,
+            bigint_col=np.int64,
+            float_col=np.float32,
+            double_col=np.float64,
+            date_string_col=str,
+            string_col=str,
+            # timestamp_col=pd.datetime,
+            year_=np.int32,
+            month_=np.int32
+        ),
+        diamonds=dict(
+            carat=np.float32,
+            cut=str,
+            color=str,
+            clarity=str,
+            depth=np.float32,
+            table_=np.float32,
+            price=np.int64,
+            x=np.float32,
+            y=np.float32,
+            z=np.float32
+        ),
+        batting=dict(
+            playerID=str,
+            yearID=np.int64,
+            stint=np.int64,
+            teamID=str,
+            lgID=str,
+            G=np.int64,
+            AB=np.int64,
+            R=np.int64,
+            H=np.int64,
+            X2B=np.int64,
+            X3B=np.int64,
+            HR=np.int64,
+            RBI=np.int64,
+            SB=np.int64,
+            CS=np.int64,
+            BB=np.int64,
+            SO=np.int64,
+            IBB=np.int64,
+            HBP=np.int64,
+            SH=np.int64,
+            SF=np.int64,
+            GIDP=np.int64
+        ),
+        awards_players=dict(
+            playerID=str,
+            awardID=str,
+            yearID=np.int64,
+            lgID=str,
+            tie=str,
+            notes=str
+        )
+    )
+
+    table_import_args = dict(
+        functional_alltypes=dict(
+            parse_dates=['timestamp_col']
+        ),
+        diamonds={},
+        batting={},
+        awards_players={}
+
+    )
+
+    table_rename = dict(
+        functional_alltypes={
+            'Unnamed_': 'Unnamed: 0'
+        },
+        diamonds={},
+        batting={},
+        awards_players={}
+    )
 
     # connection
+    click.echo('Initializing MapD...')
     conn = pymapd.connect(
         host=params['host'], user=params['user'],
         password=params['password'],
         port=params['port'], dbname=params['database']
     )
 
-    # create database
+    # drop tables if exist
+    for table in tables:
+        try:
+            conn.execute('DROP TABLE {}'.format(table))
+        except Exception as e:
+            click.echo('[WW] {}'.format(str(e)))
+    click.echo('[II] Dropping tables ... OK')
+
+    # create tables
     for stmt in schema.read().split(';'):
         stmt = stmt.strip()
         if len(stmt):
             conn.execute(stmt)
+    click.echo('[II] Creating tables ... OK')
 
     # import data
-    query = 'COPY {} FROM \'{}\' WITH(delimiter=\',\', header=\'true\')'
-
-    click.echo('Loading data ...')
+    click.echo('[II] Loading data ...')
     for table in tables:
         src = data_directory / '{}.csv'.format(table)
-        click.echo(src)
-        conn.execute(query.format(table, src))
+        click.echo('[II] src: {}'.format(src))
+        df = pd.read_csv(src, delimiter=',', **table_import_args[table])
+
+        # prepare data frame data type
+        for column, dtype in table_dtype[table].items():
+            if column.endswith('_'):
+                if column in table_rename[table]:
+                    df_col = table_rename[table][column]
+                else:
+                    df_col = column[:-1]
+                df.rename(columns={df_col: column}, inplace=True)
+            if np.issubdtype(dtype, int):
+                df[column].fillna(int_na, inplace=True)
+            df[column] = df[column].astype(dtype)
+        conn.load_table_columnar(table, df)
     conn.close()
+
+    click.echo('[II] Done!')
 
 
 @cli.command()
