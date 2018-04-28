@@ -49,6 +49,18 @@ services:
       - 8123:8123
       - 9000:9000
 
+  mapd:
+    image: mapd/mapd-ce-cpu
+    ports:
+      - 9090:9090
+      - 9091:909
+      - 9092:9092
+    environment:
+      - MAPD_HOST=mapd
+      - MAPD_PORT=9091
+      - MAPD_DATABASE=mapd
+      - MAPD_USER=mapd
+
   waiter:
     image: jwilder/dockerize
     command: |
@@ -57,6 +69,7 @@ services:
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070
                 -wait tcp://clickhouse:9000
+                -wait tcp://mapd:9091
                 -wait-retry-interval 5s
                 -timeout 5m
 
@@ -84,7 +97,7 @@ services:
       - IBIS_TEST_CLICKHOUSE_HOST=clickhouse
       - IBIS_TEST_CLICKHOUSE_PORT=9000
       - IBIS_TEST_CLICKHOUSE_DATABASE=ibis_testing
-      - IBIS_TEST_MAPD_HOST=34.207.244.142
+      - IBIS_TEST_MAPD_HOST=mapd
       - IBIS_TEST_MAPD_PORT=9091
       - IBIS_TEST_MAPD_DATABASE=mapd
       - IBIS_TEST_MAPD_USER=mapd
