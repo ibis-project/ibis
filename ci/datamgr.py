@@ -189,7 +189,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 
 
 @cli.command()
-@click.option('-h', '--host', default='34.207.244.142')
+@click.option('-h', '--host', default='localhost')
 @click.option('-P', '--port', default=9091, type=int)
 @click.option('-u', '--user', default='mapd')
 @click.option('-p', '--password', default='HyperInteractive')
