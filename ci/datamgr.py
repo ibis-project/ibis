@@ -291,6 +291,18 @@ def mapd(schema, tables, data_directory, **params):
 
     # connection
     click.echo('Initializing MapD...')
+    if params['database'] != 'mapd':
+        conn = pymapd.connect(
+            host=params['host'], user=params['user'],
+            password=params['password'],
+            port=params['port'], dbname='mapd'
+        )
+        try:
+            conn.execute('CREATE DATABASE {}'.format(params['database']))
+        except Exception as e:
+            click.echo(e)
+        conn.close()
+
     conn = pymapd.connect(
         host=params['host'], user=params['user'],
         password=params['password'],
