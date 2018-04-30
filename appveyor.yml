@@ -27,6 +27,12 @@ environment:
   IBIS_TEST_MYSQL_PASSWORD: "Password12!"
   IBIS_TEST_MYSQL_DATABASE: "ibis_testing"
 
+  IBIS_TEST_MAPD_HOST: "localhost"
+  IBIS_TEST_MAPD_PORT: "9091"
+  IBIS_TEST_MAPD_USER: "mapd"
+  IBIS_TEST_MAPD_PASSWORD: "mapd"
+  IBIS_TEST_MAPD_DATABASE: "ibis_testing"
+
   IBIS_TEST_SQLITE_DATABASE: "%USERPROFILE%\\ibis_testing.db"
 
   CONDA: "C:\\Miniconda36-x64\\Scripts\\conda"
@@ -49,9 +55,9 @@ test_script:
   - "%CONDA% config --set always_yes true"
   - "%CONDA% create --name \"ibis_%PYTHON_VERSION%\" python=%PYTHON_VERSION% --channel conda-forge"
   - "%ACTIVATE% \"ibis_%PYTHON_VERSION%\""
-  - "%CONDA% install --channel conda-forge pytables numpy sqlalchemy psycopg2 graphviz click mock plumbum flake8 pytest"
+  - "%CONDA% install --channel conda-forge pytables numpy sqlalchemy psycopg2 pymapd graphviz click mock plumbum flake8 pytest"
   - "%CONDA% list"
-  - "pip install -e .\"[sqlite, postgres, mysql, visualization, pandas, csv, hdf5]\""
+  - "pip install -e .\"[sqlite, postgres, mysql, visualization, pandas, csv, hdf5, mapd]\""
 
   - "flake8"
 
@@ -60,4 +66,5 @@ test_script:
   - "python ci\\datamgr.py mysql"
   - "python ci\\datamgr.py sqlite"
   - "python ci\\datamgr.py postgres"
+  - "python ci\\datamgr.py mapd"
   - "pytest --tb=short -m \"not backend and not clickhouse and not impala and not hdfs and not bigquery\" -rs ibis"
