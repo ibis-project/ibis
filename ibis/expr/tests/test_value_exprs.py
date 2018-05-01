@@ -1302,3 +1302,10 @@ def test_interval_negate(base_expr):
     assert isinstance(expr.op(), ops.Negate)
     assert expr.equals(expr2)
     assert expr.equals(expr3)
+
+
+def test_large_timestamp():
+    expr = ibis.timestamp('4567-02-03')
+    expected = datetime(year=4567, month=2, day=3)
+    result = expr.op().value
+    assert result == expected
