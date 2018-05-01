@@ -193,7 +193,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-P', '--port', default=9091, type=int)
 @click.option('-u', '--user', default='mapd')
 @click.option('-p', '--password', default='HyperInteractive')
-@click.option('-D', '--database', default='mapd')
+@click.option('-D', '--database', default='ibis_testing')
 @click.option('-S', '--schema', type=click.File('rt'),
               default=str(SCRIPT_DIR / 'schema' / 'mapd.sql'))
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
@@ -290,6 +290,7 @@ def mapd(schema, tables, data_directory, **params):
     )
 
     # connection
+    print(params)
     click.echo('Initializing MapD...')
     if params['database'] != 'mapd':
         conn = pymapd.connect(
@@ -302,7 +303,7 @@ def mapd(schema, tables, data_directory, **params):
         try:
             conn.execute('CREATE DATABASE {}'.format(params['database']))
         except Exception as e:
-            click.echo(e)
+            click.echo('[MAPD|WW]{}'.format(e))
         conn.close()
 
     conn = pymapd.connect(
@@ -316,21 +317,24 @@ def mapd(schema, tables, data_directory, **params):
         try:
             conn.execute('DROP TABLE {}'.format(table))
         except Exception as e:
-            click.echo('[WW] {}'.format(str(e)))
-    click.echo('[II] Dropping tables ... OK')
+            click.echo('[MAPD|WW] {}'.format(str(e)))
+    click.echo('[MAPD|II] Dropping tables ... OK')
 
     # create tables
     for stmt in schema.read().split(';'):
         stmt = stmt.strip()
         if len(stmt):
-            conn.execute(stmt)
-    click.echo('[II] Creating tables ... OK')
+            try:
+                conn.execute(stmt)
+            except Exception as e:
+                click.echo('[MAPD|WW] {}'.format(str(e)))
+    click.echo('[MAPD|II] Creating tables ... OK')
 
     # import data
-    click.echo('[II] Loading data ...')
+    click.echo('[MAPD|II] Loading data ...')
     for table in tables:
         src = data_directory / '{}.csv'.format(table)
-        click.echo('[II] src: {}'.format(src))
+        click.echo('[MAPD|II] src: {}'.format(src))
         df = pd.read_csv(src, delimiter=',', **table_import_args[table])
 
         # prepare data frame data type
@@ -347,7 +351,7 @@ def mapd(schema, tables, data_directory, **params):
         conn.load_table_columnar(table, df)
     conn.close()
 
-    click.echo('[II] Done!')
+    click.echo('[MAPD|II] Done!')
 
 
 @cli.command()

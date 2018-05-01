@@ -7,7 +7,7 @@ MAPD_HOST = os.environ.get('IBIS_TEST_MAPD_HOST', 'localhost')
 MAPD_PORT = int(os.environ.get('IBIS_TEST_MAPD_PORT', 9091))
 MAPD_USER = os.environ.get('IBIS_TEST_MAPD_USER', 'mapd')
 MAPD_PASS = os.environ.get('IBIS_TEST_MAPD_PASSWORD', 'HyperInteractive')
-MAPD_DB = os.environ.get('IBIS_TEST_DATA_DB', 'mapd')
+MAPD_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 
 @pytest.fixture(scope='module')
