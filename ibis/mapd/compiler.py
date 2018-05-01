@@ -2,9 +2,11 @@ from six import StringIO
 from . import operations as mapd_ops
 from .identifiers import quote_identifier  # noqa: F401
 from .operations import _type_to_sql_string  # noqa: F401
+from ibis.expr.api import _add_methods, _unary_op, _binop_expr
 
 import ibis.common as com
 import ibis.util as util
+import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as compiles
 
@@ -194,3 +196,25 @@ compiles = MapDExprTranslator.compiles
 rewrites = MapDExprTranslator.rewrites
 
 compiles(ops.Distance, mapd_ops.distance)
+
+mapd_reg = mapd_ops._operation_registry
+
+_add_methods(
+    ir.NumericValue, dict(
+        conv_4326_900913_x=_unary_op(
+            'conv_4326_900913_x', mapd_ops.Conv_4326_900913_X
+        ),
+        conv_4326_900913_y=_unary_op(
+            'conv_4326_900913_y', mapd_ops.Conv_4326_900913_Y
+        ),
+        truncate=_binop_expr(
+            'truncate', mapd_ops.NumericTruncate
+        )
+    )
+)
+
+
+@rewrites(ops.HLLCardinality)
+def _approx_count_distinct(expr):
+    left, right = expr.op().args
+    return left.div(right).floor()

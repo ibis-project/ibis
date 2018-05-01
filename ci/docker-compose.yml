@@ -53,12 +53,11 @@ services:
     image: mapd/mapd-ce-cpu
     ports:
       - 9090:9090
-      - 9091:909
-      - 9092:9092
+      - 9091:9091
     environment:
       - MAPD_HOST=mapd
       - MAPD_PORT=9091
-      - MAPD_DATABASE=mapd
+      - MAPD_DATABASE=ibis_testing
       - MAPD_USER=mapd
 
   waiter:
@@ -69,6 +68,7 @@ services:
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070
                 -wait tcp://clickhouse:9000
+                -wait tcp://mapd:9091
                 -wait-retry-interval 5s
                 -timeout 5m
 
@@ -98,7 +98,7 @@ services:
       - IBIS_TEST_CLICKHOUSE_DATABASE=ibis_testing
       - IBIS_TEST_MAPD_HOST=mapd
       - IBIS_TEST_MAPD_PORT=9091
-      - IBIS_TEST_MAPD_DATABASE=mapd
+      - IBIS_TEST_MAPD_DATABASE=ibis_testing
       - IBIS_TEST_MAPD_USER=mapd
       - IBIS_TEST_MAPD_PASSWORD=HyperInteractive
       - GOOGLE_BIGQUERY_PROJECT_ID=ibis-gbq

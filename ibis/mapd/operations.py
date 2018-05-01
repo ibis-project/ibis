@@ -480,8 +480,6 @@ class ApproxCountDistinct(ops.Reduction):
     where = ops.Arg(rlz.boolean, default=None)
 
     def output_type(self):
-        # Impala 2.0 and higher returns a DOUBLE
-        # return ir.DoubleScalar
         return ops.partial(ir.IntegerScalar, dtype=ops.dt.int64)
 
 
@@ -580,17 +578,20 @@ _trigonometric_ops = {
     ops.Tan: unary('tan')
 }
 
+# GEOMETRIC
 _geometric_ops = {
     Conv_4326_900913_X: unary('conv_4326_900913_x'),
     Conv_4326_900913_Y: unary('conv_4326_900913_y')
 }
 
+# STRING
 _string_ops = {
     ops.StringLength: _length(),
     ByteLength: _length('byte_length', 'LENGTH'),
     ops.StringSQLILike: binary_infix_op('ilike'),
 }
 
+# DATE
 _date_ops = {
     ops.Date: unary('toDate'),
     ops.DateTruncate: _timestamp_truncate,
@@ -613,12 +614,13 @@ _date_ops = {
     ops.TimestampSub: _timestamp_op('TIMESTAMPADD', '-'),
 }
 
-
+# AGGREGATION/REDUCTION
 _agg_ops = {
     ApproxCountDistinct: approx_count_distinct,
     ops.DistinctColumn: unary_prefix_op('distinct'),
 }
 
+# GENERAL
 _general_ops = {
     ops.Literal: literal,
     ops.ValueList: _value_list,
@@ -640,18 +642,3 @@ _operation_registry.update(_geometric_ops)
 _operation_registry.update(_string_ops)
 _operation_registry.update(_date_ops)
 _operation_registry.update(_agg_ops)
-
-
-# numeric operations
-_add_methods(ir.NumericValue, _trigonometric_ops, forced=True)
-_add_methods(ir.NumericValue, _math_ops, forced=True)
-_add_methods(ir.NumericValue, _geometric_ops, forced=True)
-_add_methods(ir.NumericValue, _stats_ops, forced=False)
-_add_methods(ir.ColumnExpr, _agg_ops, forced=True)
-
-# string operations
-_add_methods(ir.StringValue, _string_ops, forced=True)
-
-# date/time/timestamp operations
-_add_methods(ir.TimestampColumn, _date_ops, forced=True)
-_add_methods(ir.DateColumn, _date_ops, forced=True)
