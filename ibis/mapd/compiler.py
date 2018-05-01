@@ -213,8 +213,8 @@ _add_methods(
     )
 )
 
-
-@rewrites(ops.HLLCardinality)
-def _approx_count_distinct(expr):
-    left, right = expr.op().args
-    return left.div(right).floor()
+_add_methods(
+    ir.StringValue, dict(
+        byte_length=_unary_op('length', mapd_ops.ByteLength)
+    )
+)
