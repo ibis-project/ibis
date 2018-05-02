@@ -181,6 +181,25 @@ class Postgres(Backend):
                                      database=database)
 
 
+class MapD(Backend):
+    check_dtype = False
+    check_names = False
+    supports_window_operations = False
+    additional_skipped_operations = frozenset()
+    supports_divide_by_zero = False
+    returned_timestamp_unit = 's'
+
+    def connect(self, data_directory):
+        user = os.environ.get('IBIS_TEST_MAPD_USER', 'mapd')
+        password = os.environ.get(
+            'IBIS_TEST_MAPD_PASSWORD', 'HyperInteractive')
+        host = os.environ.get('IBIS_TEST_MAPD_HOST', 'localhost')
+        database = os.environ.get('IBIS_TEST_MAPD_DATABASE', 'ibis_testing')
+        return ibis.mapd.connect(
+            host=host, user=user, password=password, database=database
+        )
+
+
 class MySQL(Backend):
     check_dtype = False
     supports_window_operations = False

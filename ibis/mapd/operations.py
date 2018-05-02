@@ -322,6 +322,12 @@ def literal(translator, expr):
         raise NotImplementedError(type(expr))
 
 
+def raise_unsupported_op_error(translator, expr, *args):
+    msg = "MapD backend doesn't support {} operation!"
+    op = expr.op()
+    raise com.UnsupportedOperationError(msg.format(type(op)))
+
+
 class CaseFormatter(object):
 
     def __init__(self, translator, base, cases, results, default):
@@ -535,7 +541,6 @@ _string_ops = {
 
 # DATE
 _date_ops = {
-    ops.Date: unary('toDate'),
     ops.DateTruncate: _timestamp_truncate,
     ops.TimestampTruncate: _timestamp_truncate,
 
@@ -571,6 +576,53 @@ _general_ops = {
     ops.TableColumn: _table_column,
 }
 
+# UNSUPPORTED OPERATIONS
+_unsupported_ops = [
+    # generic/aggregation
+    ops.WindowOp,
+    ops.DecimalPrecision,
+    ops.DecimalScale,
+    ops.BaseConvert,
+    ops.CumulativeSum,
+    ops.CumulativeMin,
+    ops.CumulativeMax,
+    ops.CumulativeMean,
+    ops.CumulativeAny,
+    ops.CumulativeAll,
+    ops.IdenticalTo,
+    ops.HLLCardinality,
+    ops.Arbitrary,
+    ops.RowNumber,
+    ops.DenseRank,
+    ops.MinRank,
+    ops.PercentRank,
+    ops.FirstValue,
+    ops.LastValue,
+    ops.NthValue,
+    ops.Lag,
+    ops.Lead,
+    ops.NTile,
+    # string
+    ops.Lowercase,
+    ops.Uppercase,
+    ops.StringFind,
+    ops.FindInSet,
+    ops.StringReplace,
+    ops.StringJoin,
+    ops.StringSplit,
+    ops.Repeat,
+    ops.RegexExtract,
+    ops.RegexReplace,
+    ops.ParseURL,
+    # date/time/timestamp
+    ops.TimestampFromUNIX,
+    ops.Date,
+    ops.TimeTruncate
+]
+
+_unsupported_ops = {k: raise_unsupported_op_error for k in _unsupported_ops}
+
+# registry
 _operation_registry = impala_compiler._operation_registry.copy()
 
 _operation_registry.update(_general_ops)
@@ -584,3 +636,4 @@ _operation_registry.update(_geometric_ops)
 _operation_registry.update(_string_ops)
 _operation_registry.update(_date_ops)
 _operation_registry.update(_agg_ops)
+_operation_registry.update(_unsupported_ops)

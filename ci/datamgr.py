@@ -226,14 +226,6 @@ def mapd(schema, tables, data_directory, **params):
         port=params['port'], dbname=params['database']
     )
 
-    # drop tables if exist
-    for table in tables:
-        try:
-            conn.execute('DROP TABLE {}'.format(table))
-        except Exception as e:
-            click.echo('[MAPD|WW] {}'.format(str(e)))
-    click.echo('[MAPD|II] Dropping tables ... OK')
-
     # create tables
     for stmt in schema.read().split(';'):
         stmt = stmt.strip()
