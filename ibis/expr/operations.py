@@ -540,14 +540,14 @@ class Radians(UnaryOp):
 class TrigonometricUnary(UnaryOp):
     """Trigonometric base unary"""
     arg = Arg(rlz.numeric)
-    output_type = rlz.shape_like('arg', 'float')
+    output_type = rlz.shape_like('arg', dt.float64)
 
 
 class TrigonometricBinary(BinaryOp):
     """Trigonometric base binary"""
     left = Arg(rlz.numeric)
     right = Arg(rlz.numeric)
-    output_type = rlz.shape_like('left', 'float')
+    output_type = rlz.shape_like('args', dt.float64)
 
 
 class Acos(TrigonometricUnary):
@@ -859,10 +859,7 @@ class Variance(VarianceBase):
 
 
 class Correlation(Reduction):
-    """
-    coefficient of correlation of a set of number pairs.
-
-    """
+    """Coefficient of correlation of a set of number pairs."""
     left = Arg(rlz.numeric)
     right = Arg(rlz.numeric)
     how = Arg(rlz.isin({'sample', 'pop'}), default=None)
@@ -877,6 +874,7 @@ class Correlation(Reduction):
 
 
 class Covariance(Reduction):
+    """Covariance of a set of number pairs."""
     left = Arg(rlz.column(rlz.numeric))
     right = Arg(rlz.column(rlz.numeric))
     how = Arg(rlz.isin({'sample', 'pop'}), default=None)
@@ -2808,8 +2806,8 @@ class Distance(ValueOp):
     Calculates distance in meters between two WGS-84 positions.
 
     """
-    from_lon = Arg(rlz.column(rlz.numeric))
-    from_lat = Arg(rlz.column(rlz.numeric))
-    to_lon = Arg(rlz.column(rlz.numeric))
-    to_lat = Arg(rlz.column(rlz.numeric))
-    output_type = rlz.shape_like('from_lon', dt.float)
+    from_lon = Arg(rlz.numeric)
+    from_lat = Arg(rlz.numeric)
+    to_lon = Arg(rlz.numeric)
+    to_lat = Arg(rlz.numeric)
+    output_type = rlz.shape_like('args', dt.float64)

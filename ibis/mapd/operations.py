@@ -11,17 +11,6 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 
-_mapd_unit_names = {
-    'Y': 'YEAR',
-    'M': 'MONTH',
-    'D': 'DAY',
-    'W': 'WEEK',
-    'Q': 'QUARTER',
-    'h': 'HOUR',
-    'm': 'MINUTE',
-    's': 'SECOND',
-}
-
 _sql_type_names = {
     'int8': 'smallint',
     'int16': 'smallint',
@@ -37,45 +26,6 @@ _sql_type_names = {
     'date': 'date',
     'time': 'time',
 }
-
-
-def _add_method(dtype, klass, func_name):
-    """
-
-    :param dtype:
-    :param klass:
-    :param func_name:
-    :return:
-    """
-    def f(_klass):
-        """
-        Return a lambda function that return to_expr() result from the
-        custom classes.
-        """
-        def _f(*args, **kwargs):
-            return _klass(*args, **kwargs).to_expr()
-        return _f
-    # assign new function to the defined DataType
-    setattr(
-        dtype, func_name, f(klass)
-    )
-
-
-def _add_methods(dtype, function_ops, forced=False):
-    """
-
-    :param dtype:
-    :param function_ops: dict
-    :param forced:
-    :return:
-    """
-    for klass in function_ops.keys():
-        # skip if the class is already in the ibis operations
-        if klass in ops.__dict__.values() and not forced:
-            continue
-        # assign new function to the defined DataType
-        func_name = _operation_registry[klass].__name__
-        _add_method(dtype, klass, func_name)
 
 
 def _is_floating(*args):
@@ -437,10 +387,7 @@ def _timestamp_truncate(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
-    if unit.upper() in [u.upper() for u in _mapd_unit_names.keys()]:
-        unit_ = _mapd_unit_names[unit].upper()
-    else:
-        raise ValueError('`{}` unit is not supported!'.format(unit))
+    unit_ = dt.Interval(unit=unit).resolution.upper()
 
     # return _call_date_trunc(translator, converter, arg)
     arg_ = translator.translate(arg)
@@ -502,11 +449,6 @@ def distance(translator, expr):
 # classes
 
 # MATH
-class Log(ops.Ln):
-    """
-
-    """
-
 
 class NumericTruncate(ops.NumericBinaryOp):
     """Truncates x to y decimal places"""
