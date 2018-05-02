@@ -285,6 +285,8 @@ class UnaryOp(ValueOp):
 
 
 class BinaryOp(ValueOp):
+    """A binary operation"""
+
     left = Arg(rlz.any)
     right = Arg(rlz.any)
 
@@ -765,22 +767,6 @@ class StringLength(UnaryOp):
 class StringAscii(UnaryOp):
 
     output_type = rlz.shape_like('arg', dt.int32)
-
-
-class BinaryOp(ValueOp):
-    """A binary operation"""
-
-    # Casting rules for type promotions (for resolving the output type) may
-    # depend in some cases on the target backend.
-    #
-    # TODO: how will overflows be handled? Can we provide anything useful in
-    # Ibis to help the user avoid them?
-
-    def __init__(self, left, right):
-        super(BinaryOp, self).__init__(*self._maybe_cast_args(left, right))
-
-    def _maybe_cast_args(self, left, right):
-        return left, right
 
 
 # ----------------------------------------------------------------------
@@ -2148,6 +2134,19 @@ class Xor(LogicalBinaryOp):
 class Comparison(BinaryOp, BooleanValueOp):
     left = Arg(rlz.any)
     right = Arg(rlz.any)
+
+    def __init__(self, left, right):
+        """
+        Casting rules for type promotions (for resolving the output type) may
+        depend in some cases on the target backend.
+
+        TODO: how will overflows be handled? Can we provide anything useful in
+        Ibis to help the user avoid them?
+
+        :param left:
+        :param right:
+        """
+        super(BinaryOp, self).__init__(*self._maybe_cast_args(left, right))
 
     def _maybe_cast_args(self, left, right):
         # it might not be necessary?
