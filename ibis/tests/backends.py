@@ -185,7 +185,7 @@ class MapD(Backend):
     check_dtype = False
     check_names = False
     supports_window_operations = False
-    additional_skipped_operations = frozenset()
+    additional_skipped_operations = ibis.mapd.unsupported_operations
     supports_divide_by_zero = False
     returned_timestamp_unit = 's'
 

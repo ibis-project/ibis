@@ -1,7 +1,8 @@
 from datetime import date, datetime
-from ibis.mapd.identifiers import quote_identifier
-from six import StringIO
+from ibis.mapd.identifiers import quote_identifier, _identifiers
 from ibis.impala import compiler as impala_compiler
+from six import StringIO
+
 
 import ibis
 import ibis.common as com
@@ -51,6 +52,46 @@ def _cast(translator, expr):
     type_ = str(MapDDataType.from_ibis(target, nullable=False))
 
     return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
+
+
+def _all(expr):
+    op = expr.op()
+    arg = op.args[0]
+
+    if isinstance(arg, ir.BooleanValue):
+        arg = arg.ifelse(1, 0)
+
+    return (1 - arg).sum() == 0
+
+
+def _any(expr):
+    op = expr.op()
+    arg = op.args[0]
+
+    if isinstance(arg, ir.BooleanValue):
+        arg = arg.ifelse(1, 0)
+
+    return arg.sum() >= 0
+
+
+def _not_any(expr):
+    op = expr.op()
+    arg = op.args[0]
+
+    if isinstance(arg, ir.BooleanValue):
+        arg = arg.ifelse(1, 0)
+
+    return arg.sum() == 0
+
+
+def _not_all(expr):
+    op = expr.op()
+    arg = op.args[0]
+
+    if isinstance(arg, ir.BooleanValue):
+        arg = arg.ifelse(1, 0)
+
+    return (1 - arg).sum() != 0
 
 
 def _parenthesize(translator, expr):
@@ -209,7 +250,19 @@ def _cov(translator, expr):
     )
 
 
-# String
+# MATH
+
+def _round(translator, expr):
+    op = expr.op()
+    arg, digits = op.args
+
+    if digits is not None:
+        return _call(translator, 'round', arg, digits)
+    else:
+        return _call(translator, 'round', arg)
+
+
+# STRING
 
 def _length(func_name='length', sql_func_name='CHAR_LENGTH'):
     def __lenght(translator, expr):
@@ -222,19 +275,15 @@ def _length(func_name='length', sql_func_name='CHAR_LENGTH'):
     return __lenght
 
 
-def _name_expr(formatted_expr, quoted_name):
-    return '{0!s} AS {1!s}'.format(formatted_expr, quoted_name)
+def _contains(translator, expr):
+    arg, pattern = expr.op().args[:2]
+
+    pattern_ = '%{}%'.format(translator.translate(pattern)[1:-1])
+
+    return _parenthesize(translator, arg.like(pattern_).ifelse(1, -1))
 
 
-def _round(translator, expr):
-    op = expr.op()
-    arg, digits = op.args
-
-    if digits is not None:
-        return _call(translator, 'round', arg, digits)
-    else:
-        return _call(translator, 'round', arg)
-
+# GENERIC
 
 def _value_list(translator, expr):
     op = expr.op()
@@ -322,10 +371,23 @@ def literal(translator, expr):
         raise NotImplementedError(type(expr))
 
 
+def raise_unsupported_expr_error(expr):
+    msg = "MapD backend doesn't support {} operation!"
+    op = expr.op()
+    raise com.UnsupportedOperationError(msg.format(type(op)))
+
+
 def raise_unsupported_op_error(translator, expr, *args):
     msg = "MapD backend doesn't support {} operation!"
     op = expr.op()
     raise com.UnsupportedOperationError(msg.format(type(op)))
+
+
+# translator
+def _name_expr(formatted_expr, quoted_name):
+    if quoted_name in _identifiers:
+        quoted_name = '"{}"'.format(quoted_name)
+    return '{} AS {}'.format(formatted_expr, quoted_name)
 
 
 class CaseFormatter(object):
@@ -403,6 +465,7 @@ def _timestamp_truncate(translator, expr):
 def _table_column(translator, expr):
     op = expr.op()
     field_name = op.name
+
     quoted_name = quote_identifier(field_name, force=True)
 
     table = op.table
@@ -488,6 +551,7 @@ class ByteLength(ops.StringLength):
 _binary_infix_ops = {
     # math
     ops.Power: fixed_arity('power', 2),
+    ops.NotEquals: impala_compiler._binary_infix_op('<>'),
 }
 
 _unary_ops = {}
@@ -537,6 +601,7 @@ _string_ops = {
     ops.StringLength: _length(),
     ByteLength: _length('byte_length', 'LENGTH'),
     ops.StringSQLILike: binary_infix_op('ilike'),
+    ops.StringFind: _contains
 }
 
 # DATE
@@ -579,6 +644,7 @@ _general_ops = {
 # UNSUPPORTED OPERATIONS
 _unsupported_ops = [
     # generic/aggregation
+    ops.CMSMedian,
     ops.WindowOp,
     ops.DecimalPrecision,
     ops.DecimalScale,
@@ -602,22 +668,46 @@ _unsupported_ops = [
     ops.Lag,
     ops.Lead,
     ops.NTile,
+    ops.GroupConcat,
+    ops.Arbitrary,
+    ops.NullIf,
+    ops.NullIfZero,
+    ops.NullLiteral,
+    ops.IsNull,
+    ops.IsInf,
+    ops.IsNan,
     # string
     ops.Lowercase,
     ops.Uppercase,
-    ops.StringFind,
     ops.FindInSet,
     ops.StringReplace,
     ops.StringJoin,
     ops.StringSplit,
+    ops.Translate,
+    ops.StringAscii,
+    ops.LPad,
+    ops.RPad,
+    ops.Strip,
+    ops.RStrip,
+    ops.LStrip,
+    ops.Capitalize,
+    ops.Substring,
+    ops.StrRight,
     ops.Repeat,
+    ops.Reverse,
     ops.RegexExtract,
     ops.RegexReplace,
     ops.ParseURL,
+    # Numeric
+    ops.Least,
+    ops.Greatest,
+    ops.Log2,
+    ops.Log,
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.Date,
-    ops.TimeTruncate
+    ops.TimeTruncate,
+    ops.TimestampDiff
 ]
 
 _unsupported_ops = {k: raise_unsupported_op_error for k in _unsupported_ops}

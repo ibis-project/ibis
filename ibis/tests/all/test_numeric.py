@@ -54,25 +54,79 @@ def test_isnan_isinf(backend, con, alltypes, df,
 
 
 @pytest.mark.parametrize(('expr', 'expected'), [
-    (L(-5).abs(), 5),
-    (L(5).abs(), 5),
-    (ibis.least(L(10), L(1)), 1),
-    (ibis.greatest(L(10), L(1)), 10),
+    param(
+        L(-5).abs(), 5,
+        id='abs_1', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5).abs(), 5,
+        id='abs_2', marks=pytest.mark.xfail
+    ),
+    param(
+        ibis.least(L(10), L(1)), 1,
+        id='least', marks=pytest.mark.xfail
+    ),
+    param(
+        ibis.greatest(L(10), L(1)), 10,
+        id='greatest', marks=pytest.mark.xfail
+    ),
 
-    (L(5.5).round(), 6.0),
-    (L(5.556).round(2), 5.56),
-    (L(5.556).ceil(), 6.0),
-    (L(5.556).floor(), 5.0),
-    (L(5.556).exp(), math.exp(5.556)),
-    (L(5.556).sign(), 1),
-    (L(-5.556).sign(), -1),
-    (L(0).sign(), 0),
-    (L(5.556).sqrt(), math.sqrt(5.556)),
-    (L(5.556).log(2), math.log(5.556, 2)),
-    (L(5.556).ln(), math.log(5.556)),
-    (L(5.556).log2(), math.log(5.556, 2)),
-    (L(5.556).log10(), math.log10(5.556)),
-    (L(11) % 3, 11 % 3),
+    param(
+        L(5.5).round(), 6.0,
+        id='round_1', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5.556).round(2), 5.56,
+        id='round_2', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5.556).ceil(), 6.0,
+        id='ceil', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5.556).floor(), 5.0,
+        id='floor', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5.556).exp(), math.exp(5.556),
+        id='exp', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5.556).sign(), 1,
+        id='sign_1', marks=pytest.mark.xfail
+    ),
+    param(
+        L(-5.556).sign(), -1,
+        id='sign_2', marks=pytest.mark.xfail
+    ),
+    param(
+        L(0).sign(), 0,
+        id='sign_3', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5.556).sqrt(), math.sqrt(5.556),
+        id='sqrt', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5.556).log(2), math.log(5.556, 2),
+        id='log2_1', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5.556).ln(), math.log(5.556),
+        id='ln', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5.556).log2(), math.log(5.556, 2),
+        id='log2_2', marks=pytest.mark.xfail
+    ),
+    param(
+        L(5.556).log10(), math.log10(5.556),
+        id='log10', marks=pytest.mark.xfail
+    ),
+    param(
+        L(11) % 3, 11 % 3,
+        id='mod', marks=pytest.mark.xfail
+    ),
 ])
 @tu.skipif_unsupported
 def test_math_functions_on_literals(backend, con, alltypes, df,

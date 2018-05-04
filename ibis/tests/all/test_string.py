@@ -112,7 +112,8 @@ def test_string_col_is_unicode(backend, alltypes, df):
         param(
             lambda t: t.string_col.length(),
             lambda t: t.string_col.str.len().astype('int32'),
-            id='length'
+            id='length',
+            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: t.string_col.strip(),
