@@ -487,22 +487,10 @@ def _table_column(translator, expr):
 
 # AGGREGATION
 
-class ApproxCountDistinct(ops.Reduction):
-    """Approximate number of unique values
-
-    """
-    arg = ops.Arg(rlz.column(rlz.any))
-    approx = ops.Arg(rlz.integer, default=1)
-    where = ops.Arg(rlz.boolean, default=None)
-
-    def output_type(self):
-        return ops.partial(ir.IntegerScalar, dtype=ops.dt.int64)
-
-
 approx_count_distinct = _reduction(
     'approx_nunique',
     sql_func_name='approx_count_distinct',
-    sql_signature='{}({})'
+    sql_signature='{}({}, 100)'
 )
 
 count_distinct = _reduction('count')
@@ -514,8 +502,6 @@ def distance(translator, expr):
     values = map(translator.translate, op.args)
     return 'DISTANCE_IN_METERS({0})'.format(', '.join(values))
 
-
-# classes
 
 # MATH
 
@@ -628,7 +614,7 @@ _date_ops = {
 
 # AGGREGATION/REDUCTION
 _agg_ops = {
-    ApproxCountDistinct: approx_count_distinct,
+    ops.HLLCardinality: approx_count_distinct,
     ops.DistinctColumn: unary_prefix_op('distinct'),
 }
 
@@ -656,7 +642,6 @@ _unsupported_ops = [
     ops.CumulativeAny,
     ops.CumulativeAll,
     ops.IdenticalTo,
-    ops.HLLCardinality,
     ops.Arbitrary,
     ops.RowNumber,
     ops.DenseRank,
@@ -673,9 +658,9 @@ _unsupported_ops = [
     ops.NullIf,
     ops.NullIfZero,
     ops.NullLiteral,
-    ops.IsNull,
     ops.IsInf,
     ops.IsNan,
+    ops.IfNull,
     # string
     ops.Lowercase,
     ops.Uppercase,
