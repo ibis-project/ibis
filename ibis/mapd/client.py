@@ -73,7 +73,7 @@ class MapDDataType(object):
         v: k for k, v in dtypes.items()
     }
 
-    def __init__(self, typename, nullable=False):
+    def __init__(self, typename, nullable=True):
         if typename not in self.dtypes:
             raise com.UnsupportedBackendType(typename)
         self.typename = typename

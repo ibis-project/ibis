@@ -72,21 +72,25 @@ import ibis.tests.util as tu
         lambda t, where: t.double_col.std(how='sample'),
         lambda t, where: t.double_col.std(ddof=1),
         id='double_col_std',
+        marks=pytest.mark.xfail,
     ),
     param(
         lambda t, where: t.double_col.var(how='sample'),
         lambda t, where: t.double_col.var(ddof=1),
         id='double_col_var',
+        marks=pytest.mark.xfail,
     ),
     param(
         lambda t, where: t.double_col.std(how='pop'),
         lambda t, where: t.double_col.std(ddof=0),
         id='double_col_std_pop',
+        marks=pytest.mark.xfail,
     ),
     param(
         lambda t, where: t.double_col.var(how='pop'),
         lambda t, where: t.double_col.var(ddof=0),
         id='double_col_var_pop',
+        marks=pytest.mark.xfail,
     ),
     param(
         lambda t, where: t.string_col.approx_nunique(),

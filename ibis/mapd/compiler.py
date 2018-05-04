@@ -1,7 +1,7 @@
 from six import StringIO
 from . import operations as mapd_ops
 from .identifiers import quote_identifier  # noqa: F401
-from .operations import _type_to_sql_string  # noqa: F401
+from .operations import _type_to_sql_string, _unsupported_ops  # noqa: F401
 from ibis.expr.api import _add_methods, _unary_op, _binop_expr
 
 import ibis.common as com
@@ -195,9 +195,15 @@ dialect = MapDDialect
 compiles = MapDExprTranslator.compiles
 rewrites = MapDExprTranslator.rewrites
 
-compiles(ops.Distance, mapd_ops.distance)
-
 mapd_reg = mapd_ops._operation_registry
+unsupported_operations = frozenset(_unsupported_ops.keys())
+
+compiles(ops.Distance, mapd_ops.distance)
+rewrites(ops.All, mapd_ops._all)
+rewrites(ops.Any, mapd_ops._any)
+rewrites(ops.NotAll, mapd_ops._not_all)
+rewrites(ops.NotAny, mapd_ops._not_any)
+rewrites(ops.IfNull, mapd_ops.raise_unsupported_expr_error)
 
 _add_methods(
     ir.NumericValue, dict(

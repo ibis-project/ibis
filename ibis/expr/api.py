@@ -1296,14 +1296,12 @@ def _integer_to_interval(arg, unit='s'):
 abs = _unary_op('abs', ops.Abs)
 ceil = _unary_op('ceil', ops.Ceil)
 degrees = _unary_op('degrees', ops.Degrees)
-deg2rad = _unary_op('radians', ops.Radians)
 exp = _unary_op('exp', ops.Exp)
 floor = _unary_op('floor', ops.Floor)
 log2 = _unary_op('log2', ops.Log2)
 log10 = _unary_op('log10', ops.Log10)
 ln = _unary_op('ln', ops.Ln)
 radians = _unary_op('radians', ops.Radians)
-rad2deg = _unary_op('degrees', ops.Degrees)
 sign = _unary_op('sign', ops.Sign)
 sqrt = _unary_op('sqrt', ops.Sqrt)
 
@@ -1323,10 +1321,10 @@ _numeric_value_methods = dict(
     abs=abs,
     ceil=ceil,
     degrees=degrees,
-    deg2rad=deg2rad,
+    deg2rad=radians,
     floor=floor,
     radians=radians,
-    rad2deg=rad2deg,
+    rad2deg=degrees,
     sign=sign,
     exp=exp,
     sqrt=sqrt,
@@ -3209,5 +3207,20 @@ _add_methods(ir.TableExpr, _table_methods)
 
 def distance(from_lon, from_lat, to_lon, to_lat):
     """
+    Distance between origin longitude and latitude and
+    destine longitude and latitude
+
+    Parameters
+    ----------
+    from_lon : numeric column expr or float
+    from_lat : numeric column expr or float
+    to_lon : numeric column expr or float
+    to_lat : numeric column expr or float
+
+    Returns
+    -------
+    expr :
+        if scalar input, scalar type, same as input
+        if array input, list of scalar type
     """
     return ops.Distance(from_lon, from_lat, to_lon, to_lat).to_expr()

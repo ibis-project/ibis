@@ -1,114 +1,3 @@
-"""
-_identifiers = frozenset({
-    'add',
-    'aggregate',
-    'all',
-    'alter',
-    'and',
-    'as',
-    'asc',
-    'between',
-    'by',
-    'cached',
-    'case',
-    'cast',
-    'change',
-    'class',
-    'column',
-    'columns',
-    'comment',
-    'create',
-    'cross',
-    'data',
-    'database',
-    'databases',
-    'date',
-    'datetime',
-    'desc',
-    'describe',
-    'distinct',
-    'div',
-    'double',
-    'drop',
-    'else',
-    'end',
-    'escaped',
-    'exists',
-    'explain',
-    'external',
-    'fields',
-    'fileformat',
-    'first',
-    'float',
-    'format',
-    'from',
-    'full',
-    'function',
-    'functions',
-    'group',
-    'having',
-    'if',
-    'in',
-    'inner',
-    'inpath',
-    'insert',
-    'int',
-    'integer',
-    'intermediate',
-    'interval',
-    'into',
-    'is',
-    'join',
-    'last',
-    'left',
-    'like',
-    'limit',
-    'lines',
-    'load',
-    'location',
-    'metadata',
-    'not',
-    'null',
-    'offset',
-    'on',
-    'or',
-    'order',
-    'outer',
-    'partition',
-    'partitioned',
-    'partitions',
-    'real',
-    'refresh',
-    'regexp',
-    'rename',
-    'replace',
-    'returns',
-    'right',
-    'row',
-    'schema',
-    'schemas',
-    'select',
-    'set',
-    'show',
-    'stats',
-    'stored',
-    'string',
-    'symbol',
-    'table',
-    'tables',
-    'then',
-    'to',
-    'union',
-    'use',
-    'using',
-    'values',
-    'view',
-    'when',
-    'where',
-    'with'
-})
-"""
-
 # https://www.mapd.com/docs/latest/mapd-core-guide/tables/
 # https://www.mapd.com/docs/latest/mapd-core-guide/views/
 # https://www.mapd.com/docs/latest/mapd-core-guide/data-definition/
@@ -185,25 +74,12 @@ _dml = frozenset({
     'left',  # select/join
     'like',  # comparison operator
     'limit',  # select
-    # 'logicalaggregate',  # explain
-    # 'logicalcalc',  # explain
-    # 'logicalchi',  # explain
-    # 'logicalcorrelate',  # explain
-    # 'logicaldelta',  # explain
-    # 'logicalexchange',  # explain
-    # 'logicalfilter',  # explain
-    # 'logicalintersect',  # explain
-    # 'logicaljoin',  # explain
-    # 'logicalmatch',  # explain
-    # 'logicalminus',  # explain
-    # 'logicalproject',  # explain
-    # 'logicalsort',  # explain
-    # 'logicaltablefunctionscan',  # explain
-    # 'logicaltablemodify',  # explain
-    # 'logicaltablescan',  # explain
-    # 'logicalunion',  # explain
-    # 'logicalvalues',  # explain
-    # 'logicalwindow',  # explain
+    'max',
+    'min',
+    'std',
+    'count',
+    'mean',
+    'sum',
     'nullif',  # comparison operator
     'nulls',  # select/order
     'not',  # logical operator
@@ -259,7 +135,10 @@ _identifiers = _ddl | _dml | _data_type | _ibis
 
 
 def quote_identifier(name, quotechar='"', force=False):
-    if force or name.count(' ') or name in _identifiers:
+    if (
+        (force or name.count(' ') or name in _identifiers) and
+        quotechar not in name
+    ):
         return '{0}{1}{0}'.format(quotechar, name)
     else:
         return name

@@ -1,7 +1,8 @@
 from datetime import date, datetime
-from ibis.mapd.identifiers import quote_identifier
-from six import StringIO
+from ibis.mapd.identifiers import quote_identifier, _identifiers
 from ibis.impala import compiler as impala_compiler
+from six import StringIO
+
 
 import ibis
 import ibis.common as com
@@ -10,17 +11,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-
-_mapd_unit_names = {
-    'Y': 'YEAR',
-    'M': 'MONTH',
-    'D': 'DAY',
-    'W': 'WEEK',
-    'Q': 'QUARTER',
-    'h': 'HOUR',
-    'm': 'MINUTE',
-    's': 'SECOND',
-}
 
 _sql_type_names = {
     'int8': 'smallint',
@@ -37,45 +27,6 @@ _sql_type_names = {
     'date': 'date',
     'time': 'time',
 }
-
-
-def _add_method(dtype, klass, func_name):
-    """
-
-    :param dtype:
-    :param klass:
-    :param func_name:
-    :return:
-    """
-    def f(_klass):
-        """
-        Return a lambda function that return to_expr() result from the
-        custom classes.
-        """
-        def _f(*args, **kwargs):
-            return _klass(*args, **kwargs).to_expr()
-        return _f
-    # assign new function to the defined DataType
-    setattr(
-        dtype, func_name, f(klass)
-    )
-
-
-def _add_methods(dtype, function_ops, forced=False):
-    """
-
-    :param dtype:
-    :param function_ops: dict
-    :param forced:
-    :return:
-    """
-    for klass in function_ops.keys():
-        # skip if the class is already in the ibis operations
-        if klass in ops.__dict__.values() and not forced:
-            continue
-        # assign new function to the defined DataType
-        func_name = _operation_registry[klass].__name__
-        _add_method(dtype, klass, func_name)
 
 
 def _is_floating(*args):
@@ -101,6 +52,46 @@ def _cast(translator, expr):
     type_ = str(MapDDataType.from_ibis(target, nullable=False))
 
     return 'CAST({0!s} AS {1!s})'.format(arg_, type_)
+
+
+def _all(expr):
+    op = expr.op()
+    arg = op.args[0]
+
+    if isinstance(arg, ir.BooleanValue):
+        arg = arg.ifelse(1, 0)
+
+    return (1 - arg).sum() == 0
+
+
+def _any(expr):
+    op = expr.op()
+    arg = op.args[0]
+
+    if isinstance(arg, ir.BooleanValue):
+        arg = arg.ifelse(1, 0)
+
+    return arg.sum() >= 0
+
+
+def _not_any(expr):
+    op = expr.op()
+    arg = op.args[0]
+
+    if isinstance(arg, ir.BooleanValue):
+        arg = arg.ifelse(1, 0)
+
+    return arg.sum() == 0
+
+
+def _not_all(expr):
+    op = expr.op()
+    arg = op.args[0]
+
+    if isinstance(arg, ir.BooleanValue):
+        arg = arg.ifelse(1, 0)
+
+    return (1 - arg).sum() != 0
 
 
 def _parenthesize(translator, expr):
@@ -259,7 +250,19 @@ def _cov(translator, expr):
     )
 
 
-# String
+# MATH
+
+def _round(translator, expr):
+    op = expr.op()
+    arg, digits = op.args
+
+    if digits is not None:
+        return _call(translator, 'round', arg, digits)
+    else:
+        return _call(translator, 'round', arg)
+
+
+# STRING
 
 def _length(func_name='length', sql_func_name='CHAR_LENGTH'):
     def __lenght(translator, expr):
@@ -272,19 +275,15 @@ def _length(func_name='length', sql_func_name='CHAR_LENGTH'):
     return __lenght
 
 
-def _name_expr(formatted_expr, quoted_name):
-    return '{0!s} AS {1!s}'.format(formatted_expr, quoted_name)
+def _contains(translator, expr):
+    arg, pattern = expr.op().args[:2]
+
+    pattern_ = '%{}%'.format(translator.translate(pattern)[1:-1])
+
+    return _parenthesize(translator, arg.like(pattern_).ifelse(1, -1))
 
 
-def _round(translator, expr):
-    op = expr.op()
-    arg, digits = op.args
-
-    if digits is not None:
-        return _call(translator, 'round', arg, digits)
-    else:
-        return _call(translator, 'round', arg)
-
+# GENERIC
 
 def _value_list(translator, expr):
     op = expr.op()
@@ -372,6 +371,25 @@ def literal(translator, expr):
         raise NotImplementedError(type(expr))
 
 
+def raise_unsupported_expr_error(expr):
+    msg = "MapD backend doesn't support {} operation!"
+    op = expr.op()
+    raise com.UnsupportedOperationError(msg.format(type(op)))
+
+
+def raise_unsupported_op_error(translator, expr, *args):
+    msg = "MapD backend doesn't support {} operation!"
+    op = expr.op()
+    raise com.UnsupportedOperationError(msg.format(type(op)))
+
+
+# translator
+def _name_expr(formatted_expr, quoted_name):
+    if quoted_name in _identifiers:
+        quoted_name = '"{}"'.format(quoted_name)
+    return '{} AS {}'.format(formatted_expr, quoted_name)
+
+
 class CaseFormatter(object):
 
     def __init__(self, translator, base, cases, results, default):
@@ -437,10 +455,7 @@ def _timestamp_truncate(translator, expr):
     op = expr.op()
     arg, unit = op.args
 
-    if unit.upper() in [u.upper() for u in _mapd_unit_names.keys()]:
-        unit_ = _mapd_unit_names[unit].upper()
-    else:
-        raise ValueError('`{}` unit is not supported!'.format(unit))
+    unit_ = dt.Interval(unit=unit).resolution.upper()
 
     # return _call_date_trunc(translator, converter, arg)
     arg_ = translator.translate(arg)
@@ -450,6 +465,7 @@ def _timestamp_truncate(translator, expr):
 def _table_column(translator, expr):
     op = expr.op()
     field_name = op.name
+
     quoted_name = quote_identifier(field_name, force=True)
 
     table = op.table
@@ -502,11 +518,6 @@ def distance(translator, expr):
 # classes
 
 # MATH
-class Log(ops.Ln):
-    """
-
-    """
-
 
 class NumericTruncate(ops.NumericBinaryOp):
     """Truncates x to y decimal places"""
@@ -540,6 +551,7 @@ class ByteLength(ops.StringLength):
 _binary_infix_ops = {
     # math
     ops.Power: fixed_arity('power', 2),
+    ops.NotEquals: impala_compiler._binary_infix_op('<>'),
 }
 
 _unary_ops = {}
@@ -589,11 +601,11 @@ _string_ops = {
     ops.StringLength: _length(),
     ByteLength: _length('byte_length', 'LENGTH'),
     ops.StringSQLILike: binary_infix_op('ilike'),
+    ops.StringFind: _contains
 }
 
 # DATE
 _date_ops = {
-    ops.Date: unary('toDate'),
     ops.DateTruncate: _timestamp_truncate,
     ops.TimestampTruncate: _timestamp_truncate,
 
@@ -629,6 +641,78 @@ _general_ops = {
     ops.TableColumn: _table_column,
 }
 
+# UNSUPPORTED OPERATIONS
+_unsupported_ops = [
+    # generic/aggregation
+    ops.CMSMedian,
+    ops.WindowOp,
+    ops.DecimalPrecision,
+    ops.DecimalScale,
+    ops.BaseConvert,
+    ops.CumulativeSum,
+    ops.CumulativeMin,
+    ops.CumulativeMax,
+    ops.CumulativeMean,
+    ops.CumulativeAny,
+    ops.CumulativeAll,
+    ops.IdenticalTo,
+    ops.HLLCardinality,
+    ops.Arbitrary,
+    ops.RowNumber,
+    ops.DenseRank,
+    ops.MinRank,
+    ops.PercentRank,
+    ops.FirstValue,
+    ops.LastValue,
+    ops.NthValue,
+    ops.Lag,
+    ops.Lead,
+    ops.NTile,
+    ops.GroupConcat,
+    ops.Arbitrary,
+    ops.NullIf,
+    ops.NullIfZero,
+    ops.NullLiteral,
+    ops.IsNull,
+    ops.IsInf,
+    ops.IsNan,
+    # string
+    ops.Lowercase,
+    ops.Uppercase,
+    ops.FindInSet,
+    ops.StringReplace,
+    ops.StringJoin,
+    ops.StringSplit,
+    ops.Translate,
+    ops.StringAscii,
+    ops.LPad,
+    ops.RPad,
+    ops.Strip,
+    ops.RStrip,
+    ops.LStrip,
+    ops.Capitalize,
+    ops.Substring,
+    ops.StrRight,
+    ops.Repeat,
+    ops.Reverse,
+    ops.RegexExtract,
+    ops.RegexReplace,
+    ops.ParseURL,
+    # Numeric
+    ops.Least,
+    ops.Greatest,
+    ops.Log2,
+    ops.Log,
+    # date/time/timestamp
+    ops.TimestampFromUNIX,
+    ops.Date,
+    ops.TimeTruncate,
+    ops.TimestampDiff
+]
+
+_unsupported_ops = {k: raise_unsupported_op_error for k in _unsupported_ops}
+
+# registry
 _operation_registry = impala_compiler._operation_registry.copy()
 
 _operation_registry.update(_general_ops)
@@ -642,3 +726,4 @@ _operation_registry.update(_geometric_ops)
 _operation_registry.update(_string_ops)
 _operation_registry.update(_date_ops)
 _operation_registry.update(_agg_ops)
+_operation_registry.update(_unsupported_ops)

@@ -39,7 +39,8 @@ def test_timestamp_extract(backend, alltypes, df, attr):
 @pytest.mark.parametrize('unit', [
     'Y', 'M', 'D',
     param('W', marks=pytest.mark.xfail),
-    'h', 'm', 's', 'ms', 'us', 'ns'
+    'h', 'm', 's', 'ms', 'us',
+    param('ns', marks=pytest.mark.xfail)
 ])
 @tu.skipif_unsupported
 def test_timestamp_truncate(backend, alltypes, df, unit):
