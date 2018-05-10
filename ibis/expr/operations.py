@@ -4,6 +4,7 @@ import operator
 import itertools
 import collections
 
+from functools import partial
 from ibis.expr.schema import HasSchema, Schema
 
 import ibis.common as com
