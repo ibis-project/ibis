@@ -972,6 +972,15 @@ def _string_like(translator, expr):
     )
 
 
+def _sign(translator, expr):
+    arg, = expr.op().args
+    translated_arg = translator.translate(arg)
+    translated_type = _type_to_sql_string(target_type)
+    if arg.type() != dt.float:
+        return 'CAST(sign({}) AS {})'.format(translated_arg, translated_type)
+    return 'sign({})'.format(translated_arg)
+
+
 _operation_registry = {
     # Unary operations
     ops.NotNull: _not_null,
