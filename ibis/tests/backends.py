@@ -1,6 +1,7 @@
 import os
 import six
 import pytest
+import numpy as np
 import pandas as pd
 import pandas.util.testing as tm
 
@@ -8,6 +9,23 @@ import ibis
 import ibis.expr.operations as ops
 from ibis.compat import Path, parse_version
 from ibis.impala.tests.common import IbisTestEnv as ImpalaEnv
+
+
+class RoundAwayFromZero(object):
+    def round(self, series, decimals=0):
+        if not decimals:
+            return (-np.sign(series) * np.ceil(-series.abs() - 0.5)).astype(
+                'int64'
+            )
+        return series.round(decimals=decimals)
+
+
+class RoundHalfToEven(object):
+    def round(self, series, decimals=0):
+        result = series.round(decimals=decimals)
+        if not decimals:
+            return result.astype('int64')
+        return result
 
 
 class Backend(object):
@@ -54,14 +72,18 @@ class Backend(object):
     def default_series_rename(self, series, name='tmp'):
         return series.rename(name)
 
+    @property
+    def db(self):
+        return self.connection.database()
+
     def functional_alltypes(self):
-        return self.connection.database().functional_alltypes
+        return self.db.functional_alltypes
 
     def batting(self):
-        return self.connection.database().batting
+        return self.db.batting
 
     def awards_players(self):
-        return self.connection.database().awards_players
+        return self.db.awards_players
 
     @classmethod
     def make_context(cls, params=None):
@@ -88,39 +110,7 @@ class UnorderedComparator(object):
              left, right, *args, **kwargs)
 
 
-class Csv(Backend):
-    check_names = False
-    supports_divide_by_zero = True
-    returned_timestamp_unit = 'ns'
-
-    def connect(self, data_directory):
-        filename = data_directory / 'functional_alltypes.csv'
-        if not filename.exists():
-            pytest.skip('test data set {} not found'.format(filename))
-        return ibis.csv.connect(data_directory)
-
-    def functional_alltypes(self):
-        schema = ibis.schema([
-            ('bool_col', 'boolean'),
-            ('string_col', 'string'),
-            ('timestamp_col', 'timestamp')
-        ])
-        return self.connection.table('functional_alltypes', schema=schema)
-
-
-class Parquet(Backend):
-    check_names = False
-    supports_divide_by_zero = True
-    returned_timestamp_unit = 'ns'
-
-    def connect(self, data_directory):
-        filename = data_directory / 'functional_alltypes.parquet'
-        if not filename.exists():
-            pytest.skip('test data set {} not found'.format(filename))
-        return ibis.parquet.connect(data_directory)
-
-
-class Pandas(Backend):
+class Pandas(Backend, RoundHalfToEven):
     check_names = False
     additional_skipped_operations = frozenset({ops.StringSQLLike})
     supports_divide_by_zero = True
@@ -143,8 +133,46 @@ class Pandas(Backend):
             )
         })
 
+    def round(self, series, decimals=0):
+        result = series.round(decimals=decimals)
+        if not decimals:
+            return result.astype('int64')
+        return result
 
-class SQLite(Backend):
+
+class Csv(Pandas):
+    check_names = False
+    supports_divide_by_zero = True
+    returned_timestamp_unit = 'ns'
+
+    def connect(self, data_directory):
+        filename = data_directory / 'functional_alltypes.csv'
+        if not filename.exists():
+            pytest.skip('test data set {} not found'.format(filename))
+        return ibis.csv.connect(data_directory)
+
+    def functional_alltypes(self):
+        schema = ibis.schema([
+            ('bool_col', 'boolean'),
+            ('string_col', 'string'),
+            ('timestamp_col', 'timestamp')
+        ])
+        return self.connection.table('functional_alltypes', schema=schema)
+
+
+class Parquet(Pandas):
+    check_names = False
+    supports_divide_by_zero = True
+    returned_timestamp_unit = 'ns'
+
+    def connect(self, data_directory):
+        filename = data_directory / 'functional_alltypes.parquet'
+        if not filename.exists():
+            pytest.skip('test data set {} not found'.format(filename))
+        return ibis.parquet.connect(data_directory)
+
+
+class SQLite(Backend, RoundAwayFromZero):
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = False
@@ -217,7 +245,7 @@ class MySQL(Backend, RoundHalfToEven):
         return t.mutate(bool_col=t.bool_col == 1)
 
 
-class Clickhouse(Backend):
+class Clickhouse(Backend, RoundHalfToEven):
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = 's'
@@ -238,7 +266,7 @@ class Clickhouse(Backend):
         return t.mutate(bool_col=t.bool_col == 1)
 
 
-class BigQuery(UnorderedComparator, Backend):
+class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
     supports_divide_by_zero = True
     returned_timestamp_unit = 'us'
 
@@ -260,7 +288,7 @@ class BigQuery(UnorderedComparator, Backend):
             pytest.skip('no bigquery credentials found')
 
 
-class Impala(UnorderedComparator, Backend):
+class Impala(UnorderedComparator, Backend, RoundAwayFromZero):
     supports_arrays = True
     supports_arrays_outside_of_select = False
     check_dtype = False
