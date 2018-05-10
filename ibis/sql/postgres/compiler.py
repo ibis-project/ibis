@@ -529,6 +529,8 @@ def _table_column(t, expr):
 
 
 def _round(t, expr):
+    # postgres rounds half to even for double precision and half away from zero
+    # for numeric and decimal
     arg, digits = expr.op().args
     sa_arg = t.translate(arg)
 
@@ -541,7 +543,8 @@ def _round(t, expr):
     result = sa.func.round(sa.cast(sa_arg, sa.NUMERIC), t.translate(digits))
     if digits is not None and isinstance(arg.type(), dt.Decimal):
         return result
-    return sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
+    result = sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
+    return result
 
 
 def _mod(t, expr):
