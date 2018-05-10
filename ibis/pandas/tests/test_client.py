@@ -37,7 +37,9 @@ def test_client_table_repr(table):
 
 
 def test_literal(client):
-    assert client.execute(ibis.literal(1)) == 1
+    lit = ibis.literal(1)
+    result = client.execute(lit)
+    assert result == 1
 
 
 def test_read_with_undiscoverable_type(client):

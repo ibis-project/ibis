@@ -12,12 +12,14 @@ import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.common as com
+import ibis.expr.window as win
 import ibis.expr.operations as ops
 
 import ibis.pandas.aggcontext as agg_ctx
 
 from ibis.pandas.core import integer_types
-from ibis.pandas.dispatch import execute, execute_first, execute_node
+from ibis.pandas.dispatch import execute_node
+from ibis.pandas.core import execute
 from ibis.pandas.execution import util
 
 
@@ -40,9 +42,14 @@ def _post_process_group_by_order_by(series, index):
     return reindexed_series
 
 
-@execute_first.register(ops.WindowOp, pd.DataFrame)
-def execute_frame_window_op(op, data, scope=None, context=None, **kwargs):
-    operand, window = op.args
+@execute_node.register(ops.WindowOp, pd.Series, win.Window)
+def execute_window_op(op, data, window, scope=None, context=None, **kwargs):
+    operand = op.expr
+    root, = op.root_tables()
+    try:
+        data = scope[root]
+    except KeyError:
+        data = execute(root.to_expr(), scope=scope, context=context, **kwargs)
 
     following = window.following
     order_by = window._order_by
@@ -104,12 +111,15 @@ def execute_frame_window_op(op, data, scope=None, context=None, **kwargs):
     if not grouping_keys and not order_by:
         context = agg_ctx.Summarize()
     elif isinstance(operand.op(), ops.Reduction) and order_by:
+        # XXX(phillipc): What a horror show
         preceding = window.preceding
         if preceding is not None:
-            context = agg_ctx.Trailing(preceding)
+            context = agg_ctx.Moving(preceding)
         else:
+            # expanding window
             context = agg_ctx.Cumulative()
     else:
+        # groupby transform (window with a partition by clause in SQL parlance)
         context = agg_ctx.Transform()
 
     result = execute(operand, new_scope, context=context, **kwargs)
@@ -153,19 +163,45 @@ def execute_series_cumulative_op(op, data, **kwargs):
 @execute_node.register(
     ops.Lag, (pd.Series, SeriesGroupBy),
     integer_types + (type(None),),
-    type(None),
+    object,
 )
 def execute_series_lag(op, data, offset, default, **kwargs):
-    return data.shift(1 if offset is None else offset)
+    result = data.shift(1 if offset is None else offset)
+    if not pd.isnull(default):
+        return result.fillna(default)
+    return result
 
 
 @execute_node.register(
     ops.Lead, (pd.Series, SeriesGroupBy),
     integer_types + (type(None),),
-    type(None),
+    object,
 )
 def execute_series_lead(op, data, offset, default, **kwargs):
-    return data.shift(-(1 if offset is None else offset))
+    result = data.shift(-(1 if offset is None else offset))
+    if not pd.isnull(default):
+        return result.fillna(default)
+    return result
+
+
+@execute_node.register(
+    ops.Lag, (pd.Series, SeriesGroupBy), pd.Timedelta, object,
+)
+def execute_series_lag_timedelta(op, data, offset, default, **kwargs):
+    result = data.tshift(freq=offset)
+    if not pd.isnull(default):
+        return result.fillna(default)
+    return result
+
+
+@execute_node.register(
+    ops.Lead, (pd.Series, SeriesGroupBy), pd.Timedelta, object
+)
+def execute_series_lead_timedelta(op, data, offset, default, **kwargs):
+    result = data.tshift(freq=-offset)
+    if not pd.isnull(default):
+        return result.fillna(default)
+    return result
 
 
 @execute_node.register(ops.FirstValue, pd.Series)

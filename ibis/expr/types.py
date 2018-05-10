@@ -680,11 +680,11 @@ class ListExpr(ColumnExpr, AnyValue):
         return self.values[key]
 
     def __add__(self, other):
-        other_values = getattr(other, 'values', other)
+        other_values = tuple(getattr(other, 'values', other))
         return type(self.op())(self.values + other_values).to_expr()
 
     def __radd__(self, other):
-        other_values = getattr(other, 'values', other)
+        other_values = tuple(getattr(other, 'values', other))
         return type(self.op())(other_values + self.values).to_expr()
 
     def __bool__(self):
