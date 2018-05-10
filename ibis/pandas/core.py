@@ -1,12 +1,10 @@
 """The pandas backend is a departure from the typical ibis backend in that it
-doesn't compile to anything, and the execution of the ibis expression coming
-dervied from a PandasTable is under the purview of ibis itself rather than
-sending something to a server and having it return the results.
+doesn't compile to anything, and the execution of the ibis expression
+is under the purview of ibis itself rather than executing SQL on a server.
 
 Design
 ------
-
-Ibis uses a technique called `multiple dispatch
+The pandas backend uses a technique called `multiple dispatch
 <https://en.wikipedia.org/wiki/Multiple_dispatch>`_, implemented in a
 third-party open source library called `multipledispatch
 <https://github.com/mrocklin/multipledispatch>`_.
@@ -16,16 +14,15 @@ polymorphism to multiple arguments.
 
 Compilation
 -----------
-This is a no-op because we directly execute ibis expressions.
+This is a no-op because we execute ibis expressions directly.
 
 Execution
 ---------
-
 Execution is divided into different dispatched functions, each arising from
 different a use case.
 
-A top level dispatched function named ``execute`` with two signatures exists
-to provide a single API for executing an ibis expression.
+A top level function `execute` exists to provide the API for executing an ibis
+expression against in-memory data.
 
 The general flow of execution is:
 
@@ -37,47 +34,50 @@ The general flow of execution is:
 
        execute the current node with its executed arguments
 
-Specifically, execute is comprised of 4 steps that happen at different times
-during the loop.
+Specifically, execute is comprised of a series of steps that happen at
+different times during the loop.
 
-1. ``data_preload``
--------------------
-First, data_preload is called. data_preload provides a way for an expression to
-intercept the data and inject scope. By default it does nothing.
-
-2. ``pre_execute``
+1. ``pre_execute``
 ------------------
-
-Second, at the beginning of the main execution loop, ``pre_execute`` is called.
+First, at the beginning of the main execution loop, ``pre_execute`` is called.
 This function serves a similar purpose to ``data_preload``, the key difference
 being that ``pre_execute`` is called *every time* there's a call to execute.
 
 By default this function does nothing.
 
-3. ``execute_first``
---------------------
-
-Third is ``execute_first``. This function gives an expression the opportunity
-to define the entire flow of execution of an expression starting from the top
-of the expression.
-
-This functionality was essential for implementing window functions in the
-pandas backend
-
-By default this function does nothing.
-
-4. ``execute_node``
+2. ``execute_node``
 -------------------
 
-Finally, when an expression is ready to be evaluated we call
+Second, when an expression is ready to be evaluated we call
 :func:`~ibis.pandas.core.execute` on the expressions arguments and then
 :func:`~ibis.pandas.dispatch.execute_node` on the expression with its
 now-materialized arguments.
+
+3. ``post_execute``
+-------------------
+The final step--``post_execute``--is called immediately after the previous call
+to ``execute_node`` and takes the instance of the
+:class:`~ibis.expr.operations.Node` just computed and the result of the
+computation.
+
+The purpose of this function is to allow additional computation to happen in
+the context of the current level of the execution loop. You might be wondering
+That may sound vague, so let's look at an example.
+
+Let's say you want to take a three day rolling average, and you want to include
+3 days of data prior to the first date of the input. You don't want to see that
+data in the result for a few reasons, one of which is that it would break the
+contract of window functions: given N rows of input there are N rows of output.
+
+Defining a ``post_execute`` rule for :class:`~ibis.expr.operations.WindowOp`
+allows you to encode such logic. One might want to implement this using
+:class:`~ibis.expr.operations.ScalarParameter`, in which case the ``scope``
+passed to ``post_execute`` would be the bound values passed in at the time the
+``execute`` method was called.
 """
 
 from __future__ import absolute_import
 
-import collections
 import numbers
 import datetime
 
@@ -87,16 +87,20 @@ import numpy as np
 
 import toolz
 
+import ibis
+import ibis.common as com
+
 import ibis.expr.types as ir
-import ibis.expr.lineage as lin
+import ibis.expr.operations as ops
 import ibis.expr.datatypes as dt
+import ibis.expr.window as win
 
 from ibis.compat import functools
 from ibis.client import find_backends
 
 import ibis.pandas.aggcontext as agg_ctx
 from ibis.pandas.dispatch import (
-    execute, execute_node, execute_first, data_preload, pre_execute
+     execute_node, pre_execute, post_execute, execute_literal
 )
 
 
@@ -112,43 +116,22 @@ temporal_types = (
 scalar_types = fixed_width_types + temporal_types
 simple_types = scalar_types + six.string_types
 
-
-def find_data(expr):
-    """Find data sources bound to `expr`.
-
-    Parameters
-    ----------
-    expr : ibis.expr.types.Expr
-
-    Returns
-    -------
-    data : collections.OrderedDict
-    """
-    def finder(expr):
-        op = expr.op()
-        if hasattr(op, 'source'):
-            data = (op, op.source.dictionary.get(op.name, None))
-        else:
-            data = None
-        return lin.proceed, data
-
-    return collections.OrderedDict(lin.traverse(finder, expr))
+_VALID_INPUT_TYPES = (
+    ibis.client.Client, ir.Expr, dt.DataType, type(None), win.Window
+) + scalar_types
 
 
-_VALID_INPUT_TYPES = (ir.Expr, dt.DataType, type(None)) + scalar_types
-
-
-@execute.register(ir.Expr, dict)
 def execute_with_scope(expr, scope, context=None, **kwargs):
     """Execute an expression `expr`, with data provided in `scope`.
 
     Parameters
     ----------
-    expr : ir.Expr
+    expr : ibis.expr.types.Expr
         The expression to execute.
-    scope : dict
-        A dictionary mapping :class:`~ibis.expr.types.Node` subclass instances
-        to concrete data such as a pandas DataFrame.
+    scope : collections.Mapping
+        A dictionary mapping :class:`~ibis.expr.operations.Node` subclass
+        instances to concrete data such as a pandas DataFrame.
+    context : Optional[ibis.pandas.aggcontext.AggregationContext]
 
     Returns
     -------
@@ -158,101 +141,171 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
 
     # Call pre_execute, to allow clients to intercept the expression before
     # computing anything *and* before associating leaf nodes with data. This
-    # allows clients to provide their own scope.
-    scope = toolz.merge(
-        scope,
-        *map(
-            functools.partial(pre_execute, op, scope=scope, **kwargs),
-            find_backends(expr)
-        )
-    )
-
-    # base case: our op has been computed (or is a leaf data node), so
-    # return the corresponding value
-    if op in scope:
-        return scope[op]
+    # allows clients to provide their own data for each leaf.
+    clients = list(find_backends(expr))
 
     if context is None:
         context = agg_ctx.Summarize()
 
-    try:
-        computed_args = [scope[t] for t in op.root_tables()]
-    except KeyError:
-        pass
-    else:
-        try:
-            # special case: we have a definition of execute_first that matches
-            # our current operation and data leaves
-            return execute_first(
-                op, *computed_args, scope=scope, context=context, **kwargs
-            )
-        except NotImplementedError:
-            pass
+    pre_executed_scope = map(
+        functools.partial(
+            pre_execute, op, scope=scope, context=context, **kwargs),
+        clients
+    )
+    new_scope = toolz.merge(scope, *pre_executed_scope)
+    result = execute_until_in_scope(
+        expr, new_scope, context=context, clients=clients, **kwargs)
 
-    args = op.args
+    # XXX: we *explicitly* pass in scope and not new_scope here so that
+    # post_execute sees the scope of execute_with_scope, not the scope of
+    # execute_until_in_scope
+    return post_execute(
+        op, result, scope=scope, context=context, clients=clients, **kwargs)
 
-    # recursively compute the op's arguments
-    computed_args = [
-        execute(arg, scope, context=context, **kwargs)
-        if hasattr(arg, 'op') else arg
-        for arg in args if isinstance(arg, _VALID_INPUT_TYPES)
-    ]
 
-    # Compute our op, with its computed arguments
-    return execute_node(
-        op, *computed_args,
-        scope=scope,
-        context=context,
-        **kwargs
+def execute_until_in_scope(expr, scope, context=None, clients=None, **kwargs):
+    """Execute until our op is in `scope`.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+    scope : Mapping
+    context : Optional[AggregationContext]
+    clients : List[ibis.client.Client]
+    kwargs : Mapping
+    """
+    # these should never be None
+    assert context is not None, 'context is None'
+    assert clients is not None, 'clients is None'
+
+    # base case: our op has been computed (or is a leaf data node), so
+    # return the corresponding value
+    op = expr.op()
+    if op in scope:
+        return scope[op]
+
+    new_scope = execute_bottom_up(expr, scope, context=context, **kwargs)
+    pre_executor = functools.partial(pre_execute, op, scope=scope, **kwargs)
+    new_scope = toolz.merge(new_scope, *map(pre_executor, clients))
+    return execute_until_in_scope(
+        expr, new_scope, context=context, clients=clients, **kwargs)
+
+
+def is_computable_arg(op, arg):
+    """Is `arg` a valid input to an ``execute_node`` rule?
+
+    Parameters
+    ----------
+    arg : object
+        Any Python object
+
+    Returns
+    -------
+    result : bool
+    """
+    return (
+        isinstance(op, (ops.ValueList, ops.WindowOp)) or
+        isinstance(arg, _VALID_INPUT_TYPES)
     )
 
 
-@execute.register(ir.Expr)
-def execute_without_scope(
-        expr, params=None, scope=None, context=None, **kwargs):
+def execute_bottom_up(expr, scope, context=None, **kwargs):
+    """Execute `expr` bottom-up.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+    scope : Mapping[ibis.expr.operations.Node, object]
+    context : Optional[ibis.pandas.aggcontext.AggregationContext]
+    kwargs : Dict[str, object]
+
+    Returns
+    -------
+    result : Mapping[
+        ibis.expr.operations.Node,
+        Union[pandas.Series, pandas.DataFrame, scalar_types]
+    ]
+        A mapping from node to the computed result of that Node
+    """
+    op = expr.op()
+
+    # if we're in scope then return the scope, this will then be passed back
+    # into execute_bottom_up, which will then terminate
+    if op in scope:
+        return scope
+    elif isinstance(op, ops.Literal):
+        # special case literals to avoid the overhead of dispatching
+        # execute_node
+        return {
+            op: execute_literal(
+                op, op.value, expr.type(), context=context, **kwargs
+            )
+        }
+
+    # figure out what arguments we're able to compute on based on the
+    # expressions inputs. things like expressions, None, and scalar types are
+    # computable whereas ``list``s are not
+    args = op.inputs
+    is_computable_argument = functools.partial(is_computable_arg, op)
+    computable_args = list(filter(is_computable_argument, args))
+
+    # recursively compute each node's arguments until we've changed type
+    scopes = [
+        execute_bottom_up(arg, scope, context=context, **kwargs)
+        if hasattr(arg, 'op') else {arg: arg}
+        for arg in computable_args
+    ]
+
+    # if we're unable to find data then raise an exception
+    if not scopes:
+        raise com.UnboundExpressionError(
+            'Unable to find data for expression:\n{}'.format(repr(expr))
+        )
+
+    # there should be exactly one dictionary per computable argument
+    assert len(computable_args) == len(scopes)
+
+    new_scope = toolz.merge(scopes)
+
+    # pass our computed arguments to this node's execute_node implementation
+    data = [
+        new_scope[arg.op()] if hasattr(arg, 'op') else arg
+        for arg in computable_args
+    ]
+    result = execute_node(op, *data, scope=scope, context=context, **kwargs)
+    return {op: result}
+
+
+def execute(expr, params=None, scope=None, context=None, **kwargs):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
 
     Parameters
     ----------
-    expr : ir.Expr
+    expr : ibis.expr.types.Expr
         The expression to execute
-    params : Dict[Expr, object]
+    params : Mapping[Expr, object]
+    scope : Mapping[ibis.expr.operations.Node, object]
+    context : Optional[ibis.pandas.aggcontext.AggregationContext]
 
     Returns
     -------
-    result : scalar, pd.Series, pd.DataFrame
+    result : Union[pandas.Series, pandas.DataFrame, scalar_types]
 
     Raises
     ------
     ValueError
         * If no data are bound to the input expression
     """
-
-    data_scope = find_data(expr)
-
-    factory = type(data_scope)
-
     if scope is None:
-        scope = factory()
+        scope = {}
 
     if params is None:
-        params = factory()
+        params = {}
 
+    # TODO: make expresions hashable so that we can get rid of these .op()
+    # calls everywhere
     params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
 
-    new_scope = toolz.merge(scope, data_scope, params, factory=factory)
-
-    # data_preload
-    new_scope.update(
-        (node, data_preload(node, data, scope=new_scope))
-        for node, data in new_scope.items()
-    )
-
-    # By default, our aggregate functions are N -> 1
-    return execute(
-        expr,
-        new_scope,
-        context=context if context is not None else agg_ctx.Summarize(),
-        **kwargs
-    )
+    new_scope = toolz.merge(scope, params)
+    return execute_with_scope(expr, new_scope, context=context, **kwargs)

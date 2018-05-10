@@ -2,12 +2,14 @@ from __future__ import absolute_import
 
 import contextlib
 
-import ibis.common as com
-import ibis.expr.operations as ops
 from multipledispatch import Dispatcher, halt_ordering, restart_ordering
 
+import pandas as pd
 
-execute = Dispatcher('execute', doc='Execute an expression')
+import ibis.common as com
+import ibis.expr.operations as ops
+import ibis.expr.datatypes as dt
+
 
 # Individual operation execution
 execute_node = Dispatcher(
@@ -24,14 +26,9 @@ def execute_node_without_scope(node, **kwargs):
     raise com.UnboundExpressionError(
         'Node of type {!r} has no data bound to it. '
         'You probably tried to execute an expression without a data source.'
+        .format(type(node).__name__)
     )
 
-
-execute_first = Dispatcher(
-    'execute_first', doc='Compute from the top of the expression downward')
-
-data_preload = Dispatcher(
-    'data_preload', doc='Possibly preload data from the client, given a node')
 
 pre_execute = Dispatcher(
     'pre_execute',
@@ -46,16 +43,59 @@ depth-first traversal of the tree.
 """)
 
 
-# Default does nothing
-@data_preload.register(object, object)
-def data_preload_default(node, data, **kwargs):
-    return data
-
-
 # Default returns an empty scope
 @pre_execute.register(object, object)
 def pre_execute_default(node, client, **kwargs):
     return {}
+
+
+execute_literal = Dispatcher(
+    'execute_literal',
+    doc="""\
+Special case literal execution to avoid the dispatching overhead of
+``execute_node``.
+
+Parameters
+----------
+op : ibis.expr.operations.Node
+value : object
+    The literal value of the object, e.g., int, float.
+datatype : ibis.expr.datatypes.DataType
+    Used to specialize on expressions whose underlying value is of a different
+    type than its would-be type. For example, interval values are represented
+    by an integer.
+""")
+
+
+# By default return the literal value
+@execute_literal.register(ops.Literal, object, dt.DataType)
+def execute_node_literal_value_datatype(op, value, datatype, **kwargs):
+    return value
+
+
+# By default return the literal value
+@execute_literal.register(ops.Literal, object, dt.Interval)
+def execute_node_literal_value_interval(op, value, datatype, **kwargs):
+    return pd.Timedelta(value, unit=datatype.unit)
+
+
+post_execute = Dispatcher(
+    'post_execute',
+    doc="""\
+Execute code on the result of a computation.
+
+Parameters
+----------
+op : ibis.expr.operations.Node
+    The operation that was just executed
+data : object
+    The result of the computation
+""")
+
+
+@post_execute.register(ops.Node, object)
+def post_execute_default(op, data, **kwargs):
+    return data
 
 
 @contextlib.contextmanager

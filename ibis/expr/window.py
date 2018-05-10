@@ -1,17 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.util as util
@@ -58,38 +44,50 @@ class Window(object):
         self._validate_frame()
 
     def _validate_frame(self):
-        p_tuple = has_p = False
-        f_tuple = has_f = False
+        preceding_tuple = has_preceding = False
+        following_tuple = has_following = False
         if self.preceding is not None:
-            p_tuple = isinstance(self.preceding, tuple)
-            has_p = True
+            preceding_tuple = isinstance(self.preceding, tuple)
+            has_preceding = True
 
         if self.following is not None:
-            f_tuple = isinstance(self.following, tuple)
-            has_f = True
+            following_tuple = isinstance(self.following, tuple)
+            has_following = True
 
-        if ((p_tuple and has_f) or (f_tuple and has_p)):
-            raise com.IbisInputError('Can only specify one window side '
-                                     ' when you want an off-center '
-                                     'window')
-        elif p_tuple:
+        if ((preceding_tuple and has_following) or
+                (following_tuple and has_preceding)):
+            raise com.IbisInputError(
+                'Can only specify one window side when you want an '
+                'off-center window'
+            )
+        elif preceding_tuple:
             start, end = self.preceding
             if start is None:
                 assert end >= 0
             else:
                 assert start > end
-        elif f_tuple:
+        elif following_tuple:
             start, end = self.following
             if end is None:
                 assert start >= 0
             else:
                 assert start < end
         else:
-            if has_p and self.preceding < 0:
-                raise com.IbisInputError('Window offset must be positive')
+            if not isinstance(self.preceding, ir.Expr):
+                if has_preceding and self.preceding < 0:
+                    raise com.IbisInputError(
+                        "'preceding' must be positive, got {}".format(
+                            self.preceding
+                        )
+                    )
 
-            if has_f and self.following < 0:
-                raise com.IbisInputError('Window offset must be positive')
+            if not isinstance(self.following, ir.Expr):
+                if has_following and self.following < 0:
+                    raise com.IbisInputError(
+                        "'following' must be positive, got {}".format(
+                            self.following
+                        )
+                    )
 
     def bind(self, table):
         # Internal API, ensure that any unresolved expr references (as strings,
@@ -128,32 +126,36 @@ class Window(object):
         if cache is None:
             cache = {}
 
-        if (self, other) in cache:
-            return cache[(self, other)]
-
-        if id(self) == id(other):
-            cache[(self, other)] = True
+        if self is other:
+            cache[self, other] = True
             return True
 
         if not isinstance(other, Window):
-            cache[(self, other)] = False
+            cache[self, other] = False
             return False
+
+        try:
+            return cache[self, other]
+        except KeyError:
+            pass
 
         if (len(self._group_by) != len(other._group_by) or
                 not ops.all_equal(self._group_by, other._group_by,
                                   cache=cache)):
-            cache[(self, other)] = False
+            cache[self, other] = False
             return False
 
         if (len(self._order_by) != len(other._order_by) or
                 not ops.all_equal(self._order_by, other._order_by,
                                   cache=cache)):
-            cache[(self, other)] = False
+            cache[self, other] = False
             return False
 
-        equal = (self.preceding == other.preceding and
-                 self.following == other.following)
-        cache[(self, other)] = equal
+        equal = (
+            ops.all_equal(self.preceding, other.preceding, cache=cache) and
+            ops.all_equal(self.following, other.following, cache=cache)
+        )
+        cache[self, other] = equal
         return equal
 
 

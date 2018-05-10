@@ -1,6 +1,6 @@
 import ast
 from ibis.bigquery.udf.find import find_names
-from ibis.util import is_sequence
+from ibis.util import is_iterable
 
 
 def parse_expr(expr):
@@ -17,7 +17,7 @@ def eq(left, right):
     if type(left) != type(right):
         return False
 
-    if is_sequence(left) and is_sequence(right):
+    if is_iterable(left) and is_iterable(right):
         return all(map(eq, left, right))
 
     if not isinstance(left, ast.AST) and not isinstance(right, ast.AST):

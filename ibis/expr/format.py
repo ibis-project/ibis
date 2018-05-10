@@ -218,7 +218,7 @@ class ExprFormatter(object):
 
         if not arg_names:
             for arg in op.args:
-                if isinstance(arg, list):
+                if util.is_iterable(arg):
                     for x in arg:
                         visit(x)
                 else:
@@ -230,7 +230,7 @@ class ExprFormatter(object):
                     name = None
                 if name is not None:
                     name = self._indent('{0}:'.format(name))
-                if isinstance(arg, list):
+                if util.is_iterable(arg):
                     if name is not None and len(arg) > 0:
                         formatted_args.append(name)
                         indents = 1
