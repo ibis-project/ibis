@@ -19,7 +19,8 @@ import ibis.expr.operations as ops
 
 from ibis.compat import functools
 
-from ibis.pandas.dispatch import execute, execute_node
+from ibis.pandas.dispatch import execute_node
+from ibis.pandas.core import execute
 from ibis.pandas.execution import constants, util
 
 
@@ -44,8 +45,7 @@ Notes
 -----
 :class:`~ibis.expr.types.ScalarExpr` instances occur when a specific column
 projection is a window operation.
-"""
-)
+""")
 
 
 @compute_projection.register(ir.ScalarExpr, ops.Selection, pd.DataFrame)

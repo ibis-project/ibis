@@ -28,6 +28,7 @@ if not PY2:
     from inspect import signature, Parameter, _empty
     import unittest.mock as mock
     range = range
+    map = map
     import builtins
     import pickle
     maketrans = str.maketrans
@@ -45,6 +46,7 @@ else:
     lzip = zip
     zip = itertools.izip
     zip_longest = itertools.izip_longest
+    map = itertools.imap
 
     def viewkeys(x):
         return x.viewkeys()

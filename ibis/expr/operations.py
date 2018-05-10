@@ -4,16 +4,16 @@ import operator
 import itertools
 import collections
 
-from functools import partial
 from ibis.expr.schema import HasSchema, Schema
 
-import ibis.util as util
 import ibis.common as com
-import ibis.compat as compat
 import ibis.expr.types as ir
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
+
+from ibis import util, compat
+from ibis.compat import functools, map
 from ibis.expr.signature import Annotable, Argument as Arg
 
 
@@ -55,6 +55,10 @@ class Node(Annotable):
             pprint_args.append(pp)
 
         return '%s(%s)' % (opname, ', '.join(pprint_args))
+
+    @property
+    def inputs(self):
+        return tuple(self.args)
 
     def blocks(self):
         # The contents of this node at referentially distinct and may not be
@@ -134,13 +138,9 @@ class ValueOp(Node):
 
 
 def all_equal(left, right, cache=None):
-    if isinstance(left, list):
-        if not isinstance(right, list):
-            return False
-        for a, b in zip(left, right):
-            if not all_equal(a, b, cache=cache):
-                return False
-        return True
+    if util.is_iterable(left):
+        return util.is_iterable(right) and all(
+            map(functools.partial(all_equal, cache=cache), left, right))
 
     if hasattr(left, 'equals'):
         return left.equals(right, cache=cache)
@@ -781,7 +781,7 @@ class Count(Reduction):
     where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
-        return partial(ir.IntegerScalar, dtype=dt.int64)
+        return functools.partial(ir.IntegerScalar, dtype=dt.int64)
 
 
 class Arbitrary(Reduction):
@@ -911,7 +911,7 @@ class HLLCardinality(Reduction):
     def output_type(self):
         # Impala 2.0 and higher returns a DOUBLE
         # return ir.DoubleScalar
-        return partial(ir.IntegerScalar, dtype=dt.int64)
+        return functools.partial(ir.IntegerScalar, dtype=dt.int64)
 
 
 class GroupConcat(Reduction):
@@ -967,6 +967,10 @@ class WindowOp(ValueOp):
         new_window = self.window.combine(window)
         return WindowOp(self.expr, new_window)
 
+    @property
+    def inputs(self):
+        return self.expr.op().inputs[0], self.window
+
     def root_tables(self):
         result = list(toolz.unique(
             toolz.concatv(
@@ -985,7 +989,7 @@ class WindowOp(ValueOp):
 
 class ShiftBase(AnalyticOp):
     arg = Arg(rlz.column(rlz.any))
-    offset = Arg(rlz.integer, default=None)
+    offset = Arg(rlz.one_of((rlz.integer, rlz.interval)), default=None)
     default = Arg(rlz.any, default=None)
     output_type = rlz.typeof('arg')
 
@@ -2299,7 +2303,7 @@ class TimestampNow(Constant):
 class E(Constant):
 
     def output_type(self):
-        return partial(ir.FloatingScalar, dtype=dt.float64)
+        return functools.partial(ir.FloatingScalar, dtype=dt.float64)
 
 
 class Pi(Constant):
@@ -2771,8 +2775,7 @@ class ExpressionList(Node):
     exprs = Arg(rlz.noop)
 
     def __init__(self, values):
-        values = list(map(rlz.any, values))
-        super(ExpressionList, self).__init__(values)
+        super(ExpressionList, self).__init__(list(map(rlz.any, values)))
 
     def root_tables(self):
         return distinct_roots(self.exprs)
@@ -2788,15 +2791,14 @@ class ValueList(ValueOp):
     display_argnames = False  # disable showing argnames in repr
 
     def __init__(self, values):
-        values = list(map(rlz.any, values))
-        super(ValueList, self).__init__(values)
+        super(ValueList, self).__init__(tuple(map(rlz.any, values)))
+
+    def output_type(self):
+        dtype = rlz.highest_precedence_dtype(self.values)
+        return functools.partial(ir.ListExpr, dtype=dtype)
 
     def root_tables(self):
         return distinct_roots(*self.values)
-
-    def _make_expr(self):
-        dtype = rlz.highest_precedence_dtype(self.values)
-        return ir.ListExpr(self, dtype=dtype)
 
 
 # GEOMETRIC OPERATIONS

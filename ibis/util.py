@@ -7,6 +7,8 @@ import types
 
 import six
 
+import toolz
+
 import ibis.compat as compat
 from ibis.config import options
 
@@ -26,18 +28,12 @@ def indent(text, spaces):
     return ''.join(prefix + line for line in text.splitlines(True))
 
 
-def any_of(values, t):
-    for x in values:
-        if isinstance(x, t):
-            return True
-    return False
+def is_one_of(values, t):
+    return (isinstance(x, t) for x in values)
 
 
-def all_of(values, t):
-    for x in values:
-        if not isinstance(x, t):
-            return False
-    return True
+any_of = toolz.compose(any, is_one_of)
+all_of = toolz.compose(all, is_one_of)
 
 
 def promote_list(val):
@@ -182,8 +178,8 @@ def safe_index(elements, value):
         return -1
 
 
-def is_sequence(o):
-    """Return whether `o` is a non-string sequence.
+def is_iterable(o):
+    """Return whether `o` is a non-string iterable.
 
     Parameters
     ----------
@@ -193,6 +189,20 @@ def is_sequence(o):
     Returns
     -------
     is_seq : bool
+
+    Examples
+    --------
+    >>> x = '1'
+    >>> is_iterable(x)
+    False
+    >>> is_iterable(iter(x))
+    True
+    >>> is_iterable(i for i in range(1))
+    True
+    >>> is_iterable(1)
+    False
+    >>> is_iterable([])
+    True
     """
     return (not isinstance(o, six.string_types) and
             isinstance(o, collections.Iterable))

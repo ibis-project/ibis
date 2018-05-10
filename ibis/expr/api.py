@@ -924,17 +924,15 @@ def _case(arg):
         string_col = Column[string*] 'string_col' from table
           ref_0
       cases:
-        ValueList[string*]
-          Literal[string]
-            a
-          Literal[string]
-            b
+        Literal[string]
+          a
+        Literal[string]
+          b
       results:
-        ValueList[string*]
-          Literal[string]
-            an a
-          Literal[string]
-            a b
+        Literal[string]
+          an a
+        Literal[string]
+          a b
       default:
         Literal[string]
           null or (not a and not b)

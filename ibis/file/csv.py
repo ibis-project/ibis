@@ -7,7 +7,7 @@ import ibis.expr.operations as ops
 from ibis.compat import parse_version
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
-from ibis.pandas.core import pre_execute, execute  # noqa
+from ibis.pandas.core import execute_node, pre_execute, execute
 from ibis.pandas.execution.selection import physical_tables
 
 
@@ -92,20 +92,15 @@ class CSVClient(FileClient):
         return parse_version(pd.__version__)
 
 
-@pre_execute.register(CSVClient.table_class, CSVClient)
-def csv_pre_execute_table(op, client, scope, **kwargs):
-    # cache
-    if isinstance(scope.get(op), pd.DataFrame):
-        return {}
-
+@execute_node.register(CSVClient.table_class, CSVClient)
+def csv_read_table(op, client, scope, **kwargs):
     path = client.dictionary[op.name]
     df = _read_csv(path, schema=op.schema, header=0, **op.read_csv_kwargs)
-
-    return {op: df}
+    return df
 
 
 @pre_execute.register(ops.Selection, CSVClient)
-def csv_pre_execute(op, client, scope, **kwargs):
+def csv_pre_execute_selection(op, client, scope, **kwargs):
     tables = filter(lambda t: t not in scope, physical_tables(op.table.op()))
 
     ops = {}

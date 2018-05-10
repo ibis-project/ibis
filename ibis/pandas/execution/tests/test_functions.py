@@ -31,17 +31,16 @@ pytestmark = pytest.mark.pandas
 def test_binary_operations(t, df, op):
     expr = op(t.plain_float64, t.plain_int64)
     result = expr.execute()
-    tm.assert_series_equal(result, op(df.plain_float64, df.plain_int64))
+    expected = op(df.plain_float64, df.plain_int64)
+    tm.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize('op', [operator.and_, operator.or_, operator.xor])
 def test_binary_boolean_operations(t, df, op):
     expr = op(t.plain_int64 == 1, t.plain_int64 == 2)
     result = expr.execute()
-    tm.assert_series_equal(
-        result,
-        op(df.plain_int64 == 1, df.plain_int64 == 2)
-    )
+    expected = op(df.plain_int64 == 1, df.plain_int64 == 2)
+    tm.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize('places', [-2, 0, 1, 2, None])

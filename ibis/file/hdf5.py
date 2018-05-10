@@ -2,7 +2,7 @@ import pandas as pd
 import ibis.expr.schema as sch
 import ibis.expr.operations as ops
 from ibis.file.client import FileClient
-from ibis.pandas.core import pre_execute, execute  # noqa
+from ibis.pandas.core import execute_node, execute
 
 
 def connect(path):
@@ -66,14 +66,9 @@ class HDFClient(FileClient):
         return self._list_databases_dirs_or_files(path)
 
 
-@pre_execute.register(HDFClient.table_class, HDFClient)
-def hdf_pre_execute_table(op, client, scope, **kwargs):
-
-    # cache
-    if isinstance(scope.get(op), pd.DataFrame):
-        return {}
-
+@execute_node.register(HDFClient.table_class, HDFClient)
+def hdf_read_table(op, client, scope, **kwargs):
     key = op.name
     path = client.dictionary[key]
     df = pd.read_hdf(str(path), key, mode='r')
-    return {op: df}
+    return df

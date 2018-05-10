@@ -27,6 +27,7 @@ dependencies:
   - pymysql
   - pytables
   - pytest
+  - pytest-xdist
   - python=2.7
   - python-graphviz
   - python-hdfs>=2.0.16
