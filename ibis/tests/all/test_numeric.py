@@ -113,16 +113,6 @@ def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
             id='greatest-scalar'
         ),
         param(
-            lambda t: t.double_col.round(),
-            lambda t: t.double_col.round().astype('int64'),
-            id='round'
-        ),
-        param(
-            lambda t: t.double_col.round(2),
-            lambda t: t.double_col.round(2),
-            id='round-with-param'
-        ),
-        param(
             lambda t: t.double_col.ceil(),
             lambda t: np.ceil(t.double_col).astype('int64'),
             id='ceil'
@@ -181,6 +171,28 @@ def test_math_functions_columns(
     expr = expr_fn(alltypes)
     expected = expected_fn(df).rename('tmp')
     result = con.execute(expr)
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('expr_fn', 'expected_fn'),
+    [
+        param(
+            lambda be, t: t.double_col.round(),
+            lambda be, t: be.round(t.double_col),
+            id='round',
+        ),
+        param(
+            lambda be, t: t.double_col.round(2),
+            lambda be, t: be.round(t.double_col, 2),
+            id='round-with-param'
+        ),
+    ]
+)
+def test_round(backend, con, df, alltypes, expr_fn, expected_fn):
+    expr = expr_fn(backend, alltypes)
+    result = backend.default_series_rename(con.execute(expr))
+    expected = backend.default_series_rename(expected_fn(backend, df))
     backend.assert_series_equal(result, expected)
 
 
