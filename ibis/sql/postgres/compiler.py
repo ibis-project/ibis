@@ -529,8 +529,6 @@ def _table_column(t, expr):
 
 
 def _round(t, expr):
-    # postgres rounds half to even for double precision and half away from zero
-    # for numeric and decimal
     arg, digits = expr.op().args
     sa_arg = t.translate(arg)
 

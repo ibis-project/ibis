@@ -164,7 +164,9 @@ class SQLite(Backend):
         return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
 
 
-class Postgres(Backend):
+class Postgres(Backend, RoundHalfToEven):
+    # postgres rounds half to even for double precision and half away from zero
+    # for numeric and decimal
 
     returned_timestamp_unit = 's'
 
@@ -181,7 +183,8 @@ class Postgres(Backend):
                                      database=database)
 
 
-class MySQL(Backend):
+class MySQL(Backend, RoundHalfToEven):
+    # mysql has the same rounding behavior as postgres
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = 's'
