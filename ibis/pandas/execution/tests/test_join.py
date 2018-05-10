@@ -135,7 +135,7 @@ def test_join_with_post_expression_selection(how, left, right, df1, df2):
 
 
 @join_type
-def test_join_with_post_expression_filter(how, left, df1):
+def test_join_with_post_expression_filter(how, left):
     lhs = left[['key', 'key2']]
     rhs = left[['key2', 'value']]
 

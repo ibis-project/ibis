@@ -17,6 +17,7 @@ import toolz
 
 from ibis import compat
 
+import ibis
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -24,6 +25,7 @@ import ibis.expr.operations as ops
 from ibis.compat import functools
 
 from ibis.pandas.core import (
+    execute,
     boolean_types,
     integer_types,
     floating_types,
@@ -32,15 +34,9 @@ from ibis.pandas.core import (
     fixed_width_types,
     scalar_types
 )
-from ibis.pandas.dispatch import execute, execute_node
+
+from ibis.pandas.dispatch import execute_node
 from ibis.pandas.execution import constants
-
-
-@execute_node.register(ops.Literal)
-@execute_node.register(ops.Literal, object)
-@execute_node.register(ops.Literal, object, dt.DataType)
-def execute_node_literal(op, *args, **kwargs):
-    return op.value
 
 
 @execute_node.register(ops.Literal, object, dt.Interval)
@@ -680,8 +676,8 @@ def execute_node_self_reference_dataframe(op, data, **kwargs):
     return data
 
 
-@execute_node.register(ops.ValueList)
-def execute_node_value_list(op, **kwargs):
+@execute_node.register(ops.ValueList, collections.Sequence)
+def execute_node_value_list(op, _, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
 
 
@@ -762,3 +758,9 @@ def execute_node_where_scalar_series_scalar(op, cond, true, false, **kwargs):
 @execute_node.register(ops.Where, boolean_types, scalar_types, pd.Series)
 def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
     return pd.Series(np.repeat(true, len(false))) if cond else false
+
+
+@execute_node.register(
+    ibis.pandas.client.PandasTable, ibis.pandas.client.PandasClient)
+def execute_database_table_client(op, client, **kwargs):
+    return client.dictionary[op.name]

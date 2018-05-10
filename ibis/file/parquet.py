@@ -1,4 +1,3 @@
-import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -9,7 +8,7 @@ import ibis.expr.operations as ops
 from ibis.compat import parse_version
 from ibis.file.client import FileClient
 from ibis.pandas.api import PandasDialect
-from ibis.pandas.core import pre_execute, execute
+from ibis.pandas.core import execute_node, execute
 
 
 dialect = PandasDialect
@@ -104,13 +103,9 @@ class ParquetClient(FileClient):
         return parse_version(pa.__version__)
 
 
-@pre_execute.register(ParquetClient.table_class, ParquetClient)
-def parquet_pre_execute_client(op, client, scope, **kwargs):
-    # cache
-    if isinstance(scope.get(op), pd.DataFrame):
-        return {}
-
+@execute_node.register(ParquetClient.table_class, ParquetClient)
+def parquet_read_table(op, client, scope, **kwargs):
     path = client.dictionary[op.name]
     table = pq.read_table(str(path))
     df = table.to_pandas()
-    return {op: df}
+    return df

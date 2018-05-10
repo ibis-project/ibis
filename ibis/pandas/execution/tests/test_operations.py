@@ -637,17 +637,7 @@ def test_scalar_parameter(t, df, raw_value):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    'elements',
-    [
-        [1],
-        (1,),
-        pytest.mark.xfail({1}, raises=TypeError, reason='Not yet implemented'),
-        pytest.mark.xfail(
-            frozenset({1}), raises=TypeError, reason='Not yet implemented'
-        ),
-    ]
-)
+@pytest.mark.parametrize('elements', [[1], (1,), {1}, frozenset({1})])
 def test_isin(t, df, elements):
     expr = t.plain_float64.isin(elements)
     expected = df.plain_float64.isin(elements)
@@ -655,17 +645,7 @@ def test_isin(t, df, elements):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    'elements',
-    [
-        [1],
-        (1,),
-        pytest.mark.xfail({1}, raises=TypeError, reason='Not yet implemented'),
-        pytest.mark.xfail(
-            frozenset({1}), raises=TypeError, reason='Not yet implemented'
-        ),
-    ]
-)
+@pytest.mark.parametrize('elements', [[1], (1,), {1}, frozenset({1})])
 def test_notin(t, df, elements):
     expr = t.plain_float64.notin(elements)
     expected = ~df.plain_float64.isin(elements)

@@ -20,6 +20,7 @@ dependencies:
   - pyarrow>=0.6.0
   - pymysql
   - pytest
+  - pytest-xdist
   - python=3.5
   - python-graphviz
   - python-hdfs>=2.0.16

@@ -3,7 +3,7 @@ import operator
 import ibis
 import ibis.common as com
 
-from ibis.pandas.dispatch import execute
+from ibis.pandas.core import execute
 
 
 def compute_sort_key(key, data, **kwargs):
@@ -33,6 +33,8 @@ def compute_sorted_frame(sort_keys, df, **kwargs):
             new_columns[computed_sort_key] = temporary_column
 
     result = df.assign(**new_columns)
-    result = result.sort_values(computed_sort_keys, ascending=ascending)
+    result = result.sort_values(
+        computed_sort_keys, ascending=ascending, kind='mergesort'
+    )
     result = result.drop(new_columns.keys(), axis=1)
     return result
