@@ -4,7 +4,6 @@ import operator
 import itertools
 import collections
 
-from functools import partial
 from ibis.expr.schema import HasSchema, Schema
 
 import ibis.common as com
@@ -2312,7 +2311,7 @@ class Pi(Constant):
     The constant pi
     """
     def output_type(self):
-        return partial(ir.FloatingScalar, dtype=dt.float64)
+        return functools.partial(ir.FloatingScalar, dtype=dt.float64)
 
 
 class TemporalUnaryOp(UnaryOp):

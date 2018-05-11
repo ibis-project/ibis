@@ -202,7 +202,6 @@ rewrites(ops.All, mapd_ops._all)
 rewrites(ops.Any, mapd_ops._any)
 rewrites(ops.NotAll, mapd_ops._not_all)
 rewrites(ops.NotAny, mapd_ops._not_any)
-rewrites(ops.IfNull, mapd_ops.raise_unsupported_expr_error)
 
 _add_methods(
     ir.NumericValue, dict(
