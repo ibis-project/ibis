@@ -72,6 +72,12 @@ class Backend(object):
     def default_series_rename(self, series, name='tmp'):
         return series.rename(name)
 
+    def greatest(self, f, *args):
+        return f(*args)
+
+    def least(self, f, *args):
+        return f(*args)
+
     @property
     def db(self):
         return self.connection.database()
@@ -264,6 +270,20 @@ class Clickhouse(Backend, RoundHalfToEven):
     def functional_alltypes(self):
         t = self.connection.database().functional_alltypes
         return t.mutate(bool_col=t.bool_col == 1)
+
+    def greatest(self, f, *args):
+        if len(args) > 2:
+            raise NotImplementedError(
+                'Clickhouse does not support more than 2 arguments to greatest'
+            )
+        return super().least(f, *args)
+
+    def least(self, f, *args):
+        if len(args) > 2:
+            raise NotImplementedError(
+                'Clickhouse does not support more than 2 arguments to least'
+            )
+        return super().least(f, *args)
 
 
 class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):

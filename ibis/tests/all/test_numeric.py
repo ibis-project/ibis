@@ -93,26 +93,6 @@ def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
             id='abs'
         ),
         param(
-            lambda t: ibis.least(t.bigint_col, t.int_col),
-            lambda t: pd.Series(map(min, t.bigint_col, t.int_col)),
-            id='least-all-columns'
-        ),
-        param(
-            lambda t: ibis.least(t.bigint_col, t.int_col, -2),
-            lambda t: pd.Series(map(min, t.bigint_col, t.int_col, repeat(-2))),
-            id='least-scalar'
-        ),
-        param(
-            lambda t: ibis.greatest(t.bigint_col, t.int_col),
-            lambda t: pd.Series(map(max, t.bigint_col, t.int_col)),
-            id='greatest-all-columns'
-        ),
-        param(
-            lambda t: ibis.greatest(t.bigint_col, t.int_col, -2),
-            lambda t: pd.Series(map(max, t.bigint_col, t.int_col, repeat(-2))),
-            id='greatest-scalar'
-        ),
-        param(
             lambda t: t.double_col.ceil(),
             lambda t: np.ceil(t.double_col).astype('int64'),
             id='ceil'
@@ -121,11 +101,6 @@ def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
             lambda t: t.double_col.floor(),
             lambda t: np.floor(t.double_col).astype('int64'),
             id='floor'
-        ),
-        param(
-            lambda t: t.double_col.exp(),
-            lambda t: np.exp(t.double_col),
-            id='exp'
         ),
         param(
             lambda t: t.double_col.sign(),
@@ -137,39 +112,58 @@ def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
             lambda t: np.sign(-t.double_col),
             id='sign-negative'
         ),
+    ]
+)
+@tu.skipif_unsupported
+def test_simple_math_functions_columns(
+    backend, con, alltypes, df, expr_fn, expected_fn
+):
+    expr = expr_fn(alltypes)
+    expected = backend.default_series_rename(expected_fn(df))
+    result = con.execute(expr)
+    backend.assert_series_equal(result, expected)
+
+
+# we add one to double_col in this test to make sure the common case works (no
+# domain errors), and we test the backends' various failure modes in each
+# backend's test suite
+
+@pytest.mark.parametrize(
+    ('expr_fn', 'expected_fn'),
+    [
         param(
-            lambda t: t.double_col.sqrt(),
-            lambda t: np.sqrt(t.double_col),
+            lambda t: t.double_col.add(1).sqrt(),
+            lambda t: np.sqrt(t.double_col + 1),
             id='sqrt'
         ),
         param(
-            lambda t: t.double_col.log(2),
-            lambda t: np.log2(t.double_col),
+            lambda t: t.double_col.add(1).exp(),
+            lambda t: np.exp(t.double_col + 1),
+            id='exp'
+        ),
+        param(
+            lambda t: t.double_col.add(1).log(2),
+            lambda t: np.log2(t.double_col + 1),
             id='log2'
         ),
         param(
-            lambda t: t.double_col.ln(),
-            lambda t: np.log(t.double_col),
+            lambda t: t.double_col.add(1).ln(),
+            lambda t: np.log(t.double_col + 1),
             id='ln'
         ),
         param(
-            lambda t: t.double_col.log10(),
-            lambda t: np.log10(t.double_col),
+            lambda t: t.double_col.add(1).log10(),
+            lambda t: np.log10(t.double_col + 1),
             id='log10'
-        ),
-        param(
-            lambda t: t.double_col % 3,
-            lambda t: t.double_col % 3,
-            id='mod'
         ),
     ]
 )
 @tu.skipif_unsupported
-def test_math_functions_columns(
+def test_complex_math_functions_columns(
     backend, con, alltypes, df, expr_fn, expected_fn
 ):
     expr = expr_fn(alltypes)
-    expected = expected_fn(df).rename('tmp')
+    expected = backend.default_series_rename(expected_fn(df))
     result = con.execute(expr)
     backend.assert_series_equal(result, expected)
 
@@ -183,13 +177,43 @@ def test_math_functions_columns(
             id='round',
         ),
         param(
-            lambda be, t: t.double_col.round(2),
-            lambda be, t: be.round(t.double_col, 2),
-            id='round-with-param'
+            lambda be, t: t.double_col.add(0.05).round(3),
+            lambda be, t: be.round(t.double_col + 0.05, 3),
+            id='round-with-param',
+            marks=pytest.mark.xfail(
+                raises=AssertionError,
+                reason='Rounding tests not implemented for all backends'
+            ),
+        ),
+        param(
+            lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col),
+            lambda be, t: pd.Series(map(min, t.bigint_col, t.int_col)),
+            id='least-all-columns'
+        ),
+        param(
+            lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col, -2),
+            lambda be, t: pd.Series(
+                map(min, t.bigint_col, t.int_col, repeat(-2))),
+            id='least-scalar'
+        ),
+        param(
+            lambda be, t: be.greatest(ibis.greatest, t.bigint_col, t.int_col),
+            lambda be, t: pd.Series(map(max, t.bigint_col, t.int_col)),
+            id='greatest-all-columns'
+        ),
+        param(
+            lambda be, t: be.greatest(
+                ibis.greatest, t.bigint_col, t.int_col, -2),
+            lambda be, t: pd.Series(
+                map(max, t.bigint_col, t.int_col, repeat(-2))),
+            id='greatest-scalar'
         ),
     ]
 )
-def test_round(backend, con, df, alltypes, expr_fn, expected_fn):
+@tu.skipif_unsupported
+def test_backend_specific_numerics(
+    backend, con, df, alltypes, expr_fn, expected_fn
+):
     expr = expr_fn(backend, alltypes)
     result = backend.default_series_rename(con.execute(expr))
     expected = backend.default_series_rename(expected_fn(backend, df))
@@ -246,6 +270,6 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
             '{} does not support safe division by zero'.format(backend)
         )
     expr = alltypes[column] / denominator
-    expected = df[column].div(denominator).rename('tmp')
+    expected = backend.default_series_rename(df[column].div(denominator))
     result = expr.execute()
     backend.assert_series_equal(result, expected)
