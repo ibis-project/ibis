@@ -572,3 +572,14 @@ function f(...args) {
 }"""
     js = compile(f)
     assert js == expected
+
+
+def test_missing_vararg():
+    def my_range(n):
+        return [1 for x in [n]]
+    js = compile(my_range)
+    expected = """\
+function my_range(n) {
+    return [n].map(((x) => 1));
+}"""
+    assert js == expected
