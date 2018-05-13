@@ -242,17 +242,13 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
 
 
 def test_mod(backend, alltypes, df):
-    smallint_col = alltypes.smallint_col + 1  # make it nonzero
-    smallint_series = df.smallint_col + 1
-
-    expr = operator.mod(alltypes.smallint_col, smallint_col)
+    expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1)
 
     result = expr.execute()
-    expected = operator.mod(df.smallint_col, smallint_series)
+    expected = operator.mod(df.smallint_col, df.smallint_col + 1)
 
     expected = backend.default_series_rename(expected)
-    backend.assert_series_equal(result, expected, check_exact=False,
-                                check_less_precise=True)
+    backend.assert_series_equal(result, expected)
 
 
 def test_floating_mod(backend, alltypes, df):
@@ -262,13 +258,10 @@ def test_floating_mod(backend, alltypes, df):
                 backend.name
             )
         )
-    smallint_col = alltypes.smallint_col + 1  # make it nonzero
-    smallint_series = df.smallint_col + 1
-
-    expr = operator.mod(alltypes.double_col, smallint_col)
+    expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1)
 
     result = expr.execute()
-    expected = operator.mod(df.double_col, smallint_series)
+    expected = operator.mod(df.double_col, df.smallint_col + 1)
 
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected, check_exact=False,
