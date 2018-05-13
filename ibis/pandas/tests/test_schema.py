@@ -2,6 +2,8 @@ import pytest
 import numpy as np
 import pandas as pd
 
+import pandas.util.testing as tm
+
 import ibis
 from ibis.expr import datatypes as dt
 from ibis.expr import schema as sch
@@ -92,6 +94,17 @@ def test_infer_exhaustive_dataframe():
     ]
 
     assert sch.infer(df) == ibis.schema(expected)
+
+
+def test_apply_to_schema_with_timezone():
+    data = {
+        'time': pd.date_range('2018-01-01', '2018-01-02', freq='H')
+    }
+    df = pd.DataFrame(data)
+    expected = df.assign(time=df.time.astype('datetime64[ns, EST]'))
+    desired_schema = ibis.schema([('time', 'timestamp("EST")')])
+    result = desired_schema.apply_to(df.copy())
+    tm.assert_frame_equal(expected, result)
 
 
 # TODO(kszucs): test_Schema_to_pandas
