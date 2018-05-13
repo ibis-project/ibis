@@ -72,7 +72,8 @@ def guid2(con):
         ),
         (
             lambda t: t.string_col.cast('double'),
-            lambda at: sa.cast(at.c.string_col, sa.FLOAT),
+            lambda at: sa.cast(
+                at.c.string_col, sa.dialects.postgresql.DOUBLE_PRECISION),
         ),
         (
             lambda t: t.string_col.cast('float'),
@@ -394,33 +395,6 @@ def test_isnull_notnull(con, expr, expected):
     ]
 )
 def test_string_functions(con, expr, expected):
-    assert con.execute(expr) == expected
-
-
-@pytest.mark.parametrize(
-    ('expr', 'expected'),
-    [
-        (L(-5).abs(), 5),
-        (L(5).abs(), 5),
-        (ibis.least(L(5), L(10), L(1)), 1),
-        (ibis.greatest(L(5), L(10), L(1)), 10),
-
-        (L(5.5).round(), 6.0),
-        (L(5.556).round(2), 5.56),
-        (L(5.556).ceil(), 6.0),
-        (L(5.556).floor(), 5.0),
-        (L(5.556).exp(), math.exp(5.556)),
-        (L(5.556).sign(), 1),
-        (L(-5.556).sign(), -1),
-        (L(0).sign(), 0),
-        (L(5.556).sqrt(), math.sqrt(5.556)),
-        (L(5.556).log(2), math.log(5.556, 2)),
-        (L(5.556).ln(), math.log(5.556)),
-        (L(5.556).log2(), math.log(5.556, 2)),
-        (L(5.556).log10(), math.log10(5.556)),
-    ]
-)
-def test_math_functions(con, expr, expected):
     assert con.execute(expr) == expected
 
 
