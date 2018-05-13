@@ -137,7 +137,7 @@ def sa_binary(_, satype, nullable=True):
 
 
 @dt.dtype.register(SQLAlchemyDialect, sa.Time)
-def sa_time(satype, nullable=True):
+def sa_time(_, satype, nullable=True):
     return dt.Time(nullable=nullable)
 
 
