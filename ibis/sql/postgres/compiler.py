@@ -389,7 +389,14 @@ def _log(t, expr):
     arg, base = expr.op().args
     sa_arg = t.translate(arg)
     if base is not None:
-        return sa.func.ln(sa_arg) / sa.func.ln(t.translate(base))
+        sa_base = t.translate(base)
+        return sa.cast(
+            sa.func.log(
+                sa.cast(sa_base, sa.NUMERIC),
+                sa.cast(sa_arg, sa.NUMERIC)
+            ),
+            t.get_sqla_type(expr.type())
+        )
     return sa.func.ln(sa_arg)
 
 
@@ -685,7 +692,7 @@ class PostgreSQLExprTranslator(alch.AlchemyExprTranslator):
     _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
     _type_map = alch.AlchemyExprTranslator._type_map.copy()
     _type_map.update({
-        dt.Double: pg.FLOAT,
+        dt.Double: pg.DOUBLE_PRECISION,
         dt.Float: pg.REAL
     })
 
