@@ -188,7 +188,16 @@ def _ibis_sqlite_sign(arg):
 
 @udf
 def _ibis_sqlite_floordiv(left, right):
+    if left is None or right is None:
+        return None
     return left // right
+
+
+@udf
+def _ibis_sqlite_mod(left, right):
+    if left is None or right is None:
+        return None
+    return left % right
 
 
 @udf
