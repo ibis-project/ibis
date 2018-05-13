@@ -75,7 +75,7 @@ def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
         # False
         assert result == decimal.Decimal(str(expected))
     else:
-        assert result == expected
+        np.testing.assert_allclose(result, expected)
 
 
 @pytest.mark.parametrize(
