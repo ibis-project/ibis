@@ -38,6 +38,7 @@ class Backend(object):
     supports_divide_by_zero = False
     returned_timestamp_unit = 'us'
     supported_to_timestamp_units = {'s', 'ms', 'us'}
+    supports_floating_modulus = True
 
     def __init__(self, data_directory):
         try:
@@ -256,6 +257,7 @@ class Clickhouse(Backend, RoundHalfToEven):
     supports_window_operations = False
     returned_timestamp_unit = 's'
     supported_to_timestamp_units = {'s'}
+    supports_floating_modulus = False
 
     def connect(self, data_directory):
         host = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
@@ -288,6 +290,7 @@ class Clickhouse(Backend, RoundHalfToEven):
 
 class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
     supports_divide_by_zero = True
+    supports_floating_modulus = False
     returned_timestamp_unit = 'us'
 
     def connect(self, data_directory):
