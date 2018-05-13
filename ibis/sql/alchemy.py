@@ -9,6 +9,10 @@ import sqlalchemy.sql as sql
 
 from sqlalchemy.sql.elements import Over as _Over
 from sqlalchemy.ext.compiler import compiles as sa_compiles
+from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
+
+from sqlalchemy.dialects.sqlite.base import SQLiteDialect
+from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
 
 import pandas as pd
 
@@ -74,69 +78,75 @@ def _to_sqla_type(itype, type_map=None):
         return type_map[type(itype)]
 
 
-@dt.dtype.register(sa.types.NullType)
-def sa_null(satype, nullable=True):
+@dt.dtype.register(SQLAlchemyDialect, sa.types.NullType)
+def sa_null(_, satype, nullable=True):
     return dt.null
 
 
-@dt.dtype.register(sa.types.Boolean)
-def sa_boolean(satype, nullable=True):
+@dt.dtype.register(SQLAlchemyDialect, sa.types.Boolean)
+def sa_boolean(_, satype, nullable=True):
     return dt.Boolean(nullable=nullable)
 
 
-@dt.dtype.register(sa.types.Numeric)
-def sa_numeric(satype, nullable=True):
+@dt.dtype.register(SQLAlchemyDialect, sa.types.Numeric)
+def sa_numeric(_, satype, nullable=True):
     return dt.Decimal(satype.precision, satype.scale, nullable=nullable)
 
 
-@dt.dtype.register(sa.types.SmallInteger)
-def sa_smallint(satype, nullable=True):
+@dt.dtype.register(SQLAlchemyDialect, sa.types.SmallInteger)
+def sa_smallint(_, satype, nullable=True):
     return dt.Int16(nullable=nullable)
 
 
-@dt.dtype.register(sa.types.Integer)
-def sa_integer(satype, nullable=True):
+@dt.dtype.register(SQLAlchemyDialect, sa.types.Integer)
+def sa_integer(_, satype, nullable=True):
     return dt.Int32(nullable=nullable)
 
 
-@dt.dtype.register(sa.types.BigInteger)
-def sa_bigint(satype, nullable=True):
+@dt.dtype.register(SQLAlchemyDialect, sa.types.BigInteger)
+def sa_bigint(_, satype, nullable=True):
     return dt.Int64(nullable=nullable)
 
 
-@dt.dtype.register(sa.types.Float)
-def sa_float(satype, nullable=True):
+@dt.dtype.register(SQLAlchemyDialect, sa.types.Float)
+def sa_float(_, satype, nullable=True):
     return dt.Float(nullable=nullable)
 
 
-@dt.dtype.register(sa.types.String)
-def sa_string(satype, nullable=True):
+@dt.dtype.register(SQLiteDialect, sa.types.Float)
+@dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.DOUBLE_PRECISION)
+def sa_double(_, satype, nullable=True):
+    return dt.Double(nullable=nullable)
+
+
+@dt.dtype.register(SQLAlchemyDialect, sa.types.String)
+def sa_string(_, satype, nullable=True):
     return dt.String(nullable=nullable)
 
 
-@dt.dtype.register(sa.types.Binary)
-def sa_binary(satype, nullable=True):
+@dt.dtype.register(SQLAlchemyDialect, sa.types.Binary)
+def sa_binary(_, satype, nullable=True):
     return dt.Binary(nullable=nullable)
 
 
-@dt.dtype.register(sa.Time)
+@dt.dtype.register(SQLAlchemyDialect, sa.Time)
 def sa_time(satype, nullable=True):
     return dt.Time(nullable=nullable)
 
 
-@dt.dtype.register(sa.Date)
-def sa_date(satype, nullable=True):
+@dt.dtype.register(SQLAlchemyDialect, sa.Date)
+def sa_date(_, satype, nullable=True):
     return dt.Date(nullable=nullable)
 
 
-@dt.dtype.register(sa.DateTime)
-def sa_datetime(satype, nullable=True, default_timezone='UTC'):
+@dt.dtype.register(SQLAlchemyDialect, sa.DateTime)
+def sa_datetime(_, satype, nullable=True, default_timezone='UTC'):
     timezone = default_timezone if satype.timezone else None
     return dt.Timestamp(timezone=timezone, nullable=nullable)
 
 
-@dt.dtype.register(sa.ARRAY)
-def sa_array(satype, nullable=True):
+@dt.dtype.register(SQLAlchemyDialect, sa.ARRAY)
+def sa_array(_, satype, nullable=True):
     dimensions = satype.dimensions
     if dimensions is not None and dimensions != 1:
         raise NotImplementedError('Nested array types not yet supported')
@@ -164,7 +174,8 @@ def schema_from_table(table, schema=None):
         if name in schema:
             dtype = dt.dtype(schema[name])
         else:
-            dtype = dt.dtype(column.type, nullable=column.nullable)
+            dtype = dt.dtype(
+                table.bind.dialect, column.type, nullable=column.nullable)
         pairs.append((name, dtype))
     return sch.schema(pairs)
 
