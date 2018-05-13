@@ -153,12 +153,12 @@ def sa_datetime(_, satype, nullable=True, default_timezone='UTC'):
 
 
 @dt.dtype.register(SQLAlchemyDialect, sa.ARRAY)
-def sa_array(_, satype, nullable=True):
+def sa_array(dialect, satype, nullable=True):
     dimensions = satype.dimensions
     if dimensions is not None and dimensions != 1:
         raise NotImplementedError('Nested array types not yet supported')
 
-    value_dtype = dt.dtype(satype.item_type)
+    value_dtype = dt.dtype(dialect, satype.item_type)
     return dt.Array(value_dtype, nullable=nullable)
 
 
@@ -182,7 +182,10 @@ def schema_from_table(table, schema=None):
             dtype = dt.dtype(schema[name])
         else:
             dtype = dt.dtype(
-                table.bind.dialect, column.type, nullable=column.nullable)
+                getattr(table.bind, 'dialect', SQLAlchemyDialect()),
+                column.type,
+                nullable=column.nullable
+            )
         pairs.append((name, dtype))
     return sch.schema(pairs)
 
