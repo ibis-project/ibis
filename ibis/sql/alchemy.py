@@ -13,6 +13,7 @@ from sqlalchemy.engine.interfaces import Dialect as SQLAlchemyDialect
 
 from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 from sqlalchemy.dialects.postgresql.base import PGDialect as PostgreSQLDialect
+from sqlalchemy.dialects.mysql.base import MySQLDialect
 
 import pandas as pd
 
@@ -116,6 +117,12 @@ def sa_float(_, satype, nullable=True):
 @dt.dtype.register(SQLiteDialect, sa.types.Float)
 @dt.dtype.register(PostgreSQLDialect, sa.dialects.postgresql.DOUBLE_PRECISION)
 def sa_double(_, satype, nullable=True):
+    return dt.Double(nullable=nullable)
+
+
+@dt.dtype.register(MySQLDialect, sa.dialects.mysql.DOUBLE)
+def sa_mysql_double(_, satype, nullable=True):
+    # TODO: handle asdecimal=True
     return dt.Double(nullable=nullable)
 
 
