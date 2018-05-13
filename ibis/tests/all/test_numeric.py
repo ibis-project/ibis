@@ -242,8 +242,26 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
 
 
 def test_mod(backend, alltypes, df):
-    if backend.name == 'clickhouse':
-        pytest.skip('Clickhouse truncates to integer during modulus operation')
+    smallint_col = alltypes.smallint_col + 1  # make it nonzero
+    smallint_series = df.smallint_col + 1
+
+    expr = operator.mod(alltypes.smallint_col, smallint_col)
+
+    result = expr.execute()
+    expected = operator.mod(df.smallint_col, smallint_series)
+
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected, check_exact=False,
+                                check_less_precise=True)
+
+
+def test_floating_mod(backend, alltypes, df):
+    if not backend.supports_floating_modulus:
+        pytest.skip(
+            '{} backend does not support floating modulus operation'.format(
+                backend.name
+            )
+        )
     smallint_col = alltypes.smallint_col + 1  # make it nonzero
     smallint_series = df.smallint_col + 1
 
