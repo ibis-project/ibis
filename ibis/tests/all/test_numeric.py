@@ -179,10 +179,6 @@ def test_complex_math_functions_columns(
             lambda be, t: t.double_col.add(0.05).round(3),
             lambda be, t: be.round(t.double_col + 0.05, 3),
             id='round-with-param',
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                reason='Rounding tests not implemented for all backends'
-            ),
         ),
         param(
             lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col),
@@ -226,12 +222,6 @@ def test_backend_specific_numerics(
     operator.truediv,
     operator.floordiv,
     operator.pow,
-    pytest.param(
-        operator.mod,
-        marks=pytest.mark.xfail(
-            reason='clickhouse and sqlite truncate float to integer'
-        )
-    ),
 ], ids=lambda op: op.__name__)
 def test_binary_arithmetic_operations(backend, alltypes, df, op):
     smallint_col = alltypes.smallint_col + 1  # make it nonzero
@@ -245,6 +235,22 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
         # defined in ops.FloorDivide.output_type
         # -> returns int64 whereas pandas float64
         result = result.astype('float64')
+
+    expected = backend.default_series_rename(expected)
+    backend.assert_series_equal(result, expected, check_exact=False,
+                                check_less_precise=True)
+
+
+def test_mod(backend, alltypes, df):
+    if backend.name == 'clickhouse':
+        pytest.skip('Clickhouse truncates to integer during modulus operation')
+    smallint_col = alltypes.smallint_col + 1  # make it nonzero
+    smallint_series = df.smallint_col + 1
+
+    expr = operator.mod(alltypes.double_col, smallint_col)
+
+    result = expr.execute()
+    expected = operator.mod(df.double_col, smallint_series)
 
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected, check_exact=False,
