@@ -309,7 +309,7 @@ def execute_cast_string_literal(op, data, type, **kwargs):
     (six.integer_types, type(None))
 )
 def execute_round_scalars(op, data, places, **kwargs):
-    return round(data, places)
+    return round(data) if not places else round(data, places)
 
 
 @execute_node.register(
