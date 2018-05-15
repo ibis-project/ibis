@@ -109,11 +109,6 @@ def sa_mysql_tinyint(_, satype, nullable=True):
     return dt.Int8(nullable=nullable)
 
 
-@dt.dtype.register(SQLAlchemyDialect, sa.dialects.mysql.SMALLINT)
-def sa_mysql_smallint(_, satype, nullable=True):
-    return dt.Int16(nullable=nullable)
-
-
 @dt.dtype.register(SQLAlchemyDialect, sa.types.BigInteger)
 def sa_bigint(_, satype, nullable=True):
     return dt.Int64(nullable=nullable)
