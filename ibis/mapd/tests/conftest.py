@@ -12,10 +12,6 @@ MAPD_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 @pytest.fixture(scope='module')
 def con():
-    """
-
-    :return:
-    """
     if MAPD_DB != 'mapd':
         import pymapd
         conn = pymapd.connect(

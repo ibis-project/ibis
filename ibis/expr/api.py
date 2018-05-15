@@ -1441,7 +1441,7 @@ def variance(arg, where=None, how='sample'):
 
 def correlation(left, right, where=None, how='sample'):
     """
-    Compute corralation of numeric array
+    Compute correlation of two numeric array
 
     Parameters
     ----------
@@ -1457,7 +1457,7 @@ def correlation(left, right, where=None, how='sample'):
 
 def covariance(left, right, where=None, how='sample'):
     """
-    Compute covariance of numeric array
+    Compute covariance of two numeric array
 
     Parameters
     ----------
@@ -3198,7 +3198,7 @@ _add_methods(ir.TableExpr, _table_methods)
 def distance(from_lon, from_lat, to_lon, to_lat):
     """
     Distance between origin longitude and latitude and
-    destine longitude and latitude
+    destination longitude and latitude
 
     Parameters
     ----------

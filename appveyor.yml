@@ -57,7 +57,7 @@ test_script:
   - "%ACTIVATE% \"ibis_%PYTHON_VERSION%\""
   - "%CONDA% install --channel conda-forge pytables numpy sqlalchemy psycopg2 pymapd graphviz click mock plumbum flake8 pytest"
   - "%CONDA% list"
-  - "pip install -e .\"[sqlite, postgres, mysql, visualization, pandas, csv, hdf5, mapd]\""
+  - "pip install -e .\"[sqlite, postgres, mysql, visualization, pandas, csv, hdf5]\""
 
   - "flake8"
 
@@ -66,5 +66,4 @@ test_script:
   - "python ci\\datamgr.py mysql"
   - "python ci\\datamgr.py sqlite"
   - "python ci\\datamgr.py postgres"
-  - "python ci\\datamgr.py mapd"
-  - "pytest --tb=short -m \"not backend and not clickhouse and not impala and not hdfs and not bigquery\" -rs ibis"
+  - "pytest --tb=short -m \"not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd\" -rs ibis"
