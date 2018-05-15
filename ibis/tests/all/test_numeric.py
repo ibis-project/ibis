@@ -248,7 +248,7 @@ def test_mod(backend, alltypes, df):
     expected = operator.mod(df.smallint_col, df.smallint_col + 1)
 
     expected = backend.default_series_rename(expected)
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected, check_dtype=False)
 
 
 def test_floating_mod(backend, alltypes, df):
