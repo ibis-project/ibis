@@ -4,6 +4,9 @@ import six
 import toolz
 import numpy as np
 import pandas as pd
+import dateutil.parser
+
+from multipledispatch import Dispatcher
 
 import ibis.client as client
 import ibis.expr.types as ir
@@ -20,53 +23,57 @@ except AttributeError:
     infer_pandas_dtype = pd.lib.infer_dtype
 
 
-_ibis_dtypes = {
-    dt.Boolean: 'bool',
-    dt.Null: 'object',
-    dt.Array: 'object',
-    dt.String: 'object',
-    dt.Binary: 'object',
-    dt.Category: 'category',
-    dt.Date: 'datetime64[ns]',
-    dt.Time: 'datetime64[ns]',
-    dt.Timestamp: 'datetime64[ns]',
-    dt.Interval: 'timedelta64[ns]',
-    dt.Int8: 'int8',
-    dt.Int16: 'int16',
-    dt.Int32: 'int32',
-    dt.Int64: 'int64',
-    dt.UInt8: 'uint8',
-    dt.UInt16: 'uint16',
-    dt.UInt32: 'uint32',
-    dt.UInt64: 'uint64',
-    dt.Float32: 'float32',
-    dt.Float64: 'float64',
-    dt.Decimal: 'float64',
-    dt.Struct: 'object',
-}
+_ibis_dtypes = toolz.valmap(
+    np.dtype,
+    {
+        dt.Boolean: np.bool_,
+        dt.Null: np.object_,
+        dt.Array: np.object_,
+        dt.String: np.object_,
+        dt.Binary: np.object_,
+        dt.Date: 'datetime64[ns]',
+        dt.Time: 'timedelta64[ns]',
+        dt.Timestamp: 'datetime64[ns]',
+        dt.Int8: np.int8,
+        dt.Int16: np.int16,
+        dt.Int32: np.int32,
+        dt.Int64: np.int64,
+        dt.UInt8: np.uint8,
+        dt.UInt16: np.uint16,
+        dt.UInt32: np.uint32,
+        dt.UInt64: np.uint64,
+        dt.Float32: np.float32,
+        dt.Float64: np.float64,
+        dt.Decimal: np.float64,
+        dt.Struct: np.object_,
+    }
+)
 
 
-_numpy_dtypes = toolz.keymap(np.dtype, {
-    'bool': dt.boolean,
-    'int8': dt.int8,
-    'int16': dt.int16,
-    'int32': dt.int32,
-    'int64': dt.int64,
-    'uint8': dt.uint8,
-    'uint16': dt.uint16,
-    'uint32': dt.uint32,
-    'uint64': dt.uint64,
-    'float16': dt.float16,
-    'float32': dt.float32,
-    'float64': dt.float64,
-    'double': dt.double,
-    'unicode': dt.string,
-    'str': dt.string,
-    'datetime64': dt.timestamp,
-    'datetime64[ns]': dt.timestamp,
-    'timedelta64': dt.interval,
-    'timedelta64[ns]': dt.Interval('ns')
-})
+_numpy_dtypes = toolz.keymap(
+    np.dtype,
+    {
+        'bool': dt.boolean,
+        'int8': dt.int8,
+        'int16': dt.int16,
+        'int32': dt.int32,
+        'int64': dt.int64,
+        'uint8': dt.uint8,
+        'uint16': dt.uint16,
+        'uint32': dt.uint32,
+        'uint64': dt.uint64,
+        'float16': dt.float16,
+        'float32': dt.float32,
+        'float64': dt.float64,
+        'double': dt.double,
+        'unicode': dt.string,
+        'str': dt.string,
+        'datetime64': dt.timestamp,
+        'datetime64[ns]': dt.timestamp,
+        'timedelta64': dt.interval,
+        'timedelta64[ns]': dt.Interval('ns')
+    }
+)
 
 
 _inferable_pandas_dtypes = {
@@ -163,29 +170,107 @@ def ibis_dtype_to_pandas(ibis_dtype):
     if isinstance(ibis_dtype, dt.Timestamp) and ibis_dtype.timezone:
         return DatetimeTZDtype('ns', ibis_dtype.timezone)
     elif isinstance(ibis_dtype, dt.Interval):
-        return 'timedelta64[{}]'.format(ibis_dtype.unit)
+        return np.dtype('timedelta64[{}]'.format(ibis_dtype.unit))
+    elif isinstance(ibis_dtype, dt.Category):
+        return CategoricalDtype()
     elif type(ibis_dtype) in _ibis_dtypes:
         return _ibis_dtypes[type(ibis_dtype)]
     else:
-        return 'object'
+        return np.dtype(np.object_)
 
 
 def ibis_schema_to_pandas(schema):
     return list(zip(schema.names, map(ibis_dtype_to_pandas, schema.types)))
 
 
+convert = Dispatcher(
+    'convert',
+    doc="""\
+Convert `column` to the pandas dtype corresponding to `out_dtype`, where the
+dtype of `column` is `in_dtype`.
+
+Parameters
+----------
+in_dtype : Union[np.dtype, pandas_dtype]
+    The dtype of `column`, used for dispatching
+out_dtype : ibis.expr.datatypes.DataType
+    The requested ibis type of the output
+column : pd.Series
+    The column to convert
+
+Returns
+-------
+result : pd.Series
+    The converted column
+""")
+
+
+@convert.register(DatetimeTZDtype, dt.Timestamp, pd.Series)
+def convert_datetimetz_to_timestamp(in_dtype, out_dtype, column):
+    output_timezone = out_dtype.timezone
+    if output_timezone is not None:
+        return column.dt.tz_convert(output_timezone)
+    return column.astype(out_dtype.to_pandas(), errors='ignore')
+
+
+@convert.register(np.dtype, dt.Timestamp, pd.Series)
+def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
+    if in_dtype.type == np.datetime64:
+        return column.astype(out_dtype.to_pandas(), errors='ignore')
+    try:
+        return pd.to_datetime(column)
+    except pd.errors.OutOfBoundsDatetime:
+        return column.map(dateutil.parser.parse)
+
+
+@convert.register(np.dtype, dt.Interval, pd.Series)
+def convert_any_to_interval(_, out_dtype, column):
+    return column.values.astype(out_dtype.to_pandas())
+
+
+@convert.register(np.dtype, dt.String, pd.Series)
+def convert_any_to_string(_, out_dtype, column):
+    result = column.astype(out_dtype.to_pandas(), errors='ignore')
+    if PY2:
+        return column.str.decode('utf-8', errors='ignore')
+    return result
+
+
+@convert.register(object, dt.DataType, pd.Series)
+def convert_any_to_any(_, out_dtype, column):
+    return column.astype(out_dtype.to_pandas(), errors='ignore')
+
+
 def ibis_schema_apply_to(schema, df):
-    """Applies the Ibis schema on a pandas dataframe"""
+    """Applies the Ibis schema to a pandas DataFrame
+
+    Parameters
+    ----------
+    schema : ibis.schema.Schema
+    df : pandas.DataFrame
+
+    Returns
+    -------
+    df : pandas.DataFrame
+
+    Notes
+    -----
+    Mutates `df`
+    """
 
     for column, dtype in schema.items():
         pandas_dtype = dtype.to_pandas()
-        if isinstance(dtype, dt.Interval):
-            df[column] = df[column].values.astype(pandas_dtype)
-        else:
-            df[column] = df[column].astype(pandas_dtype, errors='ignore')
+        col = df[column]
+        col_dtype = col.dtype
 
-        if PY2 and dtype == dt.string:
-            df[column] = df[column].str.decode('utf-8', errors='ignore')
+        try:
+            not_equal = pandas_dtype != col_dtype
+        except TypeError:
+            # ugh, we can't compare dtypes coming from pandas, assume not equal
+            not_equal = True
+
+        if not_equal or dtype == dt.string:
+            df[column] = convert(col_dtype, dtype, col)
 
     return df
 

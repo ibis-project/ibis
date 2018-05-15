@@ -520,10 +520,17 @@ class PythonToJavaScriptTranslator:
                 'Only single loop comprehensions are allowed'
             )
 
-        names = find_names(node.elt)
+        names = find_names(generator.target)
         argslist = [ast.arg(arg=name.id, annotation=None) for name in names]
         if len(names) <= 1:
-            signature = ast.arguments(args=argslist)
+            signature = ast.arguments(
+                args=argslist,
+                vararg=None,
+                kwonlyargs=[],
+                kw_defaults=[],
+                kwarg=None,
+                defaults=[]
+            )
         else:
             signature = ast.List(elts=argslist, ctx=ast.Load())
 

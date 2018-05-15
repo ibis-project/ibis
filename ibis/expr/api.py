@@ -1,27 +1,17 @@
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from __future__ import print_function
+
+import collections
+import datetime
+import functools
+import operator
+import warnings
 
 import six
 import toolz
-import warnings
-import operator
-import datetime
 
-import functools
-import collections
+import dateutil.parser
+
+import pandas as pd
 
 import ibis.util as util
 import ibis.common as com
@@ -175,8 +165,10 @@ def timestamp(value):
     result : TimestampScalar
     """
     if isinstance(value, six.string_types):
-        from pandas import Timestamp
-        value = Timestamp(value)
+        try:
+            value = pd.Timestamp(value)
+        except pd.errors.OutOfBoundsDatetime:
+            value = dateutil.parser.parse(value)
     if isinstance(value, six.integer_types):
         warnings.warn(
             'Integer values for timestamp literals are deprecated in 0.11.0 '
@@ -2501,8 +2493,7 @@ _join_classes = {
 
 
 def join(left, right, predicates=(), how='inner'):
-    """
-    Perform a relational join between two tables. Does not resolve resulting
+    """Perform a relational join between two tables. Does not resolve resulting
     table schema.
 
     Parameters
@@ -2521,7 +2512,7 @@ def join(left, right, predicates=(), how='inner'):
     Returns
     -------
     joined : TableExpr
-      Note, schema is not materialized yet
+        Note that the schema is not materialized yet
     """
     klass = _join_classes[how.lower()]
     if isinstance(predicates, Expr):
@@ -2531,9 +2522,8 @@ def join(left, right, predicates=(), how='inner'):
     return ir.TableExpr(op)
 
 
-def asof_join(left, right, predicates=(), by=()):
-    """
-    Perform an asof join between two tables.  Similar to a left join
+def asof_join(left, right, predicates=(), by=(), tolerance=None):
+    """Perform an asof join between two tables.  Similar to a left join
     except that the match is done on nearest key rather than equal keys.
 
     Optionally, match keys with 'by' before joining with predicates.
@@ -2544,14 +2534,16 @@ def asof_join(left, right, predicates=(), by=()):
     right : TableExpr
     predicates : join expression(s)
     by : string
-      column to group by before joining
+        column to group by before joining
+    tolerance : interval
+        Amount of time to look behind when joining
 
     Returns
     -------
     joined : TableExpr
-      Note, schema is not materialized yet
+        Note that the schema is not materialized yet
     """
-    return ops.AsOfJoin(left, right, predicates, by).to_expr()
+    return ops.AsOfJoin(left, right, predicates, by, tolerance).to_expr()
 
 
 def cross_join(*tables, **kwargs):
