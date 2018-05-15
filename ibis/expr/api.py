@@ -2402,8 +2402,7 @@ _join_classes = {
 
 
 def join(left, right, predicates=(), how='inner'):
-    """
-    Perform a relational join between two tables. Does not resolve resulting
+    """Perform a relational join between two tables. Does not resolve resulting
     table schema.
 
     Parameters
@@ -2422,7 +2421,7 @@ def join(left, right, predicates=(), how='inner'):
     Returns
     -------
     joined : TableExpr
-      Note, schema is not materialized yet
+        Note that the schema is not materialized yet
     """
     klass = _join_classes[how.lower()]
     if isinstance(predicates, Expr):
@@ -2432,9 +2431,8 @@ def join(left, right, predicates=(), how='inner'):
     return ir.TableExpr(op)
 
 
-def asof_join(left, right, predicates=(), by=()):
-    """
-    Perform an asof join between two tables.  Similar to a left join
+def asof_join(left, right, predicates=(), by=(), tolerance=None):
+    """Perform an asof join between two tables.  Similar to a left join
     except that the match is done on nearest key rather than equal keys.
 
     Optionally, match keys with 'by' before joining with predicates.
@@ -2445,14 +2443,16 @@ def asof_join(left, right, predicates=(), by=()):
     right : TableExpr
     predicates : join expression(s)
     by : string
-      column to group by before joining
+        column to group by before joining
+    tolerance : interval
+        Amount of time to look behind when joining
 
     Returns
     -------
     joined : TableExpr
-      Note, schema is not materialized yet
+        Note that the schema is not materialized yet
     """
-    return ops.AsOfJoin(left, right, predicates, by).to_expr()
+    return ops.AsOfJoin(left, right, predicates, by, tolerance).to_expr()
 
 
 def cross_join(*tables, **kwargs):

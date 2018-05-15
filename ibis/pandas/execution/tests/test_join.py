@@ -3,6 +3,8 @@ import pandas.util.testing as tm
 
 import pytest
 
+import ibis
+
 
 pytest.importorskip('multipledispatch')
 
@@ -289,4 +291,16 @@ def test_keyed_asof_join(
     result = expr.execute()
     expected = pd.merge_asof(
         time_keyed_df1, time_keyed_df2, on='time', by='key')
+    tm.assert_frame_equal(result[expected.columns], expected)
+
+
+@merge_asof_minversion
+def test_keyed_asof_join_with_tolerance(
+        time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2):
+    expr = time_keyed_left.asof_join(
+        time_keyed_right, 'time', by='key', tolerance=2 * ibis.day())
+    result = expr.execute()
+    expected = pd.merge_asof(
+        time_keyed_df1, time_keyed_df2,
+        on='time', by='key', tolerance=pd.Timedelta('2D'))
     tm.assert_frame_equal(result[expected.columns], expected)
