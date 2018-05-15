@@ -18,7 +18,6 @@ import contextlib
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
-import ibis.expr.datatypes as dt
 
 from ibis.sql.postgres.compiler import PostgreSQLDialect
 
