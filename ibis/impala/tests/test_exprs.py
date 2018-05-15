@@ -1073,9 +1073,9 @@ class TestImpalaExprs(ImpalaE2E, unittest.TestCase, ExprTestCases):
             d.round(2),
             d.round(i1),
 
-            # i1.sign(),
-            # i4.sign(),
-            # d.sign(),
+            i1.sign(),
+            i4.sign(),
+            d.sign(),
 
             # conv
             i1.convert_base(10, 2),
