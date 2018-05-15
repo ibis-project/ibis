@@ -20,6 +20,16 @@ def client():
 
 
 @pytest.fixture(scope='session')
+def client2():
+    ga = pytest.importorskip('google.auth')
+
+    try:
+        return ibis.bigquery.connect(PROJECT_ID, DATASET_ID)
+    except ga.exceptions.DefaultCredentialsError:
+        pytest.skip("no credentials found, skipping")
+
+
+@pytest.fixture(scope='session')
 def alltypes(client):
     return client.table('functional_alltypes')
 

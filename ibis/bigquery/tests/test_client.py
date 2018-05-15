@@ -423,10 +423,9 @@ FROM (
     assert df.tags.dtype == np.object
 
 
-def test_set_database():
-    con = ibis.bigquery.connect(project_id='ibis-gbq', dataset_id='testing')
-    con.set_database('bigquery-public-data.epa_historical_air_quality')
-    tables = con.list_tables()
+def test_set_database(client2):
+    client2.set_database('bigquery-public-data.epa_historical_air_quality')
+    tables = client2.list_tables()
     assert 'co_daily_summary' in tables
 
 
