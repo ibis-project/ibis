@@ -976,7 +976,7 @@ def _sign(translator, expr):
     arg, = expr.op().args
     translated_arg = translator.translate(arg)
     translated_type = _type_to_sql_string(expr.type())
-    if arg.type() != dt.float:
+    if expr.type() != dt.float:
         return 'CAST(sign({}) AS {})'.format(translated_arg, translated_type)
     return 'sign({})'.format(translated_arg)
 
@@ -1004,7 +1004,7 @@ _operation_registry = {
     ops.Exp: unary('exp'),
     ops.Round: _round,
 
-    ops.Sign: unary('sign'),
+    ops.Sign: _sign,
     ops.Sqrt: unary('sqrt'),
 
     ops.Hash: _hash,
