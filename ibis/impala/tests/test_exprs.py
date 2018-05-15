@@ -356,7 +356,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_numeric_unary_builtins(self):
         # No argument functions
-        functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt', 'sign',
+        functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt',
                      ('log', 'ln'),
                      ('approx_median', 'appx_median'),
                      ('approx_nunique', 'ndv'),
@@ -389,6 +389,20 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
             (self.table.double_col.round(2, ), 'round(`double_col`, 2)'),
             (self.table.double_col.round(self.table.tinyint_col),
              'round(`double_col`, `tinyint_col`)')
+        ]
+        self._check_expr_cases(cases)
+
+    def test_sign(self):
+        cases = [
+            (
+                self.table.tinyint_col.sign(),
+                'CAST(sign(`tinyint_col`) AS tinyint)'
+            ),
+            (self.table.float_col.sign(), 'sign(`float_col`)'),
+            (
+                self.table.double_col.sign(),
+                'CAST(sign(`double_col`) AS double)'
+            ),
         ]
         self._check_expr_cases(cases)
 
