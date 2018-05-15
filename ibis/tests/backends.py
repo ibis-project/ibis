@@ -278,14 +278,14 @@ class Clickhouse(Backend, RoundHalfToEven):
             raise NotImplementedError(
                 'Clickhouse does not support more than 2 arguments to greatest'
             )
-        return super().least(f, *args)
+        return super(Clickhouse, self).least(f, *args)
 
     def least(self, f, *args):
         if len(args) > 2:
             raise NotImplementedError(
                 'Clickhouse does not support more than 2 arguments to least'
             )
-        return super().least(f, *args)
+        return super(Clickhouse, self).least(f, *args)
 
 
 class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
