@@ -1558,10 +1558,12 @@ class AsOfJoin(Join):
     right = Arg(rlz.noop)
     predicates = Arg(rlz.noop)
     by = Arg(rlz.noop, default=None)
+    tolerance = Arg(rlz.interval(), default=None)
 
-    def __init__(self, left, right, predicates, by):
+    def __init__(self, left, right, predicates, by, tolerance):
         super(AsOfJoin, self).__init__(left, right, predicates)
         self.by = _clean_join_predicates(self.left, self.right, by)
+        self.tolerance = tolerance
 
 
 class Union(TableNode, HasSchema):
