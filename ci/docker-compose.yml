@@ -59,6 +59,8 @@ services:
       - MAPD_PORT=9091
       - MAPD_DATABASE=ibis_testing
       - MAPD_USER=mapd
+    volumes:
+      - ./mapd.conf:/mapd-storage/mapd.conf
 
   waiter:
     image: jwilder/dockerize
