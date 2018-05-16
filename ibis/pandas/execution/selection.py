@@ -71,8 +71,10 @@ def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
     )
 
     new_scope = toolz.merge(scope, additional_scope, factory=OrderedDict)
-    result = execute(expr, new_scope, **kwargs)
-    return pd.Series([result], name=name, index=data.index)
+    scalar = execute(expr, new_scope, **kwargs)
+    result = pd.Series([scalar], name=name).repeat(len(data.index))
+    result.index = data.index
+    return result
 
 
 @compute_projection.register(ir.ColumnExpr, ops.Selection, pd.DataFrame)
