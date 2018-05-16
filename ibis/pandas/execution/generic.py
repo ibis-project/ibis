@@ -216,7 +216,9 @@ def execute_series_quantile_groupby(
         op, data, quantile, context=None, **kwargs):
 
     def q(x, quantile, interpolation):
-        return [x.quantile(quantile, interpolation=interpolation).tolist()]
+        result = x.quantile(quantile, interpolation=interpolation).tolist()
+        res = [result for _ in range(len(x))]
+        return res
 
     result = context.agg(data, q, quantile, op.interpolation)
     return result

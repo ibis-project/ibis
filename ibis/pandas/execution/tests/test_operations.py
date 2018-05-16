@@ -760,7 +760,8 @@ def test_round(t, df):
 
 def test_quantile_groupby(batting, batting_df):
     def q_fun(x, quantile, interpolation):
-        return [x.quantile(quantile, interpolation=interpolation).tolist()]
+        res = x.quantile(quantile, interpolation=interpolation).tolist()
+        return [res for _ in range(len(x))]
 
     frac = 0.2
     intp = 'linear'
