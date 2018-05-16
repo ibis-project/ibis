@@ -65,7 +65,7 @@ setup(
         'all': all_requires,
         'develop:python_version < "3"': develop_requires + [
             'thriftpy<=0.3.9',
-            'thrift<=0.10.0',
+            'thrift<=0.9.3',
             'mock',
         ],
         'develop:python_version >= "3"': develop_requires,
