@@ -3,8 +3,6 @@ import pytest
 import decimal
 import operator
 
-from itertools import repeat
-
 from pytest import param
 
 import numpy as np
@@ -12,6 +10,8 @@ import pandas as pd
 
 import ibis
 import ibis.tests.util as tu
+
+from ibis.compat import map
 from ibis import literal as L
 
 
@@ -182,25 +182,25 @@ def test_complex_math_functions_columns(
         ),
         param(
             lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col),
-            lambda be, t: pd.Series(map(min, t.bigint_col, t.int_col)),
+            lambda be, t: pd.Series(list(map(min, t.bigint_col, t.int_col))),
             id='least-all-columns'
         ),
         param(
             lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col, -2),
             lambda be, t: pd.Series(
-                map(min, t.bigint_col, t.int_col, repeat(-2))),
+                list(map(min, t.bigint_col, t.int_col, [-2] * len(t)))),
             id='least-scalar'
         ),
         param(
             lambda be, t: be.greatest(ibis.greatest, t.bigint_col, t.int_col),
-            lambda be, t: pd.Series(map(max, t.bigint_col, t.int_col)),
+            lambda be, t: pd.Series(list(map(max, t.bigint_col, t.int_col))),
             id='greatest-all-columns'
         ),
         param(
             lambda be, t: be.greatest(
                 ibis.greatest, t.bigint_col, t.int_col, -2),
             lambda be, t: pd.Series(
-                map(max, t.bigint_col, t.int_col, repeat(-2))),
+                list(map(max, t.bigint_col, t.int_col, [-2] * len(t)))),
             id='greatest-scalar'
         ),
     ]

@@ -18,8 +18,7 @@ import ibis
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis import compat
-from ibis.compat import functools
+from ibis.compat import functools, map, DatetimeTZDtype, zip
 
 from ibis.pandas.core import (
     execute,
@@ -67,9 +66,7 @@ def execute_cast_series_array(op, data, type, **kwargs):
             '(e.g., number, string, or timestamp)'
         )
     return data.map(
-        lambda array, numpy_type=numpy_type: [
-            numpy_type(element) for element in array
-        ]
+        lambda array, numpy_type=numpy_type: list(map(numpy_type, array))
     )
 
 
@@ -85,7 +82,7 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
 
     if isinstance(from_type, (dt.Timestamp, dt.Date)):
         return data.astype(
-            'M8[ns]' if tz is None else compat.DatetimeTZDtype('ns', tz)
+            'M8[ns]' if tz is None else DatetimeTZDtype('ns', tz)
         )
 
     if isinstance(from_type, (dt.String, dt.Integer)):
