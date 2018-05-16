@@ -62,9 +62,11 @@ def execute_materialized_join(op, left, right, **kwargs):
     return df
 
 
-@execute_node.register(ops.AsOfJoin, pd.DataFrame, pd.DataFrame)
-def execute_asof_join(op, left, right, **kwargs):
-    overlapping_columns = set(left.columns) & set(right.columns)
+@execute_node.register(
+    ops.AsOfJoin, pd.DataFrame, pd.DataFrame, (pd.Timedelta, type(None))
+)
+def execute_asof_join(op, left, right, tolerance, **kwargs):
+    overlapping_columns = frozenset(left.columns) & frozenset(right.columns)
     left_on, right_on = _extract_predicate_names(op.predicates)
     left_by, right_by = _extract_predicate_names(op.by)
     _validate_columns(
@@ -76,7 +78,8 @@ def execute_asof_join(op, left, right, **kwargs):
         left_on=left_on,
         right_on=right_on,
         left_by=left_by or None,
-        right_by=right_by or None
+        right_by=right_by or None,
+        tolerance=tolerance,
     )
 
 

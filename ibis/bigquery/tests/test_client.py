@@ -423,10 +423,9 @@ FROM (
     assert df.tags.dtype == np.object
 
 
-def test_set_database():
-    con = ibis.bigquery.connect(project_id='ibis-gbq', dataset_id='testing')
-    con.set_database('bigquery-public-data.epa_historical_air_quality')
-    tables = con.list_tables()
+def test_set_database(client2):
+    client2.set_database('bigquery-public-data.epa_historical_air_quality')
+    tables = client2.list_tables()
     assert 'co_daily_summary' in tables
 
 
@@ -509,3 +508,10 @@ def test_multiple_project_queries_execute(client):
     result = join.execute()
     assert list(result.columns) == ['title']
     assert len(result) == 5
+
+
+def test_large_timestamp(client):
+    huge_timestamp = datetime(year=4567, month=1, day=1)
+    expr = ibis.timestamp('4567-01-01 00:00:00')
+    result = client.execute(expr)
+    assert result == huge_timestamp

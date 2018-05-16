@@ -11,9 +11,10 @@ from ibis.compat import maketrans
 def test_string_col_is_unicode(backend, alltypes, df):
     dtype = alltypes.string_col.type()
     assert dtype == dt.String(nullable=dtype.nullable)
-
-    for s in [alltypes.string_col.execute(), df.string_col]:
-        assert s.apply(lambda x: isinstance(x, six.text_type)).all()
+    is_text_type = lambda x: isinstance(x, six.text_type)  # noqa: E731
+    assert df.string_col.map(is_text_type).all()
+    result = alltypes.string_col.execute()
+    assert result.map(is_text_type).all()
 
 
 @pytest.mark.parametrize(
@@ -113,7 +114,6 @@ def test_string_col_is_unicode(backend, alltypes, df):
             lambda t: t.string_col.length(),
             lambda t: t.string_col.str.len().astype('int32'),
             id='length',
-            marks=pytest.mark.xfail,
         ),
         param(
             lambda t: t.string_col.strip(),

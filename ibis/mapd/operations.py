@@ -167,10 +167,8 @@ def _variance_like(func):
     def formatter(translator, expr):
         arg, how, where = expr.op().args
 
-        func_type = '' if not _is_floating(arg) else '_FLOAT'
-
         return _reduction_format(
-            translator, variants[how].upper() + func_type,
+            translator, variants[how].upper(),
             None, '{}({})',
             arg, [], where
         )
