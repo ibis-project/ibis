@@ -49,7 +49,7 @@ database specified:
 
     mapd_cli = ibis.mapd.connect(
         host='localhost', user='mapd', password='HyperInteractive',
-        port=9091, dbname='mapd'
+        port=9091, database='mapd'
     )
 
 `verify` method checks if the `ibis` expression can be compiled.
