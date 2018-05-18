@@ -146,7 +146,9 @@ def infer_pandas_schema(df, schema=None):
             ibis_dtype = dt.dtype(schema[column_name])
         elif pandas_dtype == np.object_:
             inferred_dtype = infer_pandas_dtype(df[column_name].dropna())
-            if inferred_dtype == 'mixed':
+            if inferred_dtype in {'mixed', 'decimal'}:
+                # TODO: in principal we can handle decimal (added in pandas
+                # 0.23)
                 raise TypeError(
                     'Unable to infer type of column {0!r}. Try instantiating '
                     'your table from the client with client.table('

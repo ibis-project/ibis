@@ -236,9 +236,13 @@ class MySQLExprTranslator(alch.AlchemyExprTranslator):
     _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
     _type_map = alch.AlchemyExprTranslator._type_map.copy()
     _type_map.update({
+        dt.Boolean: mysql.BOOLEAN,
         dt.Int8: mysql.TINYINT,
+        dt.Int32: mysql.INTEGER,
+        dt.Int64: mysql.BIGINT,
         dt.Double: mysql.DOUBLE,
         dt.Float: mysql.FLOAT,
+        dt.String: mysql.VARCHAR,
     })
 
 

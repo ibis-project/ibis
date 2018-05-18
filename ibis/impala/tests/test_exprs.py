@@ -1,17 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import unittest
 
 import pytest
@@ -370,7 +356,7 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
 
     def test_numeric_unary_builtins(self):
         # No argument functions
-        functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt', 'sign',
+        functions = ['abs', 'ceil', 'floor', 'exp', 'sqrt',
                      ('log', 'ln'),
                      ('approx_median', 'appx_median'),
                      ('approx_nunique', 'ndv'),
@@ -403,6 +389,20 @@ class TestUnaryBuiltins(unittest.TestCase, ExprSQLTest):
             (self.table.double_col.round(2, ), 'round(`double_col`, 2)'),
             (self.table.double_col.round(self.table.tinyint_col),
              'round(`double_col`, `tinyint_col`)')
+        ]
+        self._check_expr_cases(cases)
+
+    def test_sign(self):
+        cases = [
+            (
+                self.table.tinyint_col.sign(),
+                'CAST(sign(`tinyint_col`) AS tinyint)'
+            ),
+            (self.table.float_col.sign(), 'sign(`float_col`)'),
+            (
+                self.table.double_col.sign(),
+                'CAST(sign(`double_col`) AS double)'
+            ),
         ]
         self._check_expr_cases(cases)
 
