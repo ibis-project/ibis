@@ -73,7 +73,7 @@ def insert_tables(engine, names, data_directory):
         with engine.begin() as connection:
             df.to_sql(
                 table, connection, index=False, if_exists='append',
-                chunksize=100
+                chunksize=1
             )
 
 
