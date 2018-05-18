@@ -107,3 +107,20 @@ def test_missing_data_on_custom_client():
         )
     ):
         con.execute(t)
+
+
+def test_post_execute_called_on_joins(dataframe, core_client, ibis_table):
+    count = [0]
+
+    @post_execute.register(ops.InnerJoin, pd.DataFrame)
+    def tmp_left_join_exe(op, lhs, **kwargs):
+        count[0] += 1
+        return lhs
+
+    left = ibis_table
+    right = left.view()
+    join = left.join(right, 'plain_strings')[left.plain_int64]
+    result = join.execute()
+    assert result is not None
+    assert not result.empty
+    assert count[0] == 1
