@@ -1,3 +1,5 @@
+import warnings
+
 import pytest
 from pytest import param
 
@@ -85,7 +87,8 @@ def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
         return pd.offsets.DateOffset(**{resolution: x})
 
     offset = df.int_col.apply(convert_to_offset)
-    expected = df.timestamp_col + offset
+    with warnings.catch_warnings():
+        expected = df.timestamp_col + offset
     expected = backend.default_series_rename(expected)
 
     backend.assert_series_equal(result, expected)

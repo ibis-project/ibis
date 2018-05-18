@@ -18,14 +18,8 @@ import contextlib
 import sqlalchemy as sa
 
 import ibis.sql.alchemy as alch
-import ibis.expr.datatypes as dt
 
 from ibis.sql.postgres.compiler import PostgreSQLDialect
-
-
-@dt.dtype.register(sa.dialects.postgresql.DOUBLE_PRECISION)
-def sa_postgres_double(satype, nullable=True):
-    return dt.Double(nullable=nullable)
 
 
 class PostgreSQLTable(alch.AlchemyTable):

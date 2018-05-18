@@ -3,26 +3,22 @@ from __future__ import absolute_import
 import collections
 import datetime
 import decimal
+import math
 import numbers
 import operator
-
-import six
+from collections import Sized
 
 import numpy as np
 import pandas as pd
-
-from pandas.core.groupby import SeriesGroupBy, DataFrameGroupBy
-
+import six
 import toolz
-
-from ibis import compat
+from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
 
 import ibis
 import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-
-from ibis.compat import functools
+from ibis.compat import functools, map, DatetimeTZDtype, zip
 
 from ibis.pandas.core import (
     execute,
@@ -70,9 +66,7 @@ def execute_cast_series_array(op, data, type, **kwargs):
             '(e.g., number, string, or timestamp)'
         )
     return data.map(
-        lambda array, numpy_type=numpy_type: [
-            numpy_type(element) for element in array
-        ]
+        lambda array, numpy_type=numpy_type: list(map(numpy_type, array))
     )
 
 
@@ -88,7 +82,7 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
 
     if isinstance(from_type, (dt.Timestamp, dt.Date)):
         return data.astype(
-            'M8[ns]' if tz is None else compat.DatetimeTZDtype('ns', tz)
+            'M8[ns]' if tz is None else DatetimeTZDtype('ns', tz)
         )
 
     if isinstance(from_type, (dt.String, dt.Integer)):
@@ -143,19 +137,28 @@ def execute_cast_series_date(op, data, type, **kwargs):
     raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
 
 
-@execute_node.register(ops.Negate, pd.Series)
-def execute_series_unary_op_negate(op, data, **kwargs):
+def call_numpy_ufunc(func, op, data, **kwargs):
     if data.dtype == np.dtype(np.object_):
         return data.apply(functools.partial(execute_node, op, **kwargs))
-    return np.negative(data)
+    return func(data)
+
+
+@execute_node.register(ops.Negate, pd.Series)
+def execute_series_unary_op_negate(op, data, **kwargs):
+    return call_numpy_ufunc(np.negative, op, data, **kwargs)
 
 
 @execute_node.register(ops.UnaryOp, pd.Series)
 def execute_series_unary_op(op, data, **kwargs):
     function = getattr(np, type(op).__name__.lower())
-    if data.dtype == np.dtype(np.object_):
-        return data.apply(functools.partial(execute_node, op, **kwargs))
-    return function(data)
+    return call_numpy_ufunc(function, op, data, **kwargs)
+
+
+@execute_node.register((ops.Ceil, ops.Floor), pd.Series)
+def execute_series_ceil(op, data, **kwargs):
+    return_type = np.object_ if data.dtype == np.object_ else np.int64
+    func = getattr(np, type(op).__name__.lower())
+    return call_numpy_ufunc(func, op, data, **kwargs).astype(return_type)
 
 
 def vectorize_object(op, arg, *args, **kwargs):
@@ -198,20 +201,24 @@ def execute_series_quantile(op, data, quantile, context=None, **kwargs):
     )
 
 
-@execute_node.register(ops.MultiQuantile, pd.Series, list)
-def execute_series_quantile_list(op, data, quantile, context=None, **kwargs):
+@execute_node.register(ops.MultiQuantile, pd.Series, collections.Sequence)
+def execute_series_quantile_sequence(
+    op, data, quantile, context=None, **kwargs
+):
     result = context.agg(
         data, 'quantile', q=quantile, interpolation=op.interpolation
     )
     return list(result)
 
 
-@execute_node.register(ops.MultiQuantile, SeriesGroupBy, list)
+@execute_node.register(ops.MultiQuantile, SeriesGroupBy, collections.Sequence)
 def execute_series_quantile_groupby(
         op, data, quantile, context=None, **kwargs):
 
     def q(x, quantile, interpolation):
-        return [x.quantile(quantile, interpolation=interpolation).tolist()]
+        result = x.quantile(quantile, interpolation=interpolation).tolist()
+        res = [result for _ in range(len(x))]
+        return res
 
     result = context.agg(data, q, quantile, op.interpolation)
     return result
@@ -301,10 +308,7 @@ def execute_cast_string_literal(op, data, type, **kwargs):
     (six.integer_types, type(None))
 )
 def execute_round_scalars(op, data, places, **kwargs):
-    if places is None:
-        return np.around(data)
-    else:
-        return np.around(data, places)
+    return round(data, places) if places else round(data)
 
 
 @execute_node.register(
@@ -315,7 +319,8 @@ def execute_round_scalars(op, data, places, **kwargs):
 def execute_round_series(op, data, places, **kwargs):
     if data.dtype == np.dtype(np.object_):
         return vectorize_object(op, data, places, **kwargs)
-    return data.round(places if places is not None else 0)
+    result = data.round(places or 0)
+    return result if places else result.astype('int64')
 
 
 @execute_node.register(ops.TableColumn, (pd.DataFrame, DataFrameGroupBy))
@@ -681,12 +686,12 @@ def execute_node_value_list(op, _, **kwargs):
     return [execute(arg, **kwargs) for arg in op.values]
 
 
-@execute_node.register(ops.StringConcat, list)
+@execute_node.register(ops.StringConcat, collections.Sequence)
 def execute_node_string_concat(op, args, **kwargs):
     return functools.reduce(operator.add, args)
 
 
-@execute_node.register(ops.StringJoin, list)
+@execute_node.register(ops.StringJoin, collections.Sequence)
 def execute_node_string_join(op, args, **kwargs):
     return op.sep.join(args)
 
@@ -696,7 +701,7 @@ def execute_node_string_join(op, args, **kwargs):
     pd.Series,
     (collections.Sequence, collections.Set)
 )
-def execute_node_contains_series_list(op, data, elements, **kwargs):
+def execute_node_contains_series_sequence(op, data, elements, **kwargs):
     return data.isin(elements)
 
 
@@ -705,7 +710,7 @@ def execute_node_contains_series_list(op, data, elements, **kwargs):
     pd.Series,
     (collections.Sequence, collections.Set)
 )
-def execute_node_not_contains_series_list(op, data, elements, **kwargs):
+def execute_node_not_contains_series_sequence(op, data, elements, **kwargs):
     return ~data.isin(elements)
 
 
@@ -764,3 +769,104 @@ def execute_node_where_scalar_scalar_series(op, cond, true, false, **kwargs):
     ibis.pandas.client.PandasTable, ibis.pandas.client.PandasClient)
 def execute_database_table_client(op, client, **kwargs):
     return client.dictionary[op.name]
+
+
+MATH_FUNCTIONS = {
+    ops.Floor: math.floor,
+    ops.Ln: math.log,
+    ops.Log2: lambda x: math.log(x, 2),
+    ops.Log10: math.log10,
+    ops.Exp: math.exp,
+    ops.Sqrt: math.sqrt,
+    ops.Abs: abs,
+    ops.Ceil: math.ceil,
+    ops.Sign: lambda x: 0 if not x else -1 if x < 0 else 1,
+}
+
+MATH_FUNCTION_TYPES = tuple(MATH_FUNCTIONS.keys())
+
+
+@execute_node.register(MATH_FUNCTION_TYPES, numeric_types)
+def execute_node_math_function_number(op, value, **kwargs):
+    return MATH_FUNCTIONS[type(op)](value)
+
+
+@execute_node.register(ops.Log, numeric_types, numeric_types)
+def execute_node_log_number_number(op, value, base, **kwargs):
+    return math.log(value, base)
+
+
+@execute_node.register(ops.IfNull, pd.Series, scalar_types + (type(None),))
+@execute_node.register(ops.IfNull, pd.Series, pd.Series)
+def execute_node_ifnull_series(op, value, replacement, **kwargs):
+    return value.fillna(replacement)
+
+
+@execute_node.register(ops.IfNull, scalar_types + (type(None),), pd.Series)
+def execute_node_ifnull_scalar_series(op, value, replacement, **kwargs):
+    return (
+        pd.Series(value, index=replacement.index)
+        if pd.notnull(value) else replacement
+    )
+
+
+@execute_node.register(
+    ops.IfNull, scalar_types + (type(None),), scalar_types + (type(None),))
+def execute_node_if_scalars(op, value, replacement, **kwargs):
+    return replacement if pd.isnull(value) else value
+
+
+@execute_node.register(ops.NullIf, bool, scalar_types + (type(None),))
+def execute_node_nullif_scalars(op, condition, value, **kwargs):
+    return np.nan if condition else value
+
+
+@execute_node.register(ops.NullIf, pd.Series, pd.Series)
+def execute_node_nullif_series(op, condition, series, **kwargs):
+    return pd.Series(np.where(condition.values, np.nan, series.values))
+
+
+@execute_node.register(ops.NullIf, pd.Series, scalar_types + (type(None),))
+def execute_node_nullif_series_scalar(op, condition, value, **kwargs):
+    values = np.repeat(value, len(condition))
+    return pd.Series(np.where(condition.values, np.nan, values))
+
+
+@execute_node.register(ops.NullIf, bool, pd.Series)
+def execute_node_nullif_scalar_series(op, condition, value, **kwargs):
+    return pd.Series([None], index=value.index) if condition else value
+
+
+def coalesce(values):
+    return functools.reduce(lambda x, y: x if not pd.isnull(x) else y, values)
+
+
+@toolz.curry
+def promote_to_sequence(length, obj):
+    return obj.values if isinstance(obj, pd.Series) else np.repeat(obj, length)
+
+
+def compute_row_reduction(func, value, **kwargs):
+    final_sizes = {len(x) for x in value if isinstance(x, Sized)}
+    if not final_sizes:
+        return func(value)
+
+    final_size, = final_sizes
+    raw = func(list(map(promote_to_sequence(final_size), value)), **kwargs)
+    return pd.Series(raw).squeeze()
+
+
+@execute_node.register(ops.Greatest, collections.Sequence)
+def execute_node_greatest_list(op, value, **kwargs):
+    return compute_row_reduction(np.maximum.reduce, value, axis=0)
+
+
+@execute_node.register(ops.Least, collections.Sequence)
+def execute_node_least_list(op, value, **kwargs):
+    return compute_row_reduction(np.minimum.reduce, value, axis=0)
+
+
+@execute_node.register(ops.Coalesce, collections.Sequence)
+def execute_node_coalesce(op, values, **kwargs):
+    # TODO: this is slow
+    return compute_row_reduction(coalesce, values)

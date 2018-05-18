@@ -271,6 +271,7 @@ _operation_registry.update({
     ops.Ceil: unary(sa.func._ibis_sqlite_ceil),
     ops.Sign: unary(sa.func._ibis_sqlite_sign),
     ops.FloorDivide: fixed_arity(sa.func._ibis_sqlite_floordiv, 2),
+    ops.Modulus: fixed_arity(sa.func._ibis_sqlite_mod, 2),
 
     ops.Variance: _variance_reduction('_ibis_sqlite_var'),
     ops.StandardDev: toolz.compose(
