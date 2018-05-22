@@ -230,7 +230,8 @@ def array_of(inner, arg):
     argtype = val.type()
     if not isinstance(argtype, dt.Array):
         raise com.IbisTypeError(
-            'Argument must be an array, got {}'.format(val))
+            'Argument must be an array, got expression {} which is of type '
+            '{}'.format(val, val.type()))
     return value(dt.Array(inner(val[0]).type()), val)
 
 
