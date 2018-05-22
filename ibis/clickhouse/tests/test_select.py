@@ -322,8 +322,8 @@ def test_where_simple_comparisons(con, db, alltypes):
     result = ibis.clickhouse.compile(expr)
     expected = """SELECT *
 FROM {0}.`functional_alltypes`
-WHERE `float_col` > 0 AND
-      `int_col` < (`float_col` * 2)"""
+WHERE (`float_col` > 0) AND
+      (`int_col` < (`float_col` * 2))"""
     assert result == expected.format(db.name)
     assert len(con.execute(expr))
 
@@ -335,8 +335,8 @@ def test_where_with_between(con, db, alltypes):
     result = ibis.clickhouse.compile(expr)
     expected = """SELECT *
 FROM {0}.`functional_alltypes`
-WHERE `int_col` > 0 AND
-      `float_col` BETWEEN 0 AND 1"""
+WHERE (`int_col` > 0) AND
+      (`float_col` BETWEEN 0 AND 1)"""
     assert result == expected.format(db.name)
     con.execute(expr)
 
