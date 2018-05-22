@@ -42,3 +42,16 @@ def test_ieee_divide(alltypes):
 SELECT IEEE_DIVIDE(`double_col`, 0) AS `tmp`
 FROM `ibis-gbq.testing.functional_alltypes`"""
     assert result == expected
+
+
+def test_identical_to(alltypes):
+    t = alltypes
+    pred = t.string_col.identical_to('a') & t.date_string_col.identical_to('b')
+    expr = t[pred]
+    result = expr.compile()
+    expected = """\
+SELECT *
+FROM `ibis-gbq.testing.functional_alltypes`
+WHERE (((`string_col` IS NULL) AND ('a' IS NULL)) OR (`string_col` = 'a')) AND
+      (((`date_string_col` IS NULL) AND ('b' IS NULL)) OR (`date_string_col` = 'b'))"""  # noqa: E501
+    assert result == expected
