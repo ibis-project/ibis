@@ -248,18 +248,6 @@ def _cov(translator, expr):
     )
 
 
-# MATH
-
-def _round(translator, expr):
-    op = expr.op()
-    arg, digits = op.args
-
-    if digits is not None:
-        return _call(translator, 'round', arg, digits)
-    else:
-        return _call(translator, 'round', arg)
-
-
 # STRING
 
 def _length(func_name='length', sql_func_name='CHAR_LENGTH'):
@@ -550,7 +538,6 @@ _math_ops = {
     ops.Modulus: fixed_arity('mod', 2),
     ops.Pi: fixed_arity('pi', 0),
     ops.Radians: unary('radians'),
-    ops.Round: _round,
     NumericTruncate: fixed_arity('truncate', 2)
 }
 
@@ -686,6 +673,7 @@ _unsupported_ops = [
     ops.Greatest,
     ops.Log2,
     ops.Log,
+    ops.Round,
     # date/time/timestamp
     ops.TimestampFromUNIX,
     ops.Date,

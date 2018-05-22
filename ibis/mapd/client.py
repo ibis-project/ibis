@@ -369,11 +369,8 @@ class MapDClient(SQLClient):
         return result
 
     def _fully_qualified_name(self, name, database):
-        if fully_qualified_re.search(name):
-            return name
-
-        database = database or self.current_database
-        return '{}.{}'.format(database, name)
+        # MapD raises error sometimes with qualified names
+        return name
 
     def _get_table_schema(self, table_name, database=None):
         """

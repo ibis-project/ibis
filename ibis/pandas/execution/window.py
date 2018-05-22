@@ -24,7 +24,9 @@ from ibis.pandas.execution import util
 
 
 def _post_process_empty(scalar, index):
-    return pd.Series([scalar], index=index)
+    result = pd.Series([scalar]).repeat(len(index))
+    result.index = index
+    return result
 
 
 def _post_process_group_by(series, index):

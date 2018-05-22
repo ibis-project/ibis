@@ -1,17 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import re
 import locale
 import string
@@ -132,14 +118,16 @@ def _timestamp_add(t, expr):
 
 
 def _is_nan(t, expr):
-    arg = t.translate(expr.op().args[0])
-    return arg == sa.literal('nan', sa.Float)
+    arg, = expr.op().args
+    sa_arg = t.translate(arg)
+    return sa_arg == float('nan')
 
 
 def _is_inf(t, expr):
-    arg = t.translate(expr.op().args[0])
-    return sa.or_(arg == sa.literal('inf', sa.Float),
-                  arg == sa.literal('-inf', sa.Float))
+    arg, = expr.op().args
+    sa_arg = t.translate(arg)
+    inf = float('inf')
+    return sa.or_(sa_arg == inf, sa_arg == -inf)
 
 
 def _cast(t, expr):
@@ -399,11 +387,17 @@ def _reduction(func_name):
 
 def _log(t, expr):
     arg, base = expr.op().args
-    arg = t.translate(arg)
+    sa_arg = t.translate(arg)
     if base is not None:
-        return sa.func.log(t.translate(base), arg)
-    else:
-        return sa.func.ln(arg)
+        sa_base = t.translate(base)
+        return sa.cast(
+            sa.func.log(
+                sa.cast(sa_base, sa.NUMERIC),
+                sa.cast(sa_arg, sa.NUMERIC)
+            ),
+            t.get_sqla_type(expr.type())
+        )
+    return sa.func.ln(sa_arg)
 
 
 class regex_extract(GenericFunction):
@@ -539,7 +533,8 @@ def _round(t, expr):
     result = sa.func.round(sa.cast(sa_arg, sa.NUMERIC), t.translate(digits))
     if digits is not None and isinstance(arg.type(), dt.Decimal):
         return result
-    return sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
+    result = sa.cast(result, sa.dialects.postgresql.DOUBLE_PRECISION())
+    return result
 
 
 def _mod(t, expr):
@@ -697,7 +692,7 @@ class PostgreSQLExprTranslator(alch.AlchemyExprTranslator):
     _rewrites = alch.AlchemyExprTranslator._rewrites.copy()
     _type_map = alch.AlchemyExprTranslator._type_map.copy()
     _type_map.update({
-        dt.Double: pg.FLOAT,
+        dt.Double: pg.DOUBLE_PRECISION,
         dt.Float: pg.REAL
     })
 

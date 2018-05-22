@@ -71,4 +71,5 @@ BINARY_OPERATIONS = {
     ops.FloorDivide: operator.floordiv,
     ops.Modulus: operator.mod,
     ops.Power: operator.pow,
+    ops.IdenticalTo: lambda x, y: (x == y) | (pd.isnull(x) & pd.isnull(y))
 }
