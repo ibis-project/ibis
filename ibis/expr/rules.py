@@ -226,11 +226,7 @@ def column(inner, arg):
 
 @validator
 def array_of(inner, arg):
-    if not isinstance(arg, ir.Expr):
-        val = ir.literal(arg)
-    else:
-        val = arg
-
+    val = arg if isinstance(arg, ir.Expr) else ir.literal(arg)
     argtype = val.type()
     if not isinstance(argtype, dt.Array):
         raise com.IbisTypeError(
