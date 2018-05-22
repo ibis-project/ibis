@@ -493,9 +493,8 @@ class Exp(RealUnaryOp):
 
 
 class Sign(UnaryOp):
-
-    # This is the Impala output for both integers and double/float
-    output_type = rlz.shape_like('arg', dt.float)
+    arg = Arg(rlz.numeric)
+    output_type = rlz.typeof('arg')
 
 
 class Sqrt(RealUnaryOp):

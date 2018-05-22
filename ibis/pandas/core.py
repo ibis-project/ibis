@@ -154,16 +154,30 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
     )
     new_scope = toolz.merge(scope, *pre_executed_scope)
     result = execute_until_in_scope(
-        expr, new_scope, context=context, clients=clients, **kwargs)
+        expr,
+        new_scope,
+        context=context,
+        clients=clients,
 
-    # XXX: we *explicitly* pass in scope and not new_scope here so that
-    # post_execute sees the scope of execute_with_scope, not the scope of
-    # execute_until_in_scope
-    return post_execute(
-        op, result, scope=scope, context=context, clients=clients, **kwargs)
+        # XXX: we *explicitly* pass in scope and not new_scope here so that
+        # post_execute sees the scope of execute_with_scope, not the scope of
+        # execute_until_in_scope
+        post_execute_=functools.partial(
+            post_execute,
+            scope=scope,
+            context=context,
+            clients=clients,
+            **kwargs
+        ),
+        **kwargs
+    )
+
+    return result
 
 
-def execute_until_in_scope(expr, scope, context=None, clients=None, **kwargs):
+def execute_until_in_scope(
+    expr, scope, context=None, clients=None, post_execute_=None, **kwargs
+):
     """Execute until our op is in `scope`.
 
     Parameters
@@ -177,6 +191,7 @@ def execute_until_in_scope(expr, scope, context=None, clients=None, **kwargs):
     # these should never be None
     assert context is not None, 'context is None'
     assert clients is not None, 'clients is None'
+    assert post_execute_ is not None, 'post_execute_ is None'
 
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
@@ -184,11 +199,15 @@ def execute_until_in_scope(expr, scope, context=None, clients=None, **kwargs):
     if op in scope:
         return scope[op]
 
-    new_scope = execute_bottom_up(expr, scope, context=context, **kwargs)
+    new_scope = execute_bottom_up(
+        expr, scope, context=context, post_execute_=post_execute_, **kwargs)
     pre_executor = functools.partial(pre_execute, op, scope=scope, **kwargs)
     new_scope = toolz.merge(new_scope, *map(pre_executor, clients))
     return execute_until_in_scope(
-        expr, new_scope, context=context, clients=clients, **kwargs)
+        expr, new_scope,
+        context=context, clients=clients, post_execute_=post_execute_,
+        **kwargs
+    )
 
 
 def is_computable_arg(op, arg):
@@ -209,7 +228,7 @@ def is_computable_arg(op, arg):
     )
 
 
-def execute_bottom_up(expr, scope, context=None, **kwargs):
+def execute_bottom_up(expr, scope, context=None, post_execute_=None, **kwargs):
     """Execute `expr` bottom-up.
 
     Parameters
@@ -227,6 +246,7 @@ def execute_bottom_up(expr, scope, context=None, **kwargs):
     ]
         A mapping from node to the computed result of that Node
     """
+    assert post_execute_ is not None, 'post_execute_ is None'
     op = expr.op()
 
     # if we're in scope then return the scope, this will then be passed back
@@ -251,7 +271,8 @@ def execute_bottom_up(expr, scope, context=None, **kwargs):
 
     # recursively compute each node's arguments until we've changed type
     scopes = [
-        execute_bottom_up(arg, scope, context=context, **kwargs)
+        execute_bottom_up(
+            arg, scope, context=context, post_execute_=post_execute_, **kwargs)
         if hasattr(arg, 'op') else {arg: arg}
         for arg in computable_args
     ]
@@ -273,7 +294,8 @@ def execute_bottom_up(expr, scope, context=None, **kwargs):
         for arg in computable_args
     ]
     result = execute_node(op, *data, scope=scope, context=context, **kwargs)
-    return {op: result}
+    computed = post_execute_(op, result)
+    return {op: computed}
 
 
 def execute(expr, params=None, scope=None, context=None, **kwargs):

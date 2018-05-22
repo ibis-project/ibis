@@ -1,4 +1,3 @@
-from warnings import catch_warnings
 import pytest
 
 import math
@@ -41,44 +40,6 @@ def test_binary_boolean_operations(t, df, op):
     result = expr.execute()
     expected = op(df.plain_int64 == 1, df.plain_int64 == 2)
     tm.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize('places', [-2, 0, 1, 2, None])
-def test_round(t, df, places):
-    expr = t.float64_as_strings.cast('double').round(places)
-    result = expr.execute()
-    expected = t.execute().float64_as_strings.astype('float64').round(
-        places if places is not None else 0
-    )
-    tm.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize(
-    ('ibis_func', 'pandas_func'),
-    [
-        (methodcaller('abs'), np.abs),
-        (methodcaller('ceil'), np.ceil),
-        (methodcaller('exp'), np.exp),
-        (methodcaller('floor'), np.floor),
-        (methodcaller('ln'), np.log),
-        (methodcaller('log10'), np.log10),
-        (methodcaller('log', 2), lambda x: np.log(x) / np.log(2)),
-        (methodcaller('log2'), np.log2),
-        (methodcaller('round', 0), methodcaller('round', 0)),
-        (methodcaller('round', -2), methodcaller('round', -2)),
-        (methodcaller('round', 2), methodcaller('round', 2)),
-        (methodcaller('round'), methodcaller('round')),
-        (methodcaller('sign'), np.sign),
-        (methodcaller('sqrt'), np.sqrt),
-    ]
-)
-def test_math_functions(t, df, ibis_func, pandas_func):
-
-    # ignore divide by zero
-    with catch_warnings(record=True):
-        result = ibis_func(t.float64_with_zeros).execute()
-        expected = pandas_func(df.float64_with_zeros)
-        tm.assert_series_equal(result, expected)
 
 
 def operate(func):

@@ -135,7 +135,7 @@ def test_sign(functional_alltypes, lineitem):
 
     dec_col = lineitem.l_extendedprice
     result = dec_col.sign()
-    assert isinstance(result, ir.FloatingColumn)
+    assert isinstance(result, ir.DecimalColumn)
 
 
 def test_round(functional_alltypes, lineitem):

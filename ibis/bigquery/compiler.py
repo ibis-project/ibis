@@ -374,6 +374,7 @@ _operation_registry.update({
     ops.ArrayLength: unary('ARRAY_LENGTH'),
 
     ops.Log: _log,
+    ops.Sign: unary('SIGN'),
     ops.Modulus: fixed_arity('MOD', 2),
 
     ops.Date: unary('DATE'),
