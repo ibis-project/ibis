@@ -224,6 +224,20 @@ def column(inner, arg):
     return instance_of(ir.ColumnExpr, inner(arg))
 
 
+@validator
+def array_of(inner, arg):
+    if not isinstance(arg, ir.Expr):
+        val = ir.literal(arg)
+    else:
+        val = arg
+
+    argtype = val.type()
+    if not isinstance(argtype, dt.Array):
+        raise com.IbisTypeError(
+            'Argument must be an array, got {}'.format(val))
+    return value(dt.Array(inner(val[0]).type()), val)
+
+
 any = value(dt.any)
 double = value(dt.double)
 string = value(dt.string)
@@ -241,8 +255,8 @@ strict_numeric = one_of([integer, floating, decimal])
 soft_numeric = one_of([integer, floating, decimal, boolean])
 numeric = soft_numeric
 
-set_ = value(dt.Set(dt.any))
-array = value(dt.Array(dt.any))
+set_ = value(dt.Set)
+array = value(dt.Array)
 struct = value(dt.Struct)
 mapping = value(dt.Map(dt.any, dt.any))
 
