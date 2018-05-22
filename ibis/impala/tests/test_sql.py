@@ -85,8 +85,8 @@ FROM (
     GROUP BY 1
   ) t3
     LEFT OUTER JOIN t0
-      ON t3.`uuid` = t0.`uuid` AND
-         t3.`max_count` = t0.`count`
+      ON (t3.`uuid` = t0.`uuid`) AND
+         (t3.`max_count` = t0.`count`)
 ) t1
   LEFT OUTER JOIN (
     SELECT `uuid`, max(`ts`) AS `last_visit`
@@ -145,8 +145,8 @@ t1 AS (
 t2 AS (
   SELECT t1.*
   FROM t1
-  WHERE t1.`userid` = 118205 AND
-        extract(t1.`datetime`, 'year') > 2001
+  WHERE (t1.`userid` = 118205) AND
+        (extract(t1.`datetime`, 'year') > 2001)
 )
 SELECT t2.*
 FROM t2
@@ -155,10 +155,10 @@ WHERE t2.`movieid` IN (
   FROM (
     SELECT t1.*
     FROM t1
-    WHERE t1.`userid` = 118205 AND
-          extract(t1.`datetime`, 'year') > 2001 AND
-          t1.`userid` = 118205 AND
-          extract(t1.`datetime`, 'year') < 2009
+    WHERE (t1.`userid` = 118205) AND
+          (extract(t1.`datetime`, 'year') > 2001) AND
+          (t1.`userid` = 118205) AND
+          (extract(t1.`datetime`, 'year') < 2009)
   ) t4
 )"""
     compiled_result = to_sql(result)
@@ -199,7 +199,7 @@ def test_join_with_nested_or_condition():
 SELECT t0.*
 FROM t t0
   INNER JOIN t t1
-    ON t0.`a` = t1.`a` AND
+    ON (t0.`a` = t1.`a`) AND
        ((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`))"""
     assert to_sql(expr) == expected
 
@@ -216,7 +216,7 @@ def test_join_with_nested_xor_condition():
 SELECT t0.*
 FROM t t0
   INNER JOIN t t1
-    ON t0.`a` = t1.`a` AND
+    ON (t0.`a` = t1.`a`) AND
        (((t0.`a` != t1.`b`) OR (t0.`b` != t1.`a`)) AND NOT ((t0.`a` != t1.`b`) AND (t0.`b` != t1.`a`)))"""  # noqa: E501
     assert to_sql(expr) == expected
 
@@ -350,10 +350,10 @@ FROM (
   FROM t0
   WHERE `a` < 100
 ) t0
-WHERE `a` = (
+WHERE (`a` = (
   SELECT max(`a`) AS `max`
   FROM t0
   WHERE `a` < 100
-) AND
-      `b` = 'a'"""
+)) AND
+      (`b` = 'a')"""
     assert result == expected
