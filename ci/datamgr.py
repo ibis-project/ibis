@@ -73,7 +73,10 @@ def insert_tables(engine, names, data_directory):
         with engine.begin() as connection:
             df.to_sql(
                 table, connection, index=False, if_exists='append',
-                chunksize=1
+                chunksize=1 if os.name == 'nt' else None
+                # Pandas 0.23 uses multi value inserts which is very slow for a
+                # chunksize of 1. For some reason this only shows up on
+                # Appveyor Windows CI
             )
 
 

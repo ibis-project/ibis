@@ -253,3 +253,30 @@ def test_shape_like_with_no_arguments():
     with pytest.raises(ValueError) as e:
         rlz.shape_like([])
     assert str(e.value) == 'Must pass at least one expression'
+
+
+@pytest.mark.parametrize(
+    ('rule', 'input'),
+    [
+        (rlz.array_of(rlz.integer), [1, 2, 3]),
+        (rlz.array_of(rlz.integer), []),
+        (rlz.array_of(rlz.double), [1, 2]),
+        (rlz.array_of(rlz.string), ['a', 'b']),
+        (rlz.array_of(rlz.array_of(rlz.string)), [['a'], [], [], ['a', 'b']])
+    ]
+)
+def test_array_of(rule, input):
+    assert isinstance(rule(input).type(), dt.Array)
+
+
+@pytest.mark.parametrize(
+    ('rule', 'input'),
+    [
+        (rlz.array_of(rlz.array_of(rlz.string)), [1, 2]),
+        (rlz.array_of(rlz.string), [1, 2.0]),
+        (rlz.array_of(rlz.array_of(rlz.integer)), [2, 2.0]),
+    ]
+)
+def test_array_of_invalid_input(rule, input):
+    with pytest.raises(IbisTypeError):
+        rule(input)
