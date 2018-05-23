@@ -454,6 +454,21 @@ def compiles_strftime(translator, expr):
     )
 
 
+@compiles(ops.Strptime)
+def compiles_strptime(translator, expr):
+    arg, format_string, timezone_arg = expr.op().args
+    fmt_string = translator.translate(format_string)
+    arg_formatted = translator.translate(arg)
+    if isinstance(timezone_arg, ir.StringValue):
+        timezone_str = translator.translate(timezone_arg)
+        return 'PARSE_TIMESTAMP({}, {}, {})'.format(
+            fmt_string,
+            arg_formatted,
+            timezone_str
+        )
+    return 'PARSE_TIMESTAMP({}, {})'.format(fmt_string, arg_formatted)
+
+
 @rewrites(ops.Any)
 def bigquery_rewrite_any(expr):
     arg, = expr.op().args

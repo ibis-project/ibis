@@ -1800,6 +1800,29 @@ def _string_replace(arg, pattern, replacement):
     return ops.StringReplace(arg, pattern, replacement).to_expr()
 
 
+def to_datetime(arg, format_str, timezone_str=None):
+    """
+    Parses a string and returns a timestamp.a
+
+    Parameters
+    ----------
+    format_str : A format string potentially of the type '%Y-%m-%d'
+    timezone_str : An optional string indicating the timezone, i.e. 'America/New_York'
+
+    Examples
+    --------
+    >>> import ibis
+    >>> date_as_str = ibis.literal('20170206')
+    >>> result = date_as_str.to_datetime('%Y%m%d')
+
+
+    Returns
+    -------
+    parsed : datetime
+    """
+    return ops.Strptime(arg, format_str, timezone_str).to_expr()
+
+
 def parse_url(arg, extract, key=None):
     """
     Returns the portion of a URL corresponding to a part specified
@@ -1907,6 +1930,7 @@ _string_value_methods = dict(
     re_search=re_search,
     re_extract=regex_extract,
     re_replace=regex_replace,
+    to_datetime=to_datetime,
     parse_url=parse_url,
 
     substr=_string_substr,
