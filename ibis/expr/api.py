@@ -1807,7 +1807,8 @@ def to_datetime(arg, format_str, timezone_str=None):
     Parameters
     ----------
     format_str : A format string potentially of the type '%Y-%m-%d'
-    timezone_str : An optional string indicating the timezone, i.e. 'America/New_York'
+    timezone_str : An optional string indicating the timezone,
+        i.e. 'America/New_York'
 
     Examples
     --------
