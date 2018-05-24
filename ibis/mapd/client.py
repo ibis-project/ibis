@@ -691,7 +691,7 @@ class MapDClient(SQLClient):
             )
             return self.database_class(name, new_client)
 
-    def load_data(self, table_name, obj, database=None):
+    def load_data(self, table_name, obj, database=None, **kwargs):
         """
         Wraps the LOAD DATA DDL statement. Loads data into an MapD table by
         physically moving data files.
@@ -704,7 +704,7 @@ class MapDClient(SQLClient):
         """
         _database = self.db_name
         self.set_database(database)
-        self.con.load_table(table_name, obj)
+        self.con.load_table(table_name, obj, **kwargs)
         self.set_database(_database)
 
     @property
