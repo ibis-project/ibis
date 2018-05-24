@@ -67,3 +67,22 @@ def test_compile_toplevel():
     result = ibis.mapd.compile(expr)
     expected = 'SELECT sum("foo") AS "sum"\nFROM t0'  # noqa
     assert str(result) == expected
+
+
+def test_load_data(con):
+    import ibis.pandas
+
+    df = pd.DataFrame({
+        'a': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'],
+        'b': [28., 55., 43, 91, 81, 53, 19, 87, 52]
+    })
+
+    tb = ibis.pandas.connect({'value': df}).table('value')
+
+    try:
+        con.drop_table('value')
+    except Exception:
+        pass
+    con.create_table('value', schema=tb.schema())
+    con.load_data('value', df)
+    con.drop_table('value')
