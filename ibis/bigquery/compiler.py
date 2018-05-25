@@ -454,8 +454,8 @@ def compiles_strftime(translator, expr):
     )
 
 
-@compiles(ops.Strptime)
-def compiles_strptime(translator, expr):
+@compiles(ops.StringToTimestamp)
+def compiles_string_to_timestamp(translator, expr):
     arg, format_string, timezone_arg = expr.op().args
     fmt_string = translator.translate(format_string)
     arg_formatted = translator.translate(arg)

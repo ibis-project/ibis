@@ -2305,10 +2305,10 @@ class Strftime(ValueOp):
     output_type = rlz.shape_like('arg', dt.string)
 
 
-class Strptime(ValueOp):
+class StringToTimestamp(ValueOp):
     arg = Arg(rlz.string)
     format_str = Arg(rlz.string)
-    timezone_str = Arg(rlz.string, default=None)
+    timezone = Arg(rlz.string, default=None)
     output_type = rlz.shape_like('arg', dt.time)
 
 
