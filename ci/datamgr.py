@@ -2,6 +2,7 @@
 
 import os
 import six
+import sys
 import click
 import tarfile
 
@@ -205,6 +206,12 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def mapd(schema, tables, data_directory, **params):
+    if sys.version_info[0] < 3:
+        click.echo(
+            '[MAPD|EE] MapD backend is unavailable for Python 2.'
+        )
+        return
+
     import pymapd
 
     data_directory = Path(data_directory)
