@@ -1649,10 +1649,10 @@ class Select(DML):
         buf = StringIO()
         buf.write('WHERE ')
         fmt_preds = []
+        npreds = len(self.where)
         for pred in self.where:
             new_pred = self._translate(pred, permit_subquery=True)
-            if isinstance(pred.op(), (ops.Or, ops.Xor)):
-                # parens for OR exprs because it binds looser than AND
+            if npreds > 1:
                 new_pred = '({})'.format(new_pred)
             fmt_preds.append(new_pred)
 
@@ -1827,10 +1827,10 @@ class TableSetFormatter(object):
             buf.write(util.indent('{} {}'.format(jtype, table), self.indent))
 
             fmt_preds = []
+            npreds = len(preds)
             for pred in preds:
                 new_pred = self._translate(pred)
-                if isinstance(pred.op(), (ops.Or, ops.Xor)):
-                    # parens for OR exprs because it binds looser than AND
+                if npreds > 1:
                     new_pred = '({})'.format(new_pred)
                 fmt_preds.append(new_pred)
 

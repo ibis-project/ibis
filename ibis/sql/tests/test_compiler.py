@@ -849,8 +849,8 @@ FROM star1 t0
              """SELECT t0.*
 FROM star1 t0
   INNER JOIN star2 t1
-    ON t0.`foo_id` = t1.`foo_id` AND
-       t0.`bar_id` = t1.`foo_id`"""),
+    ON (t0.`foo_id` = t1.`foo_id`) AND
+       (t0.`bar_id` = t1.`foo_id`)"""),
         ]
 
         for expr, expected_sql in cases:
@@ -978,8 +978,8 @@ FROM (
         result = to_sql(what)
         expected = """SELECT *
 FROM star1
-WHERE `f` > 0 AND
-      `c` < (`f` * 2)"""
+WHERE (`f` > 0) AND
+      (`c` < (`f` * 2))"""
         assert result == expected
 
     def test_where_in_array_literal(self):
@@ -994,8 +994,8 @@ WHERE `f` > 0 AND
 FROM star1 t0
   INNER JOIN star2 t1
     ON t0.`foo_id` = t1.`foo_id`
-WHERE t0.`f` > 0 AND
-      t1.`value3` < 1000"""
+WHERE (t0.`f` > 0) AND
+      (t1.`value3` < 1000)"""
 
         result_sql = to_sql(e1)
         assert result_sql == expected_sql
@@ -1036,8 +1036,8 @@ WHERE `diff` > 1"""
         result = to_sql(what)
         expected = """SELECT *
 FROM alltypes
-WHERE `a` > 0 AND
-      `f` BETWEEN 0 AND 1"""
+WHERE (`a` > 0) AND
+      (`f` BETWEEN 0 AND 1)"""
         assert result == expected
 
     def test_where_analyze_scalar_op(self):
@@ -1055,8 +1055,8 @@ WHERE `a` > 0 AND
         expected = """\
 SELECT count(*) AS `count`
 FROM functional_alltypes
-WHERE `timestamp_col` < date_add(cast({} as timestamp), INTERVAL 3 MONTH) AND
-      `timestamp_col` < date_add(cast(now() as timestamp), INTERVAL 10 DAY)"""
+WHERE (`timestamp_col` < date_add(cast({} as timestamp), INTERVAL 3 MONTH)) AND
+      (`timestamp_col` < date_add(cast(now() as timestamp), INTERVAL 10 DAY))"""  # noqa: E501
         assert result == expected.format("'2010-01-01 00:00:00'")
 
     def test_bug_duplicated_where(self):
@@ -1340,8 +1340,8 @@ WHERE `f` > 0"""
         result = to_sql(filtered)
         expected = """SELECT *, `a` + `b` AS `foo`
 FROM alltypes
-WHERE `f` > 0 AND
-      `g` = 'bar'"""
+WHERE (`f` > 0) AND
+      (`g` = 'bar')"""
         assert result == expected
 
         agged = agg(filtered)
@@ -1350,8 +1350,8 @@ WHERE `f` > 0 AND
 FROM (
   SELECT *, `a` + `b` AS `foo`
   FROM alltypes
-  WHERE `f` > 0 AND
-        `g` = 'bar'
+  WHERE (`f` > 0) AND
+        (`g` = 'bar')
 ) t0
 GROUP BY 1"""
         assert result == expected
@@ -1853,8 +1853,8 @@ FROM foo t0
 WHERE EXISTS (
   SELECT 1
   FROM bar t1
-  WHERE t0.`key1` = t1.`key1` AND
-        t1.`key2` = 'foo'
+  WHERE (t0.`key1` = t1.`key1`) AND
+        (t1.`key2` = 'foo')
 )"""
         assert result == expected
 
@@ -2127,20 +2127,20 @@ SELECT t0.`value_a`, t1.`value_b`
 FROM (
   SELECT *
   FROM a
-  WHERE `year` = 2016 AND
-        `month` = 2 AND
-        `day` = 29
+  WHERE (`year` = 2016) AND
+        (`month` = 2) AND
+        (`day` = 29)
 ) t0
   LEFT OUTER JOIN (
     SELECT *
     FROM b
-    WHERE `year` = 2016 AND
-          `month` = 2 AND
-          `day` = 29
+    WHERE (`year` = 2016) AND
+          (`month` = 2) AND
+          (`day` = 29)
   ) t1
-    ON t0.`year` = t1.`year` AND
-       t0.`month` = t1.`month` AND
-       t0.`day` = t1.`day`"""
+    ON (t0.`year` = t1.`year`) AND
+       (t0.`month` = t1.`month`) AND
+       (t0.`day` = t1.`day`)"""
 
         assert result_sql == expected_sql
 
@@ -2172,8 +2172,8 @@ FROM (
     FROM bar
     WHERE `id` < 3
   ) t1
-    ON t0.`id` = t1.`id` AND
-       t0.`desc` = t1.`desc`"""
+    ON (t0.`id` = t1.`id`) AND
+       (t0.`desc` = t1.`desc`)"""
 
         assert result == expected
 
@@ -2299,8 +2299,8 @@ def test_pushdown_with_or():
     expected = """\
 SELECT *
 FROM functional_alltypes
-WHERE `double_col` > 3.14 AND
-      locate('foo', `string_col`) - 1 >= 0 AND
+WHERE (`double_col` > 3.14) AND
+      (locate('foo', `string_col`) - 1 >= 0) AND
       (((`int_col` - 1) = 0) OR (`float_col` <= 1.34))"""
     assert result == expected
 
@@ -2371,12 +2371,12 @@ FROM (
   FROM my_table
   WHERE `a` < 100
 ) t0
-WHERE `a` = (
+WHERE (`a` = (
   SELECT max(`a`) AS `max`
   FROM my_table
   WHERE `a` < 100
-) AND
-      `b` = 'a'"""
+)) AND
+      (`b` = 'a')"""
     assert result == expected
 
 
