@@ -223,6 +223,7 @@ class MapD(Backend):
     check_names = False
     supports_window_operations = False
     supports_divide_by_zero = False
+    supports_floating_modulus = False
     returned_timestamp_unit = 's'
     # Exception: Non-empty LogicalValues not supported yet
     additional_skipped_operations = frozenset({
