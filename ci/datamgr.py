@@ -68,15 +68,12 @@ def read_tables(names, data_directory):
         yield (name, df)
 
 
-def insert_tables(engine, names, data_directory):
+def insert_tables(engine, names, data_directory, chunksize=None):
     for table, df in read_tables(names, data_directory):
         with engine.begin() as connection:
             df.to_sql(
                 table, connection, index=False, if_exists='append',
-                chunksize=1 if os.name == 'nt' else None
-                # Pandas 0.23 uses multi value inserts which is very slow for a
-                # chunksize of 1. For some reason this only shows up on
-                # Appveyor Windows CI
+                chunksize=chunksize
             )
 
 
@@ -191,7 +188,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 
     params['database'] = str(database)
     engine = init_database('sqlite', params, schema, recreate=False)
-    insert_tables(engine, tables, data_directory)
+    insert_tables(engine, tables, data_directory, chunksize=1)
 
 
 @cli.command()
