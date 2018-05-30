@@ -1,4 +1,8 @@
+import datetime
+
 import pytest
+
+import pandas as pd
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -76,3 +80,76 @@ FROM `ibis-gbq.testing.functional_alltypes`"""
 SELECT PARSE_TIMESTAMP('%F', `date_string_col`) AS `tmp`
 FROM `ibis-gbq.testing.functional_alltypes`"""
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('case', 'expected', 'dtype'),
+    [
+        (datetime.date(2017, 1, 1), "DATE '{}'".format('2017-01-01'), dt.date),
+        (
+            pd.Timestamp('2017-01-01'),
+            "DATE '{}'".format('2017-01-01'),
+            dt.date
+        ),
+        ('2017-01-01', "DATE '{}'".format('2017-01-01'), dt.date),
+        (
+            datetime.datetime(2017, 1, 1, 4, 55, 59),
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+        ),
+        (
+            '2017-01-01 04:55:59',
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+        ),
+        (
+            pd.Timestamp('2017-01-01 04:55:59'),
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+        ),
+    ]
+)
+def test_literal_date(case, expected, dtype):
+    expr = ibis.literal(case, type=dtype).year()
+    result = ibis.bigquery.compile(expr)
+    assert result == "SELECT EXTRACT(year from {}) AS `tmp`".format(expected)
+
+
+@pytest.mark.parametrize(
+    ('case', 'expected', 'dtype'),
+    [
+        (
+            datetime.datetime(2017, 1, 1, 4, 55, 59),
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+        ),
+        (
+            '2017-01-01 04:55:59',
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+        ),
+        (
+            pd.Timestamp('2017-01-01 04:55:59'),
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+        ),
+        pytest.mark.xfail(
+            (
+                datetime.time(4, 55, 59),
+                "TIME '{}'".format('04:55:59'),
+                dt.time,
+            ),
+            raises=AttributeError,
+            reason='Not yet implemented'
+        ),
+        pytest.mark.xfail(
+            ('04:55:59', "TIME '{}'".format('04:55:59'), dt.time),
+            raises=AttributeError,
+            reason='Not yet implemented'
+        )
+    ]
+)
+def test_literal_timestamp_or_time(case, expected, dtype):
+    expr = ibis.literal(case, type=dtype).hour()
+    result = ibis.bigquery.compile(expr)
+    assert result == "SELECT EXTRACT(hour from {}) AS `tmp`".format(expected)

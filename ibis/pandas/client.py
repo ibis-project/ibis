@@ -1,10 +1,15 @@
 from __future__ import absolute_import
 
 import re
+
+from functools import partial
+
 import six
+import pytz
 import toolz
 import numpy as np
 import pandas as pd
+
 import dateutil.parser
 
 from multipledispatch import Dispatcher
@@ -16,7 +21,9 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-from ibis.compat import PY2, DatetimeTZDtype, CategoricalDtype, parse_version
+from ibis.compat import (
+    PY2, DatetimeTZDtype, CategoricalDtype, parse_version, infer_dtype
+)
 
 
 try:
@@ -217,13 +224,40 @@ def convert_datetimetz_to_timestamp(in_dtype, out_dtype, column):
     return column.astype(out_dtype.to_pandas(), errors='ignore')
 
 
+def convert_timezone(obj, timezone):
+    """Convert `obj` to the timezone `timezone`.
+
+    Parameters
+    ----------
+    obj : datetime.date or datetime.datetime
+
+    Returns
+    -------
+    type(obj)
+    """
+    if timezone is None:
+        return obj.replace(tzinfo=None)
+    return pytz.timezone(timezone).localize(obj)
+
+
 @convert.register(np.dtype, dt.Timestamp, pd.Series)
 def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
     if in_dtype.type == np.datetime64:
         return column.astype(out_dtype.to_pandas(), errors='ignore')
     try:
-        return pd.to_datetime(column)
+        return pd.to_datetime(column, utc=True).dt.tz_convert(
+            out_dtype.timezone)
     except pd.errors.OutOfBoundsDatetime:
+        inferred_dtype = infer_dtype(column)
+        if inferred_dtype in {'datetime', 'date'}:
+            # not great, but not really any other option
+            return column.map(
+                partial(convert_timezone, timezone=out_dtype.timezone))
+        if inferred_dtype not in {'string', 'unicode', 'bytes'}:
+            raise TypeError(
+                'Conversion to timestamp not supported for Series of type {!r}'
+                .format(inferred_dtype)
+            )
         return column.map(dateutil.parser.parse)
 
 
