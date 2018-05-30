@@ -18,7 +18,7 @@ dependencies:
   - mock
   - multipledispatch
   - numpy=1.11.*
-  - pandas
+  - pandas<0.23
   - pathlib2
   - plumbum
   - psycopg2
