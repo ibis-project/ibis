@@ -237,7 +237,9 @@ def clickhouse(schema, tables, data_directory, **params):
             cols = df.select_dtypes([object]).columns
             df[cols] = df[cols].fillna('')
 
-        df.to_sql(table, engine, index=False, if_exists='append')
+        t = sa.Table(table, sa.MetaData(bind=engine), autoload=True)
+        rows = list(map(lambda row: row._asdict(), df.itertuples(index=False)))
+        t.insert().values(rows).execute()
 
 
 if __name__ == '__main__':
