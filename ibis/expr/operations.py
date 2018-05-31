@@ -2309,7 +2309,7 @@ class StringToTimestamp(ValueOp):
     arg = Arg(rlz.string)
     format_str = Arg(rlz.string)
     timezone = Arg(rlz.string, default=None)
-    output_type = rlz.shape_like('arg', dt.time)
+    output_type = rlz.shape_like('arg', dt.timestamp)
 
 
 class ExtractTemporalField(TemporalUnaryOp):

@@ -518,13 +518,12 @@ def test_large_timestamp(client):
 
 
 def test_string_to_timestamp(client):
-    timestamp = pd.Timestamp(date(year=2017, month=2, day=6), tz='UTC')
+    timestamp = pd.Timestamp(datetime(year=2017, month=2, day=6))
     expr = ibis.literal('2017-02-06').to_timestamp('%F')
     result = client.execute(expr)
     assert result == timestamp
 
-    timestamp_tz = pd.Timestamp(datetime(year=2017, month=2, day=6, hour=5),
-                                tz='UTC')
+    timestamp_tz = pd.Timestamp(datetime(year=2017, month=2, day=6, hour=5))
     expr_tz = ibis.literal('2017-02-06').to_timestamp('%F', 'America/New_York')
     result_tz = client.execute(expr_tz)
     assert result_tz == timestamp_tz

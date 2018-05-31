@@ -1816,10 +1816,9 @@ def to_timestamp(arg, format_str, timezone=None):
     >>> date_as_str = ibis.literal('20170206')
     >>> result = date_as_str.to_timestamp('%Y%m%d')
 
-
     Returns
     -------
-    parsed : datetime
+    parsed : TimestampValue
     """
     return ops.StringToTimestamp(arg, format_str, timezone).to_expr()
 
