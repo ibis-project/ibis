@@ -50,10 +50,9 @@ services:
       - 9000:9000
 
   mapd:
-    image: mapd/mapd-ce-cpu
+    image: mapd/mapd-ce-cpu:v3.6.0
     ports:
-      - 9090:9090
-      - 9091:9091
+      - "9091-9092:9091-9092"
     environment:
       - MAPD_HOST=mapd
       - MAPD_PORT=9091
@@ -65,7 +64,8 @@ services:
   waiter:
     image: jwilder/dockerize
     command: |
-      dockerize -wait tcp://mysql:3306
+      dockerize -wait tcp://mapd:9091
+                -wait tcp://mysql:3306
                 -wait tcp://postgres:5432
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070
