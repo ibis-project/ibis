@@ -238,8 +238,13 @@ def clickhouse(schema, tables, data_directory, **params):
             df[cols] = df[cols].fillna('')
 
         t = sa.Table(table, sa.MetaData(bind=engine), autoload=True)
-        rows = list(map(lambda row: row._asdict(), df.itertuples(index=False)))
-        t.insert().values(rows).execute()
+        insert = t.insert()
+        keys = df.columns
+        rows = [
+            dict(zip(keys, row))
+            for row in df.itertuples(index=False, name=None)
+        ]
+        engine.execute(insert, rows)
 
 
 if __name__ == '__main__':
