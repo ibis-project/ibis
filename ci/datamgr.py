@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import os
-import six
-import click
 import tarfile
+
+import click
+import six
 
 import pandas as pd
 import sqlalchemy as sa
@@ -68,10 +69,23 @@ def read_tables(names, data_directory):
         yield (name, df)
 
 
+def convert_to_database_compatible_value(value):
+    """Pandas 0.23 broke DataFrame.to_sql, so we workaround it by rolling our
+    own extremely low-tech conversion routine
+    """
+    if pd.isnull(value):
+        return None
+    elif isinstance(value, pd.Timestamp):
+        return value.to_pydatetime()
+    else:
+        return value
+
+
 def insert(engine, tablename, df):
     keys = df.columns
     rows = [
-        dict(zip(keys, row)) for row in df.itertuples(index=False, name=None)
+        dict(zip(keys, tuple(map(convert_to_database_compatible_value, row))))
+        for row in df.itertuples(index=False, name=None)
     ]
     t = sa.Table(tablename, sa.MetaData(bind=engine), autoload=True)
     engine.execute(t.insert(), rows)
