@@ -323,13 +323,27 @@ class PandasClient(client.Client):
     def database(self, name=None):
         return PandasDatabase(name, self)
 
+    def get_schema(self, table_name, database=None):
+        """
+        Return a Schema object for the indicated table and database
+
+        Parameters
+        ----------
+        table_name : string
+          May be fully qualified
+        database : string, default None
+
+        Returns
+        -------
+        schema : ibis Schema
+        """
+        return infer_pandas_schema(self.dictionary[table_name])
+
     def list_tables(self, like=None):
         tables = list(self.dictionary.keys())
         if like is not None:
-            pattern = re.compile(like)
-            return list(filter(lambda t: pattern.findall(t), tables))
+            return list(filter(lambda t: re.search(kind, t), tables))
         return tables
-
 
     def load_data(self, table_name, obj, **kwargs):
         """
@@ -348,10 +362,9 @@ class PandasClient(client.Client):
         if obj is not None:
             df = pd.DataFrame(obj)
         else:
-            dtypes = dict(ibis_schema_to_pandas(schema))
-            df = pd.DataFrame(columns=list(dtypes.keys())).astype(dtypes)
+            df = schema.apply_to(pd.DataFrame())
 
-        self.dictionary[table_name] =df
+        self.dictionary[table_name] = df
 
     def exists_table(self, name):
         """
@@ -366,7 +379,7 @@ class PandasClient(client.Client):
         -------
         if_exists : boolean
         """
-        return bool(self.list_tables(like=name))
+        return name in self.list_tables()
 
 
     @property
