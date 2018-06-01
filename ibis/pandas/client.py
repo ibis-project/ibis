@@ -342,7 +342,7 @@ class PandasClient(client.Client):
     def list_tables(self, like=None):
         tables = list(self.dictionary.keys())
         if like is not None:
-            return list(filter(lambda t: re.search(kind, t), tables))
+            return list(filter(lambda t: re.search(like, t), tables))
         return tables
 
     def load_data(self, table_name, obj, **kwargs):

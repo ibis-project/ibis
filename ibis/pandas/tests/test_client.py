@@ -37,7 +37,7 @@ def test_client_table_repr(table):
 
 
 def test_load_data(client):
-    result = client.load_data('testing', tm.makeDataFrame())
+    client.load_data('testing', tm.makeDataFrame())
     assert client.exists_table('testing')
     assert client.get_schema('testing')
 
@@ -49,6 +49,8 @@ def test_literal(client):
 
 
 def test_list_tables(client):
+    assert client.list_tables(like='df_unknown')
+    assert not client.list_tables(like='not_in_the_database')
     assert client.list_tables()
 
 
