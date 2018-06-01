@@ -35,11 +35,18 @@ def test_client_table(table):
 def test_client_table_repr(table):
     assert 'PandasTable' in repr(table)
 
+def test_load_data(client):
+    result = client.load_data('testing', tm.makeDataFrame())
+    assert client.exists_table('testing')
+    assert client.get_schema('testing')
 
 def test_literal(client):
     lit = ibis.literal(1)
     result = client.execute(lit)
     assert result == 1
+
+def test_list_tables(client):
+    assert len(client.list_tables()) > 0
 
 
 def test_read_with_undiscoverable_type(client):
