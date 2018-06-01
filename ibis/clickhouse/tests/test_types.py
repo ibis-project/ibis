@@ -1,5 +1,4 @@
 import pytest
-import pandas as pd
 
 
 pytest.importorskip('clickhouse_driver')
