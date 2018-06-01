@@ -381,7 +381,6 @@ class PandasClient(client.Client):
         """
         return name in self.list_tables()
 
-
     @property
     def version(self):
         return parse_version(pd.__version__)
