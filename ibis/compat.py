@@ -19,6 +19,7 @@ if not PY2:
         return list(zip(*x))
 
     zip = zip
+    long = int
     zip_longest = itertools.zip_longest
 
     def viewkeys(x):
@@ -45,6 +46,7 @@ else:
     unicode_type = unicode  # noqa: F821
     lzip = zip
     zip = itertools.izip
+    long = long
     zip_longest = itertools.izip_longest
     map = itertools.imap
 

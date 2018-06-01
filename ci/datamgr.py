@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import tarfile
 
 import click
 import six
 
+import numpy as np
 import pandas as pd
 import sqlalchemy as sa
 
 from toolz import dissoc
 from plumbum import local
 from plumbum.cmd import curl, psql
-from ibis.compat import Path
+from ibis.compat import Path, PY2, long
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -75,10 +77,14 @@ def convert_to_database_compatible_value(value):
     """
     if pd.isnull(value):
         return None
-    elif isinstance(value, pd.Timestamp):
+    if isinstance(value, pd.Timestamp):
         return value.to_pydatetime()
-    else:
-        return value
+    if PY2:
+        if isinstance(value, np.uint64):
+            return int(value) if value <= sys.maxsize else long(value)
+        if isinstance(value, (np.unsignedinteger, np.signedinteger)):
+            return int(value)
+    return value
 
 
 def insert(engine, tablename, df):
