@@ -68,13 +68,19 @@ def read_tables(names, data_directory):
         yield (name, df)
 
 
-def insert_tables(engine, names, data_directory, chunksize=None):
+def insert(engine, tablename, df):
+    keys = df.columns
+    rows = [
+        dict(zip(keys, row)) for row in df.itertuples(index=False, name=None)
+    ]
+    t = sa.Table(tablename, sa.MetaData(bind=engine), autoload=True)
+    engine.execute(t.insert(), rows)
+
+
+def insert_tables(engine, names, data_directory):
     for table, df in read_tables(names, data_directory):
         with engine.begin() as connection:
-            df.to_sql(
-                table, connection, index=False, if_exists='append',
-                chunksize=chunksize
-            )
+            insert(connection, table, df)
 
 
 @click.group()
@@ -188,7 +194,7 @@ def sqlite(database, schema, tables, data_directory, **params):
 
     params['database'] = str(database)
     engine = init_database('sqlite', params, schema, recreate=False)
-    insert_tables(engine, tables, data_directory, chunksize=1)
+    insert_tables(engine, tables, data_directory)
 
 
 @cli.command()
@@ -237,14 +243,7 @@ def clickhouse(schema, tables, data_directory, **params):
             cols = df.select_dtypes([object]).columns
             df[cols] = df[cols].fillna('')
 
-        t = sa.Table(table, sa.MetaData(bind=engine), autoload=True)
-        insert = t.insert()
-        keys = df.columns
-        rows = [
-            dict(zip(keys, row))
-            for row in df.itertuples(index=False, name=None)
-        ]
-        engine.execute(insert, rows)
+        insert(engine, table, df)
 
 
 if __name__ == '__main__':
