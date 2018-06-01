@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import re
 import six
 import toolz
 import numpy as np
@@ -9,6 +10,7 @@ import dateutil.parser
 from multipledispatch import Dispatcher
 
 import ibis.client as client
+import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
@@ -320,6 +322,52 @@ class PandasClient(client.Client):
 
     def database(self, name=None):
         return PandasDatabase(name, self)
+
+    def list_tables(self, like=None):
+        tables = list(self.dictionary.keys())
+        if like is not None:
+            pattern = re.compile(like)
+            return list(filter(lambda t: pattern.findall(t), tables))
+        return tables
+
+
+    def load_data(self, table_name, obj, **kwargs):
+        """
+        Parameters
+        ----------
+        table_name : string
+        obj: pandas.DataFrame
+        """
+        # kwargs is a catch all for any options required by other backends.
+        self.dictionary[table_name] = pd.DataFrame(obj)
+
+    def create_table(self, table_name, obj=None, schema=None):
+        if obj is None and schema is None:
+            raise com.IbisError('Must pass expr or schema')
+
+        if obj is not None:
+            df = pd.DataFrame(obj)
+        else:
+            dtypes = dict(ibis_schema_to_pandas(schema))
+            df = pd.DataFrame(columns=list(dtypes.keys())).astype(dtypes)
+
+        self.dictionary[table_name] =df
+
+    def exists_table(self, name):
+        """
+        Determine if the indicated table or view exists
+
+        Parameters
+        ----------
+        name : string
+        database : string, default None
+
+        Returns
+        -------
+        if_exists : boolean
+        """
+        return bool(self.list_tables(like=name))
+
 
     @property
     def version(self):
