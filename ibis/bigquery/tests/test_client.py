@@ -515,3 +515,10 @@ def test_large_timestamp(client):
     expr = ibis.timestamp('4567-01-01 00:00:00')
     result = client.execute(expr)
     assert result == huge_timestamp
+
+
+def test_client_sql_query(client):
+    expr = client.sql('select * from testing.functional_alltypes limit 20')
+    result = expr.execute()
+    expected = client.table('functional_alltypes').head(20).execute()
+    tm.assert_frame_equal(result, expected)
