@@ -401,9 +401,15 @@ def test_parted_column(client, kind, option, expected_fn):
 
 
 def test_cross_project_query():
-    con = ibis.bigquery.connect(
-        project_id='ibis-gbq',
-        dataset_id='bigquery-public-data.stackoverflow')
+    ga = pytest.importorskip('google.auth')
+
+    try:
+        con = ibis.bigquery.connect(
+            project_id='ibis-gbq',
+            dataset_id='bigquery-public-data.stackoverflow')
+    except ga.exceptions.DefaultCredentialsError:
+        pytest.skip("no credentials found, skipping")
+
     table = con.table('posts_questions')
     expr = table[table.tags.contains('ibis')][['title', 'tags']]
     result = expr.compile()
@@ -455,8 +461,14 @@ def test_exists_database_different_project(client, name, expected):
 
 
 def test_repeated_project_name():
-    con = ibis.bigquery.connect(
-        project_id='ibis-gbq', dataset_id='ibis-gbq.testing')
+    ga = pytest.importorskip('google.auth')
+
+    try:
+        con = ibis.bigquery.connect(
+            project_id='ibis-gbq', dataset_id='ibis-gbq.testing')
+    except ga.exceptions.DefaultCredentialsError:
+        pytest.skip("no credentials found, skipping")
+
     assert 'functional_alltypes' in con.list_tables()
 
 
