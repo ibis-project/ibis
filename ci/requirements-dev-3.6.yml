@@ -14,7 +14,7 @@ dependencies:
   - lz4
   - multipledispatch
   - numpy
-  - pandas<0.23
+  - pandas
   - plumbum
   - psycopg2
   - pyarrow>=0.6.0

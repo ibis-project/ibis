@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 import os
-import six
 import sys
-import click
 import tarfile
+
+import click
+import six
 
 import pandas as pd
 import sqlalchemy as sa
@@ -69,16 +70,32 @@ def read_tables(names, data_directory):
         yield (name, df)
 
 
+def convert_to_database_compatible_value(value):
+    """Pandas 0.23 broke DataFrame.to_sql, so we workaround it by rolling our
+    own extremely low-tech conversion routine
+    """
+    if pd.isnull(value):
+        return None
+    elif isinstance(value, pd.Timestamp):
+        return value.to_pydatetime()
+    else:
+        return value
+
+
+def insert(engine, tablename, df):
+    keys = df.columns
+    rows = [
+        dict(zip(keys, tuple(map(convert_to_database_compatible_value, row))))
+        for row in df.itertuples(index=False, name=None)
+    ]
+    t = sa.Table(tablename, sa.MetaData(bind=engine), autoload=True)
+    engine.execute(t.insert(), rows)
+
+
 def insert_tables(engine, names, data_directory):
     for table, df in read_tables(names, data_directory):
         with engine.begin() as connection:
-            df.to_sql(
-                table, connection, index=False, if_exists='append',
-                chunksize=1 if os.name == 'nt' else None
-                # Pandas 0.23 uses multi value inserts which is very slow for a
-                # chunksize of 1. For some reason this only shows up on
-                # Appveyor Windows CI
-            )
+            insert(connection, table, df)
 
 
 @click.group()
@@ -326,7 +343,7 @@ def clickhouse(schema, tables, data_directory, **params):
             cols = df.select_dtypes([object]).columns
             df[cols] = df[cols].fillna('')
 
-        df.to_sql(table, engine, index=False, if_exists='append')
+        insert(engine, table, df)
 
 
 if __name__ == '__main__':
