@@ -41,11 +41,13 @@ def test_load_data(client):
     assert client.exists_table('testing')
     assert client.get_schema('testing')
 
+
 def test_create_table(client):
     client.create_table('testing', obj=tm.makeDataFrame())
     assert client.exists_table('testing')
     client.create_table('testingschema', schema=client.get_schema('testing'))
     assert client.exists_table('testingschema')
+
 
 def test_literal(client):
     lit = ibis.literal(1)

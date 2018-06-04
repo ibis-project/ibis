@@ -330,7 +330,6 @@ class PandasClient(client.Client):
             return list(filter(lambda t: pattern.findall(t), tables))
         return tables
 
-
     def load_data(self, table_name, obj, **kwargs):
         """
         Parameters
@@ -385,7 +384,6 @@ class PandasClient(client.Client):
         if_exists : boolean
         """
         return bool(self.list_tables(like=name))
-
 
     @property
     def version(self):
