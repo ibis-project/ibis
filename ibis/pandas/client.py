@@ -323,27 +323,13 @@ class PandasClient(client.Client):
     def database(self, name=None):
         return PandasDatabase(name, self)
 
-    def get_schema(self, table_name, database=None):
-        """
-        Return a Schema object for the indicated table and database
-
-        Parameters
-        ----------
-        table_name : string
-          May be fully qualified
-        database : string, default None
-
-        Returns
-        -------
-        schema : ibis Schema
-        """
-        return infer_pandas_schema(self.dictionary[table_name])
-
     def list_tables(self, like=None):
         tables = list(self.dictionary.keys())
         if like is not None:
-            return list(filter(lambda t: re.search(like, t), tables))
+            pattern = re.compile(like)
+            return list(filter(lambda t: pattern.findall(t), tables))
         return tables
+
 
     def load_data(self, table_name, obj, **kwargs):
         """
@@ -362,9 +348,28 @@ class PandasClient(client.Client):
         if obj is not None:
             df = pd.DataFrame(obj)
         else:
-            df = schema.apply_to(pd.DataFrame())
+            dtypes = ibis_schema_to_pandas(schema)
+            df = schema.apply_to(
+                pd.DataFrame(columns=list(map(toolz.first, dtypes)))
+            )
 
         self.dictionary[table_name] = df
+
+    def get_schema(self, table_name, database=None):
+        """
+        Return a Schema object for the indicated table and database
+
+        Parameters
+        ----------
+        table_name : string
+          May be fully qualified
+        database : string, default None
+
+        Returns
+        -------
+        schema : ibis Schema
+        """
+        return sch.infer(self.dictionary[table_name])
 
     def exists_table(self, name):
         """
@@ -379,7 +384,8 @@ class PandasClient(client.Client):
         -------
         if_exists : boolean
         """
-        return name in self.dictionary
+        return bool(self.list_tables(like=name))
+
 
     @property
     def version(self):
