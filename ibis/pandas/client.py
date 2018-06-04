@@ -379,7 +379,7 @@ class PandasClient(client.Client):
         -------
         if_exists : boolean
         """
-        return name in self.list_tables()
+        return name in self.dictionary
 
     @property
     def version(self):
