@@ -130,6 +130,7 @@ def udf(input_type, output_type, strict=True, libraries=None):
     '''
     if libraries is None:
         libraries = []
+
     def wrapper(f):
         if not callable(f):
             raise TypeError('f must be callable, got {}'.format(f))
