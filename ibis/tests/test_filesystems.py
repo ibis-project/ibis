@@ -24,7 +24,7 @@ from six import BytesIO
 import pytest
 
 from ibis.filesystems import HDFS
-from ibis.impala.tests.common import IbisTestEnv
+from ibis.impala.tests.conftest import IbisTestEnv
 import ibis.compat as compat
 import ibis.util as util
 import ibis

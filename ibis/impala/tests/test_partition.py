@@ -1,5 +1,3 @@
-import unittest
-
 from posixpath import join as pjoin
 
 import pytest
@@ -14,289 +12,282 @@ from pandas.util.testing import assert_frame_equal  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from ibis.impala.compat import ImpylaError  # noqa: E402
-from ibis.impala.tests.common import ImpalaE2E, ENV  # noqa: E402
 from ibis.tests.util import assert_equal  # noqa: E402
 import ibis  # noqa: E402
 import ibis.util as util  # noqa: E402
 
 
-def _tmp_name():
-    return 'tmp_partition_{0}'.format(util.guid())
+pytestmark = pytest.mark.impala
 
 
-class TestPartitioning(ImpalaE2E, unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        ImpalaE2E.setup_e2e(cls, ENV)
-
-        df = pd.DataFrame({'year': [2009, 2009, 2009, 2010, 2010, 2010],
-                           'month': ['1', '2', '3', '1', '2', '3'],
-                           'value': [1, 2, 3, 4, 5, 6]})
-        df = pd.concat([df] * 10, ignore_index=True)
-        df['id'] = df.index.values
-
-        cls.df = df
-        cls.db = cls.con.database(cls.tmp_db)
-        cls.pd_name = _tmp_name()
-        cls.db.create_table(cls.pd_name, df)
-
-    def test_is_partitioned(self):
-        schema = ibis.schema([('foo', 'string'),
-                              ('year', 'int32'),
-                              ('month', 'string')])
-        name = _tmp_name()
-        self.db.create_table(name, schema=schema,
-                             partition=['year', 'month'])
-        assert self.db.table(name).is_partitioned
-
-    def test_create_table_with_partition_column(self):
-        schema = ibis.schema([('year', 'int32'),
-                              ('month', 'string'),
-                              ('day', 'int8'),
-                              ('value', 'double')])
-
-        name = _tmp_name()
-        self.con.create_table(name, schema=schema,
-                              database=self.tmp_db,
-                              partition=['year', 'month'])
-        self.temp_tables.append(name)
-
-        # the partition column get put at the end of the table
-        ex_schema = ibis.schema([('day', 'int8'),
-                                 ('value', 'double'),
-                                 ('year', 'int32'),
-                                 ('month', 'string')])
-        table_schema = self.con.get_schema(name, database=self.tmp_db)
-        assert_equal(table_schema, ex_schema)
-
-        partition_schema = self.db.table(name).partition_schema()
-
-        expected = ibis.schema([('year', 'int32'),
-                                ('month', 'string')])
-        assert_equal(partition_schema, expected)
-
-    def test_create_partitioned_separate_schema(self):
-        schema = ibis.schema([('day', 'int8'),
-                              ('value', 'double')])
-        part_schema = ibis.schema([('year', 'int32'),
-                                   ('month', 'string')])
-
-        name = _tmp_name()
-        self.con.create_table(name, schema=schema, partition=part_schema)
-        self.temp_tables.append(name)
-
-        # the partition column get put at the end of the table
-        ex_schema = ibis.schema([('day', 'int8'),
-                                 ('value', 'double'),
-                                 ('year', 'int32'),
-                                 ('month', 'string')])
-        table_schema = self.con.get_schema(name)
-        assert_equal(table_schema, ex_schema)
-
-        partition_schema = self.con.table(name).partition_schema()
-        assert_equal(partition_schema, part_schema)
-
-    def test_unpartitioned_table_get_schema(self):
-        tname = 'functional_alltypes'
-        with self.assertRaises(ImpylaError):
-            self.con.table(tname).partition_schema()
-
-    def test_insert_select_partitioned_table(self):
-        df = self.df
-
-        unpart_t = self.db.table(self.pd_name)
-        part_keys = ['year', 'month']
-        part_t = self._create_partitioned_table(unpart_t.schema(),
-                                                part_keys)
-        unique_keys = df[part_keys].drop_duplicates()
-
-        for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
-            select_stmt = unpart_t[(unpart_t.year == year) &
-                                   (unpart_t.month == month)]
-
-            # test both styles of insert
-            if i:
-                part = {'year': year, 'month': month}
-            else:
-                part = [year, month]
-            part_t.insert(select_stmt, partition=part)
-
-        self._verify_partitioned_table(part_t, df, unique_keys)
-
-    def test_create_partitioned_table_from_expr(self):
-        t = self.con.table('functional_alltypes')
-        expr = t[t.id <= 10][['id', 'double_col', 'month', 'year']]
-        name = 'tmppart_{}'.format(util.guid())
-        try:
-            self.con.create_table(name, expr, partition=[t.year])
-        except Exception:
-            raise
-        else:
-            new = self.con.table(name)
-            expected = expr.execute().sort_values('id').reset_index(drop=True)
-            result = new.execute().sort_values('id').reset_index(drop=True)
-            assert_frame_equal(result, expected)
-        finally:
-            self.con.drop_table(name, force=True)
-
-    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-    def test_insert_overwrite_partition(self):
-        assert False
-
-    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-    def test_dynamic_partitioning(self):
-        assert False
-
-    def test_add_drop_partition_no_location(self):
-        schema = ibis.schema([('foo', 'string'),
-                              ('year', 'int32'),
-                              ('month', 'int16')])
-        name = _tmp_name()
-        self.db.create_table(name, schema=schema,
-                             partition=['year', 'month'])
-
-        table = self.db.table(name)
-
-        part = {'year': 2007, 'month': 4}
-
-        table.add_partition(part)
-
-        assert len(table.partitions()) == 2
-
-        table.drop_partition(part)
-
-        assert len(table.partitions()) == 1
-
-        table.drop()
-
-    def test_add_drop_partition_owned_by_impala(self):
-        schema = ibis.schema([('foo', 'string'),
-                              ('year', 'int32'),
-                              ('month', 'int16')])
-        name = _tmp_name()
-        self.db.create_table(name, schema=schema, partition=['year', 'month'])
-
-        table = self.db.table(name)
-
-        part = {'year': 2007, 'month': 4}
-
-        subdir = util.guid()
-        basename = util.guid()
-        path = '/tmp/{}/{}'.format(subdir, basename)
-
-        self.con.hdfs.mkdir('/tmp/{}'.format(subdir))
-        self.con.hdfs.chown(
-            '/tmp/{}'.format(subdir), owner='impala', group='supergroup'
-        )
-
-        table.add_partition(part, location=path)
-
-        assert len(table.partitions()) == 2
-
-        table.drop_partition(part)
-
-        assert len(table.partitions()) == 1
-        table.drop()
-
-    @pytest.mark.xfail(
-        raises=impala.error.HiveServer2Error, reason='HIVE-12613'
+@pytest.fixture
+def df():
+    df = pd.DataFrame(
+        {
+            'year': [2009] * 3 + [2010] * 3,
+            'month': list(map(str, [1, 2, 3] * 2)),
+            'value': list(range(1, 7))
+        },
+        index=list(range(6))
     )
-    def test_add_drop_partition_hive_bug(self):
-        schema = ibis.schema([('foo', 'string'),
-                              ('year', 'int32'),
-                              ('month', 'int16')])
-        name = _tmp_name()
-        self.db.create_table(name, schema=schema, partition=['year', 'month'])
+    df = pd.concat([df] * 10, ignore_index=True)
+    df['id'] = df.index.values
+    return df
 
-        table = self.db.table(name)
 
-        part = {'year': 2007, 'month': 4}
+@pytest.fixture
+def unpart_t(db, df):
+    pd_name = '__ibis_test_partition_{}'.format(util.guid())
+    db.create_table(pd_name, df)
+    try:
+        yield db[pd_name]
+    finally:
+        assert db.client.exists_table(pd_name), pd_name
+        db.client.drop_table(pd_name)
 
-        path = '/tmp/{}'.format(util.guid())
 
-        table.add_partition(part, location=path)
+def test_is_partitioned(db, temp_table):
+    schema = ibis.schema([('foo', 'string'),
+                          ('year', 'int32'),
+                          ('month', 'string')])
+    name = temp_table
+    db.create_table(name, schema=schema, partition=['year', 'month'])
+    assert db.table(name).is_partitioned
 
-        assert len(table.partitions()) == 2
 
-        table.drop_partition(part)
+def test_create_table_with_partition_column(con, temp_table_db):
+    schema = ibis.schema([('year', 'int32'),
+                          ('month', 'string'),
+                          ('day', 'int8'),
+                          ('value', 'double')])
 
-        assert len(table.partitions()) == 1
+    tmp_db, name = temp_table_db.split('.')
+    con.create_table(
+        name, schema=schema, database=tmp_db, partition=['year', 'month'])
 
-        table.drop()
+    # the partition column get put at the end of the table
+    ex_schema = ibis.schema([('day', 'int8'),
+                             ('value', 'double'),
+                             ('year', 'int32'),
+                             ('month', 'string')])
+    table_schema = con.get_schema(name, database=tmp_db)
+    assert_equal(table_schema, ex_schema)
 
-    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-    def test_set_partition_location(self):
-        assert False
+    partition_schema = con.database(tmp_db).table(name).partition_schema()
 
-    def test_load_data_partition(self):
-        df = self.df
+    expected = ibis.schema([('year', 'int32'), ('month', 'string')])
+    assert_equal(partition_schema, expected)
 
-        unpart_t = self.db.table(self.pd_name)
-        part_keys = ['year', 'month']
-        part_t = self._create_partitioned_table(unpart_t.schema(),
-                                                part_keys)
 
-        # trim the runtime of this test
-        df = df[df.month == '1'].reset_index(drop=True)
+def test_create_partitioned_separate_schema(con, temp_table):
+    schema = ibis.schema([('day', 'int8'),
+                          ('value', 'double')])
+    part_schema = ibis.schema([('year', 'int32'),
+                               ('month', 'string')])
 
-        unique_keys = df[part_keys].drop_duplicates()
+    name = temp_table
+    con.create_table(name, schema=schema, partition=part_schema)
 
-        hdfs_dir = pjoin(self.tmp_dir, 'load-data-partition')
+    # the partition column get put at the end of the table
+    ex_schema = ibis.schema([('day', 'int8'),
+                             ('value', 'double'),
+                             ('year', 'int32'),
+                             ('month', 'string')])
+    table_schema = con.get_schema(name)
+    assert_equal(table_schema, ex_schema)
 
-        df2 = df.drop(['year', 'month'], axis='columns')
+    partition_schema = con.table(name).partition_schema()
+    assert_equal(partition_schema, part_schema)
 
-        csv_props = {
-            'serialization.format': ',',
-            'field.delim': ','
-        }
 
-        for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
-            chunk = df2[(df.year == year) & (df.month == month)]
-            chunk_path = pjoin(hdfs_dir, '{0}.csv'.format(i))
+def test_unpartitioned_table_get_schema(con):
+    tname = 'functional_alltypes'
+    with pytest.raises(ImpylaError):
+        con.table(tname).partition_schema()
 
-            self.con.write_dataframe(chunk, chunk_path)
 
-            # test both styles of insert
-            if i:
-                part = {'year': year, 'month': month}
-            else:
-                part = [year, month]
+def test_insert_select_partitioned_table(df, db, temp_table, unpart_t):
+    part_keys = ['year', 'month']
 
-            part_t.add_partition(part)
-            part_t.alter_partition(part, format='text',
-                                   serde_properties=csv_props)
-            part_t.load_data(chunk_path, partition=part)
+    db.create_table(temp_table, schema=unpart_t.schema(), partition=part_keys)
+    part_t = db[temp_table]
+    unique_keys = df[part_keys].drop_duplicates()
 
-        self.hdfs.rmdir(hdfs_dir)
-        self._verify_partitioned_table(part_t, df, unique_keys)
+    for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
+        select_stmt = unpart_t[(unpart_t.year == year) &
+                               (unpart_t.month == month)]
 
-    def _verify_partitioned_table(self, part_t, df, unique_keys):
-        result = (part_t.execute()
-                  .sort_values(by='id')
-                  .reset_index(drop=True)
-                  [df.columns])
+        # test both styles of insert
+        if i:
+            part = {'year': year, 'month': month}
+        else:
+            part = [year, month]
+        part_t.insert(select_stmt, partition=part)
 
-        assert_frame_equal(result, df)
+    verify_partitioned_table(part_t, df, unique_keys)
 
-        parts = part_t.partitions()
 
-        # allow for the total line
-        assert len(parts) == (len(unique_keys) + 1)
+def test_create_partitioned_table_from_expr(con, alltypes):
+    t = alltypes
+    expr = t[t.id <= 10][['id', 'double_col', 'month', 'year']]
+    name = 'tmppart_{}'.format(util.guid())
+    try:
+        con.create_table(name, expr, partition=[t.year])
+    except Exception:
+        raise
+    else:
+        new = con.table(name)
+        expected = expr.execute().sort_values('id').reset_index(drop=True)
+        result = new.execute().sort_values('id').reset_index(drop=True)
+        assert_frame_equal(result, expected)
+    finally:
+        con.drop_table(name, force=True)
 
-    def _create_partitioned_table(self, schema, part_keys, location=None):
-        part_name = _tmp_name()
 
-        self.db.create_table(part_name,
-                             schema=schema,
-                             partition=part_keys)
-        self.temp_tables.append(part_name)
-        return self.db.table(part_name)
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_insert_overwrite_partition():
+    assert False
 
-    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-    def test_drop_partition(self):
-        assert False
 
-    @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-    def test_repartition_automated(self):
-        assert False
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_dynamic_partitioning():
+    assert False
+
+
+def test_add_drop_partition_no_location(temp_table, db):
+    schema = ibis.schema([('foo', 'string'),
+                          ('year', 'int32'),
+                          ('month', 'int16')])
+    name = temp_table
+    db.create_table(name, schema=schema, partition=['year', 'month'])
+    table = db.table(name)
+
+    part = {'year': 2007, 'month': 4}
+
+    table.add_partition(part)
+
+    assert len(table.partitions()) == 2
+
+    table.drop_partition(part)
+
+    assert len(table.partitions()) == 1
+
+
+def test_add_drop_partition_owned_by_impala(hdfs, db, temp_table):
+    schema = ibis.schema([('foo', 'string'),
+                          ('year', 'int32'),
+                          ('month', 'int16')])
+    name = temp_table
+    db.create_table(name, schema=schema, partition=['year', 'month'])
+
+    table = db.table(name)
+
+    part = {'year': 2007, 'month': 4}
+
+    subdir = util.guid()
+    basename = util.guid()
+    path = '/tmp/{}/{}'.format(subdir, basename)
+
+    hdfs.mkdir('/tmp/{}'.format(subdir))
+    hdfs.chown('/tmp/{}'.format(subdir), owner='impala', group='supergroup')
+
+    table.add_partition(part, location=path)
+
+    assert len(table.partitions()) == 2
+
+    table.drop_partition(part)
+
+    assert len(table.partitions()) == 1
+
+
+@pytest.mark.xfail(raises=impala.error.HiveServer2Error, reason='HIVE-12613')
+def test_add_drop_partition_hive_bug(db, temp_table):
+    schema = ibis.schema([('foo', 'string'),
+                          ('year', 'int32'),
+                          ('month', 'int16')])
+    name = temp_table
+    db.create_table(name, schema=schema, partition=['year', 'month'])
+
+    table = db.table(name)
+
+    part = {'year': 2007, 'month': 4}
+
+    path = '/tmp/{}'.format(util.guid())
+
+    table.add_partition(part, location=path)
+
+    assert len(table.partitions()) == 2
+
+    table.drop_partition(part)
+
+    assert len(table.partitions()) == 1
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_set_partition_location():
+    assert False
+
+
+def test_load_data_partition(con, hdfs, tmp_dir, db, unpart_t, df, temp_table):
+    part_keys = ['year', 'month']
+
+    db.create_table(temp_table, schema=unpart_t.schema(), partition=part_keys)
+    part_t = db[temp_table]
+
+    # trim the runtime of this test
+    df = df[df.month == '1'].reset_index(drop=True)
+
+    unique_keys = df[part_keys].drop_duplicates()
+
+    hdfs_dir = pjoin(tmp_dir, 'load-data-partition')
+
+    df2 = df.drop(['year', 'month'], axis='columns')
+
+    csv_props = {
+        'serialization.format': ',',
+        'field.delim': ','
+    }
+
+    for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
+        chunk = df2[(df.year == year) & (df.month == month)]
+        chunk_path = pjoin(hdfs_dir, '{}.csv'.format(i))
+
+        con.write_dataframe(chunk, chunk_path)
+
+        # test both styles of insert
+        if i:
+            part = {'year': year, 'month': month}
+        else:
+            part = [year, month]
+
+        part_t.add_partition(part)
+        part_t.alter_partition(part, format='text',
+                               serde_properties=csv_props)
+        part_t.load_data(chunk_path, partition=part)
+
+    hdfs.rmdir(hdfs_dir)
+    verify_partitioned_table(part_t, df, unique_keys)
+
+
+def verify_partitioned_table(part_t, df, unique_keys):
+    result = (part_t.execute()
+              .sort_values(by='id')
+              .reset_index(drop=True)
+              [df.columns])
+
+    assert_frame_equal(result, df)
+
+    parts = part_t.partitions()
+
+    # allow for the total line
+    assert len(parts) == len(unique_keys) + 1
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_drop_partition():
+    assert False
+
+
+@pytest.mark.xfail(raises=AssertionError, reason='NYT')
+def test_repartition_automated():
+    assert False

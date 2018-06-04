@@ -50,11 +50,11 @@ test: &test
     - run:
         name: Execute Pytest
         command: |
-          docker-compose run ibis pytest -rsxX \
+          docker-compose run ibis pytest ibis \
+            -m "not udf" -ra \
             --doctest-modules \
             --doctest-ignore-import-errors \
-            --junitxml=/tmp/test-reports/pytest/junit.xml \
-            --tb=short -m "not udf" ibis
+            --junitxml=/tmp/test-reports/pytest/junit.xml
     - store_test_results:
         path: /tmp/ibis/test-reports
     - store_artifacts:
