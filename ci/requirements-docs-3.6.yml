@@ -18,7 +18,7 @@ dependencies:
   - nbsphinx
   - numpy
   - numpydoc
-  - pandas<0.23
+  - pandas
   - plumbum
   - psycopg2
   - pyarrow>=0.6.0
