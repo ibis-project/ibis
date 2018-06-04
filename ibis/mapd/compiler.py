@@ -10,6 +10,8 @@ import ibis.expr.types as ir
 import ibis.expr.operations as ops
 import ibis.sql.compiler as compiles
 
+from ibis.impala import compiler as impala_compiler
+
 
 def build_ast(expr, context):
     assert context is not None, 'context is None'
@@ -178,6 +180,8 @@ class MapDExprTranslator(compiles.ExprTranslator):
 
     """
     _registry = mapd_ops._operation_registry
+    _rewrites = impala_compiler.ImpalaExprTranslator._rewrites.copy()
+
     context_class = MapDQueryContext
 
     def name(self, translated, name, force=True):
@@ -198,10 +202,27 @@ rewrites = MapDExprTranslator.rewrites
 mapd_reg = mapd_ops._operation_registry
 
 compiles(ops.Distance, mapd_ops.distance)
-rewrites(ops.All, mapd_ops._all)
-rewrites(ops.Any, mapd_ops._any)
-rewrites(ops.NotAll, mapd_ops._not_all)
-rewrites(ops.NotAny, mapd_ops._not_any)
+
+
+@rewrites(ops.All)
+def mapd_rewrite_all(expr):
+    return mapd_ops._all(expr)
+
+
+@rewrites(ops.Any)
+def mapd_rewrite_any(expr):
+    return mapd_ops._any(expr)
+
+
+@rewrites(ops.NotAll)
+def mapd_rewrite_not_all(expr):
+    return mapd_ops._not_all(expr)
+
+
+@rewrites(ops.NotAny)
+def mapd_rewrite_not_any(expr):
+    return mapd_ops._not_any(expr)
+
 
 _add_methods(
     ir.NumericValue, dict(
