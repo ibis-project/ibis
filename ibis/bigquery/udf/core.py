@@ -26,9 +26,13 @@ class UDFContext(TypeTranslationContext):
 
 @ibis_type_to_bigquery_type.register(dt.Integer, UDFContext)
 def trans_integer(t, context):
-    # JavaScript does not have integers, only a Number class, so BigQuery
-    # doesn't allow INT64 inputs or outputs
-    return 'FLOAT64'
+    # JavaScript does not have integers, only a Number class. BigQuery doesn't
+    # behave as expected with INT64 inputs or outputs
+    raise TypeError(
+        'BigQuery does not support INT64 as an input or output type for UDFs. '
+        'Replace INT64 with FLOAT64 in your UDF signature specification and '
+        'cast any inputs to FLOAT64.'
+    )
 
 
 class SymbolTable(ChainMap):
