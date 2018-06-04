@@ -290,7 +290,7 @@ def test_scalar_param_timestamp(alltypes, df, timestamp_value):
     result = expr.execute(
         params={param: timestamp_value}
     ).sort_values('timestamp_col').reset_index(drop=True)
-    value = pd.Timestamp(timestamp_value, tz='UTC')
+    value = pd.Timestamp(timestamp_value)
     expected = df.loc[
         df.timestamp_col <= value, ['timestamp_col']
     ].sort_values('timestamp_col').reset_index(drop=True)

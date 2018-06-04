@@ -1,5 +1,4 @@
 import pytest
-import pandas as pd
 
 
 pytest.importorskip('clickhouse_driver')
@@ -14,4 +13,4 @@ def test_column_types(alltypes):
     assert df.bigint_col.dtype.name == 'int64'
     assert df.float_col.dtype.name == 'float32'
     assert df.double_col.dtype.name == 'float64'
-    assert pd.core.common.is_datetime64_dtype(df.timestamp_col.dtype)
+    assert df.timestamp_col.dtype.name == 'datetime64[ns]'
