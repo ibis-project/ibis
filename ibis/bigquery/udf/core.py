@@ -93,6 +93,12 @@ def rewrite_print(node):
     )
 
 
+@rewrite.register(ast.Call(func=ast.Name(id='len')))
+def rewrite_len(node):
+    assert len(node.args) == 1
+    return ast.Attribute(value=node.args[0], attr='length', ctx=ast.Load())
+
+
 @rewrite.register(ast.Call(func=ast.Attribute(attr='append')))
 def rewrite_append(node):
     return ast.Call(
@@ -641,5 +647,6 @@ if __name__ == '__main__':
 
         z = (x if y else b) + 2 + foobar
         foo = Rectangle(1, 2)
+        nnn = len(values)
         return [sum(values) - a + b * y ** -x, z, foo.width]
     print(my_func.js)
