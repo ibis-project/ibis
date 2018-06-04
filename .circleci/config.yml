@@ -4,7 +4,7 @@ version: 2
 base: &base
   machine:
     image: circleci/classic:latest
-    docker_layer_caching: true
+    docker_layer_caching: false
   working_directory: ~/ibis/ci
 
 
