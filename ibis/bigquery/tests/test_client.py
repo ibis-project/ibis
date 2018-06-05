@@ -539,3 +539,10 @@ def test_string_to_timestamp(client):
     expr_tz = ibis.literal('2017-02-06').to_timestamp('%F', 'America/New_York')
     result_tz = client.execute(expr_tz)
     assert result_tz == timestamp_tz
+
+
+def test_client_sql_query(client):
+    expr = client.sql('select * from testing.functional_alltypes limit 20')
+    result = expr.execute()
+    expected = client.table('functional_alltypes').head(20).execute()
+    tm.assert_frame_equal(result, expected)
