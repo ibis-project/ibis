@@ -19,7 +19,7 @@ from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 __all__ = 'udf',
 
 
-def udf(input_type, output_type, strict=True):
+def udf(input_type, output_type, strict=True, libraries=None):
     '''Define a UDF for BigQuery
 
     Parameters
@@ -128,6 +128,9 @@ def udf(input_type, output_type, strict=True):
     return my_rectangle(width, height);
     """;
     '''
+    if libraries is None:
+        libraries = []
+
     def wrapper(f):
         if not callable(f):
             raise TypeError('f must be callable, got {}'.format(f))
@@ -162,7 +165,7 @@ RETURNS {return_type}
 LANGUAGE js AS """
 {strict}{source}
 return {name}({args});
-""";'''.format(
+"""{libraries};'''.format(
             name=f.__name__,
             return_type=ibis_type_to_bigquery_type(
                 dt.dtype(output_type), type_translation_context),
@@ -177,7 +180,12 @@ return {name}({args});
                 )
             ),
             strict=repr('use strict') + ';\n' if strict else '',
-            args=', '.join(inspect.signature(f).parameters.keys())
+            args=', '.join(inspect.signature(f).parameters.keys()),
+            libraries=(
+                '\nOPTIONS (\n    library={}\n)'.format(
+                    repr(list(libraries))
+                ) if libraries else ''
+            )
         )
 
         @functools.wraps(f)

@@ -136,3 +136,22 @@ return my_add(x, y);
 SELECT my_add(1, 2) AS `tmp`'''
     result = client.execute(expr)
     assert result == 3
+
+
+def test_udf_libraries(client):
+    @udf(
+        [dt.Array(dt.string)],
+        dt.double,
+        # whatever symbols are exported in the library are visible inside the
+        # UDF, in this case lodash defines _ and we use that here
+        libraries=['gs://ibis-testing-libraries/lodash.min.js']
+    )
+    def string_length(strings):
+        return _.sum(_.map(strings, lambda x: x.length))  # noqa: F821
+
+    raw_data = ['aaa', 'bb', 'c']
+    data = ibis.literal(raw_data)
+    expr = string_length(data)
+    result = client.execute(expr)
+    expected = sum(map(len, raw_data))
+    assert result == expected
