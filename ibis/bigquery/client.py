@@ -105,6 +105,11 @@ class BigQueryCursor(object):
         result = self.query.result()
         return [field.name for field in result.schema]
 
+    @property
+    def description(self):
+        result = self.query.result()
+        return [field for field in result.schema]
+
     def __enter__(self):
         # For compatibility when constructed from Query.execute()
         return self
@@ -378,6 +383,21 @@ class BigQueryClient(SQLClient):
     def _get_table_schema(self, qualified_name):
         dataset, table = qualified_name.rsplit('.', 1)
         return self.get_schema(table, database=dataset)
+
+    def _get_schema_using_query(self, limited_query):
+        with self._execute(limited_query, results=True) as cur:
+            # resets the state of the cursor and closes operation
+            names, ibis_types = self._adapt_types(cur.description)
+        return sch.Schema(names, ibis_types)
+
+    def _adapt_types(self, descr):
+        names = []
+        adapted_types = []
+        for col in descr:
+            names.append(col.name)
+            typename = bigquery_field_to_ibis_dtype(col)
+            adapted_types.append(typename)
+        return names, adapted_types
 
     def _execute(self, stmt, results=True, query_parameters=None):
         job_config = bq.job.QueryJobConfig()
