@@ -20,6 +20,7 @@ dependencies:
   - pyarrow>=0.6.0
   - pymapd>=0.3.2
   - pymysql
+  - pytables
   - pytest
   - pytest-xdist
   - python=3.5
@@ -30,6 +31,7 @@ dependencies:
   - ruamel.yaml
   - six
   - sqlalchemy>=1.0.0,<1.1.15
+  - thrift
   - toolz
   - xorg-libxpm
   - xorg-libxrender
