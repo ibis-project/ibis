@@ -29,7 +29,7 @@ def test_connection_pool_size(env, hdfs_client):
         host=env.impala_host,
         database=env.test_data_db,
     )
-    assert client.con.connection_pool_size == 1
+    assert len(client.con.connection_pool) == 1
 
 
 @pytest.mark.impala
@@ -41,4 +41,4 @@ def test_connection_pool_size_after_close(env, hdfs_client):
         database=env.test_data_db,
     )
     client.close()
-    assert client.con.connection_pool_size == 0
+    assert len(client.con.connection_pool) == 0
