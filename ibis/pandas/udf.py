@@ -168,21 +168,21 @@ def udf_signature(input_type, klass):
     >>> input_type = [dt.int64, dt.double]
     >>> sig = udf_signature(input_type, pd.Series)
     >>> pprint(sig)  # doctest: +ELLIPSIS
-    ((<class 'pandas.core.series.Series'>,
+    ((<class '...Series'>,
       <... 'int'>,
       <... 'numpy.integer'>,
       <... 'NoneType'>),
-     (<class 'pandas.core.series.Series'>,
+     (<class '...Series'>,
       <... 'float'>,
       <... 'numpy.floating'>,
       <... 'NoneType'>))
     >>> input_type = [dt.Int64(nullable=False), dt.Double(nullable=False)]
     >>> sig = udf_signature(input_type, SeriesGroupBy)
-    >>> pprint(sig)
-    ((<class 'pandas.core.groupby.SeriesGroupBy'>,
+    >>> pprint(sig)  # doctest: +ELLIPSIS
+    ((<class '...SeriesGroupBy'>,
       <... 'int'>,
       <... 'numpy.integer'>),
-     (<class 'pandas.core.groupby.SeriesGroupBy'>,
+     (<class '...SeriesGroupBy'>,
       <... 'float'>,
       <... 'numpy.floating'>))
     """
