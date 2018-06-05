@@ -1,20 +1,18 @@
 #!/usr/bin/env python
 
 import os
-import sys
 import tarfile
 
 import click
 import six
 
-import numpy as np
 import pandas as pd
 import sqlalchemy as sa
 
 from toolz import dissoc
 from plumbum import local
 from plumbum.cmd import curl, psql
-from ibis.compat import Path, PY2, long
+from ibis.compat import Path
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
