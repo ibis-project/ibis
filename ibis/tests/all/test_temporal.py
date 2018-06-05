@@ -45,6 +45,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     param('ns', marks=pytest.mark.xfail)
 ])
 @tu.skipif_unsupported
+@tu.skipif_backend('MapD')
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
 
@@ -78,6 +79,7 @@ def test_date_truncate(backend, alltypes, df, unit):
     'unit',
     ['Y', pytest.mark.xfail('Q'), 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us'])
 @tu.skipif_unsupported
+@tu.skipif_backend('MapD')
 def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     expr = alltypes.timestamp_col + interval
@@ -192,6 +194,7 @@ unit_factors = {
 
 @pytest.mark.parametrize('unit', ['D', 's', 'ms', 'us', 'ns'])
 @tu.skipif_unsupported
+@tu.skipif_backend('MapD')
 def test_to_timestamp(backend, con, alltypes, df, unit):
     if unit not in backend.supported_to_timestamp_units:
         pytest.skip(
