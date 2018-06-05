@@ -79,18 +79,16 @@ def convert_to_database_compatible_value(value):
         return None
     if isinstance(value, pd.Timestamp):
         return value.to_pydatetime()
-    if PY2:
-        if isinstance(value, np.uint64):
-            return int(value) if value <= sys.maxsize else long(value)
-        if isinstance(value, (np.unsignedinteger, np.signedinteger)):
-            return int(value)
-    return value
+    try:
+        return value.item()
+    except AttributeError:
+        return value
 
 
 def insert(engine, tablename, df):
     keys = df.columns
     rows = [
-        dict(zip(keys, tuple(map(convert_to_database_compatible_value, row))))
+        dict(zip(keys, map(convert_to_database_compatible_value, row)))
         for row in df.itertuples(index=False, name=None)
     ]
     t = sa.Table(tablename, sa.MetaData(bind=engine), autoload=True)
