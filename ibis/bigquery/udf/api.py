@@ -10,11 +10,8 @@ from ibis.expr.signature import Argument as Arg
 
 from ibis.bigquery.compiler import BigQueryUDFNode, compiles
 
-from ibis.bigquery.udf.core import (
-    PythonToJavaScriptTranslator,
-    UDFContext
-)
-from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
+from ibis.bigquery.udf.core import PythonToJavaScriptTranslator
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type, UDFContext
 
 
 __all__ = 'udf',
@@ -186,8 +183,19 @@ def udf(input_type, output_type, strict=True, libraries=None):
                 ', '.join(map(t.translate, expr.op().args))
             )
 
-        source = PythonToJavaScriptTranslator(f).compile()
         type_translation_context = UDFContext()
+        return_type = ibis_type_to_bigquery_type(
+            dt.dtype(output_type), type_translation_context)
+        bigquery_signature = ', '.join(
+            '{name} {type}'.format(
+                name=name,
+                type=ibis_type_to_bigquery_type(
+                    dt.dtype(type), type_translation_context)
+            ) for name, type in zip(
+               inspect.signature(f).parameters.keys(), input_type
+            )
+        )
+        source = PythonToJavaScriptTranslator(f).compile()
         js = '''\
 CREATE TEMPORARY FUNCTION {external_name}({signature})
 RETURNS {return_type}
@@ -197,18 +205,9 @@ return {internal_name}({args});
 """{libraries};'''.format(
             external_name=udf_node.__name__,
             internal_name=f.__name__,
-            return_type=ibis_type_to_bigquery_type(
-                dt.dtype(output_type), type_translation_context),
+            return_type=return_type,
             source=source,
-            signature=', '.join(
-                '{name} {type}'.format(
-                    name=name,
-                    type=ibis_type_to_bigquery_type(
-                        dt.dtype(type), type_translation_context)
-                ) for name, type in zip(
-                   inspect.signature(f).parameters.keys(), input_type
-                )
-            ),
+            signature=bigquery_signature,
             strict=repr('use strict') + ';\n' if strict else '',
             args=', '.join(inspect.signature(f).parameters.keys()),
             libraries=(
