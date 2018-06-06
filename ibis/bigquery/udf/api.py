@@ -54,7 +54,11 @@ def udf(input_type, output_type, strict=True, libraries=None):
     output_type : DataType
     strict : bool
         Whether or not to put a ``'use strict';`` string at the beginning of
-        the UDF. Setting to ``False`` is a really bad idea.
+        the UDF. Setting to ``False`` is probably a bad idea.
+    libraries : List[str]
+        A list of Google Cloud Storage URIs containing to JavaScript source
+        code. Note that any symbols (functions, classes, variables, etc.) that
+        are exposed in these JavaScript files will be visible inside the UDF.
 
     Returns
     -------
