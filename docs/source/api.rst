@@ -440,6 +440,7 @@ All string operations are valid either on scalar or array values
    StringValue.capitalize
    StringValue.contains
    StringValue.like
+   StringValue.to_timestamp
    StringValue.parse_url
    StringValue.substr
    StringValue.left
