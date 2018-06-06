@@ -45,7 +45,7 @@ def create_udf_node(name, fields):
     return type(external_name, (BigQueryUDFNode,), fields)
 
 
-def udf(input_type, output_type, strict=True):
+def udf(input_type, output_type, strict=True, libraries=None):
     '''Define a UDF for BigQuery
 
     Parameters
