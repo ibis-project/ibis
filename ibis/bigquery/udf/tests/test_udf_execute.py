@@ -148,7 +148,7 @@ return my_str_len(s);
 SELECT my_str_len_0('abcd') + my_str_len_0('abcd') AS `tmp`'''
     assert sql == expected
     result = client.execute(expr)
-    assert result == 3
+    assert result == 8.0
 
 
 def test_udf_libraries(client):
