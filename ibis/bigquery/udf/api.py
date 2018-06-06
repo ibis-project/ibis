@@ -2,8 +2,6 @@ import collections
 import inspect
 import itertools
 
-import toolz
-
 import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
 
