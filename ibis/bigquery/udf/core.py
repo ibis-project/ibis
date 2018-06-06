@@ -648,5 +648,5 @@ if __name__ == '__main__':
         z = (x if y else b) + 2 + foobar
         foo = Rectangle(1, 2)
         nnn = len(values)
-        return [sum(values) - a + b * y ** -x, z, foo.width]
+        return [sum(values) - a + b * y ** -x, z, foo.width, nnn]
     print(my_func.js)
