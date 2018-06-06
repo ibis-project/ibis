@@ -549,3 +549,8 @@ def test_client_sql_query(client):
     result = expr.execute()
     expected = client.table('functional_alltypes').head(20).execute()
     tm.assert_frame_equal(result, expected)
+
+
+def test_timestamp_column_parted_is_not_renamed(client):
+    t = client.table('timestamp_column_parted')
+    assert 'PARTITIONTIME' not in t.columns
