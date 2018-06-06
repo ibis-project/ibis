@@ -22,7 +22,7 @@ from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 __all__ = 'udf',
 
 
-_udf_name_cache = collections.defaultdict(lambda: itertools.count())
+_udf_name_cache = collections.defaultdict(itertools.count)
 
 
 def create_udf_node(name, fields):
