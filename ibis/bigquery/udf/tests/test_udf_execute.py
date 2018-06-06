@@ -166,5 +166,5 @@ def test_udf_with_len(client):
     def my_array_len(x):
         return len(x)
 
-    assert client.execute(ibis.literal(my_str_len('aaa'))) == 3
-    assert client.execute(ibis.literal(my_array_len(['aaa', 'bb']))) == 2
+    assert client.execute(my_str_len('aaa')) == 3
+    assert client.execute(my_array_len(['aaa', 'bb'])) == 2
