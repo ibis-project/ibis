@@ -553,4 +553,5 @@ def test_client_sql_query(client):
 
 def test_timestamp_column_parted_is_not_renamed(client):
     t = client.table('timestamp_column_parted')
+    assert '_PARTITIONTIME' not in t.columns
     assert 'PARTITIONTIME' not in t.columns
