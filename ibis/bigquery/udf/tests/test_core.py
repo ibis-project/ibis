@@ -583,3 +583,14 @@ function my_range(n) {
     return [n].map(((x) => 1));
 }"""
     assert js == expected
+
+
+def test_len_rewrite():
+    def my_func(a):
+        return len(a)
+    js = compile(my_func)
+    expected = """\
+function my_func(a) {
+    return a.length;
+}"""
+    assert js == expected
