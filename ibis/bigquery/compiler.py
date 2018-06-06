@@ -74,10 +74,10 @@ class BigQueryQueryBuilder(comp.QueryBuilder):
             lin.traverse(find_bigquery_udf, self.expr)
         )
 
-        # UDFs are uniquely identified by their name. We do not cache them by
-        # name so that redefinitions of the same UDF behave the way Python
-        # does. That is, if you redefine a UDF you pick up the most recent
-        # definition of the UDF at the time it was invoked
+        # UDFs are uniquely identified by the name of the Node subclass we
+        # generate. We do not cache them by name so that calls to redefinitions
+        # of the a UDF with the same name behave the way Python would if the
+        # function were directly executed.
         return list(
             toolz.unique(queries, key=lambda x: type(x.expr.op()).__name__))
 
