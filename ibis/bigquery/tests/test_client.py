@@ -365,6 +365,11 @@ SELECT *, @param AS `param`
 FROM `ibis-gbq.testing.functional_alltypes`"""
 
 
+def test_parted_column_rename(client, parted_alltypes):
+    assert 'PARTITIONTIME' in parted_alltypes.columns
+    assert '_PARTITIONTIME' in parted_alltypes.op().table.columns
+
+
 def test_scalar_param_partition_time(parted_alltypes):
     t = parted_alltypes
     param = ibis.param('timestamp').name('time_param')
@@ -384,20 +389,10 @@ def test_exists_database(client):
 
 
 @pytest.mark.parametrize('kind', ['date', 'timestamp'])
-@pytest.mark.parametrize(
-    ('option', 'expected_fn'),
-    [
-        (None, 'my_{}_parted_col'.format),
-        ('PARTITIONTIME', lambda kind: 'PARTITIONTIME'),
-        ('foo_bar', lambda kind: 'foo_bar'),
-    ]
-)
-def test_parted_column(client, kind, option, expected_fn):
+def test_parted_column(client, kind):
     table_name = '{}_column_parted'.format(kind)
-    option_key = 'bigquery.partition_col'
-    with ibis.config.option_context(option_key, option):
-        t = client.table(table_name)
-    expected_column = expected_fn(kind)
+    t = client.table(table_name)
+    expected_column = 'my_{}_parted_col'.format(kind)
     assert t.columns == [expected_column, 'string_col', 'int_col']
 
 
