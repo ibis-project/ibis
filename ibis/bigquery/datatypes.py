@@ -15,6 +15,10 @@ class TypeTranslationContext(object):
     __slots__ = ()
 
 
+class UDFContext(TypeTranslationContext):
+    __slots__ = ()
+
+
 ibis_type_to_bigquery_type = Dispatcher('ibis_type_to_bigquery_type')
 
 
@@ -66,3 +70,14 @@ def trans_timestamp(t, context):
 @ibis_type_to_bigquery_type.register(dt.DataType, TypeTranslationContext)
 def trans_type(t, context):
     return str(t).upper()
+
+
+@ibis_type_to_bigquery_type.register(dt.Integer, UDFContext)
+def trans_integer(t, context):
+    # JavaScript does not have integers, only a Number class. BigQuery doesn't
+    # behave as expected with INT64 inputs or outputs
+    raise TypeError(
+        'BigQuery does not support INT64 as an argument type or a return type '
+        'for UDFs. Replace INT64 with FLOAT64 in your UDF signature and '
+        'cast all INT64 inputs to FLOAT64.'
+    )
