@@ -75,9 +75,7 @@ class BigQueryQueryBuilder(comp.QueryBuilder):
         )
 
         # UDFs are uniquely identified by the name of the Node subclass we
-        # generate. We do not cache them by name so that calls to redefinitions
-        # of the a UDF with the same name behave the way Python would if the
-        # function were directly executed.
+        # generate.
         return list(
             toolz.unique(queries, key=lambda x: type(x.expr.op()).__name__))
 
