@@ -75,16 +75,18 @@ def convert_to_database_compatible_value(value):
     """
     if pd.isnull(value):
         return None
-    elif isinstance(value, pd.Timestamp):
+    if isinstance(value, pd.Timestamp):
         return value.to_pydatetime()
-    else:
+    try:
+        return value.item()
+    except AttributeError:
         return value
 
 
 def insert(engine, tablename, df):
     keys = df.columns
     rows = [
-        dict(zip(keys, tuple(map(convert_to_database_compatible_value, row))))
+        dict(zip(keys, map(convert_to_database_compatible_value, row)))
         for row in df.itertuples(index=False, name=None)
     ]
     t = sa.Table(tablename, sa.MetaData(bind=engine), autoload=True)
