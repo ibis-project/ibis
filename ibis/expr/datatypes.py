@@ -1139,7 +1139,10 @@ def infer_date(value):
 
 @infer.register(datetime.datetime)
 def infer_timestamp(value):
-    return timestamp
+    if value.tzinfo:
+        return Timestamp(timezone=value.tzinfo)
+    else:
+        return timestamp
 
 
 @infer.register(datetime.timedelta)
