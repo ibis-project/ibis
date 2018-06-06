@@ -73,7 +73,7 @@ def trans_type(t, context):
 
 
 @ibis_type_to_bigquery_type.register(dt.Integer, UDFContext)
-def trans_integer(t, context):
+def trans_integer_udf(t, context):
     # JavaScript does not have integers, only a Number class. BigQuery doesn't
     # behave as expected with INT64 inputs or outputs
     raise TypeError(
