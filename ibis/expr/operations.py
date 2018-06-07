@@ -859,8 +859,8 @@ class Variance(VarianceBase):
 
 class Correlation(Reduction):
     """Coefficient of correlation of a set of number pairs."""
-    left = Arg(rlz.numeric)
-    right = Arg(rlz.numeric)
+    left = Arg(rlz.column(rlz.numeric))
+    right = Arg(rlz.column(rlz.numeric))
     how = Arg(rlz.isin({'sample', 'pop'}), default=None)
     where = Arg(rlz.boolean, default=None)
 
