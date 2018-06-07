@@ -66,7 +66,7 @@ __all__ = [
     'negate', 'ifelse',
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window',
-    'pi', 'distance'
+    'pi'
 ]
 
 
@@ -3191,26 +3191,3 @@ _table_methods = dict(
 
 
 _add_methods(ir.TableExpr, _table_methods)
-
-
-# geometric operation
-
-def distance(from_lon, from_lat, to_lon, to_lat):
-    """
-    Distance between origin longitude and latitude and
-    destination longitude and latitude
-
-    Parameters
-    ----------
-    from_lon : numeric column expr or float
-    from_lat : numeric column expr or float
-    to_lon : numeric column expr or float
-    to_lat : numeric column expr or float
-
-    Returns
-    -------
-    expr :
-        if scalar input, scalar type, same as input
-        if array input, list of scalar type
-    """
-    return ops.Distance(from_lon, from_lat, to_lon, to_lat).to_expr()

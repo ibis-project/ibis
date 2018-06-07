@@ -222,13 +222,11 @@ def _corr(translator, expr):
 
     x, y, how, where = args
 
-    f_type = '' if not _is_floating(x, y) else '_FLOAT'
-
     # compile the argument
     compiled_x = translator.translate(x)
     compiled_y = translator.translate(y)
 
-    return 'CORR{}({}, {})'.format(f_type, compiled_x, compiled_y)
+    return 'CORR({}, {})'.format(compiled_x, compiled_y)
 
 
 def _cov(translator, expr):
@@ -237,14 +235,12 @@ def _cov(translator, expr):
 
     x, y, how, where = args
 
-    f_type = '' if not _is_floating(x, y) else '_FLOAT'
-
     # compile the argument
     compiled_x = translator.translate(x)
     compiled_y = translator.translate(y)
 
-    return 'COVAR_{}{}({}, {})'.format(
-        how[:4].upper(), f_type, compiled_x, compiled_y
+    return 'COVAR_{}({}, {})'.format(
+        how[:4].upper(), compiled_x, compiled_y
     )
 
 
@@ -481,12 +477,6 @@ approx_count_distinct = _reduction(
 
 count_distinct = _reduction('count')
 count = _reduction('count')
-
-
-def distance(translator, expr):
-    op = expr.op()
-    values = map(translator.translate, op.args)
-    return 'DISTANCE_IN_METERS({0})'.format(', '.join(values))
 
 
 # MATH

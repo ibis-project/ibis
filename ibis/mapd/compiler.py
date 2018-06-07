@@ -201,8 +201,6 @@ rewrites = MapDExprTranslator.rewrites
 
 mapd_reg = mapd_ops._operation_registry
 
-compiles(ops.Distance, mapd_ops.distance)
-
 
 @rewrites(ops.All)
 def mapd_rewrite_all(expr):

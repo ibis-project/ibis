@@ -74,8 +74,8 @@ with suppress(ImportError):
 
 with suppress(ImportError):
     # pip install ibis-framework[mapd]
-    if sys.version_info[0] < 3:
-        raise ImportError('ibis.mapd is not allowed it for Python 2.')
+    if sys.version_info.major < 3:
+        raise ImportError('The MapD backend is not supported under Python 2.')
     import ibis.mapd.api as mapd
 
 restart_ordering()
