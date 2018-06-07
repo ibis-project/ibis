@@ -125,7 +125,7 @@ def test_udf_scalar(client):
     assert result == 3
 
 
-def test_multiple_calls(client):
+def test_multiple_calls_has_one_definition(client):
 
     @udf([dt.string], dt.double)
     def my_str_len(s):
