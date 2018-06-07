@@ -6,12 +6,8 @@ import pytest
 
 import ibis.expr.datatypes as dt
 
-from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
-from ibis.bigquery.udf.core import (
-    SymbolTable,
-    PythonToJavaScriptTranslator,
-    UDFContext,
-)
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type, UDFContext
+from ibis.bigquery.udf.core import SymbolTable, PythonToJavaScriptTranslator
 
 
 @pytest.mark.parametrize(
