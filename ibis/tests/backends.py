@@ -126,18 +126,16 @@ class Pandas(Backend, RoundHalfToEven):
     def connect(self, data_directory):
         return ibis.pandas.connect({
             'functional_alltypes': pd.read_csv(
-                data_directory / 'functional_alltypes.csv',
+                str(data_directory / 'functional_alltypes.csv'),
                 index_col=None,
                 dtype={'bool_col': bool, 'string_col': six.text_type},
                 parse_dates=['timestamp_col'],
                 encoding='utf-8'
             ),
-            'batting': pd.read_csv(
-                data_directory / 'batting.csv'
-            ),
+            'batting': pd.read_csv(str(data_directory / 'batting.csv')),
             'awards_players': pd.read_csv(
-                data_directory / 'awards_players.csv'
-            )
+                str(data_directory / 'awards_players.csv')
+            ),
         })
 
     def round(self, series, decimals=0):

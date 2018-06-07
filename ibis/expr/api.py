@@ -66,7 +66,7 @@ __all__ = [
     'negate', 'ifelse',
     'Expr', 'Schema',
     'window', 'trailing_window', 'cumulative_window',
-    'pi', 'distance'
+    'pi'
 ]
 
 
@@ -1890,6 +1890,29 @@ def _string_replace(arg, pattern, replacement):
     return ops.StringReplace(arg, pattern, replacement).to_expr()
 
 
+def to_timestamp(arg, format_str, timezone=None):
+    """
+    Parses a string and returns a timestamp.
+
+    Parameters
+    ----------
+    format_str : A format string potentially of the type '%Y-%m-%d'
+    timezone : An optional string indicating the timezone,
+        i.e. 'America/New_York'
+
+    Examples
+    --------
+    >>> import ibis
+    >>> date_as_str = ibis.literal('20170206')
+    >>> result = date_as_str.to_timestamp('%Y%m%d')
+
+    Returns
+    -------
+    parsed : TimestampValue
+    """
+    return ops.StringToTimestamp(arg, format_str, timezone).to_expr()
+
+
 def parse_url(arg, extract, key=None):
     """
     Returns the portion of a URL corresponding to a part specified
@@ -1998,6 +2021,7 @@ _string_value_methods = dict(
     re_search=re_search,
     re_extract=regex_extract,
     re_replace=regex_replace,
+    to_timestamp=to_timestamp,
     parse_url=parse_url,
 
     substr=_string_substr,
@@ -3191,26 +3215,3 @@ _table_methods = dict(
 
 
 _add_methods(ir.TableExpr, _table_methods)
-
-
-# geometric operation
-
-def distance(from_lon, from_lat, to_lon, to_lat):
-    """
-    Distance between origin longitude and latitude and
-    destination longitude and latitude
-
-    Parameters
-    ----------
-    from_lon : numeric column expr or float
-    from_lat : numeric column expr or float
-    to_lon : numeric column expr or float
-    to_lat : numeric column expr or float
-
-    Returns
-    -------
-    expr :
-        if scalar input, scalar type, same as input
-        if array input, list of scalar type
-    """
-    return ops.Distance(from_lon, from_lat, to_lon, to_lat).to_expr()

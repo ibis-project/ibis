@@ -524,14 +524,14 @@ class Log10(Logarithm):
 
 class Degrees(UnaryOp):
     """Converts radians to degrees"""
-    arg = Arg(rlz.floating)
-    output_type = rlz.shape_like('arg', dt.float)
+    arg = Arg(rlz.numeric)
+    output_type = rlz.shape_like('arg', dt.float64)
 
 
 class Radians(UnaryOp):
     """Converts radians to degrees"""
-    arg = Arg(rlz.floating)
-    output_type = rlz.shape_like('arg', dt.float)
+    arg = Arg(rlz.numeric)
+    output_type = rlz.shape_like('arg', dt.float64)
 
 
 # TRIGONOMETRIC OPERATIONS
@@ -865,11 +865,7 @@ class Correlation(Reduction):
     where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
-        if isinstance(self.left, ir.DecimalValue):
-            dtype = self.left.type().largest
-        else:
-            dtype = dt.float64
-        return dtype.scalar_type()
+        return dt.float64.scalar_type()
 
 
 class Covariance(Reduction):
@@ -880,11 +876,7 @@ class Covariance(Reduction):
     where = Arg(rlz.boolean, default=None)
 
     def output_type(self):
-        if isinstance(self.left, ir.DecimalValue):
-            dtype = self.left.type().largest
-        else:
-            dtype = dt.float64
-        return dtype.scalar_type()
+        return dt.float64.scalar_type()
 
 
 class Max(Reduction):
@@ -2410,6 +2402,13 @@ class Strftime(ValueOp):
     output_type = rlz.shape_like('arg', dt.string)
 
 
+class StringToTimestamp(ValueOp):
+    arg = Arg(rlz.string)
+    format_str = Arg(rlz.string)
+    timezone = Arg(rlz.string, default=None)
+    output_type = rlz.shape_like('arg', dt.Timestamp(timezone='UTC'))
+
+
 class ExtractTemporalField(TemporalUnaryOp):
     output_type = rlz.shape_like('arg', dt.int32)
 
@@ -2800,17 +2799,3 @@ class ValueList(ValueOp):
 
     def root_tables(self):
         return distinct_roots(*self.values)
-
-
-# GEOMETRIC OPERATIONS
-
-class Distance(ValueOp):
-    """
-    Calculates distance in meters between two WGS-84 positions.
-
-    """
-    from_lon = Arg(rlz.numeric)
-    from_lat = Arg(rlz.numeric)
-    to_lon = Arg(rlz.numeric)
-    to_lat = Arg(rlz.numeric)
-    output_type = rlz.shape_like('args', dt.float64)

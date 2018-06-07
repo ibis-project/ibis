@@ -2,19 +2,12 @@ from ibis.tests.util import assert_equal
 
 import ibis
 import ibis.expr.types as ir
-import os
 import pandas as pd
 import pytest
 
 
 pytestmark = pytest.mark.mapd
 pytest.importorskip('pymapd')
-
-
-MAPD_TEST_DB = os.environ.get('IBIS_TEST_MAPD_DATABASE', 'mapd')
-IBIS_MAPD_HOST = os.environ.get('IBIS_TEST_MAPD_HOST', 'localhost')
-IBIS_MAPD_USER = os.environ.get('IBIS_TEST_MAPD_USER', 'mapd')
-IBIS_MAPD_PASS = os.environ.get('IBIS_TEST_MAPD_PASSWORD', 'HyperInteractive')
 
 
 def test_table(alltypes):
