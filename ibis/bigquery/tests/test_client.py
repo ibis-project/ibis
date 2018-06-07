@@ -550,3 +550,21 @@ def test_timestamp_column_parted_is_not_renamed(client):
     t = client.table('timestamp_column_parted')
     assert '_PARTITIONTIME' not in t.columns
     assert 'PARTITIONTIME' not in t.columns
+
+
+def test_prevent_rewrite(alltypes):
+    t = alltypes
+    expr = (t.groupby(t.string_col)
+             .aggregate(collected_double=t.double_col.collect())
+             .pipe(ibis.prevent_rewrite)
+             .filter(lambda t: t.string_col != 'wat'))
+    result = expr.compile()
+    expected = """\
+SELECT *
+FROM (
+  SELECT `string_col`, ARRAY_AGG(`double_col`) AS `collected_double`
+  FROM `ibis-gbq.testing.functional_alltypes`
+  GROUP BY 1
+) t0
+WHERE `string_col` != 'wat'"""
+    assert result == expected
