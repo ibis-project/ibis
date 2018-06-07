@@ -191,7 +191,7 @@ def test_timestamp_literal_with_tz():
     now_raw = datetime.datetime.utcnow()
     now_utc = pytz.utc.localize(now_raw)
     assert now_utc.tzinfo == pytz.UTC
-    assert ibis.literal(now_utc).type().timezone == pytz.UTC
+    assert ibis.literal(now_utc).type().timezone == str(pytz.UTC)
 
 
 def test_array_type_not_equals():
