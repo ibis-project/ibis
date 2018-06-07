@@ -38,6 +38,13 @@ def test_compose_group_by_apis(alltypes):
     assert_equal(expr, expr3)
 
 
+def test_window_how_kwarg():
+    ibis.window(how='row')
+    ibis.window(how='range')
+    with pytest.raises(ibis.common.IbisInputError):
+        ibis.window(how='other')
+
+
 def test_combine_windows(alltypes):
     t = alltypes
     w1 = ibis.window(group_by=t.g, order_by=t.f)
