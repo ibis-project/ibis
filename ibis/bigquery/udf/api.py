@@ -1,5 +1,6 @@
 import collections
 import inspect
+import itertools
 
 import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
@@ -19,6 +20,29 @@ from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 __all__ = 'udf',
 
 
+_udf_name_cache = collections.defaultdict(itertools.count)
+
+
+def create_udf_node(name, fields):
+    """Create a new UDF node type.
+
+    Parameters
+    ----------
+    name : str
+        Then name of the UDF node
+    fields : OrderedDict
+        Mapping of class member name to definition
+
+    Returns
+    -------
+    result : type
+        A new BigQueryUDFNode subclass
+    """
+    definition = next(_udf_name_cache[name])
+    external_name = '{}_{:d}'.format(name, definition)
+    return type(external_name, (BigQueryUDFNode,), fields)
+
+
 def udf(input_type, output_type, strict=True, libraries=None):
     '''Define a UDF for BigQuery
 
@@ -28,7 +52,11 @@ def udf(input_type, output_type, strict=True, libraries=None):
     output_type : DataType
     strict : bool
         Whether or not to put a ``'use strict';`` string at the beginning of
-        the UDF. Setting to ``False`` is a really bad idea.
+        the UDF. Setting to ``False`` is probably a bad idea.
+    libraries : List[str]
+        A list of Google Cloud Storage URIs containing to JavaScript source
+        code. Note that any symbols (functions, classes, variables, etc.) that
+        are exposed in these JavaScript files will be visible inside the UDF.
 
     Returns
     -------
@@ -43,7 +71,7 @@ def udf(input_type, output_type, strict=True, libraries=None):
     ... def add_one(x):
     ...     return x + 1
     >>> print(add_one.js)
-    CREATE TEMPORARY FUNCTION add_one(x FLOAT64)
+    CREATE TEMPORARY FUNCTION add_one_0(x FLOAT64)
     RETURNS FLOAT64
     LANGUAGE js AS """
     'use strict';
@@ -65,7 +93,7 @@ def udf(input_type, output_type, strict=True, libraries=None):
     ...         result.append(value)
     ...     return result
     >>> print(my_range.js)
-    CREATE TEMPORARY FUNCTION my_range(start FLOAT64, stop FLOAT64)
+    CREATE TEMPORARY FUNCTION my_range_0(start FLOAT64, stop FLOAT64)
     RETURNS ARRAY<FLOAT64>
     LANGUAGE js AS """
     'use strict';
@@ -106,7 +134,7 @@ def udf(input_type, output_type, strict=True, libraries=None):
     ...
     ...     return Rectangle(width, height)
     >>> print(my_rectangle.js)
-    CREATE TEMPORARY FUNCTION my_rectangle(width FLOAT64, height FLOAT64)
+    CREATE TEMPORARY FUNCTION my_rectangle_0(width FLOAT64, height FLOAT64)
     RETURNS STRUCT<width FLOAT64, height FLOAT64>
     LANGUAGE js AS """
     'use strict';
@@ -148,7 +176,8 @@ def udf(input_type, output_type, strict=True, libraries=None):
             ),
             ('__slots__', ('js',)),
         ])
-        udf_node = type(f.__name__, (BigQueryUDFNode,), udf_node_fields)
+
+        udf_node = create_udf_node(f.__name__, udf_node_fields)
 
         @compiles(udf_node)
         def compiles_udf_node(t, expr):
@@ -160,13 +189,14 @@ def udf(input_type, output_type, strict=True, libraries=None):
         source = PythonToJavaScriptTranslator(f).compile()
         type_translation_context = UDFContext()
         js = '''\
-CREATE TEMPORARY FUNCTION {name}({signature})
+CREATE TEMPORARY FUNCTION {external_name}({signature})
 RETURNS {return_type}
 LANGUAGE js AS """
 {strict}{source}
-return {name}({args});
+return {internal_name}({args});
 """{libraries};'''.format(
-            name=f.__name__,
+            external_name=udf_node.__name__,
+            internal_name=f.__name__,
             return_type=ibis_type_to_bigquery_type(
                 dt.dtype(output_type), type_translation_context),
             source=source,

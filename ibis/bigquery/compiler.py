@@ -4,6 +4,8 @@ import regex as re
 
 import six
 
+import toolz
+
 from multipledispatch import Dispatcher
 
 import ibis
@@ -67,10 +69,15 @@ class BigQueryQueryBuilder(comp.QueryBuilder):
     union_class = BigQueryUnion
 
     def generate_setup_queries(self):
-        result = list(
-            map(partial(BigQueryUDFDefinition, context=self.context),
-                lin.traverse(find_bigquery_udf, self.expr)))
-        return result
+        queries = map(
+            partial(BigQueryUDFDefinition, context=self.context),
+            lin.traverse(find_bigquery_udf, self.expr)
+        )
+
+        # UDFs are uniquely identified by the name of the Node subclass we
+        # generate.
+        return list(
+            toolz.unique(queries, key=lambda x: type(x.expr.op()).__name__))
 
 
 def build_ast(expr, context):
