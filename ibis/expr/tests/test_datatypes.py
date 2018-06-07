@@ -1,5 +1,6 @@
 import pytest
 import datetime
+import pytz
 from collections import OrderedDict
 from multipledispatch.conflict import ambiguities
 
@@ -180,6 +181,19 @@ def test_literal_mixed_type_fails():
         ibis.literal(data)
 
 
+def test_timestamp_literal_without_tz():
+    now_raw = datetime.datetime.utcnow()
+    assert now_raw.tzinfo is None
+    assert ibis.literal(now_raw).type().timezone is None
+
+
+def test_timestamp_literal_with_tz():
+    now_raw = datetime.datetime.utcnow()
+    now_utc = pytz.utc.localize(now_raw)
+    assert now_utc.tzinfo == pytz.UTC
+    assert ibis.literal(now_utc).type().timezone == str(pytz.UTC)
+
+
 def test_array_type_not_equals():
     left = dt.Array(dt.string)
     right = dt.Array(dt.int32)
@@ -216,8 +230,8 @@ def test_timestamp_with_timezone_parser_invalid_timezone():
 
 
 @pytest.mark.parametrize('unit', [
-    'Y', 'Q', 'M', 'W',  'D',  # date units
-    'h',  'm',  's',  'ms', 'us', 'ns'  # time units
+    'Y', 'Q', 'M', 'W', 'D',  # date units
+    'h', 'm', 's', 'ms', 'us', 'ns'  # time units
 ])
 def test_interval(unit):
     definition = "interval('{}')".format(unit)
