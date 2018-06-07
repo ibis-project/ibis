@@ -155,3 +155,16 @@ def test_udf_libraries(client):
     result = client.execute(expr)
     expected = sum(map(len, raw_data))
     assert result == expected
+
+
+def test_udf_with_len(client):
+    @udf([dt.string], dt.double)
+    def my_str_len(x):
+        return len(x)
+
+    @udf([dt.Array(dt.string)], dt.double)
+    def my_array_len(x):
+        return len(x)
+
+    assert client.execute(my_str_len('aaa')) == 3
+    assert client.execute(my_array_len(['aaa', 'bb'])) == 2
