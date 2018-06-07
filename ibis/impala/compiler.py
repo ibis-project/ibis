@@ -256,7 +256,10 @@ def _format_window(translator, window):
         return '{} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
 
     if p is not None and f is not None:
-        frame = 'ROWS BETWEEN {} AND {}'.format(_prec(p), _foll(f))
+        if window.how == 'row':
+            frame = 'ROWS BETWEEN {} AND {}'.format(_prec(p), _foll(f))
+        else:
+            frame = 'RANGE BETWEEN {} AND {}'.format(_prec(p), _foll(f))
     elif p is not None:
         if isinstance(p, tuple):
             start, end = p

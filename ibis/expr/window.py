@@ -167,7 +167,8 @@ class Window(object):
         return equal
 
 
-def window(preceding=None, following=None, group_by=None, order_by=None, how='row'):
+def window(preceding=None, following=None,
+           group_by=None, order_by=None, how='row'):
     """
     Create a window clause for use with window (analytic and aggregate)
     functions.
