@@ -21,7 +21,7 @@ class Window(object):
     """
 
     def __init__(self, group_by=None, order_by=None,
-                 preceding=None, following=None):
+                 preceding=None, following=None, how='row'):
         if group_by is None:
             group_by = []
 
@@ -40,6 +40,7 @@ class Window(object):
 
         self.preceding = _list_to_tuple(preceding)
         self.following = _list_to_tuple(following)
+        self.how = how
 
         self._validate_frame()
 
@@ -88,6 +89,12 @@ class Window(object):
                             self.following
                         )
                     )
+        if self.how not in ['row', 'range']:
+            raise com.IbisInputError(
+                "'how' must be either 'row' or 'range', got {}".format(
+                    self.how
+                )
+            )
 
     def bind(self, table):
         # Internal API, ensure that any unresolved expr references (as strings,
@@ -114,7 +121,8 @@ class Window(object):
             group_by=kwds.get('group_by', self._group_by),
             order_by=kwds.get('order_by', self._order_by),
             preceding=kwds.get('preceding', self.preceding),
-            following=kwds.get('following', self.following)
+            following=kwds.get('following', self.following),
+            how=kwds.get('how', self.how)
         )
         return Window(**new_kwds)
 
@@ -159,7 +167,7 @@ class Window(object):
         return equal
 
 
-def window(preceding=None, following=None, group_by=None, order_by=None):
+def window(preceding=None, following=None, group_by=None, order_by=None, how='row'):
     """
     Create a window clause for use with window (analytic and aggregate)
     functions.
@@ -179,13 +187,15 @@ def window(preceding=None, following=None, group_by=None, order_by=None):
     order_by : expressions, default None
       For analytic functions requiring an ordering, specify here, or let Ibis
       determine the default ordering (for functions like rank)
+    how : string, default 'row'
+      Specify whether windowing by ROWS or RANGE of values
 
     Returns
     -------
     win : ibis Window
     """
     return Window(preceding=preceding, following=following,
-                  group_by=group_by, order_by=order_by)
+                  group_by=group_by, order_by=order_by, how=how)
 
 
 def cumulative_window(group_by=None, order_by=None):
