@@ -55,3 +55,24 @@ FROM `ibis-gbq.testing.functional_alltypes`
 WHERE (((`string_col` IS NULL) AND ('a' IS NULL)) OR (`string_col` = 'a')) AND
       (((`date_string_col` IS NULL) AND ('b' IS NULL)) OR (`date_string_col` = 'b'))"""  # noqa: E501
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    'timezone',
+    [
+        None,
+        'America/New_York'
+    ]
+)
+def test_to_timestamp(alltypes, timezone):
+    expr = alltypes.date_string_col.to_timestamp('%F', timezone)
+    result = expr.compile()
+    if timezone:
+        expected = """\
+SELECT PARSE_TIMESTAMP('%F', `date_string_col`, 'America/New_York') AS `tmp`
+FROM `ibis-gbq.testing.functional_alltypes`"""
+    else:
+        expected = """\
+SELECT PARSE_TIMESTAMP('%F', `date_string_col`) AS `tmp`
+FROM `ibis-gbq.testing.functional_alltypes`"""
+    assert result == expected
