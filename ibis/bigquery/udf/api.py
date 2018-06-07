@@ -60,6 +60,12 @@ def udf(input_type, output_type, strict=True, libraries=None):
     wrapper : Callable
         The wrapped function
 
+    Notes
+    -----
+    ``INT64`` is not supported as an argument type or a return type, as per
+    `the BigQuery documentation
+    <https://cloud.google.com/bigquery/docs/reference/standard-sql/user-defined-functions#sql-type-encodings-in-javascript>`_.
+
     Examples
     --------
     >>> from ibis.bigquery.api import udf
@@ -77,8 +83,8 @@ def udf(input_type, output_type, strict=True, libraries=None):
     }
     return add_one(x);
     """;
-    >>> @udf(input_type=[dt.int64, dt.int64],
-    ...      output_type=dt.Array(dt.int64))
+    >>> @udf(input_type=[dt.double, dt.double],
+    ...      output_type=dt.Array(dt.double))
     ... def my_range(start, stop):
     ...     def gen(start, stop):
     ...         curr = start
