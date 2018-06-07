@@ -223,28 +223,6 @@ SELECT (my_len_0('abcd') + my_len_0('abcd')) + my_len_1('abcd') AS `tmp`'''
     assert sql == expected
 
 
-def test_udf_int64(client):
-    @udf([dt.int64, dt.int64], dt.int64)
-    def my_int64_add(x, y):
-        return x + y
-    expr = my_int64_add(1, 2)
-    sql = client.compile(expr)
-    assert sql == '''
-CREATE TEMPORARY FUNCTION my_add(x INT64, y INT64)
-RETURNS INT64
-LANGUAGE js AS """
-'use strict';
-function my_int64_add(x, y) {
-    return (x + y);
-}
-return my_int64_add(x, y);
-""";
-
-SELECT my_int64_add(1, 2) AS `tmp`'''
-    result = client.execute(expr)
-    assert result == 3
-
-
 @pytest.mark.parametrize(
     ('argument_type', 'return_type'),
     [
