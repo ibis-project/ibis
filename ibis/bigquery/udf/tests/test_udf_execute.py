@@ -221,3 +221,34 @@ return my_len(s);
 
 SELECT (my_len_0('abcd') + my_len_0('abcd')) + my_len_1('abcd') AS `tmp`'''
     assert sql == expected
+
+
+@pytest.mark.parametrize(
+    ('argument_type', 'return_type'),
+    [
+        pytest.mark.xfail((dt.int64, dt.float64), raises=TypeError),
+        pytest.mark.xfail((dt.float64, dt.int64), raises=TypeError),
+
+        # complex argument type, valid return type
+        pytest.mark.xfail((dt.Array(dt.int64), dt.float64), raises=TypeError),
+
+        # valid argument type, complex invalid return type
+        pytest.mark.xfail(
+            (dt.float64, dt.Array(dt.int64)), raises=TypeError),
+
+        # both invalid
+        pytest.mark.xfail(
+            (dt.Array(dt.Array(dt.int64)), dt.int64), raises=TypeError),
+
+        # struct type with nested integer, valid return type
+        pytest.mark.xfail(
+            (dt.Struct.from_tuples([('x', dt.Array(dt.int64))]), dt.float64),
+            raises=TypeError,
+        )
+    ]
+)
+def test_udf_int64(client, argument_type, return_type):
+    # invalid argument type, valid return type
+    @udf([argument_type], return_type)
+    def my_int64_add(x):
+        return 1.0

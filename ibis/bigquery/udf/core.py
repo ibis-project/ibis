@@ -13,22 +13,8 @@ import six
 
 import ibis.expr.datatypes as dt
 
-from ibis.bigquery.datatypes import (
-    ibis_type_to_bigquery_type, TypeTranslationContext
-)
 from ibis.bigquery.udf.find import find_names
 from ibis.bigquery.udf.rewrite import rewrite
-
-
-class UDFContext(TypeTranslationContext):
-    __slots__ = ()
-
-
-@ibis_type_to_bigquery_type.register(dt.Integer, UDFContext)
-def trans_integer(t, context):
-    # JavaScript does not have integers, only a Number class, so BigQuery
-    # doesn't allow INT64 inputs or outputs
-    return 'FLOAT64'
 
 
 class SymbolTable(ChainMap):
