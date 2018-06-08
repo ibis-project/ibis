@@ -777,3 +777,71 @@ def test_quantile_groupby(batting, batting_df):
                            interpolation=intp)
                 .rename('res'))
     tm.assert_series_equal(result, expected)
+
+
+def test_summary_numeric(batting, batting_df):
+    expr = batting.G.summary()
+    result = expr.execute()
+    assert len(result) == 1
+
+    G = batting_df.G
+    expected = dict(
+        count=G.count(),
+        nulls=G.isnull().sum(),
+        min=G.min(),
+        max=G.max(),
+        sum=G.sum(),
+        mean=G.mean(),
+        approx_nunique=G.nunique(),
+    )
+    assert list(result.columns) == list(expected.keys())
+    for key, value in expected.items():
+        assert result.at[0, key] == value
+
+
+def test_summary_numeric_group_by(batting, batting_df):
+    expr = batting.groupby('teamID').G.summary()
+    result = expr.execute()
+    expected = batting_df.groupby('teamID').G.apply(
+        lambda s: pd.DataFrame(
+            dict(
+                count=s.count(),
+                nulls=s.isnull().sum(),
+                min=s.min(),
+                max=s.max(),
+                sum=s.sum(),
+                mean=s.mean(),
+                approx_nunique=s.nunique()
+            ),
+            index=[0]
+        )
+    ).reset_index(level=1, drop=True).reset_index()
+
+    # TODO: fix isnull().sum() in the pandas backend: the type is incorrect
+    tm.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_summary_non_numeric(batting, batting_df):
+    expr = batting.teamID.summary()
+    result = expr.execute()
+    assert len(result) == 1
+    assert len(result.columns) == 3
+    assert result.at[0, 'count'] == batting_df.teamID.count()
+    assert result.at[0, 'nulls'] == batting_df.teamID.isnull().sum()
+    assert result.at[0, 'uniques'] == batting_df.teamID.nunique()
+
+
+def test_summary_non_numeric_group_by(batting, batting_df):
+    expr = batting.groupby('teamID').playerID.summary()
+    result = expr.execute()
+    expected = batting_df.groupby('teamID').playerID.apply(
+        lambda s: pd.DataFrame(
+            dict(
+                count=s.count(),
+                nulls=s.isnull().sum(),
+                uniques=s.nunique()
+            ),
+            index=[0]
+        )
+    ).reset_index(level=1, drop=True).reset_index()
+    tm.assert_frame_equal(result, expected, check_dtype=False)
