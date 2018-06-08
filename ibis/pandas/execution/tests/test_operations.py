@@ -794,9 +794,7 @@ def test_summary_numeric(batting, batting_df):
         mean=G.mean(),
         approx_nunique=G.nunique(),
     )
-    assert list(result.columns) == list(expected.keys())
-    for key, value in expected.items():
-        assert result.at[0, key] == value
+    assert dict(result.iloc[0]) == expected
 
 
 def test_summary_numeric_group_by(batting, batting_df):
@@ -816,9 +814,10 @@ def test_summary_numeric_group_by(batting, batting_df):
             index=[0]
         )
     ).reset_index(level=1, drop=True).reset_index()
+    columns = expected.columns
 
     # TODO: fix isnull().sum() in the pandas backend: the type is incorrect
-    tm.assert_frame_equal(result, expected, check_dtype=False)
+    tm.assert_frame_equal(result[columns], expected, check_dtype=False)
 
 
 def test_summary_non_numeric(batting, batting_df):
@@ -826,9 +825,12 @@ def test_summary_non_numeric(batting, batting_df):
     result = expr.execute()
     assert len(result) == 1
     assert len(result.columns) == 3
-    assert result.at[0, 'count'] == batting_df.teamID.count()
-    assert result.at[0, 'nulls'] == batting_df.teamID.isnull().sum()
-    assert result.at[0, 'uniques'] == batting_df.teamID.nunique()
+    expected = dict(
+        count=batting_df.teamID.count(),
+        nulls=batting_df.teamID.isnull().sum(),
+        uniques=batting_df.teamID.nunique(),
+    )
+    assert dict(result.iloc[0]) == expected
 
 
 def test_summary_non_numeric_group_by(batting, batting_df):
@@ -844,4 +846,5 @@ def test_summary_non_numeric_group_by(batting, batting_df):
             index=[0]
         )
     ).reset_index(level=1, drop=True).reset_index()
-    tm.assert_frame_equal(result, expected, check_dtype=False)
+    columns = expected.columns
+    tm.assert_frame_equal(result[columns], expected, check_dtype=False)
