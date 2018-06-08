@@ -104,6 +104,13 @@ class Window(object):
         return self._replace(group_by=groups, order_by=sorts)
 
     def combine(self, window):
+        if self.how != window.how:
+            raise com.IbisInputError(
+                "Window types must match. Expecting '{}'' Window, got '{}'"
+                .format(
+                    self.how.upper(), window.how.upper()
+                )
+            )
         kwds = dict(
             preceding=self.preceding or window.preceding,
             following=self.following or window.following,

@@ -62,6 +62,10 @@ def test_combine_windows(alltypes):
                            preceding=5, following=5)
     assert_equal(w5, expected)
 
+    w6 = ibis.window(preceding=5, following=5, how='range')
+    with pytest.raises(ibis.common.IbisInputError):
+        w1.combine(w6)
+
 
 def test_over_auto_bind(alltypes):
     # GH #542
