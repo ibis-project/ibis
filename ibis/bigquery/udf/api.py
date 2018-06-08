@@ -10,11 +10,8 @@ from ibis.expr.signature import Argument as Arg
 
 from ibis.bigquery.compiler import BigQueryUDFNode, compiles
 
-from ibis.bigquery.udf.core import (
-    PythonToJavaScriptTranslator,
-    UDFContext
-)
-from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
+from ibis.bigquery.udf.core import PythonToJavaScriptTranslator
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type, UDFContext
 
 
 __all__ = 'udf',
@@ -63,6 +60,12 @@ def udf(input_type, output_type, strict=True, libraries=None):
     wrapper : Callable
         The wrapped function
 
+    Notes
+    -----
+    ``INT64`` is not supported as an argument type or a return type, as per
+    `the BigQuery documentation
+    <https://cloud.google.com/bigquery/docs/reference/standard-sql/user-defined-functions#sql-type-encodings-in-javascript>`_.
+
     Examples
     --------
     >>> from ibis.bigquery.api import udf
@@ -80,8 +83,8 @@ def udf(input_type, output_type, strict=True, libraries=None):
     }
     return add_one(x);
     """;
-    >>> @udf(input_type=[dt.int64, dt.int64],
-    ...      output_type=dt.Array(dt.int64))
+    >>> @udf(input_type=[dt.double, dt.double],
+    ...      output_type=dt.Array(dt.double))
     ... def my_range(start, stop):
     ...     def gen(start, stop):
     ...         curr = start
@@ -186,8 +189,19 @@ def udf(input_type, output_type, strict=True, libraries=None):
                 ', '.join(map(t.translate, expr.op().args))
             )
 
-        source = PythonToJavaScriptTranslator(f).compile()
         type_translation_context = UDFContext()
+        return_type = ibis_type_to_bigquery_type(
+            dt.dtype(output_type), type_translation_context)
+        bigquery_signature = ', '.join(
+            '{name} {type}'.format(
+                name=name,
+                type=ibis_type_to_bigquery_type(
+                    dt.dtype(type), type_translation_context)
+            ) for name, type in zip(
+               inspect.signature(f).parameters.keys(), input_type
+            )
+        )
+        source = PythonToJavaScriptTranslator(f).compile()
         js = '''\
 CREATE TEMPORARY FUNCTION {external_name}({signature})
 RETURNS {return_type}
@@ -197,18 +211,9 @@ return {internal_name}({args});
 """{libraries};'''.format(
             external_name=udf_node.__name__,
             internal_name=f.__name__,
-            return_type=ibis_type_to_bigquery_type(
-                dt.dtype(output_type), type_translation_context),
+            return_type=return_type,
             source=source,
-            signature=', '.join(
-                '{name} {type}'.format(
-                    name=name,
-                    type=ibis_type_to_bigquery_type(
-                        dt.dtype(type), type_translation_context)
-                ) for name, type in zip(
-                   inspect.signature(f).parameters.keys(), input_type
-                )
-            ),
+            signature=bigquery_signature,
             strict=repr('use strict') + ';\n' if strict else '',
             args=', '.join(inspect.signature(f).parameters.keys()),
             libraries=(
