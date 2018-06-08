@@ -263,7 +263,9 @@ def _format_window(translator, window):
     elif p is not None:
         if isinstance(p, tuple):
             start, end = p
-            frame = 'ROWS BETWEEN {} AND {}'.format(_prec(start), _prec(end))
+            kind = 'ROWS' if window.how == 'row' else 'RANGE'
+            frame = '{} BETWEEN {} AND {}'.format(
+                kind, _prec(start), _prec(end))
         else:
             kind = 'ROWS' if p > 0 else 'RANGE'
             frame = '{} BETWEEN {} AND UNBOUNDED FOLLOWING'.format(
@@ -272,7 +274,9 @@ def _format_window(translator, window):
     elif f is not None:
         if isinstance(f, tuple):
             start, end = f
-            frame = 'ROWS BETWEEN {} AND {}'.format(_foll(start), _foll(end))
+            kind = 'ROWS' if window.how == 'row' else 'RANGE'
+            frame = '{} BETWEEN {} AND {}'.format(
+                kind, _foll(start), _foll(end))
         else:
             kind = 'ROWS' if f > 0 else 'RANGE'
             frame = '{} BETWEEN UNBOUNDED PRECEDING AND {}'.format(

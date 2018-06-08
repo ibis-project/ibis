@@ -169,6 +169,14 @@ SELECT *,\n       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp
 SELECT *,\n       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) AS `win_avg`\nFROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
+    w3 = ibis.window(preceding=(4, 2),
+                     group_by='year', order_by='timestamp_col')
+    expr = t.mutate(win_avg=t.float_col.mean().over(w3))
+    result = expr.compile()
+    expected = """\
+SELECT *,\n       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ROWS BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `win_avg`\nFROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
 
 def test_range_window_function(alltypes):
     t = alltypes
@@ -178,4 +186,12 @@ def test_range_window_function(alltypes):
     result = expr.compile()
     expected = """\
 SELECT *,\n       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `month` RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) AS `two_month_avg`\nFROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+    w3 = ibis.range_window(preceding=(4, 2),
+                           group_by='year', order_by='timestamp_col')
+    expr = t.mutate(win_avg=t.float_col.mean().over(w3))
+    result = expr.compile()
+    expected = """\
+SELECT *,\n       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `win_avg`\nFROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
