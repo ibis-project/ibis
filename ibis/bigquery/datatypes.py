@@ -9,8 +9,9 @@ class TypeTranslationContext(object):
 
     Notes
     -----
-    This is used to translate INT64 types to FLOAT64 when INT64 is used in the
-    definition of a UDF.
+    This is used to raise an exception when INT64 types are encountered to
+    avoid suprising results due to BigQuery's handling of INT64 types in
+    JavaScript UDFs.
     """
     __slots__ = ()
 
