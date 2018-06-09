@@ -1,15 +1,33 @@
+import inspect
 import os
 
 import pytest
 
-from ibis import options
 import ibis.util as util
 import ibis
 
+from ibis import options
+from ibis.compat import map, zip
 from ibis.expr.tests.mocks import MockConnection
 
 
+def isproperty(obj):
+    return isinstance(obj, property)
+
+
 class IbisTestEnv(object):
+    def items(self):
+        return [
+            (name, getattr(self, name))
+            for name, _ in inspect.getmembers(type(self), predicate=isproperty)
+        ]
+
+    def __repr__(self):
+        lines = map('{}={!r},'.format, *zip(*self.items()))
+        return '{}(\n{}\n)'.format(
+            type(self).__name__, util.indent('\n'.join(lines), 4)
+        )
+
     @property
     def impala_host(self):
         return os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
