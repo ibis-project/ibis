@@ -13,6 +13,7 @@ import dateutil.parser
 
 import pandas as pd
 
+import ibis
 import ibis.util as util
 import ibis.common as com
 import ibis.expr.types as ir
@@ -51,22 +52,52 @@ from ibis.expr.types import (  # noqa
 )
 
 
-__all__ = [
-    'infer_dtype', 'infer_schema',
-    'schema', 'table', 'literal', 'expr_list',
-    'timestamp', 'time', 'date', 'interval', 'param',
-    'nanosecond', 'microsecond', 'millisecond', 'second',
-    'minute', 'hour', 'day', 'week', 'month', 'year',
-    'case', 'where', 'sequence',
-    'now', 'desc', 'null', 'NA',
-    'cast', 'coalesce', 'greatest', 'least',
-    'cross_join', 'join',
+__all__ = (
     'aggregate',
+    'case',
+    'cast',
+    'coalesce',
+    'cross_join',
+    'cumulative_window',
+    'date',
+    'day',
+    'desc',
+    'Expr',
+    'expr_list',
+    'greatest',
+    'hour',
+    'ifelse',
+    'infer_dtype',
+    'infer_schema',
+    'interval',
+    'join',
+    'least',
+    'literal',
+    'microsecond',
+    'millisecond',
+    'minute',
+    'month',
+    'NA',
+    'nanosecond',
+    'negate',
+    'now',
+    'null',
+    'param',
+    'prevent_rewrite',
     'row_number',
-    'negate', 'ifelse',
-    'Expr', 'Schema',
-    'window', 'trailing_window', 'cumulative_window',
-]
+    'schema',
+    'Schema',
+    'second',
+    'sequence',
+    'table',
+    'time',
+    'timestamp',
+    'trailing_window',
+    'week',
+    'where',
+    'window',
+    'year',
+)
 
 
 _data_type_docs = """\
@@ -3124,3 +3155,25 @@ _table_methods = dict(
 
 
 _add_methods(ir.TableExpr, _table_methods)
+
+
+def prevent_rewrite(expr, client=None):
+    """Prevent optimization from happening below `expr`.
+
+    Parameters
+    ----------
+    expr : ir.TableExpr
+        Any table expression whose optimization you want to prevent
+    client : ibis.client.Client, optional, default None
+        A client to use to create the SQLQueryResult operation. This is useful
+        if you're compiling an expression that derives from an
+        :class:`~ibis.expr.operations.UnboundTable` operation.
+
+    Returns
+    -------
+    sql_query_result : ir.TableExpr
+    """
+    if client is None:
+        client, = ibis.client.find_backends(expr)
+    query = client.compile(expr)
+    return ops.SQLQueryResult(query, expr.schema(), client).to_expr()
