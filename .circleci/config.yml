@@ -40,7 +40,7 @@ test: &test
         command: docker-compose run waiter
     - run:
         name: Load Test Datasets
-        command: docker-compose run ibis ci/load-data.sh
+        command: docker-compose run -e LOGLEVEL=DEBUG ibis ci/load-data.sh
     - run:
         name: Make test reports directory
         command: sudo mkdir -p /tmp/ibis/test-reports/pytest
