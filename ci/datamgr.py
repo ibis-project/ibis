@@ -13,6 +13,8 @@ import sqlalchemy as sa
 from toolz import dissoc
 from plumbum import local
 from plumbum.cmd import curl, psql
+
+import ibis
 from ibis.compat import Path
 
 
@@ -22,6 +24,9 @@ DATA_DIR = Path(os.environ.get('IBIS_TEST_DATA_DIRECTORY',
 
 TEST_TABLES = ['functional_alltypes', 'diamonds', 'batting',
                'awards_players']
+
+
+logger = ibis.util.get_logger('datamgr')
 
 
 def recreate_database(driver, params, **kwargs):

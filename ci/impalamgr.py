@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
 import os
-import ibis
+
 import click
-import tempfile
+import toolz
 
 from plumbum import local, CommandNotFound
-from plumbum.cmd import rm, make, cmake
+from plumbum.cmd import make, cmake
+
+import ibis
 
 from ibis.compat import BytesIO, Path
 from ibis.common import IbisError
@@ -18,7 +20,15 @@ DATA_DIR = Path(os.environ.get('IBIS_TEST_DATA_DIRECTORY',
                                SCRIPT_DIR / 'ibis-testing-data'))
 
 
+logger = ibis.util.get_logger('impalamgr')
+
 ENV = IbisTestEnv()
+
+env_items = ENV.items()
+maxlen = max(map(len, map(toolz.first, env_items))) + len('IbisTestEnv[""]')
+format_string = '%-{:d}s == %r'.format(maxlen)
+for key, value in env_items:
+    logger.info(format_string, 'IbisTestEnv[{!r}]'.format(key), value)
 
 
 def make_ibis_client():
