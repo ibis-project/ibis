@@ -181,6 +181,12 @@ def _cumulative_to_window(translator, expr, window):
     return new_expr
 
 
+_window_types = {
+    'row': 'ROWS',
+    'range': 'RANGE'
+}
+
+
 def _window(translator, expr):
     op = expr.op()
 
@@ -256,16 +262,14 @@ def _format_window(translator, window):
         return '{} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
 
     if p is not None and f is not None:
-        if window.how == 'row':
-            frame = 'ROWS BETWEEN {} AND {}'.format(_prec(p), _foll(f))
-        else:
-            frame = 'RANGE BETWEEN {} AND {}'.format(_prec(p), _foll(f))
+        frame = '{} BETWEEN {} AND {}'.format(
+            _window_types[window.how], _prec(p), _foll(f))
+
     elif p is not None:
         if isinstance(p, tuple):
             start, end = p
-            kind = 'ROWS' if window.how == 'row' else 'RANGE'
             frame = '{} BETWEEN {} AND {}'.format(
-                kind, _prec(start), _prec(end))
+                _window_types[window.how], _prec(start), _prec(end))
         else:
             kind = 'ROWS' if p > 0 else 'RANGE'
             frame = '{} BETWEEN {} AND UNBOUNDED FOLLOWING'.format(
@@ -274,9 +278,8 @@ def _format_window(translator, window):
     elif f is not None:
         if isinstance(f, tuple):
             start, end = f
-            kind = 'ROWS' if window.how == 'row' else 'RANGE'
             frame = '{} BETWEEN {} AND {}'.format(
-                kind, _foll(start), _foll(end))
+                _window_types[window.how], _foll(start), _foll(end))
         else:
             kind = 'ROWS' if f > 0 else 'RANGE'
             frame = '{} BETWEEN UNBOUNDED PRECEDING AND {}'.format(

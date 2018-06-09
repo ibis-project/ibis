@@ -89,7 +89,7 @@ class Window(object):
                             self.following
                         )
                     )
-        if self.how not in ['row', 'range']:
+        if self.how not in {'row', 'range'}:
             raise com.IbisInputError(
                 "'how' must be either 'row' or 'range', got {}".format(
                     self.how
@@ -106,7 +106,7 @@ class Window(object):
     def combine(self, window):
         if self.how != window.how:
             raise com.IbisInputError(
-                "Window types must match. Expecting '{}'' Window, got '{}'"
+                "Window types must match. Expecting '{}' Window, got '{}'"
                 .format(
                     self.how.upper(), window.how.upper()
                 )
@@ -256,13 +256,13 @@ def cumulative_window(group_by=None, order_by=None):
                   group_by=group_by, order_by=order_by)
 
 
-def trailing_window(periods, group_by=None, order_by=None):
+def trailing_window(rows, group_by=None, order_by=None):
     """
     Create a trailing window for use with aggregate window functions.
 
     Parameters
     ----------
-    periods : int
+    rows : int
       Number of trailing rows to include. 0 includes only the current row
     group_by : expressions, default None
       Either specify here or with TableExpr.group_by
@@ -274,7 +274,7 @@ def trailing_window(periods, group_by=None, order_by=None):
     -------
     win : ibis Window
     """
-    return Window(preceding=periods, following=0,
+    return Window(preceding=rows, following=0,
                   group_by=group_by, order_by=order_by)
 
 
