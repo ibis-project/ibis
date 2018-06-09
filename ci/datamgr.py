@@ -3,6 +3,7 @@
 import os
 import sys
 import tarfile
+import warnings
 
 import click
 import six
@@ -61,7 +62,6 @@ def init_database(driver, params, schema=None, recreate=True, **kwargs):
 def read_tables(names, data_directory):
     for name in names:
         path = data_directory / '{}.csv'.format(name)
-        click.echo(path)
         df = pd.read_csv(str(path), index_col=None, header=0)
 
         if name == 'functional_alltypes':
@@ -72,7 +72,7 @@ def read_tables(names, data_directory):
             # timestamp_col has object dtype
             df['timestamp_col'] = pd.to_datetime(df['timestamp_col'])
 
-        yield (name, df)
+        yield name, df
 
 
 def convert_to_database_compatible_value(value):
@@ -128,9 +128,9 @@ def download(base_url, directory, name):
         download(stdout=click.get_binary_stream('stdout'),
                  stderr=click.get_binary_stream('stderr'))
     else:
-        click.echo('Skipping download due to {} already exists.'.format(name))
+        logger.info('Skipping download: %s already exists', name)
 
-    click.echo('Extracting archive to {} ...'.format(directory))
+    logger.info('Extracting archive to %s', directory)
     if path.suffix in ('.tar', '.gz', '.bz2', '.xz'):
         with tarfile.open(str(path), mode='r|gz') as f:
             f.extractall(path=str(directory))
@@ -147,7 +147,7 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
     except ImportError:
         msg = 'PyArrow dependency is missing'
         if ignore_missing_dependency:
-            click.echo('Ignored: {}'.format(msg))
+            logger.warning('Ignored: %s', msg)
             return 0
         else:
             raise click.ClickException(msg)
@@ -179,7 +179,7 @@ def parquet(tables, data_directory, ignore_missing_dependency, **params):
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def postgres(schema, tables, data_directory, **params):
     data_directory = Path(data_directory)
-    click.echo('Initializing PostgreSQL...')
+    logger.info('Initializing PostgreSQL...')
     engine = init_database('postgresql', params, schema,
                            isolation_level='AUTOCOMMIT')
 
@@ -187,7 +187,6 @@ def postgres(schema, tables, data_directory, **params):
     database = params['database']
     for table in tables:
         src = data_directory / '{}.csv'.format(table)
-        click.echo(src)
         load = psql['--host', params['host'], '--port', params['port'],
                     '--username', params['user'], '--dbname', database,
                     '--command', query.format(table)]
@@ -207,7 +206,7 @@ def postgres(schema, tables, data_directory, **params):
 def sqlite(database, schema, tables, data_directory, **params):
     database = Path(database)
     data_directory = Path(data_directory)
-    click.echo('Initializing SQLite...')
+    logger.info('Initializing SQLite...')
 
     try:
         database.unlink()
@@ -316,9 +315,11 @@ def mapd(schema, tables, data_directory, **params):
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def mysql(schema, tables, data_directory, **params):
     data_directory = Path(data_directory)
-    click.echo('Initializing MySQL...')
-    engine = init_database('mysql+pymysql', params, schema,
-                           isolation_level='AUTOCOMMIT')
+    logger.info('Initializing MySQL...')
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        engine = init_database('mysql+pymysql', params, schema,
+                               isolation_level='AUTOCOMMIT')
     insert_tables(engine, tables, data_directory)
 
 
@@ -334,7 +335,7 @@ def mysql(schema, tables, data_directory, **params):
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def clickhouse(schema, tables, data_directory, **params):
     data_directory = Path(data_directory)
-    click.echo('Initializing ClickHouse...')
+    logger.info('Initializing ClickHouse...')
     engine = init_database('clickhouse+native', params, schema)
 
     for table, df in read_tables(tables, data_directory):
@@ -349,7 +350,6 @@ def clickhouse(schema, tables, data_directory, **params):
             # string None driver problem
             cols = df.select_dtypes([object]).columns
             df[cols] = df[cols].fillna('')
-
         insert(engine, table, df)
 
 
