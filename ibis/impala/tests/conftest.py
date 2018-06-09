@@ -281,7 +281,7 @@ def temp_table(con):
 def temp_table_db(con, temp_database):
     name = _random_identifier('table')
     try:
-        yield '{}.{}'.format(temp_database, name)
+        yield temp_database, name
     finally:
         assert con.exists_table(name, database=temp_database), name
         con.drop_table(name, database=temp_database)
@@ -301,7 +301,7 @@ def temp_view(con):
 def temp_view_db(con, temp_database):
     name = _random_identifier('view')
     try:
-        yield '{}.{}'.format(temp_database, name)
+        yield temp_database, name
     finally:
         assert con.exists_table(name, database=temp_database), name
         con.drop_view(name, database=temp_database)

@@ -61,7 +61,7 @@ def test_create_table_with_partition_column(con, temp_table_db):
                           ('day', 'int8'),
                           ('value', 'double')])
 
-    tmp_db, name = temp_table_db.split('.')
+    tmp_db, name = temp_table_db
     con.create_table(
         name, schema=schema, database=tmp_db, partition=['year', 'month'])
 

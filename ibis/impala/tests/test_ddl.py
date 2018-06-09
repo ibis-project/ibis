@@ -587,8 +587,8 @@ def test_create_exists_view(con, temp_view):
 
 
 def test_drop_non_empty_database(con, alltypes, temp_table_db, temp_view_db):
-    temp_database, temp_table = temp_table_db.split('.')
-    _, temp_view = temp_view_db.split('.')
+    temp_database, temp_table = temp_table_db
+    _, temp_view = temp_view_db
     con.create_table(temp_table, alltypes, database=temp_database)
 
     # Has a view, too
@@ -660,24 +660,22 @@ def test_truncate_table_expression(con, alltypes, temp_table):
     assert len(t.execute()) == 0
 
 
-def test_ctas_from_table_expr(con, alltypes, test_data_db, temp_table):
+def test_ctas_from_table_expr(con, alltypes, temp_table_db):
     expr = alltypes
-    table_name = temp_table
+    db, table_name = temp_table_db
     db = test_data_db
 
     con.create_table(table_name, expr, database=db)
-    # self.temp_tables.append('.'.join((db, table_name)))
 
 
-def test_create_empty_table(con, temp_table):
+def test_create_empty_table(con, temp_table_db):
     schema = ibis.schema([('a', 'string'),
                           ('b', 'timestamp'),
                           ('c', 'decimal(12, 8)'),
                           ('d', 'double')])
 
-    table_name = temp_table
-    con.create_table(table_name, schema=schema)
-    # self.temp_tables.append(table_name)
+    tmp_db, table_name = temp_table_db
+    con.create_table(table_name, schema=schema, database=tmp_db)
 
     result_schema = con.get_schema(table_name)
     assert_equal(result_schema, schema)
@@ -821,7 +819,7 @@ def test_cleanup_tmp_table_on_gc(con, test_data_dir):
 def test_persist_parquet_file_with_name(con, test_data_dir, temp_table_db):
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
 
-    tmp_db, name = temp_table_db.split('.')
+    tmp_db, name = temp_table_db
     schema = ibis.schema([('r_regionkey', 'int16'),
                           ('r_name', 'string'),
                           ('r_comment', 'string')])

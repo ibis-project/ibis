@@ -191,7 +191,7 @@ def test_writer_cleanup_deletes_hdfs_dir(con, hdfs, alltypes_df):
 
 
 def test_create_table_from_dataframe(con, alltypes_df, temp_table_db):
-    tmp_db, tname = temp_table_db.split('.')
+    tmp_db, tname = temp_table_db
     con.create_table(tname, alltypes_df, database=tmp_db)
 
     table = con.table(tname, database=tmp_db)
@@ -200,7 +200,7 @@ def test_create_table_from_dataframe(con, alltypes_df, temp_table_db):
 
 
 def test_insert(con, temp_table_db, exhaustive_df):
-    tmp_db, table_name = temp_table_db.split('.')
+    tmp_db, table_name = temp_table_db
     schema = sch.infer(exhaustive_df)
 
     con.create_table(table_name, database=tmp_db, schema=schema)
