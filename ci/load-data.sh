@@ -34,9 +34,7 @@ do
 done
 
 if [[ "${FAIL}" == 0 ]]; then
-    echo "Done loading ${ARGS[@]}"
     exit 0
 else
-    echo "Failed loading ${ARGS[@]}" >&2
     exit 1
 fi
