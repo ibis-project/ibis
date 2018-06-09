@@ -1,6 +1,7 @@
 channels:
   - conda-forge
 dependencies:
+  - backports.tempfile
   - click
   - clickhouse-cityhash
   - clickhouse-driver>=0.0.8
