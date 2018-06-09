@@ -278,6 +278,39 @@ def trailing_window(rows, group_by=None, order_by=None):
                   group_by=group_by, order_by=order_by)
 
 
+def trailing_time_window(prior_interval, order_by, group_by=None):
+    """
+    Create a trailing time window for use with aggregate window functions.
+
+    Parameters
+    ----------
+    prior_interval : TODO
+    order_by : Union[ir.TimeColumn, ir.DateColumn, ir.TimestampColumn]
+      Specify the column over which the window will look back
+    group_by : expressions, default None
+      Either specify here or with TableExpr.group_by
+
+    Returns
+    -------
+    win: ibis Window
+    """
+
+    if not isinstance(order_by, (ir.TimeColumn, ir.DateColumn,
+                                 ir.TimestampColumn)):
+        raise com.IbisInputError(
+            "'order_by' must be a TimeColumn, DateColumn, or TimestampColumn" +
+            ", got {}".format(
+                type(order_by)
+            )
+        )
+
+    # Convert Time Column to Unix_Micro
+    order_by = order_by.cast('timestamp').cast('int64')
+
+    return Window(preceding=prior_interval, following=0,
+                  group_by=group_by, order_by=order_by, how='range')
+
+
 def propagate_down_window(expr, window):
     op = expr.op()
 

@@ -205,3 +205,15 @@ SELECT *,
        avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `win_avg`
 FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
+
+
+def test_trailing_time_window(alltypes):
+    t = alltypes
+    w = ibis.trailing_time_window(5, order_by=t.timestamp_col)
+    expr = t.mutate(win_avg=t.float_col.mean().over(w))
+    result = expr.compile()
+    expected = """\
+SELECT *,
+       avg(`float_col`) OVER (ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN 5 PRECEDING AND CURRENT ROW) AS `win_avg`
+FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected

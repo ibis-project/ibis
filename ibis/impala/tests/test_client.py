@@ -1,7 +1,9 @@
 import unittest
 
+from datetime import datetime
 import numpy as np
 import pandas as pd
+import pytz
 
 from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E, connect_test
 from ibis.tests.util import assert_equal
@@ -125,13 +127,10 @@ LIMIT 10"""
         assert isinstance(result, pd.Series)
 
     def test_time_to_int_cast(self):
-        d = self.ibis.literal('2017-02-06').cast('date')
+        now = pytz.utc.localize(datetime.now())
+        d = ibis.literal(now)
         result = self.con.execute(d.cast('int64'))
-        assert result == 1486339200000000
-
-        t = self.ibis.literal('2017-02-06').cast('timestamp')
-        result = self.con.execute(t.cast('int64'))
-        assert result == 1486339200000000
+        assert result == int(now.timestamp() * 1e6)  # Convert to Micro
 
     def test_interactive_repr_call_failure(self):
         t = self.con.table('tpch_lineitem').limit(100000)
