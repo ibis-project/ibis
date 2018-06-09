@@ -414,7 +414,8 @@ def execute_reduction_series_groupby_std(op, data, _, context=None, **kwargs):
     return context.agg(data, 'std', ddof=variance_ddof[op.how])
 
 
-@execute_node.register(ops.CountDistinct, SeriesGroupBy, type(None))
+@execute_node.register(
+    (ops.CountDistinct, ops.HLLCardinality), SeriesGroupBy, type(None))
 def execute_count_distinct_series_groupby(op, data, _, context=None, **kwargs):
     return context.agg(data, 'nunique')
 
@@ -440,7 +441,11 @@ def execute_reduction_series_gb_mask(op, data, mask, context=None, **kwargs):
     )
 
 
-@execute_node.register(ops.CountDistinct, SeriesGroupBy, SeriesGroupBy)
+@execute_node.register(
+    (ops.CountDistinct, ops.HLLCardinality),
+    SeriesGroupBy,
+    SeriesGroupBy
+)
 def execute_count_distinct_series_groupby_mask(
     op, data, mask, context=None, **kwargs
 ):
@@ -484,7 +489,11 @@ def execute_reduction_series_mask(op, data, mask, context=None, **kwargs):
     return context.agg(operand, type(op).__name__.lower())
 
 
-@execute_node.register(ops.CountDistinct, pd.Series, (pd.Series, type(None)))
+@execute_node.register(
+    (ops.CountDistinct, ops.HLLCardinality),
+    pd.Series,
+    (pd.Series, type(None))
+)
 def execute_count_distinct_series_mask(op, data, mask, context=None, **kwargs):
     return context.agg(data[mask] if mask is not None else data, 'nunique')
 
@@ -870,3 +879,12 @@ def execute_node_least_list(op, value, **kwargs):
 def execute_node_coalesce(op, values, **kwargs):
     # TODO: this is slow
     return compute_row_reduction(coalesce, values)
+
+
+@execute_node.register(ops.ExpressionList, collections.Sequence)
+def execute_node_expr_list(op, sequence, **kwargs):
+    # TODO: no true approx count distinct for pandas, so we use exact for now
+    columns = [e.get_name() for e in op.exprs]
+    schema = ibis.schema(list(zip(columns, (e.type() for e in op.exprs))))
+    data = {col: [execute(el, **kwargs)] for col, el in zip(columns, sequence)}
+    return schema.apply_to(pd.DataFrame(data, columns=columns))
