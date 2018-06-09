@@ -124,6 +124,15 @@ LIMIT 10"""
         result = self.con.execute(expr)
         assert isinstance(result, pd.Series)
 
+    def test_time_to_int_cast(self):
+        d = self.ibis.literal('2017-02-06').cast('date')
+        result = self.con.execute(d.cast('int64'))
+        assert result == 1486339200000000
+
+        t = self.ibis.literal('2017-02-06').cast('timestamp')
+        result = self.con.execute(t.cast('int64'))
+        assert result == 1486339200000000
+
     def test_interactive_repr_call_failure(self):
         t = self.con.table('tpch_lineitem').limit(100000)
 
