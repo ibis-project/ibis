@@ -245,8 +245,7 @@ def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
     if in_dtype.type == np.datetime64:
         return column.astype(out_dtype.to_pandas(), errors='ignore')
     try:
-        return pd.to_datetime(column, utc=True).dt.tz_convert(
-            out_dtype.timezone)
+        series = pd.to_datetime(column, utc=True)
     except pd.errors.OutOfBoundsDatetime:
         inferred_dtype = infer_dtype(column)
         if inferred_dtype in {'datetime', 'date'}:
@@ -259,6 +258,9 @@ def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
                 .format(inferred_dtype)
             )
         return column.map(dateutil.parser.parse)
+    else:
+        utc_dtype = DatetimeTZDtype('ns', 'UTC')
+        return series.astype(utc_dtype).dt.tz_convert(out_dtype.timezone)
 
 
 @convert.register(np.dtype, dt.Interval, pd.Series)
