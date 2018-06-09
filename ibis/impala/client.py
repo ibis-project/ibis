@@ -70,8 +70,6 @@ class ImpalaConnection(object):
         self.connection_pool = deque(maxlen=pool_size)
         self.connection_pool_size = 0
 
-        self.ping()
-
     def set_options(self, options):
         self.options.update(options)
 
