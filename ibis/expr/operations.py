@@ -2680,6 +2680,10 @@ class ExpressionList(Node):
     def __init__(self, values):
         super(ExpressionList, self).__init__(list(map(rlz.any, values)))
 
+    @property
+    def inputs(self):
+        return (tuple(self.exprs),)
+
     def root_tables(self):
         return distinct_roots(self.exprs)
 
