@@ -170,16 +170,14 @@ def test_limit_equals_none_no_limit(alltypes):
 def test_verbose_log_queries(con, test_data_db):
     queries = []
 
-    def logger(x):
-        queries.append(x)
-
     with config.option_context('verbose', True):
-        with config.option_context('verbose_log', logger):
+        with config.option_context('verbose_log', queries.append):
             con.table('tpch_orders', database=test_data_db)
 
     assert len(queries) == 1
-    expected = 'DESCRIBE {0}.`tpch_orders`'.format(test_data_db)
-    assert queries[0] == expected
+    query, = queries
+    expected = 'DESCRIBE {}.`tpch_orders`'.format(test_data_db)
+    assert query == expected
 
 
 def test_sql_query_limits(con, test_data_db):
