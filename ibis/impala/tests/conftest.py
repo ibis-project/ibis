@@ -152,6 +152,8 @@ def webhdfs_user():
 
 @pytest.fixture
 def hdfs(nn_host, webhdfs_port, auth_mechanism, webhdfs_user, tmp_dir):
+    pytest.importorskip('requests')
+
     if auth_mechanism in ['GSSAPI', 'LDAP']:
         print("Warning: ignoring invalid Certificate Authority errors")
 
