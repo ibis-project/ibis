@@ -130,7 +130,7 @@ LIMIT 10"""
         now = pytz.utc.localize(datetime.now())
         d = ibis.literal(now)
         result = self.con.execute(d.cast('int64'))
-        assert result == int(now.timestamp() * 1e6)  # Convert to Micro
+        assert result == int(now.timestamp()) * 1e6  # Convert to Micro
 
     def test_interactive_repr_call_failure(self):
         t = self.con.table('tpch_lineitem').limit(100000)

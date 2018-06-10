@@ -1,5 +1,6 @@
 from six import StringIO
 import datetime
+import numpy as np
 
 import ibis
 import ibis.expr.analysis as L
@@ -225,6 +226,21 @@ def _window(translator, expr):
     if (isinstance(window_op, _require_order_by) and
             len(window._order_by) == 0):
         window = window.order_by(window_op.args[0])
+
+    # Time ranges need to be converted to microseconds.
+    if window.how == 'time_range':
+        # Check that ORDER BY column is a time column:
+        allowed_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
+        order_by_types = [type(x.op().args[0]) for x in window._order_by]
+        type_check = [col_type in allowed_types for col_type in order_by_types]
+        if not all(type_check):
+            bad_idx = list(np.where(np.logical_not(type_check))[0])
+            bad_types = [str(order_by_types[idx]) for idx in bad_idx]
+            raise com.IbisInputError(
+                "'order_by' must be a TimeColumn, DateColumn, or " +
+                "TimestampColumn, got {}".format(
+                    type(', '.join(bad_types)))
+            )
 
     window_formatted = _format_window(translator, window)
 

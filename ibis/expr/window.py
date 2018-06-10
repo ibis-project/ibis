@@ -89,9 +89,9 @@ class Window(object):
                             self.following
                         )
                     )
-        if self.how not in {'row', 'range'}:
+        if self.how not in {'row', 'range', 'time_range'}:
             raise com.IbisInputError(
-                "'how' must be either 'row' or 'range', got {}".format(
+                "'how' must be 'row', 'range', or 'time_range', got {}".format(
                     self.how
                 )
             )
@@ -294,21 +294,8 @@ def trailing_time_window(preceding, order_by, group_by=None):
     -------
     win: ibis Window
     """
-
-    if not isinstance(order_by, (ir.TimeColumn, ir.DateColumn,
-                                 ir.TimestampColumn)):
-        raise com.IbisInputError(
-            "'order_by' must be a TimeColumn, DateColumn, or TimestampColumn" +
-            ", got {}".format(
-                type(order_by)
-            )
-        )
-
-    # Convert Time Column to Unix_Micro
-    order_by = order_by.cast('timestamp').cast('int64')
-
     return Window(preceding=preceding, following=0,
-                  group_by=group_by, order_by=order_by, how='range')
+                  group_by=group_by, order_by=order_by, how='time_range')
 
 
 def propagate_down_window(expr, window):
