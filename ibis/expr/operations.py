@@ -2316,15 +2316,42 @@ class ExtractTemporalField(TemporalUnaryOp):
     output_type = rlz.shape_like('arg', dt.int32)
 
 
-class ExtractTimestampField(TimestampUnaryOp):
-    output_type = rlz.shape_like('arg', dt.int32)
+ExtractTimestampField = ExtractTemporalField
 
 
-class ExtractYear(ExtractTemporalField):
+class ExtractDateField(ExtractTemporalField):
+    arg = Arg(rlz.one_of([rlz.date, rlz.timestamp]))
+
+
+class ExtractTimeField(ExtractTemporalField):
+    arg = Arg(rlz.one_of([rlz.time, rlz.timestamp]))
+
+
+class ExtractYear(ExtractDateField):
     pass
 
 
-class ExtractMonth(ExtractTemporalField):
+class ExtractMonth(ExtractDateField):
+    pass
+
+
+class ExtractDay(ExtractDateField):
+    pass
+
+
+class ExtractHour(ExtractTimeField):
+    pass
+
+
+class ExtractMinute(ExtractTimeField):
+    pass
+
+
+class ExtractSecond(ExtractTimeField):
+    pass
+
+
+class ExtractMillisecond(ExtractTimeField):
     pass
 
 
@@ -2343,26 +2370,6 @@ class DayOfWeekNode(Node):
 
     def output_type(self):
         return ir.DayOfWeek
-
-
-class ExtractDay(ExtractTemporalField):
-    pass
-
-
-class ExtractHour(ExtractTimestampField):
-    pass
-
-
-class ExtractMinute(ExtractTimestampField):
-    pass
-
-
-class ExtractSecond(ExtractTimestampField):
-    pass
-
-
-class ExtractMillisecond(ExtractTimestampField):
-    pass
 
 
 class Time(UnaryOp):
