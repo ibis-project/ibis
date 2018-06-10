@@ -1,6 +1,7 @@
 import unittest
 
 from datetime import datetime
+import time
 import numpy as np
 import pandas as pd
 import pytz
@@ -130,7 +131,7 @@ LIMIT 10"""
         now = pytz.utc.localize(datetime.now())
         d = ibis.literal(now)
         result = self.con.execute(d.cast('int64'))
-        assert result == int(now.timestamp()) * 1e6  # Convert to Micro
+        assert result == int(time.mktime(now.timetuple())) * 1e6
 
     def test_interactive_repr_call_failure(self):
         t = self.con.table('tpch_lineitem').limit(100000)
