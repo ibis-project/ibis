@@ -23,6 +23,8 @@ import ibis.expr.types as ir
 import ibis.expr.rules as rlz
 import ibis.expr.operations as ops
 
+from ibis.compat import PY2
+
 
 def test_field_select(alltypes):
     assert isinstance(alltypes.i, ir.TimestampColumn)
@@ -168,6 +170,7 @@ def test_timestamp_field_access_on_date_failure(
         ('millisecond', ops.ExtractMillisecond, ir.IntegerColumn),
     ]
 )
+@pytest.skipif(PY2)
 def test_timestamp_field_access_on_time(
     field, expected_operation, expected_type, alltypes
 ):
@@ -185,6 +188,7 @@ def test_timestamp_field_access_on_time(
         ('day', ops.ExtractDay, ir.IntegerColumn),
     ]
 )
+@pytest.skipif(PY2)
 def test_timestamp_field_access_on_time_failure(
     field, expected_operation, expected_type, alltypes
 ):
