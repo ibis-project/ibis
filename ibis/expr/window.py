@@ -278,13 +278,13 @@ def trailing_window(rows, group_by=None, order_by=None):
                   group_by=group_by, order_by=order_by)
 
 
-def trailing_time_window(prior_interval, order_by, group_by=None):
+def trailing_time_window(preceding, order_by, group_by=None):
     """
     Create a trailing time window for use with aggregate window functions.
 
     Parameters
     ----------
-    prior_interval : TODO
+    preceding : TODO
     order_by : Union[ir.TimeColumn, ir.DateColumn, ir.TimestampColumn]
       Specify the column over which the window will look back
     group_by : expressions, default None
@@ -307,7 +307,7 @@ def trailing_time_window(prior_interval, order_by, group_by=None):
     # Convert Time Column to Unix_Micro
     order_by = order_by.cast('timestamp').cast('int64')
 
-    return Window(preceding=prior_interval, following=0,
+    return Window(preceding=preceding, following=0,
                   group_by=group_by, order_by=order_by, how='range')
 
 
