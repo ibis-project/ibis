@@ -229,9 +229,16 @@ def _window(translator, expr):
 
     # Time ranges need to be converted to microseconds.
     if window.how == 'time_range':
-        # Check that ORDER BY column is a time column:
+        # Check that ORDER BY column is a single time column:
         allowed_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
         order_by_types = [type(x.op().args[0]) for x in window._order_by]
+        if len(order_by_types) > 1:
+            raise com.IbisInputError(
+                    "Expected 1 order-by variable, got {}".format(
+                        len(order_by_types)
+                    )
+            )
+
         type_check = [col_type in allowed_types for col_type in order_by_types]
         if not all(type_check):
             bad_idx = list(np.where(np.logical_not(type_check))[0])
@@ -239,8 +246,12 @@ def _window(translator, expr):
             raise com.IbisInputError(
                 "'order_by' must be a TimeColumn, DateColumn, or " +
                 "TimestampColumn, got {}".format(
-                    type(', '.join(bad_types)))
+                    ', '.join(bad_types))
             )
+        order_var = window._order_by[0].op().args[0]
+        timestamp_order_var = order_var.cast('int64')
+        window = window._replace(order_by=timestamp_order_var,
+                                 how='range')
 
     window_formatted = _format_window(translator, window)
 

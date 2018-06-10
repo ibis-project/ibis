@@ -568,3 +568,10 @@ FROM (
 ) t0
 WHERE `string_col` != 'wat'"""
     assert result == expected
+
+
+def test_trailing_time_window(alltypes):
+    with pytest.raises(com.IbisInputError):
+        w = ibis.trailing_time_window(preceding=10, order_by='float_col')
+        expr = alltypes.int_col.mean().over(w)
+        expr.execute()
