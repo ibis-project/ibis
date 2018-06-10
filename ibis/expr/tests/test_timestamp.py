@@ -170,7 +170,7 @@ def test_timestamp_field_access_on_date_failure(
         ('millisecond', ops.ExtractMillisecond, ir.IntegerColumn),
     ]
 )
-@pytest.skipif(PY2)
+@pytest.mark.skipif(PY2, reason='Time type is not supported on python 2')
 def test_timestamp_field_access_on_time(
     field, expected_operation, expected_type, alltypes
 ):
@@ -188,7 +188,7 @@ def test_timestamp_field_access_on_time(
         ('day', ops.ExtractDay, ir.IntegerColumn),
     ]
 )
-@pytest.skipif(PY2)
+@pytest.mark.skipif(PY2, reason='Time type is not supported on python 2')
 def test_timestamp_field_access_on_time_failure(
     field, expected_operation, expected_type, alltypes
 ):
