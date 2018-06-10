@@ -2,6 +2,7 @@
 
 import concurrent.futures
 
+import itertools
 import os
 
 import click
@@ -156,10 +157,10 @@ def create_parquet_tables(con, executor):
             [('r_regionkey', 'int16'),
              ('r_name', 'string'),
              ('r_comment', 'string')])}
-    return [
+    return (
         executor.submit(create_table, table_name)
         for table_name in parquet_files
-    ]
+    )
 
 
 def create_avro_tables(con, executor):
@@ -180,9 +181,9 @@ def create_avro_tables(con, executor):
                 {'name': 'R_REGIONKEY', 'type': ['null', 'int']},
                 {'name': 'R_NAME', 'type': ['null', 'string']},
                 {'name': 'R_COMMENT', 'type': ['null', 'string']}]}}
-    return [
+    return (
         executor.submit(create_table, table_name) for table_name in avro_files
-    ]
+    )
 
 
 def build_udfs():
@@ -292,7 +293,7 @@ def load_impala_data(con, data_dir, overwrite=False):
                     [
                         future.result()
                         for future in concurrent.futures.as_completed(
-                            parquet_tables + avro_tables
+                            itertools.chain(parquet_tables, avro_tables)
                         )
                     ]
                 )
