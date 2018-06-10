@@ -188,6 +188,6 @@ def test_timestamp_field_access_on_time(
 def test_timestamp_field_access_on_time_failure(
     field, expected_operation, expected_type, alltypes
 ):
-    date_col = alltypes.i.cast('time')
+    date_col = alltypes.i.time()
     with pytest.raises(AttributeError):
         getattr(date_col, field)
