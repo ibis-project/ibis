@@ -1,5 +1,6 @@
 import inspect
 import os
+import warnings
 
 import pytest
 
@@ -39,7 +40,7 @@ class IbisTestEnv(object):
     @property
     def tmp_db(self):
         options.impala.temp_db = tmp_db = os.environ.get(
-                'IBIS_TEST_TMP_DB', '__ibis_tmp_{}'.format(util.guid()))
+                'IBIS_TEST_TMP_DB', 'ibis_testing_tmp_db')
         return tmp_db
 
     options.impala.temp_hdfs_path = tmp_dir = os.environ.get(
@@ -74,112 +75,55 @@ class IbisTestEnv(object):
         )
 
     @property
-    def cleanup_test_data(self):
-        return os.environ.get(
-            'IBIS_TEST_CLEANUP_TEST_DATA', 'True').lower() == 'true'
-
-    @property
     def auth_mechanism(self):
         return os.environ.get('IBIS_TEST_AUTH_MECH', 'NOSASL')
-
-    @property
-    def llvm_config(self):
-        return os.environ.get('IBIS_TEST_LLVM_CONFIG', None)
 
     @property
     def webhdfs_user(self):
         return os.environ.get('IBIS_TEST_WEBHDFS_USER', 'hdfs')
 
 
-@pytest.fixture
-def impala_host():
-    return os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
-
-
-@pytest.fixture
-def impala_port():
-    return int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
-
-
-@pytest.fixture
-def tmp_db():
-    options.impala.temp_db = tmp_db = os.environ.get(
-        'IBIS_TEST_TMP_DB', '__ibis_tmp_{}'.format(util.guid()))
-    return tmp_db
+@pytest.fixture(scope='session')
+def env():
+    return IbisTestEnv()
 
 
 @pytest.fixture(scope='session')
-def tmp_dir():
-    options.impala.temp_hdfs_path = tmp_dir = os.environ.get(
-        'IBIS_TEST_TMP_HDFS_DIR', '/tmp/__ibis_test_{}'.format(util.guid()))
+def tmp_dir(env):
+    options.impala.temp_hdfs_path = tmp_dir = env.tmp_dir
     return tmp_dir
 
 
-@pytest.fixture
-def test_data_db():
-    return os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
+@pytest.fixture(scope='session')
+def test_data_db(env):
+    return env.test_data_db
 
 
-@pytest.fixture
-def test_data_dir():
-    return os.environ.get(
-        'IBIS_TEST_DATA_HDFS_DIR', '/__ibis/ibis-testing-data')
+@pytest.fixture(scope='session')
+def test_data_dir(env):
+    return env.test_data_dir
 
 
-@pytest.fixture
-def nn_host():
-    return os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
-
-
-@pytest.fixture
-def webhdfs_port():
-    # 5070 is default for impala dev env
-    return int(os.environ.get('IBIS_TEST_WEBHDFS_PORT', 50070))
-
-
-@pytest.fixture
-def hdfs_superuser():
+@pytest.fixture(scope='session')
+def hdfs_superuser(env):
+    return env.hdfs_superuser
     return os.environ.get('IBIS_TEST_HDFS_SUPERUSER', 'hdfs')
 
 
-@pytest.fixture
-def use_codegen():
-    return os.environ.get('IBIS_TEST_USE_CODEGEN', 'False').lower() == 'true'
-
-
-@pytest.fixture
-def cleanup_test_data():
-    return os.environ.get(
-        'IBIS_TEST_CLEANUP_TEST_DATA', 'True').lower() == 'true'
-
-
-@pytest.fixture
-def auth_mechanism():
-    return os.environ.get('IBIS_TEST_AUTH_MECH', 'NOSASL')
-
-
-@pytest.fixture
-def llvm_config():
-    return os.environ.get('IBIS_TEST_LLVM_CONFIG', None)
-
-
-@pytest.fixture
-def webhdfs_user():
-    return os.environ.get('IBIS_TEST_WEBHDFS_USER', 'hdfs')
-
-
-@pytest.fixture
-def hdfs(nn_host, webhdfs_port, auth_mechanism, webhdfs_user, tmp_dir):
+@pytest.fixture(scope='session')
+def hdfs(env, tmp_dir):
     pytest.importorskip('requests')
 
-    if auth_mechanism in ['GSSAPI', 'LDAP']:
-        print("Warning: ignoring invalid Certificate Authority errors")
+    if env.auth_mechanism in {'GSSAPI', 'LDAP'}:
+        warnings.warn("Ignoring invalid Certificate Authority errors")
 
-    client = ibis.hdfs_connect(host=nn_host,
-                               port=webhdfs_port,
-                               auth_mechanism=auth_mechanism,
-                               verify=auth_mechanism not in ['GSSAPI', 'LDAP'],
-                               user=webhdfs_user)
+    client = ibis.hdfs_connect(host=env.nn_host,
+                               port=env.webhdfs_port,
+                               auth_mechanism=env.auth_mechanism,
+                               verify=env.auth_mechanism not in {
+                                   'GSSAPI', 'LDAP'
+                               },
+                               user=env.webhdfs_user)
 
     if not client.exists(tmp_dir):
         client.mkdir(tmp_dir)
@@ -187,66 +131,85 @@ def hdfs(nn_host, webhdfs_port, auth_mechanism, webhdfs_user, tmp_dir):
     return client
 
 
-@pytest.fixture
-def con_no_hdfs(
-    impala_host, test_data_db, impala_port, auth_mechanism, use_codegen
-):
-    con = ibis.impala.connect(host=impala_host,
+@pytest.fixture(scope='session')
+def con_no_hdfs(env, test_data_db):
+    con = ibis.impala.connect(host=env.impala_host,
                               database=test_data_db,
-                              port=impala_port,
-                              auth_mechanism=auth_mechanism)
-    if not use_codegen:
+                              port=env.impala_port,
+                              auth_mechanism=env.auth_mechanism)
+    if not env.use_codegen:
+        con.disable_codegen()
+    assert con.get_options()['DISABLE_CODEGEN'] == '1'
+    return con
+
+
+@pytest.fixture(scope='session')
+def con(env, hdfs, test_data_db):
+    con = ibis.impala.connect(host=env.impala_host,
+                              database=test_data_db,
+                              port=env.impala_port,
+                              auth_mechanism=env.auth_mechanism,
+                              hdfs_client=hdfs)
+    if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
     return con
 
 
 @pytest.fixture
-def con(
-    hdfs, impala_host, test_data_db, impala_port, auth_mechanism, use_codegen,
-    tmp_db
-):
-    con = ibis.impala.connect(host=impala_host,
-                              database=test_data_db,
-                              port=impala_port,
-                              auth_mechanism=auth_mechanism,
-                              hdfs_client=hdfs)
-    if not use_codegen:
-        con.disable_codegen()
-    assert con.get_options()['DISABLE_CODEGEN'] == '1'
+def temp_char_table(con, tmp_db):
+    statement = """\
+CREATE TABLE IF NOT EXISTS {} (
+  `group1` varchar(10),
+  `group2` char(10)
+)"""
+    name = 'testing_varchar_support'
+    sql = statement.format(name)
+    con.con.execute(sql)
+    while not con.exists_table(name, database=tmp_db):
+        pass
+    try:
+        yield con.database(tmp_db)[name]
+    finally:
+        con.drop_table(name, database=tmp_db)
 
+
+@pytest.fixture(scope='session')
+def tmp_db(env, con):
+    tmp_db = env.tmp_db
     if not con.exists_database(tmp_db):
         con.create_database(tmp_db)
     try:
-        yield con
+        yield tmp_db
     finally:
+        assert con.exists_database(tmp_db), tmp_db
         con.drop_database(tmp_db, force=True)
 
 
-@pytest.fixture
-def con_no_db(hdfs, impala_host, impala_port, auth_mechanism, use_codegen):
-    con = ibis.impala.connect(host=impala_host,
+@pytest.fixture(scope='session')
+def con_no_db(env, hdfs):
+    con = ibis.impala.connect(host=env.impala_host,
                               database=None,
-                              port=impala_port,
-                              auth_mechanism=auth_mechanism,
+                              port=env.impala_port,
+                              auth_mechanism=env.auth_mechanism,
                               hdfs_client=hdfs)
-    if not use_codegen:
+    if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
     return con
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def alltypes(con):
     return con.table('functional_alltypes')
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def alltypes_df(alltypes):
     return alltypes.execute()
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def db(con, test_data_db):
     return con.database(test_data_db)
 
