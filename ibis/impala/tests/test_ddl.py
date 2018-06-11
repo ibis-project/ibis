@@ -512,7 +512,7 @@ def path_uuid():
 
 @pytest.fixture
 def table(con, tmp_db, tmp_dir, path_uuid):
-    table_name = 'table_{0}'.format(util.guid())
+    table_name = 'table_{}'.format(util.guid())
     fake_path = pjoin(tmp_dir, path_uuid)
     schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
     con.create_table(table_name,
@@ -524,7 +524,7 @@ def table(con, tmp_db, tmp_dir, path_uuid):
     try:
         yield con.table(table_name, database=tmp_db)
     finally:
-        con.drop_table('{}.{}'.format(tmp_db, table_name))
+        con.drop_table(table_name, database=tmp_db)
 
 
 def test_list_databases(con):
@@ -663,24 +663,23 @@ def test_truncate_table_expression(con, alltypes, temp_table):
 def test_ctas_from_table_expr(con, alltypes, temp_table_db):
     expr = alltypes
     db, table_name = temp_table_db
-    db = test_data_db
 
     con.create_table(table_name, expr, database=db)
 
 
-def test_create_empty_table(con, temp_table_db):
+def test_create_empty_table(con, temp_table):
     schema = ibis.schema([('a', 'string'),
                           ('b', 'timestamp'),
                           ('c', 'decimal(12, 8)'),
                           ('d', 'double')])
 
-    tmp_db, table_name = temp_table_db
-    con.create_table(table_name, schema=schema, database=tmp_db)
+    table_name = temp_table
+    con.create_table(table_name, schema=schema)
 
     result_schema = con.get_schema(table_name)
     assert_equal(result_schema, schema)
 
-    assert len(con.table(table_name).execute()) == 0
+    assert con.table(table_name).execute().empty
 
 
 def test_insert_table(con, alltypes, temp_table, test_data_db):
@@ -913,7 +912,6 @@ def test_create_table_persist_fails_if_called_twice(
 
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
     con.parquet_file(hdfs_path, name=tname, persist=True)
-    # self.temp_tables.append(tname)
 
     with pytest.raises(HS2Error):
         con.parquet_file(hdfs_path, name=tname, persist=True)
@@ -922,15 +920,20 @@ def test_create_table_persist_fails_if_called_twice(
 def test_create_table_reserved_identifier(con):
     table_name = 'distinct'
     expr = con.table('functional_alltypes')
+    expected = expr.count().execute()
     con.create_table(table_name, expr)
-
-    t = con.table(table_name)
-    t.limit(10).execute()
-    t.drop()
+    try:
+        result = con.table(table_name).count().execute()
+    except Exception:
+        raise
+    else:
+        assert result == expected
+    finally:
+        con.drop_table(table_name)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYT')
-def test_query_text_file_regex(con):
+def test_query_text_file_regex():
     assert False
 
 
@@ -949,26 +952,12 @@ def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
             .group_by('foo')
             .aggregate([table.bar.sum().name('sum(bar)'),
                         table.baz.sum().name('mean(baz)')]))
-    expr.execute()
+    assert expr.execute() is not None
 
 
-def test_varchar_char_support(con, tmp_db):
-    statement = """\
-CREATE EXTERNAL TABLE {0}
-(`group1` varchar(10),
-`group2` char(10))
-ROW FORMAT DELIMITED
-FIELDS TERMINATED BY ','
-LOCATION '/tmp/{1}'"""
-
-    full_path = '{0}.testing_{1}'.format(tmp_db, util.guid())
-    sql = statement.format(full_path, util.guid())
-
-    con._execute(sql, results=False)
-
-    table = con.table(full_path)
-    assert isinstance(table['group1'], ir.StringValue)
-    assert isinstance(table['group2'], ir.StringValue)
+def test_varchar_char_support(temp_char_table):
+    assert isinstance(temp_char_table['group1'], ir.StringValue)
+    assert isinstance(temp_char_table['group2'], ir.StringValue)
 
 
 def test_temp_table_concurrency(con, test_data_dir):
