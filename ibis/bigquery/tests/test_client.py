@@ -546,6 +546,14 @@ def test_client_sql_query(client):
     tm.assert_frame_equal(result, expected)
 
 
+def test_trailing_time_window_order_by(alltypes):
+    # trailing_time_window must take time column in order_by
+    with pytest.raises(com.IbisInputError):
+        w = ibis.trailing_time_window(preceding=10, order_by='float_col')
+        expr = alltypes.int_col.mean().over(w)
+        expr.execute()
+
+
 def test_timestamp_column_parted_is_not_renamed(client):
     t = client.table('timestamp_column_parted')
     assert '_PARTITIONTIME' not in t.columns
@@ -568,11 +576,3 @@ FROM (
 ) t0
 WHERE `string_col` != 'wat'"""
     assert result == expected
-
-
-def test_trailing_time_window(alltypes):
-    # trailing_time_window must take time column in order_by
-    with pytest.raises(com.IbisInputError):
-        w = ibis.trailing_time_window(preceding=10, order_by='float_col')
-        expr = alltypes.int_col.mean().over(w)
-        expr.execute()
