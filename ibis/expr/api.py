@@ -2402,6 +2402,10 @@ _time_add = _binop_expr('__add__', ops.TimeAdd)
 _time_value_methods = dict(
     between=between_time,
     truncate=_time_truncate,
+    hour=_extract_field('hour', ops.ExtractHour),
+    minute=_extract_field('minute', ops.ExtractMinute),
+    second=_extract_field('second', ops.ExtractSecond),
+    millisecond=_extract_field('millisecond', ops.ExtractMillisecond),
 
     __sub__=_time_sub,
     sub=_time_sub,
