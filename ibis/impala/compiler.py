@@ -192,7 +192,6 @@ _window_types = {
 
 
 _map_interval_to_microseconds = dict(
-    Y=3.154e13,
     W=6.048e11,
     D=8.64e10,
     h=3.6e9,
@@ -237,7 +236,7 @@ def _replace_interval_with_scalar(expr):
             return microseconds
         except KeyError:
             raise KeyError(
-                "Expected preceding values of year(), week(), " +
+                "Expected preceding values of week(), " +
                 "day(), hour(), minute(), second(), millisecond(), " +
                 "microseconds(), nanoseconds(); got {}".format(expr)
                 )

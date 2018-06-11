@@ -207,13 +207,42 @@ FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 
 
-def test_trailing_time_window(alltypes):
+@pytest.mark.parametrize(
+    ('preceding', 'value'),
+    [
+        (5, 5),
+        (ibis.microsecond(), 1),
+        (ibis.second(), 1000000.0),
+        (ibis.minute(), 1000000.0 * 60),
+        (ibis.hour(), 1000000.0 * 60 * 60),
+        (ibis.day(), 1000000.0 * 60 * 60 * 24),
+        (2 * ibis.day(), 1000000.0 * 60 * 60 * 24 * 2),
+        (ibis.week(), 1000000.0 * 60 * 60 * 24 * 7),
+    ]
+)
+def test_trailing_time_window(alltypes, preceding, value):
     t = alltypes
-    w = ibis.trailing_time_window(5, order_by=t.timestamp_col)
+    w = ibis.trailing_time_window(preceding=preceding,
+                                  order_by=t.timestamp_col)
     expr = t.mutate(win_avg=t.float_col.mean().over(w))
     result = expr.compile()
     expected = """\
 SELECT *,
-       avg(`float_col`) OVER (ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN 5 PRECEDING AND CURRENT ROW) AS `win_avg`
-FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+       avg(`float_col`) OVER (ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN {} PRECEDING AND CURRENT ROW) AS `win_avg`
+FROM `ibis-gbq.testing.functional_alltypes`""".format(value)  # noqa: E501
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('preceding', 'value'),
+    [
+        (ibis.year(), None),
+    ]
+)
+def test_trailing_time_window_unsupported(alltypes, preceding, value):
+    t = alltypes
+    w = ibis.trailing_time_window(preceding=preceding,
+                                  order_by=t.timestamp_col)
+    expr = t.mutate(win_avg=t.float_col.mean().over(w))
+    with pytest.raises(KeyError):
+        expr.compile()
