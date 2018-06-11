@@ -191,6 +191,93 @@ _window_types = {
 }
 
 
+_map_interval_to_microseconds = dict(
+    Y=3.154e13,
+    W=6.048e11,
+    D=8.64e10,
+    h=3.6e9,
+    m=6e7,
+    s=1e6,
+    ms=1000,
+    us=1,
+    ns=.001
+)
+
+
+_map_interval_op_to_op = {
+    # Literal Intervals have two args, i.e.
+    # Literal(1, Interval(value_type=int8, unit='D', nullable=True))
+    # Parse both args and multipy 1 * _map_interval_to_microseconds['D']
+    ops.Literal: lambda x, y: x * y,
+    ops.IntervalMultiply: lambda x, y: x * y,
+    ops.IntervalAdd: lambda x, y: x + y,
+    ops.IntervalSubtract: lambda x, y: x - y,
+}
+
+
+def _replace_interval_with_scalar(expr):
+    """
+    Good old Depth-First Search to identify the Interval and IntervalValue
+    components of the expression and return a comparable scalar expression.
+    """
+    if not isinstance(expr, (dt.Interval, ir.IntervalValue)):
+        return expr
+    elif isinstance(expr, dt.Interval):
+        try:
+            microseconds = _map_interval_to_microseconds[expr.unit]
+            return microseconds
+        except KeyError as e:
+            raise KeyError(
+                "Expected preceding values of year(), week(), " +
+                "day(), hour(), minute(), second(), millisecond(), " +
+                "microseconds(), nanoseconds(); got {}".format(expr)
+                )
+    elif expr.op().args and isinstance(expr, ir.IntervalValue):
+        if len(expr.op().args) > 2:
+            raise com.NotImplementedError(
+                "'preceding' argument cannot be parsed."
+            )
+        left_arg = _replace_interval_with_scalar(expr.op().args[0])
+        right_arg = _replace_interval_with_scalar(expr.op().args[1])
+        method = _map_interval_op_to_op[type(expr.op())]
+        return method(left_arg, right_arg)
+
+
+def _time_range_to_range_window(translator, window):
+    # Check that ORDER BY column is a single time column:
+    allowed_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
+    order_by_types = [type(x.op().args[0]) for x in window._order_by]
+    if len(order_by_types) > 1:
+        raise com.IbisInputError(
+                "Expected 1 order-by variable, got {}".format(
+                    len(order_by_types)
+                )
+        )
+
+    type_check = [col_type in allowed_types for col_type in order_by_types]
+    if not all(type_check):
+        bad_idx = list(np.where(np.logical_not(type_check))[0])
+        bad_types = [str(order_by_types[idx]) for idx in bad_idx]
+        raise com.IbisInputError(
+            "'order_by' must be a TimeColumn, DateColumn, or " +
+            "TimestampColumn, got {}".format(
+                ', '.join(bad_types))
+        )
+    order_var = window._order_by[0].op().args[0]
+    timestamp_order_var = order_var.cast('int64')
+    window = window._replace(order_by=timestamp_order_var,
+                             how='range')
+
+    # Need to change preceding interval expression to scalars
+    preceding = window.preceding
+    if isinstance(preceding, ir.IntervalScalar):
+        new_preceding = _replace_interval_with_scalar(preceding)
+        new_preceding = eval(translator.translate(new_preceding))
+        window = window._replace(preceding=new_preceding)
+
+    return window
+
+
 def _window(translator, expr):
     op = expr.op()
 
@@ -229,29 +316,7 @@ def _window(translator, expr):
 
     # Time ranges need to be converted to microseconds.
     if window.how == 'time_range':
-        # Check that ORDER BY column is a single time column:
-        allowed_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
-        order_by_types = [type(x.op().args[0]) for x in window._order_by]
-        if len(order_by_types) > 1:
-            raise com.IbisInputError(
-                    "Expected 1 order-by variable, got {}".format(
-                        len(order_by_types)
-                    )
-            )
-
-        type_check = [col_type in allowed_types for col_type in order_by_types]
-        if not all(type_check):
-            bad_idx = list(np.where(np.logical_not(type_check))[0])
-            bad_types = [str(order_by_types[idx]) for idx in bad_idx]
-            raise com.IbisInputError(
-                "'order_by' must be a TimeColumn, DateColumn, or " +
-                "TimestampColumn, got {}".format(
-                    ', '.join(bad_types))
-            )
-        order_var = window._order_by[0].op().args[0]
-        timestamp_order_var = order_var.cast('int64')
-        window = window._replace(order_by=timestamp_order_var,
-                                 how='range')
+        window = _time_range_to_range_window(translator, window)
 
     window_formatted = _format_window(translator, window)
 
