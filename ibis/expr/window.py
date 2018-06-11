@@ -284,7 +284,8 @@ def trailing_time_window(preceding, order_by, group_by=None):
 
     Parameters
     ----------
-    preceding : TODO
+    preceding : int or expression of intervals, i.e. 
+      1 * ibis.day() + 5 * ibis.hour()
     order_by : Union[ir.TimeColumn, ir.DateColumn, ir.TimestampColumn]
       Specify the column over which the window will look back
     group_by : expressions, default None

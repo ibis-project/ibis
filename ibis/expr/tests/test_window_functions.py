@@ -55,6 +55,7 @@ def test_combine_windows(alltypes):
                            preceding=5, following=5)
     assert_equal(w5, expected)
 
+    # Cannot combine windows of varying types.
     w6 = ibis.range_window(preceding=5, following=5)
     with pytest.raises(ibis.common.IbisInputError):
         w1.combine(w6)
