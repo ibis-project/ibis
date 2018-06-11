@@ -8,6 +8,10 @@ import ibis
 import ibis.expr.datatypes as dt
 
 
+pytestmark = pytest.mark.bigquery
+pytest.importorskip('google.cloud.bigquery')
+
+
 def test_timestamp_accepts_date_literals(alltypes):
     date_string = '2009-03-01'
     param = ibis.param(dt.timestamp).name('param_0')
