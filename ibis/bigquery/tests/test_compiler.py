@@ -137,20 +137,12 @@ def test_literal_date(case, expected, dtype):
             "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
             dt.timestamp,
         ),
-        pytest.mark.xfail(
-            (
-                datetime.time(4, 55, 59),
-                "TIME '{}'".format('04:55:59'),
-                dt.time,
-            ),
-            raises=AttributeError,
-            reason='Not yet implemented'
+        (
+            datetime.time(4, 55, 59),
+            "TIME '{}'".format('04:55:59'),
+            dt.time,
         ),
-        pytest.mark.xfail(
-            ('04:55:59', "TIME '{}'".format('04:55:59'), dt.time),
-            raises=AttributeError,
-            reason='Not yet implemented'
-        )
+        ('04:55:59', "TIME '{}'".format('04:55:59'), dt.time),
     ]
 )
 def test_literal_timestamp_or_time(case, expected, dtype):
