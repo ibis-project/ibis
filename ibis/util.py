@@ -287,6 +287,7 @@ def get_logger(name, level=None, format=None, propagate=False):
     logger = logging.getLogger(name)
     logger.propagate = propagate
     logger.setLevel(
-        level or getattr(logging, os.environ.get('LOGLEVEL', level).upper()))
+        level or getattr(
+            logging, os.environ.get('LOGLEVEL', 'WARNING').upper()))
     logger.addHandler(handler)
     return logger
