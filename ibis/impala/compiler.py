@@ -235,7 +235,7 @@ def _replace_interval_with_scalar(expr):
         try:
             microseconds = _map_interval_to_microseconds[expr.unit]
             return microseconds
-        except KeyError as e:
+        except KeyError:
             raise KeyError(
                 "Expected preceding values of year(), week(), " +
                 "day(), hour(), minute(), second(), millisecond(), " +
