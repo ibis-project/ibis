@@ -219,6 +219,15 @@ def _replace_interval_with_scalar(expr):
     """
     Good old Depth-First Search to identify the Interval and IntervalValue
     components of the expression and return a comparable scalar expression.
+
+    Parameters
+    ----------
+    expr : float or expression of intervals, i.e.
+      1 * ibis.day() + 5 * ibis.hour()
+
+    Returns
+    -------
+    preceding : float or ir.FloatingScalar, depending upon the expr
     """
     if not isinstance(expr, (dt.Interval, ir.IntervalValue)):
         return expr
@@ -272,7 +281,8 @@ def _time_range_to_range_window(translator, window):
     preceding = window.preceding
     if isinstance(preceding, ir.IntervalScalar):
         new_preceding = _replace_interval_with_scalar(preceding)
-        new_preceding = eval(translator.translate(new_preceding))
+        if isinstance(new_preceding, ir.AnyScalar):
+            new_preceding = eval(translator.translate(new_preceding))
         window = window._replace(preceding=new_preceding)
 
     return window
