@@ -5,7 +5,7 @@ import itertools
 import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
 
-from ibis.compat import functools, signature
+from ibis.compat import functools
 from ibis.expr.signature import Argument as Arg
 
 from ibis.bigquery.compiler import BigQueryUDFNode, compiles
@@ -166,10 +166,12 @@ def udf(input_type, output_type, strict=True, libraries=None):
         if not callable(f):
             raise TypeError('f must be callable, got {}'.format(f))
 
-        sig = signature(f)
+        signature = inspect.signature(f)
+        parameter_names = signature.parameters.keys()
+
         udf_node_fields = collections.OrderedDict([
             (name, Arg(rlz.value(type)))
-            for name, type in zip(sig.parameters.keys(), input_type)
+            for name, type in zip(parameter_names, input_type)
         ] + [
             (
                 'output_type',
@@ -197,9 +199,7 @@ def udf(input_type, output_type, strict=True, libraries=None):
                 name=name,
                 type=ibis_type_to_bigquery_type(
                     dt.dtype(type), type_translation_context)
-            ) for name, type in zip(
-               inspect.signature(f).parameters.keys(), input_type
-            )
+            ) for name, type in zip(parameter_names, input_type)
         )
         source = PythonToJavaScriptTranslator(f).compile()
         js = '''\
@@ -215,7 +215,7 @@ return {internal_name}({args});
             source=source,
             signature=bigquery_signature,
             strict=repr('use strict') + ';\n' if strict else '',
-            args=', '.join(inspect.signature(f).parameters.keys()),
+            args=', '.join(parameter_names),
             libraries=(
                 '\nOPTIONS (\n    library={}\n)'.format(
                     repr(list(libraries))
@@ -229,8 +229,8 @@ return {internal_name}({args});
             node.js = js
             return node.to_expr()
 
-        wrapped.__signature__ = inspect.signature(f)
+        wrapped.__signature__ = signature
         wrapped.js = js
-
         return wrapped
+
     return wrapper

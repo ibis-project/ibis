@@ -30,6 +30,7 @@ dependencies:
   - python=2.7
   - python-graphviz
   - python-hdfs>=2.0.16
+  - pytz
   - regex
   - requests
   - ruamel.yaml
