@@ -1,8 +1,6 @@
 import concurrent.futures
 from concurrent.futures import as_completed
 
-import gc
-
 import ibis
 
 from posixpath import join as pjoin
@@ -36,15 +34,10 @@ def test_create_exists_view(con, temp_view):
     expr2.execute()
 
 
-def test_drop_non_empty_database(con, alltypes, temp_table_db, temp_view_db):
+def test_drop_non_empty_database(con, alltypes, temp_table_db):
     temp_database, temp_table = temp_table_db
-    _, temp_view = temp_view_db
     con.create_table(temp_table, alltypes, database=temp_database)
-    assert con.exists_table(temp_table)
-
-    # Has a view, too
-    con.create_view(temp_view, alltypes, database=temp_database)
-    assert con.exists_table(temp_view)
+    assert con.exists_table(temp_table, database=temp_database)
 
     with pytest.raises(com.IntegrityError):
         con.drop_database(temp_database)
@@ -258,15 +251,17 @@ def test_change_format(con, table):
 
 
 def test_cleanup_tmp_table_on_gc(con, test_data_dir):
+    import gc
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
     table = con.parquet_file(hdfs_path)
     name = table.op().name
     table = None
     gc.collect()
-    _assert_table_not_exists(con, name)
+    assert not con.table_exists(con, name)
 
 
 def test_persist_parquet_file_with_name(con, test_data_dir, temp_table_db):
+    import gc
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
 
     tmp_db, name = temp_table_db
@@ -421,23 +416,6 @@ def test_temp_table_concurrency(con, test_data_dir):
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=nthreads) as e:
         futures = [e.submit(limit_10, i, hdfs_path) for i in range(nthreads)]
-    result = sum(fut.result() is not None for fut in as_completed(futures))
 
-    assert sum(df is not None for df in results) == nthreads
-
-
-def _assert_table_not_exists(con, table_name, database=None):
-    if database is not None:
-        tname = '.'.join((database, table_name))
-    else:
-        tname = table_name
-
-    try:
-        con.table(tname)
-    except ImpylaError:
-        pass
-
-
-def _ensure_drop(con, table_name, database=None):
-    con.drop_table(table_name, database=database, force=True)
-    _assert_table_not_exists(con, table_name, database=database)
+    results = [future.result() for future in as_completed(futures)]
+    assert all(map(len, results))
