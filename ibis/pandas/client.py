@@ -96,7 +96,12 @@ _inferable_pandas_dtypes = {
 
 @dt.dtype.register(np.dtype)
 def from_numpy_dtype(value):
-    return _numpy_dtypes[value]
+    try:
+        return _numpy_dtypes[value]
+    except KeyError:
+        raise TypeError(
+            'numpy dtype {!r} is supported in the pandas backend'.format(value)
+        )
 
 
 @dt.dtype.register(DatetimeTZDtype)
