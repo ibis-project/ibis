@@ -229,7 +229,12 @@ def _replace_interval_with_scalar(expr):
     preceding : float or ir.FloatingScalar, depending upon the expr
     """
     if not isinstance(expr, (dt.Interval, ir.IntervalValue)):
-        return expr
+        try:
+            # Literal expressions have op method but native types do not.
+            if isinstance(expr.op(), ops.Literal):
+                return expr.op().value
+        except AttributeError:
+            return expr
     elif isinstance(expr, dt.Interval):
         try:
             microseconds = _map_interval_to_microseconds[expr.unit]
@@ -280,8 +285,6 @@ def _time_range_to_range_window(translator, window):
     preceding = window.preceding
     if isinstance(preceding, ir.IntervalScalar):
         new_preceding = _replace_interval_with_scalar(preceding)
-        if isinstance(new_preceding, ir.AnyScalar):
-            new_preceding = eval(translator.translate(new_preceding))
         window = window._replace(preceding=new_preceding)
 
     return window
