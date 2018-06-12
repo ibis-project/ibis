@@ -1,3 +1,6 @@
+import concurrent.futures
+from concurrent.futures import as_completed
+
 import gc
 
 import ibis
@@ -407,55 +410,18 @@ def test_varchar_char_support(temp_char_table):
 
 
 def test_temp_table_concurrency(con, test_data_dir):
-    pytest.skip('Cannot get this test to run under pytest')
+    def limit_10(i, hdfs_path):
+        t = con.parquet_file(hdfs_path)
+        return t.limit(10, offset=i * 10).execute()
 
-    from threading import Thread, Lock
-    import gc
     nthreads = 4
-
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
 
-    lock = Lock()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=nthreads) as e:
+        futures = [e.submit(limit_10, i, hdfs_path) for i in range(nthreads)]
+    result = sum(fut.result() is not None for fut in as_completed(futures))
 
-    results = []
-
-    def do_something():
-        t = con.parquet_file(hdfs_path)
-
-        with lock:
-            t.limit(10).execute()
-            t = None
-            gc.collect()
-            results.append(True)
-
-    threads = []
-    for i in range(nthreads):
-        t = Thread(target=do_something)
-        t.start()
-        threads.append(t)
-
-    [x.join() for x in threads]
-
-    assert results == [True] * nthreads
-
-
-def _create_table(table_name, expr, database=None, can_exist=False,
-                  format='parquet'):
-    ast = build_ast(expr, ImpalaDialect.make_context())
-    select = ast.queries[0]
-    statement = ddl.CTAS(table_name, select,
-                         database=database,
-                         format=format,
-                         can_exist=can_exist)
-    return statement
-
-
-def _get_select(expr, context):
-    ast = build_ast(expr, context)
-    select = ast.queries[0]
-    context = ast.context
-
-    return select, context
+    assert sum(df is not None for df in results) == nthreads
 
 
 def _assert_table_not_exists(con, table_name, database=None):
