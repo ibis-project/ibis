@@ -1,5 +1,7 @@
 import pytest
 
+import numpy as np
+
 import pandas as pd
 import pandas.util.testing as tm
 
@@ -72,3 +74,27 @@ def test_drop(table):
     result = expr.execute()
     expected = table[['b', 'c']].execute()
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    'unit',
+    [
+        pytest.mark.xfail('Y', raises=TypeError),
+        pytest.mark.xfail('M', raises=TypeError),
+        pytest.mark.xfail('D', raises=TypeError),
+        pytest.mark.xfail('h', raises=TypeError),
+        pytest.mark.xfail('m', raises=TypeError),
+        pytest.mark.xfail('s', raises=TypeError),
+        pytest.mark.xfail('ms', raises=TypeError),
+        pytest.mark.xfail('us', raises=TypeError),
+        'ns',
+        pytest.mark.xfail('ps', raises=TypeError),
+        pytest.mark.xfail('fs', raises=TypeError),
+        pytest.mark.xfail('as', raises=TypeError),
+    ]
+)
+def test_datetime64_infer(client, unit):
+    value = np.datetime64('2018-01-02', unit)
+    expr = ibis.literal(value, type='timestamp')
+    result = client.execute(expr)
+    assert result == value
