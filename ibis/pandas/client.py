@@ -240,6 +240,10 @@ def convert_timezone(obj, timezone):
     return pytz.timezone(timezone).localize(obj)
 
 
+PANDAS_STRING_TYPES = {'string', 'unicode', 'bytes'}
+PANDAS_DATE_TYPES = {'datetime', 'datetime64', 'date'}
+
+
 @convert.register(np.dtype, dt.Timestamp, pd.Series)
 def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
     if in_dtype.type == np.datetime64:
@@ -248,11 +252,11 @@ def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
         series = pd.to_datetime(column, utc=True)
     except pd.errors.OutOfBoundsDatetime:
         inferred_dtype = infer_dtype(column)
-        if inferred_dtype in {'datetime', 'date'}:
+        if inferred_dtype in PANDAS_DATE_TYPES:
             # not great, but not really any other option
             return column.map(
                 partial(convert_timezone, timezone=out_dtype.timezone))
-        if inferred_dtype not in {'string', 'unicode', 'bytes'}:
+        if inferred_dtype not in PANDAS_STRING_TYPES:
             raise TypeError(
                 'Conversion to timestamp not supported for Series of type {!r}'
                 .format(inferred_dtype)
