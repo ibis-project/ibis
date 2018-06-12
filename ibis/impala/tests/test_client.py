@@ -415,3 +415,48 @@ def test_set_option_with_dot(con):
     con.set_options({'request_pool': 'baz.quux'})
     result = dict(con.raw_sql('set', True).fetchall())
     assert result['REQUEST_POOL'] == 'baz.quux'
+
+
+def test_list_databases(con):
+    assert con.list_databases()
+
+
+def test_list_tables(con, test_data_db):
+    assert con.list_tables(database=test_data_db)
+    assert con.list_tables(like='*nat*', database=test_data_db)
+
+
+def test_set_database(con_no_db, test_data_db):
+    # create new connection with no default db set
+    # TODO: set test_data_db to None
+    with pytest.raises(Exception):
+        con_no_db.table('functional_alltypes')
+    con_no_db.set_database(test_data_db)
+    assert con_no_db.table('functional_alltypes') is not None
+
+
+def test_tables_robust_to_set_database(con, temp_database):
+    table = con.table('functional_alltypes')
+
+    con.set_database(temp_database)
+
+    # it still works!
+    n = 10
+    df = table.limit(n).execute()
+    assert len(df) == n
+
+
+def test_exists_table(con):
+    assert con.exists_table('functional_alltypes')
+    assert not con.exists_table('foobarbaz_{}'.format(util.guid()))
+
+
+def text_exists_table_with_database(
+    con, alltypes, test_data_db, temp_table, temp_database
+):
+    table_name = temp_table
+    tmp_db = test_data_db
+    con.create_table(table_name, alltypes, database=tmp_db)
+
+    assert con.exists_table(table_name, database=tmp_db)
+    assert not con.exists_table(table_name, database=temp_database)
