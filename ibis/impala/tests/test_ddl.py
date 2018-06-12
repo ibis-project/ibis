@@ -17,7 +17,9 @@ pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-from ibis.impala.compat import HS2Error, ImpylaError  # noqa: E402
+from ibis.impala.compat import HS2Error  # noqa: E402
+
+pytestmark = pytest.mark.impala
 
 
 def test_create_exists_view(con, temp_view):
