@@ -265,10 +265,11 @@ def rename_partitioned_column(table_expr, bq_table):
     # User configured partition column name default
     col = ibis.options.bigquery.partition_col
 
-    # No renaming if the config option is set to None
-    if col is None:
+    # No renaming if the config option is set to None or the partition field
+    # is not _PARTITIONTIME
+    if col is None or partition_field != NATIVE_PARTITION_COL:
         return table_expr
-    return table_expr.relabel({partition_field: col})
+    return table_expr.relabel({NATIVE_PARTITION_COL: col})
 
 
 def parse_project_and_dataset(project, dataset):

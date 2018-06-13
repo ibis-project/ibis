@@ -9,9 +9,14 @@ class TypeTranslationContext(object):
 
     Notes
     -----
-    This is used to translate INT64 types to FLOAT64 when INT64 is used in the
-    definition of a UDF.
+    This is used to raise an exception when INT64 types are encountered to
+    avoid suprising results due to BigQuery's handling of INT64 types in
+    JavaScript UDFs.
     """
+    __slots__ = ()
+
+
+class UDFContext(TypeTranslationContext):
     __slots__ = ()
 
 
@@ -66,3 +71,14 @@ def trans_timestamp(t, context):
 @ibis_type_to_bigquery_type.register(dt.DataType, TypeTranslationContext)
 def trans_type(t, context):
     return str(t).upper()
+
+
+@ibis_type_to_bigquery_type.register(dt.Integer, UDFContext)
+def trans_integer_udf(t, context):
+    # JavaScript does not have integers, only a Number class. BigQuery doesn't
+    # behave as expected with INT64 inputs or outputs
+    raise TypeError(
+        'BigQuery does not support INT64 as an argument type or a return type '
+        'for UDFs. Replace INT64 with FLOAT64 in your UDF signature and '
+        'cast all INT64 inputs to FLOAT64.'
+    )

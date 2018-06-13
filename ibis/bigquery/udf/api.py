@@ -1,22 +1,43 @@
 import collections
 import inspect
+import itertools
 
 import ibis.expr.rules as rlz
 import ibis.expr.datatypes as dt
 
-from ibis.compat import functools, signature
+from ibis.compat import functools
 from ibis.expr.signature import Argument as Arg
 
 from ibis.bigquery.compiler import BigQueryUDFNode, compiles
 
-from ibis.bigquery.udf.core import (
-    PythonToJavaScriptTranslator,
-    UDFContext
-)
-from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
+from ibis.bigquery.udf.core import PythonToJavaScriptTranslator
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type, UDFContext
 
 
 __all__ = 'udf',
+
+
+_udf_name_cache = collections.defaultdict(itertools.count)
+
+
+def create_udf_node(name, fields):
+    """Create a new UDF node type.
+
+    Parameters
+    ----------
+    name : str
+        Then name of the UDF node
+    fields : OrderedDict
+        Mapping of class member name to definition
+
+    Returns
+    -------
+    result : type
+        A new BigQueryUDFNode subclass
+    """
+    definition = next(_udf_name_cache[name])
+    external_name = '{}_{:d}'.format(name, definition)
+    return type(external_name, (BigQueryUDFNode,), fields)
 
 
 def udf(input_type, output_type, strict=True, libraries=None):
@@ -28,12 +49,22 @@ def udf(input_type, output_type, strict=True, libraries=None):
     output_type : DataType
     strict : bool
         Whether or not to put a ``'use strict';`` string at the beginning of
-        the UDF. Setting to ``False`` is a really bad idea.
+        the UDF. Setting to ``False`` is probably a bad idea.
+    libraries : List[str]
+        A list of Google Cloud Storage URIs containing to JavaScript source
+        code. Note that any symbols (functions, classes, variables, etc.) that
+        are exposed in these JavaScript files will be visible inside the UDF.
 
     Returns
     -------
     wrapper : Callable
         The wrapped function
+
+    Notes
+    -----
+    ``INT64`` is not supported as an argument type or a return type, as per
+    `the BigQuery documentation
+    <https://cloud.google.com/bigquery/docs/reference/standard-sql/user-defined-functions#sql-type-encodings-in-javascript>`_.
 
     Examples
     --------
@@ -43,7 +74,7 @@ def udf(input_type, output_type, strict=True, libraries=None):
     ... def add_one(x):
     ...     return x + 1
     >>> print(add_one.js)
-    CREATE TEMPORARY FUNCTION add_one(x FLOAT64)
+    CREATE TEMPORARY FUNCTION add_one_0(x FLOAT64)
     RETURNS FLOAT64
     LANGUAGE js AS """
     'use strict';
@@ -52,8 +83,8 @@ def udf(input_type, output_type, strict=True, libraries=None):
     }
     return add_one(x);
     """;
-    >>> @udf(input_type=[dt.int64, dt.int64],
-    ...      output_type=dt.Array(dt.int64))
+    >>> @udf(input_type=[dt.double, dt.double],
+    ...      output_type=dt.Array(dt.double))
     ... def my_range(start, stop):
     ...     def gen(start, stop):
     ...         curr = start
@@ -65,7 +96,7 @@ def udf(input_type, output_type, strict=True, libraries=None):
     ...         result.append(value)
     ...     return result
     >>> print(my_range.js)
-    CREATE TEMPORARY FUNCTION my_range(start FLOAT64, stop FLOAT64)
+    CREATE TEMPORARY FUNCTION my_range_0(start FLOAT64, stop FLOAT64)
     RETURNS ARRAY<FLOAT64>
     LANGUAGE js AS """
     'use strict';
@@ -106,7 +137,7 @@ def udf(input_type, output_type, strict=True, libraries=None):
     ...
     ...     return Rectangle(width, height)
     >>> print(my_rectangle.js)
-    CREATE TEMPORARY FUNCTION my_rectangle(width FLOAT64, height FLOAT64)
+    CREATE TEMPORARY FUNCTION my_rectangle_0(width FLOAT64, height FLOAT64)
     RETURNS STRUCT<width FLOAT64, height FLOAT64>
     LANGUAGE js AS """
     'use strict';
@@ -135,10 +166,12 @@ def udf(input_type, output_type, strict=True, libraries=None):
         if not callable(f):
             raise TypeError('f must be callable, got {}'.format(f))
 
-        sig = signature(f)
+        signature = inspect.signature(f)
+        parameter_names = signature.parameters.keys()
+
         udf_node_fields = collections.OrderedDict([
             (name, Arg(rlz.value(type)))
-            for name, type in zip(sig.parameters.keys(), input_type)
+            for name, type in zip(parameter_names, input_type)
         ] + [
             (
                 'output_type',
@@ -148,7 +181,8 @@ def udf(input_type, output_type, strict=True, libraries=None):
             ),
             ('__slots__', ('js',)),
         ])
-        udf_node = type(f.__name__, (BigQueryUDFNode,), udf_node_fields)
+
+        udf_node = create_udf_node(f.__name__, udf_node_fields)
 
         @compiles(udf_node)
         def compiles_udf_node(t, expr):
@@ -157,30 +191,31 @@ def udf(input_type, output_type, strict=True, libraries=None):
                 ', '.join(map(t.translate, expr.op().args))
             )
 
-        source = PythonToJavaScriptTranslator(f).compile()
         type_translation_context = UDFContext()
+        return_type = ibis_type_to_bigquery_type(
+            dt.dtype(output_type), type_translation_context)
+        bigquery_signature = ', '.join(
+            '{name} {type}'.format(
+                name=name,
+                type=ibis_type_to_bigquery_type(
+                    dt.dtype(type), type_translation_context)
+            ) for name, type in zip(parameter_names, input_type)
+        )
+        source = PythonToJavaScriptTranslator(f).compile()
         js = '''\
-CREATE TEMPORARY FUNCTION {name}({signature})
+CREATE TEMPORARY FUNCTION {external_name}({signature})
 RETURNS {return_type}
 LANGUAGE js AS """
 {strict}{source}
-return {name}({args});
+return {internal_name}({args});
 """{libraries};'''.format(
-            name=f.__name__,
-            return_type=ibis_type_to_bigquery_type(
-                dt.dtype(output_type), type_translation_context),
+            external_name=udf_node.__name__,
+            internal_name=f.__name__,
+            return_type=return_type,
             source=source,
-            signature=', '.join(
-                '{name} {type}'.format(
-                    name=name,
-                    type=ibis_type_to_bigquery_type(
-                        dt.dtype(type), type_translation_context)
-                ) for name, type in zip(
-                   inspect.signature(f).parameters.keys(), input_type
-                )
-            ),
+            signature=bigquery_signature,
             strict=repr('use strict') + ';\n' if strict else '',
-            args=', '.join(inspect.signature(f).parameters.keys()),
+            args=', '.join(parameter_names),
             libraries=(
                 '\nOPTIONS (\n    library={}\n)'.format(
                     repr(list(libraries))
@@ -194,8 +229,8 @@ return {name}({args});
             node.js = js
             return node.to_expr()
 
-        wrapped.__signature__ = inspect.signature(f)
+        wrapped.__signature__ = signature
         wrapped.js = js
-
         return wrapped
+
     return wrapper

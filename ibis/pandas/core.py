@@ -117,7 +117,7 @@ scalar_types = fixed_width_types + temporal_types
 simple_types = scalar_types + six.string_types
 
 _VALID_INPUT_TYPES = (
-    ibis.client.Client, ir.Expr, dt.DataType, type(None), win.Window
+    ibis.client.Client, ir.Expr, dt.DataType, type(None), win.Window, tuple
 ) + scalar_types
 
 
@@ -223,7 +223,7 @@ def is_computable_arg(op, arg):
     result : bool
     """
     return (
-        isinstance(op, (ops.ValueList, ops.WindowOp)) or
+        isinstance(op, (ops.ExpressionList, ops.ValueList, ops.WindowOp)) or
         isinstance(arg, _VALID_INPUT_TYPES)
     )
 

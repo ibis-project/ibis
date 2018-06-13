@@ -6,12 +6,8 @@ import pytest
 
 import ibis.expr.datatypes as dt
 
-from ibis.bigquery.udf.core import (
-    ibis_type_to_bigquery_type,
-    SymbolTable,
-    PythonToJavaScriptTranslator,
-    UDFContext,
-)
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type, UDFContext
+from ibis.bigquery.udf.core import SymbolTable, PythonToJavaScriptTranslator
 
 
 @pytest.mark.parametrize(
@@ -48,11 +44,17 @@ def test_ibis_type_to_bigquery_type(type, expected):
 @pytest.mark.parametrize(
     ('type', 'expected'),
     [
-        (dt.int64, 'FLOAT64'),
-        (dt.Array(dt.int64), 'ARRAY<FLOAT64>'),
-        (
-            dt.Struct.from_tuples([('a', dt.Array(dt.int64))]),
-            'STRUCT<a ARRAY<FLOAT64>>'
+        pytest.mark.xfail((dt.int64, 'INT64'), raises=TypeError),
+        pytest.mark.xfail(
+            (dt.Array(dt.int64), 'ARRAY<INT64>'),
+            raises=TypeError
+        ),
+        pytest.mark.xfail(
+            (
+                dt.Struct.from_tuples([('a', dt.Array(dt.int64))]),
+                'STRUCT<a ARRAY<INT64>>'
+            ),
+            raises=TypeError,
         )
     ]
 )
@@ -581,5 +583,16 @@ def test_missing_vararg():
     expected = """\
 function my_range(n) {
     return [n].map(((x) => 1));
+}"""
+    assert js == expected
+
+
+def test_len_rewrite():
+    def my_func(a):
+        return len(a)
+    js = compile(my_func)
+    expected = """\
+function my_func(a) {
+    return a.length;
 }"""
     assert js == expected

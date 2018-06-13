@@ -160,9 +160,7 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         # there is already a limit in the query, we find and remove it
         limited_query = 'SELECT * FROM ({}) t0 LIMIT 0'.format(query)
         schema = self._get_schema_using_query(limited_query)
-
-        node = ops.SQLQueryResult(query, schema, self)
-        return ir.TableExpr(node)
+        return ops.SQLQueryResult(query, schema, self).to_expr()
 
     def raw_sql(self, query, results=False):
         """
