@@ -52,6 +52,7 @@ test: &test
         command: |
           docker-compose run ibis pytest ibis \
             -m "not udf" -ra \
+            --numprocesses auto \
             --doctest-modules \
             --doctest-ignore-import-errors \
             --junitxml=/tmp/test-reports/pytest/junit.xml
