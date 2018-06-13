@@ -200,7 +200,7 @@ def created_view(con, alltypes):
 
 def test_drop_view(con, alltypes, created_view):
     con.drop_view(created_view)
-    assert not con.exist_table(created_view)
+    assert not con.exists_table(created_view)
 
 
 def test_rename_table(con, temp_database):
