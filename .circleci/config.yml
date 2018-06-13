@@ -51,7 +51,9 @@ test: &test
         name: Execute Pytest
         command: |
           docker-compose run ibis pytest ibis \
-            -m "not udf" -ra \
+            -m "not udf" \
+            -ra \
+            -vv \
             --numprocesses auto \
             --doctest-modules \
             --doctest-ignore-import-errors \
