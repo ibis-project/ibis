@@ -369,9 +369,8 @@ def con2(env):
 
 
 def test_rerelease_cursor(con2):
-    # we use a separate `con2` fixture here because the `con` fixture is global
-    # to the test runs and cursors are potentially being released multiple
-    # times
+    # we use a separate `con2` fixture here because any connection pool
+    # manipulation we want to happen independently of `con`
     with con2.raw_sql('select 1', True) as cur1:
         pass
 
