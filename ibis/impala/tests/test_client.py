@@ -357,18 +357,32 @@ def test_attr_name_conflict(
     assert left.join(right, ['id', 'files']) is not None
 
 
-def test_rerelease_cursor(con):
-    with con.raw_sql('select 1', True) as cur1:
+@pytest.fixture(scope='session')
+def con2(env):
+    con = ibis.impala.connect(host=env.impala_host,
+                              port=env.impala_port,
+                              auth_mechanism=env.auth_mechanism)
+    if not env.use_codegen:
+        con.disable_codegen()
+    assert con.get_options()['DISABLE_CODEGEN'] == '1'
+    return con
+
+
+def test_rerelease_cursor(con2):
+    # we use a separate `con2` fixture here because the `con` fixture is global
+    # to the test runs and cursors are potentially being released multiple
+    # times
+    with con2.raw_sql('select 1', True) as cur1:
         pass
 
     cur1.release()
 
-    with con.raw_sql('select 1', True) as cur2:
+    with con2.raw_sql('select 1', True) as cur2:
         pass
 
     cur2.release()
 
-    with con.raw_sql('select 1', True) as cur3:
+    with con2.raw_sql('select 1', True) as cur3:
         pass
 
     assert cur1 == cur2
