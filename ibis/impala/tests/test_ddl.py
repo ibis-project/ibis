@@ -16,6 +16,7 @@ pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
 from ibis.impala.compat import HS2Error  # noqa: E402
+from flaky import flaky  # noqa: E402
 
 pytestmark = pytest.mark.impala
 
@@ -376,16 +377,17 @@ def test_query_parquet_infer_schema(con, test_data_dir):
     assert_equal(table.schema(), ex_schema)
 
 
+@flaky
 def test_create_table_persist_fails_if_called_twice(
-    con, temp_table, test_data_dir
+    con, temp_table_db, test_data_dir
 ):
-    tname = temp_table
+    tmp_db, tname = temp_table_db
 
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
-    con.parquet_file(hdfs_path, name=tname, persist=True)
+    con.parquet_file(hdfs_path, name=tname, persist=True, database=tmp_db)
 
     with pytest.raises(HS2Error):
-        con.parquet_file(hdfs_path, name=tname, persist=True)
+        con.parquet_file(hdfs_path, name=tname, persist=True, database=tmp_db)
 
 
 def test_create_table_reserved_identifier(con):
