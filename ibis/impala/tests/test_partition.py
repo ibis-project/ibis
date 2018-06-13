@@ -36,23 +36,23 @@ def df():
 
 
 @pytest.fixture
-def unpart_t(db, df):
+def unpart_t(con, df, tmp_db):
     pd_name = '__ibis_test_partition_{}'.format(util.guid())
-    db.create_table(pd_name, df)
+    con.create_table(pd_name, df, database=tmp_db)
     try:
-        yield db[pd_name]
+        yield con.table(pd_name, database=tmp_db)
     finally:
-        assert db.client.exists_table(pd_name), pd_name
-        db.client.drop_table(pd_name)
+        assert con.exists_table(pd_name, database=tmp_db), pd_name
+        con.drop_table(pd_name, database=tmp_db)
 
 
-def test_is_partitioned(db, temp_table):
+def test_is_partitioned(con, temp_table):
     schema = ibis.schema([('foo', 'string'),
                           ('year', 'int32'),
                           ('month', 'string')])
     name = temp_table
-    db.create_table(name, schema=schema, partition=['year', 'month'])
-    assert db.table(name).is_partitioned
+    con.create_table(name, schema=schema, partition=['year', 'month'])
+    assert con.table(name).is_partitioned
 
 
 def test_create_table_with_partition_column(con, temp_table_db):
@@ -106,11 +106,11 @@ def test_unpartitioned_table_get_schema(con):
         con.table(tname).partition_schema()
 
 
-def test_insert_select_partitioned_table(df, db, temp_table, unpart_t):
+def test_insert_select_partitioned_table(con, df, temp_table, unpart_t):
     part_keys = ['year', 'month']
 
-    db.create_table(temp_table, schema=unpart_t.schema(), partition=part_keys)
-    part_t = db[temp_table]
+    con.create_table(temp_table, schema=unpart_t.schema(), partition=part_keys)
+    part_t = con.table(temp_table)
     unique_keys = df[part_keys].drop_duplicates()
 
     for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
@@ -154,13 +154,13 @@ def test_dynamic_partitioning():
     assert False
 
 
-def test_add_drop_partition_no_location(temp_table, db):
+def test_add_drop_partition_no_location(con, temp_table):
     schema = ibis.schema([('foo', 'string'),
                           ('year', 'int32'),
                           ('month', 'int16')])
     name = temp_table
-    db.create_table(name, schema=schema, partition=['year', 'month'])
-    table = db.table(name)
+    con.create_table(name, schema=schema, partition=['year', 'month'])
+    table = con.table(name)
 
     part = {'year': 2007, 'month': 4}
 
@@ -173,14 +173,14 @@ def test_add_drop_partition_no_location(temp_table, db):
     assert len(table.partitions()) == 1
 
 
-def test_add_drop_partition_owned_by_impala(hdfs, db, temp_table):
+def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
     schema = ibis.schema([('foo', 'string'),
                           ('year', 'int32'),
                           ('month', 'int16')])
     name = temp_table
-    db.create_table(name, schema=schema, partition=['year', 'month'])
+    con.create_table(name, schema=schema, partition=['year', 'month'])
 
-    table = db.table(name)
+    table = con.table(name)
 
     part = {'year': 2007, 'month': 4}
 
@@ -201,14 +201,14 @@ def test_add_drop_partition_owned_by_impala(hdfs, db, temp_table):
 
 
 @pytest.mark.xfail(raises=impala.error.HiveServer2Error, reason='HIVE-12613')
-def test_add_drop_partition_hive_bug(db, temp_table):
+def test_add_drop_partition_hive_bug(con, temp_table):
     schema = ibis.schema([('foo', 'string'),
                           ('year', 'int32'),
                           ('month', 'int16')])
     name = temp_table
-    db.create_table(name, schema=schema, partition=['year', 'month'])
+    con.create_table(name, schema=schema, partition=['year', 'month'])
 
-    table = db.table(name)
+    table = con.table(name)
 
     part = {'year': 2007, 'month': 4}
 
@@ -228,11 +228,11 @@ def test_set_partition_location():
     assert False
 
 
-def test_load_data_partition(con, hdfs, tmp_dir, db, unpart_t, df, temp_table):
+def test_load_data_partition(con, hdfs, tmp_dir, unpart_t, df, temp_table):
     part_keys = ['year', 'month']
 
-    db.create_table(temp_table, schema=unpart_t.schema(), partition=part_keys)
-    part_t = db[temp_table]
+    con.create_table(temp_table, schema=unpart_t.schema(), partition=part_keys)
+    part_t = con.table(temp_table)
 
     # trim the runtime of this test
     df = df[df.month == '1'].reset_index(drop=True)
