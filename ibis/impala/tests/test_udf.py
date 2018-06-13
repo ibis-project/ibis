@@ -21,6 +21,8 @@ pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
+pytestmark = [pytest.mark.impala, pytest.mark.udf]
+
 from ibis.impala import ddl  # noqa: E402
 import ibis.impala as api  # noqa: E402
 
@@ -162,7 +164,7 @@ class TestWrapping(unittest.TestCase):
         return func
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def udfcon(con):
     con.disable_codegen(False)
     try:
@@ -171,27 +173,26 @@ def udfcon(con):
         con.disable_codegen(True)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def alltypes(udfcon):
     return udfcon.table('functional_alltypes')
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def udf_ll(udfcon, test_data_dir):
     return pjoin(test_data_dir, 'udf/udf-sample.ll')
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def uda_ll(udfcon, test_data_dir):
     return pjoin(test_data_dir, 'udf/uda-sample.ll')
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def uda_so(udfcon, test_data_dir):
     return pjoin(test_data_dir, 'udf/libudasample.so')
 
 
-@pytest.mark.udf
 @pytest.mark.parametrize(
     ('typ', 'lit_val', 'col_name'),
     [
@@ -213,7 +214,6 @@ def test_identity_primitive_types(
     identity_func_testing(udf_ll, udfcon, test_data_db, typ, lit_val, col_val)
 
 
-@pytest.mark.udf
 def test_decimal(udfcon, test_data_db, udf_ll):
     col = udfcon.table('tpch_customer').c_acctbal
     literal = ibis.literal(1).cast('decimal(12,2)')
@@ -233,7 +233,6 @@ def test_decimal(udfcon, test_data_db, udf_ll):
     udfcon.execute(expr)
 
 
-@pytest.mark.udf
 def test_mixed_inputs(udfcon, alltypes, test_data_db, udf_ll):
     name = 'two_args'
     symbol = 'TwoArgs'
@@ -254,7 +253,6 @@ def test_mixed_inputs(udfcon, alltypes, test_data_db, udf_ll):
     udfcon.execute(expr)
 
 
-@pytest.mark.udf
 def test_implicit_typecasting(udfcon, alltypes, test_data_db, udf_ll):
     col = alltypes.tinyint_col
     literal = ibis.literal(1000)
@@ -287,7 +285,6 @@ def identity_func_testing(
     udfcon.execute(expr)
 
 
-@pytest.mark.udf
 def test_mult_type_args(udfcon, alltypes, test_data_db, udf_ll):
     symbol = 'AlmostAllTypes'
     name = 'most_types'
@@ -325,7 +322,6 @@ def test_all_type_args(udfcon, test_data_db, udf_ll):
     assert result == 9
 
 
-@pytest.mark.udf
 def test_udf_varargs(udfcon, alltypes, udf_ll, test_data_db):
     t = alltypes
 
@@ -393,7 +389,6 @@ def wrapped_count_uda(uda_so):
     return api.wrap_uda(uda_so, ['int32'], 'int64', 'CountUpdate', name=name)
 
 
-@pytest.mark.udf
 def test_count_uda(udfcon, alltypes, test_data_db, wrapped_count_uda):
     func = wrapped_count_uda
     func.register(func.name, test_data_db)
@@ -404,7 +399,6 @@ def test_count_uda(udfcon, alltypes, test_data_db, wrapped_count_uda):
     # self.temp_udas.append((func.name, ['int32']))
 
 
-@pytest.mark.udf
 def test_list_udas(udfcon, temp_database, wrapped_count_uda):
     func = wrapped_count_uda
     db = temp_database
@@ -418,7 +412,6 @@ def test_list_udas(udfcon, temp_database, wrapped_count_uda):
     assert f.output == func.output
 
 
-@pytest.mark.udf
 def test_drop_database_with_udfs_and_udas(
     udfcon, temp_database, wrapped_count_uda
 ):
