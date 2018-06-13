@@ -156,8 +156,8 @@ def con(env, hdfs, test_data_db):
     return con
 
 
-@pytest.fixture
-def temp_char_table(con, tmp_db):
+@pytest.fixture(scope='session')
+def temp_char_table(con):
     statement = """\
 CREATE TABLE IF NOT EXISTS {} (
   `group1` varchar(10),
@@ -166,12 +166,11 @@ CREATE TABLE IF NOT EXISTS {} (
     name = 'testing_varchar_support'
     sql = statement.format(name)
     con.con.execute(sql)
-    while not con.exists_table(name, database=tmp_db):
-        pass
     try:
-        yield con.database(tmp_db)[name]
+        yield con.table(name)
     finally:
-        con.drop_table(name, database=tmp_db)
+        assert con.exists_table(name)
+        con.drop_table(name)
 
 
 @pytest.fixture(scope='session')
@@ -182,7 +181,6 @@ def tmp_db(env, con):
     try:
         yield tmp_db
     finally:
-        assert con.exists_database(tmp_db), tmp_db
         con.drop_database(tmp_db, force=True)
 
 
@@ -207,11 +205,6 @@ def alltypes(con):
 @pytest.fixture(scope='session')
 def alltypes_df(alltypes):
     return alltypes.execute()
-
-
-@pytest.fixture(scope='session')
-def db(con, test_data_db):
-    return con.database(test_data_db)
 
 
 def _random_identifier(suffix):
@@ -268,6 +261,35 @@ def temp_view_db(con, temp_database):
     finally:
         assert con.exists_table(name, database=temp_database), name
         con.drop_view(name, database=temp_database)
+
+
+@pytest.fixture
+def temp_parquet_table_schema():
+    return ibis.schema([
+        ('id', 'int32'), ('name', 'string'), ('files', 'int32')
+    ])
+
+
+@pytest.fixture
+def temp_parquet_table(con, tmp_db, temp_parquet_table_schema):
+    name = util.guid()
+    db = con.database(tmp_db)
+    db.create_table(name, schema=temp_parquet_table_schema, format='parquet')
+    try:
+        yield db[name]
+    finally:
+        db.client.drop_table(name, database=tmp_db)
+
+
+@pytest.fixture
+def temp_parquet_table2(con, tmp_db, temp_parquet_table_schema):
+    name = util.guid()
+    db = con.database(tmp_db)
+    db.create_table(name, schema=temp_parquet_table_schema, format='parquet')
+    try:
+        yield db[name]
+    finally:
+        db.client.drop_table(name, database=tmp_db)
 
 
 @pytest.fixture
