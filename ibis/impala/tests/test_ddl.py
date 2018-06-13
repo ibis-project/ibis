@@ -31,7 +31,7 @@ def test_create_exists_view(con, temp_view):
 
     # just check it works for now
     expr2 = con.table(tmp_name)
-    expr2.execute()
+    assert expr2.execute() is not None
 
 
 def test_drop_non_empty_database(con, alltypes, temp_table_db):
@@ -190,14 +190,17 @@ def test_compute_stats(con):
     con.compute_stats('functional_alltypes')
 
 
-def test_drop_table_or_view(con, db, temp_table, temp_view):
-    t = db.functional_alltypes
+@pytest.fixture
+def created_view(con, alltypes):
+    name = util.guid()
+    expr = alltypes.limit(10)
+    con.create_view(name, expr)
+    return name
 
-    tname = temp_table
-    con.create_table(tname, t.limit(10))
 
-    vname = temp_view
-    con.create_view(vname, t.limit(10))
+def test_drop_view(con, alltypes, created_view):
+    con.drop_view(created_view)
+    assert not con.exist_table(created_view)
 
 
 def test_rename_table(con, temp_database):
@@ -217,6 +220,28 @@ def test_rename_table(con, temp_database):
     assert_equal(renamed, t)
 
     assert table.name == old_name
+
+
+@pytest.fixture
+def path_uuid():
+    return 'change-location-{0}'.format(util.guid())
+
+
+@pytest.fixture
+def table(con, tmp_db, tmp_dir, path_uuid):
+    table_name = 'table_{}'.format(util.guid())
+    fake_path = pjoin(tmp_dir, path_uuid)
+    schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
+    con.create_table(table_name,
+                     database=tmp_db,
+                     schema=schema,
+                     format='parquet',
+                     external=True,
+                     location=fake_path)
+    try:
+        yield con.table(table_name, database=tmp_db)
+    finally:
+        con.drop_table(table_name, database=tmp_db)
 
 
 def test_change_location(con, table, tmp_dir, path_uuid):
@@ -257,7 +282,7 @@ def test_cleanup_tmp_table_on_gc(con, test_data_dir):
     name = table.op().name
     table = None
     gc.collect()
-    assert not con.table_exists(con, name)
+    assert not con.exists_table(name)
 
 
 def test_persist_parquet_file_with_name(con, test_data_dir, temp_table_db):
@@ -294,7 +319,7 @@ def test_query_avro(con, test_data_dir, tmp_db):
     assert name.startswith('{}.'.format(tmp_db))
 
     # table exists
-    con.table(name)
+    assert con.exists_table(name, database=tmp_db)
 
     expr = table.r_name.value_counts()
     expr.execute()
@@ -409,7 +434,7 @@ def test_varchar_char_support(temp_char_table):
 def test_temp_table_concurrency(con, test_data_dir):
     def limit_10(i, hdfs_path):
         t = con.parquet_file(hdfs_path)
-        return t.limit(10, offset=i * 10).execute()
+        return t.sort_by(t.r_regionkey).limit(1, offset=i).execute()
 
     nthreads = 4
     hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
