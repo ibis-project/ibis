@@ -1,17 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import unittest
 
 from posixpath import join as pjoin
@@ -32,6 +18,8 @@ import ibis
 pytest.importorskip('hdfs')
 
 ENV = IbisTestEnv()
+
+pytestmark = pytest.mark.hdfs
 
 
 class MockHDFS(HDFS):
@@ -73,7 +61,6 @@ class TestHDFSRandom(unittest.TestCase):
         assert result == '0.parq'
 
 
-@pytest.mark.hdfs
 class TestHDFSE2E(unittest.TestCase):
 
     @classmethod
@@ -406,7 +393,6 @@ class TestHDFSE2E(unittest.TestCase):
         return dirname
 
 
-@pytest.mark.hdfs
 @pytest.mark.superuser
 class TestSuperUserHDFSE2E(unittest.TestCase):
 
@@ -529,7 +515,5 @@ def _get_all_files(path):
 
 
 def guidbytes():
-    if not compat.PY2:
-        return util.guid().encode('utf8')
-    else:
-        return util.guid()
+    guid = util.guid()
+    return guid if compat.PY2 else guid.encode('utf8')
