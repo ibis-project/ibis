@@ -24,6 +24,11 @@ pytest.importorskip('impala.dbapi')
 pytestmark = pytest.mark.impala
 
 
+@pytest.fixture(scope='module')
+def db(con, test_data_db):
+    return con.database(test_data_db)
+
+
 def test_execute_exprs_default_backend(con_no_hdfs):
     expr = ibis.literal(2)
     expected = 2
@@ -238,21 +243,6 @@ def test_database_repr(db, test_data_db):
     assert test_data_db in repr(db)
 
 
-def test_database_drop(con):
-    tmp_name = '__ibis_test_{0}'.format(util.guid())
-    con.create_database(tmp_name)
-    try:
-        db = con.database(tmp_name)
-    except Exception:
-        con.drop_database(tmp_name)
-    else:
-        try:
-            db.drop()
-        except Exception:
-            con.drop_database(tmp_name)
-            raise
-
-
 def test_database_default_current_database(con):
     db = con.database()
     assert db.name == con.current_database
@@ -356,25 +346,33 @@ def test_disable_codegen(con):
     assert opts2['DISABLE_CODEGEN'] == '1'
 
 
-def test_attr_name_conflict(con, tmp_db):
-    LEFT = 'testing_{0}'.format(util.guid())
-    RIGHT = 'testing_{0}'.format(util.guid())
+def test_attr_name_conflict(
+    con, tmp_db, temp_parquet_table, temp_parquet_table2
+):
+    left = temp_parquet_table
+    right = temp_parquet_table2
 
-    schema = ibis.schema([
-        ('id', 'int32'), ('name', 'string'), ('files', 'int32')
-    ])
+    assert left.join(right, ['id']) is not None
+    assert left.join(right, ['id', 'name']) is not None
+    assert left.join(right, ['id', 'files']) is not None
 
-    db = con.database(tmp_db)
 
-    db.create_table(LEFT, schema=schema, format='parquet')
-    db.create_table(RIGHT, schema=schema, format='parquet')
+def test_rerelease_cursor(con):
+    with con.raw_sql('select 1', True) as cur1:
+        pass
 
-    left = db[LEFT]
-    right = db[RIGHT]
+    cur1.release()
 
-    left.join(right, ['id'])
-    left.join(right, ['id', 'name'])
-    left.join(right, ['id', 'files'])
+    with con.raw_sql('select 1', True) as cur2:
+        pass
+
+    cur2.release()
+
+    with con.raw_sql('select 1', True) as cur3:
+        pass
+
+    assert cur1 == cur2
+    assert cur2 == cur3
 
 
 def test_rerelease_cursor(con):
