@@ -1,8 +1,12 @@
+import datetime
+
 from functools import partial
 
 import regex as re
 
 import six
+
+import toolz
 
 from multipledispatch import Dispatcher
 
@@ -67,10 +71,15 @@ class BigQueryQueryBuilder(comp.QueryBuilder):
     union_class = BigQueryUnion
 
     def generate_setup_queries(self):
-        result = list(
-            map(partial(BigQueryUDFDefinition, context=self.context),
-                lin.traverse(find_bigquery_udf, self.expr)))
-        return result
+        queries = map(
+            partial(BigQueryUDFDefinition, context=self.context),
+            lin.traverse(find_bigquery_udf, self.expr)
+        )
+
+        # UDFs are uniquely identified by the name of the Node subclass we
+        # generate.
+        return list(
+            toolz.unique(queries, key=lambda x: type(x.expr.op()).__name__))
 
 
 def build_ast(expr, context):
@@ -255,6 +264,21 @@ def _literal(translator, expr):
         value = expr.op().value
         if not np.isfinite(value):
             return 'CAST({!r} AS FLOAT64)'.format(str(value))
+
+    # special case literal timestamp, date, and time scalars
+    if isinstance(expr.op(), ops.Literal):
+        value = expr.op().value
+        if isinstance(expr, ir.DateScalar):
+            if isinstance(value, datetime.datetime):
+                raw_value = value.date()
+            else:
+                raw_value = value
+            return "DATE '{}'".format(raw_value)
+        elif isinstance(expr, ir.TimestampScalar):
+            return "TIMESTAMP '{}'".format(value)
+        elif isinstance(expr, ir.TimeScalar):
+            # TODO: define extractors on TimeValue expressions
+            return "TIME '{}'".format(value)
 
     try:
         return impala_compiler._literal(translator, expr)

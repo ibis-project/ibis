@@ -18,10 +18,7 @@ def execute_strftime_series_str(op, data, format_string, **kwargs):
     return data.dt.strftime(format_string)
 
 
-@execute_node.register(
-    (ops.ExtractTimestampField, ops.ExtractTemporalField),
-    pd.Timestamp
-)
+@execute_node.register(ops.ExtractTemporalField, pd.Timestamp)
 def execute_extract_timestamp_field_timestamp(op, data, **kwargs):
     field_name = type(op).__name__.lower().replace('extract', '')
     return getattr(data, field_name)
@@ -32,10 +29,7 @@ def execute_extract_millisecond_timestamp(op, data, **kwargs):
     return int(data.microsecond // 1000.0)
 
 
-@execute_node.register(
-    (ops.ExtractTimestampField, ops.ExtractTemporalField),
-    pd.Series
-)
+@execute_node.register(ops.ExtractTemporalField, pd.Series)
 def execute_extract_timestamp_field_series(op, data, **kwargs):
     field_name = type(op).__name__.lower().replace('extract', '')
     return getattr(data.dt, field_name).astype(np.int32)

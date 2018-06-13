@@ -109,11 +109,13 @@ except ImportError:
 
 # pandas compat
 try:
-    from pandas.api.types import (DatetimeTZDtype,  # noqa: F401
-                                  CategoricalDtype)  # noqa: F401
+    from pandas.api.types import (  # noqa: F401
+        DatetimeTZDtype, CategoricalDtype, infer_dtype
+    )
 except ImportError:
-    from pandas.types.dtypes import (DatetimeTZDtype,  # noqa: F401
-                                     CategoricalDtype)  # noqa: F401
+    from pandas.types.dtypes import (  # noqa: F401
+        DatetimeTZDtype, CategoricalDtype, infer_dtype
+    )
 
 try:
     from pandas.core.tools.datetimes import to_time, to_datetime  # noqa: F401

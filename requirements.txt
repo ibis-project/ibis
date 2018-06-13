@@ -4,6 +4,7 @@ functools32; python_version < '3'
 multipledispatch
 numpy>=1.10.0
 pandas>=0.18.1
+pytz
 regex
 six
 toolz

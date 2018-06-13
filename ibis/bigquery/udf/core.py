@@ -13,22 +13,8 @@ import six
 
 import ibis.expr.datatypes as dt
 
-from ibis.bigquery.datatypes import (
-    ibis_type_to_bigquery_type, TypeTranslationContext
-)
 from ibis.bigquery.udf.find import find_names
 from ibis.bigquery.udf.rewrite import rewrite
-
-
-class UDFContext(TypeTranslationContext):
-    __slots__ = ()
-
-
-@ibis_type_to_bigquery_type.register(dt.Integer, UDFContext)
-def trans_integer(t, context):
-    # JavaScript does not have integers, only a Number class, so BigQuery
-    # doesn't allow INT64 inputs or outputs
-    return 'FLOAT64'
 
 
 class SymbolTable(ChainMap):
@@ -91,6 +77,12 @@ def rewrite_print(node):
         args=node.args,
         keywords=node.keywords,
     )
+
+
+@rewrite.register(ast.Call(func=ast.Name(id='len')))
+def rewrite_len(node):
+    assert len(node.args) == 1
+    return ast.Attribute(value=node.args[0], attr='length', ctx=ast.Load())
 
 
 @rewrite.register(ast.Call(func=ast.Attribute(attr='append')))
@@ -641,5 +633,6 @@ if __name__ == '__main__':
 
         z = (x if y else b) + 2 + foobar
         foo = Rectangle(1, 2)
-        return [sum(values) - a + b * y ** -x, z, foo.width]
+        nnn = len(values)
+        return [sum(values) - a + b * y ** -x, z, foo.width, nnn]
     print(my_func.js)

@@ -72,7 +72,7 @@ def test_udf_with_struct(client, alltypes, df):
         return Rectangle(a, b)
 
     assert my_struct_thing.js == '''\
-CREATE TEMPORARY FUNCTION my_struct_thing(a FLOAT64, b FLOAT64)
+CREATE TEMPORARY FUNCTION my_struct_thing_0(a FLOAT64, b FLOAT64)
 RETURNS STRUCT<width FLOAT64, height FLOAT64>
 LANGUAGE js AS """
 'use strict';
@@ -121,21 +121,34 @@ def test_udf_scalar(client):
         return x + y
 
     expr = my_add(1, 2)
+    result = client.execute(expr)
+    assert result == 3
+
+
+def test_multiple_calls_has_one_definition(client):
+
+    @udf([dt.string], dt.double)
+    def my_str_len(s):
+        return s.length
+
+    s = ibis.literal('abcd')
+    expr = my_str_len(s) + my_str_len(s)
     sql = client.compile(expr)
-    assert sql == '''\
-CREATE TEMPORARY FUNCTION my_add(x FLOAT64, y FLOAT64)
+    expected = '''\
+CREATE TEMPORARY FUNCTION my_str_len_0(s STRING)
 RETURNS FLOAT64
 LANGUAGE js AS """
 'use strict';
-function my_add(x, y) {
-    return (x + y);
+function my_str_len(s) {
+    return s.length;
 }
-return my_add(x, y);
+return my_str_len(s);
 """;
 
-SELECT my_add(1, 2) AS `tmp`'''
+SELECT my_str_len_0('abcd') + my_str_len_0('abcd') AS `tmp`'''
+    assert sql == expected
     result = client.execute(expr)
-    assert result == 3
+    assert result == 8.0
 
 
 def test_udf_libraries(client):
@@ -155,3 +168,87 @@ def test_udf_libraries(client):
     result = client.execute(expr)
     expected = sum(map(len, raw_data))
     assert result == expected
+
+
+def test_udf_with_len(client):
+    @udf([dt.string], dt.double)
+    def my_str_len(x):
+        return len(x)
+
+    @udf([dt.Array(dt.string)], dt.double)
+    def my_array_len(x):
+        return len(x)
+
+    assert client.execute(my_str_len('aaa')) == 3
+    assert client.execute(my_array_len(['aaa', 'bb'])) == 2
+
+
+def test_multiple_calls_redefinition(client):
+
+    @udf([dt.string], dt.double)
+    def my_len(s):
+        return s.length
+
+    s = ibis.literal('abcd')
+    expr = my_len(s) + my_len(s)
+
+    @udf([dt.string], dt.double)
+    def my_len(s):
+        return s.length + 1
+    expr = expr + my_len(s)
+
+    sql = client.compile(expr)
+    expected = '''\
+CREATE TEMPORARY FUNCTION my_len_0(s STRING)
+RETURNS FLOAT64
+LANGUAGE js AS """
+'use strict';
+function my_len(s) {
+    return s.length;
+}
+return my_len(s);
+""";
+
+CREATE TEMPORARY FUNCTION my_len_1(s STRING)
+RETURNS FLOAT64
+LANGUAGE js AS """
+'use strict';
+function my_len(s) {
+    return (s.length + 1);
+}
+return my_len(s);
+""";
+
+SELECT (my_len_0('abcd') + my_len_0('abcd')) + my_len_1('abcd') AS `tmp`'''
+    assert sql == expected
+
+
+@pytest.mark.parametrize(
+    ('argument_type', 'return_type'),
+    [
+        pytest.mark.xfail((dt.int64, dt.float64), raises=TypeError),
+        pytest.mark.xfail((dt.float64, dt.int64), raises=TypeError),
+
+        # complex argument type, valid return type
+        pytest.mark.xfail((dt.Array(dt.int64), dt.float64), raises=TypeError),
+
+        # valid argument type, complex invalid return type
+        pytest.mark.xfail(
+            (dt.float64, dt.Array(dt.int64)), raises=TypeError),
+
+        # both invalid
+        pytest.mark.xfail(
+            (dt.Array(dt.Array(dt.int64)), dt.int64), raises=TypeError),
+
+        # struct type with nested integer, valid return type
+        pytest.mark.xfail(
+            (dt.Struct.from_tuples([('x', dt.Array(dt.int64))]), dt.float64),
+            raises=TypeError,
+        )
+    ]
+)
+def test_udf_int64(client, argument_type, return_type):
+    # invalid argument type, valid return type
+    @udf([argument_type], return_type)
+    def my_int64_add(x):
+        return 1.0

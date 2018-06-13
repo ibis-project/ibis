@@ -1,10 +1,15 @@
 from __future__ import absolute_import
 
 import re
+
+from functools import partial
+
 import six
+import pytz
 import toolz
 import numpy as np
 import pandas as pd
+
 import dateutil.parser
 
 from multipledispatch import Dispatcher
@@ -16,7 +21,9 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
-from ibis.compat import PY2, DatetimeTZDtype, CategoricalDtype, parse_version
+from ibis.compat import (
+    PY2, DatetimeTZDtype, CategoricalDtype, parse_version, infer_dtype
+)
 
 
 try:
@@ -89,7 +96,12 @@ _inferable_pandas_dtypes = {
 
 @dt.dtype.register(np.dtype)
 def from_numpy_dtype(value):
-    return _numpy_dtypes[value]
+    try:
+        return _numpy_dtypes[value]
+    except KeyError:
+        raise TypeError(
+            'numpy dtype {!r} is supported in the pandas backend'.format(value)
+        )
 
 
 @dt.dtype.register(DatetimeTZDtype)
@@ -217,14 +229,47 @@ def convert_datetimetz_to_timestamp(in_dtype, out_dtype, column):
     return column.astype(out_dtype.to_pandas(), errors='ignore')
 
 
+def convert_timezone(obj, timezone):
+    """Convert `obj` to the timezone `timezone`.
+
+    Parameters
+    ----------
+    obj : datetime.date or datetime.datetime
+
+    Returns
+    -------
+    type(obj)
+    """
+    if timezone is None:
+        return obj.replace(tzinfo=None)
+    return pytz.timezone(timezone).localize(obj)
+
+
+PANDAS_STRING_TYPES = {'string', 'unicode', 'bytes'}
+PANDAS_DATE_TYPES = {'datetime', 'datetime64', 'date'}
+
+
 @convert.register(np.dtype, dt.Timestamp, pd.Series)
 def convert_datetime64_to_timestamp(in_dtype, out_dtype, column):
     if in_dtype.type == np.datetime64:
         return column.astype(out_dtype.to_pandas(), errors='ignore')
     try:
-        return pd.to_datetime(column)
+        series = pd.to_datetime(column, utc=True)
     except pd.errors.OutOfBoundsDatetime:
+        inferred_dtype = infer_dtype(column)
+        if inferred_dtype in PANDAS_DATE_TYPES:
+            # not great, but not really any other option
+            return column.map(
+                partial(convert_timezone, timezone=out_dtype.timezone))
+        if inferred_dtype not in PANDAS_STRING_TYPES:
+            raise TypeError(
+                'Conversion to timestamp not supported for Series of type {!r}'
+                .format(inferred_dtype)
+            )
         return column.map(dateutil.parser.parse)
+    else:
+        utc_dtype = DatetimeTZDtype('ns', 'UTC')
+        return series.astype(utc_dtype).dt.tz_convert(out_dtype.timezone)
 
 
 @convert.register(np.dtype, dt.Interval, pd.Series)

@@ -23,6 +23,8 @@ import ibis.expr.types as ir
 import ibis.expr.rules as rlz
 import ibis.expr.operations as ops
 
+from ibis.compat import PY2
+
 
 def test_field_select(alltypes):
     assert isinstance(alltypes.i, ir.TimestampColumn)
@@ -136,7 +138,7 @@ def test_timestamp_precedence():
 def test_timestamp_field_access_on_date(
     field, expected_operation, expected_type, alltypes
 ):
-    date_col = alltypes.i.cast('date')
+    date_col = alltypes.i.date()
     result = getattr(date_col, field)()
     assert isinstance(result, expected_type)
     assert isinstance(result.op(), expected_operation)
@@ -154,6 +156,42 @@ def test_timestamp_field_access_on_date(
 def test_timestamp_field_access_on_date_failure(
     field, expected_operation, expected_type, alltypes
 ):
-    date_col = alltypes.i.cast('date')
+    time_col = alltypes.i.date()
+    with pytest.raises(AttributeError):
+        getattr(time_col, field)
+
+
+@pytest.mark.parametrize(
+    ('field', 'expected_operation', 'expected_type'),
+    [
+        ('hour', ops.ExtractHour, ir.IntegerColumn),
+        ('minute', ops.ExtractMinute, ir.IntegerColumn),
+        ('second', ops.ExtractSecond, ir.IntegerColumn),
+        ('millisecond', ops.ExtractMillisecond, ir.IntegerColumn),
+    ]
+)
+@pytest.mark.skipif(PY2, reason='Time type is not supported on python 2')
+def test_timestamp_field_access_on_time(
+    field, expected_operation, expected_type, alltypes
+):
+    time_col = alltypes.i.time()
+    result = getattr(time_col, field)()
+    assert isinstance(result, expected_type)
+    assert isinstance(result.op(), expected_operation)
+
+
+@pytest.mark.parametrize(
+    ('field', 'expected_operation', 'expected_type'),
+    [
+        ('year', ops.ExtractYear, ir.IntegerColumn),
+        ('month', ops.ExtractMonth, ir.IntegerColumn),
+        ('day', ops.ExtractDay, ir.IntegerColumn),
+    ]
+)
+@pytest.mark.skipif(PY2, reason='Time type is not supported on python 2')
+def test_timestamp_field_access_on_time_failure(
+    field, expected_operation, expected_type, alltypes
+):
+    date_col = alltypes.i.time()
     with pytest.raises(AttributeError):
         getattr(date_col, field)
