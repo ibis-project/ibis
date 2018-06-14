@@ -2,19 +2,20 @@ from posixpath import join as pjoin
 
 import pytest
 
+import ibis
+import ibis.util as util
+from ibis.tests.util import assert_equal
+
+import pandas as pd
+from pandas.util.testing import assert_frame_equal
+
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
 import impala  # noqa: E402
 
-from pandas.util.testing import assert_frame_equal  # noqa: E402
-import pandas as pd  # noqa: E402
-
 from ibis.impala.compat import ImpylaError  # noqa: E402
-from ibis.tests.util import assert_equal  # noqa: E402
-import ibis  # noqa: E402
-import ibis.util as util  # noqa: E402
 
 pytestmark = pytest.mark.impala
 

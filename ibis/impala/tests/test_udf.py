@@ -1,21 +1,22 @@
 import unittest
+
 from posixpath import join as pjoin
+
 import pytest
+
 import numpy as np
 import pandas as pd
 
 import ibis
-
 import ibis.expr.types as ir
-
-from ibis.common import IbisTypeError
-from ibis.compat import Decimal
-from ibis.expr import datatypes as dt
-from ibis.expr.tests.mocks import MockConnection
-
+import ibis.expr.datatypes as dt
 import ibis.expr.rules as rules
 import ibis.common as com
 import ibis.util as util
+
+from ibis.common import IbisTypeError
+from ibis.compat import Decimal
+from ibis.expr.tests.mocks import MockConnection
 
 pytest.importorskip('hdfs')
 pytest.importorskip('sqlalchemy')

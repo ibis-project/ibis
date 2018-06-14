@@ -9,7 +9,11 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 
-from ibis.impala.pandas_interop import DataFrameWriter
+pytest.importorskip('hdfs')
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
+
+from ibis.impala.pandas_interop import DataFrameWriter  # noqa: E402
 
 
 @pytest.fixture

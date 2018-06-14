@@ -5,7 +5,10 @@ import pytest
 
 import ibis
 
-from ibis.impala.compiler import to_sql
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
+
+from ibis.impala.compiler import to_sql  # noqa: E402
 
 pytestmark = pytest.mark.impala
 

@@ -3,6 +3,10 @@ import pytest
 from ibis.compat import mock
 import pandas as pd
 
+pytest.importorskip('hdfs')
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
+
 pytestmark = pytest.mark.impala
 
 

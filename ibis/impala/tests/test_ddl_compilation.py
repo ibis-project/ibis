@@ -2,9 +2,13 @@ import pytest
 
 import ibis
 
+pytest.importorskip('sqlalchemy')
+pytest.importorskip('impala.dbapi')
+
 from ibis.impala import ddl  # noqa: E402
 from ibis.impala.client import build_ast  # noqa: E402
 from ibis.impala.compiler import ImpalaDialect  # noqa: E402
+
 
 pytestmark = pytest.mark.impala
 
@@ -509,5 +513,4 @@ def _get_select(expr, context):
     ast = build_ast(expr, context)
     select = ast.queries[0]
     context = ast.context
-
     return select, context
