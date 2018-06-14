@@ -126,8 +126,10 @@ def _cast(translator, expr):
 
     if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
         return arg_formatted
-    if (isinstance(arg, (ir.TimeValue, ir.DateValue, ir.TimestampValue)) and
-            target_type == 'int64'):  # noqa E129
+    if (
+        isinstance(arg, (ir.TimeValue, ir.DateValue, ir.TimestampValue)) and
+            target_type == 'int64'
+            ):
         return '1000000 * unix_timestamp({})'.format(arg_formatted)
     else:
         sql_type = _type_to_sql_string(target_type)
