@@ -172,5 +172,6 @@ Learning Resources
 ------------------
 
 We collect Jupyter notebooks for learning how to use ibis here:
-https://github.com/ibis-project/ibis/tree/master/docs/source/notebooks. Some of
-these notebooks will be reproduced as part of the documentation.
+https://github.com/ibis-project/ibis/tree/master/docs/source/notebooks/tutorial.
+Some of these notebooks will be reproduced as part of the documentation
+:ref:`in the tutorial section <tutorial>`.
