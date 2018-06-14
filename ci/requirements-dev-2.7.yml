@@ -8,7 +8,6 @@ dependencies:
   - cmake
   - enum34
   - flake8
-  - flaky
   - funcsigs
   - functools32
   - google-cloud-bigquery>=1.0.0
