@@ -367,14 +367,16 @@ SELECT *, @param AS `param`
 FROM `ibis-gbq.testing.functional_alltypes`"""
 
 
-def test_parted_column_rename(client, parted_alltypes):
+def test_parted_column_rename(parted_alltypes):
     assert 'PARTITIONTIME' in parted_alltypes.columns
     assert '_PARTITIONTIME' in parted_alltypes.op().table.columns
 
 
 def test_scalar_param_partition_time(parted_alltypes):
-    assert 'PARTITIONTIME' in parted_alltypes.columns
-    assert 'PARTITIONTIME' in parted_alltypes.schema()
+    assert 'PARTITIONTIME' in parted_alltypes.columns, \
+        str(parted_alltypes.columns)
+    assert 'PARTITIONTIME' in parted_alltypes.schema(), \
+        str(parted_alltypes.schema())
     param = ibis.param('timestamp').name('time_param')
     expr = parted_alltypes[parted_alltypes.PARTITIONTIME < param]
     df = expr.execute(params={param: '2017-01-01'})
