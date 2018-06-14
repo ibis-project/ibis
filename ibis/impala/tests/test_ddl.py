@@ -1,14 +1,12 @@
-import concurrent.futures
-from concurrent.futures import as_completed
-
-import ibis
-
 from posixpath import join as pjoin
+
 import pytest
 
+import ibis
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.util as util
+
 from ibis.tests.util import assert_equal
 
 pytest.importorskip('hdfs')
@@ -350,6 +348,11 @@ def test_varchar_char_support(temp_char_table):
 
 
 def test_temp_table_concurrency(con, test_data_dir):
+    # we don't install futures on windows in CI and we can't run this test
+    # there anyway so we import here
+    import concurrent.futures
+    from concurrent.futures import as_completed
+
     def limit_10(i, hdfs_path):
         t = con.parquet_file(hdfs_path)
         return t.sort_by(t.r_regionkey).limit(1, offset=i).execute()
@@ -359,6 +362,4 @@ def test_temp_table_concurrency(con, test_data_dir):
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=nthreads) as e:
         futures = [e.submit(limit_10, i, hdfs_path) for i in range(nthreads)]
-
-    results = [future.result() for future in as_completed(futures)]
-    assert all(map(len, results))
+    assert all(map(len, (future.result() for future in as_completed(futures))))
