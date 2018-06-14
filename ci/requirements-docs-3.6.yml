@@ -11,6 +11,7 @@ dependencies:
   - graphviz
   - impyla>=0.14.0
   - ipython
+  - jinja2
   - jupyter
   - lz4
   - matplotlib
@@ -32,9 +33,12 @@ dependencies:
   - python-hdfs>=2.0.16
   - pytz
   - regex
+  - requests
+  - ruamel.yaml
   - six
   - sphinx_rtd_theme<0.3
   - sqlalchemy>=1.0.0,<1.1.15
+  - thrift
   - toolz
   - xorg-libxpm
   - xorg-libxrender
