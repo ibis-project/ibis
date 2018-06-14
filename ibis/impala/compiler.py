@@ -1,6 +1,5 @@
 from six import StringIO
 import datetime
-import numpy as np
 
 import ibis
 import ibis.expr.analysis as L
@@ -224,12 +223,16 @@ def _replace_interval_with_scalar(expr):
     -------
     preceding : float or ir.FloatingScalar, depending upon the expr
     """
+    try:
+        expr_op = expr.op()
+    except AttributeError:
+        expr_op = None
+
     if not isinstance(expr, (dt.Interval, ir.IntervalValue)):
-        try:
-            # Literal expressions have op method but native types do not.
-            if isinstance(expr.op(), ops.Literal):
-                return expr.op().value
-        except AttributeError:
+        # Literal expressions have op method but native types do not.
+        if isinstance(expr_op, ops.Literal):
+            return expr_op.value
+        else:
             return expr
     elif isinstance(expr, dt.Interval):
         try:
@@ -241,14 +244,14 @@ def _replace_interval_with_scalar(expr):
                 "day(), hour(), minute(), second(), millisecond(), " +
                 "microseconds(), nanoseconds(); got {}".format(expr)
                 )
-    elif expr.op().args and isinstance(expr, ir.IntervalValue):
-        if len(expr.op().args) > 2:
+    elif expr_op.args and isinstance(expr, ir.IntervalValue):
+        if len(expr_op.args) > 2:
             raise com.NotImplementedError(
                 "'preceding' argument cannot be parsed."
             )
-        left_arg = _replace_interval_with_scalar(expr.op().args[0])
-        right_arg = _replace_interval_with_scalar(expr.op().args[1])
-        method = _map_interval_op_to_op[type(expr.op())]
+        left_arg = _replace_interval_with_scalar(expr_op.args[0])
+        right_arg = _replace_interval_with_scalar(expr_op.args[1])
+        method = _map_interval_op_to_op[type(expr_op)]
         return method(left_arg, right_arg)
 
 

@@ -2297,7 +2297,6 @@ def _interval_property(target_unit):
 
 
 _interval_add = _binop_expr('__add__', ops.IntervalAdd)
-_interval_sub = _binop_expr('__sub__', ops.IntervalSubtract)
 _interval_radd = _binop_expr('__radd__', ops.IntervalAdd)
 _interval_sub = _binop_expr('__sub__', ops.IntervalSubtract)
 _interval_mul = _binop_expr('__mul__', ops.IntervalMultiply)
