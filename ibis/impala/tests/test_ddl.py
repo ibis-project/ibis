@@ -81,7 +81,7 @@ def test_drop_table_not_exist(con):
 
 
 def test_truncate_table(con, alltypes, temp_table):
-    expr = alltypes.limit(50)
+    expr = alltypes.limit(1)
 
     table_name = temp_table
     con.create_table(table_name, obj=expr)
@@ -92,18 +92,20 @@ def test_truncate_table(con, alltypes, temp_table):
         if 'AnalysisException' in e.args[0]:
             pytest.skip('TRUNCATE not available in this version of Impala')
 
-    result = con.table(table_name).execute()
-    assert len(result) == 0
+    t = con.table(table_name)
+    nrows = t.count().execute()
+    assert not nrows
 
 
 def test_truncate_table_expression(con, alltypes, temp_table):
-    expr = alltypes.limit(5)
+    expr = alltypes.limit(1)
 
     table_name = temp_table
     con.create_table(table_name, obj=expr)
     t = con.table(table_name)
     t.truncate()
-    assert len(t.execute()) == 0
+    nrows = t.count().execute()
+    assert not nrows
 
 
 def test_ctas_from_table_expr(con, alltypes, temp_table_db):
