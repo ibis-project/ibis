@@ -374,6 +374,7 @@ def test_parted_column_rename(client, parted_alltypes):
 
 def test_scalar_param_partition_time(parted_alltypes):
     assert 'PARTITIONTIME' in parted_alltypes.columns
+    assert 'PARTITIONTIME' in parted_alltypes.schema()
     param = ibis.param('timestamp').name('time_param')
     expr = parted_alltypes[parted_alltypes.PARTITIONTIME < param]
     df = expr.execute(params={param: '2017-01-01'})
