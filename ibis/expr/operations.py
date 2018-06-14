@@ -2484,6 +2484,12 @@ class IntervalAdd(IntervalBinaryOp):
     op = operator.add
 
 
+class IntervalSubtract(IntervalBinaryOp):
+    left = Arg(rlz.interval)
+    right = Arg(rlz.interval)
+    op = operator.sub
+
+
 class IntervalMultiply(IntervalBinaryOp):
     left = Arg(rlz.interval)
     right = Arg(rlz.numeric)
