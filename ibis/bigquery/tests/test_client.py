@@ -17,6 +17,7 @@ import ibis.expr.types as ir
 
 pytestmark = pytest.mark.bigquery
 pytest.importorskip('google.cloud.bigquery')
+ga = pytest.importorskip('google.auth')
 exceptions = pytest.importorskip('google.api_core.exceptions')
 
 
@@ -183,7 +184,7 @@ def test_has_partitions(alltypes, parted_alltypes, client):
     assert col in parted_alltypes.columns
 
 
-def test_different_partition_col_name(client, custom_partition_col):
+def test_different_partition_col_name(client):
     col = 'FOO_BAR'
     with ibis.config.option_context('bigquery.partition_col', col):
         alltypes = client.table('functional_alltypes')
@@ -400,17 +401,8 @@ def test_parted_column(client, kind):
     assert t.columns == [expected_column, 'string_col', 'int_col']
 
 
-def test_cross_project_query():
-    ga = pytest.importorskip('google.auth')
-
-    try:
-        con = ibis.bigquery.connect(
-            project_id='ibis-gbq',
-            dataset_id='bigquery-public-data.stackoverflow')
-    except ga.exceptions.DefaultCredentialsError:
-        pytest.skip("no credentials found, skipping")
-
-    table = con.table('posts_questions')
+def test_cross_project_query(public):
+    table = public.table('posts_questions')
     expr = table[table.tags.contains('ibis')][['title', 'tags']]
     result = expr.compile()
     expected = """\
@@ -445,7 +437,7 @@ def test_exists_table_different_project(client):
 def test_exists_table_different_project_fully_qualified(client):
     # TODO(phillipc): Should we raise instead?
     name = 'bigquery-public-data.epa_historical_air_quality.co_daily_summary'
-    with pytest.raises(exceptions.BadRequest):
+    with pytest.raises(ga.exceptions.BadRequest):
         client.exists_table(name)
 
 
