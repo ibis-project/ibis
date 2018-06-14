@@ -244,5 +244,5 @@ def test_trailing_time_window_unsupported(alltypes, preceding, value):
     w = ibis.trailing_time_window(preceding=preceding,
                                   order_by=t.timestamp_col)
     expr = t.mutate(win_avg=t.float_col.mean().over(w))
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         expr.compile()
