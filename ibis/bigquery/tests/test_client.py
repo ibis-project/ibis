@@ -548,9 +548,9 @@ def test_client_sql_query(client):
 
 def test_trailing_time_window_order_by(alltypes):
     # trailing_time_window must take time column in order_by
+    w = ibis.trailing_time_window(preceding=10, order_by='float_col')
+    expr = alltypes.int_col.mean().over(w)
     with pytest.raises(com.IbisInputError):
-        w = ibis.trailing_time_window(preceding=10, order_by='float_col')
-        expr = alltypes.int_col.mean().over(w)
         expr.execute()
 
 
