@@ -377,7 +377,6 @@ def test_query_parquet_infer_schema(con, test_data_dir):
     assert_equal(table.schema(), ex_schema)
 
 
-@flaky
 def test_create_table_persist_fails_if_called_twice(
     con, temp_table_db, test_data_dir
 ):

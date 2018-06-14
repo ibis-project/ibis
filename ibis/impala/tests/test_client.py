@@ -448,10 +448,10 @@ def test_set_database(con_no_db, test_data_db):
     assert con_no_db.table('functional_alltypes') is not None
 
 
-def test_tables_robust_to_set_database(con, temp_database):
-    table = con.table('functional_alltypes')
-
+def test_tables_robust_to_set_database(con, test_data_db, temp_database):
+    table = con.table('functional_alltypes', database=test_data_db)
     con.set_database(temp_database)
+    assert con.current_database == temp_database
 
     # it still works!
     n = 10
@@ -467,9 +467,8 @@ def test_exists_table(con):
 def text_exists_table_with_database(
     con, alltypes, test_data_db, temp_table, temp_database
 ):
-    table_name = temp_table
     tmp_db = test_data_db
-    con.create_table(table_name, alltypes, database=tmp_db)
+    con.create_table(temp_table, alltypes, database=tmp_db)
 
-    assert con.exists_table(table_name, database=tmp_db)
-    assert not con.exists_table(table_name, database=temp_database)
+    assert con.exists_table(temp_table, database=tmp_db)
+    assert not con.exists_table(temp_table, database=temp_database)

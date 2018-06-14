@@ -140,7 +140,10 @@ def con_no_hdfs(env, test_data_db):
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
-    return con
+    try:
+        yield con
+    finally:
+        con.set_database(test_data_db)
 
 
 @pytest.fixture(scope='session')
@@ -153,7 +156,10 @@ def con(env, hdfs, test_data_db):
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
-    return con
+    try:
+        yield con
+    finally:
+        con.set_database(test_data_db)
 
 
 @pytest.fixture(scope='session')
@@ -169,18 +175,21 @@ CREATE TABLE IF NOT EXISTS {} (
     try:
         yield con.table(name)
     finally:
-        assert con.exists_table(name)
+        assert con.exists_table(name), name
         con.drop_table(name)
 
 
 @pytest.fixture(scope='session')
-def tmp_db(env, con):
+def tmp_db(env, con, test_data_db):
     tmp_db = env.tmp_db
+
     if not con.exists_database(tmp_db):
         con.create_database(tmp_db)
     try:
         yield tmp_db
     finally:
+        assert con.exists_database(tmp_db), tmp_db
+        con.set_database(test_data_db)
         con.drop_database(tmp_db, force=True)
 
 
@@ -194,12 +203,15 @@ def con_no_db(env, hdfs):
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
-    return con
+    try:
+        yield con
+    finally:
+        con.set_database(None)
 
 
 @pytest.fixture(scope='session')
-def alltypes(con):
-    return con.table('functional_alltypes')
+def alltypes(con, test_data_db):
+    return con.database(test_data_db).functional_alltypes
 
 
 @pytest.fixture(scope='session')
@@ -218,8 +230,8 @@ def temp_database(con, test_data_db):
     try:
         yield name
     finally:
-        assert con.exists_database(name), name
         con.set_database(test_data_db)
+        assert con.exists_database(name), name
         con.drop_database(name, force=True)
 
 
