@@ -21,7 +21,7 @@ class Window(object):
     """
 
     def __init__(self, group_by=None, order_by=None,
-                 preceding=None, following=None, how='row'):
+                 preceding=None, following=None, how='rows'):
         if group_by is None:
             group_by = []
 
@@ -89,9 +89,10 @@ class Window(object):
                             self.following
                         )
                     )
-        if self.how not in {'row', 'range', 'time_range'}:
+        if self.how not in {'rows', 'range', 'time_range'}:
             raise com.IbisInputError(
-                "'how' must be 'row', 'range', or 'time_range', got {}".format(
+                "'how' must be 'rows', 'range', or 'time_range', got {}"
+                .format(
                     self.how
                 )
             )
@@ -201,7 +202,7 @@ def window(preceding=None, following=None, group_by=None, order_by=None):
     win : ibis Window
     """
     return Window(preceding=preceding, following=following,
-                  group_by=group_by, order_by=order_by, how='row')
+                  group_by=group_by, order_by=order_by, how='rows')
 
 
 def range_window(preceding=None, following=None, group_by=None, order_by=None):

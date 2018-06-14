@@ -185,12 +185,6 @@ def _cumulative_to_window(translator, expr, window):
     return new_expr
 
 
-_window_types = {
-    'row': 'ROWS',
-    'range': 'RANGE'
-}
-
-
 _map_interval_to_microseconds = dict(
     W=6.048e11,
     D=8.64e10,
@@ -370,13 +364,13 @@ def _format_window(translator, window):
 
     if p is not None and f is not None:
         frame = '{} BETWEEN {} AND {}'.format(
-            _window_types[window.how], _prec(p), _foll(f))
+            window.how.upper(), _prec(p), _foll(f))
 
     elif p is not None:
         if isinstance(p, tuple):
             start, end = p
             frame = '{} BETWEEN {} AND {}'.format(
-                _window_types[window.how], _prec(start), _prec(end))
+                window.how.upper(), _prec(start), _prec(end))
         else:
             kind = 'ROWS' if p > 0 else 'RANGE'
             frame = '{} BETWEEN {} AND UNBOUNDED FOLLOWING'.format(
@@ -386,7 +380,7 @@ def _format_window(translator, window):
         if isinstance(f, tuple):
             start, end = f
             frame = '{} BETWEEN {} AND {}'.format(
-                _window_types[window.how], _foll(start), _foll(end))
+                window.how.upper(), _foll(start), _foll(end))
         else:
             kind = 'ROWS' if f > 0 else 'RANGE'
             frame = '{} BETWEEN UNBOUNDED PRECEDING AND {}'.format(
