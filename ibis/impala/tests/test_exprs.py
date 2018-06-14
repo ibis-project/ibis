@@ -23,6 +23,8 @@ from ibis.impala.compiler import (
     ImpalaExprTranslator, to_sql, ImpalaDialect)  # noqa: E402
 from ibis.sql.tests.test_compiler import ExprTestCases  # noqa: E402
 
+pytestmark = pytest.mark.impala
+
 
 def approx_equal(a, b, eps):
     assert abs(a - b) < eps

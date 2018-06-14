@@ -18,6 +18,8 @@ import ibis.expr.datatypes as dt  # noqa: E402
 import ibis.util as util  # noqa: E402
 import ibis  # noqa: E402
 
+pytestmark = pytest.mark.kudu
+
 
 class KuduImpalaTestEnv(IbisTestEnv):
 
@@ -181,7 +183,6 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
             session.apply(op)
         session.flush()
 
-    @pytest.mark.kudu
     def test_external_kudu_table(self):
         kschema = self.example_schema()
         kudu_name = self._new_kudu_example_table(kschema)
@@ -196,7 +197,6 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         ischema = ksupport.schema_kudu_to_ibis(kschema, drop_nn=True)
         assert_equal(table.schema(), ischema)
 
-    @pytest.mark.kudu
     def test_internal_kudu_table(self):
         kschema = self.example_schema()
         kudu_name = self._new_kudu_example_table(kschema)
@@ -220,7 +220,6 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
 
         assert not self.con.kudu.table_exists(kudu_name)
 
-    @pytest.mark.kudu
     def test_create_table_as_select_ctas(self):
         # TODO
         kschema = self.example_schema()
@@ -252,7 +251,6 @@ class TestKuduE2E(ImpalaE2E, unittest.TestCase):
         ktable = self.kclient.table(kudu_name2)
         assert ktable.schema.primary_keys() == ['key']
 
-    @pytest.mark.kudu
     def test_create_empty_internal_table(self):
         kschema = self.example_schema()
         ischema = ksupport.schema_kudu_to_ibis(kschema, drop_nn=True)

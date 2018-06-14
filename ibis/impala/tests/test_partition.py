@@ -16,7 +16,6 @@ from ibis.tests.util import assert_equal  # noqa: E402
 import ibis  # noqa: E402
 import ibis.util as util  # noqa: E402
 
-
 pytestmark = pytest.mark.impala
 
 

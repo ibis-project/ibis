@@ -6,6 +6,8 @@ from ibis.impala import ddl  # noqa: E402
 from ibis.impala.client import build_ast  # noqa: E402
 from ibis.impala.compiler import ImpalaDialect  # noqa: E402
 
+pytestmark = pytest.mark.impala
+
 
 def test_drop_table_compile():
     statement = ddl.DropTable('foo', database='bar', must_exist=True)

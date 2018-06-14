@@ -1,5 +1,9 @@
+import pytest
+
 from ibis.compat import mock
 import pandas as pd
+
+pytestmark = pytest.mark.impala
 
 
 def patch_execute(con):

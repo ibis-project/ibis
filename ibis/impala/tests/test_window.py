@@ -12,7 +12,6 @@ pytest.importorskip('impala.dbapi')
 
 from ibis.impala.compiler import to_sql  # noqa: E402
 
-
 pytestmark = pytest.mark.impala
 
 

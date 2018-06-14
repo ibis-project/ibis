@@ -7,6 +7,8 @@ import ibis
 
 from ibis.impala.compiler import to_sql
 
+pytestmark = pytest.mark.impala
+
 
 class TestImpalaSQL(unittest.TestCase):
 
