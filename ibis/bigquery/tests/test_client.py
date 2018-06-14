@@ -437,7 +437,7 @@ def test_exists_table_different_project(client):
 def test_exists_table_different_project_fully_qualified(client):
     # TODO(phillipc): Should we raise instead?
     name = 'bigquery-public-data.epa_historical_air_quality.co_daily_summary'
-    with pytest.raises(ga.exceptions.BadRequest):
+    with pytest.raises(exceptions.BadRequest):
         client.exists_table(name)
 
 
