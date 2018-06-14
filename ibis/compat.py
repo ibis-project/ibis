@@ -34,7 +34,6 @@ if not PY2:
     maketrans = str.maketrans
     import functools
     from functools import reduce
-    import tempfile
 else:
     try:
         from cdecimal import Decimal
@@ -63,7 +62,6 @@ else:
     range = xrange  # noqa: F821
     reduce = reduce  # noqa: F821
     import cPickle as pickle  # noqa: F401
-    from backports import tempfile  # noqa: F401
 
     def maketrans(x, y):
         import string

@@ -1,7 +1,6 @@
 enum34; python_version < '3'
 funcsigs; python_version < '3'
 functools32; python_version < '3'
-backports.tempfile; python_version < '3'
 multipledispatch
 numpy>=1.10.0
 pandas>=0.18.1
