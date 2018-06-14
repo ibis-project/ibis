@@ -7,14 +7,14 @@ Installation and Getting Started
 Installation
 ------------
 
-System dependencies
+System Dependencies
 ~~~~~~~~~~~~~~~~~~~
 
 Ibis requires a working Python 2.7 or 3.5+ installation. We recommend using
 `Anaconda <http://continuum.io/downloads>`_ to manage Python versions and
 environments.
 
-Installing the Python package
+Installing the Python Package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Install ibis using ``pip`` or ``conda``:
@@ -174,28 +174,3 @@ Learning Resources
 We collect Jupyter notebooks for learning how to use ibis here:
 https://github.com/ibis-project/ibis/tree/master/docs/source/notebooks. Some of
 these notebooks will be reproduced as part of the documentation.
-
-.. _install.running_tests:
-
-Running the Test Suite
-----------------------
-
-Contributor `Krisztián Szűcs <https://github.com/kszucs>`_ has spent many hours
-crafting an easy-to-use `docker-compose <https://docs.docker.com/compose/>`_
-setup that enables ibis developers to get up and running quickly.
-
-Here are the steps to run clone the repo and run the test suite:
-
-.. code-block:: sh
-
-   # clone ibis
-   git clone https://github.com/ibis-project/ibis
-
-   # go to where the docker-compose file is
-   pushd ibis/ci
-
-   # start services, build ibis, and load data into databases
-   ENVKIND=docs ./build.sh
-
-   # optionally run all tests
-   ENVKIND=docs ./test.sh -m 'not udf' -n auto -o cache_dir=/tmp/.pytest_cache
