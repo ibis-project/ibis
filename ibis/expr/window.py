@@ -279,7 +279,7 @@ def trailing_window(rows, group_by=None, order_by=None):
                   group_by=group_by, order_by=order_by)
 
 
-def trailing_time_window(preceding, order_by, group_by=None):
+def trailing_range_window(preceding, order_by, group_by=None):
     """
     Create a trailing time window for use with aggregate window functions.
 
@@ -287,8 +287,9 @@ def trailing_time_window(preceding, order_by, group_by=None):
     ----------
     preceding : float or expression of intervals, i.e.
       1 * ibis.day() + 5 * ibis.hour()
-    order_by : Union[ir.TimeColumn, ir.DateColumn, ir.TimestampColumn]
-      Specify the column over which the window will look back
+    order_by : expressions, default None
+      For analytic functions requiring an ordering, specify here, or let Ibis
+      determine the default ordering (for functions like rank)
     group_by : expressions, default None
       Either specify here or with TableExpr.group_by
 

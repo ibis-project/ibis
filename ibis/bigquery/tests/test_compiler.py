@@ -220,10 +220,10 @@ FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
         (ibis.week(), 1000000.0 * 60 * 60 * 24 * 7),
     ]
 )
-def test_trailing_time_window(alltypes, preceding, value):
+def test_trailing_range_window(alltypes, preceding, value):
     t = alltypes
-    w = ibis.trailing_time_window(preceding=preceding,
-                                  order_by=t.timestamp_col)
+    w = ibis.trailing_range_window(preceding=preceding,
+                                   order_by=t.timestamp_col)
     expr = t.mutate(win_avg=t.float_col.mean().over(w))
     result = expr.compile()
     expected = """\
@@ -239,10 +239,10 @@ FROM `ibis-gbq.testing.functional_alltypes`""".format(value)  # noqa: E501
         (ibis.year(), None),
     ]
 )
-def test_trailing_time_window_unsupported(alltypes, preceding, value):
+def test_trailing_range_window_unsupported(alltypes, preceding, value):
     t = alltypes
-    w = ibis.trailing_time_window(preceding=preceding,
-                                  order_by=t.timestamp_col)
+    w = ibis.trailing_range_window(preceding=preceding,
+                                   order_by=t.timestamp_col)
     expr = t.mutate(win_avg=t.float_col.mean().over(w))
     with pytest.raises(ValueError):
         expr.compile()
