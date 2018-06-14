@@ -183,20 +183,11 @@ def test_has_partitions(alltypes, parted_alltypes, client):
     assert col in parted_alltypes.columns
 
 
-@pytest.fixture
-def custom_partition_col():
-    original_column = ibis.options.bigquery.partition_col
-    new_column = 'FOO_BAR'
-    try:
-        yield new_column
-    finally:
-        ibis.options.bigquery.partition_col = original_column
-
-
 def test_different_partition_col_name(client, custom_partition_col):
-    col = custom_partition_col
-    alltypes = client.table('functional_alltypes')
-    parted_alltypes = client.table('functional_alltypes_parted')
+    col = 'FOO_BAR'
+    with ibis.config.option_context('bigquery.partition_col', col):
+        alltypes = client.table('functional_alltypes')
+        parted_alltypes = client.table('functional_alltypes_parted')
     assert col not in alltypes.columns
     assert col in parted_alltypes.columns
 
