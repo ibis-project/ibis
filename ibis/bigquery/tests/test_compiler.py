@@ -202,7 +202,7 @@ FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
     result = expr.compile()
     expected = """\
 SELECT *,
-       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `win_avg`
+       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `win_avg`
 FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
 

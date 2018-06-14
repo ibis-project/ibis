@@ -252,26 +252,18 @@ def _replace_interval_with_scalar(expr):
 
 def _time_range_to_range_window(translator, window):
     # Check that ORDER BY column is a single time column:
-    allowed_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
-    order_by_types = [type(x.op().args[0]) for x in window._order_by]
-    if len(order_by_types) > 1:
+    order_by_vars = [x.op().args[0] for x in window._order_by]
+    if len(order_by_vars) > 1:
         raise com.IbisInputError(
                 "Expected 1 order-by variable, got {}".format(
-                    len(order_by_types)
+                    len(order_by_vars)
                 )
         )
 
-    type_check = [col_type in allowed_types for col_type in order_by_types]
-    if not all(type_check):
-        bad_idx = list(np.where(np.logical_not(type_check))[0])
-        bad_types = [str(order_by_types[idx]) for idx in bad_idx]
-        raise com.IbisInputError(
-            "'order_by' must be a TimeColumn, DateColumn, or " +
-            "TimestampColumn, got {}".format(
-                ', '.join(bad_types))
-        )
     order_var = window._order_by[0].op().args[0]
+    print(type(order_var))
     timestamp_order_var = order_var.cast('int64')
+    print(type(timestamp_order_var))
     window = window._replace(order_by=timestamp_order_var,
                              how='range')
 
@@ -321,8 +313,11 @@ def _window(translator, expr):
         window = window.order_by(window_op.args[0])
 
     # Time ranges need to be converted to microseconds.
-    if window.how == 'time_range':
-        window = _time_range_to_range_window(translator, window)
+    if window.how == 'range':
+        order_by_types = [type(x.op().args[0]) for x in window._order_by]
+        time_range_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
+        if any([col_type in time_range_types for col_type in order_by_types]):
+            window = _time_range_to_range_window(translator, window)
 
     window_formatted = _format_window(translator, window)
 

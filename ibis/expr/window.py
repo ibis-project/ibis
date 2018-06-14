@@ -89,9 +89,9 @@ class Window(object):
                             self.following
                         )
                     )
-        if self.how not in {'rows', 'range', 'time_range'}:
+        if self.how not in {'rows', 'range'}:
             raise com.IbisInputError(
-                "'how' must be 'rows', 'range', or 'time_range', got {}"
+                "'how' must be 'rows' or 'range', got {}"
                 .format(
                     self.how
                 )
@@ -297,7 +297,7 @@ def trailing_time_window(preceding, order_by, group_by=None):
     win: ibis Window
     """
     return Window(preceding=preceding, following=0,
-                  group_by=group_by, order_by=order_by, how='time_range')
+                  group_by=group_by, order_by=order_by, how='range')
 
 
 def propagate_down_window(expr, window):
