@@ -140,8 +140,7 @@ class Expr(object):
         else:
             return f(self, *args, **kwargs)
 
-    def __call__(self, *args, **kwargs):
-        return self.pipe(*args, **kwargs)
+    __call__ = pipe
 
     def op(self):
         return self._arg
