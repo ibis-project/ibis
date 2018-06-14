@@ -188,7 +188,6 @@ def tmp_db(env, con, test_data_db):
     try:
         yield tmp_db
     finally:
-        assert con.exists_database(tmp_db), tmp_db
         con.set_database(test_data_db)
         con.drop_database(tmp_db, force=True)
 
@@ -231,7 +230,6 @@ def temp_database(con, test_data_db):
         yield name
     finally:
         con.set_database(test_data_db)
-        assert con.exists_database(name), name
         con.drop_database(name, force=True)
 
 
