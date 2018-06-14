@@ -128,7 +128,7 @@ def _cast(translator, expr):
         return arg_formatted
     if (isinstance(arg, (ir.TimeValue, ir.DateValue, ir.TimestampValue)) and
             target_type == 'int64'):  # noqa E129
-        return '1e6 * unix_timestamp({})'.format(arg_formatted)
+        return '1000000 * unix_timestamp({})'.format(arg_formatted)
     else:
         sql_type = _type_to_sql_string(target_type)
         return 'CAST({} AS {})'.format(arg_formatted, sql_type)
