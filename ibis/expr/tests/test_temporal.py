@@ -85,6 +85,24 @@ def test_multiply(expr):
     assert expr.type().unit == 'D'
 
 
+@pytest.mark.parametrize('expr', [
+    api.day() + api.day(),
+    api.day(2) + api.hour(4)
+])
+def test_add(expr):
+    assert isinstance(expr, ir.IntervalScalar)
+    assert expr.type().unit == 'D'
+
+
+@pytest.mark.parametrize('expr', [
+    api.day(3) - api.day(),
+    api.day(2) - api.hour(4)
+])
+def test_subtract(expr):
+    assert isinstance(expr, ir.IntervalScalar)
+    assert expr.type().unit == 'D'
+
+
 @pytest.mark.parametrize(('case', 'expected'), [
     (api.second(2).to_unit('s'), api.second(2)),
     (api.second(2).to_unit('ms'), api.millisecond(2 * 1000)),
@@ -175,6 +193,15 @@ def test_interval_time_expr(table):
     assert isinstance(expr, ir.TimeColumn)
     assert isinstance(expr.op(), ops.TimeAdd)
 
+    expr = x - c
+    assert isinstance(expr, ir.TimeColumn)
+    assert isinstance(expr.op(), ops.TimeSub)
+
+    # test radd
+    expr = c - x
+    assert isinstance(expr, ir.TimeColumn)
+    assert isinstance(expr.op(), ops.TimeSub)
+
 
 def test_interval_date_expr(table):
     c = table.j
@@ -189,6 +216,15 @@ def test_interval_date_expr(table):
     assert isinstance(expr, ir.DateColumn)
     assert isinstance(expr.op(), ops.DateAdd)
 
+    expr = x - c
+    assert isinstance(expr, ir.DateColumn)
+    assert isinstance(expr.op(), ops.DateSub)
+
+    # test radd
+    expr = c - x
+    assert isinstance(expr, ir.DateColumn)
+    assert isinstance(expr.op(), ops.DateSub)
+
 
 def test_interval_timestamp_expr(table):
     c = table.i
@@ -202,6 +238,15 @@ def test_interval_timestamp_expr(table):
     expr = c + x
     assert isinstance(expr, ir.TimestampColumn)
     assert isinstance(expr.op(), ops.TimestampAdd)
+
+    expr = x - c
+    assert isinstance(expr, ir.TimestampColumn)
+    assert isinstance(expr.op(), ops.TimestampSub)
+
+    # test radd
+    expr = c - x
+    assert isinstance(expr, ir.TimestampColumn)
+    assert isinstance(expr.op(), ops.TimestampSub)
 
 
 @pytest.mark.xfail(raises=AssertionError, reason='NYI')
