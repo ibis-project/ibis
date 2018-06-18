@@ -41,8 +41,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
 @pytest.mark.parametrize('unit', [
     'Y', 'M', 'D',
     param('W', marks=pytest.mark.xfail),
-    'h', 'm', 's', 'ms', 'us',
-    param('ns', marks=pytest.mark.xfail)
+    'h', 'm', 's', 'ms', 'us', 'ns'
 ])
 @tu.skipif_unsupported
 @tu.skipif_backend('MapD')
