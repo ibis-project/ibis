@@ -41,3 +41,15 @@ def skipif_unsupported(f):
                 NotImplementedError) as e:
             pytest.skip('{} using {}'.format(e, str(backend)))
     return wrapper
+
+
+def skipif_backend(skip_backend):
+    def _skipif_backend(f):
+        @functools.wraps(f)
+        def wrapper(backend, *args, **kwargs):
+            if str(backend) != skip_backend:
+                return f(backend, *args, **kwargs)
+            else:
+                pytest.skip('Skip {} test'.format(str(backend)))
+        return wrapper
+    return _skipif_backend

@@ -284,6 +284,13 @@ class UnaryOp(ValueOp):
     arg = Arg(rlz.any)
 
 
+class BinaryOp(ValueOp):
+    """A binary operation"""
+
+    left = Arg(rlz.any)
+    right = Arg(rlz.any)
+
+
 class Cast(ValueOp):
     arg = Arg(rlz.any)
     to = Arg(dt.dtype)
@@ -515,6 +522,65 @@ class Log10(Logarithm):
     """Logarithm base 10"""
 
 
+class Degrees(UnaryOp):
+    """Converts radians to degrees"""
+    arg = Arg(rlz.numeric)
+    output_type = rlz.shape_like('arg', dt.float64)
+
+
+class Radians(UnaryOp):
+    """Converts radians to degrees"""
+    arg = Arg(rlz.numeric)
+    output_type = rlz.shape_like('arg', dt.float64)
+
+
+# TRIGONOMETRIC OPERATIONS
+
+class TrigonometricUnary(UnaryOp):
+    """Trigonometric base unary"""
+    arg = Arg(rlz.numeric)
+    output_type = rlz.shape_like('arg', dt.float64)
+
+
+class TrigonometricBinary(BinaryOp):
+    """Trigonometric base binary"""
+    left = Arg(rlz.numeric)
+    right = Arg(rlz.numeric)
+    output_type = rlz.shape_like('args', dt.float64)
+
+
+class Acos(TrigonometricUnary):
+    """Returns the arc cosine of x"""
+
+
+class Asin(TrigonometricUnary):
+    """Returns the arc sine of x"""
+
+
+class Atan(TrigonometricUnary):
+    """Returns the arc tangent of x"""
+
+
+class Atan2(TrigonometricBinary):
+    """Returns the arc tangent of x and y"""
+
+
+class Cos(TrigonometricUnary):
+    """Returns the cosine of x"""
+
+
+class Cot(TrigonometricUnary):
+    """Returns the cotangent of x"""
+
+
+class Sin(TrigonometricUnary):
+    """Returns the sine of x"""
+
+
+class Tan(TrigonometricUnary):
+    """Returns the tangent of x"""
+
+
 class StringUnaryOp(UnaryOp):
     arg = Arg(rlz.string)
     output_type = rlz.shape_like('arg', dt.string)
@@ -626,6 +692,10 @@ class StringSQLLike(FuzzySearch):
     escape = Arg(six.string_types, default=None)
 
 
+class StringSQLILike(StringSQLLike):
+    """SQL ilike operation"""
+
+
 class RegexSearch(FuzzySearch):
     pass
 
@@ -696,22 +766,6 @@ class StringLength(UnaryOp):
 class StringAscii(UnaryOp):
 
     output_type = rlz.shape_like('arg', dt.int32)
-
-
-class BinaryOp(ValueOp):
-    """A binary operation"""
-
-    # Casting rules for type promotions (for resolving the output type) may
-    # depend in some cases on the target backend.
-    #
-    # TODO: how will overflows be handled? Can we provide anything useful in
-    # Ibis to help the user avoid them?
-
-    def __init__(self, left, right):
-        super(BinaryOp, self).__init__(*self._maybe_cast_args(left, right))
-
-    def _maybe_cast_args(self, left, right):
-        return left, right
 
 
 # ----------------------------------------------------------------------
@@ -801,6 +855,28 @@ class StandardDev(VarianceBase):
 
 class Variance(VarianceBase):
     pass
+
+
+class Correlation(Reduction):
+    """Coefficient of correlation of a set of number pairs."""
+    left = Arg(rlz.column(rlz.numeric))
+    right = Arg(rlz.column(rlz.numeric))
+    how = Arg(rlz.isin({'sample', 'pop'}), default=None)
+    where = Arg(rlz.boolean, default=None)
+
+    def output_type(self):
+        return dt.float64.scalar_type()
+
+
+class Covariance(Reduction):
+    """Covariance of a set of number pairs."""
+    left = Arg(rlz.column(rlz.numeric))
+    right = Arg(rlz.column(rlz.numeric))
+    how = Arg(rlz.isin({'sample', 'pop'}), default=None)
+    where = Arg(rlz.boolean, default=None)
+
+    def output_type(self):
+        return dt.float64.scalar_type()
 
 
 class Max(Reduction):
@@ -2054,6 +2130,19 @@ class Comparison(BinaryOp, BooleanValueOp):
     left = Arg(rlz.any)
     right = Arg(rlz.any)
 
+    def __init__(self, left, right):
+        """
+        Casting rules for type promotions (for resolving the output type) may
+        depend in some cases on the target backend.
+
+        TODO: how will overflows be handled? Can we provide anything useful in
+        Ibis to help the user avoid them?
+
+        :param left:
+        :param right:
+        """
+        super(BinaryOp, self).__init__(*self._maybe_cast_args(left, right))
+
     def _maybe_cast_args(self, left, right):
         # it might not be necessary?
         with compat.suppress(com.IbisTypeError):
@@ -2206,6 +2295,14 @@ class TimestampNow(Constant):
 
 class E(Constant):
 
+    def output_type(self):
+        return functools.partial(ir.FloatingScalar, dtype=dt.float64)
+
+
+class Pi(Constant):
+    """
+    The constant pi
+    """
     def output_type(self):
         return functools.partial(ir.FloatingScalar, dtype=dt.float64)
 

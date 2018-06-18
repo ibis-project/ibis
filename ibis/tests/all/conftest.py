@@ -1,13 +1,29 @@
 import os
+import sys
 import pytest
 
 from ibis.compat import Path
 from ibis.tests.backends import (Csv, Parquet, Pandas,
-                                 SQLite, Postgres, MySQL,
+                                 SQLite, Postgres, MySQL, MapD,
                                  Clickhouse, Impala, BigQuery)
 
 
 pytestmark = pytest.mark.backend
+
+params_backend = [
+    pytest.param(Csv, marks=pytest.mark.csv),
+    pytest.param(Parquet, marks=pytest.mark.parquet),
+    pytest.param(Pandas, marks=pytest.mark.pandas),
+    pytest.param(SQLite, marks=pytest.mark.sqlite),
+    pytest.param(Postgres, marks=pytest.mark.postgres),
+    pytest.param(MySQL, marks=pytest.mark.mysql),
+    pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
+    pytest.param(BigQuery, marks=pytest.mark.bigquery),
+    pytest.param(Impala, marks=pytest.mark.impala)
+]
+
+if sys.version_info.major > 2:
+    params_backend.append(pytest.param(MapD, marks=pytest.mark.mapd))
 
 
 @pytest.fixture(scope='session')
@@ -24,17 +40,7 @@ def data_directory():
     return datadir
 
 
-@pytest.fixture(params=[
-    pytest.param(Csv, marks=pytest.mark.csv),
-    pytest.param(Parquet, marks=pytest.mark.parquet),
-    pytest.param(Pandas, marks=pytest.mark.pandas),
-    pytest.param(SQLite, marks=pytest.mark.sqlite),
-    pytest.param(Postgres, marks=pytest.mark.postgres),
-    pytest.param(MySQL, marks=pytest.mark.mysql),
-    pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
-    pytest.param(BigQuery, marks=pytest.mark.bigquery),
-    pytest.param(Impala, marks=pytest.mark.impala)
-], scope='session')
+@pytest.fixture(params=params_backend, scope='session')
 def backend(request, data_directory):
     return request.param(data_directory)
 

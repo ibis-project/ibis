@@ -6,6 +6,7 @@ declare -A argcommands=([sqlite]=sqlite
                         [parquet]="parquet -i"
                         [postgres]=postgres
                         [clickhouse]=clickhouse
+                        [mapd]=mapd
                         [mysql]=mysql
                         [impala]=impala)
 

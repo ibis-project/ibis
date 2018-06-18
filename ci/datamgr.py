@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import tarfile
 
 import click
@@ -211,6 +212,91 @@ def sqlite(database, schema, tables, data_directory, **params):
     params['database'] = str(database)
     engine = init_database('sqlite', params, schema, recreate=False)
     insert_tables(engine, tables, data_directory)
+
+
+@cli.command()
+@click.option('-h', '--host', default='localhost')
+@click.option('-P', '--port', default=9091, type=int)
+@click.option('-u', '--user', default='mapd')
+@click.option('-p', '--password', default='HyperInteractive')
+@click.option('-D', '--database', default='ibis_testing')
+@click.option('-S', '--schema', type=click.File('rt'),
+              default=str(SCRIPT_DIR / 'schema' / 'mapd.sql'))
+@click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
+@click.option('-d', '--data-directory', default=DATA_DIR)
+def mapd(schema, tables, data_directory, **params):
+    if sys.version_info[0] < 3:
+        click.echo(
+            '[MAPD|EE] MapD backend is unavailable for Python 2.'
+        )
+        return
+
+    import pymapd
+
+    data_directory = Path(data_directory)
+    reserved_words = ['table', 'year', 'month']
+
+    # connection
+    click.echo('Initializing MapD...')
+    if params['database'] != 'mapd':
+        conn = pymapd.connect(
+            host=params['host'],
+            user=params['user'],
+            password=params['password'],
+            port=params['port'],
+            dbname='mapd'
+        )
+        try:
+            conn.execute('CREATE DATABASE {}'.format(params['database']))
+        except Exception as e:
+            click.echo('[MAPD|WW]{}'.format(e))
+        conn.close()
+
+    conn = pymapd.connect(
+        host=params['host'], user=params['user'],
+        password=params['password'],
+        port=params['port'], dbname=params['database']
+    )
+
+    # create tables
+    for stmt in schema.read().split(';'):
+        stmt = stmt.strip()
+        if len(stmt):
+            try:
+                conn.execute(stmt)
+            except Exception as e:
+                click.echo('[MAPD|WW] {}'.format(str(e)))
+    click.echo('[MAPD|II] Creating tables ... OK')
+
+    # import data
+    click.echo('[MAPD|II] Loading data ...')
+    for table, df in read_tables(tables, data_directory):
+        if table == 'batting':
+            # float nan problem
+            cols = df.select_dtypes([float]).columns
+            df[cols] = df[cols].fillna(0).astype(int)
+            # string None driver problem
+            cols = df.select_dtypes([object]).columns
+            df[cols] = df[cols].fillna('')
+        elif table == 'awards_players':
+            # string None driver problem
+            cols = df.select_dtypes([object]).columns
+            df[cols] = df[cols].fillna('')
+
+        # rename fields
+        for df_col in df.columns:
+            if ' ' in df_col or ':' in df_col:
+                column = df_col.replace(' ', '_').replace(':', '_')
+            elif df_col in reserved_words:
+                column = '{}_'.format(df_col)
+            else:
+                continue
+            df.rename(columns={df_col: column}, inplace=True)
+        conn.load_table_columnar(table, df)
+
+    conn.close()
+
+    click.echo('[MAPD|II] Done!')
 
 
 @cli.command()

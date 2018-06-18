@@ -14,6 +14,7 @@
 
 
 # flake8: noqa
+import sys
 from multipledispatch import halt_ordering, restart_ordering
 
 import ibis.config_init
@@ -70,6 +71,12 @@ with suppress(ImportError):
 with suppress(ImportError):
     # pip install ibis-framework[bigquery]
     import ibis.bigquery.api as bigquery
+
+with suppress(ImportError):
+    # pip install ibis-framework[mapd]
+    if sys.version_info.major < 3:
+        raise ImportError('The MapD backend is not supported under Python 2.')
+    import ibis.mapd.api as mapd
 
 restart_ordering()
 
