@@ -22,7 +22,7 @@ params_backend = [
     pytest.param(Impala, marks=pytest.mark.impala)
 ]
 
-if sys.version_info.major == 3:
+if sys.version_info.major > 2:
     params_backend.append(pytest.param(MapD, marks=pytest.mark.mapd))
 
 

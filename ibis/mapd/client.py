@@ -475,7 +475,7 @@ class MapDClient(SQLClient):
         self, name, password=None, is_super=None, insert_access=None
     ):
         """
-        Create a new MapD database
+        Alter MapD user parameters
 
         Parameters
         ----------
