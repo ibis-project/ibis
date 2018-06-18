@@ -60,4 +60,4 @@ test_script:
   - "python ci\\datamgr.py mysql"
   - "python ci\\datamgr.py sqlite"
   - "python ci\\datamgr.py postgres"
-  - "pytest --tb=short -m \"not backend and not clickhouse and not impala and not hdfs and not bigquery\" -rs ibis"
+  - "pytest --tb=short -m \"not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd\" -rs ibis"

@@ -139,6 +139,25 @@ instructions above, then SQLite will be available in the conda environment.
 
       ci/datamgr.py sqlite
 
+MapD
+^^^^
+
+MapD can be used from either a docker image or from your machine directly.
+
+#. **Start the MapD Server docker image in another terminal**:
+
+   .. code:: sh
+
+      # Keeping this running as long as you want to test ibis
+      docker run -d -v $HOME/mapd-docker-storage:/mapd-storage -p 9090-9092:9090-9092 mapd/mapd-ce-cpu
+
+
+Here's how to load test data into MapD:
+
+   .. code:: sh
+
+      ci/datamgr.py mapd
+
 
 Running Tests
 -------------

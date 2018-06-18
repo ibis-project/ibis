@@ -83,6 +83,7 @@ __all__ = (
     'now',
     'null',
     'param',
+    'pi',
     'prevent_rewrite',
     'row_number',
     'schema',
@@ -410,6 +411,8 @@ def row_number():
 
 
 e = ops.E().to_expr()
+
+pi = ops.Pi().to_expr()
 
 
 def _add_methods(klass, method_table):
@@ -1313,20 +1316,36 @@ def _integer_to_interval(arg, unit='s'):
 
 abs = _unary_op('abs', ops.Abs)
 ceil = _unary_op('ceil', ops.Ceil)
+degrees = _unary_op('degrees', ops.Degrees)
 exp = _unary_op('exp', ops.Exp)
 floor = _unary_op('floor', ops.Floor)
 log2 = _unary_op('log2', ops.Log2)
 log10 = _unary_op('log10', ops.Log10)
 ln = _unary_op('ln', ops.Ln)
+radians = _unary_op('radians', ops.Radians)
 sign = _unary_op('sign', ops.Sign)
 sqrt = _unary_op('sqrt', ops.Sqrt)
+
+# TRIGONOMETRIC OPERATIONS
+acos = _unary_op('acos', ops.Acos)
+asin = _unary_op('asin', ops.Asin)
+atan = _unary_op('atan', ops.Atan)
+atan2 = _binop_expr('atan2', ops.Atan2)
+cos = _unary_op('cos', ops.Cos)
+cot = _unary_op('cot', ops.Cot)
+sin = _unary_op('sin', ops.Sin)
+tan = _unary_op('tan', ops.Tan)
 
 
 _numeric_value_methods = dict(
     __neg__=negate,
     abs=abs,
     ceil=ceil,
+    degrees=degrees,
+    deg2rad=radians,
     floor=floor,
+    radians=radians,
+    rad2deg=degrees,
     sign=sign,
     exp=exp,
     sqrt=sqrt,
@@ -1374,6 +1393,15 @@ _numeric_value_methods = dict(
 
     __mod__=mod,
     __rmod__=_rbinop_expr('__rmod__', ops.Modulus),
+    # trigonometric operations
+    acos=acos,
+    asin=asin,
+    atan=atan,
+    atan2=atan2,
+    cos=cos,
+    cot=cot,
+    sin=sin,
+    tan=tan,
 )
 
 
@@ -1442,6 +1470,38 @@ def variance(arg, where=None, how='sample'):
     return expr
 
 
+def correlation(left, right, where=None, how='sample'):
+    """
+    Compute correlation of two numeric array
+
+    Parameters
+    ----------
+    how : {'sample', 'pop'}, default 'sample'
+
+    Returns
+    -------
+    corr : double scalar
+    """
+    expr = ops.Correlation(left, right, how, where).to_expr()
+    return expr
+
+
+def covariance(left, right, where=None, how='sample'):
+    """
+    Compute covariance of two numeric array
+
+    Parameters
+    ----------
+    how : {'sample', 'pop'}, default 'sample'
+
+    Returns
+    -------
+    cov : double scalar
+    """
+    expr = ops.Covariance(left, right, how, where).to_expr()
+    return expr
+
+
 _numeric_column_methods = dict(
     mean=mean,
     cummean=cummean,
@@ -1453,6 +1513,8 @@ _numeric_column_methods = dict(
 
     std=std,
     var=variance,
+    corr=correlation,
+    cov=covariance,
 
     bucket=bucket,
     histogram=histogram,
@@ -1752,6 +1814,34 @@ def _string_like(self, patterns):
     )
 
 
+def _string_ilike(self, patterns):
+    """
+    Wildcard fuzzy matching function equivalent to the SQL LIKE directive. Use
+    % as a multiple-character wildcard or _ (underscore) as a single-character
+    wildcard.
+
+    Use re_search or rlike for regex-based matching.
+
+    Parameters
+    ----------
+    pattern : str or List[str]
+        A pattern or list of patterns to match. If `pattern` is a list, then if
+        **any** pattern matches the input then the corresponding row in the
+        output is ``True``.
+
+    Returns
+    -------
+    matched : ir.BooleanColumn
+    """
+    return functools.reduce(
+        operator.or_,
+        (
+            ops.StringSQLILike(self, pattern).to_expr()
+            for pattern in util.promote_list(patterns)
+        )
+    )
+
+
 def re_search(arg, pattern):
     """
     Search string values using a regular expression. Returns True if the regex
@@ -1956,6 +2046,7 @@ _string_value_methods = dict(
     __contains__=_string_dunder_contains,
     contains=_string_contains,
     like=_string_like,
+    ilike=_string_ilike,
     rlike=re_search,
     replace=_string_replace,
     re_search=re_search,

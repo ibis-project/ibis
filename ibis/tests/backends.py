@@ -216,6 +216,30 @@ class Postgres(Backend, RoundHalfToEven):
                                      database=database)
 
 
+class MapD(Backend):
+    check_dtype = False
+    check_names = False
+    supports_window_operations = False
+    supports_divide_by_zero = False
+    supports_floating_modulus = False
+    returned_timestamp_unit = 's'
+    # Exception: Non-empty LogicalValues not supported yet
+    additional_skipped_operations = frozenset({
+        ops.Abs, ops.Round, ops.Ceil, ops.Floor, ops.Exp, ops.Sign, ops.Sqrt,
+        ops.Ln, ops.Log10, ops.Modulus
+    })
+
+    def connect(self, data_directory):
+        user = os.environ.get('IBIS_TEST_MAPD_USER', 'mapd')
+        password = os.environ.get(
+            'IBIS_TEST_MAPD_PASSWORD', 'HyperInteractive')
+        host = os.environ.get('IBIS_TEST_MAPD_HOST', 'localhost')
+        database = os.environ.get('IBIS_TEST_MAPD_DATABASE', 'ibis_testing')
+        return ibis.mapd.connect(
+            host=host, user=user, password=password, database=database
+        )
+
+
 class MySQL(Backend, RoundHalfToEven):
     # mysql has the same rounding behavior as postgres
     check_dtype = False
