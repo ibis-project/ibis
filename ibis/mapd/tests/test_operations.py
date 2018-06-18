@@ -1,5 +1,6 @@
 import ibis
 import numpy as np
+import pandas as pd
 import pytest
 
 from pytest import param
@@ -33,3 +34,20 @@ pytest.importorskip('pymapd')
 def test_operations_scalar(alltypes, result_fn, expected):
     result = result_fn(alltypes).execute()
     np.testing.assert_allclose(result, expected)
+
+
+@pytest.mark.parametrize(('result_fn', 'check_result'), [
+    param(
+        lambda t: (
+            t[t.date_string_col][t.date_string_col.ilike('10/%')].limit(1)
+        ),
+        lambda v: v.startswith('10/'),
+        id='string_ilike'
+    )
+])
+def test_string_operations(alltypes, result_fn, check_result):
+    result = result_fn(alltypes).execute()
+
+    if isinstance(result, pd.DataFrame):
+        result = result.values[0][0]
+    assert check_result(result)

@@ -2299,6 +2299,9 @@ _timestamp_value_methods = dict(
 
     __radd__=_timestamp_radd,
     radd=_timestamp_radd,
+
+    __rsub__=_timestamp_sub,
+    rsub=_timestamp_sub,
     day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr()),
 )
 
@@ -2355,6 +2358,9 @@ _date_value_methods = dict(
     __sub__=_date_sub,
     sub=_date_sub,
 
+    __rsub__=_date_sub,
+    rsub=_date_sub,
+
     __add__=_date_add,
     add=_date_add,
 
@@ -2378,6 +2384,7 @@ def _interval_property(target_unit):
 
 _interval_add = _binop_expr('__add__', ops.IntervalAdd)
 _interval_radd = _binop_expr('__radd__', ops.IntervalAdd)
+_interval_sub = _binop_expr('__sub__', ops.IntervalSubtract)
 _interval_mul = _binop_expr('__mul__', ops.IntervalMultiply)
 _interval_rmul = _binop_expr('__rmul__', ops.IntervalMultiply)
 _interval_floordiv = _binop_expr('__floordiv__', ops.IntervalFloorDivide)
@@ -2398,6 +2405,9 @@ _interval_value_methods = dict(
 
     __add__=_interval_add,
     add=_interval_add,
+
+    __sub__=_interval_sub,
+    sub=_interval_sub,
 
     __radd__=_interval_radd,
     radd=_interval_radd,
@@ -2500,6 +2510,9 @@ _time_value_methods = dict(
 
     __sub__=_time_sub,
     sub=_time_sub,
+
+    __rsub__=_time_sub,
+    rsub=_time_sub,
 
     __add__=_time_add,
     add=_time_add,
