@@ -132,14 +132,6 @@ def test_window_bind_to_table(alltypes):
     assert_equal(w2, expected)
 
 
-# def test_trailing_time_window(alltypes):
-#     t = alltypes
-#     ibis.trailing_time_window(preceding=5, order_by=t.i)
-#     with pytest.raises(ibis.common.IbisInputError):
-#         ibis.trailing_time_window(preceding=5,
-#                                   order_by=t.e)
-
-
 def test_preceding_following_validate(alltypes):
     # these all work
     [
