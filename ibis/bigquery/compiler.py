@@ -453,7 +453,7 @@ rewrites = BigQueryExprTranslator.rewrites
 def bigquery_day_of_week_index(t, e):
     arg = e.op().args[0]
     arg_formatted = t.translate(arg)
-    return 'MOD(EXTRACT(DAYOFWEEK from {}) + 5, 7)'.format(arg_formatted)
+    return 'MOD(EXTRACT(DAYOFWEEK FROM {}) + 5, 7)'.format(arg_formatted)
 
 
 @rewrites(ops.DayOfWeekName)

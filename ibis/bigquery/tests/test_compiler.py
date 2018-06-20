@@ -163,7 +163,7 @@ def test_day_of_week(case, expected, dtype, strftime_func):
     date_var = ibis.literal(case, type=dtype)
     expr_index = date_var.day_of_week.index()
     result = ibis.bigquery.compile(expr_index)
-    assert result == "SELECT MOD(EXTRACT(DAYOFWEEK from {}) + 5, 7) AS `tmp`".format(expected)  # noqa: E501
+    assert result == "SELECT MOD(EXTRACT(DAYOFWEEK FROM {}) + 5, 7) AS `tmp`".format(expected)  # noqa: E501
 
     expr_name = date_var.day_of_week.full_name()
     result = ibis.bigquery.compile(expr_name)
