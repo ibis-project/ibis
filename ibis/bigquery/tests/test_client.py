@@ -281,7 +281,9 @@ def test_scalar_param_boolean(alltypes, df):
 
 @pytest.mark.parametrize(
     'timestamp_value',
-    ['2009-01-20 01:02:03', datetime.date(2009, 1, 20), datetime.datetime(2009, 1, 20, 1, 2, 3)]
+    ['2009-01-20 01:02:03',
+     datetime.date(2009, 1, 20),
+     datetime.datetime(2009, 1, 20, 1, 2, 3)]
 )
 def test_scalar_param_timestamp(alltypes, df, timestamp_value):
     param = ibis.param('timestamp')
@@ -531,8 +533,10 @@ def test_string_to_timestamp(client):
     result = client.execute(expr)
     assert result == timestamp
 
-    timestamp_tz = pd.Timestamp(datetime.datetime(year=2017, month=2, day=6, hour=5),
-                                tz=pytz.timezone('UTC'))
+    timestamp_tz = pd.Timestamp(
+        datetime.datetime(year=2017, month=2, day=6, hour=5),
+        tz=pytz.timezone('UTC')
+    )
     expr_tz = ibis.literal('2017-02-06').to_timestamp('%F', 'America/New_York')
     result_tz = client.execute(expr_tz)
     assert result_tz == timestamp_tz
