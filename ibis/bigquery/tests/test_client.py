@@ -14,6 +14,7 @@ import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
+
 pytestmark = pytest.mark.bigquery
 pytest.importorskip('google.cloud.bigquery')
 exceptions = pytest.importorskip('google.api_core.exceptions')

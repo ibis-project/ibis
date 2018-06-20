@@ -66,6 +66,7 @@ def find_bigquery_udf(expr):
 
 
 class BigQueryQueryBuilder(comp.QueryBuilder):
+
     select_builder = BigQuerySelectBuilder
     union_class = BigQueryUnion
 
@@ -103,7 +104,6 @@ def _extract_field(sql_attr):
         op = expr.op()
         arg = translator.translate(op.args[0])
         return 'EXTRACT({} from {})'.format(sql_attr, arg)
-
     return extract_field_formatter
 
 
@@ -119,6 +119,7 @@ SQL_TYPE_NAMES = {
     'timestamp': 'timestamp',
     'date': 'date',
 }
+
 
 bigquery_cast = Dispatcher('bigquery_cast')
 
@@ -258,6 +259,7 @@ def _log(translator, expr):
 
 
 def _literal(translator, expr):
+
     if isinstance(expr, ir.NumericValue):
         value = expr.op().value
         if not np.isfinite(value):
@@ -307,6 +309,7 @@ _date_units = {
     'M': 'MONTH',
 }
 
+
 _timestamp_units = {
     'us': 'MICROSECOND',
     'ms': 'MILLISECOND',
@@ -331,7 +334,6 @@ def _truncate(kind, units):
             )
 
         return "{}_TRUNC({}, {})".format(kind, arg, unit)
-
     return truncator
 
 
@@ -359,6 +361,7 @@ STRFTIME_FORMAT_FUNCTIONS = {
     dt.Time: 'TIME',
     dt.Timestamp: 'TIMESTAMP',
 }
+
 
 _operation_registry = impala_compiler._operation_registry.copy()
 _operation_registry.update({
@@ -535,6 +538,7 @@ class BigQueryTableSetFormatter(ImpalaTableSetFormatter):
 
 
 class BigQuerySelect(ImpalaSelect):
+
     translator = BigQueryExprTranslator
 
     @property
@@ -575,6 +579,7 @@ def compiles_floor(t, e):
 
 
 class BigQueryDialect(impala_compiler.ImpalaDialect):
+
     translator = BigQueryExprTranslator
 
 

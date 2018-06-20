@@ -7,6 +7,7 @@ import pandas as pd
 import ibis
 import ibis.expr.datatypes as dt
 
+
 pytestmark = pytest.mark.bigquery
 pytest.importorskip('google.cloud.bigquery')
 
