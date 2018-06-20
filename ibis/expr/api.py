@@ -2351,7 +2351,7 @@ _date_value_methods = dict(
     year=_extract_field('year', ops.ExtractYear),
     month=_extract_field('month', ops.ExtractMonth),
     day=_extract_field('day', ops.ExtractDay),
-    day_of_week=property(lambda self: ops.DayOfWeekNode([self]).to_expr()),
+    day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr()),
 
     truncate=_date_truncate,
 

@@ -452,6 +452,10 @@ compiles = BigQueryExprTranslator.compiles
 rewrites = BigQueryExprTranslator.rewrites
 
 
+@compiles(ops.DayOfWeekIndex)
+def bigquery_day_of_week_index(t, e):
+    return 'MOD(EXTRACT(DAYOFWEEK from {}) + 5, 7)'.format(*map(t.translate, e.op().args))
+
 @compiles(ops.Divide)
 def bigquery_compiles_divide(t, e):
     return 'IEEE_DIVIDE({}, {})'.format(*map(t.translate, e.op().args))
