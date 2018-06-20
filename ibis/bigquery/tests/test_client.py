@@ -597,6 +597,11 @@ WHERE `string_col` != 'wat'"""
     ]
 )
 def test_day_of_week(client, case, dtype):
-    expr = ibis.literal(case, type=dtype).day_of_week.index()
-    result = client.execute(expr)
+    date_var = ibis.literal(case, type=dtype)
+    expr_index = date_var.day_of_week.index()
+    result = client.execute(expr_index)
     assert result == 6
+
+    expr_name = date_var.day_of_week.full_name()
+    result = client.execute(expr_name)
+    assert result == 'Sunday'
