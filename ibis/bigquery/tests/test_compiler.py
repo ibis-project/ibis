@@ -122,6 +122,39 @@ def test_literal_date(case, expected, dtype):
 @pytest.mark.parametrize(
     ('case', 'expected', 'dtype'),
     [
+        (datetime.date(2017, 1, 1), "DATE '{}'".format('2017-01-01'), dt.date),
+        (
+            pd.Timestamp('2017-01-01'),
+            "DATE '{}'".format('2017-01-01'),
+            dt.date
+        ),
+        ('2017-01-01', "DATE '{}'".format('2017-01-01'), dt.date),
+        (
+            datetime.datetime(2017, 1, 1, 4, 55, 59),
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+        ),
+        (
+            '2017-01-01 04:55:59',
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+        ),
+        (
+            pd.Timestamp('2017-01-01 04:55:59'),
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+        ),
+    ]
+)
+def test_day_of_week(case, expected, dtype):
+    expr = ibis.literal(case, type=dtype).day_of_week.index()
+    result = ibis.bigquery.compile(expr)
+    assert result == "SELECT MOD(EXTRACT(DAYOFWEEK from {}) + 5, 7) AS `tmp`".format(expected)
+
+
+@pytest.mark.parametrize(
+    ('case', 'expected', 'dtype'),
+    [
         (
             datetime.datetime(2017, 1, 1, 4, 55, 59),
             "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
