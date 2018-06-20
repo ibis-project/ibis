@@ -456,6 +456,12 @@ def bigquery_day_of_week_index(t, e):
     return 'MOD(EXTRACT(DAYOFWEEK from {}) + 5, 7)'.format(arg_formatted)
 
 
+@rewrites(ops.DayOfWeekName)
+def bigquery_day_of_week_name(e):
+    arg = e.op().args[0]
+    return arg.strftime('%A')
+
+
 @compiles(ops.Divide)
 def bigquery_compiles_divide(t, e):
     return 'IEEE_DIVIDE({}, {})'.format(*map(t.translate, e.op().args))

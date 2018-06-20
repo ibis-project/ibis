@@ -233,7 +233,7 @@ def test_scalar_param_string(alltypes, df):
     ).sort_values('id').reset_index(drop=True)
     expected = df.loc[
         df.string_col == string_value
-        ].sort_values('id').reset_index(drop=True)
+    ].sort_values('id').reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
 
 
@@ -247,7 +247,7 @@ def test_scalar_param_int64(alltypes, df):
     ).sort_values('id').reset_index(drop=True)
     expected = df.loc[
         df.string_col.astype('int64') == int64_value
-        ].sort_values('id').reset_index(drop=True)
+    ].sort_values('id').reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
 
 
@@ -261,7 +261,7 @@ def test_scalar_param_double(alltypes, df):
     ).sort_values('id').reset_index(drop=True)
     expected = df.loc[
         df.string_col.astype('int64').astype('float64') == double_value
-        ].sort_values('id').reset_index(drop=True)
+    ].sort_values('id').reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
 
 
@@ -275,7 +275,7 @@ def test_scalar_param_boolean(alltypes, df):
     ).sort_values('id').reset_index(drop=True)
     expected = df.loc[
         df.string_col.astype('int64') == 0
-        ].sort_values('id').reset_index(drop=True)
+    ].sort_values('id').reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
 
 
@@ -313,7 +313,7 @@ def test_scalar_param_date(alltypes, df, date_value):
     value = pd.Timestamp(date_value)
     expected = df.loc[
         df.timestamp_col.dt.normalize() <= value
-        ].sort_values('timestamp_col').reset_index(drop=True)
+    ].sort_values('timestamp_col').reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
 
 
@@ -578,21 +578,21 @@ WHERE `string_col` != 'wat'"""
     [
         (datetime.date(2017, 1, 1), dt.date),
         (
-                pd.Timestamp('2017-01-01'),
-                dt.date
+            pd.Timestamp('2017-01-01'),
+            dt.date
         ),
         ('2017-01-01', dt.date),
         (
-                datetime.datetime(2017, 1, 1, 4, 55, 59),
-                dt.timestamp,
+            datetime.datetime(2017, 1, 1, 4, 55, 59),
+            dt.timestamp,
         ),
         (
-                '2017-01-01 04:55:59',
-                dt.timestamp,
+            '2017-01-01 04:55:59',
+            dt.timestamp,
         ),
         (
-                pd.Timestamp('2017-01-01 04:55:59'),
-                dt.timestamp,
+            pd.Timestamp('2017-01-01 04:55:59'),
+            dt.timestamp,
         ),
     ]
 )
