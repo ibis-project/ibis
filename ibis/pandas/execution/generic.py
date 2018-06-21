@@ -16,8 +16,10 @@ from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
 
 import ibis
 import ibis.common as com
+import ibis.expr.types as ir
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+
 from ibis.compat import functools, map, DatetimeTZDtype, zip
 
 from ibis.pandas.core import (
@@ -888,3 +890,52 @@ def execute_node_expr_list(op, sequence, **kwargs):
     schema = ibis.schema(list(zip(columns, (e.type() for e in op.exprs))))
     data = {col: [execute(el, **kwargs)] for col, el in zip(columns, sequence)}
     return schema.apply_to(pd.DataFrame(data, columns=columns))
+
+
+def wrap_case_result(raw, expr):
+    """Wrap a CASE statement result in a Series and handle returning scalars.
+
+    Parameters
+    ----------
+    raw : ndarray[T]
+        The raw results of executing the ``CASE`` expression
+    expr : ValueExpr
+        The expression from the which `raw` was computed
+
+    Returns
+    -------
+    Union[scalar, Series]
+    """
+    raw_1d = np.atleast_1d(raw)
+    if np.any(pd.isnull(raw_1d)):
+        result = pd.Series(raw_1d)
+    else:
+        result = pd.Series(
+            raw_1d, dtype=constants.IBIS_TYPE_TO_PANDAS_TYPE[expr.type()])
+    if result.size == 1 and isinstance(expr, ir.ScalarExpr):
+        return result.item()
+    return result
+
+
+@execute_node.register(ops.SearchedCase, list, list, object)
+def execute_searched_case(op, whens, thens, otherwise, **kwargs):
+    if otherwise is None:
+        otherwise = np.nan
+    raw = np.select(whens, thens, otherwise)
+    return wrap_case_result(raw, op.to_expr())
+
+
+@execute_node.register(ops.SimpleCase, object, list, list, object)
+def execute_simple_case_scalar(op, value, whens, thens, otherwise, **kwargs):
+    if otherwise is None:
+        otherwise = np.nan
+    raw = np.select(np.asarray(whens) == value, thens, otherwise)
+    return wrap_case_result(raw, op.to_expr())
+
+
+@execute_node.register(ops.SimpleCase, pd.Series, list, list, object)
+def execute_simple_case_series(op, value, whens, thens, otherwise, **kwargs):
+    if otherwise is None:
+        otherwise = np.nan
+    raw = np.select([value == when for when in whens], thens, otherwise)
+    return wrap_case_result(raw, op.to_expr())

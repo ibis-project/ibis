@@ -12,7 +12,6 @@ import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.common import IbisTypeError
 
 pytest.importorskip('multipledispatch')
 
@@ -443,197 +442,6 @@ def test_notnull(t, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_array_length(t, df):
-    expr = t.projection([
-        t.array_of_float64.length().name('array_of_float64_length'),
-        t.array_of_int64.length().name('array_of_int64_length'),
-        t.array_of_strings.length().name('array_of_strings_length'),
-    ])
-    result = expr.execute()
-    expected = pd.DataFrame({
-        'array_of_float64_length': [2, 1, 0],
-        'array_of_int64_length': [2, 0, 1],
-        'array_of_strings_length': [2, 0, 1],
-    })
-
-    tm.assert_frame_equal(result, expected)
-
-
-def test_array_length_scalar(client):
-    raw_value = [1, 2, 4]
-    value = ibis.literal(raw_value)
-    expr = value.length()
-    result = client.execute(expr)
-    expected = len(raw_value)
-    assert result == expected
-
-
-def test_array_collect(t, df):
-    expr = t.group_by(
-        t.dup_strings
-    ).aggregate(collected=t.float64_with_zeros.collect())
-    result = expr.execute().sort_values('dup_strings').reset_index(drop=True)
-    expected = df.groupby(
-        'dup_strings'
-    ).float64_with_zeros.apply(list).reset_index().rename(
-        columns={'float64_with_zeros': 'collected'}
-    )
-    tm.assert_frame_equal(result, expected)
-
-
-@pytest.mark.xfail(raises=IbisTypeError, reason='Not sure if this should work')
-def test_array_collect_scalar(client):
-    raw_value = 'abcd'
-    value = ibis.literal(raw_value)
-    expr = value.collect()
-    result = client.execute(expr)
-    expected = [raw_value]
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    ['start', 'stop'],
-    [
-        (1, 3),
-        (1, 1),
-        (2, 3),
-        (2, 5),
-
-        (None, 3),
-        (None, None),
-        (3, None),
-
-        # negative slices are not supported
-        pytest.mark.xfail(
-            (-3, None),
-            raises=ValueError,
-            reason='Negative slicing not supported'
-        ),
-        pytest.mark.xfail(
-            (None, -3),
-            raises=ValueError,
-            reason='Negative slicing not supported'
-        ),
-        pytest.mark.xfail(
-            (-3, -1),
-            raises=ValueError,
-            reason='Negative slicing not supported'
-        ),
-    ]
-)
-def test_array_slice(t, df, start, stop):
-    expr = t.array_of_strings[start:stop]
-    result = expr.execute()
-    slicer = operator.itemgetter(slice(start, stop))
-    expected = df.array_of_strings.apply(slicer)
-    tm.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize(
-    ['start', 'stop'],
-    [
-        (1, 3),
-        (1, 1),
-        (2, 3),
-        (2, 5),
-
-        (None, 3),
-        (None, None),
-        (3, None),
-
-        # negative slices are not supported
-        pytest.mark.xfail(
-            (-3, None),
-            raises=ValueError,
-            reason='Negative slicing not supported'
-        ),
-        pytest.mark.xfail(
-            (None, -3),
-            raises=ValueError,
-            reason='Negative slicing not supported'
-        ),
-        pytest.mark.xfail(
-            (-3, -1),
-            raises=ValueError,
-            reason='Negative slicing not supported'
-        ),
-    ]
-)
-def test_array_slice_scalar(client, start, stop):
-    raw_value = [-11, 42, 10]
-    value = ibis.literal(raw_value)
-    expr = value[start:stop]
-    result = client.execute(expr)
-    expected = raw_value[start:stop]
-    assert result == expected
-
-
-@pytest.mark.parametrize('index', [1, 3, 4, 11, -11])
-def test_array_index(t, df, index):
-    expr = t[t.array_of_float64[index].name('indexed')]
-    result = expr.execute()
-    expected = pd.DataFrame({
-        'indexed': df.array_of_float64.apply(
-            lambda x: x[index] if -len(x) <= index < len(x) else None
-        )
-    })
-    tm.assert_frame_equal(result, expected)
-
-
-@pytest.mark.parametrize('index', [1, 3, 4, 11])
-def test_array_index_scalar(client, index):
-    raw_value = [-10, 1, 2, 42]
-    value = ibis.literal(raw_value)
-    expr = value[index]
-    result = client.execute(expr)
-    expected = raw_value[index] if index < len(raw_value) else None
-    assert result == expected
-
-
-@pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
-@pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
-def test_array_repeat(t, df, n, mul):
-    expr = t.projection([mul(t.array_of_strings, n).name('repeated')])
-    result = expr.execute()
-    expected = pd.DataFrame({'repeated': df.array_of_strings * n})
-    tm.assert_frame_equal(result, expected)
-
-
-@pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
-@pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
-def test_array_repeat_scalar(client, n, mul):
-    raw_array = [1, 2]
-    array = ibis.literal(raw_array)
-    expr = mul(array, n)
-    result = client.execute(expr)
-    expected = mul(raw_array, n)
-    assert result == expected
-
-
-@pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
-def test_array_concat(t, df, op):
-    x = t.array_of_float64.cast('array<string>')
-    y = t.array_of_strings
-    expr = op(x, y)
-    result = expr.execute()
-    expected = op(
-        df.array_of_float64.apply(lambda x: list(map(str, x))),
-        df.array_of_strings
-    )
-    tm.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
-def test_array_concat_scalar(client, op):
-    raw_left = [1, 2, 3]
-    raw_right = [3, 4]
-    left = ibis.literal(raw_left)
-    right = ibis.literal(raw_right)
-    expr = op(left, right)
-    result = client.execute(expr)
-    assert result == op(raw_left, raw_right)
-
-
 @pytest.mark.parametrize('raw_value', [0.0, 1.0])
 def test_scalar_parameter(t, df, raw_value):
     value = ibis.param(dt.double)
@@ -848,3 +656,61 @@ def test_summary_non_numeric_group_by(batting, batting_df):
     ).reset_index(level=1, drop=True).reset_index()
     columns = expected.columns
     tm.assert_frame_equal(result[columns], expected, check_dtype=False)
+
+
+def test_searched_case_scalar(client):
+    expr = ibis.case().when(True, 1).when(False, 2).end()
+    result = client.execute(expr)
+    expected = np.int8(1)
+    assert result == expected
+
+
+def test_searched_case_column(batting, batting_df):
+    t = batting
+    df = batting_df
+    expr = (
+        ibis.case()
+            .when(t.RBI < 5, 'really bad team')
+            .when(t.teamID == 'PH1', 'ph1 team')
+            .else_(t.teamID)
+            .end()
+    )
+    result = expr.execute()
+    expected = pd.Series(
+        np.select(
+            [df.RBI < 5, df.teamID == 'PH1'],
+            ['really bad team', 'ph1 team'],
+            df.teamID
+        )
+    )
+    tm.assert_series_equal(result, expected)
+
+
+def test_simple_case_scalar(client):
+    x = ibis.literal(2)
+    expr = x.case().when(2, x - 1).when(3, x + 1).when(4, x + 2).end()
+    result = client.execute(expr)
+    expected = np.int8(1)
+    assert result == expected
+
+
+def test_simple_case_column(batting, batting_df):
+    t = batting
+    df = batting_df
+    expr = (
+        t.RBI.case()
+             .when(5, 'five')
+             .when(4, 'four')
+             .when(3, 'three')
+             .else_('could be good?')
+             .end()
+    )
+    result = expr.execute()
+    expected = pd.Series(
+        np.select(
+            [df.RBI == 5, df.RBI == 4, df.RBI == 3],
+            ['five', 'four', 'three'],
+            'could be good?'
+        )
+    )
+    tm.assert_series_equal(result, expected)
