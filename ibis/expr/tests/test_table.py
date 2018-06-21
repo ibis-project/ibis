@@ -1,16 +1,4 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+import re
 
 import pytest
 
@@ -1298,3 +1286,10 @@ def test_group_by_key_function():
     t = ibis.table([('a', 'timestamp'), ('b', 'string'), ('c', 'double')])
     expr = t.groupby(new_key=lambda t: t.b.length()).aggregate(foo=t.c.mean())
     assert expr.columns == ['new_key', 'foo']
+
+
+def test_unbound_table_name():
+    t = ibis.table([('a', 'timestamp')])
+    name = t.op().name
+    match = re.match(r'^unbound_table_\d+$', name)
+    assert match is not None
