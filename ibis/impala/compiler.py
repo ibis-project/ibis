@@ -1,5 +1,6 @@
 from six import StringIO
 import datetime
+from operator import add, mul, sub
 
 import ibis
 import ibis.expr.analysis as L
@@ -202,10 +203,10 @@ _map_interval_op_to_op = {
     # Literal Intervals have two args, i.e.
     # Literal(1, Interval(value_type=int8, unit='D', nullable=True))
     # Parse both args and multipy 1 * _map_interval_to_microseconds['D']
-    ops.Literal: lambda x, y: x * y,
-    ops.IntervalMultiply: lambda x, y: x * y,
-    ops.IntervalAdd: lambda x, y: x + y,
-    ops.IntervalSubtract: lambda x, y: x - y,
+    ops.Literal: mul,
+    ops.IntervalMultiply: mul,
+    ops.IntervalAdd: add,
+    ops.IntervalSubtract: sub,
 }
 
 
