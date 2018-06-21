@@ -1,6 +1,6 @@
 import collections
 
-from datetime import date, datetime
+import datetime
 import pytz
 
 import pytest
@@ -282,7 +282,9 @@ def test_scalar_param_boolean(alltypes, df):
 
 @pytest.mark.parametrize(
     'timestamp_value',
-    ['2009-01-20 01:02:03', date(2009, 1, 20), datetime(2009, 1, 20, 1, 2, 3)]
+    ['2009-01-20 01:02:03',
+     datetime.date(2009, 1, 20),
+     datetime.datetime(2009, 1, 20, 1, 2, 3)]
 )
 def test_scalar_param_timestamp(alltypes, df, timestamp_value):
     param = ibis.param('timestamp')
@@ -300,7 +302,7 @@ def test_scalar_param_timestamp(alltypes, df, timestamp_value):
 
 @pytest.mark.parametrize(
     'date_value',
-    ['2009-01-20', date(2009, 1, 20), datetime(2009, 1, 20)]
+    ['2009-01-20', datetime.date(2009, 1, 20), datetime.datetime(2009, 1, 20)]
 )
 def test_scalar_param_date(alltypes, df, date_value):
     param = ibis.param('date')
@@ -519,21 +521,23 @@ def test_multiple_project_queries_execute(client):
 
 
 def test_large_timestamp(client):
-    huge_timestamp = datetime(year=4567, month=1, day=1)
+    huge_timestamp = datetime.datetime(year=4567, month=1, day=1)
     expr = ibis.timestamp('4567-01-01 00:00:00')
     result = client.execute(expr)
     assert result == huge_timestamp
 
 
 def test_string_to_timestamp(client):
-    timestamp = pd.Timestamp(datetime(year=2017, month=2, day=6),
+    timestamp = pd.Timestamp(datetime.datetime(year=2017, month=2, day=6),
                              tz=pytz.timezone('UTC'))
     expr = ibis.literal('2017-02-06').to_timestamp('%F')
     result = client.execute(expr)
     assert result == timestamp
 
-    timestamp_tz = pd.Timestamp(datetime(year=2017, month=2, day=6, hour=5),
-                                tz=pytz.timezone('UTC'))
+    timestamp_tz = pd.Timestamp(
+        datetime.datetime(year=2017, month=2, day=6, hour=5),
+        tz=pytz.timezone('UTC')
+    )
     expr_tz = ibis.literal('2017-02-06').to_timestamp('%F', 'America/New_York')
     result_tz = client.execute(expr_tz)
     assert result_tz == timestamp_tz
@@ -555,9 +559,9 @@ def test_timestamp_column_parted_is_not_renamed(client):
 def test_prevent_rewrite(alltypes):
     t = alltypes
     expr = (t.groupby(t.string_col)
-             .aggregate(collected_double=t.double_col.collect())
-             .pipe(ibis.prevent_rewrite)
-             .filter(lambda t: t.string_col != 'wat'))
+            .aggregate(collected_double=t.double_col.collect())
+            .pipe(ibis.prevent_rewrite)
+            .filter(lambda t: t.string_col != 'wat'))
     result = expr.compile()
     expected = """\
 SELECT *
@@ -568,3 +572,37 @@ FROM (
 ) t0
 WHERE `string_col` != 'wat'"""
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('case', 'dtype'),
+    [
+        (datetime.date(2017, 1, 1), dt.date),
+        (
+            pd.Timestamp('2017-01-01'),
+            dt.date
+        ),
+        ('2017-01-01', dt.date),
+        (
+            datetime.datetime(2017, 1, 1, 4, 55, 59),
+            dt.timestamp,
+        ),
+        (
+            '2017-01-01 04:55:59',
+            dt.timestamp,
+        ),
+        (
+            pd.Timestamp('2017-01-01 04:55:59'),
+            dt.timestamp,
+        ),
+    ]
+)
+def test_day_of_week(client, case, dtype):
+    date_var = ibis.literal(case, type=dtype)
+    expr_index = date_var.day_of_week.index()
+    result = client.execute(expr_index)
+    assert result == 6
+
+    expr_name = date_var.day_of_week.full_name()
+    result = client.execute(expr_name)
+    assert result == 'Sunday'

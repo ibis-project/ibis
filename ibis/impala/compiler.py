@@ -805,7 +805,7 @@ def _extract_field(sql_attr):
 
 def _day_of_week_index(t, expr):
     arg, = expr.op().args
-    return 'dayofweek({})'.format(t.translate(arg))
+    return 'pmod(dayofweek({}) - 2, 7)'.format(t.translate(arg))
 
 
 def _day_of_week_name(t, expr):
