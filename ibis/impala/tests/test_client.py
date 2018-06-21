@@ -388,24 +388,6 @@ def test_rerelease_cursor(con2):
     assert cur2 == cur3
 
 
-def test_rerelease_cursor(con):
-    with con.raw_sql('select 1', True) as cur1:
-        pass
-
-    cur1.release()
-
-    with con.raw_sql('select 1', True) as cur2:
-        pass
-
-    cur2.release()
-
-    with con.raw_sql('select 1', True) as cur3:
-        pass
-
-    assert cur1 == cur2
-    assert cur2 == cur3
-
-
 def test_day_of_week(con):
     date_var = ibis.literal(datetime.date(2017, 1, 1), type=dt.date)
     expr_index = date_var.day_of_week.index()
