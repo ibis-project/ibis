@@ -260,15 +260,13 @@ def _time_range_to_range_window(translator, window):
     order_by_vars = [x.op().args[0] for x in window._order_by]
     if len(order_by_vars) > 1:
         raise com.IbisInputError(
-                "Expected 1 order-by variable, got {}".format(
-                    len(order_by_vars)
-                )
+            "Expected 1 order-by variable, got {}".format(
+                len(order_by_vars)
+            )
         )
 
     order_var = window._order_by[0].op().args[0]
-    print(type(order_var))
     timestamp_order_var = order_var.cast('int64')
-    print(type(timestamp_order_var))
     window = window._replace(order_by=timestamp_order_var,
                              how='range')
 
@@ -321,7 +319,7 @@ def _window(translator, expr):
     if window.how == 'range':
         order_by_types = [type(x.op().args[0]) for x in window._order_by]
         time_range_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
-        if any([col_type in time_range_types for col_type in order_by_types]):
+        if any(col_type in time_range_types for col_type in order_by_types):
             window = _time_range_to_range_window(translator, window)
 
     window_formatted = _format_window(translator, window)
