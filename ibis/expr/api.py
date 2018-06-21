@@ -30,7 +30,10 @@ from ibis.expr.schema import Schema
 
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
-from ibis.expr.window import window, trailing_window, cumulative_window
+from ibis.expr.window import (
+    window, range_window, trailing_window, cumulative_window,
+    trailing_range_window
+)
 
 from ibis.expr.types import (  # noqa
     ValueExpr, ScalarExpr, ColumnExpr, TableExpr,
@@ -85,6 +88,7 @@ __all__ = (
     'param',
     'pi',
     'prevent_rewrite',
+    'range_window',
     'row_number',
     'schema',
     'Schema',
@@ -93,6 +97,7 @@ __all__ = (
     'table',
     'time',
     'timestamp',
+    'trailing_range_window',
     'trailing_window',
     'week',
     'where',
