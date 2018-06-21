@@ -211,13 +211,14 @@ FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
     ('preceding', 'value'),
     [
         (5, 5),
+        (ibis.nanosecond(), 0.001),
         (ibis.microsecond(), 1),
-        (ibis.second(), 1000000.0),
-        (ibis.minute(), 1000000.0 * 60),
-        (ibis.hour(), 1000000.0 * 60 * 60),
-        (ibis.day(), 1000000.0 * 60 * 60 * 24),
-        (2 * ibis.day(), 1000000.0 * 60 * 60 * 24 * 2),
-        (ibis.week(), 1000000.0 * 60 * 60 * 24 * 7),
+        (ibis.second(), 1000000),
+        (ibis.minute(), 1000000 * 60),
+        (ibis.hour(), 1000000 * 60 * 60),
+        (ibis.day(), 1000000 * 60 * 60 * 24),
+        (2 * ibis.day(), 1000000 * 60 * 60 * 24 * 2),
+        (ibis.week(), 1000000 * 60 * 60 * 24 * 7),
     ]
 )
 def test_trailing_range_window(alltypes, preceding, value):

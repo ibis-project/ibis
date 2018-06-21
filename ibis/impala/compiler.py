@@ -187,11 +187,11 @@ def _cumulative_to_window(translator, expr, window):
 
 
 _map_interval_to_microseconds = dict(
-    W=6.048e11,
-    D=8.64e10,
-    h=3.6e9,
-    m=6e7,
-    s=1e6,
+    W=604800000000,
+    D=86400000000,
+    h=3600000000,
+    m=60000000,
+    s=1000000,
     ms=1000,
     us=1,
     ns=.001
