@@ -1,5 +1,6 @@
 import unittest
 
+import datetime
 import numpy as np
 import pandas as pd
 
@@ -9,6 +10,7 @@ import ibis
 
 import ibis.common as com
 import ibis.config as config
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.util as util
 
@@ -378,3 +380,13 @@ LIMIT 10"""
         con.set_options({'request_pool': 'baz.quux'})
         result = dict(con.raw_sql('set', True).fetchall())
         assert result['REQUEST_POOL'] == 'baz.quux'
+
+    def test_day_of_week(self):
+        date_var = ibis.literal(datetime.date(2017, 1, 1), type=dt.date)
+        expr_index = date_var.day_of_week.index()
+        result = self.con.execute(expr_index)
+        assert result == 6
+
+        expr_name = date_var.day_of_week.full_name()
+        result = self.con.execute(expr_name)
+        assert result == 'Sunday'
