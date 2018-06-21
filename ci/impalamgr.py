@@ -287,17 +287,11 @@ def load_impala_data(con, data_dir, overwrite=False):
         with concurrent.futures.ThreadPoolExecutor() as executor:
             parquet_tables = create_parquet_tables(con, executor)
             avro_tables = create_avro_tables(con, executor)
-            list(
-                executor.map(
-                    compute_stats,
-                    [
-                        future.result()
-                        for future in concurrent.futures.as_completed(
-                            itertools.chain(parquet_tables, avro_tables)
-                        )
-                    ]
-                )
+            completed_futures = concurrent.futures.as_completed(
+                itertools.chain(parquet_tables, avro_tables)
             )
+            results = [future.result() for future in completed_futures]
+            list(executor.map(compute_stats, results))
 
 
 @main.command()
