@@ -30,7 +30,10 @@ from ibis.expr.schema import Schema
 
 from ibis.expr.analytics import bucket, histogram
 from ibis.expr.groupby import GroupedTableExpr  # noqa
-from ibis.expr.window import window, trailing_window, cumulative_window
+from ibis.expr.window import (
+    window, range_window, trailing_window, cumulative_window,
+    trailing_range_window
+)
 
 from ibis.expr.types import (  # noqa
     ValueExpr, ScalarExpr, ColumnExpr, TableExpr,
@@ -85,6 +88,7 @@ __all__ = (
     'param',
     'pi',
     'prevent_rewrite',
+    'range_window',
     'row_number',
     'schema',
     'Schema',
@@ -93,6 +97,7 @@ __all__ = (
     'table',
     'time',
     'timestamp',
+    'trailing_range_window',
     'trailing_window',
     'week',
     'where',
@@ -2302,7 +2307,8 @@ _timestamp_value_methods = dict(
 
     __rsub__=_timestamp_sub,
     rsub=_timestamp_sub,
-    day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr()),
+    day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr(),
+                         doc='The day of the week with Monday=0, Sunday=6'),
 )
 
 _add_methods(ir.TimestampValue, _timestamp_value_methods)
@@ -2351,7 +2357,8 @@ _date_value_methods = dict(
     year=_extract_field('year', ops.ExtractYear),
     month=_extract_field('month', ops.ExtractMonth),
     day=_extract_field('day', ops.ExtractDay),
-    day_of_week=property(lambda self: ops.DayOfWeekNode([self]).to_expr()),
+    day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr(),
+                         doc='The day of the week with Monday=0, Sunday=6'),
 
     truncate=_date_truncate,
 

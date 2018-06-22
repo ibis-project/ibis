@@ -1,7 +1,10 @@
 import unittest
 
+import datetime
 import numpy as np
 import pandas as pd
+import pytz
+import time
 
 from ibis.impala.tests.common import IbisTestEnv, ImpalaE2E, connect_test
 from ibis.tests.util import assert_equal
@@ -9,6 +12,7 @@ import ibis
 
 import ibis.common as com
 import ibis.config as config
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.util as util
 
@@ -123,6 +127,12 @@ LIMIT 10"""
 
         result = self.con.execute(expr)
         assert isinstance(result, pd.Series)
+
+    def test_time_to_int_cast(self):
+        now = pytz.utc.localize(datetime.datetime.now())
+        d = ibis.literal(now)
+        result = self.con.execute(d.cast('int64'))
+        assert result == int(time.mktime(now.timetuple())) * 1000000
 
     def test_interactive_repr_call_failure(self):
         t = self.con.table('tpch_lineitem').limit(100000)
@@ -378,3 +388,13 @@ LIMIT 10"""
         con.set_options({'request_pool': 'baz.quux'})
         result = dict(con.raw_sql('set', True).fetchall())
         assert result['REQUEST_POOL'] == 'baz.quux'
+
+    def test_day_of_week(self):
+        date_var = ibis.literal(datetime.date(2017, 1, 1), type=dt.date)
+        expr_index = date_var.day_of_week.index()
+        result = self.con.execute(expr_index)
+        assert result == 6
+
+        expr_name = date_var.day_of_week.full_name()
+        result = self.con.execute(expr_name)
+        assert result == 'Sunday'
