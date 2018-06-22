@@ -9,24 +9,26 @@ PROJECT_ID = os.environ.get('GOOGLE_BIGQUERY_PROJECT_ID', 'ibis-gbq')
 DATASET_ID = 'testing'
 
 
-@pytest.fixture(scope='session')
-def client():
+def connect(project_id, dataset_id):
     ga = pytest.importorskip('google.auth')
 
     try:
-        return ibis.bigquery.connect(PROJECT_ID, DATASET_ID)
+        return ibis.bigquery.connect(project_id, dataset_id)
     except ga.exceptions.DefaultCredentialsError:
-        pytest.skip("no credentials found, skipping")
+        pytest.skip(
+            'no BigQuery credentials found (project_id={}, dataset_id={}), '
+            'skipping'.format(project_id, dataset_id)
+        )
+
+
+@pytest.fixture(scope='session')
+def client():
+    return connect(PROJECT_ID, DATASET_ID)
 
 
 @pytest.fixture(scope='session')
 def client2():
-    ga = pytest.importorskip('google.auth')
-
-    try:
-        return ibis.bigquery.connect(PROJECT_ID, DATASET_ID)
-    except ga.exceptions.DefaultCredentialsError:
-        pytest.skip("no credentials found, skipping")
+    return connect(PROJECT_ID, DATASET_ID)
 
 
 @pytest.fixture(scope='session')
@@ -52,3 +54,8 @@ def parted_df(parted_alltypes):
 @pytest.fixture(scope='session')
 def struct_table(client):
     return client.table('struct_table')
+
+
+@pytest.fixture(scope='session')
+def public():
+    return connect(PROJECT_ID, dataset_id='bigquery-public-data.stackoverflow')

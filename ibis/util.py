@@ -2,7 +2,9 @@ from __future__ import print_function
 
 import collections
 import functools
+import logging
 import operator
+import os
 import types
 
 import six
@@ -267,3 +269,25 @@ def convert_unit(value, unit, to):
 
     assert i > j
     return value // factor
+
+
+def get_logger(name, level=None, format=None, propagate=False):
+    logging.basicConfig()
+    handler = logging.StreamHandler()
+
+    if format is None:
+        format = (
+            '%(relativeCreated)6d '
+            '%(name)-20s '
+            '%(levelname)-8s '
+            '%(threadName)-25s '
+            '%(message)s'
+        )
+    handler.setFormatter(logging.Formatter(fmt=format))
+    logger = logging.getLogger(name)
+    logger.propagate = propagate
+    logger.setLevel(
+        level or getattr(
+            logging, os.environ.get('LOGLEVEL', 'WARNING').upper()))
+    logger.addHandler(handler)
+    return logger

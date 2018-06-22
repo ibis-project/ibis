@@ -40,25 +40,36 @@ test: &test
         command: docker-compose run waiter
     - run:
         name: Load Test Datasets
-        command: docker-compose run ibis ci/load-data.sh
+        command: docker-compose run -e LOGLEVEL=DEBUG ibis ci/load-data.sh
     - run:
-        name: Make test reports directory
-        command: sudo mkdir -p /tmp/ibis/test-reports/pytest
+        name: Make artifacts directories
+        command: |
+          sudo mkdir -p /tmp/ibis/test-reports/pytest
+          mkdir -p /tmp/env
     - run:
         name: Show packages in conda environment
         command: docker-compose run ibis conda list
     - run:
+        name: Capture the exact environment used
+        command: docker-compose run ibis conda env export > /tmp/env/env.yml
+    - run:
         name: Execute Pytest
         command: |
-          docker-compose run ibis pytest -rsxX \
+          docker-compose run \
+            -e PYTHONHASHSEED=$([ "${PYTHON_VERSION}" = "3.5" ] && echo -en 0 || echo -en "") \
+            ibis pytest ibis \
+            -m "not udf" \
+            -ra \
+            --numprocesses auto \
             --doctest-modules \
             --doctest-ignore-import-errors \
-            --junitxml=/tmp/test-reports/pytest/junit.xml \
-            --tb=short -m "not udf" ibis
+            --junitxml=/tmp/test-reports/pytest/junit.xml
     - store_test_results:
         path: /tmp/ibis/test-reports
     - store_artifacts:
         path: /tmp/ibis/test-reports
+    - store_artifacts:
+        path: /tmp/env/env.yml
 
 
 build: &build

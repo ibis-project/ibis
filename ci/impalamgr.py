@@ -1,29 +1,21 @@
 #!/usr/bin/env python
-# Copyright 2015 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
+import concurrent.futures
+
+import itertools
 import os
-import ibis
+
 import click
-import tempfile
+import toolz
 
 from plumbum import local, CommandNotFound
-from plumbum.cmd import rm, make, cmake
+from plumbum.cmd import make, cmake
+
+import ibis
 
 from ibis.compat import BytesIO, Path
 from ibis.common import IbisError
-from ibis.impala.tests.common import IbisTestEnv
+from ibis.impala.tests.conftest import IbisTestEnv
 
 
 SCRIPT_DIR = Path(__file__).parent.absolute()
@@ -31,25 +23,34 @@ DATA_DIR = Path(os.environ.get('IBIS_TEST_DATA_DIRECTORY',
                                SCRIPT_DIR / 'ibis-testing-data'))
 
 
+logger = ibis.util.get_logger('impalamgr')
+
 ENV = IbisTestEnv()
 
+env_items = ENV.items()
+maxlen = max(map(len, map(toolz.first, env_items))) + len('IbisTestEnv[""]')
+format_string = '%-{:d}s == %r'.format(maxlen)
+for key, value in env_items:
+    logger.info(format_string, 'IbisTestEnv[{!r}]'.format(key), value)
 
-def make_ibis_client():
+
+def make_ibis_client(env):
     hc = ibis.hdfs_connect(
-        host=ENV.nn_host,
-        port=ENV.webhdfs_port,
-        auth_mechanism=ENV.auth_mechanism,
-        verify=ENV.auth_mechanism not in ['GSSAPI', 'LDAP'],
-        user=ENV.webhdfs_user
+        host=env.nn_host,
+        port=env.webhdfs_port,
+        auth_mechanism=env.auth_mechanism,
+        verify=env.auth_mechanism not in ['GSSAPI', 'LDAP'],
+        user=env.webhdfs_user
     )
-    auth_mechanism = ENV.auth_mechanism
+    auth_mechanism = env.auth_mechanism
     if auth_mechanism == 'GSSAPI' or auth_mechanism == 'LDAP':
-        print("Warning: ignoring invalid Certificate Authority errors")
+        logger.warning('Ignoring invalid Certificate Authority errors')
     return ibis.impala.connect(
-        host=ENV.impala_host,
-        port=ENV.impala_port,
-        auth_mechanism=ENV.auth_mechanism,
-        hdfs_client=hc
+        host=env.impala_host,
+        port=env.impala_port,
+        auth_mechanism=env.auth_mechanism,
+        hdfs_client=hc,
+        pool_size=16
     )
 
 
@@ -61,6 +62,7 @@ def can_write_to_hdfs(con):
         con.hdfs.rm(test_path)
         return True
     except Exception:
+        logger.exception('Could not write to HDFS')
         return False
 
 
@@ -68,49 +70,45 @@ def can_build_udfs():
     try:
         local.which('cmake')
     except CommandNotFound:
-        print('Could not find cmake on PATH')
+        logger.exception('Could not find cmake on PATH')
         return False
     try:
         local.which('make')
     except CommandNotFound:
-        print('Could not find make on PATH')
+        logger.exception('Could not find make on PATH')
         return False
     try:
         local.which('clang++')
     except CommandNotFound:
-        print('Could not find LLVM on PATH; if IBIS_TEST_LLVM_CONFIG is set, '
-              'try setting PATH="$($IBIS_TEST_LLVM_CONFIG --bindir):$PATH"')
+        logger.exception(
+            'Could not find LLVM on PATH; if IBIS_TEST_LLVM_CONFIG is set, '
+            'try setting PATH="$($IBIS_TEST_LLVM_CONFIG --bindir):$PATH"'
+        )
         return False
     return True
 
 
 def is_impala_loaded(con):
-    if not con.hdfs.exists(ENV.test_data_dir):
-        return False
-    if not con.exists_database(ENV.test_data_db):
-        return False
-    return True
+    return con.hdfs.exists(ENV.test_data_dir) and con.exists_database(
+        ENV.test_data_db)
 
 
 def is_udf_loaded(con):
-    bitcode_dir = os.path.join(ENV.test_data_dir, 'udf')
-    if con.hdfs.exists(bitcode_dir):
-        return True
-    return False
+    return con.hdfs.exists(os.path.join(ENV.test_data_dir, 'udf'))
 
 
 def upload_ibis_test_data_to_hdfs(con, data_path):
     hdfs = con.hdfs
     if hdfs.exists(ENV.test_data_dir):
         hdfs.rmdir(ENV.test_data_dir)
-    hdfs.put(ENV.test_data_dir, data_path, verbose=True)
+    hdfs.put(ENV.test_data_dir, data_path)
 
 
 def create_test_database(con):
     if con.exists_database(ENV.test_data_db):
         con.drop_database(ENV.test_data_db, force=True)
     con.create_database(ENV.test_data_db)
-    print('Created database {}'.format(ENV.test_data_db))
+    logger.info('Created database %s', ENV.test_data_db)
 
     con.create_table(
         'alltypes',
@@ -127,10 +125,18 @@ def create_test_database(con):
         ]),
         database=ENV.test_data_db
     )
-    print('Created empty table {}.`alltypes`'.format(ENV.test_data_db))
+    logger.info('Created empty table %s.`alltypes`', ENV.test_data_db)
 
 
-def create_parquet_tables(con):
+def create_parquet_tables(con, executor):
+    def create_table(table_name):
+        logger.info('Creating %s', table_name)
+        schema = schemas.get(table_name)
+        path = os.path.join(ENV.test_data_dir, 'parquet', table_name)
+        table = con.parquet_file(path, schema=schema, name=table_name,
+                                 database=ENV.test_data_db, persist=True)
+        return table
+
     parquet_files = con.hdfs.ls(os.path.join(ENV.test_data_dir, 'parquet'))
     schemas = {
         'functional_alltypes': ibis.schema(
@@ -151,19 +157,21 @@ def create_parquet_tables(con):
             [('r_regionkey', 'int16'),
              ('r_name', 'string'),
              ('r_comment', 'string')])}
-    tables = []
-    for table_name in parquet_files:
-        print('Creating {}'.format(table_name))
-        # if no schema infer!
-        schema = schemas.get(table_name)
-        path = os.path.join(ENV.test_data_dir, 'parquet', table_name)
-        table = con.parquet_file(path, schema=schema, name=table_name,
-                                 database=ENV.test_data_db, persist=True)
-        tables.append(table)
-    return tables
+    return (
+        executor.submit(create_table, table_name)
+        for table_name in parquet_files
+    )
 
 
-def create_avro_tables(con):
+def create_avro_tables(con, executor):
+    def create_table(table_name):
+        logger.info('Creating %s', table_name)
+        schema = schemas[table_name]
+        path = os.path.join(ENV.test_data_dir, 'avro', table_name)
+        table = con.avro_file(path, schema, name=table_name,
+                              database=ENV.test_data_db, persist=True)
+        return table
+
     avro_files = con.hdfs.ls(os.path.join(ENV.test_data_dir, 'avro'))
     schemas = {
         'tpch_region_avro': {
@@ -173,31 +181,25 @@ def create_avro_tables(con):
                 {'name': 'R_REGIONKEY', 'type': ['null', 'int']},
                 {'name': 'R_NAME', 'type': ['null', 'string']},
                 {'name': 'R_COMMENT', 'type': ['null', 'string']}]}}
-    tables = []
-    for table_name in avro_files:
-        print('Creating {}'.format(table_name))
-        schema = schemas[table_name]
-        path = os.path.join(ENV.test_data_dir, 'avro', table_name)
-        table = con.avro_file(path, schema, name=table_name,
-                              database=ENV.test_data_db, persist=True)
-        tables.append(table)
-    return tables
+    return (
+        executor.submit(create_table, table_name) for table_name in avro_files
+    )
 
 
 def build_udfs():
-    print('Building UDFs')
+    logger.info('Building UDFs')
     ibis_home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     udf_dir = os.path.join(ibis_home_dir, 'ci', 'udf')
 
     with local.cwd(udf_dir):
-        assert (cmake('.') and make('VERBOSE=1'))
+        assert cmake('.') and make('VERBOSE=1')
 
 
 def upload_udfs(con):
     ibis_home_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     build_dir = os.path.join(ibis_home_dir, 'ci', 'udf', 'build')
     bitcode_dir = os.path.join(ENV.test_data_dir, 'udf')
-    print('Uploading UDFs to {}'.format(bitcode_dir))
+    logger.info('Uploading UDFs to %s', bitcode_dir)
     if con.hdfs.exists(bitcode_dir):
         con.hdfs.rmdir(bitcode_dir)
     con.hdfs.put(bitcode_dir, build_dir, verbose=True)
@@ -206,7 +208,7 @@ def upload_udfs(con):
 # ==========================================
 
 
-@click.group(context_settings={'help_option_names': ['-h', '--help']})
+@click.group(context_settings=dict(help_option_names=['-h', '--help']))
 def main():
     """Manage test data for Ibis"""
     pass
@@ -232,9 +234,7 @@ def main():
 )
 def load(data, udf, data_dir, overwrite):
     """Load Ibis test data and build/upload UDFs"""
-    print(str(ENV))
-
-    con = make_ibis_client()
+    con = make_ibis_client(ENV)
 
     # validate our environment before performing possibly expensive operations
     if not can_write_to_hdfs(con):
@@ -244,49 +244,54 @@ def load(data, udf, data_dir, overwrite):
 
     # load the data files
     if data:
-        tmp_dir = tempfile.mkdtemp(prefix='__ibis_tmp_')
-        try:
-            load_impala_data(con, str(data_dir), overwrite)
-        finally:
-            rm('-rf', tmp_dir)
+        load_impala_data(con, str(data_dir), overwrite)
     else:
-        print('Skipping Ibis test data load (--no-data)')
+        logger.info('Skipping Ibis test data load (--no-data)')
 
     # build and upload the UDFs
     if udf:
         already_loaded = is_udf_loaded(con)
-        print('Attempting to build and load test UDFs')
+        logger.info('Attempting to build and load test UDFs')
         if already_loaded and not overwrite:
-            print('UDFs already loaded and not overwriting; moving on')
+            logger.info('UDFs already loaded and not overwriting; moving on')
         else:
             if already_loaded:
-                print('UDFs already loaded; attempting to overwrite')
-            print('Building UDFs')
+                logger.info('UDFs already loaded; attempting to overwrite')
+            logger.info('Building UDFs')
             build_udfs()
-            print('Uploading UDFs')
+            logger.info('Uploading UDFs')
             upload_udfs(con)
     else:
-        print('Skipping UDF build/load (--no-udf)')
+        logger.info('Skipping UDF build/load (--no-udf)')
 
 
 def load_impala_data(con, data_dir, overwrite=False):
     already_loaded = is_impala_loaded(con)
-    print('Attempting to load Ibis Impala test data (--data)')
+    logger.info('Attempting to load Ibis Impala test data (--data)')
     if already_loaded and not overwrite:
-        print('Data is already loaded and not overwriting; moving on')
+        logger.info('Data is already loaded and not overwriting; moving on')
     else:
         if already_loaded:
-            print('Data is already loaded; attempting to overwrite')
+            logger.info('Data is already loaded; attempting to overwrite')
 
-        print('Uploading to HDFS')
+        logger.info('Uploading to HDFS')
         upload_ibis_test_data_to_hdfs(con, data_dir)
-        print('Creating Ibis test data database')
+
+        logger.info('Creating Ibis test data database')
         create_test_database(con)
-        parquet_tables = create_parquet_tables(con)
-        avro_tables = create_avro_tables(con)
-        for table in parquet_tables + avro_tables:
-            print('Computing stats for', table.op().name)
+
+        def compute_stats(table):
+            logger.info('Computing stats for %s', table.op().name)
             table.compute_stats()
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            parquet_tables = create_parquet_tables(con, executor)
+            avro_tables = create_avro_tables(con, executor)
+            completed_futures = concurrent.futures.as_completed(
+                itertools.chain(parquet_tables, avro_tables)
+            )
+            results = [future.result() for future in completed_futures]
+            list(executor.map(compute_stats, results))
 
 
 @main.command()
@@ -302,9 +307,7 @@ def load_impala_data(con, data_dir, overwrite=False):
 @click.option('--tmp-db', is_flag=True, help='Cleanup Ibis temporary database')
 def cleanup(test_data, udfs, tmp_data, tmp_db):
     """Cleanup Ibis test data and UDFs"""
-    print(str(ENV))
-
-    con = make_ibis_client()
+    con = make_ibis_client(ENV)
 
     if udfs:
         # this comes before test_data bc the latter clobbers this too

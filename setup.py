@@ -17,6 +17,7 @@ impala_requires = [
     'hdfs>=2.0.16',
     'impyla>=0.14.0',
     'sqlalchemy>=1.0.0,<1.1.15',
+    'requests',
 ]
 
 sqlite_requires = ['sqlalchemy>=1.0.0,<1.1.15']

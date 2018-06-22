@@ -49,15 +49,13 @@ test_script:
   - "%CONDA% config --set always_yes true"
   - "%CONDA% create --name \"ibis_%PYTHON_VERSION%\" python=%PYTHON_VERSION% --channel conda-forge"
   - "%ACTIVATE% \"ibis_%PYTHON_VERSION%\""
-  - "%CONDA% install --channel conda-forge pytables numpy \"sqlalchemy<1.1.15\" psycopg2 graphviz click mock plumbum flake8 pytest"
+  - "%CONDA% install --channel conda-forge pytables numpy \"sqlalchemy<1.1.15\" psycopg2 graphviz click mock plumbum flake8 pytest pytest-xdist"
   - "%CONDA% list"
   - "pip install -e .\"[sqlite, postgres, mysql, visualization, pandas, csv, hdf5]\""
-
-  - "flake8"
 
   - "python ci\\datamgr.py download"
   - "python ci\\datamgr.py parquet -i"
   - "python ci\\datamgr.py mysql"
   - "python ci\\datamgr.py sqlite"
   - "python ci\\datamgr.py postgres"
-  - "pytest --tb=short -m \"not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd\" -rs ibis"
+  - "pytest --tb=short -n auto -m \"not backend and not clickhouse and not impala and not hdfs and not bigquery and not mapd\" -ra ibis"
