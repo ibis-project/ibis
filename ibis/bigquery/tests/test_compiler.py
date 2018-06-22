@@ -120,6 +120,65 @@ def test_literal_date(case, expected, dtype):
 
 
 @pytest.mark.parametrize(
+    ('case', 'expected', 'dtype', 'strftime_func'),
+    [
+        (
+            datetime.date(2017, 1, 1),
+            "DATE '{}'".format('2017-01-01'),
+            dt.date,
+            'FORMAT_DATE'
+        ),
+        (
+            pd.Timestamp('2017-01-01'),
+            "DATE '{}'".format('2017-01-01'),
+            dt.date,
+            'FORMAT_DATE'
+        ),
+        (
+            '2017-01-01',
+            "DATE '{}'".format('2017-01-01'),
+            dt.date,
+            'FORMAT_DATE'
+        ),
+        (
+            datetime.datetime(2017, 1, 1, 4, 55, 59),
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+            'FORMAT_TIMESTAMP'
+        ),
+        (
+            '2017-01-01 04:55:59',
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+            'FORMAT_TIMESTAMP'
+        ),
+        (
+            pd.Timestamp('2017-01-01 04:55:59'),
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+            'FORMAT_TIMESTAMP'
+        ),
+    ]
+)
+def test_day_of_week(case, expected, dtype, strftime_func):
+    date_var = ibis.literal(case, type=dtype)
+    expr_index = date_var.day_of_week.index()
+    result = ibis.bigquery.compile(expr_index)
+    assert result == "SELECT MOD(EXTRACT(DAYOFWEEK FROM {}) + 5, 7) AS `tmp`".format(expected)  # noqa: E501
+
+    expr_name = date_var.day_of_week.full_name()
+    result = ibis.bigquery.compile(expr_name)
+    if strftime_func == 'FORMAT_TIMESTAMP':
+        assert result == "SELECT {}('%A', {}, 'UTC') AS `tmp`".format(
+            strftime_func, expected
+        )
+    else:
+        assert result == "SELECT {}('%A', {}) AS `tmp`".format(
+            strftime_func, expected
+        )
+
+
+@pytest.mark.parametrize(
     ('case', 'expected', 'dtype'),
     [
         (
