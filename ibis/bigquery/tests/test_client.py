@@ -17,6 +17,7 @@ import ibis.expr.types as ir
 
 pytestmark = pytest.mark.bigquery
 pytest.importorskip('google.cloud.bigquery')
+ga = pytest.importorskip('google.auth')
 exceptions = pytest.importorskip('google.api_core.exceptions')
 
 
@@ -184,9 +185,10 @@ def test_has_partitions(alltypes, parted_alltypes, client):
 
 
 def test_different_partition_col_name(client):
-    col = ibis.options.bigquery.partition_col = 'FOO_BAR'
-    alltypes = client.table('functional_alltypes')
-    parted_alltypes = client.table('functional_alltypes_parted')
+    col = 'FOO_BAR'
+    with ibis.config.option_context('bigquery.partition_col', col):
+        alltypes = client.table('functional_alltypes')
+        parted_alltypes = client.table('functional_alltypes_parted')
     assert col not in alltypes.columns
     assert col in parted_alltypes.columns
 
@@ -367,15 +369,16 @@ SELECT *, @param AS `param`
 FROM `ibis-gbq.testing.functional_alltypes`"""
 
 
-def test_parted_column_rename(client, parted_alltypes):
+def test_parted_column_rename(parted_alltypes):
     assert 'PARTITIONTIME' in parted_alltypes.columns
     assert '_PARTITIONTIME' in parted_alltypes.op().table.columns
 
 
 def test_scalar_param_partition_time(parted_alltypes):
-    t = parted_alltypes
+    assert 'PARTITIONTIME' in parted_alltypes.columns
+    assert 'PARTITIONTIME' in parted_alltypes.schema()
     param = ibis.param('timestamp').name('time_param')
-    expr = t[t.PARTITIONTIME < param]
+    expr = parted_alltypes[parted_alltypes.PARTITIONTIME < param]
     df = expr.execute(params={param: '2017-01-01'})
     assert df.empty
 
@@ -398,17 +401,8 @@ def test_parted_column(client, kind):
     assert t.columns == [expected_column, 'string_col', 'int_col']
 
 
-def test_cross_project_query():
-    ga = pytest.importorskip('google.auth')
-
-    try:
-        con = ibis.bigquery.connect(
-            project_id='ibis-gbq',
-            dataset_id='bigquery-public-data.stackoverflow')
-    except ga.exceptions.DefaultCredentialsError:
-        pytest.skip("no credentials found, skipping")
-
-    table = con.table('posts_questions')
+def test_cross_project_query(public):
+    table = public.table('posts_questions')
     expr = table[table.tags.contains('ibis')][['title', 'tags']]
     result = expr.compile()
     expected = """\

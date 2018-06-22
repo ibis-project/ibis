@@ -4,21 +4,17 @@
 Installation and Getting Started
 ********************************
 
-Getting up and running with Ibis involves installing the Python package and
-connecting to HDFS and Impala. If you don't have a Hadoop cluster available
-with Impala, see :ref:`install.quickstart` below for instructions to use a VM
-to get up and running quickly.
-
 Installation
 ------------
 
-System dependencies
+System Dependencies
 ~~~~~~~~~~~~~~~~~~~
 
-Ibis requires a working Python 2.7 or >= 3.4 installation. We recommend
-`Anaconda <http://continuum.io/downloads>`_.
+Ibis requires a working Python 2.7 or 3.5+ installation. We recommend using
+`Anaconda <http://continuum.io/downloads>`_ to manage Python versions and
+environments.
 
-Installing the Python package
+Installing the Python Package
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Install ibis using ``pip`` or ``conda``:
@@ -113,7 +109,7 @@ Create a client by passing a connection string or individual parameters to
    ...     user='bob', port=23569, database='ibis_testing'
    ... )
 
-.. _install.bigquery:
+.. _install.clickhouse:
 
 `Clickhouse <https://clickhouse.yandex/>`_ Quickstart
 -----------------------------------------------------
@@ -131,6 +127,8 @@ Create a client by passing in database connection parameters such as ``host``,
 .. code-block:: python
 
    >>> con = ibis.clickhouse.connect(host='localhost', port=9000)
+
+.. _install.bigquery:
 
 `BigQuery <https://cloud.google.com/bigquery/>`_ Quickstart
 -----------------------------------------------------------
@@ -170,46 +168,10 @@ method of :class:`~ibis.bigquery.client.BigQueryClient` objects:
    >>> t = db.my_awesome_table
    >>> t.sweet_column.sum().execute()  # runs against the billing project
 
-Learning resources
+Learning Resources
 ------------------
 
-We are collecting Jupyter notebooks for learning here:
-https://github.com/ibis-project/ibis/tree/master/docs/source/notebooks. Some of
-these notebooks will be reproduced as part of the documentation.
-
-.. _install.quickstart:
-
-
-Running Ibis Queries using Docker
----------------------------------
-
-Contributor `Krisztián Szűcs <https://github.com/kszucs>`_ has spent many hours
-crafting a very easy-to-use ``docker-compose`` setup that enables users and
-developers of ibis to get up and running quickly.
-
-Here are the steps:
-
-
-.. code-block:: sh
-
-   # clone ibis
-   git clone https://github.com/ibis-project/ibis
-
-   # go to where the docker-compose file is
-   pushd ibis/ci
-
-   # build the latest version of ibis
-   docker-compose build --pull ibis
-
-   # spin up containers
-   docker-compose up -d --no-build postgres impala clickhouse
-
-   # wait for things to finish starting
-   docker-compose run waiter
-
-   # load data into databases
-   docker-compose run ibis ci/load-data.sh
-
-   # confirm that you can reach impala
-   impala_ip_address="$(docker inspect -f '{{.NetworkSettings.Networks.ci_default.IPAddress}}' ci_impala_1)"
-   ping -c 1 "${impala_ip_address}"
+We collect Jupyter notebooks for learning how to use ibis here:
+https://github.com/ibis-project/ibis/tree/master/docs/source/notebooks/tutorial.
+Some of these notebooks will be reproduced as part of the documentation
+:ref:`in the tutorial section <tutorial>`.

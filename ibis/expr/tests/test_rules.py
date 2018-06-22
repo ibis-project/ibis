@@ -56,24 +56,30 @@ def test_invalid_instance_of(klass, value, expected):
         assert rlz.instance_of(klass, value)
 
 
-@pytest.mark.parametrize(('dtype', 'value', 'expected'), [
-    (dt.int8, 26, ibis.literal(26)),
-    (dt.int16, 26, ibis.literal(26)),
-    (dt.int32, 26, ibis.literal(26)),
-    (dt.int64, 26, ibis.literal(26)),
-    (dt.uint8, 26, ibis.literal(26)),
-    (dt.uint16, 26, ibis.literal(26)),
-    (dt.uint32, 26, ibis.literal(26)),
-    (dt.uint64, 26, ibis.literal(26)),
-    (dt.float32, 26, ibis.literal(26)),
-    (dt.float64, 26.4, ibis.literal(26.4)),
-    (dt.double, 26.3, ibis.literal(26.3)),
-    (dt.string, 'bar', ibis.literal('bar')),
-    (dt.Array(dt.float), [3.4, 5.6], ibis.literal([3.4, 5.6])),
-    (dt.Map(dt.string, dt.Array(dt.boolean)),
-     {'a': [True, False], 'b': [True]},
-     ibis.literal({'a': [True, False], 'b': [True]})),
-], ids=lambda x: str(x.value if isinstance(x, ir.ValueExpr) else x))
+@pytest.mark.parametrize(
+    ('dtype', 'value', 'expected'),
+    [
+        pytest.param(dt.int8, 26, ibis.literal(26)),
+        pytest.param(dt.int16, 26, ibis.literal(26)),
+        pytest.param(dt.int32, 26, ibis.literal(26)),
+        pytest.param(dt.int64, 26, ibis.literal(26)),
+        pytest.param(dt.uint8, 26, ibis.literal(26)),
+        pytest.param(dt.uint16, 26, ibis.literal(26)),
+        pytest.param(dt.uint32, 26, ibis.literal(26)),
+        pytest.param(dt.uint64, 26, ibis.literal(26)),
+        pytest.param(dt.float32, 26, ibis.literal(26)),
+        pytest.param(dt.float64, 26.4, ibis.literal(26.4)),
+        pytest.param(dt.double, 26.3, ibis.literal(26.3)),
+        pytest.param(dt.string, 'bar', ibis.literal('bar')),
+        pytest.param(dt.Array(dt.float), [3.4, 5.6], ibis.literal([3.4, 5.6])),
+        pytest.param(
+            dt.Map(dt.string, dt.Array(dt.boolean)),
+            {'a': [True, False], 'b': [True]},
+            ibis.literal({'a': [True, False], 'b': [True]}),
+            id='map_literal'
+        ),
+    ],
+)
 def test_valid_value(dtype, value, expected):
     result = rlz.value(dtype, value)
     assert result.equals(expected)

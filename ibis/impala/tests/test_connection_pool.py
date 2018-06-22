@@ -4,41 +4,25 @@ import ibis
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
-
-@pytest.fixture
-def env():
-    from ibis.impala.tests.common import IbisTestEnv  # noqa
-    return IbisTestEnv()
+pytestmark = pytest.mark.impala
 
 
-@pytest.fixture
-def hdfs_client(env):
-    return ibis.hdfs_connect(
-        host=env.nn_host,
-        port=int(env.webhdfs_port),
-        auth_mechanism=env.auth_mechanism,
-        user=env.webhdfs_user,
-    )
-
-
-@pytest.mark.impala
-def test_connection_pool_size(env, hdfs_client):
+def test_connection_pool_size(hdfs, env, test_data_db):
     client = ibis.impala.connect(
-        port=int(env.impala_port),
-        hdfs_client=hdfs_client,
+        port=env.impala_port,
+        hdfs_client=hdfs,
         host=env.impala_host,
-        database=env.test_data_db,
+        database=test_data_db,
     )
     assert len(client.con.connection_pool) == 1
 
 
-@pytest.mark.impala
-def test_connection_pool_size_after_close(env, hdfs_client):
+def test_connection_pool_size_after_close(hdfs, env, test_data_db):
     client = ibis.impala.connect(
-        port=int(env.impala_port),
-        hdfs_client=hdfs_client,
+        port=env.impala_port,
+        hdfs_client=hdfs,
         host=env.impala_host,
-        database=env.test_data_db,
+        database=test_data_db,
     )
     client.close()
-    assert len(client.con.connection_pool) == 0
+    assert not client.con.connection_pool

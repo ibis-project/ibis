@@ -46,12 +46,13 @@ Or from `conda-forge <http://conda-forge.github.io>`_ with
 At this time, Ibis offers some level of support for the following systems:
 
 - `Apache Impala (incubating) <http://impala.io/>`_
-- `Apache Kudu (incubating) <http://getkudu.io>`_
-- PostgreSQL
-- SQLite
-- Google BigQuery (experimental)
-- Yandex Clickhouse
-- Direct execution of ibis expressions against pandas objects (Experimental)
+- `Apache Kudu (incubating) <http://getkudu.io/>`_
+- `PostgreSQL <https://www.postgresql.org/>`_
+- `SQLite <https://www.sqlite.org/>`_
+- `Google BigQuery <https://cloud.google.com/bigquery/>`
+- `Yandex Clickhouse <https://clickhouse.yandex/>`_
+- Direct execution of ibis expressions against `Pandas
+  <http://pandas.pydata.org/>`_ objects
 
 Coming from SQL? Check out :ref:`Ibis for SQL Programmers <sql>`.
 
@@ -66,14 +67,11 @@ Architecturally, Ibis features:
 
 SQL engine support needing code contributors:
 
-- Redshift
-- Vertica
-- Spark SQL
-- Presto
-- Hive
-
-Since this is a young project, the documentation is definitely patchy in
-places, but this will improve as things progress.
+- `Redshift <https://aws.amazon.com/redshift/>`_
+- `Vertica <https://www.vertica.com/>`_
+- `Spark SQL <https://spark.apache.org/sql/>`_
+- `Presto <https://prestodb.io/>`_
+- `Hive <https://hive.apache.org/>`_
 
 .. toctree::
    :maxdepth: 1
@@ -85,6 +83,7 @@ places, but this will improve as things progress.
    api
    sql
    udf
+   contributing
    developer
    design
    extending

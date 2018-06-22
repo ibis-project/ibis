@@ -1,18 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-
 import pytest
 
 import ibis
@@ -26,17 +11,13 @@ pytest.importorskip('sqlalchemy')
 pytest.importorskip('impala.dbapi')
 
 from ibis.impala.compiler import to_sql  # noqa: E402
-from ibis.impala.tests.common import ImpalaE2E  # noqa: E402
+
+pytestmark = pytest.mark.impala
 
 
-@pytest.yield_fixture(scope='module')
-def con(request):
-    ImpalaE2E.setUpClass()
-
-    try:
-        yield ImpalaE2E.con
-    finally:
-        ImpalaE2E.tearDownClass()
+@pytest.fixture
+def alltypes(con):
+    return con.table('alltypes')
 
 
 def assert_sql_equal(expr, expected):
@@ -44,9 +25,8 @@ def assert_sql_equal(expr, expected):
     assert result == expected
 
 
-@pytest.mark.impala
-def test_aggregate_in_projection(con):
-    t = con.table('alltypes')
+def test_aggregate_in_projection(alltypes):
+    t = alltypes
     proj = t[t, (t.f / t.f.sum()).name('normed_f')]
 
     expected = """\
@@ -55,9 +35,8 @@ FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
 
-@pytest.mark.impala
-def test_add_default_order_by(con):
-    t = con.table('alltypes')
+def test_add_default_order_by(alltypes):
+    t = alltypes
 
     first = t.f.first().name('first')
     last = t.f.last().name('last')
@@ -76,7 +55,6 @@ FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
 
-@pytest.mark.impala
 @pytest.mark.parametrize(
     ['window', 'frame'],
     [
@@ -125,31 +103,31 @@ FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)
 
 
-@pytest.mark.impala
-def test_cumulative_functions(con):
-    t = con.table('alltypes')
+@pytest.mark.parametrize(
+    ('cumulative', 'static'),
+    [
+        (lambda t, w: t.f.cumsum().over(w), lambda t, w: t.f.sum().over(w)),
+        (lambda t, w: t.f.cummin().over(w), lambda t, w: t.f.min().over(w)),
+        (lambda t, w: t.f.cummax().over(w), lambda t, w: t.f.max().over(w)),
+        (lambda t, w: t.f.cummean().over(w), lambda t, w: t.f.mean().over(w)),
+    ]
+)
+def test_cumulative_functions(alltypes, cumulative, static):
+    t = alltypes
 
     w = ibis.window(order_by=t.d)
-    exprs = [
-        (t.f.cumsum().over(w), t.f.sum().over(w)),
-        (t.f.cummin().over(w), t.f.min().over(w)),
-        (t.f.cummax().over(w), t.f.max().over(w)),
-        (t.f.cummean().over(w), t.f.mean().over(w)),
-    ]
 
-    for cumulative, static in exprs:
-        actual = cumulative.name('foo')
-        expected = static.over(ibis.cumulative_window()).name('foo')
+    actual = cumulative(t, w).name('foo')
+    expected = static(t, w).over(ibis.cumulative_window()).name('foo')
 
-        expr1 = t.projection(actual)
-        expr2 = t.projection(expected)
+    expr1 = t.projection(actual)
+    expr2 = t.projection(expected)
 
-        assert to_sql(expr1) == to_sql(expr2)
+    assert to_sql(expr1) == to_sql(expr2)
 
 
-@pytest.mark.impala
-def test_nested_analytic_function(con):
-    t = con.table('alltypes')
+def test_nested_analytic_function(alltypes):
+    t = alltypes
 
     w = window(order_by=t.f)
     expr = (t.f - t.f.lag()).lag().over(w).name('foo')
@@ -161,9 +139,8 @@ FROM ibis_testing.`alltypes`"""
     assert_sql_equal(result, expected)
 
 
-@pytest.mark.impala
-def test_rank_functions(con):
-    t = con.table('alltypes')
+def test_rank_functions(alltypes):
+    t = alltypes
 
     proj = t[t.g, t.f.rank().name('minr'),
              t.f.dense_rank().name('denser')]
@@ -174,9 +151,8 @@ FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
 
-@pytest.mark.impala
-def test_multiple_windows(con):
-    t = con.table('alltypes')
+def test_multiple_windows(alltypes):
+    t = alltypes
 
     w = window(group_by=t.g)
 
@@ -189,9 +165,8 @@ FROM ibis_testing.`alltypes`"""
     assert_sql_equal(proj, expected)
 
 
-@pytest.mark.impala
-def test_order_by_desc(con):
-    t = con.table('alltypes')
+def test_order_by_desc(alltypes):
+    t = alltypes
 
     w = window(order_by=ibis.desc(t.f))
 
@@ -211,9 +186,8 @@ FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)
 
 
-@pytest.mark.impala
-def test_row_number_does_not_require_order_by(con):
-    t = con.table('alltypes')
+def test_row_number_does_not_require_order_by(alltypes):
+    t = alltypes
 
     expr = t.group_by(t.g).mutate(ibis.row_number().name('foo'))
     expected = """\
@@ -231,9 +205,8 @@ FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)
 
 
-@pytest.mark.impala
-def test_row_number_properly_composes_with_arithmetic(con):
-    t = con.table('alltypes')
+def test_row_number_properly_composes_with_arithmetic(alltypes):
+    t = alltypes
     w = ibis.window(order_by=t.f)
     expr = t.mutate(new=ibis.row_number().over(w) / 2)
 
@@ -243,7 +216,6 @@ FROM ibis_testing.`alltypes`"""
     assert_sql_equal(expr, expected)
 
 
-@pytest.mark.impala
 @pytest.mark.parametrize(
     ['column', 'op'],
     [
@@ -252,8 +224,8 @@ FROM ibis_testing.`alltypes`"""
         ('g', 'group_concat'),
     ]
 )
-def test_unsupported_aggregate_functions(con, column, op):
-    t = con.table('alltypes')
+def test_unsupported_aggregate_functions(alltypes, column, op):
+    t = alltypes
     w = ibis.window(order_by=t.d)
     expr = getattr(t[column], op)()
     proj = t.projection([expr.over(w).name('foo')])
@@ -261,10 +233,9 @@ def test_unsupported_aggregate_functions(con, column, op):
         to_sql(proj)
 
 
-@pytest.mark.impala
-def test_propagate_nested_windows(con):
+def test_propagate_nested_windows(alltypes):
     # GH #469
-    t = con.table('alltypes')
+    t = alltypes
 
     w = ibis.window(group_by=t.g, order_by=t.f)
 
