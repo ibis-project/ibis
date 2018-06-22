@@ -289,7 +289,7 @@ FROM alltypes"""
         cases = [
             (
                 timestamp_value.day_of_week.index(),
-                "dayofweek('2015-09-01 01:00:23')"
+                "pmod(dayofweek('2015-09-01 01:00:23') - 2, 7)"
             ),
             (
                 timestamp_value.day_of_week.full_name(),

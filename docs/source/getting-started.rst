@@ -187,7 +187,7 @@ Contributor `Krisztián Szűcs <https://github.com/kszucs>`_ has spent many hour
 crafting a very easy-to-use ``docker-compose`` setup that enables users and
 developers of ibis to get up and running quickly.
 
-Here are the steps:
+Here are the steps using all-in-one command:
 
 
 .. code-block:: sh
@@ -195,20 +195,11 @@ Here are the steps:
    # clone ibis
    git clone https://github.com/ibis-project/ibis
 
-   # go to where the docker-compose file is
+   # go to where the docker-compose file and other CI scripts are
    pushd ibis/ci
 
-   # build the latest version of ibis
-   docker-compose build --pull ibis
-
-   # spin up containers
-   docker-compose up -d --no-build postgres impala clickhouse
-
-   # wait for things to finish starting
-   docker-compose run waiter
-
-   # load data into databases
-   docker-compose run ibis ci/load-data.sh
+   # run all-in-one command to build all containers necessary
+   bash build.sh
 
    # confirm that you can reach impala
    impala_ip_address="$(docker inspect -f '{{.NetworkSettings.Networks.ci_default.IPAddress}}' ci_impala_1)"

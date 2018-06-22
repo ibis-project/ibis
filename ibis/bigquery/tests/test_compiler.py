@@ -120,6 +120,65 @@ def test_literal_date(case, expected, dtype):
 
 
 @pytest.mark.parametrize(
+    ('case', 'expected', 'dtype', 'strftime_func'),
+    [
+        (
+            datetime.date(2017, 1, 1),
+            "DATE '{}'".format('2017-01-01'),
+            dt.date,
+            'FORMAT_DATE'
+        ),
+        (
+            pd.Timestamp('2017-01-01'),
+            "DATE '{}'".format('2017-01-01'),
+            dt.date,
+            'FORMAT_DATE'
+        ),
+        (
+            '2017-01-01',
+            "DATE '{}'".format('2017-01-01'),
+            dt.date,
+            'FORMAT_DATE'
+        ),
+        (
+            datetime.datetime(2017, 1, 1, 4, 55, 59),
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+            'FORMAT_TIMESTAMP'
+        ),
+        (
+            '2017-01-01 04:55:59',
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+            'FORMAT_TIMESTAMP'
+        ),
+        (
+            pd.Timestamp('2017-01-01 04:55:59'),
+            "TIMESTAMP '{}'".format('2017-01-01 04:55:59'),
+            dt.timestamp,
+            'FORMAT_TIMESTAMP'
+        ),
+    ]
+)
+def test_day_of_week(case, expected, dtype, strftime_func):
+    date_var = ibis.literal(case, type=dtype)
+    expr_index = date_var.day_of_week.index()
+    result = ibis.bigquery.compile(expr_index)
+    assert result == "SELECT MOD(EXTRACT(DAYOFWEEK FROM {}) + 5, 7) AS `tmp`".format(expected)  # noqa: E501
+
+    expr_name = date_var.day_of_week.full_name()
+    result = ibis.bigquery.compile(expr_name)
+    if strftime_func == 'FORMAT_TIMESTAMP':
+        assert result == "SELECT {}('%A', {}, 'UTC') AS `tmp`".format(
+            strftime_func, expected
+        )
+    else:
+        assert result == "SELECT {}('%A', {}) AS `tmp`".format(
+            strftime_func, expected
+        )
+
+
+@pytest.mark.parametrize(
     ('case', 'expected', 'dtype'),
     [
         (
@@ -149,3 +208,101 @@ def test_literal_timestamp_or_time(case, expected, dtype):
     expr = ibis.literal(case, type=dtype).hour()
     result = ibis.bigquery.compile(expr)
     assert result == "SELECT EXTRACT(hour from {}) AS `tmp`".format(expected)
+
+
+def test_window_function(alltypes):
+    t = alltypes
+    w1 = ibis.window(preceding=1, following=0,
+                     group_by='year', order_by='timestamp_col')
+    expr = t.mutate(win_avg=t.float_col.mean().over(w1))
+    result = expr.compile()
+    expected = """\
+SELECT *,
+       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS `win_avg`
+FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+    w2 = ibis.window(preceding=0, following=2,
+                     group_by='year', order_by='timestamp_col')
+    expr = t.mutate(win_avg=t.float_col.mean().over(w2))
+    result = expr.compile()
+    expected = """\
+SELECT *,
+       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) AS `win_avg`
+FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+    w3 = ibis.window(preceding=(4, 2),
+                     group_by='year', order_by='timestamp_col')
+    expr = t.mutate(win_avg=t.float_col.mean().over(w3))
+    result = expr.compile()
+    expected = """\
+SELECT *,
+       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `timestamp_col` ROWS BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `win_avg`
+FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+
+def test_range_window_function(alltypes):
+    t = alltypes
+    w = ibis.range_window(preceding=1, following=0,
+                          group_by='year', order_by='month')
+    expr = t.mutate(two_month_avg=t.float_col.mean().over(w))
+    result = expr.compile()
+    expected = """\
+SELECT *,
+       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY `month` RANGE BETWEEN 1 PRECEDING AND CURRENT ROW) AS `two_month_avg`
+FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+    w3 = ibis.range_window(preceding=(4, 2),
+                           group_by='year', order_by='timestamp_col')
+    expr = t.mutate(win_avg=t.float_col.mean().over(w3))
+    result = expr.compile()
+    expected = """\
+SELECT *,
+       avg(`float_col`) OVER (PARTITION BY `year` ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING) AS `win_avg`
+FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('preceding', 'value'),
+    [
+        (5, 5),
+        (ibis.nanosecond(), 0.001),
+        (ibis.microsecond(), 1),
+        (ibis.second(), 1000000),
+        (ibis.minute(), 1000000 * 60),
+        (ibis.hour(), 1000000 * 60 * 60),
+        (ibis.day(), 1000000 * 60 * 60 * 24),
+        (2 * ibis.day(), 1000000 * 60 * 60 * 24 * 2),
+        (ibis.week(), 1000000 * 60 * 60 * 24 * 7),
+    ]
+)
+def test_trailing_range_window(alltypes, preceding, value):
+    t = alltypes
+    w = ibis.trailing_range_window(preceding=preceding,
+                                   order_by=t.timestamp_col)
+    expr = t.mutate(win_avg=t.float_col.mean().over(w))
+    result = expr.compile()
+    expected = """\
+SELECT *,
+       avg(`float_col`) OVER (ORDER BY UNIX_MICROS(`timestamp_col`) RANGE BETWEEN {} PRECEDING AND CURRENT ROW) AS `win_avg`
+FROM `ibis-gbq.testing.functional_alltypes`""".format(value)  # noqa: E501
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('preceding', 'value'),
+    [
+        (ibis.year(), None),
+    ]
+)
+def test_trailing_range_window_unsupported(alltypes, preceding, value):
+    t = alltypes
+    w = ibis.trailing_range_window(preceding=preceding,
+                                   order_by=t.timestamp_col)
+    expr = t.mutate(win_avg=t.float_col.mean().over(w))
+    with pytest.raises(ValueError):
+        expr.compile()

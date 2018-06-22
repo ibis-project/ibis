@@ -1,5 +1,6 @@
 from six import StringIO
 import datetime
+from operator import add, mul, sub
 
 import ibis
 import ibis.expr.analysis as L
@@ -125,6 +126,11 @@ def _cast(translator, expr):
 
     if isinstance(arg, ir.CategoryValue) and target_type == 'int32':
         return arg_formatted
+    if (
+        isinstance(arg, (ir.TimeValue, ir.DateValue, ir.TimestampValue)) and
+            target_type == 'int64'
+            ):
+        return '1000000 * unix_timestamp({})'.format(arg_formatted)
     else:
         sql_type = _type_to_sql_string(target_type)
         return 'CAST({} AS {})'.format(arg_formatted, sql_type)
@@ -181,6 +187,99 @@ def _cumulative_to_window(translator, expr, window):
     return new_expr
 
 
+_map_interval_to_microseconds = dict(
+    W=604800000000,
+    D=86400000000,
+    h=3600000000,
+    m=60000000,
+    s=1000000,
+    ms=1000,
+    us=1,
+    ns=.001
+)
+
+
+_map_interval_op_to_op = {
+    # Literal Intervals have two args, i.e.
+    # Literal(1, Interval(value_type=int8, unit='D', nullable=True))
+    # Parse both args and multipy 1 * _map_interval_to_microseconds['D']
+    ops.Literal: mul,
+    ops.IntervalMultiply: mul,
+    ops.IntervalAdd: add,
+    ops.IntervalSubtract: sub,
+}
+
+
+def _replace_interval_with_scalar(expr):
+    """
+    Good old Depth-First Search to identify the Interval and IntervalValue
+    components of the expression and return a comparable scalar expression.
+
+    Parameters
+    ----------
+    expr : float or expression of intervals, i.e.
+      1 * ibis.day() + 5 * ibis.hour()
+
+    Returns
+    -------
+    preceding : float or ir.FloatingScalar, depending upon the expr
+    """
+    try:
+        expr_op = expr.op()
+    except AttributeError:
+        expr_op = None
+
+    if not isinstance(expr, (dt.Interval, ir.IntervalValue)):
+        # Literal expressions have op method but native types do not.
+        if isinstance(expr_op, ops.Literal):
+            return expr_op.value
+        else:
+            return expr
+    elif isinstance(expr, dt.Interval):
+        try:
+            microseconds = _map_interval_to_microseconds[expr.unit]
+            return microseconds
+        except KeyError:
+            raise ValueError(
+                "Expected preceding values of week(), " +
+                "day(), hour(), minute(), second(), millisecond(), " +
+                "microseconds(), nanoseconds(); got {}".format(expr)
+                )
+    elif expr_op.args and isinstance(expr, ir.IntervalValue):
+        if len(expr_op.args) > 2:
+            raise com.NotImplementedError(
+                "'preceding' argument cannot be parsed."
+            )
+        left_arg = _replace_interval_with_scalar(expr_op.args[0])
+        right_arg = _replace_interval_with_scalar(expr_op.args[1])
+        method = _map_interval_op_to_op[type(expr_op)]
+        return method(left_arg, right_arg)
+
+
+def _time_range_to_range_window(translator, window):
+    # Check that ORDER BY column is a single time column:
+    order_by_vars = [x.op().args[0] for x in window._order_by]
+    if len(order_by_vars) > 1:
+        raise com.IbisInputError(
+            "Expected 1 order-by variable, got {}".format(
+                len(order_by_vars)
+            )
+        )
+
+    order_var = window._order_by[0].op().args[0]
+    timestamp_order_var = order_var.cast('int64')
+    window = window._replace(order_by=timestamp_order_var,
+                             how='range')
+
+    # Need to change preceding interval expression to scalars
+    preceding = window.preceding
+    if isinstance(preceding, ir.IntervalScalar):
+        new_preceding = _replace_interval_with_scalar(preceding)
+        window = window._replace(preceding=new_preceding)
+
+    return window
+
+
 def _window(translator, expr):
     op = expr.op()
 
@@ -216,6 +315,13 @@ def _window(translator, expr):
     if (isinstance(window_op, _require_order_by) and
             len(window._order_by) == 0):
         window = window.order_by(window_op.args[0])
+
+    # Time ranges need to be converted to microseconds.
+    if window.how == 'range':
+        order_by_types = [type(x.op().args[0]) for x in window._order_by]
+        time_range_types = (ir.TimeColumn, ir.DateColumn, ir.TimestampColumn)
+        if any(col_type in time_range_types for col_type in order_by_types):
+            window = _time_range_to_range_window(translator, window)
 
     window_formatted = _format_window(translator, window)
 
@@ -256,11 +362,14 @@ def _format_window(translator, window):
         return '{} FOLLOWING'.format(f) if f > 0 else 'CURRENT ROW'
 
     if p is not None and f is not None:
-        frame = 'ROWS BETWEEN {} AND {}'.format(_prec(p), _foll(f))
+        frame = '{} BETWEEN {} AND {}'.format(
+            window.how.upper(), _prec(p), _foll(f))
+
     elif p is not None:
         if isinstance(p, tuple):
             start, end = p
-            frame = 'ROWS BETWEEN {} AND {}'.format(_prec(start), _prec(end))
+            frame = '{} BETWEEN {} AND {}'.format(
+                window.how.upper(), _prec(start), _prec(end))
         else:
             kind = 'ROWS' if p > 0 else 'RANGE'
             frame = '{} BETWEEN {} AND UNBOUNDED FOLLOWING'.format(
@@ -269,7 +378,8 @@ def _format_window(translator, window):
     elif f is not None:
         if isinstance(f, tuple):
             start, end = f
-            frame = 'ROWS BETWEEN {} AND {}'.format(_foll(start), _foll(end))
+            frame = '{} BETWEEN {} AND {}'.format(
+                window.how.upper(), _foll(start), _foll(end))
         else:
             kind = 'ROWS' if f > 0 else 'RANGE'
             frame = '{} BETWEEN UNBOUNDED PRECEDING AND {}'.format(
@@ -695,7 +805,7 @@ def _extract_field(sql_attr):
 
 def _day_of_week_index(t, expr):
     arg, = expr.op().args
-    return 'dayofweek({})'.format(t.translate(arg))
+    return 'pmod(dayofweek({}) - 2, 7)'.format(t.translate(arg))
 
 
 def _day_of_week_name(t, expr):
