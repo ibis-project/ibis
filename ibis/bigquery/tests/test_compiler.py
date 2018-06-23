@@ -306,3 +306,32 @@ def test_trailing_range_window_unsupported(alltypes, preceding, value):
     expr = t.mutate(win_avg=t.float_col.mean().over(w))
     with pytest.raises(ValueError):
         expr.compile()
+
+
+def test_union_cte(alltypes):
+    t = alltypes
+    expr1 = t.group_by(t.string_col).aggregate(metric=t.double_col.sum())
+    expr2 = expr1.view()
+    expr3 = expr1.view()
+    expr = expr1.union(expr2).union(expr3)
+    result = expr.compile()
+    expected = """\
+WITH t0 AS (
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM `ibis-gbq.testing.functional_alltypes`
+  GROUP BY 1
+),
+t1 AS (
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM `ibis-gbq.testing.functional_alltypes`
+  GROUP BY 1
+)
+SELECT *
+FROM t0
+UNION ALL
+SELECT *
+FROM t1
+UNION ALL
+SELECT *
+FROM t1"""
+    assert result == expected
