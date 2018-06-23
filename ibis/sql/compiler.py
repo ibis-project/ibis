@@ -636,7 +636,7 @@ class _ExtractSubqueries(object):
         return to_extract
 
     def observe(self, expr):
-        if expr in self.observed_exprs:
+        if self.seen(expr):
             key = self.observed_exprs.get(expr)
         else:
             # this key only needs to be unique because of the IbisMap
@@ -645,7 +645,7 @@ class _ExtractSubqueries(object):
 
         self.expr_counts[key] += 1
 
-    def _has_been_observed(self, expr):
+    def seen(self, expr):
         return expr in self.observed_exprs
 
     def visit(self, expr):
@@ -698,6 +698,7 @@ class _ExtractSubqueries(object):
         op = expr.op()
         self.visit(op.left)
         self.visit(op.right)
+        self.observe(expr)
 
     def _visit_MaterializedJoin(self, expr):
         self.visit(expr.op().join)
@@ -712,11 +713,12 @@ class _ExtractSubqueries(object):
 
     def _visit_TableColumn(self, expr):
         table = expr.op().table
-        if not self._has_been_observed(table):
+        if not self.seen(table):
             self.visit(table)
 
     def _visit_SelfReference(self, expr):
         self.visit(expr.op().table)
+        self.observe(expr)
 
 
 def _foreign_ref_check(query, expr):
