@@ -229,10 +229,8 @@ def sqlite(database, schema, tables, data_directory, **params):
 @click.option('-t', '--tables', multiple=True, default=TEST_TABLES)
 @click.option('-d', '--data-directory', default=DATA_DIR)
 def mapd(schema, tables, data_directory, **params):
-    if sys.version_info[0] < 3:
-        click.echo(
-            '[MAPD|EE] MapD backend is unavailable for Python 2.'
-        )
+    if sys.version_info.major < 3:
+        logger.info('MapD backend is unavailable for Python 2.')
         return
 
     import pymapd
@@ -241,7 +239,7 @@ def mapd(schema, tables, data_directory, **params):
     reserved_words = ['table', 'year', 'month']
 
     # connection
-    click.echo('Initializing MapD...')
+    logger.info('Initializing MapD...')
     if params['database'] != 'mapd':
         conn = pymapd.connect(
             host=params['host'],
@@ -250,10 +248,11 @@ def mapd(schema, tables, data_directory, **params):
             port=params['port'],
             dbname='mapd'
         )
+        stmt = 'CREATE DATABASE {}'.format(params['database'])
         try:
-            conn.execute('CREATE DATABASE {}'.format(params['database']))
-        except Exception as e:
-            click.echo('[MAPD|WW]{}'.format(e))
+            conn.execute(stmt)
+        except Exception:
+            logger.exception('MapD DDL statement %r failed', stmt)
         conn.close()
 
     conn = pymapd.connect(
@@ -263,22 +262,19 @@ def mapd(schema, tables, data_directory, **params):
     )
 
     # create tables
-    for stmt in schema.read().split(';'):
-        stmt = stmt.strip()
-        if len(stmt):
-            try:
-                conn.execute(stmt)
-            except Exception as e:
-                click.echo('[MAPD|WW] {}'.format(str(e)))
-    click.echo('[MAPD|II] Creating tables ... OK')
+    for stmt in filter(None, map(str.strip, schema.read().split(';'))):
+        try:
+            conn.execute(stmt)
+        except Exception:
+            logger.exception('MapD DDL statement \n%r\n failed', stmt)
 
     # import data
-    click.echo('[MAPD|II] Loading data ...')
     for table, df in read_tables(tables, data_directory):
         if table == 'batting':
             # float nan problem
             cols = df.select_dtypes([float]).columns
             df[cols] = df[cols].fillna(0).astype(int)
+
             # string None driver problem
             cols = df.select_dtypes([object]).columns
             df[cols] = df[cols].fillna('')
@@ -299,8 +295,6 @@ def mapd(schema, tables, data_directory, **params):
         conn.load_table_columnar(table, df)
 
     conn.close()
-
-    click.echo('[MAPD|II] Done!')
 
 
 @cli.command()

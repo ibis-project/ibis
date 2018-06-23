@@ -2136,7 +2136,7 @@ _add_methods(ir.ArrayValue, _array_column_methods)
 # ---------------------------------------------------------------------
 # Map API
 
-def get(expr, key, default):
+def get(expr, key, default=None):
     """
     Return the mapped value for this key, or the default
     if the key does not exist
