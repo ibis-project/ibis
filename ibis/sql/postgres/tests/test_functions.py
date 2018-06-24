@@ -600,7 +600,7 @@ def test_union_cte(alltypes, distinct1, distinct2, expected1, expected2):
     expr = expr1.union(
         expr2, distinct=distinct1).union(expr3, distinct=distinct2)
     result = '\n'.join(map(
-        lambda line: line.rstrip(),
+        lambda line: line.rstrip(),  # strip trailing whitespace
         str(
             expr.compile().compile(compile_kwargs=dict(literal_binds=True))
         ).splitlines()
