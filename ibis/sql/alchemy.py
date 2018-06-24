@@ -743,18 +743,19 @@ class AlchemyContext(comp.QueryContext):
 class AlchemyUnion(Union):
 
     def compile(self):
+        def reduce_union(left, right, distincts=iter(self.distincts)):
+            distinct = next(distincts)
+            sa_func = sa.union if self.distinct else sa.union_all
+            return sa_func(left, right)
+
         context = self.context
-        sa_func = sa.union if self.distinct else sa.union_all
+        selects = []
 
-        left_set = context.get_compiled_expr(self.left)
-        left_cte = left_set.cte()
-        left_select = left_cte.select()
+        for table in self.tables:
+            table_set = context.get_compiled_expr(table)
+            selects.append(table_set.cte().select())
 
-        right_set = context.get_compiled_expr(self.right)
-        right_cte = right_set.cte()
-        right_select = right_cte.select()
-
-        return sa_func(left_select, right_select)
+        return functools.reduce(reduce_union, selects)
 
 
 class AlchemyQueryBuilder(comp.QueryBuilder):
