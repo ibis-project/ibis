@@ -745,7 +745,7 @@ class AlchemyUnion(Union):
     def compile(self):
         def reduce_union(left, right, distincts=iter(self.distincts)):
             distinct = next(distincts)
-            sa_func = sa.union if self.distinct else sa.union_all
+            sa_func = sa.union if distinct else sa.union_all
             return sa_func(left, right)
 
         context = self.context
