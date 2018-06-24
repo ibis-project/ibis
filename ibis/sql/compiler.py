@@ -20,8 +20,9 @@ import ibis.expr.format as fmt
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
 import ibis.expr.operations as ops
-
 import ibis.sql.transforms as transforms
+
+from ibis.compat import map
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -952,10 +953,13 @@ class Union(DML):
             return 'SELECT *\nFROM {}'.format(ref)
         return self.context.get_compiled_expr(expr)
 
+    @staticmethod
+    def keyword(distinct):
+        return 'UNION' if distinct else 'UNION ALL'
+
     def compile(self):
         self._extract_subqueries()
 
-        sets = list(map(self.format_relation, self.tables))
         extracted = self.format_subqueries()
 
         buf = []
@@ -963,10 +967,10 @@ class Union(DML):
         if extracted:
             buf.append('WITH {}'.format(extracted))
 
-        keywords = (
-            'UNION' if distinct else 'UNION ALL' for distinct in self.distincts
-        )
-        buf += toolz.interleave((sets, keywords))
+        buf += toolz.interleave((
+            map(self.format_relation, self.tables),
+            map(self.keyword, self.distincts)
+        ))
         result = '\n'.join(buf)
         return result
 

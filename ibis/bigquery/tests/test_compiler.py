@@ -311,9 +311,9 @@ def test_trailing_range_window_unsupported(alltypes, preceding, value):
 @pytest.mark.parametrize(
     ('distinct1', 'distinct2', 'expected1', 'expected2'),
     [
-        (True, True, 'UNION', 'UNION'),
-        (True, False, 'UNION', 'UNION ALL'),
-        (False, True, 'UNION ALL', 'UNION'),
+        (True, True, 'UNION DISTINCT', 'UNION DISTINCT'),
+        (True, False, 'UNION DISTINCT', 'UNION ALL'),
+        (False, True, 'UNION ALL', 'UNION DISTINCT'),
         (False, False, 'UNION ALL', 'UNION ALL'),
     ]
 )

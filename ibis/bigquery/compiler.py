@@ -52,9 +52,9 @@ class BigQueryUDFDefinition(comp.DDL):
 
 
 class BigQueryUnion(comp.Union):
-    @property
-    def keyword(self):
-        return 'UNION DISTINCT' if self.distinct else 'UNION ALL'
+    @staticmethod
+    def keyword(distinct):
+        return 'UNION DISTINCT' if distinct else 'UNION ALL'
 
 
 def find_bigquery_udf(expr):
