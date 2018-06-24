@@ -163,7 +163,7 @@ def table(schema, name=None):
             schema = Schema.from_tuples(schema)
 
     node = ops.UnboundTable(schema, name=name)
-    return ir.TableExpr(node)
+    return node.to_expr()
 
 
 def desc(expr):
@@ -2598,7 +2598,7 @@ def join(left, right, predicates=(), how='inner'):
         predicates = _L.flatten_predicate(predicates)
 
     op = klass(left, right, predicates)
-    return ir.TableExpr(op)
+    return op.to_expr()
 
 
 def asof_join(left, right, predicates=(), by=(), tolerance=None):
@@ -2691,7 +2691,8 @@ def cross_join(*tables, **kwargs):
             Table: ref_4
     """
     # TODO(phillipc): Implement prefix keyword argument
-    return ir.TableExpr(ops.CrossJoin(*tables, **kwargs))
+    op = ops.CrossJoin(*tables, **kwargs)
+    return op.to_expr()
 
 
 def _table_count(self):
@@ -2828,7 +2829,7 @@ def aggregate(table, metrics=None, by=None, having=None, **kwds):
         metrics.append(v.name(k))
 
     op = table.op().aggregate(table, metrics, by=by, having=having)
-    return ir.TableExpr(op)
+    return op.to_expr()
 
 
 def _table_distinct(self):
@@ -2856,7 +2857,7 @@ def _table_limit(table, n, offset=0):
     limited : TableExpr
     """
     op = ops.Limit(table, n, offset=offset)
-    return ir.TableExpr(op)
+    return op.to_expr()
 
 
 def _head(table, n=5):
@@ -2903,10 +2904,8 @@ def _table_sort_by(table, sort_exprs):
     -------
     sorted : TableExpr
     """
-    op = table.op()
-    result = op.sort_by(table, sort_exprs)
-
-    return ir.TableExpr(result)
+    result = table.op().sort_by(table, sort_exprs)
+    return result.to_expr()
 
 
 def _table_union(left, right, distinct=False):
@@ -2926,7 +2925,7 @@ def _table_union(left, right, distinct=False):
     union : TableExpr
     """
     op = ops.Union(left, right, distinct=distinct)
-    return ir.TableExpr(op)
+    return op.to_expr()
 
 
 def _table_to_array(self):
@@ -2946,7 +2945,7 @@ def _table_materialize(table):
         return table
 
     op = ops.MaterializedJoin(table)
-    return ir.TableExpr(op)
+    return op.to_expr()
 
 
 def add_column(table, expr, name=None):
@@ -3165,7 +3164,7 @@ def projection(table, exprs):
     projector = L.Projector(table, exprs)
 
     op = projector.get_result()
-    return ir.TableExpr(op)
+    return op.to_expr()
 
 
 def _table_relabel(table, substitutions, replacements=None):
@@ -3214,7 +3213,8 @@ def _table_view(self):
     -------
     expr : TableExpr
     """
-    return ir.TableExpr(ops.SelfReference(self))
+    new_view = ops.SelfReference(self)
+    return new_view.to_expr()
 
 
 def _table_drop(self, fields):
