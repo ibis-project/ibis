@@ -721,7 +721,6 @@ class _ExtractSubqueries(object):
 
     def _visit_SelfReference(self, expr):
         self.visit(expr.op().table)
-        self.observe(expr)
 
 
 def _foreign_ref_check(query, expr):
