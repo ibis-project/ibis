@@ -308,12 +308,22 @@ def test_trailing_range_window_unsupported(alltypes, preceding, value):
         expr.compile()
 
 
-def test_union_all_cte(alltypes):
+@pytest.mark.parametrize(
+    ('distinct1', 'distinct2', 'expected1', 'expected2'),
+    [
+        (True, True, 'UNION', 'UNION'),
+        (True, False, 'UNION', 'UNION ALL'),
+        (False, True, 'UNION ALL', 'UNION'),
+        (False, False, 'UNION ALL', 'UNION ALL'),
+    ]
+)
+def test_union_cte(alltypes, distinct1, distinct2, expected1, expected2):
     t = alltypes
     expr1 = t.group_by(t.string_col).aggregate(metric=t.double_col.sum())
     expr2 = expr1.view()
     expr3 = expr1.view()
-    expr = expr1.union(expr2).union(expr3)
+    expr = expr1.union(
+        expr2, distinct=distinct1).union(expr3, distinct=distinct2)
     result = expr.compile()
     expected = """\
 WITH t0 AS (
@@ -328,39 +338,10 @@ t1 AS (
 )
 SELECT *
 FROM t0
-UNION ALL
+{}
 SELECT *
 FROM t1
-UNION ALL
+{}
 SELECT *
-FROM t1"""
-    assert result == expected
-
-
-def test_union_cte(alltypes):
-    t = alltypes
-    expr1 = t.group_by(t.string_col).aggregate(metric=t.double_col.sum())
-    expr2 = expr1.view()
-    expr3 = expr1.view()
-    expr = expr1.union(expr2).union(expr3, distinct=True)
-    result = expr.compile()
-    expected = """\
-WITH t0 AS (
-  SELECT `string_col`, sum(`double_col`) AS `metric`
-  FROM `ibis-gbq.testing.functional_alltypes`
-  GROUP BY 1
-),
-t1 AS (
-  SELECT `string_col`, sum(`double_col`) AS `metric`
-  FROM `ibis-gbq.testing.functional_alltypes`
-  GROUP BY 1
-)
-SELECT *
-FROM t0
-UNION ALL
-SELECT *
-FROM t1
-UNION
-SELECT *
-FROM t1"""
+FROM t1""".format(expected1, expected2)
     assert result == expected
