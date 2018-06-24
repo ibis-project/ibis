@@ -10,6 +10,8 @@ import six
 
 from six import StringIO
 
+import toolz
+
 import ibis
 import ibis.common as com
 import ibis.util as util
@@ -921,11 +923,10 @@ def _adapt_expr(expr):
 
 class Union(DML):
 
-    def __init__(self, left_table, right_table, expr, context, distinct=False):
+    def __init__(self, tables, expr, context, distincts):
         self.context = context
-        self.left = left_table
-        self.right = right_table
-        self.distinct = distinct
+        self.tables = tables
+        self.distincts = distincts
         self.table_set = expr
         self.filters = []
 
@@ -938,12 +939,12 @@ class Union(DML):
         context = self.context
         subqueries = self.subqueries
 
-        return ',\n'.join([
+        return ',\n'.join(
             '{} AS (\n{}\n)'.format(
                 context.get_ref(expr),
                 util.indent(context.get_compiled_expr(expr), 2)
             ) for expr in subqueries
-        ])
+        )
 
     def format_relation(self, expr):
         ref = self.context.get_ref(expr)
@@ -951,15 +952,10 @@ class Union(DML):
             return 'SELECT *\nFROM {}'.format(ref)
         return self.context.get_compiled_expr(expr)
 
-    @property
-    def keyword(self):
-        return 'UNION' if self.distinct else 'UNION ALL'
-
     def compile(self):
         self._extract_subqueries()
 
-        left_set = self.format_relation(self.left)
-        right_set = self.format_relation(self.right)
+        sets = list(map(self.format_relation, self.tables))
         extracted = self.format_subqueries()
 
         buf = []
@@ -967,9 +963,20 @@ class Union(DML):
         if extracted:
             buf.append('WITH {}'.format(extracted))
 
-        buf += [left_set, self.keyword, right_set]
+        keywords = (
+            'UNION' if distinct else 'UNION ALL' for distinct in self.distincts
+        )
+        buf += toolz.interleave((sets, keywords))
+        result = '\n'.join(buf)
+        return result
 
-        return '\n'.join(buf)
+
+def flatten_union(table):
+    op = table.op()
+    if isinstance(op, ops.Union):
+        return toolz.concatv(
+            flatten_union(op.left), [op.distinct], flatten_union(op.right))
+    return [table]
 
 
 class QueryBuilder(object):
@@ -1010,8 +1017,27 @@ class QueryBuilder(object):
 
     def _make_union(self):
         op = self.expr.op()
-        return self.union_class(op.left, op.right, self.expr,
-                                distinct=op.distinct,
+        union_info = list(toolz.concatv(
+            flatten_union(op.left),
+            [op.distinct],
+            flatten_union(op.right)
+        ))
+
+        # since op is a union, we have at least 3 elements in union_info (left
+        # distinct right) and if there is more than a single union we have an
+        # additional two elements per union (distinct right) which means the
+        # total number of elements is at least 3 + (2 * number of unions - 1)
+        # and is therefore and odd number
+        assert len(union_info) >= 3 and len(union_info) % 2 != 0
+
+        # every other object starting from 0 is a TableExpr instance
+        table_exprs = union_info[::2]
+
+        # every other object starting from 1 is a bool indicating the type of
+        # union (UNION [True] or UNION ALL [False])
+        distincts = union_info[1::2]
+        return self.union_class(table_exprs, self.expr,
+                                distincts=distincts,
                                 context=self.context)
 
     def _make_select(self):
