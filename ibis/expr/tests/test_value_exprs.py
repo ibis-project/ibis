@@ -1309,3 +1309,41 @@ def test_large_timestamp():
     expected = datetime(year=4567, month=2, day=3)
     result = expr.op().value
     assert result == expected
+
+
+def test_map_get_broadcast():
+    t = ibis.table([('a', 'string')], name='t')
+    lookup_table = ibis.literal({'a': 1, 'b': 2})
+    expr = lookup_table.get(t.a)
+    assert isinstance(expr, ir.IntegerColumn)
+
+
+def test_map_getitem_broadcast():
+    t = ibis.table([('a', 'string')], name='t')
+    lookup_table = ibis.literal({'a': 1, 'b': 2})
+    expr = lookup_table[t.a]
+    assert isinstance(expr, ir.IntegerColumn)
+
+
+def test_map_keys_output_type():
+    mapping = ibis.literal({'a': 1, 'b': 2})
+    assert mapping.keys().type() == dt.Array(dt.string)
+
+
+def test_map_values_output_type():
+    mapping = ibis.literal({'a': 1, 'b': 2})
+    assert mapping.values().type() == dt.Array(dt.int8)
+
+
+def test_scalar_isin_map_keys():
+    mapping = ibis.literal({'a': 1, 'b': 2})
+    key = ibis.literal('a')
+    expr = key.isin(mapping.keys())
+    assert isinstance(expr, ir.BooleanScalar)
+
+
+def test_column_isin_map_keys():
+    t = ibis.table([('a', 'string')], name='t')
+    mapping = ibis.literal({'a': 1, 'b': 2})
+    expr = t.a.isin(mapping.keys())
+    assert isinstance(expr, ir.BooleanColumn)

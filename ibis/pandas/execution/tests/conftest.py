@@ -49,6 +49,9 @@ def df():
         'array_of_float64': [[1.0, 2.0], [3.0], []],
         'array_of_int64': [[1, 2], [], [3]],
         'array_of_strings': [['a', 'b'], [], ['c']],
+        'map_of_strings_integers': [{'a': 1, 'b': 2}, None, {}],
+        'map_of_integers_strings': [{}, None, {1: 'a', 2: 'b'}],
+        'map_of_complex_values': [None, {'a': [1, 2, 3], 'b': []}, {}],
     })
 
 
@@ -171,30 +174,25 @@ def df3():
     })
 
 
+t_schema = {
+    'decimal': dt.Decimal(4, 3),
+    'array_of_float64': dt.Array(dt.double),
+    'array_of_int64': dt.Array(dt.int64),
+    'array_of_strings': dt.Array(dt.string),
+    'map_of_strings_integers': dt.Map(dt.string, dt.int64),
+    'map_of_integers_strings': dt.Map(dt.int64, dt.string),
+    'map_of_complex_values': dt.Map(dt.string, dt.Array(dt.int64)),
+}
+
+
 @pytest.fixture(scope='module')
 def t(client):
-    return client.table(
-        'df',
-        schema={
-            'decimal': dt.Decimal(4, 3),
-            'array_of_float64': dt.Array(dt.double),
-            'array_of_int64': dt.Array(dt.int64),
-            'array_of_strings': dt.Array(dt.string),
-        }
-    )
+    return client.table('df', schema=t_schema)
 
 
 @pytest.fixture(scope='module')
 def time_t(client):
-    return client.table(
-        'time_df',
-        schema={
-            'decimal': dt.Decimal(4, 3),
-            'array_of_float64': dt.Array(dt.double),
-            'array_of_int64': dt.Array(dt.int64),
-            'array_of_strings': dt.Array(dt.string),
-        }
-    )
+    return client.table('time_df', schema=t_schema)
 
 
 @pytest.fixture(scope='module')

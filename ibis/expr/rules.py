@@ -1,5 +1,9 @@
+import collections
 import enum
+
 from itertools import starmap, product
+
+import six
 
 from ibis.compat import suppress
 import ibis.util as util
@@ -147,8 +151,10 @@ def member_of(obj, arg):
 
 @validator
 def list_of(inner, arg, min_length=0):
-    if not isinstance(arg, (tuple, list, ir.ListExpr)):
-        arg = [arg]
+    if isinstance(arg, six.string_types) or not isinstance(
+        arg, (collections.Sequence, ir.ListExpr)
+    ):
+        raise com.IbisTypeError('Argument must be a sequence')
 
     if len(arg) < min_length:
         raise com.IbisTypeError(

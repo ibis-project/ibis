@@ -159,11 +159,18 @@ def test_invalid_member_of(obj, value, expected):
 
 
 @pytest.mark.parametrize(('validator', 'values', 'expected'), [
-    (rlz.list_of(identity), 3, ibis.sequence([3])),
     (rlz.list_of(identity), (3, 2), ibis.sequence([3, 2])),
     (rlz.list_of(rlz.integer), (3, 2), ibis.sequence([3, 2])),
     (rlz.list_of(rlz.integer), (3, None), ibis.sequence([3, ibis.NA])),
-    (rlz.list_of(rlz.string), 'asd', ibis.sequence(['asd'])),
+    (rlz.list_of(rlz.string), ('a',), ibis.sequence(['a'])),
+    (rlz.list_of(rlz.string), ['a', 'b'], ibis.sequence(['a', 'b'])),
+    pytest.param(
+        rlz.list_of(rlz.list_of(rlz.string)),
+        [[], ['a']],
+        ibis.sequence([[], ['a']]),
+        marks=pytest.mark.xfail(
+            raises=ValueError, reason='Not yet implemented'),
+    ),
     (rlz.list_of(rlz.boolean, min_length=2), [True, False],
      ibis.sequence([True, False]))
 ])
@@ -172,12 +179,17 @@ def test_valid_list_of(validator, values, expected):
     assert result.equals(expected)
 
 
-@pytest.mark.parametrize(('validator', 'values', 'expected'), [
-    (rlz.list_of(rlz.double, min_length=2), [1], IbisTypeError),
-    (rlz.list_of(rlz.integer), 1.1, IbisTypeError),
-])
-def test_invalid_list_of(validator, values, expected):
-    with pytest.raises(expected):
+@pytest.mark.parametrize(
+    ('validator', 'values'),
+    [
+        (rlz.list_of(rlz.double, min_length=2), [1]),
+        (rlz.list_of(rlz.integer), 1.1),
+        (rlz.list_of(rlz.string), 'asd'),
+        (rlz.list_of(identity), 3),
+    ]
+)
+def test_invalid_list_of(validator, values):
+    with pytest.raises(IbisTypeError):
         validator(values)
 
 
