@@ -966,19 +966,35 @@ class Union(DML):
         if extracted:
             buf.append('WITH {}'.format(extracted))
 
-        buf += toolz.interleave((
-            map(self.format_relation, self.tables),
-            map(self.keyword, self.distincts)
-        ))
-        result = '\n'.join(buf)
-        return result
+        # interleave correct keyword for the backend in between the formatted
+        # UNION expressions
+        buf.extend(
+            toolz.interleave(
+                (
+                    map(self.format_relation, self.tables),
+                    map(self.keyword, self.distincts)
+                )
+            )
+        )
+        return '\n'.join(buf)
 
 
 def flatten_union(table):
+    """Extract all union queries from `table`.
+
+    Parameters
+    ----------
+    table : TableExpr
+
+    Returns
+    -------
+    Iterable[Union[TableExpr, bool]]
+    """
     op = table.op()
     if isinstance(op, ops.Union):
         return toolz.concatv(
-            flatten_union(op.left), [op.distinct], flatten_union(op.right))
+            flatten_union(op.left), [op.distinct], flatten_union(op.right)
+        )
     return [table]
 
 
@@ -1019,26 +1035,21 @@ class QueryBuilder(object):
         )
 
     def _make_union(self):
-        op = self.expr.op()
-        union_info = list(toolz.concatv(
-            flatten_union(op.left),
-            [op.distinct],
-            flatten_union(op.right)
-        ))
+        # flatten unions so that we can codegen them all at once
+        union_info = list(flatten_union(self.expr))
 
         # since op is a union, we have at least 3 elements in union_info (left
         # distinct right) and if there is more than a single union we have an
         # additional two elements per union (distinct right) which means the
         # total number of elements is at least 3 + (2 * number of unions - 1)
-        # and is therefore and odd number
-        assert len(union_info) >= 3 and len(union_info) % 2 != 0
+        # and is therefore an odd number
+        npieces = len(union_info)
+        assert npieces >= 3 and npieces % 2 != 0, 'Invalid union expression'
 
-        # every other object starting from 0 is a TableExpr instance
-        table_exprs = union_info[::2]
-
-        # every other object starting from 1 is a bool indicating the type of
-        # union (UNION [True] or UNION ALL [False])
-        distincts = union_info[1::2]
+        # 1. every other object starting from 0 is a TableExpr instance
+        # 2. every other object starting from 1 is a bool indicating the type
+        #    of union (distinct or not distinct)
+        table_exprs, distincts = union_info[::2], union_info[1::2]
         return self.union_class(table_exprs, self.expr,
                                 distincts=distincts,
                                 context=self.context)
