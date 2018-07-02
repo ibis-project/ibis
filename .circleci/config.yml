@@ -20,27 +20,27 @@ test: &test
             mkdir -p /tmp/ibis
             echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > /tmp/ibis/gcloud-service-key.json
           fi
-    - run:
-        name: Start Databases
-        command: docker-compose up -d --no-build mysql postgres impala clickhouse mapd
-    - run:
-        name: Show Running Containers
-        command: docker ps
+    # - run:
+    #     name: Start Databases
+    #     command: docker-compose up -d --no-build mysql postgres impala clickhouse mapd
+    # - run:
+    #     name: Show Running Containers
+    #     command: docker ps
     - run:
         name: Build Ibis Image
         command: docker-compose build --pull ibis
-    - run:
-        name: List Docker Images
-        command: docker images
-    - run:
-        name: Flake8
-        command: docker-compose run ibis flake8
-    - run:
-        name: Wait for Databases
-        command: docker-compose run waiter
-    - run:
-        name: Load Test Datasets
-        command: docker-compose run -e LOGLEVEL=DEBUG ibis ci/load-data.sh
+    # - run:
+    #     name: List Docker Images
+    #     command: docker images
+    # - run:
+    #     name: Flake8
+    #     command: docker-compose run ibis flake8
+    # - run:
+    #     name: Wait for Databases
+    #     command: docker-compose run waiter
+    # - run:
+    #     name: Load Test Datasets
+    #     command: docker-compose run -e LOGLEVEL=DEBUG ibis ci/load-data.sh
     - run:
         name: Make artifacts directories
         command: |
@@ -57,7 +57,7 @@ test: &test
         command: |
           docker-compose run \
             -e PYTHONHASHSEED=$([ "${PYTHON_VERSION}" = "3.5" ] && echo -en 0 || echo -en "") \
-            ibis pytest ibis/expr/tests \
+            ibis pytest ibis/expr/tests/test_format.py \
             -m "not udf" \
             -ra \
             --numprocesses auto \
