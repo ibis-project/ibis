@@ -62,6 +62,7 @@ test: &test
             -ra \
             --numprocesses auto \
             --cov=ibis \
+            --cov-report=xml:/tmp/ibis/coverage.xml \
             --doctest-modules \
             --doctest-ignore-import-errors \
             --junitxml=/tmp/test-reports/pytest/junit.xml
@@ -74,7 +75,7 @@ test: &test
 
     - run:
         name: Upload Coverage
-        command: bash <(curl -s https://codecov.io/bash)
+        command: bash <(curl -s https://codecov.io/bash) -f /tmp/ibis/coverage.xml
 
 
 build: &build
