@@ -57,7 +57,7 @@ test: &test
         command: |
           docker-compose run \
             -e PYTHONHASHSEED=$([ "${PYTHON_VERSION}" = "3.5" ] && echo -en 0 || echo -en "") \
-            ibis pytest ibis/expr/tests/test_format.py \
+            ibis pytest ibis \
             -m "not udf" \
             -ra \
             --numprocesses auto \
