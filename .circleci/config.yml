@@ -20,27 +20,27 @@ test: &test
             mkdir -p /tmp/ibis
             echo "${GCLOUD_SERVICE_KEY}" | base64 --decode --ignore-garbage > /tmp/ibis/gcloud-service-key.json
           fi
-    # - run:
-    #     name: Start Databases
-    #     command: docker-compose up -d --no-build mysql postgres impala clickhouse mapd
-    # - run:
-    #     name: Show Running Containers
-    #     command: docker ps
+    - run:
+        name: Start Databases
+        command: docker-compose up -d --no-build mysql postgres impala clickhouse mapd
+    - run:
+        name: Show Running Containers
+        command: docker ps
     - run:
         name: Build Ibis Image
         command: docker-compose build --pull ibis
-    # - run:
-    #     name: List Docker Images
-    #     command: docker images
-    # - run:
-    #     name: Flake8
-    #     command: docker-compose run ibis flake8
-    # - run:
-    #     name: Wait for Databases
-    #     command: docker-compose run waiter
-    # - run:
-    #     name: Load Test Datasets
-    #     command: docker-compose run -e LOGLEVEL=DEBUG ibis ci/load-data.sh
+    - run:
+        name: List Docker Images
+        command: docker images
+    - run:
+        name: Flake8
+        command: docker-compose run ibis flake8
+    - run:
+        name: Wait for Databases
+        command: docker-compose run waiter
+    - run:
+        name: Load Test Datasets
+        command: docker-compose run -e LOGLEVEL=DEBUG ibis ci/load-data.sh
     - run:
         name: Make artifacts directories
         command: |
@@ -61,11 +61,11 @@ test: &test
             -m "not udf" \
             -ra \
             --numprocesses auto \
-            --cov=ibis \
-            --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml \
             --doctest-modules \
             --doctest-ignore-import-errors \
-            --junitxml=/tmp/test-reports/pytest/junit.xml
+            --junitxml=/tmp/test-reports/pytest/junit.xml \
+            --cov=ibis \
+            --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
     - store_test_results:
         path: /tmp/ibis/test-reports
     - store_artifacts:
@@ -223,7 +223,7 @@ workflows:
   test:
     jobs:
       - python27_test
-      # - python27_conda_build
+      - python27_conda_build
 
       - python35_test
       - python35_conda_build
