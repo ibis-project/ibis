@@ -61,6 +61,7 @@ test: &test
             -m "not udf" \
             -ra \
             --numprocesses auto \
+            --cov=ibis \
             --doctest-modules \
             --doctest-ignore-import-errors \
             --junitxml=/tmp/test-reports/pytest/junit.xml
@@ -184,6 +185,8 @@ jobs:
     <<: *test
     environment:
       - PYTHON_VERSION: 3.6
+    post:
+      - bash <(curl -s https://codecov.io/bash)
 
   python27_conda_build:
     <<: *build
