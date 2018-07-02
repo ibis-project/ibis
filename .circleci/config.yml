@@ -57,7 +57,7 @@ test: &test
         command: |
           docker-compose run \
             -e PYTHONHASHSEED=$([ "${PYTHON_VERSION}" = "3.5" ] && echo -en 0 || echo -en "") \
-            ibis pytest ibis \
+            ibis pytest ibis/expr/tests \
             -m "not udf" \
             -ra \
             --numprocesses auto \
@@ -71,6 +71,10 @@ test: &test
         path: /tmp/ibis/test-reports
     - store_artifacts:
         path: /tmp/env/env.yml
+
+    - run:
+        name: Upload Coverage
+        command: bash <(curl -s https://codecov.io/bash)
 
 
 build: &build
@@ -185,8 +189,6 @@ jobs:
     <<: *test
     environment:
       - PYTHON_VERSION: 3.6
-    post:
-      - bash <(curl -s https://codecov.io/bash)
 
   python27_conda_build:
     <<: *build
