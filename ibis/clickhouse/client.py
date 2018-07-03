@@ -24,6 +24,7 @@ base_typename_re = re.compile(r"(\w+)")
 
 _clickhouse_dtypes = {
     'Null': dt.Null,
+    'Nothing': dt.Null,
     'UInt8': dt.UInt8,
     'UInt16': dt.UInt16,
     'UInt32': dt.UInt32,
