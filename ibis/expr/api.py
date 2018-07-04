@@ -3048,15 +3048,13 @@ def mutate(table, exprs=None, **mutations):
     else:
         exprs = util.promote_list(exprs)
 
-    for k, v in sorted(mutations.items()):
+    for k, v in sorted(mutations.items(), key=operator.itemgetter(0)):
         if util.is_function(v):
             v = v(table)
         else:
             v = as_value_expr(v)
 
-        # TODO(phillipc): Fix this by making expressions hashable
-        named_v = v.name(k) if _safe_get_name(v) != k else v
-        exprs.append(named_v)
+        exprs.append(v.name(k))
 
     has_replacement = False
     for expr in exprs:

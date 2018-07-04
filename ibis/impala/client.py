@@ -1309,8 +1309,7 @@ class ImpalaClient(SQLClient):
                     .format(qualified_name, cardinality))
         self._execute(set_card)
 
-        self._temp_objects[id(t)] = t
-
+        self._temp_objects[t] = t
         return t
 
     def text_file(self, hdfs_path, column_name='value'):

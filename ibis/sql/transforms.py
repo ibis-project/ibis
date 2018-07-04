@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-import ibis.util as util
 import ibis.expr.types as ir
 import ibis.expr.rules as rlz
 import ibis.expr.analysis as L
@@ -56,9 +55,7 @@ class AnyToExistsTransform(object):
         self.context = context
         self.expr = expr
         self.parent_table = parent_table
-
-        qroots = self.parent_table._root_tables()
-        self.query_roots = util.IbisSet.from_list(qroots)
+        self.query_roots = frozenset(self.parent_table._root_tables())
 
     def get_result(self):
         self.foreign_table = None

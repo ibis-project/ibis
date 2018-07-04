@@ -3,6 +3,7 @@
 
 from __future__ import absolute_import
 
+import itertools
 import operator
 
 from collections import OrderedDict
@@ -10,6 +11,7 @@ from collections import OrderedDict
 import pandas as pd
 
 import toolz
+from toolz import concat, unique
 
 from multipledispatch import Dispatcher
 
@@ -255,9 +257,9 @@ def physical_tables_join(join):
     # Physical roots of Join nodes are the unique physical roots of their
     # left and right TableNodes.
     return list(toolz.unique(
-        toolz.concatv(
-            toolz.unique(physical_tables(join.left.op()), key=id),
-            toolz.unique(physical_tables(join.right.op()), key=id)
+        itertools.chain(
+            toolz.unique(physical_tables(join.left.op())),
+            toolz.unique(physical_tables(join.right.op()))
         ),
         key=id,
     ))
@@ -267,8 +269,7 @@ def physical_tables_join(join):
 def physical_tables_node(node):
     # Iterative case. Any other Node's physical roots are the unique physical
     # roots of that Node's root tables.
-    tables = toolz.concat(map(physical_tables, node.root_tables()))
-    return list(toolz.unique(tables, key=id))
+    return list(unique(concat(map(physical_tables, node.root_tables()))))
 
 
 @execute_node.register(ops.Selection, pd.DataFrame)

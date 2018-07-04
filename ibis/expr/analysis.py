@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from operator import methodcaller
+
 import toolz
 
 import ibis.expr.types as ir
@@ -318,7 +320,7 @@ class ExprSimplifier(object):
 
     def lift(self, expr, block=None):
         # This use of id() is OK since only for memoization
-        key = id(expr.op()), block
+        key = expr.op(), block
 
         if key in self.lift_memo:
             return self.lift_memo[key]
@@ -882,16 +884,12 @@ def fully_originate_from(exprs, parents):
         op = expr.op()
 
         if isinstance(expr, ir.TableExpr):
-            return lin.proceed, expr
-        elif op.blocks():
-            return lin.halt, None
-        else:
-            return lin.proceed, None
+            return lin.proceed, expr.op()
+        return lin.halt if op.blocks() else lin.proceed, None
 
     # unique table dependencies of exprs and parents
     exprs_deps = set(lin.traverse(finder, exprs))
     parents_deps = set(lin.traverse(finder, parents))
-
     return exprs_deps <= parents_deps
 
 
@@ -1000,7 +998,7 @@ def find_source_table(expr):
             return lin.proceed, None
 
     first_tables = lin.traverse(finder, expr.op().flat_args())
-    options = list(toolz.unique(first_tables, key=id))
+    options = list(toolz.unique(first_tables, key=methodcaller('op')))
 
     if len(options) > 1:
         raise NotImplementedError('More than one base table not implemented')

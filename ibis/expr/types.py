@@ -10,6 +10,13 @@ import ibis.common as com
 import ibis.config as config
 
 
+def safe_get_name(expr):
+    try:
+        return expr.get_name()
+    except (com.ExpressionError, AttributeError):
+        return None
+
+
 # TODO move methods containing ops import to api.py
 
 class Expr(object):
@@ -23,25 +30,28 @@ class Expr(object):
         self._arg = arg
 
     def __repr__(self):
-        if config.options.interactive:
-            try:
-                result = self.execute()
-                return repr(result)
-            except com.TranslationError as e:
-                output = ('Translation to backend failed\n'
-                          'Error message: {0}\n'
-                          'Expression repr follows:\n{1}'
-                          .format(e.args[0], self._repr()))
-                return output
-        else:
+        if not config.options.interactive:
             return self._repr()
+
+        try:
+            result = self.execute()
+        except com.TranslationError as e:
+            output = ('Translation to backend failed\n'
+                      'Error message: {0}\n'
+                      'Expression repr follows:\n{1}'
+                      .format(e.args[0], self._repr()))
+            return output
+        else:
+            return repr(result)
+
+    def __hash__(self):
+        return hash((type(self), safe_get_name(self), self.op()))
 
     def __bool__(self):
         raise ValueError("The truth value of an Ibis expression is not "
                          "defined")
 
-    def __nonzero__(self):
-        return self.__bool__()
+    __nonzero__ = __bool__
 
     def _repr(self, memo=None):
         from ibis.expr.format import ExprFormatter

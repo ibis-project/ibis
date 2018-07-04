@@ -1,62 +1,11 @@
-import itertools
 import tempfile
 
-import graphviz as g
-
-from ibis.compat import zip_longest
+import graphviz as gv
 
 import ibis
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.operations as ops
-
-
-def get_args(node):
-
-    if isinstance(node, (ops.Aggregation, ops.Selection)):
-        return get_args_selection_aggregation(node)
-    elif isinstance(node, ops.Join):
-        return get_args_join(node)
-    else:
-        args = (arg for arg in node.args if isinstance(arg, ir.Expr))
-        names = getattr(node, 'argnames', [])
-        return zip_longest(args, names)
-
-
-def get_args_selection_aggregation(node):
-    return zip_longest(
-        itertools.chain(
-            [node.table],
-            itertools.chain.from_iterable(
-                getattr(node, argname) or [None]
-                for argname in (node.argnames or []) if argname != 'table'
-            )
-        ),
-        itertools.chain(
-            ['table'],
-            itertools.chain.from_iterable(
-                [
-                    '{}[{:d}]'.format(argname, i)
-                    for i in range(len(getattr(node, argname)))
-                ] or [None]
-                for argname in (node.argnames or []) if argname != 'table'
-            )
-        ),
-    )
-
-
-def get_args_join(node):
-    return zip(
-        [node.left, node.right] + node.predicates,
-        ['left', 'right'] + list(itertools.chain.from_iterable(
-            [
-                '{}[{:d}]'.format(argname, i)
-                for i in range(len(getattr(node, argname)))
-            ] or [None]
-            for argname in (node.argnames or [])
-            if argname not in {'left', 'right'}
-        ))
-    )
 
 
 def get_type(expr):
@@ -112,50 +61,47 @@ def get_label(expr, argname=None):
         if isinstance(node, ops.TableNode):
             label_fmt = '<<B>{}</B>{}>'
         else:
-            label_fmt = '<{} \u27f6 {}>'
+            label_fmt = '<<B>{}</B> \u27f6 {}>'
         label = label_fmt.format(name, typename)
     return label
 
 
+DEFAULT_NODE_ATTRS = {
+    'shape': 'box',
+    'fontname': 'Deja Vu Sans Mono',
+}
+
+
 def to_graph(expr, node_attr=None, edge_attr=None):
-    if node_attr is None:
-        node_attr = {
-            'shape': 'box',
-            'fontname': 'Deja Vu Sans Mono',
-        }
-
-    if edge_attr is None:
-        edge_attr = {
-            'dir': 'back',
-        }
-
-    stack = [expr]
+    stack = [(expr, ir.safe_get_name(expr))]
     seen = set()
-    labeled = set()
+    g = gv.Digraph(
+        node_attr=node_attr or DEFAULT_NODE_ATTRS,
+        edge_attr=edge_attr or {})
 
-    graph = g.Digraph(node_attr=node_attr, edge_attr=edge_attr)
+    g.attr(rankdir='BT')
 
     while stack:
-        e = stack.pop()
-        node = e.op()
-        a = str(hash(node))
+        v = e, ename = stack.pop()
+        if v not in seen:
+            seen.add(v)
 
-        if a not in seen:
-            seen.add(a)
+            vlabel = get_label(e, argname=ename)
+            vhash = str(hash(v))
+            g.node(vhash, label=vlabel)
 
-            if a not in labeled:
-                label = get_label(e)
-                graph.node(a, label=label)
+            node = e.op()
+            args = node.args
+            for arg, name in zip(args, node.signature.names()):
+                if isinstance(arg, ir.Expr):
+                    u = arg, name
+                    uhash = str(hash(u))
+                    ulabel = get_label(arg, argname=name)
 
-            for arg, arg_name in get_args(node):
-                if arg is not None:
-                    b = str(hash(arg.op()))
-                    label = get_label(arg, arg_name)
-                    graph.node(b, label=label)
-                    labeled.add(b)
-                    graph.edge(a, b)
-                    stack.append(arg)
-    return graph
+                    g.node(uhash, label=ulabel)
+                    g.edge(uhash, vhash)
+                    stack.append(u)
+    return g
 
 
 def draw(graph, path=None, format='png'):
