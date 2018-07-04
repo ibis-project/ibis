@@ -21,6 +21,7 @@ dependencies:
   - pymapd>=0.3.2
   - pymysql
   - pytest
+  - pytest-cov
   - pytest-xdist
   - python=3.5
   - python-graphviz
