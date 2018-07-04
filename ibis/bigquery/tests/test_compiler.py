@@ -306,3 +306,39 @@ def test_trailing_range_window_unsupported(alltypes, preceding, value):
     expr = t.mutate(win_avg=t.float_col.mean().over(w))
     with pytest.raises(ValueError):
         expr.compile()
+
+
+@pytest.mark.parametrize(
+    ('distinct1', 'distinct2', 'expected1', 'expected2'),
+    [
+        (True, True, 'UNION DISTINCT', 'UNION DISTINCT'),
+        (True, False, 'UNION DISTINCT', 'UNION ALL'),
+        (False, True, 'UNION ALL', 'UNION DISTINCT'),
+        (False, False, 'UNION ALL', 'UNION ALL'),
+    ]
+)
+def test_union_cte(alltypes, distinct1, distinct2, expected1, expected2):
+    t = alltypes
+    expr1 = t.group_by(t.string_col).aggregate(metric=t.double_col.sum())
+    expr2 = expr1.view()
+    expr3 = expr1.view()
+    expr = expr1.union(
+        expr2, distinct=distinct1).union(expr3, distinct=distinct2)
+    result = expr.compile()
+    expected = """\
+WITH t0 AS (
+  SELECT `string_col`, sum(`double_col`) AS `metric`
+  FROM `ibis-gbq.testing.functional_alltypes`
+  GROUP BY 1
+)
+SELECT *
+FROM t0
+{}
+SELECT `string_col`, sum(`double_col`) AS `metric`
+FROM `ibis-gbq.testing.functional_alltypes`
+GROUP BY 1
+{}
+SELECT `string_col`, sum(`double_col`) AS `metric`
+FROM `ibis-gbq.testing.functional_alltypes`
+GROUP BY 1""".format(expected1, expected2)
+    assert result == expected

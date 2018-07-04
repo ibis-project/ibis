@@ -584,6 +584,45 @@ def test_union(alltypes):
 
 
 @pytest.mark.parametrize(
+    ('distinct1', 'distinct2', 'expected1', 'expected2'),
+    [
+        (True, True, 'UNION', 'UNION'),
+        (True, False, 'UNION', 'UNION ALL'),
+        (False, True, 'UNION ALL', 'UNION'),
+        (False, False, 'UNION ALL', 'UNION ALL'),
+    ]
+)
+def test_union_cte(alltypes, distinct1, distinct2, expected1, expected2):
+    t = alltypes
+    expr1 = t.group_by(t.string_col).aggregate(metric=t.double_col.sum())
+    expr2 = expr1.view()
+    expr3 = expr1.view()
+    expr = expr1.union(
+        expr2, distinct=distinct1).union(expr3, distinct=distinct2)
+    result = '\n'.join(map(
+        lambda line: line.rstrip(),  # strip trailing whitespace
+        str(
+            expr.compile().compile(compile_kwargs=dict(literal_binds=True))
+        ).splitlines()
+    ))
+    expected = """\
+WITH anon_1 AS
+(SELECT t0.string_col AS string_col, sum(t0.double_col) AS metric
+FROM functional_alltypes AS t0 GROUP BY t0.string_col),
+anon_2 AS
+(SELECT t0.string_col AS string_col, sum(t0.double_col) AS metric
+FROM functional_alltypes AS t0 GROUP BY t0.string_col),
+anon_3 AS
+(SELECT t0.string_col AS string_col, sum(t0.double_col) AS metric
+FROM functional_alltypes AS t0 GROUP BY t0.string_col)
+ (SELECT anon_1.string_col, anon_1.metric
+FROM anon_1 {} SELECT anon_2.string_col, anon_2.metric
+FROM anon_2) {} SELECT anon_3.string_col, anon_3.metric
+FROM anon_3""".format(expected1, expected2)
+    assert str(result) == expected
+
+
+@pytest.mark.parametrize(
     ('func', 'pandas_func'),
     [
         (
