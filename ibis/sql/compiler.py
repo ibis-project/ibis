@@ -10,6 +10,8 @@ import six
 
 from six import StringIO
 
+import toolz
+
 import ibis
 import ibis.common as com
 import ibis.util as util
@@ -18,8 +20,9 @@ import ibis.expr.format as fmt
 import ibis.expr.analysis as L
 import ibis.expr.analytics as analytics
 import ibis.expr.operations as ops
-
 import ibis.sql.transforms as transforms
+
+from ibis.compat import map
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -636,7 +639,7 @@ class _ExtractSubqueries(object):
         return to_extract
 
     def observe(self, expr):
-        if expr in self.observed_exprs:
+        if self.seen(expr):
             key = self.observed_exprs.get(expr)
         else:
             # this key only needs to be unique because of the IbisMap
@@ -645,7 +648,7 @@ class _ExtractSubqueries(object):
 
         self.expr_counts[key] += 1
 
-    def _has_been_observed(self, expr):
+    def seen(self, expr):
         return expr in self.observed_exprs
 
     def visit(self, expr):
@@ -698,6 +701,7 @@ class _ExtractSubqueries(object):
         op = expr.op()
         self.visit(op.left)
         self.visit(op.right)
+        self.observe(expr)
 
     def _visit_MaterializedJoin(self, expr):
         self.visit(expr.op().join)
@@ -712,7 +716,7 @@ class _ExtractSubqueries(object):
 
     def _visit_TableColumn(self, expr):
         table = expr.op().table
-        if not self._has_been_observed(table):
+        if not self.seen(table):
             self.visit(table)
 
     def _visit_SelfReference(self, expr):
@@ -919,11 +923,10 @@ def _adapt_expr(expr):
 
 class Union(DML):
 
-    def __init__(self, left_table, right_table, expr, context, distinct=False):
+    def __init__(self, tables, expr, context, distincts):
         self.context = context
-        self.left = left_table
-        self.right = right_table
-        self.distinct = distinct
+        self.tables = tables
+        self.distincts = distincts
         self.table_set = expr
         self.filters = []
 
@@ -936,12 +939,12 @@ class Union(DML):
         context = self.context
         subqueries = self.subqueries
 
-        return ',\n'.join([
+        return ',\n'.join(
             '{} AS (\n{}\n)'.format(
                 context.get_ref(expr),
                 util.indent(context.get_compiled_expr(expr), 2)
             ) for expr in subqueries
-        ])
+        )
 
     def format_relation(self, expr):
         ref = self.context.get_ref(expr)
@@ -949,15 +952,13 @@ class Union(DML):
             return 'SELECT *\nFROM {}'.format(ref)
         return self.context.get_compiled_expr(expr)
 
-    @property
-    def keyword(self):
-        return 'UNION' if self.distinct else 'UNION ALL'
+    @staticmethod
+    def keyword(distinct):
+        return 'UNION' if distinct else 'UNION ALL'
 
     def compile(self):
         self._extract_subqueries()
 
-        left_set = self.format_relation(self.left)
-        right_set = self.format_relation(self.right)
         extracted = self.format_subqueries()
 
         buf = []
@@ -965,9 +966,36 @@ class Union(DML):
         if extracted:
             buf.append('WITH {}'.format(extracted))
 
-        buf += [left_set, self.keyword, right_set]
-
+        # interleave correct keyword for the backend in between the formatted
+        # UNION expressions
+        buf.extend(
+            toolz.interleave(
+                (
+                    map(self.format_relation, self.tables),
+                    map(self.keyword, self.distincts)
+                )
+            )
+        )
         return '\n'.join(buf)
+
+
+def flatten_union(table):
+    """Extract all union queries from `table`.
+
+    Parameters
+    ----------
+    table : TableExpr
+
+    Returns
+    -------
+    Iterable[Union[TableExpr, bool]]
+    """
+    op = table.op()
+    if isinstance(op, ops.Union):
+        return toolz.concatv(
+            flatten_union(op.left), [op.distinct], flatten_union(op.right)
+        )
+    return [table]
 
 
 class QueryBuilder(object):
@@ -1007,9 +1035,23 @@ class QueryBuilder(object):
         )
 
     def _make_union(self):
-        op = self.expr.op()
-        return self.union_class(op.left, op.right, self.expr,
-                                distinct=op.distinct,
+        # flatten unions so that we can codegen them all at once
+        union_info = list(flatten_union(self.expr))
+
+        # since op is a union, we have at least 3 elements in union_info (left
+        # distinct right) and if there is more than a single union we have an
+        # additional two elements per union (distinct right) which means the
+        # total number of elements is at least 3 + (2 * number of unions - 1)
+        # and is therefore an odd number
+        npieces = len(union_info)
+        assert npieces >= 3 and npieces % 2 != 0, 'Invalid union expression'
+
+        # 1. every other object starting from 0 is a TableExpr instance
+        # 2. every other object starting from 1 is a bool indicating the type
+        #    of union (distinct or not distinct)
+        table_exprs, distincts = union_info[::2], union_info[1::2]
+        return self.union_class(table_exprs, self.expr,
+                                distincts=distincts,
                                 context=self.context)
 
     def _make_select(self):
