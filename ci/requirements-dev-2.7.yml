@@ -22,7 +22,7 @@ dependencies:
   - pathlib2
   - plumbum
   - psycopg2
-  # - pyarrow>=0.6.0
+  - pyarrow>=0.6.0
   - pymysql
   - pytables
   - pytest
