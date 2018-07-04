@@ -63,13 +63,20 @@ test: &test
             --numprocesses auto \
             --doctest-modules \
             --doctest-ignore-import-errors \
-            --junitxml=/tmp/test-reports/pytest/junit.xml
+            --junitxml=/tmp/test-reports/pytest/junit.xml \
+            --cov=ibis \
+            --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
     - store_test_results:
         path: /tmp/ibis/test-reports
     - store_artifacts:
         path: /tmp/ibis/test-reports
     - store_artifacts:
         path: /tmp/env/env.yml
+    - run:
+        name: Upload Coverage
+        command: |
+          bash <(curl -s https://codecov.io/bash) \
+            -f /tmp/ibis/test-reports/pytest-cov/coverage.xml
 
 
 build: &build
