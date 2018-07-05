@@ -19,10 +19,12 @@ from clickhouse_driver.client import Client as _DriverClient
 
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
+base_typename_re = re.compile(r"(\w+)")
 
 
 _clickhouse_dtypes = {
     'Null': dt.Null,
+    'Nothing': dt.Null,
     'UInt8': dt.UInt8,
     'UInt16': dt.UInt16,
     'UInt32': dt.UInt32,
@@ -47,9 +49,11 @@ class ClickhouseDataType(object):
     __slots__ = 'typename', 'nullable'
 
     def __init__(self, typename, nullable=False):
-        if typename not in _clickhouse_dtypes:
+        m = base_typename_re.match(typename)
+        base_typename = m.groups()[0]
+        if base_typename not in _clickhouse_dtypes:
             raise com.UnsupportedBackendType(typename)
-        self.typename = typename
+        self.typename = base_typename
         self.nullable = nullable
 
     def __str__(self):
