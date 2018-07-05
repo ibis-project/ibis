@@ -2211,20 +2211,20 @@ class BetweenTime(Between):
 
 class Contains(ValueOp, BooleanValueOp):
     value = Arg(rlz.any)
-    options = Arg(rlz.one_of([rlz.set_,
+    options = Arg(rlz.one_of([rlz.list_of(rlz.any),
+                              rlz.set_,
                               rlz.column(rlz.any),
-                              rlz.list_of(rlz.any)]))
+                              rlz.array_of(rlz.any)]))
 
     def __init__(self, value, options):
-        if isinstance(options, ir.Expr):
-            # it can be a single expression, like a column
-            pass
-        elif util.any_of(options, ir.Expr):
-            # or a list of expressions
-            options = ir.sequence(options)
-        else:
-            # or a set of scalar values
-            options = frozenset(options)
+        # it can be a single expression, like a column
+        if not isinstance(options, ir.Expr):
+            if util.any_of(options, ir.Expr):
+                # or a list of expressions
+                options = ir.sequence(options)
+            else:
+                # or a set of scalar values
+                options = frozenset(options)
         super(Contains, self).__init__(value, options)
 
     def output_type(self):
@@ -2675,8 +2675,7 @@ class MapValueForKey(ValueOp):
     key = Arg(rlz.one_of([rlz.string, rlz.integer]))
 
     def output_type(self):
-        value_dtype = self.arg.type().value_type
-        return rlz.shape_like(self.arg, value_dtype)
+        return rlz.shape_like(tuple(self.args), self.arg.type().value_type)
 
 
 class MapValueOrDefaultForKey(ValueOp):
@@ -2693,17 +2692,23 @@ class MapValueOrDefaultForKey(ValueOp):
             raise ValueError("default type: {} must be the same "
                              "as the map value_type {}".format(
                                  default_type, value_type))
-        return rlz.shape_like(self.arg, map_type.value_type)
+        return rlz.shape_like(tuple(self.args), map_type.value_type)
 
 
 class MapKeys(ValueOp):
     arg = Arg(rlz.mapping)
-    output_type = rlz.typeof('arg')
+
+    def output_type(self):
+        arg = self.arg
+        return rlz.shape_like(arg, dt.Array(arg.type().key_type))
 
 
 class MapValues(ValueOp):
     arg = Arg(rlz.mapping)
-    output_type = rlz.typeof('arg')
+
+    def output_type(self):
+        arg = self.arg
+        return rlz.shape_like(arg, dt.Array(arg.type().value_type))
 
 
 class MapConcat(ValueOp):

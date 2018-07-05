@@ -26,6 +26,7 @@ dependencies:
   - pymysql
   - pytables
   - pytest
+  - pytest-cov
   - pytest-xdist
   - python=2.7
   - python-graphviz
