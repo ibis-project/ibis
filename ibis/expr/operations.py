@@ -2454,7 +2454,7 @@ class ExtractMillisecond(ExtractTimeField):
 
 class DayOfWeekIndex(UnaryOp):
     arg = Arg(rlz.one_of([rlz.date, rlz.timestamp]))
-    output_type = rlz.shape_like('arg', dt.int32)
+    output_type = rlz.shape_like('arg', dt.int16)
 
 
 class DayOfWeekName(UnaryOp):
