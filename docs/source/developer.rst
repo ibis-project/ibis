@@ -105,12 +105,13 @@ BigQuery
 ^^^^^^^^
 
 Before you begin, you must have a `Google Cloud Platform project
-<https://cloud.google.com/docs/overview/#projects>`__ with billing set up the
-BigQuery API enabled.
+<https://cloud.google.com/docs/overview/#projects>`_ with billing set up and
+the `BigQuery API enabled
+<https://console.cloud.google.com/flows/enableapi?apiid=bigquery>`_.
 
 #. **Set up application default credentials by following the `getting started with
    GCP authentication guide
-   <https://cloud.google.com/docs/authentication/getting-started>`__.**
+   <https://cloud.google.com/docs/authentication/getting-started>`_.**
 
 #. **Set the ``GOOGLE_BIGQUERY_PROJECT_ID`` environment variable**:
 
