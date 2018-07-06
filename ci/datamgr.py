@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import os
 import sys
 import tarfile
@@ -345,6 +346,105 @@ def clickhouse(schema, tables, data_directory, **params):
             cols = df.select_dtypes([object]).columns
             df[cols] = df[cols].fillna('')
         insert(engine, table, df)
+
+
+@cli.command()
+@click.option('-d', '--data-directory', default=DATA_DIR)
+@click.option('-i', '--ignore-missing-dependency', is_flag=True, default=False)
+def bigquery(data_directory, ignore_missing_dependency, **params):
+    try:
+        import google.api_core.exceptions
+        from google.cloud import bigquery
+    except ImportError:
+        msg = 'google-cloud-bigquery dependency is missing'
+        if ignore_missing_dependency:
+            logger.warning('Ignored: %s', msg)
+            return 0
+        else:
+            raise click.ClickException(msg)
+
+    project_id = os.environ['GOOGLE_BIGQUERY_PROJECT_ID']
+    bqclient = bigquery.Client(project=project_id)
+
+    # Create testing dataset.
+    testing_dataset = bqclient.dataset('testing')
+    try:
+        bqclient.create_dataset(bigquery.Dataset(testing_dataset))
+    except google.api_core.exceptions.Conflict:
+        pass  # Skip if already created.
+
+    # Set up main data table.
+    data_directory = Path(data_directory)
+    functional_alltypes_path = data_directory / 'functional_alltypes.csv'
+    functional_alltypes_schema = []
+    schema_path = data_directory / 'functional_alltypes_bigquery_schema.json'
+    with open(str(schema_path)) as schemafile:
+        schema_json = json.load(schemafile)
+        for field in schema_json:
+            functional_alltypes_schema.append(
+                bigquery.SchemaField.from_api_repr(field))
+    load_config = bigquery.LoadJobConfig()
+    load_config.skip_leading_rows = 1  # skip the header row.
+    load_config.schema = functional_alltypes_schema
+
+    # Load main data table.
+    functional_alltypes_schema = []
+    with open(str(functional_alltypes_path), 'rb') as csvfile:
+        job = bqclient.load_table_from_file(
+            csvfile,
+            testing_dataset.table('functional_alltypes'),
+            job_config=load_config).result()
+
+        if job.error_result:
+            raise click.ClickException(str(job.error_result))
+
+    # Load an ingestion time partitioned table.
+    functional_alltypes_path = data_directory / 'functional_alltypes.csv'
+    with open(str(functional_alltypes_path), 'rb') as csvfile:
+        load_config.time_partitioning = bigquery.TimePartitioning()
+        job = bqclient.load_table_from_file(
+            csvfile,
+            testing_dataset.table('functional_alltypes_parted'),
+            job_config=load_config).result()
+
+        if job.error_result:
+            raise click.ClickException(str(job.error_result))
+
+    # Create a table with complex data types (nested and repeated).
+    struct_table_path = data_directory / 'struct_table.avro'
+    with open(str(struct_table_path), 'rb') as avrofile:
+        load_config = bigquery.LoadJobConfig()
+        load_config.source_format = 'AVRO'
+        job = bqclient.load_table_from_file(
+            avrofile,
+            testing_dataset.table('struct_table'),
+            job_config=load_config)
+
+        if job.error_result:
+            raise click.ClickException(str(job.error_result))
+
+    # Create empty date-partitioned table.
+    date_table = bigquery.Table(testing_dataset.table('date_column_parted'))
+    date_table.schema = [
+        bigquery.SchemaField('my_date_parted_col', 'DATE'),
+        bigquery.SchemaField('string_col', 'STRING'),
+        bigquery.SchemaField('int_col', 'INTEGER'),
+    ]
+    date_table.time_partitioning = bigquery.TimePartitioning(
+        field='my_date_parted_col')
+    bqclient.create_table(date_table)
+
+    # Create empty timestamp-partitioned tables.
+    timestamp_table = bigquery.Table(
+        testing_dataset.table('timestamp_column_parted'))
+    timestamp_table.schema = [
+        bigquery.SchemaField('my_timestamp_parted_col', 'DATE'),
+        bigquery.SchemaField('string_col', 'STRING'),
+        bigquery.SchemaField('int_col', 'INTEGER'),
+    ]
+    timestamp_table.time_partitioning = bigquery.TimePartitioning(
+        field='my_timestamp_parted_col')
+    bqclient.create_table(timestamp_table)
 
 
 if __name__ == '__main__':

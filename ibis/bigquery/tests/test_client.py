@@ -30,7 +30,11 @@ def test_column_execute(alltypes, df):
     expr = alltypes[col_name]
     result = expr.execute()
     expected = df[col_name]
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(
+        # Sort the values because BigQuery doesn't guarantee row order unless
+        # there is an order-by clause in the query.
+        result.sort_values().reset_index(drop=True),
+        expected.sort_values().reset_index(drop=True))
 
 
 def test_literal_execute(client):
@@ -193,7 +197,7 @@ def test_different_partition_col_name(client):
     assert col in parted_alltypes.columns
 
 
-def test_subquery_scalar_params(alltypes):
+def test_subquery_scalar_params(alltypes, project_id):
     t = alltypes
     param = ibis.param('timestamp').name('my_param')
     expr = t[['float_col', 'timestamp_col', 'int_col', 'string_col']][
@@ -208,11 +212,11 @@ FROM (
   SELECT `string_col`, sum(`float_col`) AS `foo`
   FROM (
     SELECT `float_col`, `timestamp_col`, `int_col`, `string_col`
-    FROM `ibis-gbq.testing.functional_alltypes`
+    FROM `{}.testing.functional_alltypes`
     WHERE `timestamp_col` < @my_param
   ) t1
   GROUP BY 1
-) t0"""
+) t0""".format(project_id)
     assert result == expected
 
 
@@ -360,13 +364,13 @@ def test_raw_sql(client):
     assert client.raw_sql('SELECT 1').fetchall() == [(1,)]
 
 
-def test_scalar_param_scope(alltypes):
+def test_scalar_param_scope(alltypes, project_id):
     t = alltypes
     param = ibis.param('timestamp')
     mut = t.mutate(param=param).compile(params={param: '2017-01-01'})
     assert mut == """\
 SELECT *, @param AS `param`
-FROM `ibis-gbq.testing.functional_alltypes`"""
+FROM `{}.testing.functional_alltypes`""".format(project_id)
 
 
 def test_parted_column_rename(parted_alltypes):
@@ -452,12 +456,12 @@ def test_exists_database_different_project(client, name, expected):
     assert client.exists_database(name) is expected
 
 
-def test_repeated_project_name():
+def test_repeated_project_name(project_id):
     ga = pytest.importorskip('google.auth')
 
     try:
         con = ibis.bigquery.connect(
-            project_id='ibis-gbq', dataset_id='ibis-gbq.testing')
+            project_id=project_id, dataset_id='{}.testing'.format(project_id))
     except ga.exceptions.DefaultCredentialsError:
         pytest.skip("no credentials found, skipping")
 
@@ -550,7 +554,7 @@ def test_timestamp_column_parted_is_not_renamed(client):
     assert 'PARTITIONTIME' not in t.columns
 
 
-def test_prevent_rewrite(alltypes):
+def test_prevent_rewrite(alltypes, project_id):
     t = alltypes
     expr = (t.groupby(t.string_col)
             .aggregate(collected_double=t.double_col.collect())
@@ -561,10 +565,10 @@ def test_prevent_rewrite(alltypes):
 SELECT *
 FROM (
   SELECT `string_col`, ARRAY_AGG(`double_col`) AS `collected_double`
-  FROM `ibis-gbq.testing.functional_alltypes`
+  FROM `{}.testing.functional_alltypes`
   GROUP BY 1
 ) t0
-WHERE `string_col` != 'wat'"""
+WHERE `string_col` != 'wat'""".format(project_id)
     assert result == expected
 
 
