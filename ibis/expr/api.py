@@ -2439,9 +2439,8 @@ _add_methods(ir.IntervalValue, _interval_value_methods)
 # Time API
 
 def between_time(arg, lower, upper, timezone=None):
-    """
-    Check if the input expr falls between the lower/upper bounds
-    passed. Bounds are inclusive. All arguments must be comparable.
+    """Check if the input expr falls between the lower/upper bounds passed.
+    Bounds are inclusive. All arguments must be comparable.
 
     Parameters
     ----------
@@ -2451,7 +2450,7 @@ def between_time(arg, lower, upper, timezone=None):
 
     Returns
     -------
-    is_between : BooleanValue
+    BooleanValue
     """
 
     if isinstance(arg.op(), ops.Time):
