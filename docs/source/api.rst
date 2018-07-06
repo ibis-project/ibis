@@ -473,7 +473,8 @@ All timestamp operations are valid either on scalar or array values
    TimestampValue.year
    TimestampValue.month
    TimestampValue.day
-   TimestampValue.day_of_week
+   TimestampValue.day_of_week.index
+   TimestampValue.day_of_week.full_name
    TimestampValue.hour
    TimestampValue.minute
    TimestampValue.second
@@ -504,6 +505,17 @@ Date methods
    DateValue.radd
    DateValue.sub
    DateValue.rsub
+
+.. _api.dow:
+
+Day of week methods
+-------------------
+
+.. autosummary::
+   :toctree: generated/
+
+   DayOfWeek.index
+   DayOfWeek.full_name
 
 .. _api.time:
 
