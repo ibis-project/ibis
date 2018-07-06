@@ -19,7 +19,7 @@ services:
       - MYSQL_PASSWORD=ibis
 
   impala:
-    image: ibisproject/impala
+    image: ibisproject/impala:kudu
     hostname: impala
     networks:
       default:
@@ -36,6 +36,10 @@ services:
       - 8042:8042
       # Hive
       - 9083:9083
+
+      # Kudu
+      - 8050:8050
+      - 8051:8051
       # Impala
       - 21000:21000
       - 21050:21050
@@ -45,7 +49,6 @@ services:
 
   clickhouse:
     image: yandex/clickhouse-server:1.1.54388
-
     ports:
       - 8123:8123
       - 9000:9000
@@ -70,6 +73,8 @@ services:
                 -wait tcp://postgres:5432
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070
+                -wait tcp://impala:8050
+                -wait tcp://impala:8051
                 -wait tcp://clickhouse:9000
                 -wait-retry-interval 5s
                 -timeout 5m
