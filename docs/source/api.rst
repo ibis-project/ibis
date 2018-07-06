@@ -547,7 +547,6 @@ Interval methods
    IntervalValue.add
    IntervalValue.radd
    IntervalValue.sub
-   IntervalValue.rsub
    IntervalValue.mul
    IntervalValue.rmul
    IntervalValue.floordiv
