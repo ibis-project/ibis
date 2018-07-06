@@ -16,7 +16,10 @@ import sqlalchemy as sa
 
 import toolz
 
+import ibis
+
 from ibis.sql.alchemy import unary, varargs, fixed_arity, _variance_reduction
+
 import ibis.sql.alchemy as alch
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -306,3 +309,27 @@ class SQLiteDialect(alch.AlchemyDialect):
 
 
 dialect = SQLiteDialect
+
+
+@rewrites(ops.DayOfWeekIndex)
+def day_of_week_index(expr):
+    return (
+        (expr.op().arg.strftime('%w').cast(dt.int16) + 6) % 7
+    ).cast(dt.int16)
+
+
+@rewrites(ops.DayOfWeekName)
+def day_of_week_name(expr):
+    return (
+        expr.op().arg.day_of_week.index()
+            .case()
+            .when(0, 'Monday')
+            .when(1, 'Tuesday')
+            .when(2, 'Wednesday')
+            .when(3, 'Thursday')
+            .when(4, 'Friday')
+            .when(5, 'Saturday')
+            .when(6, 'Sunday')
+            .else_(ibis.NA)
+            .end()
+    )
