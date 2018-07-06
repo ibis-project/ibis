@@ -343,18 +343,15 @@ class ExprSimplifier(object):
 
     def _lift_TableColumn(self, expr, block=None):
         node = expr.op()
-
-        tnode = node.table.op()
-        root = _base_table(tnode)
-
+        root = node.table.op()
         result = expr
+
         if isinstance(root, ops.Selection):
             can_lift = False
 
             for val in root.selections:
                 if (isinstance(val.op(), ops.PhysicalTable) and
                         node.name in val.schema()):
-
                     can_lift = True
                     lifted_root = self.lift(val)
                 elif (isinstance(val.op(), ops.TableColumn) and
@@ -362,9 +359,6 @@ class ExprSimplifier(object):
                       node.name == val.get_name()):
                     can_lift = True
                     lifted_root = self.lift(val.op().table)
-
-                # XXX
-                # can_lift = False
 
             # HACK: If we've projected a join, do not lift the children
             # TODO: what about limits and other things?

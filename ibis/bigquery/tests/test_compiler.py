@@ -342,3 +342,41 @@ SELECT `string_col`, sum(`double_col`) AS `metric`
 FROM `ibis-gbq.testing.functional_alltypes`
 GROUP BY 1""".format(expected1, expected2)
     assert result == expected
+
+
+def test_projection_fusion_only_peeks_at_immediate_parent():
+    schema = [
+        ('file_date', 'timestamp'),
+        ('PARTITIONTIME', 'date'),
+        ('val', 'int64'),
+    ]
+    table = ibis.table(schema, name='unbound_table')
+    table = table[table.PARTITIONTIME < ibis.date('2017-01-01')]
+    table = table.mutate(file_date=table.file_date.cast('date'))
+    table = table[table.file_date < ibis.date('2017-01-01')]
+    table = table.mutate(XYZ=table.val * 2)
+    expr = table.join(table.view())[table]
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+WITH t0 AS (
+  SELECT *
+  FROM unbound_table
+  WHERE `PARTITIONTIME` < DATE '2017-01-01'
+),
+t1 AS (
+  SELECT CAST(`file_date` AS DATE) AS `file_date`, `PARTITIONTIME`, `val`
+  FROM t0
+),
+t2 AS (
+  SELECT t1.*
+  FROM t1
+  WHERE t1.`file_date` < DATE '2017-01-01'
+),
+t3 AS (
+  SELECT *, `val` * 2 AS `XYZ`
+  FROM t2
+)
+SELECT t3.*
+FROM t3
+  CROSS JOIN t3 t4"""
+    assert result == expected
