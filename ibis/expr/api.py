@@ -2283,6 +2283,20 @@ _timestamp_add = _binop_expr('__add__', ops.TimestampAdd)
 _timestamp_radd = _binop_expr('__radd__', ops.TimestampAdd)
 
 
+_day_of_week = property(
+    lambda self: ops.DayOfWeekNode(self).to_expr(),
+    doc="""\
+Namespace expression containing methods for extracting information about the
+day of the week of a TimestampValue or DateValue expression.
+
+Returns
+-------
+DayOfWeek
+    An namespace expression containing methods to use to extract information.
+"""
+)
+
+
 _timestamp_value_methods = dict(
     strftime=_timestamp_strftime,
     year=_extract_field('year', ops.ExtractYear),
@@ -2307,8 +2321,7 @@ _timestamp_value_methods = dict(
 
     __rsub__=_timestamp_sub,
     rsub=_timestamp_sub,
-    day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr(),
-                         doc='The day of the week with Monday=0, Sunday=6'),
+    day_of_week=_day_of_week,
 )
 
 _add_methods(ir.TimestampValue, _timestamp_value_methods)
@@ -2357,8 +2370,7 @@ _date_value_methods = dict(
     year=_extract_field('year', ops.ExtractYear),
     month=_extract_field('month', ops.ExtractMonth),
     day=_extract_field('day', ops.ExtractDay),
-    day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr(),
-                         doc='The day of the week with Monday=0, Sunday=6'),
+    day_of_week=_day_of_week,
 
     truncate=_date_truncate,
 
