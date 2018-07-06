@@ -4,7 +4,6 @@ import pytest
 from pytest import param
 
 import pandas as pd
-import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -247,9 +246,10 @@ def test_day_of_week_column(backend, con, alltypes, df):
     result_index = expr.index().execute()
     expected_index = df.timestamp_col.dt.dayofweek.astype('int16')
 
-    tm.assert_series_equal(result_index, expected_index, check_names=False)
+    backend.assert_series_equal(
+        result_index, expected_index, check_names=False)
 
     result_day = expr.full_name().execute()
     expected_day = df.timestamp_col.dt.day_name()
 
-    tm.assert_series_equal(result_day, expected_day, check_names=False)
+    backend.assert_series_equal(result_day, expected_day, check_names=False)
