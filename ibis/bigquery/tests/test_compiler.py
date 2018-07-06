@@ -344,7 +344,7 @@ GROUP BY 1""".format(expected1, expected2)
     assert result == expected
 
 
-def test_subquery_bug():
+def test_projection_fusion_only_peeks_at_immediate_parent():
     schema = [
         ('file_date', 'timestamp'),
         ('PARTITIONTIME', 'date'),
