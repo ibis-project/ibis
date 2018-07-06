@@ -380,3 +380,20 @@ SELECT t3.*
 FROM t3
   CROSS JOIN t3 t4"""
     assert result == expected
+
+
+def test_bool_reducers(alltypes):
+    b = alltypes.bool_col
+    expr = b.mean()
+    result = expr.compile()
+    expected = """\
+SELECT avg(CAST(`bool_col` AS INT64)) AS `mean`
+FROM `ibis-gbq.testing.functional_alltypes`"""
+    assert result == expected
+
+    expr2 = b.sum()
+    result = expr2.compile()
+    expected = """\
+SELECT sum(CAST(`bool_col` AS INT64)) AS `sum`
+FROM `ibis-gbq.testing.functional_alltypes`"""
+    assert result == expected
