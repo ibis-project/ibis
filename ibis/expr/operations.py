@@ -147,7 +147,7 @@ def all_equal(left, right, cache=None):
     return left == right
 
 
-_table_names = ('t{:d}'.format(i) for i in itertools.count())
+_table_names = ('unbound_table_{:d}'.format(i) for i in itertools.count())
 
 
 def genname():

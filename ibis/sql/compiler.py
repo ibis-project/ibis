@@ -1150,7 +1150,7 @@ class QueryContext(object):
 
             i += len(ctx._table_refs)
 
-        alias = 't%d' % i
+        alias = 't{:d}'.format(i)
         self.set_ref(expr, alias)
 
     def need_aliases(self, expr=None):
