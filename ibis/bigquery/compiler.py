@@ -558,6 +558,24 @@ def log2(expr):
     return arg.log(2)
 
 
+@rewrites(ops.Sum)
+def bq_sum(expr):
+    arg = expr.op().args[0]
+    if isinstance(arg, ir.BooleanColumn):
+        return arg.cast('int64').sum()
+    else:
+        return expr
+
+
+@rewrites(ops.Mean)
+def bq_mean(expr):
+    arg = expr.op().args[0]
+    if isinstance(arg, ir.BooleanColumn):
+        return arg.cast('int64').mean()
+    else:
+        return expr
+
+
 UNIT_FUNCS = {
     's': 'SECONDS',
     'ms': 'MILLIS',
