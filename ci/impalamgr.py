@@ -284,6 +284,20 @@ def load_impala_data(con, data_dir, overwrite=False):
             logger.info('Computing stats for %s', table.op().name)
             table.compute_stats()
 
+        con.raw_sql(
+            """\
+CREATE TABLE kudu_backed_table (
+  a STRING,
+  PRIMARY KEY(a)
+)
+PARTITION BY HASH PARTITIONS 2
+STORED AS KUDU
+TBLPROPERTIES (
+  'kudu.master_addresses' = 'localhost',
+  'kudu.num_tablet_replicas' = '1'
+)"""
+        )
+
         with concurrent.futures.ThreadPoolExecutor() as executor:
             parquet_tables = create_parquet_tables(con, executor)
             avro_tables = create_avro_tables(con, executor)
