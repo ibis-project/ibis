@@ -19,7 +19,7 @@ services:
       - MYSQL_PASSWORD=ibis
 
   impala:
-    image: ibisproject/impala:kudu
+    image: ibisproject/impala
     hostname: impala
     networks:
       default:
@@ -37,9 +37,6 @@ services:
       # Hive
       - 9083:9083
 
-      # Kudu
-      - 8050:8050
-      - 8051:8051
       # Impala
       - 21000:21000
       - 21050:21050
@@ -52,6 +49,36 @@ services:
     ports:
       - 8123:8123
       - 9000:9000
+
+  kudu-master:
+    image: cpcloud86/kudu:ntpd-latest
+    networks:
+      default:
+        aliases:
+          - kudu
+    cap_add:
+      - SYS_TIME
+    ports:
+      - 7051:7051
+      - 8051:8051
+    environment:
+      KUDU_MASTER: "true"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+  kudu-tserver:
+    image: cpcloud86/kudu:ntpd-latest
+    cap_add:
+      - SYS_TIME
+    ports:
+      - 7050:7050
+      - 8050:8050
+    environment:
+      KUDU_MASTER: "false"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
 
   mapd:
     image: mapd/mapd-ce-cpu:v3.6.0
@@ -73,8 +100,10 @@ services:
                 -wait tcp://postgres:5432
                 -wait tcp://impala:21050
                 -wait tcp://impala:50070
-                -wait tcp://impala:8050
-                -wait tcp://impala:8051
+                -wait tcp://kudu-master:7051
+                -wait tcp://kudu-master:8051
+                -wait tcp://kudu-tserver:7050
+                -wait tcp://kudu-tserver:8050
                 -wait tcp://clickhouse:9000
                 -wait-retry-interval 5s
                 -timeout 5m
