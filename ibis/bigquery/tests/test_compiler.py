@@ -397,3 +397,21 @@ FROM `ibis-gbq.testing.functional_alltypes`"""
 SELECT sum(CAST(`bool_col` AS INT64)) AS `sum`
 FROM `ibis-gbq.testing.functional_alltypes`"""
     assert result == expected
+
+
+def test_bool_reducers_where(alltypes):
+    b = alltypes.bool_col
+    m = alltypes.month
+    expr = b.mean(where=m > 6)
+    result = expr.compile()
+    expected = """\
+SELECT avg(CASE WHEN `month` > 6 THEN CAST(`bool_col` AS INT64) ELSE NULL END) AS `mean`
+FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+    expr2 = b.sum(where=((m > 6) & (m < 10)))
+    result = expr2.compile()
+    expected = """\
+SELECT sum(CASE WHEN (`month` > 6) AND (`month` < 10) THEN CAST(`bool_col` AS INT64) ELSE NULL END) AS `sum`
+FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
