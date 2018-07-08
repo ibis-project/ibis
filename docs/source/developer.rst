@@ -101,6 +101,31 @@ Impala (with UDFs)
 
       ci/impalamgr.py load --data --data-dir ibis-testing-data
 
+BigQuery
+^^^^^^^^
+
+Before you begin, you must have a `Google Cloud Platform project
+<https://cloud.google.com/docs/overview/#projects>`_ with billing set up and
+the `BigQuery API enabled
+<https://console.cloud.google.com/flows/enableapi?apiid=bigquery>`_.
+
+#. **Set up application default credentials by following the `getting started with
+   GCP authentication guide
+   <https://cloud.google.com/docs/authentication/getting-started>`_.**
+
+#. **Set the ``GOOGLE_BIGQUERY_PROJECT_ID`` environment variable**:
+
+   .. code:: sh
+
+      export GOOGLE_BIGQUERY_PROJECT_ID=your-project-id
+
+#. **Load data into BigQuery**:
+
+   .. code:: sh
+
+      ci/datamgr.py bigquery
+
+
 Clickhouse
 ^^^^^^^^^^
 

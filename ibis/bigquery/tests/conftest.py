@@ -22,6 +22,11 @@ def connect(project_id, dataset_id):
 
 
 @pytest.fixture(scope='session')
+def project_id():
+    return PROJECT_ID
+
+
+@pytest.fixture(scope='session')
 def client():
     return connect(PROJECT_ID, DATASET_ID)
 
