@@ -22,7 +22,7 @@ test: &test
           fi
     - run:
         name: Start Databases
-        command: docker-compose up -d --no-build mysql postgres impala clickhouse mapd
+        command: docker-compose up -d --no-build mysql postgres impala clickhouse mapd kudu-tserver kudu-master
     - run:
         name: Show Running Containers
         command: docker ps
