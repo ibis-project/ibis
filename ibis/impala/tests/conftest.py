@@ -305,3 +305,28 @@ def temp_parquet_table2(con, tmp_db, temp_parquet_table_schema):
 @pytest.fixture
 def mockcon():
     return MockConnection()
+
+
+@pytest.fixture(scope='session')
+def kudu_table(con, test_data_db):
+    name = 'kudu_backed_table'
+    con.raw_sql(
+        """\
+CREATE TABLE {database}.{name} (
+  a STRING,
+  PRIMARY KEY(a)
+)
+PARTITION BY HASH PARTITIONS 2
+STORED AS KUDU
+TBLPROPERTIES (
+  'kudu.master_addresses' = 'kudu',
+  'kudu.num_tablet_replicas' = '1'
+)""".format(database=test_data_db, name=name)
+    )
+    drop_sql = 'DROP TABLE {database}.{name}'.format(
+        database=temp_data_db, name=name
+    )
+    try:
+        yield con.table(name)
+    finally:
+        con.raw_sql(drop_sql)
