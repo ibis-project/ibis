@@ -368,4 +368,4 @@ def test_temp_table_concurrency(con, test_data_dir):
 
 def test_access_kudu_table(kudu_table):
     assert kudu_table.columns == ['a']
-    assert kudu_type['a'].type() == dt.string
+    assert kudu_table['a'].type() == dt.string

@@ -1057,7 +1057,7 @@ class ImpalaClient(SQLClient):
         query = 'DESCRIBE {}'.format(qualified_name)
 
         # only pull out the first two columns which are names and types
-        tuples = [row[:2] for row in self.con.fetchall(query)]
+        pairs = [row[:2] for row in self.con.fetchall(query)]
 
         names, types = zip(*pairs)
         ibis_types = [udf.parse_type(type.lower()) for type in types]

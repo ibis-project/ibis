@@ -324,7 +324,7 @@ TBLPROPERTIES (
 )""".format(database=test_data_db, name=name)
     )
     drop_sql = 'DROP TABLE {database}.{name}'.format(
-        database=temp_data_db, name=name
+        database=test_data_db, name=name
     )
     try:
         yield con.table(name)
