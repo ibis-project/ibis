@@ -1054,18 +1054,14 @@ class ImpalaClient(SQLClient):
         schema : ibis Schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
-        query = 'DESCRIBE {0}'.format(qualified_name)
-        tuples = self.con.fetchall(query)
+        query = 'DESCRIBE {}'.format(qualified_name)
 
-        names, types, comments = zip(*tuples)
+        # only pull out the first two columns which are names and types
+        tuples = [row[:2] for row in self.con.fetchall(query)]
 
-        ibis_types = []
-        for t in types:
-            t = t.lower()
-            t = udf.parse_type(t)
-            ibis_types.append(t)
-
-        names = [x.lower() for x in names]
+        names, types = zip(*pairs)
+        ibis_types = [udf.parse_type(type.lower()) for type in types]
+        names = [name.lower() for name in names]
 
         return sch.Schema(names, ibis_types)
 
