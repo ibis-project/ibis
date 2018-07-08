@@ -39,4 +39,4 @@ dependencies:
   - xorg-libxpm
   - xorg-libxrender
   - pip:
-    - kudu-python
+    - kudu-python==1.7.0
