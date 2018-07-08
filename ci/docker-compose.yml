@@ -51,7 +51,7 @@ services:
       - 9000:9000
 
   kudu-master:
-    image: cpcloud86/kudu:ntpd-latest
+    image: cpcloud86/kudu:latest
     networks:
       default:
         aliases:
@@ -68,7 +68,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
 
   kudu-tserver:
-    image: cpcloud86/kudu:ntpd-latest
+    image: cpcloud86/kudu:latest
     cap_add:
       - SYS_TIME
     ports:
