@@ -561,8 +561,9 @@ def log2(expr):
 @rewrites(ops.Sum)
 def bq_sum(expr):
     arg = expr.op().args[0]
+    where = expr.op().args[1]
     if isinstance(arg, ir.BooleanColumn):
-        return arg.cast('int64').sum()
+        return arg.cast('int64').sum(where=where)
     else:
         return expr
 
@@ -570,8 +571,9 @@ def bq_sum(expr):
 @rewrites(ops.Mean)
 def bq_mean(expr):
     arg = expr.op().args[0]
+    where = expr.op().args[1]
     if isinstance(arg, ir.BooleanColumn):
-        return arg.cast('int64').mean()
+        return arg.cast('int64').mean(where=where)
     else:
         return expr
 
