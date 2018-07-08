@@ -4,6 +4,7 @@ import pytest
 
 import ibis
 import ibis.common as com
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.util as util
 
@@ -363,3 +364,8 @@ def test_temp_table_concurrency(con, test_data_dir):
     with concurrent.futures.ThreadPoolExecutor(max_workers=nthreads) as e:
         futures = [e.submit(limit_10, i, hdfs_path) for i in range(nthreads)]
     assert all(map(len, (future.result() for future in as_completed(futures))))
+
+
+def test_access_kudu_table(kudu_table):
+    assert kudu_table.columns == ['a']
+    assert kudu_type['a'].type() == dt.string
