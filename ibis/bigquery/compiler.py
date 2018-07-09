@@ -23,7 +23,7 @@ import ibis.expr.operations as ops
 import ibis.expr.lineage as lin
 
 from ibis.impala.compiler import (
-    ImpalaSelect, unary, fixed_arity, ImpalaTableSetFormatter
+    ImpalaSelect, unary, fixed_arity, ImpalaTableSetFormatter, _reduction
 )
 from ibis.impala import compiler as impala_compiler
 
@@ -397,6 +397,7 @@ _operation_registry.update({
     ops.ArrayIndex: _array_index,
     ops.ArrayLength: unary('ARRAY_LENGTH'),
 
+    ops.HLLCardinality: _reduction('APPROX_COUNT_DISTINCT'),
     ops.Log: _log,
     ops.Sign: unary('SIGN'),
     ops.Modulus: fixed_arity('MOD', 2),
