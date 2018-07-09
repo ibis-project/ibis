@@ -609,3 +609,10 @@ def test_boolean_reducers(alltypes):
 
     bool_sum = b.sum().execute()
     assert type(bool_sum) == np.int64
+
+
+def test_column_summary(alltypes):
+    b = alltypes.bool_col.summary()
+    result = b.execute()
+    assert result.shape == (1, 7)
+    assert len(result) == 1

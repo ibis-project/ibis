@@ -415,3 +415,22 @@ FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
 SELECT sum(CASE WHEN (`month` > 6) AND (`month` < 10) THEN CAST(`bool_col` AS INT64) ELSE NULL END) AS `sum`
 FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
     assert result == expected
+
+
+def test_approx_nunique(alltypes):
+    d = alltypes.double_col
+    expr = d.approx_nunique()
+    result = expr.compile()
+    expected = """\
+SELECT APPROX_COUNT_DISTINCT(`double_col`) AS `approx_nunique`
+FROM `ibis-gbq.testing.functional_alltypes`"""
+    assert result == expected
+
+    b = alltypes.bool_col
+    m = alltypes.month
+    expr2 = b.approx_nunique(where=m > 6)
+    result = expr2.compile()
+    expected = """\
+SELECT APPROX_COUNT_DISTINCT(CASE WHEN `month` > 6 THEN `bool_col` ELSE NULL END) AS `approx_nunique`
+FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
