@@ -2283,6 +2283,20 @@ _timestamp_add = _binop_expr('__add__', ops.TimestampAdd)
 _timestamp_radd = _binop_expr('__radd__', ops.TimestampAdd)
 
 
+_day_of_week = property(
+    lambda self: ops.DayOfWeekNode(self).to_expr(),
+    doc="""\
+Namespace expression containing methods for extracting information about the
+day of the week of a TimestampValue or DateValue expression.
+
+Returns
+-------
+DayOfWeek
+    An namespace expression containing methods to use to extract information.
+"""
+)
+
+
 _timestamp_value_methods = dict(
     strftime=_timestamp_strftime,
     year=_extract_field('year', ops.ExtractYear),
@@ -2307,8 +2321,7 @@ _timestamp_value_methods = dict(
 
     __rsub__=_timestamp_sub,
     rsub=_timestamp_sub,
-    day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr(),
-                         doc='The day of the week with Monday=0, Sunday=6'),
+    day_of_week=_day_of_week,
 )
 
 _add_methods(ir.TimestampValue, _timestamp_value_methods)
@@ -2357,8 +2370,7 @@ _date_value_methods = dict(
     year=_extract_field('year', ops.ExtractYear),
     month=_extract_field('month', ops.ExtractMonth),
     day=_extract_field('day', ops.ExtractDay),
-    day_of_week=property(lambda self: ops.DayOfWeekNode(self).to_expr(),
-                         doc='The day of the week with Monday=0, Sunday=6'),
+    day_of_week=_day_of_week,
 
     truncate=_date_truncate,
 
@@ -2385,8 +2397,16 @@ def _to_unit(arg, target_unit):
     return arg
 
 
-def _interval_property(target_unit):
-    return property(functools.partial(_to_unit, target_unit=target_unit))
+def _interval_property(target_unit, name):
+    return property(
+        functools.partial(_to_unit, target_unit=target_unit),
+        doc="""Extract the number of {0}s from an IntervalValue expression.
+
+Returns
+-------
+IntegerValue
+    The number of {0}s in the expression
+""".format(name))
 
 
 _interval_add = _binop_expr('__add__', ops.IntervalAdd)
@@ -2398,17 +2418,17 @@ _interval_floordiv = _binop_expr('__floordiv__', ops.IntervalFloorDivide)
 
 _interval_value_methods = dict(
     to_unit=_to_unit,
-    years=_interval_property('Y'),
-    quarters=_interval_property('Q'),
-    months=_interval_property('M'),
-    weeks=_interval_property('W'),
-    days=_interval_property('D'),
-    hours=_interval_property('h'),
-    minutes=_interval_property('m'),
-    seconds=_interval_property('s'),
-    milliseconds=_interval_property('ms'),
-    microseconds=_interval_property('us'),
-    nanoseconds=_interval_property('ns'),
+    years=_interval_property('Y', 'year'),
+    quarters=_interval_property('Q', 'quarter'),
+    months=_interval_property('M', 'month'),
+    weeks=_interval_property('W', 'week'),
+    days=_interval_property('D', 'day'),
+    hours=_interval_property('h', 'hour'),
+    minutes=_interval_property('m', 'minute'),
+    seconds=_interval_property('s', 'second'),
+    milliseconds=_interval_property('ms', 'millisecond'),
+    microseconds=_interval_property('us', 'microsecond'),
+    nanoseconds=_interval_property('ns', 'nanosecond'),
 
     __add__=_interval_add,
     add=_interval_add,
@@ -2439,9 +2459,8 @@ _add_methods(ir.IntervalValue, _interval_value_methods)
 # Time API
 
 def between_time(arg, lower, upper, timezone=None):
-    """
-    Check if the input expr falls between the lower/upper bounds
-    passed. Bounds are inclusive. All arguments must be comparable.
+    """Check if the input expr falls between the lower/upper bounds passed.
+    Bounds are inclusive. All arguments must be comparable.
 
     Parameters
     ----------
@@ -2451,7 +2470,7 @@ def between_time(arg, lower, upper, timezone=None):
 
     Returns
     -------
-    is_between : BooleanValue
+    BooleanValue
     """
 
     if isinstance(arg.op(), ops.Time):
