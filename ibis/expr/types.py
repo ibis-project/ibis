@@ -733,12 +733,26 @@ class SortExpr(Expr):
 
 
 class DayOfWeek(Expr):
-
     def index(self):
+        """Get the index of the day of the week.
+
+        Returns
+        -------
+        IntegerValue
+            The index of the day of the week. Ibis follows pandas conventions,
+            where **Monday = 0 and Sunday = 6**.
+        """
         import ibis.expr.operations as ops
         return ops.DayOfWeekIndex(self.op().arg).to_expr()
 
     def full_name(self):
+        """Get the name of the day of the week.
+
+        Returns
+        -------
+        StringValue
+            The name of the day of the week
+        """
         import ibis.expr.operations as ops
         return ops.DayOfWeekName(self.op().arg).to_expr()
 

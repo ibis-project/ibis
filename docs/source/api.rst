@@ -469,14 +469,104 @@ All timestamp operations are valid either on scalar or array values
 .. autosummary::
    :toctree: generated/
 
-   TimestampValue.truncate
+   TimestampValue.strftime
    TimestampValue.year
    TimestampValue.month
    TimestampValue.day
+   TimestampValue.day_of_week
    TimestampValue.hour
    TimestampValue.minute
    TimestampValue.second
    TimestampValue.millisecond
+   TimestampValue.truncate
+   TimestampValue.time
+   TimestampValue.date
+   TimestampValue.add
+   TimestampValue.radd
+   TimestampValue.sub
+   TimestampValue.rsub
+
+.. _api.date:
+
+Date methods
+------------
+
+.. autosummary::
+   :toctree: generated/
+
+   DateValue.strftime
+   DateValue.year
+   DateValue.month
+   DateValue.day
+   DateValue.day_of_week
+   DateValue.truncate
+   DateValue.add
+   DateValue.radd
+   DateValue.sub
+   DateValue.rsub
+
+.. _api.dow:
+
+Day of week methods
+-------------------
+
+.. currentmodule:: ibis.expr.types
+
+.. autosummary::
+   :toctree: generated/
+
+   DayOfWeek.index
+   DayOfWeek.full_name
+
+.. currentmodule:: ibis.expr.api
+
+.. _api.time:
+
+Time methods
+------------
+
+.. autosummary::
+   :toctree: generated/
+
+   TimeValue.between
+   TimeValue.truncate
+   TimeValue.hour
+   TimeValue.minute
+   TimeValue.second
+   TimeValue.millisecond
+   TimeValue.add
+   TimeValue.radd
+   TimeValue.sub
+   TimeValue.rsub
+
+.. _api.interval:
+
+Interval methods
+----------------
+
+.. autosummary::
+   :toctree: generated/
+
+   IntervalValue.to_unit
+   IntervalValue.years
+   IntervalValue.quarters
+   IntervalValue.months
+   IntervalValue.weeks
+   IntervalValue.days
+   IntervalValue.hours
+   IntervalValue.minutes
+   IntervalValue.seconds
+   IntervalValue.milliseconds
+   IntervalValue.microseconds
+   IntervalValue.nanoseconds
+   IntervalValue.add
+   IntervalValue.radd
+   IntervalValue.sub
+   IntervalValue.mul
+   IntervalValue.rmul
+   IntervalValue.floordiv
+   IntervalValue.negate
+
 
 Boolean methods
 ---------------
