@@ -3,10 +3,12 @@ FROM ibisproject/miniconda3
 ADD ci/cloudera.list /etc/apt/sources.list.d/
 
 # fonts are for docs
-RUN apt-get -qq update -y \
- && apt-get -qq install -y --allow-unauthenticated --no-install-recommends ttf-dejavu \
-    git gcc g++ make clang libboost-dev postgresql-client ca-certificates \
-    libkuduclient0 libkuduclient-dev \
+RUN apt-get -qq update --yes \
+ && apt-get -qq install --yes build-essential \
+ && apt-get -qq install --yes --allow-unauthenticated --no-install-recommends \
+   ttf-dejavu \
+   git make clang libboost-dev postgresql-client ca-certificates \
+   libkuduclient0 libkuduclient-dev \
  && rm -rf /var/lib/apt/lists/*
 
 ARG PYTHON
