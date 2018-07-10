@@ -116,3 +116,13 @@ def test_optional_graphviz_repr():
     # turn it back on
     ibis.options.graphviz_repr = True
     assert expr._repr_svg_() is not None
+
+
+def test_between():
+    t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
+    expr = t.a.between(1, 1)
+    lower_bound, upper_bound = expr.op().args[1:]
+    graph = viz.to_graph(expr)
+    source = graph.source
+    assert source.count(str(hash(repr(lower_bound.op())))) == 1
+    assert source.count(str(hash(repr(upper_bound.op())))) == 1
