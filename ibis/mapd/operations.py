@@ -668,7 +668,7 @@ _unsupported_ops = [
     ops.TimestampFromUNIX,
     ops.Date,
     ops.TimeTruncate,
-    ops.TimestampDiff
+    ops.TimestampDiff,
 ]
 
 _unsupported_ops = {k: raise_unsupported_op_error for k in _unsupported_ops}
