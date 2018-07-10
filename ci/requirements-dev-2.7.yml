@@ -5,6 +5,7 @@ dependencies:
   - clickhouse-cityhash
   - clickhouse-driver>=0.0.8
   - clickhouse-sqlalchemy
+  - cython
   - cmake
   - enum34
   - flake8
