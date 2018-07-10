@@ -49,7 +49,7 @@ At this time, Ibis offers some level of support for the following systems:
 - `Apache Kudu (incubating) <http://getkudu.io/>`_
 - `PostgreSQL <https://www.postgresql.org/>`_
 - `SQLite <https://www.sqlite.org/>`_
-- `Google BigQuery <https://cloud.google.com/bigquery/>`
+- `Google BigQuery <https://cloud.google.com/bigquery/>`_
 - `Yandex Clickhouse <https://clickhouse.yandex/>`_
 - Direct execution of ibis expressions against `Pandas
   <http://pandas.pydata.org/>`_ objects
