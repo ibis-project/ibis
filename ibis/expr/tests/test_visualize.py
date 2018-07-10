@@ -34,8 +34,8 @@ pytestmark = pytest.mark.skipif(
 def test_exprs(table, expr_func):
     expr = expr_func(table)
     graph = viz.to_graph(expr)
-    assert str(hash(repr(table.op()))) in graph.source
-    assert str(hash(repr(expr.op()))) in graph.source
+    assert str(hash(table.op())) in graph.source
+    assert str(hash(expr.op())) in graph.source
 
 
 def test_custom_expr():
@@ -52,7 +52,7 @@ def test_custom_expr():
     op = MyExprNode('Hello!', 42.3)
     expr = op.to_expr()
     graph = viz.to_graph(expr)
-    assert str(hash(repr(op))) in graph.source
+    assert str(hash(op)) in graph.source
 
 
 def test_custom_expr_with_not_implemented_type():
@@ -74,7 +74,7 @@ def test_custom_expr_with_not_implemented_type():
     op = MyExprNode('Hello!', 42.3)
     expr = op.to_expr()
     graph = viz.to_graph(expr)
-    assert str(hash(repr(op))) in graph.source
+    assert str(hash(op)) in graph.source
 
 
 @pytest.mark.parametrize('how', ['inner', 'left', 'right', 'outer'])
@@ -84,7 +84,7 @@ def test_join(how):
     joined = left.join(right, left.b == right.b, how=how)
     result = joined[left.a, right.c]
     graph = viz.to_graph(result)
-    assert str(hash(repr(result.op()))) in graph.source
+    assert str(hash(result.op())) in graph.source
 
 
 def test_sort_by():
@@ -93,7 +93,7 @@ def test_sort_by():
         sum_a=t.a.sum().cast('double')
     ).sort_by('c')
     graph = viz.to_graph(expr)
-    assert str(hash(repr(expr.op()))) in graph.source
+    assert str(hash(expr.op())) in graph.source
 
 
 @pytest.mark.skipif(
@@ -116,3 +116,15 @@ def test_optional_graphviz_repr():
     # turn it back on
     ibis.options.graphviz_repr = True
     assert expr._repr_png_() is not None
+
+
+def test_between():
+    t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
+    expr = t.a.between(1, 1)
+    lower_bound, upper_bound = expr.op().args[1:]
+    graph = viz.to_graph(expr)
+    source = graph.source
+
+    # one for the node itself and one for the edge to between
+    assert source.count(str(hash(lower_bound.op()))) == 2
+    assert source.count(str(hash(upper_bound.op()))) == 2
