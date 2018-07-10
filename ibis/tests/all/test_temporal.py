@@ -9,6 +9,8 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.tests.util as tu
 
+from ibis.pandas.execution.temporal import day_name
+
 
 @pytest.mark.parametrize('attr', [
     'year', 'month', 'day',
@@ -250,6 +252,6 @@ def test_day_of_week_column(backend, con, alltypes, df):
         result_index, expected_index, check_names=False)
 
     result_day = expr.full_name().execute()
-    expected_day = df.timestamp_col.dt.day_name()
+    expected_day = day_name(df.timestamp_col.dt.day_name)
 
     backend.assert_series_equal(result_day, expected_day, check_names=False)
