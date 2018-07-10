@@ -669,6 +669,8 @@ _unsupported_ops = [
     ops.Date,
     ops.TimeTruncate,
     ops.TimestampDiff,
+    ops.DayOfWeekIndex,
+    ops.DayOfWeekName,
 ]
 
 _unsupported_ops = {k: raise_unsupported_op_error for k in _unsupported_ops}
