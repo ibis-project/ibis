@@ -4,9 +4,8 @@ ADD ci/cloudera.list /etc/apt/sources.list.d/
 
 # fonts are for docs
 RUN apt-get -qq update --yes \
- && apt-get -qq install --yes build-essential \
  && apt-get -qq install --yes --allow-unauthenticated --no-install-recommends \
-   ttf-dejavu \
+   build-essential ttf-dejavu \
    git make clang libboost-dev postgresql-client ca-certificates \
    libkuduclient0 libkuduclient-dev \
  && rm -rf /var/lib/apt/lists/*
