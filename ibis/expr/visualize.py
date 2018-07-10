@@ -138,21 +138,18 @@ def to_graph(expr, node_attr=None, edge_attr=None):
     while stack:
         e = stack.pop()
         node = e.op()
-        a = str(hash(repr(node)))
+        a = str(hash(node))
 
         if a not in seen:
             seen.add(a)
 
             if a not in labeled:
                 label = get_label(e)
-            else:
-                label = None
-
-            graph.node(a, label=label)
+                graph.node(a, label=label)
 
             for arg, arg_name in get_args(node):
                 if arg is not None:
-                    b = str(hash(repr(arg.op())))
+                    b = str(hash(arg.op()))
                     label = get_label(arg, arg_name)
                     graph.node(b, label=label)
                     labeled.add(b)
