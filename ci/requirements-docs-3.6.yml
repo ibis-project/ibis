@@ -5,6 +5,7 @@ dependencies:
   - clickhouse-cityhash
   - clickhouse-driver>=0.0.8
   - clickhouse-sqlalchemy
+  - cython
   - cmake
   - flake8
   - google-cloud-bigquery>=1.0.0
