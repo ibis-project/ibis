@@ -604,3 +604,19 @@ def test_day_of_week(client, case, dtype):
     expr_name = date_var.day_of_week.full_name()
     result = client.execute(expr_name)
     assert result == 'Sunday'
+
+
+def test_boolean_reducers(alltypes):
+    b = alltypes.bool_col
+    bool_avg = b.mean().execute()
+    assert type(bool_avg) == np.float64
+
+    bool_sum = b.sum().execute()
+    assert type(bool_sum) == np.int64
+
+
+def test_column_summary(alltypes):
+    b = alltypes.bool_col.summary()
+    result = b.execute()
+    assert result.shape == (1, 7)
+    assert len(result) == 1
