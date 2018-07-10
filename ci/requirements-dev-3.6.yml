@@ -38,5 +38,3 @@ dependencies:
   - toolz
   - xorg-libxpm
   - xorg-libxrender
-  - pip:
-    - kudu-python<1.7.0

@@ -27,6 +27,8 @@ RUN echo 'source activate ibis-'${ENVKIND}-${PYTHON}' && exec "$@"' > activate.s
 
 COPY . /ibis
 WORKDIR /ibis
+
 RUN bash /activate.sh python setup.py develop
+RUN bash /activate.sh pip install 'kudu-python<1.7.0'
 
 ENTRYPOINT ["bash", "/activate.sh"]
