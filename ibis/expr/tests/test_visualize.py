@@ -107,15 +107,15 @@ def test_optional_graphviz_repr():
     ).sort_by('c')
 
     # default behavior
-    assert expr._repr_svg_() is not None
+    assert expr._repr_png_() is not None
 
     # turn it off
     ibis.options.graphviz_repr = False
-    assert expr._repr_svg_() is None
+    assert expr._repr_png_() is None
 
     # turn it back on
     ibis.options.graphviz_repr = True
-    assert expr._repr_svg_() is not None
+    assert expr._repr_png_() is not None
 
 
 def test_between():

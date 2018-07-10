@@ -47,7 +47,7 @@ class Expr(object):
         from ibis.expr.format import ExprFormatter
         return ExprFormatter(self, memo=memo).get_result()
 
-    def _repr_svg_(self):
+    def _repr_png_(self):
         if not ibis.options.graphviz_repr:
             return None
         try:
@@ -56,7 +56,7 @@ class Expr(object):
             return None
         else:
             try:
-                return viz.to_graph(self)._repr_svg_()
+                return viz.to_graph(self).pipe(format='png')
             except Exception:
                 # Something may go wrong, and we can't error in the notebook
                 # so fallback to the default text representation.
