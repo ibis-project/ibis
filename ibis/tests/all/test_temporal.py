@@ -280,7 +280,8 @@ def test_day_of_week_column_group_by(backend, con, alltypes, df):
 
     result = expr.execute().sort_values('string_col')
     expected = df.groupby('string_col').timestamp_col.apply(
-        lambda s: day_name(s.dt).str.len().sum()).reset_index().rename(
-            columns={'timestamp_col': 'day_of_week_name_length_sum'})
+        lambda s: day_name(s.dt).str.len().sum().astype('int32')
+    ).reset_index().rename(
+        columns={'timestamp_col': 'day_of_week_name_length_sum'})
 
     backend.assert_frame_equal(result, expected)
