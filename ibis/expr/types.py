@@ -62,14 +62,14 @@ class Expr(object):
                 # so fallback to the default text representation.
                 return None
 
-    def visualize(self, format='png'):
-        """Visualize an expression in the browser as a PNG image.
+    def visualize(self, format='svg'):
+        """Visualize an expression in the browser as an SVG image.
 
         Parameters
         ----------
         format : str, optional
-            Defaults to ``'png'``. Some additional formats are
-            ``'jpeg'`` and ``'svg'``. These are specified by the ``graphviz``
+            Defaults to ``'svg'``. Some additional formats are
+            ``'jpeg'`` and ``'png'``. These are specified by the ``graphviz``
             Python library.
 
         Notes
