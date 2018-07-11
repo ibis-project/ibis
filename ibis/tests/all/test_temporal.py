@@ -255,3 +255,32 @@ def test_day_of_week_column(backend, con, alltypes, df):
     expected_day = day_name(df.timestamp_col.dt)
 
     backend.assert_series_equal(result_day, expected_day, check_names=False)
+
+
+@tu.skipif_unsupported
+def test_day_of_week_column_group_by(backend, con, alltypes, df):
+    expr = alltypes.groupby('string_col').aggregate(
+        day_of_week_index_counts=lambda t: (
+            t.timestamp_col.day_of_week.index().count()
+        )
+    )
+
+    result = expr.execute().sort_values('string_col')
+    expected = df.groupby('string_col').timestamp_col.apply(
+        lambda s: s.dt.dayofweek.count()).reset_index().rename(
+            columns={'timestamp_col': 'day_of_week_index_counts'})
+
+    backend.assert_frame_equal(result, expected)
+
+    expr = alltypes.groupby('string_col').aggregate(
+        day_of_week_name_length_sum=lambda t: (
+            t.timestamp_col.day_of_week.full_name().length().sum()
+        )
+    )
+
+    result = expr.execute().sort_values('string_col')
+    expected = df.groupby('string_col').timestamp_col.apply(
+        lambda s: day_name(s.dt).str.len().sum()).reset_index().rename(
+            columns={'timestamp_col': 'day_of_week_name_length_sum'})
+
+    backend.assert_frame_equal(result, expected)
