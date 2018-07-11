@@ -326,7 +326,7 @@ class BigQueryClient(SQLClient):
     table_class = BigQueryTable
     dialect = comp.BigQueryDialect
 
-    def __init__(self, project_id, dataset_id):
+    def __init__(self, project_id, dataset_id, credentials=None):
         """
         Parameters
         ----------
@@ -334,11 +334,13 @@ class BigQueryClient(SQLClient):
             A project name
         dataset_id : str
             A ``<project_id>.<dataset_id>`` string or just a dataset name
+        credentials : google.auth.credentials.Credentials, optional
         """
         (self.data_project,
          self.billing_project,
          self.dataset) = parse_project_and_dataset(project_id, dataset_id)
-        self.client = bq.Client(project=self.data_project)
+        self.client = bq.Client(project=self.data_project,
+                                credentials=credentials)
 
     def _parse_project_and_dataset(self, dataset):
         project, _, dataset = parse_project_and_dataset(
