@@ -359,18 +359,8 @@ class PandasClient(client.Client):
                 'async is not yet supported in the pandas backend'
             )
 
-        if not isinstance(query, ir.Expr):
-            raise TypeError(
-                'Input to execute must be an ibis expression, got object of '
-                'type {!r}'.format(type(query).__name__)
-            )
-
         assert isinstance(query, ir.Expr)
-
-        result = execute(query, params=params)
-        if isinstance(query, ir.TableExpr):
-            return query.schema().apply_to(result)
-        return result
+        return execute(query, params=params)
 
     def compile(self, expr, *args, **kwargs):
         return expr
