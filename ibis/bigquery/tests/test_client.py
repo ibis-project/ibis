@@ -27,8 +27,9 @@ def test_table(alltypes):
 
 def test_client_credentials(client, client_no_credentials):
     alltypes_default = client.table('functional_alltypes')
-    alltypes_no_credentials = client_no_credentials\
-        .table('functional_alltypes')
+    alltypes_no_credentials = client_no_credentials.table(
+        'functional_alltypes'
+    )
     result = alltypes_default.limit(50).execute()
     result_no_credentials = alltypes_no_credentials.limit(50).execute()
     tm.assert_frame_equal(result, result_no_credentials)
