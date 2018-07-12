@@ -36,17 +36,18 @@ def verify(expr, params=None):
         return False
 
 
-def connect(project_id, dataset_id):
+def connect(project_id, dataset_id, credentials=None):
     """Create a BigQueryClient for use with Ibis
 
     Parameters
     ----------
     project_id: str
     dataset_id: str
+    credentials : google.auth.credentials.Credentials, optional, default None
 
     Returns
     -------
     BigQueryClient
     """
 
-    return BigQueryClient(project_id, dataset_id)
+    return BigQueryClient(project_id, dataset_id, credentials=credentials)
