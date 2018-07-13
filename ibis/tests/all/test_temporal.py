@@ -1,3 +1,4 @@
+import sys
 import warnings
 
 import pytest
@@ -286,4 +287,11 @@ def test_day_of_week_column_group_by(
     ).reset_index().rename(columns=dict(timestamp_col='day_of_week_result'))
 
     # FIXME(#1536): Pandas backend should use query.schema().apply_to
-    backend.assert_frame_equal(result, expected, check_dtype=False)
+    backend.assert_frame_equal(
+        result,
+        expected,
+        check_dtype=False,
+        # python 2's handling of strings is annoying here wrt sqlalchemy's
+        # column name string subclass
+        check_column_type=sys.version.major != 2
+    )
