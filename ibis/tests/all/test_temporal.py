@@ -285,4 +285,5 @@ def test_day_of_week_column_group_by(
         day_of_week_pandas
     ).reset_index().rename(columns=dict(timestamp_col='day_of_week_result'))
 
-    backend.assert_frame_equal(result, expected)
+    # FIXME(#1536): Pandas backend should use query.schema().apply_to
+    backend.assert_frame_equal(result, expected, check_dtype=False)
