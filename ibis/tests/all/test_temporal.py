@@ -293,5 +293,5 @@ def test_day_of_week_column_group_by(
         check_dtype=False,
         # python 2's handling of strings is annoying here wrt sqlalchemy's
         # column name string subclass
-        check_column_type=sys.version.major != 2
+        check_column_type=sys.version_info.major != 2
     )
