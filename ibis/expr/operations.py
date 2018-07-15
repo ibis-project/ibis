@@ -483,12 +483,27 @@ class BaseConvert(ValueOp):
         return rlz.shape_like(tuple(self.flat_args()), dt.string)
 
 
-class RealUnaryOp(UnaryOp):
+class MathUnaryOp(UnaryOp):
     arg = Arg(rlz.numeric)
-    output_type = rlz.shape_like('arg', dt.double)
+
+    def output_type(self):
+        arg = self.arg
+        if isinstance(self.arg, ir.DecimalValue):
+            dtype = arg.type()
+        else:
+            dtype = dt.double
+        return rlz.shape_like(arg, dtype)
 
 
-class Exp(RealUnaryOp):
+class ExpandingTypeMathUnaryOp(MathUnaryOp):
+    def output_type(self):
+        if not isinstance(self.arg, ir.DecimalValue):
+            return super().output_type()
+        arg = self.arg
+        return rlz.shape_like(arg, arg.type().largest)
+
+
+class Exp(ExpandingTypeMathUnaryOp):
     pass
 
 
@@ -497,11 +512,11 @@ class Sign(UnaryOp):
     output_type = rlz.typeof('arg')
 
 
-class Sqrt(RealUnaryOp):
+class Sqrt(MathUnaryOp):
     pass
 
 
-class Logarithm(RealUnaryOp):
+class Logarithm(MathUnaryOp):
     arg = Arg(rlz.strict_numeric)
 
 
@@ -522,24 +537,21 @@ class Log10(Logarithm):
     """Logarithm base 10"""
 
 
-class Degrees(UnaryOp):
+class Degrees(ExpandingTypeMathUnaryOp):
     """Converts radians to degrees"""
     arg = Arg(rlz.numeric)
-    output_type = rlz.shape_like('arg', dt.float64)
 
 
-class Radians(UnaryOp):
-    """Converts radians to degrees"""
+class Radians(MathUnaryOp):
+    """Converts degrees to radians"""
     arg = Arg(rlz.numeric)
-    output_type = rlz.shape_like('arg', dt.float64)
 
 
 # TRIGONOMETRIC OPERATIONS
 
-class TrigonometricUnary(UnaryOp):
+class TrigonometricUnary(MathUnaryOp):
     """Trigonometric base unary"""
     arg = Arg(rlz.numeric)
-    output_type = rlz.shape_like('arg', dt.float64)
 
 
 class TrigonometricBinary(BinaryOp):
