@@ -1,3 +1,0 @@
-# Packages for Cloudera's Distribution for Hadoop, Version 5, on Debian 8.0 amd64
-deb http://archive.cloudera.com/kudu/debian/jessie/amd64/kudu jessie-kudu5 contrib
-deb-src http://archive.cloudera.com/kudu/debian/jessie/amd64/kudu jessie-kudu5 contrib
