@@ -9,7 +9,7 @@ RUN apt-get -qq update -y \
 ARG PYTHON
 ARG ENVKIND
 
-ADD ci/requirements-${ENVKIND}-${PYTHON}.yml /
+COPY ci/requirements-${ENVKIND}-${PYTHON}.yml /
 
 RUN conda env create -q -n ibis-${ENVKIND}-${PYTHON} -f /requirements-${ENVKIND}-${PYTHON}.yml \
  && conda install conda-build -y -q
@@ -20,7 +20,7 @@ RUN conda env create -q -n ibis-${ENVKIND}-${PYTHON} -f /requirements-${ENVKIND}
 
 RUN echo 'source activate ibis-'${ENVKIND}-${PYTHON}' && exec "$@"' > activate.sh
 
-ADD . /ibis
+COPY . /ibis
 WORKDIR /ibis
 RUN bash /activate.sh python setup.py develop
 
