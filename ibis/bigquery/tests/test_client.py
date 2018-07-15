@@ -1,6 +1,7 @@
 import collections
-
 import datetime
+import decimal
+
 import pytz
 
 import pytest
@@ -689,3 +690,17 @@ def test_column_summary(alltypes):
     result = b.execute()
     assert result.shape == (1, 7)
     assert len(result) == 1
+
+
+def test_numeric_table_schema(numeric_table):
+    assert numeric_table.schema() == ibis.schema([
+        ('string_col', dt.string),
+        ('numeric_col', dt.Decimal(38, 9))
+    ])
+
+
+def test_numeric_sum(numeric_table):
+    t = numeric_table
+    expr = t.numeric_col.sum()
+    result = expr.execute()
+    assert isinstance(result, decimal.Decimal)
