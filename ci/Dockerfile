@@ -7,7 +7,6 @@ RUN apt-get -qq update --yes \
  && apt-get -qq install --yes --allow-unauthenticated --no-install-recommends \
    build-essential ttf-dejavu \
    git make clang libboost-dev postgresql-client ca-certificates \
-   libkuduclient0 libkuduclient-dev \
  && rm -rf /var/lib/apt/lists/*
 
 ARG PYTHON
@@ -28,6 +27,5 @@ COPY . /ibis
 WORKDIR /ibis
 
 RUN bash /activate.sh python setup.py develop
-RUN bash /activate.sh pip install 'kudu-python<1.7.0'
 
 ENTRYPOINT ["bash", "/activate.sh"]
