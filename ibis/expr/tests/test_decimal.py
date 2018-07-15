@@ -101,7 +101,7 @@ def test_invalid_precision_scale_combo(precision, scale):
     ]
 )
 def test_invalid_precision_scale_type(precision, scale):
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         dt.Decimal(precision, scale)
 
 
