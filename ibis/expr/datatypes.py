@@ -1,12 +1,13 @@
-import re
-import six
-import toolz
+import collections
 import datetime
 import itertools
-import collections
+import numbers
+import re
+
+import six
 import pandas as pd
-from functools import partial
-from collections import namedtuple, OrderedDict
+
+import toolz
 from multipledispatch import Dispatcher
 
 import ibis.common as com
@@ -87,10 +88,10 @@ class DataType(object):
         return cast(self, target, **kwargs)
 
     def scalar_type(self):
-        return partial(self.scalar, dtype=self)
+        return functools.partial(self.scalar, dtype=self)
 
     def array_type(self):
-        return partial(self.column, dtype=self)
+        return functools.partial(self.column, dtype=self)
 
 
 class Any(DataType):
@@ -128,7 +129,7 @@ class Boolean(Primitive):
     __slots__ = ()
 
 
-Bounds = namedtuple('Bounds', ('lower', 'upper'))
+Bounds = collections.namedtuple('Bounds', ('lower', 'upper'))
 
 
 class Integer(Primitive):
@@ -487,7 +488,7 @@ class Struct(DataType):
             raise ValueError('names and types must have the same length')
 
         super(Struct, self).__init__(nullable=nullable)
-        self.pairs = OrderedDict(zip(names, types))
+        self.pairs = collections.OrderedDict(zip(names, types))
 
     @classmethod
     def from_tuples(self, pairs):
@@ -701,14 +702,14 @@ _token_names = dict(
 )
 
 
-Token = namedtuple('Token', ('type', 'value'))
+Token = collections.namedtuple('Token', ('type', 'value'))
 
 
 # Adapted from tokenize.String
 _STRING_REGEX = """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""  # noqa: E501
 
 
-_TYPE_RULES = OrderedDict(
+_TYPE_RULES = collections.OrderedDict(
     [
         # any, null, bool|boolean
         ('(?P<ANY>any)', lambda token: Token(Tokens.ANY, any)),
@@ -1111,7 +1112,7 @@ def infer_dtype_default(value):
     raise com.InputTypeError(value)
 
 
-@infer.register(OrderedDict)
+@infer.register(collections.OrderedDict)
 def infer_struct(value):
     if not value:
         raise TypeError('Empty struct type not supported')
