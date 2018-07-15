@@ -808,7 +808,7 @@ class Mean(Reduction):
 
     def output_type(self):
         if isinstance(self.arg, ir.DecimalValue):
-            dtype = self.arg.type().largest
+            dtype = self.arg.type()
         else:
             dtype = dt.float64
         return dtype.scalar_type()
