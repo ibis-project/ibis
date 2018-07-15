@@ -370,7 +370,7 @@ class Decimal(DataType):
 
     @property
     def largest(self):
-        return Decimal(self.precision, 38)
+        return Decimal(38, self.scale)
 
 
 assert hasattr(Decimal, '__hash__')
