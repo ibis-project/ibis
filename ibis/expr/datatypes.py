@@ -335,6 +335,24 @@ class Decimal(DataType):
     __slots__ = 'precision', 'scale'
 
     def __init__(self, precision, scale, nullable=True):
+        if not isinstance(precision, numbers.Integral):
+            raise TypeError('Decimal type precision must be an integer')
+        if not isinstance(scale, numbers.Integral):
+            raise TypeError('Decimal type scale must be an integer')
+        if precision < 0:
+            raise ValueError('Decimal type precision cannot be negative')
+        if not precision:
+            raise ValueError('Decimal type precision cannot be zero')
+        if scale < 0:
+            raise ValueError('Decimal type scale cannot be negative')
+        if precision < scale:
+            raise ValueError(
+                'Decimal type precision must be greater than or equal to '
+                'scale. Got precision={:d} and scale={:d}'.format(
+                    precision, scale
+                )
+            )
+
         super(Decimal, self).__init__(nullable=nullable)
         self.precision = precision
         self.scale = scale
