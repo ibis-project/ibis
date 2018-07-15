@@ -24,6 +24,7 @@ import ibis.expr.lineage as lin
 from ibis.compat import parse_version
 from ibis.client import Database, Query, SQLClient
 from ibis.bigquery import compiler as comp
+from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 
 NATIVE_PARTITION_COL = '_PARTITIONTIME'
 
@@ -180,7 +181,8 @@ bigquery_param = Dispatcher('bigquery_param')
 @bigquery_param.register(ir.StructScalar, OrderedDict)
 def bq_param_struct(param, value):
     field_params = [bigquery_param(param[k], v) for k, v in value.items()]
-    return bq.StructQueryParameter(param.get_name(), *field_params)
+    result = bq.StructQueryParameter(param.get_name(), *field_params)
+    return result
 
 
 @bigquery_param.register(ir.ArrayValue, list)
@@ -189,11 +191,23 @@ def bq_param_array(param, value):
     assert isinstance(param_type, dt.Array), str(param_type)
 
     try:
-        bigquery_type = _IBIS_TYPE_TO_DTYPE[str(param_type.value_type)]
-    except KeyError:
+        bigquery_type = ibis_type_to_bigquery_type(param_type.value_type)
+    except NotImplementedError:
         raise com.UnsupportedBackendType(param_type)
     else:
-        return bq.ArrayQueryParameter(param.get_name(), bigquery_type, value)
+        if isinstance(param_type.value_type, dt.Struct):
+            query_value = [
+                bigquery_param(param[i].name('element_{:d}'.format(i)), struct)
+                for i, struct in enumerate(value)
+            ]
+            bigquery_type = 'STRUCT'
+        elif isinstance(param_type.value_type, dt.Array):
+            raise TypeError('ARRAY<ARRAY<T>> is not supported in BigQuery')
+        else:
+            query_value = value
+        result = bq.ArrayQueryParameter(
+            param.get_name(), bigquery_type, query_value)
+        return result
 
 
 @bigquery_param.register(
