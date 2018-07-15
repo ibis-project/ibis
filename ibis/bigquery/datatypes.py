@@ -50,8 +50,9 @@ def trans_integer(t, context):
     return 'INT64'
 
 
-@ibis_type_to_bigquery_type.register(dt.UInt64, TypeTranslationContext)
-@ibis_type_to_bigquery_type.register(dt.UInt64, UDFContext)
+@ibis_type_to_bigquery_type.register(
+    dt.UInt64, (TypeTranslationContext, UDFContext)
+)
 def trans_lossy_integer(t, context):
     raise TypeError(
         'Conversion from uint64 to BigQuery integer type (int64) is lossy'
