@@ -10,15 +10,16 @@ import pandas as pd
 import pandas.util.testing as tm
 
 import ibis
-import ibis.common as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
-
 pytestmark = pytest.mark.bigquery
-pytest.importorskip('google.cloud.bigquery')
+bq = pytest.importorskip('google.cloud.bigquery')
 ga = pytest.importorskip('google.auth')
 exceptions = pytest.importorskip('google.api_core.exceptions')
+
+
+from ibis.bigquery.client import bigquery_param  # noqa: E402
 
 
 def test_table(alltypes):
@@ -350,10 +351,6 @@ def test_scalar_param_struct(client):
     assert value == result
 
 
-@pytest.mark.xfail(
-    raises=com.UnsupportedBackendType,
-    reason='Cannot handle nested structs/arrays in 0.27 API',
-)
 def test_scalar_param_nested(client):
     param = ibis.param('struct<x: array<struct<y: array<double>>>>')
     value = collections.OrderedDict([
@@ -368,6 +365,68 @@ def test_scalar_param_nested(client):
     ])
     result = client.execute(param, {param: value})
     assert value == result
+
+
+def test_repr_struct_of_array_of_struct():
+    param = ibis.param('struct<x: array<struct<y: array<double>>>>')
+    param = param.name('foo')
+    value = collections.OrderedDict([
+        (
+            'x',
+            [
+                collections.OrderedDict([
+                    ('y', [1.0, 2.0, 3.0])
+                ])
+            ]
+        )
+    ])
+    result = bigquery_param(param, value)
+    expected = {
+        'name': 'foo',
+        'parameterType': {
+            'structTypes': [
+                {
+                    'name': 'x',
+                    'type': {
+                        'arrayType': {
+                            'structTypes': [
+                                {
+                                    'name': 'y',
+                                    'type': {
+                                        'arrayType': {'type': 'FLOAT64'},
+                                        'type': 'ARRAY'
+                                    }
+                                }
+                            ],
+                            'type': 'STRUCT'
+                        },
+                        'type': 'ARRAY'
+                    }
+                }
+            ],
+            'type': 'STRUCT'
+        },
+        'parameterValue': {
+            'structValues': {
+                'x': {
+                    'arrayValues': [
+                        {
+                            'structValues': {
+                                'y': {
+                                    'arrayValues': [
+                                        {'value': 1.0},
+                                        {'value': 2.0},
+                                        {'value': 3.0}
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    assert result.to_api_repr() == expected
 
 
 def test_raw_sql(client):
