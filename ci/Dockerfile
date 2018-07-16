@@ -1,7 +1,5 @@
 FROM ibisproject/miniconda3
 
-ADD ci/cloudera.list /etc/apt/sources.list.d/
-
 # fonts are for docs
 RUN apt-get -qq update --yes \
  && apt-get -qq install --yes --allow-unauthenticated --no-install-recommends \
