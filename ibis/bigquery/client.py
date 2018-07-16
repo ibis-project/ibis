@@ -29,15 +29,6 @@ from ibis.bigquery.datatypes import ibis_type_to_bigquery_type
 NATIVE_PARTITION_COL = '_PARTITIONTIME'
 
 
-_IBIS_TYPE_TO_DTYPE = {
-    'string': 'STRING',
-    'int64': 'INT64',
-    'double': 'FLOAT64',
-    'boolean': 'BOOL',
-    'timestamp': 'TIMESTAMP',
-    'date': 'DATE',
-}
-
 _DTYPE_TO_IBIS_TYPE = {
     'INT64': dt.int64,
     'FLOAT64': dt.double,
@@ -49,6 +40,7 @@ _DTYPE_TO_IBIS_TYPE = {
     'TIME': dt.time,
     'TIMESTAMP': dt.timestamp,
     'BYTES': dt.binary,
+    'NUMERIC': dt.Decimal(38, 9),
 }
 
 
@@ -157,7 +149,8 @@ class BigQueryQuery(Query):
 
     def _fetch(self, cursor):
         df = cursor.query.to_dataframe()
-        return self.schema().apply_to(df)
+        schema = self.schema()
+        return schema.apply_to(df)
 
     def execute(self):
         # synchronous by default

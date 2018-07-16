@@ -1,3 +1,5 @@
+import six
+
 from multipledispatch import Dispatcher
 
 import ibis.expr.datatypes as dt
@@ -23,9 +25,19 @@ class UDFContext(TypeTranslationContext):
 ibis_type_to_bigquery_type = Dispatcher('ibis_type_to_bigquery_type')
 
 
+@ibis_type_to_bigquery_type.register(six.string_types)
+def trans_string_default(datatype):
+    return ibis_type_to_bigquery_type(dt.dtype(datatype))
+
+
 @ibis_type_to_bigquery_type.register(dt.DataType)
 def trans_default(t):
     return ibis_type_to_bigquery_type(t, TypeTranslationContext())
+
+
+@ibis_type_to_bigquery_type.register(six.string_types, TypeTranslationContext)
+def trans_string_context(datatype, context):
+    return ibis_type_to_bigquery_type(dt.dtype(datatype), context)
 
 
 @ibis_type_to_bigquery_type.register(dt.Floating, TypeTranslationContext)
@@ -36,6 +48,15 @@ def trans_float64(t, context):
 @ibis_type_to_bigquery_type.register(dt.Integer, TypeTranslationContext)
 def trans_integer(t, context):
     return 'INT64'
+
+
+@ibis_type_to_bigquery_type.register(
+    dt.UInt64, (TypeTranslationContext, UDFContext)
+)
+def trans_lossy_integer(t, context):
+    raise TypeError(
+        'Conversion from uint64 to BigQuery integer type (int64) is lossy'
+    )
 
 
 @ibis_type_to_bigquery_type.register(dt.Array, TypeTranslationContext)
@@ -82,3 +103,18 @@ def trans_integer_udf(t, context):
         'for UDFs. Replace INT64 with FLOAT64 in your UDF signature and '
         'cast all INT64 inputs to FLOAT64.'
     )
+
+
+@ibis_type_to_bigquery_type.register(dt.Decimal, TypeTranslationContext)
+def trans_numeric(t, context):
+    if (t.precision, t.scale) != (38, 9):
+        raise TypeError(
+            'BigQuery only supports decimal types with precision of 38 and '
+            'scale of 9'
+        )
+    return 'NUMERIC'
+
+
+@ibis_type_to_bigquery_type.register(dt.Decimal, TypeTranslationContext)
+def trans_numeric_udf(t, context):
+    raise TypeError('Decimal types are not supported in BigQuery UDFs')

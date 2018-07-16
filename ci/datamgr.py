@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import tarfile
+import tempfile
 import warnings
 
 import click
@@ -445,6 +446,36 @@ def bigquery(data_directory, ignore_missing_dependency, **params):
     timestamp_table.time_partitioning = bigquery.TimePartitioning(
         field='my_timestamp_parted_col')
     bqclient.create_table(timestamp_table)
+
+    # Create a table with a numeric column
+    numeric_table = bigquery.Table(
+        testing_dataset.table('numeric_table'))
+    numeric_table.schema = [
+        bigquery.SchemaField('string_col', 'STRING'),
+        bigquery.SchemaField('numeric_col', 'NUMERIC'),
+    ]
+    bqclient.create_table(numeric_table)
+
+    df = pd.read_csv(
+        str(data_directory / 'functional_alltypes.csv'),
+        usecols=['string_col', 'double_col'],
+        header=0,
+    )
+    with tempfile.NamedTemporaryFile(mode='a+b') as csvfile:
+        df.to_csv(csvfile, header=False, index=False)
+        csvfile.seek(0)
+
+        load_config = bigquery.LoadJobConfig()
+        load_config.skip_leading_rows = 1  # skip the header row.
+        load_config.schema = numeric_table.schema
+
+        job = bqclient.load_table_from_file(
+            csvfile,
+            testing_dataset.table('numeric_table'),
+            job_config=load_config).result()
+
+        if job.error_result:
+            raise click.ClickException(str(job.error_result))
 
 
 if __name__ == '__main__':

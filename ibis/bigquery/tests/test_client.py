@@ -1,6 +1,7 @@
 import collections
-
 import datetime
+import decimal
+
 import pytz
 
 import pytest
@@ -229,16 +230,6 @@ FROM (
   GROUP BY 1
 ) t0""".format(project_id)
     assert result == expected
-
-
-_IBIS_TYPE_TO_DTYPE = {
-    'string': 'STRING',
-    'int64': 'INT64',
-    'double': 'FLOAT64',
-    'boolean': 'BOOL',
-    'timestamp': 'TIMESTAMP',
-    'date': 'DATE',
-}
 
 
 def test_scalar_param_string(alltypes, df):
@@ -689,3 +680,17 @@ def test_column_summary(alltypes):
     result = b.execute()
     assert result.shape == (1, 7)
     assert len(result) == 1
+
+
+def test_numeric_table_schema(numeric_table):
+    assert numeric_table.schema() == ibis.schema([
+        ('string_col', dt.string),
+        ('numeric_col', dt.Decimal(38, 9))
+    ])
+
+
+def test_numeric_sum(numeric_table):
+    t = numeric_table
+    expr = t.numeric_col.sum()
+    result = expr.execute()
+    assert isinstance(result, decimal.Decimal)
