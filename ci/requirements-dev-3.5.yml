@@ -31,7 +31,7 @@ dependencies:
   - requests
   - ruamel.yaml
   - six
-  - sqlalchemy>=1.0.0,<1.1.15
+  - sqlalchemy
   - toolz
   - xorg-libxpm
   - xorg-libxrender
