@@ -1261,28 +1261,27 @@ def test_decimal_builtins(con, expr, expected):
     assert result == expected, to_sql(expr)
 
 
-def test_decimal_builtins_2(con):
-    d = L('5.245')
-    dc = d.cast('decimal(12, 5)')
-    cases = [
-        (dc % 5, 0.245),
-
-        (dc.fillna(0), 5.245),
-
-        (dc.exp(), 189.6158),
-        (dc.log(), 1.65728),
-        (dc.log2(), 2.39094),
-        (dc.log10(), 0.71975),
-        (dc.sqrt(), 2.29019),
-        (dc.zeroifnull(), 5.245),
-        (-dc, -5.245)
+@pytest.mark.parametrize(
+    ('func', 'expected'),
+    [
+        pytest.param(lambda dc: dc, '5.245', id='id'),
+        pytest.param(lambda dc: dc % 5, '0.245', id='mod'),
+        pytest.param(lambda dc: dc.fillna(0), '5.245', id='fillna'),
+        pytest.param(lambda dc: dc.exp(), '189.6158', id='exp'),
+        pytest.param(lambda dc: dc.log(), '1.65728', id='log'),
+        pytest.param(lambda dc: dc.log2(), '2.39094', id='log2'),
+        pytest.param(lambda dc: dc.log10(), '0.71975', id='log10'),
+        pytest.param(lambda dc: dc.sqrt(), '2.29019', id='sqrt'),
+        pytest.param(lambda dc: dc.zeroifnull(), '5.245', id='zeroifnull'),
+        pytest.param(lambda dc: -dc, '-5.245', id='neg'),
     ]
-
-    for expr, expected in cases:
-        result = con.execute(expr)
-        tol = 0.0001
-
-        approx_equal(result, expected, tol)
+)
+def test_decimal_builtins_2(con, func, expected):
+    dc = L('5.245').cast('decimal(12, 5)')
+    expr = func(dc)
+    result = con.execute(expr)
+    tol = Decimal('0.0001')
+    approx_equal(Decimal(result), Decimal(expected), tol)
 
 
 @pytest.mark.parametrize(
