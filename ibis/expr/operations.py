@@ -498,7 +498,7 @@ class MathUnaryOp(UnaryOp):
 class ExpandingTypeMathUnaryOp(MathUnaryOp):
     def output_type(self):
         if not isinstance(self.arg, ir.DecimalValue):
-            return super().output_type()
+            return super(ExpandingTypeMathUnaryOp, self).output_type()
         arg = self.arg
         return rlz.shape_like(arg, arg.type().largest)
 
