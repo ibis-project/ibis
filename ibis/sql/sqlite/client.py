@@ -336,7 +336,7 @@ class SQLiteClient(alch.AlchemyClient):
     def __init__(self, path=None, create=False):
         super(SQLiteClient, self).__init__(sa.create_engine('sqlite://'))
         self.name = path
-        self.database_name = 'default'
+        self.database_name = 'base'
 
         if path is not None:
             self.attach(self.database_name, path, create=create)
