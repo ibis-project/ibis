@@ -232,16 +232,6 @@ FROM (
     assert result == expected
 
 
-_IBIS_TYPE_TO_DTYPE = {
-    'string': 'STRING',
-    'int64': 'INT64',
-    'double': 'FLOAT64',
-    'boolean': 'BOOL',
-    'timestamp': 'TIMESTAMP',
-    'date': 'DATE',
-}
-
-
 def test_scalar_param_string(alltypes, df):
     param = ibis.param('string')
     expr = alltypes[alltypes.string_col == param]
