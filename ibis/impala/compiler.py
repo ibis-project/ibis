@@ -139,8 +139,11 @@ def _cast(translator, expr):
 def _type_to_sql_string(tval):
     if isinstance(tval, dt.Decimal):
         return 'decimal({}, {})'.format(tval.precision, tval.scale)
-    else:
-        return _sql_type_names[tval.name.lower()]
+    name = tval.name.lower()
+    try:
+        return _sql_type_names[name]
+    except KeyError:
+        raise com.UnsupportedBackendType(name)
 
 
 def _between(translator, expr):

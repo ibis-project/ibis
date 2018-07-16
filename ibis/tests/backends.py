@@ -65,7 +65,6 @@ class Backend(object):
         tm.assert_series_equal(*args, **kwargs)
 
     def assert_frame_equal(self, left, right, *args, **kwargs):
-        tm.assert_frame_equal(*args, **kwargs)
         left = left.reset_index(drop=True)
         right = right.reset_index(drop=True)
         tm.assert_frame_equal(left, right, *args, **kwargs)

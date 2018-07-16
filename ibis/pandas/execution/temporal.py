@@ -3,6 +3,8 @@ import datetime
 import numpy as np
 import pandas as pd
 
+from pandas.core.groupby import SeriesGroupBy
+
 import ibis.expr.operations as ops
 from ibis.pandas.dispatch import execute_node
 from ibis.pandas.core import numeric_types, integer_types
@@ -158,3 +160,52 @@ def execute_timestamp_from_unix(op, data, **kwargs):
 @execute_node.register(ops.TimestampNow)
 def execute_timestamp_now(op, **kwargs):
     return pd.Timestamp('now')
+
+
+@execute_node.register(ops.DayOfWeekIndex, six.string_types + (datetime.date,))
+def execute_day_of_week_index_any(op, value, **kwargs):
+    return pd.Timestamp(value).dayofweek
+
+
+@execute_node.register(ops.DayOfWeekIndex, pd.Series)
+def execute_day_of_week_index_series(op, data, **kwargs):
+    return data.dt.dayofweek.astype(np.int16)
+
+
+@execute_node.register(ops.DayOfWeekIndex, SeriesGroupBy)
+def execute_day_of_week_index_series_group_by(op, data, **kwargs):
+    groupings = data.grouper.groupings
+    return data.obj.dt.dayofweek.astype(np.int16).groupby(groupings)
+
+
+def day_name(obj):
+    """Backwards compatible name of day getting function.
+
+    Parameters
+    ----------
+    obj : Union[Series, pd.Timestamp]
+
+    Returns
+    -------
+    str
+        The name of the day corresponding to `obj`
+    """
+    try:
+        return obj.day_name()
+    except AttributeError:
+        return obj.weekday_name
+
+
+@execute_node.register(ops.DayOfWeekName, six.string_types + (datetime.date,))
+def execute_day_of_week_name_any(op, value, **kwargs):
+    return day_name(pd.Timestamp(value))
+
+
+@execute_node.register(ops.DayOfWeekName, pd.Series)
+def execute_day_of_week_name_series(op, data, **kwargs):
+    return day_name(data.dt)
+
+
+@execute_node.register(ops.DayOfWeekName, SeriesGroupBy)
+def execute_day_of_week_name_series_group_by(op, data, **kwargs):
+    return day_name(data.obj.dt).groupby(data.grouper.groupings)

@@ -84,7 +84,7 @@ def test_convert_parquet(parquet_schema):
              'int8', 'int16', 'int32',
              'int64', 'float32', 'float64', 'bool',
              'datetime', 'str', 'str_with_nulls', 'empty_str',
-             'bytes', '__index_level_0__']
+             'bytes']
     expected = ibis.schema(zip(names, types))
 
     result = ibis.infer_schema(parquet_schema)

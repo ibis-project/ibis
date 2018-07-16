@@ -1,3 +1,4 @@
+import sys
 import warnings
 
 import pytest
@@ -6,7 +7,10 @@ from pytest import param
 import pandas as pd
 
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.tests.util as tu
+
+from ibis.pandas.execution.temporal import day_name
 
 
 @pytest.mark.parametrize('attr', [
@@ -214,3 +218,80 @@ def test_to_timestamp(backend, con, alltypes, df, unit):
     expected = pd.Timestamp(pandas_ts, unit='ns').floor(backend_unit)
 
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('date', 'expected_index', 'expected_day'),
+    [
+        ('2017-01-01', 6, 'Sunday'),
+        ('2017-01-02', 0, 'Monday'),
+        ('2017-01-03', 1, 'Tuesday'),
+        ('2017-01-04', 2, 'Wednesday'),
+        ('2017-01-05', 3, 'Thursday'),
+        ('2017-01-06', 4, 'Friday'),
+        ('2017-01-07', 5, 'Saturday'),
+    ]
+)
+@tu.skipif_unsupported
+def test_day_of_week_scalar(backend, con, date, expected_index, expected_day):
+    expr = ibis.literal(date).cast(dt.date)
+    result_index = con.execute(expr.day_of_week.index())
+    assert result_index == expected_index
+
+    result_day = con.execute(expr.day_of_week.full_name())
+    assert result_day.lower() == expected_day.lower()
+
+
+@tu.skipif_unsupported
+def test_day_of_week_column(backend, con, alltypes, df):
+    expr = alltypes.timestamp_col.day_of_week
+
+    result_index = expr.index().execute()
+    expected_index = df.timestamp_col.dt.dayofweek.astype('int16')
+
+    backend.assert_series_equal(
+        result_index, expected_index, check_names=False)
+
+    result_day = expr.full_name().execute()
+    expected_day = day_name(df.timestamp_col.dt)
+
+    backend.assert_series_equal(result_day, expected_day, check_names=False)
+
+
+@pytest.mark.parametrize(
+    ('day_of_week_expr', 'day_of_week_pandas'),
+    [
+        (
+            lambda t: t.timestamp_col.day_of_week.index().count(),
+            lambda s: s.dt.dayofweek.count(),
+        ),
+        (
+            lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
+            lambda s: day_name(s.dt).str.len().sum(),
+        )
+    ]
+)
+@tu.skipif_unsupported
+def test_day_of_week_column_group_by(
+    backend, con, alltypes, df, day_of_week_expr, day_of_week_pandas
+):
+    expr = alltypes.groupby('string_col').aggregate(
+        day_of_week_result=day_of_week_expr
+    )
+    schema = expr.schema()
+    assert schema['day_of_week_result'] == dt.int64
+
+    result = expr.execute().sort_values('string_col')
+    expected = df.groupby('string_col').timestamp_col.apply(
+        day_of_week_pandas
+    ).reset_index().rename(columns=dict(timestamp_col='day_of_week_result'))
+
+    # FIXME(#1536): Pandas backend should use query.schema().apply_to
+    backend.assert_frame_equal(
+        result,
+        expected,
+        check_dtype=False,
+        # python 2's handling of strings is annoying here wrt sqlalchemy's
+        # column name string subclass
+        check_column_type=sys.version_info.major != 2
+    )

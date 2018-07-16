@@ -1,3 +1,5 @@
+import regex as re
+
 import pyarrow as pa
 import pyarrow.parquet as pq
 
@@ -46,7 +48,9 @@ def infer_parquet_schema(schema):
 
     for field in schema.to_arrow_schema():
         ibis_dtype = dt.dtype(field.type, nullable=field.nullable)
-        pairs.append((field.name, ibis_dtype))
+        name = field.name
+        if not re.match(r'^__index_level_\d+__$', name):
+            pairs.append((name, ibis_dtype))
 
     return sch.schema(pairs)
 
