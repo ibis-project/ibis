@@ -584,7 +584,10 @@ def _literal(t, expr):
 
 def _day_of_week_index(t, expr):
     sa_arg, = map(t.translate, expr.op().args)
-    return sa.cast(sa.func.to_char(sa_arg, 'D'), sa.INTEGER)
+    return sa.cast(
+        sa.cast(sa.extract('dow', sa_arg) + 6, sa.SMALLINT) % 7,
+        sa.SMALLINT
+    )
 
 
 def _day_of_week_name(t, expr):
