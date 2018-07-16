@@ -53,7 +53,7 @@ _ibis_dtypes = toolz.valmap(
         dt.UInt64: np.uint64,
         dt.Float32: np.float32,
         dt.Float64: np.float64,
-        dt.Decimal: np.float64,
+        dt.Decimal: np.object_,
         dt.Struct: np.object_,
     }
 )
