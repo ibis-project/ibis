@@ -107,20 +107,6 @@ def _extract_field(sql_attr):
     return extract_field_formatter
 
 
-SQL_TYPE_NAMES = {
-    'int8': 'int64',
-    'int16': 'int64',
-    'int32': 'int64',
-    'int64': 'int64',
-    'float': 'float64',
-    'double': 'float64',
-    'string': 'string',
-    'boolean': 'boolean',
-    'timestamp': 'timestamp',
-    'date': 'date',
-}
-
-
 bigquery_cast = Dispatcher('bigquery_cast')
 
 
@@ -131,10 +117,8 @@ def bigquery_cast_timestamp_to_integer(compiled_arg, from_, to):
 
 @bigquery_cast.register(six.string_types, dt.DataType, dt.DataType)
 def bigquery_cast_generate(compiled_arg, from_, to):
-    target_name = to.name.lower()
-    sql_type = SQL_TYPE_NAMES[target_name]
-    uppercase_sql_type = sql_type.upper()
-    return 'CAST({} AS {})'.format(compiled_arg, uppercase_sql_type)
+    sql_type = ibis_type_to_bigquery_type(to)
+    return 'CAST({} AS {})'.format(compiled_arg, sql_type)
 
 
 def _cast(translator, expr):

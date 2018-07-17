@@ -75,5 +75,10 @@ def struct_table(client):
 
 
 @pytest.fixture(scope='session')
+def numeric_table(client):
+    return client.table('numeric_table')
+
+
+@pytest.fixture(scope='session')
 def public():
     return connect(PROJECT_ID, dataset_id='bigquery-public-data.stackoverflow')
