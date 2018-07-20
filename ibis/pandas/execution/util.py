@@ -1,5 +1,9 @@
 import operator
 
+import six
+
+import toolz
+
 import ibis
 import ibis.common as com
 
@@ -9,6 +13,8 @@ from ibis.pandas.core import execute
 def compute_sort_key(key, data, **kwargs):
     by = key.args[0]
     try:
+        if isinstance(by, six.string_types):
+            return by, None
         return by.get_name(), None
     except com.ExpressionError:
         name = ibis.util.guid()
@@ -18,9 +24,10 @@ def compute_sort_key(key, data, **kwargs):
         return name, new_column
 
 
-def compute_sorted_frame(sort_keys, df, **kwargs):
+def compute_sorted_frame(df, order_by, group_by=(), **kwargs):
     computed_sort_keys = []
-    ascending = [key.op().ascending for key in sort_keys]
+    sort_keys = list(toolz.concatv(group_by, order_by))
+    ascending = [getattr(key.op(), 'ascending', True) for key in sort_keys]
     new_columns = {}
 
     for i, key in enumerate(map(operator.methodcaller('op'), sort_keys)):
@@ -36,5 +43,11 @@ def compute_sorted_frame(sort_keys, df, **kwargs):
     result = result.sort_values(
         computed_sort_keys, ascending=ascending, kind='mergesort'
     )
-    result = result.drop(new_columns.keys(), axis=1)
-    return result
+    # TODO: we'll eventually need to return this frame with the temporary
+    # columns and drop them in the caller (maybe using post_execute?)
+    ngrouping_keys = len(group_by)
+    return (
+        result,
+        computed_sort_keys[:ngrouping_keys],
+        computed_sort_keys[ngrouping_keys:],
+    )

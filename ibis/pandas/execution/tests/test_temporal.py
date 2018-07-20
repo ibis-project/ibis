@@ -165,10 +165,7 @@ def test_times_ops_py2(t, df):
     [
         (lambda x, y: x + y, lambda x, y: x.values * 2),
         (lambda x, y: x * 2, lambda x, y: x.values * 2),
-        pytest.mark.xfail(
-            (lambda x, y: x // 2, lambda x, y: x.values // 2),
-            raises=TypeError, reason='Not yet tested'
-        )
+        (lambda x, y: x // 2, lambda x, y: x.values // 2),
     ]
 )
 def test_interval_arithmetic(op, expected):

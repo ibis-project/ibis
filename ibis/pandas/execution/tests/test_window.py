@@ -22,18 +22,28 @@ def sort_kind():
 default = pytest.mark.parametrize('default', [ibis.NA, ibis.literal('a')])
 row_offset = pytest.mark.parametrize(
     'row_offset', list(map(ibis.literal, [-1, 1, 0])))
-delta_offset = pytest.mark.parametrize(
-    'delta_offset',
+range_offset = pytest.mark.parametrize(
+    'range_offset',
     [ibis.day(), 2 * ibis.day(), -2 * ibis.day()]
 )
 
 
+@pytest.fixture
+def row_window():
+    return ibis.window(following=0, order_by='plain_int64')
+
+
+@pytest.fixture
+def range_window():
+    return ibis.window(following=0, order_by='plain_datetimes_naive')
+
+
 @default
 @row_offset
-def test_lead(t, df, row_offset, default):
-    expr = t.dup_strings.lead(row_offset, default=default)
+def test_lead(t, df, row_offset, default, row_window):
+    expr = t.dup_strings.lead(row_offset, default=default).over(row_window)
     result = expr.execute()
-    expected = df.dup_strings.shift(-execute(row_offset))
+    expected = df.dup_strings.shift(execute(-row_offset))
     if default is not ibis.NA:
         expected = expected.fillna(execute(default))
     tm.assert_series_equal(result, expected)
@@ -41,8 +51,8 @@ def test_lead(t, df, row_offset, default):
 
 @default
 @row_offset
-def test_lag(t, df, row_offset, default):
-    expr = t.dup_strings.lag(row_offset, default=default)
+def test_lag(t, df, row_offset, default, row_window):
+    expr = t.dup_strings.lag(row_offset, default=default).over(row_window)
     result = expr.execute()
     expected = df.dup_strings.shift(execute(row_offset))
     if default is not ibis.NA:
@@ -51,22 +61,30 @@ def test_lag(t, df, row_offset, default):
 
 
 @default
-@delta_offset
-def test_lead_delta(time_t, time_df, delta_offset, default):
-    expr = time_t.dup_strings.lead(delta_offset, default=default)
+@range_offset
+def test_lead_delta(t, df, range_offset, default, range_window):
+    expr = t.dup_strings.lead(range_offset, default=default).over(
+        range_window)
     result = expr.execute()
-    expected = time_df.dup_strings.tshift(freq=-execute(delta_offset))
+    expected = df[['plain_datetimes_naive', 'dup_strings']].set_index(
+        'plain_datetimes_naive').squeeze().tshift(
+                freq=execute(-range_offset)).reindex(
+                df.plain_datetimes_naive).reset_index(drop=True)
     if default is not ibis.NA:
         expected = expected.fillna(execute(default))
     tm.assert_series_equal(result, expected)
 
 
 @default
-@delta_offset
-def test_lag_delta(time_t, time_df, delta_offset, default):
-    expr = time_t.dup_strings.lag(delta_offset, default=default)
+@range_offset
+def test_lag_delta(t, df, range_offset, default, range_window):
+    expr = t.dup_strings.lag(range_offset, default=default).over(
+        range_window)
     result = expr.execute()
-    expected = time_df.dup_strings.tshift(freq=execute(delta_offset))
+    expected = df[['plain_datetimes_naive', 'dup_strings']].set_index(
+        'plain_datetimes_naive').squeeze().tshift(
+            freq=execute(range_offset)).reindex(
+                df.plain_datetimes_naive).reset_index(drop=True)
     if default is not ibis.NA:
         expected = expected.fillna(execute(default))
     tm.assert_series_equal(result, expected)
@@ -91,8 +109,7 @@ def test_group_by_mutate_analytic(t, df):
         last_value=t.plain_strings.last(),
         avg_broadcast=t.plain_float64 - t.plain_float64.mean(),
         delta=(t.plain_int64 - t.plain_int64.lag()) / (
-            t.plain_float64 - t.plain_float64.lag()
-        )
+               t.plain_float64 - t.plain_float64.lag()),
     )
     result = expr.execute()
 
@@ -112,11 +129,12 @@ def test_group_by_mutate_analytic(t, df):
 
 def test_players(players, players_df):
     lagged = players.mutate(pct=lambda t: t.G - t.G.lag())
-    result = lagged.execute()
     expected = players_df.assign(
         pct=players_df.G - players_df.groupby('playerID').G.shift(1)
     )
-    tm.assert_frame_equal(result[expected.columns], expected)
+    cols = expected.columns.tolist()
+    result = lagged.execute()[cols].sort_values(cols).reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
 
 
 def test_batting_filter_mean(batting, batting_df):
@@ -130,20 +148,21 @@ def test_batting_filter_mean(batting, batting_df):
 
 def test_batting_zscore(players, players_df):
     expr = players.mutate(g_z=lambda t: (t.G - t.G.mean()) / t.G.std())
-    result = expr.execute()
 
     gb = players_df.groupby('playerID')
     expected = players_df.assign(
         g_z=(players_df.G - gb.G.transform('mean')) / gb.G.transform('std')
     )
-    tm.assert_frame_equal(result[expected.columns], expected)
+    cols = expected.columns.tolist()
+    result = expr.execute()[cols].sort_values(cols).reset_index(
+        drop=True)
+    tm.assert_frame_equal(result, expected)
 
 
 def test_batting_avg_change_in_games_per_year(players, players_df):
     expr = players.mutate(
         delta=lambda t: (t.G - t.G.lag()) / (t.yearID - t.yearID.lag())
     )
-    result = expr.execute()
 
     gb = players_df.groupby('playerID')
     expected = players_df.assign(
@@ -152,7 +171,9 @@ def test_batting_avg_change_in_games_per_year(players, players_df):
         )
     )
 
-    tm.assert_frame_equal(result[expected.columns], expected)
+    cols = expected.columns.tolist()
+    result = expr.execute()[cols].sort_values(cols).reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.xfail(AssertionError, reason='NYI')
@@ -172,12 +193,13 @@ def test_batting_most_hits(players, players_df):
 
 def test_batting_quantile(players, players_df):
     expr = players.mutate(hits_quantile=lambda t: t.H.quantile(0.25))
-    result = expr.execute()
     hits_quantile = players_df.groupby('playerID').H.transform(
         'quantile', 0.25
     )
     expected = players_df.assign(hits_quantile=hits_quantile)
-    tm.assert_frame_equal(result[expected.columns], expected)
+    cols = expected.columns.tolist()
+    result = expr.execute()[cols].sort_values(cols).reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize('op', ['sum', 'mean', 'min', 'max'])
@@ -204,27 +226,25 @@ def test_batting_cumulative(batting, batting_df, sort_kind):
 
     columns = ['G', 'yearID']
     more_values = batting_df[columns].sort_values(
-        'yearID', kind=sort_kind).G.cumsum()
+        'yearID', kind=sort_kind).G.expanding().sum()
     expected = batting_df.assign(more_values=more_values)
 
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
 def test_batting_cumulative_partitioned(batting, batting_df, sort_kind):
-    expr = batting.mutate(
-        more_values=lambda t: t.G.sum().over(
-            ibis.cumulative_window(order_by=t.yearID, group_by=t.lgID)
-        )
-    )
-    result = expr.execute().more_values
+    group_by = 'playerID'
+    order_by = 'yearID'
 
-    columns = ['G', 'yearID', 'lgID']
-    key = 'lgID'
-    expected_result = batting_df[columns].groupby(
-        key, sort=False, as_index=False
-    ).apply(lambda df: df.sort_values('yearID', kind=sort_kind)).groupby(
-        key, sort=False
-    ).G.cumsum().sort_index(level=-1)
+    t = batting
+    expr = t.G.sum().over(
+        ibis.cumulative_window(order_by=t[order_by], group_by=t[group_by])
+    )
+    result = expr.execute()
+
+    columns = [group_by, order_by, 'G']
+    expected_result = batting_df[columns].sort_values([
+        group_by, order_by]).groupby(group_by).G.expanding().sum()
     expected = expected_result.reset_index(
         list(range(expected_result.index.nlevels - 1)),
         drop=True
@@ -251,20 +271,18 @@ def test_batting_rolling(batting, batting_df, sort_kind):
 
 
 def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
-    expr = batting.mutate(
-        more_values=lambda t: t.G.sum().over(
-            ibis.trailing_window(3, order_by=t.yearID, group_by=t.lgID)
-        )
+    t = batting
+    expr = t.G.sum().over(
+        ibis.trailing_window(3, order_by=t.yearID, group_by=t.playerID)
     )
-    result = expr.execute().more_values
+    result = expr.execute()
 
-    columns = ['G', 'yearID', 'lgID']
-    key = 'lgID'
-    expected_result = batting_df[columns].groupby(
-        key, sort=False, as_index=False
-    ).apply(lambda df: df.sort_values('yearID', kind=sort_kind)).groupby(
-        key, sort=False
-    ).G.rolling(3).sum().sort_index(level=-1)
+    group_by = 'playerID'
+    order_by = 'yearID'
+    columns = [group_by, order_by, 'G']
+    expected_result = batting_df[columns].sort_values([
+        group_by, order_by
+    ]).groupby(group_by).G.rolling(3).sum().sort_index(level=-1)
     expected = expected_result.reset_index(
         list(range(expected_result.index.nlevels - 1)),
         drop=True
@@ -382,7 +400,8 @@ def test_window_with_preceding_expr():
     df = pd.DataFrame({'value': data, 'time': index}, index=index)
     client = ibis.pandas.connect({'df': df})
     t = client.table('df')
-    expected = df.set_index('time').value.rolling('3d').mean()
+    expected = df.set_index('time').value.rolling('3d').mean().reset_index(
+        drop=True)
     expected.index.name = None
     day = ibis.day()
     window = ibis.trailing_window(3 * day, order_by=t.time)

@@ -30,14 +30,25 @@ from ibis.pandas.core import (
     simple_types,
     numeric_types,
     fixed_width_types,
-    scalar_types
+    scalar_types,
+    timedelta_types,
 )
 
-from ibis.pandas.dispatch import execute_node
+from ibis.pandas.dispatch import execute_node, execute_literal
 from ibis.pandas.execution import constants
 
 
-@execute_node.register(ops.Literal, object, dt.Interval)
+# By default return the literal value
+@execute_literal.register(ops.Literal, object, dt.DataType)
+def execute_node_literal_value_datatype(op, value, datatype, **kwargs):
+    return value
+
+
+@execute_literal.register(
+    ops.Literal,
+    timedelta_types + six.string_types + integer_types,
+    dt.Interval
+)
 def execute_interval_literal(op, value, dtype, **kwargs):
     return pd.Timedelta(value, dtype.unit)
 
@@ -49,7 +60,7 @@ def execute_limit_frame(op, data, limit, offset, **kwargs):
 
 @execute_node.register(ops.Cast, SeriesGroupBy, dt.DataType)
 def execute_cast_series_group_by(op, data, type, **kwargs):
-    result = execute_node(op, data.obj, type, **kwargs)
+    result = execute_cast_series_generic(op, data.obj, type, **kwargs)
     return result.groupby(data.grouper.groupings)
 
 
@@ -145,9 +156,20 @@ def call_numpy_ufunc(func, op, data, **kwargs):
     return func(data)
 
 
+@execute_node.register(ops.Negate, scalar_types)
+def execute_obj_negate(op, data, **kwargs):
+    return -data
+
+
 @execute_node.register(ops.Negate, pd.Series)
-def execute_series_unary_op_negate(op, data, **kwargs):
+def execute_series_negate(op, data, **kwargs):
     return call_numpy_ufunc(np.negative, op, data, **kwargs)
+
+
+@execute_node.register(ops.Negate, SeriesGroupBy)
+def execute_series_group_by_negate(op, data, **kwargs):
+    return execute_series_negate(op, data.obj, **kwargs).groupby(
+        data.grouper.groupings)
 
 
 @execute_node.register(ops.UnaryOp, pd.Series)
@@ -372,6 +394,7 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         for metric in op.metrics
     ]
 
+    # group by always needs a reset to get the grouping key back as a column
     result = pd.concat(pieces, axis=1).reset_index()
     result.columns = [columns.get(c, c) for c in result.columns]
 
@@ -391,7 +414,7 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         )
         assert len(predicate) == len(result), \
             'length of predicate does not match length of DataFrame'
-        result = result.loc[predicate.values].reset_index(drop=True)
+        result = result.loc[predicate.values]
     return result
 
 
@@ -557,18 +580,29 @@ def execute_not_bool(op, data, **kwargs):
     return not data
 
 
+@execute_node.register(ops.BinaryOp, pd.Series, pd.Series)
+@execute_node.register(ops.BinaryOp, pd.Series, pd.Series)
 @execute_node.register(
-    ops.BinaryOp, (pd.Series, numeric_types), (pd.Series, numeric_types)
-)
-@execute_node.register(ops.Comparison, six.string_types, six.string_types)
-@execute_node.register(
-    (ops.Comparison, ops.Multiply),
-    pd.Series, six.string_types
+    (ops.NumericBinaryOp, ops.LogicalBinaryOp, ops.Comparison),
+    numeric_types,
+    pd.Series,
 )
 @execute_node.register(
-    (ops.Comparison, ops.Multiply),
-    six.string_types, pd.Series
+    (ops.NumericBinaryOp, ops.LogicalBinaryOp, ops.Comparison),
+    pd.Series,
+    numeric_types,
 )
+@execute_node.register(
+    (ops.NumericBinaryOp, ops.LogicalBinaryOp, ops.Comparison),
+    numeric_types,
+    numeric_types,
+)
+@execute_node.register(
+    (ops.Comparison, ops.Add, ops.Multiply), pd.Series, six.string_types)
+@execute_node.register(
+    (ops.Comparison, ops.Add, ops.Multiply), six.string_types, pd.Series)
+@execute_node.register(
+    (ops.Comparison, ops.Add), six.string_types, six.string_types)
 @execute_node.register(ops.Multiply, integer_types, six.string_types)
 @execute_node.register(ops.Multiply, six.string_types, integer_types)
 def execute_binary_op(op, left, right, **kwargs):
@@ -592,19 +626,19 @@ def execute_binary_op_series_group_by(op, left, right, **kwargs):
             'Cannot perform {} operation on two series with '
             'different groupings'.format(type(op).__name__)
         )
-    result = execute_node(op, left.obj, right.obj, **kwargs)
+    result = execute_binary_op(op, left.obj, right.obj, **kwargs)
     return result.groupby(left_groupings)
 
 
 @execute_node.register(ops.BinaryOp, SeriesGroupBy, simple_types)
 def execute_binary_op_series_gb_simple(op, left, right, **kwargs):
-    result = execute_node(op, left.obj, right, **kwargs)
+    result = execute_binary_op(op, left.obj, right, **kwargs)
     return result.groupby(left.grouper.groupings)
 
 
 @execute_node.register(ops.BinaryOp, simple_types, SeriesGroupBy)
 def execute_binary_op_simple_series_gb(op, left, right, **kwargs):
-    result = execute_node(op, left, right.obj, **kwargs)
+    result = execute_binary_op(op, left, right.obj, **kwargs)
     return result.groupby(right.grouper.groupings)
 
 

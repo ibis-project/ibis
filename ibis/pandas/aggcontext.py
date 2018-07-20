@@ -225,11 +225,18 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
+from ibis.compat import functools
+
 
 @six.add_metaclass(abc.ABCMeta)
 class AggregationContext(object):
+    __slots__ = 'parent', 'group_by', 'order_by', 'dtype'
 
-    __slots__ = ()
+    def __init__(self, parent=None, group_by=None, order_by=None, dtype=None):
+        self.parent = parent
+        self.group_by = group_by
+        self.order_by = order_by
+        self.dtype = dtype
 
     @abc.abstractmethod
     def agg(self, grouped_data, function, *args, **kwargs):
@@ -237,17 +244,16 @@ class AggregationContext(object):
 
 
 def _apply(function, args, kwargs):
+    assert callable(function), 'function {} is not callable'.format(function)
     return lambda data, function=function, args=args, kwargs=kwargs: (
         function(data, *args, **kwargs)
     )
 
 
 class Summarize(AggregationContext):
-
     __slots__ = ()
 
     def agg(self, grouped_data, function, *args, **kwargs):
-
         if isinstance(function, six.string_types):
             return getattr(grouped_data, function)(*args, **kwargs)
 
@@ -260,7 +266,6 @@ class Summarize(AggregationContext):
 
 
 class Transform(AggregationContext):
-
     __slots__ = ()
 
     def agg(self, grouped_data, function, *args, **kwargs):
@@ -287,48 +292,71 @@ def compute_window_spec_default(obj, _):
 
 
 class Window(AggregationContext):
-
     __slots__ = 'construct_window',
 
     def __init__(self, kind, *args, **kwargs):
+        super(Window, self).__init__(
+            parent=kwargs.pop('parent', None),
+            group_by=kwargs.pop('group_by', None),
+            order_by=kwargs.pop('order_by', None),
+            dtype=kwargs.pop('dtype'),
+        )
         self.construct_window = operator.methodcaller(kind, *args, **kwargs)
 
     def agg(self, grouped_data, function, *args, **kwargs):
-        if callable(function):
-            return self.construct_window(grouped_data).apply(
-                _apply(function, args, kwargs)
-            )
+        group_by = self.group_by
 
-        if not isinstance(function, six.string_types):
-            raise TypeError(
-                '{} aggregation function must be a string or callable'.format(
-                    type(self).__name__
+        if not group_by:
+            windowed = self.construct_window(grouped_data)
+            if callable(function):
+                return windowed.apply(_apply(function, args, kwargs))
+            else:
+                assert isinstance(function, six.string_types)
+                method = getattr(windowed, function)
+                result = method(*args, **kwargs)
+                return result
+        else:
+            if callable(function):
+                method = functools.partial(
+                    operator.methodcaller('apply'),
+                    _apply(function, args, kwargs)
                 )
-            )
+            else:
+                assert isinstance(function, six.string_types)
+                method = operator.methodcaller(function, *args, **kwargs)
 
-        try:
-            method = self.short_circuit_method(grouped_data, function)
-        except AttributeError:
-            window = self.construct_window(grouped_data)
-            method = getattr(window, function)
+        order_by = self.order_by
 
-        result = method(*args, **kwargs)
+        keys = group_by + order_by
+        frame = self.parent.obj
+        name = grouped_data.obj.name
+        indexed_series = frame[keys + [name]].set_index(
+            keys, append=True)[name]
+        result = pd.Series(
+            index=indexed_series.index, dtype=self.dtype, name=name)
+        view = result.values
+        lengths = grouped_data.size().values
+        rolling_indexed_series = indexed_series.reset_index(
+            level=[0] + group_by, drop=True)
+        start = 0
+        for length in lengths:
+            stop = start + length
+            subset = rolling_indexed_series.iloc[start:stop]
+            windowed = self.construct_window(subset)
+            computed = method(windowed)
+            view[start:stop] = computed.values
+            start = stop
         return result
 
 
 class Cumulative(Window):
-
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
         super(Cumulative, self).__init__('expanding', *args, **kwargs)
 
-    def short_circuit_method(self, grouped_data, function):
-        return getattr(grouped_data, 'cum{}'.format(function))
-
 
 class Moving(Window):
-
     __slots__ = ()
 
     def __init__(self, preceding, *args, **kwargs):

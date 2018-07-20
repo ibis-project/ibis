@@ -1082,8 +1082,7 @@ class ImpalaClient(SQLClient):
         Return current query options for the Impala session
         """
         query = 'SET'
-        tuples = self.con.fetchall(query)
-        return dict(tuples)
+        return dict(row[:2] for row in self.con.fetchall(query))
 
     def set_options(self, options):
         self.con.set_options(options)

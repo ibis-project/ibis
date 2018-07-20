@@ -360,7 +360,13 @@ class PandasClient(client.Client):
             )
 
         assert isinstance(query, ir.Expr)
-        return execute(query, params=params)
+        result = execute(query, params=params)
+        if isinstance(result, pd.DataFrame):
+            schema = query.schema()
+            return result.reset_index()[schema.names]
+        elif isinstance(result, pd.Series):
+            return result.reset_index(drop=True)
+        return result
 
     def compile(self, expr, *args, **kwargs):
         return expr
