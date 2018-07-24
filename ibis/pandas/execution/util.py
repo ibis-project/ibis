@@ -17,9 +17,9 @@ def compute_sort_key(key, data, **kwargs):
             return by, None
         return by.get_name(), None
     except com.ExpressionError:
-        name = ibis.util.guid()
         new_scope = {t: data for t in by.op().root_tables()}
         new_column = execute(by, new_scope, **kwargs)
+        name = ibis.util.guid()
         new_column.name = name
         return name, new_column
 
