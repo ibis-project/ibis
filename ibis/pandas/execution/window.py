@@ -241,7 +241,7 @@ def execute_series_lead_lag_timedelta(
     adjusted_parent_df = parent_df.assign(
         **{k: func(parent_df[k], offset) for k in order_by})
     indexed_parent = adjusted_parent_df.set_index(group_by + order_by)
-    result = indexed_parent[data.name]
+    result = indexed_parent[getattr(data, 'obj', data).name]
     result = result.reindex(indexed_original_df.index)
     return post_lead_lag(result, default)
 
