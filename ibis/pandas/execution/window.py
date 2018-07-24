@@ -57,8 +57,24 @@ def _post_process_order_by(series, parent, order_by, group_by):
 def _post_process_group_by_order_by(series, parent, order_by, group_by):
     indexed_parent = parent.set_index(group_by + order_by, append=True)
     index = indexed_parent.index
-    series = series.reorder_levels(index.names)
-    series = series.reindex(index)
+
+    # get the names of the levels that will be in the result
+    series_index_names = frozenset(series.index.names)
+
+    # get the levels common to series.index, in the order that they occur in
+    # the parent's index
+    reordered_levels = [
+        name for name in index.names if name in series_index_names
+    ]
+
+    # remove any levels from the parent index that can't be in the result
+    levels_to_drop = [
+        name for name in index.names if name not in series_index_names
+    ]
+
+    series = series.reorder_levels(reordered_levels)
+    new_index = index.droplevel(levels_to_drop)
+    series = series.reindex(new_index)
     return series
 
 
