@@ -82,10 +82,8 @@ def _post_process_group_by_order_by(series, parent, order_by, group_by):
 def execute_window_op(op, data, window, scope=None, context=None, **kwargs):
     operand = op.expr
     root, = op.root_tables()
-    try:
-        data = scope[root]
-    except KeyError:
-        data = execute(root.to_expr(), scope=scope, context=context, **kwargs)
+    root_expr = root.to_expr()
+    data = execute(root_expr, scope=scope, context=context, **kwargs)
 
     following = window.following
     order_by = window._order_by
