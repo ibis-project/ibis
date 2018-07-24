@@ -272,13 +272,13 @@ def test_batting_rolling(batting, batting_df, sort_kind):
 
 def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
     t = batting
+    group_by = 'playerID'
+    order_by = 'yearID'
     expr = t.G.sum().over(
-        ibis.trailing_window(3, order_by=t.yearID, group_by=t.playerID)
+        ibis.trailing_window(3, order_by=t[order_by], group_by=t[group_by])
     )
     result = expr.execute()
 
-    group_by = 'playerID'
-    order_by = 'yearID'
     columns = [group_by, order_by, 'G']
     expected_result = batting_df[columns].sort_values([
         group_by, order_by
