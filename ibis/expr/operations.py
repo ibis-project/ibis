@@ -1743,6 +1743,9 @@ class SortKey(Node):
                 self.expr.equals(other.expr, cache=cache) and
                 self.ascending == other.ascending)
 
+    def resolve_name(self):
+        return self.expr.get_name()
+
 
 class DeferredSortKey(object):
 
