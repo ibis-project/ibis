@@ -11,7 +11,7 @@ from ibis.pandas.core import execute
 
 
 def compute_sort_key(key, data, **kwargs):
-    by = key.args[0]
+    by = key.to_expr()
     try:
         if isinstance(by, six.string_types):
             return by, None

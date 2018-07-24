@@ -150,6 +150,11 @@ def execute_cast_series_date(op, data, type, **kwargs):
     raise TypeError("Don't know how to cast {} to {}".format(from_type, type))
 
 
+@execute_node.register(ops.SortKey, pd.Series, bool)
+def execute_sort_key_series_bool(op, data, ascending, **kwargs):
+    return data
+
+
 def call_numpy_ufunc(func, op, data, **kwargs):
     if data.dtype == np.dtype(np.object_):
         return data.apply(functools.partial(execute_node, op, **kwargs))
