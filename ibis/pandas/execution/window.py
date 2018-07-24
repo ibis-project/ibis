@@ -57,7 +57,6 @@ def _post_process_order_by(series, parent, order_by, group_by):
 def _post_process_group_by_order_by(series, parent, order_by, group_by):
     indexed_parent = parent.set_index(group_by + order_by, append=True)
     index = indexed_parent.index
-    series = series.reorder_levels(index.names)
     series = series.reindex(index)
     return series
 
