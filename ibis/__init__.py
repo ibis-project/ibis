@@ -17,9 +17,6 @@
 import sys
 from multipledispatch import halt_ordering, restart_ordering
 
-# speeds up signature registration
-halt_ordering()
-
 import ibis.config_init
 import ibis.util as util
 import ibis.expr.api as api
@@ -32,6 +29,9 @@ from ibis.filesystems import HDFS, WebHDFS
 
 # __all__ is defined
 from ibis.expr.api import *
+
+# speeds up signature registration
+halt_ordering()
 
 # pandas backend is mandatory
 import ibis.pandas.api as pandas
