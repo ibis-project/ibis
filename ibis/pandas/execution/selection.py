@@ -305,7 +305,7 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
     else:
         grouping_keys = ordering_keys = ()
 
-    # return early if we have any temporary grouping or ordering columns
+    # return early if we do not have any temporary grouping or ordering columns
     assert not grouping_keys, 'group by should never show up in Selection'
     if not ordering_keys:
         return result
