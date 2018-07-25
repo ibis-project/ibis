@@ -361,11 +361,17 @@ class PandasClient(client.Client):
 
         assert isinstance(query, ir.Expr)
         result = execute(query, params=params)
+
+        # we remove indices by default here, since some operations would return
+        # something other than pd.RangeIndex(start=0, stop=len(result), step=1)
         if isinstance(result, pd.DataFrame):
             schema = query.schema()
-            return result.reset_index()[schema.names]
+            return schema.apply_to(result.reset_index()[schema.names])
         elif isinstance(result, pd.Series):
-            return result.reset_index(drop=True)
+            name = result.name if result.name is not None else 'tmp'
+            result = result.rename(name).to_frame()
+            schema = sch.schema([(name, query.type())])
+            return schema.apply_to(result)[name].reset_index(drop=True)
         return result
 
     def compile(self, expr, *args, **kwargs):
