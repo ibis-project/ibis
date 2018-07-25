@@ -306,16 +306,31 @@ class Window(AggregationContext):
     def agg(self, grouped_data, function, *args, **kwargs):
         group_by = self.group_by
 
+        order_by = self.order_by
+
+        # if we don't have a grouping key, just call into pandas
         if not group_by:
+            # if we're in a window we must have non empty ordering keys
+            assert order_by, 'No ordering keys found in a {} context'.format(
+                type(self).__name__
+            )
+
+            # the result of calling .rolling(...) in pandas
             windowed = self.construct_window(grouped_data)
+
+            # if we're a UD(A)F or a function that isn't a string (like the
+            # collect implementation) then call apply
             if callable(function):
                 return windowed.apply(_apply(function, args, kwargs))
             else:
+                # otherwise we're a string and we're probably faster
                 assert isinstance(function, six.string_types)
                 method = getattr(windowed, function)
                 result = method(*args, **kwargs)
                 return result
         else:
+            # do mostly the same thing as if we did NOT have a grouping key,
+            # but don't call the callable just yet. See below where we call it
             if callable(function):
                 method = functools.partial(
                     operator.methodcaller('apply'),
@@ -325,19 +340,35 @@ class Window(AggregationContext):
                 assert isinstance(function, six.string_types)
                 method = operator.methodcaller(function, *args, **kwargs)
 
-        order_by = self.order_by
-
         keys = group_by + order_by
+
+        # get the DataFrame from which the operand originated (passed in when
+        # constructing this context object in execute_node(ops.WindowOp))
         frame = self.parent.obj
         name = grouped_data.obj.name
+
+        # set the index to our keys and append it to the existing index
         indexed_series = frame[keys + [name]].set_index(
             keys, append=True)[name]
+
+        # construct the NaN-filled result, indexed by row number + grouping
+        # keys + ordering keys
         result = pd.Series(
             index=indexed_series.index, dtype=self.dtype, name=name)
+
+        # get a view on the result to avoid overhead of iloc that we don't need
         view = result.values
+
+        # compute the length of each group
         lengths = grouped_data.size().values
+
+        # get the indexed series with JUST the index keys (our ordering keys)
+        # we need for rolling
         rolling_indexed_series = indexed_series.reset_index(
             level=[0] + group_by, drop=True)
+
+        # for each group, select out the data, construct a window, compute
+        # the rolling aggregate, and store it in the view we created above
         start = 0
         for length in lengths:
             stop = start + length
