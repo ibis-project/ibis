@@ -247,17 +247,38 @@ def execute_series_lead_lag(op, data, offset, default, **kwargs):
 def execute_series_lead_lag_timedelta(
     op, data, offset, default, context=None, **kwargs
 ):
+    """An implementation of shifting a column relative to another one that is
+    in units of time rather than rows.
+    """
+    # lagging adds time (delayed), leading subtracts time (moved up)
     func = operator.add if isinstance(op, ops.Lag) else operator.sub
     group_by = context.group_by
     order_by = context.order_by
+
+    # get the parent object from which `data` originated
     parent = context.parent
+
+    # get the DataFrame from the parent object, handling the DataFrameGroupBy
+    # case
     parent_df = getattr(parent, 'obj', parent)
+
+    # index our parent df by grouping and ordering keys
     indexed_original_df = parent_df.set_index(group_by + order_by)
+
+    # perform the time shift
     adjusted_parent_df = parent_df.assign(
         **{k: func(parent_df[k], offset) for k in order_by})
-    indexed_parent = adjusted_parent_df.set_index(group_by + order_by)
-    result = indexed_parent[getattr(data, 'obj', data).name]
+
+    # index the parent *after* adjustment
+    adjusted_indexed_parent = adjusted_parent_df.set_index(group_by + order_by)
+
+    # get the column we care about
+    result = adjusted_indexed_parent[getattr(data, 'obj', data).name]
+
+    # reindex the shifted data by the original frame's index
     result = result.reindex(indexed_original_df.index)
+
+    # add a default if necessary
     return post_lead_lag(result, default)
 
 
