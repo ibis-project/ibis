@@ -47,6 +47,26 @@ def test_array_collect(t, df):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.xfail(
+    raises=TypeError,
+    reason=(
+        'Pandas does not implement rolling for functions that do not return '
+        'numbers'
+    )
+)
+def test_array_collect_rolling_partitioned(t, df):
+    window = ibis.trailing_window(2, order_by=t.plain_int64)
+    colexpr = t.plain_float64.collect().over(window)
+    expr = t['dup_strings', 'plain_int64', colexpr.name('collected')]
+    result = expr.execute()
+    expected = pd.DataFrame({
+        'dup_strings': ['d', 'a', 'd'],
+        'plain_int64': [1, 2, 3],
+        'collected': [[4.0], [4.0, 5.0], [5.0, 6.0]],
+    })[expr.columns]
+    tm.assert_frame_equal(result, expected)
+
+
 @pytest.mark.xfail(raises=IbisTypeError, reason='Not sure if this should work')
 def test_array_collect_scalar(client):
     raw_value = 'abcd'
