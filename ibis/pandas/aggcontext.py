@@ -305,7 +305,6 @@ class Window(AggregationContext):
 
     def agg(self, grouped_data, function, *args, **kwargs):
         group_by = self.group_by
-
         order_by = self.order_by
 
         # if we don't have a grouping key, just call into pandas
