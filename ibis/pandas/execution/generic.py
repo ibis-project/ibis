@@ -586,7 +586,6 @@ def execute_not_bool(op, data, **kwargs):
 
 
 @execute_node.register(ops.BinaryOp, pd.Series, pd.Series)
-@execute_node.register(ops.BinaryOp, pd.Series, pd.Series)
 @execute_node.register(
     (ops.NumericBinaryOp, ops.LogicalBinaryOp, ops.Comparison),
     numeric_types,
