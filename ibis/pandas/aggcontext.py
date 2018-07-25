@@ -309,11 +309,6 @@ class Window(AggregationContext):
 
         # if we don't have a grouping key, just call into pandas
         if not group_by:
-            # if we're in a window we must have non empty ordering keys
-            assert order_by, 'No ordering keys found in a {} context'.format(
-                type(self).__name__
-            )
-
             # the result of calling .rolling(...) in pandas
             windowed = self.construct_window(grouped_data)
 
