@@ -161,7 +161,7 @@ def call_numpy_ufunc(func, op, data, **kwargs):
     return func(data)
 
 
-@execute_node.register(ops.Negate, scalar_types)
+@execute_node.register(ops.Negate, fixed_width_types + timedelta_types)
 def execute_obj_negate(op, data, **kwargs):
     return -data
 
