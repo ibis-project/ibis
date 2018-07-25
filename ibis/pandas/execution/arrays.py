@@ -67,11 +67,6 @@ def execute_array_repeat(op, left, right, **kwargs):
     return left * right
 
 
-@execute_node.register(ops.ArrayCollect, pd.Series)
-def execute_array_collect(op, data, **kwargs):
-    return list(data)
-
-
-@execute_node.register(ops.ArrayCollect, SeriesGroupBy)
-def execute_array_collect_group_by(op, data, **kwargs):
-    return data.apply(list)
+@execute_node.register(ops.ArrayCollect, (pd.Series, SeriesGroupBy))
+def execute_array_collect(op, data, context=None, **kwargs):
+    return context.agg(data, list)
