@@ -1,4 +1,5 @@
 import operator
+import os
 
 from collections import OrderedDict
 from operator import methodcaller
@@ -1357,11 +1358,6 @@ def test_invalid_negate(value, expected_type):
 @pytest.mark.parametrize(
     'type',
     [
-        pytest.mark.xfail(
-            np.float128,
-            reason='Type not supported in most backends',
-            raises=TypeError,
-        ),
         np.float16,
         np.float32,
         np.float64,
@@ -1381,5 +1377,19 @@ def test_invalid_negate(value, expected_type):
 )
 def test_valid_negate(type):
     value = type(1)
+    expr = ibis.literal(value)
+    assert -expr is not None
+
+
+@pytest.mark.xfail(
+    reason='Type not supported in most backends',
+    raises=TypeError,
+)
+@pytest.mark.skipif(
+    os.name == 'nt',
+    reason='np.float128 not appear to exist on windows'
+)
+def test_valid_negate_float128():
+    value = np.float128(1)
     expr = ibis.literal(value)
     assert -expr is not None
