@@ -100,7 +100,9 @@ def from_numpy_dtype(value):
         return _numpy_dtypes[value]
     except KeyError:
         raise TypeError(
-            'numpy dtype {!r} is supported in the pandas backend'.format(value)
+            'numpy dtype {!r} is not supported in the pandas backend'.format(
+                value
+            )
         )
 
 
@@ -360,7 +362,13 @@ class PandasClient(client.Client):
             )
 
         assert isinstance(query, ir.Expr)
-        return execute(query, params=params)
+        result = execute(query, params=params)
+        if isinstance(result, pd.DataFrame):
+            schema = query.schema()
+            return result.reset_index()[schema.names]
+        elif isinstance(result, pd.Series):
+            return result.reset_index(drop=True)
+        return result
 
     def compile(self, expr, *args, **kwargs):
         return expr

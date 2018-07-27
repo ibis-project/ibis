@@ -92,7 +92,7 @@ class Compilation(Suite):
 class PandasBackend:
 
     def setup(self):
-        n = int(5e6)
+        n = 30 * int(2e5)
         data = pd.DataFrame({
             'key': np.random.choice(16000, size=n),
             'low_card_key': np.random.choice(30, size=n),
@@ -103,6 +103,8 @@ class PandasBackend:
             'timestamp_strings': pd.date_range(
                 start='now', periods=n, freq='s'
             ).values.astype(str),
+            'repeated_timestamps': pd.date_range(
+                start='2018-09-01', periods=30).repeat(int(n / 30))
         })
 
         t = ibis.pandas.connect({'df': data}).table('df')
@@ -130,6 +132,18 @@ class PandasBackend:
             'low_card_key', 'key', 'value'
         ]].sort_by(['low_card_key', 'key'])
 
+        low_card_window = ibis.trailing_range_window(
+            2 * ibis.day(),
+            order_by=t.repeated_timestamps,
+            group_by=t.low_card_key)
+        self.low_card_grouped_rolling = t.value.mean().over(low_card_window)
+
+        high_card_window = ibis.trailing_range_window(
+            2 * ibis.day(),
+            order_by=t.repeated_timestamps,
+            group_by=t.key)
+        self.high_card_grouped_rolling = t.value.mean().over(high_card_window)
+
     def time_high_cardinality_group_by(self):
         self.high_card_group_by.execute()
 
@@ -153,3 +167,9 @@ class PandasBackend:
 
     def time_multikey_sort_projection(self):
         self.multikey_sort_projection.execute()
+
+    def time_low_card_grouped_rolling(self):
+        self.low_card_grouped_rolling.execute()
+
+    def time_high_card_grouped_rolling(self):
+        self.high_card_grouped_rolling.execute()

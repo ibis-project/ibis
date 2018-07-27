@@ -312,7 +312,7 @@ def test_query_cancel(db):
 
 def test_set_compression_codec(con):
     old_opts = con.get_options()
-    assert old_opts['COMPRESSION_CODEC'].upper() == 'NONE'
+    assert old_opts['COMPRESSION_CODEC'].upper() in ('NONE', '')
 
     con.set_compression_codec('snappy')
     opts = con.get_options()
@@ -320,7 +320,7 @@ def test_set_compression_codec(con):
 
     con.set_compression_codec(None)
     opts = con.get_options()
-    assert opts['COMPRESSION_CODEC'].upper() == 'NONE'
+    assert opts['COMPRESSION_CODEC'].upper() in ('NONE', '')
 
 
 def test_disable_codegen(con):
@@ -336,10 +336,10 @@ def test_disable_codegen(con):
     cur1 = impala_con.execute('SET')
     cur2 = impala_con.execute('SET')
 
-    opts1 = dict(cur1.fetchall())
+    opts1 = dict(row[:2] for row in cur1.fetchall())
     cur1.release()
 
-    opts2 = dict(cur2.fetchall())
+    opts2 = dict(row[:2] for row in cur2.fetchall())
     cur2.release()
 
     assert opts1['DISABLE_CODEGEN'] == '1'
@@ -408,7 +408,7 @@ def test_time_to_int_cast(con):
 
 def test_set_option_with_dot(con):
     con.set_options({'request_pool': 'baz.quux'})
-    result = dict(con.raw_sql('set', True).fetchall())
+    result = dict(row[:2] for row in con.raw_sql('set', True).fetchall())
     assert result['REQUEST_POOL'] == 'baz.quux'
 
 

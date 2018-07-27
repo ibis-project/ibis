@@ -4,8 +4,7 @@ import ibis
 import toolz
 
 from ibis.pandas.client import PandasClient
-from ibis.pandas.decimal import execute_node  # noqa: F401
-from ibis.pandas.execution import execute  # noqa: F401
+from ibis.pandas.execution import execute, execute_node  # noqa: F401
 
 
 __all__ = 'connect', 'execute', 'dialect'

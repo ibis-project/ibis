@@ -6,6 +6,10 @@ import re
 
 from collections import OrderedDict
 
+import six
+
+import numpy as np
+
 import toolz
 
 import pandas as pd
@@ -14,44 +18,66 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.common as com
 import ibis.expr.window as win
 import ibis.expr.operations as ops
+import ibis.expr.datatypes as dt
 
 import ibis.pandas.aggcontext as agg_ctx
 
-from ibis.pandas.core import integer_types
+from ibis.pandas.core import (
+    execute, integer_types, simple_types, date_types, timestamp_types,
+    timedelta_types
+)
 from ibis.pandas.dispatch import execute_node
-from ibis.pandas.core import execute
 from ibis.pandas.execution import util
 
 
-def _post_process_empty(scalar, index):
+def _post_process_empty(scalar, parent, order_by, group_by):
+    assert not order_by and not group_by
+    index = parent.index
     result = pd.Series([scalar]).repeat(len(index))
     result.index = index
     return result
 
 
-def _post_process_group_by(series, index):
+def _post_process_group_by(series, parent, order_by, group_by):
+    assert not order_by and group_by
     return series
 
 
-def _post_process_order_by(series, index):
-    return series.reindex(index)
+def _post_process_order_by(series, parent, order_by, group_by):
+    assert order_by and not group_by
+    indexed_parent = parent.set_index(order_by)
+    index = indexed_parent.index
+    names = index.names
+    if len(names) > 1:
+        series = series.reorder_levels(names)
+    series = series.iloc[index.argsort(kind='mergesort')]
+    return series
 
 
-def _post_process_group_by_order_by(series, index):
-    level_list = list(range(series.index.nlevels - 1))
-    series_with_reset_index = series.reset_index(level=level_list, drop=True)
-    reindexed_series = series_with_reset_index.reindex(index)
-    return reindexed_series
+def _post_process_group_by_order_by(series, parent, order_by, group_by):
+    indexed_parent = parent.set_index(group_by + order_by, append=True)
+    index = indexed_parent.index
+
+    # get the names of the levels that will be in the result
+    series_index_names = frozenset(series.index.names)
+
+    # get the levels common to series.index, in the order that they occur in
+    # the parent's index
+    reordered_levels = [
+        name for name in index.names if name in series_index_names
+    ]
+
+    if len(reordered_levels) > 1:
+        series = series.reorder_levels(reordered_levels)
+    return series
 
 
 @execute_node.register(ops.WindowOp, pd.Series, win.Window)
 def execute_window_op(op, data, window, scope=None, context=None, **kwargs):
     operand = op.expr
     root, = op.root_tables()
-    try:
-        data = scope[root]
-    except KeyError:
-        data = execute(root.to_expr(), scope=scope, context=context, **kwargs)
+    root_expr = root.to_expr()
+    data = execute(root_expr, scope=scope, context=context, **kwargs)
 
     following = window.following
     order_by = window._order_by
@@ -76,23 +102,23 @@ def execute_window_op(op, data, window, scope=None, context=None, **kwargs):
     ]
 
     order_by = window._order_by
+    if not order_by:
+        ordering_keys = ()
 
-    if grouping_keys:
-        source = data.groupby(grouping_keys, sort=False, as_index=not order_by)
-
+    if group_by:
         if order_by:
-            sorted_df = source.apply(
-                lambda df, order_by=order_by, kwargs=kwargs: (
-                    util.compute_sorted_frame(order_by, df, **kwargs)
-                )
-            )
-            source = sorted_df.groupby(grouping_keys, sort=False)
+            sorted_df, grouping_keys, ordering_keys = (
+                util.compute_sorted_frame(
+                    data, order_by, group_by=group_by, **kwargs))
+            source = sorted_df.groupby(grouping_keys, sort=True)
             post_process = _post_process_group_by_order_by
         else:
+            source = data.groupby(grouping_keys, sort=False)
             post_process = _post_process_group_by
     else:
         if order_by:
-            source = util.compute_sorted_frame(order_by, data, **kwargs)
+            source, grouping_keys, ordering_keys = (
+                util.compute_sorted_frame(data, order_by, **kwargs))
             post_process = _post_process_order_by
         else:
             source = data
@@ -104,28 +130,51 @@ def execute_window_op(op, data, window, scope=None, context=None, **kwargs):
         factory=OrderedDict,
     )
 
+    # figure out what the dtype of the operand is
+    operand_type = operand.type()
+    if isinstance(operand_type, dt.Integer) and operand_type.nullable:
+        operand_dtype = np.float64
+    else:
+        operand_dtype = operand.type().to_pandas()
+
     # no order by or group by: default summarization context
     #
     # if we're reducing and we have an order by expression then we need to
     # expand or roll.
     #
     # otherwise we're transforming
-    if not grouping_keys and not order_by:
+    if not grouping_keys and not ordering_keys:
         context = agg_ctx.Summarize()
-    elif isinstance(operand.op(), ops.Reduction) and order_by:
+    elif isinstance(operand.op(), ops.Reduction) and ordering_keys:
         # XXX(phillipc): What a horror show
         preceding = window.preceding
         if preceding is not None:
-            context = agg_ctx.Moving(preceding)
+            context = agg_ctx.Moving(
+                preceding,
+                parent=source,
+                group_by=grouping_keys,
+                order_by=ordering_keys,
+                dtype=operand_dtype,
+            )
         else:
             # expanding window
-            context = agg_ctx.Cumulative()
+            context = agg_ctx.Cumulative(
+                parent=source,
+                group_by=grouping_keys,
+                order_by=ordering_keys,
+                dtype=operand_dtype,
+            )
     else:
         # groupby transform (window with a partition by clause in SQL parlance)
-        context = agg_ctx.Transform()
+        context = agg_ctx.Transform(
+            parent=source,
+            group_by=grouping_keys,
+            order_by=ordering_keys,
+            dtype=operand_dtype,
+        )
 
     result = execute(operand, new_scope, context=context, **kwargs)
-    series = post_process(result, data.index)
+    series = post_process(result, data, ordering_keys, grouping_keys)
     assert len(data) == len(series), \
         'input data source and computed column do not have the same length'
     return series
@@ -159,56 +208,76 @@ def execute_series_cumulative_op(op, data, **kwargs):
         raise ValueError(
             'More than one operation name found in {} class'.format(typename)
         )
-    return agg_ctx.Cumulative().agg(data, operation_name.lower())
+    return agg_ctx.Cumulative(
+        dtype=op.to_expr().type().to_pandas(),
+    ).agg(data, operation_name.lower())
+
+
+def post_lead_lag(result, default):
+    if not pd.isnull(default):
+        return result.fillna(default)
+    return result
 
 
 @execute_node.register(
-    ops.Lag, (pd.Series, SeriesGroupBy),
+    (ops.Lead, ops.Lag),
+    (pd.Series, SeriesGroupBy),
     integer_types + (type(None),),
-    object,
+    simple_types + (type(None),),
 )
-def execute_series_lag(op, data, offset, default, **kwargs):
-    result = data.shift(1 if offset is None else offset)
-    if not pd.isnull(default):
-        return result.fillna(default)
-    return result
+def execute_series_lead_lag(op, data, offset, default, **kwargs):
+    func = toolz.identity if isinstance(op, ops.Lag) else operator.neg
+    result = data.shift(func(1 if offset is None else offset))
+    return post_lead_lag(result, default)
 
 
 @execute_node.register(
-    ops.Lead, (pd.Series, SeriesGroupBy),
-    integer_types + (type(None),),
-    object,
+    (ops.Lead, ops.Lag),
+    (pd.Series, SeriesGroupBy),
+    timedelta_types,
+    date_types + timestamp_types + six.string_types + (type(None),),
 )
-def execute_series_lead(op, data, offset, default, **kwargs):
-    result = data.shift(-(1 if offset is None else offset))
-    if not pd.isnull(default):
-        return result.fillna(default)
-    return result
+def execute_series_lead_lag_timedelta(
+    op, data, offset, default, context=None, **kwargs
+):
+    """An implementation of shifting a column relative to another one that is
+    in units of time rather than rows.
+    """
+    # lagging adds time (delayed), leading subtracts time (moved up)
+    func = operator.add if isinstance(op, ops.Lag) else operator.sub
+    group_by = context.group_by
+    order_by = context.order_by
 
+    # get the parent object from which `data` originated
+    parent = context.parent
 
-@execute_node.register(
-    ops.Lag, (pd.Series, SeriesGroupBy), pd.Timedelta, object,
-)
-def execute_series_lag_timedelta(op, data, offset, default, **kwargs):
-    result = data.tshift(freq=offset)
-    if not pd.isnull(default):
-        return result.fillna(default)
-    return result
+    # get the DataFrame from the parent object, handling the DataFrameGroupBy
+    # case
+    parent_df = getattr(parent, 'obj', parent)
 
+    # index our parent df by grouping and ordering keys
+    indexed_original_df = parent_df.set_index(group_by + order_by)
 
-@execute_node.register(
-    ops.Lead, (pd.Series, SeriesGroupBy), pd.Timedelta, object
-)
-def execute_series_lead_timedelta(op, data, offset, default, **kwargs):
-    result = data.tshift(freq=-offset)
-    if not pd.isnull(default):
-        return result.fillna(default)
-    return result
+    # perform the time shift
+    adjusted_parent_df = parent_df.assign(
+        **{k: func(parent_df[k], offset) for k in order_by})
+
+    # index the parent *after* adjustment
+    adjusted_indexed_parent = adjusted_parent_df.set_index(group_by + order_by)
+
+    # get the column we care about
+    result = adjusted_indexed_parent[getattr(data, 'obj', data).name]
+
+    # reindex the shifted data by the original frame's index
+    result = result.reindex(indexed_original_df.index)
+
+    # add a default if necessary
+    return post_lead_lag(result, default)
 
 
 @execute_node.register(ops.FirstValue, pd.Series)
 def execute_series_first_value(op, data, **kwargs):
-    return data.iloc[0]
+    return data.values[0]
 
 
 @execute_node.register(ops.FirstValue, SeriesGroupBy)
@@ -218,7 +287,7 @@ def execute_series_group_by_first_value(op, data, context=None, **kwargs):
 
 @execute_node.register(ops.LastValue, pd.Series)
 def execute_series_last_value(op, data, **kwargs):
-    return data.iloc[-1]
+    return data.values[-1]
 
 
 @execute_node.register(ops.LastValue, SeriesGroupBy)

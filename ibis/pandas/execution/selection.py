@@ -3,7 +3,6 @@
 
 from __future__ import absolute_import
 
-import itertools
 import operator
 
 from collections import OrderedDict
@@ -135,13 +134,6 @@ def compute_projection_table_expr(expr, parent, data, **kwargs):
     return map_new_column_names_to_data(mapping, data)
 
 
-@compute_projection.register(object, ops.Selection, pd.DataFrame)
-def compute_projection_default(op, parent, data, **kwargs):
-    raise TypeError(
-        "Don't know how to compute projection of {}".format(type(op).__name__)
-    )
-
-
 def remap_overlapping_column_names(table_op, root_table, data_columns):
     """Return an ``OrderedDict`` mapping possibly suffixed column names to
     column names without suffixes.
@@ -263,7 +255,7 @@ def physical_tables_join(join):
     # Physical roots of Join nodes are the unique physical roots of their
     # left and right TableNodes.
     return list(toolz.unique(
-        itertools.chain(
+        toolz.concatv(
             toolz.unique(physical_tables(join.left.op()), key=id),
             toolz.unique(physical_tables(join.right.op()), key=id)
         ),
@@ -286,20 +278,44 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
     sort_keys = op.sort_keys
     result = data
 
+    # computed_scope holds the columns that we've just computed
+    # merged_scope is scope + computed_scope
+    #
+    # TODO: this depends on the order that columns are projected, so we will
+    # still trigger computation in cases where a more complex expression
+    # contains a simpler one and is computed before the simpler one
+    #
+    # TODO: topologically order all nodes then we don't need to worry about
+    #       this
+    # TODO: might require variadic dispatch
+    computed_scope = OrderedDict()
+    merged_scope = scope.copy()
+
     # Build up the individual pandas structures from column expressions
     if selections:
-        data_pieces = []
-
         for selection in selections:
+            merged_scope.update(computed_scope)
             pandas_object = compute_projection(
-                selection, op, data, scope=scope, **kwargs
+                selection,
+                op,
+                data,
+                scope=merged_scope,
+                **kwargs
             )
-            data_pieces.append(pandas_object)
-        result = pd.concat(data_pieces, axis=1)
+            computed_scope[selection.op()] = pandas_object
+
+        new_pieces = [
+            piece.reset_index(
+                level=list(range(1, piece.index.nlevels)), drop=True)
+            if piece.index.nlevels > 1
+            else piece
+            for piece in computed_scope.values()
+        ]
+        result = pd.concat(new_pieces, axis=1)
 
     if predicates:
         predicates = _compute_predicates(
-            op.table.op(), predicates, data, scope, **kwargs
+            op.table.op(), predicates, data, merged_scope, **kwargs
         )
         predicate = functools.reduce(operator.and_, predicates)
         assert len(predicate) == len(result), \
@@ -307,5 +323,23 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
         result = result.loc[predicate]
 
     if sort_keys:
-        result = util.compute_sorted_frame(sort_keys, result, **kwargs)
-    return result.reset_index(drop=True)
+        result, grouping_keys, ordering_keys = util.compute_sorted_frame(
+            result, order_by=sort_keys, scope=merged_scope, **kwargs)
+    else:
+        grouping_keys = ordering_keys = ()
+
+    # return early if we do not have any temporary grouping or ordering columns
+    assert not grouping_keys, 'group by should never show up in Selection'
+    if not ordering_keys:
+        return result
+
+    # create a sequence of columns that we need to drop
+    temporary_columns = pd.Index(
+        toolz.concatv(grouping_keys, ordering_keys)).difference(data.columns)
+
+    # no reason to call drop if we don't need to
+    if temporary_columns.empty:
+        return result
+
+    # drop every temporary column we created for ordering or grouping
+    return result.drop(temporary_columns, axis=1)

@@ -731,6 +731,9 @@ class SortExpr(Expr):
     def _type_display(self):
         return 'array-sort'
 
+    def get_name(self):
+        return self.op().resolve_name()
+
 
 class DayOfWeek(Expr):
     def index(self):
