@@ -238,20 +238,17 @@ def test_batting_cumulative_partitioned(batting, batting_df, sort_kind):
 
     t = batting
     expr = t.G.sum().over(
-        ibis.cumulative_window(order_by=t[order_by], group_by=t[group_by])
-    )
+        ibis.cumulative_window(order_by=order_by, group_by=group_by))
+    expr = t.mutate(cumulative=expr)
     result = expr.execute()
 
     columns = [group_by, order_by, 'G']
-    expected_result = batting_df[columns].sort_values([
-        group_by, order_by]).groupby(group_by).G.expanding().sum()
-    expected = expected_result.reset_index(
-        list(range(expected_result.index.nlevels - 1)),
-        drop=True
-    ).reindex(batting_df.index)
-    expected.name = result.name
+    expected = batting_df[columns].set_index(
+        order_by).groupby(group_by).G.expanding().sum().rename('cumulative')
 
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(
+        result.set_index([group_by, order_by]).sort_index().cumulative,
+        expected.sort_index())
 
 
 def test_batting_rolling(batting, batting_df, sort_kind):
@@ -277,19 +274,16 @@ def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
     expr = t.G.sum().over(
         ibis.trailing_window(3, order_by=t[order_by], group_by=t[group_by])
     )
+    expr = t.mutate(rolled=expr)
     result = expr.execute()
 
     columns = [group_by, order_by, 'G']
-    expected_result = batting_df[columns].sort_values([
-        group_by, order_by
-    ]).groupby(group_by).G.rolling(3).sum().sort_index(level=-1)
-    expected = expected_result.reset_index(
-        list(range(expected_result.index.nlevels - 1)),
-        drop=True
-    ).reindex(batting_df.index)
-    expected.name = result.name
+    expected = batting_df[columns].set_index(
+        order_by).groupby(group_by).G.rolling(3).sum().rename('rolled')
 
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(
+        result.set_index([group_by, order_by]).sort_index().rolled,
+        expected.sort_index())
 
 
 @pytest.mark.parametrize(
