@@ -59,7 +59,9 @@
 	"six": [],
 	"multipledispatch": [],
 	"impyla": [],
-	"sqlalchemy": []
+	"sqlalchemy": [],
+	"pytz": [],
+	"regex": []
     },
 
     // Combinations of libraries/python versions can be excluded/included
@@ -88,12 +90,10 @@
     //     {"environment_type": "conda", "six": null}, // don't run without six on conda
     // ],
     //
-    // "include": [
-    //     // additional env for python2.7
-    //     {"python": "2.7", "numpy": "1.8"},
-    //     // additional env if run on windows+conda
-    //     {"platform": "win32", "environment_type": "conda", "python": "2.7", "libpython": ""},
-    // ],
+    "include": [
+        // additional env for python2.7
+        {"python": "2.7", "funcsigs": [], "enum34": [], "functools32": []}
+    ],
 
     // The directory (relative to the current directory) that benchmarks are
     // stored in.  If not provided, defaults to "benchmarks"
