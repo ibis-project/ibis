@@ -288,7 +288,14 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
             )
             data_pieces.append(pandas_object)
 
-        result = pd.concat(data_pieces, axis=1)
+        new_pieces = [
+            piece.reset_index(
+                level=list(range(1, piece.index.nlevels)), drop=True)
+            if piece.index.nlevels > 1
+            else piece
+            for piece in data_pieces
+        ]
+        result = pd.concat(new_pieces, axis=1)
 
     if predicates:
         predicates = _compute_predicates(
