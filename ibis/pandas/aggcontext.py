@@ -301,7 +301,8 @@ class Window(AggregationContext):
             order_by=kwargs.pop('order_by', None),
             dtype=kwargs.pop('dtype'),
         )
-        self.construct_window = operator.methodcaller(kind, *args, **kwargs)
+        self.construct_window = operator.methodcaller(
+            kind, *args, **kwargs)
 
     def agg(self, grouped_data, function, *args, **kwargs):
         group_by = self.group_by
@@ -334,43 +335,31 @@ class Window(AggregationContext):
                 assert isinstance(function, six.string_types)
                 method = operator.methodcaller(function, *args, **kwargs)
 
-        keys = group_by + order_by
-
         # get the DataFrame from which the operand originated (passed in when
         # constructing this context object in execute_node(ops.WindowOp))
         frame = self.parent.obj
         name = grouped_data.obj.name
 
-        # set the index to our keys and append it to the existing index
-        indexed_series = frame[keys + [name]].set_index(
-            keys, append=True)[name]
+        # set the index to our order_by keys and append it to the existing
+        # index
+        # TODO: see if we can do this in the caller, when the context
+        # is constructed rather than pulling out the data
+        columns = group_by + order_by + [name]
+        indexed_by_ordering = frame.loc[:, columns].set_index(order_by)
 
-        # construct the NaN-filled result, indexed by row number + grouping
-        # keys + ordering keys
-        result = pd.Series(
-            index=indexed_series.index, dtype=self.dtype, name=name)
+        # regroup
+        grouped = indexed_by_ordering.groupby(group_by)[name]
 
-        # get a view on the result to avoid overhead of iloc that we don't need
-        view = result.values
-
-        # compute the length of each group
-        lengths = grouped_data.size().values
-
-        # get the indexed series with JUST the index keys (our ordering keys)
-        # we need for rolling
-        rolling_indexed_series = indexed_series.reset_index(
-            level=[0] + group_by, drop=True)
-
-        # for each group, select out the data, construct a window, compute
-        # the rolling aggregate, and store it in the view we created above
-        start = 0
-        for length in lengths:
-            stop = start + length
-            subset = rolling_indexed_series.iloc[start:stop]
-            windowed = self.construct_window(subset)
-            computed = method(windowed)
-            view[start:stop] = computed.values
-            start = stop
+        # perform the per-group rolling operation
+        windowed = self.construct_window(grouped)
+        result = method(windowed)
+        index = result.index
+        result.index = pd.MultiIndex.from_arrays(
+            [frame.index] + list(map(
+                index.get_level_values, range(index.nlevels)
+            )),
+            names=[frame.index.name] + index.names,
+        )
         return result
 
 
