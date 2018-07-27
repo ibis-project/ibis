@@ -338,7 +338,7 @@ class Window(AggregationContext):
         # get the DataFrame from which the operand originated (passed in when
         # constructing this context object in execute_node(ops.WindowOp))
         frame = self.parent.obj
-        name = grouped_data.obj.name
+        name = getattr(grouped_data, 'obj', grouped_data).name
 
         # set the index to our order_by keys and append it to the existing
         # index
