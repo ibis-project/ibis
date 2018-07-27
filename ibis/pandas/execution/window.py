@@ -67,15 +67,8 @@ def _post_process_group_by_order_by(series, parent, order_by, group_by):
         name for name in index.names if name in series_index_names
     ]
 
-    # remove any levels from the parent index that can't be in the result
-    levels_to_drop = [
-        name for name in index.names if name not in series_index_names
-    ]
-
     if len(reordered_levels) > 1:
         series = series.reorder_levels(reordered_levels)
-    new_index = index.droplevel(levels_to_drop)
-    series = series.reindex(new_index)
     return series
 
 
