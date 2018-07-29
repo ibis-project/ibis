@@ -52,7 +52,10 @@ def execute_decimal_log2(op, data, **kwargs):
         return decimal.Decimal('NaN')
 
 
-@execute_node.register(ops.UnaryOp, decimal.Decimal)
+# While ops.Negate is a subclass of ops.UnaryOp, multipledispatch will be
+# faster if we provide types that can potentially match the types of inputs
+# exactly
+@execute_node.register((ops.UnaryOp, ops.Negate), decimal.Decimal)
 def execute_decimal_unary(op, data, **kwargs):
     operation_name = type(op).__name__.lower()
     math_function = getattr(math, operation_name, None)

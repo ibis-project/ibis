@@ -1,14 +1,21 @@
-import pytest
 import datetime
+
 from operator import methodcaller
 
+import pytest
+
+from pytest import param
+
 import numpy as np
+
 import pandas as pd
 import pandas.util.testing as tm  # noqa: E402
+
 import ibis
-from ibis.expr import datatypes as dt
+
 from ibis import literal as L  # noqa: E402
-from ibis.compat import PY2
+from ibis.expr import datatypes as dt
+from ibis.compat import PY2, parse_version
 
 
 pytestmark = pytest.mark.pandas
@@ -163,12 +170,19 @@ def test_times_ops_py2(t, df):
 @pytest.mark.parametrize(
     ('op', 'expected'),
     [
-        (lambda x, y: x + y, lambda x, y: x.values * 2),
-        (lambda x, y: x * 2, lambda x, y: x.values * 2),
-        pytest.mark.xfail(
-            (lambda x, y: x // 2, lambda x, y: x.values // 2),
-            raises=TypeError, reason='Not yet tested'
-        )
+        param(lambda x, y: x + y, lambda x, y: x.values * 2, id='add'),
+        param(lambda x, y: x * 2, lambda x, y: x.values * 2, id='mul'),
+        param(
+            lambda x, y: x // 2, lambda x, y: x.values // 2, id='floordiv',
+            marks=pytest.mark.xfail(
+                parse_version(pd.__version__) < parse_version('0.23.0'),
+                raises=TypeError,
+                reason=(
+                    'pandas versions less than 0.23.0 do not support floor '
+                    'division involving timedelta columns'
+                )
+            )
+        ),
     ]
 )
 def test_interval_arithmetic(op, expected):

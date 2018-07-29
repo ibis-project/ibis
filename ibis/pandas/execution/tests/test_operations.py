@@ -34,40 +34,6 @@ def test_read_with_undiscoverable_type(client):
         client.table('df')
 
 
-merge_asof_minversion = pytest.mark.skipif(
-    pd.__version__ < '0.19.2',
-    reason="at least pandas-0.19.2 required for merge_asof")
-
-
-@merge_asof_minversion
-def test_asof_join(time_left, time_right, time_df1, time_df2):
-    expr = time_left.asof_join(time_right, 'time')
-    _test_asof(expr, time_df1, time_df2)
-
-
-@merge_asof_minversion
-def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
-    expr = time_left.asof_join(
-        time_right, time_left.time == time_right.time)
-    _test_asof(expr, time_df1, time_df2)
-
-
-def _test_asof(expr, df1, df2):
-    result = expr.execute()
-    expected = pd.merge_asof(df1, df2, on='time')
-    tm.assert_frame_equal(result[expected.columns], expected)
-
-
-@merge_asof_minversion
-def test_keyed_asof_join(
-        time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2):
-    expr = time_keyed_left.asof_join(time_keyed_right, 'time', by='key')
-    result = expr.execute()
-    expected = pd.merge_asof(
-        time_keyed_df1, time_keyed_df2, on='time', by='key')
-    tm.assert_frame_equal(result[expected.columns], expected)
-
-
 def test_selection(t, df):
     expr = t[
         ((t.plain_strings == 'a') | (t.plain_int64 == 3)) &
@@ -284,7 +250,7 @@ def test_frame_limit(t, df, offset):
     n = 5
     df_expr = t.limit(n, offset=offset)
     result = df_expr.execute()
-    expected = df.iloc[offset:offset + n]
+    expected = df.iloc[offset:offset + n].reset_index(drop=True)
     tm.assert_frame_equal(result[expected.columns], expected)
 
 

@@ -4,11 +4,9 @@ import contextlib
 
 from multipledispatch import Dispatcher, halt_ordering, restart_ordering
 
-import pandas as pd
-
+import ibis
 import ibis.common as com
 import ibis.expr.operations as ops
-import ibis.expr.datatypes as dt
 
 
 # Individual operation execution
@@ -44,7 +42,7 @@ depth-first traversal of the tree.
 
 
 # Default returns an empty scope
-@pre_execute.register(object, object)
+@pre_execute.register(ops.Node, ibis.client.Client)
 def pre_execute_default(node, client, **kwargs):
     return {}
 
@@ -65,18 +63,6 @@ datatype : ibis.expr.datatypes.DataType
     type than its would-be type. For example, interval values are represented
     by an integer.
 """)
-
-
-# By default return the literal value
-@execute_literal.register(ops.Literal, object, dt.DataType)
-def execute_node_literal_value_datatype(op, value, datatype, **kwargs):
-    return value
-
-
-# By default return the literal value
-@execute_literal.register(ops.Literal, object, dt.Interval)
-def execute_node_literal_value_interval(op, value, datatype, **kwargs):
-    return pd.Timedelta(value, unit=datatype.unit)
 
 
 post_execute = Dispatcher(

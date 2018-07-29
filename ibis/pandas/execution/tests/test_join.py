@@ -34,7 +34,9 @@ join_type = pytest.mark.parametrize(
 
 @join_type
 def test_join(how, left, right, df1, df2):
-    expr = left.join(right, left.key == right.key, how=how)
+    expr = left.join(
+        right, left.key == right.key, how=how
+    )[left, right.other_value, right.key3]
     result = expr.execute()
     expected = pd.merge(df1, df2, how=how, on='key')
     tm.assert_frame_equal(result[expected.columns], expected)
@@ -54,15 +56,18 @@ def test_join_project_left_table(how, left, right, df1, df2):
 def test_join_with_multiple_predicates(how, left, right, df1, df2):
     expr = left.join(
         right, [left.key == right.key, left.key2 == right.key3], how=how
-    )
+    )[left, right.key3, right.other_value]
     result = expr.execute()
     expected = pd.merge(
         df1, df2,
         how=how,
         left_on=['key', 'key2'],
         right_on=['key', 'key3'],
+    ).reset_index(drop=True)
+    tm.assert_frame_equal(
+        result[expected.columns],
+        expected
     )
-    tm.assert_frame_equal(result[expected.columns], expected)
 
 
 @join_type
@@ -70,14 +75,15 @@ def test_join_with_multiple_predicates_written_as_one(
     how, left, right, df1, df2
 ):
     predicate = (left.key == right.key) & (left.key2 == right.key3)
-    expr = left.join(right, predicate, how=how)
+    expr = left.join(right, predicate, how=how)[
+        left, right.key3, right.other_value]
     result = expr.execute()
     expected = pd.merge(
         df1, df2,
         how=how,
         left_on=['key', 'key2'],
         right_on=['key', 'key3'],
-    )
+    ).reset_index(drop=True)
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
@@ -114,7 +120,8 @@ def test_join_with_duplicate_non_key_columns_not_selected(
     left = left.mutate(x=left.value * 2)
     right = right.mutate(x=right.other_value * 3)
     right = right[['key', 'other_value']]
-    expr = left.join(right, left.key == right.key, how=how)
+    expr = left.join(right, left.key == right.key, how=how)[
+        left, right.other_value]
     result = expr.execute()
     expected = pd.merge(
         df1.assign(x=df1.value * 2),
@@ -269,7 +276,8 @@ merge_asof_minversion = pytest.mark.skipif(
 
 @merge_asof_minversion
 def test_asof_join(time_left, time_right, time_df1, time_df2):
-    expr = time_left.asof_join(time_right, 'time')
+    expr = time_left.asof_join(time_right, 'time')[
+        time_left, time_right.other_value]
     result = expr.execute()
     expected = pd.merge_asof(time_df1, time_df2, on='time')
     tm.assert_frame_equal(result[expected.columns], expected)
@@ -278,7 +286,8 @@ def test_asof_join(time_left, time_right, time_df1, time_df2):
 @merge_asof_minversion
 def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
     expr = time_left.asof_join(
-        time_right, time_left.time == time_right.time)
+        time_right, time_left.time == time_right.time)[
+            time_left, time_right.other_value]
     result = expr.execute()
     expected = pd.merge_asof(time_df1, time_df2, on='time')
     tm.assert_frame_equal(result[expected.columns], expected)
@@ -287,7 +296,8 @@ def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
 @merge_asof_minversion
 def test_keyed_asof_join(
         time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2):
-    expr = time_keyed_left.asof_join(time_keyed_right, 'time', by='key')
+    expr = time_keyed_left.asof_join(time_keyed_right, 'time', by='key')[
+        time_keyed_left, time_keyed_right.other_value]
     result = expr.execute()
     expected = pd.merge_asof(
         time_keyed_df1, time_keyed_df2, on='time', by='key')
@@ -298,7 +308,8 @@ def test_keyed_asof_join(
 def test_keyed_asof_join_with_tolerance(
         time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2):
     expr = time_keyed_left.asof_join(
-        time_keyed_right, 'time', by='key', tolerance=2 * ibis.day())
+        time_keyed_right, 'time', by='key', tolerance=2 * ibis.day())[
+            time_keyed_left, time_keyed_right.other_value]
     result = expr.execute()
     expected = pd.merge_asof(
         time_keyed_df1, time_keyed_df2,

@@ -1,29 +1,20 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-import pytest
-import toolz
 import operator
-import numpy as np
+import os
 
-from functools import partial
 from collections import OrderedDict
 from operator import methodcaller
 from datetime import date, datetime, time
 
+import six
+
+import pytest
+
+import numpy as np
+
+import toolz
+
 from ibis import literal
-from ibis.compat import PY2
+from ibis.compat import PY2, functools
 from ibis.common import IbisTypeError
 from ibis.tests.util import assert_equal
 
@@ -1224,7 +1215,7 @@ def test_custom_type_binary_operations():
         value = Arg(rlz.integer)
 
         def output_type(self):
-            return partial(Foo, dtype=dt.int64)
+            return functools.partial(Foo, dtype=dt.int64)
 
     left = ibis.literal(2)
     right = FooNode(3).to_expr()
@@ -1347,3 +1338,58 @@ def test_column_isin_map_keys():
     mapping = ibis.literal({'a': 1, 'b': 2})
     expr = t.a.isin(mapping.keys())
     assert isinstance(expr, ir.BooleanColumn)
+
+
+@pytest.mark.parametrize(
+    ('value', 'expected_type'),
+    [
+        (datetime.now(), dt.timestamp),
+        (datetime.now().date(), dt.date),
+        (datetime.now().time(), dt.time),
+    ]
+)
+def test_invalid_negate(value, expected_type):
+    expr = ibis.literal(value)
+    assert expr.type() == expected_type
+    with pytest.raises(TypeError):
+        -expr
+
+
+@pytest.mark.parametrize(
+    'type',
+    [
+        np.float16,
+        np.float32,
+        np.float64,
+        np.int16,
+        np.int32,
+        np.int64,
+        np.int64,
+        np.int8,
+        np.timedelta64,
+        np.uint16,
+        np.uint32,
+        np.uint64,
+        np.uint64,
+        np.uint8,
+        float,
+    ] + list(six.integer_types)
+)
+def test_valid_negate(type):
+    value = type(1)
+    expr = ibis.literal(value)
+    assert -expr is not None
+
+
+@pytest.mark.xfail(
+    reason='Type not supported in most backends',
+    raises=TypeError,
+)
+@pytest.mark.skipif(
+    os.name == 'nt',
+    reason='np.float128 not appear to exist on windows'
+)
+def test_valid_negate_float128():
+    value = np.float128(1)
+    expr = ibis.literal(value)
+    assert -expr is not None

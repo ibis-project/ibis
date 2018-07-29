@@ -7,7 +7,8 @@ from pandas.core.groupby import SeriesGroupBy
 
 import ibis.expr.operations as ops
 from ibis.pandas.dispatch import execute_node
-from ibis.pandas.core import numeric_types, integer_types
+from ibis.pandas.core import (
+    numeric_types, integer_types, timestamp_types, timedelta_types)
 
 
 @execute_node.register(ops.Strftime, pd.Timestamp, six.string_types)
@@ -73,31 +74,31 @@ def execute_interval_from_integer_series(op, data, **kwargs):
     return data.apply(convert_to_offset)
 
 
-@execute_node.register(ops.TimestampAdd, datetime.datetime, datetime.timedelta)
+@execute_node.register(ops.TimestampAdd, timestamp_types, timedelta_types)
 def execute_timestamp_add_datetime_timedelta(op, left, right, **kwargs):
     return pd.Timestamp(left) + pd.Timedelta(right)
 
 
-@execute_node.register(ops.TimestampAdd, datetime.datetime, pd.Series)
+@execute_node.register(ops.TimestampAdd, timestamp_types, pd.Series)
 def execute_timestamp_add_datetime_series(op, left, right, **kwargs):
     return pd.Timestamp(left) + right
 
 
-@execute_node.register(ops.IntervalAdd, datetime.timedelta, datetime.timedelta)
+@execute_node.register(ops.IntervalAdd, timedelta_types, timedelta_types)
 def execute_interval_add_delta_delta(op, left, right, **kwargs):
     return op.op(pd.Timedelta(left), pd.Timedelta(right))
 
 
-@execute_node.register(ops.IntervalAdd, datetime.timedelta, pd.Series)
+@execute_node.register(ops.IntervalAdd, timedelta_types, pd.Series)
 @execute_node.register(
-    ops.IntervalMultiply, datetime.timedelta, numeric_types + (pd.Series,)
+    ops.IntervalMultiply, timedelta_types, numeric_types + (pd.Series,)
 )
 def execute_interval_add_multiply_delta_series(op, left, right, **kwargs):
     return op.op(pd.Timedelta(left), right)
 
 
 @execute_node.register(
-    (ops.TimestampAdd, ops.IntervalAdd), pd.Series, datetime.timedelta)
+    (ops.TimestampAdd, ops.IntervalAdd), pd.Series, timedelta_types)
 def execute_timestamp_interval_add_series_delta(op, left, right, **kwargs):
     return left + pd.Timedelta(right)
 
@@ -108,18 +109,18 @@ def execute_timestamp_interval_add_series_series(op, left, right, **kwargs):
     return left + right
 
 
-@execute_node.register(ops.TimestampSub, datetime.datetime, datetime.timedelta)
+@execute_node.register(ops.TimestampSub, timestamp_types, timedelta_types)
 def execute_timestamp_sub_datetime_timedelta(op, left, right, **kwargs):
     return pd.Timestamp(left) - pd.Timedelta(right)
 
 
 @execute_node.register(
-    (ops.TimestampDiff, ops.TimestampSub), datetime.datetime, pd.Series)
+    (ops.TimestampDiff, ops.TimestampSub), timestamp_types, pd.Series)
 def execute_timestamp_diff_sub_datetime_series(op, left, right, **kwargs):
     return pd.Timestamp(left) - right
 
 
-@execute_node.register(ops.TimestampSub, pd.Series, datetime.timedelta)
+@execute_node.register(ops.TimestampSub, pd.Series, timedelta_types)
 def execute_timestamp_sub_series_timedelta(op, left, right, **kwargs):
     return left - pd.Timedelta(right)
 
@@ -130,12 +131,12 @@ def execute_timestamp_diff_sub_series_series(op, left, right, **kwargs):
     return left - right
 
 
-@execute_node.register(ops.TimestampDiff, datetime.datetime, datetime.datetime)
+@execute_node.register(ops.TimestampDiff, timestamp_types, timestamp_types)
 def execute_timestamp_diff_datetime_datetime(op, left, right, **kwargs):
     return pd.Timestamp(left) - pd.Timestamp(right)
 
 
-@execute_node.register(ops.TimestampDiff, pd.Series, datetime.datetime)
+@execute_node.register(ops.TimestampDiff, pd.Series, timestamp_types)
 def execute_timestamp_diff_series_datetime(op, left, right, **kwargs):
     return left - pd.Timestamp(right)
 

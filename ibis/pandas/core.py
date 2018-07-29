@@ -85,6 +85,8 @@ import six
 
 import numpy as np
 
+import pandas as pd
+
 import toolz
 
 import ibis
@@ -109,10 +111,11 @@ floating_types = numbers.Real,
 numeric_types = integer_types + floating_types
 boolean_types = bool, np.bool_
 fixed_width_types = numeric_types + boolean_types
-temporal_types = (
-    datetime.datetime, datetime.date, datetime.timedelta, datetime.time,
-    np.datetime64, np.timedelta64,
-)
+date_types = datetime.date,
+time_types = datetime.time,
+timestamp_types = pd.Timestamp, datetime.datetime, np.datetime64
+timedelta_types = pd.Timedelta, datetime.timedelta, np.timedelta64
+temporal_types = date_types + time_types + timestamp_types + timedelta_types
 scalar_types = fixed_width_types + temporal_types
 simple_types = scalar_types + six.string_types
 
