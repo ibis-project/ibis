@@ -328,8 +328,10 @@ class Window(AggregationContext):
             # but don't call the callable just yet. See below where we call it
             if callable(function):
                 method = functools.partial(
-                    operator.methodcaller('apply'),
-                    _apply(function, args, kwargs)
+                    operator.methodcaller(
+                        'apply',
+                        _apply(function, args, kwargs)
+                    )
                 )
             else:
                 assert isinstance(function, six.string_types)
