@@ -1,4 +1,4 @@
-"""Implements ansobject to describe in what context a window aggregation is
+"""Implements an object to describe in what context a window aggregation is
 occurring.
 
 For any particular aggregation such as ``sum``, ``mean``, etc we need to decide
