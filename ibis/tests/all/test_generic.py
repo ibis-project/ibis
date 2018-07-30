@@ -36,10 +36,11 @@ def test_coalesce(backend, con, expr, expected):
 
 
 @tu.skipif_unsupported
-def test_identical_to(backend, alltypes, con, df):
+def test_identical_to(backend, sorted_alltypes, con, sorted_df):
+    df = sorted_df
     dt = df[['tinyint_col', 'double_col']]
 
-    expr = alltypes.tinyint_col.identical_to(alltypes.double_col)
+    expr = sorted_alltypes.tinyint_col.identical_to(sorted_alltypes.double_col)
     result = expr.execute()
 
     expected = ((dt.tinyint_col.isnull() & dt.double_col.isnull()) |
@@ -59,11 +60,11 @@ def test_identical_to(backend, alltypes, con, df):
     pytest.mark.xfail(('int_col', frozenset({1})), raises=TypeError,
                       reason='Not yet implemented'),
 ])
-def test_isin(backend, alltypes, df, column, elements):
-    expr = alltypes[column].isin(elements)
+def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
+    expr = sorted_alltypes[column].isin(elements)
     result = expr.execute()
 
-    expected = df[column].isin(elements)
+    expected = sorted_df[column].isin(elements)
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected)
 
@@ -78,10 +79,10 @@ def test_isin(backend, alltypes, df, column, elements):
     pytest.mark.xfail(('int_col', frozenset({1})), raises=TypeError,
                       reason='Not yet implemented'),
 ])
-def test_notin(backend, alltypes, df, column, elements):
-    expr = alltypes[column].notin(elements)
+def test_notin(backend, sorted_alltypes, sorted_df, column, elements):
+    expr = sorted_alltypes[column].notin(elements)
     result = expr.execute()
 
-    expected = ~df[column].isin(elements)
+    expected = ~sorted_df[column].isin(elements)
     expected = backend.default_series_rename(expected)
     backend.assert_series_equal(result, expected)

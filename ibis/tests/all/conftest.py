@@ -56,6 +56,11 @@ def alltypes(backend):
 
 
 @pytest.fixture(scope='session')
+def sorted_alltypes(alltypes):
+    return alltypes.sort_by('index')
+
+
+@pytest.fixture(scope='session')
 def batting(backend):
     return backend.batting()
 
@@ -73,6 +78,11 @@ def analytic_alltypes(alltypes):
 @pytest.fixture(scope='session')
 def df(alltypes):
     return alltypes.execute()
+
+
+@pytest.fixture(scope='session')
+def sorted_df(df):
+    return df.sort_values('index').reset_index(drop=True)
 
 
 @pytest.fixture(scope='session')
