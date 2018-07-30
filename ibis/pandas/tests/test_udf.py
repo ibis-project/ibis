@@ -122,3 +122,24 @@ def test_call_multiple_udfs():
     result = expr.execute()
     expected = df.a.add(1.0).mul(2.0)
     tm.assert_series_equal(expected, result)
+
+
+def test_udaf_window():
+    @udaf([dt.double], dt.double)
+    def my_mean(series):
+        return series.mean()
+
+    df = pd.DataFrame({
+        'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+        'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+        'key': list('ddeefff')})
+    con = ibis.pandas.connect({'df': df})
+    t = con.table('df')
+    window = ibis.trailing_window(2, order_by='a', group_by='key')
+    expr = t.mutate(rolled=my_mean(t.b).over(window))
+    result = expr.execute().sort_values(['key', 'a'])
+    expected = df.sort_values(['key', 'a']).assign(
+        rolled=lambda df: df.groupby('key').b.rolling(2).mean().reset_index(
+            level=0, drop=True)
+    )
+    tm.assert_frame_equal(result, expected)
