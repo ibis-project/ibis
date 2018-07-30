@@ -124,7 +124,7 @@ _VALID_INPUT_TYPES = (
 ) + scalar_types
 
 
-def execute_with_scope(expr, scope, context=None, **kwargs):
+def execute_with_scope(expr, scope, aggcontext=None, **kwargs):
     """Execute an expression `expr`, with data provided in `scope`.
 
     Parameters
@@ -134,7 +134,7 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
     scope : collections.Mapping
         A dictionary mapping :class:`~ibis.expr.operations.Node` subclass
         instances to concrete data such as a pandas DataFrame.
-    context : Optional[ibis.pandas.aggcontext.AggregationContext]
+    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
 
     Returns
     -------
@@ -147,19 +147,19 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
     # allows clients to provide their own data for each leaf.
     clients = list(find_backends(expr))
 
-    if context is None:
-        context = agg_ctx.Summarize()
+    if aggcontext is None:
+        aggcontext = agg_ctx.Summarize()
 
     pre_executed_scope = map(
         functools.partial(
-            pre_execute, op, scope=scope, context=context, **kwargs),
+            pre_execute, op, scope=scope, aggcontext=aggcontext, **kwargs),
         clients
     )
     new_scope = toolz.merge(scope, *pre_executed_scope)
     result = execute_until_in_scope(
         expr,
         new_scope,
-        context=context,
+        aggcontext=aggcontext,
         clients=clients,
 
         # XXX: we *explicitly* pass in scope and not new_scope here so that
@@ -168,7 +168,7 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
         post_execute_=functools.partial(
             post_execute,
             scope=scope,
-            context=context,
+            aggcontext=aggcontext,
             clients=clients,
             **kwargs
         ),
@@ -179,7 +179,7 @@ def execute_with_scope(expr, scope, context=None, **kwargs):
 
 
 def execute_until_in_scope(
-    expr, scope, context=None, clients=None, post_execute_=None, **kwargs
+    expr, scope, aggcontext=None, clients=None, post_execute_=None, **kwargs
 ):
     """Execute until our op is in `scope`.
 
@@ -187,12 +187,12 @@ def execute_until_in_scope(
     ----------
     expr : ibis.expr.types.Expr
     scope : Mapping
-    context : Optional[AggregationContext]
+    aggcontext : Optional[AggregationContext]
     clients : List[ibis.client.Client]
     kwargs : Mapping
     """
     # these should never be None
-    assert context is not None, 'context is None'
+    assert aggcontext is not None, 'aggcontext is None'
     assert clients is not None, 'clients is None'
     assert post_execute_ is not None, 'post_execute_ is None'
 
@@ -203,12 +203,13 @@ def execute_until_in_scope(
         return scope[op]
 
     new_scope = execute_bottom_up(
-        expr, scope, context=context, post_execute_=post_execute_, **kwargs)
+        expr, scope,
+        aggcontext=aggcontext, post_execute_=post_execute_, **kwargs)
     pre_executor = functools.partial(pre_execute, op, scope=scope, **kwargs)
     new_scope = toolz.merge(new_scope, *map(pre_executor, clients))
     return execute_until_in_scope(
         expr, new_scope,
-        context=context, clients=clients, post_execute_=post_execute_,
+        aggcontext=aggcontext, clients=clients, post_execute_=post_execute_,
         **kwargs
     )
 
@@ -231,14 +232,16 @@ def is_computable_arg(op, arg):
     )
 
 
-def execute_bottom_up(expr, scope, context=None, post_execute_=None, **kwargs):
+def execute_bottom_up(
+    expr, scope, aggcontext=None, post_execute_=None, **kwargs
+):
     """Execute `expr` bottom-up.
 
     Parameters
     ----------
     expr : ibis.expr.types.Expr
     scope : Mapping[ibis.expr.operations.Node, object]
-    context : Optional[ibis.pandas.aggcontext.AggregationContext]
+    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
     kwargs : Dict[str, object]
 
     Returns
@@ -261,7 +264,7 @@ def execute_bottom_up(expr, scope, context=None, post_execute_=None, **kwargs):
         # execute_node
         return {
             op: execute_literal(
-                op, op.value, expr.type(), context=context, **kwargs
+                op, op.value, expr.type(), aggcontext=aggcontext, **kwargs
             )
         }
 
@@ -275,7 +278,8 @@ def execute_bottom_up(expr, scope, context=None, post_execute_=None, **kwargs):
     # recursively compute each node's arguments until we've changed type
     scopes = [
         execute_bottom_up(
-            arg, scope, context=context, post_execute_=post_execute_, **kwargs)
+            arg, scope,
+            aggcontext=aggcontext, post_execute_=post_execute_, **kwargs)
         if hasattr(arg, 'op') else {arg: arg}
         for arg in computable_args
     ]
@@ -296,12 +300,13 @@ def execute_bottom_up(expr, scope, context=None, post_execute_=None, **kwargs):
         new_scope[arg.op()] if hasattr(arg, 'op') else arg
         for arg in computable_args
     ]
-    result = execute_node(op, *data, scope=scope, context=context, **kwargs)
+    result = execute_node(
+        op, *data, scope=scope, aggcontext=aggcontext, **kwargs)
     computed = post_execute_(op, result)
     return {op: computed}
 
 
-def execute(expr, params=None, scope=None, context=None, **kwargs):
+def execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
 
@@ -311,7 +316,7 @@ def execute(expr, params=None, scope=None, context=None, **kwargs):
         The expression to execute
     params : Mapping[Expr, object]
     scope : Mapping[ibis.expr.operations.Node, object]
-    context : Optional[ibis.pandas.aggcontext.AggregationContext]
+    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
 
     Returns
     -------
@@ -333,4 +338,4 @@ def execute(expr, params=None, scope=None, context=None, **kwargs):
     params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
 
     new_scope = toolz.merge(scope, params)
-    return execute_with_scope(expr, new_scope, context=context, **kwargs)
+    return execute_with_scope(expr, new_scope, aggcontext=aggcontext, **kwargs)

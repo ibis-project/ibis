@@ -68,5 +68,5 @@ def execute_array_repeat(op, left, right, **kwargs):
 
 
 @execute_node.register(ops.ArrayCollect, (pd.Series, SeriesGroupBy))
-def execute_array_collect(op, data, context=None, **kwargs):
-    return context.agg(data, list)
+def execute_array_collect(op, data, aggcontext=None, **kwargs):
+    return aggcontext.agg(data, list)
