@@ -314,13 +314,23 @@ def execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
     ----------
     expr : ibis.expr.types.Expr
         The expression to execute
-    params : Mapping[Expr, object]
+    params : Mapping[ibis.expr.types.Expr, object]
+        The data that an unbound parameter in `expr` maps to
     scope : Mapping[ibis.expr.operations.Node, object]
+        Additional scope, mapping ibis operations to data
     aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
+        An object indicating how to compute aggregations. For example,
+        a rolling mean needs to be computed differently than the mean of a
+        column.
+    kwargs : Dict[str, object]
+        Additional arguments that can potentially be used by individual node
+        execution
 
     Returns
     -------
-    result : Union[pandas.Series, pandas.DataFrame, scalar_types]
+    result : Union[
+        pandas.Series, pandas.DataFrame, ibis.pandas.core.simple_types
+    ]
 
     Raises
     ------
@@ -339,3 +349,51 @@ def execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
 
     new_scope = toolz.merge(scope, params)
     return execute_with_scope(expr, new_scope, aggcontext=aggcontext, **kwargs)
+
+
+def execute_and_reset(
+    expr, params=None, scope=None, aggcontext=None, **kwargs
+):
+    """Execute an expression against data that are bound to it. If no data
+    are bound, raise an Exception.
+
+    Notes
+    -----
+    The difference between this function and :func:`~ibis.pandas.core.execute`
+    is that this function resets the index of the result, if the result has
+    an index.
+
+    Parameters
+    ----------
+    expr : ibis.expr.types.Expr
+        The expression to execute
+    params : Mapping[ibis.expr.types.Expr, object]
+        The data that an unbound parameter in `expr` maps to
+    scope : Mapping[ibis.expr.operations.Node, object]
+        Additional scope, mapping ibis operations to data
+    aggcontext : Optional[ibis.pandas.aggcontext.AggregationContext]
+        An object indicating how to compute aggregations. For example,
+        a rolling mean needs to be computed differently than the mean of a
+        column.
+    kwargs : Dict[str, object]
+        Additional arguments that can potentially be used by individual node
+        execution
+
+    Returns
+    -------
+    result : Union[
+        pandas.Series, pandas.DataFrame, ibis.pandas.core.simple_types
+    ]
+
+    Raises
+    ------
+    ValueError
+        * If no data are bound to the input expression
+    """
+    result = execute(expr, params=params)
+    if isinstance(result, pd.DataFrame):
+        schema = expr.schema()
+        return result.reset_index()[schema.names]
+    elif isinstance(result, pd.Series):
+        return result.reset_index(drop=True)
+    return result
