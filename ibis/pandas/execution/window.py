@@ -73,11 +73,11 @@ def _post_process_group_by_order_by(series, parent, order_by, group_by):
 
 
 @execute_node.register(ops.WindowOp, pd.Series, win.Window)
-def execute_window_op(op, data, window, scope=None, context=None, **kwargs):
+def execute_window_op(op, data, window, scope=None, aggcontext=None, **kwargs):
     operand = op.expr
     root, = op.root_tables()
     root_expr = root.to_expr()
-    data = execute(root_expr, scope=scope, context=context, **kwargs)
+    data = execute(root_expr, scope=scope, aggcontext=aggcontext, **kwargs)
 
     following = window.following
     order_by = window._order_by
@@ -94,7 +94,7 @@ def execute_window_op(op, data, window, scope=None, context=None, **kwargs):
     grouping_keys = [
         key_op.name if isinstance(key_op, ops.TableColumn) else execute(
             key,
-            context=context,
+            aggcontext=aggcontext,
             **kwargs
         ) for key, key_op in zip(
             group_by, map(operator.methodcaller('op'), group_by)
@@ -137,19 +137,19 @@ def execute_window_op(op, data, window, scope=None, context=None, **kwargs):
     else:
         operand_dtype = operand.type().to_pandas()
 
-    # no order by or group by: default summarization context
+    # no order by or group by: default summarization aggcontext
     #
     # if we're reducing and we have an order by expression then we need to
     # expand or roll.
     #
     # otherwise we're transforming
     if not grouping_keys and not ordering_keys:
-        context = agg_ctx.Summarize()
+        aggcontext = agg_ctx.Summarize()
     elif isinstance(operand.op(), ops.Reduction) and ordering_keys:
         # XXX(phillipc): What a horror show
         preceding = window.preceding
         if preceding is not None:
-            context = agg_ctx.Moving(
+            aggcontext = agg_ctx.Moving(
                 preceding,
                 parent=source,
                 group_by=grouping_keys,
@@ -158,7 +158,7 @@ def execute_window_op(op, data, window, scope=None, context=None, **kwargs):
             )
         else:
             # expanding window
-            context = agg_ctx.Cumulative(
+            aggcontext = agg_ctx.Cumulative(
                 parent=source,
                 group_by=grouping_keys,
                 order_by=ordering_keys,
@@ -166,14 +166,14 @@ def execute_window_op(op, data, window, scope=None, context=None, **kwargs):
             )
     else:
         # groupby transform (window with a partition by clause in SQL parlance)
-        context = agg_ctx.Transform(
+        aggcontext = agg_ctx.Transform(
             parent=source,
             group_by=grouping_keys,
             order_by=ordering_keys,
             dtype=operand_dtype,
         )
 
-    result = execute(operand, new_scope, context=context, **kwargs)
+    result = execute(operand, new_scope, aggcontext=aggcontext, **kwargs)
     series = post_process(result, data, ordering_keys, grouping_keys)
     assert len(data) == len(series), \
         'input data source and computed column do not have the same length'
@@ -238,18 +238,18 @@ def execute_series_lead_lag(op, data, offset, default, **kwargs):
     date_types + timestamp_types + six.string_types + (type(None),),
 )
 def execute_series_lead_lag_timedelta(
-    op, data, offset, default, context=None, **kwargs
+    op, data, offset, default, aggcontext=None, **kwargs
 ):
     """An implementation of shifting a column relative to another one that is
     in units of time rather than rows.
     """
     # lagging adds time (delayed), leading subtracts time (moved up)
     func = operator.add if isinstance(op, ops.Lag) else operator.sub
-    group_by = context.group_by
-    order_by = context.order_by
+    group_by = aggcontext.group_by
+    order_by = aggcontext.order_by
 
     # get the parent object from which `data` originated
-    parent = context.parent
+    parent = aggcontext.parent
 
     # get the DataFrame from the parent object, handling the DataFrameGroupBy
     # case
@@ -281,8 +281,8 @@ def execute_series_first_value(op, data, **kwargs):
 
 
 @execute_node.register(ops.FirstValue, SeriesGroupBy)
-def execute_series_group_by_first_value(op, data, context=None, **kwargs):
-    return context.agg(data, 'first')
+def execute_series_group_by_first_value(op, data, aggcontext=None, **kwargs):
+    return aggcontext.agg(data, 'first')
 
 
 @execute_node.register(ops.LastValue, pd.Series)
@@ -291,8 +291,8 @@ def execute_series_last_value(op, data, **kwargs):
 
 
 @execute_node.register(ops.LastValue, SeriesGroupBy)
-def execute_series_group_by_last_value(op, data, context=None, **kwargs):
-    return context.agg(data, 'last')
+def execute_series_group_by_last_value(op, data, aggcontext=None, **kwargs):
+    return aggcontext.agg(data, 'last')
 
 
 @execute_node.register(ops.MinRank, (pd.Series, SeriesGroupBy))

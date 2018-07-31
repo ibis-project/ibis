@@ -6,7 +6,8 @@ from pandas.util import testing as tm
 pytest.importorskip('tables')
 
 from ibis.file.hdf5 import HDFClient, HDFTable  # noqa: E402
-from ibis.file.client import FileDatabase, execute  # noqa: E402
+from ibis.file.client import (
+    FileDatabase, execute_and_reset as execute)  # noqa: E402
 
 
 @pytest.fixture
