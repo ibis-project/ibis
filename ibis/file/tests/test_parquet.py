@@ -6,7 +6,8 @@ pa = pytest.importorskip('pyarrow')
 import pyarrow.parquet as pq  # noqa: E402
 
 from ibis.file.parquet import ParquetClient, ParquetTable  # noqa: E402
-from ibis.file.client import FileDatabase, execute  # noqa: E402
+from ibis.file.client import (
+    FileDatabase, execute_and_reset as execute)  # noqa: E402
 
 
 @pytest.fixture

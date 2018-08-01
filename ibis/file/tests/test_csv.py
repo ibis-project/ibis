@@ -3,7 +3,7 @@ import pytest
 from pandas.util import testing as tm
 import ibis
 from ibis.file.csv import CSVClient, CSVTable
-from ibis.file.client import FileDatabase, execute
+from ibis.file.client import FileDatabase, execute_and_reset as execute
 
 
 @pytest.fixture

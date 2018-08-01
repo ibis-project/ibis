@@ -194,26 +194,29 @@ def execute_string_like_series_groupby_string(
     pd.Series, six.string_types, (pd.Series, type(None))
 )
 def execute_group_concat_series_mask(
-    op, data, sep, mask, context=None, **kwargs
+    op, data, sep, mask, aggcontext=None, **kwargs
 ):
-    return context.agg(data[mask] if mask is not None else data, sep.join)
+    return aggcontext.agg(data[mask] if mask is not None else data, sep.join)
 
 
 @execute_node.register(
     ops.GroupConcat, SeriesGroupBy, six.string_types, type(None)
 )
-def execute_group_concat_series_gb(op, data, sep, _, context=None, **kwargs):
-    return context.agg(data, lambda data, sep=sep: sep.join(data.astype(str)))
+def execute_group_concat_series_gb(
+    op, data, sep, _, aggcontext=None, **kwargs
+):
+    return aggcontext.agg(
+        data, lambda data, sep=sep: sep.join(data.astype(str)))
 
 
 @execute_node.register(
     ops.GroupConcat, SeriesGroupBy, six.string_types, SeriesGroupBy
 )
 def execute_group_concat_series_gb_mask(
-    op, data, sep, mask, context=None, **kwargs
+    op, data, sep, mask, aggcontext=None, **kwargs
 ):
     method = lambda x, sep=sep: sep.join(x.astype(str))  # noqa: E731
-    return context.agg(
+    return aggcontext.agg(
         data,
         lambda data, mask=mask.obj, method=method: method(
             data[mask[data.index]]

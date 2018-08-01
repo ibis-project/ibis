@@ -225,8 +225,6 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 
-from ibis.compat import functools
-
 
 @six.add_metaclass(abc.ABCMeta)
 class AggregationContext(object):
@@ -327,8 +325,8 @@ class Window(AggregationContext):
             # do mostly the same thing as if we did NOT have a grouping key,
             # but don't call the callable just yet. See below where we call it
             if callable(function):
-                method = functools.partial(
-                    operator.methodcaller('apply'),
+                method = operator.methodcaller(
+                    'apply',
                     _apply(function, args, kwargs)
                 )
             else:

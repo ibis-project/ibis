@@ -365,8 +365,8 @@ def udaf(input_type, output_type):
                 #
                 # If the argument is not a SeriesGroupBy then keep repeating it
                 # until all groups are exhausted.
-                context = kwargs.pop('context', None)
-                assert context is not None, 'context is None'
+                aggcontext = kwargs.pop('aggcontext', None)
+                assert aggcontext is not None, 'aggcontext is None'
                 iters = (
                     (data for _, data in arg)
                     if isinstance(arg, SeriesGroupBy)
@@ -382,7 +382,7 @@ def udaf(input_type, output_type):
                     )
                     return func(*args, **kwargs)
 
-                result = context.agg(args[0], aggregator, *iters, **kwargs)
+                result = aggcontext.agg(args[0], aggregator, *iters, **kwargs)
                 return result
 
         @check_matching_signature(input_type)
