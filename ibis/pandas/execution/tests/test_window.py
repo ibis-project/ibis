@@ -8,6 +8,9 @@ from pandas.util import testing as tm
 import pytest
 
 import ibis
+import ibis.expr.operations as ops
+
+from ibis.pandas.dispatch import pre_execute
 
 execute = ibis.pandas.execute
 
@@ -402,3 +405,31 @@ def test_window_with_preceding_expr():
     expr = t.value.mean().over(window)
     result = expr.execute()
     tm.assert_series_equal(result, expected)
+
+
+def test_window_has_pre_execute_scope():
+    signature = ops.Lag, ibis.pandas.PandasClient
+    called = [0]
+
+    @pre_execute.register(*signature)
+    def test_pre_execute(op, client, **kwargs):
+        called[0] += 1
+        return {}
+
+    data = {
+        'key': list('abc'),
+        'value': [1, 2, 3],
+        'dup': list('ggh'),
+    }
+    df = pd.DataFrame(data, columns=['key', 'value', 'dup'])
+    client = ibis.pandas.connect(dict(df=df))
+    t = client.table('df')
+    window = ibis.window(order_by='value')
+    expr = t.key.lag(1).over(window).name('foo')
+    result = expr.execute()
+    assert result is not None
+
+    # once in window op at the top to pickup any scope changes before computing
+    # twice in window op when calling execute on the ops.Lag node at the
+    # beginning of execute and once before the actual computation
+    assert called[0] == 3

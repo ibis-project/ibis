@@ -370,7 +370,7 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
     if predicates:
         predicate = functools.reduce(
             operator.and_,
-            (execute(p, scope, **kwargs) for p in predicates)
+            (execute(p, scope=scope, **kwargs) for p in predicates)
         )
         data = data.loc[predicate]
 
@@ -382,7 +382,7 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         )
         grouping_keys = [
             by_op.name if isinstance(by_op, ops.TableColumn)
-            else execute(by, scope, **kwargs).rename(by.get_name())
+            else execute(by, scope=scope, **kwargs).rename(by.get_name())
             for by, by_op in grouping_key_pairs
         ]
         columns.update(
@@ -395,7 +395,8 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
 
     new_scope = toolz.merge(scope, {op.table.op(): source})
     pieces = [
-        pd.Series(execute(metric, new_scope, **kwargs), name=metric.get_name())
+        pd.Series(
+            execute(metric, scope=new_scope, **kwargs), name=metric.get_name())
         for metric in op.metrics
     ]
 
@@ -415,7 +416,8 @@ def execute_aggregation_dataframe(op, data, scope=None, **kwargs):
         # TODO(phillipc): Don't recompute identical subexpressions
         predicate = functools.reduce(
             operator.and_,
-            (execute(having, new_scope, **kwargs) for having in op.having)
+            (execute(having, scope=new_scope, **kwargs)
+             for having in op.having)
         )
         assert len(predicate) == len(result), \
             'length of predicate does not match length of DataFrame'

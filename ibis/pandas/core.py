@@ -89,6 +89,8 @@ import pandas as pd
 
 import toolz
 
+from multipledispatch import Dispatcher
+
 import ibis
 import ibis.common as com
 
@@ -124,7 +126,7 @@ _VALID_INPUT_TYPES = (
 ) + scalar_types
 
 
-def execute_with_scope(expr, scope, aggcontext=None, **kwargs):
+def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
     """Execute an expression `expr`, with data provided in `scope`.
 
     Parameters
@@ -145,7 +147,8 @@ def execute_with_scope(expr, scope, aggcontext=None, **kwargs):
     # Call pre_execute, to allow clients to intercept the expression before
     # computing anything *and* before associating leaf nodes with data. This
     # allows clients to provide their own data for each leaf.
-    clients = list(find_backends(expr))
+    if clients is None:
+        clients = list(find_backends(expr))
 
     if aggcontext is None:
         aggcontext = agg_ctx.Summarize()
@@ -204,7 +207,8 @@ def execute_until_in_scope(
 
     new_scope = execute_bottom_up(
         expr, scope,
-        aggcontext=aggcontext, post_execute_=post_execute_, **kwargs)
+        aggcontext=aggcontext,
+        post_execute_=post_execute_, clients=clients, **kwargs)
     pre_executor = functools.partial(pre_execute, op, scope=scope, **kwargs)
     new_scope = toolz.merge(new_scope, *map(pre_executor, clients))
     return execute_until_in_scope(
@@ -233,7 +237,7 @@ def is_computable_arg(op, arg):
 
 
 def execute_bottom_up(
-    expr, scope, aggcontext=None, post_execute_=None, **kwargs
+    expr, scope, aggcontext=None, post_execute_=None, clients=None, **kwargs
 ):
     """Execute `expr` bottom-up.
 
@@ -279,7 +283,10 @@ def execute_bottom_up(
     scopes = [
         execute_bottom_up(
             arg, scope,
-            aggcontext=aggcontext, post_execute_=post_execute_, **kwargs)
+            aggcontext=aggcontext,
+            post_execute_=post_execute_,
+            clients=clients,
+            **kwargs)
         if hasattr(arg, 'op') else {arg: arg}
         for arg in computable_args
     ]
@@ -301,12 +308,17 @@ def execute_bottom_up(
         for arg in computable_args
     ]
     result = execute_node(
-        op, *data, scope=scope, aggcontext=aggcontext, **kwargs)
+        op, *data,
+        scope=scope, aggcontext=aggcontext, clients=clients, **kwargs)
     computed = post_execute_(op, result)
     return {op: computed}
 
 
-def execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
+execute = Dispatcher('execute')
+
+
+@execute.register(ir.Expr)
+def main_execute(expr, params=None, scope=None, aggcontext=None, **kwargs):
     """Execute an expression against data that are bound to it. If no data
     are bound, raise an Exception.
 
@@ -390,7 +402,8 @@ def execute_and_reset(
     ValueError
         * If no data are bound to the input expression
     """
-    result = execute(expr, params=params)
+    result = execute(
+        expr, params=params, scope=scope, aggcontext=aggcontext, **kwargs)
     if isinstance(result, pd.DataFrame):
         schema = expr.schema()
         return result.reset_index()[schema.names]

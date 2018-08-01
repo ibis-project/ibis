@@ -347,7 +347,9 @@ class PandasClient(client.Client):
         schema = sch.infer(df, schema=schema)
         return PandasTable(name, schema, self).to_expr()
 
-    def execute(self, query, params=None, limit='default', async=False):
+    def execute(
+        self, query, params=None, limit='default', async=False, **kwargs
+    ):
         from ibis.pandas.core import execute_and_reset
 
         if limit != 'default':
@@ -362,7 +364,7 @@ class PandasClient(client.Client):
             )
 
         assert isinstance(query, ir.Expr)
-        return execute_and_reset(query, params=params)
+        return execute_and_reset(query, params=params, **kwargs)
 
     def compile(self, expr, *args, **kwargs):
         return expr

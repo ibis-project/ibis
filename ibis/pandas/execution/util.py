@@ -10,7 +10,7 @@ import ibis.common as com
 from ibis.pandas.core import execute
 
 
-def compute_sort_key(key, data, **kwargs):
+def compute_sort_key(key, data, scope=None, **kwargs):
     by = key.to_expr()
     try:
         if isinstance(by, six.string_types):
@@ -18,7 +18,7 @@ def compute_sort_key(key, data, **kwargs):
         return by.get_name(), None
     except com.ExpressionError:
         new_scope = {t: data for t in by.op().root_tables()}
-        new_column = execute(by, new_scope, **kwargs)
+        new_column = execute(by, scope=toolz.merge(scope, new_scope), **kwargs)
         name = ibis.util.guid()
         new_column.name = name
         return name, new_column
