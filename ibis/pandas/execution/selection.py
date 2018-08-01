@@ -70,7 +70,7 @@ def compute_projection_scalar_expr(expr, parent, data, scope=None, **kwargs):
     )
 
     new_scope = toolz.merge(scope, additional_scope, factory=OrderedDict)
-    scalar = execute(expr, new_scope, **kwargs)
+    scalar = execute(expr, scope=new_scope, **kwargs)
     result = pd.Series([scalar], name=name).repeat(len(data.index))
     result.index = data.index
     return result
@@ -111,7 +111,7 @@ def compute_projection_column_expr(expr, parent, data, scope=None, **kwargs):
     }
 
     new_scope = toolz.merge(scope, additional_scope)
-    result = execute(expr, new_scope, **kwargs)
+    result = execute(expr, scope=new_scope, **kwargs)
     assert result_name is not None, 'Column selection name is None'
     return result.rename(result_name)
 
@@ -219,7 +219,7 @@ def _compute_predicates(table_op, predicates, data, scope, **kwargs):
             additional_scope[root_table] = new_data
 
         new_scope = toolz.merge(scope, additional_scope)
-        yield execute(predicate, new_scope, **kwargs)
+        yield execute(predicate, scope=new_scope, **kwargs)
 
 
 physical_tables = Dispatcher(
