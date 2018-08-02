@@ -26,7 +26,7 @@ from ibis.pandas.core import (
     execute, integer_types, simple_types, date_types, timestamp_types,
     timedelta_types
 )
-from ibis.pandas.dispatch import execute_node
+from ibis.pandas.dispatch import execute_node, pre_execute
 from ibis.pandas.execution import util
 
 
@@ -73,8 +73,18 @@ def _post_process_group_by_order_by(series, parent, order_by, group_by):
 
 
 @execute_node.register(ops.WindowOp, pd.Series, win.Window)
-def execute_window_op(op, data, window, scope=None, aggcontext=None, **kwargs):
+def execute_window_op(
+    op, data, window, scope=None, aggcontext=None, clients=None, **kwargs
+):
     operand = op.expr
+    # pre execute "manually" here because otherwise we wouldn't pickup
+    # relevant scope changes from the child operand since we're managing
+    # execution of that by hand
+    operand_op = operand.op()
+    pre_executed_scope = pre_execute(
+        operand_op, *clients, scope=scope, aggcontext=aggcontext, **kwargs)
+    scope = toolz.merge(scope, pre_executed_scope)
+
     root, = op.root_tables()
     root_expr = root.to_expr()
     data = execute(root_expr, scope=scope, aggcontext=aggcontext, **kwargs)
@@ -82,12 +92,12 @@ def execute_window_op(op, data, window, scope=None, aggcontext=None, **kwargs):
     following = window.following
     order_by = window._order_by
 
-    if order_by and following != 0:
+    if order_by and following != 0 and not isinstance(
+        operand_op, ops.ShiftBase
+    ):
         raise com.OperationNotDefinedError(
-            'Following with a value other than 0 (current row) with order_by '
-            'is not yet implemented in the pandas backend. Use '
-            'ibis.trailing_window or ibis.cumulative_window to '
-            'construct windows when using the pandas backend.'
+            'Window functions affected by following with order_by are not '
+            'implemented'
         )
 
     group_by = window._group_by
@@ -173,7 +183,7 @@ def execute_window_op(op, data, window, scope=None, aggcontext=None, **kwargs):
             dtype=operand_dtype,
         )
 
-    result = execute(operand, new_scope, aggcontext=aggcontext, **kwargs)
+    result = execute(operand, scope=new_scope, aggcontext=aggcontext, **kwargs)
     series = post_process(result, data, ordering_keys, grouping_keys)
     assert len(data) == len(series), \
         'input data source and computed column do not have the same length'
