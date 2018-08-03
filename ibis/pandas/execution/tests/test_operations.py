@@ -54,6 +54,22 @@ def test_mutate(t, df):
     tm.assert_frame_equal(result[expected.columns], expected)
 
 
+def test_project_scope_does_not_override(t, df):
+    col = t.plain_int64
+    expr = t[[
+        col.name('new_col'),
+        col.sum().over(ibis.window(group_by='dup_strings')).name('grouped')
+    ]]
+    result = expr.execute()
+    expected = df[['plain_int64', 'dup_strings']].assign(
+        new_col=lambda df: df.plain_int64,
+        grouped=lambda df: (
+            df.groupby('dup_strings').plain_int64.transform('sum').reset_index(
+                drop=True))
+    )
+    tm.assert_result_equals(result, expected)
+
+
 @pytest.mark.parametrize(
     'where',
     [
