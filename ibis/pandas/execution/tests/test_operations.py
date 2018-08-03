@@ -67,7 +67,7 @@ def test_project_scope_does_not_override(t, df):
             df.groupby('dup_strings').plain_int64.transform('sum').reset_index(
                 drop=True))
     )
-    tm.assert_result_equals(result, expected)
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
