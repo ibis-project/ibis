@@ -376,7 +376,7 @@ class Moving(Window):
         dtype = getattr(preceding, 'type', lambda: None)()
         preceding = compute_window_spec(preceding, dtype)
         closed = None if not isinstance(
-            preceding, timedelta_types + (pd.offsets.BaseOffset,)) else 'both'
+            preceding, timedelta_types + (pd.offsets.DateOffset,)) else 'both'
         super(Moving, self).__init__(
             'rolling', preceding, *args, closed=closed, **kwargs
         )
