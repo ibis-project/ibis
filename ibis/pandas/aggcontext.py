@@ -372,9 +372,14 @@ class Moving(Window):
     __slots__ = ()
 
     def __init__(self, preceding, *args, **kwargs):
+        from ibis.pandas.core import timedelta_types
         dtype = getattr(preceding, 'type', lambda: None)()
         preceding = compute_window_spec(preceding, dtype)
-        super(Moving, self).__init__('rolling', preceding, *args, **kwargs)
+        closed = None if not isinstance(
+            preceding, timedelta_types + (pd.offsets.DateOffset,)) else 'both'
+        super(Moving, self).__init__(
+            'rolling', preceding, *args, closed=closed, **kwargs
+        )
 
     def short_circuit_method(self, grouped_data, function):
         raise AttributeError('No short circuit method for rolling operations')

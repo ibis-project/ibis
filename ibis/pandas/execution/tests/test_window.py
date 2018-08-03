@@ -397,8 +397,8 @@ def test_window_with_preceding_expr():
     df = pd.DataFrame({'value': data, 'time': index}, index=index)
     client = ibis.pandas.connect({'df': df})
     t = client.table('df')
-    expected = df.set_index('time').value.rolling('3d').mean().reset_index(
-        drop=True)
+    expected = df.set_index('time').value.rolling(
+        '3d', closed='both').mean().reset_index(drop=True)
     expected.index.name = None
     day = ibis.day()
     window = ibis.trailing_window(3 * day, order_by=t.time)

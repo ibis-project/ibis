@@ -278,44 +278,31 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
     sort_keys = op.sort_keys
     result = data
 
-    # computed_scope holds the columns that we've just computed
-    # merged_scope is scope + computed_scope
-    #
-    # TODO: this depends on the order that columns are projected, so we will
-    # still trigger computation in cases where a more complex expression
-    # contains a simpler one and is computed before the simpler one
-    #
-    # TODO: topologically order all nodes then we don't need to worry about
-    #       this
-    # TODO: might require variadic dispatch
-    computed_scope = OrderedDict()
-    merged_scope = scope.copy()
-
     # Build up the individual pandas structures from column expressions
     if selections:
+        data_pieces = []
         for selection in selections:
-            merged_scope.update(computed_scope)
             pandas_object = compute_projection(
                 selection,
                 op,
                 data,
-                scope=merged_scope,
+                scope=scope,
                 **kwargs
             )
-            computed_scope[selection.op()] = pandas_object
+            data_pieces.append(pandas_object)
 
         new_pieces = [
             piece.reset_index(
                 level=list(range(1, piece.index.nlevels)), drop=True)
             if piece.index.nlevels > 1
             else piece
-            for piece in computed_scope.values()
+            for piece in data_pieces
         ]
         result = pd.concat(new_pieces, axis=1)
 
     if predicates:
         predicates = _compute_predicates(
-            op.table.op(), predicates, data, merged_scope, **kwargs
+            op.table.op(), predicates, data, scope, **kwargs
         )
         predicate = functools.reduce(operator.and_, predicates)
         assert len(predicate) == len(result), \
@@ -324,7 +311,7 @@ def execute_selection_dataframe(op, data, scope=None, **kwargs):
 
     if sort_keys:
         result, grouping_keys, ordering_keys = util.compute_sorted_frame(
-            result, order_by=sort_keys, scope=merged_scope, **kwargs)
+            result, order_by=sort_keys, scope=scope, **kwargs)
     else:
         grouping_keys = ordering_keys = ()
 
