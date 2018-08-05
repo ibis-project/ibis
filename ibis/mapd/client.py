@@ -293,15 +293,13 @@ class MapDClient(SQLClient):
 
     """
     database_class = Database
-    sync_query = MapDQuery
+    query_class = MapDQuery
     dialect = MapDDialect
     table_expr_class = MapDTable
 
-    def __init__(
-        self, uri=None, user=None, password=None,
-        host=None, port=9091, database=None,
-        protocol='binary', execution_type=EXECUTION_TYPE_CURSOR
-    ):
+    def __init__(self, uri=None, user=None, password=None, host=None,
+                 port=9091, database=None, protocol='binary',
+                 execution_type=EXECUTION_TYPE_CURSOR):
         """
 
         Parameters
@@ -471,9 +469,8 @@ class MapDClient(SQLClient):
         )
         self._execute(statement)
 
-    def alter_user(
-        self, name, password=None, is_super=None, insert_access=None
-    ):
+    def alter_user(self, name, password=None, is_super=None,
+                   insert_access=None):
         """
         Alter MapD user parameters
 
@@ -536,11 +533,9 @@ class MapDClient(SQLClient):
         statement = ddl.DropView(name, database=database)
         self._execute(statement, False)
 
-    def create_table(
-        self, table_name, obj=None, schema=None, database=None,
-        fragment_size=None, max_rows=None, page_size=None, partitions=None,
-        shard_count=None
-    ):
+    def create_table(self, table_name, obj=None, schema=None, database=None,
+                     fragment_size=None, max_rows=None, page_size=None,
+                     partitions=None, shard_count=None):
         """
         Create a new table in MapD using an Ibis table expression.
 

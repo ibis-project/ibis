@@ -328,7 +328,7 @@ def parse_project_and_dataset(project, dataset):
 
 class BigQueryClient(SQLClient):
 
-    sync_query = BigQueryQuery
+    query_class = BigQueryQuery
     database_class = BigQueryDatabase
     table_class = BigQueryTable
     dialect = comp.BigQueryDialect
@@ -376,15 +376,10 @@ class BigQueryClient(SQLClient):
         result = comp.build_ast(expr, context)
         return result
 
-    def _execute_query(self, dml, async=False):
-        if async:
-            raise NotImplementedError(
-                'Asynchronous queries not implemented in the BigQuery backend'
-            )
-        klass = self.async_query if async else self.sync_query
-        inst = klass(self, dml, query_parameters=dml.context.params)
-        df = inst.execute()
-        return df
+    def _execute_query(self, dml):
+        query = self.query_class(self, dml,
+                                 query_parameters=dml.context.params)
+        return query.execute()
 
     def _fully_qualified_name(self, name, database):
         project, dataset = self._parse_project_and_dataset(database)

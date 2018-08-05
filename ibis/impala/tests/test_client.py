@@ -1,21 +1,17 @@
 import datetime
 import time
-
-import numpy as np
 import pandas as pd
-
 import pytz
+import pytest
 
-from ibis.tests.util import assert_equal
 import ibis
-
 import ibis.common as com
 import ibis.config as config
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 import ibis.util as util
 
-import pytest
+from ibis.tests.util import assert_equal
 
 pytest.importorskip('sqlalchemy')
 pytest.importorskip('hdfs')
@@ -274,40 +270,6 @@ def test_close_drops_temp_tables(con, test_data_dir):
     con.close()
 
     assert not con.exists_table(name)
-
-
-def test_execute_async_simple(db):
-    t = db.functional_alltypes
-    expr = t.double_col.sum()
-
-    q = expr.execute(async=True)
-    result = q.get_result()
-    expected = expr.execute()
-    assert np.allclose(result, expected)
-
-
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason='_collect_Union not implemented'
-)
-def test_query_cancel(db):
-    import time
-    t = db.functional_alltypes
-
-    t2 = t.union(t).union(t)
-
-    # WM: this query takes about 90 seconds to execute for me locally, so
-    # I'm eyeballing an acceptable time frame for the cancel to work
-    expr = t2.join(t2).count()
-
-    start = time.clock()
-    q = expr.execute(async=True)
-    q.cancel()
-    end = time.clock()
-    elapsed = end - start
-    assert elapsed < 5
-
-    assert q.is_finished()
 
 
 def test_set_compression_codec(con):
