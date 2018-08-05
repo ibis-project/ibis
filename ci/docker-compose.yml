@@ -13,13 +13,13 @@ services:
     ports:
       - 3306:3306
     environment:
-      - MYSQL_ALLOW_EMPTY_PASSWORD=1
-      - MYSQL_DATABASE=ibis_testing
-      - MYSQL_USER=ibis
-      - MYSQL_PASSWORD=ibis
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+      MYSQL_DATABASE: ibis_testing
+      MYSQL_USER: ibis
+      MYSQL_PASSWORD: ibis
 
   impala:
-    image: ibisproject/impala
+    image: impala
     hostname: impala
     networks:
       default:
@@ -63,9 +63,6 @@ services:
       - 8051:8051
     environment:
       KUDU_MASTER: "true"
-    volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
 
   kudu-tserver:
     image: ibisproject/kudu:latest
@@ -76,9 +73,6 @@ services:
       - 8050:8050
     environment:
       KUDU_MASTER: "false"
-    volumes:
-      - /etc/timezone:/etc/timezone:ro
-      - /etc/localtime:/etc/localtime:ro
 
   mapd:
     image: mapd/mapd-ce-cpu:v3.6.0
@@ -111,34 +105,34 @@ services:
   ibis:
     image: ibis:${PYTHON_VERSION:-3.6}
     environment:
-      - IBIS_TEST_DOWNLOAD_DIRECTORY=/tmp
-      - IBIS_TEST_DATA_DIRECTORY=/tmp/ibis-testing-data
-      - IBIS_TEST_SQLITE_DATABASE=/tmp/ibis_testing.db
-      - IBIS_TEST_NN_HOST=impala
-      - IBIS_TEST_IMPALA_HOST=impala
-      - IBIS_TEST_IMPALA_PORT=21050
-      - IBIS_TEST_WEBHDFS_PORT=50070
-      - IBIS_TEST_WEBHDFS_USER=hdfs
-      - IBIS_TEST_MYSQL_HOST=mysql
-      - IBIS_TEST_MYSQL_PORT=3306
-      - IBIS_TEST_MYSQL_USER=ibis
-      - IBIS_TEST_MYSQL_PASSWORD=ibis
-      - IBIS_TEST_MYSQL_DATABASE=ibis_testing
-      - IBIS_TEST_POSTGRES_HOST=postgres
-      - IBIS_TEST_POSTGRES_PORT=5432
-      - IBIS_TEST_POSTGRES_USER=postgres
-      - IBIS_TEST_POSTGRES_PASSWORD=postgres
-      - IBIS_TEST_POSTGRES_DATABASE=ibis_testing
-      - IBIS_TEST_CLICKHOUSE_HOST=clickhouse
-      - IBIS_TEST_CLICKHOUSE_PORT=9000
-      - IBIS_TEST_CLICKHOUSE_DATABASE=ibis_testing
-      - IBIS_TEST_MAPD_HOST=mapd
-      - IBIS_TEST_MAPD_PORT=9091
-      - IBIS_TEST_MAPD_DATABASE=ibis_testing
-      - IBIS_TEST_MAPD_USER=mapd
-      - IBIS_TEST_MAPD_PASSWORD=HyperInteractive
-      - GOOGLE_BIGQUERY_PROJECT_ID=ibis-gbq
-      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcloud-service-key.json
+      IBIS_TEST_DOWNLOAD_DIRECTORY: /tmp
+      IBIS_TEST_DATA_DIRECTORY: /tmp/ibis-testing-data
+      IBIS_TEST_SQLITE_DATABASE: /tmp/ibis_testing.db
+      IBIS_TEST_NN_HOST: impala
+      IBIS_TEST_IMPALA_HOST: impala
+      IBIS_TEST_IMPALA_PORT: 21050
+      IBIS_TEST_WEBHDFS_PORT: 50070
+      IBIS_TEST_WEBHDFS_USER: hdfs
+      IBIS_TEST_MYSQL_HOST: mysql
+      IBIS_TEST_MYSQL_PORT: 3306
+      IBIS_TEST_MYSQL_USER: ibis
+      IBIS_TEST_MYSQL_PASSWORD: ibis
+      IBIS_TEST_MYSQL_DATABASE: ibis_testing
+      IBIS_TEST_POSTGRES_HOST: postgres
+      IBIS_TEST_POSTGRES_PORT: 5432
+      IBIS_TEST_POSTGRES_USER: postgres
+      IBIS_TEST_POSTGRES_PASSWORD: postgres
+      IBIS_TEST_POSTGRES_DATABASE: ibis_testing
+      IBIS_TEST_CLICKHOUSE_HOST: clickhouse
+      IBIS_TEST_CLICKHOUSE_PORT: 9000
+      IBIS_TEST_CLICKHOUSE_DATABASE: ibis_testing
+      IBIS_TEST_MAPD_HOST: mapd
+      IBIS_TEST_MAPD_PORT: 9091
+      IBIS_TEST_MAPD_DATABASE: ibis_testing
+      IBIS_TEST_MAPD_USER: mapd
+      IBIS_TEST_MAPD_PASSWORD: HyperInteractive
+      GOOGLE_BIGQUERY_PROJECT_ID: ibis-gbq
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/gcloud-service-key.json
     volumes:
       - /tmp/ibis:/tmp
     build:
