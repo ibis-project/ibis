@@ -19,7 +19,7 @@ services:
       MYSQL_PASSWORD: ibis
 
   impala:
-    image: impala
+    image: ibisproject/impala
     hostname: impala
     networks:
       default:
