@@ -5,7 +5,6 @@ import pytest
 import pandas as pd
 
 import ibis
-import ibis.common as com
 import ibis.expr.datatypes as dt
 
 
@@ -442,65 +441,37 @@ FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
 
 
 @pytest.mark.parametrize(
-    ('unit', 'expected_unit'),
+    ('unit', 'expected_unit', 'expected_func'),
     [
-        ('Y', 'YEAR'),
-        ('Q', 'QUARTER'),
-        ('M', 'MONTH'),
-        ('W', 'WEEK'),
-        ('D', 'DAY'),
-        ('h', 'HOUR'),
-        ('m', 'MINUTE'),
-        ('s', 'SECOND'),
-        ('ms', 'MILLISECOND'),
-        ('us', 'MICROSECOND'),
+        ('Y', 'YEAR', 'TIMESTAMP'),
+        ('Q', 'QUARTER', 'TIMESTAMP'),
+        ('M', 'MONTH', 'TIMESTAMP'),
+        ('W', 'WEEK', 'TIMESTAMP'),
+        ('D', 'DAY', 'TIMESTAMP'),
+        ('h', 'HOUR', 'TIMESTAMP'),
+        ('m', 'MINUTE', 'TIMESTAMP'),
+        ('s', 'SECOND', 'TIMESTAMP'),
+        ('ms', 'MILLISECOND', 'TIMESTAMP'),
+        ('us', 'MICROSECOND', 'TIMESTAMP'),
+
+        ('Y', 'YEAR', 'DATE'),
+        ('Q', 'QUARTER', 'DATE'),
+        ('M', 'MONTH', 'DATE'),
+        ('W', 'WEEK', 'DATE'),
+        ('D', 'DAY', 'DATE'),
+
+        ('h', 'HOUR', 'TIME'),
+        ('m', 'MINUTE', 'TIME'),
+        ('s', 'SECOND', 'TIME'),
+        ('ms', 'MILLISECOND', 'TIME'),
+        ('us', 'MICROSECOND', 'TIME'),
     ]
 )
-def test_timestamp_truncate(unit, expected_unit):
-    t = ibis.table([('a', dt.timestamp)], name='t')
+def test_temporal_truncate(unit, expected_unit, expected_func):
+    t = ibis.table([('a', getattr(dt, expected_func.lower()))], name='t')
     expr = t.a.truncate(unit)
     result = ibis.bigquery.compile(expr)
     expected = """\
-SELECT TIMESTAMP_TRUNC(`a`, {}) AS `tmp`
-FROM t""".format(expected_unit)
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    ('unit', 'expected_unit'),
-    [
-        ('Y', 'YEAR'),
-        ('Q', 'QUARTER'),
-        ('M', 'MONTH'),
-        ('W', 'WEEK'),
-        ('D', 'DAY'),
-    ]
-)
-def test_date_truncate(unit, expected_unit):
-    t = ibis.table([('a', dt.date)], name='t')
-    expr = t.a.truncate(unit)
-    result = ibis.bigquery.compile(expr)
-    expected = """\
-SELECT DATE_TRUNC(`a`, {}) AS `tmp`
-FROM t""".format(expected_unit)
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    ('unit', 'expected_unit'),
-    [
-        ('h', 'HOUR'),
-        ('m', 'MINUTE'),
-        ('s', 'SECOND'),
-        ('ms', 'MILLISECOND'),
-        ('us', 'MICROSECOND'),
-    ]
-)
-def test_time_truncate(unit, expected_unit):
-    t = ibis.table([('a', dt.time)], name='t')
-    expr = t.a.truncate(unit)
-    result = ibis.bigquery.compile(expr)
-    expected = """\
-SELECT TIME_TRUNC(`a`, {}) AS `tmp`
-FROM t""".format(expected_unit)
+SELECT {}_TRUNC(`a`, {}) AS `tmp`
+FROM t""".format(expected_func, expected_unit)
     assert result == expected
