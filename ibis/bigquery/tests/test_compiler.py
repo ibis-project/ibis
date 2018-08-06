@@ -501,3 +501,10 @@ def test_extract_temporal_from_timestamp(kind):
 SELECT {}(`ts`) AS `tmp`
 FROM t""".format(kind.upper())
     assert result == expected
+
+
+def test_now():
+    expr = ibis.now()
+    result = ibis.bigquery.compile(expr)
+    expected = 'SELECT CURRENT_TIMESTAMP() AS `tmp`'
+    assert result == expected
