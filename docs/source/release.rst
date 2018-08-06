@@ -40,6 +40,7 @@ API Changes
 * The previous, publicly not exposed rule system has been rewritten
 * Defining input arguments for operations happens in a more readable fashion
   instead of the previous `input_type` list.
+* Removed support for async query execution (only Impala supported)
 
 v0.13.0 (March 30, 2018)
 ------------------------

@@ -528,13 +528,6 @@ def test_repeated_project_name(project_id):
     assert 'functional_alltypes' in con.list_tables()
 
 
-@pytest.mark.xfail(raises=NotImplementedError, reason='async not implemented')
-def test_async(client):
-    expr = ibis.literal(1)
-    result = client.execute(expr, async=True)
-    assert result.get_result() == 1
-
-
 def test_multiple_project_queries(client):
     so = client.table(
         'posts_questions', database='bigquery-public-data.stackoverflow')

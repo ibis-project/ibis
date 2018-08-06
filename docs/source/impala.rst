@@ -104,8 +104,8 @@ table itself has a method ``drop`` that you can use:
 
    table.drop()
 
-Expression execution and asynchronous queries
----------------------------------------------
+Expression execution
+--------------------
 
 Ibis expressions have an ``execute`` method with compiles and runs the
 expressions on Impala or whichever backend is being referenced.
@@ -121,29 +121,6 @@ For example:
 For longer-running queries, if you press Control-C (or whatever triggers the
 Python ``KeyboardInterrupt`` on your system), Ibis will attempt to cancel the
 query in progress.
-
-As of Ibis 0.5.0, there is an explicit asynchronous API:
-
-.. ipython:: python
-
-   query = expr.execute(async=True)
-
-With the returned ``AsyncQuery`` object, you have various methods available to
-check on the status of the executing expression:
-
-.. ipython:: python
-
-   import time
-   while not query.is_finished():
-       time.sleep(1)
-   query.is_finished()
-   query.get_result()
-
-If the query is still running, you can attempt to cancel it:
-
-.. code-block:: python
-
-   query.cancel()
 
 Creating tables
 ---------------

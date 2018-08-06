@@ -18,9 +18,8 @@ class Client(object):
 
 class Query(object):
 
-    """Abstraction for DML query execution to enable both synchronous and
-    asynchronous queries, progress, cancellation and more (for backends
-    supporting such functionality).
+    """Abstraction for DML query execution to enable queries, progress,
+    cancellation and more (for backends supporting such functionality).
     """
 
     def __init__(self, client, sql, **kwargs):
@@ -65,29 +64,10 @@ class Query(object):
                              'schema'.format(type(self.expr)))
 
 
-class AsyncQuery(Query):
-
-    """Abstract asynchronous query"""
-
-    def execute(self):
-        raise NotImplementedError
-
-    def is_finished(self):
-        raise NotImplementedError
-
-    def cancel(self):
-        raise NotImplementedError
-
-    def get_result(self):
-        raise NotImplementedError
-
-
 class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
 
-    sync_query = Query
-    async_query = Query
-
     dialect = comp.Dialect
+    query_class = Query
     table_class = ops.DatabaseTable
     table_expr_class = ir.TableExpr
 
@@ -182,8 +162,7 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
         """
         return self._execute(query, results=results)
 
-    def execute(self, expr, params=None, limit='default', async=False,
-                **kwargs):
+    def execute(self, expr, params=None, limit='default', **kwargs):
         """
         Compile and execute Ibis expression using this backend client
         interface, returning results in-memory in the appropriate object type
@@ -195,7 +174,6 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
           For expressions yielding result yets; retrieve at most this number of
           values/rows. Overrides any limit already set on the expression.
         params : not yet implemented
-        async : boolean, default False
 
         Returns
         -------
@@ -205,13 +183,12 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
           Scalar expressions: Python scalar value
         """
         query_ast = self._build_ast_ensure_limit(expr, limit, params=params)
-        result = self._execute_query(query_ast, async=async, **kwargs)
+        result = self._execute_query(query_ast, **kwargs)
         return result
 
-    def _execute_query(self, dml, async=False, **kwargs):
-        klass = self.async_query if async else self.sync_query
-        inst = klass(self, dml, **kwargs)
-        return inst.execute()
+    def _execute_query(self, dml, **kwargs):
+        query = self.query_class(self, dml, **kwargs)
+        return query.execute()
 
     def compile(self, expr, params=None, limit=None):
         """
@@ -283,8 +260,7 @@ class SQLClient(six.with_metaclass(abc.ABCMeta, Client)):
 
 class QueryPipeline(object):
     """
-    Execute a series of queries, possibly asynchronously, and capture any
-    result sets generated
+    Execute a series of queries, and capture any result sets generated
 
     Note: No query pipelines have yet been implemented
     """
@@ -305,10 +281,9 @@ def validate_backends(backends):
     return backends
 
 
-def execute(expr, limit='default', async=False, params=None, **kwargs):
+def execute(expr, limit='default', params=None, **kwargs):
     backend, = validate_backends(list(find_backends(expr)))
-    return backend.execute(expr, limit=limit, async=async, params=params,
-                           **kwargs)
+    return backend.execute(expr, limit=limit, params=params, **kwargs)
 
 
 def compile(expr, limit=None, params=None, **kwargs):

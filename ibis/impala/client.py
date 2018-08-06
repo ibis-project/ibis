@@ -20,8 +20,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 from ibis.config import options
-from ibis.client import (Query, AsyncQuery, Database,
-                         DatabaseEntity, SQLClient)
+from ibis.client import Query, Database, DatabaseEntity, SQLClient
 from ibis.compat import lzip, parse_version
 from ibis.filesystems import HDFS, WebHDFS
 from ibis.impala import udf, ddl
@@ -93,7 +92,7 @@ class ImpalaConnection(object):
         elif key in self.options:
             del self.options[key]
 
-    def execute(self, query, async=False):
+    def execute(self, query):
         if isinstance(query, (DDL, DML)):
             query = query.compile()
 
@@ -101,7 +100,7 @@ class ImpalaConnection(object):
         self.log(query)
 
         try:
-            cursor.execute(query, async=async)
+            cursor.execute(query)
         except Exception:
             cursor.release()
             self.error(
@@ -216,12 +215,9 @@ class ImpalaCursor(object):
             self.con.release(self)
             self.released = True
 
-    def execute(self, stmt, async=False):
+    def execute(self, stmt):
         self._cursor.execute_async(stmt)
-        if async:
-            return
-        else:
-            self._wait_synchronous()
+        self._wait_synchronous()
 
     def _wait_synchronous(self):
         # Wait to finish, but cancel if KeyboardInterrupt
@@ -348,90 +344,6 @@ def _chunks_to_pandas_array(chunks):
     return target
 
 
-class ImpalaAsyncQuery(ImpalaQuery, AsyncQuery):
-
-    def __init__(self, client, ddl):
-        super(ImpalaAsyncQuery, self).__init__(client, ddl)
-        self._cursor = None
-        self._exception = None
-        self._execute_thread = None
-        self._execute_complete = False
-        self._operation_active = False
-
-    def __del__(self):
-        try:
-            self._cursor.release()
-        except AttributeError:
-            pass
-
-    def execute(self):
-        if self._operation_active:
-            raise com.IbisError('operation already active')
-        con = self.client.con
-
-        # XXX: there is codegen overhead somewhere which causes execute_async
-        # to block, unfortunately. This threading hack works around it
-        def _async_execute():
-            try:
-                self._cursor = con.execute(self.compiled_sql, async=True)
-            except Exception as e:
-                self._exception = e
-            self._execute_complete = True
-
-        self._execute_complete = False
-        self._operation_active = True
-        self._execute_thread = threading.Thread(target=_async_execute)
-        self._execute_thread.start()
-        return self
-
-    def _wait_execute(self):
-        if not self._operation_active:
-            raise com.IbisError('No active query')
-        if self._execute_thread.is_alive():
-            self._execute_thread.join()
-        elif self._exception is not None:
-            raise self._exception
-
-    def is_finished(self):
-        """
-        Return True if the operation is finished
-        """
-        from impala.error import ProgrammingError
-        self._wait_execute()
-        try:
-            return self._cursor.is_finished()
-        except ProgrammingError as e:
-            if 'state is not available' in e.args[0]:
-                return True
-            raise
-
-    def cancel(self):
-        """
-        Cancel the query (or attempt to)
-        """
-        self._wait_execute()
-        return self._cursor.cancel()
-
-    def status(self):
-        """
-        Retrieve Impala query status
-        """
-        self._wait_execute()
-        return self._cursor.status()
-
-    def wait(self, progress_bar=True):
-        raise NotImplementedError
-
-    def get_result(self):
-        """
-        Presuming the operation is completed, return the cursor result as would
-        be returned by the synchronous query API
-        """
-        self._wait_execute()
-        result = self._fetch(self._cursor)
-        return self._wrap_result(result)
-
-
 _HS2_TTypeId_to_dtype = {
     'BOOLEAN': 'bool',
     'TINYINT': 'int8',
@@ -483,7 +395,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
     def _database(self):
         return self._match_name()[0]
 
-    def compute_stats(self, incremental=False, async=False):
+    def compute_stats(self, incremental=False):
         """
         Invoke Impala COMPUTE STATS command to compute column, table, and
         partition statistics.
@@ -491,8 +403,7 @@ class ImpalaTable(ir.TableExpr, DatabaseEntity):
         See also ImpalaClient.compute_stats
         """
         return self._client.compute_stats(self._qualified_name,
-                                          incremental=incremental,
-                                          async=async)
+                                          incremental=incremental)
 
     def invalidate_metadata(self):
         self._client.invalidate_metadata(self._qualified_name)
@@ -814,10 +725,9 @@ class ImpalaClient(SQLClient):
     An Ibis client interface that uses Impala
     """
 
-    database_class = ImpalaDatabase
-    sync_query = ImpalaQuery
-    async_query = ImpalaAsyncQuery
     dialect = ImpalaDialect
+    database_class = ImpalaDatabase
+    query_class = ImpalaQuery
     table_class = ImpalaDatabaseTable
     table_expr_class = ImpalaTable
 
@@ -1728,8 +1638,7 @@ class ImpalaClient(SQLClient):
         """
         return len(self.list_udas(database=database, like=name)) > 0
 
-    def compute_stats(self, name, database=None, incremental=False,
-                      async=False):
+    def compute_stats(self, name, database=None, incremental=False):
         """
         Issue COMPUTE STATS command for a given table
 
@@ -1741,10 +1650,6 @@ class ImpalaClient(SQLClient):
         incremental : boolean, default False
           If True, issue COMPUTE INCREMENTAL STATS
         """
-        # TODO async + cancellation
-        if async:
-            raise NotImplementedError
-
         maybe_inc = 'INCREMENTAL ' if incremental else ''
         cmd = 'COMPUTE {0}STATS'.format(maybe_inc)
 
@@ -1868,7 +1773,7 @@ class ImpalaClient(SQLClient):
                 adapted_types.append(typename)
         return names, adapted_types
 
-    def write_dataframe(self, df, path, format='csv', async=False):
+    def write_dataframe(self, df, path, format='csv'):
         """
         Write a pandas DataFrame to indicated file path (default: HDFS) in the
         indicated format
@@ -1879,17 +1784,12 @@ class ImpalaClient(SQLClient):
         path : string
           Absolute output path
         format : {'csv'}, default 'csv'
-        async : boolean, default False
-          Not yet supported
 
         Returns
         -------
         None (for now)
         """
         from ibis.impala.pandas_interop import DataFrameWriter
-
-        if async:
-            raise NotImplementedError
 
         writer = DataFrameWriter(self, df)
         return writer.write_csv(path)
