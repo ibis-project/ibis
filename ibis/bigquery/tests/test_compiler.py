@@ -7,6 +7,8 @@ import pandas as pd
 import ibis
 import ibis.expr.datatypes as dt
 
+from ibis.compat import PY2
+
 
 pytestmark = pytest.mark.bigquery
 pytest.importorskip('google.cloud.bigquery')
@@ -437,4 +439,65 @@ FROM `ibis-gbq.testing.functional_alltypes`"""
     expected = """\
 SELECT APPROX_COUNT_DISTINCT(CASE WHEN `month` > 6 THEN `bool_col` ELSE NULL END) AS `approx_nunique`
 FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('unit', 'expected_unit', 'expected_func'),
+    [
+        ('Y', 'YEAR', 'TIMESTAMP'),
+        ('Q', 'QUARTER', 'TIMESTAMP'),
+        ('M', 'MONTH', 'TIMESTAMP'),
+        ('W', 'WEEK', 'TIMESTAMP'),
+        ('D', 'DAY', 'TIMESTAMP'),
+        ('h', 'HOUR', 'TIMESTAMP'),
+        ('m', 'MINUTE', 'TIMESTAMP'),
+        ('s', 'SECOND', 'TIMESTAMP'),
+        ('ms', 'MILLISECOND', 'TIMESTAMP'),
+        ('us', 'MICROSECOND', 'TIMESTAMP'),
+
+        ('Y', 'YEAR', 'DATE'),
+        ('Q', 'QUARTER', 'DATE'),
+        ('M', 'MONTH', 'DATE'),
+        ('W', 'WEEK', 'DATE'),
+        ('D', 'DAY', 'DATE'),
+
+        ('h', 'HOUR', 'TIME'),
+        ('m', 'MINUTE', 'TIME'),
+        ('s', 'SECOND', 'TIME'),
+        ('ms', 'MILLISECOND', 'TIME'),
+        ('us', 'MICROSECOND', 'TIME'),
+    ]
+)
+def test_temporal_truncate(unit, expected_unit, expected_func):
+    t = ibis.table([('a', getattr(dt, expected_func.lower()))], name='t')
+    expr = t.a.truncate(unit)
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+SELECT {}_TRUNC(`a`, {}) AS `tmp`
+FROM t""".format(expected_func, expected_unit)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    'kind',
+    [
+        'date',
+        pytest.param(
+            'time',
+            marks=pytest.mark.xfail(
+                PY2,
+                reason='Time operations are not supported in Python 2',
+                raises=ValueError
+            )
+        ),
+    ]
+)
+def test_extract_temporal_from_timestamp(kind):
+    t = ibis.table([('ts', dt.timestamp)], name='t')
+    expr = getattr(t.ts, kind)()
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+SELECT {}(`ts`) AS `tmp`
+FROM t""".format(kind.upper())
     assert result == expected
