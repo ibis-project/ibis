@@ -30,7 +30,7 @@ def test_query_schema(backend, con, alltypes, expr_fn, expected):
 
     # we might need a public API for it
     ast = con._build_ast(expr, backend.make_context())
-    query = con.sync_query(con, ast)
+    query = con.query_class(con, ast)
     schema = query.schema()
 
     # clickhouse columns has been defined as non-nullable

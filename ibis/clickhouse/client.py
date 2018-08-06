@@ -208,7 +208,7 @@ class ClickhouseClient(SQLClient):
     """An Ibis client interface that uses Clickhouse"""
 
     database_class = ClickhouseDatabase
-    sync_query = ClickhouseQuery
+    query_class = ClickhouseQuery
     dialect = ClickhouseDialect
     table_class = ClickhouseDatabaseTable
     table_expr_class = ClickhouseTable

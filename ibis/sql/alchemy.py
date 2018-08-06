@@ -18,7 +18,7 @@ from sqlalchemy.dialects.mysql.base import MySQLDialect
 import pandas as pd
 
 from ibis.compat import parse_version, functools
-from ibis.client import SQLClient, AsyncQuery, Query, Database
+from ibis.client import SQLClient, Query, Database
 from ibis.sql.compiler import Select, Union, TableSetFormatter, Dialect
 
 import ibis
@@ -885,10 +885,6 @@ class AlchemyQuery(Query):
         return self.schema().apply_to(df)
 
 
-class AlchemyAsyncQuery(AsyncQuery):
-    pass
-
-
 class AlchemyDialect(Dialect):
 
     translator = AlchemyExprTranslator
@@ -918,7 +914,7 @@ def invalidates_reflection_cache(f):
 class AlchemyClient(SQLClient):
 
     dialect = AlchemyDialect
-    sync_query = AlchemyQuery
+    query_class = AlchemyQuery
 
     def __init__(self, con):
         super(AlchemyClient, self).__init__()
@@ -927,12 +923,6 @@ class AlchemyClient(SQLClient):
         self._inspector = sa.inspect(con)
         self._reflection_cache_is_dirty = False
         self._schemas = {}
-
-    @property
-    def async_query(self):
-        raise NotImplementedError(
-            'async_query not implemented in {}'.format(type(self).__name__)
-        )
 
     @property
     def inspector(self):
