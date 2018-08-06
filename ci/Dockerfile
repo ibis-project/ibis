@@ -2,7 +2,7 @@ FROM ibisproject/miniconda3
 
 # fonts are for docs
 RUN apt-get -qq update --yes \
- && apt-get -qq install --yes --allow-unauthenticated --no-install-recommends \
+ && apt-get -qq install --yes --no-install-recommends \
    build-essential ttf-dejavu \
    git make clang libboost-dev postgresql-client ca-certificates \
  && rm -rf /var/lib/apt/lists/*
