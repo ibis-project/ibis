@@ -395,6 +395,8 @@ _operation_registry.update({
     ops.DateTruncate: _truncate('DATE', _date_units),
     ops.TimeTruncate: _truncate('TIME', _timestamp_units),
 
+    ops.Time: _extract_field('TIME'),
+
     ops.TimestampAdd: _timestamp_op(
         'TIMESTAMP_ADD', {'h', 'm', 's', 'ms', 'us'}),
     ops.TimestampSub: _timestamp_op(
