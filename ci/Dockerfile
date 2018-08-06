@@ -1,4 +1,4 @@
-FROM ibisproject/miniconda3
+FROM continuumio/miniconda3
 
 # fonts are for docs
 RUN apt-get -qq update --yes \
