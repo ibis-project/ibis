@@ -308,13 +308,15 @@ _timestamp_units.update(_date_units)
 
 def _truncate(kind, units):
     def truncator(translator, expr):
-        op = expr.op()
-        arg, unit = op.args
-
+        arg, unit = expr.op().args
         trans_arg = translator.translate(arg)
-        unit = units.get(unit)
-        assert unit is not None, 'unit {!r} not in {}'.format(unit, units)
-        return '{}_TRUNC({}, {})'.format(kind, trans_arg, unit)
+        valid_unit = units.get(unit)
+        if valid_unit is None:
+            raise com.UnsupportedOperationError(
+                'BigQuery does not support truncating {} values to unit '
+                '{!r}'.format(arg.type(), unit)
+            )
+        return '{}_TRUNC({}, {})'.format(kind, trans_arg, valid_unit)
     return truncator
 
 
