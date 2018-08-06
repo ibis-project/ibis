@@ -78,11 +78,10 @@ def test_date_truncate(backend, alltypes, df, unit):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    'unit',
-    ['Y', pytest.mark.xfail('Q'), 'M', 'W', 'D', 'h', 'm', 's',
-     pytest.mark.xfail('ms'), pytest.mark.xfail('us')
-     ])
+@pytest.mark.parametrize('unit', [
+    'Y', pytest.mark.xfail('Q'), 'M', 'W', 'D',
+    'h', 'm', 's', pytest.mark.xfail('ms'), pytest.mark.xfail('us')
+])
 @tu.skipif_unsupported
 def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
