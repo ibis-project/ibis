@@ -291,6 +291,7 @@ _date_units = {
     'Q': 'QUARTER',
     'W': 'WEEK',
     'M': 'MONTH',
+    'D': 'DAY',
 }
 
 
@@ -301,23 +302,21 @@ _timestamp_units = {
     'm': 'MINUTE',
     'h': 'HOUR',
 }
+_time_units = _timestamp_units.copy()
 _timestamp_units.update(_date_units)
 
 
 def _truncate(kind, units):
     def truncator(translator, expr):
-        op = expr.op()
-        arg, unit = op.args
-
-        arg = translator.translate(op.args[0])
-        try:
-            unit = units[unit]
-        except KeyError:
+        arg, unit = expr.op().args
+        trans_arg = translator.translate(arg)
+        valid_unit = units.get(unit)
+        if valid_unit is None:
             raise com.UnsupportedOperationError(
-                '{!r} unit is not supported in timestamp truncate'.format(unit)
+                'BigQuery does not support truncating {} values to unit '
+                '{!r}'.format(arg.type(), unit)
             )
-
-        return "{}_TRUNC({}, {})".format(kind, arg, unit)
+        return '{}_TRUNC({}, {})'.format(kind, trans_arg, valid_unit)
     return truncator
 
 
@@ -396,6 +395,9 @@ _operation_registry.update({
 
     ops.TimestampTruncate: _truncate('TIMESTAMP', _timestamp_units),
     ops.DateTruncate: _truncate('DATE', _date_units),
+    ops.TimeTruncate: _truncate('TIME', _timestamp_units),
+
+    ops.Time: unary('TIME'),
 
     ops.TimestampAdd: _timestamp_op(
         'TIMESTAMP_ADD', {'h', 'm', 's', 'ms', 'us'}),
