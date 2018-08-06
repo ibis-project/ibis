@@ -7,6 +7,8 @@ import pandas as pd
 import ibis
 import ibis.expr.datatypes as dt
 
+from ibis.compat import PY2
+
 
 pytestmark = pytest.mark.bigquery
 pytest.importorskip('google.cloud.bigquery')
@@ -477,7 +479,20 @@ FROM t""".format(expected_func, expected_unit)
     assert result == expected
 
 
-@pytest.mark.parametrize('kind', ['date', 'time'])
+@pytest.mark.parametrize(
+    'kind',
+    [
+        'date',
+        pytest.param(
+            'time',
+            marks=pytest.mark.xfail(
+                PY2,
+                reason='Time operations are not supported in Python 2',
+                raises=ValueError
+            )
+        ),
+    ]
+)
 def test_extract_temporal_from_timestamp(kind):
     t = ibis.table([('ts', dt.timestamp)], name='t')
     expr = getattr(t.ts, kind)()
