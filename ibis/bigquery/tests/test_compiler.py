@@ -477,21 +477,12 @@ FROM t""".format(expected_func, expected_unit)
     assert result == expected
 
 
-def test_extract_time_from_timestamp():
-    t = ibis.table([('ts', 'timestamp')], name='t')
-    expr = t.ts.time()
+@pytest.mark.parametrize('kind', ['date', 'time'])
+def test_extract_temporal_from_timestamp(kind):
+    t = ibis.table([('ts', dt.timestamp)], name='t')
+    expr = getattr(t.ts, kind)()
     result = ibis.bigquery.compile(expr)
     expected = """\
-SELECT EXTRACT(TIME from `ts`) AS `tmp`
-FROM t"""
-    assert result == expected
-
-
-def test_extract_date_from_timestamp():
-    t = ibis.table([('ts', 'timestamp')], name='t')
-    expr = t.ts.date()
-    result = ibis.bigquery.compile(expr)
-    expected = """\
-SELECT DATE(`ts`) AS `tmp`
-FROM t"""
+SELECT {}(`ts`) AS `tmp`
+FROM t""".format(kind.upper())
     assert result == expected
