@@ -35,7 +35,8 @@ def verify(expr, params=None):
 def connect(host='localhost', port=21050, database='default', timeout=45,
             use_ssl=False, ca_cert=None, user=None,
             password=None, auth_mechanism='NOSASL',
-            kerberos_service_name='impala', pool_size=8, hdfs_client=None):
+            kerberos_service_name='impala', pool_size=8,
+            hdfs_client=None, **kwargs):
     """Create an ImpalaClient for use with Ibis.
 
     Parameters
@@ -65,6 +66,8 @@ def connect(host='localhost', port=21050, database='default', timeout=45,
         connections.  Use GSSAPI for Kerberos-secured clusters.
     kerberos_service_name : str, optional
         Specify particular impalad service principal.
+    kwargs : dict
+        Additional arguments to that will be passed to the impyla connection.
 
     Examples
     --------
@@ -89,20 +92,20 @@ def connect(host='localhost', port=21050, database='default', timeout=45,
     -------
     ImpalaClient
     """
-    params = {
-        'host': host,
-        'port': port,
-        'database': database,
-        'timeout': timeout,
-        'use_ssl': use_ssl,
-        'ca_cert': ca_cert,
-        'user': user,
-        'password': password,
-        'auth_mechanism': auth_mechanism,
-        'kerberos_service_name': kerberos_service_name
-    }
-
-    con = ImpalaConnection(pool_size=pool_size, **params)
+    con = ImpalaConnection(
+        pool_size=pool_size,
+        host=host,
+        port=port,
+        database=database,
+        timeout=timeout,
+        use_ssl=use_ssl,
+        ca_cert=ca_cert,
+        user=user,
+        password=password,
+        auth_mechanism=auth_mechanism,
+        kerberos_service_name=kerberos_service_name,
+        **kwargs
+    )
     try:
         client = ImpalaClient(con, hdfs_client=hdfs_client)
     except Exception:
