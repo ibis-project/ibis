@@ -5,6 +5,7 @@ import pytest
 import pandas as pd
 
 import ibis
+import ibis.common as com
 import ibis.expr.datatypes as dt
 
 
@@ -437,4 +438,69 @@ FROM `ibis-gbq.testing.functional_alltypes`"""
     expected = """\
 SELECT APPROX_COUNT_DISTINCT(CASE WHEN `month` > 6 THEN `bool_col` ELSE NULL END) AS `approx_nunique`
 FROM `ibis-gbq.testing.functional_alltypes`"""  # noqa: E501
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('unit', 'expected_unit'),
+    [
+        ('Y', 'YEAR'),
+        ('Q', 'QUARTER'),
+        ('M', 'MONTH'),
+        ('W', 'WEEK'),
+        ('D', 'DAY'),
+        ('h', 'HOUR'),
+        ('m', 'MINUTE'),
+        ('s', 'SECOND'),
+        ('ms', 'MILLISECOND'),
+        ('us', 'MICROSECOND'),
+    ]
+)
+def test_timestamp_truncate(unit, expected_unit):
+    t = ibis.table([('a', dt.timestamp)], name='t')
+    expr = t.a.truncate(unit)
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+SELECT TIMESTAMP_TRUNC(`a`, {}) AS `tmp`
+FROM t""".format(expected_unit)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('unit', 'expected_unit'),
+    [
+        ('Y', 'YEAR'),
+        ('Q', 'QUARTER'),
+        ('M', 'MONTH'),
+        ('W', 'WEEK'),
+        ('D', 'DAY'),
+    ]
+)
+def test_date_truncate(unit, expected_unit):
+    t = ibis.table([('a', dt.date)], name='t')
+    expr = t.a.truncate(unit)
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+SELECT DATE_TRUNC(`a`, {}) AS `tmp`
+FROM t""".format(expected_unit)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ('unit', 'expected_unit'),
+    [
+        ('h', 'HOUR'),
+        ('m', 'MINUTE'),
+        ('s', 'SECOND'),
+        ('ms', 'MILLISECOND'),
+        ('us', 'MICROSECOND'),
+    ]
+)
+def test_time_truncate(unit, expected_unit):
+    t = ibis.table([('a', dt.time)], name='t')
+    expr = t.a.truncate(unit)
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+SELECT TIME_TRUNC(`a`, {}) AS `tmp`
+FROM t""".format(expected_unit)
     assert result == expected
