@@ -475,3 +475,23 @@ def test_temporal_truncate(unit, expected_unit, expected_func):
 SELECT {}_TRUNC(`a`, {}) AS `tmp`
 FROM t""".format(expected_func, expected_unit)
     assert result == expected
+
+
+def test_extract_time_from_timestamp():
+    t = ibis.table([('ts', 'timestamp')], name='t')
+    expr = t.ts.time()
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+SELECT EXTRACT(TIME from `ts`) AS `tmp`
+FROM t"""
+    assert result == expected
+
+
+def test_extract_date_from_timestamp():
+    t = ibis.table([('ts', 'timestamp')], name='t')
+    expr = t.ts.date()
+    result = ibis.bigquery.compile(expr)
+    expected = """\
+SELECT DATE(`ts`) AS `tmp`
+FROM t"""
+    assert result == expected
