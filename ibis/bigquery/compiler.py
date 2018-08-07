@@ -406,6 +406,7 @@ _operation_registry.update({
 
     ops.DateAdd: _timestamp_op('DATE_ADD', {'D', 'W', 'M', 'Q', 'Y'}),
     ops.DateSub: _timestamp_op('DATE_SUB', {'D', 'W', 'M', 'Q', 'Y'}),
+    ops.TimestampNow: fixed_arity('CURRENT_TIMESTAMP', 0),
 })
 
 _invalid_operations = {
