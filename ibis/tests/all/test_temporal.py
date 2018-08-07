@@ -4,7 +4,10 @@ import warnings
 import pytest
 from pytest import param
 
+import numpy as np
 import pandas as pd
+
+import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -306,4 +309,21 @@ def test_now(backend, con):
 
     # this could fail if we're testing in different timezones and we're testing
     # on Dec 31st
-    assert result.year() == pandas_now.year()
+    assert result.year == pandas_now.year
+
+
+@tu.skipif_unsupported
+def test_now_from_projection(backend, con, alltypes, df):
+    n = 5
+    expr = alltypes[[ibis.now().name('ts')]].limit(n)
+    result = expr.execute()
+    ts = result.ts
+    assert isinstance(result, pd.DataFrame)
+    assert isinstance(ts, pd.Series)
+    assert issubclass(ts.dtype.type, np.datetime64)
+    assert len(result) == n
+    assert ts.nunique() == 1
+
+    now = pd.Timestamp('now')
+    year_expected = pd.Series([now.year] * n, name='ts')
+    tm.assert_series_equal(ts.dt.year, year_expected)
