@@ -295,3 +295,15 @@ def test_day_of_week_column_group_by(
         # column name string subclass
         check_column_type=sys.version_info.major != 2
     )
+
+
+@tu.skipif_unsupported
+def test_now(con):
+    expr = ibis.now()
+    result = con.execute(expr)
+    pandas_now = pd.Timestamp('now')
+    assert isinstance(result, pd.Timestamp)
+
+    # this could fail if we're testing in different timezones and we're testing
+    # on Dec 31st
+    assert result.year() == pandas_now.year()
