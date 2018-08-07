@@ -44,12 +44,12 @@ def skipif_unsupported(f):
 
 
 def skipif_backend(skip_backend):
-    def _skipif_backend(f):
+    def wrapped(f):
         @functools.wraps(f)
         def wrapper(backend, *args, **kwargs):
-            if str(backend) != skip_backend:
-                return f(backend, *args, **kwargs)
+            if isinstance(backend, skip_backend):
+                pytest.skip('Skipping {} test'.format(str(backend)))
             else:
-                pytest.skip('Skip {} test'.format(str(backend)))
+                return f(backend, *args, **kwargs)
         return wrapper
-    return _skipif_backend
+    return wrapped

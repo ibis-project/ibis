@@ -4,11 +4,16 @@ import warnings
 import pytest
 from pytest import param
 
+import numpy as np
 import pandas as pd
+
+import pandas.util.testing as tm
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.tests.util as tu
+
+from ibis.tests.backends import MapD
 
 from ibis.pandas.execution.temporal import day_name
 
@@ -48,7 +53,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     'h', 'm', 's', 'ms', 'us', 'ns'
 ])
 @tu.skipif_unsupported
-@tu.skipif_backend('MapD')
+@tu.skipif_backend(MapD)
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
 
@@ -295,3 +300,34 @@ def test_day_of_week_column_group_by(
         # column name string subclass
         check_column_type=sys.version_info.major != 2
     )
+
+
+@tu.skipif_unsupported
+@tu.skipif_backend(MapD)
+def test_now(backend, con):
+    expr = ibis.now()
+    result = con.execute(expr)
+    pandas_now = pd.Timestamp('now')
+    assert isinstance(result, pd.Timestamp)
+
+    # this could fail if we're testing in different timezones and we're testing
+    # on Dec 31st
+    assert result.year == pandas_now.year
+
+
+@tu.skipif_unsupported
+@tu.skipif_backend(MapD)
+def test_now_from_projection(backend, con, alltypes, df):
+    n = 5
+    expr = alltypes[[ibis.now().name('ts')]].limit(n)
+    result = expr.execute()
+    ts = result.ts
+    assert isinstance(result, pd.DataFrame)
+    assert isinstance(ts, pd.Series)
+    assert issubclass(ts.dtype.type, np.datetime64)
+    assert len(result) == n
+    assert ts.nunique() == 1
+
+    now = pd.Timestamp('now')
+    year_expected = pd.Series([now.year] * n, name='ts')
+    tm.assert_series_equal(ts.dt.year, year_expected)

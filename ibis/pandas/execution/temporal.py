@@ -5,8 +5,10 @@ import pandas as pd
 
 from pandas.core.groupby import SeriesGroupBy
 
+import ibis
 import ibis.expr.operations as ops
-from ibis.pandas.dispatch import execute_node
+
+from ibis.pandas.dispatch import execute_node, pre_execute
 from ibis.pandas.core import (
     numeric_types, integer_types, timestamp_types, timedelta_types)
 
@@ -158,9 +160,10 @@ def execute_timestamp_from_unix(op, data, **kwargs):
     return pd.to_datetime(data, unit=op.unit)
 
 
-@execute_node.register(ops.TimestampNow)
-def execute_timestamp_now(op, **kwargs):
-    return pd.Timestamp('now')
+@pre_execute.register(ops.TimestampNow)
+@pre_execute.register(ops.TimestampNow, ibis.client.Client)
+def pre_execute_timestamp_now(op, *args, **kwargs):
+    return {op: pd.Timestamp('now')}
 
 
 @execute_node.register(ops.DayOfWeekIndex, six.string_types + (datetime.date,))

@@ -222,7 +222,8 @@ _operation_registry.update({
     ops.Variance: _variance_reduction('var'),
     ops.StandardDev: _variance_reduction('stddev'),
 
-    ops.IdenticalTo: _identical_to
+    ops.IdenticalTo: _identical_to,
+    ops.TimestampNow: fixed_arity(sa.func.now, 0),
 })
 
 
