@@ -1,6 +1,4 @@
 import sys
-import warnings
-
 import pytest
 from pytest import param
 
