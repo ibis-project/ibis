@@ -298,7 +298,7 @@ def test_day_of_week_column_group_by(
 
 
 @tu.skipif_unsupported
-def test_now(con):
+def test_now(backend, con):
     expr = ibis.now()
     result = con.execute(expr)
     pandas_now = pd.Timestamp('now')
