@@ -408,7 +408,7 @@ def test_exists_table(con):
     assert not con.exists_table('foobarbaz_{}'.format(util.guid()))
 
 
-def text_exists_table_with_database(
+def test_exists_table_with_database(
     con, alltypes, test_data_db, temp_table, temp_database
 ):
     tmp_db = test_data_db
