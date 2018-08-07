@@ -40,9 +40,8 @@ def test_coalesce(backend, con, expr, expected):
 
 
 @tu.skipif_unsupported
+@tu.skipif_backend(MapD)
 def test_identical_to(backend, sorted_alltypes, con, sorted_df):
-    if isinstance(backend, MapD):
-        pytest.skip('MapD is flaky on test_identical_to')
     df = sorted_df
     dt = df[['tinyint_col', 'double_col']]
 
@@ -69,9 +68,8 @@ def test_identical_to(backend, sorted_alltypes, con, sorted_df):
                       reason='Not yet implemented'),
 ])
 @tu.skipif_unsupported
+@tu.skipif_backend(MapD)
 def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
-    if isinstance(backend, MapD):
-        pytest.skip('MapD is flaky on test_isin')
     expr = sorted_alltypes[
         'id', sorted_alltypes[column].isin(elements).name('tmp')
     ].sort_by('id')
@@ -93,9 +91,8 @@ def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
                       reason='Not yet implemented'),
 ])
 @tu.skipif_unsupported
+@tu.skipif_backend(MapD)
 def test_notin(backend, sorted_alltypes, sorted_df, column, elements):
-    if isinstance(backend, MapD):
-        pytest.skip('MapD is flaky on test_notin')
     expr = sorted_alltypes[
         'id',
         sorted_alltypes[column].notin(elements).name('tmp')

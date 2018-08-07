@@ -153,12 +153,9 @@ def execute_with_scope(expr, scope, aggcontext=None, clients=None, **kwargs):
     if aggcontext is None:
         aggcontext = agg_ctx.Summarize()
 
-    pre_executed_scope = map(
-        functools.partial(
-            pre_execute, op, scope=scope, aggcontext=aggcontext, **kwargs),
-        clients
-    )
-    new_scope = toolz.merge(scope, *pre_executed_scope)
+    pre_executed_scope = pre_execute(
+        op, *clients, scope=scope, aggcontext=aggcontext, **kwargs)
+    new_scope = toolz.merge(scope, pre_executed_scope)
     result = execute_until_in_scope(
         expr,
         new_scope,
@@ -209,8 +206,9 @@ def execute_until_in_scope(
         expr, scope,
         aggcontext=aggcontext,
         post_execute_=post_execute_, clients=clients, **kwargs)
-    pre_executor = functools.partial(pre_execute, op, scope=scope, **kwargs)
-    new_scope = toolz.merge(new_scope, *map(pre_executor, clients))
+    new_scope = toolz.merge(
+        new_scope, pre_execute(op, *clients, scope=scope, **kwargs)
+    )
     return execute_until_in_scope(
         expr, new_scope,
         aggcontext=aggcontext, clients=clients, post_execute_=post_execute_,
