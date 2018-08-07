@@ -1,8 +1,6 @@
-import os
 import sys
 import pytest
 
-from ibis.compat import Path
 from ibis.tests.backends import (Csv, Parquet, Pandas,
                                  SQLite, Postgres, MySQL, MapD,
                                  Clickhouse, Impala, BigQuery)
@@ -24,20 +22,6 @@ params_backend = [
 
 if sys.version_info.major > 2:
     params_backend.append(pytest.param(MapD, marks=pytest.mark.mapd))
-
-
-@pytest.fixture(scope='session')
-def data_directory():
-    root = Path(__file__).absolute().parents[3]
-
-    default = root / 'ci' / 'ibis-testing-data'
-    datadir = os.environ.get('IBIS_TEST_DATA_DIRECTORY', default)
-    datadir = Path(datadir)
-
-    if not datadir.exists():
-        pytest.skip('test data directory not found')
-
-    return datadir
 
 
 @pytest.fixture(params=params_backend, scope='session')
