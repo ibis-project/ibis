@@ -13,6 +13,7 @@ import ibis.tests.util as tu
 
 from ibis.compat import map
 from ibis import literal as L
+from ibis.tests.backends import MapD
 
 
 @pytest.mark.parametrize(('operand_fn', 'expected_operand_fn'), [
@@ -65,7 +66,7 @@ def test_isnan_isinf(backend, con, alltypes, df,
     param(L(5.556).log10(), math.log10(5.556), id='log10'),
     param(L(11) % 3, 11 % 3, id='mod'),
 ])
-@tu.skipif_backend('MapD')
+@tu.skipif_backend(MapD)
 @tu.skipif_unsupported
 def test_math_functions_literals(backend, con, alltypes, df, expr, expected):
     result = con.execute(expr)

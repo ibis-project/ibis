@@ -13,6 +13,8 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.tests.util as tu
 
+from ibis.tests.backends import MapD
+
 from ibis.pandas.execution.temporal import day_name
 
 
@@ -51,7 +53,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     'h', 'm', 's', 'ms', 'us', 'ns'
 ])
 @tu.skipif_unsupported
-@tu.skipif_backend('MapD')
+@tu.skipif_backend(MapD)
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit)
 
@@ -301,6 +303,7 @@ def test_day_of_week_column_group_by(
 
 
 @tu.skipif_unsupported
+@tu.skipif_backend(MapD)
 def test_now(backend, con):
     expr = ibis.now()
     result = con.execute(expr)
@@ -313,6 +316,7 @@ def test_now(backend, con):
 
 
 @tu.skipif_unsupported
+@tu.skipif_backend(MapD)
 def test_now_from_projection(backend, con, alltypes, df):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)
