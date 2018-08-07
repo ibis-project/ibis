@@ -198,7 +198,8 @@ def test_insert_with_less_columns(con, alltypes, df):
     con.raw_sql(create)
 
     temporary = con.table('temporary_alltypes')
-    records = df.loc[:10, ['string_col', 'date_col']]
+    records = df.loc[:10, ['string_col']].copy()
+    records['date_col'] = None
 
     with pytest.raises(AssertionError):
         temporary.insert(records)
@@ -213,7 +214,7 @@ def test_insert_with_more_columns(con, alltypes, df):
     con.raw_sql(create)
 
     temporary = con.table('temporary_alltypes')
-    records = df[:10]
+    records = df[:10].copy()
     records['non_existing_column'] = 'raise on me'
 
     with pytest.raises(AssertionError):

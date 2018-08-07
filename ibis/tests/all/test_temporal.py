@@ -83,6 +83,7 @@ def test_date_truncate(backend, alltypes, df, unit):
     'h', 'm', 's', pytest.mark.xfail('ms'), pytest.mark.xfail('us')
 ])
 @tu.skipif_unsupported
+@pytest.mark.filterwarnings('ignore')
 def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     expr = alltypes.timestamp_col + interval
@@ -93,8 +94,7 @@ def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
         return pd.offsets.DateOffset(**{resolution: x})
 
     offset = df.int_col.apply(convert_to_offset)
-    with warnings.catch_warnings():
-        expected = df.timestamp_col + offset
+    expected = df.timestamp_col + offset
     expected = backend.default_series_rename(expected)
 
     backend.assert_series_equal(result, expected)
