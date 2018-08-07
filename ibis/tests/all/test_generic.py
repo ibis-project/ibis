@@ -2,8 +2,12 @@ import pytest
 import decimal
 
 import ibis
+
 from ibis import literal as L
+
 import ibis.tests.util as tu
+
+from ibis.tests.backends import MapD
 
 
 @pytest.mark.parametrize(('expr', 'expected'), [
@@ -37,6 +41,8 @@ def test_coalesce(backend, con, expr, expected):
 
 @tu.skipif_unsupported
 def test_identical_to(backend, sorted_alltypes, con, sorted_df):
+    if isinstance(backend, MapD):
+        pytest.skip('MapD is flaky on test_identical_to')
     df = sorted_df
     dt = df[['tinyint_col', 'double_col']]
 
@@ -62,7 +68,10 @@ def test_identical_to(backend, sorted_alltypes, con, sorted_df):
     pytest.mark.xfail(('int_col', frozenset({1})), raises=TypeError,
                       reason='Not yet implemented'),
 ])
+@tu.skipif_unsupported
 def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
+    if isinstance(backend, MapD):
+        pytest.skip('MapD is flaky on test_isin')
     expr = sorted_alltypes[
         'id', sorted_alltypes[column].isin(elements).name('tmp')
     ].sort_by('id')
@@ -83,7 +92,10 @@ def test_isin(backend, sorted_alltypes, sorted_df, column, elements):
     pytest.mark.xfail(('int_col', frozenset({1})), raises=TypeError,
                       reason='Not yet implemented'),
 ])
+@tu.skipif_unsupported
 def test_notin(backend, sorted_alltypes, sorted_df, column, elements):
+    if isinstance(backend, MapD):
+        pytest.skip('MapD is flaky on test_notin')
     expr = sorted_alltypes[
         'id',
         sorted_alltypes[column].notin(elements).name('tmp')
