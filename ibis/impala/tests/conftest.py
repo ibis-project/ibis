@@ -163,6 +163,20 @@ def con(env, hdfs, test_data_db):
 
 
 @pytest.fixture(scope='session')
+def tls_con(env, hdfs, test_data_db):
+    con = ibis.impala.connect(host=env.impala_host,
+                              database=test_data_db,
+                              port=env.impala_port,
+                              auth_mechanism=env.auth_mechanism,
+                              hdfs_client=hdfs,
+                              ssl_version='PROTOCOL_TLSv1_2')
+    if not env.use_codegen:
+        con.disable_codegen()
+    assert con.get_options()['DISABLE_CODEGEN'] == '1'
+    return con
+
+
+@pytest.fixture(scope='session')
 def temp_char_table(con):
     statement = """\
 CREATE TABLE IF NOT EXISTS {} (

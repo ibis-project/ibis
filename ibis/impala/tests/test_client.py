@@ -408,7 +408,7 @@ def test_exists_table(con):
     assert not con.exists_table('foobarbaz_{}'.format(util.guid()))
 
 
-def text_exists_table_with_database(
+def test_exists_table_with_database(
     con, alltypes, test_data_db, temp_table, temp_database
 ):
     tmp_db = test_data_db
@@ -416,3 +416,7 @@ def text_exists_table_with_database(
 
     assert con.exists_table(temp_table, database=tmp_db)
     assert not con.exists_table(temp_table, database=temp_database)
+
+
+def test_construct_with_tls_version(tls_con):
+    assert tls_con.params['ssl_version'] == 'PROTOCOL_TLSv1_2'
