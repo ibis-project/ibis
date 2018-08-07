@@ -42,8 +42,9 @@ depth-first traversal of the tree.
 
 
 # Default returns an empty scope
+@pre_execute.register(ops.Node)
 @pre_execute.register(ops.Node, ibis.client.Client)
-def pre_execute_default(node, client, **kwargs):
+def pre_execute_default(node, *clients, **kwargs):
     return {}
 
 
