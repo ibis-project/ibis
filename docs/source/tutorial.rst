@@ -16,3 +16,5 @@ Here we show Jupyter notebooks that take you through various tasks using ibis.
    notebooks/tutorial/6-Advanced-Topics-TopK-SelfJoins.ipynb
    notebooks/tutorial/7-Advanced-Topics-ComplexFiltering.ipynb
    notebooks/tutorial/8-More-Analytics-Helpers.ipynb
+   notebooks/tutorial/9-Adding-a-new-elementwise-expression.ipynb
+   notebooks/tutorial/10-Adding-a-new-reduction-expression.ipynb
