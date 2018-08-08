@@ -6,10 +6,9 @@ import ibis
 
 
 @pytest.fixture(scope='module')
-def dbpath():
-    # If we haven't defined an environment variable with the path of the SQLite
-    # database, assume it's in $PWD
-    path = os.environ.get('IBIS_TEST_SQLITE_DATABASE', 'ibis_testing.db')
+def dbpath(data_directory):
+    default = str(data_directory / 'ibis_testing.db')
+    path = os.environ.get('IBIS_TEST_SQLITE_DATABASE', default)
     if not os.path.exists(path):
         pytest.skip('SQLite testing db {} does not exist'.format(path))
     else:
