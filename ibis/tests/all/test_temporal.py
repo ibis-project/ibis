@@ -85,14 +85,17 @@ def test_date_truncate(backend, alltypes, df, unit):
 def test_integer_to_interval_timestamp(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     expr = alltypes.timestamp_col + interval
-    result = con.execute(expr)
+
 
     def convert_to_offset(x):
         resolution = '{}s'.format(interval.type().resolution)
         return pd.offsets.DateOffset(**{resolution: x})
 
     with warnings.catch_warnings():
+        # both the implementation and test code raises pandas
+        # PerformanceWarning, because We use DateOffset addition
         warnings.simplefilter('ignore')
+        result = con.execute(expr)
         offset = df.int_col.apply(convert_to_offset)
         expected = df.timestamp_col + offset
 
