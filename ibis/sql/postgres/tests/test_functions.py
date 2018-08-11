@@ -2,6 +2,7 @@ import os
 import sys
 import operator
 import string
+import warnings
 
 from operator import methodcaller
 from datetime import date, datetime
@@ -19,7 +20,6 @@ from ibis import literal as L
 
 import pandas as pd
 import pandas.util.testing as tm
-from pandas.api.types import CategoricalDtype
 
 sa = pytest.importorskip('sqlalchemy')
 pytest.importorskip('psycopg2')
@@ -547,7 +547,10 @@ def test_category_label(alltypes, df):
     bucket = d.bucket(bins)
     expr = bucket.label(labels)
     result = expr.execute()
-    result = result.astype(CategoricalDtype(ordered=True))
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        result = result.astype('category', ordered=True)
 
     result.name = 'double_col'
 
