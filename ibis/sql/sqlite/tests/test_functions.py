@@ -18,7 +18,6 @@ import operator
 import math
 import datetime
 import sqlite3
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -33,6 +32,7 @@ import ibis.expr.datatypes as dt  # noqa: E402
 import ibis.config as config  # noqa: E402
 
 import pandas.util.testing as tm  # noqa: E402
+from pandas.api.types import CategoricalDtype  # noqa: E402
 
 
 try:
@@ -462,10 +462,7 @@ def test_bucket(alltypes, df, func, expected_func):
     expr = func(alltypes.double_col)
     result = expr.execute()
     expected = expected_func(df.double_col)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        expected = expected.astype('category')
+    expected = expected.astype(CategoricalDtype())
 
     tm.assert_series_equal(result, expected, check_names=False)
 
@@ -475,7 +472,7 @@ def test_category_label(alltypes, df):
     labels = ['a', 'b', 'c', 'd']
     expr = alltypes.double_col.bucket(bins).label(labels)
 
-    result = expr.execute().astype('category', ordered=True)
+    result = expr.execute().astype(CategoricalDtype(ordered=True))
     result.name = 'double_col'
 
     expected = pd.cut(df.double_col, bins, labels=labels, right=False)
