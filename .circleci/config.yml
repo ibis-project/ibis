@@ -58,7 +58,6 @@ test: &test
           docker-compose run -e PYTHONHASHSEED=$PYTHONHASHSEED ibis \
             pytest ibis -m "not udf" \
                         -ra \
-                        -Werror \
                         --numprocesses auto \
                         --doctest-modules \
                         --doctest-ignore-import-errors \
