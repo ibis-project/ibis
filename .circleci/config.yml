@@ -55,17 +55,16 @@ test: &test
     - run:
         name: Execute Pytest
         command: |
-          docker-compose run \
-            -e PYTHONHASHSEED=$([ "${PYTHON_VERSION}" = "3.5" ] && echo -en 0 || echo -en "") \
-            ibis pytest ibis \
-            -m "not udf" \
-            -ra \
-            --numprocesses auto \
-            --doctest-modules \
-            --doctest-ignore-import-errors \
-            --junitxml=/tmp/test-reports/pytest/junit.xml \
-            --cov=ibis \
-            --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
+          docker-compose run -e PYTHONHASHSEED=$PYTHONHASHSEED ibis \
+            pytest ibis -m "not udf" \
+                        -ra \
+                        -Werror \
+                        --numprocesses auto \
+                        --doctest-modules \
+                        --doctest-ignore-import-errors \
+                        --junitxml=/tmp/test-reports/pytest/junit.xml \
+                        --cov=ibis \
+                        --cov-report=xml:/tmp/test-reports/pytest-cov/coverage.xml
     - store_test_results:
         path: /tmp/ibis/test-reports
     - store_artifacts:
@@ -180,16 +179,19 @@ jobs:
   python27_test:
     <<: *test
     environment:
+      - PYTHONHASHSEED: ""
       - PYTHON_VERSION: 2.7
 
   python35_test:
     <<: *test
     environment:
+      - PYTHONHASHSEED: 0
       - PYTHON_VERSION: 3.5
 
   python36_test:
     <<: *test
     environment:
+      - PYTHONHASHSEED: ""
       - PYTHON_VERSION: 3.6
 
   python27_conda_build:
