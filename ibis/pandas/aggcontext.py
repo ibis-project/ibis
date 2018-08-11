@@ -314,7 +314,7 @@ class Window(AggregationContext):
             # if we're a UD(A)F or a function that isn't a string (like the
             # collect implementation) then call apply
             if callable(function):
-                return windowed.apply(_apply(function, args, kwargs), raw=True)
+                return windowed.apply(_apply(function, args, kwargs))
             else:
                 # otherwise we're a string and we're probably faster
                 assert isinstance(function, six.string_types)
@@ -327,8 +327,7 @@ class Window(AggregationContext):
             if callable(function):
                 method = operator.methodcaller(
                     'apply',
-                    _apply(function, args, kwargs),
-                    raw=True
+                    _apply(function, args, kwargs)
                 )
             else:
                 assert isinstance(function, six.string_types)
