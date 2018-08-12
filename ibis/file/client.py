@@ -36,7 +36,7 @@ class FileClient(ibis.client.Client):
     def execute(self, expr, params=None, **kwargs):  # noqa
         assert isinstance(expr, ir.Expr)
         scope = kwargs.pop('scope', {})
-        return execute_and_reset(expr, params=None, scope=scope, **kwargs)
+        return execute_and_reset(expr, params=params, scope=scope, **kwargs)
 
     def list_tables(self, path=None):
         raise NotImplementedError
