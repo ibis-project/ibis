@@ -2,6 +2,7 @@ import os
 import sys
 import operator
 import string
+import warnings
 
 from operator import methodcaller
 from datetime import date, datetime
@@ -545,7 +546,12 @@ def test_category_label(alltypes, df):
     labels = ['a', 'b', 'c', 'd']
     bucket = d.bucket(bins)
     expr = bucket.label(labels)
-    result = expr.execute().astype('category', ordered=True)
+    result = expr.execute()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        result = result.astype('category', ordered=True)
+
     result.name = 'double_col'
 
     expected = pd.cut(df.double_col, bins, labels=labels, right=False)

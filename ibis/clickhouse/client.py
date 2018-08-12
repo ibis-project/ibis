@@ -2,6 +2,8 @@ import re
 import numpy as np
 import pandas as pd
 
+from collections import OrderedDict
+
 import ibis.common as com
 import ibis.expr.types as ir
 import ibis.expr.schema as sch
@@ -125,7 +127,9 @@ class ClickhouseQuery(Query):
             # handle empty resultset
             return pd.DataFrame([], columns=colnames)
 
-        df = pd.DataFrame.from_items(zip(colnames, data))
+        df = pd.DataFrame.from_dict(
+            OrderedDict(zip(colnames, data))
+        )
         return self.schema().apply_to(df)
 
 
