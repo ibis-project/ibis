@@ -1,3 +1,5 @@
+import collections
+
 import pytest
 
 import ibis
@@ -51,3 +53,29 @@ def test_timestamp_accepts_date_literals(backend, alltypes):
     expr = alltypes.mutate(param=param)
     params = {param: date_string}
     assert expr.compile(params=params) is not None
+
+
+@tu.skipif_unsupported
+def test_scalar_param_array(backend, con):
+    value = [1, 2, 3]
+    param = ibis.param(dt.Array(dt.int64))
+    result = con.execute(param.length(), params={param: value})
+    assert result == len(value)
+
+
+@tu.skipif_unsupported
+def test_scalar_param_struct(backend, con):
+    value = collections.OrderedDict([('a', 1), ('b', 'abc'), ('c', 3.0)])
+    param = ibis.param(
+        dt.Struct.from_tuples([
+            ('a', 'int64'), ('b', 'string'), ('c', 'float64')]))
+    result = con.execute(param.a, params={param: value})
+    assert result == value['a']
+
+
+@tu.skipif_unsupported
+def test_scalar_param_map(backend, con):
+    value = {'a': 'ghi', 'b': 'def', 'c': 'abc'}
+    param = ibis.param(dt.Map(dt.string, dt.string))
+    result = con.execute(param['b'], params={param: value})
+    assert result == value['b']
