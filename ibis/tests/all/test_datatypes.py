@@ -7,8 +7,7 @@ import ibis.tests.util as tu
 
 
 @pytest.mark.parametrize(('column', 'ibis_dtype', 'pandas_dtype'), [
-    ('index', dt.Int64(nullable=True), np.int64),
-    ('Unnamed: 0', dt.Int64(nullable=True), np.int64),
+    # ('Unnamed: 0', dt.Int64(nullable=True), np.int64),
     ('id', dt.Int32(nullable=True), np.int32),
     ('bool_col', dt.Boolean(nullable=True), np.bool_),
     ('tinyint_col', dt.Int8(nullable=True), np.int8),
@@ -22,8 +21,9 @@ import ibis.tests.util as tu
     ('timestamp_col', dt.Timestamp(nullable=True), np.dtype('datetime64[ns]'))
 ])
 @tu.skipif_unsupported
-def test_columns_are_typecorrect(backend, alltypes, df, column, ibis_dtype,
-                                 pandas_dtype):
+def test_common_nullable_datatypes(backend, alltypes, df, column, ibis_dtype,
+                                   pandas_dtype):
+    # these datatypes are implemented by all of the backends
     expr = alltypes.limit(10)[column]
     col = df[column]
     result = expr.execute()

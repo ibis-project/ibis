@@ -49,22 +49,22 @@ CREATE TABLE awards_players (
 ) ENGINE = MergeTree(date, (`playerID`), 8192);
 
 CREATE TABLE functional_alltypes (
-    `date` Date DEFAULT toDate(timestamp_col),
+    `date` Date DEFAULT today(),
     `index` Int64,
-    `Unnamed: 0` Int64,
-    id Int32,
-    bool_col UInt8,
-    tinyint_col Int8,
-    smallint_col Int16,
-    int_col Int32,
-    bigint_col Int64,
-    float_col Float32,
-    double_col Float64,
-    date_string_col String,
-    string_col String,
-    timestamp_col DateTime,
-    year Int32,
-    month Int32
+    `Unnamed: 0` Nullable(Int64),
+    id Nullable(Int32),
+    bool_col Nullable(UInt8),
+    tinyint_col Nullable(Int8),
+    smallint_col Nullable(Int16),
+    int_col Nullable(Int32),
+    bigint_col Nullable(Int64),
+    float_col Nullable(Float32),
+    double_col Nullable(Float64),
+    date_string_col Nullable(String),
+    string_col Nullable(String),
+    timestamp_col Nullable(DateTime),
+    year Nullable(Int32),
+    month Nullable(Int32)
 ) ENGINE = MergeTree(date, (`index`), 8192);
 
 CREATE TABLE tzone (

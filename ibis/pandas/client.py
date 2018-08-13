@@ -308,7 +308,6 @@ def ibis_schema_apply_to(schema, df):
     -----
     Mutates `df`
     """
-
     for column, dtype in schema.items():
         pandas_dtype = dtype.to_pandas()
         col = df[column]

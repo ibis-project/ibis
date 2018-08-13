@@ -10,6 +10,7 @@ import warnings
 import click
 import six
 
+import numpy as np
 import pandas as pd
 import sqlalchemy as sa
 
@@ -68,11 +69,20 @@ def read_tables(names, data_directory):
 
         if name == 'functional_alltypes':
             df['bool_col'] = df['bool_col'].astype(bool)
-            # string_col is actually dt.int64
+            # string_col actually holds integers
             df['string_col'] = df['string_col'].astype(six.text_type)
             df['date_string_col'] = df['date_string_col'].astype(six.text_type)
             # timestamp_col has object dtype
             df['timestamp_col'] = pd.to_datetime(df['timestamp_col'])
+            # integer columns
+            df['id'] = df['id'].astype(np.int32)
+            df['tinyint_col'] = df['tinyint_col'].astype(np.int8)
+            df['smallint_col'] = df['smallint_col'].astype(np.int16)
+            df['int_col'] = df['int_col'].astype(np.int32)
+            df['bigint_col'] = df['bigint_col'].astype(np.int64)
+            # floating columns
+            df['float_col'] = df['float_col'].astype(np.float32)
+            df['double_col'] = df['double_col'].astype(np.float64)
 
         yield name, df
 

@@ -127,7 +127,16 @@ class Pandas(Backend, RoundHalfToEven):
             'functional_alltypes': pd.read_csv(
                 str(data_directory / 'functional_alltypes.csv'),
                 index_col=None,
-                dtype={'bool_col': bool, 'string_col': six.text_type},
+                dtype={
+                    'id': np.int32,
+                    'bool_col': bool,
+                    'string_col': six.text_type,
+                    'float_col': np.float32,
+                    'tinyint_col': np.int8,
+                    'smallint_col': np.int16,
+                    'int_col': np.int32,
+                    'bigint_col': np.int64,
+                },
                 parse_dates=['timestamp_col'],
                 encoding='utf-8'
             ),
