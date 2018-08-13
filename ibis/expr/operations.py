@@ -355,7 +355,6 @@ class NullIf(ValueOp):
 
 
 class NullIfZero(ValueOp):
-
     """
     Set values to NULL if they equal to zero. Commonly used in cases where
     divide-by-zero would produce an overflow or infinity.
