@@ -1,4 +1,4 @@
-# Ibis: Python data analysis framework for Hadoop and SQL engines
+# Ibis: Python data analysis framework
 
 |Service|Status|
 | -------------: | :---- |
