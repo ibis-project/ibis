@@ -39,6 +39,7 @@ class Backend(object):
     returned_timestamp_unit = 'us'
     supported_to_timestamp_units = {'s', 'ms', 'us'}
     supports_floating_modulus = True
+    unsupported_datatypes = {}
 
     def __init__(self, data_directory):
         try:
@@ -166,7 +167,14 @@ class Csv(Pandas):
 
     def functional_alltypes(self):
         schema = ibis.schema([
+            ('id', 'int32'),
             ('bool_col', 'boolean'),
+            ('tinyint_col', 'int8'),
+            ('smallint_col', 'int16'),
+            ('int_col', 'int32'),
+            ('bigint_col', 'int64'),
+            ('float_col', 'float32'),
+            ('double_col', 'float64'),
             ('string_col', 'string'),
             ('timestamp_col', 'timestamp')
         ])
@@ -191,6 +199,7 @@ class SQLite(Backend, RoundAwayFromZero):
     supports_window_operations = False
     check_dtype = False
     returned_timestamp_unit = 's'
+    unsupported_datatypes = {'int8', 'uint8', 'float32'}
 
     def connect(self, data_directory):
         path = os.environ.get('IBIS_TEST_SQLITE_DATABASE',
@@ -208,8 +217,8 @@ class SQLite(Backend, RoundAwayFromZero):
 class Postgres(Backend, RoundHalfToEven):
     # postgres rounds half to even for double precision and half away from zero
     # for numeric and decimal
-
     returned_timestamp_unit = 's'
+    unsupported_datatypes = {'int8', 'uint8', 'float32'}
 
     def connect(self, data_directory):
         user = os.environ.get('IBIS_TEST_POSTGRES_USER',
@@ -236,6 +245,7 @@ class MapD(Backend):
         ops.Abs, ops.Round, ops.Ceil, ops.Floor, ops.Exp, ops.Sign, ops.Sqrt,
         ops.Ln, ops.Log10, ops.Modulus
     })
+    unsupported_datatypes = {'int8', 'uint8'}
 
     def connect(self, data_directory):
         user = os.environ.get('IBIS_TEST_MAPD_USER', 'mapd')
@@ -322,6 +332,8 @@ class BigQuery(UnorderedComparator, Backend, RoundAwayFromZero):
     supports_divide_by_zero = True
     supports_floating_modulus = False
     returned_timestamp_unit = 'us'
+    unsupported_datatypes = {'int8', 'uint8', 'int16', 'uint16', 'int32',
+                             'uint32', 'float32'}
 
     def connect(self, data_directory):
         ga = pytest.importorskip('google.auth')

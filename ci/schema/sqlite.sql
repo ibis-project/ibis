@@ -1,19 +1,19 @@
 CREATE TABLE functional_alltypes (
-    "index" BIGINT,
-    "Unnamed: 0" BIGINT,
-    id BIGINT,
+    "index" INTEGER,
+    "Unnamed: 0" INTEGER,
+    id INTEGER,
     bool_col BOOLEAN,
-    tinyint_col BIGINT,
-    smallint_col BIGINT,
-    int_col BIGINT,
+    tinyint_col TINYINT,
+    smallint_col SMALLINT,
+    int_col INTEGER,
     bigint_col BIGINT,
     float_col FLOAT,
-    double_col REAL,
+    double_col DOUBLE,
     date_string_col TEXT,
     string_col TEXT,
     timestamp_col TEXT,
-    year BIGINT,
-    month BIGINT,
+    year INTEGER,
+    month INTEGER,
     CHECK (bool_col IN (0, 1))
 );
 

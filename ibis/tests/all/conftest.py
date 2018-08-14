@@ -16,8 +16,8 @@ params_backend = [
     pytest.param(Postgres, marks=pytest.mark.postgres),
     pytest.param(MySQL, marks=pytest.mark.mysql),
     pytest.param(Clickhouse, marks=pytest.mark.clickhouse),
+    pytest.param(Impala, marks=pytest.mark.impala),
     pytest.param(BigQuery, marks=pytest.mark.bigquery),
-    pytest.param(Impala, marks=pytest.mark.impala)
 ]
 
 if sys.version_info.major > 2:

@@ -43,13 +43,13 @@ def skipif_unsupported(f):
     return wrapper
 
 
-def skipif_backend(skip_backend):
+def skipif_backend(*backend_classes):
     def wrapped(f):
         @functools.wraps(f)
         def wrapper(backend, *args, **kwargs):
-            if isinstance(backend, skip_backend):
-                pytest.skip('Skipping {} test'.format(str(backend)))
-            else:
-                return f(backend, *args, **kwargs)
+            for backend_class in backend_classes:
+                if isinstance(backend, backend_class):
+                    pytest.skip('Skipping {} test'.format(str(backend)))
+            return f(backend, *args, **kwargs)
         return wrapper
     return wrapped
