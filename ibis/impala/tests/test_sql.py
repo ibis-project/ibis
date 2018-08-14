@@ -131,7 +131,8 @@ def test_nested_join_multiple_ctes():
     top_user_old_movie_ids = joined3.filter([
         joined3.userid == 118205,
         joined3.datetime.year() < 2009
-    ])[joined3.movieid]
+    ])[['movieid']]  # projection from a filter was hiding an insidious bug,
+                     # so we're disabling that for now see issue #1295
     cond = joined3.movieid.isin(top_user_old_movie_ids.movieid)
     result = joined3[cond]
 
@@ -146,15 +147,14 @@ t1 AS (
   FROM t0
     INNER JOIN movies t5
       ON t0.`movieid` = t5.`movieid`
-),
-t2 AS (
+)
+SELECT t2.*
+FROM (
   SELECT t1.*
   FROM t1
   WHERE (t1.`userid` = 118205) AND
         (extract(t1.`datetime`, 'year') > 2001)
-)
-SELECT t2.*
-FROM t2
+) t2
 WHERE t2.`movieid` IN (
   SELECT `movieid`
   FROM (
@@ -361,4 +361,155 @@ WHERE (`a` = (
   WHERE `a` < 100
 )) AND
       (`b` = 'a')"""
+    assert result == expected
+
+
+@pytest.fixture
+def region():
+    return ibis.table(
+        [('r_regionkey', 'int16'),
+         ('r_name', 'string'),
+         ('r_comment', 'string')],
+        name='tpch_region'
+    )
+
+
+@pytest.fixture
+def nation():
+    return ibis.table(
+        [('n_nationkey', 'int32'),
+         ('n_name', 'string'),
+         ('n_regionkey', 'int32'),
+         ('n_comment', 'string')],
+        name='tpch_nation'
+    )
+
+
+@pytest.fixture
+def customer():
+    return ibis.table(
+        [('c_custkey', 'int64'),
+         ('c_name', 'string'),
+         ('c_address', 'string'),
+         ('c_nationkey', 'int32'),
+         ('c_phone', 'string'),
+         ('c_acctbal', 'decimal(12, 2)'),
+         ('c_mktsegment', 'string'),
+         ('c_comment', 'string')],
+        name='tpch_customer',
+    )
+
+
+@pytest.fixture
+def orders():
+    return ibis.table(
+        [('o_orderkey', 'int64'),
+         ('o_custkey', 'int64'),
+         ('o_orderstatus', 'string'),
+         ('o_totalprice', 'decimal(12, 2)'),
+         ('o_orderdate', 'string'),
+         ('o_orderpriority', 'string'),
+         ('o_clerk', 'string'),
+         ('o_shippriority', 'int32'),
+         ('o_comment', 'string')],
+        name='tpch_orders'
+    )
+
+
+@pytest.fixture
+def tpch(region, nation, customer, orders):
+    fields_of_interest = [customer,
+                          region.r_name.name('region'),
+                          orders.o_totalprice,
+                          orders.o_orderdate.cast('timestamp').name('odate')]
+
+    return (region.join(nation, region.r_regionkey == nation.n_regionkey)
+            .join(customer, customer.c_nationkey == nation.n_nationkey)
+            .join(orders, orders.o_custkey == customer.c_custkey)
+            [fields_of_interest])
+
+
+def test_join_key_name(tpch):
+    year = tpch.odate.year().name('year')
+
+    pre_sizes = tpch.group_by(year).size()
+    t2 = tpch.view()
+    conditional_avg = t2[t2.region == tpch.region].o_totalprice.mean()
+    amount_filter = tpch.o_totalprice > conditional_avg
+    post_sizes = tpch[amount_filter].group_by(year).size()
+
+    percent = ((post_sizes['count'] / pre_sizes['count'].cast('double'))
+               .name('fraction'))
+
+    expr = (pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)
+            [pre_sizes.year,
+             pre_sizes['count'].name('pre_count'),
+             post_sizes['count'].name('post_count'),
+             percent])
+    result = ibis.impala.compile(expr)
+    expected = """\
+WITH t0 AS (
+  SELECT t5.*, t3.`r_name` AS `region`, t6.`o_totalprice`,
+         CAST(t6.`o_orderdate` AS timestamp) AS `odate`
+  FROM tpch_region t3
+    INNER JOIN tpch_nation t4
+      ON t3.`r_regionkey` = t4.`n_regionkey`
+    INNER JOIN tpch_customer t5
+      ON t5.`c_nationkey` = t4.`n_nationkey`
+    INNER JOIN tpch_orders t6
+      ON t6.`o_custkey` = t5.`c_custkey`
+)
+SELECT t1.`year`, t1.`count` AS `pre_count`, t2.`count` AS `post_count`,
+       t2.`count` / CAST(t1.`count` AS double) AS `fraction`
+FROM (
+  SELECT extract(`odate`, 'year') AS `year`, count(*) AS `count`
+  FROM t0
+  GROUP BY 1
+) t1
+  INNER JOIN (
+    SELECT extract(t0.`odate`, 'year') AS `year`, count(*) AS `count`
+    FROM t0
+    WHERE t0.`o_totalprice` > (
+      SELECT avg(t7.`o_totalprice`) AS `mean`
+      FROM t0 t7
+      WHERE t7.`region` = t0.`region`
+    )
+    GROUP BY 1
+  ) t2
+    ON t1.`year` = t2.`year`"""
+    assert result == expected
+
+
+def test_join_key_name2(tpch):
+    year = tpch.odate.year().name('year')
+
+    pre_sizes = tpch.group_by(year).size()
+    post_sizes = tpch.group_by(year).size().view()
+
+    expr = (pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)
+            [pre_sizes.year,
+             pre_sizes['count'].name('pre_count'),
+             post_sizes['count'].name('post_count')])
+    result = ibis.impala.compile(expr)
+    expected = """\
+WITH t0 AS (
+  SELECT t5.*, t3.`r_name` AS `region`, t6.`o_totalprice`,
+         CAST(t6.`o_orderdate` AS timestamp) AS `odate`
+  FROM tpch_region t3
+    INNER JOIN tpch_nation t4
+      ON t3.`r_regionkey` = t4.`n_regionkey`
+    INNER JOIN tpch_customer t5
+      ON t5.`c_nationkey` = t4.`n_nationkey`
+    INNER JOIN tpch_orders t6
+      ON t6.`o_custkey` = t5.`c_custkey`
+),
+t1 AS (
+  SELECT extract(`odate`, 'year') AS `year`, count(*) AS `count`
+  FROM t0
+  GROUP BY 1
+)
+SELECT t1.`year`, t1.`count` AS `pre_count`, t2.`count` AS `post_count`
+FROM t1
+  INNER JOIN t1 t2
+    ON t1.`year` = t2.`year`"""
     assert result == expected

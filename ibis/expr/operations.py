@@ -101,6 +101,9 @@ class Node(Annotable):
         cache[(self, other)] = True
         return True
 
+    def compatible_with(self, other):
+        return self.equals(other)
+
     def is_ancestor(self, other):
         if isinstance(other, ir.Expr):
             other = other.op()
@@ -139,8 +142,12 @@ class ValueOp(Node):
 
 def all_equal(left, right, cache=None):
     if util.is_iterable(left):
-        return util.is_iterable(right) and all(
-            map(functools.partial(all_equal, cache=cache), left, right))
+        return util.is_iterable(right) and len(left) == len(right) and all(
+            itertools.starmap(
+                functools.partial(all_equal, cache=cache),
+                zip(left, right)
+            )
+        )
 
     if hasattr(left, 'equals'):
         return left.equals(right, cache=cache)
@@ -167,6 +174,22 @@ class TableNode(Node):
 
     def sort_by(self, expr, sort_exprs):
         return Selection(expr, [], sort_keys=sort_exprs)
+
+    def is_ancestor(self, other):
+        import ibis.expr.lineage as lin
+
+        if isinstance(other, ir.Expr):
+            other = other.op()
+
+        if self.equals(other):
+            return True
+
+        fn = lambda e: (lin.proceed, e.op())  # noqa: E731
+        expr = self.to_expr()
+        for child in lin.traverse(fn, expr):
+            if child.equals(other):
+                return True
+        return False
 
 
 class TableColumn(ValueOp):
@@ -1862,22 +1885,27 @@ class Selection(TableNode, HasSchema):
     def can_add_filters(self, wrapped_expr, predicates):
         pass
 
-    def is_ancestor(self, other):
-        import ibis.expr.lineage as lin
+    @staticmethod
+    def compare_argument_sequences(lefts, rights):
+        return not lefts or not rights or all_equal(lefts, rights)
 
-        if isinstance(other, ir.Expr):
-            other = other.op()
-
+    def compatible_with(self, other):
+        # self and other are equivalent except for predicates, selections, or
+        # sort keys any of which is allowed to be empty. If both are not empty
+        # then they must be equal
         if self.equals(other):
             return True
 
-        expr = self.to_expr()
-        fn = lambda e: (lin.proceed, e.op())  # noqa: E731
-        for child in lin.traverse(fn, expr):
-            if child.equals(other):
-                return True
+        if not isinstance(other, type(self)):
+            return False
 
-        return False
+        return self.table.equals(other.table) and (
+            self.compare_argument_sequences(
+                self.predicates, other.predicates) and
+            self.compare_argument_sequences(
+                self.selections, other.selections) and
+            self.compare_argument_sequences(
+                self.sort_keys, other.sort_keys))
 
     # Operator combination / fusion logic
 
