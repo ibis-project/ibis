@@ -66,7 +66,8 @@ CREATE TABLE functional_alltypes (
     double_col DOUBLE,
     date_string_col TEXT,
     string_col TEXT,
-    timestamp_col TIMESTAMP,
+    -- sqlalchemy parses TIMESTAMP as non-nullable without the NULL modifier
+    timestamp_col TIMESTAMP NULL,
     year INTEGER,
     month INTEGER
 ) DEFAULT CHARACTER SET = utf8;

@@ -181,17 +181,20 @@ def schema_from_table(table, schema=None):
         An ibis schema corresponding to the types of the columns in `table`.
     """
     schema = schema if schema is not None else {}
+    default_dialect = SQLAlchemyDialect()
+
     pairs = []
     for name, column in table.columns.items():
         if name in schema:
             dtype = dt.dtype(schema[name])
         else:
             dtype = dt.dtype(
-                getattr(table.bind, 'dialect', SQLAlchemyDialect()),
+                getattr(table.bind, 'dialect', default_dialect),
                 column.type,
                 nullable=column.nullable
             )
         pairs.append((name, dtype))
+
     return sch.schema(pairs)
 
 

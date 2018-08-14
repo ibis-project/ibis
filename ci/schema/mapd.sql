@@ -58,7 +58,7 @@ CREATE TABLE functional_alltypes (
     Unnamed__0 BIGINT,
     id INTEGER,
     bool_col BOOLEAN,
-    tinyint_col TINYINT,
+    tinyint_col SMALLINT,
     smallint_col SMALLINT,
     int_col INTEGER,
     bigint_col BIGINT,
