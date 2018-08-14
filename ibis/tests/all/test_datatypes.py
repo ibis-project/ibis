@@ -6,7 +6,7 @@ import ibis.tests.util as tu
 
 @pytest.mark.parametrize(('column', 'expected_dtype'), [
     pytest.mark.xfail(
-        ('Unnamed: 0', 'int64'), reason='special characters in field names'
+        ('Unnamed: 0', 'int64'), reason='special characters in field name'
     ),
     ('id', 'int32'),
     ('bool_col', 'boolean'),
