@@ -39,7 +39,7 @@ class Backend(object):
     returned_timestamp_unit = 'us'
     supported_to_timestamp_units = {'s', 'ms', 'us'}
     supports_floating_modulus = True
-    unsupported_datatypes = {}
+    unsupported_datatypes = set()
 
     def __init__(self, data_directory):
         try:
@@ -130,7 +130,7 @@ class Pandas(Backend, RoundHalfToEven):
                 index_col=None,
                 dtype={
                     'id': np.int32,
-                    'bool_col': bool,
+                    'bool_col': np.bool_,
                     'string_col': six.text_type,
                     'float_col': np.float32,
                     'tinyint_col': np.int8,

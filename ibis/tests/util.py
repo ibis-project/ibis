@@ -47,9 +47,9 @@ def skipif_backend(*backend_classes):
     def wrapped(f):
         @functools.wraps(f)
         def wrapper(backend, *args, **kwargs):
-            for backend_class in backend_classes:
-                if isinstance(backend, backend_class):
-                    pytest.skip('Skipping {} test'.format(str(backend)))
-            return f(backend, *args, **kwargs)
+            if isinstance(backend, backend_classes):
+                pytest.skip('Skipping {} test'.format(str(backend)))
+            else:
+                return f(backend, *args, **kwargs)
         return wrapper
     return wrapped
