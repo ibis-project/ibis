@@ -687,3 +687,13 @@ def test_numeric_sum(numeric_table):
     expr = t.numeric_col.sum()
     result = expr.execute()
     assert isinstance(result, decimal.Decimal)
+
+
+def test_boolean_casting(alltypes):
+    t = alltypes
+    expr = t.groupby(k=t.string_col.nullif('1') == '9').count()
+    result = expr.execute().set_index('k')
+    count = result['count']
+    assert count.loc[False] == 5840
+    assert count.loc[True] == 730
+    assert count.loc[None] == 730
