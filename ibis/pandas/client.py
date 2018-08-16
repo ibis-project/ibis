@@ -289,6 +289,7 @@ def convert_any_to_string(_, out_dtype, column):
 
 @convert.register(np.dtype, dt.Boolean, pd.Series)
 def convert_boolean_to_series(_, out_dtype, column):
+    # XXX: this is a workaround until #1595 can be addressed
     return column
 
 
