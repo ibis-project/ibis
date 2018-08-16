@@ -287,6 +287,11 @@ def convert_any_to_string(_, out_dtype, column):
     return result
 
 
+@convert.register(np.dtype, dt.Boolean, pd.Series)
+def convert_boolean_to_series(_, out_dtype, column):
+    return column
+
+
 @convert.register(object, dt.DataType, pd.Series)
 def convert_any_to_any(_, out_dtype, column):
     return column.astype(out_dtype.to_pandas(), errors='ignore')
