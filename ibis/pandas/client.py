@@ -293,7 +293,7 @@ def convert_boolean_to_series(in_dtype, out_dtype, column):
     in_dtype_type = in_dtype.type
     out_dtype_type = out_dtype.to_pandas().type
     if in_dtype_type != np.object_ and in_dtype_type != out_dtype_type:
-        return column.astype(out_dtype)
+        return column.astype(out_dtype_type)
     return column
 
 
