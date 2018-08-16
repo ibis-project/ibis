@@ -131,8 +131,9 @@ def test_nested_join_multiple_ctes():
     top_user_old_movie_ids = joined3.filter([
         joined3.userid == 118205,
         joined3.datetime.year() < 2009
-    ])[['movieid']]  # projection from a filter was hiding an insidious bug,
-                     # so we're disabling that for now see issue #1295
+    ])[['movieid']]
+    # projection from a filter was hiding an insidious bug, so we're disabling
+    # that for now see issue #1295
     cond = joined3.movieid.isin(top_user_old_movie_ids.movieid)
     result = joined3[cond]
 
