@@ -34,36 +34,43 @@ Conda Environment Setup
    .. code:: sh
 
       # Create a conda environment ready for ibis development
-      conda env create --name ibis36 --file=ci/requirements-dev-3.6.yml
+      # including building the documentation
+      conda env create --name ibis36 --file=ci/requirements-docs-3.6.yml
 
       # Activate the conda environment
       source activate ibis36
 
       # Install ibis
-      python setup.py develop
+      make develop
 
 
 All-in-One Command
 ------------------
 
+We use `docker-compose <https://docs.docker.com/compose/>`_ for
+ibis development to make it easy for developers to test ibis
+against databases that have traditionally requied a lot of setup,
+such as Impala.
+
 The following command does three steps:
 
 #. Downloads the test data
-#. Starts each backend via docker-compose
+#. Starts each backend as a service via docker-compose
 #. Initializes the backends with the test tables
 
    .. code:: sh
 
-      cd ci
-      bash build.sh
+      make init
 
-To use specific backends follow the instructions below.
+Take a peek at the Makefile to see what else is available.
 
+Download Test Datasets
+----------------------
 
-Download Test Dataset
----------------------
+This step isn't necessary, but can sometimes be helpful if you
+want to investigate something outside of the docker-compose setup
+that ships with ibis.
 
-#. `Install docker <https://docs.docker.com/engine/installation/>`_
 #. **Download the test data**:
 
    By default this will download and extract the dataset under
@@ -77,29 +84,18 @@ Download Test Dataset
 Setting Up Test Databases
 -------------------------
 
-To start each backends
+To start every backend as a service using ``docker-compose`` and
+load test datasets into each backend use this command:
 
    .. code:: sh
 
-      cd ci
-      docker-compose up
+      make init
 
+The one backend that ibis supports that can't be started as a
+service running in a docker container is BigQuery.
 
-Impala (with UDFs)
-^^^^^^^^^^^^^^^^^^
-
-#. **Start the Impala docker image in another terminal**:
-
-   .. code:: sh
-
-      # Keeping this running as long as you want to test ibis
-      docker run --tty --rm --hostname impala cpcloud86/impala:java8
-
-#. **Load data and UDFs into impala**:
-
-   .. code:: sh
-
-      ci/impalamgr.py load --data --data-dir ibis-testing-data
+Read the next section for details on how to get setup with
+BigQuery and ibis.
 
 BigQuery
 ^^^^^^^^
@@ -125,65 +121,6 @@ the `BigQuery API enabled
 
       ci/datamgr.py bigquery
 
-
-Clickhouse
-^^^^^^^^^^
-
-#. **Start the Clickhouse Server docker image in another terminal**:
-
-   .. code:: sh
-
-      # Keeping this running as long as you want to test ibis
-      docker run --rm -p 9000:9000 --tty yandex/clickhouse-server
-
-#. **Load data**:
-
-   .. code:: sh
-
-      ci/datamgr.py clickhouse
-
-PostgreSQL
-^^^^^^^^^^
-
-PostgreSQL can be used from either the installation that resides on the Impala
-docker image or from your machine directly.
-
-Here's how to load test data into PostgreSQL:
-
-   .. code:: sh
-
-      ci/datamgr.py postgres
-
-SQLite
-^^^^^^
-
-SQLite comes already installed on many systems. If you used the conda setup
-instructions above, then SQLite will be available in the conda environment.
-
-   .. code:: sh
-
-      ci/datamgr.py sqlite
-
-MapD
-^^^^
-
-MapD can be used from either a docker image or from your machine directly.
-
-#. **Start the MapD Server docker image in another terminal**:
-
-   .. code:: sh
-
-      # Keeping this running as long as you want to test ibis
-      docker run -d -v $HOME/mapd-docker-storage:/mapd-storage -p 9090-9092:9090-9092 mapd/mapd-ce-cpu
-
-
-Here's how to load test data into MapD:
-
-   .. code:: sh
-
-      ci/datamgr.py mapd
-
-
 Running Tests
 -------------
 
@@ -191,7 +128,7 @@ You are now ready to run the full ibis test suite:
 
    .. code:: sh
 
-      pytest ibis
+      make test
 
 Contribution Ideas
 ==================
