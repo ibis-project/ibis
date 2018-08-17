@@ -49,8 +49,13 @@ testfast:
 docclean:
 	@$(DOCKER_RUN) ibis rm -rf /tmp/docs.ibis-project.org
 
-docs: docclean build
+docs: docclean
 	@$(DOCKER_RUN) ibis ping -c 1 quickstart.cloudera
 	@$(DOCKER_RUN) ibis git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
-	@$(DOCKER_RUN) ibis find /tmp/docs.ibis-project.org -maxdepth 1 ! -wholename /tmp/docs.ibis-project.org ! -name '*.git' ! -name '.' ! -name 'CNAME' ! -name '*.nojekyll' -exec rm -rf {} \;
+	@$(DOCKER_RUN) ibis find /tmp/docs.ibis-project.org -maxdepth 1 ! -wholename /tmp/docs.ibis-project.org \
+	    ! -name '*.git' \
+	    ! -name '.' \
+	    ! -name 'CNAME' \
+	    ! -name '*.nojekyll' \
+	    -exec rm -rf {} \;
 	@$(DOCKER_RUN) ibis sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -j auto -T
