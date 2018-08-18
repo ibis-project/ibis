@@ -1,27 +1,61 @@
 .PHONY: all clean-pyc develop lint test docclean docs docserve
 
 SHELL := /bin/bash
+ENVKIND := docs
+MAKEFILE_DIR = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+COMPOSE_FILE := "$(MAKEFILE_DIR)/ci/docker-compose.yml"
+DOCKER := ENVKIND=$(ENVKIND) docker-compose -f $(COMPOSE_FILE)
+DOCKER_RUN := $(DOCKER) run --rm
 
-all:
-	python setup.py build_ext --inplace
+clean:
+	@find . -name '*.pyc' -exec -delete
 
-clean-pyc:
-	find . -name "*.pyc" -exec rm -rf {} \;
-
-develop: clean-pyc
-	python setup.py develop
+develop: clean
+	@python setup.py develop
 
 lint:
-	flake8
+	@flake8
+
+stop:
+# stop all running docker compose services
+	@$(DOCKER) rm --force --stop
+
+build:
+# build the ibis image
+	@$(DOCKER) build --pull ibis
+
+start:
+# start all docker compose services
+	@$(DOCKER) up -d --no-build mapd postgres mysql clickhouse impala kudu-master kudu-tserver
+# wait for services to start
+	@$(DOCKER_RUN) waiter
+
+load:
+	@$(DOCKER_RUN) -e LOGLEVEL ibis ci/load-data.sh
+
+restart: stop
+	@$(MAKE) start
+
+init: restart
+	@$(MAKE) build
+	@$(MAKE) load
 
 test:
-	pytest --pyargs ibis -m 'not impala and not hdfs'
+	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf'
+
+testfast:
+	@ENVKIND=$(ENVKIND) $(MAKEFILE_DIR)/ci/test.sh -n auto -m 'not udf and not impala and not bigquery'
 
 docclean:
-	$(MAKE) -C docs clean
+	@$(DOCKER_RUN) ibis rm -rf /tmp/docs.ibis-project.org
 
-docs:
-	$(MAKE) -C docs html
-
-docserve: docs
-	pushd docs/build/html && python -m http.server --bind localhost
+docs: docclean
+	@$(DOCKER_RUN) ibis ping -c 1 quickstart.cloudera
+	@$(DOCKER_RUN) ibis git clone --branch gh-pages https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
+	@$(DOCKER_RUN) ibis find /tmp/docs.ibis-project.org -maxdepth 1 ! -wholename /tmp/docs.ibis-project.org \
+	    ! -name '*.git' \
+	    ! -name '.' \
+	    ! -name 'CNAME' \
+	    ! -name '*.nojekyll' \
+	    -exec rm -rf {} \;
+	@$(DOCKER_RUN) ibis sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -j auto -T
