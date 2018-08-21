@@ -26,7 +26,7 @@ mysql_requires = sqlite_requires + ['pymysql']
 mapd_requires = ['pymapd']
 kerberos_requires = ['requests-kerberos']
 visualization_requires = ['graphviz']
-clickhouse_requires = ['clickhouse-driver>=0.0.8']
+clickhouse_requires = ['clickhouse-driver>=0.0.8', 'clickhouse-cityhash']
 bigquery_requires = ['google-cloud-bigquery>=1.0.0']
 hdf5_requires = ['tables>=3.0.0']
 parquet_requires = ['pyarrow>=0.6.0']
@@ -78,14 +78,11 @@ setup(
         'impala:python_version >= "3"': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
-        'mapd': mapd_requires,
+        'mapd:python_version >= "3"': mapd_requires,
         'mysql': mysql_requires,
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
-        'clickhouse:python_version != "3.4"': clickhouse_requires + [
-            'clickhouse-cityhash'
-        ],
-        'clickhouse:python_version == "3.4"': clickhouse_requires,
+        'clickhouse': clickhouse_requires,
         'bigquery': bigquery_requires,
         'csv:python_version < "3"': ['pathlib2'],
         'hdf5': hdf5_requires,
