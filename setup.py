@@ -78,7 +78,7 @@ setup(
         'impala:python_version >= "3"': impala_requires,
         'kerberos': kerberos_requires,
         'postgres': postgres_requires,
-        'mapd': mapd_requires,
+        'mapd:python_version >= "3"': mapd_requires,
         'mysql': mysql_requires,
         'sqlite': sqlite_requires,
         'visualization': visualization_requires,
