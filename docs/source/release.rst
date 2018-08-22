@@ -11,8 +11,8 @@ Release Notes
 
 Current ``ibis.__version__``: |version|
 
-v0.14.0 (August 22nd, 2018)
--------------
+v0.14.0 (August 23rd, 2018)
+---------------------------
 
 This release brings refactored, more composable core components and rule system
 to ibis. We also focused quite heavily on the BigQuery backend this release.
