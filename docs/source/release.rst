@@ -44,6 +44,7 @@ New Features
 * All recent versions of SQLAlchemy are now suppported (:issue:`1384`)
 * Add support for ``NUMERIC`` types in the BigQuery backend (:issue:`1534`)
 * Speed up grouped and rolling operations in the pandas backend (:issue:`1549`)
+* Implement ``TimestampNow`` for BigQuery and pandas (:issue:`1575`)
 
 Bug Fixes
 ~~~~~~~~~
@@ -59,7 +60,6 @@ Bug Fixes
 * Fix projection fusion bug when attempting to fuse columns of the same name
   (:issue:`1496`)
 * Fix output type for some decimal operations (:issue:`1541`)
-* Implement ``TimestampNow`` for BigQuery and pandas (:issue:`1575`)
 
 API Changes
 -----------
