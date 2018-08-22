@@ -11,36 +11,66 @@ Release Notes
 
 Current ``ibis.__version__``: |version|
 
-v0.14.0 (???)
+v0.14.0 (August 22nd, 2018)
 -------------
 
 This release brings refactored, more composable core components and rule system
-to ibis.
+to ibis. We also focused quite heavily on the BigQuery backend this release.
 
 New Features
 ~~~~~~~~~~~~
 
 * Allow keyword arguments in Node subclasses (:issue:`968`)
 * Splat args into Node subclasses instead of requiring a list (:issue:`969`)
-* Add support for ``UNION`` in the BigQuery backend (:issue:`1408`, :issue:`1409`)
+* Add support for ``UNION`` in the BigQuery backend (:issue:`1408`,
+  :issue:`1409`)
 * Support for writing UDFs in BigQuery (:issue:`1377`). See :ref:`the BigQuery
   UDF docs <udf.bigquery>` for more details.
 * Support for cross-project expressions in the BigQuery backend.
-  (:issue:`1428`)
+  (:issue:`1427`, :issue:`1428`)
+* Add ``strftime`` and ``to_timestamp`` support for BigQuery (:issue:`1422`,
+  :issue:`1410`)
+* Require ``google-cloud-bigquery >=1.0`` (:issue:`1424`)
+* Limited support for interval arithmetic in the pandas backend (:issue:`1407`)
+* Support for subclassing ``TableExpr`` (:issue:`1439`)
+* Fill out pandas backend operations (:issue:`1423`)
+* Add common DDL APIs to the pandas backend (:issue:`1464`)
+* Implement the ``sql`` method for BigQuery (:issue:`1463`)
+* Add ``to_timestamp`` for BigQuery (:issue:`1455`)
+* Add the ``mapd`` backend (:issue:`1419`)
+* Implement range windows (:issue:`1349`)
+* Support for map types in the pandas backend (:issue:`1498`)
+* Add ``mean`` and ``sum`` for ``boolean`` types in BigQuery (:issue:`1516`)
+* All recent versions of SQLAlchemy are now suppported (:issue:`1384`)
+* Add support for ``NUMERIC`` types in the BigQuery backend (:issue:`1534`)
+* Speed up grouped and rolling operations in the pandas backend (:issue:`1549`)
 
 Bug Fixes
 ~~~~~~~~~
 
 * Nullable property is now propagated through value types (:issue:`1289`)
 * Implicit casting between signed and unsigned integers checks boundaries
+* Fix precedence of case statement (:issue:`1412`)
+* Fix handling of large timestamps (:issue:`1440`)
+* Fix ``identical_to`` precedence (:issue:`1458`)
+* Pandas 0.23 compatibility (:issue:`1458`)
+* Preserve timezones in timestamp-typed literals (:issue:`1459`)
+* Fix incorrect topological ordering of ``UNION`` expressions (:issue:`1501`)
+* Fix projection fusion bug when attempting to fuse columns of the same name
+  (:issue:`1496`)
+* Fix output type for some decimal operations (:issue:`1541`)
+* Implement ``TimestampNow`` for BigQuery and pandas (:issue:`1575`)
 
 API Changes
 -----------
 
-* The previous, publicly not exposed rule system has been rewritten
+* The previous, private rules API has been rewritten (:issue:`1366`)
 * Defining input arguments for operations happens in a more readable fashion
   instead of the previous `input_type` list.
 * Removed support for async query execution (only Impala supported)
+* Remove support for Python 3.4 (:issue:`1326`)
+* BigQuery division defaults to using ``IEEE_DIVIDE`` (:issue:`1390`)
+* Add ``tolerance`` parameter to ``asof_join`` (:issue:`1443`)
 
 v0.13.0 (March 30, 2018)
 ------------------------
