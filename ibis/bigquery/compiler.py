@@ -588,8 +588,9 @@ def compiles_floor(t, e):
 
 @compiles(ops.CMSMedian)
 def compiles_approx(translator, expr):
-    arg = expr.op().args[0]
-    where = expr.op().args[1]
+    expr = expr.op()
+    arg = expr.arg
+    where = expr.where
 
     if where is not None:
         arg = where.ifelse(arg, ibis.NA)
