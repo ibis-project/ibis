@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
+import os
 import random
 import shutil
 import sys
+import tempfile
 
 import click
 import ruamel.yaml
@@ -29,8 +31,9 @@ def cli():
 
 
 default_repo = 'https://github.com/conda-forge/ibis-framework-feedstock'
-default_dest = '/tmp/ibis-framework-feedstock-{}'.format(
-    random.getrandbits(16))
+default_dest = os.path.join(
+    tempfile.gettempdir(),
+    'ibis-framework-feedstock-{}'.format(random.getrandbits(16)))
 
 
 @cli.command()
@@ -53,7 +56,8 @@ SCRIPT = (
 
 
 @cli.command()
-@click.argument('meta', default=default_dest + '/recipe/meta.yaml')
+@click.argument('meta',
+                default=os.path.join(default_dest, 'recipe', 'meta.yaml'))
 @click.option('--source-path', default=str(IBIS_DIR))
 def update(meta, source_path):
     path = Path(meta)
@@ -82,7 +86,7 @@ def update(meta, source_path):
 
 
 @cli.command()
-@click.argument('recipe', default=default_dest + '/recipe')
+@click.argument('recipe', default=os.path.join(default_dest, 'recipe'))
 def build(recipe):
     click.echo('Building {} recipe...'.format(recipe))
 
