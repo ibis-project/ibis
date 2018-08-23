@@ -225,8 +225,10 @@ These methods are available directly in the ``ibis`` module namespace.
    expr_list
    row_number
    window
+   range_window
    trailing_window
    cumulative_window
+   trailing_range_window
 
 .. _api.expr:
 
