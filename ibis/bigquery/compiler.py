@@ -586,6 +586,19 @@ def compiles_floor(t, e):
     return 'CAST(FLOOR({}) AS {})'.format(t.translate(arg), bigquery_type)
 
 
+@compiles(ops.CMSMedian)
+def compiles_approx(translator, expr):
+    arg = expr.op().args[0]
+    where = expr.op().args[1]
+
+    if where is not None:
+        arg = where.ifelse(arg, ibis.NA)
+
+    return 'APPROX_QUANTILES({}, 2)[OFFSET(1)]'.format(
+        translator.translate(arg)
+    )
+
+
 class BigQueryDialect(impala_compiler.ImpalaDialect):
 
     translator = BigQueryExprTranslator
