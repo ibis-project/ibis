@@ -711,4 +711,3 @@ def test_approx_median(alltypes):
     expr = m.approx_median()
     result = expr.execute()
     assert result == expected
-
