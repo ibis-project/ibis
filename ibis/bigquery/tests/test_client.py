@@ -697,3 +697,18 @@ def test_boolean_casting(alltypes):
     assert count.loc[False] == 5840
     assert count.loc[True] == 730
     assert count.loc[None] == 730
+
+
+@pytest.mark.xfail
+def test_approx_median(alltypes):
+    m = alltypes.month
+    month_ct = m.topk(13).execute().sort_values('month')
+    month_ct['cum_count'] = month_ct['count'].cumsum()
+    midpoint = month_ct.cum_count.max() / 2
+    expected = month_ct[month_ct.cum_count < midpoint].month.iloc[-1]
+    assert expected == 6
+
+    expr = m.approx_median()
+    result = expr.execute()
+    assert result == expected
+
