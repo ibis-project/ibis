@@ -141,7 +141,18 @@ class ValueOp(Node):
 
 
 def all_equal(left, right, cache=None):
+    """Check whether two objects `left` and `right` are equal.
+
+    Parameters
+    ----------
+    left : Union[object, Expr, Node]
+    right : Union[object, Expr, Node]
+    cache : Optional[Dict[Tuple[Node, Node], bool]]
+        A dictionary indicating whether two Nodes are equal
+    """
     if util.is_iterable(left):
+        # check that left and right are equal length iterables and that all
+        # of their elements are equal
         return util.is_iterable(right) and len(left) == len(right) and all(
             itertools.starmap(
                 functools.partial(all_equal, cache=cache),
@@ -149,9 +160,8 @@ def all_equal(left, right, cache=None):
             )
         )
 
-    if hasattr(left, 'equals'):
-        return left.equals(right, cache=cache)
-    return left == right
+    return (hasattr(left, 'equals') and
+            left.equals(right, cache=cache)) or left == right
 
 
 _table_names = ('unbound_table_{:d}'.format(i) for i in itertools.count())
@@ -162,7 +172,6 @@ def genname():
 
 
 class TableNode(Node):
-
     def get_type(self, name):
         return self.schema[name]
 
