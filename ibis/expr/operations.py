@@ -1033,8 +1033,7 @@ class WindowOp(ValueOp):
                         self.window._group_by
                     )
                 )
-            ),
-            key=id
+            )
         ))
         return result
 
