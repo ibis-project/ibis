@@ -1487,25 +1487,22 @@ class Select(DML):
             cache[self, other] = False
             return False
 
-        this_exprs = self._all_exprs()
-        other_exprs = other._all_exprs()
-
         if self.limit != other.limit:
             cache[self, other] = False
             return False
 
-        for x, y in zip(this_exprs, other_exprs):
-            if not x.equals(y):
-                cache[self, other] = False
-                return False
+        this_exprs = self._all_exprs()
+        other_exprs = other._all_exprs()
 
-        cache[self, other] = True
-        return True
+        cache[self, other] = len(this_exprs) == len(other_exprs) and all(
+            x.equals(y) for x, y in zip(this_exprs, other_exprs)
+        )
+        return cache[self, other]
 
     def _all_exprs(self):
         # Gnarly, maybe we can improve this somehow
-        expr_attrs = ['select_set', 'table_set', 'where', 'group_by', 'having',
-                      'order_by', 'subqueries']
+        expr_attrs = ('select_set', 'table_set', 'where', 'group_by', 'having',
+                      'order_by', 'subqueries')
         exprs = []
         for attr in expr_attrs:
             val = getattr(self, attr)
