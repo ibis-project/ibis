@@ -1895,7 +1895,7 @@ class Selection(TableNode, HasSchema):
         pass
 
     @staticmethod
-    def compare_argument_sequences(lefts, rights):
+    def empty_or_equal(lefts, rights):
         return not lefts or not rights or all_equal(lefts, rights)
 
     def compatible_with(self, other):
@@ -1909,11 +1909,11 @@ class Selection(TableNode, HasSchema):
             return False
 
         return self.table.equals(other.table) and (
-            self.compare_argument_sequences(
+            self.empty_or_equal(
                 self.predicates, other.predicates) and
-            self.compare_argument_sequences(
+            self.empty_or_equal(
                 self.selections, other.selections) and
-            self.compare_argument_sequences(
+            self.empty_or_equal(
                 self.sort_keys, other.sort_keys))
 
     # Operator combination / fusion logic
