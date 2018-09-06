@@ -1476,28 +1476,20 @@ class Select(DML):
         if cache is None:
             cache = {}
 
-        if (self, other) in cache:
-            return cache[self, other]
+        key = self, other
 
-        if self is other:
-            cache[self, other] = True
-            return True
+        try:
+            return cache[key]
+        except KeyError:
+            if self is other:
+                cache[key] = True
+                return True
 
-        if not isinstance(other, Select):
-            cache[self, other] = False
-            return False
-
-        if self.limit != other.limit:
-            cache[self, other] = False
-            return False
-
-        this_exprs = self._all_exprs()
-        other_exprs = other._all_exprs()
-
-        cache[self, other] = len(this_exprs) == len(other_exprs) and all(
-            x.equals(y) for x, y in zip(this_exprs, other_exprs)
-        )
-        return cache[self, other]
+            cache[key] = result = (isinstance(other, Select) and
+                                   self.limit == other.limit and
+                                   ops.all_equal(self._all_exprs(),
+                                                 other._all_exprs()))
+            return result
 
     def _all_exprs(self):
         # Gnarly, maybe we can improve this somehow

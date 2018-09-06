@@ -79,6 +79,7 @@ class Node(Annotable):
     def __hash__(self):
         if not hasattr(self, '_hash'):
             self._hash = hash(
+                type(self),
                 tuple(
                     element.op() if isinstance(element, ir.Expr) else element
                     for element in self.flat_args()
@@ -93,29 +94,16 @@ class Node(Annotable):
         if cache is None:
             cache = {}
 
+        key = self, other
+
         try:
-            return cache[self, other]
+            return cache[key]
         except KeyError:
             pass
 
-        if self is other:
-            cache[self, other] = True
-            return True
-
-        if type(self) != type(other):
-            cache[self, other] = False
-            return False
-
-        if len(self.args) != len(other.args):
-            cache[self, other] = False
-            return False
-
-        for left, right in zip(self.args, other.args):
-            if not all_equal(left, right, cache=cache):
-                cache[self, other] = False
-                return False
-        cache[self, other] = True
-        return True
+        cache[key] = result = type(self) == type(other) and all_equal(
+            self.args, other.args, cache=cache)
+        return result
 
     def compatible_with(self, other):
         return self.equals(other)
@@ -166,6 +154,9 @@ def all_equal(left, right, cache=None):
     cache : Optional[Dict[Tuple[Node, Node], bool]]
         A dictionary indicating whether two Nodes are equal
     """
+    if cache is None:
+        cache = {}
+
     if util.is_iterable(left):
         # check that left and right are equal length iterables and that all
         # of their elements are equal
