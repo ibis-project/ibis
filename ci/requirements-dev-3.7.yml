@@ -11,14 +11,14 @@ dependencies:
   - graphviz
   - impyla>=0.14.0
   - jinja2
-  - lz4
+  #- lz4  # depends on: https://github.com/conda-forge/lz4-feedstock/pull/7
   - multipledispatch
   - numpy
   - pandas
   - plumbum
   - psycopg2
-  - pyarrow>=0.6.0
-  - pymapd>=0.3.2
+  #- pyarrow>=0.6.0
+  #- pymapd>=0.3.2  # depends on: https://github.com/conda-forge/pymapd-feedstock/pull/8
   - pymysql
   - pytables
   - pytest
@@ -30,10 +30,13 @@ dependencies:
   - pytz
   - regex
   - requests
-  - ruamel.yaml
+  #- ruamel.yaml  # depends on: https://github.com/conda-forge/ruamel.yaml-feedstock/pull/70
   - six
   - sqlalchemy
   - thrift
   - toolz
   - xorg-libxpm
   - xorg-libxrender
+  - pip:
+    - lz4
+    - ruamel.yaml
