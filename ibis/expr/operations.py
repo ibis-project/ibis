@@ -13,7 +13,7 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
 from ibis import util, compat
-from ibis.compat import functools, map
+from ibis.compat import functools, map, zip
 from ibis.expr.signature import Annotable, Argument as Arg
 
 
@@ -98,8 +98,12 @@ class Node(Annotable):
             if not all_equal(left, right, cache=cache):
                 cache[(self, other)] = False
                 return False
+
         cache[(self, other)] = True
         return True
+
+    def compatible_with(self, other):
+        return self.equals(other)
 
     def is_ancestor(self, other):
         if isinstance(other, ir.Expr):
@@ -138,9 +142,24 @@ class ValueOp(Node):
 
 
 def all_equal(left, right, cache=None):
+    """Check whether two objects `left` and `right` are equal.
+
+    Parameters
+    ----------
+    left : Union[object, Expr, Node]
+    right : Union[object, Expr, Node]
+    cache : Optional[Dict[Tuple[Node, Node], bool]]
+        A dictionary indicating whether two Nodes are equal
+    """
     if util.is_iterable(left):
-        return util.is_iterable(right) and all(
-            map(functools.partial(all_equal, cache=cache), left, right))
+        # check that left and right are equal length iterables and that all
+        # of their elements are equal
+        return util.is_iterable(right) and len(left) == len(right) and all(
+            itertools.starmap(
+                functools.partial(all_equal, cache=cache),
+                zip(left, right)
+            )
+        )
 
     if hasattr(left, 'equals'):
         return left.equals(right, cache=cache)
@@ -155,7 +174,6 @@ def genname():
 
 
 class TableNode(Node):
-
     def get_type(self, name):
         return self.schema[name]
 
@@ -167,6 +185,22 @@ class TableNode(Node):
 
     def sort_by(self, expr, sort_exprs):
         return Selection(expr, [], sort_keys=sort_exprs)
+
+    def is_ancestor(self, other):
+        import ibis.expr.lineage as lin
+
+        if isinstance(other, ir.Expr):
+            other = other.op()
+
+        if self.equals(other):
+            return True
+
+        fn = lambda e: (lin.proceed, e.op())  # noqa: E731
+        expr = self.to_expr()
+        for child in lin.traverse(fn, expr):
+            if child.equals(other):
+                return True
+        return False
 
 
 class TableColumn(ValueOp):
@@ -1862,22 +1896,27 @@ class Selection(TableNode, HasSchema):
     def can_add_filters(self, wrapped_expr, predicates):
         pass
 
-    def is_ancestor(self, other):
-        import ibis.expr.lineage as lin
+    @staticmethod
+    def empty_or_equal(lefts, rights):
+        return not lefts or not rights or all_equal(lefts, rights)
 
-        if isinstance(other, ir.Expr):
-            other = other.op()
-
+    def compatible_with(self, other):
+        # self and other are equivalent except for predicates, selections, or
+        # sort keys any of which is allowed to be empty. If both are not empty
+        # then they must be equal
         if self.equals(other):
             return True
 
-        expr = self.to_expr()
-        fn = lambda e: (lin.proceed, e.op())  # noqa: E731
-        for child in lin.traverse(fn, expr):
-            if child.equals(other):
-                return True
+        if not isinstance(other, type(self)):
+            return False
 
-        return False
+        return self.table.equals(other.table) and (
+            self.empty_or_equal(
+                self.predicates, other.predicates) and
+            self.empty_or_equal(
+                self.selections, other.selections) and
+            self.empty_or_equal(
+                self.sort_keys, other.sort_keys))
 
     # Operator combination / fusion logic
 
