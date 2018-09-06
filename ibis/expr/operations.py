@@ -13,7 +13,7 @@ import ibis.expr.schema as sch
 import ibis.expr.datatypes as dt
 
 from ibis import util, compat
-from ibis.compat import functools, map
+from ibis.compat import functools, map, zip
 from ibis.expr.signature import Annotable, Argument as Arg
 
 
@@ -98,6 +98,7 @@ class Node(Annotable):
             if not all_equal(left, right, cache=cache):
                 cache[(self, other)] = False
                 return False
+
         cache[(self, other)] = True
         return True
 
@@ -160,8 +161,9 @@ def all_equal(left, right, cache=None):
             )
         )
 
-    return (hasattr(left, 'equals') and
-            left.equals(right, cache=cache)) or left == right
+    if hasattr(left, 'equals'):
+        return left.equals(right, cache=cache)
+    return left == right
 
 
 _table_names = ('unbound_table_{:d}'.format(i) for i in itertools.count())
