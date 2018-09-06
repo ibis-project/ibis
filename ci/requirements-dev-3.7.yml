@@ -17,7 +17,7 @@ dependencies:
   - pandas
   - plumbum
   - psycopg2
-  #- pyarrow>=0.6.0
+  #- pyarrow>=0.6.0  # depends on: https://github.com/conda-forge/pyarrow-feedstock/pull/55
   #- pymapd>=0.3.2  # depends on: https://github.com/conda-forge/pymapd-feedstock/pull/8
   - pymysql
   - pytables
@@ -40,3 +40,4 @@ dependencies:
   - pip:
     - lz4
     - ruamel.yaml
+    - pyarrow
