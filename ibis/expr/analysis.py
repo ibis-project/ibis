@@ -774,7 +774,7 @@ class Projector(object):
 
             # a * projection
             if (isinstance(val, ir.TableExpr) and
-                (self.parent.op().equals(val.op()) or
+                (self.parent.op().compatible_with(val.op()) or
                  # gross we share the same table root. Better way to
                  # detect?
                  len(roots) == 1 and val._root_tables()[0] is roots[0])):
@@ -851,19 +851,16 @@ class ExprValidator(object):
 
     def shares_some_roots(self, expr):
         expr_roots = expr._root_tables()
-        return any(self._among_roots(root)
-                   for root in expr_roots)
+        return any(self._among_roots(root) for root in expr_roots)
 
     def shares_one_root(self, expr):
         expr_roots = expr._root_tables()
-        total = sum(self.roots_shared(root)
-                    for root in expr_roots)
+        total = sum(self.roots_shared(root) for root in expr_roots)
         return total == 1
 
     def shares_multiple_roots(self, expr):
         expr_roots = expr._root_tables()
-        total = sum(self.roots_shared(expr_roots)
-                    for root in expr_roots)
+        total = sum(self.roots_shared(expr_roots) for root in expr_roots)
         return total > 1
 
     def validate_all(self, exprs):
