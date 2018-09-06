@@ -79,8 +79,7 @@ class Node(Annotable):
     def __hash__(self):
         if not hasattr(self, '_hash'):
             self._hash = hash(
-                type(self),
-                tuple(
+                (type(self),) + tuple(
                     element.op() if isinstance(element, ir.Expr) else element
                     for element in self.flat_args()
                 )
