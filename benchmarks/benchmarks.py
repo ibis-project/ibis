@@ -41,7 +41,9 @@ class Suite:
 
     @property
     def large_expr(self):
-        src_table = self.t[self.base]
+        t = self.t
+        base = self.base
+        src_table = t[base]
         src_table = src_table.mutate(_timestamp=(
             src_table['_timestamp'] - src_table['_timestamp'] % 3600
         ).cast('int32').name('_timestamp'), valid_seconds=300)
@@ -66,13 +68,22 @@ class Suite:
 
 
 class Construction(Suite):
-
     def time_large_expr_construction(self):
         self.large_expr
 
 
-class Formatting(Suite):
+class Hashing(Suite):
+    def time_hash_small_expr(self):
+        hash(self.t)
 
+    def time_hash_medium_expr(self):
+        hash(self.base)
+
+    def time_hash_large_expr(self):
+        hash(self.expr)
+
+
+class Formatting(Suite):
     def time_base_expr_formatting(self):
         str(self.base)
 
@@ -81,7 +92,6 @@ class Formatting(Suite):
 
 
 class Compilation(Suite):
-
     def time_impala_base_compile(self):
         ibis.impala.compile(self.base)
 
@@ -90,7 +100,6 @@ class Compilation(Suite):
 
 
 class PandasBackend:
-
     def setup(self):
         n = 30 * int(2e5)
         data = pd.DataFrame({
