@@ -686,6 +686,8 @@ class ListExpr(ColumnExpr, AnyValue):
     def __bool__(self):
         return bool(self.values)
 
+    __nonzero__ = __bool__
+
     def __len__(self):
         return len(self.values)
 
