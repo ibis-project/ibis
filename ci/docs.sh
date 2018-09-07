@@ -11,4 +11,5 @@ docker-compose run --rm ibis git clone \
     https://github.com/ibis-project/docs.ibis-project.org /tmp/docs.ibis-project.org
 
 docker-compose run --rm ibis find /tmp/docs.ibis-project.org -maxdepth 1 ! -wholename /tmp/docs.ibis-project.org ! -name '*.git' ! -name '.' ! -name 'CNAME' ! -name '*.nojekyll' -exec rm -rf {} \;
-docker-compose run --rm ibis sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -j auto -T
+docker-compose run --rm ibis conda env export
+docker-compose run --rm ibis sphinx-build -b html docs/source /tmp/docs.ibis-project.org -W -T
