@@ -100,8 +100,9 @@ class Node(Annotable):
         except KeyError:
             pass
 
-        cache[key] = result = type(self) == type(other) and all_equal(
-            self.args, other.args, cache=cache)
+        cache[key] = result = self is other or (
+            type(self) == type(other) and
+            all_equal(self.args, other.args, cache=cache))
         return result
 
     def compatible_with(self, other):
