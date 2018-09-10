@@ -26,7 +26,7 @@ def sub_for(expr, substitutions):
     ----------
     expr : ibis.expr.types.Expr
         An Ibis expression
-    substitutions : Mapping[ibis.expr.types.Expr, ibis.expr.types.Expr]
+    substitutions : List[Tuple[ibis.expr.types.Expr, ibis.expr.types.Expr]]
         A mapping from expression to expression. If any subexpression of `expr`
         is equal to any of the keys in `substitutions`, the value for that key
         will replace the corresponding expression in `expr`.
@@ -60,7 +60,7 @@ class Substitutor(object):
         Parameters
         ----------
         expr : ibis.expr.types.Expr
-        mapping : Mapping[ibis.expr.types.Expr, ibis.expr.types.Expr]
+        mapping : Mapping[ibis.expr.operations.Node, ibis.expr.types.Expr]
 
         Returns
         -------
