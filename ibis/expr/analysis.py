@@ -1,17 +1,3 @@
-# Copyright 2014 Cloudera Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from operator import methodcaller
 
 import toolz
@@ -20,6 +6,7 @@ import ibis.expr.types as ir
 import ibis.expr.lineage as lin
 import ibis.expr.operations as ops
 
+from ibis import util
 from ibis.expr.schema import HasSchema
 from ibis.expr.window import window
 
@@ -32,29 +19,22 @@ from ibis.common import RelationError, ExpressionError, IbisTypeError
 
 
 def sub_for(expr, substitutions):
-    mapping = {repr(k.op()): v for k, v in substitutions}
+    mapping = {k.op(): v for k, v in substitutions}
     substitutor = Substitutor()
     return substitutor.substitute(expr, mapping)
-
-
-def _expr_key(expr):
-    try:
-        name = expr.get_name()
-    except (AttributeError, ExpressionError):
-        name = None
-
-    try:
-        op = expr.op()
-    except AttributeError:
-        return expr, name
-    else:
-        return repr(op), name
 
 
 class Substitutor(object):
 
     def __init__(self):
-        cache = toolz.memoize(key=lambda args, kwargs: _expr_key(args[0]))
+        """Initialize the Substitutor class.
+
+        Notes
+        -----
+        We need a new cache per substitution call, otherwise we leak state
+        across calls and end up incorrectly reusing other substitions' cache.
+        """
+        cache = toolz.memoize(key=lambda args, kwargs: util.expr_key(args[0]))
         self.substitute = cache(self._substitute)
 
     def _substitute(self, expr, mapping):
@@ -70,31 +50,31 @@ class Substitutor(object):
         new_expr : ibis.expr.types.Expr
         """
         node = expr.op()
-        key = repr(node)
-        if key in mapping:
-            return mapping[key]
-        if node.blocks():
-            return expr
-
-        new_args = list(node.args)
-        unchanged = True
-        for i, arg in enumerate(new_args):
-            if isinstance(arg, ir.Expr):
-                new_arg = self.substitute(arg, mapping)
-                unchanged = unchanged and new_arg is arg
-                new_args[i] = new_arg
-        if unchanged:
-            return expr
         try:
-            new_node = type(node)(*new_args)
-        except IbisTypeError:
-            return expr
+            return mapping[node]
+        except KeyError:
+            if node.blocks():
+                return expr
 
-        try:
-            name = expr.get_name()
-        except ExpressionError:
-            name = None
-        return expr._factory(new_node, name=name)
+            new_args = list(node.args)
+            unchanged = True
+            for i, arg in enumerate(new_args):
+                if isinstance(arg, ir.Expr):
+                    new_arg = self.substitute(arg, mapping)
+                    unchanged = unchanged and new_arg is arg
+                    new_args[i] = new_arg
+            if unchanged:
+                return expr
+            try:
+                new_node = type(node)(*new_args)
+            except IbisTypeError:
+                return expr
+
+            try:
+                name = expr.get_name()
+            except ExpressionError:
+                name = None
+            return expr._factory(new_node, name=name)
 
 
 class ScalarAggregate(object):
