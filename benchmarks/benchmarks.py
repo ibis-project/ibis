@@ -5,66 +5,77 @@ import ibis
 import ibis.expr.datatypes as dt
 
 
+def make_t(name='t'):
+    return ibis.table((('_timestamp', 'int32'),
+                       ('dim1', 'int32'),
+                       ('dim2', 'int32'),
+                       ('valid_seconds', 'int32'),
+                       ('meas1', 'int32'),
+                       ('meas2', 'int32'),
+                       ('year', 'int32'),
+                       ('month', 'int32'),
+                       ('day', 'int32'),
+                       ('hour', 'int32'),
+                       ('minute', 'int32')), name=name)
+
+
+def make_base(t):
+    return (
+        (t.year > 2016) | (
+            (t.year == 2016) & (t.month > 6)) | (
+                (t.year == 2016) & (t.month == 6) &
+                (t.day > 6)) | (
+                    (t.year == 2016) & (t.month == 6) &
+                    (t.day == 6) & (t.hour > 6)) |
+        ((t.year == 2016) & (t.month == 6) &
+         (t.day == 6) & (t.hour == 6) &
+         (t.minute >= 5))) & ((t.year < 2016) | (
+             (t.year == 2016) & (t.month < 6)) | (
+                 (t.year == 2016) & (t.month == 6) &
+                 (t.day < 6)) | (
+                     (t.year == 2016) & (t.month == 6) &
+                     (t.day == 6) & (t.hour < 6)) | (
+                         (t.year == 2016) &
+                         (t.month == 6) & (t.day == 6) &
+                         (t.hour == 6) &
+                         (t.minute <= 5)))
+
+
+def make_large_expr(t, base):
+    src_table = t[base]
+    src_table = src_table.mutate(_timestamp=(
+        src_table['_timestamp'] - src_table['_timestamp'] % 3600
+    ).cast('int32').name('_timestamp'), valid_seconds=300)
+
+    aggs = []
+    for meas in ['meas1', 'meas2']:
+        aggs.append(src_table[meas].sum().cast('float').name(meas))
+    src_table = src_table.aggregate(
+        aggs, by=['_timestamp', 'dim1', 'dim2', 'valid_seconds'])
+
+    part_keys = ['year', 'month', 'day', 'hour', 'minute']
+    ts_col = src_table['_timestamp'].cast('timestamp')
+    new_cols = {}
+    for part_key in part_keys:
+        part_col = getattr(ts_col, part_key)()
+        new_cols[part_key] = part_col
+    src_table = src_table.mutate(**new_cols)
+    return src_table[[
+        '_timestamp', 'dim1', 'dim2', 'meas1', 'meas2',
+        'year', 'month', 'day', 'hour', 'minute'
+    ]]
+
+
 class Suite:
     def setup(self):
-        self.t = t = ibis.table((('_timestamp', 'int32'),
-                                 ('dim1', 'int32'),
-                                 ('dim2', 'int32'),
-                                 ('valid_seconds', 'int32'),
-                                 ('meas1', 'int32'),
-                                 ('meas2', 'int32'),
-                                 ('year', 'int32'),
-                                 ('month', 'int32'),
-                                 ('day', 'int32'),
-                                 ('hour', 'int32'),
-                                 ('minute', 'int32')), name='t')
-        self.base = (
-            (t.year > 2016) | (
-                (t.year == 2016) & (t.month > 6)) | (
-                    (t.year == 2016) & (t.month == 6) &
-                    (t.day > 6)) | (
-                        (t.year == 2016) & (t.month == 6) &
-                        (t.day == 6) & (t.hour > 6)) |
-            ((t.year == 2016) & (t.month == 6) &
-             (t.day == 6) & (t.hour == 6) &
-             (t.minute >= 5))) & ((t.year < 2016) | (
-                 (t.year == 2016) & (t.month < 6)) | (
-                     (t.year == 2016) & (t.month == 6) &
-                     (t.day < 6)) | (
-                         (t.year == 2016) & (t.month == 6) &
-                         (t.day == 6) & (t.hour < 6)) | (
-                             (t.year == 2016) &
-                             (t.month == 6) & (t.day == 6) &
-                             (t.hour == 6) &
-                             (t.minute <= 5)))
+        self.t = t = make_t()
+        self.base = make_base(t)
         self.expr = self.large_expr
 
     @property
     def large_expr(self):
-        t = self.t
-        base = self.base
-        src_table = t[base]
-        src_table = src_table.mutate(_timestamp=(
-            src_table['_timestamp'] - src_table['_timestamp'] % 3600
-        ).cast('int32').name('_timestamp'), valid_seconds=300)
-
-        aggs = []
-        for meas in ['meas1', 'meas2']:
-            aggs.append(src_table[meas].sum().cast('float').name(meas))
-        src_table = src_table.aggregate(
-            aggs, by=['_timestamp', 'dim1', 'dim2', 'valid_seconds'])
-
-        part_keys = ['year', 'month', 'day', 'hour', 'minute']
-        ts_col = src_table['_timestamp'].cast('timestamp')
-        new_cols = {}
-        for part_key in part_keys:
-            part_col = getattr(ts_col, part_key)()
-            new_cols[part_key] = part_col
-        src_table = src_table.mutate(**new_cols)
-        return src_table[[
-            '_timestamp', 'dim1', 'dim2', 'meas1', 'meas2',
-            'year', 'month', 'day', 'hour', 'minute'
-        ]]
+        t = make_t()
+        return make_large_expr(t, make_base(t))
 
 
 class Construction(Suite):
@@ -74,13 +85,13 @@ class Construction(Suite):
 
 class Hashing(Suite):
     def time_hash_small_expr(self):
-        hash(self.t)
+        hash(make_t())
 
     def time_hash_medium_expr(self):
-        hash(self.base)
+        hash(make_base(make_t()))
 
     def time_hash_large_expr(self):
-        hash(self.expr)
+        hash(self.large_expr)
 
 
 class Formatting(Suite):
