@@ -1483,14 +1483,11 @@ class Select(DML):
         try:
             return cache[key]
         except KeyError:
-            if self is other:
-                cache[key] = True
-                return True
-
-            cache[key] = result = (isinstance(other, Select) and
-                                   self.limit == other.limit and
-                                   ops.all_equal(self._all_exprs(),
-                                                 other._all_exprs()))
+            cache[key] = result = (
+                self is other or
+                (isinstance(other, Select) and
+                    self.limit == other.limit and
+                    ops.all_equal(self._all_exprs(), other._all_exprs())))
             return result
 
     def _all_exprs(self):
